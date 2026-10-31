@@ -1,367 +1,55 @@
-// Turkish names and descriptions for shop catalog rows (2.13.x purchase modal).
-// Frontend-only localization: the DB rows stay English, nothing is migrated.
-// Keyed by sku (stable slug). Entries are [name] or [name, description].
-// Rows whose description follows a seed template get a Turkish template that
-// reuses the Turkish name. Unknown rows fall back to the English row.
+// Localized names and descriptions for shop catalog rows.
+// The text lives in the i18n catalogs (namespace `shopItems`, keyed by sku: name, desc,
+// and `stem` for chat bubbles); see i18n/locales/shopItems.en.js. The database rows stay
+// English and are the fallback for a sku the catalogs do not know yet. Rows whose
+// description follows a seed pattern use the catalog template of that pattern with the
+// localized name. Country items have no entries: their names come from Intl
+// (countryFlags.js countryName).
+import { translate } from "../i18n/index.js";
 
-const B = {
-  // Banners
-  "banner-emerald-forest": ["Zümrüt Orman", "Doğadan ilham alan, yosunlu koyu yeşillerde bir banner."],
-  "banner-royal-velvet": ["Kraliyet Kadifesi", "Lüks bir profil bannerı için asil mor ve altın."],
-  "banner-cherry-blossom": ["Kiraz Çiçeği", "Soluk bir geçişin üzerinde süzülen yumuşak pembe yapraklar."],
-  "banner-solar-flare": ["Güneş Patlaması", "Bir güneş fırtınası gibi yoğun turuncu ve kırmızı patlama."],
-  "banner-arctic-frost": ["Kutup Ayazı", "Temiz ve keskin bir banner için serin buz mavileri."],
-  "banner-toxic-slime": ["Zehirli Balçık", "Koyu, pürüzlü bir zeminde radyoaktif yeşil bir parıltı."],
-  "banner-galaxy-swirl": ["Galaksi Girdabı", "Yıldız tozuyla kaplı, mor ve maviden dönen bir galaksi."],
-  "banner-obsidian-rift": ["Obsidyen Yarık"],
-  "banner-crimson-monolith": ["Kızıl Monolit"],
-  "banner-jade-temple": ["Yeşim Tapınak"],
-  "banner-azure-cathedral": ["Gök Mavisi Katedral"],
-  "banner-amber-dunes": ["Kehribar Kumullar"],
-  "banner-violet-storm": ["Mor Fırtına"],
-  "banner-mint-horizon": ["Nane Ufku"],
-  "banner-noir-gold": ["Siyah ve Altın"],
-  "banner-plasma-ribbon": ["Plazma Şerit"],
-  "banner-copper-forge": ["Bakır Ocak"],
-  "banner-glacier-peak": ["Buzul Zirvesi"],
-  "banner-blood-moon": ["Kanlı Ay"],
-  "banner-luminous-moss": ["Işıltılı Yosun"],
-  "banner-ion-circuit": ["İyon Devresi"],
-  "banner-rose-quartz": ["Pembe Kuvars"],
-  "banner-steel-rain": ["Çelik Yağmur"],
-  "banner-ember-vault": ["Köz Kubbesi"],
-  "banner-celestial-ink": ["Göksel Mürekkep"],
-  "banner-tropical-haze": ["Tropik Pus"],
-  "banner-shadow-orchid": ["Gölge Orkide"],
-  "banner-carbon-pulse": ["Karbon Nabız"],
-  "banner-sunset-arcade": ["Gün Batımı Atari"],
-  "banner-deep-teal": ["Derin Camgöbeği Uçurum"],
-  "banner-pearl-fog": ["İnci Sis"],
-  "banner-magma-vein": ["Magma Damarı"],
-  "banner-neon-harbor": ["Neon Liman"],
-  "banner-ivory-dusk": ["Fildişi Alacakaranlık"],
-  "banner-quantum-lagoon": ["Kuantum Lagün"],
-  "banner-rust-garden": ["Pas Bahçesi"],
-  "banner-polar-night": ["Kutup Gecesi"],
-  "banner-saffron-silk": ["Safran İpek"],
-  "banner-void-mirror": ["Boşluk Aynası"],
-  "banner-coral-reef": ["Mercan Resifi"],
-  "banner-graphite-flare": ["Grafit Parıltı"],
-  "banner-lilac-mist": ["Leylak Sisi"],
-  "banner-hyperion-gold": ["Hyperion Altını"],
-  "banner-cyber-marsh": ["Siber Bataklık"],
-  "banner-opaline-wave": ["Opal Dalga"],
-  "banner-titan-bronze": ["Titan Bronz"],
-  "banner-zenith-blue": ["Zirve Mavisi"],
-  "banner-phantom-rose": ["Hayalet Gül"],
-  "banner-acid-lattice": ["Asit Kafes"],
-  "banner-midnight-harbor": ["Gece Yarısı Limanı"],
-  "banner-solar-garden": ["Güneş Bahçesi"],
-  "banner-eclipse-silk": ["Tutulma İpeği"],
-  "banner-frosted-copper": ["Buzlu Bakır"],
-  "banner-verdant-pulse": ["Yeşil Nabız"],
-  "banner-ion-sand": ["İyon Kumu"],
-  "banner-nocturne-violet": ["Noktürn Moru"],
-  "banner-chrome-tide": ["Krom Gelgit"],
-  // Backgrounds
-  "background-ocean-depths": ["Okyanus Derinlikleri", "Profil sayfan için süzülen kabarcıklı derin mavi sular."],
-  "background-cherry-grove": ["Kiraz Korusu", "Yaprakları dökülen, rüya gibi pembe-beyaz bir koru."],
-  "background-neon-city": ["Neon Şehir", "Macenta ve mor neonlardan bir siberpunk silüet."],
-  "background-forest-canopy": ["Orman Örtüsü", "Sık bir orman örtüsünün altında güneş benekli yeşiller."],
-  "background-desert-dusk": ["Çöl Alacası", "Bir çöl gün batımı gibi buğulu mora dönen sıcak turuncular."],
-  "background-aurora-sky": ["Aurora Gökyüzü", "Aurora ve yıldızlarla aydınlanan, camgöbeğinden mora parlayan bir gökyüzü."],
-  "background-volcanic-ash": ["Volkanik Kül", "Volkanik kül yatağının üzerinde süzülen için için yanan közler."],
-  "background-obsidian-hall": ["Obsidyen Salon"],
-  "background-crimson-atelier": ["Kızıl Atölye"],
-  "background-jade-sanctum": ["Yeşim Mabet"],
-  "background-azure-observatory": ["Gök Mavisi Gözlemevi"],
-  "background-amber-gallery": ["Kehribar Galeri"],
-  "background-violet-archive": ["Mor Arşiv"],
-  "background-mint-lounge": ["Nane Salonu"],
-  "background-noir-vault": ["Siyah Kasa"],
-  "background-plasma-chamber": ["Plazma Odası"],
-  "background-copper-foundry": ["Bakır Dökümhane"],
-  "background-glacier-lab": ["Buzul Laboratuvarı"],
-  "background-blood-theater": ["Kızıl Tiyatro"],
-  "background-moss-greenhouse": ["Yosun Serası"],
-  "background-ion-hangar": ["İyon Hangarı"],
-  "background-rose-suite": ["Gül Süit"],
-  "background-steel-workshop": ["Çelik Atölye"],
-  "background-ember-forge": ["Köz Ocağı"],
-  "background-celestial-dome": ["Göksel Kubbe"],
-  "background-tropical-veranda": ["Tropik Veranda"],
-  "background-orchid-salon": ["Orkide Salon"],
-  "background-carbon-deck": ["Karbon Güverte"],
-  "background-arcade-lounge": ["Atari Salonu"],
-  "background-teal-basin": ["Camgöbeği Havza"],
-  "background-pearl-atrium": ["İnci Avlu"],
-  "background-magma-core": ["Magma Çekirdeği"],
-  "background-harbor-night": ["Liman Gecesi"],
-  "background-ivory-library": ["Fildişi Kütüphane"],
-  "background-quantum-bay": ["Kuantum Koy"],
-  "background-rust-conservatory": ["Pas Limonluk"],
-  "background-polar-station": ["Kutup İstasyonu"],
-  "background-saffron-terrace": ["Safran Teras"],
-  "background-void-gallery": ["Boşluk Galerisi"],
-  "background-coral-cove": ["Mercan Koyu"],
-  "background-graphite-suite": ["Grafit Süit"],
-  "background-lilac-parlor": ["Leylak Salon"],
-  "background-hyperion-hall": ["Hyperion Salonu"],
-  "background-cyber-grove": ["Siber Koru"],
-  "background-opaline-loft": ["Opal Çatı Katı"],
-  "background-bronze-atelier": ["Bronz Atölye"],
-  "background-zenith-deck": ["Zirve Güverte"],
-  // Themes
-  "theme-emerald": ["Zümrüt", "Uygulamanın tamamı için zengin zümrüt yeşili ve siyah bir görünüm."],
-  "theme-sakura": ["Sakura", "Uygulamanın tamamı için yumuşak, çiçek pembesi bir görünüm."],
-  "theme-solar": ["Güneş", "Uygulamanın tamamı için sıcak kehribar ve kömür grisi bir görünüm."],
-  "theme-lagoon": ["Lagün", "Derin su camı. Durgun ışık kırılmaları, serin bir kenar, hareket yok."],
-  "theme-grove": ["Koru", "Orman camı. Koyu bir örtünün altında durgun ışık huzmeleri."],
-  "theme-hanami": ["Hanami", "Gece çiçeği camı. Yapraklar paletin içinde durur; hiçbiri düşmez."],
-  "theme-emberfall": ["Köz Yağmuru", "Köz camı. Renk yavaşça kayar ve birkaç kıvılcım nefes alır."],
-  "theme-borealis": ["Borealis", "Camgöbeği ve mor perdeler camın arkasında yavaşça dolaşır."],
-  "theme-starwell": ["Yıldız Kuyusu", "Yavaşça kayan bir bulutsu ve sessiz bir yıldız alanı."],
-  "theme-chromeveil": ["Krom Peçe", "Gece yarısı metali. İki katman birbirinden uzaklaşır, cam kenarında bir parıltı yürür."],
-  "theme-iriscape": ["Yanardöner", "Yanardöner cam. Arayüzün arkasında birkaç renk döner, kenar rengi kayar."],
-  // Name effects
-  "name-effect-fire": ["Ateş Geçişi", "İsmin kayan kırmızı-turuncu bir geçişle yanar."],
-  "name-effect-rainbow": ["Gökkuşağı Akışı", "İsmin tüm renkler arasında yumuşakça döner."],
-  "name-effect-neon": ["Neon Işıltı", "İsminin çevresinde nabız gibi atan camgöbeği bir neon."],
-  "name-effect-gold-shimmer": ["Altın Pırıltı", "İsminin üzerinden geçen parlak bir altın ışıltı."],
-  "name-effect-ice": ["Buz Ayazı", "Serin ve keskin, buz mavisinden beyaza bir geçiş."],
-  "name-effect-void": ["Boşluk Paraziti", "Titreyen mor-siyah bir bozulma efekti."],
-  "name-effect-plasma": ["Plazma Süpürgesi"], "name-effect-ember": ["Köz Akışı"], "name-effect-glitch": ["Bozuk Sinyal"],
-  "name-effect-mintglow": ["Nane Işıltısı"], "name-effect-sunset": ["Gün Batımı Solması"], "name-effect-ocean": ["Okyanus Akıntısı"],
-  "name-effect-chrome": ["Krom Parlaklık"], "name-effect-toxic": ["Zehirli Nabız"], "name-effect-royal": ["Kraliyet Moru"],
-  "name-effect-candy": ["Şeker Patlaması"], "name-effect-magma": ["Magma Akışı"], "name-effect-arctic": ["Kutup Işını"],
-  "name-effect-holo": ["Holo Kayma"], "name-effect-embercore": ["Köz Çekirdeği"], "name-effect-noir": ["Siyah Beyaz"],
-  "name-effect-laser": ["Lazer Pembe"], "name-effect-matrix": ["Matris Yeşili"], "name-effect-sand": ["Çöl Altını"],
-  "name-effect-sigil-damascus": ["Şam Katmanı", "Harflere işlenmiş katlanmış çelik: kıl inceliğinde dalgalar, soğuk gümüş bir sırt ve bitmiş bir bıçak gibi koyulaşmış bir vadi."],
-  "name-effect-sigil-obsidian": ["Obsidyen Damar", "Harflerin içinden tek bir altın damar geçen volkanik cam; sıcak kenarı sayesinde taş koyu bir isimde de okunur."],
-  "name-effect-sigil-sapphire": ["Safir Köşk", "Konik kesimli bir safir: parlak tabla, derin taban ve yüzler arasında keskin geçiş."],
-  "name-effect-sigil-porcelain": ["Porselen Çatlak", "İki altın kılcal çatlaklı sıcak sır. Harfler dolu bir fincan renginde kalır, çatlaklar delip geçmez."],
-  "name-effect-sigil-filigree": ["Kızıl Telkari", "Şarap rengi zemin, altın bir orta bant ve isme oyma işi gibi yerleştirilmiş üç sabit kıvılcım."],
-  "name-effect-sigil-lacquer": ["Urushi Dudak", "Başlığında keskin beyaz bir ışık, tabanında altın bir ayak olan siyah Japon laki."],
-  "name-effect-sigil-moonstone": ["Aytaşı Ayrımı", "Süt beyazı merkez, çivit gövde, ardından lambaya tutulmuş cilalı bir aytaşı gibi camgöbeği ve gül rengi ayrık kenar."],
-  "name-effect-sigil-glacier": ["Buzul Katmanı", "Yumuşak bir mavi geçiş değil, keskin renk kırılmalı üst üste buz yüzleri. Her bant ayrı bir kesim."],
-  "name-effect-sigil-rosewood": ["Gül Ağacı Özü", "Sık gül ağacı damarı: öz çizgileri, daha koyu bir çekirdek ve harfler boyunca tekrarlanan gül rengi bir sırt."],
-  "name-effect-sigil-verdigris": ["Bakır Pası Bandı", "Oksitlenmiş bakır. Sıcak metal, yeşil çiçeklenme ve dolguda duran iki sabit pas lekesi."],
-  "name-effect-sigil-inkwash": ["Sumi Çiçeği", "Sol altta daha yoğun, kâğıt parlaklığına doğru incelen tek bir mürekkep lekesi; isim okunur kalır."],
-  "name-effect-sigil-marble": ["Carrara Damarı", "Tek bir levhanın kesildiği gibi, aynı açıda iki gri damarın geçtiği soluk mermer."],
-  "name-effect-sigil-velvet": ["Kadife Hav", "Havlı kumaş: üstte gül rengi hav, ezik şarap rengi bir kenar ve yerinden oynamayan düşük bir parlaklık."],
-  "name-effect-sigil-mirror": ["Ayna Işığı", "İşlenmiş ayna: beyaz bir ışık, siyah bir oluk ve gümüş omuzlar. Parıltı döngü değil, bir şerit."],
-  "name-effect-sigil-sandstone": ["Kumtaşı Yatağı", "Bir yamaç yüzü gibi harflere bastırılmış düzensiz aşı boyası, pas ve ten rengi tortul bantlar."],
-  "name-effect-sigil-nebula": ["Bulutsu Levha", "Harflere boyanmış iki gaz bulutu ve üç sabit yıldız. Gökyüzü kaymaz."],
-  "name-effect-sigil-aurora": ["Aurora Perdesi", "Yeşil, mor ve buz renginde bir perde harflerin içinden yükselir; zemin rengi de yanında yürür."],
-  "name-effect-sigil-mercury": ["Cıva Kanalı", "Koyu bir kanaldan geçirilen erimiş gümüş. Tek bir parıltı ismin boyunca koşar ve geri döner."],
-  "name-effect-sigil-forge": ["Ocak Çekişi", "Nefes alan kömür. Bir köz harflere tırmanır, ışık kabarır, sonra çekiş tabana geri düşer."],
-  "name-effect-sigil-circuit": ["Devre Akışı", "Elektrik verilmiş bir kartın görünüşü gibi camgöbeği izler yana, gül rengi izler aşağı ilerler."],
-  "name-effect-sigil-prism": ["Prizma Çubuğu", "Mücevher bir zemin ve ismin üzerinden geçip giden tek bir beyaz çubuk. Taşın kendisi yerinde kalır."],
-  "name-effect-sigil-tide": ["Gelgit Kabarışı", "Kelimelerin arkasında yükselip alçalan parlak bir dalga tepesiyle derin su, gelgit üstüne gelgit."],
-  "name-effect-sigil-core": ["Gezgin Çekirdek", "Ortada durmak yerine harflerin içinde dolaşan sıcak bir çekirdek."],
-  "name-effect-sigil-scan": ["Tarama Levhası", "Bir hologram levhası: ince tarama dokusu ve başlıktan tabana geçen tek parlak bant."],
-  "name-effect-sigil-oil": ["Yağ Filmi", "Dönen bir yağ filmi. Renk koyu bir zeminde çemberi dolaşır, harfler kımıldamaz."],
-  "name-effect-sigil-pulse": ["Çift Nabız", "Cam altındaki bir durum lambası gibi kenarda sessiz bir çift atış. İsmin rengi değişmez."],
-  "name-effect-sigil-chroma": ["Renk Adımı", "Basamaklı bir renk ayrımı. Renk ve ikiz gölge kayarak değil, saat gibi adım adım atlar."],
-  "name-effect-sigil-comet": ["Kuyruklu Yıldız Başı", "Parlak bir baş gece alanını geçer, uzak kenarda durur, sonra geçiş yeniden başlar."],
-  "name-effect-sigil-solar": ["Güneş Kabarışı", "Koyu bir taç içinde kabarıp büzülen altın bir çekirdek. Taç dönmez."],
-  "name-effect-sigil-rift": ["Yarık Yırtığı", "İsmin genişliği boyunca ilerleyen ve arkasından kapanan ince mor bir yırtık."],
-  // Avatar effects
-  "avatar-effect-pulse": ["Nabız Işıltısı", "Avatarının çevresinde nabız gibi atan yumuşak bir ışıltı."],
-  "avatar-effect-orbit": ["Parçacık Yörüngesi", "Avatarının çevresinde durmadan dönen minik parçacıklar."],
-  "avatar-effect-spark": ["Elektrik Kıvılcımı", "Avatarının çevresinde çatırdayan elektrik kıvılcımları."],
-  "avatar-effect-aurora": ["Aurora Halkası", "Avatarını saran, renkleri kayan bir aurora halkası."],
-  "avatar-effect-flame": ["Alev Aurası", "Avatarını saran titrek bir alev aurası."],
-  "avatar-effect-frost": ["Ayaz Aurası", "Avatarını saran buz gibi bir pırıltı."],
-  "avatar-effect-halo": ["Yumuşak Hale"], "avatar-effect-ripple": ["Dalga Halkası"], "avatar-effect-comet": ["Kuyruklu Yıldız İzi"],
-  "avatar-effect-static": ["Statik Alan"], "avatar-effect-petal": ["Yaprak Yörüngesi"], "avatar-effect-hex": ["Altıgen Ağ"],
-  "avatar-effect-solar": ["Güneş Tacı"], "avatar-effect-toxic": ["Zehirli Sis"], "avatar-effect-prism": ["Prizma Dönüşü"],
-  "avatar-effect-ember": ["Köz Yörüngesi"], "avatar-effect-frostbite": ["Soğuk Isırığı"], "avatar-effect-neon": ["Neon Çizgiler"],
-  "avatar-effect-void": ["Boşluk Diski"], "avatar-effect-bubble": ["Kabarcık Halkası"], "avatar-effect-scan": ["Tarama Çizgisi"],
-  "avatar-effect-royal": ["Kraliyet Arması"], "avatar-effect-holoring": ["Holo Halka"], "avatar-effect-pulse2": ["Çift Nabız"],
-  // Chat bubbles
-  "chat-bubble-glass": ["Cam", "Hafif bulanıklıklı buzlu cam bir balon."],
-  "chat-bubble-neon-outline": ["Neon Çerçeve", "Mesajlarının çevresinde parlayan bir neon kenar."],
-  "chat-bubble-sunset": ["Gün Batımı Geçişi", "Mesaj balonlarını dolduran sıcak bir gün batımı geçişi."],
-  "chat-bubble-carbon": ["Karbon", "Şık, mat siyah karbon fiber dokusu."],
-  "chat-bubble-holo": ["Holografik", "Her mesajda yanardöner holografik bir parlaklık."],
-  "chat-bubble-royal-purple": ["Kraliyet Moru", "Zengin kraliyet moru geçişli bir balon."],
-  "chat-bubble-midnight": ["Gece Yarısı Balonu", null, "Gece Yarısı"], "chat-bubble-ember": ["Köz Balonu", null, "Köz"],
-  "chat-bubble-mint": ["Nane Ayazı Balonu", null, "Nane Ayazı"], "chat-bubble-violet": ["Mor Mürekkep Balonu", null, "Mor Mürekkep"],
-  "chat-bubble-gold": ["Yaldızlı Balon", null, "Yaldızlı"], "chat-bubble-ice": ["Buz Tabakası Balonu", null, "Buz Tabakası"],
-  "chat-bubble-toxic": ["Zehirli Dolgu Balonu", null, "Zehirli Dolgu"], "chat-bubble-rose": ["Gül Camı Balonu", null, "Gül Camı"],
-  "chat-bubble-cyber": ["Siber Izgara Balonu", null, "Siber Izgara"], "chat-bubble-sand": ["Çöl Kumu Balonu", null, "Çöl Kumu"],
-  "chat-bubble-ocean": ["Okyanus Derinliği Balonu", null, "Okyanus Derinliği"], "chat-bubble-lava": ["Lav Akışı Balonu", null, "Lav Akışı"],
-  "chat-bubble-pearl": ["Yumuşak İnci Balonu", null, "Yumuşak İnci"], "chat-bubble-matrix": ["Matris Balonu", null, "Matris"],
-  "chat-bubble-arcade": ["Atari Pop Balonu", null, "Atari Pop"], "chat-bubble-noir": ["Yumuşak Siyah Balonu", null, "Yumuşak Siyah"],
-  "chat-bubble-prism": ["Prizma Kenar Balonu", null, "Prizma Kenar"], "chat-bubble-teal": ["Yumuşak Camgöbeği Balonu", null, "Yumuşak Camgöbeği"],
-  "chat-bubble-atelier-obsidian": ["Obsidyen Kakma", "İnce altın damarlı ve laklı iç kenarlı siyah taş. Mesajların düz bir renkte değil, kesilmiş bir taşın içinde durur."],
-  "chat-bubble-atelier-marble": ["Carrara Peçe", "Gri damarlar ve sıcak kılcal bir çatlakla kesilen soluk mermer. Açık yüzey, koyu yazı, galeri çerçevesi."],
-  "chat-bubble-atelier-damascus": ["Şam Katmanı", "Katlanmış çelik: kıl inceliğinde dalgalar, soğuk bir parıltı ve bitmiş bir bıçak gibi koyulaşmış kenar."],
-  "chat-bubble-atelier-abyss": ["Uçurum İncisi", "Yüzeyin altında süzülen inci parıltılı ve camgöbeği kenarlı derin bir su kuyusu."],
-  "chat-bubble-atelier-filigree": ["Kızıl Telkari", "Şarap rengi koyu zemin, altın bir iç çerçeve ve oyma metal işi gibi köşe kıvılcımları."],
-  "chat-bubble-atelier-canopy": ["Yaprak Gölgesi", "Mesaj yaprakların altındaymış gibi, üç ışık huzmeli katmanlı orman gölgesi."],
-  "chat-bubble-atelier-moonstone": ["Aytaşı Çerçeve", "Süt beyazı merkez, çivit kenar ve cilalı bir aytaşı gibi camgöbeği–gül rengi çift çerçeve."],
-  "chat-bubble-atelier-patina": ["Bakır Pası", "Oksitlenmiş bakır: yeşile karışan sıcak metal bantlar ve çıplak bakır benekleri."],
-  "chat-bubble-atelier-inkwash": ["Sumi Mürekkebi", "Koyu kâğıtta tek bir mürekkep lekesi; bir köşede yoğun, diğerinde ince."],
-  "chat-bubble-atelier-porcelain": ["Porselen Çatlak", "Sıcak sır, kılcal çatlaklar ve altın bir dudak. Yazı koyu kalır, fincan izi gibi okunur."],
-  "chat-bubble-atelier-stormglass": ["Fırtına Camı", "Yumuşak bir gri geçiş değil, üç keskin şimşek çizgisiyle kesilen arduvaz cam."],
-  "chat-bubble-atelier-velvet": ["Siyah Kadife", "Havlı kumaş: gül rengi hav parıltısı, ezik bir kenar ve yerinde duran düşük bir parlaklık."],
-  "chat-bubble-atelier-glacier": ["Buzul Yüzü", "Kesilmiş bir blok gibi keskin renk kırılmalı ve parlak üst kenarlı üst üste buz yüzleri."],
-  "chat-bubble-atelier-coal": ["Köz Kömürü", "Sabit köz benekli, siyaha yakın kömür. Işık kımıldamaz; sıcaklık taşın içindedir."],
-  "chat-bubble-atelier-sapphire": ["Safir Kesim", "Parlak tablası ve derin tabanıyla konik kesimden yapılmış yüzlü bir safir."],
-  "chat-bubble-atelier-sandstone": ["Kumtaşı Katmanları", "Kabartma gibi bastırılmış düzensiz aşı boyası, ten ve pas rengi tortul bantlar."],
-  "chat-bubble-atelier-lacquer": ["Urushi Laki", "Keskin bir üst parıltısı ve altın bir ayağı olan siyah Japon laki."],
-  "chat-bubble-atelier-nebula": ["Bulutsu Tozu", "İki gaz bulutu ve sabit bir yıldız alanı. Gökyüzü tek bir mor boya değil, resmedilmiş."],
-  "chat-bubble-atelier-rosewood": ["Gül Ağacı Damarı", "Daha koyu bir çekirdek çizgisiyle gül ağacı ve özden sık bir damar."],
-  "chat-bubble-atelier-chrome": ["Krom Ayna", "İşlenmiş bir ayna bandı: sert gümüş, beyaz bir ışık ve koyu yazı."],
-  "chat-bubble-atelier-aurora": ["Aurora Peçesi", "Balonun üzerinde dolaşan yeşil, mor ve buz renginde bir perde."],
-  "chat-bubble-atelier-mercury": ["Sıvı Cıva", "Koyu bir kanalda kayan erimiş gümüş; parıltı akışın peşinden koşar."],
-  "chat-bubble-atelier-breath": ["Köz Nefesi", "Nefes alan kömür. Kenar bir ocak çekişi gibi parlar ve söner."],
-  "chat-bubble-atelier-circuit": ["Neon Devre", "Elektrik verilmiş bir kart gibi ilerleyen camgöbeği ve gül rengi bir iz ağı."],
-  "chat-bubble-atelier-sheen": ["Prizma Süpürgesi", "Mücevher bir zemin ve üzerinden geçip giden tek bir ışık çubuğu."],
-  "chat-bubble-atelier-tide": ["Gelgit Camı", "Kelimelerin arkasında yükselip alçalan derin su, gelgit üstüne gelgit."],
-  "chat-bubble-atelier-plasma": ["Plazma Çekirdeği", "Ortada durmak yerine balonun içinde dolaşan sıcak bir çekirdek."],
-  "chat-bubble-atelier-scanline": ["Holo Tarama", "Yukarıdan aşağıya bir tarama bandının geçtiği hologram levhası."],
-  "chat-bubble-atelier-firefly": ["Ateşböceği Süzülüşü", "Gece bahçesinde hiç aynı yolu izlemeyen iki yavaş ışık."],
-  "chat-bubble-atelier-magma": ["Magma Nabzı", "Yer değiştiren kabuk ve erimiş taş; turuncu siyahın içinden çıkar."],
-  "chat-bubble-atelier-starfall": ["Yıldız Yağmuru", "İçinden bir yıldız perdesi dökülen sabit bir gece göğü."],
-  "chat-bubble-atelier-oilslick": ["Yağ Lekesi", "Dönen bir yağ filmi. Renk çemberi dolaşır, yazı yerinde kalır."],
-  "chat-bubble-atelier-heartbeat": ["Kalp Atışı", "Cam altındaki bir durum ışığı gibi kenarda sessiz bir çift nabız."],
-  "chat-bubble-atelier-glitch": ["Sinyal Bozulması", "Basamaklı bir saatle gelen renkli kenar hataları. Balonun kendisi zıplamaz."],
-  "chat-bubble-atelier-comet": ["Kuyruklu Yıldız İzi", "Koyu bir alanı geçen ve kelimeleri okunur bırakan tek bir parlak baş."],
-  "chat-bubble-atelier-ribbon": ["Şerit Işıklar", "Düz bir geçiş kaydırmak yerine açısını döndüren bir kuzey şeridi."],
-  "chat-bubble-atelier-arc": ["Ark Kaynağı", "Kenar beyaz, camgöbeği ve mavi arasında çakar; ışık arkı takip eder."],
-  "chat-bubble-atelier-biolume": ["Biyolüminesans", "Derin suda birbirinden farklı ritimde süzülen iki canlı ışık."],
-  "chat-bubble-atelier-solar": ["Güneş Patlaması", "Koyu bir taç içinde kabarıp büzülen altın bir çekirdek."],
-  "chat-bubble-atelier-rift": ["Boşluk Yarığı", "Mesajın genişliği boyunca ilerleyen ve arkasından kapanan ince mor bir yırtık."],
-  // Typing flares
-  "typing-neon-pulse": ["Neon Nabız Şeridi", "Yazma göstergen elektrik camgöbeğinde nefes alır: varsayılan bir döngü değil, canlı bir sinyal gibi üç nabız."],
-  "typing-liquid-mercury": ["Sıvı Cıva", "Sen yazarken gümüşi küreler uzar ve yeniden biçimlenir; neredeyse fiziksel görünen bir cıva dönüşümü."],
-  "typing-aurora-wave": ["Aurora Dalgası", "Yazıyor etiketinin altında, cam altındaki kuzey ışıkları gibi dalgalanan camgöbeği–mor bir şerit."],
-  "typing-ember-cascade": ["Köz Çağlayanı", "Sıcak kömürler sırayla yükselip söner; bir ocağın başında oturuyormuş gibi bir yazma işareti."],
-  "typing-crystal-chime": ["Kristal Çan", "Yüzlü buz mavisi noktalar sekerken ışığı kırar: narin, hassas ve şaşmaz biçimde seçkin."],
-  "typing-void-signal": ["Boşluk Sinyali", "Mor bir parazit çubuğu fazdan girip çıkar; gerçekliği hackliyormuş gibi yazanlar için."],
-  "typing-golden-morse": ["Altın Mors", "Altın çizgiler şifreli bir ritimle yanıp söner; gece sohbetleri için zarif bir telgraf enerjisi."],
-  "typing-cyber-hex": ["Siber Altıgen Akışı", "Altıgen kırıklar keskin neon kenarla yana dökülür; saf siberpunk tuş tiyatrosu."],
-  "typing-sakura-drift": ["Sakura Süzülüşü", "Sen yazarken yaprak yumuşaklığında pembe küreler yukarı süzülür; sakin, romantik ve olağanüstü akıcı."],
-  "typing-plasma-arc": ["Plazma Arkı", "Macenta-camgöbeği arklar noktalar arasında sıçrar; isminin altında minyatür bir füzyon reaktörü."],
-  "typing-frost-breathe": ["Ayaz Nefesi", "Buz gibi noktalar yavaş bir nefes döngüsüyle buğulanıp açılır; düşünceli yazanlar için kış sessizliği."],
-  "typing-royal-ink": ["Kraliyet Mürekkebi", "Koyu mor mürekkep damlaları oluşur, kabarır ve düşer; asil bir duruş için hat sanatı hareketi."],
-  "typing-quantum-blink": ["Kuantum Göz Kırpma", "Noktalar yumuşak bir foton parlamasıyla yer değiştirir; fiziği bozan bir yazma tarzı."],
-  "typing-mosaic-tap": ["Mozaik Dokunuş", "Karo parçaları birleşerek yazma işaretini oluşturur; asla sıradan noktalar değil, zanaat camı enerjisi."],
-  "typing-starfall": ["Yıldız Yağmuru", "Etiketin arkasından mini yıldızlar aşağı kayar; her tuşa kendi meteor yağmurun."],
-  "typing-holo-ribbon": ["Holografik Şerit", "Yazının altında katlanan, tüm tayf renkleri arasında kayan yanardöner bir şerit."],
-  // Reaction bursts
-  "reaction-nova-pop": ["Nova Patlaması", "Tepkilerin yumuşak bir yıldız novasıyla açar: parlak çekirdek, sönen taç, sıfır kalabalık."],
-  "reaction-glass-shatter": ["Cam Kırılması", "Tepki verdiğinde çip kristal kırıklara ayrılır; keskin, lüks, unutulmaz."],
-  "reaction-confetti-storm": ["Konfeti Fırtınası", "Çipten kutlama havasında mini konfetiler fışkırır; çocukça görünmeden parti enerjisi."],
-  "reaction-ripple-ink": ["Mürekkep Halkası", "Durgun suya düşen bir damla gibi emojiden mürekkep halkaları yayılır; sessiz, sanatsal bir etki."],
-  "reaction-ember-bloom": ["Köz Çiçeği", "Tepkinin çevresinde sıcak közler açılır; kaos olmadan sıcaklık, gürültü olmadan ateş."],
-  "reaction-frost-crack": ["Ayaz Çatlağı", "Tepki verdiğinde çipin üzerine buz damarları yayılır; buz gibi yorumlar için soğuk bir kesinlik."],
-  "reaction-neon-stamp": ["Neon Mühür", "Tepkiye sert bir neon damga basılır; siber onay mührü."],
-  "reaction-void-implode": ["Boşluk Çöküşü", "Çip bir anlığına mor bir tekilliğe çöker, sonra geri döner; dramatik ve nadir."],
-  "reaction-prism-split": ["Prizma Ayrımı", "Işık emojinin çevresinde tayf bantlarına ayrılır; müze kalitesinde tepki kaplaması."],
-  "reaction-gold-rain": ["Altın Yağmuru", "Çipten mini altın pullar dökülür; gösterişli ama bağırmayan."],
-  "reaction-pixel-burst": ["Piksel Patlaması", "Retro pikseller dışa patlar, sonra yeniden birleşir; modern bir çipte atari ruhu."],
-  "reaction-petal-burst": ["Yaprak Patlaması", "Tepkiden yumuşak yapraklar yayılır; zarif, romantik, asla şekerli değil."],
-  "reaction-thunderclap": ["Gök Gürültüsü", "Çipin çevresinde kısa bir elektrik çakar; mikrofonu bırakmak gibi bir tepki."],
-  "reaction-soft-bloom": ["Yumuşak Çiçek", "Hafif pastel bir çiçek açılıp söner; günlük tepkiler için sade bir lüks."],
-  "reaction-holo-flash": ["Holo Flaş", "Yanardöner bir flaş çipi yıkar; asla varsayılan görünmeyen holografik krom."],
-  "reaction-magnetic-pulse": ["Manyetik Nabız", "İç içe manyetik halkalar içe çekilir, sonra bırakılır; ucuz bir sıçrama değil, tasarlanmış bir hareket."],
-  // Call overlays
-  "call-midnight-ops": ["Gece Operasyonu", "Komuta merkezi arama ekranı: koyu lacivert cam, kehribar telemetri çizgileri ve taktik HUD çerçevesi."],
-  "call-neon-stadium": ["Neon Stadyum", "Sesli aramalar için arena enerjisi: macenta kenar ışıkları, camgöbeği skorbord vurguları, kalabalığa hazır bir drama."],
-  "call-glass-atrium": ["Cam Avlu", "Yumuşak gün ışığı huzmeli buzlu mimari cam; sunduğumuz en zarif arama tuvali."],
-  "call-ember-theater": ["Köz Tiyatrosu", "Erimiş kehribar perdeli kadife karanlık; aramaların özel bir gala gibi hissettirir."],
-  "call-arctic-bridge": ["Kutup Köprüsü", "Buz mavisi çelik ve buzul geçişleri; odak aramaları için keskin, soğuk ve kusursuz temiz."],
-  "call-void-chamber": ["Boşluk Odası", "Mor olay ufku halkalı, siyaha yakın bir boşluk; her kelime arasında sinematik bir sessizlik."],
-  "call-royal-lounge": ["Kraliyet Salonu", "Koyu erik ve fırçalanmış altın raylar; bir toplantı değil, bir salon. Gece sohbetleri için yumuşak lüks."],
-  "call-cyber-deck": ["Siber Güverte", "Keskin kenarlı camgöbeği ızgara, sıcak pembe vurgular, tarama çizgisi pusu; bağlantıda bir arama estetiği."],
-  "call-golden-hall": ["Altın Salon", "Koyu mermer üzerinde sıcak şampanya ışığı; Descall'daki en pahalı hissettiren arama odası."],
-  "call-aurora-dome": ["Aurora Kubbesi", "Arama sahnesinin üstünde yaşayan bir aurora kubbesi: camgöbeği, mor ve yumuşak yıldız tozu."],
-  "call-carbon-cockpit": ["Karbon Kokpit", "Gösterge ışığı camgöbeği ile mat karbon örgü; yüksek riskli sesli sohbetler için pilot enerjisi."],
-  "call-sakura-suite": ["Sakura Süit", "Pembe geçişler ve yumuşak yaprak ışığı; samimi, modern, asla şekerli değil."],
-  "call-plasma-arena": ["Plazma Arena", "Aramayı çift plazma rayı (macenta ↔ camgöbeği) çerçeveler; stüdyo cilasıyla arena yoğunluğu."],
-  "call-ocean-bridge": ["Okyanus Köprüsü", "Biyolüminesans kenar ışıklı derin deniz mavileri; uzun sohbetler için sakin bir derinlik."],
-  "call-mosaic-stage": ["Mozaik Sahne", "Sen konuştukça ışığı yakalayan zanaat camı mozaik kenarlar; arama sahnesinde galeri havası."],
-  "call-titan-forge": ["Titan Ocağı", "Dövme çelik plakalar, erimiş bakır dikişler ve ısı titreşimi; efsaneler için endüstriyel bir mit."],
-  // Profile card colours (3.7.10)
-  "profile-color-graphite": ["Grafit", "Sakin, koyu bir gri; gri karttan bir adım daha derin."],
-  "profile-color-midnight": ["Gece Yarısı", "Gece mavisinden siyaha inen sade bir geçiş."],
-  "profile-color-ocean": ["Okyanus", "Derin deniz mavisi; altta koyulaşan bir okyanus."],
-  "profile-color-forest": ["Orman", "Yosun yeşilinden koyu ormana uzanan doğal bir ton."],
-  "profile-color-obsidian": ["Obsidyen", "Neredeyse siyah, cam gibi parlak bir koyuluk."],
-  "profile-color-emerald": ["Zümrüt", "Parlak zümrüt yeşili, değerli taş derinliğinde."],
-  "profile-color-ruby": ["Yakut", "Koyu yakut kırmızısı; sıcak ve iddialı."],
-  "profile-color-rose": ["Gül", "Gül kurusundan koyu pembeye yumuşak bir geçiş."],
-  "profile-color-copper": ["Bakır", "Isıtılmış bakır gibi sıcak bir kahve turuncusu."],
-  "profile-color-glacier": ["Buzul", "Buz mavisi ve camgöbeği; serin ve temiz."],
-  "profile-color-lavender": ["Lavanta", "Lavanta morundan gece moruna inen sakin bir ton."],
-  "profile-color-amethyst": ["Ametist", "Derin ametist moru; gizemli ve ışıltılı."],
-  "profile-color-sunset": ["Gün Batımı", "Kızıl turuncudan mora kayan bir gün batımı."],
-  "profile-color-aurora": ["Kutup Işığı", "Camgöbeğinden mora dönen bir kutup ışığı geçişi."],
-  "profile-color-gold": ["Altın", "Koyu altın ve kehribar; kartına asil bir parıltı."],
-  // Presence flares
-  "presence-flare-pulse-cyan": ["Camgöbeği Nabız"], "presence-flare-pulse-gold": ["Altın Nabız"], "presence-flare-pulse-rose": ["Gül Nabzı"],
-  "presence-flare-ring-neon": ["Neon Halka"], "presence-flare-ring-emerald": ["Zümrüt Halka"], "presence-flare-ring-violet": ["Mor Halka"],
-  "presence-flare-spark-white": ["Beyaz Kıvılcım"], "presence-flare-spark-fire": ["Ateş Kıvılcımı"], "presence-flare-orbit-blue": ["Mavi Yörünge"],
-  "presence-flare-orbit-pink": ["Pembe Yörünge"], "presence-flare-halo-soft": ["Yumuşak Hale"], "presence-flare-halo-royal": ["Kraliyet Halesi"],
-  "presence-flare-glitch-green": ["Yeşil Bozulma"], "presence-flare-glitch-void": ["Boşluk Bozulması"], "presence-flare-wave-teal": ["Camgöbeği Dalga"],
-  "presence-flare-wave-amber": ["Kehribar Dalga"], "presence-flare-core-crimson": ["Kızıl Çekirdek"], "presence-flare-core-ice": ["Buz Çekirdeği"],
-  "presence-flare-beam-magenta": ["Macenta Işın"], "presence-flare-beam-lime": ["Limon Işını"], "presence-flare-nova-white": ["Beyaz Nova"],
-  "presence-flare-nova-gold": ["Altın Nova"], "presence-flare-pixel-cyan": ["Camgöbeği Piksel"], "presence-flare-pixel-hot": ["Sıcak Piksel"],
-  "presence-flare-aurora-soft": ["Yumuşak Aurora"], "presence-flare-aurora-vivid": ["Canlı Aurora"], "presence-flare-steel-pulse": ["Çelik Nabız"],
-  "presence-flare-toxic-ring": ["Zehirli Halka"], "presence-flare-moon-glow": ["Ay Işıltısı"], "presence-flare-sun-flare": ["Güneş Parlaması"],
-  // Profile auras
-  "profile-aura-void-soft": ["Yumuşak Boşluk"], "profile-aura-void-hard": ["Sert Boşluk"], "profile-aura-solar-bloom": ["Güneş Çiçeği"],
-  "profile-aura-frost-veil": ["Ayaz Peçesi"], "profile-aura-ember-haze": ["Köz Pusu"], "profile-aura-neon-frame": ["Neon Çerçeve"],
-  "profile-aura-mint-mist": ["Nane Sisi"], "profile-aura-royal-curtain": ["Kraliyet Perdesi"], "profile-aura-cyber-grid": ["Siber Izgara"],
-  "profile-aura-rose-bloom": ["Gül Çiçeği"], "profile-aura-gold-dust": ["Altın Tozu"], "profile-aura-ocean-depth": ["Okyanus Derinliği"],
-  "profile-aura-plasma-field": ["Plazma Alanı"], "profile-aura-shadow-rim": ["Gölge Kenar"], "profile-aura-prism-glass": ["Prizma Cam"],
-  "profile-aura-toxic-fog": ["Zehirli Sis"], "profile-aura-starlight": ["Yıldız Işığı"], "profile-aura-copper-glow": ["Bakır Işıltı"],
-  "profile-aura-ice-crystal": ["Buz Kristali"], "profile-aura-lava-rim": ["Lav Kenarı"], "profile-aura-pearl-soft": ["Yumuşak İnci"],
-  "profile-aura-matrix-veil": ["Matris Peçesi"], "profile-aura-arcade-pop": ["Atari Pop"], "profile-aura-noir-edge": ["Siyah Kenar"],
-  "profile-aura-aurora-wall": ["Aurora Duvarı"], "profile-aura-sandstorm": ["Kum Fırtınası"], "profile-aura-holo-sheet": ["Holo Tabaka"],
-  "profile-aura-crimson-veil": ["Kızıl Peçe"], "profile-aura-jade-glow": ["Yeşim Işıltı"], "profile-aura-ion-haze": ["İyon Pusu"],
-};
-
-// Seed-template descriptions → Turkish templates. `n` is the Turkish name,
-// `s` an optional short stem (entry[2]) for bubble skins named "… Bubble".
+// Seed-pattern descriptions (English, as stored) -> template id in shopItems._templates.
 const TEMPLATES = [
-  [/^Premium profile banner — .+\. Crafted gradient with cinematic depth\.$/, (n) => `Premium profil bannerı: ${n}. Sinematik derinlikte işlenmiş bir geçiş.`],
-  [/^Immersive profile background — .+\. Full-bleed atmosphere for your card\.$/, (n) => `Sürükleyici profil arka planı: ${n}. Kartını baştan sona saran bir atmosfer.`],
-  [/^Animated name effect — .+\. Gradient\/glow styling on your display name\.$/, (n) => `Hareketli isim efekti: ${n}. Görünen adına geçiş ve ışıltı katar.`],
-  [/^Avatar aura effect — .+\. Animated ring\/overlay around your avatar\.$/, (n) => `Avatar efekti: ${n}. Avatarının çevresinde hareketli bir halka.`],
-  [/^Chat bubble skin — .+\. Styles your outgoing message bubbles\.$/, (n, s) => `Mesaj balonu: ${s || n}. Gönderdiğin mesajların balonlarını biçimlendirir.`],
-  [/^Presence flare — .+\. Advanced glow around your online status indicator\.$/, (n) => `Durum ışığı: ${n}. Çevrim içi göstergenin etrafında gelişmiş bir ışıltı.`],
-  [/^Profile aura — .+\. Atmospheric glow around your profile card\.$/, (n) => `Profil aurası: ${n}. Profil kartının çevresinde atmosferik bir ışıltı.`],
+  [/^Premium profile banner — .+\. Crafted gradient with cinematic depth\.$/, "banner"],
+  [/^Immersive profile background — .+\. Full-bleed atmosphere for your card\.$/, "background"],
+  [/^Animated name effect — .+\. Gradient\/glow styling on your display name\.$/, "nameEffect"],
+  [/^Avatar aura effect — .+\. Animated ring\/overlay around your avatar\.$/, "avatarEffect"],
+  [/^Chat bubble skin — .+\. Styles your outgoing message bubbles\.$/, "chatBubble"],
+  [/^Presence flare — .+\. Advanced glow around your online status indicator\.$/, "presenceFlare"],
+  [/^Profile aura — .+\. Atmospheric glow around your profile card\.$/, "profileAura"],
 ];
 
-export const SHOP_ITEM_TR = B;
-
-function entryFor(item) {
-  if (!item) return null;
-  return B[item.sku] || B[item.id] || null;
+/** Catalog text for `key`, or null when no catalog has it (translate echoes unknown keys). */
+function lookup(locale, key, vars) {
+  const v = translate(locale, key, vars);
+  return v && v !== key ? v : null;
 }
 
-/** Localized `{ name, description }` for a catalog row. English row is the fallback. */
+function catalogSku(item, locale) {
+  for (const id of [item?.sku, item?.id]) {
+    if (id && lookup(locale, `shopItems.${id}.name`)) return String(id);
+  }
+  return null;
+}
+
+/** Localized `{ name, description }` for a catalog row. The database row is the fallback. */
 export function localizeShopItem(item, locale) {
   const name = item?.name || "";
   const description = item?.description || "";
-  if (!item || String(locale || "").slice(0, 2) !== "tr") return { name, description };
-  const e = entryFor(item);
-  if (!e) return { name, description };
-  const trName = e[0] || name;
-  let trDesc = e[1] || null;
-  if (!trDesc && description) {
+  if (!item) return { name, description };
+  const sku = catalogSku(item, locale);
+  if (!sku) return { name, description };
+  const base = `shopItems.${sku}`;
+  const locName = lookup(locale, `${base}.name`) || name;
+  let locDesc = lookup(locale, `${base}.desc`);
+  if (!locDesc && description) {
     const tpl = TEMPLATES.find(([re]) => re.test(description));
-    trDesc = tpl ? tpl[1](trName, e[2]) : description;
+    const stem = lookup(locale, `${base}.stem`);
+    locDesc = tpl ? lookup(locale, `shopItems._templates.${tpl[1]}`, { name: stem || locName }) : null;
   }
-  return { name: trName, description: trDesc || description };
+  return { name: locName, description: locDesc || description };
 }
 
-/** Turkish name only (inventory rows, toggles). */
+/** Localized name only (inventory rows, toggles). */
 export function localizedShopItemName(item, locale) {
   return localizeShopItem(item, locale).name;
 }

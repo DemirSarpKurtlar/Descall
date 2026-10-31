@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { PROFILE_COLORS, profileColorKey, profileColorStyle, profileColorClass, profileColorSwatch } from "./profileColors.js";
 import { SHOP_CATEGORY_TABS } from "./shopCategories.js";
 import { PURCHASE_MODAL_CATEGORIES } from "./storePurchaseState.js";
-import { SHOP_ITEM_TR } from "./shopItemI18n.js";
+import { SHOP_ITEMS_TR } from "../i18n/locales/shopItems.tr.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (p) => readFileSync(join(here, p), "utf8");
@@ -41,7 +41,7 @@ const skus = [...sql.matchAll(/\('profile-color-([a-z]+)'/g)].map((m) => m[1]);
 assert.deepEqual([...skus].sort(), [...keys].sort(), "migration items = palette");
 for (const k of keys) {
   assert.match(sql, new RegExp(`'profile-color-${k}'[^\\n]*'profile_color'[^\\n]*'${k}'`), `${k} effect_key`);
-  assert.ok(SHOP_ITEM_TR[`profile-color-${k}`]?.[0], `${k} Turkish name`);
+  assert.ok(SHOP_ITEMS_TR[`profile-color-${k}`]?.name, `${k} Turkish name`);
 }
 assert.match(sql, /equipped_profile_color_id UUID REFERENCES public\.shop_items/);
 assert.match(sql, /'countries','profile_color'\)\)/);

@@ -1,153 +1,79 @@
-// Copy for the store purchase modal (approved mockups, 2026-10-19). Turkish is the
-// drafted text; English mirrors it. Item names/descriptions come from shopItemI18n.js.
+// Copy for the store purchase modal (approved mockups, 2026-10-19). The text lives in the
+// i18n catalogs under `shop.buy` (i18n/locales/shop.*.js); this builds the helper object
+// the modal and its previews read. Item names/descriptions come from shopItemI18n.js.
+import { translate } from "../i18n/index.js";
 
-const CAT_TR = {
-  banner: { eyebrow: "PROFİL BANNERI", label: "PROFİLİNDE", noun: "banner", acc: "Banner'ı", meta: () => "Banner · 600×200 · Hareketsiz",
-    foot: "Aldığın banner hesabında kalır, istediğin zaman değiştirebilirsin. Aynı anda tek banner takılır." },
-  avatar_effect: { eyebrow: "AVATAR EFEKTİ", label: "AVATARINDA", noun: "avatar efekti", acc: "Avatar efektini", meta: (a) => `Avatar efekti · ${a}`,
-    foot: "Efekt profilinde, mesajlarda ve üye listesinde görünür. Hareketi azalt açıksa durağan kalır." },
-  profile_background: { eyebrow: "PROFİL ARKA PLANI", label: "PROFİLİNDE", noun: "arka plan", acc: "Arka planı", meta: () => "Arka plan · Profil kartı · Hareketsiz",
-    foot: "Arka plan profil kartının tamamını kaplar; metin okunaklı kalsın diye alt kısmı koyulaşır." },
-  theme: { eyebrow: "UYGULAMA TEMASI", label: "UYGULAMANDA", noun: "tema", acc: "Temayı", meta: (a) => `Tema · Uygulamanın tamamı · ${a}`,
-    foot: "Tema yalnızca senin görünümünü değiştirir. Hareketi azalt açıksa perdeler durur." },
-  name_effect: { eyebrow: "İSİM EFEKTİ", label: "İSMİNDE", noun: "isim efekti", acc: "İsim efektini",
-    meta: (a, item) => (String(item?.sku || "").includes("-sigil-") ? `İsim efekti · Sigil serisi · ${a}` : `İsim efekti · ${a}`),
-    foot: "Efekt 14–34 px arası her boyutta okunur. Aynı anda tek isim efekti takılır." },
-  chat_bubble: { eyebrow: "MESAJ BALONU", label: "SOHBETTE", noun: "balon", acc: "Balonu",
-    meta: (a, item) => (String(item?.sku || "").includes("-atelier-") ? `Balon · Atelier serisi · ${a}` : `Balon · ${a}`),
-    foot: "Balon yalnızca senin mesajlarında görünür; herkes aynı balonu görür." },
-  presence_flare: { eyebrow: "DURUM IŞIĞI", label: "DURUMUN", noun: "durum ışığı", acc: "Durum ışığını", meta: () => "Durum ışığı · Çevrim içi göstergesi",
-    foot: "Hale durum noktanın rengini değiştirmez; çevrim içi, boşta ve rahatsız etme ayırt edilir kalır." },
-  profile_aura: { eyebrow: "PROFİL AURASI", label: "PROFİLİNDE", noun: "aura", acc: "Aurayı", meta: () => "Aura · Profil kartı çevresi",
-    foot: "Aura profil kartını açan herkes tarafından görülür. Aynı anda tek aura takılır." },
-  typing_flare: { eyebrow: "YAZMA GÖSTERGESİ", label: "SOHBETTE", noun: "yazma göstergesi", acc: "Yazma göstergesini", meta: (a) => `Yazma göstergesi · ${a}`,
-    foot: "Sen yazarken sohbetteki herkes bu göstergeyi görür." },
-  reaction_burst: { eyebrow: "TEPKİ PATLAMASI", label: "TEPKİLERİNDE", noun: "tepki efekti", acc: "Tepki efektini", meta: () => "Tepki · Senin bıraktığın tepkiler",
-    foot: "Efekt yalnızca senin bıraktığın tepkilerde görünür; sayılar ve emojiler değişmez." },
-  call_overlay: { eyebrow: "ARAMA KAPLAMASI", label: "ARAMADA", noun: "arama kaplaması", acc: "Arama kaplamasını", meta: () => "Arama kaplaması · Sesli ve görüntülü",
-    foot: "Kaplama arama ekranının arka planını değiştirir; kameralar ve kontroller aynı kalır." },
-  profile_color: { eyebrow: "KART RENGİ", label: "PROFİL KARTINDA", noun: "kart rengi", acc: "Kart rengini", meta: () => "Kart rengi · Profil kartının gövdesi",
-    foot: "Renk, profil kartını açan herkes tarafından görülür. Banner ve avatar aynı kalır. Aynı anda tek renk takılır." },
-};
+const CATEGORIES = [
+  "banner", "avatar_effect", "profile_background", "theme", "name_effect", "chat_bubble",
+  "presence_flare", "profile_aura", "typing_flare", "reaction_burst", "call_overlay", "profile_color",
+];
+// Categories whose items come in a named series (sku infix) with their own meta line.
+const SERIES = { name_effect: "-sigil-", chat_bubble: "-atelier-" };
+const RARITIES = ["common", "rare", "epic", "legendary", "mythic"];
+const LINES = ["ae", "bgAbout", "theme1", "theme2", "theme3", "name", "bub1", "bub2", "bub3", "ty1", "ty2", "rx", "today"];
 
-const CAT_EN = {
-  banner: { eyebrow: "PROFILE BANNER", label: "ON YOUR PROFILE", noun: "banner", acc: "The banner", meta: () => "Banner · 600×200 · Still",
-    foot: "The banner stays on your account and you can change it any time. One banner is worn at a time." },
-  avatar_effect: { eyebrow: "AVATAR EFFECT", label: "ON YOUR AVATAR", noun: "avatar effect", acc: "The avatar effect", meta: (a) => `Avatar effect · ${a}`,
-    foot: "The effect shows on your profile, in messages and in the member list. With Reduce motion on it stays still." },
-  profile_background: { eyebrow: "PROFILE BACKGROUND", label: "ON YOUR PROFILE", noun: "background", acc: "The background", meta: () => "Background · Profile card · Still",
-    foot: "The background fills the whole profile card; the bottom darkens so text stays readable." },
-  theme: { eyebrow: "APP THEME", label: "IN YOUR APP", noun: "theme", acc: "The theme", meta: (a) => `Theme · Whole app · ${a}`,
-    foot: "A theme only changes how Descall looks for you. With Reduce motion on the curtains stop." },
-  name_effect: { eyebrow: "NAME EFFECT", label: "ON YOUR NAME", noun: "name effect", acc: "The name effect",
-    meta: (a, item) => (String(item?.sku || "").includes("-sigil-") ? `Name effect · Sigil series · ${a}` : `Name effect · ${a}`),
-    foot: "The effect reads at every size from 14 to 34 px. One name effect is worn at a time." },
-  chat_bubble: { eyebrow: "CHAT BUBBLE", label: "IN CHAT", noun: "bubble", acc: "The bubble",
-    meta: (a, item) => (String(item?.sku || "").includes("-atelier-") ? `Bubble · Atelier series · ${a}` : `Bubble · ${a}`),
-    foot: "The bubble only shows on your messages; everyone sees the same bubble." },
-  presence_flare: { eyebrow: "PRESENCE FLARE", label: "YOUR STATUS", noun: "presence flare", acc: "The presence flare", meta: () => "Presence flare · Online indicator",
-    foot: "The halo does not change your status colour; online, idle and do not disturb stay distinct." },
-  profile_aura: { eyebrow: "PROFILE AURA", label: "ON YOUR PROFILE", noun: "aura", acc: "The aura", meta: () => "Aura · Around your profile card",
-    foot: "Anyone who opens your profile card sees the aura. One aura is worn at a time." },
-  typing_flare: { eyebrow: "TYPING FLARE", label: "IN CHAT", noun: "typing flare", acc: "The typing flare", meta: (a) => `Typing flare · ${a}`,
-    foot: "Everyone in the chat sees this indicator while you type." },
-  reaction_burst: { eyebrow: "REACTION BURST", label: "ON YOUR REACTIONS", noun: "reaction effect", acc: "The reaction effect", meta: () => "Reaction · The reactions you leave",
-    foot: "The effect only shows on reactions you leave; counts and emoji stay the same." },
-  call_overlay: { eyebrow: "CALL OVERLAY", label: "IN CALLS", noun: "call overlay", acc: "The call overlay", meta: () => "Call overlay · Voice and video",
-    foot: "The overlay changes the call screen background; cameras and controls stay the same." },
-  profile_color: { eyebrow: "CARD COLOR", label: "ON YOUR PROFILE CARD", noun: "card color", acc: "The card color", meta: () => "Card color · Profile card body",
-    foot: "Anyone who opens your profile card sees the color. Banner and avatar stay the same. One color is worn at a time." },
-};
-
-const TR = {
-  animated: "Hareketli", still: "Hareketsiz", owned: "Sende", live: "Canlı",
-  rarity: { common: "Sıradan", rare: "Nadir", epic: "Destansı", legendary: "Efsanevi", mythic: "Mitik" },
-  looks: (label) => `${label} BÖYLE GÖRÜNÜR`,
-  now: "Şu an", withThis: "Bununla", worn: "Takılı",
-  price: "Fiyat", balance: "Bakiye", after: "Sonra", missing: "Eksik", notEnough: "bakiye yetmiyor",
-  paid: "Ödendi", prevBalance: "Önceki bakiye", newBalance: "Yeni bakiye",
-  wearNow: "Satın alınca hemen tak",
-  wearSub: (cur) => (cur ? `Şu an takılı olan ${cur} çıkarılır, envanterinde kalır` : "Şu an takılı bir şey yok, doğrudan takılır"),
-  cancel: "İptal", close: "Kapat",
-  buyFor: (n) => `${n} DesCoin ile satın al`, buying: "Satın alınıyor…",
-  needMore: (n) => [`${n} DesCoin`, " daha lazım"], ready: (p) => `%${p} hazır`,
-  daily: "Günlük ödül", invite: "Arkadaş daveti", talk: "Aramada konuş",
-  shortBtn: (n) => `${n} DesCoin eksik`,
-  shortFoot: "Bakiyen yetince bu pencere satın almayı açar. Fiyat ve bakiye değişmeden kalır.",
-  ownTitle: (noun) => `Bu ${noun} sende`,
-  ownSub: (date, paid, bal, via) =>
-    via === "gift" ? `${date} tarihinde hediye olarak geldi · Bakiye ${bal}`
-      : via === "voucher" ? `${date} tarihinde ücretsiz kuponla alındı · Bakiye ${bal}`
-        : `${date} tarihinde ${paid} DesCoin'e alındı · Bakiye ${bal}`,
-  inInventory: "Envanterde", remove: "Çıkar", wear: "Tak", working: "Uygulanıyor…",
-  ownFootEq: "Çıkarırsan hesabında kalır; tekrar takmak ücretsizdir.",
-  ownFootInv: (cur) => (cur ? `Takınca ${cur} çıkarılır. Tekrar satın alman gerekmez.` : "Takmak ücretsizdir. Tekrar satın alman gerekmez."),
-  doneTitle: (name) => `${name} artık senin`,
-  doneSub: (prev, wore) => (!wore ? "Envanterine eklendi · istediğin zaman takabilirsin" : prev ? `Profiline takıldı · ${prev} envanterine geri döndü` : "Profiline takıldı"),
-  undo: "Geri al",
-  undoneSub: (prev) => (prev ? `Geri alındı · ${prev} yeniden takıldı, yeni öğe envanterinde` : "Geri alındı · yeni öğe envanterinde, takılı değil"),
-  openInventory: "Envanteri aç", done: "Tamam",
-  doneFoot: (acc) => `Satın alma DesCoin geçmişine yazıldı. ${acc} istediğin zaman Envanter'den değiştirebilirsin.`,
-  closeLabel: "Kapat", defaultTheme: "Varsayılan",
-  online: "Çevrim içi", idle: "Boşta", dnd: "Rahatsız etme",
-  inMessages: "Mesajlarda", inMembers: "Üye listesinde", inChat: "Sohbette", inDms: "Direkt mesajlarda", statesStay: "Durumlar ayırt edilir kalır",
-  chat15: "Sohbette · 15 px", members13: "Üye listesi · 13 px", clickMoment: "Tıkladığın an", dms: "DİREKT MESAJLAR",
-  typing: "yazıyor…", sendTo: (n) => `${n}'e mesaj gönder`, eveningGroup: "Akşam grubu",
-  lines: {
-    ae: "Akşam sesliye geçiyorum, gelen?", bgAbout: "Gece kuşu. Akşamları sesli kanaldayım, hafta sonu film gecesi.",
-    theme1: "Yeni temayı gördüm, çok iyi olmuş 😍", theme2: "Yeni tema! Arkada yavaşça kayıyor", theme3: "Ben de alacağım galiba",
-    name: "Film saat dokuzda, unutmayın.",
-    bub1: "Bu akşam film gecesi var mı?", bub2: "Var! Dokuzda sesliye gel 🎬", bub3: "Patlamış mısır benden.",
-    ty1: "Hangi filmi açıyoruz?", ty2: "Bir saniye, listeyi atıyorum", rx: "Final sahnesi efsaneydi, herkes ayakta 👏",
-    today: "Bugün",
-  },
-};
-
-const EN = {
-  animated: "Animated", still: "Still", owned: "Yours", live: "Live",
-  rarity: { common: "Common", rare: "Rare", epic: "Epic", legendary: "Legendary", mythic: "Mythic" },
-  looks: (label) => `HOW IT LOOKS ${label}`,
-  now: "Now", withThis: "With this", worn: "Worn",
-  price: "Price", balance: "Balance", after: "After", missing: "Missing", notEnough: "not enough",
-  paid: "Paid", prevBalance: "Previous balance", newBalance: "New balance",
-  wearNow: "Wear it right after buying",
-  wearSub: (cur) => (cur ? `${cur} comes off and stays in your inventory` : "Nothing is worn right now, it goes straight on"),
-  cancel: "Cancel", close: "Close",
-  buyFor: (n) => `Buy for ${n} DesCoin`, buying: "Buying…",
-  needMore: (n) => [`${n} DesCoin`, " more needed"], ready: (p) => `${p}% there`,
-  daily: "Daily reward", invite: "Invite a friend", talk: "Talk in calls",
-  shortBtn: (n) => `${n} DesCoin short`,
-  shortFoot: "When your balance is enough this window unlocks the purchase. Price and balance stay as they are.",
-  ownTitle: (noun) => `This ${noun} is yours`,
-  ownSub: (date, paid, bal, via) =>
-    via === "gift" ? `Gifted on ${date} · Balance ${bal}`
-      : via === "voucher" ? `Redeemed with a free voucher on ${date} · Balance ${bal}`
-        : `Bought on ${date} for ${paid} DesCoin · Balance ${bal}`,
-  inInventory: "In inventory", remove: "Take off", wear: "Wear", working: "Applying…",
-  ownFootEq: "Taking it off keeps it on your account; wearing it again is free.",
-  ownFootInv: (cur) => (cur ? `Wearing it takes ${cur} off. No need to buy it again.` : "Wearing it is free. No need to buy it again."),
-  doneTitle: (name) => `${name} is yours`,
-  doneSub: (prev, wore) => (!wore ? "Added to your inventory · wear it any time" : prev ? `Now worn · ${prev} went back to your inventory` : "Now worn on your profile"),
-  undo: "Undo",
-  undoneSub: (prev) => (prev ? `Undone · ${prev} is back on, the new item is in your inventory` : "Undone · the new item is in your inventory, not worn"),
-  openInventory: "Open inventory", done: "Done",
-  doneFoot: (acc) => `The purchase is in your DesCoin history. ${acc} can be changed from Inventory any time.`,
-  closeLabel: "Close", defaultTheme: "Default",
-  online: "Online", idle: "Idle", dnd: "Do not disturb",
-  inMessages: "In messages", inMembers: "In the member list", inChat: "In chat", inDms: "In direct messages", statesStay: "Statuses stay distinct",
-  chat15: "In chat · 15 px", members13: "Member list · 13 px", clickMoment: "The moment you click", dms: "DIRECT MESSAGES",
-  typing: "is typing…", sendTo: (n) => `Message ${n}`, eveningGroup: "Evening group",
-  lines: {
-    ae: "Hopping on voice tonight, who's in?", bgAbout: "Night owl. On voice most evenings, movie night on weekends.",
-    theme1: "Saw the new theme, looks great 😍", theme2: "New theme! It drifts slowly behind", theme3: "I think I'll get it too",
-    name: "Movie at nine, don't forget.",
-    bub1: "Movie night tonight?", bub2: "Yes! Join voice at nine 🎬", bub3: "Popcorn's on me.",
-    ty1: "Which movie are we putting on?", ty2: "One sec, sending the list", rx: "That final scene was legendary, everyone's on their feet 👏",
-    today: "Today",
-  },
-};
+/** "<b>12 DesCoin</b> more needed" -> ["", "12 DesCoin", " more needed"]. */
+function splitBold(text) {
+  const m = /^([\s\S]*?)<b>([\s\S]*?)<\/b>([\s\S]*)$/.exec(String(text || ""));
+  return m ? [m[1], m[2], m[3]] : ["", "", String(text || "")];
+}
 
 export function purchaseCopy(locale) {
-  const tr = String(locale || "").startsWith("tr");
-  return { ...(tr ? TR : EN), cat: tr ? CAT_TR : CAT_EN, locale: tr ? "tr" : "en" };
+  const tt = (key, vars) => translate(locale, `shop.buy.${key}`, vars);
+  const cat = {};
+  for (const id of CATEGORIES) {
+    const k = (f) => tt(`cat.${id}.${f}`);
+    cat[id] = {
+      eyebrow: k("eyebrow"),
+      label: k("label"),
+      noun: k("noun"),
+      acc: k("acc"),
+      foot: k("foot"),
+      meta: (motion, item) => {
+        const series = SERIES[id] && String(item?.sku || "").includes(SERIES[id]);
+        return tt(`cat.${id}.${series ? "metaSeries" : "meta"}`, { motion });
+      },
+    };
+  }
+  const lines = Object.fromEntries(LINES.map((k) => [k, tt(`lines.${k}`)]));
+  return {
+    locale,
+    cat,
+    lines,
+    animated: tt("animated"), still: tt("still"), owned: tt("owned"), live: tt("live"),
+    rarity: Object.fromEntries(RARITIES.map((r) => [r, tt(`rarity.${r}`)])),
+    looks: (label) => tt("looks", { label }),
+    now: tt("now"), withThis: tt("withThis"), worn: tt("worn"),
+    price: tt("price"), balance: tt("balance"), after: tt("after"), missing: tt("missing"), notEnough: tt("notEnough"),
+    balanceValue: (balance) => tt("balanceValue", { balance }),
+    paid: tt("paid"), prevBalance: tt("prevBalance"), newBalance: tt("newBalance"),
+    wearNow: tt("wearNow"),
+    wearSub: (current) => (current ? tt("wearSubCurrent", { current }) : tt("wearSubNone")),
+    cancel: tt("cancel"), close: tt("close"),
+    buyFor: (amount) => tt("buyFor", { amount }), buying: tt("buying"),
+    /** [before, bold, after] */
+    needMore: (amount) => splitBold(tt("needMore", { amount })),
+    ready: (percent) => tt("ready", { percent }),
+    daily: tt("daily"), invite: tt("invite"), talk: tt("talk"),
+    shortBtn: (amount) => tt("shortBtn", { amount }),
+    shortFoot: tt("shortFoot"),
+    ownTitle: (noun) => tt("ownTitle", { noun }),
+    ownSub: (date, paid, balance, via) => tt("ownSub", { date, paid, balance, via: via || "purchase" }),
+    inInventory: tt("inInventory"), remove: tt("remove"), wear: tt("wear"), working: tt("working"),
+    ownFootEq: tt("ownFootEq"),
+    ownFootInv: (current) => (current ? tt("ownFootInvCurrent", { current }) : tt("ownFootInvNone")),
+    doneTitle: (name) => tt("doneTitle", { name }),
+    doneSub: (previous, wore) => (!wore ? tt("doneSubStowed") : previous ? tt("doneSubSwapped", { previous }) : tt("doneSubWorn")),
+    undo: tt("undo"),
+    undoneSub: (previous) => (previous ? tt("undoneSubSwapped", { previous }) : tt("undoneSubNone")),
+    openInventory: tt("openInventory"), done: tt("done"),
+    doneFoot: (thing) => tt("doneFoot", { thing }),
+    closeLabel: tt("closeLabel"), defaultTheme: tt("defaultTheme"),
+    online: tt("online"), idle: tt("idle"), dnd: tt("dnd"),
+    inMessages: tt("inMessages"), inMembers: tt("inMembers"), inChat: tt("inChat"), inDms: tt("inDms"), statesStay: tt("statesStay"),
+    chat15: tt("chat15"), members13: tt("members13"), clickMoment: tt("clickMoment"), dms: tt("dms"),
+    typing: tt("typing"), sendTo: (name) => tt("sendTo", { name }), eveningGroup: tt("eveningGroup"),
+    admin: tt("admin"), sampleName: tt("sampleName"), sampleBubble: tt("sampleBubble"),
+    people: { selin: tt("people.selin"), ece: tt("people.ece"), kaan: tt("people.kaan") },
+  };
 }

@@ -10,7 +10,11 @@ import { NC_TR } from "./newCreate.tr.js";
 import { FBK_TR } from "./feedback.tr.js";
 import { BADGES_TR } from "./badges.tr.js";
 import { ANTIBOT_TR } from "./antibot.tr.js";
+import { SHOP_TR } from "./shop.tr.js";
+import { SHOP_ITEMS_TR } from "./shopItems.tr.js";
 export const nested = {
+  shop: SHOP_TR,
+  shopItems: SHOP_ITEMS_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,
