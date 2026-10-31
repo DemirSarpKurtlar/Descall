@@ -23,29 +23,25 @@ const modal = readFileSync(pathJoin(root, "../ui/Modal.jsx"), "utf8");
 const crop = readFileSync(pathJoin(root, "../ui/ImageCropModal.jsx"), "utf8");
 const activity = readFileSync(pathJoin(root, "../activity/ActivityView.jsx"), "utf8");
 const legal = readFileSync(pathJoin(root, "../legal/LegalContentModal.jsx"), "utf8");
-const feedbackModal = readFileSync(pathJoin(root, "../feedback/FeedbackModal.jsx"), "utf8");
 const quickFeedback = readFileSync(pathJoin(root, "../feedback/QuickFeedbackModal.jsx"), "utf8");
-const userFeedbackBtn = readFileSync(pathJoin(root, "../feedback/UserFeedbackButton.jsx"), "utf8");
 const css = readFileSync(pathJoin(root, "../../styles/app-layout.css"), "utf8");
 const serversCss = readFileSync(pathJoin(root, "../../styles/servers.css"), "utf8");
 
 function assert(c, m) { if (!c) throw new Error(m); }
 
 assert(ss.includes("createPortal("), "ServerSidebar uses createPortal");
-assert(ss.includes("Add Friend / Create Group Modal"), "add friend modal present");
+assert(ss.includes("<NewCreateModal"), "add friend / create group sheet present");
+const newCreate = readFileSync(pathJoin(root, "../friends/NewCreateModal.jsx"), "utf8");
+assert(newCreate.includes("createPortal(") && newCreate.includes("document.body"), "NewCreateModal portals to document.body");
 assert(ss.includes("Announcements Modal"), "announcements modal present");
 
 assert(ss.includes("openFeedbackModal"), "ServerSidebar opens shared feedback via openFeedbackModal");
 assert(quickFeedback.includes("createPortal("), "QuickFeedbackModal must createPortal");
 assert(quickFeedback.includes("document.body"), "QuickFeedbackModal must portal to document.body");
 assert(quickFeedback.includes("feedback-overlay"), "QuickFeedbackModal uses feedback-overlay");
-assert(feedbackModal.includes("createPortal("), "FeedbackModal must createPortal");
-assert(feedbackModal.includes("document.body"), "FeedbackModal must portal to document.body");
-assert(feedbackModal.includes("feedback-overlay"), "FeedbackModal uses feedback-overlay");
-assert(userFeedbackBtn.includes("createPortal("), "UserFeedbackButton must createPortal");
-assert(userFeedbackBtn.includes("document.body"), "UserFeedbackButton must portal to document.body");
-assert(userFeedbackBtn.includes("feedback-overlay"), "UserFeedbackButton uses feedback-overlay");
-assert((ss.match(/createPortal\(\s*\n?\s*<AnimatePresence>/g) || []).length >= 2 || ss.split("createPortal(").length >= 7, "modals portaled");
+// 3.7.14: the old wizard (FeedbackModal) and floating UserFeedbackButton were dead code and are gone.
+// 3.7.14: the add / create-group sheet portals from its own component (NewCreateModal).
+assert((ss.match(/createPortal\(\s*\n?\s*<AnimatePresence>/g) || []).length >= 1 || ss.split("createPortal(").length >= 6, "modals portaled");
 assert(ss.includes("document.body"), "portals to document.body");
 assert(!/includes\(query\.toLowerCase\(\)\)\s*, document\.body\)/.test(ss), "filter not corrupted");
 

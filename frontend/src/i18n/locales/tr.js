@@ -6,11 +6,15 @@ import { TR_APPROVED_UI } from "./trApprovedUi.js";
 
 import { MAINT_TR } from "./maintenance.tr.js";
 import { PROMO_TR } from "./promo.tr.js";
+import { NC_TR } from "./newCreate.tr.js";
+import { FBK_TR } from "./feedback.tr.js";
 import { BADGES_TR } from "./badges.tr.js";
 import { ANTIBOT_TR } from "./antibot.tr.js";
 export const nested = {
   maint: MAINT_TR,
   promo: PROMO_TR,
+  nc: NC_TR,
+  fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {
     menuLabel: "{name} için seçenekler",

@@ -154,6 +154,9 @@ export function openFeedbackModal(detail = {}) {
         detail: {
           type: detail.type || "suggestion",
           source: detail.source || "nudge",
+          // 3.7.14: "mine" opens Geri bildirimlerim; feedbackId opens that thread.
+          tab: detail.tab || (detail.feedbackId ? "mine" : "new"),
+          feedbackId: detail.feedbackId || null,
         },
       })
     );

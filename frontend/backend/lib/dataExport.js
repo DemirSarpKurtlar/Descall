@@ -186,7 +186,15 @@ async function buildExport(userId, { requestedBy = "self", now = new Date() } = 
   put("devices", await readAll("push_devices", "platform, created_at, last_seen", eq("user_id")));
 
   // Feedback, reports, moderation.
-  put("feedback", await readAll("user_feedback", "category, subject, message, status, platform, app_version, admin_replies, created_at", eq("user_id")));
+  // 3.7.14: the thread as the sender sees it (lib/userFeedback): no internal admin notes,
+  // admin ids / usernames or raw user agents.
+  put("feedback", await readAll("user_feedback", "category, subject, message, status, platform, app_version, admin_replies, created_at", eq("user_id")), (r) => ({
+    category: r.category, subject: r.subject || null, message: r.message, status: r.status,
+    device: require("./userFeedback").deviceLabel(r.platform, r.app_version), createdAt: r.created_at,
+    thread: require("./userFeedback").userThread(r).map((m) => (m.type === "status"
+      ? { type: "status", status: m.status, at: m.created_at }
+      : { from: m.fromTeam ? "Descall" : "you", text: m.text, attachments: m.attachments, at: m.created_at })),
+  }));
   const filed = await readAll("user_reports", "target_id, reason, note, context_type, snippet, status, resolution, created_at", eq("reporter_id"));
   const filedNames = await namesById("users", filed.rows.map((r) => r.target_id), "username");
   put("reportsFiled", filed, (r) => ({ about: filedNames[r.target_id] || null, reason: r.reason, note: r.note || null, context: r.context_type, snippet: r.snippet || null, status: r.status, outcome: r.resolution || null, at: r.created_at }));

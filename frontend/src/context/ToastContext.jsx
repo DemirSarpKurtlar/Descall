@@ -112,14 +112,25 @@ export function ToastProvider({ children }) {
             return (
               <motion.div
                 key={t.id}
-                className={`toast-item toast-${t.type}`}
+                className={`toast-item toast-${t.type}${t.meta?.onOpen ? " is-actionable" : ""}`}
                 initial={{ opacity: 0, y: 16, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 40 }}
                 transition={{ type: "spring", stiffness: 420, damping: 28 }}
               >
                 <Icon size={18} className="toast-icon" aria-hidden />
-                <div className="toast-body">{t.message}</div>
+                {t.meta?.onOpen ? (
+                  // 3.7.14: a toast with an action (feedback reply) opens it on click.
+                  <button
+                    type="button"
+                    className="toast-body toast-open"
+                    onClick={() => { dismiss(t.id); t.meta.onOpen(); }}
+                  >
+                    {t.message}
+                  </button>
+                ) : (
+                  <div className="toast-body">{t.message}</div>
+                )}
                 <button
                   type="button"
                   className="toast-dismiss"

@@ -129,6 +129,7 @@ import { profanityMaskingActive, setExtraProfanityWords } from "./lib/profanity"
 import { isBlockedByMe, setBlockedUserIds } from "./lib/blockedUsers";
 import MessageComposer from "./components/chat/MessageComposer";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
+import { openFeedbackModal } from "./lib/feedbackNudge";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
 import { applyGroupRename } from "./lib/groupRename";
@@ -1874,9 +1875,17 @@ export default function App() {
       toast(t("Message request declined"), "info");
     });
     // Yönetici Paneli › Geri Bildirim: an admin answered this user's feedback.
-    socket.on("feedback:reply", ({ text } = {}) => {
+    // 3.7.14: the toast opens the thread; an open feedback window refreshes live.
+    socket.on("feedback:reply", ({ text, feedbackId } = {}) => {
       const clipped = String(text || "").slice(0, 140);
-      if (clipped) toast(t("Your feedback got a reply: {text}", { text: clipped }), "info");
+      try { window.dispatchEvent(new CustomEvent("descall:feedback-live", { detail: { feedbackId, kind: "reply" } })); } catch { /* ignore */ }
+      toast(clipped ? t("Your feedback got a reply: {text}", { text: clipped }) : t("fbk.replyToast"), "info", {
+        duration: 8000,
+        onOpen: feedbackId ? () => openFeedbackModal({ feedbackId, source: "toast" }) : undefined,
+      });
+    });
+    socket.on("feedback:update", ({ feedbackId, status } = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:feedback-live", { detail: { feedbackId, status, kind: "status" } })); } catch { /* ignore */ }
     });
     socket.on("dm:request:error", ({ message, fromUserId } = {}) => {
       if (fromUserId) {
@@ -3963,6 +3972,11 @@ export default function App() {
             }
           }, 400);
         }
+        return;
+      }
+
+      if (type === "feedback-reply" && data.feedbackId) {
+        openFeedbackModal({ feedbackId: data.feedbackId, source: "push" });
         return;
       }
 

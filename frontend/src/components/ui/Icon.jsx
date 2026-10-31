@@ -245,6 +245,7 @@ import {
   UserMinus as PUserMinus,
   UserPlus as PUserPlus,
   Users as PUsers,
+  UsersThree as PUsersThree,
   VideoCamera as PVideoCamera,
   VideoCameraSlash as PVideoCameraSlash,
   Wallet as PWallet,
@@ -555,6 +556,7 @@ export const Waves = make(PWaves, "Waves");
 export const Wind = make(PWind, "Wind");
 export const Waveform = make(PWaveform, "Waveform");
 export const MaskHappy = make(PMaskHappy, "MaskHappy");
+export const UsersThree = make(PUsersThree, "UsersThree");
 
 const BY_NAME = {
   X,

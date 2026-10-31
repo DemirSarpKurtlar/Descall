@@ -94,11 +94,16 @@ async function run() {
     r = await call(base, "PATCH", "/api/admin/feedback/f1", { token: admin, body: { foo: 1 } });
     assert(r.status === 400, "empty patch 400");
 
+    // 3.7.14: a status change tells the sender (feedback:update), structured status on the line.
+    assert(emitted.some((e) => e.room === "user:u-user" && e.event === "feedback:update" && e.payload.status === "resolved"), "sender gets feedback:update");
+    assert(row("f1").admin_replies.some((x) => x.type === "system" && x.status === "resolved"), "system line carries the status");
+    emitted.length = 0;
     r = await call(base, "POST", "/api/admin/feedback/f1/reply", { token: admin, body: { text: "İç not", internal: true } });
     assert(r.status === 200 && r.body.reply.type === "note" && emitted.length === 0, "internal note: no user event");
     r = await call(base, "POST", "/api/admin/feedback/f1/reply", { token: admin, body: { text: "Düzeltiyoruz" } });
     assert(r.status === 200 && r.body.reply.type === "reply", "user reply");
-    assert(emitted.length === 1 && emitted[0].room === "user:u-user" && emitted[0].event === "feedback:reply", "sender gets feedback:reply");
+    const replyEvents = emitted.filter((e) => e.event === "feedback:reply");
+    assert(replyEvents.length === 1 && replyEvents[0].room === "user:u-user" && replyEvents[0].payload.feedbackId === "f1", "sender gets feedback:reply with the id");
     r = await call(base, "POST", "/api/admin/feedback/f1/reply", { token: admin, body: { text: "  " } });
     assert(r.status === 400, "blank reply 400");
 

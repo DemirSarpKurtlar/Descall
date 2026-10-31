@@ -64,6 +64,8 @@ const STRINGS = {
     groupCallTitle: "{groupName} — Grup Araması",
     groupCallBody: "{from} grup araması başlattı",
     ownerTitle: "Sunucu sahipliği",
+    feedbackTitle: "Descall Ekibi yanıt verdi",
+    feedbackBody: "Geri bildirimine yanıt geldi",
     antibotTitle: "Anti-bot uyarısı",
     antibotBody: "{count} hesap risk eşiğini geçti (en yüksek {topScore})",
     antibotWatchBody: "İzleme listesinde {count} yeni uyarı",
@@ -86,6 +88,8 @@ const STRINGS = {
     groupCallTitle: "{groupName} — Group Call",
     groupCallBody: "{from} started a group call",
     ownerTitle: "Server ownership",
+    feedbackTitle: "The Descall team replied",
+    feedbackBody: "Your feedback got a reply",
     antibotTitle: "Anti-bot alert",
     antibotBody: "{count} accounts crossed the risk threshold (top {topScore})",
     antibotWatchBody: "{count} new watch list alerts",
@@ -338,6 +342,16 @@ function describeEvent(event = {}, lang = "tr") {
       title: s.ownerTitle,
       body,
       data: { type: "server-owner", serverId: event.serverId, serverName: event.serverName || null, from },
+    };
+  }
+  if (type === "feedback-reply") {
+    return {
+      ...base,
+      threadId: event.feedbackId ? `feedback-${event.feedbackId}`.slice(0, 64) : "feedback",
+      priority: 5,
+      title: s.feedbackTitle,
+      body: clip(event.text, 180) || s.feedbackBody,
+      data: { type: "feedback-reply", feedbackId: event.feedbackId || null },
     };
   }
   if (type === "call") {

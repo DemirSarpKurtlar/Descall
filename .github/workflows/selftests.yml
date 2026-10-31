@@ -179,6 +179,7 @@ jobs:
           node backend/lib/adminPermissions.selftest.cjs
           node src/components/admin/adminStaff.selftest.mjs
           node backend/lib/reportWorkflow.selftest.cjs
+          node backend/lib/userFeedback.selftest.cjs
           node src/components/admin/reportCase.selftest.mjs
           node backend/lib/clientIp.selftest.cjs
           node backend/lib/accessBans.selftest.cjs
@@ -260,6 +261,8 @@ jobs:
           node src/components/admin/adminOverviewModel.selftest.mjs
           node src/styles/presenceToast.selftest.mjs
           node src/styles/updateToast.selftest.mjs
+          node src/components/layout/newCreate.selftest.mjs
+          node src/lib/feedbackForm.selftest.mjs
           node src/lib/hoverToolbarPlacement.selftest.mjs
           node src/lib/singleActiveHover.selftest.mjs
           node src/styles/admin-liquid.selftest.mjs

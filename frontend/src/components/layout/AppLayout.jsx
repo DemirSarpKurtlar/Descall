@@ -12,6 +12,7 @@ import ErrorBoundary from "../ErrorBoundary";
 import { preloadWhenIdle } from "../../lib/preloadIdle";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
 import QuickFeedbackModal from "../feedback/QuickFeedbackModal";
+import { feedbackOpenDetail } from "../../lib/feedbackForm";
 import { useActivity } from "../../hooks/useActivity";
 import { useMobile } from "../../hooks/useMobile";
 import { useMobileKeyboard } from "../../hooks/useMobileKeyboard";
@@ -177,6 +178,7 @@ export default function AppLayout({
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackInitialType, setFeedbackInitialType] = useState("suggestion");
+  const [feedbackOpen, setFeedbackOpen] = useState({ tab: "new", id: null, at: 0 });
 
   const activity = useActivity({ socket, me, friends });
 
@@ -204,10 +206,9 @@ export default function AppLayout({
 
   useEffect(() => {
     const onOpenFeedback = (event) => {
-      const type = event?.detail?.type;
-      setFeedbackInitialType(
-        type === "bug" || type === "praise" || type === "suggestion" ? type : "suggestion"
-      );
+      const d = feedbackOpenDetail(event?.detail || {});
+      setFeedbackInitialType(d.type);
+      setFeedbackOpen({ tab: d.tab, id: d.feedbackId, at: Date.now() });
       setShowFeedbackModal(true);
     };
     window.addEventListener("descall:open-feedback", onOpenFeedback);
@@ -556,7 +557,7 @@ export default function AppLayout({
 
       {/* Soft feedback reminder, top banner, auto-hides in 10s */}
       {me && !showNotifBanner && <FeedbackNudgeBanner enabled />}
-      <QuickFeedbackModal isOpen={showFeedbackModal} initialType={feedbackInitialType} onClose={() => setShowFeedbackModal(false)} />
+      <QuickFeedbackModal isOpen={showFeedbackModal} initialType={feedbackInitialType} initialTab={feedbackOpen.tab} initialId={feedbackOpen.id} onClose={() => setShowFeedbackModal(false)} />
 
       {/* Mobile drawer backdrop */}
       <AnimatePresence>
