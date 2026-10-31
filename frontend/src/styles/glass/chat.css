@@ -734,6 +734,45 @@ html.glass-ui .app-root.g-shell.in-conversation .chat-search-bar > .icon-btn {
   }
 }
 
+/* Mesaj araması (3.7.7): the results card floats under the fixed search bar
+   (in flow it sat under the header capsule and mixed with the messages). */
+html.glass-ui .app-root.g-shell.in-conversation .msr {
+  position: fixed;
+  top: calc(var(--g-conv-top) + 44px + 8px);
+  left: 12px;
+  right: 12px;
+  z-index: 58;
+  max-height: min(60vh, 520px);
+  padding: 8px;
+  border-radius: var(--r-xl);
+  color: var(--g-t1);
+  /* Heavier than the capsules: a list of text must stay readable over the chat. */
+  background:
+    linear-gradient(180deg, var(--g-tint-top) 0%, var(--g-tint-bot) 100%),
+    color-mix(in srgb, var(--g-solid, #1b1c24) 88%, transparent);
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-saturate)) brightness(var(--g-brightness));
+  box-shadow: var(--g-shadow);
+}
+
+html.glass-ui .app-root.g-shell.in-conversation .msr .msr-text {
+  color: var(--g-t2);
+}
+
+html.glass-ui.a11y-solid .app-root.g-shell.in-conversation .msr,
+html.glass-ui.glass-lite .app-root.g-shell.in-conversation .msr {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--g-solid, rgb(28, 30, 40));
+}
+
+@media (max-width: 400px) {
+  html.glass-ui .app-root.g-shell.in-conversation .msr {
+    left: 8px;
+    right: 8px;
+  }
+}
+
 /* ── Messages (03) ── */
 html.glass-ui .app-root.g-shell.in-conversation .messages-container {
   padding: var(--g-conv-top) 14px calc(var(--g-bar-bottom) + 78px + var(--composer-grow, 0px)) !important;

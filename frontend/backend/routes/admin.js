@@ -2093,6 +2093,7 @@ const SHOP_CATEGORIES = [
   "reaction_burst",
   "call_overlay",
   "countries",
+  "profile_color",
 ];
 
 // Categories that render from a small piece of metadata rather than an
@@ -2111,6 +2112,7 @@ const METADATA_ONLY_CATEGORIES = new Set([
   "typing_flare",
   "reaction_burst",
   "call_overlay",
+  "profile_color",
 ]);
 const EFFECT_KEY_CATEGORIES = new Set([
   "name_effect",
@@ -2122,6 +2124,7 @@ const EFFECT_KEY_CATEGORIES = new Set([
   "typing_flare",
   "reaction_burst",
   "call_overlay",
+  "profile_color",
 ]);
 
 router.post("/shop/items", async (req, res) => {

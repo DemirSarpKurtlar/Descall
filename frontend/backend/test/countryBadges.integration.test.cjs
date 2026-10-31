@@ -39,6 +39,18 @@ const fakeSupabase = createFakeSupabase({
     { id: "u-gift", username: "gifted", active_sessions: [{ id: "s-gift" }], descoin_balance: 100, equipped_title_id: null, equipped_country_id: null },
   ],
   shop_items: [
+    {
+      id: "item-color-ocean",
+      sku: "profile-color-ocean",
+      name: "Ocean",
+      category: "profile_color",
+      asset_url: "data:,",
+      price_descoin: 50,
+      effect_key: "ocean",
+      active: true,
+      rarity: "common",
+      sort_order: 1502,
+    },
     country("TR", "Türkiye", "🇹🇷", 5100),
     country("DE", "Almanya", "🇩🇪", 5003),
     country("JP", "Japonya", "🇯🇵", 5050),
@@ -153,6 +165,18 @@ async function run() {
     assert(eq.country?.country_code === "JP", "equipped record resolves the flag");
     r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "countries", itemId: null } });
     assert(r.status === 200 && payer.equipped_country_id === null, "unequip");
+
+    // Profile card colour (3.7.10): its own slot, bought and worn like any cosmetic.
+    r = await req(base, "POST", "/api/shop/purchase", { token: pay, body: { itemId: "item-color-ocean" } });
+    assert(r.status === 200 && payer.descoin_balance === 0, "buy a card colour: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "profile_color", itemId: "item-color-ocean" } });
+    assert(r.status === 200 && payer.equipped_profile_color_id === "item-color-ocean", "equip a card colour: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "countries", itemId: "item-color-ocean" } });
+    assert(r.status === 400 && r.body.code === "category_mismatch", "a colour cannot go into another slot");
+    const eqColor = await shop.getEquippedCosmeticsForUser("u-pay");
+    assert(eqColor.profileColor?.effect_key === "ocean", "equipped record resolves the colour");
+    r = await req(base, "POST", "/api/shop/equip", { token: pay, body: { category: "profile_color", itemId: null } });
+    assert(r.status === 200 && payer.equipped_profile_color_id === null, "unequip the colour");
 
     console.log("countryBadges.integration.test.cjs: ok");
   } finally {

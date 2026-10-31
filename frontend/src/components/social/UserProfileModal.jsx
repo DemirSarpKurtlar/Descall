@@ -38,6 +38,7 @@ import { useNickname, setNickname, NICKNAME_MAX } from "../../lib/friendNickname
 import { copyText } from "../../lib/copyText";
 import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { useToast } from "../../context/ToastContext";
+import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import "./ProfileSheet.css";
 import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUser, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
 
@@ -580,7 +581,8 @@ function UserProfileModal({
             >
               <motion.div
                 key={userId || "profile"}
-                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy`}
+                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy ${profileColorClass(fetched)}`.trim()}
+                style={profileColorStyle(fetched) || undefined}
                 data-testid="profile-sheet"
                 custom={dismissV.current}
                 initial="initial"
@@ -664,10 +666,12 @@ function UserProfileModal({
               fetched?.equippedProfileAura?.effect_key
                 ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}`
                 : "",
+              equippedBackgroundUrl ? "" : profileColorClass(fetched),
             ]
               .filter(Boolean)
               .join(" ")}
             style={{
+              ...(equippedBackgroundUrl ? {} : profileColorStyle(fetched) || {}),
               width: glassDesktop ? 560 : 300,
               maxWidth: glassDesktop ? "calc(100vw - 48px)" : undefined,
               // A purchased profile background shows through everywhere the card

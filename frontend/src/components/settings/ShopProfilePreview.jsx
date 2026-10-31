@@ -5,6 +5,7 @@ import ParallaxBanner from "../ui/ParallaxBanner";
 import AdminBadge from "../social/AdminBadge";
 import { NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
 import { cssUrl } from "../../lib/cssUrl";
+import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 
 const EQUIPPED_SLOTS = [
   { id: "banner", label: "Banners", pick: (user) => user?.equippedBanner },
@@ -19,6 +20,7 @@ const EQUIPPED_SLOTS = [
   { id: "typing_flare", label: "Typing", pick: (user) => user?.equippedTypingFlare },
   { id: "reaction_burst", label: "Reactions", pick: (user) => user?.equippedReactionBurst },
   { id: "call_overlay", label: "Call Overlays", pick: (user) => user?.equippedCallOverlay },
+  { id: "profile_color", label: "Card Colors", pick: (user) => user?.equippedProfileColor },
 ];
 
 function bannerFallback(username) {
@@ -51,13 +53,13 @@ export default function ShopProfilePreview({ me, t }) {
     <aside className="shop-profile-stage" aria-label={t("Preview")}>
       <div className="shop-profile-stage-label">{t("Preview")}</div>
       <div
-        className={`shop-live-profile user-profile-card ${profileAuraClass(me)}`.trim()}
+        className={`shop-live-profile user-profile-card ${profileAuraClass(me)} ${backgroundUrl ? "" : profileColorClass(me)}`.trim()}
         style={
           backgroundUrl
             ? {
                 background: `linear-gradient(180deg, rgba(12,12,16,0.28) 0%, rgba(12,12,16,0.78) 58%, rgba(12,12,16,0.94) 100%), ${cssUrl(backgroundUrl)} center/cover no-repeat`,
               }
-            : undefined
+            : profileColorStyle(me) || undefined
         }
       >
         <ParallaxBanner

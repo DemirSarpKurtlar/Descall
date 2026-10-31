@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { profileColorStyle } from "../../lib/profileColors";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -66,6 +67,7 @@ const CATEGORY_ICONS = {
   typing_flare: Ellipsis,
   reaction_burst: Flame,
   call_overlay: Phone,
+  profile_color: Palette,
 };
 const CATEGORY_TABS = SHOP_CATEGORY_TABS.map((tab) => ({ ...tab, icon: CATEGORY_ICONS[tab.id] || null }));
 
@@ -100,6 +102,7 @@ const CATEGORY_HEADING = {
   typing_flare: "Typing Flares",
   reaction_burst: "Reaction Bursts",
   call_overlay: "Call Overlays",
+  profile_color: "Card Colors",
 };
 
 function ShopItemPreview({ category, item, t, name }) {
@@ -165,6 +168,19 @@ function ShopItemPreview({ category, item, t, name }) {
     return (
       <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${item.effect_key}`}>
         <Phone size={18} />
+      </div>
+    );
+  }
+  if (category === "profile_color") {
+    return (
+      <div className="shop-profile-color-preview" style={profileColorStyle(item) || undefined}>
+        <div className="pcp-banner" />
+        <div className="pcp-body">
+          <span className="pcp-av" />
+          <span className="pcp-line" />
+          <span className="pcp-line is-short" />
+          <span className="pcp-dot" />
+        </div>
       </div>
     );
   }
@@ -439,6 +455,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     if (category === "typing_flare") return equipped?.typingFlareId;
     if (category === "reaction_burst") return equipped?.reactionBurstId;
     if (category === "call_overlay") return equipped?.callOverlayId;
+    if (category === "profile_color") return equipped?.profileColorId;
     return null;
   };
 

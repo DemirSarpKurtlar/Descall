@@ -705,6 +705,7 @@ const UserPanel = forwardRef(function UserPanel({
       typingFlareId: me?.equippedTypingFlare?.id || null,
       reactionBurstId: me?.equippedReactionBurst?.id || null,
       callOverlayId: me?.equippedCallOverlay?.id || null,
+      profileColorId: me?.equippedProfileColor?.id || null,
     }),
     [
       me?.equippedBanner?.id,
@@ -720,6 +721,7 @@ const UserPanel = forwardRef(function UserPanel({
       me?.equippedTypingFlare?.id,
       me?.equippedReactionBurst?.id,
       me?.equippedCallOverlay?.id,
+      me?.equippedProfileColor?.id,
     ]
   );
 

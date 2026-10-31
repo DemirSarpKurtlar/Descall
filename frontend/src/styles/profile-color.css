@@ -1,0 +1,101 @@
+/*
+ * Profile card colours (shop category profile_color, 3.7.10).
+ * The card root gets .has-pcolor + --pc-a / --pc-b / --pc-accent / --pc-angle
+ * from lib/profileColors.js. Only the card body changes; banner, avatar and
+ * layout stay. Every palette entry is dark, so the ink is forced light.
+ * High specificity + !important: the glass material, the solid / reduced-
+ * transparency fallbacks and the classic card's inline background all set
+ * their own background and must lose to an equipped colour.
+ */
+
+:root:root:root:root:root:root .has-pcolor:is(.pfs-heavy, .user-hover-card, .user-profile-card, .pcolor-surface) {
+  background:
+    radial-gradient(130% 70% at 50% 0%, color-mix(in srgb, var(--pc-accent) 16%, transparent) 0%, transparent 70%),
+    linear-gradient(var(--pc-angle, 180deg), var(--pc-a) 0%, var(--pc-b) 100%) !important;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 color-mix(in srgb, var(--pc-accent) 38%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--pc-accent) 16%, transparent) !important;
+  border-color: color-mix(in srgb, var(--pc-accent) 22%, transparent) !important;
+  color: #f4f6fb;
+  --text-0: #ffffff;
+  --text-1: #f4f6fb;
+  --text-2: rgba(235, 238, 255, 0.78);
+  --text-muted: rgba(235, 238, 255, 0.66);
+  --border-2: rgba(255, 255, 255, 0.12);
+  --border-3: rgba(255, 255, 255, 0.14);
+  --gd-t1: #f4f6fb;
+  --gd-t2: rgba(235, 238, 255, 0.78);
+  --gd-t3: rgba(235, 238, 255, 0.6);
+}
+
+/* Inner grouped rows read as a lighter layer of the same colour. */
+.has-pcolor .pfs-group,
+.has-pcolor .pfs-act {
+  background: rgba(255, 255, 255, 0.085);
+}
+.has-pcolor .pfs-sec {
+  color: color-mix(in srgb, var(--pc-accent) 70%, #ffffff);
+}
+/* The avatar ring is cut from the card colour, not the old grey. */
+.has-pcolor .pfs-av {
+  background: var(--pc-a);
+}
+
+/* Shop card and purchase preview swatch. */
+.shop-profile-color-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(130% 70% at 50% 30%, color-mix(in srgb, var(--pc-accent) 18%, transparent) 0%, transparent 70%),
+    linear-gradient(var(--pc-angle, 180deg), var(--pc-a) 0%, var(--pc-b) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc-accent) 22%, transparent);
+}
+.shop-profile-color-preview .pcp-banner {
+  height: 30%;
+  min-height: 18px;
+  background: linear-gradient(135deg, #3a4fd0, #1a1f3a);
+}
+.shop-profile-color-preview .pcp-body {
+  flex: 1;
+  position: relative;
+  padding: 0 10px 8px;
+}
+.shop-profile-color-preview .pcp-av {
+  position: absolute;
+  top: -14px;
+  left: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pc-accent) 55%, #1a1f2c);
+  box-shadow: 0 0 0 3px var(--pc-a);
+}
+.shop-profile-color-preview .pcp-line {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  margin-top: 22px;
+  width: 52%;
+}
+.shop-profile-color-preview .pcp-line.is-short {
+  margin-top: 6px;
+  width: 34%;
+  background: rgba(255, 255, 255, 0.28);
+}
+.shop-profile-color-preview .pcp-dot {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pc-accent);
+}

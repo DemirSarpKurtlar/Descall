@@ -46,6 +46,7 @@ const EQUIP_COLUMN_BY_CATEGORY = {
   reaction_burst: "equipped_reaction_burst_id",
   call_overlay: "equipped_call_overlay_id",
   countries: "equipped_country_id",
+  profile_color: "equipped_profile_color_id",
 };
 
 /** One flag per user: buying or equipping a country replaces the previous one. */
@@ -571,7 +572,7 @@ const EQUIPPED_USER_COLUMNS =
   "equipped_avatar_frame_id, equipped_banner_id, equipped_background_id, equipped_theme_id, " +
   "equipped_badge_id, equipped_title_id, equipped_name_effect_id, equipped_avatar_effect_id, equipped_chat_bubble_id, " +
   "equipped_presence_flare_id, equipped_profile_aura_id, equipped_sound_pack_id, " +
-  "equipped_typing_flare_id, equipped_reaction_burst_id, equipped_call_overlay_id, equipped_country_id";
+  "equipped_typing_flare_id, equipped_reaction_burst_id, equipped_call_overlay_id, equipped_country_id, equipped_profile_color_id";
 
 const EMPTY_EQUIPPED = {
   avatarFrame: null,
@@ -590,6 +591,7 @@ const EMPTY_EQUIPPED = {
   reactionBurst: null,
   callOverlay: null,
   country: null,
+  profileColor: null,
   specialBadge: null,
 };
 
@@ -611,6 +613,7 @@ const EQUIPPED_ID_FIELDS = [
   "equipped_reaction_burst_id",
   "equipped_call_overlay_id",
   "equipped_country_id",
+  "equipped_profile_color_id",
 ];
 
 function equippedRecord(user, byId) {
@@ -636,6 +639,7 @@ function equippedRecord(user, byId) {
     reactionBurst: pick("equipped_reaction_burst_id"),
     callOverlay: pick("equipped_call_overlay_id"),
     country: pick("equipped_country_id"),
+    profileColor: pick("equipped_profile_color_id"),
   };
 }
 
@@ -710,6 +714,7 @@ async function getEquippedForUsers(userIds) {
       reactionBurstId: u.equipped_reaction_burst_id,
       callOverlayId: u.equipped_call_overlay_id,
       countryId: u.equipped_country_id || null,
+      profileColorId: u.equipped_profile_color_id || null,
     });
   });
   return map;

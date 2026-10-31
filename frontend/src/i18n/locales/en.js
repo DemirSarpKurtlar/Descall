@@ -338,6 +338,20 @@ export const nested = {
     "stepUpLead": "Enter the current code from your authenticator app for this action. You won't be asked again for 15 minutes.",
     "stepUpConfirm": "Confirm"
   },
+  "search": {
+    "results": "Search results",
+    "searching": "Searching…",
+    "failed": "Search failed.",
+    "typeMore": "Type at least {n} letters to search.",
+    "none": "No results for “{q}” in this chat.",
+    "count": "{n} results",
+    "countMore": "First {n} results",
+    "more": "Show more",
+    "context": "Message in context",
+    "kindVoice": "Voice message",
+    "kindCall": "Call",
+    "kindFile": "File"
+  },
   "staffBadge": {
     "tip": "Descall staff",
     "short": "STAFF",
@@ -3457,6 +3471,8 @@ export const phrases = {
   "Typing Flare": "Typing Flare",
   "Reaction Burst": "Reaction Burst",
   "Call Overlay": "Call Overlay",
+  "Card Colors": "Card Colors",
+  "Card Color": "Card Color",
   "Owned": "Owned",
   "Equip": "Equip",
   "Unequip": "Unequip",
