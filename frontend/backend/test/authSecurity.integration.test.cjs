@@ -46,7 +46,7 @@ function assert(cond, msg) {
 function lastCodeFor(email, subjectIncludes) {
   const rows = sentEmails.filter((e) => e.to[0] === email && (!subjectIncludes || String(e.subject || "").includes(subjectIncludes)));
   const email_ = rows.slice(-1)[0];
-  const match = email_?.text?.match(/code is (\d{6})/);
+  const match = email_?.text?.match(/(?:code is|Kodun:|Your code:)\s*(\d{6})/);
   return match ? match[1] : null;
 }
 
@@ -157,7 +157,7 @@ async function run() {
 
     r = await req(base, "POST", "/api/auth/password/request", { token: alice.token });
     assert(r.status === 200, "signed-in reset sends a code: " + JSON.stringify(r.body));
-    const resetCode = lastCodeFor("next@example.com", "password reset");
+    const resetCode = lastCodeFor("next@example.com", "şifre sıfırlama");
     r = await req(base, "POST", "/api/auth/password/confirm", {
       token: alice.token,
       body: { code: resetCode, newPassword: "a-reasonably-long-secret" },
@@ -176,7 +176,7 @@ async function run() {
       secondToken = done.body.token;
     }
     r = await req(base, "POST", "/api/auth/password/request", { token: secondToken });
-    const code2 = lastCodeFor("next@example.com", "password reset");
+    const code2 = lastCodeFor("next@example.com", "şifre sıfırlama");
     for (let i = 0; i < 5; i += 1) {
       await req(base, "POST", "/api/auth/password/confirm", {
         token: secondToken,
@@ -196,7 +196,7 @@ async function run() {
 
     fakeSupabase._tables.auth_code_attempts.rows.splice(0);
     r = await req(base, "POST", "/api/auth/password/request", { token: secondToken });
-    const goodCode = lastCodeFor("next@example.com", "password reset");
+    const goodCode = lastCodeFor("next@example.com", "şifre sıfırlama");
     const beforeReset = secondToken;
     r = await req(base, "POST", "/api/auth/password/confirm", {
       token: secondToken,

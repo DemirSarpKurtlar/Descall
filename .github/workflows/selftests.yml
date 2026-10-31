@@ -195,6 +195,7 @@ jobs:
           node src/lib/messageSearch.selftest.mjs
           node backend/lib/messageSearch.selftest.cjs
           node backend/test/messageSearch.integration.test.cjs
+          node backend/lib/emailTemplates.selftest.cjs
           node backend/lib/growthInsights.selftest.cjs
           node src/components/admin/userLens.selftest.mjs
           node backend/lib/userLens.selftest.cjs

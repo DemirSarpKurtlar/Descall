@@ -41,7 +41,7 @@ const authRouter = require("../routes/auth");
 
 function lastCodeFor(email) {
   const email_ = sentEmails.filter((e) => e.to[0] === email).slice(-1)[0];
-  const match = email_?.text?.match(/code is (\d{6})/);
+  const match = email_?.text?.match(/(?:code is|Kodun:|Your code:)\s*(\d{6})/);
   return match ? match[1] : null;
 }
 

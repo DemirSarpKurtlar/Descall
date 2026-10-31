@@ -7,7 +7,8 @@ const { requireAuth } = require("../middleware/auth");
 const { revokedSessionIds, authCodeAttempts, systemConfig } = require("../runtime/sharedState");
 const platformPolicy = require("../lib/platformPolicy");
 const twoFactor = require("../lib/twoFactorService");
-const { sendEmail, generateCode, codeEmailHtml, SUPPORT_EMAIL } = require("../lib/mailer");
+const { sendEmail, generateCode, SUPPORT_EMAIL } = require("../lib/mailer");
+const { buildCodeEmail, langFrom } = require("../lib/emailTemplates");
 const { notifyTeamNewSignup } = require("../lib/signupReport");
 const { buildUserAttributionColumns, isMissingColumnError, countryFromHeaders } = require("../lib/signupAttribution");
 const { trackSignupAttempt } = require("../lib/signupStats");
@@ -80,10 +81,9 @@ async function secondFactorGate(res, user) {
     email: user.email,
     username: user.username,
     purpose: "2fa_login",
+    lang: langFrom(res.req?.headers?.["accept-language"], user.language),
     column: "reauthentication_token",
     sentAtColumn: "reauthentication_sent_at",
-    title: "Your Descall sign-in code",
-    footer: "Enter this code to finish signing in to Descall.",
   }).catch(() => ({ sent: false, error: "send_failed" }));
   if (!result.sent) {
     console.error("[AUTH] 2FA code email failed", result.error);
@@ -187,6 +187,11 @@ async function dropSessions(req, userId, keepSessionId) {
   return removed;
 }
 
+/**
+ * Store a fresh 6-digit code and send it with the designed email
+ * (lib/emailTemplates.js, 3.7.8). `template` picks the copy
+ * ("email_verify_signup" for a new account), `lang` is "tr" | "en".
+ */
 async function issueAndSendCode({
   userId,
   email,
@@ -194,31 +199,15 @@ async function issueAndSendCode({
   purpose,
   column,
   sentAtColumn,
-  title,
-  footer,
-  headline,
-  purposeLabel,
-  subject,
+  template,
+  lang,
 }) {
   const code = generateCode();
   const update = { [column]: hashCode(code), [sentAtColumn]: new Date().toISOString() };
   await supabase.from("users").update(update).eq("id", userId);
   // Attempt counts stay for the hour. Sending another code must not reset them.
-  const mailSubject = subject || title;
-  const result = await sendEmail({
-    to: email,
-    subject: mailSubject,
-    text: `Your Descall code is ${code}. It expires in 10 minutes.\n\nIf you did not request this, ignore this email or contact ${SUPPORT_EMAIL}.`,
-    html: codeEmailHtml({
-      title: mailSubject,
-      headline: headline || title,
-      code,
-      minutes: 10,
-      footer,
-      username,
-      purposeLabel: purposeLabel || "Security code",
-    }),
-  });
+  const mail = buildCodeEmail({ purpose: template || purpose, code, username, lang: lang === "en" ? "en" : "tr", minutes: 10 });
+  const result = await sendEmail({ to: email, subject: mail.subject, text: mail.text, html: mail.html });
   if (!result.sent && !result.skipped) {
     console.warn(`[AUTH] ${purpose} email failed`, result.error);
   }
@@ -621,10 +610,10 @@ router.post("/register", async (req, res) => {
         email,
         username: cleanUsername,
         purpose: "email_verify",
+        template: "email_verify_signup",
+        lang: langFrom(req.headers["accept-language"]),
         column: "confirmation_token",
         sentAtColumn: "confirmation_sent_at",
-        title: "Verify your Descall email",
-        footer: "Welcome to Descall! Enter this code in the app to verify your email address.",
       }).catch(() => ({ sent: false }));
       emailSent = Boolean(result?.sent);
     }
@@ -1419,10 +1408,9 @@ router.post("/email/reauth", requireAuth, async (req, res) => {
       email: user.email,
       username: user.username,
       purpose: "email_reauth",
+      lang: langFrom(req.headers["accept-language"]),
       column: "reauthentication_token",
       sentAtColumn: "reauthentication_sent_at",
-      title: "Confirm it's you",
-      footer: "Enter this code to confirm an email change on your Descall account.",
     });
     if (!result.sent && !result.skipped) {
       return res.status(503).json({ error: "Could not send verification email. Please try again." });
@@ -1503,10 +1491,9 @@ router.post("/email/set", requireAuth, async (req, res) => {
       email,
       username: user.username || req.user.username,
       purpose: "email_verify",
+      lang: langFrom(req.headers["accept-language"]),
       column: "confirmation_token",
       sentAtColumn: "confirmation_sent_at",
-      title: "Verify your Descall email",
-      footer: "Enter this code in Descall to verify your email address.",
     });
     if (!result.sent && !result.skipped) {
       return res.status(503).json({ error: "Could not send verification email. Please try again." });
@@ -1553,10 +1540,9 @@ router.post("/email/resend", requireAuth, async (req, res) => {
       email: target,
       username: req.user.username,
       purpose: "email_verify",
+      lang: langFrom(req.headers["accept-language"]),
       column: "confirmation_token",
       sentAtColumn: "confirmation_sent_at",
-      title: "Verify your Descall email",
-      footer: "Enter this code in Descall to verify your email address.",
     });
     if (!result.sent && !result.skipped) {
       return res.status(503).json({ error: "Could not send verification email. Please try again." });
@@ -1818,7 +1804,6 @@ router.post("/username", requireAuth, async (req, res) => {
     if (user.email && user.email_confirmed_at) {
       sendEmail({
         to: user.email,
-        subject: "Your Descall username was changed",
         text: `Your Descall username was changed from @${user.username} to @${nextUsername}.\n\nIf this wasn't you, reset your password right away and contact ${SUPPORT_EMAIL}.`,
       }).catch(() => {});
     }
@@ -2040,7 +2025,7 @@ async function findUserForPasswordReset(usernameOrEmail) {
     if (!EMAIL_RE.test(email)) return null;
     const { data } = await supabase
       .from("users")
-      .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider")
+      .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider, language")
       .ilike("email", escapeLike(email))
       .maybeSingle();
     return data || null;
@@ -2081,12 +2066,9 @@ async function sendPasswordResetCode(user) {
       email: user.email,
       username: user.username,
       purpose: "password_reset",
+      lang: langFrom("", user.language),
       column: "password_reset_token",
       sentAtColumn: "password_reset_sent_at",
-      title: "Reset your Descall password",
-      subject: "Your Descall password reset code",
-      headline: "Reset your password",
-      purposeLabel: "Password reset",
       footer:
         "Use this 6-digit code in Descall to choose a new password. If you did not ask to reset your password, you can ignore this email — your account stays secure.",
     });

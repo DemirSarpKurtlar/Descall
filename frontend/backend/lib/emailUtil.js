@@ -1,0 +1,13 @@
+"use strict";
+
+/** HTML-escape for email templates (shared by mailer.js and emailTemplates.js). */
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+module.exports = { escapeHtml };
