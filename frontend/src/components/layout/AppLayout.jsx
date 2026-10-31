@@ -25,6 +25,7 @@ import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
 import LegalContentModal from "../legal/LegalContentModal";
+import { HoverCardContext } from "../social/HoverCardContext";
 import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
 import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib/bottomTabBar";
 
@@ -479,6 +480,19 @@ export default function AppLayout({
     badges: glassTabBadges,
     onSelect: handleViewChange,
   });
+  // Desktop hover profile card (design C, 3.7.13): live activity, voice, DM.
+  const hoverCardValue = useMemo(
+    () => ({
+      friendPresence: activity?.friendPresence || null,
+      voiceStatesByServer: serverVoice?.voiceStatesByServer || null,
+      servers,
+      sendDm: socket ? (toUserId, text) => socket.emit("dm:send", { toUserId, text }) : null,
+      openDm: handleOpenChatFromCalls,
+      meId: me?.id || null,
+    }),
+    [activity?.friendPresence, serverVoice?.voiceStatesByServer, servers, socket, handleOpenChatFromCalls, me?.id]
+  );
+
   const glassShellValue = useMemo(
     () =>
       glassShell
@@ -497,6 +511,7 @@ export default function AppLayout({
 
   return (
     <GlassShellContext.Provider value={glassShellValue}>
+    <HoverCardContext.Provider value={hoverCardValue}>
     <div
       className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}${showUserVoicePanel ? " has-uvp" : ""}`}
       data-view={activeView}
@@ -858,6 +873,7 @@ export default function AppLayout({
         onClose={() => setConsentLegal(null)}
       />
     </div>
+    </HoverCardContext.Provider>
     </GlassShellContext.Provider>
   );
 }

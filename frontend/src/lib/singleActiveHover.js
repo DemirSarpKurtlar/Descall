@@ -12,7 +12,10 @@
 // AIM_MAX_MS) instead of taking over; reaching the pill cancels it, stopping
 // on the neighbour grants it. Same idea as menu "safe triangles".
 
-export const HOVER_TOOLBAR_GRACE_MS = 120;
+// 3.7.13: 120 ms was too short to travel from a short bubble to a pill parked
+// beside the header; the pill vanished on the way (owner report). A new
+// message's toolbar still replaces the old one immediately.
+export const HOVER_TOOLBAR_GRACE_MS = 350;
 export const AIM_DELAY_MS = 150;
 export const AIM_MAX_MS = 600;
 const TRAIL_MS = 100;
@@ -170,10 +173,17 @@ export function createSingleActive({
     }
     if (!active || active.id !== id || locked) return;
     cancel();
-    timer = setTimer(() => {
+    const started = now();
+    const fire = () => {
       timer = null;
+      // Still on the way to the pill: wait a little longer (bounded).
+      if (active && active.id === id && !locked && aiming() && now() - started < aimMaxMs) {
+        timer = setTimer(fire, aimDelayMs);
+        return;
+      }
       release(id);
-    }, ms);
+    };
+    timer = setTimer(fire, ms);
   }
 
   /** Pointer re-entered the bubble or toolbar: keep it open. */

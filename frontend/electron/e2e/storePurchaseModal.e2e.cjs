@@ -54,7 +54,7 @@ const row = (sku, category, name, price, rarity, extra = {}) => ({
 const PICKS = [
   [row('banner-emerald-forest', 'banner', 'Emerald Forest', 280, 'rare'), 'Zümrüt Orman'],
   [row('avatar-effect-aurora', 'avatar_effect', 'Aurora Ring', 400, 'epic', { effect_key: 'aurora' }), 'Aurora Halkası'],
-  [row('background-ocean-depths', 'profile_background', 'Ocean Depths', 350, 'epic'), null],
+  [row('profile-color-ocean', 'profile_color', 'Ocean', 220, 'common', { effect_key: 'ocean' }), 'Okyanus'],
   [row('theme-borealis', 'theme', 'Borealis', 580, 'legendary', { theme_key: 'borealis' }), 'Borealis'],
   [row('name-effect-sigil-aurora', 'name_effect', 'Aurora Curtain', 580, 'legendary', { effect_key: 'sigil-aurora', animated: true }), 'Aurora Perdesi'],
   [row('chat-bubble-atelier-moonstone', 'chat_bubble', 'Moonstone Rim', 420, 'epic', { effect_key: 'atelier-moonstone' }), 'Aytaşı Çerçeve'],
@@ -69,7 +69,7 @@ const WORN = row('avatar-effect-pulse', 'avatar_effect', 'Pulse Glow', 300, 'rar
 const PRICEY = row('banner-e2e-vault', 'banner', 'Vault Banner', 99999, 'mythic');
 const ITEMS = [...PICKS.map((p) => p[0]), WORN, PRICEY];
 const byId = new Map(ITEMS.map((i) => [i.id, i]));
-const COL = { banner: 'equippedBanner', profile_background: 'equippedBackground', theme: 'equippedTheme',
+const COL = { banner: 'equippedBanner', profile_color: 'equippedProfileColor', theme: 'equippedTheme',
   name_effect: 'equippedNameEffect', avatar_effect: 'equippedAvatarEffect', chat_bubble: 'equippedChatBubble',
   presence_flare: 'equippedPresenceFlare', profile_aura: 'equippedProfileAura', typing_flare: 'equippedTypingFlare',
   reaction_burst: 'equippedReactionBurst', call_overlay: 'equippedCallOverlay' };

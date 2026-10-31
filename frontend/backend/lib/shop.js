@@ -26,7 +26,8 @@ const supabase = require("../db/supabase");
  * shop_refund and their inventory rows were deleted. Special badges (lib/specialBadges.js)
  * are a separate system and are not affected.
  */
-const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame", "profile_title", "profile_badge"]);
+// Profile backgrounds removed 2026-10-31 (owner, 3.7.12): buyers refunded, Kart Renkleri took the tab.
+const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame", "profile_title", "profile_badge", "profile_background"]);
 const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack", ...REMOVED_COSMETIC_CATEGORIES]);
 
 const EQUIP_COLUMN_BY_CATEGORY = {
@@ -625,7 +626,7 @@ function equippedRecord(user, byId) {
   return {
     avatarFrame: null, // frames removed in 2.10.114; the stored id is ignored
     banner: pick("equipped_banner_id"),
-    background: pick("equipped_background_id"),
+    background: null, // profile backgrounds removed 2026-10-31; the stored id is ignored
     theme: pick("equipped_theme_id"),
     badge: null, // shop profile badges removed 2026-10-26; the stored id is ignored
     title: null, // titles retired in 2.13.0; the stored id is ignored
@@ -700,7 +701,7 @@ async function getEquippedForUsers(userIds) {
     map.set(u.id, {
       avatarFrameId: null,
       bannerId: u.equipped_banner_id,
-      backgroundId: u.equipped_background_id,
+      backgroundId: null,
       themeId: u.equipped_theme_id,
       badgeId: null,
       titleId: null,

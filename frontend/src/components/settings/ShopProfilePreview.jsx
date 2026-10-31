@@ -10,7 +10,6 @@ import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 const EQUIPPED_SLOTS = [
   { id: "banner", label: "Banners", pick: (user) => user?.equippedBanner },
   { id: "avatar_effect", label: "Avatar Effects", pick: (user) => user?.equippedAvatarEffect },
-  { id: "profile_background", label: "Backgrounds", pick: (user) => user?.equippedBackground },
   { id: "theme", label: "Themes", pick: (user) => user?.equippedTheme },
   { id: "countries", label: "Countries", pick: (user) => user?.equippedCountry },
   { id: "name_effect", label: "Name Effects", pick: (user) => user?.equippedNameEffect },
