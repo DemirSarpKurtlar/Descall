@@ -3387,6 +3387,7 @@ export const phrases = {
   "Failed to send verification code.": "Failed to send verification code.",
   "Failed to resend code.": "Failed to resend code.",
   "Incorrect code.": "Incorrect code.",
+  "Code is required.": "Enter the code.",
   "Email verified!": "Email verified!",
   "Failed to enable two-factor authentication.": "Failed to enable two-factor authentication.",
   "Incorrect password.": "Incorrect password.",
