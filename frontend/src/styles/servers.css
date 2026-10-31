@@ -769,6 +769,13 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   box-shadow: var(--shadow-xl, 0 12px 40px rgba(0, 0, 0, 0.35));
 }
 
+/* 3.7.16: desktop header menu portaled to <body>, pinned under the button
+   (ServerMenuFrame sets top / right / max-height inline). */
+.server-dropdown.is-portaled {
+  z-index: 12000;
+  overflow-y: auto;
+}
+
 .servers-sidebar {
   position: relative;
 }
