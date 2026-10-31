@@ -26,6 +26,8 @@ const CAT_TR = {
     foot: "Efekt yalnızca senin bıraktığın tepkilerde görünür; sayılar ve emojiler değişmez." },
   call_overlay: { eyebrow: "ARAMA KAPLAMASI", label: "ARAMADA", noun: "arama kaplaması", acc: "Arama kaplamasını", meta: () => "Arama kaplaması · Sesli ve görüntülü",
     foot: "Kaplama arama ekranının arka planını değiştirir; kameralar ve kontroller aynı kalır." },
+  profile_color: { eyebrow: "KART RENGİ", label: "PROFİL KARTINDA", noun: "kart rengi", acc: "Kart rengini", meta: () => "Kart rengi · Profil kartının gövdesi",
+    foot: "Renk, profil kartını açan herkes tarafından görülür. Banner ve avatar aynı kalır. Aynı anda tek renk takılır." },
 };
 
 const CAT_EN = {
@@ -53,6 +55,8 @@ const CAT_EN = {
     foot: "The effect only shows on reactions you leave; counts and emoji stay the same." },
   call_overlay: { eyebrow: "CALL OVERLAY", label: "IN CALLS", noun: "call overlay", acc: "The call overlay", meta: () => "Call overlay · Voice and video",
     foot: "The overlay changes the call screen background; cameras and controls stay the same." },
+  profile_color: { eyebrow: "CARD COLOR", label: "ON YOUR PROFILE CARD", noun: "card color", acc: "The card color", meta: () => "Card color · Profile card body",
+    foot: "Anyone who opens your profile card sees the color. Banner and avatar stay the same. One color is worn at a time." },
 };
 
 const TR = {

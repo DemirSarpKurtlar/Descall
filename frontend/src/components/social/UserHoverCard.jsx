@@ -8,6 +8,7 @@ import AdminBadge from "./AdminBadge";
 import { NameEffectText, CountryBadge, profileAuraClass } from "../ui/Cosmetics";
 import { useT } from "../../context/LocaleContext";
 import ParallaxBanner from "../ui/ParallaxBanner";
+import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 
 const STATUS_CLASS = {
   online: "st-online",
@@ -81,8 +82,9 @@ export default function UserHoverCard({ user, anchor }) {
   const node = (
     <motion.div
       ref={ref}
-      className={`user-hover-card glass ${profileAuraClass(user)}`.trim()}
+      className={`user-hover-card glass ${profileAuraClass(user)} ${profileColorClass(user)}`.trim()}
       style={{
+        ...(profileColorStyle(user) || {}),
         position: "fixed",
         left: pos.left,
         top: pos.top,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PROFILE_COLORS, profileColorSwatch } from "../../lib/profileColors";
 import { motion } from "framer-motion";
 import { Gift, Plus, RefreshCw, ShoppingBag, Search, CheckCircle2, XCircle, Coins, Sparkles } from "../ui/Icon.jsx";
 import { ShopBadgeIcon, ShopTitleTag } from "../../lib/shopIcons";
@@ -24,6 +25,7 @@ const CATEGORIES = [
   { id: "typing_flare", label: "Typing Flare" },
   { id: "reaction_burst", label: "Reaction Burst" },
   { id: "call_overlay", label: "Call Overlay" },
+  { id: "profile_color", label: "Card Color" },
 ];
 
 // Categories that render from a small piece of metadata instead of an
@@ -40,6 +42,7 @@ const METADATA_ONLY_CATEGORIES = new Set([
   "typing_flare",
   "reaction_burst",
   "call_overlay",
+  "profile_color",
 ]);
 const EFFECT_KEY_CATEGORIES = new Set([
   "name_effect",
@@ -51,6 +54,7 @@ const EFFECT_KEY_CATEGORIES = new Set([
   "typing_flare",
   "reaction_burst",
   "call_overlay",
+  "profile_color",
 ]);
 
 const EFFECT_KEY_OPTIONS = {
@@ -104,6 +108,7 @@ const EFFECT_KEY_OPTIONS = {
     "royal-lounge", "cyber-deck", "golden-hall", "aurora-dome", "carbon-cockpit", "sakura-suite",
     "plasma-arena", "ocean-bridge", "mosaic-stage", "titan-forge",
   ],
+  profile_color: Object.keys(PROFILE_COLORS),
 };
 
 const RARITIES = ["common", "rare", "epic", "legendary", "mythic"];
@@ -731,6 +736,8 @@ export default function AdminShop() {
                       </div>
                     ) : item.category === "reaction_burst" ? (
                       <div className={`cosmetic-reaction-burst burst-${item.effect_key}`} style={{ fontSize: 16, display: "inline-flex" }}><Sparkles size={16} /></div>
+                    ) : item.category === "profile_color" ? (
+                      <div style={{ width: 40, height: 22, borderRadius: 6, background: profileColorSwatch(item) || "rgba(255,255,255,0.06)" }} />
                     ) : item.category === "call_overlay" ? (
                       <div className={`cosmetic-call-overlay overlay-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 6 }} />
                     ) : (

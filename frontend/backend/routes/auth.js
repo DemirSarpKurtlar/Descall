@@ -265,6 +265,7 @@ function authUserPayload(user, extra = {}) {
     equippedTypingFlare: extra.equippedTypingFlare || null,
     equippedReactionBurst: extra.equippedReactionBurst || null,
     equippedCallOverlay: extra.equippedCallOverlay || null,
+    equippedProfileColor: extra.equippedProfileColor || null,
   };
 }
 
@@ -289,6 +290,7 @@ async function resolveEquippedExtra(userId) {
     equippedTypingFlare: equipped.typingFlare || null,
     equippedReactionBurst: equipped.reactionBurst || null,
     equippedCallOverlay: equipped.callOverlay || null,
+    equippedProfileColor: equipped.profileColor || null,
   };
 }
 
@@ -1338,6 +1340,7 @@ router.get("/me", requireAuth, async (req, res) => {
         equippedTypingFlare: equipped.typingFlare || null,
         equippedReactionBurst: equipped.reactionBurst || null,
         equippedCallOverlay: equipped.callOverlay || null,
+        equippedProfileColor: equipped.profileColor || null,
         descoinBalance: Number(user.descoin_balance) || 0,
       },
     });
@@ -1382,6 +1385,7 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
         equippedTypingFlare: equipped.typingFlare || null,
         equippedReactionBurst: equipped.reactionBurst || null,
         equippedCallOverlay: equipped.callOverlay || null,
+        equippedProfileColor: equipped.profileColor || null,
       },
     });
   } catch (err) {

@@ -4,6 +4,7 @@
 // shows is what the app draws. `item` null means "nothing worn" (the Şu an side).
 import { Mic, MonitorUp, PhoneOff, Plus, ShieldCheck, SmilePlus, Video } from "../../ui/Icon.jsx";
 import { CountryBadge } from "../CountryFlag";
+import { profileColorStyle } from "../../../lib/profileColors";
 
 // Absolute path: the Electron build uses base "./", which would resolve under /settings/.
 const BASE = (typeof import.meta !== "undefined" && import.meta.env?.BASE_URL) || "/";
@@ -197,6 +198,18 @@ const S = {
       </div>
     );
   },
+  profile_color({ item, me, c, compact }) {
+    const { name, at } = meNames(me);
+    const style = item ? profileColorStyle(item) : null;
+    return (
+      <div className="spm-stage spm-flat spm-aura-stage">
+        <div className={`spm-pcard spm-pc${style ? " has-pcolor pcolor-surface" : ""}`} style={style || undefined}>
+          <div className="spm-bn" style={{ height: compact ? 70 : 84, background: DEFAULT_BANNER }} />
+          <div className="spm-bd"><Av me={me} /><div className="spm-nm">{name}</div><div className="spm-at">{at}</div><BadgeRow me={me} c={c} /></div>
+        </div>
+      </div>
+    );
+  },
   typing_flare({ item, me, c }) {
     const { name } = meNames(me);
     const k = keyOf(item);
@@ -294,6 +307,12 @@ export function PurchaseThumb({ category, item, me }) {
       );
     case "reaction_burst":
       return <span className={`spm-rx spm-mine spm-th-rx burst-chip-${k}`}><span className="spm-emoji">🔥</span>3</span>;
+    case "profile_color":
+      return (
+        <div className="shop-profile-color-preview spm-th-pcolor" style={profileColorStyle(item) || undefined}>
+          <div className="pcp-banner" /><div className="pcp-body"><span className="pcp-av" /><span className="pcp-line" /><span className="pcp-line is-short" /><span className="pcp-dot" /></div>
+        </div>
+      );
     case "call_overlay":
       return <div className={`spm-th-call cosmetic-call-overlay overlay-${k}`}><Av me={me} /><Av letter="S" className="spm-a2" /><div className="spm-th-call-bar" /></div>;
     default:

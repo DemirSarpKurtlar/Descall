@@ -24,6 +24,7 @@ export const SHOP_CATEGORY_TABS = Object.freeze([
   { id: "typing_flare", label: "Typing" },
   { id: "reaction_burst", label: "Reactions" },
   { id: "call_overlay", label: "Call Overlays" },
+  { id: "profile_color", label: "Card Colors" },
 ]);
 
 /** True for a category the shop must never show (built-in removals + server-announced). */

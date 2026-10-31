@@ -22,6 +22,7 @@ const CATEGORY_LABEL = {
   typing_flare: "Typing Flare",
   reaction_burst: "Reaction Burst",
   call_overlay: "Call Overlay",
+  profile_color: "Card Color",
 };
 
 /**

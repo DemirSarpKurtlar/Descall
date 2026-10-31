@@ -3471,6 +3471,8 @@ export const phrases = {
   "Typing Flare": "Typing Flare",
   "Reaction Burst": "Reaction Burst",
   "Call Overlay": "Call Overlay",
+  "Card Colors": "Card Colors",
+  "Card Color": "Card Color",
   "Owned": "Owned",
   "Equip": "Equip",
   "Unequip": "Unequip",

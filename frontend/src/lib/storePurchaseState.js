@@ -16,6 +16,7 @@ export const PURCHASE_MODAL_CATEGORIES = [
   "typing_flare",
   "reaction_burst",
   "call_overlay",
+  "profile_color",
 ];
 const MODAL_SET = new Set(PURCHASE_MODAL_CATEGORIES);
 export const usesPurchaseModal = (category) => MODAL_SET.has(category);

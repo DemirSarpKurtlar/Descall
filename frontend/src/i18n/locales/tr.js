@@ -3790,6 +3790,8 @@ export const phrases = {
   "Typing Flare": "Yazma Parıltısı",
   "Reaction Burst": "Tepki Patlaması",
   "Call Overlay": "Arama Kaplaması",
+  "Card Colors": "Kart Renkleri",
+  "Card Color": "Kart Rengi",
   "Owned": "Sahip Olundu",
   "Equip": "Kullan",
   "Unequip": "Kaldır",

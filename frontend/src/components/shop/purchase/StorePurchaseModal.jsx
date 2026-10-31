@@ -18,7 +18,7 @@ import { PurchasePreview, PurchaseThumb } from "./StorePurchasePreviews";
 const CAT_ICON = {
   banner: ImageIcon, avatar_effect: Sparkles, profile_background: ImageIcon, theme: Palette,
   name_effect: Type, chat_bubble: MessageCircle, presence_flare: CircleDot, profile_aura: Sun, typing_flare: Ellipsis,
-  reaction_burst: Smile, call_overlay: Phone,
+  reaction_burst: Smile, call_overlay: Phone, profile_color: Palette,
 };
 
 // Springs from the motion spec: damping ratio → bounce (1 - ζ), response → duration.

@@ -159,6 +159,7 @@ export function mergeUserProfiles(...parts) {
     "equippedTypingFlare",
     "equippedReactionBurst",
     "equippedCallOverlay",
+    "equippedProfileColor",
   ]) {
     const hit = [...list].reverse().find((p) => p[key]);
     if (hit?.[key]) out[key] = hit[key];
@@ -222,6 +223,7 @@ export function patchUserProfile(user, patch = {}) {
     "equippedTypingFlare",
     "equippedReactionBurst",
     "equippedCallOverlay",
+    "equippedProfileColor",
   ]) {
     if (key in patch && patch[key] !== undefined) {
       next[key] = patch[key];
@@ -265,6 +267,7 @@ export function pickEquippedCosmetics(user) {
     "equippedAvatarEffect",
     "equippedPresenceFlare",
     "equippedCallOverlay",
+    "equippedProfileColor",
   ]) {
     if (user[key]) out[key] = user[key];
   }

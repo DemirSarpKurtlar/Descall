@@ -38,6 +38,7 @@ const ALL_COSMETIC_KEYS = [
   "equippedTypingFlare",
   "equippedReactionBurst",
   "equippedCallOverlay",
+  "equippedProfileColor",
   "_cosmeticsLoaded",
 ];
 
@@ -83,6 +84,7 @@ function cosmeticsFromEquipped(equipped) {
     equippedTypingFlare: equipped.typingFlare || null,
     equippedReactionBurst: equipped.reactionBurst || null,
     equippedCallOverlay: equipped.callOverlay || null,
+    equippedProfileColor: equipped.profileColor || null,
   };
 }
 
@@ -145,6 +147,7 @@ function toPublicUser(profile) {
     equippedTypingFlare: profile.equippedTypingFlare || null,
     equippedReactionBurst: profile.equippedReactionBurst || null,
     equippedCallOverlay: profile.equippedCallOverlay || null,
+    equippedProfileColor: profile.equippedProfileColor || null,
   };
 }
 

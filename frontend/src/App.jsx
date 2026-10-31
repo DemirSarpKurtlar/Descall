@@ -1130,6 +1130,7 @@ export default function App() {
       equippedTypingFlare: normalized.equippedTypingFlare,
       equippedReactionBurst: normalized.equippedReactionBurst,
       equippedCallOverlay: normalized.equippedCallOverlay,
+      equippedProfileColor: normalized.equippedProfileColor,
     };
 
     const patch = {
