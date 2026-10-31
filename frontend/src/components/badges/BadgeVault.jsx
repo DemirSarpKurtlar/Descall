@@ -17,20 +17,15 @@ import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/spri
 import { hapticSelection, hapticSuccess } from "../../lib/fluid/haptics";
 import { openPromoRedeem } from "../../lib/promoBus";
 import { showBadgeToast } from "./BadgeToast.jsx";
+import { trGenitive } from "../../lib/trSuffix";
+import { formatDate, formatTime } from "../../i18n/format";
 
 const idOf = (u) => u?.id || u?._id || null;
 const sameId = (a, b) => Boolean(a && b && String(a) === String(b));
 const nameOfUser = (u) => u?.displayName || u?.display_name || u?.username || "";
 
-/** Turkish genitive with apostrophe: Mert'in, Ayşe'nin, Oğuz'un, Gül'ün. */
-export function possessiveTr(n) {
-  const s = String(n || "");
-  const low = s.toLocaleLowerCase("tr");
-  const m = [...low].reverse().find((c) => "aeıioöuü".includes(c)) || "e";
-  const v = { a: "ı", ı: "ı", e: "i", i: "i", o: "u", u: "u", ö: "ü", ü: "ü" }[m];
-  const endsV = "aeıioöuü".includes(low.slice(-1));
-  return `${s}'${endsV ? "n" : ""}${v}n`;
-}
+/** Turkish genitive with apostrophe (Mert'in, Ayşe'nin, Oğuz'un, Gül'ün): lib/trSuffix.js. */
+export const possessiveTr = trGenitive;
 
 /** "{a} rozetten {n} tanesi sende" with {n} in bold. */
 function Rich({ text, bold }) {
@@ -92,7 +87,7 @@ function shortDate(iso, locale) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Istanbul" });
+  return formatDate(d, locale, { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Istanbul" });
 }
 
 function Hero({ me, self, sel, eq, myBadges, onEquip, busy, phone }) {
@@ -106,7 +101,7 @@ function Hero({ me, self, sel, eq, myBadges, onEquip, busy, phone }) {
     : !sel.grantedBy ? t("badges.viaTeam")
       : sameId(sel.grantedBy.id, idOf(me)) ? t("badges.viaYou")
         : t("badges.viaBy", { name: sel.grantedBy.displayName || sel.grantedBy.username });
-  const now = new Date().toLocaleTimeString(locale === "tr" ? "tr-TR" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const now = formatTime(new Date(), locale, { hour: "2-digit", minute: "2-digit", hour12: false });
   return (
     <section className={`bp-hero t-${tier}`} style={{ "--bp-glow": pal.glow }} aria-live="polite">
       <div className="bp-hero-art"><SpecialBadgeIcon id={sel.id} size={phone ? 72 : 84} /></div>
@@ -301,7 +296,7 @@ export function BadgeVault({ user, me, self, variant = "desk", onClose }) {
   const countText = count
     ? t(self ? "badges.countSelf" : "badges.countOther", { total, n: "\u0000" })
     : t("badges.countNone", { total });
-  const title = self ? t("badges.titleSelf") : t("badges.titleOther", { owner: locale === "tr" ? possessiveTr(who) : `${who}'s` });
+  const title = self ? t("badges.titleSelf") : t("shell.badges.titleOther", { name: who, nameGen: locale === "tr" ? possessiveTr(who) : who });
   const enter = reduce ? { opacity: 0 } : phone ? { y: "100%" } : { opacity: 0, scale: 0.96, filter: "blur(8px)" };
   const shown = reduce ? { opacity: 1 } : phone ? { y: 0 } : { opacity: 1, scale: 1, filter: "blur(0px)" };
   const exit = reduce ? { opacity: 0 } : phone ? { y: "100%" } : { opacity: 0, scale: 0.97, filter: "blur(6px)" };

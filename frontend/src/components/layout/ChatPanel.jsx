@@ -21,7 +21,8 @@ import { API_BASE_URL } from "../../config/api";
 import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatDate, upper } from "../../i18n/format";
 import { displayText } from "../../lib/profanity";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
@@ -37,10 +38,10 @@ import { useGroupActions } from "./ServerSidebar";
 import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 
-function glassGroupInitials(name) {
+function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toLocaleUpperCase("tr");
-  return (parts[0]?.[0] || "").toLocaleUpperCase("tr");
+  if (parts.length >= 2) return upper(parts[0][0] + parts[1][0], locale);
+  return upper(parts[0]?.[0] || "", locale);
 }
 
 export default function ChatPanel({
@@ -100,7 +101,7 @@ export default function ChatPanel({
   children,
   serverVoice = null,
 }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const glass = useGlassUi();
   const messagesRef = useRef(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -481,7 +482,7 @@ export default function ChatPanel({
               </div>
               {activeTimeout.until && (
                 <span className="timeout-banner-until">
-                  {t("Until")}: {new Date(activeTimeout.until).toLocaleString()}
+                  {t("Until")}: {formatDate(activeTimeout.until, locale, { dateStyle: "medium", timeStyle: "short" })}
                 </span>
               )}
               <p>
@@ -548,7 +549,7 @@ export default function ChatPanel({
                   size={floatingHeader ? 40 : headerGroupIconSize}
                   radius={floatingHeader ? 20 : 12}
                   className="header-group-photo"
-                  initials={glass ? glassGroupInitials(headerGroup.name) : headerGroup.name?.charAt(0)?.toUpperCase()}
+                  initials={glass ? glassGroupInitials(headerGroup.name, locale) : headerGroup.name?.charAt(0)?.toUpperCase()}
                 />
               </div>
             ) : glassHash ? (

@@ -10,6 +10,7 @@ import { showBadgeToast } from "./BadgeToast.jsx";
 import { equipMine, holdersOf, loadCatalog, loadUserBadges, sortOwned, useSpecialBadgeStore, userBadgesState } from "../../lib/specialBadges";
 import { hapticSelection, hapticSuccess } from "../../lib/fluid/haptics";
 import { openPromoRedeem } from "../../lib/promoBus";
+import { formatTime } from "../../i18n/format";
 
 export default function BadgeSettingsTab({ me }) {
   const { t, locale, name, tierLabel, num } = useBadgeCopy();
@@ -28,7 +29,7 @@ export default function BadgeSettingsTab({ me }) {
   const [busy, setBusy] = useState(false);
   const country = me?.equippedCountry || null;
   const countryName = country ? (country.name || country.label || t("badges.modeCountry")) : t("badges.noCountry");
-  const now = new Date().toLocaleTimeString(locale === "tr" ? "tr-TR" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const now = formatTime(new Date(), locale, { hour: "2-digit", minute: "2-digit", hour12: false });
   const myName = me?.displayName || me?.username || "";
 
   const equip = async (badgeId) => {

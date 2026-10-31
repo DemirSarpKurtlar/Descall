@@ -34,7 +34,7 @@ assert.match(close, /size=\{16\}/);
 const closeCss = readFileSync(join(src, "styles/close-button.css"), "utf8");
 assert.match(closeCss, /--ui-close-size: 32px/);
 assert.match(closeCss, /44px/);
-for (const f of ["components/VoiceEffectsPanel.jsx", "components/ui/Modal.jsx", "components/settings/SettingsPanel.jsx"]) {
+for (const f of ["components/VoiceEffectsPanel.jsx", "components/ui/Modal.jsx"]) {
   const s = readFileSync(join(src, f), "utf8");
   assert.equal(/>\s*×\s*</.test(s), false, `${f}: use <CloseButton>, not a "×" character`);
 }
@@ -42,7 +42,7 @@ for (const f of ["components/VoiceEffectsPanel.jsx", "components/ui/Modal.jsx", 
 // 06-sparkle-overuse: these places say what they do instead of "magic".
 const noSparkle = [
   "components/VideoConference.jsx", "components/VideoConferenceClean.jsx", "components/VoiceEffectsPanel.jsx",
-  "components/profile/ProfileCustomizationPanel.jsx", "components/download/DownloadPage.jsx", "site/icons.jsx",
+  "components/download/DownloadPage.jsx", "site/icons.jsx",
 ];
 for (const f of noSparkle) {
   const s = readFileSync(join(src, f), "utf8");

@@ -5,7 +5,8 @@ import { Megaphone, X } from "../ui/Icon.jsx";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import { announcementIcon, loadAnnouncements } from "../../lib/announcements";
-import { useT } from "../../context/LocaleContext";
+import { useLocale } from "../../context/LocaleContext";
+import { formatDate } from "../../i18n/format";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import useGlassUi from "../../hooks/useGlassUi";
 
@@ -16,16 +17,16 @@ const emptyStyle = {
   textAlign: "center",
 };
 
-function glassAnnouncementWhen(iso) {
+function glassAnnouncementWhen(iso, t, locale) {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return "";
   const min = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (min < 60) return `${Math.max(1, min)}dk`;
+  if (min < 60) return t("shell.ann.minutes", { count: Math.max(1, min) });
   const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}sa`;
+  if (hr < 24) return t("shell.ann.hours", { count: hr });
   const day = Math.round(hr / 24);
-  if (day < 14) return `${day}g`;
-  return new Date(iso).toLocaleDateString("tr-TR");
+  if (day < 14) return t("shell.ann.days", { count: day });
+  return formatDate(iso, locale, { dateStyle: "short" });
 }
 
 /**
@@ -33,7 +34,7 @@ function glassAnnouncementWhen(iso) {
  * Activity toolbar had wired Megaphone to feedback by mistake.
  */
 export default function AnnouncementsButton({ className = "icon-btn", iconSize = 18 }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const glass = useGlassUi();
   const [open, setOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -86,7 +87,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
-                    <h3>{glass ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
+                    <h3>{`📢 ${t("Announcements")}`}</h3>
                     <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("Close")}>
                       <X size={18} />
                     </button>
@@ -128,7 +129,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                             )}
                             {a.createdAt && (
                               <span className="announcement-date">
-                                {glass ? glassAnnouncementWhen(a.createdAt) : new Date(a.createdAt).toLocaleDateString()}
+                                {glass ? glassAnnouncementWhen(a.createdAt, t, locale) : formatDate(a.createdAt, locale, { dateStyle: "short" })}
                               </span>
                             )}
                           </div>

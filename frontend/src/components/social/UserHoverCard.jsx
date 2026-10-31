@@ -12,6 +12,7 @@ import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { acceptProfilePayload } from "../../lib/profileModalState";
 import { trDative } from "../../lib/trSuffix";
+import { formatDate } from "../../i18n/format";
 import {
   cachedHoverProfile,
   cachedMutual,
@@ -75,11 +76,9 @@ async function fetchMutual(username) {
   return res.json().catch(() => null);
 }
 
-function formatDate(iso, locale) {
+function memberSinceLabel(iso, locale) {
   if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric" });
+  return formatDate(iso, locale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 function ActivityIcon({ kind }) {
@@ -147,7 +146,7 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
 
   const merged = mergeHoverProfile(user, full);
   const model = hoverCardModel(merged);
-  const activity = currentActivity(userId, ctx, Date.now(), locale === "en" ? "en" : "tr");
+  const activity = currentActivity(userId, ctx, Date.now(), { t, locale });
 
   useLayoutEffect(() => {
     if (!anchor) return;
@@ -160,11 +159,12 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
   const statusKey = merged.status && STATUS_CLASS[merged.status] ? merged.status : "offline";
   const statusLabel = { online: t("Online"), idle: t("Idle"), dnd: t("Do Not Disturb"), invisible: t("Invisible"), offline: t("Offline") }[statusKey];
   const display = resolveDisplayName(merged);
-  const memberSince = formatDate(model.createdAt, locale);
+  const memberSince = memberSinceLabel(model.createdAt, locale);
   const mutualFriends = mutual?.friends || [];
   const mutualServers = mutual?.servers || [];
   const canMessage = !isSelf && typeof ctx.sendDm === "function" && userId;
-  const nameForMessage = locale === "tr" ? `@${trDative(display)}` : `@${display}`;
+  // Turkish needs the dative ("@Ayşe'ye mesaj gönder"); other languages use {name}.
+  const messageVars = { name: `@${display}`, nameDat: locale === "tr" ? `@${trDative(display)}` : `@${display}` };
 
   const send = () => {
     const text = draft.trim();
@@ -299,10 +299,10 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
               value={draft}
               maxLength={2000}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder={t("profile.hoverMessage", { name: nameForMessage })}
-              aria-label={t("profile.hoverMessage", { name: nameForMessage })}
+              placeholder={t("shell.hover.message", messageVars)}
+              aria-label={t("shell.hover.message", messageVars)}
             />
-            <button type="submit" disabled={!draft.trim()} aria-label={t("profile.hoverMessage", { name: nameForMessage })}>
+            <button type="submit" disabled={!draft.trim()} aria-label={t("shell.hover.message", messageVars)}>
               <Send size={18} weight="fill" />
             </button>
           </form>

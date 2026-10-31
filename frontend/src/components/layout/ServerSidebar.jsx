@@ -37,7 +37,8 @@ import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
 import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
-import { parseAppDate, formatMessageClock, formatMessageDate } from "../../lib/datetime";
+import { parseAppDate } from "../../lib/datetime";
+import { formatDate, formatTime, upper } from "../../i18n/format";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
@@ -91,6 +92,7 @@ export default function ServerSidebar({
   onDmPrefAction,
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const { toast } = useToast();
   const glassShell = useGlassShell();
   const [searchQuery, setSearchQuery] = useState("");
@@ -642,7 +644,7 @@ export default function ServerSidebar({
                         <div className="announcement-content">{a.content}</div>
                         <div className="announcement-meta">
                           {a.author && <span className="announcement-author">{t("By {author}", { author: a.author })}</span>}
-                          {a.createdAt && <span className="announcement-date">{glassShell ? glassAnnouncementWhen(a.createdAt) : new Date(a.createdAt).toLocaleDateString()}</span>}
+                          {a.createdAt && <span className="announcement-date">{glassShell ? glassAnnouncementWhen(a.createdAt, t, locale) : formatDate(a.createdAt, locale, { dateStyle: "short" })}</span>}
                         </div>
                       </div>
                       );
@@ -707,18 +709,17 @@ function formatConversationTime(iso, t, locale) {
     const d = parseAppDate(iso);
     if (!d) return "";
     const now = new Date();
-    const loc = locale === "tr" ? "tr-TR" : locale === "en" ? "en-US" : undefined;
     const sameDay = d.toDateString() === now.toDateString();
-    if (sameDay) return formatMessageClock(d, loc);
+    if (sameDay) return formatTime(d, locale);
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
     if (d.toDateString() === yesterday.toDateString()) return t("Yesterday");
     const weekAgo = new Date(now);
     weekAgo.setDate(now.getDate() - 6);
     if (d >= weekAgo) {
-      return formatMessageDate(d, loc, { weekday: "short" });
+      return formatDate(d, locale, { weekday: "short" });
     }
-    return formatMessageDate(d, loc, { month: "short", day: "numeric" });
+    return formatDate(d, locale, { month: "short", day: "numeric" });
   } catch {
     return "";
   }
@@ -1779,26 +1780,26 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
 
 const GROUP_SWIPE_WIDTH = 248;
 
-function glassAnnouncementWhen(iso) {
+function glassAnnouncementWhen(iso, t, locale) {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return "";
   const min = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (min < 60) return `${Math.max(1, min)}dk`;
+  if (min < 60) return t("shell.ann.minutes", { count: Math.max(1, min) });
   const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}sa`;
+  if (hr < 24) return t("shell.ann.hours", { count: hr });
   const day = Math.round(hr / 24);
-  if (day < 14) return `${day}g`;
-  return new Date(iso).toLocaleDateString("tr-TR");
+  if (day < 14) return t("shell.ann.days", { count: day });
+  return formatDate(iso, locale, { dateStyle: "short" });
 }
 
-function glassGroupInitials(name) {
+function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toLocaleUpperCase("tr");
-  return (parts[0]?.[0] || "").toLocaleUpperCase("tr");
+  if (parts.length >= 2) return upper(parts[0][0] + parts[1][0], locale);
+  return upper(parts[0]?.[0] || "", locale);
 }
 
 function GroupRowContent({ group, unread, timeLabel, preview }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const glass = useGlassUi();
   const members = glass && Array.isArray(group.members) ? group.members.slice(0, 4) : [];
   const memberCount = group.memberCount || group.members?.length || 0;
@@ -1809,7 +1810,7 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
           group={group}
           size={36}
           radius={10}
-          initials={glass ? glassGroupInitials(group.name) : group.name?.charAt(0)?.toUpperCase()}
+          initials={glass ? glassGroupInitials(group.name, locale) : group.name?.charAt(0)?.toUpperCase()}
         />
       </div>
       <div className="group-info conv-row-body">
