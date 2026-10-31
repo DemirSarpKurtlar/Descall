@@ -124,8 +124,8 @@ const statusEl = document.getElementById("boot-status");
 // Keep status for screen readers only, splash UI is logo + thin bar (no STARTING wall).
 // The inline splash already wrote "Yükleniyor" (window.__descallBootTr). Catalogs
 // are still loading here, so translate() would flip it to English "Loading" (B2).
-// (English here: no catalog is loaded yet, which is what translate() returned before.)
-if (statusEl && !window.__descallBootTr) statusEl.textContent = "Loading";
+// Other languages take the inline boot copy (index.html), English is the fallback.
+if (statusEl && !window.__descallBootTr) statusEl.textContent = window.__descallBootCopy?.waitLabel || "Loading";
 
 /**
  * Progressive marketing hydration: paint #seo-static first (LCP / crawlers),

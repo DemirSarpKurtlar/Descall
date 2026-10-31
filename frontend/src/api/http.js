@@ -1,24 +1,12 @@
 import { API_BASE_URL } from "../config/api";
 import { deviceHeaders } from "../lib/deviceId";
+import { t } from "../i18n/runtime.js";
 import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
-
-function httpLocaleMessage(tr, en) {
-  const lang =
-    (typeof document !== "undefined" && document.documentElement?.lang) ||
-    (typeof navigator !== "undefined" && navigator.language) ||
-    "en";
-  return String(lang).toLowerCase().startsWith("tr") ? tr : en;
-}
 
 export async function httpRequest(path, options = {}) {
   // Empty string is valid: browser SPA same-origin via Vercel → Render rewrite.
   if (API_BASE_URL == null) {
-    throw new Error(
-      httpLocaleMessage(
-        "API URL yapılandırılmamış. Lütfen yöneticinize başvurun.",
-        "API URL is not configured. Please contact support.",
-      ),
-    );
+    throw new Error(t("core.http.apiNotConfigured"));
   }
 
   const url = `${API_BASE_URL}${path}`;
@@ -42,7 +30,7 @@ export async function httpRequest(path, options = {}) {
       body = await response.json();
     } catch (parseError) {
       body = {
-        error: httpLocaleMessage("Sunucudan geçersiz yanıt alındı", "The server returned an invalid response"),
+        error: t("core.http.invalidResponse"),
       };
     }
 
@@ -63,8 +51,6 @@ export async function httpRequest(path, options = {}) {
     if (isTransportError(networkError)) throw transientFailureError(0);
     if (networkError?.status && !isTransientHttpStatus(networkError.status)) throw networkError;
     if (isTransientHttpStatus(networkError?.status)) throw transientFailureError(networkError.status);
-    throw new Error(
-      networkError.message || httpLocaleMessage("Bağlantı hatası", "Connection error"),
-    );
+    throw new Error(networkError.message || t("core.http.connectionError"));
   }
 }

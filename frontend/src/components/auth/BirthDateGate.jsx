@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, LogOut } from "../ui/Icon.jsx";
-import { useT } from "../../context/localeContextInstance";
+import { useLocale } from "../../context/localeContextInstance";
+import { formatDate as formatLocaleDate } from "../../i18n/format.js";
 import BirthDateInput from "./BirthDateInput";
 import { setBirthDate } from "../../api/security";
 import { getMe } from "../../api/auth";
@@ -9,13 +10,10 @@ import { ageGroupOf, isEligibleBirthDate } from "../../lib/age";
 import "../../styles/age-gate.css";
 import OverlayPortal from "../ui/OverlayPortal";
 
+/** "2010-05-04" (a calendar day, no time zone) in the UI language. */
 function formatDate(iso, locale) {
   const [y, m, d] = String(iso).split("-").map(Number);
-  try {
-    return new Date(y, m - 1, d).toLocaleDateString(locale || undefined, { day: "numeric", month: "long", year: "numeric" });
-  } catch {
-    return iso;
-  }
+  return formatLocaleDate(new Date(Date.UTC(y, m - 1, d, 12)), locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) || iso;
 }
 
 /**
@@ -24,7 +22,7 @@ function formatDate(iso, locale) {
  * lock screen when the stored date of birth is under 13.
  */
 export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [known, setKnown] = useState(me?.birthDate);
   const [value, setValue] = useState("");
   const [step, setStep] = useState("ask"); // ask | confirm
@@ -137,7 +135,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
         ) : (
           <>
             <h2 id="age-gate-title">{t("Is this correct?")}</h2>
-            <p className="age-gate-date">{formatDate(value, document?.documentElement?.lang)}</p>
+            <p className="age-gate-date">{formatDate(value, locale)}</p>
             <p className="age-gate-text">
               {t("You can't change your date of birth later, so please make sure it's right.")}
             </p>

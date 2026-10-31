@@ -16,10 +16,13 @@ export const APP_TIMEZONE = "Europe/Istanbul";
 
 /** UI locale id (or an Intl tag) -> Intl tag. Registered locales use locales.json. */
 export function intlLocaleTag(locale) {
-  if (!locale) return "tr-TR";
+  // No locale: the app's home clock (Turkish), as before.
+  if (!locale) return getLocaleMeta("tr").intl;
   const id = String(locale).toLowerCase();
-  if (id === "tr" || id.startsWith("tr-")) return "tr-TR";
-  if (id === "en" || id.startsWith("en-")) return "en-GB";
+  // Any Turkish or English tag maps onto the registered UI locale (en-US -> en's tag).
+  for (const base of ["tr", "en"]) {
+    if (id === base || id.startsWith(`${base}-`)) return getLocaleMeta(base).intl;
+  }
   const meta = getLocaleMeta(String(locale));
   if (meta) return meta.intl;
   const base = ALL_LOCALES.find((l) => l.id.toLowerCase().split("-")[0] === id.split("-")[0]);

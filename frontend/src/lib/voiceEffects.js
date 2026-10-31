@@ -392,8 +392,6 @@ class VoiceEffects {
   initializePresets() {
     return {
       'none': {
-        name: 'None',
-        description: 'No effects',
         icon: 'Mic',
         settings: {
           inputGain: 1.0,
@@ -408,8 +406,6 @@ class VoiceEffects {
         }
       },
       'robot': {
-        name: 'Robot',
-        description: 'Robot voice effect',
         icon: 'Cpu',
         settings: {
           inputGain: 1.0,
@@ -424,8 +420,6 @@ class VoiceEffects {
         }
       },
       'deep': {
-        name: 'Deep',
-        description: 'Deep voice effect',
         icon: 'Volume2',
         settings: {
           inputGain: 1.2,
@@ -440,8 +434,6 @@ class VoiceEffects {
         }
       },
       'helium': {
-        name: 'Helium',
-        description: 'High pitched voice',
         icon: 'Zap',
         settings: {
           inputGain: 1.0,
@@ -456,8 +448,6 @@ class VoiceEffects {
         }
       },
       'echo': {
-        name: 'Echo',
-        description: 'Echo effect',
         icon: 'Layers',
         settings: {
           inputGain: 1.0,
@@ -472,8 +462,6 @@ class VoiceEffects {
         }
       },
       'radio': {
-        name: 'Radio',
-        description: 'Radio/telephone effect',
         icon: 'Radio',
         settings: {
           inputGain: 1.0,

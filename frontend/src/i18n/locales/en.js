@@ -1,4 +1,5 @@
 /** Auto-generated + curated en locale */
+import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
 import { NC_EN } from "./newCreate.en.js";
@@ -22,6 +23,7 @@ export const nested = {
   shopItems: SHOP_ITEMS_EN,
   adminx: ADMINX_EN,
   polls: POLLS_EN, slash: SLASH_EN, chatx: CHATX_EN,
+  core: CORE_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,

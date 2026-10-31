@@ -67,9 +67,10 @@ assert.equal(await applyUndo(undoTarget({ item: banner, previous: prev, autoWore
 assert.deepEqual(calls, [["b0", false], ["b1", true]], "re-equip previous, or take the new one off; never a refund call");
 
 // Numbers keep the 2,918 format in both languages.
-assert.equal(formatCoins(2918), "2,918");
-assert.equal(formatCoins(12345678), "12,345,678");
-assert.equal(formatCoins(-5), "0");
+assert.equal(formatCoins(2918, "en"), "2,918");
+assert.equal(formatCoins(2918, "tr"), "2.918", "UI language digits");
+assert.equal(formatCoins(12345678, "en"), "12,345,678");
+assert.equal(formatCoins(-5, "en"), "0");
 
 assert.equal(rarityKey("mythic"), "mythic");
 assert.equal(rarityKey("weird"), "common");
@@ -81,7 +82,7 @@ assert.equal(isAnimatedItem({ sku: "banner-galaxy-swirl", category: "banner" }),
 assert.equal(isAnimatedItem({ sku: "theme-borealis", category: "theme" }), true);
 assert.equal(isAnimatedItem({ sku: "theme-lagoon", category: "theme" }), false);
 assert.equal(formatOwnedDate("2026-10-12T15:20:00+03:00", "tr"), "12 Eki 2026");
-assert.equal(formatOwnedDate("2026-10-03T11:00:00+03:00", "en"), "Oct 3, 2026");
+assert.equal(formatOwnedDate("2026-10-03T11:00:00+03:00", "en"), "3 Oct 2026");
 assert.equal(formatOwnedDate(null, "tr"), "");
 
 // Catalog localization: i18n catalogs (shopItems), database English as the fallback.
@@ -139,7 +140,7 @@ for (const cat of PURCHASE_MODAL_CATEGORIES) {
 }
 assert.equal(tr.cat.banner.eyebrow, "PROFİL BANNERI");
 assert.equal(tr.looks(tr.cat.name_effect.label), "İSMİNDE BÖYLE GÖRÜNÜR");
-assert.equal(tr.buyFor(formatCoins(500)), "500 DesCoin ile satın al");
+assert.equal(tr.buyFor(formatCoins(500, "tr")), "500 DesCoin ile satın al");
 assert.equal(tr.wearSub("Zümrüt Orman"), "Şu an takılı olan Zümrüt Orman çıkarılır, envanterinde kalır");
 assert.equal(tr.doneSub("Zümrüt Orman", true), "Profiline takıldı · Zümrüt Orman envanterine geri döndü");
 assert.deepEqual(tr.needMore("120"), ["", "120 DesCoin", " daha lazım"]);

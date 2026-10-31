@@ -4,6 +4,7 @@ import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
 import { TR_APPROVED_UI } from "./trApprovedUi.js";
 
+import { CORE_TR } from "./core.tr.js";
 import { MAINT_TR } from "./maintenance.tr.js";
 import { PROMO_TR } from "./promo.tr.js";
 import { NC_TR } from "./newCreate.tr.js";
@@ -27,6 +28,7 @@ export const nested = {
   shopItems: SHOP_ITEMS_TR,
   adminx: ADMINX_TR,
   polls: POLLS_TR, slash: SLASH_TR, chatx: CHATX_TR,
+  core: CORE_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,

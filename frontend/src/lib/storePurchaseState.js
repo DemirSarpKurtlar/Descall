@@ -2,6 +2,8 @@
 // so lib/storePurchaseState.selftest.mjs can run them under node.
 // Prices, balances and the purchase/equip endpoints are not touched here: the
 // modal only reads balance and price_descoin and calls ShopPanel's handlers.
+import { formatDate, formatNumber } from "../i18n/format.js";
+import { getLocale } from "../i18n/runtime.js";
 
 /** Categories that open the purchase modal. Countries keep CountryShop's own dialog. */
 export const PURCHASE_MODAL_CATEGORIES = [
@@ -29,8 +31,8 @@ export const RARITY_COLORS = {
 };
 export const rarityKey = (rarity) => (RARITY_COLORS[rarity] ? rarity : "common");
 
-/** Same digits as the wallet pill and the cards (2,918), whatever the UI language. */
-export const formatCoins = (n) => Math.max(0, Math.round(Number(n) || 0)).toLocaleString("en-US");
+/** Whole DesCoin in the UI language's digits ("2,918" en, "2.918" tr). */
+export const formatCoins = (n, locale = getLocale()) => formatNumber(Math.max(0, Math.round(Number(n) || 0)), locale);
 
 /**
  * The modal's state for one item.
@@ -107,14 +109,8 @@ export function isAnimatedItem(item) {
   return false;
 }
 
-/** Turkish short date for the owned card: "12 Eki 2026". English: "Oct 12, 2026". */
-const TR_MONTHS = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-export function formatOwnedDate(iso, locale) {
-  const d = iso ? new Date(iso) : null;
-  if (!d || Number.isNaN(d.getTime())) return "";
-  const tr = String(locale || "").startsWith("tr");
-  return tr
-    ? `${d.getDate()} ${TR_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-    : `${EN_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+/** Short date for the owned card in the UI language: "12 Eki 2026", "12 Oct 2026". */
+export function formatOwnedDate(iso, locale = getLocale()) {
+  if (!iso) return "";
+  return formatDate(iso, locale, { day: "numeric", month: "short", year: "numeric" });
 }

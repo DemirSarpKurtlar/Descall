@@ -10,8 +10,10 @@ assert.equal(desktopOsName("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Electron/3
 assert.equal(platformLabel({ nativePlatform: "ios" }), "iOS");
 assert.equal(platformLabel({ isElectron: true, userAgent: "Macintosh" }), "macOS");
 assert.equal(platformLabel({}), "Web");
-assert.equal(formatVersionLine({ version: "2.10.109", platform: "Windows" }), "Sürüm 2.10.109 · Windows");
-assert.equal(formatVersionLine({ version: "2.10.109", build: "20261017.1942", platform: "iOS" }), "Sürüm 2.10.109 (20261017.1942) · iOS");
+const trFormat = (v) => `Sürüm ${v}`;
+assert.equal(formatVersionLine({ version: "2.10.109", platform: "Windows", format: trFormat }), "Sürüm 2.10.109 · Windows");
+assert.equal(formatVersionLine({ version: "2.10.109", platform: "Windows" }), "App version 2.10.109 · Windows", "default template is the catalog key (English until a catalog loads)");
+assert.equal(formatVersionLine({ version: "2.10.109", build: "20261017.1942", platform: "iOS", format: trFormat }), "Sürüm 2.10.109 (20261017.1942) · iOS");
 assert.equal(formatVersionLine({ version: "" }), "");
 
 // Electron: app.getVersion over IPC wins over the bundle version.

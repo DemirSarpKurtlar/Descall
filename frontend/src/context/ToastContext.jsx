@@ -4,7 +4,7 @@ import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "../components/ui/
 import { Avatar } from "../components/ui/Avatar";
 import StatusBadge from "../components/ui/StatusBadge";
 import { nativeToastSupported, showPresenceCapsule } from "../lib/nativeToast.js";
-import { getLocale } from "../i18n/runtime.js";
+import { getLocale, t as tRuntime } from "../i18n/runtime.js";
 import "../styles/presence-toast.css";
 
 const ToastContext = createContext(null);
@@ -134,7 +134,7 @@ export function ToastProvider({ children }) {
                 <button
                   type="button"
                   className="toast-dismiss"
-                  aria-label="Dismiss"
+                  aria-label={tRuntime("Dismiss")}
                   onClick={() => dismiss(t.id)}
                 >
                   <X size={14} />

@@ -21,6 +21,7 @@ function inlineScript(marker) {
   while ((m = re.exec(html))) if (m[1].includes(marker)) return m[1];
   throw new Error(`inline script not found: ${marker}`);
 }
+const bootLocale = inlineScript("Boot locale: splash and cookie-bar words");
 const safetyNet = inlineScript("Safety net: prerender used to strip #boot-splash");
 const splashScript = inlineScript("Boot splash only, prerender strips this with #boot-splash");
 
@@ -165,6 +166,7 @@ function makeWorld({ electron = true, token = true, autoRetryUsed = false } = {}
 
 function boot(opts) {
   const w = makeWorld(opts);
+  w.run(bootLocale);    // first body script: boot words in the UI language
   w.run(safetyNet);     // runs before the static markup is parsed
   w.parseStaticSplash(); // parser reaches <div id="boot-splash">
   w.run(splashScript);   // the script right after it

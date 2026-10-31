@@ -38,18 +38,20 @@ assert.equal(dativeSuffixForNumber(20), "ye");
 
 // 31 Oct 2026 23:59 TRT = 20:59Z
 assert.equal(popupUntil("2026-10-31T20:59:00Z", "tr"), "31 Ekim 23:59’a");
-assert.equal(popupUntil("2026-10-31T20:59:00Z", "en"), "October 31, 23:59");
+assert.equal(popupUntil("2026-10-31T20:59:00Z", "en"), "31 October at 23:59");
 assert.equal(popupUntil("2026-11-01T17:00:00Z", "tr"), "1 Kasım 20:00’ye");
 assert.equal(popupUntil("bad"), "");
-assert.equal(shortWhen("2026-10-31T20:59:00Z"), "31 Eki 23:59");
+assert.equal(shortWhen("2026-10-31T20:59:00Z", "tr"), "31 Eki 23:59");
 assert.equal(shortWhen(null), "—");
-assert.equal(longDate("2026-11-02T09:00:00Z"), "2 Kasım 2026");
+assert.equal(longDate("2026-11-02T09:00:00Z", "tr"), "2 Kasım 2026");
+assert.equal(longDate("2026-11-02T09:00:00Z", "en"), "2 November 2026");
 
 const now = Date.parse("2026-10-26T11:02:00Z");
-assert.deepEqual(historyWhen("2026-10-26T11:02:00Z", now), { today: "14:02" });
-assert.deepEqual(historyWhen("2025-10-29T09:00:00Z", now), { date: "29 Eki 2025" });
+assert.deepEqual(historyWhen("2026-10-26T11:02:00Z", now, "tr"), { today: "14:02" });
+assert.deepEqual(historyWhen("2025-10-29T09:00:00Z", now, "tr"), { date: "29 Eki 2025" });
+assert.deepEqual(historyWhen("2025-10-29T09:00:00Z", now, "en"), { date: "29 Oct 2025" });
 // Day boundary is TRT: 22:30Z on the 25th is already the 26th in Türkiye.
-assert.deepEqual(historyWhen("2026-10-25T22:30:00Z", now), { today: "01:30" });
+assert.deepEqual(historyWhen("2026-10-25T22:30:00Z", now, "tr"), { today: "01:30" });
 
 assert.equal(fmtNum(1240, "tr"), "1.240");
 assert.equal(fmtNum(1240, "en"), "1,240");
