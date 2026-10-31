@@ -1,0 +1,6 @@
+/* French permission prompts (Info.plist usage descriptions). */
+"CFBundleDisplayName" = "Descall";
+"NSMicrophoneUsageDescription" = "Descall utilise ton micro pour que tu puisses parler avec tes amis et envoyer des messages vocaux.";
+"NSCameraUsageDescription" = "Descall utilise ta caméra pour que les autres puissent te voir pendant les appels vidéo.";
+"NSPhotoLibraryUsageDescription" = "Descall utilise tes photos pour que tu puisses choisir une photo de profil et envoyer des images dans le chat.";
+"NSPhotoLibraryAddUsageDescription" = "Descall enregistre dans ta photothèque les images que tu choisis de garder.";

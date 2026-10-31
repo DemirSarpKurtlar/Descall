@@ -4,7 +4,7 @@ const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusi
 const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
 const { describeNotification } = require('./notificationCard.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
-const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible } = require('./overlayWindow.cjs');
+const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible, refreshOverlayLanguage } = require('./overlayWindow.cjs');
 const { autoUpdater } = require('electron-updater');
 const {
   decideUpdateInstall,
@@ -59,6 +59,7 @@ const {
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile } = require('./appProtocolPath.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
+const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -174,6 +175,18 @@ ipcMain.on('app:boot-state', (event, payload) => {
     // even if the window was minimized/occluded while it changed.
     try { mainWindow.webContents.invalidate(); } catch (_) { /* ignore */ }
   }
+});
+
+// UI language (LocaleContext → preload electronAPI.setLocale) on boot and on every
+// change: tray menu, splash, dialogs, notification cards and the overlay follow it.
+ipcMain.on('app:locale', (event, locale) => {
+  const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+  if (!w || (w !== mainWindow && w !== signupStatsWindow && w !== adminPanelWindow)) return;
+  if (setUiLocale(String(locale || '').slice(0, 16))) log.info(`[i18n] main-process language: ${getLocale()}`);
+});
+onLocaleChange(() => {
+  rebuildTrayMenu?.();
+  refreshOverlayLanguage();
 });
 
 ipcMain.on('secure-token:get', (event) => {
@@ -860,13 +873,14 @@ function showMainWindow() {
 }
 
 
-const SPLASH_TR = {
-  checking: 'Güncellemeler denetleniyor…',
-  starting: 'Descall başlatılıyor…',
-  installing: 'Güncelleme yükleniyor…',
-  downloading: 'Güncelleme indiriliyor…',
-  upToDate: 'Güncel',
-  checkFailed: 'Güncellemeler denetlenemedi',
+// Splash status lines in the active language (electron/i18n/<id>.json "splash").
+const SPLASH_TEXT = {
+  get checking() { return et('splash.checking'); },
+  get starting() { return et('splash.starting'); },
+  get installing() { return et('splash.installing'); },
+  get downloading() { return et('splash.downloading'); },
+  get upToDate() { return et('splash.upToDate'); },
+  get checkFailed() { return et('splash.checkFailed'); },
 };
 
 // Discord-like update / boot splash (blocks main window until ready).
@@ -900,7 +914,9 @@ function createSplashWindow() {
   try { splashWindow.setHasShadow(false); } catch (_) { /* ignore */ }
 
   const splashPath = path.join(__dirname, 'splash.html');
-  const ready = splashWindow.loadFile(splashPath).catch((err) => {
+  // Language and first status line travel in the query, so the card never flashes another language.
+  const query = { lang: getLocale(), status: SPLASH_TEXT.checking, loading: et('splash.loading') };
+  const ready = splashWindow.loadFile(splashPath, { query }).catch((err) => {
     log.warn('[splash] loadFile failed, using inline fallback:', err?.message);
     return splashWindow.loadURL(`data:text/html,${encodeURIComponent(
       '<!doctype html><html><body style="margin:0;background:transparent;height:100vh"></body></html>'
@@ -934,7 +950,7 @@ function openMainApp() {
   if (mainLaunchStarted) return;
   mainLaunchStarted = true;
   prelaunchActive = false;
-  updateSplash({ status: SPLASH_TR.starting, detail: '', busy: true, showProgress: false });
+  updateSplash({ status: SPLASH_TEXT.starting, detail: '', busy: true, showProgress: false });
   createMainWindow();
   createTray();
   if (smokeBoot) runBootSmoke();
@@ -989,7 +1005,7 @@ async function runPrelaunchUpdateGate() {
 
   prelaunchActive = true;
   updateSplash({
-    status: SPLASH_TR.checking,
+    status: SPLASH_TEXT.checking,
     detail: '',
     busy: true,
     showProgress: false,
@@ -1027,7 +1043,7 @@ async function runPrelaunchUpdateGate() {
 
   if (outcome?.type === 'update-downloaded') {
     updateSplash({
-      status: SPLASH_TR.installing,
+      status: SPLASH_TEXT.installing,
       detail: outcome.version ? `v${outcome.version}` : '',
       busy: true,
       showProgress: true,
@@ -1052,7 +1068,7 @@ async function runPrelaunchUpdateGate() {
 
     if (downloadOutcome?.type === 'update-downloaded') {
       updateSplash({
-        status: SPLASH_TR.installing,
+        status: SPLASH_TEXT.installing,
         detail: downloadOutcome.version ? `v${downloadOutcome.version}` : '',
         busy: true,
         showProgress: true,
@@ -1211,7 +1227,7 @@ function createMainWindow() {
     setStartInBackground(true, 'hidden');
     showNotificationWindow({
       title: 'Descall',
-      body: 'Descall arka planda çalışmaya devam ediyor. Simge durumundan geri açabilirsin.',
+      body: et('notice.background'),
       type: 'default',
       appIcon: true,
       duration: 5000,
@@ -1385,9 +1401,9 @@ function createMainWindow() {
     dialog.showMessageBox(win, {
       type: 'error',
       title: 'Descall',
-      message: 'Descall yüklenemedi',
-      detail: `Uygulama dosyaları açılamadı (${detail}). Tekrar deneyebilir veya Descall'ı kapatabilirsin.`,
-      buttons: ['Tekrar dene', 'Çıkış'],
+      message: et('dialog.loadFailed'),
+      detail: et('dialog.loadFailedDetail', { detail }),
+      buttons: [et('dialog.retry'), et('dialog.quit')],
       defaultId: 0,
       cancelId: 1,
       noLink: true,
@@ -1516,9 +1532,9 @@ function createMainWindow() {
         dialog.showMessageBox(win, {
           type: 'error',
           title: 'Descall',
-          message: 'Descall açılamadı',
-          detail: 'Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene.',
-          buttons: ['Tekrar dene', 'Çıkış'],
+          message: et('dialog.openFailed'),
+          detail: et('dialog.openFailedDetail'),
+          buttons: [et('dialog.retry'), et('dialog.quit')],
           defaultId: 0,
           cancelId: 1,
           noLink: true,
@@ -1567,7 +1583,7 @@ function createMainWindow() {
     if (root) {
       loadApp();
     } else {
-      dialog.showErrorBox('Loading Error', 'index.html was not found in the app resources.');
+      dialog.showErrorBox(et('dialog.indexMissingTitle'), et('dialog.indexMissing'));
     }
   }
 
@@ -1745,14 +1761,14 @@ function createTray() {
 
   const buildMenu = () => Menu.buildFromTemplate([
     {
-      label: 'Descall\'i Aç',
+      label: et('tray.open'),
       click: () => {
         showMainWindow();
       },
     },
     { type: 'separator' },
     {
-      label: 'Windows ile Başlat',
+      label: et('tray.startWithWindows'),
       type: 'checkbox',
       checked: readOpenAtLogin(),
       click: (item) => {
@@ -1762,7 +1778,7 @@ function createTray() {
     },
     { type: 'separator' },
     {
-      label: updateReady ? `Güncelle ve Çık (v${updateVersion || ''})` : 'Çıkış',
+      label: updateReady ? et('tray.updateAndQuit', { version: updateVersion || '' }) : et('tray.quit'),
       click: () => {
         if (updateReady) {
           // In a voice chat this asks before cutting the call. Otherwise it
@@ -1814,6 +1830,14 @@ app.whenReady().then(async () => {
     log.info('[smoke] process started, exiting');
     app.exit(0);
     return;
+  }
+
+  // Main-process language before the splash: last UI language, else the OS languages.
+  try {
+    const osLanguages = [...(app.getPreferredSystemLanguages?.() || []), app.getLocale()];
+    initLocale({ userDataDir: app.getPath('userData'), osLanguages });
+  } catch (err) {
+    log.warn('[i18n] locale init failed:', err?.message || err);
   }
 
   registerDescallProtocol();
@@ -1873,7 +1897,7 @@ autoUpdater.on('checking-for-update', () => {
   log.info('[updater] Checking for update...');
   if (prelaunchActive) {
     updateSplash({
-      status: SPLASH_TR.checking,
+      status: SPLASH_TEXT.checking,
       detail: '',
       busy: true,
       showProgress: false,
@@ -1886,7 +1910,7 @@ autoUpdater.on('update-available', (info) => {
   updateVersion = info.version || updateVersion;
   if (prelaunchActive) {
     updateSplash({
-      status: SPLASH_TR.downloading,
+      status: SPLASH_TEXT.downloading,
       detail: info.version ? `v${info.version}` : '',
       busy: true,
       showProgress: true,
@@ -1902,7 +1926,7 @@ autoUpdater.on('update-not-available', (info) => {
   log.info('[updater] Already up-to-date:', info.version);
   if (prelaunchActive) {
     updateSplash({
-      status: SPLASH_TR.upToDate,
+      status: SPLASH_TEXT.upToDate,
       detail: info.version ? `v${info.version}` : '',
       busy: true,
       showProgress: false,
@@ -1915,8 +1939,8 @@ autoUpdater.on('error', (err) => {
   log.error('[updater] Error:', err?.message ?? err);
   if (prelaunchActive) {
     updateSplash({
-      status: SPLASH_TR.checkFailed,
-      detail: SPLASH_TR.starting,
+      status: SPLASH_TEXT.checkFailed,
+      detail: SPLASH_TEXT.starting,
       busy: true,
       showProgress: false,
     });
@@ -1931,7 +1955,7 @@ autoUpdater.on('download-progress', ({ percent, bytesPerSecond, transferred, tot
   if (prelaunchActive) {
     const mb = total > 0 ? `${(transferred / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB` : '';
     updateSplash({
-      status: SPLASH_TR.downloading,
+      status: SPLASH_TEXT.downloading,
       detail: mb,
       busy: true,
       showProgress: true,
@@ -1954,7 +1978,7 @@ autoUpdater.on('update-downloaded', (info) => {
 
   if (prelaunchActive) {
     updateSplash({
-      status: SPLASH_TR.installing,
+      status: SPLASH_TEXT.installing,
       detail: info.version ? `v${info.version}` : '',
       busy: true,
       showProgress: true,
@@ -1976,9 +2000,7 @@ autoUpdater.on('update-downloaded', (info) => {
 
   showNotificationWindow({
     title: 'Descall',
-    body: deferredForCall
-      ? `v${info.version} indirildi. Sesli sohbet bitene kadar kurulmayacak.`
-      : `v${info.version} indirildi. Arka planda sessizce kurulacak.`,
+    body: et(deferredForCall ? 'update.downloadedDeferred' : 'update.downloaded', { version: info.version }),
     type: 'default',
     appIcon: true,
     duration: 8000,

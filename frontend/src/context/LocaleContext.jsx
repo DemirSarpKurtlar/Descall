@@ -12,6 +12,7 @@ import { setRuntimeLocale } from "../i18n/runtime.js";
 import { FALLBACK_LOCALE } from "../i18n/registry.js";
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { shareUiLocaleWithNative } from "../lib/notifyActionToken.js";
 import { LocaleContext, useLocale, useT } from "./localeContextInstance";
 
 export function LocaleProvider({ children, meLanguage = null }) {
@@ -57,6 +58,14 @@ export function LocaleProvider({ children, meLanguage = null }) {
 
   useEffect(() => {
     persistLocale(locale);
+    // Native text follows the UI language: Electron main process (tray, splash, dialogs,
+    // toasts, overlay) and iOS (notification actions, CallKit hints, Apple Watch).
+    try {
+      window.electronAPI?.setLocale?.(locale);
+    } catch {
+      /* ignore */
+    }
+    shareUiLocaleWithNative(locale);
   }, [locale]);
 
   const setLocale = useCallback((next) => {

@@ -1,0 +1,67 @@
+{
+  "splash": {
+    "checking": "Проверка обновлений…",
+    "starting": "Запуск Descall…",
+    "installing": "Установка обновления…",
+    "downloading": "Загрузка обновления…",
+    "upToDate": "Установлена последняя версия",
+    "checkFailed": "Не удалось проверить обновления",
+    "loading": "Загрузка"
+  },
+  "notice": {
+    "background": "Descall продолжает работать в фоновом режиме. Его можно снова открыть из области уведомлений."
+  },
+  "update": {
+    "downloaded": "v{version} загружена. Обновление тихо установится в фоновом режиме.",
+    "downloadedDeferred": "v{version} загружена. Обновление установится после завершения голосового чата."
+  },
+  "dialog": {
+    "retry": "Повторить",
+    "quit": "Выйти",
+    "loadFailed": "Не удалось загрузить Descall",
+    "loadFailedDetail": "Не удалось открыть файлы приложения ({detail}). Попробуйте ещё раз или закройте Descall.",
+    "openFailed": "Не удалось открыть Descall",
+    "openFailedDetail": "Приложение не загрузилось вовремя. Проверьте подключение и попробуйте ещё раз.",
+    "indexMissingTitle": "Ошибка загрузки",
+    "indexMissing": "Файл index.html не найден в файлах приложения."
+  },
+  "tray": {
+    "open": "Открыть Descall",
+    "startWithWindows": "Запускать вместе с Windows",
+    "updateAndQuit": "Обновить и выйти (v{version})",
+    "quit": "Выйти"
+  },
+  "notif": {
+    "calling": "звонит...",
+    "voiceCall": "Голосовой звонок",
+    "videoCall": "Видеозвонок",
+    "groupCall": "Групповой звонок",
+    "groupCallIn": "👥 {group} · Групповой звонок",
+    "now": "сейчас",
+    "mentionedYou": "упоминает вас",
+    "online": "{name} в сети",
+    "justConnected": "Только что в сети",
+    "missedCall": "пропущенный звонок",
+    "message": "Сообщение",
+    "close": "Закрыть",
+    "accept": "Принять",
+    "decline": "Отклонить"
+  },
+  "overlay": {
+    "connected": "Подключено",
+    "calling": "Вызов…",
+    "group": "Групповой звонок",
+    "server": "Голосовой канал",
+    "offline": "Нет подключения",
+    "mute": "Выключить микрофон",
+    "unmute": "Включить микрофон",
+    "deafen": "Выключить звук",
+    "undeafen": "Включить звук",
+    "leave": "Выйти",
+    "end": "Завершить звонок"
+  },
+  "window": {
+    "signupStats": "Статистика регистраций — Descall Admin",
+    "adminPanel": "Descall Admin"
+  }
+}

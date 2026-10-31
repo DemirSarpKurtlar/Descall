@@ -123,6 +123,7 @@ jobs:
           node electron/launchVisibility.selftest.mjs
           node electron/splash.selftest.mjs
           node electron/notificationCard.selftest.mjs
+          node electron/mainI18n.selftest.mjs
           node src/api/transportRetry.selftest.mjs
           node src/api/adminHttpRetry.selftest.mjs
           node src/styles/rail-icons.selftest.mjs

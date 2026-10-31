@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>tr</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>Descall</string>
 	<key>CFBundleExecutable</key>
@@ -22,8 +22,13 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleLocalizations</key>
 	<array>
-		<string>tr</string>
 		<string>en</string>
+		<string>tr</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>pt-BR</string>
+		<string>ru</string>
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

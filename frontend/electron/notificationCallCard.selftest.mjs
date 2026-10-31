@@ -11,6 +11,9 @@ import zlib from "node:zlib";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
+// Card text comes from electron/i18n; these checks use the Turkish catalog (English ones below).
+const mainI18n = require("./mainI18n.cjs");
+mainI18n.setLocale("tr");
 const card = require("./notificationCard.cjs");
 const { stackPositions, evictionsFor, capsuleWidth, NOTIF_MARGIN, NOTIF_GAP } = require("./notificationStack.cjs");
 const read = (rel) => readFileSync(join(here, rel), "utf8");
@@ -181,6 +184,22 @@ const d = (title, body, data, extra = {}) => card.describeNotification({ title, 
   assert.match(svc, /callerName: from, avatarUrl/);
   assert.match(svc, /data: \{ type: 'group', groupId, from, groupName, preview, fromId, avatarUrl \}/);
   assert.match(svc, /data: \{ type: 'friend-online', username, userId, fromId: userId, avatarUrl \}/);
+}
+
+// 7. Other UI languages: same capsule, words from that catalog, <html lang> follows.
+{
+  mainI18n.setLocale("en");
+  const online = d("Descall", "x", { type: "friend-online", username: "Mert", userId: "u-m" });
+  assert.equal(online.name, "Mert is online");
+  assert.equal(online.preview, "Just connected");
+  assert.equal(d("Ayşe", "x", { type: "dm", from: "Ayşe" }).context, "now");
+  const html = card.buildNotificationHtml({ title: "Ada", body: "Voice call", type: "call", from: "Ada", duration: 0 });
+  assert.match(html, /<html lang="en">/);
+  assert.match(html, /class="accept"[^>]*aria-label="Accept"/);
+  mainI18n.setLocale("de");
+  assert.equal(d("Ayşe", "x", { type: "missed-call", from: "Ayşe" }).context, "verpasster Anruf");
+  assert.match(card.buildNotificationHtml({ title: "Mert", body: "x", type: "default", model: d("Mert", "x", { type: "dm", from: "Mert" }) }), /<html lang="de">[\s\S]*<span>Nachricht<\/span>/);
+  mainI18n.setLocale("tr");
 }
 
 console.log("notificationCallCard.selftest ok");

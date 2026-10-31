@@ -9,7 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        registerNotificationCategories()
+        Self.registerNotificationCategories()
         // PushKit + CallKit must exist before the first VoIP push is delivered,
         // which can be right after a background launch, before any web JS runs.
         DescallCallManager.shared.start()
@@ -22,16 +22,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     /// MESSAGE (3.0.0, A4): rich message notifications. The content extension
     /// draws the thread, reactions and reply field; these are the menu actions
     /// under it. Lock-screen previews follow the iOS setting only.
-    private func registerNotificationCategories() {
-        let accept = UNNotificationAction(identifier: "accept", title: "Accept", options: [.foreground])
-        let decline = UNNotificationAction(identifier: "decline", title: "Decline", options: [.destructive, .foreground])
+    /// Titles follow the UI language (DescallNotifyLang.current); DescallNotifyPlugin.setUiLocale
+    /// registers them again when it changes.
+    static func registerNotificationCategories() {
+        let strings = DescallNotifyStrings(lang: DescallNotifyLang.current())
+        let accept = UNNotificationAction(identifier: "accept", title: strings.text("call.accept"), options: [.foreground])
+        let decline = UNNotificationAction(identifier: "decline", title: strings.text("call.decline"), options: [.destructive, .foreground])
         let call = UNNotificationCategory(
             identifier: DescallNotify.callCategory,
             actions: [accept, decline],
             intentIdentifiers: [],
             options: []
         )
-        let strings = DescallNotifyStrings(lang: DescallNotifyLang.current())
         let actions: [UNNotificationAction]
         if #available(iOS 15.0, *) {
             actions = [

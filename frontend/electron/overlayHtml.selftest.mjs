@@ -95,6 +95,16 @@ assert.match(els.status.textContent, /^Voice channel · /);
 assert.equal(els.leaveBtn.getAttribute("aria-label"), "Leave");
 assert.match(els.avInit.innerHTML, /<svg/);
 
+// Every UI language has its own labels (no more "anything but en is Turkish").
+update({ lang: "de" });
+assert.match(els.status.textContent, /^Sprachkanal · /);
+assert.equal(ctx.document.documentElement.lang, "de");
+update({ lang: "pt" });
+assert.equal(ctx.window.__overlayState().lang, "pt-BR", "base language match");
+update({ lang: "xx" });
+assert.equal(ctx.window.__overlayState().lang, "en", "unknown language -> English");
+update({ lang: "en" });
+
 update({ muted: false, deafened: false });
 els.muteBtn.onclick();
 assert.ok(els.muteBtn.classList.contains("is-off"), "mute flips instantly (optimistic)");
