@@ -56,15 +56,18 @@ final class WatchPhoneClient: NSObject, WCSessionDelegate, WatchTransport {
             })
         }
         let status = reply[P.Key.status] as? Int ?? 0
-        let text = reply[P.Key.body] as? String
+        let data = P.decodeReply(reply)
+        let text = data.flatMap { String(data: $0, encoding: .utf8) }
         switch status {
         case 0:
             let failure = reply[P.Key.error] as? String
-            throw failure == P.Failure.notAllowed ? WatchError.notAllowed : WatchError.network
+            if failure == P.Failure.notAllowed { throw WatchError.notAllowed }
+            if failure == P.Failure.tooLarge { throw WatchError.decode }
+            throw WatchError.network
         case 401:
             throw WatchError.noSession
         case 200..<300:
-            return Data((text ?? "{}").utf8)
+            return data ?? Data("{}".utf8)
         default:
             throw WatchError.http(status, Self.reason(text))
         }

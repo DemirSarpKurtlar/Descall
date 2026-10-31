@@ -31,5 +31,25 @@ check(P.validate(P.request(id: "1", method: "POST", path: "/api/watch/send", bod
 check(P.validate(P.request(id: "1", method: "POST", path: "/api/admin/x", stepUp: "abc.DEF-123_x")) == nil, "step-up token passes")
 check(P.validate(P.request(id: "1", method: "POST", path: "/api/admin/x", stepUp: "a\r\nX-Evil: 1")) == P.Failure.badRequest, "header injection in step-up rejected")
 
+// Reply encoding: small = text, big = zlib that round-trips, too big = nil.
+let small = Data("{\"ok\":true}".utf8)
+check(P.encodeReply(small)?.key == P.Key.body, "small reply travels as text")
+let bigJSON = Data(("[" + Array(repeating: "{\"id\":\"abc\",\"text\":\"aynı satır tekrar\"}", count: 4000).joined(separator: ",") + "]").utf8)
+check(bigJSON.count > P.plainReplyBytes, "fixture is bigger than a plain reply")
+if let enc = P.encodeReply(bigJSON) {
+    check(enc.key == P.Key.bodyZ, "big reply is compressed")
+    check(P.decodeReply([P.Key.bodyZ: enc.value]) == bigJSON, "compressed reply round-trips")
+} else {
+    check(false, "big compressible reply fits after compression")
+}
+var noise = Data(count: 400 * 1024)
+var x: UInt64 = 0x9E3779B97F4A7C15
+for i in 0..<noise.count {
+    // xorshift64: bytes zlib cannot shrink
+    x ^= x << 13; x ^= x >> 7; x ^= x << 17
+    noise[i] = UInt8(truncatingIfNeeded: x >> 32)
+}
+check(P.encodeReply(noise) == nil, "incompressible 400 KB reply is too large")
+
 if failures > 0 { print("\(failures) failure(s)"); exit(1) }
 print("watch protocol selftest ok")

@@ -6,8 +6,21 @@ require "xcodeproj"
 
 root = File.expand_path("../App", __dir__)
 project = Xcodeproj::Project.open(File.join(root, "App.xcodeproj"))
-if project.targets.any? { |t| t.name == "DescallWatch" }
-  puts "DescallWatch target already present"
+existing = project.targets.find { |t| t.name == "DescallWatch" }
+if existing
+  # Target present: add any new DescallWatch/*.swift file to its sources (idempotent).
+  group = project.main_group.find_subpath("DescallWatch", false)
+  have = existing.source_build_phase.files.map { |f| f.file_ref&.path }.compact
+  added = []
+  Dir.glob(File.join(root, "DescallWatch", "*.swift")).sort.each do |file|
+    name = File.basename(file)
+    next if have.include?(name)
+    ref = group.files.find { |f| f.path == name } || group.new_reference(name)
+    existing.add_file_references([ref])
+    added << name
+  end
+  project.save if added.any?
+  puts added.any? ? "DescallWatch: added #{added.join(', ')}" : "DescallWatch target already present"
   exit 0
 end
 

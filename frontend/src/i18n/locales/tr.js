@@ -1263,6 +1263,7 @@ export const phrases = {
   "Email is required.": "E-posta zorunlu.",
   "Enter a valid email address.": "Geçerli bir e-posta adresi gir.",
   "We'll send a code to this email to verify it. It keeps your account safe: recovery, sign-in codes and two-factor authentication.": "Bu adrese bir doğrulama kodu göndereceğiz. Hesabını korur: kurtarma, giriş kodları ve iki adımlı doğrulama.",
+  "Suggestion:": "Öneri:",
   "Email": "E-posta",
   "Dark": "Koyu",
   "Light": "Açık",

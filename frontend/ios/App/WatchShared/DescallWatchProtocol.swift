@@ -11,7 +11,13 @@ import Foundation
 enum DescallWatchProtocol {
     static let version = 1
     static let maxBodyBytes = 8 * 1024
-    static let maxReplyBytes = 256 * 1024
+    /// Largest API reply the iPhone accepts at all.
+    static let maxReplyBytes = 4 * 1024 * 1024
+    /// WatchConnectivity messages top out around 64 KB: replies up to `plainReplyBytes`
+    /// travel as text, bigger ones zlib-compressed as `bodyZ`, and only if they then
+    /// fit in `maxWireBytes` (else `too_large`).
+    static let plainReplyBytes = 48 * 1024
+    static let maxWireBytes = 60 * 1024
     static let maxPathLength = 300
 
     enum Key {
@@ -20,6 +26,7 @@ enum DescallWatchProtocol {
         static let method = "method"
         static let path = "path"
         static let body = "body"
+        static let bodyZ = "bodyZ"
         static let stepUp = "stepUp"
         static let status = "status"
         static let error = "error"
@@ -31,6 +38,26 @@ enum DescallWatchProtocol {
         static let noSession = "no_session"
         static let network = "network"
         static let badRequest = "bad_request"
+        static let tooLarge = "too_large"
+    }
+
+    /// Reply body for the watch: text when small, zlib data when big, nil when too big.
+    static func encodeReply(_ data: Data) -> (key: String, value: Any)? {
+        if data.count <= plainReplyBytes, let text = String(data: data, encoding: .utf8) {
+            return (Key.body, text)
+        }
+        guard data.count <= maxReplyBytes,
+              let packed = try? (data as NSData).compressed(using: .zlib) as Data,
+              packed.count <= maxWireBytes else { return nil }
+        return (Key.bodyZ, packed)
+    }
+
+    static func decodeReply(_ reply: [String: Any]) -> Data? {
+        if let text = reply[Key.body] as? String { return Data(text.utf8) }
+        if let packed = reply[Key.bodyZ] as? Data {
+            return try? (packed as NSData).decompressed(using: .zlib) as Data
+        }
+        return nil
     }
 
     static let methods: Set<String> = ["GET", "POST", "PUT", "PATCH", "DELETE"]

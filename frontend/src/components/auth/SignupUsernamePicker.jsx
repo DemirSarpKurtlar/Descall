@@ -24,19 +24,17 @@ export function usernameFromName(name) {
 }
 
 /**
- * Username step for a new Apple account: prefilled suggestion, debounced live
- * availability, inline rules, suggestions when taken. `onState({ value, ok })`.
+ * Username step for a new Apple account (owner rule 3.7.19: the person picks it,
+ * nothing is filled in for them). The field starts empty; the name from Apple is
+ * only offered as a chip to tap. Debounced live availability, inline rules,
+ * suggestions when taken. `onState({ value, ok })`.
  */
 export default function SignupUsernamePicker({ initial = "", onState, check = checkSignupUsername, debounceMs = 350 }) {
   const t = useT();
-  const [value, setValue] = useState(initial);
+  const [value, setValue] = useState("");
   const [status, setStatus] = useState({ state: "idle" }); // idle | checking | ok | taken | invalid | error
   const seq = useRef(0);
-
-  useEffect(() => {
-    if (initial && !value) setValue(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initial]);
+  const suggestion = String(initial || "").trim();
 
   useEffect(() => {
     const v = value.trim();
@@ -89,6 +87,12 @@ export default function SignupUsernamePicker({ initial = "", onState, check = ch
         <span className={`signup-username-dot is-${status.state}`} aria-hidden="true" />
       </div>
       <p id="signup-username-status" className="signup-username-status" role="status">{msg}</p>
+      {!value && suggestion && (
+        <div className="signup-username-suggestions">
+          <span className="signup-username-suggest-label">{t("Suggestion:")}</span>
+          <button type="button" className="signup-username-chip" onClick={() => setValue(suggestion)}>@{suggestion}</button>
+        </div>
+      )}
       {status.state === "taken" && status.suggestions?.length > 0 && (
         <div className="signup-username-suggestions">
           {status.suggestions.map((s) => (

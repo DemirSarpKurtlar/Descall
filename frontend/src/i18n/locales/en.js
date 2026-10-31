@@ -1257,6 +1257,7 @@ export const phrases = {
   "Email is required.": "Email is required.",
   "Enter a valid email address.": "Enter a valid email address.",
   "We'll send a code to this email to verify it. It keeps your account safe: recovery, sign-in codes and two-factor authentication.": "We'll send a code to this email to verify it. It keeps your account safe: recovery, sign-in codes and two-factor authentication.",
+  "Suggestion:": "Suggestion:",
   "Email": "Email",
   "Dark": "Dark",
   "Light": "Light",

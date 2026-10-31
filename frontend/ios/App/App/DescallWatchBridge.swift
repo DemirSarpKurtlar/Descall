@@ -98,8 +98,12 @@ final class DescallWatchBridge: NSObject, WCSessionDelegate {
                 return
             }
             var out: [String: Any] = [P.Key.status: http.statusCode]
-            if let data, data.count <= P.maxReplyBytes, let text = String(data: data, encoding: .utf8) {
-                out[P.Key.body] = text
+            if let data, !data.isEmpty {
+                guard let encoded = P.encodeReply(data) else {
+                    reply([P.Key.status: 0, P.Key.error: P.Failure.tooLarge])
+                    return
+                }
+                out[encoded.key] = encoded.value
             }
             reply(out)
         }.resume()

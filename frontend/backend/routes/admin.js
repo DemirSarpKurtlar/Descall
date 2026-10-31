@@ -1682,7 +1682,9 @@ router.get("/feedback", async (req, res) => {
     if (fb.STATUSES.includes(status)) query = query.eq("status", status);
     const q = fb.safeSearch(req.query.q || "");
     if (q) query = query.or(`message.ilike.%${q}%,username.ilike.%${q}%`);
-    query = query.order("created_at", { ascending: sort === "oldest" }).limit(500);
+    // 3.7.19: the Apple Watch asks for a short page (?limit=15); the panel keeps 500.
+    const limit = Math.max(1, Math.min(500, Number.parseInt(req.query.limit, 10) || 500));
+    query = query.order("created_at", { ascending: sort === "oldest" }).limit(limit);
     const { data: rows, error } = await query;
     if (error) throw error;
     const { users, counts } = await loadFeedbackUsers(rows || []);
