@@ -51,7 +51,9 @@ html:not(.glass-ui)[data-theme="chromeveil"] body::before {
   inset: -12%;
   z-index: 0;
   pointer-events: none;
-  animation: theme-scene-drift 32s ease-in-out infinite alternate;
+  /* 3.7.15 idle CPU: one slow pass, then still. An infinite drift made the compositor
+     redraw the whole window at 60 fps (~24% of a core), also minimized / in the tray. */
+  animation: theme-scene-drift 32s ease-in-out 1 both;
 }
 html:not(.glass-ui)[data-theme="emberfall"] body::before {
   background:

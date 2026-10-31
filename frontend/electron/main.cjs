@@ -1612,21 +1612,37 @@ function createMainWindow() {
   const tryBackgroundCheck = (reason) => {
     checkForAppUpdates(reason);
   };
+  // 3.7.15 idle CPU: backgroundThrottling is off (sockets / sounds must keep running
+  // in the tray), so Chromium never tells the page it is hidden. Tell it ourselves:
+  // the renderer pauses CSS animations while minimized / hidden (html.app-backgrounded).
+  const sendVisibility = (backgrounded) => {
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app:visibility', { backgrounded });
+    } catch (_) { /* ignore */ }
+  };
+  // Update checks on blur were firing on every alt-tab: at most one per 15 minutes.
+  let lastBlurCheck = 0;
   mainWindow.on('minimize', () => {
     // Minimize keeps the taskbar button — clicking it restores natively.
     try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
     setStartInBackground(true, 'minimized');
+    sendVisibility(true);
     tryBackgroundCheck('minimize');
   });
   mainWindow.on('hide', () => {
     setStartInBackground(true, 'hidden');
+    sendVisibility(true);
     tryBackgroundCheck('hide');
   });
-  mainWindow.on('show', () => setStartInBackground(false));
-  mainWindow.on('focus', () => setStartInBackground(false));
-  mainWindow.on('restore', () => setStartInBackground(false));
+  mainWindow.on('show', () => { setStartInBackground(false); sendVisibility(false); });
+  mainWindow.on('focus', () => { setStartInBackground(false); sendVisibility(false); });
+  mainWindow.on('restore', () => { setStartInBackground(false); sendVisibility(false); });
   mainWindow.on('blur', () => {
-    if (isAppInBackground()) tryBackgroundCheck('blur');
+    if (!isAppInBackground()) return;
+    const now = Date.now();
+    if (now - lastBlurCheck < 15 * 60 * 1000) return;
+    lastBlurCheck = now;
+    tryBackgroundCheck('blur');
   });
 
   // Handle external links — Descall Setup assets download in-app so we can prune older installers

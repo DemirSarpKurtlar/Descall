@@ -59,7 +59,8 @@ const ENGINE_KEY = "descall:noiseSuppressionEngine";
 
 /** @type {AudioContext | null} */
 let sharedCtx = null;
-let assetsPromise = null;
+/** Wraps between dispose and the new session: the context must not be closed under them. */
+let wrapsInFlight = 0;
 /** @type {null | { rawStream: MediaStream, processedStream: MediaStream, nodes: any[], engine: string }} */
 let activeSession = null;
 
@@ -88,27 +89,40 @@ export function getVoiceAudioConstraints({ deviceId } = {}) {
   return { audio: captureConstraints(readVoiceProfile(), deviceId), video: false };
 }
 
-async function ensureAssets(ctx) {
-  if (!assetsPromise) {
-    assetsPromise = (async () => {
-      const [gtcrnWasm, rnnoiseWasm, speexWasm] = await Promise.all([
-        loadGtcrn({ url: gtcrnWasmPath }).catch(() => null),
-        loadRnnoise({ url: rnnoiseWasmPath, simdUrl: rnnoiseSimdWasmPath }).catch(() => null),
-        loadSpeex({ url: speexWasmPath }).catch(() => null),
-      ]);
-      await Promise.allSettled([
-        ctx.audioWorklet.addModule(gtcrnWorkletPath),
-        ctx.audioWorklet.addModule(rnnoiseWorkletPath),
-        ctx.audioWorklet.addModule(speexWorkletPath),
-        ctx.audioWorklet.addModule(noiseGateWorkletPath),
-      ]);
-      return { gtcrnWasm, rnnoiseWasm, speexWasm };
-    })().catch((err) => {
-      assetsPromise = null;
-      throw err;
-    });
+// 3.7.15: the WASM binaries do not depend on an AudioContext, so they are loaded
+// once and kept; the worklet modules belong to one context and are added again
+// when a new context is created (the context is closed between voice sessions).
+let wasmPromise = null;
+let workletCtx = null;
+let workletPromise = null;
+
+function ensureWasm() {
+  if (!wasmPromise) {
+    wasmPromise = Promise.all([
+      loadGtcrn({ url: gtcrnWasmPath }).catch(() => null),
+      loadRnnoise({ url: rnnoiseWasmPath, simdUrl: rnnoiseSimdWasmPath }).catch(() => null),
+      loadSpeex({ url: speexWasmPath }).catch(() => null),
+    ]).then(([gtcrnWasm, rnnoiseWasm, speexWasm]) => ({ gtcrnWasm, rnnoiseWasm, speexWasm }))
+      .catch((err) => {
+        wasmPromise = null;
+        throw err;
+      });
   }
-  return assetsPromise;
+  return wasmPromise;
+}
+
+async function ensureAssets(ctx) {
+  if (workletCtx !== ctx || !workletPromise) {
+    workletCtx = ctx;
+    workletPromise = Promise.allSettled([
+      ctx.audioWorklet.addModule(gtcrnWorkletPath),
+      ctx.audioWorklet.addModule(rnnoiseWorkletPath),
+      ctx.audioWorklet.addModule(speexWorkletPath),
+      ctx.audioWorklet.addModule(noiseGateWorkletPath),
+    ]);
+  }
+  const [wasm] = await Promise.all([ensureWasm(), workletPromise]);
+  return wasm;
 }
 
 async function ensureContext() {
@@ -165,7 +179,16 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
   if (!isNoiseSuppressionEnabled()) return rawStream;
   if (typeof AudioWorkletNode === "undefined") return rawStream;
 
-  disposeNoiseSuppressionSession({ stopRaw: false });
+  wrapsInFlight += 1;
+  try {
+    return await wrapInto(rawStream);
+  } finally {
+    wrapsInFlight -= 1;
+  }
+}
+
+async function wrapInto(rawStream) {
+  disposeNoiseSuppressionSession({ stopRaw: false, keepContext: true });
 
   const ctx = await ensureContext();
   const assets = await ensureAssets(ctx).catch((err) => {
@@ -325,7 +348,7 @@ export function getNoiseSuppressionRawTrack() {
   return activeSession?.rawStream?.getAudioTracks?.()?.[0] || null;
 }
 
-export function disposeNoiseSuppressionSession({ stopRaw = true } = {}) {
+export function disposeNoiseSuppressionSession({ stopRaw = true, keepContext = false } = {}) {
   if (!activeSession) return;
   const { rawStream, nodes } = activeSession;
   for (const node of nodes) {
@@ -348,6 +371,7 @@ export function disposeNoiseSuppressionSession({ stopRaw = true } = {}) {
     }
   }
   activeSession = null;
+  if (!keepContext) suspendIdleContext();
 }
 
 /** Sync mute flag onto both processed + raw tracks. */
@@ -365,9 +389,37 @@ export function setNoiseSuppressedTrackEnabled(enabled) {
   }
 }
 
+/**
+ * Warm the noise-suppression files so a voice join is quick, WITHOUT creating an
+ * AudioContext (3.7.15 idle CPU / RAM): a live context keeps Chromium's audio
+ * render thread and the whole Audio Service process (~70 MB) up all session,
+ * even with no call. WASM is loaded into memory; worklet scripts go into the
+ * HTTP cache. The context is created on the first voice session.
+ */
 export function preloadNoiseSuppression() {
   if (!isNoiseSuppressionEnabled()) return;
-  ensureContext()
-    .then((ctx) => ensureAssets(ctx))
-    .catch(() => {});
+  ensureWasm().catch(() => {});
+  if (typeof fetch === "function") {
+    for (const url of [gtcrnWorkletPath, rnnoiseWorkletPath, speexWorkletPath, noiseGateWorkletPath]) {
+      fetch(url).catch(() => {});
+    }
+  }
+}
+
+/**
+ * Close the shared context when no voice session uses it, so the Audio Service
+ * process can go away between calls (a suspended context still keeps it).
+ */
+export function suspendIdleContext() {
+  if (activeSession || wrapsInFlight > 0 || !sharedCtx || sharedCtx.state === "closed") return;
+  const ctx = sharedCtx;
+  sharedCtx = null;
+  workletCtx = null;
+  workletPromise = null;
+  try {
+    const p = ctx.close();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {
+    /* ignore */
+  }
 }

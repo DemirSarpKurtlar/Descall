@@ -526,3 +526,14 @@ html.glass-desktop .composer-right .composer-send-btn {
   display: grid;
   place-items: center;
 }
+
+/* 6. The message list is its own stacking layer (3.7.15, owner report). A hovered /
+   menu-open bubble lifts to z 25 (ui-polish.css) so its hover pill stays above the
+   neighbours; without this layer that z competed at the panel level and a tall bubble
+   (game card, image, link preview) scrolled under the header painted over the header
+   pills on hover. Now every z inside the list stays below the header (z 6) and the
+   floating composer (z 40). */
+html.glass-desktop .main-panel.is-floating-header > .messages-container {
+  position: relative;
+  z-index: 0;
+}

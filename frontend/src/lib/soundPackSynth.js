@@ -82,6 +82,11 @@ export async function unlockSoundPackAudio() {
       if (unlockSoundPackAudio._ctx.state === "suspended") {
         await unlockSoundPackAudio._ctx.resume();
       }
+      // 3.7.15 idle CPU: the resume above is the unlock; a context left running keeps
+      // the audio render thread busy all session. Sounds play through <audio>.
+      if (unlockSoundPackAudio._ctx.state === "running") {
+        await unlockSoundPackAudio._ctx.suspend().catch(() => {});
+      }
     }
     return true;
   } catch {

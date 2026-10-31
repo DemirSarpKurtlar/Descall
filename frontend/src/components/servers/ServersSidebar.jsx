@@ -5,7 +5,7 @@ import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, ShieldCheck, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff } from "../ui/Icon.jsx";
+import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, ShieldCheck, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info } from "../ui/Icon.jsx";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -1526,7 +1526,8 @@ export default function ServersSidebar({
             )}
             {channelListReady ? (
               <p className="server-step-hint">
-                {t("Open a text channel to chat, or join a voice channel to hang out.")}
+                <span className="server-step-hint-ic" aria-hidden="true"><Info size={14} weight="bold" /></span>
+                <span>{t("Open a text channel to chat, or join a voice channel to hang out.")}</span>
               </p>
             ) : null}
           </div>

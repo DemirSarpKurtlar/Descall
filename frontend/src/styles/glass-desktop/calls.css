@@ -773,3 +773,74 @@ html.glass-desktop.gd-contrast .gd-incoming .gd-incoming-sheet {
   backdrop-filter: none;
   background: var(--gd-solid-heavy);
 }
+
+/* 3.7.15 (owner report): the server voice room sits inside the chat panel, so under
+   the glass theme it uses the panel's own glass (no opaque slab of its own, which read
+   as "different colours from the app"), a soft brand glow behind the tiles, theme ink,
+   glass chips in the head and a floating glass dock instead of a dark bottom band.
+   The full-screen DM / group call overlays keep their own surface above. */
+html.glass-desktop .main-panel .server-voice-panel {
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(55% 45% at 50% 38%, color-mix(in srgb, var(--gd-brand) 16%, transparent), transparent 72%),
+    radial-gradient(40% 40% at 88% 92%, color-mix(in srgb, var(--gd-brand-2) 12%, transparent), transparent 70%) !important;
+}
+html.glass-desktop .main-panel .server-voice-room-head {
+  padding: 12px 16px 6px;
+}
+html.glass-desktop .main-panel .server-voice-room-mark {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gd-brand) 95%, white 5%), color-mix(in srgb, var(--gd-brand) 75%, black 10%));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 6px 16px color-mix(in srgb, var(--gd-brand) 35%, transparent);
+}
+html.glass-desktop .main-panel .server-voice-room-title h2 { color: var(--gd-t1); }
+html.glass-desktop .main-panel .server-voice-room-title p { color: var(--gd-t2); }
+html.glass-desktop .main-panel .server-voice-count-pill {
+  padding: 5px 10px;
+  color: var(--gd-t1);
+  background: var(--gd-chip, rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair, rgba(255, 255, 255, 0.14));
+}
+html.glass-desktop .main-panel .server-voice-room-error {
+  margin: 4px 16px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  color: #ff8a80;
+  background: rgba(255, 69, 58, 0.12);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 105, 97, 0.35);
+}
+html.glass-desktop .main-panel .server-voice-empty { color: var(--gd-t2); }
+html.glass-desktop .main-panel .server-voice-empty p:first-child { color: var(--gd-t1); font-size: 16px; }
+
+/* Dock: no band, the controls float as one glass capsule. */
+html.glass-desktop .main-panel .server-voice-dock {
+  border-top: 0;
+  background: transparent;
+  padding: 10px 16px 16px;
+}
+html.glass-desktop .main-panel .server-voice-dock-group {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px;
+  background: var(--fh-pill-sheen, linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04))), var(--gd-glass-fill);
+  -webkit-backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  backdrop-filter: blur(var(--gd-blur-panel)) saturate(var(--gd-saturate));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px var(--gd-hair, rgba(255, 255, 255, 0.14)), 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+html.glass-desktop .main-panel .server-voice-dock-btn { border-radius: 999px; color: var(--gd-t1); }
+html.glass-desktop .main-panel .server-voice-dock-btn:hover:not(:disabled) { background: var(--gd-chip-hover, rgba(255, 255, 255, 0.1)); }
+html.glass-desktop .main-panel .server-voice-dock-btn.join {
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--gd-cta);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px color-mix(in srgb, var(--gd-brand) 40%, transparent);
+}
+html.glass-desktop .main-panel .server-voice-dock-btn.leave { border-radius: 999px; }
+html.glass-desktop.a11y-solid .main-panel .server-voice-dock-group,
+html.glass-desktop.gd-lite:not(.electron-app) .main-panel .server-voice-dock-group {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gd-solid);
+}

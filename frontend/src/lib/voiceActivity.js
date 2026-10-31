@@ -159,6 +159,7 @@ function sampleAll() {
   if (!subscribers.size || (typeof document !== "undefined" && document.hidden)) {
     dropGraphs();
     stopLoop();
+    if (!subscribers.size) suspendIdle();
     return;
   }
   const now = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -207,10 +208,27 @@ function stopLoop() {
   timer = 0;
 }
 
+/**
+ * 3.7.15 idle CPU: with nobody to meter (no call, no voice channel) the context
+ * is suspended, so the audio render thread stops. The next call's
+ * primeVoiceActivity() (from the tap that starts the mic) resumes it.
+ */
+function suspendIdle() {
+  if (subscribers.size || !ctx || ctx.state !== "running") return;
+  try {
+    const p = ctx.suspend();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
 function ensureGestureUnlock() {
   if (gestureInstalled || typeof window === "undefined") return;
   gestureInstalled = true;
   const unlock = () => {
+    // Only wake the context for a live meter; idle taps leave it suspended.
+    if (!subscribers.size) return;
     if (!unlocked || (ctx && ctx.state !== "running")) primeVoiceActivity();
   };
   window.addEventListener("pointerdown", unlock, { capture: true, passive: true });
@@ -291,6 +309,7 @@ export function subscribeVoiceActivity(stream, { hidden, onRms, levelProbe } = {
     if (!subscribers.size) {
       stopLoop();
       dropGraphs();
+      suspendIdle();
     }
   };
 }

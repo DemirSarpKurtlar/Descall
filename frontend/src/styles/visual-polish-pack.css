@@ -273,7 +273,10 @@
 .dm-item.has-unread .conv-unread-badge,
 .group-item.has-unread .conv-unread-badge,
 .conv-unread-badge.has-unread-pulse {
-  animation: unread-badge-pulse 2s ease-in-out infinite;
+  /* 3.7.15 idle CPU: two pulses when the badge appears, then still. An infinite
+     box-shadow pulse repainted the frosted sidebar every frame while any
+     conversation was unread (also minimized / in the tray). */
+  animation: unread-badge-pulse 2s ease-in-out 2;
 }
 
 .dm-item.has-unread .dm-name.unread,

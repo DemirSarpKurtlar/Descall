@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
   closeWindow: () => ipcRenderer.send('window:close'),
   onMaximizedChange: (callback) => ipcRenderer.on('window:maximized', (_, isMaximized) => callback(isMaximized)),
+  // 3.7.15: minimized / hidden to tray → the page pauses its animations.
+  onAppVisibility: (callback) => {
+    const handler = (_, payload) => callback(payload || {});
+    ipcRenderer.on('app:visibility', handler);
+    return () => ipcRenderer.removeListener('app:visibility', handler);
+  },
   getContentBox: () => ipcRenderer.invoke('window:content-box'),
   onContentBox: (callback) => {
     const handler = (_, data) => callback(data);

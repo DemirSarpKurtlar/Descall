@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import "../styles/call-people.css";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff, SwitchCamera,
@@ -1016,42 +1017,18 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              bottom: 0,
-              width: narrowViewport ? "min(100%, 320px)" : 300,
-              maxWidth: "100vw",
-              zIndex: 20,
-              background: "#1e1f23",
-              borderLeft: "1px solid rgba(255,255,255,0.06)",
-              display: "flex",
-              flexDirection: "column",
-              boxSizing: "border-box",
-              paddingTop: "env(safe-area-inset-top, 0px)",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
-              paddingRight: "env(safe-area-inset-right, 0px)",
-            }}
+            className={`call-people-panel${narrowViewport ? " is-narrow" : ""}`}
           >
-            <div
-              style={{
-                padding: "16px 20px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t("People")}</span>
-              <button
-                onClick={() => setShowParticipants(false)}
-                style={{ background: "none", border: "none", color: "#b5bac1", cursor: "pointer" }}
-               aria-label={t("Close")}>
-                <XIcon size={18} />
+            <div className="call-people-head">
+              <span className="call-people-title">
+                {t("People")}
+                <em>{isDm ? 2 : (groupCall.participants?.length || 0)}</em>
+              </span>
+              <button type="button" className="call-people-x" onClick={() => setShowParticipants(false)} aria-label={t("Close")}>
+                <XIcon size={16} />
               </button>
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+            <div className="call-people-list">
               {isDm ? (
                 <PersonRow name={peer?.username || t("User")} avatarUrl={resolveAvatarUrl(peer)} isHost />
               ) : (
@@ -2295,18 +2272,11 @@ function TopIconBtn({ children, onClick, active }) {
 function PersonRow({ name, avatarUrl, isHost }) {
   const t = useT();
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 0",
-      }}
-    >
+    <div className="call-people-row">
       <Avatar name={name} size={36} imageUrl={avatarUrl} animate="hover" />
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{name}</span>
-        {isHost && <span style={{ fontSize: 11, color: "#b5bac1" }}>{t("Host")}</span>}
+      <div className="call-people-who">
+        <span className="call-people-name">{name}</span>
+        {isHost && <span className="call-people-host">{t("Host")}</span>}
       </div>
     </div>
   );

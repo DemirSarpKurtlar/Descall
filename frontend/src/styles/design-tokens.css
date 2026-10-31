@@ -1825,7 +1825,8 @@
 [data-theme="starlight"] .composer-send-btn.active,
 [data-theme="plasmastorm"] .composer-send-btn.active,
 [data-theme="moltencore"] .composer-send-btn.active {
-  animation: theme-pulse-glow 2.6s ease-in-out infinite;
+  /* 3.7.15 idle CPU: three glows, then still (infinite = whole-window redraws). */
+  animation: theme-pulse-glow 2.6s ease-in-out 3;
 }
 
 [data-theme="phoenixfire"] .us-theme-card.selected .us-theme-meta span,
@@ -1834,5 +1835,5 @@
 [data-theme="starlight"] .us-theme-card.selected .us-theme-meta span,
 [data-theme="plasmastorm"] .us-theme-card.selected .us-theme-meta span,
 [data-theme="moltencore"] .us-theme-card.selected .us-theme-meta span {
-  animation: theme-pulse-text 2.6s ease-in-out infinite;
+  animation: theme-pulse-text 2.6s ease-in-out 3;
 }
