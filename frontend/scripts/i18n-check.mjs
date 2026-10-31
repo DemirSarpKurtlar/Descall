@@ -211,6 +211,19 @@ export async function checkCoverage({ messageLib } = {}) {
 const TR_CHARS = /[çğıöşüÇĞİÖŞÜ]/;
 const HARDCODE_ROOTS = ["src", "electron", "backend/lib", "backend/routes", "backend/socket", "backend/games"];
 
+// Lines that only log or throw internally are not user-visible.
+const LOG_LINE = /\bconsole\.(log|warn|error|info|debug)\(|\blog(?:ger)?\.(info|warn|error|debug)\(|throw new Error\(/;
+
+// English UI text written straight into code (no Turkish letters, so the line test above
+// misses it): JSX text attributes, setError/toast calls and copy-like object fields with at
+// least two words, and backend JSON error / message fields.
+const WORDS = "[^\"'`{}\\n]*[A-Za-z]{2,}[ ][A-Za-z][^\"'`{}\\n]*";
+const ENGLISH_UI = [
+  new RegExp(`\\b(?:aria-label|aria-description|title|placeholder|alt|label)=\\s*["'](?:[^"'{}\\n]*[A-Za-z]{2,}[^"'{}\\n]*)["']`),
+  new RegExp(`\\b(?:setError|setErr|setStatus|setMessage|setNotice|setHint|showToast|addToast|pushToast|toast(?:\\.\\w+)?|notify|alert|window\\.confirm|confirm)\\(\\s*["'\`]${WORDS}["'\`]`),
+  new RegExp(`\\b(?:label|title|placeholder|description|desc|hint|subtitle|message|text|body|caption|tooltip|emptyText|cta|error|reason|detail)\\s*:\\s*["'\`]${WORDS}["'\`]`),
+];
+
 // Names and tokens that stay the same in every language.
 const UNTRANSLATED_TOKENS = new Set(["Descall", "DesCoin", "GIF", "GIPHY", "Giphy", "Discord", "Windows", "iOS", "macOS", "Android", "iPhone", "iPad", "Apple", "Google", "Steam", "Spotify", "YouTube", "Twitch", "Xbox", "PlayStation", "Inter", "Lucide", "OK", "ID", "URL", "API", "PIN", "2FA", "QR", "HD", "FPS", "VS", "Beta", "BETA", "Pro", "PRO"]);
 
@@ -249,11 +262,17 @@ export function countHardcoded() {
       const rel = relative(root, file).split("\\").join("/");
       if (rel.startsWith("src/i18n/")) continue;
       if (/\/(node_modules|scripts|test|fixtures)\//.test(rel)) continue;
+      if (/(^|\/)marketingPhrases\.[\w-]+\.js$/.test(rel)) continue; // a catalog
       const code = stripComments(readFileSync(file, "utf8"));
       let n = 0;
       for (const line of code.split("\n")) {
+        if (LOG_LINE.test(line)) continue;
         const lits = line.match(/(["'`])(?:\\.|(?!\1)[^\\\n])*\1/g) || [];
-        if (lits.some((s) => TR_CHARS.test(s))) n += 1;
+        if (lits.some((s) => TR_CHARS.test(s))) {
+          n += 1;
+          continue;
+        }
+        if (ENGLISH_UI.some((re) => re.test(line))) n += 1;
       }
       if (/\.jsx$/.test(rel)) {
         const jsxText = code.match(/>\s*([A-Za-zÀ-ɏ][^<>{}\n]{1,}?)\s*</g) || [];
