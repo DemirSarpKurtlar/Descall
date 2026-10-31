@@ -27,7 +27,7 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/oyuncu-sohbet-uygulamasi",
-    "title": "Oyuncu Sohbet Uygulaması | Ses, Klan Sunucusu ve Ekran Paylaşımı: Descall",
+    "title": "Oyuncu Sohbet Uygulaması: Ses, Klan Sunucusu, Ekran Paylaşma | Descall",
     "description": "Oyuncular için ücretsiz sohbet uygulaması: klan sunucusu, rollerle düzen, oyun içi sesli sohbet ve ekran paylaşımı tek uygulamada.",
     "h1": "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve ekran paylaşımı tek yerde"
   },
