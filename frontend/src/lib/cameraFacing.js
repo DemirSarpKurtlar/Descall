@@ -52,9 +52,25 @@ export function tagCameraTrack(track, facing) {
   return track;
 }
 
+/**
+ * Facing from the camera's name. Phones name their cameras ("Back Camera",
+ * "Arka Üçlü Kamera", "Front Camera", "Ön Kamera", "camera2 1, facing back")
+ * and some report no or a stale facingMode after a flip, which left the back
+ * camera mirrored (3.7.6).
+ */
+export function labelFacing(label) {
+  const l = String(label || "").toLocaleLowerCase("tr");
+  if (!l) return null;
+  if (/\b(back|rear|environment|world)\b|facing back|\barka\b|trasera|arrière|rück/.test(l)) return FACING_ENVIRONMENT;
+  if (/\b(front|user|facetime|selfie)\b|facing front|(^|[\s(])ön([\s)]|$)|frontal|avant/.test(l)) return FACING_USER;
+  return null;
+}
+
 /** "user" | "environment" | null for a camera track. */
 export function trackFacing(track) {
   if (!track) return null;
+  const named = labelFacing(track.label);
+  if (named) return named;
   let settings = {};
   try {
     settings = (typeof track.getSettings === "function" && track.getSettings()) || {};
