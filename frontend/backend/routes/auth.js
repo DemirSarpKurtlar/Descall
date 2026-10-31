@@ -1174,13 +1174,12 @@ router.post("/apple", async (req, res) => {
         [givenName, familyName].map((x) => String(x || "").trim()).filter(Boolean).join("") ||
         (email && !apple.isPrivateEmail && email.split("@")[0]) ||
         `user${apple.sub.replace(/[^a-z0-9]/gi, "").slice(-6)}`;
-      // 2.13.8: clients with the username step (usernameStep: true) let the user
-      // pick it; nothing is created until they send one. Older clients keep the
-      // auto-generated username.
+      // 2.13.8: the person picks the username in the app; nothing is created until
+      // they send one. 3.7.19 (owner rule): never made up, older clients included
+      // (they see "Choose a username to finish creating your account.").
       let username;
-      const wantsStep = Boolean(req.body?.usernameStep);
       const chosen = typeof req.body?.username === "string" ? req.body.username.trim() : "";
-      if (wantsStep && !chosen) {
+      if (!chosen) {
         return res.status(428).json({
           error: "Choose a username to finish creating your account.",
           code: "apple_username_required",
@@ -1199,8 +1198,6 @@ router.post("/apple", async (req, res) => {
           });
         }
         username = chosen;
-      } else {
-        username = await allocateUniqueUsername(preferred);
       }
       {
         const closed = platformPolicy.checkRegistration({ config: systemConfig });

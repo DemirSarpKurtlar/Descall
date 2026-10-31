@@ -15,4 +15,12 @@ assert.match(auth, /router\.get\("\/username\/check"/);
 assert.match(auth, /username_taken/);
 const api = readFileSync(new URL("../../api/auth.js", import.meta.url), "utf8");
 assert.match(api, /payload\.usernameStep = true/);
+// 3.7.19 (owner rule): the field starts empty, the Apple name is only a chip; the server
+// never makes up a username for a new Apple account.
+assert.match(src, /useState\(""\)/);
+assert.doesNotMatch(src, /setValue\(initial\)/);
+assert.match(src, /onClick=\{\(\) => setValue\(suggestion\)\}/);
+const appleRoute = auth.slice(auth.indexOf('router.post("/apple"'), auth.indexOf("router.post(", auth.indexOf('router.post("/apple"') + 10));
+assert.doesNotMatch(appleRoute, /username = await allocateUniqueUsername\(preferred\)/);
+assert.match(appleRoute, /if \(!chosen\) \{\s*return res\.status\(428\)/);
 console.log("signupUsername.selftest: ok");
