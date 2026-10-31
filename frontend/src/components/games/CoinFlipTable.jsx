@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useT } from "../../context/LocaleContext";
+import { getLocale } from "../../i18n/runtime";
+import { formatNumber, upper } from "../../i18n/format";
 import { coinFaceSvg } from "./coinflip/coinArt";
 import {
   TOSS,
@@ -20,8 +22,8 @@ import { hapticImpactLight, hapticSelection, hapticSuccess, hapticWarning } from
 const SLICES = 44;
 const COIN_SIZE = 196;
 const SIDES = [
-  { key: "heads", face: "yazi", label: "Heads", hint: "Number side" },
-  { key: "tails", face: "tura", label: "Tails", hint: "Logo side" },
+  { key: "heads", face: "yazi", labelKey: "Heads", hintKey: "Number side" },
+  { key: "tails", face: "tura", labelKey: "Tails", hintKey: "Logo side" },
 ];
 // Rounds already animated in this window, so a remount (scroll, chat switch) does not re-toss.
 const animatedRounds = new Set();
@@ -39,7 +41,7 @@ function prefersReducedMotion() {
   }
 }
 
-const fmt = (n) => Number(n || 0).toLocaleString("tr-TR");
+const fmt = (n) => formatNumber(n || 0, getLocale());
 
 export function MiniCoin({ face, size = 26, className = "" }) {
   const prefix = usePrefix();
@@ -364,7 +366,7 @@ export default function CoinFlipTable({ gameData, isMine, busy, onCall, onAgain 
             <span className="cf2-num">{fmt(bet)}</span>
           </span>
           <span className="cf2-chip" title={`@${name}`}>
-            <span className="cf2-avatar">{(name[0] || "?").toLocaleUpperCase("tr")}</span>
+            <span className="cf2-avatar">{upper(name[0] || "?", getLocale())}</span>
             <span className="cf2-chip-name">{name}</span>
           </span>
         </div>
@@ -407,8 +409,8 @@ export default function CoinFlipTable({ gameData, isMine, busy, onCall, onAgain 
               >
                 <MiniCoin face={s.face} />
                 <span className="cf2-lbl">
-                  {t(s.label)}
-                  <small>{t(s.hint)}</small>
+                  {t(s.labelKey)}
+                  <small>{t(s.hintKey)}</small>
                 </span>
                 <span className="cf2-x">2×</span>
               </button>
@@ -433,9 +435,9 @@ export default function CoinFlipTable({ gameData, isMine, busy, onCall, onAgain 
               >
                 <MiniCoin face={s.face} />
                 <span className="cf2-lbl">
-                  {t(s.label)}
+                  {t(s.labelKey)}
                   <small>
-                    {gameData.call === s.key ? t("Again {side}", { side: t(s.label) }) : t("{side} this time", { side: t(s.label) })}
+                    {gameData.call === s.key ? t("Again {side}", { side: t(s.labelKey) }) : t("{side} this time", { side: t(s.labelKey) })}
                   </small>
                 </span>
                 <span className="cf2-x">2×</span>

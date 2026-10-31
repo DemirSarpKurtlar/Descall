@@ -11,7 +11,15 @@ import {
   slashMenuSections,
   slashQueryOf,
   SLASH_COMMANDS,
+  SLASH_GROUPS,
+  TIMEOUT_DURATIONS,
 } from "./slashCommands.js";
+import { loadI18nCatalogs } from "../i18n/index.js";
+import { setRuntimeLocale } from "../i18n/runtime.js";
+
+// Texts come from the slash.* catalog in the UI language; these checks run in Turkish.
+await loadI18nCatalogs("tr");
+setRuntimeLocale("tr");
 
 const CASINO = ["bj", "slot", "coinflip", "pay", "daily", "credits", "top"];
 const names = (list) => list.map((c) => c.name);
@@ -117,6 +125,19 @@ for (const t of ["/cf 100 yazı", "/coinflip 50", "/pay @a 5", "/gonder @a 5", "
   assert.ok(isDmSlashCommand(t), t);
 }
 for (const t of ["/kick @a", "/purge 5", "/server", "hello /cf", "/", "//cf"]) assert.equal(isDmSlashCommand(t), false, t);
+
+// The same menu in English: labels, hints and keywords follow the UI language.
+setRuntimeLocale("en");
+assert.equal(findSlashCommand("user").label, "User card");
+assert.deepEqual(findSlashCommand("timeout").args.map((x) => x.name), ["@user", "duration", "reason"]);
+assert.equal(byName(getSlashCommandsForSurface({ activeChannel: { type: "text" }, permissionFlags: {} }), "ban").lockReason, "Requires the “Use application commands” permission");
+assert.equal(filterSlashCommandMatches(getSlashCommandsForSurface({ activeGroup: { id: "g" } }), "/vot")[0].name, "poll", "English keyword");
+assert.deepEqual(SLASH_GROUPS.map((g) => g.label), ["General", "Moderation", "Games", "Credits"]);
+assert.match(TIMEOUT_DURATIONS[1].label, /^5 min/);
+assert.deepEqual(findSlashCommand("help").usage, [["/help", ""], ["/yardım", "same command"]]);
+setRuntimeLocale("tr");
+assert.equal(TIMEOUT_DURATIONS[5].label, "1 hafta");
+assert.equal(findSlashCommand("poll").usage[1][0], "/poll Soru | Evet | Hayır");
 
 // Native iOS app: casino commands are hidden from the picker.
 const iosGroup = names(getSlashCommandsForSurface({ activeGroup: { id: "g" }, hideCasino: true }));

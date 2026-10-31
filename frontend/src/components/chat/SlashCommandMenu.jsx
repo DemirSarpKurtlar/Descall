@@ -7,6 +7,10 @@ import {
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { Avatar } from "../ui/Avatar";
 import { SLASH_ICONS } from "../polls/slashIconsMap";
+import { presenceLabel, tNodes } from "../polls/dsxShared";
+import { useLocale } from "../../context/LocaleContext";
+import { formatDate, upper } from "../../i18n/format";
+import { APP_TIMEZONE } from "../../lib/datetime";
 import "../polls/dsx.css";
 import "./SlashCommandMenu.css";
 
@@ -21,7 +25,8 @@ export function orderSlashMatches(matches) {
   return groupSlashMatches(matches).flatMap((g) => g.items);
 }
 
-export const SLASH_CATEGORIES = [{ id: "all", label: "Tümü", color: null }, ...SLASH_GROUPS];
+/** Category tabs; read `label` at render time (it follows the UI language). */
+export const SLASH_CATEGORIES = [{ id: "all", labelKey: "slash.menu.all", color: null }, ...SLASH_GROUPS];
 
 const iconFor = (cmd) => SLASH_ICONS[cmd?.name] || SLASH_ICONS.help;
 const gradientFor = (cmd) => (SLASH_GROUP_BY_ID[cmd?.group] || SLASH_GROUP_BY_ID.general).gradient;
@@ -42,6 +47,7 @@ function Marked({ text, ranges }) {
 }
 
 function CommandRow({ cmd, active, compact, onHover, onPick, index }) {
+  const { t } = useLocale();
   const Icon = iconFor(cmd);
   const hl = cmd.highlight;
   const args = cmd.args || [];
@@ -64,7 +70,7 @@ function CommandRow({ cmd, active, compact, onHover, onPick, index }) {
         <span className="l1">
           <span className="cmd">/{hl?.field === "name" ? <Marked text={cmd.name} ranges={hl.ranges} /> : cmd.name}</span>
           <span className="lab">{hl?.field === "label" ? <Marked text={cmd.label} ranges={hl.ranges} /> : cmd.label}</span>
-          {cmd.isNew ? <span className="dsx-badge dsx-b-new">YENİ</span> : null}
+          {cmd.isNew ? <span className="dsx-badge dsx-b-new">{t("slash.menu.isNew")}</span> : null}
           {compact ? null : args.map((a) => <span key={a.name} className={`dsx-ah ${a.optional ? "opt" : ""}`}>{argText(a)}</span>)}
           {compact
             ? null
@@ -85,7 +91,7 @@ function CommandRow({ cmd, active, compact, onHover, onPick, index }) {
           )}
         </span>
       </span>
-      {cmd.locked ? <Lock className="lock" aria-label="Kilitli" /> : null}
+      {cmd.locked ? <Lock className="lock" aria-label={t("slash.menu.locked")} /> : null}
       {!cmd.locked && active && !compact ? <span className="ent dsx-kbd" aria-hidden="true">↵</span> : null}
       {!cmd.locked && compact ? <ChevronRight className="chev" aria-hidden="true" /> : null}
     </button>
@@ -93,16 +99,17 @@ function CommandRow({ cmd, active, compact, onHover, onPick, index }) {
 }
 
 function Detail({ cmd }) {
+  const { t } = useLocale();
   if (!cmd) return <div className="scm-det" />;
   const Icon = iconFor(cmd);
   const where = [
-    { id: "server", label: "Sunucu", icon: Hash, on: true },
-    { id: "group", label: "Grup", icon: Users, on: !cmd.serverOnly },
-    { id: "dm", label: "DM", icon: MessageCircle, on: !cmd.serverOnly && Boolean(cmd.dm || cmd.casino) },
+    { id: "server", label: t("slash.menu.whereServer"), icon: Hash, on: true },
+    { id: "group", label: t("slash.menu.whereGroup"), icon: Users, on: !cmd.serverOnly },
+    { id: "dm", label: t("slash.menu.whereDm"), icon: MessageCircle, on: !cmd.serverOnly && Boolean(cmd.dm || cmd.casino) },
   ];
   const perm = cmd.permission && cmd.permission !== "USE_APPLICATION_COMMANDS"
-    ? `${cmd.permissionLabel || PERMISSION_LABELS[cmd.permission] || cmd.permission} + Uygulama komutları`
-    : "Uygulama komutları";
+    ? t("slash.menu.permPlusApp", { perm: PERMISSION_LABELS[cmd.permission] || cmd.permission })
+    : t("slash.menu.appCommands");
   const optionalArg = (cmd.args || []).find((a) => a.optional);
   return (
     <div className="scm-det" aria-live="polite">
@@ -116,7 +123,7 @@ function Detail({ cmd }) {
       <p>{cmd.detail || cmd.description}</p>
       {cmd.usage?.length ? (
         <div>
-          <div className="k">KULLANIM</div>
+          <div className="k">{t("slash.menu.usage")}</div>
           <div className="scm-code">
             {cmd.usage.map(([code, note], i) => (
               <div key={i}>
@@ -134,15 +141,15 @@ function Detail({ cmd }) {
       ) : null}
       {optionalArg && !cmd.usage?.length ? (
         <div>
-          <div className="k">ARGÜMAN</div>
+          <div className="k">{t("slash.menu.argument")}</div>
           <div className="scm-code">
-            [{optionalArg.name}] <span className="c">· isteğe bağlı</span>
+            [{optionalArg.name}] <span className="c">· {t("slash.menu.optional")}</span>
           </div>
         </div>
       ) : null}
       {cmd.aliases?.length ? (
         <div>
-          <div className="k">TAKMA ADLAR</div>
+          <div className="k">{t("slash.menu.aliases")}</div>
           <div className="scm-ctxs">
             {cmd.aliases.map((a) => (
               <span key={a} className="scm-chipx">/{a}</span>
@@ -151,7 +158,7 @@ function Detail({ cmd }) {
         </div>
       ) : null}
       <div>
-        <div className="k">NEREDE ÇALIŞIR</div>
+        <div className="k">{t("slash.menu.worksIn")}</div>
         <div className="scm-ctxs">
           {where.map((w) => (
             <span key={w.id} className={`scm-chipx ${w.on ? "" : "is-off"}`}>
@@ -161,7 +168,7 @@ function Detail({ cmd }) {
         </div>
       </div>
       <div>
-        <div className="k">GEREKLİ YETKİ</div>
+        <div className="k">{t("slash.menu.permission")}</div>
         <span className="scm-chipx" style={{ height: 28 }}>
           {cmd.locked ? <Lock /> : <Shield />} {perm}
         </span>
@@ -198,6 +205,7 @@ export default function SlashCommandMenu({
   allCommands = [],
   onPickFrequent,
 }) {
+  const { t, locale } = useLocale();
   const listRef = useRef(null);
   const motionProps = useMenuMotion();
   const q = String(query || "");
@@ -209,8 +217,8 @@ export default function SlashCommandMenu({
     el?.scrollIntoView({ block: "nearest" });
   }, [activeIndex, flat.length]);
 
-  const title = noResults ? "Sonuç yok" : q.trim() ? `“${q}” için sonuçlar` : "Komutlar";
-  const count = `${flat.length} komut${q.trim() ? "" : " · yazarak filtrele"}`;
+  const title = noResults ? t("slash.menu.noResults") : q.trim() ? t("slash.menu.resultsFor", { query: q }) : t("slash.menu.title");
+  const count = `${t("slash.menu.count", { count: flat.length })}${q.trim() ? "" : ` · ${t("slash.menu.typeToFilter")}`}`;
   const frequent = FREQUENT_COMMANDS.map((n) => allCommands.find((c) => c.name === n)).filter(Boolean);
   const detailOn = showDetail && !compact && !noResults;
 
@@ -220,7 +228,7 @@ export default function SlashCommandMenu({
       ref={menuRef}
       className={`slash-command-menu scm dsx-heavy ${compact ? "is-compact" : ""} ${detailOn ? "" : "is-single"}`}
       role="listbox"
-      aria-label="Komutlar"
+      aria-label={t("slash.menu.aria")}
       aria-activedescendant={flat[activeIndex] ? `scm-${flat[activeIndex].id}` : undefined}
       onMouseDown={(e) => e.preventDefault()}
       {...motionProps}
@@ -232,7 +240,7 @@ export default function SlashCommandMenu({
           <span>{count}</span>
         </div>
         {noResults ? null : (
-          <div className="scm-cats" role="tablist" aria-label="Kategori">
+          <div className="scm-cats" role="tablist" aria-label={t("slash.menu.category")}>
             {SLASH_CATEGORIES.map((c, i) => (
               <button
                 key={c.id}
@@ -245,7 +253,7 @@ export default function SlashCommandMenu({
                 title={compact ? undefined : `⌘${i + 1}`}
               >
                 {c.color ? <i /> : null}
-                {c.label}
+                {c.labelKey ? t(c.labelKey) : c.label}
               </button>
             ))}
           </div>
@@ -256,15 +264,15 @@ export default function SlashCommandMenu({
               <span className="eic">
                 <Search />
               </span>
-              <b>“/{q}” diye bir komut yok</b>
+              <b>{t("slash.menu.noCommand", { query: q })}</b>
               <p>
-                Enter'a basarsan bu metin normal mesaj olarak gönderilir.
+                {t("slash.menu.enterSends")}
                 <br />
-                Tüm komutları görmek için <b style={{ fontSize: 13, color: "var(--dsx-t1)" }}>/help</b> yaz.
+                {tNodes(t, "slash.menu.seeAll", { help: <b style={{ fontSize: 13, color: "var(--dsx-t1)" }}>/help</b> })}
               </p>
               {frequent.length ? (
                 <>
-                  <div className="sect">Sık kullanılanlar</div>
+                  <div className="sect">{t("slash.menu.frequent")}</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
                     {frequent.map((c) => {
                       const Icon = iconFor(c);
@@ -283,12 +291,12 @@ export default function SlashCommandMenu({
             </div>
           ) : empty ? (
             <div className="scm-empty">
-              <p>Bu kategoride burada kullanılabilen komut yok.</p>
+              <p>{t("slash.menu.emptyCategory")}</p>
             </div>
           ) : (
             sections.map((s) => (
               <div key={s.id} role="group" aria-label={s.label}>
-                <div className="dsx-sg">{s.label.toLocaleUpperCase("tr")}</div>
+                <div className="dsx-sg">{upper(s.label, locale)}</div>
                 {s.items.map((cmd) => {
                   n += 1;
                   return (
@@ -301,11 +309,11 @@ export default function SlashCommandMenu({
         </div>
         {compact ? null : (
           <div className="scm-foot" aria-hidden="true">
-            <span><b className="dsx-kbd">↑</b><b className="dsx-kbd">↓</b> gez</span>
-            <span><b className="dsx-kbd">↵</b> seç</span>
-            <span><b className="dsx-kbd">⇥</b> tamamla</span>
-            <span><b className="dsx-kbd">⌘</b><b className="dsx-kbd">1–5</b> kategori</span>
-            <span className="r"><b className="dsx-kbd">esc</b> kapat</span>
+            <span><b className="dsx-kbd">↑</b><b className="dsx-kbd">↓</b> {t("slash.menu.kNavigate")}</span>
+            <span><b className="dsx-kbd">↵</b> {t("slash.menu.kSelect")}</span>
+            <span><b className="dsx-kbd">⇥</b> {t("slash.menu.kComplete")}</span>
+            <span><b className="dsx-kbd">⌘</b><b className="dsx-kbd">1–5</b> {t("slash.menu.kCategory")}</span>
+            <span className="r"><b className="dsx-kbd">esc</b> {t("slash.menu.kClose")}</span>
           </div>
         )}
       </div>
@@ -334,10 +342,9 @@ function markPrefix(text, q) {
   );
 }
 
-const PRESENCE_TEXT = { online: "Çevrimiçi", idle: "Boşta", dnd: "Rahatsız etmeyin", offline: "Çevrimdışı" };
-
-/** "Kullanıcı seç · “yi”": BU KANALDA / SUNUCU ÜYELERİ (+ Kendin when the arg is optional). */
+/** "Choose a user · “yi”": recent people here / all members (+ yourself when the arg is optional). */
 export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover, onPick, compact = false, self = null, menuRef }) {
+  const { t } = useLocale();
   const motionProps = useMenuMotion();
   const listRef = useRef(null);
   useEffect(() => {
@@ -346,12 +353,12 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
   let n = -1;
   const total = sections.reduce((s, x) => s + x.items.length, 0);
   return (
-    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label="Kullanıcı seç" onMouseDown={(e) => e.preventDefault()} {...motionProps}>
+    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label={t("slash.picker.user")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
       <div className="dsx-pk-h">
         <User className="dsx-ico" size={16} />
-        <b>Kullanıcı seç</b>
+        <b>{t("slash.picker.user")}</b>
         {query ? ` · “${query}”` : null}
-        {compact ? null : <span className="r">↑↓ gez · ↵ seç · ⇥ tamamla</span>}
+        {compact ? null : <span className="r">{`↑↓ ${t("slash.menu.kNavigate")} · ↵ ${t("slash.menu.kSelect")} · ⇥ ${t("slash.menu.kComplete")}`}</span>}
       </div>
       <div className="dsx-pk-list" ref={listRef}>
         {sections.map((s) => (
@@ -372,7 +379,7 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
                   <div style={{ minWidth: 0 }}>
                     <div className="nm" style={it.roleColor ? { color: it.roleColor } : undefined}>{markPrefix(name, query)}</div>
                     <div className="un">
-                      @{markPrefix(u.username, query)} · {it.status || PRESENCE_TEXT[it.presence] || "Çevrimdışı"}
+                      @{markPrefix(u.username, query)} · {it.status || presenceLabel(t, it.presence)}
                     </div>
                   </div>
                   <div className="r">
@@ -389,7 +396,7 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
             })}
           </div>
         ))}
-        {!total ? <div className="dsx-line" style={{ margin: "8px 18px", color: "var(--dsx-t3)" }}>Eşleşen üye yok</div> : null}
+        {!total ? <div className="dsx-line" style={{ margin: "8px 18px", color: "var(--dsx-t3)" }}>{t("slash.picker.noMembers")}</div> : null}
         {self ? (
           <div className="dsx-pr-row" style={{ opacity: 0.8, cursor: "default" }}>
             <span className="av">
@@ -397,8 +404,8 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
               <Pres status="online" />
             </span>
             <div>
-              <div className="nm">Kendin</div>
-              <div className="un">Boş bırakırsan kendi kartın gönderilir</div>
+              <div className="nm">{t("slash.picker.self")}</div>
+              <div className="un">{t("slash.picker.selfHint")}</div>
             </div>
           </div>
         ) : null}
@@ -408,23 +415,24 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
   );
 }
 
-/** "Süre seç" for /timeout, with the effect spelled out. */
+/** "Choose a duration" for /timeout, with the effect spelled out. */
 export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHover, target = null, reason = "", compact = false, menuRef }) {
+  const { t, locale } = useLocale();
   const motionProps = useMenuMotion();
   const d = durations[activeIndex] || durations[0];
   const until = d ? new Date(Date.now() + d.seconds * 1000) : null;
   const untilLabel = until
     ? d.seconds >= 86400
-      ? until.toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" })
-      : until.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" })
+      ? formatDate(until, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE })
+      : formatDate(until, locale, { hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE })
     : "";
   const tname = target ? target.nickname || target.displayName || target.username : null;
   return (
-    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label="Süre seç" onMouseDown={(e) => e.preventDefault()} {...motionProps}>
+    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label={t("slash.picker.duration")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
       <div className="dsx-pk-h">
         <Timer className="dsx-ico" size={16} />
-        <b>Süre seç</b>
-        {compact ? null : <span className="r">←→ gez · ↵ seç</span>}
+        <b>{t("slash.picker.duration")}</b>
+        {compact ? null : <span className="r">{`←→ ${t("slash.menu.kNavigate")} · ↵ ${t("slash.menu.kSelect")}`}</span>}
       </div>
       <div className="dsx-durs">
         {durations.map((x, i) => (
@@ -437,28 +445,31 @@ export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHove
         <div className="warn">
           {target ? <Avatar size={36} name={tname} user={target} imageUrl={target.avatarUrl || undefined} animate="never" /> : null}
           <div>
-            {tname ? <b style={{ color: target.roleColor || "var(--dsx-t1)" }}>{tname}</b> : "Üye"} <b className="t">{untilLabel}'a kadar</b> mesaj yazamayacak, tepki
-            veremeyecek ve sesli kanaldan çıkarılacak.
+            {tNodes(t, "slash.picker.timeoutEffect", {
+              name: tname ? <b style={{ color: target.roleColor || "var(--dsx-t1)" }}>{tname}</b> : t("slash.picker.member"),
+              until: <b className="t">{t("slash.picker.until", { time: untilLabel })}</b>,
+            })}
           </div>
         </div>
       ) : null}
       <div className="dsx-lbl" style={{ margin: "0 18px 6px" }}>
-        Sebep <i>isteğe bağlı · denetim kaydına yazılır</i>
+        {t("polls.reason")} <i>{t("slash.picker.reasonNote")}</i>
       </div>
-      <div className={`reason ${reason ? "" : "is-empty"}`}>{reason || "Örn. spam, kural 3"}</div>
+      <div className={`reason ${reason ? "" : "is-empty"}`}>{reason || t("slash.picker.reasonPlaceholder")}</div>
     </motion.div>
   );
 }
 
 /** /purge: how many messages. */
 export function CountPicker({ counts = [], activeIndex = 0, onPick, onHover, compact = false, menuRef }) {
+  const { t } = useLocale();
   const motionProps = useMenuMotion();
   return (
-    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label="Kaç mesaj?" onMouseDown={(e) => e.preventDefault()} {...motionProps}>
+    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label={t("slash.picker.countAria")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
       <div className="dsx-pk-h">
         <Eraser className="dsx-ico" size={16} />
-        <b>Kaç mesaj silinsin?</b>
-        {compact ? null : <span className="r">←→ gez · ↵ seç · 1–100</span>}
+        <b>{t("slash.picker.countTitle")}</b>
+        {compact ? null : <span className="r">{`←→ ${t("slash.menu.kNavigate")} · ↵ ${t("slash.menu.kSelect")} · 1–100`}</span>}
       </div>
       <div className="dsx-durs" style={{ paddingBottom: 16 }}>
         {counts.map((c, i) => (

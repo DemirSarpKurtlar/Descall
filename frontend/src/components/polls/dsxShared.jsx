@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useReducedMotion } from "framer-motion";
+import { formatDate, formatNumber, formatRelativeTime, formatTime } from "../../i18n/format";
+import { APP_TIMEZONE } from "../../lib/datetime";
 import "./dsx.css";
 
 /** Body portal for sheets and popovers. */
@@ -41,31 +43,42 @@ export function useCountUp(value, { duration = 750, enabled = true } = {}) {
   return shown;
 }
 
-/** "2 sa önce", "az önce", "3 gün önce". */
-export function relativeTr(iso, now = Date.now()) {
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "";
-  const s = Math.max(0, Math.round((now - t) / 1000));
-  if (s < 60) return "az önce";
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m} dk önce`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h} sa önce`;
-  const d = Math.round(h / 24);
-  if (d < 30) return `${d} gün önce`;
-  return new Date(t).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Istanbul" });
+/** "just now", then "2 hr. ago" / "2 sa. önce", "3 days ago"; a date after 30 days. */
+export function relativeShort(iso, locale, t, now = Date.now()) {
+  const ms = new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return "";
+  if (now - ms < 60000) return t("polls.justNow");
+  if (now - ms < 30 * 86400000) return formatRelativeTime(ms, locale, { now, style: "short" });
+  return appDate(iso, locale);
 }
 
-export function trDate(iso) {
+/** "18 Eki 2026" / "18 Oct 2026" (Europe/Istanbul, like the rest of the app cards). */
+export function appDate(iso, locale) {
   const d = new Date(iso);
   if (!iso || !Number.isFinite(d.getTime())) return "";
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Istanbul" });
+  return formatDate(d, locale, { day: "numeric", month: "short", year: "numeric", timeZone: APP_TIMEZONE });
 }
 
-export function trTime(iso) {
+export function appClock(iso, locale) {
   const d = new Date(iso);
   if (!iso || !Number.isFinite(d.getTime())) return "";
-  return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
+  return formatTime(d, locale, { hour: "2-digit", minute: "2-digit", timeZone: APP_TIMEZONE });
+}
+
+/** "%42" / "42 %" / "42%" in the UI language. */
+export function percent(value, locale) {
+  return formatNumber((Number(value) || 0) / 100, locale, { style: "percent", maximumFractionDigits: 0 });
+}
+
+/**
+ * Translate `key` and put React nodes where its {placeholders} are, so the word
+ * order stays the translator's: tNodes(t, "polls.app.tip", { slash: <b>/</b> }).
+ */
+export function tNodes(t, key, nodes, vars = {}) {
+  const names = Object.keys(nodes);
+  const marks = Object.fromEntries(names.map((n, i) => [n, `\u0001${i}\u0001`]));
+  const text = String(t(key, { ...vars, ...marks }));
+  return text.split(/\u0001(\d+)\u0001/).map((part, i) => (i % 2 ? <Fragment key={i}>{nodes[names[Number(part)]]}</Fragment> : part));
 }
 
 /** Compact layout for phones and narrow chat columns. */
@@ -108,10 +121,9 @@ export function DescallMark({ size = 18, white = true }) {
   return <img src={`${base}brand/descall-symbol.svg`} alt="" width={size} height={size} style={{ display: "block", filter: white ? "brightness(0) invert(1)" : undefined }} />;
 }
 
-export const PRESENCE_LABEL = {
-  online: "Çevrimiçi",
-  idle: "Boşta",
-  dnd: "Rahatsız etmeyin",
-  offline: "Çevrimdışı",
-  invisible: "Çevrimdışı",
-};
+const PRESENCE_KEYS = { online: "online", idle: "idle", dnd: "dnd", offline: "offline", invisible: "offline" };
+
+/** "Online" / "Çevrimiçi" ...; unknown states read as offline. */
+export function presenceLabel(t, status) {
+  return t(`polls.presence.${PRESENCE_KEYS[status] || "offline"}`);
+}

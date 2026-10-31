@@ -66,7 +66,7 @@ export default function CallSummaryBubble({ summary }) {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Users size={11} />
               <span>
-                {t("{count} participants joined", { count: participantCount })}
+                {t("chatx.participantsJoined", { count: participantCount })}
               </span>
             </div>
           </div>

@@ -9,7 +9,6 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const composer = readFileSync(join(root, "components/chat/MessageComposer.jsx"), "utf8");
 const list = readFileSync(join(root, "components/chat/MessageList.jsx"), "utf8");
-const bubble = readFileSync(join(root, "components/chat/MessageBubble.jsx"), "utf8");
 const chat = readFileSync(join(root, "styles/glass/chat.css"), "utf8");
 const polish = readFileSync(join(root, "styles/ui-polish.css"), "utf8");
 
@@ -25,8 +24,8 @@ assert.ok(!composer.includes("blur()"), "composer never blurs the field when the
 assert.ok(!composer.includes("msg-edit-box"), "edit mode is not this bar");
 
 assert.ok(list.includes('className="msg-edit-box"'), "message edit stays inline");
-assert.ok(bubble.includes('className="msg-edit-box"'), "bubble edit stays inline");
-assert.ok(!list.includes("composer-reply-bar") && !bubble.includes("composer-reply-bar"), "edit does not render the reply strip");
+// The bubble lives in MessageList.jsx (the unused components/chat/MessageBubble.jsx was deleted).
+assert.ok(!list.includes("composer-reply-bar"), "edit does not render the reply strip");
 
 assert.ok(polish.includes(".composer-row {\n  display: flex;"), "non-glass row stays a normal flex line");
 

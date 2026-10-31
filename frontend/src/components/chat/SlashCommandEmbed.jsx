@@ -1,6 +1,7 @@
 import { Avatar } from "../ui/Avatar";
 import { casinoHiddenOnThisDevice, isCasinoEmbed, isCasinoGameCommandName } from "../../lib/casinoCommands";
 import { displayText } from "../../lib/profanity";
+import { useT } from "../../context/LocaleContext";
 
 function colorToCss(color) {
   const n = Number(color);
@@ -37,8 +38,9 @@ function renderInlineMarkdown(text) {
 }
 
 function FieldValue({ value }) {
+  const t = useT();
   if (value && typeof value === "object" && value.kind === "user") {
-    const label = value.displayName || value.username || "User";
+    const label = value.displayName || value.username || t("polls.user");
     return (
       <span className="slash-embed-user">
         <Avatar
