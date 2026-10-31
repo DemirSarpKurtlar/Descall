@@ -28,8 +28,9 @@ export function staffGroups(grantable) {
 }
 
 /** null (= every section, set before 3.3.0) → the full list, else the list. */
-export function effectiveSections(sections, grantable) {
-  return sections == null ? [...(grantable || [])] : [...sections];
+export function effectiveSections(sections, grantable, legacy) {
+  // null = set before 3.3.0: every section except the sensitive ones (DM inceleme).
+  return sections == null ? [...(legacy || grantable || [])] : [...sections];
 }
 
 function Avatar({ user }) {
@@ -37,8 +38,8 @@ function Avatar({ user }) {
   return <span className="ast-av is-letter" aria-hidden="true">{String(user.displayName || user.username || "?").slice(0, 1).toUpperCase()}</span>;
 }
 
-function AdminCard({ admin, grantable, labelOf, t, onSaved, onRemoved }) {
-  const initial = useMemo(() => effectiveSections(admin.sections, grantable), [admin.sections, grantable]);
+function AdminCard({ admin, grantable, legacy, labelOf, t, onSaved, onRemoved }) {
+  const initial = useMemo(() => effectiveSections(admin.sections, grantable, legacy), [admin.sections, grantable, legacy]);
   const [picked, setPicked] = useState(() => new Set(initial));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -230,7 +231,7 @@ export default function AdminStaff({ tabs = [] }) {
   const load = useCallback(() => {
     setErr("");
     adminFetch("/staff")
-      .then((d) => setData({ admins: d?.admins || [], grantable: d?.grantable || [] }))
+      .then((d) => setData({ admins: d?.admins || [], grantable: d?.grantable || [], legacy: d?.legacy || null }))
       .catch((e) => setErr(e?.message || t("admin.staffLoadFailed")));
   }, [t]);
   useEffect(() => {
@@ -256,7 +257,7 @@ export default function AdminStaff({ tabs = [] }) {
       {data ? (
         <div className="ast-list">
           {data.admins.map((a) => (
-            <AdminCard key={a.id} admin={a} grantable={data.grantable} labelOf={labelOf} t={t} onSaved={onSaved} onRemoved={onRemoved} />
+            <AdminCard key={a.id} admin={a} grantable={data.grantable} legacy={data.legacy} labelOf={labelOf} t={t} onSaved={onSaved} onRemoved={onRemoved} />
           ))}
         </div>
       ) : null}

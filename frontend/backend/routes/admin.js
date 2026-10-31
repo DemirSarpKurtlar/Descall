@@ -978,34 +978,54 @@ router.get("/export/messages", (_req, res) => {
   res.send(JSON.stringify(state.generalMessages, null, 2));
 });
 
-router.get("/dm/conversations", async (_req, res) => {
+// DM inceleme (3.7.1, section dmReview). The privacy policy allows reading a
+// conversation only for a report, a security investigation or a legal request,
+// so the list is metadata only and the text of one conversation is returned by
+// POST /dm/:key/view with a written reason (step-up code, audited). There is no
+// bulk export of everyone's messages.
+const DM_VIEW_PURPOSES = Object.freeze(["report", "security", "legal"]);
+
+router.get("/dm/conversations", async (req, res) => {
   try {
-    const payload = await insights.listDmConversations({ presenceIds: presenceUserIds(_req) });
+    const payload = await insights.listDmConversations({ presenceIds: presenceUserIds(req) });
+    const userId = String(req.query.userId || "");
+    if (userId) payload.conversations = payload.conversations.filter((c) => c.users.some((u) => String(u.id) === userId));
+    res.set("Cache-Control", "no-store");
     res.json(payload);
   } catch (e) {
     console.error("[ADMIN] dm conversations failed:", e);
-    res.status(500).json({ error: e.message || "Failed to load DM conversations." });
+    res.status(500).json({ error: "DM listesi yüklenemedi." });
   }
 });
 
-router.get("/dm/export", async (req, res) => {
+router.post("/dm/:key/view", async (req, res) => {
+  const purpose = String(req.body?.purpose || "");
+  const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : "";
+  if (!DM_VIEW_PURPOSES.includes(purpose)) return res.status(400).json({ error: "Bir inceleme nedeni seç.", code: "DM_VIEW_PURPOSE" });
+  if (reason.length < 10) return res.status(400).json({ error: "Nedeni en az 10 karakterle yaz.", code: "DM_VIEW_REASON" });
   try {
-    const payload = await insights.exportDmJson({ presenceIds: presenceUserIds(req) });
-    res.json(payload);
-  } catch (e) {
-    console.error("[ADMIN] dm export failed:", e);
-    res.status(500).json({ error: e.message || "Failed to export DMs." });
-  }
-});
-
-router.get("/dm/:key", async (req, res) => {
-  try {
-    const payload = await insights.listDmThread(decodeURIComponent(req.params.key));
-    res.json(payload);
+    const key = decodeURIComponent(req.params.key);
+    const payload = await insights.listDmThread(key);
+    audit(req.user, "dm_view", payload.key, {
+      purpose,
+      reason,
+      users: payload.users.map((u) => u.username),
+      messages: payload.messages.length,
+    });
+    res.set("Cache-Control", "no-store");
+    res.json({
+      ...payload,
+      messages: payload.messages.map(({ preview, ...m }) => {
+        const media = String(m.mediaType || "").toLowerCase();
+        const kind = m.isVoice || media === "audio" ? "voice" : media === "image" ? "image" : m.mediaType || m.mediaUrl ? "file" : "text";
+        return { ...m, kind, text: kind === "text" || kind === "image" ? m.text : "" };
+      }),
+      viewedAt: new Date().toISOString(),
+    });
   } catch (e) {
     const status = e.status || 500;
-    if (status >= 500) console.error("[ADMIN] dm thread failed:", e);
-    res.status(status).json({ error: e.message || "Failed to load conversation." });
+    if (status >= 500) console.error("[ADMIN] dm view failed:", e);
+    res.status(status).json({ error: status === 400 ? "Geçersiz konuşma." : "Konuşma yüklenemedi." });
   }
 });
 
@@ -1024,15 +1044,16 @@ router.delete("/dm/:key", async (req, res) => {
 
 router.delete("/dm/:key/messages/:msgId", async (req, res) => {
   try {
-    await insights.deleteDmMessage(req.params.msgId);
+    await insights.deleteDmMessage(decodeURIComponent(req.params.key), req.params.msgId);
     const arr = state.dmHistory.get(req.params.key);
     if (arr) {
       state.dmHistory.set(req.params.key, arr.filter((m) => m.id !== req.params.msgId));
     }
-    audit(req.user, "dm_msg_delete", req.params.msgId, {});
+    audit(req.user, "dm_msg_delete", req.params.msgId, { conversation: decodeURIComponent(req.params.key) });
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: e.message || "Failed to delete message." });
+    const status = e.status || 500;
+    res.status(status).json({ error: status === 404 ? "Mesaj bu konuşmada yok." : status === 400 ? "Geçersiz konuşma." : "Mesaj silinemedi." });
   }
 });
 

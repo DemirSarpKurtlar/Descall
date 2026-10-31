@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle, Ban, Clock, Coins, Flag, Globe, History, Lock, LockOpen,
   Download, LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
-  Wallet,
+  Wallet, Eye,
 } from "../ui/Icon.jsx";
+import UserLens from "./UserLens.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { saveJsonFile } from "../../lib/saveFile";
 import { Avatar } from "../ui/Avatar";
@@ -55,6 +56,7 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState(null);
+  const [lensOpen, setLensOpen] = useState(false);
   const [message, setMessage] = useState("");
   const walletBtnRef = useRef(null);
   const [walletHint, setWalletHint] = useState(false);
@@ -254,6 +256,9 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
               >
                 <Download size={14} /> {t("admin.dataExport")}
               </button>
+              <button type="button" className="dossier-act slate" onClick={() => setLensOpen(true)}>
+                <Eye size={14} /> {t("admin.lensOpen")}
+              </button>
             </div>
           </header>
 
@@ -407,6 +412,7 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
           </div>
         </>
       ) : null}
+      {lensOpen ? <UserLens userId={userId} onClose={() => setLensOpen(false)} /> : null}
     </div>
   );
 }

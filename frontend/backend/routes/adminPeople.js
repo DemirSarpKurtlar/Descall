@@ -8,6 +8,7 @@ const moderation = require("../lib/moderation");
 const descoin = require("../lib/descoin");
 const { listSessions } = require("../lib/sessions");
 const { buildDossier } = require("../lib/userDossier");
+const { buildLens } = require("../lib/userLens");
 const reports = require("../lib/userReports");
 const workflow = require("../lib/reportWorkflow");
 
@@ -62,6 +63,21 @@ router.get("/people/:id/dossier", async (req, res) => {
     if (err.code === "NOT_FOUND") return res.status(404).json({ error: err.message });
     console.error("[dossier]", err);
     res.status(500).json({ error: err.message || "Failed to load dossier." });
+  }
+});
+
+// Kullanıcının gözünden (3.7.2): what this account can / cannot do right now.
+// Read-only and without message content; the view is audited.
+router.get("/people/:id/lens", async (req, res) => {
+  try {
+    const lens = await buildLens(req.params.id);
+    state.appendAudit(req.user.id, req.user.username, "user_lens", lens.user.id, { username: lens.user.username });
+    res.set("Cache-Control", "no-store");
+    res.json(lens);
+  } catch (err) {
+    if (err.code === "NOT_FOUND") return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    console.error("[lens]", err?.message || err);
+    res.status(500).json({ error: "Görünüm yüklenemedi." });
   }
 });
 

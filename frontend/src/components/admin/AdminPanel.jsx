@@ -41,10 +41,12 @@ import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import MaintenanceTab from "./MaintenanceTab";
 import SuspiciousTab from "./SuspiciousTab";
-import { ShieldWarning, UserGear, Bug } from "../ui/Icon.jsx";
+import { ShieldWarning, UserGear, Bug, Trophy } from "../ui/Icon.jsx";
 import AdminStaff from "./AdminStaff.jsx";
 import AccessBansTab from "./AccessBansTab.jsx";
 import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
+import AdminTopUsers from "./AdminTopUsers.jsx";
+import AdminDmInbox from "./AdminDmInbox.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import {
@@ -98,6 +100,7 @@ const TABS = [
   { id: "analytics", label: "admin.analytics", icon: Activity },
   // Kayıt İstatistikleri opens in its own window (Electron) or an in-app window (web / iPad).
   { id: "signupStats", label: "admin.signupStats", icon: BarChart3 },
+  { id: "topUsers", label: "admin.topUsers", icon: Trophy },
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
@@ -108,6 +111,8 @@ const TABS = [
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
   { id: "moderation", label: "admin.moderation", icon: Shield },
+  // DM inceleme (3.7.1): never in the legacy "all sections" default; owner grants it.
+  { id: "dmReview", label: "admin.dmReview", icon: MessageCircle },
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "accessBans", label: "admin.accessBans", icon: Ban },
   { id: "system", label: "admin.system", icon: Settings },
@@ -830,6 +835,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "accessBans" && <AccessBansTab />}
 
         {tab === "errors" && <ErrorIssuesTab />}
+        {tab === "topUsers" && <AdminTopUsers />}
+        {tab === "dmReview" && <AdminDmInbox />}
 
         {tab === "announcements" && (
           <section className="admin-section admin-section-full">

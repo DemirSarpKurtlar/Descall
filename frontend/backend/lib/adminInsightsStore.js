@@ -58,7 +58,7 @@ async function recentLastSeenUsers(limit = 80) {
 
 async function loadMessageRows() {
   const [dmRows, serverRows, groupRows] = await Promise.all([
-    fetchAll("dm_messages", DM_COLS, { order: "created_at" }),
+    fetchAll("dm_messages", "id, from_user_id, to_user_id, created_at", { order: "created_at" }),
     fetchAll("server_messages", SEND_COLS, { order: "created_at" }),
     fetchAll("group_messages", SEND_COLS, { order: "created_at" }),
   ]);
@@ -117,8 +117,13 @@ async function getLeaderboard({
   };
 }
 
+// DM inceleme (3.7.1): the list never carries message text, only who talked,
+// how much and when. Text is read one conversation at a time with a reason
+// (routes/admin.js POST /dm/:key/view).
+const DM_META_COLS = "id, from_user_id, to_user_id, created_at";
+
 async function listDmConversations({ presenceIds = [] } = {}) {
-  const dmRows = await fetchAll("dm_messages", DM_COLS, { order: "created_at" });
+  const dmRows = await fetchAll("dm_messages", DM_META_COLS, { order: "created_at" });
   const ids = [];
   for (const row of dmRows) {
     ids.push(row.from_user_id, row.to_user_id);
@@ -131,7 +136,7 @@ async function listDmConversations({ presenceIds = [] } = {}) {
       users,
       presenceIds,
       nowMs: Date.now(),
-    }),
+    }).map(({ last, ...c }) => ({ ...c, lastFromUserId: last?.fromUserId || null })),
   };
 }
 
@@ -188,28 +193,28 @@ async function deleteDmThread(key) {
   return { ok: true, removed: count || 0 };
 }
 
-async function deleteDmMessage(msgId) {
-  const { error } = await supabase.from("dm_messages").delete().eq("id", msgId);
+async function deleteDmMessage(key, msgId) {
+  const parsed = parseUuidConvKey(key);
+  if (!parsed) {
+    const err = new Error("Invalid conversation key.");
+    err.status = 400;
+    throw err;
+  }
+  // Only a message of this conversation: the id alone could name any DM.
+  const { error, count } = await supabase
+    .from("dm_messages")
+    .delete({ count: "exact" })
+    .eq("id", msgId)
+    .or(
+      `and(from_user_id.eq.${parsed.a},to_user_id.eq.${parsed.b}),and(from_user_id.eq.${parsed.b},to_user_id.eq.${parsed.a})`
+    );
   if (error) throw error;
+  if (!count) {
+    const err = new Error("Message not found.");
+    err.status = 404;
+    throw err;
+  }
   return { ok: true };
-}
-
-async function exportDmJson({ presenceIds = [] } = {}) {
-  const dmRows = await fetchAll("dm_messages", DM_COLS, { order: "created_at" });
-  const ids = [];
-  for (const row of dmRows) ids.push(row.from_user_id, row.to_user_id);
-  const users = await usersByIds(ids);
-  const usersById = new Map(users.map((u) => [String(u.id), u]));
-  return {
-    generatedAt: new Date().toISOString(),
-    conversations: buildConversations({
-      dmRows,
-      users,
-      presenceIds,
-      nowMs: Date.now(),
-    }),
-    messages: dmRows.map((row) => mapAdminDmMessage(row, usersById)),
-  };
 }
 
 module.exports = {
@@ -218,5 +223,4 @@ module.exports = {
   listDmThread,
   deleteDmThread,
   deleteDmMessage,
-  exportDmJson,
 };

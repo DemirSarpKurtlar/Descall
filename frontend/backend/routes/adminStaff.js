@@ -52,13 +52,13 @@ router.get("/staff", async (_req, res) => {
         lastSeenAt: u.last_seen_at || null,
         owner,
         twoFactor: Boolean(u.totp_enabled_at),
-        // null = every section (set before 3.3.0)
+        // null = every section except the sensitive ones (set before 3.3.0)
         sections: owner ? null : u.admin_permissions == null ? null : perms.normalizeSections(u.admin_permissions),
       };
     });
     admins.sort((a, b) => Number(b.owner) - Number(a.owner));
     res.set("Cache-Control", "no-store");
-    return res.json({ admins, grantable: perms.GRANTABLE_SECTIONS });
+    return res.json({ admins, grantable: perms.GRANTABLE_SECTIONS, legacy: perms.LEGACY_SECTIONS });
   } catch (err) {
     console.error("[adminStaff] list", err?.message || err);
     return res.status(500).json({ error: "Yöneticiler yüklenemedi." });

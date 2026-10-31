@@ -1,0 +1,105 @@
+/* DM inceleme (3.7.1): reason dialog + "this view was logged" banner.
+   The scrim sits above the 99998 admin shell, like the other admin overlays. */
+.adm-dmv-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(6, 8, 14, 0.62);
+  -webkit-backdrop-filter: blur(28px);
+  backdrop-filter: blur(28px);
+}
+.adm-dmv-card {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  border-radius: 20px;
+  color: var(--adm-t1, #f4f6fb);
+  background: rgba(22, 24, 34, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.adm-dmv-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #ffd27a;
+  background: rgba(255, 196, 80, 0.14);
+}
+.adm-dmv-card h3 { margin: 2px 0 0; font-size: 17px; font-weight: 650; }
+.adm-dmv-who { margin: 0; font-weight: 600; opacity: 0.9; }
+.adm-dmv-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--adm-t2, rgba(244, 246, 251, 0.68)); }
+.adm-dmv-purposes { display: flex; flex-wrap: wrap; gap: 6px; }
+.adm-dmv-purposes button {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+.adm-dmv-purposes button:active { transform: scale(0.97); }
+.adm-dmv-purposes button:hover { background: rgba(255, 255, 255, 0.08); }
+.adm-dmv-purposes button.is-on,
+.adm-dmv-purposes button.is-on:hover { background: rgba(var(--g-brand-rgb, 120, 140, 255), 0.38); border-color: rgba(var(--g-brand-rgb, 120, 140, 255), 0.85); color: #fff; font-weight: 600; }
+@media (hover: none) { .adm-dmv-purposes button:not(.is-on):hover { background: rgba(255, 255, 255, 0.04); } }
+.admin-dm-thread-head .danger { white-space: nowrap; flex: none; }
+.adm-dmv-label { font-size: 12px; font-weight: 600; opacity: 0.75; margin-top: 4px; }
+.adm-dmv-card textarea { width: 100%; resize: vertical; min-height: 72px; font: inherit; }
+.adm-dmv-count { min-height: 16px; font-size: 12px; color: var(--adm-t2, rgba(244, 246, 251, 0.6)); }
+.adm-dmv-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.adm-dmv-actions button {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.adm-dmv-cancel { background: transparent; color: inherit; }
+.adm-dmv-go { background: #ffb84a; color: #1a1306; border-color: transparent !important; }
+.adm-dmv-go:disabled { opacity: 0.45; cursor: not-allowed; }
+.adm-dmv-purposes button:focus-visible,
+.adm-dmv-actions button:focus-visible { outline: 2px solid rgba(var(--g-brand-rgb, 120, 140, 255), 0.9); outline-offset: 2px; }
+
+.adm-dmv-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: #ffd27a;
+  background: rgba(255, 196, 80, 0.1);
+  border: 1px solid rgba(255, 196, 80, 0.22);
+}
+.adm-dmv-banner span { flex: 1; min-width: 0; }
+.adm-dmv-banner button { background: none; border: 0; color: inherit; font: inherit; font-weight: 600; cursor: pointer; padding: 4px 6px; }
+.adm-dmv-kind { display: inline-flex; align-items: center; gap: 6px; opacity: 0.75; font-style: italic; }
+
+@media (max-width: 720px) {
+  .adm-dmv-scrim { align-items: flex-end; padding: 0; }
+  .adm-dmv-card { width: 100%; border-radius: 22px 22px 0 0; padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+  .adm-dmv-purposes button, .adm-dmv-actions button { height: 44px; }
+  .adm-dmv-actions button { flex: 1; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .adm-dmv-scrim { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(6, 8, 14, 0.85); }
+  .adm-dmv-card { background: rgb(22, 24, 34); }
+}
+@media (prefers-reduced-motion: reduce) { .adm-dmv-purposes button { transition: none; } }

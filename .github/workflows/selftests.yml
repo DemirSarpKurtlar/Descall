@@ -187,6 +187,9 @@ jobs:
           node src/components/settings/dataExport.selftest.mjs
           node backend/lib/errorGroups.selftest.cjs
           node src/components/admin/errorIssues.selftest.mjs
+          node src/components/admin/dmReview.selftest.mjs
+          node src/components/admin/userLens.selftest.mjs
+          node backend/lib/userLens.selftest.cjs
           node backend/middleware/gzipJson.selftest.cjs
           node src/lib/onlineRoster.unit.test.mjs
           node backend/lib/edgeConfig.selftest.cjs
