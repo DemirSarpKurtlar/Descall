@@ -3,7 +3,6 @@ import { removeBootSplashNow, rootHasPainted } from "./lib/bootSplashDirect.js";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { resolveInitialLocale, translate, loadI18nCatalogs } from "./i18n";
 import { isPublicMarketingPath } from "./site/marketingPaths";
 import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken, hydrateSecureToken } from "./lib/storage";
@@ -121,12 +120,12 @@ try {
   document.documentElement.setAttribute("data-theme", "dark");
 }
 
-const bootLocale = resolveInitialLocale();
 const statusEl = document.getElementById("boot-status");
 // Keep status for screen readers only, splash UI is logo + thin bar (no STARTING wall).
 // The inline splash already wrote "Yükleniyor" (window.__descallBootTr). Catalogs
 // are still loading here, so translate() would flip it to English "Loading" (B2).
-if (statusEl && !window.__descallBootTr) statusEl.textContent = translate(bootLocale, "Loading");
+// (English here: no catalog is loaded yet, which is what translate() returned before.)
+if (statusEl && !window.__descallBootTr) statusEl.textContent = "Loading";
 
 /**
  * Progressive marketing hydration: paint #seo-static first (LCP / crawlers),
@@ -220,7 +219,7 @@ async function bootApp() {
       import("./components/boot/AppBootSkeleton.jsx"),
       // Same cascade order as before: app styles, then the skeleton's.
       import("./styles.css").then(() => import("./styles/boot-skeleton.css")),
-      loadI18nCatalogs(),
+      import("./i18n/index.js").then((m) => m.loadI18nCatalogs()),
       // iPhone + mobile web Liquid Glass (html.glass-ui) and desktop Liquid Glass
       // (html.glass-desktop, on at >=960px unless a kill switch says otherwise).
       import("./lib/glassUi.js").then((m) => m.initGlassUi()).catch(() => {}),

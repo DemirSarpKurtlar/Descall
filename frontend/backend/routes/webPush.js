@@ -1,5 +1,6 @@
 "use strict";
 
+const { normalizeLocale } = require("../lib/locales");
 const express = require("express");
 const { requireAuth } = require("../middleware/auth");
 const supabase = require("../db/supabase");
@@ -76,8 +77,8 @@ router.post("/fcm-token", requireAuth, async (req, res) => {
   if (platform === fcm.IOS_ALERT_PLATFORM && !fcm.isApnsDeviceToken(token)) {
     return res.status(400).json({ error: "Invalid iOS push token." });
   }
-  const rawLocale = typeof req.body?.locale === "string" ? req.body.locale.trim().toLowerCase() : "";
-  const locale = platform === fcm.IOS_ALERT_PLATFORM && (rawLocale === "tr" || rawLocale === "en") ? rawLocale : null;
+  const rawLocale = typeof req.body?.locale === "string" ? req.body.locale.trim() : "";
+  const locale = platform === fcm.IOS_ALERT_PLATFORM ? normalizeLocale(rawLocale) : null;
   try {
     await fcm.upsertDeviceToken(req.user.id, token, platform, locale);
     return res.status(204).end();

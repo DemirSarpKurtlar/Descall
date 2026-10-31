@@ -136,7 +136,10 @@ async function run() {
     const actions = r.body.events.map((e) => `${e.actorUsername}:${e.action}`);
     for (const a of ["demir:created", "demir:message_edited", "demir:cancelled", "demir:extended", "demir:ended_early"])
       assert(actions.includes(a), "audit " + a + " in " + actions.join());
-    assert(r.body.summary.monthDowntimeMs > 0 || new Date().getUTCDate() === 1, "downtime from real rows");
+    // The summary month is the Istanbul calendar month: right after midnight on the 1st
+    // (Istanbul) the window that started minutes ago belongs to the previous month.
+    const istanbulDay = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", day: "numeric" }).format(new Date()));
+    assert(r.body.summary.monthDowntimeMs > 0 || istanbulDay === 1 || new Date().getUTCDate() === 1, "downtime from real rows");
 
     console.log("maintenance.integration.test.cjs: ok");
   } finally {

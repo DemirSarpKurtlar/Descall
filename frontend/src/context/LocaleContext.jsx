@@ -6,7 +6,10 @@ import {
   SUPPORTED_LOCALES,
   normalizeLocale,
   loadI18nCatalogs,
+  ensureLocaleLoaded,
 } from "../i18n/index.js";
+import { setRuntimeLocale } from "../i18n/runtime.js";
+import { FALLBACK_LOCALE } from "../i18n/registry.js";
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
 import { LocaleContext, useLocale, useT } from "./localeContextInstance";
@@ -14,6 +17,8 @@ import { LocaleContext, useLocale, useT } from "./localeContextInstance";
 export function LocaleProvider({ children, meLanguage = null }) {
   const [locale, setLocaleState] = useState(() => resolveInitialLocale({ meLanguage }));
   const [ready, setReady] = useState(false);
+  // Bumped whenever a catalog finishes loading so t() re-renders with it.
+  const [catalogVersion, setCatalogVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,6 +29,17 @@ export function LocaleProvider({ children, meLanguage = null }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRuntimeLocale(locale);
+    ensureLocaleLoaded(locale).then(() => {
+      if (!cancelled) setCatalogVersion((v) => v + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
 
   useEffect(() => {
     const fromMe = normalizeLocale(meLanguage);
@@ -44,7 +60,7 @@ export function LocaleProvider({ children, meLanguage = null }) {
   }, [locale]);
 
   const setLocale = useCallback((next) => {
-    const normalized = normalizeLocale(next) || "en";
+    const normalized = normalizeLocale(next) || FALLBACK_LOCALE;
     setLocaleState(normalized);
     persistLocale(normalized);
 
@@ -71,7 +87,8 @@ export function LocaleProvider({ children, meLanguage = null }) {
     }
   }, []);
 
-  const t = useCallback((key, vars) => translate(locale, key, vars), [locale, ready]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const t = useCallback((key, vars) => translate(locale, key, vars), [locale, ready, catalogVersion]);
 
   const value = useMemo(
     () => ({ locale, setLocale, t, locales: SUPPORTED_LOCALES }),

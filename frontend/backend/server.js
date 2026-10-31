@@ -13,6 +13,7 @@ const { setupSentryExpressErrorHandler } = require("./instrument");
 
 const express = require("express");
 const http = require("http");
+const { normalizeLocale: normalizeUiLocale } = require("./lib/locales");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
@@ -618,8 +619,13 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
     const { language, timezone } = req.body;
     
     const updateData = {};
-    if (language !== undefined) updateData.language = language;
+    // Only registered UI locales are stored (src/i18n/locales.json); anything else is ignored.
+    if (language !== undefined) {
+      const normalized = normalizeUiLocale(language);
+      if (normalized) updateData.language = normalized;
+    }
     if (timezone !== undefined) updateData.timezone = timezone;
+    if (!Object.keys(updateData).length) return res.json({ success: true });
     
     const { data, error } = await supabase
       .from("users")

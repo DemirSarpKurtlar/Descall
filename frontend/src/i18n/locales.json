@@ -1,0 +1,54 @@
+{
+  "fallback": "en",
+  "locales": [
+    {
+      "id": "en",
+      "name": "English",
+      "intl": "en-GB",
+      "dir": "ltr",
+      "status": "live"
+    },
+    {
+      "id": "tr",
+      "name": "Türkçe",
+      "intl": "tr-TR",
+      "dir": "ltr",
+      "status": "live"
+    },
+    {
+      "id": "de",
+      "name": "Deutsch",
+      "intl": "de-DE",
+      "dir": "ltr",
+      "status": "draft"
+    },
+    {
+      "id": "es",
+      "name": "Español",
+      "intl": "es-ES",
+      "dir": "ltr",
+      "status": "draft"
+    },
+    {
+      "id": "fr",
+      "name": "Français",
+      "intl": "fr-FR",
+      "dir": "ltr",
+      "status": "draft"
+    },
+    {
+      "id": "pt-BR",
+      "name": "Português (Brasil)",
+      "intl": "pt-BR",
+      "dir": "ltr",
+      "status": "draft"
+    },
+    {
+      "id": "ru",
+      "name": "Русский",
+      "intl": "ru-RU",
+      "dir": "ltr",
+      "status": "draft"
+    }
+  ]
+}
