@@ -9,6 +9,7 @@ const platformPolicy = require("../lib/platformPolicy");
 const twoFactor = require("../lib/twoFactorService");
 const { sendEmail, generateCode, SUPPORT_EMAIL } = require("../lib/mailer");
 const { buildCodeEmail, langFrom } = require("../lib/emailTemplates");
+const { bt } = require("../lib/i18n");
 const { notifyTeamNewSignup } = require("../lib/signupReport");
 const { buildUserAttributionColumns, isMissingColumnError, countryFromHeaders } = require("../lib/signupAttribution");
 const { trackSignupAttempt } = require("../lib/signupStats");
@@ -30,6 +31,7 @@ const accountDeletion = require("../lib/accountDeletion");
 const ageGate = require("../lib/ageGate");
 const appleAuth = require("../lib/appleAuth");
 const { socialSignupGate } = require("../lib/socialSignup");
+const { apiError, apiText } = require("../lib/apiError");
 const {
   isReservedUsername,
   isProtectedAccountUsername,
@@ -41,9 +43,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DUMMY_BCRYPT_HASH = "$2b$12$vBwiXx.Pn.bQ3emAQbmAPuQnbGxVl8zBbmWYnLoFFy2XbHw7nvqLi";
 const GENERIC_LOGIN_ERROR = "Invalid username or password.";
 const GENERIC_RESET_MESSAGE = "If an account with a confirmed email exists, a reset code is on the way.";
-const EMAIL_CHANGE_NEEDS_PASSWORD = "E-postayı değiştirmek için mevcut şifreni gir.";
-const EMAIL_CHANGE_NEEDS_REAUTH = "Bu hesap şifresiz. Kayıtlı e-postana gelen kodu girdikten sonra yeni adresi ekleyebilirsin.";
-const PASSWORD_CHANGE_NEEDS_CURRENT = "Şifreyi değiştirmek için mevcut şifreni gir.";
+const EMAIL_CHANGE_NEEDS_PASSWORD = "Enter your current password to change your email.";
+const EMAIL_CHANGE_NEEDS_REAUTH = "This account has no password. Enter the code sent to your saved email, then you can add the new address.";
+const PASSWORD_CHANGE_NEEDS_CURRENT = "Enter your current password to change your password.";
 
 function guard(res, ipKey, accountKey, opts, accountOpts) {
   const checks = [peek(ipKey, opts)];
@@ -164,13 +166,12 @@ async function judgeCode({ userId, purpose, code, storedHash, sentAtIso }) {
   return verdict;
 }
 
+/** Security notice to the account's email, in its language (Turkish when none matches). */
 async function notifyAccountChange(user, kind) {
   if (!user?.email || !user.email_confirmed_at) return;
-  const text =
-    kind === "password"
-      ? "Descall hesabının şifresi az önce değiştirildi. Bu sen değilsen destek ile iletişime geç."
-      : "Descall hesabında e-posta adresini değiştirme isteği var. Bu sen değilsen hemen şifreni değiştir ve destek ile iletişime geç.";
-  const subject = kind === "password" ? "Descall şifren değişti" : "Descall e-posta değişikliği";
+  const lang = langFrom("", user.language);
+  const text = bt(lang, kind === "password" ? "security.passwordChangedBody" : "security.emailChangeBody");
+  const subject = bt(lang, kind === "password" ? "security.passwordChangedSubject" : "security.emailChangeSubject");
   await sendEmail({
     to: user.email,
     subject,
@@ -190,7 +191,7 @@ async function dropSessions(req, userId, keepSessionId) {
 /**
  * Store a fresh 6-digit code and send it with the designed email
  * (lib/emailTemplates.js, 3.7.8). `template` picks the copy
- * ("email_verify_signup" for a new account), `lang` is "tr" | "en".
+ * ("email_verify_signup" for a new account), `lang` is a locale id from langFrom().
  */
 async function issueAndSendCode({
   userId,
@@ -206,7 +207,7 @@ async function issueAndSendCode({
   const update = { [column]: hashCode(code), [sentAtColumn]: new Date().toISOString() };
   await supabase.from("users").update(update).eq("id", userId);
   // Attempt counts stay for the hour. Sending another code must not reset them.
-  const mail = buildCodeEmail({ purpose: template || purpose, code, username, lang: lang === "en" ? "en" : "tr", minutes: 10 });
+  const mail = buildCodeEmail({ purpose: template || purpose, code, username, lang: lang || "tr", minutes: 10 });
   const result = await sendEmail({ to: email, subject: mail.subject, text: mail.text, html: mail.html });
   if (!result.sent && !result.skipped) {
     console.warn(`[AUTH] ${purpose} email failed`, result.error);
@@ -815,7 +816,7 @@ router.post("/2fa/verify-login", async (req, res) => {
       if (accountKey) recordFailure(accountKey, { max: 30 });
       if (verdict.totp) {
         return res.status(401).json({
-          error: verdict.reason === "replay" ? "Bu kod zaten kullanıldı. Bir sonraki kodu bekle." : "Kod yanlış. Doğrulama uygulamandaki güncel kodu ya da bir yedek kodu gir.",
+          error: verdict.reason === "replay" ? "This code was already used. Wait for the next code." : "Wrong code. Enter the current code from your authenticator app or a backup code.",
           code: verdict.reason,
         });
       }
@@ -1010,11 +1011,10 @@ router.post("/google", async (req, res) => {
 
       if (insertError || !created) {
         console.error("[AUTH] Google register error:", insertError);
-        const hint =
-          insertError?.message?.includes("google_id") || insertError?.code === "42703"
-            ? " Run supabase/migrations/20260729_add_google_oauth_columns.sql first."
-            : "";
-        return res.status(500).json({ error: `Failed to create Google user.${hint}` });
+        const needsMigration = insertError?.message?.includes("google_id") || insertError?.code === "42703";
+        // Operator hint stays in the log; the user gets one static sentence.
+        if (needsMigration) console.error("[AUTH] Run supabase/migrations/20260729_add_google_oauth_columns.sql first.");
+        return res.status(500).json({ error: "Failed to create Google user." });
       }
       user = created;
       attributionColumns = createdAttribution;
@@ -1410,7 +1410,7 @@ router.post("/email/reauth", requireAuth, async (req, res) => {
       .eq("id", req.user.id)
       .maybeSingle();
     if (!user?.email || !user.email_confirmed_at) {
-      return res.status(400).json({ error: "Doğrulanmış bir e-posta yok. Önce mevcut adresi doğrula." });
+      return res.status(400).json({ error: "There is no verified email. Verify your current address first." });
     }
     const result = await issueAndSendCode({
       userId: req.user.id,
@@ -1483,7 +1483,7 @@ router.post("/email/set", requireAuth, async (req, res) => {
     const pendingUpdate = await supabase.from("users").update({ pending_email: email }).eq("id", req.user.id);
     if (pendingUpdate.error) {
       if (isMissingColumnError(pendingUpdate.error)) {
-        return res.status(503).json({ error: "E-posta değişikliği şu an kullanılamıyor. Biraz sonra tekrar dene." });
+        return res.status(503).json({ error: "Email change is unavailable right now. Try again in a bit." });
       }
       console.error("[AUTH] email/set pending update failed");
       return res.status(500).json({ error: "Internal server error." });
@@ -1811,9 +1811,11 @@ router.post("/username", requireAuth, async (req, res) => {
     const token = signToken({ id: userId, username: nextUsername, sid: req.user.sid || null });
 
     if (user.email && user.email_confirmed_at) {
+      const lang = langFrom("", user.language);
       sendEmail({
         to: user.email,
-        text: `Your Descall username was changed from @${user.username} to @${nextUsername}.\n\nIf this wasn't you, reset your password right away and contact ${SUPPORT_EMAIL}.`,
+        subject: bt(lang, "security.usernameChangedSubject"),
+        text: bt(lang, "security.usernameChangedBody", { from: user.username, to: nextUsername, support: SUPPORT_EMAIL }),
       }).catch(() => {});
     }
 
@@ -2053,7 +2055,7 @@ async function sendPasswordResetCode(user) {
     return {
       status: "no_email",
       supportEmail: SUPPORT_CONTACT,
-      message: `This account has no email on file. Contact ${SUPPORT_CONTACT} to recover access.`,
+      ...apiText("message", "This account has no email on file. Contact {support} to recover access.", { support: SUPPORT_CONTACT }),
     };
   }
 
@@ -2241,7 +2243,7 @@ router.post("/password/request", requireAuth, async (req, res) => {
       return res.json({
         status: "no_email",
         supportEmail: SUPPORT_CONTACT,
-        message: "Doğrulanmış bir e-posta olmadan şifre sıfırlanamaz. Önce e-postanı doğrula.",
+        message: "A password can't be reset without a verified email. Verify your email first.",
       });
     }
 
@@ -2272,7 +2274,7 @@ router.post("/password/confirm", requireAuth, async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found." });
     if (!user.email_confirmed_at) {
       return res.status(400).json({
-        error: "Doğrulanmış bir e-posta olmadan şifre sıfırlanamaz. Önce e-postanı doğrula.",
+        error: "A password can't be reset without a verified email. Verify your email first.",
       });
     }
     if (user.password_hash) {

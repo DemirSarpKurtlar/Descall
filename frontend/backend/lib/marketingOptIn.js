@@ -9,6 +9,7 @@
 const crypto = require("crypto");
 const supabase = require("../db/supabase");
 const { sendEmail, escapeHtml } = require("./mailer");
+const { bt, pickLang } = require("./i18n");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,13 +32,13 @@ function unsubscribeUrl(token, env = process.env) {
   return `${publicOrigin(env)}/api/marketing/unsubscribe?token=${encodeURIComponent(token)}`;
 }
 
-function marketingFooterText(link) {
-  return `\n\nUnsubscribe any time: ${link}\n`;
+function marketingFooterText(link, locale = "en") {
+  return `\n\n${bt(langOf(locale), "marketing.unsubscribeAnyTime")} ${link}\n`;
 }
 
-function marketingFooterHtml(link) {
+function marketingFooterHtml(link, locale = "en") {
   const href = escapeHtml(link);
-  return `<p style="margin-top:24px;font-size:12px;color:#666">Unsubscribe any time: <a href="${href}">${href}</a></p>`;
+  return `<p style="margin-top:24px;font-size:12px;color:#666">${escapeHtml(bt(langOf(locale), "marketing.unsubscribeAnyTime"))} <a href="${href}">${href}</a></p>`;
 }
 
 function isMissingTable(error) {
@@ -46,41 +47,39 @@ function isMissingTable(error) {
   return code === "42P01" || code === "PGRST205" || msg.includes("marketing_subscribers") || msg.includes("does not exist") || msg.includes("schema cache");
 }
 
+/** Language of the opt-in mail and pages: a live locale with a catalog, else English. */
+function langOf(locale) {
+  return pickLang([locale], "en");
+}
+
 function copyFor(locale) {
-  if (String(locale || "").toLowerCase().startsWith("tr")) {
-    return {
-      subject: "Descall ürün güncellemelerini onaylayın",
-      text: "Descall ürün notlarını almak için bu bağlantıyı açın. Onaylamazsanız size yazmayız.",
-      htmlLead: "Descall ürün notlarını almak için aşağıdaki bağlantıyı açın. Onaylamazsanız size yazmayız.",
-      confirmLabel: "Aboneliği onayla",
-      pageConfirm: "Aboneliğiniz onaylandı. İstediğiniz zaman abonelikten çıkabilirsiniz.",
-      pageGone: "Bu bağlantı geçersiz veya süresi dolmuş.",
-      pageUnsub: "Abonelikten çıktınız. Size bir daha ürün e-postası göndermeyeceğiz.",
-    };
-  }
+  const lang = langOf(locale);
+  const m = (key) => bt(lang, `marketing.${key}`);
   return {
-    subject: "Confirm Descall product updates",
-    text: "Open this link to confirm product notes from Descall. If you do not confirm, we will not email you.",
-    htmlLead: "Open the link below to confirm product notes from Descall. If you do not confirm, we will not email you.",
-    confirmLabel: "Confirm subscription",
-    pageConfirm: "You are confirmed. You can unsubscribe any time.",
-    pageGone: "This link is invalid or has already been used.",
-    pageUnsub: "You are unsubscribed. We will not send you product emails.",
+    lang,
+    subject: m("subject"),
+    text: m("text"),
+    htmlLead: m("htmlLead"),
+    confirmLabel: m("confirmLabel"),
+    pageConfirm: m("pageConfirm"),
+    pageGone: m("pageGone"),
+    pageUnsub: m("pageUnsub"),
   };
 }
 
-function pageHtml(title, body) {
+function pageHtml(title, body, locale = "en") {
+  const lang = langOf(locale);
   const safeTitle = escapeHtml(title);
   const safeBody = escapeHtml(body);
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title></head><body style="margin:0;min-height:100vh;display:grid;place-items:center;padding:40px 20px;background:radial-gradient(520px 420px at 50% 0,rgba(88,122,246,.35),transparent 70%),#0d0e13;color:rgba(255,255,255,.96);font-family:-apple-system,Inter,system-ui,sans-serif;text-align:center"><main style="width:min(520px,100%);padding:36px 32px 28px;border-radius:36px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.05)),rgba(20,21,30,.86);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.12),0 24px 64px rgba(0,0,0,.45)"><div style="width:72px;height:72px;margin:0 auto;border-radius:36px;display:grid;place-items:center;background:rgba(88,122,246,.22);color:#8fa6ff;font-size:32px">✓</div><h1 style="margin:18px 0 0;font-size:28px;letter-spacing:-.03em">Descall</h1><p style="margin:8px 0 0;font-size:16px;color:rgba(235,238,255,.72);line-height:1.55"><strong style="color:#fff">${safeTitle}.</strong> ${safeBody}</p><p style="margin:22px 0 0"><a href="https://descall.com" style="display:inline-flex;align-items:center;height:48px;padding:0 22px;border-radius:24px;background:linear-gradient(180deg,#8fa6ff,#587af6);color:#fff;font-weight:650;text-decoration:none">Go to descall.com</a></p></main></body></html>`;
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title></head><body style="margin:0;min-height:100vh;display:grid;place-items:center;padding:40px 20px;background:radial-gradient(520px 420px at 50% 0,rgba(88,122,246,.35),transparent 70%),#0d0e13;color:rgba(255,255,255,.96);font-family:-apple-system,Inter,system-ui,sans-serif;text-align:center"><main style="width:min(520px,100%);padding:36px 32px 28px;border-radius:36px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.05)),rgba(20,21,30,.86);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.12),0 24px 64px rgba(0,0,0,.45)"><div style="width:72px;height:72px;margin:0 auto;border-radius:36px;display:grid;place-items:center;background:rgba(88,122,246,.22);color:#8fa6ff;font-size:32px">✓</div><h1 style="margin:18px 0 0;font-size:28px;letter-spacing:-.03em">Descall</h1><p style="margin:8px 0 0;font-size:16px;color:rgba(235,238,255,.72);line-height:1.55"><strong style="color:#fff">${safeTitle}.</strong> ${safeBody}</p><p style="margin:22px 0 0"><a href="https://descall.com" style="display:inline-flex;align-items:center;height:48px;padding:0 22px;border-radius:24px;background:linear-gradient(180deg,#8fa6ff,#587af6);color:#fff;font-weight:650;text-decoration:none">${escapeHtml(bt(lang, "marketing.goToSite"))}</a></p></main></body></html>`;
 }
 
 async function sendConfirmEmail({ email, locale, confirmToken, unsubscribeToken }) {
   const copy = copyFor(locale);
   const confirm = confirmUrl(confirmToken);
   const unsub = unsubscribeUrl(unsubscribeToken);
-  const text = `${copy.text}\n\n${confirm}${marketingFooterText(unsub)}`;
-  const html = `<p>${escapeHtml(copy.htmlLead)}</p><p><a href="${escapeHtml(confirm)}">${escapeHtml(copy.confirmLabel)}</a></p>${marketingFooterHtml(unsub)}`;
+  const text = `${copy.text}\n\n${confirm}${marketingFooterText(unsub, copy.lang)}`;
+  const html = `<p>${escapeHtml(copy.htmlLead)}</p><p><a href="${escapeHtml(confirm)}">${escapeHtml(copy.confirmLabel)}</a></p>${marketingFooterHtml(unsub, copy.lang)}`;
   await sendEmail({ to: email, subject: copy.subject, text, html });
 }
 

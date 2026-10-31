@@ -16,8 +16,20 @@ const supabase = require("../db/supabase");
 const TZ = "Europe/Istanbul";
 const RETENTION_DAYS = 400;
 const DAY_MS = 86400000;
-const MONTHS = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const WEEKDAYS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+const { bt, pickLang } = require("./i18n");
+const { intlTag } = require("./locales");
+
+// Chart labels in the admin's language (Intl month / weekday names, words from
+// backend/i18n/<locale>.js stats.*). Turkish by default, as before.
+const labelFmtCache = new Map();
+function labelFmt(lang, opts) {
+  const key = `${lang}|${JSON.stringify(opts)}`;
+  if (!labelFmtCache.has(key)) labelFmtCache.set(key, new Intl.DateTimeFormat(intlTag(lang), { timeZone: "UTC", ...opts }));
+  return labelFmtCache.get(key);
+}
+function statsLang(lang) {
+  return pickLang([lang], "tr");
+}
 
 const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 const timeFmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -38,12 +50,16 @@ const addDays = (day, n) => fromUtc(toUtc(day) + n * DAY_MS);
 const diffDays = (a, b) => Math.round((toUtc(b) - toUtc(a)) / DAY_MS);
 const isDay = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(toUtc(v)) && fromUtc(toUtc(v)) === v;
 
-function dayLabel(day, { year = false, weekday = false } = {}) {
+function dayLabel(day, { year = false, weekday = false, lang = "tr" } = {}) {
   const d = new Date(toUtc(day));
-  let s = `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-  if (year) s += ` ${d.getUTCFullYear()}`;
-  if (weekday) s += ` · ${WEEKDAYS[d.getUTCDay()]}`;
+  const L = statsLang(lang);
+  let s = labelFmt(L, year ? { day: "numeric", month: "short", year: "numeric" } : { day: "numeric", month: "short" }).format(d);
+  if (weekday) s += ` · ${labelFmt(L, { weekday: "short" }).format(d)}`;
   return s;
+}
+
+function monthLabel(day, lang = "tr") {
+  return labelFmt(statsLang(lang), { month: "short", year: "numeric" }).format(new Date(toUtc(day)));
 }
 
 /** ISO week start (Monday) of a day key. */
@@ -79,12 +95,15 @@ function resolveRange({ from, to, granularity } = {}, now = new Date()) {
   return { from: start, to: end, granularity: g, today };
 }
 
+// Brand names stay as they are; "direct", "google_organic" and "referral" are words
+// (stats.source.* in the catalog).
+const SOURCE_WORDS = { direct: "stats.sourceDirect", google_organic: "stats.sourceGoogleOrganic", referral: "stats.sourceReferral", invite: "stats.sourceReferral" };
 const SOURCE_LABELS = {
-  direct: "Doğrudan",
-  google_organic: "Google (organik)",
+  direct: "Direct",
+  google_organic: "Google (organic)",
   google_ads: "Google Ads",
-  referral: "Arkadaş daveti",
-  invite: "Arkadaş daveti",
+  referral: "Friend invite",
+  invite: "Friend invite",
   discord: "Discord",
   instagram: "Instagram",
   reddit: "Reddit",
@@ -117,7 +136,9 @@ function delta(cur, prev, { percent }) {
  * attempts:     [{ created_at, status, attempt_key }]
  * activeDays:   [{ user_id, day }]
  */
-function computeSignupStats({ users = [], startedDays = [], attempts = [], activeDays = [], range, now = new Date() }) {
+function computeSignupStats({ users = [], startedDays = [], attempts = [], activeDays = [], range, now = new Date(), lang = "tr" }) {
+  const L = statsLang(lang);
+  const sourceLabel = (k) => (SOURCE_WORDS[k] ? bt(L, SOURCE_WORDS[k]) : SOURCE_LABELS[k]);
   const { from, to, granularity, today } = range;
   const signupDay = new Map();
   const byDay = new Map();
@@ -171,7 +192,13 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
       p = granularity === "day" ? addDays(p, -1) : granularity === "week" ? addDays(p, -7) : monthStart(addDays(p, -1));
     }
     const avg = back.reduce((a, b) => a + b, 0) / span;
-    return { key: k, label: dayLabel(k), tip: granularity === "month" ? `${MONTHS[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)}` : granularity === "week" ? `${dayLabel(k, { year: true })} haftası` : dayLabel(k, { year: true, weekday: true }), count: bucketCount(k), avg: Math.round(avg * 100) / 100 };
+    const tip =
+      granularity === "month"
+        ? monthLabel(k, L)
+        : granularity === "week"
+          ? bt(L, "stats.weekOf", { date: dayLabel(k, { year: true, lang: L }) })
+          : dayLabel(k, { year: true, weekday: true, lang: L });
+    return { key: k, label: dayLabel(k, { lang: L }), tip, count: bucketCount(k), avg: Math.round(avg * 100) / 100 };
   });
 
   // Funnel (range).
@@ -204,9 +231,9 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
   const known = [...src.entries()].filter(([k]) => SOURCE_LABELS[k]).sort((a, b) => b[1] - a[1]);
   const top = known.slice(0, 5);
   const other = [...src.entries()].reduce((n, [k, c]) => n + c, 0) - top.reduce((n, [, c]) => n + c, 0);
-  const sources = top.map(([k, c]) => ({ key: k, label: SOURCE_LABELS[k], color: SOURCE_COLORS[k] || null, count: c }));
-  if (other > 0) sources.push({ key: "other", label: "Diğer", color: "#9AA3B8", count: other });
-  sources.push({ key: "unknown", label: "Bilinmiyor", color: null, muted: true, count: unknownSource });
+  const sources = top.map(([k, c]) => ({ key: k, label: sourceLabel(k), color: SOURCE_COLORS[k] || null, count: c }));
+  if (other > 0) sources.push({ key: "other", label: bt(L, "stats.other"), color: "#9AA3B8", count: other });
+  sources.push({ key: "unknown", label: bt(L, "stats.unknown"), color: null, muted: true, count: unknownSource });
 
   // Sign-in method (all time).
   const authMethods = { email: 0, google: 0, other: 0, unknown: 0 };
@@ -259,7 +286,7 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
 
   return {
     tz: TZ,
-    range: { from, to, granularity, fromLabel: dayLabel(from), toLabel: dayLabel(to, { year: true }) },
+    range: { from, to, granularity, fromLabel: dayLabel(from, { lang: L }), toLabel: dayLabel(to, { year: true, lang: L }) },
     updatedAt: now.toISOString(),
     updatedLabel: istTime(now),
     kpis,
@@ -277,8 +304,9 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
 }
 
 /** CSV of the trend buckets (UTF-8 BOM so Excel opens Turkish characters). */
-function statsCsv(stats) {
-  const rows = [["donem", "kayit", "ortalama"]];
+function statsCsv(stats, lang = "tr") {
+  const L = statsLang(lang);
+  const rows = [[bt(L, "stats.csvPeriod"), bt(L, "stats.csvSignups"), bt(L, "stats.csvAverage")]];
   for (const s of stats.series) rows.push([s.key, String(s.count), String(s.avg).replace(".", ",")]);
   return "\uFEFF" + rows.map((r) => r.join(";")).join("\r\n") + "\r\n";
 }

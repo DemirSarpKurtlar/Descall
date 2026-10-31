@@ -16,6 +16,7 @@ import { POLLS_EN } from "./polls.en.js";
 import { SLASH_EN } from "./slash.en.js";
 import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
+import { BOT_EN } from "./bot.en.js";
 export const nested = {
   counts: COUNTS_EN,
   shell: SHELL_EN,
@@ -26,6 +27,7 @@ export const nested = {
   adminx: ADMINX_EN,
   polls: POLLS_EN, slash: SLASH_EN, chatx: CHATX_EN,
   core: CORE_EN,
+  bot: BOT_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,

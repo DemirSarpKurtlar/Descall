@@ -42,7 +42,7 @@ async function requireViewer(req, res, next) {
   try {
     const row = await perms.loadRow(req.user.id);
     if (!perms.canOpen(req.user, row, "suspicious")) {
-      return res.status(403).json({ error: "Bu bölüm için yetkin yok.", code: "ADMIN_PERMISSION_DENIED", section: "suspicious" });
+      return res.status(403).json({ error: "You don't have access to this section.", code: "ADMIN_PERMISSION_DENIED", section: "suspicious" });
     }
     req.antibotRole = "admin";
     return next();
@@ -700,7 +700,7 @@ router.put("/watch/:id", validId, requireAdminRole, writeLimit, async (req, res)
     const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
     if (note.length > 500) return res.status(400).json({ error: "Note is too long (max 500)." });
     const norm = watch.normalizeRules(req.body?.rules ?? []);
-    if (norm.error) return res.status(400).json({ error: norm.error });
+    if (norm.error) return res.status(400).json({ error: norm.error, errorKey: norm.errorKey, errorVars: norm.errorVars });
     const { data: target } = await supabase.from("users").select("id").eq("id", id).maybeSingle();
     if (!target) return res.status(404).json({ error: "User not found." });
     const existing = await store.run("descoin_watchlist", "select", (s) => s.from("descoin_watchlist").select("user_id").eq("user_id", id).maybeSingle());

@@ -147,7 +147,7 @@ async function check({ ip, deviceId, action, userId = null, isAdmin = false } = 
   return {
     ban,
     publicBody: {
-      error: "Bu cihazdan veya ağdan Descall'a erişim engellendi.",
+      error: "Access to Descall from this device or network is blocked.",
       code: "ACCESS_BANNED",
       expiresAt: ban.expires_at || null,
     },
@@ -203,7 +203,7 @@ function bad(message, code = "BAD_REQUEST", status = 400) {
 async function insertBans(rows) {
   const { data, error } = await db().from("access_bans").insert(rows).select("*");
   if (error) {
-    if (error.code === "42P01" || error.code === "PGRST205") throw bad("Erişim yasakları henüz etkin değil.", "BANS_UNAVAILABLE", 503);
+    if (error.code === "42P01" || error.code === "PGRST205") throw bad("Access bans are not enabled yet.", "BANS_UNAVAILABLE", 503);
     throw error;
   }
   await refresh({ force: true });
@@ -212,17 +212,17 @@ async function insertBans(rows) {
 
 /** Ban a typed IP address (kind "ip") or its network (kind "network"). */
 async function banAddress({ ip, kind, duration, reason, actor }) {
-  if (kind !== "ip" && kind !== "network") throw bad("Geçersiz yasak türü.");
+  if (kind !== "ip" && kind !== "network") throw bad("Invalid ban type.");
   const addr = normalizeIp(ip);
-  if (!addr || !isPublicIp(addr) || !(ipSubnet(addr))) throw bad("Geçerli, herkese açık bir IP adresi gir.", "BAD_IP");
+  if (!addr || !isPublicIp(addr) || !(ipSubnet(addr))) throw bad("Enter a valid, public IP address.", "BAD_IP");
   const expires = expiryFor(duration);
-  if (expires === undefined) throw bad("Geçersiz süre.");
+  if (expires === undefined) throw bad("Invalid duration.");
   const fp = fingerprintOf({ ip: addr });
   const hash = fp[kind];
-  if (!hash) throw bad("Bu adres yasaklanamaz.", "BAD_IP");
+  if (!hash) throw bad("This address can't be banned.", "BAD_IP");
   await refresh({ force: true });
-  if (state.byHash.has(`${kind}:${hash}`)) throw bad("Bu adres zaten yasaklı.", "ALREADY_BANNED", 409);
-  const label = kind === "ip" ? maskIp(addr) : `${maskIp(addr)} ağı (${ipSubnet(addr).includes(":") ? "/64" : "/24"})`;
+  if (state.byHash.has(`${kind}:${hash}`)) throw bad("This address is already banned.", "ALREADY_BANNED", 409);
+  const label = kind === "ip" ? maskIp(addr) : `${maskIp(addr)} network (${ipSubnet(addr).includes(":") ? "/64" : "/24"})`;
   return insertBans([
     {
       kind,
@@ -242,11 +242,11 @@ async function banAddress({ ip, kind, duration, reason, actor }) {
  */
 async function banAccountAccess({ userId, duration, reason, actor, includeNetwork = false }) {
   const expires = expiryFor(duration);
-  if (expires === undefined) throw bad("Geçersiz süre.");
+  if (expires === undefined) throw bad("Invalid duration.");
   const { data: user, error } = await db().from("users").select("id, username, is_admin, active_sessions").eq("id", userId).maybeSingle();
   if (error) throw error;
-  if (!user) throw bad("Kullanıcı bulunamadı.", "NOT_FOUND", 404);
-  if (user.is_admin || user.username === "admin") throw bad("Yönetici hesaplarının cihazı yasaklanamaz.", "IS_ADMIN", 400);
+  if (!user) throw bad("User not found.", "NOT_FOUND", 404);
+  if (user.is_admin || user.username === "admin") throw bad("Admin accounts' devices can't be banned.", "IS_ADMIN", 400);
   await refresh({ force: true });
   const sessions = Array.isArray(user.active_sessions) ? user.active_sessions : [];
   const want = new Map();
@@ -255,7 +255,7 @@ async function banAccountAccess({ userId, duration, reason, actor, includeNetwor
     const deviceHash = typeof s?.deviceHash === "string" && /^[0-9a-f]{48}$/.test(s.deviceHash) ? s.deviceHash : null;
     if (deviceHash) want.set(`device:${deviceHash}`, { kind: "device", hash: deviceHash, label: `Cihaz · ${String(s.device || "bilinmiyor").slice(0, 60)}` });
     if (fp.ip) want.set(`ip:${fp.ip}`, { kind: "ip", hash: fp.ip, label: maskIp(s.ip) });
-    if (includeNetwork && fp.network) want.set(`network:${fp.network}`, { kind: "network", hash: fp.network, label: `${maskIp(s.ip)} ağı` });
+    if (includeNetwork && fp.network) want.set(`network:${fp.network}`, { kind: "network", hash: fp.network, label: `${maskIp(s.ip)} network` });
   }
   const fresh = [...want.entries()].filter(([k]) => !state.byHash.has(k)).map(([, v]) => v);
   if (!fresh.length) return { added: [], skipped: want.size };
@@ -281,7 +281,7 @@ async function revokeBan({ id, actor }) {
     .select("*");
   if (error) throw error;
   const row = (data || [])[0];
-  if (!row) throw bad("Yasak bulunamadı ya da zaten kaldırılmış.", "NOT_FOUND", 404);
+  if (!row) throw bad("Ban not found or already lifted.", "NOT_FOUND", 404);
   await refresh({ force: true });
   return publicBan(row);
 }

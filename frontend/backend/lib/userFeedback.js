@@ -1,5 +1,7 @@
 "use strict";
 
+const { put } = require("./botText");
+
 /**
  * Geri bildirim, user side (3.7.14, owner pick "A"): what the sender may send
  * and what they may read back.
@@ -29,6 +31,7 @@ const MAX_SHOTS = 3;
 /** kind -> legacy category column (CHECK: bug, feature, improvement, security, other). */
 const CATEGORY_OF = { suggestion: "feature", bug: "bug", praise: "improvement" };
 
+// Old Turkish timeline lines ("x durumu Çözüldü yaptı") carry no status field.
 const STATUS_FROM_TR = { "Yeni": "new", "İşlemde": "in_progress", "Çözüldü": "resolved", "Kapalı": "closed" };
 
 function clip(s, n) {
@@ -200,7 +203,7 @@ function appendUserReply(row, text, attachments = [], env = process.env) {
   const update = { admin_replies: replies, updated_at: now, user_last_read_at: now, viewed: false };
   if (row.status === "resolved") {
     update.status = "in_progress";
-    replies.push({ id: newId(), type: "system", status: "in_progress", text: "Kullanıcı yanıt verdi, yeniden açıldı", created_at: now });
+    replies.push(put({ id: newId(), type: "system", status: "in_progress", created_at: now }, "text", "bot.feedback.userReopened"));
   }
   return { reply, update };
 }

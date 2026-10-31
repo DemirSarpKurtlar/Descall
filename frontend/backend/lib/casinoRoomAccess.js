@@ -19,14 +19,14 @@
  */
 
 const DENY = {
-  missing: { code: "no_target", text: "Bu komut için bir sohbet seçilmedi." },
-  notMember: { code: "not_member", text: "Bu sohbetin üyesi değilsin." },
-  channel: { code: "no_channel_access", text: "Bu kanalda mesaj gönderme iznin yok." },
-  timedOut: { code: "timed_out", text: "Zaman aşımındasın, şu an komut kullanamazsın." },
-  banned: { code: "banned", text: "Hesabın engellendi." },
-  blocked: { code: "dm_blocked", text: "Bu kişiyle komut kullanamazsın." },
-  notFriend: { code: "dm_not_friend", text: "Oyunlar ve komutlar yalnızca arkadaşlarınla olan DM'lerde çalışır." },
-  self: { code: "dm_self", text: "Kendinle DM'de komut kullanamazsın." },
+  missing: { code: "no_target", text: "No chat was selected for this command." },
+  notMember: { code: "not_member", text: "You're not a member of this chat." },
+  channel: { code: "no_channel_access", text: "You don't have permission to send messages in this channel." },
+  timedOut: { code: "timed_out", text: "You're timed out and can't use commands right now." },
+  banned: { code: "banned", text: "Your account is blocked." },
+  blocked: { code: "dm_blocked", text: "You can't use commands with this person." },
+  notFriend: { code: "dm_not_friend", text: "Games and commands only work in DMs with your friends." },
+  self: { code: "dm_self", text: "You can't use commands in a DM with yourself." },
 };
 
 function dmRoomId(a, b) {

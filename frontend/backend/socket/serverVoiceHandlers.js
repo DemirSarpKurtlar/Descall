@@ -18,6 +18,7 @@ const {
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { emitToChannelViewers, canViewChannel } = require("../lib/channelViewers");
 const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutState");
+const { errorFields } = require("../lib/apiError");
 
 function resolvePublicUser(socket) {
   const myId = socket.user?.id;
@@ -373,7 +374,10 @@ function registerServerVoiceHandlers(io, socket) {
       t = null;
     }
     if (!t) return false;
-    socket.emit("server:voice:error", { channelId, message: timedOutError(t).message, code: "TIMED_OUT", timeout: t });
+    {
+      const e = timedOutError(t);
+      socket.emit("server:voice:error", { channelId, message: e.message, messageKey: e.i18n.errorKey, messageVars: e.i18n.errorVars, code: "TIMED_OUT", timeout: t });
+    }
     if (getParticipantEntry(activeServerVoiceCalls.get(channelId), myId)) {
       removeFromVoice(io, channelId, myId);
       io.to(`user:${myId}`).emit("server:voice:force-disconnected", { serverId: call.serverId, channelId, reason: "timeout" });
@@ -422,6 +426,7 @@ function registerServerVoiceHandlers(io, socket) {
     } catch (err) {
       socket.emit("server:voice:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Failed to check voice channel.",
         code: err.code || null,
       });
@@ -532,6 +537,7 @@ function registerServerVoiceHandlers(io, socket) {
       console.error("[ServerVoice] join error:", err.message || err);
       socket.emit("server:voice:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Failed to join voice channel.",
         code: err.code || null,
       });
@@ -588,6 +594,7 @@ function registerServerVoiceHandlers(io, socket) {
       });
     } catch (err) {
       socket.emit("server:voice:error", {
+        ...errorFields(err, "message"),
         message: err.message || "Disconnect failed.",
         code: err.code || null,
       });
@@ -693,6 +700,7 @@ function registerServerVoiceHandlers(io, socket) {
         });
       } catch (err) {
         socket.emit("server:voice:error", {
+          ...errorFields(err, "message"),
           message: err.message || "Move failed.",
           code: err.code || null,
         });
@@ -737,6 +745,7 @@ function registerServerVoiceHandlers(io, socket) {
       });
     } catch (err) {
       socket.emit("server:voice:error", {
+        ...errorFields(err, "message"),
         message: err.message || "Mute failed.",
         code: err.code || null,
       });
@@ -785,6 +794,7 @@ function registerServerVoiceHandlers(io, socket) {
       });
     } catch (err) {
       socket.emit("server:voice:error", {
+        ...errorFields(err, "message"),
         message: err.message || "Deafen failed.",
         code: err.code || null,
       });
@@ -955,6 +965,7 @@ function registerServerVoiceHandlers(io, socket) {
     } catch (err) {
       socket.emit("server:voice:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Request to speak failed.",
         code: err.code || null,
       });
@@ -1026,6 +1037,7 @@ function registerServerVoiceHandlers(io, socket) {
     } catch (err) {
       socket.emit("server:voice:error", {
         channelId,
+        ...errorFields(err, "message"),
         message: err.message || "Stage role update failed.",
         code: err.code || null,
       });

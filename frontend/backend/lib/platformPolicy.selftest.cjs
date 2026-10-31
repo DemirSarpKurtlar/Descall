@@ -29,7 +29,7 @@ assert.equal(send({ dmEnabled: false }, { kind: "group", now: 5_000_000 }).ok, t
 P.resetPlatformPolicyForTests();
 assert.equal(send({ slowModeSeconds: 10 }, { now: 0 }).ok, true);
 let v = send({ slowModeSeconds: 10 }, { now: 4000 });
-assert.equal(v.code, "SLOW_MODE"); assert.equal(v.retryAfterMs, 6000); assert.match(v.message, /6 saniye/);
+assert.equal(v.code, "SLOW_MODE"); assert.equal(v.retryAfterMs, 6000); assert.match(v.message, /6 seconds/); assert.deepEqual(v.messageVars, { seconds: 6 }); assert.match(v.messageKey, /\{seconds, plural/);
 assert.equal(send({ slowModeSeconds: 10 }, { now: 4000, userId: "u2" }).ok, true);
 assert.equal(send({ slowModeSeconds: 10 }, { now: 10_001 }).ok, true);
 

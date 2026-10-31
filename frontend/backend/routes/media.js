@@ -9,6 +9,7 @@ const privateMedia = require("../lib/privateMedia");
 const { recordFailure } = require("../lib/rateLimit");
 const voiceTranscode = require("../lib/voiceTranscode");
 const { safeExtension, uploadConcurrencyGate } = require("../lib/uploadGuard");
+const { templatedError } = require("../lib/apiError");
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ const upload = multer({
       file.mimetype = base;
       return cb(null, true);
     }
-    cb(new Error(`File type ${file.mimetype} is not allowed.`));
+    cb(templatedError("File type {type} is not allowed.", { type: file.mimetype }));
   },
 });
 

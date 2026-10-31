@@ -8,10 +8,11 @@
  * notification never fails the admin's reply.
  */
 
+// bot.notify.* keys (English text + i18n ref in the notification, lib/botText.js).
 const STATUS_TEXT = {
-  in_progress: "Geri bildirimin inceleniyor",
-  resolved: "Geri bildirimin çözüldü olarak işaretlendi",
-  closed: "Geri bildirimin kapatıldı",
+  in_progress: "bot.notify.feedbackInProgress",
+  resolved: "bot.notify.feedbackResolved",
+  closed: "bot.notify.feedbackClosed",
 };
 
 function notifyFeedbackReply(io, userId, { feedbackId, text = "", subject = "" } = {}) {
@@ -27,7 +28,7 @@ function notifyFeedbackReply(io, userId, { feedbackId, text = "", subject = "" }
     if (io && typeof pushNotification === "function") {
       pushNotification(io, String(userId), {
         type: "feedback_reply",
-        title: "Descall Ekibi yanıt verdi",
+        titleKey: "bot.notify.feedbackReplyTitle",
         body: preview || String(subject || "").slice(0, 120),
         meta: { feedbackId },
       });
@@ -56,7 +57,7 @@ function notifyFeedbackStatus(io, userId, { feedbackId, status } = {}) {
     try {
       const { pushNotification } = require("../socket/handlers");
       if (io && typeof pushNotification === "function") {
-        pushNotification(io, String(userId), { type: "feedback_status", title: "Geri bildirim", body: STATUS_TEXT[status], meta: { feedbackId, status } });
+        pushNotification(io, String(userId), { type: "feedback_status", titleKey: "bot.notify.feedbackStatusTitle", bodyKey: STATUS_TEXT[status], meta: { feedbackId, status } });
       }
     } catch (err) {
       console.warn("[feedback] status notification failed:", err?.message || err);

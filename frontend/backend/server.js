@@ -316,14 +316,14 @@ app.get("/api/marketing/confirm", async (req, res) => {
   const result = await marketingOptIn.confirmByToken(req.query?.token);
   const copy = marketingOptIn.copyFor(result.locale);
   const body = result.ok ? copy.pageConfirm : copy.pageGone;
-  res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body));
+  res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body, copy.lang));
 });
 
 app.get("/api/marketing/unsubscribe", async (req, res) => {
   const result = await marketingOptIn.unsubscribeByToken(req.query?.token);
   const copy = marketingOptIn.copyFor(result.locale);
   const body = result.ok ? copy.pageUnsub : copy.pageGone;
-  res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body));
+  res.status(result.ok ? 200 : 404).type("html").send(marketingOptIn.pageHtml("Descall", body, copy.lang));
 });
 
 function consentPayload(req) {

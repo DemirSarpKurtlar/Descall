@@ -57,9 +57,10 @@ function parseCoinArgs(arg) {
   return { amount, side };
 }
 
+/** English side name (board text uses catalog refs, socket/gameHandlers.js sideRef). */
 function sideLabel(side) {
-  if (side === "heads") return "Yazı";
-  if (side === "tails") return "Tura";
+  if (side === "heads") return "Heads";
+  if (side === "tails") return "Tails";
   return "";
 }
 

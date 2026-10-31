@@ -25,6 +25,7 @@ const { requireAuth } = require("../middleware/auth");
 const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
 const { NotifyActionError, createNotifyActions } = require("../lib/notifyActions");
 const watch = require("../lib/watchApi");
+const { requestLang } = require("../lib/i18n");
 
 const READS = { windowMs: 60 * 1000, max: 120 };
 const WRITES = { windowMs: 60 * 1000, max: 30 };
@@ -109,6 +110,7 @@ function createWatchRouter(deps = {}) {
         lastActivity: maps?.dmLastActivityByPeer || {},
         groups,
         adminSections: sections.length ? sections : null,
+        lang: requestLang(req, "tr"),
       }));
     } catch (err) {
       return fail(res, err, "home");
@@ -120,7 +122,7 @@ function createWatchRouter(deps = {}) {
     if (!watch.validConv(conv)) return res.status(400).json({ error: "bad_conv" });
     try {
       const out = await actions.thread(req.user.id, { conv, limit: THREAD_LIMIT, textMax: THREAD_TEXT_MAX });
-      return res.json(watch.shapeThread(out));
+      return res.json(watch.shapeThread(out, { lang: requestLang(req, "tr") }));
     } catch (err) {
       // A DM with no messages yet is an empty thread, not an error.
       if (err instanceof NotifyActionError && err.code === "empty") {

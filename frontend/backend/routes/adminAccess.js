@@ -40,7 +40,7 @@ async function kickMatching(io) {
     const row = await perms.loadRow(userId).catch(() => null);
     if (row?.is_admin || row?.username === "admin") continue;
     try {
-      sock.emit("system:kick", { reason: "Bu cihazdan veya ağdan erişim engellendi.", action: "ban", category: "access" });
+      sock.emit("system:kick", { reason: "Access from this device or network is blocked.", action: "ban", category: "access" });
       sock.disconnect(true);
       kicked += 1;
     } catch {
@@ -79,7 +79,7 @@ router.get("/access-bans", async (req, res) => {
       },
     });
   } catch (err) {
-    fail(res, err, "Yasaklar yüklenemedi.");
+    fail(res, err, "Could not load bans.");
   }
 });
 
@@ -95,7 +95,7 @@ router.get("/access-bans/hits", async (_req, res) => {
     res.set("Cache-Control", "no-store");
     res.json({ hits: hits.map((h) => ({ ...h, username: h.userId ? names[h.userId] || null : null })) });
   } catch (err) {
-    fail(res, err, "Engellenen denemeler yüklenemedi.");
+    fail(res, err, "Could not load blocked attempts.");
   }
 });
 
@@ -113,13 +113,13 @@ router.post("/access-bans", async (req, res) => {
         const { data } = await supabase.from("users").select("id").ilike("username", body.username.trim().replace(/[%_]/g, "")).maybeSingle();
         userId = data?.id || "";
       }
-      if (!UUID_RE.test(userId)) return res.status(400).json({ error: "Kullanıcı bulunamadı.", code: "NOT_FOUND" });
+      if (!UUID_RE.test(userId)) return res.status(400).json({ error: "User not found.", code: "NOT_FOUND" });
       const result = await accessBans.banAccountAccess({ userId, duration, reason, actor: req.user, includeNetwork: Boolean(body.includeNetwork) });
       added = result.added;
       skipped = result.skipped;
       target = added[0]?.sourceUsername || userId;
       if (!added.length && !skipped) {
-        return res.status(409).json({ error: "Bu hesabın kayıtlı cihazı veya IP adresi yok.", code: "NOTHING_TO_BAN" });
+        return res.status(409).json({ error: "This account has no recorded device or IP address.", code: "NOTHING_TO_BAN" });
       }
     } else {
       added = await accessBans.banAddress({ ip: body.ip, kind: body.kind === "network" ? "network" : "ip", duration, reason, actor: req.user });
@@ -141,14 +141,14 @@ router.post("/access-bans", async (req, res) => {
 });
 
 router.delete("/access-bans/:id", async (req, res) => {
-  if (!UUID_RE.test(String(req.params.id))) return res.status(400).json({ error: "Geçersiz yasak." });
+  if (!UUID_RE.test(String(req.params.id))) return res.status(400).json({ error: "Invalid ban." });
   try {
     const ban = await accessBans.revokeBan({ id: req.params.id, actor: req.user });
     appendAudit(req.user.id, req.user.username, "access_unban", ban.label, { kind: ban.kind });
     notifyAdminRoom(req.app?.get?.("io"), { type: "access_unban", id: ban.id });
     res.json({ ok: true, ban });
   } catch (err) {
-    fail(res, err, "Yasak kaldırılamadı.");
+    fail(res, err, "Could not lift the ban.");
   }
 });
 

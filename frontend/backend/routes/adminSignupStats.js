@@ -11,6 +11,7 @@ const express = require("express");
 const supabase = require("../db/supabase");
 const { isMissingColumnError } = require("../lib/signupAttribution");
 const ss = require("../lib/signupStats");
+const { bt, requestLang } = require("../lib/i18n");
 
 const router = express.Router();
 const PAGE = 1000;
@@ -29,7 +30,7 @@ async function pageAll(build) {
 
 const missingTable = (e) => /does not exist|schema cache|relation/i.test(String(e?.message || ""));
 
-async function loadStats(query) {
+async function loadStats(query, lang = "tr") {
   const range = ss.resolveRange(query);
   const sinceIso = new Date(Date.parse(`${ss.addDays(range.from, -1)}T00:00:00Z`)).toISOString();
   const full = "id, created_at, signup_at, auth_method, first_touch_source, signup_country, first_app_opened_at, deleted_at";
@@ -57,6 +58,7 @@ async function loadStats(query) {
   if (attempts.error && !missingTable(attempts.error)) console.warn("[signup-stats] attempts read failed");
   if (active.error && !missingTable(active.error)) console.warn("[signup-stats] active days read failed");
   return ss.computeSignupStats({
+    lang,
     users: users.data,
     startedDays,
     attempts: attempts.error ? [] : attempts.data,
@@ -68,21 +70,22 @@ async function loadStats(query) {
 router.get("/", async (req, res) => {
   try {
     res.setHeader("Cache-Control", "no-store");
-    return res.json(await loadStats(req.query || {}));
+    return res.json(await loadStats(req.query || {}, requestLang(req, "tr")));
   } catch {
-    return res.status(500).json({ error: "Kayıt istatistikleri yüklenemedi." });
+    return res.status(500).json({ error: "Could not load sign-up statistics." });
   }
 });
 
 router.get("/csv", async (req, res) => {
   try {
-    const stats = await loadStats(req.query || {});
+    const lang = requestLang(req, "tr");
+    const stats = await loadStats(req.query || {}, lang);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Disposition", `attachment; filename="kayit-istatistikleri-${stats.range.from}_${stats.range.to}.csv"`);
-    return res.send(ss.statsCsv(stats));
+    res.setHeader("Content-Disposition", `attachment; filename="${bt(lang, "stats.csvFilePrefix")}-${stats.range.from}_${stats.range.to}.csv"`);
+    return res.send(ss.statsCsv(stats, lang));
   } catch {
-    return res.status(500).json({ error: "CSV hazırlanamadı." });
+    return res.status(500).json({ error: "Could not prepare the CSV." });
   }
 });
 

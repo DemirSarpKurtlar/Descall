@@ -21,6 +21,8 @@ import { POLLS_TR } from "./polls.tr.js";
 import { SLASH_TR } from "./slash.tr.js";
 import { CHATX_TR } from "./chatx.tr.js";
 import { COUNTS_TR } from "./counts.tr.js";
+import { API_TR } from "./api.tr.js";
+import { BOT_TR } from "./bot.tr.js";
 export const nested = {
   counts: COUNTS_TR,
   shell: SHELL_TR,
@@ -31,6 +33,7 @@ export const nested = {
   adminx: ADMINX_TR,
   polls: POLLS_TR, slash: SLASH_TR, chatx: CHATX_TR,
   core: CORE_TR,
+  bot: BOT_TR,
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,
@@ -1151,6 +1154,7 @@ export const nested = {
 };
 
 export const phrases = {
+  ...API_TR,
   "Close": "Kapat",
   "You": "Sen",
   "Medium": "Orta",
