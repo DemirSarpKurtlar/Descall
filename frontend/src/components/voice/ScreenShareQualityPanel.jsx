@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Monitor, X, Check, Loader2, Maximize2, Gauge, Info, Sparkles, Type, Gamepad2, Zap, SlidersHorizontal, ChevronDown, Activity } from "../ui/Icon.jsx";
+import { Monitor, X, Check, Loader2, Info, Type, Gamepad2, Layout, Wifi } from "../ui/Icon.jsx";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   SCREEN_QUALITY_PRESETS,
   estimateScreenShareMbps,
-  matchScreenQualityPreset,
 } from "../../lib/webrtcScreenShare";
 import { useIsNarrowViewport } from "../../lib/useIsNarrowViewport";
-import { useT } from "../../context/LocaleContext";
+import { useLocale, useT } from "../../context/LocaleContext";
 import { usePressFeedbackScope } from "../../hooks/usePressFeedback";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
-
-const CHECK_SPRING = Object.freeze({ dampingRatio: 0.75, response: 0.28 });
 
 export const SCREEN_RESOLUTION_PRESETS = [
   { value: "480p", label: "480p", desc: "854×480", hintKey: "Smoothest, low bandwidth" },
@@ -29,70 +26,59 @@ export const SCREEN_FPS_PRESETS = [
   { value: 60, label: "60", hintKey: "Game capture (1:1)" },
 ];
 
-const PRESET_CARDS = [
-  {
-    id: "smooth",
-    icon: Zap,
-    titleKey: "Smooth",
-    descKey: "Low bandwidth, fluid",
-    accent: "#34d399",
-  },
-  {
-    id: "balanced",
-    icon: Gauge,
-    titleKey: "Balanced",
-    descKey: "Best for most shares",
-    accent: "#818cf8",
-  },
-  {
-    id: "high",
-    icon: Activity,
-    titleKey: "High",
-    descKey: "Full HD, 30 FPS",
-    accent: "#60a5fa",
-  },
-  {
-    id: "ultra",
-    icon: Gamepad2,
-    titleKey: "Ultra",
-    descKey: "QHD gaming / video",
-    accent: "#f472b6",
-  },
-  {
-    id: "text",
-    icon: Type,
-    titleKey: "Text",
-    descKey: "Code, docs, slides",
-    accent: "#fbbf24",
-  },
+/**
+ * 3.7.15 design A (owner pick): three plain questions. What you share sets the
+ * encoder content hint and a sensible starting resolution / frame rate; the two
+ * segmented rows fine-tune it. Same quality object as before
+ * ({ resolution, fps, contentHint }), so the capture / restart code is unchanged.
+ */
+export const CONTENT_CHOICES = [
+  { value: "motion", icon: Gamepad2, labelKey: "Games, video" },
+  { value: "detail", icon: Layout, labelKey: "Apps" },
+  { value: "text", icon: Type, labelKey: "Text, code" },
 ];
 
-const CONTENT_MODES = [
-  { value: "motion", labelKey: "Motion", descKey: "Games & video" },
-  { value: "detail", labelKey: "Detail", descKey: "UI & photos" },
-  { value: "text", labelKey: "Text", descKey: "Code & docs" },
-];
-
-function SectionLabel({ icon: Icon, children }) {
-  return (
-    <div className="ssq-label">
-      {Icon ? <Icon size={12} /> : null}
-      {children}
-    </div>
-  );
+/** Frame-rate segments: 15 / 20 / 30 / 60, plus 24 only when that is the current value. */
+export function fpsSegments(options, current) {
+  const base = options.filter((o) => o.value !== 24);
+  if (Number(current) === 24 && options.some((o) => o.value === 24)) return options;
+  return base.length ? base : options;
 }
 
-function nearestIndex(options, value) {
-  let best = 0;
-  let dist = Infinity;
-  options.forEach((option, index) => {
-    const gap = Math.abs(option.value - value);
-    if (gap < dist) {
-      dist = gap;
-      best = index;
-    }
-  });
-  return best;
+/** Highest allowed value not above `want` (falls back to the lowest option). */
+function clampTo(options, want, key = "value", order = (o) => o[key]) {
+  const sorted = [...options].sort((x, y) => order(x) - order(y));
+  let pick = sorted[0];
+  for (const o of sorted) if (order(o) <= want) pick = o;
+  return pick ? pick[key] : want;
+}
+
+const RES_RANK = { "480p": 480, "720p": 720, "1080p": 1080, "1440p": 1440 };
+
+/**
+ * The quality a content choice starts from: motion keeps the resolution and
+ * raises the frame rate to 30; apps = 1080p at 24-30; text = the "text" preset
+ * (1080p 20). Clamped to what this call allows (group calls).
+ */
+export function qualityForContent(value, quality, resolutionOptions, fpsOptions) {
+  const resOf = (want) => clampTo(resolutionOptions, RES_RANK[want] || 720, "value", (o) => RES_RANK[o.value] || 0);
+  const fpsOf = (want) => clampTo(fpsOptions, want);
+  if (value === "text") {
+    const p = SCREEN_QUALITY_PRESETS.text;
+    return { ...quality, resolution: resOf(p.resolution), fps: fpsOf(p.fps), contentHint: "text" };
+  }
+  if (value === "detail") {
+    const fps = (Number(quality.fps) || 24) >= 30 ? 30 : 24;
+    return { ...quality, resolution: resOf("1080p"), fps: fpsOf(fps), contentHint: "detail" };
+  }
+  const fps = Math.max(30, Number(quality.fps) || 30);
+  return { ...quality, resolution: resOf(quality.resolution || "720p"), fps: fpsOf(fps), contentHint: "motion" };
+}
+
+/** "4,4" in Turkish, "4.4" in English. */
+export function formatMbps(mbps, locale = "tr") {
+  const n = Number(mbps) || 0;
+  return locale === "tr" ? String(n).replace(".", ",") : String(n);
 }
 
 /**
@@ -111,15 +97,14 @@ export default function ScreenShareQualityPanel({
   onRestartWithQuality,
 }) {
   const t = useT();
+  const { locale } = useLocale() || {};
   const reduceMotion = useReducedMotion();
   const panelRef = useRef(null);
   usePressFeedbackScope(panelRef, { enabled: open });
   const [applying, setApplying] = useState(false);
   const [appliedFlash, setAppliedFlash] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const quality = screenQuality || GROUP_SCREEN_DEFAULT_QUALITY;
   const narrow = useIsNarrowViewport(720);
-  const activePreset = useMemo(() => matchScreenQualityPreset(quality), [quality]);
   const mbps = useMemo(
     () => estimateScreenShareMbps(quality, participantCount),
     [quality, participantCount]
@@ -162,10 +147,6 @@ export default function ScreenShareQualityPanel({
     return () => document.removeEventListener("mousedown", onPointer);
   }, [open, onClose, anchorRef]);
 
-  useEffect(() => {
-    if (open && activePreset === "custom") setShowAdvanced(true);
-  }, [open, activePreset]);
-
   const applyChange = useCallback(
     async (nextQuality) => {
       setScreenQuality(nextQuality);
@@ -183,18 +164,8 @@ export default function ScreenShareQualityPanel({
     [isScreenSharing, onRestartWithQuality, setScreenQuality]
   );
 
-  const pickPreset = (presetId) => {
-    const preset = SCREEN_QUALITY_PRESETS[presetId];
-    if (!preset) return;
-    if (isGroupCall && participantCount >= 3 && (preset.resolution === "1440p" || preset.fps > 24)) {
-      void applyChange({
-        ...preset,
-        resolution: preset.resolution === "1440p" ? "1080p" : preset.resolution,
-        fps: Math.min(preset.fps, 24),
-      });
-      return;
-    }
-    void applyChange({ ...preset });
+  const pickContent = (value) => {
+    void applyChange(qualityForContent(value, quality, resolutionOptions, fpsOptions));
   };
 
   const pickResolution = (resolution) => {
@@ -203,10 +174,6 @@ export default function ScreenShareQualityPanel({
 
   const pickFps = (fps) => {
     void applyChange({ ...quality, fps });
-  };
-
-  const pickContentHint = (contentHint) => {
-    void applyChange({ ...quality, contentHint });
   };
 
   const handleStart = async () => {
@@ -226,18 +193,10 @@ export default function ScreenShareQualityPanel({
       quality.resolution === "1440p" ||
       (quality.fps || 20) > 24);
 
-  const contentLabel =
-    quality.contentHint === "text"
-      ? t("Text")
-      : quality.contentHint === "detail"
-        ? t("Detail")
-        : t("Motion");
   const fpsValue = Number(quality.fps) || 24;
-  const fpsIndex = nearestIndex(fpsOptions, fpsValue);
-  const activeFps = fpsOptions[fpsIndex];
+  const fpsShown = fpsSegments(fpsOptions, fpsValue);
+  const contentValue = quality.contentHint === "text" || quality.contentHint === "detail" ? quality.contentHint : "motion";
   const motionTransition = reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize);
-  const checkTransition = reduceMotion ? REDUCED_MOTION_FADE : framerSpring(CHECK_SPRING);
-  const exactFps = fpsOptions.find((option) => option.value === Number(quality.fps));
   const popStyle = narrow
     ? {
         position: "fixed",
@@ -287,32 +246,17 @@ export default function ScreenShareQualityPanel({
             <div className="ssq-sheen" aria-hidden="true" />
             <div className="ssq-scroll">
               <div className="ssq-head">
-                <div className="ssq-mark" aria-hidden="true">
-                  <Monitor size={18} />
-                </div>
                 <div className="ssq-head-copy">
-                  <h2 className="ssq-title">{t("Screen share quality")}</h2>
+                  <h2 className="ssq-title">{t("Screen share")}</h2>
                   <p className="ssq-sub">
                     {isScreenSharing
                       ? t("Live, changes will restart sharing")
-                      : t("Choose a preset or fine-tune below")}
+                      : t("Pick the quality before you share")}
                   </p>
                 </div>
                 <button type="button" className="ssq-close" onClick={onClose} aria-label={t("Close")}>
                   <X size={16} />
                 </button>
-              </div>
-
-              <div className="ssq-chips" aria-live="polite">
-                <span className="ssq-chip">{quality.resolution}</span>
-                <span className="ssq-chip">{fpsValue} FPS</span>
-                <span className="ssq-chip" title={t("Estimated encode bitrate")}>
-                  ~{mbps} Mbps
-                </span>
-                <span className="ssq-chip is-muted">{contentLabel}</span>
-                <span className="ssq-chip is-muted">
-                  {activePreset !== "custom" ? t("Preset") : t("Custom")}
-                </span>
               </div>
 
               {meshWarning && (
@@ -327,179 +271,79 @@ export default function ScreenShareQualityPanel({
                 </div>
               )}
 
-              <SectionLabel icon={Sparkles}>{t("Presets")}</SectionLabel>
-              <div className="ssq-grid" role="radiogroup" aria-label={t("Presets")}>
-                {PRESET_CARDS.map((card) => {
-                  const Icon = card.icon;
-                  const active = activePreset === card.id;
-                  const preset = SCREEN_QUALITY_PRESETS[card.id];
-                  const locked =
-                    isGroupCall &&
-                    participantCount >= 3 &&
-                    (preset.resolution === "1440p" || preset.fps > 24) &&
-                    card.id === "ultra";
-                  const cardClass = [
-                    "ssq-card",
-                    card.id === "text" ? "is-wide" : "",
-                    active ? "is-on" : "",
-                    locked ? "is-locked" : "",
-                    applying && !locked ? "is-busy" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
+              <div className="ssq-label" id="ssq-what">{t("What are you sharing?")}</div>
+              <div className="ssq-seg is-tall" role="radiogroup" aria-labelledby="ssq-what">
+                {CONTENT_CHOICES.map((choice) => {
+                  const Icon = choice.icon;
+                  const on = contentValue === choice.value;
                   return (
                     <button
-                      key={card.id}
+                      key={choice.value}
                       type="button"
                       role="radio"
-                      aria-checked={active}
-                      disabled={applying || locked}
-                      onClick={() => pickPreset(card.id)}
-                      className={cardClass}
-                      style={{ "--ssq-accent": card.accent }}
+                      aria-checked={on}
+                      className={on ? "is-on" : undefined}
+                      disabled={applying}
+                      onClick={() => pickContent(choice.value)}
                     >
-                      <span className="ssq-card-icon" aria-hidden="true">
-                        <Icon size={22} />
-                      </span>
-                      <span className="ssq-card-copy">
-                        <span className="ssq-card-title">{t(card.titleKey)}</span>
-                        <span className="ssq-card-desc">{t(card.descKey)}</span>
-                        <span className="ssq-card-meta">
-                          {preset.resolution} · {preset.fps} FPS
-                        </span>
-                      </span>
-                      <AnimatePresence>
-                        {active && (
-                          <motion.span
-                            className="ssq-check"
-                            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.4 }}
-                            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-                            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.4 }}
-                            transition={checkTransition}
-                          >
-                            <Check size={14} />
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      <Icon size={20} aria-hidden="true" />
+                      <span>{t(choice.labelKey)}</span>
                     </button>
                   );
                 })}
               </div>
 
-              <button
-                type="button"
-                className="ssq-advanced"
-                aria-expanded={showAdvanced}
-                onClick={() => setShowAdvanced((v) => !v)}
-              >
-                <span className="ssq-advanced-label">
-                  <SlidersHorizontal size={14} />
-                  {t("Advanced settings")}
+              <div className="ssq-label" id="ssq-res">{t("Resolution")}</div>
+              <div className="ssq-seg" role="radiogroup" aria-labelledby="ssq-res">
+                {resolutionOptions.map((res) => {
+                  const on = quality.resolution === res.value;
+                  return (
+                    <button
+                      key={res.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      className={on ? "is-on" : undefined}
+                      disabled={applying}
+                      title={`${res.desc} · ${t(res.hintKey)}`}
+                      onClick={() => pickResolution(res.value)}
+                    >
+                      {res.value}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="ssq-label" id="ssq-fps">{t("Frame rate")}</div>
+              <div className="ssq-seg" role="radiogroup" aria-labelledby="ssq-fps">
+                {fpsShown.map((fps) => {
+                  const on = fpsValue === fps.value;
+                  return (
+                    <button
+                      key={fps.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      aria-label={`${fps.value} FPS`}
+                      className={on ? "is-on" : undefined}
+                      disabled={applying}
+                      title={t(fps.hintKey)}
+                      onClick={() => pickFps(fps.value)}
+                    >
+                      {fps.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="ssq-sum" aria-live="polite" title={t("Estimated encode bitrate")}>
+                <Wifi size={16} aria-hidden="true" />
+                <span>
+                  <b>{quality.resolution} · {fpsValue} FPS</b>
+                  {" · "}
+                  {t("about {mbps} Mbps", { mbps: formatMbps(mbps, locale) })}
                 </span>
-                <motion.span
-                  aria-hidden="true"
-                  animate={{ rotate: showAdvanced ? 180 : 0 }}
-                  transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
-                  style={{ display: "inline-flex" }}
-                >
-                  <ChevronDown size={16} />
-                </motion.span>
-              </button>
-
-              <motion.div
-                className="ssq-advanced-body"
-                initial={false}
-                animate={{ height: showAdvanced ? "auto" : 0, opacity: showAdvanced ? 1 : 0 }}
-                transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
-                aria-hidden={!showAdvanced}
-                {...(showAdvanced ? {} : { inert: "" })}
-              >
-                <div className="ssq-block">
-                  <SectionLabel icon={Maximize2}>{t("Resolution")}</SectionLabel>
-                  <div className="ssq-seg is-res" role="radiogroup" aria-label={t("Resolution")}>
-                    {resolutionOptions.map((res) => {
-                      const active = quality.resolution === res.value;
-                      return (
-                        <button
-                          key={res.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          className={active ? "is-on" : undefined}
-                          disabled={applying}
-                          title={t(res.hintKey)}
-                          onClick={() => pickResolution(res.value)}
-                        >
-                          <div className="ssq-seg-title">{res.label}</div>
-                          <div className="ssq-seg-desc">{res.desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="ssq-block">
-                  <SectionLabel icon={Gauge}>{t("Frame rate")}</SectionLabel>
-                  <div className="ssq-slider-wrap">
-                    <input
-                      className="ssq-slider"
-                      type="range"
-                      min={0}
-                      max={Math.max(0, fpsOptions.length - 1)}
-                      step={1}
-                      value={fpsIndex}
-                      disabled={applying || fpsOptions.length < 2}
-                      aria-label={t("Frame rate")}
-                      aria-valuemin={fpsOptions[0]?.value}
-                      aria-valuemax={fpsOptions[fpsOptions.length - 1]?.value}
-                      aria-valuenow={activeFps?.value ?? fpsValue}
-                      aria-valuetext={activeFps ? `${activeFps.value} FPS` : `${fpsValue} FPS`}
-                      onChange={(e) => {
-                        const next = fpsOptions[Number(e.target.value)];
-                        if (next) pickFps(next.value);
-                      }}
-                    />
-                  </div>
-                  <div className="ssq-ticks" role="group" aria-label={t("Frame rate")}>
-                    {fpsOptions.map((fps) => (
-                      <button
-                        key={fps.value}
-                        type="button"
-                        className={`ssq-tick${Number(quality.fps) === fps.value ? " is-on" : ""}`}
-                        disabled={applying}
-                        title={t(fps.hintKey)}
-                        onClick={() => pickFps(fps.value)}
-                      >
-                        {fps.label}
-                      </button>
-                    ))}
-                  </div>
-                  {exactFps ? <p className="ssq-hint">{t(exactFps.hintKey)}</p> : null}
-                </div>
-
-                <div className="ssq-block">
-                  <SectionLabel icon={Type}>{t("Optimize for")}</SectionLabel>
-                  <div className="ssq-seg is-mode" role="radiogroup" aria-label={t("Optimize for")}>
-                    {CONTENT_MODES.map((mode) => {
-                      const isActive = (quality.contentHint || "motion") === mode.value;
-                      return (
-                        <button
-                          key={mode.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={isActive}
-                          className={isActive ? "is-on" : undefined}
-                          disabled={applying}
-                          onClick={() => pickContentHint(mode.value)}
-                        >
-                          <div className="ssq-seg-title">{t(mode.labelKey)}</div>
-                          <div className="ssq-seg-desc">{t(mode.descKey)}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </motion.div>
+              </div>
 
               {applying && (
                 <div className="ssq-status">
@@ -515,8 +359,8 @@ export default function ScreenShareQualityPanel({
               )}
               {!isScreenSharing && (
                 <button type="button" className="ssq-cta" onClick={handleStart} disabled={applying}>
-                  {applying ? <Loader2 size={16} className="ssq-spin" /> : <Monitor size={16} />}
-                  {t("Share with these settings")}
+                  {applying ? <Loader2 size={16} className="ssq-spin" /> : <Monitor size={16} weight="fill" />}
+                  {t("Start sharing")}
                 </button>
               )}
             </div>
