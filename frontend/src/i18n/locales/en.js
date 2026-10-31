@@ -5,7 +5,9 @@ import { NC_EN } from "./newCreate.en.js";
 import { FBK_EN } from "./feedback.en.js";
 import { BADGES_EN } from "./badges.en.js";
 import { ANTIBOT_EN } from "./antibot.en.js";
+import { ADMINX_EN } from "./adminx.en.js";
 export const nested = {
+  adminx: ADMINX_EN,
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,

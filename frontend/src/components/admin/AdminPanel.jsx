@@ -50,6 +50,7 @@ import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
 import AdminTopUsers from "./AdminTopUsers.jsx";
 import AdminDmInbox from "./AdminDmInbox.jsx";
 import { useLocale } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import {
   parseAppDate,
@@ -1054,7 +1055,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                           });
                           if (!res.ok) {
                             const body = await res.json().catch(() => ({}));
-                            throw new Error(body.error || `Server error ${res.status}`);
+                            throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
                           }
                           setAnnouncementDraft({ title: "", content: "", priority: "normal", color: "#5865F2", pinned: false, target: "all", emoji: "📢" });
                           setShowComposePanel(false);
@@ -1142,7 +1143,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                                 });
                                 if (!res.ok) {
                                   const body = await res.json().catch(() => ({}));
-                                  throw new Error(body.error || `Server error ${res.status}`);
+                                  throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
                                 }
                                 setAnnouncementError("");
                                 await loadAnnouncements();
@@ -1172,7 +1173,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                                 });
                                 if (!res.ok) {
                                   const body = await res.json().catch(() => ({}));
-                                  throw new Error(body.error || `Server error ${res.status}`);
+                                  throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
                                 }
                                 setAnnouncementError("");
                                 await loadAnnouncements();
@@ -1221,7 +1222,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               <div className="admin-grid" style={{ marginBottom: 24 }}>
                 <div className="admin-card is-accent">
                   <span style={{ color: "#f59e0b" }}>{t("Total Credits in System")}</span>
-                  <strong style={{ color: "#f59e0b", fontSize: 24 }}>{(creditStats.totalCredits || 0).toLocaleString()}</strong>
+                  <strong style={{ color: "#f59e0b", fontSize: 24 }}>{formatNumber(creditStats.totalCredits || 0, locale)}</strong>
                 </div>
                 <div className="admin-card">
                   <span>{t("Total Players")}</span>
@@ -1233,7 +1234,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                 </div>
                 <div className="admin-card">
                   <span>{t("Avg Credits/User")}</span>
-                  <strong>{Math.round((creditStats.totalCredits || 0) / (creditStats.totalPlayers || 1)).toLocaleString()}</strong>
+                  <strong>{formatNumber(Math.round((creditStats.totalCredits || 0) / (creditStats.totalPlayers || 1)), locale)}</strong>
                 </div>
               </div>
             )}
@@ -1284,7 +1285,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         <div style={{ textAlign: "right" }}>
                           <div style={{ fontWeight: 700, fontSize: 16, color: "#f59e0b" }}>
                             <Wallet size={14} style={{ display: "inline", marginRight: 4 }} />
-                            {user.credits?.toLocaleString() || 0}
+                            {formatNumber(user.credits || 0, locale)}
                           </div>
                           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                             {t("{count} games", { count: user.games_played || 0 })}
@@ -1314,7 +1315,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("Current Balance")}</div>
                       </div>
                       <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>
-                        {selectedCreditUser.credits?.toLocaleString() || 0}
+                        {formatNumber(selectedCreditUser.credits || 0, locale)}
                       </div>
                     </div>
 
@@ -1370,7 +1371,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         style={{ width: "100%", marginTop: 8 }}
                       >
                         {busy ? t("Processing...") : (
-                          <>{creditOperation === "add" ? <Plus size={16} /> : <Minus size={16} />} {t("{op} {amount} Credits", { op: creditOperation === "add" ? t("Add") : t("Remove"), amount: creditAmount.toLocaleString() })}</>
+                          <>{creditOperation === "add" ? <Plus size={16} /> : <Minus size={16} />} {t("{op} {amount} Credits", { op: creditOperation === "add" ? t("Add") : t("Remove"), amount: formatNumber(creditAmount, locale) })}</>
                         )}
                       </RippleButton>
                     </div>
@@ -1404,7 +1405,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                     {gameHistory.slice(0, 20).map((game, idx) => (
                       <tr key={idx}>
                         <td>{game.username || game.user_id?.slice(0, 8)}</td>
-                        <td>{game.bet_amount?.toLocaleString() || 0}</td>
+                        <td>{formatNumber(game.bet_amount || 0, locale)}</td>
                         <td>
                           <span style={{
                             padding: "4px 10px",
@@ -1418,7 +1419,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                           </span>
                         </td>
                         <td style={{ color: game.win_amount > 0 ? '#22c55e' : 'var(--text-1)' }}>
-                          {game.win_amount > 0 ? '+' : ''}{game.win_amount?.toLocaleString() || 0}
+                          {game.win_amount > 0 ? '+' : ''}{formatNumber(game.win_amount || 0, locale)}
                         </td>
                         <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
                           {game.played_at ? formatAppDateTime(game.played_at, locale) : '-'}

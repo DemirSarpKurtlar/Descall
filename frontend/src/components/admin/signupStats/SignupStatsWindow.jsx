@@ -13,25 +13,31 @@ import { createPortal } from "react-dom";
 import { adminFetch } from "../../../api/adminHttp";
 import { API_BASE_URL } from "../../../config/api";
 import { getToken } from "../../../lib/storage";
+import { useLocale } from "../../../context/LocaleContext";
 import logoIcon from "../../../assets/admin-logo-icon.png";
 import {
   AUTH_SEGMENTS,
   GRANULARITIES,
   PRESETS,
   addDays,
+  authLabel,
   axisLabel,
   countryRow,
+  dayVars,
   dec1,
   istToday,
   kpiDelta,
   niceMax,
   num,
+  pct,
   pctOf,
   peakIndex,
   rangeCaption,
   rangeLabel,
   sinceText,
+  sourceLabel,
   tickIndexes,
+  tipLabel,
 } from "./statsModel.js";
 import "../../../styles/admin-signup-stats.css";
 
@@ -65,6 +71,19 @@ function I({ n, s = 18, w = 2 }) {
   );
 }
 
+/** A catalog sentence with one {slot} rendered as an element (a <code> table name, a <b> word). */
+function Slotted({ text, slot }) {
+  const [a, b = ""] = String(text).split("\u0001");
+  return (
+    <>
+      {a}
+      {slot}
+      {b}
+    </>
+  );
+}
+const SLOT = "\u0001";
+
 const isElectron = () => typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
 
 /** Electron desktop: open the real window. Returns false when the caller should show the in-app one. */
@@ -81,6 +100,7 @@ export function openSignupStatsWindow(layout) {
 // ---- chart --------------------------------------------------------------------
 
 function TrendChart({ series, granularity, W, H }) {
+  const { t, locale } = useLocale();
   const [hi, setHi] = useState(() => peakIndex(series));
   useEffect(() => setHi(peakIndex(series)), [series]);
   if (!W || !series.length) return <div style={{ height: H }} />;
@@ -100,12 +120,12 @@ function TrendChart({ series, granularity, W, H }) {
   const flip = tx + 10 + 128 > W;
   const bx = flip ? tx - 10 - 128 : tx + 10;
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} onMouseLeave={() => setHi(peakIndex(series))} role="img" aria-label="Kayıt trendi">
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} onMouseLeave={() => setHi(peakIndex(series))} role="img" aria-label={t("adminx.sst.trend")}>
       {[0, max / 2, max].map((v) => (
         <g key={v}>
           <line x1={pl} x2={W - pr} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,.08)" />
           <text x={pl - 8} y={y(v) + 4} fill="rgba(235,238,255,.4)" fontSize="11" textAnchor="end">
-            {num(v)}
+            {num(v, locale)}
           </text>
         </g>
       ))}
@@ -126,16 +146,16 @@ function TrendChart({ series, granularity, W, H }) {
           <line x1={tx} x2={tx} y1={pt} y2={pt + ch} stroke="rgba(143,166,255,.35)" strokeDasharray="3 3" />
           <rect x={bx} y={pt + 22} width="128" height="40" rx="10" fill="rgba(36,38,54,.96)" stroke="rgba(255,255,255,.12)" />
           <text x={bx + 64} y={pt + 38} fill="rgba(235,238,255,.6)" fontSize="11" textAnchor="middle">
-            {cur.tip}
+            {tipLabel(cur, granularity, t, locale)}
           </text>
           <text x={bx + 64} y={pt + 54} fill="#fff" fontSize="13" fontWeight="650" textAnchor="middle">
-            {`${num(cur.count)} kayıt · ort. ${dec1(cur.avg)}`}
+            {`${t("adminx.sst.tipCount", { count: cur.count })} · ${t("adminx.sst.tipAvg", { avg: dec1(cur.avg, locale) })}`}
           </text>
         </g>
       ) : null}
       {tickIndexes(n).map((i) => (
         <text key={i} x={pl + i * bw + bw / 2} y={H - 6} fill="rgba(235,238,255,.45)" fontSize="11" textAnchor="middle">
-          {axisLabel(series[i], granularity)}
+          {axisLabel(series[i], granularity, locale)}
         </text>
       ))}
       {series.map((s, i) => (
@@ -173,6 +193,7 @@ function Card({ title, extra, children, style }) {
 }
 
 function Bars({ rows, total }) {
+  const { locale } = useLocale();
   return rows.map((r) => (
     <div className="st-br" key={r.key || r.label}>
       <span className={`k${r.muted ? " muted" : ""}`} title={r.label}>
@@ -182,14 +203,15 @@ function Bars({ rows, total }) {
         <i style={{ width: `${total ? (r.count / total) * 100 : 0}%`, background: r.muted ? "rgba(255,255,255,.22)" : r.color || "#587AF6" }} />
       </span>
       <span className="v">
-        {num(r.count)}
-        <small>%{pctOf(r.count, total)}</small>
+        {num(r.count, locale)}
+        <small>{pct(pctOf(r.count, total), locale)}</small>
       </span>
     </div>
   ));
 }
 
 function Ring({ p, color }) {
+  const { locale } = useLocale();
   const r = 36;
   const C = 2 * Math.PI * r;
   return (
@@ -200,17 +222,18 @@ function Ring({ p, color }) {
           <circle cx="43" cy="43" r={r} stroke={color} strokeWidth="9" fill="none" strokeLinecap="round" strokeDasharray={`${C * p} ${C}`} transform="rotate(-90 43 43)" />
         ) : null}
       </svg>
-      <b>%{Math.round(p * 100)}</b>
+      <b>{pct(Math.round(p * 100), locale)}</b>
     </div>
   );
 }
 
 function Kpi({ label, value, kind, delta, note }) {
-  const d = kind ? kpiDelta(kind, delta) : null;
+  const { t, locale } = useLocale();
+  const d = kind ? kpiDelta(kind, delta, t, locale) : null;
   return (
     <div className="st-kpi">
       <div className="l">{label}</div>
-      <div className="n">{num(value)}</div>
+      <div className="n">{num(value, locale)}</div>
       <div className="d">
         {d ? (
           <>
@@ -228,15 +251,17 @@ function Kpi({ label, value, kind, delta, note }) {
 // ---- content ----------------------------------------------------------------------
 
 function StatsContent({ data, W, controls }) {
+  const { t, locale } = useLocale();
+  const n = (v) => num(v, locale);
   const trendRef = useRef(null);
   const trendW = useWidth(trendRef);
   const wide = W > 1100;
   const narrow = W > 0 && W < 760;
   const today = istToday();
-  const cap = rangeCaption(data.range.from, data.range.to, today);
+  const cap = rangeCaption(data.range.from, data.range.to, today, t, locale);
   const g = data.range.granularity;
-  const unitLabel = g === "week" ? "Haftalık kayıt" : g === "month" ? "Aylık kayıt" : "Günlük kayıt";
-  const avgLabel = g === "week" ? "4 haftalık ortalama" : g === "month" ? "3 aylık ortalama" : "7 günlük ortalama";
+  const unitLabel = g === "week" ? t("adminx.sst.unitWeek") : g === "month" ? t("adminx.sst.unitMonth") : t("adminx.sst.unitDay");
+  const avgLabel = g === "week" ? t("adminx.sst.avgWeek") : g === "month" ? t("adminx.sst.avgMonth") : t("adminx.sst.avgDay");
   const k = data.kpis;
   const f = data.funnel;
   const total = data.total;
@@ -248,7 +273,7 @@ function StatsContent({ data, W, controls }) {
 
   const trend = (
     <Card
-      title="Kayıt trendi"
+      title={t("adminx.sst.trend")}
       extra={
         <span className="st-lg">
           <span>
@@ -268,89 +293,91 @@ function StatsContent({ data, W, controls }) {
     </Card>
   );
   const funnel = (
-    <Card title="Kayıt akışı" extra={<span className="mut">{cap}</span>}>
+    <Card title={t("adminx.sst.funnel")} extra={<span className="mut">{cap}</span>}>
       <div className="st-fun">
         <div className="st-fs">
-          <div className="bar" style={{ width: "100%" }}>{`Başladı · ${num(f.started)}`}</div>
+          <div className="bar" style={{ width: "100%" }}>{t("adminx.sst.started", { value: n(f.started) })}</div>
         </div>
         <div className="st-fs">
           <div className="bar" style={{ width: `${pctOf(f.completed, f.started)}%`, background: "rgba(48,209,88,.5)" }}>
-            {`Tamamlandı · ${num(f.completed)} · %${f.completedPct}`}
+            {t("adminx.sst.completed", { value: n(f.completed), pct: pct(f.completedPct, locale) })}
           </div>
         </div>
         <div className="st-fs">
           <div className="bar" style={{ width: `${pctOf(f.appOpened, f.started)}%`, background: "rgba(48,209,88,.36)" }}>
-            {`Uygulamayı açtı · ${num(f.appOpened)}`}
+            {t("adminx.sst.appOpened", { value: n(f.appOpened) })}
           </div>
         </div>
       </div>
       <div className="st-chips">
         <div className="st-chip">
-          Yarım bıraktı<b>{num(f.abandoned)}</b>
+          {t("adminx.sst.abandoned")}<b>{n(f.abandoned)}</b>
         </div>
         <div className="st-chip">
-          Başarısız<b>{num(f.failed)}</b>
+          {t("adminx.sst.failed")}<b>{n(f.failed)}</b>
         </div>
       </div>
       <div className="st-note">
         <I n="bolt" s={13} w={2} />
         <span>
-          Başarısız = doğrulama/hata ile biten kayıt (yeni <code>signup_attempts</code>).
+          <Slotted text={t("adminx.sst.failedNote", { table: SLOT })} slot={<code>signup_attempts</code>} />
         </span>
       </div>
     </Card>
   );
   const src = (
-    <Card title="Kaynak" extra={<span className="mut">{`tümü · ${num(total)}`}</span>}>
-      <Bars rows={data.sources} total={total} />
+    <Card title={t("adminx.sst.sourceTitle")} extra={<span className="mut">{t("adminx.sst.allCount", { value: n(total) })}</span>}>
+      <Bars rows={data.sources.map((row) => ({ ...row, label: sourceLabel(row, t) }))} total={total} />
       <div className="st-sep" />
-      <div className="st-sub">Giriş yöntemi</div>
+      <div className="st-sub">{t("adminx.sst.signInMethod")}</div>
       <div className="st-stack">
         {AUTH_SEGMENTS.map(([key, , color]) =>
           data.authMethods[key] ? <i key={key} style={{ width: `${(data.authMethods[key] / authTotal) * 100}%`, background: color }} /> : null,
         )}
       </div>
       <div className="st-leg2">
-        {AUTH_SEGMENTS.map(([key, label, color]) => (
-          <span key={key}>
-            <i style={{ background: color }} />
-            {`${label} ${num(data.authMethods[key] || 0)}`}
+        {AUTH_SEGMENTS.map((seg) => (
+          <span key={seg[0]}>
+            <i style={{ background: seg[2] }} />
+            {`${authLabel(seg, t)} ${n(data.authMethods[seg[0]] || 0)}`}
           </span>
         ))}
       </div>
     </Card>
   );
   const ret = (
-    <Card title="Geri dönüş" extra={<span className="mut">{cap}</span>}>
+    <Card title={t("adminx.sst.retention")} extra={<span className="mut">{cap}</span>}>
       <div className="st-ret">
         <div>
           <Ring p={d1} color="#587AF6" />
-          <div className="t">D1 · ertesi gün</div>
-          <div className="s">{`${num(r.d1.returned)} / ${num(r.d1.eligible)} geri geldi`}</div>
+          <div className="t">{t("adminx.sst.d1")}</div>
+          <div className="s">{t("adminx.sst.cameBack", { returned: n(r.d1.returned), eligible: n(r.d1.eligible) })}</div>
         </div>
         <div>
           <Ring p={d7} color="#30D158" />
-          <div className="t">D7 · 7. gün</div>
-          <div className="s">{`${num(r.d7.returned)} / ${num(r.d7.eligible)} hâlâ aktif`}</div>
+          <div className="t">{t("adminx.sst.d7")}</div>
+          <div className="s">{t("adminx.sst.stillActive", { returned: n(r.d7.returned), eligible: n(r.d7.eligible) })}</div>
         </div>
       </div>
       <div className="st-note">
         <I n="clock" s={13} w={2} />
         <span>
-          Gün sınırı İstanbul saatine göre (00:00, UTC+3). Ölçüm için yeni <code>user_active_days</code> tablosu.
+          <Slotted text={t("adminx.sst.retentionNote", { table: SLOT })} slot={<code>user_active_days</code>} />
         </span>
       </div>
     </Card>
   );
   const ctry = (
-    <Card title="Ülke" extra={<span className="mut">{`tümü · ${num(total)}`}</span>}>
-      <Bars rows={data.countries.map((c, i) => ({ key: c.code, ...countryRow(c, i) }))} total={total} />
+    <Card title={t("adminx.sst.country")} extra={<span className="mut">{t("adminx.sst.allCount", { value: n(total) })}</span>}>
+      <Bars rows={data.countries.map((c, i) => ({ key: c.code, ...countryRow(c, i, t, locale) }))} total={total} />
       {unknownCountries > 0 && data.countrySinceDay ? (
         <div className="st-note">
           <I n="globe" s={13} w={2} />
           <span>
-            {`${sinceText(data.countrySinceDay).replace(/ beri$/, "")} önceki kayıtlarda ülke tutulmuyordu → `}
-            <b>Bilinmiyor</b>.
+            <Slotted
+              text={t("adminx.sst.countryNote", { ...dayVars(data.countrySinceDay, locale), unknown: SLOT })}
+              slot={<b>{t("adminx.sst.unknown")}</b>}
+            />
           </span>
         </div>
       ) : null}
@@ -362,20 +389,20 @@ function StatsContent({ data, W, controls }) {
       <div className="st-hd">
         <div>
           <h1>
-            Kayıt İstatistikleri {data.sample ? <span className="st-ex">ÖRNEK VERİ</span> : null}
+            {t("adminx.sst.title")} {data.sample ? <span className="st-ex">{t("adminx.sst.sampleData")}</span> : null}
           </h1>
-          <p>{`Sadece yöneticiler görür · Saat dilimi: İstanbul (UTC+3) · Son güncelleme ${data.updatedLabel}`}</p>
+          <p>{t("adminx.sst.subtitle", { time: data.updatedLabel })}</p>
         </div>
         {controls}
       </div>
       <div className="st-kpis">
-        <Kpi label="Bugün" value={k.today.value} kind="today" delta={k.today.delta} />
-        <Kpi label="Bu hafta" value={k.week.value} kind="week" delta={k.week.delta} />
-        <Kpi label="Son 30 gün" value={k.month.value} kind="month" delta={k.month.delta} />
+        <Kpi label={t("adminx.sst.today")} value={k.today.value} kind="today" delta={k.today.delta} />
+        <Kpi label={t("adminx.sst.thisWeek")} value={k.week.value} kind="week" delta={k.week.delta} />
+        <Kpi label={t("adminx.sst.preset30")} value={k.month.value} kind="month" delta={k.month.delta} />
         <Kpi
-          label="Toplam kayıt"
+          label={t("adminx.sst.total")}
           value={k.total.value}
-          note={k.total.since ? `${sinceText(k.total.since)} · ${num(k.total.deleted)} silinmiş` : `${num(k.total.deleted)} silinmiş`}
+          note={k.total.since ? `${sinceText(k.total.since, t, locale)} · ${t("adminx.sst.deleted", { value: n(k.total.deleted) })}` : t("adminx.sst.deleted", { value: n(k.total.deleted) })}
         />
       </div>
       {wide ? (
@@ -406,6 +433,8 @@ function StatsContent({ data, W, controls }) {
 }
 
 function Controls({ data, query, setQuery, onCsv, csvBusy }) {
+  const { t, locale } = useLocale();
+  const range = data ? rangeLabel(data.range.from, data.range.to, locale) : "";
   const [menu, setMenu] = useState(false);
   const [custom, setCustom] = useState({ from: data?.range.from || "", to: data?.range.to || "" });
   const ref = useRef(null);
@@ -429,15 +458,15 @@ function Controls({ data, query, setQuery, onCsv, csvBusy }) {
   };
   return (
     <div className="st-tools" ref={ref}>
-      <div className="st-seg" role="tablist" aria-label="Zaman aralığı">
+      <div className="st-seg" role="tablist" aria-label={t("adminx.sst.timeRange")}>
         {GRANULARITIES.map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={query.granularity === id} className={query.granularity === id ? "on" : ""} onClick={() => setQuery((q) => ({ ...q, granularity: id }))}>
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
-      <button type="button" className="st-pill" aria-label={data ? `Tarih aralığı: ${rangeLabel(data.range.from, data.range.to)}` : "Tarih aralığı"} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
-        <I n="clock" s={14} w={2} /> {data ? rangeLabel(data.range.from, data.range.to) : "…"} <I n="down" s={13} w={2.2} />
+      <button type="button" className="st-pill" aria-label={range ? t("adminx.sst.dateRangeValue", { range }) : t("adminx.sst.dateRange")} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
+        <I n="clock" s={14} w={2} /> {range || "…"} <I n="down" s={13} w={2.2} />
       </button>
       <button type="button" className="st-pill" onClick={onCsv} disabled={!data || csvBusy}>
         <I n="down" s={14} w={2} /> CSV
@@ -446,7 +475,7 @@ function Controls({ data, query, setQuery, onCsv, csvBusy }) {
         <div className="st-menu" role="menu">
           {PRESETS.map(([id, label]) => (
             <button key={id} type="button" role="menuitemradio" aria-checked={query.preset === id} className={query.preset === id ? "on" : ""} onClick={() => pick(id)}>
-              {label}
+              {t(label)}
               {query.preset === id ? <I n="check" s={15} w={2.4} /> : null}
             </button>
           ))}
@@ -461,15 +490,15 @@ function Controls({ data, query, setQuery, onCsv, csvBusy }) {
             }}
           >
             <label>
-              Başlangıç
+              {t("adminx.sst.start")}
               <input type="date" value={custom.from} max={today} onChange={(e) => setCustom((c) => ({ ...c, from: e.target.value }))} />
             </label>
             <label>
-              Bitiş
+              {t("adminx.sst.end")}
               <input type="date" value={custom.to} max={today} onChange={(e) => setCustom((c) => ({ ...c, to: e.target.value }))} />
             </label>
             <button type="submit" className="go">
-              Aralığı uygula
+              {t("adminx.sst.applyRange")}
             </button>
           </form>
         </div>
@@ -514,11 +543,11 @@ function useSignupStats() {
   return { query, setQuery, data, error, loading, reload: load };
 }
 
-async function downloadCsv(query) {
+async function downloadCsv(query, fallbackName) {
   const res = await fetch(`${API_BASE_URL}/admin/signup-stats/csv?${qs(query)}`, { headers: { Authorization: `Bearer ${getToken()}` } });
   if (!res.ok) throw new Error(String(res.status));
   const blob = await res.blob();
-  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") || "")?.[1] || "kayit-istatistikleri.csv";
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") || "")?.[1] || fallbackName;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -532,6 +561,7 @@ async function downloadCsv(query) {
 // ---- window ----------------------------------------------------------------------
 
 export default function SignupStatsWindow({ layout = "desktop", onClose, standalone = false, embedded = false }) {
+  const { t } = useLocale();
   const { query, setQuery, data, error, loading, reload } = useSignupStats();
   const winRef = useRef(null);
   const W = useWidth(winRef);
@@ -562,21 +592,22 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
 
   useEffect(() => {
     if (!toast) return undefined;
-    const t = window.setTimeout(() => setToast(null), 2200);
-    return () => window.clearTimeout(t);
+    const id = window.setTimeout(() => setToast(null), 2200);
+    return () => window.clearTimeout(id);
   }, [toast]);
 
+  const windowTitle = t("adminx.sst.windowTitle");
   useEffect(() => {
-    if (standalone) document.title = "Kayıt İstatistikleri — Descall Yönetici";
-  }, [standalone]);
+    if (standalone) document.title = windowTitle;
+  }, [standalone, windowTitle]);
 
   const onCsv = async () => {
     setCsvBusy(true);
     try {
-      await downloadCsv(query);
-      setToast("CSV indirildi");
+      await downloadCsv(query, t("adminx.sst.csvFile"));
+      setToast(t("adminx.sst.csvDone"));
     } catch {
-      setToast("CSV indirilemedi");
+      setToast(t("adminx.sst.csvFailed"));
     } finally {
       setCsvBusy(false);
     }
@@ -631,14 +662,14 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
       <div className="st-state">
         <div>
           {error === "forbidden"
-            ? "Kayıt İstatistikleri sadece yöneticilere açık."
+            ? t("adminx.sst.forbidden")
             : error === "auth"
-              ? "Bu pencere için oturum açman gerekiyor."
-              : "İstatistikler yüklenemedi."}
+              ? t("adminx.sst.needsSignIn")
+              : t("adminx.sst.loadError")}
           {error === "error" ? (
             <div style={{ marginTop: 10 }}>
               <button type="button" onClick={reload} disabled={loading} aria-busy={loading || undefined}>
-                {loading ? "Yükleniyor…" : "Tekrar dene"}
+                {loading ? t("adminx.sst.loading") : t("adminx.sst.retry")}
               </button>
             </div>
           ) : null}
@@ -646,7 +677,7 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
       </div>
     );
   } else if (!data) {
-    body = <div className="st-state">Yükleniyor…</div>;
+    body = <div className="st-state">{t("adminx.sst.loading")}</div>;
   } else {
     body = (
       <div className={loading ? "st-loading" : ""}>
@@ -662,7 +693,7 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
   // 3.1: a section inside the admin shell, no window chrome of its own.
   if (embedded) {
     return (
-      <div className={`st3 st3-embedded${layout === "phone" ? " st3-phone" : ""}`} aria-label="Kayıt İstatistikleri">
+      <div className={`st3 st3-embedded${layout === "phone" ? " st3-phone" : ""}`} aria-label={t("adminx.sst.title")}>
         <div ref={winRef} className="st-win">
           <div className="st-body">{body}</div>
         </div>
@@ -672,28 +703,28 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
   }
 
   const tree = (
-    <div className={`st3 st3-${chrome}`} role={standalone ? "main" : "dialog"} aria-modal={standalone ? undefined : "true"} aria-label="Kayıt İstatistikleri">
+    <div className={`st3 st3-${chrome}`} role={standalone ? "main" : "dialog"} aria-modal={standalone ? undefined : "true"} aria-label={t("adminx.sst.title")}>
       {standalone ? null : <div className="st3-dim" onClick={chrome === "desktop" ? undefined : close} />}
       <div ref={winRef} className={`st-win${max ? " max" : ""}`} style={style}>
         {chrome === "desktop" || electron ? (
           <div className="st-tb" onPointerDown={startDrag} onDoubleClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
             <img src={logoIcon} alt="" />
-            <span>Kayıt İstatistikleri — Descall Yönetici</span>
+            <span>{windowTitle}</span>
             <span className="sp" />
-            <button type="button" className="wc" aria-label="Küçült" onClick={() => (electron ? window.electronAPI.minimizeWindow?.() : close())}>
+            <button type="button" className="wc" aria-label={t("adminx.sst.minimize")} onClick={() => (electron ? window.electronAPI.minimizeWindow?.() : close())}>
               <I n="minus" s={15} w={1.6} />
             </button>
-            <button type="button" className="wc" aria-label="Büyüt" onClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
+            <button type="button" className="wc" aria-label={t("adminx.sst.maximize")} onClick={() => (electron ? window.electronAPI.maximizeWindow?.() : setMax((v) => !v))}>
               <svg width="12" height="12" aria-hidden="true">
                 <rect x="1" y="1" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
               </svg>
             </button>
-            <button type="button" className="wc x" aria-label="Kapat" onClick={close}>
+            <button type="button" className="wc x" aria-label={t("adminx.sst.close")} onClick={close}>
               <I n="x" s={15} w={1.6} />
             </button>
           </div>
         ) : chrome === "page" ? null : (
-          <div className="st-grab" onPointerDown={grab} role="button" aria-label="Kapat" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && close()}>
+          <div className="st-grab" onPointerDown={grab} role="button" aria-label={t("adminx.sst.close")} tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && close()}>
             <span />
           </div>
         )}

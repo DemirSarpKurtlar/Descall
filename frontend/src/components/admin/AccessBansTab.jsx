@@ -89,7 +89,7 @@ function NewBan({ t, onDone }) {
       {mode === "account" ? (
         <label className="aba-field">
           <span>{t("admin.abUsername")}</span>
-          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@kullaniciadi" autoComplete="off" spellCheck={false} />
+          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("adminx.bans.usernamePlaceholder")} autoComplete="off" spellCheck={false} />
         </label>
       ) : (
         <label className="aba-field">

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "../../ui/Icon.jsx";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
-import { ColumnChart, BarList, SERIES_A, SERIES_B, fmtNum, heatColor } from "./GrowthCharts.jsx";
+import { ColumnChart, BarList, SERIES_A, SERIES_B, fmtNum, fmtPct, heatColor } from "./GrowthCharts.jsx";
 import "../../../styles/admin-growth.css";
 
 /**
@@ -56,7 +56,7 @@ export default function RetentionTab() {
 
   const k = data?.kpis || {};
   const r = data?.returns || {};
-  const ret = (x) => (x?.pct == null ? "–" : `%${fmtNum(x.pct, locale)}`);
+  const ret = (x) => fmtPct(x?.pct, locale);
   const retHint = (x) => (x?.eligible ? t("admin.grOf", { kept: x.kept, n: x.eligible }) : t("admin.grTooNew"));
   const f = data?.funnel || {};
   const maxWeeks = Math.max(1, ...(data?.cohorts || []).map((c) => c.cells.length));
@@ -81,7 +81,7 @@ export default function RetentionTab() {
             <Kpi label={t("admin.grDau")} value={fmtNum(k.dau, locale)} hint={t("admin.grToday")} />
             <Kpi label={t("admin.grWau")} value={fmtNum(k.wau, locale)} hint={t("admin.grLast7")} />
             <Kpi label={t("admin.grMau")} value={fmtNum(k.mau, locale)} hint={t("admin.grLast30")} />
-            <Kpi label={t("admin.grSticky")} value={k.stickiness == null ? "–" : `%${fmtNum(k.stickiness, locale)}`} hint={t("admin.grStickyHint")} />
+            <Kpi label={t("admin.grSticky")} value={fmtPct(k.stickiness, locale)} hint={t("admin.grStickyHint")} />
             <Kpi label={t("admin.grD1")} value={ret(r.d1)} hint={retHint(r.d1)} />
             <Kpi label={t("admin.grW2")} value={ret(r.w2)} hint={retHint(r.w2)} />
             <Kpi label={t("admin.grM2")} value={ret(r.m2)} hint={retHint(r.m2)} />
@@ -127,7 +127,7 @@ export default function RetentionTab() {
                             title={t("admin.grCellTip", { n: cell.active, size: c.size, pct: fmtNum(cell.pct, locale) })}
                             className={cell.partial ? "is-partial" : ""}
                           >
-                            %{fmtNum(cell.pct, locale)}
+                            {fmtPct(cell.pct, locale)}
                           </td>
                         );
                       })}

@@ -10,7 +10,7 @@ import { antibotApi } from "../../api/adminAntibot";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import {
   tone, statusFor, signalTone, sortReasons, rawScore, fmtNumber, maskHash, phasesFrom,
-  shortDate, shortDateTime, accountAge, dayOfMonth, chartMax, layoutGraph, canWrite,
+  shortDate, shortDateTime, accountAge, chartMax, layoutGraph, canWrite,
   DEFAULT_WEIGHTS, RULE_KINDS, RULE_NEEDS_THRESHOLD, BLOCK_REASONS,
   nodeBadge,
   nodeLabels,
@@ -109,7 +109,7 @@ function Phases({ flags, t }) {
       <span className="sx-phases-title"><Shield size={14} /> {t("sx.protection")}</span>
       {phasesFrom(flags).map((p) => (
         <span key={p.id} className={`sx-phase${p.on ? " on" : ""}`}>
-          <i aria-hidden />Faz {p.id} · {t(`sx.phase.${p.key}`)}<em>{p.on ? t("sx.phaseOn") : t("sx.phaseOff")}</em>
+          <i aria-hidden />{t("adminx.sx.phaseN", { n: p.id })} · {t(`sx.phase.${p.key}`)}<em>{p.on ? t("sx.phaseOn") : t("sx.phaseOff")}</em>
         </span>
       ))}
     </div>
@@ -240,7 +240,7 @@ function Earnings({ earnings, t }) {
           <div className="sx-col" key={d.day}>
             <span className="sx-col-v tnum">{fmtNumber(d.amount)}</span>
             <i style={{ height: `${Math.max(d.amount ? 2 : 0, (d.amount / max) * H)}px` }} />
-            <span className="sx-col-d tnum">{`${dayOfMonth(d.day)} ${shortDate(`${d.day}T12:00:00Z`).split(" ")[1] || ""}`}</span>
+            <span className="sx-col-d tnum">{shortDate(`${d.day}T12:00:00Z`)}</span>
           </div>
         ))}
       </div>

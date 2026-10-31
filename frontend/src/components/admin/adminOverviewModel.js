@@ -116,28 +116,19 @@ export function pendingCount(todo) {
   return todo.filter((x) => x.level !== "ok").length;
 }
 
-const ACTIONS_TR = {
-  ban: "banladı", unban: "banını kaldırdı", kick: "sunucudan attı", timeout: "zaman aşımı verdi",
-  untimeout: "zaman aşımını kaldırdı", mute: "susturdu", unmute: "susturmayı kaldırdı", warn: "uyardı",
-  broadcast: "duyuru gönderdi", disconnect_all: "herkesin bağlantısını kesti", delete_message: "mesaj sildi",
-  set_admin: "yönetici yaptı", remove_admin: "yöneticiliği kaldırdı", maintenance: "bakım ayarını değiştirdi",
-};
-const ACTIONS_EN = {
-  ban: "banned", unban: "unbanned", kick: "kicked", timeout: "timed out", untimeout: "lifted a timeout on",
-  mute: "muted", unmute: "unmuted", warn: "warned", broadcast: "sent an announcement",
-  disconnect_all: "disconnected everyone", delete_message: "deleted a message", set_admin: "made admin",
-  remove_admin: "removed admin from", maintenance: "changed maintenance",
-};
+/** Audit action codes with a readable verb in the catalogs (adminx.audit.<code>). */
+export const AUDIT_ACTIONS = [
+  "ban", "unban", "kick", "timeout", "untimeout", "mute", "unmute", "warn", "broadcast",
+  "disconnect_all", "delete_message", "set_admin", "remove_admin", "maintenance",
+];
 
 /** Human verb for an audit action code; unknown codes are de-underscored, never shown raw. */
-export function auditVerb(action, locale) {
+export function auditVerb(action, t) {
   const code = String(action || "").trim();
-  const tr = String(locale || "tr").toLowerCase().startsWith("tr");
-  const map = tr ? ACTIONS_TR : ACTIONS_EN;
-  if (map[code]) return map[code];
+  if (AUDIT_ACTIONS.includes(code)) return t(`adminx.audit.${code}`);
   const antibot = code.match(/^antibot_(.+)$/);
-  if (antibot) return `${tr ? "bot denetimi" : "anti-bot"}: ${antibot[1].replace(/_/g, " ")}`;
-  return code.replace(/[_:.]+/g, " ").trim() || (tr ? "bir işlem yaptı" : "did something");
+  if (antibot) return t("adminx.audit.antibot", { rule: antibot[1].replace(/_/g, " ") });
+  return code.replace(/[_:.]+/g, " ").trim() || t("adminx.audit.unknown");
 }
 
 const UUIDISH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

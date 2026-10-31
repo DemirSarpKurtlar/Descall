@@ -10,6 +10,7 @@ import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime, parseAppDate } from "../../lib/datetime";
+import { formatRelativeTime } from "../../i18n/format.js";
 
 const ACTION_TABS = [
   { id: "timeout", label: "Timeout", icon: Timer, tone: "amber" },
@@ -17,22 +18,18 @@ const ACTION_TABS = [
   { id: "kick", label: "Kick", icon: UserX, tone: "slate" },
 ];
 
-function formatUntil(iso, locale) {
-  if (!iso) return "Permanent";
+function formatUntil(iso, locale, t) {
+  if (!iso) return t("Permanent");
   return formatAppDateTime(iso, locale) || iso;
 }
 
-function remainingLabel(iso) {
+/** "in 5 min" / "5 dk. içinde" (Intl, UI locale); "expired" once it has passed. */
+function remainingLabel(iso, locale, t) {
   if (!iso) return "∞";
   const until = parseAppDate(iso);
   if (!until) return "∞";
-  const ms = until.getTime() - Date.now();
-  if (ms <= 0) return "expired";
-  const m = Math.floor(ms / 60000);
-  if (m < 60) return `${m}m left`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return `${h}h left`;
-  return `${Math.floor(h / 24)}d left`;
+  if (until.getTime() <= Date.now()) return t("adminx.mod.expired");
+  return formatRelativeTime(until, locale, { style: "short", numeric: "always" });
 }
 
 export default function AdminModeration({ users = [], onRefreshUsers }) {
@@ -66,7 +63,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
   }, []);
 
   useEffect(() => {
-    loadAll().catch((e) => setErr(e.message || "Failed to load moderation"));
+    loadAll().catch((e) => setErr(e.message || t("adminx.mod.loadError")));
   }, [loadAll]);
 
   useEffect(() => {
@@ -103,7 +100,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
     try {
       await fn();
     } catch (e) {
-      setErr(e.message || "Action failed");
+      setErr(e.message || t("adminx.mod.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -388,7 +385,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
                     <span className="mod-pill red">{b.categoryLabel || b.category}</span>
                     {b.message && <p className="mod-sanction-msg">“{b.message}”</p>}
                     <small>
-                      {b.expiresAt ? `${formatUntil(b.expiresAt, locale)} · ${remainingLabel(b.expiresAt)}` : t("Permanent")}
+                      {b.expiresAt ? `${formatUntil(b.expiresAt, locale, t)} · ${remainingLabel(b.expiresAt, locale, t)}` : t("Permanent")}
                     </small>
                   </div>
                   <RippleButton type="button" className="small admin-btn-green" disabled={busy} onClick={() => revoke(b)}>
@@ -414,7 +411,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
                     <span className="mod-pill amber">{row.categoryLabel || row.category}</span>
                     {row.message && <p className="mod-sanction-msg">“{row.message}”</p>}
                     <small>
-                      {formatUntil(row.until, locale)} · {remainingLabel(row.until)}
+                      {formatUntil(row.until, locale, t)} · {remainingLabel(row.until, locale, t)}
                     </small>
                   </div>
                   <RippleButton type="button" className="small" disabled={busy} onClick={() => revoke(row)}>
@@ -454,7 +451,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
                 ) : (
                   history.map((h) => (
                     <tr key={h.id}>
-                      <td style={{ fontSize: 12 }}>{formatUntil(h.created_at, locale)}</td>
+                      <td style={{ fontSize: 12 }}>{formatUntil(h.created_at, locale, t)}</td>
                       <td>
                         <span className={`mod-pill ${h.action_type === "ban" ? "red" : h.action_type === "timeout" ? "amber" : "slate"}`}>
                           {h.action_type}

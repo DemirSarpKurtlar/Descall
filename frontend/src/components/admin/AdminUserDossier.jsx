@@ -11,6 +11,7 @@ import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
+import { formatNumber } from "../../i18n/format.js";
 import { SkeletonLine } from "../ui/Skeleton";
 
 function sourceLabel(key, t) {
@@ -250,7 +251,7 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
                     // KVKK veri dışa aktarma (3.6.0): the same file the account owner gets.
                     const data = await adminFetch(`/people/${userId}/export`);
                     const day = new Date().toISOString().slice(0, 10);
-                    await saveJsonFile(`descall-verileri-${data?.account?.username || userId}-${day}.json`, data);
+                    await saveJsonFile(t("adminx.dossier.exportFile", { username: data?.account?.username || userId, day }), data);
                   }, t("admin.dataExported"))
                 }
               >
@@ -343,7 +344,7 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
             <section className="dossier-card">
               <h3><Wallet size={15} /> {t("admin.dossierWallet")}</h3>
               <p className="dossier-balance">
-                <Coins size={16} /> {Number(wallet.balance || 0).toLocaleString()}
+                <Coins size={16} /> {formatNumber(wallet.balance || 0, locale)}
                 {wallet.frozen ? <span className="dossier-frozen">{t("admin.frozen")}</span> : null}
               </p>
               {(wallet.ledger || []).length === 0 ? (
