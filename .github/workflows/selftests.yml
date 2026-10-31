@@ -190,6 +190,8 @@ jobs:
           node src/components/admin/dmReview.selftest.mjs
           node src/components/social/adminBadge.selftest.mjs
           node src/styles/glass/headerPresence.selftest.mjs
+          node src/components/admin/growth/growth.selftest.mjs
+          node backend/lib/growthInsights.selftest.cjs
           node src/components/admin/userLens.selftest.mjs
           node backend/lib/userLens.selftest.cjs
           node backend/middleware/gzipJson.selftest.cjs

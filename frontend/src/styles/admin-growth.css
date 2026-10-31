@@ -1,0 +1,65 @@
+/* Elde tutma + DesCoin ekonomisi (3.7.5). Dark admin surface; chart colours
+   from the validated pair in GrowthCharts.jsx. */
+.agr { display: flex; flex-direction: column; gap: 16px; }
+.agr-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.agr-head h2 { margin: 0; }
+.agr-head p { margin: 4px 0 0; }
+.agr-actions { display: flex; align-items: center; gap: 8px; }
+.agr-range { display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); }
+.agr-range button { height: 30px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: inherit; font: inherit; font-size: 12.5px; cursor: pointer; opacity: 0.72; }
+.agr-range button.is-on { opacity: 1; background: rgba(var(--g-brand-rgb, 120, 140, 255), 0.28); }
+.agr-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; border: 0; background: rgba(255, 255, 255, 0.06); color: inherit; cursor: pointer; }
+.agr-range button:focus-visible, .agr-icon:focus-visible { outline: 2px solid rgba(var(--g-brand-rgb, 120, 140, 255), 0.9); outline-offset: 1px; }
+
+.agr-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.agr-kpi { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); min-width: 0; }
+.agr-kpi span { font-size: 12px; color: var(--adm-t2, rgba(244, 246, 251, 0.64)); }
+.agr-kpi strong { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.agr-kpi em { font-style: normal; font-size: 11.5px; color: var(--adm-t3, rgba(244, 246, 251, 0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agr-kpi.is-warn strong { color: #fbbf24; }
+
+.agr-card { padding: 14px 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.06); min-width: 0; }
+.agr-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 650; }
+.agr-note { margin: -4px 0 10px; font-size: 12px; }
+.agr-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.agr-foot { font-size: 12px; margin: 0; }
+
+.agr-chart { position: relative; }
+.agr-chart svg { display: block; width: 100%; height: 180px; overflow: visible; }
+.agr-grid { stroke: #2c2c2a; stroke-width: 1; }
+.agr-base { stroke: #383835; stroke-width: 1; }
+.agr-axis { fill: #898781; font-size: 10px; font-family: inherit; }
+.agr-legend { display: flex; gap: 14px; margin: -4px 0 8px; font-size: 12px; color: var(--adm-t2, rgba(244, 246, 251, 0.7)); }
+.agr-legend span, .agr-tip span { display: inline-flex; align-items: center; gap: 6px; }
+.agr-legend i, .agr-tip i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.agr-tip { position: absolute; top: 24px; transform: translateX(-50%); pointer-events: none; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 10px; font-size: 12px; white-space: nowrap; color: #f0efec; background: rgba(16, 17, 24, 0.96); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); z-index: 2; }
+
+.agr-barlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.agr-barlist li { display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+.agr-bl-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--adm-t2, rgba(244, 246, 251, 0.8)); }
+.agr-bl-track { height: 10px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); overflow: hidden; }
+.agr-bl-track span { display: block; height: 100%; border-radius: 4px; }
+.agr-bl-val { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.agr-cohort-wrap { overflow-x: auto; }
+.agr-cohort { border-collapse: separate; border-spacing: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.agr-cohort th { font-weight: 600; color: var(--adm-t2, rgba(244, 246, 251, 0.64)); padding: 4px 8px; text-align: center; white-space: nowrap; }
+.agr-cohort tbody th { text-align: left; }
+.agr-cohort td { min-width: 48px; height: 30px; text-align: center; border-radius: 6px; padding: 0 6px; }
+.agr-cohort td.agr-size { background: rgba(255, 255, 255, 0.05); font-weight: 600; }
+.agr-cohort td.agr-empty { background: rgba(255, 255, 255, 0.02); }
+.agr-cohort td.is-partial { outline: 1px dashed rgba(255, 255, 255, 0.35); outline-offset: -2px; }
+
+.agr-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.agr-table th { text-align: left; font-weight: 600; font-size: 12px; color: var(--adm-t2, rgba(244, 246, 251, 0.6)); padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.agr-table td { padding: 7px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+@media (max-width: 960px) {
+  .agr-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .agr-grid2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .agr-range button { height: 40px; }
+  .agr-icon { width: 44px; height: 44px; }
+  .agr-chart svg { height: 160px; }
+}

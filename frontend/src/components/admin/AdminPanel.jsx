@@ -42,6 +42,8 @@ import AdminOverview from "./AdminOverview";
 import MaintenanceTab from "./MaintenanceTab";
 import SuspiciousTab from "./SuspiciousTab";
 import { ShieldWarning, UserGear, Bug, Trophy } from "../ui/Icon.jsx";
+import RetentionTab from "./growth/RetentionTab.jsx";
+import EconomyTab from "./growth/EconomyTab.jsx";
 import AdminStaff from "./AdminStaff.jsx";
 import AccessBansTab from "./AccessBansTab.jsx";
 import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
@@ -100,6 +102,8 @@ const TABS = [
   { id: "analytics", label: "admin.analytics", icon: Activity },
   // Kayıt İstatistikleri opens in its own window (Electron) or an in-app window (web / iPad).
   { id: "signupStats", label: "admin.signupStats", icon: BarChart3 },
+  { id: "retention", label: "admin.retention", icon: TrendingUp },
+  { id: "economy", label: "admin.economy", icon: Wallet },
   { id: "topUsers", label: "admin.topUsers", icon: Trophy },
   { id: "people", label: "admin.people", icon: FolderSearch },
   { id: "reports", label: "admin.reports", icon: Flag },
@@ -835,6 +839,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "accessBans" && <AccessBansTab />}
 
         {tab === "errors" && <ErrorIssuesTab />}
+        {tab === "retention" && <RetentionTab />}
+        {tab === "economy" && <EconomyTab />}
         {tab === "topUsers" && <AdminTopUsers />}
         {tab === "dmReview" && <AdminDmInbox />}
 

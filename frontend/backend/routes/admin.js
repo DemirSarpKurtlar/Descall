@@ -69,6 +69,7 @@ router.use(adminPermissions.requireAdminSection);
 router.use(require("./adminStaff"));
 router.use(require("./adminAccess"));
 router.use(require("./adminErrors"));
+router.use(require("./adminGrowth"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
 router.use(require("./adminPeople"));
