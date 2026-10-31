@@ -45,7 +45,10 @@ ok("paths map to panel sections", () => {
     "/users/u1/timeout": "moderation",
     "/users/bulk": "moderation",
     "/moderation/history": "moderation",
-    "/dm/conversations": "moderation",
+    "/dm/conversations": "dmReview",
+    "/dm/a::b/view": "dmReview",
+    "/activity/leaderboard": "topUsers",
+    "/activity/recent": "directory",
     "/messages/m1": "moderation",
     "/users/u1/analytics": "analytics",
     "/analytics": "analytics",
@@ -68,7 +71,10 @@ ok("owner sees everything incl. staff; nobody else gets staff", () => {
   assert(superRow.includes("staff"));
   const legacy = perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: null });
   assert(!legacy.includes("staff"));
-  assert.deepStrictEqual(legacy, ["overview", ...perms.GRANTABLE_SECTIONS]);
+  assert.deepStrictEqual(legacy, ["overview", ...perms.LEGACY_SECTIONS]);
+  assert(!legacy.includes("dmReview"), "legacy admins never get DM inceleme by default");
+  assert(perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["dmReview"] }).includes("dmReview"), "granted explicitly");
+  assert(perms.sectionsFor({ username: "admin" }, { is_admin: true }).includes("dmReview"), "owner sees it");
   const tried = perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["staff", "reports"] });
   assert.deepStrictEqual(tried, ["overview", "reports"]);
 });

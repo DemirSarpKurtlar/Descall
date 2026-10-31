@@ -18,10 +18,12 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "directory",
   "analytics",
   "signupStats",
+  "topUsers",
   "people",
   "reports",
   "feedback",
   "moderation",
+  "dmReview",
   "suspicious",
   "accessBans",
   "shop",
@@ -37,6 +39,10 @@ const GRANTABLE_SECTIONS = Object.freeze([
 ]);
 
 const ALWAYS = Object.freeze(["overview"]);
+// Reading private messages (3.7.1): never part of the legacy NULL = "every
+// section" default; the owner grants it to an admin explicitly.
+const SENSITIVE_SECTIONS = Object.freeze(["dmReview"]);
+const LEGACY_SECTIONS = Object.freeze(GRANTABLE_SECTIONS.filter((s) => !SENSITIVE_SECTIONS.includes(s)));
 const OWNER_ONLY = Object.freeze(["staff"]);
 
 /**
@@ -68,7 +74,9 @@ const RULES = [
   [/^\/users\/[^/]+\/(ban|unban|timeout|untimeout|kick|status)$/, "moderation"],
   [/^\/users\/bulk$/, "moderation"],
   [/^\/moderation(\/|$)/, "moderation"],
-  [/^\/(messages|export\/messages|dm)(\/|$)/, "moderation"],
+  [/^\/dm(\/|$)/, "dmReview"],
+  [/^\/(messages|export\/messages)(\/|$)/, "moderation"],
+  [/^\/activity\/leaderboard$/, "topUsers"],
   [/^\/users\/[^/]+\/analytics$/, "analytics"],
   [/^\/(analytics|attribution)(\/|$)/, "analytics"],
   [/^\/(directory|users|member-pulse|activity|friends)(\/|$)/, "directory"],
@@ -99,7 +107,7 @@ function normalizeSections(list) {
 function sectionsFor(user, row) {
   if (isOwner(user, row)) return [...ALWAYS, ...GRANTABLE_SECTIONS, ...OWNER_ONLY];
   if (!row?.is_admin) return [];
-  const granted = row.admin_permissions == null ? GRANTABLE_SECTIONS : normalizeSections(row.admin_permissions);
+  const granted = row.admin_permissions == null ? LEGACY_SECTIONS : normalizeSections(row.admin_permissions);
   return [...ALWAYS, ...granted];
 }
 
@@ -159,6 +167,8 @@ function __setDbForTests(client) {
 
 module.exports = {
   GRANTABLE_SECTIONS,
+  SENSITIVE_SECTIONS,
+  LEGACY_SECTIONS,
   ALWAYS,
   OWNER_ONLY,
   sectionForPath,

@@ -22,8 +22,8 @@ assert.ok(!grantable.includes("staff") && !grantable.includes("overview"), "staf
 
 // Pure helpers (copied shape check: they are exported).
 assert.match(src, /export function staffGroups\(grantable\)/);
-assert.match(src, /export function effectiveSections\(sections, grantable\)/);
-assert.match(src, /sections == null \? \[\.\.\.\(grantable \|\| \[\]\)\]/, "legacy null shows every section");
+assert.match(src, /export function effectiveSections\(sections, grantable, legacy\)/);
+assert.match(src, /sections == null \? \[\.\.\.\(legacy \|\| grantable \|\| \[\]\)\]/, "legacy null shows every section but the sensitive ones");
 
 // Owner only, server routes, native checkbox through GlassCheckbox, no emoji.
 assert.match(panel, /tab === "staff" && perm\.owner && <AdminStaff tabs=\{TABS\} \/>/);

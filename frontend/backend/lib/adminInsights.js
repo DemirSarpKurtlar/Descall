@@ -278,6 +278,7 @@ function mapAdminDmMessage(row, usersById = new Map()) {
     timestamp: toUtcIso(row.created_at),
     editedAt: row.edited_at ? toUtcIso(row.edited_at) : null,
     readAt: row.read_at ? toUtcIso(row.read_at) : null,
+    isVoice,
   };
 }
 
