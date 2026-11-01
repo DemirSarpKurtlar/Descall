@@ -188,6 +188,7 @@ export default function World3DView({
         window.__descallWorld = engine; // dev / e2e inspection only (no secrets)
         const cust = Customizer ? new Customizer(engine) : null;
         custRef.current = cust;
+        window.__descallCustomizer = cust; // dev / e2e inspection only
         // saved looks travel in the roster: seed them before avatars are created
         const placeMembers = (list) => {
           cust?.setRoomLooks(list);
@@ -258,6 +259,7 @@ export default function World3DView({
       } catch {
         /* closing */
       }
+      if (window.__descallCustomizer === custRef.current) delete window.__descallCustomizer;
       custRef.current?.dispose();
       custRef.current = null;
       engine?.dispose();

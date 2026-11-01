@@ -7,10 +7,11 @@
  *    avatar, framed to the left of the panel, then lets you orbit; eases back on close.
  */
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Ray } from "@babylonjs/core/Culling/ray";
 import { clampBoom } from "./collision.js";
 import { resolveLook } from "./look.js";
 
-const PREVIEW = { radius: 2.75, beta: 1.36, side: 0.34, frame: 0.6, lift: 0.78 };
+const PREVIEW = { radius: 3.45, beta: 1.47, side: 0.3, frame: 0.66, height: 0.98 };
 const EASE_IN_S = 1.1;
 const EASE_OUT_S = 0.7;
 
@@ -117,6 +118,7 @@ export class Customizer {
     if (!e.camera || !e.scene) return;
     if (this.cam?.observer) e.scene.onBeforeRenderObservable.remove(this.cam.observer);
     const c = e.camera;
+    this.view = null; // re-pick the angle from where you stand now
     this.cam = {
       mode: "in",
       t: 0,
@@ -133,15 +135,64 @@ export class Customizer {
     this.cam.t = 0;
   }
 
+  /**
+   * Pick the side angle and distance once per open: the three-quarter front view if the
+   * line of sight is clear, otherwise the nearest angle where no furniture or wall sits
+   * between the camera and the avatar (ray test against the room only).
+   */
+  chooseView() {
+    const e = this.engine;
+    const av = e.avatars.get(e.selfId);
+    if (!av || !e.scene) return { side: PREVIEW.side, radius: PREVIEW.radius };
+    const front = Math.atan2(Math.cos(av.yaw), Math.sin(av.yaw));
+    const roomOnly = (m) => m.isEnabled() && m.isVisible && !m.metadata?.avatarId && !/^(COL_|ROOM_BOUNDS|FLOOR|shadow_|blob)/.test(m.name) && !/rug/i.test(m.name) && m.getTotalVertices() > 0;
+    // the room's meshes have frozen world matrices and do not sync their bounding boxes;
+    // bring the boxes to world space once so the ray test sees the furniture where it is
+    for (const m of e.scene.meshes) {
+      if (m.doNotSyncBoundingInfo && roomOnly(m)) m.getBoundingInfo().update(m.getWorldMatrix());
+    }
+    const blocked = (from, to) => {
+      const d = to.subtract(from);
+      const len = d.length();
+      d.scaleInPlace(1 / len);
+      try {
+        return Boolean(e.scene.pickWithRay(new Ray(from.add(d.scale(0.4)), d, Math.max(0.1, len - 0.4)), roomOnly, true)?.hit);
+      } catch {
+        return false;
+      }
+    };
+    let best = null;
+    for (const side of [PREVIEW.side, -PREVIEW.side, 0, 0.6, -0.6, 0.95, -0.95]) {
+      const a = front + side;
+      const dir = new Vector3(Math.cos(a) * Math.sin(PREVIEW.beta), Math.cos(PREVIEW.beta), Math.sin(a) * Math.sin(PREVIEW.beta));
+      const right = new Vector3(-Math.sin(a), 0, Math.cos(a));
+      const target = new Vector3(av.position.x, av.position.y + PREVIEW.height, av.position.z).addInPlace(right.scale(PREVIEW.frame));
+      const room = e.bounds ? clampBoom(target, dir, PREVIEW.radius, e.bounds, 0.25) : PREVIEW.radius;
+      // the camera must see the feet, knees, middle and head: a sofa back between you and
+      // the camera would hide the legs, a wall or a lamp the whole body
+      for (const radius of [PREVIEW.radius, 3.0, 2.6, 2.2].filter((r) => r <= room + 1e-6)) {
+        const cam = target.add(dir.scale(radius));
+        const seen = [0.12, 0.62, PREVIEW.height, 1.75].every((h) => !blocked(new Vector3(av.position.x, av.position.y + h, av.position.z), cam));
+        if (!seen) continue;
+        if (radius >= PREVIEW.radius - 1e-6) return { side, radius };
+        if (!best || radius > best.radius) best = { side, radius };
+        break;
+      }
+    }
+    return best || { side: PREVIEW.side, radius: 2.2 };
+  }
+
   previewTarget(out) {
     const e = this.engine;
     const av = e.avatars.get(e.selfId);
     if (!av) return null;
-    const head = av.headPosition(new Vector3());
     const yaw = av.yaw;
-    const alpha = Math.atan2(Math.cos(yaw), Math.sin(yaw)) + PREVIEW.side;
+    if (!this.view) this.view = this.chooseView();
+    const alpha = Math.atan2(Math.cos(yaw), Math.sin(yaw)) + this.view.side;
     const right = new Vector3(-Math.sin(alpha), 0, Math.cos(alpha));
-    out.set(av.position.x, head.y - PREVIEW.lift, av.position.z).addInPlace(right.scale(PREVIEW.frame));
+    // mid-body (lower when seated), shifted so the avatar stands left of the panel
+    const seated = av.state === "sit" || av.state === "sitDown";
+    out.set(av.position.x, av.position.y + (seated ? PREVIEW.height - 0.3 : PREVIEW.height), av.position.z).addInPlace(right.scale(PREVIEW.frame));
     return alpha;
   }
 
@@ -177,7 +228,8 @@ export class Customizer {
       c.alpha += angleTo(c.alpha, alpha) * k;
       c.beta += (PREVIEW.beta - c.beta) * k;
       const dir = new Vector3(Math.cos(c.alpha) * Math.sin(c.beta), Math.cos(c.beta), Math.sin(c.alpha) * Math.sin(c.beta));
-      const allowed = e.bounds ? clampBoom(c.target, dir, PREVIEW.radius, e.bounds, 0.25) : PREVIEW.radius;
+      const want = this.view?.radius ?? PREVIEW.radius;
+      const allowed = e.bounds ? clampBoom(c.target, dir, want, e.bounds, 0.25) : want;
       c.radius += (allowed - c.radius) * k;
       if (st.t >= EASE_IN_S) st.mode = "hold";
     }
@@ -202,7 +254,7 @@ export class Customizer {
     c.target.copyFrom(target);
     c.alpha = alpha;
     c.beta = PREVIEW.beta;
-    c.radius = PREVIEW.radius;
+    c.radius = this.view?.radius ?? PREVIEW.radius;
     this.cam.mode = "hold";
   }
 

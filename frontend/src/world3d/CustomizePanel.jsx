@@ -51,6 +51,8 @@ export default function CustomizePanel({ api, getCustomizer, onSaved, onClose, i
         const s = await api.state();
         if (!live) return;
         setState({ ...s, owned: new Set(s.owned || []) });
+        if (s.available === false) setLoadError("unavailable");
+        if (s.available === false) setLoadError("unavailable");
         const start = cleanSpec(s.look || wearing);
         setSaved(s.look ? cleanSpec(s.look) : null);
         setDraft(start);
@@ -277,14 +279,14 @@ export default function CustomizePanel({ api, getCustomizer, onSaved, onClose, i
       </div>
 
       <div className="w3d-cust-actions">
-        <button type="button" className="w3d-cust-btn" onClick={onSave} disabled={!draft || busy || loadError === "offline" || (!dirty && !missing.length)}>
+        <button type="button" className="w3d-cust-btn" onClick={onSave} disabled={!draft || busy || loadError === "offline" || loadError === "unavailable" || (!dirty && !missing.length)}>
           {busy && !confirm ? t("world3d.custom.saving") : t("world3d.custom.save")}
         </button>
         <button type="button" className="w3d-cust-btn is-ghost" onClick={onRandom} disabled={!draft || busy}>
           {t("world3d.custom.random")}
         </button>
         {notice ? <span className={`w3d-cust-note is-${notice.kind}`} role="status">{notice.text}</span> : null}
-        {!notice && loadError ? <span className="w3d-cust-note is-error" role="status">{t(loadError === "offline" ? "world3d.custom.offline" : "world3d.custom.failed")}</span> : null}
+        {!notice && loadError ? <span className="w3d-cust-note is-error" role="status">{t(`world3d.custom.${loadError}`)}</span> : null}
       </div>
 
       {confirm ? (

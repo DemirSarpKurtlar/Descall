@@ -13,6 +13,8 @@
  *   { v: 1, hair, top, face, acc: [ids], skin: 0..5, colors: { hair?, top?, <accId>? } }
  * colour values are indexes into the panel's colour row (0..5), never free hex strings.
  *
+ * Error bodies carry machine codes only ({ error: code, code }); the panel translates them.
+ *
  * Pure module: no database, no network.
  */
 

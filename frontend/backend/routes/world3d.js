@@ -37,10 +37,10 @@ function createWorld3dRouter(deps = {}) {
     try {
       const row = await Promise.resolve(loadAdminRow(req.user.id)).catch(() => null);
       const verdict = canUseWorld({ isAdmin: isAdminRow(row, req.user), app: "web", publicEnabled: publicEnabled() });
-      if (!verdict.ok) return res.status(403).json({ error: "The 3D world is not available for this account.", code: "WORLD_DISABLED" });
+      if (!verdict.ok) return res.status(403).json({ error: "WORLD_DISABLED", code: "WORLD_DISABLED" });
       return next();
     } catch {
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(500).json({ error: "server_error", code: "server_error" });
     }
   }
 
@@ -52,12 +52,12 @@ function createWorld3dRouter(deps = {}) {
       res.json(await service.state(req.user.id));
     } catch (err) {
       console.error("[world3d] cosmetics state:", err?.message || err);
-      res.status(500).json({ error: "Failed to load character items." });
+      res.status(500).json({ error: "server_error", code: "server_error" });
     }
   });
 
   router.post("/look", async (req, res) => {
-    if (limited(String(req.user.id))) return res.status(429).json({ error: "Too many saves. Try again in a moment.", code: "rate_limited" });
+    if (limited(String(req.user.id))) return res.status(429).json({ error: "rate_limited", code: "rate_limited" });
     try {
       const out = await service.save(req.user.id, req.body || {});
       if (out.status === 200 && out.body?.purchase && !out.body.purchase.replayed && out.body.purchase.total > 0) {
@@ -68,7 +68,7 @@ function createWorld3dRouter(deps = {}) {
       res.status(out.status).json(out.body);
     } catch (err) {
       console.error("[world3d] save look:", err?.message || err);
-      res.status(500).json({ error: "Failed to save your character." });
+      res.status(500).json({ error: "server_error", code: "server_error" });
     }
   });
 

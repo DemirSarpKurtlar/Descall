@@ -39,6 +39,7 @@ function Harness() {
         members={[]}
         voice={{ muted, deafened: deaf, toggleMute: () => setMuted((v) => !v), toggleDeafen: () => setDeaf((v) => !v), toggleScreen: () => {}, toggleCamera: () => {} }}
         socketUrl={`http://127.0.0.1:${port}`}
+        apiBase={`http://127.0.0.1:${port}`}
         socketPath="/socket.io"
         token={meId}
         activeSpeakerIds={active}

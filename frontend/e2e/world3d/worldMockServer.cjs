@@ -28,12 +28,40 @@ const EMOTE = { none: 0, wave: 1, dance: 2, clap: 3, laugh: 4, jump: 5, cheer: 6
 const participants = new Map(Object.keys(NAMES).map((id) => [id, {}]));
 const sharedState = { activeGroupCalls: new Map(), activeServerVoiceCalls: new Map([['c1', { participants }]]) };
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'content-type': 'text/plain' });
-  res.end('descall world mock');
+// Phase 5: the REAL cosmetics route (routes/world3d.js + cosmeticsService) on an in-memory
+// store with the same contract as the SQL purchase function. Token = user id, everyone admin.
+const express = require(require.resolve('express', { paths: [path.join(__dirname, '../../backend/node_modules')] }));
+const createWorld3dRouter = require('../../backend/routes/world3d');
+const { createCosmeticsService } = require('../../backend/lib/world3d/cosmeticsService');
+const { createMemoryStore } = require('../../backend/lib/world3d/cosmeticsMemoryStore');
+const cosmeticsStore = createMemoryStore({
+  balances: Object.fromEntries(Object.keys(NAMES).map((id) => [id, Number(process.env.MOCK_BALANCE || 640)])),
+  owned: { demir: ['top_bomber'] },
 });
+const cosmetics = createCosmeticsService({ store: cosmeticsStore });
+const app = express();
+app.use((req, res, next) => {
+  res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type, authorization', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' });
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  return next();
+});
+app.use(express.json());
+app.use('/api/world3d', createWorld3dRouter({
+  service: cosmetics,
+  requireAuth: (req, res, next) => {
+    const id = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    if (!NAMES[id]) return res.status(401).json({ error: 'auth' });
+    req.user = { id, username: id };
+    return next();
+  },
+  loadAdminRow: async (id) => ({ id, username: id, is_admin: true }),
+}));
+app.use((req, res) => res.type('text/plain').send('descall world mock'));
+const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
+app.set('io', { to: () => ({ emit: () => {} }) });
 registerWorldNamespace(io, {
+  loadLook: (id) => cosmetics.loadWearableLook(id),
   sharedState,
   authMiddleware(socket, next) {
     const id = String(socket.handshake.auth?.token || '');

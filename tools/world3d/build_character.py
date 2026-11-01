@@ -7,9 +7,16 @@ hand-keyed animation clips (idle, walk, run, sitDown, sit, standUp, wave, dance,
 clap, laugh, jump, cheer, sitCheer).
 
 All meshes share one material whose base colour is a small palette texture
-(8 x 8 cells). Every part's UVs point at one cell, so the client recolours an
-avatar by drawing a new 64 x 64 palette: one draw call per mesh, any number of
-colour variants. Face morph targets: blink, mouthOpen.
+(8 x 8 cells, plus three stripe strips in row 7). Every part's UVs point at one
+cell, so the client recolours an avatar by drawing a new 64 x 64 palette.
+
+Phase 5 ("Karakterini oluştur"): every catalog item is its own mesh group, named
+by its catalog id (backend/lib/world3d/cosmetics.js): body, hair_* (six styles,
+each with a *_hat variant worn under a cap or beanie), top_* (six outfits),
+acc_* (six accessories + the guitar prop) and face_* (six faces, each with its own
+blink / mouthOpen morphs). All share one skin, so the client merges the visible
+body / hair / top / accessory groups into one skinned mesh (one draw call) and
+shows one face mesh (frontend/src/world3d/engine/avatars.js applyLook).
 
   blender -b -P tools/world3d/build_character.py -- --preview out.png
   blender -b -P tools/world3d/build_character.py -- --out frontend/public/world3d/avatar.glb
@@ -507,6 +514,43 @@ def hood_back(group, cell, scale=1.0, z=1.0):
     add(paint(rim, cell), group, ["chest", "neck"])
 
 
+def quilt_ridge(name, z, a=0.176, b=0.121, p=2.7, tube=0.0095, gap=0.072):
+    """Puffer vest seam: a soft tube that follows the torso's rounded-box section
+    (superellipse) all the way round, open at the front between the zips."""
+    pts = []
+    n = 72
+    for i in range(n + 1):
+        th = -math.pi / 2 + 2 * math.pi * i / n  # starts at the front (-Y)
+        c, s = math.cos(th), math.sin(th)
+        x = a * math.copysign(abs(c) ** (2 / p), c)
+        y = b * math.copysign(abs(s) ** (2 / p), s)
+        if y < 0 and abs(x) < gap:
+            continue
+        pts.append(Vector((x, y, z)))
+    # keep one open arc: rotate the list so it starts at the right zip and ends at the left
+    k = max(range(len(pts)), key=lambda i: (pts[i] - pts[i - 1]).length)
+    pts = pts[k:] + pts[:k]
+    bm = bmesh.new()
+    rings = []
+    for i, pnt in enumerate(pts):
+        nxt = pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]
+        t = nxt.normalized()
+        side = t.cross(Vector((0, 0, 1))).normalized()
+        ring_v = []
+        for j in range(8):
+            ang = 2 * math.pi * j / 8
+            ring_v.append(bm.verts.new(pnt + side * (math.cos(ang) * tube * 1.15) + Vector((0, 0, math.sin(ang) * tube))))
+        rings.append(ring_v)
+    for i in range(len(rings) - 1):
+        for j in range(8):
+            bm.faces.new((rings[i][j], rings[i + 1][j], rings[i + 1][(j + 1) % 8], rings[i][(j + 1) % 8]))
+    bm.faces.new(list(reversed(rings[0])))
+    bm.faces.new(rings[-1])
+    o = blib.mesh_from_bmesh(name, bm)
+    blib.shade_smooth(o)
+    return paint(o, "top_dark")
+
+
 def build_outfits():
     """Kiyafet items, one mesh group each (approved-ui-5.png): top_hoodie, top_bomber,
     top_varsity, top_vest, top_raincoat, top_striped. Torso and sleeves live in the body
@@ -559,11 +603,10 @@ def build_outfits():
     panel = box("vest_shirt", (0.13, 0.03, 0.38), (0, -0.108, 0.83), "inner", bevel=0.012, sub=2)
     add(paint_strip(panel, "shirt"), g, ["hips", "spine", "chest"])
     for k, z in enumerate((0.69, 0.77, 0.85, 0.93)):
-        add(box(f"quilt{k}", (0.343, 0.236, 0.01), (0, 0.0, z), "top_dark", bevel=0.004, sub=1), g, ["hips", "spine", "chest"])
+        add(quilt_ridge(f"quilt{k}", z), g, ["hips", "spine", "chest"])
     for s in (-1, 1):
         add(box(f"vest_collar{s}", (0.12, 0.06, 0.07), (s * 0.075, -0.05, 0.985), "top", bevel=0.026, sub=1, rot=(0, 0, s * 12)), g, ["chest", "neck"])
         add(box(f"vest_zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), "top_dark", bevel=0.003, sub=0), g, ["hips", "spine", "chest"])
-        add(ball(f"vest_arm{s}", 0.07, (s * 0.15, 0.0, 0.94), "top", scale=(0.42, 1.0, 1.05)), g, ["chest"])
     add(box("vest_pull", (0.012, 0.012, 0.035), (0.068, -0.126, 0.67), "metal", bevel=0.004, sub=0), g, ["hips"])
 
     # Yagmurluk (raincoat): closed placket with snaps, hood down, flap pockets, long skirt

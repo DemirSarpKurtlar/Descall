@@ -43,7 +43,7 @@ author and license as reported by the Poly Haven / ambientCG APIs at download ti
 
 - Night skyline (two layers), abstract wall print, lava lamp wax: `tools/world3d/gen_textures.py` (Pillow, random seeds fixed).
 - All furniture (L sofa + second sofa, bean bag, coffee table, TV + console with slatted doors, table lamp, globe lamp on its stand, lava lamp, fruit bowl, cup, books, framed print, curtains, window frame) and the two large banana-leaf plants (procedural leaves, stems and pots): `build_living_room.py`.
-- Characters (round head with blush, glossy eyes, four-finger hands), hair styles (metaball swept locks, bun, long bob), outfits (hoodie, open zip jacket over a tee, puffer vest over a striped long-sleeve shirt, sweater), accessories (cap, round glasses, headphones, scarf, backpack, acoustic guitar), rig and every animation clip: `build_character.py`.
+- Characters (round head with blush, glossy eyes, four-finger hands), six hair styles with under-a-hat variants (metaball swept locks, fringe, bob, bun, ponytail with tie, curls), six outfits (hoodie, bomber, varsity jacket with chest letter, puffer vest, raincoat, striped long-sleeve), six accessories (headphones, cap, round glasses, scarf, backpack, knit beanie) plus the acoustic guitar, six faces (classic, lashes, bold brows, calm lids, grin with teeth, freckles), rig and every animation clip: `build_character.py` (phase 5 catalog items, one mesh group each).
 
 ## Rules for later phases
 
