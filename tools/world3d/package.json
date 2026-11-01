@@ -1,0 +1,14 @@
+{
+  "name": "descall-world3d-tools",
+  "private": true,
+  "description": "Build-time only: shrinks the 3D world GLB files (quantize, weld, resample). Not shipped.",
+  "type": "module",
+  "scripts": {
+    "optimize": "node optimize_glb.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/extensions": "4.2.1",
+    "@gltf-transform/functions": "4.2.1"
+  }
+}

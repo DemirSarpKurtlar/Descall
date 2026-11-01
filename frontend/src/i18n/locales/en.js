@@ -1,4 +1,5 @@
 /** Auto-generated + curated en locale */
+import { WORLD3D_EN } from "./world3d.en.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -18,6 +19,7 @@ import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  world3d: WORLD3D_EN,
   counts: COUNTS_EN,
   shell: SHELL_EN,
   svh: SVH_EN,

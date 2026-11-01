@@ -1,3 +1,4 @@
+import { publishActiveSpeakers } from "../lib/activeSpeakers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
 import { subscribeNetworkChange } from "../lib/networkChange";
@@ -435,6 +436,7 @@ export function useServerVoice(socket) {
   }, []);
 
   const disconnectLiveKit = useCallback(() => {
+    publishActiveSpeakers(null, []);
     const room = liveKitRoomRef.current;
     liveKitRoomRef.current = null;
     setLiveKitLink("idle");
@@ -482,6 +484,11 @@ export function useServerVoice(socket) {
         const next = String(quality || "").toLowerCase();
         if (!next || next === "unknown") return;
         setLinkQualityByUser((prev) => (prev[userId] === next ? prev : { ...prev, [userId]: next }));
+      });
+      // 3D world speaking rings (lib/activeSpeakers.js): no React state, no re-render.
+      room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+        if (liveKitRoomRef.current && liveKitRoomRef.current !== room) return;
+        publishActiveSpeakers(channelId, (speakers || []).map((p) => p?.identity).filter(Boolean));
       });
       room.on(RoomEvent.ParticipantDisconnected, (participant) => {
         cleanupPeer(participant.identity);
