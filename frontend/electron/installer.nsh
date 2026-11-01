@@ -1,4 +1,4 @@
-!macro customHeader
+﻿!macro customHeader
   ; Custom installer header
 !macroend
 
@@ -102,6 +102,58 @@
     Pop $R5
 !macroend
 
+; Installer messages in the user's language. $LANGUAGE is the Windows language id the
+; multi-language installer picked (electron-builder nsis.installerLanguages):
+; 1055 tr, 1031 de, 1034 es, 1036 fr, 1046 pt-BR, 1049 ru, anything else English.
+; Each macro leaves the text in $R9.
+!macro Descall_Text_StillOpen
+  StrCpy $R9 "Descall is still open. Close it, then retry the update."
+  StrCmp $LANGUAGE 1055 0 +2
+    StrCpy $R9 "Descall hâlâ açık. Kapatıp güncellemeyi yeniden dene."
+  StrCmp $LANGUAGE 1031 0 +2
+    StrCpy $R9 "Descall ist noch geöffnet. Schließe es und versuche das Update erneut."
+  StrCmp $LANGUAGE 1034 0 +2
+    StrCpy $R9 "Descall sigue abierto. Ciérralo y vuelve a intentar la actualización."
+  StrCmp $LANGUAGE 1036 0 +2
+    StrCpy $R9 "Descall est encore ouvert. Ferme-le, puis relance la mise à jour."
+  StrCmp $LANGUAGE 1046 0 +2
+    StrCpy $R9 "O Descall ainda está aberto. Feche-o e tente a atualização novamente."
+  StrCmp $LANGUAGE 1049 0 +2
+    StrCpy $R9 "Descall всё ещё открыт. Закройте его и повторите обновление."
+!macroend
+
+!macro Descall_Text_Damaged
+  StrCpy $R9 "Descall could not finish the update because a program file is damaged or the wrong architecture (0xc000007b). Download a fresh installer."
+  StrCmp $LANGUAGE 1055 0 +2
+    StrCpy $R9 "Bir program dosyası bozuk ya da yanlış mimaride olduğu için Descall güncellemeyi tamamlayamadı (0xc000007b). Yeni bir kurulum dosyası indir."
+  StrCmp $LANGUAGE 1031 0 +2
+    StrCpy $R9 "Descall konnte das Update nicht abschließen, weil eine Programmdatei beschädigt ist oder die falsche Architektur hat (0xc000007b). Lade ein neues Installationsprogramm herunter."
+  StrCmp $LANGUAGE 1034 0 +2
+    StrCpy $R9 "Descall no pudo terminar la actualización porque un archivo del programa está dañado o es de otra arquitectura (0xc000007b). Descarga un instalador nuevo."
+  StrCmp $LANGUAGE 1036 0 +2
+    StrCpy $R9 "Descall n'a pas pu terminer la mise à jour : un fichier du programme est endommagé ou d'une autre architecture (0xc000007b). Télécharge un nouvel installateur."
+  StrCmp $LANGUAGE 1046 0 +2
+    StrCpy $R9 "O Descall não conseguiu concluir a atualização porque um arquivo do programa está danificado ou é de outra arquitetura (0xc000007b). Baixe um instalador novo."
+  StrCmp $LANGUAGE 1049 0 +2
+    StrCpy $R9 "Descall не удалось завершить обновление: файл программы повреждён или собран для другой архитектуры (0xc000007b). Скачайте новый установщик."
+!macroend
+
+!macro Descall_Text_Installing
+  StrCpy $R9 "Installing Descall..."
+  StrCmp $LANGUAGE 1055 0 +2
+    StrCpy $R9 "Descall kuruluyor..."
+  StrCmp $LANGUAGE 1031 0 +2
+    StrCpy $R9 "Descall wird installiert..."
+  StrCmp $LANGUAGE 1034 0 +2
+    StrCpy $R9 "Instalando Descall..."
+  StrCmp $LANGUAGE 1036 0 +2
+    StrCpy $R9 "Installation de Descall..."
+  StrCmp $LANGUAGE 1046 0 +2
+    StrCpy $R9 "Instalando o Descall..."
+  StrCmp $LANGUAGE 1049 0 +2
+    StrCpy $R9 "Установка Descall..."
+!macroend
+
 !ifndef BUILD_UNINSTALLER
 Function DescallWaitUntilClosed
   StrCpy $R5 0
@@ -115,7 +167,8 @@ Function DescallWaitUntilClosed
     IntOp $R5 $R5 + 1
     IntCmp $R5 25 descallGiveUp descallWaitApp descallGiveUp
   descallGiveUp:
-    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Descall is still open. Close it, then retry the update." /SD IDCANCEL IDRETRY descallWaitApp
+    !insertmacro Descall_Text_StillOpen
+    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$R9" /SD IDCANCEL IDRETRY descallWaitApp
     Quit
   descallAppStopped:
     Sleep 800
@@ -135,7 +188,8 @@ Function un.DescallWaitUntilClosed
     IntOp $R5 $R5 + 1
     IntCmp $R5 25 un.descallGiveUp un.descallWaitApp un.descallGiveUp
   un.descallGiveUp:
-    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Descall is still open. Close it, then retry the update." /SD IDCANCEL IDRETRY un.descallWaitApp
+    !insertmacro Descall_Text_StillOpen
+    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$R9" /SD IDCANCEL IDRETRY un.descallWaitApp
     Quit
   un.descallAppStopped:
     Sleep 800
@@ -152,7 +206,8 @@ FunctionEnd
 
 !macro customInstall
   ; Post-install actions
-  DetailPrint "Installing Descall..."
+  !insertmacro Descall_Text_Installing
+  DetailPrint "$R9"
 
   ; Descall.exe and ffmpeg.dll must both be x64 (machine 0x8664 = 34404).
   ; Electron 41 does not ship vcruntime140.dll; only reject it when it is present
@@ -183,7 +238,8 @@ FunctionEnd
   Pop $0
   Pop $1
   ${if} $0 != 0
-    MessageBox MB_OK|MB_ICONSTOP "Descall could not finish the update because a program file is damaged or the wrong architecture (0xc000007b). Download a fresh installer."
+    !insertmacro Descall_Text_Damaged
+    MessageBox MB_OK|MB_ICONSTOP "$R9"
     ExecShell "open" "https://github.com/DemirSarpKurtlar/Descall/releases/latest/download/Descall-Setup.exe"
     Abort
   ${endif}

@@ -180,6 +180,17 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Descall",
       "include": "electron/installer.nsh",
+      "multiLanguageInstaller": true,
+      "displayLanguageSelector": false,
+      "installerLanguages": [
+        "en_US",
+        "tr_TR",
+        "de_DE",
+        "es_ES",
+        "fr_FR",
+        "pt_BR",
+        "ru_RU"
+      ],
       "artifactName": "Descall-Setup-${version}.exe",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
