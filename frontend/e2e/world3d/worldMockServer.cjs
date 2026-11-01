@@ -75,11 +75,12 @@ server.listen(PORT, '127.0.0.1', () => {
     bots.push(bot('can', () => ({ x: -1.28, z: -2.32, yaw: 0.6, state: STATE.sit, seat: SEAT.beanbag })));
     bots.push(bot('elif', (t) => {
       // walking (about 0.6 m/s)
-      const w = t * 0.42;
-      const x = -3.2 + Math.cos(w) * 2.0;
-      const z = -3.75 + Math.sin(w) * 1.5;
-      const dx = -Math.sin(w) * 2.0;
-      const dz = Math.cos(w) * 1.55;
+      // a small loop in the back right, between the corner plant and the TV console
+      const w = t * 1.2;
+      const x = -5.55 + Math.cos(w) * 0.4;
+      const z = -4.75 + Math.sin(w) * 0.6;
+      const dx = -Math.sin(w) * 0.4;
+      const dz = Math.cos(w) * 0.6;
       return { x, z, yaw: Math.atan2(dx, dz), state: STATE.walk };
     }));
   } else if (SCENARIO === 'lineup') {

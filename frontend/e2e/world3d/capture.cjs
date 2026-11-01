@@ -60,7 +60,7 @@ async function main() {
         const out = {};
         for (const [id, a] of w.avatars) {
           const r = w.remote.get(id);
-          out[id] = { st: a.state, em: a.emote && a.emote.clip, until: a.emoteUntil && Math.round(a.emoteUntil - w.nowMs() / 1000), seq: r && r.lastEmoteSeq, last: r && r.last && [r.last.state, r.last.emote, r.last.emoteSeq], w: Object.entries(a.groups).filter(([, g]) => g.w > 0.05).map(([n, g]) => n + ':' + g.w.toFixed(2)).join(' ') };
+          out[id] = { p: [Math.round(a.position.x * 10) / 10, Math.round(a.position.z * 10) / 10], look: a.look.index, st: a.state, em: a.emote && a.emote.clip, until: a.emoteUntil && Math.round(a.emoteUntil - w.nowMs() / 1000), seq: r && r.lastEmoteSeq, last: r && r.last && [r.last.state, r.last.emote, r.last.emoteSeq], w: Object.entries(a.groups).filter(([, g]) => g.w > 0.05).map(([n, g]) => n + ':' + g.w.toFixed(2)).join(' ') };
         }
         return out;
       });
