@@ -366,6 +366,7 @@ function newGame(s, events) {
     off: [0, 0],
     turn: null,
     opening: [null, null],
+    openingTies: 0,
     rolled: null,
     dice: [],
     need: 0,
@@ -433,6 +434,7 @@ function openingRoll(state, me, rng) {
     const [a, b] = sg.opening;
     if (a === b) {
       sg.opening = [null, null];
+      sg.openingTies = (sg.openingTies || 0) + 1;
       events.push({ type: "openingTie", die: a });
     } else {
       const starter = a > b ? 0 : 1;
@@ -602,7 +604,7 @@ function timers(state) {
     else out.push({ key, kind: "turn", playerId: seatRec.playerId, ms, action });
   };
   if (state.phase === "opening") {
-    for (let i = 0; i < 2; i++) if (g.opening[i] === null) timerFor(i, `open:${g.number}:${i}:${state.seq}`, o.rollMs, { type: "roll" });
+    for (let i = 0; i < 2; i++) if (g.opening[i] === null) timerFor(i, `open:${g.number}:${i}:${g.openingTies || 0}`, o.rollMs, { type: "roll" });
     return out;
   }
   if (state.phase !== "playing") return out;

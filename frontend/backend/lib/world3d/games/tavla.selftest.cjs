@@ -362,6 +362,10 @@ function endgame(whiteOff, blackOff, matchTo = 5) {
   eq(ts.length, 2, "both opening rolls pending");
   ok(ts.some((t) => t.kind === "turn" && t.playerId === "a" && t.action.type === "roll"));
   ok(ts.some((t) => t.kind === "bot"));
+  // The bot's opening roll does not restart the human's countdown (same timer key).
+  const humanKey = ts.find((t) => t.kind === "turn").key;
+  const afterBot = T.apply(s, "bot:1", { type: "roll" }, { rng: diceRng([3]) }).state;
+  eq(T.timers(afterBot).map((t) => t.key), [humanKey]);
   const pub = T.publicView(s);
   eq(pub.you, null);
   eq(pub.board.pips, [167, 167]);
