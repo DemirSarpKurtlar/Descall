@@ -18,6 +18,7 @@ const { registerWorldNamespace } = require('../../backend/socket/worldHandlers')
 
 const PORT = Number(process.argv[2] || process.env.WORLD_MOCK_PORT || 4791);
 const SCENARIO = process.argv[3] || 'hero';
+const SELF = process.argv[4] || ''; // the harness user: no bot for that id
 const NAMES = { demir: 'Demir', ayse: 'Ayşe', mert: 'Mert', zeynep: 'Zeynep', can: 'Can', elif: 'Elif' };
 // Seats sorted by node name in the room GLB: 0 beanbag, 1-2 second sofa, 3-5 main sofa.
 const SEAT = { beanbag: 0, sofa2a: 1, sofa2b: 2, sofaL: 3, sofaM: 4, sofaR: 5 };
@@ -45,6 +46,7 @@ registerWorldNamespace(io, {
 });
 
 function bot(id, plan) {
+  if (id === SELF) return { c: null, stop() {} };
   const c = ioc(`http://127.0.0.1:${PORT}/world`, { auth: { token: id, app: 'web' }, transports: ['websocket'], forceNew: true });
   let t0 = Date.now();
   c.on('connect', () => {
@@ -98,8 +100,8 @@ server.listen(PORT, '127.0.0.1', () => {
   }
   // the draft's chat lines, repeated so a client that joins later still sees them
   const say = () => {
-    bots[2]?.c.emit('world:chat', { text: 'gol gol gol' });
-    setTimeout(() => bots[3]?.c.emit('world:chat', { text: 'bir şarkı daha?' }), 700);
+    bots[2]?.c?.emit('world:chat', { text: 'gol gol gol' });
+    setTimeout(() => bots[3]?.c?.emit('world:chat', { text: 'bir şarkı daha?' }), 700);
   };
   setTimeout(say, 2500);
   setInterval(say, 12000);

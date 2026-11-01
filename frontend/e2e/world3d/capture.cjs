@@ -22,8 +22,10 @@ async function main() {
   page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
   page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
   const quality = process.env.Q || 'high';
-  const looks = MODE === 'lineup' ? '&looks=elif:0,can:1,zeynep:2,demir:3,mert:4,ayse:5' : '&looks=ayse:6,mert:5,zeynep:2,can:4,elif:7,demir:0';
-  await page.goto(`${BASE}?port=4791&me=demir&name=Demir&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
+  const looks = MODE === 'lineup' ? '&looks=elif:0,can:1,zeynep:2,demir:3,mert:4,ayse:5' : '&looks=ayse:3,mert:5,zeynep:2,can:6,elif:7,demir:0';
+  const me = process.env.ME || 'demir';
+  const meName = me[0].toUpperCase() + me.slice(1);
+  await page.goto(`${BASE}?port=4791&me=${me}&name=${meName}&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
   const t0 = Date.now();
   const dump = setInterval(() => { while (logs.length) console.log(logs.shift().slice(0, 400)); }, 3000);
   await page.waitForFunction((min) => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= min, Number(process.env.MIN_AVATARS || 2), { timeout: 240000 });
@@ -53,7 +55,26 @@ async function main() {
     w.lockQuality = true;
     w.setQuality(cfg);
   }, finalCfg);
-  if (MODE === 'dbg') {
+  if (MODE === 'grade') {
+    await ev((k) => { const w = window.__descallWorld; const s = w.seats[k]; w.local.pos.set(s.pos.x + Math.sin(s.yaw) * 0.64, 0, s.pos.z + Math.cos(s.yaw) * 0.64); w.sitOn(k); }, 1);
+    await step(40, 30);
+    await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-tags,.w3d-net{display:none!important}' });
+    const variants = JSON.parse(process.env.GRADES);
+    for (let i = 0; i < variants.length; i += 1) {
+      await ev((v) => {
+        const w = window.__descallWorld;
+        for (const m of w.scene.meshes) {
+          const mat = m.material; if (!mat || !mat.albedoColor) continue;
+          const key = m.name === 'FLOOR' ? 'FLOOR' : mat.name;
+          if (v.tints[key]) mat.albedoColor.set(...v.tints[key]);
+        }
+        const ip = w.pipeline.imageProcessing; ip.exposure = v.exposure; ip.contrast = v.contrast || 1.12;
+        const c = ip.colorCurves; c.globalHue = v.gh; c.globalDensity = v.gd; c.shadowsHue = v.sh; c.shadowsDensity = v.sd; c.globalSaturation = v.gs || 0;
+      }, variants[i]);
+      await step(1);
+      await shot(`grade-${i}.png`);
+    }
+  } else if (MODE === 'dbg') {
     for (let k = 0; k < 4; k += 1) {
       await step(15, 40);
       const d = await ev(() => {
@@ -89,14 +110,24 @@ async function main() {
     await shot('probe.png');
   } else if (MODE === 'hero' || MODE === 'overlay') {
     // local player takes the draft's guitar seat (second sofa, back to the camera)
-    await ev(() => { const w = window.__descallWorld; const s = w.seats[2]; w.local.pos.set(s.pos.x + Math.sin(s.yaw) * 0.64, 0, s.pos.z + Math.cos(s.yaw) * 0.64); w.sitOn(2); });
-    await step(75, 40);
+    // local player sits on the second sofa (seat 1 = the draft's guitar seat; SEAT env overrides)
+    await ev((k) => { const w = window.__descallWorld; const s = w.seats[k]; w.local.pos.set(s.pos.x + Math.sin(s.yaw) * 0.64, 0, s.pos.z + Math.cos(s.yaw) * 0.64); w.sitOn(k); }, Number(process.env.SEAT || 1));
+    await step(45, 40);
+    if (process.env.GUITAR === '1') await ev(() => window.__descallWorld.toggleGuitar());
+    await step(30, 40);
     if (MODE === 'hero') {
       await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-tags,.w3d-net{display:none!important}' });
       await upgrade();
       await step(2);
       await shot('hero-1600x900.png');
     } else {
+      if (process.env.ME === 'can') {
+        // the draft's second chat line, typed into the real chat box
+        await page.fill('.w3d-input', 'bir şarkı daha?');
+        await page.press('.w3d-input', 'Enter');
+        await page.waitForTimeout(600);
+        await page.evaluate(() => document.activeElement && document.activeElement.blur());
+      }
       await upgrade();
       await page.keyboard.press('g');
       await step(3, 100);

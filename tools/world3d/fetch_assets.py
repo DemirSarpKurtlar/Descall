@@ -18,7 +18,6 @@ CACHE = os.path.join(HERE, ".cache")
 
 POLYHAVEN_MODELS = [
     # (asset id, resolution) -> glTF + textures
-    ("potted_plant_02", "1k"),  # large heart-leaf plants (window corner, left corner)
     ("potted_plant_04", "1k"),  # small succulent on the TV console
     ("potted_plant_01", "1k"),  # bushy plant next to the side table
 ]

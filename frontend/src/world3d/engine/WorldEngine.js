@@ -26,6 +26,7 @@ import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imagePro
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import { SSAO2RenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssao2RenderingPipeline";
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture";
+import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import { Plane } from "@babylonjs/core/Maths/math.plane";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import { SceneInstrumentation } from "@babylonjs/core/Instrumentation/sceneInstrumentation";
@@ -182,7 +183,10 @@ export class WorldEngine {
         mat.backFaceCulling = mname !== "BAKED_foliage";
         if (mat.albedoTexture) mat.albedoTexture.anisotropicFilteringLevel = 8;
         // grade: the bake came out a little red on the planks; pull them toward the draft's brown
-        if (name === "FLOOR" && "albedoColor" in mat) mat.albedoColor = new Color3(0.86, 0.86, 0.98);
+        // grade toward the draft: dusty lavender walls, browner floor (the bake is neutral-warm)
+        const GRADE = { FLOOR: [0.9, 0.8, 0.88], BAKED_shell: [1.02, 0.98, 1.4], BAKED_furniture: [1.22, 1.18, 1.4], BAKED_rug: [1.05, 1.0, 1.08], BAKED_props: [1.05, 1.0, 1.15] };
+        const g = GRADE[name] || GRADE[mname];
+        if (g && "albedoColor" in mat) mat.albedoColor = new Color3(g[0], g[1], g[2]);
       } else if (mname.startsWith("EMIT_")) {
         if ("unlit" in mat) mat.unlit = false;
         const lvl = EMISSIVE_LEVELS[mname] ?? 1.5;
@@ -231,25 +235,25 @@ export class WorldEngine {
     hemi.diffuse = Color3.FromHexString("#9a86ff");
     hemi.groundColor = Color3.FromHexString("#3b2846");
     hemi.specular = Color3.Black();
-    hemi.intensity = 0.62;
+    hemi.intensity = 0.46;
     const win = new DirectionalLight("window", new Vector3(0.15, -0.35, -1), scene);
     win.diffuse = Color3.FromHexString("#6f7cff");
     win.specular = Color3.FromHexString("#3b46aa");
-    win.intensity = 0.55;
+    win.intensity = 0.42;
     const front = new DirectionalLight("front", new Vector3(0.2, -0.45, 1), scene);
     front.diffuse = Color3.FromHexString("#ffd9e6");
     front.specular = Color3.Black();
-    front.intensity = 0.38;
+    front.intensity = 0.3;
     this.lights = [hemi, win, front];
     for (const l of this.lampPositions) {
       const p = new PointLight(`pl_${l.name}`, l.pos, scene);
       if (/lava/.test(l.name)) {
         p.diffuse = Color3.FromHexString("#ff5fd2");
-        p.intensity = 1.2;
+        p.intensity = 0.9;
         p.range = 2.2;
       } else {
         p.diffuse = Color3.FromHexString("#ffb46e");
-        p.intensity = 3.2;
+        p.intensity = 2.4;
         p.range = 5.5;
       }
       p.specular = p.diffuse.scale(0.4);
@@ -268,15 +272,26 @@ export class WorldEngine {
     const q = this.quality;
     scene.imageProcessingConfiguration.toneMappingEnabled = true;
     scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    scene.imageProcessingConfiguration.exposure = 1.15;
-    scene.imageProcessingConfiguration.contrast = 1.12;
+    scene.imageProcessingConfiguration.exposure = 1.75;
+    scene.imageProcessingConfiguration.contrast = 1.05;
     const pipe = new DefaultRenderingPipeline("post", true, scene, [this.camera]);
     pipe.samples = q.msaa;
     pipe.imageProcessingEnabled = true;
     pipe.imageProcessing.toneMappingEnabled = true;
     pipe.imageProcessing.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    pipe.imageProcessing.exposure = 1.15;
-    pipe.imageProcessing.contrast = 1.12;
+    pipe.imageProcessing.exposure = 1.75;
+    pipe.imageProcessing.contrast = 1.05;
+    // colour grade: violet shadows and mids, warm highlights (scene-3.jpg)
+    const curves = new ColorCurves();
+    curves.globalHue = 272;
+    curves.globalDensity = 30;
+    curves.globalSaturation = -20;
+    curves.shadowsHue = 250;
+    curves.shadowsDensity = 55;
+    curves.highlightsHue = 32;
+    curves.highlightsDensity = 14;
+    pipe.imageProcessing.colorCurvesEnabled = true;
+    pipe.imageProcessing.colorCurves = curves;
     pipe.imageProcessing.vignetteEnabled = true;
     pipe.imageProcessing.vignetteWeight = 1.4;
     pipe.imageProcessing.vignetteColor = new Color4(0.05, 0.02, 0.12, 0);
