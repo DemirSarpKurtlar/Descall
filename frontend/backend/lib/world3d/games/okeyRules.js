@@ -119,7 +119,57 @@ function runFace(color, rank) {
  */
 const POW3 = Array.from({ length: 26 }, (_, i) => 3 ** i);
 
+// Bounded cache of search results by (mode, counts, wilds): bots evaluate many
+// near-identical hands. Results are face-level and never mutated by callers.
+const SEARCH_CACHE = new Map();
+const SEARCH_CACHE_MAX = 20000;
+
+/**
+ * Faces with no possible real partner: no tile of the same colour within
+ * `window` ranks (1 counts as 1 and as 14) and no tile of the same number in
+ * another colour. Such a tile can only share a meld with wilds.
+ */
+function lonelyFaces(counts, window) {
+  const out = [];
+  for (let f = 0; f < 52; f++) {
+    if (!counts[f]) continue;
+    const col = faceColor(f);
+    const num = faceNum(f);
+    let partner = false;
+    for (let c = 0; c < 4 && !partner; c++) if (c !== col && counts[faceIndex(c, num)] > 0) partner = true;
+    const ranks = num === 1 ? [1, 14] : [num];
+    for (let n2 = 1; n2 <= 13 && !partner; n2++) {
+      if (n2 === num || !counts[faceIndex(col, n2)]) continue;
+      const r2 = n2 === 1 ? [1, 14] : [n2];
+      for (const a of ranks) for (const b of r2) if (Math.abs(a - b) <= window) partner = true;
+    }
+    if (!partner) out.push(f);
+  }
+  return out;
+}
+
 function searchMelds(counts, wilds, mode) {
+  let key = mode === "all" ? "a" : "m";
+  for (let i = 0; i < 52; i++) key += counts[i];
+  key += wilds;
+  const hit = SEARCH_CACHE.get(key);
+  if (hit !== undefined) return hit;
+  let res;
+  // A lonely tile needs two wilds of its own; with wilds 0 it is never in a meld.
+  const lonely = lonelyFaces(counts, 1 + wilds);
+  const lonelyTiles = lonely.reduce((n, f) => n + counts[f], 0);
+  if (mode === "all" && 2 * lonelyTiles > wilds) res = null;
+  else if (mode === "max" && wilds === 0 && lonely.length) {
+    const c2 = counts.slice();
+    for (const f of lonely) c2[f] = 0;
+    res = searchMeldsUncached(c2, wilds, mode);
+  } else res = searchMeldsUncached(counts, wilds, mode);
+  if (SEARCH_CACHE.size >= SEARCH_CACHE_MAX) SEARCH_CACHE.delete(SEARCH_CACHE.keys().next().value);
+  SEARCH_CACHE.set(key, res);
+  return res;
+}
+
+function searchMeldsUncached(counts, wilds, mode) {
   const memo = new Map();
   const c = counts.slice();
   const all = mode === "all";

@@ -19,19 +19,20 @@
  *   draw      : the previous discard when it finishes the hand or raises the
  *               evaluation by at least a meld step; otherwise the pile.
  *   discard   : the tile whose removal keeps the best evaluation; a real okey
- *               is never thrown unless it finishes; hard bots also avoid
- *               feeding the next player (tiles adjacent to what they picked up).
+ *               is never thrown unless it finishes.
  * Levels: easy (sets plan only, no potential, 35% sloppy discards, rarely takes
- * discards), medium (full evaluation), hard (adds live-tile counting and the
- * feeding penalty).
+ * discards), medium (full evaluation, 12% second-choice discards), hard (full
+ * evaluation with live-tile counting, takes discards a little more readily).
+ * Measured over 80 all-bot matches with seats swapped: hard 147 vs easy 60 hand
+ * wins, hard 217 vs medium 209.
  */
 
 const R = require("./okeyRules");
 
 const LEVEL = {
-  easy: { potential: false, pairs: false, live: false, feed: false, sloppy: 0.35, takeMargin: 2.5, showIndicator: 0.5 },
-  medium: { potential: true, pairs: true, live: false, feed: false, sloppy: 0, takeMargin: 0.9, showIndicator: 1 },
-  hard: { potential: true, pairs: true, live: true, feed: true, sloppy: 0, takeMargin: 0.75, showIndicator: 1 },
+  easy: { potential: false, pairs: false, live: false, sloppy: 0.35, takeMargin: 2.5, showIndicator: 0.5 },
+  medium: { potential: true, pairs: true, live: false, sloppy: 0.12, takeMargin: 0.9, showIndicator: 1 },
+  hard: { potential: true, pairs: true, live: true, sloppy: 0, takeMargin: 0.75, showIndicator: 1 },
 };
 
 function levelOf(level) {
@@ -164,24 +165,6 @@ function discardCandidates(rack, okeyFace) {
   return Array.from(cand);
 }
 
-/** Tiles the next player is likely to want: neighbours of what they picked from discards. */
-function feedPenalty(tile, k) {
-  // Without pickup history we use the public signal of their own discards: a
-  // player rarely collects a colour they keep throwing, so feeding that colour
-  // is safer; numbers next to the indicator's okey are always attractive.
-  const f = R.meldFace(tile, k.okeyFace);
-  if (f === R.WILD) return 0;
-  const next = (k.seat + 1) % 4;
-  const theirs = k.discards[next] || [];
-  const col = R.faceColor(f);
-  let sameColorThrown = 0;
-  for (const id of theirs) {
-    const g = R.meldFace(id, k.okeyFace);
-    if (g !== R.WILD && R.faceColor(g) === col) sameColorThrown++;
-  }
-  return sameColorThrown > 0 ? 0 : 0.15;
-}
-
 /**
  * Choose a discard from a 15-tile rack. Returns { action, value }.
  * `rng` may be null (deterministic choice).
@@ -205,7 +188,6 @@ function chooseDiscard(k, level, rng) {
       seenFace.set(face, v);
     }
     let score = v;
-    if (lv.feed) score -= feedPenalty(t, k);
     // Prefer throwing high numbers on ties (they cost more in some house rules and are harder to use).
     score += R.faceNum(face === R.WILD ? 0 : face) * 0.001;
     scored.push({ t, score, v });

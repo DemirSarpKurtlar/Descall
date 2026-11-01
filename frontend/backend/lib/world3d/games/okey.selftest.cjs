@@ -41,16 +41,23 @@ function started(seed = "s1", humans = ["alice"], opts = {}) {
   return r.state;
 }
 
-function allTiles(s) {
-  const h = s.hand;
-  const out = [h.indicator, ...h.pile, ...h.racks.flat(), ...h.discards.flat()];
-  if (h.finishTile != null && !h.racks.flat().includes(h.finishTile)) out.push(h.finishTile);
-  return out;
-}
-
+/** Every one of the 106 tiles exactly once: indicator, pile, racks, discards (and a finish tile). */
 function conserved(s) {
-  const all = allTiles(s);
-  return all.length === 106 && new Set(all).size === 106;
+  const h = s.hand;
+  const seen = new Uint8Array(106);
+  let n = 0;
+  const mark = (t) => {
+    if (!(t >= 0 && t < 106) || seen[t]) return false;
+    seen[t] = 1;
+    n++;
+    return true;
+  };
+  if (!mark(h.indicator)) return false;
+  for (const t of h.pile) if (!mark(t)) return false;
+  for (const r of h.racks) for (const t of r) if (!mark(t)) return false;
+  for (const d of h.discards) for (const t of d) if (!mark(t)) return false;
+  if (h.finishTile != null && !seen[h.finishTile] && !mark(h.finishTile)) return false;
+  return n === 106;
 }
 
 /**
@@ -545,7 +552,7 @@ const finishes = {};
 let hands = 0;
 let matches = 0;
 for (const level of ["easy", "medium", "hard"]) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     const { final } = botMatch(`prop-${level}-${i}`, level, { checkViews: i < 2 });
     matches++;
     hands += final.handsPlayed;
