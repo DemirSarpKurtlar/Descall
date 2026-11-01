@@ -2729,6 +2729,20 @@ html[data-bubble="minimal"] .message-bubble {
   background: rgba(10, 11, 13, 0.5);
   backdrop-filter: blur(20px) saturate(1.15);
   -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  transition: padding-bottom 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* iOS (3.7.26): WKWebView keeps the layout viewport full height while the
+   keyboard covers the bottom, so a centered dialog with a code field (admin
+   step-up, 2FA setup) sat behind the number pad. --kb-inset is the keyboard
+   overlap published by useMobileKeyboard (native inset on iOS, visual
+   viewport elsewhere); the dialog centers in the space above the keys. */
+html.kb-open .modal-backdrop {
+  padding-bottom: calc(var(--kb-inset, 0px) + 12px);
+}
+
+html.kb-open .modal-card {
+  max-height: calc(100dvh - var(--kb-inset, 0px) - env(safe-area-inset-top, 0px) - 24px);
 }
 
 .modal-card {
