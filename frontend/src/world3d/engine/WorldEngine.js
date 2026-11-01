@@ -5,49 +5,61 @@
  * - Room: baked GLB (static lighting in textures, drawn unlit) + emissive lamps
  *   and city (HDR, bloom). Colliders, seats, spawn points and the hero camera
  *   come from named nodes in the GLB (COL_*, ROOM_BOUNDS, SEAT_*, SPAWN_*, CAM_*).
- * - Avatars: AvatarController per member, palette-recoloured.
- * - Local player: WASD / arrows relative to the camera, Shift runs, click on the
- *   floor to walk there, E sits on / stands up from the nearest seat, G emote wheel.
- * - Camera: orbit (drag) + zoom (wheel), boom shortened so it never leaves the room.
+ * - Avatars: AvatarController per member (pooled), palette-recoloured.
+ * - Local player: WASD / arrows relative to the view, Shift runs, click on the floor to
+ *   walk there (third person), E sits on / stands up from the nearest seat, G emote wheel.
+ * - Camera: CameraRig with three modes (third person orbit follow, first person, free
+ *   cam), V cycles, every change eases over 0.5 s.
  * - Rendering pauses while the window is hidden / minimised; dispose() frees the GPU.
+ *
+ * Performance (docs/design/3d-world/PERFORMANCE.md):
+ * - one render loop (engine.runRenderLoop), no timers; an opaque, non-multisampled canvas
+ * - presets fix the effects; dynamic resolution (small render-scale steps with hysteresis)
+ *   holds 60 fps and never compiles a shader; every material and post effect is compiled
+ *   and warmed up behind the loading state (parallel shader compile where available)
+ * - static room: frozen world matrices and materials, no bounding sync, picking only on click
+ * - name tags are moved here with one transform write per changed tag (no React per frame)
+ * - no per-frame allocation in movement, interpolation, animation blending or tags
  */
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { Vector3, Matrix } from "@babylonjs/core/Maths/math.vector";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Viewport } from "@babylonjs/core/Maths/math.viewport";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Camera } from "@babylonjs/core/Cameras/camera";
+import { Frustum } from "@babylonjs/core/Maths/math.frustum";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { PointLight } from "@babylonjs/core/Lights/pointLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imageProcessingConfiguration";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
-import { SSAO2RenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssao2RenderingPipeline";
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture";
 import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import { Plane } from "@babylonjs/core/Maths/math.plane";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
-import { SceneInstrumentation } from "@babylonjs/core/Instrumentation/sceneInstrumentation";
+import { EngineInstrumentation } from "@babylonjs/core/Instrumentation/engineInstrumentation";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import "@babylonjs/core/Culling/ray";
 import "@babylonjs/core/Animations/animatable";
 import "@babylonjs/core/Rendering/depthRendererSceneComponent";
-import "@babylonjs/core/Rendering/prePassRendererSceneComponent";
-import "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent";
 import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
 import "@babylonjs/loaders/glTF/2.0";
 import "@babylonjs/loaders/glTF/glTFFileLoader";
 
-import { AvatarController, loadAvatarAsset, measureYawOffset, RUN_SPEED, WALK_SPEED } from "./avatars.js";
-import { makeBox, resolve, clampBoom } from "./collision.js";
-import { PRESETS, createGovernor, lowerPreset } from "./quality.js";
+import { AvatarController, createShadowPool, loadAvatarAsset, measureYawOffset, RUN_SPEED, WALK_SPEED } from "./avatars.js";
+import { makeBox, resolve } from "./collision.js";
+import { PRESETS } from "./quality.js";
+import { createResolutionController, hardwareScalingFor } from "./dynamicResolution.js";
+import { CameraRig } from "./cameraRig.js";
+import { DEFAULT_CAMERA_PREFS, damp, headBob, normalizePrefs } from "./cameraModes.js";
 import { createClock, createSnapshotBuffer } from "../net/snapshotBuffer.js";
-import { STATE, STATES, EMOTE, EMOTES, encodeSnapshot, SNAP_INTERVAL_MS } from "../net/protocol.js";
-import { looksForRoom } from "./look.js";
+import { STATE, STATES, EMOTES, encodeSnapshot, SNAP_INTERVAL_MS } from "../net/protocol.js";
+import { lookFor, looksForRoom } from "./look.js";
 
 const AVATAR_RADIUS = 0.24;
 const SIT_RANGE = 1.9;
+const POOL_SIZE = 8;
+const FRAME_RING = 600;
 const EMISSIVE_LEVELS = {
   EMIT_shade: 1.15,
   EMIT_globe: 1.2,
@@ -55,6 +67,8 @@ const EMISSIVE_LEVELS = {
   EMIT_sky_far: 0.95,
   EMIT_sky_near: 1.0,
 };
+const ACTIVITY_EMOTES = new Set(["dance", "laugh", "clap", "wave", "guitar"]);
+const MOVE_KEYS = new Set(["w", "a", "s", "d", "q", "e", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"]);
 
 function isTyping() {
   const el = typeof document !== "undefined" ? document.activeElement : null;
@@ -63,83 +77,191 @@ function isTyping() {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
 }
 
+class Aborted extends Error {
+  constructor() {
+    super("world3d: disposed during init");
+    this.name = "AbortError";
+  }
+}
+
+let liveEngines = 0;
+
 export class WorldEngine {
-  constructor(canvas, { assetBase = "/world3d/", quality, selfId, lookOverrides = null, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
+  /** Engines alive right now (leak check for leave / re-enter). */
+  static get live() {
+    return liveEngines;
+  }
+
+  constructor(canvas, { assetBase = "/world3d/", quality, selfId, lookOverrides = null, cameraPrefs = null, onSeatHint, onEmoteWheel, onLocalSnapshot, onFatal, onProgress, onActivity, onCameraMode, onPointerLock, onHelp, onChatFocus } = {}) {
     this.canvas = canvas;
     this.assetBase = assetBase;
     this.quality = quality || PRESETS.medium;
     this.selfId = String(selfId || "me");
     this.lookOverrides = lookOverrides; // { userId: LOOKS index } (previews / tests only)
-    this.cb = { onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal };
+    this.cameraPrefs = normalizePrefs(cameraPrefs || DEFAULT_CAMERA_PREFS);
+    this.cb = { onSeatHint, onEmoteWheel, onLocalSnapshot, onFatal, onProgress, onActivity, onCameraMode, onPointerLock, onHelp, onChatFocus };
     this.avatars = new Map();
-    this.remote = new Map(); // id -> { buffer, lastEmoteSeq, lastPos }
+    this.pool = [];
+    this.remote = new Map(); // id -> { buffer, lastEmoteSeq, last, sample, speed, offscreen, lodAcc }
+    this.tags = new Map(); // id -> { el, x, y, on }
+    this.activity = new Map(); // id -> emote name shown on the tag
     this.clock = createClock();
     this.keys = new Set();
     this.moveTarget = null;
-    this.local = { pos: new Vector3(2.5, 0, 2.5), yaw: 0, speed: 0, state: "idle", seat: -1, emote: 0, emoteSeq: 0, stateUntil: 0, sitFrom: null };
+    this.local = { pos: new Vector3(2.5, 0, 2.5), yaw: 0, speed: 0, state: "idle", seat: -1, emote: 0, emoteSeq: 0, stateUntil: 0, sitFrom: null, moveDir: new Vector3(0, 0, 1) };
     this.lastSent = 0;
     this.lastSentKey = "";
     this.paused = false;
     this.disposed = false;
-    this.governor = createGovernor();
-    this.tmp = new Vector3();
     this.speakers = new Set();
+    this.dynres = createResolutionController();
+    this.frames = new Float32Array(FRAME_RING);
+    this.frameCount = 0;
+    this.drawCalls = 0;
+    this.eyeY = null;
+    this.bobPhase = 0;
+    this.tmp = new Vector3();
+    this.tmp2 = new Vector3();
+    this.eye = new Vector3();
+    this.projected = new Vector3();
+    this.planes = Frustum.GetPlanes(Matrix.Identity());
+    this.fly = { forward: 0, right: 0, up: 0, fast: false };
+    this.rigCtx = { avatar: this.local.pos, moving: false, eye: null, fly: this.fly };
+    this.progress = 0;
+    liveEngines += 1;
+  }
+
+  setProgress(p) {
+    const v = Math.max(this.progress, Math.min(1, p));
+    if (v - this.progress < 0.005 && v < 1) return;
+    this.progress = v;
+    this.cb.onProgress?.(v);
+  }
+
+  check() {
+    if (this.disposed) throw new Aborted();
   }
 
   async init() {
-    const engine = new Engine(this.canvas, this.quality.msaa > 1, {
+    // The canvas is opaque and single-sampled: the scene renders into the post-processing
+    // target, so a multisampled or transparent back buffer would only cost bandwidth and
+    // compositing. powerPreference picks the discrete GPU on dual-GPU laptops (where the
+    // browser honours it; Electron adds force_high_performance_gpu on Windows).
+    const engine = new Engine(this.canvas, false, {
       preserveDrawingBuffer: false,
       stencil: true,
+      antialias: false,
+      alpha: false,
+      premultipliedAlpha: false,
       powerPreference: "high-performance",
-      antialias: this.quality.msaa > 1,
       disableWebGL2Support: false,
       doNotHandleContextLost: false,
+      failIfMajorPerformanceCaveat: false,
     }, false);
     this.engine = engine;
-    engine.setHardwareScalingLevel(1 / Math.min(1.5, (window.devicePixelRatio || 1) * this.quality.pixelRatio));
-    const scene = new Scene(engine);
+    engine.enableOfflineSupport = false;
+    this.renderer = this.probeRendererName();
+    if (engine.getCaps().timerQuery) {
+      try {
+        this.gpuTimer = new EngineInstrumentation(engine);
+        this.gpuTimer.captureGPUFrameTime = true;
+      } catch {
+        this.gpuTimer = null;
+      }
+    }
+    this.applyScale();
+    const scene = new Scene(engine, { useGeometryUniqueIdsMap: true, useMaterialMeshMap: true, useClonedMeshMap: true });
     this.scene = scene;
-    this.instrumentation = new SceneInstrumentation(scene);
-    this.instrumentation.captureFrameTime = true;
     scene.clearColor = new Color4(0.04, 0.03, 0.09, 1);
+    // picking only on a click (done by hand), never on move / down / up
     scene.skipPointerMovePicking = true;
-    scene.autoClear = true;
-
-    const cam = new ArcRotateCamera("cam", -Math.PI / 2, 1.1, 6, new Vector3(3, 1, 3), scene);
-    cam.minZ = 0.05;
-    cam.maxZ = 120;
-    cam.lowerRadiusLimit = 1.6;
-    cam.upperRadiusLimit = 9;
-    cam.lowerBetaLimit = 0.35;
-    cam.upperBetaLimit = 1.52;
-    cam.wheelDeltaPercentage = 0.01;
-    cam.panningSensibility = 0;
-    cam.angularSensibilityX = 1400;
-    cam.angularSensibilityY = 1400;
-    cam.inertia = 0.82;
-    cam.fovMode = Camera.FOVMODE_HORIZONTAL_FIXED;
-    cam.fov = 1.211; // 69.4 deg horizontal, same as the hero render (26 mm on 36 mm)
-    cam.attachControl(this.canvas, true);
-    this.camera = cam;
+    scene.skipPointerDownPicking = true;
+    scene.skipPointerUpPicking = true;
+    this.shadows = createShadowPool(scene);
+    this.rig = new CameraRig(scene, this.canvas, {
+      bounds: null,
+      prefs: this.cameraPrefs,
+      onModeChange: (mode, prev) => this.onModeChange(mode, prev),
+      onPointerLock: (locked) => this.cb.onPointerLock?.(locked),
+    });
+    this.camera = this.rig.camera;
+    scene.activeCamera = this.camera;
+    this.setProgress(0.04);
 
     await this.loadRoom();
+    this.check();
     await this.loadAvatars();
+    this.check();
     this.setupLights();
     this.setupPost();
     this.setupInput();
+    this.rig.bounds = this.bounds;
     this.applyHeroCamera();
+    this.fillPool();
+    this.setProgress(0.9);
+    await this.prewarm();
+    this.check();
+    // the room is closed and the third / first person camera stays inside it: every pixel
+    // is drawn each frame, so the colour clear is skipped (free cam keeps it, to be safe)
+    scene.autoClear = this.rig.mode === "free";
+    scene.autoClearDepthAndStencil = true;
+    // own head collapsed after the clips wrote the bones (first person)
+    scene.onAfterAnimationsObservable.add(() => this.avatars.get(this.selfId)?.applyHeadHide());
+    this.setProgress(1);
 
     this.lastT = this.nowMs();
-    engine.runRenderLoop(() => this.frame());
-    this.onResize = () => engine.resize();
+    this.loop = () => this.frame();
+    engine.runRenderLoop(this.loop);
+    this.onResize = () => {
+      engine.resize();
+      this.updateViewport();
+    };
     window.addEventListener("resize", this.onResize);
     this.setupVisibility();
+    this.ready = true;
     return this;
+  }
+
+  probeRendererName() {
+    try {
+      const gl = this.engine._gl;
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      return String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || "");
+    } catch {
+      return "";
+    }
+  }
+
+  /** Render scale = device pixel ratio (capped by the preset) x preset scale x dynamic scale. */
+  applyScale() {
+    if (!this.engine) return;
+    const level = this.lockedLevel || hardwareScalingFor({
+      devicePixelRatio: window.devicePixelRatio || 1,
+      maxPixelRatio: this.quality.maxPixelRatio ?? 1,
+      presetScale: this.quality.presetScale ?? 1,
+      scale: this.dynres.scale,
+    });
+    if (Math.abs(this.engine.getHardwareScalingLevel() - level) > 1e-4) this.engine.setHardwareScalingLevel(level);
+    this.updateViewport();
+  }
+
+  updateViewport() {
+    const w = this.engine.getRenderWidth();
+    const h = this.engine.getRenderHeight();
+    this.vp = new Viewport(0, 0, w, h);
+    this.cssRatio = (this.canvas.clientWidth || w) / Math.max(1, w);
   }
 
   async loadRoom() {
     const scene = this.scene;
-    const room = await LoadAssetContainerAsync(`${this.assetBase}living-room.glb`, scene, { pluginExtension: ".glb" });
+    const room = await LoadAssetContainerAsync(`${this.assetBase}living-room.glb`, scene, {
+      pluginExtension: ".glb",
+      onProgress: (e) => {
+        if (e.lengthComputable) this.setProgress(0.04 + 0.6 * (e.loaded / e.total));
+      },
+    });
+    this.check();
+    scene.blockMaterialDirtyMechanism = true;
     room.addAllToScene();
     this.room = room;
     const boxes = [];
@@ -148,11 +270,13 @@ export class WorldEngine {
     const nodes = [...room.transformNodes, ...room.meshes];
     const byName = new Map(nodes.map((n) => [n.name, n]));
     for (const n of nodes) n.computeWorldMatrix?.(true);
+    this.roomMaterials = new Set();
     for (const m of room.meshes) {
       const name = m.name || "";
       if (name.startsWith("COL_") || name === "ROOM_BOUNDS") {
         m.isVisible = false;
         m.isPickable = false;
+        m.setEnabled(false);
         m.computeWorldMatrix(true);
         const bb = m.getBoundingInfo().boundingBox;
         if (name === "ROOM_BOUNDS") {
@@ -172,17 +296,19 @@ export class WorldEngine {
         continue;
       }
       m.isPickable = name === "FLOOR" || /rug/i.test(name);
+      // static: no world matrix, bounding info or culling work after this
       m.freezeWorldMatrix?.();
       m.doNotSyncBoundingInfo = true;
+      m.cullingStrategy = AbstractMesh.CULLINGSTRATEGY_BOUNDINGSPHERE_ONLY;
       const mat = m.material;
       if (!mat) continue;
+      this.roomMaterials.add(mat);
       const mname = mat.name || "";
       if (mname.startsWith("BAKED_")) {
         if ("unlit" in mat) mat.unlit = true;
         // leaves are single sided cards
         mat.backFaceCulling = mname !== "BAKED_foliage";
         if (mat.albedoTexture) mat.albedoTexture.anisotropicFilteringLevel = 8;
-        // grade: the bake came out a little red on the planks; pull them toward the draft's brown
         // grade toward the draft: dusty lavender walls, browner floor (the bake is neutral-warm)
         const GRADE = { FLOOR: [0.9, 0.8, 0.88], BAKED_shell: [1.02, 0.98, 1.4], BAKED_furniture: [1.22, 1.18, 1.4], BAKED_rug: [1.05, 1.0, 1.08], BAKED_props: [1.05, 1.0, 1.15] };
         const g = GRADE[name] || GRADE[mname];
@@ -201,6 +327,7 @@ export class WorldEngine {
         }
       }
     }
+    scene.blockMaterialDirtyMechanism = false;
     this.boxes = boxes;
     for (const [name, n] of byName) {
       const mm = /^SEAT_(.+)_(\d+)$/.exec(name);
@@ -224,7 +351,7 @@ export class WorldEngine {
   }
 
   async loadAvatars() {
-    this.avatarAsset = await loadAvatarAsset(this.scene, `${this.assetBase}avatar.glb`);
+    this.avatarAsset = await loadAvatarAsset(this.scene, `${this.assetBase}avatar.glb`, (f) => this.setProgress(0.64 + 0.2 * f));
     this.yawOffset = measureYawOffset(this.avatarAsset);
   }
 
@@ -265,6 +392,8 @@ export class WorldEngine {
         for (const l of this.lights) l.excludedMeshes.push(m);
       }
     }
+    // the blob shadows are unlit too
+    for (const l of this.lights) l.excludedMeshes.push(this.shadows.mesh);
   }
 
   setupPost() {
@@ -274,6 +403,7 @@ export class WorldEngine {
     scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
     scene.imageProcessingConfiguration.exposure = 1.75;
     scene.imageProcessingConfiguration.contrast = 1.05;
+    // one pipeline, one AA method: MSAA on the scene target (high) or FXAA (low, medium)
     const pipe = new DefaultRenderingPipeline("post", true, scene, [this.camera]);
     pipe.samples = q.msaa;
     pipe.imageProcessingEnabled = true;
@@ -300,8 +430,9 @@ export class WorldEngine {
     if (q.bloom) {
       pipe.bloomThreshold = 0.82;
       pipe.bloomWeight = 0.45;
+      // the kernel is relative to the output: same glow radius on a smaller target
+      pipe.bloomScale = q.bloomScale ?? 0.5;
       pipe.bloomKernel = 72;
-      pipe.bloomScale = 0.5;
     }
     pipe.depthOfFieldEnabled = q.dof;
     if (q.dof) {
@@ -311,27 +442,17 @@ export class WorldEngine {
       pipe.depthOfField.focusDistance = 5200;
     }
     this.pipeline = pipe;
-    if (q.ssao) {
-      try {
-        const ssao = new SSAO2RenderingPipeline("ssao", scene, { ssaoRatio: 0.5, blurRatio: 0.5 }, [this.camera], true);
-        ssao.radius = 0.6;
-        ssao.totalStrength = 0.9;
-        ssao.samples = 12;
-        ssao.maxZ = 30;
-        this.ssao = ssao;
-      } catch {
-        this.ssao = null;
-      }
-    }
-    if (q.mirror && this.floor) {
-      // glossy floor: blurred mirror of the lamps and people (high preset only)
-      const mirror = new MirrorTexture("floorMirror", { ratio: 0.5 }, scene, true);
+    const mat = this.floor?.material;
+    if (mat) mat.unfreeze?.();
+    if (q.mirror && this.floor && !this.mirror) {
+      // glossy floor: blurred mirror of the lamps and people (high only), every second frame
+      const mirror = new MirrorTexture("floorMirror", { ratio: 0.35 }, scene, true);
       mirror.mirrorPlane = new Plane(0, -1, 0, 0.0);
-      mirror.adaptiveBlurKernel = 24;
+      mirror.adaptiveBlurKernel = 16;
+      mirror.refreshRate = 2;
       mirror.renderList = this.scene.meshes.filter((m) => /EMIT_/.test(m.name) || /sofa|table|console|tv/i.test(m.name));
+      for (const av of [...this.avatars.values(), ...this.pool]) mirror.renderList.push(...av.meshes);
       this.mirror = mirror;
-      this.mirrorAvatars = true;
-      const mat = this.floor.material;
       if (mat && "reflectionTexture" in mat) {
         mat.reflectionTexture = mirror;
         mat.reflectionTexture.level = 0.22;
@@ -343,38 +464,136 @@ export class WorldEngine {
         mat.albedoColor = Color3.Black();
         for (const l of this.lights) if (!l.excludedMeshes.includes(this.floor)) l.excludedMeshes.push(this.floor);
       }
+    } else if (!q.mirror && this.mirror) {
+      if (mat) {
+        mat.reflectionTexture = null;
+        mat.unlit = true;
+        mat.albedoTexture = mat.emissiveTexture || mat.albedoTexture;
+        mat.albedoColor = new Color3(0.9, 0.8, 0.88);
+        mat.emissiveTexture = null;
+        mat.emissiveColor = Color3.Black();
+      }
+      this.mirror.dispose();
+      this.mirror = null;
     }
+    this.freezeRoom();
+  }
+
+  /** Room materials never change after setup: skip their per-frame define checks. */
+  freezeRoom() {
+    if (!this.roomMaterials) return;
+    // freeze once the effects exist (a frozen material that was never ready stays unready)
+    const doFreeze = () => {
+      if (this.disposed) return;
+      for (const m of this.roomMaterials) m.freeze?.();
+    };
+    if (this.warm) doFreeze();
+    else this.freezeAfterWarm = doFreeze;
   }
 
   applyHeroCamera() {
-    const cam = this.camera;
     if (this.hero) {
-      cam.setTarget(this.hero.target.clone());
-      cam.setPosition(this.hero.pos.clone());
-      this.heroRadius = cam.radius;
+      this.rig.setHero(this.hero.pos, this.hero.target);
       this.roomFocus = this.hero.target.clone();
     } else {
+      this.rig.setHero(new Vector3(6, 2.2, 6), new Vector3(3, 0.8, 3));
       this.roomFocus = new Vector3(3, 0.8, 3);
     }
-    this.camFollow = 0; // 0 = hero framing, 1 = follow avatar
+  }
+
+  /** Avatars ready for people who join later: no cloning or compiling while they arrive. */
+  fillPool() {
+    while (this.pool.length + this.avatars.size < POOL_SIZE) {
+      const av = new AvatarController(this.scene, this.avatarAsset, `pool${this.pool.length}`, lookFor(`pool${this.pool.length}`), { yawOffset: this.yawOffset, shadows: this.shadows });
+      av.deactivate();
+      if (this.mirror) this.mirror.renderList.push(...av.meshes);
+      this.pool.push(av);
+    }
+  }
+
+  /**
+   * Compile every shader the session can need and draw a few frames, all behind the
+   * loading state: every avatar part (all hair, outfits, accessories and the guitar)
+   * on one pooled avatar in view, shadows, mirror, post effects. Parallel compile
+   * (KHR_parallel_shader_compile) lets the browser build them side by side.
+   */
+  async prewarm() {
+    const scene = this.scene;
+    const engine = this.engine;
+    const av = this.pool[0];
+    const spot = this.spawns[0] || new Vector3(2.5, 0, 2.5);
+    if (av) {
+      av.holder.setEnabled(true);
+      for (const p of av.parts) p.mesh.setEnabled(true);
+      av.setPose(spot, 0, 0, false);
+      av.triggerEmote("guitar", 0);
+      av.update(0.016, 0);
+    }
+    // look at the warm-up avatar (and the room) for these frames
+    this.rig.update(0, 0, this.rigCtx);
+    this.camera.position.set(spot.x, 1.4, spot.z - 2.4);
+    this.camera.rotation.set(0.12, 0, 0);
+    this.shadows.flush();
+    try {
+      await scene.whenReadyAsync(true);
+    } catch {
+      /* draw anyway */
+    }
+    this.check();
+    const t0 = performance.now();
+    for (let i = 0; i < 90; i += 1) {
+      engine.beginFrame();
+      scene.render();
+      engine.endFrame();
+      await new Promise((r) => requestAnimationFrame(r));
+      this.check();
+      const allReady = engine.areAllEffectsReady ? engine.areAllEffectsReady() : true;
+      if (i >= 3 && allReady) break;
+      if (performance.now() - t0 > 12000) break;
+      this.setProgress(0.9 + 0.08 * Math.min(1, i / 20));
+    }
+    if (av) {
+      av.cancelEmote();
+      av.deactivate();
+    }
+    this.warm = true;
+    this.freezeAfterWarm?.();
+    this.freezeAfterWarm = null;
+    this.applyHeroCamera();
   }
 
   setupInput() {
     const onKeyDown = (e) => {
-      if (isTyping() || this.disposed) return;
+      if (this.disposed) return;
+      if (isTyping()) return;
       const k = e.key.toLowerCase();
-      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"].includes(k)) {
+      const mode = this.rig.mode;
+      if (MOVE_KEYS.has(k) && !(k === "e" && mode !== "free") && !(k === "q" && mode !== "free")) {
         this.keys.add(k);
-        this.moveTarget = null;
+        if (mode !== "free") this.moveTarget = null;
         if (k.startsWith("arrow")) e.preventDefault();
-      } else if (k === "e" && !e.repeat) {
-        this.toggleSit();
-      } else if (k === "b" && !e.repeat) {
-        this.toggleGuitar();
-      } else if (k === "g" && !e.repeat) {
+        return;
+      }
+      if (e.repeat) return;
+      if (k === "e") this.toggleSit();
+      else if (k === "b") this.toggleGuitar();
+      else if (k === "g") {
+        this.rig.exitLock();
         this.cb.onEmoteWheel?.("toggle");
+      } else if (k === "v") this.cycleCamera();
+      else if (k === "r" && mode === "free") this.rig.returnToAvatar(this.nowMs());
+      else if (k === "h" || e.key === "?") {
+        this.rig.exitLock();
+        this.cb.onHelp?.("toggle");
+      } else if (k === "enter") {
+        this.rig.exitLock();
+        if (this.cb.onChatFocus) {
+          e.preventDefault();
+          this.cb.onChatFocus();
+        }
       } else if (k === "escape") {
         this.cb.onEmoteWheel?.("close");
+        this.cb.onHelp?.("close");
       }
     };
     const onKeyUp = (e) => {
@@ -399,13 +618,14 @@ export class WorldEngine {
         const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y);
         const quick = this.nowMs() - down.t < 450;
         down = null;
-        if (moved > 6 || !quick) return;
+        // click to walk: third person only (first person / free cam: the click locks the mouse)
+        if (moved > 6 || !quick || !this.rig.policy.clickToWalk) return;
         const pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => m.isPickable && m.isEnabled());
         if (pick?.hit && pick.pickedPoint) {
           if (this.local.state === "sit" || this.local.state === "sitDown") this.standUp();
           const p = pick.pickedPoint;
           this.moveTarget = new Vector3(p.x, 0, p.z);
-          this.camFollow = Math.max(this.camFollow, 0.6);
+          this.rig.follow = Math.max(this.rig.follow, 0.6);
         }
       }
     });
@@ -416,11 +636,12 @@ export class WorldEngine {
       const hidden = document.hidden || document.documentElement.classList.contains("app-backgrounded");
       if (hidden && !this.paused) {
         this.paused = true;
-        this.engine.stopRenderLoop();
-      } else if (!hidden && this.paused && !this.disposed) {
+        this.engine.stopRenderLoop(this.loop);
+      } else if (!hidden && this.paused && !this.disposed && !this.fixedStepMs) {
         this.paused = false;
         this.lastT = this.nowMs();
-        this.engine.runRenderLoop(() => this.frame());
+        this.dynres.reset(this.lastT);
+        this.engine.runRenderLoop(this.loop);
       }
     };
     document.addEventListener("visibilitychange", update);
@@ -432,6 +653,41 @@ export class WorldEngine {
     };
   }
 
+  // ------------------------------------------------------------ camera
+
+  cycleCamera() {
+    this.rig.cycle(this.nowMs());
+  }
+
+  setCameraMode(mode) {
+    this.rig.setMode(mode, this.nowMs());
+  }
+
+  setCameraPrefs(prefs) {
+    this.cameraPrefs = normalizePrefs({ ...this.cameraPrefs, ...prefs, mode: this.rig.mode });
+    this.rig.setPrefs(this.cameraPrefs);
+  }
+
+  onModeChange(mode, prev) {
+    this.keys.clear();
+    if (mode !== "third") this.moveTarget = null;
+    // free cam: the avatar stops where it is
+    if (mode === "free") this.local.speed = 0;
+    this.eyeY = null;
+    if (this.scene && this.ready) this.scene.autoClear = mode === "free";
+    this.cb.onCameraMode?.(mode, prev);
+  }
+
+  resetCamera() {
+    if (this.rig.mode !== "third") this.rig.setMode("third", this.nowMs());
+    this.applyHeroCamera();
+  }
+
+  /** Evidence capture: hold the camera at a fixed pose (null releases it). */
+  lockCameraPose(pos, target) {
+    this.cameraLocked = pos && target ? { pos: pos.clone(), target: target.clone() } : null;
+  }
+
   // ------------------------------------------------------------ members
 
   /** members: [{ id, name, snap? }] including self. */
@@ -440,34 +696,46 @@ export class WorldEngine {
     const looks = looksForRoom(ids, this.lookOverrides);
     for (const id of [...this.avatars.keys()]) {
       if (!ids.includes(id)) {
-        this.avatars.get(id).dispose();
+        const av = this.avatars.get(id);
+        av.deactivate();
+        this.pool.push(av);
         this.avatars.delete(id);
         this.remote.delete(id);
+        if (this.activity.has(id)) {
+          this.activity.delete(id);
+          this.cb.onActivity?.(id, null);
+        }
       }
     }
     for (const m of members) {
       const id = String(m.id);
       if (this.avatars.has(id)) continue;
-      const av = new AvatarController(this.scene, this.avatarAsset, id, looks.get(id), { yawOffset: this.yawOffset });
+      let av = this.pool.pop();
+      if (av) av.reset(id, looks.get(id));
+      else {
+        av = new AvatarController(this.scene, this.avatarAsset, id, looks.get(id), { yawOffset: this.yawOffset, shadows: this.shadows });
+        if (this.mirror) this.mirror.renderList.push(...av.meshes);
+      }
       this.avatars.set(id, av);
-      if (this.mirror && this.mirrorAvatars) this.mirror.renderList.push(...av.meshes.filter((x) => x.isEnabled()));
       if (id === this.selfId) {
         const spawn = this.pickSpawn();
         this.local.pos.copyFrom(spawn);
         this.local.yaw = Math.atan2(this.roomFocus.x - spawn.x, this.roomFocus.z - spawn.z);
         av.setPose(this.local.pos, this.local.yaw, 0, false);
+        av.setHeadHidden(this.rig.mode === "first");
       } else {
-        this.remote.set(id, { buffer: createSnapshotBuffer(), lastEmoteSeq: m.snap ? m.snap[6] : 0, last: null });
-        if (m.snap) this.pushRemote(id, this.clock.serverNow(this.nowMs()), m.snap);
-        else av.setPose(new Vector3(0, -50, 0), 0, 0, false);
+        this.remote.set(id, { buffer: createSnapshotBuffer(), lastEmoteSeq: m.snap ? m.snap[6] : 0, last: null, sample: {}, speed: 0, offscreen: 0, lodAcc: 0, hasLast: false });
+        if (m.snap) this.pushRemote(id, this.clock.serverNow(this.nowMs()), m.snap, 0);
+        else av.setPose(this.tmp.set(0, -50, 0), 0, 0, false);
       }
     }
   }
 
   pickSpawn() {
-    const taken = [...this.avatars.values()].map((a) => a.position);
     for (const s of this.spawns.length ? this.spawns : [new Vector3(2.5, 0, 2.5)]) {
-      if (!taken.some((p) => Vector3.Distance(p, s) < 0.7)) return s.clone();
+      let taken = false;
+      for (const a of this.avatars.values()) if (Vector3.Distance(a.position, s) < 0.7) taken = true;
+      if (!taken) return s.clone();
     }
     return (this.spawns[0] || new Vector3(2.5, 0, 2.5)).clone();
   }
@@ -479,19 +747,32 @@ export class WorldEngine {
     for (const row of batch.s) {
       const id = String(row[0]);
       if (id === this.selfId) continue;
-      this.pushRemote(id, batch.t, row.slice(1));
+      this.pushRemote(id, batch.t, row, 1);
     }
   }
 
-  pushRemote(id, t, snap) {
+  pushRemote(id, t, row, o) {
     const r = this.remote.get(id);
     if (!r) return;
-    const [x, y, z, yaw, state, emote, emoteSeq, seat] = snap;
-    r.buffer.push(t, { x, y, z, yaw, state, emote, emoteSeq, seat });
+    r.buffer.push(t, { x: row[o], y: row[o + 1], z: row[o + 2], yaw: row[o + 3], state: row[o + 4], emote: row[o + 5], emoteSeq: row[o + 6], seat: row[o + 7] });
+  }
+
+  /** Speaking edges from the speaking monitor (no React state). */
+  setSpeaking(id, v) {
+    const sid = String(id);
+    if (v) this.speakers.add(sid);
+    else this.speakers.delete(sid);
   }
 
   setSpeakers(ids) {
     this.speakers = new Set([...ids].map(String));
+  }
+
+  /** Name tag element for a member; positioned here every frame it moves. */
+  setTagElement(id, el) {
+    const sid = String(id);
+    if (el) this.tags.set(sid, { el, x: -1e4, y: -1e4, on: null });
+    else this.tags.delete(sid);
   }
 
   // ------------------------------------------------------------ local actions
@@ -499,19 +780,17 @@ export class WorldEngine {
   nearestSeat(range = SIT_RANGE) {
     let best = null;
     let bd = range;
-    const occupied = new Set();
-    for (const [id, r] of this.remote) {
-      const last = r.last;
-      if (last && last.seat >= 0) occupied.add(last.seat);
-    }
-    this.seats.forEach((s, i) => {
-      if (occupied.has(i)) return;
+    for (let i = 0; i < this.seats.length; i += 1) {
+      let occupied = false;
+      for (const r of this.remote.values()) if (r.hasLast && r.sample.seat === i) occupied = true;
+      if (occupied) continue;
+      const s = this.seats[i];
       const d = Math.hypot(s.pos.x - this.local.pos.x, s.pos.z - this.local.pos.z);
       if (d < bd) {
         bd = d;
         best = i;
       }
-    });
+    }
     return best;
   }
 
@@ -543,7 +822,7 @@ export class WorldEngine {
     this.local.seat = i;
     this.local.state = "sitDown";
     this.local.stateUntil = this.nowMs() + 1000;
-    this.local.sitFrom = { pos: this.local.pos.clone(), yaw: this.local.yaw, t: this.nowMs() };
+    this.local.sitFrom = { t: this.nowMs() };
     this.local.emote = 0;
     this.avatars.get(this.selfId)?.cancelEmote();
   }
@@ -579,31 +858,14 @@ export class WorldEngine {
     this.avatars.get(this.selfId)?.triggerEmote(name, this.nowMs() / 1000);
   }
 
-  resetCamera() {
-    this.applyHeroCamera();
-  }
-
+  /** Quality preset chosen by the user (never automatic). */
   setQuality(preset) {
-    // simplest correct path: rebuild post-processing with the new preset
+    if (!preset || !this.scene) return;
     this.quality = preset;
-    this.engine.setHardwareScalingLevel(1 / Math.min(1.5, (window.devicePixelRatio || 1) * preset.pixelRatio));
     this.pipeline?.dispose();
-    this.ssao?.dispose?.();
-    this.ssao = null;
-    if (this.mirror && !preset.mirror) {
-      const mat = this.floor?.material;
-      if (mat) {
-        mat.reflectionTexture = null;
-        mat.unlit = true;
-        mat.albedoTexture = mat.emissiveTexture || mat.albedoTexture;
-        mat.albedoColor = Color3.White();
-        mat.emissiveTexture = null;
-        mat.emissiveColor = Color3.Black();
-      }
-      this.mirror.dispose();
-      this.mirror = null;
-    }
+    this.pipeline = null;
     this.setupPost();
+    this.applyScale();
   }
 
   // ------------------------------------------------------------ frame
@@ -616,7 +878,7 @@ export class WorldEngine {
   /** Stop the loop and advance in fixed steps (deterministic capture on slow software GL). */
   manualStep(frames = 1, stepMs = 1000 / 30) {
     if (!this.fixedStepMs) {
-      this.engine.stopRenderLoop();
+      this.engine.stopRenderLoop(this.loop);
       this.fixedStepMs = stepMs;
       this.virtualNow = performance.now();
       this.lastT = this.virtualNow;
@@ -632,37 +894,49 @@ export class WorldEngine {
     this.engine._gl?.finish?.();
   }
 
+  /** Perf probe: pin the hardware scaling level (0 releases it). */
+  perfLockScale(level) {
+    this.lockedLevel = level > 0 ? level : 0;
+    this.dynres.lock(level > 0 ? 1 / level : null);
+    this.applyScale();
+  }
+
+  /** Perf probe / tests: what the governor does when the frame rate drops (one step). */
+  perfGovernorStep() {
+    const s = this.dynres.stepDown(this.nowMs());
+    if (s != null) this.applyScale();
+    return s;
+  }
+
   frame() {
     if (this.disposed) return;
     const now = this.nowMs();
-    const dt = Math.min(0.1, (now - this.lastT) / 1000);
+    const rawDt = now - this.lastT;
+    const dt = Math.min(0.1, rawDt / 1000);
     this.lastT = now;
-    this.governor.push(dt * 1000);
+    this.frames[this.frameCount % FRAME_RING] = rawDt;
+    this.frameCount += 1;
+    if (!this.fixedStepMs && !this.lockedLevel) {
+      const gpuNs = this.gpuTimer?.gpuFrameTimeCounter?.current;
+      const scale = this.dynres.push(rawDt, now, gpuNs > 0 ? gpuNs * 1e-6 : null);
+      if (scale != null) this.applyScale();
+    }
+    this.engine._drawCalls?.fetchNewFrame?.();
     this.updateLocal(dt, now);
     this.updateRemote(dt, now);
-    this.updateCamera(dt);
+    this.shadows.flush();
+    this.updateCamera(dt, now);
     this.scene.render();
-    this.emitFrame(now);
-    if (now - (this.lastStats || 0) > 1000) {
-      this.lastStats = now;
-      this.cb.onStats?.({
-        fps: Math.round(this.engine.getFps()),
-        frameMs: this.governor.average(),
-        drawCalls: this.instrumentation?.drawCallsCounter.current ?? null,
-        meshes: this.scene.getActiveMeshes().length,
-        avatars: this.avatars.size,
-        quality: this.quality.id,
-      });
-      if (this.governor.shouldStepDown() && this.quality.id !== "low" && !this.lockQuality) {
-        this.setQuality(PRESETS[lowerPreset(this.quality.id)]);
-      }
-    }
+    this.drawCalls = this.engine._drawCalls?.current ?? 0;
+    this.updateTags();
+    this.updateActivities();
   }
 
   updateLocal(dt, now) {
     const av = this.avatars.get(this.selfId);
     if (!av) return;
     const L = this.local;
+    const mode = this.rig.mode;
     let speed = 0;
     if (L.state === "sitDown" || L.state === "sit") {
       const seat = this.seats[L.seat];
@@ -673,7 +947,7 @@ export class WorldEngine {
         L.yaw = seat.yaw;
       }
       if (L.state === "sitDown" && now > L.stateUntil) L.state = "sit";
-      if (this.keys.size) this.standUp();
+      if (this.keys.size && mode !== "free" && this.hasMoveKey()) this.standUp();
     } else if (L.state === "standUp") {
       if (now > L.stateUntil) {
         L.state = "idle";
@@ -688,41 +962,57 @@ export class WorldEngine {
         }
       }
     } else {
-      // input direction relative to the camera
-      const fwd = this.camera.getForwardRay(1).direction;
-      const f = new Vector3(fwd.x, 0, fwd.z).normalize();
-      const r = new Vector3(f.z, 0, -f.x);
+      // input direction relative to the view (free cam: the keys fly the camera instead)
+      const yaw = this.rig.walkYaw;
+      const fx = Math.sin(yaw);
+      const fz = Math.cos(yaw);
       let ix = 0;
       let iz = 0;
-      if (this.keys.has("w") || this.keys.has("arrowup")) iz += 1;
-      if (this.keys.has("s") || this.keys.has("arrowdown")) iz -= 1;
-      if (this.keys.has("d") || this.keys.has("arrowright")) ix += 1;
-      if (this.keys.has("a") || this.keys.has("arrowleft")) ix -= 1;
-      let dir = null;
-      if (ix || iz) {
-        dir = f.scale(iz).add(r.scale(ix)).normalize();
-      } else if (this.moveTarget) {
-        const d = this.moveTarget.subtract(new Vector3(L.pos.x, 0, L.pos.z));
-        if (d.length() < 0.08) this.moveTarget = null;
-        else dir = d.normalize();
+      if (mode !== "free") {
+        if (this.keys.has("w") || this.keys.has("arrowup")) iz += 1;
+        if (this.keys.has("s") || this.keys.has("arrowdown")) iz -= 1;
+        if (this.keys.has("d") || this.keys.has("arrowright")) ix += 1;
+        if (this.keys.has("a") || this.keys.has("arrowleft")) ix -= 1;
       }
-      const target = dir ? (this.keys.has("shift") ? RUN_SPEED : WALK_SPEED) : 0;
+      let hasDir = false;
+      let dx = 0;
+      let dz = 0;
+      if (ix || iz) {
+        // forward (fx, fz), right (fz, -fx)
+        dx = fx * iz + fz * ix;
+        dz = fz * iz - fx * ix;
+        hasDir = true;
+      } else if (this.moveTarget) {
+        dx = this.moveTarget.x - L.pos.x;
+        dz = this.moveTarget.z - L.pos.z;
+        if (Math.hypot(dx, dz) < 0.08) this.moveTarget = null;
+        else hasDir = true;
+      }
+      if (hasDir) {
+        const len = Math.hypot(dx, dz) || 1;
+        dx /= len;
+        dz /= len;
+      }
+      const target = hasDir ? (this.keys.has("shift") ? RUN_SPEED : WALK_SPEED) : 0;
       L.speed += (target - L.speed) * Math.min(1, dt * (target > L.speed ? 6 : 10));
       if (L.speed < 0.02) L.speed = 0;
-      if (dir) {
-        L.moveDir = dir;
-        L.yaw = Math.atan2(dir.x, dir.z);
+      if (hasDir) {
+        L.moveDir.set(dx, 0, dz);
+        L.yaw = Math.atan2(dx, dz);
+      } else if (mode === "first") {
+        // standing in first person: the body turns with the view
+        L.yaw = this.rig.look.yaw;
       }
-      if (L.speed > 0 && L.moveDir) {
+      if (L.speed > 0) {
         const nx = L.pos.x + L.moveDir.x * L.speed * dt;
         const nz = L.pos.z + L.moveDir.z * L.speed * dt;
         const p = resolve(nx, nz, AVATAR_RADIUS, this.boxes, this.bounds);
         // actual ground speed after collisions (keeps feet planted when sliding along walls)
         speed = Math.hypot(p[0] - L.pos.x, p[1] - L.pos.z) / Math.max(1e-4, dt);
         if (this.moveTarget && speed < 0.05 * L.speed) {
-        this.moveTarget = null;
-        this.approach = null; // blocked on the way to the seat
-      }
+          this.moveTarget = null;
+          this.approach = null; // blocked on the way to the seat
+        }
         L.pos.x = p[0];
         L.pos.z = p[1];
       }
@@ -731,12 +1021,13 @@ export class WorldEngine {
         this.approach = null;
         this.sitOn(seat);
       }
-      if (this.keys.size && this.approach) this.approach = null;
+      if (this.approach && this.hasMoveKey()) this.approach = null;
       if (L.emote && now > (L.emoteUntil || 0)) L.emote = 0;
       if (speed > 0.2) L.emote = 0;
       L.state = speed > 0.05 ? (speed > WALK_SPEED + 0.2 ? "run" : "walk") : "idle";
       if (L.emote) L.state = "emote";
     }
+    L.groundSpeed = speed;
     av.setLocomotion(L.state === "walk" || L.state === "run" || L.state === "emote" ? "idle" : L.state, speed);
     av.setSpeaking(this.speakers.has(this.selfId));
     av.update(dt, now / 1000);
@@ -748,6 +1039,11 @@ export class WorldEngine {
       this.cb.onSeatHint?.(near);
     }
     this.sendLocal(now);
+  }
+
+  hasMoveKey() {
+    for (const k of this.keys) if (k !== "shift" && k !== "q" && k !== "e") return true;
+    return false;
   }
 
   sendLocal(now) {
@@ -763,26 +1059,30 @@ export class WorldEngine {
       emoteSeq: L.emoteSeq,
       seat: L.seat,
     });
-    const key = snap.join(",");
+    const key = `${snap[0]},${snap[2]},${snap[3]},${snap[4]},${snap[5]},${snap[6]},${snap[7]}`;
     if (key === this.lastSentKey && now - this.lastSent < 1000) return;
     this.lastSent = now;
     this.lastSentKey = key;
     this.cb.onLocalSnapshot?.(snap);
   }
 
+  /** Remote avatars: interpolation without allocation, off-screen ones animate at 5 Hz. */
   updateRemote(dt, now) {
     const serverNow = this.clock.serverNow(now);
+    Frustum.GetPlanesToRef(this.scene.getTransformMatrix(), this.planes);
+    const planes = this.planes;
     for (const [id, r] of this.remote) {
       const av = this.avatars.get(id);
       if (!av) continue;
-      const s = r.buffer.sample(serverNow);
+      const s = r.buffer.sampleInto(serverNow, r.sample);
       if (!s) continue;
-      const pos = this.tmp.set(s.x, 0, s.z);
-      let speed = 0;
-      if (r.last) {
-        speed = Math.hypot(s.x - r.last.x, s.z - r.last.z) / Math.max(1e-4, dt);
-        r.speed = (r.speed || 0) + (speed - (r.speed || 0)) * Math.min(1, dt * 8);
+      if (r.hasLast) {
+        const v = Math.hypot(s.x - r.lastX, s.z - r.lastZ) / Math.max(1e-4, dt);
+        r.speed += (v - r.speed) * Math.min(1, dt * 8);
       }
+      r.lastX = s.x;
+      r.lastZ = s.z;
+      r.hasLast = true;
       const stateName = STATES[s.state] || "idle";
       if (s.emoteSeq !== r.lastEmoteSeq) {
         r.lastEmoteSeq = s.emoteSeq;
@@ -790,86 +1090,205 @@ export class WorldEngine {
         else av.cancelEmote();
       }
       const loco = stateName === "walk" || stateName === "run" || stateName === "emote" ? "idle" : stateName;
-      av.setLocomotion(loco, stateName === "walk" || stateName === "run" ? r.speed || 0 : 0);
+      av.setLocomotion(loco, stateName === "walk" || stateName === "run" ? r.speed : 0);
       av.setSpeaking(this.speakers.has(id));
-      av.update(dt, now / 1000);
-      // seated avatars face the seat direction and sit on it
-      if ((stateName === "sit" || stateName === "sitDown") && this.seats[s.seat]) {
-        const seat = this.seats[s.seat];
-        av.setPose(seat.pos, seat.yaw, dt);
-      } else {
-        av.setPose(pos, s.yaw, dt);
+      // animation LOD: an avatar outside the view (with margin) for 0.4 s stops evaluating
+      // its clips and updates its blend state 5 times a second; it resumes before it shows
+      const cx = s.x;
+      const cy = 0.9;
+      const cz = s.z;
+      let inView = true;
+      for (let i = 0; i < 6; i += 1) {
+        const p = planes[i];
+        if (p.normal.x * cx + p.normal.y * cy + p.normal.z * cz + p.d < -1.3) {
+          inView = false;
+          break;
+        }
       }
-      r.last = s;
+      r.offscreen = inView ? 0 : r.offscreen + dt;
+      const lod = r.offscreen > 0.4;
+      av.setAnimPaused(lod);
+      if (lod) {
+        r.lodAcc += dt;
+        if (r.lodAcc >= 0.2) {
+          av.update(r.lodAcc, now / 1000);
+          r.lodAcc = 0;
+        }
+      } else {
+        r.lodAcc = 0;
+        av.update(dt, now / 1000);
+      }
+      // seated avatars face the seat direction and sit on it
+      const seat = (stateName === "sit" || stateName === "sitDown") && this.seats[s.seat];
+      if (seat) av.setPose(seat.pos, seat.yaw, dt);
+      else av.setPose(this.tmp.set(s.x, 0, s.z), s.yaw, dt);
     }
   }
 
-  updateCamera(dt) {
-    if (this.cameraLocked) return;
-    const cam = this.camera;
+  updateCamera(dt, now) {
     const self = this.avatars.get(this.selfId);
-    if (!self) return;
-    if (this.local.speed > 0.1) this.camFollow = Math.min(1, this.camFollow + dt * 0.8);
-    const k = 0.55 * this.camFollow;
-    const desired = new Vector3(
-      this.roomFocus.x + (self.position.x - this.roomFocus.x) * k,
-      this.roomFocus.y + (1.0 - this.roomFocus.y) * k,
-      this.roomFocus.z + (self.position.z - this.roomFocus.z) * k,
-    );
-    cam.target.x += (desired.x - cam.target.x) * Math.min(1, dt * 3);
-    cam.target.y += (desired.y - cam.target.y) * Math.min(1, dt * 3);
-    cam.target.z += (desired.z - cam.target.z) * Math.min(1, dt * 3);
-    // camera collision: keep the camera inside the room box
-    const dir = cam.position.subtract(cam.target).normalize();
-    this.userRadius = this.userRadius ?? cam.radius;
-    if (Math.abs(cam.radius - (this.lastSetRadius ?? cam.radius)) > 1e-3) this.userRadius = cam.radius; // wheel input
-    const allowed = clampBoom(cam.target, dir, this.userRadius, this.bounds, 0.25);
-    cam.radius = Math.min(this.userRadius, allowed);
-    this.lastSetRadius = cam.radius;
+    if (this.cameraLocked) {
+      this.camera.position.copyFrom(this.cameraLocked.pos);
+      this.camera.setTarget(this.cameraLocked.target);
+      return;
+    }
+    const mode = this.rig.mode;
+    const ctx = this.rigCtx;
+    ctx.avatar = self ? self.position : this.local.pos;
+    ctx.moving = this.local.speed > 0.1;
+    ctx.eye = mode === "first" && self ? this.computeEye(self, dt) : null;
+    const f = this.fly;
+    f.forward = 0;
+    f.right = 0;
+    f.up = 0;
+    if (mode === "free") {
+      const K = this.keys;
+      f.forward = (K.has("w") || K.has("arrowup") ? 1 : 0) - (K.has("s") || K.has("arrowdown") ? 1 : 0);
+      f.right = (K.has("d") || K.has("arrowright") ? 1 : 0) - (K.has("a") || K.has("arrowleft") ? 1 : 0);
+      f.up = (K.has("e") ? 1 : 0) - (K.has("q") ? 1 : 0);
+      f.fast = K.has("shift");
+    }
+    this.rig.update(dt, now, ctx);
+    // own head: hidden once the first-person camera is close to it
+    if (self) {
+      const st = this.rig.state;
+      const w = st.blend ? Math.min(1, (now - st.blend.start) / st.blend.duration) : 1;
+      self.setHeadHidden(mode === "first" && w > 0.55);
+    }
   }
 
-  emitFrame(now) {
-    if (!this.cb.onFrame) return;
-    const out = [];
-    const w = this.engine.getRenderWidth();
-    const h = this.engine.getRenderHeight();
-    const vp = this.camera.viewport.toGlobal(w, h);
-    const tm = this.scene.getTransformMatrix();
-    const head = new Vector3();
-    for (const [id, av] of this.avatars) {
-      av.headPosition(head);
-      const p = Vector3.Project(head, Matrix.IdentityReadOnly, tm, vp);
-      const behind = Vector3.Dot(head.subtract(this.camera.position), this.camera.getForwardRay(1).direction) < 0;
-      out.push({ id, x: p.x / w, y: p.y / h, visible: !behind && p.z > 0 && p.z < 1 && av.position.y > -10, state: id === this.selfId ? this.local.state : STATES[this.remote.get(id)?.last?.state] });
+  /** First-person eye: in front of the face, at eye height; seated it follows the head. */
+  computeEye(av, dt) {
+    const L = this.local;
+    const st = L.state;
+    const follows = st === "sit" || st === "sitDown" || st === "standUp" || st === "emote";
+    let x = L.pos.x;
+    let z = L.pos.z;
+    let y = L.pos.y + av.eye.y;
+    if (follows && av.headNode) {
+      const h = av.headNode.getAbsolutePosition();
+      x = h.x;
+      z = h.z;
+      y = h.y - av.eye.headY + av.eye.y;
     }
-    this.cb.onFrame(out, now);
+    this.eyeY = this.eyeY == null ? y : damp(this.eyeY, y, follows ? 12 : 20, dt);
+    const yaw = av.yaw;
+    const fwd = av.eye.forward;
+    let bx = 0;
+    let by = 0;
+    if (this.cameraPrefs.headBob && L.groundSpeed > 0.1 && !follows) {
+      this.bobPhase += dt * (4.2 + L.groundSpeed * 2.1);
+      const b = headBob(this.bobPhase, L.groundSpeed);
+      bx = b.x;
+      by = b.y;
+    }
+    this.eye.set(x + Math.sin(yaw) * fwd + Math.cos(yaw) * bx, this.eyeY + by, z + Math.cos(yaw) * fwd - Math.sin(yaw) * bx);
+    return this.eye;
+  }
+
+  /** Name tags: one transform per moved tag, written straight to the DOM. */
+  updateTags() {
+    if (!this.tags.size || !this.vp) return;
+    const tm = this.scene.getTransformMatrix();
+    const ratio = this.cssRatio || 1;
+    const out = this.projected;
+    const first = this.rig.mode === "first";
+    for (const [id, av] of this.avatars) {
+      const t = this.tags.get(id);
+      if (!t) continue;
+      av.headPosition(this.tmp2);
+      Vector3.ProjectToRef(this.tmp2, Matrix.IdentityReadOnly, tm, this.vp, out);
+      const on = out.z > 0 && out.z < 1 && av.position.y > -10 && !(first && id === this.selfId);
+      if (on !== t.on) {
+        t.on = on;
+        t.el.style.opacity = on ? "1" : "0";
+      }
+      if (!on) continue;
+      const x = Math.round(out.x * ratio * 2) / 2;
+      const y = Math.round(out.y * ratio * 2) / 2;
+      if (x !== t.x || y !== t.y) {
+        t.x = x;
+        t.y = y;
+        t.el.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-100%)`;
+      }
+    }
+  }
+
+  /** Activity labels (dancing, guitar...): reported on change only. */
+  updateActivities() {
+    if (!this.cb.onActivity) return;
+    for (const [id, av] of this.avatars) {
+      const name = av.emote && ACTIVITY_EMOTES.has(av.emote.name) ? av.emote.name : null;
+      if ((this.activity.get(id) || null) !== name) {
+        if (name) this.activity.set(id, name);
+        else this.activity.delete(id);
+        this.cb.onActivity(id, name);
+      }
+    }
+  }
+
+  /** Numbers for the performance HUD (read twice a second). */
+  perfStats() {
+    const n = Math.min(this.frameCount, FRAME_RING);
+    const recent = [];
+    let sum1s = 0;
+    let frames1s = 0;
+    for (let i = 0; i < n; i += 1) {
+      const v = this.frames[(this.frameCount - 1 - i + FRAME_RING) % FRAME_RING];
+      if (!(v > 0) || v > 1000) continue;
+      recent.push(v);
+      if (sum1s < 1000) {
+        sum1s += v;
+        frames1s += 1;
+      }
+    }
+    recent.sort((a, b) => a - b);
+    const pct = (p) => (recent.length ? recent[Math.min(recent.length - 1, Math.floor(p * recent.length))] : 0);
+    const worst = recent.slice(Math.floor(recent.length * 0.99));
+    const worstAvg = worst.length ? worst.reduce((a, b) => a + b, 0) / worst.length : 0;
+    const gpuNs = this.gpuTimer?.gpuFrameTimeCounter?.lastSecAverage;
+    return {
+      fps: sum1s > 0 ? (frames1s * 1000) / sum1s : 0,
+      low1: worstAvg > 0 ? 1000 / worstAvg : 0,
+      p95: pct(0.95),
+      p99: pct(0.99),
+      drawCalls: this.drawCalls,
+      triangles: Math.round((this.scene?.getActiveIndices?.() || 0) / 3),
+      renderer: this.renderer || "",
+      scale: this.lockedLevel ? 1 / this.lockedLevel : this.dynres.scale,
+      renderW: this.engine?.getRenderWidth() || 0,
+      renderH: this.engine?.getRenderHeight() || 0,
+      gpuMs: gpuNs > 0 ? gpuNs * 1e-6 : null,
+      quality: this.quality.id,
+      avatars: this.avatars.size,
+    };
   }
 
   stats() {
-    return {
-      fps: this.engine?.getFps?.() ?? 0,
-      drawCalls: this.instrumentation?.drawCallsCounter.current ?? null,
-      frameMs: this.instrumentation?.frameTimeCounter.lastSecAverage ?? null,
-      activeTriangles: Math.round((this.scene?.getActiveIndices?.() || 0) / 3),
-      activeMeshes: this.scene?.getActiveMeshes?.().length ?? 0,
-    };
+    const p = this.perfStats();
+    return { fps: p.fps, drawCalls: p.drawCalls, frameMs: p.fps ? 1000 / p.fps : null, activeTriangles: p.triangles, activeMeshes: this.scene?.getActiveMeshes?.().length ?? 0 };
   }
 
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    liveEngines = Math.max(0, liveEngines - 1);
     try {
-      this.instrumentation?.dispose();
+      this.engine?.stopRenderLoop();
       this.unbindKeys?.();
       this.unbindVisibility?.();
-      window.removeEventListener("resize", this.onResize);
+      if (this.onResize) window.removeEventListener("resize", this.onResize);
+      this.rig?.dispose();
       for (const a of this.avatars.values()) a.dispose();
+      for (const a of this.pool) a.dispose();
       this.avatars.clear();
+      this.pool.length = 0;
+      this.tags.clear();
+      this.shadows?.dispose();
       this.avatarAsset?.container.dispose();
       this.pipeline?.dispose();
-      this.ssao?.dispose?.();
       this.mirror?.dispose();
-      this.engine?.stopRenderLoop();
+      this.gpuTimer?.dispose();
       this.scene?.dispose();
       // release the GL context so the GPU memory goes back right away
       const gl = this.engine?._gl;

@@ -2,7 +2,8 @@
 
 /**
  * Renders the 3D world harness in headless Chromium (SwiftShader) and saves evidence.
- * Needs: vite dev server on :5199 and e2e/world3d/worldMockServer.cjs on :4791.
+ * Needs: vite dev server on :5199 and e2e/world3d/worldMockServer.cjs on :4791
+ * (HARNESS_URL / WORLD_MOCK_PORT override both).
  *   node e2e/world3d/capture.cjs <outDir> [mode]
  * mode: hero | overlay | walk | probe
  */
@@ -25,7 +26,7 @@ async function main() {
   const looks = MODE === 'lineup' ? '&looks=elif:0,can:1,zeynep:2,demir:3,mert:4,ayse:5' : '&looks=ayse:3,mert:5,zeynep:2,can:6,elif:7,demir:0';
   const me = process.env.ME || 'demir';
   const meName = me[0].toUpperCase() + me.slice(1);
-  await page.goto(`${BASE}?port=4791&me=${me}&name=${meName}&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
+  await page.goto(`${BASE}?port=${process.env.WORLD_MOCK_PORT || 4791}&me=${me}&name=${meName}&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
   const t0 = Date.now();
   const dump = setInterval(() => { while (logs.length) console.log(logs.shift().slice(0, 400)); }, 3000);
   await page.waitForFunction((min) => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= min, Number(process.env.MIN_AVATARS || 2), { timeout: 240000 });
@@ -138,16 +139,14 @@ async function main() {
       const w = window.__descallWorld;
       w.local.pos.set(-4.85 + 2 * 0.68, 0, -3.3);
       w.local.yaw = 0;
-      w.cameraLocked = true;
-      w.camera.setTarget(new w.local.pos.constructor(-3.15, 0.95, -3.3));
-      w.camera.alpha = Math.PI / 2;
-      w.camera.beta = 1.48;
-      w.camera.radius = 4.1;
+      const V = w.local.pos.constructor;
+      // ArcRotate alpha pi/2, beta 1.48, radius 4.1 around the line-up
+      w.lockCameraPose(new V(-3.15, 0.95 + 4.1 * Math.cos(1.48), -3.3 + 4.1 * Math.sin(1.48)), new V(-3.15, 0.95, -3.3));
     });
     await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-net{display:none!important}' });
     await step(45, 40);
     await shot('lineup.png');
-    await ev(() => { const w = window.__descallWorld; w.camera.setTarget(new w.local.pos.constructor(-3.49, 1.25, -3.3)); w.camera.radius = 1.7; });
+    await ev(() => { const w = window.__descallWorld; const V = w.local.pos.constructor; w.lockCameraPose(new V(-3.49, 1.25 + 1.7 * Math.cos(1.48), -3.3 + 1.7 * Math.sin(1.48)), new V(-3.49, 1.25, -3.3)); });
     await step(2);
     await shot('closeup.png');
   } else if (MODE === 'walk') {
@@ -155,8 +154,8 @@ async function main() {
     await page.addStyleTag({ content: '.w3d-chat,.w3d-net{display:none!important}' });
     await ev(() => {
       const w = window.__descallWorld;
-      w.camera.radius = 3.9;
-      w.camFollow = 1;
+      w.rig.orbit.radius = w.rig.orbit.tRadius = 3.9;
+      w.rig.follow = 1;
       w.moveTarget = new w.local.pos.constructor(-1.75, 0, -5.05);
     });
     let n = 0;

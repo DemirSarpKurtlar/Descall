@@ -1,7 +1,12 @@
-/* 3D world overlay (phase 1). Values follow docs/design/3d-world/drafts.html (scene #s3). */
+/* 3D world overlay (phase 1). Values follow docs/design/3d-world/drafts.html (scene #s3).
+ * No backdrop-filter anywhere in here: a blurred panel over the live canvas is re-blurred
+ * by the compositor on every frame (a full extra pass per panel on an integrated GPU).
+ * The panels are tinted surfaces instead, darker than the draft's 58 % glass so they read
+ * the same over the bright room (the draft's blur hid the detail behind them). */
 .w3d-root {
-  --w3d-glass: rgba(16, 18, 30, 0.58);
-  --w3d-glass-strong: rgba(14, 16, 26, 0.78);
+  --w3d-glass: rgba(17, 18, 33, 0.8);
+  --w3d-glass-top: rgba(34, 32, 56, 0.82);
+  --w3d-glass-strong: rgba(14, 16, 26, 0.84);
   --w3d-line: rgba(255, 255, 255, 0.12);
   --w3d-text: #f2f3f8;
   --w3d-muted: rgba(235, 238, 255, 0.66);
@@ -28,11 +33,9 @@
   touch-action: none;
 }
 .w3d-glass {
-  background: var(--w3d-glass);
-  backdrop-filter: blur(22px) saturate(1.5);
-  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  background: linear-gradient(180deg, var(--w3d-glass-top), var(--w3d-glass) 60%);
   border: 1px solid var(--w3d-line);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .w3d-root button {
   font: inherit;
@@ -136,17 +139,19 @@
   color: #fff !important;
 }
 
-/* name tags */
+/* name tags: the engine writes translate3d() (compositor only, no layout per frame) */
 .w3d-tags {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  overflow: hidden;
+  contain: strict;
 }
 .w3d-tag {
   position: absolute;
-  left: -999px;
+  left: 0;
   top: 0;
-  transform: translate(-50%, -100%);
+  transform: translate3d(-10000px, 0, 0);
   padding: 5px 10px;
   border-radius: 10px;
   font-size: 13px;
@@ -159,16 +164,20 @@
   border: 1px solid var(--w3d-line);
   opacity: 0;
   transition: opacity 0.2s ease, box-shadow 0.2s ease;
-  will-change: left, top;
+  will-change: transform;
 }
 .w3d-tag.is-talk {
   box-shadow: 0 0 0 2px var(--w3d-ok), 0 0 18px rgba(61, 220, 132, 0.55);
 }
 .w3d-dot {
+  display: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--w3d-ok);
+}
+.w3d-tag.is-talk .w3d-dot {
+  display: block;
 }
 .w3d-tag-act {
   font-weight: 700;
@@ -302,10 +311,13 @@
   bottom: 100px;
   left: 50%;
   transform: translateX(calc(-50% + 150px));
-  width: 300px;
+  width: 320px;
+  max-height: calc(100% - 200px);
+  overflow-y: auto;
   border-radius: 18px;
   padding: 14px;
   font-size: 13px;
+  scrollbar-width: thin;
 }
 .w3d-settings-h {
   font-weight: 700;
@@ -340,11 +352,256 @@
 .w3d-row:hover {
   background: rgba(255, 255, 255, 0.07) !important;
 }
-.w3d-keys,
-.w3d-stats {
+.w3d-settings .w3d-settings-h + .w3d-seg {
+  margin-bottom: 12px;
+}
+.w3d-range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 2px 2px 10px;
+  font-weight: 600;
+}
+.w3d-range output {
   color: var(--w3d-muted);
-  margin: 8px 2px 0;
-  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.w3d-range input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--w3d-brand);
+  margin: 0;
+}
+.w3d-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 2px !important;
+  font-weight: 600 !important;
+  text-align: left;
+}
+.w3d-switch i {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 0.18s ease;
+}
+.w3d-switch i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.18s ease;
+}
+.w3d-switch.is-on i {
+  background: var(--w3d-brand);
+}
+.w3d-switch.is-on i::after {
+  transform: translateX(14px);
+}
+.w3d-settings-rows {
+  margin-top: 6px;
+  border-top: 1px solid var(--w3d-line);
+  padding-top: 6px;
+}
+.w3d-root button:focus-visible,
+.w3d-root input:focus-visible {
+  outline: 2px solid var(--w3d-brand);
+  outline-offset: 2px;
+}
+
+/* camera mode label (V) and the first-person mouse hint */
+.w3d-mode-toast {
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 9px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(88, 122, 246, 0.92), rgba(139, 108, 246, 0.9));
+  box-shadow: 0 10px 28px rgba(88, 122, 246, 0.35);
+  font-weight: 700;
+  font-size: 14px;
+  pointer-events: none;
+  animation: w3d-toast 1.4s ease both;
+}
+@keyframes w3d-toast {
+  0% { opacity: 0; transform: translate(-50%, -6px); }
+  14%, 78% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 0); }
+}
+.w3d-lock-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 104px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--w3d-glass-strong);
+  border: 1px solid var(--w3d-line);
+  color: var(--w3d-muted);
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.w3d-reticle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1.5px rgba(10, 8, 24, 0.55);
+  pointer-events: none;
+}
+
+/* controls help (H) */
+.w3d-help {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(760px, calc(100% - 48px));
+  max-height: calc(100% - 200px);
+  overflow-y: auto;
+  border-radius: 22px;
+  padding: 18px 20px 20px;
+  font-size: 13px;
+}
+.w3d-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.w3d-help-head b {
+  font-size: 17px;
+}
+.w3d-help-x {
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-weight: 700;
+}
+.w3d-help-x:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+.w3d-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.w3d-help section {
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+}
+.w3d-help section.is-on {
+  border-color: rgba(88, 122, 246, 0.6);
+  background: rgba(88, 122, 246, 0.1);
+}
+.w3d-help h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #a9b8ff;
+}
+.w3d-help p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0;
+}
+.w3d-help p > span:last-child {
+  color: var(--w3d-muted);
+  text-align: right;
+}
+.w3d-keys-caps {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.w3d-keys-caps em {
+  font-style: normal;
+  color: var(--w3d-muted);
+  font-size: 12px;
+  margin-left: 4px;
+}
+.w3d-kbd {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* performance overlay */
+.w3d-hud {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  width: 230px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 12px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.w3d-hud dl {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+}
+.w3d-hud dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.w3d-hud dt {
+  color: var(--w3d-muted);
+}
+.w3d-hud dd {
+  margin: 0;
+  font-weight: 700;
+}
+.w3d-hud-gpu {
+  margin: 8px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--w3d-line);
+  color: var(--w3d-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.w3d-hud-gpu span {
+  color: var(--w3d-muted);
+  margin-right: 6px;
 }
 
 .w3d-loading,
@@ -383,6 +640,13 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .w3d-tag {
+    transition: none;
+  }
+  .w3d-mode-toast {
+    animation: none;
+  }
+  .w3d-switch i,
+  .w3d-switch i::after {
     transition: none;
   }
 }

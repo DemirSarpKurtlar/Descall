@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // True while a DM call, group call, or server voice channel is up (ringing counts).
   setVoiceBusy: (busy) => ipcRenderer.send('voice:set-busy', Boolean(busy)),
   setActivityBusy: (busy) => ipcRenderer.send('activity:set-busy', Boolean(busy)),
+  // 3D world opened: use the discrete GPU from the next launch (Windows dual-GPU laptops)
+  world3dPreferHighPerformanceGpu: () => ipcRenderer.send('world3d:prefer-high-performance-gpu'),
   onConfirmRestart: (callback) => {
     const handler = (_, data) => callback(data);
     ipcRenderer.on('update:confirm-restart', handler);

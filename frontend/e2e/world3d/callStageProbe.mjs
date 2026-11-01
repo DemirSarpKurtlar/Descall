@@ -112,6 +112,31 @@ function install(fixture) {
     }
   };
   setInterval(watch, 250);
+  // WebGL contexts created and released (leak check across leave / re-enter)
+  const gl = (window.__probeGl = { created: 0, lost: 0 });
+  const seen = new WeakSet();
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function patchedGetContext(type, ...rest) {
+    const ctx = getContext.call(this, type, ...rest);
+    if (ctx && /webgl/.test(String(type)) && !seen.has(ctx)) {
+      seen.add(ctx);
+      gl.created += 1;
+      const getExt = ctx.getExtension.bind(ctx);
+      ctx.getExtension = (name) => {
+        const ext = getExt(name);
+        if (ext && name === "WEBGL_lose_context" && !ext.__probe) {
+          const lose = ext.loseContext.bind(ext);
+          ext.loseContext = () => {
+            gl.lost += 1;
+            return lose();
+          };
+          ext.__probe = true;
+        }
+        return ext;
+      };
+    }
+    return ctx;
+  };
 
   const media = navigator.mediaDevices || {};
   media.enumerateDevices = async () => [
@@ -235,6 +260,8 @@ async function measure(page, cdp, ms) {
       t: performance.now(),
       backdrop: bf.filter(vis).length,
       backdropInWorldOverlay: bf.filter((el) => el.closest(".w3d-root")).length,
+      backdropInCallSurface: bf.filter((el) => vis(el) && el.closest(".call-overlay-root, .server-voice-panel")).length,
+      backdropSample: bf.filter(vis).slice(0, 8).map((el) => `${el.tagName.toLowerCase()}.${String(el.className || "").split(" ").slice(0, 2).join(".")}`),
       videos: videos.length,
       videosPlaying: videos.filter((v) => !v.paused && v.readyState >= 2 && vis(v)).length,
       runningAnimations: anims,
@@ -251,6 +278,8 @@ async function measure(page, cdp, ms) {
     videosPlaying: p1.videosPlaying,
     backdropFilterElements: p1.backdrop,
     backdropInWorldOverlay: p1.backdropInWorldOverlay,
+    backdropInCallSurface: p1.backdropInCallSurface,
+    backdropSample: p1.backdropSample,
     runningCssAnimations: p1.runningAnimations,
     domNodes: p1.domNodes,
     audioElements: p1.audioEls,
@@ -326,6 +355,19 @@ try {
       row.stage = await measure(page, cdp, MEASURE_MS);
       if (hasEnter) {
         await page.click(".w3d-enter");
+        // loading state of the dock button (engine + GLB download, shader warm-up)
+        await page.waitForTimeout(700);
+        if (dock && (await page.$(".w3d-enter.is-loading"))) {
+          const box = await (await page.$(sc.dock)).boundingBox();
+          const pad = 24;
+          await page.screenshot({ path: join(OUT, `${tag}-dock-loading.png`), clip: { x: Math.max(0, box.x - pad), y: Math.max(0, box.y - pad), width: Math.min(w, box.width + pad * 2), height: Math.min(h - Math.max(0, box.y - pad), box.height + pad * 2) } });
+        }
+        // the transition: stage scales and fades into the world
+        const t0 = Date.now();
+        await page.waitForFunction(() => document.querySelector('[data-w3d="entering"]') || document.querySelector('[data-w3d="open"]') || (window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= 1 && !document.querySelector("[data-w3d]")), null, { timeout: 240000 });
+        if (await page.$('[data-w3d="entering"]')) await page.screenshot({ path: join(OUT, `${tag}-entering.png`) });
+        await page.waitForFunction(() => document.querySelector('[data-w3d="open"]') || (window.__descallWorld && !document.querySelector("[data-w3d]")), null, { timeout: 30000 });
+        row.enterMs = Date.now() - t0;
         await page.waitForFunction(() => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= 1, null, { timeout: 240000 });
         await page.waitForTimeout(2500);
         await page.evaluate(() => { const w = window.__descallWorld; if (w.perfLockScale) w.perfLockScale(8); else { w.lockQuality = true; w.engine.setHardwareScalingLevel(8); } });
@@ -336,10 +378,38 @@ try {
         await page.waitForTimeout(1500);
         await page.screenshot({ path: join(OUT, `${tag}-world.png`) });
         await page.click(".w3d-leave");
+        await page.waitForTimeout(150);
+        if (await page.$('[data-w3d="leaving"]')) await page.screenshot({ path: join(OUT, `${tag}-leaving.png`) });
         await page.waitForTimeout(1500);
         row.afterLeave = await measure(page, cdp, 3000);
         row.afterLeave.engineGone = await page.evaluate(() => !window.__descallWorld);
         await page.screenshot({ path: join(OUT, `${tag}-after-leave.png`) });
+        // leak check: enter and leave twice more, then count engines, GL contexts, listeners
+        const listeners = async () => {
+          const out = {};
+          for (const expr of ["window", "document"]) {
+            const { result } = await cdp.send("Runtime.evaluate", { expression: expr });
+            const { listeners: ls } = await cdp.send("DOMDebugger.getEventListeners", { objectId: result.objectId });
+            out[expr] = ls.length;
+          }
+          return out;
+        };
+        const before = await listeners();
+        for (let i = 0; i < 2; i += 1) {
+          await page.click(".w3d-enter");
+          await page.waitForFunction(() => document.querySelector('[data-w3d="open"]') || (window.__descallWorld && !document.querySelector("[data-w3d]")), null, { timeout: 240000 });
+          await page.waitForTimeout(800);
+          await page.click(".w3d-leave");
+          await page.waitForFunction(() => !document.querySelector("[data-w3d]") && !window.__descallWorld, null, { timeout: 30000 });
+          await page.waitForTimeout(600);
+        }
+        row.reenter = {
+          cycles: 3,
+          liveEngines: await page.evaluate(() => (window.__descallWorldClass ? window.__descallWorldClass.live : null)),
+          webglContexts: await page.evaluate(() => ({ ...window.__probeGl })),
+          listenersAfterFirstLeave: before,
+          listenersAfterThirdLeave: await listeners(),
+        };
       }
       report[id] = round(row);
       console.log(id, JSON.stringify(report[id], null, 2));

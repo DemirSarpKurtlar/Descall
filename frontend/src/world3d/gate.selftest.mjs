@@ -2,7 +2,7 @@
 // Run: node src/world3d/gate.selftest.mjs
 import assert from "node:assert/strict";
 import { canShowWorld, isWorldAdmin, rendererVerdict, WORLD3D_PUBLIC, detectEnvironment } from "./gate.js";
-import { autoPreset, createGovernor, lowerPreset, PRESETS, resolvePreset } from "./engine/quality.js";
+import { autoPreset, PRESETS, resolvePreset } from "./engine/quality.js";
 
 const admin = { id: "1", username: "demir", is_admin: true };
 const named = { id: "2", username: "admin" };
@@ -41,24 +41,22 @@ assert.deepEqual(rendererVerdict({ webgl2: true, renderer: "SwiftShader", allowS
 assert.deepEqual(detectEnvironment(undefined), { native: false, ua: "", coarsePointer: false, screenShort: 1080 });
 assert.equal(detectEnvironment({ Capacitor: { isNativePlatform: () => true }, navigator: { userAgent: "x" }, screen: { width: 1920, height: 1080 } }).native, true);
 
-// Quality presets.
+// Quality presets. "auto" starts from a sensible medium (also on discrete GPUs: high is a
+// manual choice); software rendering, weak integrated GPUs and 2-core machines get low.
 assert.equal(autoPreset({ software: true }), "low");
 assert.equal(autoPreset({ cores: 2, renderer: "NVIDIA GeForce RTX 4070" }), "low");
-assert.equal(autoPreset({ cores: 12, renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11)" }), "high");
+assert.equal(autoPreset({ cores: 12, renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11)" }), "medium");
 assert.equal(autoPreset({ cores: 8, renderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11)" }), "medium");
 assert.equal(autoPreset({ cores: 4, renderer: "ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11)" }), "low");
 assert.equal(resolvePreset("high", {}).id, "high");
 assert.equal(resolvePreset("auto", { software: true }).id, "low");
 assert.equal(resolvePreset("bogus", { cores: 8 }).id, "medium");
-assert.ok(PRESETS.high.pixelRatio <= 1.5, "pixel ratio cap 1.5");
-assert.equal(lowerPreset("high"), "medium");
-assert.equal(lowerPreset("medium"), "low");
-const gov = createGovernor({ windowFrames: 10 });
-for (let i = 0; i < 9; i += 1) gov.push(50);
-assert.equal(gov.shouldStepDown(), false, "needs a full window");
-gov.push(50);
-assert.equal(gov.shouldStepDown(), true);
-for (let i = 0; i < 10; i += 1) gov.push(16);
-assert.equal(gov.shouldStepDown(), false);
+for (const p of Object.values(PRESETS)) {
+  assert.ok(p.maxPixelRatio <= 1.5, `${p.id}: device pixel ratio cap 1.5`);
+  assert.ok(!(p.fxaa && p.msaa > 1), `${p.id}: one anti-aliasing method, not MSAA + FXAA`);
+  assert.equal(p.ssao, false, `${p.id}: SSAO stays off`);
+}
+assert.ok(PRESETS.medium.maxPixelRatio <= 1.25 && !PRESETS.medium.dof && !PRESETS.medium.mirror, "medium skips the expensive effects");
+assert.ok(PRESETS.medium.bloomScale <= 0.25, "medium bloom on a quarter-size target");
 
 console.log("gate.selftest: ok");

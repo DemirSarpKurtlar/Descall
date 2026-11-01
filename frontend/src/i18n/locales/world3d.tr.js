@@ -30,4 +30,9 @@ export const WORLD3D_TR = {
     no_webgl2: "Bu tarayıcı 3D dünyayı çalıştıramıyor (WebGL 2 yok). Arama devam ediyor.",
     engine: "3D dünya açılamadı. Arama düz görünümde devam ediyor.",
   },
+  enterLoading: "Yükleniyor %{percent}",
+  camera: { label: "Kamera", third: "Üçüncü şahıs", first: "Birinci şahıs", free: "Serbest kamera", fov: "Görüş açısı", sensitivity: "Fare hassasiyeti", invertY: "Dikey bakışı ters çevir", headBob: "Yürürken kafa sallanması", lockHint: "Fareyle etrafa bakmak için tıkla. Esc fareyi bırakır.", freeHint: "Serbest kamera: WASD ile uç, Q ve E aşağı ve yukarı, Shift daha hızlı, R karakterine döner." },
+  perf: { toggle: "Performans göstergesi", title: "Performans", fps: "FPS", low1: "En düşük %1", p95: "Kare süresi p95", p99: "Kare süresi p99", drawCalls: "Çizim çağrısı", triangles: "Üçgen", gpu: "GPU", gpuTime: "GPU süresi", scale: "Çözünürlük", scaleValue: "%{percent} · {width} x {height}", quality: "Kalite", ms: "{value} ms" },
+  help: { title: "Kontroller", close: "Kapat", open: "Kontroller (H)", everywhere: "Her modda", walk: "Yürü", run: "Koş", sit: "Otur veya kalk", emotes: "Emoji çarkı", guitar: "Gitar çal", camera: "Kamerayı değiştir", chat: "Oda sohbetine yaz", help: "Bu yardımı aç veya kapat", clickWalk: "Tıkladığın yere yürü", orbit: "Kamerayı çevir", zoom: "Yakınlaştır", look: "Fareyle etrafa bak", release: "Fareyi bırak", fly: "Uç", flyUpDown: "Aşağı ve yukarı", faster: "Daha hızlı", back: "Karakterine dön" },
+  keys: { shift: "Shift", enter: "Enter", click: "Tıkla", drag: "Sürükle", wheel: "Fare tekerleği", esc: "Esc", arrows: "veya ok tuşları" },
 };

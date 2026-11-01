@@ -41,6 +41,13 @@ export function createClock() {
   };
 }
 
+function copyDiscrete(out, s) {
+  out.state = s.state;
+  out.emote = s.emote;
+  out.emoteSeq = s.emoteSeq;
+  out.seat = s.seat;
+}
+
 export function createSnapshotBuffer({ delayMs = DEFAULT_DELAY_MS } = {}) {
   const items = []; // { t, s } sorted by t
 
@@ -60,48 +67,57 @@ export function createSnapshotBuffer({ delayMs = DEFAULT_DELAY_MS } = {}) {
     while (items.length > MAX_BUFFER) items.shift();
   }
 
-  /** Pose at server time `now - delay`. Returns null before the first snapshot. */
-  function sample(serverNow) {
+  /**
+   * Pose at server time `now - delay`, written into `out` (no allocation: called for every
+   * remote avatar on every frame). Returns `out`, or null before the first snapshot.
+   */
+  function sampleInto(serverNow, out) {
     if (!items.length) return null;
     const rt = serverNow - delayMs;
     // drop snapshots we will never need again (keep one before rt)
     while (items.length > 2 && items[1].t <= rt) items.shift();
     const a = items[0];
+    out.t = rt;
     if (items.length === 1 || rt <= a.t) {
-      return { ...a.s, t: rt, interpolated: false };
+      copyDiscrete(out, a.s);
+      out.x = a.s.x;
+      out.y = a.s.y;
+      out.z = a.s.z;
+      out.yaw = a.s.yaw;
+      out.interpolated = false;
+      return out;
     }
     const b = items[1];
+    copyDiscrete(out, b.s);
     if (rt >= b.t) {
       // ran past the newest snapshot: extrapolate briefly along the last segment, then hold
-      const prev = a;
       const dt = Math.min(EXTRAPOLATE_MS, rt - b.t);
-      const span = Math.max(1, b.t - prev.t);
-      const k = dt / span;
-      return {
-        ...b.s,
-        x: b.s.x + (b.s.x - prev.s.x) * k,
-        y: b.s.y,
-        z: b.s.z + (b.s.z - prev.s.z) * k,
-        yaw: b.s.yaw,
-        t: rt,
-        interpolated: false,
-      };
+      const k = dt / Math.max(1, b.t - a.t);
+      out.x = b.s.x + (b.s.x - a.s.x) * k;
+      out.y = b.s.y;
+      out.z = b.s.z + (b.s.z - a.s.z) * k;
+      out.yaw = b.s.yaw;
+      out.interpolated = false;
+      return out;
     }
     const k = (rt - a.t) / Math.max(1, b.t - a.t);
-    return {
-      ...b.s,
-      x: a.s.x + (b.s.x - a.s.x) * k,
-      y: a.s.y + (b.s.y - a.s.y) * k,
-      z: a.s.z + (b.s.z - a.s.z) * k,
-      yaw: lerpAngle(a.s.yaw, b.s.yaw, k),
-      t: rt,
-      interpolated: true,
-    };
+    out.x = a.s.x + (b.s.x - a.s.x) * k;
+    out.y = a.s.y + (b.s.y - a.s.y) * k;
+    out.z = a.s.z + (b.s.z - a.s.z) * k;
+    out.yaw = lerpAngle(a.s.yaw, b.s.yaw, k);
+    out.interpolated = true;
+    return out;
+  }
+
+  /** Same as sampleInto with a fresh object (tests, one-off reads). */
+  function sample(serverNow) {
+    return sampleInto(serverNow, {});
   }
 
   return {
     push,
     sample,
+    sampleInto,
     get size() {
       return items.length;
     },

@@ -41,6 +41,8 @@ const SECONDS = Number(args.seconds || 12);
 const WIDTH = Number(args.width || 1920);
 const HEIGHT = Number(args.height || 1080);
 const PASSES = String(args.passes || 'cpu,full').split(',');
+// the cpu pass also uses a smaller page so SwiftShader's compositor does not set the pace
+const CPU_VIEW = String(args.cpuViewport || '960x540').split('x').map(Number);
 const BASE = process.env.HARNESS_URL || 'http://127.0.0.1:5199/world3d-harness.html';
 const MOCK_PORT = Number(process.env.WORLD_MOCK_PORT || 4791);
 fs.mkdirSync(OUT, { recursive: true });
@@ -105,7 +107,8 @@ async function run(pass) {
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required',
       '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--enable-precise-memory-info'],
   });
-  const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });
+  const view = pass === 'cpu' ? { width: CPU_VIEW[0], height: CPU_VIEW[1] } : { width: WIDTH, height: HEIGHT };
+  const page = await browser.newPage({ viewport: view, deviceScaleFactor: 1 });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(instrument, GPUS[GPU] || null);
@@ -120,10 +123,10 @@ async function run(pass) {
   const setup = await page.evaluate((mode) => {
     const w = window.__descallWorld;
     if (mode === 'cpu') {
-      if (w.perfLockScale) w.perfLockScale(8);
+      if (w.perfLockScale) w.perfLockScale(4);
       else {
         w.lockQuality = true;
-        w.engine.setHardwareScalingLevel(8);
+        w.engine.setHardwareScalingLevel(4);
       }
     }
     const P = window.__w3dPerf;
@@ -140,7 +143,7 @@ async function run(pass) {
         t: now,
         js: now - begin,
         interval: lastEnd ? now - lastEnd : null,
-        bjsDraws: inst?.drawCallsCounter?.current ?? null,
+        bjsDraws: typeof w.drawCalls === 'number' ? w.drawCalls : inst?.drawCallsCounter?.current ?? null,
         glDraws: P.gl.draws - gl0.draws,
         fb: P.gl.fb - gl0.fb,
         active: w.scene.getActiveMeshes().length,
@@ -229,6 +232,55 @@ async function run(pass) {
   walk(profile.head, []);
   const gcEvents = (trace.traceEvents || []).filter((e) => e.name === 'MinorGC' || e.name === 'MajorGC' || e.name === 'MinorMS');
   const gc = { minor: gcEvents.filter((e) => e.name !== 'MajorGC').length, major: gcEvents.filter((e) => e.name === 'MajorGC').length, ms: r2(gcEvents.reduce((a, e) => a + (e.dur || 0), 0) / 1000) };
+  // engine-only cost: 120 frames stepped by hand in one task (no React, no compositor in
+  // between), JS time and bytes allocated per frame
+  let stepMs = null;
+  let stepBytes = 0;
+  const stepTop = new Map();
+  if (pass === 'cpu') {
+    await cdp.send('HeapProfiler.startSampling', { samplingInterval: 1024, includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true });
+    stepMs = await page.evaluate(() => {
+      const w = window.__descallWorld;
+      w.manualStep(5);
+      const t0 = performance.now();
+      for (let i = 0; i < 120; i += 1) w.manualStep(1);
+      return (performance.now() - t0) / 120;
+    });
+    const stepProfile = (await cdp.send('HeapProfiler.stopSampling')).profile;
+    const walk2 = (n) => {
+      stepBytes += n.selfSize;
+      const k = `${n.callFrame.functionName || '(anon)'} ${(n.callFrame.url || '').split('/').pop().split('?')[0]}:${n.callFrame.lineNumber + 1}`;
+      if (n.selfSize) stepTop.set(k, (stepTop.get(k) || 0) + n.selfSize);
+      for (const c of n.children || []) walk2(c);
+    };
+    walk2(stepProfile.head);
+  }
+  // what the automatic quality governor does when the frame rate drops: before this work
+  // it rebuilt the post-processing pipeline with a lower preset, now it changes the
+  // render scale only. Measures that one step: time of the call, the next 6 frames
+  // (stepped by hand, compile time included), shader programs linked.
+  const govern = await page.evaluate(() => {
+    const w = window.__descallWorld;
+    const P = window.__w3dPerf;
+    const link0 = P.gl.link;
+    const t0 = performance.now();
+    let kind;
+    if (typeof w.perfGovernorStep === 'function') {
+      kind = 'resolution-step';
+      w.perfGovernorStep();
+    } else {
+      kind = 'preset-rebuild';
+      w.setQuality({ id: 'low', pixelRatio: 0.75, bloom: false, ssao: false, dof: false, fxaa: true, msaa: 1, mirror: false, maxAvatarsAnimated: 8, shadowBlob: true });
+    }
+    const callMs = performance.now() - t0;
+    const js = [];
+    for (let i = 0; i < 6; i += 1) {
+      const a = performance.now();
+      w.manualStep(1);
+      js.push(performance.now() - a);
+    }
+    return { kind, callMs, worstNextFramesJsMs: Math.max(...js), programsLinked: P.gl.link - link0 };
+  });
   await browser.close();
 
   const frames = data.frames;
@@ -250,7 +302,7 @@ async function run(pass) {
     pass,
     gpu: GPU,
     qualityChoice: QUALITY,
-    viewport: `${WIDTH}x${HEIGHT}`,
+    viewport: `${view.width}x${view.height}`,
     qualityStart: setup.quality,
     qualityEnd: data.quality,
     render: `${data.renderW}x${data.renderH} (scale ${r2(data.scale)})`,
@@ -284,7 +336,12 @@ async function run(pass) {
     shaderProgramsLinkedAfterLoad: data.glAfterLoad.link,
     shadersCompiledAfterLoad: data.glAfterLoad.compile,
     texUploadsAfterLoad: data.glAfterLoad.tex,
+    governorStep: { kind: govern.kind, callMs: r2(govern.callMs), worstNextFramesJsMs: r2(govern.worstNextFramesJsMs), programsLinked: govern.programsLinked },
+    engineStepMsPerFrame: r2(stepMs),
+    engineStepAllocKBPerFrame: stepMs == null ? null : r2(stepBytes / 1024 / 125),
+    engineStepTopAlloc: [...stepTop.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => `${(v / 1024 / 125).toFixed(2)} KB/frame ${k}`),
     allocKBPerFrame: r2(allocBytes / 1024 / Math.max(1, allocFrames)),
+    allocKBPerSec: r2(allocBytes / 1024 / 6),
     allocFrames,
     gcMinor: gc.minor,
     gcMajor: gc.major,

@@ -58,6 +58,11 @@ const {
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile } = require('./appProtocolPath.cjs');
+const { applyWorldGpuPreference, writeMarker: writeWorldGpuMarker } = require('./gpuPreference.cjs');
+
+// 3D world: discrete GPU on Windows dual-GPU laptops once this user has opened the world
+// (see gpuPreference.cjs; never in smoke runs, which use software GL on purpose).
+applyWorldGpuPreference({ app, fs, path, smoke: smokeLaunch || smokeBoot });
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 
@@ -1281,7 +1286,8 @@ function createMainWindow() {
   // 'speaker-selection' (2.10.113): without it Chromium rejects
   // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
   // silently did nothing.
-  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
+  // pointerLock: first-person mouse look in the 3D world (click to look, Esc releases)
+  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection', 'pointerLock'];
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(MEDIA_PERMISSIONS.includes(permission));
   });
@@ -2161,6 +2167,13 @@ ipcMain.handle('check-for-updates', async () => {
     log.error('[updater] Manual check failed:', err?.message);
     return { success: false, error: err?.message };
   }
+});
+
+ipcMain.on('world3d:prefer-high-performance-gpu', (event) => {
+  if (!mainWindow || mainWindow.isDestroyed?.() || event.sender !== mainWindow.webContents) return;
+  try {
+    if (writeWorldGpuMarker(app.getPath('userData'), { fs, path })) log.info('[world3d] discrete GPU requested from the next launch');
+  } catch (_) { /* ignore */ }
 });
 
 ipcMain.on('voice:set-busy', (event, busy) => {

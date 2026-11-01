@@ -62,6 +62,20 @@ const e = createSnapshotBuffer();
 for (let i = 0; i < 500; i += 1) e.push(i * 100, snap(i, 0));
 assert.ok(e.size <= 32);
 
+// sampleInto reuses the caller's object (no allocation per frame) and matches sample().
+const f = createSnapshotBuffer({ delayMs: 100 });
+for (let i = 0; i <= 5; i += 1) f.push(1000 + i * 100, snap(i, i, i * 0.1, i % 3));
+const reuse = {};
+for (let t = 1000; t <= 1800; t += 13) {
+  const got = f.sampleInto(t, reuse);
+  assert.equal(got, reuse, "same object back");
+  const ref = createSnapshotBuffer({ delayMs: 100 });
+  for (let i = 0; i <= 5; i += 1) ref.push(1000 + i * 100, snap(i, i, i * 0.1, i % 3));
+  const want = ref.sample(t);
+  for (const k of ["x", "y", "z", "yaw", "state", "emote", "emoteSeq", "seat", "interpolated"]) near(Number(got[k]), Number(want[k]), 1e-9);
+}
+assert.equal(createSnapshotBuffer().sampleInto(0, reuse), null);
+
 // Clock: keeps the least delayed sample, maps local -> server time.
 const clock = createClock();
 clock.observe(10_000, 1_000); // server ahead by 9000 minus delay

@@ -30,4 +30,9 @@ export const WORLD3D_EN = {
     no_webgl2: "This browser can't run the 3D world (WebGL 2 is missing). The call keeps going.",
     engine: "The 3D world could not start. The call keeps going in the flat view.",
   },
+  enterLoading: "Loading {percent}%",
+  camera: { label: "Camera", third: "Third person", first: "First person", free: "Free cam", fov: "Field of view", sensitivity: "Mouse sensitivity", invertY: "Invert vertical look", headBob: "Head bob when walking", lockHint: "Click to look around with the mouse. Esc frees the mouse.", freeHint: "Free cam: WASD to fly, Q and E down and up, Shift faster, R back to your avatar." },
+  perf: { toggle: "Performance overlay", title: "Performance", fps: "FPS", low1: "1% low", p95: "Frame time p95", p99: "Frame time p99", drawCalls: "Draw calls", triangles: "Triangles", gpu: "GPU", gpuTime: "GPU time", scale: "Resolution", scaleValue: "{percent}% · {width} x {height}", quality: "Quality", ms: "{value} ms" },
+  help: { title: "Controls", close: "Close", open: "Controls (H)", everywhere: "Everywhere", walk: "Walk", run: "Run", sit: "Sit down or stand up", emotes: "Emote wheel", guitar: "Play the guitar", camera: "Switch camera", chat: "Write in the room chat", help: "Show or hide this help", clickWalk: "Walk to the spot you click", orbit: "Turn the camera", zoom: "Zoom", look: "Take the mouse to look around", release: "Free the mouse", fly: "Fly", flyUpDown: "Down and up", faster: "Faster", back: "Back to your avatar" },
+  keys: { shift: "Shift", enter: "Enter", click: "Click", drag: "Drag", wheel: "Mouse wheel", esc: "Esc", arrows: "or arrow keys" },
 };
