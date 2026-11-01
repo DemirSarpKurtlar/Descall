@@ -7,5 +7,17 @@
       "mcp__Supabase__list_tables",
       "mcp__Supabase__list_projects"
     ]
+  },
+  "extraKnownMarketplaces": {
+    "ruflo": {
+      "source": {
+        "source": "github",
+        "repo": "ruvnet/claude-flow"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ruflo-core@ruflo": true,
+    "ruflo-swarm@ruflo": true
   }
 }
