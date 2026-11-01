@@ -18,9 +18,11 @@ import { CreateDisc } from "@babylonjs/core/Meshes/Builders/discBuilder";
 import { CELLS } from "./look.js";
 import { lerpAngle } from "../net/snapshotBuffer.js";
 
-// Nominal speeds of the authored clips (stride length / cycle time, see build_character.py).
-export const WALK_NOMINAL = 0.96;
-export const RUN_NOMINAL = 2.33;
+// The model is authored ~1.5 m tall; the drafts show the cast a bit larger next to the sofa.
+export const AVATAR_SCALE = 1.15;
+// Nominal ground speeds of the authored clips (stride / cycle, build_character.py) at that scale.
+export const WALK_NOMINAL = 0.96 * AVATAR_SCALE;
+export const RUN_NOMINAL = 2.33 * AVATAR_SCALE;
 export const WALK_SPEED = 1.35;
 export const RUN_SPEED = 3.0;
 
@@ -88,6 +90,7 @@ export class AvatarController {
     this.look = look;
     this.yawOffset = yawOffset;
     this.holder = new TransformNode(`avatar_${id}`, scene);
+    this.holder.scaling.setAll(AVATAR_SCALE);
     const inst = asset.container.instantiateModelsToScene((n) => `${id}:${n}`, false, { doNotInstantiate: true });
     this.inst = inst;
     for (const r of inst.rootNodes) r.parent = this.holder;
@@ -144,7 +147,7 @@ export class AvatarController {
     this.yaw = 0;
     this.seated = false;
     this.position = new Vector3(0, 0, 0);
-    this.headOffset = 1.68;
+    this.headOffset = 1.68 * AVATAR_SCALE;
     this.setTarget("idle", 1, true);
   }
 
@@ -192,8 +195,10 @@ export class AvatarController {
     const seated = this.state === "sit" || this.state === "sitDown";
     if (seated) clip = SEATED_EMOTES[name] || "sitCheer";
     if (!this.groups[clip]) return;
+    const same = this.emote?.clip === clip && this.groups[clip].playing && this.groups[clip].w > 0.5;
     this.emote = { name, clip };
-    this.restart(clip);
+    // the same looping emote again just keeps going (no snap back to the first frame)
+    if (!same || !LOOPS.has(clip)) this.restart(clip);
     this.emoteUntil = nowSec + (EMOTE_SECONDS[name] || 2);
   }
 
@@ -303,7 +308,7 @@ export class AvatarController {
 
   headPosition(out) {
     const seated = this.state === "sit" || this.state === "sitDown";
-    out.set(this.position.x, this.position.y + (seated ? this.headOffset - 0.2 : this.headOffset), this.position.z);
+    out.set(this.position.x, this.position.y + (seated ? this.headOffset - 0.24 : this.headOffset), this.position.z);
     return out;
   }
 

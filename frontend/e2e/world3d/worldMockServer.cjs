@@ -68,33 +68,40 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`world mock on http://127.0.0.1:${PORT} scenario=${SCENARIO}`);
   if (SCENARIO === 'none') return;
   if (SCENARIO === 'hero') {
-    // positions only matter until the client snaps seated avatars onto the seat
-    bots.push(bot('ayse', () => ({ x: 1.7, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaL, emote: EMOTE.cheer, emoteEvery: 3.6 })));
+    // Babylon world space: x = -blenderX, z = -blenderY. Seated bots snap onto their seat.
+    bots.push(bot('ayse', () => ({ x: 1.7, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaL, emote: EMOTE.cheer, emoteEvery: 2.6 })));
     bots.push(bot('mert', () => ({ x: 2.5, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaM, emote: EMOTE.clap, emoteEvery: 3.0 })));
-    bots.push(bot('zeynep', () => ({ x: 3.4, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaR, emote: EMOTE.cheer, emoteEvery: 3.6 })));
-    bots.push(bot('can', () => ({ x: 4.6, z: 1.3, yaw: 0, state: STATE.sit, seat: SEAT.sofa2a })));
+    bots.push(bot('zeynep', () => ({ x: 3.4, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaR, emote: EMOTE.cheer, emoteEvery: 2.6 })));
+    bots.push(bot('can', () => ({ x: -1.28, z: -2.32, yaw: 0.6, state: STATE.sit, seat: SEAT.beanbag })));
     bots.push(bot('elif', (t) => {
-      // walk an ellipse around the rug, 1.3 m/s
+      // walking (about 0.6 m/s)
       const w = t * 0.42;
-      const x = 3.2 + Math.cos(w) * 2.0;
-      const z = 3.4 + Math.sin(w) * 1.55;
+      const x = -3.2 + Math.cos(w) * 2.0;
+      const z = -3.75 + Math.sin(w) * 1.5;
       const dx = -Math.sin(w) * 2.0;
       const dz = Math.cos(w) * 1.55;
       return { x, z, yaw: Math.atan2(dx, dz), state: STATE.walk };
     }));
+  } else if (SCENARIO === 'lineup') {
+    // character sheet: everyone in a row facing the camera (compare with scene-5.jpg)
+    ['ayse', 'mert', 'zeynep', 'can', 'elif'].forEach((id, i) => {
+      const x = -4.85 + (i + (i >= 2 ? 1 : 0)) * 0.68;
+      bots.push(bot(id, () => ({ x, z: -3.3, yaw: 0, state: STATE.idle })));
+    });
   } else {
     let k = 0;
     for (const id of ['ayse', 'mert', 'zeynep', 'can', 'elif']) {
       const a = (k += 1) * 1.2;
-      bots.push(bot(id, (t) => ({ x: 3 + Math.cos(a) * 1.8, z: 3 + Math.sin(a) * 1.4, yaw: a + Math.PI, state: STATE.idle, emote: t > 2 && k % 2 ? EMOTE.wave : 0, emoteEvery: 4 })));
+      bots.push(bot(id, (t) => ({ x: -3.2 + Math.cos(a) * 1.8, z: -3.6 + Math.sin(a) * 1.4, yaw: a + Math.PI, state: STATE.idle, emote: t > 2 && k % 2 ? EMOTE.wave : 0, emoteEvery: 4 })));
     }
   }
-  setTimeout(() => {
+  // the draft's chat lines, repeated so a client that joins later still sees them
+  const say = () => {
     bots[2]?.c.emit('world:chat', { text: 'gol gol gol' });
-  }, 2500);
-  setTimeout(() => {
-    bots[3]?.c.emit('world:chat', { text: 'bir şarkı daha?' });
-  }, 3200);
+    setTimeout(() => bots[3]?.c.emit('world:chat', { text: 'bir şarkı daha?' }), 700);
+  };
+  setTimeout(say, 2500);
+  setInterval(say, 12000);
 });
 
 process.on('SIGTERM', () => { bots.forEach((b) => b.stop()); io.close(); server.close(); process.exit(0); });

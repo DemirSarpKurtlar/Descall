@@ -64,7 +64,7 @@ def collider(name, size, loc, rot_z=0.0):
 
 def make_materials():
     M = {}
-    M["floor"] = textured("floor", os.path.join(ACG, "WoodFloor051"), "WoodFloor051", tint="#c39a7c", rough=0.45, scale=0.55)
+    M["floor"] = textured("floor", os.path.join(ACG, "WoodFloor051"), "WoodFloor051", tint="#b39684", rough=0.45, scale=0.55)
     M["wall"] = textured("wall", os.path.join(ACG, "Plaster001"), "Plaster001", tint="#ead8e8", rough=0.9, scale=0.35, normal_strength=0.25)
     M["wall_window"] = textured("wall_window", os.path.join(ACG, "Plaster001"), "Plaster001", tint="#cfc0e0", rough=0.9, scale=0.35, normal_strength=0.25)
     M["ceiling"] = principled("ceiling", "#b6a6cf", 0.95)
@@ -80,7 +80,7 @@ def make_materials():
     M["leg_dark"] = principled("leg_dark", "#26222e", 0.5, metal=0.3)
     M["table_top"] = principled("table_top", "#2f2a3a", 0.45)
     M["table_leg"] = principled("table_leg", "#1d1a24", 0.5, metal=0.3)
-    M["rug"] = textured("rug", os.path.join(ACG, "Carpet016"), "Carpet016", tint="#f1dcd8", rough=1.0, scale=1.6, normal_strength=0.9)
+    M["rug"] = textured("rug", os.path.join(ACG, "Carpet016"), "Carpet016", tint="#dcc6c4", rough=1.0, scale=1.6, normal_strength=0.9)
     M["beanbag"] = principled("beanbag", "#e0559c", 0.85)
     M["wood"] = textured("wood", os.path.join(ACG, "Wood049"), "Wood049", tint="#e7c7a6", rough=0.6, scale=0.8, rotate=math.pi / 2)
     M["wood_dark"] = principled("wood_slat", "#b38d6c", 0.6)
@@ -480,10 +480,10 @@ def build_lights():
     light("L_fill_front", "AREA", (3.4, -1.2, 2.2), "#d9c4ff", 160, size=(4.0, 1.5), rot=(-80, 0, 0))
     # lamps
     light("L_lamp1", "POINT", (RW - 0.26, 4.8, 1.2), "#ffb066", 420, size=0.12)
-    light("L_globe", "POINT", (RW - 0.32, 2.2, 0.92), "#ffc58a", 420, size=0.16)
+    light("L_globe", "POINT", (RW - 0.32, 2.2, 0.92), "#ffc58a", 230, size=0.16)
     light("L_lava", "POINT", (3.57, 3.8, 0.72), "#ff5fd2", 28, size=0.05)
     # warm wash on the TV wall (the draft's pink/peach glow)
-    light("L_wall_warm", "AREA", (RW - 0.6, 2.4, 2.6), "#ffb0bc", 130, size=(0.6, 2.5), rot=(0, -60, 0))
+    light("L_wall_warm", "AREA", (RW - 0.6, 2.4, 2.6), "#ffb0bc", 55, size=(0.6, 2.5), rot=(0, -60, 0))
 
 
 def build_camera():
@@ -593,7 +593,7 @@ def bake_group(name, objs, size, samples, out_dir, margin=6):
     return joined
 
 
-EXPOSURE = 1.45
+EXPOSURE = 1.35
 
 
 def save_display(arr, path):

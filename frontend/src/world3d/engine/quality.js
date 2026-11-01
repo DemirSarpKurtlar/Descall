@@ -1,12 +1,14 @@
 /**
  * Quality presets for the 3D world and auto detection (pure).
  * Budget (desktop, Intel Iris Xe class): 60 fps target, 30 fps floor, pixel ratio <= 1.5.
+ * SSAO stays off: the room has baked AO, avatars get blob shadows, and SSAO2 + the
+ * default pipeline rendered black frames in testing (Babylon 9.33, WebGL2).
  */
 
 export const PRESETS = {
   low: { id: "low", pixelRatio: 0.75, bloom: false, ssao: false, dof: false, fxaa: true, msaa: 1, mirror: false, maxAvatarsAnimated: 8, shadowBlob: true },
   medium: { id: "medium", pixelRatio: 1.0, bloom: true, ssao: false, dof: false, fxaa: true, msaa: 1, mirror: false, maxAvatarsAnimated: 16, shadowBlob: true },
-  high: { id: "high", pixelRatio: 1.5, bloom: true, ssao: true, dof: true, fxaa: true, msaa: 4, mirror: true, maxAvatarsAnimated: 16, shadowBlob: true },
+  high: { id: "high", pixelRatio: 1.5, bloom: true, ssao: false, dof: true, fxaa: true, msaa: 4, mirror: true, maxAvatarsAnimated: 16, shadowBlob: true },
 };
 
 export const QUALITY_IDS = ["auto", "low", "medium", "high"];

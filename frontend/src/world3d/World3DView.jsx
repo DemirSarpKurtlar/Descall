@@ -67,7 +67,7 @@ function NameTag({ member, speaking, activity, tagRef }) {
     <div ref={tagRef} className={`w3d-tag${speaking ? " is-talk" : ""}`} data-id={member.id}>
       {speaking ? <span className="w3d-dot" aria-hidden /> : null}
       <span className="w3d-tag-name">{member.name}</span>
-      {activity ? <span className="w3d-tag-act">{` · ${activity}`}</span> : null}
+      {activity ? <span className="w3d-tag-act">{`· ${activity}`}</span> : null}
     </div>
   );
 }

@@ -25,7 +25,7 @@ async function main() {
   await page.goto(`${BASE}?port=4791&me=demir&name=Demir&speakers=ayse,zeynep&quality=${quality}&lang=tr`, { waitUntil: 'load' });
   const t0 = Date.now();
   const dump = setInterval(() => { while (logs.length) console.log(logs.shift().slice(0, 400)); }, 3000);
-  await page.waitForFunction(() => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= 2, null, { timeout: 240000 });
+  await page.waitForFunction((min) => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= min, Number(process.env.MIN_AVATARS || 2), { timeout: 240000 });
   console.log('world ready in', Date.now() - t0, 'ms');
   clearInterval(dump);
   const shot = async (name) => {
@@ -45,7 +45,36 @@ async function main() {
     }
   };
   await step(1);
-  if (MODE === 'exposures') {
+  // step cheaply, then render the final frames with the high preset (bloom, SSAO, DOF, mirror floor)
+  const finalCfg = { id: 'high', pixelRatio: 1.0, bloom: true, ssao: false, dof: true, fxaa: true, msaa: 4, mirror: true, maxAvatarsAnimated: 16, shadowBlob: true, ...JSON.parse(process.env.FINALCFG || '{}') };
+  const upgrade = () => process.env.FINAL === 'high' && ev((cfg) => {
+    const w = window.__descallWorld;
+    w.lockQuality = true;
+    w.setQuality(cfg);
+  }, finalCfg);
+  if (MODE === 'dbg') {
+    for (let k = 0; k < 4; k += 1) {
+      await step(15, 40);
+      const d = await ev(() => {
+        const w = window.__descallWorld;
+        const out = {};
+        for (const [id, a] of w.avatars) {
+          const r = w.remote.get(id);
+          out[id] = { st: a.state, em: a.emote && a.emote.clip, until: a.emoteUntil && Math.round(a.emoteUntil - w.nowMs() / 1000), seq: r && r.lastEmoteSeq, last: r && r.last && [r.last.state, r.last.emote, r.last.emoteSeq], w: Object.entries(a.groups).filter(([, g]) => g.w > 0.05).map(([n, g]) => n + ':' + g.w.toFixed(2)).join(' ') };
+        }
+        return out;
+      });
+      console.log(JSON.stringify(d));
+    }
+    await shot('dbg.png');
+  } else if (MODE === 'info') {
+    const info = await ev(() => {
+      const w = window.__descallWorld;
+      const r = (v) => Math.round(v * 100) / 100;
+      return { bounds: w.bounds, seats: w.seats.map((s) => [s.name, r(s.pos.x), r(s.pos.z), r(s.yaw)]), spawns: w.spawns.map((p) => [r(p.x), r(p.z)]), hero: w.hero && [r(w.hero.pos.x), r(w.hero.pos.y), r(w.hero.pos.z)] };
+    });
+    console.log(JSON.stringify(info));
+  } else if (MODE === 'exposures') {
     await ev(() => window.__descallWorld.sitOn(2));
     await step(40, 30);
     await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-tags,.w3d-net{display:none!important}' });
@@ -59,30 +88,53 @@ async function main() {
     await shot('probe.png');
   } else if (MODE === 'hero' || MODE === 'overlay') {
     // local player takes the draft's guitar seat (second sofa, back to the camera)
-    await ev(() => window.__descallWorld.sitOn(2));
+    await ev(() => window.__descallWorld.sitOn(1));
     await step(75, 40);
     if (MODE === 'hero') {
       await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-tags,.w3d-net{display:none!important}' });
-      await step(1);
+      await upgrade();
+      await step(2);
       await shot('hero-1600x900.png');
     } else {
+      await upgrade();
       await page.keyboard.press('g');
       await step(3, 100);
       await shot('overlay-1600x900.png');
     }
+  } else if (MODE === 'lineup') {
+    await ev(() => {
+      const w = window.__descallWorld;
+      w.local.pos.set(-4.85 + 2 * 0.68, 0, -3.3);
+      w.local.yaw = 0;
+      w.cameraLocked = true;
+      w.camera.setTarget(new w.local.pos.constructor(-3.15, 0.95, -3.3));
+      w.camera.alpha = Math.PI / 2;
+      w.camera.beta = 1.48;
+      w.camera.radius = 4.1;
+    });
+    await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-net{display:none!important}' });
+    await step(45, 40);
+    await shot('lineup.png');
+    await ev(() => { const w = window.__descallWorld; w.camera.setTarget(new w.local.pos.constructor(-3.49, 1.25, -3.3)); w.camera.radius = 1.7; });
+    await step(2);
+    await shot('closeup.png');
   } else if (MODE === 'walk') {
-    await ev(() => { const w = window.__descallWorld; w.camera.radius = 4.2; w.camFollow = 1; });
+    // click-to-move to the front of the sofa, then E (sit). Same code path as a floor click.
+    await page.addStyleTag({ content: '.w3d-chat,.w3d-net{display:none!important}' });
+    await ev(() => {
+      const w = window.__descallWorld;
+      w.camera.radius = 3.9;
+      w.camFollow = 1;
+      w.moveTarget = new w.local.pos.constructor(-1.75, 0, -5.05);
+    });
     let n = 0;
-    await page.keyboard.down('w');
-    for (let i = 0; i < 36; i += 1) { await step(2); await shot(`walk-${String(n++).padStart(3, '0')}.png`); }
-    await page.keyboard.up('w');
-    await step(10);
+    for (let i = 0; i < 46; i += 1) { await step(2); await shot(`walk-${String(n++).padStart(3, '0')}.png`); }
     await ev(() => window.__descallWorld.toggleSit());
-    for (let i = 0; i < 28; i += 1) { await step(2); await shot(`walk-${String(n++).padStart(3, '0')}.png`); }
+    for (let i = 0; i < 26; i += 1) { await step(2); await shot(`walk-${String(n++).padStart(3, '0')}.png`); }
   }
   const stats = await ev(() => {
     const w = window.__descallWorld;
-    return { fps: w.engine.getFps(), avatars: w.avatars.size, quality: w.quality.id, drawCalls: w.engine._drawCalls?.current, activeMeshes: w.scene.getActiveMeshes().length, totalVertices: w.scene.getTotalVertices(), activeIndices: w.scene.getActiveIndices() };
+    return { ...w.stats(), avatars: w.avatars.size, quality: w.quality.id, totalVertices: w.scene.getTotalVertices() };
   });
   console.log('stats', JSON.stringify(stats));
   fs.writeFileSync(path.join(OUT, `log-${MODE}.txt`), logs.join('\n') + `\nstats ${JSON.stringify(stats)}\n`);

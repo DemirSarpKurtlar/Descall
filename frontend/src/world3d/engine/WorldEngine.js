@@ -28,6 +28,7 @@ import { SSAO2RenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipe
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture";
 import { Plane } from "@babylonjs/core/Maths/math.plane";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
+import { SceneInstrumentation } from "@babylonjs/core/Instrumentation/sceneInstrumentation";
 import "@babylonjs/core/Culling/ray";
 import "@babylonjs/core/Animations/animatable";
 import "@babylonjs/core/Rendering/depthRendererSceneComponent";
@@ -96,6 +97,8 @@ export class WorldEngine {
     engine.setHardwareScalingLevel(1 / Math.min(1.5, (window.devicePixelRatio || 1) * this.quality.pixelRatio));
     const scene = new Scene(engine);
     this.scene = scene;
+    this.instrumentation = new SceneInstrumentation(scene);
+    this.instrumentation.captureFrameTime = true;
     scene.clearColor = new Color4(0.04, 0.03, 0.09, 1);
     scene.skipPointerMovePicking = true;
     scene.autoClear = true;
@@ -113,7 +116,7 @@ export class WorldEngine {
     cam.angularSensibilityY = 1400;
     cam.inertia = 0.82;
     cam.fovMode = Camera.FOVMODE_HORIZONTAL_FIXED;
-    cam.fov = 1.287; // 73.7 deg horizontal, same as the hero render (24 mm on 36 mm)
+    cam.fov = 1.211; // 69.4 deg horizontal, same as the hero render (26 mm on 36 mm)
     cam.attachControl(this.canvas, true);
     this.camera = cam;
 
@@ -176,6 +179,8 @@ export class WorldEngine {
         if ("unlit" in mat) mat.unlit = true;
         mat.backFaceCulling = true;
         if (mat.albedoTexture) mat.albedoTexture.anisotropicFilteringLevel = 8;
+        // grade: the bake came out a little red on the planks; pull them toward the draft's brown
+        if (name === "FLOOR" && "albedoColor" in mat) mat.albedoColor = new Color3(0.86, 0.86, 0.98);
       } else if (mname.startsWith("EMIT_")) {
         if ("unlit" in mat) mat.unlit = false;
         const lvl = EMISSIVE_LEVELS[mname] ?? 1.5;
@@ -261,14 +266,14 @@ export class WorldEngine {
     const q = this.quality;
     scene.imageProcessingConfiguration.toneMappingEnabled = true;
     scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    scene.imageProcessingConfiguration.exposure = 1.32;
+    scene.imageProcessingConfiguration.exposure = 1.15;
     scene.imageProcessingConfiguration.contrast = 1.12;
     const pipe = new DefaultRenderingPipeline("post", true, scene, [this.camera]);
     pipe.samples = q.msaa;
     pipe.imageProcessingEnabled = true;
     pipe.imageProcessing.toneMappingEnabled = true;
     pipe.imageProcessing.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    pipe.imageProcessing.exposure = 1.32;
+    pipe.imageProcessing.exposure = 1.15;
     pipe.imageProcessing.contrast = 1.12;
     pipe.imageProcessing.vignetteEnabled = true;
     pipe.imageProcessing.vignetteWeight = 1.4;
@@ -582,6 +587,8 @@ export class WorldEngine {
       this.frame();
       this.engine.endFrame();
     }
+    // wait for the GPU (software GL queues frames far ahead otherwise)
+    this.engine._gl?.finish?.();
   }
 
   frame() {
@@ -600,7 +607,7 @@ export class WorldEngine {
       this.cb.onStats?.({
         fps: Math.round(this.engine.getFps()),
         frameMs: this.governor.average(),
-        drawCalls: this.engine._drawCalls?.current ?? null,
+        drawCalls: this.instrumentation?.drawCallsCounter.current ?? null,
         meshes: this.scene.getActiveMeshes().length,
         avatars: this.avatars.size,
         quality: this.quality.id,
@@ -747,6 +754,7 @@ export class WorldEngine {
   }
 
   updateCamera(dt) {
+    if (this.cameraLocked) return;
     const cam = this.camera;
     const self = this.avatars.get(this.selfId);
     if (!self) return;
@@ -789,7 +797,10 @@ export class WorldEngine {
   stats() {
     return {
       fps: this.engine?.getFps?.() ?? 0,
-      drawCalls: this.engine?._drawCalls?.current ?? null,
+      drawCalls: this.instrumentation?.drawCallsCounter.current ?? null,
+      frameMs: this.instrumentation?.frameTimeCounter.lastSecAverage ?? null,
+      activeTriangles: Math.round((this.scene?.getActiveIndices?.() || 0) / 3),
+      activeMeshes: this.scene?.getActiveMeshes?.().length ?? 0,
     };
   }
 
@@ -797,6 +808,7 @@ export class WorldEngine {
     if (this.disposed) return;
     this.disposed = true;
     try {
+      this.instrumentation?.dispose();
       this.unbindKeys?.();
       this.unbindVisibility?.();
       window.removeEventListener("resize", this.onResize);
