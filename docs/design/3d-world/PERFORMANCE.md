@@ -99,7 +99,7 @@ the old code, "after" = world open now.
 | --- | --- | --- | --- | --- |
 | `<video>` elements playing under the world | 5 | 0 | 2 | 0 |
 | video frames presented / s | 5.8 | 0 | 0.9 | 0 |
-| `backdrop-filter` elements in the call surface | 28 visible on the page, all under the canvas | 0 | 30 | 0 |
+| `backdrop-filter` elements in the call surface + world overlay | 10 + 4 | 0 + 0 | 17 + 4 | 0 + 0 |
 | `<audio>` elements (call audio, screen-share audio) | 2 | 2 | 1 | 1 |
 | DOM nodes | 540 | 413 | 503 | 378 |
 
