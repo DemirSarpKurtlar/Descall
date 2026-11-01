@@ -26,10 +26,11 @@ export const RUN_NOMINAL = 2.33 * AVATAR_SCALE;
 export const WALK_SPEED = 1.35;
 export const RUN_SPEED = 3.0;
 
-const LOOPS = new Set(["idle", "walk", "run", "sit", "dance", "cheer", "sitCheer"]);
-const EMOTE_CLIPS = { wave: "wave", dance: "dance", clap: "clap", laugh: "laugh", jump: "jump", cheer: "cheer" };
-const SEATED_EMOTES = { wave: "sitWave", clap: "sitClap", laugh: "sitLaugh", jump: "sitCheer", cheer: "sitCheer", dance: "sitCheer" };
-const EMOTE_SECONDS = { wave: 1.95, dance: 6.0, clap: 1.6, laugh: 2.0, jump: 1.2, cheer: 4.0 };
+const LOOPS = new Set(["idle", "walk", "run", "sit", "dance", "cheer", "sitCheer", "guitar", "sitGuitar"]);
+const EMOTE_CLIPS = { wave: "wave", dance: "dance", clap: "clap", laugh: "laugh", jump: "jump", cheer: "cheer", guitar: "guitar" };
+const SEATED_EMOTES = { wave: "sitWave", clap: "sitClap", laugh: "sitLaugh", jump: "sitCheer", cheer: "sitCheer", dance: "sitCheer", guitar: "sitGuitar" };
+// guitar plays until the person moves, stands up or stops it
+const EMOTE_SECONDS = { wave: 1.95, dance: 6.0, clap: 1.6, laugh: 2.0, jump: 1.2, cheer: 4.0, guitar: 36000 };
 
 export async function loadAvatarAsset(scene, url) {
   const container = await LoadAssetContainerAsync(url, scene, { pluginExtension: ".glb" });
@@ -105,12 +106,28 @@ export class AvatarController {
       mat.roughness = 0.62;
       mat.maxSimultaneousLights = 6;
       mat.environmentIntensity = 0.55;
+      // soft toon-PBR look: fabric-like sheen reads as a gentle lavender rim light
+      if (mat.sheen) {
+        mat.sheen.isEnabled = true;
+        mat.sheen.intensity = 0.55;
+        mat.sheen.color = Color3.FromHexString("#d6c8ff");
+        mat.sheen.roughness = 0.45;
+      }
     } else {
       mat.diffuseTexture = this.palette;
     }
     this.material = mat;
-    const show = new Set(["body", "face", `hair_${look.hair}`, `extra_${look.outfit}`, ...look.accessories.map((a) => `acc_${a}`)]);
-    if (look.accessories.includes("cap")) show.delete(`hair_${look.hair}`), show.add("hair_spiky");
+    const show = new Set(["body", "face", `hair_${look.hair}`, ...(look.outfit === "sweater" ? [] : [`extra_${look.outfit}`]), ...look.accessories.map((a) => `acc_${a}`)]);
+    // eyes, brows and mouth: glossy (big dark eyes with a sharp highlight)
+    this.faceMaterial = mat.clone(`avatarFace_${id}`);
+    if ("roughness" in this.faceMaterial) {
+      // a cloned DynamicTexture would come back empty: share the palette itself
+      this.faceMaterial.albedoTexture = this.palette;
+      this.faceMaterial.roughness = 0.16;
+      if (this.faceMaterial.sheen) this.faceMaterial.sheen.isEnabled = false;
+    }
+    // the cap covers the hair completely (no hair poking through the crown)
+    if (look.accessories.includes("cap")) show.delete(`hair_${look.hair}`);
     for (const m of this.meshes) {
       m.material = mat;
       m.isPickable = false;
@@ -118,15 +135,12 @@ export class AvatarController {
       const visible = show.has(part);
       m.setEnabled(visible);
       m.alwaysSelectAsActiveMesh = false;
-      if (part === "face") this.face = m;
-      if (visible) m.metadata = { ...(m.metadata || {}), avatarId: this.id };
-    }
-    if (look.accessories.includes("cap")) {
-      // hair under the cap: keep the short cut and lower it
-      for (const m of this.meshes) {
-        const part = String(m.name).split(":").pop();
-        if (part.startsWith("hair_") && part !== "hair_spiky") m.setEnabled(false);
+      if (part === "face") {
+        this.face = m;
+        m.material = this.faceMaterial;
       }
+      if (part === "acc_guitar") this.guitar = m;
+      if (visible) m.metadata = { ...(m.metadata || {}), avatarId: this.id };
     }
     this.shadow = blobShadow(scene, `shadow_${id}`);
     this.groups = {};
@@ -232,13 +246,26 @@ export class AvatarController {
       }
     }
     if (this.emote) {
-      if (now > this.emoteUntil || this.speed > 0.2) {
+      const seatedNow = st === "sit" || st === "sitDown";
+      const seatedClip = this.emote.clip.startsWith("sit");
+      if (seatedClip !== seatedNow && now <= this.emoteUntil) {
+        // sat down or stood up mid-emote: switch to the matching variant
+        const clip = seatedNow ? SEATED_EMOTES[this.emote.name] || "sitCheer" : EMOTE_CLIPS[this.emote.name];
+        if (clip && this.groups[clip] && st !== "standUp") {
+          this.emote.clip = clip;
+          this.restart(clip);
+        } else {
+          this.emote = null;
+        }
+      }
+      if (this.emote && (now > this.emoteUntil || this.speed > 0.2)) {
         this.emote = null;
-      } else {
+      } else if (this.emote) {
         for (const k of Object.keys(T)) T[k] = 0;
         T[this.emote.clip] = 1;
       }
     }
+    if (this.guitar) this.guitar.setEnabled(this.emote?.name === "guitar");
     const rate = Math.min(1, dt * 7);
     let sum = 0;
     for (const [k, slot] of Object.entries(this.groups)) {
@@ -285,6 +312,7 @@ export class AvatarController {
       const emoteName = this.emote?.name;
       if (emoteName === "laugh") mouthTarget = 0.65 + 0.35 * Math.abs(Math.sin(now * 13));
       else if (emoteName === "cheer" || emoteName === "jump") mouthTarget = 0.75;
+      else if (emoteName === "guitar") mouthTarget = 0.18 + 0.2 * Math.abs(Math.sin(now * 3.1));
       else if (this.speaking) mouthTarget = 0.12 + 0.45 * Math.abs(Math.sin(now * 17) * Math.sin(now * 7.3));
       this.mouth += (mouthTarget - this.mouth) * Math.min(1, dt * 18);
       for (let i = 0; i < this.morphs.numTargets; i += 1) {
@@ -319,6 +347,7 @@ export class AvatarController {
     this.holder.dispose();
     this.shadow.dispose();
     this.material.dispose(false, false);
+    this.faceMaterial?.dispose(false, false);
     this.palette.dispose();
   }
 }

@@ -54,6 +54,7 @@ export const nested = {
     "resetCamera": "Restablecer cámara",
     "flatView": "Volver a la vista plana",
     "keysHelp": "WASD o flechas para caminar, Mayús para correr, haz clic en el suelo para ir allí, arrastra para mirar, rueda para acercar, E para sentarte, G para gestos.",
+    "keysGuitar": "B: tocar la guitarra (siéntate primero para la postura completa).",
     "stats": "{fps} fps · {quality}",
     "loading": "Cargando el mundo 3D...",
     "failed": "No se pudo iniciar el mundo 3D. La llamada sigue en la vista plana.",
@@ -62,7 +63,8 @@ export const nested = {
       "dancing": "bailando",
       "laughing": "riendo",
       "clapping": "aplaudiendo",
-      "waving": "saludando"
+      "waving": "saludando",
+      "guitar": "tocando la guitarra"
     },
     "fallback": {
       "software": "Tu ordenador dibuja los gráficos sin GPU, así que el mundo 3D queda desactivado. La llamada sigue.",

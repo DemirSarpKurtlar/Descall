@@ -26,6 +26,7 @@ import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imagePro
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import { SSAO2RenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssao2RenderingPipeline";
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture";
+import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import { Plane } from "@babylonjs/core/Maths/math.plane";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import { SceneInstrumentation } from "@babylonjs/core/Instrumentation/sceneInstrumentation";
@@ -63,11 +64,12 @@ function isTyping() {
 }
 
 export class WorldEngine {
-  constructor(canvas, { assetBase = "/world3d/", quality, selfId, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
+  constructor(canvas, { assetBase = "/world3d/", quality, selfId, lookOverrides = null, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
     this.canvas = canvas;
     this.assetBase = assetBase;
     this.quality = quality || PRESETS.medium;
     this.selfId = String(selfId || "me");
+    this.lookOverrides = lookOverrides; // { userId: LOOKS index } (previews / tests only)
     this.cb = { onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal };
     this.avatars = new Map();
     this.remote = new Map(); // id -> { buffer, lastEmoteSeq, lastPos }
@@ -177,10 +179,14 @@ export class WorldEngine {
       const mname = mat.name || "";
       if (mname.startsWith("BAKED_")) {
         if ("unlit" in mat) mat.unlit = true;
-        mat.backFaceCulling = true;
+        // leaves are single sided cards
+        mat.backFaceCulling = mname !== "BAKED_foliage";
         if (mat.albedoTexture) mat.albedoTexture.anisotropicFilteringLevel = 8;
         // grade: the bake came out a little red on the planks; pull them toward the draft's brown
-        if (name === "FLOOR" && "albedoColor" in mat) mat.albedoColor = new Color3(0.86, 0.86, 0.98);
+        // grade toward the draft: dusty lavender walls, browner floor (the bake is neutral-warm)
+        const GRADE = { FLOOR: [0.9, 0.8, 0.88], BAKED_shell: [1.02, 0.98, 1.4], BAKED_furniture: [1.22, 1.18, 1.4], BAKED_rug: [1.05, 1.0, 1.08], BAKED_props: [1.05, 1.0, 1.15] };
+        const g = GRADE[name] || GRADE[mname];
+        if (g && "albedoColor" in mat) mat.albedoColor = new Color3(g[0], g[1], g[2]);
       } else if (mname.startsWith("EMIT_")) {
         if ("unlit" in mat) mat.unlit = false;
         const lvl = EMISSIVE_LEVELS[mname] ?? 1.5;
@@ -229,25 +235,25 @@ export class WorldEngine {
     hemi.diffuse = Color3.FromHexString("#9a86ff");
     hemi.groundColor = Color3.FromHexString("#3b2846");
     hemi.specular = Color3.Black();
-    hemi.intensity = 0.62;
+    hemi.intensity = 0.46;
     const win = new DirectionalLight("window", new Vector3(0.15, -0.35, -1), scene);
     win.diffuse = Color3.FromHexString("#6f7cff");
     win.specular = Color3.FromHexString("#3b46aa");
-    win.intensity = 0.55;
+    win.intensity = 0.42;
     const front = new DirectionalLight("front", new Vector3(0.2, -0.45, 1), scene);
     front.diffuse = Color3.FromHexString("#ffd9e6");
     front.specular = Color3.Black();
-    front.intensity = 0.38;
+    front.intensity = 0.3;
     this.lights = [hemi, win, front];
     for (const l of this.lampPositions) {
       const p = new PointLight(`pl_${l.name}`, l.pos, scene);
       if (/lava/.test(l.name)) {
         p.diffuse = Color3.FromHexString("#ff5fd2");
-        p.intensity = 1.2;
+        p.intensity = 0.9;
         p.range = 2.2;
       } else {
         p.diffuse = Color3.FromHexString("#ffb46e");
-        p.intensity = 3.2;
+        p.intensity = 2.4;
         p.range = 5.5;
       }
       p.specular = p.diffuse.scale(0.4);
@@ -266,15 +272,26 @@ export class WorldEngine {
     const q = this.quality;
     scene.imageProcessingConfiguration.toneMappingEnabled = true;
     scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    scene.imageProcessingConfiguration.exposure = 1.15;
-    scene.imageProcessingConfiguration.contrast = 1.12;
+    scene.imageProcessingConfiguration.exposure = 1.75;
+    scene.imageProcessingConfiguration.contrast = 1.05;
     const pipe = new DefaultRenderingPipeline("post", true, scene, [this.camera]);
     pipe.samples = q.msaa;
     pipe.imageProcessingEnabled = true;
     pipe.imageProcessing.toneMappingEnabled = true;
     pipe.imageProcessing.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    pipe.imageProcessing.exposure = 1.15;
-    pipe.imageProcessing.contrast = 1.12;
+    pipe.imageProcessing.exposure = 1.75;
+    pipe.imageProcessing.contrast = 1.05;
+    // colour grade: violet shadows and mids, warm highlights (scene-3.jpg)
+    const curves = new ColorCurves();
+    curves.globalHue = 272;
+    curves.globalDensity = 30;
+    curves.globalSaturation = -20;
+    curves.shadowsHue = 250;
+    curves.shadowsDensity = 55;
+    curves.highlightsHue = 32;
+    curves.highlightsDensity = 14;
+    pipe.imageProcessing.colorCurvesEnabled = true;
+    pipe.imageProcessing.colorCurves = curves;
     pipe.imageProcessing.vignetteEnabled = true;
     pipe.imageProcessing.vignetteWeight = 1.4;
     pipe.imageProcessing.vignetteColor = new Color4(0.05, 0.02, 0.12, 0);
@@ -352,6 +369,8 @@ export class WorldEngine {
         if (k.startsWith("arrow")) e.preventDefault();
       } else if (k === "e" && !e.repeat) {
         this.toggleSit();
+      } else if (k === "b" && !e.repeat) {
+        this.toggleGuitar();
       } else if (k === "g" && !e.repeat) {
         this.cb.onEmoteWheel?.("toggle");
       } else if (k === "escape") {
@@ -418,7 +437,7 @@ export class WorldEngine {
   /** members: [{ id, name, snap? }] including self. */
   setMembers(members) {
     const ids = members.map((m) => String(m.id));
-    const looks = looksForRoom(ids);
+    const looks = looksForRoom(ids, this.lookOverrides);
     for (const id of [...this.avatars.keys()]) {
       if (!ids.includes(id)) {
         this.avatars.get(id).dispose();
@@ -510,6 +529,16 @@ export class WorldEngine {
   sitOn(i) {
     const seat = this.seats[i];
     if (!seat) return;
+    // just outside the seat's collider (seat front + avatar radius)
+    const front = new Vector3(seat.pos.x + Math.sin(seat.yaw) * 0.64, 0, seat.pos.z + Math.cos(seat.yaw) * 0.64);
+    const d = Math.hypot(front.x - this.local.pos.x, front.z - this.local.pos.z);
+    if (d > 0.18) {
+      // walk to the front of the seat, then turn round and sit (no snap)
+      this.moveTarget = front;
+      this.approach = { seat: i };
+      return;
+    }
+    this.approach = null;
     this.moveTarget = null;
     this.local.seat = i;
     this.local.state = "sitDown";
@@ -525,6 +554,18 @@ export class WorldEngine {
     this.local.stateUntil = this.nowMs() + 870;
     this.local.standFrom = this.local.seat;
     this.local.seat = -1;
+  }
+
+  toggleGuitar() {
+    const av = this.avatars.get(this.selfId);
+    if (av?.emote?.name === "guitar") {
+      av.cancelEmote();
+      this.local.emote = 0;
+      this.local.emoteSeq = (this.local.emoteSeq + 1) & 255;
+      return;
+    }
+    this.emote("guitar");
+    this.local.emoteUntil = this.nowMs() + 36000000;
   }
 
   emote(name) {
@@ -678,10 +719,19 @@ export class WorldEngine {
         const p = resolve(nx, nz, AVATAR_RADIUS, this.boxes, this.bounds);
         // actual ground speed after collisions (keeps feet planted when sliding along walls)
         speed = Math.hypot(p[0] - L.pos.x, p[1] - L.pos.z) / Math.max(1e-4, dt);
-        if (this.moveTarget && speed < 0.05 * L.speed) this.moveTarget = null;
+        if (this.moveTarget && speed < 0.05 * L.speed) {
+        this.moveTarget = null;
+        this.approach = null; // blocked on the way to the seat
+      }
         L.pos.x = p[0];
         L.pos.z = p[1];
       }
+      if (this.approach && !this.moveTarget && L.speed < 0.3) {
+        const seat = this.approach.seat;
+        this.approach = null;
+        this.sitOn(seat);
+      }
+      if (this.keys.size && this.approach) this.approach = null;
       if (L.emote && now > (L.emoteUntil || 0)) L.emote = 0;
       if (speed > 0.2) L.emote = 0;
       L.state = speed > 0.05 ? (speed > WALK_SPEED + 0.2 ? "run" : "walk") : "idle";
@@ -737,6 +787,7 @@ export class WorldEngine {
       if (s.emoteSeq !== r.lastEmoteSeq) {
         r.lastEmoteSeq = s.emoteSeq;
         if (s.emote > 0) av.triggerEmote(EMOTES[s.emote], now / 1000);
+        else av.cancelEmote();
       }
       const loco = stateName === "walk" || stateName === "run" || stateName === "emote" ? "idle" : stateName;
       av.setLocomotion(loco, stateName === "walk" || stateName === "run" ? r.speed || 0 : 0);

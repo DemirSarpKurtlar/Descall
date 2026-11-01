@@ -89,6 +89,7 @@ export default function World3DView({
   activeSpeakerIds = null,
   allowSoftware = false,
   worldSocketFactory = connectWorld,
+  lookOverrides = null,
 }) {
   const t = useT();
   const canvasRef = useRef(null);
@@ -151,6 +152,7 @@ export default function World3DView({
           assetBase,
           quality: preset,
           selfId,
+          lookOverrides,
           onFrame: (rows) => {
             const map = tagRefs.current;
             for (const r of rows) {
@@ -274,6 +276,7 @@ export default function World3DView({
         else if (em === "laugh") next[aid] = t("world3d.activity.laughing");
         else if (em === "clap") next[aid] = t("world3d.activity.clapping");
         else if (em === "wave") next[aid] = t("world3d.activity.waving");
+        else if (em === "guitar") next[aid] = t("world3d.activity.guitar");
       }
       setActivities((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
     }, 400);
@@ -483,6 +486,7 @@ export default function World3DView({
             {t("world3d.flatView")}
           </button>
           <p className="w3d-keys">{t("world3d.keysHelp")}</p>
+          <p className="w3d-keys">{t("world3d.keysGuitar")}</p>
           {stats ? <p className="w3d-stats">{t("world3d.stats", { fps: stats.fps, quality: t(`world3d.quality.${stats.quality}`) })}</p> : null}
         </div>
       ) : null}

@@ -28,7 +28,7 @@ const BOUNDS = { minX: -30, maxX: 30, minY: -1, maxY: 6, minZ: -30, maxZ: 30 };
 const CHAT_MAX_LEN = 300;
 
 const STATES = ["idle", "walk", "run", "sitDown", "sit", "standUp", "emote"];
-const EMOTES = ["none", "wave", "dance", "clap", "laugh", "jump", "cheer"];
+const EMOTES = ["none", "wave", "dance", "clap", "laugh", "jump", "cheer", "guitar"];
 const KINDS = ["voice", "group"];
 const DESKTOP_APPS = new Set(["web", "electron"]);
 
