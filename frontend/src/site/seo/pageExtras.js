@@ -4,6 +4,19 @@
  * #seo-static shell, so crawlers and users see the same text.
  * Only describe features Descall ships today.
  */
+import {
+  PREFIXABLE_LOCALES,
+  isMirrorPath,
+  prefixedLocaleFromPath,
+  stripPrefixedLocale,
+  withLocalePrefix,
+} from "../siteLocales.js";
+import { siteText } from "../siteText.js";
+
+/** /<prefix> twin of a mirrored English link, other links unchanged. */
+function mirrorHref(to, loc) {
+  return isMirrorPath(to) ? withLocalePrefix(to, loc) : to;
+}
 
 const TR_HUBS = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
@@ -422,10 +435,41 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
+/**
+ * Extras of a route in its language. Prefixed locales (/de/...) reuse the English
+ * entry of the mirrored page; `text` translates every string, `href` localizes links.
+ * English and Turkish routes come back as written.
+ */
+export function localizedPageExtras(routePath, { text, href } = {}) {
+  const loc = prefixedLocaleFromPath(routePath, PREFIXABLE_LOCALES);
+  if (!loc) {
+    const extra = PAGE_EXTRAS[routePath];
+    return extra ? { extra, loc: null } : null;
+  }
+  const bare = stripPrefixedLocale(routePath, [loc]);
+  const source = isMirrorPath(bare) ? PAGE_EXTRAS[bare] : null;
+  if (!source) return null;
+  const tx = (s) => (text ? text(s, loc) : s);
+  const hx = (to) => (href ? href(to, loc) : to);
+  return {
+    loc,
+    extra: {
+      sections: source.sections.map((s) => ({
+        ...s,
+        h: tx(s.h),
+        p: s.p.map(tx),
+        ...(s.list ? { list: s.list.map(tx) } : {}),
+      })),
+      links: (source.links || []).map((l) => ({ to: hx(l.to), label: tx(l.label) })),
+    },
+  };
+}
+
 /** Static HTML for the prerendered shell. */
 export function pageExtrasHtml(routePath) {
-  const extra = PAGE_EXTRAS[routePath];
-  if (!extra) return "";
+  const found = localizedPageExtras(routePath, { text: siteText, href: mirrorHref });
+  if (!found) return "";
+  const { extra } = found;
   const sections = extra.sections
     .map(
       (s) =>

@@ -4,6 +4,7 @@
  */
 
 import { PUBLIC_ROUTES, DEFAULT_ORIGIN } from "./seoConfig.js";
+import { prefixedLocaleFromPath, stripPrefixedLocale } from "./siteLocales.js";
 
 export const SITE = DEFAULT_ORIGIN;
 
@@ -77,7 +78,9 @@ export const INDEXING_PRIORITY_PATHS = [
 ];
 
 function tableIdForPath(path) {
-  const p = path || "/";
+  // Prefixed site languages (/de/faq) sit in the same table as their English page.
+  const prefixed = prefixedLocaleFromPath(path || "/");
+  const p = prefixed ? stripPrefixedLocale(path, [prefixed]) : path || "/";
   if (p.startsWith("/blog") || p.startsWith("/tr/blog")) return "blog";
   if (p === "/tr" || p.startsWith("/tr/")) return "niches";
   if (p === "/status") return "company";

@@ -10,9 +10,10 @@ import {
 import { useLocale } from "../context/localeContextInstance";
 import {
   isTrPath,
-  hreflangPair,
+  hreflangAlternates,
   stripLocalePrefix,
 } from "./localePaths";
+import { ogLocaleTag } from "./siteLocales.js";
 import { SITE_OPERATOR } from "./siteIdentity";
 
 function upsertMeta(attr, key, content) {
@@ -49,21 +50,25 @@ function upsertLink(rel, href, extra = {}) {
  */
 export default function SeoHead({ forceNoindex = false, title, description, path, image }) {
   const location = useLocation();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const rawPath = path || location.pathname || "/";
   const pathname = stripLocalePrefix(rawPath);
   const meta = routeMetaForLocale(rawPath, locale);
-  const pageTitle = title || meta.title;
-  const pageDesc = description || meta.description;
+  // Prefixed-locale routes (/de/...) carry their locale; the site catalog has their copy.
+  const pageTitle = title || (meta.locale ? t(meta.title) : meta.title);
+  const pageDesc = description || (meta.locale ? t(meta.description) : meta.description);
   const noindex = forceNoindex || meta.noindex;
-  const tr = locale === "tr" || isTrPath(rawPath) || meta.lang === "tr";
-  const canonicalPath = tr
-    ? rawPath === "/tr" || rawPath === "/tr/"
-      ? "/tr"
-      : rawPath.replace(/\/+$/, "")
-    : meta.path === "/" || pathname === "/"
-      ? "/"
-      : pathname;
+  const tr = !meta.locale && (locale === "tr" || isTrPath(rawPath) || meta.lang === "tr");
+  const canonicalPath = meta.locale
+    ? meta.path
+    : tr
+      ? rawPath === "/tr" || rawPath === "/tr/"
+        ? "/tr"
+        : rawPath.replace(/\/+$/, "")
+      : meta.path === "/" || pathname === "/"
+        ? "/"
+        : pathname;
+  const pageLocale = meta.locale || (tr ? "tr" : "en");
   const canonical = absoluteUrl(canonicalPath === "/tr" ? "/tr" : canonicalPath);
   // Social crawlers prefer PNG; on-page can still preload webp.
   const ogImage = absoluteUrl(image || meta.image || DEFAULT_OG_IMAGE);
@@ -93,20 +98,22 @@ export default function SeoHead({ forceNoindex = false, title, description, path
 
     const origin = DEFAULT_ORIGIN.replace(/\/$/, "");
     document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove());
-    const pair = hreflangPair(rawPath);
-    if (pair && !noindex) {
-      const enHref = `${origin}${pair.en === "/" ? "/" : pair.en}`;
-      const trHref = `${origin}${pair.tr}`;
-      upsertLink("alternate", enHref, { hreflang: "en" });
-      upsertLink("alternate", trHref, { hreflang: "tr" });
-      upsertLink("alternate", enHref, { hreflang: "x-default" });
+    const alternates = hreflangAlternates(rawPath);
+    if (!noindex) {
+      for (const alt of alternates) upsertLink("alternate", `${origin}${alt.path}`, { hreflang: alt.hreflang });
     }
 
     upsertMeta("property", "og:type", meta.ogType || "website");
     upsertMeta("property", "og:site_name", SITE_NAME);
-    upsertMeta("property", "og:locale", tr ? "tr_TR" : "en_US");
-    if (hreflangPair(rawPath)) upsertMeta("property", "og:locale:alternate", tr ? "en_US" : "tr_TR");
-    else document.head.querySelector('meta[property="og:locale:alternate"]')?.remove();
+    upsertMeta("property", "og:locale", ogLocaleTag(pageLocale));
+    document.head.querySelectorAll('meta[property="og:locale:alternate"]').forEach((el) => el.remove());
+    for (const alt of alternates) {
+      if (alt.hreflang === "x-default" || alt.hreflang === pageLocale) continue;
+      const el = document.createElement("meta");
+      el.setAttribute("property", "og:locale:alternate");
+      el.setAttribute("content", ogLocaleTag(alt.hreflang));
+      document.head.appendChild(el);
+    }
     upsertMeta("property", "og:title", pageTitle);
     upsertMeta("property", "og:description", pageDesc);
     upsertMeta("property", "og:url", canonical);
@@ -134,7 +141,7 @@ export default function SeoHead({ forceNoindex = false, title, description, path
     upsertMeta("name", "twitter:title", pageTitle);
     upsertMeta("name", "twitter:description", pageDesc);
     upsertMeta("name", "twitter:image", ogImage);
-  }, [pageTitle, pageDesc, noindex, canonical, ogImage, ogImageWebp, meta.ogType, meta.keywords, rawPath, tr]);
+  }, [pageTitle, pageDesc, noindex, canonical, ogImage, ogImageWebp, meta.ogType, meta.keywords, rawPath, pageLocale]);
 
   return null;
 }

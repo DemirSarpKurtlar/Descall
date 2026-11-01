@@ -10,6 +10,7 @@ import { Funnel, trackPageView } from "./analytics";
 import { signalMarketingEngage } from "./analyticsGate";
 import MarketingLayout from "./MarketingLayout";
 import SeoHead from "./SeoHead";
+import { PREFIXED_SITE_LOCALES, SITE_MIRROR_PATHS, withLocalePrefix } from "./siteLocales.js";
 const MarketingAuthModal = lazy(() => import("./MarketingAuthModal"));
 const AuthView = lazy(() => import("../components/AuthView"));
 
@@ -36,6 +37,25 @@ const DiscordAlternativeNichePage = lazy(() => import("./pages/DiscordAlternativ
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+
+/** Page of each mirrored English path; /de, /de/features, ... render the same pages. */
+const MIRROR_PAGES = {
+  "/": HomePage,
+  "/features": FeaturesPage,
+  "/download": DownloadPage,
+  "/faq": FaqPage,
+  "/compare/discord": CompareDiscordPage,
+  "/about": AboutPage,
+  "/contact": ContactPage,
+  "/security": SecurityPage,
+  "/status": StatusPage,
+  "/privacy": PrivacyPage,
+  "/terms": TermsPage,
+  "/copyright": CopyrightPage,
+  "/who-owns-descall": WhoOwnsDescallPage,
+  "/discord-alternative": DiscordAlternativePage,
+  "/alternatives": AlternativesPage,
+};
 
 /**
  * Drop the crawler shell once the real page has committed. Leaving it in the
@@ -357,6 +377,20 @@ function MarketingAppSite({
         <Route path="/best-discord-alternative" element={<Navigate to="/discord-alternative" replace />} />
         <Route path="/blog" element={withLayout(BlogIndexPage, openAuth)} />
         <Route path="/blog/:slug" element={withLayout(BlogPostPage, openAuth)} />
+        {/* Prefixed site languages (/de, /pt-br, ...): same pages, locale from the URL. */}
+        {PREFIXED_SITE_LOCALES.flatMap((id) =>
+          SITE_MIRROR_PATHS.filter((p) => MIRROR_PAGES[p]).map((p) => (
+            <Route
+              key={`${id}${p}`}
+              path={withLocalePrefix(p, id)}
+              element={withLayout(
+                MIRROR_PAGES[p],
+                openAuth,
+                p === "/download" ? { onOpenRegister: () => openAuth({ mode: "register", source: `download_${id}` }) } : {}
+              )}
+            />
+          ))
+        )}
         <Route path="*" element={withLayout(NotFoundPage, openAuth)} />
       </Routes>
       {authOpen ? (

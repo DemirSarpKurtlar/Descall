@@ -2,13 +2,15 @@
 
 import { stripLocalePrefix } from "./localePaths.js";
 import { TR_LANDING_META, TR_BLOG_META } from "./seo/trMeta.js";
+import { PREFIXED_SITE_LOCALES, SITE_LOCALES, SITE_MIRROR_PATHS, withLocalePrefix } from "./siteLocales.js";
 
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
 export const DEFAULT_ORIGIN = "https://descall.com";
 // PNG, Instagram/Facebook rasterize SVG poorly (dark smudge next to wordmark).
 export const DEFAULT_OG_IMAGE = "/og-default.png";
-export const SUPPORTED_LOCALES = ["en", "tr"];
+/** Languages the public site serves (en, tr, plus prefixed locales out of draft). */
+export const SUPPORTED_LOCALES = SITE_LOCALES;
 
 /** Runtime origin (API / preview hosts). Prefer this only for non-SEO needs. */
 export function siteOrigin() {
@@ -37,8 +39,8 @@ export function absoluteUrl(path = "/") {
   return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/** Public indexable routes (must match sitemap staticPages + MarketingApp). */
-export const PUBLIC_ROUTES = [
+/** English and Turkish routes; PUBLIC_ROUTES adds the prefixed mirrors below. */
+const BASE_ROUTES = [
   {
     path: "/",
     title: "Descall | Voice Chat, Servers & Screen Share",
@@ -443,6 +445,32 @@ export const PUBLIC_ROUTES = [
   })),
 ];
 
+/**
+ * Routes of a prefixed locale: one per SITE_MIRROR_PATHS entry, copied from the English
+ * route with `locale` / `enPath` set. Title and description stay English here and are
+ * translated where they are rendered (localizeRouteMeta), because the catalogs load
+ * lazily in the browser. English keywords are dropped.
+ */
+export function localeMirrorRoutes(locale) {
+  return SITE_MIRROR_PATHS.map((enPath) => {
+    const en = BASE_ROUTES.find((r) => r.path === enPath);
+    if (!en) throw new Error(`[seoConfig] mirror path without an English route: ${enPath}`);
+    const { keywords: _keywords, ...rest } = en;
+    return { ...rest, path: withLocalePrefix(enPath, locale), lang: locale, locale, enPath };
+  });
+}
+
+/** Public indexable routes (must match sitemap staticPages + MarketingApp). */
+export const PUBLIC_ROUTES = [...BASE_ROUTES, ...PREFIXED_SITE_LOCALES.flatMap((id) => localeMirrorRoutes(id))];
+
+/** Title / description / h1 of a prefixed-locale route through `translate(text, locale)`. */
+export function localizeRouteMeta(route, translate) {
+  if (!route?.locale || typeof translate !== "function") return route;
+  const out = { ...route, title: translate(route.title, route.locale), description: translate(route.description, route.locale) };
+  if (route.h1) out.h1 = translate(route.h1, route.locale);
+  return out;
+}
+
 export function routeMeta(pathname) {
   const clean = (pathname || "/").replace(/\/+$/, "") || "/";
   const hit = PUBLIC_ROUTES.find((r) => r.path === clean);
@@ -518,6 +546,8 @@ const TR_TITLES = {
 /** Document title follows the active locale, including English-canonical URLs. */
 export function routeMetaForLocale(pathname, locale) {
   const meta = routeMeta(pathname);
+  // Prefixed-locale pages carry `locale`; SeoHead translates their title and description.
+  if (meta.locale) return meta;
   if (locale !== "tr") return meta;
   const clean = (pathname || "/").replace(/\/+$/, "") || "/";
   const bare = stripLocalePrefix(clean);

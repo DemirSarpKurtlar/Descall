@@ -4,6 +4,7 @@ import { SITE_OPERATOR } from "../siteIdentity";
 import JsonLd, { buildEntityGraphLd, buildFaqLd } from "../JsonLd";
 import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts";
 import { useMarketingHref } from "../useMarketingHref";
+import { isPrefixedLocale } from "../siteLocales.js";
 
 export default function AboutPage() {
   const t = useT();
@@ -37,7 +38,7 @@ export default function AboutPage() {
           {t(
             "Demir Sarp Kurtlar owns Descall. He is the founder, owner, and CEO of Descall. The name is spelled exactly Demir Sarp Kurtlar."
           )}{" "}
-          <Link to={locale === "tr" ? SITE_OPERATOR.personPathTr : SITE_OPERATOR.personPath}>
+          <Link to={locale === "tr" ? SITE_OPERATOR.personPathTr : href(SITE_OPERATOR.personPath)}>
             {t("Read the ownership record")}
           </Link>
         </p>
@@ -71,7 +72,12 @@ export default function AboutPage() {
           )}
         </p>
         <p>
-          {t("Last updated")}: {locale === "tr" ? SITE_OPERATOR.lastUpdatedLabelTr : SITE_OPERATOR.lastUpdatedLabel}
+          {t("Last updated")}:{" "}
+          {locale === "tr"
+            ? SITE_OPERATOR.lastUpdatedLabelTr
+            : isPrefixedLocale(locale)
+              ? t(SITE_OPERATOR.lastUpdatedLabel)
+              : SITE_OPERATOR.lastUpdatedLabel}
         </p>
         <div className="mkt-cta-row" style={{ marginTop: 24 }}>
           <Link to={href("/security")} className="mkt-btn mkt-btn-soft">

@@ -11,7 +11,7 @@ const root = path.resolve(__dirname, "..");
 const distDir = path.join(root, "dist");
 const SITE = "https://descall.com";
 
-const { PUBLIC_ROUTES } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
+const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { buildHumanSitemapHtml, SITEMAP_XSL } = await import(
   pathToFileURL(path.join(root, "src/site/buildSitemapHtml.js")).href
 );
@@ -28,7 +28,12 @@ const { BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/cont
 const { TR_BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { execFileSync } = await import("node:child_process");
-const { hreflangPair } = await import(pathToFileURL(path.join(root, "src/site/localePaths.js")).href);
+const { hreflangAlternates } = await import(pathToFileURL(path.join(root, "src/site/localePaths.js")).href);
+const { PREFIXED_SITE_LOCALES, localePrefix, prefixedLocaleFromPath, stripPrefixedLocale } = await import(
+  pathToFileURL(path.join(root, "src/site/siteLocales.js")).href
+);
+const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
+const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
 
 /** Source files whose last commit date is the page's real lastmod. */
 const PAGE_SOURCES = {
@@ -119,6 +124,11 @@ function lastmodFor(routePath) {
       : ["src/site/seo/trLandings.js", "src/site/seo/trMeta.js", "src/site/pages/TrLandingPage.jsx"];
   }
   if (routePath === "/tr") files = [...PAGE_SOURCES["/"], "src/site/marketingPhrases.tr.js"];
+  const prefixed = prefixedLocaleFromPath(routePath);
+  if (prefixed) {
+    const bare = stripPrefixedLocale(routePath, [prefixed]);
+    files = PAGE_SOURCES[bare] ? [...PAGE_SOURCES[bare], `src/site/i18n/${prefixed}.js`] : null;
+  }
   return files ? gitLastmod(files) : null;
 }
 
@@ -193,7 +203,7 @@ Allow: /contact
 Allow: /compare/
 Allow: /discord-alternative
 Allow: /tr/
-Allow: /discord-alternative-for-communities
+${PREFIXED_SITE_LOCALES.map((id) => `Allow: ${localePrefix(id)}/\n`).join("")}Allow: /discord-alternative-for-communities
 Allow: /discord-alternative-for-voice-chat
 Allow: /discord-alternative-for-friends
 Allow: /best-discord-alternative-for-gamers
@@ -242,26 +252,27 @@ Sitemap: ${SITE}/sitemap.xml
 `;
 }
 
-/** SEO 3.7.14: EN/TR pairs in the sitemap too (Google reads either source). */
-function alternateLinks(loc) {
+/**
+ * SEO 3.7.14: hreflang alternates in the sitemap too (Google reads either source).
+ * Every served site language of the page plus x-default; nothing for one-language pages.
+ */
+export function alternateLinks(loc, { locales } = {}) {
   let pathname = "/";
   try {
     pathname = new URL(loc).pathname || "/";
   } catch {
     return "";
   }
-  const pair = hreflangPair(pathname);
-  if (!pair) return "";
-  const en = `${SITE}${pair.en === "/" ? "/" : pair.en}`;
-  const tr = `${SITE}${pair.tr}`;
-  return [
-    `    <xhtml:link rel="alternate" hreflang="en" href="${xmlEscape(en)}" />`,
-    `    <xhtml:link rel="alternate" hreflang="tr" href="${xmlEscape(tr)}" />`,
-    `    <xhtml:link rel="alternate" hreflang="x-default" href="${xmlEscape(en)}" />`,
-  ].join("\n") + "\n";
+  const alternates = hreflangAlternates(pathname, locales ? { locales } : undefined);
+  if (!alternates.length) return "";
+  return (
+    alternates
+      .map((alt) => `    <xhtml:link rel="alternate" hreflang="${alt.hreflang}" href="${xmlEscape(`${SITE}${alt.path}`)}" />`)
+      .join("\n") + "\n"
+  );
 }
 
-function buildUrlset(entries) {
+export function buildUrlset(entries) {
   const urls = entries.map((e) => {
     assertHttpsDescall(e.loc);
     return `  <url>
@@ -303,7 +314,7 @@ ${children.join("\n")}
 function buildSitemapHtml() {
   return buildHumanSitemapHtml({
     origin: SITE,
-    routes: PUBLIC_ROUTES.filter((r) => !r.noindex),
+    routes: PUBLIC_ROUTES.filter((r) => !r.noindex).map((r) => localizeRouteMeta(r, siteText)),
     lang: "en",
   });
 }
@@ -320,7 +331,8 @@ function guardBody(name, body) {
   }
 }
 
-function main() {
+async function main() {
+  await registerSiteCatalogs();
   if (!fs.existsSync(distDir)) {
     console.error("[generate-seo-files] dist/ missing — run vite build first");
     process.exit(1);
@@ -395,4 +407,6 @@ function main() {
   );
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+  await main();
+}

@@ -17,7 +17,7 @@ const indexPath = path.join(distDir, "index.html");
 const SITE = "https://descall.com";
 const OG = `${SITE}/og-default.png`;
 
-const { PUBLIC_ROUTES } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
+const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { BLOG_POSTS, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
@@ -29,7 +29,7 @@ const { TR_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo
 const { TR_BLOG_POSTS, TR_BLOG_BODIES, TR_BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href
 );
-const { cookieBannerHtml, navLabels, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy } = await import(
+const { cookieBannerHtml, navLabels, newCopy, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy } = await import(
   pathToFileURL(path.join(root, "src/site/seo/prerenderCopy.js")).href
 );
 const { FAQ_ITEMS } = await import(pathToFileURL(path.join(root, "src/site/faqData.js")).href);
@@ -47,9 +47,12 @@ const {
   OWNERSHIP_STATEMENT_EN,
   OWNERSHIP_STATEMENT_TR,
 } = await import(pathToFileURL(path.join(root, "src/site/ownershipFacts.js")).href);
-const { hreflangPair } = await import(
+const { hreflangAlternates } = await import(
   pathToFileURL(path.join(root, "src/site/localePaths.js")).href
 );
+const { ogLocaleTag, isPrefixedLocale } = await import(pathToFileURL(path.join(root, "src/site/siteLocales.js")).href);
+const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
+const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -67,14 +70,20 @@ function routeIsTr(route) {
   return route.lang === "tr" || route.path === "/tr" || route.path.startsWith("/tr/");
 }
 
-function seoCtaRow(softHref = "/discord-alternative", softLabel, isTr = false) {
-  const n = navLabels(isTr);
-  const label = softLabel || n.alternative;
-  return `<p class="seo-cta-row"><a class="seo-cta-primary" href="${prefixHref("/download", isTr)}">${n.download}</a><a class="seo-cta-soft" href="${prefixHref(softHref, isTr)}">${label}</a></p>`;
+/** "en", "tr" or the prefixed locale of a route (/de/... routes carry `locale`). */
+function routeLocale(route) {
+  if (route.locale) return route.locale;
+  return routeIsTr(route) ? "tr" : "en";
 }
 
-function seoSiteNav(isTr = false) {
-  return seoSiteNavHtml(isTr);
+function seoCtaRow(softHref = "/discord-alternative", softLabel, loc = "en") {
+  const n = navLabels(loc);
+  const label = softLabel || n.alternative;
+  return `<p class="seo-cta-row"><a class="seo-cta-primary" href="${prefixHref("/download", loc)}">${n.download}</a><a class="seo-cta-soft" href="${prefixHref(softHref, loc)}">${label}</a></p>`;
+}
+
+function seoSiteNav(loc = "en") {
+  return seoSiteNavHtml(loc);
 }
 
 function stripBootSplash(html) {
@@ -98,7 +107,8 @@ function crawlBody(route) {
 
 function crawlBodyInner(route) {
   const isTr = routeIsTr(route);
-  const n = navLabels(isTr);
+  const loc = routeLocale(route);
+  const n = navLabels(loc);
   const trLanding = TR_LANDINGS[route.path];
   if (trLanding) {
     const sections = trLanding.sections
@@ -202,14 +212,14 @@ function crawlBodyInner(route) {
   ${seoBrand()}
   <h1>${escapeHtml(niche.h1)}</h1>
   <p>${escapeHtml(niche.lead)}</p>
-  ${seoCtaRow("/discord-alternative", n.alternative, isTr)}
+  ${seoCtaRow("/discord-alternative", n.alternative, loc)}
   <h2>${escapeHtml(niche.answerTitle)}</h2>
   <p>${escapeHtml(niche.answer)}</p>
   <ul>${niche.bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>
   ${sections}
   ${faq}
   <nav aria-label="Related"><ul>${links}</ul></nav>
-  ${seoSiteNav(isTr)}
+  ${seoSiteNav(loc)}
 </main>`;
   }
 
@@ -228,9 +238,9 @@ function crawlBodyInner(route) {
     <h1>${escapeHtml(post.title)}</h1>
     <p>${escapeHtml(post.description)}</p>
     ${sections}
-    ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : "All guides", isTr)}
+    ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : "All guides", loc)}
   </article>
-  ${seoSiteNav(isTr)}
+  ${seoSiteNav(loc)}
 </main>`;
     }
   }
@@ -246,8 +256,8 @@ function crawlBodyInner(route) {
   <h1>Descall Blog</h1>
   <p>Guides on Discord alternatives, servers, and voice chat.</p>
   <ul>${posts}</ul>
-  ${seoCtaRow("/download", n.download, isTr)}
-  ${seoSiteNav(isTr)}
+  ${seoCtaRow("/download", n.download, loc)}
+  ${seoSiteNav(loc)}
 </main>`;
   }
 
@@ -257,19 +267,60 @@ function crawlBodyInner(route) {
   ${seoBrand()}
   <h1>${escapeHtml(h1)}</h1>
   <p>${escapeHtml(route.description)}</p>
-  ${seoCtaRow("/discord-alternative", n.alternative, isTr)}
-  <h2>What you get with Descall</h2>
+  ${seoCtaRow("/discord-alternative", n.alternative, loc)}
+  <h2>${escapeHtml(newCopy("What you get with Descall", loc))}</h2>
   <ul>
-    <li>Discord-style servers with roles, channels, and templates</li>
-    <li>Free real-time chat, group voice/video, and screen share</li>
-    <li>Gaming server templates without bot hell</li>
-    <li>Windows, Android, and full web app</li>
+    <li>${escapeHtml(newCopy("Discord-style servers with roles, channels, and templates", loc))}</li>
+    <li>${escapeHtml(newCopy("Free real-time chat, group voice/video, and screen share", loc))}</li>
+    <li>${escapeHtml(newCopy("Gaming server templates without bot hell", loc))}</li>
+    <li>${escapeHtml(newCopy("Windows, Android, and full web app", loc))}</li>
   </ul>
-  ${seoSiteNav(isTr)}
+  ${seoSiteNav(loc)}
 </main>`;
 }
 
+/** JSON-LD of a prefixed-locale route: the English page's graphs, text translated. */
+function localizedJsonLd(route) {
+  const loc = route.locale;
+  const t = (s) => siteText(s, loc);
+  const faq = (items) => buildFaqLd(items.map((f) => ({ q: t(f.q), a: t(f.a) })));
+  const graphs = [buildEntityGraphLd()];
+  switch (route.enPath) {
+    case "/faq":
+      graphs.push(faq(FAQ_ITEMS));
+      break;
+    case "/discord-alternative":
+      graphs.push(faq(ALTERNATIVE_HUB_FAQ));
+      break;
+    case "/alternatives":
+      graphs.push(faq(ALTERNATIVES_FAQ));
+      break;
+    case "/compare/discord":
+      graphs.push(faq(COMPARE_FAQ));
+      break;
+    case "/about":
+      graphs.push(faq(OWNERSHIP_FAQ_EN));
+      break;
+    case "/who-owns-descall":
+      graphs.push(
+        buildOwnershipWebPageLd({
+          path: route.path,
+          name: t("Who owns Descall?"),
+          description: t(OWNERSHIP_STATEMENT_EN),
+          inLanguage: loc,
+          faqs: OWNERSHIP_FAQ_EN.map((f) => ({ q: t(f.q), a: t(f.a) })),
+        }),
+        faq(OWNERSHIP_FAQ_EN)
+      );
+      break;
+    default:
+      break;
+  }
+  return graphs;
+}
+
 function jsonLdForRoute(route) {
+  if (route.locale) return localizedJsonLd(route);
   const graphs = [buildEntityGraphLd()];
 
   // SoftwareApplication already lives in the entity @graph (same @id) on every
@@ -403,12 +454,13 @@ function stripStaleHeadSeo(html) {
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>\s*/gi, "");
 }
 
-function injectMeta(html, route, { keepBootSplash = false } = {}) {
+export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
+  const route = localizeRouteMeta(sourceRoute, siteText);
   const url = `${SITE}${route.path === "/" ? "/" : route.path}`;
   const title = escapeHtml(route.title);
   const desc = escapeHtml(route.description);
   const keywords = route.keywords ? escapeHtml(route.keywords) : "";
-  const lang = route.lang || (routeIsTr(route) ? "tr" : "en");
+  const lang = route.lang || routeLocale(route);
   const ogType = route.ogType || "website";
 
   // Vercel rewrites authenticated deep links (/calls, /direct, …) to dist/index.html
@@ -419,19 +471,15 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
   out = out.replace(/<html\s+lang="[^"]*"/i, `<html lang="${lang}"`);
   out = out.replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`);
 
-  // hreflang only for true 1:1 EN/TR translations; reciprocal, x-default → EN.
-  const isTr = lang === "tr";
-  const pair = hreflangPair(route.path);
-  const hreflang = [];
-  if (pair) {
-    const enHref = `${SITE}${pair.en === "/" ? "/" : pair.en}`;
-    const trHref = `${SITE}${pair.tr}`;
-    hreflang.push(
-      `<link rel="alternate" hreflang="en" href="${enHref}" />`,
-      `<link rel="alternate" hreflang="tr" href="${trHref}" />`,
-      `<link rel="alternate" hreflang="x-default" href="${enHref}" />`
-    );
-  }
+  // hreflang only for real translations (served site languages); reciprocal, x-default → EN.
+  const loc = routeLocale(route);
+  const alternates = hreflangAlternates(route.path);
+  const hreflang = alternates.map(
+    (alt) => `<link rel="alternate" hreflang="${alt.hreflang}" href="${SITE}${alt.path}" />`
+  );
+  const ogAlternates = alternates
+    .filter((alt) => alt.hreflang !== "x-default" && alt.hreflang !== loc)
+    .map((alt) => `<meta property="og:locale:alternate" content="${ogLocaleTag(alt.hreflang)}" />`);
 
   const ldScripts = jsonLdForRoute(route)
     .map(
@@ -458,8 +506,8 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
     `<meta property="og:image" content="${route.image ? `${SITE}${route.image.startsWith("/") ? route.image : `/${route.image}`}` : OG}" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
-    `<meta property="og:locale" content="${isTr ? "tr_TR" : "en_US"}" />`,
-    pair ? `<meta property="og:locale:alternate" content="${isTr ? "en_US" : "tr_TR"}" />` : "",
+    `<meta property="og:locale" content="${ogLocaleTag(loc)}" />`,
+    ...ogAlternates,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${desc}" />`,
@@ -495,7 +543,7 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
     );
   }
 
-  const noscript = noscriptNavHtml(isTr);
+  const noscript = noscriptNavHtml(loc);
   if (/<noscript>[\s\S]*?<\/noscript>/i.test(out)) {
     out = out.replace(/<noscript>[\s\S]*?<\/noscript>/i, noscript);
   }
@@ -503,7 +551,7 @@ function injectMeta(html, route, { keepBootSplash = false } = {}) {
   if (/<div id="mkt-consent-static"[^>]*>[\s\S]*?<div class="actions">[\s\S]*?<\/div>\s*<\/div>/i.test(out)) {
     out = out.replace(
       /<div id="mkt-consent-static"[^>]*>[\s\S]*?<div class="actions">[\s\S]*?<\/div>\s*<\/div>/i,
-      cookieBannerHtml(isTr)
+      cookieBannerHtml(loc)
     );
   }
 
@@ -535,7 +583,8 @@ function writeRoute(route, html) {
   console.log(`[prerender-seo] ${route.path} -> ${path.relative(distDir, file)}`);
 }
 
-function main() {
+async function main() {
+  await registerSiteCatalogs();
   if (!fs.existsSync(indexPath)) {
     console.error("[prerender-seo] dist/index.html missing — run vite build first");
     process.exit(1);
@@ -548,4 +597,6 @@ function main() {
   console.log(`[prerender-seo] wrote ${routes.length} SEO shells with crawlable HTML`);
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+  await main();
+}
