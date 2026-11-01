@@ -28,7 +28,8 @@ export default {
     vignette: { weight: 1.3, color: [0.06, 0.03, 0.12, 0] },
     bloom: { threshold: 0.8, weight: 0.5, kernel: 72, scale: 0.5 },
     dof: { fStop: 4.0, focalLength: 34, focusDistance: 4200 },
-    bakedTint: {},
+    // the pendant spot washes the felt out in the bake: pull it back to the draft's green
+    bakedTint: { BAKED_furniture: [0.66, 0.82, 0.7] },
     emissive: { EMIT_lamp: 1.6, EMIT_bulb: 1.5, EMIT_window: 0.9, EMIT_robot_glow: 1.5, EMIT_robot_blue: 1.4 },
     emissiveDefault: 1.3,
     doubleSided: [],
@@ -50,6 +51,7 @@ export default {
   },
   props: [
     { kind: "robot", glb: "robot-dealer.glb", at: "dealer", clip: "idle" },
-    { kind: "pieces", sets: ["okey", "cards", "tavla", "chess"], dressing: "default" },
+    // the draft draws cards, racks and tiles toy-sized next to the avatars
+    { kind: "pieces", sets: ["okey", "cards", "tavla", "chess"], dressing: "default", scale: { cards: 1.9, okey: 1.55 } },
   ],
 };

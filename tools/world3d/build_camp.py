@@ -363,7 +363,7 @@ def stones_and_bits():
         x, y = r * math.sin(a), r * math.cos(a)
         s = rnd.uniform(0.05, 0.16)
         st = sphere(f"pebble{k}", s, (x, y, s * 0.25), M["stone"], scale=(1.2, 1.0, 0.55), segments=10, rings=6, rot=(0, 0, rnd.uniform(0, 90)))
-        kit.grp("props", st)
+        kit.vc("stones", st)
     # foreground: bush leaves bottom left, a rock bottom right (near the camera, like the draft)
     for k in range(9):
         lf = sphere(f"bush{k}", rnd.uniform(0.2, 0.35), (-2.1 + rnd.uniform(-0.4, 0.4), -3.7 + rnd.uniform(-0.3, 0.3), rnd.uniform(0.05, 0.35)), M["bush"], scale=(1.6, 0.4, 0.9), segments=12, rings=6, rot=(rnd.uniform(-30, 30), 0, rnd.uniform(0, 180)))
@@ -390,7 +390,7 @@ def build_fire():
     for k in range(12):
         a = 2 * math.pi * k / 12 + rnd.uniform(-0.1, 0.1)
         s = rnd.uniform(0.11, 0.15)
-        kit.grp("props", sphere(f"ring_stone{k}", s, (0.62 * math.sin(a), 0.62 * math.cos(a), s * 0.35), M["stone"], scale=(1.3, 1.0, 0.7), segments=12, rings=6, rot=(0, 0, math.degrees(a))))
+        kit.vc("stones", sphere(f"ring_stone{k}", s, (0.62 * math.sin(a), 0.62 * math.cos(a), s * 0.35), M["stone"], scale=(1.3, 1.0, 0.7), segments=12, rings=6, rot=(0, 0, math.degrees(a))))
     kit.grp("props", cylinder("ash", 0.55, 0.012, (0, 0, 0.006), M["ash"], verts=32))
     # crossed logs (draft: a star of logs, ends outward), with burning cores
     for k in range(5):

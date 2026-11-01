@@ -12,13 +12,13 @@ export const ROOM_CASTS = {
   ],
   // scene-1.jpg: seven people facing the screen, some waving
   cinema: [
-    { id: "demir", seat: "SEAT_cinema_1_1", look: 7 },
-    { id: "ayse", seat: "SEAT_cinema_0_1", look: 4, emote: "wave", every: 3.2 },
-    { id: "mert", seat: "SEAT_cinema_1_3", look: 6, emote: "wave", every: 2.8 },
+    { id: "demir", seat: "SEAT_cinema_2_1", look: 5 },
+    { id: "ayse", seat: "SEAT_cinema_1_1", look: 4, emote: "wave", every: 3.2 },
+    { id: "mert", seat: "SEAT_cinema_2_3", look: 6, emote: "wave", every: 2.8 },
     { id: "zeynep", seat: "SEAT_cinema_1_4", look: 9, emote: "clap", every: 3.4 },
-    { id: "can", seat: "SEAT_cinema_0_4", look: 1 },
-    { id: "elif", seat: "SEAT_cinema_0_5", look: 8, emote: "wave", every: 3.0 },
-    { id: "deniz", seat: "SEAT_cinema_2_1", look: 5 },
+    { id: "can", seat: "SEAT_cinema_0_3", look: 1 },
+    { id: "elif", seat: "SEAT_cinema_1_5", look: 8, emote: "wave", every: 3.0 },
+    { id: "deniz", seat: "SEAT_cinema_0_1", look: 3 },
   ],
   // scene-2.jpg: five players round the blackjack table, the robot deals
   // (seats by phi: 0 back left, 1 left, 2 near left, 3 near right, 4 right)

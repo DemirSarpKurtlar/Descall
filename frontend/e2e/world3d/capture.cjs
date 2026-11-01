@@ -28,7 +28,8 @@ async function roomMode(browser) {
   page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
   page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
   const quality = process.env.Q || 'high';
-  await page.goto(`${BASE}?room=${room}&quality=${quality}&screen=${process.env.SCREEN || 'demo'}`, { waitUntil: 'load' });
+  const extra = (process.env.DRESSING ? `&dressing=${process.env.DRESSING}` : '') + (process.env.ROBOT ? `&robot=${process.env.ROBOT}` : '');
+  await page.goto(`${BASE}?room=${room}&quality=${quality}&screen=${process.env.SCREEN || 'demo'}${extra}`, { waitUntil: 'load' });
   const t0 = Date.now();
   try {
     await page.waitForFunction(() => window.__roomPreview && window.__descallWorld && window.__descallWorld.avatars.size > 0, null, { timeout: 300000 });

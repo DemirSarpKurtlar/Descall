@@ -22,11 +22,12 @@ export default {
     clearColor: [0.03, 0.025, 0.08],
     exposure: 1.6,
     contrast: 1.08,
-    curves: { globalHue: 262, globalDensity: 22, globalSaturation: 6, shadowsHue: 250, shadowsDensity: 40, highlightsHue: 30, highlightsDensity: 8 },
+    curves: { globalHue: 285, globalDensity: 10, globalSaturation: -5, shadowsHue: 255, shadowsDensity: 30, highlightsHue: 30, highlightsDensity: 8 },
     vignette: { weight: 1.7, color: [0.04, 0.02, 0.12, 0] },
     bloom: { threshold: 0.72, weight: 0.6, kernel: 80, scale: 0.5 },
     dof: { fStop: 5.6, focalLength: 26, focusDistance: 7000 },
-    bakedTint: {},
+    // grade toward the draft: indigo-violet walls, plum velvet (the bake runs blue)
+    bakedTint: { BAKED_seats: [0.95, 0.72, 0.86], BAKED_shell: [1.9, 1.3, 0.95], FLOOR: [1.15, 1.05, 0.85], BAKED_furniture: [1.4, 1.1, 0.9] },
     emissive: {
       EMIT_neon: 1.7, EMIT_aisle: 1.3, EMIT_downlight: 1.5, EMIT_popcorn_bulb: 1.5, EMIT_popcorn_sign: 1.1,
       EMIT_pouf_ring: 1.5, EMIT_speaker_led: 1.0, EMIT_projector_lens: 2.2, EMIT_sconce: 1.0, EMIT_screen: 0.5,
@@ -34,7 +35,7 @@ export default {
     emissiveDefault: 1.2,
     pickable: "^FLOOR$",
     mirror: null,
-    screen: { standbyColor: "#2b2f7a", standbyLevel: 0.12, liveLevel: 1.0, layerGain: 1.0, emissiveLive: 1.25, emissiveStandby: 0.45, avatarLight: 1.3 },
+    screen: { standbyColor: "#2b2f7a", standbyLevel: 0.12, liveLevel: 1.0, layerGain: 1.0, emissiveLive: 0.72, emissiveStandby: 0.45, avatarLight: 1.3 },
     beam: { color: "#5fa8ff", level: 0.6, idle: 0.25 },
     lights: {
       hemi: { dir: [0, 1, 0], diffuse: "#8f7cff", ground: "#2c2046", intensity: 0.42 },
