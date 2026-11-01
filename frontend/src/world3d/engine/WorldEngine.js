@@ -18,9 +18,6 @@ import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Viewport } from "@babylonjs/core/Maths/math.viewport";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Camera } from "@babylonjs/core/Cameras/camera";
-import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
-import { PointLight } from "@babylonjs/core/Lights/pointLight";
-import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imageProcessingConfiguration";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
@@ -40,21 +37,18 @@ import "@babylonjs/loaders/glTF/2.0";
 import "@babylonjs/loaders/glTF/glTFFileLoader";
 
 import { AvatarController, loadAvatarAsset, measureYawOffset, RUN_SPEED, WALK_SPEED } from "./avatars.js";
-import { makeBox, resolve, clampBoom } from "./collision.js";
+import { resolve, clampBoom } from "./collision.js";
 import { PRESETS, createGovernor, lowerPreset } from "./quality.js";
 import { createClock, createSnapshotBuffer } from "../net/snapshotBuffer.js";
 import { STATE, STATES, EMOTE, EMOTES, encodeSnapshot, SNAP_INTERVAL_MS } from "../net/protocol.js";
 import { looksForRoom } from "./look.js";
+import { getRoom } from "./rooms/index.js";
+import { prepareRoom } from "./rooms/roomLoader.js";
+import { groundAt, easeHeight } from "./rooms/ground.js";
+import { createRoomLights, createRoomRuntime } from "./rooms/roomRuntime.js";
 
 const AVATAR_RADIUS = 0.24;
 const SIT_RANGE = 1.9;
-const EMISSIVE_LEVELS = {
-  EMIT_shade: 1.15,
-  EMIT_globe: 1.2,
-  EMIT_lava: 1.3,
-  EMIT_sky_far: 0.95,
-  EMIT_sky_near: 1.0,
-};
 
 function isTyping() {
   const el = typeof document !== "undefined" ? document.activeElement : null;
@@ -64,9 +58,10 @@ function isTyping() {
 }
 
 export class WorldEngine {
-  constructor(canvas, { assetBase = "/world3d/", quality, selfId, lookOverrides = null, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
+  constructor(canvas, { assetBase = "/world3d/", roomId, quality, selfId, lookOverrides = null, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
     this.canvas = canvas;
     this.assetBase = assetBase;
+    this.roomDef = getRoom(roomId); // rooms/index.js (default: living room)
     this.quality = quality || PRESETS.medium;
     this.selfId = String(selfId || "me");
     this.lookOverrides = lookOverrides; // { userId: LOOKS index } (previews / tests only)
@@ -101,7 +96,8 @@ export class WorldEngine {
     this.scene = scene;
     this.instrumentation = new SceneInstrumentation(scene);
     this.instrumentation.captureFrameTime = true;
-    scene.clearColor = new Color4(0.04, 0.03, 0.09, 1);
+    const cc = this.roomDef.look.clearColor || [0.04, 0.03, 0.09];
+    scene.clearColor = new Color4(cc[0], cc[1], cc[2], 1);
     scene.skipPointerMovePicking = true;
     scene.autoClear = true;
 
@@ -126,6 +122,7 @@ export class WorldEngine {
     await this.loadAvatars();
     this.setupLights();
     this.setupPost();
+    this.roomRuntime = await createRoomRuntime(this); // screen, light layers, fire, props
     this.setupInput();
     this.applyHeroCamera();
 
@@ -138,89 +135,26 @@ export class WorldEngine {
   }
 
   async loadRoom() {
-    const scene = this.scene;
-    const room = await LoadAssetContainerAsync(`${this.assetBase}living-room.glb`, scene, { pluginExtension: ".glb" });
+    const room = await LoadAssetContainerAsync(`${this.assetBase}${this.roomDef.glb}`, this.scene, { pluginExtension: ".glb" });
     room.addAllToScene();
     this.room = room;
-    const boxes = [];
-    this.seats = [];
-    this.spawns = [];
-    const nodes = [...room.transformNodes, ...room.meshes];
-    const byName = new Map(nodes.map((n) => [n.name, n]));
-    for (const n of nodes) n.computeWorldMatrix?.(true);
-    for (const m of room.meshes) {
-      const name = m.name || "";
-      if (name.startsWith("COL_") || name === "ROOM_BOUNDS") {
-        m.isVisible = false;
-        m.isPickable = false;
-        m.computeWorldMatrix(true);
-        const bb = m.getBoundingInfo().boundingBox;
-        if (name === "ROOM_BOUNDS") {
-          this.bounds = { minX: bb.minimumWorld.x, maxX: bb.maximumWorld.x, minY: bb.minimumWorld.y, maxY: bb.maximumWorld.y, minZ: bb.minimumWorld.z, maxZ: bb.maximumWorld.z };
-        } else {
-          // oriented box in the floor plane from the world matrix
-          const wm = m.getWorldMatrix();
-          const c = bb.centerWorld;
-          const ax = Vector3.TransformNormal(new Vector3(1, 0, 0), wm);
-          const az = Vector3.TransformNormal(new Vector3(0, 0, 1), wm);
-          const ext = bb.extendSize;
-          const hx = Math.hypot(ax.x, ax.z) * ext.x;
-          const hz = Math.hypot(az.x, az.z) * ext.z;
-          const angle = Math.atan2(ax.z, ax.x);
-          boxes.push(makeBox(c.x, c.z, hx, hz, -angle));
-        }
-        continue;
-      }
-      m.isPickable = name === "FLOOR" || /rug/i.test(name);
-      m.freezeWorldMatrix?.();
-      m.doNotSyncBoundingInfo = true;
-      const mat = m.material;
-      if (!mat) continue;
-      const mname = mat.name || "";
-      if (mname.startsWith("BAKED_")) {
-        if ("unlit" in mat) mat.unlit = true;
-        // leaves are single sided cards
-        mat.backFaceCulling = mname !== "BAKED_foliage";
-        if (mat.albedoTexture) mat.albedoTexture.anisotropicFilteringLevel = 8;
-        // grade: the bake came out a little red on the planks; pull them toward the draft's brown
-        // grade toward the draft: dusty lavender walls, browner floor (the bake is neutral-warm)
-        const GRADE = { FLOOR: [0.9, 0.8, 0.88], BAKED_shell: [1.02, 0.98, 1.4], BAKED_furniture: [1.22, 1.18, 1.4], BAKED_rug: [1.05, 1.0, 1.08], BAKED_props: [1.05, 1.0, 1.15] };
-        const g = GRADE[name] || GRADE[mname];
-        if (g && "albedoColor" in mat) mat.albedoColor = new Color3(g[0], g[1], g[2]);
-      } else if (mname.startsWith("EMIT_")) {
-        if ("unlit" in mat) mat.unlit = false;
-        const lvl = EMISSIVE_LEVELS[mname] ?? 1.5;
-        mat.emissiveIntensity = lvl;
-        if ("albedoColor" in mat) mat.albedoColor = Color3.Black();
-        if (mname === "EMIT_sky_near" && mat.emissiveTexture) {
-          mat.opacityTexture = null;
-          mat.albedoTexture = mat.emissiveTexture;
-          mat.useAlphaFromAlbedoTexture = true;
-          mat.transparencyMode = 1; // ALPHATEST
-          mat.alphaCutOff = 0.5;
-        }
-      }
-    }
-    this.boxes = boxes;
-    for (const [name, n] of byName) {
-      const mm = /^SEAT_(.+)_(\d+)$/.exec(name);
-      if (mm) {
-        const look = byName.get(`${name}_look`);
-        const p = n.getAbsolutePosition().clone();
-        const q = look ? look.getAbsolutePosition() : p.add(new Vector3(0, 0, 1));
-        const yaw = Math.atan2(q.x - p.x, q.z - p.z);
-        this.seats.push({ name, pos: new Vector3(p.x, 0, p.z), height: p.y, yaw });
-      }
-      if (/^SPAWN_\d+$/.test(name)) this.spawns.push(n.getAbsolutePosition().clone());
-    }
-    // byte order, same as the build script and the server-side seat indexes
-    this.seats.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-    const hero = byName.get("CAM_hero");
-    const heroT = byName.get("CAM_hero_target");
-    this.hero = hero && heroT ? { pos: hero.getAbsolutePosition().clone(), target: heroT.getAbsolutePosition().clone() } : null;
-    if (!this.bounds) this.bounds = { minX: -3, maxX: 3, minY: 0, maxY: 3, minZ: -3, maxZ: 3 };
-    this.floor = room.meshes.find((m) => m.name === "FLOOR") || null;
-    this.lampPositions = room.meshes.filter((m) => /EMIT_(lamp|globe|lava)/.test(m.name)).map((m) => ({ name: m.name, pos: m.getBoundingInfo().boundingBox.centerWorld.clone() }));
+    // layout (colliders, seats, spawns, floors, hero camera, anchors) + material treatment
+    const st = prepareRoom(room, this.roomDef);
+    this.roomState = st;
+    this.boxes = st.boxes;
+    this.bounds = st.bounds;
+    this.seats = st.seats;
+    this.spawns = st.spawns;
+    this.floors = st.floors;
+    this.hero = st.hero;
+    this.floor = st.floor;
+    this.lampPositions = st.lampPositions;
+    if (st.hero?.fov) this.camera.fov = st.hero.fov;
+  }
+
+  /** Walkable ground height (tiers); 0 in flat rooms. */
+  groundAt(x, z) {
+    return groundAt(this.floors, x, z);
   }
 
   async loadAvatars() {
@@ -229,36 +163,9 @@ export class WorldEngine {
   }
 
   setupLights() {
-    const scene = this.scene;
-    // Characters only: the room is baked. Approximate the baked light so avatars sit in it.
-    const hemi = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
-    hemi.diffuse = Color3.FromHexString("#9a86ff");
-    hemi.groundColor = Color3.FromHexString("#3b2846");
-    hemi.specular = Color3.Black();
-    hemi.intensity = 0.46;
-    const win = new DirectionalLight("window", new Vector3(0.15, -0.35, -1), scene);
-    win.diffuse = Color3.FromHexString("#6f7cff");
-    win.specular = Color3.FromHexString("#3b46aa");
-    win.intensity = 0.42;
-    const front = new DirectionalLight("front", new Vector3(0.2, -0.45, 1), scene);
-    front.diffuse = Color3.FromHexString("#ffd9e6");
-    front.specular = Color3.Black();
-    front.intensity = 0.3;
-    this.lights = [hemi, win, front];
-    for (const l of this.lampPositions) {
-      const p = new PointLight(`pl_${l.name}`, l.pos, scene);
-      if (/lava/.test(l.name)) {
-        p.diffuse = Color3.FromHexString("#ff5fd2");
-        p.intensity = 0.9;
-        p.range = 2.2;
-      } else {
-        p.diffuse = Color3.FromHexString("#ffb46e");
-        p.intensity = 2.4;
-        p.range = 5.5;
-      }
-      p.specular = p.diffuse.scale(0.4);
-      this.lights.push(p);
-    }
+    // Characters only: the room is baked. Approximate the baked light so avatars sit in it
+    // (per-room lights from rooms/<room>.js).
+    this.lights = createRoomLights(this.scene, this.roomDef.look, this.lampPositions);
     // the room itself must not be lit twice
     for (const m of this.room.meshes) {
       if (m.material?.name?.startsWith("BAKED_") || m.material?.name?.startsWith("EMIT_")) {
@@ -270,45 +177,39 @@ export class WorldEngine {
   setupPost() {
     const scene = this.scene;
     const q = this.quality;
+    const look = this.roomDef.look; // per-room grade (rooms/<room>.js)
     scene.imageProcessingConfiguration.toneMappingEnabled = true;
     scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    scene.imageProcessingConfiguration.exposure = 1.75;
-    scene.imageProcessingConfiguration.contrast = 1.05;
+    scene.imageProcessingConfiguration.exposure = look.exposure;
+    scene.imageProcessingConfiguration.contrast = look.contrast;
     const pipe = new DefaultRenderingPipeline("post", true, scene, [this.camera]);
     pipe.samples = q.msaa;
     pipe.imageProcessingEnabled = true;
     pipe.imageProcessing.toneMappingEnabled = true;
     pipe.imageProcessing.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    pipe.imageProcessing.exposure = 1.75;
-    pipe.imageProcessing.contrast = 1.05;
-    // colour grade: violet shadows and mids, warm highlights (scene-3.jpg)
+    pipe.imageProcessing.exposure = look.exposure;
+    pipe.imageProcessing.contrast = look.contrast;
     const curves = new ColorCurves();
-    curves.globalHue = 272;
-    curves.globalDensity = 30;
-    curves.globalSaturation = -20;
-    curves.shadowsHue = 250;
-    curves.shadowsDensity = 55;
-    curves.highlightsHue = 32;
-    curves.highlightsDensity = 14;
+    Object.assign(curves, look.curves);
     pipe.imageProcessing.colorCurvesEnabled = true;
     pipe.imageProcessing.colorCurves = curves;
     pipe.imageProcessing.vignetteEnabled = true;
-    pipe.imageProcessing.vignetteWeight = 1.4;
-    pipe.imageProcessing.vignetteColor = new Color4(0.05, 0.02, 0.12, 0);
+    pipe.imageProcessing.vignetteWeight = look.vignette.weight;
+    pipe.imageProcessing.vignetteColor = new Color4(...look.vignette.color);
     pipe.fxaaEnabled = q.fxaa;
     pipe.bloomEnabled = q.bloom;
     if (q.bloom) {
-      pipe.bloomThreshold = 0.82;
-      pipe.bloomWeight = 0.45;
-      pipe.bloomKernel = 72;
-      pipe.bloomScale = 0.5;
+      pipe.bloomThreshold = look.bloom.threshold;
+      pipe.bloomWeight = look.bloom.weight;
+      pipe.bloomKernel = look.bloom.kernel;
+      pipe.bloomScale = look.bloom.scale;
     }
     pipe.depthOfFieldEnabled = q.dof;
     if (q.dof) {
       pipe.depthOfFieldBlurLevel = 0; // low
-      pipe.depthOfField.fStop = 4.0;
-      pipe.depthOfField.focalLength = 28;
-      pipe.depthOfField.focusDistance = 5200;
+      pipe.depthOfField.fStop = look.dof.fStop;
+      pipe.depthOfField.focalLength = look.dof.focalLength;
+      pipe.depthOfField.focusDistance = look.dof.focusDistance;
     }
     this.pipeline = pipe;
     if (q.ssao) {
@@ -323,18 +224,19 @@ export class WorldEngine {
         this.ssao = null;
       }
     }
-    if (q.mirror && this.floor) {
+    if (q.mirror && this.floor && look.mirror) {
       // glossy floor: blurred mirror of the lamps and people (high preset only)
       const mirror = new MirrorTexture("floorMirror", { ratio: 0.5 }, scene, true);
       mirror.mirrorPlane = new Plane(0, -1, 0, 0.0);
       mirror.adaptiveBlurKernel = 24;
-      mirror.renderList = this.scene.meshes.filter((m) => /EMIT_/.test(m.name) || /sofa|table|console|tv/i.test(m.name));
+      const mirrorRe = new RegExp(look.mirror.match, "i");
+      mirror.renderList = this.scene.meshes.filter((m) => /EMIT_/.test(m.name) || mirrorRe.test(m.name));
       this.mirror = mirror;
       this.mirrorAvatars = true;
       const mat = this.floor.material;
       if (mat && "reflectionTexture" in mat) {
         mat.reflectionTexture = mirror;
-        mat.reflectionTexture.level = 0.22;
+        mat.reflectionTexture.level = look.mirror.level;
         mat.unlit = false;
         mat.metallic = 0;
         mat.roughness = 1;
@@ -529,8 +431,8 @@ export class WorldEngine {
   sitOn(i) {
     const seat = this.seats[i];
     if (!seat) return;
-    // just outside the seat's collider (seat front + avatar radius)
-    const front = new Vector3(seat.pos.x + Math.sin(seat.yaw) * 0.64, 0, seat.pos.z + Math.cos(seat.yaw) * 0.64);
+    // just outside the seat's collider (seat front + avatar radius); table chairs name their own approach point
+    const front = seat.approach ? seat.approach.clone() : new Vector3(seat.pos.x + Math.sin(seat.yaw) * 0.64, 0, seat.pos.z + Math.cos(seat.yaw) * 0.64);
     const d = Math.hypot(front.x - this.local.pos.x, front.z - this.local.pos.z);
     if (d > 0.18) {
       // walk to the front of the seat, then turn round and sit (no snap)
@@ -641,6 +543,7 @@ export class WorldEngine {
     this.updateLocal(dt, now);
     this.updateRemote(dt, now);
     this.updateCamera(dt);
+    this.roomRuntime?.update(dt, now);
     this.scene.render();
     this.emitFrame(now);
     if (now - (this.lastStats || 0) > 1000) {
@@ -679,9 +582,14 @@ export class WorldEngine {
         L.state = "idle";
         const seat = this.seats[L.standFrom];
         if (seat) {
-          // step forward off the seat
-          L.pos.x += Math.sin(seat.yaw) * 0.35;
-          L.pos.z += Math.cos(seat.yaw) * 0.35;
+          // step forward off the seat (or back out to the chair's approach point at a table)
+          if (seat.approach) {
+            L.pos.x = seat.approach.x;
+            L.pos.z = seat.approach.z;
+          } else {
+            L.pos.x += Math.sin(seat.yaw) * 0.35;
+            L.pos.z += Math.cos(seat.yaw) * 0.35;
+          }
           const p = resolve(L.pos.x, L.pos.z, AVATAR_RADIUS, this.boxes, this.bounds);
           L.pos.x = p[0];
           L.pos.z = p[1];
@@ -737,6 +645,9 @@ export class WorldEngine {
       L.state = speed > 0.05 ? (speed > WALK_SPEED + 0.2 ? "run" : "walk") : "idle";
       if (L.emote) L.state = "emote";
     }
+    // tiered floors: ease onto the ground (or the seat's tier) under the avatar; 0 in flat rooms
+    const seatNow = (L.state === "sit" || L.state === "sitDown") && this.seats[L.seat];
+    L.pos.y = easeHeight(L.pos.y, seatNow ? seatNow.pos.y : this.groundAt(L.pos.x, L.pos.z), dt);
     av.setLocomotion(L.state === "walk" || L.state === "run" || L.state === "emote" ? "idle" : L.state, speed);
     av.setSpeaking(this.speakers.has(this.selfId));
     av.update(dt, now / 1000);
@@ -777,7 +688,8 @@ export class WorldEngine {
       if (!av) continue;
       const s = r.buffer.sample(serverNow);
       if (!s) continue;
-      const pos = this.tmp.set(s.x, 0, s.z);
+      r.y = easeHeight(r.y, this.groundAt(s.x, s.z), dt);
+      const pos = this.tmp.set(s.x, r.y, s.z);
       let speed = 0;
       if (r.last) {
         speed = Math.hypot(s.x - r.last.x, s.z - r.last.z) / Math.max(1e-4, dt);
@@ -813,7 +725,7 @@ export class WorldEngine {
     const k = 0.55 * this.camFollow;
     const desired = new Vector3(
       this.roomFocus.x + (self.position.x - this.roomFocus.x) * k,
-      this.roomFocus.y + (1.0 - this.roomFocus.y) * k,
+      this.roomFocus.y + (self.position.y + 1.0 - this.roomFocus.y) * k,
       this.roomFocus.z + (self.position.z - this.roomFocus.z) * k,
     );
     cam.target.x += (desired.x - cam.target.x) * Math.min(1, dt * 3);
@@ -865,6 +777,7 @@ export class WorldEngine {
       window.removeEventListener("resize", this.onResize);
       for (const a of this.avatars.values()) a.dispose();
       this.avatars.clear();
+      this.roomRuntime?.dispose();
       this.avatarAsset?.container.dispose();
       this.pipeline?.dispose();
       this.ssao?.dispose?.();

@@ -15,8 +15,70 @@ const MODE = process.argv[3] || 'hero';
 const BASE = process.env.HARNESS_URL || 'http://127.0.0.1:5199/world3d-harness.html';
 fs.mkdirSync(OUT, { recursive: true });
 
+/**
+ * Room preview modes (no mock server needed): ROOM=cinema|game-room|camp|living-room
+ *   room    -> room-<id>.png from the draft's hero angle with the cast seated
+ *              (SCREEN=demo|off for the cinema screen; FRAMES = frames stepped first)
+ *   layout  -> prints the room's phase 1 GLB layout as JSON (living room migration)
+ */
+async function roomMode(browser) {
+  const room = process.env.ROOM || 'cinema';
+  const page = await browser.newPage({ viewport: { width: Number(process.env.W || 1600), height: Number(process.env.H || 900) }, deviceScaleFactor: 1 });
+  const logs = [];
+  page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
+  page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
+  const quality = process.env.Q || 'high';
+  await page.goto(`${BASE}?room=${room}&quality=${quality}&screen=${process.env.SCREEN || 'demo'}`, { waitUntil: 'load' });
+  const t0 = Date.now();
+  try {
+    await page.waitForFunction(() => window.__roomPreview && window.__descallWorld && window.__descallWorld.avatars.size > 0, null, { timeout: 300000 });
+  } catch (e) {
+    console.log(logs.join('\n'));
+    throw e;
+  }
+  console.log('room ready in', Date.now() - t0, 'ms');
+  const ev = (fn, arg) => page.evaluate(fn, arg);
+  if (MODE === 'layout') {
+    const L = await ev(() => window.__roomPreview.layoutFromGlb());
+    const file = path.join(OUT, `${room}.layout.json`);
+    fs.writeFileSync(file, JSON.stringify(L, null, 1));
+    console.log('saved', file);
+  } else {
+    if (process.env.LOOK) {
+      // grade iteration: {tints:{name:[r,g,b]}, exposure, contrast, curves:{...}, emissive:{EMIT_x:level}, beam, fog}
+      await ev((v) => {
+        const w = window.__descallWorld;
+        for (const m of w.scene.meshes) {
+          const mat = m.material;
+          if (!mat || !mat.albedoColor) continue;
+          const t = (v.tints || {})[m.name] || (v.tints || {})[mat.name];
+          if (t) mat.albedoColor.set(t[0], t[1], t[2]);
+          if (v.emissive && v.emissive[mat.name] != null) mat.emissiveIntensity = v.emissive[mat.name];
+        }
+        const ip = w.pipeline.imageProcessing;
+        if (v.exposure) ip.exposure = v.exposure;
+        if (v.contrast) ip.contrast = v.contrast;
+        if (v.curves) Object.assign(ip.colorCurves, v.curves);
+        if (v.lights) for (const l of w.lights) if (v.lights[l.name] != null) l.intensity = v.lights[l.name];
+      }, JSON.parse(process.env.LOOK));
+    }
+    const frames = Number(process.env.FRAMES || 60);
+    for (let i = 0; i < frames; i += 10) await ev((n) => window.__roomPreview.step(n), Math.min(10, frames - i));
+    await ev(() => window.__descallWorld.resetCamera());
+    await ev(() => window.__roomPreview.step(2));
+    const name = process.env.SHOT || `room-${room}.png`;
+    await page.screenshot({ path: path.join(OUT, name), timeout: 300000 });
+    console.log('saved', path.join(OUT, name));
+    const stats = await ev(() => ({ ...window.__descallWorld.stats(), totalVertices: window.__descallWorld.scene.getTotalVertices(), seats: window.__descallWorld.seats.length }));
+    console.log('stats', JSON.stringify(stats));
+  }
+  fs.writeFileSync(path.join(OUT, `log-room-${room}.txt`), logs.join('\n'));
+  await browser.close();
+}
+
 async function main() {
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  if (MODE === 'room' || MODE === 'layout') return roomMode(browser);
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 });
   const logs = [];
   page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));

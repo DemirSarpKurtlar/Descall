@@ -28,6 +28,13 @@ AMBIENTCG_TEXTURES = [
     "Carpet016",     # shaggy rug
     "Wood049",       # light wood for the TV console and side table
     "Plaster001",    # wall plaster
+    # rooms (cinema, game room, camp)
+    "Carpet012",     # cinema carpet (tiers, aisle)
+    "Fabric026",     # cinema velvet seats
+    "Fabric023",     # game room felt (tinted green / sand)
+    "WoodFloor040",  # game room floor planks
+    "Grass004",      # camp ground
+    "Bark014",       # camp logs and tree trunks
 ]
 
 

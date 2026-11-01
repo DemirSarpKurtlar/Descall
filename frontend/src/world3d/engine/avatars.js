@@ -328,10 +328,11 @@ export class AvatarController {
     this.holder.position.copyFrom(position);
     this.yaw = smoothYaw && dt > 0 ? lerpAngle(this.yaw, yaw, Math.min(1, dt * 12)) : yaw;
     this.holder.rotation.y = this.yaw + this.yawOffset;
-    this.shadow.position.set(position.x, 0.012 + Math.max(0, position.y - 0.0) * 0, position.z);
+    // blob shadow on the floor under the avatar (tiered rooms: the tier it stands on)
+    this.shadow.position.set(position.x, position.y + 0.012, position.z);
     const seated = this.state === "sit" || this.state === "sitDown";
     this.shadow.scaling.setAll(seated ? 0.8 : 1);
-    this.shadow.setEnabled(position.y < 0.2);
+    this.shadow.setEnabled(position.y > -10); // parked (not yet placed) avatars sit far below
   }
 
   headPosition(out) {

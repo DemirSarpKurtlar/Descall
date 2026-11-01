@@ -76,3 +76,13 @@ if frames:
         sheet.paste(im.resize((400, 225)), ((i % 4) * 400, (i // 4) * 225))
     sheet.save(os.path.join(out, "walk-and-sit-contact-sheet.jpg"), quality=88)
     print("saved", os.path.join(out, "walk-and-sit-contact-sheet.jpg"))
+
+# rooms (capture.cjs room mode): the draft next to the real-time render from its hero angle
+for draft, shot, name, label in (
+    ("scene-1.jpg", "room-cinema.png", "compare-scene-1.jpg", "Descall real-time: Sinema (screen share demo)"),
+    ("scene-1.jpg", "room-cinema-dark.png", "compare-scene-1-screen-off.jpg", "Descall real-time: Sinema, screen idle"),
+    ("scene-2.jpg", "room-game-room.png", "compare-scene-2.jpg", "Descall real-time: Oyun odasi"),
+    ("scene-4.jpg", "room-camp.png", "compare-scene-4.jpg", "Descall real-time: Kamp"),
+):
+    if os.path.exists(os.path.join(shots, shot)):
+        side_by_side(os.path.join(design, draft), os.path.join(shots, shot), f"Draft: {draft}", label, name)
