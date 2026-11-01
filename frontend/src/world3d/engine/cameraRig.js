@@ -193,7 +193,8 @@ export class CameraRig {
       if (!d.moved && Math.hypot(e.clientX - d.x, e.clientY - d.y) > DRAG_PX) d.moved = true;
       if (!d.moved) return;
       if (this.state.mode === "third") {
-        const k = 0.0045 * this.prefs.sensitivity;
+        // about 0.16 deg per pixel at sensitivity 1 (a little quicker than the old orbit camera)
+        const k = 0.0028 * this.prefs.sensitivity;
         this.orbit.tYaw += dx * k;
         this.orbit.tPitch = Math.min(THIRD_PITCH[1], Math.max(THIRD_PITCH[0], this.orbit.tPitch + (this.prefs.invertY ? -dy : dy) * k));
       } else {
