@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Descall 3D Dünya Taslakları</title>
+<style>
+  :root {
+    --glass: rgba(16, 18, 30, 0.58);
+    --glass-strong: rgba(14, 16, 26, 0.78);
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #f2f3f8;
+    --muted: rgba(235, 238, 255, 0.66);
+    --brand: #587af6;
+    --brand2: #8b6cf6;
+    --ok: #3ddc84;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #07080d; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--text); }
+  .scene { position: relative; width: 1600px; height: 900px; overflow: hidden; margin: 0 auto 40px; border-radius: 22px; }
+  .scene > img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .glass { background: var(--glass); backdrop-filter: blur(22px) saturate(1.5); -webkit-backdrop-filter: blur(22px) saturate(1.5); border: 1px solid var(--line); box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+  .rooms { position: absolute; top: 24px; left: 24px; display: flex; gap: 6px; padding: 6px; border-radius: 18px; }
+  .rooms span { padding: 10px 16px; border-radius: 13px; font-size: 15px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .rooms span.on { color: #fff; background: linear-gradient(135deg, rgba(88,122,246,.9), rgba(139,108,246,.85)); box-shadow: 0 6px 18px rgba(88,122,246,.45); }
+  .rooms i { width: 18px; height: 18px; display: inline-block; border-radius: 5px; background: currentColor; opacity: .9; -webkit-mask-size: contain; mask-size: contain; }
+  .who { position: absolute; top: 24px; right: 24px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 18px; }
+  .who b { font-size: 16px; } .who small { color: var(--muted); font-size: 13px; display: block; }
+  .faces { display: flex; } .faces em { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #141624; margin-left: -8px; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 13px; }
+  .leave { padding: 10px 14px; border-radius: 12px; background: rgba(240, 71, 71, .9); font-weight: 700; font-size: 14px; }
+  .dock { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; border-radius: 22px; }
+  .dock span { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: rgba(255,255,255,.07); font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.1; }
+  .dock span.on { background: rgba(88,122,246,.95); color: #fff; }
+  .dock span.red { background: rgba(240,71,71,.9); color: #fff; }
+  .dock .sep { width: 1px; background: var(--line); margin: 6px 2px; height: auto; border-radius: 0; }
+  .chat { position: absolute; left: 24px; bottom: 24px; width: 330px; border-radius: 18px; padding: 14px; font-size: 14px; }
+  .chat p { margin: 6px 0; color: var(--text); } .chat p b { color: #a9b8ff; margin-right: 6px; }
+  .chat .input { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.06); color: var(--muted); }
+  .tag { position: absolute; padding: 5px 10px; border-radius: 10px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; background: var(--glass-strong); border: 1px solid var(--line); }
+  .tag.talk { box-shadow: 0 0 0 2px var(--ok), 0 0 18px rgba(61,220,132,.55); }
+  .tag .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .chip { position: absolute; padding: 9px 14px; border-radius: 14px; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+  .chip .live { background: #f04747; color: #fff; font-size: 11px; padding: 3px 7px; border-radius: 7px; font-weight: 800; letter-spacing: .04em; }
+  .btn { padding: 10px 16px; border-radius: 12px; background: linear-gradient(135deg, var(--brand), var(--brand2)); font-weight: 700; font-size: 14px; display: inline-block; }
+  .panel { position: absolute; border-radius: 20px; padding: 18px; }
+  .panel h3 { font-size: 17px; margin-bottom: 4px; } .panel .sub { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+  .rack { position: absolute; left: 50%; bottom: 104px; transform: translateX(-50%); padding: 12px 16px 14px; border-radius: 18px; }
+  .rack .row { display: flex; gap: 6px; }
+  .rack .row + .row { margin-top: 8px; }
+  .tile { width: 40px; height: 54px; border-radius: 7px; background: linear-gradient(#fffdf6, #eee7d6); box-shadow: 0 3px 0 #c9bfa6, 0 6px 12px rgba(0,0,0,.35); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
+  .tile.r { color: #e0403a; } .tile.b { color: #2f6be8; } .tile.k { color: #1d1d22; } .tile.y { color: #e2a21b; }
+  .tile.sel { transform: translateY(-10px); box-shadow: 0 3px 0 #c9bfa6, 0 0 0 3px var(--brand), 0 10px 20px rgba(88,122,246,.5); }
+  .tile.gap { visibility: hidden; }
+  .cards { display: flex; gap: 8px; margin: 8px 0 12px; }
+  .card { width: 54px; height: 76px; border-radius: 8px; background: #fff; color: #1d1d22; display: grid; place-items: center; font-size: 22px; font-weight: 800; box-shadow: 0 6px 14px rgba(0,0,0,.35); }
+  .card.red { color: #d63a3a; } .card.back { background: linear-gradient(135deg, #3a4fd8, #7a5cf0); }
+  .row2 { display: flex; gap: 8px; }
+  .row2 .btn.ghost { background: rgba(255,255,255,.09); }
+  .emote { position: absolute; width: 330px; height: 330px; border-radius: 50%; display: grid; place-items: center; }
+  .emote span { position: absolute; padding: 9px 14px; border-radius: 14px; background: rgba(255,255,255,.08); font-weight: 700; font-size: 14px; }
+  .emote .c { position: static; background: rgba(88,122,246,.9); border-radius: 50%; width: 92px; height: 92px; display: grid; place-items: center; text-align: center; font-size: 13px; }
+  .label { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+  .cust { position: absolute; right: 24px; top: 96px; width: 380px; border-radius: 22px; padding: 20px; }
+  .tabs { display: flex; gap: 6px; margin: 10px 0 14px; } .tabs span { padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--muted); background: rgba(255,255,255,.06); } .tabs span.on { color: #fff; background: var(--brand); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .item { border-radius: 14px; background: rgba(255,255,255,.06); padding: 10px; font-size: 12px; text-align: center; border: 1px solid transparent; }
+  .item.on { border-color: var(--brand); background: rgba(88,122,246,.18); }
+  .item .sw { height: 54px; border-radius: 10px; margin-bottom: 8px; }
+  .item .price { color: #ffd166; font-weight: 800; }
+  .colors { display: flex; gap: 8px; margin: 14px 0; } .colors i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); }
+  .caption { width: 1600px; margin: 0 auto 10px; padding: 0 6px; font-size: 22px; font-weight: 800; }
+  .caption small { display: block; font-size: 15px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Sinema -->
+<div class="caption">1. Sinema odası<small>Büyük ekranda bir üyenin ekran paylaşımı oynar. Koltuğa oturunca kamera ekrana döner; "Ekrana geç" ile tam ekran izlenir.</small></div>
+<section class="scene" id="s1">
+  <img class="bg" src="scene-1.jpg" alt="">
+  <div class="rooms glass"><span class="on">Sinema</span><span>Oyun odası</span><span>Oturma odası</span><span>Kamp</span></div>
+  <div class="who glass"><div><b>Hafta Sonu Ekibi</b><small>6 kişi bu odada</small></div><div class="faces"><em style="background:#e2556b">A</em><em style="background:#2aa198">M</em><em style="background:#d9a21b">Z</em><em style="background:#587af6">D</em></div><span class="leave">Ayrıl</span></div>
+  <div class="chip glass" style="top:118px;left:540px"><span class="live">CANLI</span> Deniz ekranını paylaşıyor <span class="btn" style="padding:7px 12px;font-size:13px">Ekrana geç</span></div>
+  <div class="tag talk" style="top:560px;left:330px"><span class="dot"></span>Mert</div>
+  <div class="tag" style="top:600px;left:930px">Zeynep</div>
+  <div class="tag talk" style="top:520px;left:1380px"><span class="dot"></span>Can</div>
+  <div class="chat glass"><p><b>Ayşe</b>bu sahne efsane</p><p><b>Can</b>sesi biraz aç</p><p><b>Mert</b>patlamış mısır kimde</p><div class="input">Odaya yaz...</div></div>
+  <div class="dock glass"><span class="on">Mik</span><span>Ses</span><span>Emoji</span><span class="on">Ekran</span><div class="sep"></div><span>Otur</span><span>Kamera</span><span>Ayar</span></div>
+</section>
+
+<!-- 2. Oyun odasi -->
+<div class="caption">2. Oyun odası<small>Masaya yürüyüp oturunca oyun açılır. Okey ıstakası altta düz panelde (taşları dizmek kolay olsun); masa ve atılan taşlar 3D. Yanda blackjack masası: krupiye bot, yalnızca puan, fiş ve bahis yok.</small></div>
+<section class="scene" id="s2">
+  <img class="bg" src="scene-2.jpg" alt="">
+  <div class="rooms glass"><span>Sinema</span><span class="on">Oyun odası</span><span>Oturma odası</span><span>Kamp</span></div>
+  <div class="who glass"><div><b>Hafta Sonu Ekibi</b><small>7 kişi · 3 izleyici</small></div><div class="faces"><em style="background:#e2556b">A</em><em style="background:#2aa198">M</em><em style="background:#d9a21b">Z</em><em style="background:#587af6">D</em></div><span class="leave">Ayrıl</span></div>
+  <div class="panel glass" style="top:96px;left:24px;width:300px"><h3>Okey · Masa 1</h3><div class="sub">Sıra sende · 0:18</div>
+    <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)">Gösterge <span class="tile r" style="width:34px;height:46px;font-size:18px">7</span> Okey: kırmızı 8</div>
+    <div style="margin-top:12px;font-size:13px;color:var(--muted)">Puan: Ayşe 12 · Mert 9 · Sen 14 · Zeynep 6</div>
+  </div>
+  <div class="panel glass" style="top:96px;right:24px;width:310px"><h3>Blackjack · Masa 2</h3><div class="sub">Krupiye bot · eğlence modu, puanla</div>
+    <div style="font-size:13px;color:var(--muted)">Krupiye</div><div class="cards"><div class="card">K</div><div class="card back"></div></div>
+    <div style="font-size:13px;color:var(--muted)">Senin elin · 17</div><div class="cards"><div class="card red">9</div><div class="card">8</div></div>
+    <div class="row2"><span class="btn">Kart çek</span><span class="btn ghost">Dur</span><span class="btn ghost">İkiye katla</span></div>
+  </div>
+  <div class="rack glass"><div class="row"><span class="tile r">3</span><span class="tile r">4</span><span class="tile r sel">5</span><span class="tile gap"></span><span class="tile b">9</span><span class="tile b">10</span><span class="tile b">11</span><span class="tile gap"></span><span class="tile k">7</span><span class="tile y">7</span><span class="tile b">7</span><span class="tile gap"></span><span class="tile k">1</span></div>
+    <div class="row"><span class="tile y">2</span><span class="tile y">3</span><span class="tile gap"></span><span class="tile k">12</span><span class="tile k">13</span><span class="tile gap"></span><span class="tile r">8</span><span class="tile gap"></span><span class="tile b">5</span><span class="tile gap"></span><span class="btn" style="align-self:center;margin-left:8px">Taşı at</span></div></div>
+  <div class="dock glass" style="bottom:24px"><span class="on">Mik</span><span>Ses</span><span>Emoji</span><div class="sep"></div><span>Kalk</span><span>İzle</span><span>Ayar</span></div>
+</section>
+
+<!-- 3. Oturma odasi -->
+<div class="caption">3. Oturma odası<small>Serbest takılma alanı. WASD ile yürü, koltuğa tıkla otur. Emoji tekerleği (G tuşu) ile dans, alkış, selam. Yakına gelen arkadaşın sesi daha net duyulur.</small></div>
+<section class="scene" id="s3">
+  <img class="bg" src="scene-3.jpg" alt="">
+  <div class="rooms glass"><span>Sinema</span><span>Oyun odası</span><span class="on">Oturma odası</span><span>Kamp</span></div>
+  <div class="who glass"><div><b>Hafta Sonu Ekibi</b><small>5 kişi bu odada</small></div><div class="faces"><em style="background:#e2556b">A</em><em style="background:#2aa198">M</em><em style="background:#d9a21b">Z</em></div><span class="leave">Ayrıl</span></div>
+  <div class="tag talk" style="top:190px;left:250px"><span class="dot"></span>Ayşe</div>
+  <div class="tag" style="top:200px;left:470px">Mert</div>
+  <div class="tag talk" style="top:180px;left:640px"><span class="dot"></span>Zeynep</div>
+  <div class="tag" style="top:500px;left:1150px">Can · gitar çalıyor</div>
+  <div class="emote glass" style="left:640px;top:380px"><div class="c">Emoji<br>G</div>
+    <span style="top:18px;left:132px">Dans</span><span style="top:80px;right:14px">Alkış</span><span style="bottom:80px;right:14px">Gül</span><span style="bottom:18px;left:128px">Selam</span><span style="bottom:80px;left:14px">Otur</span><span style="top:80px;left:14px">Zıpla</span></div>
+  <div class="chat glass"><p><b>Zeynep</b>gol gol gol</p><p><b>Can</b>bir şarkı daha?</p><div class="input">Odaya yaz...</div></div>
+  <div class="dock glass"><span class="on">Mik</span><span>Ses</span><span class="on">Emoji</span><span>Ekran</span><div class="sep"></div><span>Otur</span><span>Kamera</span><span>Ayar</span></div>
+</section>
+
+<!-- 4. Kamp -->
+<div class="caption">4. Kamp odası<small>Ateş başında sohbet. Ses ateşin etrafında daha sıcak duyulur; odadan biri müzik çalabilir. Gece, yıldızlar ve kutup ışıkları.</small></div>
+<section class="scene" id="s4">
+  <img class="bg" src="scene-4.jpg" alt="">
+  <div class="rooms glass"><span>Sinema</span><span>Oyun odası</span><span>Oturma odası</span><span class="on">Kamp</span></div>
+  <div class="who glass"><div><b>Hafta Sonu Ekibi</b><small>4 kişi bu odada</small></div><div class="faces"><em style="background:#e2556b">A</em><em style="background:#2aa198">M</em><em style="background:#587af6">D</em></div><span class="leave">Ayrıl</span></div>
+  <div class="tag talk" style="top:290px;left:640px"><span class="dot"></span>Mert · hikâye anlatıyor</div>
+  <div class="tag" style="top:300px;left:1090px">Elif</div>
+  <div class="chip glass" style="top:96px;right:24px">Çalan: Lo-fi kamp ateşi · Deniz</div>
+  <div class="chat glass"><p><b>Elif</b>marshmallow yandı</p><p><b>Deniz</b>bir tur daha anlat</p><div class="input">Odaya yaz...</div></div>
+  <div class="dock glass"><span class="on">Mik</span><span>Ses</span><span>Emoji</span><span>Müzik</span><div class="sep"></div><span>Otur</span><span>Kamera</span><span>Ayar</span></div>
+</section>
+
+<!-- 5. Karakterler -->
+<div class="caption">5. 3D karakterler ve özelleştirme<small>Herkesin kendi 3D karakteri. Saç, kıyafet, aksesuar ve renk; bir kısmı ücretsiz, bir kısmı DesCoin ile mağazadan (yalnızca görünüm, oyunlara etkisi yok).</small></div>
+<section class="scene" id="s5">
+  <img class="bg" src="scene-5.jpg" alt="">
+  <div class="cust glass"><h3 style="font-size:20px">Karakterini oluştur</h3><div class="sub" style="color:var(--muted);font-size:13px">Değişiklikler odadaki herkes için anında görünür</div>
+    <div class="tabs"><span>Saç</span><span class="on">Kıyafet</span><span>Aksesuar</span><span>Yüz</span></div>
+    <div class="grid">
+      <div class="item on"><div class="sw" style="background:linear-gradient(135deg,#e8e8ee,#b9bcc8)"></div>Kapüşonlu<br><span style="color:var(--ok);font-weight:800">Ücretsiz</span></div>
+      <div class="item"><div class="sw" style="background:linear-gradient(135deg,#1e2a5a,#3a4fd8)"></div>Bomber<br><span class="price">150 DesCoin</span></div>
+      <div class="item"><div class="sw" style="background:linear-gradient(135deg,#b23a3a,#e2556b)"></div>Kolej ceket<br><span class="price">220 DesCoin</span></div>
+      <div class="item"><div class="sw" style="background:linear-gradient(135deg,#d9a21b,#f2c94c)"></div>Yelek<br><span class="price">120 DesCoin</span></div>
+      <div class="item"><div class="sw" style="background:linear-gradient(135deg,#2aa198,#5ad1c4)"></div>Yağmurluk<br><span class="price">180 DesCoin</span></div>
+      <div class="item"><div class="sw" style="background:linear-gradient(135deg,#3a3d4a,#6b6f80)"></div>Çizgili<br><span style="color:var(--ok);font-weight:800">Ücretsiz</span></div>
+    </div>
+    <div class="colors"><i style="background:#f2f3f8"></i><i style="background:#587af6"></i><i style="background:#8b6cf6"></i><i style="background:#e2556b"></i><i style="background:#2aa198"></i><i style="background:#d9a21b"></i></div>
+    <div class="row2"><span class="btn">Kaydet</span><span class="btn ghost">Rastgele</span></div>
+  </div>
+</section>
+
+</body>
+</html>
