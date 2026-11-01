@@ -38,7 +38,7 @@ import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
-import { World3DButton, World3DStage, useWorld3DAvailable } from "../../world3d/World3DLauncher.jsx";
+import { World3DDockButton, World3DStage, useWorld3DAvailable, useWorld3DSession } from "../../world3d/World3DLauncher.jsx";
 import { subscribeActiveSpeakers } from "../../lib/activeSpeakers";
 import { SOCKET_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
@@ -760,18 +760,22 @@ export default function ServerVoicePanel({
 
   const [memberMenu, setMemberMenu] = useState(null);
   // 3D world (phase 1, staff preview): a mode of this voice channel. Voice keeps running.
+  // While the world covers the channel, the stage and dock are not rendered (no video
+  // decode, tile meters or animations under the canvas); screen-share audio keeps its sink.
   const worldAvailable = useWorld3DAvailable(me);
-  const [worldOpen, setWorldOpen] = useState(false);
+  const world = useWorld3DSession();
+  const worldActive = world.active;
+  const resetWorld = world.reset;
   const [lkSpeakers, setLkSpeakers] = useState(null);
   useEffect(() => {
-    if (!inThis || isStage) setWorldOpen(false);
-  }, [inThis, isStage]);
+    if (!inThis || isStage) resetWorld();
+  }, [inThis, isStage, resetWorld]);
   useEffect(() => {
-    if (!worldOpen) return undefined;
+    if (!worldActive) return undefined;
     return subscribeActiveSpeakers(({ scope, ids }) => {
       setLkSpeakers(scope === String(channel?.id) ? new Set(ids) : null);
     });
-  }, [worldOpen, channel?.id]);
+  }, [worldActive, channel?.id]);
   const [screenExpand, setScreenExpand] = useState({ token: 0, id: null });
   const [tileFullscreen, setTileFullscreen] = useState(null);
   const tilesRef = useRef([]);
@@ -941,9 +945,10 @@ export default function ServerVoicePanel({
   const openMemberMenu = useCallback((next) => setMemberMenu(next), []);
 
   return (
-    <div className="server-voice-panel server-voice-room" style={worldOpen ? { position: "relative" } : undefined}>
-      {worldOpen ? (
+    <div className="server-voice-panel server-voice-room" style={world.active ? { position: "relative" } : undefined} data-w3d={world.active ? world.phase : undefined}>
+      {world.active ? (
         <World3DStage
+          session={world}
           kind="voice"
           roomId={channel?.id}
           title={channel?.name || t("Voice channel")}
@@ -969,9 +974,7 @@ export default function ServerVoicePanel({
           activeSpeakerIds={lkSpeakers}
           socketUrl={SOCKET_URL}
           token={getToken()}
-          onExit={() => setWorldOpen(false)}
           onFallback={(reason) => {
-            setWorldOpen(false);
             toast(t(`world3d.fallback.${reason === "software" || reason === "no_webgl2" ? reason : "engine"}`), "info");
           }}
         />
@@ -991,6 +994,21 @@ export default function ServerVoicePanel({
             document.body
           )
         : null}
+      {world.stageHidden ? (
+        <div hidden>
+          {screenSharers
+            .filter((sh) => !sh.isLocal && sh.stream)
+            .map((sh) => (
+              <RemoteScreenAudioSink
+                key={`screen-audio-${sh.id}`}
+                stream={sh.stream}
+                volume={serverVoice?.screenVolumes?.[String(sh.id)] ?? 100}
+                enabled
+                sinkId={serverVoice?.selectedAudioOutput || ""}
+              />
+            ))}
+        </div>
+      ) : (<>
       <header className="server-voice-room-head">
         <span className="server-voice-room-mark" aria-hidden>
           {isStage ? <Radio size={18} /> : <Volume2 size={18} />}
@@ -1006,9 +1024,6 @@ export default function ServerVoicePanel({
           </p>
         </div>
         <div className="server-voice-room-meta">
-          {worldAvailable && inThis && !isStage ? (
-            <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
-          ) : null}
           {statusLabel ? (
             <span className={`server-voice-status is-${statusTone}`} role="status">
               <i aria-hidden />
@@ -1196,6 +1211,15 @@ export default function ServerVoicePanel({
               <LogOut size={18} />
               {t("Leave")}
             </button>
+            {worldAvailable && !isStage ? (
+              <World3DDockButton
+                session={world}
+                label={t("world3d.enter")}
+                hint={t("world3d.enterHint")}
+                loadingLabel={t("world3d.enterLoading", { percent: Math.round(world.progress * 100) })}
+                compact
+              />
+            ) : null}
           </>
         ) : (
           <button
@@ -1210,6 +1234,7 @@ export default function ServerVoicePanel({
           </button>
         )}
       </footer>
+      </>)}
 
       <VoiceMemberContextMenu
         menu={memberMenu}

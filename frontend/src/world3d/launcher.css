@@ -1,26 +1,198 @@
-/* 3D world entry (always bundled, tiny). The world UI lives in world3d.css (lazy). */
+/* 3D world entry (always bundled, tiny). The world UI lives in world3d.css (lazy).
+ * The "3D Dünya" pill closes the call's control dock, after a divider: a glass pill in the
+ * app's colours with an accent gradient ring and an isometric cube. */
+.w3d-dock-divider {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 1px;
+  height: 30px;
+  margin: 0 2px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+
 .w3d-enter {
+  --w3d-a: var(--gd-brand, #587af6);
+  --w3d-b: #8b6cf6;
+  --w3d-c: #c06cf0;
+  --w3d-fill: rgba(22, 24, 38, 0.82);
+  position: relative;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 11px;
+  gap: 9px;
+  height: 52px;
+  padding: 0 20px 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(88, 122, 246, 0.55);
-  background: linear-gradient(135deg, rgba(88, 122, 246, 0.22), rgba(139, 108, 246, 0.2));
-  color: #e9edff;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)) padding-box,
+    linear-gradient(var(--w3d-fill), var(--w3d-fill)) padding-box,
+    linear-gradient(135deg, var(--w3d-a), var(--w3d-b) 52%, var(--w3d-c)) border-box;
+  box-shadow: 0 8px 24px rgba(88, 122, 246, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  color: #eef1ff;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   cursor: pointer;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
 }
-.w3d-enter:hover {
-  background: linear-gradient(135deg, rgba(88, 122, 246, 0.42), rgba(139, 108, 246, 0.38));
+.w3d-enter.is-compact {
+  height: 44px;
+  padding: 0 16px 0 13px;
+  font-size: 13px;
+}
+.w3d-enter:hover:not([aria-disabled]) {
+  box-shadow: 0 10px 30px rgba(88, 122, 246, 0.38), 0 0 0 4px rgba(139, 108, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+.w3d-enter:active:not([aria-disabled]) {
+  transform: translateY(0) scale(0.98);
 }
 .w3d-enter:focus-visible {
-  outline: 2px solid #587af6;
-  outline-offset: 2px;
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
+.w3d-enter[aria-disabled] {
+  cursor: default;
+}
+.w3d-enter-label {
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+
+/* cube: three faces + an edge outline */
+.w3d-cube {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.w3d-cube path {
+  transition: transform 0.28s cubic-bezier(0.3, 0.7, 0.2, 1.2), fill 0.28s ease, opacity 0.28s ease;
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+}
+.w3d-cube-top {
+  fill: #b9c6ff;
+}
+.w3d-cube-left {
+  fill: #6f86f8;
+}
+.w3d-cube-right {
+  fill: #8b6cf6;
+}
+.w3d-cube-edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+/* hover: the lid lifts a little and the faces brighten */
+.w3d-enter:hover:not([aria-disabled]) .w3d-cube-top,
+.w3d-enter:focus-visible .w3d-cube-top {
+  transform: translateY(-1.8px);
+  fill: #dfe5ff;
+}
+.w3d-enter:hover:not([aria-disabled]) .w3d-cube-left,
+.w3d-enter:focus-visible .w3d-cube-left {
+  transform: translateX(-0.6px);
+  fill: #8197ff;
+}
+.w3d-enter:hover:not([aria-disabled]) .w3d-cube-right,
+.w3d-enter:focus-visible .w3d-cube-right {
+  transform: translateX(0.6px);
+  fill: #a184ff;
+}
+
+/* loading: the ring fills with the download / warm-up progress, the faces pulse in turn */
+.w3d-enter.is-loading {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)) padding-box,
+    linear-gradient(var(--w3d-fill), var(--w3d-fill)) padding-box,
+    conic-gradient(from -90deg, var(--w3d-a), var(--w3d-b) calc(var(--w3d-p, 0) * 0.5%), var(--w3d-c) calc(var(--w3d-p, 0) * 1%), rgba(255, 255, 255, 0.14) 0) border-box;
+}
+.w3d-enter.is-loading .w3d-cube-top {
+  animation: w3d-face 1.2s ease-in-out infinite;
+}
+.w3d-enter.is-loading .w3d-cube-left {
+  animation: w3d-face 1.2s ease-in-out 0.2s infinite;
+}
+.w3d-enter.is-loading .w3d-cube-right {
+  animation: w3d-face 1.2s ease-in-out 0.4s infinite;
+}
+@keyframes w3d-face {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.w3d-enter-bar {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 7px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.w3d-enter-bar i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--w3d-a), var(--w3d-c));
+  transition: transform 0.25s ease;
+}
+
+/* tooltip above the pill (hover and keyboard focus) */
+.w3d-enter-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 11px;
+  border-radius: 11px;
+  background: rgba(18, 19, 31, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  color: #e6e9f5;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 5;
+}
+.w3d-enter:hover .w3d-enter-tip,
+.w3d-enter:focus-visible .w3d-enter-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0.25s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w3d-enter,
+  .w3d-cube path,
+  .w3d-enter-tip,
+  .w3d-enter-bar i {
+    transition: none;
+  }
+  .w3d-enter:hover:not([aria-disabled]) {
+    transform: none;
+  }
+  .w3d-enter:hover:not([aria-disabled]) .w3d-cube path,
+  .w3d-enter:focus-visible .w3d-cube path {
+    transform: none;
+  }
+  .w3d-enter.is-loading .w3d-cube path {
+    animation: none;
+  }
+}
+
+/* the world layer of a call surface */
 .w3d-host {
   position: absolute;
   inset: 0;
@@ -33,4 +205,61 @@
   position: absolute;
   inset: 0;
   background: #0a0818;
+}
+/* loading: mounted (download, compile, warm-up) but invisible and inert */
+.w3d-host[data-phase="loading"] {
+  opacity: 0;
+  pointer-events: none;
+}
+.w3d-host[data-phase="entering"] {
+  animation: w3d-world-in 400ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+.w3d-host[data-phase="leaving"] {
+  pointer-events: none;
+  animation: w3d-world-out 400ms cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+/* the call stage (every other child of the surface) dives into the world and comes back */
+[data-w3d="entering"] > :not(.w3d-host) {
+  pointer-events: none;
+  animation: w3d-stage-out 400ms cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+[data-w3d="leaving"] > :not(.w3d-host) {
+  animation: w3d-stage-in 400ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+@keyframes w3d-world-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes w3d-world-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(0.94); }
+}
+@keyframes w3d-stage-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(1.06); }
+}
+@keyframes w3d-stage-in {
+  from { opacity: 0; transform: scale(1.06); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .w3d-host[data-phase="entering"],
+  .w3d-host[data-phase="leaving"],
+  [data-w3d="entering"] > :not(.w3d-host),
+  [data-w3d="leaving"] > :not(.w3d-host) {
+    animation-duration: 180ms;
+    animation-name: w3d-fade-in;
+  }
+  .w3d-host[data-phase="leaving"],
+  [data-w3d="entering"] > :not(.w3d-host) {
+    animation-name: w3d-fade-out;
+  }
+}
+@keyframes w3d-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes w3d-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
