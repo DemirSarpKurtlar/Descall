@@ -292,7 +292,7 @@ function crawlBodyInner(route) {
   const h1 = route.h1 || route.title.replace(/\s*\|\s*Descall\s*$/i, "").replace(/\s*—\s*Descall\s*$/i, "");
   return `
 <main>
-  ${seoBrand()}
+  ${brand}
   <h1>${escapeHtml(h1)}</h1>
   <p>${escapeHtml(route.description)}</p>
   ${seoCtaRow("/discord-alternative", n.alternative, loc)}

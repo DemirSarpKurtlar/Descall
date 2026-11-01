@@ -392,7 +392,14 @@ assert.equal((xml.match(/<xhtml:link /g) || []).length, 8, "7 languages + x-defa
 assert.match(xml, /hreflang="pt-BR" href="https:\/\/descall\.com\/pt-br\/features"/);
 assert.match(xml, /hreflang="x-default" href="https:\/\/descall\.com\/features"/);
 assert.match(alternateLinks("https://descall.com/de/contact", ALL), /hreflang="tr" href="https:\/\/descall\.com\/iletisim"/);
-assert.equal(alternateLinks("https://descall.com/apps-like-discord", ALL), "");
+assert.equal(alternateLinks("https://descall.com/apps-like-discord", ALL), "", "staged niche: no alternates");
+assert.match(
+  alternateLinks("https://descall.com/apps-like-discord", ALL_ON),
+  /hreflang="ru" href="https:\/\/descall\.com\/ru\/apps-like-discord"/,
+  "served niche: prefixed alternates"
+);
+assert.doesNotMatch(alternateLinks("https://descall.com/apps-like-discord", ALL_ON), /hreflang="tr"/);
+assert.match(alternateLinks("https://descall.com/blog/discord-vs-descall", ALL_ON), /hreflang="tr" href="https:\/\/descall\.com\/tr\/blog\/discord-vs-descall"/);
 const served = alternateLinks("https://descall.com/features");
 assert.equal((served.match(/<xhtml:link /g) || []).length, sl.SITE_LOCALES.length + 1, "served set only");
 
