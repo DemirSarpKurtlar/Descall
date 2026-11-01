@@ -28,6 +28,6 @@ export const SITE_DRAFT_LOCALES = [];
  * missing group means the group is live for every served locale).
  */
 export const SITE_DRAFT_PAGE_GROUPS = {
-  blog: ["de", "es", "fr", "pt-BR", "ru"],
-  niche: ["de", "es", "fr", "pt-BR", "ru"],
+  blog: [],
+  niche: [],
 };
