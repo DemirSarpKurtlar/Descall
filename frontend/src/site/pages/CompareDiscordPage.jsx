@@ -6,6 +6,7 @@ import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { COMPARE_FAQ, COMPARE_ROWS } from "../content/discordSeoContent";
 import { useT } from "../../context/localeContextInstance";
+import { useMirrorCopy } from "../useMirrorCopy";
 
 const crumbs = [
   { label: "Home", to: "/" },
@@ -15,6 +16,8 @@ const crumbs = [
 
 export default function CompareDiscordPage({ onSignIn }) {
   const t = useT();
+  // Links to the blog twins once a locale serves them (identity on en and tr).
+  const mirror = useMirrorCopy();
 
   return (
     <SeoLandingShell
@@ -114,7 +117,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           <li>{t("Keep Discord only for bot-heavy communities you still need.")}</li>
         </ol>
         <p className="seo-note">
-          <Link to="/blog/leave-nitro-keep-voice-chat">{t("Read the full migration guide")}</Link>
+          <Link to={mirror.href("/blog/leave-nitro-keep-voice-chat")}>{t("Read the full migration guide")}</Link>
         </p>
       </section>
 

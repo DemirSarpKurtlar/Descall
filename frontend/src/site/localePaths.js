@@ -149,8 +149,11 @@ export function localeHomePath(locale) {
   return "/";
 }
 
-/** Counterpart of this page in `locale`, or null when that language has no twin. */
-export function localizedPathFor(pathname = "/", locale = "en", { locales = SITE_LOCALES } = {}) {
+/**
+ * Counterpart of this page in `locale`, or null when that language has no twin.
+ * `pageDrafts` (default SITE_DRAFT_PAGE_GROUPS) says which page groups a locale serves.
+ */
+export function localizedPathFor(pathname = "/", locale = "en", { locales = SITE_LOCALES, pageDrafts } = {}) {
   const base = englishPathFor(pathname, { locales });
   if (locale === "tr") {
     if (!base) return cleanPath(pathname);
@@ -158,7 +161,7 @@ export function localizedPathFor(pathname = "/", locale = "en", { locales = SITE
   }
   if (!base) return null;
   if (isPrefixedLocale(locale)) {
-    if (!locales.includes(locale) || !isMirrorPath(base)) return null;
+    if (!locales.includes(locale) || !isMirrorPath(base, locale, pageDrafts ? { pageDrafts } : undefined)) return null;
     return withLocalePrefix(base, locale);
   }
   return base;
@@ -169,12 +172,12 @@ export function localizedPathFor(pathname = "/", locale = "en", { locales = SITE
  * pages). Turkish: the Turkish twin, else the English page with Turkish chrome (the
  * long-standing behaviour). Prefixed locales: their twin, else their home page.
  */
-export function destinationForLocale(pathname = "/", locale = "en", { locales = SITE_LOCALES } = {}) {
+export function destinationForLocale(pathname = "/", locale = "en", { locales = SITE_LOCALES, pageDrafts } = {}) {
   if (locale === "tr") {
     return localizedPathFor(pathname, "tr", { locales }) || englishPathFor(pathname, { locales }) || "/tr";
   }
   if (isPrefixedLocale(locale)) {
-    return localizedPathFor(pathname, locale, { locales }) || localeHomePath(locale);
+    return localizedPathFor(pathname, locale, { locales, pageDrafts }) || localeHomePath(locale);
   }
   return englishPathFor(pathname, { locales }) || "/";
 }
@@ -184,13 +187,13 @@ export function destinationForLocale(pathname = "/", locale = "en", { locales = 
  * translation, plus x-default (English). Empty when the page exists in one language.
  * Turkish pairs keep their Turkish URLs.
  */
-export function hreflangAlternates(pathname = "/", { locales = SITE_LOCALES } = {}) {
+export function hreflangAlternates(pathname = "/", { locales = SITE_LOCALES, pageDrafts } = {}) {
   const base = englishPathFor(pathname, { locales });
   if (!base) return [];
   const out = [{ hreflang: "en", path: base }];
   for (const id of locales) {
     if (id === "en") continue;
-    const path = localizedPathFor(base, id, { locales });
+    const path = localizedPathFor(base, id, { locales, pageDrafts });
     if (path) out.push({ hreflang: id, path });
   }
   if (out.length < 2) return [];

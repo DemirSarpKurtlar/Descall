@@ -6,6 +6,7 @@ import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { GAMER_FAQ } from "../content/discordSeoContent";
 import { useT } from "../../context/localeContextInstance";
+import { useMirrorCopy } from "../useMirrorCopy";
 
 const crumbs = [
   { label: "Home", to: "/" },
@@ -15,6 +16,7 @@ const crumbs = [
 
 export default function DiscordAlternativeGamersPage({ onSignIn }) {
   const t = useT();
+  const mirror = useMirrorCopy();
   return (
     <SeoLandingShell
       breadcrumbs={crumbs}
@@ -25,14 +27,18 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
       )}
       tone="gaming"
       faq={GAMER_FAQ}
-      jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(GAMER_FAQ), buildDiscordAlternativeAppLd()]}
+      jsonLd={[
+        buildBreadcrumbLd(mirror.crumbs(crumbs)),
+        buildFaqLd(mirror.faq(GAMER_FAQ)),
+        buildDiscordAlternativeAppLd(mirror.href("/discord-alternative")),
+      ]}
       primaryCta={
         <button type="button" className="mkt-btn mkt-btn-primary" onClick={onSignIn}>
           {t("Open Descall")}
         </button>
       }
       secondaryCta={
-        <Link to="/download" className="mkt-btn mkt-btn-soft">
+        <Link to={mirror.href("/download")} className="mkt-btn mkt-btn-soft">
           {t("Download for Windows")}
         </Link>
       }
@@ -53,7 +59,6 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
           {[
             "Group voice/video with screen share",
             "Gaming templates with squad-up rooms",
-            "account link for rank on profile",
             "Desktop app for low-friction gaming sessions",
             "Free core, cosmetics optional",
           ].map((item) => (
@@ -65,16 +70,17 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
         </ul>
       </section>
 
-      <SeoExtraContent path="/best-discord-alternative-for-gamers" />
+      {/* No fixed path: /de/best-discord-alternative-for-gamers reads its localized extras. */}
+      <SeoExtraContent />
 
       <section className="seo-section">
         <h2>{t("Keep reading")}</h2>
         <ul className="seo-link-list">
           <li>
-            <Link to="/compare/discord">{t("Descall vs Discord")}</Link>
+            <Link to={mirror.href("/compare/discord")}>{t("Descall vs Discord")}</Link>
           </li>
           <li>
-            <Link to="/features">{t("All features")}</Link>
+            <Link to={mirror.href("/features")}>{t("All features")}</Link>
           </li>
         </ul>
       </section>

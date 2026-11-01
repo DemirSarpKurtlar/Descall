@@ -7,6 +7,8 @@ import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { NICHE_LANDINGS } from "../seo/nicheLandings";
 import { useT } from "../../context/localeContextInstance";
+import { PREFIXABLE_LOCALES, stripPrefixedLocale } from "../siteLocales.js";
+import { useMirrorCopy } from "../useMirrorCopy";
 
 function previewForPath(path) {
   if (path.includes("gamers")) return { tone: "gaming", mode: "friends" };
@@ -18,8 +20,10 @@ function previewForPath(path) {
 
 export default function DiscordAlternativeNichePage({ onSignIn }) {
   const t = useT();
+  const mirror = useMirrorCopy();
   const { pathname } = useLocation();
-  const clean = (pathname || "/").replace(/\/+$/, "") || "/";
+  // /de/apps-like-discord renders the English entry of /apps-like-discord.
+  const clean = stripPrefixedLocale((pathname || "/").replace(/\/+$/, "") || "/", PREFIXABLE_LOCALES);
   const page = NICHE_LANDINGS[clean];
   if (!page) return <Navigate to="/discord-alternative" replace />;
   const preview = previewForPath(clean);
@@ -39,9 +43,9 @@ export default function DiscordAlternativeNichePage({ onSignIn }) {
       tone={preview.tone}
       faq={page.faq}
       jsonLd={[
-        buildBreadcrumbLd(crumbs),
-        buildFaqLd(page.faq),
-        buildDiscordAlternativeAppLd(page.path),
+        buildBreadcrumbLd(mirror.crumbs(crumbs)),
+        buildFaqLd(mirror.faq(page.faq)),
+        buildDiscordAlternativeAppLd(mirror.href(page.path)),
       ]}
       primaryCta={
         <button type="button" className="mkt-btn mkt-btn-primary" onClick={onSignIn}>
@@ -49,7 +53,7 @@ export default function DiscordAlternativeNichePage({ onSignIn }) {
         </button>
       }
       secondaryCta={
-        <Link to="/download" className="mkt-btn mkt-btn-soft">
+        <Link to={mirror.href("/download")} className="mkt-btn mkt-btn-soft">
           {t("Download")}
         </Link>
       }

@@ -8875,7 +8875,6 @@ export const phrases = {
   "[name]": "[nome]",
   "about {mbps} Mbps": "cerca de {mbps} Mbps",
   "abuse": "Abuso",
-  "account link for rank on profile": "conta vinculada para mostrar o rank no perfil",
   "account linked": "conta vinculada",
   "active": "ativo",
   "ago": "atrás",

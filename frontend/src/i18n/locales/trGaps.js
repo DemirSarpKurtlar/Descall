@@ -455,7 +455,6 @@ export const TR_I18N_GAPS = {
   "Free Discord alternative": "Ücretsiz Discord alternatifi",
   "Group voice/video with screen share": "Ekran paylaşımlı grup ses/görüntü",
   "Gaming templates with squad-up rooms": "Ekip toplama odalı oyun şablonları",
-  "account link for rank on profile": "Profilde rütbe için hesap bağlantısı",
   "Desktop app for low-friction gaming sessions": "Düşük sürtünmeli oyun oturumları için masaüstü uygulama",
   "Free core, cosmetics optional": "Ücretsiz temel, kozmetikler isteğe bağlı",
   "Explore by use case": "Kullanım alanına göre keşfet",

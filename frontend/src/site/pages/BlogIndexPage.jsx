@@ -3,6 +3,7 @@ import SeoLandingShell from "../components/SeoLandingShell";
 import { buildBreadcrumbLd } from "../JsonLd";
 import { BLOG_POSTS } from "../content/discordSeoContent";
 import { useT } from "../../context/localeContextInstance";
+import { useMirrorCopy } from "../useMirrorCopy";
 
 const crumbs = [
   { label: "Home", to: "/" },
@@ -11,6 +12,8 @@ const crumbs = [
 
 export default function BlogIndexPage() {
   const t = useT();
+  // Card text, links and dates change only on /de-style mirrors (see useMirrorCopy).
+  const mirror = useMirrorCopy();
   return (
     <SeoLandingShell
       breadcrumbs={crumbs}
@@ -19,20 +22,20 @@ export default function BlogIndexPage() {
       lead={t(
         "Practical guides on Discord alternatives, voice chat, and moving friend groups to Descall."
       )}
-      jsonLd={[buildBreadcrumbLd(crumbs)]}
+      jsonLd={[buildBreadcrumbLd(mirror.crumbs(crumbs))]}
     >
       <section className="seo-section">
         <div className="seo-blog-grid">
           {BLOG_POSTS.map((post) => (
             <article key={post.slug} className="seo-blog-card">
-              <time dateTime={post.date}>{post.date}</time>
+              <time dateTime={post.date}>{mirror.date(post.date)}</time>
               <h2>
-                <Link to={post.path}>{post.title}</Link>
+                <Link to={mirror.href(post.path)}>{mirror.text(post.title)}</Link>
               </h2>
-              <p>{post.description}</p>
+              <p>{mirror.text(post.description)}</p>
               <div className="seo-tags">
                 {post.tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
+                  <span key={tag}>{mirror.text(tag)}</span>
                 ))}
               </div>
             </article>

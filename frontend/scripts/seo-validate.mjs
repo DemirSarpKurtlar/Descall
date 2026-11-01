@@ -95,8 +95,10 @@ for (const route of PUBLIC_ROUTES) {
       fail("MarketingApp missing DiscordAlternativeNichePage");
     }
   } else if (route.locale) {
-    // Prefixed site languages render the English page from MarketingApp's MIRROR_PAGES map.
-    if (!marketingApp.includes(`"${route.enPath}":`)) fail(`MarketingApp MIRROR_PAGES missing ${route.enPath} (${route.path})`);
+    // Prefixed site languages render the English page from MarketingApp's MIRROR_PAGES map
+    // ("/blog/*" covers every post).
+    const key = route.enPath.startsWith("/blog/") ? "/blog/*" : route.enPath;
+    if (!marketingApp.includes(`"${key}":`)) fail(`MarketingApp MIRROR_PAGES missing ${key} (${route.path})`);
   } else if (route.path !== "/download" && route.path !== "/") {
     // soft check — path string appears in MarketingApp or is niche/blog
     const needle = route.path === "/" ? 'path="/"' : `path="${route.path}"`;
@@ -314,7 +316,8 @@ if (checkDist) {
       if (page === "/" && !html.includes("Demir Sarp Kurtlar")) {
         fail(`Homepage shell missing owner name ${rel}`);
       }
-      if (route.path.startsWith("/blog/") && route.path !== "/blog" && !html.includes('"@type":"Article"') && !html.includes('"@type": "Article"')) {
+      const articlePath = route.enPath || route.path;
+      if (articlePath.startsWith("/blog/") && !html.includes('"@type":"Article"') && !html.includes('"@type": "Article"')) {
         warn(`Article JSON-LD missing in ${rel}`);
       }
       if (/rel="canonical"[^>]*http:\/\//i.test(html)) fail(`HTTP canonical in ${rel}`);

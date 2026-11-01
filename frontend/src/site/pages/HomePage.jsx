@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useLocale } from "../../context/localeContextInstance";
 import { Funnel, getFeatureFlag, getFeatureFlagPayload } from "../analytics";
 import { useMarketingHref } from "../useMarketingHref";
+import { useMirrorCopy } from "../useMirrorCopy";
 import JsonLd, { buildEntityGraphLd } from "../JsonLd";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { APP_STORE_URL } from "../appStoreLink";
@@ -16,6 +17,8 @@ export default function HomePage({ onSignIn, onSignUp }) {
   useDocumentMarker("has-mkt-hh"); // was body:has(.mkt-hh), see lib/documentMarker.js
   const { t, locale } = useLocale();
   const href = useMarketingHref();
+  // Links to the niche twins once a locale serves them (identity on en and tr).
+  const mirror = useMirrorCopy();
   const openRegister = onSignUp || onSignIn;
   const appleMobile = useIsAppleMobile();
   const [heroVariant, setHeroVariant] = useState("control");
@@ -145,7 +148,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
               <Link to={href("/features")} className="mkt-btn mkt-btn-primary">
                 {t("Explore server features")}
               </Link>
-              <Link to="/discord-alternative-for-communities" className="mkt-btn mkt-btn-ghost">
+              <Link to={mirror.href("/discord-alternative-for-communities")} className="mkt-btn mkt-btn-ghost">
                 {t("For communities")}
               </Link>
             </div>

@@ -2,7 +2,7 @@
 
 import { stripLocalePrefix } from "./localePaths.js";
 import { TR_LANDING_META, TR_BLOG_META } from "./seo/trMeta.js";
-import { PREFIXED_SITE_LOCALES, SITE_LOCALES, SITE_MIRROR_PATHS, withLocalePrefix } from "./siteLocales.js";
+import { PREFIXED_SITE_LOCALES, SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
 
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
@@ -446,13 +446,14 @@ const BASE_ROUTES = [
 ];
 
 /**
- * Routes of a prefixed locale: one per SITE_MIRROR_PATHS entry, copied from the English
- * route with `locale` / `enPath` set. Title and description stay English here and are
- * translated where they are rendered (localizeRouteMeta), because the catalogs load
- * lazily in the browser. English keywords are dropped.
+ * Routes of a prefixed locale: one per mirrored English page (SITE_MIRROR_PATHS plus the
+ * page groups the locale serves, see mirrorPathsFor), copied from the English route with
+ * `locale` / `enPath` set. Title and description stay English here and are translated
+ * where they are rendered (localizeRouteMeta), because the catalogs load lazily in the
+ * browser. English keywords are dropped. Tooling passes `paths` to get staged pages too.
  */
-export function localeMirrorRoutes(locale) {
-  return SITE_MIRROR_PATHS.map((enPath) => {
+export function localeMirrorRoutes(locale, { paths = mirrorPathsFor(locale) } = {}) {
+  return paths.map((enPath) => {
     const en = BASE_ROUTES.find((r) => r.path === enPath);
     if (!en) throw new Error(`[seoConfig] mirror path without an English route: ${enPath}`);
     const { keywords: _keywords, ...rest } = en;

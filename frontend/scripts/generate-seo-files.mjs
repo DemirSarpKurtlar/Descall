@@ -127,7 +127,13 @@ function lastmodFor(routePath) {
   const prefixed = prefixedLocaleFromPath(routePath);
   if (prefixed) {
     const bare = stripPrefixedLocale(routePath, [prefixed]);
-    files = PAGE_SOURCES[bare] ? [...PAGE_SOURCES[bare], `src/site/i18n/${prefixed}.js`] : null;
+    // Posts keep their editorial date in every language; other pages add the catalog.
+    const post = BLOG_POSTS.find((p) => p.path === bare);
+    if (post) return `${post.updated || post.date}T00:00:00.000Z`;
+    const base =
+      PAGE_SOURCES[bare] ||
+      (NICHE_LANDINGS[bare] ? ["src/site/seo/nicheLandings.js", "src/site/pages/DiscordAlternativeNichePage.jsx"] : null);
+    files = base ? [...base, `src/site/i18n/${prefixed}.js`] : null;
   }
   return files ? gitLastmod(files) : null;
 }
@@ -256,14 +262,17 @@ Sitemap: ${SITE}/sitemap.xml
  * SEO 3.7.14: hreflang alternates in the sitemap too (Google reads either source).
  * Every served site language of the page plus x-default; nothing for one-language pages.
  */
-export function alternateLinks(loc, { locales } = {}) {
+export function alternateLinks(loc, { locales, pageDrafts } = {}) {
   let pathname = "/";
   try {
     pathname = new URL(loc).pathname || "/";
   } catch {
     return "";
   }
-  const alternates = hreflangAlternates(pathname, locales ? { locales } : undefined);
+  const alternates = hreflangAlternates(pathname, {
+    ...(locales ? { locales } : {}),
+    ...(pageDrafts ? { pageDrafts } : {}),
+  });
   if (!alternates.length) return "";
   return (
     alternates
