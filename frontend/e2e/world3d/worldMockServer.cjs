@@ -7,7 +7,9 @@
  * plus bot members that sit, cheer, walk and chat over the same protocol.
  *   node e2e/world3d/worldMockServer.cjs [port] [scenario]
  * scenario: hero (draft scene-3: three cheering on the sofa, one on the second sofa,
- * one walking) | walk (bots idle around the rug) | none
+ * one walking) | walk (bots idle around the rug) | perf (7 bots = 8 avatars with the
+ * harness user: sitting + emotes, guitar, two walkers, a runner, and one member who
+ * leaves and joins again every few seconds; chat every 3 s) | none
  */
 
 const http = require('http');
@@ -19,7 +21,7 @@ const { registerWorldNamespace } = require('../../backend/socket/worldHandlers')
 const PORT = Number(process.argv[2] || process.env.WORLD_MOCK_PORT || 4791);
 const SCENARIO = process.argv[3] || 'hero';
 const SELF = process.argv[4] || ''; // the harness user: no bot for that id
-const NAMES = { demir: 'Demir', ayse: 'Ayşe', mert: 'Mert', zeynep: 'Zeynep', can: 'Can', elif: 'Elif' };
+const NAMES = { demir: 'Demir', ayse: 'Ayşe', mert: 'Mert', zeynep: 'Zeynep', can: 'Can', elif: 'Elif', burak: 'Burak', selin: 'Selin' };
 // Seats sorted by node name in the room GLB: 0 beanbag, 1-2 second sofa, 3-5 main sofa.
 const SEAT = { beanbag: 0, sofa2a: 1, sofa2b: 2, sofaL: 3, sofaM: 4, sofaR: 5 };
 const STATE = { idle: 0, walk: 1, run: 2, sitDown: 3, sit: 4, standUp: 5, emote: 6 };
@@ -91,6 +93,30 @@ server.listen(PORT, '127.0.0.1', () => {
       const x = -4.85 + (i + (i >= 2 ? 1 : 0)) * 0.68;
       bots.push(bot(id, () => ({ x, z: -3.3, yaw: 0, state: STATE.idle })));
     });
+  } else if (SCENARIO === 'perf') {
+    // 8 avatars with the harness user, every kind of update the client has to absorb
+    bots.push(bot('ayse', () => ({ x: 1.7, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaL, emote: EMOTE.cheer, emoteEvery: 2.6 })));
+    bots.push(bot('mert', () => ({ x: 2.5, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaM, emote: EMOTE.clap, emoteEvery: 3.0 })));
+    bots.push(bot('zeynep', (t) => ({ x: -3.2 + Math.cos(t * 0.9) * 1.1, z: -3.4 + Math.sin(t * 0.9) * 0.8, yaw: Math.atan2(-Math.sin(t * 0.9), Math.cos(t * 0.9)), state: STATE.walk })));
+    bots.push(bot('can', () => ({ x: -4.7, z: -1.6, yaw: 0, state: STATE.sit, seat: SEAT.sofa2a, emote: EMOTE.guitar, emoteEvery: 100000 })));
+    bots.push(bot('elif', (t) => {
+      const w = t * 1.2;
+      return { x: -5.55 + Math.cos(w) * 0.4, z: -4.75 + Math.sin(w) * 0.6, yaw: Math.atan2(-Math.sin(w) * 0.4, Math.cos(w) * 0.6), state: STATE.walk };
+    }));
+    bots.push(bot('burak', (t) => {
+      // runs back and forth across the rug
+      const k = (Math.sin(t * 0.8) + 1) / 2;
+      const dir = Math.cos(t * 0.8) >= 0 ? 1 : -1;
+      return { x: -1.0 - k * 3.0, z: -2.2, yaw: dir > 0 ? -Math.PI / 2 : Math.PI / 2, state: STATE.run };
+    }));
+    // selin leaves and joins again: join / leave hitches on every client
+    const churn = () => {
+      const b = bot('selin', (t) => ({ x: -2.6, z: -4.4, yaw: 0, state: t > 1 ? STATE.emote : STATE.idle, emote: t > 1 ? EMOTE.wave : 0, emoteEvery: 3 }));
+      bots.push(b);
+      setTimeout(() => { b.stop(); bots.splice(bots.indexOf(b), 1); setTimeout(churn, 3000); }, 6000);
+    };
+    churn();
+    setInterval(() => bots[0]?.c?.emit('world:chat', { text: `perf ${Date.now() % 1000}` }), 3000);
   } else {
     let k = 0;
     for (const id of ['ayse', 'mert', 'zeynep', 'can', 'elif']) {
