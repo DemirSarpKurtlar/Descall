@@ -10,7 +10,7 @@ import { Funnel, trackPageView } from "./analytics";
 import { signalMarketingEngage } from "./analyticsGate";
 import MarketingLayout from "./MarketingLayout";
 import SeoHead from "./SeoHead";
-import { PREFIXED_SITE_LOCALES, SITE_MIRROR_PATHS, withLocalePrefix } from "./siteLocales.js";
+import { PREFIXED_SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
 const MarketingAuthModal = lazy(() => import("./MarketingAuthModal"));
 const AuthView = lazy(() => import("../components/AuthView"));
 
@@ -38,7 +38,10 @@ const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
-/** Page of each mirrored English path; /de, /de/features, ... render the same pages. */
+/**
+ * Page of each mirrored English path; /de, /de/features, ... render the same pages.
+ * "/blog/*" is every blog post (the page reads the slug from the URL).
+ */
 const MIRROR_PAGES = {
   "/": HomePage,
   "/features": FeaturesPage,
@@ -55,7 +58,19 @@ const MIRROR_PAGES = {
   "/who-owns-descall": WhoOwnsDescallPage,
   "/discord-alternative": DiscordAlternativePage,
   "/alternatives": AlternativesPage,
+  "/blog": BlogIndexPage,
+  "/blog/*": BlogPostPage,
+  "/best-discord-alternative-for-gamers": DiscordAlternativeGamersPage,
+  "/discord-alternative-for-communities": DiscordAlternativeNichePage,
+  "/discord-alternative-for-voice-chat": DiscordAlternativeNichePage,
+  "/discord-alternative-for-friends": DiscordAlternativeNichePage,
+  "/apps-like-discord": DiscordAlternativeNichePage,
+  "/discord-replacement": DiscordAlternativeNichePage,
 };
+
+function mirrorPage(enPath) {
+  return MIRROR_PAGES[enPath] || (enPath.startsWith("/blog/") ? MIRROR_PAGES["/blog/*"] : null);
+}
 
 /**
  * Drop the crawler shell once the real page has committed. Leaving it in the
@@ -379,12 +394,12 @@ function MarketingAppSite({
         <Route path="/blog/:slug" element={withLayout(BlogPostPage, openAuth)} />
         {/* Prefixed site languages (/de, /pt-br, ...): same pages, locale from the URL. */}
         {PREFIXED_SITE_LOCALES.flatMap((id) =>
-          SITE_MIRROR_PATHS.filter((p) => MIRROR_PAGES[p]).map((p) => (
+          mirrorPathsFor(id).filter((p) => mirrorPage(p)).map((p) => (
             <Route
               key={`${id}${p}`}
               path={withLocalePrefix(p, id)}
               element={withLayout(
-                MIRROR_PAGES[p],
+                mirrorPage(p),
                 openAuth,
                 p === "/download" ? { onOpenRegister: () => openAuth({ mode: "register", source: `download_${id}` }) } : {}
               )}

@@ -15,7 +15,7 @@ import { siteText } from "../siteText.js";
 
 /** /<prefix> twin of a mirrored English link, other links unchanged. */
 function mirrorHref(to, loc) {
-  return isMirrorPath(to) ? withLocalePrefix(to, loc) : to;
+  return isMirrorPath(to, loc) ? withLocalePrefix(to, loc) : to;
 }
 
 const TR_HUBS = [
@@ -447,7 +447,7 @@ export function localizedPageExtras(routePath, { text, href } = {}) {
     return extra ? { extra, loc: null } : null;
   }
   const bare = stripPrefixedLocale(routePath, [loc]);
-  const source = isMirrorPath(bare) ? PAGE_EXTRAS[bare] : null;
+  const source = isMirrorPath(bare, loc) ? PAGE_EXTRAS[bare] : null;
   if (!source) return null;
   const tx = (s) => (text ? text(s, loc) : s);
   const hx = (to) => (href ? href(to, loc) : to);

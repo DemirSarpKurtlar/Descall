@@ -29,7 +29,7 @@ const { TR_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo
 const { TR_BLOG_POSTS, TR_BLOG_BODIES, TR_BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href
 );
-const { cookieBannerHtml, navLabels, newCopy, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy } = await import(
+const { cookieBannerHtml, homeHref, navLabels, newCopy, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy } = await import(
   pathToFileURL(path.join(root, "src/site/seo/prerenderCopy.js")).href
 );
 const { FAQ_ITEMS } = await import(pathToFileURL(path.join(root, "src/site/faqData.js")).href);
@@ -50,9 +50,17 @@ const {
 const { hreflangAlternates } = await import(
   pathToFileURL(path.join(root, "src/site/localePaths.js")).href
 );
-const { ogLocaleTag, isPrefixedLocale } = await import(pathToFileURL(path.join(root, "src/site/siteLocales.js")).href);
+const { ogLocaleTag, isPrefixedLocale, withLocalePrefix } = await import(
+  pathToFileURL(path.join(root, "src/site/siteLocales.js")).href
+);
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
+const { formatDate } = await import(pathToFileURL(path.join(root, "src/i18n/format.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
+
+/** "2026-08-11" in the page language, same rule as useMirrorCopy.js (Intl, UTC). */
+function formatPostDate(iso, loc) {
+  return formatDate(`${iso}T00:00:00Z`, loc, { dateStyle: "long", timeZone: "UTC" }) || iso;
+}
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -64,6 +72,11 @@ function escapeHtml(s) {
 
 function seoBrand() {
   return `<a class="seo-brand" href="/" aria-label="Descall home"><img class="seo-brand-lockup" src="/brand/descall-lockup.svg" alt="Descall" height="22" decoding="async" /><span class="seo-brand-beta">Beta</span></a>`;
+}
+
+/** Brand link of a prefixed-locale shell: that language's home, translated label. */
+function seoBrandFor(loc) {
+  return `<a class="seo-brand" href="${homeHref(loc)}" aria-label="${escapeHtml(newCopy("Descall home", loc))}"><img class="seo-brand-lockup" src="/brand/descall-lockup.svg" alt="Descall" height="22" decoding="async" /><span class="seo-brand-beta">Beta</span></a>`;
 }
 
 function routeIsTr(route) {
@@ -193,68 +206,83 @@ function crawlBodyInner(route) {
   const core = corePageBody(route.path);
   if (core) return core;
 
-  const niche = NICHE_LANDINGS[route.path];
+  // Niche landings and the blog: English routes, and their /<prefix> twins (route.enPath),
+  // whose text goes through the site catalog. tx / hx are the identity for English.
+  const enPath = route.enPath || route.path;
+  const tx = (s) => newCopy(s, loc);
+  const hx = (href) => prefixHref(href, loc);
+  const brand = route.locale ? seoBrandFor(loc) : seoBrand();
+
+  const niche = NICHE_LANDINGS[enPath];
   if (niche) {
     const sections = niche.sections
-      .map((s) => `<h2>${escapeHtml(s.h)}</h2><p>${escapeHtml(s.p)}</p>`)
+      .map((s) => `<h2>${escapeHtml(tx(s.h))}</h2><p>${escapeHtml(tx(s.p))}</p>`)
       .join("\n");
     const links = niche.related
-      .map((l) => `<li><a href="${escapeHtml(l.to)}">${escapeHtml(l.label)}</a></li>`)
+      .map((l) => `<li><a href="${escapeHtml(hx(l.to))}">${escapeHtml(tx(l.label))}</a></li>`)
       .join("");
     const faq =
       Array.isArray(niche.faq) && niche.faq.length
-        ? `<h2>FAQ</h2>${niche.faq
-            .map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`)
+        ? `<h2>${escapeHtml(tx("FAQ"))}</h2>${niche.faq
+            .map((f) => `<h3>${escapeHtml(tx(f.q))}</h3><p>${escapeHtml(tx(f.a))}</p>`)
             .join("\n")}`
         : "";
     return `
 <main>
-  ${seoBrand()}
-  <h1>${escapeHtml(niche.h1)}</h1>
-  <p>${escapeHtml(niche.lead)}</p>
+  ${brand}
+  <h1>${escapeHtml(tx(niche.h1))}</h1>
+  <p>${escapeHtml(tx(niche.lead))}</p>
   ${seoCtaRow("/discord-alternative", n.alternative, loc)}
-  <h2>${escapeHtml(niche.answerTitle)}</h2>
-  <p>${escapeHtml(niche.answer)}</p>
-  <ul>${niche.bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>
+  <h2>${escapeHtml(tx(niche.answerTitle))}</h2>
+  <p>${escapeHtml(tx(niche.answer))}</p>
+  <ul>${niche.bullets.map((b) => `<li>${escapeHtml(tx(b))}</li>`).join("")}</ul>
   ${sections}
   ${faq}
-  <nav aria-label="Related"><ul>${links}</ul></nav>
+  <nav aria-label="${escapeHtml(tx("Related"))}"><ul>${links}</ul></nav>
   ${seoSiteNav(loc)}
 </main>`;
   }
 
-  if (route.path.startsWith("/blog/") && route.path !== "/blog") {
-    const slug = route.path.replace("/blog/", "");
+  if (enPath.startsWith("/blog/") && enPath !== "/blog") {
+    const slug = enPath.replace("/blog/", "");
     const post = BLOG_POSTS.find((p) => p.slug === slug);
     const body = BLOG_BODIES[slug];
     if (post && body) {
       const sections = body.sections
-        .map((s) => `<h2>${escapeHtml(s.h)}</h2><p>${escapeHtml(s.p)}</p>`)
+        .map((s) => `<h2>${escapeHtml(tx(s.h))}</h2><p>${escapeHtml(tx(s.p))}</p>`)
         .join("\n");
+      // Prefixed locales also show the dates, written with Intl in that language.
+      const dates = route.locale
+        ? `\n    <p class="seo-note">${escapeHtml(tx("Published"))}: ${escapeHtml(formatPostDate(post.date, loc))}${
+            post.updated && post.updated !== post.date
+              ? ` · ${escapeHtml(tx("Updated"))}: ${escapeHtml(formatPostDate(post.updated, loc))}`
+              : ""
+          }</p>`
+        : "";
       return `
 <main>
-  ${seoBrand()}
+  ${brand}
   <article>
-    <h1>${escapeHtml(post.title)}</h1>
-    <p>${escapeHtml(post.description)}</p>
+    <h1>${escapeHtml(tx(post.title))}</h1>
+    <p>${escapeHtml(tx(post.description))}</p>${dates}
     ${sections}
-    ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : "All guides", loc)}
+    ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : tx("All guides"), loc)}
   </article>
   ${seoSiteNav(loc)}
 </main>`;
     }
   }
 
-  if (route.path === "/blog") {
+  if (enPath === "/blog") {
     const posts = BLOG_POSTS.map(
       (p) =>
-        `<li><a href="/blog/${escapeHtml(p.slug)}"><strong>${escapeHtml(p.title)}</strong></a> — ${escapeHtml(p.description)}</li>`
+        `<li><a href="${escapeHtml(hx(`/blog/${p.slug}`))}"><strong>${escapeHtml(tx(p.title))}</strong></a> — ${escapeHtml(tx(p.description))}</li>`
     ).join("");
     return `
 <main>
-  ${seoBrand()}
-  <h1>Descall Blog</h1>
-  <p>Guides on Discord alternatives, servers, and voice chat.</p>
+  ${brand}
+  <h1>${escapeHtml(tx("Descall Blog"))}</h1>
+  <p>${escapeHtml(tx("Guides on Discord alternatives, servers, and voice chat."))}</p>
   <ul>${posts}</ul>
   ${seoCtaRow("/download", n.download, loc)}
   ${seoSiteNav(loc)}
@@ -315,6 +343,32 @@ function localizedJsonLd(route) {
       break;
     default:
       break;
+  }
+  const niche = NICHE_LANDINGS[route.enPath];
+  if (niche?.faq?.length) graphs.push(faq(niche.faq));
+  if (route.enPath.startsWith("/blog/")) {
+    const slug = route.enPath.slice("/blog/".length);
+    const post = BLOG_POSTS.find((p) => p.slug === slug);
+    if (post) {
+      const home = withLocalePrefix("/", loc);
+      graphs.push(
+        buildArticleLd({
+          title: t(post.title),
+          description: t(post.description),
+          path: route.path,
+          datePublished: post.date,
+          dateModified: post.updated || post.date,
+          inLanguage: loc,
+        }),
+        buildBreadcrumbLd([
+          { name: t("Home"), path: home },
+          { name: t("Blog"), path: withLocalePrefix("/blog", loc) },
+          { name: t(post.title), path: route.path },
+        ])
+      );
+      const blogFaq = BLOG_FAQ_BY_SLUG[slug];
+      if (blogFaq?.length) graphs.push(faq(blogFaq));
+    }
   }
   return graphs;
 }

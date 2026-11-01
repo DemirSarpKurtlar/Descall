@@ -5,6 +5,7 @@ import SeoExtraContent from "../components/SeoExtraContent";
 import { buildBreadcrumbLd, buildFaqLd } from "../JsonLd";
 import { ALTERNATIVES_FAQ } from "../content/discordSeoContent";
 import { useT } from "../../context/localeContextInstance";
+import { useMirrorCopy } from "../useMirrorCopy";
 
 const crumbs = [
   { label: "Home", to: "/" },
@@ -57,6 +58,8 @@ const OPTIONS = [
 
 export default function AlternativesPage() {
   const t = useT();
+  // Links to the blog / niche twins once a locale serves them (identity on en and tr).
+  const mirror = useMirrorCopy();
   return (
     <SeoLandingShell
       breadcrumbs={crumbs}
@@ -100,7 +103,7 @@ export default function AlternativesPage() {
             <article key={opt.name} className={`seo-option${opt.highlight ? " is-highlight" : ""}`}>
               <h3>{opt.name}</h3>
               <p>{t(opt.blurb)}</p>
-              <Link to={opt.href}>{t("Learn more")}</Link>
+              <Link to={mirror.href(opt.href)}>{t("Learn more")}</Link>
             </article>
           ))}
         </div>
@@ -113,13 +116,13 @@ export default function AlternativesPage() {
             <Link to="/compare/discord">{t("Descall vs Discord")}</Link>
           </li>
           <li>
-            <Link to="/best-discord-alternative-for-gamers">{t("Best for gamers")}</Link>
+            <Link to={mirror.href("/best-discord-alternative-for-gamers")}>{t("Best for gamers")}</Link>
           </li>
           <li>
             <Link to="/tr/discord-alternatifi">{t("Türkiye / Turkish")}</Link>
           </li>
           <li>
-            <Link to="/blog/leave-nitro-keep-voice-chat">{t("Leave Nitro guide")}</Link>
+            <Link to={mirror.href("/blog/leave-nitro-keep-voice-chat")}>{t("Leave Nitro guide")}</Link>
           </li>
         </ul>
       </section>

@@ -292,7 +292,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
                 <Link to={L("/discord-alternative")}>{t("Discord alternative")}</Link>
                 <Link to={L("/compare/discord")}>{t("vs Discord")}</Link>
                 <Link to="/tr/discord-alternatifi">Türkçe: Discord alternatifi</Link>
-                <Link to="/blog">{t("Blog")}</Link>
+                <Link to={L("/blog")}>{t("Blog")}</Link>
               </>
             )}
             <Link to={L("/status")}>{t("Status")}</Link>

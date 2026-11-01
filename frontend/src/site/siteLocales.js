@@ -9,9 +9,13 @@
  * A locale in SITE_DRAFT_LOCALES (siteDraftLocales.js) is known (its prefix can be
  * parsed, its strings can be exported) but not served. Adding a language = an entry in
  * locales.json + src/site/i18n/<id>.js; no code changes.
+ *
+ * SITE_PAGE_GROUPS are English pages mirrored after launch (blog, niche landings). Each
+ * group is served per locale: a locale listed for the group in SITE_DRAFT_PAGE_GROUPS
+ * has no twin of those pages yet (isMirrorPath(path, locale) is false for them).
  */
 import { ALL_LOCALES, getLocaleMeta } from "../i18n/registry.js";
-import { SITE_DRAFT_LOCALES } from "./siteDraftLocales.js";
+import { SITE_DRAFT_LOCALES, SITE_DRAFT_PAGE_GROUPS } from "./siteDraftLocales.js";
 
 /** English pages that get a twin under every prefixed locale (/de, /de/features, ...). */
 export const SITE_MIRROR_PATHS = [
@@ -31,6 +35,36 @@ export const SITE_MIRROR_PATHS = [
   "/discord-alternative",
   "/alternatives",
 ];
+
+/**
+ * English pages mirrored per group, staged with SITE_DRAFT_PAGE_GROUPS. English slugs stay
+ * in the localized URLs (/de/blog/discord-vs-descall, /de/apps-like-discord). The blog
+ * paths follow BLOG_POSTS in content/discordSeoContent.js (siteLocales.selftest.mjs).
+ */
+export const SITE_PAGE_GROUPS = Object.freeze({
+  blog: [
+    "/blog",
+    "/blog/discord-vs-descall",
+    "/blog/best-discord-alternatives-2026",
+    "/blog/apps-like-discord",
+    "/blog/discord-competitors",
+    "/blog/leave-nitro-keep-voice-chat",
+    "/blog/discord-alternative-for-communities-guide",
+    "/blog/voice-chat-alternative-to-discord",
+    "/blog/migrate-from-discord-to-descall",
+  ],
+  niche: [
+    "/best-discord-alternative-for-gamers",
+    "/discord-alternative-for-communities",
+    "/discord-alternative-for-voice-chat",
+    "/discord-alternative-for-friends",
+    "/apps-like-discord",
+    "/discord-replacement",
+  ],
+});
+
+/** Every English page that has (or will have) prefixed twins: SITE_MIRROR_PATHS + the groups. */
+export const ALL_MIRROR_PATHS = Object.freeze([...SITE_MIRROR_PATHS, ...Object.values(SITE_PAGE_GROUPS).flat()]);
 
 /** Locales with their own URLs and wording that is not the site catalog. */
 const NAMED_LOCALES = new Set(["en", "tr"]);
@@ -98,8 +132,45 @@ export function withLocalePrefix(enPath, id) {
   return p === "/" ? localePrefix(id) : `${localePrefix(id)}${p}`;
 }
 
-export function isMirrorPath(enPath) {
-  return SITE_MIRROR_PATHS.includes(cleanPath(enPath));
+/** Group of a staged mirror page ("blog", "niche"), or null. */
+export function pageGroupOf(enPath) {
+  const p = cleanPath(enPath);
+  for (const [group, paths] of Object.entries(SITE_PAGE_GROUPS)) if (paths.includes(p)) return group;
+  return null;
+}
+
+let previewPageGroups = false;
+
+/**
+ * Tooling only (scripts/site-i18n.mjs): treat every page group as live while the string
+ * export renders the staged pages, so they render exactly as they will once served.
+ */
+export function setPageGroupPreview(on) {
+  previewPageGroups = Boolean(on);
+}
+
+/** True when `locale` serves the pages of `group` (not listed in SITE_DRAFT_PAGE_GROUPS). */
+export function isPageGroupLive(group, locale, pageDrafts = SITE_DRAFT_PAGE_GROUPS) {
+  if (previewPageGroups) return true;
+  return !(pageDrafts?.[group] || []).includes(locale);
+}
+
+/** English pages a prefixed locale mirrors: SITE_MIRROR_PATHS plus its live page groups. */
+export function mirrorPathsFor(locale, { pageDrafts = SITE_DRAFT_PAGE_GROUPS } = {}) {
+  const groups = Object.keys(SITE_PAGE_GROUPS).filter((g) => isPageGroupLive(g, locale, pageDrafts));
+  return [...SITE_MIRROR_PATHS, ...groups.flatMap((g) => SITE_PAGE_GROUPS[g])];
+}
+
+/**
+ * True when the English page has a /<prefix> twin. Without a locale only SITE_MIRROR_PATHS
+ * count; with one, the page groups that locale serves count too.
+ */
+export function isMirrorPath(enPath, locale, { pageDrafts = SITE_DRAFT_PAGE_GROUPS } = {}) {
+  const p = cleanPath(enPath);
+  if (SITE_MIRROR_PATHS.includes(p)) return true;
+  if (!locale) return false;
+  const group = pageGroupOf(p);
+  return Boolean(group) && isPageGroupLive(group, locale, pageDrafts);
 }
 
 /** Native language name from locales.json ("Deutsch"). */

@@ -379,7 +379,7 @@ export function prefixHref(href, loc) {
     if (pair) return pair.tr;
     return href;
   }
-  return isMirrorPath(href) ? withLocalePrefix(href, l) : href;
+  return isMirrorPath(href, l) ? withLocalePrefix(href, l) : href;
 }
 
 export function cookieBannerHtml(loc) {
@@ -452,8 +452,8 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
                 footerItem(h("/discord-alternative"), n.alternative),
                 footerItem(h("/compare/discord"), n.vsDiscord),
                 footerItem(h("/alternatives"), n.alternatives),
-                footerItem("/apps-like-discord", n.apps),
-                footerItem("/blog", n.blog),
+                footerItem(h("/apps-like-discord"), n.apps),
+                footerItem(h("/blog"), n.blog),
               ].join("\n        ")
         }
       </ul>
