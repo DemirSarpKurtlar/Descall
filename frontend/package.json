@@ -46,6 +46,8 @@
     "node": "24.x"
   },
   "dependencies": {
+    "@babylonjs/core": "^9.33.1",
+    "@babylonjs/loaders": "^9.33.1",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "@capacitor/haptics": "^8.0.2",
