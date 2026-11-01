@@ -10,4 +10,4 @@
  * To ship a locale on the site: translate it until `node scripts/site-i18n.mjs check`
  * reports 100 % for it, then remove it from this list. Nothing else changes.
  */
-export const SITE_DRAFT_LOCALES = ["de", "es", "fr", "pt-BR", "ru"];
+export const SITE_DRAFT_LOCALES = [];

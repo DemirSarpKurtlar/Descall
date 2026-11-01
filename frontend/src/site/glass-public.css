@@ -131,6 +131,11 @@
 .mkt .mkt-language-list {
   border: none;
   border-radius: var(--r-lg);
+  /* Solid: the header already has a backdrop filter, and a second one nested inside
+     it lets the page text under the open menu show through in Chromium. */
+  background: #12141c;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 

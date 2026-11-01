@@ -32,6 +32,8 @@ const imp = (rel) => import(pathToFileURL(path.join(root, rel)).href);
 
 export const EXPORT_DIR = path.join(os.tmpdir(), "site-i18n");
 export const PART_SIZE = 250;
+/** Files rendered only in the browser whose t("...") keys the export must include. */
+const CLIENT_ONLY_FILES = ["site/CookieConsentBanner.jsx"];
 const TITLE_MAX = 70;
 const DESCRIPTION_MAX = 170;
 
@@ -272,7 +274,10 @@ export async function collectSiteStrings(locale) {
     console.error = consoleError;
   }
 
-  for (const file of inputs) {
+  // Chrome that only mounts in the browser (after consent checks), so the server render
+  // above never asks for its strings.
+  const clientOnly = CLIENT_ONLY_FILES.map((rel) => path.join(srcDir, rel)).filter((f) => !inputs.includes(f));
+  for (const file of [...inputs, ...clientOnly]) {
     const rel = path.relative(root, file).split(path.sep).join("/");
     for (const key of staticKeys(file)) list.add(key, `${rel} (shown after an interaction)`);
   }
@@ -342,6 +347,11 @@ export async function checkSiteI18n({
     if (invalid.length && !(allowDraft && draft)) {
       errors.push(`${id}: ${invalid.length} translations break placeholders, tags or length limits`);
     }
+    // A live page must render from the small site chunk: app-only strings make the
+    // browser download the whole app catalog. `bake` copies them over.
+    if (app && !draft) {
+      errors.push(`${id}: ${app} strings only in the app catalog, run node scripts/site-i18n.mjs bake --locale=${id}`);
+    }
     if (invalid.length && allowDraft && draft) warnings.push(`${id}: ${invalid.length} invalid translations (site draft)`);
     if (stale.length) warnings.push(`${id}: ${stale.length} site catalog keys are no longer used`);
   }
@@ -409,9 +419,10 @@ export async function exportSiteStrings({ locales = siteLocales.PREFIXABLE_LOCAL
 
 const CATALOG_HEADER = (id) => `/**
  * Marketing site catalog for ${id}: English source string -> translation.
- * Written by \`node scripts/site-i18n.mjs import --locale=${id}\` (sorted keys). Lookup
- * order on the site: this file, then the app phrases in src/i18n/locales/${id}.js,
- * then English.
+ * Written by \`node scripts/site-i18n.mjs import --locale=${id}\` and \`bake\` (sorted
+ * keys; bake copies the app-catalog strings the site uses, so the browser renders from
+ * this file alone). Lookup order: this file, then the app phrases in
+ * src/i18n/locales/${id}.js (loaded only when a lookup misses), then English.
  */
 `;
 
@@ -463,6 +474,26 @@ export async function importSiteStrings(id, { dir = EXPORT_DIR } = {}) {
   return { ok: true, problems, added, total: Object.keys(next).length };
 }
 
+/**
+ * Copy the app-catalog translations the site uses into the site catalog, so the
+ * browser can render a prefixed page from the small site chunk alone (the app
+ * catalog is a few hundred KB and only loads when a lookup misses).
+ */
+export async function bakeSiteStrings(id) {
+  if (!siteLocales.isPrefixedLocale(id)) throw new Error(`[site-i18n] ${id} is not a prefixed site locale`);
+  await registerSiteCatalogs({ locales: [id] });
+  const rows = await collectSiteStrings(id);
+  const next = { ...(await readSiteCatalog(id)) };
+  let added = 0;
+  for (const r of rows) {
+    if (siteLookupSource(r.en, id) !== "app") continue;
+    next[r.en] = siteLookup(r.en, id);
+    added += 1;
+  }
+  fs.writeFileSync(siteCatalogFile(id), formatCatalog(id, next), "utf8");
+  return { added, total: Object.keys(next).length };
+}
+
 // ---------------------------------------------------------------------------
 // CLI
 
@@ -496,6 +527,14 @@ async function main() {
     console.log(`site-i18n import ${args.locale}: ${res.added} new or changed, ${res.total} entries in ${path.relative(root, siteCatalogFile(String(args.locale)))}`);
     return;
   }
+  if (cmd === "bake") {
+    const ids = args.locale && args.locale !== true ? [String(args.locale)] : siteLocales.PREFIXABLE_LOCALES;
+    for (const id of ids) {
+      const res = await bakeSiteStrings(id);
+      console.log(`site-i18n bake ${id}: ${res.added} copied from the app catalog, ${res.total} entries`);
+    }
+    return;
+  }
   if (cmd === "check") {
     const { report, errors, warnings } = await checkSiteI18n({ allowDraft: Boolean(args["allow-draft"]) });
     for (const [id, r] of Object.entries(report)) {
@@ -514,7 +553,7 @@ async function main() {
     console.log("site-i18n check: ok");
     return;
   }
-  console.error("usage: node scripts/site-i18n.mjs export | import --locale=<id> | check [--allow-draft] [--missing=<id>]");
+  console.error("usage: node scripts/site-i18n.mjs export | import --locale=<id> | bake [--locale=<id>] | check [--allow-draft] [--missing=<id>]");
   process.exit(2);
 }
 

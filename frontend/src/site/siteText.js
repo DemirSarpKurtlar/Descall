@@ -35,6 +35,17 @@ export function setSiteTextRecorder(fn) {
   recorder = typeof fn === "function" ? fn : null;
 }
 
+let missHandler = null;
+
+/**
+ * Called with (locale) when a lookup misses both catalogs of a registered locale. The
+ * browser loader uses it to fetch the large app catalog only when the site catalog
+ * does not cover a string. Pass null to stop.
+ */
+export function setSiteMissHandler(fn) {
+  missHandler = typeof fn === "function" ? fn : null;
+}
+
 /** Translation or undefined. Empty strings count as missing. */
 export function siteLookup(english, id) {
   const cat = catalogs.get(id);
@@ -44,6 +55,7 @@ export function siteLookup(english, id) {
   if (typeof site === "string" && site !== "") return site;
   const app = cat.app[key];
   if (typeof app === "string" && app !== "") return app;
+  if (missHandler) missHandler(id);
   return undefined;
 }
 

@@ -7,7 +7,7 @@ import { initialMarketingLocale } from "./resolveMarketingLocale.js";
 import { forcedLocaleForPath } from "./localePaths.js";
 import { SITE_LOCALES, isPrefixedLocale, isSiteLocale, localeNativeName } from "./siteLocales.js";
 import { hasSiteCatalog, siteLookup } from "./siteText.js";
-import { loadSiteCatalog } from "./loadSiteCatalog.js";
+import { loadSiteCatalog, onSiteAppCatalog } from "./loadSiteCatalog.js";
 
 const LOCALES = SITE_LOCALES.map((id) => ({ id, nativeLabel: localeNativeName(id) }));
 
@@ -86,6 +86,11 @@ export default function MarketingLocaleProvider({ children }) {
       cancelled = true;
     };
   }, [locale]);
+
+  // The app catalog arrives later, only when a string is missing from the site catalog.
+  useEffect(() => onSiteAppCatalog((id) => {
+    if (id === locale) setCatalogTick((n) => n + 1);
+  }), [locale]);
 
   useEffect(() => {
     if (!isPrefixedLocale(locale) || hasSiteCatalog(locale)) return undefined;
