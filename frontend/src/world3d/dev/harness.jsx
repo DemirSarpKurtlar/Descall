@@ -14,6 +14,11 @@ const port = q.get("port") || "4791";
 const meId = q.get("me") || "demir";
 const meName = q.get("name") || "Demir";
 const speakers = (q.get("speakers") || "").split(",").filter(Boolean);
+// looks=ayse:0,mert:1 pins outfits (character sheet comparisons)
+const lookOverrides = Object.fromEntries((q.get("looks") || "").split(",").filter(Boolean).map((kv) => {
+  const [k, v] = kv.split(":");
+  return [k, Number(v)];
+}));
 if (q.get("quality")) localStorage.setItem("descall:world3d:quality", q.get("quality"));
 if (q.get("lang")) localStorage.setItem("descall_language", q.get("lang"));
 
@@ -38,6 +43,7 @@ function Harness() {
         token={meId}
         activeSpeakerIds={active}
         allowSoftware
+        lookOverrides={lookOverrides}
         onExit={(r) => setExited(r)}
         onFallback={(r) => setExited(`fallback:${r}`)}
       />

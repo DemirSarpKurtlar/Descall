@@ -48,14 +48,25 @@ CELLS = {
     "skin": 0, "top": 1, "top_dark": 2, "inner": 3, "pants": 4, "pants_cuff": 5,
     "shoe": 6, "sole": 7, "shoe_accent": 8, "hair": 9, "eye_white": 10, "iris": 11,
     "mouth": 12, "brows": 13, "acc1": 14, "acc2": 15, "highlight": 16, "sock": 17,
-    "nose": 18, "lens": 19,
+    "nose": 18, "lens": 19, "sleeve": 20, "sleeve_stripe": 21, "stripe": 22, "blush": 23,
+    "pack": 24, "scarf": 25, "guitar": 26, "guitar_dark": 27, "metal": 28, "sole_band": 29,
 }
 DEFAULT_COLORS = {
     "skin": "#f2b58f", "top": "#d9dbe3", "top_dark": "#b9bcc8", "inner": "#f1e9da", "pants": "#2c3566",
     "pants_cuff": "#4a5590", "shoe": "#f3f3f3", "sole": "#e9e9ea", "shoe_accent": "#3f8a6a", "hair": "#1d2236",
     "eye_white": "#fbfbff", "iris": "#2a1c16", "mouth": "#7a2c35", "brows": "#1d2236", "acc1": "#c94a4a",
     "acc2": "#f5f5f5", "highlight": "#ffffff", "sock": "#f4f4f4", "nose": "#eda687", "lens": "#1b1b22",
+    "sleeve": "#d9dbe3", "sleeve_stripe": "#d9dbe3", "stripe": "#f1e9da", "blush": "#f29a8e", "pack": "#3b4a7a",
+    "scarf": "#5cc0c8", "guitar": "#d9954a", "guitar_dark": "#4a2a1a", "metal": "#c9ccd6", "sole_band": "#e9e9ea",
 }
+
+# Head group (head, face, hair, hats) is scaled about the neck: rounder, bigger head (scene-5 proportions).
+HEAD_K = 1.1
+HEAD_PIVOT = Vector((0.0, 0.0, 1.07))
+
+
+def head_xyz(x, y, z):
+    return (x * HEAD_K, y * HEAD_K, HEAD_PIVOT.z + (z - HEAD_PIVOT.z) * HEAD_K)
 
 
 def cell_uv(name):
@@ -108,12 +119,31 @@ def paint(obj, cell):
     return obj
 
 
+def paint_bands(obj, cell_a, cell_b, band=0.032):
+    """Horizontal stripes: every polygon gets cell_a or cell_b by the height of its centre."""
+    me = obj.data
+    if not me.uv_layers:
+        me.uv_layers.new(name="UVMap")
+    ua, ub = cell_uv(cell_a), cell_uv(cell_b)
+    bpy.context.view_layer.update()
+    mw = obj.matrix_world
+    uv = me.uv_layers.active.data
+    for poly in me.polygons:
+        z = (mw @ poly.center).z
+        c = ua if int(math.floor(z / band)) % 2 == 0 else ub
+        for li in poly.loop_indices:
+            uv[li].uv = c
+    blib.set_mat(obj, MAT)
+    obj["banded"] = True
+    return obj
+
+
 # ------------------------------------------------------------------ rig layout (rest pose)
 
 def arm_points(side):
     s = 1 if side == "L" else -1
-    shoulder = Vector((s * 0.178, 0.0, 0.975))
-    a1 = math.radians(79)
+    shoulder = Vector((s * 0.172, 0.0, 0.975))
+    a1 = math.radians(82)
     elbow = shoulder + 0.235 * Vector((s * math.cos(a1), 0.01, -math.sin(a1)))
     a2 = math.radians(84)
     wrist = elbow + 0.215 * Vector((s * math.cos(a2), -0.04, -math.sin(a2)))
@@ -179,11 +209,18 @@ def build_armature():
 
 # ------------------------------------------------------------------ modelling helpers
 
-def seg_cylinder(name, a, b, r1, r2, cell, verts=20):
-    """Cylinder from point a to point b."""
+def seg_cylinder(name, a, b, r1, r2, cell, verts=20, segs=1):
+    """Cylinder from point a to point b (segs = rings along the length)."""
     a, b = Vector(a), Vector(b)
     d = b - a
     o = blib.cylinder(name, r1, d.length, (0, 0, 0), None, verts=verts, radius_top=r2)
+    if segs > 1:
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        edges = [e for e in bm.edges if abs(e.verts[0].co.z - e.verts[1].co.z) > 1e-6]
+        bmesh.ops.subdivide_edges(bm, edges=edges, cuts=segs - 1, use_grid_fill=True)
+        bm.to_mesh(o.data)
+        bm.free()
     # create_cone builds along Z centred on origin; radius1 at -Z
     o.rotation_mode = "QUATERNION"
     o.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(d.normalized())
@@ -246,23 +283,73 @@ def add(obj, group, bones):
     return obj
 
 
+_FOLD_TEX = None
+
+
+def folds(obj, strength):
+    """Gentle cloth folds: low-frequency noise displacement (applied with the object)."""
+    global _FOLD_TEX
+    if _FOLD_TEX is None:
+        _FOLD_TEX = bpy.data.textures.new("folds", "CLOUDS")
+        _FOLD_TEX.noise_scale = 0.06
+        _FOLD_TEX.noise_depth = 1
+    d = obj.modifiers.new("folds", "DISPLACE")
+    d.texture = _FOLD_TEX
+    d.texture_coords = "GLOBAL"
+    d.strength = strength
+    d.mid_level = 0.5
+    return obj
+
+
+def build_hand(side, wr, he):
+    """Relaxed hand: palm, four slightly curled fingers and a separate thumb."""
+    s = 1 if side == "L" else -1
+    hd = (he - wr).normalized()
+    across = Vector((0, 1, 0))  # fingers line up front to back when the arm hangs
+    inward = Vector((-s, 0, 0))  # palm faces the thigh
+    palm_c = wr + hd * 0.042
+    palm = ball(f"palm.{side}", 0.042, palm_c, "skin", scale=(0.55, 0.95, 1.0))
+    palm.rotation_mode = "QUATERNION"
+    palm.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(hd)
+    add(palm, "body", f"hand.{side}")
+    for k, off in enumerate((-0.027, -0.009, 0.009, 0.026)):
+        length = (0.036, 0.04, 0.038, 0.031)[k]
+        base = wr + hd * 0.07 + across * off
+        mid = base + hd * length * 0.55
+        tip = mid + (hd * 0.6 + inward * 0.8).normalized() * length * 0.5
+        r = 0.0105 if k in (1, 2) else 0.0095
+        add(seg_cylinder(f"fing{k}a.{side}", base, mid, r, r * 0.95, "skin", verts=10), "body", f"hand.{side}")
+        add(seg_cylinder(f"fing{k}b.{side}", mid, tip, r * 0.95, r * 0.9, "skin", verts=10), "body", f"hand.{side}")
+        add(ball(f"fing{k}m.{side}", r * 0.97, mid, "skin", seg=10, rings=6), "body", f"hand.{side}")
+        add(ball(f"fing{k}t.{side}", r * 0.92, tip, "skin", seg=10, rings=6), "body", f"hand.{side}")
+    tb = wr + hd * 0.03 + across * -0.03 + inward * 0.012
+    tt = tb + (hd * 0.5 + across * -0.6 + inward * 0.4).normalized() * 0.04
+    add(seg_cylinder(f"thumb.{side}", tb, tt, 0.012, 0.011, "skin", verts=10), "body", f"hand.{side}")
+    add(ball(f"thumbt.{side}", 0.0112, tt, "skin", seg=10, rings=6), "body", f"hand.{side}")
+
+
 def build_body():
     # head
-    head = ball("head", 0.19, (0, 0, 1.25), "skin", scale=(1.0, 0.94, 1.0), seg=40, rings=24)
+    head = ball("head", 0.19, (0, 0, 1.25), "skin", scale=(1.04, 0.98, 1.0), seg=40, rings=24)
     # fuller cheeks / jaw: push lower front verts slightly out
     for v in head.data.vertices:
         z = v.co.z
         if z < 0:
             k = min(1.0, -z / 0.19)
-            v.co.x *= 1.0 + 0.06 * k
-            v.co.y *= 1.0 + 0.03 * k
+            # soft, full jaw and cheeks
+            v.co.x *= 1.0 + 0.09 * k
+            v.co.y *= 1.0 + 0.05 * k
     add(head, "body", "head")
     for s in (-1, 1):
-        add(ball(f"ear{s}", 0.048, (s * 0.186, 0.005, 1.235), "skin", scale=(0.45, 0.8, 1.05)), "body", "head")
-    add(ball("nose", 0.026, (0, -0.176, 1.2), "nose", scale=(1.05, 0.8, 0.85)), "body", "head")
+        add(ball(f"ear{s}", 0.05, (s * 0.198, 0.01, 1.232), "skin", scale=(0.5, 0.82, 1.08)), "body", "head")
+        add(ball(f"ear_in{s}", 0.03, (s * 0.214, 0.0, 1.232), "nose", scale=(0.3, 0.7, 0.95)), "body", "head")
+        # cheek blush (palette cell 'blush'), sunk into the face so only a soft disc shows
+        add(ball(f"blush{s}", 0.04, (s * 0.112, -0.158, 1.178), "blush", scale=(1.0, 0.35, 0.72), rot=(0, 0, s * 28)), "body", "head")
+    add(ball("nose", 0.027, (0, -0.184, 1.2), "nose", scale=(1.1, 0.8, 0.85)), "body", "head")
     add(seg_cylinder("neck", (0, 0, 0.96), (0, 0, 1.11), 0.058, 0.055, "skin"), "body", ["chest", "neck", "head"])
     # torso (top), hem
-    torso = box("torso", (0.36, 0.235, 0.42), (0, 0.0, 0.825), "top", bevel=0.1, sub=1, seg=4)
+    torso = box("torso", (0.34, 0.23, 0.42), (0, 0.0, 0.825), "top", bevel=0.1, sub=2, seg=4)
+    folds(torso, 0.006)
     add(torso, "body", ["hips", "spine", "chest"])
     add(box("hem", (0.365, 0.24, 0.05), (0, 0.0, 0.635), "top_dark", bevel=0.022, sub=1), "body", ["hips"])
     # pelvis (pants)
@@ -270,24 +357,13 @@ def build_body():
     for side in ("L", "R"):
         s = 1 if side == "L" else -1
         sh, el, wr, he = arm_points(side)
-        add(ball(f"shoulder.{side}", 0.066, sh + Vector((s * 0.005, 0, -0.01)), "top"), "body", ["chest", f"upper_arm.{side}"])
-        add(seg_cylinder(f"uarm.{side}", sh, el, 0.06, 0.054, "top"), "body", ["chest", f"upper_arm.{side}", f"forearm.{side}"])
-        add(ball(f"elbow.{side}", 0.054, el, "top"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
-        add(seg_cylinder(f"farm.{side}", el, wr - (wr - el).normalized() * 0.03, 0.054, 0.05, "top"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
-        add(seg_cylinder(f"cuff.{side}", wr - (wr - el).normalized() * 0.045, wr, 0.053, 0.053, "top_dark"), "body", f"forearm.{side}")
-        # hand: palm + fingers block + thumb
-        hd = (he - wr).normalized()
-        palm_c = wr + hd * 0.045
-        palm = ball(f"palm.{side}", 0.045, palm_c, "skin", scale=(0.62, 0.95, 1.0))
-        palm.rotation_mode = "QUATERNION"
-        palm.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(hd)
-        add(palm, "body", f"hand.{side}")
-        fing = ball(f"fingers.{side}", 0.034, wr + hd * 0.085, "skin", scale=(0.6, 1.05, 1.0))
-        fing.rotation_mode = "QUATERNION"
-        fing.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(hd)
-        add(fing, "body", f"hand.{side}")
-        thumb = ball(f"thumb.{side}", 0.016, wr + hd * 0.04 + Vector((0, -0.032, 0)), "skin", scale=(1, 1, 2.0))
-        add(thumb, "body", f"hand.{side}")
+        # sleeves: own palette cells so a vest look can show a striped long-sleeve shirt
+        add(paint_bands(ball(f"shoulder.{side}", 0.064, sh + Vector((s * 0.004, 0, -0.012)), "top"), "sleeve", "sleeve_stripe"), "body", ["chest", f"upper_arm.{side}"])
+        add(paint_bands(seg_cylinder(f"uarm.{side}", sh, el, 0.058, 0.052, "top", segs=6), "sleeve", "sleeve_stripe"), "body", ["chest", f"upper_arm.{side}", f"forearm.{side}"])
+        add(paint_bands(ball(f"elbow.{side}", 0.052, el, "top"), "sleeve", "sleeve_stripe"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
+        add(paint_bands(seg_cylinder(f"farm.{side}", el, wr - (wr - el).normalized() * 0.03, 0.052, 0.048, "top", segs=6), "sleeve", "sleeve_stripe"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
+        add(seg_cylinder(f"cuff.{side}", wr - (wr - el).normalized() * 0.048, wr + (wr - el).normalized() * 0.004, 0.054, 0.054, "top_dark"), "body", f"forearm.{side}")
+        build_hand(side, wr, he)
         # legs (jeans)
         hip, knee, ankle, toe, toe_end = leg_points(side)
         add(seg_cylinder(f"thigh.{side}", hip + Vector((0, 0, 0.04)), knee, 0.08, 0.068, "pants"), "body", ["hips", f"thigh.{side}", f"shin.{side}"])
@@ -297,12 +373,13 @@ def build_body():
         add(seg_cylinder(f"sock.{side}", Vector((knee.x, 0, 0.05)), Vector((knee.x, 0, 0.1)), 0.045, 0.047, "sock"), "body", f"shin.{side}")
         # sneaker
         x = ankle.x
-        add(box(f"shoe.{side}", (0.112, 0.235, 0.085), (x, -0.04, 0.058), "shoe", bevel=0.042, sub=1), "body", [f"foot.{side}", f"toe.{side}"])
-        add(box(f"sole.{side}", (0.118, 0.245, 0.032), (x, -0.04, 0.016), "sole", bevel=0.014, sub=1), "body", [f"foot.{side}", f"toe.{side}"])
-        add(box(f"heel.{side}", (0.114, 0.07, 0.06), (x, 0.045, 0.06), "shoe_accent", bevel=0.026, sub=1), "body", f"foot.{side}")
-        add(box(f"toecap.{side}", (0.1, 0.06, 0.05), (x, -0.135, 0.045), "shoe_accent", bevel=0.024, sub=1), "body", f"toe.{side}")
+        add(box(f"shoe.{side}", (0.118, 0.245, 0.09), (x, -0.04, 0.072), "shoe", bevel=0.044, sub=1), "body", [f"foot.{side}", f"toe.{side}"])
+        add(box(f"sole.{side}", (0.126, 0.258, 0.034), (x, -0.04, 0.03), "sole_band", bevel=0.014, sub=1), "body", [f"foot.{side}", f"toe.{side}"])
+        add(box(f"outsole.{side}", (0.124, 0.254, 0.018), (x, -0.04, 0.009), "sole", bevel=0.008, sub=1), "body", [f"foot.{side}", f"toe.{side}"])
+        add(box(f"heel.{side}", (0.114, 0.07, 0.06), (x, 0.045, 0.074), "shoe_accent", bevel=0.026, sub=1), "body", f"foot.{side}")
+        add(box(f"toecap.{side}", (0.1, 0.06, 0.05), (x, -0.135, 0.058), "shoe_accent", bevel=0.024, sub=1), "body", f"toe.{side}")
         for k in range(3):
-            add(box(f"lace{k}.{side}", (0.06, 0.012, 0.01), (x, -0.07 + k * 0.03, 0.1 - k * 0.004), "sole", bevel=0.004, sub=0), "body", f"foot.{side}")
+            add(box(f"lace{k}.{side}", (0.06, 0.012, 0.01), (x, -0.07 + k * 0.03, 0.118 - k * 0.004), "sole_band", bevel=0.004, sub=0), "body", f"foot.{side}")
 
 
 def build_outfits():
@@ -323,15 +400,25 @@ def build_outfits():
         add(box(f"collar{s}", (0.1, 0.045, 0.08), (s * 0.085, -0.075, 0.975), "top", bevel=0.02, sub=1, rot=(0, s * 25, s * 20)), "extra_jacket", ["chest", "neck"])
         add(box(f"zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), "top_dark", bevel=0.003, sub=0), "extra_jacket", ["hips", "spine", "chest"])
     add(box("jacket_pull", (0.012, 0.012, 0.035), (0.068, -0.126, 0.67), "acc2", bevel=0.004, sub=0), "extra_jacket", ["hips"])
+    # puffer vest over a striped long-sleeve shirt (scene-5, right): quilted ridges, open front, high collar
+    panel = box("vest_shirt", (0.13, 0.03, 0.38), (0, -0.108, 0.83), "inner", bevel=0.012, sub=2)
+    add(paint_bands(panel, "inner", "stripe", band=0.03), "extra_vest", ["hips", "spine", "chest"])
+    for k, z in enumerate((0.69, 0.77, 0.85, 0.93)):
+        add(box(f"quilt{k}", (0.343, 0.236, 0.01), (0, 0.0, z), "top_dark", bevel=0.004, sub=1), "extra_vest", ["hips", "spine", "chest"])
+    for s in (-1, 1):
+        add(box(f"vest_collar{s}", (0.12, 0.06, 0.07), (s * 0.075, -0.05, 0.985), "top", bevel=0.026, sub=1, rot=(0, 0, s * 12)), "extra_vest", ["chest", "neck"])
+        add(box(f"vest_zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), "top_dark", bevel=0.003, sub=0), "extra_vest", ["hips", "spine", "chest"])
 
 
 def build_face():
     for s in (-1, 1):
         x = s * 0.074
-        add(ball(f"eye_white{s}", 0.043, (x, -0.148, 1.255), "eye_white", scale=(1.0, 0.55, 1.18)), "face", "head")
-        add(ball(f"iris{s}", 0.031, (x * 0.98, -0.171, 1.25), "iris", scale=(1.0, 0.42, 1.12)), "face", "head")
-        add(ball(f"shine{s}", 0.0095, (x - s * 0.006 + 0.008, -0.184, 1.27), "highlight"), "face", "head")
-        brow = box(f"brow{s}", (0.068, 0.02, 0.016), (s * 0.078, -0.162, 1.335), "brows", bevel=0.007, sub=1, rot=(-12, s * 3, -s * 9))
+        x = s * 0.077
+        add(ball(f"eye_white{s}", 0.048, (x, -0.15, 1.252), "eye_white", scale=(1.0, 0.55, 1.2)), "face", "head")
+        add(ball(f"iris{s}", 0.036, (x * 0.98, -0.175, 1.246), "iris", scale=(1.0, 0.42, 1.14)), "face", "head")
+        add(ball(f"shine{s}", 0.012, (x - s * 0.006 + 0.011, -0.191, 1.268), "highlight"), "face", "head")
+        add(ball(f"shine2{s}", 0.006, (x - s * 0.004 - 0.012, -0.19, 1.232), "highlight"), "face", "head")
+        brow = box(f"brow{s}", (0.07, 0.02, 0.016), (s * 0.08, -0.166, 1.34), "brows", bevel=0.007, sub=1, rot=(-12, s * 3, -s * 9))
         add(brow, "face", "head")
     add(mouth_mesh(), "face", "head")
 
@@ -343,7 +430,7 @@ def mouth_shape(open_amount):
     for i in range(n + 1):
         t = -1 + 2 * i / n
         x = w * t
-        curve = 0.011 * t * t
+        curve = 0.015 * t * t
         tz = curve + 0.0025 * (1 - t * t) + 0.004 * open_amount * (1 - t * t)
         bz = curve - 0.0035 * (1 - t * t) - 0.036 * open_amount * (1 - t * t) ** 0.8
         top.append((x, tz))
@@ -373,28 +460,46 @@ def mouth_mesh():
     return paint(obj, "mouth")
 
 
+def swept_locks():
+    C = Vector((0, 0.0, 1.27))
+    R0 = 0.2
+    top = C + Vector((0, 0.03, R0))
+    out = []
+    spec = [(-80, 28), (-55, 34), (-30, 40), (-8, 44), (15, 40), (40, 34), (65, 28), (95, 24), (-105, 22),
+            (-20, 62), (20, 62), (0, 74), (140, 30), (-140, 30), (180, 34)]
+    for az, el in spec:
+        a, e = math.radians(az), math.radians(el)
+        n = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+        pnt = C + n * R0
+        t = (pnt - top)
+        t = (t - n * t.dot(n))
+        if t.length < 1e-4:
+            t = Vector((0, -1, 0))
+        t.normalize()
+        # sweep to the character's right a little
+        t = (t + Vector((-0.35, 0, 0)) - n * Vector((-0.35, 0, 0)).dot(n)).normalized()
+        q = Vector((0, 0, 1)).rotation_difference(t)
+        rot = [math.degrees(v) for v in q.to_euler("XYZ")]
+        size = (0.85, 0.65, 2.1) if el < 60 else (0.9, 0.7, 1.8)
+        out.append(("ELLIPSOID", tuple(pnt + n * 0.012), 0.062 if el < 60 else 0.07, size, tuple(rot)))
+    return out
+
+
 def build_hair_and_accessories():
     E = "ELLIPSOID"
     B = "BALL"
-    # short, swept, spiky (scene-5 boys)
-    # swept clumps: elongated ellipsoids pointing up/forward/sideways (scene-5 boys)
+    # short swept hair (scene-5 boys): a cap plus soft locks lying on the scalp, all
+    # sweeping from the crown towards the forehead and to one side, merged by the metaballs.
     spiky = [
-        (E, (0, 0.02, 1.33), 0.19, (1.05, 1.02, 0.78)),
-        (E, (0, 0.06, 1.25), 0.17, (1.08, 0.95, 0.85)),
-        (E, (-0.06, -0.1, 1.43), 0.055, (0.8, 0.8, 1.9), (-55, 0, 25)),
-        (E, (0.03, -0.12, 1.44), 0.055, (0.8, 0.8, 1.9), (-60, 0, -10)),
-        (E, (0.11, -0.08, 1.42), 0.05, (0.8, 0.8, 1.8), (-50, 25, -35)),
-        (E, (-0.13, -0.04, 1.42), 0.05, (0.8, 0.8, 1.8), (-35, -30, 40)),
-        (E, (0.0, -0.02, 1.5), 0.06, (0.8, 0.8, 1.7), (-25, 10, 0)),
-        (E, (0.08, 0.06, 1.49), 0.055, (0.8, 0.8, 1.7), (10, 30, 0)),
-        (E, (-0.09, 0.07, 1.47), 0.055, (0.8, 0.8, 1.7), (15, -30, 0)),
-        (E, (0.15, -0.11, 1.37), 0.035, (0.8, 0.8, 1.8), (-30, 40, -20)),
-        (E, (-0.165, -0.09, 1.33), 0.035, (0.8, 0.8, 1.8), (-20, -40, 20)),
-    ]
+        (E, (0, 0.02, 1.345), 0.19, (1.06, 1.03, 0.84)),
+        (E, (0, 0.07, 1.24), 0.17, (1.1, 0.95, 0.9)),
+    ] + swept_locks()
     add(metaball_mesh("hair_spiky", spiky, "hair"), "hair_spiky", "head")
     bun = [
-        (E, (0, 0.015, 1.32), 0.195, (1.06, 1.04, 0.82)),
-        (E, (0, 0.07, 1.22), 0.18, (1.1, 0.9, 1.0)),
+        (E, (0, 0.015, 1.33), 0.2, (1.08, 1.06, 0.84)),
+        (E, (0, 0.07, 1.22), 0.185, (1.12, 0.92, 1.0)),
+        (E, (-0.075, -0.13, 1.39), 0.075, (1.5, 0.7, 0.8), (0, 0, -20)),
+        (E, (0.075, -0.13, 1.39), 0.075, (1.5, 0.7, 0.8), (0, 0, 20)),
         (E, (-0.15, -0.06, 1.2), 0.07, (0.7, 0.8, 1.9)),
         (E, (0.15, -0.06, 1.2), 0.07, (0.7, 0.8, 1.9)),
         (E, (-0.05, -0.12, 1.4), 0.08, (1.4, 0.8, 0.7)),
@@ -403,10 +508,11 @@ def build_hair_and_accessories():
     add(metaball_mesh("hair_bun", bun, "hair"), "hair_bun", "head")
     bob = [
         (E, (0, 0.02, 1.32), 0.2, (1.08, 1.05, 0.8)),
-        (E, (0, 0.07, 1.18), 0.2, (1.12, 0.92, 1.15)),
-        (E, (-0.16, -0.03, 1.16), 0.085, (0.75, 1.0, 2.0)),
-        (E, (0.16, -0.03, 1.16), 0.085, (0.75, 1.0, 2.0)),
-        (E, (0.0, -0.13, 1.39), 0.09, (1.9, 0.7, 0.75)),
+        (E, (0, 0.07, 1.16), 0.2, (1.14, 0.94, 1.3)),
+        (E, (-0.165, -0.03, 1.12), 0.09, (0.72, 1.05, 2.4)),
+        (E, (0.165, -0.03, 1.12), 0.09, (0.72, 1.05, 2.4)),
+        (E, (-0.07, -0.135, 1.385), 0.08, (1.5, 0.7, 0.8), (0, 0, -12)),
+        (E, (0.07, -0.135, 1.385), 0.08, (1.5, 0.7, 0.8), (0, 0, 12)),
     ]
     add(metaball_mesh("hair_bob", bob, "hair"), "hair_bob", "head")
     # baseball cap
@@ -456,6 +562,18 @@ def build_hair_and_accessories():
         add(paint(tor, "lens"), "acc_glasses", "head")
         add(seg_cylinder(f"temple{s}", (s * 0.13, -0.195, 1.262), (s * 0.19, -0.02, 1.255), 0.006, 0.006, "lens", verts=8), "acc_glasses", "head")
     add(seg_cylinder("bridge", (-0.022, -0.2, 1.262), (0.022, -0.2, 1.262), 0.006, 0.006, "lens", verts=8), "acc_glasses", "head")
+    # backpack (vest look)
+    add(box("pack_body", (0.27, 0.12, 0.32), (0, 0.17, 0.82), "pack", bevel=0.05, sub=1), "acc_backpack", ["spine", "chest"])
+    add(box("pack_pocket", (0.19, 0.04, 0.12), (0, 0.235, 0.74), "pack", bevel=0.02, sub=1), "acc_backpack", ["spine"])
+    for s in (-1, 1):
+        add(box(f"strap{s}", (0.035, 0.02, 0.32), (s * 0.085, -0.122, 0.86), "pack", bevel=0.008, sub=0, rot=(-6, 0, 0)), "acc_backpack", ["spine", "chest"])
+        add(box(f"strap_top{s}", (0.035, 0.26, 0.025), (s * 0.085, 0.02, 1.0), "pack", bevel=0.01, sub=0), "acc_backpack", ["chest"])
+    # scarf (scene-5, middle girl)
+    sc = blib.cylinder("scarf_ring", 0.098, 0.07, (0, -0.005, 1.0), None, verts=28, radius_top=0.088, bevel=0.02)
+    add(paint(sc, "scarf"), "acc_scarf", ["chest", "neck"])
+    add(box("scarf_tail", (0.07, 0.03, 0.17), (0.05, -0.12, 0.89), "scarf", bevel=0.014, sub=1, rot=(-8, 0, -6)), "acc_scarf", ["chest"])
+    add(box("scarf_knot", (0.08, 0.05, 0.05), (0.04, -0.105, 0.975), "scarf", bevel=0.02, sub=1), "acc_scarf", ["chest"])
+    build_guitar()
     # headphones
     band = []
     for i in range(17):
@@ -472,6 +590,30 @@ def build_hair_and_accessories():
 
 # ------------------------------------------------------------------ skinning
 
+def build_guitar():
+    """Own acoustic guitar, held across the belly (rigid on the chest bone)."""
+    parts = []
+    lower = blib.sphere("gtr_lower", 0.13, (0, 0, 0), None, scale=(1.0, 0.36, 1.0), segments=32, rings=14)
+    upper = blib.sphere("gtr_upper", 0.098, (0, 0, 0.14), None, scale=(1.0, 0.36, 1.0), segments=32, rings=14)
+    parts += [paint(lower, "guitar"), paint(upper, "guitar")]
+    hole = blib.cylinder("gtr_hole", 0.034, 0.006, (0, -0.046, 0.1), None, verts=24, rot=(90, 0, 0))
+    parts.append(paint(hole, "guitar_dark"))
+    parts.append(box("gtr_bridge", (0.07, 0.012, 0.014), (0, -0.047, -0.04), "guitar_dark", bevel=0.003, sub=0))
+    parts.append(box("gtr_neck", (0.04, 0.025, 0.36), (0, -0.01, 0.39), "guitar_dark", bevel=0.006, sub=0))
+    parts.append(box("gtr_head", (0.055, 0.02, 0.09), (0, -0.01, 0.61), "guitar_dark", bevel=0.008, sub=0))
+    for k in range(3):
+        for sgn in (-1, 1):
+            parts.append(ball(f"gtr_peg{k}{sgn}", 0.008, (sgn * 0.035, -0.01, 0.585 + k * 0.025), "metal", seg=8, rings=4))
+    for k in range(4):
+        x = -0.012 + k * 0.008
+        parts.append(seg_cylinder(f"gtr_str{k}", (x, -0.024, -0.04), (x, -0.024, 0.57), 0.0012, 0.0012, "metal", verts=4))
+    g = blib.join(parts, "guitar_obj")
+    # across the belly: neck to the character's left and up, face out
+    g.rotation_euler = (math.radians(-12), math.radians(-62), math.radians(0))
+    g.location = (-0.04, -0.17, 0.72)
+    add(g, "acc_guitar", "chest")
+
+
 def dist_to_segment(p, a, b):
     ab = b - a
     t = max(0.0, min(1.0, (p - a).dot(ab) / max(1e-9, ab.dot(ab))))
@@ -482,6 +624,10 @@ def skin(rig):
     groups = {}
     for obj, group, bones in PARTS:
         blib.apply_all(obj)
+        if bones == "head":
+            for v in obj.data.vertices:
+                w = obj.matrix_world @ v.co
+                v.co = obj.matrix_world.inverted() @ Vector(head_xyz(w.x, w.y, w.z))
         names = [bones] if isinstance(bones, str) else list(bones)
         for n in names:
             obj.vertex_groups.new(name=n)
@@ -511,7 +657,7 @@ def skin(rig):
         if group != "face":
             # budget: ~16k triangles per visible avatar (16 avatars < 300k triangles)
             dec = o.modifiers.new("decimate", "DECIMATE")
-            dec.ratio = 0.42 if group in ("body",) or group.startswith("hair_") else 0.6
+            dec.ratio = 0.45 if group in ("body",) or group.startswith("hair_") else (0.75 if group == "acc_guitar" else 0.6)
             blib.apply_all(o)
         o.parent = rig
         mod = o.modifiers.new("rig", "ARMATURE")
@@ -528,9 +674,9 @@ def add_face_morphs(face):
     # blink: squash eye parts (white, iris, shine) vertically around each eye centre
     for i, v in enumerate(me.vertices):
         co = v.co
-        if co.z > 1.2 and co.z < 1.31 and abs(co.x) > 0.02 and abs(co.x) < 0.13 and co.y < -0.1:
-            cx = 0.074 if co.x > 0 else -0.074
-            cz = 1.252
+        lo, hi = head_xyz(0, 0, 1.19)[2], head_xyz(0, 0, 1.32)[2]
+        if co.z > lo and co.z < hi and abs(co.x) > 0.02 and abs(co.x) < 0.15 and co.y < -0.1:
+            cz = head_xyz(0, 0, 1.25)[2]
             k = 0.08
             blink.data[i].co = Vector((co.x, co.y + 0.004, cz - 0.012 + (co.z - cz) * k))
     # mouth: rebuild the outline with the open shape
@@ -540,16 +686,17 @@ def add_face_morphs(face):
     ring1 = top1 + list(reversed(bot1[1:-1]))
     for i, v in enumerate(me.vertices):
         co = v.co
-        if co.z < 1.18 and co.z > 1.08 and abs(co.x) < 0.06 and co.y < -0.1:
+        if co.z < head_xyz(0, 0, 1.18)[2] and co.z > head_xyz(0, 0, 1.08)[2] and abs(co.x) < 0.066 and co.y < -0.1:
             # find matching outline point by x/z of the closed shape
             best, bd = None, 1e9
             for k, (x, z) in enumerate(ring0):
-                d = (x - co.x) ** 2 + (1.148 + z - co.z) ** 2
+                hx, _, hz = head_xyz(x, 0, 1.148 + z)
+                d = (hx - co.x) ** 2 + (hz - co.z) ** 2
                 if d < bd:
                     bd, best = d, k
             x1, z1 = ring1[best]
-            dx = x1 - ring0[best][0]
-            dz = z1 - ring0[best][1]
+            dx = (x1 - ring0[best][0]) * HEAD_K
+            dz = (z1 - ring0[best][1]) * HEAD_K
             mouth_open.data[i].co = Vector((co.x + dx, co.y - 0.004 * (1 if co.y < -0.15 else 0), co.z + dz))
 
 
@@ -627,7 +774,8 @@ def merge(*ps):
 
 
 # arms hang a bit closer than the modelled rest (A pose 72 deg); sides relax them
-ARMS_DOWN = {"upper_arm.L": (0, 0, 0), "upper_arm.R": (0, 0, 0), "forearm.L": (-8, 0, 0), "forearm.R": (-8, 0, 0)}
+ARMS_DOWN = {"upper_arm.L": (2, 4, 0), "upper_arm.R": (2, -4, 0), "forearm.L": (-12, 0, -4), "forearm.R": (-12, 0, 4),
+             "hand.L": (0, 0, -6), "hand.R": (0, 0, 6)}
 
 
 def side_rot(side, deg):
@@ -699,20 +847,22 @@ def build_animations(rig):
     make_action(rig, "run", run)
 
     # ---------------- sitting
+    # seated: thighs slope down to the knee so the feet rest flat on the floor, hands on the knees
     SIT = {
-        "thigh.L": (-86, 0, -4), "thigh.R": (-86, 0, 4),
-        "shin.L": (78, 0, 0), "shin.R": (78, 0, 0),
-        "foot.L": (-8, 0, 0), "foot.R": (-8, 0, 0),
+        "thigh.L": (-66, 0, -5), "thigh.R": (-66, 0, 5),
+        "shin.L": (64, 0, 0), "shin.R": (64, 0, 0),
+        "foot.L": (2, 0, 0), "foot.R": (2, 0, 0),
         "spine": (-6, 0, 0), "chest": (-4, 0, 0), "head": (6, 0, 0),
-        "upper_arm.L": (-28, -8, 0), "upper_arm.R": (-28, 8, 0),
-        "forearm.L": (-50, 0, 0), "forearm.R": (-50, 0, 0),
+        "upper_arm.L": (-34, 4, 0), "upper_arm.R": (-34, -4, 0),
+        "forearm.L": (-30, 0, -6), "forearm.R": (-30, 0, 6),
+        "hand.L": (-25, 0, 0), "hand.R": (-25, 0, 0),
     }
-    SIT_HIPS = (0, 0.16, -0.08)
+    SIT_HIPS = (0, 0.15, -0.135)
     CROUCH = merge(SIT, {"spine": (24, 0, 0), "chest": (10, 0, 0), "head": (-12, 0, 0)})
     make_action(rig, "sitDown", [
         (1, ARMS_DOWN, (0, 0, 0)),
-        (12, merge(CROUCH, {"thigh.L": (40, 0, 0), "thigh.R": (40, 0, 0), "shin.L": (-30, 0, 0), "shin.R": (-30, 0, 0)}), (0, 0.06, -0.06)),
-        (22, CROUCH, (0, 0.14, -0.08)),
+        (12, merge(CROUCH, {"thigh.L": (30, 0, 0), "thigh.R": (30, 0, 0), "shin.L": (-22, 0, 0), "shin.R": (-22, 0, 0)}), (0, 0.06, -0.07)),
+        (22, CROUCH, (0, 0.13, -0.12)),
         (30, SIT, SIT_HIPS),
     ])
     sit = []
@@ -817,6 +967,25 @@ def build_animations(rig):
 
     make_action(rig, "cheer", cheer_keys(ARMS_DOWN, (0, 0, 0)))
     make_action(rig, "sitCheer", cheer_keys(SEATED_BASE, SIT_HIPS))
+
+    # ---------------- guitar (seated and standing): left hand on the neck, right hand strumming
+    def guitar_keys(base, rest, hips):
+        hold = merge(base, {
+            "upper_arm.L": (-30, -18, 0), "forearm.L": (-95, 0, -30), "hand.L": (0, 0, -20),
+            "upper_arm.R": (-12, 10, 0), "forearm.R": (-78, 0, 38), "hand.R": (-10, 0, 0),
+            "head": (12, 0, -10), "chest": (6, 0, 0),
+        })
+        keys = [(1, rest, hips), (8, hold, hips)]
+        f = 8
+        for k in range(12):
+            sgn = 1 if k % 2 == 0 else -1
+            keys.append((f + 4, merge(hold, {"forearm.R": (8 * sgn, 0, 0), "head": (2 * sgn, 0, 0)}), hips))
+            f += 4
+        keys.append((f + 4, hold, hips))
+        return keys
+
+    make_action(rig, "guitar", guitar_keys(ARMS_DOWN, ARMS_DOWN, (0, 0, 0)))
+    make_action(rig, "sitGuitar", guitar_keys(SEATED_BASE, SIT, SIT_HIPS))
     # back to the rest pose (the exporter writes the current pose as node defaults)
     for pb in rig.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)

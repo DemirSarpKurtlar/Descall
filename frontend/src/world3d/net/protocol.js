@@ -11,7 +11,7 @@ export const SNAP_INTERVAL_MS = Math.round(1000 / SNAP_HZ);
 export const INTERP_DELAY_MS = 100;
 
 export const STATES = ["idle", "walk", "run", "sitDown", "sit", "standUp", "emote"];
-export const EMOTES = ["none", "wave", "dance", "clap", "laugh", "jump", "cheer"];
+export const EMOTES = ["none", "wave", "dance", "clap", "laugh", "jump", "cheer", "guitar"];
 
 export const STATE = Object.freeze(Object.fromEntries(STATES.map((s, i) => [s, i])));
 export const EMOTE = Object.freeze(Object.fromEntries(EMOTES.map((s, i) => [s, i])));

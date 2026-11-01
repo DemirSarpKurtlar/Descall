@@ -19,11 +19,12 @@ export const WORLD3D_EN = {
   resetCamera: "Reset camera",
   flatView: "Back to the flat view",
   keysHelp: "WASD or arrow keys to walk, Shift to run, click the floor to go there, drag to look around, scroll to zoom, E to sit, G for emotes.",
+  keysGuitar: "B: play the guitar (sit down first for the full pose).",
   stats: "{fps} fps · {quality}",
   loading: "Loading the 3D world...",
   failed: "The 3D world could not start. The call keeps going in the flat view.",
   offline: "Others can't see you right now. Reconnecting...",
-  activity: { dancing: "dancing", laughing: "laughing", clapping: "clapping", waving: "waving" },
+  activity: { dancing: "dancing", laughing: "laughing", clapping: "clapping", waving: "waving", guitar: "playing the guitar" },
   fallback: {
     software: "Your computer is drawing graphics without a GPU, so the 3D world stays off. The call keeps going.",
     no_webgl2: "This browser can't run the 3D world (WebGL 2 is missing). The call keeps going.",

@@ -22,7 +22,7 @@ const NAMES = { demir: 'Demir', ayse: 'Ayşe', mert: 'Mert', zeynep: 'Zeynep', c
 // Seats sorted by node name in the room GLB: 0 beanbag, 1-2 second sofa, 3-5 main sofa.
 const SEAT = { beanbag: 0, sofa2a: 1, sofa2b: 2, sofaL: 3, sofaM: 4, sofaR: 5 };
 const STATE = { idle: 0, walk: 1, run: 2, sitDown: 3, sit: 4, standUp: 5, emote: 6 };
-const EMOTE = { none: 0, wave: 1, dance: 2, clap: 3, laugh: 4, jump: 5, cheer: 6 };
+const EMOTE = { none: 0, wave: 1, dance: 2, clap: 3, laugh: 4, jump: 5, cheer: 6, guitar: 7 };
 
 const participants = new Map(Object.keys(NAMES).map((id) => [id, {}]));
 const sharedState = { activeGroupCalls: new Map(), activeServerVoiceCalls: new Map([['c1', { participants }]]) };
@@ -72,7 +72,7 @@ server.listen(PORT, '127.0.0.1', () => {
     bots.push(bot('ayse', () => ({ x: 1.7, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaL, emote: EMOTE.cheer, emoteEvery: 2.6 })));
     bots.push(bot('mert', () => ({ x: 2.5, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaM, emote: EMOTE.clap, emoteEvery: 3.0 })));
     bots.push(bot('zeynep', () => ({ x: 3.4, z: 5.8, yaw: Math.PI, state: STATE.sit, seat: SEAT.sofaR, emote: EMOTE.cheer, emoteEvery: 2.6 })));
-    bots.push(bot('can', () => ({ x: -1.28, z: -2.32, yaw: 0.6, state: STATE.sit, seat: SEAT.beanbag })));
+    bots.push(bot('can', () => ({ x: -4.7, z: -1.6, yaw: 0, state: STATE.sit, seat: SEAT.sofa2a, emote: EMOTE.guitar, emoteEvery: 100000 })));
     bots.push(bot('elif', (t) => {
       // walking (about 0.6 m/s)
       // a small loop in the back right, between the corner plant and the TV console

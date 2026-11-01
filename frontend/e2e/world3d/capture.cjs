@@ -22,7 +22,8 @@ async function main() {
   page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
   page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
   const quality = process.env.Q || 'high';
-  await page.goto(`${BASE}?port=4791&me=demir&name=Demir&speakers=ayse,zeynep&quality=${quality}&lang=tr`, { waitUntil: 'load' });
+  const looks = MODE === 'lineup' ? '&looks=elif:0,can:1,zeynep:2,demir:3,mert:4,ayse:5' : '&looks=ayse:6,mert:5,zeynep:2,can:4,elif:7,demir:0';
+  await page.goto(`${BASE}?port=4791&me=demir&name=Demir&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
   const t0 = Date.now();
   const dump = setInterval(() => { while (logs.length) console.log(logs.shift().slice(0, 400)); }, 3000);
   await page.waitForFunction((min) => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= min, Number(process.env.MIN_AVATARS || 2), { timeout: 240000 });
@@ -88,7 +89,7 @@ async function main() {
     await shot('probe.png');
   } else if (MODE === 'hero' || MODE === 'overlay') {
     // local player takes the draft's guitar seat (second sofa, back to the camera)
-    await ev(() => window.__descallWorld.sitOn(1));
+    await ev(() => { const w = window.__descallWorld; const s = w.seats[2]; w.local.pos.set(s.pos.x + Math.sin(s.yaw) * 0.64, 0, s.pos.z + Math.cos(s.yaw) * 0.64); w.sitOn(2); });
     await step(75, 40);
     if (MODE === 'hero') {
       await page.addStyleTag({ content: '.w3d-rooms,.w3d-who,.w3d-chat,.w3d-dock,.w3d-tags,.w3d-net{display:none!important}' });

@@ -63,11 +63,12 @@ function isTyping() {
 }
 
 export class WorldEngine {
-  constructor(canvas, { assetBase = "/world3d/", quality, selfId, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
+  constructor(canvas, { assetBase = "/world3d/", quality, selfId, lookOverrides = null, onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal } = {}) {
     this.canvas = canvas;
     this.assetBase = assetBase;
     this.quality = quality || PRESETS.medium;
     this.selfId = String(selfId || "me");
+    this.lookOverrides = lookOverrides; // { userId: LOOKS index } (previews / tests only)
     this.cb = { onFrame, onSeatHint, onEmoteWheel, onStats, onLocalSnapshot, onFatal };
     this.avatars = new Map();
     this.remote = new Map(); // id -> { buffer, lastEmoteSeq, lastPos }
@@ -177,7 +178,8 @@ export class WorldEngine {
       const mname = mat.name || "";
       if (mname.startsWith("BAKED_")) {
         if ("unlit" in mat) mat.unlit = true;
-        mat.backFaceCulling = true;
+        // leaves are single sided cards
+        mat.backFaceCulling = mname !== "BAKED_foliage";
         if (mat.albedoTexture) mat.albedoTexture.anisotropicFilteringLevel = 8;
         // grade: the bake came out a little red on the planks; pull them toward the draft's brown
         if (name === "FLOOR" && "albedoColor" in mat) mat.albedoColor = new Color3(0.86, 0.86, 0.98);
@@ -352,6 +354,8 @@ export class WorldEngine {
         if (k.startsWith("arrow")) e.preventDefault();
       } else if (k === "e" && !e.repeat) {
         this.toggleSit();
+      } else if (k === "b" && !e.repeat) {
+        this.toggleGuitar();
       } else if (k === "g" && !e.repeat) {
         this.cb.onEmoteWheel?.("toggle");
       } else if (k === "escape") {
@@ -418,7 +422,7 @@ export class WorldEngine {
   /** members: [{ id, name, snap? }] including self. */
   setMembers(members) {
     const ids = members.map((m) => String(m.id));
-    const looks = looksForRoom(ids);
+    const looks = looksForRoom(ids, this.lookOverrides);
     for (const id of [...this.avatars.keys()]) {
       if (!ids.includes(id)) {
         this.avatars.get(id).dispose();
@@ -510,6 +514,16 @@ export class WorldEngine {
   sitOn(i) {
     const seat = this.seats[i];
     if (!seat) return;
+    // just outside the seat's collider (seat front + avatar radius)
+    const front = new Vector3(seat.pos.x + Math.sin(seat.yaw) * 0.64, 0, seat.pos.z + Math.cos(seat.yaw) * 0.64);
+    const d = Math.hypot(front.x - this.local.pos.x, front.z - this.local.pos.z);
+    if (d > 0.18) {
+      // walk to the front of the seat, then turn round and sit (no snap)
+      this.moveTarget = front;
+      this.approach = { seat: i };
+      return;
+    }
+    this.approach = null;
     this.moveTarget = null;
     this.local.seat = i;
     this.local.state = "sitDown";
@@ -525,6 +539,18 @@ export class WorldEngine {
     this.local.stateUntil = this.nowMs() + 870;
     this.local.standFrom = this.local.seat;
     this.local.seat = -1;
+  }
+
+  toggleGuitar() {
+    const av = this.avatars.get(this.selfId);
+    if (av?.emote?.name === "guitar") {
+      av.cancelEmote();
+      this.local.emote = 0;
+      this.local.emoteSeq = (this.local.emoteSeq + 1) & 255;
+      return;
+    }
+    this.emote("guitar");
+    this.local.emoteUntil = this.nowMs() + 36000000;
   }
 
   emote(name) {
@@ -678,10 +704,19 @@ export class WorldEngine {
         const p = resolve(nx, nz, AVATAR_RADIUS, this.boxes, this.bounds);
         // actual ground speed after collisions (keeps feet planted when sliding along walls)
         speed = Math.hypot(p[0] - L.pos.x, p[1] - L.pos.z) / Math.max(1e-4, dt);
-        if (this.moveTarget && speed < 0.05 * L.speed) this.moveTarget = null;
+        if (this.moveTarget && speed < 0.05 * L.speed) {
+        this.moveTarget = null;
+        this.approach = null; // blocked on the way to the seat
+      }
         L.pos.x = p[0];
         L.pos.z = p[1];
       }
+      if (this.approach && !this.moveTarget && L.speed < 0.3) {
+        const seat = this.approach.seat;
+        this.approach = null;
+        this.sitOn(seat);
+      }
+      if (this.keys.size && this.approach) this.approach = null;
       if (L.emote && now > (L.emoteUntil || 0)) L.emote = 0;
       if (speed > 0.2) L.emote = 0;
       L.state = speed > 0.05 ? (speed > WALK_SPEED + 0.2 ? "run" : "walk") : "idle";
@@ -737,6 +772,7 @@ export class WorldEngine {
       if (s.emoteSeq !== r.lastEmoteSeq) {
         r.lastEmoteSeq = s.emoteSeq;
         if (s.emote > 0) av.triggerEmote(EMOTES[s.emote], now / 1000);
+        else av.cancelEmote();
       }
       const loco = stateName === "walk" || stateName === "run" || stateName === "emote" ? "idle" : stateName;
       av.setLocomotion(loco, stateName === "walk" || stateName === "run" ? r.speed || 0 : 0);
