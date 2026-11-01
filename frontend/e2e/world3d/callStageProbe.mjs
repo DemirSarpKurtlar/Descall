@@ -374,7 +374,7 @@ try {
         await page.waitForTimeout(1000);
         row.world = await measure(page, cdp, MEASURE_MS);
         row.world.avatars = await page.evaluate(() => window.__descallWorld.avatars.size);
-        await page.evaluate(() => { const w = window.__descallWorld; if (w.perfLockScale) w.perfLockScale(0); else w.engine.setHardwareScalingLevel(1); });
+        await page.evaluate(() => { const w = window.__descallWorld; if (w.perfLockScale) w.perfLockScale(1); else w.engine.setHardwareScalingLevel(1); });
         await page.waitForTimeout(1500);
         await page.screenshot({ path: join(OUT, `${tag}-world.png`) });
         await page.click(".w3d-leave");

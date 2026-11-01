@@ -5,7 +5,7 @@
  * Needs: vite dev server on :5199 and e2e/world3d/worldMockServer.cjs on :4791
  * (HARNESS_URL / WORLD_MOCK_PORT override both).
  *   node e2e/world3d/capture.cjs <outDir> [mode]
- * mode: hero | overlay | walk | probe
+ * mode: hero | overlay | walk | probe | camera (one shot per camera mode, help, Ayar + HUD)
  */
 const path = require('path');
 const fs = require('fs');
@@ -48,6 +48,8 @@ async function main() {
       if (waitMs) await page.waitForTimeout(waitMs);
     }
   };
+  // evidence at the full render size (dynamic resolution would have stepped down on software GL)
+  await ev(() => { const w = window.__descallWorld; if (w.perfLockScale) w.perfLockScale(1 / Math.min(window.devicePixelRatio || 1, 1.25)); });
   await step(1);
   // step cheaply, then render the final frames with the high preset (bloom, SSAO, DOF, mirror floor)
   const finalCfg = { id: 'high', pixelRatio: 1.0, bloom: true, ssao: false, dof: true, fxaa: true, msaa: 4, mirror: true, maxAvatarsAnimated: 16, shadowBlob: true, ...JSON.parse(process.env.FINALCFG || '{}') };
@@ -149,6 +151,52 @@ async function main() {
     await ev(() => { const w = window.__descallWorld; const V = w.local.pos.constructor; w.lockCameraPose(new V(-3.49, 1.25 + 1.7 * Math.cos(1.48), -3.3 + 1.7 * Math.sin(1.48)), new V(-3.49, 1.25, -3.3)); });
     await step(2);
     await shot('closeup.png');
+  } else if (MODE === 'camera') {
+    // settle a moment between steps so CSS transitions (tags, toasts) finish before a shot
+    const settle = () => page.waitForTimeout(450);
+    await step(30, 20);
+    await settle();
+    await shot('camera-third.png');
+    await page.keyboard.press('v');
+    await step(24, 20);
+    await settle();
+    await shot('camera-first.png');
+    await ev(() => { window.__descallWorld.rig.look.pitch = 1.15; });
+    await step(6);
+    await settle();
+    await shot('camera-first-look-down.png');
+    await ev(() => { window.__descallWorld.rig.look.pitch = 0.1; });
+    await page.keyboard.press('v');
+    await ev(() => { const w = window.__descallWorld; w.keys.add('s'); w.keys.add('e'); });
+    await step(28, 20);
+    await ev(() => { window.__descallWorld.keys.clear(); });
+    await step(20, 20);
+    await settle();
+    await shot('camera-free.png');
+    await page.keyboard.press('r');
+    await step(24, 20);
+    // seated first person: walk to the second sofa, sit, first person again
+    await ev((k) => { const w = window.__descallWorld; const s = w.seats[k]; w.local.pos.set(s.pos.x + Math.sin(s.yaw) * 0.64, 0, s.pos.z + Math.cos(s.yaw) * 0.64); w.sitOn(k); }, Number(process.env.SEAT || 1));
+    await step(40, 20);
+    await page.keyboard.press('v');
+    await step(24, 20);
+    await settle();
+    await shot('camera-first-seated.png');
+    await page.keyboard.press('v');
+    await page.keyboard.press('v');
+    await step(24, 20);
+    await page.keyboard.press('h');
+    await step(2);
+    await settle();
+    await shot('camera-help.png');
+    await page.keyboard.press('Escape');
+    await page.click('.w3d-dock button[aria-expanded]');
+    // the last switch of the Ayar menu is the performance overlay
+    const toggles = await page.$$('.w3d-switch');
+    if (toggles.length) await toggles[toggles.length - 1].click();
+    await step(2);
+    await page.waitForTimeout(1200);
+    await shot('camera-settings-hud.png');
   } else if (MODE === 'walk') {
     // click-to-move to the front of the sofa, then E (sit). Same code path as a floor click.
     await page.addStyleTag({ content: '.w3d-chat,.w3d-net{display:none!important}' });

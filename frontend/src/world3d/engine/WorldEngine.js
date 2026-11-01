@@ -194,13 +194,14 @@ export class WorldEngine {
     this.check();
     this.setupLights();
     this.setupPost();
-    this.setupInput();
     this.rig.bounds = this.bounds;
     this.applyHeroCamera();
     this.fillPool();
     this.setProgress(0.9);
     await this.prewarm();
     this.check();
+    // keys only once the world is about to show (the call UI is still in front while loading)
+    this.setupInput();
     // the room is closed and the third / first person camera stays inside it: every pixel
     // is drawn each frame, so the colour clear is skipped (free cam keeps it, to be safe)
     scene.autoClear = this.rig.mode === "free";
@@ -214,6 +215,8 @@ export class WorldEngine {
     engine.runRenderLoop(this.loop);
     this.onResize = () => {
       engine.resize();
+      // moved to a screen with another pixel ratio: new scaling level
+      this.applyScale();
       this.updateViewport();
     };
     window.addEventListener("resize", this.onResize);
