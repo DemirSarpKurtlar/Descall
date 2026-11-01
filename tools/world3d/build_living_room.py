@@ -64,23 +64,23 @@ def collider(name, size, loc, rot_z=0.0):
 
 def make_materials():
     M = {}
-    M["floor"] = textured("floor", os.path.join(ACG, "WoodFloor051"), "WoodFloor051", tint="#b39684", rough=0.45, scale=0.55)
-    M["wall"] = textured("wall", os.path.join(ACG, "Plaster001"), "Plaster001", tint="#ead8e8", rough=0.9, scale=0.35, normal_strength=0.25)
-    M["wall_window"] = textured("wall_window", os.path.join(ACG, "Plaster001"), "Plaster001", tint="#cfc0e0", rough=0.9, scale=0.35, normal_strength=0.25)
-    M["ceiling"] = principled("ceiling", "#b6a6cf", 0.95)
+    M["floor"] = textured("floor", os.path.join(ACG, "WoodFloor051"), "WoodFloor051", tint="#a3806a", rough=0.45, scale=0.55)
+    M["wall"] = textured("wall", os.path.join(ACG, "Plaster001"), "Plaster001", tint="#dcc6d2", rough=0.9, scale=0.35, normal_strength=0.25)
+    M["wall_window"] = textured("wall_window", os.path.join(ACG, "Plaster001"), "Plaster001", tint="#c6b8d4", rough=0.9, scale=0.35, normal_strength=0.25)
+    M["ceiling"] = principled("ceiling", "#9d90b0", 0.95)
     M["base"] = principled("baseboard", "#d8cce6", 0.6)
     M["frame"] = principled("window_frame", "#2a2c46", 0.5, metal=0.2)
     M["curtain"] = principled("curtain", "#6f6585", 0.95)
     M["rod"] = principled("rod", "#2a2a30", 0.35, metal=0.8)
     M["sofa"] = textured("sofa", os.path.join(ACG, "Fabric030"), "Fabric030", tint="#e2dfe8", rough=0.95, scale=2.2, normal_strength=0.5)
-    M["sofa2"] = textured("sofa2", os.path.join(ACG, "Fabric030"), "Fabric030", tint="#a6b2dc", rough=0.95, scale=2.2, normal_strength=0.5)
+    M["sofa2"] = textured("sofa2", os.path.join(ACG, "Fabric030"), "Fabric030", tint="#b8bcd2", rough=0.95, scale=2.2, normal_strength=0.5)
     M["pillow_teal"] = principled("pillow_teal", "#7fb8b4", 0.9)
     M["pillow_pink"] = principled("pillow_pink", "#f0a3a6", 0.9)
     M["blanket"] = principled("blanket", "#f7e4dc", 0.95)
     M["leg_dark"] = principled("leg_dark", "#26222e", 0.5, metal=0.3)
     M["table_top"] = principled("table_top", "#2f2a3a", 0.45)
     M["table_leg"] = principled("table_leg", "#1d1a24", 0.5, metal=0.3)
-    M["rug"] = textured("rug", os.path.join(ACG, "Carpet016"), "Carpet016", tint="#dcc6c4", rough=1.0, scale=1.6, normal_strength=0.9)
+    M["rug"] = textured("rug", os.path.join(ACG, "Carpet016"), "Carpet016", tint="#cfc5bc", rough=1.0, scale=2.6, normal_strength=1.4)
     M["beanbag"] = principled("beanbag", "#e0559c", 0.85)
     M["wood"] = textured("wood", os.path.join(ACG, "Wood049"), "Wood049", tint="#e7c7a6", rough=0.6, scale=0.8, rotate=math.pi / 2)
     M["wood_dark"] = principled("wood_slat", "#b38d6c", 0.6)
@@ -95,6 +95,11 @@ def make_materials():
     M["book2"] = principled("book2", "#7b8fd0", 0.8)
     M["book3"] = principled("book3", "#d68aa0", 0.8)
     M["pot_white"] = principled("pot_white", "#ece6ee", 0.6)
+    M["soil"] = principled("soil", "#3a2a22", 1.0)
+    M["stem"] = principled("stem", "#5f8f45", 0.7)
+    M["leaf"] = principled("leaf", "#3b7a3a", 0.55)
+    M["leaf2"] = principled("leaf2", "#4f8c45", 0.55)
+    M["frame_wood"] = principled("frame_wood", "#d9c2a4", 0.6)
     M["pot_terra"] = principled("pot_terra", "#b7684a", 0.8)
     M["speaker"] = principled("speaker", "#2b2a31", 0.6)
     art = bpy.data.images.load(os.path.join(GEN, "art.png"))
@@ -190,8 +195,8 @@ def build_shell(M):
     near = plane("EMIT_sky_near", 24, 12, (2.5, RD + 15, 0.6), rot=(90, 0, 0), mat=M["sky_near"])
     EMISSIVE.append(near)
     # picture frame on the TV wall near the camera side
-    grp("furniture", rbox("art_frame", (0.04, 0.78, 0.98), (RW - 0.03, 0.55, 1.85), M["art_frame"], bevel=0.01))
-    art = plane("art", 0.64, 0.84, (RW - 0.055, 0.55, 1.85), rot=(90, 0, -90), mat=M["art"])
+    grp("furniture", rbox("art_frame", (0.04, 0.78, 0.98), (RW - 0.03, 1.55, 1.95), M["frame_wood"], bevel=0.01))
+    art = plane("art", 0.64, 0.84, (RW - 0.055, 1.55, 1.95), rot=(90, 0, -90), mat=M["art"])
     grp("furniture", art)
     # room collider (interior box) for the client: keeps avatars and camera inside
     roomc = rbox("ROOM_BOUNDS", (RW, RD - Y0, RH), (RW / 2, (RD + Y0) / 2, RH / 2), bevel=0)
@@ -307,16 +312,16 @@ def build_furniture(M):
     # rug
     rug = rbox("rug", (2.9, 2.1, 0.025), (3.2, 3.75, 0.0125), M["rug"], bevel=0.01, segments=2)
     uv_metres(rug)
-    grp("furniture", rug)
+    grp("rug", rug)
 
     # bean bag (pink), foreground left
-    bb = sphere("beanbag", 0.55, (1.25, 2.35, 0.32), M["beanbag"], scale=(1.05, 1.0, 0.62), segments=48, rings=24)
-    dent = sphere("beanbag_top", 0.38, (1.3, 2.5, 0.62), M["beanbag"], scale=(1.0, 0.9, 0.35), segments=32, rings=16)
+    bb = sphere("beanbag", 0.58, (1.55, 1.75, 0.34), M["beanbag"], scale=(1.05, 1.0, 0.62), segments=48, rings=24)
+    dent = sphere("beanbag_top", 0.4, (1.6, 1.9, 0.64), M["beanbag"], scale=(1.0, 0.9, 0.35), segments=32, rings=16)
     grp("furniture", bb)
     grp("furniture", dent)
-    empty("SEAT_beanbag_0", (1.28, 2.32, 0.42))
-    empty("SEAT_beanbag_0_look", (2.1, 3.2, 0.42))
-    collider("beanbag", (1.1, 1.1, 0.6), (1.25, 2.35, 0.3))
+    empty("SEAT_beanbag_0", (1.58, 1.72, 0.44))
+    empty("SEAT_beanbag_0_look", (2.4, 2.6, 0.44))
+    collider("beanbag", (1.15, 1.15, 0.6), (1.55, 1.75, 0.3))
 
     # TV console on the right wall
     cx, cy0, cy1 = RW - 0.24, 2.75, 5.05
@@ -354,14 +359,14 @@ def build_furniture(M):
     shade = cylinder("EMIT_lamp1_shade", 0.2, 0.3, (cx - 0.02, ly, 1.22), M["shade"], verts=40, radius_top=0.19, cap=True)
     EMISSIVE.append(shade)
     # side table + globe lamp right of the console
-    sx_, sy_ = RW - 0.32, 2.2
-    grp("furniture", cylinder("side_top", 0.26, 0.04, (sx_, sy_, 0.56), M["wood"], verts=40, bevel=0.01))
-    grp("furniture", cylinder("side_leg", 0.035, 0.54, (sx_, sy_, 0.28), M["wood"], verts=16))
-    grp("furniture", cylinder("side_foot", 0.18, 0.02, (sx_, sy_, 0.01), M["wood"], verts=32))
-    grp("props", cylinder("globe_base", 0.08, 0.16, (sx_, sy_, 0.66), M["metal"], verts=24, radius_top=0.035))
-    globe = sphere("EMIT_globe", 0.19, (sx_, sy_, 0.92), M["globe"], segments=40, rings=20)
+    sx_, sy_ = RW - 0.3, 2.45
+    grp("furniture", cylinder("side_top", 0.2, 0.035, (sx_, sy_, 0.95), M["wood"], verts=40, bevel=0.01))
+    grp("furniture", cylinder("side_leg", 0.03, 0.93, (sx_, sy_, 0.47), M["metal"], verts=16))
+    grp("furniture", cylinder("side_foot", 0.17, 0.02, (sx_, sy_, 0.01), M["metal"], verts=32))
+    grp("props", cylinder("globe_base", 0.07, 0.15, (sx_, sy_, 1.04), M["metal"], verts=24, radius_top=0.03))
+    globe = sphere("EMIT_globe", 0.2, (sx_, sy_, 1.3), M["globe"], segments=40, rings=20)
     EMISSIVE.append(globe)
-    collider("side", (0.55, 0.55, 0.6), (sx_, sy_, 0.3))
+    collider("side", (0.45, 0.45, 0.6), (sx_, sy_, 0.3))
 
     # on the coffee table: lava lamp, fruit bowl, tea cup
     lx, ly2 = tx + 0.42, ty - 0.05
@@ -431,13 +436,81 @@ def import_plant(asset, name, loc, height, rot_z=0, pot_mat=None, decimate=0.25)
     return obj
 
 
+def banana_plant(name, loc, height, pot_mat, rot=0.0, leaves=9, seed=1):
+    """Own banana-leaf plant: tapered pot, stems, long drooping V-folded leaves."""
+    import random as _r
+    rnd = _r.Random(seed)
+    x0, y0, _ = loc
+    parts = []
+    pot_h = 0.4
+    parts.append(cylinder(name + "_pot", 0.2, pot_h, (x0, y0, pot_h / 2), pot_mat, verts=40, radius_top=0.25, bevel=0.012))
+    parts.append(cylinder(name + "_soil", 0.235, 0.02, (x0, y0, pot_h - 0.03), M["soil"], verts=32))
+    leaf_parts = []
+    for i in range(leaves):
+        az = rot + i * (2 * math.pi / leaves) + rnd.uniform(-0.3, 0.3)
+        tilt = rnd.uniform(0.15, 0.55)  # radians from vertical
+        stem_len = height * rnd.uniform(0.45, 0.78)
+        base = Vector((x0 + rnd.uniform(-0.04, 0.04), y0 + rnd.uniform(-0.04, 0.04), pot_h - 0.02))
+        d = Vector((math.sin(tilt) * math.cos(az), math.sin(tilt) * math.sin(az), math.cos(tilt)))
+        tip = base + d * stem_len
+        a, b = base, tip
+        st = cylinder(f"{name}_stem{i}", 0.012, (b - a).length, (0, 0, 0), M["stem"], verts=8)
+        st.rotation_mode = "QUATERNION"
+        st.rotation_quaternion = Vector((0, 0, 1)).rotation_difference((b - a).normalized())
+        st.location = (a + b) / 2
+        parts.append(st)
+        L = height * rnd.uniform(0.42, 0.56)
+        W = L * rnd.uniform(0.3, 0.38)
+        leaf_parts.append(leaf_mesh(f"{name}_leaf{i}", tip, d, L, W, rnd))
+    for o in parts:
+        grp("furniture", o)
+    for o in leaf_parts:
+        grp("foliage", o)
+
+
+def leaf_mesh(name, origin, direction, L, W, rnd):
+    import bmesh as _bm
+    bm = _bm.new()
+    nu, nv = 12, 5
+    rows = []
+    for i in range(nu + 1):
+        u = i / nu
+        half = W / 2 * (math.sin(math.pi * min(1.0, u * 1.05)) ** 0.7)
+        row = []
+        for j in range(nv):
+            v = -1 + 2 * j / (nv - 1)
+            x = v * half
+            y = u * L
+            z = -0.42 * L * u * u + abs(v) * half * 0.35
+            row.append(bm.verts.new((x, y, z)))
+        rows.append(row)
+    for i in range(nu):
+        for j in range(nv - 1):
+            bm.faces.new((rows[i][j], rows[i][j + 1], rows[i + 1][j + 1], rows[i + 1][j]))
+    obj = blib.mesh_from_bmesh(name, bm)
+    # point the leaf (local +Y) along the stem direction, pitched outward and up
+    horiz = Vector((direction.x, direction.y, 0))
+    if horiz.length < 1e-4:
+        horiz = Vector((1, 0, 0))
+    horiz.normalize()
+    pitch = rnd.uniform(0.6, 1.1)
+    fwd = (horiz * math.cos(pitch) + Vector((0, 0, math.sin(pitch)))).normalized()
+    q = Vector((0, 1, 0)).rotation_difference(fwd)
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = q
+    obj.location = origin
+    blib.set_mat(obj, M["leaf"] if rnd.random() < 0.6 else M["leaf2"])
+    blib.shade_smooth(obj)
+    return obj
+
+
 def build_plants(M):
+    banana_plant("plant_corner", (5.45, 6.05, 0), 1.9, M["pot_white"], rot=0.4, leaves=10, seed=3)
+    banana_plant("plant_left", (0.42, 4.7, 0), 2.0, M["pot_terra"], rot=1.1, leaves=10, seed=7)
     plants = [
-        import_plant("potted_plant_02", "plant_corner", (5.55, 6.1, 0), 1.75, rot_z=200, pot_mat=M["pot_white"]),
-        import_plant("potted_plant_02", "plant_left", (0.45, 4.75, 0), 1.85, rot_z=40),
         import_plant("potted_plant_01", "plant_front", (0.35, 0.2, 0), 1.0, rot_z=10),
         import_plant("potted_plant_04", "plant_console", (RW - 0.26, 4.7, 0.67), 0.24, rot_z=0, decimate=0.5),
-        import_plant("potted_plant_04", "plant_floor_r", (RW - 0.35, 2.55, 0), 0.4, rot_z=60, decimate=0.5),
+        import_plant("potted_plant_04", "plant_floor_r", (RW - 0.3, 1.95, 0), 0.4, rot_z=60, decimate=0.5),
     ]
     for p in plants:
         grp("plants", p)
@@ -454,8 +527,8 @@ def build_lights():
     scene.world = world
     world.use_nodes = True
     bg = world.node_tree.nodes["Background"]
-    bg.inputs["Color"].default_value = srgb("#2c2752")
-    bg.inputs["Strength"].default_value = 0.8
+    bg.inputs["Color"].default_value = srgb("#2a2a48")
+    bg.inputs["Strength"].default_value = 0.6
 
     def light(name, kind, loc, color, energy, size=0.1, rot=(0, 0, 0)):
         ld = bpy.data.lights.new(name, kind)
@@ -474,16 +547,16 @@ def build_lights():
         return o
 
     # window: cool night light coming in
-    light("L_window", "AREA", (2.5, RD - 0.25, 1.7), "#6f78ff", 220, size=(4.4, 2.4), rot=(90, 0, 0))
+    light("L_window", "AREA", (2.5, RD - 0.25, 1.7), "#5d78ff", 260, size=(4.4, 2.4), rot=(90, 0, 0))
     # room fill: violet skylight from above
-    light("L_fill", "AREA", (3.6, 3.3, RH - 0.05), "#cdbcff", 430, size=(5.5, 4.5))
-    light("L_fill_front", "AREA", (3.4, -1.2, 2.2), "#d9c4ff", 160, size=(4.0, 1.5), rot=(-80, 0, 0))
+    light("L_fill", "AREA", (3.6, 3.3, RH - 0.05), "#d4c6e2", 300, size=(5.5, 4.5))
+    light("L_fill_front", "AREA", (3.4, -1.2, 2.2), "#e2d2e2", 150, size=(4.0, 1.5), rot=(-80, 0, 0))
     # lamps
-    light("L_lamp1", "POINT", (RW - 0.26, 4.8, 1.2), "#ffb066", 420, size=0.12)
-    light("L_globe", "POINT", (RW - 0.32, 2.2, 0.92), "#ffc58a", 230, size=0.16)
+    light("L_lamp1", "POINT", (RW - 0.26, 4.8, 1.2), "#ffa04a", 380, size=0.2)
+    light("L_globe", "POINT", (RW - 0.3, 2.45, 1.3), "#ffb060", 190, size=0.3)
     light("L_lava", "POINT", (3.57, 3.8, 0.72), "#ff5fd2", 28, size=0.05)
     # warm wash on the TV wall (the draft's pink/peach glow)
-    light("L_wall_warm", "AREA", (RW - 0.6, 2.4, 2.6), "#ffb0bc", 55, size=(0.6, 2.5), rot=(0, -60, 0))
+    light("L_wall_warm", "AREA", (RW - 0.6, 2.4, 2.6), "#ffb08a", 60, size=(0.6, 2.5), rot=(0, -60, 0))
 
 
 def build_camera():
@@ -493,8 +566,8 @@ def build_camera():
     cam_data.sensor_width = 36
     cam = bpy.data.objects.new("hero", cam_data)
     blib.link(cam)
-    cam.location = (2.3, -0.15, 1.5)
-    target = Vector((4.25, 5.0, 0.82))
+    cam.location = (2.3, -0.4, 1.62)
+    target = Vector((4.15, 5.0, 0.58))
     d = target - cam.location
     cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
     bpy.context.scene.camera = cam
@@ -593,7 +666,7 @@ def bake_group(name, objs, size, samples, out_dir, margin=6):
     return joined
 
 
-EXPOSURE = 1.35
+EXPOSURE = 1.25
 
 
 def save_display(arr, path):
@@ -707,9 +780,9 @@ def main():
         samples = int(arg("--samples", 64))
         work = os.path.join(blib.HERE, "out", "bakes")
         os.makedirs(work, exist_ok=True)
-        sizes = {"floor": 2048, "shell": 2048, "furniture": 2048, "props": 1024}
+        sizes = {"floor": 3072, "shell": 2048, "furniture": 2048, "props": 1024, "rug": 1024, "foliage": 1024}
         baked = []
-        for g in ("floor", "shell", "furniture", "props"):
+        for g in ("floor", "shell", "furniture", "props", "rug", "foliage"):
             baked.append(bake_group(g, GROUPS[g], int(arg("--size", sizes[g])) if arg("--size") else sizes[g], samples, work))
         for p in GROUPS["plants"]:
             bake_plant(p, 1024, max(16, samples // 2), work)

@@ -54,6 +54,7 @@ export const nested = {
     "resetCamera": "Kamera zurücksetzen",
     "flatView": "Zurück zur flachen Ansicht",
     "keysHelp": "WASD oder Pfeiltasten zum Gehen, Umschalt zum Rennen, auf den Boden klicken, um dorthin zu gehen, ziehen zum Umsehen, Mausrad zum Zoomen, E zum Sitzen, G für Emotes.",
+    "keysGuitar": "B: Gitarre spielen (für die volle Haltung zuerst hinsetzen).",
     "stats": "{fps} fps · {quality}",
     "loading": "3D-Welt wird geladen...",
     "failed": "Die 3D-Welt konnte nicht starten. Der Anruf läuft in der flachen Ansicht weiter.",
@@ -62,7 +63,8 @@ export const nested = {
       "dancing": "tanzt",
       "laughing": "lacht",
       "clapping": "klatscht",
-      "waving": "winkt"
+      "waving": "winkt",
+      "guitar": "spielt Gitarre"
     },
     "fallback": {
       "software": "Dein Computer zeichnet Grafik ohne Grafikkarte, deshalb bleibt die 3D-Welt aus. Der Anruf läuft weiter.",

@@ -19,11 +19,12 @@ export const WORLD3D_TR = {
   resetCamera: "Kamerayı sıfırla",
   flatView: "Düz görünüme dön",
   keysHelp: "Yürümek için WASD ya da ok tuşları, koşmak için Shift, gitmek için zemine tıkla, bakmak için sürükle, yakınlaşmak için tekerlek, oturmak için E, ifadeler için G.",
+  keysGuitar: "B: gitar çal (tam duruş için önce otur).",
   stats: "{fps} fps · {quality}",
   loading: "3D dünya yükleniyor...",
   failed: "3D dünya açılamadı. Arama düz görünümde devam ediyor.",
   offline: "Şu an diğerleri seni göremiyor. Yeniden bağlanılıyor...",
-  activity: { dancing: "dans ediyor", laughing: "gülüyor", clapping: "alkışlıyor", waving: "el sallıyor" },
+  activity: { dancing: "dans ediyor", laughing: "gülüyor", clapping: "alkışlıyor", waving: "el sallıyor", guitar: "gitar çalıyor" },
   fallback: {
     software: "Bilgisayarın grafikleri ekran kartı olmadan çiziyor, bu yüzden 3D dünya kapalı. Arama devam ediyor.",
     no_webgl2: "Bu tarayıcı 3D dünyayı çalıştıramıyor (WebGL 2 yok). Arama devam ediyor.",

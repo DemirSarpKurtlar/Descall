@@ -21,15 +21,14 @@ Blender 4.0.2 (Ubuntu package) with Cycles on the CPU was used for phase 1.
 | File | What | Made from | License |
 | --- | --- | --- | --- |
 | `frontend/public/world3d/living-room.glb` | Living room ("Oturma odası"), geometry + baked lighting atlases (WebP) | `tools/world3d/build_living_room.py` (own modelling and lighting), the CC0 materials and plants below, own procedural textures | Descall (own work) + CC0 inputs |
-| `frontend/public/world3d/avatar.glb` | Stylized avatar: meshes, 20 bone rig, 16 animation clips, face morphs, palette texture | `tools/world3d/build_character.py`, 100 % own work (no external meshes or motion data) | Descall (own work) |
+| `frontend/public/world3d/avatar.glb` | Stylized avatar: meshes, 20 bone rig, 18 animation clips, face morphs, palette texture | `tools/world3d/build_character.py`, 100 % own work (no external meshes or motion data) | Descall (own work) |
 | `dist/world3d/engine/*.js` (built) | Babylon.js runtime + world engine | `@babylonjs/core`, `@babylonjs/loaders` 9.33.1 | Apache-2.0 (Babylon.js), Descall code |
 
 ## External sources (all CC0 1.0)
 
 | Asset | Source | Author | License | Used for |
 | --- | --- | --- | --- | --- |
-| Potted Plant 02 | https://polyhaven.com/a/potted_plant_02 | Rico Cilliers | CC0 1.0 (https://polyhaven.com/license) | Large plants in the window corner and on the left (decimated, pot recoloured, lighting baked) |
-| Potted Plant 01 | https://polyhaven.com/a/potted_plant_01 | Rico Cilliers | CC0 1.0 | Bushy plant at the front left |
+| Potted Plant 01 | https://polyhaven.com/a/potted_plant_01 | Rico Cilliers | CC0 1.0 (https://polyhaven.com/license) | Bushy plant at the front left |
 | Potted Plant 04 | https://polyhaven.com/a/potted_plant_04 | James Ray Cock | CC0 1.0 | Small succulents on the TV console and the floor |
 | WoodFloor051 | https://ambientcg.com/view?id=WoodFloor051 | ambientCG (Lennart Demes) | CC0 1.0 (https://docs.ambientcg.com/license/) | Floor planks (tinted, baked) |
 | Fabric030 | https://ambientcg.com/view?id=Fabric030 | ambientCG | CC0 1.0 | Sofa and armchair fabric |
@@ -43,8 +42,8 @@ author and license as reported by the Poly Haven / ambientCG APIs at download ti
 ## Own procedural art
 
 - Night skyline (two layers), abstract wall print, lava lamp wax: `tools/world3d/gen_textures.py` (Pillow, random seeds fixed).
-- All furniture (L sofa + second sofa, bean bag, coffee table, TV + console with slatted doors, lamps, globe lamp, lava lamp, fruit bowl, cup, books, curtains, window frame): primitives and bevels in `build_living_room.py`.
-- Characters, hair styles (metaballs), outfits (hoodie, zip jacket), accessories (cap, glasses, headphones), rig and every animation clip: `build_character.py`.
+- All furniture (L sofa + second sofa, bean bag, coffee table, TV + console with slatted doors, table lamp, globe lamp on its stand, lava lamp, fruit bowl, cup, books, framed print, curtains, window frame) and the two large banana-leaf plants (procedural leaves, stems and pots): `build_living_room.py`.
+- Characters (round head with blush, glossy eyes, four-finger hands), hair styles (metaball swept locks, bun, long bob), outfits (hoodie, open zip jacket over a tee, puffer vest over a striped long-sleeve shirt, sweater), accessories (cap, round glasses, headphones, scarf, backpack, acoustic guitar), rig and every animation clip: `build_character.py`.
 
 ## Rules for later phases
 
