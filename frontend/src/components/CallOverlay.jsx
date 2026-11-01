@@ -52,6 +52,9 @@ import { copyText } from "../lib/copyText";
 import audioManager from "../lib/audioManager";
 import { canFlipCamera } from "../lib/cameraFacing";
 import GlassVolumeSlider from "./ui/GlassVolumeSlider";
+import { World3DButton, World3DStage, useWorld3DAvailable } from "../world3d/World3DLauncher.jsx";
+import { SOCKET_URL } from "../config/api";
+import { getToken } from "../lib/storage";
 
 /*
  * Google Meet-style call overlay
@@ -112,7 +115,7 @@ function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
-export default function CallOverlay({ call, groupCall, me, groupName = "", onReturnToCall }) {
+export default function CallOverlay({ call, groupCall, me, groupName = "", onReturnToCall, socket = null }) {
   const t = useT();
   const { toast } = useToast();
   const callOverlayKey = me?.equippedCallOverlay?.effect_key || null;
@@ -142,6 +145,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
     });
   };
   const [copiedInfo, setCopiedInfo] = useState(false);
+  // 3D world (phase 1, staff preview): group calls only; voice keeps running underneath.
+  const worldAvailable = useWorld3DAvailable(me);
+  const [worldOpen, setWorldOpen] = useState(false);
+  useEffect(() => {
+    if (!groupCall?.isInCall) setWorldOpen(false);
+  }, [groupCall?.isInCall]);
   const narrowViewport = useIsNarrowViewport(720);
   const glass = useGlassUi();
   const glassDesktop = useGlassDesktop();
@@ -457,6 +466,44 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       }}
     >
       <style>{PULSE_STYLE}</style>
+      {worldOpen && !isDm ? (
+        <World3DStage
+          kind="group"
+          roomId={groupCall?.activeGroupId}
+          title={title}
+          me={me}
+          members={[
+            { id: String(me?.id), name: localUsername, avatarUrl: resolveAvatarUrl(me), stream: groupCall?.localStream || null, muted: Boolean(groupCall?.isMuted) },
+            ...remoteParticipants.map((p) => ({
+              id: String(p.id),
+              name: resolveDisplayName(p) || p.username,
+              avatarUrl: resolveAvatarUrl(p),
+              stream: p.stream || null,
+              muted: Boolean(p.isMuted),
+            })),
+          ]}
+          voice={{
+            muted: Boolean(groupCall?.isMuted),
+            deafened: Boolean(groupCall?.deafened),
+            toggleMute: () => groupCall?.toggleMute?.(),
+            toggleDeafen: () => groupCall?.toggleDeafen?.(),
+            isScreenSharing: Boolean(groupCall?.isScreenSharing),
+            toggleScreen: screenShareUnavailableOnIos()
+              ? null
+              : () => (groupCall?.isScreenSharing ? groupCall.stopScreenShare?.() : groupCall?.startScreenShare?.(groupCall?.screenQuality)),
+            isCameraOn: Boolean(groupCall?.isCameraOn),
+            toggleCamera: () => groupCall?.toggleCamera?.(),
+          }}
+          mainSocket={socket}
+          socketUrl={SOCKET_URL}
+          token={getToken()}
+          onExit={() => setWorldOpen(false)}
+          onFallback={(reason) => {
+            setWorldOpen(false);
+            toast(t(`world3d.fallback.${reason === "software" || reason === "no_webgl2" ? reason : "engine"}`), "info");
+          }}
+        />
+      ) : null}
       {/* ====== TOP INFO BAR ====== */}
       {glass ? (
         <div className="g-call-head">
@@ -476,6 +523,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             </div>
             {isDm && mode === "active" ? (
               <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
+            ) : null}
+            {!isDm && worldAvailable ? (
+              <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
             ) : null}
             {!isDm ? (
               <button
@@ -526,6 +576,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, pointerEvents: "auto" }}>
+          {!isDm && worldAvailable ? (
+            <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
+          ) : null}
           <TopIconBtn onClick={() => setShowParticipants(!showParticipants)} active={showParticipants}><Users size={18} /></TopIconBtn>
           <TopIconBtn onClick={() => setShowChat(!showChat)} active={showChat}><MessageSquare size={18} /></TopIconBtn>
           <TopIconBtn onClick={() => setMinimized(true)}><Minus size={18} /></TopIconBtn>

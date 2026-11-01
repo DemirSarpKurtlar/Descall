@@ -940,6 +940,8 @@ io.use(socketAuthMiddleware);
 require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
+// 3D world (phase 1): separate /world namespace, desktop + admins only (socket/worldHandlers.js).
+require("./socket/worldHandlers").registerWorldNamespace(io);
 {
   const maint = require("./runtime/maintenanceInstance");
   maint.attachIo(io);

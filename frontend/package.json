@@ -12,8 +12,8 @@
   "homepage": "./",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-marketing-locale.mjs && vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/csp-verify-dist.mjs",
-    "build:prod": "node scripts/check-marketing-locale.mjs && npx vite build && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/seo-validate.mjs --dist && node scripts/perf-budget.mjs && node scripts/csp-verify-dist.mjs",
+    "build": "node scripts/check-marketing-locale.mjs && vite build && node scripts/build-world3d.mjs && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/csp-verify-dist.mjs",
+    "build:prod": "node scripts/check-marketing-locale.mjs && npx vite build && node scripts/build-world3d.mjs && node scripts/prerender-seo.mjs && node scripts/generate-seo-files.mjs && node scripts/seo-validate.mjs --dist && node scripts/perf-budget.mjs && node scripts/csp-verify-dist.mjs",
     "locale:check": "node scripts/check-marketing-locale.mjs && node scripts/check-ownership-entity.mjs",
     "prerender:seo": "node scripts/prerender-seo.mjs",
     "seo:files": "node scripts/generate-seo-files.mjs",
@@ -34,9 +34,9 @@
     "electron:build:linux": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --linux",
     "electron:pack": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --dir",
     "electron:publish": "ELECTRON_BUILD=1 npm run build:prod && electron-builder --publish=always",
-    "android:sync": "npm run build:prod && cap sync android",
+    "android:sync": "VITE_WORLD3D=0 npm run build:prod && cap sync android",
     "android:open": "cap open android",
-    "ios:sync": "npm run build && npx cap sync ios",
+    "ios:sync": "VITE_WORLD3D=0 npm run build && npx cap sync ios",
     "ios:open": "npx cap open ios",
     "android:apk:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:apk:release": "npm run android:sync && cd android && ./gradlew assembleRelease",
@@ -46,6 +46,8 @@
     "node": "24.x"
   },
   "dependencies": {
+    "@babylonjs/core": "^9.33.1",
+    "@babylonjs/loaders": "^9.33.1",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "@capacitor/haptics": "^8.0.2",

@@ -104,6 +104,9 @@ jobs:
 
       - name: Build web assets (same production build as Render)
         working-directory: frontend
+        # 3D world is desktop only: no engine bundle or world assets in the iOS app.
+        env:
+          VITE_WORLD3D: "0"
         run: npm run build:prod
 
       - name: Sync Capacitor iOS

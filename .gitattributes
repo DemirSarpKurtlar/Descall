@@ -32,3 +32,9 @@
 *.bat -text
 *.cmd -text
 *.ps1 -text
+*.glb binary
+*.ktx2 binary
+*.blend binary
+*.hdr binary
+*.exr binary
+*.env binary

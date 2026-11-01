@@ -5692,7 +5692,7 @@ export default function App() {
         </AppLayout>
         {(callUiReady || (call?.mode && call.mode !== "idle") || groupCall?.isInCall || groupCall?.incomingCall) ? (
           <Suspense fallback={null}>
-            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} />
+            <CallOverlay call={call} groupCall={groupCall} me={me} groupName={activeGroup?.name || ""} onReturnToCall={returnToCall} socket={socketApi} />
             <GroupCallIncomingModal
               incomingCall={groupCall?.incomingCall}
               onAccept={(groupId, callType, fromUser) => groupCall?.acceptGroupCall(groupId, callType, fromUser)}
