@@ -112,6 +112,13 @@ function install(fixture) {
     }
   };
   setInterval(watch, 250);
+  // who adds document listeners (leak hunting): window.__probeDocAdds[type] = [stack, ...]
+  const adds = (window.__probeDocAdds = {});
+  const add = Document.prototype.addEventListener;
+  Document.prototype.addEventListener = function patchedAdd(type, ...rest) {
+    if (window.__probeTraceDoc) (adds[type] = adds[type] || []).push((new Error().stack || "").split("\n").slice(2, 7).map((l) => l.trim().replace(/\(.*\/([^/?]+)[^:]*(:\d+):\d+\)/, "($1$2)")).join(" < "));
+    return add.call(this, type, ...rest);
+  };
   // WebGL contexts created and released (leak check across leave / re-enter)
   const gl = (window.__probeGl = { created: 0, lost: 0 });
   const seen = new WeakSet();
@@ -391,10 +398,14 @@ try {
             const { result } = await cdp.send("Runtime.evaluate", { expression: expr });
             const { listeners: ls } = await cdp.send("DOMDebugger.getEventListeners", { objectId: result.objectId });
             out[expr] = ls.length;
+            const types = {};
+            for (const l of ls) types[l.type] = (types[l.type] || 0) + 1;
+            out[`${expr}Types`] = types;
           }
           return out;
         };
         const before = await listeners();
+        await page.evaluate(() => { window.__probeTraceDoc = true; });
         for (let i = 0; i < 2; i += 1) {
           await page.click(".w3d-enter");
           await page.waitForFunction(() => document.querySelector('[data-w3d="open"]') || (window.__descallWorld && !document.querySelector("[data-w3d]")), null, { timeout: 240000 });
@@ -409,6 +420,7 @@ try {
           webglContexts: await page.evaluate(() => ({ ...window.__probeGl })),
           listenersAfterFirstLeave: before,
           listenersAfterThirdLeave: await listeners(),
+          documentListenersAddedDuringCycles: await page.evaluate(() => window.__probeDocAdds),
         };
       }
       report[id] = round(row);
