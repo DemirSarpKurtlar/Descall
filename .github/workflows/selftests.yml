@@ -326,6 +326,7 @@ jobs:
           node test/promoUserSearch.test.cjs
           node test/promoAvailable.db.test.cjs
           node test/promoAvailable.integration.test.cjs
+          node test/worldCosmetics.db.test.cjs
 
   # Special badges: grant / take-back / equip / #001 rules live in Postgres functions, so run
   # the migration (on top of the promo migration) and its tests against a throwaway Postgres.

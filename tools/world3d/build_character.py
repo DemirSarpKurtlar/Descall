@@ -50,6 +50,9 @@ CELLS = {
     "mouth": 12, "brows": 13, "acc1": 14, "acc2": 15, "highlight": 16, "sock": 17,
     "nose": 18, "lens": 19, "sleeve": 20, "sleeve_stripe": 21, "stripe": 22, "blush": 23,
     "pack": 24, "scarf": 25, "guitar": 26, "guitar_dark": 27, "metal": 28, "sole_band": 29,
+    # phase 5 (customisation): trims, patches, faces, hair ties
+    "trim": 30, "trim_stripe": 31, "patch": 32, "teeth": 33, "freckle": 34, "acc_dark": 35,
+    "hair_tie": 36, "coat_dark": 37, "lash": 38, "torso_stripe": 39, "hair_hi": 40, "tongue": 41, "cuff": 42,
 }
 DEFAULT_COLORS = {
     "skin": "#f2b58f", "top": "#d9dbe3", "top_dark": "#b9bcc8", "inner": "#f1e9da", "pants": "#2c3566",
@@ -58,7 +61,18 @@ DEFAULT_COLORS = {
     "acc2": "#f5f5f5", "highlight": "#ffffff", "sock": "#f4f4f4", "nose": "#eda687", "lens": "#1b1b22",
     "sleeve": "#d9dbe3", "sleeve_stripe": "#d9dbe3", "stripe": "#f1e9da", "blush": "#f29a8e", "pack": "#3b4a7a",
     "scarf": "#5cc0c8", "guitar": "#d9954a", "guitar_dark": "#4a2a1a", "metal": "#c9ccd6", "sole_band": "#e9e9ea",
+    "trim": "#f1ece4", "trim_stripe": "#b23a3a", "patch": "#f1ece4", "teeth": "#fbfaf7", "freckle": "#c97a5c",
+    "acc_dark": "#8f2f35", "hair_tie": "#e2556b", "coat_dark": "#1f7d76", "lash": "#1b1420", "torso_stripe": "#d9dbe3",
+    "hair_hi": "#3a4160", "tongue": "#e0707a", "cuff": "#b9bcc8",
 }
+
+# Row 7 of the palette (y 56..63) holds three horizontal colour strips, two pixels tall each.
+# Striped cloth maps U to the height of the vertex, so the stripes are crisp texels at any
+# mesh density (no jagged polygon bands) and the client recolours them like any cell.
+STRIP_Y = {"torso": 57, "sleeve": 59, "shirt": 61}
+STRIP_PAIRS = {"torso": ("top", "torso_stripe"), "sleeve": ("sleeve", "sleeve_stripe"), "shirt": ("inner", "stripe")}
+STRIP_Z0, STRIP_Z1 = 0.5, 1.06
+STRIP_PERIOD_PX = 8  # 4 px of each colour: a 3.5 cm stripe
 
 # Head group (head, face, hair, hats) is scaled about the neck: rounder, bigger head (scene-5 proportions).
 HEAD_K = 1.1
@@ -85,6 +99,12 @@ def palette_image():
         y0 = (i // 8) * 8
         x0 = (i % 8) * 8
         arr[y0:y0 + 8, x0:x0 + 8, :3] = rgb
+    for strip, y in STRIP_Y.items():
+        a, b = (DEFAULT_COLORS[c].lstrip("#") for c in STRIP_PAIRS[strip])
+        ca = [int(a[k:k + 2], 16) / 255 for k in (0, 2, 4)]
+        cb = [int(b[k:k + 2], 16) / 255 for k in (0, 2, 4)]
+        for x in range(64):
+            arr[y - 1:y + 1, x, :3] = ca if (x // (STRIP_PERIOD_PX // 2)) % 2 == 0 else cb
     return blib.image_from_array("avatar_palette", arr)
 
 
@@ -117,6 +137,43 @@ def paint(obj, cell):
     blib.set_mat(obj, MAT)
     obj["cell"] = cell
     return obj
+
+
+def paint_strip(obj, strip):
+    """Stripes through the palette strips: U follows the height of every vertex (see STRIP_Y)."""
+    me = obj.data
+    if not me.uv_layers:
+        me.uv_layers.new(name="UVMap")
+    bpy.context.view_layer.update()
+    mw = obj.matrix_world
+    v = 1.0 - STRIP_Y[strip] / 64.0
+    uv = me.uv_layers.active.data
+    for loop in me.loops:
+        z = (mw @ me.vertices[loop.vertex_index].co).z
+        u = (z - STRIP_Z0) / (STRIP_Z1 - STRIP_Z0)
+        uv[loop.index].uv = (min(0.996, max(0.004, u)), v)
+    blib.set_mat(obj, MAT)
+    obj["strip"] = strip
+    return obj
+
+
+def restripe(obj):
+    """Subdivision, bevels, cloth folds and decimation all bend interpolated UVs: once the
+    mesh is final, every loop that points at a stripe strip gets U from its height again,
+    so stripes stay straight and evenly spaced."""
+    me = obj.data
+    if not me.uv_layers:
+        return
+    vs = {round(1.0 - y / 64.0, 4): y for y in STRIP_Y.values()}
+    mw = obj.matrix_world
+    uv = me.uv_layers.active.data
+    for loop in me.loops:
+        v = round(uv[loop.index].uv[1], 4)
+        if v not in vs:
+            continue
+        z = (mw @ me.vertices[loop.vertex_index].co).z
+        u = (z - STRIP_Z0) / (STRIP_Z1 - STRIP_Z0)
+        uv[loop.index].uv = (min(0.996, max(0.004, u)), uv[loop.index].uv[1])
 
 
 def paint_bands(obj, cell_a, cell_b, band=0.032):
@@ -228,7 +285,14 @@ def seg_cylinder(name, a, b, r1, r2, cell, verts=20, segs=1):
     return paint(o, cell)
 
 
-def ball(name, r, loc, cell, scale=(1, 1, 1), seg=24, rings=12, rot=(0, 0, 0)):
+
+
+def ball(name, r, loc, cell, scale=(1, 1, 1), seg=None, rings=None, rot=(0, 0, 0)):
+    # tiny parts (snaps, shines, freckles) do not need 24 x 12 spheres: smaller GLB, same look
+    if seg is None:
+        seg = 10 if r < 0.012 else (16 if r < 0.026 else 24)
+    if rings is None:
+        rings = max(6, seg // 2)
     return paint(blib.sphere(name, r, loc, None, scale=scale, segments=seg, rings=rings, rot=rot), cell)
 
 
@@ -348,7 +412,7 @@ def build_body():
     add(ball("nose", 0.027, (0, -0.184, 1.2), "nose", scale=(1.1, 0.8, 0.85)), "body", "head")
     add(seg_cylinder("neck", (0, 0, 0.96), (0, 0, 1.11), 0.058, 0.055, "skin"), "body", ["chest", "neck", "head"])
     # torso (top), hem
-    torso = box("torso", (0.34, 0.23, 0.42), (0, 0.0, 0.825), "top", bevel=0.1, sub=2, seg=4)
+    torso = paint_strip(box("torso", (0.34, 0.23, 0.42), (0, 0.0, 0.825), "top", bevel=0.1, sub=2, seg=4), "torso")
     folds(torso, 0.006)
     add(torso, "body", ["hips", "spine", "chest"])
     add(box("hem", (0.365, 0.24, 0.05), (0, 0.0, 0.635), "top_dark", bevel=0.022, sub=1), "body", ["hips"])
@@ -358,11 +422,11 @@ def build_body():
         s = 1 if side == "L" else -1
         sh, el, wr, he = arm_points(side)
         # sleeves: own palette cells so a vest look can show a striped long-sleeve shirt
-        add(paint_bands(ball(f"shoulder.{side}", 0.064, sh + Vector((s * 0.004, 0, -0.012)), "top"), "sleeve", "sleeve_stripe"), "body", ["chest", f"upper_arm.{side}"])
-        add(paint_bands(seg_cylinder(f"uarm.{side}", sh, el, 0.058, 0.052, "top", segs=6), "sleeve", "sleeve_stripe"), "body", ["chest", f"upper_arm.{side}", f"forearm.{side}"])
-        add(paint_bands(ball(f"elbow.{side}", 0.052, el, "top"), "sleeve", "sleeve_stripe"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
-        add(paint_bands(seg_cylinder(f"farm.{side}", el, wr - (wr - el).normalized() * 0.03, 0.052, 0.048, "top", segs=6), "sleeve", "sleeve_stripe"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
-        add(seg_cylinder(f"cuff.{side}", wr - (wr - el).normalized() * 0.048, wr + (wr - el).normalized() * 0.004, 0.054, 0.054, "top_dark"), "body", f"forearm.{side}")
+        add(paint_strip(ball(f"shoulder.{side}", 0.064, sh + Vector((s * 0.004, 0, -0.012)), "top"), "sleeve"), "body", ["chest", f"upper_arm.{side}"])
+        add(paint_strip(seg_cylinder(f"uarm.{side}", sh, el, 0.058, 0.052, "top", segs=6), "sleeve"), "body", ["chest", f"upper_arm.{side}", f"forearm.{side}"])
+        add(paint_strip(ball(f"elbow.{side}", 0.052, el, "top"), "sleeve"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
+        add(paint_strip(seg_cylinder(f"farm.{side}", el, wr - (wr - el).normalized() * 0.03, 0.052, 0.048, "top", segs=6), "sleeve"), "body", [f"upper_arm.{side}", f"forearm.{side}"])
+        add(seg_cylinder(f"cuff.{side}", wr - (wr - el).normalized() * 0.048, wr + (wr - el).normalized() * 0.004, 0.054, 0.054, "cuff"), "body", f"forearm.{side}")
         build_hand(side, wr, he)
         # legs (jeans)
         hip, knee, ankle, toe, toe_end = leg_points(side)
@@ -382,82 +446,352 @@ def build_body():
             add(box(f"lace{k}.{side}", (0.06, 0.012, 0.01), (x, -0.07 + k * 0.03, 0.118 - k * 0.004), "sole_band", bevel=0.004, sub=0), "body", f"foot.{side}")
 
 
+def ring(name, r_xy, z, height, cell, center=(0.0, 0.0), verts=32, thickness=0.012, scale_y=1.0, bevel=0.0):
+    """Open band around the body (collar, hem, cuff stripe): a short tube with real thickness."""
+    o = blib.cylinder(name, r_xy, height, (center[0], center[1], z), None, verts=verts, cap=False)
+    o.scale = (1.0, scale_y, 1.0)
+    sol = o.modifiers.new("solid", "SOLIDIFY")
+    sol.thickness = thickness
+    sol.offset = 0
+    if bevel:
+        bv = o.modifiers.new("bevel", "BEVEL")
+        bv.width = bevel
+        bv.segments = 2
+    return paint(o, cell)
+
+
+def arm_band(name, side, t0, t1, r, cell):
+    """Band around the forearm between fractions t0..t1 from elbow to wrist."""
+    sh, el, wr, he = arm_points(side)
+    return seg_cylinder(name, el + (wr - el) * t0, el + (wr - el) * t1, r, r, cell, verts=20)
+
+
+def open_front(group, inner="inner", zip_cell="top_dark", pull=True):
+    """Open jacket front: the tee between two zip tapes and its neckline."""
+    add(box(f"{group}_shirt", (0.13, 0.03, 0.38), (0, -0.108, 0.83), inner, bevel=0.012, sub=1), group, ["hips", "spine", "chest"])
+    add(box(f"{group}_tee_neck", (0.14, 0.12, 0.04), (0, -0.04, 0.985), inner, bevel=0.02, sub=1), group, ["chest"])
+    for s in (-1, 1):
+        add(box(f"{group}_zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), zip_cell, bevel=0.003, sub=0), group, ["hips", "spine", "chest"])
+    if pull:
+        add(box(f"{group}_pull", (0.012, 0.012, 0.035), (0.068, -0.126, 0.67), "metal", bevel=0.004, sub=0), group, ["hips"])
+
+
+def letter_d(group, cx, cz, y, h, cell):
+    """The varsity chest letter: a 'D' (Descall) from a stem and a half ring."""
+    x0 = cx - h * 0.28
+    add(box(f"{group}_d_stem", (0.011, 0.008, h), (x0, y, cz), cell, bevel=0.003, sub=0), group, ["chest"])
+    bm = bmesh.new()
+    segs, tube, rr = 14, 0.0055, h * 0.5 - 0.004
+    rings = []
+    for i in range(segs + 1):
+        a = -math.pi / 2 + math.pi * i / segs
+        c = Vector((x0 + math.cos(a) * rr * 1.1, y, cz + math.sin(a) * rr))
+        ring_v = []
+        for j in range(6):
+            bb = 2 * math.pi * j / 6
+            n = Vector((math.cos(a) * math.cos(bb), math.sin(bb), math.sin(a) * math.cos(bb)))
+            ring_v.append(bm.verts.new(c + n * tube))
+        rings.append(ring_v)
+    for i in range(segs):
+        for j in range(6):
+            bm.faces.new((rings[i][j], rings[i + 1][j], rings[i + 1][(j + 1) % 6], rings[i][(j + 1) % 6]))
+    o = blib.mesh_from_bmesh(f"{group}_d_bowl", bm)
+    blib.shade_smooth(o)
+    add(paint(o, cell), group, ["chest"])
+
+
+def hood_back(group, cell, scale=1.0, z=1.0):
+    hood = box(f"{group}_hood", (0.3 * scale, 0.13 * scale, 0.12 * scale), (0, 0.085 + (scale - 1) * 0.05, z), cell, bevel=0.055, sub=1, rot=(-15, 0, 0))
+    add(hood, group, ["chest", "neck"])
+    rim = blib.cylinder(f"{group}_hood_ring", 0.1, 0.05, (0, -0.01, z), None, verts=24, radius_top=0.09)
+    add(paint(rim, cell), group, ["chest", "neck"])
+
+
 def build_outfits():
-    # hoodie extras: hood, pocket, drawstrings
-    hood = box("hood", (0.3, 0.13, 0.12), (0, 0.085, 1.0), "top", bevel=0.055, sub=1, rot=(-15, 0, 0))
-    add(hood, "extra_hoodie", ["chest", "neck"])
-    collar = blib.cylinder("hood_ring", 0.1, 0.05, (0, -0.01, 1.0), None, verts=24, radius_top=0.09)
-    add(paint(collar, "top"), "extra_hoodie", ["chest", "neck"])
-    add(box("pocket", (0.22, 0.03, 0.12), (0, -0.115, 0.715), "top", bevel=0.014, sub=1), "extra_hoodie", ["hips", "spine"])
-    add(box("pocket_line", (0.2, 0.02, 0.006), (0, -0.124, 0.77), "top_dark", bevel=0.002, sub=0), "extra_hoodie", ["spine"])
+    """Kiyafet items, one mesh group each (approved-ui-5.png): top_hoodie, top_bomber,
+    top_varsity, top_vest, top_raincoat, top_striped. Torso and sleeves live in the body
+    mesh; an item adds its own parts and the client sets the palette (sleeve, cuff and
+    stripe colours) from the catalog (frontend/src/world3d/engine/look.js)."""
+    # Kapusonlu: hood, kangaroo pocket with soft side openings, drawstrings
+    g = "top_hoodie"
+    hood_back(g, "top")
+    add(box("pocket", (0.22, 0.03, 0.12), (0, -0.115, 0.715), "top", bevel=0.014, sub=1), g, ["hips", "spine"])
+    add(box("pocket_line", (0.2, 0.02, 0.006), (0, -0.124, 0.77), "top_dark", bevel=0.002, sub=0), g, ["spine"])
     for s in (-1, 1):
-        add(seg_cylinder(f"string{s}", (s * 0.035, -0.118, 0.98), (s * 0.04, -0.124, 0.86), 0.0055, 0.0055, "top_dark", verts=8), "extra_hoodie", ["chest"])
-        add(ball(f"string_tip{s}", 0.009, (s * 0.04, -0.124, 0.855), "top_dark", scale=(1, 1, 1.6)), "extra_hoodie", ["chest"])
-    # zip jacket extras: inner shirt panel, collar, zip
-    add(box("shirt_panel", (0.13, 0.03, 0.38), (0, -0.108, 0.83), "inner", bevel=0.012, sub=1), "extra_jacket", ["hips", "spine", "chest"])
-    add(box("shirt_neck", (0.14, 0.12, 0.04), (0, -0.04, 0.985), "inner", bevel=0.02, sub=1), "extra_jacket", ["chest"])
+        add(seg_cylinder(f"string{s}", (s * 0.035, -0.118, 0.98), (s * 0.04, -0.124, 0.86), 0.0055, 0.0055, "top_dark", verts=8), g, ["chest"])
+        add(ball(f"string_tip{s}", 0.009, (s * 0.04, -0.124, 0.855), "top_dark", scale=(1, 1, 1.6)), g, ["chest"])
+
+    # Bomber: open zip front over a tee, ribbed collar and hem, utility pocket on the left sleeve
+    g = "top_bomber"
+    open_front(g)
+    add(ring("bomber_collar", 0.103, 1.0, 0.05, "trim", center=(0, -0.012), thickness=0.016, scale_y=0.95, bevel=0.004), g, ["chest", "neck"])
+    add(box("bomber_hem", (0.372, 0.248, 0.06), (0, 0.0, 0.645), "trim", bevel=0.026, sub=1), g, ["hips"])
+    for k in range(9):
+        x = -0.16 + k * 0.04
+        if abs(x) < 0.07:
+            continue
+        add(box(f"bomber_rib{k}", (0.006, 0.01, 0.05), (x, -0.124, 0.645), "top_dark", bevel=0.002, sub=0), g, ["hips"])
+    sh, el, wr, he = arm_points("L")
+    pc = sh + (el - sh) * 0.45 + Vector((0.052, -0.004, 0))
+    add(box("bomber_pocket", (0.012, 0.06, 0.07), pc, "top_dark", bevel=0.005, sub=1, rot=(0, -8, 0)), g, ["upper_arm.L"])
+    add(box("bomber_pocket_zip", (0.014, 0.05, 0.005), pc + Vector((0.002, 0, 0.026)), "metal", bevel=0.002, sub=0, rot=(0, -8, 0)), g, ["upper_arm.L"])
+    add(ball("bomber_badge", 0.018, (-0.105, -0.122, 0.93), "patch", scale=(1, 0.3, 1)), g, ["chest"])
+
+    # Kolej ceket (varsity): open front with snaps, striped rib trims, chest letter
+    g = "top_varsity"
+    open_front(g, pull=False)
+    add(ring("var_collar", 0.103, 1.0, 0.052, "trim", center=(0, -0.012), thickness=0.016, scale_y=0.95, bevel=0.004), g, ["chest", "neck"])
+    add(ring("var_collar_stripe", 0.108, 0.99, 0.01, "trim_stripe", center=(0, -0.012), thickness=0.008, scale_y=0.95), g, ["chest", "neck"])
+    add(box("var_hem", (0.372, 0.248, 0.062), (0, 0.0, 0.645), "trim", bevel=0.026, sub=1), g, ["hips"])
+    for k, z in enumerate((0.635, 0.656)):
+        add(box(f"var_hem_stripe{k}", (0.378, 0.252, 0.008), (0, 0.0, z), "trim_stripe", bevel=0.003, sub=1), g, ["hips"])
+    for side in ("L", "R"):
+        for k, t in enumerate((0.78, 0.84)):
+            add(arm_band(f"var_cuff_stripe{k}.{side}", side, t, t + 0.025, 0.0565, "trim_stripe"), g, [f"forearm.{side}"])
     for s in (-1, 1):
-        add(box(f"collar{s}", (0.1, 0.045, 0.08), (s * 0.085, -0.075, 0.975), "top", bevel=0.02, sub=1, rot=(0, s * 25, s * 20)), "extra_jacket", ["chest", "neck"])
-        add(box(f"zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), "top_dark", bevel=0.003, sub=0), "extra_jacket", ["hips", "spine", "chest"])
-    add(box("jacket_pull", (0.012, 0.012, 0.035), (0.068, -0.126, 0.67), "acc2", bevel=0.004, sub=0), "extra_jacket", ["hips"])
-    # puffer vest over a striped long-sleeve shirt (scene-5, right): quilted ridges, open front, high collar
+        for k, z in enumerate((0.7, 0.78, 0.86, 0.94)):
+            add(ball(f"var_snap{s}{k}", 0.0085, (s * 0.083, -0.122, z), "metal", scale=(1, 0.45, 1)), g, ["spine", "chest"] if z > 0.8 else ["hips", "spine"])
+    add(box("var_patch", (0.075, 0.012, 0.075), (-0.095, -0.118, 0.9), "patch", bevel=0.012, sub=1), g, ["chest"])
+    letter_d(g, -0.095, 0.9, -0.126, 0.05, "trim_stripe")
+
+    # Yelek: puffer vest over a long-sleeve shirt, quilted ridges, high collar, puffy armholes
+    g = "top_vest"
     panel = box("vest_shirt", (0.13, 0.03, 0.38), (0, -0.108, 0.83), "inner", bevel=0.012, sub=2)
-    add(paint_bands(panel, "inner", "stripe", band=0.03), "extra_vest", ["hips", "spine", "chest"])
+    add(paint_strip(panel, "shirt"), g, ["hips", "spine", "chest"])
     for k, z in enumerate((0.69, 0.77, 0.85, 0.93)):
-        add(box(f"quilt{k}", (0.343, 0.236, 0.01), (0, 0.0, z), "top_dark", bevel=0.004, sub=1), "extra_vest", ["hips", "spine", "chest"])
+        add(box(f"quilt{k}", (0.343, 0.236, 0.01), (0, 0.0, z), "top_dark", bevel=0.004, sub=1), g, ["hips", "spine", "chest"])
     for s in (-1, 1):
-        add(box(f"vest_collar{s}", (0.12, 0.06, 0.07), (s * 0.075, -0.05, 0.985), "top", bevel=0.026, sub=1, rot=(0, 0, s * 12)), "extra_vest", ["chest", "neck"])
-        add(box(f"vest_zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), "top_dark", bevel=0.003, sub=0), "extra_vest", ["hips", "spine", "chest"])
+        add(box(f"vest_collar{s}", (0.12, 0.06, 0.07), (s * 0.075, -0.05, 0.985), "top", bevel=0.026, sub=1, rot=(0, 0, s * 12)), g, ["chest", "neck"])
+        add(box(f"vest_zip{s}", (0.008, 0.012, 0.36), (s * 0.068, -0.118, 0.83), "top_dark", bevel=0.003, sub=0), g, ["hips", "spine", "chest"])
+        add(ball(f"vest_arm{s}", 0.07, (s * 0.15, 0.0, 0.94), "top", scale=(0.42, 1.0, 1.05)), g, ["chest"])
+    add(box("vest_pull", (0.012, 0.012, 0.035), (0.068, -0.126, 0.67), "metal", bevel=0.004, sub=0), g, ["hips"])
+
+    # Yagmurluk (raincoat): closed placket with snaps, hood down, flap pockets, long skirt
+    g = "top_raincoat"
+    hood_back(g, "top", scale=1.12, z=1.005)
+    add(ring("rain_collar", 0.104, 1.0, 0.06, "top", center=(0, -0.008), thickness=0.016, scale_y=0.96, bevel=0.005), g, ["chest", "neck"])
+    add(box("rain_placket", (0.034, 0.016, 0.5), (0, -0.12, 0.74), "coat_dark", bevel=0.006, sub=1), g, ["hips", "spine", "chest"])
+    for k, z in enumerate((0.54, 0.65, 0.76, 0.87, 0.96)):
+        add(ball(f"rain_snap{k}", 0.009, (0, -0.13, z), "metal", scale=(1, 0.5, 1)), g, ["hips"] if z < 0.62 else (["hips", "spine"] if z < 0.82 else ["spine", "chest"]))
+    skirt = blib.cylinder("rain_skirt", 0.205, 0.22, (0, 0.0, 0.565), None, verts=40, radius_top=0.182, cap=False)
+    skirt.scale = (1.0, 0.72, 1.0)
+    bm = bmesh.new()
+    bm.from_mesh(skirt.data)
+    edges = [e for e in bm.edges if abs(e.verts[0].co.z - e.verts[1].co.z) > 1e-6]
+    bmesh.ops.subdivide_edges(bm, edges=edges, cuts=5, use_grid_fill=False)
+    bm.to_mesh(skirt.data)
+    bm.free()
+    sol = skirt.modifiers.new("solid", "SOLIDIFY")
+    sol.thickness = 0.012
+    sol.offset = 0
+    add(paint(skirt, "top"), g, ["hips", "thigh.L", "thigh.R"])
+    add(ring("rain_hem", 0.208, 0.462, 0.022, "coat_dark", thickness=0.016, scale_y=0.72), g, ["hips", "thigh.L", "thigh.R"])
+    for s in (-1, 1):
+        add(box(f"rain_flap{s}", (0.09, 0.02, 0.03), (s * 0.1, -0.135, 0.6), "coat_dark", bevel=0.008, sub=1, rot=(-6, 0, 0)), g, ["hips"])
+        add(box(f"rain_pocket{s}", (0.085, 0.012, 0.09), (s * 0.1, -0.128, 0.555), "top", bevel=0.01, sub=1), g, ["hips"])
+
+    # Cizgili: striped long-sleeve tee (the stripes are the palette strip), ribbed crew neck
+    g = "top_striped"
+    add(ring("striped_neck", 0.098, 1.0, 0.035, "top_dark", center=(0, -0.012), thickness=0.012, scale_y=0.95, bevel=0.003), g, ["chest", "neck"])
+    add(box("striped_hem", (0.358, 0.238, 0.03), (0, 0.0, 0.64), "top_dark", bevel=0.012, sub=1), g, ["hips"])
 
 
-def build_face():
+# ------------------------------------------------------------------ faces (Yuz items)
+# Each face item is a full face mesh with its own blink / mouthOpen morphs (one draw call).
+FACES = {
+    "face_classic": {"brow": "soft", "mouth": "smile"},
+    "face_lashes": {"brow": "arch", "mouth": "smile", "lashes": True},
+    "face_bold": {"brow": "bold", "mouth": "smile"},
+    "face_sleepy": {"brow": "flat", "mouth": "small", "lid": True},
+    "face_grin": {"brow": "raised", "mouth": "grin"},
+    "face_freckles": {"brow": "soft", "mouth": "smile", "freckles": True},
+}
+MOUTH_CZ, MOUTH_CY = 1.148, -0.153
+
+
+def tag(obj, name):
+    """Morph tag: vertex group '_blink' / '_mouth' marks the parts a morph may move."""
+    vg = obj.vertex_groups.new(name=f"_{name}")
+    vg.add(list(range(len(obj.data.vertices))), 1.0, "REPLACE")
+    return obj
+
+
+def head_surface_y(x, z, lift=0.0):
+    """Front surface of the (unscaled) head at x, z: the sphere with the fuller jaw of build_body."""
+    k = max(0.0, min(1.0, (1.25 - z) / 0.19))
+    rx = 0.19 * 1.04 * (1 + 0.09 * k)
+    ry = 0.19 * 0.98 * (1 + 0.05 * k)
+    q = 1 - (x / rx) ** 2 - ((z - 1.25) / 0.19) ** 2
+    return -ry * math.sqrt(max(0.0, q)) - lift
+
+
+def brow_arc(name, s, x0, x1, z0, lift, r0, r1, group, steps=7):
+    pts = []
+    for i in range(steps):
+        u = i / (steps - 1)
+        x = s * (x0 + (x1 - x0) * u)
+        z = z0 + lift * math.sin(math.pi * (0.15 + 0.75 * u)) - 0.006 * u
+        pts.append(Vector((x, head_surface_y(x, z, 0.004), z)))
+    for i in range(steps - 1):
+        r = r0 + (r1 - r0) * (i / (steps - 2))
+        add(seg_cylinder(f"{name}{i}", pts[i], pts[i + 1], r, r * 0.92, "brows", verts=10), group, "head")
+        add(ball(f"{name}j{i}", r * 0.98, pts[i + 1], "brows", seg=10, rings=6), group, "head")
+    add(ball(f"{name}j0", r0 * 0.98, pts[0], "brows", seg=10, rings=6), group, "head")
+
+
+def build_brows(group, style):
     for s in (-1, 1):
-        x = s * 0.074
+        if style == "soft":
+            add(box(f"{group}_brow{s}", (0.07, 0.02, 0.016), (s * 0.08, -0.166, 1.34), "brows", bevel=0.007, sub=1, rot=(-12, s * 3, -s * 9)), group, "head")
+        elif style == "arch":
+            brow_arc(f"{group}_brow{s}_", s, 0.048, 0.115, 1.33, 0.016, 0.0072, 0.0042, group)
+        elif style == "bold":
+            add(box(f"{group}_brow{s}", (0.084, 0.026, 0.026), (s * 0.079, -0.163, 1.336), "brows", bevel=0.011, sub=1, rot=(-12, 0, -s * 4)), group, "head")
+        elif style == "flat":
+            add(box(f"{group}_brow{s}", (0.068, 0.018, 0.014), (s * 0.08, -0.166, 1.347), "brows", bevel=0.006, sub=1, rot=(-12, 0, s * 4)), group, "head")
+        elif style == "raised":
+            add(box(f"{group}_brow{s}", (0.066, 0.02, 0.016), (s * 0.08, -0.164, 1.356), "brows", bevel=0.007, sub=1, rot=(-12, s * 3, -s * 15)), group, "head")
+
+
+def build_eyes(group, lashes=False, lid=False):
+    for s in (-1, 1):
         x = s * 0.077
-        add(ball(f"eye_white{s}", 0.048, (x, -0.15, 1.252), "eye_white", scale=(1.0, 0.55, 1.2)), "face", "head")
-        add(ball(f"iris{s}", 0.036, (x * 0.98, -0.175, 1.246), "iris", scale=(1.0, 0.42, 1.14)), "face", "head")
-        add(ball(f"shine{s}", 0.012, (x - s * 0.006 + 0.011, -0.191, 1.268), "highlight"), "face", "head")
-        add(ball(f"shine2{s}", 0.006, (x - s * 0.004 - 0.012, -0.19, 1.232), "highlight"), "face", "head")
-        brow = box(f"brow{s}", (0.07, 0.02, 0.016), (s * 0.08, -0.166, 1.34), "brows", bevel=0.007, sub=1, rot=(-12, s * 3, -s * 9))
-        add(brow, "face", "head")
-    add(mouth_mesh(), "face", "head")
+        add(tag(ball(f"{group}_eye_white{s}", 0.048, (x, -0.15, 1.252), "eye_white", scale=(1.0, 0.55, 1.2)), "blink"), group, "head")
+        add(tag(ball(f"{group}_iris{s}", 0.036, (x * 0.98, -0.175, 1.246), "iris", scale=(1.0, 0.42, 1.14)), "blink"), group, "head")
+        add(tag(ball(f"{group}_shine{s}", 0.012, (x - s * 0.006 + 0.011, -0.191, 1.268), "highlight"), "blink"), group, "head")
+        add(tag(ball(f"{group}_shine2{s}", 0.006, (x - s * 0.004 - 0.012, -0.19, 1.232), "highlight"), "blink"), group, "head")
+        if lashes:
+            # three lashes flicking out of the upper outer rim (scene-5, the girl with the bun)
+            for k, ang in enumerate((28, 48, 68)):
+                a = math.radians(ang)
+                base = Vector((x + s * 0.046 * math.cos(a), -0.163 - 0.006 * math.sin(a), 1.252 + 0.057 * math.sin(a)))
+                tip = base + Vector((s * math.cos(a) * 0.9, -0.35, math.sin(a) * 0.7 + 0.25)).normalized() * (0.02 - k * 0.002)
+                add(tag(seg_cylinder(f"{group}_lash{s}{k}", base, tip, 0.0042, 0.0012, "lash", verts=8), "blink"), group, "head")
+            # a soft upper lash line on the rim
+            for k in range(6):
+                a0 = math.radians(25 + k * 22)
+                a1 = math.radians(25 + (k + 1) * 22)
+                p0 = Vector((x + s * 0.049 * math.cos(a0), -0.158 - 0.012 * math.sin(a0), 1.252 + 0.058 * math.sin(a0)))
+                p1 = Vector((x + s * 0.049 * math.cos(a1), -0.158 - 0.012 * math.sin(a1), 1.252 + 0.058 * math.sin(a1)))
+                add(tag(seg_cylinder(f"{group}_lashline{s}{k}", p0, p1, 0.0036, 0.0036, "lash", verts=8), "blink"), group, "head")
+        if lid:
+            # relaxed upper lid: a skin cap over the top of the eye with a dark rim line
+            cut = 0.014
+            lid_obj = blib.sphere(f"{group}_lid{s}", 0.05, (x, -0.149, 1.252), None, scale=(1.03, 0.6, 1.22), segments=28, rings=16)
+            bm = bmesh.new()
+            bm.from_mesh(lid_obj.data)
+            bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z * 1.22 < cut], context="VERTS")
+            bm.to_mesh(lid_obj.data)
+            bm.free()
+            add(paint(lid_obj, "skin"), group, "head")
+            c = 0.05 * 1.22
+            f = math.sqrt(max(0.0, 1 - (cut / c) ** 2))
+            pts = []
+            for k in range(13):
+                ph = math.radians(-10 + k * 200 / 12)
+                pts.append(Vector((x + 0.05 * 1.03 * f * math.cos(ph) * 1.01, -0.149 - 0.05 * 0.6 * f * math.sin(ph) - 0.0015, 1.252 + cut)))
+            for k in range(12):
+                add(seg_cylinder(f"{group}_lidline{s}{k}", pts[k], pts[k + 1], 0.0032, 0.0032, "lash", verts=8), group, "head")
 
 
-def mouth_shape(open_amount):
+def mouth_shape(open_amount, style="smile"):
     n = 18
-    w = 0.036 * (1 + 0.18 * open_amount)
+    if style == "grin":
+        o = 0.42 + 0.58 * open_amount
+        w, curve_k = 0.043 * (1 + 0.12 * o), 0.017
+    elif style == "small":
+        o = open_amount
+        w, curve_k = 0.028 * (1 + 0.18 * o), 0.011
+    else:
+        o = open_amount
+        w, curve_k = 0.036 * (1 + 0.18 * o), 0.015
     top, bot = [], []
     for i in range(n + 1):
         t = -1 + 2 * i / n
         x = w * t
-        curve = 0.015 * t * t
-        tz = curve + 0.0025 * (1 - t * t) + 0.004 * open_amount * (1 - t * t)
-        bz = curve - 0.0035 * (1 - t * t) - 0.036 * open_amount * (1 - t * t) ** 0.8
+        curve = curve_k * t * t
+        tz = curve + 0.0025 * (1 - t * t) + 0.004 * o * (1 - t * t)
+        bz = curve - 0.0035 * (1 - t * t) - 0.036 * o * (1 - t * t) ** 0.8
         top.append((x, tz))
         bot.append((x, bz))
     return top, bot
 
 
-def mouth_mesh():
-    """Closed mouth outline (smile), extruded into the head. Morph 'mouthOpen' = laugh."""
-    cz, cy = 1.148, -0.153
+def curve_front(v):
+    """The mouth front follows the head curvature a little."""
+    v.co.y += 0.35 * v.co.x * v.co.x / 0.19
+
+
+def mouth_mesh(name, style="smile"):
+    """Mouth outline, extruded into the head. Morph 'mouthOpen' (talking, laughing)."""
+    cz, cy = MOUTH_CZ, MOUTH_CY
     bm = bmesh.new()
-    top, bot = mouth_shape(0)
-    ring = top + list(reversed(bot[1:-1]))
-    front = [bm.verts.new((x, cy - 0.006 - 0.012 * (x / 0.04) ** 2 * -1, cz + z)) for x, z in ring]
-    back = [bm.verts.new((x, cy + 0.012, cz + z)) for x, z in ring]
+    top, bot = mouth_shape(0, style)
+    ring_pts = top + list(reversed(bot[1:-1]))
+    front = [bm.verts.new((x, cy - 0.006 + 0.012 * (x / 0.04) ** 2, cz + z)) for x, z in ring_pts]
+    back = [bm.verts.new((x, cy + 0.012, cz + z)) for x, z in ring_pts]
     bm.faces.new(front)
     bm.faces.new(list(reversed(back)))
-    nring = len(ring)
+    nring = len(ring_pts)
     for i in range(nring):
         j = (i + 1) % nring
         bm.faces.new((front[i], front[j], back[j], back[i]))
-    obj = blib.mesh_from_bmesh("mouth", bm)
-    # the front follows the head curvature a little
+    obj = blib.mesh_from_bmesh(name, bm)
     for v in obj.data.vertices:
-        v.co.y += 0.35 * v.co.x * v.co.x / 0.19
+        curve_front(v)
     obj["ring"] = nring
     return paint(obj, "mouth")
+
+
+def strip_band(name, pts_top, pts_bot, y_front, depth, cell):
+    """Flat band between two polylines (x, z), facing -Y, with a little depth."""
+    bm = bmesh.new()
+    ft = [bm.verts.new((x, y_front + 0.012 * (x / 0.04) ** 2, z)) for x, z in pts_top]
+    fb = [bm.verts.new((x, y_front + 0.012 * (x / 0.04) ** 2, z)) for x, z in pts_bot]
+    bt = [bm.verts.new((x, y_front + depth, z)) for x, z in pts_top]
+    bb = [bm.verts.new((x, y_front + depth, z)) for x, z in pts_bot]
+    for i in range(len(pts_top) - 1):
+        bm.faces.new((ft[i], ft[i + 1], fb[i + 1], fb[i]))
+        bm.faces.new((bt[i + 1], bt[i], bb[i], bb[i + 1]))
+    obj = blib.mesh_from_bmesh(name, bm)
+    for v in obj.data.vertices:
+        curve_front(v)
+    return paint(obj, cell)
+
+
+def build_mouth(group, style):
+    add(tag(mouth_mesh(f"{group}_mouth", style), "mouth"), group, "head")
+    if style != "grin":
+        return
+    top, bot = mouth_shape(0, style)
+    cz, cy = MOUTH_CZ, MOUTH_CY
+    sel = range(4, 15)
+    # upper teeth just under the lip, tongue resting on the lower lip
+    tt = [(top[i][0] * 0.96, cz + top[i][1] - 0.0012) for i in sel]
+    tb = [(top[i][0] * 0.96, cz + top[i][1] - 0.0075 * (1 - ((i - 9) / 6.0) ** 2) - 0.0016) for i in sel]
+    add(tag(strip_band(f"{group}_teeth", tt, tb, cy - 0.0068, 0.006, "teeth"), "mouth"), group, "head")
+    mid_b = cz + bot[9][1]
+    tongue = ball(f"{group}_tongue", 0.016, (0, cy - 0.0062, mid_b + 0.0058), "tongue", scale=(1.0, 0.25, 0.36), seg=20, rings=10)
+    add(tag(tongue, "mouth"), group, "head")
+
+
+def build_freckles(group):
+    spots = [(0.095, 1.206), (0.112, 1.196), (0.128, 1.205), (0.104, 1.186), (0.12, 1.183), (0.088, 1.192), (0.136, 1.19)]
+    for s in (-1, 1):
+        for k, (x, z) in enumerate(spots):
+            xx = s * x
+            add(ball(f"{group}_frk{s}{k}", 0.0052 - 0.0006 * (k % 3), (xx, head_surface_y(xx, z, -0.0015), z), "freckle", scale=(1, 0.45, 1), seg=10, rings=6), group, "head")
+    for k, x in enumerate((-0.016, 0.0, 0.017)):
+        add(ball(f"{group}_frkn{k}", 0.0042, (x, -0.198, 1.212 + (0.004 if k == 1 else 0)), "freckle", scale=(1, 0.45, 1), seg=10, rings=6), group, "head")
+
+
+def build_faces():
+    for group, spec in FACES.items():
+        build_eyes(group, lashes=spec.get("lashes", False), lid=spec.get("lid", False))
+        build_brows(group, spec["brow"])
+        build_mouth(group, spec["mouth"])
+        if spec.get("freckles"):
+            build_freckles(group)
 
 
 def swept_locks():
@@ -485,16 +819,99 @@ def swept_locks():
     return out
 
 
-def build_hair_and_accessories():
+def fringe_locks():
+    """Forehead fringe for the tousled style (scene-5, second from the right)."""
+    C = Vector((0, 0.0, 1.27))
+    out = []
+    for az, el, tilt in ((-38, 26, 18), (-15, 24, 10), (8, 25, -4), (30, 27, -14)):
+        a, e = math.radians(az), math.radians(el)
+        n = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+        pnt = C + n * 0.205
+        t = Vector((math.sin(math.radians(tilt)) * 0.6, -0.25, -1.0))
+        t = (t - n * t.dot(n)).normalized()
+        q = Vector((0, 0, 1)).rotation_difference(t)
+        out.append(("ELLIPSOID", tuple(pnt + n * 0.006 + t * 0.02), 0.05, (0.85, 0.6, 1.9), tuple(math.degrees(v) for v in q.to_euler("XYZ"))))
+    # extra crown volume, standing up a little
+    for az, el in ((-20, 70), (25, 66), (160, 55), (-150, 52)):
+        a, e = math.radians(az), math.radians(el)
+        n = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+        out.append(("ELLIPSOID", tuple(C + n * 0.215), 0.07, (1.0, 0.8, 1.5), (0, 0, az)))
+    return out
+
+
+def curls():
+    """Curly crown: balls on a Fibonacci sphere, the forehead and ears left free."""
+    C = Vector((0, 0.02, 1.28))
+    out = []
+    n_pts = 86
+    for i in range(n_pts):
+        zf = 1 - 2 * (i + 0.5) / n_pts
+        r = math.sqrt(1 - zf * zf)
+        ph = i * math.pi * (3 - math.sqrt(5))
+        n = Vector((math.cos(ph) * r, math.sin(ph) * r, zf))
+        if n.z < -0.12:
+            continue
+        if n.y < -0.5 and n.z < 0.42:
+            continue
+        rad = 0.043 + 0.008 * ((i * 7) % 3) / 2
+        out.append(("BALL", tuple(C + n * 0.208), rad, None))
+    # a few curls falling on the forehead
+    for x, z in ((-0.07, 1.385), (0.0, 1.4), (0.075, 1.38)):
+        out.append(("BALL", (x, -0.155, z), 0.04, None))
+    return out
+
+
+HAIR_STYLES = ("hair_swept", "hair_fringe", "hair_bob", "hair_bun", "hair_ponytail", "hair_curly")
+
+
+def hat_variant(src, name):
+    """Hair worn under a cap or beanie: the crown is pulled inside the hat and cut away,
+    the sides, fringe ends and tails stay. One extra small mesh per style."""
+    me = src.data.copy()
+    obj = bpy.data.objects.new(name, me)
+    blib.link(obj)
+    a = 0.205 * 1.04 * 0.97
+    c = 0.205 * 0.85
+    for v in me.vertices:
+        z = v.co.z
+        w = min(1.0, max(0.0, (z - 1.235) / 0.06))
+        if w <= 0:
+            continue
+        w = w * w * (3 - 2 * w)
+        dx, dy = v.co.x, v.co.y - 0.01
+        r = math.hypot(dx, dy)
+        lim = a * math.sqrt(max(0.05, 1 - (max(0.0, z - 1.3) / c) ** 2))
+        if r > lim:
+            k = (lim + (r - lim) * (1 - w)) / r
+            v.co.x = dx * k
+            v.co.y = 0.01 + dy * k
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.calc_center_median().z > 1.33], context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    bm.to_mesh(me)
+    bm.free()
+    blib.shade_smooth(obj)
+    return paint(obj, "hair")
+
+
+def build_hair():
+    """Sac items: six styles (scene-5 + the draft's look) and their under-a-hat variants."""
     E = "ELLIPSOID"
     B = "BALL"
+    meshes = {}
     # short swept hair (scene-5 boys): a cap plus soft locks lying on the scalp, all
     # sweeping from the crown towards the forehead and to one side, merged by the metaballs.
-    spiky = [
+    swept = [
         (E, (0, 0.02, 1.345), 0.19, (1.06, 1.03, 0.84)),
         (E, (0, 0.07, 1.24), 0.17, (1.1, 0.95, 0.9)),
     ] + swept_locks()
-    add(metaball_mesh("hair_spiky", spiky, "hair"), "hair_spiky", "head")
+    meshes["hair_swept"] = metaball_mesh("hair_swept", swept, "hair")
+    fringe = [
+        (E, (0, 0.02, 1.35), 0.195, (1.07, 1.04, 0.86)),
+        (E, (0, 0.07, 1.24), 0.172, (1.1, 0.95, 0.92)),
+    ] + swept_locks() + fringe_locks()
+    meshes["hair_fringe"] = metaball_mesh("hair_fringe", fringe, "hair")
     bun = [
         (E, (0, 0.015, 1.33), 0.2, (1.08, 1.06, 0.84)),
         (E, (0, 0.07, 1.22), 0.185, (1.12, 0.92, 1.0)),
@@ -505,7 +922,7 @@ def build_hair_and_accessories():
         (E, (-0.05, -0.12, 1.4), 0.08, (1.4, 0.8, 0.7)),
         (B, (0, 0.06, 1.53), 0.095, None),
     ]
-    add(metaball_mesh("hair_bun", bun, "hair"), "hair_bun", "head")
+    meshes["hair_bun"] = metaball_mesh("hair_bun", bun, "hair")
     bob = [
         (E, (0, 0.02, 1.32), 0.2, (1.08, 1.05, 0.8)),
         (E, (0, 0.07, 1.16), 0.2, (1.14, 0.94, 1.3)),
@@ -514,7 +931,78 @@ def build_hair_and_accessories():
         (E, (-0.07, -0.135, 1.385), 0.08, (1.5, 0.7, 0.8), (0, 0, -12)),
         (E, (0.07, -0.135, 1.385), 0.08, (1.5, 0.7, 0.8), (0, 0, 12)),
     ]
-    add(metaball_mesh("hair_bob", bob, "hair"), "hair_bob", "head")
+    meshes["hair_bob"] = metaball_mesh("hair_bob", bob, "hair")
+    pony = [
+        (E, (0, 0.025, 1.335), 0.19, (1.05, 1.04, 0.82)),
+        (E, (0, 0.08, 1.23), 0.165, (1.08, 0.95, 0.9)),
+        (E, (-0.06, -0.13, 1.39), 0.075, (1.6, 0.7, 0.75), (0, 0, -15)),
+        (E, (0.085, -0.122, 1.372), 0.068, (1.4, 0.7, 0.75), (0, 0, 24)),
+        (E, (-0.15, -0.05, 1.24), 0.058, (0.6, 0.8, 1.6)),
+        (E, (0.15, -0.05, 1.24), 0.058, (0.6, 0.8, 1.6)),
+        (B, (0, 0.2, 1.33), 0.05, None),
+        (E, (0, 0.238, 1.285), 0.062, (0.9, 0.9, 1.4), (24, 0, 0)),
+        (E, (0, 0.262, 1.2), 0.068, (0.95, 0.9, 1.6), (10, 0, 0)),
+        (E, (0, 0.268, 1.105), 0.058, (0.9, 0.85, 1.6), (-4, 0, 0)),
+        (E, (0, 0.255, 1.03), 0.042, (0.8, 0.8, 1.4), (-16, 0, 0)),
+    ]
+    meshes["hair_ponytail"] = metaball_mesh("hair_ponytail", pony, "hair")
+    meshes["hair_curly"] = metaball_mesh("hair_curly", [
+        (E, (0, 0.02, 1.33), 0.185, (1.05, 1.03, 0.82)),
+        (E, (0, 0.07, 1.23), 0.168, (1.09, 0.95, 0.9)),
+    ] + curls(), "hair", resolution=0.0105)
+    for name in HAIR_STYLES:
+        src = meshes[name]
+        hat = hat_variant(src, f"{name}_hat")
+        add(src, name, "head")
+        add(hat, f"{name}_hat", "head")
+    # ponytail tie (same group as the tail, so still one mesh)
+    tie = blib.cylinder("pony_tie", 0.034, 0.02, (0, 0.214, 1.318), None, verts=24, rot=(-58, 0, 0), bevel=0.006)
+    add(paint(tie, "hair_tie"), "hair_ponytail", "head")
+    tie2 = blib.cylinder("pony_tie_hat", 0.034, 0.02, (0, 0.214, 1.318), None, verts=24, rot=(-58, 0, 0), bevel=0.006)
+    add(paint(tie2, "hair_tie"), "hair_ponytail_hat", "head")
+
+
+def knit(obj, ribs, depth):
+    """Knit ribbing: a radial ripple around the Z axis."""
+    for v in obj.data.vertices:
+        a = math.atan2(v.co.y, v.co.x)
+        r = math.hypot(v.co.x, v.co.y)
+        if r < 1e-5:
+            continue
+        k = 1 + depth * math.cos(ribs * a) / max(r, 0.05)
+        v.co.x *= k
+        v.co.y *= k
+
+
+def build_beanie():
+    g = "acc_beanie"
+    dome = blib.sphere("beanie_dome", 0.214, (0, 0.012, 1.3), None, scale=(1.03, 1.03, 0.98), segments=48, rings=20)
+    bm = bmesh.new()
+    bm.from_mesh(dome.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < -0.02], context="VERTS")
+    bm.to_mesh(dome.data)
+    bm.free()
+    knit(dome, 24, 0.0016)
+    sol = dome.modifiers.new("solid", "SOLIDIFY")
+    sol.thickness = 0.01
+    add(paint(dome, "acc1"), g, "head")
+    cuff = blib.cylinder("beanie_cuff", 0.226, 0.066, (0, 0.012, 1.298), None, verts=72, cap=False)
+    knit(cuff, 36, 0.0022)
+    sol = cuff.modifiers.new("solid", "SOLIDIFY")
+    sol.thickness = 0.018
+    sol.offset = 0
+    bv = cuff.modifiers.new("bevel", "BEVEL")
+    bv.width = 0.006
+    bv.segments = 2
+    add(paint(cuff, "acc_dark"), g, "head")
+    pom = ball("beanie_pom", 0.058, (0, 0.012, 1.53), "acc2", seg=24, rings=14)
+    folds(pom, 0.014)
+    add(pom, g, "head")
+
+
+def build_hair_and_accessories():
+    build_hair()
+    build_beanie()
     # baseball cap
     dome = blib.sphere("cap_dome", 0.205, (0, 0.01, 1.3), None, scale=(1.04, 1.04, 0.85), segments=32, rings=16)
     me = dome.data
@@ -654,11 +1142,12 @@ def skin(rig):
         o = blib.join(objs, group) if len(objs) > 1 else objs[0]
         o.name = group
         o.data.name = group
-        if group != "face":
+        if not group.startswith("face_"):
             # budget: ~16k triangles per visible avatar (16 avatars < 300k triangles)
             dec = o.modifiers.new("decimate", "DECIMATE")
-            dec.ratio = 0.45 if group in ("body",) or group.startswith("hair_") else (0.75 if group == "acc_guitar" else 0.6)
+            dec.ratio = 0.3 if group.startswith("hair_curly") or group.endswith("_hat") else (0.45 if group in ("body",) or group.startswith("hair_") else (0.75 if group == "acc_guitar" else 0.6))
             blib.apply_all(o)
+        restripe(o)
         o.parent = rig
         mod = o.modifiers.new("rig", "ARMATURE")
         mod.object = rig
@@ -666,38 +1155,41 @@ def skin(rig):
     return meshes
 
 
-def add_face_morphs(face):
+def add_face_morphs(face, style):
+    """blink squashes the tagged eye parts, mouthOpen rebuilds the tagged mouth parts
+    with the open outline. Untagged parts (lids, freckles, brows) never move."""
     me = face.data
+    gb = face.vertex_groups.get("_blink")
+    gm = face.vertex_groups.get("_mouth")
+
+    def member(v, g):
+        return g is not None and any(e.group == g.index for e in v.groups)
+
     face.shape_key_add(name="Basis", from_mix=False)
     blink = face.shape_key_add(name="blink", from_mix=False)
     mouth_open = face.shape_key_add(name="mouthOpen", from_mix=False)
-    # blink: squash eye parts (white, iris, shine) vertically around each eye centre
-    for i, v in enumerate(me.vertices):
-        co = v.co
-        lo, hi = head_xyz(0, 0, 1.19)[2], head_xyz(0, 0, 1.32)[2]
-        if co.z > lo and co.z < hi and abs(co.x) > 0.02 and abs(co.x) < 0.15 and co.y < -0.1:
-            cz = head_xyz(0, 0, 1.25)[2]
-            k = 0.08
-            blink.data[i].co = Vector((co.x, co.y + 0.004, cz - 0.012 + (co.z - cz) * k))
-    # mouth: rebuild the outline with the open shape
-    top0, bot0 = mouth_shape(0)
-    top1, bot1 = mouth_shape(1)
+    cz = head_xyz(0, 0, 1.25)[2]
+    top0, bot0 = mouth_shape(0, style)
+    top1, bot1 = mouth_shape(1, style)
     ring0 = top0 + list(reversed(bot0[1:-1]))
     ring1 = top1 + list(reversed(bot1[1:-1]))
+    ring0_h = [head_xyz(x, 0, MOUTH_CZ + z) for x, z in ring0]
     for i, v in enumerate(me.vertices):
         co = v.co
-        if co.z < head_xyz(0, 0, 1.18)[2] and co.z > head_xyz(0, 0, 1.08)[2] and abs(co.x) < 0.066 and co.y < -0.1:
-            # find matching outline point by x/z of the closed shape
-            best, bd = None, 1e9
-            for k, (x, z) in enumerate(ring0):
-                hx, _, hz = head_xyz(x, 0, 1.148 + z)
+        if member(v, gb):
+            blink.data[i].co = Vector((co.x, co.y + 0.004, cz - 0.012 + (co.z - cz) * 0.08))
+        elif member(v, gm):
+            best, bd = 0, 1e9
+            for k, (hx, _, hz) in enumerate(ring0_h):
                 d = (hx - co.x) ** 2 + (hz - co.z) ** 2
                 if d < bd:
                     bd, best = d, k
-            x1, z1 = ring1[best]
-            dx = (x1 - ring0[best][0]) * HEAD_K
-            dz = (z1 - ring0[best][1]) * HEAD_K
+            dx = (ring1[best][0] - ring0[best][0]) * HEAD_K
+            dz = (ring1[best][1] - ring0[best][1]) * HEAD_K
             mouth_open.data[i].co = Vector((co.x + dx, co.y - 0.004 * (1 if co.y < -0.15 else 0), co.z + dz))
+    for g in (gb, gm):
+        if g is not None:
+            face.vertex_groups.remove(g)
 
 
 # ------------------------------------------------------------------ animation
@@ -1041,18 +1533,18 @@ def main():
     rig = build_armature()
     build_body()
     build_outfits()
-    build_face()
+    build_faces()
     build_hair_and_accessories()
     meshes = skin(rig)
-    face = bpy.data.objects["face"]
-    add_face_morphs(face)
+    for name, spec in FACES.items():
+        add_face_morphs(bpy.data.objects[name], spec["mouth"])
     build_animations(rig)
     print("meshes:", [(m.name, len(m.data.polygons)) for m in meshes])
     preview = arg("--preview")
     if preview:
-        show = (arg("--show") or "hair_spiky,extra_hoodie").split(",")
+        show = (arg("--show") or "hair_swept,top_hoodie,face_classic").split(",")
         for m in meshes:
-            if m.name.startswith(("hair_", "extra_", "acc_")):
+            if m.name.startswith(("hair_", "top_", "acc_", "face_")):
                 m.hide_render = m.name not in show
         setup_preview(rig, preview)
         return

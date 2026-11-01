@@ -14,6 +14,12 @@
  * validates them (lib/world3d/worldCore.js) and relays the changed ones to the
  * room once per 100 ms as one batch (`world:snaps`) stamped with server time;
  * clients interpolate ~100 ms behind.
+ *
+ * Looks (phase 5, "Karakterini oluştur"): the saved look of every member comes from the
+ * database on join (world_avatar_looks, owned items only; null = the per-user default)
+ * and travels in the roster. After saving (POST /api/world3d/look) a client sends
+ * `world:look`; the server reloads that user's look from the database (never from the
+ * payload) and relays `world:look { id, look }` to the room. Rate limited per socket.
  */
 
 const {
@@ -27,6 +33,18 @@ const {
 } = require("../lib/world3d/worldCore");
 
 const RECHECK_MS = 5000;
+const LOOK_LOAD_TIMEOUT_MS = 1500;
+
+/** Saved look (validated, owned items only) or null; never throws, never waits long. */
+function loadLookSafe(loadLook, userId) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(null), LOOK_LOAD_TIMEOUT_MS);
+    Promise.resolve()
+      .then(() => loadLook(userId))
+      .then((look) => resolve(look || null), () => resolve(null))
+      .finally(() => clearTimeout(t));
+  });
+}
 
 function publicProfile(userId, socketUser) {
   let cached = null;
@@ -56,6 +74,7 @@ function registerWorldNamespace(io, deps = {}) {
   const publicEnabled = deps.publicEnabled || (() => false);
   const profileOf = deps.profileOf || publicProfile;
   const rooms = deps.rooms || new WorldRooms();
+  const loadLook = deps.loadLook || ((id) => require("../lib/world3d/cosmeticsService").loadWearableLook(id));
   const nsp = io.of("/world");
   if (authMiddleware) nsp.use(authMiddleware);
 
@@ -114,6 +133,7 @@ function registerWorldNamespace(io, deps = {}) {
     const chatLimit = createRateLimiter({ ratePerSec: 0.5, burst: 5 });
     const emoteLimit = createRateLimiter({ ratePerSec: 2, burst: 4 });
     const joinLimit = createRateLimiter({ ratePerSec: 0.2, burst: 6 });
+    const lookLimit = createRateLimiter({ ratePerSec: 0.5, burst: 3 });
     socket.data.worldKey = null;
 
     const leaveCurrent = () => {
@@ -126,7 +146,7 @@ function registerWorldNamespace(io, deps = {}) {
       }
     };
 
-    socket.on("world:join", (payload, ack) => {
+    socket.on("world:join", async (payload, ack) => {
       const reply = typeof ack === "function" ? ack : () => {};
       if (!joinLimit.take()) return reply({ ok: false, error: "rate_limited" });
       const kind = payload?.kind;
@@ -139,8 +159,10 @@ function registerWorldNamespace(io, deps = {}) {
         activeServerVoiceCalls: shared.activeServerVoiceCalls,
       });
       if (!verdict.ok) return reply({ ok: false, error: verdict.reason });
+      const look = await loadLookSafe(loadLook, userId);
+      if (!socket.connected) return reply({ ok: false, error: "disconnected" });
       if (socket.data.worldKey && socket.data.worldKey !== verdict.key) leaveCurrent();
-      const profile = profileOf(userId, socket.user);
+      const profile = { ...profileOf(userId, socket.user), look };
       const joined = rooms.join(verdict.key, { kind, id: String(id), userId, socketId: socket.id, profile });
       if (!joined.ok) return reply({ ok: false, error: joined.reason });
       if (joined.replaced && joined.replaced !== socket.id) {
@@ -200,6 +222,20 @@ function registerWorldNamespace(io, deps = {}) {
       };
       nsp.to(key).emit("world:chat", msg);
       return reply({ ok: true, id: msg.id });
+    });
+
+    socket.on("world:look", async (_payload, ack) => {
+      const reply = typeof ack === "function" ? ack : () => {};
+      const key = socket.data.worldKey;
+      if (!key) return reply({ ok: false, error: "not_joined" });
+      if (!lookLimit.take()) return reply({ ok: false, error: "rate_limited" });
+      // The payload is ignored: the room sees what the database holds.
+      const look = await loadLookSafe(loadLook, userId);
+      const member = rooms.room(key)?.members.get(userId);
+      if (!member || member.socketId !== socket.id || socket.data.worldKey !== key) return reply({ ok: false, error: "not_joined" });
+      member.profile = { ...member.profile, look };
+      nsp.to(key).emit("world:look", { id: userId, look });
+      return reply({ ok: true, look });
     });
 
     socket.on("world:leave", () => leaveCurrent());

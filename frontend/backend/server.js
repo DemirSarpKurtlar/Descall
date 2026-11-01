@@ -485,6 +485,8 @@ app.use("/api/special-badges", require("./routes/specialBadges"));
 app.use("/api/messages", require("./routes/notifyActions"));
 // 3.7.17: Apple Watch (through the paired iPhone's session), routes/watch.js.
 app.use("/api/watch", require("./routes/watch"));
+// 3D world, phase 5: character cosmetics (admins only, like the /world namespace).
+app.use("/api/world3d", require("./routes/world3d")());
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));

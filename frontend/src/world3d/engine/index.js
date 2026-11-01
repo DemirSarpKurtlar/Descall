@@ -2,3 +2,4 @@
 // dist/world3d/engine/engine.js). Babylon.js lives only here: the app bundle never
 // imports it, so the marketing first paint and the iOS build carry none of it.
 export { WorldEngine } from "./WorldEngine.js";
+export { Customizer } from "./customizer.js";

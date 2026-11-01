@@ -14,6 +14,9 @@ import useHeldSpeaking from "../hooks/useHeldSpeaking";
 import { connectWorld, appPlatform } from "./net/worldSocket.js";
 import { PRESETS, resolvePreset } from "./engine/quality.js";
 import { probeRenderer, rendererVerdict } from "./gate.js";
+import { API_BASE_URL } from "../config/api";
+import { createCosmeticsApi } from "./net/cosmeticsApi.js";
+import CustomizePanel from "./CustomizePanel.jsx";
 import "./world3d.css";
 
 const ROOMS = [
@@ -83,6 +86,7 @@ export default function World3DView({
   socketUrl,
   socketPath = "/socket.io",
   token,
+  apiBase = API_BASE_URL,
   assetBase = "/world3d/",
   onExit,
   onFallback,
@@ -101,6 +105,9 @@ export default function World3DView({
   const [roster, setRoster] = useState([]); // members in the world (from the server)
   const [wheel, setWheel] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [custom, setCustom] = useState(false); // "Karakterini oluştur" (C, or Ayar menu)
+  const custRef = useRef(null);
+  const cosmeticsApi = useMemo(() => createCosmeticsApi({ baseUrl: apiBase, token }), [apiBase, token]);
   const [seatHint, setSeatHint] = useState(null);
   const [chat, setChat] = useState([]);
   const [draft, setDraft] = useState("");
@@ -139,7 +146,7 @@ export default function World3DView({
     }
     (async () => {
       try {
-        const { WorldEngine } = await loadEngineModule();
+        const { WorldEngine, Customizer } = await loadEngineModule();
         if (disposed) return;
         const preset = resolvePreset(quality, {
           renderer: probe.renderer,
@@ -179,6 +186,13 @@ export default function World3DView({
           return;
         }
         window.__descallWorld = engine; // dev / e2e inspection only (no secrets)
+        const cust = Customizer ? new Customizer(engine) : null;
+        custRef.current = cust;
+        // saved looks travel in the roster: seed them before avatars are created
+        const placeMembers = (list) => {
+          cust?.setRoomLooks(list);
+          engine.setMembers(list);
+        };
         net = worldSocketFactory({ url: socketUrl, token, app: appPlatform(), path: socketPath });
         netRef.current = net;
         net.socket.on("world:snaps", (batch) => engine.onSnaps(batch));
@@ -186,13 +200,13 @@ export default function World3DView({
           if (ev?.type === "join" && ev.member) {
             setRoster((prev) => {
               const next = prev.filter((m) => String(m.id) !== String(ev.member.id)).concat([ev.member]);
-              engine.setMembers(next);
+              placeMembers(next);
               return next;
             });
           } else if (ev?.type === "leave") {
             setRoster((prev) => {
               const next = prev.filter((m) => String(m.id) !== String(ev.id));
-              engine.setMembers(next);
+              placeMembers(next);
               return next;
             });
           }
@@ -201,6 +215,7 @@ export default function World3DView({
           if (kind === "group" && mainSocket) return;
           setChat((prev) => prev.concat([{ id: msg.id, name: msg.name, userId: msg.userId, text: msg.text }]).slice(-30));
         });
+        net.socket.on("world:look", (ev) => cust?.onRemoteLook(ev));
         net.socket.on("world:kicked", () => onExit?.("kicked"));
         const doJoin = async () => {
           const res = await net.join(kind, roomId);
@@ -216,7 +231,7 @@ export default function World3DView({
           setError("");
           const list = res.members.map((m) => ({ ...m, id: String(m.id) }));
           setRoster(list);
-          engine.setMembers(list);
+          placeMembers(list);
         };
         net.socket.on("connect", doJoin);
         net.socket.on("connect_error", (err) => {
@@ -243,6 +258,8 @@ export default function World3DView({
       } catch {
         /* closing */
       }
+      custRef.current?.dispose();
+      custRef.current = null;
       engine?.dispose();
       engineRef.current = null;
       netRef.current = null;
@@ -321,6 +338,26 @@ export default function World3DView({
     if (id === "sit") eng.toggleSit();
     else eng.emote(id);
   }, []);
+
+  // "Karakterini oluştur": C toggles it (not while typing), the Ayar menu opens it
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = document.activeElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.key.toLowerCase() !== "c") return;
+      if (phase !== "ready") return;
+      setSettings(false);
+      setCustom((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase]);
+  const getCustomizer = useCallback(() => custRef.current, []);
+  const onLookSaved = useCallback((look) => {
+    custRef.current?.onRemoteLook({ id: selfId, look });
+    // everyone in the room reloads it from the server (the payload is ignored there)
+    netRef.current?.socket?.emit("world:look", {}, () => {});
+  }, [selfId]);
 
   const changeQuality = useCallback((q) => {
     setQuality(q);
@@ -464,13 +501,17 @@ export default function World3DView({
         <button type="button" className={voice.isCameraOn ? "is-on" : ""} aria-pressed={Boolean(voice.isCameraOn)} disabled={!voice.toggleCamera || voice.canVideo === false} onClick={() => voice.toggleCamera?.()} title={t("Camera")}>
           {t("world3d.dock.camera")}
         </button>
-        <button type="button" className={settings ? "is-on" : ""} aria-expanded={settings} onClick={() => setSettings((s) => !s)} title={t("world3d.dock.settings")}>
+        <button type="button" className={settings ? "is-on" : ""} aria-expanded={settings} onClick={() => { setCustom(false); setSettings((s) => !s); }} title={t("world3d.dock.settings")}>
           {t("world3d.dock.settings")}
         </button>
       </div>
 
       {settings ? (
         <div className="w3d-settings w3d-glass" role="dialog" aria-label={t("world3d.dock.settings")}>
+          <button type="button" className="w3d-row w3d-row-cust" onClick={() => { setSettings(false); setCustom(true); }}>
+            {t("world3d.custom.open")}
+            <kbd>C</kbd>
+          </button>
           <p className="w3d-settings-h">{t("world3d.quality.label")}</p>
           <div className="w3d-seg">
             {["auto", "low", "medium", "high"].map((q) => (
@@ -489,6 +530,10 @@ export default function World3DView({
           <p className="w3d-keys">{t("world3d.keysGuitar")}</p>
           {stats ? <p className="w3d-stats">{t("world3d.stats", { fps: stats.fps, quality: t(`world3d.quality.${stats.quality}`) })}</p> : null}
         </div>
+      ) : null}
+
+      {custom && phase === "ready" ? (
+        <CustomizePanel api={cosmeticsApi} getCustomizer={getCustomizer} onSaved={onLookSaved} onClose={() => setCustom(false)} />
       ) : null}
 
       {phase === "loading" ? (

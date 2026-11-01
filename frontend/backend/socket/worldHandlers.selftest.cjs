@@ -3,7 +3,8 @@
 /**
  * /world namespace end to end on a real Socket.IO server:
  * gate (admin + desktop), call membership, relay of batched snapshots, chat,
- * 16 avatar cap, kick when the user leaves the call.
+ * 16 avatar cap, kick when the user leaves the call, saved looks on join and the
+ * world:look relay (the database look, never the payload; rate limited).
  * Run: node frontend/backend/socket/worldHandlers.selftest.cjs
  */
 
@@ -40,6 +41,8 @@ function emitAck(socket, event, payload) {
   return new Promise((resolve) => socket.emit(event, payload, resolve));
 }
 
+const savedLooks = new Map([["alice", { v: 1, hair: "hair_bob", top: "top_bomber", face: "face_lashes", acc: ["acc_headphones"], skin: 2, colors: { top: 1 } }]]);
+
 async function main() {
   const server = http.createServer();
   const io = new Server(server);
@@ -48,6 +51,7 @@ async function main() {
     authMiddleware: fakeAuth,
     loadAdminRow: async (id) => ({ id, username: id, is_admin: admins.has(id) }),
     profileOf: (id) => ({ id, username: id, displayName: id.toUpperCase(), avatarUrl: null }),
+    loadLook: async (id) => savedLooks.get(id) || null,
   });
   await new Promise((r) => server.listen(0, r));
   const url = `http://127.0.0.1:${server.address().port}/world`;
@@ -94,6 +98,22 @@ async function main() {
     assert.strictEqual(joined.type, "join");
     assert.strictEqual(joined.member.id, "bob");
     assert.strictEqual(joined.member.displayName, "BOB");
+    assert.strictEqual(joined.member.look, null, "no saved look: null (client uses the per-user default)");
+    assert.deepStrictEqual(b.members.find((m) => m.id === "alice").look, savedLooks.get("alice"), "joiners get the saved looks");
+
+    // world:look: bob saved a new look (REST); the room gets the database copy, not the payload.
+    savedLooks.set("bob", { v: 1, hair: "hair_curly", top: "top_varsity", face: "face_grin", acc: [], skin: 4, colors: {} });
+    const lookSeen = waitFor(alice, "world:look");
+    const lookAck = await emitAck(bob, "world:look", { look: { hair: "hacked", top: "top_raincoat" } });
+    assert.strictEqual(lookAck.ok, true);
+    assert.deepStrictEqual(await lookSeen, { id: "bob", look: savedLooks.get("bob") });
+    const rejoin = await emitAck(alice, "world:join", { kind: "group", id: "g1" });
+    assert.deepStrictEqual(rejoin.members.find((m) => m.id === "bob").look, savedLooks.get("bob"), "roster keeps the relayed look");
+    // rate limit: burst 3 (one used above), then refused
+    const burst = [];
+    for (let i = 0; i < 4; i += 1) burst.push(await emitAck(bob, "world:look", {}));
+    assert.ok(burst.some((r) => r.error === "rate_limited"), "world:look is rate limited");
+    assert.deepStrictEqual(await emitAck(eve, "world:look", {}), { ok: false, error: "not_joined" });
 
     // Snapshots: bob moves, alice receives one batch with server time.
     const snaps = waitFor(alice, "world:snaps");

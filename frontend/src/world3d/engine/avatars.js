@@ -1,7 +1,9 @@
 /**
  * Avatars: one shared GLB (rig + 13 clips + morphs), instantiated per member.
- * Colours come from a 64 x 64 palette texture per avatar (see look.js), so every
- * avatar is a handful of draw calls whatever its outfit.
+ * Colours come from a 64 x 64 palette texture per avatar (see look.js). The visible
+ * item meshes (body, hair, top, accessories) are merged into one skinned mesh and the
+ * face is a second one, so an avatar is two draw calls (plus its blob shadow) whatever
+ * it wears (phase 5 customisation, applyLook).
  *
  * AvatarController blends animation groups by weight (idle/walk/run by speed,
  * sit/emote layers with cross-fades), keeps yaw smooth, blinks and moves the
@@ -15,7 +17,10 @@ import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTextur
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { CreateDisc } from "@babylonjs/core/Meshes/Builders/discBuilder";
-import { CELLS } from "./look.js";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
+import { CELLS, STRIPS, STRIP_PERIOD_PX } from "./look.js";
 import { lerpAngle } from "../net/snapshotBuffer.js";
 
 // The model is authored ~1.5 m tall; the drafts show the cast a bit larger next to the sofa.
@@ -38,8 +43,7 @@ export async function loadAvatarAsset(scene, url) {
   return { container, template: container.materials.find((m) => /AVATAR/i.test(m.name)) || container.materials[0] };
 }
 
-function paletteTexture(scene, name, colors) {
-  const tex = new DynamicTexture(name, { width: 64, height: 64 }, scene, false, Texture.NEAREST_SAMPLINGMODE);
+function drawPalette(tex, colors) {
   const ctx = tex.getContext();
   ctx.fillStyle = "#808080";
   ctx.fillRect(0, 0, 64, 64);
@@ -49,10 +53,76 @@ function paletteTexture(scene, name, colors) {
     ctx.fillStyle = hex;
     ctx.fillRect((idx % 8) * 8, Math.floor(idx / 8) * 8, 8, 8);
   }
+  // stripe strips (row 7): two pixels tall, U follows the height on the mesh
+  const half = STRIP_PERIOD_PX / 2;
+  for (const s of Object.values(STRIPS)) {
+    for (let x = 0; x < 64; x += half) {
+      ctx.fillStyle = (x / half) % 2 === 0 ? colors[s.a] || "#808080" : colors[s.b] || colors[s.a] || "#808080";
+      ctx.fillRect(x, s.y - 1, half, 2);
+    }
+  }
   tex.update(false);
+}
+
+function paletteTexture(scene, name, colors) {
+  // bilinear: UVs sit on cell centres, and stripe edges come out anti-aliased
+  const tex = new DynamicTexture(name, { width: 64, height: 64 }, scene, false, Texture.BILINEAR_SAMPLINGMODE);
   tex.wrapU = Texture.CLAMP_ADDRESSMODE;
   tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+  drawPalette(tex, colors);
   return tex;
+}
+
+const MERGE_KINDS = [VertexBuffer.PositionKind, VertexBuffer.NormalKind, VertexBuffer.UVKind, VertexBuffer.MatricesIndicesKind, VertexBuffer.MatricesWeightsKind];
+const MERGE_SIZES = [3, 3, 2, 4, 4];
+const geometryCache = new WeakMap(); // asset -> Map(groupsKey -> VertexData)
+
+/**
+ * The visible item meshes (body, hair, top, accessories) share one skin and one material,
+ * so they are concatenated into one skinned mesh: one draw call per avatar whatever the
+ * outfit. The vertex data is cached per asset and group set, so a room of people in the
+ * same outfit builds it once (each avatar still gets its own GPU buffers).
+ */
+function mergedVertexData(asset, parts, groups) {
+  let cache = geometryCache.get(asset);
+  if (!cache) {
+    cache = new Map();
+    geometryCache.set(asset, cache);
+  }
+  const key = groups.join("|");
+  if (cache.has(key)) return cache.get(key);
+  const sources = groups.map((g) => parts.get(g)).filter(Boolean);
+  let verts = 0;
+  let idx = 0;
+  for (const m of sources) {
+    verts += m.getTotalVertices();
+    idx += m.getTotalIndices();
+  }
+  const out = MERGE_KINDS.map((k, i) => new Float32Array(verts * MERGE_SIZES[i]));
+  const indices = verts > 65535 ? new Uint32Array(idx) : new Uint16Array(idx);
+  let vo = 0;
+  let io = 0;
+  for (const m of sources) {
+    const n = m.getTotalVertices();
+    MERGE_KINDS.forEach((kind, i) => {
+      const data = m.getVerticesData(kind);
+      if (data) out[i].set(data.subarray ? data.subarray(0, n * MERGE_SIZES[i]) : data.slice(0, n * MERGE_SIZES[i]), vo * MERGE_SIZES[i]);
+    });
+    const src = m.getIndices();
+    for (let j = 0; j < src.length; j += 1) indices[io + j] = src[j] + vo;
+    vo += n;
+    io += src.length;
+  }
+  const vd = new VertexData();
+  vd.positions = out[0];
+  vd.normals = out[1];
+  vd.uvs = out[2];
+  vd.matricesIndices = out[3];
+  vd.matricesWeights = out[4];
+  vd.indices = indices;
+  if (cache.size > 24) cache.delete(cache.keys().next().value);
+  cache.set(key, vd);
+  return vd;
 }
 
 let shadowMat = null;
@@ -117,7 +187,6 @@ export class AvatarController {
       mat.diffuseTexture = this.palette;
     }
     this.material = mat;
-    const show = new Set(["body", "face", `hair_${look.hair}`, ...(look.outfit === "sweater" ? [] : [`extra_${look.outfit}`]), ...look.accessories.map((a) => `acc_${a}`)]);
     // eyes, brows and mouth: glossy (big dark eyes with a sharp highlight)
     this.faceMaterial = mat.clone(`avatarFace_${id}`);
     if ("roughness" in this.faceMaterial) {
@@ -126,22 +195,42 @@ export class AvatarController {
       this.faceMaterial.roughness = 0.16;
       if (this.faceMaterial.sheen) this.faceMaterial.sheen.isEnabled = false;
     }
-    // the cap covers the hair completely (no hair poking through the crown)
-    if (look.accessories.includes("cap")) show.delete(`hair_${look.hair}`);
+    // Every item is its own mesh in the GLB (build_character.py). Item meshes are only
+    // sources: the visible ones are merged into `dressed`; faces keep their morphs and
+    // switch by visibility; the guitar shows during the guitar emote.
+    this.asset = asset;
+    this.parts = new Map();
+    this.faces = new Map();
     for (const m of this.meshes) {
       m.material = mat;
       m.isPickable = false;
-      const part = String(m.name).split(":").pop().replace(/_primitive\d+$/, "");
-      const visible = show.has(part);
-      m.setEnabled(visible);
+      m.setEnabled(false);
       m.alwaysSelectAsActiveMesh = false;
-      if (part === "face") {
-        this.face = m;
+      const part = String(m.name).split(":").pop().replace(/_primitive\d+$/, "");
+      if (part.startsWith("face_")) {
+        this.faces.set(part, m);
         m.material = this.faceMaterial;
+      } else if (part === "acc_guitar") {
+        this.guitar = m;
+      } else {
+        this.parts.set(part, m);
       }
-      if (part === "acc_guitar") this.guitar = m;
-      if (visible) m.metadata = { ...(m.metadata || {}), avatarId: this.id };
     }
+    const body = this.parts.get("body") || this.meshes[0];
+    const dressed = new Mesh(`${id}:dressed`, scene);
+    dressed.parent = body.parent;
+    dressed.position.copyFrom(body.position);
+    if (body.rotationQuaternion) dressed.rotationQuaternion = body.rotationQuaternion.clone();
+    else dressed.rotation.copyFrom(body.rotation);
+    dressed.scaling.copyFrom(body.scaling);
+    dressed.skeleton = body.skeleton;
+    dressed.numBoneInfluencers = body.numBoneInfluencers;
+    dressed.material = mat;
+    dressed.isPickable = false;
+    dressed.metadata = { avatarId: this.id };
+    this.dressed = dressed;
+    this.meshes.push(dressed);
+    this.applyLook(look);
     this.shadow = blobShadow(scene, `shadow_${id}`);
     this.groups = {};
     for (const g of inst.animationGroups) {
@@ -163,6 +252,38 @@ export class AvatarController {
     this.position = new Vector3(0, 0, 0);
     this.headOffset = 1.68 * AVATAR_SCALE;
     this.setTarget("idle", 1, true);
+  }
+
+  /**
+   * Show a resolved look (look.js resolveLook): repaint the palette, rebuild the merged
+   * item mesh when the set of groups changed, switch the face. Cheap enough to run on
+   * every click in the customisation panel (the vertex data is cached per group set).
+   */
+  applyLook(look) {
+    const prev = this.look;
+    this.look = look;
+    if (this.palette && prev && prev !== look) drawPalette(this.palette, look.colors);
+    const key = look.groups.join("|");
+    if (key !== this.groupsKey) {
+      this.groupsKey = key;
+      const vd = mergedVertexData(this.asset, this.parts, look.groups);
+      vd.applyToMesh(this.dressed, false);
+      this.dressed.refreshBoundingInfo();
+    }
+    const face = this.faces.get(look.face) || this.faces.values().next().value || null;
+    if (face !== this.face) {
+      const old = this.face;
+      if (old) old.setEnabled(false);
+      this.face = face;
+      if (face) {
+        face.setEnabled(true);
+        face.metadata = { ...(face.metadata || {}), avatarId: this.id };
+      }
+      this.morphs = face?.morphTargetManager || null;
+      // the new face starts neutral; blink and mouth pick up on the next frame
+      if (this.morphs) for (let i = 0; i < this.morphs.numTargets; i += 1) this.morphs.getTarget(i).influence = 0;
+    }
+    return { dressed: this.dressed, face: this.face };
   }
 
   play(name, { loop = LOOPS.has(name), from = 0, speed = 1 } = {}) {

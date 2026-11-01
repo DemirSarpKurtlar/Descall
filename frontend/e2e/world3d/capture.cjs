@@ -25,7 +25,7 @@ async function main() {
   const looks = MODE === 'lineup' ? '&looks=elif:0,can:1,zeynep:2,demir:3,mert:4,ayse:5' : '&looks=ayse:3,mert:5,zeynep:2,can:6,elif:7,demir:0';
   const me = process.env.ME || 'demir';
   const meName = me[0].toUpperCase() + me.slice(1);
-  await page.goto(`${BASE}?port=4791&me=${me}&name=${meName}&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
+  await page.goto(`${BASE}?port=${process.env.MOCK_PORT || 4791}&me=${me}&name=${meName}&speakers=ayse,zeynep&quality=${quality}&lang=tr${looks}`, { waitUntil: 'load' });
   const t0 = Date.now();
   const dump = setInterval(() => { while (logs.length) console.log(logs.shift().slice(0, 400)); }, 3000);
   await page.waitForFunction((min) => window.__descallWorld && window.__descallWorld.avatars && window.__descallWorld.avatars.size >= min, Number(process.env.MIN_AVATARS || 2), { timeout: 240000 });

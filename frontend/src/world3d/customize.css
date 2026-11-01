@@ -1,0 +1,322 @@
+/* "Karakterini oluştur" (phase 5). Values from docs/design/3d-world/drafts.html #s5
+   (.cust, .tabs, .grid, .item, .colors, .row2) and approved-ui-5.png. */
+.w3d-cust {
+  position: absolute;
+  right: 24px;
+  top: 96px;
+  width: 380px;
+  max-height: calc(100% - 200px);
+  overflow: visible;
+  border-radius: 22px;
+  padding: 20px;
+  z-index: 6;
+  animation: w3d-cust-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes w3d-cust-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .w3d-cust {
+    animation: none;
+  }
+}
+.w3d-cust-head {
+  position: relative;
+  padding-right: 28px;
+}
+.w3d-cust-head h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.w3d-cust-head p {
+  margin: 4px 0 0;
+  color: var(--w3d-muted);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.w3d-root .w3d-cust-x {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--w3d-muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+.w3d-root .w3d-cust-x:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.w3d-cust-x svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.w3d-cust-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 14px;
+}
+.w3d-root .w3d-cust-tabs button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--w3d-muted);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 140ms ease, color 140ms ease;
+}
+.w3d-root .w3d-cust-tabs button:hover {
+  color: #fff;
+}
+.w3d-root .w3d-cust-tabs button.is-on {
+  color: #fff;
+  background: var(--w3d-brand);
+}
+
+.w3d-cust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.w3d-root .w3d-cust-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: center;
+  border: 1px solid transparent;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.w3d-root .w3d-cust-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.w3d-root .w3d-cust-item:active {
+  transform: scale(0.97);
+}
+.w3d-root .w3d-cust-item.is-on {
+  border-color: var(--w3d-brand);
+  background: rgba(88, 122, 246, 0.18);
+}
+.w3d-root .w3d-cust-item:focus-visible,
+.w3d-root .w3d-cust-tabs button:focus-visible,
+.w3d-root .w3d-cust-colors button:focus-visible,
+.w3d-root .w3d-cust-btn:focus-visible {
+  outline: 2px solid rgba(169, 184, 255, 0.9);
+  outline-offset: 2px;
+}
+.w3d-cust-sw {
+  display: block;
+  height: 54px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.w3d-cust-name {
+  color: var(--w3d-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w3d-cust-price {
+  color: #ffd166;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.w3d-cust-price.is-free {
+  color: var(--w3d-ok);
+}
+.w3d-cust-price.is-owned {
+  color: rgba(169, 184, 255, 0.95);
+}
+
+.w3d-cust-colors {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+}
+.w3d-root .w3d-cust-colors button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.w3d-root .w3d-cust-colors button:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+.w3d-root .w3d-cust-colors button.is-on {
+  box-shadow: 0 0 0 2px rgba(14, 16, 26, 0.9), 0 0 0 4px var(--w3d-brand);
+}
+.w3d-root .w3d-cust-colors button:disabled {
+  opacity: 0.4;
+}
+
+.w3d-cust-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.w3d-root .w3d-cust-btn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--w3d-brand), var(--w3d-brand2));
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
+}
+.w3d-root .w3d-cust-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.w3d-root .w3d-cust-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.w3d-root .w3d-cust-btn.is-ghost {
+  background: rgba(255, 255, 255, 0.09);
+}
+.w3d-root .w3d-cust-btn:disabled {
+  opacity: 0.55;
+}
+.w3d-cust-note {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--w3d-muted);
+}
+.w3d-cust-note.is-ok {
+  color: var(--w3d-ok);
+}
+.w3d-cust-note.is-error {
+  color: #ff8f8f;
+}
+
+/* purchase confirmation, over the panel body */
+.w3d-cust-buy {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  padding: 20px;
+  background: rgba(14, 16, 26, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  animation: w3d-cust-fade 160ms ease;
+}
+@keyframes w3d-cust-fade {
+  from {
+    opacity: 0;
+  }
+}
+.w3d-cust-buy h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.w3d-cust-buy-sub {
+  margin: 4px 0 12px;
+  color: var(--w3d-muted);
+  font-size: 13px;
+}
+.w3d-cust-buy ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.w3d-cust-buy li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+}
+.w3d-cust-buy li span:nth-child(2) {
+  flex: 1;
+}
+.w3d-cust-buy li b {
+  color: #ffd166;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.w3d-cust-buy-sw {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex: none;
+}
+.w3d-cust-buy dl {
+  margin: 14px 0 10px;
+  display: grid;
+  gap: 6px;
+}
+.w3d-cust-buy dl div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.w3d-cust-buy dt {
+  color: var(--w3d-muted);
+}
+.w3d-cust-buy dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.w3d-cust-buy dd.is-gold {
+  color: #ffd166;
+  font-weight: 800;
+}
+.w3d-cust-buy dd.is-bad {
+  color: #ff8f8f;
+}
+.w3d-cust-buy .w3d-cust-actions {
+  margin-top: auto;
+}
+.w3d-cust-buy > .w3d-cust-note {
+  margin: 0 0 10px;
+}
+
+/* Ayar menu entry that opens the panel */
+.w3d-root .w3d-row-cust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  background: rgba(88, 122, 246, 0.16);
+}
+.w3d-row-cust kbd {
+  font: 700 11px/1 "Inter", "Segoe UI", system-ui, sans-serif;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--w3d-muted);
+}
