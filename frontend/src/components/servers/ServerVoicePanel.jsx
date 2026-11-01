@@ -38,6 +38,10 @@ import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
+import { World3DButton, World3DStage, useWorld3DAvailable } from "../../world3d/World3DLauncher.jsx";
+import { subscribeActiveSpeakers } from "../../lib/activeSpeakers";
+import { SOCKET_URL } from "../../config/api";
+import { getToken } from "../../lib/storage";
 
 function TileFullscreenVideo({ stream }) {
   const ref = useRef(null);
@@ -755,6 +759,19 @@ export default function ServerVoicePanel({
   ]);
 
   const [memberMenu, setMemberMenu] = useState(null);
+  // 3D world (phase 1, staff preview): a mode of this voice channel. Voice keeps running.
+  const worldAvailable = useWorld3DAvailable(me);
+  const [worldOpen, setWorldOpen] = useState(false);
+  const [lkSpeakers, setLkSpeakers] = useState(null);
+  useEffect(() => {
+    if (!inThis || isStage) setWorldOpen(false);
+  }, [inThis, isStage]);
+  useEffect(() => {
+    if (!worldOpen) return undefined;
+    return subscribeActiveSpeakers(({ scope, ids }) => {
+      setLkSpeakers(scope === String(channel?.id) ? new Set(ids) : null);
+    });
+  }, [worldOpen, channel?.id]);
   const [screenExpand, setScreenExpand] = useState({ token: 0, id: null });
   const [tileFullscreen, setTileFullscreen] = useState(null);
   const tilesRef = useRef([]);
@@ -924,7 +941,41 @@ export default function ServerVoicePanel({
   const openMemberMenu = useCallback((next) => setMemberMenu(next), []);
 
   return (
-    <div className="server-voice-panel server-voice-room">
+    <div className="server-voice-panel server-voice-room" style={worldOpen ? { position: "relative" } : undefined}>
+      {worldOpen ? (
+        <World3DStage
+          kind="voice"
+          roomId={channel?.id}
+          title={channel?.name || t("Voice channel")}
+          me={me}
+          members={tiles.map((tile) => ({
+            id: String(tile.id === "local" ? me?.id : tile.id),
+            name: tile.label,
+            avatarUrl: tile.member?.avatarUrl || tile.member?.avatar_url || null,
+            stream: tile.audioStream,
+            muted: tile.muted,
+          }))}
+          voice={{
+            muted: Boolean(serverVoice?.muted),
+            deafened: Boolean(serverVoice?.deafened),
+            toggleMute: () => serverVoice?.toggleMute?.(),
+            toggleDeafen: () => serverVoice?.toggleDeafen?.(),
+            isScreenSharing: Boolean(serverVoice?.isScreenSharing),
+            toggleScreen: screenShareUnavailableOnIos() ? null : onToggleScreen,
+            isCameraOn: Boolean(serverVoice?.isCameraOn),
+            toggleCamera: onToggleCamera,
+            canVideo,
+          }}
+          activeSpeakerIds={lkSpeakers}
+          socketUrl={SOCKET_URL}
+          token={getToken()}
+          onExit={() => setWorldOpen(false)}
+          onFallback={(reason) => {
+            setWorldOpen(false);
+            toast(t(`world3d.fallback.${reason === "software" || reason === "no_webgl2" ? reason : "engine"}`), "info");
+          }}
+        />
+      ) : null}
       {tileFullscreen
         ? createPortal(
             <div className="server-voice-screen-expanded" onClick={closeTileFullscreen}>
@@ -955,6 +1006,9 @@ export default function ServerVoicePanel({
           </p>
         </div>
         <div className="server-voice-room-meta">
+          {worldAvailable && inThis && !isStage ? (
+            <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
+          ) : null}
           {statusLabel ? (
             <span className={`server-voice-status is-${statusTone}`} role="status">
               <i aria-hidden />

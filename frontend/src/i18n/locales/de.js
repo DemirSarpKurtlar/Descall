@@ -5,6 +5,71 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  "world3d": {
+    "enter": "3D-Welt",
+    "enterHint": "Diesen Anruf als 3D-Raum öffnen (Desktop, Team-Vorschau). Die Sprache bleibt an.",
+    "rooms": {
+      "cinema": "Kino",
+      "games": "Spielzimmer",
+      "living": "Wohnzimmer",
+      "camp": "Camp"
+    },
+    "roomsLabel": "Räume",
+    "soon": "Bald verfügbar",
+    "peopleInRoom": "{count, plural, one {# Person in diesem Raum} other {# Personen in diesem Raum}}",
+    "leave": "Verlassen",
+    "leaveHint": "Zurück zur Anrufansicht, deine Sprache bleibt an",
+    "member": "Mitglied",
+    "emote": {
+      "label": "Emotes",
+      "center": "Emoji",
+      "dance": "Tanzen",
+      "clap": "Klatschen",
+      "laugh": "Lachen",
+      "wave": "Winken",
+      "sit": "Sitzen",
+      "jump": "Springen"
+    },
+    "dock": {
+      "mic": "Mikro",
+      "sound": "Ton",
+      "emoji": "Emoji",
+      "screen": "Bildschirm",
+      "sit": "Sitzen",
+      "stand": "Aufstehen",
+      "camera": "Kamera",
+      "settings": "Optionen"
+    },
+    "dockLabel": "Steuerung der Welt",
+    "chatPlaceholder": "Nachricht an den Raum...",
+    "canvasLabel": "3D-Welt",
+    "sitHint": "Auf den nächsten Platz setzen (E)",
+    "quality": {
+      "label": "Grafikqualität",
+      "auto": "Automatisch",
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "resetCamera": "Kamera zurücksetzen",
+    "flatView": "Zurück zur flachen Ansicht",
+    "keysHelp": "WASD oder Pfeiltasten zum Gehen, Umschalt zum Rennen, auf den Boden klicken, um dorthin zu gehen, ziehen zum Umsehen, Mausrad zum Zoomen, E zum Sitzen, G für Emotes.",
+    "stats": "{fps} fps · {quality}",
+    "loading": "3D-Welt wird geladen...",
+    "failed": "Die 3D-Welt konnte nicht starten. Der Anruf läuft in der flachen Ansicht weiter.",
+    "offline": "Andere sehen dich gerade nicht. Verbindung wird wiederhergestellt...",
+    "activity": {
+      "dancing": "tanzt",
+      "laughing": "lacht",
+      "clapping": "klatscht",
+      "waving": "winkt"
+    },
+    "fallback": {
+      "software": "Dein Computer zeichnet Grafik ohne Grafikkarte, deshalb bleibt die 3D-Welt aus. Der Anruf läuft weiter.",
+      "no_webgl2": "Dieser Browser kann die 3D-Welt nicht ausführen (WebGL 2 fehlt). Der Anruf läuft weiter.",
+      "engine": "Die 3D-Welt konnte nicht starten. Der Anruf läuft in der flachen Ansicht weiter."
+    }
+  },
   "activeNow": {
     "emptyBody": "Wenn Freunde online kommen oder ein Spiel, Musik oder eine andere App starten, erscheinen sie hier.",
     "emptyTitle": "Gerade ist es ruhig",

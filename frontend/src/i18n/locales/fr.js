@@ -5,6 +5,71 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  "world3d": {
+    "enter": "Monde 3D",
+    "enterHint": "Ouvrir cet appel comme une salle 3D (ordinateur, aperçu de l'équipe). La voix reste active.",
+    "rooms": {
+      "cinema": "Cinéma",
+      "games": "Salle de jeux",
+      "living": "Salon",
+      "camp": "Camp"
+    },
+    "roomsLabel": "Salles",
+    "soon": "Bientôt",
+    "peopleInRoom": "{count, plural, one {# personne dans cette salle} other {# personnes dans cette salle}}",
+    "leave": "Quitter",
+    "leaveHint": "Retour à la vue d'appel, ta voix reste active",
+    "member": "Membre",
+    "emote": {
+      "label": "Emotes",
+      "center": "Emoji",
+      "dance": "Danser",
+      "clap": "Applaudir",
+      "laugh": "Rire",
+      "wave": "Saluer",
+      "sit": "S'asseoir",
+      "jump": "Sauter"
+    },
+    "dock": {
+      "mic": "Micro",
+      "sound": "Son",
+      "emoji": "Emoji",
+      "screen": "Écran",
+      "sit": "S'asseoir",
+      "stand": "Se lever",
+      "camera": "Caméra",
+      "settings": "Réglages"
+    },
+    "dockLabel": "Commandes du monde",
+    "chatPlaceholder": "Écrire à la salle...",
+    "canvasLabel": "Monde 3D",
+    "sitHint": "S'asseoir sur le siège le plus proche (E)",
+    "quality": {
+      "label": "Qualité graphique",
+      "auto": "Auto",
+      "low": "Basse",
+      "medium": "Moyenne",
+      "high": "Haute"
+    },
+    "resetCamera": "Réinitialiser la caméra",
+    "flatView": "Revenir à la vue à plat",
+    "keysHelp": "WASD ou flèches pour marcher, Maj pour courir, clique sur le sol pour y aller, fais glisser pour regarder, molette pour zoomer, E pour t'asseoir, G pour les emotes.",
+    "stats": "{fps} fps · {quality}",
+    "loading": "Chargement du monde 3D...",
+    "failed": "Le monde 3D n'a pas pu démarrer. L'appel continue dans la vue à plat.",
+    "offline": "Les autres ne te voient pas pour le moment. Reconnexion...",
+    "activity": {
+      "dancing": "danse",
+      "laughing": "rit",
+      "clapping": "applaudit",
+      "waving": "salue"
+    },
+    "fallback": {
+      "software": "Ton ordinateur affiche les graphismes sans carte graphique, le monde 3D reste donc désactivé. L'appel continue.",
+      "no_webgl2": "Ce navigateur ne peut pas lancer le monde 3D (WebGL 2 absent). L'appel continue.",
+      "engine": "Le monde 3D n'a pas pu démarrer. L'appel continue dans la vue à plat."
+    }
+  },
   "activeNow": {
     "emptyBody": "Quand un ami se connecte ou lance un jeu, de la musique ou une autre appli, il apparaît ici.",
     "emptyTitle": "C'est calme pour l'instant",
