@@ -460,7 +460,8 @@ def bench(name, cx, cy, axis_deg):
     names = []
     for k, sd in enumerate((-1, 1)):
         sx, sy = cx + tx * sd * 0.34, cy + ty * sd * 0.34
-        appr = (sx + nx * 0.5 + tx * sd * 0.3, sy + ny * 0.5 + ty * sd * 0.3)  # in front, a step to the outer side
+        out = sd if (tx * sd * sx + ty * sd * sy) >= 0 else -sd  # along the log, away from the fire
+        appr = (sx + nx * 0.62 + tx * out * 0.35, sy + ny * 0.62 + ty * out * 0.35)  # clear of the bench box, a step outwards
         names.append(kit.seat(f"SEAT_camp_{name}_{k}", (sx + nx * 0.12, sy + ny * 0.12), (nx, ny), "log", height=0.46, approach=appr))
     return names
 

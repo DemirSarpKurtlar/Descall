@@ -202,10 +202,25 @@ def table_seats(table, prefix, phis, chair_mat, kind, dist=None, skip=()):
             chair(f"{prefix}_chair{k}", sx, sy, face_deg, chair_mat)
         root = (sx + facing.x * 0.13, sy + facing.y * 0.13)
         side = Vector((facing.y, -facing.x))
-        appr = (sx - facing.x * 0.35 + side.x * 0.45, sy - facing.y * 0.35 + side.y * 0.45)
+        appr = pick_approach(sx, sy, facing, side)
         names.append(kit.seat(f"SEAT_{prefix}_{k}", root, (facing.x, facing.y), kind, height=0.47, approach=appr,
                               extra={"table": prefix}))
     return names, base
+
+
+def pick_approach(sx, sy, facing, side):
+    """First walkable spot next to a chair: behind-left, behind-right, left, right."""
+    tables = [(BJ["c"], BJ["r"]), (OKEY["c"], OKEY["r"]), (TAVLA["c"], TAVLA["r"]), (CHESS["c"], CHESS["r"])]
+    for back, sd in ((0.35, 1), (0.35, -1), (0.0, 1), (0.0, -1), (-0.15, 1), (-0.15, -1), (0.6, 0)):
+        x = sx - facing.x * back + side.x * 0.5 * sd
+        y = sy - facing.y * back + side.y * 0.5 * sd
+        if not (0.32 < x < W - 0.32 and 0.32 < y < D - 0.32):
+            continue
+        # table colliders: two squares of half size 0.92 r (an octagon); keep the avatar (0.24) clear
+        if any(math.hypot(x - c[0], y - c[1]) < r * 0.92 / math.cos(math.pi / 8) + 0.3 for c, r in tables):
+            continue
+        return (x, y)
+    raise SystemExit(f"no walkable approach for the chair at {sx:.2f}, {sy:.2f}")
 
 
 def bookcase(x, y, w=1.3, h=2.05, depth=0.38):

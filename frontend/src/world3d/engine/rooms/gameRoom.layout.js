@@ -104,8 +104,8 @@ export default {
    "yaw": -0.5236,
    "height": 0.47,
    "approach": [
-    -3.2153,
-    -6.0984
+    -3.172,
+    -6.0734
    ],
    "table": "bj"
   },
@@ -121,7 +121,7 @@ export default {
    "height": 0.47,
    "approach": [
     -2.61,
-    -4.15
+    -4.1
    ],
    "table": "bj"
   },
@@ -136,8 +136,8 @@ export default {
    "yaw": -2.618,
    "height": 0.47,
    "approach": [
-    -3.9947,
-    -2.6516
+    -4.038,
+    -2.6266
    ],
    "table": "bj"
   },
@@ -152,8 +152,8 @@ export default {
    "yaw": 2.618,
    "height": 0.47,
    "approach": [
-    -5.9847,
-    -3.1016
+    -6.028,
+    -3.1266
    ],
    "table": "bj"
   },
@@ -169,7 +169,7 @@ export default {
    "height": 0.47,
    "approach": [
     -6.59,
-    -5.05
+    -5.1
    ],
    "table": "bj"
   },
@@ -184,8 +184,8 @@ export default {
    "yaw": -0.2004,
    "height": 0.47,
    "approach": [
-    -7.8142,
-    -2.8158
+    -7.7652,
+    -2.8059
    ],
    "table": "chess"
   },
@@ -200,8 +200,8 @@ export default {
    "yaw": 2.9412,
    "height": 0.47,
    "approach": [
-    -9.1858,
-    -0.5842
+    -9.2348,
+    -0.5941
    ],
    "table": "chess"
   },
@@ -216,8 +216,8 @@ export default {
    "yaw": 0.4208,
    "height": 0.47,
    "approach": [
-    -1.7806,
-    -10.5169
+    -1.735,
+    -10.5373
    ],
    "table": "okey"
   },
@@ -232,8 +232,8 @@ export default {
    "yaw": 1.9916,
    "height": 0.47,
    "approach": [
-    -3.1669,
-    -8.6694
+    -3.1873,
+    -8.715
    ],
    "table": "okey"
   },
@@ -248,8 +248,8 @@ export default {
    "yaw": -2.7208,
    "height": 0.47,
    "approach": [
-    -1.3194,
-    -7.2831
+    -1.365,
+    -7.2627
    ],
    "table": "okey"
   },
@@ -264,8 +264,8 @@ export default {
    "yaw": -1.15,
    "height": 0.47,
    "approach": [
-    0.0669,
-    -9.1306
+    -0.3212,
+    -9.9977
    ],
    "table": "okey"
   },
@@ -280,8 +280,8 @@ export default {
    "yaw": 2.4964,
    "height": 0.47,
    "approach": [
-    -9.1917,
-    -7.5923
+    -9.2317,
+    -7.6223
    ],
    "table": "tavla"
   },
@@ -296,8 +296,8 @@ export default {
    "yaw": -0.6452,
    "height": 0.47,
    "approach": [
-    -6.5483,
-    -9.6077
+    -6.5083,
+    -9.5777
    ],
    "table": "tavla"
   }

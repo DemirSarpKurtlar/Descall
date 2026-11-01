@@ -1,5 +1,5 @@
 // Read out of living-room.glb with the phase 1 parser (dev harness: capture.cjs layout, ROOM=living-room).
-// Babylon world space. One fix against phase 1: the sofa2 collider angle sign (the old parser mirrored rotated boxes).
+// Babylon world space. Fixes against phase 1: the sofa2 collider angle sign (the old parser mirrored rotated boxes) and an approach point for the beanbag (its default front point was inside its own collider, so it could not be reached).
 export default {
  "id": "living-room",
  "bounds": {
@@ -94,7 +94,11 @@ export default {
     -1.72
    ],
    "yaw": -2.391474,
-   "height": 0.44
+   "height": 0.44,
+   "approach": [
+    -2.4,
+    -2.6
+   ]
   },
   {
    "name": "SEAT_sofa2_0",
