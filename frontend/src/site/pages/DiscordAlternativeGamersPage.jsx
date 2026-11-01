@@ -59,7 +59,6 @@ export default function DiscordAlternativeGamersPage({ onSignIn }) {
           {[
             "Group voice/video with screen share",
             "Gaming templates with squad-up rooms",
-            "account link for rank on profile",
             "Desktop app for low-friction gaming sessions",
             "Free core, cosmetics optional",
           ].map((item) => (

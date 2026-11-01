@@ -55,3 +55,7 @@ frontend/.vercel/
 frontend/dist-e2e/
 .shots/
 .claude/worktrees/
+
+# Research notes and reports (local, not shipped)
+/research_notes/
+/reports/
