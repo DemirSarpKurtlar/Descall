@@ -39,7 +39,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
     });
   };
 
-  const useExperimentCopy = locale !== "tr" && heroPayload && typeof heroPayload === "object";
+  const useExperimentCopy = locale === "en" && heroPayload && typeof heroPayload === "object";
   const heroCtaLabel = useExperimentCopy && heroPayload.cta ? String(heroPayload.cta) : t("Start free");
 
   return (

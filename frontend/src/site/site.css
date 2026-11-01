@@ -199,29 +199,97 @@ html.has-mkt:not([data-app-shell="1"]) #root {
   align-items: center;
 }
 
-.mkt-language-toggle {
+.mkt-language-picker {
+  position: relative;
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--mkt-border);
-  border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.04);
 }
 
-.mkt-language-toggle button {
+.mkt-language-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-width: 44px;
   min-height: 44px;
   padding: 8px 10px;
+  border: 1px solid var(--mkt-border);
+  border-radius: var(--r-sm);
+  color: var(--mkt-text);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.mkt-language-current svg {
+  transition: transform 160ms ease;
+}
+
+.mkt-language-picker.is-open .mkt-language-current svg {
+  transform: rotate(180deg);
+}
+
+.mkt-language-list {
+  position: absolute;
+  z-index: 60;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--mkt-border);
+  border-radius: var(--r-md);
+  background: var(--mkt-surface);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.mkt-language-list[hidden] {
+  display: none;
+}
+
+.mkt-language-picker.is-up .mkt-language-list {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: auto;
+}
+
+.mkt-language-picker.is-inline {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mkt-language-picker.is-inline .mkt-language-list {
+  position: static;
+  margin-top: 6px;
+  box-shadow: none;
+}
+
+.mkt-language-list button {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
   border: 0;
   border-radius: var(--r-sm);
   color: var(--mkt-muted);
   background: transparent;
-  font-size: 11px;
-  font-weight: 750;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
-.mkt-language-toggle button.is-active {
+.mkt-language-list button:hover,
+.mkt-language-list button:focus-visible {
+  color: var(--mkt-text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.mkt-language-list button.is-active {
   color: #fff;
   background: rgba(123, 137, 255, 0.36);
 }

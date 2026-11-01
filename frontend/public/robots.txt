@@ -52,6 +52,11 @@ Allow: /contact
 Allow: /compare/
 Allow: /discord-alternative
 Allow: /tr/
+Allow: /de/
+Allow: /es/
+Allow: /fr/
+Allow: /pt-br/
+Allow: /ru/
 Allow: /discord-alternative-for-communities
 Allow: /discord-alternative-for-voice-chat
 Allow: /discord-alternative-for-friends

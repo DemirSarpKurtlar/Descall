@@ -117,24 +117,29 @@
   }
 }
 
-.mkt .mkt-language-toggle {
+.mkt .mkt-language-current {
   height: 36px;
-  padding: 3px;
+  min-height: 0;
+  padding: 0 10px;
   border: none;
   border-radius: var(--r-lg);
+  color: var(--gp-t3);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
 }
 
-.mkt .mkt-language-toggle button {
-  min-width: 40px;
-  min-height: 0;
-  height: 30px;
-  border-radius: var(--r-md);
-  color: var(--gp-t3);
+.mkt .mkt-language-list {
+  border: none;
+  border-radius: var(--r-lg);
+  /* Solid: the header already has a backdrop filter, and a second one nested inside
+     it lets the page text under the open menu show through in Chromium. */
+  background: #12141c;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
-.mkt .mkt-language-toggle button.is-active {
+.mkt .mkt-language-list button.is-active {
   color: #fff;
   background: rgba(88, 122, 246, 0.32);
 }

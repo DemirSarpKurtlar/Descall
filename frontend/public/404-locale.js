@@ -37,6 +37,12 @@
     }
   } catch (eS) {}
   var path = (location.pathname || "/").replace(/\/+$/, "");
+  // A site language prefix (/de, /pt-br, from the ids above) names the page language
+  // and wins over the stored choice. /tr keeps its old rule (only without a stored choice).
+  for (var p = 0; p < ids.length; p += 1) {
+    var pre = "/" + ids[p].toLowerCase();
+    if (ids[p] !== "en" && ids[p] !== "tr" && (path === pre || path.indexOf(pre + "/") === 0) && usable(ids[p])) locale = ids[p];
+  }
   if (!locale && (path === "/tr" || path.indexOf("/tr/") === 0)) locale = pick("tr");
   var langs = [];
   try { langs = [navigator.language].concat(navigator.languages || []).filter(Boolean); } catch (eN) {}

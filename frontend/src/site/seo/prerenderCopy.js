@@ -1,8 +1,15 @@
 /**
- * Crawlable EN/TR copy for prerendered #seo-static shells (visible until React hydrates).
+ * Crawlable copy for prerendered #seo-static shells (visible until React hydrates).
+ *
+ * Every helper takes a site locale `loc`: "en", "tr" or a prefixed locale ("de", ...).
+ * `true` / `false` still mean "tr" / "en" for older call sites. Turkish keeps its
+ * hand-written objects; prefixed locales translate the English values through the
+ * site catalog (siteText.js), so translators always work from the English text.
  */
 import { MARKETING_TR } from "../marketingPhrases.tr.js";
 import { hreflangPair } from "../localePaths.js";
+import { siteText } from "../siteText.js";
+import { SITE_LOCALES, isMirrorPath, isPrefixedLocale, localeNativeName, localePrefix, withLocalePrefix } from "../siteLocales.js";
 
 /** Extra TR strings for prerender bodies that are not always in the slim catalog. */
 const EXTRA_TR = {
@@ -82,14 +89,61 @@ const EXTRA_TR = {
   "Accounts": "Hesaplar",
 };
 
-export function trCopy(s, isTr) {
-  if (!isTr || s == null) return s;
-  const key = String(s);
-  return EXTRA_TR[key] || MARKETING_TR[key] || key;
+/** Normalise a locale argument: true -> "tr", false / empty -> "en". */
+export function siteLoc(loc) {
+  if (loc === true) return "tr";
+  if (!loc) return "en";
+  return String(loc);
 }
 
-export function navLabels(isTr) {
-  return isTr
+/** English text in the visitor's language: Turkish copy for tr, the site catalog for prefixed locales. */
+export function trCopy(s, loc) {
+  const l = siteLoc(loc);
+  if (l === "en" || s == null) return s;
+  const key = String(s);
+  if (l === "tr") return EXTRA_TR[key] || MARKETING_TR[key] || key;
+  return siteText(key, l);
+}
+
+/**
+ * English text that the Turkish shells also show in English (no Turkish copy exists).
+ * Only prefixed locales translate it, so Turkish output stays exactly as it was.
+ */
+export function newCopy(s, loc) {
+  const l = siteLoc(loc);
+  if (s == null || !isPrefixedLocale(l)) return s;
+  return siteText(String(s), l);
+}
+
+/** Turkish text for tr, otherwise the English text (translated for prefixed locales). */
+export function localeCopy(loc, en, tr) {
+  return siteLoc(loc) === "tr" ? tr : newCopy(en, loc);
+}
+
+/** Every string value in a plain object / array tree through newCopy. */
+function translateTree(value, loc, skip = new Set()) {
+  if (typeof value === "string") return newCopy(value, loc);
+  if (Array.isArray(value)) return value.map((v) => translateTree(v, loc));
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = skip.has(k) ? v : translateTree(v, loc);
+    return out;
+  }
+  return value;
+}
+
+/** Home URL of a site language: "/", "/tr", "/de". */
+export function homeHref(loc) {
+  const l = siteLoc(loc);
+  if (l === "tr") return "/tr";
+  if (isPrefixedLocale(l)) return localePrefix(l);
+  return "/";
+}
+
+export function navLabels(loc) {
+  const l = siteLoc(loc);
+  if (isPrefixedLocale(l)) return translateTree(navLabels("en"), l, new Set(["turkish"]));
+  return l === "tr"
     ? {
         explore: "Keşfet",
         features: "Özellikler",
@@ -128,23 +182,24 @@ export function navLabels(isTr) {
       };
 }
 
-export function authHref(isTr, mode) {
-  const home = isTr ? "/tr" : "/";
-  return `${home}?auth=${mode}`;
+export function authHref(loc, mode) {
+  return `${homeHref(loc)}?auth=${mode}`;
 }
 
-export function heroCtaHtml(isTr = false) {
-  const n = navLabels(isTr);
-  const h = (path) => prefixHref(path, isTr);
+export function heroCtaHtml(loc = "en") {
+  const n = navLabels(loc);
+  const h = (path) => prefixHref(path, loc);
   return `<p class="seo-cta-row">
-    <a class="seo-cta-primary" href="${authHref(isTr, "register")}" data-hydrate data-auth="register">${n.startFree}</a>
-    <a class="seo-cta-soft" href="${authHref(isTr, "login")}" data-hydrate data-auth="login">${n.signIn}</a>
+    <a class="seo-cta-primary" href="${authHref(loc, "register")}" data-hydrate data-auth="register">${n.startFree}</a>
+    <a class="seo-cta-soft" href="${authHref(loc, "login")}" data-hydrate data-auth="login">${n.signIn}</a>
     <a class="seo-cta-soft" href="${h("/download")}">${n.download}</a>
   </p>`;
 }
 
-export function cookieCopy(isTr) {
-  return isTr
+export function cookieCopy(loc) {
+  const l = siteLoc(loc);
+  if (isPrefixedLocale(l)) return translateTree(cookieCopy("en"), l);
+  return l === "tr"
     ? {
         aria: "Çerez tercihleri",
         body: "İsteğe bağlı analitik. Zorunlu çerezler açık kalır.",
@@ -161,8 +216,10 @@ export function cookieCopy(isTr) {
       };
 }
 
-export function homeHero(isTr) {
-  return isTr
+export function homeHero(loc) {
+  const l = siteLoc(loc);
+  if (isPrefixedLocale(l)) return translateTree(homeHero("en"), l);
+  return l === "tr"
     ? {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
@@ -309,21 +366,29 @@ export function homeHero(isTr) {
       };
 }
 
-/** Map an EN marketing href to its Turkish twin (true 1:1 pairs only). */
-export function prefixHref(href, isTr) {
-  if (!isTr) return href;
+/**
+ * Map an EN marketing href to its twin: the Turkish pair (true 1:1 pairs only) for tr,
+ * the /<prefix> mirror for prefixed locales. Pages without a twin keep the EN href.
+ */
+export function prefixHref(href, loc) {
+  const l = siteLoc(loc);
+  if (l === "en") return href;
   if (href === "/tr" || href.startsWith("/tr/")) return href;
-  const pair = hreflangPair(href);
-  if (pair) return pair.tr;
-  return href;
+  if (l === "tr") {
+    const pair = hreflangPair(href);
+    if (pair) return pair.tr;
+    return href;
+  }
+  return isMirrorPath(href) ? withLocalePrefix(href, l) : href;
 }
 
-export function cookieBannerHtml(isTr) {
-  const c = cookieCopy(isTr);
+export function cookieBannerHtml(loc) {
+  const c = cookieCopy(loc);
+  const privacyHref = siteLoc(loc) === "tr" ? "/gizlilik" : prefixHref("/privacy", loc);
   return `<div id="mkt-consent-static" role="dialog" aria-label="${c.aria}">
       <p>
         ${c.body}
-        <a class="privacy" href="${isTr ? "/gizlilik" : "/privacy"}">${c.privacy}</a>
+        <a class="privacy" href="${privacyHref}">${c.privacy}</a>
       </p>
       <div class="actions">
         <button type="button" class="reject" data-consent="rejected">${c.reject}</button>
@@ -346,13 +411,23 @@ export const TR_HUB_LINKS = [
   ["/tr/oyuncu-sohbet-uygulamasi", "Oyuncu sohbet uygulaması"],
 ];
 
-export function seoSiteNavHtml(isTr = false) {
-  const n = navLabels(isTr);
-  const h = (path) => prefixHref(path, isTr);
-  const product = isTr ? "Ürün" : "Product";
-  const company = isTr ? "Şirket" : "Company";
+/** Other site languages as footer links to their home pages ("Türkçe" on English pages). */
+function languageLinks(loc, locales) {
+  const l = siteLoc(loc);
+  return locales
+    .filter((id) => id !== l)
+    .map((id) => footerItem(homeHref(id), id === "en" ? "English" : localeNativeName(id)));
+}
+
+export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
+  const l = siteLoc(loc);
+  const isTr = l === "tr";
+  const n = navLabels(l);
+  const h = (path) => prefixHref(path, l);
+  const product = isTr ? "Ürün" : newCopy("Product", l);
+  const company = isTr ? "Şirket" : newCopy("Company", l);
   return `<footer class="seo-footer">
-  ${heroCtaHtml(isTr)}
+  ${heroCtaHtml(l)}
   <div class="seo-footer-grid">
     <section>
       <h2>${product}</h2>
@@ -374,9 +449,9 @@ export function seoSiteNavHtml(isTr = false) {
                 footerItem("/tr/blog", n.blog),
               ].join("\n        ")
             : [
-                footerItem("/discord-alternative", n.alternative),
-                footerItem("/compare/discord", n.vsDiscord),
-                footerItem("/alternatives", n.alternatives),
+                footerItem(h("/discord-alternative"), n.alternative),
+                footerItem(h("/compare/discord"), n.vsDiscord),
+                footerItem(h("/alternatives"), n.alternatives),
                 footerItem("/apps-like-discord", n.apps),
                 footerItem("/blog", n.blog),
               ].join("\n        ")
@@ -387,33 +462,35 @@ export function seoSiteNavHtml(isTr = false) {
       <h2>${company}</h2>
       <ul>
         ${footerItem(h("/about"), n.about)}
-        ${footerItem(isTr ? "/descall-sahibi" : "/who-owns-descall", isTr ? "Descall’ın sahibi kim?" : "Who owns Descall?")}
+        ${footerItem(isTr ? "/descall-sahibi" : h("/who-owns-descall"), isTr ? "Descall’ın sahibi kim?" : newCopy("Who owns Descall?", l))}
         ${footerItem(h("/contact"), n.contact)}
         ${footerItem(h("/privacy"), n.privacy)}
         ${footerItem(h("/terms"), n.terms)}
-        ${footerItem(h("/copyright"), isTr ? "Telif hakkı" : "Copyright")}
-        ${footerItem(isTr ? "/" : "/tr", isTr ? "English" : n.turkish)}
+        ${footerItem(h("/copyright"), isTr ? "Telif hakkı" : newCopy("Copyright", l))}
+        ${languageLinks(l, locales).join("\n        ")}
       </ul>
     </section>
   </div>
 </footer>`;
 }
 
-export function noscriptNavHtml(isTr = false) {
-  const n = navLabels(isTr);
-  const h = (path) => prefixHref(path, isTr);
+export function noscriptNavHtml(loc = "en") {
+  const l = siteLoc(loc);
+  const isTr = l === "tr";
+  const n = navLabels(l);
+  const h = (path) => prefixHref(path, l);
   return `<noscript>
       <nav aria-label="Descall">
-        <a href="${isTr ? "/tr" : "/"}">Descall</a>
+        <a href="${homeHref(l)}">Descall</a>
         <a href="${h("/discord-alternative")}">${n.alternative}</a>
         <a href="${h("/features")}">${n.features}</a>
         <a href="${h("/download")}">${n.download}</a>
         <a href="${h("/faq")}">${n.faq}</a>
         <a href="${h("/about")}">${n.about}</a>
-        <a href="${isTr ? "/descall-sahibi" : "/who-owns-descall"}">${isTr ? "Descall’ın sahibi kim?" : "Who owns Descall?"}</a>
+        <a href="${isTr ? "/descall-sahibi" : h("/who-owns-descall")}">${isTr ? "Descall’ın sahibi kim?" : newCopy("Who owns Descall?", l)}</a>
         <a href="${h("/privacy")}">${n.privacy}</a>
         <a href="${h("/terms")}">${n.terms}</a>
-        <a href="${h("/copyright")}">${isTr ? "Telif hakkı" : "Copyright"}</a>
+        <a href="${h("/copyright")}">${isTr ? "Telif hakkı" : newCopy("Copyright", l)}</a>
         <a href="${h("/contact")}">${n.contact}</a>
       </nav>
     </noscript>`;

@@ -24,7 +24,12 @@ function warn(msg) {
   warnings.push(msg);
 }
 
-const { PUBLIC_ROUTES } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
+const seoConfig = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
+const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
+const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
+await registerSiteCatalogs();
+// Prefixed site languages (/de/...) are checked with their translated title / description.
+const PUBLIC_ROUTES = seoConfig.PUBLIC_ROUTES.map((r) => seoConfig.localizeRouteMeta(r, siteText));
 const { KEYWORD_STRATEGY } = await import(
   pathToFileURL(path.join(root, "src/site/seo/keywordStrategy.js")).href
 );
@@ -89,6 +94,9 @@ for (const route of PUBLIC_ROUTES) {
     if (!marketingApp.includes("DiscordAlternativeNichePage")) {
       fail("MarketingApp missing DiscordAlternativeNichePage");
     }
+  } else if (route.locale) {
+    // Prefixed site languages render the English page from MarketingApp's MIRROR_PAGES map.
+    if (!marketingApp.includes(`"${route.enPath}":`)) fail(`MarketingApp MIRROR_PAGES missing ${route.enPath} (${route.path})`);
   } else if (route.path !== "/download" && route.path !== "/") {
     // soft check — path string appears in MarketingApp or is niche/blog
     const needle = route.path === "/" ? 'path="/"' : `path="${route.path}"`;
@@ -278,30 +286,32 @@ if (checkDist) {
       if (!mainMatch || mainMatch[0].length < 400) {
         fail(`Thin crawl <main> in ${rel} (${mainMatch ? mainMatch[0].length : 0} chars)`);
       }
-      if (route.path === "/faq" && !html.includes('"@type":"FAQPage"') && !html.includes('"@type": "FAQPage"')) {
+      // Prefixed site languages (/de/faq) must carry the same structured data as their English page.
+      const page = route.enPath || route.path;
+      if (page === "/faq" && !html.includes('"@type":"FAQPage"') && !html.includes('"@type": "FAQPage"')) {
         fail(`FAQPage JSON-LD missing in ${rel}`);
       }
       if (
-        (["/discord-alternative", "/alternatives", "/compare/discord", "/tr/faq", "/faq"].includes(route.path) ||
+        (["/discord-alternative", "/alternatives", "/compare/discord", "/tr/faq", "/faq"].includes(page) ||
           TR_LANDINGS[route.path]) &&
         !html.includes("FAQPage")
       ) {
         fail(`FAQPage JSON-LD missing in ${rel}`);
       }
       if (
-        (route.path === "/" || route.path === "/features") &&
+        (page === "/" || page === "/features") &&
         !html.includes("SoftwareApplication")
       ) {
         fail(`SoftwareApplication JSON-LD missing in ${rel}`);
       }
-      if (route.path === "/who-owns-descall" || route.path === "/descall-sahibi") {
+      if (page === "/who-owns-descall" || page === "/descall-sahibi") {
         if (!html.includes("Demir Sarp Kurtlar")) fail(`Owner name missing in ${rel}`);
         if (!html.includes("ownedBy") && !html.includes('"@type":"Person"') && !html.includes('"@type": "Person"')) {
           fail(`Person/ownedBy JSON-LD missing in ${rel}`);
         }
         if (!html.includes("FAQPage")) fail(`FAQPage JSON-LD missing in ${rel}`);
       }
-      if (route.path === "/" && !html.includes("Demir Sarp Kurtlar")) {
+      if (page === "/" && !html.includes("Demir Sarp Kurtlar")) {
         fail(`Homepage shell missing owner name ${rel}`);
       }
       if (route.path.startsWith("/blog/") && route.path !== "/blog" && !html.includes('"@type":"Article"') && !html.includes('"@type": "Article"')) {

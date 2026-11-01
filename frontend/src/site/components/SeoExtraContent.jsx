@@ -1,14 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
-import { PAGE_EXTRAS } from "../seo/pageExtras";
+import { localizedPageExtras } from "../seo/pageExtras";
 import { useLocale } from "../../context/localeContextInstance";
+import { marketingHref } from "../useMarketingHref";
 
 /** Long-form copy shared with the prerendered shell (see seo/pageExtras.js). */
 export default function SeoExtraContent({ path, collapsible = false, showLinks = true }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { pathname } = useLocation();
   const key = path || (pathname || "/").replace(/\/+$/, "") || "/";
-  const extra = PAGE_EXTRAS[key];
-  if (!extra) return null;
+  // English and Turkish entries render as written; /de/... reuses the English entry
+  // translated through t() (the site catalog) with links to the /de twins.
+  const found = localizedPageExtras(key, {
+    text: (s) => t(s),
+    href: (to) => marketingHref(to, { locale, pathname }),
+  });
+  if (!found) return null;
+  const { extra } = found;
   const body = (
     <>
       {extra.sections.map((s) => (

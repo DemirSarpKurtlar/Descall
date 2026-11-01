@@ -1,10 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useLocale, useT } from "../context/localeContextInstance";
 import { Funnel } from "./analytics";
 import { signalMarketingEngage } from "./analyticsGate";
 import { SITE_OPERATOR } from "./siteIdentity";
-import { isTrPath, withTrPrefix, stripLocalePrefix, TR_MIRROR_PATHS, enPathForHreflang, isTurkishMarketingPath, trDestinationForPath } from "./localePaths";
+import {
+  isTrPath,
+  withTrPrefix,
+  stripLocalePrefix,
+  TR_MIRROR_PATHS,
+  isTurkishMarketingPath,
+  trDestinationForPath,
+  forcedLocaleForPath,
+  localizedPathFor,
+  destinationForLocale,
+} from "./localePaths";
+import { isPrefixedLocale } from "./siteLocales.js";
+import { loadSiteCatalog } from "./loadSiteCatalog.js";
+import { marketingHref } from "./useMarketingHref";
 import EmailCapture from "./components/EmailCapture";
 import { APP_STORE_URL } from "./appStoreLink";
 import { useIsAppleMobile } from "./useIsAppleMobile";
@@ -60,7 +73,7 @@ const TR_FOOTER_HUBS = [
 
 export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   const t = useT();
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, locales } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
   // Page markers as classes, not body:has(.mkt) (A3: whole-document restyles).
@@ -69,17 +82,23 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathIsTr = isTrPath(location.pathname);
-  const useTrUrls = pathIsTr || locale === "tr";
+  const pathLocale = forcedLocaleForPath(location.pathname);
+  // Prefixed site language (/de, ...): from the URL first, else the chosen locale.
+  const prefixed = isPrefixedLocale(pathLocale) ? pathLocale : !pathLocale && isPrefixedLocale(locale) ? locale : null;
+  const useTrUrls = !prefixed && (pathIsTr || locale === "tr");
   const L = (to) => {
+    if (prefixed) return marketingHref(to, { locale: prefixed, pathname: location.pathname });
     const bare = stripLocalePrefix(to);
     if (useTrUrls && TR_MIRROR_PATHS.includes(bare)) return withTrPrefix(bare);
     return to;
   };
 
-  // Turkish URL → Turkish locale. Do not include `locale` in deps:
-  // clicking EN used to race (still on /tr) and force Turkish back on.
+  // Localized URL → its locale (/tr and the Turkish canonical paths → tr, /de/* → de).
+  // Do not include `locale` in deps: clicking EN used to race (still on /tr) and force
+  // Turkish back on.
   useEffect(() => {
-    if (isTurkishMarketingPath(location.pathname)) setLocale("tr");
+    const forced = forcedLocaleForPath(location.pathname);
+    if (forced) setLocale(forced);
   }, [location.pathname, setLocale]);
 
   useEffect(() => {
@@ -89,10 +108,12 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Stored or detected language on an English page with a twin → the twin
+  // (tr → /tr/features, de → /de/features). A URL that names a language stays put.
   useEffect(() => {
-    if (locale !== "tr") return;
-    if (isTurkishMarketingPath(location.pathname)) return;
-    const dest = trDestinationForPath(location.pathname);
+    if (locale === "en") return;
+    if (forcedLocaleForPath(location.pathname)) return;
+    const dest = locale === "tr" ? trDestinationForPath(location.pathname) : localizedPathFor(location.pathname, locale);
     if (dest && dest !== location.pathname) {
       navigate(dest + location.search, { replace: true });
     }
@@ -110,14 +131,19 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
     onSignIn?.({ mode: "login", source: "header" });
   };
 
+  // Counterpart of this page in `next` (that language's home when it has none; Turkish
+  // and English keep their old rules). Prefixed catalogs load before the switch so the
+  // page never repaints in English first.
   const switchLocale = (next) => {
-    setLocale(next);
-    if (next === "tr") {
-      const dest = trDestinationForPath(location.pathname);
-      if (dest && dest !== location.pathname) navigate(dest + location.search);
-      return;
-    }
-    navigate(enPathForHreflang(location.pathname) + location.search);
+    const from = location.pathname;
+    const search = location.search;
+    const dest = destinationForLocale(from, next);
+    const go = () => {
+      setLocale(next);
+      if (dest && dest !== from) navigate(dest + search);
+    };
+    if (isPrefixedLocale(next)) loadSiteCatalog(next).then(go);
+    else go();
   };
 
   const nav = (
@@ -165,7 +191,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
       </Link>
       <div className="mkt-mobile-language">
         <span>{t("Language")}</span>
-        <LanguageToggle locale={locale} onSwitch={switchLocale} />
+        <LanguagePicker locale={locale} locales={locales} onSwitch={switchLocale} placement="inline" />
       </div>
     </nav>
   );
@@ -194,7 +220,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
         {nav}
         <div className="mkt-header-actions">
           <div className="mkt-desktop-language">
-            <LanguageToggle locale={locale} onSwitch={switchLocale} />
+            <LanguagePicker locale={locale} locales={locales} onSwitch={switchLocale} />
           </div>
           <button type="button" className="mkt-btn mkt-btn-ghost" onClick={openLogin} aria-label={t("Sign In")}>
             {t("Sign In")}
@@ -263,30 +289,30 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
               ))
             ) : (
               <>
-                <Link to="/discord-alternative">{t("Discord alternative")}</Link>
-                <Link to="/compare/discord">{t("vs Discord")}</Link>
+                <Link to={L("/discord-alternative")}>{t("Discord alternative")}</Link>
+                <Link to={L("/compare/discord")}>{t("vs Discord")}</Link>
                 <Link to="/tr/discord-alternatifi">Türkçe: Discord alternatifi</Link>
                 <Link to="/blog">{t("Blog")}</Link>
               </>
             )}
-            <Link to="/status">{t("Status")}</Link>
+            <Link to={L("/status")}>{t("Status")}</Link>
             <a href="/sitemap">{t("Sitemap")}</a>
           </section>
           <section className="mkt-footer-col">
             <h2>{t("Company")}</h2>
             <Link to={L("/about")}>{t("About")}</Link>
-            <Link to={locale === "tr" ? "/descall-sahibi" : "/who-owns-descall"}>{t("Who owns Descall?")}</Link>
+            <Link to={locale === "tr" ? "/descall-sahibi" : L("/who-owns-descall")}>{t("Who owns Descall?")}</Link>
             <Link to={L("/security")}>{t("Security")}</Link>
-            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/iletisim" : "/contact"}>
+            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/iletisim" : L("/contact")}>
               {t("Contact")}
             </Link>
-            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/gizlilik" : "/privacy"}>
+            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/gizlilik" : L("/privacy")}>
               {t("Privacy Policy")}
             </Link>
-            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/kosullar" : "/terms"}>
+            <Link to={locale === "tr" || isTurkishMarketingPath(location.pathname) ? "/kosullar" : L("/terms")}>
               {t("Terms")}
             </Link>
-            <Link to="/copyright">{t("Copyright")}</Link>
+            <Link to={L("/copyright")}>{t("Copyright")}</Link>
             <a href={SITE_OPERATOR.githubUrl} rel="noopener noreferrer" target="_blank">
               GitHub
             </a>
@@ -294,7 +320,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
         </div>
         <EmailCapture source="footer" />
         <div className="mkt-footer-meta">
-          <LanguageToggle locale={locale} onSwitch={switchLocale} />
+          <LanguagePicker locale={locale} locales={locales} onSwitch={switchLocale} placement="up" />
           <div className="mkt-footer-trust">
             <span className="mkt-trust-chip">
               {t("Status")}: {t("Beta")}
@@ -302,7 +328,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
             <span className="mkt-trust-chip">
               {t("Transport security")}: TLS / DTLS-SRTP
             </span>
-            <Link className="mkt-trust-chip is-link" to="/status">
+            <Link className="mkt-trust-chip is-link" to={L("/status")}>
               {t("Live status")}
             </Link>
             <Link className="mkt-trust-chip is-link" to={L("/security")}>
@@ -316,7 +342,12 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
         <p className="mkt-footer-copy">
           © {SITE_OPERATOR.copyrightYear} {SITE_OPERATOR.operatorName}. {t("Descall is owned by Demir Sarp Kurtlar.")}{" "}
           {t("All rights reserved.")} {t("Last updated")}:{" "}
-          {locale === "tr" ? SITE_OPERATOR.lastUpdatedLabelTr : SITE_OPERATOR.lastUpdatedLabel}.
+          {locale === "tr"
+            ? SITE_OPERATOR.lastUpdatedLabelTr
+            : isPrefixedLocale(locale)
+              ? t(SITE_OPERATOR.lastUpdatedLabel)
+              : SITE_OPERATOR.lastUpdatedLabel}
+          .
         </p>
       </footer>
       <StickyMobileCta onStart={openRegister} downloadTo={L("/download")} />
@@ -358,28 +389,77 @@ function StickyMobileCta({ onStart, downloadTo }) {
   );
 }
 
-function LanguageToggle({ locale, onSwitch }) {
+/** Two-letter badge for the picker button ("EN", "PT"). */
+function shortCode(id) {
+  return String(id || "en").split("-")[0].toUpperCase();
+}
+
+/**
+ * Site language picker: a disclosure button with the current language and a list of
+ * every site language by its native name. placement: "down" (header), "up" (footer),
+ * "inline" (mobile menu, the list opens in the flow).
+ */
+function LanguagePicker({ locale, locales = [], onSwitch, placement = "down" }) {
   const t = useT();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const buttonRef = useRef(null);
+  const listId = useId();
+  const current = locales.find((l) => l.id === locale) || locales[0] || { id: "en", nativeLabel: "English" };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className="mkt-language-toggle" role="group" aria-label={t("Language")}>
+    <div ref={rootRef} className={`mkt-language-picker is-${placement}${open ? " is-open" : ""}`}>
       <button
+        ref={buttonRef}
         type="button"
-        className={locale === "tr" ? "is-active" : ""}
-        onClick={() => onSwitch("tr")}
-        aria-pressed={locale === "tr"}
-        aria-label="TR, Türkçe"
+        className="mkt-language-current"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-label={`${t("Language")}: ${current.nativeLabel}`}
+        onClick={() => setOpen((v) => !v)}
       >
-        TR
+        <span aria-hidden="true">{shortCode(current.id)}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
-      <button
-        type="button"
-        className={locale === "en" ? "is-active" : ""}
-        onClick={() => onSwitch("en")}
-        aria-pressed={locale === "en"}
-        aria-label="EN, English"
-      >
-        EN
-      </button>
+      <ul id={listId} className="mkt-language-list" hidden={!open}>
+        {locales.map((l) => (
+          <li key={l.id}>
+            <button
+              type="button"
+              lang={l.id}
+              className={l.id === locale ? "is-active" : ""}
+              aria-current={l.id === locale ? "true" : undefined}
+              onClick={() => {
+                setOpen(false);
+                if (l.id !== locale) onSwitch(l.id);
+              }}
+            >
+              {l.nativeLabel}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

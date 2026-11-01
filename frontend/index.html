@@ -1422,6 +1422,7 @@
         window.__descallBootLocale = locale;
         window.__descallBootCopy = BOOT_COPY[locale] || BOOT_COPY.en;
         window.__descallBootCopyFor = function (id) { return BOOT_COPY[id] || BOOT_COPY.en; };
+        window.__descallBootIds = ids;
         // Turkish keeps its own flag: main.jsx must not overwrite the Turkish label (B2).
         window.__descallBootTr = locale === "tr";
       })();
@@ -1446,6 +1447,16 @@
           var path = (location.pathname || "/").replace(/\/+$/, "") || "/";
           var isTrUrl = path === "/tr" || path.indexOf("/tr/") === 0
             || path === "/descall-sahibi" || path === "/discord-alternative-turkey";
+          // Site language prefix (/de, /pt-br): the prerender is already in that language,
+          // cookie bar included. Only set <html lang> and leave the page alone.
+          var bootIds = window.__descallBootIds || [];
+          for (var bi = 0; bi < bootIds.length; bi += 1) {
+            var pre = "/" + String(bootIds[bi]).toLowerCase();
+            if (bootIds[bi] !== "en" && bootIds[bi] !== "tr" && (path === pre || path.indexOf(pre + "/") === 0)) {
+              try { document.documentElement.lang = bootIds[bi]; } catch (eL) {}
+              return;
+            }
+          }
           var locale = isTrUrl ? "tr" : (window.__descallBootLocale || "en");
           // Native Capacitor app: the /tr marketing mirror is web-only. Redirecting
           // there reloaded the whole document on every Turkish cold start.

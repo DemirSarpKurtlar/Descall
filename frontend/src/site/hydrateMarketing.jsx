@@ -2,8 +2,10 @@ import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
 import ErrorBoundary from "../components/ErrorBoundary";
-import MarketingLocaleProvider from "./MarketingLocaleProvider";
+import MarketingLocaleProvider, { resolveBootMarketingLocale } from "./MarketingLocaleProvider";
 import CookieConsentBanner from "./CookieConsentBanner";
+import { isPrefixedLocale } from "./siteLocales.js";
+import { loadSiteCatalogWithin } from "./loadSiteCatalog.js";
 
 const MarketingBoot = lazy(() => import("./MarketingBoot.jsx"));
 
@@ -17,7 +19,13 @@ const Router =
  * no authenticated App/LiveKit. Analytics only after cookie consent.
  */
 export async function hydrateMarketing() {
-  await import("./marketing-entry.css");
+  // A prefixed site language (de, es, ...) renders only once its catalog is here:
+  // the prerendered localized shell stays up meanwhile, so English never flashes over it.
+  const bootLocale = resolveBootMarketingLocale();
+  await Promise.all([
+    import("./marketing-entry.css"),
+    isPrefixedLocale(bootLocale) ? loadSiteCatalogWithin(bootLocale) : null,
+  ]);
 
   const rootEl = document.getElementById("root");
   if (!rootEl) return;
