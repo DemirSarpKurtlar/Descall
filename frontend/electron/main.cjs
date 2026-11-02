@@ -916,6 +916,8 @@ function createSplashWindow() {
   const splashPath = path.join(__dirname, 'splash.html');
   // Language and first status line travel in the query, so the card never flashes another language.
   const query = { lang: getLocale(), status: SPLASH_TEXT.checking, loading: et('splash.loading') };
+  // 3.7.29 animated splash follows the theme (light / dark card under the logo animation).
+  try { query.theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'; } catch (_) { query.theme = 'dark'; }
   const ready = splashWindow.loadFile(splashPath, { query }).catch((err) => {
     log.warn('[splash] loadFile failed, using inline fallback:', err?.message);
     return splashWindow.loadURL(`data:text/html,${encodeURIComponent(

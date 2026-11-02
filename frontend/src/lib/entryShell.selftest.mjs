@@ -108,18 +108,21 @@ const capConfig = readFileSync(join(here, "..", "..", "capacitor.config.ts"), "u
 assert(/ios:\s*\{[\s\S]*?backgroundColor: "#0D1030"/.test(capConfig), "iOS WebView background must be the aurora base color");
 assert(/android:\s*\{[\s\S]*?backgroundColor: "#1E1F22"/.test(capConfig), "Android keeps its own splash surface");
 const launchStoryboard = readFileSync(join(here, "..", "..", "ios", "App", "App", "Base.lproj", "LaunchScreen.storyboard"), "utf8");
-assert(/image="LaunchAurora"/.test(launchStoryboard) && /contentMode="scaleAspectFill"/.test(launchStoryboard), "LaunchScreen must show the full-bleed LaunchAurora image");
-assert(/red="0\.050980392156862744" green="0\.062745098039215685" blue="0\.18823529411764706"/.test(launchStoryboard), "LaunchScreen background must be #0D1030");
-for (const edge of ["top", "bottom", "leading", "trailing"]) assert(new RegExp(`firstAttribute="${edge}" secondItem="Dsc-Lv-001"`).test(launchStoryboard), `LaunchAurora pinned ${edge}`);
-assert(existsSync(join(here, "..", "..", "ios", "App", "App", "Assets.xcassets", "LaunchAurora.imageset", "launch-aurora@3x.jpg")), "LaunchAurora @3x asset");
-// iPad: the tile is its own centered view (capped), not baked into the Aspect Fill background.
-assert(/image="LaunchTile"/.test(launchStoryboard), "LaunchScreen draws the tile as its own image view");
-assert(/firstItem="Dsc-Tl-001" firstAttribute="centerX" secondItem="Dsc-Lv-001" secondAttribute="centerX"/.test(launchStoryboard) && /firstItem="Dsc-Tl-001" firstAttribute="centerY" secondItem="Dsc-Lv-001" secondAttribute="centerY"/.test(launchStoryboard), "launch tile centered");
-assert(/firstItem="Dsc-Tl-001" firstAttribute="width" relation="lessThanOrEqual" constant="360"/.test(launchStoryboard), "launch tile capped (158pt tile on iPad)");
-assert(/firstItem="Dsc-Tl-001" firstAttribute="width" secondItem="Dsc-Lv-001" secondAttribute="width" multiplier="0\.763/.test(launchStoryboard), "launch tile follows the phone width like the web --u");
-for (const f of ["launch-tile@2x.png", "launch-tile@3x.png"]) assert(existsSync(join(here, "..", "..", "ios", "App", "App", "Assets.xcassets", "LaunchTile.imageset", f)), `LaunchTile ${f}`);
+// 3.7.29 animated splash: the launch screen is the plain first frame of the splash video.
+assert(/<color key="backgroundColor" name="SplashBackground"\/>/.test(launchStoryboard), "LaunchScreen is the SplashBackground color (first video frame)");
+assert(!/<imageView/.test(launchStoryboard), "LaunchScreen draws no image (no flash before the video)");
+{
+  const assets = join(here, "..", "..", "ios", "App", "App", "Assets.xcassets");
+  const color = JSON.parse(readFileSync(join(assets, "SplashBackground.colorset", "Contents.json"), "utf8"));
+  const comps = color.colors.map((c) => c.color.components);
+  assert(comps.some((c) => c.red === "0xF4" && c.blue === "0xF6") && comps.some((c) => c.red === "0x1E" && c.blue === "0x29"), "SplashBackground light #F4F4F6 / dark #1E2029");
+  for (const k of ["oneshot", "loop"]) for (const t of ["light", "dark"]) {
+    assert(existsSync(join(assets, `SplashVideo-${k}-${t}.dataset`, `descall-splash-${k}-${t}.mp4`)), `splash video ${k} ${t}`);
+  }
+}
 const bridgeVc = readFileSync(join(here, "..", "..", "ios", "App", "App", "DescallBridgeViewController.swift"), "utf8");
-assert(/splashPaintedHandler = "descallSplashPainted"/.test(bridgeVc) && /func webSplashDidPaint\(\)/.test(bridgeVc), "native launch view waits for the web splash paint");
+assert(/splashPaintedHandler = "descallSplashPainted"/.test(bridgeVc) && /func webSplashDidPaint\(\)/.test(bridgeVc), "native launch view still listens for the web splash paint");
+assert(/final class DescallLaunchSplashView/.test(bridgeVc) && /AVPlayerLooper/.test(bridgeVc) && /isReduceMotionEnabled/.test(bridgeVc), "native splash: one-shot, loop while loading, static frame on Reduce Motion");
 const bootSkeleton = readFileSync(join(here, "..", "components", "boot", "AppBootSkeleton.jsx"), "utf8");
 assert(/isMobileBootSurface\(\) && isNativeBootSurface\(\)\) return <MobileBootSplash \/>;/.test(bootSkeleton), "native mobile boot still uses the launch splash");
 assert(/isMobileBootSurface\(\)\) return <WebBootSplash \/>;/.test(bootSkeleton), "phone web boot uses the aurora loader");

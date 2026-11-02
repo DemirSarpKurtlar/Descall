@@ -1,17 +1,16 @@
 import UIKit
 import Capacitor
 import WebKit
+import AVFoundation
 import ObjectiveC
 
 class DescallBridgeViewController: CAPBridgeViewController {
-    /// LaunchScreen.storyboard's view, kept over the WebView until the first
-    /// page load finishes (see "Launch overlay" below).
+    /// Native animated splash (DescallLaunchSplashView), kept over the WebView
+    /// until the web app painted (see "Launch overlay" below).
     private var launchOverlay: UIView?
-    private var launchLoadObservation: NSKeyValueObservation?
     /// True once index.html reports that the web boot splash (Aurora, same
     /// picture as the launch screen) has painted with its background decoded.
     private var webSplashPainted = false
-    private var launchPageLoaded = false
     /// Status-bar content colour. White by default (dark themes); the Liquid
     /// Glass light theme asks for black via DescallDisplay.setStatusBarStyle.
     private var statusBarDarkContent = false
@@ -151,10 +150,12 @@ class DescallBridgeViewController: CAPBridgeViewController {
     }
 }
 
-// MARK: - Launch overlay
+// MARK: - Launch overlay (3.7.29: animated splash)
 
-/// Aurora splash, base color of the launch image (#0D1030).
-let descallSplashBaseColor = UIColor(red: 13 / 255, green: 16 / 255, blue: 48 / 255, alpha: 1)
+/// LaunchScreen.storyboard color (SplashBackground: light #F4F4F6, dark #1E2029),
+/// the exact background of the splash videos, so launch → video is one picture.
+let descallSplashBaseColor = UIColor(named: "SplashBackground")
+    ?? UIColor(red: 30 / 255, green: 32 / 255, blue: 41 / 255, alpha: 1)
 
 /// Weak proxy so WKUserContentController does not retain the view controller.
 final class DescallSplashMessageProxy: NSObject, WKScriptMessageHandler {
@@ -165,12 +166,11 @@ final class DescallSplashMessageProxy: NSObject, WKScriptMessageHandler {
     }
 }
 
-/// The launch screen (LaunchAurora) stays over the WebView until index.html
-/// reports, through the `descallSplashPainted` message handler, that its boot
-/// splash has painted the same picture (background image decoded, two frames
-/// later). Only then does the launch view go, so the handoff is invisible.
-/// Fallbacks: 1.5 s after the first page load (an older web bundle never
-/// posts), and 5 s in any case.
+/// The launch screen is a plain SplashBackground color. Over the WebView the
+/// native splash plays the one-shot Konsept 2 logo animation (light or dark
+/// MP4, same background), loops while the web app is still loading, and fades
+/// into the app once index.html removed its #boot-splash (the app painted).
+/// Reduce Motion: the static last frame instead of the video. Fallback: 12 s.
 extension DescallBridgeViewController {
     static let splashPaintedHandler = "descallSplashPainted"
 
@@ -178,59 +178,176 @@ extension DescallBridgeViewController {
         view?.backgroundColor = descallSplashBaseColor
         webView?.backgroundColor = descallSplashBaseColor
         webView?.scrollView.backgroundColor = descallSplashBaseColor
-        guard launchOverlay == nil,
-              let host = view,
-              let overlay = UIStoryboard(name: "LaunchScreen", bundle: nil).instantiateInitialViewController()?.view
-        else { return }
-        overlay.frame = host.bounds
-        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        overlay.isUserInteractionEnabled = false
-        host.addSubview(overlay)
-        launchOverlay = overlay
+        guard launchOverlay == nil, let host = view else { return }
+        let dark = UIScreen.main.traitCollection.userInterfaceStyle != .light
+        let splash = DescallLaunchSplashView(frame: host.bounds, dark: dark)
+        splash.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        host.addSubview(splash)
+        launchOverlay = splash
 
         if let controller = webView?.configuration.userContentController {
             controller.removeScriptMessageHandler(forName: Self.splashPaintedHandler)
             controller.add(DescallSplashMessageProxy(self), name: Self.splashPaintedHandler)
         }
-        launchLoadObservation = webView?.observe(\.isLoading, options: [.new]) { [weak self] webView, _ in
-            guard !webView.isLoading else { return }
-            DispatchQueue.main.async { self?.launchPageDidLoad() }
-        }
-        // Never leave the launch view up if the page load stalls or fails.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+        splash.onOneShotFinished = { [weak self] in self?.pollAppPainted() }
+        splash.start()
+        // Never leave the splash up if the page load stalls or fails.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
             self?.hideLaunchOverlay()
         }
     }
 
     func webSplashDidPaint() {
         webSplashPainted = true
-        hideLaunchOverlay()
     }
 
-    private func launchPageDidLoad() {
-        guard !launchPageLoaded else { return }
-        launchPageLoaded = true
-        if webSplashPainted { hideLaunchOverlay(); return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.hideLaunchOverlay()
+    /// After the one-shot: leave as soon as the web boot splash is gone.
+    /// Until then the loop keeps playing.
+    private func pollAppPainted() {
+        guard launchOverlay != nil else { return }
+        let js = "(function(){var r=document.getElementById('root');return document.getElementById('boot-splash')||!r||!r.firstElementChild?0:1})()"
+        webView?.evaluateJavaScript(js) { [weak self] result, _ in
+            guard let self = self, self.launchOverlay != nil else { return }
+            if (result as? NSNumber)?.intValue == 1 {
+                self.hideLaunchOverlay()
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.pollAppPainted()
+            }
         }
     }
 
     private func hideLaunchOverlay() {
-        launchLoadObservation?.invalidate()
-        launchLoadObservation = nil
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: Self.splashPaintedHandler)
         guard let overlay = launchOverlay else { return }
         launchOverlay = nil
-        // Same picture underneath: a short cross-fade only hides sub-pixel
-        // differences between the baked image and the live glass.
         UIView.animate(
-            withDuration: 0.2,
+            withDuration: 0.35,
             delay: 0,
-            options: [.curveEaseOut, .beginFromCurrentState],
+            options: [.curveEaseInOut, .beginFromCurrentState],
             animations: { overlay.alpha = 0 },
-            completion: { _ in overlay.removeFromSuperview() }
+            completion: { _ in
+                (overlay as? DescallLaunchSplashView)?.stop()
+                overlay.removeFromSuperview()
+            }
         )
+    }
+}
+
+/// Native splash: SplashBackground + the one-shot video, then the loop.
+/// Videos ship as data assets (Assets.xcassets/SplashVideo-*.dataset) and are
+/// written once to the temporary directory, because AVPlayer needs a file URL.
+final class DescallLaunchSplashView: UIView {
+    var onOneShotFinished: (() -> Void)?
+    private let dark: Bool
+    private let oneShotLayer = AVPlayerLayer()
+    private let loopLayer = AVPlayerLayer()
+    private var oneShotPlayer: AVPlayer?
+    private var loopPlayer: AVQueuePlayer?
+    private var looper: AVPlayerLooper?
+    private var endObserver: NSObjectProtocol?
+    private var finished = false
+
+    init(frame: CGRect, dark: Bool) {
+        self.dark = dark
+        super.init(frame: frame)
+        backgroundColor = descallSplashBaseColor
+        isUserInteractionEnabled = false
+        accessibilityElementsHidden = true
+        for l in [loopLayer, oneShotLayer] {
+            l.videoGravity = .resizeAspectFill
+            l.frame = bounds
+            layer.addSublayer(l)
+        }
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        oneShotLayer.frame = bounds
+        loopLayer.frame = bounds
+        CATransaction.commit()
+    }
+
+    private func videoURL(_ kind: String) -> URL? {
+        let name = "SplashVideo-\(kind)-\(dark ? "dark" : "light")"
+        guard let asset = NSDataAsset(name: name) else { return nil }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("descall-\(name)-\(asset.data.count).mp4")
+        if !FileManager.default.fileExists(atPath: url.path) {
+            do { try asset.data.write(to: url, options: .atomic) } catch { return nil }
+        }
+        return url
+    }
+
+    func start() {
+        guard !UIAccessibility.isReduceMotionEnabled, let oneShot = videoURL("oneshot") else {
+            showStill()
+            DispatchQueue.main.async { [weak self] in self?.finishOneShot() }
+            return
+        }
+        // The loop waits, prerolled, under the one-shot so the switch has no gap.
+        if let loop = videoURL("loop") {
+            let player = AVQueuePlayer()
+            player.isMuted = true
+            looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: loop))
+            loopLayer.player = player
+            loopPlayer = player
+        }
+        let item = AVPlayerItem(url: oneShot)
+        let player = AVPlayer(playerItem: item)
+        player.isMuted = true
+        player.actionAtItemEnd = .pause
+        oneShotLayer.player = player
+        oneShotPlayer = player
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
+        ) { [weak self] _ in self?.finishOneShot() }
+        player.play()
+    }
+
+    private func finishOneShot() {
+        guard !finished else { return }
+        finished = true
+        if let loop = loopPlayer {
+            loop.play()
+            // One loop frame later, drop the paused one-shot on top.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.oneShotLayer.isHidden = true
+            }
+        }
+        onOneShotFinished?()
+    }
+
+    /// Reduce Motion: the last frame of the one-shot (the finished logo tile).
+    private func showStill() {
+        guard let url = videoURL("oneshot") else { return }
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        let time = CMTimeSubtract(asset.duration, CMTime(value: 1, timescale: 30))
+        guard let image = try? generator.copyCGImage(at: time, actualTime: nil) else { return }
+        let still = CALayer()
+        still.frame = bounds
+        still.contents = image
+        still.contentsGravity = .resizeAspectFill
+        oneShotLayer.addSublayer(still)
+        oneShotLayer.masksToBounds = true
+        still.frame = oneShotLayer.bounds
+        still.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+    }
+
+    func stop() {
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
+        oneShotPlayer?.pause()
+        loopPlayer?.pause()
+        looper?.disableLooping()
+        oneShotLayer.player = nil
+        loopLayer.player = nil
     }
 }
 
