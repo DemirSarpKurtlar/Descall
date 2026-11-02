@@ -88,4 +88,17 @@ assert.equal(
   "splash icon is the Konsept 2 brand asset",
 );
 
+// 3.7.29 animated splash: VP9-alpha WebM one-shot then loop, static tile on Reduce Motion, theme from main.
+assert.match(splash, /splash\/descall-splash-oneshot\.webm/);
+assert.match(splash, /splash\/descall-splash-loop\.webm/);
+assert.match(splash, /const animated = !reduceMotion && startLogoAnimation\(\)/);
+assert.match(splash, /query\.get\("theme"\) === "light"/);
+assert.match(win, /query\.theme = nativeTheme\.shouldUseDarkColors \? 'dark' : 'light'/);
+for (const k of ["oneshot", "loop"]) {
+  const webm = readFileSync(join(here, "splash", `descall-splash-${k}.webm`));
+  assert.ok(webm.length < 120 * 1024, `${k} webm stays small`);
+  assert.deepEqual(webm, readFileSync(join(here, "../public/brand/splash", `descall-splash-${k}.webm`)), `${k} same file on web`);
+}
+assert.doesNotMatch(splash, /\.apng|lottie/i);
+
 console.log("splash.selftest ok");
