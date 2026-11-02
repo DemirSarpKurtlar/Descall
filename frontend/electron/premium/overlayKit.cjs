@@ -18,12 +18,12 @@ let actionHooked = false;
 function hookActions() {
   if (actionHooked) return;
   actionHooked = true;
-  ipcMain.on('premium:hud:action', (event, msg) => {
+  ipcMain.on('descall:hud:action', (event, msg) => {
     for (const o of overlays.values()) {
       if (!o.win || o.win.isDestroyed() || o.win.webContents !== event.sender) continue;
       const type = msg && typeof msg.type === 'string' ? msg.type : '';
       if (type === 'ready') {
-        if (o.last) o.win.webContents.send('premium:hud:state', o.last);
+        if (o.last) o.win.webContents.send('descall:hud:state', o.last);
         if (!o.win.isVisible() && o.showOnReady) o.win.showInactive();
         return;
       }
@@ -142,7 +142,7 @@ function send(id, state) {
   const o = overlays.get(String(id));
   if (!o || !o.win || o.win.isDestroyed()) return false;
   o.last = state;
-  try { o.win.webContents.send('premium:hud:state', state); } catch (_) { return false; }
+  try { o.win.webContents.send('descall:hud:state', state); } catch (_) { return false; }
   return true;
 }
 

@@ -10,12 +10,12 @@ const { wrapFeature } = require('../compat.cjs');
  * chosen by main.cjs's secure-token handlers from the sender's session.
  * The partition gets the same descall:// protocol handler and media permission list as the
  * default session; the CSP is carried by the protocol response itself, so it is unchanged.
- * Premium IPC from an account window is refused (entitlements belong to the main account),
- * except 'premium:multi_account:whoami', checked here against the account sessions.
+ * Premium IPC from an account window is refused (entitlements belong to the main account).
+ * The tray label comes from the account's own JWT (username claim), read in main.
  * Cost: one full renderer per extra account (~200-400 MB), so the switcher caps it at 3.
  */
 
-const { BrowserWindow, session, app, ipcMain } = require('electron');
+const { BrowserWindow, session, app, safeStorage } = require('electron');
 const hostHooks = require('../hostHooks.cjs');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -89,7 +89,7 @@ function open(id) {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: acct.label || 'Descall',
+    title: labelFor(acct) || 'Descall',
     show: false,
     backgroundColor: '#0f1117',
     webPreferences: {
@@ -140,14 +140,35 @@ function rebuildTray() {
   const list = readAccounts();
   const items = [
     { label: labels.main || 'Descall', click: () => { const w = ctx.getMainWindow(); if (w) { if (w.isMinimized()) w.restore(); w.show(); w.focus(); } } },
-    ...list.map((a) => ({ label: a.label || labels.unnamed || a.id, click: () => open(a.id) })),
+    ...list.map((a) => ({ label: labelFor(a) || labels.unnamed || a.id, click: () => open(a.id) })),
   ];
   if (list.length < MAX_EXTRA && labels.add) items.push({ type: 'separator' }, { label: labels.add, click: () => add() });
   ctx.setTrayItems([{ label: labels.menu, submenu: items }]);
 }
 
+/** Username claim of an account's stored JWT (display only, never trusted for auth). */
+function tokenUsername(id) {
+  try {
+    const buf = fs.readFileSync(path.join(app.getPath('userData'), 'premium', 'accounts', id, 'auth-token.bin'));
+    const jwt = safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(buf) : buf.toString('utf8');
+    const payload = JSON.parse(Buffer.from(String(jwt).split('.')[1] || '', 'base64url').toString('utf8'));
+    return String(payload.username || '').slice(0, 40);
+  } catch (_) {
+    return '';
+  }
+}
+
+function labelFor(a) {
+  return tokenUsername(a.id) || a.label || '';
+}
+
+function isAccountWebContents(wc) {
+  for (const w of windows.values()) if (w && !w.isDestroyed() && w.webContents === wc) return true;
+  return false;
+}
+
 function listPublic() {
-  return readAccounts().map((a) => ({ id: a.id, label: a.label, createdAt: a.createdAt, open: Boolean(windows.get(a.id) && !windows.get(a.id).isDestroyed()), signedIn: fs.existsSync(path.join(ctx.storeDir(), 'accounts', a.id, 'auth-token.bin')) }));
+  return readAccounts().map((a) => ({ id: a.id, label: labelFor(a), createdAt: a.createdAt, open: Boolean(windows.get(a.id) && !windows.get(a.id).isDestroyed()), signedIn: fs.existsSync(path.join(ctx.storeDir(), 'accounts', a.id, 'auth-token.bin')) }));
 }
 
 module.exports = wrapFeature({
@@ -157,6 +178,7 @@ module.exports = wrapFeature({
     // Sessions of known accounts exist up front so their token files resolve.
     for (const a of readAccounts()) sessionFor(a.id);
     hostHooks.set('tokenFileForSession', tokenFileForSession);
+    hostHooks.set('isAccountWebContents', isAccountWebContents);
     ctx.handle('premium:multi_account:list', () => ({ ok: true, accounts: listPublic(), max: MAX_EXTRA }));
     ctx.handle('premium:multi_account:add', () => add());
     ctx.handle('premium:multi_account:open', (_e, id) => open(String(id || '')));
@@ -171,22 +193,8 @@ module.exports = wrapFeature({
       rebuildTray();
       return { ok: true };
     });
-    // An account window reports who signed in, so the tray can show the name. Registered on
-    // ipcMain directly: the host only lets the main window and its own windows through.
-    ipcMain.removeHandler('premium:multi_account:whoami');
-    ipcMain.handle('premium:multi_account:whoami', (event, who = {}) => {
-      if (!ctx) return { ok: false };
-      const ses = event.sender.session;
-      const id = [...sessions].find(([, s2]) => s2 === ses)?.[0];
-      if (!id) return { ok: false };
-      const list = readAccounts().map((a) => (a.id === id ? { ...a, label: String(who.username || '').slice(0, 40) } : a));
-      writeAccounts(list);
-      rebuildTray();
-      return { ok: true, id };
-    });
   },
   stop() {
-    ipcMain.removeHandler('premium:multi_account:whoami');
     for (const w of windows.values()) { try { if (!w.isDestroyed()) w.destroy(); } catch (_) { /* ignore */ } }
     windows.clear();
     // Sessions stay registered: tokens of extra accounts still resolve to their own files.
