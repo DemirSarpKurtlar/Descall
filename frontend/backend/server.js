@@ -468,6 +468,8 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/reactions", reactionRoutes);
 app.use("/api/friends", friendsRoutes);
 app.use("/api/activity", activityRoutes);
+// Descall+ / Ultra gaming data (game status card, long game history); entitlement checked per route.
+app.use("/api/premium/gaming", require("./routes/premiumGaming"));
 app.use("/api/servers", serverRoutes);
 app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
