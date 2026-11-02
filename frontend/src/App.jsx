@@ -4599,6 +4599,9 @@ export default function App() {
     setInviteAuthOpen(false);
   }, []);
 
+  // Descall+ desktop windows (Electron): unread, friends, DMs, status. Before the early returns.
+  usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
+
   if (bootError && !me) {
     return (
       <>
@@ -4992,8 +4995,6 @@ export default function App() {
       console.error("[App] refresh server permissions error:", err);
     }
   };
-
-  usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
 
   const handleServerBack = () => {
     setActiveServer(null);
