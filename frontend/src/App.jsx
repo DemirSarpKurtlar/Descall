@@ -60,6 +60,7 @@ import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
+import { attachPremiumSocket } from "./premium/usePremium.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { getVoiceBusy } from "./lib/voiceBusy";
 import { shouldPlayDisconnectSound } from "./lib/connectionSound";
@@ -1508,6 +1509,7 @@ export default function App() {
     const socket = createSocket(token, { ...options, edgeUrl });
     socketRef.current = socket;
     setSocketApi(socket);
+    attachPremiumSocket(socket); // Descall+: "premium:updated" -> re-read /api/premium/me
     const edgeFailures = createEdgeFailureCounter();
 
     socket.on("edge:advice", (advice) => {

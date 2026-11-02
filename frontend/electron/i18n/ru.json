@@ -63,5 +63,29 @@
   "window": {
     "signupStats": "Статистика регистраций — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Выключить микрофон",
+      "unmute": "Включить микрофон",
+      "deafen": "Выключить звук",
+      "undeafen": "Включить звук",
+      "hangup": "Покинуть звонок",
+      "mini": "Открыть мини-режим",
+      "status": "Статус",
+      "online": "В сети",
+      "idle": "Нет на месте",
+      "dnd": "Не беспокоить",
+      "invisible": "Невидимка",
+      "inCall": "В звонке: {title}"
+    },
+    "taskbar": {
+      "unread": "Непрочитанных: {n}"
+    },
+    "window": {
+      "mini": "Descall мини-режим",
+      "call": "Descall звонок",
+      "sidebar": "Descall боковая панель"
+    }
   }
 }
