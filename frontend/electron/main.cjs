@@ -1716,7 +1716,9 @@ function createMainWindow() {
     tryBackgroundCheck('blur');
   });
 
-  // Handle external links — Descall Setup assets download in-app so we can prune older installers
+  // Handle external links — Descall Setup assets download in-app so we can prune older installers.
+  // The admin windows get adminPreload.cjs: the same bridge minus screen capture, clipboard,
+  // process list, downloads, call overlay and update install.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     // Yönetici › Kayıt İstatistikleri: its own window (one at a time).
     if (isSignupStatsUrl(url, { isDev })) {
@@ -1727,7 +1729,7 @@ function createMainWindow() {
       }
       return {
         action: 'allow',
-        overrideBrowserWindowOptions: signupStatsWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
+        overrideBrowserWindowOptions: signupStatsWindowOptions({ preload: path.join(__dirname, 'adminPreload.cjs'), icon: resolveAppIcon() }),
       };
     }
     // Yönetici Paneli: its own window (one at a time), the main window stays usable.
@@ -1739,7 +1741,7 @@ function createMainWindow() {
       }
       return {
         action: 'allow',
-        overrideBrowserWindowOptions: adminPanelWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
+        overrideBrowserWindowOptions: adminPanelWindowOptions({ preload: path.join(__dirname, 'adminPreload.cjs'), icon: resolveAppIcon() }),
       };
     }
     if (isDescallSetupDownloadUrl(url)) {
