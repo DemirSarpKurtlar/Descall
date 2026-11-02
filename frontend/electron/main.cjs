@@ -60,6 +60,8 @@ const {
 const { resolveDistFile } = require('./appProtocolPath.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
+// Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
+const premium = require('./premium/index.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -227,6 +229,7 @@ ipcMain.on('secure-token:set', (event, token) => {
 });
 
 ipcMain.on('secure-token:clear', (event) => {
+  premium.gate.reset();
   try {
     const file = tokenFilePath();
     if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -1238,6 +1241,7 @@ function createMainWindow() {
   // A secondary app window (Kayıt İstatistikleri, Yönetici Paneli) drives its own controls; everything else is the main window.
   const controlledWindow = (event) => {
     const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    if (w && premium.isAuxWindow(w.webContents)) return w;
     return w && w !== mainWindow && (w === signupStatsWindow || w === adminPanelWindow) ? w : mainWindow;
   };
   ipcMain.on('window:minimize', (event) => {
@@ -1662,7 +1666,9 @@ function createMainWindow() {
   });
 
   // Handle external links — Descall Setup assets download in-app so we can prune older installers
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
+    const premiumOpen = premium.windowOpen({ url, frameName, features });
+    if (premiumOpen) return premiumOpen;
     // Yönetici › Kayıt İstatistikleri: its own window (one at a time).
     if (isSignupStatsUrl(url, { isDev })) {
       if (signupStatsWindow && !signupStatsWindow.isDestroyed()) {
@@ -1700,7 +1706,9 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('did-create-window', (win, { url }) => {
+  mainWindow.webContents.on('did-create-window', (win, details) => {
+    if (premium.didCreateWindow(win, details)) return;
+    const { url } = details;
     const isStats = isSignupStatsUrl(url, { isDev });
     const isPanel = !isStats && isAdminPanelUrl(url, { isDev });
     if (!isStats && !isPanel) return;
@@ -1767,6 +1775,7 @@ function createTray() {
       },
     },
     { type: 'separator' },
+    ...premium.trayMenuItems(),
     {
       label: et('tray.startWithWindows'),
       type: 'checkbox',
@@ -1853,6 +1862,17 @@ app.whenReady().then(async () => {
 
   registerProcessScannerIPC();
   registerOverlayIPC(() => mainWindow);
+  premium.init({
+    electron: require('electron'),
+    getMainWindow: () => mainWindow,
+    appUrl: (route) => (isDev ? `http://localhost:5173${route}` : `descall://app${route}`),
+    tokenFile: tokenFilePath,
+    preloadPath: path.join(__dirname, 'preload.cjs'),
+    iconPath: resolveAppIcon(),
+    isDev,
+    rebuildTray: () => rebuildTrayMenu?.(),
+    log,
+  });
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
   globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
@@ -1881,6 +1901,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  premium.flush();
   destroyOverlayWindow();
   if (!updateReady || installStarted || !app.isPackaged) return;
   try {
@@ -2104,6 +2125,7 @@ function showAppNotification({ title, options = {} } = {}) {
 }
 
 ipcMain.on('notification:show', (_event, payload = {}) => {
+  if (premium.isAuxWindow(_event?.sender)) return; // Descall+ pop-outs: the main window notifies
   showAppNotification(payload);
 });
 

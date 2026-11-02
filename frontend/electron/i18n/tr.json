@@ -63,5 +63,29 @@
   "window": {
     "signupStats": "Kayıt İstatistikleri — Descall Yönetici",
     "adminPanel": "Descall Yönetici"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Sessize al",
+      "unmute": "Sesi aç",
+      "deafen": "Sağırlaştır",
+      "undeafen": "Sesi duy",
+      "hangup": "Aramadan çık",
+      "mini": "Mini modu aç",
+      "status": "Durum",
+      "online": "Çevrimiçi",
+      "idle": "Boşta",
+      "dnd": "Rahatsız etmeyin",
+      "invisible": "Görünmez",
+      "inCall": "Aramada: {title}"
+    },
+    "taskbar": {
+      "unread": "{n} okunmamış"
+    },
+    "window": {
+      "mini": "Descall mini mod",
+      "call": "Descall arama",
+      "sidebar": "Descall kenar çubuğu"
+    }
   }
 }

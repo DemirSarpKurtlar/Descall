@@ -5,6 +5,333 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  // premium:start (generated, Descall+ phase 1)
+  "premium": {
+    "name": {
+      "plus": "Descall+",
+      "ultra": "Descall Ultra",
+      "ultraShort": "Ultra",
+      "free": "Gratis"
+    },
+    "badge": {
+      "plusTip": "Miembro de Descall+",
+      "ultraTip": "Miembro de Descall Ultra"
+    },
+    "nav": "Descall+",
+    "navHint": "Membresía, funciones y herramientas de escritorio",
+    "status": {
+      "title": "Tu membresía",
+      "plan": "Plan",
+      "state": "Estado",
+      "active": "Activa",
+      "expired": "Caducada",
+      "cancelled": "Cancelada",
+      "none": "Sin membresía",
+      "ends": "Termina",
+      "unlimited": "Ilimitada",
+      "nextCoin": "Próximo regalo de DesCoin",
+      "nextCoinValue": "{amount} DesCoin el {date}",
+      "loading": "Cargando tu membresía…",
+      "offline": "No se pudo actualizar tu membresía. Se muestra el último estado conocido.",
+      "monthlyGift": "{amount} DesCoin cada 30 días"
+    },
+    "grantNote": "Por ahora, las membresías las otorga el equipo de Descall. Todavía no se pueden comprar.",
+    "redeem": {
+      "title": "Usar un código de cupón",
+      "placeholder": "Código de cupón",
+      "submit": "Canjear",
+      "busy": "Comprobando…",
+      "ok": "Código aplicado. Tu membresía está actualizada.",
+      "fail": "No se pudo usar este código.",
+      "unavailable": "Los códigos de cupón aún no están disponibles."
+    },
+    "features": {
+      "title": "Funciones",
+      "lead": "Activa, desactiva y ajusta cada función aquí. Las funciones de escritorio funcionan en la app de escritorio de Descall.",
+      "desktop": "Escritorio",
+      "desktopOnly": "Disponible en la app de escritorio",
+      "lockedPlus": "Se desbloquea con Descall+",
+      "lockedUltra": "Se desbloquea con Ultra",
+      "enabled": "Activada",
+      "soon": "Próximamente",
+      "groupDesktop": "Ventanas de escritorio",
+      "groupOther": "Más funciones",
+      "settings": "Ajustes"
+    },
+    "compare": {
+      "title": "Comparar planes",
+      "feature": "Función",
+      "coin": "Regalo de DesCoin cada 30 días",
+      "baseline": "Llamadas, chat, servidores y todo lo que usas hoy",
+      "current": "Plan actual",
+      "included": "Incluido",
+      "notIncluded": "No incluido",
+      "featureCount": "{n} funciones",
+      "showAll": "Mostrar todas las funciones",
+      "showLess": "Mostrar menos"
+    },
+    "win": {
+      "mini": "Modo mini",
+      "call": "Ventana de llamada",
+      "sidebar": "Barra lateral de escritorio",
+      "popout": "Ventana separada",
+      "noCall": "No hay llamada activa",
+      "unread": "{n, plural, one {# sin leer} other {# sin leer}}",
+      "allRead": "Todo leído",
+      "mute": "Silenciar",
+      "unmute": "Activar micrófono",
+      "deafen": "Ensordecer",
+      "undeafen": "Dejar de ensordecer",
+      "hangup": "Salir de la llamada",
+      "openApp": "Abrir Descall",
+      "close": "Cerrar",
+      "pin": "Mantener encima",
+      "noVideo": "No hay vídeo ahora",
+      "connecting": "Conectando…",
+      "friends": "Amigos",
+      "online": "En línea",
+      "dms": "Mensajes directos",
+      "nobodyOnline": "Ningún amigo en línea",
+      "noDms": "No hay mensajes recientes",
+      "popOut": "Abrir en otra ventana",
+      "popOutLimit": "Puedes tener hasta 4 ventanas separadas.",
+      "dragHint": "Arrastra para mover"
+    },
+    "panel": {
+      "open": "Abrir",
+      "openMini": "Abrir modo mini",
+      "openCall": "Abrir ventana de llamada",
+      "openSidebar": "Mostrar barra lateral",
+      "miniAuto": "Abrir el modo mini al minimizar Descall durante una llamada",
+      "pipAuto": "Abrir la ventana de llamada al salir de Descall en una videollamada",
+      "topMain": "Ventana principal",
+      "topMini": "Ventana mini",
+      "topCall": "Ventana de llamada",
+      "topPopouts": "Ventanas separadas",
+      "topLead": "Mantener estas ventanas sobre otras apps.",
+      "opacityValue": "{value} %",
+      "opacityLead": "Hacer translúcidas las ventanas pequeñas.",
+      "popoutsOpen": "{n, plural, one {# ventana separada abierta} other {# ventanas separadas abiertas}}",
+      "popoutsHow": "Usa Abrir en otra ventana en la cabecera de un chat para abrirlo aparte.",
+      "closeAll": "Cerrar todas",
+      "restorePopouts": "Volver a abrir las ventanas separadas",
+      "restoreMini": "Volver a abrir el modo mini y la barra lateral",
+      "restoreBounds": "Recordar posición y tamaño de las ventanas",
+      "snap": "Ajustar ventanas a los bordes",
+      "keepVisible": "Recuperar ventanas al quitar un monitor",
+      "mainMonitor": "Abrir Descall en el último monitor usado",
+      "layoutName": "Nombre del diseño",
+      "layoutSave": "Guardar diseño actual",
+      "layoutApply": "Aplicar",
+      "layoutDelete": "Eliminar",
+      "layoutEmpty": "Aún no hay diseños guardados.",
+      "layoutWindows": "{n, plural, one {# ventana} other {# ventanas}}",
+      "edge": "Borde de la pantalla",
+      "edgeLeft": "Izquierda",
+      "edgeRight": "Derecha",
+      "autoHide": "Ocultar automáticamente",
+      "edgeLead": "Lleva el puntero a este borde para mostrar la barra lateral.",
+      "edgeDelay": "Retraso",
+      "edgeDelayValue": "{ms} ms",
+      "needsSidebar": "Activa también la barra lateral de escritorio.",
+      "trayLead": "Silencia, ensordece, cambia tu estado y abre el modo mini desde el icono de la bandeja.",
+      "taskbarBadge": "Mensajes sin leer en el icono de la barra de tareas",
+      "taskbarButtons": "Botones de llamada en la vista previa de la barra de tareas",
+      "windowsOnly": "Solo Windows",
+      "desktopApp": "Abre la app de escritorio de Descall para usarlo."
+    },
+    "f": {
+      "mini_mode": {
+        "name": "Modo mini",
+        "desc": "Una ventana pequeña con los controles de llamada y los no leídos."
+      },
+      "always_on_top": {
+        "name": "Siempre encima",
+        "desc": "Mantén las ventanas de Descall elegidas sobre otras apps."
+      },
+      "pip_call": {
+        "name": "Llamada en imagen en imagen",
+        "desc": "Mira la llamada en una ventana pequeña siempre encima."
+      },
+      "multi_window": {
+        "name": "Ventanas separadas",
+        "desc": "Abre un chat o canal en su propia ventana, hasta 4."
+      },
+      "window_opacity": {
+        "name": "Opacidad de ventanas",
+        "desc": "Haz translúcidas las ventanas mini, de llamada y separadas."
+      },
+      "session_restore": {
+        "name": "Restaurar sesión",
+        "desc": "Vuelve a abrir tus ventanas donde las dejaste."
+      },
+      "tray_controls_plus": {
+        "name": "Controles en la bandeja",
+        "desc": "Controles de llamada, estado y modo mini en la bandeja."
+      },
+      "taskbar_plus": {
+        "name": "Extras de la barra de tareas",
+        "desc": "Contador de no leídos y botones de llamada en la barra de tareas."
+      },
+      "global_mute": {
+        "name": "Silencio global",
+        "desc": "Silénciate con un atajo desde cualquier app."
+      },
+      "global_ptt": {
+        "name": "Pulsar para hablar global",
+        "desc": "Pulsar para hablar funciona mientras usas otras apps."
+      },
+      "custom_hotkeys": {
+        "name": "Atajos personalizados",
+        "desc": "Elige tus propios atajos de teclado."
+      },
+      "media_keys": {
+        "name": "Teclas multimedia",
+        "desc": "Usa las teclas multimedia del teclado en llamadas."
+      },
+      "quick_launcher": {
+        "name": "Lanzador rápido",
+        "desc": "Salta a cualquier chat con un atajo."
+      },
+      "notification_history": {
+        "name": "Historial de notificaciones",
+        "desc": "Mira las notificaciones que te perdiste."
+      },
+      "focus_mode": {
+        "name": "Modo concentración",
+        "desc": "Silencia todo menos lo importante."
+      },
+      "notification_profiles": {
+        "name": "Perfiles de notificación",
+        "desc": "Cambia entre conjuntos de reglas de notificación."
+      },
+      "mic_presets": {
+        "name": "Ajustes de micrófono",
+        "desc": "Guarda y cambia configuraciones de micrófono."
+      },
+      "noise_gate": {
+        "name": "Puerta de ruido",
+        "desc": "Ajusta tu propio umbral de ruido de fondo."
+      },
+      "mic_monitor": {
+        "name": "Monitor de micrófono",
+        "desc": "Escucha tu propio micrófono."
+      },
+      "voice_activity_monitor": {
+        "name": "Monitor de actividad de voz",
+        "desc": "Mira en tiempo real lo alto que hablas."
+      },
+      "auto_device_switch": {
+        "name": "Cambio automático de dispositivo",
+        "desc": "Pasa a un auricular nuevo nada más conectarlo."
+      },
+      "audio_routing": {
+        "name": "Enrutamiento de audio",
+        "desc": "Envía llamadas y sonidos a salidas distintas."
+      },
+      "audio_device_profiles": {
+        "name": "Perfiles de dispositivo de audio",
+        "desc": "Recuerda los ajustes de cada auricular."
+      },
+      "game_status": {
+        "name": "Estado de juego",
+        "desc": "Muestra el juego al que juegas."
+      },
+      "game_session_history": {
+        "name": "Historial de sesiones de juego",
+        "desc": "Mira cuánto jugaste a cada juego."
+      },
+      "smart_game_notifications": {
+        "name": "Notificaciones inteligentes en juegos",
+        "desc": "Menos interrupciones mientras juegas."
+      },
+      "clipboard_history": {
+        "name": "Historial del portapapeles",
+        "desc": "Pega algo que copiaste antes."
+      },
+      "quick_file_drop": {
+        "name": "Envío rápido de archivos",
+        "desc": "Suelta archivos en Descall para compartirlos rápido."
+      },
+      "app_lock": {
+        "name": "Bloqueo de la app",
+        "desc": "Bloquea Descall con un PIN."
+      },
+      "quick_actions": {
+        "name": "Acciones rápidas",
+        "desc": "Las acciones habituales a un clic."
+      },
+      "desktop_sidebar": {
+        "name": "Barra lateral de escritorio",
+        "desc": "Un panel fino en el borde con amigos, mensajes y tu llamada."
+      },
+      "screen_edge_actions": {
+        "name": "Acciones en el borde",
+        "desc": "Muestra la barra lateral al tocar un borde con el puntero."
+      },
+      "window_layouts": {
+        "name": "Diseños de ventanas",
+        "desc": "Guarda diseños con nombre y cambia entre ellos."
+      },
+      "advanced_window_mgmt": {
+        "name": "Gestión avanzada de ventanas",
+        "desc": "Ajuste a bordes, varios monitores y comportamiento guardado."
+      },
+      "voice_hud": {
+        "name": "HUD de voz",
+        "desc": "Mira quién habla encima de cualquier app."
+      },
+      "gaming_hud": {
+        "name": "HUD para juegos",
+        "desc": "Información de la llamada sobre juegos sin bordes."
+      },
+      "instant_clip": {
+        "name": "Clip instantáneo",
+        "desc": "Guarda los últimos momentos de tu pantalla compartida."
+      },
+      "per_user_volume_hotkeys": {
+        "name": "Atajos de volumen por persona",
+        "desc": "Cambia el volumen de alguien con un atajo."
+      },
+      "stream_audio_control": {
+        "name": "Control del audio de la transmisión",
+        "desc": "Elige cómo suena tu transmisión."
+      },
+      "workspace_profiles": {
+        "name": "Perfiles de espacio de trabajo",
+        "desc": "Cambia entre configuraciones para trabajo, juegos y amigos."
+      },
+      "desktop_automations": {
+        "name": "Automatizaciones de escritorio",
+        "desc": "Deja que Descall reaccione a lo que pasa en tu PC."
+      },
+      "activity_timeline": {
+        "name": "Cronología de actividad",
+        "desc": "Una cronología de tus llamadas y chats."
+      },
+      "command_center": {
+        "name": "Centro de control",
+        "desc": "Un panel para todo lo que Descall puede hacer."
+      },
+      "widgets": {
+        "name": "Widgets",
+        "desc": "Ventanas pequeñas de Descall en tu escritorio."
+      },
+      "custom_layouts": {
+        "name": "Diseños personalizados",
+        "desc": "Organiza la ventana de Descall a tu manera."
+      },
+      "multi_account": {
+        "name": "Varias cuentas",
+        "desc": "Cambia entre cuentas de Descall."
+      },
+      "quick_reply": {
+        "name": "Respuesta rápida",
+        "desc": "Responde desde la notificación sin abrir Descall."
+      }
+    }
+  },
+  // premium:end
   "world3d": {
     "enter": "Mundo 3D",
     "enterHint": "Abrir esta llamada como una sala 3D (escritorio, vista previa del equipo). La voz sigue activa.",

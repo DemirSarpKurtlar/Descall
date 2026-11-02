@@ -5,6 +5,333 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  // premium:start (generated, Descall+ phase 1)
+  "premium": {
+    "name": {
+      "plus": "Descall+",
+      "ultra": "Descall Ultra",
+      "ultraShort": "Ultra",
+      "free": "Kostenlos"
+    },
+    "badge": {
+      "plusTip": "Descall+-Mitglied",
+      "ultraTip": "Descall Ultra-Mitglied"
+    },
+    "nav": "Descall+",
+    "navHint": "Mitgliedschaft, Funktionen und Desktop-Werkzeuge",
+    "status": {
+      "title": "Deine Mitgliedschaft",
+      "plan": "Plan",
+      "state": "Status",
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "cancelled": "Beendet",
+      "none": "Keine Mitgliedschaft",
+      "ends": "Endet",
+      "unlimited": "Unbegrenzt",
+      "nextCoin": "Nächstes DesCoin-Geschenk",
+      "nextCoinValue": "{amount} DesCoin am {date}",
+      "loading": "Mitgliedschaft wird geladen…",
+      "offline": "Die Mitgliedschaft konnte nicht aktualisiert werden. Der letzte bekannte Stand wird angezeigt.",
+      "monthlyGift": "{amount} DesCoin alle 30 Tage"
+    },
+    "grantNote": "Mitgliedschaften werden derzeit vom Descall-Team vergeben. Ein Kauf ist noch nicht möglich.",
+    "redeem": {
+      "title": "Gutscheincode einlösen",
+      "placeholder": "Gutscheincode",
+      "submit": "Einlösen",
+      "busy": "Wird geprüft…",
+      "ok": "Code eingelöst. Deine Mitgliedschaft ist aktualisiert.",
+      "fail": "Dieser Code konnte nicht eingelöst werden.",
+      "unavailable": "Gutscheincodes sind noch nicht verfügbar."
+    },
+    "features": {
+      "title": "Funktionen",
+      "lead": "Hier schaltest du jede Funktion ein oder aus und passt sie an. Desktop-Funktionen laufen in der Descall-Desktop-App.",
+      "desktop": "Desktop",
+      "desktopOnly": "In der Desktop-App verfügbar",
+      "lockedPlus": "Mit Descall+ verfügbar",
+      "lockedUltra": "Mit Ultra verfügbar",
+      "enabled": "Aktiviert",
+      "soon": "Demnächst",
+      "groupDesktop": "Desktop-Fenster",
+      "groupOther": "Weitere Funktionen",
+      "settings": "Einstellungen"
+    },
+    "compare": {
+      "title": "Pläne vergleichen",
+      "feature": "Funktion",
+      "coin": "DesCoin-Geschenk alle 30 Tage",
+      "baseline": "Anrufe, Chat, Server und alles, was du heute nutzt",
+      "current": "Aktueller Plan",
+      "included": "Enthalten",
+      "notIncluded": "Nicht enthalten",
+      "featureCount": "{n} Funktionen",
+      "showAll": "Alle Funktionen zeigen",
+      "showLess": "Weniger zeigen"
+    },
+    "win": {
+      "mini": "Minimodus",
+      "call": "Anruffenster",
+      "sidebar": "Desktop-Seitenleiste",
+      "popout": "Separates Fenster",
+      "noCall": "Kein aktiver Anruf",
+      "unread": "{n, plural, one {# ungelesen} other {# ungelesen}}",
+      "allRead": "Alles gelesen",
+      "mute": "Stummschalten",
+      "unmute": "Stummschaltung aufheben",
+      "deafen": "Ton aus",
+      "undeafen": "Ton an",
+      "hangup": "Anruf verlassen",
+      "openApp": "Descall öffnen",
+      "close": "Schließen",
+      "pin": "Im Vordergrund halten",
+      "noVideo": "Gerade kein Video",
+      "connecting": "Verbinde…",
+      "friends": "Freunde",
+      "online": "Online",
+      "dms": "Direktnachrichten",
+      "nobodyOnline": "Keine Freunde online",
+      "noDms": "Keine neuen Nachrichten",
+      "popOut": "In eigenem Fenster öffnen",
+      "popOutLimit": "Du kannst bis zu 4 separate Fenster öffnen.",
+      "dragHint": "Zum Verschieben ziehen"
+    },
+    "panel": {
+      "open": "Öffnen",
+      "openMini": "Minimodus öffnen",
+      "openCall": "Anruffenster öffnen",
+      "openSidebar": "Seitenleiste zeigen",
+      "miniAuto": "Minimodus öffnen, wenn ich Descall während eines Anrufs minimiere",
+      "pipAuto": "Anruffenster öffnen, wenn ich Descall während eines Videoanrufs verlasse",
+      "topMain": "Hauptfenster",
+      "topMini": "Minifenster",
+      "topCall": "Anruffenster",
+      "topPopouts": "Separate Fenster",
+      "topLead": "Diese Fenster über anderen Apps halten.",
+      "opacityValue": "{value} %",
+      "opacityLead": "Kleine Fenster durchscheinend machen.",
+      "popoutsOpen": "{n, plural, one {# separates Fenster offen} other {# separate Fenster offen}}",
+      "popoutsHow": "Mit „In eigenem Fenster öffnen“ im Chat-Kopf öffnest du einen Chat separat.",
+      "closeAll": "Alle schließen",
+      "restorePopouts": "Separate Fenster wieder öffnen",
+      "restoreMini": "Minimodus und Seitenleiste wieder öffnen",
+      "restoreBounds": "Fensterpositionen und -größen merken",
+      "snap": "Fenster an Bildschirmränder andocken",
+      "keepVisible": "Fenster zurückholen, wenn ein Monitor entfernt wird",
+      "mainMonitor": "Descall auf dem zuletzt genutzten Monitor öffnen",
+      "layoutName": "Name des Layouts",
+      "layoutSave": "Aktuelles Layout speichern",
+      "layoutApply": "Anwenden",
+      "layoutDelete": "Löschen",
+      "layoutEmpty": "Noch keine gespeicherten Layouts.",
+      "layoutWindows": "{n, plural, one {# Fenster} other {# Fenster}}",
+      "edge": "Bildschirmrand",
+      "edgeLeft": "Links",
+      "edgeRight": "Rechts",
+      "autoHide": "Automatisch ausblenden",
+      "edgeLead": "Bewege den Zeiger an diesen Rand, um die Seitenleiste zu zeigen.",
+      "edgeDelay": "Verzögerung",
+      "edgeDelayValue": "{ms} ms",
+      "needsSidebar": "Schalte auch die Desktop-Seitenleiste ein.",
+      "trayLead": "Über das Tray-Symbol stummschalten, Ton aus, Status setzen und Minimodus öffnen.",
+      "taskbarBadge": "Ungelesen-Zähler auf dem Taskleistensymbol",
+      "taskbarButtons": "Anruftasten in der Taskleisten-Vorschau",
+      "windowsOnly": "Nur Windows",
+      "desktopApp": "Öffne die Descall-Desktop-App, um das zu nutzen."
+    },
+    "f": {
+      "mini_mode": {
+        "name": "Minimodus",
+        "desc": "Ein kleines Fenster mit Anrufsteuerung und Ungelesen-Zähler."
+      },
+      "always_on_top": {
+        "name": "Immer im Vordergrund",
+        "desc": "Ausgewählte Descall-Fenster bleiben über anderen Apps."
+      },
+      "pip_call": {
+        "name": "Bild-im-Bild-Anruf",
+        "desc": "Den Anruf in einem kleinen Fenster im Vordergrund sehen."
+      },
+      "multi_window": {
+        "name": "Separate Fenster",
+        "desc": "Einen Chat oder Kanal in eigenem Fenster öffnen, bis zu 4."
+      },
+      "window_opacity": {
+        "name": "Fenstertransparenz",
+        "desc": "Mini-, Anruf- und separate Fenster durchscheinend machen."
+      },
+      "session_restore": {
+        "name": "Sitzung wiederherstellen",
+        "desc": "Deine Fenster dort wieder öffnen, wo du sie gelassen hast."
+      },
+      "tray_controls_plus": {
+        "name": "Tray-Steuerung",
+        "desc": "Anrufsteuerung, Status und Minimodus im Tray-Menü."
+      },
+      "taskbar_plus": {
+        "name": "Taskleisten-Extras",
+        "desc": "Ungelesen-Badge und Anruftasten in der Taskleiste."
+      },
+      "global_mute": {
+        "name": "Globales Stummschalten",
+        "desc": "Dich per Tastenkürzel aus jeder App stummschalten."
+      },
+      "global_ptt": {
+        "name": "Globales Push-to-Talk",
+        "desc": "Push-to-Talk funktioniert auch in anderen Apps."
+      },
+      "custom_hotkeys": {
+        "name": "Eigene Tastenkürzel",
+        "desc": "Wähle deine eigenen Tastenkürzel."
+      },
+      "media_keys": {
+        "name": "Medientasten",
+        "desc": "Nutze die Medientasten deiner Tastatur für Anrufe."
+      },
+      "quick_launcher": {
+        "name": "Schnellstarter",
+        "desc": "Mit einem Kürzel zu jedem Chat springen."
+      },
+      "notification_history": {
+        "name": "Benachrichtigungsverlauf",
+        "desc": "Verpasste Benachrichtigungen ansehen."
+      },
+      "focus_mode": {
+        "name": "Fokusmodus",
+        "desc": "Alles außer dem Wichtigen stummschalten."
+      },
+      "notification_profiles": {
+        "name": "Benachrichtigungsprofile",
+        "desc": "Zwischen Sätzen von Benachrichtigungsregeln wechseln."
+      },
+      "mic_presets": {
+        "name": "Mikrofon-Voreinstellungen",
+        "desc": "Mikrofon-Setups speichern und wechseln."
+      },
+      "noise_gate": {
+        "name": "Noise Gate",
+        "desc": "Eigene Schwelle für Hintergrundgeräusche."
+      },
+      "mic_monitor": {
+        "name": "Mikrofon-Monitor",
+        "desc": "Dein eigenes Mikrofon hören."
+      },
+      "voice_activity_monitor": {
+        "name": "Sprachaktivitätsanzeige",
+        "desc": "Sieh in Echtzeit, wie laut du bist."
+      },
+      "auto_device_switch": {
+        "name": "Automatischer Gerätewechsel",
+        "desc": "Sofort zum neu angeschlossenen Headset wechseln."
+      },
+      "audio_routing": {
+        "name": "Audio-Routing",
+        "desc": "Anrufe und Töne auf verschiedene Ausgänge legen."
+      },
+      "audio_device_profiles": {
+        "name": "Audiogeräteprofile",
+        "desc": "Einstellungen je Headset merken."
+      },
+      "game_status": {
+        "name": "Spielstatus",
+        "desc": "Zeigen, welches Spiel du spielst."
+      },
+      "game_session_history": {
+        "name": "Spielsitzungsverlauf",
+        "desc": "Sieh, wie lange du jedes Spiel gespielt hast."
+      },
+      "smart_game_notifications": {
+        "name": "Smarte Spiel-Benachrichtigungen",
+        "desc": "Weniger Unterbrechungen beim Spielen."
+      },
+      "clipboard_history": {
+        "name": "Zwischenablage-Verlauf",
+        "desc": "Früher Kopiertes einfügen."
+      },
+      "quick_file_drop": {
+        "name": "Schnelles Dateiablegen",
+        "desc": "Dateien auf Descall ziehen und schnell teilen."
+      },
+      "app_lock": {
+        "name": "App-Sperre",
+        "desc": "Descall mit einer PIN sperren."
+      },
+      "quick_actions": {
+        "name": "Schnellaktionen",
+        "desc": "Häufige Aktionen mit einem Klick."
+      },
+      "desktop_sidebar": {
+        "name": "Desktop-Seitenleiste",
+        "desc": "Eine schmale Leiste am Bildschirmrand mit Freunden, Nachrichten und Anruf."
+      },
+      "screen_edge_actions": {
+        "name": "Bildschirmrand-Aktionen",
+        "desc": "Die Seitenleiste zeigen, wenn der Zeiger den Rand berührt."
+      },
+      "window_layouts": {
+        "name": "Fensterlayouts",
+        "desc": "Benannte Layouts speichern und wechseln."
+      },
+      "advanced_window_mgmt": {
+        "name": "Erweiterte Fensterverwaltung",
+        "desc": "Andocken, Monitorerkennung und gespeichertes Fensterverhalten."
+      },
+      "voice_hud": {
+        "name": "Sprach-HUD",
+        "desc": "Sieh über jeder App, wer spricht."
+      },
+      "gaming_hud": {
+        "name": "Gaming-HUD",
+        "desc": "Anrufinfos über randlosen Spielen."
+      },
+      "instant_clip": {
+        "name": "Sofort-Clip",
+        "desc": "Die letzten Momente deiner Bildschirmfreigabe speichern."
+      },
+      "per_user_volume_hotkeys": {
+        "name": "Lautstärke-Kürzel pro Person",
+        "desc": "Die Lautstärke einer Person per Kürzel ändern."
+      },
+      "stream_audio_control": {
+        "name": "Stream-Audio-Steuerung",
+        "desc": "Bestimmen, wie dein Stream klingt."
+      },
+      "workspace_profiles": {
+        "name": "Arbeitsbereich-Profile",
+        "desc": "Zwischen Setups für Arbeit, Spiele und Freunde wechseln."
+      },
+      "desktop_automations": {
+        "name": "Desktop-Automatisierungen",
+        "desc": "Descall auf Ereignisse am Computer reagieren lassen."
+      },
+      "activity_timeline": {
+        "name": "Aktivitätszeitleiste",
+        "desc": "Eine Zeitleiste deiner Anrufe und Chats."
+      },
+      "command_center": {
+        "name": "Kommandozentrale",
+        "desc": "Ein Panel für alles, was Descall kann."
+      },
+      "widgets": {
+        "name": "Widgets",
+        "desc": "Kleine Descall-Fenster auf deinem Desktop."
+      },
+      "custom_layouts": {
+        "name": "Eigene Layouts",
+        "desc": "Das Descall-Fenster nach deinem Geschmack anordnen."
+      },
+      "multi_account": {
+        "name": "Mehrere Konten",
+        "desc": "Zwischen Descall-Konten wechseln."
+      },
+      "quick_reply": {
+        "name": "Schnellantwort",
+        "desc": "Aus der Benachrichtigung antworten, ohne Descall zu öffnen."
+      }
+    }
+  },
+  // premium:end
   "world3d": {
     "enter": "3D-Welt",
     "enterHint": "Diesen Anruf als 3D-Raum öffnen (Desktop, Team-Vorschau). Die Sprache bleibt an.",
