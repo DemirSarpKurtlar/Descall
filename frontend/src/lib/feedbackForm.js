@@ -55,6 +55,10 @@ export function buildSubmitBody(form, device = {}) {
   if (body.includeDevice) {
     if (device.platform) body.platform = String(device.platform).slice(0, 60);
     if (device.version) body.appVersion = String(device.version).slice(0, 40);
+    // 3.7.27: last call's voice diagnostic snapshot (lib/voiceDiagnostics.js) on voice / bug reports.
+    if (device.voiceDiag && typeof device.voiceDiag === "object" && (form.kind === "bug" || form.area === "voice")) {
+      body.voiceDiag = device.voiceDiag;
+    }
   }
   return body;
 }

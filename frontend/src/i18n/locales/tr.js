@@ -2190,6 +2190,8 @@ export const phrases = {
   "Their microphone is connecting…": "Karşı tarafın mikrofonu bağlanıyor…",
   "Retry audio connection": "Yeniden dene",
   "Audio isn't coming through yet.": "Ses henüz gelmiyor.",
+  "Couldn't connect.": "Bağlantı kurulamadı.",
+  "Noise suppression was cutting your voice, switched to the normal mic.": "Gürültü engelleme sesini kesiyordu, normal mikrofona geçtik.",
   "Join the call": "Aramaya katıl",
   "Group voice call in progress": "Grup sesli araması sürüyor",
   "Group video call in progress": "Grup görüntülü araması sürüyor",

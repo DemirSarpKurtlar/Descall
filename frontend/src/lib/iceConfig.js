@@ -27,6 +27,30 @@ let preloadPromise = null;
 const MAX_REFRESH_MS = 90 * 60 * 1000;
 const RETRY_MS = 60 * 1000;
 const livePeers = new Set();
+/** Backoff between ice-config attempts for a signed-in caller (first = immediate). */
+export const FETCH_BACKOFF_MS = Object.freeze([0, 400, 1200]);
+let lastFetch = { ok: false, attempts: 0, at: 0, status: 0, turn: false };
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Pure: retry this HTTP status? (5xx, 408, 429). */
+export function shouldRetryStatus(status) {
+  const n = Number(status) || 0;
+  return n === 0 || n === 408 || n === 429 || n >= 500;
+}
+
+/** Diagnostics: did the last ice-config fetch work, and does the cache hold TURN. */
+export function getIceConfigStatus() {
+  return {
+    fetchOk: Boolean(lastFetch.ok),
+    fetchAttempts: lastFetch.attempts,
+    fetchStatus: lastFetch.status || null,
+    turnPresent: iceServersHaveTurn(cachedServers),
+    authenticated: Boolean(cachedAuthenticated),
+  };
+}
 
 function parseEnvIceServers() {
   const raw = import.meta.env?.VITE_ICE_SERVERS;
@@ -121,6 +145,11 @@ export function trackPeerConnection(pc) {
   return pc;
 }
 
+/** Open peer connections (the mic failsafe swaps their audio sender). */
+export function getLivePeerConnections() {
+  return [...livePeers].filter((pc) => pc.signalingState !== "closed" && pc.connectionState !== "closed");
+}
+
 function pushToLivePeers(servers) {
   for (const pc of [...livePeers]) {
     if (pc.signalingState === "closed" || pc.connectionState === "closed") {
@@ -156,33 +185,50 @@ export async function preloadIceServers() {
       (typeof window !== "undefined" ? window.location.origin : "");
     const token = currentToken();
 
-    try {
-      const headers = { Accept: "application/json" };
-      if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${base}/api/webrtc/ice-config`, {
-        credentials: "omit",
-        cache: "no-store",
-        headers,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data?.iceServers) && data.iceServers.length > 0) {
-          const next = normalizeIceServers(data.iceServers);
-          const now = Date.now();
-          cachedServers = next;
-          cachedAt = now;
-          cachedToken = token;
-          cachedAuthenticated = Boolean(data.authenticated);
-          cachedRefreshMs = data.authenticated ? refreshDelayMs(data.ttlSeconds) : RETRY_MS;
-          const exp = Date.parse(data.expiresAt || "");
-          cachedExpiresAt = Number.isFinite(exp) ? exp : 0;
-          if (iceServersHaveTurn(next)) pushToLivePeers(next);
-          return cachedServers;
+    // 3.7.27: a signed-in caller retries a failed fetch (network error, 5xx /
+    // 429, empty list) with backoff before falling back. Falling straight to
+    // the STUN-only default made two clients behind symmetric / carrier NAT
+    // (Mac ↔ Windows reports) fail ICE without any TURN relay, in silence.
+    const attempts = token ? FETCH_BACKOFF_MS.length : 1;
+    for (let i = 0; i < attempts; i += 1) {
+      if (FETCH_BACKOFF_MS[i]) await sleep(FETCH_BACKOFF_MS[i]);
+      if (currentToken() !== token) break; // signed out / switched meanwhile
+      lastFetch = { ok: false, attempts: i + 1, at: Date.now(), status: 0, turn: false };
+      try {
+        const headers = { Accept: "application/json" };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch(`${base}/api/webrtc/ice-config`, {
+          credentials: "omit",
+          cache: "no-store",
+          headers,
+        });
+        lastFetch.status = res.status;
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.iceServers) && data.iceServers.length > 0) {
+            const next = normalizeIceServers(data.iceServers);
+            const now = Date.now();
+            cachedServers = next;
+            cachedAt = now;
+            cachedToken = token;
+            cachedAuthenticated = Boolean(data.authenticated);
+            cachedRefreshMs = data.authenticated ? refreshDelayMs(data.ttlSeconds) : RETRY_MS;
+            const exp = Date.parse(data.expiresAt || "");
+            cachedExpiresAt = Number.isFinite(exp) ? exp : 0;
+            lastFetch = { ...lastFetch, ok: true, turn: iceServersHaveTurn(next) };
+            if (iceServersHaveTurn(next)) pushToLivePeers(next);
+            // Signed in but the answer has no TURN (server config gap): retry.
+            if (!token || data.authenticated === false || lastFetch.turn) return cachedServers;
+          }
+        } else if (!shouldRetryStatus(res.status)) {
+          break;
         }
+      } catch {
+        /* network error: next attempt */
       }
-    } catch {
-      /* use defaults */
     }
+    if (lastFetch.ok) return cachedServers;
+    console.warn(`[iceConfig] ice-config fetch failed after ${lastFetch.attempts} attempt(s) (status ${lastFetch.status || "network"}), STUN only`);
 
     // Keep a previously fetched list (with TURN) over the bare STUN default,
     // unless it belongs to another session or has expired.
@@ -306,5 +352,6 @@ export function _resetIceConfigForTests() {
   cachedToken = null;
   cachedAuthenticated = false;
   preloadPromise = null;
+  lastFetch = { ok: false, attempts: 0, at: 0, status: 0, turn: false };
   livePeers.clear();
 }

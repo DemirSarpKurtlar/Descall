@@ -5123,6 +5123,8 @@ export const phrases = {
   "Audio Devices": "Dispositivos de áudio",
   "Audio devices": "Dispositivos de áudio",
   "Audio isn't coming through yet.": "O áudio ainda não está chegando.",
+  "Couldn't connect.": "Não foi possível conectar.",
+  "Noise suppression was cutting your voice, switched to the normal mic.": "A supressão de ruído estava cortando sua voz, mudamos para o microfone normal.",
   "Audio output": "Saída de áudio",
   "Audio processing failed: {message}": "Falha no processamento de áudio: {message}",
   "Audio settings": "Configurações de áudio",
