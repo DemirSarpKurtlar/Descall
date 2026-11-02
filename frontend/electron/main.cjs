@@ -59,6 +59,7 @@ const {
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
 const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
+const { isAppUrl, isSafeExternalUrl } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 
@@ -89,6 +90,16 @@ function distRoot() {
     path.join(__dirname, '..', 'dist'),
   ];
   return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html'))) || null;
+}
+
+/** Web and mail links go to the OS browser / mail client; file:, custom schemes and the like never do. */
+function openExternalSafely(url, why) {
+  if (!isSafeExternalUrl(url)) {
+    log.warn(`[nav] not opening ${why || 'link'}: ${String(url || '').slice(0, 120)}`);
+    return false;
+  }
+  shell.openExternal(url).catch((err) => log.warn('[nav] openExternal failed:', err?.message || err));
+  return true;
 }
 
 let cachedAppCsp = null;
@@ -1697,7 +1708,7 @@ function createMainWindow() {
       });
       return { action: 'deny' };
     }
-    shell.openExternal(url);
+    openExternalSafely(url, 'window-open');
     return { action: 'deny' };
   });
 
@@ -1716,7 +1727,7 @@ function createMainWindow() {
     win.on('maximize', () => win.webContents.send('window:maximized', true));
     win.on('unmaximize', () => win.webContents.send('window:maximized', false));
     win.webContents.setWindowOpenHandler(({ url: next }) => {
-      if (/^https?:/i.test(next)) shell.openExternal(next);
+      openExternalSafely(next, 'admin-window-open');
       return { action: 'deny' };
     });
     win.webContents.on('will-navigate', (event, next) => {
@@ -1724,21 +1735,22 @@ function createMainWindow() {
     });
   });
 
-  // Security: Prevent navigation to external sites
+  // Security: the main window only ever shows the app itself. Exact origin match
+  // (appTrust.cjs: descall://app, plus http://localhost:5173 in a dev run); anything
+  // else is cancelled and, if it is a web or mail link, handed to the OS.
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.includes('localhost') && !url.startsWith('file://')) {
-      event.preventDefault();
-      if (isDescallSetupDownloadUrl(url)) {
-        downloadDescallSetupViaElectron({
-          webContents: mainWindow.webContents,
-          app,
-          url,
-          log,
-        });
-        return;
-      }
-      shell.openExternal(url);
+    if (isAppUrl(url, { isDev })) return;
+    event.preventDefault();
+    if (isDescallSetupDownloadUrl(url)) {
+      downloadDescallSetupViaElectron({
+        webContents: mainWindow.webContents,
+        app,
+        url,
+        log,
+      });
+      return;
     }
+    openExternalSafely(url, 'will-navigate');
   });
 }
 
