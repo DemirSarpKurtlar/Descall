@@ -248,6 +248,7 @@ final class DescallLaunchSplashView: UIView {
     private var looper: AVPlayerLooper?
     private var endObserver: NSObjectProtocol?
     private var finished = false
+    private var stillLayer: CALayer?
 
     init(frame: CGRect, dark: Bool) {
         self.dark = dark
@@ -270,6 +271,7 @@ final class DescallLaunchSplashView: UIView {
         CATransaction.setDisableActions(true)
         oneShotLayer.frame = bounds
         loopLayer.frame = bounds
+        stillLayer?.frame = bounds
         CATransaction.commit()
     }
 
@@ -334,10 +336,9 @@ final class DescallLaunchSplashView: UIView {
         still.frame = bounds
         still.contents = image
         still.contentsGravity = .resizeAspectFill
-        oneShotLayer.addSublayer(still)
-        oneShotLayer.masksToBounds = true
-        still.frame = oneShotLayer.bounds
-        still.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        still.masksToBounds = true
+        layer.addSublayer(still)
+        stillLayer = still
     }
 
     func stop() {
