@@ -582,12 +582,16 @@ DECLARE
   v_ids uuid[] := '{}';
   v_errors integer := 0;
 BEGIN
+  -- Ended memberships, and memberships of deleted accounts (they would otherwise keep logging
+  -- withheld gift cycles forever).
   FOR r IN
-    SELECT * FROM public.user_subscriptions
-     WHERE status = 'active' AND NOT unlimited AND ends_at <= now()
-     ORDER BY ends_at
+    SELECT s.* FROM public.user_subscriptions s
+     WHERE s.status = 'active'
+       AND ((NOT s.unlimited AND s.ends_at <= now())
+         OR EXISTS (SELECT 1 FROM public.users u WHERE u.id = s.user_id AND u.deleted_at IS NOT NULL))
+     ORDER BY s.ends_at NULLS LAST
      LIMIT 500
-     FOR UPDATE SKIP LOCKED
+     FOR UPDATE OF s SKIP LOCKED
   LOOP
     BEGIN
       PERFORM public.premium_pay_cycles(r.user_id);   -- cycles that started before the end are still owed
@@ -595,7 +599,8 @@ BEGIN
        WHERE user_id = r.user_id;
       INSERT INTO public.subscription_events (user_id, kind, prev_plan, new_plan, prev_ends_at, new_ends_at,
         prev_unlimited, new_unlimited, actor_kind, reason, is_free)
-      VALUES (r.user_id, 'expire', r.plan_id, r.plan_id, r.ends_at, r.ends_at, false, false, 'system', 'ended', r.is_free);
+      VALUES (r.user_id, 'expire', r.plan_id, r.plan_id, r.ends_at, r.ends_at, r.unlimited, r.unlimited, 'system',
+        CASE WHEN NOT r.unlimited AND r.ends_at <= now() THEN 'ended' ELSE 'account_deleted' END, r.is_free);
       v_ids := v_ids || r.user_id;
     EXCEPTION WHEN OTHERS THEN
       v_errors := v_errors + 1;

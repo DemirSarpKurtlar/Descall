@@ -180,6 +180,14 @@ async function run() {
     eq([balance(U(6)), gifts(U(6))], [5000, 1], "frozen wallet gets no gift");
     eq(one(`SELECT meta->>'withheld' FROM subscription_events WHERE user_id = '${U(6)}' AND kind = 'coin_grant' ORDER BY created_at DESC LIMIT 1`), "wallet_frozen", "withheld reason");
 
+    // deleted account: the sweeper ends the membership (no endless withheld cycles)
+    await apply(U(7), "grant", { plan: "ultra", unlimited: true });
+    one(`UPDATE users SET deleted_at = now() WHERE id = '${U(7)}'`);
+    ex = await rpc("premium_expire_due", {});
+    eq([ex.expired, one(`SELECT status FROM user_subscriptions WHERE user_id = '${U(7)}'`)], [1, "expired"], "deleted account's membership ends");
+    eq(one(`SELECT reason FROM subscription_events WHERE user_id = '${U(7)}' AND kind = 'expire'`), "account_deleted", "with the reason");
+    eq((await apply(U(7), "grant", { plan: "plus", days: 3 })).error, "user_not_found", "deleted accounts get nothing");
+
     // ---- append-only events
     await rejects(pg.psqlAsync(url, `UPDATE subscription_events SET reason = 'x' WHERE user_id = '${U(1)}'`), /append-only/, "events cannot be updated");
     await rejects(pg.psqlAsync(url, `DELETE FROM subscription_events WHERE user_id = '${U(1)}'`), /append-only/, "events cannot be deleted");
