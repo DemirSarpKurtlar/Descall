@@ -23,21 +23,61 @@ export function rms(buf) {
   return Math.sqrt(sum / buf.length);
 }
 
-/** Raw mic louder than this counts as "the user is making sound" (≈ -54 dBFS). */
+/**
+ * 3.7.28: silence is judged relative to the raw mic, not with fixed levels.
+ * The old rule (raw ≥ 0.002 and processed ≤ 0.0002) fired on quiet rooms
+ * whose steady background (≈ -54 dBFS) the suppressor rightly removed, then
+ * sent the raw, un-suppressed mic: hiss / "cızırtı".
+ *
+ * "Speech-like" raw: ≥ 6 dB over its own slow noise floor (or loud, ≥ -40 dBFS),
+ * and above an absolute floor (-70 dBFS). "Swallowed": processed output more
+ * than 40 dB below raw. 3 s of speech-like + swallowed ticks → fallback.
+ */
+export const RAW_ABS_MIN = 0.0003;
+export const RAW_LOUD = 0.01;
+export const SPEECH_OVER_FLOOR = 2; // 6 dB
+export const OUT_BELOW_RAW = 0.01; // 40 dB
+/** Kept for older callers: rough -54 / -74 dBFS reference points. */
 export const RAW_SIGNAL_MIN = 0.002;
-/** Processed output quieter than this counts as silent (≈ -74 dBFS). */
 export const OUT_SILENT_MAX = 0.0002;
 export const SILENCE_WINDOW_MS = 3000;
 export const SUSPENDED_MS = 1500;
 export const TICK_MS = 250;
+/**
+ * Render clock behind the wall clock by more than this (accumulated since the
+ * last anchor) = one underrun. Accumulated, so the render callback's own
+ * chunking jitter (10-40 ms) never adds up, a graph that keeps missing
+ * quanta does. The first WARMUP_MS (worklet compile, device start) are skipped.
+ */
+export const UNDERRUN_LAG_S = 0.05;
+export const WARMUP_MS = 2000;
+/** This many underruns within OVERLOAD_WINDOW_MS → the engine cannot keep up. */
+export const OVERLOAD_UNDERRUNS = 4;
+export const OVERLOAD_WINDOW_MS = 10000;
+
+/**
+ * Suppressor order for this device. Firefox runs GTCRN far slower than
+ * Chromium, so it starts at RNNoise; a device that measured overload before
+ * starts at its saved cap ("rnnoise" or "dsp" = no neural stage).
+ */
+export function pickSuppressorOrder({ firefox = false, cap = null } = {}) {
+  if (cap === "dsp") return { engines: [], reason: "overload-cap" };
+  if (cap === "rnnoise") return { engines: ["rnnoise", "speex"], reason: "overload-cap" };
+  if (firefox) return { engines: ["rnnoise", "speex"], reason: "firefox" };
+  return { engines: ["gtcrn", "rnnoise", "speex"], reason: "default" };
+}
 
 /**
  * Watches one processed-mic session. Calls `onFallback(reason)` once, when
  *   - the context is not "running" for SUSPENDED_MS and resume() did not help
  *     ("context-suspended"), or
- *   - the raw mic has signal while the processed output is ~0 for
+ *   - speech-like raw signal is swallowed (processed > 40 dB below raw) for
  *     SILENCE_WINDOW_MS in total within that run ("processed-silent").
  * Muted (track disabled) time never counts.
+ * With `readClock` (AudioContext.currentTime, seconds) it also counts render
+ * underruns (the audio clock falling behind the wall clock: the graph, e.g. a
+ * neural worklet, cannot keep up) → `onUnderrun(total)`, and once
+ * OVERLOAD_UNDERRUNS land within OVERLOAD_WINDOW_MS → `onOverload(total)`.
  */
 export function createSilenceWatchdog({
   readRaw,
@@ -46,20 +86,31 @@ export function createSilenceWatchdog({
   getCtxState = () => "running",
   tryResume = () => {},
   onFallback = () => {},
+  readClock = null,
+  onUnderrun = () => {},
+  onOverload = () => {},
   now = () => Date.now(),
   setTimer = (fn, ms) => setInterval(fn, ms),
   clearTimer = (id) => clearInterval(id),
   windowMs = SILENCE_WINDOW_MS,
   suspendedMs = SUSPENDED_MS,
   tickMs = TICK_MS,
-  rawMin = RAW_SIGNAL_MIN,
-  outMax = OUT_SILENT_MAX,
+  rawAbsMin = RAW_ABS_MIN,
+  rawLoud = RAW_LOUD,
+  speechOverFloor = SPEECH_OVER_FLOOR,
+  outBelowRaw = OUT_BELOW_RAW,
 } = {}) {
-  let silentSince = null;
+  let silentMs = 0;
+  let lastTick = null;
   let suspendedSince = null;
   let fired = false;
   let timer = null;
-  let last = { raw: 0, out: 0, state: "running" };
+  let floor = null;
+  let underruns = 0;
+  let recentUnderruns = [];
+  let clockRef = null; // { wall, audio }
+  let runningSince = null;
+  let last = { raw: 0, out: 0, state: "running", floor: 0, underruns: 0 };
 
   function fire(reason) {
     if (fired) return;
@@ -72,9 +123,39 @@ export function createSilenceWatchdog({
     }
   }
 
+  function checkClock(t) {
+    if (!readClock) return;
+    const audio = Number(readClock());
+    if (!Number.isFinite(audio)) return;
+    if (runningSince == null) runningSince = t;
+    if (t - runningSince < WARMUP_MS) return;
+    if (!clockRef) {
+      clockRef = { wall: t, audio };
+      return;
+    }
+    const lag = (t - clockRef.wall) / 1000 - (audio - clockRef.audio);
+    if (lag > UNDERRUN_LAG_S) {
+      underruns += 1;
+      recentUnderruns.push(t);
+      try { onUnderrun(underruns); } catch { /* ignore */ }
+      // Re-anchor: count each stall once.
+      clockRef = { wall: t, audio };
+      recentUnderruns = recentUnderruns.filter((x) => t - x <= OVERLOAD_WINDOW_MS);
+      if (recentUnderruns.length >= OVERLOAD_UNDERRUNS) {
+        recentUnderruns = [];
+        try { onOverload(underruns); } catch { /* ignore */ }
+      }
+    } else if (lag < 0) {
+      // Clock ahead (a chunk landed early): re-anchor, never count it.
+      clockRef = { wall: t, audio };
+    }
+  }
+
   function step() {
     if (fired) return null;
     const t = now();
+    const dt = lastTick == null ? tickMs : Math.min(t - lastTick, tickMs * 4);
+    lastTick = t;
     const state = getCtxState();
     last.state = state;
     if (state === "closed") {
@@ -82,7 +163,8 @@ export function createSilenceWatchdog({
       return null;
     }
     if (state !== "running") {
-      silentSince = null;
+      clockRef = null;
+      runningSince = null;
       if (suspendedSince == null) {
         suspendedSince = t;
         tryResume();
@@ -91,20 +173,26 @@ export function createSilenceWatchdog({
       return last;
     }
     suspendedSince = null;
+    checkClock(t);
     if (!isEnabled()) {
-      silentSince = null;
+      silentMs = 0;
       return last;
     }
     const raw = Number(readRaw()) || 0;
     const out = Number(readOut()) || 0;
-    last = { raw, out, state };
-    if (raw >= rawMin && out <= outMax) {
-      if (silentSince == null) silentSince = t;
-      if (t - silentSince >= windowMs) fire("processed-silent");
-    } else if (out > outMax) {
-      silentSince = null;
+    // Slow noise floor: falls at once, rises ~2 % per tick.
+    if (floor == null || raw < floor) floor = raw;
+    else floor += (raw - floor) * 0.02;
+    const speechLike = raw >= rawAbsMin && (raw >= rawLoud || raw >= floor * speechOverFloor);
+    const swallowed = out < raw * outBelowRaw;
+    last = { raw, out, state, floor, underruns };
+    if (speechLike && swallowed) {
+      silentMs += dt;
+      if (silentMs >= windowMs) fire("processed-silent");
+    } else if (speechLike && !swallowed) {
+      silentMs = 0;
     }
-    // raw quiet + out quiet: nobody is talking, keep the window as it is.
+    // Not speech-like (quiet room, steady noise): keep the count as it is.
     return last;
   }
 
@@ -118,7 +206,7 @@ export function createSilenceWatchdog({
     timer = null;
   }
 
-  return { start, stop, step, get fired() { return fired; }, last: () => ({ ...last }) };
+  return { start, stop, step, get fired() { return fired; }, get underruns() { return underruns; }, last: () => ({ ...last }) };
 }
 
 /**

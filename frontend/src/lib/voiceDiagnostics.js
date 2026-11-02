@@ -10,8 +10,8 @@
  */
 
 const STATE_RE = /^[a-z-]{1,24}$/;
-const NUM_KEYS = ["rawRms", "processedRms", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
-const STR_KEYS = ["audioContextState", "nsEngine", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
+const NUM_KEYS = ["rawRms", "processedRms", "contextSampleRate", "captureSampleRate", "nsUnderruns", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
+const STR_KEYS = ["audioContextState", "nsEngine", "nsEngineReason", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
 const BOOL_KEYS = ["nsEnabled", "trackEnabled", "trackMuted", "uiMuted", "turnPresent", "iceConfigFetchOk"];
 
 export function sanitizeVoiceDiagnostics(input) {
@@ -85,6 +85,10 @@ export async function captureVoiceDiagnostics({ pc, localTrack, uiMuted, ns = {}
     audioContextState: ns.audioContextState || "none",
     rawRms: ns.rawRms ?? undefined,
     processedRms: ns.processedRms ?? undefined,
+    contextSampleRate: ns.contextSampleRate ?? undefined,
+    captureSampleRate: ns.captureSampleRate ?? undefined,
+    nsUnderruns: ns.underruns ?? undefined,
+    nsEngineReason: ns.engineReason || undefined,
     trackEnabled: localTrack ? Boolean(localTrack.enabled) : undefined,
     trackMuted: localTrack ? Boolean(localTrack.muted) : undefined,
     trackReadyState: localTrack?.readyState || "none",

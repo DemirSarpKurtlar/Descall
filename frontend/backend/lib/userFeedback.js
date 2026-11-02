@@ -77,8 +77,8 @@ function parseUserAgent(ua) {
   return { browser, os };
 }
 
-const VD_NUM = ["rawRms", "processedRms", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
-const VD_STR = ["audioContextState", "nsEngine", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
+const VD_NUM = ["rawRms", "processedRms", "contextSampleRate", "captureSampleRate", "nsUnderruns", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
+const VD_STR = ["audioContextState", "nsEngine", "nsEngineReason", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
 const VD_BOOL = ["nsEnabled", "trackEnabled", "trackMuted", "uiMuted", "turnPresent", "iceConfigFetchOk"];
 
 /** Voice diagnostic snapshot: whitelisted keys, short state words, numbers only. No IPs / ids. */

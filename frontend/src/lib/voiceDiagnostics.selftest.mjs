@@ -51,3 +51,17 @@ assert.equal(buildSubmitBody({ ...emptyForm("suggestion"), text: "tema güzel" }
 assert.equal(buildSubmitBody({ ...emptyForm("bug"), text: "ses gitmiyor", includeDevice: false }, { voiceDiag: vd }).voiceDiag, undefined);
 
 console.log("voiceDiagnostics.selftest ok");
+
+// 3.7.28: sample rates, underruns and engine reason reach the feedback row.
+{
+  const { sanitizeVoiceDiagnostics: sv } = await import("./voiceDiagnostics.js");
+  const o = sv({ contextSampleRate: 44100, captureSampleRate: 48000, nsUnderruns: 3, nsEngineReason: "firefox", processedRms: 0.001 });
+  assert.equal(o.contextSampleRate, 44100);
+  assert.equal(o.captureSampleRate, 48000);
+  assert.equal(o.nsUnderruns, 3);
+  assert.equal(o.nsEngineReason, "firefox");
+  const { createRequire } = await import("node:module");
+  const be = createRequire(import.meta.url)("../../backend/lib/userFeedback.js");
+  const b = be.sanitizeVoiceDiag({ contextSampleRate: 44100, captureSampleRate: 48000, nsUnderruns: 3, nsEngineReason: "firefox" });
+  assert.deepEqual(b, { contextSampleRate: 44100, captureSampleRate: 48000, nsUnderruns: 3, nsEngineReason: "firefox" }, "backend whitelist matches");
+}
