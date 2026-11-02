@@ -59,7 +59,7 @@ const {
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
 const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
-const { isAppUrl, isSafeExternalUrl } = require('./appTrust.cjs');
+const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 
@@ -145,6 +145,49 @@ function registerDescallProtocol() {
   return root;
 }
 
+// ---- IPC sender validation (appTrust.cjs) ----------------------------------------------
+// Sensitive channels (token, file system, download, settings, auth, updates, and every
+// premium:* channel) accept a message only from the top frame of a Descall window whose
+// URL has the app origin (descall://app, or the Vite origin in a dev run). Register them
+// with trustedHandle / trustedOn, never with a bare ipcMain call.
+/** True for the web contents of one of our app windows (main, Kayıt İstatistikleri, Yönetici Paneli). */
+function isDescallWebContents(wc) {
+  return [mainWindow, signupStatsWindow, adminPanelWindow].some(
+    (w) => w && !w.isDestroyed() && w.webContents === wc,
+  );
+}
+let senderGuard = null;
+function getSenderGuard() {
+  if (!senderGuard) senderGuard = createSenderGuard({ isDev, isKnownWebContents: isDescallWebContents, log });
+  return senderGuard;
+}
+/** Throws E_UNTRUSTED_SENDER unless the message comes from an app page in a Descall window. */
+function assertTrustedSender(event, channel = '') {
+  getSenderGuard().assertTrustedSender(event, channel);
+}
+/** ipcMain.handle with the sender check first (an untrusted invoke rejects). */
+function trustedHandle(channel, handler) {
+  ipcMain.handle(channel, (event, ...args) => {
+    assertTrustedSender(event, channel);
+    return handler(event, ...args);
+  });
+}
+/**
+ * ipcMain.on with the sender check first. An untrusted message is dropped; for a sendSync
+ * channel pass { sync: true, refused } so the renderer gets `refused` instead of hanging.
+ */
+function trustedOn(channel, handler, { sync = false, refused = null } = {}) {
+  ipcMain.on(channel, (event, ...args) => {
+    try {
+      assertTrustedSender(event, channel);
+    } catch (_) {
+      if (sync) event.returnValue = refused;
+      return undefined;
+    }
+    return handler(event, ...args);
+  });
+}
+
 function tokenFilePath() {
   return path.join(app.getPath('userData'), 'auth-token.bin');
 }
@@ -191,7 +234,7 @@ ipcMain.on('app:boot-state', (event, payload) => {
 
 // UI language (LocaleContext → preload electronAPI.setLocale) on boot and on every
 // change: tray menu, splash, dialogs, notification cards and the overlay follow it.
-ipcMain.on('app:locale', (event, locale) => {
+trustedOn('app:locale', (event, locale) => {
   const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
   if (!w || (w !== mainWindow && w !== signupStatsWindow && w !== adminPanelWindow)) return;
   if (setUiLocale(String(locale || '').slice(0, 16))) log.info(`[i18n] main-process language: ${getLocale()}`);
@@ -201,7 +244,7 @@ onLocaleChange(() => {
   refreshOverlayLanguage();
 });
 
-ipcMain.on('secure-token:get', (event) => {
+trustedOn('secure-token:get', (event) => {
   try {
     const file = tokenFilePath();
     if (!fs.existsSync(file)) {
@@ -216,9 +259,9 @@ ipcMain.on('secure-token:get', (event) => {
     log.warn('[secure-token] read failed:', err?.message || err);
     event.returnValue = null;
   }
-});
+}, { sync: true, refused: null });
 
-ipcMain.on('secure-token:set', (event, token) => {
+trustedOn('secure-token:set', (event, token) => {
   try {
     const file = tokenFilePath();
     const value = String(token || '');
@@ -236,9 +279,9 @@ ipcMain.on('secure-token:set', (event, token) => {
     log.warn('[secure-token] write failed:', err?.message || err);
     event.returnValue = false;
   }
-});
+}, { sync: true, refused: false });
 
-ipcMain.on('secure-token:clear', (event) => {
+trustedOn('secure-token:clear', (event) => {
   try {
     const file = tokenFilePath();
     if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -246,7 +289,7 @@ ipcMain.on('secure-token:clear', (event) => {
   } catch {
     event.returnValue = false;
   }
-});
+}, { sync: true, refused: false });
 
 // Background / tray: keep the renderer fully awake so socket events keep
 // arriving and the message sound can play without a prior click (the app
@@ -1864,7 +1907,7 @@ app.whenReady().then(async () => {
   // After an update is applied (or on every launch), drop older Setup installers from Downloads
   pruneOldSetupDownloads('app-ready', app.isPackaged ? app.getVersion() : null);
 
-  registerProcessScannerIPC();
+  registerProcessScannerIPC({ assertSender: assertTrustedSender });
   registerOverlayIPC(() => mainWindow);
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
@@ -2116,13 +2159,13 @@ function showAppNotification({ title, options = {} } = {}) {
   return win;
 }
 
-ipcMain.on('notification:show', (_event, payload = {}) => {
+trustedOn('notification:show', (_event, payload = {}) => {
   showAppNotification(payload);
 });
 
 // Incoming-call toasts use duration 0. The renderer closes them by tag when
 // the ring ends (accept, decline, cancel, end, miss, answered elsewhere).
-ipcMain.on('notification:close', (_event, payload = {}) => {
+trustedOn('notification:close', (_event, payload = {}) => {
   const tags = Array.isArray(payload.tags) ? payload.tags : [payload.tag];
   for (const tag of tags) {
     if (!tag || !activeNotifByTag.has(tag)) continue;
@@ -2132,7 +2175,7 @@ ipcMain.on('notification:close', (_event, payload = {}) => {
   }
 });
 
-ipcMain.handle('show-notification', (_event, payload = {}) => {
+trustedHandle('show-notification', (_event, payload = {}) => {
   const title = payload?.title;
   const options = payload?.options
     ? payload.options
@@ -2150,7 +2193,7 @@ ipcMain.handle('show-notification', (_event, payload = {}) => {
 
 // IPC handlers
 // Composer paste fallback: clipboard image as PNG bytes (null when none).
-ipcMain.handle('clipboard:read-image', () => {
+trustedHandle('clipboard:read-image', () => {
   try {
     const img = clipboard.readImage();
     if (!img || img.isEmpty()) return null;
@@ -2165,7 +2208,7 @@ ipcMain.handle('app-version', () => {
   return app.getVersion();
 });
 
-ipcMain.handle('check-for-updates', async () => {
+trustedHandle('check-for-updates', async () => {
   if (!isPackaged) return { success: true, skipped: true };
   try {
     const result = await checkForAppUpdates('ipc');
@@ -2195,9 +2238,9 @@ ipcMain.on('activity:set-busy', (event, busy) => {
   if (updateReady && !next) evaluatePendingUpdate('user-busy');
 });
 
-ipcMain.handle('restart-app', () => requestExplicitInstall('ipc'));
+trustedHandle('restart-app', () => requestExplicitInstall('ipc'));
 
-ipcMain.handle('restart-app-confirmed', () => {
+trustedHandle('restart-app-confirmed', () => {
   // The user explicitly chose to end the call and restart.
   if (!updateReady) {
     isQuitting = true;
@@ -2252,7 +2295,7 @@ ipcMain.handle('focus-window', () => {
 });
 
 // Desktop capturer — screen share sources
-ipcMain.handle('get-screen-sources', async () => {
+trustedHandle('get-screen-sources', async () => {
   try {
     if (process.platform === 'darwin' && systemPreferences?.getMediaAccessStatus) {
       const access = systemPreferences.getMediaAccessStatus('screen');
@@ -2279,7 +2322,7 @@ ipcMain.handle('get-screen-sources', async () => {
 // Security: Handle downloads
 // The renderer names the file: safeDownload.cjs keeps it a plain file name directly
 // inside Downloads (no separators, '..', reserved characters or device names).
-ipcMain.on('download-file', async (event, payload) => {
+trustedOn('download-file', async (event, payload) => {
   try {
     const { url, filename } = payload || {};
     if (!isDownloadableUrl(url)) throw new Error('download-file: only http(s) URLs');
