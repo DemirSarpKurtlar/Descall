@@ -1,45 +1,38 @@
 'use strict';
 
 /**
- * global_mute (Descall+): a global hotkey toggles mute (and one toggles
- * deafen) from any app. globalShortcut is registered only while the user has
- * switched the feature on.
- * Settings: { enabled: boolean, deafen: boolean }
+ * global_mute (Descall+): global hotkeys toggle mute and deafen from any app.
+ * Off by default (globalShortcut takes the key away from other apps, so the
+ * user opts in). Settings: { enabled, deafen }
+ * Renderer: premium:hotkey { action: 'toggle_mute' | 'toggle_deafen' }.
  */
 
-let ctx = null;
-let offSettings = null;
+const { kit } = require('../moduleKit.cjs');
+const { getHotkeys } = require('../hotkeys.cjs');
 
-function settings() {
-  const s = ctx ? ctx.store.get('global_mute') : {};
-  return { enabled: Boolean(s.enabled), deafen: s.deafen !== false };
-}
+let k = null;
+let hk = null;
 
-function sync() {
-  if (!ctx) return;
-  const s = settings();
-  ctx.hotkeys.setHandler('toggle_mute', s.enabled ? () => ctx.send('premium:hotkey', { action: 'toggle_mute' }) : null);
-  ctx.hotkeys.setHandler('toggle_deafen', s.enabled && s.deafen ? () => ctx.send('premium:hotkey', { action: 'toggle_deafen' }) : null);
+function sync(ctx) {
+  const s = k.settings();
+  hk.setHandler('toggle_mute', () => ctx.send('premium:hotkey', { action: 'toggle_mute', source: 'hotkey' }));
+  hk.setHandler('toggle_deafen', s.deafen === false ? null : () => ctx.send('premium:hotkey', { action: 'toggle_deafen', source: 'hotkey' }));
 }
 
 module.exports = {
   key: 'global_mute',
-  start(c) {
-    ctx = c;
-    const onSettings = (key) => { if (key === 'global_mute' || key === 'custom_hotkeys') sync(); };
-    ctx.events.on('settings', onSettings);
-    offSettings = () => ctx.events.off('settings', onSettings);
-    sync();
+  defaultEnabled: false,
+  start(ctx) {
+    k = kit(ctx);
+    hk = getHotkeys(ctx);
+    k.onSettings(['global_mute'], () => sync(ctx));
+    ctx.handle('premium:global_mute:status', () => ({ ok: true, hotkeys: hk.status() }));
+    sync(ctx);
   },
   stop() {
-    if (!ctx) return;
-    ctx.hotkeys.setHandler('toggle_mute', null);
-    ctx.hotkeys.setHandler('toggle_deafen', null);
-    offSettings?.();
-    offSettings = null;
-    ctx = null;
-  },
-  status() {
-    return ctx ? { enabled: settings().enabled } : null;
+    hk?.setHandler('toggle_mute', null);
+    hk?.setHandler('toggle_deafen', null);
+    k?.dispose();
+    k = null;
   },
 };

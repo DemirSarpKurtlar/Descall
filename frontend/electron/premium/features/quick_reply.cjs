@@ -26,6 +26,8 @@
 
 const { Notification } = require('electron');
 const { TOAST_CLSID, toastIdentityReady } = require('../toastIdentity.cjs');
+const notifyHooks = require('../notifyHooks.cjs');
+const { et } = require('../../mainI18n.cjs');
 
 const KEEP_MS = 10 * 60 * 1000;
 const MAX_LIVE = 20;
@@ -35,10 +37,7 @@ const live = new Map(); // id -> { n, conv, at, replied }
 let seq = 0;
 let activationBound = false;
 
-function settings() {
-  const s = ctx ? ctx.store.get('quick_reply') : {};
-  return { enabled: s.enabled !== false };
-}
+let offFilter = null;
 
 /** conv id for the quick-reply route ("dm:<peerId>"), or null when not replyable. */
 function replyTarget(data = {}) {
@@ -112,7 +111,7 @@ function showNative({ title, body, conv, onClick }) {
       title: String(title || 'Descall').slice(0, 120),
       body: String(body || '').slice(0, 300),
       hasReply: true,
-      replyPlaceholder: ctx.et('premium.quickReply.placeholder'),
+      replyPlaceholder: et('premium.quickReply.placeholder'),
       silent: false,
       id,
     });
@@ -131,32 +130,40 @@ function showNative({ title, body, conv, onClick }) {
   return true;
 }
 
+function status() {
+  const can = supported();
+  return { ok: true, mode: can.ok ? 'native' : 'unavailable', reason: can.ok ? null : can.reason, clsid: TOAST_CLSID };
+}
+
+/** Marks replyable DMs; main.cjs then shows them with showNative() when possible. */
+function filterNotification(payload) {
+  if (!ctx) return payload;
+  const data = payload?.options?.data || {};
+  const conv = replyTarget(data);
+  if (!conv) return payload;
+  return { ...payload, quickReply: { conv } };
+}
+
 module.exports = {
   key: 'quick_reply',
   start(c) {
     ctx = c;
     bindActivation();
+    offFilter = notifyHooks.register('quick_reply', filterNotification);
+    notifyHooks.setQuickReplyHandler(showNative);
+    ctx.handle('premium:quick_reply:status', () => status());
   },
   stop() {
+    offFilter?.();
+    offFilter = null;
+    notifyHooks.setQuickReplyHandler(null);
     for (const { n } of live.values()) {
       try { n.close(); } catch (_) { /* ignore */ }
     }
     live.clear();
     ctx = null;
   },
-  status() {
-    if (!ctx) return null;
-    const can = supported();
-    return { enabled: settings().enabled, mode: can.ok ? 'native' : 'unavailable', reason: can.ok ? null : can.reason, clsid: TOAST_CLSID };
-  },
-  /** Marks replyable DMs; main.cjs shows them with showNative() when possible. */
-  filterNotification(payload) {
-    if (!ctx || !settings().enabled) return payload;
-    const data = payload?.options?.data || {};
-    const conv = replyTarget(data);
-    if (!conv) return payload;
-    return { ...payload, quickReply: { conv } };
-  },
+  filterNotification,
   showNative,
   replyTarget,
   nativeSupport,

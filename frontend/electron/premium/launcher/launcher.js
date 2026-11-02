@@ -14,6 +14,7 @@
 
   function applyStrings(s) {
     strings = s || {};
+    if (strings.lang) document.documentElement.lang = String(strings.lang).replace(/[^A-Za-z-]/g, '');
     input.placeholder = strings.placeholder || '';
     input.setAttribute('aria-label', strings.placeholder || '');
     hint.textContent = strings.hint || '';

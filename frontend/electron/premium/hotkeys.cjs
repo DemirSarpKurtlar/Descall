@@ -1,11 +1,14 @@
 'use strict';
 
 /**
- * Global hotkey manager shared by the Descall+ desktop modules.
- * Feature modules switch actions on with setHandler(action, fn); the manager
- * registers only those actions with globalShortcut and only Descall's own
- * shortcuts are ever unregistered. Nothing is registered while every action
- * is off, so free users see no change.
+ * Global hotkey manager shared by the Descall+ hotkey modules (one per process).
+ * A module switches an action on with setHandler(action, fn); the manager
+ * registers only those actions with globalShortcut, and only Descall's own
+ * registrations are ever released. With every action off nothing is
+ * registered, so free users and switched-off features see no change.
+ *
+ * Custom bindings (store features.custom_hotkeys.bindings) apply only while the
+ * custom_hotkeys module runs (it calls setCustomAllowed(true)).
  */
 
 const {
@@ -17,20 +20,20 @@ const {
   findConflicts,
 } = require('./hotkeyLogic.cjs');
 
-function createHotkeyManager({ globalShortcut, store, gate, log = console } = {}) {
+function createHotkeyManager({ globalShortcut, store = null, log = console } = {}) {
   const handlers = new Map();
   const owned = new Map(); // accel -> action
   let failures = [];
+  let customAllowed = false;
   const listeners = new Set();
 
   function customMap() {
-    const s = store ? store.get('custom_hotkeys') : {};
-    return s && typeof s.bindings === 'object' ? s.bindings : {};
+    const s = store ? store.feature('custom_hotkeys') : {};
+    return s && s.bindings && typeof s.bindings === 'object' ? s.bindings : {};
   }
 
   function bindings() {
-    const allowCustom = Boolean(gate && gate.has('custom_hotkeys'));
-    return resolveBindings(customMap(), { allowCustom });
+    return resolveBindings(customMap(), { allowCustom: customAllowed });
   }
 
   function unregisterOwned() {
@@ -40,16 +43,25 @@ function createHotkeyManager({ globalShortcut, store, gate, log = console } = {}
     owned.clear();
   }
 
+  function status() {
+    return {
+      bindings: bindings(),
+      customAllowed,
+      active: [...handlers.keys()],
+      registered: [...owned.entries()].map(([accel, action]) => ({ action, accel })),
+      failures: failures.slice(),
+    };
+  }
+
   function apply() {
     unregisterOwned();
     failures = [];
     const map = bindings();
     const active = {};
     for (const [action, accel] of Object.entries(map)) {
-      if (!handlers.has(action) || !accel) continue;
-      active[action] = accel;
+      if (handlers.has(action) && accel) active[action] = accel;
     }
-    // Duplicates / reserved / invalid are not registered at all.
+    // Duplicates / reserved / invalid bindings are not registered at all.
     const issues = findConflicts(active, { reserved: RESERVED });
     const blocked = new Set(issues.map((i) => i.action));
     failures = issues.slice();
@@ -59,61 +71,58 @@ function createHotkeyManager({ globalShortcut, store, gate, log = console } = {}
       try {
         ok = globalShortcut.register(accel, () => {
           const fn = handlers.get(action);
-          if (fn) {
-            try { fn({ action, accel }); } catch (err) { log.warn('[premium:hotkeys] handler failed', action, err?.message || err); }
-          }
+          if (!fn) return;
+          try { fn({ action, accel }); } catch (err) { log.warn('[premium:hotkeys] handler failed', action, err?.message || err); }
         });
-      } catch (err) {
+      } catch (_) {
         ok = false;
       }
       if (ok) owned.set(accel, action);
       else failures.push({ action, accel, reason: 'taken' });
     }
-    if (failures.length) log.info('[premium:hotkeys] not registered:', failures.map((f) => `${f.action}=${f.accel} (${f.reason})`).join(', '));
-    for (const fn of listeners) {
-      try { fn(status()); } catch (_) { /* ignore */ }
+    if (failures.length) {
+      log.info('[premium:hotkeys] not registered:', failures.map((f) => `${f.action}=${f.accel} (${f.reason})`).join(', '));
     }
-    return status();
+    const snap = status();
+    for (const fn of listeners) {
+      try { fn(snap); } catch (_) { /* ignore */ }
+    }
+    return snap;
   }
 
   function setHandler(action, fn) {
     if (!ACTIONS[action]) return;
+    const had = handlers.has(action);
     if (typeof fn === 'function') handlers.set(action, fn);
     else handlers.delete(action);
+    if (had || handlers.has(action)) apply();
+  }
+
+  function setCustomAllowed(on) {
+    if (customAllowed === Boolean(on)) return;
+    customAllowed = Boolean(on);
     apply();
   }
 
-  function status() {
-    return {
-      bindings: bindings(),
-      active: [...handlers.keys()],
-      registered: [...owned.entries()].map(([accel, action]) => ({ action, accel })),
-      failures: failures.slice(),
-    };
-  }
-
-  /**
-   * Check a proposed map before saving it (settings UI). Accelerators held by
-   * Descall itself for the same action do not count as taken.
-   */
+  /** Validate a proposed map (settings UI). Descall's own registrations are not "taken". */
   function check(proposed = {}) {
     const merged = { ...bindings(), ...proposed };
-    const mine = new Set([...owned.keys()]);
     return findConflicts(merged, {
       isRegistered: (accel) => {
-        if (mine.has(accel)) return false;
+        if (owned.has(accel)) return false;
         try { return globalShortcut.isRegistered(accel); } catch (_) { return false; }
       },
     });
   }
 
   /**
-   * Probe whether another app holds an accelerator: register and release it
-   * right away. Only used from the settings UI on demand.
+   * Does another app hold this accelerator? Register and release it at once
+   * (globalShortcut.register returns false when the OS refuses it).
    */
   function probe(accel) {
-    const a = normalizeAccelerator(accel);
-    if (!a || isMouseBinding(a)) return { accel: a, free: Boolean(a) };
+    const a = normalizeAccelerator(String(accel || ''));
+    if (!a) return { accel: '', free: false, invalid: true };
+    if (isMouseBinding(a)) return { accel: a, free: true, mouse: true };
     if (owned.has(a)) return { accel: a, free: true, ours: true };
     let free = false;
     try {
@@ -134,7 +143,20 @@ function createHotkeyManager({ globalShortcut, store, gate, log = console } = {}
     unregisterOwned();
   }
 
-  return { setHandler, apply, status, bindings, check, probe, onStatus, dispose };
+  return { setHandler, setCustomAllowed, apply, status, bindings, check, probe, onStatus, dispose };
 }
 
-module.exports = { createHotkeyManager };
+let shared = null;
+
+/** The process-wide manager (created on first use by a running module). */
+function getHotkeys(ctx) {
+  if (!shared) {
+    // eslint-disable-next-line global-require
+    const { globalShortcut } = require('electron');
+    shared = createHotkeyManager({ globalShortcut, store: ctx.store, log: ctx.log });
+    try { ctx.bus.once('before-quit', () => shared?.dispose()); } catch (_) { /* ignore */ }
+  }
+  return shared;
+}
+
+module.exports = { createHotkeyManager, getHotkeys };
