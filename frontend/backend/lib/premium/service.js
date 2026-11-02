@@ -437,8 +437,8 @@ async function finance() {
     paid_count: null,
     free_count: dash ? dash.free_count : null,
     active_total: dash ? dash.active_total : null,
+    // The client shows "Odeme altyapisi henuz entegre edilmedi" from its catalogs under this key.
     message_key: "premium.finance.notIntegrated",
-    note: "Payment infrastructure is not integrated yet. No prices are set, so no revenue or estimate is shown.",
   };
 }
 

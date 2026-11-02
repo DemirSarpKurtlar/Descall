@@ -59,9 +59,9 @@ function requireFeature(feature) {
   if (!isFeatureKey(feature)) throw new Error(`Unknown premium feature: ${feature}`);
   return async (req, res, next) => {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: "Not signed in.", code: "UNAUTHENTICATED" });
+    if (!userId) return res.status(401).json({ error: "UNAUTHENTICATED", code: "UNAUTHENTICATED" });
     if (await hasFeature(userId, feature)) return next();
-    return res.status(403).json({ error: "This needs Descall+ or Descall Ultra.", code: "PREMIUM_REQUIRED", feature });
+    return res.status(403).json({ error: "PREMIUM_REQUIRED", code: "PREMIUM_REQUIRED", feature });
   };
 }
 
