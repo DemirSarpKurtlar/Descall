@@ -76,7 +76,7 @@
       "online": "En línea",
       "idle": "Ausente",
       "dnd": "No molestar",
-      "invisible": "Invisible",
+      "invisible": "Oculto",
       "inCall": "En llamada: {title}",
       "focus": "Modo concentración",
       "focusOn": "Modo concentración: quedan {minutes} min",
