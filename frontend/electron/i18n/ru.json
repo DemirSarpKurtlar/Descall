@@ -63,5 +63,26 @@
   "window": {
     "signupStats": "Статистика регистраций — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "launcher": {
+      "title": "Быстрый запуск",
+      "placeholder": "Ищите друзей, чаты, серверы или действия",
+      "empty": "Ничего не найдено",
+      "hint": "Enter — открыть, стрелки — выбрать, Esc — закрыть",
+      "loading": "Поиск"
+    },
+    "tray": {
+      "focus": "Режим фокуса",
+      "focusOn": "Режим фокуса: осталось {minutes} мин",
+      "focus30": "30 минут",
+      "focus60": "1 час",
+      "focus120": "2 часа",
+      "focusOff": "Выключить режим фокуса",
+      "audioProfile": "Аудиопрофиль"
+    },
+    "quickReply": {
+      "placeholder": "Ответить"
+    }
   }
 }

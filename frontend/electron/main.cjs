@@ -60,6 +60,13 @@ const {
 const { resolveDistFile } = require('./appProtocolPath.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
+// Descall+ / Ultra desktop features (electron/premium). Each module stays off
+// until the renderer sends the entitlement list and the user switches it on.
+const premium = require('./premium/index.cjs');
+const { applyToastIdentity } = require('./premium/toastIdentity.cjs');
+// Windows toast identity (AUMID = build.appId, fixed activator CLSID). Must run
+// before any notification; the NSIS shortcut carries the same values.
+applyToastIdentity(app, { log });
 
 // Logging
 log.transports.file.level = 'info';
@@ -1766,6 +1773,7 @@ function createTray() {
         showMainWindow();
       },
     },
+    ...premium.premiumTrayItems(),
     { type: 'separator' },
     {
       label: et('tray.startWithWindows'),
@@ -1853,6 +1861,20 @@ app.whenReady().then(async () => {
 
   registerProcessScannerIPC();
   registerOverlayIPC(() => mainWindow);
+  try {
+    const premiumCtx = premium.initPremium({
+      app,
+      ipcMain,
+      getMainWindow: () => mainWindow,
+      log,
+      globalShortcut,
+      et,
+    });
+    premiumCtx.events.on('tray-changed', () => rebuildTrayMenu?.());
+    premiumCtx.events.on('settings', () => rebuildTrayMenu?.());
+  } catch (err) {
+    log.warn('[premium] init failed:', err?.message || err);
+  }
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
   globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
@@ -1882,6 +1904,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
   destroyOverlayWindow();
+  try { premium.stopAll(); } catch (_) { /* ignore */ }
   if (!updateReady || installStarted || !app.isPackaged) return;
   try {
     installStarted = true;
@@ -2025,13 +2048,33 @@ function mainWindowInFront() {
   }
 }
 
-function showAppNotification({ title, options = {} } = {}) {
+function showAppNotification(payload = {}) {
+  // Descall+ modules may decorate (quick reply) or skip a toast.
+  const hooked = premium.premiumNotificationHook(payload);
+  if (!hooked) return null;
+  const { title, options = {} } = hooked;
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
   // Descall in front: the in-app UI (message list, incoming call card) is
   // already showing this. A toast on top would be a duplicate.
   if (mainWindowInFront() && (isCall || !requireInteraction)) return null;
+
+  // Descall+ quick reply: a DM becomes a native toast with an inline reply
+  // field where the OS supports it; otherwise the capsule below is shown.
+  if (hooked.quickReply && !isCall) {
+    const quickReply = premium._modules.get('quick_reply');
+    const shown = quickReply?.showNative?.({
+      title: data?.from || title,
+      body: data?.preview || body,
+      conv: hooked.quickReply.conv,
+      onClick: () => {
+        showMainWindow();
+        mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+      },
+    });
+    if (shown) return null;
+  }
 
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;

@@ -63,5 +63,26 @@
   "window": {
     "signupStats": "Kayıt İstatistikleri — Descall Yönetici",
     "adminPanel": "Descall Yönetici"
+  },
+  "premium": {
+    "launcher": {
+      "title": "Hızlı başlatıcı",
+      "placeholder": "Arkadaş, sohbet, sunucu veya eylem ara",
+      "empty": "Sonuç bulunamadı",
+      "hint": "Açmak için Enter, gezinmek için ok tuşları, kapatmak için Esc",
+      "loading": "Aranıyor"
+    },
+    "tray": {
+      "focus": "Odak modu",
+      "focusOn": "Odak modu: {minutes} dk kaldı",
+      "focus30": "30 dakika",
+      "focus60": "1 saat",
+      "focus120": "2 saat",
+      "focusOff": "Odak modunu bitir",
+      "audioProfile": "Ses profili"
+    },
+    "quickReply": {
+      "placeholder": "Yanıtla"
+    }
   }
 }

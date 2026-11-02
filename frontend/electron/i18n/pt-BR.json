@@ -63,5 +63,26 @@
   "window": {
     "signupStats": "Estatísticas de cadastro — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "launcher": {
+      "title": "Inicializador rápido",
+      "placeholder": "Busque amigos, conversas, servidores ou ações",
+      "empty": "Nada encontrado",
+      "hint": "Enter para abrir, setas para navegar, Esc para fechar",
+      "loading": "Buscando"
+    },
+    "tray": {
+      "focus": "Modo foco",
+      "focusOn": "Modo foco: faltam {minutes} min",
+      "focus30": "30 minutos",
+      "focus60": "1 hora",
+      "focus120": "2 horas",
+      "focusOff": "Encerrar modo foco",
+      "audioProfile": "Perfil de áudio"
+    },
+    "quickReply": {
+      "placeholder": "Responder"
+    }
   }
 }

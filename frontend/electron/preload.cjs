@@ -158,5 +158,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 });
 
+// Descall+ / Ultra bridge: `premium:` channels only (electron/premium/index.cjs).
+const PREMIUM_INVOKE = new Set(['premium:entitlements', 'premium:settings:get', 'premium:settings:set', 'premium:status', 'premium:call']);
+const PREMIUM_SEND = new Set(['premium:voice-state', 'premium:activity']);
+contextBridge.exposeInMainWorld('descallPremium', {
+  invoke: (channel, payload) => {
+    const ch = String(channel || '');
+    if (!PREMIUM_INVOKE.has(ch)) return Promise.reject(new Error('premium: channel not allowed'));
+    return ipcRenderer.invoke(ch, payload);
+  },
+  send: (channel, payload) => {
+    const ch = String(channel || '');
+    if (PREMIUM_SEND.has(ch)) ipcRenderer.send(ch, payload);
+  },
+  on: (channel, callback) => {
+    const ch = String(channel || '');
+    if (!ch.startsWith('premium:') || typeof callback !== 'function') return () => {};
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on(ch, handler);
+    return () => ipcRenderer.off(ch, handler);
+  },
+});
+
 // Log preload loaded
 console.log('[Preload] Electron API exposed');

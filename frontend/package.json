@@ -206,5 +206,8 @@
     "asarUnpack": [],
     "compression": "maximum",
     "removePackageScripts": true
+  },
+  "optionalDependencies": {
+    "uiohook-napi": "1.5.5"
   }
 }

@@ -63,5 +63,26 @@
   "window": {
     "signupStats": "Sign-up Stats — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "launcher": {
+      "title": "Quick launcher",
+      "placeholder": "Search friends, chats, servers or actions",
+      "empty": "Nothing found",
+      "hint": "Enter to open, arrow keys to move, Esc to close",
+      "loading": "Searching"
+    },
+    "tray": {
+      "focus": "Focus mode",
+      "focusOn": "Focus mode: {minutes} min left",
+      "focus30": "30 minutes",
+      "focus60": "1 hour",
+      "focus120": "2 hours",
+      "focusOff": "End focus mode",
+      "audioProfile": "Audio profile"
+    },
+    "quickReply": {
+      "placeholder": "Reply"
+    }
   }
 }
