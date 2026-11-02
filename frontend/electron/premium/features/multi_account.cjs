@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Multiple accounts (Ultra). Each extra account runs in its own window on its own session
  * partition (session.fromPartition('persist:acct-<id>')): separate localStorage, IndexedDB,
@@ -8,11 +10,13 @@
  * chosen by main.cjs's secure-token handlers from the sender's session.
  * The partition gets the same descall:// protocol handler and media permission list as the
  * default session; the CSP is carried by the protocol response itself, so it is unchanged.
- * Premium IPC from an account window is refused (entitlements belong to the main account).
+ * Premium IPC from an account window is refused (entitlements belong to the main account),
+ * except 'premium:multi_account:whoami', checked here against the account sessions.
  * Cost: one full renderer per extra account (~200-400 MB), so the switcher caps it at 3.
  */
 
-const { BrowserWindow, session, app } = require('electron');
+const { BrowserWindow, session, app, ipcMain } = require('electron');
+const hostHooks = require('../hostHooks.cjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -146,13 +150,13 @@ function listPublic() {
   return readAccounts().map((a) => ({ id: a.id, label: a.label, createdAt: a.createdAt, open: Boolean(windows.get(a.id) && !windows.get(a.id).isDestroyed()), signedIn: fs.existsSync(path.join(ctx.storeDir(), 'accounts', a.id, 'auth-token.bin')) }));
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'multi_account',
   start(c) {
     ctx = c;
     // Sessions of known accounts exist up front so their token files resolve.
     for (const a of readAccounts()) sessionFor(a.id);
-    ctx.shared.set('multi_account', { tokenFileForSession });
+    hostHooks.set('tokenFileForSession', tokenFileForSession);
     ctx.handle('premium:multi_account:list', () => ({ ok: true, accounts: listPublic(), max: MAX_EXTRA }));
     ctx.handle('premium:multi_account:add', () => add());
     ctx.handle('premium:multi_account:open', (_e, id) => open(String(id || '')));
@@ -167,22 +171,26 @@ module.exports = {
       rebuildTray();
       return { ok: true };
     });
-    // An account window reports who signed in, so the tray can show the name.
-    ctx.handle('premium:multi_account:whoami', (event, who = {}) => {
+    // An account window reports who signed in, so the tray can show the name. Registered on
+    // ipcMain directly: the host only lets the main window and its own windows through.
+    ipcMain.removeHandler('premium:multi_account:whoami');
+    ipcMain.handle('premium:multi_account:whoami', (event, who = {}) => {
+      if (!ctx) return { ok: false };
       const ses = event.sender.session;
-      const id = [...sessions].find(([, s]) => s === ses)?.[0];
+      const id = [...sessions].find(([, s2]) => s2 === ses)?.[0];
       if (!id) return { ok: false };
       const list = readAccounts().map((a) => (a.id === id ? { ...a, label: String(who.username || '').slice(0, 40) } : a));
       writeAccounts(list);
       rebuildTray();
       return { ok: true, id };
-    }, { anySender: true });
+    });
   },
   stop() {
+    ipcMain.removeHandler('premium:multi_account:whoami');
     for (const w of windows.values()) { try { if (!w.isDestroyed()) w.destroy(); } catch (_) { /* ignore */ } }
     windows.clear();
     // Sessions stay registered: tokens of extra accounts still resolve to their own files.
     ctx = null;
   },
   _tokenFileForSession: tokenFileForSession,
-};
+});

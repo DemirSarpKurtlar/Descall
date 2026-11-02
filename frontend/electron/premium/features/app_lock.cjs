@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * App lock (Descall+): PIN lock with a salted scrypt hash, stored encrypted with safeStorage
  * (userData/premium/app-lock.bin). Locks on system idle, on minimize and on OS lock, each
@@ -88,7 +90,7 @@ function onSystemLock() {
   if (config.enabled && config.onSystemLock) lock('system');
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'app_lock',
   start(c) {
     ctx = c;
@@ -155,4 +157,4 @@ module.exports = {
     locked = false;
     ctx = null;
   },
-};
+});

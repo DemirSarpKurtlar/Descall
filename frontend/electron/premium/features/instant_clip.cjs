@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Instant clip (Ultra), main-process side: capture source list (desktopCapturer), the save
  * hotkey, a save-to-disk dialog and CPU / RAM metrics. The ring buffer itself runs in the
@@ -39,7 +41,7 @@ function metrics() {
   };
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'instant_clip',
   start(c) {
     ctx = c;
@@ -84,4 +86,4 @@ module.exports = {
     ctx = null;
   },
   _metrics: () => metrics(),
-};
+});

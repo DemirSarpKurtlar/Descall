@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Workspace profiles (Ultra), main side: global hotkeys and tray entries that switch the
  * active profile. The profiles themselves (notification profile, layout, status, audio
@@ -8,7 +10,7 @@
 
 let ctx = null;
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'workspace_profiles',
   start(c) {
     ctx = c;
@@ -37,4 +39,4 @@ module.exports = {
   stop() {
     ctx = null;
   },
-};
+});

@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Custom layouts (Ultra): named widget layouts saved in the main process (userData/premium)
  * so they survive a cache wipe, applied through the widgets service.
@@ -13,7 +15,7 @@ function readAll() {
   return { layouts: Array.isArray(v.layouts) ? v.layouts : [], active: v.active || null };
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'custom_layouts',
   start(c) {
     ctx = c;
@@ -48,4 +50,4 @@ module.exports = {
   stop() {
     ctx = null;
   },
-};
+});

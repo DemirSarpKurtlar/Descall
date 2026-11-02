@@ -1,9 +1,11 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 // Command center (Ultra), main side: a global hotkey that brings Descall forward and opens the panel.
 let ctx = null;
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'command_center',
   start(c) {
     ctx = c;
@@ -21,4 +23,4 @@ module.exports = {
   stop() {
     ctx = null;
   },
-};
+});

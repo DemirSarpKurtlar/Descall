@@ -63,5 +63,29 @@
   "window": {
     "signupStats": "Registrierungsstatistik — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Stummschalten",
+      "unmute": "Stummschaltung aufheben",
+      "deafen": "Ton aus",
+      "undeafen": "Ton an",
+      "hangup": "Anruf verlassen",
+      "mini": "Minimodus öffnen",
+      "status": "Status",
+      "online": "Online",
+      "idle": "Abwesend",
+      "dnd": "Nicht stören",
+      "invisible": "Unsichtbar",
+      "inCall": "Im Anruf: {title}"
+    },
+    "taskbar": {
+      "unread": "{n} ungelesen"
+    },
+    "window": {
+      "mini": "Descall Minimodus",
+      "call": "Descall Anruf",
+      "sidebar": "Descall Seitenleiste"
+    }
   }
 }

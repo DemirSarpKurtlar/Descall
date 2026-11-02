@@ -158,16 +158,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 });
 
-// Descall+ / Ultra bridge (electron/premium). Only "premium:" channels pass; main checks
-// the sender and the entitlement on every handler.
-const PREMIUM_CHANNEL = /^premium:[a-z_]+(:[a-z_-]+)?$/;
+// Descall+ (electron/premium/index.cjs): one generic bridge, limited to 'premium:*'
+// channels, so feature modules never need a preload change. Main checks the sender and
+// the entitlement gate on every call.
+const isPremiumChannel = (channel) => typeof channel === 'string' && /^premium:[a-z0-9:_-]{1,64}$/i.test(channel);
 contextBridge.exposeInMainWorld('descallPremium', {
-  invoke: (channel, ...args) => (PREMIUM_CHANNEL.test(String(channel))
+  invoke: (channel, ...args) => (isPremiumChannel(channel)
     ? ipcRenderer.invoke(channel, ...args)
-    : Promise.reject(new Error('premium channel only'))),
-  on: (channel, callback) => {
-    if (!PREMIUM_CHANNEL.test(String(channel)) || typeof callback !== 'function') return () => {};
-    const handler = (_e, payload) => callback(payload);
+    : Promise.reject(new Error('premium channel expected'))),
+  on: (channel, fn) => {
+    if (!isPremiumChannel(channel) || typeof fn !== 'function') return () => {};
+    const handler = (_event, ...args) => fn(...args);
     ipcRenderer.on(channel, handler);
     return () => ipcRenderer.off(channel, handler);
   },

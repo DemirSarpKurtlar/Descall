@@ -4,8 +4,9 @@
 // It never reads the game's FPS: that needs injection into the game or admin-level
 // event tracing (ETW / PresentMon), both off limits (anti-cheat, privileges).
 const { createHudFeature } = require('../hudFeature.cjs');
+const { wrapFeature } = require('../compat.cjs');
 
-module.exports = createHudFeature({
+module.exports = wrapFeature(createHudFeature({
   key: 'gaming_hud',
   kind: 'gaming',
   defaults: { corner: 'tr', width: 230 },
@@ -18,4 +19,4 @@ module.exports = createHudFeature({
     if (show.friends !== false) h += 46 + 34 * Math.max(1, Math.min(6, (s.friends || []).length));
     return h;
   },
-});
+}));

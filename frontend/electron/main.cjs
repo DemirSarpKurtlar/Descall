@@ -5,8 +5,6 @@ const { showNotificationWindow, closeShownNotification, updateShownNotification 
 const { describeNotification } = require('./notificationCard.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible, refreshOverlayLanguage } = require('./overlayWindow.cjs');
-// Descall+ / Ultra desktop features (electron/premium): gated, off until the user enables them.
-const premium = require('./premium/index.cjs');
 const { autoUpdater } = require('electron-updater');
 const {
   decideUpdateInstall,
@@ -62,6 +60,10 @@ const {
 const { resolveDistFile } = require('./appProtocolPath.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
+// Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
+const premium = require('./premium/index.cjs');
+// Host hooks for premium modules that need main.cjs internals (multi_account partitions).
+const premiumHooks = require('./premium/hostHooks.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -117,6 +119,9 @@ function registerAppProtocolOn(ses) {
   return true;
 }
 
+premiumHooks.set('registerAppProtocolOn', registerAppProtocolOn);
+premiumHooks.set('mediaPermissions', MEDIA_PERMISSIONS);
+
 function registerDescallProtocol() {
   const root = distRoot();
   if (!root) return null;
@@ -147,7 +152,7 @@ function registerDescallProtocol() {
 
 function tokenFilePath(event) {
   // A premium multi_account window (own session partition) keeps its own token file.
-  const own = event ? premium.tokenFileForSender(event.sender) : null;
+  const own = event ? premiumHooks.tokenFileForSender(event.sender) : null;
   return own || path.join(app.getPath('userData'), 'auth-token.bin');
 }
 
@@ -241,6 +246,7 @@ ipcMain.on('secure-token:set', (event, token) => {
 });
 
 ipcMain.on('secure-token:clear', (event) => {
+  if (!premiumHooks.tokenFileForSender(event.sender)) premium.gate.reset();
   try {
     const file = tokenFilePath(event);
     if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -1252,6 +1258,7 @@ function createMainWindow() {
   // A secondary app window (Kayıt İstatistikleri, Yönetici Paneli) drives its own controls; everything else is the main window.
   const controlledWindow = (event) => {
     const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    if (w && premium.isAuxWindow(w.webContents)) return w;
     return w && w !== mainWindow && (w === signupStatsWindow || w === adminPanelWindow) ? w : mainWindow;
   };
   ipcMain.on('window:minimize', (event) => {
@@ -1390,22 +1397,6 @@ function createMainWindow() {
       }
     });
   });
-
-  // Premium desktop features: loader only. Every feature waits for the entitlement list
-  // from the renderer (premium:entitlements) and stays off until the user enables it.
-  try {
-    premium.initPremium({
-      getMainWindow: () => mainWindow,
-      log,
-      rebuildTray: () => rebuildTrayMenu?.(),
-      registerAppProtocolOn,
-      mediaPermissions: MEDIA_PERMISSIONS,
-      preloadPath: path.join(__dirname, 'preload.cjs'),
-      appUrl: () => (isDev ? 'http://localhost:5173' : 'descall://app/index.html'),
-    });
-  } catch (err) {
-    log.warn('[premium] init failed:', err?.message || err);
-  }
 
   // Load app. Boot watchdog (2.11.5, bootWatchdog.cjs): a failed main-frame
   // load is retried with backoff, then the user gets Tekrar dene / Çıkış; a
@@ -1691,7 +1682,9 @@ function createMainWindow() {
   });
 
   // Handle external links — Descall Setup assets download in-app so we can prune older installers
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
+    const premiumOpen = premium.windowOpen({ url, frameName, features });
+    if (premiumOpen) return premiumOpen;
     // Yönetici › Kayıt İstatistikleri: its own window (one at a time).
     if (isSignupStatsUrl(url, { isDev })) {
       if (signupStatsWindow && !signupStatsWindow.isDestroyed()) {
@@ -1729,7 +1722,9 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('did-create-window', (win, { url }) => {
+  mainWindow.webContents.on('did-create-window', (win, details) => {
+    if (premium.didCreateWindow(win, details)) return;
+    const { url } = details;
     const isStats = isSignupStatsUrl(url, { isDev });
     const isPanel = !isStats && isAdminPanelUrl(url, { isDev });
     if (!isStats && !isPanel) return;
@@ -1796,6 +1791,7 @@ function createTray() {
       },
     },
     { type: 'separator' },
+    ...premium.trayMenuItems(),
     {
       label: et('tray.startWithWindows'),
       type: 'checkbox',
@@ -1805,7 +1801,6 @@ function createTray() {
         tray.setContextMenu(buildMenu());
       },
     },
-    ...premium.trayMenuItems(),
     { type: 'separator' },
     {
       label: updateReady ? et('tray.updateAndQuit', { version: updateVersion || '' }) : et('tray.quit'),
@@ -1883,6 +1878,17 @@ app.whenReady().then(async () => {
 
   registerProcessScannerIPC();
   registerOverlayIPC(() => mainWindow);
+  premium.init({
+    electron: require('electron'),
+    getMainWindow: () => mainWindow,
+    appUrl: (route) => (isDev ? `http://localhost:5173${route}` : `descall://app${route}`),
+    tokenFile: tokenFilePath,
+    preloadPath: path.join(__dirname, 'preload.cjs'),
+    iconPath: resolveAppIcon(),
+    isDev,
+    rebuildTray: () => rebuildTrayMenu?.(),
+    log,
+  });
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
   globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
@@ -1911,6 +1917,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  premium.flush();
   destroyOverlayWindow();
   if (!updateReady || installStarted || !app.isPackaged) return;
   try {
@@ -2134,6 +2141,7 @@ function showAppNotification({ title, options = {} } = {}) {
 }
 
 ipcMain.on('notification:show', (_event, payload = {}) => {
+  if (premium.isAuxWindow(_event?.sender)) return; // Descall+ pop-outs: the main window notifies
   showAppNotification(payload);
 });
 

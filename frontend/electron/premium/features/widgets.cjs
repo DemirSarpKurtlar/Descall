@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Desktop widgets (Ultra): small frameless always-on-top windows (online friends, active
  * calls, notifications). The Widget Studio in the renderer places them; dragging a widget
@@ -60,7 +62,7 @@ function closeAll() {
   return { ok: true };
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'widgets',
   start(c) {
     ctx = c;
@@ -77,4 +79,4 @@ module.exports = {
     ctx = null;
   },
   _normWidget: normWidget,
-};
+});

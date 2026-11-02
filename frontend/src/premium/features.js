@@ -1,43 +1,90 @@
 /**
- * Descall+ / Descall Ultra feature keys (docs/premium/CONTRACT.md, "Feature keys").
- * One list shared by the client and mirrored by backend/lib/premium/entitlements.js.
- * A key marked "plus" is also available on "ultra". Free baseline features are not listed.
+ * Descall+ / Descall Ultra feature keys (phase 1). Single source for the client; the
+ * backend (lib/premium/entitlements.js) and Electron main (electron/premium/featureTiers.cjs)
+ * mirror it, and features.selftest.mjs checks both against docs/premium/CONTRACT.md.
+ *
+ * tier:    the lowest plan that unlocks the key ('plus' keys are also on 'ultra').
+ * desktop: true when the key only works in the desktop app.
+ * Free baseline keys stay free and are not listed. No imports: the backend can load it as is.
  */
-export const TIERS = ["plus", "ultra"];
 
-const P = (key, desktop) => ({ key, tier: "plus", desktop: Boolean(desktop) });
-const U = (key, desktop) => ({ key, tier: "ultra", desktop: Boolean(desktop) });
+export const PLANS = Object.freeze(["plus", "ultra"]);
 
-export const FEATURES = [
-  P("mini_mode", true), P("always_on_top", true), P("pip_call", true), P("multi_window", true),
-  P("window_opacity", true), P("session_restore", true), P("tray_controls_plus", true), P("taskbar_plus", true),
-  P("global_mute", true), P("global_ptt", true), P("custom_hotkeys", true), P("media_keys", true),
-  P("quick_launcher", true), P("notification_history", false), P("focus_mode", false),
-  P("notification_profiles", false), P("mic_presets", false), P("noise_gate", false), P("mic_monitor", false),
-  P("voice_activity_monitor", false), P("auto_device_switch", false), P("audio_routing", false),
-  P("audio_device_profiles", false), P("game_status", true), P("game_session_history", true),
-  P("smart_game_notifications", true), P("clipboard_history", true), P("quick_file_drop", true),
-  P("app_lock", true), P("quick_actions", false),
-  U("desktop_sidebar", true), U("screen_edge_actions", true), U("window_layouts", true),
-  U("advanced_window_mgmt", true), U("voice_hud", true), U("gaming_hud", true), U("instant_clip", true),
-  U("per_user_volume_hotkeys", true), U("stream_audio_control", true), U("workspace_profiles", false),
-  U("desktop_automations", true), U("activity_timeline", false), U("command_center", true), U("widgets", true),
-  U("custom_layouts", true), U("multi_account", true),
-  P("quick_reply", true),
-];
+/** Plan rank; a higher plan includes every key of the lower ones. Unknown plans rank 0 (free). */
+export const PLAN_RANK = Object.freeze({ plus: 1, ultra: 2 });
 
-export const FEATURE_MAP = Object.fromEntries(FEATURES.map((f) => [f.key, f]));
+/** DesCoin gifted on every 30-day cycle of an active membership. */
+export const PLAN_COIN = Object.freeze({ plus: 5000, ultra: 15000 });
 
-const RANK = { plus: 1, ultra: 2 };
+const f = (tier, desktop) => Object.freeze({ tier, desktop });
 
-/** True when a plan ("plus" | "ultra" | null) includes a feature of the given tier. */
-export function tierAllows(plan, tier) {
-  const have = RANK[String(plan || "")] || 0;
-  const need = RANK[String(tier || "")] || 0;
-  return have > 0 && need > 0 && have >= need;
+export const FEATURES = Object.freeze({
+  mini_mode: f("plus", true),
+  always_on_top: f("plus", true),
+  pip_call: f("plus", true),
+  multi_window: f("plus", true),
+  window_opacity: f("plus", true),
+  session_restore: f("plus", true),
+  tray_controls_plus: f("plus", true),
+  taskbar_plus: f("plus", true),
+  global_mute: f("plus", true),
+  global_ptt: f("plus", true),
+  custom_hotkeys: f("plus", true),
+  media_keys: f("plus", true),
+  quick_launcher: f("plus", true),
+  notification_history: f("plus", false),
+  focus_mode: f("plus", false),
+  notification_profiles: f("plus", false),
+  mic_presets: f("plus", false),
+  noise_gate: f("plus", false),
+  mic_monitor: f("plus", false),
+  voice_activity_monitor: f("plus", false),
+  auto_device_switch: f("plus", false),
+  audio_routing: f("plus", false),
+  audio_device_profiles: f("plus", false),
+  game_status: f("plus", true),
+  game_session_history: f("plus", true),
+  smart_game_notifications: f("plus", true),
+  clipboard_history: f("plus", true),
+  quick_file_drop: f("plus", true),
+  app_lock: f("plus", true),
+  quick_actions: f("plus", false),
+  desktop_sidebar: f("ultra", true),
+  screen_edge_actions: f("ultra", true),
+  window_layouts: f("ultra", true),
+  advanced_window_mgmt: f("ultra", true),
+  voice_hud: f("ultra", true),
+  gaming_hud: f("ultra", true),
+  instant_clip: f("ultra", true),
+  per_user_volume_hotkeys: f("ultra", true),
+  stream_audio_control: f("ultra", true),
+  workspace_profiles: f("ultra", false),
+  desktop_automations: f("ultra", true),
+  activity_timeline: f("ultra", false),
+  command_center: f("ultra", true),
+  widgets: f("ultra", true),
+  custom_layouts: f("ultra", true),
+  multi_account: f("ultra", true),
+  quick_reply: f("plus", true),
+});
+
+export const FEATURE_KEYS = Object.freeze(Object.keys(FEATURES));
+
+/** Normalised plan id, or null for free / unknown. */
+export function normalizePlan(plan) {
+  const p = String(plan || "").toLowerCase();
+  return PLAN_RANK[p] ? p : null;
 }
 
-/** Feature keys a plan unlocks. */
+/** True when `plan` unlocks feature `key`. Unknown keys and free plans are never allowed. */
+export function tierAllows(plan, key) {
+  const def = Object.prototype.hasOwnProperty.call(FEATURES, key) ? FEATURES[key] : null;
+  const p = normalizePlan(plan);
+  if (!def || !p) return false;
+  return PLAN_RANK[p] >= PLAN_RANK[def.tier];
+}
+
+/** Every key a plan unlocks, in table order. */
 export function featuresForPlan(plan) {
-  return FEATURES.filter((f) => tierAllows(plan, f.tier)).map((f) => f.key);
+  return FEATURE_KEYS.filter((k) => tierAllows(plan, k));
 }

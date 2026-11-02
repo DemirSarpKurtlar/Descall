@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Desktop automations (Ultra), main side: the OS idle signal for "idle" triggers. Polls
  * powerMonitor every 15 s only while at least one enabled rule uses the idle trigger.
@@ -38,7 +40,7 @@ function arm(sec) {
   timer.unref?.();
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'desktop_automations',
   start(c) {
     ctx = c;
@@ -48,4 +50,4 @@ module.exports = {
     arm(0);
     ctx = null;
   },
-};
+});

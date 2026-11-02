@@ -63,5 +63,29 @@
   "window": {
     "signupStats": "Statistiques d'inscription — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Couper le micro",
+      "unmute": "Réactiver le micro",
+      "deafen": "Mettre en sourdine",
+      "undeafen": "Réactiver le son",
+      "hangup": "Quitter l'appel",
+      "mini": "Ouvrir le mode mini",
+      "status": "Statut",
+      "online": "En ligne",
+      "idle": "Absent",
+      "dnd": "Ne pas déranger",
+      "invisible": "Invisible",
+      "inCall": "En appel : {title}"
+    },
+    "taskbar": {
+      "unread": "{n} non lus"
+    },
+    "window": {
+      "mini": "Descall mode mini",
+      "call": "Descall appel",
+      "sidebar": "Descall barre latérale"
+    }
   }
 }

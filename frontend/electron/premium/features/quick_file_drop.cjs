@@ -1,5 +1,7 @@
 'use strict';
 
+const { wrapFeature } = require('../compat.cjs');
+
 /**
  * Quick file drop (Descall+): a small always-on-top drop zone. Files dropped on it are read
  * in the drop window, handed to the main window and sent to the chosen recent chat through
@@ -55,7 +57,7 @@ function updateTray() {
   ctx.setTrayItems(trayLabel ? [{ label: trayLabel, click: () => (kit.get(ID) ? close() : open()) }] : []);
 }
 
-module.exports = {
+module.exports = wrapFeature({
   key: 'quick_file_drop',
   start(c) {
     ctx = c;
@@ -88,4 +90,4 @@ module.exports = {
     trayLabel = '';
     ctx = null;
   },
-};
+});

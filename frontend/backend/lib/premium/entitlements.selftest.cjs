@@ -34,14 +34,14 @@ function fakeDb(tables) {
 (async () => {
   // Mirror of src/premium/features.js
   const fe = await import(pathToFileURL(path.join(__dirname, '../../../src/premium/features.js')).href);
-  const clientTier = Object.fromEntries(fe.FEATURES.map((f) => [f.key, f.tier]));
+  const clientTier = Object.fromEntries(Object.entries(fe.FEATURES).map(([k, f]) => [k, f.tier]));
   assert.deepEqual(Object.keys(ent.FEATURE_TIER).sort(), Object.keys(clientTier).sort(), 'backend mirrors the client feature list');
   for (const [k, tier] of Object.entries(clientTier)) assert.equal(ent.FEATURE_TIER[k], tier, k);
   assert.deepEqual(ent.featuresFor('plus').sort(), fe.featuresForPlan('plus').sort());
   assert.deepEqual(ent.featuresFor('ultra').sort(), fe.featuresForPlan('ultra').sort());
   assert.deepEqual(ent.featuresFor(null), []);
-  assert.equal(fe.tierAllows('ultra', 'plus'), true);
-  assert.equal(fe.tierAllows('plus', 'ultra'), false);
+  assert.equal(fe.tierAllows('ultra', 'game_status'), true);
+  assert.equal(fe.tierAllows('plus', 'voice_hud'), false);
 
   // activePlan
   const future = new Date(Date.now() + 86_400_000).toISOString();
