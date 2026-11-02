@@ -57,7 +57,7 @@ const {
   SPLASH_RESCUE_MS,
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
-const { resolveDistFile } = require('./appProtocolPath.cjs');
+const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 
@@ -2290,10 +2290,16 @@ ipcMain.on('download-file', async (event, { url, filename }) => {
 
 // Register custom protocol for sounds
 app.on('ready', () => {
+  // Files under the app root only (appProtocolPath.cjs): '..' and outside paths get ACCESS_DENIED.
+  const legacyRoot = path.join(__dirname, '..');
   protocol.registerFileProtocol('app', (request, callback) => {
-    const url = request.url.substr(6); // Remove 'app://'
-    const filePath = path.join(__dirname, '..', url);
-    callback({ path: filePath });
+    const resolved = resolveLegacyAppFile(legacyRoot, request.url);
+    if (resolved.forbidden) {
+      log.warn('[protocol] app:// path refused:', String(request.url || '').slice(0, 200));
+      callback({ error: -10 }); // net::ERR_ACCESS_DENIED
+      return;
+    }
+    callback({ path: resolved.filePath });
   });
 });
 
