@@ -56,6 +56,47 @@ function isOwnMediaUrl(url, env = process.env) {
   return /\.supabase\.co$/.test(u.host) && u.pathname.startsWith("/storage/v1/object/");
 }
 
+/** "Chrome 156" / "macOS" out of a user agent (3.7.27, feedback triage). */
+function parseUserAgent(ua) {
+  const s = String(ua || "");
+  let browser = "unknown";
+  let m;
+  if ((m = s.match(/Descall\/([\d.]+)/)) && /Electron\//.test(s)) browser = `Descall Desktop ${m[1]}`;
+  else if ((m = s.match(/Edg\/(\d+)/))) browser = `Edge ${m[1]}`;
+  else if ((m = s.match(/OPR\/(\d+)/))) browser = `Opera ${m[1]}`;
+  else if ((m = s.match(/Firefox\/(\d+)/))) browser = `Firefox ${m[1]}`;
+  else if ((m = s.match(/(?:Chrome|CriOS)\/(\d+)/))) browser = `Chrome ${m[1]}`;
+  else if ((m = s.match(/Version\/(\d+)[\d.]* (?:Mobile\/\S+ )?Safari/))) browser = `Safari ${m[1]}`;
+  let os = "unknown";
+  if (/iPhone|iPad|iPod/.test(s)) os = "iOS";
+  else if (/Android/.test(s)) os = "Android";
+  else if (/Windows NT/.test(s)) os = "Windows";
+  else if (/Mac OS X|Macintosh/.test(s)) os = "macOS";
+  else if (/CrOS/.test(s)) os = "ChromeOS";
+  else if (/Linux/.test(s)) os = "Linux";
+  return { browser, os };
+}
+
+const VD_NUM = ["rawRms", "processedRms", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
+const VD_STR = ["audioContextState", "nsEngine", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
+const VD_BOOL = ["nsEnabled", "trackEnabled", "trackMuted", "uiMuted", "turnPresent", "iceConfigFetchOk"];
+
+/** Voice diagnostic snapshot: whitelisted keys, short state words, numbers only. No IPs / ids. */
+function sanitizeVoiceDiag(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const out = {};
+  for (const k of VD_NUM) {
+    const n = Number(input[k]);
+    if (input[k] != null && input[k] !== "" && Number.isFinite(n)) out[k] = Math.max(-1e12, Math.min(1e12, Math.round(n * 1e5) / 1e5));
+  }
+  for (const k of VD_STR) {
+    const v = typeof input[k] === "string" ? input[k].trim().toLowerCase() : "";
+    if (v && /^[a-z-]{1,24}$/.test(v)) out[k] = v;
+  }
+  for (const k of VD_BOOL) if (typeof input[k] === "boolean") out[k] = input[k];
+  return Object.keys(out).length ? out : null;
+}
+
 /**
  * The submit body → the row fields we store, or { error }.
  * Accepts the old client shape too ({ category, priority, message }).
@@ -78,6 +119,16 @@ function sanitizeSubmission(body, { userAgent = "", env = process.env } = {}) {
     .filter((u) => isOwnMediaUrl(u, env))
     .slice(0, MAX_SHOTS);
   const includeDevice = b.includeDevice !== false;
+  // 3.7.27: browser / OS for triage (web reports used to say only "Web"), and
+  // the voice diagnostic snapshot for call reports. Both only with "Cihaz bilgisi".
+  if (includeDevice) {
+    const ua = String(userAgent || "");
+    if (ua) details.client = { ...parseUserAgent(ua), ua: clip(ua, 300) };
+    if (kind === "bug" || details.area === "voice") {
+      const vd = sanitizeVoiceDiag(b.voiceDiag);
+      if (vd) details.voiceDiag = vd;
+    }
+  }
   // Priority: a bug that happens every time is high, a bad rating raises it too.
   let priority = "medium";
   if (kind === "bug" && details.frequency === "always") priority = "high";
@@ -209,6 +260,8 @@ function appendUserReply(row, text, attachments = [], env = process.env) {
 }
 
 module.exports = {
+  parseUserAgent,
+  sanitizeVoiceDiag,
   KINDS,
   AREAS,
   FREQUENCIES,

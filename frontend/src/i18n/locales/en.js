@@ -2227,6 +2227,8 @@ export const phrases = {
   "Their microphone is connecting…": "Their microphone is connecting…",
   "Retry audio connection": "Try again",
   "Audio isn't coming through yet.": "Audio isn't coming through yet.",
+  "Couldn't connect.": "Couldn't connect.",
+  "Noise suppression was cutting your voice, switched to the normal mic.": "Noise suppression was cutting your voice, switched to the normal mic.",
   "Join the call": "Join the call",
   "Group voice call in progress": "Group voice call in progress",
   "Group video call in progress": "Group video call in progress",

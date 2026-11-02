@@ -586,7 +586,60 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       </div>
       )}
 
-      {isDm && mode === "active" && call?.mediaFlow === "retry" && !call?.ending ? (
+      {isDm && (mode === "active" || mode === "outgoing") && call?.connectFailed && !call?.ending ? (
+        <div
+          className="call-connect-failed"
+          role="alert"
+          style={{
+            position: "absolute",
+            top: "calc(96px + env(safe-area-inset-top, 0px))",
+            left: 16,
+            right: 16,
+            zIndex: 13,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "8px 8px 8px 16px",
+              borderRadius: 999,
+              background: "rgba(20,22,28,0.58)",
+              backdropFilter: "blur(40px) saturate(180%)",
+              WebkitBackdropFilter: "blur(40px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.28)",
+              color: "#fff",
+              fontSize: 14,
+              pointerEvents: "auto",
+            }}
+          >
+            <span>{t("Couldn't connect.")}</span>
+            <button
+              type="button"
+              onClick={() => call?.retryConnection?.()}
+              style={{
+                border: 0,
+                borderRadius: 999,
+                padding: "8px 14px",
+                background: "#34c759",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              {t("Retry audio connection")}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {isDm && mode === "active" && call?.mediaFlow === "retry" && !call?.connectFailed && !call?.ending ? (
         <div
           className="call-media-retry"
           role="status"

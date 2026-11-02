@@ -29,6 +29,8 @@ import speexWasmPath from "@sapphi-red/web-noise-suppressor/speex.wasm?url";
 import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?url";
 import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
 import { primeVoiceActivity } from "./voiceActivity";
+import { getLivePeerConnections } from "./iceConfig.js";
+import { createSilenceWatchdog, rms, swapToRawTrack } from "./micFailsafe.js";
 import {
   agcCompressorSettings,
   applyStoredMute,
@@ -61,8 +63,11 @@ const ENGINE_KEY = "descall:noiseSuppressionEngine";
 let sharedCtx = null;
 /** Wraps between dispose and the new session: the context must not be closed under them. */
 let wrapsInFlight = 0;
-/** @type {null | { rawStream: MediaStream, processedStream: MediaStream, nodes: any[], engine: string }} */
+/** @type {null | { rawStream: MediaStream, processedStream: MediaStream, processedTrack: MediaStreamTrack | null, nodes: any[], engine: string, watchdog?: any, onState?: any, ctx?: AudioContext, readRaw?: () => number, readOut?: () => number, fallback?: string | null }} */
 let activeSession = null;
+/** Why the last session sends the raw mic ("context-suspended", "processed-silent", …), for diagnostics. */
+let lastFallbackReason = null;
+export const MIC_FALLBACK_EVENT = "descall:mic-fallback";
 
 export function isNoiseSuppressionEnabled() {
   if (isNativeIosApp()) return false;
@@ -125,28 +130,72 @@ async function ensureAssets(ctx) {
   return wasm;
 }
 
-async function ensureContext() {
-  if (sharedCtx && sharedCtx.state !== "closed") {
-    if (sharedCtx.state === "suspended") {
-      try {
-        await sharedCtx.resume();
-      } catch {
-        /* ignore */
-      }
-    }
-    return sharedCtx;
-  }
-  sharedCtx = new (window.AudioContext || window.webkitAudioContext)({
-    sampleRate: 48000,
-    latencyHint: "interactive",
-  });
-  if (sharedCtx.state === "suspended") {
+function createContext() {
+  const Ctor = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext) : null;
+  if (!Ctor) return null;
+  try {
+    return new Ctor({ sampleRate: 48000, latencyHint: "interactive" });
+  } catch {
     try {
-      await sharedCtx.resume();
+      return new Ctor();
     } catch {
-      /* ignore */
+      return null;
     }
   }
+}
+
+/**
+ * 3.7.27: create / resume the shared context SYNCHRONOUSLY, in the same turn as
+ * the call / answer tap. Before this the context was created after `await
+ * getUserMedia`, outside the user gesture; Chrome / Safari then kept it
+ * "suspended" (resume() rejected or never settled, and the error was
+ * swallowed), so a live, enabled, unmuted but SILENT track was sent: "ses
+ * gitmiyor, izin verilmiş olsa bile".
+ */
+export function primeNoiseSuppressionContext() {
+  if (!isNoiseSuppressionEnabled()) return null;
+  if (typeof AudioWorkletNode === "undefined") return null;
+  if (!sharedCtx || sharedCtx.state === "closed") {
+    sharedCtx = createContext();
+    workletCtx = null;
+    workletPromise = null;
+  }
+  if (sharedCtx && sharedCtx.state !== "running") {
+    try {
+      const p = sharedCtx.resume();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {
+      /* checked again after wrapping */
+    }
+  }
+  return sharedCtx;
+}
+
+/** Resolve true once `ctx` runs, false after `timeoutMs` (resume rejected / ignored). */
+export async function resumeContext(ctx, timeoutMs = 600) {
+  if (!ctx) return false;
+  if (ctx.state === "running") return true;
+  if (ctx.state === "closed") return false;
+  let timer = null;
+  try {
+    await Promise.race([
+      Promise.resolve().then(() => ctx.resume()).catch(() => {}),
+      new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+  return ctx.state === "running";
+}
+
+async function ensureContext() {
+  if (!sharedCtx || sharedCtx.state === "closed") {
+    sharedCtx = createContext();
+    workletCtx = null;
+    workletPromise = null;
+  }
+  if (!sharedCtx) throw new Error("AudioContext unavailable");
+  await resumeContext(sharedCtx);
   return sharedCtx;
 }
 
@@ -277,12 +326,32 @@ async function wrapInto(rawStream) {
     ...rawStream.getVideoTracks(),
   ]);
 
+  // Level meters for the failsafe: raw mic vs what actually leaves the chain.
+  const rawMeter = makeMeter(ctx, source);
+  const outMeter = makeMeter(ctx, node);
+
   activeSession = {
     rawStream,
     processedStream: out,
-    nodes: [source, highpass, suppressor, gate, compressor, destination].filter(Boolean),
+    processedTrack: outTrack || null,
+    nodes: [source, highpass, suppressor, gate, compressor, destination, rawMeter?.node, outMeter?.node].filter(Boolean),
     engine,
+    ctx,
+    readRaw: rawMeter ? rawMeter.read : () => 0,
+    readOut: outMeter ? outMeter.read : () => 0,
+    fallback: null,
   };
+  lastFallbackReason = null;
+
+  // The tap is over by now. If the context still does not run, the processed
+  // track would be silent from the first frame: send the raw mic instead.
+  if (!(await resumeContext(ctx, 400))) {
+    console.warn(`[NoiseSuppression] AudioContext ${ctx.state}, sending the raw mic`);
+    lastFallbackReason = "context-not-running";
+    disposeNoiseSuppressionSession({ stopRaw: false, keepContext: true });
+    return rawStream;
+  }
+  armFailsafe(activeSession);
 
   try {
     localStorage.setItem(ENGINE_KEY, engine);
@@ -294,6 +363,106 @@ async function wrapInto(rawStream) {
   return out;
 }
 
+function makeMeter(ctx, from) {
+  try {
+    const node = ctx.createAnalyser();
+    node.fftSize = 1024;
+    from.connect(node);
+    const buf = new Float32Array(node.fftSize);
+    return {
+      node,
+      read: () => {
+        node.getFloatTimeDomainData(buf);
+        return rms(buf);
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * statechange (suspended / interrupted mid-call: device change, OS audio
+ * interruption, sleep) → resume; if the context does not come back, or the
+ * processed output stays silent while the raw mic has signal, switch every
+ * sender to the raw mic (watchdog in micFailsafe.js).
+ */
+function armFailsafe(session) {
+  const { ctx } = session;
+  const watchdog = createSilenceWatchdog({
+    readRaw: session.readRaw,
+    readOut: session.readOut,
+    isEnabled: () => Boolean(session.processedTrack?.enabled),
+    getCtxState: () => ctx.state,
+    tryResume: () => { void resumeContext(ctx, 800); },
+    onFallback: (reason) => { void fallbackToRawMic(reason); },
+  });
+  session.watchdog = watchdog;
+  session.onState = () => {
+    if (activeSession !== session) return;
+    if (ctx.state === "running" || ctx.state === "closed") return;
+    void resumeContext(ctx, 800).then((ok) => {
+      if (!ok && activeSession === session && !session.fallback) void fallbackToRawMic("context-suspended");
+    });
+  };
+  try {
+    ctx.addEventListener?.("statechange", session.onState);
+  } catch {
+    /* the watchdog still sees the state */
+  }
+  watchdog.start();
+}
+
+/**
+ * Give up on the processed track: the raw mic goes on the local stream and on
+ * every live sender (DM, group and server voice peers), mute state kept.
+ */
+export async function fallbackToRawMic(reason = "manual") {
+  const session = activeSession;
+  if (!session || session.fallback) return false;
+  const rawTrack = session.rawStream?.getAudioTracks?.()[0];
+  const processedTrack = session.processedTrack;
+  if (!rawTrack || !processedTrack || rawTrack.readyState === "ended") return false;
+  session.fallback = reason;
+  lastFallbackReason = reason;
+  session.watchdog?.stop();
+  const switched = await swapToRawTrack({
+    stream: session.processedStream,
+    processedTrack,
+    rawTrack,
+    peers: getLivePeerConnections(),
+  });
+  session.engine = "raw-fallback";
+  console.warn(`[NoiseSuppression] ${reason}: switched ${switched} sender(s) to the raw mic`);
+  try {
+    window.dispatchEvent(new CustomEvent(MIC_FALLBACK_EVENT, { detail: { reason, switched } }));
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+/** Snapshot for the voice diagnostics (no personal data). */
+export function getNoiseSuppressionDiagnostics() {
+  const s = activeSession;
+  let rawRms = null;
+  let outRms = null;
+  try {
+    if (s?.readRaw && s.ctx?.state === "running") rawRms = Number(s.readRaw().toFixed(5));
+    if (s?.readOut && s.ctx?.state === "running" && !s.fallback) outRms = Number(s.readOut().toFixed(5));
+  } catch {
+    /* ignore */
+  }
+  return {
+    enabled: isNoiseSuppressionEnabled(),
+    engine: s?.engine || (lastFallbackReason ? "raw-fallback" : "off"),
+    audioContextState: sharedCtx ? sharedCtx.state : "none",
+    fallback: s?.fallback || lastFallbackReason || null,
+    rawRms,
+    processedRms: outRms,
+  };
+}
+
 /**
  * Capture mic with optimized constraints and apply suppression when enabled.
  */
@@ -302,6 +471,7 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   // an AudioContext created later from the speaking-ring effect.
   claimVoiceAudioSession();
   primeVoiceActivity();
+  primeNoiseSuppressionContext();
   const base = getVoiceAudioConstraints({
     deviceId: extraConstraints?.audio?.deviceId?.exact || extraConstraints?.deviceId,
   });
@@ -343,6 +513,11 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   return stream;
 }
 
+/** The audio track the session currently sends (raw after a fallback). */
+export function getNoiseSuppressionOutputTrack() {
+  return activeSession?.processedStream?.getAudioTracks?.()?.[0] || null;
+}
+
 /** Raw capture track behind the processed (noise-suppressed) one, if any. */
 export function getNoiseSuppressionRawTrack() {
   return activeSession?.rawStream?.getAudioTracks?.()?.[0] || null;
@@ -351,6 +526,12 @@ export function getNoiseSuppressionRawTrack() {
 export function disposeNoiseSuppressionSession({ stopRaw = true, keepContext = false } = {}) {
   if (!activeSession) return;
   const { rawStream, nodes } = activeSession;
+  try {
+    activeSession.watchdog?.stop();
+    if (activeSession.onState) activeSession.ctx?.removeEventListener?.("statechange", activeSession.onState);
+  } catch {
+    /* ignore */
+  }
   for (const node of nodes) {
     try {
       node.disconnect?.();

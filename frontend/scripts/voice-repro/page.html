@@ -1,0 +1,38 @@
+<html><body><script src="mf.js"></script><script>
+// Two RTCPeerConnections in two *pages*; signaling via the harness.
+window.sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+async function senderStats(pc){let b=0,lvl=null;(await pc.getStats()).forEach(s=>{if(s.type==="outbound-rtp"&&s.kind==="audio")b=s.bytesSent;if(s.type==="media-source"&&s.kind==="audio")lvl=s.audioLevel});return{bytesSent:b,audioLevelOut:lvl}}
+async function recvStats(pc){let b=0,lvl=null;(await pc.getStats()).forEach(s=>{if(s.type==="inbound-rtp"&&s.kind==="audio"){b=s.bytesReceived;lvl=s.audioLevel}});return{bytesReceived:b,audioLevelIn:lvl}}
+window.rxStats=()=>recvStats(window.pc);
+window.makePc=()=>{window.pc=new RTCPeerConnection({iceServers:[]});window.cands=[];pc.onicecandidate=e=>e.candidate&&cands.push(e.candidate.toJSON());pc.ontrack=e=>{const a=new Audio();a.srcObject=e.streams[0]||new MediaStream([e.track]);a.muted=true;a.play().catch(()=>{});window.remote=e.track}};
+// mode: "old" = AudioContext created AFTER await getUserMedia (no gesture), processed track sent as-is
+//       "new" = context primed first; if not running → raw; watchdog + statechange swap to raw
+window.startSender=async(mode,forceSuspend)=>{
+  let ctx=null;
+  if(mode==="new"){ctx=new AudioContext();ctx.resume().catch(()=>{})}
+  const raw=(await navigator.mediaDevices.getUserMedia({audio:true})).getAudioTracks()[0];
+  if(!ctx)ctx=new AudioContext();
+  if(mode==="old")ctx.resume().catch(()=>{});
+  if(forceSuspend){await ctx.suspend();window.__noResume=true}
+  const src=ctx.createMediaStreamSource(new MediaStream([raw]));
+  const gain=ctx.createGain();src.connect(gain);
+  const dst=ctx.createMediaStreamDestination();gain.connect(dst);
+  const anR=ctx.createAnalyser(),anO=ctx.createAnalyser();src.connect(anR);gain.connect(anO);
+  const rd=a=>{const b=new Float32Array(a.fftSize);a.getFloatTimeDomainData(b);return MF.rms(b)};
+  const processed=dst.stream.getAudioTracks()[0];
+  let send=processed;window.fallback=null;
+  if(mode==="new"){
+    const ok=await Promise.race([ (window.__noResume?Promise.resolve():ctx.resume()).then(()=>ctx.state==="running"),sleep(400).then(()=>false)]);
+    if(!ok){send=raw;window.fallback="context-not-running"}
+  }
+  const stream=new MediaStream([send]);
+  pc.addTrack(send,stream);
+  if(mode==="new"&&send===processed){
+    const wd=MF.createSilenceWatchdog({readRaw:()=>rd(anR),readOut:()=>rd(anO),getCtxState:()=>ctx.state,
+      tryResume:()=>{if(!window.__noResume)ctx.resume().catch(()=>{})},
+      onFallback:async r=>{window.fallback=r;await MF.swapToRawTrack({stream,processedTrack:processed,rawTrack:raw,peers:[pc]})}});
+    wd.start();window.wd=wd;
+  }
+  window.ctx=ctx;window.stats=()=>senderStats(pc);
+};
+</script></body></html>
