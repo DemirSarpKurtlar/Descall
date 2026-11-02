@@ -62,6 +62,12 @@ ok("paths map to panel sections", () => {
     "/chat/freeze": "system",
     "/restart": "system",
     "/something-new": "system",
+    "/premium/dashboard": "premium",
+    "/premium/users/search": "premium",
+    "/premium/users/u1/apply": "premium",
+    "/premium/bulk": "premium",
+    "/premium/campaigns/c1/stats": "premium",
+    "/premiumx": "system",
   };
   for (const [path, want] of Object.entries(cases)) assert.strictEqual(perms.sectionForPath(path), want, path);
 });

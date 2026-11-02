@@ -33,8 +33,10 @@ function kbInset() {
  * The list is a body-level frosted popover (frost.css), so the admin panel's
  * glass cannot show through it and the iPhone keyboard cannot cover it.
  * The server checks every id again when the code is created.
+ * `search` swaps the lookup (Premium Yönetimi uses /admin/premium/users/search)
+ * and `label` the field title; both default to the promo picker's.
  */
-export default function PromoPeoplePicker({ value, onChange, t }) {
+export default function PromoPeoplePicker({ value, onChange, t, search = adminPromoUsers, label = null }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState([]);
   const [status, setStatus] = useState("idle");
@@ -63,7 +65,7 @@ export default function PromoPeoplePicker({ value, onChange, t }) {
     reqRef.current = ctl;
     const id = setTimeout(async () => {
       try {
-        const data = await adminPromoUsers(term, { exclude: pickedKey ? pickedKey.split(",") : [], signal: ctl.signal });
+        const data = await search(term, { exclude: pickedKey ? pickedKey.split(",") : [], signal: ctl.signal });
         if (ctl.signal.aborted) return;
         const list = visibleHits(data?.users, value);
         setHits(list);
@@ -81,7 +83,7 @@ export default function PromoPeoplePicker({ value, onChange, t }) {
       ctl.abort();
     };
     // value is read through pickedKey; a new array with the same people is not a new search
-  }, [term, pickedKey]);
+  }, [term, pickedKey, search]);
 
   const shown = open && !!term;
 
@@ -241,7 +243,7 @@ export default function PromoPeoplePicker({ value, onChange, t }) {
 
   return (
     <div className="mt-f">
-      <span id={`${listId}-l`}>{t("promo.pickPeople")}</span>
+      <span id={`${listId}-l`}>{label || t("promo.pickPeople")}</span>
       <div
         ref={fieldRef}
         className={`mt-in pc-chips${shown ? " is-open" : ""}`}

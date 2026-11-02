@@ -13,6 +13,7 @@ import { CALLUI_EN } from "./callui.en.js";
 import { SHOP_EN } from "./shop.en.js";
 import { SHOP_ITEMS_EN } from "./shopItems.en.js";
 import { ADMINX_EN } from "./adminx.en.js";
+import { PREMIUM_ADMIN_EN } from "./premiumAdmin.en.js";
 import { POLLS_EN } from "./polls.en.js";
 import { SLASH_EN } from "./slash.en.js";
 import { CHATX_EN } from "./chatx.en.js";
@@ -27,6 +28,7 @@ export const nested = {
   shop: SHOP_EN,
   shopItems: SHOP_ITEMS_EN,
   adminx: ADMINX_EN,
+  premiumAdmin: PREMIUM_ADMIN_EN,
   polls: POLLS_EN, slash: SLASH_EN, chatx: CHATX_EN,
   core: CORE_EN,
   bot: BOT_EN,

@@ -28,6 +28,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "dmReview",
   "suspicious",
   "accessBans",
+  // Premium Yönetimi (Descall+ / Ultra): every /admin/premium/* page and route.
+  "premium",
   "shop",
   "promo",
   "specialBadges",
@@ -57,6 +59,7 @@ const RULES = [
   [/^\/staff(\/|$)/, "staff"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],
   [/^\/signup-stats(\/|$)/, "signupStats"],
+  [/^\/premium(\/|$)/, "premium"],
   [/^\/maintenance\/windows(\/|$)/, "maintenance"],
   [/^\/people\//, "people"],
   [/^\/reports(\/|$)/, "reports"],
