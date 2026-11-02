@@ -11,7 +11,7 @@ const t = (name, fn) => { fn(); n += 1; };
 // ---------------- rule engine ----------------
 t("normalize drops invalid rules and actions", () => {
   const rules = normalizeRules([
-    { id: "a", trigger: { type: "game_started", game: "Valorant" }, actions: [{ type: "set_status", status: "dnd" }, { type: "rm -rf" }] },
+    { id: "a", trigger: { type: "game_started", game: "Rocket League" }, actions: [{ type: "set_status", status: "dnd" }, { type: "rm -rf" }] },
     { id: "b", trigger: { type: "exec" }, actions: [{ type: "focus" }] },
     { id: "c", trigger: { type: "time_window", from: "25:00", to: "10:00" }, actions: [{ type: "focus" }] },
     { id: "d", trigger: { type: "call_joined" }, actions: [{ type: "open_hud", hud: "nope" }] },
@@ -23,8 +23,8 @@ t("normalize drops invalid rules and actions", () => {
 });
 
 t("game trigger matches name filter, case-insensitive", () => {
-  const rules = [{ id: "g", trigger: { type: "game_started", game: "valorant" }, actions: [{ type: "switch_profile", profileId: "game" }, { type: "focus", on: true }] }];
-  const r1 = evaluate(rules, { type: "game_started", game: "VALORANT" }, emptyState(), 1_000_000);
+  const rules = [{ id: "g", trigger: { type: "game_started", game: "rocket league" }, actions: [{ type: "switch_profile", profileId: "game" }, { type: "focus", on: true }] }];
+  const r1 = evaluate(rules, { type: "game_started", game: "ROCKET LEAGUE" }, emptyState(), 1_000_000);
   assert.equal(r1.fired.length, 2);
   assert.deepEqual(r1.fired[0].action, { type: "switch_profile", profileId: "game" });
   const r2 = evaluate(rules, { type: "game_started", game: "Minecraft" }, emptyState(), 1_000_000);
@@ -152,9 +152,9 @@ t("timeline merges calls, games and events within the day", () => {
       { kind: "group", startedAt: at(23, 50), endedAt: new Date(start + 86_400_000 + 20 * 60_000).toISOString(), group: { name: "Ekip" } },
     ],
     games: [
-      { app_name: "Valorant", started_at: at(18), ended_at: at(19) },
-      { game: "valorant", startedAt: at(19, 3), endedAt: at(19, 40) },
-      { app_name: "Valorant", started_at: at(18, 10), ended_at: at(18, 50) },
+      { app_name: "Rocket League", started_at: at(18), ended_at: at(19) },
+      { game: "rocket league", startedAt: at(19, 3), endedAt: at(19, 40) },
+      { app_name: "Rocket League", started_at: at(18, 10), ended_at: at(18, 50) },
       { app_name: "Minecraft", started_at: new Date(start - 3_600_000).toISOString(), ended_at: at(1) },
     ],
     events: [{ at: at(18, 1), kind: "profile", label: "Oyun" }, { at: new Date(start - 1).toISOString(), kind: "x", label: "old" }],
@@ -162,8 +162,8 @@ t("timeline merges calls, games and events within the day", () => {
   });
   assert.equal(tl.day, day);
   const kinds = tl.items.map((i) => `${i.kind}:${i.label}`);
-  assert.deepEqual(kinds, ["game:Minecraft", "game:Valorant", "event:Oyun", "call:call ayse", "call:group Ekip"]);
-  const val = tl.items.find((i) => i.label === "Valorant");
+  assert.deepEqual(kinds, ["game:Minecraft", "game:Rocket League", "event:Oyun", "call:call ayse", "call:group Ekip"]);
+  const val = tl.items.find((i) => i.label === "Rocket League");
   assert.equal(val.durationSec, 100 * 60, "18:00-19:40 joined across a 3 min gap");
   assert.equal(tl.items[0].durationSec, 3600, "Minecraft clipped to midnight");
   assert.equal(tl.items.at(-1).durationSec, 10 * 60, "group call clipped at the end of the day");

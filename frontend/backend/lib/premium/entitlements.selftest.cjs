@@ -57,11 +57,11 @@ function fakeDb(tables) {
       { user_id: 'u-ultra', plan_id: 'ultra', status: 'active', ends_at: null, unlimited: true },
     ],
     user_activity_settings: [{ user_id: 'u-plus', privacy: 'friends', game_card: 'everyone' }],
-    user_presence: [{ user_id: 'u-plus', app_name: 'Valorant', app_type: 'game', started_at: '2026-11-02T10:00:00Z', is_manual: false }],
+    user_presence: [{ user_id: 'u-plus', app_name: 'Rocket League', app_type: 'game', started_at: '2026-11-02T10:00:00Z', is_manual: false }],
     user_activity_log: [
-      { id: 1, user_id: 'u-plus', app_name: 'Valorant', app_type: 'game', started_at: new Date(Date.now() - 3_600_000).toISOString(), ended_at: null, duration_sec: 1200 },
+      { id: 1, user_id: 'u-plus', app_name: 'Rocket League', app_type: 'game', started_at: new Date(Date.now() - 3_600_000).toISOString(), ended_at: null, duration_sec: 1200 },
       { id: 2, user_id: 'u-plus', app_name: 'Spotify', app_type: 'music', started_at: new Date(Date.now() - 3_600_000).toISOString(), ended_at: null, duration_sec: 900 },
-      { id: 3, user_id: 'u-plus', app_name: 'Valorant', app_type: 'game', started_at: new Date(Date.now() - 7_200_000).toISOString(), ended_at: null, duration_sec: 600 },
+      { id: 3, user_id: 'u-plus', app_name: 'Rocket League', app_type: 'game', started_at: new Date(Date.now() - 7_200_000).toISOString(), ended_at: null, duration_sec: 600 },
     ],
   };
   ent._setDb(fakeDb(tables));
@@ -98,11 +98,11 @@ function fakeDb(tables) {
   };
   const s = await call('get', '/sessions', { user: { id: 'u-plus' }, query: {} });
   assert.equal(s.status, 200);
-  assert.deepEqual(s.body.sessions.map((x) => x.game), ['Valorant', 'Valorant']);
+  assert.deepEqual(s.body.sessions.map((x) => x.game), ['Rocket League', 'Rocket League']);
   assert.equal(s.body.stats.totalSec, 1800);
   assert.equal((await call('get', '/sessions', { user: { id: 'u-free' }, query: {} })).status, 403);
   const st = await call('get', '/status/:userId', { user: { id: 'u-free' }, params: { userId: 'u-plus' } });
-  assert.equal(st.body.status.game, 'Valorant', 'everyone visibility shows the card to a free viewer');
+  assert.equal(st.body.status.game, 'Rocket League', 'everyone visibility shows the card to a free viewer');
   const none = await call('get', '/status/:userId', { user: { id: 'u-plus' }, params: { userId: 'u-free' } });
   assert.equal(none.body.status, null, 'a non-member has no card');
   assert.equal((await call('put', '/prefs', { user: { id: 'u-plus' }, body: { game_card: 'nobody' } })).body.game_card, 'nobody');
