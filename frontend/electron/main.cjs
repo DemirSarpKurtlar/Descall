@@ -5,6 +5,8 @@ const { showNotificationWindow, closeShownNotification, updateShownNotification 
 const { describeNotification } = require('./notificationCard.cjs');
 const { registerProcessScannerIPC } = require('./processScanner.cjs');
 const { registerOverlayIPC, destroyOverlayWindow, hideOverlayWindow, isOverlayWindowVisible, refreshOverlayLanguage } = require('./overlayWindow.cjs');
+// Descall+ / Ultra desktop features (electron/premium): gated, off until the user enables them.
+const premium = require('./premium/index.cjs');
 const { autoUpdater } = require('electron-updater');
 const {
   decideUpdateInstall,
@@ -80,6 +82,8 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
+
 function distRoot() {
   const candidates = [
     path.join(process.resourcesPath || '', 'dist'),
@@ -105,10 +109,18 @@ function appDocumentCsp(root) {
   return cachedAppCsp;
 }
 
+let descallProtocolHandler = null;
+/** Same descall:// handler on another session (premium multi_account partitions). */
+function registerAppProtocolOn(ses) {
+  if (!descallProtocolHandler || !ses || ses === session.defaultSession) return false;
+  ses.protocol.handle('descall', descallProtocolHandler);
+  return true;
+}
+
 function registerDescallProtocol() {
   const root = distRoot();
   if (!root) return null;
-  protocol.handle('descall', (request) => {
+  protocol.handle('descall', descallProtocolHandler = (request) => {
     try {
       const url = new URL(request.url);
       // SPA routes serve the app document (2.11.11), and the document's relative
@@ -133,8 +145,10 @@ function registerDescallProtocol() {
   return root;
 }
 
-function tokenFilePath() {
-  return path.join(app.getPath('userData'), 'auth-token.bin');
+function tokenFilePath(event) {
+  // A premium multi_account window (own session partition) keeps its own token file.
+  const own = event ? premium.tokenFileForSender(event.sender) : null;
+  return own || path.join(app.getPath('userData'), 'auth-token.bin');
 }
 
 // Renderer boot watchdog / "Tekrar dene" (index.html, 2.11.5): drop the service
@@ -191,7 +205,7 @@ onLocaleChange(() => {
 
 ipcMain.on('secure-token:get', (event) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (!fs.existsSync(file)) {
       event.returnValue = null;
       return;
@@ -208,7 +222,7 @@ ipcMain.on('secure-token:get', (event) => {
 
 ipcMain.on('secure-token:set', (event, token) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     const value = String(token || '');
     if (!value) {
       if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -228,7 +242,7 @@ ipcMain.on('secure-token:set', (event, token) => {
 
 ipcMain.on('secure-token:clear', (event) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (fs.existsSync(file)) fs.unlinkSync(file);
     event.returnValue = true;
   } catch {
@@ -1281,7 +1295,6 @@ function createMainWindow() {
   // 'speaker-selection' (2.10.113): without it Chromium rejects
   // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
   // silently did nothing.
-  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(MEDIA_PERMISSIONS.includes(permission));
   });
@@ -1377,6 +1390,22 @@ function createMainWindow() {
       }
     });
   });
+
+  // Premium desktop features: loader only. Every feature waits for the entitlement list
+  // from the renderer (premium:entitlements) and stays off until the user enables it.
+  try {
+    premium.initPremium({
+      getMainWindow: () => mainWindow,
+      log,
+      rebuildTray: () => rebuildTrayMenu?.(),
+      registerAppProtocolOn,
+      mediaPermissions: MEDIA_PERMISSIONS,
+      preloadPath: path.join(__dirname, 'preload.cjs'),
+      appUrl: () => (isDev ? 'http://localhost:5173' : 'descall://app/index.html'),
+    });
+  } catch (err) {
+    log.warn('[premium] init failed:', err?.message || err);
+  }
 
   // Load app. Boot watchdog (2.11.5, bootWatchdog.cjs): a failed main-frame
   // load is retried with backoff, then the user gets Tekrar dene / Çıkış; a
@@ -1776,6 +1805,7 @@ function createTray() {
         tray.setContextMenu(buildMenu());
       },
     },
+    ...premium.trayMenuItems(),
     { type: 'separator' },
     {
       label: updateReady ? et('tray.updateAndQuit', { version: updateVersion || '' }) : et('tray.quit'),

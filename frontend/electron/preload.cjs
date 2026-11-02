@@ -158,5 +158,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 });
 
+// Descall+ / Ultra bridge (electron/premium). Only "premium:" channels pass; main checks
+// the sender and the entitlement on every handler.
+const PREMIUM_CHANNEL = /^premium:[a-z_]+(:[a-z_-]+)?$/;
+contextBridge.exposeInMainWorld('descallPremium', {
+  invoke: (channel, ...args) => (PREMIUM_CHANNEL.test(String(channel))
+    ? ipcRenderer.invoke(channel, ...args)
+    : Promise.reject(new Error('premium channel only'))),
+  on: (channel, callback) => {
+    if (!PREMIUM_CHANNEL.test(String(channel)) || typeof callback !== 'function') return () => {};
+    const handler = (_e, payload) => callback(payload);
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.off(channel, handler);
+  },
+});
+
 // Log preload loaded
 console.log('[Preload] Electron API exposed');
