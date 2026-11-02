@@ -158,25 +158,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 });
 
-// Descall+ / Ultra bridge: `premium:` channels only (electron/premium/index.cjs).
-const PREMIUM_INVOKE = new Set(['premium:entitlements', 'premium:settings:get', 'premium:settings:set', 'premium:status', 'premium:call']);
-const PREMIUM_SEND = new Set(['premium:voice-state', 'premium:activity']);
+// Descall+ (electron/premium/index.cjs): one generic bridge, limited to 'premium:*'
+// channels, so feature modules never need a preload change. Main checks the sender and
+// the entitlement gate on every call.
+const isPremiumChannel = (channel) => typeof channel === 'string' && /^premium:[a-z0-9:_-]{1,64}$/i.test(channel);
 contextBridge.exposeInMainWorld('descallPremium', {
-  invoke: (channel, payload) => {
-    const ch = String(channel || '');
-    if (!PREMIUM_INVOKE.has(ch)) return Promise.reject(new Error('premium: channel not allowed'));
-    return ipcRenderer.invoke(ch, payload);
-  },
-  send: (channel, payload) => {
-    const ch = String(channel || '');
-    if (PREMIUM_SEND.has(ch)) ipcRenderer.send(ch, payload);
-  },
-  on: (channel, callback) => {
-    const ch = String(channel || '');
-    if (!ch.startsWith('premium:') || typeof callback !== 'function') return () => {};
-    const handler = (_event, data) => callback(data);
-    ipcRenderer.on(ch, handler);
-    return () => ipcRenderer.off(ch, handler);
+  invoke: (channel, ...args) => (isPremiumChannel(channel)
+    ? ipcRenderer.invoke(channel, ...args)
+    : Promise.reject(new Error('premium channel expected'))),
+  on: (channel, fn) => {
+    if (!isPremiumChannel(channel) || typeof fn !== 'function') return () => {};
+    const handler = (_event, ...args) => fn(...args);
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.off(channel, handler);
   },
 });
 

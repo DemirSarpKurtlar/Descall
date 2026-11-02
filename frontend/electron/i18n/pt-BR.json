@@ -65,14 +65,19 @@
     "adminPanel": "Descall Admin"
   },
   "premium": {
-    "launcher": {
-      "title": "Inicializador rápido",
-      "placeholder": "Busque amigos, conversas, servidores ou ações",
-      "empty": "Nada encontrado",
-      "hint": "Enter para abrir, setas para navegar, Esc para fechar",
-      "loading": "Buscando"
-    },
     "tray": {
+      "mute": "Silenciar",
+      "unmute": "Ativar microfone",
+      "deafen": "Ensurdecer",
+      "undeafen": "Reativar áudio",
+      "hangup": "Sair da chamada",
+      "mini": "Abrir modo mini",
+      "status": "Status",
+      "online": "Online",
+      "idle": "Ausente",
+      "dnd": "Não perturbe",
+      "invisible": "Invisível",
+      "inCall": "Em chamada: {title}",
       "focus": "Modo foco",
       "focusOn": "Modo foco: faltam {minutes} min",
       "focus30": "30 minutos",
@@ -80,6 +85,21 @@
       "focus120": "2 horas",
       "focusOff": "Encerrar modo foco",
       "audioProfile": "Perfil de áudio"
+    },
+    "taskbar": {
+      "unread": "{n} não lidas"
+    },
+    "window": {
+      "mini": "Descall modo mini",
+      "call": "Descall chamada",
+      "sidebar": "Descall barra lateral"
+    },
+    "launcher": {
+      "title": "Inicializador rápido",
+      "placeholder": "Busque amigos, conversas, servidores ou ações",
+      "empty": "Nada encontrado",
+      "hint": "Enter para abrir, setas para navegar, Esc para fechar",
+      "loading": "Buscando"
     },
     "quickReply": {
       "placeholder": "Responder"

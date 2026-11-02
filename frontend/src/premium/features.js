@@ -1,84 +1,90 @@
 /**
- * Descall+ / Ultra feature keys (docs/premium/CONTRACT.md, "Feature keys").
- * The backend mirrors this list. A key marked `plus` is also on `ultra`.
- * Free baseline keys are not listed: they stay free.
+ * Descall+ / Descall Ultra feature keys (phase 1). Single source for the client; the
+ * backend (lib/premium/entitlements.js) and Electron main (electron/premium/featureTiers.cjs)
+ * mirror it, and features.selftest.mjs checks both against docs/premium/CONTRACT.md.
  *
- * NOTE: minimal compatible version written by the hotkey/audio/notification
- * agent; the coordinator reconciles it with the shared copy on merge.
+ * tier:    the lowest plan that unlocks the key ('plus' keys are also on 'ultra').
+ * desktop: true when the key only works in the desktop app.
+ * Free baseline keys stay free and are not listed. No imports: the backend can load it as is.
  */
 
-const P = "plus";
-const U = "ultra";
+export const PLANS = Object.freeze(["plus", "ultra"]);
 
-function f(tier, desktop) {
-  return Object.freeze({ tier, desktop: Boolean(desktop) });
-}
+/** Plan rank; a higher plan includes every key of the lower ones. Unknown plans rank 0 (free). */
+export const PLAN_RANK = Object.freeze({ plus: 1, ultra: 2 });
+
+/** DesCoin gifted on every 30-day cycle of an active membership. */
+export const PLAN_COIN = Object.freeze({ plus: 5000, ultra: 15000 });
+
+const f = (tier, desktop) => Object.freeze({ tier, desktop });
 
 export const FEATURES = Object.freeze({
-  mini_mode: f(P, true),
-  always_on_top: f(P, true),
-  pip_call: f(P, true),
-  multi_window: f(P, true),
-  window_opacity: f(P, true),
-  session_restore: f(P, true),
-  tray_controls_plus: f(P, true),
-  taskbar_plus: f(P, true),
-  global_mute: f(P, true),
-  global_ptt: f(P, true),
-  custom_hotkeys: f(P, true),
-  media_keys: f(P, true),
-  quick_launcher: f(P, true),
-  notification_history: f(P, false),
-  focus_mode: f(P, false),
-  notification_profiles: f(P, false),
-  mic_presets: f(P, false),
-  noise_gate: f(P, false),
-  mic_monitor: f(P, false),
-  voice_activity_monitor: f(P, false),
-  auto_device_switch: f(P, false),
-  audio_routing: f(P, false),
-  audio_device_profiles: f(P, false),
-  game_status: f(P, true),
-  game_session_history: f(P, true),
-  smart_game_notifications: f(P, true),
-  clipboard_history: f(P, true),
-  quick_file_drop: f(P, true),
-  app_lock: f(P, true),
-  quick_actions: f(P, false),
-  desktop_sidebar: f(U, true),
-  screen_edge_actions: f(U, true),
-  window_layouts: f(U, true),
-  advanced_window_mgmt: f(U, true),
-  voice_hud: f(U, true),
-  gaming_hud: f(U, true),
-  instant_clip: f(U, true),
-  per_user_volume_hotkeys: f(U, true),
-  stream_audio_control: f(U, true),
-  workspace_profiles: f(U, false),
-  desktop_automations: f(U, true),
-  activity_timeline: f(U, false),
-  command_center: f(U, true),
-  widgets: f(U, true),
-  custom_layouts: f(U, true),
-  multi_account: f(U, true),
-  quick_reply: f(P, true),
+  mini_mode: f("plus", true),
+  always_on_top: f("plus", true),
+  pip_call: f("plus", true),
+  multi_window: f("plus", true),
+  window_opacity: f("plus", true),
+  session_restore: f("plus", true),
+  tray_controls_plus: f("plus", true),
+  taskbar_plus: f("plus", true),
+  global_mute: f("plus", true),
+  global_ptt: f("plus", true),
+  custom_hotkeys: f("plus", true),
+  media_keys: f("plus", true),
+  quick_launcher: f("plus", true),
+  notification_history: f("plus", false),
+  focus_mode: f("plus", false),
+  notification_profiles: f("plus", false),
+  mic_presets: f("plus", false),
+  noise_gate: f("plus", false),
+  mic_monitor: f("plus", false),
+  voice_activity_monitor: f("plus", false),
+  auto_device_switch: f("plus", false),
+  audio_routing: f("plus", false),
+  audio_device_profiles: f("plus", false),
+  game_status: f("plus", true),
+  game_session_history: f("plus", true),
+  smart_game_notifications: f("plus", true),
+  clipboard_history: f("plus", true),
+  quick_file_drop: f("plus", true),
+  app_lock: f("plus", true),
+  quick_actions: f("plus", false),
+  desktop_sidebar: f("ultra", true),
+  screen_edge_actions: f("ultra", true),
+  window_layouts: f("ultra", true),
+  advanced_window_mgmt: f("ultra", true),
+  voice_hud: f("ultra", true),
+  gaming_hud: f("ultra", true),
+  instant_clip: f("ultra", true),
+  per_user_volume_hotkeys: f("ultra", true),
+  stream_audio_control: f("ultra", true),
+  workspace_profiles: f("ultra", false),
+  desktop_automations: f("ultra", true),
+  activity_timeline: f("ultra", false),
+  command_center: f("ultra", true),
+  widgets: f("ultra", true),
+  custom_layouts: f("ultra", true),
+  multi_account: f("ultra", true),
+  quick_reply: f("plus", true),
 });
 
 export const FEATURE_KEYS = Object.freeze(Object.keys(FEATURES));
 
-const RANK = Object.freeze({ plus: 1, ultra: 2 });
+/** Normalised plan id, or null for free / unknown. */
+export function normalizePlan(plan) {
+  const p = String(plan || "").toLowerCase();
+  return PLAN_RANK[p] ? p : null;
+}
 
-/** True when `plan` ('plus' | 'ultra' | null) includes feature `key`. */
+/** True when `plan` unlocks feature `key`. Unknown keys and free plans are never allowed. */
 export function tierAllows(plan, key) {
-  const spec = FEATURES[key];
-  if (!spec) return false;
-  const have = RANK[plan] || 0;
-  return have > 0 && have >= (RANK[spec.tier] || 99);
+  const def = Object.prototype.hasOwnProperty.call(FEATURES, key) ? FEATURES[key] : null;
+  const p = normalizePlan(plan);
+  if (!def || !p) return false;
+  return PLAN_RANK[p] >= PLAN_RANK[def.tier];
 }
 
-/** Every key the plan includes. */
-export function featuresFor(plan) {
-  return FEATURE_KEYS.filter((key) => tierAllows(plan, key));
+/** Every key a plan unlocks, in table order. */
+export function featuresForPlan(plan) {
+  return FEATURE_KEYS.filter((k) => tierAllows(plan, k));
 }
-
-export default FEATURES;

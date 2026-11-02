@@ -5,6 +5,333 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  // premium:start (generated, Descall+ phase 1)
+  "premium": {
+    "name": {
+      "plus": "Descall+",
+      "ultra": "Descall Ultra",
+      "ultraShort": "Ultra",
+      "free": "Gratuit"
+    },
+    "badge": {
+      "plusTip": "Membre Descall+",
+      "ultraTip": "Membre Descall Ultra"
+    },
+    "nav": "Descall+",
+    "navHint": "Abonnement, fonctionnalités et outils de bureau",
+    "status": {
+      "title": "Ton abonnement",
+      "plan": "Formule",
+      "state": "Statut",
+      "active": "Actif",
+      "expired": "Expiré",
+      "cancelled": "Annulé",
+      "none": "Aucun abonnement",
+      "ends": "Fin",
+      "unlimited": "Illimité",
+      "nextCoin": "Prochain cadeau DesCoin",
+      "nextCoinValue": "{amount} DesCoin le {date}",
+      "loading": "Chargement de ton abonnement…",
+      "offline": "Impossible d'actualiser ton abonnement. Dernier état connu affiché.",
+      "monthlyGift": "{amount} DesCoin tous les 30 jours"
+    },
+    "grantNote": "Les abonnements sont pour l'instant attribués par l'équipe Descall. L'achat n'est pas encore disponible.",
+    "redeem": {
+      "title": "Utiliser un code promo",
+      "placeholder": "Code promo",
+      "submit": "Valider",
+      "busy": "Vérification…",
+      "ok": "Code appliqué. Ton abonnement est à jour.",
+      "fail": "Ce code n'a pas pu être utilisé.",
+      "unavailable": "Les codes promo ne sont pas encore disponibles."
+    },
+    "features": {
+      "title": "Fonctionnalités",
+      "lead": "Active, désactive et règle chaque fonctionnalité ici. Les fonctionnalités de bureau marchent dans l'app de bureau Descall.",
+      "desktop": "Bureau",
+      "desktopOnly": "Disponible dans l'app de bureau",
+      "lockedPlus": "Débloqué avec Descall+",
+      "lockedUltra": "Débloqué avec Ultra",
+      "enabled": "Activée",
+      "soon": "Bientôt",
+      "groupDesktop": "Fenêtres de bureau",
+      "groupOther": "Autres fonctionnalités",
+      "settings": "Réglages"
+    },
+    "compare": {
+      "title": "Comparer les formules",
+      "feature": "Fonctionnalité",
+      "coin": "Cadeau DesCoin tous les 30 jours",
+      "baseline": "Appels, chat, serveurs et tout ce que tu utilises déjà",
+      "current": "Formule actuelle",
+      "included": "Inclus",
+      "notIncluded": "Non inclus",
+      "featureCount": "{n} fonctionnalités",
+      "showAll": "Afficher toutes les fonctionnalités",
+      "showLess": "Afficher moins"
+    },
+    "win": {
+      "mini": "Mode mini",
+      "call": "Fenêtre d'appel",
+      "sidebar": "Barre latérale de bureau",
+      "popout": "Fenêtre détachée",
+      "noCall": "Aucun appel en cours",
+      "unread": "{n, plural, one {# non lu} other {# non lus}}",
+      "allRead": "Tout est lu",
+      "mute": "Couper le micro",
+      "unmute": "Réactiver le micro",
+      "deafen": "Mettre en sourdine",
+      "undeafen": "Réactiver le son",
+      "hangup": "Quitter l'appel",
+      "openApp": "Ouvrir Descall",
+      "close": "Fermer",
+      "pin": "Garder au premier plan",
+      "noVideo": "Pas de vidéo pour l'instant",
+      "connecting": "Connexion…",
+      "friends": "Amis",
+      "online": "En ligne",
+      "dms": "Messages privés",
+      "nobodyOnline": "Aucun ami en ligne",
+      "noDms": "Aucun message récent",
+      "popOut": "Ouvrir dans une fenêtre",
+      "popOutLimit": "Tu peux ouvrir jusqu'à 4 fenêtres détachées.",
+      "dragHint": "Fais glisser pour déplacer"
+    },
+    "panel": {
+      "open": "Ouvrir",
+      "openMini": "Ouvrir le mode mini",
+      "openCall": "Ouvrir la fenêtre d'appel",
+      "openSidebar": "Afficher la barre latérale",
+      "miniAuto": "Ouvrir le mode mini quand je réduis Descall pendant un appel",
+      "pipAuto": "Ouvrir la fenêtre d'appel quand je quitte Descall pendant un appel vidéo",
+      "topMain": "Fenêtre principale",
+      "topMini": "Fenêtre mini",
+      "topCall": "Fenêtre d'appel",
+      "topPopouts": "Fenêtres détachées",
+      "topLead": "Garder ces fenêtres au-dessus des autres apps.",
+      "opacityValue": "{value} %",
+      "opacityLead": "Rendre les petites fenêtres transparentes.",
+      "popoutsOpen": "{n, plural, one {# fenêtre détachée ouverte} other {# fenêtres détachées ouvertes}}",
+      "popoutsHow": "Utilise Ouvrir dans une fenêtre dans l'en-tête d'une discussion pour la détacher.",
+      "closeAll": "Tout fermer",
+      "restorePopouts": "Rouvrir les fenêtres détachées",
+      "restoreMini": "Rouvrir le mode mini et la barre latérale",
+      "restoreBounds": "Mémoriser la position et la taille des fenêtres",
+      "snap": "Aimanter les fenêtres aux bords",
+      "keepVisible": "Ramener les fenêtres quand un écran est retiré",
+      "mainMonitor": "Ouvrir Descall sur le dernier écran utilisé",
+      "layoutName": "Nom de la disposition",
+      "layoutSave": "Enregistrer la disposition",
+      "layoutApply": "Appliquer",
+      "layoutDelete": "Supprimer",
+      "layoutEmpty": "Aucune disposition enregistrée.",
+      "layoutWindows": "{n, plural, one {# fenêtre} other {# fenêtres}}",
+      "edge": "Bord de l'écran",
+      "edgeLeft": "Gauche",
+      "edgeRight": "Droite",
+      "autoHide": "Masquer automatiquement",
+      "edgeLead": "Amène le pointeur sur ce bord pour afficher la barre latérale.",
+      "edgeDelay": "Délai d'affichage",
+      "edgeDelayValue": "{ms} ms",
+      "needsSidebar": "Active aussi la barre latérale de bureau.",
+      "trayLead": "Coupe le micro, le son, change ton statut et ouvre le mode mini depuis l'icône de la barre des tâches.",
+      "taskbarBadge": "Messages non lus sur l'icône de la barre des tâches",
+      "taskbarButtons": "Boutons d'appel dans l'aperçu de la barre des tâches",
+      "windowsOnly": "Windows uniquement",
+      "desktopApp": "Ouvre l'app de bureau Descall pour l'utiliser."
+    },
+    "f": {
+      "mini_mode": {
+        "name": "Mode mini",
+        "desc": "Une petite fenêtre avec les contrôles d'appel et les non lus."
+      },
+      "always_on_top": {
+        "name": "Toujours au premier plan",
+        "desc": "Garde les fenêtres Descall choisies au-dessus des autres apps."
+      },
+      "pip_call": {
+        "name": "Appel en incrustation",
+        "desc": "Suis l'appel dans une petite fenêtre au premier plan."
+      },
+      "multi_window": {
+        "name": "Fenêtres détachées",
+        "desc": "Ouvre une discussion ou un salon dans sa propre fenêtre, jusqu'à 4."
+      },
+      "window_opacity": {
+        "name": "Opacité des fenêtres",
+        "desc": "Rends transparentes les fenêtres mini, d'appel et détachées."
+      },
+      "session_restore": {
+        "name": "Restaurer la session",
+        "desc": "Rouvre tes fenêtres là où tu les as laissées."
+      },
+      "tray_controls_plus": {
+        "name": "Contrôles dans la barre système",
+        "desc": "Contrôles d'appel, statut et mode mini dans le menu système."
+      },
+      "taskbar_plus": {
+        "name": "Extras de la barre des tâches",
+        "desc": "Badge non lus et boutons d'appel dans la barre des tâches."
+      },
+      "global_mute": {
+        "name": "Sourdine globale",
+        "desc": "Coupe ton micro avec un raccourci depuis n'importe quelle app."
+      },
+      "global_ptt": {
+        "name": "Appuyer pour parler global",
+        "desc": "Appuyer pour parler marche dans les autres apps."
+      },
+      "custom_hotkeys": {
+        "name": "Raccourcis personnalisés",
+        "desc": "Choisis tes propres raccourcis clavier."
+      },
+      "media_keys": {
+        "name": "Touches multimédia",
+        "desc": "Utilise les touches multimédia du clavier pour les appels."
+      },
+      "quick_launcher": {
+        "name": "Lanceur rapide",
+        "desc": "Accède à n'importe quelle discussion avec un raccourci."
+      },
+      "notification_history": {
+        "name": "Historique des notifications",
+        "desc": "Retrouve les notifications manquées."
+      },
+      "focus_mode": {
+        "name": "Mode concentration",
+        "desc": "Fais taire tout sauf l'essentiel."
+      },
+      "notification_profiles": {
+        "name": "Profils de notification",
+        "desc": "Passe d'un ensemble de règles de notification à l'autre."
+      },
+      "mic_presets": {
+        "name": "Préréglages micro",
+        "desc": "Enregistre et change de réglages micro."
+      },
+      "noise_gate": {
+        "name": "Noise gate",
+        "desc": "Règle ton propre seuil de bruit de fond."
+      },
+      "mic_monitor": {
+        "name": "Retour micro",
+        "desc": "Entends ton propre micro."
+      },
+      "voice_activity_monitor": {
+        "name": "Moniteur d'activité vocale",
+        "desc": "Vois en direct à quel volume tu parles."
+      },
+      "auto_device_switch": {
+        "name": "Changement d'appareil automatique",
+        "desc": "Passe sur un nouveau casque dès qu'il est branché."
+      },
+      "audio_routing": {
+        "name": "Routage audio",
+        "desc": "Envoie appels et sons vers des sorties différentes."
+      },
+      "audio_device_profiles": {
+        "name": "Profils d'appareils audio",
+        "desc": "Mémorise les réglages de chaque casque."
+      },
+      "game_status": {
+        "name": "Statut de jeu",
+        "desc": "Montre le jeu auquel tu joues."
+      },
+      "game_session_history": {
+        "name": "Historique des sessions de jeu",
+        "desc": "Vois combien de temps tu as joué à chaque jeu."
+      },
+      "smart_game_notifications": {
+        "name": "Notifications de jeu intelligentes",
+        "desc": "Moins d'interruptions pendant que tu joues."
+      },
+      "clipboard_history": {
+        "name": "Historique du presse-papiers",
+        "desc": "Colle quelque chose copié plus tôt."
+      },
+      "quick_file_drop": {
+        "name": "Dépôt rapide de fichiers",
+        "desc": "Dépose des fichiers sur Descall pour les partager vite."
+      },
+      "app_lock": {
+        "name": "Verrouillage de l'app",
+        "desc": "Verrouille Descall avec un PIN."
+      },
+      "quick_actions": {
+        "name": "Actions rapides",
+        "desc": "Les actions courantes en un clic."
+      },
+      "desktop_sidebar": {
+        "name": "Barre latérale de bureau",
+        "desc": "Un panneau fin au bord de l'écran avec amis, messages et appel."
+      },
+      "screen_edge_actions": {
+        "name": "Actions de bord d'écran",
+        "desc": "Affiche la barre latérale quand le pointeur touche un bord."
+      },
+      "window_layouts": {
+        "name": "Dispositions de fenêtres",
+        "desc": "Enregistre des dispositions nommées et passe de l'une à l'autre."
+      },
+      "advanced_window_mgmt": {
+        "name": "Gestion avancée des fenêtres",
+        "desc": "Aimantation, multi-écran et comportement mémorisé."
+      },
+      "voice_hud": {
+        "name": "HUD vocal",
+        "desc": "Vois qui parle par-dessus n'importe quelle app."
+      },
+      "gaming_hud": {
+        "name": "HUD de jeu",
+        "desc": "Infos d'appel par-dessus les jeux sans bordure."
+      },
+      "instant_clip": {
+        "name": "Clip instantané",
+        "desc": "Enregistre les derniers instants de ton partage d'écran."
+      },
+      "per_user_volume_hotkeys": {
+        "name": "Raccourcis de volume par personne",
+        "desc": "Change le volume d'une personne avec un raccourci."
+      },
+      "stream_audio_control": {
+        "name": "Contrôle audio du stream",
+        "desc": "Choisis le son de ton stream."
+      },
+      "workspace_profiles": {
+        "name": "Profils d'espace de travail",
+        "desc": "Passe d'un réglage travail, jeu ou amis à l'autre."
+      },
+      "desktop_automations": {
+        "name": "Automatisations de bureau",
+        "desc": "Laisse Descall réagir à ce qui se passe sur ton ordinateur."
+      },
+      "activity_timeline": {
+        "name": "Chronologie d'activité",
+        "desc": "Une chronologie de tes appels et discussions."
+      },
+      "command_center": {
+        "name": "Centre de commande",
+        "desc": "Un panneau pour tout ce que Descall sait faire."
+      },
+      "widgets": {
+        "name": "Widgets",
+        "desc": "De petites fenêtres Descall sur ton bureau."
+      },
+      "custom_layouts": {
+        "name": "Dispositions personnalisées",
+        "desc": "Organise la fenêtre Descall à ta façon."
+      },
+      "multi_account": {
+        "name": "Plusieurs comptes",
+        "desc": "Passe d'un compte Descall à l'autre."
+      },
+      "quick_reply": {
+        "name": "Réponse rapide",
+        "desc": "Réponds depuis la notification sans ouvrir Descall."
+      }
+    }
+  },
+  // premium:end
   "world3d": {
     "enter": "Monde 3D",
     "enterHint": "Ouvrir cet appel comme une salle 3D (ordinateur, aperçu de l'équipe). La voix reste active.",

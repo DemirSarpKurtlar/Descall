@@ -60,17 +60,17 @@ const {
 const { resolveDistFile } = require('./appProtocolPath.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
-// Descall+ / Ultra desktop features (electron/premium). Each module stays off
-// until the renderer sends the entitlement list and the user switches it on.
+// Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
+const premiumNotify = require('./premium/notifyHooks.cjs');
 const { applyToastIdentity } = require('./premium/toastIdentity.cjs');
-// Windows toast identity (AUMID = build.appId, fixed activator CLSID). Must run
-// before any notification; the NSIS shortcut carries the same values.
-applyToastIdentity(app, { log });
 
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+// Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
+// toast activator CLSID, both also written on the NSIS Start Menu shortcut.
+applyToastIdentity(app, { log });
 
 // Standard scheme so packaged pages can call https APIs with webSecurity on.
 // file:// cannot. Register before ready.
@@ -234,6 +234,7 @@ ipcMain.on('secure-token:set', (event, token) => {
 });
 
 ipcMain.on('secure-token:clear', (event) => {
+  premium.gate.reset();
   try {
     const file = tokenFilePath();
     if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -1245,6 +1246,7 @@ function createMainWindow() {
   // A secondary app window (Kayıt İstatistikleri, Yönetici Paneli) drives its own controls; everything else is the main window.
   const controlledWindow = (event) => {
     const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    if (w && premium.isAuxWindow(w.webContents)) return w;
     return w && w !== mainWindow && (w === signupStatsWindow || w === adminPanelWindow) ? w : mainWindow;
   };
   ipcMain.on('window:minimize', (event) => {
@@ -1669,7 +1671,9 @@ function createMainWindow() {
   });
 
   // Handle external links — Descall Setup assets download in-app so we can prune older installers
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
+    const premiumOpen = premium.windowOpen({ url, frameName, features });
+    if (premiumOpen) return premiumOpen;
     // Yönetici › Kayıt İstatistikleri: its own window (one at a time).
     if (isSignupStatsUrl(url, { isDev })) {
       if (signupStatsWindow && !signupStatsWindow.isDestroyed()) {
@@ -1707,7 +1711,9 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('did-create-window', (win, { url }) => {
+  mainWindow.webContents.on('did-create-window', (win, details) => {
+    if (premium.didCreateWindow(win, details)) return;
+    const { url } = details;
     const isStats = isSignupStatsUrl(url, { isDev });
     const isPanel = !isStats && isAdminPanelUrl(url, { isDev });
     if (!isStats && !isPanel) return;
@@ -1773,8 +1779,8 @@ function createTray() {
         showMainWindow();
       },
     },
-    ...premium.premiumTrayItems(),
     { type: 'separator' },
+    ...premium.trayMenuItems(),
     {
       label: et('tray.startWithWindows'),
       type: 'checkbox',
@@ -1861,20 +1867,17 @@ app.whenReady().then(async () => {
 
   registerProcessScannerIPC();
   registerOverlayIPC(() => mainWindow);
-  try {
-    const premiumCtx = premium.initPremium({
-      app,
-      ipcMain,
-      getMainWindow: () => mainWindow,
-      log,
-      globalShortcut,
-      et,
-    });
-    premiumCtx.events.on('tray-changed', () => rebuildTrayMenu?.());
-    premiumCtx.events.on('settings', () => rebuildTrayMenu?.());
-  } catch (err) {
-    log.warn('[premium] init failed:', err?.message || err);
-  }
+  premium.init({
+    electron: require('electron'),
+    getMainWindow: () => mainWindow,
+    appUrl: (route) => (isDev ? `http://localhost:5173${route}` : `descall://app${route}`),
+    tokenFile: tokenFilePath,
+    preloadPath: path.join(__dirname, 'preload.cjs'),
+    iconPath: resolveAppIcon(),
+    isDev,
+    rebuildTray: () => rebuildTrayMenu?.(),
+    log,
+  });
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
   globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
@@ -1903,8 +1906,8 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  premium.flush();
   destroyOverlayWindow();
-  try { premium.stopAll(); } catch (_) { /* ignore */ }
   if (!updateReady || installStarted || !app.isPackaged) return;
   try {
     installStarted = true;
@@ -2050,7 +2053,7 @@ function mainWindowInFront() {
 
 function showAppNotification(payload = {}) {
   // Descall+ modules may decorate (quick reply) or skip a toast.
-  const hooked = premium.premiumNotificationHook(payload);
+  const hooked = premiumNotify.run(payload);
   if (!hooked) return null;
   const { title, options = {} } = hooked;
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
@@ -2063,8 +2066,7 @@ function showAppNotification(payload = {}) {
   // Descall+ quick reply: a DM becomes a native toast with an inline reply
   // field where the OS supports it; otherwise the capsule below is shown.
   if (hooked.quickReply && !isCall) {
-    const quickReply = premium._modules.get('quick_reply');
-    const shown = quickReply?.showNative?.({
+    const shown = premiumNotify.showQuickReply({
       title: data?.from || title,
       body: data?.preview || body,
       conv: hooked.quickReply.conv,
@@ -2147,6 +2149,7 @@ function showAppNotification(payload = {}) {
 }
 
 ipcMain.on('notification:show', (_event, payload = {}) => {
+  if (premium.isAuxWindow(_event?.sender)) return; // Descall+ pop-outs: the main window notifies
   showAppNotification(payload);
 });
 
