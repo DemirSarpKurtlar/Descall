@@ -77,7 +77,7 @@ for (const u of ["file:///C:/Windows/win.ini", "descall://app/index.html", "java
 // Wiring: main.cjs uses it and no longer joins the raw name.
 const main = readFileSync(new URL("./main.cjs", import.meta.url), "utf8");
 assert.match(main, /require\('\.\/safeDownload\.cjs'\)/);
-const handler = main.slice(main.indexOf("ipcMain.on('download-file'"), main.indexOf("// Register custom protocol for sounds"));
+const handler = main.slice(main.indexOf("trustedOn('download-file'"), main.indexOf("// Register custom protocol for sounds"));
 assert.match(handler, /isDownloadableUrl\(url\)/);
 assert.match(handler, /resolveDownloadPath\(app\.getPath\('downloads'\), filename\)/);
 assert.doesNotMatch(handler, /path\.join\(downloadsPath, filename\)/);
