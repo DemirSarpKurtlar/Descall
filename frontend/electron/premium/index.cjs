@@ -182,6 +182,7 @@ function makeCtx(mod) {
     icon: opts.iconPath,
     appUrl: (route) => opts.appUrl(route),
     settings: () => ({ ...store.feature(mod.key) }),
+    showMain,
     handle: (channel, fn, o) => registerChannel(mod.key, channel, fn, o),
     send,
     onWindowOpen: (fn) => { reg.windowOpen.push(fn); },
@@ -247,6 +248,18 @@ function loadModules() {
   }
 }
 
+function showMain() {
+  try {
+    if (opts?.showMain) return opts.showMain();
+    const w = mainWindow();
+    if (!w) return undefined;
+    if (w.isMinimized()) w.restore();
+    w.show();
+    w.focus();
+  } catch (_) { /* ignore */ }
+  return undefined;
+}
+
 function refreshTray() {
   try { opts?.rebuildTray?.(); } catch (_) { /* ignore */ }
 }
@@ -282,6 +295,10 @@ function registerCore() {
     send('premium:settings-changed', { key: k, settings: next });
     return { ok: true, settings: next };
   });
+  registerChannel('core', 'premium:focus-main', () => {
+    showMain();
+    return { ok: true };
+  }, { from: 'app' });
   registerChannel('core', 'premium:call-state', (snap = {}) => {
     state.call = {
       active: Boolean(snap.active),

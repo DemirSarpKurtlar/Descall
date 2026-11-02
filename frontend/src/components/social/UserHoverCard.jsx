@@ -6,6 +6,7 @@ import StatusBadge from "../ui/StatusBadge";
 import { pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import AdminBadge from "./AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { API_BASE_URL } from "../../config/api";
@@ -217,6 +218,7 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
           <button type="button" className="uhc3-name" onClick={() => onOpenProfile?.(merged)}>
             <NameEffectText user={merged}>{display}</NameEffectText>
             <AdminBadge user={merged} variant="inline" />
+            <PremiumBadge user={merged} variant="inline" />
           </button>
           <div className="uhc3-handle">
             @{merged.username || t("user")}

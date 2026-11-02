@@ -67,6 +67,7 @@ export const nested = {
       "included": "Inclus",
       "notIncluded": "Non inclus",
       "featureCount": "{n} fonctionnalités",
+      "everythingPlus": "Tout Descall+",
       "showAll": "Afficher toutes les fonctionnalités",
       "showLess": "Afficher moins"
     },

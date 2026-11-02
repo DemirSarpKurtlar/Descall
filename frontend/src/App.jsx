@@ -61,6 +61,8 @@ import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
 import { attachPremiumSocket } from "./premium/usePremium.js";
+import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
+import { isPopoutWindow } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { getVoiceBusy } from "./lib/voiceBusy";
 import { shouldPlayDisconnectSound } from "./lib/connectionSound";
@@ -149,6 +151,9 @@ import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/d
 import { mergeServerDetail } from "./lib/serverDetail";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
+// Descall+ desktop windows (mini mode, call window, sidebar): Electron main window only.
+const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHost.jsx"));
+const premiumDesktopHost = typeof window !== "undefined" && Boolean(window.descallPremium) && !isPopoutWindow();
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
@@ -4988,6 +4993,8 @@ export default function App() {
     }
   };
 
+  usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
+
   const handleServerBack = () => {
     setActiveServer(null);
     setActiveChannel(null);
@@ -5000,6 +5007,11 @@ export default function App() {
     <SeoHead forceNoindex title="Descall" description={t("core.seo.appDesc")} path="/app" />
     <TitleBar />
     <UpdateNotes />
+    {premiumDesktopHost ? (
+      <Suspense fallback={null}>
+        <PremiumDesktopHost />
+      </Suspense>
+    ) : null}
     <div className="app-container">
         <ElectronUpdateToast />
         <BirthDateGate

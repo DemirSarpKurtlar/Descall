@@ -13,6 +13,10 @@ import { installAndroidBack } from "./lib/androidBack";
 import { installFlagFont } from "./lib/flagFont.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
+import { applyPopoutMode } from "./premium/desktop/popout.js";
+
+// Descall+ pop-out window (Electron multi_window): conversation-only chrome.
+applyPopoutMode();
 
 // On-device viewport readout (?vpdebug=1 / ?vpdebug=0). Loaded only when asked.
 try {

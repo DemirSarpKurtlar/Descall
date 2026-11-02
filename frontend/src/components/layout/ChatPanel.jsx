@@ -27,6 +27,8 @@ import { displayText } from "../../lib/profanity";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
 import AdminBadge from "../social/AdminBadge";
+import PopOutButton from "../../premium/desktop/PopOutButton.jsx";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import UserProfileModal from "../social/UserProfileModal";
 import ServerMembersPanel from "../servers/ServerMembersPanel";
 import ServerVoicePanel from "../servers/ServerVoicePanel";
@@ -576,6 +578,7 @@ export default function ChatPanel({
               <h1 className={glassConv ? "header-title g-peer-name" : "header-title"}>
                 <span className={glassConv ? "header-title-text g-peer-name-text" : "header-title-text"}>{glassHash ? (activeChannel?.name || "") : getTitle()}</span>
                 {headerDm && <AdminBadge user={headerDm} variant="inline" />}
+                {headerDm && <PremiumBadge user={headerDm} variant="inline" />}
               </h1>
               {getSubtitle() && (
                 <span className={`header-subtitle${glassConv ? " g-peer-status" : ""}${glass && (headerGroup || glassServerChannel || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>{getSubtitle()}</span>
@@ -585,6 +588,7 @@ export default function ChatPanel({
         </div>
 
         <div className="header-right">
+          <PopOutButton />
           <button
             className={`icon-btn ${showSearch ? "active" : ""}`}
             title={t("Search")}
@@ -1007,6 +1011,7 @@ export default function ChatPanel({
                         <div className="member-name-row">
                           <span className="member-name">{name}</span>
                           <AdminBadge user={m} variant="inline" />
+                          <PremiumBadge user={m} variant="inline" />
                           {m._isOwner && (
                             <span className="member-owner-badge" title={t("Owner")}>
                               <Crown size={11} strokeWidth={2.25} aria-hidden="true" />

@@ -1,6 +1,6 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -58,12 +58,17 @@ import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
 
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
+// Ayarlar > Descall+ (status, coupon, features, plan comparison; iOS: status only).
+const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.jsx"));
+import { getPremiumState, subscribePremium } from "../../premium/premiumStore.js";
+import { isNativeIOS } from "../../lib/platform.js";
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import {
@@ -294,6 +299,7 @@ const NAV_GROUPS_DEF = [
   {
     labelKey: "settings.personalization",
     items: [
+      { id: "premium", labelKey: "premium.nav", icon: Sparkles, hintKey: "premium.navHint" },
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
       { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
@@ -313,6 +319,7 @@ const S3_NAV_TILES = {
   licenses: ["book", "gray"],
   voice: ["volume", "green"],
   sound: ["music", "teal"],
+  premium: ["sparkle", "purple"],
   shop: ["bag", "purple"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
@@ -332,6 +339,7 @@ const TAB_TITLE_KEYS = {
   shop: "settings.shop",
   badges: "badges.navTitle",
   promo: "settings.promo",
+  premium: "premium.nav",
 };
 
 /** What the settings sheet covers: the open list drawer on a root tab, else the main page. */
@@ -406,17 +414,20 @@ const UserPanel = forwardRef(function UserPanel({
   const promoCount = promoSummary.count;
   const promoUnseen = promoSummary.unseen;
 
+  // iOS: the Descall+ page only for members (status only, no upsell; App Store 3.1.1).
+  const premiumPlan = useSyncExternalStore(subscribePremium, () => getPremiumState().plan, () => getPremiumState().plan);
+  const hidePremiumNav = isNativeIOS() && !premiumPlan;
   const navGroups = useMemo(
     () =>
       NAV_GROUPS_DEF.map((g) => ({
         label: t(g.labelKey),
-        items: g.items.map((item) => ({
+        items: g.items.filter((item) => !(item.id === "premium" && hidePremiumNav)).map((item) => ({
           ...item,
           label: t(item.labelKey),
           hint: t(item.hintKey),
         })),
       })),
-    [t]
+    [t, hidePremiumNav]
   );
 
   const tabTitles = useMemo(() => {
@@ -1418,6 +1429,7 @@ const UserPanel = forwardRef(function UserPanel({
                   <div className="user-profile-badges">
                     <CountryBadge user={me} />
                     <AdminBadge user={me} variant="chip" />
+                    <PremiumBadge user={me} variant="chip" />
                   </div>
                   {customStatus && <span className="us-status-pill">{customStatus}</span>}
                 </div>
@@ -2177,6 +2189,13 @@ const UserPanel = forwardRef(function UserPanel({
           </Suspense>
         );
 
+      case "premium":
+        return (
+          <Suspense fallback={null}>
+            <PremiumSettingsTab />
+          </Suspense>
+        );
+
       case "appearance":
         return (
           <AppearancePane
@@ -2802,6 +2821,7 @@ const UserPanel = forwardRef(function UserPanel({
               <strong style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap" }}>
                 <span className="us-mini-name">{displayName || me?.username || t("User")}</span>
                 <AdminBadge user={me} variant="inline" />
+                <PremiumBadge user={me} variant="inline" />
               </strong>
               <span>
                 @{me?.username?.toLowerCase() || "user"}

@@ -1,0 +1,136 @@
+/* Descall+ portal windows (mini mode, call window, sidebar). Injected as text into each
+   child window document (same-origin about:blank, rendered by the main renderer), so it
+   cannot rely on the app stylesheet. Glass palette mirrors the desktop shell. */
+:root {
+  --ax-brand: var(--g-brand-rgb, 124, 140, 255);
+  --ax-bg: rgba(20, 21, 30, 0.86);
+  --ax-panel: rgba(255, 255, 255, 0.055);
+  --ax-panel-hi: rgba(255, 255, 255, 0.09);
+  --ax-edge: rgba(255, 255, 255, 0.10);
+  --ax-text: #f2f3f5;
+  --ax-dim: rgba(242, 243, 245, 0.62);
+  --ax-red: #f0475a;
+  --ax-green: #3ccf84;
+  --ax-amber: #f4b740;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+body {
+  font: 13px/1.35 "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--ax-text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+#aux-root { height: 100%; }
+button { font: inherit; color: inherit; }
+.ax-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--ax-brand), 0.20), transparent 60%),
+    radial-gradient(90% 80% at 100% 100%, rgba(var(--ax-brand), 0.10), transparent 60%),
+    var(--ax-bg);
+  border: 1px solid var(--ax-edge);
+  border-radius: 14px;
+  overflow: hidden;
+  backdrop-filter: blur(24px) saturate(1.3);
+}
+.ax-shell.square { border-radius: 0; border: 0; }
+.ax-bar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 6px 0 12px;
+  flex: none;
+}
+.ax-bar .ax-title { flex: 1; min-width: 0; font-weight: 650; font-size: 12px; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ax-dim); }
+.ax-bar button, .ax-nodrag { -webkit-app-region: no-drag; }
+.ax-mark { width: 16px; height: 16px; flex: none; color: rgb(var(--ax-brand)); }
+.ax-ib {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ax-dim);
+  cursor: pointer;
+}
+.ax-ib:hover { background: var(--ax-panel-hi); color: var(--ax-text); }
+.ax-ib.on { color: rgb(var(--ax-brand)); background: rgba(var(--ax-brand), 0.16); }
+.ax-ib:focus-visible, .ax-btn:focus-visible, .ax-row:focus-visible { outline: 2px solid rgba(var(--ax-brand), 0.8); outline-offset: 1px; }
+.ax-body { flex: 1; min-height: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.ax-unread {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--ax-dim);
+}
+.ax-pill {
+  min-width: 18px; height: 18px; padding: 0 6px; border-radius: 9px;
+  background: var(--ax-red); color: #fff; font-size: 11px; font-weight: 700;
+  display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
+}
+.ax-call {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-radius: 12px;
+  background: var(--ax-panel); border: 1px solid var(--ax-edge);
+}
+.ax-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex: none;
+  background: rgba(var(--ax-brand), 0.25) center / cover no-repeat;
+  display: grid; place-items: center; font-weight: 700; color: var(--ax-text);
+}
+.ax-avatar.sm { width: 26px; height: 26px; font-size: 11px; }
+.ax-call-text { flex: 1; min-width: 0; }
+.ax-call-title { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ax-call-sub { font-size: 11.5px; color: var(--ax-dim); font-variant-numeric: tabular-nums; }
+.ax-live { color: var(--ax-green); }
+.ax-controls { display: flex; gap: 6px; justify-content: center; }
+.ax-btn {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; border-radius: 10px; border: 1px solid var(--ax-edge);
+  background: var(--ax-panel); cursor: pointer; font-weight: 600; font-size: 12px;
+}
+.ax-btn:hover { background: var(--ax-panel-hi); }
+.ax-btn.active { background: rgba(240, 71, 90, 0.16); border-color: rgba(240, 71, 90, 0.35); color: #ff9aa6; }
+.ax-btn.danger { background: var(--ax-red); border-color: transparent; color: #fff; }
+.ax-btn.danger:hover { filter: brightness(1.08); }
+.ax-btn.icon { flex: 0 0 40px; }
+.ax-empty { color: var(--ax-dim); font-size: 12.5px; padding: 6px 2px; }
+/* call window */
+.ax-stage { position: relative; flex: 1; min-height: 0; background: #07080c; overflow: hidden; }
+.ax-stage video { width: 100%; height: 100%; object-fit: contain; display: block; background: #07080c; }
+.ax-stage .ax-novideo { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 10px; color: var(--ax-dim); text-align: center; padding: 12px; }
+.ax-stage .ax-novideo .ax-avatar { width: 64px; height: 64px; font-size: 22px; }
+.ax-overlay-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; gap: 6px; justify-content: center; padding: 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  opacity: 0; transition: opacity 0.18s ease;
+}
+.ax-stage:hover .ax-overlay-bar, .ax-overlay-bar:focus-within { opacity: 1; }
+.ax-overlay-bar .ax-btn { flex: 0 0 auto; padding: 0 12px; background: rgba(20, 21, 30, 0.72); backdrop-filter: blur(10px); }
+.ax-overlay-bar .ax-btn.danger { background: var(--ax-red); }
+/* sidebar */
+.ax-sec { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ax-dim); margin: 6px 2px 2px; }
+.ax-list { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; min-height: 0; }
+.ax-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
+.ax-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 6px 8px; border: 0; border-radius: 10px; background: transparent;
+  cursor: pointer; text-align: left;
+}
+.ax-row:hover { background: var(--ax-panel-hi); }
+.ax-row .ax-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ax-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(20, 21, 30, 0.9); margin-left: -16px; margin-top: 18px; }
+.ax-dot.online { background: var(--ax-green); }
+.ax-dot.idle { background: var(--ax-amber); }
+.ax-dot.dnd { background: var(--ax-red); }
+.ax-scroll::-webkit-scrollbar { width: 6px; }
+.ax-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) { .ax-overlay-bar { transition: none; } }
