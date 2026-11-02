@@ -76,7 +76,7 @@
       "online": "En ligne",
       "idle": "Absent",
       "dnd": "Ne pas déranger",
-      "invisible": "Invisible",
+      "invisible": "Masqué",
       "inCall": "En appel : {title}"
     },
     "taskbar": {
