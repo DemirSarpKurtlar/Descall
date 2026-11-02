@@ -1,7 +1,8 @@
 /**
  * Advanced mic noise suppression for Descall voice (group DM + server voice).
  *
- * Pipeline (best → fallback):
+ * Pipeline (best → fallback; Firefox and devices that measured overload start
+ * lower, see pickSuppressorOrder in micFailsafe.js):
  *   1) GTCRN neural suppressor
  *   2) RNNoise (SIMD WASM when available)
  *   3) Speex preprocess
@@ -30,7 +31,7 @@ import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?u
 import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
 import { primeVoiceActivity } from "./voiceActivity";
 import { getLivePeerConnections } from "./iceConfig.js";
-import { createSilenceWatchdog, rms, swapToRawTrack } from "./micFailsafe.js";
+import { createSilenceWatchdog, pickSuppressorOrder, rms, swapToRawTrack } from "./micFailsafe.js";
 import {
   agcCompressorSettings,
   applyStoredMute,
@@ -58,6 +59,33 @@ function isNativeIosApp() {
   }
 }
 const ENGINE_KEY = "descall:noiseSuppressionEngine";
+/** 3.7.28: lightest engine that kept up on this device ("rnnoise" | "dsp"), set after measured overload. */
+const ENGINE_CAP_KEY = "descall:noiseSuppressionEngineCap";
+
+/**
+ * Firefox runs the GTCRN worklet ~8-12x slower than Chromium (offline render
+ * bench, e2e/voice-crackle/bench.mjs) and on weaker machines it cannot keep up
+ * with the render quantum: clicks / "cızırtı". Firefox starts at RNNoise.
+ */
+export function isFirefoxBrowser(ua = typeof navigator !== "undefined" ? navigator.userAgent : "") {
+  return /\bFirefox\/\d+/.test(String(ua || ""));
+}
+
+function readEngineCap() {
+  try {
+    return localStorage.getItem(ENGINE_CAP_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+function writeEngineCap(cap) {
+  try {
+    localStorage.setItem(ENGINE_CAP_KEY, cap);
+  } catch {
+    /* ignore */
+  }
+}
 
 /** @type {AudioContext | null} */
 let sharedCtx = null;
@@ -91,7 +119,10 @@ export function getNoiseSuppressionEngine() {
 }
 
 export function getVoiceAudioConstraints({ deviceId } = {}) {
-  return { audio: captureConstraints(readVoiceProfile(), deviceId), video: false };
+  // Browser noise suppression stays on whenever our pipeline does not run
+  // (native iOS, no AudioWorklet): never send a raw capture without any NS.
+  const pipeline = isNoiseSuppressionEnabled() && typeof AudioWorkletNode !== "undefined";
+  return { audio: captureConstraints(readVoiceProfile(), deviceId, { pipeline }), video: false };
 }
 
 // 3.7.15: the WASM binaries do not depend on an AudioContext, so they are loaded
@@ -134,7 +165,11 @@ function createContext() {
   const Ctor = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext) : null;
   if (!Ctor) return null;
   try {
-    return new Ctor({ sampleRate: 48000, latencyHint: "interactive" });
+    // 3.7.28: Firefox resamples every 44.1 kHz device into a forced 48 kHz
+    // context (extra cost, artifacts): use the device rate there.
+    return isFirefoxBrowser()
+      ? new Ctor({ latencyHint: "interactive" })
+      : new Ctor({ sampleRate: 48000, latencyHint: "interactive" });
   } catch {
     try {
       return new Ctor();
@@ -219,6 +254,25 @@ function buildDspFallback(ctx, { agc }) {
   return { highpass, compressor, engine: "dsp" };
 }
 
+const SUPPRESSORS = {
+  gtcrn: (ctx, a) => a.gtcrnWasm && new GtcrnWorkletNode(ctx, { wasmBinary: a.gtcrnWasm, maxChannels: 1 }),
+  rnnoise: (ctx, a) => a.rnnoiseWasm && new RnnoiseWorkletNode(ctx, { wasmBinary: a.rnnoiseWasm, maxChannels: 1 }),
+  speex: (ctx, a) => a.speexWasm && new SpeexWorkletNode(ctx, { wasmBinary: a.speexWasm, maxChannels: 1 }),
+};
+
+/** First engine of `engines` that loads; none → plain DSP chain. */
+function createSuppressor(ctx, assets, engines) {
+  for (const engine of engines) {
+    try {
+      const node = SUPPRESSORS[engine]?.(ctx, assets);
+      if (node) return { suppressor: node, engine };
+    } catch (err) {
+      console.warn(`[NoiseSuppression] ${engine} init failed:`, err?.message || err);
+    }
+  }
+  return { suppressor: null, engine: "dsp" };
+}
+
 /**
  * Wrap a raw mic MediaStream with the best available suppressor.
  * Returns a new MediaStream whose audio track is processed. Keeps raw tracks alive.
@@ -250,35 +304,9 @@ async function wrapInto(rawStream) {
   const destination = ctx.createMediaStreamDestination();
   const { highpass, compressor } = buildDspFallback(ctx, { agc: prefs.autoGainControl !== false });
 
-  /** @type {AudioNode | null} */
-  let suppressor = null;
-  let engine = "dsp";
-
-  // Prefer GTCRN (newer neural model) → RNNoise → Speex
-  if (assets.gtcrnWasm) {
-    try {
-      suppressor = new GtcrnWorkletNode(ctx, { wasmBinary: assets.gtcrnWasm, maxChannels: 1 });
-      engine = "gtcrn";
-    } catch (err) {
-      console.warn("[NoiseSuppression] GTCRN init failed:", err?.message || err);
-    }
-  }
-  if (!suppressor && assets.rnnoiseWasm) {
-    try {
-      suppressor = new RnnoiseWorkletNode(ctx, { wasmBinary: assets.rnnoiseWasm, maxChannels: 1 });
-      engine = "rnnoise";
-    } catch (err) {
-      console.warn("[NoiseSuppression] RNNoise init failed:", err?.message || err);
-    }
-  }
-  if (!suppressor && assets.speexWasm) {
-    try {
-      suppressor = new SpeexWorkletNode(ctx, { wasmBinary: assets.speexWasm, maxChannels: 1 });
-      engine = "speex";
-    } catch (err) {
-      console.warn("[NoiseSuppression] Speex init failed:", err?.message || err);
-    }
-  }
+  const order = pickSuppressorOrder({ firefox: isFirefoxBrowser(), cap: readEngineCap() });
+  const { suppressor, engine } = createSuppressor(ctx, assets, order.engines);
+  const engineReason = order.reason;
 
   let gate = null;
   try {
@@ -336,6 +364,12 @@ async function wrapInto(rawStream) {
     processedTrack: outTrack || null,
     nodes: [source, highpass, suppressor, gate, compressor, destination, rawMeter?.node, outMeter?.node].filter(Boolean),
     engine,
+    engineReason,
+    underruns: 0,
+    suppressor,
+    gateNode: gate,
+    chainIn: highpass,
+    chainOut: gate || compressor || destination,
     ctx,
     readRaw: rawMeter ? rawMeter.read : () => 0,
     readOut: outMeter ? outMeter.read : () => 0,
@@ -396,6 +430,9 @@ function armFailsafe(session) {
     getCtxState: () => ctx.state,
     tryResume: () => { void resumeContext(ctx, 800); },
     onFallback: (reason) => { void fallbackToRawMic(reason); },
+    readClock: () => ctx.currentTime,
+    onUnderrun: (count) => { session.underruns = count; },
+    onOverload: () => { void downgradeEngine(session); },
   });
   session.watchdog = watchdog;
   session.onState = () => {
@@ -420,18 +457,40 @@ function armFailsafe(session) {
 export async function fallbackToRawMic(reason = "manual") {
   const session = activeSession;
   if (!session || session.fallback) return false;
-  const rawTrack = session.rawStream?.getAudioTracks?.()[0];
+  const oldRaw = session.rawStream?.getAudioTracks?.()[0];
   const processedTrack = session.processedTrack;
-  if (!rawTrack || !processedTrack || rawTrack.readyState === "ended") return false;
+  if (!oldRaw || !processedTrack || oldRaw.readyState === "ended") return false;
   session.fallback = reason;
   lastFallbackReason = reason;
   session.watchdog?.stop();
+  // Levels at the moment we gave up (the meters go away with the graph).
+  try {
+    session.lastRawRms = Number(session.readRaw?.()) || 0;
+    session.lastOutRms = Number(session.readOut?.()) || 0;
+  } catch {
+    /* ignore */
+  }
+  // 3.7.28: the raw capture was opened with browser noise suppression OFF (our
+  // pipeline did it): sent as is it hisses. Re-open it with the browser's own
+  // NS / echo cancellation / AGC; keep the old one if that fails.
+  const rawTrack = await reacquireProcessedRawTrack(oldRaw);
   const switched = await swapToRawTrack({
     stream: session.processedStream,
     processedTrack,
     rawTrack,
     peers: getLivePeerConnections(),
   });
+  if (activeSession !== session) {
+    if (rawTrack !== oldRaw) try { rawTrack.stop(); } catch { /* ignore */ }
+    return false;
+  }
+  if (rawTrack !== oldRaw) {
+    session.rawStream = new MediaStream([rawTrack, ...(session.rawStream?.getVideoTracks?.() || [])]);
+    try { oldRaw.stop(); } catch { /* ignore */ }
+  }
+  // The processed graph (and its neural worklet) must not keep burning CPU.
+  teardownGraph(session);
+  try { processedTrack.stop(); } catch { /* ignore */ }
   session.engine = "raw-fallback";
   console.warn(`[NoiseSuppression] ${reason}: switched ${switched} sender(s) to the raw mic`);
   try {
@@ -439,6 +498,89 @@ export async function fallbackToRawMic(reason = "manual") {
   } catch {
     /* ignore */
   }
+  return true;
+}
+
+/** Same device, browser NS + EC + AGC on. Falls back to applyConstraints, then the old track. */
+async function reacquireProcessedRawTrack(oldRaw) {
+  const browserNs = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+  let deviceId;
+  try {
+    deviceId = oldRaw.getSettings?.().deviceId;
+  } catch {
+    deviceId = undefined;
+  }
+  try {
+    const audio = {
+      ...captureConstraints(readVoiceProfile(), deviceId, { pipeline: false }),
+      ...browserNs,
+      googNoiseSuppression: true,
+      googEchoCancellation: true,
+      googAutoGainControl: true,
+    };
+    const s = await navigator.mediaDevices.getUserMedia({ audio, video: false });
+    const t = s.getAudioTracks()[0];
+    if (t) {
+      try { t.contentHint = "speech"; } catch { /* ignore */ }
+      t.enabled = oldRaw.enabled;
+      return t;
+    }
+  } catch (err) {
+    console.warn("[NoiseSuppression] raw re-capture failed:", err?.name || err?.message || err);
+  }
+  try {
+    await oldRaw.applyConstraints?.(browserNs);
+  } catch {
+    /* the old raw track is still better than silence */
+  }
+  return oldRaw;
+}
+
+function teardownGraph(session) {
+  for (const node of session.nodes || []) {
+    try { node.disconnect?.(); } catch { /* ignore */ }
+    try { node.destroy?.(); } catch { /* ignore */ }
+  }
+  session.nodes = [];
+  session.readRaw = () => 0;
+  session.readOut = () => 0;
+}
+
+/**
+ * Measured overload (render clock falling behind, see micFailsafe.js): step
+ * down GTCRN → RNNoise → DSP for this session and remember it on this device.
+ */
+async function downgradeEngine(session) {
+  if (activeSession !== session || session.fallback) return false;
+  const next = session.engine === "gtcrn" ? "rnnoise" : session.engine === "dsp" ? null : "dsp";
+  if (!next) return false;
+  writeEngineCap(next);
+  console.warn(`[NoiseSuppression] ${session.engine} cannot keep up (${session.underruns} underruns), switching to ${next}`);
+  const assets = await ensureWasm().catch(() => ({}));
+  if (activeSession !== session || session.fallback || !session.chainIn || !session.chainOut) return false;
+  const { suppressor, engine } = next === "dsp" ? { suppressor: null, engine: "dsp" } : createSuppressor(session.ctx, assets, [next]);
+  try {
+    if (session.suppressor) {
+      session.chainIn.disconnect(session.suppressor);
+      session.suppressor.disconnect();
+      session.suppressor.destroy?.();
+      session.nodes = session.nodes.filter((n) => n !== session.suppressor);
+    }
+    if (suppressor) {
+      session.chainIn.connect(suppressor);
+      suppressor.connect(session.chainOut);
+      session.nodes.push(suppressor);
+    } else {
+      session.chainIn.connect(session.chainOut);
+    }
+  } catch (err) {
+    console.warn("[NoiseSuppression] engine switch failed:", err?.message || err);
+    return false;
+  }
+  session.suppressor = suppressor;
+  session.engine = engine;
+  session.engineReason = "overload";
+  try { localStorage.setItem(ENGINE_KEY, engine); } catch { /* ignore */ }
   return true;
 }
 
@@ -450,6 +592,16 @@ export function getNoiseSuppressionDiagnostics() {
   try {
     if (s?.readRaw && s.ctx?.state === "running") rawRms = Number(s.readRaw().toFixed(5));
     if (s?.readOut && s.ctx?.state === "running" && !s.fallback) outRms = Number(s.readOut().toFixed(5));
+    if (s?.fallback) {
+      rawRms = s.lastRawRms != null ? Number(s.lastRawRms.toFixed(5)) : null;
+      outRms = s.lastOutRms != null ? Number(s.lastOutRms.toFixed(5)) : null;
+    }
+  } catch {
+    /* ignore */
+  }
+  let captureSampleRate = null;
+  try {
+    captureSampleRate = s?.rawStream?.getAudioTracks?.()[0]?.getSettings?.().sampleRate ?? null;
   } catch {
     /* ignore */
   }
@@ -460,6 +612,10 @@ export function getNoiseSuppressionDiagnostics() {
     fallback: s?.fallback || lastFallbackReason || null,
     rawRms,
     processedRms: outRms,
+    contextSampleRate: s?.ctx?.sampleRate ?? sharedCtx?.sampleRate ?? null,
+    captureSampleRate,
+    underruns: s?.underruns ?? null,
+    engineReason: s?.engineReason || null,
   };
 }
 

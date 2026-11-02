@@ -147,18 +147,24 @@ export function jitterBufferTargetSeconds(quality) {
   return 0.05;
 }
 
-export function captureConstraints(prefs = readVoiceProfile(), deviceId) {
+/**
+ * `pipeline`: our WebAudio suppressor will process this capture. Only then is
+ * the browser's own noise suppression turned off (no muddy double-NS); a
+ * capture sent as is (native iOS, raw-mic fallback, no AudioWorklet) keeps it.
+ */
+export function captureConstraints(prefs = readVoiceProfile(), deviceId, { pipeline = true } = {}) {
   const neural = prefs.noiseMode !== "off";
+  const browserNs = neural && !pipeline;
   const audio = {
     echoCancellation: { ideal: prefs.echoCancellation !== false },
-    noiseSuppression: { ideal: false },
+    noiseSuppression: { ideal: browserNs },
     autoGainControl: { ideal: prefs.autoGainControl !== false },
     channelCount: { ideal: 1 },
     sampleRate: { ideal: 48000 },
     latency: { ideal: 0.01 },
     googEchoCancellation: prefs.echoCancellation !== false,
     googAutoGainControl: prefs.autoGainControl !== false,
-    googNoiseSuppression: false,
+    googNoiseSuppression: browserNs,
     googHighpassFilter: true,
   };
   if (!neural) {

@@ -2,7 +2,7 @@
 // (noise-suppressed) mic track is never sent silent.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createSilenceWatchdog, rms, swapToRawTrack, SILENCE_WINDOW_MS, SUSPENDED_MS, TICK_MS } from "./micFailsafe.js";
+import { createSilenceWatchdog, pickSuppressorOrder, rms, swapToRawTrack, OVERLOAD_UNDERRUNS, WARMUP_MS, SILENCE_WINDOW_MS, SUSPENDED_MS, TICK_MS } from "./micFailsafe.js";
 
 assert.equal(rms(new Float32Array([0, 0, 0])), 0);
 assert.ok(Math.abs(rms(new Float32Array([0.5, -0.5])) - 0.5) < 1e-9);
@@ -89,5 +89,73 @@ assert.doesNotMatch(src.slice(src.indexOf("async function ensureContext"), src.i
 const { gateSettings } = await import("./voiceProfile.js");
 assert.ok(gateSettings("on").openThreshold <= -58, "default gate opens for quiet mics");
 assert.ok(gateSettings("on").closeThreshold < gateSettings("on").openThreshold);
+
+// 3.7.28 "cızırtı": relative silence rule.
+// 9) quiet room, steady -53.5 dBFS background removed by the suppressor → never (kaantos' diag).
+r = drive({ readRaw: () => 0.0021, readOut: () => 0 }, 200);
+assert.deepEqual(r.reasons, [], "steady quiet background never triggers the raw fallback");
+// 10) quiet SPEECH (syllables over the floor) swallowed by the gate → fallback.
+{
+  let i = 0;
+  r = drive({ readRaw: () => ((i++ % 4) < 2 ? 0.0006 : 0.004), readOut: () => 0 }, 200);
+  assert.deepEqual(r.reasons, ["processed-silent"], "quiet speech swallowed → raw mic");
+}
+// 11) suppressor attenuates 30 dB (< 40 dB) → not silent.
+{
+  let i = 0;
+  r = drive({ readRaw: () => ((i++ % 4) < 2 ? 0.001 : 0.02), readOut: () => 0.02 * 0.0316 }, 200);
+  assert.deepEqual(r.reasons, []);
+}
+// 12) under the absolute floor (-70 dBFS) → never.
+r = drive({ readRaw: () => 0.0002, readOut: () => 0 }, 200);
+assert.deepEqual(r.reasons, []);
+
+// Underruns: audio clock falls behind the wall clock → counted; OVERLOAD_UNDERRUNS in 10 s → onOverload once per burst.
+{
+  let t = 0; let audio = 0; const under = []; const over = [];
+  const wd = createSilenceWatchdog({ now: () => t, readRaw: () => 0.02, readOut: () => 0.01, readClock: () => audio, onUnderrun: (n) => under.push(n), onOverload: (n) => over.push(n), setTimer: () => 1, clearTimer: () => {} });
+  // Warm-up stalls (worklet compile) are not counted.
+  for (let i = 0; i < 4; i += 1) { t += TICK_MS; audio += 0.01; wd.step(); }
+  assert.equal(under.length, 0, "warm-up ignored");
+  for (let i = 0; i < Math.ceil(WARMUP_MS / TICK_MS) + 20; i += 1) { t += TICK_MS; audio += TICK_MS / 1000; wd.step(); }
+  assert.equal(under.length, 0, "healthy clock: no underruns");
+  // Chunk jitter (±30 ms, not accumulating) is not an underrun.
+  for (let i = 0; i < 40; i += 1) { t += TICK_MS; audio += TICK_MS / 1000 + (i % 2 ? 0.03 : -0.03); wd.step(); }
+  assert.equal(under.length, 0, "render jitter ignored");
+  for (let i = 0; i < OVERLOAD_UNDERRUNS; i += 1) { t += TICK_MS; audio += TICK_MS / 1000 - 0.06; wd.step(); }
+  assert.equal(wd.underruns, OVERLOAD_UNDERRUNS);
+  assert.deepEqual(over, [OVERLOAD_UNDERRUNS]);
+  // Slow clock skew (0.1 %) is not an underrun.
+  const before = wd.underruns;
+  for (let i = 0; i < 40; i += 1) { t += TICK_MS; audio += (TICK_MS / 1000) * 0.999; wd.step(); }
+  assert.equal(wd.underruns, before);
+}
+
+// Engine order: Firefox / measured overload never start on GTCRN.
+assert.deepEqual(pickSuppressorOrder({}).engines, ["gtcrn", "rnnoise", "speex"]);
+assert.equal(pickSuppressorOrder({ firefox: true }).engines[0], "rnnoise");
+assert.equal(pickSuppressorOrder({ firefox: true }).reason, "firefox");
+assert.equal(pickSuppressorOrder({ cap: "rnnoise" }).engines.includes("gtcrn"), false);
+assert.deepEqual(pickSuppressorOrder({ cap: "dsp" }).engines, []);
+
+// Browser NS only off when our pipeline processes the capture.
+const { captureConstraints } = await import("./voiceProfile.js");
+assert.equal(captureConstraints({ noiseMode: "on" }, undefined).noiseSuppression.ideal, false);
+assert.equal(captureConstraints({ noiseMode: "on" }, undefined, { pipeline: false }).noiseSuppression.ideal, true, "raw / native iOS capture keeps browser NS");
+assert.equal(captureConstraints({ noiseMode: "on" }, undefined, { pipeline: false }).googNoiseSuppression, true);
+assert.equal(captureConstraints({ noiseMode: "off" }, undefined, { pipeline: false }).noiseSuppression.ideal, false, "user turned NS off");
+
+// Wiring (source shape).
+const fb = src.slice(src.indexOf("export async function fallbackToRawMic"), src.indexOf("/** Snapshot for the voice diagnostics"));
+assert.match(fb, /reacquireProcessedRawTrack\(oldRaw\)/, "fallback re-captures the raw mic");
+assert.match(fb, /noiseSuppression: true/, "re-capture with browser NS on");
+assert.match(fb, /teardownGraph\(session\)/, "processed graph disconnected on fallback");
+assert.match(fb, /processedTrack\.stop\(\)/);
+assert.match(src, /isFirefoxBrowser\(\)\s*\?\s*new Ctor\(\{ latencyHint: "interactive" \}\)/, "Firefox uses the device sample rate");
+assert.match(src, /pickSuppressorOrder\(\{ firefox: isFirefoxBrowser\(\), cap: readEngineCap\(\) \}\)/);
+assert.match(src, /onOverload: \(\) => \{ void downgradeEngine\(session\); \}/);
+const diagSrc = src.slice(src.indexOf("export function getNoiseSuppressionDiagnostics"));
+for (const k of ["contextSampleRate", "captureSampleRate", "underruns", "engineReason", "processedRms"]) assert.match(diagSrc, new RegExp(`\\b${k}\\b[:,]`), `diag has ${k}`);
+assert.match(src, /return \/\\bFirefox\\\/\\d\+\/\.test/, "Firefox detection by UA");
 
 console.log("micFailsafe.selftest ok");
