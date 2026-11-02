@@ -2051,6 +2051,28 @@ function mainWindowInFront() {
   }
 }
 
+// Native OS toasts kept referenced until closed (otherwise GC drops the click handler).
+const liveNativeToasts = new Set();
+function showNativeToast({ title, body, tag, data, silent }) {
+  try {
+    const { Notification } = require('electron');
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(data?.from || title || 'Descall').slice(0, 120), body: String(data?.preview || body || '').slice(0, 300), silent });
+    liveNativeToasts.add(n);
+    n.on('click', () => {
+      showMainWindow();
+      mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+    });
+    n.on('close', () => liveNativeToasts.delete(n));
+    n.on('failed', () => liveNativeToasts.delete(n));
+    n.show();
+    if (liveNativeToasts.size > 20) liveNativeToasts.delete(liveNativeToasts.values().next().value);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function showAppNotification(payload = {}) {
   // Descall+ modules may decorate (quick reply) or skip a toast.
   const hooked = premiumNotify.run(payload);
@@ -2076,6 +2098,12 @@ function showAppNotification(payload = {}) {
       },
     });
     if (shown) return null;
+  }
+
+  // Descall+ notification profiles: "toast" style uses the OS notification
+  // instead of a capsule (the renderer only sends it for entitled users).
+  if (options.style === 'toast' && !isCall && showNativeToast({ title, body, tag, data, silent: Boolean(options.silent) })) {
+    return null;
   }
 
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');

@@ -318,6 +318,8 @@ export function useActivity({ socket, me, friends = [] }) {
 
     if (step.emit === 'update' && detected) {
       lastDetectedRef.current = detected;
+      // Descall+ smart game notifications follow the detected game (no extra scan).
+      try { window.dispatchEvent(new CustomEvent('descall:activity', { detail: { appType: detected.appType, appName: detected.appName, displayName: detected.displayName } })); } catch { /* ignore */ }
       const startedAt = step.startedAt;
       setCurrentActivity({ ...detected, startedAt });
       socket.emit('activity:update', {
@@ -328,6 +330,7 @@ export function useActivity({ socket, me, friends = [] }) {
       });
     } else if (step.emit === 'clear') {
       setCurrentActivity(null);
+      try { window.dispatchEvent(new CustomEvent('descall:activity', { detail: null })); } catch { /* ignore */ }
       socket.emit('activity:clear');
     }
   }, [socket, settings]);
