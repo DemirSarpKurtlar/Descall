@@ -58,6 +58,7 @@ const {
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
+const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 
@@ -2264,18 +2265,21 @@ ipcMain.handle('get-screen-sources', async () => {
 });
 
 // Security: Handle downloads
-ipcMain.on('download-file', async (event, { url, filename }) => {
+// The renderer names the file: safeDownload.cjs keeps it a plain file name directly
+// inside Downloads (no separators, '..', reserved characters or device names).
+ipcMain.on('download-file', async (event, payload) => {
   try {
+    const { url, filename } = payload || {};
+    if (!isDownloadableUrl(url)) throw new Error('download-file: only http(s) URLs');
+    const { filePath, name } = resolveDownloadPath(app.getPath('downloads'), filename);
+
     const { default: fetch } = await import('node-fetch');
     const response = await fetch(url);
     const buffer = await response.buffer();
-    
-    const downloadsPath = app.getPath('downloads');
-    const filePath = path.join(downloadsPath, filename);
-    
+
     fs.writeFileSync(filePath, buffer);
 
-    const setupVer = versionFromSetupFilename(filename);
+    const setupVer = versionFromSetupFilename(name);
     if (setupVer || isDescallSetupDownloadUrl(url)) {
       pruneOldSetupDownloads('download-file', setupVer);
     }
