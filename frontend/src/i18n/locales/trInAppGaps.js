@@ -171,4 +171,5 @@ export const TR_INAPP_GAPS = {
   "Title text (e.g. Elite)": "Başlık metni (ör. Elit)",
   "iOS Liquid Glass": "iOS Liquid Glass",
   "{groupName} | Group Call": "{groupName} | Grup araması",
+  "Couldn't complete, change reverted.": "İşlem tamamlanamadı, değişiklik geri alındı.",
 };

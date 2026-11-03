@@ -166,3 +166,109 @@ export function isFinalInviteError(err) {
   const status = Number(err?.status || 0);
   return code === "INVITE_INVALID" || code === "INVITE_EXPIRED" || code === "BANNED" || status === 404 || status === 410;
 }
+
+/**
+ * 3.7.32: a channel-bound invite (invite.channel_id) opens that channel after
+ * joining. Returns the channel object to open, or null (server home). Voice /
+ * stage channels and categories are not auto-opened: opening one must never
+ * put the user in a call they did not choose.
+ */
+export function inviteLandingChannel(server, channelId) {
+  if (!server || !channelId) return null;
+  const ch = (Array.isArray(server.channels) ? server.channels : []).find(
+    (c) => String(c?.id) === String(channelId)
+  );
+  if (!ch) return null;
+  if (ch.type === "voice" || ch.type === "stage" || ch.type === "category") return null;
+  return ch;
+}
+
+/**
+ * 3.7.32: one pending slot per landing kind so vanity links (/s/:slug) and
+ * group invites (/invite/:code) survive login / sign-up exactly like server
+ * invites (they used to live in sessionStorage only and were lost when web
+ * sign-in came back in a new tab).
+ */
+export const PENDING_LANDING_KEYS = {
+  server: PENDING_SERVER_INVITE_KEY,
+  vanity: "descall:pendingServerVanity",
+  group: "descall:pendingInvite",
+};
+const LANDING_VALUE_RE = {
+  server: SERVER_INVITE_CODE_RE,
+  vanity: /^[a-z0-9][a-z0-9-]{2,31}$/,
+  group: /^[A-Za-z0-9_-]{2,64}$/,
+};
+
+function cleanLandingValue(kind, raw) {
+  const re = LANDING_VALUE_RE[kind];
+  if (!re) return null;
+  let value = String(raw ?? "").trim();
+  if (kind === "vanity") value = value.toLowerCase();
+  return re.test(value) ? value : null;
+}
+
+export function savePendingLanding(kind, value, { now = Date.now(), storage } = {}) {
+  const key = PENDING_LANDING_KEYS[kind];
+  const v = cleanLandingValue(kind, value);
+  if (!key || !v) return false;
+  const payload = kind === "server" ? { code: v, at: now } : { value: v, at: now };
+  let ok = false;
+  for (const s of stores(storage)) {
+    try {
+      s.setItem(key, JSON.stringify(payload));
+      ok = true;
+    } catch {
+      /* ignore */
+    }
+  }
+  return ok;
+}
+
+export function clearPendingLanding(kind, { storage } = {}) {
+  const key = PENDING_LANDING_KEYS[kind];
+  if (!key) return;
+  for (const s of stores(storage)) {
+    try {
+      s.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export function peekPendingLanding(kind, { now = Date.now(), storage } = {}) {
+  if (kind === "server") return peekPendingServerInvite({ now, storage });
+  const key = PENDING_LANDING_KEYS[kind];
+  if (!key) return null;
+  for (const s of stores(storage)) {
+    let raw = null;
+    try {
+      raw = s.getItem(key);
+    } catch {
+      raw = null;
+    }
+    if (!raw) continue;
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+    if (parsed && typeof parsed === "object") {
+      const v = cleanLandingValue(kind, parsed.value);
+      if (v && Number.isFinite(parsed.at) && now - parsed.at <= PENDING_TTL_MS && parsed.at <= now + 60_000) return v;
+      continue;
+    }
+    // Pre-3.7.32 builds stored the bare value in sessionStorage.
+    const legacy = cleanLandingValue(kind, raw);
+    if (legacy) return legacy;
+  }
+  return null;
+}
+
+export function takePendingLanding(kind, opts = {}) {
+  const v = peekPendingLanding(kind, opts);
+  clearPendingLanding(kind, opts);
+  return v;
+}

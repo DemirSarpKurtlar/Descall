@@ -207,3 +207,8 @@ input.svh-range::-moz-range-thumb{width:26px;height:26px;border-radius:50%;backg
 .svh-mi+.svh-mnode,.svh-mnode+.svh-mi{position:relative}.svh-mnode+.svh-mi:before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:rgba(255,255,255,.1)}
 /* the field draws the focus ring; the inner control never adds its own (global input:focus styles) */
 .svh-field input,.svh-field textarea,.svh-field input:focus,.svh-field textarea:focus,.svh-field input:focus-visible,.svh-field textarea:focus-visible{outline:none;box-shadow:none;border:0;border-radius:0;background:transparent;-webkit-appearance:none;appearance:none}
+
+/* 3.7.32 — opaque fallback for the hub glass (Reduce Transparency, low-power, no backdrop-filter). */
+:root:is(.a11y-solid,.gd-lite) .svh-heavy{background:rgba(24,25,36,.97)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+@media (prefers-reduced-transparency: reduce){.svh-heavy{background:rgba(24,25,36,.97)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){.svh-heavy{background:rgba(24,25,36,.97)!important}}

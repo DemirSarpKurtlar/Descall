@@ -16,6 +16,10 @@ import {
   takePendingServerInvite,
   peekPendingServerInvite,
   clearPendingServerInvite,
+  peekPendingLanding,
+  takePendingLanding,
+  clearPendingLanding,
+  inviteLandingChannel,
 } from "./lib/serverInviteRoute";
 import MarketingApp from "./site/MarketingApp";
 import SeoHead from "./site/SeoHead";
@@ -3533,8 +3537,10 @@ export default function App() {
       const justRegistered = sessionStorage.getItem("descall:justRegistered") === "1";
       const pendingGroupInvite =
         Boolean(inviteCode) ||
-        Boolean(sessionStorage.getItem("descall:pendingInvite")) ||
+        Boolean(peekPendingLanding("group")) ||
         Boolean(serverInviteCode) ||
+        Boolean(serverVanitySlug) ||
+        Boolean(peekPendingLanding("vanity")) ||
         Boolean(peekPendingServerInvite());
       if (justRegistered && !pendingGroupInvite) {
         sessionStorage.removeItem("descall:justRegistered");
@@ -4479,17 +4485,15 @@ export default function App() {
         if (nextPath && location.pathname !== nextPath) navigate(nextPath, { replace: true });
         return;
       }
-      const pendingVanity = sessionStorage.getItem("descall:pendingServerVanity");
+      const pendingVanity = takePendingLanding("vanity");
       if (pendingVanity) {
-        sessionStorage.removeItem("descall:pendingServerVanity");
         setServerVanitySlug(pendingVanity);
         setServerVanityAuthOpen(false);
         writeServerVanityPath(pendingVanity);
         return;
       }
-      const pending = sessionStorage.getItem("descall:pendingInvite");
+      const pending = takePendingLanding("group");
       if (!pending) return;
-      sessionStorage.removeItem("descall:pendingInvite");
       setInviteCode(pending);
       setInviteAuthOpen(false);
       writeInvitePath(pending);
@@ -4520,11 +4524,7 @@ export default function App() {
           /* ignore */
         }
       }
-      try {
-        sessionStorage.removeItem("descall:pendingServerVanity");
-      } catch {
-        /* ignore */
-      }
+      clearPendingLanding("vanity");
       clearServerVanityPath();
       setServerVanitySlug(null);
       setServerVanityAuthOpen(false);
@@ -4548,11 +4548,7 @@ export default function App() {
         socketRef.current.emit("dm:set_active", { withUserId: null });
       }
     }
-    try {
-      sessionStorage.removeItem("descall:pendingInvite");
-    } catch {
-      /* ignore */
-    }
+    clearPendingLanding("group");
     clearInvitePath();
     setInviteCode(null);
     setInviteAuthOpen(false);
@@ -4560,8 +4556,9 @@ export default function App() {
 
   // In-chat Discord-style invite embeds → join / open group or server
   useEffect(() => {
-    const openServerFromInvite = (server) => {
+    const openServerFromInvite = (server, channelId) => {
       if (!server?.id) return;
+      const landingChannel = inviteLandingChannel(server, channelId);
       setMyServers((prev) => {
         const list = Array.isArray(prev) ? prev : [];
         if (list.some((s) => s.id === server.id)) {
@@ -4572,10 +4569,10 @@ export default function App() {
       setActiveDmUser(null);
       setActiveGroup(null);
       setActiveServer(server);
-      setActiveChannel(null);
+      setActiveChannel(landingChannel);
       setActiveView("servers");
       try {
-        const nextPath = serverPath(server);
+        const nextPath = serverPath(server, landingChannel);
         if (location.pathname !== nextPath) navigate(nextPath);
       } catch {
         /* ignore */
@@ -4586,7 +4583,7 @@ export default function App() {
       handleInviteJoined(event?.detail?.group);
     };
     const onJoinedServer = (event) => {
-      openServerFromInvite(event?.detail?.server);
+      openServerFromInvite(event?.detail?.server, event?.detail?.channelId);
     };
     const onOpenInviteTarget = (event) => {
       const detail = event?.detail || {};
@@ -4595,7 +4592,7 @@ export default function App() {
         return;
       }
       if (detail.kind === "server" && detail.server) {
-        openServerFromInvite(detail.server);
+        openServerFromInvite(detail.server, detail.channelId);
       }
     };
 
@@ -4616,8 +4613,10 @@ export default function App() {
   }, []);
 
   const handleServerInviteJoined = useCallback(
-    (server) => {
+    (server, res) => {
       finishServerInvite();
+      // 3.7.32: a channel-bound invite opens its channel (text only).
+      const landingChannel = inviteLandingChannel(server, res?.channelId);
       if (!server?.id) {
         navigate("/servers", { replace: true });
         return;
@@ -4632,10 +4631,10 @@ export default function App() {
       setActiveDmUser(null);
       setActiveGroup(null);
       setActiveServer(server);
-      setActiveChannel(null);
+      setActiveChannel(landingChannel);
       setActiveView("servers");
       try {
-        navigate(serverPath(server), { replace: true });
+        navigate(serverPath(server, landingChannel), { replace: true });
       } catch {
         /* ignore */
       }
@@ -4648,9 +4647,14 @@ export default function App() {
     navigate(me ? "/servers" : "/", { replace: true });
   }, [finishServerInvite, navigate, me]);
 
-  const openServerInviteAuth = useCallback(
-    (mode) => {
-      setServerInviteAuthOpen(true);
+  // 3.7.32: vanity and group landings use the same flow as server invites:
+  // the value waits in its pending slot and the web opens /login or /register
+  // instead of falling through to the marketing home page.
+  const openLandingAuth = useCallback(
+    (kind, mode) => {
+      if (kind === "vanity") setServerVanityAuthOpen(true);
+      else if (kind === "group") setInviteAuthOpen(true);
+      else setServerInviteAuthOpen(true);
       const isElectronDesktop = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
       // Native / desktop render AuthView directly; the web site opens its
       // login / sign-up dialog from the route. The code waits in the pending slot.
@@ -4660,24 +4664,17 @@ export default function App() {
     },
     [navigate]
   );
+  const openServerInviteAuth = useCallback((mode) => openLandingAuth("server", mode), [openLandingAuth]);
 
   const dismissServerVanity = useCallback(() => {
-    try {
-      sessionStorage.removeItem("descall:pendingServerVanity");
-    } catch {
-      /* ignore */
-    }
+    clearPendingLanding("vanity");
     clearServerVanityPath();
     setServerVanitySlug(null);
     setServerVanityAuthOpen(false);
   }, []);
 
   const dismissInvite = useCallback(() => {
-    try {
-      sessionStorage.removeItem("descall:pendingInvite");
-    } catch {
-      /* ignore */
-    }
+    clearPendingLanding("group");
     clearInvitePath();
     setInviteCode(null);
     setInviteAuthOpen(false);
@@ -4734,7 +4731,7 @@ export default function App() {
           slug={serverVanitySlug}
           me={me}
           onJoined={handleServerVanityJoined}
-          onNeedLogin={() => setServerVanityAuthOpen(true)}
+          onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
           onDismiss={dismissServerVanity}
         />
       </>
@@ -4751,7 +4748,7 @@ export default function App() {
           code={inviteCode}
           me={me}
           onJoined={handleInviteJoined}
-          onNeedLogin={() => setInviteAuthOpen(true)}
+          onNeedLogin={(mode) => openLandingAuth("group", mode)}
           onDismiss={dismissInvite}
         />
       </>
