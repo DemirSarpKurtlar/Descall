@@ -1,5 +1,6 @@
 /** Auto-generated + curated en locale */
 import { WORLD3D_EN } from "./world3d.en.js";
+import { AMP_EN } from "./profileMediaPicker.en.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -33,6 +34,7 @@ export const nested = {
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,
+  amp: AMP_EN,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {

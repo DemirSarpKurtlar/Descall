@@ -6,7 +6,7 @@ import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 
-const GIPHY_API_KEY = "dtgxSdCkeVkjYcEeEpSYlqP4mmv4LQgi";
+export const GIPHY_API_KEY = "dtgxSdCkeVkjYcEeEpSYlqP4mmv4LQgi";
 const GIPHY_API_URL = "https://api.giphy.com/v1/gifs";
 
 export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef }) {
