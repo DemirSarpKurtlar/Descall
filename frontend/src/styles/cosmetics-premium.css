@@ -309,6 +309,38 @@
 .shop-reaction-burst-preview {
   font-size: 22px;
   color: #f4f6fb;
+  position: relative;
+  overflow: visible;
+  contain: layout style;
+}
+
+/* Live preview (ReactionBurstPreview): the sample chip and the real burst. */
+.shop-reaction-burst-preview .srb-stage {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 22px;
+  transform: scale(1.5);
+}
+.shop-reaction-burst-preview .srb-chip {
+  position: relative;
+  cursor: default;
+  padding: 5px 12px;
+  gap: 6px;
+  font-size: 17px;
+  pointer-events: none;
+}
+.shop-reaction-burst-preview .srb-chip .reaction-count { font-size: 13px; }
+.shop-reaction-burst-preview .reaction-burst-pop-emoji { font-size: 20px; }
+.shop-reaction-burst-preview.is-compact { min-height: 0; }
+.shop-reaction-burst-preview.is-compact .srb-stage { padding: 4px 10px; transform: none; }
+.shop-reaction-burst-preview.is-compact .srb-chip { font-size: 13px; padding: 2px 8px; }
+.shop-reaction-burst-preview.is-compact .reaction-burst-pop-emoji { font-size: 13px; }
+/* Reduced motion: one still frame (chip in its effect colours, particles parked). */
+.shop-reaction-burst-preview.is-still .srb-chip { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .shop-reaction-burst-preview .srb-chip { animation: none !important; }
 }
 
 .shop-call-overlay-preview {

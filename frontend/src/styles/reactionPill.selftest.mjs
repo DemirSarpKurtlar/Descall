@@ -16,5 +16,5 @@ assert.match(pill, /@media \(hover: none\) \{[^}]*\.reaction-add-wrapper \{\s*di
 assert.match(pill, /\[data-theme="light"\][^{]*\.reaction-chip/, "light-theme pill");
 assert.ok(!/\.message-reactions \{\s*margin-left: 46px;/.test(glass), "glass/chat.css no longer pushes the in-bubble row 46px right");
 assert.ok(list.includes('reactions.length > 0 ? "has-reactions" : ""'), "bubble gets has-reactions");
-assert.ok(rx.includes("burst?.emoji === emoji ? ` burst-chip-${burstKey}`"), "burst glow only while the burst plays");
+assert.ok(rx.includes("burst?.emoji === emoji ? ` ${burstChipClass(burstKey)}`"), "burst glow only while the burst plays");
 console.log("reactionPill selftest ok");
