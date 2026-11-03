@@ -1322,6 +1322,13 @@ export const nested = {
     "voice": "Sprachanruf"
   },
   "callui": {
+    "share": {
+      "viewers": "{n} schauen zu",
+      "sharing": "{name} teilt den Bildschirm",
+      "you": "Du teilst deinen Bildschirm",
+      "fullscreen": "Vollbild",
+      "people": "Personen im Anruf"
+    },
     "media": {
       "dmTitle": "Descall-Anruf",
       "groupTitle": "Descall-Gruppenanruf"
