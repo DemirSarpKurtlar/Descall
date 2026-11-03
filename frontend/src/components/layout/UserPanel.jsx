@@ -58,6 +58,7 @@ import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
+import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
 
@@ -2722,14 +2723,15 @@ const UserPanel = forwardRef(function UserPanel({
       <aside ref={menuPaneRef} className="us-sidebar s3 s3-side visible">
         <div className="s3-side-pad" aria-hidden="true" />
         <div className="s3-side-scroll">
-          <button type="button" className="s3-hero" onClick={() => openTab("overview")}>
-            <Avatar name={me?.username || t("User")} size={64} user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }} />
-            <span className="n">{displayName || me?.username || t("User")}</span>
-            <span className="m">
-              @{me?.username?.toLowerCase() || "user"}
-              {isUserAdmin(me) ? ` · ${t("staffBadge.tip")}` : ""}
-            </span>
-          </button>
+          <SettingsProfileCard
+            me={me}
+            avatarUrl={avatarUrl}
+            status={myStatus}
+            isAdmin={isUserAdmin(me)}
+            size={64}
+            onOpen={() => openTab("overview")}
+            onEdit={() => openTab("profile")}
+          />
           <nav aria-label={t("Settings sections")}>
             {navGroups.map((group) => (
               <div key={group.label} className="s3-side-group">
@@ -2789,32 +2791,16 @@ const UserPanel = forwardRef(function UserPanel({
             )}
           </div>
 
-          <button type="button" className="us-mini-profile" onClick={() => openTab("overview")}>
-            <span className="us-mini-avatar">
-              <Avatar
-                name={me?.username || t("User")}
-                size={glassShell && isMobile ? 56 : 40}
-                user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-              />
-              {glassShell && isMobile ? <StatusBadge status={myStatus || "online"} /> : null}
-            </span>
-            <div className="us-mini-meta">
-              <strong style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap" }}>
-                <span className="us-mini-name">{displayName || me?.username || t("User")}</span>
-                <AdminBadge user={me} variant="inline" />
-              </strong>
-              <span>
-                @{me?.username?.toLowerCase() || "user"}
-                {glassShell && isMobile ? (
-                  <>
-                    {" · "}
-                    <em className="us-descoin">◈ {formatNumber(me?.descoinBalance || 0, locale)} DesCoin</em>
-                  </>
-                ) : null}
-              </span>
-            </div>
-            {isMobile && <ChevronRight size={16} className="us-chevron" />}
-          </button>
+          <SettingsProfileCard
+            me={me}
+            avatarUrl={avatarUrl}
+            status={myStatus}
+            isAdmin={isUserAdmin(me)}
+            size={72}
+            variant="ios"
+            onOpen={() => openTab("overview")}
+            onEdit={() => openTab("profile")}
+          />
         </div>
 
         <nav className="us-nav" aria-label={t("Settings sections")}>
