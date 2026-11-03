@@ -10,6 +10,8 @@ const { recordFailure } = require("../lib/rateLimit");
 const voiceTranscode = require("../lib/voiceTranscode");
 const { safeExtension, uploadConcurrencyGate } = require("../lib/uploadGuard");
 const { templatedError } = require("../lib/apiError");
+const { applyGifCrop } = require("../lib/gifCrop");
+const QRCode = require("qrcode");
 
 const router = express.Router();
 
@@ -77,6 +79,23 @@ router.get(/^\/f\/(.+)$/, async (req, res) => {
     return res.redirect(302, target);
   } catch {
     return res.status(404).json({ error: "not_found" });
+  }
+});
+
+// GET /api/media/handoff-qr.svg?target=avatar|banner : QR for "Telefonundan yükle" in the
+// profile photo / banner picker. It only encodes the fixed universal link that opens
+// the same picker on the phone (no token, no user data), so it is public: <img> sends no auth.
+router.get("/handoff-qr.svg", async (req, res) => {
+  const target = req.query.target === "banner" ? "banner" : "avatar";
+  try {
+    const svg = await QRCode.toString(`https://descall.com/settings/profile?picker=${target}`, {
+      type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0b0c10", light: "#ffffff" },
+    });
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(svg);
+  } catch {
+    return res.status(500).end();
   }
 });
 
@@ -241,6 +260,9 @@ router.post("/avatar", uploadGate, upload.single("avatar"), async (req, res) => 
       return res.status(400).json({ error: "Avatar must be 8 MB or smaller." });
     }
 
+    // picker: an animated GIF arrives whole with its crop and is cut here, every frame kept.
+    await applyGifCrop(req.file, req.body?.crop, "avatar");
+
     const userId = req.user.id;
     const { url } = await uploadToSupabase(req.file, "avatars");
 
@@ -293,6 +315,36 @@ router.post("/banner", uploadGate, upload.single("banner"), async (req, res) => 
   } catch (err) {
     console.error("[MEDIA] Banner upload error:", err);
     res.status(500).json({ error: "Banner upload failed." });
+  }
+});
+
+// POST /api/media/banner-image (picker): store a profile banner image (a GIF is cropped
+// here with its animation) and return its public URL. The profile row is saved by the client
+// through PUT /api/user/profile exactly as before, so shop-banner and premium rules are unchanged.
+router.post("/banner-image", uploadGate, upload.single("banner"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "no_file" });
+    if (!ALLOWED_IMAGE.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: "bad_type" });
+    }
+    if (req.file.size > MAX_AVATAR_SIZE) {
+      return res.status(400).json({ error: "too_large" });
+    }
+    await applyGifCrop(req.file, req.body?.crop, "banner");
+    const { url, path: storagePath } = await uploadToSupabase(req.file, "banners");
+    await supabase.from("media_uploads").insert({
+      uploader_id: req.user.id,
+      storage_path: storagePath,
+      public_url: url,
+      media_type: "image",
+      mime_type: req.file.mimetype,
+      file_size: req.file.size,
+      original_name: req.file.originalname,
+    });
+    res.json({ url, bannerUrl: url, mimeType: req.file.mimetype });
+  } catch (err) {
+    console.error("[MEDIA] Banner image upload error:", err);
+    res.status(500).json({ error: "upload_failed" });
   }
 });
 

@@ -1,5 +1,6 @@
 /** Auto-generated + curated tr locale */
 import { WORLD3D_TR } from "./world3d.tr.js";
+import { AMP_TR } from "./profileMediaPicker.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -39,6 +40,7 @@ export const nested = {
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,
+  amp: AMP_TR,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {
