@@ -147,8 +147,9 @@ extension View {
     }
 }
 
-/// A List styled like the old glass ScrollView, with pull-to-refresh and a
-/// toolbar refresh button.
+/// Glass screen with a toolbar refresh button. 3.7.33 first tried a List for
+/// pull-to-refresh; watchOS aborted in DisplayList.ViewUpdater with glass rows inside a
+/// List, so screens stay on the proven ScrollView and refresh by button, timer, wake.
 struct DescallList<Content: View>: View {
     var title: String
     var loading: Bool
@@ -156,13 +157,10 @@ struct DescallList<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        List {
-            content()
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 3, leading: 2, bottom: 3, trailing: 2))
+        ScrollView {
+            LazyVStack(spacing: 6) { content() }
+                .padding(.horizontal, 2)
         }
-        .listStyle(.plain)
-        .refreshable { await refresh() }
         .navigationTitle(title)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

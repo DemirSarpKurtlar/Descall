@@ -239,30 +239,23 @@ struct UpdatedLine: View {
     var loading: Bool
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 30)) { ctx in
-            HStack(spacing: 5) {
-                if loading { ProgressView().frame(width: 12, height: 12).scaleEffect(0.6) }
-                Text(loading ? L.refreshing : (updatedAt.map { L.updated($0, now: ctx.date) } ?? ""))
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(DS.ink2)
-                    .monospacedDigit()
-            }
+        Text(loading ? L.refreshing : (updatedAt.map { L.updated($0) } ?? ""))
+            .font(.system(size: 10.5))
+            .foregroundStyle(DS.ink2)
+            .monospacedDigit()
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
-        }
     }
 }
 
-/// Toolbar refresh: spins while loading, haptic on tap.
+/// Toolbar refresh: a spinner while loading.
 struct RefreshToolbarButton: View {
     var loading: Bool
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "arrow.clockwise")
-                .rotationEffect(.degrees(loading ? 360 : 0))
-                .animation(loading ? .linear(duration: 0.9).repeatForever(autoreverses: false) : .default, value: loading)
+            Image(systemName: loading ? "hourglass" : "arrow.clockwise")
         }
         .disabled(loading)
         .accessibilityLabel(L.refresh)
