@@ -1,0 +1,403 @@
+/* Screen share, V1 "Kutucuk satırı" (owner pick, Nov 2026).
+   Stream with pills on top, centered glass tile row under it, one control capsule.
+   Heavy frost that is never see-through; solid fallback for Reduce Transparency. */
+
+.call-screen-share-layout.ss-v1 {
+  --ss-accent: #4F7CFF;
+  --ss-accent-rgb: 79, 124, 255;
+  --ss-glass: rgba(30, 31, 34, 0.94);      /* surface-1 */
+  --ss-glass-solid: #1E1F22;
+  --ss-tile: #2B2D31;                      /* surface-2 */
+  --ss-tile-solid: #2B2D31;
+  --ss-hair: rgba(255, 255, 255, 0.09);
+  --ss-sheen: rgba(255, 255, 255, 0.07);
+  --ss-ink: #F2F3F5;
+  --ss-ink-2: #B5BAC1;
+  --ss-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ss-r-row: 26px;                        /* r-xl = tile 18 + 8 padding */
+  --ss-r-tile: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 16px 0;
+  overflow: visible;
+  color: var(--ss-ink);
+}
+
+[data-theme="light"] .call-screen-share-layout.ss-v1 {
+  --ss-glass: rgba(255, 255, 255, 0.94);
+  --ss-glass-solid: #FFFFFF;
+  --ss-tile: #F2F3F5;
+  --ss-tile-solid: #F2F3F5;
+  --ss-hair: rgba(0, 0, 0, 0.07);
+  --ss-sheen: rgba(255, 255, 255, 0.9);
+  --ss-ink: #1C1D21;
+  --ss-ink-2: #5C616B;
+  --ss-shadow: 0 10px 28px rgba(30, 40, 80, 0.12);
+}
+
+.call-screen-share-layout.ss-v1.is-narrow {
+  gap: 8px;
+  padding: 2px 8px 16px; /* clear the capsule (narrow pad is only 72px) */
+  --ss-r-row: 22px;
+  --ss-r-tile: 14px;
+}
+
+/* ── Stream ── */
+.ss-v1 .ss-stream {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #0B0C10;
+  cursor: zoom-in;
+  box-shadow: 0 0 0 1px var(--ss-hair), var(--ss-shadow);
+}
+.ss-v1 .ss-stream[hidden] { display: none; }
+.ss-v1 .ss-stream-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transform: translateZ(0);
+  will-change: contents;
+}
+.ss-v1 .ss-stream-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #B5BAC1;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* ── Pills on the stream (always dark: they sit on video) ── */
+.ss-v1 .ss-pills {
+  position: absolute;
+  top: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(50% - 20px);
+  cursor: default;
+}
+.ss-v1 .ss-pills-start { left: 12px; }
+.ss-v1 .ss-pills-end { right: 12px; justify-content: flex-end; }
+
+.ss-v1 .ss-pill,
+.ss-v1 .ss-live {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.ss-v1 .ss-pill {
+  color: #F2F3F5;
+  background: rgba(20, 21, 26, 0.9);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  backdrop-filter: blur(30px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.ss-v1 .ss-pill-sharer { flex: 0 1 auto; min-width: 0; }
+.ss-v1 .ss-pill-text { overflow: hidden; text-overflow: ellipsis; }
+.ss-v1 .ss-pill-icon {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 160ms ease;
+}
+.ss-v1 .ss-pill-icon:hover { background: rgba(40, 42, 50, 0.94); }
+.ss-v1 .ss-pill-icon:active { transform: scale(0.94); }
+.ss-v1 .ss-pill-icon:focus-visible { outline: 2px solid var(--ss-accent); outline-offset: 2px; }
+
+/* the volume chip keeps GlassVolumeSlider, just seated in a pill */
+.ss-v1 .ss-pill-volume.gd-share-volume {
+  position: static;
+  top: auto;
+  right: auto;
+  padding: 0 6px 0 4px;
+}
+
+.ss-v1 .ss-live {
+  color: #fff;
+  background: #E5484D;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ss-v1 .ss-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+/* ── Fullscreen ── */
+.ss-v1 .ss-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  cursor: zoom-out;
+}
+.ss-v1 .ss-expanded-top {
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  left: calc(16px + env(safe-area-inset-left, 0px));
+}
+.ss-v1 .ss-expanded-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  color: #B5BAC1;
+}
+
+/* ── Participant tile row ── */
+.ss-v1 .ss-tile-row {
+  flex: none;
+  align-self: center;
+  max-width: 100%;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--ss-r-row);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: var(--ss-glass);
+  -webkit-backdrop-filter: blur(40px) saturate(1.6);
+  backdrop-filter: blur(40px) saturate(1.6);
+  border: 1px solid var(--ss-hair);
+  box-shadow: inset 0 1px 0 var(--ss-sheen), var(--ss-shadow);
+}
+.ss-v1 .ss-tile-row::-webkit-scrollbar { display: none; }
+
+.ss-v1 .ss-tile-slot {
+  flex: 0 0 180px;
+  width: 180px;
+  height: 96px;
+}
+.ss-v1.is-narrow .ss-tile-slot {
+  flex-basis: 116px;
+  width: 116px;
+  height: 84px;
+}
+
+.ss-v1 .participant-tile.ss-tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--ss-r-tile);
+  overflow: hidden;
+  background: var(--ss-tile);
+  border: 1px solid var(--ss-hair);
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.ss-v1 .participant-tile.ss-tile.is-speaking {
+  border-color: rgba(var(--ss-accent-rgb), 0.7);
+  background: linear-gradient(180deg, rgba(var(--ss-accent-rgb), 0.16), var(--ss-tile));
+}
+.ss-v1 .ss-tile .participant-tile-avatar-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 10px;
+}
+.ss-v1 .ss-tile .participant-tile-avatar-shell { flex: none; }
+.ss-v1 .ss-tile .participant-tile-avatar-core { position: relative; }
+
+/* Speaking ring: one blue ring outside the avatar (and outside any
+   decoration frame), never the old floating halos. */
+.ss-v1 .ss-tile .speaking-rings,
+.ss-v1 .ss-tile .g-speak-ring { display: none; }
+.ss-v1 .ss-tile .participant-tile-avatar-core::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2.5px var(--ss-accent), 0 0 18px rgba(var(--ss-accent-rgb), 0.55);
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 180ms ease, transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  pointer-events: none;
+}
+.ss-v1 .ss-tile.is-speaking .participant-tile-avatar-core::after { opacity: 1; transform: scale(1); }
+
+.ss-v1 .ss-tile-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ss-ink);
+}
+.ss-v1 .ss-tile-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* badges attached to the name, never floating above the avatar */
+.ss-v1 .ss-tile-badges.participant-state-icons {
+  position: static;
+  display: inline-flex;
+  gap: 3px;
+  flex: none;
+}
+.ss-v1 .ss-tile-badges .participant-state-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  background: #E5484D;
+  box-shadow: none;
+}
+.ss-v1 .ss-tile-badges .participant-state-icon.is-camera-off { background: #6B7280; }
+
+/* camera on: video fills the tile, label stays readable */
+.ss-v1 .ss-tile .participant-tile-label {
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  font-size: 11px;
+}
+
+/* ── One control capsule while sharing ──
+   The bar itself becomes the capsule (controls + End together), centred with
+   left/right + auto margins (no translateX, iPad rule). Inner capsule goes flat. */
+html .call-control-bar.is-sharing,
+html.glass-desktop .call-control-bar.is-sharing {
+  left: 0 !important;
+  right: 0 !important;
+  width: fit-content !important;
+  max-width: calc(100% - 24px) !important;
+  height: auto !important;
+  pointer-events: auto;
+  margin-inline: auto;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+  gap: 6px !important;
+  padding: 6px !important;
+  border-radius: 30px;
+  background: rgba(30, 31, 34, 0.94) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.6) !important;
+  backdrop-filter: blur(40px) saturate(1.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme="light"] .call-control-bar.is-sharing,
+html.glass-desktop[data-theme="light"] .call-control-bar.is-sharing {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(0, 0, 0, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(30, 40, 80, 0.12) !important;
+}
+/* End sits in the same capsule: same height as the other controls (r = 30 - 6 padding). */
+html .call-control-bar.is-sharing .gd-call-btn.is-end {
+  width: 56px !important;
+  height: 52px !important;
+  border-radius: 24px !important;
+  box-shadow: none !important;
+}
+/* light: dark ink on the light capsule */
+[data-theme="light"] .call-control-bar.is-sharing .gd-call-btn:not(.is-end):not(.is-off):not(.is-on) {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #1C1D21 !important;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] .call-control-bar.is-sharing .gd-call-btn.is-off {
+  background: rgba(229, 72, 77, 0.12) !important;
+  color: #D93036 !important;
+}
+[data-theme="light"] .call-control-bar.is-sharing .gd-call-btn.is-on {
+  background: #4F7CFF !important;
+  color: #fff !important;
+}
+[data-theme="light"] .call-control-bar.is-sharing button:not(.gd-call-btn) {
+  color: #1C1D21 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(30, 40, 80, 0.12) !important;
+}
+html .call-control-bar.is-sharing > .call-ctrl-capsule {
+  height: auto !important;
+  padding: 0 !important;
+  max-width: none !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ── Reduce Transparency / solid modes: same layout, opaque surfaces ── */
+@media (prefers-reduced-transparency: reduce) {
+  .ss-v1 .ss-tile-row,
+  .ss-v1 .ss-pill,
+  html:root:root .call-control-bar.is-sharing {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .ss-v1 .ss-tile-row { background: var(--ss-glass-solid); }
+  .ss-v1 .ss-pill { background: #14151A; }
+  html:root:root .call-control-bar.is-sharing { background: #1E1F22 !important; }
+  html:root:root[data-theme="light"] .call-control-bar.is-sharing { background: #FFFFFF !important; }
+}
+html.a11y-solid .ss-v1 .ss-tile-row,
+html.gd-lite .ss-v1 .ss-tile-row,
+html.a11y-solid .ss-v1 .ss-pill,
+html.gd-lite .ss-v1 .ss-pill,
+html.a11y-solid:root .call-control-bar.is-sharing,
+html.gd-lite:root .call-control-bar.is-sharing {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.a11y-solid .ss-v1 .ss-tile-row,
+html.gd-lite .ss-v1 .ss-tile-row { background: var(--ss-glass-solid) !important; }
+html.a11y-solid .ss-v1 .ss-pill,
+html.gd-lite .ss-v1 .ss-pill { background: #14151A !important; }
+html.a11y-solid:root .call-control-bar.is-sharing,
+html.gd-lite:root .call-control-bar.is-sharing { background: #1E1F22 !important; }
+html.a11y-solid:root:root[data-theme="light"] .call-control-bar.is-sharing,
+html.gd-lite:root:root[data-theme="light"] .call-control-bar.is-sharing { background: #FFFFFF !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-v1 .ss-tile .participant-tile-avatar-core::after,
+  .ss-v1 .participant-tile.ss-tile,
+  .ss-v1 .ss-pill-icon { transition: none; }
+}
+
+/* Narrow (phone / small window): keep pills on one line — the sharer pill
+   moves out, viewers collapse to icon + number, volume slider shortens. */
+.ss-v1.is-narrow .ss-pill-sharer { display: none; }
+.ss-v1.is-narrow .ss-pills { top: 8px; gap: 4px; }
+.ss-v1.is-narrow .ss-pills-start { left: 8px; }
+.ss-v1.is-narrow .ss-pills-end { right: 8px; }
+.ss-v1.is-narrow .ss-pill-volume .g-vol-slider { width: 64px !important; min-width: 0 !important; flex: 0 0 64px !important; }
+.ss-v1.is-narrow .ss-pill-volume .g-vol-pct { display: none; }

@@ -2,6 +2,13 @@
  * ring notices, presence capsule, server voice errors, media session and overlay
  * titles. Same key tree as callui.tr.js. */
 export const CALLUI_EN = {
+  share: {
+    viewers: "{n} watching",
+    sharing: "{name} is sharing their screen",
+    you: "You're sharing your screen",
+    fullscreen: "Fullscreen",
+    people: "People in the call",
+  },
   // components/voice/CallTapCard.jsx (mockups 31, 32)
   tap: {
     live: "Group call in progress",

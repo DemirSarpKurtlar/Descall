@@ -1324,6 +1324,13 @@ export const nested = {
     "voice": "Llamada de voz"
   },
   "callui": {
+    "share": {
+      "viewers": "{n} viendo",
+      "sharing": "{name} comparte su pantalla",
+      "you": "Estás compartiendo tu pantalla",
+      "fullscreen": "Pantalla completa",
+      "people": "Personas en la llamada"
+    },
     "media": {
       "dmTitle": "Llamada de Descall",
       "groupTitle": "Llamada grupal de Descall"

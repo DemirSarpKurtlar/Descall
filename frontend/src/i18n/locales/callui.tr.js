@@ -1,5 +1,12 @@
 /* Aramalar ve ses (t("callui.<grup>.<anahtar>")). callui.en.js ile aynı anahtarlar. */
 export const CALLUI_TR = {
+  share: {
+    viewers: "{n} izleyici",
+    sharing: "{name} ekranını paylaşıyor",
+    you: "Ekranını paylaşıyorsun",
+    fullscreen: "Tam ekran",
+    people: "Aramadakiler",
+  },
   tap: {
     live: "Grup araması sürüyor",
     liveVideo: "Görüntülü grup araması sürüyor",
