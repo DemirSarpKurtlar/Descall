@@ -333,6 +333,8 @@
         pointer-events: none;
       }
       #boot-splash .boot-mark--anim .boot-anim[hidden] { display: none; }
+      /* Safari / iOS: opaque MP4, clipped to the glass tile (73.3% of the frame). */
+      #boot-splash .boot-mark--mp4 .boot-anim { clip-path: inset(13.4% round 16.5%); }
       @media (prefers-reduced-motion: reduce) {
         #boot-splash .boot-anim { display: none !important; }
       }
@@ -1653,10 +1655,23 @@
           var mark = el && el.querySelector(".boot-mark");
           if (!mark || root.classList.contains("native-app")) return;
           try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) { return; }
-          var ua = navigator.userAgent || "";
-          if (!/(Chrome|Chromium|Firefox)\//.test(ua) || /(CriOS|FxiOS|EdgiOS)\//.test(ua)) return;
+          // VP9 + alpha WebM where it plays (Chromium / Firefox); everywhere
+          // else (Safari, iOS browsers) the opaque H.264 MP4, clipped to the tile.
           var probe = document.createElement("video");
-          if (!probe.canPlayType || !probe.canPlayType('video/webm; codecs="vp9"')) return;
+          if (!probe.canPlayType) return;
+          var ua = navigator.userAgent || "";
+          var alphaOk = /(Chrome|Chromium|Firefox)\//.test(ua) && !/(CriOS|FxiOS|EdgiOS)\//.test(ua) && !!probe.canPlayType('video/webm; codecs="vp9"');
+          var ext = alphaOk ? "webm" : "mp4";
+          if (!alphaOk && !probe.canPlayType('video/mp4; codecs="avc1.4D401E"')) return;
+          if (!alphaOk) mark.classList.add("boot-mark--mp4");
+          // App boot: keep the splash up until the one-shot has played (cap 4.5 s),
+          // or the app paints in under a second and the animation is never seen.
+          var release = null;
+          if (root.getAttribute("data-app-shell") === "1" && !(window.electronAPI && window.electronAPI.isElectron) && !/Electron/i.test(ua) && typeof window.__descallHoldBootSplash === "function") {
+            release = window.__descallHoldBootSplash();
+            setTimeout(function () { if (release) { release(); release = null; } }, 4500);
+          }
+          function letGo() { if (release) { release(); release = null; } }
           function make(name, loop) {
             var v = document.createElement("video");
             v.className = "boot-anim";
@@ -1668,7 +1683,7 @@
             v.setAttribute("muted", "");
             v.setAttribute("playsinline", "");
             v.setAttribute("aria-hidden", "true");
-            v.src = "/brand/splash/descall-splash-" + name + ".webm";
+            v.src = "/brand/splash/descall-splash-" + name + "." + ext;
             return v;
           }
           var oneShot = make("oneshot", false);
@@ -1678,6 +1693,7 @@
             mark.classList.remove("boot-mark--anim");
             if (oneShot.parentNode) oneShot.parentNode.removeChild(oneShot);
             if (loop.parentNode) loop.parentNode.removeChild(loop);
+            letGo();
           }
           oneShot.addEventListener("error", fallback);
           loop.addEventListener("error", fallback);
@@ -1686,6 +1702,7 @@
             var lp = loop.play();
             if (lp && lp.catch) lp.catch(function () {});
             setTimeout(function () { oneShot.hidden = true; }, 60);
+            letGo();
           });
           mark.classList.add("boot-mark--anim");
           mark.appendChild(loop);

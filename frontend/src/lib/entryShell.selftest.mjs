@@ -131,3 +131,18 @@ const mobileBranch = bootSkeleton.slice(bootSkeleton.indexOf("function MobileBoo
 assert(mobileBranch && !/Loading Descall|app-boot-skeleton/.test(mobileBranch), "mobile boot placeholder must have no skeleton / English text");
 
 console.log("entryShell.selftest.mjs: ok");
+
+// 3.7.30: web splash on Safari (MP4) + hold until the one-shot ends; iOS tab bar under the splash.
+{
+  const fs = await import("node:fs");
+  const html = fs.readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+  if (!/descall-splash-" \+ name \+ "\." \+ ext/.test(html)) throw new Error("web splash must pick webm or mp4");
+  if (!html.includes("__descallHoldBootSplash()")) throw new Error("web splash must hold the boot splash until the one-shot ends");
+  for (const k of ["oneshot", "loop"]) {
+    const st = fs.statSync(new URL(`../../public/brand/splash/descall-splash-${k}.mp4`, import.meta.url));
+    if (st.size > 120 * 1024) throw new Error(`mp4 ${k} too large`);
+  }
+  const vc = fs.readFileSync(new URL("../../ios/App/App/DescallBridgeViewController.swift", import.meta.url), "utf8");
+  const pl = fs.readFileSync(new URL("../../ios/App/App/DescallGlassTabBarPlugin.swift", import.meta.url), "utf8");
+  if (!vc.includes("revealAfterLaunchSplash()") || !pl.includes("keepLaunchOverlayOnTop()")) throw new Error("tab bar must stay under the launch splash");
+}
