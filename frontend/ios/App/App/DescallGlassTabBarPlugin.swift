@@ -54,6 +54,12 @@ public class DescallGlassTabBarPlugin: CAPPlugin, CAPBridgedPlugin {
             bar.setItems(tabs, selected: selected)
             bar.isHidden = false
             bar.attach(to: host)
+            // The native launch splash must stay above everything until it
+            // fades out; the bar stays invisible under it until then.
+            if let vc = self.bridge?.viewController as? DescallBridgeViewController,
+               vc.keepLaunchOverlayOnTop() {
+                bar.alpha = 0
+            }
             call.resolve(["shown": true, "height": bar.bounds.height])
         }
     }
@@ -82,6 +88,12 @@ public class DescallGlassTabBarPlugin: CAPPlugin, CAPBridgedPlugin {
             self.barView?.isHidden = true
             call.resolve()
         }
+    }
+
+    /// Fades the bar in once the launch splash is gone.
+    func revealAfterLaunchSplash() {
+        guard let bar = barView, bar.alpha < 1 else { return }
+        UIView.animate(withDuration: 0.25) { bar.alpha = 1 }
     }
 
     /// Called by DescallBridgeViewController.viewDidLayoutSubviews (rotation,

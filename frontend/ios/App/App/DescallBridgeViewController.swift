@@ -21,6 +21,7 @@ class DescallBridgeViewController: CAPBridgeViewController {
     override open func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         glassTabBarPlugin.relayout()
+        keepLaunchOverlayOnTop()
         #if DEBUG
         showGlassTabBarDemoIfAsked()
         DescallNotifyDemo.showIfAsked(in: view)
@@ -182,6 +183,7 @@ extension DescallBridgeViewController {
         let dark = UIScreen.main.traitCollection.userInterfaceStyle != .light
         let splash = DescallLaunchSplashView(frame: host.bounds, dark: dark)
         splash.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        splash.layer.zPosition = 10_000
         host.addSubview(splash)
         launchOverlay = splash
 
@@ -195,6 +197,15 @@ extension DescallBridgeViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
             self?.hideLaunchOverlay()
         }
+    }
+
+    /// Re-raises the launch splash over anything added later (the Liquid
+    /// Glass tab bar brings itself to front). Returns true while it is up.
+    @discardableResult
+    func keepLaunchOverlayOnTop() -> Bool {
+        guard let overlay = launchOverlay else { return false }
+        overlay.superview?.bringSubviewToFront(overlay)
+        return true
     }
 
     func webSplashDidPaint() {
@@ -230,6 +241,7 @@ extension DescallBridgeViewController {
             completion: { _ in
                 (overlay as? DescallLaunchSplashView)?.stop()
                 overlay.removeFromSuperview()
+                self.glassTabBarPlugin.revealAfterLaunchSplash()
             }
         )
     }
