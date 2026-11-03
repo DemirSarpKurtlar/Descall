@@ -66,8 +66,15 @@ jobs:
         working-directory: frontend/ios
         run: |
           set -euo pipefail
-          swiftc -o "$RUNNER_TEMP/ws" App/WatchShared/DescallWatchProtocol.swift App/DescallWatch/WatchStrings.swift selftest/watchstrings/main.swift
+          swiftc -o "$RUNNER_TEMP/ws" App/WatchShared/DescallWatchProtocol.swift App/DescallWatch/WatchCore.swift App/DescallWatch/WatchStrings.swift selftest/watchstrings/main.swift
           "$RUNNER_TEMP/ws"
+
+      - name: Watch stability core selftest (Swift, retries / timeout / cache)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/wc" App/DescallWatch/WatchCore.swift selftest/watchcore/main.swift
+          "$RUNNER_TEMP/wc"
 
       - name: watchOS platform (3.7.17 Apple Watch app is embedded)
         run: |
@@ -302,7 +309,7 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/watch-shots"
-          for SCREEN in chats chat reply friends status admin reports case stepup feedback maintenance; do
+          for SCREEN in chats chat reply servers server friends status activity calls profile offline admin reports case stepup feedback maintenance; do
             xcrun simctl terminate "$UDID" com.descall.app.watchkitapp || true
             # Turkish, like the App Store listing (primary locale tr).
             xcrun simctl launch "$UDID" com.descall.app.watchkitapp -DescallWatchDemo -DescallWatchDemoScreen "$SCREEN" -AppleLanguages "(tr)" -AppleLocale tr_TR

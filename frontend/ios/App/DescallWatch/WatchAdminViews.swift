@@ -162,61 +162,248 @@ struct StepUpView: View {
 
 // MARK: - Admin home
 
+/// 3.7.33 advanced dashboard: health badge, live / growth / safety / system blocks, 7-day
+/// sign-up bars, recent audit and newly joined. Refresh: toolbar button, pull-to-refresh
+/// (List), Digital Crown scroll past the top, and every 60 s while on screen. Reads only
+/// GET /api/admin/overview (the endpoint the web admin uses, staff-gated server-side).
 struct AdminHomeView: View {
     @EnvironmentObject var store: WatchStore
-    @State private var overview = AdminLoadState<AdminOverview>()
+    @State private var overview = Loadable<AdminOverview>()
 
     private var sections: [AdminSection] {
         let allowed = Set(store.home?.adminSections ?? [])
         return AdminSection.allCases.filter { allowed.contains($0.rawValue) }
     }
+    /// Server-side gate decides (403 shows the permission card), same as before 3.7.33.
+    private var canOverview: Bool { store.home?.adminSections != nil }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 6) {
+        DescallList(title: L.admin, loading: overview.loading, refresh: { await load() }) {
+            if canOverview {
                 if let o = overview.value {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
-                        KpiTile(value: o.live?.connected, label: L.online, icon: "dot.radiowaves.left.and.right")
-                        KpiTile(value: o.product?.signupsToday, label: L.signupsToday, icon: "person.badge.plus")
-                        KpiTile(value: o.safety?.openReports, label: L.openReports, icon: "flag.fill", alert: (o.safety?.openReports ?? 0) > 0)
-                        KpiTile(value: o.product?.newFeedback, label: L.newFeedback, icon: "bubble.left.fill", alert: (o.product?.newFeedback ?? 0) > 0)
-                    }
+                    if let e = overview.error { OfflineBanner(error: e.isOffline || e.isServerSide ? e : .network, updatedAt: overview.updatedAt) }
+                    HealthBadge(level: o.health?.level, updatedAt: overview.updatedAt, loading: overview.loading) { Task { await load() } }
+                    dashboard(o)
                 } else if let e = overview.error {
                     ErrorCard(error: e) { Task { await load() } }
                 } else {
-                    ProgressView().padding(.vertical, 12)
-                }
-                ForEach(sections, id: \.self) { s in
-                    NavigationLink(value: s.route) {
-                        HStack(spacing: 10) {
-                            Image(systemName: s.icon).font(.system(size: 14)).foregroundStyle(DS.brandHi).frame(width: 20)
-                            Text(L.section(s)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.ink2)
-                        }
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 10)
-                        .glass(16)
-                    }
-                    .buttonStyle(.plain)
+                    LoadingRows(count: 2)
                 }
             }
-            .padding(.horizontal, 2)
+            SectionLabel(text: L.sections)
+            ForEach(sections, id: \.self) { s in
+                NavigationLink(value: s.route) {
+                    HStack(spacing: 10) {
+                        Image(systemName: s.icon).font(.system(size: 14)).foregroundStyle(DS.brandHi).frame(width: 20)
+                        Text(L.section(s)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                        Spacer(minLength: 0)
+                        if s == .reports, let n = overview.value?.safety?.openReports, n > 0 { CountPill(n: n) }
+                        if s == .feedback, let n = overview.value?.product?.newFeedback, n > 0 { CountPill(n: n) }
+                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.ink2)
+                    }
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 10)
+                    .glass(16)
+                }
+                .buttonStyle(.plain)
+            }
+            if canOverview {
+                Text(L.autoRefresh).font(.system(size: 10.5)).foregroundStyle(DS.ink2).frame(maxWidth: .infinity).padding(.top, 2)
+            }
         }
-        .navigationTitle(L.admin)
-        .descallScreen()
-        .task { await load() }
+        .whileActive(every: 60) { if canOverview { await load() } }
+    }
+
+    @ViewBuilder private func dashboard(_ o: AdminOverview) -> some View {
+        SectionLabel(text: L.live)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+            KpiTile(value: o.live?.connected, label: L.online, icon: "dot.radiowaves.left.and.right")
+            KpiTile(value: o.live?.visible, label: L.visible, icon: "eye")
+        }
+        if let c = o.live?.statusCounts {
+            HStack(spacing: 8) {
+                StatusCount(status: "online", n: c.online)
+                StatusCount(status: "idle", n: c.idle)
+                StatusCount(status: "dnd", n: c.dnd)
+                StatusCount(status: "offline", n: c.invisible)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 7)
+            .glass(14)
+        }
+        SectionLabel(text: L.growth)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+            KpiTile(value: o.product?.signupsToday, label: L.signupsToday, icon: "person.badge.plus")
+            KpiTile(value: o.product?.newFeedback, label: L.newFeedback, icon: "bubble.left.fill", alert: (o.product?.newFeedback ?? 0) > 0)
+        }
+        if let days = o.product?.sparkline, !days.isEmpty { SignupBars(days: days) }
+        MetricRow(label: L.feedbackActive, value: o.product?.feedbackInProgress.map(String.init), icon: "hourglass")
+        SectionLabel(text: L.safety)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+            KpiTile(value: o.safety?.openReports, label: L.openReports, icon: "flag.fill", alert: (o.safety?.openReports ?? 0) > 0)
+            KpiTile(value: o.safety?.uniqueTargets, label: L.reportedPeople, icon: "person.crop.circle.badge.exclamationmark", alert: (o.safety?.hotCount ?? 0) > 0)
+        }
+        MetricRow(label: L.bans, value: o.safety?.bans.map(String.init), icon: "hand.raised.fill")
+        MetricRow(label: L.timeouts, value: o.safety?.timeouts.map(String.init), icon: "clock.badge.exclamationmark")
+        if let sys = o.system {
+            SectionLabel(text: L.system)
+            if sys.maintenance { MetricRow(label: L.t("maintActive"), value: nil, icon: "wrench.and.screwdriver.fill", alert: true) }
+            if sys.chatFrozen { MetricRow(label: L.chatFrozen, value: nil, icon: "snowflake", alert: true) }
+            MetricRow(label: L.errorsHour, value: sys.errorsLastHour.map(String.init), icon: "exclamationmark.triangle", alert: (sys.errorsLastHour ?? 0) >= 25)
+            MetricRow(label: L.flagged, value: sys.flaggedMessages.map(String.init), icon: "flag")
+            MetricRow(label: L.memory, value: sys.rssMb.map { "\($0) MB" }, icon: "memorychip")
+            MetricRow(label: L.uptime, value: sys.uptime?.label, icon: "clock")
+        }
+        if !o.recentAudit.isEmpty {
+            SectionLabel(text: L.recentAudit)
+            ForEach(o.recentAudit.prefix(5)) { e in
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 4) {
+                        Text(e.actor.map { "@\($0)" } ?? "-").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                        Spacer(minLength: 2)
+                        Text(WatchTime.short(e.at)).font(.system(size: 10.5)).foregroundStyle(DS.ink2)
+                    }
+                    Text([e.action, e.target].compactMap { $0 }.joined(separator: " · ")).font(.system(size: 11)).foregroundStyle(DS.ink2).lineLimit(2)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .glass(14)
+            }
+        }
+        if !o.newlyJoined.isEmpty {
+            SectionLabel(text: L.newlyJoined)
+            ForEach(o.newlyJoined.prefix(4)) { p in
+                HStack(spacing: 8) {
+                    AvatarView(url: p.avatarUrl, initials: String(p.name.prefix(2)).uppercased(), seed: p.id, size: 24)
+                    Text(p.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 9).padding(.vertical, 6)
+                .glass(14)
+            }
+        }
     }
 
     private func load() async {
+        if overview.loading { return }
+        overview.loading = true
+        defer { overview.loading = false }
         do {
             overview.value = try await store.adminGet("/overview", as: AdminOverview.self)
             overview.error = nil
+            overview.updatedAt = Date()
         } catch let e as WatchError {
             overview.error = e
         } catch {
             overview.error = .network
         }
+    }
+}
+
+struct HealthBadge: View {
+    var level: String?
+    var updatedAt: Date?
+    var loading: Bool
+    var refresh: () -> Void
+
+    private var color: Color {
+        switch level {
+        case "critical": return DS.dnd
+        case "high": return DS.dnd.opacity(0.85)
+        case "watch": return DS.idle
+        default: return DS.online
+        }
+    }
+
+    var body: some View {
+        Button(action: refresh) {
+            HStack(spacing: 8) {
+                Circle().fill(color).frame(width: 10, height: 10).shadow(color: color.opacity(0.7), radius: 4)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L.health(level)).font(.system(size: 14, weight: .bold)).lineLimit(1)
+                    UpdatedLine(updatedAt: updatedAt, loading: loading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, -4)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .semibold)).foregroundStyle(DS.brandHi)
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 9)
+            .glass(16, highlight: level != nil && level != "ok")
+        }
+        .buttonStyle(.plain)
+        .disabled(loading)
+        .accessibilityLabel("\(L.health(level)), \(L.refresh)")
+    }
+}
+
+struct StatusCount: View {
+    var status: String
+    var n: Int?
+    var body: some View {
+        HStack(spacing: 3) {
+            PresenceDot(status: status, size: 8)
+            Text(n.map(String.init) ?? "-").font(.system(size: 12, weight: .semibold)).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityLabel("\(L.status(status)) \(n ?? 0)")
+    }
+}
+
+struct MetricRow: View {
+    var label: String
+    var value: String?
+    var icon: String
+    var alert = false
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(alert ? DS.idle : DS.brandHi).frame(width: 18)
+            Text(label).font(.system(size: 12.5)).lineLimit(2).minimumScaleFactor(0.8)
+            Spacer(minLength: 2)
+            if let value { Text(value).font(.system(size: 13, weight: .bold)).monospacedDigit() }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .glass(14, highlight: alert)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct CountPill: View {
+    var n: Int
+    var body: some View {
+        Text("\(n)").font(.system(size: 11, weight: .bold)).monospacedDigit()
+            .padding(.horizontal, 6).padding(.vertical, 1)
+            .background(Capsule().fill(DS.dnd))
+    }
+}
+
+/// Seven bars, today last and highlighted.
+struct SignupBars: View {
+    var days: [AdminOverview.Day]
+    var body: some View {
+        let top = max(1, days.map(\.signups).max() ?? 1)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(L.signups7d).font(.system(size: 10.5, weight: .semibold)).foregroundStyle(DS.ink2)
+                Spacer(minLength: 0)
+                Text("\(days.map(\.signups).reduce(0, +))").font(.system(size: 12, weight: .bold)).monospacedDigit()
+            }
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach(Array(days.suffix(7).enumerated()), id: \.offset) { i, d in
+                    VStack(spacing: 2) {
+                        Capsule()
+                            .fill(i == min(days.count, 7) - 1 ? AnyShapeStyle(LinearGradient(colors: [DS.ctaTop, DS.ctaBottom], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(DS.brandHi.opacity(0.45)))
+                            .frame(height: max(3, CGFloat(d.signups) / CGFloat(top) * 34))
+                        Text("\(d.signups)").font(.system(size: 8.5)).foregroundStyle(DS.ink2).monospacedDigit()
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 48, alignment: .bottom)
+        }
+        .padding(10)
+        .glass(14)
+        .accessibilityElement(children: .combine)
     }
 }
 
