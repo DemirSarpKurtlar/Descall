@@ -122,7 +122,13 @@ export function buildDisplayMediaConstraints({ width, height, fps, preferTab } =
       echoCancellation: false,
       noiseSuppression: false,
       autoGainControl: false,
+      // Keep the sharer hearing their own tab/video (true would mute it).
       suppressLocalAudioPlayback: false,
+      // Echo fix (3.7.33): system/window loopback must not include Descall's
+      // own playback (the other participants' voices), or viewers hear
+      // themselves inside the share. Chromium 141+ / Electron 43.4+ honour
+      // this by capturing `loopbackWithoutChrome`.
+      restrictOwnAudio: true,
     },
     preferCurrentTab: false,
     selfBrowserSurface: "include",
@@ -171,6 +177,9 @@ export async function getDisplayMediaStream(opts = {}) {
   const primary = buildDisplayMediaConstraints(opts);
   const attempts = [
     primary,
+    // Engines that reject the detailed audio object may still accept the
+    // own-audio exclusion on its own; try that before the bare `true`.
+    { ...primary, audio: { restrictOwnAudio: true } },
     { ...primary, audio: true },
     { ...primary, audio: false },
     {
@@ -387,6 +396,24 @@ export async function captureScreenShareStream(opts = {}) {
           err.name = "AbortError";
           throw err;
         }
+        if (typeof window.electronAPI?.selectDisplaySource === "function") {
+          // 3.7.33 echo fix: route the chosen source through getDisplayMedia so
+          // `restrictOwnAudio` excludes Descall's own playback from loopback.
+          // The legacy chromeMediaSource:"desktop" path below captures the
+          // whole system mix, including the call, and viewers hear themselves.
+          try {
+            const ok = await window.electronAPI.selectDisplaySource(sourceId);
+            if (ok) {
+              const stream = await getDisplayMediaStream({ width, height, fps, preferTab });
+              return guardDisplayCapture(stream);
+            }
+          } catch (err) {
+            if (err?.name === "NotAllowedError" || err?.name === "AbortError") throw err;
+            console.warn("[ScreenShare] Electron getDisplayMedia path failed, video-only fallback:", err);
+          }
+          // Never fall back to whole-system loopback: that is the echo.
+          return await captureElectronDesktop(sourceId, { width, height, fps }, { audio: false });
+        }
         return await captureElectronDesktop(sourceId, { width, height, fps });
       }
       // Empty sources (macOS Screen Recording denied), try getDisplayMedia next.
@@ -411,9 +438,10 @@ export async function captureScreenShareStream(opts = {}) {
  * could come back as the camera. Retry video-only for the same source id,
  * then refuse the result if it is a camera track.
  */
-async function captureElectronDesktop(sourceId, size) {
+async function captureElectronDesktop(sourceId, size, { audio = true } = {}) {
   const withAudio = buildElectronDesktopConstraints(sourceId, size);
   const videoOnly = { audio: false, video: withAudio.video };
+  if (!audio) return guardDisplayCapture(await navigator.mediaDevices.getUserMedia(videoOnly));
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia(withAudio);
