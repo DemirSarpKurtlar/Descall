@@ -1,17 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactionBurstPop, { BURST_LIFETIME_MS, burstChipClass } from "./ReactionBurstPop.jsx";
 import { Smile, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 
 const COMMON_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "👏", "🤔", "👎"];
 
-const BURST_PARTICLES = [
-  { x: -22, y: -28, r: -18, d: 0 },
-  { x: 18, y: -30, r: 14, d: 0.04 },
-  { x: -28, y: 6, r: -28, d: 0.08 },
-  { x: 26, y: 4, r: 22, d: 0.06 },
-  { x: 4, y: -36, r: 6, d: 0.02 },
-];
 
 export default function MessageReactions({
   messageId,
@@ -56,7 +50,7 @@ export default function MessageReactions({
     setBurst({ id, emoji });
     window.setTimeout(() => {
       setBurst((prev) => (prev?.id === id ? null : prev));
-    }, 520);
+    }, BURST_LIFETIME_MS);
   }, []);
 
   const handleAddReaction = useCallback(
@@ -135,43 +129,14 @@ export default function MessageReactions({
 
   return (
     <div className={`message-reactions${burstKey ? ` cosmetic-reaction-burst burst-${burstKey}` : ""}`}>
-      <AnimatePresence>
-        {burst && (
-          <motion.div
-            key={burst.id}
-            className="reaction-burst-pop"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            aria-hidden
-          >
-            {BURST_PARTICLES.map((p, i) => (
-              <motion.span
-                key={i}
-                className="reaction-burst-pop-emoji"
-                initial={{ opacity: 0, x: 0, y: 0, scale: 0.4, rotate: 0 }}
-                animate={{
-                  opacity: [0, 1, 0],
-                  x: p.x,
-                  y: p.y,
-                  scale: [0.4, 1.15, 0.7],
-                  rotate: p.r,
-                }}
-                transition={{ duration: 0.48, delay: p.d, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {burst.emoji}
-              </motion.span>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ReactionBurstPop burst={burst} />
 
       <div className="reactions-list">
         {Object.entries(groupedReactions).map(([emoji, data]) => (
           <motion.button
             key={emoji}
             className={`reaction-chip ${data.hasMine ? "reaction-mine" : ""}${
-              data.hasMine && burstKey && burst?.emoji === emoji ? ` burst-chip-${burstKey}` : ""
+              data.hasMine && burstKey && burst?.emoji === emoji ? ` ${burstChipClass(burstKey)}` : ""
             }`}
             onClick={() => handleReactionClick(emoji)}
             whileHover={{ scale: 1.05 }}

@@ -1,4 +1,5 @@
-import { Flame, Phone, Zap, Check } from "../ui/Icon.jsx";
+import { Check } from "../ui/Icon.jsx";
+import CallOverlayPreview from "../shop/CallOverlayPreview.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import ParallaxBanner from "../ui/ParallaxBanner";
@@ -9,6 +10,7 @@ import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { countryCode, countryName, flagEmoji, isCountryItem } from "../../lib/countryFlags";
 import { useLocale } from "../../context/LocaleContext";
+import ReactionBurstPreview from "../shop/ReactionBurstPreview.jsx";
 
 const EQUIPPED_SLOTS = [
   { id: "banner", pick: (user) => user?.equippedBanner },
@@ -125,15 +127,10 @@ export default function ShopProfilePreview({ me, t }) {
                     </div>
                   ) : null}
                   {reaction ? (
-                    <div className={`shop-reaction-burst-preview cosmetic-reaction-burst burst-${reaction.effect_key}`}>
-                      <Flame size={14} />
-                      <Zap size={12} />
-                    </div>
+                    <ReactionBurstPreview effectKey={reaction.effect_key} compact />
                   ) : null}
                   {callOverlay ? (
-                    <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${callOverlay.effect_key}`}>
-                      <Phone size={14} />
-                    </div>
+                    <CallOverlayPreview effectKey={callOverlay.effect_key} name={displayName} compact />
                   ) : null}
                 </div>
               )}
