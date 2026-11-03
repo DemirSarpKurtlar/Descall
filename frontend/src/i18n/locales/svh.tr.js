@@ -240,6 +240,7 @@ export const SVH_TR = {
   kickMsg: "Yeni bir davetle tekrar katılabilir.",
   kickDone: "Üye atıldı",
   banPrompt: "{name} yasaklansın mı? İstersen bir sebep yaz:",
+  reverted: "İşlem tamamlanamadı, değişiklik geri alındı.",
   banDone: "Üye yasaklandı",
   timeoutRemove: "Zaman aşımını kaldır",
   timeoutDone: "Zaman aşımı uygulandı",

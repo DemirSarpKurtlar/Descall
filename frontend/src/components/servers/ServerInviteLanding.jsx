@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, RefreshCw } from "../ui/Icon.jsx";
+import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, RefreshCw, Ban } from "../ui/Icon.jsx";
 import { previewServerInvite, joinServerByInvite } from "../../api/servers";
 import { getToken } from "../../lib/storage";
 import { useT } from "../../context/LocaleContext";
@@ -89,6 +89,8 @@ export default function ServerInviteLanding({ code, me, onJoined, onNeedAuth, on
   const inviter = preview?.invite?.inviter;
   const inviterName = inviter?.displayName || inviter?.username || "";
   const finalLoadError = loadError && isFinalInviteError(loadError);
+  // 3.7.32: a banned viewer sees it in the preview, before pressing Join.
+  const banned = Boolean(server?.banned && !server?.isMember);
 
   return (
     <div className="invite-landing" data-testid="server-invite-landing">
@@ -156,7 +158,13 @@ export default function ServerInviteLanding({ code, me, onJoined, onNeedAuth, on
               </div>
             </div>
             {server?.description ? <p className="invite-landing-desc">{server.description}</p> : null}
-            {joinError ? (
+            {banned ? (
+              <p className="invite-landing-error" role="alert" data-testid="server-invite-banned">
+                <Ban size={16} aria-hidden="true" />
+                {t("You are banned from this server.")}
+              </p>
+            ) : null}
+            {joinError && !banned ? (
               <p className="invite-landing-error" role="alert" data-testid="server-invite-join-error">
                 {t(serverInviteErrorKey(joinError))}
               </p>
@@ -170,7 +178,7 @@ export default function ServerInviteLanding({ code, me, onJoined, onNeedAuth, on
                   <button
                     type="button"
                     className="invite-landing-btn primary"
-                    disabled={joining || (joinError && isFinalInviteError(joinError))}
+                    disabled={banned || joining || (joinError && isFinalInviteError(joinError))}
                     onClick={handleJoin}
                   >
                     {joining ? (

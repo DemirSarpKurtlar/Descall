@@ -1920,6 +1920,10 @@ function rejectJoinRate(req, res, kind = "join") {
   return rejectIfLimited(res, results);
 }
 
+function withInviteChannel(payload, invite) {
+  return { ...payload, channelId: inviteLandingChannelId(invite, payload?.server?.channels) };
+}
+
 async function alreadyMemberPayload(serverId, userId, existing) {
   const membership = existing || (await getMembership(serverId, userId));
   const bundle = await loadServerBundle(serverId);
@@ -2065,6 +2069,24 @@ router.get("/discover", requireAuth, async (req, res) => {
 });
 
 
+/** 3.7.32: previews tell a banned viewer up front (used to show only after pressing Join). */
+async function isViewerBanned(serverId, userId) {
+  const { data } = await supabase
+    .from("server_bans")
+    .select("user_id")
+    .eq("server_id", serverId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/** 3.7.32: a channel-bound invite opens that channel after joining, if the joiner can see it. */
+function inviteLandingChannelId(invite, channels) {
+  const id = invite?.channel_id ? String(invite.channel_id) : null;
+  if (!id) return null;
+  return (channels || []).some((c) => String(c?.id) === id) ? id : null;
+}
+
 /**
  * Invite / vanity previews are public: a logged-out visitor opening a
  * descall.com/servers/join/:code link must see the server before signing in
@@ -2113,7 +2135,7 @@ router.get("/invites/:code", optionalAuth, async (req, res) => {
     if (!invite) return res.status(404).json({ error: "Invite invalid or expired.", code: "INVITE_INVALID" });
 
     if (isInviteExpired(invite)) {
-      await supabase.from("server_invites").delete().eq("code", code);
+      // Soft expire (3.7.32): the row stays; lib/serverInviteCleanup prunes it later.
       return res.status(410).json({ error: "Invite invalid or expired.", code: "INVITE_EXPIRED" });
     }
 
@@ -2135,6 +2157,7 @@ router.get("/invites/:code", optionalAuth, async (req, res) => {
 
     const viewerId = req.user?.id || null;
     const membership = viewerId ? await getMembership(server.id, viewerId) : null;
+    const banned = viewerId && !membership ? await isViewerBanned(server.id, viewerId) : false;
     const extras = await invitePreviewExtras(supabase, {
       serverId: server.id,
       creatorId: invite.creator_id || null,
@@ -2157,6 +2180,7 @@ router.get("/invites/:code", optionalAuth, async (req, res) => {
         memberCount: count || 1,
         isMember: Boolean(membership),
         isOwner: server.owner_id === viewerId,
+        banned,
         rulesAcceptedAt: membership?.rules_accepted_at || null,
         needsRulesAccept:
           Boolean(server.community_enabled) &&
@@ -2239,7 +2263,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
     if (error) throw error;
     if (!invite) return res.status(404).json({ error: "Invite invalid or expired.", code: "INVITE_INVALID" });
     if (isInviteExpired(invite)) {
-      await supabase.from("server_invites").delete().eq("code", code);
+      // Soft expire (3.7.32): the row stays; lib/serverInviteCleanup prunes it later.
       return res.status(410).json({ error: "Invite invalid or expired.", code: "INVITE_EXPIRED" });
     }
 
@@ -2254,7 +2278,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
     }
 
     const existing = await getMembership(invite.server_id, userId);
-    if (existing) return res.json(await alreadyMemberPayload(invite.server_id, userId, existing));
+    if (existing) return res.json(withInviteChannel(await alreadyMemberPayload(invite.server_id, userId, existing), invite));
 
     const { data: inviteServer, error: inviteServerErr } = await supabase
       .from("servers")
@@ -2302,12 +2326,8 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
     }
     if (!joined.ok) {
       await releaseInviteUse(code);
-      if (joined.alreadyMember) return res.json(await alreadyMemberPayload(invite.server_id, userId));
+      if (joined.alreadyMember) return res.json(withInviteChannel(await alreadyMemberPayload(invite.server_id, userId), invite));
       return joinRefusal(res, joined);
-    }
-
-    if (claimed.max_uses != null && claimed.uses >= claimed.max_uses) {
-      await supabase.from("server_invites").delete().eq("code", code);
     }
 
     await writeAudit({
@@ -2329,6 +2349,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
 
     return res.status(201).json({
       alreadyMember: false,
+      channelId: inviteLandingChannelId(invite, channels),
       server: publicServer(bundle.server, {
         isOwner: false,
         memberCount: bundle.memberCount,
@@ -2378,6 +2399,7 @@ router.get("/vanity/:slug", optionalAuth, async (req, res) => {
 
     const viewerId = req.user?.id || null;
     const membership = viewerId ? await getMembership(server.id, viewerId) : null;
+    const banned = viewerId && !membership ? await isViewerBanned(server.id, viewerId) : false;
     const extras = await invitePreviewExtras(supabase, { serverId: server.id, presence: livePresence, io: req.app.get("io") });
 
     if (!viewerId) {
@@ -2394,6 +2416,7 @@ router.get("/vanity/:slug", optionalAuth, async (req, res) => {
         memberCount: count || 1,
         isMember: Boolean(membership),
         isOwner: server.owner_id === viewerId,
+        banned,
         rulesAcceptedAt: membership?.rules_accepted_at || null,
         needsRulesAccept:
           Boolean(server.community_enabled) &&

@@ -280,7 +280,7 @@ export function Sheet({ onClose, medium, h, children, label, z, dimStrong }) {
         transition={reduced ? fadeT : framerSpring(SPRINGS.sheet)}
         drag={reduced ? false : "y"} dragListener={false} dragControls={controls}
         dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0.02, bottom: 0.9 }} dragMomentum={false}
-        onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 650) onClose?.(); }}
+        onDragEnd={(_, info) => { if (info.offset.y + info.velocity.y * 0.2 > 140 || info.velocity.y > 650) onClose?.(); }}
         onPointerDown={onPointerDown}
       >
         <div className="svh-grab" />

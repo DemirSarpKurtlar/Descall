@@ -4815,3 +4815,11 @@ button.member-row.server-member-row {
   background: color-mix(in srgb, var(--primary) 18%, transparent);
   color: var(--primary);
 }
+
+/* 3.7.32 — 44pt touch targets on touch screens without changing the visual size. */
+.server-channel-mini-btn { position: relative; transition: transform .12s ease; }
+.server-channel-mini-btn:active { transform: scale(0.97); }
+@media (pointer: coarse) {
+  .server-channel-mini-btn::after { content: ""; position: absolute; inset: -9px; }
+}
+@media (prefers-reduced-motion: reduce) { .server-channel-mini-btn:active { transform: none; } }
