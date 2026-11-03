@@ -163,8 +163,8 @@ struct StepUpView: View {
 // MARK: - Admin home
 
 /// 3.7.33 advanced dashboard: health badge, live / growth / safety / system blocks, 7-day
-/// sign-up bars, recent audit and newly joined. Refresh: toolbar button, pull-to-refresh
-/// (List), Digital Crown scroll past the top, and every 60 s while on screen. Reads only
+/// sign-up bars, recent audit and newly joined. Refresh: the refresh row at
+/// the top (3.7.34, no nav-bar items), and every 60 s while on screen. Reads only
 /// GET /api/admin/overview (the endpoint the web admin uses, staff-gated server-side).
 struct AdminHomeView: View {
     @EnvironmentObject var store: WatchStore

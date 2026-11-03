@@ -147,9 +147,12 @@ extension View {
     }
 }
 
-/// Glass screen with a toolbar refresh button. 3.7.33 first tried a List for
-/// pull-to-refresh; watchOS aborted in DisplayList.ViewUpdater with glass rows inside a
-/// List, so screens stay on the proven ScrollView and refresh by button, timer, wake.
+/// Glass screen with an in-content refresh button.
+/// Root cause of the 3.7.33 SIGABRT: a ToolbarItem in each NavigationStack inside the
+/// vertical-page TabView. Its label changed with `loading`, so SwiftUI re-rendered the
+/// bar item while UIKit tore down / re-laid out the page's UINavigationBar
+/// (DisplayList.ViewUpdater.removeRemaining -> UINavigationBar layoutSubviews assertion).
+/// Pages therefore carry no navigation-bar items; refresh is the first row instead.
 struct DescallList<Content: View>: View {
     var title: String
     var loading: Bool
@@ -158,15 +161,13 @@ struct DescallList<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 6) { content() }
-                .padding(.horizontal, 2)
+            LazyVStack(spacing: 6) {
+                RefreshRowButton(loading: loading) { Task { await refresh() } }
+                content()
+            }
+            .padding(.horizontal, 2)
         }
         .navigationTitle(title)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                RefreshToolbarButton(loading: loading) { Task { await refresh() } }
-            }
-        }
         .descallScreen()
     }
 }

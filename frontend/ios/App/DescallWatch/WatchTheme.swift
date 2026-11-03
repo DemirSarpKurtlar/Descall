@@ -249,16 +249,26 @@ struct UpdatedLine: View {
 }
 
 /// Toolbar refresh: a spinner while loading.
-struct RefreshToolbarButton: View {
+/// Refresh row at the top of every screen (stats, lists). Fixed size so the row never
+/// changes layout while loading; only opacity changes.
+struct RefreshRowButton: View {
     var loading: Bool
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: loading ? "hourglass" : "arrow.clockwise")
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold))
+                Text(L.refresh).font(.system(size: 12.5, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity, minHeight: 30)
+            .opacity(loading ? 0.45 : 1)
         }
+        .buttonStyle(.plain)
+        .foregroundStyle(DS.brandHi)
         .disabled(loading)
         .accessibilityLabel(L.refresh)
+        .accessibilityIdentifier("watch-refresh")
     }
 }
 
