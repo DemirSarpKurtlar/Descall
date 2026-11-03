@@ -293,6 +293,8 @@ struct AdminHomeView: View {
             overview.updatedAt = Date()
         } catch let e as WatchError {
             overview.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             overview.error = .network
         }
@@ -479,6 +481,8 @@ struct AdminReportsView: View {
             state.error = nil
         } catch let e as WatchError {
             state.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             state.error = .network
         }
@@ -632,6 +636,8 @@ struct AdminFeedbackListView: View {
             state.error = nil
         } catch let e as WatchError {
             state.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             state.error = .network
         }
@@ -775,6 +781,8 @@ struct AdminErrorsView: View {
             state.error = nil
         } catch let e as WatchError {
             state.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             state.error = .network
         }
@@ -866,6 +874,8 @@ struct AdminMaintenanceView: View {
             state.error = nil
         } catch let e as WatchError {
             state.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             state.error = .network
         }
@@ -928,6 +938,8 @@ struct AdminAccessBansView: View {
             state.error = nil
         } catch let e as WatchError {
             state.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             state.error = .network
         }
@@ -998,6 +1010,8 @@ struct AdminPeopleView: View {
             state.error = nil
         } catch let e as WatchError {
             state.error = e
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             state.error = .network
         }

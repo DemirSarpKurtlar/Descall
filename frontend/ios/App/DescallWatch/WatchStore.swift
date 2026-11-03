@@ -102,6 +102,14 @@ final class WatchStore: ObservableObject {
     func refresh<T: Decodable>(_ key: ReferenceWritableKeyPath<WatchStore, Loadable<T>>, _ path: String) async {
         if self[keyPath: key].loading { return }
         self[keyPath: key].loading = true
+        // 3.7.34: shared store loads run in their own task. A screen that leaves (page swipe,
+        // NavigationStack push) cancels its .task; that used to cancel the shared request
+        // (CancellationError -> "No connection") on the next screen reading the same state.
+        let work = Task { await self.load(key, path) }
+        await work.value
+    }
+
+    private func load<T: Decodable>(_ key: ReferenceWritableKeyPath<WatchStore, Loadable<T>>, _ path: String) async {
         defer { self[keyPath: key].loading = false }
         do {
             let value = try await get(path, as: T.self)
@@ -112,6 +120,8 @@ final class WatchStore: ObservableObject {
         } catch let e as WatchError {
             self[keyPath: key].error = e
             if e == .noSession { self[keyPath: key].value = nil }
+        } catch is CancellationError {
+            // Not a connection problem; keep the last value and error as they were.
         } catch {
             self[keyPath: key].error = .network
         }

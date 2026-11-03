@@ -296,6 +296,8 @@ struct ChatView: View {
         } catch let e as WatchError {
             refreshError = e
             if thread == nil { error = e }
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
             refreshError = .network
             if thread == nil { self.error = .network }
