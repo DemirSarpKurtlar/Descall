@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "3.7.32",
+  "version": "3.7.33",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -76,7 +76,7 @@
     "@capacitor/cli": "^8.5.0",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^8.2.2",
-    "electron": "^42.11.18",
+    "electron": "^43.8.6",
     "electron-builder": "^26.18.0",
     "typescript": "~5.9.3",
     "vite": "^6.4.5",
