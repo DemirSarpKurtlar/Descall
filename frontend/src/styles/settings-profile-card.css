@@ -1,0 +1,149 @@
+/* Settings profile header — owner pick "01 · Banner Kart" (mockup settings-header-mockups/01).
+   Heavy frost, never see-through; Reduce Transparency → solid surface-2 / white. */
+.spc {
+  --spc-fill: rgba(43, 45, 49, 0.94);
+  --spc-edge: rgba(255, 255, 255, 0.12);
+  --spc-t0: #ffffff;
+  --spc-t3: #b5bac1;
+  --spc-chip: rgba(255, 255, 255, 0.07);
+  --spc-r: 20px;
+  --spc-banner-h: 84px;
+  position: relative;
+  width: 100%;
+  border-radius: var(--spc-r);
+  background: var(--spc-fill);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: 0 0 0 0.5px var(--spc-edge), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.35);
+  color: var(--spc-t0);
+  isolation: isolate;
+  text-align: left;
+}
+html[data-theme="light"] .spc {
+  --spc-fill: rgba(255, 255, 255, 0.95);
+  --spc-edge: rgba(0, 0, 0, 0.1);
+  --spc-t0: #060607;
+  --spc-t3: #5c5f67;
+  --spc-chip: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 0.5px var(--spc-edge), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 24px rgba(20, 30, 60, 0.1), 0 1px 2px rgba(20, 30, 60, 0.06);
+}
+html.a11y-solid .spc { --spc-fill: #2b2d31; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.a11y-solid[data-theme="light"] .spc { --spc-fill: #ffffff; }
+@media (prefers-reduced-transparency: reduce) {
+  .spc { --spc-fill: #2b2d31; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html[data-theme="light"] .spc { --spc-fill: #ffffff; }
+}
+@media (prefers-contrast: more) {
+  .spc { --spc-edge: rgba(255, 255, 255, 0.4); }
+  html[data-theme="light"] .spc { --spc-edge: rgba(0, 0, 0, 0.45); }
+}
+
+/* Only the banner clips (to the card's top corners); the card itself never
+   clips, so an equipped avatar effect ring stays whole (stray-arc fix). */
+.spc-banner {
+  height: var(--spc-banner-h);
+  border-radius: var(--spc-r) var(--spc-r) 0 0;
+  overflow: hidden;
+  background-color: #2f52c9;
+  box-shadow: inset 0 -0.5px 0 rgba(0, 0, 0, 0.18);
+}
+.spc-body { position: relative; padding: 0 16px 16px; }
+.spc-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: calc(var(--spc-av) * -0.56); }
+.spc-avatar {
+  position: relative;
+  flex: none;
+  padding: 4px;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--spc-fill);
+  cursor: pointer;
+  line-height: 0;
+  transition: transform 0.16s cubic-bezier(0.2, 0, 0, 1);
+}
+.spc-avatar:active { transform: scale(0.96); }
+.spc-avatar .ui-avatar { position: relative; overflow: visible; }
+.spc-avatar .ui-avatar-img { outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; border-radius: 50%; }
+html[data-theme="light"] .spc-avatar .ui-avatar-img { outline-color: rgba(0, 0, 0, 0.1); }
+.spc-avatar .status-badge {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 3;
+  width: calc(var(--spc-av) * 0.25);
+  height: calc(var(--spc-av) * 0.25);
+  border: 3px solid var(--spc-fill);
+  background-clip: padding-box;
+}
+html.a11y-solid .spc-avatar .status-badge { border-color: var(--spc-fill); }
+.spc-badges { min-width: 0; margin-bottom: 6px; }
+.spc-badges .bp-row {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--spc-chip);
+  box-shadow: inset 0 0 0 0.5px var(--spc-edge);
+}
+.spc-badges .bp-row:empty { display: none; }
+.spc-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.spc-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.spc-name-t {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--spc-t0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spc-meta { font-size: 13px; font-weight: 500; line-height: 1.3; letter-spacing: 0.005em; color: var(--spc-t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.spc-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 14px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px; /* concentric: 20 card − ~8 inset feel */
+  background: #4F7CFF;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 14px rgba(79, 124, 255, 0.35);
+  transition: transform 0.16s cubic-bezier(0.2, 0, 0, 1), background-color 0.12s ease;
+}
+.spc-edit:hover { background: #3B63E6; }
+.spc-edit:active { transform: scale(0.96); background: #3B63E6; }
+.spc-edit:focus-visible, .spc-avatar:focus-visible, .spc-id:focus-visible { outline: 2px solid #4F7CFF; outline-offset: 2px; }
+.spc-id:focus-visible { border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .spc-avatar, .spc-edit { transition: none; }
+  .spc-avatar:active, .spc-edit:active { transform: none; }
+}
+
+/* iPhone menu: a little larger, edit button meets the 44 pt touch target. */
+.spc-ios { --spc-banner-h: 96px; }
+.spc-ios .spc-name-t { font-size: 22px; letter-spacing: -0.022em; }
+.spc-ios .spc-edit { min-height: 44px; font-size: 15px; }
+
+/* Placement: desktop sidebar keeps the hero's spot; the phone menu replaces the mini profile row. */
+.s3-side-scroll > .spc { margin: 2px 0 4px; }
+.us-sidebar-top > .spc { margin-top: 12px; }
