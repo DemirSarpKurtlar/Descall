@@ -49,6 +49,91 @@ enum L {
     static var retry: String { t("retry") }
     static var sending: String { t("sending") }
 
+    // 3.7.33: tabs, freshness, offline, advanced admin.
+    static var servers: String { t("servers") }
+    static var activity: String { t("activity") }
+    static var calls: String { t("calls") }
+    static var refresh: String { t("refresh") }
+    static var refreshing: String { t("refreshing") }
+    static var loading: String { t("loading") }
+    static var offlineTitle: String { t("offlineTitle") }
+    static var refreshFailed: String { t("refreshFailed") }
+    static var noServers: String { t("noServers") }
+    static var noChannels: String { t("noChannels") }
+    static var muted: String { t("muted") }
+    static var timedOutHere: String { t("timedOutHere") }
+    static var noCalls: String { t("noCalls") }
+    static var callsOnPhone: String { t("callsOnPhone") }
+    static var noActivity: String { t("noActivity") }
+    static var acceptOnPhone: String { t("acceptOnPhone") }
+    static var friendRequest: String { t("friendRequest") }
+    static var iphoneConnected: String { t("iphoneConnected") }
+    static var iphoneAway: String { t("iphoneAway") }
+    static var refreshAll: String { t("refreshAll") }
+    static var version: String { t("version") }
+    static var language: String { t("language") }
+    static var live: String { t("live") }
+    static var growth: String { t("growth") }
+    static var safety: String { t("safety") }
+    static var system: String { t("system") }
+    static var visible: String { t("visible") }
+    static var invisibleCount: String { t("invisibleCount") }
+    static var signups7d: String { t("signups7d") }
+    static var feedbackActive: String { t("feedbackActive") }
+    static var reportedPeople: String { t("reportedPeople") }
+    static var bans: String { t("bans") }
+    static var timeouts: String { t("timeouts") }
+    static var uptime: String { t("uptime") }
+    static var memory: String { t("memory") }
+    static var errorsHour: String { t("errorsHour") }
+    static var flagged: String { t("flagged") }
+    static var chatFrozen: String { t("chatFrozen") }
+    static var recentAudit: String { t("recentAudit") }
+    static var newlyJoined: String { t("newlyJoined") }
+    static var autoRefresh: String { t("autoRefresh") }
+    static var sections: String { t("sections") }
+
+    static func health(_ level: String?) -> String {
+        switch level {
+        case "watch": return t("health.watch")
+        case "high": return t("health.high")
+        case "critical": return t("health.critical")
+        default: return t("health.ok")
+        }
+    }
+
+    static func call(_ c: (missed: Bool, direction: String, video: Bool)) -> String {
+        if c.missed { return t(c.video ? "missedVideo" : "missedCall") }
+        switch c.direction {
+        case "outgoing": return t(c.video ? "outVideo" : "outCall")
+        case "group": return t("groupCall")
+        default: return t(c.video ? "inVideo" : "inCall")
+        }
+    }
+
+    static func activityLine(_ type: String) -> String {
+        switch type {
+        case "friendRequest": return t("friendRequest")
+        case "missedVideo": return t("missedVideo")
+        default: return t("missedCall")
+        }
+    }
+
+    /// "az önce" / "3 dk önce" / "2 sa önce" / "4 gün önce".
+    static func ago(_ date: Date, now: Date = Date()) -> String {
+        switch WatchFreshness.of(date, now: now) {
+        case .live: return t("ago.now")
+        case .minutes(let n): return t("ago.min", ["n": "\(n)"])
+        case .hours(let n): return t("ago.hour", ["n": "\(n)"])
+        case .days(let n): return plural("ago.day", n)
+        }
+    }
+    static func updated(_ date: Date, now: Date = Date()) -> String { t("updated", ["ago": ago(date, now: now)]) }
+    static func showingFrom(_ date: Date, now: Date = Date()) -> String { t("showingFrom", ["ago": ago(date, now: now)]) }
+    static func members(_ n: Int) -> String { plural("members", n) }
+    static func requestsHeader(_ n: Int) -> String { t("requestsHeader", ["n": "\(n)"]) }
+    static func missedHeader(_ n: Int) -> String { t("missedHeader", ["n": "\(n)"]) }
+
     static func status(_ s: String) -> String {
         switch s {
         case "idle", "dnd", "invisible", "offline": return t("status.\(s)")
@@ -59,6 +144,7 @@ enum L {
     static func error(_ e: WatchError) -> String {
         switch e {
         case .unreachable: return t("err.unreachable")
+        case .timeout: return t("err.timeout")
         case .noSession: return t("err.noSession")
         case .notAllowed: return t("err.notAllowed")
         case .network: return t("err.network")
@@ -174,5 +260,74 @@ enum L {
         "errorStats.few": ["ru": "{count}× · {n} человека"],
         "errorStats.many": ["ru": "{count}× · {n} человек"],
         "errorStats.other": ["en": "{count}× · {n} people", "tr": "{count} kez · {n} kişi", "de": "{count}× · {n} Personen", "es": "{count}× · {n} personas", "fr": "{count}× · {n} personnes", "pt-BR": "{count}× · {n} pessoas", "ru": "{count}× · {n} человека"],
+        "err.timeout": ["en": "Your iPhone is taking too long. Try again.", "tr": "iPhone'un çok geç yanıt verdi. Tekrar dene.", "de": "Dein iPhone antwortet zu langsam. Versuch es noch mal.", "es": "Tu iPhone tarda demasiado. Inténtalo de nuevo.", "fr": "Ton iPhone met trop de temps. Réessaie.", "pt-BR": "Seu iPhone está demorando. Tente de novo.", "ru": "iPhone долго не отвечает. Попробуйте ещё раз."],
+        "servers": ["en": "Servers", "tr": "Sunucular", "de": "Server", "es": "Servidores", "fr": "Serveurs", "pt-BR": "Servidores", "ru": "Серверы"],
+        "activity": ["en": "Activity", "tr": "Etkinlik", "de": "Aktivität", "es": "Actividad", "fr": "Activité", "pt-BR": "Atividade", "ru": "Активность"],
+        "calls": ["en": "Calls", "tr": "Aramalar", "de": "Anrufe", "es": "Llamadas", "fr": "Appels", "pt-BR": "Chamadas", "ru": "Звонки"],
+        "refresh": ["en": "Refresh", "tr": "Yenile", "de": "Aktualisieren", "es": "Actualizar", "fr": "Actualiser", "pt-BR": "Atualizar", "ru": "Обновить"],
+        "refreshing": ["en": "Refreshing…", "tr": "Yenileniyor…", "de": "Wird aktualisiert…", "es": "Actualizando…", "fr": "Actualisation…", "pt-BR": "Atualizando…", "ru": "Обновление…"],
+        "loading": ["en": "Loading", "tr": "Yükleniyor", "de": "Wird geladen", "es": "Cargando", "fr": "Chargement", "pt-BR": "Carregando", "ru": "Загрузка"],
+        "offlineTitle": ["en": "Can't reach your iPhone", "tr": "iPhone'una ulaşılamıyor", "de": "iPhone nicht erreichbar", "es": "No se puede conectar con tu iPhone", "fr": "iPhone injoignable", "pt-BR": "iPhone fora de alcance", "ru": "iPhone недоступен"],
+        "refreshFailed": ["en": "Couldn't refresh", "tr": "Yenilenemedi", "de": "Aktualisierung fehlgeschlagen", "es": "No se pudo actualizar", "fr": "Actualisation impossible", "pt-BR": "Não foi possível atualizar", "ru": "Не удалось обновить"],
+        "updated": ["en": "Updated · {ago}", "tr": "Güncellendi · {ago}", "de": "Aktualisiert · {ago}", "es": "Actualizado · {ago}", "fr": "Mis à jour · {ago}", "pt-BR": "Atualizado · {ago}", "ru": "Обновлено · {ago}"],
+        "showingFrom": ["en": "Showing data from {ago}", "tr": "{ago} verisi gösteriliyor", "de": "Daten von {ago}", "es": "Datos de {ago}", "fr": "Données d'il y a {ago}", "pt-BR": "Dados de {ago}", "ru": "Данные: {ago}"],
+        "ago.now": ["en": "just now", "tr": "az önce", "de": "gerade eben", "es": "ahora mismo", "fr": "à l'instant", "pt-BR": "agora", "ru": "только что"],
+        "ago.min": ["en": "{n} min ago", "tr": "{n} dk önce", "de": "vor {n} Min.", "es": "hace {n} min", "fr": "il y a {n} min", "pt-BR": "há {n} min", "ru": "{n} мин назад"],
+        "ago.hour": ["en": "{n} h ago", "tr": "{n} sa önce", "de": "vor {n} Std.", "es": "hace {n} h", "fr": "il y a {n} h", "pt-BR": "há {n} h", "ru": "{n} ч назад"],
+        "ago.day.one": ["en": "{n} day ago", "tr": "{n} gün önce", "de": "vor {n} Tag", "es": "hace {n} día", "fr": "il y a {n} jour", "pt-BR": "há {n} dia", "ru": "{n} день назад"],
+        "ago.day.other": ["en": "{n} days ago", "tr": "{n} gün önce", "de": "vor {n} Tagen", "es": "hace {n} días", "fr": "il y a {n} jours", "pt-BR": "há {n} dias", "ru": "{n} дня назад"],
+        "members.one": ["en": "{n} member", "tr": "{n} üye", "de": "{n} Mitglied", "es": "{n} miembro", "fr": "{n} membre", "pt-BR": "{n} membro", "ru": "{n} участник"],
+        "members.other": ["en": "{n} members", "tr": "{n} üye", "de": "{n} Mitglieder", "es": "{n} miembros", "fr": "{n} membres", "pt-BR": "{n} membros", "ru": "{n} участника"],
+        "noServers": ["en": "You haven't joined a server yet.", "tr": "Henüz bir sunucuya katılmadın.", "de": "Du bist noch keinem Server beigetreten.", "es": "Aún no te has unido a ningún servidor.", "fr": "Tu n'as encore rejoint aucun serveur.", "pt-BR": "Você ainda não entrou em nenhum servidor.", "ru": "Вы ещё не вступили ни в один сервер."],
+        "noChannels": ["en": "No text channels you can open here.", "tr": "Burada açabileceğin metin kanalı yok.", "de": "Hier gibt es keine Textkanäle für dich.", "es": "Aquí no hay canales de texto que puedas abrir.", "fr": "Aucun salon textuel à ouvrir ici.", "pt-BR": "Nenhum canal de texto para abrir aqui.", "ru": "Здесь нет доступных текстовых каналов."],
+        "muted": ["en": "Muted", "tr": "Sessizde", "de": "Stumm", "es": "Silenciado", "fr": "En sourdine", "pt-BR": "Silenciado", "ru": "Без звука"],
+        "timedOutHere": ["en": "You're timed out here", "tr": "Burada zaman aşımındasın", "de": "Du bist hier im Timeout", "es": "Estás aislado aquí", "fr": "Tu es exclu temporairement ici", "pt-BR": "Você está de castigo aqui", "ru": "У вас тут тайм-аут"],
+        "noCalls": ["en": "No calls yet.", "tr": "Henüz arama yok.", "de": "Noch keine Anrufe.", "es": "Aún no hay llamadas.", "fr": "Pas encore d'appels.", "pt-BR": "Nenhuma chamada ainda.", "ru": "Звонков пока нет."],
+        "callsOnPhone": ["en": "Start calls from your iPhone.", "tr": "Aramaları iPhone'undan başlatabilirsin.", "de": "Starte Anrufe auf deinem iPhone.", "es": "Inicia las llamadas desde tu iPhone.", "fr": "Lance les appels depuis ton iPhone.", "pt-BR": "Inicie chamadas pelo iPhone.", "ru": "Звонки начинайте с iPhone."],
+        "missedCall": ["en": "Missed voice call", "tr": "Cevapsız sesli arama", "de": "Verpasster Sprachanruf", "es": "Llamada de voz perdida", "fr": "Appel vocal manqué", "pt-BR": "Chamada de voz perdida", "ru": "Пропущенный аудиозвонок"],
+        "missedVideo": ["en": "Missed video call", "tr": "Cevapsız görüntülü arama", "de": "Verpasster Videoanruf", "es": "Videollamada perdida", "fr": "Appel vidéo manqué", "pt-BR": "Chamada de vídeo perdida", "ru": "Пропущенный видеозвонок"],
+        "inCall": ["en": "Incoming voice call", "tr": "Gelen sesli arama", "de": "Eingehender Sprachanruf", "es": "Llamada de voz entrante", "fr": "Appel vocal reçu", "pt-BR": "Chamada de voz recebida", "ru": "Входящий аудиозвонок"],
+        "inVideo": ["en": "Incoming video call", "tr": "Gelen görüntülü arama", "de": "Eingehender Videoanruf", "es": "Videollamada entrante", "fr": "Appel vidéo reçu", "pt-BR": "Chamada de vídeo recebida", "ru": "Входящий видеозвонок"],
+        "outCall": ["en": "Outgoing voice call", "tr": "Giden sesli arama", "de": "Ausgehender Sprachanruf", "es": "Llamada de voz saliente", "fr": "Appel vocal émis", "pt-BR": "Chamada de voz feita", "ru": "Исходящий аудиозвонок"],
+        "outVideo": ["en": "Outgoing video call", "tr": "Giden görüntülü arama", "de": "Ausgehender Videoanruf", "es": "Videollamada saliente", "fr": "Appel vidéo émis", "pt-BR": "Chamada de vídeo feita", "ru": "Исходящий видеозвонок"],
+        "groupCall": ["en": "Group call", "tr": "Grup araması", "de": "Gruppenanruf", "es": "Llamada grupal", "fr": "Appel de groupe", "pt-BR": "Chamada em grupo", "ru": "Групповой звонок"],
+        "noActivity": ["en": "Nothing new. You're all caught up.", "tr": "Yeni bir şey yok, her şeye yetiştin.", "de": "Nichts Neues. Du bist auf dem neuesten Stand.", "es": "Nada nuevo. Estás al día.", "fr": "Rien de neuf. Tu es à jour.", "pt-BR": "Nada de novo. Você está em dia.", "ru": "Ничего нового."],
+        "acceptOnPhone": ["en": "Accept requests on your iPhone.", "tr": "İstekleri iPhone'undan kabul edebilirsin.", "de": "Anfragen nimmst du auf dem iPhone an.", "es": "Acepta las solicitudes desde tu iPhone.", "fr": "Accepte les demandes sur ton iPhone.", "pt-BR": "Aceite pedidos pelo iPhone.", "ru": "Принимайте заявки на iPhone."],
+        "friendRequest": ["en": "Sent you a friend request", "tr": "Sana arkadaşlık isteği gönderdi", "de": "Hat dir eine Freundschaftsanfrage geschickt", "es": "Te envió una solicitud de amistad", "fr": "T'a envoyé une demande d'ami", "pt-BR": "Te enviou um pedido de amizade", "ru": "Отправил(а) вам заявку в друзья"],
+        "requestsHeader": ["en": "Requests · {n}", "tr": "İstekler · {n}", "de": "Anfragen · {n}", "es": "Solicitudes · {n}", "fr": "Demandes · {n}", "pt-BR": "Pedidos · {n}", "ru": "Заявки · {n}"],
+        "missedHeader": ["en": "Missed calls · {n}", "tr": "Cevapsız aramalar · {n}", "de": "Verpasste Anrufe · {n}", "es": "Llamadas perdidas · {n}", "fr": "Appels manqués · {n}", "pt-BR": "Chamadas perdidas · {n}", "ru": "Пропущенные · {n}"],
+        "iphoneConnected": ["en": "iPhone connected", "tr": "iPhone bağlı", "de": "iPhone verbunden", "es": "iPhone conectado", "fr": "iPhone connecté", "pt-BR": "iPhone conectado", "ru": "iPhone подключён"],
+        "iphoneAway": ["en": "iPhone out of reach", "tr": "iPhone'una ulaşılamıyor", "de": "iPhone nicht erreichbar", "es": "iPhone fuera de alcance", "fr": "iPhone hors de portée", "pt-BR": "iPhone fora de alcance", "ru": "iPhone вне зоны"],
+        "refreshAll": ["en": "Refresh everything", "tr": "Hepsini yenile", "de": "Alles aktualisieren", "es": "Actualizar todo", "fr": "Tout actualiser", "pt-BR": "Atualizar tudo", "ru": "Обновить всё"],
+        "version": ["en": "Version", "tr": "Sürüm", "de": "Version", "es": "Versión", "fr": "Version", "pt-BR": "Versão", "ru": "Версия"],
+        "language": ["en": "Language", "tr": "Dil", "de": "Sprache", "es": "Idioma", "fr": "Langue", "pt-BR": "Idioma", "ru": "Язык"],
+        "live": ["en": "Live", "tr": "Canlı", "de": "Live", "es": "En vivo", "fr": "En direct", "pt-BR": "Ao vivo", "ru": "Сейчас"],
+        "growth": ["en": "Growth", "tr": "Büyüme", "de": "Wachstum", "es": "Crecimiento", "fr": "Croissance", "pt-BR": "Crescimento", "ru": "Рост"],
+        "safety": ["en": "Safety", "tr": "Güvenlik", "de": "Sicherheit", "es": "Seguridad", "fr": "Sécurité", "pt-BR": "Segurança", "ru": "Безопасность"],
+        "system": ["en": "System", "tr": "Sistem", "de": "System", "es": "Sistema", "fr": "Système", "pt-BR": "Sistema", "ru": "Система"],
+        "visible": ["en": "Visible", "tr": "Görünür", "de": "Sichtbar", "es": "Visibles", "fr": "Visibles", "pt-BR": "Visíveis", "ru": "Видимые"],
+        "invisibleCount": ["en": "Invisible", "tr": "Görünmez", "de": "Unsichtbar", "es": "Invisibles", "fr": "Invisibles", "pt-BR": "Invisíveis", "ru": "Невидимые"],
+        "signups7d": ["en": "Sign-ups, last 7 days", "tr": "Son 7 gün kayıt", "de": "Registrierungen, 7 Tage", "es": "Registros, últimos 7 días", "fr": "Inscriptions, 7 derniers jours", "pt-BR": "Cadastros, últimos 7 dias", "ru": "Регистрации за 7 дней"],
+        "feedbackActive": ["en": "Feedback in progress", "tr": "İşlemdeki geri bildirim", "de": "Feedback in Bearbeitung", "es": "Comentarios en curso", "fr": "Retours en cours", "pt-BR": "Feedback em andamento", "ru": "Отзывы в работе"],
+        "reportedPeople": ["en": "Reported people", "tr": "Raporlanan kişi", "de": "Gemeldete Personen", "es": "Personas reportadas", "fr": "Personnes signalées", "pt-BR": "Pessoas denunciadas", "ru": "Пользователи с жалобами"],
+        "bans": ["en": "Active bans", "tr": "Aktif ban", "de": "Aktive Sperren", "es": "Baneos activos", "fr": "Bannissements actifs", "pt-BR": "Banimentos ativos", "ru": "Активные баны"],
+        "timeouts": ["en": "Timeouts", "tr": "Zaman aşımı", "de": "Timeouts", "es": "Aislamientos", "fr": "Exclusions", "pt-BR": "Castigos", "ru": "Тайм-ауты"],
+        "uptime": ["en": "Uptime", "tr": "Çalışma süresi", "de": "Laufzeit", "es": "Tiempo activo", "fr": "Disponibilité", "pt-BR": "Tempo ativo", "ru": "Аптайм"],
+        "memory": ["en": "Memory", "tr": "Bellek", "de": "Speicher", "es": "Memoria", "fr": "Mémoire", "pt-BR": "Memória", "ru": "Память"],
+        "errorsHour": ["en": "Errors, last hour", "tr": "Son 1 saatte hata", "de": "Fehler, letzte Stunde", "es": "Errores, última hora", "fr": "Erreurs, dernière heure", "pt-BR": "Erros, última hora", "ru": "Ошибки за час"],
+        "flagged": ["en": "Flagged messages", "tr": "İşaretli mesaj", "de": "Markierte Nachrichten", "es": "Mensajes marcados", "fr": "Messages signalés", "pt-BR": "Mensagens sinalizadas", "ru": "Отмеченные сообщения"],
+        "chatFrozen": ["en": "Chat frozen", "tr": "Sohbet donduruldu", "de": "Chat eingefroren", "es": "Chat congelado", "fr": "Chat gelé", "pt-BR": "Chat congelado", "ru": "Чат заморожен"],
+        "recentAudit": ["en": "Recent actions", "tr": "Son işlemler", "de": "Letzte Aktionen", "es": "Acciones recientes", "fr": "Actions récentes", "pt-BR": "Ações recentes", "ru": "Последние действия"],
+        "newlyJoined": ["en": "Newly joined", "tr": "Yeni katılanlar", "de": "Neu dabei", "es": "Recién llegados", "fr": "Nouveaux membres", "pt-BR": "Novos membros", "ru": "Новые участники"],
+        "autoRefresh": ["en": "Refreshes by itself every minute", "tr": "Her dakika kendiliğinden yenilenir", "de": "Aktualisiert sich jede Minute", "es": "Se actualiza solo cada minuto", "fr": "Se met à jour chaque minute", "pt-BR": "Atualiza sozinho a cada minuto", "ru": "Обновляется каждую минуту"],
+        "sections": ["en": "Sections", "tr": "Bölümler", "de": "Bereiche", "es": "Secciones", "fr": "Sections", "pt-BR": "Seções", "ru": "Разделы"],
+        "health.ok": ["en": "All good", "tr": "Her şey yolunda", "de": "Alles in Ordnung", "es": "Todo bien", "fr": "Tout va bien", "pt-BR": "Tudo certo", "ru": "Всё в порядке"],
+        "health.watch": ["en": "Keep an eye on it", "tr": "Göz kulak ol", "de": "Im Auge behalten", "es": "Vigílalo", "fr": "À surveiller", "pt-BR": "Fique de olho", "ru": "Под наблюдением"],
+        "health.high": ["en": "Needs attention", "tr": "İlgilenmen gerek", "de": "Braucht Aufmerksamkeit", "es": "Requiere atención", "fr": "Demande ton attention", "pt-BR": "Precisa de atenção", "ru": "Нужно внимание"],
+        "health.critical": ["en": "Critical", "tr": "Kritik", "de": "Kritisch", "es": "Crítico", "fr": "Critique", "pt-BR": "Crítico", "ru": "Критично"],
+        "ago.day.few": ["ru": "{n} дня назад"],
+        "ago.day.many": ["ru": "{n} дней назад"],
+        "members.few": ["ru": "{n} участника"],
+        "members.many": ["ru": "{n} участников"],
     ]
 }

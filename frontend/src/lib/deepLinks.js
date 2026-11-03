@@ -86,7 +86,7 @@ function routeForSegments(rawSegments) {
  * Resolve a URL string to `{ path }`, or null when the URL is not a Descall link.
  * Query strings and fragments are ignored (nothing in them is trusted).
  */
-export function resolveDeepLink(raw) {
+function resolveDeepLinkPath(raw) {
   const text = String(raw || "").trim();
   if (!text || text.length > 2048) return null;
   const match = /^([a-z][a-z0-9+.-]*):(.*)$/i.exec(text);
@@ -133,4 +133,15 @@ export function resolveDeepLink(raw) {
 export function isWhatsNewPath(pathname) {
   const path = String(pathname || "").replace(/\/+$/, "").toLowerCase();
   return path === WHATS_NEW_PATH;
+}
+
+/**
+ * Public resolver. One query value survives: `?picker=avatar|banner` on
+ * /settings/profile, so the desktop "Telefonundan yükle" QR opens the photo/banner picker.
+ */
+export function resolveDeepLink(raw) {
+  const out = resolveDeepLinkPath(raw);
+  if (!out || out.path !== "/settings/profile") return out;
+  const m = /[?&]picker=(avatar|banner)(?:[&#]|$)/.exec(String(raw || ""));
+  return m ? { path: `${out.path}?picker=${m[1]}` } : out;
 }

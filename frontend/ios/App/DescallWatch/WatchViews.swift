@@ -2,18 +2,41 @@ import SwiftUI
 
 // MARK: - Root
 
+/// Vertical pages, the iOS tabs in watch form (3.7.33): Chats, Servers, Friends, Activity,
+/// Calls, You, and Admin for staff. No DimaAI, no call recording, no game / LFG content.
+enum WatchTab: Int {
+    case chats = 0, servers, friends, activity, calls, you, admin
+
+    static func forDemo(_ screen: String?) -> WatchTab {
+        switch screen ?? "" {
+        case "servers", "server": return .servers
+        case "friends", "status": return .friends
+        case "activity": return .activity
+        case "calls": return .calls
+        case "profile": return .you
+        case "admin", "reports", "case", "stepup", "feedback", "maintenance": return .admin
+        default: return .chats
+        }
+    }
+}
+
 struct RootView: View {
     @EnvironmentObject var store: WatchStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var tab: Int
     @State private var chatsPath: [ChatRoute]
+    @State private var serversPath: [ServersRoute]
     @State private var friendsPath: [FriendsRoute]
+    @State private var activityPath: [ChatRoute] = []
+    @State private var callsPath: [ChatRoute] = []
+    @State private var youPath: [FriendsRoute] = []
     @State private var adminPath: [AdminRoute]
 
     init() {
         let demo = WatchDemo.screen
-        let adminScreens: Set<String> = ["admin", "reports", "case", "stepup", "feedback", "maintenance"]
-        _tab = State(initialValue: (demo == "friends" || demo == "status") ? 1 : (adminScreens.contains(demo ?? "") ? 2 : 0))
+        _tab = State(initialValue: WatchTab.forDemo(demo).rawValue)
         _chatsPath = State(initialValue: (demo == "chat" || demo == "reply") ? [WatchDemo.chatRoute] : [])
+        _serversPath = State(initialValue: demo == "server" ? [.server(WatchDemo.serverId)] : [])
         _friendsPath = State(initialValue: demo == "status" ? [.status] : [])
         _adminPath = State(initialValue: WatchDemo.adminPath)
     }
@@ -24,33 +47,61 @@ struct RootView: View {
                 ChatsView()
                     .navigationDestination(for: ChatRoute.self) { ChatView(route: $0) }
             }
-            .tag(0)
-            NavigationStack(path: $friendsPath) {
-                FriendsView()
-                    .navigationDestination(for: FriendsRoute.self) { route in
+            .tag(WatchTab.chats.rawValue)
+            NavigationStack(path: $serversPath) {
+                ServersView()
+                    .navigationDestination(for: ServersRoute.self) { route in
                         switch route {
-                        case .status: StatusPickerView()
+                        case .server(let id): ServerChannelsView(serverId: id)
                         case .chat(let r): ChatView(route: r)
                         }
                     }
             }
-            .tag(1)
+            .tag(WatchTab.servers.rawValue)
+            NavigationStack(path: $friendsPath) {
+                FriendsView()
+                    .navigationDestination(for: FriendsRoute.self) { FriendsRouteView(route: $0) }
+            }
+            .tag(WatchTab.friends.rawValue)
+            NavigationStack(path: $activityPath) {
+                ActivityView()
+                    .navigationDestination(for: ChatRoute.self) { ChatView(route: $0) }
+            }
+            .tag(WatchTab.activity.rawValue)
+            NavigationStack(path: $callsPath) {
+                CallsView()
+                    .navigationDestination(for: ChatRoute.self) { ChatView(route: $0) }
+            }
+            .tag(WatchTab.calls.rawValue)
+            NavigationStack(path: $youPath) {
+                ProfileView()
+                    .navigationDestination(for: FriendsRoute.self) { FriendsRouteView(route: $0) }
+            }
+            .tag(WatchTab.you.rawValue)
             // Staff only: the page exists when the account may open at least one section.
             if store.home?.adminSections != nil {
                 NavigationStack(path: $adminPath) {
                     AdminHomeView()
                         .navigationDestination(for: AdminRoute.self) { AdminRouteView(route: $0) }
                 }
-                .tag(2)
+                .tag(WatchTab.admin.rawValue)
             }
         }
         .tabViewStyle(.verticalPage)
         .sheet(isPresented: $store.stepUpPrompt, onDismiss: { store.cancelStepUp() }) {
-            NavigationStack { StepUpView() }
+            NavigationStack { StepUpView() }.descallSheet()
         }
         .task {
             await store.loadHome()
             if WatchDemo.screen == "stepup" { store.stepUpPrompt = true }
+        }
+        // Back on the wrist: refresh what is stale (not on every glance).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, store.homeState.isStale { Task { await store.loadHome() } }
+        }
+        // The iPhone came back: retry right away instead of waiting for a timer.
+        .onReceive(NotificationCenter.default.publisher(for: .descallWatchReachability)) { _ in
+            if store.offline, WatchDemo.screen == nil { Task { await store.refreshAll() } }
         }
     }
 }
@@ -60,34 +111,92 @@ enum FriendsRoute: Hashable {
     case chat(ChatRoute)
 }
 
+struct FriendsRouteView: View {
+    var route: FriendsRoute
+    var body: some View {
+        switch route {
+        case .status: StatusPickerView()
+        case .chat(let r): ChatView(route: r)
+        }
+    }
+}
+
+/// Runs `body` now and every `seconds` while the app is active and the screen is shown
+/// (3.7.33: polling used to keep going with the wrist down).
+struct ActivePolling: ViewModifier {
+    var seconds: UInt64
+    var action: () async -> Void
+    @Environment(\.scenePhase) private var scenePhase
+
+    func body(content: Content) -> some View {
+        content.task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            await action()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+                if Task.isCancelled { break }
+                await action()
+            }
+        }
+    }
+}
+
+extension View {
+    func whileActive(every seconds: UInt64, _ action: @escaping () async -> Void) -> some View {
+        modifier(ActivePolling(seconds: seconds, action: action))
+    }
+}
+
+/// Glass screen with an in-content refresh button.
+/// Root cause of the 3.7.33 SIGABRT: a ToolbarItem in each NavigationStack inside the
+/// vertical-page TabView. Its label changed with `loading`, so SwiftUI re-rendered the
+/// bar item while UIKit tore down / re-laid out the page's UINavigationBar
+/// (DisplayList.ViewUpdater.removeRemaining -> UINavigationBar layoutSubviews assertion).
+/// Pages therefore carry no navigation-bar items; refresh is the first row instead.
+struct DescallList<Content: View>: View {
+    var title: String
+    var loading: Bool
+    var refresh: () async -> Void
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 6) {
+                RefreshRowButton(loading: loading) { Task { await refresh() } }
+                content()
+            }
+            .padding(.horizontal, 2)
+        }
+        .navigationTitle(title)
+        .descallScreen()
+    }
+}
+
 // MARK: - Chats
 
 struct ChatsView: View {
     @EnvironmentObject var store: WatchStore
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 6) {
-                if let home = store.home {
-                    if home.conversations.isEmpty {
-                        Text(L.noChats).font(.system(size: 13)).foregroundStyle(DS.ink2).padding(.top, 20)
+        let state = store.homeState
+        DescallList(title: L.chats, loading: state.loading, refresh: { await store.loadHome() }) {
+            OfflineBanner(error: state.value == nil ? nil : state.error, updatedAt: state.updatedAt)
+            if let home = state.value {
+                if home.conversations.isEmpty { EmptyState(text: L.noChats) }
+                ForEach(home.conversations) { c in
+                    NavigationLink(value: ChatRoute(conv: c.conv, title: c.title)) {
+                        ConversationRow(c: c)
                     }
-                    ForEach(home.conversations) { c in
-                        NavigationLink(value: ChatRoute(conv: c.conv, title: c.title)) {
-                            ConversationRow(c: c)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } else if let error = store.homeError {
-                    ErrorCard(error: error) { Task { await store.loadHome() } }
-                } else {
-                    ProgressView().padding(.top, 24)
+                    .buttonStyle(.plain)
                 }
+                UpdatedLine(updatedAt: state.updatedAt, loading: state.loading)
+            } else if let error = state.error {
+                ErrorCard(error: error) { Task { await store.loadHome() } }
+            } else {
+                LoadingRows(count: 4)
             }
-            .padding(.horizontal, 2)
         }
-        .navigationTitle(L.chats)
-        .descallScreen()
+        .whileActive(every: 60) { if store.homeState.isStale || store.homeState.value == nil { await store.loadHome() } }
     }
 }
 
@@ -124,6 +233,7 @@ struct ChatView: View {
     @EnvironmentObject var store: WatchStore
     @State private var thread: WatchThread?
     @State private var error: WatchError?
+    @State private var refreshError: WatchError?
     @State private var showReply = WatchDemo.screen == "reply"
 
     private var isGroup: Bool { !route.conv.hasPrefix("dm:") }
@@ -132,6 +242,9 @@ struct ChatView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 5) {
+                    if thread != nil, let refreshError, refreshError.isOffline {
+                        OfflineBanner(error: refreshError, updatedAt: nil)
+                    }
                     if let thread {
                         if thread.messages.isEmpty {
                             Text(L.noMessages).font(.system(size: 13)).foregroundStyle(DS.ink2).padding(.vertical, 12)
@@ -168,26 +281,25 @@ struct ChatView: View {
                     await load()
                 }
             }
+            .descallSheet()
         }
-        .task {
-            await load()
-            await store.markRead(route.conv)
-            // Light polling while the chat is on screen (no socket on the watch).
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
-                if Task.isCancelled { break }
-                await load()
-            }
-        }
+        .task { await store.markRead(route.conv) }
+        // Light polling while the chat is on screen and the app is active (no socket on the watch).
+        .whileActive(every: 10) { await load() }
     }
 
     private func load() async {
         do {
             thread = try await store.thread(route.conv)
             error = nil
+            refreshError = nil
         } catch let e as WatchError {
+            refreshError = e
             if thread == nil { error = e }
+        } catch is CancellationError {
+            // 3.7.34: a screen leaving (page swipe, push) cancels its load; that is not "no connection".
         } catch {
+            refreshError = .network
             if thread == nil { self.error = .network }
         }
     }
@@ -308,69 +420,63 @@ struct FriendsView: View {
     @EnvironmentObject var store: WatchStore
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 6) {
-                if let me = store.home?.me {
-                    NavigationLink(value: FriendsRoute.status) {
+        let state = store.friendsState
+        DescallList(title: L.friends, loading: state.loading, refresh: { await store.loadFriends() }) {
+            if let me = store.home?.me {
+                NavigationLink(value: FriendsRoute.status) { MeRow(me: me) }
+                    .buttonStyle(.plain)
+            }
+            OfflineBanner(error: state.value == nil ? nil : state.error, updatedAt: state.updatedAt)
+            if let friends = state.value {
+                SectionLabel(text: L.onlineHeader(friends.onlineCount))
+                if friends.online.isEmpty { EmptyState(text: L.noOneOnline, icon: "person.2") }
+                ForEach(friends.online) { f in
+                    NavigationLink(value: FriendsRoute.chat(ChatRoute(conv: f.conv, title: f.name))) {
                         HStack(spacing: 8) {
-                            AvatarView(url: me.avatarUrl, initials: me.initials, seed: me.id ?? me.name, size: 30, presence: me.status == "invisible" ? "offline" : me.status)
+                            AvatarView(url: f.avatarUrl, initials: f.initials, seed: f.id, size: 28, presence: f.presence)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(me.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                                Text("\(L.status(me.status)) · \(L.change)").font(.system(size: 12)).foregroundStyle(DS.brandHi)
+                                Text(f.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                                Text((f.customStatus?.isEmpty == false) ? f.customStatus! : L.status(f.presence))
+                                    .font(.system(size: 11)).foregroundStyle(DS.ink2).lineLimit(1)
                             }
                             Spacer(minLength: 0)
-                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.ink2)
                         }
                         .padding(.horizontal, 9)
                         .padding(.vertical, 8)
-                        .glass(16, highlight: true)
+                        .glass(16)
                     }
                     .buttonStyle(.plain)
                 }
-                if let friends = store.friends {
-                    SectionLabel(text: L.onlineHeader(friends.onlineCount))
-                    if friends.online.isEmpty {
-                        Text(L.noOneOnline).font(.system(size: 12)).foregroundStyle(DS.ink2).padding(.vertical, 8)
-                    }
-                    ForEach(friends.online) { f in
-                        NavigationLink(value: FriendsRoute.chat(ChatRoute(conv: f.conv, title: f.name))) {
-                            HStack(spacing: 8) {
-                                AvatarView(url: f.avatarUrl, initials: f.initials, seed: f.id, size: 28, presence: f.presence)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(f.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                                    if let s = f.customStatus, !s.isEmpty {
-                                        Text(s).font(.system(size: 11)).foregroundStyle(DS.ink2).lineLimit(1)
-                                    }
-                                }
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 8)
-                            .glass(16)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    if friends.offlineCount > 0 {
-                        Text(L.offlineFooter(friends.offlineCount)).font(.system(size: 11)).foregroundStyle(DS.ink2).padding(.top, 4)
-                    }
-                } else if let error = store.friendsError {
-                    ErrorCard(error: error) { Task { await store.loadFriends() } }
-                } else {
-                    ProgressView().padding(.top, 16)
+                if friends.offlineCount > 0 {
+                    Text(L.offlineFooter(friends.offlineCount)).font(.system(size: 11)).foregroundStyle(DS.ink2).frame(maxWidth: .infinity).padding(.top, 4)
                 }
-            }
-            .padding(.horizontal, 2)
-        }
-        .navigationTitle(L.friends)
-        .descallScreen()
-        .task {
-            await store.loadFriends()
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
-                if Task.isCancelled { break }
-                await store.loadFriends()
+                UpdatedLine(updatedAt: state.updatedAt, loading: state.loading)
+            } else if let error = state.error {
+                ErrorCard(error: error) { Task { await store.loadFriends() } }
+            } else {
+                LoadingRows()
             }
         }
+        .whileActive(every: 30) { await store.loadFriends() }
+    }
+}
+
+struct MeRow: View {
+    var me: WatchMe
+
+    var body: some View {
+        HStack(spacing: 8) {
+            AvatarView(url: me.avatarUrl, initials: me.initials, seed: me.id ?? me.name, size: 30, presence: me.status == "invisible" ? "offline" : me.status)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(me.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                Text("\(L.status(me.status)) · \(L.change)").font(.system(size: 12)).foregroundStyle(DS.brandHi)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.ink2)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 8)
+        .glass(16, highlight: true)
     }
 }
 

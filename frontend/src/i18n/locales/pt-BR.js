@@ -4,7 +4,9 @@
  *   nested  - keyed messages (same paths as en.js nested)
  *   phrases - English source string -> translation
  */
+import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
 export const nested = {
+  "amp": AMP_PT_BR,
   "activeNow": {
     "emptyBody": "Quando um amigo ficar online ou começar um jogo, música ou outro app, ele aparece aqui.",
     "emptyTitle": "Tudo calmo por enquanto",
@@ -1322,6 +1324,13 @@ export const nested = {
     "voice": "Chamada de voz"
   },
   "callui": {
+    "share": {
+      "viewers": "{n} assistindo",
+      "sharing": "{name} está compartilhando a tela",
+      "you": "Você está compartilhando sua tela",
+      "fullscreen": "Tela cheia",
+      "people": "Pessoas na chamada"
+    },
     "media": {
       "dmTitle": "Chamada do Descall",
       "groupTitle": "Chamada em grupo do Descall"

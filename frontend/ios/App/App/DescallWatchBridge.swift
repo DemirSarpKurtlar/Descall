@@ -69,6 +69,8 @@ final class DescallWatchBridge: NSObject, WCSessionDelegate {
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
+        // 3.7.33: answer before the watch gives up (WatchRetry.requestTimeout = 22 s).
+        request.timeoutInterval = 18
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("watch", forHTTPHeaderField: "X-Descall-Client")
@@ -88,9 +90,9 @@ final class DescallWatchBridge: NSObject, WCSessionDelegate {
                 task = .invalid
             }
         }
-        DispatchQueue.main.async {
-            task = UIApplication.shared.beginBackgroundTask(withName: "descall.watch") { finish() }
-        }
+        // 3.7.33: begin before the request starts (beginBackgroundTask is safe off the main
+        // thread); the old main.async begin let a backgrounded app suspend mid-request.
+        task = UIApplication.shared.beginBackgroundTask(withName: "descall.watch") { finish() }
         session.dataTask(with: request) { data, response, error in
             defer { DispatchQueue.main.async { finish() } }
             guard error == nil, let http = response as? HTTPURLResponse else {

@@ -14,6 +14,9 @@
  *   POST /read   { conv }
  *   GET  /friends              → { online[], onlineCount, offlineCount }
  *   POST /status { status }    online / idle / dnd / invisible
+ *   GET  /servers              → { servers[{ id, name, channels[{ conv: "channel:<id>" }] }] } (3.7.33)
+ *   GET  /calls                → { calls[] } call history, no recordings (3.7.33)
+ *   GET  /activity             → { items[], requestCount, missedCount } friend requests + missed calls (3.7.33)
  *
  * Sending, reading and the thread reuse lib/notifyActions (the iOS notification
  * quick actions): same friend / member / channel permission checks, rate limits
@@ -41,6 +44,8 @@ function createWatchRouter(deps = {}) {
   const perms = () => deps.adminPermissions || require("../lib/adminPermissions");
   const state = () => deps.state || require("../runtime/sharedState");
   const fanout = () => deps.presenceFanout || require("../runtime/presenceFanoutInstance");
+  const serverList = () => deps.serverList || require("./servers").buildMyServerList;
+  const callLog = () => deps.callLog || require("../lib/dmCallLog").listCallsForUser;
   const io = (req) => deps.io || req.app?.get?.("io") || null;
 
   router.use(requireAuth);
@@ -181,6 +186,47 @@ function createWatchRouter(deps = {}) {
       return res.json({ ok: true, status });
     } catch (err) {
       return fail(res, err, "status");
+    }
+  });
+
+  // 3.7.33: the rest of the iOS tab bar (servers, calls, notifications) in watch size.
+  // Read only; a channel opens through /thread and /send like a DM (same permission checks).
+  router.get("/servers", async (req, res) => {
+    try {
+      return res.json(watch.shapeServers(await serverList()(req.user.id)));
+    } catch (err) {
+      return fail(res, err, "servers");
+    }
+  });
+
+  router.get("/calls", async (req, res) => {
+    try {
+      return res.json(watch.shapeCalls(await callLog()(req.user.id, { limit: 25 })));
+    } catch (err) {
+      return fail(res, err, "calls");
+    }
+  });
+
+  async function incomingRequests(userId) {
+    const { data: rows, error } = await getDb().from("friendships").select("user_id, created_at").eq("friend_id", userId).eq("status", "pending");
+    if (error) throw error;
+    const list = (rows || []).slice(0, 50);
+    if (!list.length) return [];
+    const { data: users, error: usersError } = await getDb().from("users").select("id, username, display_name, avatar_url").in("id", list.map((r) => r.user_id));
+    if (usersError) throw usersError;
+    const at = new Map(list.map((r) => [r.user_id, r.created_at || null]));
+    return (users || []).map((u) => ({ id: u.id, username: u.username, displayName: u.display_name || null, avatarUrl: u.avatar_url || null, requestedAt: at.get(u.id) || null }));
+  }
+
+  router.get("/activity", async (req, res) => {
+    try {
+      const [requests, calls] = await Promise.all([
+        incomingRequests(req.user.id),
+        callLog()(req.user.id, { limit: 25 }).catch(() => []),
+      ]);
+      return res.json(watch.shapeActivity({ requests, calls }));
+    } catch (err) {
+      return fail(res, err, "activity");
     }
   });
 

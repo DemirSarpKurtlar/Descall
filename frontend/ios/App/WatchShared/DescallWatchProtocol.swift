@@ -114,7 +114,8 @@ enum DescallWatchProtocol {
 enum DescallWatchLocale {
     static let ids = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"]
     /// status "live" in src/i18n/locales.json (drafts only by the app's UI choice).
-    static let live: Set<String> = ["en", "tr"]
+    /// 3.7.33: all seven are live since 3.7.22; a German watch without a phone reply yet showed English.
+    static let live: Set<String> = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"]
     static let storeKey = "descall.uiLocale"
 
     /// Registered id for "tr-TR", "pt", "pt_BR", "de-AT"; nil when unknown.

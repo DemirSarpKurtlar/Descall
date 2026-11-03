@@ -5156,3 +5156,5 @@ router.delete("/:id/invites/:code", requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+// 3.7.33: the Apple Watch servers page (routes/watch.js) reuses the member-filtered list.
+module.exports.buildMyServerList = buildMyServerList;

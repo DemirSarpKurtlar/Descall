@@ -713,6 +713,9 @@ html[data-bubble="minimal"] .shop-live-bubble {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* fills the card so the footer can sit on its bottom edge */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .shop-item-name-row {
@@ -763,7 +766,9 @@ html[data-bubble="minimal"] .shop-live-bubble {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 4px;
+  /* price + Satın Al row pinned to the card bottom, aligned across a row */
+  margin-top: auto;
+  padding-top: 4px;
 }
 
 .shop-item-footer .ripple-btn,

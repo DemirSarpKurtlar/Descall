@@ -4,7 +4,9 @@
  *   nested  - keyed messages (same paths as en.js nested)
  *   phrases - English source string -> translation
  */
+import { AMP_RU } from "./profileMediaPicker.ru.js";
 export const nested = {
+  "amp": AMP_RU,
   "activeNow": {
     "emptyBody": "Когда друг появится в сети или запустит игру, музыку или другое приложение, он отобразится здесь.",
     "emptyTitle": "Пока тихо",
@@ -1322,6 +1324,13 @@ export const nested = {
     "voice": "Голосовой звонок"
   },
   "callui": {
+    "share": {
+      "viewers": "Зрителей: {n}",
+      "sharing": "{name} показывает экран",
+      "you": "Ты показываешь свой экран",
+      "fullscreen": "Во весь экран",
+      "people": "Участники звонка"
+    },
     "media": {
       "dmTitle": "Звонок Descall",
       "groupTitle": "Групповой звонок Descall"

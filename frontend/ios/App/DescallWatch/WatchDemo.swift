@@ -2,7 +2,8 @@ import Foundation
 
 /// `-DescallWatchDemo` (CI screenshots, App Store shots): fixed sample data instead of
 /// the iPhone, so the simulator shows every screen without a paired phone or a sign-in.
-/// `-DescallWatchDemoScreen chats|chat|reply|friends|status` picks the first screen.
+/// `-DescallWatchDemoScreen chats|chat|reply|servers|server|friends|status|activity|calls|profile|offline|admin|...`
+/// picks the first screen. `offline` shows cached chats with the iPhone out of reach.
 enum WatchDemo {
     static var screen: String? {
         let args = ProcessInfo.processInfo.arguments
@@ -11,6 +12,14 @@ enum WatchDemo {
     }
 
     static let chatRoute = ChatRoute(conv: "dm:demo-ayse", title: "Ayşe")
+    static let serverId = "demo-srv-1"
+    static var isOffline: Bool { screen == "offline" }
+
+    /// Offline demo: the chats list as if it came from the cache 7 minutes ago.
+    static var offlineHome: Loadable<WatchHome> {
+        guard let home = try? JSONDecoder().decode(WatchHome.self, from: Data(json(for: "/api/watch/home").utf8)) else { return Loadable() }
+        return Loadable(value: home, error: .unreachable, updatedAt: Date().addingTimeInterval(-7 * 60), loading: false, fromCache: true)
+    }
 
     static let demoCase = AdminReportGroup(
         targetId: "demo-troll", targetUsername: "troll42", targetDisplayName: nil, targetAvatarUrl: nil,
@@ -66,8 +75,46 @@ enum WatchDemo {
             ],"onlineCount":3,"offlineCount":12}
             """
         }
+        if path.hasPrefix("/api/watch/servers") {
+            return """
+            {"servers":[
+              {"id":"demo-srv-1","name":"Descall Topluluk","initials":"DT","iconUrl":null,"memberCount":128,"muted":false,"timedOut":false,"channels":[
+                {"conv":"channel:demo-genel","name":"genel","category":"Sohbet"},
+                {"conv":"channel:demo-duyuru","name":"duyurular","category":"Sohbet"},
+                {"conv":"channel:demo-yardim","name":"yardım","category":"Destek"}]},
+              {"id":"demo-srv-2","name":"Ekip","initials":"EK","iconUrl":null,"memberCount":9,"muted":true,"timedOut":false,"channels":[
+                {"conv":"channel:demo-ekip","name":"genel","category":null}]}
+            ]}
+            """
+        }
+        if path.hasPrefix("/api/watch/calls") {
+            return """
+            {"calls":[
+              {"id":"c1","kind":"dm","title":"Ayşe","initials":"AY","avatarUrl":null,"conv":"dm:demo-ayse","direction":"incoming","video":false,"missed":true,"durationSec":0,"at":"\(iso(minutesAgo: 15))"},
+              {"id":"c2","kind":"group","title":"Ekip","initials":"EK","avatarUrl":null,"conv":"group:demo-ekip","direction":"group","video":false,"missed":false,"durationSec":2710,"at":"\(iso(minutesAgo: 120))"},
+              {"id":"c3","kind":"dm","title":"Mert","initials":"ME","avatarUrl":null,"conv":"dm:demo-mert","direction":"outgoing","video":true,"missed":false,"durationSec":325,"at":"\(iso(minutesAgo: 1500))"}
+            ]}
+            """
+        }
+        if path.hasPrefix("/api/watch/activity") {
+            return """
+            {"items":[
+              {"id":"call:c1","type":"missedCall","title":"Ayşe","initials":"AY","avatarUrl":null,"conv":"dm:demo-ayse","at":"\(iso(minutesAgo: 15))"},
+              {"id":"req:1","type":"friendRequest","title":"Zeynep","initials":"ZE","avatarUrl":null,"conv":null,"at":"\(iso(minutesAgo: 45))"},
+              {"id":"req:2","type":"friendRequest","title":"kaan.dev","initials":"KA","avatarUrl":null,"conv":null,"at":"\(iso(minutesAgo: 200))"}
+            ],"requestCount":2,"missedCount":1}
+            """
+        }
         if path.hasPrefix("/api/admin/overview") {
-            return "{\"live\":{\"connected\":42},\"product\":{\"signupsToday\":7,\"newFeedback\":2},\"safety\":{\"openReports\":3},\"health\":{\"level\":\"watch\"}}"
+            return """
+            {"generatedAt":"\(iso(minutesAgo: 0))","health":{"level":"watch"},
+             "live":{"connected":42,"visible":37,"invisible":5,"statusCounts":{"online":28,"idle":6,"dnd":3,"invisible":5}},
+             "product":{"signupsToday":7,"newFeedback":2,"feedbackInProgress":1,"sparkline":[{"date":"d1","signups":4},{"date":"d2","signups":9},{"date":"d3","signups":6},{"date":"d4","signups":12},{"date":"d5","signups":5},{"date":"d6","signups":8},{"date":"d7","signups":7}]},
+             "safety":{"openReports":3,"uniqueTargets":2,"hotTargets":[],"bans":4,"timeouts":1},
+             "system":{"uptime":{"label":"6d 4h","seconds":533000},"maintenance":false,"chatFrozen":false,"rssMb":212,"errorsLastHour":3,"flaggedMessages":1},
+             "newlyJoined":[{"id":"n1","username":"zeynep","displayName":"Zeynep","avatarUrl":null}],
+             "recentAudit":[{"id":"a1","at":"\(iso(minutesAgo: 8))","actor":"demirr","action":"timeout","target":"troll42"},{"id":"a2","at":"\(iso(minutesAgo: 95))","actor":"mod_can","action":"report_resolved","target":"bedava_coin"}]}
+            """
         }
         if path.hasPrefix("/api/admin/reports") {
             return """
@@ -98,6 +145,7 @@ enum WatchDemo {
 final class WatchDemoTransport: WatchTransport {
     func send(method: String, path: String, body: Data?, stepUp: String?) async throws -> Data {
         try await Task.sleep(nanoseconds: 150_000_000)
+        if WatchDemo.isOffline { throw WatchError.unreachable }
         return Data(WatchDemo.json(for: path).utf8)
     }
 }

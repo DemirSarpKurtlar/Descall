@@ -10,6 +10,9 @@ import { BlockListSkeleton } from "../ui/Skeleton";
 import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
+import ProfileAuraPreview from "../shop/ProfileAuraPreview.jsx";
+import ReactionBurstPreview from "../shop/ReactionBurstPreview.jsx";
+import CallOverlayPreview from "../shop/CallOverlayPreview.jsx";
 import { CountryFlag } from "../shop/CountryFlag";
 
 /** Label: t(`adminx.shop.cat.${id}`). */
@@ -727,7 +730,7 @@ export default function AdminShop() {
                     ) : item.category === "presence_flare" ? (
                       <span className={`status-badge status-online cosmetic-presence-flare flare-${item.effect_key}`} style={{ width: 14, height: 14, display: "inline-block", borderRadius: "50%" }} />
                     ) : item.category === "profile_aura" ? (
-                      <div className={`cosmetic-profile-aura aura-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 8, background: "rgba(255,255,255,0.06)" }} />
+                      <ProfileAuraPreview effectKey={item.effect_key} name={item.name} compact />
                     ) : item.category === "sound_pack" ? (
                       <span className="mono" style={{ fontSize: 11 }}>{item.effect_key}</span>
                     ) : item.category === "typing_flare" ? (
@@ -737,11 +740,11 @@ export default function AdminShop() {
                         <span className="typing-dot" style={{ width: 5, height: 5, borderRadius: "50%", display: "inline-block" }} />
                       </div>
                     ) : item.category === "reaction_burst" ? (
-                      <div className={`cosmetic-reaction-burst burst-${item.effect_key}`} style={{ fontSize: 16, display: "inline-flex" }}><Sparkles size={16} /></div>
+                      <ReactionBurstPreview effectKey={item.effect_key} compact />
                     ) : item.category === "profile_color" ? (
                       <div style={{ width: 40, height: 22, borderRadius: 6, background: profileColorSwatch(item) || "rgba(255,255,255,0.06)" }} />
                     ) : item.category === "call_overlay" ? (
-                      <div className={`cosmetic-call-overlay overlay-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 6 }} />
+                      <CallOverlayPreview effectKey={item.effect_key} name={item.name} compact />
                     ) : (
                       <img src={item.preview_url || item.asset_url} alt="" style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 6 }} />
                     )}

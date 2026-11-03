@@ -93,6 +93,12 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
           DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/server-invite
         run: node e2e/serverInvite.e2e.cjs --dist=dist-e2e
+      - name: Settings profile card e2e (desktop + iPhone, dark + light)
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          CHROME_PATH: /usr/bin/google-chrome
+          DESCALL_E2E_SHOTS: ${{ runner.temp }}/e2e-msg-shots/settings-card
+        run: node e2e/settingsProfileCard.e2e.cjs --dist=dist-e2e
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -140,6 +146,7 @@ jobs:
           node src/lib/glassDesktop.selftest.mjs
           node src/lib/glassBreakpoints.selftest.mjs
           node src/styles/cosmeticPrecedence.selftest.mjs
+          node src/styles/defaultBubbleGlass.selftest.mjs
           node src/lib/hookDepsTdz.selftest.mjs
           node src/styles/list-card-padding.selftest.mjs
           node src/styles/call-glass.selftest.mjs
