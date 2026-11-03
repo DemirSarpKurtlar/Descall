@@ -1,4 +1,4 @@
-// 3.7.34 default message bubble "Logo Mavisi Cam" (design/bubble-mockups/02).
+// Default (Nov 3 2026) message bubble "Logo Mavisi Cam" (design/bubble-mockups/02).
 //  - only bubbles without an equipped catalog bubble are painted;
 //  - fills are >= 0.94 opaque (no see-through), no backdrop-filter per bubble;
 //  - Reduce Transparency / a11y-solid / gd-lite get a flat opaque fill;
