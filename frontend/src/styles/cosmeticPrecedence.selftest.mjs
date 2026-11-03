@@ -11,7 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const read = (p) => readFileSync(join(here, p), "utf8");
 
 // Bubbles: every glass rule that paints a .message-bubble background must skip cosmetics.
-for (const file of ["glass-desktop/chat.css", "glass/chat.css"]) {
+for (const file of ["glass-desktop/chat.css", "glass/chat.css", "default-bubble-glass.css"]) {
   const css = read(file);
   for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
     const sel = m[1].trim();
