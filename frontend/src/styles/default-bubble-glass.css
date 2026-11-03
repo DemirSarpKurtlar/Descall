@@ -1,0 +1,104 @@
+/* Default message bubble: "Logo Mavisi Cam" (3.7.34, owner pick from
+   design/bubble-mockups/02). Applies only when the sender has NO catalog
+   bubble equipped (.cosmetic-chat-bubble always wins) and never to media-only
+   bubbles. Desktop/web/Electron (html.glass-desktop) and iPhone (html.glass-ui).
+
+   Readability rule: the fill is >= 0.94 opaque, so nothing behind a bubble
+   shows through. No backdrop-filter: at this opacity a blur is invisible and
+   would cost one compositing layer per bubble while scrolling. The "glass"
+   is the tinted gradient, a hairline edge and a top sheen.
+   Reduce Transparency / gd-lite / a11y-solid: flat opaque fill, no sheen. */
+
+:root {
+  --dbub-in: linear-gradient(180deg, rgba(50, 56, 74, 0.94), rgba(40, 44, 58, 0.94));
+  --dbub-in-solid: #2E3242;
+  --dbub-in-ink: #F2F3F5;
+  --dbub-own: linear-gradient(160deg,
+    rgba(var(--g-brand-rgb, 79, 124, 255), 0.94),
+    color-mix(in srgb, rgb(var(--g-brand-rgb, 79, 124, 255)) 80%, #0c1640) 100%);
+  --dbub-own-solid: color-mix(in srgb, rgb(var(--g-brand-rgb, 79, 124, 255)) 88%, #0c1640);
+  --dbub-own-ink: #FFFFFF;
+  --dbub-own-ink-2: rgba(255, 255, 255, 0.74);
+  --dbub-edge: rgba(var(--g-brand-rgb, 79, 124, 255), 0.22);
+  --dbub-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+  --dbub-own-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+  --dbub-lift: 0 4px 14px rgba(var(--g-brand-rgb, 79, 124, 255), 0.16);
+}
+
+html[data-theme="light"] {
+  --dbub-in: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 255, 0.96));
+  --dbub-in-solid: #FFFFFF;
+  --dbub-in-ink: #2E3338;
+  --dbub-edge: rgba(var(--g-brand-rgb, 79, 124, 255), 0.20);
+  --dbub-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --dbub-own-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  --dbub-lift: 0 4px 14px rgba(var(--g-brand-rgb, 79, 124, 255), 0.14);
+}
+
+/* Incoming */
+html.glass-desktop .message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only),
+html.glass-ui .app-root.g-shell .message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only) {
+  background: var(--dbub-in) !important;
+  color: var(--dbub-in-ink);
+  border: 0.5px solid var(--dbub-edge);
+  box-shadow: var(--dbub-sheen), var(--dbub-lift);
+}
+
+/* Own */
+html.glass-desktop .message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only),
+html.glass-ui .app-root.g-shell .message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only) {
+  background: var(--dbub-own) !important;
+  color: var(--dbub-own-ink);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: var(--dbub-own-sheen), var(--dbub-lift);
+}
+
+/* Ink inside an own (blue) bubble: white text, soft white meta. */
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) :is(.message-text, .message-reply-author, .msg-link) {
+  color: var(--dbub-own-ink) !important;
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) :is(.message-footer, .message-status, .message-timestamp, .msg-edited, .message-reply-text) {
+  color: var(--dbub-own-ink-2) !important;
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-mention {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .message-reply-quote {
+  background: rgba(255, 255, 255, 0.16);
+  border-left-color: rgba(255, 255, 255, 0.85);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble:not(.own):not(.cosmetic-chat-bubble) .message-text {
+  color: var(--dbub-in-ink);
+}
+
+/* Editing / pressed states keep their own ring on top of the sheen. */
+html.glass-ui .app-root.g-shell .message-bubble.is-editing:not(.cosmetic-chat-bubble) {
+  box-shadow: inset 0 0 0 1.5px rgba(143, 166, 255, 0.9), var(--dbub-lift);
+}
+html.glass-ui .app-root.g-shell .message-bubble.own.is-editing:not(.cosmetic-chat-bubble) {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.8), var(--dbub-lift);
+}
+
+/* Reduce Transparency (native → html.a11y-solid), low-power gd-lite, OS query:
+   flat opaque fill, no sheen, no lift. Scoped to the glass UIs only. */
+html:is(.a11y-solid, .gd-lite):is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only) {
+  background: var(--dbub-in-solid) !important;
+  box-shadow: none !important;
+}
+html:is(.a11y-solid, .gd-lite):is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only) {
+  background: var(--dbub-own-solid) !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  html:is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only) {
+    background: var(--dbub-in-solid) !important;
+    box-shadow: none !important;
+  }
+  html:is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only) {
+    background: var(--dbub-own-solid) !important;
+  }
+}
