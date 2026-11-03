@@ -1,4 +1,5 @@
-import { Phone, Check } from "../ui/Icon.jsx";
+import { Check } from "../ui/Icon.jsx";
+import CallOverlayPreview from "../shop/CallOverlayPreview.jsx";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import ParallaxBanner from "../ui/ParallaxBanner";
@@ -129,9 +130,7 @@ export default function ShopProfilePreview({ me, t }) {
                     <ReactionBurstPreview effectKey={reaction.effect_key} compact />
                   ) : null}
                   {callOverlay ? (
-                    <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${callOverlay.effect_key}`}>
-                      <Phone size={14} />
-                    </div>
+                    <CallOverlayPreview effectKey={callOverlay.effect_key} name={displayName} compact />
                   ) : null}
                 </div>
               )}

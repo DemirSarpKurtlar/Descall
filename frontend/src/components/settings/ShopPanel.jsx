@@ -45,6 +45,8 @@ import InviteCard from "../friends/InviteCard";
 import { ShopGridSkeleton, SkeletonImage } from "../ui/Skeleton";
 import ShopProfilePreview from "./ShopProfilePreview";
 import ReactionBurstPreview from "../shop/ReactionBurstPreview.jsx";
+import ProfileAuraPreview from "../shop/ProfileAuraPreview.jsx";
+import CallOverlayPreview from "../shop/CallOverlayPreview.jsx";
 import { GLASS_THEME_SCENE_SKUS } from "../../lib/glassThemeScenes";
 import { SHOP_CATEGORY_TABS, visibleShopTabs, visibleShopItems } from "../../lib/shopCategories.js";
 import { localizeShopItem } from "../../lib/shopItemI18n.js";
@@ -143,9 +145,7 @@ function ShopItemPreview({ category, item, t, name }) {
   }
   if (category === "profile_aura") {
     return (
-      <div className={`shop-profile-aura-preview cosmetic-profile-aura aura-${item.effect_key}`}>
-        <Sparkles size={18} />
-      </div>
+      <ProfileAuraPreview effectKey={item.effect_key} name={name} />
     );
   }
   if (category === "typing_flare") {
@@ -164,9 +164,7 @@ function ShopItemPreview({ category, item, t, name }) {
   }
   if (category === "call_overlay") {
     return (
-      <div className={`shop-call-overlay-preview cosmetic-call-overlay overlay-${item.effect_key}`}>
-        <Phone size={18} />
-      </div>
+      <CallOverlayPreview effectKey={item.effect_key} name={name} />
     );
   }
   if (category === "profile_color") {

@@ -469,3 +469,97 @@
   backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* ── Live shop previews: profile auras + call overlays (ProfileAuraPreview /
+   CallOverlayPreview). Real cosmetic classes; motion is transform/opacity only,
+   driven by the shared visible-only preview loop. ─────────────────────── */
+.shop-profile-aura-preview.spa-live {
+  width: 100%;
+  height: 100%;
+  min-height: 72px;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.04), transparent 70%);
+  contain: layout style;
+}
+.spa-live .spa-stage { position: relative; width: 112px; height: 58px; }
+.spa-live .spa-card,
+.spa-live .spa-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+.spa-live .spa-card {
+  overflow: hidden;
+  background-color: #171925;
+  display: block;
+}
+.spa-live .spa-glow { opacity: 0; pointer-events: none; }
+.spa-live .spa-banner { position: absolute; inset: 0 0 auto 0; height: 22px; background: linear-gradient(120deg,#3b2a6e,#5a4bd8 60%,#7d97ff); }
+.spa-live .spa-av {
+  position: absolute; left: 10px; top: 12px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font: 700 11px/1 inherit; color: #fff;
+  background: #2b2f45; box-shadow: 0 0 0 3px #171925;
+}
+.spa-live .spa-line { position: absolute; left: 10px; top: 40px; width: 58px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.28); }
+.spa-live .spa-line.is-short { left: 72px; width: 26px; background: rgba(255,255,255,0.14); }
+.spa-live .spa-card.is-pulse { animation: spa-lift 1.6s cubic-bezier(.22,1,.36,1) both; }
+.spa-live .spa-glow.is-pulse { animation: spa-breathe 1.6s cubic-bezier(.22,1,.36,1) both; }
+@keyframes spa-lift { 0%,100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-1px) scale(1.035); } }
+@keyframes spa-breathe { 0% { opacity: 0; transform: scale(1); } 40% { opacity: 1; transform: scale(1.06); } 100% { opacity: 0; transform: scale(1.1); } }
+.shop-profile-aura-preview.spa-live.is-compact { min-height: 0; width: auto; height: auto; background: none; }
+.spa-live.is-compact .spa-stage { width: 72px; height: 38px; }
+.spa-live.is-compact .spa-banner { height: 14px; }
+.spa-live.is-compact .spa-av { top: 7px; left: 7px; width: 16px; height: 16px; font-size: 8px; box-shadow: 0 0 0 2px #171925; }
+.spa-live.is-compact .spa-line { top: 27px; left: 7px; width: 36px; height: 4px; }
+.spa-live.is-compact .spa-line.is-short { left: 46px; width: 16px; }
+
+.shop-call-overlay-preview.sco-live {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 72px;
+  padding: 8px 10px 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 0;
+  border: 0;
+  background-color: #0f1115;
+  align-items: stretch;
+  contain: layout style paint;
+}
+.sco-live .sco-tiles { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sco-live .sco-tile {
+  position: relative; display: grid; place-items: center; border-radius: 8px;
+  background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+  transition: box-shadow .3s ease;
+}
+.sco-live .sco-tile.is-speaking { box-shadow: inset 0 0 0 1.5px #4ade80, 0 0 12px rgba(74,222,128,0.22); }
+.sco-live .sco-av {
+  position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 11px/1 inherit; color: #fff; background: #3b3f5c;
+}
+.sco-live .sco-av.is-b { background: #8a4b6e; }
+.sco-live .sco-ring {
+  position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(74,222,128,0.7); opacity: 0;
+  animation: sco-speak 1.5s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes sco-speak { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.9); } }
+.sco-live .sco-bar {
+  position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+  display: flex; gap: 5px; padding: 3px 6px; border-radius: 999px;
+  background: rgba(0,0,0,0.35); border-top: 1px solid rgba(255,255,255,0.08);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.sco-live .sco-bar i { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.22); }
+.sco-live .sco-bar i.is-end { width: 18px; border-radius: 999px; background: #ef4444; }
+.shop-call-overlay-preview.sco-live.is-compact { width: 56px; height: 36px; min-height: 0; padding: 4px; border-radius: 8px; }
+.sco-live.is-compact .sco-tiles { grid-template-columns: 1fr; }
+.sco-live.is-compact .sco-av { width: 16px; height: 16px; font-size: 8px; }
+
+/* Reduced motion / still frame: no pulses, speaking state shown statically. */
+.spa-live.is-still .spa-card, .spa-live.is-still .spa-glow,
+.sco-live.is-still .sco-ring { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .spa-live .spa-card, .spa-live .spa-glow, .sco-live .sco-ring { animation: none !important; }
+  .sco-live .sco-tile { transition: none; }
+}
