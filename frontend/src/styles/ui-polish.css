@@ -2349,6 +2349,95 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   color: #fff;
   background: rgba(255, 255, 255, 0.05);
 }
+/* 3.7.31: server invite + vanity landing actions (were unstyled browser buttons). */
+.invite-landing-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+.invite-landing-btn {
+  flex: 1 1 0;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, background 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.invite-landing-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.invite-landing-btn.primary {
+  background: #5865f2;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(88, 101, 242, 0.35);
+}
+.invite-landing-btn.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.invite-landing-btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e3e5e8;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+}
+.invite-landing-btn.ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
+}
+.invite-landing-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.invite-landing-btn:focus-visible {
+  outline: 2px solid #8ea1ff;
+  outline-offset: 2px;
+}
+.invite-landing-desc {
+  margin: -6px 0 16px;
+  color: #b5bac1;
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: left;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.invite-landing-hint {
+  margin: 12px 0 0;
+  color: #949ba4;
+  font-size: 12px;
+}
+.invite-landing-state.error {
+  color: #f2f3f5;
+  text-align: center;
+}
+.invite-landing-state.error > svg {
+  color: #ed4245;
+}
+.invite-landing-state.error > strong {
+  font-size: 16px;
+}
+.invite-landing-state.error > span {
+  color: #b5bac1;
+  font-size: 13px;
+}
+.invite-landing-state .invite-landing-actions {
+  margin-top: 10px;
+}
+@media (max-width: 380px) {
+  .invite-landing-actions {
+    flex-direction: column-reverse;
+  }
+}
 .spin {
   animation: invite-spin 0.9s linear infinite;
 }

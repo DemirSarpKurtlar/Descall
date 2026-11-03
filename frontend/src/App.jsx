@@ -9,6 +9,14 @@ import AuthView from "./components/AuthView";
 import AppLayout from "./components/layout/AppLayout";
 import GroupInviteLanding from "./components/groups/GroupInviteLanding";
 import ServerVanityLanding from "./components/servers/ServerVanityLanding";
+import ServerInviteLanding from "./components/servers/ServerInviteLanding";
+import {
+  parseServerInviteFromLocation,
+  serverInvitePath,
+  takePendingServerInvite,
+  peekPendingServerInvite,
+  clearPendingServerInvite,
+} from "./lib/serverInviteRoute";
 import MarketingApp from "./site/MarketingApp";
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
@@ -487,6 +495,16 @@ export default function App() {
   const [inviteAuthOpen, setInviteAuthOpen] = useState(false);
   const [serverVanitySlug, setServerVanitySlug] = useState(() => parseServerVanityFromLocation());
   const [serverVanityAuthOpen, setServerVanityAuthOpen] = useState(false);
+  // 3.7.31: server invite links (/servers/join/:code). Kept in state (not
+  // derived from the URL) so the app's own route effects can't drop it.
+  const [serverInviteCode, setServerInviteCode] = useState(() => {
+    try {
+      return parseServerInviteFromLocation(window.location);
+    } catch {
+      return null;
+    }
+  });
+  const [serverInviteAuthOpen, setServerInviteAuthOpen] = useState(false);
   const [activeTimeout, setActiveTimeout] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [myStatus, setMyStatus] = useState(() => {
@@ -3513,7 +3531,11 @@ export default function App() {
     // Skip when a group invite deep-link is pending.
     try {
       const justRegistered = sessionStorage.getItem("descall:justRegistered") === "1";
-      const pendingGroupInvite = Boolean(inviteCode) || Boolean(sessionStorage.getItem("descall:pendingInvite"));
+      const pendingGroupInvite =
+        Boolean(inviteCode) ||
+        Boolean(sessionStorage.getItem("descall:pendingInvite")) ||
+        Boolean(serverInviteCode) ||
+        Boolean(peekPendingServerInvite());
       if (justRegistered && !pendingGroupInvite) {
         sessionStorage.removeItem("descall:justRegistered");
         navigate("/friends", { replace: true });
@@ -4436,10 +4458,27 @@ export default function App() {
     };
   }, []);
 
+  // In-app navigation to an invite URL (iOS deep link → navigate, chat links).
+  useEffect(() => {
+    const code = parseServerInviteFromLocation(location);
+    if (code) {
+      setServerInviteCode((prev) => (prev === code ? prev : code));
+      setServerInviteAuthOpen(false);
+    }
+  }, [location.pathname, location.search]);
+
   // After login, resume a pending group invite or server vanity link
   useEffect(() => {
     if (!me?.id) return;
     try {
+      const pendingServerInvite = takePendingServerInvite();
+      if (pendingServerInvite) {
+        setServerInviteCode(pendingServerInvite);
+        setServerInviteAuthOpen(false);
+        const nextPath = serverInvitePath(pendingServerInvite);
+        if (nextPath && location.pathname !== nextPath) navigate(nextPath, { replace: true });
+        return;
+      }
       const pendingVanity = sessionStorage.getItem("descall:pendingServerVanity");
       if (pendingVanity) {
         sessionStorage.removeItem("descall:pendingServerVanity");
@@ -4570,6 +4609,58 @@ export default function App() {
     };
   }, [handleInviteJoined, location.pathname, navigate]);
 
+  const finishServerInvite = useCallback(() => {
+    clearPendingServerInvite();
+    setServerInviteCode(null);
+    setServerInviteAuthOpen(false);
+  }, []);
+
+  const handleServerInviteJoined = useCallback(
+    (server) => {
+      finishServerInvite();
+      if (!server?.id) {
+        navigate("/servers", { replace: true });
+        return;
+      }
+      setMyServers((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        if (list.some((s) => s.id === server.id)) {
+          return list.map((s) => (s.id === server.id ? { ...s, ...server } : s));
+        }
+        return [...list, server];
+      });
+      setActiveDmUser(null);
+      setActiveGroup(null);
+      setActiveServer(server);
+      setActiveChannel(null);
+      setActiveView("servers");
+      try {
+        navigate(serverPath(server), { replace: true });
+      } catch {
+        /* ignore */
+      }
+    },
+    [finishServerInvite, navigate]
+  );
+
+  const dismissServerInvite = useCallback(() => {
+    finishServerInvite();
+    navigate(me ? "/servers" : "/", { replace: true });
+  }, [finishServerInvite, navigate, me]);
+
+  const openServerInviteAuth = useCallback(
+    (mode) => {
+      setServerInviteAuthOpen(true);
+      const isElectronDesktop = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+      // Native / desktop render AuthView directly; the web site opens its
+      // login / sign-up dialog from the route. The code waits in the pending slot.
+      if (!Capacitor.isNativePlatform() && !isElectronDesktop) {
+        navigate(mode === "register" ? "/register" : "/login");
+      }
+    },
+    [navigate]
+  );
+
   const dismissServerVanity = useCallback(() => {
     try {
       sessionStorage.removeItem("descall:pendingServerVanity");
@@ -4612,6 +4703,23 @@ export default function App() {
       <>
         <TitleBar />
         <AppBootSkeleton />
+      </>
+    );
+  }
+
+  // Server invite landing (/servers/join/:code): preview + join, logged in or out.
+  if (serverInviteCode && !(serverInviteAuthOpen && !me)) {
+    return (
+      <>
+        <SeoHead forceNoindex title={t("core.seo.serverInviteTitle")} description={t("core.seo.serverInviteDesc")} />
+        <TitleBar />
+        <ServerInviteLanding
+          code={serverInviteCode}
+          me={me}
+          onJoined={handleServerInviteJoined}
+          onNeedAuth={openServerInviteAuth}
+          onDismiss={dismissServerInvite}
+        />
       </>
     );
   }

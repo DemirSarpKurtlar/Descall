@@ -1910,7 +1910,7 @@ function rejectJoinRate(req, res, kind = "join") {
   const ip = req.ip || "";
   const results =
     kind === "lookup"
-      ? [recordFailure(`server-invite-lookup:user:${uid}`, INVITE_LOOKUP_LIMIT)]
+      ? [recordFailure(uid ? `server-invite-lookup:user:${uid}` : `server-invite-lookup:ip:${ip}`, INVITE_LOOKUP_LIMIT)]
       : kind === "discover"
         ? [recordFailure(`server-discover:user:${uid}`, DISCOVER_LIMIT)]
         : [
@@ -2066,9 +2066,39 @@ router.get("/discover", requireAuth, async (req, res) => {
 
 
 /**
- * GET /servers/invites/:code — public invite preview (auth optional but requireAuth for consistency)
+ * Invite / vanity previews are public: a logged-out visitor opening a
+ * descall.com/servers/join/:code link must see the server before signing in
+ * (3.7.31: they were bounced to the home page). A Bearer token, when sent, is
+ * still fully verified (invalid → 401) so members get isMember.
  */
-router.get("/invites/:code", requireAuth, async (req, res) => {
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization || "";
+  if (header.startsWith("Bearer ")) return requireAuth(req, res, next);
+  req.user = null;
+  return next();
+}
+
+/** Logged-out preview: only what the invite card shows. */
+function anonymousServerPreview(server, extra) {
+  return {
+    id: server.id,
+    name: server.name,
+    iconUrl: server.icon_url || null,
+    bannerUrl: server.banner_url || null,
+    splashUrl: server.splash_url || null,
+    description: server.description || null,
+    vanitySlug: server.vanity_slug || null,
+    verificationLevel: server.verification_level || "none",
+    isMember: false,
+    isOwner: false,
+    ...extra,
+  };
+}
+
+/**
+ * GET /servers/invites/:code — public invite preview (auth optional)
+ */
+router.get("/invites/:code", optionalAuth, async (req, res) => {
   try {
     const code = String(req.params.code || "").trim();
     if (!code) return res.status(400).json({ error: "Invite code is required." });
@@ -2103,7 +2133,8 @@ router.get("/invites/:code", requireAuth, async (req, res) => {
       .select("user_id", { count: "exact", head: true })
       .eq("server_id", server.id);
 
-    const membership = await getMembership(server.id, req.user.id);
+    const viewerId = req.user?.id || null;
+    const membership = viewerId ? await getMembership(server.id, viewerId) : null;
     const extras = await invitePreviewExtras(supabase, {
       serverId: server.id,
       creatorId: invite.creator_id || null,
@@ -2111,13 +2142,21 @@ router.get("/invites/:code", requireAuth, async (req, res) => {
       io: req.app.get("io"),
     });
 
+    if (!viewerId) {
+      const inv = publicInvite(invite, req);
+      return res.json({
+        invite: { code: inv.code, url: inv.url, expiresAt: inv.expiresAt, inviter: extras.inviter },
+        server: anonymousServerPreview(server, { onlineCount: extras.onlineCount, memberCount: count || 1 }),
+      });
+    }
+
     return res.json({
       invite: { ...publicInvite(invite, req), inviter: extras.inviter },
       server: publicServer(server, {
         onlineCount: extras.onlineCount,
         memberCount: count || 1,
         isMember: Boolean(membership),
-        isOwner: server.owner_id === req.user.id,
+        isOwner: server.owner_id === viewerId,
         rulesAcceptedAt: membership?.rules_accepted_at || null,
         needsRulesAccept:
           Boolean(server.community_enabled) &&
@@ -2310,7 +2349,7 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
 /**
  * GET /servers/vanity/:slug — vanity URL preview (must be registered before /:id)
  */
-router.get("/vanity/:slug", requireAuth, async (req, res) => {
+router.get("/vanity/:slug", optionalAuth, async (req, res) => {
   try {
     if (rejectJoinRate(req, res, "lookup")) return;
     let slug;
@@ -2337,8 +2376,16 @@ router.get("/vanity/:slug", requireAuth, async (req, res) => {
       .select("user_id", { count: "exact", head: true })
       .eq("server_id", server.id);
 
-    const membership = await getMembership(server.id, req.user.id);
+    const viewerId = req.user?.id || null;
+    const membership = viewerId ? await getMembership(server.id, viewerId) : null;
     const extras = await invitePreviewExtras(supabase, { serverId: server.id, presence: livePresence, io: req.app.get("io") });
+
+    if (!viewerId) {
+      return res.json({
+        vanity: { slug, url: publicVanityUrl(req, slug) },
+        server: anonymousServerPreview(server, { onlineCount: extras.onlineCount, memberCount: count || 1 }),
+      });
+    }
 
     return res.json({
       vanity: { slug, url: publicVanityUrl(req, slug) },
@@ -2346,7 +2393,7 @@ router.get("/vanity/:slug", requireAuth, async (req, res) => {
         onlineCount: extras.onlineCount,
         memberCount: count || 1,
         isMember: Boolean(membership),
-        isOwner: server.owner_id === req.user.id,
+        isOwner: server.owner_id === viewerId,
         rulesAcceptedAt: membership?.rules_accepted_at || null,
         needsRulesAccept:
           Boolean(server.community_enabled) &&
