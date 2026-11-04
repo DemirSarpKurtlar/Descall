@@ -11,6 +11,10 @@ const VID_RE = /^[a-zA-Z0-9_-]{8,64}$/;
 
 const PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
 
+// Round-trips of our own flow (our pages, Google/Apple OAuth screens) must not
+// overwrite last-touch when they carry no new marketing signal.
+const PASS_THROUGH = /\/\/[^/]*(accounts\.google|appleid\.apple|descall\.com)/;
+
 function readJson(key, storage) {
   if (!storage) return null;
   try {
@@ -41,36 +45,17 @@ export function collectSnapshotFromLocation({
 } = {}) {
   const params = new URLSearchParams(search.startsWith("?") ? search : search ? `?${search}` : "");
   const snap = {
-    utm_source: "",
-    utm_medium: "",
-    utm_campaign: "",
-    utm_term: "",
-    utm_content: "",
-    gclid: "",
-    fbclid: "",
     referrer: String(referrer || ""),
     landing_page: String(href || "").split("#")[0],
     landing_path: String(pathname || "/") || "/",
     captured_at: now,
   };
-  for (const key of PARAMS) {
-    const value = params.get(key);
-    if (value) snap[key] = value;
-  }
+  for (const key of PARAMS) snap[key] = params.get(key) || "";
   return snap;
 }
 
 export function hasMarketingSignal(snap) {
-  if (!snap || typeof snap !== "object") return false;
-  return Boolean(
-    snap.gclid ||
-      snap.fbclid ||
-      snap.utm_source ||
-      snap.utm_medium ||
-      snap.utm_campaign ||
-      snap.utm_term ||
-      snap.utm_content
-  );
+  return Boolean(snap && typeof snap === "object" && PARAMS.some((k) => snap[k]));
 }
 
 export function getVisitorKey(env = typeof window !== "undefined" ? window : null) {
@@ -104,11 +89,8 @@ export function captureVisit(env = typeof window !== "undefined" ? window : null
     });
     const localStorage = env.localStorage;
     const sessionStorage = env.sessionStorage;
-    const existingFirst = readJson(FIRST_KEY, localStorage);
-    if (!existingFirst) writeJson(FIRST_KEY, incoming, localStorage);
-    // Last touch always follows the latest landing so a later Direct visit
-    // is stored separately from a first-touch Ads click.
-    writeJson(LAST_KEY, incoming, localStorage);
+    if (!readJson(FIRST_KEY, localStorage)) writeJson(FIRST_KEY, incoming, localStorage);
+    if (hasMarketingSignal(incoming) || !PASS_THROUGH.test(incoming.referrer)) writeJson(LAST_KEY, incoming, localStorage);
     try {
       sessionStorage?.setItem(SESSION_KEY, "1");
     } catch {

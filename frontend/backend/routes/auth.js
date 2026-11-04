@@ -96,6 +96,8 @@ async function secondFactorGate(res, user) {
   return true;
 }
 
+const { buildSignupSourceColumns, inviteFromPath } = require("../lib/signupSourceTaxonomy");
+
 async function insertUserWithAttribution(basePayload, selectCols, attribution, authMethod, extra = {}) {
   const attributionColumns = buildUserAttributionColumns({
     attribution,
@@ -106,7 +108,30 @@ async function insertUserWithAttribution(basePayload, selectCols, attribution, a
   const visitorKey = sanitizeVisitorKey(attribution?.visitorKey);
   const full = { ...basePayload, ...attributionColumns };
   if (visitorKey) full.signup_visitor_key = visitorKey;
-  const first = await supabase.from("users").insert(full).select(selectCols).single();
+  let sourceColumns = null;
+  try {
+    const snap = attribution && typeof attribution === "object" ? attribution.first || attribution : {};
+    sourceColumns = buildSignupSourceColumns({
+      snapshot: {
+        ...snap,
+        invite_kind:
+          inviteFromPath(snap?.landing_page || snap?.landing_path) ||
+          inviteFromPath(attribution?.last?.landing_page || attribution?.last?.landing_path) ||
+          "",
+      },
+      invitedBy: extra.invitedBy,
+      userAgent: extra.req?.headers?.["user-agent"] || "",
+    });
+  } catch {
+    sourceColumns = null;
+  }
+  let first = sourceColumns
+    ? await supabase.from("users").insert({ ...full, ...sourceColumns }).select(selectCols).single()
+    : { error: { code: "42703", message: "skip" } };
+  if (first.error && isMissingColumnError(first.error)) {
+    // Granular source columns not migrated yet: keep the legacy attribution.
+    first = await supabase.from("users").insert(full).select(selectCols).single();
+  }
   if (first.error && isMissingColumnError(first.error)) {
     console.warn("[AUTH] attribution columns missing; creating user without them");
     const fallback = await supabase.from("users").insert(basePayload).select(selectCols).single();
