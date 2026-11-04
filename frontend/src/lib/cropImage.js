@@ -114,3 +114,29 @@ export async function getRotatedCroppedImageFile(imageSrc, pixelCrop, rotation =
   });
   return new File([blob], fileName, { type: mimeType, lastModified: Date.now() });
 }
+
+/**
+ * Crop rectangle that reaches past the picture (picker zoomed out to "contain"). Draws the
+ * whole picture at its offset inside the frame instead of using an out-of-bounds source
+ * rectangle (Safari/WKWebView drew nothing for those). The margin stays transparent, so use
+ * PNG/WebP output.
+ */
+export async function getPaddedCroppedImageFile(imageSrc, pixelCrop, opts = {}) {
+  const { mimeType = "image/png", quality = 0.92, fileName = "crop.png", maxSize = 1024 } = opts;
+  const image = await loadImage(imageSrc);
+  const cropW = Math.max(1, Math.round(pixelCrop.width));
+  const cropH = Math.max(1, Math.round(pixelCrop.height));
+  const scale = Math.min(1, maxSize / Math.max(cropW, cropH));
+  const out = document.createElement("canvas");
+  out.width = Math.max(1, Math.round(cropW * scale));
+  out.height = Math.max(1, Math.round(cropH * scale));
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(image, -pixelCrop.x * scale, -pixelCrop.y * scale, image.naturalWidth * scale, image.naturalHeight * scale);
+  const blob = await new Promise((resolve, reject) => {
+    out.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to crop image"))), mimeType, quality);
+  });
+  return new File([blob], fileName, { type: mimeType, lastModified: Date.now() });
+}

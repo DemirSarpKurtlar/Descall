@@ -5,6 +5,8 @@ import { Search, X, TrendingUp, Loader2 } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
+import { masonryColumns, masonryColumnCount, giphyThumb, gifRatio } from "../../lib/gifMasonry";
+import "../../styles/gif-masonry.css";
 
 export const GIPHY_API_KEY = "dtgxSdCkeVkjYcEeEpSYlqP4mmv4LQgi";
 const GIPHY_API_URL = "https://api.giphy.com/v1/gifs";
@@ -30,6 +32,9 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
   const [panelPos, setPanelPos] = useState({ bottom: 72, left: 16, width: 400 });
   const searchInputRef = useRef(null);
   const panelRef = useRef(null);
+  // Masonry column count follows the grid's real width (2 on a phone sheet, 3 in the popover).
+  const gridRef = useRef(null);
+  const [gridCols, setGridCols] = useState(3);
 
   const fetchTrending = useCallback(async () => {
     setLoading(true);
@@ -135,6 +140,17 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!isOpen || !el) return undefined;
+    const measure = () => setGridCols(masonryColumnCount(el.clientWidth - 20, { target: 150, min: 2, max: 4 }));
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isOpen, loading, gifs.length]);
 
   const handleSelect = (gif) => {
     const gifUrl = gif.images?.fixed_height?.url || gif.images?.original?.url;
@@ -261,7 +277,7 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
               </button>
             </div>
 
-            <div className="giphy-grid">
+            <div className="giphy-grid" ref={gridRef}>
               {loading ? (
                 <div className="giphy-state">
                   <Loader2 size={26} className="giphy-spin" />
@@ -277,27 +293,34 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
               ) : gifs.length === 0 ? (
                 <div className="giphy-state">{t("No GIFs found. Try another search.")}</div>
               ) : (
-                gifs.map((gif) => (
-                  <button
-                    key={gif.id}
-                    type="button"
-                    className="giphy-cell"
-                    title={gif.title} aria-label={gif.title}
-                    onClick={() => handleSelect(gif)}
-                  >
-                    <img
-                      src={
-                        gif.images?.fixed_width_small?.url ||
-                        gif.images?.fixed_height_small?.url ||
-                        gif.images?.preview_gif?.url
-                      }
-                      alt={gif.title || "GIF"}
-                      loading="lazy"
-                      decoding="async"
-                      draggable={false}
-                    />
-                  </button>
-                ))
+                /* Masonry by each GIF's real GIPHY width/height: constant gaps, no holes. */
+                <div className="gif-masonry giphy-masonry">
+                  {masonryColumns(gifs, gridCols, (gif) => gifRatio(giphyThumb(gif))).map((col, ci) => (
+                    <div className="gif-masonry-col" key={ci}>
+                      {col.map(({ item: gif, ratio }) => {
+                        const thumb = giphyThumb(gif);
+                        return (
+                          <button
+                            key={gif.id}
+                            type="button"
+                            className="giphy-cell"
+                            style={{ paddingBottom: `${(ratio * 100).toFixed(3)}%` }}
+                            title={gif.title} aria-label={gif.title}
+                            onClick={() => handleSelect(gif)}
+                          >
+                            <img
+                              src={thumb.url}
+                              alt={gif.title || "GIF"}
+                              loading="lazy"
+                              decoding="async"
+                              draggable={false}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 

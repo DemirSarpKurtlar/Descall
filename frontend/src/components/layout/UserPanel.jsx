@@ -1056,7 +1056,9 @@ const UserPanel = forwardRef(function UserPanel({
     setCustomStatus(keep ? keep.customStatus : me.customStatus || me.custom_status || "");
     setAvatarUrl(me.avatarUrl || me.avatar_url || "");
     setBannerUrl(me.bannerUrl || me.banner_url || "");
-  }, [me?.id, me?.avatarUrl, me?.avatar_url, me?.displayName, me?.display_name, me?.updated_at]);
+  // bannerUrl is listed too: PUT /api/user/profile does not bump updated_at for a banner-only
+  // change, so a new banner arriving from the server (socket / another device) never reached this state.
+  }, [me?.id, me?.avatarUrl, me?.avatar_url, me?.displayName, me?.display_name, me?.updated_at, me?.bannerUrl, me?.banner_url]);
 
   // An equipped shop banner always takes precedence over a manually-set URL —
   // matches how the rest of the app (UserProfileModal, message list) renders it.
@@ -1098,9 +1100,15 @@ const UserPanel = forwardRef(function UserPanel({
     keepDraftsRef.current = { displayName, bio, customStatus };
   };
 
+  // Latest saved profile for async saves: the picker saves avatar THEN banner in one go, and the
+  // banner request used to send the pre-save avatar from the render closure (and vice versa).
+  const meRef = useRef(me);
+  meRef.current = me;
+
   /** Save only photo/banner changes on top of the SAVED profile (never unsaved text drafts). */
   const persistProfilePatch = async (patch) => {
     const token = getToken();
+    const me = meRef.current;
     const body = {
       displayName: me?.displayName || me?.display_name || null,
       bio: me?.bio || "",
@@ -1148,6 +1156,29 @@ const UserPanel = forwardRef(function UserPanel({
     }
   };
 
+  /**
+   * Make an uploaded banner the one everybody sees (picker + old flow).
+   * A shop banner paints over a custom URL, so it is unequipped FIRST: the profile save and its
+   * socket broadcast then already carry `equippedBanner: null`. The old order (save, broadcast
+   * with the shop banner still on, then unequip) let that stale broadcast land after the local
+   * update and put the old banner back. Both `bannerUrl` and `banner_url` are written so no
+   * reader falls back to the previous value.
+   */
+  const applyNewBanner = async (url) => {
+    const before = meRef.current;
+    const hadShopBanner = Boolean(before?.equippedBanner);
+    if (hadShopBanner) await equipShopItem("banner", null);
+    const saved = await persistProfilePatch({ bannerUrl: url });
+    applyProfileLocally({
+      ...(saved || before),
+      ...(hadShopBanner || saved?.equippedBanner ? { equippedBanner: null } : null),
+      bannerUrl: url,
+      banner_url: url,
+    });
+    if (saved?.equippedBanner && !hadShopBanner) await equipShopItem("banner", null);
+    setBannerUrl(url);
+  };
+
   const persistBannerFile = async (file) => {
     setBannerUploading(true);
     setProfileError("");
@@ -1155,13 +1186,7 @@ const UserPanel = forwardRef(function UserPanel({
       const uploaded = await uploadFile(file);
       const url = uploaded?.url || uploaded?.mediaUrl || null;
       if (!url) throw new Error(t("Upload failed"));
-      const saved = await persistProfilePatch({ bannerUrl: url });
-      // A shop banner paints over a custom URL. Unequip it so this upload shows.
-      if (saved?.equippedBanner || me?.equippedBanner) {
-        await equipShopItem("banner", null);
-        applyProfileLocally({ ...(saved || me), equippedBanner: null, bannerUrl: url, banner_url: url });
-      }
-      setBannerUrl(url);
+      await applyNewBanner(url);
     } catch (err) {
       flashProfileError(err?.message || t("Network error during upload"));
     } finally {
@@ -1191,13 +1216,7 @@ const UserPanel = forwardRef(function UserPanel({
       const uploaded = await uploadBannerImage(file, crop);
       const url = uploaded?.url || uploaded?.bannerUrl || null;
       if (!url) throw new Error(t("Upload failed"));
-      const saved = await persistProfilePatch({ bannerUrl: url });
-      // A shop banner paints over a custom URL. Unequip it so this upload shows.
-      if (saved?.equippedBanner || me?.equippedBanner) {
-        await equipShopItem("banner", null);
-        applyProfileLocally({ ...(saved || me), equippedBanner: null, bannerUrl: url, banner_url: url });
-      }
-      setBannerUrl(url);
+      await applyNewBanner(url);
     } finally {
       setBannerUploading(false);
     }

@@ -28,7 +28,7 @@ assert.equal(m.clampZoom("x"), m.ZOOM_MIN);
 assert.equal(m.zoomFillPercent(2), 50);
 
 // GIF crop payload the backend accepts.
-assert.deepEqual(m.serverCropPayload({ x: -1.2, y: 3.6, width: 99.5, height: 0 }, 450), { x: 0, y: 4, width: 100, height: 1, rotation: 90 });
+assert.deepEqual(m.serverCropPayload({ x: -1.2, y: 3.6, width: 99.5, height: 0 }, 450), { x: -1, y: 4, width: 100, height: 1, rotation: 90 });
 assert.equal(m.serverCropPayload(null, 0), null);
 
 // Preview layout: full area = identity, quarter turn swaps the media box.
@@ -43,7 +43,23 @@ assert.match(q.media.transform, /rotate\(90deg\)/);
 const tiles = m.giphyTiles({ data: [{ id: "a", images: { fixed_width: { url: "p", width: "200", height: "100" }, downsized: { url: "f" } } }, { id: "b", images: {} }] });
 assert.equal(tiles.length, 1);
 assert.equal(tiles[0].full, "f");
-assert.equal(tiles[0].ratio, 0.6);
+assert.equal(tiles[0].ratio, 0.5, "true GIPHY shape, no 0.6 clamp");
+
+// Contain zoom-out: the whole picture can fit the crop frame edge to edge.
+{
+  const b = m.zoomBounds({ width: 400, height: 300 }, { width: 432, height: 144 });
+  assert.equal(b.min, 0.48, "contain = 144/300");
+  assert.equal(b.cover, 1.08, "cover = 432/400");
+  assert.ok(b.min < m.ZOOM_MIN, "can zoom out below the old fixed 1");
+  assert.equal(m.clampZoom(0.1, b.min, b.max), 0.48);
+  assert.equal(m.zoomFillPercent(b.min, b.min, b.max), 0);
+  // At contain the 192x144 picture stays inside the 432x144 frame.
+  assert.deepEqual(m.clampCropPosition({ x: 500, y: 40 }, { width: 400, height: 300 }, { width: 432, height: 144 }, 0.48), { x: 120, y: 0 });
+  // At 2x (800x600) no empty edge is allowed.
+  assert.deepEqual(m.clampCropPosition({ x: -999, y: 999 }, { width: 400, height: 300 }, { width: 432, height: 144 }, 2), { x: -184, y: 228 });
+  assert.equal(m.cropExceedsMedia({ x: -10, y: 0, width: 100, height: 50 }, { width: 80, height: 50 }), true);
+  assert.equal(m.cropExceedsMedia({ x: 0, y: 0, width: 80, height: 50 }, { width: 80, height: 50 }), false);
+}
 
 // Handoff link + query.
 assert.equal(m.handoffUrl("banner"), "https://descall.com/settings/profile?picker=banner");
@@ -99,7 +115,18 @@ assert.ok(!/\p{Extended_Pictographic}/u.test(jsx), "no emoji in picker UI");
 // UserPanel opens the picker and keeps the shop-banner rule.
 const up = src("../components/layout/UserPanel.jsx");
 assert.match(up, /<ProfileMediaPicker/);
-assert.match(up, /uploadBannerImage\(file, crop\)[\s\S]{0,600}equipShopItem\("banner", null\)/);
+assert.match(up, /uploadBannerImage\(file, crop\)[\s\S]{0,600}applyNewBanner\(url\)/);
+// Banner replace: unequip the shop banner BEFORE the profile save so its broadcast is not stale.
+assert.match(up, /const applyNewBanner[\s\S]{0,400}equipShopItem\("banner", null\)[\s\S]{0,120}persistProfilePatch\(\{ bannerUrl: url \}\)/);
+assert.match(up, /const me = meRef\.current;/);
+assert.match(up, /me\?\.bannerUrl, me\?\.banner_url\]\);/);
+{
+  const fs = await import("node:fs");
+  const badges = fs.readFileSync(new URL("../styles/special-badges.css", import.meta.url), "utf8");
+  assert.match(badges, /@media \(hover:none\)\{\.bp-tip\{display:none\}\}/, "badge tip must not lay out on touch");
+  const gs = fs.readFileSync(new URL("../styles/glass/settings.css", import.meta.url), "utf8");
+  assert.match(gs, /is-mobile\.g-settings \.us-sidebar \{[\s\S]{0,300}overflow-x: hidden;\s*overflow-y: auto;/, "mobile settings menu pans on Y only");
+}
 
 // Universal link from the QR keeps only the whitelisted picker value.
 const { resolveDeepLink } = await import("./deepLinks.js");

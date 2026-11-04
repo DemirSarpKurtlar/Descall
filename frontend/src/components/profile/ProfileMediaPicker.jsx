@@ -7,16 +7,18 @@ import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/spri
 import { hapticImpactLight, hapticSuccess } from "../../lib/fluid/haptics";
 import { useT } from "../../context/LocaleContext";
 import {
-  X, ChevronLeft, Upload, Smartphone, Camera, ImageIcon, Search, RotateCcw, RefreshCw,
+  X, ChevronLeft, Upload, Smartphone, Camera, ImageIcon, Search, RefreshCw,
   ZoomIn, ZoomOut, Loader2, AlertTriangle,
 } from "../ui/Icon.jsx";
-import { getRotatedCroppedImageFile } from "../../lib/cropImage";
+import { getRotatedCroppedImageFile, getPaddedCroppedImageFile } from "../../lib/cropImage";
 import { handoffQrSrc } from "../../api/media";
 import {
-  pickerTarget, validatePickedFile, isGifFile, rotateLeft, clampZoom, zoomFillPercent,
-  serverCropPayload, previewLayout, giphyTiles, GIF_CHIPS, readRecent, pushRecent, ZOOM_MIN, ZOOM_MAX,
+  pickerTarget, validatePickedFile, isGifFile, clampZoom, zoomFillPercent, zoomBounds, clampCropPosition, cropExceedsMedia,
+  serverCropPayload, previewLayout, giphyTiles, GIF_CHIPS, readRecent, pushRecent,
 } from "../../lib/profileMediaPicker";
+import { masonryColumns } from "../../lib/gifMasonry";
 import "../../styles/profile-media-picker.css";
+import "../../styles/gif-masonry.css";
 
 // Same public GIPHY key/endpoint as the chat GIF picker (single source: components/chat/GiphyPicker.jsx).
 import { GIPHY_API_KEY } from "../chat/GiphyPicker.jsx";
@@ -87,7 +89,12 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
   // Editor state for the current target
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
+  // Rotation is off (owner report): no button, no two-finger rotate. Kept as a constant 0 so
+  // the crop payload / preview helpers stay shape-compatible.
+  const rotation = 0;
+  // Picture size at zoom 1 inside the editor (react-easy-crop onMediaLoaded); sets the zoom range.
+  const [mediaSize, setMediaSize] = useState(null);
+  const zoomRef = useRef(1);
   const [area, setArea] = useState(null);
   const [pixels, setPixels] = useState(null);
   const [draft, setDraft] = useState(null); // { file, src, isGif, natural }
@@ -128,7 +135,7 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
       img.src = src;
     });
     setDraft({ file, src, isGif: isGifFile(file), natural });
-    setCrop({ x: 0, y: 0 }); setZoom(1); setRotation(0); setArea(null); setPixels(null);
+    setCrop({ x: 0, y: 0 }); setZoom(1); setMediaSize(null); setArea(null); setPixels(null);
     setStep("edit");
     hapticImpactLight();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,13 +190,13 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
     if (!draft || !pixels) return;
     setPending((prev) => ({
       ...prev,
-      [target]: { ...draft, area, pixels, rotation, zoom, crop },
+      [target]: { ...draft, area, pixels, rotation, zoom, crop, mediaSize },
     }));
     setStep("final");
     hapticImpactLight();
   };
 
-  const reset = () => { setCrop({ x: 0, y: 0 }); setZoom(1); setRotation(0); };
+  const reset = () => { setCrop({ x: 0, y: 0 }); setZoom(1); };
 
   const changeTarget = (next) => {
     const p = pending[next];
@@ -197,7 +204,7 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
     setError("");
     if (p) {
       setDraft({ file: p.file, src: p.src, isGif: p.isGif, natural: p.natural });
-      setCrop(p.crop); setZoom(p.zoom); setRotation(p.rotation);
+      setCrop(p.crop); setZoom(p.zoom); setMediaSize(p.mediaSize || null);
       setStep("edit");
     } else {
       setTab("upload"); setShowQr(false); setStep("source");
@@ -218,9 +225,14 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
         if (p.isGif) {
           serverCrop = serverCropPayload(p.pixels, p.rotation);
         } else {
-          file = await getRotatedCroppedImageFile(p.src, p.pixels, p.rotation, {
-            mimeType: "image/jpeg", quality: 0.92, fileName: `${c.fileName}.jpg`, maxSize: c.maxOutput,
-          });
+          // Zoomed out past the frame edge (contain): transparent margin, so PNG instead of JPEG.
+          file = cropExceedsMedia(p.pixels, p.natural)
+            ? await getPaddedCroppedImageFile(p.src, p.pixels, {
+              mimeType: "image/png", fileName: `${c.fileName}.png`, maxSize: c.maxOutput,
+            })
+            : await getRotatedCroppedImageFile(p.src, p.pixels, 0, {
+              mimeType: "image/jpeg", quality: 0.92, fileName: `${c.fileName}.jpg`, maxSize: c.maxOutput,
+            });
         }
         // eslint-disable-next-line no-await-in-loop
         await onSave?.(k, { file, crop: serverCrop, isGif: p.isGif });
@@ -270,6 +282,15 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
   const cropSize = isMobile
     ? (target === "avatar" ? { width: 250, height: 250 } : { width: 318, height: 106 })
     : (target === "avatar" ? { width: 280, height: 280 } : { width: 432, height: 144 });
+  // Minimum zoom = the whole picture fits inside the frame edge to edge (contain).
+  const zb = zoomBounds(mediaSize, cropSize);
+  zoomRef.current = zoom;
+  const applyZoom = (z) => {
+    const nz = clampZoom(z, zb.min, zb.max);
+    zoomRef.current = nz;
+    setZoom(nz);
+    setCrop((c) => clampCropPosition(c, mediaSize, cropSize, nz));
+  };
 
   const renderSource = () => (
     <>
@@ -345,13 +366,18 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
           <div className="amp-gif-scroll">
             {gifError ? <p className="amp-empty">{gifError}</p> : null}
             {!gifError && !gifLoading && gifs.length === 0 ? <p className="amp-empty">{t("amp.noResults")}</p> : null}
-            <div className={`amp-gif-grid${isMobile ? " is-3" : ""}`} aria-busy={gifLoading || undefined}>
-              {gifs.map((g) => (
-                <button key={g.id} type="button" className={`amp-gif${loadingTile === g.id ? " is-sel" : ""}`} style={{ aspectRatio: `1 / ${g.ratio}` }} onClick={() => pickGif(g)} aria-label={g.title || t("amp.tabGif")}>
-                  <img src={g.preview} alt="" loading="lazy" />
-                  <span className="amp-gif-tag">{t("amp.gifTag")}</span>
-                  {loadingTile === g.id ? <span className="amp-tile-busy"><Loader2 size={20} className="amp-spin" /></span> : null}
-                </button>
+            {/* Masonry by each GIF's real GIPHY size: constant gaps, no holes under short GIFs. */}
+            <div className={`amp-gif-grid gif-masonry${isMobile ? " is-3" : ""}`} aria-busy={gifLoading || undefined}>
+              {masonryColumns(gifs, isMobile ? 3 : 4).map((col, ci) => (
+                <div className="gif-masonry-col" key={ci}>
+                  {col.map(({ item: g }) => (
+                    <button key={g.id} type="button" className={`amp-gif${loadingTile === g.id ? " is-sel" : ""}`} style={{ aspectRatio: `${g.width} / ${g.height}` }} onClick={() => pickGif(g)} aria-label={g.title || t("amp.tabGif")}>
+                      <img src={g.preview} alt="" loading="lazy" width={g.width} height={g.height} />
+                      <span className="amp-gif-tag">{t("amp.gifTag")}</span>
+                      {loadingTile === g.id ? <span className="amp-tile-busy"><Loader2 size={20} className="amp-spin" /></span> : null}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
@@ -369,16 +395,17 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
               image={draft.src}
               crop={crop}
               zoom={zoom}
-              rotation={rotation}
+              rotation={0}
               aspect={cfg.aspect}
               cropShape={cfg.shape === "round" ? "round" : "rect"}
               cropSize={cropSize}
               showGrid
-              minZoom={ZOOM_MIN}
-              maxZoom={ZOOM_MAX}
-              onCropChange={setCrop}
-              onZoomChange={(z) => setZoom(clampZoom(z))}
-              onRotationChange={setRotation}
+              minZoom={zb.min}
+              maxZoom={zb.max}
+              restrictPosition={false}
+              onCropChange={(c) => setCrop(clampCropPosition(c, mediaSize, cropSize, zoomRef.current))}
+              onZoomChange={applyZoom}
+              onMediaLoaded={(m) => setMediaSize({ width: m.width, height: m.height })}
               onCropComplete={onCropComplete}
               objectFit="cover"
             />
@@ -389,10 +416,9 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
         <div className="amp-ctrl">
           <div className="amp-zoom">
             <ZoomOut size={16} aria-hidden />
-            <input type="range" min={ZOOM_MIN} max={ZOOM_MAX} step={0.01} value={zoom} onChange={(e) => setZoom(clampZoom(e.target.value))} style={{ "--amp-zoom": `${zoomFillPercent(zoom)}%` }} aria-label={t("amp.zoom")} />
+            <input type="range" min={zb.min} max={zb.max} step={0.01} value={zoom} onChange={(e) => applyZoom(e.target.value)} style={{ "--amp-zoom": `${zoomFillPercent(zoom, zb.min, zb.max)}%` }} aria-label={t("amp.zoom")} />
             <ZoomIn size={16} aria-hidden />
           </div>
-          <button type="button" className="amp-ibtn" onClick={() => { setRotation((r) => rotateLeft(r)); hapticImpactLight(); }}><RotateCcw size={15} />{t("amp.rotate")}</button>
           <button type="button" className="amp-ibtn" onClick={reset}><RefreshCw size={15} />{t("amp.reset")}</button>
         </div>
       </div>

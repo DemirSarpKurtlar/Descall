@@ -21,6 +21,10 @@
 @media (hover:hover){
   .bp-plus:hover .bp-tip,.bp-plus:focus-visible .bp-tip{opacity:1;visibility:visible;transform:translate(-50%,0) scale(1);transition-delay:.25s,.25s}
 }
+/* Touch screens never show the tip (hover only), so it must not exist there: even hidden it is laid
+   out, and centred over a "+" near the right edge it reached ~6px past the iPhone settings menu,
+   which made the whole menu drift left-right (owner report, 3.7.34). */
+@media (hover:none){.bp-tip{display:none}}
 @media (prefers-reduced-motion:reduce){.bp-tip{transition:opacity .1s ease;transform:translate(-50%,0)}}
 
 /* stacked: the profile card behind steps back */
