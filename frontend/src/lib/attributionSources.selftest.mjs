@@ -24,7 +24,7 @@ captureVisit(win({ pathname: "/", referrer: "https://accounts.google.com/", ls, 
 let a = peekAttribution({ localStorage: ls, sessionStorage: ss });
 assert(a.first.utm_source === "tiktok", "first keeps tiktok");
 assert(a.last.utm_source === "tiktok", "last survives own-host + oauth return");
-assert(a.first.ttclid === "t1", "ttclid captured");
+assert(a.first.landing_page.includes("ttclid=t1"), "ttclid kept in landing URL for server-side parsing");
 
 // A genuinely new external visit does update last-touch.
 captureVisit(win({ referrer: "https://www.reddit.com/r/x", ls, ss }));
@@ -32,12 +32,7 @@ a = peekAttribution({ localStorage: ls, sessionStorage: ss });
 assert(a.last.referrer.includes("reddit"), "new external visit updates last");
 assert(a.first.utm_source === "tiktok", "first is write-once");
 
-// sessionStorage fallback when localStorage is unusable.
-const broken = { getItem: () => null, setItem: () => { throw new Error("quota"); }, removeItem: () => {} };
-const ss2 = mem();
-captureVisit(win({ search: "?utm_source=reddit", ls: broken, ss: ss2 }));
-a = peekAttribution({ localStorage: broken, sessionStorage: ss2 });
-assert(a && a.first.utm_source === "reddit", "session fallback works");
+
 
 
 

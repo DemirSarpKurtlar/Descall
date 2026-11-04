@@ -2,23 +2,11 @@ import { API_ROUTES } from "../config/api";
 import { httpRequest } from "./http";
 import { peekAttribution } from "../lib/attribution";
 
-// web | electron | ios | android (iPad is told apart from the UA server-side).
-function withClientPlatform(attribution) {
-  let p = "web";
-  try {
-    const w = window;
-    p = w.electronAPI ? "electron" : w.Capacitor?.isNativePlatform?.() ? w.Capacitor.getPlatform() : "web";
-  } catch {
-    /* ignore */
-  }
-  const first = { ...attribution?.first, client_platform: p };
-  return { ...attribution, first, last: { ...(attribution?.last || first), client_platform: p } };
-}
-
 function withAttribution(payload = {}) {
-  if (payload?.attribution) return { ...payload, attribution: withClientPlatform(payload.attribution) };
+  if (payload?.attribution) return payload;
   const attribution = peekAttribution();
-  return { ...payload, attribution: withClientPlatform(attribution) };
+  if (!attribution) return payload;
+  return { ...payload, attribution };
 }
 
 export function register(payload) {

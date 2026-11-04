@@ -208,7 +208,17 @@ function isNativePlatform(platform) {
  * Classify one signup.
  * @returns {{group:string, sub:string, detail:string}}
  */
-function classifySignupSource(input = {}) {
+function classifySignupSource(raw = {}) {
+  // Click ids / UTM the client didn't extract are recovered from the stored landing URL query.
+  const input = { ...raw };
+  try {
+    const q = new URL(String(raw.landing_page || ""), "https://x.invalid").searchParams;
+    for (const k of ["utm_source", "utm_medium", "utm_campaign", "gclid", "gbraid", "wbraid", "fbclid", "msclkid", "yclid", "ttclid", "twclid"]) {
+      if (!input[k] && q.get(k)) input[k] = q.get(k);
+    }
+  } catch {
+    /* ignore */
+  }
   const utmSource = lc(input.utm_source, 64).replace(/\s+/g, "_");
   const utmMedium = lc(input.utm_medium, 64);
   const campaign = String(input.utm_campaign || "").trim().slice(0, 80);

@@ -158,3 +158,11 @@ test("buildSignupSourceColumns writes only the new nullable columns", () => {
   const app = buildSignupSourceColumns({ snapshot: { client_platform: "electron", landing_path: "/" }, userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14) Electron/30" });
   assert.equal(`${app.signup_source_group}/${app.signup_source_sub}`, "app_direct/desktop_macos");
 });
+
+test("click ids are recovered from the landing URL query", () => {
+  const r = c({ landing_page: "https://descall.com/?msclkid=abc", has_snapshot: true });
+  assert.equal(r.group, "paid");
+  assert.equal(r.sub, "bing_ads");
+  assert.equal(c({ landing_page: "https://descall.com/?ttclid=z" }).sub, "tiktok_ads");
+});
+
