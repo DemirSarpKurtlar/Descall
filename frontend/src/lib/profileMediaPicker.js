@@ -5,6 +5,8 @@
  * Flow: source (upload / phone / camera, GIF tab) -> crop editor -> final preview -> save.
  */
 
+import { gifRatio } from "./gifMasonry.js";
+
 export const PICKER_TARGETS = Object.freeze({
   // Avatar: circular crop, still images exported at most 1024 px (same as the old crop modal).
   avatar: Object.freeze({ id: "avatar", aspect: 1, shape: "round", maxOutput: 1024, fileName: "avatar" }),
@@ -44,23 +46,74 @@ export function rotateLeft(deg) {
   return normalizeRotation(Number(deg || 0) - 90);
 }
 
-export function clampZoom(z) {
+/** `min` is the per-image contain zoom (zoomBounds), ZOOM_MIN when unknown. */
+export function clampZoom(z, min = ZOOM_MIN, max = ZOOM_MAX) {
   const n = Number(z);
-  if (!Number.isFinite(n)) return ZOOM_MIN;
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n));
+  const lo = Number.isFinite(Number(min)) && Number(min) > 0 ? Number(min) : ZOOM_MIN;
+  if (!Number.isFinite(n)) return lo;
+  return Math.min(Math.max(max, lo), Math.max(lo, n));
 }
 
 /** Slider fill (0..100) for the brand-coloured part of the zoom track. */
-export function zoomFillPercent(z) {
-  return Math.round(((clampZoom(z) - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN)) * 100);
+export function zoomFillPercent(z, min = ZOOM_MIN, max = ZOOM_MAX) {
+  const lo = Number(min) > 0 ? Number(min) : ZOOM_MIN;
+  if (!(max > lo)) return 0;
+  return Math.round(((clampZoom(z, lo, max) - lo) / (max - lo)) * 100);
+}
+
+/**
+ * Zoom range for one picture in the crop editor. react-easy-crop reports `mediaSize` (the
+ * picture at zoom 1, fitted to the editor box) and we know the crop frame. `contain` is the
+ * zoom where the WHOLE picture fits inside the frame and touches its edges (the owner's
+ * "tam kenarlara kadar uzaklaştır"); `cover` is where it just fills the frame.
+ * The old fixed minimum of 1 stopped short of both for most pictures.
+ */
+export function zoomBounds(mediaSize, cropSize) {
+  const mw = Number(mediaSize?.width);
+  const mh = Number(mediaSize?.height);
+  const cw = Number(cropSize?.width);
+  const ch = Number(cropSize?.height);
+  if (!(mw > 0 && mh > 0 && cw > 0 && ch > 0)) return { min: ZOOM_MIN, cover: ZOOM_MIN, max: ZOOM_MAX };
+  const contain = Math.min(cw / mw, ch / mh);
+  const cover = Math.max(cw / mw, ch / mh);
+  const round = (v) => Math.floor(v * 1000) / 1000;
+  return { min: round(contain), cover: Math.ceil(cover * 1000) / 1000, max: Math.max(ZOOM_MAX, cover * ZOOM_MAX) };
+}
+
+/**
+ * Keep the picture usable at any zoom (react-easy-crop's own restrictPosition only knows
+ * "cover"): larger than the frame on an axis -> no empty edge on that axis; smaller ->
+ * the picture stays inside the frame. Offsets are react-easy-crop `crop` px.
+ */
+export function clampCropPosition(pos, mediaSize, cropSize, zoom) {
+  const x = Number(pos?.x) || 0;
+  const y = Number(pos?.y) || 0;
+  const mw = Number(mediaSize?.width) * Number(zoom);
+  const mh = Number(mediaSize?.height) * Number(zoom);
+  const cw = Number(cropSize?.width);
+  const ch = Number(cropSize?.height);
+  if (!(mw > 0 && mh > 0 && cw > 0 && ch > 0)) return { x, y };
+  const lx = Math.abs(mw - cw) / 2;
+  const ly = Math.abs(mh - ch) / 2;
+  return { x: Math.min(lx, Math.max(-lx, x)), y: Math.min(ly, Math.max(-ly, y)) };
+}
+
+/** Crop rectangle reaches outside the picture (zoomed out past cover): needs a transparent margin. */
+export function cropExceedsMedia(pixels, natural) {
+  if (!pixels || !natural) return false;
+  const e = 0.5;
+  return pixels.x < -e || pixels.y < -e
+    || pixels.x + pixels.width > Number(natural.width) + e
+    || pixels.y + pixels.height > Number(natural.height) + e;
 }
 
 /** Crop payload the server accepts for GIFs (backend/lib/gifCrop.js parseCrop). */
 export function serverCropPayload(pixels, rotation) {
   if (!pixels) return null;
   return {
-    x: Math.max(0, Math.round(pixels.x)),
-    y: Math.max(0, Math.round(pixels.y)),
+    // Negative / past-the-edge rectangles are valid: the server pads them (contain zoom-out).
+    x: Math.round(pixels.x),
+    y: Math.round(pixels.y),
     width: Math.max(1, Math.round(pixels.width)),
     height: Math.max(1, Math.round(pixels.height)),
     rotation: normalizeRotation(rotation),
@@ -117,7 +170,8 @@ export function giphyTiles(json) {
       full: full.url,
       width,
       height,
-      ratio: Math.min(1.6, Math.max(0.6, height / width)),
+      // Real shape (masonry packs by it); only corrupt metadata is clamped.
+      ratio: gifRatio({ width, height }),
     });
   }
   return out;

@@ -3,7 +3,7 @@
 // Profile photo / banner picker: crop + zoom + quarter-turn rotate for ANIMATED
 // GIFs without losing the animation. Still images are cropped in the client canvas; a GIF
 // is sent whole with the crop rectangle and cut here with ffmpeg (already a dependency for
-// voice notes): rotate → crop → scale → palettegen/paletteuse, every frame, loop forever.
+// voice notes): rotate (legacy clients) → pad → crop → scale → palettegen/paletteuse, every frame, loop forever.
 
 const { spawn } = require("child_process");
 const fs = require("fs");
@@ -36,7 +36,10 @@ function parseCrop(raw) {
   if ([x, y, width, height, rotation].some(Number.isNaN)) return null;
   rotation = ((rotation % 360) + 360) % 360;
   if (rotation % 90 !== 0) return null;
-  if (width < 8 || height < 8 || width > 8192 || height > 8192 || x < 0 || y < 0 || x > 16384 || y > 16384) return null;
+  // x/y may be negative and the rectangle may reach past the source: the picker lets the user
+  // zoom OUT until the whole GIF fits inside the frame (contain). That margin is padded
+  // transparent in filterChain, never stretched.
+  if (width < 8 || height < 8 || width > 8192 || height > 8192 || x < -8192 || y < -8192 || x > 16384 || y > 16384) return null;
   return { x, y, width, height, rotation };
 }
 
@@ -47,9 +50,17 @@ function filterChain(crop, target = "avatar") {
   const scale = Math.min(1, t.maxW / crop.width, t.maxH / crop.height);
   const w = Math.max(2, Math.round((crop.width * scale) / 2) * 2);
   const h = Math.max(2, Math.round((crop.height * scale) / 2) * 2);
+  // Pad first so a crop rectangle that is larger than / outside the GIF stays valid
+  // (contain zoom-out). For a rectangle fully inside the GIF the pad is the input size (no-op).
+  const left = Math.max(0, -crop.x);
+  const top = Math.max(0, -crop.y);
+  const cx = crop.x + left;
+  const cy = crop.y + top;
   return [
     ...rot,
-    `crop=${crop.width}:${crop.height}:${crop.x}:${crop.y}`,
+    "format=rgba",
+    `pad=w='max(iw+${left},${cx + crop.width})':h='max(ih+${top},${cy + crop.height})':x=${left}:y=${top}:color=black@0`,
+    `crop=${crop.width}:${crop.height}:${cx}:${cy}`,
     `scale=${w}:${h}:flags=lanczos`,
     "split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
   ].join(",");
