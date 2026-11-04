@@ -96,7 +96,7 @@ async function secondFactorGate(res, user) {
   return true;
 }
 
-const { buildSignupSourceColumns } = require("../lib/signupSourceTaxonomy");
+const { buildSignupSourceColumns, inviteFromPath } = require("../lib/signupSourceTaxonomy");
 
 async function insertUserWithAttribution(basePayload, selectCols, attribution, authMethod, extra = {}) {
   const attributionColumns = buildUserAttributionColumns({
@@ -112,7 +112,13 @@ async function insertUserWithAttribution(basePayload, selectCols, attribution, a
   try {
     const snap = attribution && typeof attribution === "object" ? attribution.first || attribution : {};
     sourceColumns = buildSignupSourceColumns({
-      snapshot: { ...snap, invite_kind: snap?.invite_kind || attribution?.last?.invite_kind || "" },
+      snapshot: {
+        ...snap,
+        invite_kind:
+          inviteFromPath(snap?.landing_page || snap?.landing_path) ||
+          inviteFromPath(attribution?.last?.landing_page || attribution?.last?.landing_path) ||
+          "",
+      },
       invitedBy: extra.invitedBy,
       userAgent: extra.req?.headers?.["user-agent"] || "",
     });

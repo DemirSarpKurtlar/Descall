@@ -2,7 +2,8 @@
  * Run: node frontend/src/lib/attributionSources.selftest.mjs
  * Landing referrer/UTM survive SPA reloads and OAuth round-trips.
  */
-import { captureVisit, peekAttribution, inviteKindFromLocation, detectClientPlatform, collectSnapshotFromLocation } from "./attribution.js";
+import { captureVisit, peekAttribution } from "./attribution.js";
+import { inviteKindFromLocation, detectClientPlatform } from "./clientPlatform.js";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -25,7 +26,6 @@ let a = peekAttribution({ localStorage: ls, sessionStorage: ss });
 assert(a.first.utm_source === "tiktok", "first keeps tiktok");
 assert(a.last.utm_source === "tiktok", "last survives own-host + oauth return");
 assert(a.first.ttclid === "t1", "ttclid captured");
-assert(a.first.client_platform === "web", "client platform web");
 
 // A genuinely new external visit does update last-touch.
 captureVisit(win({ referrer: "https://www.reddit.com/r/x", ls, ss }));
@@ -45,7 +45,6 @@ assert(inviteKindFromLocation("/invite/s/abc", "") === "server_invite", "server 
 assert(inviteKindFromLocation("/invite/abc", "") === "group_invite", "group invite");
 assert(inviteKindFromLocation("/register", "?ref=ali") === "friend_invite", "friend invite");
 assert(inviteKindFromLocation("/", "") === "", "no invite");
-assert(collectSnapshotFromLocation({ pathname: "/servers/join/x" }).invite_kind === "server_invite", "snapshot invite kind");
 
 assert(detectClientPlatform({ electronAPI: {} }) === "electron", "electron");
 assert(detectClientPlatform({ Capacitor: { isNativePlatform: () => true, getPlatform: () => "ios" }, navigator: { userAgent: "iPhone" } }) === "ios", "ios");

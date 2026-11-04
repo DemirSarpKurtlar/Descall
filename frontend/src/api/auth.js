@@ -1,12 +1,23 @@
 import { API_ROUTES } from "../config/api";
 import { httpRequest } from "./http";
 import { peekAttribution } from "../lib/attribution";
+import { detectClientPlatform } from "../lib/clientPlatform";
+
+function withClientPlatform(attribution) {
+  let platform = "web";
+  try {
+    platform = detectClientPlatform();
+  } catch {
+    /* ignore */
+  }
+  const first = { ...(attribution?.first || {}), client_platform: platform };
+  return { ...(attribution || {}), first, last: { ...(attribution?.last || first), client_platform: platform } };
+}
 
 function withAttribution(payload = {}) {
-  if (payload?.attribution) return payload;
+  if (payload?.attribution) return { ...payload, attribution: withClientPlatform(payload.attribution) };
   const attribution = peekAttribution();
-  if (!attribution) return payload;
-  return { ...payload, attribution };
+  return { ...payload, attribution: withClientPlatform(attribution) };
 }
 
 export function register(payload) {
