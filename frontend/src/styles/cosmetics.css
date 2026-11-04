@@ -79,88 +79,94 @@
   97% { opacity: 1; }
 }
 
-/* ── Avatar effects (animated ring/aura overlay, rendered behind the frame) ── */
+/* ── Avatar effects (animated ring/aura overlay, rendered behind the frame) ──
+   One geometry for every effect (lib/avatarEffectGeometry.js): the box is
+   concentric with the avatar and extends --fx-gap + --fx-w past its edge;
+   each effect paints its ring ONLY inside the outer --fx-w band (inset
+   shadow, border or mask), never with an outer spread, fixed px radius or
+   own inset. Hosts that do not pass the vars get the 3px/3px default. */
 
 .cosmetic-avatar-effect {
+  --fx-gap: 3px;
+  --fx-w: 3px;
   position: absolute;
-  /* Percentage inset stays concentric even when avatar size changes */
-  inset: -12%;
+  inset: calc(-1 * (var(--fx-gap) + var(--fx-w)));
+  box-sizing: border-box;
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
   transform-origin: 50% 50%;
 }
 
-.cosmetic-avatar-effect.effect-pulse {
-  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.55);
-  animation: cosmetic-pulse-ring 1.8s ease-out infinite;
+/* Masked conic rings: the band is exactly --fx-w wide at the outer edge. */
+.cosmetic-avatar-effect.effect-aurora,
+.cosmetic-avatar-effect.effect-flame,
+.cosmetic-avatar-effect.effect-solar,
+.cosmetic-avatar-effect.effect-prism,
+.cosmetic-avatar-effect.effect-holoring {
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--fx-w) - 0.5px), #000 calc(100% - var(--fx-w)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--fx-w) - 0.5px), #000 calc(100% - var(--fx-w)));
 }
 
+/* Orbiting particles: a full-size rotating layer with the dot drawn in the band. */
 .cosmetic-avatar-effect.effect-orbit::before,
-.cosmetic-avatar-effect.effect-orbit::after {
+.cosmetic-avatar-effect.effect-orbit::after,
+.cosmetic-avatar-effect.effect-petal::before,
+.cosmetic-avatar-effect.effect-petal::after {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
+  inset: 0;
   border-radius: 50%;
-  background: #4fd8ff;
-  box-shadow: 0 0 6px #4fd8ff;
+  --fx-dot: #4fd8ff;
+  background: radial-gradient(circle at 50% calc(var(--fx-w) / 2), var(--fx-dot) 0 calc(var(--fx-w) * 0.75), transparent calc(var(--fx-w) * 0.75 + 0.75px));
+  filter: drop-shadow(0 0 3px var(--fx-dot));
   transform-origin: 50% 50%;
-  /* Orbit on a radius instead of spinning in place at the center */
-  animation: cosmetic-orbit-dot 3.2s linear infinite;
+  animation: cosmetic-orbit-spin 3.2s linear infinite;
 }
 .cosmetic-avatar-effect.effect-orbit::after {
-  background: #ff8fab;
-  box-shadow: 0 0 6px #ff8fab;
+  --fx-dot: #ff8fab;
   animation-delay: -1.6s;
 }
 
+.cosmetic-avatar-effect.effect-pulse {
+  --fx-c: 88, 101, 242;
+  box-shadow: inset 0 0 0 var(--fx-w) rgba(var(--fx-c), 0.6);
+  animation: cosmetic-pulse-ring 1.8s ease-out infinite;
+}
+
 .cosmetic-avatar-effect.effect-spark {
-  border: 2px dashed rgba(255, 221, 51, 0.85);
-  filter: drop-shadow(0 0 4px rgba(255, 221, 51, 0.65));
+  border: var(--fx-w) dashed rgba(255, 221, 51, 0.85);
+  filter: drop-shadow(0 0 3px rgba(255, 221, 51, 0.65));
   animation: cosmetic-spark-spin 2.4s linear infinite;
 }
 
 .cosmetic-avatar-effect.effect-aurora {
   background: conic-gradient(from 0deg, #38ef7d, #4fd8ff, #ff8fab, #38ef7d);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
-  transform-origin: 50% 50%;
   animation: cosmetic-orbit-spin 6s linear infinite;
   opacity: 0.9;
 }
 
 .cosmetic-avatar-effect.effect-flame {
   background: conic-gradient(from 90deg, #ff5722, #ffc107, #ff5722, #8b0000, #ff5722);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
   filter: blur(0.4px);
-  transform-origin: 50% 50%;
   animation: cosmetic-flame-flicker 1.1s ease-in-out infinite;
 }
 
 .cosmetic-avatar-effect.effect-frost {
-  box-shadow: 0 0 0 3px rgba(142, 202, 230, 0.7), 0 0 12px rgba(72, 202, 228, 0.55);
+  box-shadow: inset 0 0 0 var(--fx-w) rgba(142, 202, 230, 0.75), 0 0 8px rgba(72, 202, 228, 0.5);
   animation: cosmetic-frost-shimmer 2.4s ease-in-out infinite;
 }
 
 @keyframes cosmetic-pulse-ring {
-  0% { box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.7); opacity: 1; }
-  70% { box-shadow: 0 0 0 10px rgba(88, 101, 242, 0); opacity: 0.4; }
-  100% { box-shadow: 0 0 0 2px rgba(88, 101, 242, 0); opacity: 1; }
+  /* Ring stays in its band; only a soft halo breathes outward. */
+  0% { box-shadow: inset 0 0 0 var(--fx-w) rgba(var(--fx-c), 0.75), 0 0 0 0 rgba(var(--fx-c), 0.55); opacity: 1; }
+  70% { box-shadow: inset 0 0 0 var(--fx-w) rgba(var(--fx-c), 0.45), 0 0 0 calc(var(--fx-w) * 1.5) rgba(var(--fx-c), 0); opacity: 0.75; }
+  100% { box-shadow: inset 0 0 0 var(--fx-w) rgba(var(--fx-c), 0.75), 0 0 0 0 rgba(var(--fx-c), 0); opacity: 1; }
 }
 
 @keyframes cosmetic-orbit-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-@keyframes cosmetic-orbit-dot {
-  0% { transform: rotate(0deg) translateX(46%) rotate(0deg); }
-  100% { transform: rotate(360deg) translateX(46%) rotate(-360deg); }
 }
 
 @keyframes cosmetic-spark-spin {
@@ -171,7 +177,7 @@
 
 @keyframes cosmetic-flame-flicker {
   0%, 100% { opacity: 0.85; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.04); }
+  50% { opacity: 1; transform: scale(1.02); }
 }
 
 @keyframes cosmetic-frost-shimmer {

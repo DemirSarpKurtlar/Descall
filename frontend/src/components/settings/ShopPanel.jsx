@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { avatarEffectStyle } from "../../lib/avatarEffectGeometry.js";
 import { profileColorStyle } from "../../lib/profileColors";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -122,8 +123,10 @@ function ShopItemPreview({ category, item, t, name }) {
   if (category === "avatar_effect") {
     return (
       <div className="shop-avatar-effect-preview">
-        <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} />
-        <div className="shop-avatar-effect-dot" />
+        <div className="shop-avatar-effect-host">
+          <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} style={avatarEffectStyle(28)} />
+          <div className="shop-avatar-effect-dot" />
+        </div>
       </div>
     );
   }

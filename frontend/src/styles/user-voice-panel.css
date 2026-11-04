@@ -359,6 +359,7 @@ html[data-theme="light"] .uvp-voice-inner {
 }
 .uvp-avatar .ui-avatar { margin: 0; }
 .uvp-status-dot {
+  z-index: 2;
   position: absolute;
   right: 0;
   bottom: 0;

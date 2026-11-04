@@ -588,8 +588,11 @@
   justify-content: center;
 }
 
-.shop-avatar-effect-preview .cosmetic-avatar-effect {
-  inset: 0;
+/* The ring wraps the 28px sample disc with the shared effect geometry. */
+.shop-avatar-effect-host {
+  position: relative;
+  width: 28px;
+  height: 28px;
 }
 
 .shop-avatar-effect-dot {

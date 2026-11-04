@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { avatarEffectStyle } from "../../lib/avatarEffectGeometry.js";
 import { PROFILE_COLORS, profileColorSwatch } from "../../lib/profileColors";
 import { motion } from "framer-motion";
 import { Gift, Plus, RefreshCw, ShoppingBag, Search, CheckCircle2, XCircle, Coins, Sparkles } from "../ui/Icon.jsx";
@@ -722,8 +723,8 @@ export default function AdminShop() {
                     ) : item.category === "name_effect" ? (
                       <span className={`cosmetic-name-effect effect-${item.effect_key}`} style={{ fontSize: 13, fontWeight: 700 }}>{t("adminx.shop.sample")}</span>
                     ) : item.category === "avatar_effect" ? (
-                      <div style={{ position: "relative", width: 32, height: 32 }}>
-                        <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} style={{ position: "absolute", inset: -6 }} />
+                      <div style={{ position: "relative", width: 24, height: 24, margin: 4, borderRadius: "50%", background: "var(--surface-3, #2b2d31)" }}>
+                        <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} style={avatarEffectStyle(24)} />
                       </div>
                     ) : item.category === "chat_bubble" ? (
                       <div className={`cosmetic-chat-bubble bubble-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 8 }} />
