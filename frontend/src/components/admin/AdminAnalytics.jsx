@@ -6,6 +6,7 @@ import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatTime } from "../../i18n/format.js";
 import { APP_TIMEZONE } from "../../lib/datetime";
+import SignupSourceBreakdown from "./SignupSourceBreakdown.jsx";
 
 const SOURCE_ORDER = [
   "google_ads",
@@ -141,6 +142,8 @@ export default function AdminAnalytics() {
           <span className="summary-value">{data?.firstTimeUsers || 0}</span>
         </motion.div>
       </div>
+
+      {data?.sourceBreakdown ? <SignupSourceBreakdown breakdown={data.sourceBreakdown} /> : null}
 
       <div className="attribution-grid analytics-split">
         <div className="attribution-panel">

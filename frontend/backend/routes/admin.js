@@ -193,6 +193,25 @@ router.get("/health", (_req, res) => {
   });
 });
 
+const { aggregateSourceBreakdown } = require("../lib/signupSourceTaxonomy");
+const SOURCE_LEGACY_COLS =
+  "first_touch_source, first_touch_medium, first_touch_campaign, first_touch_gclid, first_touch_referrer, first_touch_landing_page, referred_by, signup_os, signup_device";
+const SOURCE_NEW_COLS = "signup_source_group, signup_source_sub, signup_source_detail, signup_platform";
+
+/** Group -> sub-source breakdown; tolerates the new columns not being migrated. */
+async function loadSourceBreakdown() {
+  let res = await withTimeout(
+    supabase.from("users").select(`${SOURCE_LEGACY_COLS}, ${SOURCE_NEW_COLS}`),
+    8000,
+    { data: null, error: { message: "timeout" } }
+  );
+  if (res?.error && isMissingColumnError(res.error)) {
+    res = await withTimeout(supabase.from("users").select(SOURCE_LEGACY_COLS), 8000, { data: null, error: { message: "timeout" } });
+  }
+  if (res?.error || !Array.isArray(res?.data)) return null;
+  return aggregateSourceBreakdown(res.data);
+}
+
 router.get("/attribution", async (_req, res) => {
   try {
     const { data, error } = await supabase
@@ -227,6 +246,7 @@ router.get("/analytics", async (_req, res) => {
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const usersSelect =
       "id, created_at, signup_at, last_seen, auth_method, first_touch_source, first_touch_medium, first_touch_campaign, first_touch_term, first_touch_gclid, signup_device, signup_country, first_app_opened_at, first_action_at, first_message_at";
+    const breakdownPromise = loadSourceBreakdown().catch(() => null);
     const [usersRes, visitsRes, startedRes] = await Promise.all([
       withTimeout(
         supabase.from("users").select(usersSelect),
@@ -308,6 +328,7 @@ router.get("/analytics", async (_req, res) => {
       ...active,
       firstTimeUsers: users.filter((u) => u.first_app_opened_at).length,
       bySource: sources,
+      sourceBreakdown: await breakdownPromise,
       byAuthMethod: attr.byAuthMethod,
       byDevice,
       countries,
