@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { resolveAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { getStaticAvatarFrame, isAnimatedAvatarUrl } from "../../lib/gifAvatar";
 import { avatarEffectClass } from "./Cosmetics";
+import { avatarEffectStyle } from "../../lib/avatarEffectGeometry.js";
 import { avatarColor, avatarInitials, avatarKey } from "../../lib/avatarFallback.js";
 
 function imgIsReady(img) {
@@ -223,10 +224,8 @@ export function Avatar({
         <div
           className={effectClass}
           aria-hidden
-          style={{
-            // Pixel insets stay concentric at every avatar size (avoids % subpixel drift).
-            inset: -Math.max(6, Math.round(size * 0.12)),
-          }}
+          // One shared ring geometry for every effect (see avatarEffectGeometry).
+          style={avatarEffectStyle(size)}
         />
       )}
       <div className="ui-avatar-inner">

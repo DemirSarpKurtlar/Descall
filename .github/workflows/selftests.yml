@@ -146,6 +146,8 @@ jobs:
           node src/lib/glassDesktop.selftest.mjs
           node src/lib/glassBreakpoints.selftest.mjs
           node src/styles/cosmeticPrecedence.selftest.mjs
+          node src/styles/avatarEffectGeometry.selftest.mjs
+          node src/lib/settingsProfileCard.selftest.mjs
           node src/styles/defaultBubbleGlass.selftest.mjs
           node src/lib/hookDepsTdz.selftest.mjs
           node src/styles/list-card-padding.selftest.mjs

@@ -1,3 +1,4 @@
+import { avatarEffectGeometry } from "./avatarEffectGeometry.js";
 /**
  * Settings profile header, "Banner Kart" (3.7.x, owner pick 01): pure model so
  * the card, its tests and the mockups agree on what is shown.
@@ -26,14 +27,14 @@ export function statusDotOf(status) {
 }
 
 /**
- * Avatar effects (`.cosmetic-avatar-effect`) sit at inset -12% around the avatar.
+ * Avatar effects (`.cosmetic-avatar-effect`) extend `avatarEffectGeometry().outset` past the avatar.
  * The old hero gave the avatar only 6 px above it inside a scrolling column, so
  * the ring's top was cut off and read as a stray blue arc. The card reserves the
  * full ring plus its glow.
  */
 export function effectRoom(avatarSize) {
   const n = Math.max(0, Number(avatarSize) || 0);
-  return Math.max(6, Math.round(n * 0.12)) + 4;
+  return avatarEffectGeometry(n).outset + 6;
 }
 
 export function profileCardModel(me, { status, isAdmin = false, teamLabel = "", fallbackName = "User" } = {}) {

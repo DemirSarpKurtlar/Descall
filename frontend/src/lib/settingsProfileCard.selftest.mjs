@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { profileCardModel, statusDotOf, effectRoom, bannerUrlOf, fallbackBanner } from "./settingsProfileCard.js";
+import { avatarEffectGeometry } from "./avatarEffectGeometry.js";
 
 // Display name, handle and the staff line.
 const me = { username: "Admin", displayName: "Demirr", equippedBanner: { asset_url: "https://x/b.webp" } };
@@ -30,7 +31,7 @@ assert.equal(statusDotOf("offline"), null);
 assert.equal(statusDotOf(undefined), "online");
 
 // Stray-arc fix: the room kept around the avatar covers the effect inset (12%).
-for (const size of [56, 64, 72, 84]) assert.ok(effectRoom(size) >= Math.round(size * 0.12) + 2, `room ${size}`);
+for (const size of [56, 64, 72, 84]) assert.ok(effectRoom(size) >= avatarEffectGeometry(size).outset + 4, `room ${size}`);
 
 // CSS contract: the banner clips itself, the card never clips the avatar ring,
 // heavy frost has a Reduce Transparency fallback, light theme is covered.
