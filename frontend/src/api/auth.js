@@ -1,17 +1,18 @@
 import { API_ROUTES } from "../config/api";
 import { httpRequest } from "./http";
 import { peekAttribution } from "../lib/attribution";
-import { detectClientPlatform } from "../lib/clientPlatform";
 
+// web | electron | ios | android (iPad is told apart from the UA server-side).
 function withClientPlatform(attribution) {
-  let platform = "web";
+  let p = "web";
   try {
-    platform = detectClientPlatform();
+    const w = window;
+    p = w.electronAPI ? "electron" : w.Capacitor?.isNativePlatform?.() ? w.Capacitor.getPlatform() : "web";
   } catch {
     /* ignore */
   }
-  const first = { ...(attribution?.first || {}), client_platform: platform };
-  return { ...(attribution || {}), first, last: { ...(attribution?.last || first), client_platform: platform } };
+  const first = { ...attribution?.first, client_platform: p };
+  return { ...attribution, first, last: { ...(attribution?.last || first), client_platform: p } };
 }
 
 function withAttribution(payload = {}) {

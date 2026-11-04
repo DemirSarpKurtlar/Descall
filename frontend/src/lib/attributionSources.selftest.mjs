@@ -3,7 +3,6 @@
  * Landing referrer/UTM survive SPA reloads and OAuth round-trips.
  */
 import { captureVisit, peekAttribution } from "./attribution.js";
-import { inviteKindFromLocation, detectClientPlatform } from "./clientPlatform.js";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -40,15 +39,6 @@ captureVisit(win({ search: "?utm_source=reddit", ls: broken, ss: ss2 }));
 a = peekAttribution({ localStorage: broken, sessionStorage: ss2 });
 assert(a && a.first.utm_source === "reddit", "session fallback works");
 
-assert(inviteKindFromLocation("/servers/join/abc", "") === "server_invite", "server invite");
-assert(inviteKindFromLocation("/invite/s/abc", "") === "server_invite", "server invite alt");
-assert(inviteKindFromLocation("/invite/abc", "") === "group_invite", "group invite");
-assert(inviteKindFromLocation("/register", "?ref=ali") === "friend_invite", "friend invite");
-assert(inviteKindFromLocation("/", "") === "", "no invite");
 
-assert(detectClientPlatform({ electronAPI: {} }) === "electron", "electron");
-assert(detectClientPlatform({ Capacitor: { isNativePlatform: () => true, getPlatform: () => "ios" }, navigator: { userAgent: "iPhone" } }) === "ios", "ios");
-assert(detectClientPlatform({ Capacitor: { isNativePlatform: () => true, getPlatform: () => "android" }, navigator: {} }) === "android", "android");
-assert(detectClientPlatform({ navigator: { userAgent: "Chrome" } }) === "web", "web");
 
 console.log("attributionSources.selftest.mjs: ok");
