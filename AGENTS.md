@@ -2,6 +2,12 @@
 
 ## Cursor Cloud specific instructions
 
+### Tasarım dili (zorunlu, unutulmaz)
+- Her arayüz, hareket, tipografi, malzeme ve etkileşim **tamamen** `.cursor/rules/apple-design.mdc` dosyasına göre yapılır. Başka bir görsel dil uydurulmaz.
+- Kural her ajan için geçerlidir: web, Electron, mobil, sohbet, oyun kartları, mağaza, ayarlar, pazarlama.
+- UI işine başlamadan bu dosya okunur ve uygulanır. Özet: basışta anında tepki, 1:1 sürükleme, kesilebilir yaylar (varsayılan sönüm 1.0, sıçrama yalnız momentumda), hız devri, aynı yoldan giriş/çıkış, lastik bant sınır, yarı saydam katmanlar, boyuta göre tipografi, `prefers-reduced-motion` için kısa opaklık geçişi.
+- Çelişkide `.cursor/rules/apple-design.mdc` içindeki tam metin geçerlidir.
+
 ### Auth
 - Descall uses **custom JWT** (`JWT_SECRET`); Supabase is DB/storage only (service role), not Supabase Auth.
 - Google Sign-In: GIS ID token → `POST /auth/google` → same app JWT. Requires `GOOGLE_CLIENT_ID` (and ideally `VITE_GOOGLE_CLIENT_ID` at frontend build). If client ID is missing, the UI shows “not configured” and password auth still works.
