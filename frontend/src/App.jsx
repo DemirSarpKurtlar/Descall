@@ -65,6 +65,7 @@ import { bindServerSocketHandlers } from "./socket/bindServerSocketHandlers";
 import { API_BASE_URL } from "./config/api";
 import { preloadIceServers, refreshIceServers } from "./lib/iceConfig";
 import { optimisticSessionReady } from "./lib/bootSession";
+import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessage } from "./lib/liveMessageMerge";
 import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
@@ -2022,18 +2023,11 @@ export default function App() {
       if (previewText) setDmPreviews((prev) => ({ ...prev, [convWith]: previewText }));
 
       setDmByUserId((prev) => {
+        if (!shouldAcceptLiveMessage(normalizedMsg)) return prev;
         const cur = prev[convWith] ?? [];
-        const isSelf = normalizedMsg.from?.id === myIdRef.current;
-        // Replace optimistic (sending) message by tempId echo, or dedupe by real id
-        if (isSelf && normalizedMsg.tempId) {
-          const hasTemp = cur.some((m) => m.id === normalizedMsg.tempId);
-          if (hasTemp) {
-            return { ...prev, [convWith]: cur.map((m) => m.id === normalizedMsg.tempId ? { ...normalizedMsg, sending: false } : m) };
-          }
-        }
-        const alreadyExists = cur.some((m) => m.id === normalizedMsg.id);
-        if (alreadyExists) return prev;
-        return { ...prev, [convWith]: [...cur, normalizedMsg] };
+        const next = mergeIncomingDmMessage(cur, normalizedMsg, myIdRef.current);
+        if (next === cur) return prev;
+        return { ...prev, [convWith]: next };
       });
       // Only notify for messages from others (not self)
       const currentUserId = myIdRef.current;
@@ -2233,18 +2227,11 @@ export default function App() {
         poll: message.poll || null,
       };
       setGroupMessagesById((prev) => {
+        if (!shouldAcceptLiveMessage(normalized)) return prev;
         const cur = prev[groupId] ?? [];
-        // Replace optimistic message by tempId, or dedupe by real id
-        if (tempId && cur.some((m) => m.id === tempId)) {
-          return {
-            ...prev,
-            [groupId]: sortMessagesChronologically(
-              cur.map((m) => m.id === tempId ? { ...normalized, sending: false } : m)
-            ),
-          };
-        }
-        if (cur.some((m) => m.id === normalized.id)) return prev;
-        return { ...prev, [groupId]: sortMessagesChronologically([...cur, normalized]) };
+        const merged = mergeIncomingChatMessage(cur, normalized, tempId);
+        if (merged === cur) return prev;
+        return { ...prev, [groupId]: sortMessagesChronologically(merged) };
       });
 
       setGroupLastActivity((prev) => ({ ...prev, [groupId]: normalized.timestamp }));
