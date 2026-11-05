@@ -425,6 +425,15 @@ function registerGroupHandlers(io, socket, state) {
     socket.to(`group:${groupId}`).emit("group:message", { groupId, message });
     // Echo back to sender with tempId for optimistic message replacement
     socket.emit("group:message", { groupId, message, tempId });
+    // Sender's other devices (Electron while typing on iOS, etc.) — room
+    // broadcast already covers ones that joined the group room; this covers
+    // any session that has not (yet) rejoined. Client dedupes by message id.
+    require("../lib/messageFanout").fanoutOwnMessageToOtherDevices(io, {
+      userId: myId,
+      exceptSocketId: socket.id,
+      event: "group:message",
+      payload: { groupId, message },
+    });
 
     // Detect @mentions and notify mentioned users
     const mentionedUserIds = new Set();

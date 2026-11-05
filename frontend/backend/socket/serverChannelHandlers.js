@@ -1211,6 +1211,13 @@ function registerServerChannelHandlers(io, socket) {
           message,
           tempId,
         });
+        // Same-user other devices: see groupHandlers note (iOS → Electron).
+        require("../lib/messageFanout").fanoutOwnMessageToOtherDevices(io, {
+          userId: myId,
+          exceptSocketId: socket.id,
+          event: "server:channel:message",
+          payload: { serverId: channel.server_id, channelId, message },
+        });
 
         bumpChannelUnreadForMembers(channel.server_id, channelId, myId, {
           io,
