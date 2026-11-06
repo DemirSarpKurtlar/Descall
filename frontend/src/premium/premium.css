@@ -25,14 +25,12 @@
   --pb-tint: rgba(242, 170, 96, 0.14);
   --pb-edge: rgba(255, 200, 120, 0.42);
 }
+/* The mark is the tier logo itself (PremiumGlyph, concept A): no tile behind it. */
 .dsc-premium-badge-mark {
   display: grid;
   place-items: center;
   flex: none;
-  color: #fff;
-  background: linear-gradient(180deg, var(--pb-a), var(--pb-b));
 }
-.dsc-premium-badge.is-ultra .dsc-premium-badge-mark { color: #3a2208; }
 .dsc-premium-badge-label {
   display: grid;
   place-items: center;
@@ -46,12 +44,14 @@
   width: 16px;
   height: 16px;
   margin-left: 6px;
-  border-radius: 5px;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
   transform: translateY(-1px);
 }
 .dsc-premium-badge--inline .dsc-premium-badge-mark { width: 16px; }
 .dsc-premium-badge--chip { height: 22px; border-radius: 6px; }
-.dsc-premium-badge--chip .dsc-premium-badge-mark { width: 22px; }
+.dsc-premium-badge--chip .dsc-premium-badge-mark { width: 24px; background: var(--pb-tint); }
 .dsc-premium-badge--chip .dsc-premium-badge-label { font-size: 10.5px; }
 .dsc-admin-badge + .dsc-premium-badge--inline { margin-left: 4px; }
 .dsc-admin-badge + .dsc-premium-badge--chip,
