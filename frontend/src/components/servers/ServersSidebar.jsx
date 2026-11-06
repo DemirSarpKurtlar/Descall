@@ -3220,15 +3220,16 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
       title={title}
       message={message}
       confirmLabel={busy ? t("Please wait...") : title}
-      cancelLabel={t("Cancel")}
+      cancelLabel={t("Never mind")}
       danger
       busy={busy}
       error={error}
       confirmDisabled={!match}
       onConfirm={confirm}
       onCancel={onCancel}
+      className="g-alert-form"
     >
-      <label>
+      <label className="g-alert-field">
         <span>{t("Server name")}</span>
         <input
           value={value}

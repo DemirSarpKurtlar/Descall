@@ -39,6 +39,7 @@ export default function GlassConfirm({
   onConfirm,
   onCancel,
   children,
+  className = "",
 }) {
   const reduce = useReducedMotion();
   const [draft, setDraft] = useState(input?.defaultValue ?? "");
@@ -91,7 +92,7 @@ export default function GlassConfirm({
       }}
     >
       <motion.div
-        className="g-alert g-glass g-heavy"
+        className={`g-alert g-glass g-heavy${className ? ` ${className}` : ""}`}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="g-alert-title"

@@ -6260,6 +6260,7 @@ export const nested = {
 export const phrases = {
   "API reachable": "API accesible",
   "Master switch": "Interruptor principal",
+  "Never mind": "Mejor no",
   "Private messages, group messages and mentions": "Mensajes privados, mensajes de grupo y menciones",
   "Request timed out": "La solicitud agotó el tiempo de espera",
   " (you)": " (tú)",
