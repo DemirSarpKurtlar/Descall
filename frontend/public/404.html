@@ -31,25 +31,19 @@
         padding: 32px 20px;
       }
       .card {
-        width: min(520px, 100%);
-        text-align: center;
-        border-radius: 40px;
-        padding: 36px 28px 32px;
-        background:
-          linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)),
-          rgba(20, 21, 30, .72);
-        box-shadow: inset 0 0 0 .5px rgba(255,255,255,.14), 0 24px 64px rgba(0,0,0,.45);
+        width: min(560px, 100%);
+        text-align: left;
       }
       h1 {
         margin: 0;
         font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
-        font-size: clamp(72px, 18vw, 120px);
-        line-height: .9;
-        letter-spacing: -.06em;
-        font-weight: 800;
+        font-size: clamp(30px, 7vw, 44px);
+        line-height: 1.08;
+        letter-spacing: -.03em;
+        font-weight: 700;
       }
       p { margin: 12px 0 0; color: rgba(235,238,255,.72); font-size: 16px; line-height: 1.45; }
-      .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+      .row { display: flex; gap: 10px; justify-content: flex-start; flex-wrap: wrap; margin-top: 22px; }
       a {
         display: inline-flex; align-items: center; justify-content: center;
         min-height: 48px; padding: 0 18px; border-radius: 999px;
@@ -61,8 +55,7 @@
   </head>
   <body>
     <main class="card">
-      <h1>404</h1>
-      <p data-i18n="body">This page does not exist on Descall.</p>
+      <h1 data-i18n="body">This page does not exist on Descall.</h1>
       <div class="row">
         <a class="primary" href="/" data-i18n="home">Home</a>
         <a class="ghost" href="/download" data-i18n="download">Download</a>

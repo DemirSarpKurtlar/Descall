@@ -5,12 +5,7 @@ import {
   IconDownload,
   IconMonitor,
   IconSmartphone,
-  IconShield,
-  IconGlobe,
   IconCheck,
-  IconGithub,
-  IconStar,
-  IconZap,
 } from "../icons";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { fetchLatestDesktopRelease } from "../../lib/githubRelease";
@@ -207,43 +202,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
-      <ul className="mkt-download-trust">
-        <li>
-          <span>
-            <IconShield size={16} /> TLS
-          </span>
-        </li>
-        <li>
-          <span>
-            <IconZap size={16} /> {t("Free")}
-          </span>
-        </li>
-        <li>
-          <Link to={href("/")}>
-            <IconGlobe size={16} /> Web
-          </Link>
-        </li>
-        <li>
-          <button type="button" onClick={() => setSelectedPlatform("windows")}>
-            <IconMonitor size={16} /> Windows
-          </button>
-        </li>
-        <li>
-          <button type="button" onClick={() => setSelectedPlatform("android")}>
-            <IconSmartphone size={16} /> Android
-          </button>
-        </li>
-        <li>
-          <a href={`https://github.com/${GITHUB_REPO}`} rel="noopener noreferrer" target="_blank">
-            <IconGithub size={16} /> GitHub
-          </a>
-        </li>
-        <li>
-          <span>
-            <IconStar size={16} /> {t("Beta")}
-          </span>
-        </li>
-      </ul>
+      <p className="mkt-download-platforms">{t("Works on Windows, Android, iPhone and the web.")}</p>
 
       <section className="mkt-shot-row">
         <SeoProductPreview

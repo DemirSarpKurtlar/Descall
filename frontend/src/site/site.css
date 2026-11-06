@@ -1064,7 +1064,7 @@ a.mkt-feature-link {
 .auth-otp-cells { display: none; }
 
 .mkt-404 {
-  text-align: center;
+  text-align: left;
   padding: 80px 0;
 }
 
@@ -1963,6 +1963,13 @@ a.mkt-feature-link {
   font-size: 13px;
   color: var(--mkt-muted);
   line-height: 1.45;
+}
+
+.mkt-download-platforms {
+  margin: 32px 0 8px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--mkt-muted);
 }
 
 .mkt-download-trust {
