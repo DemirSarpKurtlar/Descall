@@ -81,10 +81,10 @@ assert.ok(!("days" in r.body) && !("ends_at" in r.body), "unlimited sends no end
 r = buildApplyPayload({ ...base, op: "grant", plan: "plus", duration: { mode: "date", endDate: "2027-01-15", endTime: "12:00" } }, { requestId: "rid", now: NOW });
 assert.equal(r.body.ends_at, new Date(2027, 0, 15, 12, 0).toISOString());
 assert.ok(!("days" in r.body));
-// a later start sends the computed end and the start
+// the server has no start date: a grant always starts now, and a stray start is ignored
 r = buildApplyPayload({ ...base, op: "grant", plan: "plus", start: iso(NOW + 3 * DAY), duration: { mode: "preset", days: 7 } }, { requestId: "rid", now: NOW });
-assert.equal(r.body.ends_at, iso(NOW + 10 * DAY));
-assert.equal(r.body.starts_at, iso(NOW + 3 * DAY));
+assert.equal(r.body.days, 7);
+assert.ok(!("starts_at" in r.body) && !("ends_at" in r.body), "no start date is sent");
 // reason is required
 assert.deepEqual(buildApplyPayload({ op: "cancel", reason: "  " }, { requestId: "x", now: NOW }), { ok: false, error: "reason" });
 assert.deepEqual(buildApplyPayload({ ...base, op: "grant", duration: { mode: "preset", days: 30 } }, { requestId: "x", now: NOW }), { ok: false, error: "plan" });
@@ -95,6 +95,7 @@ r = buildApplyPayload({ ...base, op: "extend", duration: { mode: "custom", days:
 assert.equal(r.body.days, 12);
 assert.equal(r.body.plan, "plus", "plan carries the current plan");
 assert.deepEqual(buildApplyPayload({ ...base, op: "extend", duration: { mode: "unlimited" } }, { requestId: "x", current: active, now: NOW }), { ok: false, error: "extendUnlimited" });
+assert.deepEqual(buildApplyPayload({ ...base, op: "extend", duration: { mode: "date", endDate: "2027-01-15" } }, { requestId: "x", current: active, now: NOW }), { ok: false, error: "extendDate" }, "extend takes days only (the server adds days)");
 // change_plan must change something
 assert.deepEqual(buildApplyPayload({ ...base, op: "change_plan", plan: "plus" }, { requestId: "x", current: active, now: NOW }), { ok: false, error: "samePlan" });
 assert.equal(buildApplyPayload({ ...base, op: "change_plan", plan: "ultra" }, { requestId: "x", current: active, now: NOW }).body.plan, "ultra");
@@ -134,6 +135,12 @@ assert.deepEqual(buildCampaignPayload({ code: "ABCD", kind: "percent", value: "1
 r = buildCampaignPayload({ code: "SALE10", kind: "percent", value: "10", planLimit: "" });
 assert.equal(r.body.value, 10);
 assert.equal(r.body.plan_id, null);
+assert.equal(r.body.currency, null);
+assert.deepEqual(buildCampaignPayload({ code: "ABCD", kind: "percent", value: "" }), { ok: false, error: "value" });
+assert.deepEqual(buildCampaignPayload({ code: "ABCD", kind: "fixed", value: "500" }), { ok: false, error: "currency" });
+r = buildCampaignPayload({ code: "FIX5", kind: "fixed", value: "500", currency: "try" });
+assert.equal(r.body.currency, "TRY");
+assert.equal(r.body.value, 500);
 assert.deepEqual(buildCampaignPayload({ code: "ABCD", kind: "free_membership", planLimit: "plus", durationDays: "7", startDate: "2026-12-10", endDate: "2026-12-01" }), { ok: false, error: "endBeforeStart" });
 
 // ---- plans: never a price
@@ -218,5 +225,8 @@ assert.deepEqual(an.campaigns, [{ id: "c1", code: "LAUNCH", redemptions: 3, user
 const none = normalizeAnalytics({});
 for (const [k, v] of Object.entries(none)) assert.equal(v, null, `${k} is null without data`);
 assert.deepEqual(normalizeAnalytics({ conversion: { rate: 0.1, numerator: 1, denominator: 10, denominator_label: "granted" } }).conversion, { rate: 0.1, numerator: 1, denominator: 10, denominatorLabel: "granted" });
+
+// the server's active series is one total per bucket (all plans)
+assert.deepEqual(normalizeAnalytics({ active: [{ bucket: "2026-10-01T00:00:00+00:00", total: 5 }] }).active, [{ label: "2026-10-01T00:00:00+00:00", values: [5] }]);
 
 console.log("premiumModel.selftest ok");

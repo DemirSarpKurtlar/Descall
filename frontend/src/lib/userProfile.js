@@ -164,6 +164,10 @@ export function mergeUserProfiles(...parts) {
     const hit = [...list].reverse().find((p) => p[key]);
     if (hit?.[key]) out[key] = hit[key];
   }
+  // Descall+ / Ultra badge: the newest shard that carries the key wins, null included
+  // (a membership that ended must not be kept alive by an older copy).
+  const premiumHit = [...list].reverse().find((p) => p.premium_plan !== undefined);
+  if (premiumHit) out.premium_plan = premiumHit.premium_plan ?? null;
   return normalizeUser(out);
 }
 
@@ -229,6 +233,7 @@ export function patchUserProfile(user, patch = {}) {
       next[key] = patch[key];
     }
   }
+  if (patch.premium_plan !== undefined) next.premium_plan = patch.premium_plan ?? null;
 
   const version =
     patch.avatarVersion ?? patch.updated_at ?? patch.updatedAt ?? user.avatarVersion ?? Date.now();

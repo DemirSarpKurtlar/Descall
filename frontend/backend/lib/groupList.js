@@ -197,12 +197,15 @@ async function loadUserGroups(userId, db = defaultDb()) {
   ]);
 
   const userIds = [...new Set(memberRows.map((row) => row.user_id).filter(Boolean))];
-  const [users, lastRows] = await Promise.all([
+  const [rawUsers, lastRows, plans] = await Promise.all([
     userIds.length
       ? selectIn(db, "users", "id", userIds, "id, username, avatar_url, status, is_admin")
       : Promise.resolve([]),
     loadLastMessages(db, groupIds),
+    // Descall+ / Ultra badges of the members: one batched, cached lookup (lib/premium/badges.js).
+    require("./premium/badges").plansFor(userIds).catch(() => new Map()),
   ]);
+  const users = (rawUsers || []).map((u) => ({ ...u, premium_plan: plans.get(String(u.id)) ?? null }));
 
   return assembleGroupList({ memberships, groups, memberRows, users, lastRows, viewerId: userId });
 }

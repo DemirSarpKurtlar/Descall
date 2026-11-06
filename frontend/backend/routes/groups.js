@@ -688,9 +688,19 @@ router.get("/:groupId/members", requireAuth, async (req, res) => {
     }
     
     if (error) throw error;
-    
+
+    // Descall+ / Ultra badges: one batched premium_active_for lookup, cached for a minute.
+    const premiumByUser = await require("../lib/premium/badges")
+      .plansFor(members.map((m) => m.user?.id))
+      .catch(() => new Map());
+
     res.json({ 
-      members: members.map(m => ({ ...m.user, joinedAt: m.joined_at, role: m.role === ROLES.ADMIN ? ROLES.ADMIN : ROLES.MEMBER })),
+      members: members.map(m => ({
+        ...m.user,
+        premium_plan: premiumByUser.get(String(m.user?.id)) ?? null,
+        joinedAt: m.joined_at,
+        role: m.role === ROLES.ADMIN ? ROLES.ADMIN : ROLES.MEMBER,
+      })),
       isFull: members.length >= MAX_GROUP_SIZE
     });
   } catch (err) {

@@ -1,13 +1,11 @@
 import { Gift } from "../../ui/Icon.jsx";
-import { OPS, PLANS, localInputToDate, subscriptionState } from "./premiumModel.js";
-import { DateInput, DurationField, Field, Seg, ToggleRow } from "./PremiumUi.jsx";
+import { OPS, PLANS, subscriptionState } from "./premiumModel.js";
+import { DurationField, Field, Seg, ToggleRow } from "./PremiumUi.jsx";
 
 export function freshActionForm(op = "grant") {
   return {
     op,
     plan: "plus",
-    startDate: "",
-    startTime: "00:00",
     duration: { mode: "preset", days: 30 },
     isFree: true,
     note: "",
@@ -17,19 +15,20 @@ export function freshActionForm(op = "grant") {
 
 /** The form as premiumModel.buildApplyPayload / buildBulkPayload expect it. */
 export function formForModel(f) {
-  return { ...f, start: f.startDate ? localInputToDate(f.startDate, f.startTime || "00:00") : null };
+  return { ...f };
 }
 
-/** Which ops make sense for this member (null current = bulk: every op). */
+/**
+ * Which ops make sense for this member (undefined current = bulk: every op), matching
+ * premium_admin_apply: only "grant" works without an active membership (already_active
+ * otherwise); every other op answers not_active on an ended one.
+ */
 export function opAllowed(op, current) {
   if (current === undefined) return true;
   const st = subscriptionState(current).state;
-  // An active membership is changed, not granted again (the server answers already_active).
   if (op === "grant") return st !== "active";
-  if (st === "none") return false;
-  if (op === "extend") return !current.unlimited;
-  if (op === "cancel" || op === "change_plan") return st === "active";
-  if (op === "set_unlimited") return !current.unlimited || st !== "active";
+  if (st !== "active") return false;
+  if (op === "extend" || op === "set_unlimited") return !current.unlimited;
   return true;
 }
 
@@ -71,13 +70,9 @@ export default function ActionFields({ form, onChange, t, current, ops = OPS }) 
             options={PLANS.map((p) => [p, t(`premiumAdmin.plan.${p}`), op === "change_plan" && current?.plan_id === p])} />
         </div>
       ) : null}
-      {op === "grant" ? (
-        <Field label={t("premiumAdmin.f.start")} hint={form.startDate ? t("premiumAdmin.startLocal") : t("premiumAdmin.startNow")}>
-          <DateInput empty={t("premiumAdmin.now")} label={t("premiumAdmin.f.start")} value={form.startDate} onChange={(startDate) => set({ startDate })} time timeValue={form.startTime} onTime={(startTime) => set({ startTime })} />
-        </Field>
-      ) : null}
+      {op === "grant" ? <p className="pc-hint">{t("premiumAdmin.grantStartsNow")}</p> : null}
       {showDuration ? (
-        <DurationField t={t} value={form.duration} onChange={(duration) => set({ duration })} allowUnlimited={op === "grant"} />
+        <DurationField t={t} value={form.duration} onChange={(duration) => set({ duration })} allowUnlimited={op === "grant"} allowDate={op !== "extend"} />
       ) : null}
       {op === "set_end" && form.duration?.mode !== "date" ? <p className="pc-hint">{t("premiumAdmin.setEndFromNow")}</p> : null}
       <ToggleRow icon={Gift} label={t("premiumAdmin.f.free")} hint={t("premiumAdmin.freeHint")} on={form.isFree} onChange={(isFree) => set({ isFree })} />

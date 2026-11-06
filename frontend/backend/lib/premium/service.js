@@ -48,6 +48,10 @@ const ERROR_STATUS = {
   not_redeemable: 409,
   unavailable: 409,
   code_taken: 409,
+  invalid_code: 400,
+  invalid_range: 400,
+  unknown_feature: 400,
+  field_not_editable: 400,
 };
 
 const MISSING_FN = new Set(["PGRST202", "42883", "42P01", "PGRST205"]);
@@ -158,6 +162,58 @@ function applyArgs(actorId, userId, p, batchId = null) {
   };
 }
 
+/* ---------------- user lookups (names for the admin pages) ---------------- */
+
+const LOOKUP_MAX = 500;
+
+/** id -> { id, username, display_name, avatar_url } for the given ids, one query per 500 ids. Never throws. */
+async function usersById(ids) {
+  const want = [...new Set((ids || []).map(String).filter((x) => UUID.test(x)))];
+  const out = new Map();
+  for (let i = 0; i < want.length; i += LOOKUP_MAX) {
+    try {
+      const { data, error } = await db().from("users").select("id, username, display_name, avatar_url").in("id", want.slice(i, i + LOOKUP_MAX));
+      if (error) continue;
+      for (const u of data || []) {
+        out.set(String(u.id), { id: u.id, username: u.username ?? null, display_name: u.display_name ?? null, avatar_url: u.avatar_url ?? null });
+      }
+    } catch {
+      /* names are a nicety: the ids still show */
+    }
+  }
+  return out;
+}
+
+/**
+ * A filter value typed by an admin: a user id, or a username (with or without "@").
+ * Returns the id, null for an empty value, or false when nobody matches.
+ */
+async function resolveUserRef(raw) {
+  const s = String(raw ?? "").trim().replace(/^@/, "");
+  if (!s) return null;
+  if (UUID.test(s)) return s;
+  if (s.length > 64) return false;
+  try {
+    const exact = s.replace(/[\\%_]/g, (c) => `\\${c}`);
+    const { data, error } = await db().from("users").select("id").ilike("username", exact).limit(1);
+    if (error || !data?.length) return false;
+    return String(data[0].id);
+  } catch {
+    return false;
+  }
+}
+
+/** Events with the member ({id, username, display_name, avatar_url}) and the admin's username. */
+async function decorateEvents(events) {
+  const list = Array.isArray(events) ? events : [];
+  const names = await usersById(list.flatMap((e) => [e.user_id, e.actor_id]));
+  return list.map((e) => ({
+    ...e,
+    user: names.get(String(e.user_id)) || null,
+    actor_username: e.actor_id ? names.get(String(e.actor_id))?.username ?? null : null,
+  }));
+}
+
 /* ---------------- memberships ---------------- */
 
 async function apply(actorId, userId, body) {
@@ -234,7 +290,7 @@ async function userDetail(userId) {
   if (!UUID.test(String(userId || ""))) throw new PremiumError("user_not_found", 404);
   const data = await rpc("premium_admin_user", { p_user: userId, p_limit: 200 });
   if (!data) throw new PremiumError("user_not_found", 404);
-  return data;
+  return { ...data, events: await decorateEvents(data.events) };
 }
 
 /* ---------------- plans ---------------- */
@@ -336,6 +392,12 @@ function parseCampaign(body, { partial = false } = {}) {
   if (has("duration_days")) row.duration_days = intOrNull(b.duration_days, 1, 3650);
   if (has("percent_off")) row.percent_off = intOrNull(b.percent_off, 1, 100);
   if (has("amount_off_minor")) row.amount_off_minor = intOrNull(b.amount_off_minor, 1, 100000000);
+  // The admin form sends one "value": percent off for percent coupons, minor units for fixed ones.
+  if (has("value") && b.value !== null && b.value !== "") {
+    const kind = row.kind || String(b.kind || "");
+    if (kind === "percent" && !has("percent_off")) row.percent_off = intOrNull(b.value, 1, 100);
+    else if (kind === "fixed" && !has("amount_off_minor")) row.amount_off_minor = intOrNull(b.value, 1, 100000000);
+  }
   if (has("currency")) {
     const c = b.currency ? String(b.currency).toUpperCase() : null;
     if (c && !/^[A-Z]{3}$/.test(c)) throw new PremiumError("invalid_body", 400);
@@ -372,17 +434,38 @@ function dbWriteError(error) {
   return new PremiumError("server_error", 500, error);
 }
 
+/**
+ * A campaign row as the admin pages read it: the table columns plus `value` (percent_off or
+ * amount_off_minor, by kind) and `allowed_users` ({id, username, display_name, avatar_url}).
+ */
+function campaignView(row, names = new Map()) {
+  if (!row) return row;
+  const value = row.kind === "percent" ? row.percent_off ?? null : row.kind === "fixed" ? row.amount_off_minor ?? null : null;
+  const ids = Array.isArray(row.allowed_user_ids) ? row.allowed_user_ids : [];
+  return {
+    ...row,
+    value,
+    allowed_users: ids.map((id) => names.get(String(id)) || { id, username: null, display_name: null, avatar_url: null }),
+  };
+}
+
+async function campaignViews(rows) {
+  const list = (rows || []).filter(Boolean);
+  const names = await usersById(list.flatMap((r) => r.allowed_user_ids || []));
+  return list.map((r) => campaignView(r, names));
+}
+
 async function listCampaigns() {
   const { data, error } = await db().from("premium_campaigns").select(CAMPAIGN_COLS).order("created_at", { ascending: false }).limit(500);
   if (error) throw dbWriteError(error);
-  return data || [];
+  return campaignViews(data || []);
 }
 
 async function createCampaign(actorId, body) {
   const row = { ...parseCampaign(body), created_by: actorId };
   const { data, error } = await db().from("premium_campaigns").insert(row).select(CAMPAIGN_COLS).maybeSingle();
   if (error) throw dbWriteError(error);
-  return data;
+  return (await campaignViews([data]))[0];
 }
 
 async function updateCampaign(id, body) {
@@ -391,14 +474,23 @@ async function updateCampaign(id, body) {
   const { data, error } = await db().from("premium_campaigns").update(row).eq("id", id).select(CAMPAIGN_COLS).maybeSingle();
   if (error) throw dbWriteError(error);
   if (!data) throw new PremiumError("not_found", 404);
-  return data;
+  return (await campaignViews([data]))[0];
 }
 
+/**
+ * premium_campaign_stats plus the names the admin page reads: `redemptions` (all-time uses,
+ * = used_count), `still_active` (= active_now) and `recent[].at` (= created_at).
+ */
 async function campaignStats(id) {
   if (!UUID.test(String(id || ""))) throw new PremiumError("not_found", 404);
   const data = await rpc("premium_campaign_stats", { p_campaign: id });
   if (!data) throw new PremiumError("not_found", 404);
-  return data;
+  return {
+    ...data,
+    redemptions: data.used_count ?? null,
+    still_active: data.active_now ?? null,
+    recent: (data.recent || []).map((r) => ({ ...r, at: r.created_at })),
+  };
 }
 
 /* ---------------- dashboards ---------------- */
@@ -417,16 +509,96 @@ function parseRange(query, { defaultDays = 30 } = {}) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
+const numOrNull = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
+
+/**
+ * The stable analytics shape the admin page reads (docs/premium/BACKEND.md "Analytics response").
+ * Built only from premium_admin_analytics: per-bucket rows are null when there are no events at all,
+ * and a value the SQL does not compute (paid, per-campaign unique users) stays null.
+ */
+function analyticsView(raw) {
+  const r = raw || {};
+  if (r.error) throw new PremiumError(String(r.error), ERROR_STATUS[r.error] || 400);
+  const series = Array.isArray(r.series) ? r.series : null;
+  const rows = (fn) => (series ? series.map(fn) : null);
+  const conv = r.conversion && typeof r.conversion === "object" ? r.conversion : null;
+  const split = r.plan_split && typeof r.plan_split === "object" ? r.plan_split : null;
+  return {
+    from: r.from ?? null,
+    to: r.to ?? null,
+    bucket: r.bucket ?? null,
+    has_data: Boolean(r.has_data),
+    timezone: "UTC",
+    acquisitions: rows((b) => ({
+      bucket: b.bucket,
+      plus: numOrNull(b.acquisitions_by_plan?.plus) ?? 0,
+      ultra: numOrNull(b.acquisitions_by_plan?.ultra) ?? 0,
+      total: numOrNull(b.acquisitions) ?? 0,
+      free: numOrNull(b.acquisitions_free) ?? 0,
+    })),
+    active: rows((b) => ({ bucket: b.bucket, total: numOrNull(b.active) ?? 0 })),
+    cancellations_renewals: rows((b) => ({
+      bucket: b.bucket,
+      cancellations: numOrNull(b.cancellations) ?? 0,
+      renewals: numOrNull(b.renewals) ?? 0,
+      expirations: numOrNull(b.expirations) ?? 0,
+    })),
+    upgrades_downgrades: rows((b) => ({ bucket: b.bucket, upgrades: numOrNull(b.upgrades) ?? 0, downgrades: numOrNull(b.downgrades) ?? 0 })),
+    coin_cycles: rows((b) => ({ bucket: b.bucket, total: numOrNull(b.coin_cycles) ?? 0 })),
+    plan_split: split ? { plus: numOrNull(split.plus) ?? 0, ultra: numOrNull(split.ultra) ?? 0 } : null,
+    free_paid: r.free_paid ? { free: numOrNull(r.free_paid.free), paid: null, payments_integrated: false } : null,
+    avg_duration_days: numOrNull(r.average_duration_days),
+    unlimited_count: numOrNull(r.unlimited_count),
+    conversion: conv
+      ? {
+        rate: numOrNull(conv.value),
+        numerator: numOrNull(conv.numerator),
+        denominator: numOrNull(conv.denominator),
+        numerator_label: conv.numerator_label || null,
+        denominator_label: conv.denominator_label || null,
+      }
+      : null,
+    campaigns: (Array.isArray(r.campaigns) ? r.campaigns : []).map((c) => ({
+      id: c.id,
+      code: c.code,
+      kind: c.kind,
+      plan_id: c.plan_id ?? null,
+      active: c.active,
+      redemptions: numOrNull(c.redemptions_in_range),
+      unique_users: null,
+      still_active: numOrNull(c.active_now),
+      used_total: numOrNull(c.used_total),
+      total_limit: numOrNull(c.total_limit),
+    })),
+  };
+}
+
 async function analytics(query) {
   const { from, to } = parseRange(query);
   const bucket = ["day", "week", "month"].includes(String(query?.bucket)) ? String(query.bucket) : "day";
-  return rpc("premium_admin_analytics", { p_from: from, p_to: to, p_bucket: bucket });
+  return analyticsView(await rpc("premium_admin_analytics", { p_from: from, p_to: to, p_bucket: bucket }));
+}
+
+/** Count of subscription events (all time) for the finance page; null when it cannot be read. */
+async function countEvents(apply) {
+  try {
+    const { count, error } = await apply(db().from("subscription_events").select("id", { count: "exact", head: true }));
+    return error || typeof count !== "number" ? null : count;
+  } catch {
+    return null;
+  }
 }
 
 /** No payment provider yet: nothing here is revenue, and nothing is invented. */
 async function finance() {
-  const dash = await dashboard().catch(() => null);
+  const [dash, manual, campaign] = await Promise.all([
+    dashboard().catch(() => null),
+    countEvents((q) => q.eq("kind", "grant").eq("actor_kind", "admin")),
+    countEvents((q) => q.eq("kind", "campaign_redeem")),
+  ]);
   return {
+    manual_grants: manual,
+    campaign_grants: campaign,
     payments_integrated: false,
     revenue: null,
     mrr: null,
@@ -459,14 +631,18 @@ function decodeCursor(raw) {
   }
 }
 
+/**
+ * GET /events: { events, next_cursor }. `user` and `actor` take an id or a username; an unknown
+ * username gives an empty page. Each event carries `user` {id, username, display_name, avatar_url}
+ * and `actor_username`.
+ */
 async function listEvents(query) {
   const q = query || {};
   const limit = Math.max(1, Math.min(200, Number(q.limit) || 50));
+  const [userId, actorId] = await Promise.all([resolveUserRef(q.user), resolveUserRef(q.actor)]);
+  if (userId === false || actorId === false) return { events: [], next_cursor: null };
   let sel = db().from("subscription_events").select("*");
-  if (q.user) {
-    if (!UUID.test(String(q.user))) throw new PremiumError("invalid_body", 400);
-    sel = sel.eq("user_id", String(q.user));
-  }
+  if (userId) sel = sel.eq("user_id", userId);
   if (q.kind) {
     if (!EVENT_KINDS.includes(String(q.kind))) throw new PremiumError("invalid_body", 400);
     sel = sel.eq("kind", String(q.kind));
@@ -475,10 +651,7 @@ async function listEvents(query) {
     if (!PLAN_ID.test(String(q.plan))) throw new PremiumError("invalid_plan", 400);
     sel = sel.or(`new_plan.eq.${q.plan},prev_plan.eq.${q.plan}`);
   }
-  if (q.actor) {
-    if (!UUID.test(String(q.actor))) throw new PremiumError("invalid_body", 400);
-    sel = sel.eq("actor_id", String(q.actor));
-  }
+  if (actorId) sel = sel.eq("actor_id", actorId);
   if (q.batch) {
     if (!UUID.test(String(q.batch))) throw new PremiumError("invalid_body", 400);
     sel = sel.eq("batch_id", String(q.batch));
@@ -491,28 +664,49 @@ async function listEvents(query) {
   if (error) throw dbWriteError(error);
   const rows = data || [];
   const page = rows.slice(0, limit);
-  return { events: page, next_cursor: rows.length > limit && page.length ? encodeCursor(page[page.length - 1]) : null };
+  return { events: await decorateEvents(page), next_cursor: rows.length > limit && page.length ? encodeCursor(page[page.length - 1]) : null };
 }
 
-/** Premium admin actions from the durable admin audit log (actions named premium_*). */
+function encodeAuditCursor(entry) {
+  return Buffer.from(JSON.stringify([entry.at, entry.id])).toString("base64url");
+}
+
+function decodeAuditCursor(raw) {
+  if (!raw) return null;
+  try {
+    const [at] = JSON.parse(Buffer.from(String(raw), "base64url").toString("utf8"));
+    return Number.isNaN(new Date(at).getTime()) ? null : { at: new Date(at).toISOString() };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * GET /audit: premium admin actions (admin_audit rows whose action starts with "premium", merged with
+ * the in-memory log). Returns { items: [{id, at, actor_id, actor_username, action, target,
+ * target_username, meta}], next_cursor, durable }. `actor` takes an id or a username; `cursor` pages
+ * to older rows.
+ */
 async function listAudit(query, memoryEntries = []) {
   const q = query || {};
   const limit = Math.max(1, Math.min(500, Number(q.limit) || 100));
   const search = String(q.q || "").trim().slice(0, 80).replace(/[%_\\,()"]/g, "");
   const from = q.from ? parseIso(q.from) : null;
   const to = q.to ? parseIso(q.to) : null;
-  const actor = q.actor ? String(q.actor) : null;
-  if (actor && !UUID.test(actor)) throw new PremiumError("invalid_body", 400);
+  const cursor = decodeAuditCursor(q.cursor);
+  const actor = await resolveUserRef(q.actor);
+  if (actor === false) return { items: [], next_cursor: null, durable: true };
   let rows = null;
   try {
     let sel = db().from("admin_audit").select("id, at, actor_id, actor_username, action, target, meta").like("action", "premium%");
     if (actor) sel = sel.eq("actor_id", actor);
     if (from) sel = sel.gte("at", from);
     if (to) sel = sel.lte("at", to);
+    if (cursor) sel = sel.lt("at", cursor.at);
     if (search) sel = sel.or(`action.ilike.%${search}%,target.ilike.%${search}%,actor_username.ilike.%${search}%`);
-    const res = await sel.order("at", { ascending: false }).limit(limit);
+    const res = await sel.order("at", { ascending: false }).limit(limit + 1);
     if (!res.error) {
-      rows = (res.data || []).map((r) => ({ id: r.id, at: r.at, actorId: r.actor_id, actorUsername: r.actor_username, action: r.action, target: r.target, meta: r.meta || {} }));
+      rows = (res.data || []).map((r) => ({ id: r.id, at: new Date(r.at).toISOString(), actorId: r.actor_id, actorUsername: r.actor_username, action: r.action, target: r.target, meta: r.meta || {} }));
     }
   } catch {
     rows = null;
@@ -520,11 +714,24 @@ async function listAudit(query, memoryEntries = []) {
   const memory = (memoryEntries || []).filter((e) => String(e.action || "").startsWith("premium")
     && (!actor || e.actorId === actor)
     && (!from || e.at >= from) && (!to || e.at <= to)
+    && (!cursor || e.at < cursor.at)
     && (!search || [e.action, e.target, e.actorUsername].some((v) => String(v || "").toLowerCase().includes(search.toLowerCase()))));
   const seen = new Set();
   const merged = [...(rows || []), ...memory].filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)));
   merged.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  return { entries: merged.slice(0, limit), durable: rows !== null };
+  const page = merged.slice(0, limit);
+  const names = await usersById(page.map((e) => e.target));
+  const items = page.map((e) => ({
+    id: e.id,
+    at: e.at,
+    actor_id: e.actorId ?? null,
+    actor_username: e.actorUsername ?? null,
+    action: e.action,
+    target: e.target ?? null,
+    target_username: names.get(String(e.target))?.username ?? null,
+    meta: e.meta || {},
+  }));
+  return { items, next_cursor: merged.length > limit && page.length ? encodeAuditCursor(page[page.length - 1]) : null, durable: rows !== null };
 }
 
 /* ---------------- scheduler ---------------- */
@@ -609,6 +816,10 @@ module.exports = {
   finance,
   listEvents,
   listAudit,
+  analyticsView,
+  campaignView,
+  usersById,
+  resolveUserRef,
   encodeCursor,
   decodeCursor,
   runScheduledOnce,
