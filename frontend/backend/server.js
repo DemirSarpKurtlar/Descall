@@ -160,6 +160,8 @@ if (isVercel) {
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/promo", promoRoutes);
+// Descall+ / Ultra gaming data (game status card, long game history); entitlement checked per route.
+app.use("/api/premium/gaming", require("./routes/premiumGaming"));
 app.use("/api/premium", require("./routes/premium"));
 app.use("/api/dimaai", goneRouter("This feature has been removed."));
 // 2.13.0: the game tab, its Riot account link and lobbies were removed. Installed

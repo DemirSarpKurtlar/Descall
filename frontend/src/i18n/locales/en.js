@@ -1,4 +1,5 @@
 /** Auto-generated + curated en locale */
+import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
 import { WORLD3D_EN } from "./world3d.en.js";
 import { CORE_EN } from "./core.en.js";
@@ -21,6 +22,7 @@ import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  premiumGaming: PREMIUM_GAMING_EN,
   premium: PREMIUM_EN,
   world3d: WORLD3D_EN,
   counts: COUNTS_EN,

@@ -64,6 +64,8 @@ const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelW
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
+// Host hooks for premium modules that need main.cjs internals (multi_account partitions).
+const premiumHooks = require('./premium/hostHooks.cjs');
 
 // Logging
 log.transports.file.level = 'info';
@@ -83,6 +85,8 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+
+const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
 
 function distRoot() {
   const candidates = [
@@ -119,10 +123,21 @@ function appDocumentCsp(root) {
   return cachedAppCsp;
 }
 
+let descallProtocolHandler = null;
+/** Same descall:// handler on another session (premium multi_account partitions). */
+function registerAppProtocolOn(ses) {
+  if (!descallProtocolHandler || !ses || ses === session.defaultSession) return false;
+  ses.protocol.handle('descall', descallProtocolHandler);
+  return true;
+}
+
+premiumHooks.set('registerAppProtocolOn', registerAppProtocolOn);
+premiumHooks.set('mediaPermissions', MEDIA_PERMISSIONS);
+
 function registerDescallProtocol() {
   const root = distRoot();
   if (!root) return null;
-  protocol.handle('descall', (request) => {
+  protocol.handle('descall', descallProtocolHandler = (request) => {
     try {
       const url = new URL(request.url);
       // SPA routes serve the app document (2.11.11), and the document's relative
@@ -158,7 +173,12 @@ function isDescallWebContents(wc) {
     (w) => w && !w.isDestroyed() && w.webContents === wc,
   )) return true;
   // Descall+ pop-outs, mini mode and PiP load the same app document and need the token.
-  try { return Boolean(premium && premium.isAuxWindow && premium.isAuxWindow(wc)); } catch (_) { return false; }
+  try {
+    if (premium && premium.isAuxWindow && premium.isAuxWindow(wc)) return true;
+    // Descall Ultra extra-account windows (multi_account, own session partition).
+    const isAccount = premiumHooks.get('isAccountWebContents');
+    return Boolean(isAccount && isAccount(wc));
+  } catch (_) { return false; }
 }
 let senderGuard = null;
 function getSenderGuard() {
@@ -192,8 +212,10 @@ function trustedOn(channel, handler, { sync = false, refused = null } = {}) {
   });
 }
 
-function tokenFilePath() {
-  return path.join(app.getPath('userData'), 'auth-token.bin');
+function tokenFilePath(event) {
+  // A premium multi_account window (own session partition) keeps its own token file.
+  const own = event ? premiumHooks.tokenFileForSender(event.sender) : null;
+  return own || path.join(app.getPath('userData'), 'auth-token.bin');
 }
 
 // Renderer boot watchdog / "Tekrar dene" (index.html, 2.11.5): drop the service
@@ -250,7 +272,7 @@ onLocaleChange(() => {
 
 trustedOn('secure-token:get', (event) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (!fs.existsSync(file)) {
       event.returnValue = null;
       return;
@@ -267,7 +289,7 @@ trustedOn('secure-token:get', (event) => {
 
 trustedOn('secure-token:set', (event, token) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     const value = String(token || '');
     if (!value) {
       if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -286,9 +308,9 @@ trustedOn('secure-token:set', (event, token) => {
 }, { sync: true, refused: false });
 
 trustedOn('secure-token:clear', (event) => {
-  premium.gate.reset();
+  if (!premiumHooks.tokenFileForSender(event.sender)) premium.gate.reset();
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (fs.existsSync(file)) fs.unlinkSync(file);
     event.returnValue = true;
   } catch {
@@ -1342,7 +1364,6 @@ function createMainWindow() {
   // 'speaker-selection' (2.10.113): without it Chromium rejects
   // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
   // silently did nothing.
-  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(MEDIA_PERMISSIONS.includes(permission));
   });
