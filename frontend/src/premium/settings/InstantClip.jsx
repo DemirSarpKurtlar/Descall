@@ -64,10 +64,10 @@ export function Panel() {
           <div className="pg-row">
             <span className="pg-chip is-on">{info.hardware ? t("premiumGaming.instantClip.hw") : t("premiumGaming.instantClip.sw")}</span>
             <span className="pg-num pg-grow">{t("premiumGaming.instantClip.status", { seconds: Math.round(info.bufferedSec), mb: (info.bytes / MB).toFixed(1), cap: Math.round(cap / MB) })}</span>
-            <button type="button" className="pg-btn is-primary is-small" onClick={() => saveClip()}>{t("premiumGaming.instantClip.saveNow")}</button>
+            <button type="button" className="pg-btn is-primary is-small" data-testid="pg-clip-save" onClick={() => saveClip()}>{t("premiumGaming.instantClip.saveNow")}</button>
           </div>
           <div className="pg-row">
-            <button type="button" className="pg-btn is-small" onClick={() => measureClipCost()}>{t("premiumGaming.instantClip.measure")}</button>
+            <button type="button" className="pg-btn is-small" data-testid="pg-clip-measure" onClick={() => measureClipCost()}>{t("premiumGaming.instantClip.measure")}</button>
             {clip.cost?.main ? (
               <span className="pg-num pg-muted" data-testid="pg-clip-cost">
                 {t("premiumGaming.instantClip.cost", { cpu: clip.cost.main.renderer?.cpuPercent ?? clip.cost.main.total.cpuPercent, mem: Math.round(clip.cost.main.renderer?.privateMB ?? clip.cost.main.total.privateMB), dropped: info.dropped })}

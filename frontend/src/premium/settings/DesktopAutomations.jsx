@@ -116,7 +116,7 @@ export function Panel() {
             const d = describeRule(t, r, profiles);
             return (
               <li key={r.id}>
-                <input type="checkbox" checked={r.enabled} aria-label={t("premiumGaming.automations.ruleOn")} onChange={(e) => update({ rules: rules.map((x) => (x.id === r.id ? { ...x, enabled: e.target.checked } : x)) })} />
+                <Switch checked={r.enabled} label={t("premiumGaming.automations.ruleOn")} onChange={(on) => update({ rules: rules.map((x) => (x.id === r.id ? { ...x, enabled: on } : x)) })} testId={`pg-rule-${r.id}`} />
                 <span className="pg-grow">{t("premiumGaming.automations.ruleText", { when: d.when, then: d.then })}</span>
                 <button type="button" className="pg-btn is-small" aria-label={t("premiumGaming.common.remove")} onClick={() => update({ rules: rules.filter((x) => x.id !== r.id) })}><Trash2 size={14} /></button>
               </li>

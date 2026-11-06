@@ -7,6 +7,7 @@ import { formatTime } from "../../i18n/format.js";
 import { useFeatureSettings } from "../featureSettings.js";
 import { runAction } from "./actions.js";
 import { Bell, MessageSquare, Phone, Settings, Users, X, Zap } from "../../components/ui/Icon.jsx";
+import { createPortal } from "react-dom";
 import "./gaming.css";
 
 const nameOf = (u) => u?.displayName || u?.display_name || u?.username || "";
@@ -24,7 +25,7 @@ export default function CommandCenterView({ onClose }) {
   const online = (app.friends || []).filter((f) => app.statusOf?.(f.id) && app.statusOf(f.id) !== "offline").slice(0, 10);
   const dms = (app.recentDms || []).slice(0, 8);
   const notes = app.notifications || [];
-  return (
+  return createPortal((
     <div className="pg-modal-backdrop" onClick={onClose} data-testid="pg-command-center">
       <div className="pg-modal" role="dialog" aria-modal="true" aria-label={t("premiumGaming.commandCenter.title")} onClick={(e) => e.stopPropagation()}>
         <div className="pg-modal-head">
@@ -100,5 +101,5 @@ export default function CommandCenterView({ onClose }) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

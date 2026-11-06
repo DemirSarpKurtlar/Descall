@@ -23,11 +23,13 @@
 .pg-input, .pg-select { font: inherit; font-size: 13px; color: inherit; background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 9px; padding: 6px 9px; min-width: 0; }
 .pg-select option { background: #1b1e29; color: #f2f4f8; }
-.pg-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-.pg-switch input { width: 34px; height: 20px; appearance: none; border-radius: 999px; background: rgba(255, 255, 255, 0.16); position: relative; cursor: pointer; flex: 0 0 auto; transition: background 0.15s; }
-.pg-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
-.pg-switch input:checked { background: rgba(var(--g-brand-rgb, 88, 101, 242), 0.95); }
-.pg-switch input:checked::after { transform: translateX(14px); }
+.pg-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; appearance: none; background: none; border: 0; padding: 2px 0; color: inherit; font: inherit; text-align: left; }
+.pg-switch:disabled { opacity: 0.5; cursor: default; }
+.pg-switch-track { width: 34px; height: 20px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); position: relative; flex: 0 0 auto; transition: background 0.15s; }
+.pg-switch-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.pg-switch[aria-checked="true"] .pg-switch-track { background: rgba(var(--g-brand-rgb, 88, 101, 242), 0.95); }
+.pg-switch[aria-checked="true"] .pg-switch-track::after { transform: translateX(14px); }
+@media (prefers-reduced-motion: reduce) { .pg-switch-track, .pg-switch-track::after { transition: none; } }
 .pg-range { width: 140px; accent-color: rgb(var(--g-brand-rgb, 88, 101, 242)); }
 .pg-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pg-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.035); min-width: 0; }

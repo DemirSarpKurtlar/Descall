@@ -17,10 +17,10 @@ export const DEFAULTS = Object.freeze({
 
 export function Switch({ checked, onChange, label, disabled, testId }) {
   return (
-    <label className="pg-switch">
-      <input type="checkbox" role="switch" checked={Boolean(checked)} disabled={disabled} data-testid={testId} onChange={(e) => onChange?.(e.target.checked)} />
+    <button type="button" role="switch" className="pg-switch" aria-checked={Boolean(checked)} disabled={disabled} data-testid={testId} onClick={() => onChange?.(!checked)}>
+      <span className="pg-switch-track" aria-hidden="true" />
       <span>{label}</span>
-    </label>
+    </button>
   );
 }
 

@@ -5,6 +5,7 @@ import { useT } from "../../context/LocaleContext";
 import { usePremium } from "../usePremium.js";
 import { FEATURES } from "../features.js";
 import { X } from "../../components/ui/Icon.jsx";
+import { createPortal } from "react-dom";
 import "./gaming.css";
 
 export const HUB_PANELS = [
@@ -38,7 +39,7 @@ export default function GamingHub({ initialKey = null, onClose }) {
   const keys = useMemo(() => HUB_PANELS.map(([k]) => k).filter((k) => has(k)), [has]);
   const [cur, setCur] = useState(initialKey && keys.includes(initialKey) ? initialKey : keys[0] || null);
   const Panel = cur ? LAZY[cur] : null;
-  return (
+  return createPortal((
     <div className="pg-modal-backdrop" onClick={onClose} data-testid="pg-hub">
       <div className="pg-modal" role="dialog" aria-modal="true" aria-label={t("premiumGaming.hub.title")} onClick={(e) => e.stopPropagation()}>
         <div className="pg-modal-head">
@@ -60,5 +61,5 @@ export default function GamingHub({ initialKey = null, onClose }) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

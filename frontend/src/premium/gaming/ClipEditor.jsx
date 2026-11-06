@@ -7,6 +7,7 @@ import { closeClipEditor } from "./clipController.js";
 import { pinvoke, useAppBridge } from "./bridge.js";
 import { recentTargets, sendFileTo } from "./sendMedia.js";
 import { X } from "../../components/ui/Icon.jsx";
+import { createPortal } from "react-dom";
 import "./gaming.css";
 
 export default function ClipEditor({ snap, socket }) {
@@ -58,7 +59,7 @@ export default function ClipEditor({ snap, socket }) {
     } catch { setState("sendError"); }
   };
   const sec = (ms) => (ms / 1000).toFixed(1);
-  return (
+  return createPortal((
     <div className="pg-modal-backdrop" data-testid="pg-clip-editor">
       <div className="pg-modal pg-clip" role="dialog" aria-modal="true" aria-label={t("premiumGaming.instantClip.editor.title")}>
         <div className="pg-modal-head">
@@ -95,5 +96,5 @@ export default function ClipEditor({ snap, socket }) {
         {state === "sendError" ? <p className="pg-error">{t("premiumGaming.instantClip.editor.sendFailed")}</p> : null}
       </div>
     </div>
-  );
+  ), document.body);
 }
