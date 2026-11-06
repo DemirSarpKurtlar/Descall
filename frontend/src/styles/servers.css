@@ -4773,6 +4773,41 @@ button.member-row.server-member-row {
   margin: 0 0 8px;
 }
 
+.server-rules-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.server-rules-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.server-rules-num {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(88, 122, 246, 0.22);
+  color: #AFC3FF;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="light"] .server-rules-num { color: #3D5BD9; background: rgba(88, 122, 246, 0.14); }
+
+.server-rules-line {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 3px;
+}
+
 .server-join-preview-card {
   border-radius: var(--r-md);
   overflow: hidden;

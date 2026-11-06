@@ -181,3 +181,14 @@ html.gd-lite .dc-check input.dc-check-input:checked + .dc-check-box {
     box-shadow: 0 0 0 2px Highlight;
   }
 }
+
+/* UI audit #124 (and the shared .server-check-row root cause): the row's
+   "span { flex: 1 1 auto }" text rule also matched the checkbox face, which
+   then stretched into a 60px grey bar. The face keeps its 22x22 size. */
+.server-check-row > .dc-check,
+.server-check-row .dc-check-box {
+  flex: 0 0 22px;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+}

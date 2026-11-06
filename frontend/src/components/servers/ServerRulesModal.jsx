@@ -6,6 +6,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { acceptServerRules } from "../../api/servers";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import { rulesList } from "./hub/hubData";
 
 /**
  * Community onboarding rules accept screen.
@@ -64,11 +65,15 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
               name: server?.name || t("this server"),
             })}
           </p>
-          <div className="server-rules-text">
-            {(server?.rulesText || "").split("\n").map((line, i) => (
-              <p key={i}>{line || "\u00A0"}</p>
+          {/* UI audit #124: the same numbered list as the iPhone rules sheet. */}
+          <ol className="server-rules-text server-rules-list">
+            {rulesList(server?.rulesText).map((line, i) => (
+              <li key={`${i}-${line}`}>
+                <span className="server-rules-num" aria-hidden="true">{i + 1}</span>
+                <span className="server-rules-line">{line}</span>
+              </li>
             ))}
-          </div>
+          </ol>
           <label className="server-check-row">
             <GlassCheckbox
               checked={checked}
