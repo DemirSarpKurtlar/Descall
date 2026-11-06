@@ -133,7 +133,14 @@ for (const route of PUBLIC_ROUTES) {
 
 }
 
+const { contentUpdated } = await import(pathToFileURL(path.join(root, "src/site/seo/contentDates.js")).href);
 const catalogPaths = new Set(allSitemapEntries("https://descall.com").map((e) => e.path));
+// Sitemap lastmod must be an editorial content date, never a build or git date.
+for (const route of PUBLIC_ROUTES) {
+  if (route.noindex) continue;
+  const day = contentUpdated(route.path);
+  if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) fail(`No content date for ${route.path} (src/site/seo/contentDates.js)`);
+}
 for (const route of PUBLIC_ROUTES) {
   if (route.noindex) continue;
   if (!catalogPaths.has(route.path)) {

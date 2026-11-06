@@ -342,7 +342,7 @@ text.registerSiteCatalog("de", {
     "What it takes to compete with Discord": "Was es braucht",
     "Who actually competes with Discord in 2026?": "Wer konkurriert 2026 mit Discord?",
     Published: "Veroeffentlicht",
-    "Apps Like Discord (2026) | Websites & Platforms Compared": "Apps wie Discord (2026)",
+    "Descall and Other Apps Like Discord (2026)": "Apps wie Discord (2026)",
   },
   app: {},
 });

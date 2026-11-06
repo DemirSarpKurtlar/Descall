@@ -5,6 +5,7 @@
 
 import { PUBLIC_ROUTES, DEFAULT_ORIGIN } from "./seoConfig.js";
 import { prefixedLocaleFromPath, stripPrefixedLocale } from "./siteLocales.js";
+import { contentLastmod } from "./seo/contentDates.js";
 
 export const SITE = DEFAULT_ORIGIN;
 
@@ -77,10 +78,11 @@ export function routesForTable(tableId) {
 
 /**
  * @param {string} origin
- * @param {string} now fallback lastmod (ISO)
- * @param {(path: string) => string | null} [lastmodFor] real per-page lastmod (e.g. git)
+ * @param {string} now fallback lastmod (ISO), only for a path without a content date
+ * @param {(path: string) => string | null} [lastmodFor] per-page lastmod; defaults to the
+ *   editorial content date (seo/contentDates.js) so the static and the Render sitemaps agree
  */
-export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
+export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
   const lm = (p) => (lastmodFor && lastmodFor(p)) || now;
   const entries = indexableRoutes().map((r) => ({
     path: r.path,
@@ -108,6 +110,6 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
   return entries;
 }
 
-export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
+export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
   return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.tableId === tableId);
 }
