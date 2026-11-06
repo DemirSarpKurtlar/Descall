@@ -1,0 +1,514 @@
+{
+  "src/components/IosPushPermissionPrompt.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/components/IosPwaInstallBanner.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/components/admin/AdminVersionBadge.css": {
+    "px": 1,
+    "half": 1
+  },
+  "src/components/chat/EmojiPickerSheet.css": {
+    "px": 6,
+    "half": 0
+  },
+  "src/components/chat/SlashCommandMenu.css": {
+    "px": 19,
+    "half": 7
+  },
+  "src/components/download/DownloadPage.css": {
+    "px": 30,
+    "half": 0
+  },
+  "src/components/groups/GroupIcon.css": {
+    "px": 2,
+    "half": 1
+  },
+  "src/components/groups/GroupInfoSheet.css": {
+    "px": 8,
+    "half": 2
+  },
+  "src/components/groups/GroupMemberRemoval.css": {
+    "px": 7,
+    "half": 5
+  },
+  "src/components/groups/GroupMenu.css": {
+    "px": 3,
+    "half": 1
+  },
+  "src/components/groups/GroupSheet.css": {
+    "px": 15,
+    "half": 0
+  },
+  "src/components/layout/PinnedMessagesPopover.css": {
+    "px": 7,
+    "half": 1
+  },
+  "src/components/polls/dsx.css": {
+    "px": 76,
+    "half": 27
+  },
+  "src/components/servers/hub/svh.css": {
+    "px": 29,
+    "half": 3
+  },
+  "src/components/settings/UsernameChangeModal.css": {
+    "px": 13,
+    "half": 4
+  },
+  "src/components/social/AdminBadge.css": {
+    "px": 2,
+    "half": 2
+  },
+  "src/components/social/ProfileSheet.css": {
+    "px": 26,
+    "half": 4
+  },
+  "src/components/ui/ImageCropModal.css": {
+    "px": 7,
+    "half": 1
+  },
+  "src/components/voice/CallTapCard.css": {
+    "px": 12,
+    "half": 4
+  },
+  "src/premium/desktop/auxWindows.css": {
+    "px": 9,
+    "half": 2
+  },
+  "src/premium/gaming/gaming.css": {
+    "px": 18,
+    "half": 4
+  },
+  "src/premium/premium.css": {
+    "px": 23,
+    "half": 10
+  },
+  "src/premium/ui/premiumAudio.css": {
+    "px": 15,
+    "half": 4
+  },
+  "src/site/cookie-consent.css": {
+    "px": 10,
+    "half": 6
+  },
+  "src/site/glass-public-frames.css": {
+    "px": 53,
+    "half": 6
+  },
+  "src/site/glass-public.css": {
+    "px": 5,
+    "half": 1
+  },
+  "src/site/home-hero.css": {
+    "px": 7,
+    "half": 0
+  },
+  "src/site/legal-doc.css": {
+    "px": 11,
+    "half": 3
+  },
+  "src/site/site.css": {
+    "px": 69,
+    "half": 1
+  },
+  "src/styles/admin-access.css": {
+    "px": 23,
+    "half": 11
+  },
+  "src/styles/admin-broadcast.css": {
+    "px": 13,
+    "half": 0
+  },
+  "src/styles/admin-dm.css": {
+    "px": 8,
+    "half": 1
+  },
+  "src/styles/admin-edge-realtime.css": {
+    "px": 2,
+    "half": 0
+  },
+  "src/styles/admin-errors.css": {
+    "px": 26,
+    "half": 11
+  },
+  "src/styles/admin-feedback-v3.css": {
+    "px": 46,
+    "half": 15
+  },
+  "src/styles/admin-glass.css": {
+    "px": 74,
+    "half": 8
+  },
+  "src/styles/admin-growth.css": {
+    "px": 14,
+    "half": 2
+  },
+  "src/styles/admin-lens.css": {
+    "px": 14,
+    "half": 6
+  },
+  "src/styles/admin-liquid.css": {
+    "px": 3,
+    "half": 0
+  },
+  "src/styles/admin-overview.css": {
+    "px": 25,
+    "half": 9
+  },
+  "src/styles/admin-shell.css": {
+    "px": 16,
+    "half": 6
+  },
+  "src/styles/admin-signup-stats.css": {
+    "px": 29,
+    "half": 12
+  },
+  "src/styles/admin-staff.css": {
+    "px": 14,
+    "half": 5
+  },
+  "src/styles/age-gate.css": {
+    "px": 8,
+    "half": 2
+  },
+  "src/styles/app-layout.css": {
+    "px": 56,
+    "half": 9
+  },
+  "src/styles/auth-sheet.css": {
+    "px": 7,
+    "half": 3
+  },
+  "src/styles/auth-splash.css": {
+    "px": 17,
+    "half": 3
+  },
+  "src/styles/avatar.css": {
+    "px": 10,
+    "half": 4
+  },
+  "src/styles/base.css": {
+    "px": 2,
+    "half": 0
+  },
+  "src/styles/blackjack.css": {
+    "px": 27,
+    "half": 0
+  },
+  "src/styles/boot-skeleton.css": {
+    "px": 4,
+    "half": 0
+  },
+  "src/styles/call-device-menu.css": {
+    "px": 4,
+    "half": 0
+  },
+  "src/styles/call-grid.css": {
+    "px": 3,
+    "half": 0
+  },
+  "src/styles/call-people.css": {
+    "px": 4,
+    "half": 1
+  },
+  "src/styles/calls.css": {
+    "px": 12,
+    "half": 0
+  },
+  "src/styles/coinflip.css": {
+    "px": 16,
+    "half": 1
+  },
+  "src/styles/cosmetics-premium.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/cosmetics.css": {
+    "px": 2,
+    "half": 0
+  },
+  "src/styles/countries.css": {
+    "px": 34,
+    "half": 8
+  },
+  "src/styles/data-export.css": {
+    "px": 3,
+    "half": 2
+  },
+  "src/styles/design-tokens.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/error-boundary.css": {
+    "px": 7,
+    "half": 0
+  },
+  "src/styles/feedback-a.css": {
+    "px": 32,
+    "half": 15
+  },
+  "src/styles/feedback-nudge.css": {
+    "px": 4,
+    "half": 0
+  },
+  "src/styles/glass/activity-view.css": {
+    "px": 7,
+    "half": 0
+  },
+  "src/styles/glass/alert.css": {
+    "px": 6,
+    "half": 0
+  },
+  "src/styles/glass/auth.css": {
+    "px": 10,
+    "half": 3
+  },
+  "src/styles/glass/call.css": {
+    "px": 19,
+    "half": 2
+  },
+  "src/styles/glass/chat.css": {
+    "px": 45,
+    "half": 4
+  },
+  "src/styles/glass/legal.css": {
+    "px": 7,
+    "half": 0
+  },
+  "src/styles/glass/settings.css": {
+    "px": 16,
+    "half": 0
+  },
+  "src/styles/glass/shell.css": {
+    "px": 14,
+    "half": 2
+  },
+  "src/styles/glass/shop.css": {
+    "px": 8,
+    "half": 0
+  },
+  "src/styles/glass/social.css": {
+    "px": 51,
+    "half": 1
+  },
+  "src/styles/glass-desktop/auth.css": {
+    "px": 7,
+    "half": 3
+  },
+  "src/styles/glass-desktop/calls.css": {
+    "px": 10,
+    "half": 0
+  },
+  "src/styles/glass-desktop/chat.css": {
+    "px": 12,
+    "half": 3
+  },
+  "src/styles/glass-desktop/community.css": {
+    "px": 10,
+    "half": 2
+  },
+  "src/styles/glass-desktop/floatingHeader.css": {
+    "px": 3,
+    "half": 1
+  },
+  "src/styles/glass-desktop/menus.css": {
+    "px": 18,
+    "half": 3
+  },
+  "src/styles/glass-desktop/social.css": {
+    "px": 5,
+    "half": 1
+  },
+  "src/styles/glass-desktop/surfaces.css": {
+    "px": 12,
+    "half": 1
+  },
+  "src/styles/glass-desktop/titlebar.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/glass-dialogs.css": {
+    "px": 6,
+    "half": 0
+  },
+  "src/styles/glass-volume.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/google-signin.css": {
+    "px": 5,
+    "half": 0
+  },
+  "src/styles/incoming-call.css": {
+    "px": 3,
+    "half": 0
+  },
+  "src/styles/legal.css": {
+    "px": 7,
+    "half": 5
+  },
+  "src/styles/maintenance.css": {
+    "px": 59,
+    "half": 25
+  },
+  "src/styles/message-search.css": {
+    "px": 11,
+    "half": 4
+  },
+  "src/styles/messages.css": {
+    "px": 19,
+    "half": 1
+  },
+  "src/styles/mini-call-card.css": {
+    "px": 2,
+    "half": 0
+  },
+  "src/styles/mobile-glass.css": {
+    "px": 25,
+    "half": 0
+  },
+  "src/styles/mobile.css": {
+    "px": 11,
+    "half": 0
+  },
+  "src/styles/new-create.css": {
+    "px": 20,
+    "half": 5
+  },
+  "src/styles/ownership-transfer.css": {
+    "px": 20,
+    "half": 5
+  },
+  "src/styles/premium-admin.css": {
+    "px": 37,
+    "half": 16
+  },
+  "src/styles/presence-toast.css": {
+    "px": 2,
+    "half": 1
+  },
+  "src/styles/promo-mycodes.css": {
+    "px": 16,
+    "half": 10
+  },
+  "src/styles/promo.css": {
+    "px": 39,
+    "half": 12
+  },
+  "src/styles/rail-icons.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/reaction-picker.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/reaction-pill.css": {
+    "px": 3,
+    "half": 1
+  },
+  "src/styles/report-case.css": {
+    "px": 11,
+    "half": 3
+  },
+  "src/styles/screen-share-quality.css": {
+    "px": 9,
+    "half": 3
+  },
+  "src/styles/screen-share-stage.css": {
+    "px": 2,
+    "half": 0
+  },
+  "src/styles/servers.css": {
+    "px": 38,
+    "half": 8
+  },
+  "src/styles/settings-v3.css": {
+    "px": 22,
+    "half": 5
+  },
+  "src/styles/settings.css": {
+    "px": 44,
+    "half": 13
+  },
+  "src/styles/shop.css": {
+    "px": 45,
+    "half": 2
+  },
+  "src/styles/slot-cabinet.css": {
+    "px": 10,
+    "half": 0
+  },
+  "src/styles/special-badges.css": {
+    "px": 53,
+    "half": 21
+  },
+  "src/styles/store-purchase-modal.css": {
+    "px": 41,
+    "half": 1
+  },
+  "src/styles/suspicious.css": {
+    "px": 50,
+    "half": 21
+  },
+  "src/styles/theme-scenes.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/titlebar.css": {
+    "px": 3,
+    "half": 0
+  },
+  "src/styles/two-factor.css": {
+    "px": 16,
+    "half": 5
+  },
+  "src/styles/ui-audit-high.css": {
+    "px": 7,
+    "half": 0
+  },
+  "src/styles/ui-polish.css": {
+    "px": 33,
+    "half": 14
+  },
+  "src/styles/update-toast.css": {
+    "px": 4,
+    "half": 3
+  },
+  "src/styles/user-hover-card.css": {
+    "px": 12,
+    "half": 6
+  },
+  "src/styles/user-voice-panel.css": {
+    "px": 8,
+    "half": 3
+  },
+  "src/styles/visual-polish-pack.css": {
+    "px": 4,
+    "half": 0
+  },
+  "src/styles/voice-chat.css": {
+    "px": 1,
+    "half": 0
+  },
+  "src/styles/voice-message.css": {
+    "px": 3,
+    "half": 0
+  },
+  "src/styles/voice-ui.css": {
+    "px": 9,
+    "half": 0
+  },
+  "src/world3d/launcher.css": {
+    "px": 1,
+    "half": 1
+  },
+  "src/world3d/world3d.css": {
+    "px": 15,
+    "half": 0
+  }
+}

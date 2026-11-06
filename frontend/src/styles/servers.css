@@ -28,7 +28,7 @@
 .server-shell-title {
   margin: 0;
   min-width: 0;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 700;
   color: var(--text-0);
   white-space: normal;
@@ -41,7 +41,7 @@
 
 .server-shell-meta {
   display: block;
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -57,7 +57,7 @@
   gap: 8px;
   flex-wrap: wrap;
   margin: 8px 14px 0;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text-muted);
@@ -65,7 +65,7 @@
 }
 
 .server-dnd-hint {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
   font-weight: 400;
   text-transform: none;
@@ -100,7 +100,7 @@
 }
 
 .server-folder-head-unfiled {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -115,7 +115,7 @@
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -126,7 +126,7 @@
 
 .server-folder-count {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--fs-11);
   opacity: 0.75;
 }
 
@@ -149,7 +149,7 @@
 }
 
 .server-folder-move-title {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -175,7 +175,7 @@
 
 .server-audit-filter select,
 .server-audit-search input {
-  font-size: 12px;
+  font-size: var(--fs-12);
   border-radius: var(--r-sm);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
   background: var(--surface-2);
@@ -296,7 +296,7 @@
   background: linear-gradient(135deg, var(--primary), var(--primary-2, #6d78f5));
   color: #fff;
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .server-list-copy {
@@ -319,7 +319,7 @@
 }
 
 .server-list-sub {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
 }
 
@@ -341,7 +341,7 @@
   border-radius: var(--r-pill);
   background: #f23f43;
   color: #fff;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   line-height: 1;
   margin-left: auto;
@@ -379,7 +379,7 @@
 
 .server-empty-state p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.45;
   max-width: 240px;
 }
@@ -387,7 +387,7 @@
 .server-empty-hint {
   padding: 16px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .server-step-hint {
@@ -400,7 +400,7 @@
   background: var(--surface-2);
   border: 1px solid var(--border-2);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.45;
 }
 .server-step-hint-ic {
@@ -454,7 +454,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -706,7 +706,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   color: var(--text-2);
   border-radius: var(--r-md);
   padding: 9px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -738,7 +738,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 .server-channel-topic {
   margin-top: 4px !important;
   color: var(--text-muted) !important;
-  font-size: 13px !important;
+  font-size: var(--fs-13) !important;
 }
 
 .server-channel-row:disabled {
@@ -790,7 +790,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   color: var(--text-1);
   padding: 9px 10px;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   cursor: pointer;
 }
@@ -906,7 +906,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-create-path-body span {
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   color: var(--text-2);
 }
@@ -958,7 +958,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-template-card-desc {
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   color: var(--text-2);
   display: -webkit-box;
@@ -971,7 +971,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--text-muted);
 }
@@ -1018,7 +1018,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .server-template-selected p {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-2);
 }
 
@@ -1094,7 +1094,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-icon-picker-hint {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 500;
   line-height: 1.35;
   color: var(--text-muted);
@@ -1137,7 +1137,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .server-modal-sub {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   color: var(--text-muted);
 }
@@ -1150,7 +1150,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .server-modal-lead {
   margin: 0 0 16px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.45;
   color: var(--text-2);
 }
@@ -1160,7 +1160,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -1192,7 +1192,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   background: var(--surface-1);
   color: var(--text-2);
   padding: 6px 9px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
 }
@@ -1207,7 +1207,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 .server-modal-error {
   margin: 0 0 10px;
   color: var(--danger, #ed4245);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .server-modal-actions {
@@ -1254,7 +1254,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .server-settings-channels h4 {
   margin: 12px 22px 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1312,7 +1312,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   justify-content: center;
   gap: 6px;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 650;
 }
 
@@ -1327,7 +1327,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   backdrop-filter: blur(6px);
   pointer-events: none;
@@ -1503,7 +1503,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   gap: 6px;
   border-radius: var(--r-md);
   padding: 9px 16px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   cursor: pointer;
   border: none;
@@ -1587,7 +1587,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   color: var(--text-2);
   border-radius: var(--r-md);
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -1621,7 +1621,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   border-radius: 8px;
   background: transparent;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
 }
 
@@ -1675,7 +1675,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   border-radius: var(--r-sm);
   cursor: pointer;
   text-align: left;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
 }
 
@@ -1751,7 +1751,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   align-items: flex-start;
   gap: 10px;
   margin: 8px 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-1);
   cursor: pointer;
   text-align: left;
@@ -1798,7 +1798,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   width: 100%;
   margin: 0;
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
   color: var(--text-1);
   cursor: pointer;
@@ -1843,7 +1843,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   color: var(--text-2);
   border-radius: var(--r-pill);
   padding: 7px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 650;
   cursor: pointer;
   touch-action: manipulation;
@@ -1910,7 +1910,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .sra-chip-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   line-height: 1.35;
 }
@@ -1962,7 +1962,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   outline: none;
   background: transparent;
   color: var(--text-0);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .sra-icon-clear {
@@ -1985,7 +1985,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   border: 1px solid var(--border-3);
   background: var(--surface-1);
   color: var(--text-2);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .sra-filter select {
@@ -2018,7 +2018,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   color: var(--text-2);
   border-radius: var(--r-sm);
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
 }
@@ -2033,7 +2033,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   align-items: center;
   gap: 5px;
   margin-left: auto;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   color: var(--text-2);
 }
@@ -2178,7 +2178,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .sra-detail-head h4 {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--fs-17);
   font-weight: 800;
   color: var(--text-0);
 }
@@ -2327,12 +2327,12 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
 }
 
 .sra-add-results button small {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 500;
   color: var(--text-2);
 }
@@ -2385,13 +2385,13 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 .sra-empty h4 {
   margin: 4px 0 0;
   color: var(--text-0);
-  font-size: 15px;
+  font-size: var(--fs-15);
 }
 
 .sra-empty p,
 .sra-list-empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.4;
   max-width: 280px;
 }
@@ -2437,7 +2437,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   outline: none;
   background: transparent;
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
 }
 
@@ -2570,7 +2570,7 @@ button.member-row.server-member-row {
   background: var(--surface-3, var(--surface-1));
   color: var(--text-1);
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .server-invite-list-head {
@@ -2578,7 +2578,7 @@ button.member-row.server-member-row {
   align-items: center;
   justify-content: space-between;
   margin: 16px 0 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2612,13 +2612,13 @@ button.member-row.server-member-row {
 }
 
 .server-invite-item-meta code {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   color: var(--text-0);
 }
 
 .server-invite-item-meta span {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
 }
 
@@ -2641,7 +2641,7 @@ button.member-row.server-member-row {
   border: 1px solid var(--border-2);
   background: var(--surface-3, var(--surface-1));
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2680,7 +2680,7 @@ button.member-row.server-member-row {
   color: var(--text-2);
   border-radius: var(--r-md);
   padding: 9px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
 }
@@ -2709,7 +2709,7 @@ button.member-row.server-member-row {
 }
 
 .server-join-preview span {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
 }
 
@@ -2736,7 +2736,7 @@ button.member-row.server-member-row {
 
 .server-primary-btn.sm {
   padding: 7px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   flex-shrink: 0;
 }
 
@@ -2804,12 +2804,12 @@ button.member-row.server-member-row {
 }
 
 .server-moderation-meta strong {
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-0);
 }
 
 .server-moderation-meta span {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
 }
 
@@ -2818,7 +2818,7 @@ button.member-row.server-member-row {
   align-items: center;
   gap: 6px;
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   flex-shrink: 0;
 }
 
@@ -2830,7 +2830,7 @@ button.member-row.server-member-row {
 }
 
 .server-audit-action {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   color: var(--text-0);
 }
@@ -2840,7 +2840,7 @@ button.member-row.server-member-row {
   justify-content: space-between;
   gap: 10px;
   margin-top: 2px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
 }
 
@@ -2894,7 +2894,7 @@ button.member-row.server-member-row {
 
 .server-voice-room-title h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 700;
   color: var(--text-0);
   display: flex;
@@ -2905,7 +2905,7 @@ button.member-row.server-member-row {
 
 .server-voice-room-title p {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2927,7 +2927,7 @@ button.member-row.server-member-row {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 650;
   color: var(--text-muted);
 }
@@ -2952,7 +2952,7 @@ button.member-row.server-member-row {
   border-radius: var(--r-pill);
   background: var(--surface-2);
   color: var(--text-1);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 650;
 }
 
@@ -3222,7 +3222,7 @@ button.member-row.server-member-row {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
 }
 
@@ -3336,7 +3336,7 @@ button.member-row.server-member-row {
   gap: 8px;
   cursor: pointer;
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .server-voice-dock-btn:hover:not(:disabled) {
@@ -3420,7 +3420,7 @@ button.member-row.server-member-row {
 
 .server-voice-device-heading {
   padding: 6px 8px 4px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3436,7 +3436,7 @@ button.member-row.server-member-row {
   color: var(--text-0, #f2f3f5);
   border-radius: var(--r-sm);
   padding: 8px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   cursor: pointer;
 }
 
@@ -3536,7 +3536,7 @@ button.member-row.server-member-row {
   align-items: center;
   border-radius: var(--r-pill);
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 800;
   letter-spacing: 0.02em;
   background: color-mix(in srgb, var(--primary) 16%, var(--surface-2));
@@ -3579,7 +3579,7 @@ button.member-row.server-member-row {
   border: none;
   border-radius: var(--r-pill);
   padding: 11px 18px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -3713,7 +3713,7 @@ button.member-row.server-member-row {
   border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   pointer-events: none;
   backdrop-filter: blur(6px);
@@ -3738,7 +3738,7 @@ button.member-row.server-member-row {
   border-radius: var(--r-sm);
   background: rgba(0, 0, 0, 0.55);
   color: #b5bac1;
-  font-size: 12px;
+  font-size: var(--fs-12);
   pointer-events: none;
   backdrop-filter: blur(4px);
   white-space: nowrap;
@@ -3793,7 +3793,7 @@ button.member-row.server-member-row {
   align-items: center;
   padding: 2px 0;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .server-voice-screen-chip {
@@ -3805,7 +3805,7 @@ button.member-row.server-member-row {
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-1, #b5bac1);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
@@ -3909,7 +3909,7 @@ button.member-row.server-member-row {
   padding: 5px 9px;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
 }
 
@@ -3923,7 +3923,7 @@ button.member-row.server-member-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -3947,7 +3947,7 @@ button.member-row.server-member-row {
   border-radius: var(--r-md);
   background: var(--surface-2);
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   overflow: visible;
 }
@@ -3966,7 +3966,7 @@ button.member-row.server-member-row {
 
 .server-voice-count {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--text-muted);
   background: var(--surface-3);
@@ -4095,7 +4095,7 @@ button.member-row.server-member-row {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
   line-height: 1.2;
   color: inherit;
@@ -4185,7 +4185,7 @@ button.member-row.server-member-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -4239,7 +4239,7 @@ button.member-row.server-member-row {
 
 .server-channel-perms-add p {
   margin: 6px 0 4px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -4304,7 +4304,7 @@ button.member-row.server-member-row {
   gap: 12px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .server-channel-perms-label {
@@ -4327,7 +4327,7 @@ button.member-row.server-member-row {
   background: transparent;
   color: var(--text-2);
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -4388,7 +4388,7 @@ button.member-row.server-member-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 650;
 }
 
@@ -4419,14 +4419,14 @@ button.member-row.server-member-row {
 
 .server-voice-member-menu-title {
   padding: 6px 10px 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .server-dropdown-item.nested {
   padding-left: 22px;
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 @media (max-width: 720px) {
@@ -4456,7 +4456,7 @@ button.member-row.server-member-row {
   }
 
   .server-channel-perms-modal .server-modal-sub {
-    font-size: 11px;
+    font-size: var(--fs-11);
   }
 
   .server-channel-perms-layout {
@@ -4505,7 +4505,7 @@ button.member-row.server-member-row {
     padding: 7px 10px;
     border: 1px solid var(--border-2);
     background: var(--surface-1, var(--surface-3));
-    font-size: 12px;
+    font-size: var(--fs-12);
   }
 
   .server-channel-perms-target.active {
@@ -4535,7 +4535,7 @@ button.member-row.server-member-row {
 
   .server-channel-perms-editor-head .server-ghost-btn {
     padding: 7px 10px;
-    font-size: 12px;
+    font-size: var(--fs-12);
   }
 
   .server-channel-perms-remove-label {
@@ -4550,7 +4550,7 @@ button.member-row.server-member-row {
   }
 
   .server-channel-perms-label {
-    font-size: 13px;
+    font-size: var(--fs-13);
   }
 
   .server-channel-perms-tri {
@@ -4660,7 +4660,7 @@ button.member-row.server-member-row {
   justify-content: flex-start;
   gap: 10px;
   margin: 10px 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-1);
   cursor: pointer;
   text-align: left;
@@ -4819,7 +4819,7 @@ button.member-row.server-member-row {
   background: var(--surface-2);
   border: 1px solid var(--border-2);
   margin: 10px 0 14px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.45;
   color: var(--text-1);
 }
@@ -4850,7 +4850,7 @@ button.member-row.server-member-row {
   place-items: center;
   background: rgba(88, 122, 246, 0.22);
   color: #AFC3FF;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -4873,7 +4873,7 @@ html[data-theme="light"] .server-rules-num { color: #3D5BD9; background: rgba(88
 
 .server-join-rules-excerpt {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   line-height: 1.35;
 }

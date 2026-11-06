@@ -90,7 +90,7 @@ html .toast-item.toast-error .toast-icon { color: #FF453A; }
   border-radius: 10px;
   background: var(--g-brand, #587AF6);
   color: #fff;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -135,7 +135,7 @@ html.glass-desktop body.electron-app .toast-stack {
   border: 1px solid var(--border-2);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
@@ -155,7 +155,7 @@ html.glass-desktop body.electron-app .toast-stack {
 
 .reaction-emoji { line-height: 1; }
 .reaction-count {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -204,7 +204,7 @@ html.glass-desktop body.electron-app .toast-stack {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--text-2);
 }
@@ -226,7 +226,7 @@ html.glass-desktop body.electron-app .toast-stack {
 .reaction-picker-emoji {
   border: none;
   background: transparent;
-  font-size: 20px;
+  font-size: var(--fs-20);
   padding: 6px;
   border-radius: var(--radius-lg);
   cursor: pointer;
@@ -369,7 +369,7 @@ html.glass-desktop body.electron-app .toast-stack {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--text-muted);
   margin-bottom: 6px;
@@ -422,7 +422,7 @@ html.glass-desktop body.electron-app .toast-stack {
 }
 .message-file-meta { flex: 1; min-width: 0; }
 .message-file-name {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   color: var(--text-0);
   overflow: hidden;
@@ -430,7 +430,7 @@ html.glass-desktop body.electron-app .toast-stack {
   white-space: nowrap;
 }
 .message-file-size {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -439,7 +439,7 @@ html.glass-desktop body.electron-app .toast-stack {
   border: none;
   background: transparent;
   color: var(--text-3);
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   padding: 0 8px;
   height: 28px;
@@ -564,7 +564,7 @@ html.glass-desktop body.electron-app .toast-stack {
 
 .status-picker-header {
   padding: 6px 10px 8px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -585,7 +585,7 @@ html.glass-desktop body.electron-app .toast-stack {
   border: none;
   background: transparent;
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
   padding: 9px 10px;
   border-radius: var(--r-sm);
@@ -628,7 +628,7 @@ html.glass-desktop body.electron-app .toast-stack {
   padding: 8px 6px 4px;
 }
 .status-picker-custom-label {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -663,7 +663,7 @@ html.glass-desktop body.electron-app .toast-stack {
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-0);
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
 }
 .status-picker-input:focus {
@@ -704,7 +704,7 @@ html.glass-desktop body.electron-app .toast-stack {
   gap: 6px;
   padding: 8px 12px;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
   border: none;
@@ -753,7 +753,7 @@ html.glass-desktop body.electron-app .toast-stack {
 .empty-state h2,
 .empty-state .empty-title {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--fs-17);
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.01em;
@@ -783,8 +783,8 @@ html.glass-desktop body.electron-app .toast-stack {
   margin-bottom: 4px;
 }
 
-.empty-state.compact .empty-title { font-size: 15px; }
-.empty-state.compact .empty-body { font-size: 13px; max-width: 260px; }
+.empty-state.compact .empty-title { font-size: var(--fs-15); }
+.empty-state.compact .empty-body { font-size: var(--fs-13); max-width: 260px; }
 
 .empty-state.tone-error .empty-tile {
   color: var(--g-red, #FF453A);
@@ -832,7 +832,7 @@ html.glass-desktop body.electron-app .toast-stack {
   background: #4D6EE8;
 }
 
-.empty-state.compact .empty-cta { min-height: 32px; padding: 6px 14px; font-size: 13px; }
+.empty-state.compact .empty-cta { min-height: 32px; padding: 6px 14px; font-size: var(--fs-13); }
 
 @media (prefers-reduced-motion: reduce) {
   .empty-cta:active { transform: none; }
@@ -939,7 +939,7 @@ html.glass-desktop body.electron-app .toast-stack {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
 }
 
@@ -957,7 +957,7 @@ html.glass-desktop body.electron-app .toast-stack {
   background: var(--success);
   border: none;
   color: #fff;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -1117,12 +1117,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 6px;
   color: #fff;
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .participant-tile.small .participant-tile-label {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--fs-11);
 }
 
 .participant-tile-name {
@@ -1156,7 +1156,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 12px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
 }
 
@@ -1202,7 +1202,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   justify-content: center;
   flex-wrap: wrap;
   gap: 4px;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 650;
   color: #fff;
   text-align: center;
@@ -1230,7 +1230,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: color-mix(in srgb, var(--surface-1) 75%, transparent);
   border: 1px solid var(--border-2);
   backdrop-filter: blur(8px);
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   color: var(--text-2);
 }
@@ -1286,12 +1286,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   cursor: pointer;
 }
 .message-reply-author {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--primary);
 }
 .message-reply-text {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1373,7 +1373,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 6px;
   margin-bottom: 10px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 750;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1401,7 +1401,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 20px;
+  font-size: var(--fs-20);
   color: var(--text-0);
   background: color-mix(in srgb, var(--primary) 32%, var(--surface-1));
 }
@@ -1481,7 +1481,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 8px;
   min-height: 40px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-2);
 }
 
@@ -1491,7 +1491,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 
 .invite-embed-inline-error {
   margin: 0 0 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--danger, #ed4245);
 }
 
@@ -1651,7 +1651,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .slash-embed-user-handle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-2);
 }
 
@@ -1770,7 +1770,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   flex: 1 0 100%;
   order: -2;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   background: color-mix(in srgb, var(--warning, #f0b232) 9%, var(--surface-2));
 }
@@ -1784,12 +1784,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .composer-reply-meta strong,
 .composer-attach-meta strong {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-0);
 }
 .composer-reply-meta span,
 .composer-attach-meta span {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1895,7 +1895,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .giphy-logo {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 800;
   letter-spacing: 0.08em;
   background: linear-gradient(90deg, #00cdac, #8ddad5);
@@ -1905,13 +1905,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .giphy-sub {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
 }
 
 .giphy-title {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--fs-17);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--gd-t1, var(--g-t1, var(--text-0)));
@@ -1957,7 +1957,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-md);
   padding: 9px 34px 9px 34px;
   color: var(--text-0);
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
 }
 .giphy-search input:focus {
@@ -1989,7 +1989,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   padding: 6px 10px;
   border-radius: var(--r-sm);
@@ -2056,7 +2056,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 10px;
   padding: 36px 16px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
   text-align: center;
 }
 .giphy-state.is-error {
@@ -2069,7 +2069,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-sm);
   padding: 7px 14px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
 }
 .giphy-spin {
@@ -2132,13 +2132,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-modal-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-20);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 .invite-modal-header p {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-2, #b5bac1);
   line-height: 1.4;
 }
@@ -2168,19 +2168,19 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-modal-group strong {
   display: block;
-  font-size: 15px;
+  font-size: var(--fs-15);
 }
 .invite-modal-group span {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin-top: 3px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted, #949ba4);
 }
 .invite-modal-label {
   display: block;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2199,7 +2199,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   color: var(--text-1, #dbdee1);
   border-radius: var(--r-pill);
   padding: 6px 11px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2225,7 +2225,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: var(--surface-2, #2b2d31);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-link-box span {
   overflow: hidden;
@@ -2242,7 +2242,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: var(--primary, #5865f2);
   color: #fff;
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-13);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -2265,7 +2265,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   background: transparent;
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2282,7 +2282,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-sm);
   background: var(--danger-soft, rgba(237, 66, 69, 0.12));
   color: var(--danger, #ed4245);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .invite-landing {
@@ -2307,7 +2307,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   backdrop-filter: blur(18px);
 }
 .invite-landing-brand {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -2339,7 +2339,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-landing-preview span {
   color: var(--text-muted, #b5bac1);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-landing-avatar {
   width: 56px;
@@ -2371,7 +2371,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 6px;
   margin-top: 4px;
   color: #b5bac1;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-landing-state {
   display: flex;
@@ -2390,7 +2390,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 8px;
   padding: 8px 12px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: var(--fs-13);
   margin-bottom: 14px;
 }
 .invite-landing-banner.is-ok {
@@ -2400,7 +2400,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-landing-error {
   margin-bottom: 12px;
   color: #ed4245;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-landing-join {
   width: 100%;
@@ -2413,7 +2413,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-md);
   background: #5865f2;
   color: #fff;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 700;
   cursor: pointer;
 }
@@ -2432,7 +2432,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: none;
   background: transparent;
   color: #b5bac1;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2456,7 +2456,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 1px;
 }
 .friend-custom-status {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2471,11 +2471,11 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 18px 16px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 .sidebar-empty-friends strong {
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .sidebar-empty-friends-actions {
   display: flex;
@@ -2487,7 +2487,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .sidebar-empty-friends-actions .mkt-btn {
   min-height: 34px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   cursor: pointer;
@@ -2574,7 +2574,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   word-break: break-word;
 }
 .uhc-handle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   margin: 2px 0 6px;
   line-height: 1.2;
@@ -2583,7 +2583,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-2);
   line-height: 1.2;
 }
@@ -2599,7 +2599,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .uhc-custom-status,
 .uhc-bio {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   color: var(--text-2);
 }
@@ -2666,7 +2666,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   padding: 8px 6px;
   border-radius: var(--r-md);
@@ -2690,7 +2690,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .us-bubble-demo {
   max-width: 78%;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.35;
 }
 .us-bubble-demo.other { align-self: flex-start; background: var(--surface-2); color: var(--text-1); }
@@ -2879,7 +2879,7 @@ body.electron-app .modal-backdrop {
 .update-notes-lead {
   margin: 0;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.5;
   color: var(--text-muted, #949ba4);
 }
@@ -2907,7 +2907,7 @@ body.electron-app .modal-backdrop {
 }
 
 .update-notes-version {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #ff7a84;
@@ -2922,7 +2922,7 @@ body.electron-app .modal-backdrop {
 
 .update-notes-item-body {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.45;
   color: var(--text-1, #dbdee1);
 }
@@ -2940,7 +2940,7 @@ body.electron-app .modal-backdrop {
   border-radius: var(--r-md);
   padding: 10px 16px;
   min-height: 44px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   cursor: pointer;
   color: #fff;
@@ -3007,7 +3007,7 @@ body.electron-app .modal-backdrop {
     width: 100%;
     min-height: 48px;
     border-radius: var(--r-md);
-    font-size: 15px;
+    font-size: var(--fs-15);
     justify-content: center;
   }
 }
@@ -3054,7 +3054,7 @@ body.electron-app .modal-backdrop {
   border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.28);
 }
-.signup-username-label { font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
+.signup-username-label { font-size: var(--fs-12); font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
 .signup-username-field {
   display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 46px; border-radius: 12px;
   background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3062,7 +3062,7 @@ body.electron-app .modal-backdrop {
 }
 .signup-username-field:focus-within { border-color: rgba(120, 140, 255, 0.6); box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.22); }
 .signup-username-at { color: var(--text-muted); font-weight: 600; }
-.signup-username-field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--text-0, #fff); font-size: 17px; letter-spacing: -0.01em; }
+.signup-username-field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--text-0, #fff); font-size: var(--fs-17); letter-spacing: -0.01em; }
 .signup-username-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); transition: background 160ms ease; }
 .signup-username-dot.is-ok { background: #3ba55d; }
 .signup-username-dot.is-checking { background: #faa61a; }
@@ -3071,7 +3071,7 @@ body.electron-app .modal-backdrop {
 .signup-username.is-ok .signup-username-status { color: #3ba55d; }
 .signup-username.is-taken .signup-username-status, .signup-username.is-invalid .signup-username-status { color: #f0797b; }
 .signup-username-suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
-.signup-username-chip { border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: var(--text-0, #fff); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
+.signup-username-chip { border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: var(--text-0, #fff); border-radius: 999px; padding: 6px 12px; font-size: var(--fs-13); cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
 .signup-username-chip:active { transform: scale(0.96); }
 .signup-username-suggest-label { align-self: center; font-size: 12.5px; color: var(--text-2, rgba(255, 255, 255, 0.66)); }
 .signup-username-rules { margin: 0; font-size: 11.5px; color: var(--text-muted); opacity: 0.8; }

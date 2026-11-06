@@ -108,6 +108,17 @@
   --text-3xl: 24px;
   --text-4xl: 32px;
 
+  /* App type scale (UI audit #129): seven steps in rem, so they follow the
+     root size. html is 16px (base.css), so 1rem = 16px. New CSS uses these;
+     scripts/type-scale.mjs keeps literal px font-sizes from growing. */
+  --fs-11: 0.6875rem;
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-15: 0.9375rem;
+  --fs-17: 1.0625rem;
+  --fs-20: 1.25rem;
+  --fs-28: 1.75rem;
+
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
