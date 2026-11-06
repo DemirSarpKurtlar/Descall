@@ -15,5 +15,14 @@ export const UAH_EN = {
   dm: {
     errorTitle: "Couldn't load messages",
     errorBody: "Check your connection and try again."
+  },
+  channel: {
+    generalName: "general",
+    announcementsName: "announcements"
+  },
+  slow: {
+    seconds: "{n} s",
+    minutes: "{n} min",
+    hours: "{n} h"
   }
 };

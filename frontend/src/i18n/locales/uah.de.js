@@ -15,5 +15,14 @@ export const UAH_DE = {
   dm: {
     errorTitle: "Nachrichten konnten nicht geladen werden",
     errorBody: "Prüf deine Verbindung und versuch es noch einmal."
+  },
+  channel: {
+    generalName: "allgemein",
+    announcementsName: "ankuendigungen"
+  },
+  slow: {
+    seconds: "{n} s",
+    minutes: "{n} Min.",
+    hours: "{n} Std."
   }
 };

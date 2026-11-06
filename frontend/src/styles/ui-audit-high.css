@@ -385,3 +385,135 @@ html[data-theme="light"] .activity-web-notice strong {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* #34 Create channel: one-row segmented type picker (selected = brand fill),
+   slow mode as a segmented control under its label (Turkish units), NSFW as
+   the app's switch row. #87 shares the switch row. */
+.server-type-toggle.is-segmented {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  padding: 3px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+.server-type-toggle.is-segmented .server-type-btn {
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 2px 7px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--gd-t2, var(--text-2));
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.server-type-toggle.is-segmented .server-type-btn > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.server-type-toggle.is-segmented .server-type-btn:hover {
+  color: var(--gd-t1, var(--text-0));
+}
+.server-type-toggle.is-segmented .server-type-btn:active,
+.server-slowmode-presets.is-segmented button:active {
+  transform: scale(0.97);
+}
+.server-type-toggle.is-segmented .server-type-btn.active,
+.server-slowmode-presets.is-segmented button.active {
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(16, 18, 28, 0.18);
+}
+.server-slowmode-presets.is-segmented {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+.server-slowmode-presets.is-segmented::-webkit-scrollbar {
+  display: none;
+}
+.server-slowmode-presets.is-segmented button {
+  flex: 1 0 auto;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--gd-t2, var(--text-2));
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+html[data-theme="light"] .server-type-toggle.is-segmented,
+html[data-theme="light"] .server-slowmode-presets.is-segmented {
+  background: #EEF0F5;
+  box-shadow: inset 0 0 0 0.5px rgba(57, 60, 77, 0.1);
+}
+.server-slowmode-hint {
+  margin: -6px 0 12px;
+}
+.server-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin: 2px 0 12px;
+  font-size: 14px;
+  color: var(--gd-t1, var(--text-0));
+}
+.server-toggle-row > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.35;
+}
+.server-toggle-row.is-card {
+  margin-top: 16px;
+  padding: 6px 8px 6px 12px;
+}
+.server-modal .s3-tg:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .server-type-toggle.is-segmented .server-type-btn,
+  .server-slowmode-presets.is-segmented button { transition: none; }
+  .server-type-toggle.is-segmented .server-type-btn:active,
+  .server-slowmode-presets.is-segmented button:active { transform: none; }
+}
+
+/* #87 Root cause of the "empty bar" checkboxes: `.server-check-row span
+   { flex: 1 1 auto }` also matched the GlassCheckbox face spans, and the glass
+   modal input fill reached its hidden input. The face keeps its 22px. */
+.server-check-row > .dc-check {
+  flex: 0 0 22px;
+  width: 22px;
+}
+.server-check-row .dc-check input.dc-check-input,
+html.glass-desktop .server-modal .dc-check input.dc-check-input,
+html.glass-desktop .server-settings-modal .dc-check input.dc-check-input {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}

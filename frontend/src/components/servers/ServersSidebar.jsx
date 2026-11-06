@@ -41,7 +41,7 @@ import ServerSettingsModal from "./ServerSettingsModal";
 import { OwnerLeaveSheet, OwnershipTransferModal } from "./OwnershipTransfer";
 import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
-import GlassCheckbox from "../ui/GlassCheckbox";
+import { S3Toggle } from "../settings/SettingsV3";
 import PullToRefresh from "../ui/PullToRefresh";
 import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
@@ -2487,6 +2487,16 @@ function buildChannelTree(channels) {
   return tree;
 }
 
+const SLOWMODE_PRESETS = [0, 5, 10, 30, 60, 300, 3600];
+
+/** "5 sn", "1 dk", "1 sa" (UI audit #34: no English s / m / h units). */
+function formatSlowmode(seconds, t) {
+  const n = Number(seconds) || 0;
+  if (n >= 3600 && n % 3600 === 0) return t("uah.slow.hours", { n: n / 3600 });
+  if (n >= 60 && n % 60 === 0) return t("uah.slow.minutes", { n: n / 60 });
+  return t("uah.slow.seconds", { n });
+}
+
 function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null, categories = [], onClose, onSubmit }) {
   const t = useT();
   const isEdit = mode === "edit";
@@ -2581,7 +2591,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
         </p>
 
         {!typeLocked && (
-          <div className="server-type-toggle" role="group" aria-label={t("Channel type")}>
+          <div className="server-type-toggle is-segmented" role="radiogroup" aria-label={t("Channel type")}>
             {[
               { id: "text", label: t("Text"), Icon: Hash },
               { id: "announcement", label: t("Announcement"), Icon: Megaphone },
@@ -2592,11 +2602,13 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
               <button
                 key={id}
                 type="button"
+                role="radio"
+                aria-checked={type === id}
                 className={`server-type-btn ${type === id ? "active" : ""}`}
                 onClick={() => setType(id)}
               >
-                <Icon size={15} />
-                {label}
+                <Icon size={16} aria-hidden="true" />
+                <span>{label}</span>
               </button>
             ))}
           </div>
@@ -2611,8 +2623,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
             placeholder={
               type === "text" || type === "announcement"
                 ? type === "announcement"
-                  ? "announcements"
-                  : "general"
+                  ? t("uah.channel.announcementsName")
+                  : t("uah.channel.generalName")
                 : type === "stage"
                   ? t("Town hall")
                   : type === "voice"
@@ -2652,59 +2664,36 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
               />
             </label>
 
-            <label className="server-field">
-              <span>{t("Slowmode")}</span>
-              <input
-                type="number"
-                min="0"
-                max="21600"
-                step="1"
-                value={Number(slowmodeSeconds) || 0}
-                onChange={(e) => {
-                  const next = Math.floor(Number(e.target.value));
-                  setSlowmodeSeconds(Number.isFinite(next) ? Math.max(0, Math.min(21600, next)) : 0);
-                }}
-                placeholder="0"
-              />
-            </label>
-            <p className="server-modal-sub" style={{ marginTop: -6, marginBottom: 10 }}>
+            <div className="server-field" role="group" aria-labelledby="server-slowmode-label">
+              <span id="server-slowmode-label">{t("Slowmode")}</span>
+              <div className="server-slowmode-presets is-segmented">
+                {SLOWMODE_PRESETS
+                  .concat(SLOWMODE_PRESETS.includes(Number(slowmodeSeconds) || 0) ? [] : [Number(slowmodeSeconds)])
+                  .map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={(Number(slowmodeSeconds) || 0) === value}
+                      className={(Number(slowmodeSeconds) || 0) === value ? "active" : ""}
+                      onClick={() => setSlowmodeSeconds(value)}
+                    >
+                      {value === 0 ? t("Off") : formatSlowmode(value, t)}
+                    </button>
+                  ))}
+              </div>
+            </div>
+            <p className="server-modal-sub server-slowmode-hint">
               {Number(slowmodeSeconds) > 0
-                ? t("Members must wait {time} between messages.", {
-                    time:
-                      Number(slowmodeSeconds) >= 3600
-                        ? `${Math.round(Number(slowmodeSeconds) / 3600)}h`
-                        : Number(slowmodeSeconds) >= 60
-                          ? `${Math.round(Number(slowmodeSeconds) / 60)}m`
-                          : `${Number(slowmodeSeconds)}s`,
-                  })
+                ? t("Members must wait {time} between messages.", { time: formatSlowmode(Number(slowmodeSeconds), t) })
                 : t("Off, members can send freely.")}
             </p>
-            <label className="server-check-row">
-              <GlassCheckbox
+            <div className="server-toggle-row">
+              <span id="server-nsfw-label">{t("Age-restricted (NSFW) channel")}</span>
+              <S3Toggle
                 checked={Boolean(nsfw)}
-                onChange={(e) => setNsfw(e.target.checked)}
+                onChange={(next) => setNsfw(next)}
+                label={t("Age-restricted (NSFW) channel")}
               />
-              <span>{t("Age-restricted (NSFW) channel")}</span>
-            </label>
-            <div className="server-slowmode-presets" role="group" aria-label={t("Slowmode presets")}>
-              {[
-                [0, t("Off")],
-                [5, "5s"],
-                [10, "10s"],
-                [30, "30s"],
-                [60, "1m"],
-                [300, "5m"],
-                [3600, "1h"],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={Number(slowmodeSeconds) === value ? "active" : ""}
-                  onClick={() => setSlowmodeSeconds(value)}
-                >
-                  {label}
-                </button>
-              ))}
             </div>
           </>
         )}

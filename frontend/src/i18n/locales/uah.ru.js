@@ -15,5 +15,14 @@ export const UAH_RU = {
   dm: {
     errorTitle: "Не удалось загрузить сообщения",
     errorBody: "Проверь подключение и попробуй ещё раз."
+  },
+  channel: {
+    generalName: "общий",
+    announcementsName: "объявления"
+  },
+  slow: {
+    seconds: "{n} с",
+    minutes: "{n} мин",
+    hours: "{n} ч"
   }
 };

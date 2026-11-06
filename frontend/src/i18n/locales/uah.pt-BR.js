@@ -15,5 +15,14 @@ export const UAH_PT_BR = {
   dm: {
     errorTitle: "Não foi possível carregar as mensagens",
     errorBody: "Verifique sua conexão e tente de novo."
+  },
+  channel: {
+    generalName: "geral",
+    announcementsName: "avisos"
+  },
+  slow: {
+    seconds: "{n} s",
+    minutes: "{n} min",
+    hours: "{n} h"
   }
 };

@@ -15,5 +15,14 @@ export const UAH_TR = {
   dm: {
     errorTitle: "Mesajlar yüklenemedi",
     errorBody: "Bağlantını kontrol edip tekrar dene."
+  },
+  channel: {
+    generalName: "genel",
+    announcementsName: "duyurular"
+  },
+  slow: {
+    seconds: "{n} sn",
+    minutes: "{n} dk",
+    hours: "{n} sa"
   }
 };
