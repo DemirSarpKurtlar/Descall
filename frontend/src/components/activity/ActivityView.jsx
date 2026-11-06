@@ -12,7 +12,7 @@ import { openFeedbackModal } from '../../lib/feedbackNudge';
 import AnnouncementsButton from '../social/AnnouncementsModal';
 import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
 import ActivityHistoryRow, { localizeActivityLabel } from './ActivityHistoryRow';
-import { TYPE_PRIORITY } from '../../lib/processDatabase';
+import { TYPE_PRIORITY } from '../../lib/activityTypePriority';
 import { isVisiblyOnline } from '../../lib/presence';
 import { Avatar } from '../ui/Avatar';
 import { ConversationListSkeleton } from '../ui/Skeleton';

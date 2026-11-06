@@ -7,8 +7,6 @@
  * - The SDK is lazy-loaded after first paint (keeps the marketing JS budget); errors thrown
  *   before it loads are buffered and sent once it is ready.
  */
-import { scrubEvent, scrubBreadcrumb } from "./sentryScrub";
-
 const SENTRY_DSN =
   "https://dd5fad1cc547154ece0dd5ff07edb982@o4512220968779776.ingest.de.sentry.io/4512221008035920";
 // eslint-disable-next-line no-undef
@@ -108,8 +106,9 @@ function onEarlyRejection(e) {
 
 function loadSdk() {
   if (loading) return loading;
-  loading = import("./sentrySdk")
-    .then((Sentry) => {
+  // sentryScrub rides with the lazy SDK so it stays out of the first-paint entry.
+  loading = Promise.all([import("./sentrySdk"), import("./sentryScrub")])
+    .then(([Sentry, { scrubEvent, scrubBreadcrumb }]) => {
       const { isNativeIOS } = Sentry;
       Sentry.init({
         dsn: SENTRY_DSN,

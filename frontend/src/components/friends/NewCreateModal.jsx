@@ -6,7 +6,7 @@ import {
   Loader2, UsersRound, Camera, Plus, Search, X,
 } from "../ui/Icon.jsx";
 import CloseButton from "../ui/CloseButton";
-import ImageCropModal from "../ui/ImageCropModal";
+import ImageCropModal from "../ui/LazyImageCropModal";
 import { Avatar } from "../ui/Avatar";
 import { useT } from "../../context/LocaleContext";
 import { resolveDisplayName } from "../../lib/userProfile";

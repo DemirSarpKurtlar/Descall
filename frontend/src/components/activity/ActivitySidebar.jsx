@@ -16,7 +16,7 @@ import { openFeedbackModal } from "../../lib/feedbackNudge";
 import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
 import ActivityHistoryRow, { localizeActivityLabel } from "./ActivityHistoryRow";
-import { TYPE_PRIORITY } from "../../lib/processDatabase";
+import { TYPE_PRIORITY } from "../../lib/activityTypePriority";
 import PullToRefresh from "../ui/PullToRefresh";
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/glass/GlassShell";
