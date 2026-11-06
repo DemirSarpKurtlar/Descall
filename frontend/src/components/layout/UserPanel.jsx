@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -270,7 +270,7 @@ const NAV_GROUPS_DEF = [
     labelKey: "settings.account",
     items: [
       { id: "overview", labelKey: "settings.myAccount", icon: User, hintKey: "settings.accountHint" },
-      { id: "profile", labelKey: "settings.profile", icon: Type, hintKey: "settings.profileHint" },
+      { id: "profile", labelKey: "settings.profile", icon: Pencil, hintKey: "settings.profileHint" },
       { id: "security", labelKey: "settings.security", icon: Shield, hintKey: "settings.securityHint" },
       { id: "privacy", labelKey: "settings.privacy", icon: Lock, hintKey: "settings.privacyHint" },
     ],
@@ -303,11 +303,13 @@ const NAV_GROUPS_DEF = [
 ];
 
 /* 3.0 settings sidebar (desktop + iPad): colored icon tiles, mockup 34/36. */
+/* UI audit #14 / #77: the ONE icon + colour map for every settings list
+   (desktop sidebar, iPad, iPhone): same glyph, same tile colour everywhere. */
 const S3_NAV_TILES = {
-  overview: ["user", "gray"],
-  profile: ["pen", "gray"],
-  security: ["shield", "gray"],
-  privacy: ["lock", "gray"],
+  overview: ["user", "brand"],
+  profile: ["pen", "blue"],
+  security: ["shield", "green"],
+  privacy: ["lock", "indigo"],
   appearance: ["palette", "brand"],
   notifications: ["bell", "red"],
   language: ["globe", "blue"],
@@ -318,6 +320,12 @@ const S3_NAV_TILES = {
   shop: ["bag", "purple"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
+};
+
+/* Same values as .s3 .c-* in settings-v3.css, for lists outside .s3. */
+const S3_TILE_HEX = {
+  blue: "#3e7bfa", brand: "#587af6", indigo: "#5e5ce6", purple: "#9b5de5", green: "#30b458", teal: "#1aa6b7",
+  orange: "#f08a24", yellow: "#e9b10c", red: "#f0453a", pink: "#e8457a", gray: "#6b6f80", mint: "#22b59a",
 };
 
 const TAB_TITLE_KEYS = {
@@ -2797,7 +2805,7 @@ const UserPanel = forwardRef(function UserPanel({
         <div className="us-sidebar-top">
           <div className="us-sidebar-brand">
             <div>
-              <h2>{glassShell && isMobile ? t("Settings") : t("settings.title")}</h2>
+              <h2>{t("Settings")}</h2>
               <p>{t("Manage your Descall account")}</p>
             </div>
             {isMobile && (
@@ -2851,9 +2859,18 @@ const UserPanel = forwardRef(function UserPanel({
                     data-nav={item.id}
                     onClick={() => openTab(item.id)}
                   >
-                    <span className="us-nav-ico">
-                      <Icon size={18} />
-                    </span>
+                    {(() => {
+                      const [glyph, color] = S3_NAV_TILES[item.id] || [];
+                      return glyph ? (
+                        <span className="us-nav-ico" style={{ background: S3_TILE_HEX[color] || S3_TILE_HEX.gray, color: "#fff" }}>
+                          <S3Glyph name={glyph} size={18} stroke={2.1} />
+                        </span>
+                      ) : (
+                        <span className="us-nav-ico">
+                          <Icon size={18} />
+                        </span>
+                      );
+                    })()}
                     <span className="us-nav-copy">
                       <span className="us-nav-label">{item.label}</span>
                       {isMobile && <span className={`us-nav-hint${item.id === "promo" && promoCount ? " is-promo-new" : ""}`}>{item.id === "promo" && promoCount ? (promoCount === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoCount })) : item.hint}</span>}
