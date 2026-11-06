@@ -74,6 +74,7 @@ function AuthModal({
   // New Google account (also from "Sign in"): the backend created nothing and wants
   // Terms + date of birth first. { provider: "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
+  const [googleUnavailable, setGoogleUnavailable] = useState(false);
 
   useEffect(() => {
     if (!isRegistering && !socialSignup) return;
@@ -202,7 +203,7 @@ function AuthModal({
             aria-modal="true"
             aria-label={isRegistering ? t("Create account") : t("Sign in")}
           >
-            <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+            <button type="button" className="modal-close" onClick={onClose} aria-label={t("Close")}>
               <IconClose />
             </button>
             {twoFa ? (
@@ -323,6 +324,8 @@ function AuthModal({
                 <Suspense fallback={null}>
                   <GoogleSignInButton
                   appearance="glass"
+                  hideWhenUnavailable
+                  onUnavailable={() => setGoogleUnavailable(true)}
                   disabled={isSubmitting || authLoading || signupBlocked}
                   onCredential={async (credential) => {
                     if (signupBlocked) return;
@@ -338,14 +341,16 @@ function AuthModal({
                   }}
                 />
                 </Suspense>
-                {isRegistering && (
+                {isRegistering && !googleUnavailable && (
                   <p className="mkt-auth-field-hint mkt-auth-google-hint">
                     {t("Fastest path: continue with Google, then you’re in.")}
                   </p>
                 )}
-                <div className="mkt-auth-divider" aria-hidden>
-                  <span>{t("or")}</span>
-                </div>
+                {!googleUnavailable && (
+                  <div className="mkt-auth-divider" aria-hidden>
+                    <span>{t("or")}</span>
+                  </div>
+                )}
                   </>
                 )}
                 <form onSubmit={submit}>
