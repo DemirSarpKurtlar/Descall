@@ -11,7 +11,8 @@ import { getLocale } from "../../../i18n/runtime.js";
 // Absolute path: the Electron build uses base "./", which would resolve under /settings/.
 const BASE = (typeof import.meta !== "undefined" && import.meta.env?.BASE_URL) || "/";
 const SYMBOL_SRC = `${BASE.startsWith("/") ? BASE : "/"}brand/descall-symbol.svg`;
-const DEFAULT_BANNER = "linear-gradient(120deg,#3b2a6e,#5a4bd8 60%,#7d97ff)";
+// UI audit #3: one default banner token (design-tokens.css).
+const DEFAULT_BANNER = "var(--profile-banner-fallback)";
 const keyOf = (item) => item?.effect_key || "";
 const imgOf = (item) => item?.preview_url || item?.asset_url || "";
 const cssUrl = (src) => (src ? `url("${String(src).replace(/"/g, "%22")}")` : "");
@@ -65,7 +66,7 @@ const S = {
     return (
       <div className="spm-stage spm-flat">
         <div className="spm-pcard spm-pc">
-          <div className="spm-bn" style={{ backgroundImage: src ? cssUrl(src) : DEFAULT_BANNER }} />
+          <div className="spm-bn" style={src ? { backgroundImage: cssUrl(src) } : { background: DEFAULT_BANNER }} />
           <div className="spm-bd">
             <Av me={me}><span className="status-badge spm-sb-lg" /></Av>
             <div className="spm-nm">{name}</div>
@@ -294,7 +295,7 @@ export function PurchaseThumb({ category, item, me, c }) {
   switch (category) {
     case "banner":
     case "profile_background":
-      return <div className="spm-th-banner" style={{ backgroundImage: cssUrl(imgOf(item)) || DEFAULT_BANNER }} />;
+      return <div className="spm-th-banner" style={cssUrl(imgOf(item)) ? { backgroundImage: cssUrl(imgOf(item)) } : { background: DEFAULT_BANNER }} />;
     case "avatar_effect":
       return <div className="spm-th-av"><Av me={me}><AvatarEffect item={item} delay="-2.2s" /></Av></div>;
     case "theme":

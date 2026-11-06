@@ -2486,7 +2486,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .uhc-banner {
   height: 72px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2) 55%, #7b5cff);
+  background: var(--profile-banner-fallback);
   background-size: cover;
   background-position: center;
   flex-shrink: 0;

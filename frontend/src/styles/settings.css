@@ -643,7 +643,7 @@
 
 .us-hero-banner {
   height: 104px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2) 55%, #7b5cff);
+  background: var(--profile-banner-fallback);
   background-size: cover;
   background-position: center;
 }
@@ -1660,7 +1660,7 @@ button.us-row.g-privacy-link:hover {
 .us-pe-banner {
   position: relative;
   height: 128px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2) 55%, #7b5cff);
+  background: var(--profile-banner-fallback);
   background-size: cover;
   background-position: center;
 }

@@ -31,10 +31,10 @@ function equippedName(item, locale) {
   return localizedShopItemName(item, locale);
 }
 
-function bannerFallback(username) {
-  const seed = String(username || "user").split("").reduce((n, c) => n + c.charCodeAt(0), 0);
-  const hue = seed % 360;
-  return `linear-gradient(135deg, hsl(${hue} 42% 32%), hsl(${(hue + 36) % 360} 46% 16%))`;
+// UI audit #3: the same default banner as Hesabım and the profile editor.
+// eslint-disable-next-line no-unused-vars
+function bannerFallback(_username) {
+  return "var(--profile-banner-fallback)";
 }
 
 export default function ShopProfilePreview({ me, t }) {
