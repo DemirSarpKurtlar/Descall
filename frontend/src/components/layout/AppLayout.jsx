@@ -610,6 +610,7 @@ export default function AppLayout({
                 me={me}
                 myStatus={myStatus}
                 history={activity.history}
+                historyLoaded={activity.historyLoaded !== false}
                 currentActivity={activity.currentActivity}
                 privacy={activity.settings?.privacy}
               />

@@ -735,6 +735,7 @@ export default function ChatPanel({
           currentActivity={activity?.currentActivity}
           manualOverride={activity?.manualOverride}
           history={activity?.history}
+          historyLoaded={activity?.historyLoaded !== false}
           friendPresence={activity?.friendPresence}
           friends={friends}
           settings={activity?.settings}

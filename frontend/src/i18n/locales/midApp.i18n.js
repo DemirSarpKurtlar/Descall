@@ -10,6 +10,8 @@ export const MID_APP_I18N = {
     "The shelf is empty for now": "Vitrin şu an boş",
     "You'll see new items here as soon as they're added.": "Yeni ürünler eklenince burada göreceksin.",
     "View your inventory": "Envanterine bak",
+    // #91: sentence case, like every other button.
+    "Set Status": "Durum ayarla",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",

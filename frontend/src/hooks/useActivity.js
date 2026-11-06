@@ -175,6 +175,8 @@ export function useActivity({ socket, me, friends = [] }) {
   });
   const [friendPresence, setFriendPresence]   = useState({});
   const [history, setHistory]                 = useState([]);
+  // UI audit #91: the history list shows skeleton rows until the first load settles.
+  const [historyLoaded, setHistoryLoaded]     = useState(false);
   const [settings, setSettings]               = useState(loadStoredSettings);
 
   const scanStateRef      = useRef({ active: null, paused: null });
@@ -193,7 +195,7 @@ export function useActivity({ socket, me, friends = [] }) {
   // ─── Load initial data ──────────────────────────────────────────────────────
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
+    if (!token) { setHistoryLoaded(true); return; }
 
     Promise.all([
       fetch(`${API_BASE_URL}/api/activity/history`,  { headers: { Authorization: `Bearer ${token}` } }),
@@ -211,7 +213,7 @@ export function useActivity({ socket, me, friends = [] }) {
           persistSettings(merged);
         }
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setHistoryLoaded(true));
   }, []);
 
   // ─── Hydrate friend presence from REST ───────────────────────────────────
@@ -580,6 +582,7 @@ export function useActivity({ socket, me, friends = [] }) {
     currentActivity,
     friendPresence,
     history,
+    historyLoaded,
     settings,
     manualOverride,
     isElectron,
