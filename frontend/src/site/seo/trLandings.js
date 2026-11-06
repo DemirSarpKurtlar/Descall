@@ -17,7 +17,7 @@ const RELATED_CORE = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
   { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri karşılaştırması" },
   { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı?" },
-  { to: "/tr/turk-discord", label: "Türk Discord’u" },
+  { to: "/tr/turk-discord", label: "Türkiye’de geliştirilen sohbet uygulaması" },
   { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
   { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
   { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },
@@ -28,6 +28,11 @@ const RELATED_CORE = [
 
 function related(self) {
   return RELATED_CORE.filter((l) => l.to !== self);
+}
+
+/** Short label of a Turkish landing for breadcrumbs and hub lists. */
+export function trLandingLabel(page) {
+  return page.short || page.h1.split(":")[0].trim();
 }
 
 export const TR_LANDINGS = {
@@ -130,16 +135,18 @@ export const TR_LANDINGS = {
 
   "/tr/turk-discord": {
     path: "/tr/turk-discord",
-    kicker: "Yerli · Türkçe · Ücretsiz",
-    h1: "Türk Discord’u: Türkiye’de geliştirilen Descall",
+    kicker: "Türkiye’de geliştirildi · Türkçe · Ücretsiz",
+    h1: "Descall: Türkiye’de geliştirilen sesli sohbet ve topluluk uygulaması",
+    // Breadcrumb / hub-list label (the H1 starts with the brand name).
+    short: "Türkiye’de geliştirilen sohbet uygulaması",
     lead:
-      "“Türk Discord’u var mı?” sorusunun bir cevabı Descall. Türkiye’de, bağımsız bir geliştirici olan Demir Sarp Kurtlar tarafından geliştirilen Descall; sunucular, roller, sesli ve görüntülü sohbet, ekran paylaşımı ve oyun arkadaşı bulma özelliklerini Türkçe bir arayüzde ve ücretsiz olarak sunar.",
+      "Türkiye’de geliştirilen, Türkçe bir sohbet uygulaması mı arıyorsun? Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor. Sunucular, roller, sesli ve görüntülü sohbet ve ekran paylaşımı Türkçe bir arayüzde ve ücretsiz olarak sunuluyor.",
     sections: [
       {
-        h: "“Türk Discord’u” ne demek?",
+        h: "Türkiye’de geliştirilen bir sohbet uygulamasından ne beklenir?",
         p: [
-          "Discord’a erişim Ekim 2024’te Türkiye’de engellendikten sonra arama motorlarında “Türk Discord’u”, “yerli Discord” ve “Discord’un Türk versiyonu” aramaları hızla arttı. Bu aramaların arkasında genelde üç beklenti var: Türkiye’den sorunsuz çalışması, Türkçe olması ve Discord’a alışkın birinin hemen anlayabileceği bir yapıda olması.",
-          "Descall bu üç beklentiye de doğrudan cevap verir. Uygulama Türkiye’de geliştirilir, arayüz baştan sona Türkçe kullanılabilir ve sunucu, kanal, rol, ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelecek şekilde tasarlanmıştır. Ama Descall bir kopya değil; kendi tasarım dili ve abonelik gerektirmeyen yaklaşımıyla ayrı bir üründür.",
+          "Discord’a erişim Ekim 2024’te Türkiye’de engellendikten sonra pek çok kişi Türkiye’de geliştirilen, Türkçe bir sohbet uygulaması aramaya başladı. Bu aramaların arkasında genelde üç beklenti var: Türkiye’den sorunsuz çalışması, Türkçe olması ve sunucu, kanal, ses odası gibi alışık olunan kavramları sunması.",
+          "Descall bu üç beklentiye de doğrudan cevap verir. Uygulama Türkiye’de geliştirilir, arayüz baştan sona Türkçe kullanılabilir ve sunucu, kanal, rol, ses odası gibi kavramlar başka sohbet uygulamalarından gelenlere tanıdık gelecek şekilde tasarlanmıştır. Descall bir kopya değil; kendi tasarım dili ve abonelik gerektirmeyen yaklaşımıyla ayrı bir üründür ve Discord Inc. ile bağlantılı değildir.",
         ],
       },
       {
@@ -152,7 +159,7 @@ export const TR_LANDINGS = {
       },
       {
         h: "Descall’ın özellikleri",
-        p: ["Türk Discord’u olarak düşünebileceğin Descall’da bugün kullanabileceğin özellikler:"],
+        p: ["Descall’da bugün kullanabileceğin özellikler:"],
         list: [
           "Sunucular, kategoriler, yazı, ses ve sahne kanalları",
           "Rol hiyerarşisi ve kanal bazlı izin ayarları",
@@ -162,7 +169,6 @@ export const TR_LANDINGS = {
           "Birebir ve grup halinde sesli/görüntülü arama",
           "Kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
-          "Arkadaşlar ve durum Descall içinde",
           "Windows, Android ve tarayıcı; tek hesap",
         ],
       },
@@ -191,8 +197,8 @@ export const TR_LANDINGS = {
     ],
     faq: [
       {
-        q: "Türk Discord’u hangisi?",
-        a: "Tek bir resmi “Türk Discord’u” yok; ama Descall, Türkiye’de geliştirilen, Türkçe arayüzlü ve Discord’a benzer yapıda (sunucular, roller, ses kanalları) ücretsiz bir alternatiftir.",
+        q: "Türkiye’de geliştirilen bir sohbet uygulaması var mı?",
+        a: "Evet. Descall Türkiye’de geliştirilen, Türkçe arayüzlü ve sunucular, roller ve ses kanalları sunan ücretsiz bir sohbet uygulamasıdır. Discord’a alternatif olarak kullanılabilir, ama Discord Inc. ile bağlantılı değildir.",
       },
       {
         q: "Descall’ı kim geliştiriyor?",
@@ -200,7 +206,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Descall Discord’un kopyası mı?",
-        a: "Hayır. Kavramlar Discord kullanıcılarına tanıdık gelir (sunucu, kanal, rol), ama Descall kendi tasarımı ve abonelik gerektirmeyen yapısıyla ayrı bir üründür.",
+        a: "Hayır. Sunucu, kanal ve rol gibi kavramlar tanıdık gelir, ama Descall kendi tasarımı ve abonelik gerektirmeyen yapısıyla ayrı bir üründür. Discord Inc. ile bir bağlantısı yoktur.",
       },
       {
         q: "Türkçe destek alabilir miyim?",
@@ -443,7 +449,6 @@ export const TR_LANDINGS = {
           "Kalıcı ses kanalları ve sahne kanalları",
           "Sesli/görüntülü arama ve kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
-          "Arkadaşlar ve durum Descall içinde",
           "Atma, yasaklama, zaman aşımı ve denetim kayıtları",
           "Windows, Android ve tarayıcı",
           "Ücretsiz; kozmetikler isteğe bağlı (DesCoin)",

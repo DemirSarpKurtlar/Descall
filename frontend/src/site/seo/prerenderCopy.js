@@ -397,6 +397,17 @@ export function cookieBannerHtml(loc) {
     </div>`;
 }
 
+/**
+ * Trademark note on every page (the footer of every page names Discord). Turkish has
+ * its own sentence; prefixed locales translate the English one through the site catalog.
+ */
+export const NOT_AFFILIATED_EN = "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.";
+export const NOT_AFFILIATED_TR = "Descall, Discord Inc. ile bağlantılı değildir. Discord, Discord Inc.’in ticari markasıdır.";
+
+export function notAffiliatedCopy(loc) {
+  return siteLoc(loc) === "tr" ? NOT_AFFILIATED_TR : newCopy(NOT_AFFILIATED_EN, loc);
+}
+
 function footerItem(href, label) {
   return `<li><a href="${href}">${label}</a></li>`;
 }
@@ -405,7 +416,7 @@ function footerItem(href, label) {
 export const TR_HUB_LINKS = [
   ["/tr/discord-acildi-mi", "Discord açıldı mı?"],
   ["/tr/discord-alternatifleri", "Discord alternatifleri"],
-  ["/tr/turk-discord", "Türk Discord’u"],
+  ["/tr/turk-discord", "Türk sohbet uygulaması"],
   ["/tr/discord-yerine-ne-kullanilir", "Discord yerine ne kullanılır?"],
   ["/tr/sesli-sohbet-uygulamasi", "Sesli sohbet uygulaması"],
   ["/tr/oyuncu-sohbet-uygulamasi", "Oyuncu sohbet uygulaması"],
@@ -471,6 +482,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
       </ul>
     </section>
   </div>
+  <p class="seo-legal-note">${notAffiliatedCopy(l)}</p>
 </footer>`;
 }
 

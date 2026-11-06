@@ -72,9 +72,9 @@ const BASE_ROUTES = [
   },
   {
     path: "/discord-alternative",
-    title: "Free Discord Alternative | Voice, Screen Share & Servers",
+    title: "Descall: Free Discord Alternative for Voice and Servers",
     description:
-      "A free Discord alternative with real servers, HD voice/video, and screen share. Core chat and calls stay free, no Nitro paywall.",
+      "A free Discord alternative with real servers, HD voice and video, and screen share. Core chat and calls stay free, with no subscription.",
     image: "/og-discord.png",
     h1: "The best free Discord alternative for friends & gamers",
     changefreq: "weekly",
@@ -83,7 +83,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/alternatives",
-    title: "Discord Alternatives Compared | Free Voice & Servers",
+    title: "Descall Guide: Discord Alternatives Compared (2026)",
     description:
       "Honest 2026 comparison of Discord alternatives: Descall, Discord, Guilded, TeamSpeak, Telegram. Free voice, screen share, and friend-group servers.",
     h1: "Discord alternatives compared | pick by what you actually need",
@@ -93,7 +93,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/compare/discord",
-    title: "Discord vs Descall (2026) | Which Should You Use?",
+    title: "Descall vs Discord (2026): Which Should You Use?",
     description:
       "Side-by-side Discord vs Descall: servers, roles, voice, screen share, mobile, and price. Clear verdict for friend groups vs mega-communities.",
     h1: "Discord vs Descall | which fits your group in 2026?",
@@ -103,7 +103,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/best-discord-alternative-for-gamers",
-    title: "Best Discord Alternative for Gamers | Descall",
+    title: "Descall for Gamers: A Free Discord Alternative",
     description:
       "Discord alternative for gamers: free voice, screen share, and gaming server templates without Nitro or bot hell.",
     changefreq: "weekly",
@@ -112,7 +112,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/discord-alternative-for-communities",
-    title: "Discord Alternative for Communities | Descall Servers",
+    title: "Descall for Communities: A Discord Alternative",
     description:
       "Community chat platform with real servers: roles, channels, templates, invites, and voice. Descall is a Discord alternative for private and growing communities.",
     changefreq: "weekly",
@@ -121,16 +121,16 @@ const BASE_ROUTES = [
   },
   {
     path: "/discord-alternative-for-voice-chat",
-    title: "Voice Chat Alternative to Discord | Free Calls | Descall",
+    title: "Descall Voice Chat: A Free Alternative to Discord",
     description:
-      "Free voice chat alternative to Discord with WebRTC calls, screen share quality presets, and no Nitro paywall on talking to friends.",
+      "A free voice chat alternative to Discord: WebRTC calls, screen share with quality presets, and no subscription for talking to friends.",
     changefreq: "weekly",
     priority: "0.88",
     keywords: "voice chat alternative to discord, discord alternative for voice chat",
   },
   {
     path: "/discord-alternative-for-friends",
-    title: "Discord Alternative for Friends | DMs, Groups & Voice",
+    title: "Descall for Friends: A Discord Alternative",
     description:
       "Discord alternative for friends: DMs, groups, presence, and free voice/video. Skip server admin, keep the people you actually call.",
     changefreq: "weekly",
@@ -139,7 +139,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/apps-like-discord",
-    title: "Apps Like Discord (2026) | Websites & Platforms Compared",
+    title: "Descall and Other Apps Like Discord (2026)",
     description:
       "Looking for apps like Discord, websites like Discord, or platforms like Discord? Compare options and see when Descall is the better free pick.",
     changefreq: "weekly",
@@ -148,7 +148,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/discord-replacement",
-    title: "Discord Replacement for Friend Groups | Switch to Descall",
+    title: "Descall as a Discord Replacement: Migration Guide",
     description:
       "Need a Discord replacement for nightly voice and DMs? Migrate your friend group to Descall in two weeks, keep Discord only for mega-servers.",
     changefreq: "weekly",
@@ -157,7 +157,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/blog",
-    title: "Descall Blog | Discord Alternatives & Voice Chat Guides",
+    title: "Descall Blog: Guides to Voice Chat and Communities",
     description:
       "Practical guides on Discord alternatives, Discord competitors, voice chat, and migrating friend groups to Descall.",
     changefreq: "weekly",
@@ -165,7 +165,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/blog/leave-nitro-keep-voice-chat",
-    title: "Leave Nitro. Keep Voice Chat. | Migration Guide",
+    title: "Keep Voice Chat Free, Skip the Subscription | Descall",
     description:
       "Move your friend group off Discord Nitro habits to a free Discord alternative with voice, video, and screen share.",
     changefreq: "monthly",
@@ -174,7 +174,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/blog/best-discord-alternatives-2026",
-    title: "Best Discord Alternatives in 2026 | Honest Shortlist",
+    title: "Descall Blog: Best Discord Alternatives in 2026",
     description:
       "Best Discord alternatives in 2026 for friends, servers, and voice, how Descall, Discord, Guilded, and others actually compare.",
     changefreq: "monthly",
@@ -183,7 +183,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/blog/discord-competitors",
-    title: "Discord Competitors in 2026 | Who Actually Competes",
+    title: "Descall Blog: Discord Competitors in 2026",
     description:
       "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics, plus where Descall competes honestly.",
     changefreq: "monthly",
@@ -219,7 +219,7 @@ const BASE_ROUTES = [
     title: "Descall Privacy Policy | GDPR/KVKK data practices",
     image: "/og-privacy.png",
     description:
-      "Descall Privacy Policy: what we collect (account, messages, IP, call metadata), how long we keep it, processors (Supabase, Resend, FCM), and your access/deletion rights.",
+      "Descall Privacy Policy: what we collect (account, messages, IP, call metadata), how long we keep it, our processors, and your access and deletion rights.",
     changefreq: "monthly",
     priority: "0.5",
   },
@@ -262,7 +262,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/descall-sahibi",
-    title: "Descall’ın sahibi kim? Demir Sarp Kurtlar | Kurucu, sahip ve CEO",
+    title: "Descall’ın sahibi kim? Demir Sarp Kurtlar, kurucu ve CEO",
     description:
       "Descall’ın sahibi Demir Sarp Kurtlar’dır. Demir Sarp Kurtlar, Descall’ın kurucusu, sahibi ve CEO’sudur.",
     h1: "Descall’ın sahibi kim?",
@@ -345,7 +345,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/tr/compare/discord",
-    title: "Discord mu Descall mı? 2026 Karşılaştırması",
+    title: "Descall mı Discord mu? 2026 Karşılaştırması",
     description:
       "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı ve fiyat. Arkadaş grubu için hangisi daha uygun?",
     h1: "Discord mu Descall mı | 2026 karşılaştırması",
@@ -372,7 +372,7 @@ const BASE_ROUTES = [
   },
   {
     path: "/tr/blog",
-    title: "Descall Blog | Discord Alternatifleri ve Sesli Sohbet Rehberleri",
+    title: "Descall Blog | Sesli Sohbet ve Topluluk Rehberleri",
     description:
       "Türkçe rehberler: Discord alternatifleri, Discord’dan geçiş, sesli sohbet ve topluluk yönetimi. Arkadaş grupları ve oyuncular için pratik yazılar.",
     changefreq: "weekly",

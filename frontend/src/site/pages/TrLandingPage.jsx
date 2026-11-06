@@ -4,7 +4,7 @@ import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
-import { TR_LANDINGS } from "../seo/trLandings";
+import { TR_LANDINGS, trLandingLabel } from "../seo/trLandings";
 
 function previewForPath(path) {
   if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
@@ -24,7 +24,7 @@ export default function TrLandingPage({ onSignIn, onSignUp }) {
 
   const crumbs = [
     { label: "Ana sayfa", to: "/tr" },
-    { label: page.h1.split(":")[0].trim(), to: page.path },
+    { label: trLandingLabel(page), to: page.path },
   ];
 
   return (

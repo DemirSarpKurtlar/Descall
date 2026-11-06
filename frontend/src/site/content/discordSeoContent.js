@@ -205,7 +205,7 @@ export const BLOG_POSTS = [
   {
     slug: "leave-nitro-keep-voice-chat",
     path: "/blog/leave-nitro-keep-voice-chat",
-    title: "Leave Nitro. Keep voice chat.",
+    title: "Keep voice chat free without a subscription",
     description:
       "How to move a friend group from Discord Nitro habits to a free Discord alternative with servers, voice, video, and screen share.",
     date: "2026-08-11",

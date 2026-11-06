@@ -3,19 +3,19 @@
 export const TR_LANDING_META = [
   {
     "path": "/tr/discord-alternatifi",
-    "title": "Discord Alternatifi (2026): Ücretsiz, Türkçe ve Engelsiz | Descall",
+    "title": "Descall: Ücretsiz ve Türkçe Discord Alternatifi (2026)",
     "description": "Discord’a Türkiye’den erişemiyor musun? Descall VPN gerekmeden çalışır: ücretsiz sunucular, sesli ve görüntülü arama, ekran paylaşımı. Windows, iPhone, Android.",
     "h1": "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı"
   },
   {
     "path": "/tr/turk-discord",
-    "title": "Yerli Discord: Türk Discord Uygulaması Descall (Ücretsiz)",
-    "description": "Yerli Discord arayanlar için Descall: Türkiye’de geliştirildi, Türkçe, erişim engeli yok. Ücretsiz sunucular, sesli sohbet ve ekran paylaşımı. Hemen indir.",
-    "h1": "Türk Discord’u: Türkiye’de geliştirilen Descall"
+    "title": "Descall: Türk Sesli Sohbet ve Topluluk Uygulaması",
+    "description": "Descall Türkiye’de geliştirilen, Türkçe bir sohbet uygulaması: erişim engeli yok, ücretsiz sunucular, sesli sohbet ve ekran paylaşımı. Hemen indir.",
+    "h1": "Descall: Türkiye’de geliştirilen sesli sohbet ve topluluk uygulaması"
   },
   {
     "path": "/tr/discord-yerine-ne-kullanilir",
-    "title": "Discord Yerine Ne Kullanılır? İhtiyaca Göre Rehber (2026)",
+    "title": "Descall Rehberi: Discord Yerine Ne Kullanılır?",
     "description": "Discord yerine ne kullanılır? Arkadaş sesli sohbeti, oyun klanı, okul grubu ya da sadece mesajlaşma için doğru uygulamayı seçmene yardım eden rehber.",
     "h1": "Discord yerine ne kullanılır? İhtiyacına göre doğru uygulama"
   },
@@ -27,19 +27,19 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/oyuncu-sohbet-uygulamasi",
-    "title": "Oyuncu Sohbet Uygulaması: Ses, Klan Sunucusu, Ekran Paylaşma | Descall",
+    "title": "Descall: Oyuncu Sohbet Uygulaması, Ses ve Klan Sunucusu",
     "description": "Oyuncular için ücretsiz sohbet uygulaması: klan sunucusu, rollerle düzen, oyun içi sesli sohbet ve ekran paylaşımı tek uygulamada.",
     "h1": "Oyuncular için sohbet uygulaması: klan sunucusu, ses ve ekran paylaşımı tek yerde"
   },
   {
     "path": "/tr/discord-acildi-mi",
-    "title": "Discord Açıldı mı? (Ekim 2026) Güncel Durum ve Çalışan Alternatif",
+    "title": "Discord Açıldı mı? Güncel Durum ve Descall Alternatifi",
     "description": "Kısa cevap: hayır. Discord 9 Ekim 2024’ten beri Türkiye’de erişim engelli ve engel Ekim 2026’da sürüyor. VPN’siz çalışan ücretsiz alternatif: Descall.",
     "h1": "Discord açıldı mı? Türkiye’de Discord erişim durumu"
   },
   {
     "path": "/tr/discord-alternatifleri",
-    "title": "Discord Alternatifleri (2026) | Dürüst Karşılaştırma",
+    "title": "Descall Karşılaştırması: Discord Alternatifleri (2026)",
     "description": "Discord alternatifleri karşılaştırması: Descall, TeamSpeak, Mumble, Telegram, WhatsApp, Slack ve Element. Hangisi sesli sohbet, klan veya mesajlaşma için uygun?",
     "h1": "Discord alternatifleri: 2026 için dürüst karşılaştırma"
   }
@@ -48,7 +48,8 @@ export const TR_LANDING_META = [
 export const TR_BLOG_META = [
   {
     "slug": "best-discord-alternatives-2026",
-    "title": "2026’nın en iyi Discord alternatifleri: dürüst kısa liste",
+    "title": "Descall Blog: 2026’nın En İyi Discord Alternatifleri",
+    "h1": "2026’nın en iyi Discord alternatifleri: dürüst kısa liste",
     "description": "Arkadaş grupları, sunucular, sesli sohbet için 2026’nın en iyi Discord alternatifleri; Descall, TeamSpeak, Telegram ve diğerleri gerçekte nasıl kıyaslanıyor?",
     "date": "2026-08-11",
     "updated": "2026-10-17",
@@ -59,7 +60,8 @@ export const TR_BLOG_META = [
   },
   {
     "slug": "discord-competitors",
-    "title": "Discord’un rakipleri: 2026’da kim gerçekten rekabet ediyor?",
+    "title": "Descall Blog: Discord’un Rakipleri 2026’da Kim?",
+    "h1": "Discord’un rakipleri: 2026’da kim gerçekten rekabet ediyor?",
     "description": "2026’da Discord’un rakiplerinin haritası: hafif arkadaş uygulamaları, oyun toplulukları için araçlar ve klasik ses yazılımları. Descall’ın dürüst konumu.",
     "date": "2026-08-11",
     "updated": "2026-10-17",
@@ -70,7 +72,7 @@ export const TR_BLOG_META = [
   },
   {
     "slug": "leave-nitro-keep-voice-chat",
-    "title": "Nitro’yu bırak, sesli sohbeti bırakma",
+    "title": "Aboneliksiz ücretsiz sesli sohbet: geçiş rehberi",
     "description": "Arkadaş grubunu abonelik alışkanlığından sunucular, ses, görüntü ve ekran paylaşımı ücretsiz olan bir Discord alternatifine taşımanın pratik yolu.",
     "date": "2026-08-11",
     "updated": "2026-10-17",

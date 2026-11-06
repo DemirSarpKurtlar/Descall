@@ -58,7 +58,17 @@ const {
   allSitemapEntries,
 } = await import(pathToFileURL(path.join(root, "src/site/sitemapCatalog.js")).href);
 
+/**
+ * Search results cut titles at about 60 characters and descriptions at about 160
+ * (SEO audit, Nov 2026; the old 70 / 170 limits let 60 titles and 41 descriptions
+ * through). Same limits as scripts/site-i18n.mjs for translated titles.
+ */
+const TITLE_MAX = 60;
+const DESCRIPTION_MAX = 160;
+
 const paths = PUBLIC_ROUTES.map((r) => r.path);
+/** Per-language length report: { routes, titleOver, descOver, longestTitle, longestDesc }. */
+const lengthByLang = new Map();
 const titles = new Map();
 const descriptions = new Map();
 
@@ -66,9 +76,21 @@ for (const route of PUBLIC_ROUTES) {
   if (!route.path?.startsWith("/")) fail(`Invalid path: ${route.path}`);
   if (!route.title) fail(`Missing title: ${route.path}`);
   if (!route.description) fail(`Missing description: ${route.path}`);
-  if (route.title.length > 70) warn(`Title long (${route.title.length}): ${route.path}`);
+  if (route.title.length > TITLE_MAX) warn(`Title long (${route.title.length} > ${TITLE_MAX}): ${route.path} "${route.title}"`);
   if (route.title.length < 20) warn(`Title short (${route.title.length}): ${route.path}`);
-  if (route.description.length > 170) warn(`Description long (${route.description.length}): ${route.path}`);
+  if (route.description.length > DESCRIPTION_MAX) {
+    warn(`Description long (${route.description.length} > ${DESCRIPTION_MAX}): ${route.path}`);
+  }
+  {
+    const lang = route.locale || route.lang || (route.path === "/tr" || route.path.startsWith("/tr/") ? "tr" : "en");
+    const row = lengthByLang.get(lang) || { routes: 0, titleOver: 0, descOver: 0, longestTitle: 0, longestDesc: 0 };
+    row.routes += 1;
+    if (route.title.length > TITLE_MAX) row.titleOver += 1;
+    if (route.description.length > DESCRIPTION_MAX) row.descOver += 1;
+    row.longestTitle = Math.max(row.longestTitle, route.title.length);
+    row.longestDesc = Math.max(row.longestDesc, route.description.length);
+    lengthByLang.set(lang, row);
+  }
   if (route.description.length < 70) warn(`Description short (${route.description.length}): ${route.path}`);
 
   if (titles.has(route.title)) fail(`Duplicate title: "${route.title}" (${titles.get(route.title)} & ${route.path})`);
@@ -410,6 +432,12 @@ if (checkDist) {
 }
 
 console.log(`SEO validate: ${PUBLIC_ROUTES.length} routes, ${KEYWORD_STRATEGY.length} keywords, ${Object.keys(NICHE_LANDINGS).length} niches`);
+console.log(`Title / description lengths per language (limits ${TITLE_MAX} / ${DESCRIPTION_MAX}):`);
+for (const [lang, row] of lengthByLang) {
+  console.log(
+    `  ${lang.padEnd(6)} ${String(row.routes).padStart(3)} pages  titles over: ${row.titleOver}  descriptions over: ${row.descOver}  longest: ${row.longestTitle} / ${row.longestDesc}`
+  );
+}
 for (const w of warnings) console.warn(`WARN  ${w}`);
 for (const e of errors) console.error(`ERROR ${e}`);
 

@@ -41,8 +41,9 @@ export const PART_SIZE = 120;
 export const PART_WORDS = 2500;
 /** Files rendered only in the browser whose t("...") keys the export must include. */
 const CLIENT_ONLY_FILES = ["site/CookieConsentBanner.jsx"];
-const TITLE_MAX = 70;
-const DESCRIPTION_MAX = 170;
+// Same limits as scripts/seo-validate.mjs (search results cut longer text).
+const TITLE_MAX = 60;
+const DESCRIPTION_MAX = 160;
 
 const siteLocales = await imp("src/site/siteLocales.js");
 const { SITE_DRAFT_LOCALES, SITE_DRAFT_PAGE_GROUPS } = await imp("src/site/siteDraftLocales.js");

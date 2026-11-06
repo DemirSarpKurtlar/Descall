@@ -328,6 +328,9 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
         <p className="mkt-footer-copy">
           © {SITE_OPERATOR.copyrightYear} Descall. {t("All rights reserved.")}
         </p>
+        <p className="mkt-footer-copy mkt-footer-legal">
+          {t("Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.")}
+        </p>
       </footer>
       <StickyMobileCta onStart={openRegister} downloadTo={L("/download")} />
     </div>

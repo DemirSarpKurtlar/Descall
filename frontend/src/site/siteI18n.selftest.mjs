@@ -67,7 +67,7 @@ for (const s of [
 ]) {
   assert.ok(en.has(s), `export is missing ${JSON.stringify(s)}`);
 }
-assert.ok(rows.find((r) => r.en === "Descall Features | Free Voice, Screen Share & Servers").max === 70, "SEO titles carry their length limit");
+assert.ok(rows.find((r) => r.en === "Descall Features | Free Voice, Screen Share & Servers").max === 60, "SEO titles carry their length limit");
 
 // 2b. The page groups are recorded too, with paragraph-sized rows and precise contexts.
 const byEn = new Map(rows.map((r) => [r.en, r]));
@@ -84,8 +84,8 @@ for (const [slug, body] of Object.entries(BLOG_BODIES)) {
   }
 }
 assert.ok(rows.every((r) => wordCount(r.en) <= 200), "no row is a whole article");
-const seoTitle = byEn.get("Discord Competitors in 2026 | Who Actually Competes");
-assert.equal(seoTitle?.max, 70, "post SEO titles carry the limit");
+const seoTitle = byEn.get("Descall Blog: Discord Competitors in 2026");
+assert.equal(seoTitle?.max, 60, "post SEO titles carry the limit");
 assert.match(seoTitle.context, /SEO title of \/blog\/discord-competitors/);
 assert.equal(byEn.get(NICHE_LANDINGS["/apps-like-discord"].answer)?.groups?.[0], "niche");
 assert.equal(byEn.get("Start free").groups, null, "a string a live page uses stays strict");

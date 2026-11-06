@@ -25,7 +25,7 @@ const { BLOG_POSTS, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_F
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
 const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
 const { pageExtrasHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/pageExtras.js")).href);
-const { TR_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/trLandings.js")).href);
+const { TR_LANDINGS, trLandingLabel } = await import(pathToFileURL(path.join(root, "src/site/seo/trLandings.js")).href);
 const { TR_BLOG_POSTS, TR_BLOG_BODIES, TR_BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href
 );
@@ -156,10 +156,10 @@ function crawlBodyInner(route) {
   if (route.path === "/tr/blog") {
     const posts = TR_BLOG_POSTS.map(
       (p) =>
-        `<li><a href="${escapeHtml(p.path)}"><strong>${escapeHtml(p.title)}</strong></a> — ${escapeHtml(p.description)}</li>`
+        `<li><a href="${escapeHtml(p.path)}"><strong>${escapeHtml(p.h1 || p.title)}</strong></a> — ${escapeHtml(p.description)}</li>`
     ).join("");
     const hubs = Object.values(TR_LANDINGS)
-      .map((p) => `<li><a href="${p.path}">${escapeHtml(p.h1.split(":")[0].trim())}</a></li>`)
+      .map((p) => `<li><a href="${p.path}">${escapeHtml(trLandingLabel(p))}</a></li>`)
       .join("");
     return `
 <main>
@@ -190,7 +190,7 @@ function crawlBodyInner(route) {
   ${seoBrand()}
   <nav aria-label="Breadcrumb"><a href="/tr">Ana sayfa</a> › <a href="/tr/blog">Blog</a></nav>
   <article>
-    <h1>${escapeHtml(post.title)}</h1>
+    <h1>${escapeHtml(post.h1 || post.title)}</h1>
     <p>${escapeHtml(post.description)}</p>
     <p class="seo-note">Yayın: ${post.date} · Güncelleme: ${post.updated}</p>
     ${sections}
@@ -401,7 +401,7 @@ function jsonLdForRoute(route) {
       buildFaqLd(trLanding.faq),
       buildBreadcrumbLd([
         { name: "Ana sayfa", path: "/tr" },
-        { name: trLanding.h1.split(":")[0].trim(), path: route.path },
+        { name: trLandingLabel(trLanding), path: route.path },
       ])
     );
   }
@@ -414,7 +414,7 @@ function jsonLdForRoute(route) {
     if (post) {
       graphs.push(
         buildArticleLd({
-          title: post.title,
+          title: post.h1 || post.title,
           description: post.description,
           path: route.path,
           datePublished: post.date,
@@ -424,7 +424,7 @@ function jsonLdForRoute(route) {
         buildBreadcrumbLd([
           { name: "Ana sayfa", path: "/tr" },
           { name: "Blog", path: "/tr/blog" },
-          { name: post.title, path: route.path },
+          { name: post.h1 || post.title, path: route.path },
         ])
       );
       const faq = TR_BLOG_FAQ_BY_SLUG[slug];

@@ -22,7 +22,7 @@ export default function TrBlogPostPage({ onSignIn, onSignUp }) {
   const crumbs = [
     { label: "Ana sayfa", to: "/tr" },
     { label: "Blog", to: "/tr/blog" },
-    { label: post.title, to: post.path },
+    { label: post.h1 || post.title, to: post.path },
   ];
   const startFree = () => (onSignUp || onSignIn)?.({ mode: "register", source: "tr_blog" });
 
@@ -30,14 +30,14 @@ export default function TrBlogPostPage({ onSignIn, onSignUp }) {
     <SeoLandingShell
       breadcrumbs={crumbs}
       kicker={post.tags.join(" · ")}
-      title={post.title}
+      title={post.h1 || post.title}
       lead={post.description}
       faq={faq}
       jsonLd={[
         buildBreadcrumbLd(crumbs),
         ...(faq.length ? [buildFaqLd(faq)] : []),
         buildArticleLd({
-          title: post.title,
+          title: post.h1 || post.title,
           description: post.description,
           path: post.path,
           datePublished: post.date,

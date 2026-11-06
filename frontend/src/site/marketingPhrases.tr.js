@@ -355,4 +355,6 @@ export const MARKETING_TR = {
   "Discord vs Descall article": "Discord ve Descall yazısı",
   "Descall features": "Descall özellikleri",
   ...TR_APPROVED_UI,
+  "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.":
+    "Descall, Discord Inc. ile bağlantılı değildir. Discord, Discord Inc.’in ticari markasıdır.",
 };
