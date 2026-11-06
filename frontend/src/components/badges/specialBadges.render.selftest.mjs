@@ -118,7 +118,7 @@ globalThis.__sbApi = {
   catalog: async () => ({ badges: catalogRows }),
   user: async (id) => structuredClone(users[id] || { equipped: null, badges: [] }),
   equip: async (badgeId) => { calls.push(["equip", badgeId]); if (failEquip) throw new Error("not_owned"); return { ok: true, equipped: badgeId }; },
-  overview: async () => ({ kpis: { catalog: 36, granted: 3, equipped: 2, activeCodes: 0 }, badges: catalogRows.map((r) => ({ ...r, grantMode: r.id === "facebook" ? "admin_only" : "promo", active: true })) }),
+  overview: async () => ({ kpis: { catalog: 37, granted: 3, equipped: 2, activeCodes: 0 }, badges: catalogRows.map((r) => ({ ...r, grantMode: r.id === "facebook" ? "admin_only" : "promo", active: true })) }),
   holders: async () => ({ holders: [] }),
   audit: async () => ({ entries: [] }),
   grant: async () => ({ ok: true, serial: 3 }),
@@ -127,9 +127,10 @@ globalThis.__sbApi = {
 };
 
 // ---- catalog shape
-assert.equal(m.BADGE_ART.length, 36, "36 badges");
+assert.equal(m.BADGE_ART.length, 37, "37 badges");
+assert.equal(m.ART_BY_ID.kk22.tier, "tekil", "KK22 is tekil");
 assert.equal(m.ART_BY_ID.facebook.tier, "nadir", "Facebook is Nadir");
-assert.equal(store.BADGE_TOTAL, 36);
+assert.equal(store.BADGE_TOTAL, 37);
 assert.equal(store.formatSerial(1), "#001");
 assert.equal(store.formatSerial(42), "#042");
 assert.equal(store.formatSerial(1234), "#1234");
@@ -201,7 +202,7 @@ has(html, /bp-plus/, "own profile always shows + (empty state)");
 // ---- vault: own
 html = render.vault({ user: me, me, self: true, variant: "desk", onClose() {} });
 has(html, /Rozetlerin/);
-has(text(html), /36 rozetten 3 tanesi sende/);
+has(text(html), /37 rozetten 3 tanesi sende/);
 has(html, /role="dialog"/);
 has(html, /aria-modal="true"/);
 has(html, /✓|Takılı/);

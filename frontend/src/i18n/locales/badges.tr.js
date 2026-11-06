@@ -169,6 +169,7 @@ export const BADGES_TR = {
     hergun: "Her Gün",
     ilkarama: "İlk Arama",
     facebook: "Facebook",
+    kk22: "KK22",
   },
   desc: {
     no001: "Descall'a ilk kayıt olan hesap. Yalnızca bir kişide olabilir.",
@@ -207,5 +208,6 @@ export const BADGES_TR = {
     hergun: "100 gün aralıksız günlük ödül alanlar.",
     ilkarama: "İlk sesli aramasını yapanlar.",
     facebook: "Bilen bilir. Satılmaz, kodla da çıkmaz; yalnızca elle verilir.",
+    kk22: "Yalnızca bir kişide olabilir. Bilen bilir.",
   },
 };

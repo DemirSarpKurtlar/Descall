@@ -159,7 +159,7 @@ function FontSize({ prefs }) {
           max={3}
           step={1}
           value={i}
-          style={{ "--v": pct }}
+          style={{ "--v": pct, "--vp": [0, 1 / 3, 2 / 3, 1][i] }}
           aria-label={t("shell.appearance.textSize")}
           aria-valuetext={labels[i]}
           onChange={(e) => updateAppearance({ fontStep: Number(e.target.value) })}

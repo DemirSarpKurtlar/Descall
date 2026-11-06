@@ -3,7 +3,7 @@
 // Bridge for premium HUD / widget / drop windows. Nothing but state in and whitelisted actions out.
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-const ACTIONS = new Set(['ready', 'drop', 'open', 'close', 'moved', 'pick']);
+const ACTIONS = new Set(['ready', 'drop', 'open', 'close', 'moved', 'pick', 'size']);
 
 contextBridge.exposeInMainWorld('descallHud', {
   onState: (cb) => {

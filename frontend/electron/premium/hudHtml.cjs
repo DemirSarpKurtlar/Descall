@@ -97,7 +97,13 @@ document.addEventListener('drop',function(e){if(kind!=='quickdrop')return;e.prev
 });
 function render(){document.documentElement.style.setProperty('--brand',state.brandRgb||'88,101,242');
  if(kind==='voice')renderVoice();else if(kind==='gaming')renderGaming();else if(kind==='widget')renderWidget();else if(kind==='quickdrop')renderDrop();
- document.documentElement.style.fontSize=(state.scale||1)*13+'px';document.body.style.zoom=state.scale||1;}
+ document.documentElement.style.fontSize=(state.scale||1)*13+'px';document.body.style.zoom=state.scale||1;
+ reportSize();}
+var lastSize=0;
+function reportSize(){if(kind!=='voice'&&kind!=='gaming')return;var c=root.querySelector('.card');if(!c||!window.innerHeight)return;
+ var r=c.getBoundingClientRect(),l=c.lastElementChild,pb=parseFloat(getComputedStyle(c).paddingBottom)||0;
+ var need=Math.ceil((l?l.getBoundingClientRect().bottom-r.top+pb:c.scrollHeight)+12);if(Math.abs(need-lastSize)<2)return;lastSize=need;
+ window.descallHud.action('size',{need:need});}
 window.descallHud.onState(function(s){if(s&&s.dropStatus!=null)dropStatus=s.dropStatus;state=s||{};render();});
 setInterval(function(){if(document.hidden)return;var c=document.getElementById('clk');if(c)c.textContent=clock();
  var ds=document.querySelectorAll('[data-since]');for(var i=0;i<ds.length;i++){var v=+ds[i].getAttribute('data-since');if(v)ds[i].textContent=dur(v);}},1000);

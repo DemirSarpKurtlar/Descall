@@ -13,7 +13,7 @@ for (const k of Object.keys(tr)) assert.equal(vars(tr[k]), vars(en[k]), `placeho
 // Every badge in the art table has a name and a description in both languages.
 const art = readFileSync(new URL("../../components/badges/specialBadgeArt.jsx", import.meta.url), "utf8");
 const ids = [...art.matchAll(/\{ id: "([a-z0-9]+)"/g)].map((m) => m[1]);
-assert.equal(ids.length, 36, "36 badges drawn");
+assert.equal(ids.length, 37, "37 badges drawn");
 for (const id of ids) for (const loc of [BADGES_TR, BADGES_EN]) assert(loc.names[id] && loc.desc[id], `copy for ${id}`);
 // Turkish copy speaks to "sen", never "siz".
 assert(!/\b(siz|sizin|sizi|lütfen|ediniz|yapınız|edin)\b/i.test(JSON.stringify(BADGES_TR)), "sen dili");

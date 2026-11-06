@@ -30,19 +30,37 @@ function createHudFeature({ key, kind, defaults, heightFor }) {
   let config = normalizeConfig({}, defaults);
   let lastState = null;
   let visible = false;
+  // Height the HUD page measured for its own content (CSS px scaled to window px). The
+  // heightFor() estimate is only the first guess: a two-line call row or long names made
+  // the real content taller and the bottom of the friends list was cut off.
+  let measuredH = 0;
 
   const id = `hud:${key}`;
 
   function bounds(state) {
     const w = Math.round(config.width * config.scale);
-    const h = Math.round(heightFor(state || {}) * config.scale);
+    const h = measuredH || Math.round(heightFor(state || {}) * config.scale);
     return kit.cornerBounds(config.corner, w, h, config.margin);
   }
 
   function show() {
     visible = true;
-    kit.open({ id, kind, bounds: bounds(lastState), clickThrough: config.clickThrough, opacity: config.opacity, focusable: false, state: decorate(lastState) });
+    kit.open({ id, kind, bounds: bounds(lastState), clickThrough: config.clickThrough, opacity: config.opacity, focusable: false, state: decorate(lastState), onAction });
     return { ok: true, visible: true };
+  }
+
+  function onAction(type, payload) {
+    if (type !== 'size' || !payload) return;
+    // The page measures its content in its own CSS px, which are window px here (the
+    // overlay's zoom factor is 1 and the HUD's own scale is applied as CSS zoom, which the
+    // measurement already includes).
+    const need = Number(payload.need);
+    if (!Number.isFinite(need)) return;
+    const next = Math.max(60, Math.min(900, Math.round(need)));
+    if (Math.abs(next - measuredH) < 2) return;
+    measuredH = next;
+    const o = kit.get(id);
+    if (o) { try { o.win.setBounds(bounds(lastState)); } catch (_) { /* ignore */ } }
   }
 
   function hide() {
@@ -61,7 +79,7 @@ function createHudFeature({ key, kind, defaults, heightFor }) {
     if (!visible) return { ok: true, visible: false };
     const o = kit.get(id);
     if (!o) return show();
-    if (heightFor(lastState) !== prevH) {
+    if (!measuredH && heightFor(lastState) !== prevH) {
       try { o.win.setBounds(bounds(lastState)); } catch (_) { /* ignore */ }
     }
     kit.send(id, decorate(lastState));
@@ -78,6 +96,7 @@ function createHudFeature({ key, kind, defaults, heightFor }) {
       ctx.handle(`premium:${key}:state`, (_e, state) => update(state));
       ctx.handle(`premium:${key}:config`, (_e, raw) => {
         config = normalizeConfig(raw || {}, defaults);
+        measuredH = 0;
         ctx.store(key).write(config);
         if (visible) show();
         return { ok: true, config };
