@@ -1,0 +1,58 @@
+/* UI audit, Nov 2026 (high-severity items). Loaded last from styles.css so the
+   fixes win over older per-theme slabs. Theme ink comes from the tokens:
+   --text-* (classic), --g-t* (iPhone glass), --gd-t* (desktop glass). */
+
+/* #16 #36 Announcements: line icon in the title, shared compact empty state. */
+.add-modal-header h3.ann-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ann-modal-title svg {
+  flex-shrink: 0;
+}
+
+.empty-state.is-compact {
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 28px 16px 24px;
+  overflow: visible;
+}
+.empty-state.is-compact .empty-illustration {
+  width: auto;
+  height: auto;
+  margin: 0 0 6px;
+}
+.empty-state.is-compact .empty-illu-blob {
+  display: none;
+}
+.empty-state.is-compact .empty-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  margin: 0;
+  box-shadow: none;
+}
+.empty-state.is-compact .empty-icon-wrap svg {
+  width: 22px;
+  height: 22px;
+}
+.empty-state.is-compact h2 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-0);
+}
+.empty-state.is-compact p {
+  margin: 0;
+  max-width: 300px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+html.glass-ui .empty-state.is-compact h2 { color: var(--g-t1); }
+html.glass-ui .empty-state.is-compact p { color: var(--g-t2); }
+html.glass-desktop .empty-state.is-compact h2 { color: var(--gd-t1); }
+html.glass-desktop .empty-state.is-compact p { color: var(--gd-t2); }

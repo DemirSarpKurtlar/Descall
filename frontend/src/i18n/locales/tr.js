@@ -1,4 +1,5 @@
 /** Auto-generated + curated tr locale */
+import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
@@ -28,6 +29,7 @@ import { COUNTS_TR } from "./counts.tr.js";
 import { API_TR } from "./api.tr.js";
 import { BOT_TR } from "./bot.tr.js";
 export const nested = {
+  uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
   world3d: WORLD3D_TR,

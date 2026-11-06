@@ -1,3 +1,4 @@
+import { UAH_RU } from "./uah.ru.js";
 /**
  * ru catalog (status "draft" in ../locales.json, hidden from users until the
  * coverage check reports 100 %). Same shape as en.js / tr.js:
@@ -5,6 +6,7 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  uah: UAH_RU,
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Управление премиумом",
