@@ -72,7 +72,7 @@ html.theme-crossfade .app-layout {
 
 body {
   background:
-    radial-gradient(1400px 600px at 15% -10%, rgba(88,101,242,0.08) 0%, transparent 60%),
+    radial-gradient(1400px 600px at 15% -10%, rgba(88,122,245,0.08) 0%, transparent 60%),
     radial-gradient(1200px 500px at 90% -20%, rgba(71,82,196,0.06) 0%, transparent 60%),
     var(--surface-0);
 }
@@ -688,6 +688,6 @@ html.a11y-solid .message-day-sep span {
 
 .message-unread-sep span {
   color: #c5ccff;
-  background: rgba(88, 101, 242, 0.16);
-  border-color: rgba(88, 101, 242, 0.35);
+  background: rgba(88, 122, 245, 0.16);
+  border-color: rgba(88, 122, 245, 0.35);
 }

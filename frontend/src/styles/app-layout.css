@@ -1223,11 +1223,11 @@ html.gd-lite .rail-tooltip {
   align-self: stretch;
 }
 
-.group-swipe-btn.invite { background: #5865f2; }
+.group-swipe-btn.invite { background: #587af5; }
 .group-swipe-btn.add { background: #3ba55d; }
 .group-swipe-btn.rename { background: #f0b232; color: #1e1f22; }
 .group-swipe-btn.leave { background: #ed4245; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.group-swipe-btn.pin { background: #5865f2; }
+.group-swipe-btn.pin { background: #587af5; }
 .group-swipe-btn.mute { background: #4e5058; }
 .group-swipe-btn.unread { background: #3ba55d; }
 .group-swipe-btn.close { background: #ed4245; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
@@ -2573,7 +2573,7 @@ button.header-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(88, 101, 242, 0.18);
+  background: rgba(88, 122, 245, 0.18);
   color: #aab0ff;
   flex-shrink: 0;
 }
@@ -2819,7 +2819,7 @@ button.header-avatar {
 }
 
 .friends-quick-add-btn:hover {
-  background: var(--primary-soft, rgba(88, 101, 242, 0.16));
+  background: var(--primary-soft, rgba(88, 122, 245, 0.16));
   color: var(--primary);
 }
 
@@ -2913,7 +2913,7 @@ button.header-avatar {
 }
 
 .quick-add-card-badge.mutual {
-  background: rgba(88, 101, 242, 0.16);
+  background: rgba(88, 122, 245, 0.16);
   color: #8ea1ff;
 }
 
@@ -3713,7 +3713,7 @@ button.header-avatar {
 }
 
 .feedback-header-left svg {
-  color: var(--primary, #5865f2);
+  color: var(--primary, #587af5);
   flex-shrink: 0;
 }
 
@@ -3747,8 +3747,8 @@ button.header-avatar {
 }
 
 .feedback-type-btn.active {
-  background: rgba(88, 101, 242, 0.15);
-  border-color: var(--primary, #5865f2);
+  background: rgba(88, 122, 245, 0.15);
+  border-color: var(--primary, #587af5);
   color: #818cf8;
 }
 
@@ -3805,7 +3805,7 @@ button.header-avatar {
 }
 
 .feedback-textarea:focus {
-  border-color: var(--primary, #5865f2);
+  border-color: var(--primary, #587af5);
 }
 
 .feedback-textarea::placeholder {
@@ -3822,7 +3822,7 @@ button.header-avatar {
 .feedback-submit-btn {
   width: 100%;
   padding: 12px;
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
   border: none;
   border-radius: var(--r-md);
@@ -3834,7 +3834,7 @@ button.header-avatar {
 }
 
 .feedback-submit-btn:hover:not(:disabled) {
-  background: #4752c4;
+  background: #4a68e0;
   transform: translateY(-1px);
 }
 
@@ -4005,7 +4005,7 @@ button.header-avatar {
 
 .electron-screen-picker-item:hover {
   background: var(--surface-2, rgba(255,255,255,0.07));
-  border-color: var(--primary, #5865f2);
+  border-color: var(--primary, #587af5);
   transform: translateY(-2px);
 }
 
@@ -4097,7 +4097,7 @@ button.header-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-soft, rgba(88, 101, 242, 0.12));
+  background: var(--primary-soft, rgba(88, 122, 245, 0.12));
   color: var(--primary);
   margin-bottom: 4px;
 }
@@ -4283,7 +4283,7 @@ button.header-avatar {
   width: 40px;
   height: 40px;
   border-radius: var(--r-md);
-  background: var(--primary-soft, rgba(88,101,242,0.15));
+  background: var(--primary-soft, rgba(88,122,245,0.15));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4426,11 +4426,11 @@ button.header-avatar {
   gap: 8px;
   margin-top: 12px;
   padding: 10px 14px;
-  background: rgba(88,101,242,0.08);
+  background: rgba(88,122,245,0.08);
   border-radius: var(--r-sm);
   font-size: 12px;
   color: var(--text-muted);
-  border: 1px solid rgba(88,101,242,0.15);
+  border: 1px solid rgba(88,122,245,0.15);
 }
 
 /* ─── Privacy selector ─── */
@@ -4492,7 +4492,7 @@ button.header-avatar {
 
 .activity-privacy-option.active {
   color: var(--primary);
-  background: var(--primary-soft, rgba(88,101,242,0.1));
+  background: var(--primary-soft, rgba(88,122,245,0.1));
 }
 
 .activity-privacy-option-desc {
@@ -4845,7 +4845,7 @@ button.header-avatar {
 
 .activity-expiry-btn.active {
   border-color: var(--primary);
-  background: var(--primary-soft, rgba(88,101,242,0.1));
+  background: var(--primary-soft, rgba(88,122,245,0.1));
   color: var(--primary);
 }
 

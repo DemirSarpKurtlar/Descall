@@ -13,7 +13,7 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-0, #fff) 12%, transparent);
   outline: none;
 }
-.dex-field input:focus-visible { box-shadow: inset 0 0 0 2px var(--primary, #5865f2); }
+.dex-field input:focus-visible { box-shadow: inset 0 0 0 2px var(--primary, #587af5); }
 .dex-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .dex-ok,
 .dex-err { margin: 0; padding: 0 14px 12px; font-size: 12.5px; }

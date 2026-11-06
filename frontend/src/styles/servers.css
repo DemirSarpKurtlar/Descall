@@ -95,8 +95,8 @@
 }
 
 .server-folder-head.is-drag-over {
-  outline: 1px dashed color-mix(in srgb, var(--accent, #5865f2) 65%, transparent);
-  background: color-mix(in srgb, var(--accent, #5865f2) 10%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--accent, #587af5) 65%, transparent);
+  background: color-mix(in srgb, var(--accent, #587af5) 10%, transparent);
 }
 
 .server-folder-head-unfiled {
@@ -258,8 +258,8 @@
 }
 
 .server-list-row-wrap.is-drag-over > .server-list-item {
-  outline: 1px solid color-mix(in srgb, var(--accent, #5865f2) 70%, transparent);
-  background: color-mix(in srgb, var(--accent, #5865f2) 12%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent, #587af5) 70%, transparent);
+  background: color-mix(in srgb, var(--accent, #587af5) 12%, transparent);
 }
 
 .server-list-item {
@@ -501,8 +501,8 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-channel-row-wrap.is-drag-over > .server-channel-row {
-  outline: 1px solid color-mix(in srgb, var(--accent, #5865f2) 70%, transparent);
-  background: color-mix(in srgb, var(--accent, #5865f2) 12%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent, #587af5) 70%, transparent);
+  background: color-mix(in srgb, var(--accent, #587af5) 12%, transparent);
 }
 
 .server-channel-row-wrap {
@@ -1683,8 +1683,8 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-role-row-wrap.is-drag-over > .server-role-item {
-  outline: 1px solid color-mix(in srgb, var(--accent, #5865f2) 70%, transparent);
-  background: color-mix(in srgb, var(--accent, #5865f2) 12%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent, #587af5) 70%, transparent);
+  background: color-mix(in srgb, var(--accent, #587af5) 12%, transparent);
 }
 
 .server-role-everyone {
@@ -3377,7 +3377,7 @@ button.member-row.server-member-row {
 
 .server-voice-dock-chevron.is-open,
 .server-voice-dock-chevron:hover {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
 }
 
@@ -3420,7 +3420,7 @@ button.member-row.server-member-row {
 
 .server-voice-device-item:hover,
 .server-voice-device-item.is-selected {
-  background: rgba(88, 101, 242, 0.28);
+  background: rgba(88, 122, 245, 0.28);
 }
 
 .server-voice-device-empty {
@@ -3790,7 +3790,7 @@ button.member-row.server-member-row {
 }
 
 .server-voice-screen-chip.is-active {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
 }
 

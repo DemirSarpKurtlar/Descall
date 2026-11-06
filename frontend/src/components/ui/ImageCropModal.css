@@ -81,7 +81,7 @@
 
 .img-crop-zoom input[type="range"] {
   flex: 1;
-  accent-color: var(--primary, #5865f2);
+  accent-color: var(--primary, #587af5);
   cursor: pointer;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .img-crop-btn.primary {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
 }
 

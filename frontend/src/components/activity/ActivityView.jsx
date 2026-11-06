@@ -24,11 +24,11 @@ function typeRank(type) {
 const TYPE_COLOR = {
   game:     '#23a55a',
   music:    '#1db954',
-  dev:      '#5865f2',
+  dev:      '#587af5',
   creative: '#eb459e',
   browser:  '#4f9ef8',
   media:    '#f0b232',
-  manual:   '#5865f2',
+  manual:   '#587af5',
   app:      '#747f8d',
 };
 
@@ -54,7 +54,7 @@ function formatRelativeTime(dateStr, t) {
 
 function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectron }) {
   const t = useT();
-  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#5865f2') : '#5865f2';
+  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#587af5') : '#587af5';
 
   return (
     <div className="activity-current-card" style={{ borderColor: accentColor }}>
@@ -493,7 +493,7 @@ export default function ActivityView({
               {friendFeed.length > 0 ? (
                 <div className="activity-friend-feed">
                   {friendFeed.map(({ friend, pres }) => {
-                    const accentColor = TYPE_COLOR[pres.appType] || '#5865f2';
+                    const accentColor = TYPE_COLOR[pres.appType] || '#587af5';
                     return (
                       <button
                         type="button"

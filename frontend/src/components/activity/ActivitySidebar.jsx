@@ -23,13 +23,13 @@ import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/gl
 const TYPE_COLOR = {
   game: "#23a55a",
   music: "#1db954",
-  dev: "#5865f2",
+  dev: "#587af5",
   creative: "#eb459e",
   browser: "#4f9ef8",
-  communication: "#5865f2",
+  communication: "#587af5",
   media: "#f0b232",
   launcher: "#747f8d",
-  manual: "#5865f2",
+  manual: "#587af5",
   app: "#747f8d",
 };
 
@@ -38,7 +38,7 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
   const glassShell = useGlassShell();
   const status = getPresenceStatus(onlineUsers, friend.id);
   const isOnline = isVisiblyOnline(onlineUsers, friend.id);
-  const accentColor = presence ? TYPE_COLOR[presence.appType] || "#5865f2" : null;
+  const accentColor = presence ? TYPE_COLOR[presence.appType] || "#587af5" : null;
   const label = friend.displayName || friend.display_name || friend.username;
 
   return (

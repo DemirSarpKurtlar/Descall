@@ -39,8 +39,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-soft, rgba(88, 101, 242, 0.18));
-  color: var(--primary, #5865f2);
+  background: var(--primary-soft, rgba(88, 122, 245, 0.18));
+  color: var(--primary, #587af5);
 }
 .un-head-text {
   flex: 1;
@@ -108,7 +108,7 @@
   flex: 0 0 auto;
 }
 .un-preview-new {
-  color: var(--primary, #5865f2);
+  color: var(--primary, #587af5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -137,8 +137,8 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .un-field:focus-within {
-  border-color: var(--primary, #5865f2);
-  box-shadow: 0 0 0 3px var(--primary-soft, rgba(88, 101, 242, 0.2));
+  border-color: var(--primary, #587af5);
+  box-shadow: 0 0 0 3px var(--primary-soft, rgba(88, 122, 245, 0.2));
 }
 .un-field.un-state-ok {
   border-color: #23a55a;
@@ -258,7 +258,7 @@
   border-color: var(--border-2, rgba(255, 255, 255, 0.08));
 }
 .un-btn.primary {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
 }
 .un-btn.primary:hover:not(:disabled) {
@@ -300,7 +300,7 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .us-username-change:hover:not(:disabled) {
-  border-color: var(--primary, #5865f2);
+  border-color: var(--primary, #587af5);
 }
 .us-username-change:disabled {
   opacity: 0.55;

@@ -92,7 +92,7 @@
 }
 
 .cosmetic-avatar-effect.effect-pulse {
-  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.55);
+  box-shadow: 0 0 0 3px rgba(88, 122, 245, 0.55);
   animation: cosmetic-pulse-ring 1.8s ease-out infinite;
 }
 
@@ -148,9 +148,9 @@
 }
 
 @keyframes cosmetic-pulse-ring {
-  0% { box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.7); opacity: 1; }
-  70% { box-shadow: 0 0 0 10px rgba(88, 101, 242, 0); opacity: 0.4; }
-  100% { box-shadow: 0 0 0 2px rgba(88, 101, 242, 0); opacity: 1; }
+  0% { box-shadow: 0 0 0 2px rgba(88, 122, 245, 0.7); opacity: 1; }
+  70% { box-shadow: 0 0 0 10px rgba(88, 122, 245, 0); opacity: 0.4; }
+  100% { box-shadow: 0 0 0 2px rgba(88, 122, 245, 0); opacity: 1; }
 }
 
 @keyframes cosmetic-orbit-spin {

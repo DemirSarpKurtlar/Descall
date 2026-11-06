@@ -1414,7 +1414,7 @@ a.mkt-feature-link {
   display: grid;
   place-items: center;
   border-radius: var(--r-sm);
-  background: rgba(88, 101, 242, 0.22);
+  background: rgba(88, 122, 245, 0.22);
   color: #c5ccff;
   font-size: 12px;
   font-weight: 700;
@@ -1468,7 +1468,7 @@ a.mkt-feature-link {
 
 .seo-option.is-highlight {
   border-color: rgba(123, 137, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(88, 101, 242, 0.15) inset;
+  box-shadow: 0 0 0 1px rgba(88, 122, 245, 0.15) inset;
 }
 
 .seo-option a {
@@ -1595,7 +1595,7 @@ a.mkt-feature-link {
   border: 1px solid var(--mkt-border);
   border-radius: var(--r-lg);
   background:
-    radial-gradient(80% 120% at 10% 0%, rgba(88, 101, 242, 0.22), transparent 55%),
+    radial-gradient(80% 120% at 10% 0%, rgba(88, 122, 245, 0.22), transparent 55%),
     rgba(30, 31, 34, 0.65);
   text-align: center;
 }

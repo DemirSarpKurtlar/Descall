@@ -339,7 +339,7 @@
 }
 
 .us-nav-item.active .us-nav-ico {
-  background: rgba(88, 101, 242, 0.2);
+  background: rgba(88, 122, 245, 0.2);
 }
 
 .us-nav-copy {
@@ -362,7 +362,7 @@
 }
 
 .us-nav-item.active .us-nav-hint {
-  color: rgba(88, 101, 242, 0.85);
+  color: rgba(88, 122, 245, 0.85);
 }
 
 .us-chevron {

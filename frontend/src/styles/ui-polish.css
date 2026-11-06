@@ -1870,7 +1870,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   outline: none;
 }
 .giphy-search input:focus {
-  border-color: rgba(88, 101, 242, 0.55);
+  border-color: rgba(88, 122, 245, 0.55);
 }
 .giphy-search-clear {
   position: absolute;
@@ -1940,11 +1940,11 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   -webkit-tap-highlight-color: transparent;
 }
 .giphy-cell:hover {
-  outline-color: var(--primary, #5865f2);
+  outline-color: var(--primary, #587af5);
   z-index: 1;
 }
 .giphy-cell:focus-visible {
-  outline-color: var(--primary, #5865f2);
+  outline-color: var(--primary, #587af5);
 }
 .giphy-cell img {
   position: absolute;
@@ -1972,7 +1972,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   color: var(--danger, #ed4245);
 }
 .giphy-state button {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
   border: none;
   border-radius: var(--r-sm);
@@ -2114,8 +2114,8 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-expiry-row button.active,
 .invite-expiry-row button:hover {
-  border-color: var(--primary, #5865f2);
-  background: var(--primary-soft, rgba(88, 101, 242, 0.16));
+  border-color: var(--primary, #587af5);
+  background: var(--primary-soft, rgba(88, 122, 245, 0.16));
   color: #fff;
 }
 .invite-link-row {
@@ -2148,7 +2148,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 0 14px;
   border: none;
   border-radius: var(--r-md);
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
   font-weight: 700;
   font-size: 13px;
@@ -2200,7 +2200,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   place-items: center;
   padding: 28px 16px;
   background:
-    radial-gradient(900px 420px at 20% -10%, rgba(88, 101, 242, 0.28), transparent 60%),
+    radial-gradient(900px 420px at 20% -10%, rgba(88, 122, 245, 0.28), transparent 60%),
     radial-gradient(700px 380px at 90% 110%, rgba(35, 165, 90, 0.16), transparent 55%),
     linear-gradient(160deg, #0f1014 0%, #1a1b1f 45%, #121317 100%);
   color: #f2f3f5;
@@ -2320,7 +2320,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 12px 16px;
   border: none;
   border-radius: var(--r-md);
-  background: #5865f2;
+  background: #587af5;
   color: #fff;
   font-size: 15px;
   font-weight: 700;
@@ -3020,7 +3020,7 @@ body.electron-app .modal-backdrop {
   background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.08);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
-.signup-username-field:focus-within { border-color: rgba(120, 140, 255, 0.6); box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.22); }
+.signup-username-field:focus-within { border-color: rgba(120, 140, 255, 0.6); box-shadow: 0 0 0 3px rgba(88, 122, 245, 0.22); }
 .signup-username-at { color: var(--text-muted); font-weight: 600; }
 .signup-username-field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--text-0, #fff); font-size: 17px; letter-spacing: -0.01em; }
 .signup-username-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); transition: background 160ms ease; }

@@ -157,7 +157,7 @@
 
 .admin-tabs button.active,
 .admin-tab.active {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(88, 101, 242, 0.2));
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(88, 122, 245, 0.2));
   border-color: rgba(10, 132, 255, 0.4);
   color: #8ec7ff;
   box-shadow: 0 4px 16px rgba(10, 132, 255, 0.15);
@@ -2015,7 +2015,7 @@
 .analytics-funnel-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(10, 132, 255, 0.85), rgba(88, 101, 242, 0.75));
+  background: linear-gradient(90deg, rgba(10, 132, 255, 0.85), rgba(88, 122, 245, 0.75));
 }
 
 .analytics-mini-table {
@@ -2641,7 +2641,7 @@
 
 .dossier-act.red { background: rgba(242, 63, 67, 0.18); border-color: rgba(242, 63, 67, 0.4); }
 .dossier-act.amber { background: rgba(240, 178, 50, 0.16); border-color: rgba(240, 178, 50, 0.4); }
-.dossier-act.violet { background: rgba(88, 101, 242, 0.16); border-color: rgba(88, 101, 242, 0.4); }
+.dossier-act.violet { background: rgba(88, 122, 245, 0.16); border-color: rgba(88, 122, 245, 0.4); }
 .dossier-act.green { background: rgba(48, 209, 88, 0.14); border-color: rgba(48, 209, 88, 0.4); }
 .dossier-act.slate { background: rgba(255, 255, 255, 0.05); }
 .dossier-act:disabled { opacity: 0.5; cursor: default; }

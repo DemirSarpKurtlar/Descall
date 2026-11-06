@@ -101,8 +101,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(88, 101, 242, 0.2);
-  border: 1px solid rgba(88, 101, 242, 0.3);
+  background: rgba(88, 122, 245, 0.2);
+  border: 1px solid rgba(88, 122, 245, 0.3);
   border-radius: 50px;
   font-size: 14px;
   color: #7B89FF;
@@ -119,7 +119,7 @@
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #5865F2 0%, #7B89FF 45%, #23A55A 100%);
+  background: linear-gradient(135deg, #587af5 0%, #7B89FF 45%, #23A55A 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -240,9 +240,9 @@
 }
 
 .platform-tab.active {
-  background: rgba(88, 101, 242, 0.3);
+  background: rgba(88, 122, 245, 0.3);
   color: white;
-  box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
+  box-shadow: 0 4px 15px rgba(88, 122, 245, 0.3);
 }
 
 .platform-info {
@@ -302,7 +302,7 @@
   width: 100%;
   position: relative;
   padding: 16px 24px;
-  background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+  background: linear-gradient(135deg, #587af5 0%, #4a68e0 100%);
   border: none;
   border-radius: var(--r-md);
   color: white;
@@ -315,12 +315,12 @@
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(88, 101, 242, 0.4);
+  box-shadow: 0 4px 20px rgba(88, 122, 245, 0.4);
 }
 
 .download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(88, 101, 242, 0.5);
+  box-shadow: 0 8px 30px rgba(88, 122, 245, 0.5);
 }
 
 .download-btn:disabled {
@@ -434,20 +434,20 @@
 
 .feature-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(88, 101, 242, 0.3);
+  border-color: rgba(88, 122, 245, 0.3);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .feature-icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+  background: linear-gradient(135deg, #587af5 0%, #4a68e0 100%);
   border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20px;
-  box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3);
+  box-shadow: 0 8px 20px rgba(88, 122, 245, 0.3);
 }
 
 .feature-card h3 {
@@ -484,7 +484,7 @@
 }
 
 .trust-item svg {
-  color: #5865F2;
+  color: #587af5;
   margin-bottom: 16px;
 }
 
@@ -567,7 +567,7 @@
   bottom: 0;
   border-radius: var(--r-xl);
   padding: 1px;
-  background: linear-gradient(135deg, rgba(88, 101, 242, 0.3), rgba(139, 92, 246, 0.1), transparent);
+  background: linear-gradient(135deg, rgba(88, 122, 245, 0.3), rgba(139, 92, 246, 0.1), transparent);
   -webkit-mask: 
     linear-gradient(#fff 0 0) content-box, 
     linear-gradient(#fff 0 0);
@@ -594,7 +594,7 @@
   position: absolute;
   width: 4px;
   height: 4px;
-  background: rgba(88, 101, 242, 0.4);
+  background: rgba(88, 122, 245, 0.4);
   border-radius: 50%;
   animation: particleFloat 15s infinite;
 }
@@ -702,7 +702,7 @@
 .submit-btn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+  background: linear-gradient(135deg, #587af5 0%, #4a68e0 100%);
   border: none;
   border-radius: var(--r-md);
   color: white;
@@ -716,7 +716,7 @@
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(88, 101, 242, 0.4);
+  box-shadow: 0 8px 20px rgba(88, 122, 245, 0.4);
 }
 
 .submit-btn:disabled {

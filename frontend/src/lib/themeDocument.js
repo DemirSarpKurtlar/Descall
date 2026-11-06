@@ -26,7 +26,7 @@ export function themeAccentAction(theme, accentColor) {
 
 function hexToRgba(hex, alpha) {
   const h = String(hex || "").replace("#", "");
-  if (h.length !== 6) return `rgba(88, 101, 242, ${alpha})`;
+  if (h.length !== 6) return `rgba(88, 122, 245, ${alpha})`;
   const r = parseInt(h.slice(0, 2), 16);
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
