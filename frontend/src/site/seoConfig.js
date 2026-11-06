@@ -524,11 +524,11 @@ const TR_TITLES = {
   },
   "/login": {
     title: "Giriş yap | Descall",
-    description: "Descall hesabınıza giriş yapın. Sohbet, ses, görüntü ve ekran paylaşımı.",
+    description: "Descall hesabına giriş yap. Sohbet, ses, görüntü ve ekran paylaşımı.",
   },
   "/register": {
     title: "Hesap oluştur | Descall",
-    description: "Ücretsiz Descall hesabı oluşturun. Sohbet, ses, görüntü ve ekran paylaşımı.",
+    description: "Ücretsiz Descall hesabını oluştur. Sohbet, ses, görüntü ve ekran paylaşımı.",
   },
   "/status": {
     title: "Descall hizmet durumu",

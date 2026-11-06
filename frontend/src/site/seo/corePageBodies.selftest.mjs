@@ -28,7 +28,7 @@ assert.match(homeTr, /data-hydrate data-auth="register"/);
 assert.match(homeTr, /class="seo-card-grid"/);
 assert.match(homeTr, /class="seo-footer-grid"/);
 assert.doesNotMatch(homeTr, /seo-explore-label/);
-assert.match(homeTr, /Birlikte konuşun/);
+assert.match(homeTr, /Birlikte konuş</);
 assert.match(homeTr, /Ücretsiz başla/);
 assert.match(homeTr, /Giriş yap/);
 

@@ -1,4 +1,5 @@
 /** Auto-generated + curated en locale */
+import { UAH_EN } from "./uah.en.js";
 import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
 import { PREMIUM_AUDIO_EN } from "./premiumAudio.en.js";
@@ -23,6 +24,7 @@ import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  uah: UAH_EN,
   premiumGaming: PREMIUM_GAMING_EN,
   premium: PREMIUM_EN,
   premiumAudio: PREMIUM_AUDIO_EN,
@@ -1156,6 +1158,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API reachable",
+  "Request timed out": "Request timed out",
   "Close": "Close",
   "You": "You",
   "Primary navigation": "Primary navigation",

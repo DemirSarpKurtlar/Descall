@@ -15,7 +15,7 @@ import {
   updateServer,
 } from "../../api/servers";
 import { BlockListSkeleton } from "../ui/Skeleton";
-import GlassCheckbox from "../ui/GlassCheckbox";
+import { S3Toggle } from "../settings/SettingsV3";
 
 const AGE_OPTIONS = [
   { value: 60 * 60, labelKey: "1 hour" },
@@ -189,14 +189,15 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
               </label>
             </div>
 
-            <label className="server-check-row">
-              <GlassCheckbox
+            <div className="server-toggle-row">
+              <span>{t("Temporary membership")}</span>
+              <S3Toggle
                 checked={temporary}
                 disabled={busy}
-                onChange={(e) => setTemporary(e.target.checked)}
+                onChange={(next) => setTemporary(next)}
+                label={t("Temporary membership")}
               />
-              <span>{t("Temporary membership")}</span>
-            </label>
+            </div>
 
             <button
               type="button"
@@ -260,11 +261,11 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
         )}
 
         {server?.isOwner && (
-          <label className="server-public-toggle">
-            <Globe size={16} />
+          <div className="server-public-toggle server-toggle-row is-card">
+            <Globe size={16} aria-hidden="true" />
             <span>{t("List in public discovery")}</span>
-            <GlassCheckbox checked={isPublic} disabled={busy} onChange={togglePublic} />
-          </label>
+            <S3Toggle checked={isPublic} disabled={busy} onChange={() => togglePublic()} label={t("List in public discovery")} />
+          </div>
         )}
 
         <div className="server-modal-actions">

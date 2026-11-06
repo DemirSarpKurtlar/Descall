@@ -2,7 +2,8 @@ import { memo, useState, useMemo, useEffect, useRef, useLayoutEffect } from "rea
 import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff } from "../ui/Icon.jsx";
+import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff, Megaphone as MegaphoneLine } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
 import { groupAvatarUrl } from "../../lib/avatarFile";
@@ -620,7 +621,10 @@ export default function ServerSidebar({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
-                    <h3>{glassShell ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
+                    <h3 className="ann-modal-title">
+                      <MegaphoneLine size={18} strokeWidth={2} aria-hidden="true" />
+                      {t("Announcements")}
+                    </h3>
                   <button className="icon-btn" onClick={() => setShowAnnouncements(false)} aria-label={t("Close")}><X size={18} /></button>
                 </div>
 
@@ -630,7 +634,13 @@ export default function ServerSidebar({
                   ) : announcementsError ? (
                     <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{announcementsError}</div>
                   ) : announcements.length === 0 ? (
-                    <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{t("No announcements")}</div>
+                    <EmptyState
+                      className="is-compact ann-empty"
+                      illustration="none"
+                      icon={MegaphoneLine}
+                      title={t("uah.ann.emptyTitle")}
+                      body={t("uah.ann.emptyBody")}
+                    />
                   ) : (
                     announcements.map((a) => {
                       const AnnIcon = glassShell ? announcementIcon(a.emoji) : null;
@@ -638,7 +648,7 @@ export default function ServerSidebar({
                       <div key={a.id} className="announcement-item">
                         {glassShell ? (
                           <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                            {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : (a.emoji || "📢")}
+                            {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : <MegaphoneLine size={18} strokeWidth={2} />}
                           </span>
                         ) : null}
                         <div className="announcement-title">{a.title}</div>

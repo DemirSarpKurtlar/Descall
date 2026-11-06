@@ -568,6 +568,8 @@ export default function App() {
   const [myServers, setMyServers] = useState([]);
   const [serverFolders, setServerFolders] = useState([]);
   const [serversLoaded, setServersLoaded] = useState(false);
+  // UI audit #60: a failed list request is an error, not "no servers yet".
+  const [serversLoadError, setServersLoadError] = useState(false);
   const [activeServer, setActiveServer] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
   useEffect(() => {
@@ -898,11 +900,13 @@ export default function App() {
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
       listCommitRef.current.servers = true;
+      setServersLoadError(false);
       setServersLoaded(true);
       syncServerChannelMeta();
     } catch (err) {
       console.error("[App] load servers error:", err);
       listCommitRef.current.servers = true;
+      setServersLoadError(true);
       setServersLoaded(true);
     }
     })();
@@ -947,8 +951,29 @@ export default function App() {
   groupMessagesRef.current = groupMessagesById;
   channelMessagesRef.current = channelMessagesById;
 
+  // UI audit #59: a DM whose history never arrives shows an error with a
+  // retry instead of an endless skeleton (REST failed and the socket
+  // fallback is down or silent).
+  const [dmLoadErrors, setDmLoadErrors] = useState({});
+  const dmLoadErrorTimersRef = useRef({});
+  const setDmLoadError = useCallback((peerId, failed) => {
+    clearTimeout(dmLoadErrorTimersRef.current[peerId]);
+    delete dmLoadErrorTimersRef.current[peerId];
+    setDmLoadErrors((prev) => {
+      if (Boolean(prev[peerId]) === failed) return prev;
+      const next = { ...prev };
+      if (failed) next[peerId] = true;
+      else delete next[peerId];
+      return next;
+    });
+  }, []);
+  useEffect(() => () => {
+    Object.values(dmLoadErrorTimersRef.current).forEach((id) => clearTimeout(id));
+  }, []);
+
   const loadDmMessagesRest = useCallback((peerId) => {
     if (!peerId) return Promise.resolve();
+    setDmLoadError(peerId, false);
     const cached = dmByUserIdRef.current?.[peerId];
     const since = Array.isArray(cached) && cached.length ? newestCursor(cached) : null;
     return getDmMessages(peerId, since ? { since, limit: 50 } : { limit: 50 })
@@ -974,14 +999,25 @@ export default function App() {
       })
       .catch((err) => {
         console.error("[App] fetch DM messages error:", err);
-        if (!socketRef.current?.connected) return;
+        if (!socketRef.current?.connected) {
+          if (dmByUserIdRef.current?.[peerId] === undefined) setDmLoadError(peerId, true);
+          return;
+        }
         socketRef.current.emit("dm:history", { withUserId: peerId });
+        clearTimeout(dmLoadErrorTimersRef.current[peerId]);
+        dmLoadErrorTimersRef.current[peerId] = setTimeout(() => {
+          delete dmLoadErrorTimersRef.current[peerId];
+          if (dmByUserIdRef.current?.[peerId] === undefined) setDmLoadError(peerId, true);
+        }, 8000);
       })
       .finally(() => {
         if (activeDmRef.current?.id === peerId) setMessagesLoading(false);
       });
-  }, [t]);
+  }, [t, setDmLoadError]);
   loadDmRestRef.current = loadDmMessagesRest;
+  const dmHistoryFailed = Boolean(
+    activeDmUser?.id && dmByUserId[activeDmUser.id] === undefined && dmLoadErrors[activeDmUser.id]
+  );
 
   /** Discord-like per-server notification level: all | mentions | muted */
   const getServerNotificationLevel = useCallback((serverId) => {
@@ -3003,6 +3039,7 @@ export default function App() {
     setFriendsLoaded(false);
     setGroupsLoaded(false);
     setServersLoaded(false);
+    setServersLoadError(false);
     setDmByUserId({}); setDmUnread({}); setDmPrefs({}); setGroupUnread({}); setChannelUnread({}); setDmLastActivity({}); setGroupLastActivity({}); setDmPreviews({}); setGroupPreviews({}); setNotifications([]);
     setActiveDmUser(null); setActiveGroup(null); setActiveServer(null); setActiveChannel(null);
     setActiveView("chat");
@@ -4762,6 +4799,7 @@ export default function App() {
       setMyServers(data?.servers || []);
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
+      setServersLoadError(false);
       setServersLoaded(true);
       await syncServerChannelMeta();
       if (activeServer?.id) {
@@ -4785,6 +4823,7 @@ export default function App() {
       }
     } catch (err) {
       console.error("[App] refresh servers error:", err);
+      setServersLoadError(true);
       setFriendNotice(err.message || t("Failed to load servers"));
       setTimeout(() => setFriendNotice(""), 4000);
     }
@@ -5171,8 +5210,10 @@ export default function App() {
           friends={orderedFriends}
           friendsLoaded={friendsLoaded}
           groupsLoaded={groupsLoaded}
+          historyLoadError={dmHistoryFailed}
           servers={myServers}
           serversLoaded={serversLoaded}
+          serversLoadError={serversLoadError}
           serverFolders={serverFolders}
           onServerFoldersChange={setServerFolders}
           onMoveServerToFolder={handleMoveServerToFolder}
@@ -5714,6 +5755,10 @@ export default function App() {
                   activeChannel?.type === "text" &&
                   channelMessagesById[activeChannel.id] === undefined)
             )}
+            loadError={dmHistoryFailed}
+            onRetryLoad={() => {
+              if (activeDmUser?.id) loadDmMessagesRest(activeDmUser.id);
+            }}
             unreadCount={
               unreadMarker &&
               ((activeDmUser && unreadMarker.key === `dm:${activeDmUser.id}`) ||

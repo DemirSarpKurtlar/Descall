@@ -223,7 +223,7 @@ export function homeHero(loc) {
     ? {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
-        h1: "Birlikte konuşun",
+        h1: "Birlikte konuş",
         lead: "Arkadaşlarınla sesli sohbet, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
         voiceTitle: "Sohbetin yanında ses",
         voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
