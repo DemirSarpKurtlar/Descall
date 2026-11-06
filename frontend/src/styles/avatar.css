@@ -45,7 +45,7 @@
   font-size: 0.42em;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: var(--avatar-fg, #E8ECF8);
   user-select: none;
 }
 .ui-avatar-letter.is-two {
