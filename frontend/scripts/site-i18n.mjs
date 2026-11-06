@@ -12,6 +12,10 @@
  *   node scripts/site-i18n.mjs import --locale=<id>
  *       Merge /tmp/site-i18n/<id>/out-*.json ([{ i, t }]) into src/site/i18n/<id>.js after
  *       checking placeholders, HTML tags, length limits and empty values.
+ *   node scripts/site-i18n.mjs prune [--locale=<id>]
+ *       Remove site-catalog keys no page asks for any more (the "no longer used" warning
+ *       of check), e.g. after pages were merged or copy was rewritten. The catalog is what
+ *       a /<prefix> visitor downloads, so dead keys cost bytes on every page.
  *   node scripts/site-i18n.mjs check [--allow-draft]
  *       Coverage per locale; exit 1 when a string has no translation (site catalog or app
  *       catalog). --allow-draft tolerates gaps in SITE_DRAFT_LOCALES (what CI runs).
@@ -722,6 +726,22 @@ export async function bakeSiteStrings(id) {
   return { added, total: Object.keys(next).length };
 }
 
+/** Drop the site-catalog keys that no page renders any more. */
+export async function pruneSiteStrings(id) {
+  if (!siteLocales.isPrefixedLocale(id)) throw new Error(`[site-i18n] ${id} is not a prefixed site locale`);
+  const rows = await collectSiteStrings(id);
+  const used = new Set(rows.map((r) => r.en));
+  const current = await readSiteCatalog(id);
+  const next = {};
+  let removed = 0;
+  for (const [en, tr] of Object.entries(current)) {
+    if (used.has(en)) next[en] = tr;
+    else removed += 1;
+  }
+  fs.writeFileSync(siteCatalogFile(id), formatCatalog(id, next), "utf8");
+  return { removed, total: Object.keys(next).length };
+}
+
 // ---------------------------------------------------------------------------
 // CLI
 
@@ -764,6 +784,14 @@ async function main() {
     }
     return;
   }
+  if (cmd === "prune") {
+    const ids = args.locale ? [args.locale] : siteLocales.PREFIXABLE_LOCALES;
+    for (const id of ids) {
+      const res = await pruneSiteStrings(id);
+      console.log(`site-i18n prune ${id}: ${res.removed} unused keys removed, ${res.total} entries`);
+    }
+    return;
+  }
   if (cmd === "check") {
     const { report, errors, warnings } = await checkSiteI18n({ allowDraft: Boolean(args["allow-draft"]) });
     for (const [id, r] of Object.entries(report)) {
@@ -788,7 +816,7 @@ async function main() {
     console.log("site-i18n check: ok");
     return;
   }
-  console.error("usage: node scripts/site-i18n.mjs export | import --locale=<id> | bake [--locale=<id>] | check [--allow-draft] [--missing=<id>]");
+  console.error("usage: node scripts/site-i18n.mjs export | import --locale=<id> | bake [--locale=<id>] | prune [--locale=<id>] | check [--allow-draft] [--missing=<id>]");
   process.exit(2);
 }
 
