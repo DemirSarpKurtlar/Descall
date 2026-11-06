@@ -19,6 +19,7 @@ import { CALLUI_TR } from "./callui.tr.js";
 import { SHOP_TR } from "./shop.tr.js";
 import { SHOP_ITEMS_TR } from "./shopItems.tr.js";
 import { ADMINX_TR } from "./adminx.tr.js";
+import { PREMIUM_ADMIN_TR } from "./premiumAdmin.tr.js";
 import { POLLS_TR } from "./polls.tr.js";
 import { SLASH_TR } from "./slash.tr.js";
 import { CHATX_TR } from "./chatx.tr.js";
@@ -35,6 +36,7 @@ export const nested = {
   shop: SHOP_TR,
   shopItems: SHOP_ITEMS_TR,
   adminx: ADMINX_TR,
+  premiumAdmin: PREMIUM_ADMIN_TR,
   polls: POLLS_TR, slash: SLASH_TR, chatx: CHATX_TR,
   core: CORE_TR,
   bot: BOT_TR,
