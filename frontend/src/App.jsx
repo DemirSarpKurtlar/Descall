@@ -62,7 +62,7 @@ import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
 import { attachPremiumSocket } from "./premium/usePremium.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
-import { isPopoutWindow } from "./premium/desktop/popout.js";
+import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { getVoiceBusy } from "./lib/voiceBusy";
 import { shouldPlayDisconnectSound } from "./lib/connectionSound";
@@ -153,6 +153,8 @@ import { mergeServerDetail } from "./lib/serverDetail";
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 // Descall+ desktop windows (mini mode, call window, sidebar): Electron main window only.
 const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHost.jsx"));
+// Descall+ pop-out window (Electron multi_window): conversation-only chrome, set before first render.
+applyPopoutMode();
 const premiumDesktopHost = typeof window !== "undefined" && Boolean(window.descallPremium) && !isPopoutWindow();
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
