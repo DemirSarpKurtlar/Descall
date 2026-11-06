@@ -1391,6 +1391,7 @@ export const nested = {
       "lockedTitle": "Descall ist gesperrt",
       "pin": "PIN",
       "unlock": "Entsperren",
+      "hint": "PIN eingeben und Enter drücken",
       "help": "Die PIN wird als gesalzener Hash gespeichert und mit dem Windows-Datenschutz verschlüsselt. Das hält andere an deinem Computer ab, während du weg bist; es ist keine Festplattenverschlüsselung und schützt nicht vor Software, die unter deinem Konto läuft. Windows Hello wird noch nicht angeboten: Es braucht eine native Komponente, die Descall nicht mitliefert."
     },
     "quickActions": {

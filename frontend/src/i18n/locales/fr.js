@@ -1391,6 +1391,7 @@ export const nested = {
       "lockedTitle": "Descall est verrouillé",
       "pin": "Code PIN",
       "unlock": "Déverrouiller",
+      "hint": "Saisis ton PIN et appuie sur Entrée",
       "help": "Le code PIN est conservé sous forme de hachage salé, chiffré avec la protection des données de Windows. Cela arrête une autre personne devant ton ordinateur pendant ton absence ; ce n’est pas un chiffrement du disque et cela ne protège pas contre un logiciel lancé sous ton compte. Windows Hello n’est pas encore proposé : il demande un composant natif que Descall n’inclut pas."
     },
     "quickActions": {

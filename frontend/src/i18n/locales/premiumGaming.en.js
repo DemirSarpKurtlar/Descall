@@ -184,6 +184,7 @@ export const PREMIUM_GAMING_EN = {
     lockedTitle: "Descall is locked",
     pin: "PIN",
     unlock: "Unlock",
+    hint: "Type your PIN and press Enter",
     help: "The PIN is kept as a salted hash, encrypted with Windows data protection. That stops someone else at your computer while you are away; it is not disk encryption and does not protect against software running as you. Windows Hello is not offered yet: it needs a native component Descall does not ship.",
   },
   quickActions: {

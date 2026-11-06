@@ -184,6 +184,7 @@ export const PREMIUM_GAMING_TR = {
     lockedTitle: "Descall kilitli",
     pin: "PIN",
     unlock: "Kilidi aç",
+    hint: "PIN'ini yaz, Enter ile aç",
     help: "PIN, tuzlanmış bir özet olarak, Windows veri korumasıyla şifrelenerek saklanır. Sen yokken bilgisayarındaki başka birini durdurur; disk şifrelemesi değildir ve senin adınla çalışan yazılımlara karşı korumaz. Windows Hello henüz sunulmuyor: Descall'un içermediği yerel bir bileşen gerektiriyor.",
   },
   quickActions: {
