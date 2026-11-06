@@ -512,8 +512,7 @@ export const TR_LANDINGS = {
       {
         h: "Son haberler ne diyor?",
         p: [
-          `${CHECKED} tarihli haberler, Discord’a Türkiye’deki internet servis sağlayıcıları üzerinden erişimin hâlâ kapalı olduğunu ve engelin kaldırıldığına dair resmi bir duyuru bulunmadığını bildiriyordu.`,
-          "Haziran 2026’da ise Ulaştırma ve Altyapı Bakanı Abdulkadir Uraloğlu’nun, Discord’un istenen kriterleri karşıladığını ve platformun yakında yeniden erişime açılabileceğini söylediği haberler çıkmıştı. Bu açıklamalardan sonra yayımlanan haberlerde erişimin açıldığına dair bir bilgi yer almıyordu.",
+          `${CHECKED} tarihli haberler, Discord’a Türkiye’deki internet servis sağlayıcıları üzerinden erişimin hâlâ kapalı olduğunu ve engelin kaldırıldığına dair resmi bir duyuru bulunmadığını bildiriyordu. Haziran 2026’da ise Ulaştırma ve Altyapı Bakanı Abdulkadir Uraloğlu’nun, Discord’un istenen kriterleri karşıladığını ve platformun yakında yeniden erişime açılabileceğini söylediği haberler çıkmıştı. Bu açıklamalardan sonra yayımlanan haberlerde erişimin açıldığına dair bir bilgi yer almıyordu.`,
           "Sosyal medyada zaman zaman “Discord açıldı” iddiaları dolaşıyor. Bu iddialar çoğu zaman kısa süreli bağlantı farklılıklarından ya da farklı ağlardan yapılan denemelerden kaynaklanıyor. Kesin bilgi için BTK’nın internet sitesindeki site sorgulama aracına ve resmi açıklamalara bakmak en doğrusu.",
         ],
       },

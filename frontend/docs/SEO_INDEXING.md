@@ -60,8 +60,9 @@ What *does* help, using Search Console data:
 4. **Turkish queries** (`discord alternatifi`, `muadili`, `benzeri`) consolidate on `/tr/discord-alternatifi`; `/discord-alternative-turkey` and `/tr/discord-alternative` 301 there so the TR URLs do not compete.
 5. **Unique FAQ JSON-LD** per commercial URL, only with questions that are visible on that page and in its language. Do not copy the same FAQPage onto hub, compare, list, and blog posts.
 6. **One URL per search intent.** Same-intent pages are merged with a 301 (see `docs/SITEMAP.md`, "Merged pages"). Before adding a page, check that no existing page already answers the query.
-7. **"Discord açıldı mı?"** is evergreen: re-check the access status every month and move `DISCORD_TR_STATUS_CHECKED` and `CHECKED` in `src/site/seo/trLandings.js` (page date, Article `dateModified` and sitemap lastmod follow). `/status` shows `SITE_OPERATOR.statusReviewedIso`.
-8. After a deploy nothing needs to be pushed: the sitemap and its `lastmod` values carry the change. Rankings take days/weeks; judge in GSC, not by searching Google yourself.
+7. **"Discord açıldı mı?"** is evergreen and reports dated public sources only (we do not test access ourselves and the owner has not confirmed a status). Every month read the latest reliable reports, set `CHECKED` in `src/site/seo/trLandings.js` to the month of the latest report the page cites, update the dated "Zaman çizelgesi" entries, and move `DISCORD_TR_STATUS_CHECKED` to the review day (page date, Article `dateModified` and sitemap lastmod follow). `/status` shows `SITE_OPERATOR.statusReviewedIso`.
+8. **Social images.** Each site language has its own default (`og-default.png`, `og-default-<lang>.png`); `src/site/ogImages.js` picks the image per page and language (prerender, SeoHead, Article JSON-LD). Images name Descall, never a competitor. To change one, edit `OG_IMAGE_COPY` and run `node scripts/generate-og-images.mjs` (Playwright Chromium, 1200x630, max 120 KB each), then commit the PNGs.
+9. After a deploy nothing needs to be pushed: the sitemap and its `lastmod` values carry the change. Rankings take days/weeks; judge in GSC, not by searching Google yourself.
 
 ## Host split note (`www` vs `app`)
 
