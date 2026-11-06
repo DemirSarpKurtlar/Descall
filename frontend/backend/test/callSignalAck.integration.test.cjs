@@ -231,7 +231,41 @@ async function scenarios() {
     assertEq((await status).state, "ended", "callee: ended, not unknown");
     await disconnect(alice);
     await disconnect(bob);
+    advance(200);
     console.log("ok - missed decline → caller-resume ended");
+  }
+
+  // Crossed calls: both press call at once, Bob answers Alice's offer. Bob's
+  // own ring to Alice must end right there (no missed-call row, no 45 s
+  // "no answer" that would hang up the connected call, Alice's iPhone ring
+  // ended), and Alice's ring to Bob is the call.
+  {
+    const alice = await connect("alice");
+    const bob = await connect("bob");
+    const bobGot = waitFor(bob, "call:offer");
+    const aliceGot = waitFor(alice, "call:offer");
+    alice.emit("call:offer", { toUserId: USERS.bob.id, offer: OFFER, callType: "voice", renegotiate: false });
+    bob.emit("call:offer", { toUserId: USERS.alice.id, offer: OFFER, callType: "voice", renegotiate: false });
+    await Promise.all([bobGot, aliceGot]);
+    assertEq(dmCallLog.listRingingForCallee(USERS.alice.id).length, 1, "Bob's ring to Alice is out");
+    const reverseEnded = waitFor(alice, "call:ring-ended", (p) => p.fromUserId === USERS.bob.id);
+    const noCancel = [];
+    alice.on("call:cancelled", (p) => noCancel.push(p));
+    alice.on("call:declined", (p) => noCancel.push(p));
+    const answered = waitFor(alice, "call:answer");
+    await emitAck(bob, "call:answer", { toUserId: USERS.alice.id, answer: ANSWER });
+    await answered;
+    const ended = await reverseEnded;
+    assertEq(ended.reason, "cancelled", "Alice's devices stop ringing for Bob's crossed ring");
+    assertEq(dmCallLog.listRingingForCallee(USERS.alice.id).length, 0, "Bob's crossed ring is dropped");
+    assertEq(dmCallLog.getPendingCall(USERS.alice.id, USERS.bob.id)?.status, "active", "Alice's ring is the call");
+    assertEq(dmCallLog.getPendingCall(USERS.alice.id, USERS.bob.id)?.callerId, USERS.alice.id);
+    await sleep(50);
+    assertEq(noCancel.length, 0, "Alice's outgoing call is never cancelled / declined by it");
+    await emitAck(alice, "call:end", { toUserId: USERS.bob.id });
+    await disconnect(alice);
+    await disconnect(bob);
+    console.log("ok - crossed calls: the answer drops the reverse ring");
   }
 }
 

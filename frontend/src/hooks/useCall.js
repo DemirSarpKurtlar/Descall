@@ -97,6 +97,7 @@ import { createCallRecovery } from "../lib/callConnectionMachine";
 import {
   INCOMING_RING_TIMEOUT_MS,
   createRingChannel,
+  crossedCallRole,
   outgoingRingGuardMs,
   ringEventMatches,
 } from "../lib/callRingSync";
@@ -321,6 +322,12 @@ export function useCall(socket, callOccupancyRef = null) {
   const socketRef = useRef(socket);
   const callTypeRef = useRef(callType);
   const makingOfferRef = useRef(false);
+  // Crossed calls (both pressed call): the peer's offer, answered by the
+  // polite side once its own dial is out (lib/callRingSync.js crossedCallRole).
+  const crossedOfferRef = useRef(null);
+  // startCall has not emitted its offer yet (the pc must not be touched).
+  const dialingRef = useRef(false);
+  const takeCrossedOfferRef = useRef(null);
   const negotiationQueuedRef = useRef(false);
   const iceRestartAttemptedRef = useRef(false);
   const iceRecoveryTimerRef = useRef(null);
@@ -540,6 +547,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setDuration(0);
     incomingOfferRef.current = null;
     incomingCallTypeRef.current = null;
+    crossedOfferRef.current = null;
     if (pcRef.current) {
       safeClosePeer(pcRef.current);
       pcRef.current = null;
@@ -702,6 +710,40 @@ export function useCall(socket, callOccupancyRef = null) {
     }
     pendingIceRef.current = [];
   };
+
+  /**
+   * Crossed calls, polite side: answer the peer's offer on our own dialing
+   * connection (our offer is rolled back), same mic, no second ring. The
+   * server drops our reverse ring when it sees this answer.
+   */
+  const takeCrossedOffer = async () => {
+    const crossed = crossedOfferRef.current;
+    const pc = pcRef.current;
+    if (!crossed || !pc || dialingRef.current) return false;
+    crossedOfferRef.current = null;
+    const peerId = peerRef.current?.id;
+    if (modeRef.current !== "outgoing" || String(peerId || "") !== String(crossed.fromId)) return false;
+    try {
+      setupTimelineRef.current?.count("crossed");
+      const { accepted } = await applyRemoteOffer(pc, crossed.offer, { polite: true, makingOffer: false });
+      if (!accepted || pcRef.current !== pc || modeRef.current !== "outgoing") return false;
+      await flushIce(pc);
+      const answer = await pc.createAnswer();
+      await commitLocalDescription(pc, answer);
+      emitWithAck(() => socketRef.current, "call:answer", { toUserId: peerId, answer: pc.localDescription }, {
+        shouldRetry: () => pcRef.current === pc && pc.connectionState !== "connected" && pc.connectionState !== "closed",
+      });
+      if (crossed.callUuid) setCallUuid(crossed.callUuid);
+      hapticCallConnected();
+      setMode("active");
+      modeRef.current = "active";
+      return true;
+    } catch (err) {
+      console.warn("[Call] crossed call answer failed:", err?.name || err?.message || err);
+      return false;
+    }
+  };
+  takeCrossedOfferRef.current = takeCrossedOffer;
 
   const markRemoteMediaReady = useCallback((stream) => {
     if (!stream) return;
@@ -1293,7 +1335,26 @@ export function useCall(socket, callOccupancyRef = null) {
         return;
       }
 
-      // Already ringing / dialing this peer → refresh SDP, keep popup
+      // Crossed calls: we are dialing this peer and they dial us. One side
+      // answers the other's offer (polite peer), the other keeps waiting.
+      const crossedRole = crossedCallRole(
+        { mode: modeRef.current, peerId: peerRef.current?.id },
+        fromUser.id,
+        getUser()?.id || null
+      );
+      if (crossedRole === "wait") return;
+      if (crossedRole === "answer") {
+        crossedOfferRef.current = {
+          fromId: fromUser.id,
+          offer,
+          callUuid: typeof incomingCallUuid === "string" ? incomingCallUuid : null,
+        };
+        // Still dialing: startCall takes it right after its own offer is out.
+        void takeCrossedOfferRef.current?.();
+        return;
+      }
+
+      // Already ringing this peer → refresh SDP, keep popup
       if (
         peerRef.current?.id === fromUser.id &&
         (modeRef.current === "incoming" || modeRef.current === "outgoing")
@@ -1622,6 +1683,8 @@ export function useCall(socket, callOccupancyRef = null) {
       console.warn("[Call] startCall ignored, already in a call:", modeRef.current);
       return;
     }
+    dialingRef.current = true;
+    crossedOfferRef.current = null;
     try {
       callDirectionRef.current = "outgoing";
       setupTimelineRef.current?.start("outgoing", type, { entry: "tap", push: "none" });
@@ -1691,10 +1754,15 @@ export function useCall(socket, callOccupancyRef = null) {
         shouldRetry: () => modeRef.current === "outgoing" && pcRef.current === pc,
       });
       setupTimelineRef.current?.mark("offerSent");
+      dialingRef.current = false;
+      // The peer called us while we were dialing (crossed calls, polite side).
+      if (crossedOfferRef.current) await takeCrossedOfferRef.current?.();
     } catch (err) {
       console.error("[Call] startCall failed:", err?.name || err?.message || err);
       voiceMicErrorToast(err, { toast, t: tRuntime, MicOffIcon: MicOff });
       cleanup();
+    } finally {
+      dialingRef.current = false;
     }
   }, [cleanup, setupPeerConnection, toast, acquireCallMicStream]);
 

@@ -1,4 +1,5 @@
 import { t } from "../i18n/runtime.js";
+import { isPolitePeer } from "./webrtcNegotiation.js";
 
 /**
  * Stop an incoming DM ring everywhere it is showing on this machine.
@@ -34,6 +35,24 @@ export const OUTGOING_ANSWERING_TIMEOUT_MS = 125_000;
 /** How long the caller side waits before giving up on its own ring. */
 export function outgoingRingGuardMs({ calleeAnswering = false } = {}) {
   return calleeAnswering ? OUTGOING_ANSWERING_TIMEOUT_MS : OUTGOING_RING_TIMEOUT_MS;
+}
+
+/**
+ * Crossed calls: we are dialing the peer and their offer for us arrives (both
+ * pressed call at the same moment). Before, each side kept the other's offer
+ * as a "refreshed" ring and both heard their ringback until the 45 s "No
+ * answer". Same polite-peer rule as the renegotiation glare: the polite side
+ * ("answer") answers the peer's offer on its own connection; the other side
+ * ("wait") keeps its offer and gets answered. Exactly one side answers.
+ * @returns {"answer"|"wait"|null} null = not a crossed call
+ */
+export function crossedCallRole(current = {}, offerFromId, myId) {
+  if (!current || current.mode !== "outgoing") return null;
+  const peer = current.peerId != null ? String(current.peerId) : "";
+  const from = offerFromId != null ? String(offerFromId) : "";
+  const me = myId != null ? String(myId) : "";
+  if (!peer || !from || !me || peer !== from || me === from) return null;
+  return isPolitePeer(me, from) ? "answer" : "wait";
 }
 
 /** Does a ring-ended style event refer to the ring this tab shows? */
