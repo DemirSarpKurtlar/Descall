@@ -256,7 +256,7 @@ text.registerSiteCatalog("de", {
   site: {
     Features: "Funktionen (site)",
     "Start free": "Kostenlos starten (site)",
-    "Talk together": "Gemeinsam reden",
+    "Descall: voice chat, servers and screen sharing for friends": "Gemeinsam reden",
     "Optional analytics only. Essentials stay on.": "Nur optionale Analyse.",
     "Descall Features, Free Voice, Screen Share & Servers": "Descall Funktionen",
     "{name} is the founder, owner, and CEO of Descall.": "{name} hat Descall gegründet.",
@@ -280,7 +280,7 @@ assert.equal(copy.navLabels("de").turkish, "Türkçe", "native names are not tra
 assert.deepEqual(copy.navLabels(true), copy.navLabels("tr"));
 assert.deepEqual(copy.navLabels(false), copy.navLabels("en"));
 assert.equal(copy.homeHero("de").h1, "Gemeinsam reden");
-assert.equal(copy.homeHero("tr").h1, "Birlikte konuş");
+assert.equal(copy.homeHero("tr").h1, "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı");
 assert.equal(copy.cookieCopy("de").body, "Nur optionale Analyse.");
 assert.equal(copy.prefixHref("/features", "de"), "/de/features");
 assert.equal(copy.prefixHref("/blog", "de"), sl.isPageGroupLive("blog", "de") ? "/de/blog" : "/blog");

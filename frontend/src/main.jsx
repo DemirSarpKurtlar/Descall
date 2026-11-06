@@ -169,10 +169,9 @@ function scheduleMarketingHydration(run) {
     return;
   }
   if (!isPublicMarketingPath(path)) return;
-  // Hydrate right away on every public marketing route. The prerender shell is
-  // for crawlers only: index.html keeps it invisible (html.seo-hold) until the
-  // real page commits, so any delay here would just be a longer blank screen.
-  // (It used to be visible and flashed as a plain "old" landing before the real one.)
+  // Hydrate right away on every public marketing route. The prerendered page is the
+  // first paint (header and home hero mirror the React layout); React takes over with
+  // a short cross-fade (MarketingApp RevealMarketingShell).
   start();
 }
 
@@ -328,13 +327,8 @@ async function boot() {
     .catch(() => {});
         })
         .catch((err) => {
+          // The prerendered page stays as it is: readable, with working links.
           console.error("[boot] marketing hydrate failed", err);
-          // Show the crawlable shell instead of a blank page if the chunk failed.
-          try {
-            window.__descallReleaseSeoHold?.();
-          } catch {
-            /* ignore */
-          }
         });
     });
     return;

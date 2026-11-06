@@ -30,7 +30,7 @@ const { TR_LANDINGS, trLandingLabel } = await import(pathToFileURL(path.join(roo
 const { TR_BLOG_POSTS, TR_BLOG_BODIES, TR_BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href
 );
-const { cookieBannerHtml, homeHref, navLabels, newCopy, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy } = await import(
+const { cookieBannerHtml, homeHref, navLabels, newCopy, noscriptNavHtml, prefixHref, seoSiteNavHtml, trCopy, authHref } = await import(
   pathToFileURL(path.join(root, "src/site/seo/prerenderCopy.js")).href
 );
 const { FAQ_ITEMS } = await import(pathToFileURL(path.join(root, "src/site/faqData.js")).href);
@@ -90,6 +90,82 @@ function seoBrandFor(loc) {
   return `<a class="seo-brand" href="${homeHref(loc)}" aria-label="${escapeHtml(newCopy("Descall home", loc))}"><img class="seo-brand-lockup" src="/brand/descall-lockup.svg" alt="Descall" height="22" decoding="async" /><span class="seo-brand-beta">Beta</span></a>`;
 }
 
+const ICON_DOWNLOAD =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICON_MENU =
+  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+/**
+ * Header of every prerendered page: the same pill, brand, nav and buttons as the React
+ * MarketingLayout header (sizes in index.html #seo-static .seo-top), so nothing moves
+ * when React takes over. Works without JavaScript: the buttons are real links, the
+ * menu button jumps to the footer navigation.
+ */
+function seoTopHtml(loc = "en") {
+  const l = loc;
+  const n = navLabels(l);
+  const h = (path) => prefixHref(path, l);
+  const code = (l === "pt-BR" ? "pt" : l).split("-")[0].toUpperCase();
+  const signIn = trCopy("Sign In", l);
+  return `<header class="seo-top">
+  <a class="seo-top-brand" href="${homeHref(l)}"><img src="/brand/descall-lockup.svg" alt="Descall" width="123" height="28" decoding="async" /><span class="seo-top-beta">Beta</span></a>
+  <nav class="seo-top-nav" aria-label="${trCopy("Primary navigation", l)}"><a href="${h("/features")}">${n.features}</a><a href="${h("/download")}">${n.download}</a><a href="${h("/faq")}">${n.faq}</a></nav>
+  <div class="seo-top-actions">
+    <span class="seo-top-lang" aria-hidden="true">${code}</span>
+    <a class="seo-top-btn" href="${authHref(l, "login")}" rel="nofollow" data-hydrate data-auth="login">${signIn}</a>
+    <a class="seo-top-btn is-primary" href="${authHref(l, "register")}" rel="nofollow" data-hydrate data-auth="register">${n.startFree}</a>
+    <a class="seo-top-icon seo-top-dl" href="${h("/download")}" aria-label="${n.download}" title="${n.download}">${ICON_DOWNLOAD}</a>
+    <a class="seo-top-icon seo-top-menu" href="#seo-site-nav" aria-label="${trCopy("Open menu", l)}">${ICON_MENU}</a>
+  </div>
+</header>`;
+}
+
+/** Product shots of SeoProductPreview (same files and sizes). */
+const PREVIEW_SHOTS = {
+  chat: "/brand/previews/02-dm.webp",
+  servers: "/brand/previews/06-server.webp",
+  call: "/brand/previews/09-server-voice.webp",
+  friends: "/brand/previews/11-friends.webp",
+};
+
+/** Same mapping as DiscordAlternativeNichePage previewForPath. */
+function nichePreview(path) {
+  if (path.includes("communities")) return "servers";
+  if (path.includes("voice")) return "call";
+  return "chat";
+}
+
+/** Same mapping as TrLandingPage previewForPath. */
+function trPreview(path) {
+  if (path.includes("oyuncu")) return "friends";
+  if (path.includes("sesli")) return "call";
+  if (path.includes("turk")) return "servers";
+  return "chat";
+}
+
+/**
+ * Hero of a landing page, twin of SeoLandingShell (breadcrumbs, title, lead, Start free +
+ * Download, product shot): same boxes as the React page, see index.html .seo-lhero.
+ */
+function landingHeroHtml({ loc, crumbs, h1, lead, shot, alt }) {
+  const n = navLabels(loc);
+  const trail = crumbs
+    .map(([href, label]) => (href ? `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>` : `<span aria-current="page">${escapeHtml(label)}</span>`))
+    .join(" › ");
+  const img = shot
+    ? `<figure class="seo-lhero-shot"><img src="${shot}" width="1440" height="900" alt="${escapeHtml(alt)}" fetchpriority="high" decoding="async" /></figure>`
+    : "";
+  return `<header class="seo-lhero${shot ? "" : " is-single"}">
+    <nav class="seo-crumbs" aria-label="Breadcrumb">${trail}</nav>
+    <div class="seo-lhero-copy">
+      <h1>${escapeHtml(h1)}</h1>
+      <p class="seo-lhero-lead">${escapeHtml(lead)}</p>
+      <p class="seo-cta-row"><a class="seo-cta-primary" href="${authHref(loc, "register")}" rel="nofollow" data-hydrate data-auth="register">${n.startFree}</a><a class="seo-cta-soft" href="${prefixHref("/download", loc)}">${n.download}</a></p>
+    </div>
+    ${img}
+  </header>`;
+}
+
 function routeIsTr(route) {
   return route.lang === "tr" || route.path === "/tr" || route.path.startsWith("/tr/");
 }
@@ -111,8 +187,11 @@ function seoSiteNav(loc = "en") {
 }
 
 function stripBootSplash(html) {
-  // Nested divs — remove the whole splash block + its dismiss script.
+  // The splash template and the script after it (only "/" keeps them: the app shell).
+  // Older templates had a bare #boot-splash div; both forms are handled.
   return html
+    .replace(/<!-- The boot splash is an inert template[\s\S]*?-->\s*/i, "")
+    .replace(/<template id="boot-splash-tpl">[\s\S]*?<\/template>\s*<script>[\s\S]*?<\/script>\s*/i, "")
     .replace(
       /<div id="boot-splash"[\s\S]*?<\/div>\s*<script>\s*\(function \(\) \{\s*var el = document\.getElementById\("boot-splash"\)[\s\S]*?<\/script>\s*/i,
       ""
@@ -160,16 +239,26 @@ function crawlBodyInner(route) {
       .map((l) => `<li><a href="${escapeHtml(l.to)}">${escapeHtml(l.label)}</a></li>`)
       .join("");
     return `
-<main>
+<main class="seo-main-landing">
   ${seoBrand()}
-  <h1>${escapeHtml(trLanding.h1)}</h1>
+  <article class="seo-landing">
+  ${landingHeroHtml({
+    loc: "tr",
+    crumbs: [
+      ["/tr", "Ana sayfa"],
+      [null, trLandingLabel(trLanding)],
+    ],
+    h1: trLanding.h1,
+    lead: trLanding.lead,
+    shot: PREVIEW_SHOTS[trPreview(route.path)],
+    alt: trLanding.h1,
+  })}
   ${trLanding.updatedLabel ? `<p class="seo-note"><time datetime="${trLanding.updated}">${escapeHtml(trLanding.updatedLabel)}</time></p>` : ""}
-  <p>${escapeHtml(trLanding.lead)}</p>
-  ${seoCtaRow("/tr/discord-alternatifleri", "Alternatifleri karşılaştır", true)}
   ${sections}
   <h2>Sık sorulan sorular</h2>
   ${faq}
   <nav aria-label="İlgili sayfalar"><h2>İlgili sayfalar</h2><ul>${links}</ul></nav>
+  </article>
   ${seoSiteNav(true)}
 </main>`;
   }
@@ -253,17 +342,28 @@ function crawlBodyInner(route) {
             .join("\n")}`
         : "";
     return `
-<main>
+<main class="seo-main-landing">
   ${brand}
-  <h1>${escapeHtml(tx(niche.h1))}</h1>
-  <p>${escapeHtml(tx(niche.lead))}</p>
-  ${seoCtaRow("/discord-alternative", n.alternative, loc)}
+  <article class="seo-landing">
+  ${landingHeroHtml({
+    loc,
+    crumbs: [
+      [homeHref(loc), tx("Home")],
+      [hx("/discord-alternative"), tx("Discord alternative")],
+      [null, tx(niche.h1.split(" | ")[0].trim())],
+    ],
+    h1: tx(niche.h1),
+    lead: tx(niche.lead),
+    shot: PREVIEW_SHOTS[nichePreview(enPath)],
+    alt: tx(niche.h1),
+  })}
   <h2>${escapeHtml(tx(niche.answerTitle))}</h2>
   <p>${escapeHtml(tx(niche.answer))}</p>
   <ul>${niche.bullets.map((b) => `<li>${escapeHtml(tx(b))}</li>`).join("")}</ul>
   ${sections}
   ${faq}
   <nav aria-label="${escapeHtml(tx("Related"))}"><ul>${links}</ul></nav>
+  </article>
   ${seoSiteNav(loc)}
 </main>`;
   }
@@ -614,7 +714,8 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
 
   out = out.replace(/<\/title>/i, `</title>\n    ${metaBlock}`);
 
-  const body = crawlBody(route);
+  // The page header (React twin) replaces the old brand-only line at the top of each body.
+  const body = `${seoTopHtml(loc)}\n${crawlBody(route).replace(/<a class="seo-brand"[\s\S]*?<\/a>/, "")}`;
   if (/<div id="seo-static"><\/div>/i.test(out)) {
     out = out.replace(
       /<div id="seo-static"><\/div>/i,

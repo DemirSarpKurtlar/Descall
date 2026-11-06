@@ -190,8 +190,8 @@ export function heroCtaHtml(loc = "en") {
   const n = navLabels(loc);
   const h = (path) => prefixHref(path, loc);
   return `<p class="seo-cta-row">
-    <a class="seo-cta-primary" href="${authHref(loc, "register")}" data-hydrate data-auth="register">${n.startFree}</a>
-    <a class="seo-cta-soft" href="${authHref(loc, "login")}" data-hydrate data-auth="login">${n.signIn}</a>
+    <a class="seo-cta-primary" href="${authHref(loc, "register")}" rel="nofollow" data-hydrate data-auth="register">${n.startFree}</a>
+    <a class="seo-cta-soft" href="${authHref(loc, "login")}" rel="nofollow" data-hydrate data-auth="login">${n.signIn}</a>
     <a class="seo-cta-soft" href="${h("/download")}">${n.download}</a>
   </p>`;
 }
@@ -223,7 +223,7 @@ export function homeHero(loc) {
     ? {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
-        h1: "Birlikte konuş",
+        h1: "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
         lead: "Arkadaşlarınla sesli sohbet, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
         voiceTitle: "Sohbetin yanında ses",
         voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
@@ -295,7 +295,7 @@ export function homeHero(loc) {
     : {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
-        h1: "Talk together",
+        h1: "Descall: voice chat, servers and screen sharing for friends",
         lead: "Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.",
         voiceTitle: "Voice next to the chat",
         voiceBody: "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.",
@@ -436,7 +436,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
   const h = (path) => prefixHref(path, l);
   const product = isTr ? "Ürün" : newCopy("Product", l);
   const company = isTr ? "Şirket" : newCopy("Company", l);
-  return `<footer class="seo-footer">
+  return `<footer class="seo-footer" id="seo-site-nav">
   ${heroCtaHtml(l)}
   <div class="seo-footer-grid">
     <section>

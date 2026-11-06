@@ -10951,6 +10951,7 @@ export const phrases = {
   "Author": "Autor",
   "Download Descall for Windows, iPhone, Android and the web": "Descall für Windows, iPhone, Android und das Web herunterladen",
   "iPhone and iPad app on the App Store": "App für iPhone und iPad im App Store",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall: Sprachchat, Server und Bildschirmübertragung für Freunde",
 };
 
 export default { nested, phrases };

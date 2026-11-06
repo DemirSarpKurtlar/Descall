@@ -179,12 +179,19 @@ export function corePageBody(path) {
   switch (bare) {
     case "/": {
       const copy = homeHero(loc);
+      const n = navLabels(loc);
+      // Same grid, copy and product shot as HomePage.jsx (.mkt-hh), see index.html .seo-hh.
       return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(copy.h1)}</h1>
-  <p class="seo-lead">${escapeHtml(copy.lead)}</p>
-  ${heroCtaHtml(loc)}
+<main class="seo-main-home">
+  <section class="seo-hh">
+    <div class="seo-hh-copy">
+      <h1>${escapeHtml(copy.h1)}</h1>
+      <p class="seo-hh-lead"><span class="seo-hh-lead-long">${escapeHtml(copy.lead)}</span><span class="seo-hh-lead-short">${escapeHtml(tc("Voice chat, screen sharing, and servers."))}</span></p>
+      <p class="seo-hh-cta"><a class="seo-hh-btn is-primary" href="${homeHref(loc)}?auth=register" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(n.startFree)}</a><a class="seo-hh-btn is-secondary" href="${h("/download")}">${escapeHtml(tc("Download the desktop app"))}</a></p>
+      <ul class="seo-hh-platforms"><li>iPhone</li><li>Android</li><li>Windows</li><li>Web</li></ul>
+    </div>
+    <figure class="seo-pf"><div class="seo-pf-glass"><picture><source media="(max-width: 768px)" srcset="/brand/previews/hero-ios-chats.webp" width="780" height="1688" /><img class="seo-pf-screen" src="/brand/previews/hero-desktop-dm.webp" width="1440" height="900" alt="${escapeHtml(tc("Descall chat, with servers and a voice channel in the same window"))}" fetchpriority="high" decoding="async" /></picture></div></figure>
+  </section>
   <h2>${escapeHtml(copy.voiceTitle)}</h2>
   <p>${escapeHtml(copy.voiceBody)}</p>
   <h2>${escapeHtml(copy.serversTitle)}</h2>

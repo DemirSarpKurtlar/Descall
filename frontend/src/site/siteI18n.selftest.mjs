@@ -57,7 +57,7 @@ const rows = await collectSiteStrings("de");
 const en = new Set(rows.map((r) => r.en));
 for (const s of [
   "Start free", // header (React)
-  "Talk together", // home page (React)
+  "Descall: voice chat, servers and screen sharing for friends", // home page H1 (React + prerender)
   "Is Descall free?", // FAQ data
   "Descall Features | Free Voice, Screen Share & Servers", // SEO title
   "Optional analytics only. Essentials stay on.", // cookie banner (cookieCopy)

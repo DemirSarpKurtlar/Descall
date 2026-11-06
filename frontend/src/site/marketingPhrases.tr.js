@@ -362,4 +362,5 @@ export const MARKETING_TR = {
   Author: "Yazar",
   "Download Descall for Windows, iPhone, Android and the web": "Descall’ı indir: Windows, iPhone, Android ve tarayıcı",
   "iPhone and iPad app on the App Store": "App Store’da iPhone ve iPad uygulaması",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
 };

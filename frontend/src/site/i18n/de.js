@@ -286,6 +286,7 @@ export default {
   "Descall: Free Discord Alternative for Voice and Servers": "Descall: kostenlose Discord-Alternative für Sprache & Server",
   "Descall: free voice, video and servers for friend groups": "Descall: kostenloser Sprachchat, Video und Server für Freundesgruppen",
   "Descall: the closest everyday replacement": "Descall: der naheliegendste Ersatz für den Alltag",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall: Sprachchat, Server und Bildschirmübertragung für Freunde",
   "Descall’s place on the list": "Descalls Platz auf der Liste",
   "Desktop + web + Android": "Desktop + Web + Android",
   "Desktop and mobile reality": "Desktop und Mobil in der Praxis",

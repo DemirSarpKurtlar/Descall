@@ -74,14 +74,42 @@ function mirrorPage(enPath) {
 }
 
 /**
- * Drop the crawler shell once the real page has committed. Leaving it in the
- * DOM kept a second, often English, h1 ("Talk together" / "Privacy Policy")
- * on Turkish pages and 404s. No-JS crawlers still receive the prerender.
+ * Hand over from the prerendered page (the first paint) to the React page once it has
+ * committed: the shell leaves the flow and fades out on top for 180 ms while the React
+ * page is already in place underneath, then it is removed. Header and home hero have
+ * the same boxes in both, so the swap reads as one page. Leaving the shell in the DOM
+ * kept a second, often English, h1 on Turkish pages and 404s; crawlers without
+ * JavaScript still get the prerender.
  */
 function RevealMarketingShell() {
   useLayoutEffect(() => {
-    document.documentElement.setAttribute("data-marketing-ready", "1");
-    document.getElementById("seo-static")?.remove();
+    const html = document.documentElement;
+    const shell = document.getElementById("seo-static");
+    const visible = shell && !shell.hidden && shell.offsetParent !== null;
+    html.setAttribute("data-marketing-ready", "1");
+    if (!visible) {
+      shell?.remove();
+      return;
+    }
+    let reduce = false;
+    try {
+      reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch {
+      /* ignore */
+    }
+    if (reduce) {
+      shell.remove();
+      return;
+    }
+    shell.setAttribute("aria-hidden", "true");
+    // Out of the flow at full opacity, then let the class fade it to 0.
+    shell.style.opacity = "1";
+    shell.classList.add("seo-static--leaving");
+    void shell.offsetHeight;
+    shell.style.opacity = "";
+    const done = () => shell.remove();
+    shell.addEventListener("transitionend", done, { once: true });
+    window.setTimeout(done, 400);
   }, []);
   return null;
 }

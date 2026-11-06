@@ -703,7 +703,10 @@
         }
       }
       /* @native-splash-end */
-      /* Static SEO shell, readable first paint before React hydrate (all niche pages). */
+      /* Prerendered page = the real first paint (SEO audit, Nov 2026: it used to be
+         hidden until React committed). Header and home hero mirror the React layout
+         (MarketingLayout + home-hero.css: same boxes, sizes and colours), so the hand-over
+         to React is a short cross-fade (RevealMarketingShell), not a jump. */
       #seo-static {
         --seo-bg: #0b0c10;
         --seo-text: #f2f3f5;
@@ -713,18 +716,293 @@
         --seo-border: rgba(255, 255, 255, 0.1);
         --seo-surface: rgba(30, 31, 34, 0.72);
         color: var(--seo-text);
-        background: var(--seo-bg);
-        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        background:
+          radial-gradient(120% 70% at 70% -10%, #1a2240 0%, rgba(14, 17, 32, 0.9) 48%, rgba(10, 12, 20, 0) 78%) no-repeat 0 0 / 100% 100vh,
+          var(--seo-bg);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, system-ui, sans-serif;
         line-height: 1.55;
-        max-width: 72rem;
+        max-width: 1280px;
         margin: 0 auto;
-        padding: 1.35rem 1.25rem 4rem;
+        padding: 16px 40px 4rem;
         min-height: 100vh;
         box-sizing: border-box;
       }
+      /* Leaving: React has committed underneath; fade the shell out in place. */
+      #seo-static.seo-static--leaving {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 30;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.18s ease-out;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #seo-static.seo-static--leaving { transition: none; }
+      }
+      #seo-static .seo-top {
+        position: relative;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 64px;
+        margin: 0;
+        padding: 0 10px 0 14px;
+        border-radius: 32px;
+        box-sizing: border-box;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04) 40%),
+          rgba(22, 25, 38, 0.78);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.22),
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+          0 30px 80px rgba(0, 0, 0, 0.45),
+          0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+      #seo-static .seo-top a { text-decoration: none !important; }
+      #seo-static .seo-top-brand { display: flex; align-items: center; gap: 10px; flex: none; }
+      #seo-static .seo-top-brand img { display: block; height: 28px; width: auto; }
+      #seo-static .seo-top-beta {
+        display: inline-flex;
+        align-items: center;
+        height: 20px;
+        padding: 0 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #8fa6ff;
+        background: rgba(88, 122, 246, 0.18);
+        box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.45);
+      }
+      #seo-static .seo-top-nav {
+        display: flex;
+        gap: 2px;
+        margin-left: 8px;
+        padding: 4px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+      }
+      #seo-static .seo-top-nav a {
+        display: flex;
+        align-items: center;
+        height: 36px;
+        padding: 0 16px;
+        border-radius: 18px;
+        font-size: 14.5px;
+        font-weight: 600;
+        color: #d5dbe8;
+      }
+      #seo-static .seo-top-actions { display: flex; align-items: center; gap: 8px; }
+      #seo-static .seo-top-lang {
+        display: flex;
+        align-items: center;
+        height: 36px;
+        padding: 0 10px;
+        min-width: 54px;
+        box-sizing: border-box;
+        justify-content: center;
+        border-radius: 18px;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.04em;
+        color: #b7c0d4;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+      }
+      #seo-static .seo-top-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 44px;
+        padding: 0 18px;
+        border-radius: 26px;
+        font-size: 15px;
+        font-weight: 650;
+        letter-spacing: -0.012em;
+        color: #f4f6fb !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+        white-space: nowrap;
+      }
+      #seo-static .seo-top-btn.is-primary { background: #3b63e6; box-shadow: none; color: #fff !important; }
+      #seo-static .seo-top-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        box-sizing: border-box;
+        border-radius: 26px;
+        color: #f4f6fb !important;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      #seo-static .seo-top-menu { display: none; }
+      @media (max-width: 820px) {
+        #seo-static { padding: 10px 8px 4rem; }
+        #seo-static .seo-top { height: 60px; border-radius: 26px; margin-bottom: -2px; }
+        #seo-static .seo-top-beta,
+        #seo-static .seo-top-nav,
+        #seo-static .seo-top-lang,
+        #seo-static .seo-top-btn:not(.is-primary),
+        #seo-static .seo-top-dl { display: none; }
+        #seo-static .seo-top-actions { margin-left: auto; }
+        #seo-static .seo-top-btn.is-primary { height: 36px; padding: 0 14px; font-size: 13px; }
+        #seo-static .seo-top-menu { display: inline-flex; }
+        #seo-static main { padding: 24px 2px 0; }
+        #seo-static main.seo-main-home { padding-top: 0; }
+      }
+      /* Landing pages (SeoLandingShell twin): 920 px column, hero card with the
+         product shot, 52 px title; body headings as .seo-section > h2. */
+      #seo-static .seo-landing { max-width: 920px; margin: 0 auto; }
+      #seo-static main.seo-main-landing { padding-top: 8px; }
+      #seo-static .seo-lhero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+        column-gap: 48px;
+        align-items: center;
+        padding: 8px 18px 18px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, rgba(120, 140, 255, 0.08), rgba(255, 255, 255, 0.02));
+      }
+      #seo-static .seo-lhero.is-single { grid-template-columns: minmax(0, 1fr); }
+      #seo-static .seo-crumbs { grid-column: 1 / -1; min-height: 37px; margin: 0 0 22px; font-size: 13px; color: rgba(225, 230, 245, 0.62); }
+      #seo-static .seo-crumbs a { color: rgba(225, 230, 245, 0.72); }
+      #seo-static .seo-lhero h1 {
+        margin: 0 0 14px;
+        font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-size: 52px;
+        line-height: 1.05;
+        font-weight: 740;
+        letter-spacing: -0.04em;
+        color: #f7f8fb;
+      }
+      #seo-static .seo-lhero-lead { margin: 0; font-size: 18px; line-height: 1.55; color: rgba(235, 238, 250, 0.78); }
+      #seo-static .seo-lhero .seo-cta-row { margin: 22px 0 0; }
+      #seo-static .seo-lhero .seo-cta-row a { border-radius: 26px; min-height: 44px; padding: 0 18px; font-size: 15px; }
+      #seo-static .seo-lhero .seo-cta-row a.seo-cta-primary { background: #3b63e6; }
+      #seo-static .seo-lhero-shot { margin: 0; }
+      #seo-static .seo-lhero-shot img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1440 / 900;
+        border-radius: 18px;
+        box-shadow: 0 0 0 8px rgba(30, 33, 46, 0.9), 0 30px 80px rgba(0, 0, 0, 0.45);
+      }
+      #seo-static .seo-landing h2 { font-size: 40px; line-height: 1.1; font-weight: 720; letter-spacing: -0.034em; margin: 48px 0 14px; }
+      @media (max-width: 900px) {
+        #seo-static .seo-lhero { grid-template-columns: minmax(0, 1fr); row-gap: 24px; padding: 8px 18px 12px; }
+        #seo-static .seo-crumbs { margin-bottom: 19px; }
+        #seo-static .seo-lhero-lead { font-size: 16px; }
+        #seo-static .seo-lhero .seo-cta-row a { flex: 1 1 100%; min-height: 48px; }
+        #seo-static .seo-lhero h1 { font-size: 36px; }
+        #seo-static .seo-landing h2 { font-size: 28px; margin-top: 36px; }
+      }
+      /* Home hero, same grid and type as home-hero.css (.mkt-hh). */
+      #seo-static .seo-hh {
+        display: grid;
+        grid-template-columns: minmax(0, 470px) minmax(0, 1fr);
+        gap: 72px;
+        align-items: center;
+        min-height: 640px;
+        padding: 96px 0 40px;
+        box-sizing: border-box;
+      }
+      #seo-static .seo-hh h1 {
+        margin: 0;
+        font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-size: 56px;
+        line-height: 1.02;
+        font-weight: 750;
+        letter-spacing: -0.035em;
+        color: #f4f6fb;
+      }
+      #seo-static .seo-hh-lead { margin: 22px 0 0; font-size: 20px; line-height: 1.45; color: rgba(235, 238, 250, 0.72); }
+      #seo-static .seo-hh-lead-short { display: none; }
+      #seo-static .seo-hh-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 34px 0 0; }
+      #seo-static .seo-hh-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        padding: 0 22px;
+        border-radius: 999px;
+        font-size: 16px;
+        font-weight: 650;
+        white-space: nowrap;
+        text-decoration: none !important;
+        box-sizing: border-box;
+      }
+      #seo-static .seo-hh-btn.is-primary {
+        background: #3a66ee;
+        color: #fff !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px rgba(79, 124, 255, 0.35);
+      }
+      #seo-static .seo-hh-btn.is-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: #f4f6fb !important;
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+      }
+      #seo-static .seo-hh-platforms {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin: 30px 0 0;
+        padding: 0;
+        list-style: none;
+        color: rgba(225, 230, 245, 0.5);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      #seo-static .seo-hh-platforms li { margin: 0; }
+      #seo-static .seo-pf { margin: 0; min-width: 0; }
+      #seo-static .seo-pf-glass {
+        padding: 10px;
+        border-radius: 30px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04) 40%),
+          rgba(22, 25, 38, 0.62);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.22),
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+          0 30px 80px rgba(0, 0, 0, 0.45),
+          0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+      #seo-static .seo-pf-screen {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1440 / 900;
+        object-fit: cover;
+        object-position: left top;
+        border-radius: 20px;
+      }
+      @media (max-width: 1100px) {
+        #seo-static .seo-hh { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 64px; min-height: 0; }
+      }
+      @media (max-width: 768px) {
+        #seo-static .seo-hh { gap: 36px; padding: 28px 0 24px; }
+        #seo-static .seo-hh h1 { font-size: 34px; line-height: 1.08; letter-spacing: -0.03em; }
+        #seo-static .seo-hh-lead { margin-top: 12px; font-size: 17px; line-height: 1.4; }
+        #seo-static .seo-hh-lead-long { display: none; }
+        #seo-static .seo-hh-lead-short { display: inline; }
+        #seo-static .seo-hh-cta { flex-direction: column; gap: 10px; margin-top: 24px; }
+        #seo-static .seo-hh-btn { width: 100%; height: 50px; }
+        #seo-static .seo-hh-platforms { display: none; }
+        #seo-static .seo-pf { display: flex; justify-content: center; }
+        #seo-static .seo-pf-glass { width: min(236px, 64vw); padding: 8px; border-radius: 38px; background: rgba(18, 20, 30, 0.82); }
+        #seo-static .seo-pf-screen { aspect-ratio: 780 / 1688; object-position: center top; border-radius: 30px; }
+      }
       #seo-static main {
         display: block;
+        padding-top: 32px;
       }
+      #seo-static main.seo-main-home { padding-top: 0; }
       #seo-static .seo-brand {
         display: flex;
         align-items: center;
@@ -996,18 +1274,7 @@
       }
       /* Hide prerendered SEO shell only after the lazy marketing page commits
          (data-marketing-ready). data-react-ready alone used to blank H1 during Suspense. */
-      html[data-marketing-ready="1"] #seo-static { display: none !important; }
-      /* Visitors with JavaScript never see the crawler shell. It stays in the HTML
-         for search engines, but humans wait on the dark background until the real
-         React landing commits, so the plain "old" page no longer flashes for ~0.5s
-         before the real one. A timeout in <head> reveals it if hydrate stalls. */
-      html.seo-hold:not([data-marketing-ready="1"]) #seo-static,
-      html.seo-hold:not([data-marketing-ready="1"]) #mkt-consent-static,
-      html.seo-hold:not([data-marketing-ready="1"]) .mkt-consent {
-        /* .mkt-consent is the React cookie bar: it mounts a moment before the
-           page chunk commits, so without this it sat alone on the dark screen. */
-        visibility: hidden !important;
-      }
+      html[data-marketing-ready="1"] #seo-static:not(.seo-static--leaving) { display: none !important; }
       html[data-react-ready="1"] #mkt-consent-static { display: none !important; }
       #boot-splash * {
         font-family: inherit !important;
@@ -1349,23 +1616,6 @@
         }
       }
     </style>
-    <script>
-      /* Hold the prerendered SEO shell (see html.seo-hold CSS). Fallback: if the
-         React marketing page has not committed within 5s (very slow network or a
-         failed chunk), show the crawler shell so nobody is stuck on a blank page. */
-      (function () {
-        try {
-          var html = document.documentElement;
-          html.classList.add("seo-hold");
-          window.__descallReleaseSeoHold = function () {
-            html.classList.remove("seo-hold");
-          };
-          window.setTimeout(function () {
-            if (html.getAttribute("data-marketing-ready") !== "1") html.classList.remove("seo-hold");
-          }, 5000);
-        } catch (e) {}
-      })();
-    </script>
   </head>
   <body>
     <script>
@@ -1627,7 +1877,10 @@
         } catch (e1) {}
       })();
     </script>
-    <div id="boot-splash" data-shown-at="" role="progressbar" aria-busy="true" aria-label="Starting Descall">
+    <!-- The boot splash is an inert template: it only mounts for an app boot (data-app-shell,
+         set above for a token, an app route or the native app). Marketing visitors and
+         crawlers on / see the prerendered page, never a "Starting" screen (SEO audit). -->
+    <template id="boot-splash-tpl"><div id="boot-splash" data-shown-at="" role="progressbar" aria-busy="true" aria-label="Starting Descall">
       <div class="boot-orb boot-orb--a" aria-hidden="true"></div>
       <div class="boot-orb boot-orb--b" aria-hidden="true"></div>
       <div class="boot-card">
@@ -1638,10 +1891,16 @@
         <p class="boot-slow" id="boot-slow" aria-hidden="true">Connecting to Descall…</p>
         <p class="boot-status" id="boot-status">Starting</p>
       </div>
-    </div>
+    </div></template>
     <script>
       /* Boot splash only, prerender strips this with #boot-splash. */
       (function () {
+        (function mountBootSplash() {
+          var tpl = document.getElementById("boot-splash-tpl");
+          if (!tpl || !tpl.content) return;
+          if (document.documentElement.getAttribute("data-app-shell") !== "1") return;
+          tpl.parentNode.insertBefore(tpl.content.cloneNode(true), tpl);
+        })();
         // The app-shell safety net (above) runs before this markup is parsed and
         // injects a fallback splash, so an app boot with a token had TWO
         // #boot-splash nodes. getElementById() (dismiss, failure, retry) only
