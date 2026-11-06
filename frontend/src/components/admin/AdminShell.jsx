@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { List, Search, X } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import AdminVersionBadge from "./AdminVersionBadge.jsx";
+import { AdminSectionBoundary } from "./AdminErrorCard.jsx";
 import { groupAdminTabs } from "./adminNav.js";
 import { isElectronShell } from "../../lib/entryShell.js";
 import logoIcon from "../../assets/admin-logo-icon.png";
@@ -191,7 +192,9 @@ export default function AdminShell({
           ) : null}
         </header>
         {banner}
-        <main ref={mainRef} className="adm-main" data-tab={current}>{children}</main>
+        <main ref={mainRef} className="adm-main" data-tab={current}>
+          <AdminSectionBoundary resetKey={current}>{children}</AdminSectionBoundary>
+        </main>
         {drawer ? (
           <div className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
             <aside className="adm-side is-drawer">
@@ -222,7 +225,7 @@ export default function AdminShell({
         </aside>
         <main ref={mainRef} className="adm-main" data-tab={current}>
           {banner}
-          {children}
+          <AdminSectionBoundary resetKey={current}>{children}</AdminSectionBoundary>
         </main>
       </div>
     </div>

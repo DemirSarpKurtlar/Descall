@@ -4,6 +4,8 @@
  * the per-section ErrorBoundary, so the side menu always stays in place.
  */
 import { AlertCircle, RefreshCw } from "../ui/Icon.jsx";
+import ErrorBoundary from "../ErrorBoundary";
+import { useLocale } from "../../context/LocaleContext";
 
 export default function AdminErrorCard({ title, body, onRetry, retryLabel, busy = false, code = "" }) {
   return (
@@ -24,3 +26,24 @@ export default function AdminErrorCard({ title, body, onRetry, retryLabel, busy 
   );
 }
 
+/** One admin section that crashes shows the card in place; the panel keeps working. */
+export function AdminSectionBoundary({ resetKey, children }) {
+  const { t } = useLocale();
+  return (
+    <ErrorBoundary
+      scope="pane"
+      resetKey={resetKey}
+      fallback={({ retry, supportCode }) => (
+        <AdminErrorCard
+          title={t("admin.sectionErrorTitle")}
+          body={t("admin.sectionErrorBody")}
+          code={supportCode}
+          onRetry={retry}
+          retryLabel={t("common.retry")}
+        />
+      )}
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}

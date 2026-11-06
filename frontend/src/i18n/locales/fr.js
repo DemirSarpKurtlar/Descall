@@ -1688,6 +1688,8 @@ export const nested = {
     "overviewLoadError": "Impossible de charger la vue d'ensemble.",
     "overviewLoadTitle": "Impossible de charger la vue d'ensemble",
     "overviewLoadBody": "Vérifie la connexion et réessaie.",
+    "sectionErrorTitle": "Impossible d'ouvrir cette section",
+    "sectionErrorBody": "Le reste du panneau fonctionne toujours. Réessaie dans un instant.",
     "overviewNewFeedback": "Nouveaux, non lus",
     "overviewNoActive": "Pas encore d'activité récente.",
     "overviewNoAudit": "Aucune action admin pour l'instant.",

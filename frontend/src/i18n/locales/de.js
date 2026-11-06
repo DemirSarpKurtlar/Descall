@@ -1688,6 +1688,8 @@ export const nested = {
     "overviewLoadError": "Übersicht konnte nicht geladen werden.",
     "overviewLoadTitle": "Übersicht konnte nicht geladen werden",
     "overviewLoadBody": "Prüfe die Verbindung und versuche es erneut.",
+    "sectionErrorTitle": "Dieser Bereich konnte nicht geöffnet werden",
+    "sectionErrorBody": "Der Rest des Panels funktioniert weiter. Versuche es gleich noch einmal.",
     "overviewNewFeedback": "Neu, ungelesen",
     "overviewNoActive": "Noch keine Aktivität.",
     "overviewNoAudit": "Noch keine Admin-Aktionen.",

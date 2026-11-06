@@ -1688,6 +1688,8 @@ export const nested = {
     "overviewLoadError": "No se pudo cargar el resumen.",
     "overviewLoadTitle": "No se pudo cargar el resumen",
     "overviewLoadBody": "Revisa la conexión e inténtalo de nuevo.",
+    "sectionErrorTitle": "No se pudo abrir esta sección",
+    "sectionErrorBody": "El resto del panel sigue funcionando. Vuelve a intentarlo en un momento.",
     "overviewNewFeedback": "Nuevos, sin leer",
     "overviewNoActive": "Todavía no hay actividad reciente.",
     "overviewNoAudit": "Todavía no hay acciones de admins.",

@@ -1688,6 +1688,8 @@ export const nested = {
     "overviewLoadError": "Не удалось загрузить обзор.",
     "overviewLoadTitle": "Не удалось загрузить обзор",
     "overviewLoadBody": "Проверьте подключение и попробуйте ещё раз.",
+    "sectionErrorTitle": "Не удалось открыть этот раздел",
+    "sectionErrorBody": "Остальная часть панели работает. Попробуйте ещё раз чуть позже.",
     "overviewNewFeedback": "Новые, непрочитанные",
     "overviewNoActive": "Недавней активности пока нет.",
     "overviewNoAudit": "Действий админов пока нет.",

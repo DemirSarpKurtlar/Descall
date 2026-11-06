@@ -405,6 +405,8 @@ export const nested = {
     "overviewLoadError": "Could not load overview.",
     "overviewLoadTitle": "Overview could not load",
     "overviewLoadBody": "Check the connection and try again.",
+    "sectionErrorTitle": "This section could not open",
+    "sectionErrorBody": "The rest of the panel still works. Try again in a moment.",
     "overviewGatewayError": "The connection is slow. Retrying.",
     "overviewOnline": "Online now",
     "overviewReports": "Open reports",

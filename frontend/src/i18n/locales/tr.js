@@ -411,6 +411,8 @@ export const nested = {
     "overviewLoadError": "Genel bakış yüklenemedi.",
     "overviewLoadTitle": "Genel bakış yüklenemedi",
     "overviewLoadBody": "Bağlantını kontrol edip tekrar dene.",
+    "sectionErrorTitle": "Bu bölüm açılamadı",
+    "sectionErrorBody": "Panelin geri kalanı çalışıyor. Birazdan tekrar dene.",
     "overviewGatewayError": "Bağlantı gecikti. Yeniden deniyoruz.",
     "overviewOnline": "Şu an çevrimiçi",
     "overviewReports": "Açık raporlar",
