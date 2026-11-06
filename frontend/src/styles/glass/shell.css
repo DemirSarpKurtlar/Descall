@@ -1081,3 +1081,28 @@ html.glass-ui .g-peer-status {
     display: none;
   }
 }
+
+/* UI audit #133: the phone layout also serves 700-768px (iPad split view and
+   small tablets). Keep it at a readable width there instead of stretching rows
+   and the tab bar edge to edge. */
+@media (min-width: 700px) {
+  html.glass-ui .app-root.is-mobile.g-shell .sidebar-content > * {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  html.glass-ui .g-tabbar {
+    left: 0;
+    right: 0;
+    width: min(600px, calc(100vw - 24px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  html.glass-ui .user-settings.is-mobile .us-tab {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
