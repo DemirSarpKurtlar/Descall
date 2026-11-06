@@ -97,6 +97,7 @@ import { createCallRecovery } from "../lib/callConnectionMachine";
 import {
   INCOMING_RING_TIMEOUT_MS,
   createRingChannel,
+  outgoingRingGuardMs,
   ringEventMatches,
 } from "../lib/callRingSync";
 import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLevel";
@@ -1140,6 +1141,20 @@ export function useCall(socket, callOccupancyRef = null) {
       clearTimeout(timer);
     };
   }, [mode, socket]);
+
+  // Outgoing ring guard: the server ends an unanswered ring at 45 s with
+  // call:declined (no_answer). When that never arrives (backend restarted and
+  // lost the ring, socket stayed down) the ringback looped until the caller
+  // hung up. Give up here a little later, the same way the server would.
+  useEffect(() => {
+    if (mode !== "outgoing") return undefined;
+    const timer = setTimeout(() => {
+      if (modeRef.current !== "outgoing") return;
+      toastRef.current?.(tRuntime("No answer"), "info");
+      endCallRef.current?.(peerRef.current?.id ?? null, "no_answer");
+    }, outgoingRingGuardMs({ calleeAnswering }));
+    return () => clearTimeout(timer);
+  }, [mode, calleeAnswering]);
 
   // Outgoing ring: after the caller's socket comes back (phone was locked /
   // app backgrounded while it rang) fetch an answer that arrived meanwhile.

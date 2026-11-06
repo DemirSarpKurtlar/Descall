@@ -17,6 +17,25 @@ export const RING_CHANNEL = "descall-call-ring";
 /** Server ends an unanswered ring at 45 s; the local guard is a bit later. */
 export const INCOMING_RING_TIMEOUT_MS = 50_000;
 
+/**
+ * Caller side guard: the server answers an unanswered ring with
+ * call:declined (no_answer) at 45 s. When that signal is lost (backend
+ * restart dropped the in-memory ring, the socket stayed down), the ringback
+ * used to loop until the caller hung up. A bit later than the server.
+ */
+export const OUTGOING_RING_TIMEOUT_MS = 50_000;
+/**
+ * The callee answered on a locked iPhone and is unlocking: the server keeps
+ * that ring resumable for 120 s (dmCallLog ANSWERING_MAX_AGE_MS) and the
+ * phone reports "failed" itself after 60 s. Only a lost signal gets this far.
+ */
+export const OUTGOING_ANSWERING_TIMEOUT_MS = 125_000;
+
+/** How long the caller side waits before giving up on its own ring. */
+export function outgoingRingGuardMs({ calleeAnswering = false } = {}) {
+  return calleeAnswering ? OUTGOING_ANSWERING_TIMEOUT_MS : OUTGOING_RING_TIMEOUT_MS;
+}
+
 /** Does a ring-ended style event refer to the ring this tab shows? */
 export function ringEventMatches(current = {}, event = {}) {
   if (!current || current.mode !== "incoming") return false;
