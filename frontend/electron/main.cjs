@@ -58,6 +58,8 @@ const {
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
+const { encryptText, readEncryptedFile, looksLikeJwt } = require('./tokenCrypto.cjs');
+const { readClipboardImagePng } = require('./clipboardImage.cjs');
 const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
@@ -275,24 +277,24 @@ onLocaleChange(() => {
   refreshOverlayLanguage();
 });
 
-trustedOn('secure-token:get', (event) => {
+// Electron 45: async safeStorage (tokenCrypto.cjs; the sync methods go away in 46). These stay
+// sendSync channels because secureToken.get() is synchronous in the renderer: the reply is
+// sent when returnValue is assigned, so the renderer waits the few ms the key store takes.
+trustedOn('secure-token:get', async (event) => {
   try {
     const file = tokenFilePath(event);
     if (!fs.existsSync(file)) {
       event.returnValue = null;
       return;
     }
-    const buf = fs.readFileSync(file);
-    event.returnValue = safeStorage.isEncryptionAvailable()
-      ? safeStorage.decryptString(buf)
-      : buf.toString('utf8');
+    event.returnValue = await readEncryptedFile(safeStorage, fs, file, { legacyPlain: looksLikeJwt });
   } catch (err) {
     log.warn('[secure-token] read failed:', err?.message || err);
     event.returnValue = null;
   }
 }, { sync: true, refused: null });
 
-trustedOn('secure-token:set', (event, token) => {
+trustedOn('secure-token:set', async (event, token) => {
   try {
     const file = tokenFilePath(event);
     const value = String(token || '');
@@ -301,10 +303,7 @@ trustedOn('secure-token:set', (event, token) => {
       event.returnValue = true;
       return;
     }
-    const buf = safeStorage.isEncryptionAvailable()
-      ? safeStorage.encryptString(value)
-      : Buffer.from(value, 'utf8');
-    fs.writeFileSync(file, buf);
+    await fs.promises.writeFile(file, await encryptText(safeStorage, value));
     event.returnValue = true;
   } catch (err) {
     log.warn('[secure-token] write failed:', err?.message || err);
@@ -890,8 +889,8 @@ function resolveColdStart() {
   } catch (_) { /* before ready, or the platform has no login-item API */ }
   coldStartDecision = decideColdStart({
     argv: process.argv,
+    // wasOpenedAsHidden was removed in Electron 44 (it only worked on macOS 12 and older).
     wasOpenedAtLogin: Boolean(login.wasOpenedAtLogin),
-    wasOpenedAsHidden: Boolean(login.wasOpenedAsHidden),
     backgroundMode: startInBackgroundMode(),
     updaterRelaunch: consumeUpdaterRelaunch(),
   });
@@ -1050,8 +1049,10 @@ function runBootSmoke() {
   const started = Date.now();
   const win = mainWindow;
   if (!win || win.isDestroyed()) { console.error('[smoke-boot] FAIL no main window'); app.exit(21); return; }
-  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
-    const message = String(e?.message ?? legacyMessage ?? '');
+  // Event object only (level / message on the event): the positional arguments are deprecated
+  // and Electron 45 warns once a listener declares them.
+  win.webContents.on('console-message', (e) => {
+    const message = String(e?.message ?? '');
     if (isInlineCspViolation(message)) {
       smokeCspInlineBlocked += 1;
       console.error(`[smoke-boot] CSP blocked: ${message.slice(0, 300)}`);
@@ -1642,9 +1643,9 @@ function createMainWindow() {
   }
 
   // Renderer warnings/errors and [boot] lines go to main.log (evidence for stuck starts).
-  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
-    const level = e?.level ?? legacyLevel;
-    const message = String(e?.message ?? legacyMessage ?? '');
+  win.webContents.on('console-message', (e) => {
+    const level = e?.level;
+    const message = String(e?.message ?? '');
     const isWarn = level === 'warning' || level === 'error' || level === 2 || level === 3;
     if (!isWarn && !message.startsWith('[boot]')) return;
     if (rendererBoot.painted && !isWarn) return;
@@ -2292,17 +2293,9 @@ trustedHandle('show-notification', (_event, payload = {}) => {
 });
 
 // IPC handlers
-// Composer paste fallback: clipboard image as PNG bytes (null when none).
-trustedHandle('clipboard:read-image', () => {
-  try {
-    const img = clipboard.readImage();
-    if (!img || img.isEmpty()) return null;
-    const png = img.toPNG();
-    return png.length > 25 * 1024 * 1024 ? null : png;
-  } catch {
-    return null;
-  }
-});
+// Composer paste fallback: clipboard image as PNG bytes (null when none). Electron 44 removed
+// clipboard.readImage(); clipboardImage.cjs reads it through the async clipboard.read().
+trustedHandle('clipboard:read-image', () => readClipboardImagePng({ clipboard, nativeImage }));
 
 ipcMain.handle('app-version', () => {
   return app.getVersion();
