@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Descall+ Ayarlar Sayfası Taslakları</title>
+<style>
+  :root {
+    --bg: #1B1D26;
+    --bg-deep: #12131a;
+    --surface: #393C4D;
+    --brand: #587AF5;
+    --brand-2: #4A68E0;
+    --text: #F2F3F8;
+    --text-2: rgba(235, 238, 250, 0.74);
+    --muted: rgba(225, 229, 245, 0.52);
+    --line: rgba(255, 255, 255, 0.08);
+    --line-2: rgba(255, 255, 255, 0.13);
+    --glass: rgba(30, 32, 44, 0.78);
+    --glass-2: rgba(40, 43, 58, 0.72);
+    --row: rgba(255, 255, 255, 0.04);
+    --row-h: rgba(255, 255, 255, 0.07);
+    --ok: #30D158;
+    --plus-a: #9b8cff; --plus-b: #6c7bff;
+    --ultra-a: #ffd27a; --ultra-b: #ef8f5b;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI Variable", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0b0c11; font-family: var(--font); color: var(--text); padding: 40px 0; -webkit-font-smoothing: antialiased; }
+  .cap { width: 1280px; margin: 0 auto 14px; color: var(--text-2); font-size: 15px; }
+  .cap b { color: var(--text); font-size: 18px; display: block; margin-bottom: 4px; }
+
+  /* window */
+  .frame { position: relative; width: 1280px; height: 820px; margin: 0 auto 56px; border-radius: 18px; overflow: hidden;
+    background:
+      radial-gradient(900px 520px at 78% -10%, rgba(88, 122, 245, 0.22), transparent 60%),
+      radial-gradient(700px 480px at -5% 110%, rgba(88, 122, 245, 0.12), transparent 60%),
+      linear-gradient(180deg, #171922, #12131a);
+  }
+  .shell { position: absolute; inset: 22px; display: grid; grid-template-columns: 232px 1fr; border-radius: 20px; overflow: hidden;
+    background: rgba(24, 26, 36, 0.86); backdrop-filter: blur(40px) saturate(1.8);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 0 0 1px var(--line-2); }
+
+  /* settings nav */
+  .nav { padding: 18px 12px; border-right: 1px solid var(--line); background: rgba(255, 255, 255, 0.015); }
+  .nav .me { display: flex; align-items: center; gap: 10px; padding: 8px 8px 16px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 15px; background: linear-gradient(160deg, #4a5a9a, #2e3550); flex: none; }
+  .me b { font-size: 14px; display: flex; align-items: center; gap: 6px; } .me small { color: var(--muted); font-size: 12px; }
+  .nav .sec { font-size: 11px; font-weight: 600; color: var(--muted); padding: 10px 10px 6px; text-transform: none; letter-spacing: .02em; }
+  .nav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; color: var(--text-2); font-size: 13.5px; text-decoration: none; }
+  .nav a svg { width: 16px; height: 16px; opacity: .8; }
+  .nav a.on { background: rgba(88, 122, 245, 0.16); color: #fff; box-shadow: inset 0 0 0 1px rgba(88, 122, 245, 0.28); }
+  .nav a.on svg { opacity: 1; color: #a9b9ff; }
+
+  .main { position: relative; overflow: hidden; }
+  .content { position: absolute; inset: 0; padding: 26px 30px; overflow: hidden; }
+  .ptitle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .ptitle h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+  .crumb { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .crumb svg { width: 13px; height: 13px; }
+
+  svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* badge */
+  .badge { display: inline-flex; height: 22px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 200, 120, 0.42); font-size: 10.5px; font-weight: 800; letter-spacing: .04em; }
+  .badge i { width: 22px; display: grid; place-items: center; background: linear-gradient(180deg, var(--ultra-a), var(--ultra-b)); color: #3a2208; font-style: normal; }
+  .badge i svg { width: 12px; height: 12px; stroke-width: 2.4; }
+  .badge span { padding: 0 8px; display: grid; place-items: center; color: #f4c27f; background: rgba(242, 170, 96, 0.14); }
+  .badge.plus { box-shadow: 0 0 0 1px rgba(155, 140, 255, 0.4); }
+  .badge.plus i { background: linear-gradient(180deg, var(--plus-a), var(--plus-b)); color: #fff; }
+  .badge.plus span { color: #b9b0ff; background: rgba(124, 118, 255, 0.15); }
+  .mini-badge { width: 16px; height: 16px; border-radius: 5px; display: inline-grid; place-items: center; background: linear-gradient(180deg, var(--ultra-a), var(--ultra-b)); color: #3a2208; }
+  .mini-badge svg { width: 10px; height: 10px; stroke-width: 2.6; }
+  .mini-badge.plus { background: linear-gradient(180deg, var(--plus-a), var(--plus-b)); color: #fff; }
+
+  /* common bits */
+  .glass { background: var(--glass); backdrop-filter: blur(40px) saturate(1.8); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text); background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px var(--line-2); white-space: nowrap; }
+  .btn.primary { background: var(--brand); box-shadow: none; color: #fff; }
+  .btn svg { width: 15px; height: 15px; }
+  .search { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 11px; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); font-size: 13.5px; }
+  .search svg { width: 16px; height: 16px; }
+  .kbd { margin-left: auto; font-size: 11px; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.07); color: var(--muted); }
+  .tg { width: 40px; height: 24px; border-radius: 12px; background: rgba(120, 120, 128, 0.36); position: relative; flex: none; }
+  .tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
+  .tg.on { background: var(--ok); } .tg.on::after { left: 18px; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.07); color: var(--text-2); }
+  .tag svg { width: 11px; height: 11px; }
+  .tag.ultra { background: rgba(242, 170, 96, 0.14); color: #f4c27f; }
+  .tag.ok { background: rgba(48, 209, 88, 0.14); color: #6fe08f; }
+  .ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(88, 122, 245, 0.16); color: #aebdff; flex: none; }
+  .ico svg { width: 17px; height: 17px; }
+  .ico.g { background: rgba(48, 209, 88, 0.14); color: #7fe39c; }
+  .ico.o { background: rgba(255, 159, 10, 0.15); color: #ffc46b; }
+  .ico.p { background: rgba(155, 140, 255, 0.16); color: #c3b9ff; }
+  .ico.r { background: rgba(255, 105, 97, 0.15); color: #ff9a94; }
+  .ico.c { background: rgba(100, 210, 255, 0.14); color: #8fdcff; }
+  .ico.y { background: rgba(242, 170, 96, 0.16); color: #f6c58a; }
+  .ico.nn { background: rgba(255, 255, 255, 0.08); color: var(--text-2); }
+
+  /* grouped list */
+  .group { border-radius: 14px; background: var(--row); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+  .grow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; }
+  .grow + .grow::before { content: ""; position: absolute; top: 0; left: 60px; right: 0; height: 1px; background: var(--line); }
+  .grow .t { flex: 1; min-width: 0; }
+  .grow .t b { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .grow .t small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grow .chev { color: var(--muted); width: 16px; height: 16px; }
+  .grow.sel { background: rgba(88, 122, 245, 0.12); }
+  .gtitle { font-size: 12px; font-weight: 600; color: var(--muted); margin: 18px 4px 8px; display: flex; justify-content: space-between; }
+
+  /* ================= Draft A ================= */
+  .a-hero { position: relative; border-radius: 20px; padding: 22px 24px; display: grid; grid-template-columns: 1fr 300px; gap: 24px; overflow: hidden;
+    background:
+      radial-gradient(420px 220px at 100% 0%, rgba(255, 190, 110, 0.20), transparent 70%),
+      radial-gradient(380px 260px at 0% 100%, rgba(88, 122, 245, 0.18), transparent 70%),
+      rgba(38, 40, 54, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(255, 210, 140, 0.20), 0 12px 40px rgba(0, 0, 0, .25); }
+  .a-hero h2 { font-size: 28px; font-weight: 750; letter-spacing: -0.02em; margin: 10px 0 4px; }
+  .a-hero p { color: var(--text-2); font-size: 13.5px; }
+  .a-stats { display: flex; gap: 10px; margin-top: 18px; }
+  .a-stat { padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--line); }
+  .a-stat b { font-size: 18px; display: block; } .a-stat small { font-size: 12px; color: var(--muted); }
+  .gift { border-radius: 16px; padding: 16px; background: rgba(18, 19, 26, 0.55); box-shadow: inset 0 0 0 1px var(--line); display: flex; gap: 16px; align-items: center; }
+  .ring { width: 92px; height: 92px; flex: none; position: relative; }
+  .ring svg { width: 92px; height: 92px; stroke-width: 8; transform: rotate(-90deg); }
+  .ring .lbl { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-size: 11px; color: var(--muted); line-height: 1.2; }
+  .ring .lbl b { display: block; font-size: 22px; color: var(--text); }
+  .gift h4 { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .gift .amt { font-size: 22px; font-weight: 750; margin: 4px 0; display: flex; align-items: center; gap: 6px; }
+  .coin { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe7a3, #e4a73d 70%); box-shadow: inset 0 0 0 1.5px rgba(120, 70, 0, .35); flex: none; }
+  .gift small { font-size: 12px; color: var(--muted); }
+  .a-bar { display: flex; gap: 12px; align-items: center; margin: 20px 0 14px; }
+  .a-bar .search { flex: 1; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: rgba(118, 118, 128, 0.18); }
+  .seg span { padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+  .seg span.on { background: rgba(255, 255, 255, 0.14); color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .tile { border-radius: 16px; padding: 16px; background: var(--row); box-shadow: inset 0 0 0 1px var(--line); min-height: 132px; display: flex; flex-direction: column; }
+  .tile .top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .tile h3 { font-size: 15px; font-weight: 650; margin-top: 12px; }
+  .tile p { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .tile .foot { margin-top: auto; padding-top: 10px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-2); }
+  .dots { display: flex; gap: 3px; } .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); } .dots i.on { background: var(--ok); }
+  .a-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .a-foot .group .grow { padding: 11px 14px; }
+
+  /* A2 detail */
+  .detail-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .detail-head .ico { width: 44px; height: 44px; border-radius: 13px; } .detail-head .ico svg { width: 22px; height: 22px; }
+  .detail-head h1 { font-size: 22px; } .detail-head p { color: var(--muted); font-size: 13px; }
+  .expand { padding: 4px 14px 16px 60px; }
+  .panel { border-radius: 14px; padding: 16px; background: rgba(12, 13, 18, 0.45); box-shadow: inset 0 0 0 1px var(--line); }
+  .meter { height: 34px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); position: relative; overflow: hidden; margin: 10px 0 6px; }
+  .meter .lvl { position: absolute; left: 0; top: 0; bottom: 0; width: 58%; background: linear-gradient(90deg, rgba(48, 209, 88, .55), rgba(48, 209, 88, .85)); }
+  .meter .lvl.dim { width: 18%; background: rgba(255, 255, 255, 0.12); }
+  .meter .thr { position: absolute; top: -2px; bottom: -2px; left: 34%; width: 3px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 4px rgba(88, 122, 245, .35); }
+  .scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .prow { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: 13.5px; }
+  .prow + .prow { border-top: 1px solid var(--line); }
+  .prow small { color: var(--muted); font-size: 12px; display: block; }
+  .slider { width: 220px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); position: relative; }
+  .slider b { position: absolute; left: 0; top: 0; bottom: 0; width: 45%; border-radius: 3px; background: var(--brand); }
+  .slider b::after { content: ""; position: absolute; right: -9px; top: -6px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); }
+  .pills { display: flex; gap: 6px; } .pills span { padding: 6px 11px; border-radius: 9px; font-size: 12.5px; background: rgba(255, 255, 255, 0.06); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .pills span.on { background: rgba(88, 122, 245, 0.2); color: #fff; box-shadow: inset 0 0 0 1px rgba(88, 122, 245, .5); }
+
+  /* ================= Draft B ================= */
+  .b-strip { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; margin-bottom: 16px;
+    background: linear-gradient(90deg, rgba(255, 190, 110, 0.13), rgba(88, 122, 245, 0.10) 60%, rgba(255, 255, 255, 0.03)); box-shadow: inset 0 0 0 1px rgba(255, 210, 140, 0.18); }
+  .b-strip .t b { font-size: 16px; display: flex; gap: 8px; align-items: center; } .b-strip .t small { color: var(--muted); font-size: 12.5px; }
+  .b-strip .kv { margin-left: auto; display: flex; gap: 22px; align-items: center; }
+  .kv div small { display: block; font-size: 11.5px; color: var(--muted); } .kv div b { font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .b-cols { display: grid; grid-template-columns: 250px 1fr; gap: 18px; height: 640px; }
+  .cats { display: flex; flex-direction: column; gap: 2px; }
+  .cat { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px; font-size: 13.5px; color: var(--text-2); }
+  .cat .ico { width: 28px; height: 28px; border-radius: 8px; } .cat .ico svg { width: 15px; height: 15px; }
+  .cat .n { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .cat.on { background: rgba(88, 122, 245, 0.16); color: #fff; box-shadow: inset 0 0 0 1px rgba(88, 122, 245, .3); }
+  .cat.on .n { color: #c5d0ff; }
+  .catsep { height: 1px; background: var(--line); margin: 8px 6px; }
+  .b-list h2 { font-size: 18px; font-weight: 700; display: flex; align-items: baseline; gap: 10px; }
+  .b-list h2 small { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+  .b-list .lead { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+  .b-list .group .grow { padding: 13px 14px; }
+  .drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 430px; padding: 22px; background: rgba(28, 30, 42, 0.94); backdrop-filter: blur(40px) saturate(1.8);
+    box-shadow: -24px 0 60px rgba(0, 0, 0, .45), inset 1px 0 0 var(--line-2); }
+  .scrim { position: absolute; inset: 0; background: rgba(10, 11, 16, 0.45); backdrop-filter: blur(2px); }
+  .drawer .dh { display: flex; align-items: center; gap: 12px; }
+  .drawer .dh .x { margin-left: auto; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.08); color: var(--text-2); }
+  .drawer .dh .x svg { width: 15px; height: 15px; }
+  .preview { margin: 18px 0 14px; height: 168px; border-radius: 14px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #3b2f4a, #1e3343 55%, #2a3a22); box-shadow: inset 0 0 0 1px var(--line); }
+  .preview .game { position: absolute; inset: 0; background:
+      radial-gradient(120px 60px at 70% 75%, rgba(255, 170, 80, .35), transparent 70%),
+      repeating-linear-gradient(100deg, rgba(255, 255, 255, .03) 0 14px, transparent 14px 28px); }
+  .hud { position: absolute; top: 10px; right: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(16, 17, 24, 0.72); backdrop-filter: blur(10px); font-size: 11px; line-height: 1.55; box-shadow: inset 0 0 0 1px var(--line-2); }
+  .hud b { font-size: 12px; } .hud .g { color: #7fe39c; }
+  .preview .lbl { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: rgba(255, 255, 255, .6); }
+  .corners { display: grid; grid-template-columns: repeat(2, 54px); gap: 6px; }
+  .corners span { height: 34px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px var(--line); position: relative; }
+  .corners span::after { content: ""; position: absolute; width: 12px; height: 8px; border-radius: 2px; background: rgba(255, 255, 255, .3); }
+  .corners span:nth-child(1)::after { top: 5px; left: 5px; } .corners span:nth-child(2)::after { top: 5px; right: 5px; }
+  .corners span:nth-child(3)::after { bottom: 5px; left: 5px; } .corners span:nth-child(4)::after { bottom: 5px; right: 5px; }
+  .corners span.on { background: rgba(88, 122, 245, .2); box-shadow: inset 0 0 0 1px rgba(88, 122, 245, .6); } .corners span.on::after { background: #aebdff; }
+  .note { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 12px; display: flex; gap: 8px; }
+  .note svg { width: 14px; height: 14px; margin-top: 2px; }
+
+  /* ================= Draft C ================= */
+  .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(118, 118, 128, 0.16); width: max-content; margin-bottom: 18px; }
+  .tabs span { padding: 7px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .tabs span.on { background: rgba(255, 255, 255, 0.14); color: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+  .c-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; }
+  .card { border-radius: 18px; padding: 18px; background: var(--row); box-shadow: inset 0 0 0 1px var(--line); }
+  .card h3 { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .c-member { background:
+      radial-gradient(360px 200px at 100% 0%, rgba(255, 190, 110, 0.18), transparent 70%),
+      rgba(38, 40, 54, 0.8); box-shadow: inset 0 0 0 1px rgba(255, 210, 140, 0.2); }
+  .c-member h2 { font-size: 26px; font-weight: 750; margin: 10px 0 2px; letter-spacing: -0.02em; }
+  .c-member p { font-size: 13px; color: var(--text-2); }
+  .timeline { display: flex; align-items: flex-start; gap: 0; margin-top: 20px; }
+  .tl { flex: 1; position: relative; padding-top: 22px; font-size: 12px; color: var(--muted); }
+  .tl::before { content: ""; position: absolute; top: 7px; left: 0; right: 0; height: 2px; background: rgba(255, 255, 255, 0.12); }
+  .tl.done::before { background: linear-gradient(90deg, var(--ultra-b), var(--ultra-a)); }
+  .tl i { position: absolute; top: 0; left: 0; width: 16px; height: 16px; border-radius: 50%; background: #2a2c3a; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25); }
+  .tl.done i { background: linear-gradient(180deg, var(--ultra-a), var(--ultra-b)); box-shadow: none; }
+  .tl.next i { box-shadow: inset 0 0 0 2px var(--ultra-a), 0 0 0 4px rgba(255, 200, 120, .15); }
+  .tl b { display: block; color: var(--text); font-size: 13px; }
+  .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .qt { border-radius: 14px; padding: 12px; background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: 10px; min-height: 104px; }
+  .qt .r { display: flex; justify-content: space-between; align-items: flex-start; }
+  .qt b { font-size: 13px; font-weight: 600; } .qt small { font-size: 11.5px; color: var(--muted); display: block; margin-top: 2px; }
+  .qt.on { background: rgba(88, 122, 245, 0.12); box-shadow: inset 0 0 0 1px rgba(88, 122, 245, 0.32); }
+  .redeem { display: flex; gap: 8px; } .redeem .search { flex: 1; }
+  .appstat { display: flex; gap: 12px; align-items: center; }
+  .appstat .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px rgba(48, 209, 88, .18); }
+
+  /* C2 plans */
+  .plans { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; border-radius: 18px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); background: var(--row); }
+  .plans > div { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .plans .h { padding: 18px 16px; flex-direction: column; align-items: flex-start; gap: 6px; border-bottom: 1px solid var(--line-2); }
+  .plans .h b { font-size: 17px; } .plans .h small { color: var(--muted); font-size: 12px; }
+  .plans .lab { color: var(--text-2); }
+  .plans .lab svg { width: 15px; height: 15px; color: var(--muted); }
+  .plans .cur { background: rgba(255, 200, 120, 0.06); }
+  .plans .h.cur { box-shadow: inset 0 3px 0 var(--ultra-a); }
+  .yes { color: #6fe08f; } .no { color: rgba(255, 255, 255, .25); }
+  .plans .cnt { font-weight: 600; } .plans .cnt small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .curtag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(255, 200, 120, .18); color: #f6c58a; }
+  .plans .last { border-bottom: 0; }
+  .c-note { margin-top: 14px; font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .c-note svg { width: 15px; height: 15px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M8 14h8"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+    <symbol id="i-game" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4.4l-.5 3.6a2.6 2.6 0 0 1-4.6 1.2L14.5 15h-5l-1.4 2.2a2.6 2.6 0 0 1-4.6-1.2L3 12.4A4 4 0 0 1 7 8z"/><path d="M8 11v3M6.5 12.5h3M15.5 12h.01M17.5 13.5h.01"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M9 3v18M9 12h12"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.7 1.3L21 13l-1.3.7L19 15l-.7-1.3L17 13l1.3-.7z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.9 1.4-1.9-.5-1.2.3-2.6 1.7-2.6H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></symbol>
+    <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8c-2-4-6-4-6-1.5S9.5 8 12 8zm0 0c2-4 6-4 6-1.5S14.5 8 12 8z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  </defs>
+</svg>
+
+<!-- shared nav fragment is repeated per frame (static mockup) -->
+
+<!-- ===================== DRAFT A1 ===================== -->
+<div class="cap"><b>Taslak A: Kontrol Merkezi (1/2)</b>Üstte büyük üyelik kartı: plan, süre ve bir sonraki DesCoin hediyesine kalan gün. Altında 8 kategori kutusu. Her kutuda kaç özelliğin açık olduğu görünür. Kupon ve planlar en altta, küçük ve sade.</div>
+<div class="frame" id="a1">
+  <div class="shell">
+    <aside class="nav">
+      <div class="me"><div class="av">A</div><div><b>admin <span class="mini-badge"><svg><use href="#i-crown"/></svg></span></b><small>Çevrimiçi</small></div></div>
+      <div class="sec">Kullanıcı ayarları</div>
+      <a><svg><use href="#i-user"/></svg>Hesabım</a>
+      <a><svg><use href="#i-palette"/></svg>Profil</a>
+      <a><svg><use href="#i-shield"/></svg>Gizlilik ve güvenlik</a>
+      <a class="on"><svg><use href="#i-crown"/></svg>Descall+</a>
+      <div class="sec">Uygulama ayarları</div>
+      <a><svg><use href="#i-volume"/></svg>Ses ve görüntü</a>
+      <a><svg><use href="#i-bell"/></svg>Bildirimler</a>
+      <a><svg><use href="#i-key"/></svg>Kısayollar</a>
+      <a><svg><use href="#i-window"/></svg>Görünüm</a>
+    </aside>
+    <main class="main"><div class="content">
+      <section class="a-hero">
+        <div>
+          <span class="badge"><i><svg><use href="#i-crown"/></svg></i><span>ULTRA</span></span>
+          <h2>Descall Ultra</h2>
+          <p>Süresiz üyelik · Descall ekibi tarafından verildi</p>
+          <div class="a-stats">
+            <div class="a-stat"><b>47</b><small>özelliğe erişimin var</small></div>
+            <div class="a-stat"><b>18</b><small>özellik açık</small></div>
+            <div class="a-stat"><b>15.000</b><small>DesCoin aldın</small></div>
+          </div>
+        </div>
+        <div class="gift">
+          <div class="ring">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,.1)"/><circle cx="50" cy="50" r="42" stroke="url(#gr)" stroke-dasharray="264" stroke-dashoffset="0" style="stroke-dashoffset:8.8"/><defs><linearGradient id="gr"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#ef8f5b"/></linearGradient></defs></svg>
+            <div class="lbl"><div><b>30</b>gün</div></div>
+          </div>
+          <div>
+            <h4>Sonraki hediye</h4>
+            <div class="amt"><span class="coin"></span>15.000</div>
+            <small>6 Aralık 2026'da hesabına yatar</small>
+          </div>
+        </div>
+      </section>
+
+      <div class="a-bar">
+        <div class="search"><svg><use href="#i-search"/></svg>Özellik ara<span class="kbd">Ctrl K</span></div>
+        <div class="seg"><span class="on">Tümü</span><span>Açık olanlar</span><span>Kapalı olanlar</span></div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><div class="top"><span class="ico"><svg><use href="#i-window"/></svg></span><span class="tag"><svg><use href="#i-monitor"/></svg>Masaüstü</span></div><h3>Pencereler</h3><p>Mini mod, üstte kalma, ayrı pencereler</p><div class="foot"><span>5 / 12 açık</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico p"><svg><use href="#i-key"/></svg></span><span class="tag"><svg><use href="#i-monitor"/></svg>Masaüstü</span></div><h3>Kısayollar</h3><p>Genel sessize alma, bas-konuş, medya tuşları</p><div class="foot"><span>3 / 7 açık</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico r"><svg><use href="#i-bell"/></svg></span></div><h3>Bildirimler</h3><p>Geçmiş, odak modu, bildirim profilleri</p><div class="foot"><span>2 / 4 açık</span><span class="dots"><i class="on"></i><i class="on"></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico g"><svg><use href="#i-mic"/></svg></span></div><h3>Ses</h3><p>Gürültü kapısı, mikrofon dinleme, cihaz profilleri</p><div class="foot"><span>4 / 8 açık</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico o"><svg><use href="#i-game"/></svg></span><span class="tag ultra">HUD Ultra</span></div><h3>Oyun</h3><p>Oyun durumu, HUD'lar, anlık klip</p><div class="foot"><span>3 / 5 açık</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico c"><svg><use href="#i-zap"/></svg></span></div><h3>Verimlilik</h3><p>Pano geçmişi, dosya bırakma, uygulama kilidi</p><div class="foot"><span>1 / 4 açık</span><span class="dots"><i class="on"></i><i></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico y"><svg><use href="#i-layout"/></svg></span><span class="tag ultra">Ultra</span></div><h3>Masaüstü araçları</h3><p>Kenar çubuğu, bileşenler, komuta merkezi</p><div class="foot"><span>0 / 3 açık</span><span class="dots"><i></i><i></i><i></i></span></div></div>
+        <div class="tile"><div class="top"><span class="ico y"><svg><use href="#i-wand"/></svg></span><span class="tag ultra">Ultra</span></div><h3>Otomasyon ve profiller</h3><p>Çalışma alanları, otomasyonlar, çoklu hesap</p><div class="foot"><span>0 / 4 açık</span><span class="dots"><i></i><i></i><i></i><i></i></span></div></div>
+      </div>
+
+      <div class="a-foot">
+        <div class="group"><div class="grow"><span class="ico nn"><svg><use href="#i-grid"/></svg></span><div class="t"><b>Planları karşılaştır</b><small>Ücretsiz, Descall+ ve Ultra yan yana</small></div><svg class="chev"><use href="#i-chev"/></svg></div></div>
+        <div class="group"><div class="grow"><span class="ico nn"><svg><use href="#i-ticket"/></svg></span><div class="t"><b>Kupon kodu kullan</b><small>Bir kodun varsa buradan gir</small></div><svg class="chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+    </div></main>
+  </div>
+</div>
+
+<!-- ===================== DRAFT A2 ===================== -->
+<div class="cap"><b>Taslak A: Kontrol Merkezi (2/2), bir kategori açıkken</b>"Ses" kutusuna tıklayınca açılan sayfa. Özellikler düzenli bir listede. Açık olan bir özelliğin ayarları kendi satırının altında açılır. Örnekte gürültü kapısı: canlı ses göstergesinin üstünde eşiği sürükleyerek ayarlıyorsun.</div>
+<div class="frame" id="a2">
+  <div class="shell">
+    <aside class="nav">
+      <div class="me"><div class="av">A</div><div><b>admin <span class="mini-badge"><svg><use href="#i-crown"/></svg></span></b><small>Çevrimiçi</small></div></div>
+      <div class="sec">Kullanıcı ayarları</div>
+      <a><svg><use href="#i-user"/></svg>Hesabım</a>
+      <a><svg><use href="#i-palette"/></svg>Profil</a>
+      <a><svg><use href="#i-shield"/></svg>Gizlilik ve güvenlik</a>
+      <a class="on"><svg><use href="#i-crown"/></svg>Descall+</a>
+      <div class="sec">Uygulama ayarları</div>
+      <a><svg><use href="#i-volume"/></svg>Ses ve görüntü</a>
+      <a><svg><use href="#i-bell"/></svg>Bildirimler</a>
+      <a><svg><use href="#i-key"/></svg>Kısayollar</a>
+      <a><svg><use href="#i-window"/></svg>Görünüm</a>
+    </aside>
+    <main class="main"><div class="content">
+      <div class="crumb"><svg><use href="#i-back"/></svg>Descall+</div>
+      <div class="detail-head">
+        <span class="ico g"><svg><use href="#i-mic"/></svg></span>
+        <div><h1>Ses</h1><p>Mikrofonun ve kulaklığın için gelişmiş ayarlar · 4 / 8 açık</p></div>
+      </div>
+      <div class="group">
+        <div class="grow"><span class="ico g"><svg><use href="#i-sliders"/></svg></span><div class="t"><b>Gürültü kapısı</b><small>Arka plan gürültüsü için kendi eşiğini ayarla.</small></div><div class="tg on"></div></div>
+        <div class="expand"><div class="panel">
+          <div style="display:flex;justify-content:space-between;font-size:13px"><b>Eşik</b><span style="color:var(--muted)">-48 dB · konuşurken yeşil</span></div>
+          <div class="meter"><div class="lvl"></div><div class="thr"></div></div>
+          <div class="scale"><span>Sessiz</span><span>Eşiği sürükle</span><span>Yüksek</span></div>
+          <div class="prow" style="margin-top:8px"><div>Kapanma süresi<small>Konuşma bitince sesin ne kadar sonra kesileceği</small></div><div class="pills"><span>100 ms</span><span class="on">250 ms</span><span>500 ms</span></div></div>
+        </div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-mic"/></svg></span><div class="t"><b>Mikrofon ön ayarları</b><small>Mikrofon ayarlarını kaydet ve değiştir.</small></div><div class="tg on"></div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-volume"/></svg></span><div class="t"><b>Mikrofon dinleme</b><small>Kendi mikrofonunu duy.</small></div><div class="tg"></div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-sliders"/></svg></span><div class="t"><b>Ses etkinliği göstergesi</b><small>Sesinin ne kadar yüksek olduğunu anlık gör.</small></div><div class="tg on"></div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-zap"/></svg></span><div class="t"><b>Otomatik cihaz geçişi</b><small>Yeni bir kulaklık takınca hemen ona geç.</small></div><div class="tg on"></div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-volume"/></svg></span><div class="t"><b>Ses yönlendirme</b><small>Aramaları ve sesleri farklı çıkışlara gönder.</small></div><div class="tg"></div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-sliders"/></svg></span><div class="t"><b>Ses cihazı profilleri</b><small>Her kulaklık için ayarları hatırla.</small></div><div class="tg"></div></div>
+        <div class="grow"><span class="ico g"><svg><use href="#i-monitor"/></svg></span><div class="t"><b>Yayın sesi kontrolü</b><small>Yayınının nasıl duyulacağını seç.</small></div><span class="tag ultra">Ultra</span><div class="tg"></div></div>
+      </div>
+    </div></main>
+  </div>
+</div>
+
+<!-- ===================== DRAFT B1 ===================== -->
+<div class="cap"><b>Taslak B: İki sütun (1/2)</b>Üstte ince bir üyelik şeridi. Solda kategoriler ve sayıları, sağda o kategorinin özellikleri. Her satırda açma düğmesi ve ayar oku var. Kilitli özellikler en altta ayrı durur, "Ultra ile açılır" yazar. Bu örnekte bir Descall+ üyesinin ekranı var.</div>
+<div class="frame" id="b1">
+  <div class="shell">
+    <aside class="nav">
+      <div class="me"><div class="av" style="background:linear-gradient(160deg,#6a5ad0,#3b3f78)">E</div><div><b>elif <span class="mini-badge plus"><svg><use href="#i-spark"/></svg></span></b><small>Çevrimiçi</small></div></div>
+      <div class="sec">Kullanıcı ayarları</div>
+      <a><svg><use href="#i-user"/></svg>Hesabım</a>
+      <a><svg><use href="#i-palette"/></svg>Profil</a>
+      <a><svg><use href="#i-shield"/></svg>Gizlilik ve güvenlik</a>
+      <a class="on"><svg><use href="#i-spark"/></svg>Descall+</a>
+      <div class="sec">Uygulama ayarları</div>
+      <a><svg><use href="#i-volume"/></svg>Ses ve görüntü</a>
+      <a><svg><use href="#i-bell"/></svg>Bildirimler</a>
+      <a><svg><use href="#i-key"/></svg>Kısayollar</a>
+      <a><svg><use href="#i-window"/></svg>Görünüm</a>
+    </aside>
+    <main class="main"><div class="content">
+      <div class="b-strip" style="background:linear-gradient(90deg, rgba(155,140,255,.16), rgba(88,122,245,.10) 60%, rgba(255,255,255,.03)); box-shadow: inset 0 0 0 1px rgba(155,140,255,.22)">
+        <span class="badge plus"><i><svg><use href="#i-spark"/></svg></i><span>DESCALL+</span></span>
+        <div class="t"><b>Descall+</b><small>31 özellik · 6 Ocak 2027'ye kadar</small></div>
+        <div class="kv">
+          <div><small>Sonraki hediye</small><b><span class="coin" style="width:15px;height:15px"></span>5.000 · 6 Ara</b></div>
+          <div><small>Açık</small><b>17 / 31</b></div>
+          <span class="btn">Planlar</span>
+        </div>
+      </div>
+      <div class="b-cols">
+        <div class="cats">
+          <div class="search" style="margin-bottom:10px"><svg><use href="#i-search"/></svg>Ara</div>
+          <div class="cat"><span class="ico nn"><svg><use href="#i-grid"/></svg></span>Tümü<span class="n">31</span></div>
+          <div class="cat"><span class="ico"><svg><use href="#i-window"/></svg></span>Pencereler<span class="n">5/8</span></div>
+          <div class="cat on"><span class="ico p"><svg><use href="#i-key"/></svg></span>Kısayollar<span class="n">3/6</span></div>
+          <div class="cat"><span class="ico r"><svg><use href="#i-bell"/></svg></span>Bildirimler<span class="n">2/4</span></div>
+          <div class="cat"><span class="ico g"><svg><use href="#i-mic"/></svg></span>Ses<span class="n">4/7</span></div>
+          <div class="cat"><span class="ico o"><svg><use href="#i-game"/></svg></span>Oyun<span class="n">2/2</span></div>
+          <div class="cat"><span class="ico c"><svg><use href="#i-zap"/></svg></span>Verimlilik<span class="n">1/4</span></div>
+          <div class="catsep"></div>
+          <div class="cat" style="opacity:.6"><span class="ico y"><svg><use href="#i-layout"/></svg></span>Masaüstü araçları<span class="n"><svg style="width:13px;height:13px"><use href="#i-lock"/></svg></span></div>
+          <div class="cat" style="opacity:.6"><span class="ico y"><svg><use href="#i-wand"/></svg></span>Otomasyon<span class="n"><svg style="width:13px;height:13px"><use href="#i-lock"/></svg></span></div>
+          <div class="catsep"></div>
+          <div class="cat"><span class="ico nn"><svg><use href="#i-ticket"/></svg></span>Kupon kodu</div>
+        </div>
+        <div class="b-list">
+          <h2>Kısayollar <small>3 / 6 açık</small></h2>
+          <p class="lead">Diğer uygulamalar açıkken bile Descall'ı klavyeden yönet. Masaüstü uygulamasında çalışır.</p>
+          <div class="group">
+            <div class="grow"><span class="ico p"><svg><use href="#i-mic"/></svg></span><div class="t"><b>Genel bas-konuş</b><small>Bas-konuş diğer uygulamaları kullanırken de çalışır. Şu an: Fare 4</small></div><div class="tg on"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="grow"><span class="ico p"><svg><use href="#i-volume"/></svg></span><div class="t"><b>Genel sessize alma</b><small>Her uygulamadan bir kısayolla sessize al. Şu an: Ctrl + Shift + M</small></div><div class="tg on"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="grow"><span class="ico p"><svg><use href="#i-key"/></svg></span><div class="t"><b>Özel kısayollar</b><small>Kendi klavye kısayollarını seç.</small></div><div class="tg on"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="grow"><span class="ico p"><svg><use href="#i-sliders"/></svg></span><div class="t"><b>Medya tuşları</b><small>Aramalar için klavyendeki medya tuşlarını kullan.</small></div><div class="tg"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="grow"><span class="ico p"><svg><use href="#i-search"/></svg></span><div class="t"><b>Hızlı başlatıcı</b><small>Tek kısayolla herhangi bir sohbete geç.</small></div><div class="tg"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="grow"><span class="ico p"><svg><use href="#i-bell"/></svg></span><div class="t"><b>Hızlı yanıt</b><small>Descall'ı açmadan bildirimden yanıtla.</small></div><div class="tg"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+          </div>
+          <div class="gtitle"><span>Ultra ile açılır</span></div>
+          <div class="group" style="opacity:.7">
+            <div class="grow"><span class="ico y"><svg><use href="#i-volume"/></svg></span><div class="t"><b>Kişi başı ses kısayolları</b><small>Birinin sesini bir kısayolla değiştir.</small></div><span class="tag ultra"><svg><use href="#i-lock"/></svg>Ultra</span></div>
+          </div>
+        </div>
+      </div>
+    </div></main>
+  </div>
+</div>
+
+<!-- ===================== DRAFT B2 ===================== -->
+<div class="cap"><b>Taslak B: İki sütun (2/2), ayar paneli açıkken</b>Bir özelliğin okuna tıklayınca sağdan buzlu cam bir panel açılır. Ayarları canlı önizlemeyle birlikte görürsün. Örnekte Oyun HUD'u: konumu, saydamlığı ve HUD'da neyin görüneceği.</div>
+<div class="frame" id="b2">
+  <div class="shell">
+    <aside class="nav">
+      <div class="me"><div class="av">A</div><div><b>admin <span class="mini-badge"><svg><use href="#i-crown"/></svg></span></b><small>Çevrimiçi</small></div></div>
+      <div class="sec">Kullanıcı ayarları</div>
+      <a><svg><use href="#i-user"/></svg>Hesabım</a>
+      <a><svg><use href="#i-palette"/></svg>Profil</a>
+      <a><svg><use href="#i-shield"/></svg>Gizlilik ve güvenlik</a>
+      <a class="on"><svg><use href="#i-crown"/></svg>Descall+</a>
+      <div class="sec">Uygulama ayarları</div>
+      <a><svg><use href="#i-volume"/></svg>Ses ve görüntü</a>
+      <a><svg><use href="#i-bell"/></svg>Bildirimler</a>
+      <a><svg><use href="#i-key"/></svg>Kısayollar</a>
+      <a><svg><use href="#i-window"/></svg>Görünüm</a>
+    </aside>
+    <main class="main">
+      <div class="content">
+        <div class="b-strip">
+          <span class="badge"><i><svg><use href="#i-crown"/></svg></i><span>ULTRA</span></span>
+          <div class="t"><b>Descall Ultra</b><small>47 özellik · Süresiz</small></div>
+          <div class="kv"><div><small>Sonraki hediye</small><b><span class="coin" style="width:15px;height:15px"></span>15.000 · 6 Ara</b></div><div><small>Açık</small><b>18 / 47</b></div><span class="btn">Planlar</span></div>
+        </div>
+        <div class="b-cols">
+          <div class="cats">
+            <div class="search" style="margin-bottom:10px"><svg><use href="#i-search"/></svg>Ara</div>
+            <div class="cat"><span class="ico nn"><svg><use href="#i-grid"/></svg></span>Tümü<span class="n">47</span></div>
+            <div class="cat"><span class="ico"><svg><use href="#i-window"/></svg></span>Pencereler<span class="n">5/12</span></div>
+            <div class="cat"><span class="ico p"><svg><use href="#i-key"/></svg></span>Kısayollar<span class="n">3/7</span></div>
+            <div class="cat"><span class="ico r"><svg><use href="#i-bell"/></svg></span>Bildirimler<span class="n">2/4</span></div>
+            <div class="cat"><span class="ico g"><svg><use href="#i-mic"/></svg></span>Ses<span class="n">4/8</span></div>
+            <div class="cat on"><span class="ico o"><svg><use href="#i-game"/></svg></span>Oyun<span class="n">3/5</span></div>
+          </div>
+          <div class="b-list">
+            <h2>Oyun <small>3 / 5 açık</small></h2>
+            <div class="group" style="margin-top:12px">
+              <div class="grow"><span class="ico o"><svg><use href="#i-game"/></svg></span><div class="t"><b>Oyun durumu</b><small>Oynadığın oyunu göster.</small></div><div class="tg on"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+              <div class="grow sel"><span class="ico o"><svg><use href="#i-monitor"/></svg></span><div class="t"><b>Oyun HUD'u</b><small>Kenarlıksız oyunların üstünde arama bilgisi.</small></div><div class="tg on"></div><svg class="chev"><use href="#i-chev"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="drawer">
+        <div class="dh"><span class="ico o"><svg><use href="#i-monitor"/></svg></span><div><b style="font-size:17px">Oyun HUD'u</b><div style="font-size:12.5px;color:var(--muted)">Ultra · Masaüstü uygulamasında çalışır</div></div><span class="x"><svg><use href="#i-x"/></svg></span></div>
+        <div class="preview"><div class="game"></div>
+          <div class="hud"><b>Sesli · Ekip</b><br><span class="g">Ayşe konuşuyor</span><br>Gecikme 38 ms · 21:42<br>4 arkadaş çevrimiçi</div>
+          <div class="lbl">Önizleme</div>
+        </div>
+        <div class="group" style="padding:2px 14px">
+          <div class="prow"><div>Açık<small>Oyun açıkken HUD görünsün</small></div><div class="tg on"></div></div>
+          <div class="prow"><div>Konum</div><div class="corners"><span></span><span class="on"></span><span></span><span></span></div></div>
+          <div class="prow"><div>Saydamlık<small>%70</small></div><div class="slider"><b style="width:70%"></b></div></div>
+          <div class="prow" style="flex-direction:column;align-items:flex-start;gap:8px"><div>Gösterilenler</div><div class="pills"><span class="on">Arama</span><span class="on">Saat</span><span class="on">Gecikme</span><span>Arkadaşlar</span></div></div>
+        </div>
+        <div class="note"><svg><use href="#i-info"/></svg>HUD oyunun içine girmez, oyunun üstünde ayrı bir pencerede durur. Tam ekran (exclusive) modda görünmez.</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===================== DRAFT C1 ===================== -->
+<div class="cap"><b>Taslak C: Sekmeli (1/2), Genel bakış</b>Sayfa üç sekmeye ayrılıyor: Genel bakış, Özellikler, Planlar. Genel bakışta üyelik kartı ve hediye takvimi var: geçmiş hediyeler ve sıradaki tarih. En çok kullanılan 6 özellik tek dokunuşla açılıyor. Kupon ve masaüstü uygulamasının durumu da burada.</div>
+<div class="frame" id="c1">
+  <div class="shell">
+    <aside class="nav">
+      <div class="me"><div class="av">A</div><div><b>admin <span class="mini-badge"><svg><use href="#i-crown"/></svg></span></b><small>Çevrimiçi</small></div></div>
+      <div class="sec">Kullanıcı ayarları</div>
+      <a><svg><use href="#i-user"/></svg>Hesabım</a>
+      <a><svg><use href="#i-palette"/></svg>Profil</a>
+      <a><svg><use href="#i-shield"/></svg>Gizlilik ve güvenlik</a>
+      <a class="on"><svg><use href="#i-crown"/></svg>Descall+</a>
+      <div class="sec">Uygulama ayarları</div>
+      <a><svg><use href="#i-volume"/></svg>Ses ve görüntü</a>
+      <a><svg><use href="#i-bell"/></svg>Bildirimler</a>
+      <a><svg><use href="#i-key"/></svg>Kısayollar</a>
+      <a><svg><use href="#i-window"/></svg>Görünüm</a>
+    </aside>
+    <main class="main"><div class="content">
+      <div class="tabs"><span class="on">Genel bakış</span><span>Özellikler</span><span>Planlar</span></div>
+      <div class="c-grid">
+        <div class="card c-member">
+          <span class="badge"><i><svg><use href="#i-crown"/></svg></i><span>ULTRA</span></span>
+          <h2>Descall Ultra</h2>
+          <p>Süresiz · 47 özelliğe erişimin var · Descall ekibi tarafından verildi</p>
+          <div class="timeline">
+            <div class="tl done"><i></i><b>6 Kas</b>15.000 alındı</div>
+            <div class="tl next"><i></i><b>6 Ara</b>15.000 · 30 gün</div>
+            <div class="tl"><i></i><b>5 Oca</b>15.000</div>
+            <div class="tl" style="flex:.4"><i></i><b>4 Şub</b></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card"><h3>Masaüstü uygulaması</h3>
+            <div class="appstat"><span class="dot"></span><div><b style="font-size:14px">Bağlı · 3.7.35</b><div style="font-size:12.5px;color:var(--muted)">Masaüstü özellikleri bu bilgisayarda çalışıyor</div></div></div>
+          </div>
+          <div class="card"><h3>Kupon kodu</h3>
+            <div class="redeem"><div class="search">Kupon kodu</div><span class="btn primary">Kullan</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3><span>Sık kullanılanlar</span><span style="color:#aebdff">Düzenle</span></h3>
+        <div class="quick">
+          <div class="qt on"><div class="r"><span class="ico p"><svg><use href="#i-mic"/></svg></span><div class="tg on"></div></div><div><b>Genel bas-konuş</b><small>Fare 4</small></div></div>
+          <div class="qt on"><div class="r"><span class="ico"><svg><use href="#i-window"/></svg></span><div class="tg on"></div></div><div><b>Mini mod</b><small>Ctrl + Shift + D</small></div></div>
+          <div class="qt"><div class="r"><span class="ico r"><svg><use href="#i-bell"/></svg></span><div class="tg"></div></div><div><b>Odak modu</b><small>Kapalı</small></div></div>
+          <div class="qt on"><div class="r"><span class="ico o"><svg><use href="#i-monitor"/></svg></span><div class="tg on"></div></div><div><b>Oyun HUD'u</b><small>Sağ üst köşe</small></div></div>
+          <div class="qt on"><div class="r"><span class="ico g"><svg><use href="#i-sliders"/></svg></span><div class="tg on"></div></div><div><b>Gürültü kapısı</b><small>-48 dB</small></div></div>
+          <div class="qt"><div class="r"><span class="ico o"><svg><use href="#i-clip"/></svg></span><div class="tg"></div></div><div><b>Anlık klip</b><small>Son 30 saniye</small></div></div>
+        </div>
+      </div>
+    </div></main>
+  </div>
+</div>
+
+<!-- ===================== DRAFT C2 ===================== -->
+<div class="cap"><b>Taslak C: Sekmeli (2/2), Planlar</b>47 maddelik uzun liste yerine kategori bazında bir karşılaştırma tablosu. Her plan için kategoride kaç özellik olduğu görünür, senin planın vurgulanır. Satın alma düğmesi yok: altta "üyelikler şu an Descall ekibi tarafından veriliyor" yazar.</div>
+<div class="frame" id="c2">
+  <div class="shell">
+    <aside class="nav">
+      <div class="me"><div class="av">A</div><div><b>admin <span class="mini-badge"><svg><use href="#i-crown"/></svg></span></b><small>Çevrimiçi</small></div></div>
+      <div class="sec">Kullanıcı ayarları</div>
+      <a><svg><use href="#i-user"/></svg>Hesabım</a>
+      <a><svg><use href="#i-palette"/></svg>Profil</a>
+      <a><svg><use href="#i-shield"/></svg>Gizlilik ve güvenlik</a>
+      <a class="on"><svg><use href="#i-crown"/></svg>Descall+</a>
+      <div class="sec">Uygulama ayarları</div>
+      <a><svg><use href="#i-volume"/></svg>Ses ve görüntü</a>
+      <a><svg><use href="#i-bell"/></svg>Bildirimler</a>
+      <a><svg><use href="#i-key"/></svg>Kısayollar</a>
+      <a><svg><use href="#i-window"/></svg>Görünüm</a>
+    </aside>
+    <main class="main"><div class="content">
+      <div class="tabs"><span>Genel bakış</span><span>Özellikler</span><span class="on">Planlar</span></div>
+      <div class="plans">
+        <div class="h"><b>Planlar</b><small>Kategori başına özellik sayısı</small></div>
+        <div class="h"><b>Ücretsiz</b><small>Bugün kullandığın her şey</small></div>
+        <div class="h"><span class="badge plus"><i><svg><use href="#i-spark"/></svg></i><span>DESCALL+</span></span><small>31 özellik · 30 günde 5.000 DesCoin</small></div>
+        <div class="h cur"><span style="display:flex;gap:8px;align-items:center"><span class="badge"><i><svg><use href="#i-crown"/></svg></i><span>ULTRA</span></span><span class="curtag">Senin planın</span></span><small>47 özellik · 30 günde 15.000 DesCoin</small></div>
+
+        <div class="lab"><svg><use href="#i-check"/></svg>Aramalar, sohbet, sunucular</div><div class="yes">Dahil</div><div class="yes">Dahil</div><div class="yes cur">Dahil</div>
+        <div class="lab"><svg><use href="#i-window"/></svg>Pencereler</div><div class="no">—</div><div class="cnt">8</div><div class="cnt cur">12<small>+4 Ultra</small></div>
+        <div class="lab"><svg><use href="#i-key"/></svg>Kısayollar</div><div class="no">—</div><div class="cnt">6</div><div class="cnt cur">7<small>+1 Ultra</small></div>
+        <div class="lab"><svg><use href="#i-bell"/></svg>Bildirimler</div><div class="no">—</div><div class="cnt">4</div><div class="cnt cur">4</div>
+        <div class="lab"><svg><use href="#i-mic"/></svg>Ses</div><div class="no">—</div><div class="cnt">7</div><div class="cnt cur">8<small>+1 Ultra</small></div>
+        <div class="lab"><svg><use href="#i-game"/></svg>Oyun</div><div class="no">—</div><div class="cnt">2</div><div class="cnt cur">5<small>HUD'lar, klip</small></div>
+        <div class="lab"><svg><use href="#i-zap"/></svg>Verimlilik</div><div class="no">—</div><div class="cnt">4</div><div class="cnt cur">4</div>
+        <div class="lab"><svg><use href="#i-layout"/></svg>Masaüstü araçları</div><div class="no">—</div><div class="no">—</div><div class="cnt cur">3<small>kenar çubuğu, bileşenler</small></div>
+        <div class="lab"><svg><use href="#i-wand"/></svg>Otomasyon ve profiller</div><div class="no">—</div><div class="no">—</div><div class="cnt cur">4<small>çoklu hesap dahil</small></div>
+        <div class="lab last"><svg><use href="#i-gift"/></svg>DesCoin hediyesi</div><div class="no last">—</div><div class="cnt last">5.000<small>/ 30 gün</small></div><div class="cnt cur last">15.000<small>/ 30 gün</small></div>
+      </div>
+      <div class="c-note"><svg><use href="#i-info"/></svg>Üyelikler şu an Descall ekibi tarafından veriliyor. Üyelik satın alma henüz yok.</div>
+    </div></main>
+  </div>
+</div>
+
+</body>
+</html>
