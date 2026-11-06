@@ -149,12 +149,10 @@ BEGIN
   RAISE EXCEPTION 'subscription_events is append-only';
 END;
 $$;
-DROP TRIGGER IF EXISTS subscription_events_no_update ON public.subscription_events;
-CREATE TRIGGER subscription_events_no_update
+CREATE OR REPLACE TRIGGER subscription_events_no_update
   BEFORE UPDATE OR DELETE ON public.subscription_events
   FOR EACH ROW EXECUTE FUNCTION public.subscription_events_append_only();
-DROP TRIGGER IF EXISTS subscription_events_no_truncate ON public.subscription_events;
-CREATE TRIGGER subscription_events_no_truncate
+CREATE OR REPLACE TRIGGER subscription_events_no_truncate
   BEFORE TRUNCATE ON public.subscription_events
   FOR EACH STATEMENT EXECUTE FUNCTION public.subscription_events_append_only();
 

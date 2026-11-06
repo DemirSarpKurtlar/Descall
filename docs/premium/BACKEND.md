@@ -6,7 +6,7 @@ This is the server side of `docs/premium/CONTRACT.md`. Phase 1 has no payments. 
 
 | File | Live name (Descall-EU) | Status |
 |---|---|---|
-| `supabase/migrations/20261106_premium_memberships.sql` | `20261106_premium_memberships` | **Not applied yet.** Two Supabase `apply_migration` calls (2026-11-02 and 2026-11-06) stopped at the server's confirmation question, which got no answer, so nothing was written. Read-only checks afterwards show no premium tables, no premium functions, no `descoin_ledger_premium_gift_key` index, and the old ledger CHECK. Apply the file as it is in the repo (with the Supabase MCP, approving the prompt, or in the SQL editor), then run the checks under "After applying". |
+| `supabase/migrations/20261106_premium_memberships.sql` | `premium_ledger_reason_premium_gift`, `premium_memberships_tables`, `premium_memberships_write_functions`, `premium_memberships_read_functions` | **Applied to Descall-EU on 2026-11-06** in four parts with the same SQL (triggers use `CREATE OR REPLACE TRIGGER`). Verified: 8 tables, 18 `premium_*` functions, both plans seeded (plus 5000 / 31 keys, ultra 15000 / 47 keys), 2 append-only triggers, ledger CHECK includes `premium_gift`. |
 
 The migration only adds things:
 - New tables.
