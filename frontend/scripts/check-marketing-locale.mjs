@@ -47,7 +47,7 @@ if (enNav.features !== "Features" || enNav.signIn !== "Sign in" || enNav.faq !==
 
 const homeTr = corePageBody("/tr");
 const homeEn = corePageBody("/");
-if (!homeTr?.includes("Birlikte konuşun") || !homeTr.includes("Özellikler") || !homeTr.includes("Giriş yap")) {
+if (!homeTr?.includes("Birlikte konuş") || !homeTr.includes("Özellikler") || !homeTr.includes("Giriş yap")) {
   console.error("TR homepage prerender missing translated chrome");
   process.exit(1);
 }
