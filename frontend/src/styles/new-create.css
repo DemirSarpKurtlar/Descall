@@ -423,16 +423,20 @@ button.nc-pill:active { transform: scale(0.96); }
 
 /* Phone: full-width sheet from the top (iPhone glass shell) or the bottom
    (narrow web), 44px targets. */
+/* UI audit #70: the grabber sheet is a real bottom sheet: its bottom corners
+   meet the screen edge, the home-indicator area is padded, and the app stays
+   visible (dimmed) above it instead of a card floating mid-screen. */
 html.glass-ui .add-modal-backdrop.nc-scrim.g-add-scrim {
-  align-items: flex-start;
-  padding: 10vh 10px 16px;
+  align-items: flex-end;
+  padding: 0;
 }
 .nc-sheet.is-phone {
   width: 100%;
   max-width: none;
-  max-height: 84vh;
-  border-radius: var(--g-r-sheet, 28px);
+  max-height: 86vh;
+  border-radius: var(--g-r-sheet, 28px) var(--g-r-sheet, 28px) 0 0;
 }
+.nc-sheet.is-phone { padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
 .nc-sheet.is-phone .g-grabber { margin: 8px auto 0; }
 .nc-sheet.is-phone .nc-foot small { font-size: 12px; line-height: 1.35; }
 .nc-sheet.is-phone .nc-primary { padding: 0 18px; }
