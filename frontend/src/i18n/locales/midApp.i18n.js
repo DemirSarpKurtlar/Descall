@@ -28,6 +28,7 @@ export const MID_APP_I18N = {
     "No roles yet": "Henüz rol yok",
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Roller izinleri bir araya toplar; örneğin mesaj silebilen moderatörler. Bir rol oluştur ve üyelere ver.",
     "Select a role": "Bir rol seç",
+    "Management": "Yönetim",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -51,6 +52,7 @@ export const MID_APP_I18N = {
     "No roles yet": "Noch keine Rollen",
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Rollen bündeln Berechtigungen, etwa Moderatoren, die Nachrichten löschen dürfen. Erstelle eine und gib sie Mitgliedern.",
     "Select a role": "Wähle eine Rolle",
+    "Management": "Verwaltung",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -74,6 +76,7 @@ export const MID_APP_I18N = {
     "No roles yet": "Aún no hay roles",
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Los roles agrupan permisos, como moderadores que pueden borrar mensajes. Crea uno y dáselo a los miembros.",
     "Select a role": "Elige un rol",
+    "Management": "Gestión",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -97,6 +100,7 @@ export const MID_APP_I18N = {
     "No roles yet": "Aucun rôle pour l'instant",
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Les rôles regroupent des permissions, par exemple des modérateurs qui peuvent supprimer des messages. Crées-en un et attribue-le aux membres.",
     "Select a role": "Choisis un rôle",
+    "Management": "Gestion",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -120,6 +124,7 @@ export const MID_APP_I18N = {
     "No roles yet": "Ainda não há cargos",
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Cargos agrupam permissões, como moderadores que podem apagar mensagens. Crie um e dê aos membros.",
     "Select a role": "Escolha um cargo",
+    "Management": "Gerenciamento",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -143,5 +148,6 @@ export const MID_APP_I18N = {
     "No roles yet": "Ролей пока нет",
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Роли объединяют права, например модераторов, которые могут удалять сообщения. Создай роль и выдай её участникам.",
     "Select a role": "Выбери роль",
+    "Management": "Управление",
   },
 };

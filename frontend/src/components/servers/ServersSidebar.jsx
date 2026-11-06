@@ -5,7 +5,7 @@ import GlassConfirm from "../ui/GlassConfirm";
 import { copyText } from "../../lib/copyText";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, ShieldCheck, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info } from "../ui/Icon.jsx";
+import { Plus, Hash, Volume2, Folder, ChevronDown, ChevronRight, ArrowLeft, MoreHorizontal, LogOut, Trash2, RefreshCw, Server, X, Pencil, Settings2, Shield, Link2, LogIn, Ban, ScrollText, MicOff, BellOff, Bell, BellRing, Lock, Radio, UserPlus, Settings, Globe, Check, Gamepad2, Crosshair, Users, Megaphone, GraduationCap, Sparkles, Layers, Camera, Upload, ImagePlus, FolderPlus, GripVertical, HeadphoneOff, Info, UserGear, Compass } from "../ui/Icon.jsx";
 import { GlassListHeader, GlassToolbarMenu, useGlassShell } from "../layout/glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useT } from "../../context/LocaleContext";
@@ -1066,7 +1066,12 @@ export default function ServersSidebar({
                 </div>
               </>
             ) : null}
-            <div className={glassShell ? "g-menu-group" : undefined}>
+            {/* UI audit #35: desktop groups the menu as Yönetim · Bildirimler ·
+                Moderasyon, then the destructive actions behind a divider. */}
+            <div className={glassShell ? "g-menu-group" : "server-dropdown-section"}>
+                {glassShell ? null : (
+                  <span className="server-dropdown-section-label">{t("Management")}</span>
+                )}
                 {canManageChannels && (
                   <>
                     <button
@@ -1102,7 +1107,7 @@ export default function ServersSidebar({
                         setShowRoles(true);
                       }}
                     >
-                      <Shield size={15} />
+                      {glassShell ? <Shield size={15} /> : <UserGear size={15} />}
                       {t("Roles")}
                     </button>
                 )}
@@ -1141,7 +1146,7 @@ export default function ServersSidebar({
                       setShowCommunity(true);
                     }}
                   >
-                    {glassShell ? <Globe size={15} /> : <ShieldCheck size={15} />}
+                    {glassShell ? <Globe size={15} /> : <Compass size={15} />}
                     {t("Community & Discovery")}
                   </button>
                 )}
@@ -1211,32 +1216,38 @@ export default function ServersSidebar({
                 })}
               </div>
             </div>
-            {!glassShell && canBanMembers && (
-              <button
-                type="button"
-                className="server-dropdown-item"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setShowModeration("bans");
-                }}
-              >
-                <Ban size={15} />
-                {t("Bans")}
-              </button>
+            {!glassShell && (canBanMembers || canViewAudit) && (
+              <div className="server-dropdown-section">
+                <span className="server-dropdown-section-label">{t("Moderation")}</span>
+                {canBanMembers && (
+                  <button
+                    type="button"
+                    className="server-dropdown-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowModeration("bans");
+                    }}
+                  >
+                    <Ban size={15} />
+                    {t("Bans")}
+                  </button>
+                )}
+                {canViewAudit && (
+                  <button
+                    type="button"
+                    className="server-dropdown-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowModeration("audit");
+                    }}
+                  >
+                    <ScrollText size={15} />
+                    {t("Audit log")}
+                  </button>
+                )}
+              </div>
             )}
-            {!glassShell && canViewAudit && (
-              <button
-                type="button"
-                className="server-dropdown-item"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setShowModeration("audit");
-                }}
-              >
-                <ScrollText size={15} />
-                {t("Audit log")}
-              </button>
-            )}
+            {glassShell ? null : <div className="server-dropdown-divider" role="separator" />}
             {glassShell ? (
               <div className="g-menu-group is-leave">
                 <button type="button" className="server-dropdown-item danger is-leave" onClick={() => openConfirm("leave")}>
