@@ -131,7 +131,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   }
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [duration, setDuration] = useState(0);
+  // Call timer: a stable start, never ticking here (components that show it
+  // use useCallTimer, so the app does not re-render every second).
+  const [durationStartedAt, setDurationStartedAt] = useState(null);
   const [participants, setParticipants] = useState([]);
   // userId -> { muted, cameraOn, deafened } from group:call:media-state.
   // Kept apart from `participants` so a state that arrives before the peer
@@ -170,7 +172,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const localVideoRef = useRef(null);
   const screenVideoRef = useRef(null);
   const myIdRef = useRef(null);
-  const timerRef = useRef(null);
   const screenSenderRef = useRef(null);
   const screenAudioCtxRef = useRef(null);
   const intentionalScreenStopRef = useRef(false);
@@ -411,11 +412,6 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   // Cleanup on unmount - prevent resource leaks
   useEffect(() => {
     return () => {
-      // Clear timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      
       // Stop all local streams
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
@@ -498,17 +494,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
   useEffect(() => {
     if (!isInCall) return;
-    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    setDurationStartedAt((prev) => prev ?? Date.now());
   }, [isInCall]);
 
   const cleanup = useCallback(() => {
     groupTelemetryRef.current?.finish("ended");
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setDuration(0);
+    setDurationStartedAt(null);
 
     pcMapRef.current.forEach((peerData) => {
       peerData.recovery?.dispose();
@@ -2798,7 +2789,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
           setCallType,
           setIsCameraOn,
           setIsMuted,
-          setDuration,
+          setDurationStartedAt,
           setLocalStream,
           setParticipants,
           isInCallRef,
@@ -2824,7 +2815,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     deafened,
     isCameraOn,
     isScreenSharing,
-    duration,
+    durationStartedAt,
+    durationStoppedAt: null,
     participants: participantsWithMedia,
     incomingCall,
     activeCallBanner,
