@@ -131,7 +131,7 @@
 }
 
 .shop-theme-swatch.theme-default {
-  background: linear-gradient(135deg, #111214 0%, #2b2d31 55%, #587af5 100%);
+  background: linear-gradient(135deg, #111214 0%, var(--surface-2) 55%, #587af5 100%);
 }
 
 .shop-theme-swatch.theme-emerald {
@@ -597,7 +597,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--surface-3, #2b2d31);
+  background: var(--surface-3, var(--surface-2));
   border: 1px solid rgba(255, 255, 255, 0.15);
   z-index: 1;
 }
@@ -643,7 +643,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #3f4248, #2b2d31 72%);
+  background: radial-gradient(circle at 35% 30%, #3f4248, var(--surface-2) 72%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   flex-shrink: 0;
 }
@@ -1207,7 +1207,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
 
 .shop-live-profile {
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
   box-shadow: none;
   box-sizing: border-box;
   max-width: 100%;
@@ -1271,7 +1271,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #23a559;
+  background: var(--success);
   flex-shrink: 0;
 }
 
@@ -1498,10 +1498,10 @@ html[data-bubble="minimal"] .shop-live-bubble {
   justify-content: center;
   color: var(--text-0, #fff);
   cursor: pointer;
-  background: var(--surface-2, #2b2d31);
+  background: var(--surface-2);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 100%),
-    color-mix(in srgb, var(--surface-2, #2b2d31) 42%, transparent);
+    color-mix(in srgb, var(--surface-2) 42%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
@@ -1527,7 +1527,7 @@ html.gd-lite .shop-chip-arrow {
   .shop-chip-arrow,
   html.glass-lite .shop-chip-arrow,
   html.gd-lite .shop-chip-arrow {
-    background: var(--surface-2, #2b2d31);
+    background: var(--surface-2);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));
@@ -1535,7 +1535,7 @@ html.gd-lite .shop-chip-arrow {
 }
 
 html.a11y-solid .shop-chip-arrow {
-  background: var(--surface-2, #2b2d31);
+  background: var(--surface-2);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));

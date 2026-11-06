@@ -13,7 +13,7 @@
         <style>
           :root { color-scheme: dark; }
           body { margin:0; font-family:system-ui,"Segoe UI",sans-serif; background:#0b0c10; color:#f2f3f5;
-            background-image: radial-gradient(80% 50% at 50% -10%, rgba(88,101,242,.28), transparent 55%);
+            background-image: radial-gradient(80% 50% at 50% -10%, rgba(88,122,245,.28), transparent 55%);
             padding: 32px 20px 64px; }
           .wrap { max-width: 960px; margin: 0 auto; }
           h1 { font-family:"Avenir Next",system-ui,sans-serif; font-size: clamp(28px, 5vw, 40px); letter-spacing:-.03em; margin:0 0 8px; }

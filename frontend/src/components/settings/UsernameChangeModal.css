@@ -16,7 +16,7 @@
   width: min(440px, 100%);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   border-radius: var(--r-lg);
   padding: 18px;
@@ -145,7 +145,7 @@
 }
 .un-field.un-state-taken,
 .un-field.un-state-invalid {
-  border-color: #ed4245;
+  border-color: var(--danger);
 }
 .un-field.un-state-taken:focus-within,
 .un-field.un-state-invalid:focus-within {
@@ -186,7 +186,7 @@
 }
 .un-state-taken .un-status,
 .un-state-invalid .un-status {
-  color: #ed4245;
+  color: var(--danger);
 }
 
 .un-hint {
@@ -201,7 +201,7 @@
 }
 .un-hint-taken,
 .un-hint-invalid {
-  color: #ed4245;
+  color: var(--danger);
 }
 
 .un-note {
@@ -227,7 +227,7 @@
   padding: 9px 12px;
   border-radius: var(--r-md);
   background: rgba(237, 66, 69, 0.12);
-  color: #ed4245;
+  color: var(--danger);
   font-size: 13px;
   font-weight: 600;
 }

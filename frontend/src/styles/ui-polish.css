@@ -1359,7 +1359,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-size: 11.5px;
   font-style: normal;
   font-weight: 650;
-  color: #3ba55d;
+  color: var(--success);
 }
 
 .invite-embed-cta {
@@ -1405,13 +1405,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .invite-embed-error {
-  color: var(--danger, #ed4245);
+  color: var(--danger);
 }
 
 .invite-embed-inline-error {
   margin: 0 0 8px;
   font-size: 12px;
-  color: var(--danger, #ed4245);
+  color: var(--danger);
 }
 
 .invite-embed-friend .invite-embed-accent {
@@ -1969,7 +1969,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   text-align: center;
 }
 .giphy-state.is-error {
-  color: var(--danger, #ed4245);
+  color: var(--danger);
 }
 .giphy-state button {
   background: var(--primary, #587af5);
@@ -2025,7 +2025,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-modal {
   width: min(440px, 100%);
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
@@ -2048,7 +2048,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-modal-header p {
   margin: 6px 0 0;
   font-size: 13px;
-  color: var(--text-2, #b5bac1);
+  color: var(--text-2, var(--text-3));
   line-height: 1.4;
 }
 .invite-modal-close {
@@ -2072,7 +2072,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 12px;
   padding: 12px;
   border-radius: var(--r-md);
-  background: var(--surface-2, #2b2d31);
+  background: var(--surface-2);
   margin-bottom: 16px;
 }
 .invite-modal-group strong {
@@ -2104,8 +2104,8 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-expiry-row button {
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  background: var(--surface-2, #2b2d31);
-  color: var(--text-1, #dbdee1);
+  background: var(--surface-2);
+  color: var(--text-1, var(--text-2));
   border-radius: var(--r-pill);
   padding: 6px 11px;
   font-size: 12px;
@@ -2131,7 +2131,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 8px;
   padding: 10px 12px;
   border-radius: var(--r-md);
-  background: var(--surface-2, #2b2d31);
+  background: var(--surface-2);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   color: var(--text-1);
   font-size: 13px;
@@ -2190,7 +2190,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 8px 10px;
   border-radius: var(--r-sm);
   background: var(--danger-soft, rgba(237, 66, 69, 0.12));
-  color: var(--danger, #ed4245);
+  color: var(--danger);
   font-size: 12px;
 }
 
@@ -2247,7 +2247,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-size: 16px;
 }
 .invite-landing-preview span {
-  color: var(--text-muted, #b5bac1);
+  color: var(--text-muted, var(--text-3));
   font-size: 13px;
 }
 .invite-landing-avatar {
@@ -2279,7 +2279,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
-  color: #b5bac1;
+  color: var(--text-3);
   font-size: 13px;
 }
 .invite-landing-state {
@@ -2287,11 +2287,11 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: #b5bac1;
+  color: var(--text-3);
   padding: 18px 0;
 }
 .invite-landing-state.is-error {
-  color: #ed4245;
+  color: var(--danger);
 }
 .invite-landing-banner {
   display: inline-flex;
@@ -2308,7 +2308,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-landing-error {
   margin-bottom: 12px;
-  color: #ed4245;
+  color: var(--danger);
   font-size: 13px;
 }
 .invite-landing-join {
@@ -2340,7 +2340,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-md);
   border: none;
   background: transparent;
-  color: #b5bac1;
+  color: var(--text-3);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -2694,7 +2694,7 @@ html[data-bubble="minimal"] .message-bubble {
   font-size: 14px;
   line-height: 1.45;
   letter-spacing: -0.01em;
-  color: var(--text-1, #dbdee1);
+  color: var(--text-1, var(--text-2));
 }
 
 .update-restart-actions {
@@ -2755,7 +2755,7 @@ html.kb-open .modal-card {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
@@ -2794,7 +2794,7 @@ html.kb-open .modal-card {
   border-radius: var(--r-md);
   border: none;
   background: transparent;
-  color: var(--text-2, #b5bac1);
+  color: var(--text-2, var(--text-3));
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -2884,7 +2884,7 @@ body.electron-app .modal-backdrop {
   margin: 6px 0 0;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--text-1, #dbdee1);
+  color: var(--text-1, var(--text-2));
 }
 
 .update-notes-actions {
@@ -2892,7 +2892,7 @@ body.electron-app .modal-backdrop {
   justify-content: flex-end;
   flex-shrink: 0;
   padding-top: 4px;
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
 }
 
 .update-notes-done {
@@ -3049,7 +3049,7 @@ html.glass-ui :is(.profile-avatar-shell, .g-profile-avatar, .us-hero-avatar) > .
   box-sizing: border-box;
   border-width: max(3px, calc(var(--av-size, 88px) * 0.045)) !important;
   border-style: solid;
-  border-color: var(--profile-ring, var(--g-ring, var(--surface-1, #1e1f22)));
+  border-color: var(--profile-ring, var(--g-ring, var(--surface-1)));
   right: calc(var(--av-size, 88px) * 0.1464 - var(--dot) / 2) !important;
   bottom: calc(var(--av-size, 88px) * 0.1464 - var(--dot) / 2) !important;
   z-index: 3;

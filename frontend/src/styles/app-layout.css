@@ -443,7 +443,7 @@ button.nav-rail-logo:active {
   height: 16px;
   padding: 0 4px;
   border-radius: var(--r-pill);
-  background: #ed4245;
+  background: var(--danger);
   color: #fff;
   font-size: 9px;
   font-weight: 800;
@@ -1013,7 +1013,7 @@ html.gd-lite .rail-tooltip {
 }
 
 .conv-time.unread {
-  color: #ed4245;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -1034,7 +1034,7 @@ html.gd-lite .rail-tooltip {
   height: 20px;
   padding: 0 6px;
   border-radius: var(--r-pill);
-  background: #ed4245;
+  background: var(--danger);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -1186,7 +1186,7 @@ html.gd-lite .rail-tooltip {
   min-width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: var(--surface-1, #313338) !important;
+  background: var(--surface-1, var(--surface-3)) !important;
   border-radius: var(--r-sm);
   min-height: 56px;
 }
@@ -1918,7 +1918,7 @@ button.header-avatar {
 .admin-header-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #f23f43, #ff6b6b);
+  background: linear-gradient(135deg, var(--danger), #ff6b6b);
   border-radius: var(--r-md);
   display: flex;
   align-items: center;
@@ -1957,7 +1957,7 @@ button.header-avatar {
 .admin-error {
   background: rgba(242, 63, 67, 0.1);
   border: 1px solid rgba(242, 63, 67, 0.3);
-  color: #f23f43;
+  color: var(--danger);
   padding: 12px 16px;
   margin: 16px 24px;
   border-radius: var(--r-sm);
@@ -2384,7 +2384,7 @@ button.header-avatar {
   background: rgba(242, 63, 67, 0.15);
   border: 1px solid rgba(242, 63, 67, 0.3);
   border-radius: var(--r-sm);
-  color: #f23f43;
+  color: var(--danger);
   font-size: 13px;
   margin-bottom: 16px;
 }
@@ -2397,7 +2397,7 @@ button.header-avatar {
   background: rgba(242, 63, 67, 0.15);
   border: 1px solid rgba(242, 63, 67, 0.3);
   border-radius: var(--r-sm);
-  color: #f23f43;
+  color: var(--danger);
   font-size: 13px;
   margin-bottom: 12px;
 }
@@ -2497,7 +2497,7 @@ button.header-avatar {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #f23f43;
+  background: var(--danger);
   animation: recordingPulse 1.2s infinite;
 }
 
@@ -2508,7 +2508,7 @@ button.header-avatar {
 
 .recording-label {
   font-size: 14px;
-  color: #f23f43;
+  color: var(--danger);
   font-weight: 500;
 }
 
@@ -2757,7 +2757,7 @@ button.header-avatar {
   background: rgba(242, 63, 67, 0.1);
   border: 1px solid rgba(242, 63, 67, 0.3);
   border-radius: var(--r-sm);
-  color: #f23f43;
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -3634,7 +3634,7 @@ button.header-avatar {
   display: inline-flex;
   border: none;
   background: transparent;
-  color: #f23f43;
+  color: var(--danger);
   cursor: pointer;
   padding: 0;
 }
@@ -3644,7 +3644,7 @@ button.header-avatar {
   border-radius: var(--r-md);
   border: 1px solid rgba(242, 63, 67, 0.35);
   background: rgba(242, 63, 67, 0.1);
-  color: #f23f43;
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -4416,7 +4416,7 @@ button.header-avatar {
 }
 
 .activity-clear-manual-btn:hover {
-  background: var(--danger, #ed4245);
+  background: var(--danger);
   color: white;
 }
 
