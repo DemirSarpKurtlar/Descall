@@ -411,12 +411,17 @@ export default function ServersSidebar({
     t,
   ]);
 
+  // UI audit #32: the iPhone server list has the same large title + search
+  // as Sohbetler / Arkadaşlar; the query filters the list by name.
+  const [serverQuery, setServerQuery] = useState("");
   const groupedServers = useMemo(() => {
     const folderMap = new Map(
       (serverFolders || []).map((f) => [String(f.id), { ...f, servers: [] }])
     );
     const unfiled = [];
+    const q = serverQuery.trim().toLocaleLowerCase("tr");
     for (const server of servers || []) {
+      if (q && !String(server?.name || "").toLocaleLowerCase("tr").includes(q)) continue;
       const fid = server.folderId ? String(server.folderId) : null;
       if (fid && folderMap.has(fid)) {
         folderMap.get(fid).servers.push(server);
@@ -428,7 +433,7 @@ export default function ServersSidebar({
       folders: [...folderMap.values()].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
       unfiled,
     };
-  }, [servers, serverFolders]);
+  }, [servers, serverFolders, serverQuery]);
 
   const serverListDraggable = !isMobile || serverListReorderMode;
   const channelListDraggable = canManageChannels && (!isMobile || channelReorderMode);
@@ -910,11 +915,12 @@ export default function ServersSidebar({
     />
   );
 
-  const renderGlassServerChrome = () => (
+  const renderGlassServerChrome = ({ list = false } = {}) => (
     <>
       <GlassListHeader
         title={t("Servers")}
-        inlineTitle
+        inlineTitle={!list}
+        search={list ? { value: serverQuery, onChange: (e) => setServerQuery(e.target.value), placeholder: t("Search servers") } : null}
         buttons={
           serverListReorderMode
             ? [{ id: "reorder-done", icon: Check, label: t("Done"), active: true, onClick: () => setServerListReorderMode(false) }]
@@ -1764,7 +1770,7 @@ export default function ServersSidebar({
     <aside className="sidebar-secondary servers-sidebar">
       <div className="sidebar-inner">
         {glassShell ? (
-          renderGlassServerChrome()
+          renderGlassServerChrome({ list: true })
         ) : (
           <>
           <div className="sidebar-header">

@@ -171,6 +171,15 @@ html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) #root {
   html.glass-ui .app-root.g-shell .g-list-head.g-head-inline ~ .server-owned-banner ~ .sidebar-content {
     padding-top: 0 !important;
   }
+  /* UI audit #32: the server list uses the large title + search like the
+     other tabs; the owned line sits 16px under the search field. */
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-search ~ .server-owned-banner {
+    margin: calc(var(--g-chrome-top) + 162px + 16px) 16px 0;
+    background: transparent;
+  }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-search ~ .server-owned-banner ~ .sidebar-content {
+    padding-top: 8px !important;
+  }
 
   /* Open server (channel list, Stage 5 redesigns it): keep it below the Island. */
   html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header {
