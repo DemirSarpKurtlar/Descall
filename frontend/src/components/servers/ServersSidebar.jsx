@@ -143,6 +143,8 @@ export default function ServersSidebar({
   const [serverIconCropSrc, setServerIconCropSrc] = useState("");
   const [serverIconBusy, setServerIconBusy] = useState(false);
   const [rulesPrompt, setRulesPrompt] = useState(false);
+  // "Şimdi değil" on the rules screen hides it for this server until the next visit.
+  const [rulesDismissedFor, setRulesDismissedFor] = useState(null);
   const serverIconFileRef = useRef(null);
   // A5 (3.0.0): iPhone / iPad use the new server hub, sheets and long-press menus; desktop keeps the modals.
   const hubMode = useHubMode(isMobile);
@@ -1657,9 +1659,13 @@ export default function ServersSidebar({
               onRequestDelete={(server) => setConfirm({ mode: "delete", server })}
             />
           )}
-          {(needsRulesAccept || rulesPrompt) && (
+          {(needsRulesAccept || rulesPrompt) && rulesDismissedFor !== activeServer?.id && (
             <ServerRulesModal
               server={activeServer}
+              onClose={() => {
+                setRulesPrompt(false);
+                setRulesDismissedFor(activeServer?.id || null);
+              }}
               onAccepted={(rulesAcceptedAt) => {
                 setRulesPrompt(false);
                 onServerUpdated?.({ ...activeServer, rulesAcceptedAt });

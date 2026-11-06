@@ -4820,3 +4820,14 @@ button.member-row.server-member-row {
   background: color-mix(in srgb, var(--primary) 18%, transparent);
   color: var(--primary);
 }
+
+/* Rules accept (desktop): numbered list like the phone sheet. */
+.server-rules-list {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.server-rules-list li {
+  margin: 0 0 6px;
+  padding-left: 4px;
+}

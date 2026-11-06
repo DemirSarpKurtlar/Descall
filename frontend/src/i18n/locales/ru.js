@@ -6259,10 +6259,12 @@ export const nested = {
 
 export const phrases = {
   "API reachable": "API доступен",
+  "Accept and join": "Принять и войти",
   "Master switch": "Главный переключатель",
   "Never mind": "Не нужно",
   "People you ban from this server show up here.": "Здесь появятся люди, которых ты заблокируешь на этом сервере.",
   "Private messages, group messages and mentions": "Личные сообщения, групповые сообщения и упоминания",
+  "Read and accept the rules before you start chatting.": "Прочитай и прими правила, прежде чем начать общение.",
   "Request timed out": "Время ожидания запроса истекло",
   " (you)": " (вы)",
   "#6678ff": "#6678ff",
@@ -10157,6 +10159,7 @@ export const phrases = {
   "Welcome back": "С возвращением",
   "Welcome channel": "Канал приветствия",
   "Welcome to Descall": "Добро пожаловать в Descall",
+  "Welcome to {name}": "Добро пожаловать на {name}",
   "Welcome! Rules accepted.": "Добро пожаловать! Правила приняты.",
   "We’ll email a 6-digit code so you can choose a new password securely.": "Мы отправим 6-значный код на почту, чтобы вы могли безопасно задать новый пароль.",
   "What": "Что",
