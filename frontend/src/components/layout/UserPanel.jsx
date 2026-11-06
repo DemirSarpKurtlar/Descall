@@ -2702,7 +2702,7 @@ const UserPanel = forwardRef(function UserPanel({
   return (
     <motion.div
       ref={ref}
-      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}${glassShell && isMobile && mobileDetail && activeTab === "appearance" ? " s3-phone-shell" : ""}`}
+      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}`}
       variants={shellVariants}
       initial="hidden"
       animate="visible"
@@ -2711,7 +2711,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}${isMobile && glassShell && activeTab === "appearance" && mobileDetail ? " s3-phone-sheet" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -2867,7 +2867,6 @@ const UserPanel = forwardRef(function UserPanel({
       <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
         {activeTab === "appearance" ? (
           <>
-            {isMobile ? <div className="s3-grab" aria-hidden="true" /> : null}
             <header className="us-main-header s3-nav">
               <span className="l">
                 {isMobile ? (

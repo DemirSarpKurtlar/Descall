@@ -72,7 +72,7 @@ export const TR_I18N_GAPS = {
     "Discord alternatifi mi arıyorsun? Çoğu liste aynı ses uygulamalarını tekrar eder. Daha net bir bakış, ve Descall’ın arkadaşlar, sunucular ve ücretsiz temel sohbet/aramalarda neden önde olduğu.",
   "Start with your real job-to-be-done: friend DMs, group voice, screen share, or a gaming server. If you need mega-servers and bot ecosystems, Discord still leads. If you want a lighter Discord alternative that keeps communication free, Descall is built for you.":
     "Gerçek ihtiyacınla başla: arkadaş DM’leri, grup sesi, ekran paylaşımı veya bir oyun sunucusu. Mega sunucular ve bot ekosistemleri gerekiyorsa Discord hâlâ önde. İletişimi ücretsiz tutan daha hafif bir Discord alternatifi istiyorsan Descall senin için.",
-  "Talk together": "Birlikte konuşun",
+  "Talk together": "Birlikte konuş",
   "The best free Discord alternative for friends & gamers":
     "Arkadaşlar ve oyuncular için en iyi ücretsiz Discord alternatifi",
   "Top Discord alternatives compared": "Öne çıkan Discord alternatifleri karşılaştırması",

@@ -118,10 +118,13 @@ function showNative({ title, body, conv, onClick }) {
   } catch (_) { return false; }
   const entry = { n, conv, at: Date.now(), replied: false };
   live.set(id, entry);
-  n.on('reply', (_event, reply) => {
+  // The text is on the event (NotificationReplyEventParams); the positional string argument
+  // is deprecated and Electron 45 warns when a listener declares it.
+  // (...legacy keeps listener.length at 1, so no warning, and still reads an old build's string.)
+  n.on('reply', (event, ...legacy) => {
     if (entry.replied) return;
     entry.replied = true;
-    deliver(conv, reply);
+    deliver(conv, event?.reply ?? legacy[0] ?? '');
   });
   n.on('click', () => { try { onClick && onClick(); } catch (_) { /* ignore */ } });
   n.on('close', () => { setTimeout(() => live.delete(id), 5000); });

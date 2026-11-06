@@ -1,3 +1,4 @@
+import { UAH_FR } from "./uah.fr.js";
 /**
  * fr catalog (status "draft" in ../locales.json, hidden from users until the
  * coverage check reports 100 %). Same shape as en.js / tr.js:
@@ -345,6 +346,7 @@ export const nested = {
     }
   },
   // premiumAudio:end
+  uah: UAH_FR,
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Gestion premium",
@@ -6256,6 +6258,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API joignable",
+  "Request timed out": "Délai de la requête dépassé",
   " (you)": " (toi)",
   "#6678ff": "#6678ff",
   "#general msgs": "messages de #general",
