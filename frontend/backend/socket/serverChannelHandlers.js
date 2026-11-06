@@ -20,6 +20,7 @@ const {
   Permissions,
   hasPermission,
   resolveChannelPermissions,
+  resolveChannelPermissionsBulk,
   resolveMemberPermissions,
 } = require("../lib/serverPermissions");
 const {
@@ -304,19 +305,9 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = nul
       const userIds = (members || []).map((m) => m.user_id).filter(Boolean);
       if (!userIds.length) return;
 
-      const viewerIds = [];
-      await Promise.all(
-        userIds.map(async (uid) => {
-          try {
-            const resolved = await resolveChannelPermissions(supabase, serverId, uid, channelId);
-            if (resolved.isMember && hasPermission(resolved.bits, Permissions.VIEW_CHANNEL)) {
-              viewerIds.push(uid);
-            }
-          } catch {
-            /* skip members who cannot view */
-          }
-        })
-      );
+      // One bulk resolve (5 queries) instead of resolveChannelPermissions per member.
+      const bitsByUser = await resolveChannelPermissionsBulk(supabase, serverId, channelId, userIds);
+      const viewerIds = userIds.filter((uid) => hasPermission(bitsByUser.get(uid) || 0n, Permissions.VIEW_CHANNEL));
       if (!viewerIds.length) return;
 
       // Desktop notification fan-out: every member who can see the channel
@@ -349,37 +340,104 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = nul
         }
       }
 
-      const { data: existing, error: rErr } = await supabase
-        .from("server_channel_reads")
-        .select("user_id, unread_count")
-        .eq("channel_id", channelId)
-        .in("user_id", viewerIds);
-      if (rErr) throw rErr;
-
-      const byUser = new Map((existing || []).map((r) => [r.user_id, r]));
-      await Promise.all(
-        viewerIds.map(async (uid) => {
-          const row = byUser.get(uid);
-          if (row) {
-            await supabase
-              .from("server_channel_reads")
-              .update({ unread_count: Math.max(0, Number(row.unread_count) || 0) + 1 })
-              .eq("user_id", uid)
-              .eq("channel_id", channelId);
-          } else {
-            await supabase.from("server_channel_reads").insert({
-              user_id: uid,
-              channel_id: channelId,
-              unread_count: 1,
-              last_read_at: null,
-            });
-          }
-        })
-      );
+      await bumpChannelUnreadCounts(supabase, channelId, viewerIds);
     } catch (err) {
       console.warn("[ServerChannel] unread bump failed:", err?.message || err);
     }
   })();
+}
+
+// bump_channel_unread (supabase/migrations/20261109_channel_unread_bump.sql) does the
+// whole bump in one atomic statement. Until that migration runs, the RPC answers
+// "function not found" once and the per-row path below is used from then on.
+let unreadRpcMissing = false;
+
+function isMissingFunctionError(error, name) {
+  if (!error) return false;
+  const code = String(error.code || "");
+  const text = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`;
+  if (code === "PGRST202" || code === "42883") return true;
+  return /could not find the function|function .* does not exist/i.test(text) && text.includes(name);
+}
+
+/** +1 unread_count of `channelId` for every user in userIds (row created when missing). */
+async function bumpChannelUnreadCounts(db, channelId, userIds) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  if (!channelId || !ids.length) return;
+  if (!unreadRpcMissing) {
+    const { error } = await db.rpc("bump_channel_unread", { p_channel_id: channelId, p_user_ids: ids });
+    if (!error) return;
+    if (!isMissingFunctionError(error, "bump_channel_unread")) throw error;
+    unreadRpcMissing = true;
+  }
+  await bumpChannelUnreadPerRow(db, channelId, ids);
+}
+
+/**
+ * Fallback without the RPC. New rows are inserted with unread_count 1 and the column
+ * default for last_read_at (it is NOT NULL; sending null failed every insert). An
+ * existing row is bumped by compare-and-set on its unread_count, re-read and retried
+ * when a concurrent bump won, so increments are not lost the way read-then-write lost them.
+ */
+async function bumpChannelUnreadPerRow(db, channelId, ids) {
+  const table = "server_channel_reads";
+  const { data: existing, error: rErr } = await db
+    .from(table)
+    .select("user_id, unread_count")
+    .eq("channel_id", channelId)
+    .in("user_id", ids);
+  if (rErr) throw rErr;
+  const byUser = new Map((existing || []).map((r) => [r.user_id, r]));
+
+  const readCount = async (uid) => {
+    const { data, error } = await db
+      .from(table)
+      .select("unread_count")
+      .eq("user_id", uid)
+      .eq("channel_id", channelId)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? data.unread_count : undefined;
+  };
+
+  const bumpOne = async (uid) => {
+    let current = byUser.has(uid) ? byUser.get(uid).unread_count : undefined;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      if (current === undefined) {
+        const { data, error } = await db
+          .from(table)
+          .upsert(
+            { user_id: uid, channel_id: channelId, unread_count: 1 },
+            { onConflict: "user_id,channel_id", ignoreDuplicates: true }
+          )
+          .select("user_id");
+        if (error) throw error;
+        if (data && data.length) return;
+        current = await readCount(uid); // created concurrently: bump it instead
+        continue;
+      }
+      const { data, error } = await db
+        .from(table)
+        .update({ unread_count: Math.max(0, Number(current) || 0) + 1 })
+        .eq("user_id", uid)
+        .eq("channel_id", channelId)
+        .eq("unread_count", current)
+        .select("user_id");
+      if (error) throw error;
+      if (data && data.length) return;
+      current = await readCount(uid);
+    }
+  };
+
+  await Promise.all(
+    ids.map((uid) =>
+      bumpOne(uid).catch((err) => console.warn("[ServerChannel] unread bump row failed:", err?.message || err))
+    )
+  );
+}
+
+function __resetUnreadRpcState() {
+  unreadRpcMissing = false;
 }
 
 function mapPinnedServerMessage(row, senderProfile) {
@@ -1341,6 +1399,8 @@ module.exports = {
   registerServerChannelHandlers,
   buildChannelNotifyPayload,
   bumpChannelUnreadForMembers,
+  bumpChannelUnreadCounts,
+  __resetUnreadRpcState,
   assertTextChannelAccess,
   pushChannelMessageToIos,
 };

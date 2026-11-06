@@ -70,6 +70,35 @@ async function pushGroupMessageToIos({ groupId, groupName, fromId, from, message
   }
 }
 
+/**
+ * Set of String(groupId) among groupIds that userId is a member of (groups:rejoin).
+ * One .in() query per 100 ids instead of one query per group. When a chunk errors
+ * (e.g. one malformed id fails the whole uuid list), that chunk is checked id by id
+ * as before, so one bad id still only skips itself.
+ */
+async function groupsUserBelongsTo(groupIds, userId, db = supabase) {
+  const out = new Set();
+  const ids = [...new Set((groupIds || []).filter(Boolean))];
+  for (let i = 0; i < ids.length; i += 100) {
+    const chunk = ids.slice(i, i + 100);
+    const { data, error } = await db.from("group_members").select("group_id").in("group_id", chunk).eq("user_id", userId);
+    if (!error) {
+      for (const row of data || []) out.add(String(row.group_id));
+      continue;
+    }
+    for (const groupId of chunk) {
+      const { data: membership } = await db
+        .from("group_members")
+        .select("group_id")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (membership) out.add(String(groupId));
+    }
+  }
+  return out;
+}
+
 function resolveSocketAvatar(socket) {
   const cached = getCachedPublicUser(socket.user?.id);
   return (
@@ -197,15 +226,10 @@ function registerGroupHandlers(io, socket, state) {
   // Restores active-banner state without requiring a page reload
   socket.on("groups:rejoin", async (groupIds) => {
     if (!Array.isArray(groupIds)) return;
+    const memberOf = await groupsUserBelongsTo(groupIds.filter(Boolean), myId);
     for (const groupId of groupIds) {
       if (!groupId) continue;
-      const { data: membership } = await supabase
-        .from("group_members")
-        .select("group_id")
-        .eq("group_id", groupId)
-        .eq("user_id", myId)
-        .maybeSingle();
-      if (!membership) continue;
+      if (!memberOf.has(String(groupId))) continue;
       socket.join(`group:${groupId}`);
       const activeCall = activeGroupCalls.get(groupId);
       if (activeCall && activeCall.participants.size > 0) {
@@ -963,4 +987,4 @@ function registerGroupHandlers(io, socket, state) {
   });
 }
 
-module.exports = { registerGroupHandlers, removeUserFromAllGroupCalls, pushGroupMessageToIos };
+module.exports = { registerGroupHandlers, removeUserFromAllGroupCalls, pushGroupMessageToIos, groupsUserBelongsTo };

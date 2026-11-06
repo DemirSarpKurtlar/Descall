@@ -207,6 +207,15 @@ async function resolveMemberPermissions(supabase, serverId, userId, preloaded = 
     assigned = assignedRes.data;
   }
 
+  return { bits: computeMemberBaseBits(roles, assigned), isOwner: false, isMember: true };
+}
+
+/**
+ * Pure part of resolveMemberPermissions for a non-owner member:
+ * OR(@everyone minus privilege bits, assigned roles); ADMINISTRATOR -> all bits.
+ * roles: [{ id, permissions, is_everyone }], assigned: [{ role_id }].
+ */
+function computeMemberBaseBits(roles, assigned) {
   const assignedIds = new Set((assigned || []).map((r) => r.role_id));
   let bits = 0n;
   for (const role of roles || []) {
@@ -220,8 +229,7 @@ async function resolveMemberPermissions(supabase, serverId, userId, preloaded = 
   if ((bits & Permissions.ADMINISTRATOR) === Permissions.ADMINISTRATOR) {
     bits = ALL_PERMISSIONS;
   }
-
-  return { bits, isOwner: false, isMember: true };
+  return bits;
 }
 
 async function getMemberHighestPosition(supabase, serverId, userId, preloaded = null) {
@@ -450,6 +458,32 @@ async function resolveChannelPermissions(supabase, serverId, userId, channelId) 
   if (rErr) throw rErr;
   if (aErr) throw aErr;
 
+  const bits = computeChannelOverwriteBits({
+    baseBits: base.bits,
+    roles,
+    assigned,
+    overrides,
+    channelId,
+    parentId,
+    userId,
+  });
+
+  return {
+    bits,
+    isOwner: false,
+    isMember: true,
+    channelId,
+    overwritesApplied: (overrides || []).length > 0,
+  };
+}
+
+/**
+ * Pure part of resolveChannelPermissions for a non-owner, non-ADMINISTRATOR member:
+ * apply the governing overwrites (the channel's own, else its category's) onto baseBits.
+ * roles: [{ id, position, is_everyone }], assigned: the member's [{ role_id }],
+ * overrides: rows of channelId and parentId.
+ */
+function computeChannelOverwriteBits({ baseBits, roles, assigned, overrides, channelId, parentId, userId }) {
   const everyoneRoleId = (roles || []).find((r) => r.is_everyone)?.id || null;
   const rolePos = new Map((roles || []).map((r) => [String(r.id), Number(r.position) || 0]));
   const memberRoleIds = new Set((assigned || []).map((r) => String(r.role_id)));
@@ -464,15 +498,118 @@ async function resolveChannelPermissions(supabase, serverId, userId, channelId) 
   const ctx = { everyoneRoleId, memberRoleIds, userId };
   const own = (overrides || []).filter((o) => String(o.channel_id) === String(channelId));
   const parentRows = parentId ? (overrides || []).filter((o) => String(o.channel_id) === String(parentId)) : [];
-  const bits = applyOverwrites(base.bits, decorate(effectiveOverwrites(own, parentRows)), ctx);
+  return applyOverwrites(baseBits, decorate(effectiveOverwrites(own, parentRows)), ctx);
+}
 
-  return {
-    bits,
-    isOwner: false,
-    isMember: true,
-    channelId,
-    overwritesApplied: (overrides || []).length > 0,
-  };
+/**
+ * Pure: channel permission bits of one member from preloaded rows, the same bits
+ * resolveChannelPermissions returns. server: { owner_id } (null when missing),
+ * channel: { id, parent_id } of that server (null when missing), roles: the server's
+ * [{ id, permissions, position, is_everyone }], assigned: this member's [{ role_id }],
+ * overrides: rows of the channel and its category.
+ */
+function computeChannelPermissionsFromRows({ server, channel, roles, assigned, overrides, userId, isMember }) {
+  if (!server) return 0n;
+  if (server.owner_id !== userId && !isMember) return 0n;
+  if (!channel) return 0n;
+  if (server.owner_id === userId) return ALL_PERMISSIONS;
+  const baseBits = computeMemberBaseBits(roles, assigned);
+  if (hasPermission(baseBits, Permissions.ADMINISTRATOR)) return ALL_PERMISSIONS;
+  return computeChannelOverwriteBits({
+    baseBits,
+    roles,
+    assigned,
+    overrides,
+    channelId: channel.id,
+    parentId: channel.parent_id || null,
+    userId,
+  });
+}
+
+const BULK_ID_CHUNK = 100;
+const BULK_PAGE = 1000;
+
+/** Every row of a select filtered by .in(inCol, ids): ids in chunks, pages past the row cap. */
+async function selectAllIn(supabase, table, columns, applyFilters, inCol, ids) {
+  const out = [];
+  for (let i = 0; i < ids.length; i += BULK_ID_CHUNK) {
+    const chunk = ids.slice(i, i + BULK_ID_CHUNK);
+    for (let from = 0; ; from += BULK_PAGE) {
+      const { data, error } = await applyFilters(supabase.from(table).select(columns))
+        .in(inCol, chunk)
+        .range(from, from + BULK_PAGE - 1);
+      if (error) throw error;
+      const rows = data || [];
+      out.push(...rows);
+      if (rows.length < BULK_PAGE) break;
+    }
+  }
+  return out;
+}
+
+/**
+ * Channel permission bits of many members of serverId at once: the same bits as
+ * resolveChannelPermissions per member, from 5 queries in total instead of ~8 per
+ * member. `memberIds` must be current members of serverId (the caller just read
+ * them from server_members). Returns Map userId -> bits (bigint). Throws on a
+ * query error.
+ */
+async function resolveChannelPermissionsBulk(supabase, serverId, channelId, memberIds) {
+  const ids = [...new Set((memberIds || []).filter(Boolean))];
+  const result = new Map();
+  if (!ids.length) return result;
+
+  const [serverRes, channelRes, rolesRes] = await Promise.all([
+    supabase.from("servers").select("id, owner_id").eq("id", serverId).maybeSingle(),
+    supabase
+      .from("server_channels")
+      .select("id, parent_id")
+      .eq("id", channelId)
+      .eq("server_id", serverId)
+      .maybeSingle(),
+    supabase.from("server_roles").select("id, permissions, position, is_everyone").eq("server_id", serverId),
+  ]);
+  if (serverRes.error) throw serverRes.error;
+  if (channelRes.error) throw channelRes.error;
+  if (rolesRes.error) throw rolesRes.error;
+  const server = serverRes.data;
+  const channel = channelRes.data;
+  if (!server || !channel) {
+    for (const uid of ids) result.set(uid, 0n);
+    return result;
+  }
+
+  const parentId = channel.parent_id || null;
+  const [assignedRows, overridesRes] = await Promise.all([
+    selectAllIn(supabase, "server_member_roles", "user_id, role_id", (q) => q.eq("server_id", serverId), "user_id", ids),
+    supabase
+      .from("server_channel_overrides")
+      .select("id, channel_id, target_type, target_id, allow_permissions, deny_permissions")
+      .in("channel_id", parentId ? [parentId, channelId] : [channelId]),
+  ]);
+  if (overridesRes.error) throw overridesRes.error;
+
+  const assignedByUser = new Map();
+  for (const row of assignedRows) {
+    if (!assignedByUser.has(row.user_id)) assignedByUser.set(row.user_id, []);
+    assignedByUser.get(row.user_id).push({ role_id: row.role_id });
+  }
+
+  for (const uid of ids) {
+    result.set(
+      uid,
+      computeChannelPermissionsFromRows({
+        server,
+        channel,
+        roles: rolesRes.data || [],
+        assigned: assignedByUser.get(uid) || [],
+        overrides: overridesRes.data || [],
+        userId: uid,
+        isMember: true,
+      })
+    );
+  }
+  return result;
 }
 
 module.exports = {
@@ -489,6 +626,10 @@ module.exports = {
   assertHierarchy,
   assertCanManageRole,
   resolveChannelPermissions,
+  resolveChannelPermissionsBulk,
+  computeMemberBaseBits,
+  computeChannelOverwriteBits,
+  computeChannelPermissionsFromRows,
   applyOverwrites,
   effectiveOverwrites,
   permissionsToFlags,

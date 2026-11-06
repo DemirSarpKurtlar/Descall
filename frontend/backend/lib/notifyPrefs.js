@@ -91,9 +91,50 @@ async function levelFor(userId, type, id, now = Date.now()) {
 
 /** The recipients whose options allow this message. */
 async function filterRecipients(userIds, type, id, { mention = false, now = Date.now() } = {}) {
+  const prefs = await readPrefsMany(userIds || [], type, id, now);
   const out = [];
   for (const uid of userIds || []) {
-    if (allows(await levelFor(uid, type, id, now), { mention })) out.push(uid);
+    if (allows(effectiveLevel(prefs.get(uid) || null, now), { mention })) out.push(uid);
+  }
+  return out;
+}
+
+/**
+ * readPref for many users of one conversation: cached ones from the cache, the rest
+ * with one .in("user_id") query per 100 ids (was one query per user). Map uid ->
+ * pref or null. A failed query leaves those users at null ('all'), like readPref.
+ */
+async function readPrefsMany(userIds, type, id, now = Date.now()) {
+  const out = new Map();
+  if (tableMissing || !id) return out;
+  const pending = [];
+  for (const uid of new Set(userIds.filter(Boolean))) {
+    const hit = cache.get(keyOf(uid, type, id));
+    if (hit && now - hit.at < TTL_MS) out.set(uid, hit.pref);
+    else pending.push(uid);
+  }
+  for (let i = 0; i < pending.length && !tableMissing; i += 100) {
+    const chunk = pending.slice(i, i + 100);
+    try {
+      const { data, error } = await db()
+        .from("conversation_notify_prefs")
+        .select("user_id, level, muted_until")
+        .in("user_id", chunk)
+        .eq("conv_type", type)
+        .eq("conv_id", id);
+      if (error) {
+        if (isMissingTable(error, "conversation_notify_prefs")) tableMissing = true;
+        continue;
+      }
+      const byUser = new Map((data || []).map((r) => [r.user_id, { level: r.level, muted_until: r.muted_until }]));
+      for (const uid of chunk) {
+        const pref = byUser.get(uid) || null;
+        cache.set(keyOf(uid, type, id), { pref, at: now });
+        out.set(uid, pref);
+      }
+    } catch {
+      /* unknown: these users stay on 'all' */
+    }
   }
   return out;
 }
