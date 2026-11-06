@@ -1059,7 +1059,7 @@ export const nested = {
     "tileMessage": "Mesaj",
     "tileCall": "Ara",
     "tileVideo": "Görüntülü",
-    "tileFriend": "Arkadaşsınız",
+    "tileFriend": "Arkadaş",
     "tileAdd": "Ekle",
     "about": "Hakkında",
     "memberSince": "Üyelik tarihi",

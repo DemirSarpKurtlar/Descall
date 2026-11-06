@@ -4,9 +4,8 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
   Search, MessageSquare, X, ChevronDown, ChevronRight, Menu, ChevronLeft,
-  UserPlus, Plus, Crown, Pin, Timer, ImagePlus, ShieldCheck, MoreHorizontal, Ban,
+  UserPlus, Plus, Crown, Pin, Timer, ImagePlus, ShieldCheck,
 } from "../ui/Icon.jsx";
-import GlassActionMenu from "../ui/GlassActionMenu";
 import { useGroupMemberMenu, GroupRemovedBanner } from "../groups/GroupMemberRemoval";
 import { groupRoleOf } from "../../lib/groupMembers";
 import { Avatar } from "../ui/Avatar";
@@ -27,7 +26,7 @@ import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate, upper } from "../../i18n/format";
 import { displayText } from "../../lib/profanity";
-import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
+import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
 import AdminBadge from "../social/AdminBadge";
 import PopOutButton from "../../premium/desktop/PopOutButton.jsx";
@@ -116,7 +115,6 @@ export default function ChatPanel({
   const [showMembers, setShowMembers] = useState(false);
   const [showPinned, setShowPinned] = useState(false);
   const pinButtonRef = useRef(null);
-  const [dmMoreOpen, setDmMoreOpen] = useState(false);
   // DM header "⋯" (A2, mockup #05): pinned messages, pin chat, mute, report, block.
   // Same handlers as the sidebar swipe actions / row menu.
   const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded: onGroupMemberAdded });
@@ -596,18 +594,14 @@ export default function ChatPanel({
 
         <div className="header-right">
           <PopOutButton />
-          {/* UI audit #67: a DM header shows only voice + video; search, pinned
-              and the destructive "Engelle" live in the ⋯ menu. */}
-          {!headerDm && (
-            <button
-              className={`icon-btn ${showSearch ? "active" : ""}`}
-              title={t("Search")}
-              aria-label={t("Search")}
-              onClick={() => { setShowSearch(!showSearch); setShowMembers(false); }}
-            >
-              <Search size={20} />
-            </button>
-          )}
+          <button
+            className={`icon-btn ${showSearch ? "active" : ""}`}
+            title={t("Search")}
+            aria-label={t("Search")}
+            onClick={() => { setShowSearch(!showSearch); setShowMembers(false); }}
+          >
+            <Search size={20} />
+          </button>
           {!headerDm && (
             <button
               className={`icon-btn ${showMembers ? "active" : ""}`}
@@ -618,7 +612,7 @@ export default function ChatPanel({
               <Users size={20} />
             </button>
           )}
-          {(headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
+          {(headerDm || headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
             <button
               ref={pinButtonRef}
               className={`icon-btn ${showPinned ? "active" : ""}`}
@@ -657,47 +651,16 @@ export default function ChatPanel({
               </button>
             </>
           )}
+          {/* Mockup #29/#30: DM actions are one pill — search, pin, call, video, block.
+              Profile (avatar/title) carries share, nickname, report; the DM list carries pin/mute chat. */}
           {headerDm?.id && headerDm.id !== me?.id ? (
-            <button
-              ref={pinButtonRef}
-              type="button"
-              className={`icon-btn header-more-btn${dmMoreOpen || showPinned || showSearch ? " active" : ""}`}
-              title={t("More")}
-              aria-label={t("More")}
-              aria-haspopup="menu"
-              aria-expanded={dmMoreOpen}
-              onClick={() => setDmMoreOpen((v) => !v)}
-            >
-              <MoreHorizontal size={20} />
-              {pinnedMessages.length > 0 && (
-                <span className="icon-btn-badge">{pinnedMessages.length}</span>
-              )}
-            </button>
-          ) : null}
-          {headerDm?.id && headerDm.id !== me?.id ? (
-            <GlassActionMenu
-              open={dmMoreOpen}
-              anchorRef={pinButtonRef}
-              onClose={() => setDmMoreOpen(false)}
-              ariaLabel={t("More")}
-              sections={[
-                [
-                  { id: "search", label: t("Search"), icon: Search, onSelect: () => { setDmMoreOpen(false); setShowSearch(true); setShowMembers(false); } },
-                  { id: "pinned", label: t("Pinned messages"), icon: Pin, badge: pinnedMessages.length || undefined, onSelect: () => { setDmMoreOpen(false); togglePinnedPanel(); } },
-                ],
-                [
-                  {
-                    id: "block",
-                    label: dmBlockedByMe ? t("Unblock") : t("Block"),
-                    icon: Ban,
-                    danger: !dmBlockedByMe,
-                    onSelect: () => {
-                      setDmMoreOpen(false);
-                      confirmToggleBlock({ userId: headerDm.id, username: headerDm.username, displayName: resolveDisplayName(headerDm), t }).catch(() => {});
-                    },
-                  },
-                ],
-              ]}
+            <BlockUserButton
+              userId={headerDm.id}
+              username={headerDm.username}
+              displayName={resolveDisplayName(headerDm)}
+              className={`icon-btn header-block-btn${dmBlockedByMe ? " active" : ""}`}
+              iconSize={20}
+              compact
             />
           ) : null}
         </div>
