@@ -1391,6 +1391,7 @@ export const nested = {
       "lockedTitle": "O Descall está bloqueado",
       "pin": "PIN",
       "unlock": "Desbloquear",
+      "hint": "Digite seu PIN e pressione Enter",
       "help": "O PIN é guardado como um hash com sal, criptografado com a proteção de dados do Windows. Isso impede que outra pessoa use seu computador enquanto você está longe; não é criptografia de disco e não protege contra programas executados com a sua conta. O Windows Hello ainda não é oferecido: ele precisa de um componente nativo que o Descall não inclui."
     },
     "quickActions": {
