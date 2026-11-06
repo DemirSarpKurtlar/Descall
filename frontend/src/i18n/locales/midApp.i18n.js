@@ -36,6 +36,9 @@ export const MID_APP_I18N = {
     "Your inventory is empty": "Envanterin boş",
     "Items you buy in the store show up here.": "Mağazadan aldığın öğeler burada görünür.",
     "Browse the store": "Mağazaya göz at",
+    "Cleans up keyboard, fan and background noise.": "Klavye, fan ve arka plan sesini temizler.",
+    "Noise suppression is on": "Gürültü engelleme açık",
+    "Keeps your voice at an even level.": "Sesini dengeli bir seviyede tutar.",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -67,6 +70,9 @@ export const MID_APP_I18N = {
     "Your inventory is empty": "Dein Inventar ist leer",
     "Items you buy in the store show up here.": "Artikel, die du im Shop kaufst, erscheinen hier.",
     "Browse the store": "Shop durchstöbern",
+    "Cleans up keyboard, fan and background noise.": "Entfernt Tastatur-, Lüfter- und Hintergrundgeräusche.",
+    "Noise suppression is on": "Rauschunterdrückung ist an",
+    "Keeps your voice at an even level.": "Hält deine Stimme auf einem gleichmäßigen Pegel.",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -98,6 +104,9 @@ export const MID_APP_I18N = {
     "Your inventory is empty": "Tu inventario está vacío",
     "Items you buy in the store show up here.": "Los artículos que compres en la tienda aparecen aquí.",
     "Browse the store": "Explorar la tienda",
+    "Cleans up keyboard, fan and background noise.": "Elimina el ruido del teclado, del ventilador y de fondo.",
+    "Noise suppression is on": "La supresión de ruido está activada",
+    "Keeps your voice at an even level.": "Mantiene tu voz a un nivel uniforme.",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -129,6 +138,9 @@ export const MID_APP_I18N = {
     "Your inventory is empty": "Ton inventaire est vide",
     "Items you buy in the store show up here.": "Les articles achetés dans la boutique apparaissent ici.",
     "Browse the store": "Parcourir la boutique",
+    "Cleans up keyboard, fan and background noise.": "Supprime le bruit du clavier, du ventilateur et de fond.",
+    "Noise suppression is on": "La suppression du bruit est activée",
+    "Keeps your voice at an even level.": "Garde ta voix à un niveau régulier.",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -160,6 +172,9 @@ export const MID_APP_I18N = {
     "Your inventory is empty": "Seu inventário está vazio",
     "Items you buy in the store show up here.": "Os itens que você compra na loja aparecem aqui.",
     "Browse the store": "Explorar a loja",
+    "Cleans up keyboard, fan and background noise.": "Remove ruído de teclado, ventilador e de fundo.",
+    "Noise suppression is on": "A supressão de ruído está ativada",
+    "Keeps your voice at an even level.": "Mantém sua voz em um nível uniforme.",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -191,5 +206,8 @@ export const MID_APP_I18N = {
     "Your inventory is empty": "Инвентарь пуст",
     "Items you buy in the store show up here.": "Купленные в магазине предметы появятся здесь.",
     "Browse the store": "Открыть магазин",
+    "Cleans up keyboard, fan and background noise.": "Убирает шум клавиатуры, вентилятора и фона.",
+    "Noise suppression is on": "Шумоподавление включено",
+    "Keeps your voice at an even level.": "Держит громкость голоса ровной.",
   },
 };

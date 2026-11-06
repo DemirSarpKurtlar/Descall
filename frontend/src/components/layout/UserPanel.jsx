@@ -2442,9 +2442,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Waveform}
                   title={t("AI noise suppression")}
-                  description={t(
-                    "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available."
-                  )}
+                  description={t("Cleans up keyboard, fan and background noise.")}
                 >
                   <div className="us-btn-row">
                     {[
@@ -2463,20 +2461,11 @@ const UserPanel = forwardRef(function UserPanel({
                     ))}
                   </div>
                 </SettingRow>
+                {/* UI audit #38: a plain status line aligned with the row text; the
+                    engine name stays out of the copy (hover title only). */}
                 {voiceProfile.noiseMode !== "off" ? (
-                  <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
-                    {t("Active engine")}:{" "}
-                    <strong>
-                      {noiseEngine === "gtcrn"
-                        ? "GTCRN"
-                        : noiseEngine === "rnnoise"
-                          ? "RNNoise"
-                          : noiseEngine === "speex"
-                            ? "Speex"
-                            : noiseEngine === "dsp"
-                              ? "DSP"
-                              : t("Ready")}
-                    </strong>
+                  <p className="us-row-desc us-row-status" title={noiseEngine || undefined}>
+                    {noiseEngine ? t("Noise suppression is on") : t("Ready")}
                   </p>
                 ) : null}
                 <SettingRow
@@ -2493,7 +2482,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Volume2}
                   title={t("Auto gain control")}
-                  description={t("Keeps your volume steady without pumping.")}
+                  description={t("Keeps your voice at an even level.")}
                 >
                   <Toggle
                     value={voiceProfile.autoGainControl !== false}
