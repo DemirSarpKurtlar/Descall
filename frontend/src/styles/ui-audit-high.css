@@ -307,3 +307,25 @@ html[data-theme="light"] .pm-tab .pc-codein-g.is-active {
 html[data-theme="light"] .pm-tab .pc-codein.is-error .pc-codein-g {
   box-shadow: inset 0 0 0 1.5px rgba(255, 69, 58, 0.85);
 }
+
+/* #63 Activity, light theme: the status card stayed a dark translucent slab
+   with a glowing blue edge (the accent is an inline border colour) and an
+   unreadable grey hint strip. White card, hairline, no glow. */
+html[data-theme="light"] .activity-current-card {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(57, 60, 77, 0.1) !important;
+  box-shadow: 0 1px 2px rgba(16, 18, 28, 0.04) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-theme="light"] .activity-current-label {
+  color: rgba(57, 60, 77, 0.6);
+}
+html[data-theme="light"] .activity-web-notice {
+  background: #F3F4F8;
+  border: 0;
+  color: rgba(57, 60, 77, 0.7);
+}
+html[data-theme="light"] .activity-web-notice strong {
+  color: #393C4D;
+}
