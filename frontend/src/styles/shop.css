@@ -910,7 +910,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   height: 64px;
   margin: 0 auto 12px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6678ff, #a855f7);
+  background: var(--brand, #587af5);
   display: flex;
   align-items: center;
   justify-content: center;
