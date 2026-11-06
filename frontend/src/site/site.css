@@ -1319,7 +1319,8 @@ a.mkt-feature-link {
   letter-spacing: -0.02em;
 }
 
-.seo-section > p {
+.seo-section > p,
+.seo-section-body > p {
   margin: 0 0 16px;
   color: var(--mkt-muted);
   line-height: 1.6;

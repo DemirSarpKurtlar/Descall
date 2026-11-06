@@ -287,7 +287,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
-      <SeoExtraContent />
+      <SeoExtraContent layout="split" />
       <SeoRelatedLinks title="Keep exploring" links={SEO_PILLARS} />
     </>
   );
