@@ -1,0 +1,71 @@
+/* Descall+ hotkey / audio / notification settings (pa-*). Glass-friendly:
+   translucent fills over the Settings card, theme tokens with fallbacks. */
+.pa-panel { display: flex; flex-direction: column; gap: 14px; }
+.pa-section .us-card.stack { display: flex; flex-direction: column; }
+.pa-row .us-row-control { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.pa-hint { margin: 6px 4px 0; font-size: 12px; color: var(--text-muted, rgba(255, 255, 255, 0.6)); line-height: 1.45; }
+.pa-muted { color: var(--text-muted, rgba(255, 255, 255, 0.55)); }
+.pa-note { margin: 0; padding: 10px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.45;
+  background: rgba(var(--g-brand-rgb, 120, 140, 255), 0.1); border: 1px solid rgba(var(--g-brand-rgb, 120, 140, 255), 0.22); }
+.pa-note-warn { background: rgba(255, 176, 32, 0.12); border-color: rgba(255, 176, 32, 0.35); }
+.pa-note-ok { background: rgba(48, 196, 108, 0.12); border-color: rgba(48, 196, 108, 0.32); }
+
+.pa-slider { display: inline-flex; align-items: center; gap: 10px; min-width: 200px; }
+.pa-slider input[type="range"] { flex: 1; accent-color: var(--primary, #7c8cff); min-width: 140px; }
+.pa-slider-value { min-width: 54px; text-align: right; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+.pa-select { max-width: 260px; padding: 7px 10px; border-radius: 10px; font: inherit; font-size: 13px;
+  color: inherit; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); }
+.pa-select:focus-visible, .pa-btn:focus-visible, .pa-recorder:focus-visible { outline: 2px solid var(--primary, #7c8cff); outline-offset: 2px; }
+.pa-select option { color: #111; }
+
+.pa-btn { padding: 7px 12px; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  color: inherit; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: background 0.15s, transform 0.1s; }
+.pa-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+.pa-btn:active:not(:disabled) { transform: scale(0.97); }
+.pa-btn:disabled { opacity: 0.5; cursor: default; }
+.pa-btn-primary { background: var(--primary, #6d7cff); border-color: transparent; color: #fff; }
+.pa-btn-primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--primary, #6d7cff); }
+.pa-btn-danger { color: #ff7b72; }
+
+.pa-keycaps { display: inline-flex; gap: 4px; align-items: center; }
+.pa-keycaps kbd { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 7px; border-radius: 7px;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25); }
+.pa-recorder { min-width: 150px; min-height: 32px; padding: 4px 10px; border-radius: 10px; cursor: pointer; color: inherit; font: inherit; font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255, 255, 255, 0.22); }
+.pa-recorder.is-recording { border-style: solid; border-color: var(--primary, #7c8cff); background: rgba(var(--g-brand-rgb, 120, 140, 255), 0.14); }
+
+.pa-meter { position: relative; width: 100%; min-width: 180px; height: 10px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.08); }
+.pa-meter.is-compact { min-width: 0; height: 4px; }
+.pa-meter-fill { position: absolute; inset: 0; transform-origin: left center; border-radius: inherit;
+  background: linear-gradient(90deg, #30c46c 0%, #30c46c 70%, #f0b429 85%, #ff5f56 100%); transition: transform 60ms linear; }
+.pa-meter:not(.is-open) .pa-meter-fill { filter: saturate(0.35) brightness(0.85); }
+.pa-meter-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #fff; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+@media (prefers-reduced-motion: reduce) { .pa-meter-fill { transition: none; } }
+
+.pa-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pa-list-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.pa-list-item:first-child { border-top: 0; }
+.pa-list-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pa-list-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pa-list-sub { font-size: 12px; color: var(--text-muted, rgba(255, 255, 255, 0.6)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pa-list-item.is-unread .pa-list-title::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: middle; background: var(--primary, #7c8cff); }
+.pa-empty { padding: 18px 14px; font-size: 13px; color: var(--text-muted, rgba(255, 255, 255, 0.6)); text-align: center; }
+.pa-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
+.pa-badge-ok { background: rgba(48, 196, 108, 0.2); color: #6fe39b; }
+.pa-badge-warn { background: rgba(255, 176, 32, 0.2); color: #ffc65c; }
+
+.pa-matrix { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pa-matrix th, .pa-matrix td { padding: 8px 10px; text-align: left; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.pa-matrix th { font-weight: 600; color: var(--text-muted, rgba(255, 255, 255, 0.65)); font-size: 12px; }
+.pa-matrix td.pa-c, .pa-matrix th.pa-c { text-align: center; }
+.pa-input { padding: 7px 10px; border-radius: 10px; font: inherit; font-size: 13px; color: inherit; min-width: 0;
+  background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); }
+.pa-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 14px; }
+
+/* In-call participant meter (voice_activity_monitor). */
+.pa-vam { display: block; width: 100%; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+.pa-vam > i { display: block; height: 100%; transform-origin: left center; background: #30c46c; transition: transform 80ms linear; }
+@media (prefers-reduced-motion: reduce) { .pa-vam > i { transition: none; } }
