@@ -287,9 +287,8 @@
         ${lbl(p[1], 'left:6%;top:7%', 'strong')}</div>`;
     },
     mic_monitor(s) {
-      const n = Math.round(s.volume / 20);
       return `<div class="dpc-scr pv-monitor"><div class="flow"><span class="node">${svg('mic', 20)}</span>
-        <span class="wave">${Array.from({ length: 5 }, (_, i) => `<i class="${i < n ? 'on' : ''}" style="height:${30 + i * 14}%"></i>`).join('')}</span>
+        <span class="wave">${Array.from({ length: 9 }, (_, i) => `<span class="mb${i < Math.round(s.volume / 11) ? ' on' : ''}" style="height:${[30, 55, 80, 45, 95, 60, 75, 40, 25][i]}%"></span>`).join('')}</span>
         <span class="node">${svg('head', 20)}</span></div>${lbl(`Dinleme sesi %${s.volume}`, 'left:50%;bottom:9%;transform:translateX(-50%)')}</div>`;
     },
     voice_activity_monitor() {
@@ -796,9 +795,9 @@
   .pv-presets .ar{display:grid;opacity:.5}
   .pv-monitor .flow{position:absolute;inset:0 0 18%;display:flex;align-items:center;justify-content:center;gap:6%}
   .pv-monitor .node{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-  .pv-monitor .wave{display:flex;align-items:center;gap:6px;height:40%}
-  .pv-monitor .wave i{width:6px;border-radius:3px;background:rgba(255,255,255,.14)}
-  .pv-monitor .wave i.on{background:#30b458}
+  .pv-monitor .wave{display:flex;align-items:center;gap:5px;height:44%}
+  .pv-monitor .wave .mb{display:block;width:5px;border-radius:3px;background:rgba(255,255,255,.14)}
+  .pv-monitor .wave .mb.on{background:linear-gradient(180deg,#c8e35b,#30b458)}
   .pv-vam .ppl{position:absolute;inset:10% 5%;display:grid;grid-template-columns:1fr 1fr;gap:6%}
   .pv-vam .p{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:8px;background:rgba(255,255,255,.05)}
   .pv-vam .p.talk .dpc-av{box-shadow:0 0 0 2px #30d158}
@@ -954,14 +953,14 @@
   .dpc-e-scene{position:relative;height:168px;border-radius:12px;overflow:hidden;container-type:size;background:radial-gradient(90% 80% at 15% 0%,rgba(62,123,250,.35),transparent 60%),radial-gradient(80% 90% at 100% 100%,rgba(155,93,229,.3),transparent 60%),#151821;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .dpc-e-scene .dpc-call{width:100%;min-width:0}
   .dpc-e-pin{position:absolute;z-index:9;min-width:24px;height:20px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-size:var(--fs-11);font-weight:800;color:#fff;background:#3e7bfa;box-shadow:0 0 0 3px rgba(62,123,250,.3)}
-  .dpc-e-scene.audio{display:flex;align-items:center;justify-content:center;padding:0 14px}
+  .dpc-e-scene.audio{display:flex;align-items:center;justify-content:center;padding:0 8px}
   .dpc-e-scene .chain{display:flex;align-items:center;gap:2px;width:100%}
-  .dpc-e-scene .cn{position:relative;flex:none;width:62px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+  .dpc-e-scene .cn{position:relative;flex:none;width:60px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
   .dpc-e-scene .ci{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:rgba(48,180,88,.18);box-shadow:inset 0 0 0 1px rgba(48,196,108,.45);color:#7fe0a3}
   .dpc-e-scene .cn b{font-size:var(--fs-12)}.dpc-e-scene .cn small{font-size:var(--fs-11);color:var(--text-muted)}
   .dpc-e-pin.st{position:absolute;top:-12px;right:0;background:#30b458;box-shadow:0 0 0 3px rgba(48,180,88,.3)}
-  .dpc-e-scene .cw{flex:1;display:flex;align-items:center;justify-content:center;gap:2px;height:28px;margin-bottom:26px}
-  .dpc-e-scene .cw i{width:3px;border-radius:2px;background:rgba(127,224,163,.7)}
+  .dpc-e-scene .cw{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:2px;height:28px;margin-bottom:26px}
+  .dpc-e-scene .cw i{flex:none;width:2px;border-radius:2px;background:rgba(127,224,163,.7)}
   .dpc-e-ch{display:flex;flex-direction:column;gap:10px}
   .dpc-e-cht{display:flex;align-items:baseline;gap:10px;min-width:0}
   .dpc-e-cht h3,.dpc-e-cht p{margin:0!important;white-space:nowrap}
