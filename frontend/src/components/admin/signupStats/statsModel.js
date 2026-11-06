@@ -37,11 +37,13 @@ export function shortDay(day, locale, withYear = false) {
 }
 /** "27 Eyl – 26 Eki 2026" (year on both ends only when they differ). */
 export function rangeLabel(from, to, locale) {
+  if (!from || !to) return "";
   const sameYear = from.slice(0, 4) === to.slice(0, 4);
   return `${shortDay(from, locale, !sameYear)} – ${shortDay(to, locale, true)}`;
 }
 /** "last 30 days" for a preset that ends today, otherwise the dates. */
 export function rangeCaption(from, to, today, t, locale) {
+  if (!from || !to) return "";
   if (to === today) {
     const n = Math.round((Date.parse(to) - Date.parse(from)) / 864e5) + 1;
     if ([7, 30, 90].includes(n)) return t("adminx.sst.captionDays", { count: n });

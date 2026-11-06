@@ -1,7 +1,7 @@
 // Ayarlar → Rozetler (mockup 03-equip, adapted to "next to": the country badge always shows,
 // you pick which one special badge sits beside it, or none).
 import { useEffect, useRef, useState } from "react";
-import { Check, Sparkles, Gift } from "../ui/Icon.jsx";
+import { Check, Gift } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { CountryFlag } from "../shop/CountryFlag";
 import { SpecialBadgeIcon, ART_BY_ID } from "./specialBadgeArt.jsx";
@@ -119,7 +119,8 @@ export default function BadgeSettingsTab({ me }) {
             })}
           </div>
         ) : null}
-        <p className="us-row-desc ps-hint"><Sparkles size={13} /> {t("badges.settingsHint")}</p>
+        {/* The empty state already says how badges are earned; show the note only when the list has badges. */}
+        {owned.length ? <p className="us-row-desc ps-hint">{t("badges.settingsHint")}</p> : null}
       </section>
     </div>
   );

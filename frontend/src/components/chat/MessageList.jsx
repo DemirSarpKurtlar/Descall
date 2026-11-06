@@ -1,11 +1,11 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
+import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
-import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
 import VoiceMessagePlayer from "./VoiceMessagePlayer";
@@ -30,7 +30,8 @@ import VotersSheet from "../polls/VotersSheet";
 import PollCreateSheet from "../polls/PollCreateSheet";
 import { useCompact } from "../polls/dsxShared";
 import { bindPollSocket, editPollNow } from "../../lib/pollStore";
-import { BarChart3 } from "../ui/Icon.jsx";
+import { BarChart3, Hash, AlertCircle, RefreshCw } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";
@@ -174,6 +175,8 @@ export default function MessageList({
   activeServer = null,
   canManageMessages = false,
   loading = false,
+  loadError = false,
+  onRetryLoad,
   unreadCount = 0,
   onReply,
   searchQuery = "",
@@ -488,10 +491,40 @@ export default function MessageList({
     return grouped;
   }, [searchedMessages, unreadCount, isSearching, t]);
 
+  if (loading && loadError) {
+    return (
+      <div className="message-list is-load-error" ref={listRef} role="alert">
+        <EmptyState
+          className="is-compact"
+          illustration="none"
+          icon={AlertCircle}
+          title={t("uah.dm.errorTitle")}
+          body={t("uah.dm.errorBody")}
+          primary={onRetryLoad ? { label: t("Try again"), icon: RefreshCw, action: onRetryLoad } : undefined}
+        />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="message-list is-loading-skeleton" ref={listRef} aria-busy="true">
         <MessageSkeleton count={8} />
+      </div>
+    );
+  }
+
+  // UI audit #144: an empty text channel opens on a start-of-channel block
+  // (the same EmptyState as the rest of the app), not a blank pane.
+  if (activeChannel?.id && !isSearching && groupedMessages.length === 0) {
+    return (
+      <div className="message-list is-channel-start" ref={listRef}>
+        <EmptyState
+          className="channel-start"
+          icon={Hash}
+          title={t("Welcome to #{channel}", { channel: activeChannel.name || "" })}
+          body={activeChannel.topic || t("This is the start of the #{channel} channel.", { channel: activeChannel.name || "" })}
+        />
       </div>
     );
   }
@@ -643,10 +676,8 @@ export default function MessageList({
                     imageUrl={pickAvatarUrl(avatarUser)}
                     animate="hover"
                   />
-                  <StatusBadge
-                    status={getPresenceStatus(onlineUsers, avatarUser?.id)}
-                    user={avatarUser}
-                  />
+                  {/* No presence dot on message avatars (as in Messages): the
+                      list could disagree with the live panel status. */}
                 </div>
                 <div className="message-meta">
                   <span
@@ -806,8 +837,8 @@ export default function MessageList({
         onClose={() => setReportTarget(null)}
         targetId={reportTarget?.id}
         targetUsername={reportTarget?.username}
-        targetDisplayName={reportTarget ? resolveDisplayName(reportTarget) : undefined}
-        targetUser={reportTarget}
+        targetDisplayName={reportTarget ? resolveDisplayName(senderFor(reportTarget) || reportTarget) : undefined}
+        targetUser={reportTarget ? senderFor(reportTarget) || reportTarget : null}
         snippet={reportTarget?.snippet}
         contextType={reportTarget?.contextType || conversationType}
         contextId={reportTarget?.contextId}
@@ -1512,7 +1543,7 @@ function MessageBubble({
               {reply.text
                 ? displayText(plainText(String(localizedField({ text: reply.text, i18n: textI18n(reply.i18n) }, "text"))).slice(0, 120))
                 : reply.mediaType
-                ? `📎 ${reply.mediaType}`
+                ? mediaTypeLabel(reply.mediaType, t)
                 : t("Original message")}
             </span>
           </button>

@@ -63,5 +63,46 @@
   "window": {
     "signupStats": "Statistiques d'inscription — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Couper le micro",
+      "unmute": "Réactiver le micro",
+      "deafen": "Mettre en sourdine",
+      "undeafen": "Réactiver le son",
+      "hangup": "Quitter l'appel",
+      "mini": "Ouvrir le mode mini",
+      "status": "Statut",
+      "online": "En ligne",
+      "idle": "Absent",
+      "dnd": "Ne pas déranger",
+      "invisible": "Masqué",
+      "inCall": "En appel : {title}",
+      "focus": "Mode concentration",
+      "focusOn": "Mode concentration : encore {minutes} min",
+      "focus30": "30 min",
+      "focus60": "1 heure",
+      "focus120": "2 heures",
+      "focusOff": "Arrêter le mode concentration",
+      "audioProfile": "Profil audio"
+    },
+    "taskbar": {
+      "unread": "{n} non lus"
+    },
+    "window": {
+      "mini": "Descall mode mini",
+      "call": "Descall appel",
+      "sidebar": "Descall barre latérale"
+    },
+    "launcher": {
+      "title": "Lanceur rapide",
+      "placeholder": "Rechercher des amis, discussions, serveurs ou actions",
+      "empty": "Aucun résultat",
+      "hint": "Entrée pour ouvrir, flèches pour naviguer, Échap pour fermer",
+      "loading": "Recherche en cours"
+    },
+    "quickReply": {
+      "placeholder": "Répondre"
+    }
   }
 }

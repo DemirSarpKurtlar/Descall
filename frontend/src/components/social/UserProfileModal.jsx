@@ -11,6 +11,7 @@ import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
 import AdminBadge from "./AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText } from "../ui/Cosmetics";
 import { ProfileBadgeRow } from "../badges/BadgeVault.jsx";
 import { useT } from "../../context/LocaleContext";
@@ -41,7 +42,7 @@ import { useToast } from "../../context/ToastContext";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import { formatDate } from "../../i18n/format";
 import "./ProfileSheet.css";
-import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUser, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
+import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -122,7 +123,7 @@ function UserProfileModal({
   const toggleBlock = async () => {
     setBlockError("");
     try {
-      const next = await confirmToggleBlock({ userId, username: profile?.username || username, t });
+      const next = await confirmToggleBlock({ userId, username: profile?.username || username, displayName: profile?.displayName || profile?.display_name, t });
       if (next) setFriendOverride({ userId, state: "none" });
     } catch (err) {
       setBlockError(err?.message || t("Something went wrong."));
@@ -387,7 +388,7 @@ function UserProfileModal({
       canCall ? { id: "video", icon: MICam, label: t("profile.tileVideo"), disabled: blockedByMe, onClick: () => { onClose(); onStartCall(callTarget, "video"); } } : null,
       {
         id: "friend",
-        icon: friendState === "friend" ? MIUser : friendState === "sent" ? MICheck : MIUserPlus,
+        icon: friendState === "friend" || friendState === "sent" ? MICheck : MIUserPlus,
         label: friendState === "friend" ? t("profile.tileFriend") : friendState === "sent" ? t("Sent") : t("profile.tileAdd"),
         disabled: friendLoading || friendState === "sent" || (friendState === "none" && blockedByMe),
         onClick: friendState === "friend" ? handleRemoveFriend : handleAddFriend,
@@ -482,6 +483,7 @@ function UserProfileModal({
           <div className="pfs-badges">
             <ProfileBadgeRow user={badgeUser} me={me} size={glassShell ? "ios" : "md"} />
             {isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
+            <PremiumBadge user={viewUser} variant="chip" />
           </div>
           {fetched?.bio ? <p className="pfs-bio">{fetched.bio}</p> : null}
           {tiles.length ? (
@@ -747,7 +749,7 @@ function UserProfileModal({
                   <ProfileBadgeRow
                     user={badgeUser}
                     me={me}
-                    trailing={isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
+                    trailing={<>{isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}<PremiumBadge user={viewUser} variant="chip" /></>}
                   />
                 </div>
                 <div

@@ -1,25 +1,27 @@
 /**
  * Avatar fallbacks (approved 2026-10-19, design/ai-look-2026-10-19/04-avatar-fallbacks):
- * colour = PALETTE[crc32(user id) % 8], fixed for the life of the account (a rename does
+ * colour = PALETTE[crc32(user id) % 6], fixed for the life of the account (a rename does
  * not change it); up to two initials from the visible name, Turkish upper case (i → İ).
- * Flat fill, no white sheen, no gradient. White text is ≥ 4.5:1 on every palette entry.
+ * Flat fill, no white sheen, no gradient. The light letter is ≥ 4.5:1 on every palette entry.
  * A photo, when there is one, replaces all of this.
  */
 import { upper as upperCase } from "../i18n/format.js";
 
 export const AVATAR_PALETTE = Object.freeze([
-  "#2868FF", // blue
-  "#228359", // green
-  "#BA590E", // orange
-  "#DB2C5B", // pink
-  "#7E59EE", // violet
-  "#177E96", // teal
-  "#926F16", // gold
-  "#DA362C", // red
+  "#3D5296", // brand blue, muted
+  "#2F5F66", // slate teal
+  "#584A86", // dusk
+  "#7A5636", // umber
+  "#4A6340", // moss
+  "#7D4458", // plum
 ]);
-// Display swatches from the mockup (gen.py PAL). The stored colours above are the
-// same hues darkened just enough for 4.5:1 white text (rule in the mockup).
-export const AVATAR_PALETTE_MOCKUP = Object.freeze(["#5B8CFF", "#2FB67C", "#F08A3C", "#E2557B", "#8C6CF0", "#1FA9C9", "#D9A520", "#E0574F"]);
+/* UI audit #21 (2026-11-06): six low-saturation tones that sit with the brand
+   charcoal (#393C4D) and logo blue (#587AF5) instead of the old eight
+   saturated hues. Dark fill + light letter (--avatar-fg); the letter is
+   >= 5.5:1 and white >= 6.5:1 on every entry. */
+export const AVATAR_FG = "#E8ECF8";
+// Kept for older imports: the display swatches are the stored colours now.
+export const AVATAR_PALETTE_MOCKUP = AVATAR_PALETTE;
 
 let TABLE = null;
 function table() {

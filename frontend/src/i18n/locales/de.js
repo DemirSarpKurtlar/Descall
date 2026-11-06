@@ -1,12 +1,1552 @@
+import { UAH_DE } from "./uah.de.js";
 /**
  * de catalog (status "draft" in ../locales.json, hidden from users until the
  * coverage check reports 100 %). Same shape as en.js / tr.js:
  *   nested  - keyed messages (same paths as en.js nested)
  *   phrases - English source string -> translation
  */
+import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_DE } from "./profileMediaPicker.de.js";
 export const nested = {
   "amp": AMP_DE,
+  // premiumAudio:start (Descall+ hotkeys, audio, notifications)
+  "premiumAudio": {
+    "common": {
+      "desktopOnly": "Diese Funktion gibt es in der Descall-Desktop-App.",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "apply": "Anwenden",
+      "active": "Aktiv",
+      "delete": "Löschen",
+      "deleteNamed": "{name} löschen",
+      "remove": "Entfernen",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "unnamedDevice": "Unbenanntes Gerät",
+      "micError": "Das Mikrofon konnte nicht geöffnet werden. Prüfe die Berechtigung und das gewählte Gerät.",
+      "ms": "{n} ms",
+      "db": "{n} dB",
+      "seconds": "{n} s",
+      "minutes": "{n} Min.",
+      "hours": "{n} Std."
+    },
+    "hotkeys": {
+      "title": "Eigene Tastenkürzel",
+      "hint": "Klicke auf ein Kürzel und drücke dann die neuen Tasten. Esc bricht ab, Rücktaste löscht es.",
+      "enable": "Eigene Kürzel verwenden",
+      "enableDesc": "Aus: Die Standardkürzel gelten.",
+      "holdDesc": "Zum Sprechen gedrückt halten. Eine Maus-Seitentaste geht auch.",
+      "pressKey": "Tasten drücken...",
+      "pressKeyOrMouse": "Tasten oder eine Maustaste drücken...",
+      "unbound": "Nicht belegt",
+      "mouse3": "Mittlere Maustaste",
+      "mouse4": "Maus zurück",
+      "mouse5": "Maus vor",
+      "saveAnyway": "Trotzdem speichern",
+      "reset": "Auf Standard zurücksetzen",
+      "saved": "Kürzel gespeichert.",
+      "actions": {
+        "toggle_mute": "Stumm / laut",
+        "toggle_deafen": "Taub / hörend",
+        "push_to_talk": "Push-to-Talk",
+        "quick_launcher": "Schnellstarter",
+        "volume_up": "Angehefteten lauter",
+        "volume_down": "Angehefteten leiser"
+      },
+      "reason": {
+        "invalid": "{action}: {accel} ist kein gültiges Kürzel.",
+        "duplicate": "{action}: {accel} ist schon für {other} belegt.",
+        "reserved": "{action}: {accel} ist für Descall reserviert.",
+        "needs_modifier": "{action}: Ergänze Strg, Alt oder Umschalt zu {accel}, sonst blockiert es das Tippen in anderen Apps.",
+        "mouse_not_allowed": "{action}: Maustasten gehen nur für Push-to-Talk.",
+        "registered": "{action}: {accel} wird schon verwendet.",
+        "taken": "{action}: Eine andere App verwendet {accel} bereits."
+      }
+    },
+    "globalMute": {
+      "title": "Globales Stummschalten",
+      "hint": "Funktioniert in jeder App, auch in Spielen. Andere Apps bekommen diese Tasten nicht.",
+      "enable": "Kürzel zum Stummschalten",
+      "enableDesc": "Im Anruf aus jeder App stumm oder laut schalten.",
+      "deafen": "Kürzel für Taubschalten",
+      "remap": "Die Tasten änderst du unter Eigene Tastenkürzel."
+    },
+    "ptt": {
+      "title": "Globales Push-to-Talk",
+      "hint": "Dein Mikrofon bleibt stumm, bis du die Taste hältst, in jeder App.",
+      "enable": "Globales Push-to-Talk",
+      "enableDesc": "Damit wechseln auch Anrufe zu Push-to-Talk.",
+      "bindingDesc": "Unter Eigene Tastenkürzel ändern.",
+      "releaseDelay": "Loslass-Verzögerung",
+      "releaseDelayDesc": "Das Mikrofon bleibt nach dem Loslassen kurz offen, damit das letzte Wort nicht abreißt.",
+      "forceToggle": "Drücken zum Umschalten",
+      "forceToggleDesc": "Einmal drücken zum Sprechen, nochmal zum Beenden, statt zu halten.",
+      "toggleTimeout": "Automatisch stumm nach",
+      "toggleTimeoutDesc": "Im Umschaltmodus schaltet sich das Mikrofon nach dieser Zeit stumm.",
+      "modeHold": "Halten zum Sprechen ist aktiv. Die Taste erreicht auch das Spiel.",
+      "modeToggle": "Umschaltmodus: einmal drücken zum Sprechen, nochmal zum Beenden.",
+      "modeToggleNative": "Der Tasten-Hook konnte auf diesem Computer nicht starten, daher arbeitet Push-to-Talk als Umschalter mit automatischem Stummschalten.",
+      "mouseNeedsNative": "Maustasten brauchen den Tasten-Hook; wähle eine Tastaturtaste.",
+      "elevated": "Als Administrator gestartete Spiele geben Tasten nur an Apps weiter, die auch als Administrator laufen. Für Push-to-Talk in solchen Spielen starte auch Descall als Administrator."
+    },
+    "mediaKeys": {
+      "title": "Medientasten",
+      "hint": "Nur während Anrufen. Außerhalb bleiben die Tasten bei deinem Musikplayer.",
+      "enable": "Anrufe mit Medientasten steuern",
+      "enableDesc": "Während eines Anrufs funktionieren die Medientasten in anderen Playern nicht.",
+      "none": "Nichts",
+      "taken": "Eine andere App belegt gerade einige Medientasten.",
+      "keys": {
+        "playPause": "Wiedergabe / Pause",
+        "next": "Nächster Titel",
+        "previous": "Vorheriger Titel",
+        "stop": "Stopp"
+      }
+    },
+    "launcher": {
+      "title": "Schnellstarter",
+      "hint": "Freunde, Chats, Server, Kanäle und Aktionen von überall suchen.",
+      "enable": "Kürzel für den Schnellstarter",
+      "enableDesc": "Öffnet ein kleines Suchfenster über jeder App.",
+      "tryIt": "Ausprobieren",
+      "openNow": "Jetzt öffnen",
+      "friend": "Freund",
+      "dm": "Direktnachricht",
+      "group": "Gruppe",
+      "server": "Server",
+      "mute": "Stummschalten",
+      "unmute": "Stumm aufheben",
+      "deafen": "Taubschalten",
+      "undeafen": "Taub aufheben",
+      "voice": "Sprache",
+      "status": "Status",
+      "statusOnline": "Status: Online",
+      "statusIdle": "Status: Abwesend",
+      "statusDnd": "Status: Bitte nicht stören",
+      "statusInvisible": "Status: Unsichtbar",
+      "openSettings": "Einstellungen öffnen",
+      "app": "Descall",
+      "focus": "Fokusmodus",
+      "focus60": "1 Stunde fokussieren",
+      "focusOff": "Fokusmodus beenden"
+    },
+    "userVolume": {
+      "title": "Lautstärke-Kürzel pro Person",
+      "hint": "Die angeheftete Person im Sprachchat lauter oder leiser stellen, ohne Descall zu öffnen.",
+      "enable": "Lautstärke-Kürzel",
+      "step": "Schritt",
+      "pinNote": "Hefte jemanden im Sprachkanal an (Kachel anklicken), um festzulegen, wen die Tasten ändern."
+    },
+    "presets": {
+      "title": "Mikrofon",
+      "hint": "Verstärkung und Verarbeitung gelten für Anrufe und Sprachkanäle.",
+      "gain": "Eingangsverstärkung",
+      "gainDesc": "Lauter oder leiser als das Mikrofon liefert.",
+      "current": "Aktuelle Einstellungen",
+      "list": "Voreinstellungen",
+      "namePlaceholder": "Name der Voreinstellung",
+      "saveCurrent": "Aktuelle als Voreinstellung speichern",
+      "voice": "Sprache",
+      "noisy": "Lauter Raum",
+      "studio": "Studio (ohne Verarbeitung)",
+      "stream": "Streaming",
+      "echoOn": "Echounterdrückung",
+      "echoOff": "Keine Echounterdrückung",
+      "agcOn": "Automatische Verstärkung",
+      "agcOff": "Feste Verstärkung",
+      "noise": {
+        "off": "Keine Rauschunterdrückung",
+        "on": "Rauschunterdrückung",
+        "strong": "Starke Rauschunterdrückung"
+      },
+      "error": {
+        "name": "Gib einen Namen ein.",
+        "duplicate": "Dieser Name ist schon vergeben.",
+        "limit": "Du hast das Limit erreicht. Lösche zuerst eine."
+      }
+    },
+    "gate": {
+      "title": "Noise Gate",
+      "hint": "Geräusche unter der Schwelle werden nicht gesendet: Tastatur, Lüfter, Atmen.",
+      "enable": "Noise Gate",
+      "enableDesc": "Nutzt deine Schwelle statt der eingebauten.",
+      "threshold": "Schwelle",
+      "thresholdDesc": "Sprich normal und stelle sie knapp unter deine Stimme.",
+      "meter": "Mikrofonpegel",
+      "startTest": "Mikrofon testen",
+      "stopTest": "Test beenden",
+      "open": "Offen",
+      "closed": "Geschlossen",
+      "hysteresis": "Schließen unter der Schwelle um",
+      "hysteresisDesc": "Leise Wortenden werden nicht abgeschnitten.",
+      "hold": "Haltezeit",
+      "holdDesc": "Wie lange das Gate nach dem Sprechen offen bleibt."
+    },
+    "monitor": {
+      "title": "Sich selbst hören",
+      "hint": "Höre in Anrufen dein Mikrofon nach der Rauschunterdrückung.",
+      "enable": "Mithören",
+      "enableDesc": "Geringe Latenz, direkt aus der Audiokette.",
+      "volume": "Lautstärke beim Mithören",
+      "headphones": "Nutze Kopfhörer, sonst hören die anderen ein Echo."
+    },
+    "vam": {
+      "title": "Sprachaktivität",
+      "hint": "Ein Live-Pegel unter jedem Teilnehmer in Sprachkanälen.",
+      "enable": "Pegelanzeigen",
+      "enableDesc": "Zeigt, wie laut jede Person gerade spricht.",
+      "meter": "Sprachpegel"
+    },
+    "autoSwitch": {
+      "title": "Automatischer Gerätewechsel",
+      "hint": "Wenn ein Gerät verbunden wird, wechselt Descall zum höchsten auf deiner Liste.",
+      "enable": "Automatisch wechseln",
+      "enableDesc": "Auch während eines Anrufs.",
+      "headsetFirst": "Neue Headsets bevorzugen",
+      "headsetFirstDesc": "Passt nichts auf der Liste, wird ein Headset sofort nach dem Verbinden genutzt.",
+      "inputs": "Mikrofone in Reihenfolge",
+      "outputs": "Lautsprecher und Kopfhörer in Reihenfolge",
+      "empty": "Noch keine Geräte auf der Liste.",
+      "add": "Gerät hinzufügen",
+      "connected": "Verbunden",
+      "notConnected": "Nicht verbunden"
+    },
+    "routing": {
+      "title": "Audioausgabe",
+      "hint": "Wähle, wo Descall Anrufe und wo es Benachrichtigungstöne abspielt.",
+      "enable": "Eigene Ausgabe für Benachrichtigungen",
+      "enableDesc": "Aus: Benachrichtigungstöne folgen der Systemausgabe.",
+      "call": "Anrufe",
+      "callDesc": "Sprachkanäle und Anrufe.",
+      "notifications": "Benachrichtigungstöne",
+      "notificationsDesc": "Nachrichten, Erwähnungen und Klingeltöne.",
+      "systemDefault": "Systemstandard",
+      "test": "Testen",
+      "unsupported": "Dieser Browser kann kein Ausgabegerät wählen."
+    },
+    "profiles": {
+      "title": "Geräteprofile",
+      "hint": "Ein Profil setzt Mikrofon, Ausgabe und Voreinstellung auf einmal.",
+      "empty": "Noch keine Profile.",
+      "new": "Neues Profil",
+      "namePlaceholder": "Profilname, zum Beispiel Schreibtisch oder Gaming",
+      "keep": "Aktuelles behalten",
+      "noPreset": "Keine Voreinstellung",
+      "create": "Erstellen",
+      "applied": "{name} ist aktiv.",
+      "missing": "Angewendet. Nicht gefunden: {items}.",
+      "trayNote": "In der Desktop-App kannst du Profile auch über das Tray-Symbol wechseln.",
+      "part": {
+        "input": "Mikrofon",
+        "output": "Ausgabe",
+        "preset": "Voreinstellung"
+      }
+    },
+    "stream": {
+      "sendTitle": "Geteilter Ton (du)",
+      "sendHint": "Lautstärke des Tons in deiner Bildschirmfreigabe, für alle Zuschauer.",
+      "sendVolume": "Lautstärke des geteilten Tons",
+      "sendMute": "Geteilten Ton stummschalten",
+      "sendMuteDesc": "Das Bild läuft weiter.",
+      "viewTitle": "Geteilter Ton (andere)",
+      "viewHint": "Wie laut die Bildschirmfreigaben anderer für dich sind.",
+      "viewVolume": "Lautstärke",
+      "viewMute": "Geteilten Ton anderer stummschalten",
+      "note": "Gilt für die nächste Bildschirmfreigabe, die du startest. Deine Lautstärke für Freigaben anderer gilt in Sprachkanälen."
+    },
+    "history": {
+      "title": "Benachrichtigungsverlauf",
+      "hint": "Verpasste Benachrichtigungen, nur auf diesem Gerät gespeichert (die letzten {cap}).",
+      "enable": "Verlauf speichern",
+      "unread": "{count, plural, one {# ungelesen} other {# ungelesen}}",
+      "markAllRead": "Alle als gelesen markieren",
+      "clear": "Verlauf leeren",
+      "listTitle": "Verpasste Benachrichtigungen",
+      "empty": "Nichts verpasst.",
+      "open": "Öffnen"
+    },
+    "focus": {
+      "title": "Fokusmodus",
+      "hint": "Benachrichtigungen bleiben eine Weile still. Sie landen trotzdem im Verlauf.",
+      "status": "Fokus",
+      "activeFor": "{minutes, plural, one {An, noch # Minute} other {An, noch # Minuten}}",
+      "inactive": "Aus",
+      "end": "Jetzt beenden",
+      "allowCalls": "Anrufe durchlassen",
+      "allowDms": "Direktnachrichten durchlassen",
+      "allowDmsDesc": "Ohne Ton.",
+      "trayNote": "Den Fokus kannst du auch über das Tray-Symbol oder den Schnellstarter starten."
+    },
+    "rules": {
+      "title": "Benachrichtigungsprofile",
+      "hint": "Lege fest, was beim Spielen, Arbeiten oder Entspannen erscheint, mit oder ohne Ton.",
+      "mode": "Aktives Profil",
+      "auto": "Automatisch",
+      "now": "Jetzt: {profile}",
+      "schedule": "Arbeitszeiten",
+      "scheduleDesc": "Im automatischen Modus gilt zu diesen Zeiten das Arbeitsprofil.",
+      "start": "Beginn",
+      "end": "Ende",
+      "edit": "Profil bearbeiten",
+      "style": "Darstellung",
+      "styleCapsule": "Descall-Kapsel",
+      "styleToast": "Systembenachrichtigung",
+      "category": "Benachrichtigung",
+      "show": "Anzeigen",
+      "sound": "Ton",
+      "activity": {
+        "default": "Standard",
+        "gaming": "Spielen",
+        "working": "Arbeiten"
+      },
+      "cat": {
+        "call": "Anrufe",
+        "dm": "Direktnachrichten",
+        "mention": "Erwähnungen",
+        "group": "Gruppennachrichten",
+        "server": "Servernachrichten",
+        "social": "Freunde",
+        "system": "Sonstiges"
+      },
+      "day": {
+        "0": "So",
+        "1": "Mo",
+        "2": "Di",
+        "3": "Mi",
+        "4": "Do",
+        "5": "Fr",
+        "6": "Sa"
+      }
+    },
+    "smartGame": {
+      "title": "Intelligente Spiel-Benachrichtigungen",
+      "hint": "Solange ein Spiel im Vordergrund ist, warten Nachrichten. Anrufe erscheinen trotzdem.",
+      "enable": "Benachrichtigungen beim Spielen zurückhalten",
+      "enableDesc": "Dringende und Anrufe werden nie zurückgehalten.",
+      "summary": "Zusammenfassung nach dem Spiel",
+      "summaryDesc": "Eine Benachrichtigung mit allem, was du verpasst hast.",
+      "state": "Gerade",
+      "playing": "{count, plural, one {{game} läuft, # wartet} other {{game} läuft, # warten}}",
+      "notPlaying": "Kein Spiel erkannt.",
+      "detectNote": "Nutzt die Spielerkennung deines Aktivitätsstatus, es läuft kein zusätzlicher Scan.",
+      "summaryTitle": "Während du gespielt hast",
+      "summaryBody": "{count, plural, one {# Benachrichtigung von {names}} other {# Benachrichtigungen von {names}}}",
+      "summaryBodyMore": "{count, plural, one {# Benachrichtigung von {names} und {more} weiteren} other {# Benachrichtigungen von {names} und {more} weiteren}}"
+    },
+    "quickReply": {
+      "title": "Schnellantwort",
+      "hint": "Direkt aus der Benachrichtigung auf eine Direktnachricht antworten.",
+      "enable": "Aus Benachrichtigungen antworten",
+      "enableDesc": "Direktnachrichten zeigen ein Antwortfeld.",
+      "native": "Antworten werden aus der Systembenachrichtigung gesendet.",
+      "failedTitle": "Antwort nicht gesendet",
+      "failedBody": "Öffne den Chat und versuche es erneut.",
+      "unavailable": {
+        "platform": "Dieses System hat kein Antwortfeld in Benachrichtigungen, Nachrichten kommen wie gewohnt.",
+        "identity": "Schnellantwort braucht das installierte Descall (Startmenü-Verknüpfung). Die portable Version zeigt die übliche Benachrichtigung.",
+        "unsupported": "Benachrichtigungen sind auf diesem System nicht verfügbar."
+      }
+    }
+  },
+  // premiumAudio:end
+  uah: UAH_DE,
+  // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
+  "premiumAdmin": {
+    "navGroup": "Premium-Verwaltung",
+    "navDashboard": "Premium-Dashboard",
+    "navUsers": "Mitglieder-Abos",
+    "navBulk": "Sammelaktionen",
+    "navHistory": "Abo-Verlauf",
+    "navAnalytics": "Analysen",
+    "navFinance": "Finanzberichte",
+    "navCampaigns": "Gutscheine und Kampagnen",
+    "navAudit": "Admin-Aktionsprotokoll",
+    "navPlans": "Planverwaltung",
+    "plan": {
+      "plus": "Descall+",
+      "ultra": "Descall Ultra",
+      "none": "Keine Mitgliedschaft"
+    },
+    "state": {
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "cancelled": "Gekündigt",
+      "none": "Keine",
+      "scheduled": "Geplant"
+    },
+    "op": {
+      "grant": "Mitgliedschaft vergeben",
+      "extend": "Verlängern",
+      "change_plan": "Plan wechseln",
+      "cancel": "Kündigen",
+      "set_end": "Enddatum festlegen",
+      "set_unlimited": "Unbegrenzt machen"
+    },
+    "opHint": {
+      "grant": "Startet eine Mitgliedschaft im gewählten Plan. Das erste monatliche DesCoin-Geschenk wird bei der Vergabe gezahlt.",
+      "extend": "Fügt dem aktuellen Enddatum einer aktiven Mitgliedschaft ganze Tage hinzu. Für ein genaues neues Enddatum nutze \"Enddatum festlegen\".",
+      "change_plan": "Verschiebt das Mitglied in den anderen Plan. Das Enddatum bleibt gleich.",
+      "cancel": "Beendet die Mitgliedschaft jetzt. Der Verlauf behält jede frühere Änderung.",
+      "set_end": "Legt ein neues Enddatum fest. Vorgaben zählen ab jetzt.",
+      "set_unlimited": "Entfernt das Enddatum. Das monatliche DesCoin-Geschenk läuft weiter."
+    },
+    "kind": {
+      "grant": "Vergeben",
+      "extend": "Verlängert",
+      "change_plan": "Plan gewechselt",
+      "cancel": "Gekündigt",
+      "set_end": "Enddatum gesetzt",
+      "set_unlimited": "Unbegrenzt gemacht",
+      "expire": "Abgelaufen",
+      "coin_grant": "DesCoin-Geschenk",
+      "campaign_redeem": "Gutschein eingelöst"
+    },
+    "actorKind": {
+      "admin": "Admin",
+      "system": "System",
+      "campaign": "Kampagne",
+      "payment": "Zahlung"
+    },
+    "source": {
+      "admin": "Admin",
+      "campaign": "Kampagne",
+      "payment": "Zahlung"
+    },
+    "f": {
+      "plan": "Plan",
+      "status": "Status",
+      "start": "Beginn",
+      "end": "Ende",
+      "free": "Kostenlos",
+      "source": "Quelle",
+      "nextCoin": "Nächstes DesCoin-Geschenk",
+      "op": "Aktion",
+      "reason": "Grund",
+      "note": "Admin-Notiz",
+      "date": "Datum",
+      "user": "Mitglied",
+      "kind": "Ereignis",
+      "actor": "Von",
+      "actorKind": "Ausgeführt von",
+      "prevEnd": "Bisheriges Ende",
+      "newEnd": "Neues Ende",
+      "batch": "Stapel-ID",
+      "requestId": "Anfrage-ID",
+      "code": "Code"
+    },
+    "dur": {
+      "label": "Dauer",
+      "preset": "Vorgabe",
+      "custom": "Eigene Tage",
+      "customLabel": "Anzahl der Tage",
+      "date": "Genaues Enddatum",
+      "days": "{n, plural, one {# Tag} other {# Tage}}",
+      "daysUnit": "Tage",
+      "unlimitedHint": "Kein Enddatum. Bleibt aktiv, bis ein Admin es ändert."
+    },
+    "unlimited": "Unbegrenzt",
+    "free": "Kostenlos",
+    "paid": "Bezahlt",
+    "yes": "Ja",
+    "no": "Nein",
+    "before": "Vorher",
+    "after": "Nachher",
+    "from": "Von",
+    "to": "Bis",
+    "filter": "Filtern",
+    "clearFilters": "Filter zurücksetzen",
+    "refresh": "Aktualisieren",
+    "retry": "Erneut versuchen",
+    "review": "Prüfen",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "save": "Speichern",
+    "copy": "Kopieren",
+    "details": "Details",
+    "applying": "Wird angewendet…",
+    "loading": "Wird geladen…",
+    "loadMore": "Mehr laden",
+    "noData": "Keine Daten",
+    "cannotCompute": "Nicht berechenbar",
+    "paymentsNotIntegrated": "Das Zahlungssystem ist noch nicht integriert",
+    "coinPerMonth": "{n} DesCoin / Monat",
+    "coinAmount": "{n} DesCoin",
+    "daysLeft": "{n, plural, one {noch # Tag} other {noch # Tage}}",
+    "freeHint": "Eine kostenlose Mitgliedschaft vergibt das Descall-Team. Es wird nichts bezahlt.",
+    "reasonHint": "Pflichtfeld. Wird mit der Änderung und im Admin-Protokoll gespeichert.",
+    "reasonPh": "Warum wird diese Änderung vorgenommen?",
+    "notePh": "Optionale Notiz für andere Admins",
+    "setEndFromNow": "Vorgaben und eigene Tage zählen ab jetzt.",
+    "stepUpHint": "Änderungen fragen nach deinem Authenticator-Code.",
+    "pickDate": "Datum wählen",
+    "time": "Uhrzeit",
+    "clearDate": "Datum löschen",
+    "err": {
+      "op": "Wähle eine Aktion.",
+      "reason": "Gib einen Grund ein (mindestens 3 Zeichen).",
+      "plan": "Wähle einen Plan.",
+      "samePlan": "Das Mitglied ist bereits in diesem Plan.",
+      "days": "Gib eine ganze Zahl an Tagen ein (1 bis 3650).",
+      "endDate": "Gib ein gültiges Datum ein.",
+      "endPast": "Das Enddatum muss in der Zukunft liegen.",
+      "endBeforeStart": "Das Ende muss nach dem Beginn liegen.",
+      "duration": "Wähle eine Dauer.",
+      "extendUnlimited": "Nutze \"Unbegrenzt machen\" für eine Mitgliedschaft ohne Ende.",
+      "useUnlimited": "Nutze \"Unbegrenzt machen\" für eine Mitgliedschaft ohne Ende.",
+      "requestId": "Die Anfrage konnte nicht vorbereitet werden. Versuche es erneut.",
+      "noUsers": "Wähle mindestens ein Mitglied.",
+      "tooMany": "Höchstens 500 Mitglieder pro Stapel.",
+      "code": "Der Code braucht 4 bis 32 Buchstaben oder Ziffern.",
+      "kind": "Wähle einen Gutscheintyp.",
+      "campaignPlan": "Ein Gutschein für eine kostenlose Mitgliedschaft braucht einen Plan.",
+      "limit": "Limits müssen ganze Zahlen ab 1 sein.",
+      "value": "Gib einen gültigen Wert ein (Prozent: 1 bis 100).",
+      "name": "Der Plan braucht einen Namen.",
+      "status": "Wähle einen Status.",
+      "range": "Wähle einen gültigen Zeitraum.",
+      "stepUp": "Der Authenticator-Code wurde nicht bestätigt. Es wurde nichts geändert.",
+      "forbidden": "Du hast keinen Zugriff auf die Premium-Verwaltung.",
+      "notReady": "Dieser Teil des Servers ist noch nicht verfügbar.",
+      "generic": "Etwas ist schiefgelaufen. Es wurde nichts geändert.",
+      "not_found": "Nicht gefunden. Es wurde möglicherweise gelöscht.",
+      "already_active": "Das Mitglied hat bereits eine aktive Mitgliedschaft.",
+      "extendDate": "Verlängern fügt ganze Tage hinzu. Nutze \"Enddatum festlegen\" für ein genaues Datum.",
+      "currency": "Gib einen dreistelligen Währungscode ein (zum Beispiel EUR).",
+      "rateLimited": "Zu viele Anfragen. Warte eine Minute und versuche es erneut.",
+      "not_active": "Das Mitglied hat keine aktive Mitgliedschaft. Vergib stattdessen eine neue.",
+      "invalid_plan": "Diesen Plan gibt es nicht.",
+      "plan_archived": "Dieser Plan ist archiviert. Setze ihn zuerst in der Planverwaltung auf aktiv.",
+      "already_unlimited": "Die Mitgliedschaft ist bereits unbegrenzt.",
+      "not_unlimited": "Die Mitgliedschaft ist nicht unbegrenzt.",
+      "same_plan": "Das Mitglied ist bereits in diesem Plan.",
+      "invalid_end": "Das Enddatum muss in der Zukunft liegen (höchstens 20 Jahre).",
+      "invalid_duration": "Gib eine Dauer von 1 bis 3650 Tagen ein.",
+      "invalid_op": "Diese Aktion wird nicht unterstützt.",
+      "user_not_found": "Mitglied nicht gefunden oder das Konto wurde gelöscht.",
+      "reason_required": "Gib einen Grund für diese Änderung an.",
+      "too_long": "Der Grund (500 Zeichen) oder die Notiz (2000 Zeichen) ist zu lang.",
+      "invalid_request_id": "Die Anfrage konnte nicht vorbereitet werden. Versuche es erneut.",
+      "invalid_body": "Einige Werte sind ungültig. Prüfe das Formular.",
+      "no_users": "Wähle mindestens ein Mitglied aus.",
+      "too_many_users": "Höchstens 500 Mitglieder pro Stapel.",
+      "code_taken": "Dieser Gutscheincode wird bereits verwendet.",
+      "invalid_code": "Der Code braucht 4 bis 32 Buchstaben oder Ziffern.",
+      "unknown_feature": "Ein Funktionsschlüssel ist unbekannt. Nutze Schlüssel aus der Funktionsliste.",
+      "field_not_editable": "Preise und das monatliche DesCoin-Geschenk können in Phase 1 nicht geändert werden.",
+      "invalid_range": "Wähle einen gültigen Zeitraum.",
+      "premium_unavailable": "Premium ist auf dem Server noch nicht eingerichtet (die Datenbankmigration fehlt).",
+      "server_error": "Der Server konnte das nicht abschließen. Es wurde nichts geändert."
+    },
+    "confirm": {
+      "title": "Änderung bestätigen",
+      "body": "{op} für {name}. Prüfe die Zusammenfassung, bevor du sie anwendest.",
+      "apply": "Bestätigen und anwenden"
+    },
+    "dash": {
+      "sub": "Aktuelle Descall+- und Descall-Ultra-Mitgliedschaften. Admin-Konten zählen wie jedes Mitglied.",
+      "activeTotal": "Aktiv gesamt",
+      "activeTotalHint": "Descall+ und Ultra",
+      "activePlus": "Aktiv Descall+",
+      "activeUltra": "Aktiv Ultra",
+      "expired": "Abgelaufen",
+      "expiredHint": "Beendet und nicht verlängert",
+      "expiring7": "Endet in 7 Tagen",
+      "expiring7Hint": "Aktiv, Enddatum innerhalb von 7 Tagen",
+      "new7": "Neu in 7 Tagen",
+      "new30": "Neu in 30 Tagen",
+      "last7": "Letzte 7 Tage",
+      "last30": "Letzte 30 Tage",
+      "free": "Kostenlos vergeben",
+      "freeHint": "Aktive kostenlose Mitgliedschaften",
+      "paid": "Bezahlt",
+      "paidHint": "Aktive bezahlte Mitgliedschaften",
+      "split": "Aktive Mitglieder nach Plan",
+      "coinTitle": "Monatliches DesCoin-Geschenk",
+      "coinHint": "Jede aktive Mitgliedschaft erhält es in jedem 30-Tage-Zyklus, ab der Vergabe. Auch kostenlose Mitgliedschaften.",
+      "foot": "Zeiten werden in deiner Ortszeit angezeigt. Nichts hier ist Umsatz."
+    },
+    "users": {
+      "sub": "Finde ein Mitglied, sieh seine Mitgliedschaft und seinen Verlauf und ändere sie.",
+      "find": "Mitglied finden",
+      "searchPh": "Benutzername, ID, E-Mail oder Anzeigename",
+      "searchHint": "Die Ergebnisse zeigen den aktuellen Plan jedes Mitglieds.",
+      "noMatch": "Kein Mitglied passt zu \"{q}\".",
+      "results": "Suchergebnisse",
+      "pickHint": "Wähle links ein Mitglied, um seine Mitgliedschaft zu sehen.",
+      "back": "Zurück zur Suche",
+      "actions": "Mitgliedschaft ändern",
+      "history": "Verlauf",
+      "applied": "{op}: erledigt."
+    },
+    "bulk": {
+      "sub": "Eine Aktion auf viele Mitglieder anwenden. Jedes Mitglied wird einzeln verarbeitet: Ein Fehler macht die anderen nicht rückgängig.",
+      "steps": "Schritte",
+      "step": {
+        "form": "Mitglieder und Aktion",
+        "confirm": "Bestätigen",
+        "result": "Ergebnisse"
+      },
+      "people": "Mitglieder",
+      "pick": "Mitglieder hinzufügen",
+      "pickHint": "Gib einen Namen oder @Benutzernamen ein, um Mitglieder hinzuzufügen.",
+      "selected": "{n} von max. {max}",
+      "clear": "Alle entfernen",
+      "action": "Aktion",
+      "continue": "Weiter mit {n, plural, one {# Mitglied} other {# Mitgliedern}}",
+      "confirmTitle": "{n, plural, one {Auf # Mitglied anwenden?} other {Auf # Mitglieder anwenden?}}",
+      "confirmBody": "{op} läuft für {n, plural, one {# Mitglied} other {# Mitglieder}}. Ein erneuter Versuch dieses Stapels wendet es nicht doppelt an.",
+      "andMore": "und {n} weitere",
+      "apply": "Auf {n, plural, one {# Mitglied} other {# Mitglieder}} anwenden",
+      "total": "Gesamt",
+      "ok": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "results": "Ergebnisse pro Mitglied",
+      "reasonCol": "Fehlergrund",
+      "rowOk": "Erledigt",
+      "rowFailed": "Fehlgeschlagen",
+      "again": "Neue Sammelaktion"
+    },
+    "hist": {
+      "sub": "Jede Änderung an Mitgliedschaften, neueste zuerst. Ereignisse werden nie bearbeitet oder gelöscht.",
+      "userPh": "Mitglied (Benutzername oder ID)",
+      "actorPh": "Admin (Benutzername oder ID)",
+      "allKinds": "Alle Ereignisse",
+      "allPlans": "Alle Pläne",
+      "empty": "Noch keine Ereignisse."
+    },
+    "an": {
+      "sub": "Nur echte Daten. Eine Kennzahl ohne Daten sagt das; nichts wird geschätzt.",
+      "range": "Zeitraum",
+      "preset": {
+        "7d": "7 Tage",
+        "30d": "30 Tage",
+        "90d": "90 Tage",
+        "12m": "12 Monate",
+        "custom": "Eigener"
+      },
+      "bucket": "Gruppieren nach",
+      "bucketOpt": {
+        "day": "Tag",
+        "week": "Woche",
+        "month": "Monat"
+      },
+      "acq": "Neue Mitgliedschaften",
+      "active": "Aktive Mitglieder im Zeitverlauf",
+      "split": "Planverteilung",
+      "cancelRenew": "Kündigungen und Verlängerungen",
+      "cancellations": "Kündigungen",
+      "renewals": "Verlängerungen",
+      "freePaid": "Kostenlos und bezahlt",
+      "upDown": "Upgrades und Downgrades",
+      "upgrades": "Upgrades",
+      "downgrades": "Downgrades",
+      "avgDuration": "Durchschnittliche Mitgliedsdauer",
+      "conversion": "Konversion",
+      "convOf": "{num} von {den}",
+      "denominator": "Nenner",
+      "campaigns": "Kampagnenleistung",
+      "def": {
+        "acq": "Mitglieder, deren Mitgliedschaft im jeweiligen Zeitraum begann (vergeben oder per Gutschein), nach Plan.",
+        "active": "Mitglieder mit aktiver Mitgliedschaft am Ende jedes Zeitraums, alle Pläne zusammen.",
+        "split": "Aktuell aktive Mitglieder nach Plan.",
+        "cancelRenew": "Kündigungen: von einem Admin im Zeitraum gekündigte Mitgliedschaften. Verlängerungen: von einem Admin im Zeitraum verlängerte Mitgliedschaften.",
+        "freePaid": "Aktuell aktive Mitgliedschaften, die als kostenlos markiert sind. Bezahlt bleibt leer, bis Zahlungen integriert sind.",
+        "upDown": "Upgrades: Descall+ zu Ultra. Downgrades: Ultra zu Descall+. Planwechsel im Zeitraum.",
+        "avgDuration": "Durchschnittliche Tage vom Beginn bis zum Ende der aktuellen oder letzten befristeten Mitgliedschaft jedes Mitglieds. Unbegrenzte Mitgliedschaften zählen nicht.",
+        "conversion": "Im Zeitraum erstellte Konten, die im Zeitraum eine Mitgliedschaft erhielten, geteilt durch alle im Zeitraum erstellten Konten.",
+        "campaigns": "Gutscheineinlösungen im Zeitraum und wie viele Gutschein-Mitglieder jetzt aktiv sind. Eindeutige Mitglieder pro Zeitraum werden noch nicht gezählt."
+      },
+      "foot": "Zeiträume werden in UTC gruppiert. Die Zahlen stammen aus dem Abo-Ereignisprotokoll.",
+      "allPlans": "Alle Pläne",
+      "convLabel": {
+        "accounts_created_in_range": "Im Zeitraum erstellte Konten"
+      }
+    },
+    "fin": {
+      "sub": "Umsatz, Erstattungen und Steuern erscheinen hier, sobald Zahlungen integriert sind. Nichts wird geschätzt.",
+      "bannerBody": "Es ist kein Zahlungsanbieter verbunden und es gibt keine Preise, also gibt es keinen Umsatz zu melden. Die Felder unten sind vorbereitet und bleiben leer, bis Zahlungen beginnen.",
+      "grantsTitle": "Mitgliedschaften ohne Zahlung",
+      "freeMemberships": "Kostenlose Mitgliedschaften",
+      "freeHint": "Aktiv, als kostenlos markiert",
+      "manualGrants": "Manuelle Vergaben",
+      "manualHint": "Von einem Admin vergeben (gesamt)",
+      "campaignGrants": "Gutscheinvergaben",
+      "campaignHint": "Aus Gutscheinen für kostenlose Mitgliedschaften (gesamt)",
+      "notRevenue": "Das sind Anzahlen von Mitgliedschaften, kein Geld.",
+      "revenueTitle": "Umsatz (nach der Zahlungsintegration)",
+      "field": {
+        "gross": "Bruttoumsatz",
+        "refunds": "Erstattungen",
+        "taxes": "Steuern",
+        "net": "Nettoumsatz",
+        "arpu": "ARPU",
+        "renewalExpected": "Erwarteter Verlängerungsumsatz"
+      },
+      "def": {
+        "gross": "Alle erfolgreichen Zahlungen im Zeitraum",
+        "refunds": "An Mitglieder zurückgezahltes Geld",
+        "taxes": "Auf Zahlungen erhobene Steuern",
+        "net": "Brutto minus Erstattungen und Steuern",
+        "arpu": "Nettoumsatz pro zahlendem Mitglied",
+        "renewalExpected": "Preis der Mitgliedschaften, die in den nächsten 30 Tagen verlängert werden"
+      },
+      "byPlan": "Umsatz nach Plan",
+      "waiting": "Wartet auf die Zahlungsintegration.",
+      "foot": "Nur verifizierte Ereignisse des Zahlungsanbieters füllen diese Felder."
+    },
+    "camp": {
+      "sub": "Gutscheincodes für Mitgliedschaften. In Phase 1 bewirken nur Gutscheine für kostenlose Mitgliedschaften etwas.",
+      "new": "Neuer Gutschein",
+      "edit": "Gutschein bearbeiten",
+      "create": "Gutschein erstellen",
+      "codeHint": "Buchstaben und Ziffern. Mitglieder geben ihn in den Einstellungen ein.",
+      "generate": "Code erzeugen",
+      "kind": "Typ",
+      "kindOpt": {
+        "free_membership": "Kostenlose Mitgliedschaft",
+        "percent": "Prozentrabatt",
+        "fixed": "Festbetragsrabatt"
+      },
+      "noMoneyEffect": "Prozent- und Festbetragsgutscheine werden nur für später gespeichert. Sie haben noch keine finanzielle Wirkung.",
+      "planLimit": "Plan",
+      "anyPlan": "Jeder Plan",
+      "durationDays": "Mitgliedsdauer",
+      "percentValue": "Prozent",
+      "fixedValue": "Betrag",
+      "starts": "Beginn",
+      "ends": "Ende",
+      "startsNow": "Beginnt jetzt",
+      "noEnd": "Kein Ende",
+      "totalLimit": "Einlösungen gesamt",
+      "perUser": "Einlösungen pro Mitglied",
+      "noLimit": "Kein Limit",
+      "allowed": "Nur diese Mitglieder (optional)",
+      "allowedAll": "Alle können ihn nutzen.",
+      "allowedSome": "{n, plural, one {Nur # Mitglied kann ihn nutzen.} other {Nur # Mitglieder können ihn nutzen.}}",
+      "active": "Aktiv",
+      "activeHint": "Mitglieder können ihn einlösen, solange er aktiv ist.",
+      "list": "Gutscheine",
+      "empty": "Noch keine Gutscheine.",
+      "disable": "Deaktivieren",
+      "disableTitle": "{code} deaktivieren?",
+      "disableBody": "Mitglieder können ihn nicht mehr einlösen. Bereits vergebene Mitgliedschaften bleiben.",
+      "stats": "Statistik",
+      "redemptions": "Einlösungen",
+      "uniqueUsers": "Eindeutige Mitglieder",
+      "stillActive": "Noch aktiv",
+      "stillActiveHint": "Ihre Mitgliedschaft ist jetzt aktiv",
+      "ofLimit": "von {n}",
+      "noRedemptions": "Noch nicht eingelöst.",
+      "pickForStats": "Wähle einen Gutschein, um seine Statistik zu sehen.",
+      "window": "Gültig",
+      "status": {
+        "active": "Aktiv",
+        "disabled": "Deaktiviert",
+        "ended": "Beendet",
+        "scheduled": "Geplant",
+        "full": "Aufgebraucht"
+      },
+      "currency": "Währung",
+      "fixedHint": "In der kleinsten Einheit (zum Beispiel Cent)."
+    },
+    "audit": {
+      "sub": "Jede Premium-Änderung durch einen Admin und abgelehnte Versuche.",
+      "searchPh": "Aktion, Mitglied oder Grund suchen",
+      "action": "Aktion",
+      "target": "Ziel",
+      "empty": "Noch keine Admin-Aktionen.",
+      "act": {
+        "grant": "Mitgliedschaft vergeben",
+        "extend": "Mitgliedschaft verlängert",
+        "change_plan": "Plan gewechselt",
+        "cancel": "Mitgliedschaft gekündigt",
+        "set_end": "Enddatum gesetzt",
+        "set_unlimited": "Unbegrenzt gemacht",
+        "apply": "Mitgliedschaft geändert",
+        "bulk": "Sammelaktion",
+        "plan_update": "Plan bearbeitet",
+        "campaign_create": "Gutschein erstellt",
+        "campaign_update": "Gutschein bearbeitet",
+        "denied": "Abgelehnter Versuch",
+        "step_up_required": "Code angefordert"
+      }
+    },
+    "plans": {
+      "sub": "Namen, Beschreibungen und Funktionen von Descall+ und Descall Ultra.",
+      "name": "Name",
+      "description": "Beschreibung",
+      "features": "Funktionen ({n})",
+      "featuresHint": "Ein Funktionsschlüssel pro Zeile (siehe frontend/src/premium/features.js).",
+      "status": "Status",
+      "statusActive": "Aktiv",
+      "statusArchived": "Archiviert",
+      "monthlyCoin": "Monatliche DesCoin",
+      "visible": "Für Mitglieder sichtbar",
+      "visibleHint": "Wird auf der Planvergleichsseite angezeigt.",
+      "price": "Preis",
+      "priceLater": "Wird mit der Zahlungsintegration festgelegt",
+      "priceHint": "In Phase 1 werden keine Preise festgelegt.",
+      "saved": "Gespeichert.",
+      "foot": "Die Mitgliedschaft vergibt vorerst das Descall-Team; es gibt keinen Kaufen-Knopf."
+    },
+    "grantStartsNow": "Die Mitgliedschaft beginnt, sobald du sie anwendest. Für ein Ende an einem bestimmten Tag wähle ein genaues Enddatum."
+  },
+  // premiumAdmin:end
+  // premium:start (generated, Descall+ phase 1)
+  "premium": {
+    "name": {
+      "plus": "Descall+",
+      "ultra": "Descall Ultra",
+      "ultraShort": "Ultra",
+      "free": "Kostenlos"
+    },
+    "badge": {
+      "plusTip": "Descall+-Mitglied",
+      "ultraTip": "Descall Ultra-Mitglied"
+    },
+    "nav": "Descall+",
+    "navHint": "Mitgliedschaft, Funktionen und Desktop-Werkzeuge",
+    "status": {
+      "title": "Deine Mitgliedschaft",
+      "plan": "Plan",
+      "state": "Status",
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "cancelled": "Beendet",
+      "none": "Keine Mitgliedschaft",
+      "ends": "Endet",
+      "unlimited": "Unbegrenzt",
+      "nextCoin": "Nächstes DesCoin-Geschenk",
+      "nextCoinValue": "{amount} DesCoin am {date}",
+      "loading": "Mitgliedschaft wird geladen…",
+      "offline": "Die Mitgliedschaft konnte nicht aktualisiert werden. Der letzte bekannte Stand wird angezeigt.",
+      "monthlyGift": "{amount} DesCoin alle 30 Tage"
+    },
+    "grantNote": "Mitgliedschaften werden derzeit vom Descall-Team vergeben. Ein Kauf ist noch nicht möglich.",
+    "redeem": {
+      "title": "Gutscheincode einlösen",
+      "placeholder": "Gutscheincode",
+      "submit": "Einlösen",
+      "busy": "Wird geprüft…",
+      "ok": "Code eingelöst. Deine Mitgliedschaft ist aktualisiert.",
+      "fail": "Dieser Code konnte nicht eingelöst werden.",
+      "unavailable": "Gutscheincodes sind noch nicht verfügbar."
+    },
+    "features": {
+      "title": "Funktionen",
+      "lead": "Hier schaltest du jede Funktion ein oder aus und passt sie an. Desktop-Funktionen laufen in der Descall-Desktop-App.",
+      "desktop": "Desktop",
+      "desktopOnly": "In der Desktop-App verfügbar",
+      "lockedPlus": "Mit Descall+ verfügbar",
+      "lockedUltra": "Mit Ultra verfügbar",
+      "enabled": "Aktiviert",
+      "soon": "Demnächst",
+      "groupDesktop": "Desktop-Fenster",
+      "groupOther": "Weitere Funktionen",
+      "settings": "Einstellungen"
+    },
+    "compare": {
+      "title": "Pläne vergleichen",
+      "feature": "Funktion",
+      "coin": "DesCoin-Geschenk alle 30 Tage",
+      "baseline": "Anrufe, Chat, Server und alles, was du heute nutzt",
+      "current": "Aktueller Plan",
+      "included": "Enthalten",
+      "notIncluded": "Nicht enthalten",
+      "featureCount": "{n} Funktionen",
+      "everythingPlus": "Alles aus Descall+",
+      "showAll": "Alle Funktionen zeigen",
+      "showLess": "Weniger zeigen"
+    },
+    "win": {
+      "mini": "Minimodus",
+      "call": "Anruffenster",
+      "sidebar": "Desktop-Seitenleiste",
+      "popout": "Separates Fenster",
+      "noCall": "Kein aktiver Anruf",
+      "unread": "{n, plural, one {# ungelesen} other {# ungelesen}}",
+      "allRead": "Alles gelesen",
+      "mute": "Stummschalten",
+      "unmute": "Stummschaltung aufheben",
+      "deafen": "Ton aus",
+      "undeafen": "Ton an",
+      "hangup": "Anruf verlassen",
+      "openApp": "Descall öffnen",
+      "close": "Schließen",
+      "pin": "Im Vordergrund halten",
+      "noVideo": "Gerade kein Video",
+      "connecting": "Verbinde…",
+      "friends": "Freunde",
+      "online": "Online",
+      "dms": "Direktnachrichten",
+      "nobodyOnline": "Keine Freunde online",
+      "noDms": "Keine neuen Nachrichten",
+      "popOut": "In eigenem Fenster öffnen",
+      "popOutLimit": "Du kannst bis zu 4 separate Fenster öffnen.",
+      "dragHint": "Zum Verschieben ziehen"
+    },
+    "panel": {
+      "open": "Öffnen",
+      "openMini": "Minimodus öffnen",
+      "openCall": "Anruffenster öffnen",
+      "openSidebar": "Seitenleiste zeigen",
+      "miniAuto": "Minimodus öffnen, wenn ich Descall während eines Anrufs minimiere",
+      "pipAuto": "Anruffenster öffnen, wenn ich Descall während eines Videoanrufs verlasse",
+      "topMain": "Hauptfenster",
+      "topMini": "Minifenster",
+      "topCall": "Anruffenster",
+      "topPopouts": "Separate Fenster",
+      "topLead": "Diese Fenster über anderen Apps halten.",
+      "opacityValue": "{value} %",
+      "opacityLead": "Kleine Fenster durchscheinend machen.",
+      "popoutsOpen": "{n, plural, one {# separates Fenster offen} other {# separate Fenster offen}}",
+      "popoutsHow": "Mit „In eigenem Fenster öffnen“ im Chat-Kopf öffnest du einen Chat separat.",
+      "closeAll": "Alle schließen",
+      "restorePopouts": "Separate Fenster wieder öffnen",
+      "restoreMini": "Minimodus und Seitenleiste wieder öffnen",
+      "restoreBounds": "Fensterpositionen und -größen merken",
+      "snap": "Fenster an Bildschirmränder andocken",
+      "keepVisible": "Fenster zurückholen, wenn ein Monitor entfernt wird",
+      "mainMonitor": "Descall auf dem zuletzt genutzten Monitor öffnen",
+      "layoutName": "Name des Layouts",
+      "layoutSave": "Aktuelles Layout speichern",
+      "layoutApply": "Anwenden",
+      "layoutDelete": "Löschen",
+      "layoutEmpty": "Noch keine gespeicherten Layouts.",
+      "layoutWindows": "{n, plural, one {# Fenster} other {# Fenster}}",
+      "edge": "Bildschirmrand",
+      "edgeLeft": "Links",
+      "edgeRight": "Rechts",
+      "autoHide": "Automatisch ausblenden",
+      "edgeLead": "Bewege den Zeiger an diesen Rand, um die Seitenleiste zu zeigen.",
+      "edgeDelay": "Verzögerung",
+      "edgeDelayValue": "{ms} ms",
+      "needsSidebar": "Schalte auch die Desktop-Seitenleiste ein.",
+      "trayLead": "Über das Tray-Symbol stummschalten, Ton aus, Status setzen und Minimodus öffnen.",
+      "taskbarBadge": "Ungelesen-Zähler auf dem Taskleistensymbol",
+      "taskbarButtons": "Anruftasten in der Taskleisten-Vorschau",
+      "windowsOnly": "Nur Windows",
+      "desktopApp": "Öffne die Descall-Desktop-App, um das zu nutzen."
+    },
+    "f": {
+      "mini_mode": {
+        "name": "Minimodus",
+        "desc": "Ein kleines Fenster mit Anrufsteuerung und Ungelesen-Zähler."
+      },
+      "always_on_top": {
+        "name": "Immer im Vordergrund",
+        "desc": "Ausgewählte Descall-Fenster bleiben über anderen Apps."
+      },
+      "pip_call": {
+        "name": "Bild-im-Bild-Anruf",
+        "desc": "Den Anruf in einem kleinen Fenster im Vordergrund sehen."
+      },
+      "multi_window": {
+        "name": "Separate Fenster",
+        "desc": "Einen Chat oder Kanal in eigenem Fenster öffnen, bis zu 4."
+      },
+      "window_opacity": {
+        "name": "Fenstertransparenz",
+        "desc": "Mini-, Anruf- und separate Fenster durchscheinend machen."
+      },
+      "session_restore": {
+        "name": "Sitzung wiederherstellen",
+        "desc": "Deine Fenster dort wieder öffnen, wo du sie gelassen hast."
+      },
+      "tray_controls_plus": {
+        "name": "Tray-Steuerung",
+        "desc": "Anrufsteuerung, Status und Minimodus im Tray-Menü."
+      },
+      "taskbar_plus": {
+        "name": "Taskleisten-Extras",
+        "desc": "Ungelesen-Badge und Anruftasten in der Taskleiste."
+      },
+      "global_mute": {
+        "name": "Globales Stummschalten",
+        "desc": "Dich per Tastenkürzel aus jeder App stummschalten."
+      },
+      "global_ptt": {
+        "name": "Globales Push-to-Talk",
+        "desc": "Push-to-Talk funktioniert auch in anderen Apps."
+      },
+      "custom_hotkeys": {
+        "name": "Eigene Tastenkürzel",
+        "desc": "Wähle deine eigenen Tastenkürzel."
+      },
+      "media_keys": {
+        "name": "Medientasten",
+        "desc": "Nutze die Medientasten deiner Tastatur für Anrufe."
+      },
+      "quick_launcher": {
+        "name": "Schnellstarter",
+        "desc": "Mit einem Kürzel zu jedem Chat springen."
+      },
+      "notification_history": {
+        "name": "Benachrichtigungsverlauf",
+        "desc": "Verpasste Benachrichtigungen ansehen."
+      },
+      "focus_mode": {
+        "name": "Fokusmodus",
+        "desc": "Alles außer dem Wichtigen stummschalten."
+      },
+      "notification_profiles": {
+        "name": "Benachrichtigungsprofile",
+        "desc": "Zwischen Sätzen von Benachrichtigungsregeln wechseln."
+      },
+      "mic_presets": {
+        "name": "Mikrofon-Voreinstellungen",
+        "desc": "Mikrofon-Setups speichern und wechseln."
+      },
+      "noise_gate": {
+        "name": "Noise Gate",
+        "desc": "Eigene Schwelle für Hintergrundgeräusche."
+      },
+      "mic_monitor": {
+        "name": "Mikrofon-Monitor",
+        "desc": "Dein eigenes Mikrofon hören."
+      },
+      "voice_activity_monitor": {
+        "name": "Sprachaktivitätsanzeige",
+        "desc": "Sieh in Echtzeit, wie laut du bist."
+      },
+      "auto_device_switch": {
+        "name": "Automatischer Gerätewechsel",
+        "desc": "Sofort zum neu angeschlossenen Headset wechseln."
+      },
+      "audio_routing": {
+        "name": "Audio-Routing",
+        "desc": "Anrufe und Töne auf verschiedene Ausgänge legen."
+      },
+      "audio_device_profiles": {
+        "name": "Audiogeräteprofile",
+        "desc": "Einstellungen je Headset merken."
+      },
+      "game_status": {
+        "name": "Spielstatus",
+        "desc": "Zeigen, welches Spiel du spielst."
+      },
+      "game_session_history": {
+        "name": "Spielsitzungsverlauf",
+        "desc": "Sieh, wie lange du jedes Spiel gespielt hast."
+      },
+      "smart_game_notifications": {
+        "name": "Smarte Spiel-Benachrichtigungen",
+        "desc": "Weniger Unterbrechungen beim Spielen."
+      },
+      "clipboard_history": {
+        "name": "Zwischenablage-Verlauf",
+        "desc": "Früher Kopiertes einfügen."
+      },
+      "quick_file_drop": {
+        "name": "Schnelles Dateiablegen",
+        "desc": "Dateien auf Descall ziehen und schnell teilen."
+      },
+      "app_lock": {
+        "name": "App-Sperre",
+        "desc": "Descall mit einer PIN sperren."
+      },
+      "quick_actions": {
+        "name": "Schnellaktionen",
+        "desc": "Häufige Aktionen mit einem Klick."
+      },
+      "desktop_sidebar": {
+        "name": "Desktop-Seitenleiste",
+        "desc": "Eine schmale Leiste am Bildschirmrand mit Freunden, Nachrichten und Anruf."
+      },
+      "screen_edge_actions": {
+        "name": "Bildschirmrand-Aktionen",
+        "desc": "Die Seitenleiste zeigen, wenn der Zeiger den Rand berührt."
+      },
+      "window_layouts": {
+        "name": "Fensterlayouts",
+        "desc": "Benannte Layouts speichern und wechseln."
+      },
+      "advanced_window_mgmt": {
+        "name": "Erweiterte Fensterverwaltung",
+        "desc": "Andocken, Monitorerkennung und gespeichertes Fensterverhalten."
+      },
+      "voice_hud": {
+        "name": "Sprach-HUD",
+        "desc": "Sieh über jeder App, wer spricht."
+      },
+      "gaming_hud": {
+        "name": "Gaming-HUD",
+        "desc": "Anrufinfos über randlosen Spielen."
+      },
+      "instant_clip": {
+        "name": "Sofort-Clip",
+        "desc": "Die letzten Momente deiner Bildschirmfreigabe speichern."
+      },
+      "per_user_volume_hotkeys": {
+        "name": "Lautstärke-Kürzel pro Person",
+        "desc": "Die Lautstärke einer Person per Kürzel ändern."
+      },
+      "stream_audio_control": {
+        "name": "Stream-Audio-Steuerung",
+        "desc": "Bestimmen, wie dein Stream klingt."
+      },
+      "workspace_profiles": {
+        "name": "Arbeitsbereich-Profile",
+        "desc": "Zwischen Setups für Arbeit, Spiele und Freunde wechseln."
+      },
+      "desktop_automations": {
+        "name": "Desktop-Automatisierungen",
+        "desc": "Descall auf Ereignisse am Computer reagieren lassen."
+      },
+      "activity_timeline": {
+        "name": "Aktivitätszeitleiste",
+        "desc": "Eine Zeitleiste deiner Anrufe und Chats."
+      },
+      "command_center": {
+        "name": "Kommandozentrale",
+        "desc": "Ein Panel für alles, was Descall kann."
+      },
+      "widgets": {
+        "name": "Widgets",
+        "desc": "Kleine Descall-Fenster auf deinem Desktop."
+      },
+      "custom_layouts": {
+        "name": "Eigene Layouts",
+        "desc": "Das Descall-Fenster nach deinem Geschmack anordnen."
+      },
+      "multi_account": {
+        "name": "Mehrere Konten",
+        "desc": "Zwischen Descall-Konten wechseln."
+      },
+      "quick_reply": {
+        "name": "Schnellantwort",
+        "desc": "Aus der Benachrichtigung antworten, ohne Descall zu öffnen."
+      }
+    }
+  },
+  // premium:end
+  // premiumGaming:start (Descall+ gaming / HUD / productivity)
+  "premiumGaming": {
+    "names": {
+      "game_status": "Spielstatus",
+      "game_session_history": "Spielverlauf",
+      "voice_hud": "Sprach-HUD",
+      "gaming_hud": "Gaming-HUD",
+      "instant_clip": "Sofort-Clip",
+      "clipboard_history": "Zwischenablage-Verlauf",
+      "quick_file_drop": "Schnelle Dateiablage",
+      "app_lock": "App-Sperre",
+      "quick_actions": "Schnellaktionen",
+      "workspace_profiles": "Arbeitsprofile",
+      "desktop_automations": "Automationen",
+      "activity_timeline": "Aktivitäts-Zeitleiste",
+      "command_center": "Kommandozentrale",
+      "widgets": "Widget-Studio",
+      "custom_layouts": "Layouts",
+      "multi_account": "Konten"
+    },
+    "hub": {
+      "title": "Gaming und Produktivität",
+      "open": "Einstellungen",
+      "empty": "Keine dieser Funktionen ist in deinem Plan."
+    },
+    "common": {
+      "close": "Schließen",
+      "remove": "Entfernen",
+      "none": "Keine",
+      "failed": "Etwas ist schiefgelaufen. Versuch es erneut.",
+      "saved": "Gespeichert",
+      "sending": "Wird gesendet…",
+      "hotkey": "Tastenkürzel",
+      "position": "Position",
+      "size": "Größe",
+      "opacity": "Deckkraft",
+      "margin": "Abstand zum Rand",
+      "small": "Klein",
+      "medium": "Mittel",
+      "large": "Groß",
+      "corner": {
+        "tl": "Oben links",
+        "tr": "Oben rechts",
+        "bl": "Unten links",
+        "br": "Unten rechts"
+      },
+      "desktopOnly": "Das funktioniert in der Descall-Desktop-App.",
+      "durationHM": "{h} Std. {m} Min.",
+      "durationM": "{m} Min.",
+      "durationS": "{s} Sek.",
+      "minutes": "{count, plural, one {# Minute} other {# Minuten}}"
+    },
+    "gameStatus": {
+      "title": "Spielstatus",
+      "desc": "Zeig auf deiner Profilkarte, welches Spiel du spielst und seit wann.",
+      "now": "Spielt gerade",
+      "noGame": "Kein Spiel erkannt",
+      "visibility": "Wer deine Spielkarte sieht",
+      "vis": {
+        "everyone": "Alle",
+        "friends": "Nur Freunde",
+        "nobody": "Niemand"
+      },
+      "share": "Spiele in meiner Aktivität teilen",
+      "help": "Descall+ erkennt außerdem {count} weitere Spiele. Die Erkennung prüft nur die Namen laufender Programme unter Windows; aus dem Spiel wird nichts gelesen.",
+      "cardLabel": "Spielt",
+      "forDuration": "seit {duration}"
+    },
+    "gameHistory": {
+      "title": "Spielverlauf",
+      "desc": "Deine Spielsitzungen: welches Spiel, wann und wie lange.",
+      "lastDays": "{count, plural, one {Letzter Tag} other {Letzte # Tage}}",
+      "total": "Gesamt {duration}",
+      "sessions": "{count, plural, one {# Sitzung} other {# Sitzungen}}",
+      "local": "Dieses Gerät",
+      "empty": "In diesem Zeitraum gibt es noch keine Spielsitzungen.",
+      "offline": "Der synchronisierte Verlauf konnte nicht geladen werden. Es wird nur dieses Gerät angezeigt."
+    },
+    "voiceHud": {
+      "title": "Sprach-HUD",
+      "desc": "Ein kleines durchsichtiges Feld über deinen Spielen, das zeigt, wer in deinem Anruf ist und wer spricht.",
+      "show": "Sprach-HUD anzeigen",
+      "empty": "Nicht in einem Anruf",
+      "muted": "stumm",
+      "help": "Funktioniert über Spielen im randlosen oder Fenstermodus, nicht über exklusivem Vollbild. In das Spiel wird nichts eingeschleust, daher ist es mit Anti-Cheat unbedenklich. Klicks gehen an das Spiel durch."
+    },
+    "gamingHud": {
+      "title": "Gaming-HUD",
+      "desc": "Uhrzeit, Ping, dein Anruf und Freunde online in einem kleinen Feld über deinen Spielen.",
+      "show": "Gaming-HUD anzeigen",
+      "clock": "Uhrzeit",
+      "ping": "Ping",
+      "call": "Anruf",
+      "friends": "Freunde online",
+      "hudTitle": "Descall",
+      "descallPing": "Descall-Ping",
+      "voicePing": "Sprach-Ping",
+      "ms": "ms",
+      "noCall": "Kein Anruf",
+      "noFriends": "Niemand online",
+      "people": "{count, plural, one {# Person} other {# Personen}}",
+      "help": "Funktioniert über Spielen im randlosen oder Fenstermodus, nicht über exklusivem Vollbild. Es ist ein normales Fenster im Vordergrund: In das Spiel wird nichts eingeschleust. Ping ist die Zeit bis zum Descall-Server.",
+      "noFps": "Das HUD zeigt keine FPS. Die Bildrate eines Spiels auszulesen erfordert in das Spiel eingeschleusten Code oder Ablaufverfolgung mit Administratorrechten, und Anti-Cheat-Systeme melden beides."
+    },
+    "instantClip": {
+      "title": "Sofort-Clip",
+      "desc": "Behalte die letzten Momente eines Bildschirms oder Fensters und speichere sie mit einer Taste als Clip.",
+      "enable": "Wiederholungspuffer behalten",
+      "source": "Aufnahme",
+      "pickSource": "Bildschirm oder Fenster wählen",
+      "length": "Länge",
+      "sec30": "30 Sekunden",
+      "sec60": "60 Sekunden",
+      "quality": "Qualität",
+      "qualityValue": "720p, 30 fps",
+      "hw": "Hardware-Encoder",
+      "sw": "Software-Encoder",
+      "status": "{seconds} s bereit, {mb} MB von {cap} MB",
+      "saveNow": "Clip speichern",
+      "measure": "Kosten messen",
+      "cost": "CPU {cpu} %, Speicher {mem} MB, verworfene Bilder {dropped}",
+      "unsupported": "Diese Descall-Version kann hier nicht aufnehmen.",
+      "help": "Solange es an ist, behält Descall die letzten {seconds} Sekunden nur im Arbeitsspeicher. Drück {hotkey}, um einen Clip zu speichern, kürze ihn und schick ihn in einen Chat. Ausschalten gibt den Speicher frei.",
+      "audioNote": "Clips haben keinen Ton. Unter Windows enthält die einzige Systemtonquelle auch deinen Sprachanruf, und Descall nimmt keine Anrufe auf.",
+      "error": {
+        "unsupported": "Diese Descall-Version kann hier nicht aufnehmen.",
+        "start": "Die Aufnahme konnte nicht starten. Wähl den Bildschirm oder das Fenster erneut.",
+        "no_codec": "Auf diesem Computer ist kein Video-Encoder verfügbar.",
+        "encoder": "Der Video-Encoder wurde beendet. Schalt den Puffer aus und wieder ein."
+      },
+      "editor": {
+        "title": "Neuer Clip",
+        "muxing": "Clip wird vorbereitet…",
+        "failed": "Der Clip konnte nicht vorbereitet werden.",
+        "start": "Anfang",
+        "end": "Ende",
+        "length": "{seconds} s",
+        "keyframeNote": "Der Anfang springt auf die nächste volle Sekunde davor.",
+        "sendTo": "Senden an",
+        "send": "Clip senden",
+        "saveFile": "Auf Festplatte speichern",
+        "sent": "Clip gesendet",
+        "sendFailed": "Der Clip konnte nicht gesendet werden."
+      }
+    },
+    "clipboard": {
+      "title": "Zwischenablage-Verlauf",
+      "desc": "Hol dir Text zurück, den du in Descall kopiert oder eingefügt hast.",
+      "enable": "Verlauf dessen behalten, was ich in Descall kopiere",
+      "help": "Nur Text, den du in Descall kopierst oder in Descall einfügst, wird auf diesem Gerät behalten. Descall liest nie, was du in anderen Apps kopierst.",
+      "count": "{count} von {max} Einträgen",
+      "clear": "Verlauf löschen",
+      "copied": "Kopiert",
+      "pasted": "Eingefügt",
+      "copy": "Erneut kopieren",
+      "done": "Fertig",
+      "empty": "Hier ist noch nichts."
+    },
+    "quickDrop": {
+      "title": "Schnelle Dateiablage",
+      "desc": "Eine kleine Ablagefläche auf deinem Desktop, die Dateien an einen letzten Chat schickt.",
+      "show": "Ablagefläche anzeigen",
+      "help": "Leg Dateien darauf ab, wähl den Chat, und sie werden wie jeder Anhang gesendet (je bis zu 100 MB). Du kannst sie auch über den Infobereich öffnen.",
+      "drop": "Dateien zum Senden ablegen",
+      "target": "Senden an",
+      "noTargets": "Keine letzten Chats",
+      "tooBig": "Zu groß (höchstens 100 MB)",
+      "sent": "{count, plural, one {# Datei gesendet} other {# Dateien gesendet}}",
+      "failed": "Einige Dateien konnten nicht gesendet werden.",
+      "tray": "Schnelle Dateiablage"
+    },
+    "appLock": {
+      "title": "App-Sperre",
+      "desc": "Frag nach einer PIN, bevor jemand deine Chats sehen kann.",
+      "newPin": "Neue PIN (4 bis 12 Ziffern)",
+      "currentPin": "Aktuelle PIN",
+      "setPin": "PIN festlegen",
+      "changePin": "PIN ändern",
+      "removePin": "PIN entfernen",
+      "saved": "PIN gespeichert",
+      "invalid": "Verwende 4 bis 12 Ziffern.",
+      "wrong": "Falsche PIN",
+      "wait": "Zu viele Versuche. Versuch es in {seconds} s erneut.",
+      "enable": "Descall mit meiner PIN sperren",
+      "idle": "Nach Inaktivität sperren",
+      "idleOff": "Nie",
+      "onMinimize": "Beim Minimieren sperren",
+      "onSystemLock": "Sperren, wenn der Computer gesperrt wird",
+      "lockNow": "Jetzt sperren",
+      "lockedTitle": "Descall ist gesperrt",
+      "pin": "PIN",
+      "unlock": "Entsperren",
+      "help": "Die PIN wird als gesalzener Hash gespeichert und mit dem Windows-Datenschutz verschlüsselt. Das hält andere an deinem Computer ab, während du weg bist; es ist keine Festplattenverschlüsselung und schützt nicht vor Software, die unter deinem Konto läuft. Windows Hello wird noch nicht angeboten: Es braucht eine native Komponente, die Descall nicht mitliefert."
+    },
+    "quickActions": {
+      "title": "Schnellaktionen",
+      "desc": "Eigene Schaltflächen für Dinge, die du oft tust.",
+      "type": "Aktion",
+      "types": {
+        "join_channel": "Einem Sprachkanal beitreten",
+        "set_status": "Status festlegen",
+        "open_dm": "Eine DM öffnen",
+        "toggle_focus": "Fokusmodus ein- oder ausschalten",
+        "workspace": "Arbeitsprofil wechseln"
+      },
+      "choose": "Auswählen",
+      "noChannels": "Öffne zuerst einen Server, um seine Sprachkanäle aufzulisten.",
+      "labelDm": "{name} schreiben",
+      "labelJoin": "{name} beitreten",
+      "add": "Aktion hinzufügen",
+      "run": "Ausführen",
+      "empty": "Noch keine Schnellaktionen.",
+      "help": "Schnellaktionen erscheinen auch in der Kommandozentrale und im Schnellstarter."
+    },
+    "workspace": {
+      "title": "Arbeitsprofile",
+      "desc": "Status, Benachrichtigungen, Widgets und Audio gemeinsam wechseln.",
+      "names": {
+        "game": "Gaming",
+        "work": "Arbeit",
+        "daily": "Alltag"
+      },
+      "active": "Aktiv",
+      "switch": "Wechseln",
+      "status": "Status",
+      "notifications": "Benachrichtigungen",
+      "notif": {
+        "keep": "Unverändert",
+        "all": "Alle",
+        "mentions": "Nur Erwähnungen",
+        "none": "Stumm"
+      },
+      "audio": "Audio",
+      "audioChoice": {
+        "keep": "Unverändert",
+        "noise_on": "Rauschunterdrückung an",
+        "noise_strong": "Starke Rauschunterdrückung",
+        "noise_off": "Rauschunterdrückung aus",
+        "ptt_on": "Push-to-Talk an",
+        "ptt_off": "Push-to-Talk aus"
+      },
+      "layout": "Widget-Layout",
+      "trayTitle": "Arbeitsprofil",
+      "help": "Wechsle hier, über den Infobereich, mit dem Tastenkürzel oder per Automation. Benachrichtigungs- und Audioänderungen setzen die passenden Descall+-Funktionen um."
+    },
+    "automations": {
+      "title": "Automationen",
+      "desc": "Lass Descall reagieren, wenn ein Spiel startet, ein Anruf beginnt oder du weg bist.",
+      "enable": "Meine Automationen ausführen",
+      "when": "Wenn",
+      "then": "Dann",
+      "triggers": {
+        "game_started": "Ein Spiel startet",
+        "game_stopped": "Ein Spiel endet",
+        "call_joined": "Ich trete einem Anruf bei",
+        "call_left": "Ich verlasse einen Anruf",
+        "time_window": "Ein Zeitfenster beginnt",
+        "idle": "Ich bin abwesend"
+      },
+      "actions": {
+        "switch_profile": "Profil wechseln",
+        "focus_on": "Fokusmodus einschalten",
+        "focus_off": "Fokusmodus ausschalten",
+        "set_status": "Status festlegen",
+        "open_hud": "Ein HUD öffnen"
+      },
+      "hud": {
+        "voice_hud": "Sprach-HUD",
+        "gaming_hud": "Gaming-HUD"
+      },
+      "gameFilter": "Spielname (optional)",
+      "between": "Zwischen",
+      "afterMinutes": "Nach (Minuten)",
+      "add": "Regel hinzufügen",
+      "ruleOn": "Regel an",
+      "ruleText": "Wenn {when}: {then}",
+      "empty": "Noch keine Regeln.",
+      "help": "Regeln können nur diese Auslöser und Aktionen nutzen. Sie starten nie Programme und öffnen keine Links."
+    },
+    "timeline": {
+      "title": "Aktivitäts-Zeitleiste",
+      "desc": "Dein Tag auf einen Blick: Anrufe, Spiele und wichtige Momente.",
+      "today": "Heute",
+      "prev": "Vorheriger Tag",
+      "next": "Nächster Tag",
+      "summary": "{games} in Spielen, {calls} in Anrufen",
+      "call": "Anruf mit {name}",
+      "groupCall": "Gruppenanruf: {name}",
+      "unknown": "Anruf",
+      "empty": "An diesem Tag ist nichts passiert.",
+      "ev": {
+        "profile": "Profil: {name}",
+        "clip": "Clip gespeichert",
+        "automation": "Automation: {name}",
+        "lock": "Descall gesperrt",
+        "action": "Schnellaktion: {name}",
+        "other": "Ereignis"
+      }
+    },
+    "commandCenter": {
+      "title": "Kommandozentrale",
+      "desc": "Nachrichten, Freunde, Anrufe und Benachrichtigungen in einem Feld.",
+      "open": "Kommandozentrale öffnen",
+      "help": "Öffne sie mit dem Tastenkürzel von überall, auch wenn Descall im Hintergrund läuft.",
+      "messages": "Nachrichten",
+      "friends": "Freunde online",
+      "calls": "Anrufe",
+      "notifications": "Benachrichtigungen",
+      "inCall": "Im Anruf",
+      "unread": "{count} neu",
+      "noMessages": "Keine neuen Nachrichten",
+      "noFriends": "Niemand online",
+      "noCalls": "Keine letzten Anrufe",
+      "noNotifications": "Du bist auf dem neuesten Stand",
+      "friendRequest": "Freundschaftsanfrage von {name}",
+      "dmUnread": "{name}: {count, plural, one {# neue Nachricht} other {# neue Nachrichten}}",
+      "groupUnread": "{name}: {count, plural, one {# neue Nachricht} other {# neue Nachrichten}}"
+    },
+    "widgets": {
+      "title": "Widget-Studio",
+      "desc": "Kleine, immer sichtbare Fenster auf deinem Desktop.",
+      "show": "Meine Widgets anzeigen",
+      "kinds": {
+        "friends": "Freunde online",
+        "calls": "Aktiver Anruf",
+        "notifications": "Benachrichtigungen"
+      },
+      "x": "Links",
+      "y": "Oben",
+      "w": "Breite",
+      "h": "Höhe",
+      "empty": "Noch keine Widgets.",
+      "help": "Bis zu {max} Widgets. Zieh ein Widget an seinem Titel, um es zu verschieben; die neue Position wird gespeichert."
+    },
+    "layouts": {
+      "title": "Layouts",
+      "desc": "Speichere deine Widget-Anordnung und wechsle zwischen Anordnungen.",
+      "name": "Name des Layouts",
+      "save": "Aktuelle Widgets speichern",
+      "apply": "Verwenden",
+      "count": "{count, plural, one {# Widget} other {# Widgets}}",
+      "empty": "Noch keine gespeicherten Layouts.",
+      "limit": "Du kannst 8 Layouts behalten."
+    },
+    "multiAccount": {
+      "title": "Konten",
+      "desc": "Nutze ein weiteres Descall-Konto neben diesem.",
+      "add": "Konto hinzufügen",
+      "open": "Öffnen",
+      "menu": "Konten",
+      "main": "Hauptkonto",
+      "unnamed": "Neues Konto",
+      "signedIn": "Angemeldet",
+      "notSignedIn": "Noch nicht angemeldet",
+      "empty": "Noch keine weiteren Konten.",
+      "limit": "Du kannst {max} Konten hinzufügen.",
+      "help": "Jedes weitere Konto öffnet sich in einem eigenen Fenster mit getrenntem Speicher, und seine Anmeldung wird auf diesem Gerät separat verschlüsselt. Bis zu {max} Konten; jedes Fenster braucht etwa so viel Arbeitsspeicher wie Descall selbst. Wechsle hier oder über den Infobereich."
+    }
+  },
+  // premiumGaming:end
+  "world3d": {
+    "enter": "3D-Welt",
+    "enterHint": "Diesen Anruf als 3D-Raum öffnen (Desktop, Team-Vorschau). Die Sprache bleibt an.",
+    "rooms": {
+      "cinema": "Kino",
+      "games": "Spielzimmer",
+      "living": "Wohnzimmer",
+      "camp": "Camp"
+    },
+    "roomsLabel": "Räume",
+    "soon": "Bald verfügbar",
+    "peopleInRoom": "{count, plural, one {# Person in diesem Raum} other {# Personen in diesem Raum}}",
+    "leave": "Verlassen",
+    "leaveHint": "Zurück zur Anrufansicht, deine Sprache bleibt an",
+    "member": "Mitglied",
+    "emote": {
+      "label": "Emotes",
+      "center": "Emoji",
+      "dance": "Tanzen",
+      "clap": "Klatschen",
+      "laugh": "Lachen",
+      "wave": "Winken",
+      "sit": "Sitzen",
+      "jump": "Springen"
+    },
+    "dock": {
+      "mic": "Mikro",
+      "sound": "Ton",
+      "emoji": "Emoji",
+      "screen": "Bildschirm",
+      "sit": "Sitzen",
+      "stand": "Aufstehen",
+      "camera": "Kamera",
+      "settings": "Optionen"
+    },
+    "dockLabel": "Steuerung der Welt",
+    "chatPlaceholder": "Nachricht an den Raum...",
+    "canvasLabel": "3D-Welt",
+    "sitHint": "Auf den nächsten Platz setzen (E)",
+    "quality": {
+      "label": "Grafikqualität",
+      "auto": "Automatisch",
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "resetCamera": "Kamera zurücksetzen",
+    "flatView": "Zurück zur flachen Ansicht",
+    "keysHelp": "WASD oder Pfeiltasten zum Gehen, Umschalt zum Rennen, auf den Boden klicken, um dorthin zu gehen, ziehen zum Umsehen, Mausrad zum Zoomen, E zum Sitzen, G für Emotes.",
+    "keysGuitar": "B: Gitarre spielen (für die volle Haltung zuerst hinsetzen).",
+    "stats": "{fps} fps · {quality}",
+    "loading": "3D-Welt wird geladen...",
+    "failed": "Die 3D-Welt konnte nicht starten. Der Anruf läuft in der flachen Ansicht weiter.",
+    "offline": "Andere sehen dich gerade nicht. Verbindung wird wiederhergestellt...",
+    "activity": {
+      "dancing": "tanzt",
+      "laughing": "lacht",
+      "clapping": "klatscht",
+      "waving": "winkt",
+      "guitar": "spielt Gitarre"
+    },
+    "fallback": {
+      "software": "Dein Computer zeichnet Grafik ohne Grafikkarte, deshalb bleibt die 3D-Welt aus. Der Anruf läuft weiter.",
+      "no_webgl2": "Dieser Browser kann die 3D-Welt nicht ausführen (WebGL 2 fehlt). Der Anruf läuft weiter.",
+      "engine": "Die 3D-Welt konnte nicht starten. Der Anruf läuft in der flachen Ansicht weiter."
+    }
+  },
   "activeNow": {
     "emptyBody": "Wenn Freunde online kommen oder ein Spiel, Musik oder eine andere App starten, erscheinen sie hier.",
     "emptyTitle": "Gerade ist es ruhig",
@@ -518,6 +2058,10 @@ export const nested = {
     "overviewLive": "Jetzt live",
     "overviewLiveHint": "Verbundene Sockets. Öffne eine Akte mit einem Klick.",
     "overviewLoadError": "Übersicht konnte nicht geladen werden.",
+    "overviewLoadTitle": "Übersicht konnte nicht geladen werden",
+    "overviewLoadBody": "Prüfe die Verbindung und versuche es erneut.",
+    "sectionErrorTitle": "Dieser Bereich konnte nicht geöffnet werden",
+    "sectionErrorBody": "Der Rest des Panels funktioniert weiter. Versuche es gleich noch einmal.",
     "overviewNewFeedback": "Neu, ungelesen",
     "overviewNoActive": "Noch keine Aktivität.",
     "overviewNoAudit": "Noch keine Admin-Aktionen.",
@@ -530,7 +2074,7 @@ export const nested = {
     "overviewSanctions": "Aktive Banns",
     "overviewSpark": "Registrierungen · 7 Tage",
     "overviewSparkHint": "Istanbuler Tage. Der vollständige Funnel ist unter Analysen.",
-    "overviewSubtitle": "Live-Zustand, wer zuletzt aktiv war, wer gerade beigetreten ist und was einen Klick braucht – statt einer Flut roher Zähler.",
+    "overviewSubtitle": "Live-Status, aktive Nutzer und neue Anmeldungen.",
     "overviewTimeouts": "{count, plural, one {# Timeout} other {# Timeouts}}",
     "overviewTitle": "Gerade jetzt",
     "overviewUptime": "Laufzeit",
@@ -1492,18 +3036,18 @@ export const nested = {
     }
   },
   "chat": {
-    "attachment": "📎 Anhang",
+    "attachment": "Anhang",
     "cancelReply": "Antwort abbrechen",
     "emoji": "Emoji",
     "messagePlaceholder": "Nachricht…",
     "noMessagesYet": "Noch keine Nachrichten",
-    "photo": "📷 Foto",
+    "photo": "Foto",
     "replyingTo": "Antwort an",
     "sendMessage": "Nachricht senden",
     "stopRecording": "Aufnahme beenden",
     "today": "Heute",
     "voiceMessage": "Sprachnachricht",
-    "voicePreview": "🎤 Sprachnachricht",
+    "voicePreview": "Sprachnachricht",
     "yesterday": "Gestern"
   },
   "chatx": {
@@ -2480,7 +4024,7 @@ export const nested = {
       "removed": "Entfernt:",
       "removedBubble": "Stil der Nachrichtenblasen",
       "removedStatus": "Status (ins Profilmenü verschoben)",
-      "savedFoot": "Das Erscheinungsbild wird in deinem Konto gespeichert und ist auf all deinen Geräten gleich. Deinen Status änderst du jetzt im Profilmenü.",
+      "savedFoot": "Das Erscheinungsbild wird in deinem Konto gespeichert und ist auf all deinen Geräten gleich.",
       "shopThemes": "Shop-Themes",
       "textSize": "Textgröße",
       "textSizeFootDesktop": "Gilt für Chat, Kanalliste und Menüs. Auch mit Ctrl + / Ctrl − änderbar.",
@@ -4918,6 +6462,14 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API erreichbar",
+  "Accept and join": "Akzeptieren und beitreten",
+  "Master switch": "Hauptschalter",
+  "Never mind": "Doch nicht",
+  "People you ban from this server show up here.": "Personen, die du von diesem Server sperrst, erscheinen hier.",
+  "Private messages, group messages and mentions": "Privatnachrichten, Gruppennachrichten und Erwähnungen",
+  "Read and accept the rules before you start chatting.": "Lies die Regeln und akzeptiere sie, bevor du loslegst.",
+  "Request timed out": "Zeitüberschreitung der Anfrage",
   " (you)": " (du)",
   "#6678ff": "#6678ff",
   "#general msgs": "#general-Nachrichten",
@@ -5355,6 +6907,7 @@ export const phrases = {
   "Block": "Blockieren",
   "Block User": "Nutzer blockieren",
   "Block user": "Blockieren",
+  "Block {name}?": "{name} blockieren?",
   "Block {username}? They won't be able to message you, call you, or send you friend requests, and their messages will be hidden.": "{username} blockieren? Die Person kann dir dann keine Nachrichten schreiben, dich nicht anrufen und dir keine Freundschaftsanfragen senden, und ihre Nachrichten werden ausgeblendet.",
   "Blocked users": "Blockierte Nutzer",
   "Blog": "Blog",
@@ -5419,6 +6972,7 @@ export const phrases = {
   "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally on their device, that recording is outside Descall's control.": "Anrufmedien werden mit WebRTC-Sicherheit (DTLS/SRTP) übertragen. Descall zeichnet Audio, Video und Bildschirmübertragungen von Anrufen niemals auf und speichert sie nicht. Wenn ein Teilnehmer lokal auf seinem Gerät aufzeichnet, liegt diese Aufnahme außerhalb der Kontrolle von Descall.",
   "Call notifications": "Anrufbenachrichtigungen",
   "Call sounds": "Anruftöne",
+  "Call your friends quickly or go back to your recent calls.": "Ruf deine Freunde schnell an oder kehre zu deinen letzten Anrufen zurück.",
   "Called": "Gewählt",
   "Calling...": "Ruft an…",
   "Calling…": "Ruft an…",
@@ -5456,7 +7010,7 @@ export const phrases = {
   "Card Color": "Kartenfarbe",
   "Card Colors": "Kartenfarben",
   "Casino": "Casino",
-  "Casino / Credits Management": "Casino-/Credit-Verwaltung",
+  "Casino / Credits Management": "Spiele / Credits",
   "Casino Help": "Casino-Hilfe",
   "Casino games are not available in the iOS app.": "Casinospiele sind in der iOS-App nicht verfügbar.",
   "Casino games are only available to users 18 and over.": "Casinospiele sind nur für Nutzer ab 18 Jahren verfügbar.",
@@ -5827,6 +7381,7 @@ export const phrases = {
   "Custom Primary Color": "Eigene Primärfarbe",
   "Custom Status": "Eigener Status",
   "Custom color": "Eigene Farbe",
+  "Custom invite link": "Eigener Einladungslink",
   "Custom link: descall.com/s/your-name": "Eigener Link: descall.com/s/dein-name",
   "Custom size": "Eigene Größe",
   "Custom status": "Eigener Status",
@@ -5944,6 +7499,7 @@ export const phrases = {
   "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.": "Descall ist ein unabhängiges Beta-Produkt. Chat, Server und Sprachchat sind kostenlos, während wir mit echten Communitys wachsen.",
   "Descall is an independent messaging and voice platform for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls.": "Descall ist eine unabhängige Messaging- und Sprachplattform für Freunde, Gaming-Squads und kleine Communities, die Server im Discord-Stil wollen – ohne Nitro-Bezahlschranken bei grundlegenden Chats und Anrufen.",
   "Descall is building a fast, modern place to chat and call with friends and groups.": "Descall baut einen schnellen, modernen Ort zum Chatten und Telefonieren mit Freunden und Gruppen.",
+  "Descall is developed by Demir Sarp Kurtlar.": "Descall wird von Demir Sarp Kurtlar entwickelt.",
   "Descall is for ages 13 and up": "Descall ist ab 13 Jahren",
   "Descall is owned by Demir Sarp Kurtlar.": "Descall gehört Demir Sarp Kurtlar.",
   "Descall is owned by Demir Sarp Kurtlar. Demir Sarp Kurtlar is the founder, owner, and CEO of Descall.": "Descall gehört Demir Sarp Kurtlar. Demir Sarp Kurtlar ist Gründer, Inhaber und CEO von Descall.",
@@ -6818,6 +8374,7 @@ export const phrases = {
   "Invite not found": "Einladung nicht gefunden",
   "Invite not found.": "Einladung nicht gefunden.",
   "Invite only": "Nur mit Einladung",
+  "Invite page image": "Bild der Einladungsseite",
   "Invite people": "Leute einladen",
   "Invite revoked": "Einladung widerrufen",
   "Invite revoked.": "Einladung widerrufen.",
@@ -7039,7 +8596,7 @@ export const phrases = {
   "Manage roles": "Rollen verwalten",
   "Manage server": "Server verwalten",
   "Manage the cosmetics catalog and gift items to users.": "Verwalte den Kosmetik-Katalog und verschenke Artikel an Nutzer.",
-  "Manage user credits and view Blackjack statistics": "Credits der Nutzer verwalten und Blackjack-Statistiken ansehen",
+  "Manage user credits and view Blackjack statistics": "Verwalte Nutzer-Credits und sieh dir die Blackjack-Statistiken an",
   "Manage users, roles, and permissions": "Nutzer, Rollen und Berechtigungen verwalten",
   "Manage your Descall account": "Verwalte dein Descall-Konto",
   "Manual status only in browser": "Im Browser nur manueller Status",
@@ -8118,6 +9675,7 @@ export const phrases = {
   "Share a window or browser tab in calls": "Teile in Anrufen ein Fenster oder einen Browser-Tab",
   "Share games, VODs, or docs with quality presets tuned for smooth capture while you play.": "Teile Spiele, VODs oder Dokumente mit Qualitätsvorgaben, die auf flüssige Aufnahme beim Spielen abgestimmt sind.",
   "Share grid": "Raster",
+  "Share product analytics": "Produktanalysen teilen",
   "Share with these settings": "Mit diesen Einstellungen teilen",
   "Share your entire screen so switching apps keeps the broadcast alive.": "Teile deinen gesamten Bildschirm, damit die Übertragung beim App-Wechsel weiterläuft.",
   "Share your idea or suggestion…": "Teile deine Idee oder deinen Vorschlag…",
@@ -8228,7 +9786,7 @@ export const phrases = {
   "Squad-ready layout with a squad-up channel, game chats, clip drops, staff ops, and ranked voice lobbies.": "Squad-taugliches Layout mit Squad-Up-Kanal, Spiele-Chats, Clip-Drops, Team-Bereich und Sprach-Lobbys für Ranked.",
   "Squad-up channel": "Squad-Up-Kanal",
   "Stack Trace": "Stacktrace",
-  "Staff can kick, ban, timeout, and read an audit log.": "Das Team kann kicken, bannen, Timeouts vergeben und ein Audit-Log einsehen.",
+  "Staff can kick, ban, or time out members, and every action is logged.": "Das Team kann Mitglieder entfernen, sperren oder vorübergehend stummschalten, und jede Aktion wird protokolliert.",
   "Staff roles": "Team-Rollen",
   "Stage": "Stage",
   "Stage channel": "Stage-Kanal",
@@ -8376,6 +9934,7 @@ export const phrases = {
   "The connection is slow. Saved data is still here. Retrying.": "Die Verbindung ist langsam. Gespeicherte Daten sind noch da. Neuer Versuch läuft.",
   "The download and the website show the same servers and chats": "Die App und die Website zeigen dieselben Server und Chats",
   "The group will show its initials again for everyone.": "Die Gruppe zeigt für alle wieder ihre Initialen.",
+  "The link may be outdated or mistyped. Go back home or check the service status.": "Der Link ist vielleicht veraltet oder falsch geschrieben. Geh zurück zur Startseite oder sieh dir den Dienststatus an.",
   "The member is not in this server.": "Das Mitglied ist nicht auf diesem Server.",
   "The moderator role was removed. Make them an admin and give section access.": "Die Moderatorrolle wurde entfernt. Mach die Person zum Admin und gib ihr Zugriff auf Bereiche.",
   "The new owner must be a member of this server.": "Der neue Besitzer muss Mitglied dieses Servers sein.",
@@ -8390,6 +9949,7 @@ export const phrases = {
   "The saved microphone was not found, using the default microphone.": "Das gespeicherte Mikrofon wurde nicht gefunden, das Standardmikrofon wird verwendet.",
   "The selected microphone was not found.": "Das ausgewählte Mikrofon wurde nicht gefunden.",
   "The server did not answer in time. Check your connection and try again.": "Der Server hat nicht rechtzeitig geantwortet. Prüfe deine Verbindung und versuch es noch mal.",
+  "The shop is empty right now": "Der Shop ist gerade leer",
   "The short answer": "Die kurze Antwort",
   "The timeout must end in the future.": "Der Timeout muss in der Zukunft enden.",
   "The ultimate chat application for your desktop. Fast, secure, and beautifully designed.": "Die ultimative Chat-App für deinen Desktop. Schnell, sicher und schön gestaltet.",
@@ -8441,6 +10001,7 @@ export const phrases = {
   "This message will be deleted for everyone. This cannot be undone.": "Diese Nachricht wird für alle gelöscht. Das kann nicht rückgängig gemacht werden.",
   "This override contains permissions you do not have.": "Diese Überschreibung enthält Berechtigungen, die du nicht hast.",
   "This page does not exist on Descall.": "Diese Seite gibt es auf Descall nicht.",
+  "This page doesn’t exist": "Diese Seite gibt es nicht",
   "This password has appeared in data breaches. Choose a different password.": "Dieses Passwort ist in Datenlecks aufgetaucht. Wähle ein anderes Passwort.",
   "This person can't work on reports (no Reports permission).": "Diese Person kann keine Meldungen bearbeiten (keine Berechtigung für Meldungen).",
   "This person is not an admin.": "Diese Person ist kein Admin.",
@@ -8654,6 +10215,7 @@ export const phrases = {
   "User Growth Analytics": "Analyse des Nutzerwachstums",
   "User ID": "Nutzer-ID",
   "User ID:": "Nutzer-ID:",
+  "User IDs, separated by commas": "Nutzer-IDs, durch Kommas getrennt",
   "User Information": "Nutzerinformationen",
   "User Management": "Nutzerverwaltung",
   "User Settings": "Benutzereinstellungen",
@@ -8721,6 +10283,7 @@ export const phrases = {
   "View channel": "Kanal ansehen",
   "View channels": "Kanäle ansehen",
   "View profile": "Profil ansehen",
+  "View your inventory": "Inventar ansehen",
   "Viewport:": "Viewport:",
   "Visible only": "Nur sichtbare",
   "Visible to Friends": "Für Freunde sichtbar",
@@ -8779,7 +10342,7 @@ export const phrases = {
   "Watching this hand…": "Du schaust bei dieser Hand zu…",
   "Watching this spin…": "Du schaust bei diesem Dreh zu…",
   "We are (players already)": "Wir sind (Spieler bisher)",
-  "We care about your privacy": "Deine Privatsphäre ist uns wichtig",
+  "Your cookie choice": "Deine Cookie-Auswahl",
   "We don’t claim Discord’s bot marketplace, Stage events, or every platform client. Honesty ranks better than doorway pages.": "Wir behaupten nicht, Discords Bot-Marktplatz, Bühnen-Events oder jeden Plattform-Client zu haben. Ehrlichkeit rankt besser als Brückenseiten.",
   "We focus on real-time messaging, group voice/video, screen share, and a polished desktop experience, without turning private chats into SEO landings.": "Wir konzentrieren uns auf Echtzeit-Messaging, Gruppen-Sprache/-Video, Bildschirmübertragung und ein ausgefeiltes Desktop-Erlebnis – ohne private Chats in SEO-Landingpages zu verwandeln.",
   "We got your note. We’ll reply at the email you gave.": "Wir haben deine Nachricht erhalten. Wir antworten an die angegebene E-Mail-Adresse.",
@@ -8812,6 +10375,7 @@ export const phrases = {
   "Welcome back": "Willkommen zurück",
   "Welcome channel": "Willkommenskanal",
   "Welcome to Descall": "Willkommen bei Descall",
+  "Welcome to {name}": "Willkommen auf {name}",
   "Welcome! Rules accepted.": "Willkommen! Regeln akzeptiert.",
   "We’ll email a 6-digit code so you can choose a new password securely.": "Wir schicken dir einen 6-stelligen Code per E-Mail, damit du sicher ein neues Passwort wählen kannst.",
   "What": "Was",
@@ -8844,6 +10408,7 @@ export const phrases = {
   "What's this channel about?": "Worum geht es in diesem Kanal?",
   "When": "Wann",
   "When friends come online, their activity shows up here.": "Wenn Freunde online kommen, erscheint ihre Aktivität hier.",
+  "When off, every client goes back to the main server.": "Wenn aus, kehren alle Clients zum Hauptserver zurück.",
   "When should a community stay on Discord?": "Wann sollte eine Community bei Discord bleiben?",
   "When to pick Descall for communities": "Wann Descall die richtige Wahl für Communitys ist",
   "Where Descall competes": "Wo Descall mithält",
@@ -8882,6 +10447,7 @@ export const phrases = {
   "Work-first chat. Huddles exist, but gamers looking for a Discord alternative usually want evenings, not tickets.": "Chat mit Fokus auf Arbeit. Huddles gibt es zwar, aber Gamer auf der Suche nach einer Discord-Alternative wollen meistens Feierabende, keine Tickets.",
   "Working": "Arbeitet",
   "Working…": "Wird bearbeitet…",
+  "Works on Windows, Android, iPhone and the web.": "Läuft auf Windows, Android, iPhone und im Web.",
   "Worn": "Angelegt",
   "Write a reply...": "Schreib eine Antwort…",
   "Write at least 5 characters.": "Schreib mindestens 5 Zeichen.",
@@ -9082,6 +10648,7 @@ export const phrases = {
   "Your shop banner is equipped. Unequip it in the Shop to use your own.": "Dein Shop-Banner ist angelegt. Leg es im Shop ab, um dein eigenes zu nutzen.",
   "Your status": "Dein Status",
   "Yours": "Deins",
+  "You’ll see new items here once they’re added.": "Neue Artikel siehst du hier, sobald sie hinzugefügt werden.",
   "You’re on the list": "Du bist auf der Liste",
   "Zoom": "Zoom",
   "Zoom in": "Vergrößern",
@@ -9255,6 +10822,7 @@ export const phrases = {
   "{from}: {preview}": "{from}: {preview}",
   "{groupName} | Group Call": "{groupName} | Gruppenanruf",
   "{groupName}, Group Call": "{groupName}, Gruppenanruf",
+  "{handle} won't be able to message you, call you, or send you friend requests, and their messages will be hidden.": "{handle} kann dir dann keine Nachrichten schreiben, dich nicht anrufen und keine Freundschaftsanfragen senden; seine Nachrichten werden ausgeblendet.",
   "{label} available": "{label} verfügbar",
   "{name1} and {name2} are typing": "{name1} und {name2} schreiben",
   "{names} and {count} more are typing": "{names} und {count} weitere schreiben",
@@ -9285,16 +10853,22 @@ export const phrases = {
   "○ PAUSED": "○ PAUSIERT",
   "● LIVE": "● LIVE",
   "⚠ High volume may damage headphones. Start at a low level.": "⚠ Hohe Lautstärke kann Kopfhörer beschädigen. Fang mit einer niedrigen Stufe an.",
-  "🎤 Voice message": "🎤 Sprachnachricht",
+  "🎤 Voice message": "Sprachnachricht",
   "👥 All Users": "👥 Alle Nutzer",
-  "📎 Attachment": "📎 Anhang",
-  "📞 Call": "📞 Anruf",
-  "📷 Photo": "📷 Foto",
+  "📎 Attachment": "Anhang",
+  "📞 Call": "Anruf",
+  "📷 Photo": "Foto",
   "🔴 Urgent": "🔴 Dringend",
   "🔵 Normal": "🔵 Normal",
   "🛡️ Admins Only": "🛡️ Nur Admins",
   "🟡 Important": "🟡 Wichtig",
-  "🟢 Online Users": "🟢 Online-Nutzer"
+  "🟢 Online Users": "🟢 Online-Nutzer",
+  "Compare": "Vergleich",
+  "Descall features": "Descall-Funktionen",
+  "Discord vs Descall article": "Artikel: Discord vs. Descall",
+  "More comparisons": "Weitere Vergleiche",
+  "Ready-made Gaming template": "Fertige Gaming-Vorlage",
+  ...MID_APP_I18N.de,
 };
 
 export default { nested, phrases };

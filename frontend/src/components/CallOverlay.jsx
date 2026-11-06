@@ -10,6 +10,7 @@ import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
+import CallWindowButtons from "../premium/desktop/CallWindowButtons.jsx";
 import { NameEffectText } from "./ui/Cosmetics";
 import DmRemoteParticipantSlot from "./voice/DmRemoteParticipantSlot";
 import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
@@ -509,6 +510,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           <button type="button" className="g-cbtn g-glass" onClick={() => setMinimized(true)} aria-label={t("Minimize")}>
             <ChevronDown size={22} strokeWidth={1.9} />
           </button>
+          <CallWindowButtons className="g-cbtn g-glass" size={20} />
           <div className="g-call-title g-glass">
             <div className="g-call-title-text">
               <div className="g-call-name">
@@ -562,12 +564,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 4, minWidth: 0, pointerEvents: "auto" }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>{title}</span>
           {anyScreenShare && !desktopGroupLine && (
-            <span style={{ background: "#3ba55d", color: "#fff", fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ background: "#30d158", color: "#fff", fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4 }}>
               <Monitor size={12} />
               {t("Presenting")}
             </span>
           )}
-          <span style={{ fontSize: 13, color: "#b5bac1" }}>
+          <span style={{ fontSize: 13, color: "rgba(235,235,245,0.6)" }}>
             {desktopGroupLine || `${subtitle}${formattedDuration ? ` · ${formattedDuration}` : ""}`}
           </span>
           {isDm && mode === "active" && (
@@ -580,6 +582,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           ) : null}
           <TopIconBtn onClick={() => setShowParticipants(!showParticipants)} active={showParticipants}><Users size={18} /></TopIconBtn>
           <TopIconBtn onClick={() => setShowChat(!showChat)} active={showChat}><MessageSquare size={18} /></TopIconBtn>
+          <CallWindowButtons style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }} />
           <TopIconBtn onClick={() => setMinimized(true)}><Minus size={18} /></TopIconBtn>
         </div>
       </div>
@@ -677,7 +680,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               border: 0,
               borderRadius: 999,
               padding: "8px 14px",
-              background: "#34c759",
+              background: "#30d158",
               color: "#fff",
               fontWeight: 600,
               fontSize: 14,
@@ -811,10 +814,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       >
         {mode === "incoming" && isDm ? (
           <>
-            <CircleBtn color="#3ba55d" size={64} onClick={() => { hapticImpactLight(); call.acceptIncoming?.(); }}>
+            <CircleBtn color="#30d158" size={64} onClick={() => { hapticImpactLight(); call.acceptIncoming?.(); }}>
               <Phone size={28} />
             </CircleBtn>
-            <CircleBtn color="#ed4245" size={64} onClick={() => { hapticImpactLight(); call.declineIncoming?.(); }}>
+            <CircleBtn color="#ff453a" size={64} onClick={() => { hapticImpactLight(); call.declineIncoming?.(); }}>
               <PhoneOff size={28} />
             </CircleBtn>
           </>
@@ -831,7 +834,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               <CircleBtn
                 className={glass ? `g-cb${muted ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
-                color={muted ? "#ed4245" : "#3c4043"}
+                color={muted ? "#ff453a" : "rgba(118,118,128,0.32)"}
                 onClick={() => { hapticSelection(); (isDm ? call.toggleMute : groupCall.toggleMute)?.(); }}
                 title={muted ? t("Unmute") : t("Mute")}
               >
@@ -847,7 +850,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               <CircleBtn
                 className={glass ? `g-cb${deafened ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
-                color={deafened ? "#ed4245" : "#3c4043"}
+                color={deafened ? "#ff453a" : "rgba(118,118,128,0.32)"}
                 onClick={() => { hapticSelection(); (isDm ? call.toggleDeafen : groupCall.toggleDeafen)?.(); }}
                 title={deafened ? t("Undeafen") : t("Deafen")}
               >
@@ -870,7 +873,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               <CircleBtn
                 className={glass ? `g-cb${cameraOn ? "" : " is-on"}` : undefined}
                 size={narrowViewport ? 46 : 52}
-                color={cameraOn ? "#3c4043" : "#ed4245"}
+                color={cameraOn ? "rgba(118,118,128,0.32)" : "#ff453a"}
                 onClick={() => { hapticSelection(); (isDm ? call.toggleCamera : groupCall.toggleCamera)?.(); }}
                 title={cameraOn ? t("Turn off camera") : t("Turn on camera")}
               >
@@ -894,7 +897,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               <CircleBtn
                 className={glass ? `g-cb${screenSharing ? " is-on" : ""}` : undefined}
                 size={narrowViewport ? 46 : 52}
-                color={screenSharing ? "#3ba55d" : "#3c4043"}
+                color={screenSharing ? "#30d158" : "rgba(118,118,128,0.32)"}
                 onClick={() => {
                   setShowMoreMenu(false);
                   if (isDm) {
@@ -922,7 +925,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                     height: narrowViewport ? 32 : 28,
                     borderRadius: 8,
                     border: "1px solid rgba(255,255,255,0.12)",
-                    background: showScreenQuality ? "rgba(88,101,242,0.35)" : "rgba(0,0,0,0.35)",
+                    background: showScreenQuality ? "rgba(88,122,245,0.35)" : "rgba(0,0,0,0.35)",
                     color: "#e8e8ec",
                     cursor: "pointer",
                     display: "flex",
@@ -963,7 +966,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               <CircleBtn
                 className={glass ? "g-cb" : undefined}
                 size={narrowViewport ? 46 : 52}
-                color={showMoreMenu ? "rgba(255,255,255,0.15)" : "#3c4043"}
+                color={showMoreMenu ? "rgba(255,255,255,0.15)" : "rgba(118,118,128,0.32)"}
                 title={t("More options")}
                 onClick={() => {
                   setShowMoreMenu((v) => !v);
@@ -1072,7 +1075,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                       }}
                     />
                     <MoreMenuItem
-                      icon={copiedInfo ? <Check size={16} color="#3ba55d" /> : <MessageSquare size={16} />}
+                      icon={copiedInfo ? <Check size={16} color="#30d158" /> : <MessageSquare size={16} />}
                       label={copiedInfo ? t("Copied!") : t("Copy call info")}
                       onClick={() => {
                         const info = isDm
@@ -1085,7 +1088,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                     />
                     <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "4px 0" }} />
                     <MoreMenuItem
-                      icon={<PhoneOff size={16} color="#ed4245" />}
+                      icon={<PhoneOff size={16} color="#ff453a" />}
                       label={t("Leave call")}
                       danger
                       onClick={() => {
@@ -1103,7 +1106,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
 
             <CircleBtn
               className={glass ? "g-cb is-end" : "is-end"}
-              color="#ed4245"
+              color="#ff453a"
               size={narrowViewport ? 50 : 56}
               onClick={() => { hapticImpactMedium(); isDm ? call.endCall(peer?.id) : groupCall.leaveCall(); }}
               title={t("End call")}
@@ -1328,7 +1331,7 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
 function StatRow({ label, value }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "2px 0" }}>
-      <span style={{ color: "#96989d" }}>{label}</span>
+      <span style={{ color: "rgba(235,235,245,0.6)" }}>{label}</span>
       <span style={{ fontWeight: 600 }}>{value}</span>
     </div>
   );
@@ -2173,9 +2176,9 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
 
 /* ---------- Sub-components ---------- */
 
-function CircleBtn({ children, color = "#3c4043", size = 52, onClick, title, className }) {
-  const off = String(color).toLowerCase() === "#ed4245" && !String(className || "").includes("is-end");
-  const on = String(color).toLowerCase() === "#3ba55d";
+function CircleBtn({ children, color = "rgba(118,118,128,0.32)", size = 52, onClick, title, className }) {
+  const off = String(color).toLowerCase() === "#ff453a" && !String(className || "").includes("is-end");
+  const on = String(color).toLowerCase() === "#30d158";
   const gdClass = ["gd-call-btn", off ? "is-off" : "", on ? "is-on" : "", className].filter(Boolean).join(" ");
   return (
     <button
@@ -2251,7 +2254,7 @@ function MoreMenuItem({ icon, label, onClick, danger }) {
         padding: "10px 16px",
         background: "none",
         border: "none",
-        color: danger ? "#ed4245" : "#e3e5e8",
+        color: danger ? "#ff453a" : "#e3e5e8",
         fontSize: 14,
         fontWeight: 500,
         cursor: "pointer",

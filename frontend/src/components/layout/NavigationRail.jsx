@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Settings, Check, Shield } from "../ui/Icon.jsx";
+import { Settings, Check, Shield, Smile } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { STATUS_META } from "../../lib/presence";
 import { getToken, getUser, setUser } from "../../lib/storage";
@@ -15,29 +15,15 @@ import {
   NAV_ICON_SIZE,
   NAV_ICON_STROKE,
 } from "./navConfig";
-import { RAIL_ACCENT } from "./railIcons";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
 import { glassStatusAnchor, glassStatusMenuStyle } from "../../lib/statusMenuAnchor";
 import { UVP_STATUS_EVENT } from "../../lib/userVoicePanel";
 import useMaterialize from "../../hooks/useMaterialize";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import { STATUS_EMOJIS, splitStatusEmoji, joinStatusEmoji } from "../../lib/statusPresets";
 
 const STATUS_OPTIONS = ["online", "idle", "dnd", "invisible"];
-const STATUS_EMOJIS = ["💬", "😀", "🎮", "🎵", "💼", "📚", "☕", "🌙"];
-
-function splitStatusEmoji(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return { emoji: "💬", text: "" };
-  const chars = Array.from(raw);
-  const first = chars[0];
-  if (STATUS_EMOJIS.includes(first) || /\p{Extended_Pictographic}/u.test(first)) {
-    const rest = chars.slice(1).join("").replace(/^\s+/, "");
-    return { emoji: first, text: rest };
-  }
-  return { emoji: "💬", text: raw };
-}
-
 
 function canUseHoverTooltips() {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
@@ -51,7 +37,6 @@ function RailButton({
   badge = 0,
   onClick,
   dismissToken,
-  accent,
   children,
   ...rest
 }) {
@@ -125,7 +110,6 @@ function RailButton({
             ? { duration: 0 }
             : { type: "spring", stiffness: 640, damping: 38, mass: 0.7 }
         }
-        style={accent ? { "--rail-accent": accent } : undefined}
         aria-label={badge > 0 ? `${label} ${badge > 99 ? "99+" : badge}` : label}
         aria-current={active ? "page" : undefined}
         data-tooltip={label}
@@ -179,7 +163,7 @@ export default function NavigationRail({
   const [statusOpen, setStatusOpen] = useState(false);
   const statusMat = useMaterialize(Boolean(glass && statusOpen));
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const [statusEmoji, setStatusEmoji] = useState("💬");
+  const [statusEmoji, setStatusEmoji] = useState("");
   const [statusDraft, setStatusDraft] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -323,7 +307,7 @@ export default function NavigationRail({
 
   const saveCustomStatus = async () => {
     const text = statusDraft.trim();
-    const customStatus = text ? `${statusEmoji} ${text}`.trim() : "";
+    const customStatus = joinStatusEmoji(statusEmoji, text);
     setStatusSaving(true);
     try {
       const token = getToken();
@@ -422,7 +406,7 @@ export default function NavigationRail({
                 aria-label={t("Custom status")}
                 onClick={() => setEmojiOpen((v) => !v)}
               >
-                {statusEmoji}
+                {statusEmoji || <Smile size={18} strokeWidth={1.75} />}
               </button>
               <input
                 className="status-picker-input"
@@ -445,6 +429,17 @@ export default function NavigationRail({
             </div>
             {emojiOpen && (
               <div className="status-picker-emoji-grid" role="listbox" aria-label={t("Custom status")}>
+                <button
+                  type="button"
+                  className={`status-picker-emoji-choice${!statusEmoji ? " active" : ""}`}
+                  aria-label={t("None")}
+                  onClick={() => {
+                    setStatusEmoji("");
+                    setEmojiOpen(false);
+                  }}
+                >
+                  <Smile size={18} strokeWidth={1.75} />
+                </button>
                 {STATUS_EMOJIS.map((em) => (
                   <button
                     key={em}
@@ -547,7 +542,6 @@ export default function NavigationRail({
                 dismissToken={activeView}
                 label={item.label}
                 badge={Number(badges[item.id]) || 0}
-                accent={RAIL_ACCENT[item.id]}
                 onClick={() => onViewChange(item.id)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
@@ -566,7 +560,6 @@ export default function NavigationRail({
                 key={item.id}
                 dismissToken={activeView}
                 label={item.label}
-                accent={RAIL_ACCENT[item.id]}
                 onClick={() => handleToolAction(item.action)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />

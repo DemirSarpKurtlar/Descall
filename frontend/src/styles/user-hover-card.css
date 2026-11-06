@@ -112,8 +112,8 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
 .uhc3-dot { width: 7px; height: 7px; border-radius: 50%; background: #8e8e93; }
 .uhc3-status.st-online { color: #30d158; }
 .uhc3-status.st-online .uhc3-dot { background: #30d158; }
-.uhc3-status.st-idle { color: #ffd60a; }
-.uhc3-status.st-idle .uhc3-dot { background: #ffd60a; }
+.uhc3-status.st-idle { color: var(--status-idle, #FF9F0A); }
+.uhc3-status.st-idle .uhc3-dot { background: var(--status-idle, #FF9F0A); }
 .uhc3-status.st-dnd { color: #ff6961; }
 .uhc3-status.st-dnd .uhc3-dot { background: #ff453a; }
 
@@ -177,10 +177,10 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
   place-items: center;
   overflow: hidden;
   color: #fff;
-  background: linear-gradient(135deg, #5865f2, #8b5cf6);
+  background: var(--brand, #587af5);
 }
-.uhc3-act-ic.is-voice { background: linear-gradient(135deg, #1fa463, #138a52); }
-.uhc3-act-ic.is-game { background: linear-gradient(135deg, #7c4dff, #c13cff); }
+.uhc3-act-ic.is-voice { background: #1fa463; }
+.uhc3-act-ic.is-game { background: var(--brand, #587af5); }
 .uhc3-act-ic img { width: 100%; height: 100%; object-fit: cover; }
 .uhc3-act-text { display: flex; flex-direction: column; min-width: 0; }
 .uhc3-act-text b {

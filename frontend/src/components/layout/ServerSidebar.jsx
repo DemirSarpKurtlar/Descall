@@ -2,7 +2,8 @@ import { memo, useState, useMemo, useEffect, useRef, useLayoutEffect } from "rea
 import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff } from "../ui/Icon.jsx";
+import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff, Megaphone as MegaphoneLine } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
 import { groupAvatarUrl } from "../../lib/avatarFile";
@@ -35,6 +36,7 @@ import { localizeListPreview } from "../../lib/listPreview";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate } from "../../lib/datetime";
@@ -357,13 +359,12 @@ export default function ServerSidebar({
                       ? t("Calls")
                       : t("Chats")
             }
-            sub={activeView === "calls" ? t("Quick-dial friends or jump back into recent DM & group calls.") : ""}
+            sub={activeView === "calls" ? t("Call your friends quickly or go back to your recent calls.") : ""}
             searchCollapsible={activeView === "calls"}
             buttons={
               activeView === "calls"
                 ? [
                     { id: "search", icon: Search, label: t("Search") },
-                    { id: "refresh", icon: RefreshCw, label: t("Refresh"), onClick: () => refreshList() },
                   ]
                 : [
                     { id: "search", icon: Search, label: t("Search") },
@@ -619,7 +620,10 @@ export default function ServerSidebar({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
-                    <h3>{glassShell ? `📢 ${t("Announcements")}` : "📢 Announcements"}</h3>
+                    <h3 className="ann-modal-title">
+                      <MegaphoneLine size={18} strokeWidth={2} aria-hidden="true" />
+                      {t("Announcements")}
+                    </h3>
                   <button className="icon-btn" onClick={() => setShowAnnouncements(false)} aria-label={t("Close")}><X size={18} /></button>
                 </div>
 
@@ -629,7 +633,13 @@ export default function ServerSidebar({
                   ) : announcementsError ? (
                     <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{announcementsError}</div>
                   ) : announcements.length === 0 ? (
-                    <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{t("No announcements")}</div>
+                    <EmptyState
+                      className="is-compact ann-empty"
+                      illustration="none"
+                      icon={MegaphoneLine}
+                      title={t("uah.ann.emptyTitle")}
+                      body={t("uah.ann.emptyBody")}
+                    />
                   ) : (
                     announcements.map((a) => {
                       const AnnIcon = glassShell ? announcementIcon(a.emoji) : null;
@@ -637,7 +647,7 @@ export default function ServerSidebar({
                       <div key={a.id} className="announcement-item">
                         {glassShell ? (
                           <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                            {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : (a.emoji || "📢")}
+                            {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : <MegaphoneLine size={18} strokeWidth={2} />}
                           </span>
                         ) : null}
                         <div className="announcement-title">{a.title}</div>
@@ -811,7 +821,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
     }
     if (action === "block") {
       try {
-        await confirmToggleBlock({ userId: dm.id, username: dm.username, t });
+        await confirmToggleBlock({ userId: dm.id, username: dm.username, displayName: dm.displayName || dm.display_name, t });
       } catch (err) {
         setActionError(err?.message || t("Something went wrong."));
         setTimeout(() => setActionError(""), 4000);
@@ -894,21 +904,13 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
           {loading && safeDms.length === 0 ? (
             <ConversationListSkeleton count={7} label={t("Loading conversations")} />
           ) : safeDms.length === 0 ? (
-            <div className="sidebar-empty-friends">
-              <div className="empty-illustration empty-illu-chats compact" aria-hidden="true">
-                <div className="empty-illu-blob" />
-                <div className="empty-illu-blob secondary" />
-              </div>
-              <strong>{t("No conversations yet")}</strong>
-              <span>{t("Add a friend to start chatting, messages, voice, and screen share in one place.")}</span>
-              {onAddFriend && (
-                <div className="sidebar-empty-friends-actions">
-                  <button type="button" className="mkt-btn mkt-btn-soft" onClick={onAddFriend}>
-                    {t("Add friend")}
-                  </button>
-                </div>
-              )}
-            </div>
+            <EmptyState
+              compact
+              icon={MessageSquare}
+              title={t("No conversations yet")}
+              body={t("Add a friend to start chatting, messages, voice, and screen share in one place.")}
+              primary={onAddFriend ? { label: t("Add friend"), action: onAddFriend } : undefined}
+            />
           ) : (
             <div className="conv-list">
               {safeDms.map((dm) => {
@@ -1665,21 +1667,13 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
               {loading && safeGroups.length === 0 ? (
                 <ConversationListSkeleton count={6} label={t("Loading groups")} />
               ) : safeGroups.length === 0 ? (
-                <div className="sidebar-empty-friends">
-                  <div className="empty-illustration empty-illu-groups compact" aria-hidden="true">
-                    <div className="empty-illu-blob" />
-                    <div className="empty-illu-blob secondary" />
-                  </div>
-                  <strong>{t("No groups yet")}</strong>
-                  <span>{t("Create a group for friends, chat, call, and share your screen together.")}</span>
-                  {onCreateGroup && (
-                    <div className="sidebar-empty-friends-actions">
-                      <button type="button" className="mkt-btn mkt-btn-soft" onClick={onCreateGroup}>
-                        {t("Create group")}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <EmptyState
+                  compact
+                  icon={Users}
+                  title={t("No groups yet")}
+                  body={t("Create a group for friends, chat, call, and share your screen together.")}
+                  primary={onCreateGroup ? { label: t("Create group"), action: onCreateGroup } : undefined}
+                />
               ) : (
                 safeGroups.map((group) => {
                   const isActive = activeGroup?.id === group.id;
@@ -2074,6 +2068,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       <span className="g-friend-sub">{friendSub(friend)}</span>
                     </div>
@@ -2102,6 +2097,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       <span className="g-friend-sub is-dim">{friendSub(friend)}</span>
                     </div>
@@ -2326,6 +2322,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         {resolveDisplayName(friend)}
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       {(friend.customStatus || friend.custom_status) && (
                         <span className="friend-custom-status">
@@ -2361,6 +2358,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         {resolveDisplayName(friend)}
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       {(friend.customStatus || friend.custom_status) && (
                         <span className="friend-custom-status">
@@ -2375,19 +2373,13 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
             {loading && safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
               <ConversationListSkeleton count={6} label={t("Loading conversations")} />
             ) : safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
-              <div className="sidebar-empty-friends">
-                <div className="empty-illustration empty-illu-friends compact" aria-hidden="true">
-                  <div className="empty-illu-blob" />
-                  <div className="empty-illu-blob secondary" />
-                </div>
-                <strong>{t("No friends yet")}</strong>
-                <span>{t("Share your invite link, friends join free and connect with you instantly.")}</span>
-                <div className="sidebar-empty-friends-actions">
-                  <button type="button" className="mkt-btn mkt-btn-soft" onClick={onQuickAdd}>
-                    {t("Add friend")}
-                  </button>
-                </div>
-              </div>
+              <EmptyState
+                compact
+                icon={UserPlus}
+                title={t("No friends yet")}
+                body={t("Share your invite link, friends join free and connect with you instantly.")}
+                primary={{ label: t("Add friend"), action: onQuickAdd }}
+              />
             ) : null}
       </SidebarSectionContent>
     </div>

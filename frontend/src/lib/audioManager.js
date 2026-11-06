@@ -287,6 +287,8 @@ class AudioManager {
   canPlay(type) {
     // Check global mute
     if (this.settings.globalMute) return false;
+    // Descall+ pop-out window: the main window plays every sound (no double ring).
+    if (typeof document !== "undefined" && document.documentElement.classList.contains("descall-popout")) return false;
 
     // Check per-type mute
     if (this.settings[type] === false) return false;
@@ -312,6 +314,17 @@ class AudioManager {
     if (!this.preloadComplete) {
       console.warn("[AudioManager] Not initialized yet");
       return false;
+    }
+    // Descall+ (focus mode / profiles / audio routing). No hook for free users.
+    let sinkId = null;
+    if (audioPlayHook) {
+      try {
+        const r = audioPlayHook(type);
+        if (r && r.block) return false;
+        sinkId = r && typeof r.sinkId === "string" ? r.sinkId : null;
+      } catch {
+        /* never block a sound on a hook error */
+      }
     }
 
     let { loop = false, volume } = options;
@@ -361,6 +374,9 @@ class AudioManager {
 
     // Set loop
     playAudio.loop = loop;
+    if (sinkId && typeof playAudio.setSinkId === "function") {
+      playAudio.setSinkId(sinkId).catch(() => {});
+    }
 
     // Reset and play
     playAudio.currentTime = 0;
@@ -523,6 +539,12 @@ class AudioManager {
 
 // Create singleton instance
 const audioManager = new AudioManager();
+
+/** Descall+ hook: fn(type) -> { block?, sinkId? } | null. */
+let audioPlayHook = null;
+export function setAudioPlayHook(fn) {
+  audioPlayHook = typeof fn === "function" ? fn : null;
+}
 
 export default audioManager;
 

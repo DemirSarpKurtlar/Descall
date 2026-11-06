@@ -63,5 +63,46 @@
   "window": {
     "signupStats": "Registrierungsstatistik — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Stummschalten",
+      "unmute": "Stummschaltung aufheben",
+      "deafen": "Ton aus",
+      "undeafen": "Ton an",
+      "hangup": "Anruf verlassen",
+      "mini": "Minimodus öffnen",
+      "status": "Onlinestatus",
+      "online": "Verfügbar",
+      "idle": "Abwesend",
+      "dnd": "Nicht stören",
+      "invisible": "Unsichtbar",
+      "inCall": "Im Anruf: {title}",
+      "focus": "Fokusmodus",
+      "focusOn": "Fokusmodus: noch {minutes} Min.",
+      "focus30": "30 Minuten",
+      "focus60": "1 Stunde",
+      "focus120": "2 Stunden",
+      "focusOff": "Fokusmodus beenden",
+      "audioProfile": "Audioprofil"
+    },
+    "taskbar": {
+      "unread": "{n} ungelesen"
+    },
+    "window": {
+      "mini": "Descall Minimodus",
+      "call": "Descall Anruf",
+      "sidebar": "Descall Seitenleiste"
+    },
+    "launcher": {
+      "title": "Schnellstarter",
+      "placeholder": "Freunde, Chats, Server oder Aktionen suchen",
+      "empty": "Nichts gefunden",
+      "hint": "Enter zum Öffnen, Pfeiltasten zum Bewegen, Esc zum Schließen",
+      "loading": "Suche läuft"
+    },
+    "quickReply": {
+      "placeholder": "Antworten"
+    }
   }
 }

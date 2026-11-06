@@ -58,13 +58,26 @@ const {
   SPLASH_RESCUE_MS,
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
-const { resolveDistFile } = require('./appProtocolPath.cjs');
+const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
+const { encryptText, readEncryptedFile, looksLikeJwt } = require('./tokenCrypto.cjs');
+const { readClipboardImagePng } = require('./clipboardImage.cjs');
+const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
+const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
+// Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
+const premium = require('./premium/index.cjs');
+const premiumNotify = require('./premium/notifyHooks.cjs');
+const { applyToastIdentity } = require('./premium/toastIdentity.cjs');
+// Host hooks for premium modules that need main.cjs internals (multi_account partitions).
+const premiumHooks = require('./premium/hostHooks.cjs');
 
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+// Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
+// toast activator CLSID, both also written on the NSIS Start Menu shortcut.
+applyToastIdentity(app, { log });
 
 // Standard scheme so packaged pages can call https APIs with webSecurity on.
 // file:// cannot. Register before ready.
@@ -81,6 +94,8 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
+
 function distRoot() {
   const candidates = [
     path.join(process.resourcesPath || '', 'dist'),
@@ -89,6 +104,16 @@ function distRoot() {
     path.join(__dirname, '..', 'dist'),
   ];
   return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.html'))) || null;
+}
+
+/** Web and mail links go to the OS browser / mail client; file:, custom schemes and the like never do. */
+function openExternalSafely(url, why) {
+  if (!isSafeExternalUrl(url)) {
+    log.warn(`[nav] not opening ${why || 'link'}: ${String(url || '').slice(0, 120)}`);
+    return false;
+  }
+  shell.openExternal(url).catch((err) => log.warn('[nav] openExternal failed:', err?.message || err));
+  return true;
 }
 
 let cachedAppCsp = null;
@@ -106,10 +131,21 @@ function appDocumentCsp(root) {
   return cachedAppCsp;
 }
 
+let descallProtocolHandler = null;
+/** Same descall:// handler on another session (premium multi_account partitions). */
+function registerAppProtocolOn(ses) {
+  if (!descallProtocolHandler || !ses || ses === session.defaultSession) return false;
+  ses.protocol.handle('descall', descallProtocolHandler);
+  return true;
+}
+
+premiumHooks.set('registerAppProtocolOn', registerAppProtocolOn);
+premiumHooks.set('mediaPermissions', MEDIA_PERMISSIONS);
+
 function registerDescallProtocol() {
   const root = distRoot();
   if (!root) return null;
-  protocol.handle('descall', (request) => {
+  protocol.handle('descall', descallProtocolHandler = (request) => {
     try {
       const url = new URL(request.url);
       // SPA routes serve the app document (2.11.11), and the document's relative
@@ -134,8 +170,60 @@ function registerDescallProtocol() {
   return root;
 }
 
-function tokenFilePath() {
-  return path.join(app.getPath('userData'), 'auth-token.bin');
+// ---- IPC sender validation (appTrust.cjs) ----------------------------------------------
+// Sensitive channels (token, file system, download, settings, auth, updates, and every
+// premium:* channel) accept a message only from the top frame of a Descall window whose
+// URL has the app origin (descall://app, or the Vite origin in a dev run). Register them
+// with trustedHandle / trustedOn, never with a bare ipcMain call.
+/** True for the web contents of one of our app windows (main, Kayıt İstatistikleri, Yönetici Paneli). */
+function isDescallWebContents(wc) {
+  if ([mainWindow, signupStatsWindow, adminPanelWindow].some(
+    (w) => w && !w.isDestroyed() && w.webContents === wc,
+  )) return true;
+  // Descall+ pop-outs, mini mode and PiP load the same app document and need the token.
+  try {
+    if (premium && premium.isAuxWindow && premium.isAuxWindow(wc)) return true;
+    // Descall Ultra extra-account windows (multi_account, own session partition).
+    const isAccount = premiumHooks.get('isAccountWebContents');
+    return Boolean(isAccount && isAccount(wc));
+  } catch (_) { return false; }
+}
+let senderGuard = null;
+function getSenderGuard() {
+  if (!senderGuard) senderGuard = createSenderGuard({ isDev, isKnownWebContents: isDescallWebContents, log });
+  return senderGuard;
+}
+/** Throws E_UNTRUSTED_SENDER unless the message comes from an app page in a Descall window. */
+function assertTrustedSender(event, channel = '') {
+  getSenderGuard().assertTrustedSender(event, channel);
+}
+/** ipcMain.handle with the sender check first (an untrusted invoke rejects). */
+function trustedHandle(channel, handler) {
+  ipcMain.handle(channel, (event, ...args) => {
+    assertTrustedSender(event, channel);
+    return handler(event, ...args);
+  });
+}
+/**
+ * ipcMain.on with the sender check first. An untrusted message is dropped; for a sendSync
+ * channel pass { sync: true, refused } so the renderer gets `refused` instead of hanging.
+ */
+function trustedOn(channel, handler, { sync = false, refused = null } = {}) {
+  ipcMain.on(channel, (event, ...args) => {
+    try {
+      assertTrustedSender(event, channel);
+    } catch (_) {
+      if (sync) event.returnValue = refused;
+      return undefined;
+    }
+    return handler(event, ...args);
+  });
+}
+
+function tokenFilePath(event) {
+  // A premium multi_account window (own session partition) keeps its own token file.
+  const own = event ? premiumHooks.tokenFileForSender(event.sender) : null;
+  return own || path.join(app.getPath('userData'), 'auth-token.bin');
 }
 
 // Renderer boot watchdog / "Tekrar dene" (index.html, 2.11.5): drop the service
@@ -180,7 +268,7 @@ ipcMain.on('app:boot-state', (event, payload) => {
 
 // UI language (LocaleContext → preload electronAPI.setLocale) on boot and on every
 // change: tray menu, splash, dialogs, notification cards and the overlay follow it.
-ipcMain.on('app:locale', (event, locale) => {
+trustedOn('app:locale', (event, locale) => {
   const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
   if (!w || (w !== mainWindow && w !== signupStatsWindow && w !== adminPanelWindow)) return;
   if (setUiLocale(String(locale || '').slice(0, 16))) log.info(`[i18n] main-process language: ${getLocale()}`);
@@ -190,52 +278,50 @@ onLocaleChange(() => {
   refreshOverlayLanguage();
 });
 
-ipcMain.on('secure-token:get', (event) => {
+// Electron 45: async safeStorage (tokenCrypto.cjs; the sync methods go away in 46). These stay
+// sendSync channels because secureToken.get() is synchronous in the renderer: the reply is
+// sent when returnValue is assigned, so the renderer waits the few ms the key store takes.
+trustedOn('secure-token:get', async (event) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (!fs.existsSync(file)) {
       event.returnValue = null;
       return;
     }
-    const buf = fs.readFileSync(file);
-    event.returnValue = safeStorage.isEncryptionAvailable()
-      ? safeStorage.decryptString(buf)
-      : buf.toString('utf8');
+    event.returnValue = await readEncryptedFile(safeStorage, fs, file, { legacyPlain: looksLikeJwt });
   } catch (err) {
     log.warn('[secure-token] read failed:', err?.message || err);
     event.returnValue = null;
   }
-});
+}, { sync: true, refused: null });
 
-ipcMain.on('secure-token:set', (event, token) => {
+trustedOn('secure-token:set', async (event, token) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     const value = String(token || '');
     if (!value) {
       if (fs.existsSync(file)) fs.unlinkSync(file);
       event.returnValue = true;
       return;
     }
-    const buf = safeStorage.isEncryptionAvailable()
-      ? safeStorage.encryptString(value)
-      : Buffer.from(value, 'utf8');
-    fs.writeFileSync(file, buf);
+    await fs.promises.writeFile(file, await encryptText(safeStorage, value));
     event.returnValue = true;
   } catch (err) {
     log.warn('[secure-token] write failed:', err?.message || err);
     event.returnValue = false;
   }
-});
+}, { sync: true, refused: false });
 
-ipcMain.on('secure-token:clear', (event) => {
+trustedOn('secure-token:clear', (event) => {
+  if (!premiumHooks.tokenFileForSender(event.sender)) premium.gate.reset();
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (fs.existsSync(file)) fs.unlinkSync(file);
     event.returnValue = true;
   } catch {
     event.returnValue = false;
   }
-});
+}, { sync: true, refused: false });
 
 // Background / tray: keep the renderer fully awake so socket events keep
 // arriving and the message sound can play without a prior click (the app
@@ -804,8 +890,8 @@ function resolveColdStart() {
   } catch (_) { /* before ready, or the platform has no login-item API */ }
   coldStartDecision = decideColdStart({
     argv: process.argv,
+    // wasOpenedAsHidden was removed in Electron 44 (it only worked on macOS 12 and older).
     wasOpenedAtLogin: Boolean(login.wasOpenedAtLogin),
-    wasOpenedAsHidden: Boolean(login.wasOpenedAsHidden),
     backgroundMode: startInBackgroundMode(),
     updaterRelaunch: consumeUpdaterRelaunch(),
   });
@@ -966,8 +1052,10 @@ function runBootSmoke() {
   const started = Date.now();
   const win = mainWindow;
   if (!win || win.isDestroyed()) { console.error('[smoke-boot] FAIL no main window'); app.exit(21); return; }
-  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
-    const message = String(e?.message ?? legacyMessage ?? '');
+  // Event object only (level / message on the event): the positional arguments are deprecated
+  // and Electron 45 warns once a listener declares them.
+  win.webContents.on('console-message', (e) => {
+    const message = String(e?.message ?? '');
     if (isInlineCspViolation(message)) {
       smokeCspInlineBlocked += 1;
       console.error(`[smoke-boot] CSP blocked: ${message.slice(0, 300)}`);
@@ -1241,6 +1329,7 @@ function createMainWindow() {
   // A secondary app window (Kayıt İstatistikleri, Yönetici Paneli) drives its own controls; everything else is the main window.
   const controlledWindow = (event) => {
     const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    if (w && premium.isAuxWindow(w.webContents)) return w;
     return w && w !== mainWindow && (w === signupStatsWindow || w === adminPanelWindow) ? w : mainWindow;
   };
   ipcMain.on('window:minimize', (event) => {
@@ -1284,7 +1373,6 @@ function createMainWindow() {
   // 'speaker-selection' (2.10.113): without it Chromium rejects
   // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
   // silently did nothing.
-  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(MEDIA_PERMISSIONS.includes(permission));
   });
@@ -1559,9 +1647,9 @@ function createMainWindow() {
   }
 
   // Renderer warnings/errors and [boot] lines go to main.log (evidence for stuck starts).
-  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
-    const level = e?.level ?? legacyLevel;
-    const message = String(e?.message ?? legacyMessage ?? '');
+  win.webContents.on('console-message', (e) => {
+    const level = e?.level;
+    const message = String(e?.message ?? '');
     const isWarn = level === 'warning' || level === 'error' || level === 2 || level === 3;
     if (!isWarn && !message.startsWith('[boot]')) return;
     if (rendererBoot.painted && !isWarn) return;
@@ -1665,8 +1753,12 @@ function createMainWindow() {
     tryBackgroundCheck('blur');
   });
 
-  // Handle external links — Descall Setup assets download in-app so we can prune older installers
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  // Handle external links — Descall Setup assets download in-app so we can prune older installers.
+  // The admin windows get adminPreload.cjs: the same bridge minus screen capture, clipboard,
+  // process list, downloads, call overlay and update install.
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
+    const premiumOpen = premium.windowOpen({ url, frameName, features });
+    if (premiumOpen) return premiumOpen;
     // Yönetici › Kayıt İstatistikleri: its own window (one at a time).
     if (isSignupStatsUrl(url, { isDev })) {
       if (signupStatsWindow && !signupStatsWindow.isDestroyed()) {
@@ -1676,7 +1768,7 @@ function createMainWindow() {
       }
       return {
         action: 'allow',
-        overrideBrowserWindowOptions: signupStatsWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
+        overrideBrowserWindowOptions: signupStatsWindowOptions({ preload: path.join(__dirname, 'adminPreload.cjs'), icon: resolveAppIcon() }),
       };
     }
     // Yönetici Paneli: its own window (one at a time), the main window stays usable.
@@ -1688,7 +1780,7 @@ function createMainWindow() {
       }
       return {
         action: 'allow',
-        overrideBrowserWindowOptions: adminPanelWindowOptions({ preload: path.join(__dirname, 'preload.cjs'), icon: resolveAppIcon() }),
+        overrideBrowserWindowOptions: adminPanelWindowOptions({ preload: path.join(__dirname, 'adminPreload.cjs'), icon: resolveAppIcon() }),
       };
     }
     if (isDescallSetupDownloadUrl(url)) {
@@ -1700,11 +1792,13 @@ function createMainWindow() {
       });
       return { action: 'deny' };
     }
-    shell.openExternal(url);
+    openExternalSafely(url, 'window-open');
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('did-create-window', (win, { url }) => {
+  mainWindow.webContents.on('did-create-window', (win, details) => {
+    if (premium.didCreateWindow(win, details)) return;
+    const { url } = details;
     const isStats = isSignupStatsUrl(url, { isDev });
     const isPanel = !isStats && isAdminPanelUrl(url, { isDev });
     if (!isStats && !isPanel) return;
@@ -1719,7 +1813,7 @@ function createMainWindow() {
     win.on('maximize', () => win.webContents.send('window:maximized', true));
     win.on('unmaximize', () => win.webContents.send('window:maximized', false));
     win.webContents.setWindowOpenHandler(({ url: next }) => {
-      if (/^https?:/i.test(next)) shell.openExternal(next);
+      openExternalSafely(next, 'admin-window-open');
       return { action: 'deny' };
     });
     win.webContents.on('will-navigate', (event, next) => {
@@ -1727,21 +1821,22 @@ function createMainWindow() {
     });
   });
 
-  // Security: Prevent navigation to external sites
+  // Security: the main window only ever shows the app itself. Exact origin match
+  // (appTrust.cjs: descall://app, plus http://localhost:5173 in a dev run); anything
+  // else is cancelled and, if it is a web or mail link, handed to the OS.
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.includes('localhost') && !url.startsWith('file://')) {
-      event.preventDefault();
-      if (isDescallSetupDownloadUrl(url)) {
-        downloadDescallSetupViaElectron({
-          webContents: mainWindow.webContents,
-          app,
-          url,
-          log,
-        });
-        return;
-      }
-      shell.openExternal(url);
+    if (isAppUrl(url, { isDev })) return;
+    event.preventDefault();
+    if (isDescallSetupDownloadUrl(url)) {
+      downloadDescallSetupViaElectron({
+        webContents: mainWindow.webContents,
+        app,
+        url,
+        log,
+      });
+      return;
     }
+    openExternalSafely(url, 'will-navigate');
   });
 }
 
@@ -1771,6 +1866,7 @@ function createTray() {
       },
     },
     { type: 'separator' },
+    ...premium.trayMenuItems(),
     {
       label: et('tray.startWithWindows'),
       type: 'checkbox',
@@ -1855,8 +1951,20 @@ app.whenReady().then(async () => {
   // After an update is applied (or on every launch), drop older Setup installers from Downloads
   pruneOldSetupDownloads('app-ready', app.isPackaged ? app.getVersion() : null);
 
-  registerProcessScannerIPC();
+  registerProcessScannerIPC({ assertSender: assertTrustedSender });
   registerOverlayIPC(() => mainWindow);
+  premium.init({
+    electron: require('electron'),
+    getMainWindow: () => mainWindow,
+    appUrl: (route) => (isDev ? `http://localhost:5173${route}` : `descall://app${route}`),
+    tokenFile: tokenFilePath,
+    preloadPath: path.join(__dirname, 'preload.cjs'),
+    iconPath: resolveAppIcon(),
+    isDev,
+    rebuildTray: () => rebuildTrayMenu?.(),
+    showMain: () => showMainWindow(),
+    log,
+  });
 
   globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
   globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
@@ -1885,6 +1993,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  premium.flush();
   destroyOverlayWindow();
   if (!updateReady || installStarted || !app.isPackaged) return;
   try {
@@ -2029,13 +2138,60 @@ function mainWindowInFront() {
   }
 }
 
-function showAppNotification({ title, options = {} } = {}) {
+// Native OS toasts kept referenced until closed (otherwise GC drops the click handler).
+const liveNativeToasts = new Set();
+function showNativeToast({ title, body, tag, data, silent }) {
+  try {
+    const { Notification } = require('electron');
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(data?.from || title || 'Descall').slice(0, 120), body: String(data?.preview || body || '').slice(0, 300), silent });
+    liveNativeToasts.add(n);
+    n.on('click', () => {
+      showMainWindow();
+      mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+    });
+    n.on('close', () => liveNativeToasts.delete(n));
+    n.on('failed', () => liveNativeToasts.delete(n));
+    n.show();
+    if (liveNativeToasts.size > 20) liveNativeToasts.delete(liveNativeToasts.values().next().value);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function showAppNotification(payload = {}) {
+  // Descall+ modules may decorate (quick reply) or skip a toast.
+  const hooked = premiumNotify.run(payload);
+  if (!hooked) return null;
+  const { title, options = {} } = hooked;
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
   // Descall in front: the in-app UI (message list, incoming call card) is
   // already showing this. A toast on top would be a duplicate.
   if (mainWindowInFront() && (isCall || !requireInteraction)) return null;
+
+  // Descall+ quick reply: a DM becomes a native toast with an inline reply
+  // field where the OS supports it; otherwise the capsule below is shown.
+  if (hooked.quickReply && !isCall) {
+    const shown = premiumNotify.showQuickReply({
+      title: data?.from || title,
+      body: data?.preview || body,
+      conv: hooked.quickReply.conv,
+      onClick: () => {
+        showMainWindow();
+        mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+      },
+    });
+    if (shown) return null;
+  }
+
+  // Descall+ notification profiles: "toast" style uses the OS notification
+  // instead of a capsule (the renderer only sends it for entitled users).
+  if (options.style === 'toast' && !isCall && showNativeToast({ title, body, tag, data, silent: Boolean(options.silent) })) {
+    return null;
+  }
 
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;
@@ -2107,13 +2263,14 @@ function showAppNotification({ title, options = {} } = {}) {
   return win;
 }
 
-ipcMain.on('notification:show', (_event, payload = {}) => {
+trustedOn('notification:show', (_event, payload = {}) => {
+  if (premium.isAuxWindow(_event?.sender)) return; // Descall+ pop-outs: the main window notifies
   showAppNotification(payload);
 });
 
 // Incoming-call toasts use duration 0. The renderer closes them by tag when
 // the ring ends (accept, decline, cancel, end, miss, answered elsewhere).
-ipcMain.on('notification:close', (_event, payload = {}) => {
+trustedOn('notification:close', (_event, payload = {}) => {
   const tags = Array.isArray(payload.tags) ? payload.tags : [payload.tag];
   for (const tag of tags) {
     if (!tag || !activeNotifByTag.has(tag)) continue;
@@ -2123,7 +2280,7 @@ ipcMain.on('notification:close', (_event, payload = {}) => {
   }
 });
 
-ipcMain.handle('show-notification', (_event, payload = {}) => {
+trustedHandle('show-notification', (_event, payload = {}) => {
   const title = payload?.title;
   const options = payload?.options
     ? payload.options
@@ -2140,23 +2297,15 @@ ipcMain.handle('show-notification', (_event, payload = {}) => {
 });
 
 // IPC handlers
-// Composer paste fallback: clipboard image as PNG bytes (null when none).
-ipcMain.handle('clipboard:read-image', () => {
-  try {
-    const img = clipboard.readImage();
-    if (!img || img.isEmpty()) return null;
-    const png = img.toPNG();
-    return png.length > 25 * 1024 * 1024 ? null : png;
-  } catch {
-    return null;
-  }
-});
+// Composer paste fallback: clipboard image as PNG bytes (null when none). Electron 44 removed
+// clipboard.readImage(); clipboardImage.cjs reads it through the async clipboard.read().
+trustedHandle('clipboard:read-image', () => readClipboardImagePng({ clipboard, nativeImage }));
 
 ipcMain.handle('app-version', () => {
   return app.getVersion();
 });
 
-ipcMain.handle('check-for-updates', async () => {
+trustedHandle('check-for-updates', async () => {
   if (!isPackaged) return { success: true, skipped: true };
   try {
     const result = await checkForAppUpdates('ipc');
@@ -2186,9 +2335,9 @@ ipcMain.on('activity:set-busy', (event, busy) => {
   if (updateReady && !next) evaluatePendingUpdate('user-busy');
 });
 
-ipcMain.handle('restart-app', () => requestExplicitInstall('ipc'));
+trustedHandle('restart-app', () => requestExplicitInstall('ipc'));
 
-ipcMain.handle('restart-app-confirmed', () => {
+trustedHandle('restart-app-confirmed', () => {
   // The user explicitly chose to end the call and restart.
   if (!updateReady) {
     isQuitting = true;
@@ -2243,7 +2392,7 @@ ipcMain.handle('focus-window', () => {
 });
 
 // Desktop capturer — screen share sources
-ipcMain.handle('get-screen-sources', async () => {
+trustedHandle('get-screen-sources', async () => {
   try {
     if (process.platform === 'darwin' && systemPreferences?.getMediaAccessStatus) {
       const access = systemPreferences.getMediaAccessStatus('screen');
@@ -2274,18 +2423,21 @@ ipcMain.handle('screen-share:select-source', (_e, sourceId) => {
 });
 
 // Security: Handle downloads
-ipcMain.on('download-file', async (event, { url, filename }) => {
+// The renderer names the file: safeDownload.cjs keeps it a plain file name directly
+// inside Downloads (no separators, '..', reserved characters or device names).
+trustedOn('download-file', async (event, payload) => {
   try {
+    const { url, filename } = payload || {};
+    if (!isDownloadableUrl(url)) throw new Error('download-file: only http(s) URLs');
+    const { filePath, name } = resolveDownloadPath(app.getPath('downloads'), filename);
+
     const { default: fetch } = await import('node-fetch');
     const response = await fetch(url);
     const buffer = await response.buffer();
-    
-    const downloadsPath = app.getPath('downloads');
-    const filePath = path.join(downloadsPath, filename);
-    
+
     fs.writeFileSync(filePath, buffer);
 
-    const setupVer = versionFromSetupFilename(filename);
+    const setupVer = versionFromSetupFilename(name);
     if (setupVer || isDescallSetupDownloadUrl(url)) {
       pruneOldSetupDownloads('download-file', setupVer);
     }
@@ -2300,10 +2452,16 @@ ipcMain.on('download-file', async (event, { url, filename }) => {
 
 // Register custom protocol for sounds
 app.on('ready', () => {
+  // Files under the app root only (appProtocolPath.cjs): '..' and outside paths get ACCESS_DENIED.
+  const legacyRoot = path.join(__dirname, '..');
   protocol.registerFileProtocol('app', (request, callback) => {
-    const url = request.url.substr(6); // Remove 'app://'
-    const filePath = path.join(__dirname, '..', url);
-    callback({ path: filePath });
+    const resolved = resolveLegacyAppFile(legacyRoot, request.url);
+    if (resolved.forbidden) {
+      log.warn('[protocol] app:// path refused:', String(request.url || '').slice(0, 200));
+      callback({ error: -10 }); // net::ERR_ACCESS_DENIED
+      return;
+    }
+    callback({ path: resolved.filePath });
   });
 });
 

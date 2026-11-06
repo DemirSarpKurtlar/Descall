@@ -42,7 +42,7 @@ export default function IosPwaInstallBanner() {
         <strong>{t("Add Descall to your Home Screen")}</strong>
         <span>
           {t("In Safari tap Share")}{" "}
-          <b>(□↑)</b>
+          <Share size={14} className="ios-pwa-banner__share" aria-hidden="true" />
           {" → "}
           <b>{t("Add to Home Screen")}</b>
           {" → "}

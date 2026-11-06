@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PROCESS_DB, TYPE_PRIORITY, PROCESS_BLOCKLIST } from '../lib/processDatabase';
+// Descall+ game_status: extra game list for members only (null for everyone else).
+import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
 import { getToken } from '../lib/storage';
 import { API_BASE_URL } from '../config/api';
 import {
@@ -110,11 +112,12 @@ function filterHistory(list) {
 /** Resolve the highest-priority detected app from running process names. */
 function resolveActivity(processList) {
   const candidates = [];
+  const extra = premiumProcessEntries(PROCESS_DB);
 
   for (const proc of processList) {
     const lc = proc.toLowerCase();
     if (PROCESS_BLOCKLIST.has(lc)) continue;
-    const entry = PROCESS_DB[lc];
+    const entry = PROCESS_DB[lc] || (extra && extra[lc]);
     if (!entry) continue;
     if (isJunkResolvedEntry(entry)) continue;
     candidates.push({ ...entry, exe: lc });
@@ -167,11 +170,13 @@ export function useActivity({ socket, me, friends = [] }) {
   const [currentActivity, setCurrentActivity] = useState(() => {
     const m = loadStoredManual();
     return m
-      ? { appName: 'manual', appType: 'manual', displayName: m.displayName, startedAt: m.startedAt, icon: '✏️' }
+      ? { appName: 'manual', appType: 'manual', displayName: m.displayName, startedAt: m.startedAt, icon: null }
       : null;
   });
   const [friendPresence, setFriendPresence]   = useState({});
   const [history, setHistory]                 = useState([]);
+  // UI audit #91: the history list shows skeleton rows until the first load settles.
+  const [historyLoaded, setHistoryLoaded]     = useState(false);
   const [settings, setSettings]               = useState(loadStoredSettings);
 
   const scanStateRef      = useRef({ active: null, paused: null });
@@ -190,7 +195,7 @@ export function useActivity({ socket, me, friends = [] }) {
   // ─── Load initial data ──────────────────────────────────────────────────────
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
+    if (!token) { setHistoryLoaded(true); return; }
 
     Promise.all([
       fetch(`${API_BASE_URL}/api/activity/history`,  { headers: { Authorization: `Bearer ${token}` } }),
@@ -208,7 +213,7 @@ export function useActivity({ socket, me, friends = [] }) {
           persistSettings(merged);
         }
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setHistoryLoaded(true));
   }, []);
 
   // ─── Hydrate friend presence from REST ───────────────────────────────────
@@ -318,6 +323,8 @@ export function useActivity({ socket, me, friends = [] }) {
 
     if (step.emit === 'update' && detected) {
       lastDetectedRef.current = detected;
+      // Descall+ smart game notifications follow the detected game (no extra scan).
+      try { window.dispatchEvent(new CustomEvent('descall:activity', { detail: { appType: detected.appType, appName: detected.appName, displayName: detected.displayName } })); } catch { /* ignore */ }
       const startedAt = step.startedAt;
       setCurrentActivity({ ...detected, startedAt });
       socket.emit('activity:update', {
@@ -328,6 +335,7 @@ export function useActivity({ socket, me, friends = [] }) {
       });
     } else if (step.emit === 'clear') {
       setCurrentActivity(null);
+      try { window.dispatchEvent(new CustomEvent('descall:activity', { detail: null })); } catch { /* ignore */ }
       socket.emit('activity:clear');
     }
   }, [socket, settings]);
@@ -518,7 +526,7 @@ export function useActivity({ socket, me, friends = [] }) {
     const startedAt = manualRef.current.startedAt;
     const override  = manualRef.current;
     setManualOverride(override);
-    setCurrentActivity({ appName: 'manual', appType: 'manual', displayName, startedAt, icon: '✏️' });
+    setCurrentActivity({ appName: 'manual', appType: 'manual', displayName, startedAt, icon: null });
     persistManual(override);
 
     socket?.emit('activity:manual', { displayName, expiresIn: expiresIn ?? null });
@@ -577,6 +585,7 @@ export function useActivity({ socket, me, friends = [] }) {
     currentActivity,
     friendPresence,
     history,
+    historyLoaded,
     settings,
     manualOverride,
     isElectron,

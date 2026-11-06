@@ -4,7 +4,7 @@ import { useT } from "../../context/LocaleContext";
 import { confirmToggleBlock, useIsBlocked } from "../../lib/blockedUsers";
 
 /** Block / Unblock toggle used in the profile popout and the DM header. */
-export default function BlockUserButton({ userId, username, className = "user-profile-report-btn", iconSize = 13, compact = false, onChange }) {
+export default function BlockUserButton({ userId, username, displayName, className = "user-profile-report-btn", iconSize = 13, compact = false, onChange }) {
   const t = useT();
   const blocked = useIsBlocked(userId);
   const [busy, setBusy] = useState(false);
@@ -24,7 +24,7 @@ export default function BlockUserButton({ userId, username, className = "user-pr
           setError("");
           setBusy(true);
           try {
-            const next = await confirmToggleBlock({ userId, username, t });
+            const next = await confirmToggleBlock({ userId, username, displayName, t });
             if (next !== null) onChange?.(next);
           } catch (err) {
             setError(err?.message || t("Something went wrong."));

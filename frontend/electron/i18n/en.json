@@ -63,5 +63,46 @@
   "window": {
     "signupStats": "Sign-up Stats — Descall Admin",
     "adminPanel": "Descall Admin"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "deafen": "Deafen",
+      "undeafen": "Undeafen",
+      "hangup": "Leave call",
+      "mini": "Open mini mode",
+      "status": "Status",
+      "online": "Online",
+      "idle": "Idle",
+      "dnd": "Do not disturb",
+      "invisible": "Invisible",
+      "inCall": "In a call: {title}",
+      "focus": "Focus mode",
+      "focusOn": "Focus mode: {minutes} min left",
+      "focus30": "30 minutes",
+      "focus60": "1 hour",
+      "focus120": "2 hours",
+      "focusOff": "End focus mode",
+      "audioProfile": "Audio profile"
+    },
+    "taskbar": {
+      "unread": "{n} unread"
+    },
+    "window": {
+      "mini": "Descall mini mode",
+      "call": "Descall call",
+      "sidebar": "Descall sidebar"
+    },
+    "launcher": {
+      "title": "Quick launcher",
+      "placeholder": "Search friends, chats, servers or actions",
+      "empty": "Nothing found",
+      "hint": "Enter to open, arrow keys to move, Esc to close",
+      "loading": "Searching"
+    },
+    "quickReply": {
+      "placeholder": "Reply"
+    }
   }
 }

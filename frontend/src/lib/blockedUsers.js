@@ -69,14 +69,19 @@ export async function setUserBlocked(userId, shouldBlock) {
  * Ask for confirmation, then block / unblock. Returns the new blocked state
  * (true / false) or null when the user cancelled. Throws on API errors.
  */
-export async function confirmToggleBlock({ userId, username, t = (k) => k }) {
+export async function confirmToggleBlock({ userId, username, displayName, t = (k) => k }) {
   if (!userId) return null;
   const blockedNow = isBlockedByMe(userId);
   const name = username || t("this user");
+  // Title uses the name people see everywhere else; the @handle goes on the line below.
+  const shown = String(displayName || "").trim() || name;
+  const handle = username ? `@${username}` : "";
+  const title = blockedNow ? t("Unblock {username}?", { username: shown }) : t("Block {name}?", { name: shown });
   const message = blockedNow
-    ? t("Unblock {username}?", { username: name })
-    : t("Block {username}? They won't be able to message you, call you, or send you friend requests, and their messages will be hidden.", { username: name });
+    ? handle
+    : t("{handle} won't be able to message you, call you, or send you friend requests, and their messages will be hidden.", { handle: handle || name });
   const ok = await confirmAction({
+    title,
     message,
     confirmLabel: blockedNow ? t("Unblock") : t("Block"),
     cancelLabel: t("Cancel"),

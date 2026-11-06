@@ -1,6 +1,6 @@
 {
   "name": "descall",
-  "version": "3.7.34",
+  "version": "3.7.35",
   "description": "Modern messaging and video conferencing app",
   "author": {
     "name": "Descall",
@@ -63,6 +63,7 @@
     "electron-updater": "^6.3.0",
     "framer-motion": "^11.11.17",
     "livekit-client": "^2.21.0",
+    "mediabunny": "1.61.6",
     "posthog-js": "^1.415.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -76,7 +77,7 @@
     "@capacitor/cli": "^8.5.0",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^8.2.2",
-    "electron": "^43.8.6",
+    "electron": "^45.2.3",
     "electron-builder": "^26.18.0",
     "typescript": "~5.9.3",
     "vite": "^6.4.5",
@@ -128,7 +129,12 @@
       ],
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "files": [
+        "!node_modules/uiohook-napi/prebuilds/{linux-*,darwin-*,win32-arm64}/**",
+        "!node_modules/uiohook-napi/{libuiohook,src}/**",
+        "!node_modules/uiohook-napi/binding.gyp"
+      ]
     },
     "mac": {
       "target": [
@@ -151,7 +157,12 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "icon": "electron/icon.icns",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "files": [
+        "!node_modules/uiohook-napi/prebuilds/{linux-*,win32-*}/**",
+        "!node_modules/uiohook-napi/{libuiohook,src}/**",
+        "!node_modules/uiohook-napi/binding.gyp"
+      ]
     },
     "linux": {
       "target": [
@@ -171,7 +182,12 @@
       "category": "Network",
       "maintainer": "Descall Team",
       "vendor": "Descall",
-      "artifactName": "${productName}-${version}.${ext}"
+      "artifactName": "${productName}-${version}.${ext}",
+      "files": [
+        "!node_modules/uiohook-napi/prebuilds/{darwin-*,win32-*}/**",
+        "!node_modules/uiohook-napi/{libuiohook,src}/**",
+        "!node_modules/uiohook-napi/binding.gyp"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -201,10 +217,15 @@
     "portable": {
       "artifactName": "Descall-Portable-${version}.exe"
     },
-    "npmRebuild": true,
+    "npmRebuild": false,
     "asar": true,
-    "asarUnpack": [],
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**"
+    ],
     "compression": "maximum",
     "removePackageScripts": true
+  },
+  "optionalDependencies": {
+    "uiohook-napi": "1.5.5"
   }
 }

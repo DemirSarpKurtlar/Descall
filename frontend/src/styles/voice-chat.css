@@ -234,7 +234,7 @@
 
 /* ─── Incoming Call Overlay ─── */
 .incoming-call-overlay {
-  background: linear-gradient(135deg, rgba(88, 101, 242, 0.2) 0%, rgba(0, 0, 0, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(88, 122, 245, 0.2) 0%, rgba(0, 0, 0, 0.95) 100%);
 }
 .incoming-call-container {
   background: var(--surface-1);

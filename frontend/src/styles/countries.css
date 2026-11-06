@@ -433,12 +433,13 @@ html.flag-font {
 }
 
 /* ---------- licences ---------- */
-.licenses-list { display: flex; flex-direction: column; gap: 10px; }
+.licenses-list { display: flex; flex-direction: column; gap: 0; }
 .licenses-item {
-  padding: 14px 16px; border-radius: var(--r-md);
-  background: var(--border-1); border: 1px solid var(--border-2);
+  padding: 14px 16px; border-radius: 0;
+  background: none; border: 0;
   font-size: 13px; line-height: 1.5; color: var(--text-2);
 }
+.licenses-item + .licenses-item { border-top: 1px solid var(--border-2); }
 .licenses-item strong { display: block; color: var(--text-0); font-size: 14px; margin-bottom: 4px; }
 .licenses-item a { color: var(--text-link); }
 

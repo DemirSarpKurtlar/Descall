@@ -51,14 +51,3 @@ export const RailActivity = railIcon("activity");
 export const RailCalls = railIcon("calls");
 export const RailAdd = railIcon("add");
 export const RailSettings = railIcon("settings");
-
-export const RAIL_ACCENT = {
-  chat: "#5C7CFA",
-  groups: "#0F9F8F",
-  servers: "#7C3AED",
-  friends: "#16A34A",
-  activity: "#E8A317",
-  calls: "#059669",
-  add: "#C9D2E3",
-  settings: "#8E99B0",
-};

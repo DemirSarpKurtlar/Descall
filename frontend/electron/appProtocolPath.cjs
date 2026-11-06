@@ -46,4 +46,24 @@ function resolveDistFile(root, pathname, exists) {
   return { filePath: direct, forbidden: false, spa: false, rewritten: false };
 }
 
-module.exports = { resolveDistFile };
+/**
+ * Legacy app:// scheme (sounds and other files next to electron/). The old handler did
+ * path.join(__dirname, '..', url) with no check, so app://../../… read any file on disk.
+ * Same rule as resolveDistFile: decode, normalize, resolve against root, and refuse any
+ * path with a '..' segment or one that lands outside root. Returns { filePath, forbidden }.
+ */
+function resolveLegacyAppFile(root, requestUrl) {
+  const rootAbs = path.resolve(root);
+  const rootPrefix = rootAbs.endsWith(path.sep) ? rootAbs : rootAbs + path.sep;
+  const raw = String(requestUrl || '').replace(/^app:\/\//i, '').split(/[?#]/)[0];
+  const rel = safeDecode(raw).replace(/\\/g, '/');
+  const forbidden = { filePath: null, forbidden: true };
+  // NUL bytes, '..' segments (before or after decoding) and absolute or drive paths never resolve.
+  if (!rel || /\0/.test(rel) || /(^|\/)\.\.(\/|$)/.test(rel) || /(^|[\\/])\.\.([\\/]|$)/.test(raw)) return forbidden;
+  if (/^[a-z]:/i.test(rel) || rel.startsWith('//')) return forbidden;
+  const filePath = path.resolve(rootAbs, '.' + path.posix.normalize('/' + rel));
+  if (filePath === rootAbs || !filePath.startsWith(rootPrefix)) return forbidden;
+  return { filePath, forbidden: false };
+}
+
+module.exports = { resolveDistFile, resolveLegacyAppFile };

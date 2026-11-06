@@ -65,7 +65,8 @@ import {
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
 } from "../lib/noiseSuppression";
-import { voiceMicErrorCopy } from "../lib/voiceMicError";
+import { voiceMicErrorToast } from "../lib/voiceMicError";
+import { MicOff } from "../components/ui/Icon.jsx";
 import { callKitOwnsIncomingRing, callKitManagesAudioSession, interceptUiAnswer } from "../lib/iosCallKitState";
 import { IOS_NATIVE } from "../lib/iosCallKit";
 import {
@@ -1677,7 +1678,7 @@ export function useCall(socket, callOccupancyRef = null) {
       setupTimelineRef.current?.mark("offerSent");
     } catch (err) {
       console.error("[Call] startCall failed:", err?.name || err?.message || err);
-      toast(tRuntime(voiceMicErrorCopy(err)), "error");
+      voiceMicErrorToast(err, { toast, t: tRuntime, MicOffIcon: MicOff });
       cleanup();
     }
   }, [cleanup, setupPeerConnection, toast, acquireCallMicStream]);
@@ -1757,7 +1758,7 @@ export function useCall(socket, callOccupancyRef = null) {
       setMode("active");
       modeRef.current = "active";
     } catch (err) {
-      toast(tRuntime(voiceMicErrorCopy(err)), "error");
+      voiceMicErrorToast(err, { toast, t: tRuntime, MicOffIcon: MicOff });
       cleanup();
     }
   }, [peer, cleanup, setupPeerConnection, toast, acquireCallMicStream]);

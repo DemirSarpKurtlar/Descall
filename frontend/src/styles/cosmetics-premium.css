@@ -6,8 +6,8 @@
 /* ── Typing flares ─────────────────────────────────────────────────────── */
 
 .cosmetic-typing-flare .typing-dot {
-  background: var(--primary, #5865f2);
-  box-shadow: 0 0 6px var(--primary, #5865f2);
+  background: var(--primary, #587af5);
+  box-shadow: 0 0 6px var(--primary, #587af5);
 }
 
 .cosmetic-typing-flare.typing-neon-pulse .typing-dot {

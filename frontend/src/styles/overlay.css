@@ -11,9 +11,12 @@
    The list is the single source of truth, checked by overlay.selftest.mjs. */
 
 :root {
-  --overlay-blur: 28px;
+  /* The one scrim token (UI audit #65): a light dim + blur so the app stays
+     readable behind every modal and sheet, the same as the Settings sheet.
+     The card on top is the heavy frost (--frost-base), never the scrim. */
+  --overlay-blur: 12px;
   --overlay-saturate: 140%;
-  --overlay-dim: rgba(6, 7, 12, 0.62);
+  --overlay-dim: rgba(10, 11, 16, 0.45);
   --overlay-dim-solid: rgba(6, 7, 12, 0.86);
   /* z-index scale (higher = on top). Existing per-surface values keep their
      relative order; new overlays use these. */
@@ -22,9 +25,15 @@
   --z-modal-nested: 30000;
   --z-alert: 100500;
   --z-toast: 110000;
+
+  /* Top stacking layers (UI audit #130). App layers stay below 200000; these
+     are the only ones above, in this order, and nothing goes past the title bar. */
+  --z-fullscreen: 2147481000; /* full-window media (screen share expanded) */
+  --z-system: 2147482000;     /* system prompts: install/push banners, native call card, picker menus */
+  --z-titlebar: 2147483000;   /* Electron title bar, always on top */
 }
 :root[data-theme="light"] {
-  --overlay-dim: rgba(20, 22, 30, 0.42);
+  --overlay-dim: rgba(57, 60, 77, 0.25);
   --overlay-dim-solid: rgba(20, 22, 30, 0.72);
 }
 

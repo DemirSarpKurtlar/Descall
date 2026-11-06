@@ -31,7 +31,7 @@ for (const { id } of registry.locales) {
     assert.ok(typeof text === "string" && text.trim(), `${id}.${key} empty`);
     assert.equal(placeholders(text), placeholders(en[key]), `${id}.${key} placeholders`);
     // Translated, not copied from English (brand-only titles and same-spelled words excepted).
-    const sameEverywhere = ["window.adminPanel", "notif.message"];
+    const sameEverywhere = ["window.adminPanel", "notif.message", "premium.tray.status", "premium.tray.online", "premium.tray.invisible"];
     if (id !== "en" && !sameEverywhere.includes(key)) assert.notEqual(text, en[key], `${id}.${key} still English`);
   }
 }
@@ -98,7 +98,7 @@ const preload = readFileSync(join(here, "preload.cjs"), "utf8");
 const ctx = readFileSync(join(here, "../src/context/LocaleContext.jsx"), "utf8");
 assert.match(preload, /setLocale: \(locale\) => ipcRenderer\.send\('app:locale'/);
 assert.match(ctx, /window\.electronAPI\?\.setLocale\?\.\(locale\)/);
-assert.match(main, /ipcMain\.on\('app:locale'/);
+assert.match(main, /trustedOn\('app:locale'/, "app:locale is registered through the sender guard");
 assert.match(main, /onLocaleChange\(\(\) => \{\s*rebuildTrayMenu\?\.\(\);\s*refreshOverlayLanguage\(\);/);
 assert.match(main, /initLocale\(\{ userDataDir: app\.getPath\('userData'\), osLanguages \}\)[\s\S]*await createSplashWindow\(\)/, "language known before the splash");
 assert.match(main, /label: et\('tray\.open'\)/);

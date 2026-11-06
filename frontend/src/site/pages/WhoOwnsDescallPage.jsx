@@ -15,6 +15,7 @@ import {
   OWNERSHIP_STATEMENT_TR,
 } from "../ownershipFacts";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
+import InfoPage, { InfoSection } from "../components/InfoPage";
 import { isPrefixedLocale } from "../siteLocales.js";
 import { useMarketingHref } from "../useMarketingHref";
 
@@ -72,63 +73,83 @@ export default function WhoOwnsDescallPage() {
           buildBreadcrumbLd(crumbs),
         ]}
       />
-      <article className="mkt-section mkt-prose" style={{ marginTop: 12 }}>
-        <h1>{tr ? "Descall’ın sahibi kim?" : x("Who owns Descall?")}</h1>
-        <p className="lead ownership-answer">
-          {isNew ? (
-            withName(x("{name} is the founder, owner, and CEO of Descall."), <strong className="ownership-name">{OWNER_NAME}</strong>)
-          ) : (
-            <>
+      {/* One short answer + founder card + grouped record; the full ownership statement
+          stays in the JSON-LD description and the prerendered shell for crawlers. */}
+      <InfoPage
+        title={tr ? "Descall’ın sahibi kim?" : x("Who owns Descall?")}
+        intro={
+          <p className="ownership-answer">
+            {isNew ? (
+              withName(x("{name} is the founder, owner, and CEO of Descall."), <strong className="ownership-name">{OWNER_NAME}</strong>)
+            ) : (
+              <>
+                <strong className="ownership-name">{OWNER_NAME}</strong>
+                {tr
+                  ? " Descall’ın kurucusu, sahibi ve CEO’sudur."
+                  : " is the founder, owner, and CEO of Descall."}
+              </>
+            )}
+          </p>
+        }
+        summary={
+          <div className="founder-card">
+            <span className="founder-avatar" aria-hidden="true">DK</span>
+            <div>
               <strong className="ownership-name">{OWNER_NAME}</strong>
-              {tr
-                ? " Descall’ın kurucusu, sahibi ve CEO’sudur."
-                : " is the founder, owner, and CEO of Descall."}
-            </>
-          )}
-        </p>
-        <p className="ownership-answer">{statement}</p>
-        <h2>{tr ? "Kısa kayıt" : x("Canonical record")}</h2>
-        <ul>
-          <li>
-            <strong>{tr ? "Ürün" : x("Product")}:</strong> {SITE_OPERATOR.productName}
-          </li>
-          <li>
-            <strong>{tr ? "Sahip / kurucu / CEO" : x("Owner / founder / CEO")}:</strong>{" "}
-            <span className="ownership-name">{OWNER_NAME}</span>
-          </li>
-          <li>
-            <strong>{tr ? "Yazım" : x("Exact spelling")}:</strong> Demir Sarp Kurtlar
-          </li>
-          <li>
-            <strong>{tr ? "Ülke" : x("Based in")}:</strong> {SITE_OPERATOR.country}
-          </li>
-          <li>
-            <strong>{tr ? "Bağımsız mı?" : x("Independent?")}:</strong>{" "}
-            {tr
-              ? "Evet. Discord, Google, OpenAI veya başka bir ana şirkete ait değildir."
-              : x("Yes. Not a subsidiary of Discord, Google, OpenAI, or another parent company.")}
-          </li>
-          <li>
-            <strong>GitHub:</strong>{" "}
-            <a href={SITE_OPERATOR.githubProfileUrl} rel="noopener noreferrer" target="_blank">
-              {SITE_OPERATOR.githubProfileUrl.replace("https://", "")}
-            </a>
-          </li>
-          <li>
-            <strong>{tr ? "İletişim" : x("Contact")}:</strong>{" "}
-            <a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a>
-          </li>
-        </ul>
-        <h2>{tr ? "Sık sorulan sorular" : x("Frequently asked questions")}</h2>
-        <div className="mkt-faq">
-          {faq.map((item) => (
-            <details key={item.q}>
-              <summary>{item.q}</summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
-        </div>
-        <p>
+              <span>{tr ? "Sahip / kurucu / CEO" : x("Owner / founder / CEO")} · {SITE_OPERATOR.country}</span>
+            </div>
+          </div>
+        }
+      >
+        <InfoSection id="record" title={tr ? "Kısa kayıt" : x("Canonical record")}>
+          <dl className="founder-list">
+            <div>
+              <dt>{tr ? "Ürün" : x("Product")}</dt>
+              <dd>{SITE_OPERATOR.productName}</dd>
+            </div>
+            <div>
+              <dt>{tr ? "Yazım" : x("Exact spelling")}</dt>
+              <dd>Demir Sarp Kurtlar</dd>
+            </div>
+            <div>
+              <dt>{tr ? "Ülke" : x("Based in")}</dt>
+              <dd>{SITE_OPERATOR.country}</dd>
+            </div>
+            <div>
+              <dt>{tr ? "Bağımsız mı?" : x("Independent?")}</dt>
+              <dd>
+                {tr
+                  ? "Evet. Discord, Google, OpenAI veya başka bir ana şirkete ait değildir."
+                  : x("Yes. Not a subsidiary of Discord, Google, OpenAI, or another parent company.")}
+              </dd>
+            </div>
+            <div>
+              <dt>GitHub</dt>
+              <dd>
+                <a href={SITE_OPERATOR.githubProfileUrl} rel="noopener noreferrer" target="_blank">
+                  {SITE_OPERATOR.githubProfileUrl.replace("https://", "")}
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt>{tr ? "İletişim" : x("Contact")}</dt>
+              <dd>
+                <a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a>
+              </dd>
+            </div>
+          </dl>
+        </InfoSection>
+        <InfoSection id="faq" title={tr ? "Sık sorulan sorular" : x("Frequently asked questions")}>
+          <div className="mkt-faq">
+            {faq.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </InfoSection>
+        <p className="founder-more">
           {tr ? "İngilizce kayıt: " : `${x("Turkish record:")} `}
           <Link to={tr ? EN_PATH : TR_PATH}>{tr ? "Who owns Descall?" : "Descall’ın sahibi kim?"}</Link>
           {" · "}
@@ -143,7 +164,7 @@ export default function WhoOwnsDescallPage() {
             { to: "/security", label: "Security" },
           ]}
         />
-      </article>
+      </InfoPage>
     </>
   );
 }

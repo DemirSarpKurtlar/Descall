@@ -465,6 +465,33 @@ export function localizedPageExtras(routePath, { text, href } = {}) {
   };
 }
 
+/**
+ * A paragraph written as inline steps ("1. ... 2. ... 3. ...") becomes a real list:
+ * { steps: [...], after } where `after` is the closing sentence of the last step
+ * ("The app updates itself ..."). Null for any other paragraph. Works on every
+ * locale because translations keep the "1. " markers.
+ */
+export function numberedSteps(p) {
+  const text = String(p || "").trim();
+  if (!/^1\.\s/.test(text) || !/\s2\.\s/.test(text)) return null;
+  const parts = text.split(/\s(?=\d{1,2}\.\s)/).map((x) => x.replace(/^\d{1,2}\.\s+/, "").trim());
+  if (parts.length < 2) return null;
+  const last = parts[parts.length - 1];
+  const cut = last.search(/[.!?。](\s|$)/);
+  let after = "";
+  if (cut > 0 && cut < last.length - 1) {
+    after = last.slice(cut + 1).trim();
+    parts[parts.length - 1] = last.slice(0, cut + 1);
+  }
+  return { steps: parts, after };
+}
+
+function paragraphHtml(p) {
+  const n = numberedSteps(p);
+  if (!n) return `<p>${esc(p)}</p>`;
+  return `<ol class="seo-numbered">${n.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>${n.after ? `<p>${esc(n.after)}</p>` : ""}`;
+}
+
 /** Static HTML for the prerendered shell. */
 export function pageExtrasHtml(routePath) {
   const found = localizedPageExtras(routePath, { text: siteText, href: mirrorHref });
@@ -473,7 +500,7 @@ export function pageExtrasHtml(routePath) {
   const sections = extra.sections
     .map(
       (s) =>
-        `<h2>${esc(s.h)}</h2>${s.p.map((p) => `<p>${esc(p)}</p>`).join("")}${
+        `<h2>${esc(s.h)}</h2>${s.p.map(paragraphHtml).join("")}${
           s.list?.length ? `<ul>${s.list.map((li) => `<li>${esc(li)}</li>`).join("")}</ul>` : ""
         }`
     )

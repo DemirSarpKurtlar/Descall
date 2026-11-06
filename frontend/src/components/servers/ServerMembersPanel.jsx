@@ -4,10 +4,12 @@ import { copyText } from "../../lib/copyText";
 import { runOptimistic, removeMemberOptimistic, patchMemberOptimistic } from "../../lib/optimisticMembers";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { createPortal } from "react-dom";
-import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "../ui/Icon.jsx";
+import { Crown, MoreHorizontal, MessageSquare, User, Users, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { CountryBadge } from "../shop/CountryFlag";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -62,6 +64,7 @@ export default function ServerMembersPanel({
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState(() => server?.roles || []);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState(null); // { member, x, y }
   const [roleSubmenu, setRoleSubmenu] = useState(false);
@@ -90,6 +93,7 @@ export default function ServerMembersPanel({
   const load = async () => {
     if (!server?.id) return;
     setLoading(true);
+    setLoadFailed(false);
     try {
       const [membersData, rolesData] = await Promise.all([
         getServerMembers(server.id),
@@ -99,8 +103,8 @@ export default function ServerMembersPanel({
       ]);
       setMembers(membersData?.members || []);
       setRoles(rolesData?.roles || server?.roles || []);
-    } catch (err) {
-      toast(err?.message || t("Something went wrong."), "error");
+    } catch {
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -211,6 +215,7 @@ export default function ServerMembersPanel({
           display_name: m.nickname || m.displayName,
           avatarUrl: m.avatarUrl,
           avatar_url: m.avatarUrl,
+          premium_plan: m.premium_plan,
         };
         const status = getPresenceStatus(onlineUsers, m.userId);
         return {
@@ -505,6 +510,7 @@ export default function ServerMembersPanel({
           </span>
           <CountryBadge user={m.user || m} item={m.user?.equippedCountry || m.equippedCountry} compact />
           <AdminBadge user={m.user} variant="inline" />
+          <PremiumBadge user={m.user} variant="inline" />
           {m.isOwner && (
             <span className="member-owner-badge" title={t("Owner")}>
               <Crown size={11} strokeWidth={2.25} aria-hidden="true" />
@@ -521,6 +527,12 @@ export default function ServerMembersPanel({
     </button>
   );
 
+  const knownCount = Number(server?.memberCount);
+  const memberTotal = Number.isFinite(knownCount) && knownCount > 0 ? knownCount : decorated.length;
+  // A failed request, or an empty list for a server that has members, is an
+  // error to retry, never "Üye yok".
+  const listMissing = loadFailed || (members.length === 0 && Number.isFinite(knownCount) && knownCount > 0);
+
   const menuMember = menu?.member;
   const isSelf = menuMember && me?.id && String(menuMember.userId) === String(me.id);
   const isFriend = menuMember && friendIds.has(String(menuMember.userId));
@@ -532,7 +544,8 @@ export default function ServerMembersPanel({
       <div className="members-panel-header">
         <h4>
           {t("Members")}
-          <span className="members-panel-count">{decorated.length}</span>
+          {/* UI audit #113: one count, the same server.memberCount the headers show. */}
+          <span className="members-panel-count">{memberTotal}</span>
         </h4>
         <button type="button" className="icon-btn" onClick={onClose} title={t("Close")} aria-label={t("Close")}>
           <X size={16} />
@@ -552,6 +565,15 @@ export default function ServerMembersPanel({
       <div className="members-panel-scroll">
         {loading ? (
           <ConversationListSkeleton count={8} label={t("Loading…")} />
+        ) : listMissing ? (
+          <EmptyState
+            compact
+            tone="error"
+            icon={Users}
+            title={t("Members couldn't load")}
+            body={t("Check your connection and try again.")}
+            primary={{ label: t("Retry"), action: () => load() }}
+          />
         ) : (
           <>
             {memberSections.sections.map((section) => (

@@ -16,7 +16,7 @@
   width: min(440px, 100%);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   border-radius: var(--r-lg);
   padding: 18px;
@@ -39,8 +39,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-soft, rgba(88, 101, 242, 0.18));
-  color: var(--primary, #5865f2);
+  background: var(--primary-soft, rgba(88, 122, 245, 0.18));
+  color: var(--primary, #587af5);
 }
 .un-head-text {
   flex: 1;
@@ -108,7 +108,7 @@
   flex: 0 0 auto;
 }
 .un-preview-new {
-  color: var(--primary, #5865f2);
+  color: var(--primary, #587af5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -137,15 +137,15 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .un-field:focus-within {
-  border-color: var(--primary, #5865f2);
-  box-shadow: 0 0 0 3px var(--primary-soft, rgba(88, 101, 242, 0.2));
+  border-color: var(--primary, #587af5);
+  box-shadow: 0 0 0 3px var(--primary-soft, rgba(88, 122, 245, 0.2));
 }
 .un-field.un-state-ok {
   border-color: #23a55a;
 }
 .un-field.un-state-taken,
 .un-field.un-state-invalid {
-  border-color: #ed4245;
+  border-color: var(--danger);
 }
 .un-field.un-state-taken:focus-within,
 .un-field.un-state-invalid:focus-within {
@@ -186,7 +186,7 @@
 }
 .un-state-taken .un-status,
 .un-state-invalid .un-status {
-  color: #ed4245;
+  color: var(--danger);
 }
 
 .un-hint {
@@ -201,7 +201,7 @@
 }
 .un-hint-taken,
 .un-hint-invalid {
-  color: #ed4245;
+  color: var(--danger);
 }
 
 .un-note {
@@ -227,7 +227,7 @@
   padding: 9px 12px;
   border-radius: var(--r-md);
   background: rgba(237, 66, 69, 0.12);
-  color: #ed4245;
+  color: var(--danger);
   font-size: 13px;
   font-weight: 600;
 }
@@ -258,7 +258,7 @@
   border-color: var(--border-2, rgba(255, 255, 255, 0.08));
 }
 .un-btn.primary {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
 }
 .un-btn.primary:hover:not(:disabled) {
@@ -300,7 +300,7 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .us-username-change:hover:not(:disabled) {
-  border-color: var(--primary, #5865f2);
+  border-color: var(--primary, #587af5);
 }
 .us-username-change:disabled {
   opacity: 0.55;

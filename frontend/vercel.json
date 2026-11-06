@@ -365,7 +365,7 @@
       ]
     },
     {
-      "source": "/(llms.txt|llms-full.txt|humans.txt)",
+      "source": "/(llms\\.txt|llms-full\\.txt|humans\\.txt)",
       "headers": [
         {
           "key": "Cache-Control",

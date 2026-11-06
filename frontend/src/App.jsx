@@ -73,6 +73,10 @@ import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
+import { attachPremiumSocket } from "./premium/usePremium.js";
+import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
+import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
+import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { getVoiceBusy } from "./lib/voiceBusy";
 import { shouldPlayDisconnectSound } from "./lib/connectionSound";
@@ -161,6 +165,11 @@ import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/d
 import { mergeServerDetail } from "./lib/serverDetail";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
+// Descall+ desktop windows (mini mode, call window, sidebar): Electron main window only.
+const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHost.jsx"));
+// Descall+ pop-out window (Electron multi_window): conversation-only chrome, set before first render.
+applyPopoutMode();
+const premiumDesktopHost = typeof window !== "undefined" && Boolean(window.descallPremium) && !isPopoutWindow();
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
@@ -582,6 +591,8 @@ export default function App() {
   const [myServers, setMyServers] = useState([]);
   const [serverFolders, setServerFolders] = useState([]);
   const [serversLoaded, setServersLoaded] = useState(false);
+  // UI audit #60: a failed list request is an error, not "no servers yet".
+  const [serversLoadError, setServersLoadError] = useState(false);
   const [activeServer, setActiveServer] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
   useEffect(() => {
@@ -912,11 +923,13 @@ export default function App() {
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
       listCommitRef.current.servers = true;
+      setServersLoadError(false);
       setServersLoaded(true);
       syncServerChannelMeta();
     } catch (err) {
       console.error("[App] load servers error:", err);
       listCommitRef.current.servers = true;
+      setServersLoadError(true);
       setServersLoaded(true);
     }
     })();
@@ -961,8 +974,29 @@ export default function App() {
   groupMessagesRef.current = groupMessagesById;
   channelMessagesRef.current = channelMessagesById;
 
+  // UI audit #59: a DM whose history never arrives shows an error with a
+  // retry instead of an endless skeleton (REST failed and the socket
+  // fallback is down or silent).
+  const [dmLoadErrors, setDmLoadErrors] = useState({});
+  const dmLoadErrorTimersRef = useRef({});
+  const setDmLoadError = useCallback((peerId, failed) => {
+    clearTimeout(dmLoadErrorTimersRef.current[peerId]);
+    delete dmLoadErrorTimersRef.current[peerId];
+    setDmLoadErrors((prev) => {
+      if (Boolean(prev[peerId]) === failed) return prev;
+      const next = { ...prev };
+      if (failed) next[peerId] = true;
+      else delete next[peerId];
+      return next;
+    });
+  }, []);
+  useEffect(() => () => {
+    Object.values(dmLoadErrorTimersRef.current).forEach((id) => clearTimeout(id));
+  }, []);
+
   const loadDmMessagesRest = useCallback((peerId) => {
     if (!peerId) return Promise.resolve();
+    setDmLoadError(peerId, false);
     const cached = dmByUserIdRef.current?.[peerId];
     const since = Array.isArray(cached) && cached.length ? newestCursor(cached) : null;
     return getDmMessages(peerId, since ? { since, limit: 50 } : { limit: 50 })
@@ -988,14 +1022,25 @@ export default function App() {
       })
       .catch((err) => {
         console.error("[App] fetch DM messages error:", err);
-        if (!socketRef.current?.connected) return;
+        if (!socketRef.current?.connected) {
+          if (dmByUserIdRef.current?.[peerId] === undefined) setDmLoadError(peerId, true);
+          return;
+        }
         socketRef.current.emit("dm:history", { withUserId: peerId });
+        clearTimeout(dmLoadErrorTimersRef.current[peerId]);
+        dmLoadErrorTimersRef.current[peerId] = setTimeout(() => {
+          delete dmLoadErrorTimersRef.current[peerId];
+          if (dmByUserIdRef.current?.[peerId] === undefined) setDmLoadError(peerId, true);
+        }, 8000);
       })
       .finally(() => {
         if (activeDmRef.current?.id === peerId) setMessagesLoading(false);
       });
-  }, [t]);
+  }, [t, setDmLoadError]);
   loadDmRestRef.current = loadDmMessagesRest;
+  const dmHistoryFailed = Boolean(
+    activeDmUser?.id && dmByUserId[activeDmUser.id] === undefined && dmLoadErrors[activeDmUser.id]
+  );
 
   /** Discord-like per-server notification level: all | mentions | muted */
   const getServerNotificationLevel = useCallback((serverId) => {
@@ -1531,6 +1576,7 @@ export default function App() {
     const socket = createSocket(token, { ...options, edgeUrl });
     socketRef.current = socket;
     setSocketApi(socket);
+    attachPremiumSocket(socket); // Descall+: "premium:updated" -> re-read /api/premium/me
     const edgeFailures = createEdgeFailureCounter();
 
     socket.on("edge:advice", (advice) => {
@@ -3002,6 +3048,7 @@ export default function App() {
     setFriendsLoaded(false);
     setGroupsLoaded(false);
     setServersLoaded(false);
+    setServersLoadError(false);
     setDmByUserId({}); setDmUnread({}); setDmPrefs({}); setGroupUnread({}); setChannelUnread({}); setDmLastActivity({}); setGroupLastActivity({}); setDmPreviews({}); setGroupPreviews({}); setNotifications([]);
     setActiveDmUser(null); setActiveGroup(null); setActiveServer(null); setActiveChannel(null);
     setActiveView("chat");
@@ -4292,6 +4339,21 @@ export default function App() {
     socketRef.current?.emit("status:set", { status });
   };
 
+  // Descall+ hotkeys, push-to-talk, quick launcher, tray, quick reply, audio and
+  // notification features. No-op without a membership.
+  usePremiumAudioBridge({
+    call,
+    groupCall,
+    serverVoice,
+    friends,
+    groups: myGroups,
+    servers: myServers,
+    dmByUserId,
+    onOpenDm: handleOpenDm,
+    onOpenSettings: () => setUserPanelOpen(true),
+    onStatusChange: handleStatusChange,
+  });
+
   const emitTypingDmStart = (toUserId) => {
     socketRef.current?.emit("typing:start", { context: "dm", toUserId });
   };
@@ -4667,6 +4729,9 @@ export default function App() {
     setInviteAuthOpen(false);
   }, []);
 
+  // Descall+ desktop windows (Electron): unread, friends, DMs, status. Before the early returns.
+  usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
+
   if (bootError && !me) {
     return (
       <>
@@ -4826,6 +4891,7 @@ export default function App() {
       setMyServers(data?.servers || []);
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
+      setServersLoadError(false);
       setServersLoaded(true);
       await syncServerChannelMeta();
       if (activeServer?.id) {
@@ -4849,6 +4915,7 @@ export default function App() {
       }
     } catch (err) {
       console.error("[App] refresh servers error:", err);
+      setServersLoadError(true);
       setFriendNotice(err.message || t("Failed to load servers"));
       setTimeout(() => setFriendNotice(""), 4000);
     }
@@ -5090,6 +5157,11 @@ export default function App() {
     <SeoHead forceNoindex title="Descall" description={t("core.seo.appDesc")} path="/app" />
     <TitleBar />
     <UpdateNotes />
+    {premiumDesktopHost ? (
+      <Suspense fallback={null}>
+        <PremiumDesktopHost />
+      </Suspense>
+    ) : null}
     <div className="app-container">
         <ElectronUpdateToast />
         <BirthDateGate
@@ -5230,8 +5302,10 @@ export default function App() {
           friends={orderedFriends}
           friendsLoaded={friendsLoaded}
           groupsLoaded={groupsLoaded}
+          historyLoadError={dmHistoryFailed}
           servers={myServers}
           serversLoaded={serversLoaded}
+          serversLoadError={serversLoadError}
           serverFolders={serverFolders}
           onServerFoldersChange={setServerFolders}
           onMoveServerToFolder={handleMoveServerToFolder}
@@ -5773,6 +5847,10 @@ export default function App() {
                   activeChannel?.type === "text" &&
                   channelMessagesById[activeChannel.id] === undefined)
             )}
+            loadError={dmHistoryFailed}
+            onRetryLoad={() => {
+              if (activeDmUser?.id) loadDmMessagesRest(activeDmUser.id);
+            }}
             unreadCount={
               unreadMarker &&
               ((activeDmUser && unreadMarker.key === `dm:${activeDmUser.id}`) ||

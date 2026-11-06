@@ -1,6 +1,7 @@
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { ProfileBadgeRow } from "../badges/BadgeVault";
 import { cssUrl } from "../../lib/cssUrl";
 import { profileCardModel, effectRoom } from "../../lib/settingsProfileCard";
@@ -39,6 +40,7 @@ export default function SettingsProfileCard({ me, avatarUrl, status, isAdmin, on
           <span className="spc-name">
             <span className="spc-name-t">{model.display}</span>
             <AdminBadge user={me} variant="inline" />
+            <PremiumBadge user={me} variant="inline" />
           </span>
           <span className="spc-meta">{model.meta}</span>
         </button>

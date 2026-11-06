@@ -280,7 +280,7 @@ assert.equal(copy.navLabels("de").turkish, "Türkçe", "native names are not tra
 assert.deepEqual(copy.navLabels(true), copy.navLabels("tr"));
 assert.deepEqual(copy.navLabels(false), copy.navLabels("en"));
 assert.equal(copy.homeHero("de").h1, "Gemeinsam reden");
-assert.equal(copy.homeHero("tr").h1, "Birlikte konuşun");
+assert.equal(copy.homeHero("tr").h1, "Birlikte konuş");
 assert.equal(copy.cookieCopy("de").body, "Nur optionale Analyse.");
 assert.equal(copy.prefixHref("/features", "de"), "/de/features");
 assert.equal(copy.prefixHref("/blog", "de"), sl.isPageGroupLive("blog", "de") ? "/de/blog" : "/blog");

@@ -27,8 +27,8 @@ const ACCENT = {
 };
 
 // Same letter-avatar fallback as the app (src/lib/avatarFallback.js):
-// AVATAR_PALETTE[crc32(user id) % 8], up to two initials, Turkish upper case.
-const AVATAR_PALETTE = ['#2868FF', '#228359', '#BA590E', '#DB2C5B', '#7E59EE', '#177E96', '#926F16', '#DA362C'];
+// AVATAR_PALETTE[crc32(user id) % 6], up to two initials, Turkish upper case.
+const AVATAR_PALETTE = ['#3D5296', '#2F5F66', '#584A86', '#7A5636', '#4A6340', '#7D4458'];
 
 let CRC_TABLE = null;
 function crc32(str) {
@@ -277,7 +277,7 @@ function notificationCss() {
       font-size: 18px;
       font-weight: 600;
       letter-spacing: -0.01em;
-      color: #fff;
+      color: #E8ECF8;
     }
     .badge {
       position: absolute;

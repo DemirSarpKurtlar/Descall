@@ -1,4 +1,8 @@
 /** Auto-generated + curated en locale */
+import { UAH_EN } from "./uah.en.js";
+import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
+import { PREMIUM_EN } from "./premium.en.js";
+import { PREMIUM_AUDIO_EN } from "./premiumAudio.en.js";
 import { WORLD3D_EN } from "./world3d.en.js";
 import { AMP_EN } from "./profileMediaPicker.en.js";
 import { CORE_EN } from "./core.en.js";
@@ -14,12 +18,17 @@ import { CALLUI_EN } from "./callui.en.js";
 import { SHOP_EN } from "./shop.en.js";
 import { SHOP_ITEMS_EN } from "./shopItems.en.js";
 import { ADMINX_EN } from "./adminx.en.js";
+import { PREMIUM_ADMIN_EN } from "./premiumAdmin.en.js";
 import { POLLS_EN } from "./polls.en.js";
 import { SLASH_EN } from "./slash.en.js";
 import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  uah: UAH_EN,
+  premiumGaming: PREMIUM_GAMING_EN,
+  premium: PREMIUM_EN,
+  premiumAudio: PREMIUM_AUDIO_EN,
   world3d: WORLD3D_EN,
   counts: COUNTS_EN,
   shell: SHELL_EN,
@@ -28,6 +37,7 @@ export const nested = {
   shop: SHOP_EN,
   shopItems: SHOP_ITEMS_EN,
   adminx: ADMINX_EN,
+  premiumAdmin: PREMIUM_ADMIN_EN,
   polls: POLLS_EN, slash: SLASH_EN, chatx: CHATX_EN,
   core: CORE_EN,
   bot: BOT_EN,
@@ -271,9 +281,9 @@ export const nested = {
     "voiceMessage": "Voice Message",
     "stopRecording": "Stop Recording",
     "sendMessage": "Send Message",
-    "photo": "📷 Photo",
-    "attachment": "📎 Attachment",
-    "voicePreview": "🎤 Voice message",
+    "photo": "Photo",
+    "attachment": "Attachment",
+    "voicePreview": "Voice message",
     "cancelReply": "Cancel reply",
     "replyingTo": "Replying to"
   },
@@ -397,8 +407,12 @@ export const nested = {
     "subtitle": "System administration & moderation",
     "overview": "Overview",
     "overviewTitle": "Right now",
-    "overviewSubtitle": "Live health, who was last active, who just joined, and what needs a click, not a dump of raw counters.",
+    "overviewSubtitle": "Live status, active users and new sign-ups.",
     "overviewLoadError": "Could not load overview.",
+    "overviewLoadTitle": "Overview could not load",
+    "overviewLoadBody": "Check the connection and try again.",
+    "sectionErrorTitle": "This section could not open",
+    "sectionErrorBody": "The rest of the panel still works. Try again in a moment.",
     "overviewGatewayError": "The connection is slow. Retrying.",
     "overviewOnline": "Online now",
     "overviewReports": "Open reports",
@@ -653,7 +667,7 @@ export const nested = {
     "dataExport": "Data export (KVKK)",
     "dataExported": "Data file downloaded",
     "errors": "Error logs",
-    "errLead": "Errors from the app, the same error grouped into one line. See how often, for how many people and on which platform; mark it when fixed. A fixed error that comes back reopens itself.",
+    "errLead": "Errors from the app, one line per distinct error.",
     "errKpiEvents": "Errors",
     "errKpiOpen": "Open issues",
     "errKpiNew": "New (24 hours)",
@@ -1150,6 +1164,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API reachable",
+  "Request timed out": "Request timed out",
   "Close": "Close",
   "You": "You",
   "Primary navigation": "Primary navigation",
@@ -2764,9 +2780,9 @@ export const phrases = {
   "CALLS": "CALLS",
   "SERVERS": "SERVERS",
   "PLAY": "PLAY",
-  "🎤 Voice message": "🎤 Voice message",
-  "📷 Photo": "📷 Photo",
-  "📎 Attachment": "📎 Attachment",
+  "🎤 Voice message": "Voice message",
+  "📷 Photo": "Photo",
+  "📎 Attachment": "Attachment",
   "members": "members",
   "Friend action failed.": "Friend action failed.",
   "Request sent.": "Request sent.",
@@ -3361,7 +3377,7 @@ export const phrases = {
   "Failed to submit feedback: {message}": "Failed to submit feedback: {message}",
   "Copied!": "Copied!",
   "No members": "No members",
-  "📞 Call": "📞 Call",
+  "📞 Call": "Call",
   "Descall staff": "Descall staff",
   "Pending, {count}": "Pending, {count}",
   "Message requests, {count}": "Message requests, {count}",

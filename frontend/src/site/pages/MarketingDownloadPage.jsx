@@ -5,12 +5,7 @@ import {
   IconDownload,
   IconMonitor,
   IconSmartphone,
-  IconShield,
-  IconGlobe,
   IconCheck,
-  IconGithub,
-  IconStar,
-  IconZap,
 } from "../icons";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { fetchLatestDesktopRelease } from "../../lib/githubRelease";
@@ -23,6 +18,8 @@ import { SEO_PILLARS } from "../seoHubLinks";
 import { Funnel } from "../analytics";
 import { signalMarketingEngage } from "../analyticsGate";
 import { useMarketingHref } from "../useMarketingHref";
+import { useIsAppleMobile } from "../useIsAppleMobile";
+import { APP_STORE_URL } from "../appStoreLink";
 
 const GITHUB_REPO = "DemirSarpKurtlar/Descall";
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
@@ -58,6 +55,8 @@ const crumbs = [
 export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
   const t = useT();
   const href = useMarketingHref();
+  // UI audit #27: an iPhone / iPad visitor's first action is the App Store.
+  const appleMobile = useIsAppleMobile();
   const [selectedPlatform, setSelectedPlatform] = useState("windows");
   const [loading, setLoading] = useState(true);
   const [releaseLabel, setReleaseLabel] = useState("");
@@ -103,6 +102,9 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
       ? t("{label} available", { label: releaseLabel })
       : t("Latest release");
 
+  // "v3.7.26 · Masaüstü uygulaması" instead of a raw file name.
+  const platformSub = (kind) => (releaseLabel ? `${releaseLabel} · ${kind}` : kind);
+
   const openAuth = () => {
     signalMarketingEngage({ source: "download", intent: "register" });
     Funnel.ctaClick({ page: "/download", placement: "download_hero", label: "start_free", intent: "register" });
@@ -129,33 +131,31 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             {t("Windows installer and the Android APK. The browser app is the same account, with no install.")}
           </p>
           <div className="mkt-cta-row">
-            <a
-              className="mkt-btn mkt-btn-primary"
-              href={downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={trackDownload}
-            >
-              <IconDownload size={18} />
-              {selectedPlatform === "android" ? t("Download APK") : t("Download for Windows")}
-            </a>
-            <button type="button" className="mkt-btn mkt-btn-soft" onClick={openAuth}>
+            {/* iPhone visitors get the App Store as the one primary action (#27); elsewhere the
+                platform panel owns the single download button (#108). */}
+            {appleMobile ? (
+              <a className="mkt-btn mkt-btn-primary" href={APP_STORE_URL} rel="noopener noreferrer">
+                <IconDownload size={18} />
+                {t("Download on the App Store")}
+              </a>
+            ) : null}
+            <button type="button" className="mkt-btn mkt-btn-soft mkt-download-hero-start" onClick={openAuth}>
               {t("Start free")}
             </button>
             <Link to={href("/")} className="mkt-btn mkt-btn-ghost">
               {t("Open the web app")}
             </Link>
           </div>
-          <AppStoreBadge label={t("Download on the App Store")} />
+          {appleMobile ? null : <AppStoreBadge label={t("Download on the App Store")} />}
         </div>
 
         <div className="mkt-download-panel">
           <p className="mkt-download-panel-kicker">{t("Platform")}</p>
-          <div className="mkt-download-platforms" role="tablist" aria-label={t("Platform")}>
+          <div className="mkt-download-platforms" role="radiogroup" aria-label={t("Platform")}>
             <button
               type="button"
-              role="tab"
-              aria-selected={selectedPlatform === "windows"}
+              role="radio"
+              aria-checked={selectedPlatform === "windows"}
               className={`mkt-download-platform${selectedPlatform === "windows" ? " is-active" : ""}`}
               onClick={() => setSelectedPlatform("windows")}
             >
@@ -168,12 +168,12 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
                 </span>
               </span>
               <strong>Windows</strong>
-              <span className="mkt-mono">Descall-Setup.exe</span>
+              <span className="mkt-download-sub">{platformSub(t("Desktop app"))}</span>
             </button>
             <button
               type="button"
-              role="tab"
-              aria-selected={selectedPlatform === "android"}
+              role="radio"
+              aria-checked={selectedPlatform === "android"}
               className={`mkt-download-platform${selectedPlatform === "android" ? " is-active" : ""}`}
               onClick={() => setSelectedPlatform("android")}
             >
@@ -186,16 +186,15 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
                 </span>
               </span>
               <strong>Android</strong>
-              <span className="mkt-mono">Descall-APK.apk</span>
+              <span className="mkt-download-sub">{platformSub("APK")}</span>
             </button>
           </div>
           <p className="mkt-download-version">
             <span className="mkt-pulse" aria-hidden />
             <span>{versionLine}</span>
-            <span className="mkt-download-version-src">GitHub releases/latest</span>
           </p>
           <a
-            className="mkt-btn mkt-btn-primary mkt-download-panel-cta"
+            className={`mkt-btn mkt-btn-primary mkt-download-panel-cta${appleMobile ? " is-apple" : ""}`}
             href={downloadUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -207,43 +206,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
-      <ul className="mkt-download-trust">
-        <li>
-          <span>
-            <IconShield size={16} /> TLS
-          </span>
-        </li>
-        <li>
-          <span>
-            <IconZap size={16} /> {t("Free")}
-          </span>
-        </li>
-        <li>
-          <Link to={href("/")}>
-            <IconGlobe size={16} /> Web
-          </Link>
-        </li>
-        <li>
-          <button type="button" onClick={() => setSelectedPlatform("windows")}>
-            <IconMonitor size={16} /> Windows
-          </button>
-        </li>
-        <li>
-          <button type="button" onClick={() => setSelectedPlatform("android")}>
-            <IconSmartphone size={16} /> Android
-          </button>
-        </li>
-        <li>
-          <a href={`https://github.com/${GITHUB_REPO}`} rel="noopener noreferrer" target="_blank">
-            <IconGithub size={16} /> GitHub
-          </a>
-        </li>
-        <li>
-          <span>
-            <IconStar size={16} /> {t("Beta")}
-          </span>
-        </li>
-      </ul>
+      <p className="mkt-download-oslist">{t("Works on Windows, Android, iPhone and the web.")}</p>
 
       <section className="mkt-shot-row">
         <SeoProductPreview
@@ -287,7 +250,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
-      <SeoExtraContent />
+      <SeoExtraContent layout="split" />
       <SeoRelatedLinks title="Keep exploring" links={SEO_PILLARS} />
     </>
   );

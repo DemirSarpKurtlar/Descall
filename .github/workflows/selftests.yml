@@ -381,6 +381,48 @@ jobs:
           node test/adminAudit.db.test.cjs | tee /tmp/aa.log
           grep -q "adminAudit.db.test.cjs: ok" /tmp/aa.log
 
+  # Descall+ / Ultra: memberships, DesCoin gifts per 30-day cycle, bulk, campaigns and their races
+  # live in Postgres functions, so run the migration (on top of the promo one) against a throwaway Postgres.
+  premium-postgres:
+    name: Premium (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: premium
+          POSTGRES_PASSWORD: premium
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U premium" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PREMIUM_TEST_PG_URL: postgresql://premium:premium@127.0.0.1:5432/postgres
+    defaults:
+      run:
+        working-directory: frontend/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/backend/package-lock.json
+      - name: Install backend dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Premium migration + membership tests
+        run: |
+          set -euo pipefail
+          node test/premium.db.test.cjs | tee /tmp/pm.log
+          grep -q "premium.db.test.cjs: ok" /tmp/pm.log
+          node test/premium.http.db.test.cjs | tee /tmp/ph.log
+          grep -q "premium.http.db.test.cjs: ok" /tmp/ph.log
+          node test/premiumAdmin.e2e.db.test.cjs | tee /tmp/pa.log
+          grep -q "premiumAdmin.e2e.db.test.cjs: ok" /tmp/pa.log
+          node test/premium.integration.test.cjs
+          node lib/premium/features.selftest.cjs
+
   # 2.11.11: boot the real Electron app from a production build whose HTML has CRLF line
   # endings (what the Windows runner used to check out) and require the main window to
   # paint with the splash gone and no inline script blocked by the CSP. The Windows

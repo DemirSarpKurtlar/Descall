@@ -6,7 +6,7 @@
  * (lib/appearanceSync.js) and cached in localStorage.
  */
 import { useEffect, useState } from "react";
-import ayseUrl from "../../assets/preview-ayse.webp";
+import { avatarColor, avatarInitials } from "../../lib/avatarFallback.js";
 import { useLocale } from "../../context/LocaleContext";
 import { ACCENTS, APPEARANCE_EVENT, FONT_STEPS, readAppearance, resolveBaseTheme } from "../../lib/appearancePrefs";
 import { updateAppearance } from "../../lib/appearanceSync";
@@ -26,8 +26,18 @@ export function useAppearancePrefs() {
   return prefs;
 }
 
+/** Same letter avatar the app draws for people without a photo (no stock portrait). */
+const PREVIEW_NAME = "Ayşe";
 function PreviewAvatar({ size }) {
-  return <span className="s3-av" style={{ width: size, height: size, backgroundImage: `url(${ayseUrl})` }} aria-hidden="true" />;
+  return (
+    <span
+      className="s3-av s3-av-letter"
+      style={{ width: size, height: size, background: avatarColor(PREVIEW_NAME), fontSize: Math.round(size * 0.42) }}
+      aria-hidden="true"
+    >
+      {avatarInitials(PREVIEW_NAME)}
+    </span>
+  );
 }
 
 /** The live preview: real bubble shapes, the chosen accent and text size. */
@@ -44,7 +54,7 @@ export function AppearancePreview({ prefs, premium }) {
       <div className="hd">
         <PreviewAvatar size={30} />
         <div>
-          Ayşe<small>{t("shell.appearance.previewOnline")}</small>
+          {PREVIEW_NAME}<small>{t("shell.appearance.previewOnline")}</small>
         </div>
         <span className="live">{t("shell.appearance.livePreviewBadge")}</span>
       </div>
@@ -196,7 +206,7 @@ export default function AppearancePane({
     ? equipped.name
     : ownedThemes.length
       ? t("shell.appearance.themesOwned", { count: ownedThemes.length })
-      : t("shell.appearance.browseShop");
+      : null; // nothing owned yet: the chevron alone says "opens the shop"
 
   const left = (
     <>
@@ -205,7 +215,7 @@ export default function AppearancePane({
       <S3Group className="s3-store">
         <S3Row
           icon="palette"
-          color="purple"
+          color="brand"
           title={t("shell.appearance.shopThemes")}
           value={storeValue}
           chevron
@@ -223,7 +233,7 @@ export default function AppearancePane({
                   onClick={() => onPickPremiumTheme?.(item)}
                 />
               )),
-              <S3Row key="shop" icon="bag" color="purple" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
+              <S3Row key="shop" icon="bag" color="brand" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
             ]
           : null}
       </S3Group>

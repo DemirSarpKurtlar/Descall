@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, TrendingUp, Loader2 } from "../ui/Icon.jsx";
+import { Search, X, Loader2, WifiOff } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
@@ -41,11 +42,11 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
     setError(null);
     try {
       const res = await fetch(`${GIPHY_API_URL}/trending?api_key=${GIPHY_API_KEY}&limit=30&rating=g`);
-      if (!res.ok) throw new Error(t("Failed to fetch trending GIFs"));
+      if (!res.ok) throw new Error("trending");
       const data = await res.json();
       setGifs(data.data || []);
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      setError("trending");
     } finally {
       setLoading(false);
     }
@@ -62,11 +63,11 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
       const res = await fetch(
         `${GIPHY_API_URL}/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=30&rating=g`
       );
-      if (!res.ok) throw new Error(t("Failed to search GIFs"));
+      if (!res.ok) throw new Error("search");
       const data = await res.json();
       setGifs(data.data || []);
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      setError("search");
     } finally {
       setLoading(false);
     }
@@ -197,10 +198,9 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
             onMouseDown={(e) => e.stopPropagation()}
           >
             <header className="giphy-header">
-              <div className="giphy-brand">
-                <span className="giphy-logo">GIPHY</span>
-                <span className="giphy-sub">{t("Pick a GIF")}</span>
-              </div>
+              {/* UI audit #107: the title is what you pick, not the provider;
+                  the GIPHY credit stays in the footer. */}
+              <h2 className="giphy-title">{t("GIFs")}</h2>
               <button type="button" className="giphy-close" onClick={onClose} aria-label={t("Close")}>
                 <X size={16} />
               </button>
@@ -245,38 +245,6 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
               )}
             </div>
 
-            <div className="giphy-tabs">
-              <button
-                type="button"
-                className={activeTab === "trending" ? "active" : ""}
-                onClick={() => {
-                  setActiveTab("trending");
-                  setSearchQuery("");
-                  fetchTrending();
-                }}
-              >
-                <TrendingUp size={13} />
-                {t("Trending")}
-              </button>
-              <button
-                type="button"
-                className={activeTab === "search" ? "active" : ""}
-                onClick={() => {
-                  armSearch();
-                  setActiveTab("search");
-                  requestAnimationFrame(() => {
-                    const input = searchInputRef.current;
-                    if (!input) return;
-                    input.readOnly = false;
-                    input.focus();
-                  });
-                }}
-              >
-                <Search size={13} />
-                {t("Search")}
-              </button>
-            </div>
-
             <div className="giphy-grid" ref={gridRef}>
               {loading ? (
                 <div className="giphy-state">
@@ -284,12 +252,15 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
                   <span>{t("Loading GIFs…")}</span>
                 </div>
               ) : error ? (
-                <div className="giphy-state is-error">
-                  <p>{error}</p>
-                  <button type="button" onClick={fetchTrending}>
-                    {t("Retry")}
-                  </button>
-                </div>
+                <EmptyState
+                  compact
+                  tone="error"
+                  className="giphy-state is-error"
+                  icon={WifiOff}
+                  title={t("GIFs couldn't load")}
+                  body={t("Check your connection and try again.")}
+                  primary={{ label: t("Retry"), action: () => (searchQuery.trim() ? searchGifs(searchQuery) : fetchTrending()) }}
+                />
               ) : gifs.length === 0 ? (
                 <div className="giphy-state">{t("No GIFs found. Try another search.")}</div>
               ) : (

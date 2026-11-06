@@ -8,6 +8,7 @@ const iosPushContext = require("../lib/iosPushContext");
 const { bt } = require("../lib/i18n");
 const { put } = require("../lib/botText");
 const friendSince = require("../lib/friendSince");
+const premiumBadges = require("../lib/premium/badges");
 const {
   loadUserProfile,
   savePresenceStatus,
@@ -731,8 +732,15 @@ function registerSocketHandlers(io) {
         });
         socket.emit("status:current", { status: presence.get(myId)?.status || "online" });
         const friendIds = [...(friends.get(myId) || [])];
-        ensureCosmeticsCached(friendIds)
-          .catch(() => {})
+        // Descall+ / Ultra badges of the friends (one batched lookup, cached) ride on the same rows.
+        Promise.all([
+          ensureCosmeticsCached(friendIds).catch(() => {}),
+          premiumBadges.plansFor([myId, ...friendIds, ...(pendingRequests.get(myId)?.keys() || [])]).catch(() => {}),
+        ])
+          .then(() => {
+            // My own roster row gets the badge once it is known.
+            if (premiumBadges.cachedPlan(myId)) broadcastUsers(io, myId);
+          })
           .finally(() => {
             // 2.11.7: reconnects with an unchanged list get "same" (boot diet).
             require("../lib/bootDiet").emitBootFriendList(socket, getFriendList(myId), {
@@ -814,7 +822,10 @@ function registerSocketHandlers(io) {
       // forever after a transient boot failure or missed accept event.
       await loadFriendsFromDB(myId);
       await loadPendingRequestsFromDB(myId);
-      await ensureCosmeticsCached([...(friends.get(myId) || [])]).catch(() => {});
+      await Promise.all([
+        ensureCosmeticsCached([...(friends.get(myId) || [])]).catch(() => {}),
+        premiumBadges.plansFor([...(friends.get(myId) || []), ...(pendingRequests.get(myId)?.keys() || [])]).catch(() => {}),
+      ]);
       socket.emit("friend:list", getFriendList(myId));
       socket.emit("friend:requests", getPendingList(myId));
       socket.emit("dm:requests", await listMessageRequests(supabase, myId));

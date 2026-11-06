@@ -9,6 +9,7 @@ import { ServerIcon } from "./ServerIcon";
 import { SkeletonLine } from "../ui/Skeleton";
 import "../../site/glass-public.css";
 import "../../site/glass-public-frames.css";
+import InviteLandingBrand from "./InviteLandingBrand";
 
 /**
  * Landing page for /s/:vanitySlug server vanity URLs.
@@ -76,7 +77,7 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="invite-landing-brand">Descall</div>
+        <InviteLandingBrand />
         <h1>{t("You've been invited to join a server")}</h1>
 
         {loading ? (
@@ -87,10 +88,11 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
               <SkeletonLine width="62%" height={12} />
             </div>
           </div>
-        ) : error && !server ? (
-          <div className="invite-landing-state error">
+        ) : !server ? (
+          // Nothing to show (error or an empty reply): never a fake "Sunucu · 0 üye" row.
+          <div className="invite-landing-state error" role="alert">
             <AlertTriangle size={28} />
-            <span>{error}</span>
+            <strong>{t("Invite not found")}</strong>
             <button type="button" className="invite-landing-btn ghost" onClick={onDismiss}>
               {t("Dismiss")}
             </button>
@@ -108,10 +110,14 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
                 }
               />
               <div>
-                <strong>{server?.name || t("Server")}</strong>
+                <strong>{server.name || t("Server")}</strong>
                 <span>
-                  {t("{count} members", { count: server?.memberCount ?? 0 })}
-                  {server?.isMember ? ` · ${t("Already a member")}` : ""}
+                  {[
+                    Number.isFinite(Number(server.memberCount)) && server.memberCount != null
+                      ? t("{count} members", { count: Number(server.memberCount) })
+                      : null,
+                    server.isMember ? t("Already a member") : null,
+                  ].filter(Boolean).join(" · ")}
                 </span>
               </div>
             </div>
@@ -141,14 +147,14 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
               >
                 {joining ? (
                   <Loader2 size={18} className="spin" />
-                ) : server?.isMember ? (
+                ) : server.isMember ? (
                   <CheckCircle2 size={18} />
                 ) : (
                   <LogIn size={18} />
                 )}
                 {joining
                   ? t("Joining…")
-                  : server?.isMember
+                  : server.isMember
                     ? t("Open server")
                     : me
                       ? t("Accept Invite")

@@ -63,5 +63,46 @@
   "window": {
     "signupStats": "Kayıt İstatistikleri — Descall Yönetici",
     "adminPanel": "Descall Yönetici"
+  },
+  "premium": {
+    "tray": {
+      "mute": "Sessize al",
+      "unmute": "Sesi aç",
+      "deafen": "Sağırlaştır",
+      "undeafen": "Sesi duy",
+      "hangup": "Aramadan çık",
+      "mini": "Mini modu aç",
+      "status": "Durum",
+      "online": "Çevrimiçi",
+      "idle": "Boşta",
+      "dnd": "Rahatsız etmeyin",
+      "invisible": "Görünmez",
+      "inCall": "Aramada: {title}",
+      "focus": "Odak modu",
+      "focusOn": "Odak modu: {minutes} dk kaldı",
+      "focus30": "30 dakika",
+      "focus60": "1 saat",
+      "focus120": "2 saat",
+      "focusOff": "Odak modunu bitir",
+      "audioProfile": "Ses profili"
+    },
+    "taskbar": {
+      "unread": "{n} okunmamış"
+    },
+    "window": {
+      "mini": "Descall mini mod",
+      "call": "Descall arama",
+      "sidebar": "Descall kenar çubuğu"
+    },
+    "launcher": {
+      "title": "Hızlı başlatıcı",
+      "placeholder": "Arkadaş, sohbet, sunucu veya eylem ara",
+      "empty": "Sonuç bulunamadı",
+      "hint": "Açmak için Enter, gezinmek için ok tuşları, kapatmak için Esc",
+      "loading": "Aranıyor"
+    },
+    "quickReply": {
+      "placeholder": "Yanıtla"
+    }
   }
 }

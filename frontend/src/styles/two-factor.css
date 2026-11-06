@@ -9,14 +9,11 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--primary, #5865f2) 6%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary, #5865f2) 22%, transparent);
-}
-.tfa-app.is-on {
-  background: color-mix(in srgb, var(--success, #23a55a) 7%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success, #23a55a) 26%, transparent);
+  /* A plain row of the grouped Security card, like the email and password rows. */
+  padding: 14px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 .tfa-app-icon {
   width: 40px;
@@ -25,8 +22,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary, #5865f2);
-  background: color-mix(in srgb, var(--primary, #5865f2) 14%, transparent);
+  color: var(--primary, #587af5);
+  background: color-mix(in srgb, var(--primary, #587af5) 14%, transparent);
 }
 .tfa-app.is-on .tfa-app-icon { color: var(--success, #23a55a); background: color-mix(in srgb, var(--success, #23a55a) 14%, transparent); }
 .tfa-app-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -38,8 +35,8 @@
   font-weight: 650;
   padding: 2px 8px;
   border-radius: 999px;
-  color: var(--primary, #5865f2);
-  background: color-mix(in srgb, var(--primary, #5865f2) 16%, transparent);
+  color: var(--text-muted, rgba(255,255,255,.6));
+  background: color-mix(in srgb, currentColor 14%, transparent);
 }
 .tfa-pill.ok { color: var(--success, #23a55a); background: color-mix(in srgb, var(--success, #23a55a) 16%, transparent); }
 .tfa-warn { color: var(--warning, #f0b232) !important; }
@@ -79,7 +76,7 @@
   background: color-mix(in srgb, var(--text-0, #fff) 8%, transparent);
 }
 .tfa-steps li.is-on { color: var(--text-0, #fff); }
-.tfa-steps li.is-on span { color: #fff; background: var(--primary, #5865f2); }
+.tfa-steps li.is-on span { color: #fff; background: var(--primary, #587af5); }
 .tfa-steps li.is-done span { color: var(--success, #23a55a); background: color-mix(in srgb, var(--success, #23a55a) 18%, transparent); }
 
 .tfa-body { display: flex; flex-direction: column; gap: 14px; }
@@ -125,7 +122,7 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-0, #fff) 12%, transparent);
   outline: none;
 }
-.tfa-code:focus-visible { box-shadow: inset 0 0 0 2px var(--primary, #5865f2); }
+.tfa-code:focus-visible { box-shadow: inset 0 0 0 2px var(--primary, #587af5); }
 .tfa-code::placeholder { color: color-mix(in srgb, var(--text-0, #fff) 25%, transparent); letter-spacing: 0.12em; font-size: 16px; }
 .tfa-pass { width: 100%; }
 .tfa-error { margin: 0; font-size: 13px; color: var(--danger, #f23f43); }
@@ -175,8 +172,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary, #5865f2);
-  background: color-mix(in srgb, var(--primary, #5865f2) 14%, transparent);
+  color: var(--primary, #587af5);
+  background: color-mix(in srgb, var(--primary, #587af5) 14%, transparent);
 }
 .tfa-gate h2 { margin: 6px 0 0; font-size: 20px; font-weight: 700; color: var(--text-0, #fff); }
 .tfa-gate p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-muted, rgba(255,255,255,.65)); }

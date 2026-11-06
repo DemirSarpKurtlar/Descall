@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement } from "react";
+import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
@@ -21,12 +22,15 @@ import { API_BASE_URL } from "../../config/api";
 import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate, upper } from "../../i18n/format";
 import { displayText } from "../../lib/profanity";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
 import AdminBadge from "../social/AdminBadge";
+import PopOutButton from "../../premium/desktop/PopOutButton.jsx";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import UserProfileModal from "../social/UserProfileModal";
 import ServerMembersPanel from "../servers/ServerMembersPanel";
 import ServerVoicePanel from "../servers/ServerVoicePanel";
@@ -45,6 +49,7 @@ function glassGroupInitials(name, locale) {
 }
 
 export default function ChatPanel({
+  historyLoadError = false,
   onGroupAvatarChanged,
   onGroupLeft,
   onGroupRenamed,
@@ -91,6 +96,7 @@ export default function ChatPanel({
   onAddClick,
   onViewChange,
   onStartCall,
+  activitySplitView = false,
   onOpenChatFromCalls,
   onStartGroupCall,
   onOpenGroupFromCalls,
@@ -168,6 +174,7 @@ export default function ChatPanel({
   // DM with someone I blocked: no messages or calls (the server enforces it too).
   const dmBlockedByMe = Boolean(activeDmUser?.id && blockedIds.has(String(activeDmUser.id)));
   const composerDisabled =
+    historyLoadError ||
     Boolean(activeTimeout?.timedOut) ||
     dmBlockedByMe ||
     (!activeDmUser && !activeGroup && !canSendChannel);
@@ -576,6 +583,7 @@ export default function ChatPanel({
               <h1 className={glassConv ? "header-title g-peer-name" : "header-title"}>
                 <span className={glassConv ? "header-title-text g-peer-name-text" : "header-title-text"}>{glassHash ? (activeChannel?.name || "") : getTitle()}</span>
                 {headerDm && <AdminBadge user={headerDm} variant="inline" />}
+                {headerDm && <PremiumBadge user={headerDm} variant="inline" />}
               </h1>
               {getSubtitle() && (
                 <span className={`header-subtitle${glassConv ? " g-peer-status" : ""}${glass && (headerGroup || glassServerChannel || (headerDm && getPresenceStatus(onlineUsers, headerDm.id) !== "online")) ? " is-dim" : ""}`}>{getSubtitle()}</span>
@@ -585,6 +593,7 @@ export default function ChatPanel({
         </div>
 
         <div className="header-right">
+          <PopOutButton />
           <button
             className={`icon-btn ${showSearch ? "active" : ""}`}
             title={t("Search")}
@@ -648,6 +657,7 @@ export default function ChatPanel({
             <BlockUserButton
               userId={headerDm.id}
               username={headerDm.username}
+              displayName={resolveDisplayName(headerDm)}
               className={`icon-btn header-block-btn${dmBlockedByMe ? " active" : ""}`}
               iconSize={20}
               compact
@@ -731,6 +741,7 @@ export default function ChatPanel({
           currentActivity={activity?.currentActivity}
           manualOverride={activity?.manualOverride}
           history={activity?.history}
+          historyLoaded={activity?.historyLoaded !== false}
           friendPresence={activity?.friendPresence}
           friends={friends}
           settings={activity?.settings}
@@ -739,7 +750,10 @@ export default function ChatPanel({
           onClearManual={activity?.clearManual}
           onUpdatePrivacy={activity?.updatePrivacy}
           onlineUsers={onlineUsers}
-          isMobile={isMobile}
+          /* UI audit #147: on iPad the list column already shows the friends
+             list (ActivitySidebar); the detail side shows your status and
+             history like desktop instead of a second copy of that list. */
+          isMobile={isMobile && !activitySplitView}
           onRefresh={onRefresh}
           onAddFriend={() => onAddClick?.("friend")}
           onFriendSelect={onStartDm}
@@ -771,31 +785,27 @@ export default function ChatPanel({
             me={me}
             serverVoice={serverVoice}
           />
+        ) : !activeServer && typeof window !== "undefined" && /^\/servers\/[^/]+/.test(window.location.pathname) ? (
+          /* UI audit #92: a server is already in the URL while the list loads, so
+             show its loading skeleton, not "pick a server on the left". */
+          <DetailPaneSkeleton label={t("Loading servers")} />
         ) : (
-        <div className="server-main-placeholder">
-          {activeChannel?.type === "voice" || activeChannel?.type === "stage" ? (
-            <Phone size={40} strokeWidth={1.5} />
-          ) : (
-            <Hash size={40} strokeWidth={1.5} />
-          )}
-          <h2>
-            {activeChannel
-              ? activeChannel.type === "voice" || activeChannel.type === "stage"
-                ? activeChannel.name
-                : `#${activeChannel.name}`
-              : activeServer
-                ? activeServer.name
-                : t("Servers")}
-          </h2>
-          <p>
-            {!activeServer
+        <EmptyState
+          className="server-main-placeholder"
+          icon={activeChannel?.type === "voice" || activeChannel?.type === "stage" ? Phone : Hash}
+          title={activeChannel
+            ? activeChannel.type === "voice" || activeChannel.type === "stage"
+              ? activeChannel.name
+              : `#${activeChannel.name}`
+            : activeServer
+              ? activeServer.name
+              : t("Servers")}
+          body={activeChannel?.topic
+            ? activeChannel.topic
+            : !activeServer
               ? t("Pick a server on the left, or create a new one with +.")
               : t("Pick a text or voice channel from the list on the left.")}
-          </p>
-          {activeChannel?.topic ? (
-            <p className="server-channel-topic">{activeChannel.topic}</p>
-          ) : null}
-        </div>
+        />
         )
       ) : (
       <div
@@ -849,7 +859,7 @@ export default function ChatPanel({
               }}
             />
           ) : (
-          <div className="composer-container">
+          <div className={`composer-container${historyLoadError ? " is-history-error" : ""}`} aria-disabled={historyLoadError || undefined}>
             {/* Typing pill rides on the composer (absolute, bottom: 100%), so it
                 always sits just above it, even when the composer is
                 position: fixed (iOS glass capsule, keyboard lift, safe area). */}
@@ -1007,6 +1017,7 @@ export default function ChatPanel({
                         <div className="member-name-row">
                           <span className="member-name">{name}</span>
                           <AdminBadge user={m} variant="inline" />
+                          <PremiumBadge user={m} variant="inline" />
                           {m._isOwner && (
                             <span className="member-owner-badge" title={t("Owner")}>
                               <Crown size={11} strokeWidth={2.25} aria-hidden="true" />
@@ -1108,7 +1119,7 @@ export default function ChatPanel({
       items={pinnedMessages}
       t={t}
       resolveName={resolveDisplayName}
-      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
+      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? mediaTypeLabel(pm.mediaType, t) : t("Message"))}
       onUnpin={unpinMessage}
     />
     {groupActions.element}

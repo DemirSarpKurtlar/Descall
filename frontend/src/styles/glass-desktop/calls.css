@@ -269,11 +269,17 @@ html.glass-desktop .calls-quick-card:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-html.glass-desktop .calls-search input,
 html.glass-desktop .calls-search {
   border: none;
-  border-radius: var(--r-lg);
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.1);
+  color: var(--gd-t1);
+}
+
+/* One layer: the field is the capsule, the input inside stays transparent. */
+html.glass-desktop .calls-search input {
+  border: none;
+  background: transparent;
   color: var(--gd-t1);
 }
 

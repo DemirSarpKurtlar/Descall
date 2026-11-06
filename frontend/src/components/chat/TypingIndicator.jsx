@@ -34,8 +34,8 @@ function TypingDots({ flareKey }) {
             width: 6,
             height: 6,
             borderRadius: "50%",
-            background: flareKey ? undefined : "var(--primary, #5865f2)",
-            boxShadow: flareKey ? undefined : "0 0 6px var(--primary, #5865f2)",
+            background: flareKey ? undefined : "var(--primary, #587af5)",
+            boxShadow: flareKey ? undefined : "0 0 6px var(--primary, #587af5)",
           }}
         />
       ))}

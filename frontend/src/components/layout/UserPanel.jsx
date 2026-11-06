@@ -1,6 +1,6 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -20,6 +20,7 @@ import { API_BASE_URL } from "../../config/api";
 import { normalizeUser } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import "../../styles/promo-mycodes.css"; // Promosyon Kodu nav row badge
+import { STATUS_EMOJIS, splitStatusEmoji } from "../../lib/statusPresets";
 import { PROMO_AVAILABLE_EVENT, PROMO_NUDGE_EVENT, PROMO_REDEEMED_EVENT, summaryOf } from "../../lib/promoAvailable";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { uploadAvatar, uploadFile, uploadAvatarWithCrop, uploadBannerImage } from "../../api/media";
@@ -61,6 +62,7 @@ import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
@@ -68,6 +70,10 @@ import ErrorBoundary from "../ErrorBoundary";
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
+// Ayarlar > Descall+ (status, coupon, features, plan comparison; iOS: status only).
+const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.jsx"));
+import { getPremiumState, subscribePremium } from "../../premium/premiumStore.js";
+import { isNativeIOS } from "../../lib/platform.js";
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import {
@@ -113,13 +119,7 @@ const saveSettings = (obj) => {
 
 
 
-const STATUS_EMOJIS = ["😀", "🎮", "💼", "🎵", "📚", "☕", "🍿", "💤"];
-
-function splitStatusEmoji(value) {
-  const raw = String(value || "");
-  const emoji = STATUS_EMOJIS.find((e) => e && raw.startsWith(e)) || "";
-  return { emoji, text: emoji ? raw.slice(emoji.length).replace(/^\s+/, "") : raw };
-}
+// Custom-status emoji presets: one shared list (UI audit #29), lib/statusPresets.js.
 
 // A purchased premium theme fully re-tints `--primary` (and every other
 // token) via its `[data-theme="…"]` CSS block. The custom "Accent Color"
@@ -149,7 +149,7 @@ function Toggle({ value, onChange, label }) {
   );
 }
 
-function PrivacySettingsSection() {
+function PrivacySettingsSection({ activitySection = null }) {
   const { t } = useLocale();
   const [choice, setChoice] = useState(() => getCookieConsent()?.choice || "");
   const [legal, setLegal] = useState(null);
@@ -185,41 +185,27 @@ function PrivacySettingsSection() {
                 <Lock size={16} />
               </span>
               <div className="us-row-copy">
-                <span className="us-row-title">{t("Product analytics")}</span>
+                <span className="us-row-title">{t("Share product analytics")}</span>
                 <span className="us-row-desc">{status}</span>
               </div>
             </div>
-          </div>
-          <div className="g-privacy-actions">
-            <button
-              type="button"
-              className={`us-btn ghost${choice === "rejected" ? " is-on" : ""}`}
-              disabled={under16}
-              aria-pressed={choice === "rejected"}
-              onClick={() => apply("rejected")}
-            >
-              {choice === "rejected" ? <Check size={15} /> : null}
-              {t("Reject")}
-            </button>
-            <button
-              type="button"
-              className={`us-btn primary${choice === "accepted" ? " is-on" : ""}`}
-              disabled={under16}
-              aria-pressed={choice === "accepted"}
-              onClick={() => apply("accepted")}
-            >
-              {choice === "accepted" ? <Check size={15} /> : null}
-              {t("Accept")}
-            </button>
+            {under16 ? null : (
+              <Toggle
+                value={choice === "accepted"}
+                onChange={(on) => apply(on ? "accepted" : "rejected")}
+                label={t("Share product analytics")}
+              />
+            )}
           </div>
         </div>
       </section>
+      {activitySection}
       <section className="us-section">
         <h4 className="us-section-label">{t("dex.section")}</h4>
         <DataExportCard />
       </section>
       <section className="us-section">
-        <h4 className="us-section-label">{t("settings.privacy")}</h4>
+        <h4 className="us-section-label">{t("Legal")}</h4>
         <div className="us-card stack">
           <button type="button" className="us-row g-privacy-link" onClick={() => setLegal("privacy")}>
             <span className="us-row-text">
@@ -274,7 +260,7 @@ const NAV_GROUPS_DEF = [
     labelKey: "settings.account",
     items: [
       { id: "overview", labelKey: "settings.myAccount", icon: User, hintKey: "settings.accountHint" },
-      { id: "profile", labelKey: "settings.profile", icon: Type, hintKey: "settings.profileHint" },
+      { id: "profile", labelKey: "settings.profile", icon: Pencil, hintKey: "settings.profileHint" },
       { id: "security", labelKey: "settings.security", icon: Shield, hintKey: "settings.securityHint" },
       { id: "privacy", labelKey: "settings.privacy", icon: Lock, hintKey: "settings.privacyHint" },
     ],
@@ -298,6 +284,7 @@ const NAV_GROUPS_DEF = [
   {
     labelKey: "settings.personalization",
     items: [
+      { id: "premium", labelKey: "premium.nav", icon: Sparkles, hintKey: "premium.navHint" },
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
       { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
@@ -306,20 +293,29 @@ const NAV_GROUPS_DEF = [
 ];
 
 /* 3.0 settings sidebar (desktop + iPad): colored icon tiles, mockup 34/36. */
+/* UI audit #14 / #77: the ONE icon + colour map for every settings list
+   (desktop sidebar, iPad, iPhone): same glyph, same tile colour everywhere. */
 const S3_NAV_TILES = {
-  overview: ["user", "gray"],
-  profile: ["pen", "gray"],
-  security: ["shield", "gray"],
-  privacy: ["lock", "gray"],
+  overview: ["user", "brand"],
+  profile: ["pen", "blue"],
+  security: ["shield", "green"],
+  privacy: ["lock", "indigo"],
   appearance: ["palette", "brand"],
   notifications: ["bell", "red"],
   language: ["globe", "blue"],
   licenses: ["book", "gray"],
   voice: ["volume", "green"],
   sound: ["music", "teal"],
+  premium: ["sparkle", "purple"],
   shop: ["bag", "purple"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
+};
+
+/* Same values as .s3 .c-* in settings-v3.css, for lists outside .s3. */
+const S3_TILE_HEX = {
+  blue: "#3e7bfa", brand: "#587af6", indigo: "#5e5ce6", purple: "#9b5de5", green: "#30b458", teal: "#1aa6b7",
+  orange: "#f08a24", yellow: "#e9b10c", red: "#f0453a", pink: "#e8457a", gray: "#6b6f80", mint: "#22b59a",
 };
 
 const TAB_TITLE_KEYS = {
@@ -336,6 +332,7 @@ const TAB_TITLE_KEYS = {
   shop: "settings.shop",
   badges: "badges.navTitle",
   promo: "settings.promo",
+  premium: "premium.nav",
 };
 
 /** What the settings sheet covers: the open list drawer on a root tab, else the main page. */
@@ -410,17 +407,20 @@ const UserPanel = forwardRef(function UserPanel({
   const promoCount = promoSummary.count;
   const promoUnseen = promoSummary.unseen;
 
+  // iOS: the Descall+ page only for members (status only, no upsell; App Store 3.1.1).
+  const premiumPlan = useSyncExternalStore(subscribePremium, () => getPremiumState().plan, () => getPremiumState().plan);
+  const hidePremiumNav = isNativeIOS() && !premiumPlan;
   const navGroups = useMemo(
     () =>
       NAV_GROUPS_DEF.map((g) => ({
         label: t(g.labelKey),
-        items: g.items.map((item) => ({
+        items: g.items.filter((item) => !(item.id === "premium" && hidePremiumNav)).map((item) => ({
           ...item,
           label: t(item.labelKey),
           hint: t(item.hintKey),
         })),
       })),
-    [t]
+    [t, hidePremiumNav]
   );
 
   const tabTitles = useMemo(() => {
@@ -1483,7 +1483,7 @@ const UserPanel = forwardRef(function UserPanel({
                   className="us-btn us-hero-edit"
                   onClick={() => openTab("profile")}
                 >
-                  <Type size={14} />
+                  <Pencil size={14} />
                   {t("Edit profile")}
                 </button>
                 <div className="us-hero-meta">
@@ -1494,6 +1494,7 @@ const UserPanel = forwardRef(function UserPanel({
                   <div className="user-profile-badges">
                     <CountryBadge user={me} />
                     <AdminBadge user={me} variant="chip" />
+                    <PremiumBadge user={me} variant="chip" />
                   </div>
                   {customStatus && <span className="us-status-pill">{customStatus}</span>}
                 </div>
@@ -1526,10 +1527,15 @@ const UserPanel = forwardRef(function UserPanel({
                 </div>
                 <div className="us-info-row">
                   <span className="us-muted">{t("User ID")}</span>
-                  <button type="button" className="us-copy-btn" onClick={copyUserId} title={t("Copy ID")} aria-label={t("Copy ID")}>
-                    <span className="us-info-value mono">{me?.id || "—"}</span>
-                    {copiedId ? <Check size={14} /> : <Copy size={14} />}
-                  </button>
+                  {/* UI audit #40: system font, the ID truncates in the middle of
+                      the row and the action says what it does. */}
+                  <span className="us-username-value us-id-row">
+                    <span className="us-info-value us-id-value" title={me?.id || ""}>{me?.id || "—"}</span>
+                    <button type="button" className="us-copy-btn us-copy-text" onClick={copyUserId} aria-label={t("Copy ID")}>
+                      {copiedId ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copiedId ? t("Copied") : t("Copy")}</span>
+                    </button>
+                  </span>
                 </div>
                 <div className="us-info-row">
                   <span className="us-muted">{t("Status")}</span>
@@ -1858,6 +1864,9 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
+            {/* UI audit #76: the bar only appears with unsaved edits (or the brief
+                "Kaydedildi" confirmation), so it never covers Biyografi at rest. */}
+            {(profileDirty || profileSaved || savingProfile) && (
             <div className={`us-pe-savebar${profileDirty ? " dirty" : ""}`}>
               <span className="us-pe-savebar-text">
                 {profileSaved
@@ -1888,6 +1897,7 @@ const UserPanel = forwardRef(function UserPanel({
                 </button>
               </div>
             </div>
+            )}
           </div>
         );
       }
@@ -1905,21 +1915,21 @@ const UserPanel = forwardRef(function UserPanel({
               <div className="us-card us-form">
                 <SettingRow
                   icon={Mail}
-                  title={t("Email address")}
+                  title={emailVerified && me?.email ? me.email : t("Email address")}
                   description={
-                    emailVerified
+                    emailVerified && me?.email
                       ? t("Verified, used for sign-in codes and account alerts.")
                       : t("Verify your email to enable two-factor authentication.")
                   }
                 >
-                  {emailVerified && (
+                  {emailVerified && me?.email && (
                     <span className="us-verified-pill">
                       <CheckCircle2 size={13} /> {t("Verified")}
                     </span>
                   )}
                 </SettingRow>
 
-                {!emailVerified && (
+                {!(emailVerified && me?.email) && (
                   <div className="us-email-verify-flow">
                     <input
                       type="email"
@@ -1998,7 +2008,7 @@ const UserPanel = forwardRef(function UserPanel({
                     </a>
                   </div>
                 ) : pwStage === "idle" || pwStage === "done" ? (
-                  <div className="us-email-verify-flow">
+                  <div className="us-email-verify-flow is-end">
                     <button
                       type="button"
                       className="us-btn primary"
@@ -2218,7 +2228,70 @@ const UserPanel = forwardRef(function UserPanel({
         );
 
       case "privacy":
-        return <PrivacySettingsSection />;
+        return (
+          <PrivacySettingsSection
+            activitySection={(
+                <section className="us-section">
+                  <h4 className="us-section-label">{t("Activity Status")}</h4>
+                  <div className="us-card stack">
+                    {activity?.isElectron && (
+                      <>
+                        <SettingRow
+                          icon={Monitor}
+                          title={t("Game activity")}
+                          description={t("Show friends what game you're playing")}
+                        >
+                          <Toggle
+                            value={activity?.settings?.show_game_activity !== false}
+                            onChange={(v) => activity?.updateSettings?.({ show_game_activity: v })}
+                            label={t("Game activity")}
+                          />
+                        </SettingRow>
+                        <SettingRow
+                          icon={MonitorSpeaker}
+                          title={t("App activity")}
+                          description={t("Show friends what apps you have open")}
+                        >
+                          <Toggle
+                            value={activity?.settings?.show_app_activity !== false}
+                            onChange={(v) => activity?.updateSettings?.({ show_app_activity: v })}
+                            label={t("App activity")}
+                          />
+                        </SettingRow>
+                        <SettingRow
+                          icon={Globe}
+                          title={t("Browser activity")}
+                          description={t("Show friends when you're browsing the web")}
+                        >
+                          <Toggle
+                            value={activity?.settings?.show_browser === true}
+                            onChange={(v) => activity?.updateSettings?.({ show_browser: v })}
+                            label={t("Browser activity")}
+                          />
+                        </SettingRow>
+                      </>
+                    )}
+                    <SettingRow
+                      icon={MonitorSpeaker}
+                      title={t("Descall usage time")}
+                      description={t("Track and show time spent in Descall")}
+                    >
+                      <Toggle
+                        value={activity?.settings?.show_descall_time !== false}
+                        onChange={(v) => activity?.updateSettings?.({ show_descall_time: v })}
+                        label={t("Descall usage time")}
+                      />
+                    </SettingRow>
+                  </div>
+                  {!activity?.isElectron && (
+                    <p className="us-row-desc g-activity-footnote">
+                      {t("Install the Descall desktop app to share game and app activity automatically.")}
+                    </p>
+                  )}
+                </section>
+            )}
+          />
+        );
 
       case "shop":
         return (
@@ -2253,6 +2326,13 @@ const UserPanel = forwardRef(function UserPanel({
           </Suspense>
         );
 
+      case "premium":
+        return (
+          <Suspense fallback={null}>
+            <PremiumSettingsTab />
+          </Suspense>
+        );
+
       case "appearance":
         return (
           <AppearancePane
@@ -2274,7 +2354,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Bell}
                   title={t("Message notifications")}
-                  description={t("DMs, group messages, and mentions")}
+                  description={t("Private messages, group messages and mentions")}
                 >
                   <Toggle
                     value={msgNotifications}
@@ -2313,64 +2393,6 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Activity Status")}</h4>
-              <div className="us-card stack">
-                {activity?.isElectron && (
-                  <>
-                    <SettingRow
-                      icon={Monitor}
-                      title={t("Game activity")}
-                      description={t("Show friends what game you're playing")}
-                    >
-                      <Toggle
-                        value={activity?.settings?.show_game_activity !== false}
-                        onChange={(v) => activity?.updateSettings?.({ show_game_activity: v })}
-                        label={t("Game activity")}
-                      />
-                    </SettingRow>
-                    <SettingRow
-                      icon={MonitorSpeaker}
-                      title={t("App activity")}
-                      description={t("Show friends what apps you have open")}
-                    >
-                      <Toggle
-                        value={activity?.settings?.show_app_activity !== false}
-                        onChange={(v) => activity?.updateSettings?.({ show_app_activity: v })}
-                        label={t("App activity")}
-                      />
-                    </SettingRow>
-                    <SettingRow
-                      icon={Globe}
-                      title={t("Browser activity")}
-                      description={t("Show friends when you're browsing the web")}
-                    >
-                      <Toggle
-                        value={activity?.settings?.show_browser === true}
-                        onChange={(v) => activity?.updateSettings?.({ show_browser: v })}
-                        label={t("Browser activity")}
-                      />
-                    </SettingRow>
-                  </>
-                )}
-                <SettingRow
-                  icon={MonitorSpeaker}
-                  title={t("Descall usage time")}
-                  description={t("Track and show time spent in Descall")}
-                >
-                  <Toggle
-                    value={activity?.settings?.show_descall_time !== false}
-                    onChange={(v) => activity?.updateSettings?.({ show_descall_time: v })}
-                    label={t("Descall usage time")}
-                  />
-                </SettingRow>
-              </div>
-              {!activity?.isElectron && (
-                <p className="us-row-desc g-activity-footnote">
-                  {t("Install the Descall desktop app to share game and app activity automatically.")}
-                </p>
-              )}
-            </section>
           </div>
         );
 
@@ -2378,25 +2400,28 @@ const UserPanel = forwardRef(function UserPanel({
         return (
           <div className="us-tab">
             <p className="us-lead">{t("settings.licensesDesc")}</p>
-            <section className="us-section licenses-list">
-              <div className="licenses-item">
-                <strong>Twemoji</strong>
-                {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
-                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
-                  creativecommons.org/licenses/by/4.0
-                </a>
-              </div>
-              <div className="licenses-item">
-                <strong>country-flag-emoji-polyfill</strong>
-                {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
-              </div>
-              <div className="licenses-item">
-                <strong>Inter</strong>
-                {t("Interface font: Inter, SIL Open Font License 1.1.")}
-              </div>
-              <div className="licenses-item">
-                <strong>Lucide</strong>
-                {t("Icons: Lucide, ISC licence.")}
+            <section className="us-section">
+              {/* One grouped card, rows split by hairlines (same card as every settings page). */}
+              <div className="us-card licenses-list">
+                <div className="licenses-item">
+                  <strong>Twemoji</strong>
+                  {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
+                  <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
+                    creativecommons.org/licenses/by/4.0
+                  </a>
+                </div>
+                <div className="licenses-item">
+                  <strong>country-flag-emoji-polyfill</strong>
+                  {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
+                </div>
+                <div className="licenses-item">
+                  <strong>Inter</strong>
+                  {t("Interface font: Inter, SIL Open Font License 1.1.")}
+                </div>
+                <div className="licenses-item">
+                  <strong>Lucide</strong>
+                  {t("Icons: Lucide, ISC licence.")}
+                </div>
               </div>
             </section>
           </div>
@@ -2408,24 +2433,24 @@ const UserPanel = forwardRef(function UserPanel({
             <p className="us-lead">{t("settings.languageDesc")}</p>
             <section className="us-section">
               <h4 className="us-section-label">{t("settings.appLanguage")}</h4>
-              <div className="us-theme-grid us-lang-grid">
+              {/* One grouped list (name, native name, check on the selected row), like iOS. */}
+              <div className="us-card stack us-lang-list" role="radiogroup" aria-label={t("settings.appLanguage")}>
                 {locales.map((opt) => {
                   const selected = locale === opt.id;
                   return (
                     <button
                       key={opt.id}
                       type="button"
-                      className={`us-theme-card ${selected ? "selected" : ""}`}
+                      role="radio"
+                      aria-checked={selected}
+                      className="us-row g-privacy-link"
                       onClick={() => setLocale(opt.id)}
                     >
-                      <div className="us-theme-meta" style={{ gap: 10 }}>
-                        <Globe size={16} />
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                          <span style={{ fontWeight: 700 }}>{languageLabel(opt.id, locale)}</span>
-                          <span style={{ fontSize: 12, opacity: 0.65 }}>{opt.nativeLabel}</span>
-                        </div>
-                      </div>
-                      {selected && <Check size={14} className="us-theme-check" />}
+                      <span className="us-row-copy">
+                        <span className="us-row-title">{languageLabel(opt.id, locale)}</span>
+                        <span className="us-row-desc">{opt.nativeLabel}</span>
+                      </span>
+                      {selected ? <Check size={18} className="us-lang-check" /> : null}
                     </button>
                   );
                 })}
@@ -2433,9 +2458,6 @@ const UserPanel = forwardRef(function UserPanel({
               <p className="us-row-desc" style={{ marginTop: 14 }}>
                 {t("settings.autoDetectHint")}{" "}
                 ({t("Detected from your device")}: {languageLabel(deviceDefault, locale)})
-              </p>
-              <p className="us-row-desc" style={{ marginTop: 8 }}>
-                {t("settings.appliesInstantly")}
               </p>
             </section>
           </div>
@@ -2492,9 +2514,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Waveform}
                   title={t("AI noise suppression")}
-                  description={t(
-                    "Removes keyboard, fan, and background noise in group calls and server voice. Uses GTCRN / RNNoise when available."
-                  )}
+                  description={t("Cleans up keyboard, fan and background noise.")}
                 >
                   <div className="us-btn-row">
                     {[
@@ -2513,20 +2533,11 @@ const UserPanel = forwardRef(function UserPanel({
                     ))}
                   </div>
                 </SettingRow>
+                {/* UI audit #38: a plain status line aligned with the row text; the
+                    engine name stays out of the copy (hover title only). */}
                 {voiceProfile.noiseMode !== "off" ? (
-                  <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
-                    {t("Active engine")}:{" "}
-                    <strong>
-                      {noiseEngine === "gtcrn"
-                        ? "GTCRN"
-                        : noiseEngine === "rnnoise"
-                          ? "RNNoise"
-                          : noiseEngine === "speex"
-                            ? "Speex"
-                            : noiseEngine === "dsp"
-                              ? "DSP"
-                              : t("Ready")}
-                    </strong>
+                  <p className="us-row-desc us-row-status" title={noiseEngine || undefined}>
+                    {noiseEngine ? t("Noise suppression is on") : t("Ready")}
                   </p>
                 ) : null}
                 <SettingRow
@@ -2543,7 +2554,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Volume2}
                   title={t("Auto gain control")}
-                  description={t("Keeps your volume steady without pumping.")}
+                  description={t("Keeps your voice at an even level.")}
                 >
                   <Toggle
                     value={voiceProfile.autoGainControl !== false}
@@ -2551,7 +2562,7 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Auto gain control")}
                   />
                 </SettingRow>
-                <label className="us-field">
+                <label className="us-field us-field-inset">
                   <span>{t("Input sensitivity")}</span>
                   <input
                     type="range"
@@ -2561,7 +2572,7 @@ const UserPanel = forwardRef(function UserPanel({
                     onChange={(event) => patchVoice({ inputSensitivity: Number(event.target.value) })}
                   />
                 </label>
-                <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
+                <p className="us-row-desc us-field-inset-hint">
                   {t("Raise this if people miss quiet speech. Lower it if background noise lights the ring.")}
                 </p>
               </div>
@@ -2777,7 +2788,7 @@ const UserPanel = forwardRef(function UserPanel({
   return (
     <motion.div
       ref={ref}
-      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}${glassShell && isMobile && mobileDetail && activeTab === "appearance" ? " s3-phone-shell" : ""}`}
+      className={`user-settings-shell ${isMobile ? "is-mobile" : "is-desktop"}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && !mobileDetail ? " g-settings-menu" : ""}`}
       variants={shellVariants}
       initial="hidden"
       animate="visible"
@@ -2786,7 +2797,7 @@ const UserPanel = forwardRef(function UserPanel({
     >
     <motion.div
       ref={panelRef}
-      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}${isMobile && glassShell && activeTab === "appearance" && mobileDetail ? " s3-phone-sheet" : ""}`}
+      className={`user-settings ${isMobile ? "is-mobile" : "is-desktop"}${!isMobile && activeTab === "shop" ? " is-shop-open" : ""}${glassShell && isMobile ? " g-settings" : ""}${glassShell && isMobile && activeTab === "shop" && mobileDetail ? " g-shop-open" : ""}${glassProfileEdit ? " g-profile-edit" : ""}${!isMobile ? ` s3-shell${isTabletLayout() ? " s3-tablet" : ""}` : ""}${activeTab === "appearance" && (!isMobile || mobileDetail) ? " s3-tab-v3" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={t("settings.title")}
@@ -2856,7 +2867,7 @@ const UserPanel = forwardRef(function UserPanel({
         <div className="us-sidebar-top">
           <div className="us-sidebar-brand">
             <div>
-              <h2>{glassShell && isMobile ? t("Settings") : t("settings.title")}</h2>
+              <h2>{t("Settings")}</h2>
               <p>{t("Manage your Descall account")}</p>
             </div>
             {isMobile && (
@@ -2893,9 +2904,18 @@ const UserPanel = forwardRef(function UserPanel({
                     data-nav={item.id}
                     onClick={() => openTab(item.id)}
                   >
-                    <span className="us-nav-ico">
-                      <Icon size={18} />
-                    </span>
+                    {(() => {
+                      const [glyph, color] = S3_NAV_TILES[item.id] || [];
+                      return glyph ? (
+                        <span className="us-nav-ico" style={{ background: S3_TILE_HEX[color] || S3_TILE_HEX.gray, color: "#fff" }}>
+                          <S3Glyph name={glyph} size={18} stroke={2.1} />
+                        </span>
+                      ) : (
+                        <span className="us-nav-ico">
+                          <Icon size={18} />
+                        </span>
+                      );
+                    })()}
                     <span className="us-nav-copy">
                       <span className="us-nav-label">{item.label}</span>
                       {isMobile && <span className={`us-nav-hint${item.id === "promo" && promoCount ? " is-promo-new" : ""}`}>{item.id === "promo" && promoCount ? (promoCount === 1 ? t("promo.navWaitingOne") : t("promo.navWaiting", { n: promoCount })) : item.hint}</span>}
@@ -2924,9 +2944,10 @@ const UserPanel = forwardRef(function UserPanel({
 
       {/* Detail pane */}
       <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
-        {activeTab === "appearance" ? (
+        {/* UI audit #152: desktop keeps the same left-aligned page title as every
+            other settings page; only the phone sheet uses the centred nav bar. */}
+        {activeTab === "appearance" && isMobile ? (
           <>
-            {isMobile ? <div className="s3-grab" aria-hidden="true" /> : null}
             <header className="us-main-header s3-nav">
               <span className="l">
                 {isMobile ? (
@@ -2947,8 +2968,11 @@ const UserPanel = forwardRef(function UserPanel({
               {t("Cancel")}
             </button>
           ) : isMobile ? (
-            <button type="button" className="us-icon-btn" onClick={backToMenu} aria-label={t("Back")}>
-              <ChevronLeft size={22} />
+            /* UI audit #46: every subpage uses the same iOS "‹ Ayarlar" text back
+               as Görünüm, not a filled circle on some pages. */
+            <button type="button" className="s3-back us-text-back" onClick={backToMenu} aria-label={t("Back")}>
+              <S3Glyph name="chevl" size={22} stroke={2.4} />
+              <span>{t("Settings")}</span>
             </button>
           ) : (
             <div className="us-main-heading">

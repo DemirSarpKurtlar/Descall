@@ -208,7 +208,7 @@ ${faviconLinksHtml("  ")}
     .count {
       font-size: 11px; font-weight: 700;
       padding: 3px 9px; border-radius: 999px;
-      background: rgba(88,101,242,0.22); color: #c9d0ff;
+      background: rgba(88,122,245,0.22); color: #c9d0ff;
     }
     .grid {
       display: grid;
@@ -227,7 +227,7 @@ ${faviconLinksHtml("  ")}
     }
     .card:hover {
       border-color: rgba(139,156,255,0.45);
-      background: rgba(88,101,242,0.12);
+      background: rgba(88,122,245,0.12);
       transform: translateY(-1px);
     }
     .card-title {
@@ -310,7 +310,7 @@ export const SITEMAP_XSL = `<?xml version="1.0" encoding="UTF-8"?>
         <style>
           :root { color-scheme: dark; }
           body { margin:0; font-family:system-ui,"Segoe UI",sans-serif; background:#0b0c10; color:#f2f3f5;
-            background-image: radial-gradient(80% 50% at 50% -10%, rgba(88,101,242,.28), transparent 55%);
+            background-image: radial-gradient(80% 50% at 50% -10%, rgba(88,122,245,.28), transparent 55%);
             padding: 32px 20px 64px; }
           .wrap { max-width: 960px; margin: 0 auto; }
           h1 { font-family:"Avenir Next",system-ui,sans-serif; font-size: clamp(28px, 5vw, 40px); letter-spacing:-.03em; margin:0 0 8px; }

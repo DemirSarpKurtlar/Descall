@@ -85,6 +85,13 @@ export default function NewCreateModal({
   const [photo, setPhoto] = useState(null); // { file, url }
   const [cropSrc, setCropSrc] = useState("");
   const [photoError, setPhotoError] = useState("");
+  // UI audit #90: "‹" only when there is a previous step (the sheet was opened
+  // on the start screen); opened straight on "Grup oluştur" it only closes.
+  const [openedOn, setOpenedOn] = useState(null);
+  useEffect(() => {
+    setOpenedOn((prev) => (open ? prev ?? screen : null));
+  }, [open, screen]);
+  const canGoBack = openedOn === "start";
 
   const handle = me?.username || "";
   const inviteUrl = handle ? toPublicShareUrl(buildFriendInviteUrl(handle)) : "";
@@ -288,10 +295,17 @@ export default function NewCreateModal({
   const group = (
     <motion.div key="group" className="nc-pane" {...paneMotion}>
       <header className="nc-head">
-        <button type="button" className="nc-back" onClick={() => go("start")} aria-label={t("nc.back")}>
-          <ChevronLeft size={18} weight="bold" />
-        </button>
-        <h3 className="nc-title is-sub">{t("nc.groupTitle")}</h3>
+        {canGoBack ? (
+          <button type="button" className="nc-back" onClick={() => go("start")} aria-label={t("nc.back")}>
+            <ChevronLeft size={18} weight="bold" />
+          </button>
+        ) : null}
+        <div className="nc-head-copy">
+          <h3 className="nc-title is-sub">{t("nc.groupTitle")}</h3>
+          <small className="nc-head-count" aria-label={t("nc.selectedCount", { count: selected.length, max: GROUP_MAX })}>
+            {selected.length + 1}/{GROUP_MAX}
+          </small>
+        </div>
         <CloseButton onClick={onClose} label={t("Close")} className="nc-close" />
       </header>
       <div className="nc-body">
@@ -373,7 +387,6 @@ export default function NewCreateModal({
         {message}
       </div>
       <footer className="nc-foot">
-        <small>{t("nc.selectedCount", { count: selected.length, max: GROUP_MAX })}</small>
         <button type="button" className="nc-primary" onClick={create} disabled={addLoading || !nameOk}>
           {addLoading ? <Loader2 size={16} className="spin" /> : null}
           {addLoading ? t("Creating...") : t("nc.createGroup")}

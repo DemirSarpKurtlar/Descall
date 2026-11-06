@@ -2,7 +2,7 @@
    White frost, dark ink, ink hairlines, and accent buttons. */
 
 html.glass-desktop[data-theme="light"] {
-  --gd-scrim: color-mix(in srgb, var(--g-deep) 58%, transparent);
+  --gd-scrim: var(--overlay-dim);
   color-scheme: light;
 }
 
@@ -114,4 +114,22 @@ html.glass-desktop.gd-lite[data-theme="light"] .user-profile-scrim,
 html.glass-desktop.gd-lite[data-theme="light"] .user-settings.is-desktop {
   background: var(--g-solid) !important;
   color: var(--g-t1);
+}
+
+/* UI audit #105/#148: on white the frosted search field vanished. Light mode
+   uses the iOS search field: tertiary system fill, 36px, radius 10, a visible
+   magnifier inside. */
+html.glass-desktop[data-theme="light"] .search-input,
+html.glass-desktop[data-theme="light"] .sidebar-search input,
+html.glass-desktop[data-theme="light"] .calls-search {
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.12);
+  box-shadow: none;
+}
+
+html.glass-desktop[data-theme="light"] .sidebar-search .search-icon,
+html.glass-desktop[data-theme="light"] .calls-search svg {
+  color: rgba(60, 60, 67, 0.6);
+  z-index: 1;
 }

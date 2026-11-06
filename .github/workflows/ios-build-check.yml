@@ -316,7 +316,9 @@ jobs:
             sleep 8
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/watch-shots/watch-$SCREEN.png"
             # 3.7.33: a screen whose app died shows the watch face; record it and fail below.
-            if ! xcrun simctl spawn "$UDID" launchctl list | grep -q "com.descall.app.watchkitapp"; then
+            # Read the whole list before matching: `grep -q` stops at the first hit, launchctl
+            # then dies of SIGPIPE, and with pipefail that read as "not running" (no crash report).
+            if ! xcrun simctl spawn "$UDID" launchctl list | grep "com.descall.app.watchkitapp" >/dev/null; then
               echo "::error::DescallWatch is not running after launching screen $SCREEN (crash?)"
               echo "$SCREEN" >> "$RUNNER_TEMP/watch-dead.txt"
             fi

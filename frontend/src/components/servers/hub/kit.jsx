@@ -1,12 +1,14 @@
 /* Descall 3.0.0 server sheets: the approved mockup kit (dev/after/kit.cjs) as React.
  * Every class/size here mirrors kit.cjs 1:1 so the built screens match the mockups. */
+import { serverInitials } from "../../../lib/serverInitials.js";
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { usePressFeedbackScope } from "../../../hooks/usePressFeedback";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../../lib/fluid/springs";
 import { resolveAvatarUrl } from "../../../lib/userProfile";
-import { SX_PATHS, SX_AVATAR_COLORS } from "./icons";
+import { SX_PATHS } from "./icons";
+import { avatarColor, avatarKey } from "../../../lib/avatarFallback";
 import { useReducedMotionPref } from "./useHubMode";
 import { useSvh } from "./useSvh";
 import { t } from "../../../i18n/runtime.js";
@@ -75,7 +77,7 @@ export const Foot = ({ children, style }) => <div className="svh-foot" style={st
 export const Large = ({ children, style }) => <div className="svh-large" style={style}>{children}</div>;
 
 export function initials(name) {
-  return String(name || "?").trim().split(/\s+/).filter(Boolean).map((p) => Array.from(p)[0] || "").join("").slice(0, 2).toLocaleUpperCase("tr") || "?";
+  return serverInitials(name);
 }
 
 export const PRESENCE_DOT = { online: "#30D158", idle: "#FFD60A", dnd: "#FF453A" };
@@ -85,7 +87,7 @@ export function Av({ user, name, s = 36, dot, img, style }) {
   const n = name || user?.displayName || user?.username || "?";
   const L = (Array.from(String(n))[0] || "?").toLocaleUpperCase("tr");
   const url = img || (user ? resolveAvatarUrl(user) : null);
-  const st = { width: s, height: s, fontSize: s * 0.42, ...(url ? { backgroundImage: `url("${url}")` } : { background: SX_AVATAR_COLORS[L] || "#555" }), ...style };
+  const st = { width: s, height: s, fontSize: s * 0.42, ...(url ? { backgroundImage: `url("${url}")` } : { background: avatarColor(avatarKey(user, n)), color: "#E8ECF8" }), ...style };
   return (
     <span className="svh-av" style={st} aria-hidden="true">
       {url ? null : L}

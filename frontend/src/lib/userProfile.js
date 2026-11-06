@@ -100,6 +100,28 @@ export function pickAvatarUrl(...sources) {
   return null;
 }
 
+/** Equipped cosmetics carried on a user object (merge + patch use the same list). */
+const EQUIPPED_KEYS = [
+    "equippedAvatarFrame",
+    "equippedBanner",
+    "equippedBackground",
+    "equippedTheme",
+    "equippedBadge",
+    "equippedTitle",
+    "equippedCountry",
+    "equippedSpecialBadge",
+    "equippedNameEffect",
+    "equippedAvatarEffect",
+    "equippedChatBubble",
+    "equippedPresenceFlare",
+    "equippedProfileAura",
+    "equippedSoundPack",
+    "equippedTypingFlare",
+    "equippedReactionBurst",
+    "equippedCallOverlay",
+    "equippedProfileColor",
+];
+
 /**
  * Merge profile shards without letting null avatar/banner/bio/displayName wipe known values.
  */
@@ -141,29 +163,13 @@ export function mergeUserProfiles(...parts) {
     out.isAdmin = true;
   }
   // Prefer the richest equipped cosmetic shard (profile/API > friends > message)
-  for (const key of [
-    "equippedAvatarFrame",
-    "equippedBanner",
-    "equippedBackground",
-    "equippedTheme",
-    "equippedBadge",
-    "equippedTitle",
-    "equippedCountry",
-    "equippedSpecialBadge",
-    "equippedNameEffect",
-    "equippedAvatarEffect",
-    "equippedChatBubble",
-    "equippedPresenceFlare",
-    "equippedProfileAura",
-    "equippedSoundPack",
-    "equippedTypingFlare",
-    "equippedReactionBurst",
-    "equippedCallOverlay",
-    "equippedProfileColor",
-  ]) {
+  for (const key of EQUIPPED_KEYS) {
     const hit = [...list].reverse().find((p) => p[key]);
     if (hit?.[key]) out[key] = hit[key];
   }
+  // Descall+ / Ultra badge: the newest shard that carries the key wins, null included
+  // (a membership that ended must not be kept alive by an older copy).
+  for (const p of list) if (p.premium_plan !== undefined) out.premium_plan = p.premium_plan;
   return normalizeUser(out);
 }
 
@@ -205,26 +211,7 @@ export function patchUserProfile(user, patch = {}) {
     next.isAdmin = admin;
   }
 
-  for (const key of [
-    "equippedAvatarFrame",
-    "equippedBanner",
-    "equippedBackground",
-    "equippedTheme",
-    "equippedBadge",
-    "equippedTitle",
-    "equippedCountry",
-    "equippedSpecialBadge",
-    "equippedNameEffect",
-    "equippedAvatarEffect",
-    "equippedChatBubble",
-    "equippedPresenceFlare",
-    "equippedProfileAura",
-    "equippedSoundPack",
-    "equippedTypingFlare",
-    "equippedReactionBurst",
-    "equippedCallOverlay",
-    "equippedProfileColor",
-  ]) {
+  for (const key of [...EQUIPPED_KEYS, "premium_plan"]) {
     if (key in patch && patch[key] !== undefined) {
       next[key] = patch[key];
     }

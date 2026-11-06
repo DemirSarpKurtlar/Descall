@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
   Search, MessageSquarePlus, Plus, Menu,
+  Gamepad2, Music, BookOpen, Briefcase, Coffee, Clapperboard, Code2,
 } from "../ui/Icon.jsx";
 import { ActivityTypeIcon } from '../../lib/shopIcons';
 import { useT } from '../../context/LocaleContext';
@@ -14,6 +15,7 @@ import ActivityHistoryRow, { localizeActivityLabel } from './ActivityHistoryRow'
 import { TYPE_PRIORITY } from '../../lib/processDatabase';
 import { isVisiblyOnline } from '../../lib/presence';
 import { Avatar } from '../ui/Avatar';
+import { ConversationListSkeleton } from '../ui/Skeleton';
 
 function typeRank(type) {
   const i = TYPE_PRIORITY.indexOf(type);
@@ -23,11 +25,11 @@ function typeRank(type) {
 const TYPE_COLOR = {
   game:     '#23a55a',
   music:    '#1db954',
-  dev:      '#5865f2',
+  dev:      '#587AF5',
   creative: '#eb459e',
   browser:  '#4f9ef8',
   media:    '#f0b232',
-  manual:   '#5865f2',
+  manual:   '#587AF5',
   app:      '#747f8d',
 };
 
@@ -53,13 +55,16 @@ function formatRelativeTime(dateStr, t) {
 
 function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectron }) {
   const t = useT();
-  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#5865f2') : '#5865f2';
+  // UI audit #6: the card keeps the standard hairline glass edge (no coloured
+  // border or glow); only the icon carries the activity colour, and the idle
+  // moon stays neutral.
+  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#587AF5') : null;
 
   return (
-    <div className="activity-current-card" style={{ borderColor: accentColor }}>
+    <div className="activity-current-card">
       <div className="activity-current-header">
-        <div className="activity-current-icon-wrap" style={{ background: `${accentColor}22` }}>
-          <span style={{ color: accentColor, display: "inline-flex" }}>
+        <div className="activity-current-icon-wrap" style={accentColor ? { background: `${accentColor}22` } : undefined}>
+          <span style={{ color: accentColor || 'var(--text-2)', display: "inline-flex" }}>
             <ActivityTypeIcon type={activity?.appType} size={28} />
           </span>
         </div>
@@ -99,9 +104,10 @@ function ManualStatusModal({ onSet, onClose }) {
   const [text, setText] = useState('');
   const [expiresIn, setExpiresIn] = useState('4h');
 
+  // Line icons, not emoji prefixes: the chip text is exactly what gets saved.
   const SUGGESTIONS = [
-    `🎮 ${t('Gaming')}`, `🎵 ${t('Listening to Music')}`, `📚 ${t('Studying')}`, `💼 ${t('Working')}`,
-    `🍕 ${t('Taking a break')}`, `🎬 ${t('Watching something')}`, `💻 ${t('Coding')}`,
+    [Gamepad2, t('Gaming')], [Music, t('Listening to Music')], [BookOpen, t('Studying')], [Briefcase, t('Working')],
+    [Coffee, t('Taking a break')], [Clapperboard, t('Watching something')], [Code2, t('Coding')],
   ];
 
   if (typeof document === 'undefined') return null;
@@ -140,9 +146,10 @@ function ManualStatusModal({ onSet, onClose }) {
         />
 
         <div className="activity-modal-suggestions">
-          {SUGGESTIONS.map(s => (
-            <button key={s} className="activity-suggestion-chip" onClick={() => setText(s.slice(3).trim())}>
-              {s}
+          {SUGGESTIONS.map(([SuggestionIcon, label]) => (
+            <button key={label} className="activity-suggestion-chip" onClick={() => setText(label)}>
+              <SuggestionIcon size={16} aria-hidden="true" />
+              {label}
             </button>
           ))}
         </div>
@@ -192,6 +199,7 @@ export default function ActivityView({
   onAddFriend,
   onFriendSelect,
   onMenuClick,
+  historyLoaded = true,
 }) {
   const t = useT();
   const searchRef = useRef(null);
@@ -463,17 +471,16 @@ export default function ActivityView({
                     <ActivityHistoryRow key={entry.id} entry={entry} />
                   ))}
                 </div>
+              ) : !historyLoaded ? (
+                <ConversationListSkeleton count={5} label={t('Loading…')} />
               ) : (
+                /* One action on this screen: "Durum ayarla" lives in the header. */
                 <div className="activity-tab-empty">
                   <div className="activity-empty-icon">
                     <Clock size={24} />
                   </div>
                   <p>{t('No activity history yet')}</p>
                   <span>{t('Start using apps and games to see them here')}</span>
-                  <button type="button" className="activity-empty-cta" onClick={() => setShowManualModal(true)}>
-                    <Edit3 size={14} />
-                    {t('Set Status')}
-                  </button>
                 </div>
               )}
             </motion.div>
@@ -490,7 +497,7 @@ export default function ActivityView({
               {friendFeed.length > 0 ? (
                 <div className="activity-friend-feed">
                   {friendFeed.map(({ friend, pres }) => {
-                    const accentColor = TYPE_COLOR[pres.appType] || '#5865f2';
+                    const accentColor = TYPE_COLOR[pres.appType] || '#587AF5';
                     return (
                       <button
                         type="button"

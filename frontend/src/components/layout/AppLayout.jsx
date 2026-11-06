@@ -8,6 +8,7 @@ import ChatPanel from "./ChatPanel";
 import UserVoicePanel from "./UserVoicePanel";
 import { shouldShowUserVoicePanel } from "../../lib/userVoicePanel";
 import { isNativeMobileApp } from "../../lib/userVoicePanelEnv";
+import { usePremium } from "../../premium/usePremium.js";
 import ErrorBoundary from "../ErrorBoundary";
 import { preloadWhenIdle } from "../../lib/preloadIdle";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
@@ -32,6 +33,8 @@ import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib
 
 const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
 const UserPanel = lazy(() => import("./UserPanel"));
+// Descall+ / Ultra gaming and productivity (loaded only for members, never on iOS / Android).
+const PremiumGamingHost = lazy(() => import("../../premium/gaming/PremiumGamingHost.jsx"));
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
@@ -122,6 +125,8 @@ export default function AppLayout({
   groupsLoaded = true,
   servers = [],
   serversLoaded = false,
+  historyLoadError = false,
+  serversLoadError = false,
   activeServer = null,
   activeChannel = null,
   channelUnread = {},
@@ -181,6 +186,7 @@ export default function AppLayout({
   const [feedbackOpen, setFeedbackOpen] = useState({ tab: "new", id: null, at: 0 });
 
   const activity = useActivity({ socket, me, friends });
+  const { plan: premiumPlan } = usePremium();
 
   // Phone Liquid Glass: at <=768px the "drawer" is the full-screen list page
   // (glass/shell.css), not a side drawer, so its dimming backdrop has nothing
@@ -404,6 +410,22 @@ export default function AppLayout({
     !notifBannerDismissed &&
     notifPermission === "default" &&
     !(isMobile && inConversation);
+  // UI audit #2: the permission card reserves its own row (the shell is pushed
+  // down by its measured height) instead of covering the rail logo and the
+  // list / conversation titles.
+  const [notifBannerEl, setNotifBannerEl] = useState(null);
+  const [notifBannerH, setNotifBannerH] = useState(0);
+  useEffect(() => {
+    if (!notifBannerEl || typeof ResizeObserver === "undefined") {
+      setNotifBannerH(0);
+      return undefined;
+    }
+    const measure = () => setNotifBannerH(Math.ceil(notifBannerEl.getBoundingClientRect().height));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(notifBannerEl);
+    return () => ro.disconnect();
+  }, [notifBannerEl]);
 
   const handleAddClick = (tab) => {
     const nextTab =
@@ -514,8 +536,9 @@ export default function AppLayout({
     <GlassShellContext.Provider value={glassShellValue}>
     <HoverCardContext.Provider value={hoverCardValue}>
     <div
-      className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}${showUserVoicePanel ? " has-uvp" : ""}`}
+      className={`app-root${isMobile ? " is-mobile" : ""}${glassShell ? " g-shell" : ""}${mobileDrawerOpen ? " mobile-drawer-open" : ""}${userPanelOpen ? " mobile-settings-open" : ""}${isMobile && inConversation ? " in-conversation" : ""}${showUserVoicePanel ? " has-uvp" : ""}${showNotifBanner && notifBannerH ? " has-notif-banner" : ""}`}
       data-view={activeView}
+      style={showNotifBanner && notifBannerH ? { "--notif-banner-h": `${notifBannerH}px` } : undefined}
     >
       <div className="g-theme-stage" aria-hidden="true">
         <span className="g-theme-wash" />
@@ -526,14 +549,15 @@ export default function AppLayout({
       <AnimatePresence>
         {showNotifBanner && (
           <motion.div
-            initial={{ y: -48, opacity: 0 }}
+            initial={{ y: isMobile ? 24 : -24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -48, opacity: 0 }}
+            exit={{ y: isMobile ? 24 : -24, opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 380 }}
             className="app-notif-banner"
+            ref={setNotifBannerEl}
           >
-            <Bell size={15} style={{ flexShrink: 0 }} />
-            <span>{t("Allow notifications for messages, calls, and mentions")}</span>
+            <span className="app-notif-banner-icon" aria-hidden="true"><Bell size={16} strokeWidth={2} /></span>
+            <span className="app-notif-banner-text">{t("Allow notifications for messages, calls, and mentions")}</span>
             <button
               type="button"
               className="app-notif-banner-btn"
@@ -606,6 +630,7 @@ export default function AppLayout({
                 me={me}
                 myStatus={myStatus}
                 history={activity.history}
+                historyLoaded={activity.historyLoaded !== false}
                 currentActivity={activity.currentActivity}
                 privacy={activity.settings?.privacy}
               />
@@ -615,6 +640,7 @@ export default function AppLayout({
           <ServersSidebar
             servers={servers}
             serversLoaded={serversLoaded}
+            loadError={serversLoadError}
             serverFolders={serverFolders}
             onServerFoldersChange={onServerFoldersChange}
             onMoveServerToFolder={onMoveServerToFolder}
@@ -740,6 +766,8 @@ export default function AppLayout({
             <div className="app-chat-keep">
               <ErrorBoundary scope="pane">
               <ChatPanel
+                activitySplitView={isMobile && !drawerIsPage}
+                historyLoadError={historyLoadError}
                 dms={dms}
                 onDmPrefAction={onDmPrefAction}
                 onGroupAvatarChanged={onGroupAvatarChanged}
@@ -867,6 +895,31 @@ export default function AppLayout({
           })}
         </nav>
       )}
+      {premiumPlan && !isNativeMobileApp() ? (
+        <Suspense fallback={null}>
+          <PremiumGamingHost
+            me={me}
+            socket={socket}
+            friends={friends}
+            dms={dms}
+            groups={groups}
+            servers={servers}
+            activeServer={activeServer}
+            onlineUsers={onlineUsers}
+            call={call}
+            groupCall={groupCall}
+            serverVoice={serverVoice}
+            myStatus={myStatus}
+            onStatusChange={onStatusChange}
+            onOpenDm={handleOpenChatFromCalls}
+            onGroupSelect={onGroupSelect}
+            activity={activity}
+            dmUnread={dmUnread}
+            groupUnread={groupUnread}
+            friendRequests={friendRequests}
+          />
+        </Suspense>
+      ) : null}
       <CookieConsentBanner variant="app" onOpenPrivacy={() => setConsentLegal("privacy")} />
       <LegalContentModal
         open={Boolean(consentLegal)}

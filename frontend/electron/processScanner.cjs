@@ -56,8 +56,10 @@ function getRawProcessList() {
   });
 }
 
-function registerProcessScannerIPC() {
-  ipcMain.handle('scan-processes', async () => {
+/** assertSender(event, channel) throws for an untrusted sender (main.cjs passes assertTrustedSender). */
+function registerProcessScannerIPC({ assertSender } = {}) {
+  ipcMain.handle('scan-processes', async (event) => {
+    if (typeof assertSender === 'function') assertSender(event, 'scan-processes');
     try {
       return await getRawProcessList();
     } catch {

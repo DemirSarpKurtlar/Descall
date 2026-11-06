@@ -24,8 +24,8 @@
   width: 100%;
   max-width: 400px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ab-accent, #6ea0ff) 16%, #171c2b) 0%, #0d1019 42%);
-  border: 1px solid color-mix(in srgb, var(--ab-accent, #6ea0ff) 45%, rgba(255, 255, 255, 0.08));
+    linear-gradient(180deg, color-mix(in srgb, var(--ab-accent, #587AF5) 16%, #171c2b) 0%, #0d1019 42%);
+  border: 1px solid color-mix(in srgb, var(--ab-accent, #587AF5) 45%, rgba(255, 255, 255, 0.08));
   border-radius: var(--r-xl);
   padding: 28px 24px 22px;
   text-align: center;
@@ -60,9 +60,9 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 30px;
-  background: color-mix(in srgb, var(--ab-accent, #6ea0ff) 28%, #1a2030);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ab-accent, #6ea0ff) 14%, transparent);
+  color: #fff;
+  background: color-mix(in srgb, var(--ab-accent, #587AF5) 28%, #1a2030);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ab-accent, #587AF5) 14%, transparent);
 }
 
 .admin-broadcast-kicker {
@@ -80,8 +80,8 @@
 .admin-broadcast-sev {
   padding: 2px 8px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--ab-accent, #6ea0ff) 22%, transparent);
-  color: var(--ab-accent, #6ea0ff);
+  background: color-mix(in srgb, var(--ab-accent, #587AF5) 22%, transparent);
+  color: var(--ab-accent, #587AF5);
 }
 
 .admin-broadcast-card h3 {
@@ -223,13 +223,14 @@
   width: 38px;
   height: 38px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border-radius: var(--r-md);
-  font-size: 18px;
 }
 .admin-live-popup-pills button.is-on,
 .admin-live-popup-emojis button.is-on {
-  outline: 2px solid var(--pill-accent, #6ea0ff);
-  background: color-mix(in srgb, var(--pill-accent, #6ea0ff) 18%, transparent);
+  outline: 2px solid var(--pill-accent, #587AF5);
+  background: color-mix(in srgb, var(--pill-accent, #587AF5) 18%, transparent);
 }
 .admin-live-popup-cta .admin-input {
   flex: 1 1 160px;

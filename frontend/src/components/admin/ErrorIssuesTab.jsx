@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
-import { AlertTriangle, Bug, Check, Copy, RefreshCw, Search, X, Users, EyeOff, RotateCcw } from "../ui/Icon.jsx";
+import { AlertTriangle, Check, Copy, RefreshCw, Search, X, Users, EyeOff, RotateCcw } from "../ui/Icon.jsx";
 import OverlayPortal from "../ui/OverlayPortal.jsx";
 import "../../styles/admin-errors.css";
 
@@ -210,7 +210,7 @@ export default function ErrorIssuesTab() {
   return (
     <section className="aer">
       <div className="aer-head">
-        <span className="aer-head-ic" aria-hidden="true"><Bug size={20} /></span>
+        {/* UI audit #118: same section header as System / Moderation (title, one line, action). */}
         <div>
           <h1>{t("admin.errors")}</h1>
           <p>{t("admin.errLead")}</p>
@@ -259,7 +259,6 @@ export default function ErrorIssuesTab() {
       {!data && !err ? <p className="aer-muted">{t("Loading...")}</p> : null}
       {data && !data.groups.length ? (
         <div className="aer-empty">
-          <Check size={22} />
           <b>{t("admin.errEmpty")}</b>
           <span>{t("admin.errEmptyBody")}</span>
         </div>

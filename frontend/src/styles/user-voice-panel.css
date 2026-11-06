@@ -370,7 +370,7 @@ html[data-theme="light"] .uvp-voice-inner {
   background: var(--success, #3ba55d);
   z-index: 2;
 }
-.uvp-status-dot.status-idle { background: var(--warning, #f5b10a); }
+.uvp-status-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .uvp-status-dot.status-dnd { background: var(--danger, #ed4245); }
 .uvp-status-dot.status-invisible,
 .uvp-status-dot.status-offline { background: var(--text-muted, #80848e); }

@@ -136,25 +136,25 @@ function outcomeCopy(result, profit, bet, t) {
   return (
     {
       blackjack: {
-        title: "BLACKJACK!",
+        title: t("Blackjack!"),
         headline: t("You win"),
         sub: `+${num(profit || 0)} ${t("counts.credits", { n: profit || 0 })}`,
         cls: "bj",
       },
       win: {
-        title: t("YOU WIN"),
+        title: t("You won"),
         headline: t("You win"),
         sub: `+${num(profit || 0)} ${t("counts.credits", { n: profit || 0 })}`,
         cls: "win",
       },
       push: {
-        title: t("PUSH"),
+        title: t("It's a tie"),
         headline: t("Tie"),
         sub: t("Stake returned"),
         cls: "push",
       },
       loss: {
-        title: t("YOU LOSE"),
+        title: t("You lost"),
         headline: t("Dealer wins"),
         sub: `−${num(bet || 0)} ${t("counts.credits", { n: bet || 0 })}`,
         cls: "loss",
