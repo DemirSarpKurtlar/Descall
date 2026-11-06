@@ -23,6 +23,8 @@ import { SEO_PILLARS } from "../seoHubLinks";
 import { Funnel } from "../analytics";
 import { signalMarketingEngage } from "../analyticsGate";
 import { useMarketingHref } from "../useMarketingHref";
+import { useIsAppleMobile } from "../useIsAppleMobile";
+import { APP_STORE_URL } from "../appStoreLink";
 
 const GITHUB_REPO = "DemirSarpKurtlar/Descall";
 const FALLBACK_WINDOWS_URL = DESKTOP_RELEASE_FALLBACK.windowsDownloadUrl;
@@ -58,6 +60,8 @@ const crumbs = [
 export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
   const t = useT();
   const href = useMarketingHref();
+  // UI audit #27: an iPhone / iPad visitor's first action is the App Store.
+  const appleMobile = useIsAppleMobile();
   const [selectedPlatform, setSelectedPlatform] = useState("windows");
   const [loading, setLoading] = useState(true);
   const [releaseLabel, setReleaseLabel] = useState("");
@@ -132,14 +136,22 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             {t("Windows installer and the Android APK. The browser app is the same account, with no install.")}
           </p>
           <div className="mkt-cta-row">
-            <button type="button" className="mkt-btn mkt-btn-soft" onClick={openAuth}>
+            {/* iPhone visitors get the App Store as the one primary action (#27); elsewhere the
+                platform panel owns the single download button (#108). */}
+            {appleMobile ? (
+              <a className="mkt-btn mkt-btn-primary" href={APP_STORE_URL} rel="noopener noreferrer">
+                <IconDownload size={18} />
+                {t("Download on the App Store")}
+              </a>
+            ) : null}
+            <button type="button" className="mkt-btn mkt-btn-soft mkt-download-hero-start" onClick={openAuth}>
               {t("Start free")}
             </button>
             <Link to={href("/")} className="mkt-btn mkt-btn-ghost">
               {t("Open the web app")}
             </Link>
           </div>
-          <AppStoreBadge label={t("Download on the App Store")} />
+          {appleMobile ? null : <AppStoreBadge label={t("Download on the App Store")} />}
         </div>
 
         <div className="mkt-download-panel">
@@ -187,7 +199,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             <span>{versionLine}</span>
           </p>
           <a
-            className="mkt-btn mkt-btn-primary mkt-download-panel-cta"
+            className={`mkt-btn mkt-btn-primary mkt-download-panel-cta${appleMobile ? " is-apple" : ""}`}
             href={downloadUrl}
             target="_blank"
             rel="noopener noreferrer"

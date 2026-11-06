@@ -210,6 +210,7 @@ export default function ServerMembersPanel({
           display_name: m.nickname || m.displayName,
           avatarUrl: m.avatarUrl,
           avatar_url: m.avatarUrl,
+          premium_plan: m.premium_plan,
         };
         const status = getPresenceStatus(onlineUsers, m.userId);
         return {

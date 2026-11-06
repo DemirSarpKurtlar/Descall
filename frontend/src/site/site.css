@@ -1896,7 +1896,7 @@ a.mkt-feature-link {
 .mkt-status-card.is-ok { border-color: rgba(61, 214, 140, 0.45); background: rgba(61, 214, 140, 0.08); }
 .mkt-status-card.is-warn { border-color: rgba(255, 176, 32, 0.45); background: rgba(255, 176, 32, 0.08); }
 .mkt-status-card.is-checking { opacity: 0.85; }
-.mkt-status-list { padding-left: 1.2rem; color: var(--mkt-muted, #c5ccd6); }
+.mkt-status-list { margin: 0; padding-left: 0; color: var(--mkt-muted, #c5ccd6); }
 .mkt-status-list li { margin: 0.4rem 0; }
 
 .mkt-download-panel {

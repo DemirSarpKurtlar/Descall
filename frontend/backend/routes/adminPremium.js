@@ -128,6 +128,7 @@ router.post("/users/:id/apply", async (req, res) => {
         unlimited: result.subscription?.unlimited ?? null,
         request_id: result.event?.request_id || null,
         event_id: result.event?.id || null,
+        reason: result.event?.reason || null,
       });
       emitPremiumUpdated(req.app.get("io"), userId, { kind: result.event?.kind });
     }
@@ -150,6 +151,7 @@ router.post("/bulk", async (req, res) => {
         ok: out.batch.ok,
         failed: out.batch.failed,
         request_id: req.body?.request_id || null,
+        reason: typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 500) : null,
       });
       const io = req.app.get("io");
       for (const r of out.results) if (r.ok) emitPremiumUpdated(io, r.user_id, { kind: String(req.body?.op || "") });

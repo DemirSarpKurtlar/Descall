@@ -26,6 +26,7 @@ const gate = require('./gate.cjs');
 const { createStore } = require('./store.cjs');
 const { TIERS } = require('./featureTiers.cjs');
 const { checkTrustedSender } = require('../appTrust.cjs');
+const { readEncryptedFile, looksLikeJwt } = require('../tokenCrypto.cjs');
 
 const FEATURE_DIR = path.join(__dirname, 'features');
 const DEFAULT_API = 'https://des-call.onrender.com';
@@ -122,13 +123,12 @@ const windows = {
 
 // ---- token + server check --------------------------------------------------------------
 
-function readToken() {
+async function readToken() {
   try {
     const file = opts?.tokenFile?.();
     if (!file || !fs.existsSync(file)) return '';
-    const buf = fs.readFileSync(file);
-    const { safeStorage } = electron;
-    return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(buf) : buf.toString('utf8');
+    // Electron 45: async safeStorage (tokenCrypto.cjs).
+    return await readEncryptedFile(electron.safeStorage, fs, file, { legacyPlain: looksLikeJwt });
   } catch (err) {
     log.warn('[premium] token read failed:', err?.message || err);
     return '';
@@ -141,7 +141,7 @@ function apiBase() {
 }
 
 async function fetchMe() {
-  const token = readToken();
+  const token = await readToken();
   if (!token) {
     const err = new Error('no token');
     err.code = 'no-token';

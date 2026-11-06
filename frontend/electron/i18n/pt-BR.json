@@ -77,7 +77,14 @@
       "idle": "Ausente",
       "dnd": "Não perturbe",
       "invisible": "Invisível",
-      "inCall": "Em chamada: {title}"
+      "inCall": "Em chamada: {title}",
+      "focus": "Modo foco",
+      "focusOn": "Modo foco: faltam {minutes} min",
+      "focus30": "30 minutos",
+      "focus60": "1 hora",
+      "focus120": "2 horas",
+      "focusOff": "Encerrar modo foco",
+      "audioProfile": "Perfil de áudio"
     },
     "taskbar": {
       "unread": "{n} não lidas"
@@ -86,6 +93,16 @@
       "mini": "Descall modo mini",
       "call": "Descall chamada",
       "sidebar": "Descall barra lateral"
+    },
+    "launcher": {
+      "title": "Inicializador rápido",
+      "placeholder": "Busque amigos, conversas, servidores ou ações",
+      "empty": "Nada encontrado",
+      "hint": "Enter para abrir, setas para navegar, Esc para fechar",
+      "loading": "Buscando"
+    },
+    "quickReply": {
+      "placeholder": "Responder"
     }
   }
 }

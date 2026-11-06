@@ -29,6 +29,8 @@ import speexWasmPath from "@sapphi-red/web-noise-suppressor/speex.wasm?url";
 import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?url";
 import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
 import { primeVoiceActivity } from "./voiceActivity";
+import { onAudioSettings, premiumMicChain } from "../premium/audio/premiumAudioRuntime.js";
+import { registerSinkContext } from "./callAudioDevices.js";
 import {
   agcCompressorSettings,
   applyStoredMute,
@@ -176,7 +178,7 @@ function buildDspFallback(ctx, { agc }) {
  */
 export async function wrapStreamWithNoiseSuppression(rawStream) {
   if (!rawStream?.getAudioTracks?.().length) return rawStream;
-  if (!isNoiseSuppressionEnabled()) return rawStream;
+  if (!needsProcessing()) return rawStream;
   if (typeof AudioWorkletNode === "undefined") return rawStream;
 
   wrapsInFlight += 1;
@@ -184,6 +186,28 @@ export async function wrapStreamWithNoiseSuppression(rawStream) {
     return await wrapInto(rawStream);
   } finally {
     wrapsInFlight -= 1;
+  }
+}
+
+/**
+ * Descall+ (noise_gate, mic_presets gain, mic_monitor) can need the Web Audio
+ * chain even with noise suppression off. Free users: same as before.
+ */
+function needsProcessing() {
+  if (isNativeIosApp()) return false;
+  if (isNoiseSuppressionEnabled()) return true;
+  try {
+    return premiumMicChain().forceChain;
+  } catch {
+    return false;
+  }
+}
+
+function currentPremiumChain() {
+  try {
+    return premiumMicChain();
+  } catch {
+    return { gain: 1, gate: null, monitor: { on: false, volume: 0 }, forceChain: false };
   }
 }
 
@@ -197,16 +221,25 @@ async function wrapInto(rawStream) {
   });
 
   const prefs = readVoiceProfile();
+  const premium = currentPremiumChain();
   const source = ctx.createMediaStreamSource(rawStream);
   const destination = ctx.createMediaStreamDestination();
+  // Descall+ mic gain (mic_presets): a GainNode right after the source, only when used.
+  let inputGain = null;
+  if (premium.gain !== 1 || premium.forceChain) {
+    inputGain = ctx.createGain();
+    inputGain.gain.value = premium.gain;
+  }
   const { highpass, compressor } = buildDspFallback(ctx, { agc: prefs.autoGainControl !== false });
 
   /** @type {AudioNode | null} */
   let suppressor = null;
   let engine = "dsp";
 
-  // Prefer GTCRN (newer neural model) → RNNoise → Speex
-  if (assets.gtcrnWasm) {
+  // Prefer GTCRN (newer neural model) → RNNoise → Speex. Noise suppression
+  // switched off (chain kept for Descall+ gain / gate / monitor): no suppressor.
+  const suppress = prefs.noiseMode !== "off";
+  if (suppress && assets.gtcrnWasm) {
     try {
       suppressor = new GtcrnWorkletNode(ctx, { wasmBinary: assets.gtcrnWasm, maxChannels: 1 });
       engine = "gtcrn";
@@ -214,7 +247,7 @@ async function wrapInto(rawStream) {
       console.warn("[NoiseSuppression] GTCRN init failed:", err?.message || err);
     }
   }
-  if (!suppressor && assets.rnnoiseWasm) {
+  if (suppress && !suppressor && assets.rnnoiseWasm) {
     try {
       suppressor = new RnnoiseWorkletNode(ctx, { wasmBinary: assets.rnnoiseWasm, maxChannels: 1 });
       engine = "rnnoise";
@@ -222,7 +255,7 @@ async function wrapInto(rawStream) {
       console.warn("[NoiseSuppression] RNNoise init failed:", err?.message || err);
     }
   }
-  if (!suppressor && assets.speexWasm) {
+  if (suppress && !suppressor && assets.speexWasm) {
     try {
       suppressor = new SpeexWorkletNode(ctx, { wasmBinary: assets.speexWasm, maxChannels: 1 });
       engine = "speex";
@@ -234,24 +267,32 @@ async function wrapInto(rawStream) {
   let gate = null;
   try {
     gate = new NoiseGateWorkletNode(ctx, {
-      ...gateSettings(prefs.noiseMode),
+      // Descall+ noise_gate: the user's threshold instead of the built-in one.
+      ...(premium.gate || gateSettings(prefs.noiseMode)),
       maxChannels: 1,
     });
   } catch {
     gate = null;
   }
 
-  // mic → highpass → neural/speex → mild gate → compressor → destination
-  source.connect(highpass);
+  // mic → (Descall+ gain) → highpass → neural/speex → mild gate → compressor → destination
+  if (inputGain) {
+    source.connect(inputGain);
+    inputGain.connect(highpass);
+  } else {
+    source.connect(highpass);
+  }
   let node = highpass;
   if (suppressor) {
     node.connect(suppressor);
     node = suppressor;
   }
+  const beforeGate = node;
   if (gate) {
     node.connect(gate);
     node = gate;
   }
+  const afterGate = compressor || destination;
   if (compressor) {
     node.connect(compressor);
     node = compressor;
@@ -280,9 +321,18 @@ async function wrapInto(rawStream) {
   activeSession = {
     rawStream,
     processedStream: out,
-    nodes: [source, highpass, suppressor, gate, compressor, destination].filter(Boolean),
+    nodes: [source, inputGain, highpass, suppressor, gate, compressor, destination].filter(Boolean),
     engine,
+    ctx,
+    inputGain,
+    gate,
+    beforeGate,
+    afterGate,
+    tail: node,
+    monitor: null,
+    gateKey: JSON.stringify(premium.gate || null),
   };
+  applyMonitor(premium.monitor);
 
   try {
     localStorage.setItem(ENGINE_KEY, engine);
@@ -332,7 +382,7 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   }
 
   let stream = raw;
-  if (isNoiseSuppressionEnabled()) {
+  if (needsProcessing()) {
     try {
       stream = await wrapStreamWithNoiseSuppression(raw);
     } catch (err) {
@@ -350,6 +400,7 @@ export function getNoiseSuppressionRawTrack() {
 
 export function disposeNoiseSuppressionSession({ stopRaw = true, keepContext = false } = {}) {
   if (!activeSession) return;
+  applyMonitor({ on: false });
   const { rawStream, nodes } = activeSession;
   for (const node of nodes) {
     try {
@@ -422,4 +473,107 @@ export function suspendIdleContext() {
   } catch {
     /* ignore */
   }
+}
+
+// ── Descall+ live changes (noise_gate, mic_presets gain, mic_monitor) ──────
+
+/**
+ * Hear yourself (mic_monitor): the processed signal goes to the context's own
+ * output as well, through a GainNode. Lowest latency path (no extra element,
+ * no network). Follows the call output device via the sink registry.
+ */
+function applyMonitor(monitor) {
+  const session = activeSession;
+  if (!session?.ctx || !session.tail) return;
+  const want = Boolean(monitor?.on);
+  if (!want) {
+    if (session.monitor) {
+      try { session.tail.disconnect(session.monitor.node); } catch { /* ignore */ }
+      try { session.monitor.node.disconnect(); } catch { /* ignore */ }
+      try { session.monitor.unregister?.(); } catch { /* ignore */ }
+      session.monitor = null;
+    }
+    return;
+  }
+  if (!session.monitor) {
+    const node = session.ctx.createGain();
+    node.gain.value = 0;
+    try {
+      session.tail.connect(node);
+      node.connect(session.ctx.destination);
+    } catch {
+      return;
+    }
+    let unregister = null;
+    try { unregister = registerSinkContext(session.ctx); } catch { /* ignore */ }
+    session.monitor = { node, unregister };
+  }
+  const vol = Math.max(0, Math.min(1, Number(monitor.volume) || 0));
+  try {
+    session.monitor.node.gain.setTargetAtTime(vol, session.ctx.currentTime, 0.02);
+  } catch {
+    session.monitor.node.gain.value = vol;
+  }
+}
+
+/** Swap the gate node in place when the Descall+ threshold changes mid-call. */
+function retuneGate(params) {
+  const session = activeSession;
+  if (!session?.ctx || !session.gate || !session.beforeGate || !session.afterGate) return;
+  const key = JSON.stringify(params || null);
+  if (key === session.gateKey) return;
+  let next;
+  try {
+    next = new NoiseGateWorkletNode(session.ctx, { ...(params || gateSettings(readVoiceProfile().noiseMode)), maxChannels: 1 });
+  } catch {
+    return;
+  }
+  const old = session.gate;
+  try {
+    session.beforeGate.connect(next);
+    next.connect(session.afterGate);
+    session.beforeGate.disconnect(old);
+    old.disconnect();
+    old.destroy?.();
+  } catch {
+    try { next.disconnect(); } catch { /* ignore */ }
+    return;
+  }
+  session.gate = next;
+  session.gateKey = key;
+  session.nodes = session.nodes.map((n) => (n === old ? next : n));
+  if (session.tail === old) {
+    session.tail = next;
+    if (session.monitor) {
+      try { next.connect(session.monitor.node); } catch { /* ignore */ }
+    }
+  }
+}
+
+export function applyPremiumMicSettings() {
+  const session = activeSession;
+  if (!session) return;
+  const premium = currentPremiumChain();
+  if (session.inputGain) {
+    try {
+      session.inputGain.gain.setTargetAtTime(premium.gain, session.ctx.currentTime, 0.03);
+    } catch {
+      session.inputGain.gain.value = premium.gain;
+    }
+  }
+  retuneGate(premium.gate);
+  applyMonitor(premium.monitor);
+}
+
+/** The processed mic stream of the live session (level meters), or null. */
+export function getActiveProcessedStream() {
+  return activeSession?.processedStream || null;
+}
+
+try {
+  onAudioSettings((key) => {
+    if (key === "mic_presets" || key === "noise_gate" || key === "mic_monitor" || key === "*") applyPremiumMicSettings();
+  });
+} catch {
+  /* non-browser test env */
 }

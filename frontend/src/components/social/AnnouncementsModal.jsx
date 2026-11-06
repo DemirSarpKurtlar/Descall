@@ -9,6 +9,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatDate } from "../../i18n/format";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import useGlassUi from "../../hooks/useGlassUi";
+import EmptyState from "../ui/EmptyState";
 
 const emptyStyle = {
   padding: "16px",
@@ -87,7 +88,10 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="add-modal-header">
-                    <h3>{`📢 ${t("Announcements")}`}</h3>
+                    <h3 className="ann-modal-title">
+                      <Megaphone size={18} strokeWidth={2} aria-hidden="true" />
+                      {t("Announcements")}
+                    </h3>
                     <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("Close")}>
                       <X size={18} />
                     </button>
@@ -103,12 +107,13 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                         {error}
                       </div>
                     ) : announcements.length === 0 ? (
-                      <div
-                        className={glass ? "announcements-empty" : undefined}
-                        style={glass ? undefined : emptyStyle}
-                      >
-                        {t("No announcements")}
-                      </div>
+                      <EmptyState
+                        className="is-compact ann-empty"
+                        illustration="none"
+                        icon={Megaphone}
+                        title={t("uah.ann.emptyTitle")}
+                        body={t("uah.ann.emptyBody")}
+                      />
                     ) : (
                       announcements.map((a) => {
                         const AnnIcon = glass ? announcementIcon(a.emoji) : null;
@@ -116,7 +121,7 @@ export default function AnnouncementsButton({ className = "icon-btn", iconSize =
                         <div key={a.id} className="announcement-item">
                           {glass ? (
                             <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                              {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : (a.emoji || "📢")}
+                              {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : <Megaphone size={18} strokeWidth={2} />}
                             </span>
                           ) : null}
                           <div className="announcement-title">{a.title}</div>

@@ -1,3 +1,4 @@
+import { UAH_PT_BR } from "./uah.pt-BR.js";
 /**
  * pt-BR catalog (status "draft" in ../locales.json, hidden from users until the
  * coverage check reports 100 %). Same shape as en.js / tr.js:
@@ -5,6 +6,347 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  // premiumAudio:start (Descall+ hotkeys, audio, notifications)
+  "premiumAudio": {
+    "common": {
+      "desktopOnly": "Este recurso funciona no app Descall para computador.",
+      "save": "Salvar",
+      "cancel": "Cancelar",
+      "apply": "Aplicar",
+      "active": "Ativo",
+      "delete": "Excluir",
+      "deleteNamed": "Excluir {name}",
+      "remove": "Remover",
+      "moveUp": "Subir",
+      "moveDown": "Descer",
+      "unnamedDevice": "Dispositivo sem nome",
+      "micError": "Não foi possível abrir o microfone. Confira a permissão e o dispositivo escolhido.",
+      "ms": "{n} ms",
+      "db": "{n} dB",
+      "seconds": "{n} s",
+      "minutes": "{n} min",
+      "hours": "{n} h"
+    },
+    "hotkeys": {
+      "title": "Atalhos personalizados",
+      "hint": "Clique em um atalho e pressione as novas teclas. Esc cancela, Backspace apaga.",
+      "enable": "Usar meus próprios atalhos",
+      "enableDesc": "Desligado: valem os atalhos padrão.",
+      "holdDesc": "Segure para falar. Um botão lateral do mouse também funciona.",
+      "pressKey": "Pressione as teclas...",
+      "pressKeyOrMouse": "Pressione teclas ou um botão do mouse...",
+      "unbound": "Não definido",
+      "mouse3": "Botão do meio",
+      "mouse4": "Mouse voltar",
+      "mouse5": "Mouse avançar",
+      "saveAnyway": "Salvar mesmo assim",
+      "reset": "Restaurar padrões",
+      "saved": "Atalhos salvos.",
+      "actions": {
+        "toggle_mute": "Silenciar / ativar microfone",
+        "toggle_deafen": "Ensurdecer / ouvir",
+        "push_to_talk": "Apertar para falar",
+        "quick_launcher": "Inicializador rápido",
+        "volume_up": "Aumentar o fixado",
+        "volume_down": "Diminuir o fixado"
+      },
+      "reason": {
+        "invalid": "{action}: {accel} não é um atalho válido.",
+        "duplicate": "{action}: {accel} já é usado para {other}.",
+        "reserved": "{action}: {accel} é reservado pelo Descall.",
+        "needs_modifier": "{action}: adicione Ctrl, Alt ou Shift a {accel}, senão a digitação em outros apps fica bloqueada.",
+        "mouse_not_allowed": "{action}: botões do mouse só servem para apertar para falar.",
+        "registered": "{action}: {accel} já está em uso.",
+        "taken": "{action}: outro app já usa {accel}."
+      }
+    },
+    "globalMute": {
+      "title": "Silêncio global",
+      "hint": "Funciona em qualquer app, inclusive jogos. Os outros apps não recebem essas teclas.",
+      "enable": "Atalho de silêncio global",
+      "enableDesc": "Silencie ou ative o microfone de qualquer app durante uma chamada.",
+      "deafen": "Atalho para ensurdecer",
+      "remap": "Troque as teclas em Atalhos personalizados."
+    },
+    "ptt": {
+      "title": "Apertar para falar global",
+      "hint": "Seu microfone fica mudo até você segurar a tecla, em qualquer app.",
+      "enable": "Apertar para falar global",
+      "enableDesc": "Ao ligar, as chamadas também passam para apertar para falar.",
+      "bindingDesc": "Troque em Atalhos personalizados.",
+      "releaseDelay": "Atraso ao soltar",
+      "releaseDelayDesc": "O microfone fica aberto um instante depois de soltar, para não cortar a última palavra.",
+      "forceToggle": "Apertar para alternar",
+      "forceToggleDesc": "Aperte uma vez para falar e de novo para parar, em vez de segurar.",
+      "toggleTimeout": "Silenciar sozinho após",
+      "toggleTimeoutDesc": "No modo alternar, o microfone silencia depois desse tempo.",
+      "modeHold": "Segurar para falar está ativo. A tecla também chega ao jogo.",
+      "modeToggle": "Modo alternar: aperte uma vez para falar e de novo para parar.",
+      "modeToggleNative": "O leitor de teclas não pôde iniciar neste computador, então apertar para falar funciona como alternar com silêncio automático.",
+      "mouseNeedsNative": "Botões do mouse precisam do leitor de teclas; escolha uma tecla do teclado.",
+      "elevated": "Jogos abertos como administrador só passam teclas para apps que também rodam como administrador. Para apertar para falar nesses jogos, rode o Descall como administrador também."
+    },
+    "mediaKeys": {
+      "title": "Teclas de mídia",
+      "hint": "Só durante chamadas. Fora delas, as teclas continuam com o seu player de música.",
+      "enable": "Controlar chamadas com teclas de mídia",
+      "enableDesc": "Durante uma chamada, as teclas de mídia param de funcionar em outros players.",
+      "none": "Nada",
+      "taken": "Outro app está usando algumas teclas de mídia agora.",
+      "keys": {
+        "playPause": "Reproduzir / Pausar",
+        "next": "Próxima faixa",
+        "previous": "Faixa anterior",
+        "stop": "Parar"
+      }
+    },
+    "launcher": {
+      "title": "Inicializador rápido",
+      "hint": "Busque amigos, conversas, servidores, canais e ações de qualquer lugar.",
+      "enable": "Atalho do inicializador rápido",
+      "enableDesc": "Abre uma pequena janela de busca sobre qualquer app.",
+      "tryIt": "Experimente",
+      "openNow": "Abrir agora",
+      "friend": "Amigo",
+      "dm": "Mensagem direta",
+      "group": "Grupo",
+      "server": "Servidor",
+      "mute": "Silenciar",
+      "unmute": "Ativar microfone",
+      "deafen": "Ensurdecer",
+      "undeafen": "Parar de ensurdecer",
+      "voice": "Voz",
+      "status": "Status",
+      "statusOnline": "Status: Online",
+      "statusIdle": "Status: Ausente",
+      "statusDnd": "Status: Não perturbe",
+      "statusInvisible": "Status: Invisível",
+      "openSettings": "Abrir configurações",
+      "app": "Descall",
+      "focus": "Modo foco",
+      "focus60": "Focar por 1 hora",
+      "focusOff": "Encerrar modo foco"
+    },
+    "userVolume": {
+      "title": "Atalhos de volume por pessoa",
+      "hint": "Aumente ou diminua a pessoa fixada no chat de voz sem abrir o Descall.",
+      "enable": "Atalhos de volume",
+      "step": "Passo",
+      "pinNote": "Fixe alguém no canal de voz (clique no quadro da pessoa) para escolher quem as teclas alteram."
+    },
+    "presets": {
+      "title": "Microfone",
+      "hint": "Ganho e processamento valem para chamadas e canais de voz.",
+      "gain": "Ganho de entrada",
+      "gainDesc": "Mais alto ou mais baixo do que o microfone entrega.",
+      "current": "Configuração atual",
+      "list": "Predefinições",
+      "namePlaceholder": "Nome da predefinição",
+      "saveCurrent": "Salvar a atual como predefinição",
+      "voice": "Voz",
+      "noisy": "Ambiente barulhento",
+      "studio": "Estúdio (sem processamento)",
+      "stream": "Transmissão",
+      "echoOn": "Cancelamento de eco",
+      "echoOff": "Sem cancelamento de eco",
+      "agcOn": "Ganho automático",
+      "agcOff": "Ganho fixo",
+      "noise": {
+        "off": "Sem supressão de ruído",
+        "on": "Supressão de ruído",
+        "strong": "Supressão de ruído forte"
+      },
+      "error": {
+        "name": "Digite um nome.",
+        "duplicate": "Esse nome já existe.",
+        "limit": "Você chegou ao limite. Exclua uma primeiro."
+      }
+    },
+    "gate": {
+      "title": "Noise gate",
+      "hint": "Sons abaixo do limite não são enviados: teclado, ventoinha, respiração.",
+      "enable": "Noise gate",
+      "enableDesc": "Usa o seu limite em vez do embutido.",
+      "threshold": "Limite",
+      "thresholdDesc": "Fale normalmente e ajuste logo abaixo da sua voz.",
+      "meter": "Nível do microfone",
+      "startTest": "Testar microfone",
+      "stopTest": "Parar teste",
+      "open": "Aberto",
+      "closed": "Fechado",
+      "hysteresis": "Fechar abaixo do limite em",
+      "hysteresisDesc": "Evita cortar finais suaves das palavras.",
+      "hold": "Retenção",
+      "holdDesc": "Quanto tempo o gate fica aberto depois que você para de falar."
+    },
+    "monitor": {
+      "title": "Ouvir a si mesmo",
+      "hint": "Ouça seu microfone, depois da supressão de ruído, durante as chamadas.",
+      "enable": "Retorno do microfone",
+      "enableDesc": "Baixa latência, direto da cadeia de áudio.",
+      "volume": "Volume do retorno",
+      "headphones": "Use fones, senão os outros podem ouvir eco."
+    },
+    "vam": {
+      "title": "Atividade de voz",
+      "hint": "Uma barra de nível ao vivo embaixo de cada participante nos canais de voz.",
+      "enable": "Medidores de nível",
+      "enableDesc": "Mostra o quão alto cada pessoa está falando agora.",
+      "meter": "Nível de voz"
+    },
+    "autoSwitch": {
+      "title": "Troca automática de dispositivo",
+      "hint": "Quando um dispositivo conecta, o Descall troca para o mais alto da sua lista.",
+      "enable": "Trocar automaticamente",
+      "enableDesc": "Também durante uma chamada.",
+      "headsetFirst": "Preferir headsets novos",
+      "headsetFirstDesc": "Se nada da lista combinar, usa o headset assim que ele conectar.",
+      "inputs": "Microfones em ordem",
+      "outputs": "Alto-falantes e fones em ordem",
+      "empty": "Ainda não há dispositivos na lista.",
+      "add": "Adicionar dispositivo",
+      "connected": "Conectado",
+      "notConnected": "Desconectado"
+    },
+    "routing": {
+      "title": "Saída de áudio",
+      "hint": "Escolha onde o Descall toca as chamadas e onde toca os sons de notificação.",
+      "enable": "Saída separada para notificações",
+      "enableDesc": "Desligado: os sons de notificação seguem a saída do sistema.",
+      "call": "Chamadas",
+      "callDesc": "Canais de voz e chamadas.",
+      "notifications": "Sons de notificação",
+      "notificationsDesc": "Mensagens, menções e toques.",
+      "systemDefault": "Padrão do sistema",
+      "test": "Testar",
+      "unsupported": "Este navegador não consegue escolher um dispositivo de saída."
+    },
+    "profiles": {
+      "title": "Perfis de dispositivo",
+      "hint": "Um perfil troca o microfone, a saída e uma predefinição de uma vez.",
+      "empty": "Ainda não há perfis.",
+      "new": "Novo perfil",
+      "namePlaceholder": "Nome do perfil, por exemplo Mesa ou Jogos",
+      "keep": "Manter o atual",
+      "noPreset": "Sem predefinição",
+      "create": "Criar",
+      "applied": "{name} está ativo.",
+      "missing": "Aplicado. Não encontrado: {items}.",
+      "trayNote": "No app para computador, você também pode trocar de perfil pelo ícone da bandeja.",
+      "part": {
+        "input": "Microfone",
+        "output": "Saída",
+        "preset": "Predefinição"
+      }
+    },
+    "stream": {
+      "sendTitle": "Áudio compartilhado (você)",
+      "sendHint": "Volume do áudio da sua tela compartilhada, para todos que assistem.",
+      "sendVolume": "Volume do áudio compartilhado",
+      "sendMute": "Silenciar o áudio compartilhado",
+      "sendMuteDesc": "A imagem continua.",
+      "viewTitle": "Áudio compartilhado (outros)",
+      "viewHint": "O volume das telas compartilhadas dos outros para você.",
+      "viewVolume": "Volume",
+      "viewMute": "Silenciar o áudio compartilhado dos outros",
+      "note": "Vale para a próxima tela que você compartilhar. Seu volume para o que os outros compartilham vale nos canais de voz."
+    },
+    "history": {
+      "title": "Histórico de notificações",
+      "hint": "Notificações que você perdeu, guardadas só neste dispositivo (as últimas {cap}).",
+      "enable": "Guardar histórico",
+      "unread": "{count, plural, one {# não lida} other {# não lidas}}",
+      "markAllRead": "Marcar tudo como lido",
+      "clear": "Limpar histórico",
+      "listTitle": "Notificações perdidas",
+      "empty": "Nada perdido.",
+      "open": "Abrir"
+    },
+    "focus": {
+      "title": "Modo foco",
+      "hint": "As notificações ficam em silêncio por um tempo. Elas continuam no histórico.",
+      "status": "Foco",
+      "activeFor": "{minutes, plural, one {Ligado, falta # minuto} other {Ligado, faltam # minutos}}",
+      "inactive": "Desligado",
+      "end": "Encerrar agora",
+      "allowCalls": "Deixar chamadas passarem",
+      "allowDms": "Deixar mensagens diretas passarem",
+      "allowDmsDesc": "Sem som.",
+      "trayNote": "Você também pode iniciar pelo ícone da bandeja ou pelo inicializador rápido."
+    },
+    "rules": {
+      "title": "Perfis de notificação",
+      "hint": "Decida o que aparece, com ou sem som, enquanto você joga, trabalha ou descansa.",
+      "mode": "Perfil ativo",
+      "auto": "Automático",
+      "now": "Agora: {profile}",
+      "schedule": "Horário de trabalho",
+      "scheduleDesc": "No modo automático, usa o perfil de trabalho nesses horários.",
+      "start": "Início",
+      "end": "Fim",
+      "edit": "Editar perfil",
+      "style": "Aparência",
+      "styleCapsule": "Cápsula do Descall",
+      "styleToast": "Notificação do sistema",
+      "category": "Notificação",
+      "show": "Mostrar",
+      "sound": "Som",
+      "activity": {
+        "default": "Padrão",
+        "gaming": "Jogando",
+        "working": "Trabalhando"
+      },
+      "cat": {
+        "call": "Chamadas",
+        "dm": "Mensagens diretas",
+        "mention": "Menções",
+        "group": "Mensagens de grupo",
+        "server": "Mensagens de servidor",
+        "social": "Amigos",
+        "system": "Outros"
+      },
+      "day": {
+        "0": "Dom",
+        "1": "Seg",
+        "2": "Ter",
+        "3": "Qua",
+        "4": "Qui",
+        "5": "Sex",
+        "6": "Sáb"
+      }
+    },
+    "smartGame": {
+      "title": "Notificações inteligentes em jogos",
+      "hint": "Enquanto um jogo está na frente, as mensagens esperam. As chamadas continuam aparecendo.",
+      "enable": "Segurar notificações ao jogar",
+      "enableDesc": "Urgentes e chamadas nunca são seguradas.",
+      "summary": "Resumo depois do jogo",
+      "summaryDesc": "Uma notificação com o que você perdeu.",
+      "state": "Agora",
+      "playing": "{count, plural, one {Jogando {game}, # esperando} other {Jogando {game}, # esperando}}",
+      "notPlaying": "Nenhum jogo detectado.",
+      "detectNote": "Usa a detecção de jogos do seu status de atividade, sem varredura extra.",
+      "summaryTitle": "Enquanto você jogava",
+      "summaryBody": "{count, plural, one {# notificação de {names}} other {# notificações de {names}}}",
+      "summaryBodyMore": "{count, plural, one {# notificação de {names} e mais {more}} other {# notificações de {names} e mais {more}}}"
+    },
+    "quickReply": {
+      "title": "Resposta rápida",
+      "hint": "Responda a uma mensagem direta pela própria notificação.",
+      "enable": "Responder pelas notificações",
+      "enableDesc": "Mensagens diretas mostram um campo de resposta.",
+      "native": "As respostas são enviadas pela notificação do sistema.",
+      "failedTitle": "Resposta não enviada",
+      "failedBody": "Abra a conversa e tente de novo.",
+      "unavailable": {
+        "platform": "Este sistema não tem campo de resposta nas notificações; as mensagens chegam como sempre.",
+        "identity": "A resposta rápida precisa do Descall instalado (atalho do menu Iniciar). A versão portátil mostra a notificação de sempre.",
+        "unsupported": "As notificações não estão disponíveis neste sistema."
+      }
+    }
+  },
+  // premiumAudio:end
+  uah: UAH_PT_BR,
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Gestão premium",
@@ -39,7 +381,7 @@ export const nested = {
     },
     "opHint": {
       "grant": "Inicia uma assinatura no plano escolhido. O primeiro presente mensal de DesCoin é pago na concessão.",
-      "extend": "Adiciona tempo a partir da data de fim atual (ou de agora, se já terminou).",
+      "extend": "Adiciona dias inteiros à data de término atual de uma assinatura ativa. Para uma nova data de término exata, use \"Definir data de fim\".",
       "change_plan": "Move o membro para o outro plano. A data de fim continua igual.",
       "cancel": "Encerra a assinatura agora. O histórico mantém todas as mudanças anteriores.",
       "set_end": "Define uma nova data de fim. As durações prontas contam a partir de agora.",
@@ -131,14 +473,11 @@ export const nested = {
     "reasonHint": "Obrigatório. Fica salvo com a mudança e no registro de admin.",
     "reasonPh": "Por que esta mudança está sendo feita?",
     "notePh": "Nota opcional para outros admins",
-    "startNow": "Vazio = começa agora.",
-    "startLocal": "No seu horário local; salvo em UTC.",
     "setEndFromNow": "Durações prontas e dias personalizados contam a partir de agora.",
     "stepUpHint": "As mudanças pedem seu código do autenticador.",
     "pickDate": "Escolher data",
     "time": "hora",
     "clearDate": "Limpar data",
-    "now": "Agora",
     "err": {
       "op": "Escolha uma ação.",
       "reason": "Escreva um motivo (pelo menos 3 caracteres).",
@@ -166,11 +505,34 @@ export const nested = {
       "forbidden": "Você não tem acesso à gestão premium.",
       "notReady": "Esta parte do servidor ainda não está disponível.",
       "generic": "Algo deu errado. Nada foi alterado.",
-      "not_found": "Membro não encontrado.",
-      "no_subscription": "O membro não tem uma assinatura para mudar.",
+      "not_found": "Não encontrado. Pode ter sido excluído.",
       "already_active": "O membro já tem uma assinatura ativa.",
-      "unlimited": "A assinatura não tem data de fim.",
-      "banned": "A conta está banida ou sendo excluída."
+      "extendDate": "Estender adiciona dias inteiros. Use \"Definir data de fim\" para uma data exata.",
+      "currency": "Digite um código de moeda de 3 letras (por exemplo EUR).",
+      "rateLimited": "Muitas solicitações. Aguarde um minuto e tente de novo.",
+      "not_active": "O membro não tem assinatura ativa. Dê uma nova assinatura.",
+      "invalid_plan": "Este plano não existe.",
+      "plan_archived": "Este plano está arquivado. Ative-o primeiro em Gestão de planos.",
+      "already_unlimited": "A assinatura já é ilimitada.",
+      "not_unlimited": "A assinatura não é ilimitada.",
+      "same_plan": "O membro já está neste plano.",
+      "invalid_end": "A data de término precisa estar no futuro (no máximo 20 anos).",
+      "invalid_duration": "Digite uma duração de 1 a 3650 dias.",
+      "invalid_op": "Esta ação não é suportada.",
+      "user_not_found": "Membro não encontrado, ou a conta foi excluída.",
+      "reason_required": "Escreva um motivo para esta mudança.",
+      "too_long": "O motivo (500 caracteres) ou a nota (2000 caracteres) é longo demais.",
+      "invalid_request_id": "Não foi possível preparar a solicitação. Tente de novo.",
+      "invalid_body": "Alguns valores não são válidos. Verifique o formulário.",
+      "no_users": "Escolha pelo menos um membro.",
+      "too_many_users": "No máximo 500 membros por lote.",
+      "code_taken": "Este código de cupom já está em uso.",
+      "invalid_code": "O código precisa de 4 a 32 letras ou dígitos.",
+      "unknown_feature": "Uma das chaves de recurso é desconhecida. Use chaves da lista de recursos.",
+      "field_not_editable": "Preços e o presente mensal de DesCoin não podem ser alterados na fase 1.",
+      "invalid_range": "Escolha um intervalo de datas válido.",
+      "premium_unavailable": "O Premium ainda não está configurado no servidor (falta a migração do banco de dados).",
+      "server_error": "O servidor não conseguiu concluir. Nada foi alterado."
     },
     "confirm": {
       "title": "Confirmar a mudança",
@@ -282,16 +644,20 @@ export const nested = {
       "campaigns": "Desempenho das campanhas",
       "def": {
         "acq": "Membros cuja assinatura começou em cada período (concedida ou por cupom), por plano.",
-        "active": "Membros com assinatura ativa no fim de cada período, por plano.",
-        "split": "Membros ativos no fim do intervalo, por plano.",
-        "cancelRenew": "Cancelamentos: assinaturas canceladas por um admin no período. Renovações: assinaturas estendidas ou pagas de novo no período.",
-        "freePaid": "Assinaturas iniciadas no intervalo, grátis ou pagas. Pagas fica vazio até integrar os pagamentos.",
+        "active": "Membros com assinatura ativa no fim de cada período, todos os planos juntos.",
+        "split": "Membros ativos agora, por plano.",
+        "cancelRenew": "Cancelamentos: assinaturas canceladas por um administrador no período. Renovações: assinaturas estendidas por um administrador no período.",
+        "freePaid": "Assinaturas ativas agora marcadas como gratuitas. Paga fica vazia até os pagamentos serem integrados.",
         "upDown": "Upgrades: de Descall+ para Ultra. Downgrades: de Ultra para Descall+. Mudanças de plano no intervalo.",
-        "avgDuration": "Média de dias entre início e fim das assinaturas que terminaram no intervalo. As ilimitadas ficam de fora.",
-        "conversion": "Assinaturas pagas iniciadas no intervalo, divididas pelo denominador: membros que tiveram uma assinatura grátis no intervalo.",
-        "campaigns": "Resgates de cupons no intervalo, membros únicos e quantos ainda estão ativos."
+        "avgDuration": "Média de dias do início ao fim da assinatura datada atual ou última de cada membro. Assinaturas ilimitadas ficam de fora.",
+        "conversion": "Contas criadas no intervalo que receberam uma assinatura no intervalo, divididas por todas as contas criadas no intervalo.",
+        "campaigns": "Resgates de cupons no intervalo e quantos membros vindos de cupom estão ativos agora. Membros únicos por intervalo ainda não são contados."
       },
-      "foot": "Os horários são agrupados no seu horário local. Os números vêm do registro de eventos de assinatura."
+      "foot": "Os períodos são agrupados em UTC. Os números vêm do registro de eventos de assinatura.",
+      "allPlans": "Todos os planos",
+      "convLabel": {
+        "accounts_created_in_range": "Contas criadas no intervalo"
+      }
     },
     "fin": {
       "sub": "Receita, reembolsos e impostos aparecem aqui quando os pagamentos forem integrados. Nada é estimado.",
@@ -376,7 +742,9 @@ export const nested = {
         "ended": "Encerrado",
         "scheduled": "Agendado",
         "full": "Esgotado"
-      }
+      },
+      "currency": "Moeda",
+      "fixedHint": "Na menor unidade (por exemplo centavos)."
     },
     "audit": {
       "sub": "Cada mudança premium feita por um admin, e as tentativas negadas.",
@@ -417,7 +785,8 @@ export const nested = {
       "priceHint": "Na fase 1 não há preços.",
       "saved": "Salvo.",
       "foot": "Por enquanto a assinatura é dada pela equipe Descall; não há botão de compra."
-    }
+    },
+    "grantStartsNow": "A assinatura começa quando você a aplica. Para terminar em um dia específico, escolha uma data de término exata."
   },
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)
@@ -5893,6 +6262,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API acessível",
+  "Request timed out": "A solicitação expirou",
   " (you)": " (você)",
   "#6678ff": "#6678ff",
   "#general msgs": "msgs no #geral",

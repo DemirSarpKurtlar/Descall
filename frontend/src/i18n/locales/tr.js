@@ -1,6 +1,8 @@
 /** Auto-generated + curated tr locale */
+import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
+import { PREMIUM_AUDIO_TR } from "./premiumAudio.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
@@ -28,8 +30,10 @@ import { COUNTS_TR } from "./counts.tr.js";
 import { API_TR } from "./api.tr.js";
 import { BOT_TR } from "./bot.tr.js";
 export const nested = {
+  uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
+  premiumAudio: PREMIUM_AUDIO_TR,
   world3d: WORLD3D_TR,
   counts: COUNTS_TR,
   shell: SHELL_TR,
@@ -1166,6 +1170,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API erişilebilir",
+  "Request timed out": "İstek zaman aşımına uğradı",
   ...API_TR,
   "Close": "Kapat",
   "You": "Sen",
@@ -1526,7 +1532,7 @@ export const phrases = {
   "Message": "Mesaj",
   "Pinned announcements appear at the top of the list": "Sabitlenen duyurular listenin en üstünde görünür",
   "No announcements yet": "Henüz duyuru yok",
-  "Compose one above to broadcast to your users.": "Kullanıcılarınıza yayınlamak için yukarıdan bir duyuru oluşturun.",
+  "Compose one above to broadcast to your users.": "Kullanıcılarına yayınlamak için yukarıdan bir duyuru oluştur.",
   "By": "Yazan",
   "Manage user credits and view Blackjack statistics": "Kullanıcı kredilerini yönet ve Blackjack istatistiklerini gör",
   "Total Credits in System": "Sistemdeki Toplam Kredi",
@@ -4066,7 +4072,7 @@ export const phrases = {
   "Open moderation": "Moderasyonu aç",
   "You are timed out": "Zaman aşımı aldın",
   "You cannot send messages until the timeout ends.":
-    "Timeout bitene kadar mesaj gönderemezsiniz.",
+    "Susturman bitene kadar mesaj gönderemezsin.",
   "Until": "Bitiş",
   "Permanent": "Kalıcı",
   "Removed by moderator": "Moderatör tarafından çıkarıldın",
@@ -4336,7 +4342,7 @@ export const phrases = {
   "Install on Windows, open the web app anywhere, or use Android. A practical Discord alternative if your group mixes desktop gaming with mobile chat.":
     "Windows’a kur, web’i her yerden aç veya Android kullan. Masaüstü oyun + mobil sohbet karışık gruplar için pratik Discord alternatifi.",
 
-  "Talk together": "Birlikte konuşun",
+  "Talk together": "Birlikte konuş",
   "together": "konuşun",
   "Reject": "Reddet",
   "Optional analytics only. Essentials stay on.": "İsteğe bağlı analitik. Zorunlu çerezler açık kalır.",
@@ -4362,12 +4368,12 @@ export const phrases = {
   "Your chats live here": "Sohbetlerin burada",
   "Open the menu to pick a friend or start a new conversation": "Arkadaş seçmek veya yeni sohbet başlatmak için menüyü aç",
   "Pick a friend, start a DM, or create a group, Descall keeps it light.":
-    "Bir arkadaş seçin, DM başlatın veya grup oluşturun, Descall hafif tutar.",
+    "Bir arkadaş seç, DM başlat ya da grup kur.",
   "Pick a home": "Bir yuva seç",
   "Servers hold channels, roles, and voice rooms. Create one or join with an invite.":
-    "Sunucular kanal, rol ve ses odalarını barındırır. Bir tane oluşturun veya davetle katılın.",
+    "Sunucular kanal, rol ve ses odalarını barındırır. Bir tane kur ya da davetle katıl.",
   "Create a server for channels, roles, and voice, or join with an invite.":
-    "Kanallar, roller ve ses için bir sunucu oluşturun, veya davetle katılın.",
+    "Bir sunucu kur ya da davetle katıl.",
   "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.":
     "Descall; DM, gerçek sunucular, WebRTC ses/görüntü, ekran paylaşımı, Windows masaüstü, Android ve tarayıcı uygulaması olan modern bir mesajlaşma uygulamasıdır.",
 

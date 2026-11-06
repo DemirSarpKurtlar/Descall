@@ -192,7 +192,7 @@ async function run() {
     r = await call(base, "GET", "/api/admin/premium/analytics?from=2026-12-01&to=2026-11-01", { token: admin });
     assert(r.status === 400 && r.body.code === "invalid_range", "bad range");
     r = await call(base, "GET", "/api/admin/premium/audit?q=premium", { token: admin });
-    assert(r.status === 200 && r.body.entries.every((e) => e.action.startsWith("premium")), "premium audit only");
+    assert(r.status === 200 && r.body.items.every((e) => e.action.startsWith("premium")), "premium audit only");
 
     // ---- user side
     assert((await call(base, "GET", "/api/premium/me")).status === 401, "me needs sign-in");

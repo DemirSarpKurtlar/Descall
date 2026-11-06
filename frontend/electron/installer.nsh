@@ -204,6 +204,61 @@ FunctionEnd
   !endif
 !macroend
 
+; Descall+ quick reply (native Windows toast with an inline reply field).
+; electron-builder already writes the AppUserModelID (build.appId) on the Start
+; Menu shortcut. Windows also needs the toast activator CLSID on that shortcut,
+; and the CLSID registered for the current user so a reply can start Descall
+; from a cold start. Keep in sync with electron/premium/toastIdentity.cjs.
+!define DESCALL_TOAST_CLSID "{BCF5A315-F914-4A7E-95BD-313CBE4B661B}"
+
+!macro Descall_SetToastClsid LNK
+  Push $0
+  Push $1
+  Push $2
+  Push $3
+  Push $4
+  Push $5
+  Push $6
+  ${if} ${FileExists} "${LNK}"
+    ; IShellLinkW -> IPersistFile::Load -> IPropertyStore::SetValue(PKEY_AppUserModel_ToastActivatorCLSID, VT_CLSID)
+    System::Call 'ole32::CoCreateInstance(g "{00021401-0000-0000-C000-000000000046}", p 0, i 1, g "{000214F9-0000-0000-C000-000000000046}", *p .r1) i .r0'
+    ${if} $0 = 0
+      System::Call '$1->0(g "{0000010b-0000-0000-C000-000000000046}", *p .r2) i .r0'
+      ${if} $0 = 0
+        System::Call '$2->5(w "${LNK}", i 2) i .r0'
+        ${if} $0 = 0
+          System::Call '$1->0(g "{886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99}", *p .r3) i .r0'
+          ${if} $0 = 0
+            System::Call '*(g "{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}", i 26) p .r4'
+            System::Call '*(g "${DESCALL_TOAST_CLSID}") p .r5'
+            System::Call '*(&i2 72, &i2 0, &i2 0, &i2 0, p r5, p 0) p .r6'
+            System::Call '$3->6(p r4, p r6) i .r0'
+            ${if} $0 = 0
+              System::Call '$3->7() i .r0'
+            ${endif}
+            System::Free $6
+            System::Free $5
+            System::Free $4
+            System::Call '$3->2()'
+          ${endif}
+          System::Call '$2->6(p 0, i 1) i .r0'
+        ${endif}
+        System::Call '$2->2()'
+      ${endif}
+      System::Call '$1->2()'
+    ${endif}
+  ${endif}
+  WriteRegStr HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}" "" "Descall"
+  WriteRegStr HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}\LocalServer32" "" '"$INSTDIR\${PRODUCT_FILENAME}.exe"'
+  Pop $6
+  Pop $5
+  Pop $4
+  Pop $3
+  Pop $2
+  Pop $1
+  Pop $0
+!macroend
+
 !macro customInstall
   ; Post-install actions
   !insertmacro Descall_Text_Installing
@@ -260,6 +315,9 @@ FunctionEnd
     "Publisher" "Descall"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall" \
     "DisplayVersion" "${VERSION}"
+
+  ; Quick reply toasts: CLSID on the Start Menu shortcut + HKCU registration.
+  !insertmacro Descall_SetToastClsid "$newStartMenuLink"
 !macroend
 
 !macro customUnInstall
@@ -268,5 +326,6 @@ FunctionEnd
     ; optional: do not even delete userData on real uninstall — deleteAppDataOnUninstall is false.
     ; Do NOT RMDir $APPDATA\Descall or $LOCALAPPDATA\Descall. Session must survive reinstalls/updates.
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall"
+    DeleteRegKey HKCU "Software\Classes\CLSID\${DESCALL_TOAST_CLSID}"
   ${endIf}
 !macroend

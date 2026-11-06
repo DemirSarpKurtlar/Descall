@@ -10,6 +10,7 @@ import {
   markIncomingDismissed,
   planIncomingDismiss,
 } from "./callNotificationClose";
+import { premiumNotifyGate, setDeferredFlusher } from "../premium/notify/premiumNotify.js";
 
 const COOLDOWN_MS = 800;
 const CALL_TAG = DM_INCOMING_TAG;
@@ -124,7 +125,8 @@ class NotificationService {
     return typeof document !== 'undefined' ? document.hasFocus() : false;
   }
 
-  async show({ title, body: rawBody, tag = 'descall', requireInteraction = false, silent = false, data = {}, avatarUrl = null, incomingTicket = null }) {
+  async show({ title, body: rawBody, tag = 'descall', requireInteraction = false, silent: silentIn = false, data = {}, avatarUrl = null, incomingTicket = null }) {
+    let silent = silentIn;
     // Native iOS app: bad words in notification text are masked with ***.
     const body = displayText(rawBody);
     if (!this.initialized) {
@@ -157,6 +159,13 @@ class NotificationService {
       if (windowActive && !requireInteraction) return;
       if (incomingTicket && !incomingShowStillCurrent(this._incomingGate, incomingTicket)) return;
 
+      // Descall+ (focus mode, notification profiles, smart game notifications,
+      // history). null = no premium feature: unchanged behaviour.
+      const premium = premiumNotifyGate({ title, body, tag, data, requireInteraction });
+      if (premium && !premium.show) return;
+      if (premium?.silent) silent = true;
+      const style = premium?.style === 'toast' ? 'toast' : undefined;
+
       this._lastByTag.set(tag, now);
       this.lastNotificationTime = now;
       if (this._lastByTag.size > 200) {
@@ -166,7 +175,7 @@ class NotificationService {
       }
 
       if (this.isElectron && window.electronAPI?.showNotification) {
-        window.electronAPI.showNotification(title, { body, tag, data, requireInteraction, silent, avatarUrl });
+        window.electronAPI.showNotification(title, { body, tag, data, requireInteraction, silent, avatarUrl, ...(style ? { style } : {}) });
       } else {
         this._showWebNotification({ title, body, tag, requireInteraction, silent, data });
       }

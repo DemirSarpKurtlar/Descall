@@ -92,7 +92,8 @@ const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const TOKEN = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ id: USER.id, userId: USER.id, username: USER.username, exp: 4102444800 })}.e2e`;
 
 app.whenReady().then(() => {
-  fs.writeFileSync(path.join(userData, 'auth-token.bin'), safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(TOKEN) : Buffer.from(TOKEN, 'utf8'));
+  // Electron 45: async safeStorage, like main.cjs (tokenCrypto.cjs). Written long before the renderer asks for it.
+  safeStorage.isAsyncEncryptionAvailable().then((ok) => (ok ? safeStorage.encryptStringAsync(TOKEN) : Buffer.from(TOKEN, 'utf8'))).then((buf) => fs.writeFileSync(path.join(userData, 'auth-token.bin'), buf));
   protocol.handle('https', async (request) => {
     try { return await mockResponse(request); } catch (err) { return new Response(String(err), { status: 500 }); }
   });
