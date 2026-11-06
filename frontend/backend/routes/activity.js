@@ -71,7 +71,7 @@ router.get('/friend/:userId/presence', requireAuth, async (req, res) => {
     .from('user_activity_settings')
     .select('privacy')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   const privacy = settings?.privacy ?? 'friends';
   if (privacy === 'hidden') return res.json({ presence: null });
@@ -81,7 +81,7 @@ router.get('/friend/:userId/presence', requireAuth, async (req, res) => {
     .from('user_presence')
     .select('app_name,app_type,display_name,started_at,is_manual,updated_at')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message });
   return res.json({ presence: data || null });

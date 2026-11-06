@@ -10,6 +10,8 @@ export function isModuleLoadError(error) {
   if (/error loading dynamically imported module/i.test(message)) return true;
   if (/loading chunk [\w-]+ failed/i.test(message)) return true;
   if (/unable to preload css/i.test(message)) return true;
+  // Safari, when a removed chunk is answered with the HTML fallback page.
+  if (/is not a valid javascript mime type/i.test(message)) return true;
   if (name === "ChunkLoadError") return true;
   return false;
 }
