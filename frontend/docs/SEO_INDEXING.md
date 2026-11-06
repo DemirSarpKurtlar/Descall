@@ -1,16 +1,24 @@
 # SEO indexing & Search Console
 
-Descall ships static sitemaps + an indexing helper. You still need Google Search Console ownership once.
+Descall ships static sitemaps. Search engines find pages through them; nothing pushes URLs to Google. You still need Google Search Console ownership once.
 
 ## Already automated in-repo
 
 ```bash
 cd frontend
-npm run seo:index:dry   # preview URL queue
-npm run seo:index       # IndexNow + sitemap ping (+ Google Indexing API if creds set)
-npm run seo:link-audit  # orphan internal-link check
+npm run seo:link-audit  # internal links counted in the built HTML (runs in build:prod)
 npm run seo:prod-check  # live HTML/CWV smoke
 ```
+
+### Google Indexing API: not used (Nov 2026)
+
+Google allows the Indexing API only for pages with `JobPosting` or `BroadcastEvent` (livestream) structured data. Descall has neither, so it must not be used for marketing pages. `scripts/request-indexing.mjs` (`npm run seo:index`) now refuses to run and points to the sitemap. The old Google sitemap ping endpoint is gone too (Google retired it in 2023).
+
+How a change gets picked up instead:
+
+1. `https://descall.com/sitemap.xml` is submitted in Search Console (Domain property) and Bing Webmaster Tools.
+2. Sitemap `lastmod` follows real content dates, so crawlers trust it (see `docs/SITEMAP.md`).
+3. For one urgent page: Search Console > URL inspection > Request indexing, by hand.
 
 ## Google Search Console
 
@@ -24,7 +32,7 @@ Still do in the existing Domain property:
 
 1. Sitemap: `https://descall.com/sitemap.xml`
 2. Optional Bing Webmaster: `VITE_BING_SITE_VERIFICATION` (injects `msvalidate.01`) — Bing has no Domain-property DNS equivalent in this repo
-3. Optional Google Indexing API: add a GCP service account as a user on the **same Domain property**, set `GOOGLE_INDEXING_CREDENTIALS_JSON` when running `npm run seo:index`
+3. Do not set up the Google Indexing API (see above).
 
 ## Mobile LCP notes (DES-50)
 
@@ -35,7 +43,7 @@ Still do in the existing Domain property:
 
 ## IndexNow
 
-Key file is published at `/4f463b15fd51f502c6bb73abbeb38e3c.txt` (see `scripts/request-indexing.mjs`).
+The key file is still published at `/4f463b15fd51f502c6bb73abbeb38e3c.txt` so Bing Webmaster Tools keeps the site verified for IndexNow. The repo no longer sends IndexNow pings; Bing reads the sitemap.
 
 ## GSC playbook (legitimate only)
 
@@ -48,7 +56,7 @@ What *does* help, using Search Console data:
 3. **CTR on pages that already rank.** `/alternatives` (~position 4, 0 clicks) and `/compare/discord` (~position 9, 0 clicks) are snippet problems, not crawl problems — titles/descriptions are written to earn the click.
 4. **Turkish queries** (`discord alternatifi`, `muadili`, `benzeri`) consolidate on `/discord-alternative-turkey`. `/tr/discord-alternative` 301s there so the two TR URLs do not compete.
 5. **Unique FAQ JSON-LD** per commercial URL. Do not copy the same FAQPage onto hub, compare, list, and blog posts.
-6. After a deploy: `npm run seo:index` (IndexNow + sitemap ping). Rankings take days/weeks; judge in GSC, not by searching Google yourself.
+6. After a deploy nothing needs to be pushed: the sitemap and its `lastmod` values carry the change. Rankings take days/weeks; judge in GSC, not by searching Google yourself.
 
 ## Host split note (`www` vs `app`)
 

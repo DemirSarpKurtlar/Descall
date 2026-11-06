@@ -41,42 +41,6 @@ export const SITEMAP_TABLES = [
   },
 ];
 
-/** Highest-value URLs to push first when requesting indexing (daily quota). */
-export const INDEXING_PRIORITY_PATHS = [
-  "/",
-  "/discord-alternative",
-  "/alternatives",
-  "/compare/discord",
-  "/download",
-  "/best-discord-alternative-for-gamers",
-  "/apps-like-discord",
-  "/tr/discord-alternatifi",
-  "/discord-replacement",
-  "/discord-alternative-for-voice-chat",
-  "/discord-alternative-for-friends",
-  "/discord-alternative-for-communities",
-  "/features",
-  "/blog",
-  "/blog/discord-vs-descall",
-  "/blog/best-discord-alternatives-2026",
-  "/blog/apps-like-discord",
-  "/blog/discord-competitors",
-  "/faq",
-  "/blog/leave-nitro-keep-voice-chat",
-  "/blog/discord-alternative-for-communities-guide",
-  "/blog/voice-chat-alternative-to-discord",
-  "/blog/migrate-from-discord-to-descall",
-  "/about",
-  "/who-owns-descall",
-  "/descall-sahibi",
-  "/contact",
-  "/security",
-  "/status",
-  "/tr",
-  "/tr/compare/discord",
-  "/tr/download",
-];
-
 function tableIdForPath(path) {
   // Prefixed site languages (/de/faq) sit in the same table as their English page.
   const prefixed = prefixedLocaleFromPath(path || "/");
@@ -146,25 +110,4 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
 
 export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
   return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.tableId === tableId);
-}
-
-/** Deduped absolute URLs ordered by INDEXING_PRIORITY_PATHS then remaining. */
-export function indexingUrlQueue(origin = SITE) {
-  const all = allSitemapEntries(origin);
-  const byPath = new Map(all.map((e) => [e.path, e.loc]));
-  const seen = new Set();
-  const out = [];
-
-  for (const path of INDEXING_PRIORITY_PATHS) {
-    const loc = byPath.get(path);
-    if (!loc || seen.has(loc)) continue;
-    seen.add(loc);
-    out.push(loc);
-  }
-  for (const entry of all) {
-    if (seen.has(entry.loc)) continue;
-    seen.add(entry.loc);
-    out.push(entry.loc);
-  }
-  return out;
 }

@@ -56,7 +56,6 @@ const robotsTxt = fs.readFileSync(path.join(root, "public/robots.txt"), "utf8");
 const {
   SITEMAP_TABLES,
   allSitemapEntries,
-  indexingUrlQueue,
 } = await import(pathToFileURL(path.join(root, "src/site/sitemapCatalog.js")).href);
 
 const paths = PUBLIC_ROUTES.map((r) => r.path);
@@ -121,9 +120,6 @@ for (const route of PUBLIC_ROUTES) {
 }
 if (!sitemapJs.includes("sitemapCatalog") || !sitemapJs.includes("sitemap-core.xml")) {
   fail("backend/routes/sitemap.js must serve multi-table sitemapCatalog children");
-}
-if (indexingUrlQueue("https://descall.com").length < PUBLIC_ROUTES.filter((r) => !r.noindex).length) {
-  fail("indexingUrlQueue shorter than indexable PUBLIC_ROUTES");
 }
 for (const table of SITEMAP_TABLES) {
   if (!["core", "niches", "blog", "company"].includes(table.id)) {
