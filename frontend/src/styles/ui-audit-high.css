@@ -240,6 +240,18 @@ html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .s3-back {
   color: var(--g-brand, #587AF6);
 }
 
+/* #102 Görünüm on iPhone is a pushed full-screen page like every other sub
+   page (it was a dark sheet at top 54 in both themes). Its iOS-style header
+   needs the same status-bar clearance as the other sub page headers. */
+html.glass-ui .user-settings.is-mobile.g-settings.s3-tab-v3 .us-main-header.s3-nav {
+  position: sticky !important;
+  top: 0;
+  z-index: 4;
+  height: auto !important;
+  min-height: 52px !important;
+  padding: calc(var(--g-chrome-top, env(safe-area-inset-top, 0px)) + 4px) 16px 8px !important;
+}
+
 /* #103 Promosyon Kodu, light theme: the segment labels, the empty state and
    the code fields kept dark-theme ink (white on white). The count pill used
    Discord blurple; it is the brand blue now in every theme. */
@@ -328,4 +340,18 @@ html[data-theme="light"] .activity-web-notice {
 }
 html[data-theme="light"] .activity-web-notice strong {
   color: #393C4D;
+}
+
+/* #102 'Mağaza temaları' was cut to 'Mağaza tem…' by its value on phones:
+   the title keeps its width, the value truncates. */
+.s3-store .s3-row .lab {
+  flex: 0 0 auto;
+  max-width: 70%;
+}
+.s3-store .s3-row .val {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
