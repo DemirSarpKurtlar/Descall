@@ -23,7 +23,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Gift,
+  WifiOff,
+  ShoppingBag,
 } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
 import RippleButton from "../ui/RippleButton";
 import ErrorBoundary from "../ErrorBoundary";
@@ -524,7 +527,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     <div className="shop-wallet-bar">
       <div className="shop-wallet-pill" title={t("Your DesCoin balance")}>
         <Coins size={16} />
-        <span>{formatNumber(balance, locale)}</span>
+        <span>{balance == null || (catalogError && items.length === 0 && !balance) ? "—" : formatNumber(balance, locale)}</span>
         <span className="shop-wallet-label">DesCoin</span>
       </div>
       <button type="button" className="shop-redeem-btn" aria-haspopup="dialog" onClick={() => openPromoRedeem()}><Gift size={15} /> {t("promo.shopButton")}</button>
@@ -592,7 +595,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     <>
       {catalogError && items.length > 0 && (
         <div className="shop-load-error is-inline">
-          <p>{catalogError}</p>
+          <p>{t("The store couldn't load right now")}</p>
           <RippleButton
             className="btn-secondary sm"
             onClick={() => {
@@ -609,12 +612,14 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       {loading ? (
         <ShopGridSkeleton count={6} />
       ) : catalogError && items.length === 0 ? (
-        <div className="shop-load-error">
-          <p>{catalogError}</p>
-          <RippleButton className="btn-secondary sm" onClick={() => load()}>
-            {t("Retry")}
-          </RippleButton>
-        </div>
+        <EmptyState
+          className="shop-load-error"
+          tone="error"
+          icon={WifiOff}
+          title={t("The store couldn't load right now")}
+          body={t("Check your connection and try again.")}
+          primary={{ label: t("Retry"), action: () => load() }}
+        />
       ) : view === "inventory" ? (
         <ShopInventoryView
           inventory={inventory}
@@ -629,7 +634,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           }}
         />
       ) : items.length === 0 ? (
-        <p className="shop-empty-state">{t("No items available yet, check back soon!")}</p>
+        <EmptyState
+          className="shop-empty-state"
+          icon={ShoppingBag}
+          title={t("The shelf is empty for now")}
+          body={t("You'll see new items here as soon as they're added.")}
+          secondary={{ label: t("View your inventory"), action: () => setView("inventory") }}
+        />
       ) : activeCategory === "countries" ? (
         <div className="shop-category-block">
           <h4>{t("Countries")}</h4>

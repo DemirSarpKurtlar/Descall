@@ -27,6 +27,7 @@ import { getLocale } from "../../i18n/runtime";
 import { getPresenceStatus } from "../../lib/presence";
 import { useT } from "../../context/LocaleContext";
 import { ConversationListSkeleton } from "../ui/Skeleton";
+import EmptyState from "../ui/EmptyState";
 import useGlassUi from "../../hooks/useGlassUi";
 
 const FILTERS = [
@@ -429,11 +430,13 @@ export default function CallsView({
         {loading ? (
           <ConversationListSkeleton count={6} label={t("Loading call history…")} />
         ) : filtered.length === 0 ? (
-          <div className="calls-empty">
-            <Phone size={28} />
-            <strong>{filter === "missed" ? t("No missed calls") : t("No calls yet")}</strong>
-            <span>{t("Start a voice or video call from Quick dial, a chat, or a group.")}</span>
-          </div>
+          <EmptyState
+            compact
+            className="calls-empty"
+            icon={Phone}
+            title={filter === "missed" ? t("No missed calls") : t("No calls yet")}
+            body={t("Start a voice or video call from Quick dial, a chat, or a group.")}
+          />
         ) : (
           <div className="calls-list">
             <AnimatePresence initial={false}>

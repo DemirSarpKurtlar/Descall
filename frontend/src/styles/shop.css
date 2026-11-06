@@ -822,7 +822,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   text-align: center;
 }
 
-.shop-load-error p {
+.shop-load-error.is-inline p {
   margin: 0;
   color: var(--text-1, #f2f3f5);
   font-size: 14px;
@@ -836,7 +836,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   margin: 0;
 }
 
-.shop-load-error .ripple-btn {
+.shop-load-error.is-inline .ripple-btn {
   width: auto;
   min-height: 36px;
   padding: 8px 16px;

@@ -776,30 +776,22 @@ export default function ChatPanel({
             serverVoice={serverVoice}
           />
         ) : (
-        <div className="server-main-placeholder">
-          {activeChannel?.type === "voice" || activeChannel?.type === "stage" ? (
-            <Phone size={40} strokeWidth={1.5} />
-          ) : (
-            <Hash size={40} strokeWidth={1.5} />
-          )}
-          <h2>
-            {activeChannel
-              ? activeChannel.type === "voice" || activeChannel.type === "stage"
-                ? activeChannel.name
-                : `#${activeChannel.name}`
-              : activeServer
-                ? activeServer.name
-                : t("Servers")}
-          </h2>
-          <p>
-            {!activeServer
+        <EmptyState
+          className="server-main-placeholder"
+          icon={activeChannel?.type === "voice" || activeChannel?.type === "stage" ? Phone : Hash}
+          title={activeChannel
+            ? activeChannel.type === "voice" || activeChannel.type === "stage"
+              ? activeChannel.name
+              : `#${activeChannel.name}`
+            : activeServer
+              ? activeServer.name
+              : t("Servers")}
+          body={activeChannel?.topic
+            ? activeChannel.topic
+            : !activeServer
               ? t("Pick a server on the left, or create a new one with +.")
               : t("Pick a text or voice channel from the list on the left.")}
-          </p>
-          {activeChannel?.topic ? (
-            <p className="server-channel-topic">{activeChannel.topic}</p>
-          ) : null}
-        </div>
+        />
         )
       ) : (
       <div

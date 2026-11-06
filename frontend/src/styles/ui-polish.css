@@ -695,27 +695,69 @@
 }
 
 
-/* ─── Empty states ─── */
+/* ─── Empty states (UI audit #19: the one EmptyState) ───
+   48 px glass tile + line icon, title 17/600, body 14/400 secondary,
+   at most one primary + one secondary button. No blobs, no dashed boxes. */
 .empty-state {
-  gap: 12px;
+  gap: 8px;
   padding: 32px 20px;
 }
 
-.empty-icon-wrap {
-  width: 88px;
-  height: 88px;
-  border-radius: var(--r-xl);
+.empty-state .empty-tile {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, var(--primary-soft), transparent);
-  color: var(--primary);
+  margin-bottom: 8px;
+  background: var(--gd-glass-fill, var(--g-fill, var(--surface-2)));
+  color: var(--gd-brand, var(--g-brand, #587AF6));
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair, var(--g-hair, var(--border-3)));
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
+}
+
+.empty-state .empty-tile svg { opacity: 1; }
+
+.empty-state h2,
+.empty-state .empty-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+}
+
+.empty-state p,
+.empty-state .empty-body {
+  margin: 0;
+  max-width: 320px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.empty-state.compact {
+  flex: 0 0 auto;
+  padding: 20px 12px;
+  gap: 6px;
+}
+
+.empty-state.compact .empty-tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   margin-bottom: 4px;
 }
 
-.empty-icon-wrap svg { opacity: 1; }
+.empty-state.compact .empty-title { font-size: 15px; }
+.empty-state.compact .empty-body { font-size: 13px; max-width: 260px; }
 
-.empty-state h2 {
-  color: var(--text-0);
+.empty-state.tone-error .empty-tile {
+  color: var(--g-red, #FF453A);
 }
 
 .empty-cta-row {
@@ -730,31 +772,40 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  border-radius: var(--radius-full);
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: 12px;
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform 120ms var(--ease-out);
 }
 
 .empty-cta:hover {
   background: var(--surface-hover);
   border-color: var(--border-4);
-  transform: translateY(-1px);
 }
 
+.empty-cta:active { transform: scale(0.97); }
+
 .empty-cta.primary {
-  background: var(--primary);
+  background: #587AF6;
   border-color: transparent;
   color: #fff;
 }
 
 .empty-cta.primary:hover {
-  background: var(--primary-2);
+  background: #4D6EE8;
+}
+
+.empty-state.compact .empty-cta { min-height: 32px; padding: 6px 14px; font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-cta:active { transform: none; }
 }
 
 /* ─── Appearance accent swatches ─── */
@@ -2629,57 +2680,6 @@ html[data-bubble="minimal"] .message-bubble {
   border: 1px solid var(--border-2) !important;
   border-radius: var(--r-sm) !important;
   box-shadow: none !important;
-}
-
-/* ── Empty illustrations ── */
-.empty-illustration {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 12px;
-  display: grid;
-  place-items: center;
-}
-.empty-illustration.compact {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 4px;
-}
-.empty-illu-blob {
-  position: absolute;
-  inset: 12%;
-  border-radius: 40% 60% 55% 45%;
-  background: radial-gradient(circle at 30% 30%, var(--primary-soft), transparent 70%);
-  filter: blur(2px);
-  /* A3: two slow breaths, then rest on the first keyframe (identical to the
-     static look). Endless, it kept the desktop main panel's two 40px backdrop
-     blurs recompositing every frame while idle (15 fps headless, idle GPU). */
-  animation: emptyBlob 8s ease-in-out 2;
-}
-@media (prefers-reduced-motion: reduce) {
-  .empty-illu-blob { animation: none; }
-}
-.empty-illu-blob.secondary {
-  inset: 22%;
-  background: radial-gradient(circle at 70% 60%, var(--primary-soft), transparent 70%);
-  animation-delay: -3s;
-}
-.empty-illustration .empty-icon-wrap {
-  position: relative;
-  z-index: 1;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--r-lg);
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--border-2);
-  color: var(--primary);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-}
-@keyframes emptyBlob {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(12deg) scale(1.06); }
 }
 
 /* ── Mobile bottom tabs (edge-to-edge; glass styles live in mobile.css) ── */

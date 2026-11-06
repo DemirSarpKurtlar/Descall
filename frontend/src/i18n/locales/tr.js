@@ -27,6 +27,7 @@ import { CHATX_TR } from "./chatx.tr.js";
 import { COUNTS_TR } from "./counts.tr.js";
 import { API_TR } from "./api.tr.js";
 import { BOT_TR } from "./bot.tr.js";
+import { MID_APP_I18N } from "./midApp.i18n.js";
 export const nested = {
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
@@ -4512,6 +4513,7 @@ export const phrases = {
   ...TR_INAPP_GAPS,
   ...TR_AI_LOOK_FIXES,
   ...TR_APPROVED_UI,
+  ...MID_APP_I18N.tr,
 };
 
 const locale = { nested, phrases };

@@ -4,6 +4,7 @@
  *   nested  - keyed messages (same paths as en.js nested)
  *   phrases - English source string -> translation
  */
+import { MID_APP_I18N } from "./midApp.i18n.js";
 export const nested = {
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
@@ -10248,7 +10249,8 @@ export const phrases = {
   "🔵 Normal": "🔵 Normal",
   "🛡️ Admins Only": "🛡️ Admins uniquement",
   "🟡 Important": "🟡 Important",
-  "🟢 Online Users": "🟢 Utilisateurs en ligne"
+  "🟢 Online Users": "🟢 Utilisateurs en ligne",
+  ...MID_APP_I18N.fr,
 };
 
 export default { nested, phrases };
