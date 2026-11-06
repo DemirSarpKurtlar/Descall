@@ -517,3 +517,39 @@ html.glass-desktop .server-settings-modal .dc-check input.dc-check-input {
   border: 0;
   box-shadow: none;
 }
+
+/* #64 Feedback modal, light theme: the text area and the Yeni / Geri
+   bildirimlerim segment were mid-grey fills with low-contrast text. White
+   field with a hairline, #EEF0F5 track with a white selected segment, neutral
+   kind cards with a brand ring when selected. */
+:root[data-theme="light"] .feedback-modal.fbk .fbk-ta {
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(57, 60, 77, 0.12);
+  color: #1B1D26;
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-ta::placeholder {
+  color: rgba(57, 60, 77, 0.5);
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-ta:focus {
+  box-shadow: inset 0 0 0 1.5px #587AF5;
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-seg {
+  background: #EEF0F5;
+  box-shadow: inset 0 0 0 0.5px rgba(57, 60, 77, 0.1);
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-seg > button {
+  color: rgba(57, 60, 77, 0.72);
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-seg > button.is-on {
+  background: #FFFFFF;
+  color: #1B1D26;
+  box-shadow: 0 1px 3px rgba(16, 18, 28, 0.1), inset 0 0 0 0.5px rgba(57, 60, 77, 0.08);
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-type {
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(57, 60, 77, 0.1);
+}
+:root[data-theme="light"] .feedback-modal.fbk .fbk-type.is-on {
+  background: rgba(88, 122, 245, 0.06);
+  box-shadow: inset 0 0 0 1.5px #587AF5;
+}
