@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { evaluate, normalizeRules, inTimeWindow, idleThresholdSec, emptyState, COOLDOWN_MS } from "./ruleEngine.js";
 import { pruneCount, selectRange, timelineLength, defaultTrim, clampTrim, memoryCapBytes, bitrateFor, keyframeEvery, totalBytes, MAX_BYTES_CAP } from "./clipRing.js";
 import { buildTimeline, mergeGameSessions, dayBounds, dayKey } from "./timeline.js";
+import { addItem, MAX_ITEMS, MAX_CHARS } from "./clipboardHistory.js";
 
 let n = 0;
 const t = (name, fn) => { fn(); n += 1; };
@@ -179,6 +180,20 @@ t("mergeGameSessions keeps separate games apart and dayKey round-trips", () => {
   ]);
   assert.equal(m.length, 3);
   assert.equal(dayKey(new Date(dayBounds("2026-03-29").start)), "2026-03-29");
+});
+
+// ---------------- clipboard history (pure part) ----------------
+t("clipboard history: newest first, de-duplicated, capped, trimmed", () => {
+  let list = [];
+  list = addItem(list, "  hello ", "copy", 1);
+  list = addItem(list, "world", "paste", 2);
+  list = addItem(list, "hello", "copy", 3);
+  assert.deepEqual(list.map((i) => i.text), ["hello", "world"]);
+  assert.equal(list[1].source, "paste");
+  assert.equal(addItem(list, "   ", "copy").length, 2);
+  for (let i = 0; i < 80; i += 1) list = addItem(list, `item ${i}`, "copy", 10 + i);
+  assert.equal(list.length, MAX_ITEMS);
+  assert.equal(addItem([], "x".repeat(9000), "copy")[0].text.length, MAX_CHARS);
 });
 
 console.log(`premiumGaming selftest: ${n} checks passed`);

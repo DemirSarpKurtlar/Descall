@@ -70,7 +70,7 @@ export function Panel() {
             <button type="button" className="pg-btn is-small" data-testid="pg-clip-measure" onClick={() => measureClipCost()}>{t("premiumGaming.instantClip.measure")}</button>
             {clip.cost?.main ? (
               <span className="pg-num pg-muted" data-testid="pg-clip-cost">
-                {t("premiumGaming.instantClip.cost", { cpu: clip.cost.main.renderer?.cpuPercent ?? clip.cost.main.total.cpuPercent, mem: Math.round(clip.cost.main.renderer?.privateMB ?? clip.cost.main.total.privateMB), dropped: info.dropped })}
+                {t("premiumGaming.instantClip.cost", { cpu: clip.cost.main.renderer?.cpuPercent ?? clip.cost.main.total.cpuPercent, mem: Math.round((clip.cost.main.renderer?.privateMB || clip.cost.main.renderer?.workingSetMB) ?? clip.cost.main.total.workingSetMB), dropped: info.dropped })}
               </span>
             ) : null}
           </div>

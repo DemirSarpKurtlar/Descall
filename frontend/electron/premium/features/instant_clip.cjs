@@ -70,7 +70,12 @@ module.exports = wrapFeature({
       hotkey = ok ? String(accel) : '';
       return { ok, hotkey };
     });
-    ctx.handle('premium:instant_clip:metrics', () => metrics());
+    // percentCPUUsage is measured since the previous call: prime, wait 2 s, read.
+    ctx.handle('premium:instant_clip:metrics', async () => {
+      app.getAppMetrics();
+      await new Promise((r) => setTimeout(r, 2000));
+      return ctx ? metrics() : { ok: false };
+    });
     ctx.handle('premium:instant_clip:save-file', async (_e, name, bytes) => {
       if (!bytes || !bytes.byteLength) return { ok: false };
       const win = ctx.getMainWindow();
