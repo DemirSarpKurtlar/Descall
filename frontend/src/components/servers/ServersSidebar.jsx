@@ -13,7 +13,7 @@ import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
-import ImageCropModal from "../ui/ImageCropModal";
+import ImageCropModal from "../ui/LazyImageCropModal";
 import useSpeaking from "../../hooks/useSpeaking";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";

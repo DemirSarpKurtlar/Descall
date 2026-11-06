@@ -9,7 +9,6 @@ import { getToken, hydrateSecureToken } from "./lib/storage";
 import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
-import { installAndroidBack } from "./lib/androidBack";
 import { installFlagFont } from "./lib/flagFont.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
@@ -39,11 +38,14 @@ try {
 } catch {
   /* first-touch capture is best-effort */
 }
-installAndroidBack();
 // Windows has no flag emoji glyphs: use the bundled Twemoji flag subset there.
 installFlagFont();
 // Lazy so the marketing first-paint bundle does not pull Capacitor in.
 if (isCapacitorNativeShell()) {
+  // Android system back (MainActivity calls window.__descallAndroidBack): native shell only.
+  import("./lib/androidBack")
+    .then((mod) => mod.installAndroidBack())
+    .catch(() => {});
   import("./lib/fluid/haptics.js")
     .then((mod) => mod.installIosHapticHints())
     .catch(() => {});

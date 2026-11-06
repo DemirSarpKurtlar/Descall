@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import ImageCropModal from "../ui/ImageCropModal";
+import ImageCropModal from "../ui/LazyImageCropModal";
 import { uploadFile } from "../../api/media";
 import { setGroupAvatar } from "../../api/groups";
 import { readFileAsDataUrl } from "../../lib/cropImage";
