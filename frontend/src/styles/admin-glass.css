@@ -1746,9 +1746,9 @@
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.5);
 }
-.mod-action-tab.active.tone-amber {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: rgba(245, 158, 11, 0.5);
+.mod-action-tab.active.tone-brand {
+  background: rgba(var(--g-brand-rgb, 88, 122, 246), 0.2);
+  border-color: rgba(var(--g-brand-rgb, 88, 122, 246), 0.55);
 }
 .mod-action-tab.active.tone-slate {
   background: rgba(148, 163, 184, 0.18);
@@ -1846,9 +1846,10 @@
   color: #fff;
 }
 
-.mod-submit.tone-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
-.mod-submit.tone-amber { background: linear-gradient(135deg, #f59e0b, #b45309); }
-.mod-submit.tone-slate { background: linear-gradient(135deg, #64748b, #334155); }
+.mod-submit.tone-red { background: #e5484d; }
+.mod-submit.tone-brand { background: rgb(var(--g-brand-rgb, 88, 122, 246)); }
+.mod-submit.tone-slate { background: rgba(255, 255, 255, 0.14); }
+.mod-card h3.mod-step-title { margin-top: 18px; }
 .mod-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .mod-sanction-row {

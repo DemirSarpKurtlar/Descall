@@ -13,7 +13,7 @@ import { formatAppDateTime, parseAppDate } from "../../lib/datetime";
 import { formatRelativeTime } from "../../i18n/format.js";
 
 const ACTION_TABS = [
-  { id: "timeout", label: "Timeout", icon: Timer, tone: "amber" },
+  { id: "timeout", label: "Timeout", icon: Timer, tone: "brand" },
   { id: "ban", label: "Ban", icon: Ban, tone: "red" },
   { id: "kick", label: "Kick", icon: UserX, tone: "slate" },
 ];
@@ -300,7 +300,9 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
               </>
             )}
 
-            <h4>{t("3. Category")}</h4>
+            {categoryGroups.length > 0 ? (
+              <>
+            <h3 className="mod-step-title">{t("3. Category")}</h3>
             <div className="mod-category-scroll">
               {categoryGroups.map(([group, items]) => (
                 <div key={group} className="mod-cat-group">
@@ -320,6 +322,8 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
                 </div>
               ))}
             </div>
+              </>
+            ) : null}
 
             {category === "other" && (
               <label className="mod-field">

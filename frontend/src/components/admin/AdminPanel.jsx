@@ -1476,7 +1476,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               <h2>{t("Content filters")}</h2>
               <p className="muted">{t("Profanity filter and flagged messages")}</p>
               <div className="admin-toolbar">
-                <RippleButton type="button" onClick={() => act(loadSystem)} disabled={busy}>
+                <RippleButton type="button" className="admin-btn-ghost" onClick={() => act(loadSystem)} disabled={busy}>
+                  <RefreshCw size={15} className={busy ? "spin" : ""} aria-hidden="true" />
                   {t("Refresh")}
                 </RippleButton>
               </div>
