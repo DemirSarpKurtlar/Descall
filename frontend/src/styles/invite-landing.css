@@ -1,0 +1,76 @@
+/* Invite landings (/s/:slug server vanity, /invite/:code group), UI audit #47.
+   Loaded after ui-polish.css / glass-public*.css: brand block, 12 px rows, brand buttons. */
+
+.invite-landing {
+  background:
+    radial-gradient(50% 40% at 50% 12%, rgba(88, 122, 245, 0.16), transparent 70%),
+    #1b1d26;
+}
+
+.invite-landing .invite-landing-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-size: 0;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.invite-landing-tile { display: block; width: 48px; height: 48px; }
+.invite-landing-wordmark { display: block; height: 18px; width: auto; opacity: 0.92; }
+
+/* Server row: rounded like every other grouped row (it rendered with square corners). */
+.invite-landing .invite-landing-preview {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+.invite-landing .invite-landing-avatar { border-radius: 12px; }
+.invite-landing .invite-landing-avatar.fallback { background: #393c4d; color: #8fa6ff; }
+.invite-landing .invite-landing-preview span { color: rgba(235, 238, 255, 0.66); }
+
+.invite-landing .invite-landing-state { color: rgba(235, 238, 255, 0.72); }
+.invite-landing .invite-landing-state svg { color: #ff6961; }
+.invite-landing .invite-landing-state strong { color: #fff; font-size: 17px; }
+
+/* Buttons: brand primary (#587AF5), neutral glass secondary, radius 12. */
+.invite-landing-actions { display: flex; flex-direction: column-reverse; gap: 10px; }
+.invite-landing-actions > * { width: 100%; white-space: nowrap; }
+.invite-landing .invite-landing-btn,
+.invite-landing .invite-landing-join {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.invite-landing .invite-landing-btn.primary,
+.invite-landing .invite-landing-join { background: #587af5; color: #fff; }
+.invite-landing .invite-landing-btn.primary:hover:not(:disabled),
+.invite-landing .invite-landing-join:hover:not(:disabled) { background: #6585f6; filter: none; }
+.invite-landing .invite-landing-btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(244, 246, 251, 0.92);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+}
+.invite-landing .invite-landing-btn:active:not(:disabled),
+.invite-landing .invite-landing-join:active:not(:disabled) { transform: scale(0.97); }
+.invite-landing .invite-landing-btn:disabled { opacity: 0.6; cursor: default; }
+.invite-landing .invite-landing-btn:focus-visible,
+.invite-landing .invite-landing-join:focus-visible { outline: 2px solid #8fa6ff; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-landing .invite-landing-btn,
+  .invite-landing .invite-landing-join { transition: none; transform: none; }
+}
+.invite-landing .invite-landing-card h1 { color: #fff; }

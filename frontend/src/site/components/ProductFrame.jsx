@@ -14,16 +14,23 @@ const FRAMES = {
     desktop: { src: "brand/previews/09-server-voice.webp", width: 1440, height: 900 },
     phone: { src: "brand/previews/hero-ios-dm.webp", width: 780, height: 1688 },
   },
+  // No iPhone capture of the server screen: the window stays landscape on phones too.
+  servers: {
+    desktop: { src: "brand/previews/06-server.webp", width: 1440, height: 900 },
+    wide: true,
+  },
 };
 
 export default function ProductFrame({ kind = "chats", alt = "", priority = false }) {
   const f = FRAMES[kind] || FRAMES.chats;
   const base = import.meta.env.BASE_URL;
   return (
-    <figure className={`mkt-pf mkt-pf-${kind}`}>
+    <figure className={`mkt-pf mkt-pf-${kind}${f.wide ? " mkt-pf-wide" : ""}`}>
       <div className="mkt-pf-glass">
         <picture>
-          <source media="(max-width: 768px)" srcSet={`${base}${f.phone.src}`} width={f.phone.width} height={f.phone.height} />
+          {f.phone ? (
+            <source media="(max-width: 768px)" srcSet={`${base}${f.phone.src}`} width={f.phone.width} height={f.phone.height} />
+          ) : null}
           <img
             className="mkt-pf-screen"
             src={`${base}${f.desktop.src}`}

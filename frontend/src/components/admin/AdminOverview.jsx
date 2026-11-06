@@ -8,6 +8,7 @@ import { APP_TIMEZONE, formatAppDateTime, formatTimeAgo } from "../../lib/dateti
 import { formatNumber, formatTime } from "../../i18n/format.js";
 import { composeOverviewFromLegacy, mergeOverviewWithDb, overviewHasPeople, isOnlineNow } from "../../lib/adminOverviewFallback";
 import { SkeletonLine } from "../ui/Skeleton";
+import AdminErrorCard from "./AdminErrorCard.jsx";
 import { PRIORITIES } from "./feedback3/fbModel.js";
 import {
   auditTargetLabel,
@@ -299,7 +300,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
   };
 
   return (
-    <section className="aov" aria-busy={loading && !data ? true : undefined}>
+    <section className="aov" aria-busy={loading && !data && !error ? true : undefined}>
       <header className="aov-head">
         <div>
           <h1>{t("admin.ovTitle")}</h1>
@@ -319,17 +320,17 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
         </div>
       </header>
 
-      {error ? (
-        data ? (
-          <p className="admin-stale-note">{error}</p>
-        ) : (
-          <div className="admin-error-banner" role="alert">
-            <AlertTriangle size={16} />
-            <span>{error}</span>
-          </div>
-        )
-      ) : null}
+      {error && data ? <p className="admin-stale-note">{error}</p> : null}
 
+      {error && !data ? (
+        <AdminErrorCard
+          title={t("admin.overviewLoadTitle")}
+          body={t("admin.overviewLoadBody")}
+          onRetry={() => { setLoading(true); load(); }}
+          retryLabel={t("common.retry")}
+          busy={loading}
+        />
+      ) : (
       <div className="aov-kpis">
         {data
           ? kpis.map((k) => {
@@ -358,6 +359,7 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
               </div>
             ))}
       </div>
+      )}
 
       {data ? (
         <div className="aov-grid">

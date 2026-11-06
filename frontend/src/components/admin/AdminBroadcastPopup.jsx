@@ -4,9 +4,10 @@ import { X, Shield } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
 import OverlayPortal from "../ui/OverlayPortal";
+import { announcementIconOrDefault } from "../../lib/announcements";
 
 const SEVERITY_TONE = {
-  info: { label: "Info", color: "#6ea0ff" },
+  info: { label: "Info", color: "#587AF5" },
   success: { label: "Success", color: "#23a55a" },
   warning: { label: "Warning", color: "#f0b232" },
   urgent: { label: "Urgent", color: "#da373c" },
@@ -30,6 +31,7 @@ export function AdminBroadcastPopupCard({ popup, onDismiss, preview = false }) {
   const tone = SEVERITY_TONE[popup.severity] || SEVERITY_TONE.info;
   const title = popup.title || t("Message from Descall");
   const canSkip = !popup.requireAck;
+  const Glyph = announcementIconOrDefault(popup.emoji);
 
   const handleCta = () => {
     if (!preview && popup.ctaUrl) openCta(popup.ctaUrl);
@@ -60,7 +62,7 @@ export function AdminBroadcastPopupCard({ popup, onDismiss, preview = false }) {
       )}
 
       <div className="admin-broadcast-icon" aria-hidden="true">
-        <span>{popup.emoji || "📢"}</span>
+        <Glyph size={28} weight="regular" />
       </div>
 
       <div className="admin-broadcast-kicker">

@@ -107,6 +107,9 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
       ? t("{label} available", { label: releaseLabel })
       : t("Latest release");
 
+  // "v3.7.26 · Masaüstü uygulaması" instead of a raw file name.
+  const platformSub = (kind) => (releaseLabel ? `${releaseLabel} · ${kind}` : kind);
+
   const openAuth = () => {
     signalMarketingEngage({ source: "download", intent: "register" });
     Funnel.ctaClick({ page: "/download", placement: "download_hero", label: "start_free", intent: "register" });
@@ -133,23 +136,14 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
             {t("Windows installer and the Android APK. The browser app is the same account, with no install.")}
           </p>
           <div className="mkt-cta-row">
+            {/* iPhone visitors get the App Store as the one primary action (#27); elsewhere the
+                platform panel owns the single download button (#108). */}
             {appleMobile ? (
               <a className="mkt-btn mkt-btn-primary" href={APP_STORE_URL} rel="noopener noreferrer">
                 <IconDownload size={18} />
                 {t("Download on the App Store")}
               </a>
-            ) : (
-              <a
-                className="mkt-btn mkt-btn-primary"
-                href={downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={trackDownload}
-              >
-                <IconDownload size={18} />
-                {selectedPlatform === "android" ? t("Download APK") : t("Download for Windows")}
-              </a>
-            )}
+            ) : null}
             <button type="button" className="mkt-btn mkt-btn-soft mkt-download-hero-start" onClick={openAuth}>
               {t("Start free")}
             </button>
@@ -162,11 +156,11 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
 
         <div className="mkt-download-panel">
           <p className="mkt-download-panel-kicker">{t("Platform")}</p>
-          <div className="mkt-download-platforms" role="tablist" aria-label={t("Platform")}>
+          <div className="mkt-download-platforms" role="radiogroup" aria-label={t("Platform")}>
             <button
               type="button"
-              role="tab"
-              aria-selected={selectedPlatform === "windows"}
+              role="radio"
+              aria-checked={selectedPlatform === "windows"}
               className={`mkt-download-platform${selectedPlatform === "windows" ? " is-active" : ""}`}
               onClick={() => setSelectedPlatform("windows")}
             >
@@ -179,12 +173,12 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
                 </span>
               </span>
               <strong>Windows</strong>
-              <span className="mkt-mono">Descall-Setup.exe</span>
+              <span className="mkt-download-sub">{platformSub(t("Desktop app"))}</span>
             </button>
             <button
               type="button"
-              role="tab"
-              aria-selected={selectedPlatform === "android"}
+              role="radio"
+              aria-checked={selectedPlatform === "android"}
               className={`mkt-download-platform${selectedPlatform === "android" ? " is-active" : ""}`}
               onClick={() => setSelectedPlatform("android")}
             >
@@ -197,16 +191,15 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
                 </span>
               </span>
               <strong>Android</strong>
-              <span className="mkt-mono">Descall-APK.apk</span>
+              <span className="mkt-download-sub">{platformSub("APK")}</span>
             </button>
           </div>
           <p className="mkt-download-version">
             <span className="mkt-pulse" aria-hidden />
             <span>{versionLine}</span>
-            <span className="mkt-download-version-src">GitHub releases/latest</span>
           </p>
           <a
-            className="mkt-btn mkt-btn-primary mkt-download-panel-cta"
+            className={`mkt-btn mkt-btn-primary mkt-download-panel-cta${appleMobile ? " is-apple" : ""}`}
             href={downloadUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -298,7 +291,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
-      <SeoExtraContent />
+      <SeoExtraContent layout="split" />
       <SeoRelatedLinks title="Keep exploring" links={SEO_PILLARS} />
     </>
   );

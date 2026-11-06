@@ -12,7 +12,9 @@ assert.doesNotMatch(page, /<script>/, "no inline script on the 404 page");
 assert.deepEqual(JSON.parse(script.match(/var LIVE = (\[[^\]]*\]);/)[1]), registry.locales.filter((l) => l.status === "live").map((l) => l.id));
 assert.deepEqual(JSON.parse(script.match(/var ids = (\[[^\]]*\]);/)[1]), registry.locales.map((l) => l.id));
 const keys = [...page.matchAll(/data-i18n="(\w+)"/g)].map((m) => m[1]);
-assert.deepEqual(keys.sort(), ["body", "download", "home"]);
+assert.deepEqual(keys.sort(), ["body", "download", "heading", "home"]);
+assert.match(page, /<html lang="tr">/, "Turkish is the static default");
+assert.match(page, /descall-appicon-rounded\.svg/, "Concept 2 app tile");
 
 function render({ stored = {}, languages = ["en-US"], tz = "UTC", pathname = "/nope" } = {}) {
   const store = new Map(Object.entries(stored));
@@ -31,7 +33,8 @@ function render({ stored = {}, languages = ["en-US"], tz = "UTC", pathname = "/n
 assert.equal(render().lang, "en");
 const tr = render({ languages: ["tr-TR"] });
 assert.equal(tr.lang, "tr");
-assert.equal(tr.text.body, "Bu sayfa Descall’da yok.");
+assert.equal(tr.text.heading, "Bu sayfa bulunamadı");
+assert.equal(tr.text.home, "Ana sayfaya dön");
 assert.equal(render({ tz: "Europe/Istanbul" }).lang, "tr");
 assert.equal(render({ pathname: "/tr/nope" }).lang, "tr", "Turkish URL");
 assert.equal(render({ pathname: "/de/nope", stored: { descall_language: "en" } }).lang, "de", "a site language prefix wins");

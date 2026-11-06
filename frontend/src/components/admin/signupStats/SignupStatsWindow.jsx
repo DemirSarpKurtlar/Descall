@@ -258,7 +258,7 @@ function StatsContent({ data, W, controls }) {
   const wide = W > 1100;
   const narrow = W > 0 && W < 760;
   const today = istToday();
-  const cap = rangeCaption(data.range.from, data.range.to, today, t, locale);
+  const cap = rangeCaption(data.range?.from, data.range?.to, today, t, locale);
   const g = data.range.granularity;
   const unitLabel = g === "week" ? t("adminx.sst.unitWeek") : g === "month" ? t("adminx.sst.unitMonth") : t("adminx.sst.unitDay");
   const avgLabel = g === "week" ? t("adminx.sst.avgWeek") : g === "month" ? t("adminx.sst.avgMonth") : t("adminx.sst.avgDay");
@@ -434,9 +434,9 @@ function StatsContent({ data, W, controls }) {
 
 function Controls({ data, query, setQuery, onCsv, csvBusy }) {
   const { t, locale } = useLocale();
-  const range = data ? rangeLabel(data.range.from, data.range.to, locale) : "";
+  const range = data?.range ? rangeLabel(data.range.from, data.range.to, locale) : "";
   const [menu, setMenu] = useState(false);
-  const [custom, setCustom] = useState({ from: data?.range.from || "", to: data?.range.to || "" });
+  const [custom, setCustom] = useState({ from: data?.range?.from || "", to: data?.range?.to || "" });
   const ref = useRef(null);
   useEffect(() => {
     if (!menu) return undefined;
@@ -447,7 +447,7 @@ function Controls({ data, query, setQuery, onCsv, csvBusy }) {
     return () => window.removeEventListener("pointerdown", off);
   }, [menu]);
   useEffect(() => {
-    if (data) setCustom({ from: data.range.from, to: data.range.to });
+    if (data?.range) setCustom({ from: data.range.from, to: data.range.to });
   }, [data]);
   const today = istToday();
   const pick = (preset) => {
@@ -526,6 +526,11 @@ function useSignupStats() {
     try {
       const d = await adminFetch(`/signup-stats?${qs(query)}`);
       if (id !== seq.current) return;
+      // A reply without the expected shape is an error state, not a crash.
+      if (!d || typeof d !== "object" || !d.range || !d.kpis || !Array.isArray(d.series)) {
+        setError("error");
+        return;
+      }
       setData(d);
       setError(null);
     } catch (e) {
