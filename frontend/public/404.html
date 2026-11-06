@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Page not found | Descall</title>
-    <meta name="description" content="This page does not exist on Descall." />
+    <title>Sayfa bulunamadı | Descall</title>
+    <meta name="description" content="Bu sayfa Descall’da yok." />
     <meta name="robots" content="noindex,nofollow" />
     <link rel="icon" href="/favicon-48.png?v=concept2" type="image/png" sizes="48x48" />
     <link rel="icon" href="/favicon-96.png?v=concept2" type="image/png" sizes="96x96" />
@@ -20,45 +20,62 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Descall" />
-    <meta name="theme-color" content="#0d0e13" />
+    <meta name="theme-color" content="#1b1d26" />
     <style>
-      html, body { margin: 0; min-height: 100%; background: #0d0e13; color: #fff; box-sizing: border-box; }
       *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; background: #1b1d26; color: #fff; }
       body {
+        min-height: 100vh;
+        min-height: 100dvh;
         font-family: -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
         display: grid;
         place-items: center;
-        padding: 32px 20px;
+        padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+        background: radial-gradient(60% 45% at 50% 0%, rgba(88, 122, 245, 0.14), transparent 70%), #1b1d26;
       }
       .card {
-        width: min(560px, 100%);
-        text-align: left;
+        width: min(440px, 100%);
+        text-align: center;
+        border-radius: 28px;
+        padding: 36px 28px 30px;
+        background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)), rgba(37, 39, 51, .92);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        backdrop-filter: blur(40px) saturate(180%);
+        box-shadow: inset 0 0 0 .5px rgba(255,255,255,.14), 0 24px 64px rgba(0,0,0,.45);
       }
+      .tile { display: block; width: 64px; height: 64px; margin: 0 auto 20px; }
       h1 {
         margin: 0;
         font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
-        font-size: clamp(30px, 7vw, 44px);
-        line-height: 1.08;
-        letter-spacing: -.03em;
+        font-size: 26px;
+        line-height: 1.2;
+        letter-spacing: -.02em;
         font-weight: 700;
       }
-      p { margin: 12px 0 0; color: rgba(235,238,255,.72); font-size: 16px; line-height: 1.45; }
-      .row { display: flex; gap: 10px; justify-content: flex-start; flex-wrap: wrap; margin-top: 22px; }
+      p { margin: 10px 0 0; color: rgba(235,238,255,.72); font-size: 15px; line-height: 1.45; }
+      .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
       a {
         display: inline-flex; align-items: center; justify-content: center;
-        min-height: 48px; padding: 0 18px; border-radius: 999px;
-        text-decoration: none; font-weight: 650; color: #fff;
+        min-height: 44px; padding: 0 18px; border-radius: 12px;
+        text-decoration: none; font-weight: 600; font-size: 15px; color: #fff;
+        transition: transform .12s ease, background-color .12s ease;
       }
+      a:active { transform: scale(.97); }
+      a:focus-visible { outline: 2px solid #8fa6ff; outline-offset: 2px; }
       .primary { background: #587af5; }
-      .ghost { box-shadow: inset 0 0 0 .5px rgba(255,255,255,.28); }
+      .primary:hover { background: #6585f6; }
+      .ghost { background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.2); }
+      @media (prefers-reduced-motion: reduce) { a, a:active { transition: none; transform: none; } }
     </style>
   </head>
   <body>
     <main class="card">
-      <h1 data-i18n="body">This page does not exist on Descall.</h1>
+      <img class="tile" src="/brand/descall-appicon-rounded.svg" width="64" height="64" alt="Descall" />
+      <h1 data-i18n="heading">Bu sayfa bulunamadı</h1>
+      <p data-i18n="body">Adresi kontrol et ya da ana sayfaya dön.</p>
       <div class="row">
-        <a class="primary" href="/" data-i18n="home">Home</a>
-        <a class="ghost" href="/download" data-i18n="download">Download</a>
+        <a class="primary" href="/" data-i18n="home">Ana sayfaya dön</a>
+        <a class="ghost" href="/download" data-i18n="download">İndir</a>
       </div>
     </main>
     <script src="/404-locale.js"></script>

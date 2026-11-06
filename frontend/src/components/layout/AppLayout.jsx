@@ -630,6 +630,7 @@ export default function AppLayout({
                 me={me}
                 myStatus={myStatus}
                 history={activity.history}
+                historyLoaded={activity.historyLoaded !== false}
                 currentActivity={activity.currentActivity}
                 privacy={activity.settings?.privacy}
               />
@@ -765,6 +766,7 @@ export default function AppLayout({
             <div className="app-chat-keep">
               <ErrorBoundary scope="pane">
               <ChatPanel
+                activitySplitView={isMobile && !drawerIsPage}
                 historyLoadError={historyLoadError}
                 dms={dms}
                 onDmPrefAction={onDmPrefAction}

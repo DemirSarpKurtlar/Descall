@@ -1009,54 +1009,63 @@ body.has-mkt .login-modal :focus-visible {
     width: max(100%, 560px);
   }
 
-  .mkt .mkt-download-platform {
+  /* Phone: one vertical list row per platform, icon · name over version · check. */
+  .mkt .mkt-download-platforms .mkt-download-platform {
     display: grid;
-    grid-template-columns: 44px 28px minmax(0, 1fr) auto;
+    grid-template-columns: 44px minmax(0, 1fr) 28px;
+    grid-template-rows: auto auto;
     align-items: center;
-    column-gap: 10px;
+    column-gap: 12px;
+    row-gap: 2px;
     justify-content: stretch;
     text-align: left;
     min-height: 64px;
   }
 
-  .mkt .mkt-download-platform-top {
+  .mkt .mkt-download-platforms .mkt-download-platform-top {
     display: contents;
     width: auto;
   }
 
-  .mkt .mkt-download-platform .mkt-icon,
-  .mkt .mkt-download-check,
-  .mkt .mkt-download-platform strong,
-  .mkt .mkt-download-platform .mkt-mono,
-  .mkt .mkt-download-platform span {
-    margin-left: 0;
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-icon,
+  .mkt .mkt-download-platforms .mkt-download-check,
+  .mkt .mkt-download-platforms .mkt-download-platform strong,
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-download-sub,
+  .mkt .mkt-download-platforms .mkt-download-platform span {
+    margin: 0;
   }
 
-  .mkt .mkt-download-platform .mkt-icon {
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-icon {
     grid-column: 1;
+    grid-row: 1 / 3;
     justify-self: start;
   }
 
-  .mkt .mkt-download-check {
-    grid-column: 2;
-    justify-self: center;
+  .mkt .mkt-download-platforms .mkt-download-check {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    justify-self: end;
     visibility: hidden;
   }
 
-  .mkt .mkt-download-platform.is-active .mkt-download-check {
+  .mkt .mkt-download-platforms .mkt-download-platform.is-active .mkt-download-check {
     visibility: visible;
   }
 
-  .mkt .mkt-download-platform strong {
-    grid-column: 3;
+  .mkt .mkt-download-platforms .mkt-download-platform strong {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
     justify-self: start;
     text-align: left;
   }
 
-  .mkt .mkt-download-platform .mkt-mono {
-    grid-column: 4;
-    justify-self: end;
-    text-align: right;
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-download-sub {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    justify-self: start;
+    text-align: left;
   }
 
   .mkt .mkt-feature-grid,
@@ -1437,6 +1446,7 @@ body.has-mkt .login-modal :focus-visible {
 }
 
 .mkt .mkt-download-check {
+  visibility: hidden;
   width: 24px;
   height: 24px;
   border-radius: var(--r-md);
@@ -1451,6 +1461,14 @@ body.has-mkt .login-modal :focus-visible {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;
   color: rgba(235, 238, 255, 0.5);
+}
+
+/* One selected platform: only the active card shows its check. */
+.mkt .mkt-download-platform.is-active .mkt-download-check { visibility: visible; }
+.mkt .mkt-download-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(235, 238, 255, 0.6);
 }
 
 .mkt .mkt-download-version {
@@ -1857,7 +1875,7 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
 
 .mkt .mkt-contact .mkt-contact-aside h2 {
   margin: 18px 0 6px;
-  font-size: 15px;
+  font-size: var(--fs-15, 0.9375rem);
   line-height: 1.3;
   font-weight: 650;
   letter-spacing: 0;
@@ -1951,6 +1969,158 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
   }
 }
 
+/* Narrow phones (375-430 px): the header stays one compact row. "Ücretsiz başla"
+   never wraps onto two lines and the BETA chip gives its room to the button. */
+@media (max-width: 430px) {
+  .mkt .mkt-header-beta { display: none; }
+  .mkt .mkt-header-actions > .mkt-btn-primary {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex: none;
+  }
+}
+
+/* Long-form extras: inline "1. 2. 3." steps render as a real numbered list. */
+.mkt .seo-numbered {
+  counter-reset: seo-numbered-step;
+  list-style: none;
+  margin: 4px 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  max-width: 68ch;
+}
+.mkt .seo-numbered > li {
+  counter-increment: seo-numbered-step;
+  position: relative;
+  min-height: 32px;
+  padding: 4px 0 0 48px;
+  color: var(--gp-t2, #d5dbe8);
+  line-height: 1.55;
+}
+.mkt .seo-numbered > li::before {
+  content: counter(seo-numbered-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: rgba(88, 122, 245, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(143, 166, 255, 0.35);
+}
+
+/* Download page extras: heading left, copy right, 32 px headings. */
+.mkt .seo-extra.is-split .seo-section + .seo-section { margin-top: 56px; }
+.mkt .seo-extra.is-split .seo-section > h2 { font-size: 32px; line-height: 1.15; }
+@media (min-width: 900px) {
+  .mkt .seo-extra.is-split .seo-section {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 48px;
+    align-items: start;
+  }
+  .mkt .seo-extra.is-split .seo-section > h2 { margin: 0; }
+  .mkt .seo-extra.is-split .seo-section-body > p:last-child { margin-bottom: 0; }
+}
+@media (max-width: 768px) {
+  .mkt .seo-extra.is-split .seo-section > h2 { font-size: 26px; }
+}
+.mkt .seo-extra.is-split .seo-link-list { margin-top: 40px; }
+
+/* Landing hero with a preview: title, lead and buttons stack in the left column,
+   the preview takes the right column (the buttons used to drop ~250 px below). */
+.mkt .seo-landing .seo-hero:has(.seo-product-preview) {
+  row-gap: 0;
+  align-content: center;
+}
+.mkt .seo-landing .seo-hero:has(.seo-product-preview) > :not(.seo-product-preview) {
+  grid-column: 1;
+}
+.mkt .seo-landing .seo-hero:has(.seo-product-preview) > .seo-product-preview {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
+/* Discord comparison: the highlighted column is Descall, not the competitor. */
+.mkt .mkt-table.is-compare th:last-child,
+.mkt .mkt-table.is-compare td:last-child {
+  color: var(--gp-t2);
+  background: transparent;
+}
+.mkt .mkt-table.is-compare th:nth-child(2),
+.mkt .mkt-table.is-compare td:nth-child(2) {
+  color: var(--gp-t1);
+  background: rgba(88, 122, 245, 0.08);
+}
+
+/* Features: the H1 keeps clear space under the floating header (it sat ~8 px under it). */
+.mkt .mkt-section.seo-features { margin-top: 48px; }
+@media (max-width: 768px) { .mkt .mkt-section.seo-features { margin-top: 32px; } }
+
+/* Info pages (Güvenlik, Descall'ın sahibi) share the legal reader template. */
+.mkt .info-doc { margin-top: 32px; }
+.mkt .info-doc .legal-doc-cards { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.mkt .info-doc-main { max-width: none; margin-top: 28px; }
+.mkt .info-doc-section > p:last-child { margin-bottom: 0; }
+@media (max-width: 768px) {
+  .mkt .info-doc .legal-doc-cards { grid-template-columns: 1fr; }
+  .mkt .info-doc .legal-doc-section { padding: 20px; }
+}
+
+/* Founder page: founder card + grouped record list (no browser bullets). */
+.mkt .founder-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+  padding: 18px 20px;
+  border-radius: var(--r-xl);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+.mkt .founder-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #393c4d;
+  color: #8fa6ff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.mkt .founder-card strong { display: block; font-size: 17px; color: var(--gp-t1, #f7f8fc); }
+.mkt .founder-card span:not(.founder-avatar) { display: block; margin-top: 2px; font-size: 14px; color: var(--gp-t2, #d5dbe8); }
+.mkt .founder-list { margin: 4px 0 0; }
+.mkt .founder-list > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+.mkt .founder-list > div:first-child { border-top: none; padding-top: 0; }
+.mkt .founder-list dt { font-size: 14px; font-weight: 600; color: var(--gp-t3, rgba(235, 238, 255, 0.6)); }
+.mkt .founder-list dd { margin: 0; font-size: 15px; line-height: 1.5; color: var(--gp-t1, #f7f8fc); }
+.mkt .info-doc a { color: #8fa6ff; font-weight: 600; text-decoration: none; }
+.mkt .info-doc a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.mkt .founder-more { margin: 20px 0 0; color: var(--gp-t2, #d5dbe8); }
+@media (max-width: 600px) {
+  .mkt .founder-list > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
 /* UI audit #27: the download platform card on phones. The unscoped
    .mkt-download-platform-top flex rule above beat the 600px `display:
    contents` grid, so the name and file name overlapped and the check sat on
@@ -1993,7 +2163,7 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
     justify-self: start;
     line-height: 1.25;
   }
-  .mkt .mkt-download-platforms .mkt-download-platform .mkt-mono {
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-download-sub {
     grid-column: 2;
     grid-row: 2;
     justify-self: start;
@@ -2005,8 +2175,11 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
     font-size: 13px;
     text-align: left;
   }
+  /* #108 merge: off iPhone the hero has no download button any more, so the
+     panel button stays the one download action; on iPhone the hero App Store
+     button is primary and the Windows button hides. */
   .mkt .mkt-download-hero-start,
-  .mkt .mkt-download-panel-cta {
+  .mkt .mkt-download-panel-cta.is-apple {
     display: none;
   }
 }

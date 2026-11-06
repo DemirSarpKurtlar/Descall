@@ -1319,7 +1319,8 @@ a.mkt-feature-link {
   letter-spacing: -0.02em;
 }
 
-.seo-section > p {
+.seo-section > p,
+.seo-section-body > p {
   margin: 0 0 16px;
   color: var(--mkt-muted);
   line-height: 1.6;
@@ -1968,7 +1969,7 @@ a.mkt-feature-link {
 .mkt-download-platforms {
   margin: 32px 0 8px;
   text-align: center;
-  font-size: 15px;
+  font-size: var(--fs-15, 0.9375rem);
   color: var(--mkt-muted);
 }
 

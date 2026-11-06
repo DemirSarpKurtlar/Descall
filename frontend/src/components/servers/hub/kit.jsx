@@ -7,7 +7,8 @@ import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { usePressFeedbackScope } from "../../../hooks/usePressFeedback";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../../lib/fluid/springs";
 import { resolveAvatarUrl } from "../../../lib/userProfile";
-import { SX_PATHS, SX_AVATAR_COLORS } from "./icons";
+import { SX_PATHS } from "./icons";
+import { avatarColor, avatarKey } from "../../../lib/avatarFallback";
 import { useReducedMotionPref } from "./useHubMode";
 import { useSvh } from "./useSvh";
 import { t } from "../../../i18n/runtime.js";
@@ -86,7 +87,7 @@ export function Av({ user, name, s = 36, dot, img, style }) {
   const n = name || user?.displayName || user?.username || "?";
   const L = (Array.from(String(n))[0] || "?").toLocaleUpperCase("tr");
   const url = img || (user ? resolveAvatarUrl(user) : null);
-  const st = { width: s, height: s, fontSize: s * 0.42, ...(url ? { backgroundImage: `url("${url}")` } : { background: SX_AVATAR_COLORS[L] || "#555" }), ...style };
+  const st = { width: s, height: s, fontSize: s * 0.42, ...(url ? { backgroundImage: `url("${url}")` } : { background: avatarColor(avatarKey(user, n)), color: "#E8ECF8" }), ...style };
   return (
     <span className="svh-av" style={st} aria-hidden="true">
       {url ? null : L}

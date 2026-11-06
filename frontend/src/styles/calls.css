@@ -250,20 +250,7 @@
   text-align: center;
   padding: 36px 16px;
   color: var(--text-muted);
-  border: 0;
-  border-radius: var(--r-lg);
-  background: var(--surface-1);
-}
 
-.calls-empty strong {
-  color: var(--text-1);
-  font-size: 14px;
-}
-
-.calls-empty span {
-  font-size: 12px;
-  max-width: 36ch;
-  line-height: 1.4;
 }
 
 .calls-list {

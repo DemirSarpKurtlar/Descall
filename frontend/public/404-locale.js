@@ -6,13 +6,13 @@
    (src/site404Locale.selftest.mjs checks it). */
 (function () {
   var COPY = {
-    "en": { title: "Page not found | Descall", body: "This page does not exist on Descall.", home: "Home", download: "Download" },
-    "tr": { title: "Sayfa bulunamadı | Descall", body: "Bu sayfa Descall’da yok.", home: "Ana sayfa", download: "İndir" },
-    "de": { title: "Seite nicht gefunden | Descall", body: "Diese Seite gibt es auf Descall nicht.", home: "Startseite", download: "Herunterladen" },
-    "es": { title: "Página no encontrada | Descall", body: "Esta página no existe en Descall.", home: "Inicio", download: "Descargar" },
-    "fr": { title: "Page introuvable | Descall", body: "Cette page n'existe pas sur Descall.", home: "Accueil", download: "Télécharger" },
-    "pt-BR": { title: "Página não encontrada | Descall", body: "Esta página não existe no Descall.", home: "Início", download: "Baixar" },
-    "ru": { title: "Страница не найдена | Descall", body: "Такой страницы на Descall нет.", home: "Главная", download: "Скачать" }
+    "en": { title: "Page not found | Descall", heading: "This page could not be found", body: "Check the address or go back to the home page.", home: "Back to home", download: "Download" },
+    "tr": { title: "Sayfa bulunamadı | Descall", heading: "Bu sayfa bulunamadı", body: "Adresi kontrol et ya da ana sayfaya dön.", home: "Ana sayfaya dön", download: "İndir" },
+    "de": { title: "Seite nicht gefunden | Descall", heading: "Diese Seite wurde nicht gefunden", body: "Prüfe die Adresse oder geh zurück zur Startseite.", home: "Zur Startseite", download: "Herunterladen" },
+    "es": { title: "Página no encontrada | Descall", heading: "No encontramos esta página", body: "Revisa la dirección o vuelve al inicio.", home: "Volver al inicio", download: "Descargar" },
+    "fr": { title: "Page introuvable | Descall", heading: "Cette page est introuvable", body: "Vérifie l'adresse ou reviens à l'accueil.", home: "Retour à l'accueil", download: "Télécharger" },
+    "pt-BR": { title: "Página não encontrada | Descall", heading: "Esta página não foi encontrada", body: "Confira o endereço ou volte para o início.", home: "Voltar ao início", download: "Baixar" },
+    "ru": { title: "Страница не найдена | Descall", heading: "Страница не найдена", body: "Проверьте адрес или вернитесь на главную.", home: "На главную", download: "Скачать" }
   };
   var LIVE = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];
   var ids = ["en", "tr", "de", "es", "fr", "pt-BR", "ru"];

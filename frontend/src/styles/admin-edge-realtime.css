@@ -7,8 +7,8 @@
 .admin-edge-chip { display: inline-flex; align-items: center; gap: 4px; }
 .admin-edge-switch { justify-content: space-between; flex-wrap: nowrap; }
 .admin-edge-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.admin-edge-copy small { font-size: 12px; opacity: 0.65; }
+.admin-edge-copy small { font-size: var(--fs-12); opacity: 0.65; }
 .admin-edge-seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: 9px; background: rgba(118, 118, 128, 0.24); }
-.admin-edge-seg-btn { border: 0; padding: 5px 12px; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.admin-edge-seg-btn { border: 0; padding: 5px 12px; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: var(--fs-13); font-weight: 600; cursor: pointer; }
 .admin-edge-seg-btn.is-on { background: var(--brand, #587af5); color: #fff; }
 .admin-edge-seg-btn:disabled { opacity: 0.5; cursor: default; }

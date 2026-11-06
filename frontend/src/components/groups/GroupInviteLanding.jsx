@@ -8,6 +8,7 @@ import { SkeletonLine } from "../ui/Skeleton";
 import "../../site/glass-public.css";
 import "../../site/glass-public-frames.css";
 import { useT } from "../../context/LocaleContext";
+import InviteLandingBrand from "../servers/InviteLandingBrand";
 
 /**
  * Discord-style invite landing, shown for /invite/:code
@@ -73,7 +74,7 @@ export default function GroupInviteLanding({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="invite-landing-brand">Descall</div>
+        <InviteLandingBrand />
         <h1>{t("You've been invited to join a group")}</h1>
 
         {loading ? (
@@ -84,10 +85,10 @@ export default function GroupInviteLanding({
               <SkeletonLine width="62%" height={12} />
             </div>
           </div>
-        ) : error && !preview ? (
+        ) : !preview?.group ? (
           <div className="invite-landing-state is-error">
             <AlertTriangle size={28} />
-            <p>{error}</p>
+            <strong>{t("Invite not found")}</strong>
             <button type="button" className="invite-landing-secondary" onClick={onDismiss}>
               {t("Back to Descall")}
             </button>

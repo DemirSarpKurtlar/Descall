@@ -15,6 +15,7 @@ import ActivityHistoryRow, { localizeActivityLabel } from './ActivityHistoryRow'
 import { TYPE_PRIORITY } from '../../lib/processDatabase';
 import { isVisiblyOnline } from '../../lib/presence';
 import { Avatar } from '../ui/Avatar';
+import { ConversationListSkeleton } from '../ui/Skeleton';
 
 function typeRank(type) {
   const i = TYPE_PRIORITY.indexOf(type);
@@ -24,11 +25,11 @@ function typeRank(type) {
 const TYPE_COLOR = {
   game:     '#23a55a',
   music:    '#1db954',
-  dev:      '#587af5',
+  dev:      '#587AF5',
   creative: '#eb459e',
   browser:  '#4f9ef8',
   media:    '#f0b232',
-  manual:   '#587af5',
+  manual:   '#587AF5',
   app:      '#747f8d',
 };
 
@@ -54,13 +55,16 @@ function formatRelativeTime(dateStr, t) {
 
 function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectron }) {
   const t = useT();
-  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#587af5') : '#587af5';
+  // UI audit #6: the card keeps the standard hairline glass edge (no coloured
+  // border or glow); only the icon carries the activity colour, and the idle
+  // moon stays neutral.
+  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#587AF5') : null;
 
   return (
-    <div className="activity-current-card" style={{ borderColor: accentColor }}>
+    <div className="activity-current-card">
       <div className="activity-current-header">
-        <div className="activity-current-icon-wrap" style={{ background: `${accentColor}22` }}>
-          <span style={{ color: accentColor, display: "inline-flex" }}>
+        <div className="activity-current-icon-wrap" style={accentColor ? { background: `${accentColor}22` } : undefined}>
+          <span style={{ color: accentColor || 'var(--text-2)', display: "inline-flex" }}>
             <ActivityTypeIcon type={activity?.appType} size={28} />
           </span>
         </div>
@@ -195,6 +199,7 @@ export default function ActivityView({
   onAddFriend,
   onFriendSelect,
   onMenuClick,
+  historyLoaded = true,
 }) {
   const t = useT();
   const searchRef = useRef(null);
@@ -466,17 +471,16 @@ export default function ActivityView({
                     <ActivityHistoryRow key={entry.id} entry={entry} />
                   ))}
                 </div>
+              ) : !historyLoaded ? (
+                <ConversationListSkeleton count={5} label={t('Loading…')} />
               ) : (
+                /* One action on this screen: "Durum ayarla" lives in the header. */
                 <div className="activity-tab-empty">
                   <div className="activity-empty-icon">
                     <Clock size={24} />
                   </div>
                   <p>{t('No activity history yet')}</p>
                   <span>{t('Start using apps and games to see them here')}</span>
-                  <button type="button" className="activity-empty-cta" onClick={() => setShowManualModal(true)}>
-                    <Edit3 size={14} />
-                    {t('Set Status')}
-                  </button>
                 </div>
               )}
             </motion.div>
@@ -493,7 +497,7 @@ export default function ActivityView({
               {friendFeed.length > 0 ? (
                 <div className="activity-friend-feed">
                   {friendFeed.map(({ friend, pres }) => {
-                    const accentColor = TYPE_COLOR[pres.appType] || '#587af5';
+                    const accentColor = TYPE_COLOR[pres.appType] || '#587AF5';
                     return (
                       <button
                         type="button"

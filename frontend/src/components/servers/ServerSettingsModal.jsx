@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { serverInitials } from "../../lib/serverInitials.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings2, Camera, ImagePlus, Trash2, X } from "../ui/Icon.jsx";
+import { Camera, ImagePlus, Trash2, X } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";
@@ -194,10 +194,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
         >
           <header className="server-settings-head">
             <div className="server-settings-head-copy">
-              <h3>
-                <Settings2 size={18} />
-                {t("Server Settings")}
-              </h3>
+              <h3>{t("Server Settings")}</h3>
               <p className="server-modal-lead">
                 {t("Update your server name, description, icon, and banner.")}
               </p>
@@ -230,10 +227,6 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
                   <span>{t("Upload banner")}</span>
                 </div>
               )}
-              <span className="server-settings-media-chip">
-                <ImagePlus size={12} />
-                {t("Banner")}
-              </span>
             </button>
 
             <button
@@ -259,25 +252,9 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
             </button>
           </div>
 
+          {/* UI audit #85: the banner area itself is the one upload target (no
+              extra "Banner" chip or "Banner ekle" button doing the same job). */}
           <div className="server-settings-media-actions">
-            <button
-              type="button"
-              className="server-ghost-btn"
-              disabled={!canManage || busy || uploading}
-              onClick={() => openPicker("icon")}
-            >
-              <Camera size={15} />
-              {t("Change icon")}
-            </button>
-            <button
-              type="button"
-              className="server-ghost-btn"
-              disabled={!canManage || busy || uploading}
-              onClick={() => openPicker("banner")}
-            >
-              <ImagePlus size={15} />
-              {bannerUrl ? t("Change banner") : t("Add banner")}
-            </button>
             {bannerUrl ? (
               <button
                 type="button"
@@ -337,7 +314,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
             <div className="server-settings-channels">
               <h4>{t("System channels")}</h4>
               <label className="server-field">
-                <span>{t("AFK voice channel")}</span>
+                <span>{t("Voice channel for idle members")}</span>
                 <select
                   value={afkChannelId}
                   disabled={busy}
@@ -352,15 +329,20 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
                 </select>
               </label>
               <label className="server-field">
-                <span>{t("AFK timeout (seconds)")}</span>
-                <input
-                  type="number"
-                  min={60}
-                  max={3600}
-                  value={afkTimeoutSeconds}
+                <span>{t("Move idle members after")}</span>
+                <select
+                  value={String(afkTimeoutSeconds)}
                   disabled={busy || !afkChannelId}
                   onChange={(e) => setAfkTimeoutSeconds(Number(e.target.value) || 300)}
-                />
+                >
+                  {[...new Set([60, 300, 900, 1800, 3600, Number(afkTimeoutSeconds) || 300])]
+                    .sort((a, b) => a - b)
+                    .map((sec) => (
+                      <option key={sec} value={String(sec)}>
+                        {t("{count} min", { count: Math.max(1, Math.round(sec / 60)) })}
+                      </option>
+                    ))}
+                </select>
               </label>
               <label className="server-field">
                 <span>{t("System channel")}</span>

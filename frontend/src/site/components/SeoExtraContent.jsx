@@ -1,10 +1,26 @@
 import { Link, useLocation } from "react-router-dom";
-import { localizedPageExtras } from "../seo/pageExtras";
+import { localizedPageExtras, numberedSteps } from "../seo/pageExtras";
+
+function Paragraph({ text }) {
+  const n = numberedSteps(text);
+  if (!n) return <p>{text}</p>;
+  return (
+    <>
+      <ol className="seo-numbered">
+        {n.steps.map((step) => (
+          <li key={step.slice(0, 40)}>{step}</li>
+        ))}
+      </ol>
+      {n.after ? <p>{n.after}</p> : null}
+    </>
+  );
+}
 import { useLocale } from "../../context/localeContextInstance";
 import { marketingHref } from "../useMarketingHref";
 
 /** Long-form copy shared with the prerendered shell (see seo/pageExtras.js). */
-export default function SeoExtraContent({ path, collapsible = false, showLinks = true }) {
+/** layout="split": heading left, copy right on wide screens (download page). */
+export default function SeoExtraContent({ path, collapsible = false, showLinks = true, layout = "" }) {
   const { t, locale } = useLocale();
   const { pathname } = useLocation();
   const key = path || (pathname || "/").replace(/\/+$/, "") || "/";
@@ -21,8 +37,9 @@ export default function SeoExtraContent({ path, collapsible = false, showLinks =
       {extra.sections.map((s) => (
         <div key={s.h} className="seo-section">
           <h2>{s.h}</h2>
+          <div className="seo-section-body">
           {s.p.map((p) => (
-            <p key={p.slice(0, 40)}>{p}</p>
+            <Paragraph key={p.slice(0, 40)} text={p} />
           ))}
           {s.list?.length > 0 && (
             <ul className="mkt-plain-list">
@@ -31,6 +48,7 @@ export default function SeoExtraContent({ path, collapsible = false, showLinks =
               ))}
             </ul>
           )}
+          </div>
         </div>
       ))}
       {showLinks && extra.links?.length > 0 && (
@@ -54,5 +72,5 @@ export default function SeoExtraContent({ path, collapsible = false, showLinks =
       </section>
     );
   }
-  return <section className="mkt-section mkt-prose seo-extra">{body}</section>;
+  return <section className={`mkt-section mkt-prose seo-extra${layout === "split" ? " is-split" : ""}`}>{body}</section>;
 }

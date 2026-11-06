@@ -112,8 +112,8 @@ html.glass-desktop .user-hover-card.uhc3 { width: 340px; }
 .uhc3-dot { width: 7px; height: 7px; border-radius: 50%; background: #8e8e93; }
 .uhc3-status.st-online { color: #30d158; }
 .uhc3-status.st-online .uhc3-dot { background: #30d158; }
-.uhc3-status.st-idle { color: #ffd60a; }
-.uhc3-status.st-idle .uhc3-dot { background: #ffd60a; }
+.uhc3-status.st-idle { color: var(--status-idle, #FF9F0A); }
+.uhc3-status.st-idle .uhc3-dot { background: var(--status-idle, #FF9F0A); }
 .uhc3-status.st-dnd { color: #ff6961; }
 .uhc3-status.st-dnd .uhc3-dot { background: #ff453a; }
 

@@ -272,11 +272,14 @@ assert.match(panelJsx, /"main-panel is-floating-header"/);
 assert.match(panelJsx, /<div className="chat-panel-bg" aria-hidden="true" \/>/);
 assert.match(panelJsx, /<div className="chat-scroll-edge" aria-hidden="true" \/>/);
 assert.match(panelJsx, /chrome\.dataset\.scrolled/);
-// Mockup #29/#30: DM header is one pill (search, pin, call, video, block) with no "⋯".
+// UI audit #67 (2026-11-06) replaces mockup #29/#30's one-pill DM header:
+// the DM header shows voice + video, and search, pinned and the destructive
+// block sit in a "⋯" menu (block in its own red section).
 assert.equal((panelJsx.match(/className="header-actions-sep"/g) || []).length, 1);
 assert.match(panelJsx, /\{headerDm \? null : <span className="header-actions-sep"/);
-assert.doesNotMatch(panelJsx, /header-more-btn|dm-header-more/);
-assert.match(panelJsx, /className=\{`icon-btn header-block-btn\$\{dmBlockedByMe \? " active" : ""\}`\}/);
-assert.match(panelJsx, /\(headerDm \|\| headerGroup \|\| \(activeView === "servers"/);
+assert.match(panelJsx, /icon-btn header-more-btn/);
+assert.match(panelJsx, /id: "block",[\s\S]{0,240}danger: !dmBlockedByMe/);
+assert.doesNotMatch(panelJsx, /header-block-btn/);
+assert.match(panelJsx, /\(headerGroup \|\| \(activeView === "servers"/);
 
 console.log("headerBand.selftest ok");

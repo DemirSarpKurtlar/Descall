@@ -5,6 +5,7 @@ import { UAH_RU } from "./uah.ru.js";
  *   nested  - keyed messages (same paths as en.js nested)
  *   phrases - English source string -> translation
  */
+import { MID_APP_I18N } from "./midApp.i18n.js";
 export const nested = {
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
@@ -2055,6 +2056,10 @@ export const nested = {
     "overviewLive": "Сейчас онлайн",
     "overviewLiveHint": "Подключённые сокеты. Карточка открывается в один клик.",
     "overviewLoadError": "Не удалось загрузить обзор.",
+    "overviewLoadTitle": "Не удалось загрузить обзор",
+    "overviewLoadBody": "Проверьте подключение и попробуйте ещё раз.",
+    "sectionErrorTitle": "Не удалось открыть этот раздел",
+    "sectionErrorBody": "Остальная часть панели работает. Попробуйте ещё раз чуть позже.",
     "overviewNewFeedback": "Новые, непрочитанные",
     "overviewNoActive": "Недавней активности пока нет.",
     "overviewNoAudit": "Действий админов пока нет.",
@@ -2067,7 +2072,7 @@ export const nested = {
     "overviewSanctions": "Активные баны",
     "overviewSpark": "Регистрации · 7 дней",
     "overviewSparkHint": "Дни по Стамбулу. Полная воронка — в «Аналитике».",
-    "overviewSubtitle": "Состояние в реальном времени, кто был активен последним, кто только что присоединился и что требует действия — а не свалка сырых счётчиков.",
+    "overviewSubtitle": "Текущее состояние, активные пользователи и новые регистрации.",
     "overviewTimeouts": "{count, plural, one {# тайм-аут} few {# тайм-аута} many {# тайм-аутов} other {# тайм-аута}}",
     "overviewTitle": "Прямо сейчас",
     "overviewUptime": "Время работы",
@@ -9573,7 +9578,7 @@ export const phrases = {
   "Squad-ready layout with a squad-up channel, game chats, clip drops, staff ops, and ranked voice lobbies.": "Макет для команд: канал для сбора команды, игровые чаты, клипы, канал персонала и рейтинговые голосовые лобби.",
   "Squad-up channel": "Канал для сбора команды",
   "Stack Trace": "Трассировка стека",
-  "Staff can kick, ban, timeout, and read an audit log.": "Модераторы могут выгонять, банить, отправлять в тайм-аут и просматривать журнал аудита.",
+  "Staff can kick, ban, or time out members, and every action is logged.": "Модераторы могут выгнать, заблокировать или временно заглушить участника, и каждое действие записывается.",
   "Staff roles": "Роли персонала",
   "Stage": "Трибуна",
   "Stage channel": "Канал-трибуна",
@@ -10126,7 +10131,7 @@ export const phrases = {
   "Watching this hand…": "Наблюдаете за раздачей…",
   "Watching this spin…": "Наблюдаете за вращением…",
   "We are (players already)": "Нас уже (игроков)",
-  "We care about your privacy": "Мы заботимся о вашей конфиденциальности",
+  "Your cookie choice": "Ваш выбор cookie",
   "We don’t claim Discord’s bot marketplace, Stage events, or every platform client. Honesty ranks better than doorway pages.": "Мы не заявляем магазин ботов Discord, трибуны или клиенты для всех платформ. Честность ранжируется лучше дорвеев.",
   "We focus on real-time messaging, group voice/video, screen share, and a polished desktop experience, without turning private chats into SEO landings.": "Мы сосредоточены на сообщениях в реальном времени, групповом голосе и видео, демонстрации экрана и продуманном приложении для ПК — не превращая личные чаты в SEO-лендинги.",
   "We got your note. We’ll reply at the email you gave.": "Мы получили ваше сообщение и ответим на указанный вами e-mail.",
@@ -10641,7 +10646,13 @@ export const phrases = {
   "🔵 Normal": "🔵 Обычно",
   "🛡️ Admins Only": "🛡️ Только админы",
   "🟡 Important": "🟡 Важно",
-  "🟢 Online Users": "🟢 Пользователи в сети"
+  "🟢 Online Users": "🟢 Пользователи в сети",
+  "Compare": "Сравнение",
+  "Descall features": "Возможности Descall",
+  "Discord vs Descall article": "Статья «Discord vs Descall»",
+  "More comparisons": "Другие сравнения",
+  "Ready-made Gaming template": "Готовый шаблон «Игры»",
+  ...MID_APP_I18N.ru,
 };
 
 export default { nested, phrases };

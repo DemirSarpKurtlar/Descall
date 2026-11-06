@@ -30,7 +30,7 @@ import VotersSheet from "../polls/VotersSheet";
 import PollCreateSheet from "../polls/PollCreateSheet";
 import { useCompact } from "../polls/dsxShared";
 import { bindPollSocket, editPollNow } from "../../lib/pollStore";
-import { BarChart3, AlertCircle, RefreshCw } from "../ui/Icon.jsx";
+import { BarChart3, Hash, AlertCircle, RefreshCw } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
@@ -514,6 +514,21 @@ export default function MessageList({
     );
   }
 
+  // UI audit #144: an empty text channel opens on a start-of-channel block
+  // (the same EmptyState as the rest of the app), not a blank pane.
+  if (activeChannel?.id && !isSearching && groupedMessages.length === 0) {
+    return (
+      <div className="message-list is-channel-start" ref={listRef}>
+        <EmptyState
+          className="channel-start"
+          icon={Hash}
+          title={t("Welcome to #{channel}", { channel: activeChannel.name || "" })}
+          body={activeChannel.topic || t("This is the start of the #{channel} channel.", { channel: activeChannel.name || "" })}
+        />
+      </div>
+    );
+  }
+
   if (isSearching && groupedMessages.length === 0) {
     return (
       <div className="message-list" ref={listRef}>
@@ -822,8 +837,8 @@ export default function MessageList({
         onClose={() => setReportTarget(null)}
         targetId={reportTarget?.id}
         targetUsername={reportTarget?.username}
-        targetDisplayName={reportTarget ? resolveDisplayName(reportTarget) : undefined}
-        targetUser={reportTarget}
+        targetDisplayName={reportTarget ? resolveDisplayName(senderFor(reportTarget) || reportTarget) : undefined}
+        targetUser={reportTarget ? senderFor(reportTarget) || reportTarget : null}
         snippet={reportTarget?.snippet}
         contextType={reportTarget?.contextType || conversationType}
         contextId={reportTarget?.contextId}

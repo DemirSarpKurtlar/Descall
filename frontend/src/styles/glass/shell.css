@@ -171,6 +171,15 @@ html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) #root {
   html.glass-ui .app-root.g-shell .g-list-head.g-head-inline ~ .server-owned-banner ~ .sidebar-content {
     padding-top: 0 !important;
   }
+  /* UI audit #32: the server list uses the large title + search like the
+     other tabs; the owned line sits 16px under the search field. */
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-search ~ .server-owned-banner {
+    margin: calc(var(--g-chrome-top) + 162px + 16px) 16px 0;
+    background: transparent;
+  }
+  html.glass-ui .app-root.g-shell .g-list-head.g-head-search ~ .server-owned-banner ~ .sidebar-content {
+    padding-top: 8px !important;
+  }
 
   /* Open server (channel list, Stage 5 redesigns it): keep it below the Island. */
   html.glass-ui .app-root.g-shell .servers-sidebar .server-shell-header {
@@ -904,7 +913,7 @@ html.glass-ui .g-status-menu .status-picker-dot {
   height: 12px;
 }
 html.glass-ui .g-status-menu .status-picker-dot.status-online { background: #30D158 !important; box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.2); }
-html.glass-ui .g-status-menu .status-picker-dot.status-idle { background: #FFD60A !important; box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.2); }
+html.glass-ui .g-status-menu .status-picker-dot.status-idle { background: var(--g-idle) !important; box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.2); }
 html.glass-ui .g-status-menu .status-picker-dot.status-dnd { background: #FF453A !important; box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2); }
 html.glass-ui .g-status-menu .status-picker-dot.status-invisible { background: #8E8E93 !important; box-shadow: 0 0 0 3px rgba(142, 142, 147, 0.2); }
 

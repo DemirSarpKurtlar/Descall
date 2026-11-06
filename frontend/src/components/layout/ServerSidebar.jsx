@@ -904,21 +904,13 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
           {loading && safeDms.length === 0 ? (
             <ConversationListSkeleton count={7} label={t("Loading conversations")} />
           ) : safeDms.length === 0 ? (
-            <div className="sidebar-empty-friends">
-              <div className="empty-illustration empty-illu-chats compact" aria-hidden="true">
-                <div className="empty-illu-blob" />
-                <div className="empty-illu-blob secondary" />
-              </div>
-              <strong>{t("No conversations yet")}</strong>
-              <span>{t("Add a friend to start chatting, messages, voice, and screen share in one place.")}</span>
-              {onAddFriend && (
-                <div className="sidebar-empty-friends-actions">
-                  <button type="button" className="mkt-btn mkt-btn-soft" onClick={onAddFriend}>
-                    {t("Add friend")}
-                  </button>
-                </div>
-              )}
-            </div>
+            <EmptyState
+              compact
+              icon={MessageSquare}
+              title={t("No conversations yet")}
+              body={t("Add a friend to start chatting, messages, voice, and screen share in one place.")}
+              primary={onAddFriend ? { label: t("Add friend"), action: onAddFriend } : undefined}
+            />
           ) : (
             <div className="conv-list">
               {safeDms.map((dm) => {
@@ -1675,21 +1667,13 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
               {loading && safeGroups.length === 0 ? (
                 <ConversationListSkeleton count={6} label={t("Loading groups")} />
               ) : safeGroups.length === 0 ? (
-                <div className="sidebar-empty-friends">
-                  <div className="empty-illustration empty-illu-groups compact" aria-hidden="true">
-                    <div className="empty-illu-blob" />
-                    <div className="empty-illu-blob secondary" />
-                  </div>
-                  <strong>{t("No groups yet")}</strong>
-                  <span>{t("Create a group for friends, chat, call, and share your screen together.")}</span>
-                  {onCreateGroup && (
-                    <div className="sidebar-empty-friends-actions">
-                      <button type="button" className="mkt-btn mkt-btn-soft" onClick={onCreateGroup}>
-                        {t("Create group")}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <EmptyState
+                  compact
+                  icon={Users}
+                  title={t("No groups yet")}
+                  body={t("Create a group for friends, chat, call, and share your screen together.")}
+                  primary={onCreateGroup ? { label: t("Create group"), action: onCreateGroup } : undefined}
+                />
               ) : (
                 safeGroups.map((group) => {
                   const isActive = activeGroup?.id === group.id;
@@ -2389,19 +2373,13 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
             {loading && safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
               <ConversationListSkeleton count={6} label={t("Loading conversations")} />
             ) : safeFriends.length === 0 && pendingRequests.length === 0 && pendingMessages.length === 0 ? (
-              <div className="sidebar-empty-friends">
-                <div className="empty-illustration empty-illu-friends compact" aria-hidden="true">
-                  <div className="empty-illu-blob" />
-                  <div className="empty-illu-blob secondary" />
-                </div>
-                <strong>{t("No friends yet")}</strong>
-                <span>{t("Share your invite link, friends join free and connect with you instantly.")}</span>
-                <div className="sidebar-empty-friends-actions">
-                  <button type="button" className="mkt-btn mkt-btn-soft" onClick={onQuickAdd}>
-                    {t("Add friend")}
-                  </button>
-                </div>
-              </div>
+              <EmptyState
+                compact
+                icon={UserPlus}
+                title={t("No friends yet")}
+                body={t("Share your invite link, friends join free and connect with you instantly.")}
+                primary={{ label: t("Add friend"), action: onQuickAdd }}
+              />
             ) : null}
       </SidebarSectionContent>
     </div>

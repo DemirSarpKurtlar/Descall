@@ -35,8 +35,11 @@ for (const layer of [".server-icon-picker-overlay"]) {
 assert.equal((css.match(/\(/g) || []).length, (css.match(/\)/g) || []).length, "balanced parentheses (a stray one drops the rule when minified)");
 assert.match(css, /position:\s*fixed !important;\s*inset:\s*0 !important/);
 assert.match(css, /backdrop-filter:\s*blur\(var\(--overlay-blur\)\)/);
-assert.ok(Number(css.match(/--overlay-blur:\s*(\d+)px/)[1]) >= 24, "heavy blur");
-assert.ok(Number(css.match(/--overlay-dim:\s*rgba\([^)]*,\s*([0-9.]+)\)/)[1]) >= 0.55, "heavy dim");
+// UI audit #65: one scrim token for every modal, rgba(10,11,16,.45) + blur(12px)
+// (light: rgba(57,60,77,.25)). The heavy frost lives on the card, not the scrim.
+assert.equal(Number(css.match(/--overlay-blur:\s*(\d+)px/)[1]), 12, "scrim blur token");
+assert.equal(css.match(/--overlay-dim:\s*(rgba\([^)]*\))/)[1], "rgba(10, 11, 16, 0.45)", "scrim dim token");
+assert.match(css, /\[data-theme="light"\]\s*\{\s*--overlay-dim:\s*rgba\(57, 60, 77, 0\.25\)/, "light scrim token");
 assert.match(css, /\.titlebar::after/, "the Electron title bar gets the same dim + blur");
 
 // Every component that renders one of these backdrops portals it to

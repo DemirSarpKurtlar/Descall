@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Avatar from "../ui/Avatar";
+import { X } from "../ui/Icon.jsx";
 import { useT, useLocale } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { submitUserReport } from "../../api/reports";
@@ -195,21 +196,33 @@ export default function ReportUserModal({
               </>
             ) : (
               <>
-                <div className="pfs-nav">
-                  <button type="button" className="l" onClick={onClose} disabled={busy}>
-                    {t("report.cancel")}
-                  </button>
-                  <span className="t" id="report-sheet-title">{t("report.sheetTitle")}</span>
-                  <button type="button" className="r" onClick={submit} disabled={busy || !targetId} data-testid="report-submit">
-                    {busy ? t("report.sending") : t("report.send")}
-                  </button>
-                </div>
+                {/* UI audit #132: the iOS nav bar (Vazgeç / Gönder) is the phone
+                    sheet; desktop uses the common modal header + bottom buttons. */}
+                {layout === "sheet" ? (
+                  <div className="pfs-nav">
+                    <button type="button" className="l" onClick={onClose} disabled={busy}>
+                      {t("report.cancel")}
+                    </button>
+                    <span className="t" id="report-sheet-title">{t("report.sheetTitle")}</span>
+                    <button type="button" className="r" onClick={submit} disabled={busy || !targetId} data-testid="report-submit">
+                      {busy ? t("report.sending") : t("report.send")}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rps-form-head">
+                    <h3 id="report-sheet-title">{t("report.sheetTitle")}</h3>
+                    <button type="button" className="rps-x" onClick={onClose} disabled={busy} aria-label={t("Close")}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                )}
                 <div className="pfs-scroll">
                   <div className="rps-head">
                     <span className="av">
                       <Avatar name={name} size={56} user={targetUser || { id: targetId, username: targetUsername }} />
                     </span>
                     <div className="ttl">{t("report.why", { nameAcc })}</div>
+                    {targetUsername && name !== targetUsername ? <div className="handle">@{targetUsername}</div> : null}
                     <div className="sub">{t("report.anon", { name })}</div>
                   </div>
                   {snippet ? <blockquote className="rps-snippet">“{snippet}”</blockquote> : null}
@@ -243,6 +256,16 @@ export default function ReportUserModal({
                   />
                   {error ? <p className="pfs-err" role="alert">{error}</p> : null}
                 </div>
+                {layout === "sheet" ? null : (
+                  <div className="rps-form-foot">
+                    <button type="button" className="rps-btn" onClick={onClose} disabled={busy}>
+                      {t("report.cancel")}
+                    </button>
+                    <button type="button" className="rps-btn is-danger" onClick={submit} disabled={busy || !targetId} data-testid="report-submit">
+                      {busy ? t("report.sending") : t("report.sheetTitle")}
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </motion.div>

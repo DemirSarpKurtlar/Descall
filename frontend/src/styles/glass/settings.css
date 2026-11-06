@@ -394,8 +394,8 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-main-header {
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-main-header .us-mobile-title {
   position: absolute;
-  left: 72px;
-  right: 72px;
+  left: 104px;
+  right: 104px;
   top: calc(var(--g-chrome-top) + 16px);
   text-align: center;
   pointer-events: none;

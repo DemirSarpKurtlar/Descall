@@ -599,15 +599,31 @@
 }
 
 .attachment-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+  background: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: var(--text-2);
   flex-shrink: 0;
+}
+
+/* "GIF" as a small outlined text badge in the icon slot (no gift box). */
+.attachment-gif-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 16px;
+  padding: 0 3px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
 
 .attachment-label {
@@ -839,4 +855,19 @@ html[data-theme="light"] .msg-jump-btn {
   color: #111;
   background: rgba(250, 250, 252, 0.9);
   border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Start of an empty text channel (UI audit #144): the shared EmptyState,
+   seated at the bottom like the first message would be. */
+.message-list.is-channel-start {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.message-list.is-channel-start .channel-start {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  text-align: left;
+  padding: 24px 20px 28px;
 }

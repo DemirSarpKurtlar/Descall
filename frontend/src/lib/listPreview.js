@@ -1,4 +1,5 @@
 import { localizeMemberEventPreview } from "./groupMemberEvents.js";
+import { plainText } from "./messageMarkdown.js";
 
 /** English system previews the API stores on DM and group rows. */
 const LIST_PREVIEW_KEYS = ["📞 Call", "📷 Photo", "🎤 Voice message", "📎 Attachment"];
@@ -13,7 +14,19 @@ export function mediaTypeLabel(mediaType, t = (key) => key) {
 
 function localizePreviewBody(body, t) {
   if (LIST_PREVIEW_KEYS.includes(body)) return t(body);
-  return body;
+  return stripPreviewMarkdown(body);
+}
+
+/**
+ * A one-line preview shows the words, not the formatting (UI audit #96):
+ * "**Önemli:** yarın `22:00`" -> "Önemli: yarın 22:00". Uses the same parser
+ * as the message renderer (lib/messageMarkdown.js), so the preview strips
+ * exactly the syntax a sent message would format, then folds lines.
+ */
+export function stripPreviewMarkdown(text) {
+  const s = String(text ?? "");
+  if (!s) return s;
+  return plainText(s).replace(/\s*\n+\s*/g, " ").trim();
 }
 
 /**

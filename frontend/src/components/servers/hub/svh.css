@@ -207,3 +207,46 @@ input.svh-range::-moz-range-thumb{width:26px;height:26px;border-radius:50%;backg
 .svh-mi+.svh-mnode,.svh-mnode+.svh-mi{position:relative}.svh-mnode+.svh-mi:before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:rgba(255,255,255,.1)}
 /* the field draws the focus ring; the inner control never adds its own (global input:focus styles) */
 .svh-field input,.svh-field textarea,.svh-field input:focus,.svh-field textarea:focus,.svh-field input:focus-visible,.svh-field textarea:focus-visible{outline:none;box-shadow:none;border:0;border-radius:0;background:transparent;-webkit-appearance:none;appearance:none}
+
+/* UI audit #145: light theme for the server hub sheets (Kategori, Kanal
+   oluştur, ...). Same structure, light ink: white frost, #393C4D text,
+   ink hairlines, brand #3D5BD9 for links. Dark themes are untouched. */
+html[data-theme="light"] .svh-root{color:#1B1D26}
+html[data-theme="light"] .svh-dim{background:rgba(57,60,77,.25)}
+html[data-theme="light"] .svh-dim.strong{background:rgba(57,60,77,.4)}
+html[data-theme="light"] .svh-heavy,html[data-theme="light"] .svh-menu.svh-heavy,html[data-theme="light"] .svh-alert.svh-heavy{background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.55)),rgba(246,247,251,.92);box-shadow:0 24px 64px rgba(27,29,38,.22),inset 0 0 0 .5px rgba(57,60,77,.1)}
+html[data-theme="light"] .svh-grab{background:rgba(57,60,77,.25)}
+html[data-theme="light"] .svh-nav .l,html[data-theme="light"] .svh-nav .r,html[data-theme="light"] .svh-check,html[data-theme="light"] .svh-act,html[data-theme="light"] .svh-pillrow>.svh-act,html[data-theme="light"] .svh-alert .bt>span,html[data-theme="light"] .svh-alert .bt>button,html[data-theme="light"] .svh-row.blue{color:#3D5BD9}
+html[data-theme="light"] .svh-nav .r.dim,html[data-theme="light"] .svh-nav .l>button:disabled,html[data-theme="light"] .svh-nav .r>button:disabled{color:rgba(57,60,77,.35)}
+html[data-theme="light"] .svh-xbtn{background:rgba(57,60,77,.08);color:rgba(57,60,77,.7)}
+html[data-theme="light"] .svh-sec,html[data-theme="light"] .svh-row .lab small,html[data-theme="light"] .svh-row .val,html[data-theme="light"] .svh-mi .sub,html[data-theme="light"] .svh-mhead,html[data-theme="light"] .svh-hero .m,html[data-theme="light"] .svh-field .pre,html[data-theme="light"] .svh-row input.val{color:rgba(57,60,77,.62)}
+html[data-theme="light"] .svh-foot,html[data-theme="light"] .svh-empty{color:rgba(57,60,77,.55)}
+html[data-theme="light"] .svh-group{background:#fff;box-shadow:inset 0 0 0 .5px rgba(57,60,77,.1)}
+html[data-theme="light"] .svh-row+.svh-row:before,html[data-theme="light"] .svh-mi+.svh-mi:before,html[data-theme="light"] .svh-ri+.svh-ri>.svh-row:before,html[data-theme="light"] .svh-ri+.svh-row:before,html[data-theme="light"] .svh-row+.svh-ri>.svh-row:before,html[data-theme="light"] .svh-mnode+.svh-mi:before{background:rgba(57,60,77,.12)}
+html[data-theme="light"] .svh-row.sel{background:rgba(88,122,246,.14)}
+html[data-theme="light"] .svh-badge,html[data-theme="light"] .svh-chip{background:rgba(57,60,77,.08);color:rgba(57,60,77,.8)}
+html[data-theme="light"] .svh-tg{background:rgba(120,120,128,.2)}
+html[data-theme="light"] .svh-seg{background:rgba(118,118,128,.12)}
+html[data-theme="light"] .svh-seg>span,html[data-theme="light"] .svh-seg>button{color:rgba(27,29,38,.8)}
+html[data-theme="light"] .svh-seg>span.on,html[data-theme="light"] .svh-seg>button.on{background:#fff;color:#1B1D26;box-shadow:0 3px 8px rgba(0,0,0,.08)}
+html[data-theme="light"] .svh-btn.gray{background:rgba(57,60,77,.08);color:#1B1D26;box-shadow:none}
+html[data-theme="light"] .svh-field{background:rgba(57,60,77,.06)}
+html[data-theme="light"] .svh-field.ph,html[data-theme="light"] .svh-field input::placeholder,html[data-theme="light"] .svh-field textarea::placeholder{color:rgba(57,60,77,.4)}
+html[data-theme="light"] .svh-field .caret{background:#3D5BD9}
+html[data-theme="light"] .svh-field input,html[data-theme="light"] .svh-field textarea{caret-color:#3D5BD9}
+html[data-theme="light"] .svh-row input.val:focus{color:#1B1D26}
+html[data-theme="light"] .svh-msep{background:rgba(57,60,77,.08)}
+html[data-theme="light"] .svh-mi.hl,html[data-theme="light"] .svh-mi.svh-tap[data-pressed],html[data-theme="light"] .svh-mi.svh-tap:active,html[data-theme="light"] .svh-row.svh-tap[data-pressed],html[data-theme="light"] .svh-row.svh-tap:active,html[data-theme="light"] .svh-alert .bt>button[data-pressed],html[data-theme="light"] .svh-alert .bt>button:active{background:rgba(57,60,77,.08)}
+html[data-theme="light"] .svh-alert p{color:rgba(57,60,77,.75)}
+html[data-theme="light"] .svh-form .side{border-right-color:rgba(57,60,77,.1);background:rgba(57,60,77,.04)}
+html[data-theme="light"] .svh-slider{background:rgba(57,60,77,.16)}
+html[data-theme="light"] .svh-slider b{background:#587AF6}
+html[data-theme="light"] .svh-tri>span,html[data-theme="light"] .svh-tri>button{background:rgba(57,60,77,.06);color:rgba(57,60,77,.5)}
+html[data-theme="light"] .svh-tri>.mid,html[data-theme="light"] .svh-tri>button.mid{background:rgba(57,60,77,.14);color:#1B1D26}
+html[data-theme="light"] .svh-tri>.ok,html[data-theme="light"] .svh-tri>button.ok{color:#1F8F43}
+html[data-theme="light"] .svh-tri>.no,html[data-theme="light"] .svh-tri>button.no{color:#D12B21}
+html[data-theme="light"] .svh-err{color:#D12B21}
+html[data-theme="light"] .svh-dot{box-shadow:0 0 0 2.5px #fff}
+/* Inline accents in sheets.jsx read the same tokens (no hard-coded hex). */
+.svh-root{--svh-link:#8FA6FF;--svh-ok:#30D158;--svh-err:#FF6B63;--svh-ring:rgba(20,21,32,.95);--svh-box:rgba(255,255,255,.35)}
+html[data-theme="light"] .svh-root{--svh-link:#3D5BD9;--svh-ok:#1F8F43;--svh-err:#D12B21;--svh-ring:#fff;--svh-box:rgba(57,60,77,.35)}

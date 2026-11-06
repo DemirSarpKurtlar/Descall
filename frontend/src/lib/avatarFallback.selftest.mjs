@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { AVATAR_PALETTE, avatarColor, avatarInitials, avatarKey, crc32 } from "./avatarFallback.js";
+import { AVATAR_PALETTE, AVATAR_FG, avatarColor, avatarInitials, avatarKey, crc32 } from "./avatarFallback.js";
 
 assert.equal(crc32("hello"), 0x3610a686); // zlib.crc32(b"hello")
 assert.equal(crc32("Ayşe Yılmaz") >>> 0, crc32("Ayşe Yılmaz"));
-assert.equal(AVATAR_PALETTE.length, 8);
+assert.equal(AVATAR_PALETTE.length, 6); // UI audit #21: six muted brand tones
 assert.equal(avatarInitials("Ayşe Yılmaz"), "AY");
 assert.equal(avatarInitials("Mert Kaya"), "MK");
 assert.equal(avatarInitials("Zeynep"), "Z");
@@ -19,8 +19,8 @@ const a = avatarColor(avatarKey({ id: "u-1", displayName: "Ayşe" }));
 const b = avatarColor(avatarKey({ id: "u-1", displayName: "Ayşe Yeni" }));
 assert.equal(a, b);
 assert.ok(AVATAR_PALETTE.includes(avatarColor("x")));
-// Palette spread: 200 ids hit all 8 colours.
-assert.equal(new Set(Array.from({ length: 200 }, (_, i) => avatarColor(`user-${i}`))).size, 8);
+// Palette spread: 200 ids hit all 6 colours.
+assert.equal(new Set(Array.from({ length: 200 }, (_, i) => avatarColor(`user-${i}`))).size, 6);
 
 // WCAG contrast of white text on every swatch ≥ 4.5.
 const lum = (hex) => {
@@ -30,6 +30,11 @@ const lum = (hex) => {
 for (const hex of AVATAR_PALETTE) {
   const ratio = 1.05 / (lum(hex) + 0.05);
   assert.ok(ratio >= 4.5, `${hex}: white text contrast ${ratio.toFixed(2)} < 4.5`);
+  const fg = (lum(AVATAR_FG) + 0.05) / (lum(hex) + 0.05);
+  assert.ok(fg >= 4.5, `${hex}: letter contrast ${fg.toFixed(2)} < 4.5`);
+  // Low saturation: max-min channel spread stays small (no neon hues).
+  const ch = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  assert.ok(Math.max(...ch) - Math.min(...ch) <= 96, `${hex}: too saturated`);
 }
 
 const avatar = readFileSync(new URL("../components/ui/Avatar.jsx", import.meta.url), "utf8");

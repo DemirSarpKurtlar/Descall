@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { signupEmailError, SIGNUP_EMAIL_HINT } from "../lib/signupEmail";
 import { createPortal } from "react-dom";
 import { useT } from "../context/localeContextInstance";
@@ -114,6 +114,53 @@ function AuthModal({
     };
   }, [open]);
 
+  // UI audit #127: a real modal. The page behind is inert (no Tab, no
+  // screen-reader reading), focus starts on the first field and Tab cycles
+  // inside the card.
+  const overlayRef = useRef(null);
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return undefined;
+    const overlay = overlayRef.current;
+    if (!overlay) return undefined;
+    const prevFocus = document.activeElement;
+    const madeInert = [];
+    for (const el of Array.from(document.body.children)) {
+      if (el === overlay || el.contains(overlay) || el.hasAttribute("inert")) continue;
+      if (el.tagName === "SCRIPT" || el.tagName === "STYLE") continue;
+      el.setAttribute("inert", "");
+      madeInert.push(el);
+    }
+    const focusables = () => Array.from(
+      overlay.querySelectorAll('input:not([type="hidden"]):not([disabled]), button:not([disabled]), select, textarea, a[href], [tabindex]:not([tabindex="-1"])'),
+    ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    const raf = requestAnimationFrame(() => {
+      if (overlay.contains(document.activeElement)) return;
+      const first = overlay.querySelector('.login-modal input:not([type="hidden"]):not([disabled])');
+      (first || focusables()[0])?.focus?.();
+    });
+    const onKey = (e) => {
+      if (e.key !== "Tab") return;
+      const list = focusables();
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !overlay.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !overlay.contains(document.activeElement))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", onKey, true);
+      for (const el of madeInert) el.removeAttribute("inert");
+      if (prevFocus && typeof prevFocus.focus === "function" && document.contains(prevFocus)) prevFocus.focus();
+    };
+  }, [open]);
+
   const withInvite = (payload = {}) => {
     const ref = inviteRef || peekInviteRef();
     if (ref) return { ...payload, invitedBy: ref };
@@ -192,6 +239,7 @@ function AuthModal({
 
   return createPortal(
         <div
+          ref={overlayRef}
           className="login-modal-overlay"
           onClick={onClose}
           role="presentation"

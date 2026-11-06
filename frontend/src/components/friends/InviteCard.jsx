@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Coins, Copy, Gift, Link2, Share2 } from "../ui/Icon.jsx";
+import { Check, Coins, Copy, Gift, Share2 } from "../ui/Icon.jsx";
 import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";
@@ -36,7 +36,10 @@ async function copyText(text) {
 }
 
 /**
- * Shareable personal invite card with DesCoin reward copy.
+ * Shareable personal invite card with DesCoin reward copy. UI audit #12: every
+ * variant (Arkadaşlar web/iPhone, Mağaza web/iPhone) shares one look: a 32px
+ * brand tile with the gift icon, the title, one reward line, the link and
+ * a primary "copy" plus a secondary "share".
  */
 export default function InviteCard({ username, compact = false, onCopied, onShared, variant = "friends" }) {
   const t = useT();
@@ -116,10 +119,10 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
     return (
       <div className="g-invite-link">
         <div className="g-invite-link-head">
-          <Gift size={18} aria-hidden />
+          <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
           <div>
             <strong>{t("Invite friends")}</strong>
-            <span>{t("You get 100 DesCoin · they get 50")}</span>
+            <span>{t("You get 100 DesCoin, your friend gets 50")}</span>
           </div>
         </div>
         <div className="g-invite-link-field" title={url}>{shown}</div>
@@ -141,13 +144,10 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
     return (
       <div className={`invite-card g-invite${compact ? " compact" : ""}`}>
         <div className="g-invite-head">
-          <div className="g-invite-mark" aria-hidden="true">
-            <Link2 size={22} />
-          </div>
+          <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
           <div className="g-invite-copy">
             <strong>{t("Invite friends")}</strong>
-            <span>{t("Join me on Descall, we both get DesCoin")}</span>
-            <em>{t("You get 100 DesCoin, your friend gets 50")}</em>
+            <span>{t("You get 100 DesCoin, your friend gets 50")}</span>
           </div>
         </div>
         <div className="g-invite-actions">
@@ -167,19 +167,19 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
   return (
     <div className={`invite-card${compact ? " compact" : ""}`}>
       <div className="invite-card-header">
-        <Gift size={16} aria-hidden />
+        <span className="invite-card-mark" aria-hidden="true"><Gift size={18} /></span>
         <div>
           <strong>{t("Invite friends")}</strong>
-          <span>{t("You get 100 DesCoin · they get 50")}</span>
+          <span>{t("You get 100 DesCoin, your friend gets 50")}</span>
         </div>
       </div>
       <div className="invite-card-link" title={url}>
         {url.replace(/^https?:\/\//, "")}
       </div>
       <div className="invite-card-actions">
-        <button type="button" className="invite-card-btn primary" onClick={copy}>
+        <button type="button" className="invite-card-btn primary" onClick={copy} aria-label={t("Copy link")}>
           {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-          {copied ? t("Copied") : t("Copy link")}
+          {copied ? t("Copied") : t("Copy")}
         </button>
         <button
           type="button"

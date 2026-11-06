@@ -122,7 +122,7 @@ export function CreateServerSheet({ mode, me, ownedCount = 0, maxOwned = 10, onC
             {iconUrl
               ? <Sq server={{ iconUrl, name }} s={84} />
               : <span className="svh-sq" style={{ width: 84, height: 84, background: "rgba(255,255,255,.08)", boxShadow: "inset 0 0 0 1.5px rgba(255,255,255,.22)", borderRadius: 24 }}>{uploading ? <Spinner /> : <I n="cam" s={30} />}</span>}
-            <span style={{ position: "absolute", right: -4, bottom: -4, width: 28, height: 28, borderRadius: 14, background: "#587AF6", display: "grid", placeItems: "center", boxShadow: "0 0 0 3px rgba(20,21,32,.95)" }}><I n="plus" s={16} w={2.6} /></span>
+            <span style={{ position: "absolute", right: -4, bottom: -4, width: 28, height: 28, borderRadius: 14, background: "#587AF6", display: "grid", placeItems: "center", boxShadow: "0 0 0 3px var(--svh-ring)" }}><I n="plus" s={16} w={2.6} /></span>
           </button>
           <div className="m" style={{ marginTop: 4 }}>{s[tpl.t]}</div>
         </div>
@@ -130,7 +130,7 @@ export function CreateServerSheet({ mode, me, ownedCount = 0, maxOwned = 10, onC
         <Field value={name} onChange={setName} placeholder={placeholder || s.serverNameSec} autoFocus maxLength={100} onEnter={create} autoCapitalize="words" />
         <Foot>{s.createFoot}</Foot>
         <Btn style={{ marginTop: 22 }} onClick={create} disabled={busy || uploading || name.trim().length < 2}>{busy ? <Spinner /> : s.create}</Btn>
-        {iconUrl ? <div style={{ textAlign: "center", marginTop: 14 }}><button type="button" className="svh-tap" style={{ color: "#8FA6FF", fontSize: 16 }} aria-label={s.removeIcon} onClick={() => setIconUrl("")}>{s.removeIcon}</button></div> : null}
+        {iconUrl ? <div style={{ textAlign: "center", marginTop: 14 }}><button type="button" className="svh-tap" style={{ color: "var(--svh-link)", fontSize: 16 }} aria-label={s.removeIcon} onClick={() => setIconUrl("")}>{s.removeIcon}</button></div> : null}
       </Scroll>
     </>
   ) : null;
@@ -223,7 +223,7 @@ export function JoinServerSheet({ mode, initialCode = "", onClose, onJoined }) {
         <Sec first>{s.inviteLink}</Sec>
         <Field value={code} onChange={setCode} placeholder={s.invitePh} autoFocus label={s.inviteLink} inputMode="url" onEnter={join}
           right={looking ? <span style={{ marginLeft: "auto" }}><Spinner /></span> : null} />
-        <Foot>{error ? <span style={{ color: "#FF6B63" }}>{error}</span> : f("inviteFoot", { code: "K7QM2XRD" })}</Foot>
+        <Foot>{error ? <span style={{ color: "var(--svh-err)" }}>{error}</span> : f("inviteFoot", { code: "K7QM2XRD" })}</Foot>
         {sv ? (
           <>
             <div className="svh-group" style={{ marginTop: 18, padding: 18, display: "flex", gap: 14, alignItems: "center" }}>
@@ -232,7 +232,7 @@ export function JoinServerSheet({ mode, initialCode = "", onClose, onJoined }) {
                 <div style={{ fontSize: 18, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sv.name}</div>
                 <div style={{ fontSize: 13.5, color: "rgba(235,238,255,.55)", marginTop: 3 }}>
                   {f("listMetaNoOnline", { members: numFmt(sv.memberCount || 1, locale) })}
-                  {sv.onlineCount != null ? <> · <span style={{ color: "#30D158" }}>●</span> {f("onlineCount", { n: numFmt(sv.onlineCount, locale) })}</> : null}
+                  {sv.onlineCount != null ? <> · <span style={{ color: "var(--svh-ok)" }}>●</span> {f("onlineCount", { n: numFmt(sv.onlineCount, locale) })}</> : null}
                 </div>
                 {sv.description ? <div style={{ fontSize: 13.5, color: "rgba(235,238,255,.7)", marginTop: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sv.description}</div> : null}
               </div>
@@ -307,7 +307,7 @@ function DiscoverPage({ onBack, onJoined, tablet }) {
             {list.map((sv) => (
               <Row key={sv.id} av={<Sq server={sv} s={40} />} t={sv.name} inset={66}
                 sub={sv.description || f("listMetaNoOnline", { members: numFmt(sv.memberCount || 1, locale) })}
-                tail={<Btn sm variant="gray" style={{ height: 30, fontSize: 14, padding: "0 14px", color: "#8FA6FF" }} onClick={() => join(sv)} disabled={busyId === sv.id}>{sv.isMember ? s.openServer : s.joinServer}</Btn>} />
+                tail={<Btn sm variant="gray" style={{ height: 30, fontSize: 14, padding: "0 14px", color: "var(--svh-link)" }} onClick={() => join(sv)} disabled={busyId === sv.id}>{sv.isMember ? s.openServer : s.joinServer}</Btn>} />
             ))}
           </Group>
         )}
@@ -349,12 +349,12 @@ export function RulesGateSheet({ mode, server, onAccepted, onClose }) {
         <Group>
           {rules.map((r, i) => (
             <Row key={`${i}-${r}`} wrap inset={52} style={{ minHeight: 52 }} t={r}
-              lead={<span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(88,122,246,.24)", color: "#8FA6FF", display: "grid", placeItems: "center", fontSize: 13.5, fontWeight: 700, flex: "none" }}>{i + 1}</span>} />
+              lead={<span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(88,122,246,.24)", color: "var(--svh-link)", display: "grid", placeItems: "center", fontSize: 13.5, fontWeight: 700, flex: "none" }}>{i + 1}</span>} />
           ))}
         </Group>
         <button type="button" role="checkbox" aria-checked={ok} className="svh-tap" data-press-scale="0.98" onClick={() => setOk((v) => !v)}
           style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 6px", fontSize: 15, textAlign: "left", width: "calc(100% - 12px)" }}>
-          <span style={{ width: 24, height: 24, borderRadius: 7, display: "grid", placeItems: "center", flex: "none", transition: "background .15s", ...(ok ? { background: "#587AF6" } : { boxShadow: "inset 0 0 0 1.5px rgba(255,255,255,.35)" }) }}>
+          <span style={{ width: 24, height: 24, borderRadius: 7, display: "grid", placeItems: "center", flex: "none", transition: "background .15s", ...(ok ? { background: "#587AF6" } : { boxShadow: "inset 0 0 0 1.5px var(--svh-box)" }) }}>
             {ok ? <I n="check" s={16} w={3} /> : null}
           </span>
           <span>{s.iAccept}</span>
@@ -418,11 +418,11 @@ export function DeleteServerSheet({ mode, server, onCancel, onConfirm, onTransfe
         </div>
         <Sec>{s.delTypeName}</Sec>
         <Field value={name} onChange={setName} placeholder={server?.name} autoFocus onEnter={submit} label={s.delTypeName}
-          right={ok ? <span style={{ marginLeft: "auto", color: "#30D158", display: "flex" }}><I n="check" s={18} w={2.6} /></span> : null} />
+          right={ok ? <span style={{ marginLeft: "auto", color: "var(--svh-ok)", display: "flex" }}><I n="check" s={18} w={2.6} /></span> : null} />
         <Btn variant="red" style={{ marginTop: 22 }} onClick={submit} disabled={!ok || busy}>{busy ? <Spinner /> : s.delBtn}</Btn>
         {onTransfer ? (
           <div style={{ textAlign: "center", marginTop: 14 }}>
-            <button type="button" className="svh-tap" style={{ color: "#8FA6FF", fontSize: 16 }} onClick={onTransfer}>{s.delTransferFirst}</button>
+            <button type="button" className="svh-tap" style={{ color: "var(--svh-link)", fontSize: 16 }} onClick={onTransfer}>{s.delTransferFirst}</button>
           </div>
         ) : null}
       </Scroll>

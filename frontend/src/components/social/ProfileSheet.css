@@ -451,3 +451,36 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 }
 .pfs-badges .cosmetic-country-badge .cosmetic-country-name { font: inherit; color: inherit; }
 :root[data-theme="light"] .pfs-badges .cosmetic-country-badge { background: rgba(0, 0, 0, 0.06); }
+
+/* UI audit #132: desktop report modal = common modal header + bottom buttons. */
+.rps-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 6px 22px;
+  flex: none;
+}
+.rps-form-head h3 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+.rps-x {
+  width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: color-mix(in srgb, currentColor 10%, transparent); color: inherit; cursor: pointer;
+}
+.rps-form-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px 20px;
+  flex: none;
+  border-top: 0.5px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+.rps-btn {
+  min-height: 38px; padding: 0 18px; border: 0; border-radius: 12px; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: inherit;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.rps-btn.is-danger { background: #FF453A; color: #fff; }
+.rps-btn:disabled { opacity: 0.55; cursor: default; }
+.rps-btn:active:not(:disabled) { transform: scale(0.97); }
+.rps-head .handle { font-size: 13px; opacity: 0.6; margin-top: -2px; }
+@media (prefers-reduced-motion: reduce) { .rps-btn:active:not(:disabled) { transform: none; } }

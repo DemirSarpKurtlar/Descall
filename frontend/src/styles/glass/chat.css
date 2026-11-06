@@ -1381,20 +1381,13 @@ html.glass-ui .app-root.g-shell .attachment-item:active {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* UI audit #17: plain line icons in currentColor, no coloured tiles. */
 html.glass-ui .app-root.g-shell .attachment-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-md);
-  color: #fff;
-  background: linear-gradient(145deg, #7d97ff, #4a68e8);
-}
-
-html.glass-ui .app-root.g-shell .attachment-item:nth-child(1) .attachment-icon {
-  background: linear-gradient(145deg, #4cd97b, #1fa850);
-}
-
-html.glass-ui .app-root.g-shell .attachment-item:nth-child(3) .attachment-icon {
-  background: linear-gradient(145deg, #ff8fc1, #bf5af2);
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  color: var(--g-t2);
+  background: none;
 }
 
 html.glass-ui .app-root.g-shell .attachment-label {

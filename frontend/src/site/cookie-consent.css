@@ -36,11 +36,10 @@
   height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 15px;
-  background: linear-gradient(145deg, rgba(255, 179, 64, 0.32), rgba(255, 159, 10, 0.1));
-  border: 1px solid rgba(255, 179, 64, 0.4);
-  color: #ffc266;
-  box-shadow: 0 8px 22px rgba(255, 159, 10, 0.2);
+  border-radius: 14px;
+  background: rgba(88, 122, 245, 0.16);
+  border: 1px solid rgba(143, 166, 255, 0.28);
+  color: #8fa6ff;
 }
 .dc-consent-text { min-width: 0; }
 .dc-consent h2 {
@@ -59,7 +58,7 @@
   border: 0;
   background: none;
   font: inherit;
-  color: #6cb6ff;
+  color: #8fa6ff;
   text-decoration: none;
   cursor: pointer;
 }
@@ -74,14 +73,14 @@
   height: 38px;
   min-width: 44px;
   padding: 0 18px;
-  border-radius: var(--r-pill, 999px);
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: none;
   color: var(--dc-c-t1);
   font: inherit;
-  font-size: 13.5px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -91,13 +90,15 @@
 .dc-btn:active { transform: scale(0.96); transition-duration: 80ms; }
 .dc-btn.is-ghost { background: transparent; border-color: transparent; box-shadow: none; color: rgba(244, 246, 251, 0.65); padding: 0 10px; }
 .dc-btn.is-ghost:hover { background: rgba(255, 255, 255, 0.06); color: var(--dc-c-t1); }
+/* Same primary as the app Button: flat logo blue, no glow. */
 .dc-btn.is-primary {
-  background: linear-gradient(180deg, #1a6fe0, #0a58c2);
-  border-color: rgba(120, 190, 255, 0.5);
-  box-shadow: 0 6px 18px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: #587af5;
+  border-color: transparent;
+  box-shadow: none;
   color: #fff;
 }
-.dc-btn.is-primary:hover { background: linear-gradient(180deg, #1f76e8, #0d5fcc); }
+.dc-btn.is-primary:hover { background: #6585f6; }
+.dc-btn:focus-visible { outline: 2px solid #8fa6ff; outline-offset: 2px; }
 
 /* Ayarlar: the choices open inside the same card. */
 .dc-consent.is-prefs { flex-direction: column; align-items: stretch; }
@@ -142,49 +143,47 @@
 .dc-switch.is-on { background: #587af5; }
 .dc-switch.is-on span { transform: translateX(20px); }
 
-/* Phone (1-cerez-mobil): stacked, "Kabul et" full width on top, then Reddet + Ayarlar. */
+/* Phone: compact bottom strip. One short line (+ policy link), then Ayarlar (icon),
+   Reddet and Kabul et in one row. The title and the tile give their room to the page. */
 @media (max-width: 600px) {
   .dc-consent {
     display: block;
-    left: 12px;
-    right: 12px;
+    left: 10px;
+    right: 10px;
     width: auto;
     transform: none;
-    bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 12px));
-    padding: 20px;
-    border-radius: 30px;
+    bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+    padding: 12px 12px 12px 14px;
+    border-radius: 20px;
     animation-name: dc-consent-in-phone;
   }
   @keyframes dc-consent-in-phone {
     from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: none; }
   }
-  .dc-consent-main { align-items: flex-start; gap: 14px; }
-  .dc-consent h2 { font-size: 16.5px; }
-  .dc-consent p { font-size: 14px; }
+  .dc-consent:not(.is-prefs) .dc-consent-ico,
+  .dc-consent:not(.is-prefs) h2 { display: none; }
+  .dc-consent-main { align-items: center; gap: 12px; }
+  .dc-consent.is-prefs h2 { font-size: 16px; }
+  .dc-consent p { font-size: 13px; line-height: 1.35; }
   .dc-consent .dc-wide { display: none; }
   .dc-consent .dc-narrow { display: inline; }
   .dc-consent > .dc-consent-acts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     gap: 8px;
-    margin: 18px 0 0;
+    margin: 10px 0 0;
   }
-  .dc-consent > .dc-consent-acts .is-accept { grid-column: 1 / -1; order: -1; height: 46px; font-size: 15px; }
-  .dc-consent > .dc-consent-acts .is-reject { order: 0; }
-  .dc-consent > .dc-consent-acts .is-settings {
-    order: 1;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    color: var(--dc-c-t1);
-  }
-  .dc-consent > .dc-consent-acts .dc-btn { height: 44px; font-size: 14.5px; padding: 0 12px; }
-  .dc-consent-prefs { margin-top: 16px; }
+  .dc-consent > .dc-consent-acts .dc-btn { height: 40px; font-size: 14px; padding: 0 12px; }
+  .dc-consent > .dc-consent-acts .is-settings { width: 40px; padding: 0; flex: none; }
+  .dc-consent > .dc-consent-acts .is-settings .dc-settings-label { display: none; }
+  .dc-consent > .dc-consent-acts .is-reject,
+  .dc-consent > .dc-consent-acts .is-accept { flex: 1 1 0; }
+  .dc-consent-prefs { margin-top: 14px; }
   body.has-dc-consent .mkt-sticky-cta { display: none; }
 }
 
 body.has-dc-consent-site .mkt { padding-bottom: 96px; }
+@media (max-width: 600px) { body.has-dc-consent-site .mkt { padding-bottom: 120px; } }
 
 @media (prefers-reduced-motion: reduce) {
   .dc-consent { animation: dc-consent-fade 200ms ease-out both; }

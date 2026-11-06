@@ -90,27 +90,32 @@
   white-space: nowrap;
 }
 
+/* UI audit #13: neutral glass capsule, normal-case "DesCoin", only the
+   coin icon is gold (no gold border, no tracked caps). */
 .shop-wallet-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--r-pill);
-  background: rgba(240, 178, 50, 0.1);
-  border: 1px solid rgba(240, 178, 50, 0.22);
+  background: var(--g-fill, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   box-shadow: none;
-  color: #f0b232;
-  font-weight: 700;
+  color: var(--text-0, #f4f6fb);
+  font-weight: 650;
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.shop-wallet-pill > svg { color: #F5C451; flex: none; }
+
 .shop-wallet-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: none; /* brand name: "DesCoin", never "DESCOİN" under tr upper-casing */
-  letter-spacing: 0.04em;
-  opacity: 0.85;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-2, rgba(235, 238, 255, 0.72));
 }
 
 .shop-theme-swatch {
@@ -327,11 +332,17 @@
   color: var(--text-0, #f4f6fb);
 }
 
+/* UI audit #13: selected chip = brand tone, same language as the segment. */
 .shop-category-tab.active {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(88, 122, 245, 0.2));
-  border-color: rgba(10, 132, 255, 0.4);
-  color: #8ec7ff;
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.15);
+  background: rgba(88, 122, 246, 0.22);
+  border-color: transparent;
+  color: #AFC3FF;
+  box-shadow: none;
+}
+
+html[data-theme="light"] .shop-category-tab.active {
+  background: rgba(88, 122, 246, 0.14);
+  color: #3D5BD9;
 }
 
 .shop-category-tab-count {
@@ -350,7 +361,7 @@
 }
 
 .shop-category-tab.active .shop-category-tab-count {
-  background: rgba(142, 199, 255, 0.2);
+  background: rgba(175, 195, 255, 0.2);
 }
 
 .shop-category-block h4 {
@@ -808,6 +819,19 @@ html[data-bubble="minimal"] .shop-live-bubble {
   font-size: 13px;
 }
 
+/* UI audit #112: Envanter page head. */
+.shop-inventory-head {
+  margin: 0 0 12px;
+}
+
+.shop-inventory-head h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--gd-t1, var(--g-t1, var(--text-0)));
+}
+
 .shop-load-error {
   display: flex;
   flex-direction: column;
@@ -822,7 +846,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   text-align: center;
 }
 
-.shop-load-error p {
+.shop-load-error.is-inline p {
   margin: 0;
   color: var(--text-1, #f2f3f5);
   font-size: 14px;
@@ -836,7 +860,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   margin: 0;
 }
 
-.shop-load-error .ripple-btn {
+.shop-load-error.is-inline .ripple-btn {
   width: auto;
   min-height: 36px;
   padding: 8px 16px;
@@ -1057,9 +1081,41 @@ html[data-bubble="minimal"] .shop-live-bubble {
 .descoin-daily-head,
 .invite-card-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+/* UI audit #12: the one invite mark (web, iPhone, Arkadaşlar, Mağaza). */
+.invite-card-mark,
+html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-card-mark {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+  box-shadow: none;
+}
+
+.invite-card-mark svg,
+html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-card-mark svg {
+  color: #fff;
+  width: 18px;
+  height: 18px;
+}
+
+.invite-card-header > div,
+.g-invite-copy {
+  min-width: 0;
+}
+
+.invite-card-btn {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .descoin-daily-head strong,
 .invite-card-header strong {
@@ -1072,20 +1128,31 @@ html[data-bubble="minimal"] .shop-live-bubble {
   font-size: 12px;
   color: var(--text-muted, #98a2b3);
 }
+/* UI audit #4: the same flat brand primary as every other button (no
+   orange/yellow gradient), content width; only the coin stays gold. */
 .descoin-daily-claim {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: flex-start;
   gap: 6px;
-  width: 100%;
+  width: auto;
+  min-height: 36px;
   border: none;
-  border-radius: var(--r-md);
-  padding: 9px 12px;
+  border-radius: 12px;
+  padding: 8px 16px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 650;
   cursor: pointer;
-  background: linear-gradient(135deg, #f0b232, #e89a1a);
-  color: #1a1205;
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.descoin-daily-claim svg { color: #F5C451; }
+.descoin-daily-claim:hover:not(:disabled) { background: color-mix(in srgb, var(--g-brand, #587AF6) 88%, #000); }
+.descoin-daily-claim:active:not(:disabled) { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .descoin-daily-claim:active:not(:disabled) { transform: none; }
 }
 .descoin-daily-claim:disabled {
   opacity: 0.55;
@@ -1275,7 +1342,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   flex-shrink: 0;
 }
 
-.shop-live-status-dot.status-idle { background: #f0b232; }
+.shop-live-status-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .shop-live-status-dot.status-dnd { background: #f23f43; }
 .shop-live-status-dot.status-offline,
 .shop-live-status-dot.status-invisible { background: #80848e; }

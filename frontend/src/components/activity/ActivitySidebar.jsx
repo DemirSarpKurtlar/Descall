@@ -18,6 +18,7 @@ import { useT } from "../../context/LocaleContext";
 import ActivityHistoryRow, { localizeActivityLabel } from "./ActivityHistoryRow";
 import { TYPE_PRIORITY } from "../../lib/processDatabase";
 import PullToRefresh from "../ui/PullToRefresh";
+import { ConversationListSkeleton } from "../ui/Skeleton";
 import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/glass/GlassShell";
 
 const TYPE_COLOR = {
@@ -104,6 +105,7 @@ export default function ActivitySidebar({
   me = null,
   myStatus = "online",
   history = [],
+  historyLoaded = true,
   currentActivity = null,
   privacy = "friends",
   onRefresh,
@@ -232,6 +234,8 @@ export default function ActivitySidebar({
                   <ActivityHistoryRow key={entry.id || entry.started_at} entry={entry} />
                 ))}
               </div>
+            ) : !historyLoaded ? (
+              <ConversationListSkeleton count={5} label={t("Loading…")} />
             ) : (
               <div className="activity-empty-state">
                 <div className="activity-empty-icon"><Clock size={28} /></div>

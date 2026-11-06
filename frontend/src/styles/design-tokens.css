@@ -27,6 +27,11 @@
   --success-soft: rgba(35, 165, 90, 0.12);
   --warning: #F0B232;
   --warning-soft: rgba(240, 178, 50, 0.12);
+  /* Presence "Boşta" on every platform (UI audit #69; same as iOS / Watch). */
+  --status-idle: #FF9F0A;
+  /* The one default profile banner (UI audit #3): brand charcoal with a
+     faint logo-blue wash. Every "no banner yet" surface uses it. */
+  --profile-banner-fallback: linear-gradient(180deg, rgba(88, 122, 245, 0.22), rgba(88, 122, 245, 0.06)), #393C4D;
   --danger: #DA373C;
   --danger-soft: rgba(218, 55, 60, 0.12);
 
@@ -108,6 +113,17 @@
   --text-2xl: 20px;
   --text-3xl: 24px;
   --text-4xl: 32px;
+
+  /* App type scale (UI audit #129): seven steps in rem, so they follow the
+     root size. html is 16px (base.css), so 1rem = 16px. New CSS uses these;
+     scripts/type-scale.mjs keeps literal px font-sizes from growing. */
+  --fs-11: 0.6875rem;
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-15: 0.9375rem;
+  --fs-17: 1.0625rem;
+  --fs-20: 1.25rem;
+  --fs-28: 1.75rem;
 
   --weight-normal: 400;
   --weight-medium: 500;

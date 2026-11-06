@@ -1291,7 +1291,8 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-image: linear-gradient(135deg, rgba(88, 122, 246, 0.85), rgba(124, 92, 255, 0.65));
+  /* UI audit #3 / #79: the one default banner, no blue-violet gradient. */
+  background: var(--profile-banner-fallback, #393C4D);
   background-size: cover;
   background-position: center;
 }
@@ -1300,17 +1301,25 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner.has-image {
   background-color: #12131a;
 }
 
+/* A plain secondary button on the banner (UI audit #79), same frosted chip
+   as the desktop "Banner'ı değiştir". */
 html.glass-ui .user-settings.is-mobile.g-profile-edit .g-pe-banner-label {
   position: relative;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: rgba(20, 21, 30, 0.55);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
   color: #fff;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-pe-banner-actions,

@@ -1,5 +1,18 @@
 import { fetchPublic } from "./edgeApi.js";
-import { Bell, Megaphone, ShoppingBag, Users } from "@phosphor-icons/react/dist/ssr";
+import {
+  Bell,
+  ChatCircle,
+  CheckCircle,
+  Confetti,
+  Lock,
+  Megaphone,
+  PushPin,
+  ShoppingBag,
+  Siren,
+  Users,
+  Warning,
+  Wrench,
+} from "@phosphor-icons/react/dist/ssr";
 
 /**
  * Stored `emoji` is the per-item icon. Known glyphs draw as the same
@@ -13,7 +26,22 @@ const ANNOUNCEMENT_EMOJI_ICONS = new Map([
   ["👥", Users],
   ["📢", Megaphone],
   ["📣", Megaphone],
+  // Admin live popup + announcement picker values (stored as before; drawn as line icons).
+  ["🚨", Siren],
+  ["⚠️", Warning],
+  ["⚠", Warning],
+  ["✅", CheckCircle],
+  ["🎉", Confetti],
+  ["🔧", Wrench],
+  ["🔒", Lock],
+  ["💬", ChatCircle],
+  ["📌", PushPin],
 ]);
+
+/** Line icon for a stored glyph; unknown values fall back to the megaphone (never an emoji). */
+export function announcementIconOrDefault(emoji) {
+  return announcementIcon(emoji) || Megaphone;
+}
 
 export function announcementIcon(emoji) {
   const raw = String(emoji || "").trim();

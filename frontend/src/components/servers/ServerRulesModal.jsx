@@ -5,6 +5,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { acceptServerRules } from "../../api/servers";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import { rulesList } from "./hub/hubData";
 
 /**
  * Community onboarding rules accept screen.
@@ -59,13 +60,12 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
           <h3>{t("Welcome to {name}", { name: server?.name || t("this server") })}</h3>
           <p className="server-modal-lead">{t("Read and accept the rules before you start chatting.")}</p>
           <ol className="server-rules-text server-rules-list">
-            {(server?.rulesText || "")
-              .split("\n")
-              .map((line) => line.trim())
-              .filter(Boolean)
-              .map((line, i) => (
-                <li key={`${i}-${line}`}>{line}</li>
-              ))}
+            {rulesList(server?.rulesText).map((line, i) => (
+              <li key={`${i}-${line}`}>
+                <span className="server-rules-num" aria-hidden="true">{i + 1}</span>
+                <span className="server-rules-line">{line}</span>
+              </li>
+            ))}
           </ol>
           <label className="server-check-row">
             <GlassCheckbox

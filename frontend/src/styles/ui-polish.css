@@ -77,6 +77,36 @@
 
 .toast-info .toast-icon { color: var(--primary); }
 
+/* UI audit #66: errors read red on every surface, a toast can carry one
+   named action, and on desktop the stack sits under the chat header pills
+   (12px gap) instead of covering the call / pin / search buttons. */
+html .toast-item.toast-error .toast-icon { color: #FF453A; }
+
+.toast-action {
+  flex: none;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+  font-size: var(--fs-13);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.toast-action:active { transform: scale(0.97); }
+
+html.glass-desktop .toast-stack,
+html.glass-desktop body.electron-app .toast-stack {
+  top: calc(var(--electron-titlebar-h, 0px) + 88px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-action:active { transform: none; }
+}
+
 /* ─── Reactions ─── */
 .message-reactions,
 .msg-reactions {
@@ -105,7 +135,7 @@
   border: 1px solid var(--border-2);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-13);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
@@ -125,7 +155,7 @@
 
 .reaction-emoji { line-height: 1; }
 .reaction-count {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -174,7 +204,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--text-2);
 }
@@ -196,7 +226,7 @@
 .reaction-picker-emoji {
   border: none;
   background: transparent;
-  font-size: 20px;
+  font-size: var(--fs-20);
   padding: 6px;
   border-radius: var(--radius-lg);
   cursor: pointer;
@@ -339,7 +369,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--text-muted);
   margin-bottom: 6px;
@@ -392,7 +422,7 @@
 }
 .message-file-meta { flex: 1; min-width: 0; }
 .message-file-name {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   color: var(--text-0);
   overflow: hidden;
@@ -400,7 +430,7 @@
   white-space: nowrap;
 }
 .message-file-size {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -409,7 +439,7 @@
   border: none;
   background: transparent;
   color: var(--text-3);
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   padding: 0 8px;
   height: 28px;
@@ -503,13 +533,13 @@
 }
 
 .status-badge.status-online { background: var(--success); }
-.status-badge.status-idle { background: var(--warning); }
+.status-badge.status-idle { background: var(--status-idle, #FF9F0A); }
 .status-badge.status-dnd { background: var(--danger); }
 .status-badge.status-invisible,
 .status-badge.status-offline { background: var(--text-muted); }
 
 .rail-user-status-dot.status-online { background: var(--success); }
-.rail-user-status-dot.status-idle { background: var(--warning); }
+.rail-user-status-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .rail-user-status-dot.status-dnd { background: var(--danger); }
 .rail-user-status-dot.status-invisible,
 .rail-user-status-dot.status-offline { background: var(--text-muted); }
@@ -534,7 +564,7 @@
 
 .status-picker-header {
   padding: 6px 10px 8px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -555,7 +585,7 @@
   border: none;
   background: transparent;
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
   padding: 9px 10px;
   border-radius: var(--r-sm);
@@ -583,7 +613,7 @@
 }
 
 .status-picker-dot.status-online { background: var(--success); }
-.status-picker-dot.status-idle { background: var(--warning); }
+.status-picker-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .status-picker-dot.status-dnd { background: var(--danger); }
 .status-picker-dot.status-invisible { background: var(--text-muted); }
 
@@ -598,7 +628,7 @@
   padding: 8px 6px 4px;
 }
 .status-picker-custom-label {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -633,7 +663,7 @@
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-0);
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
 }
 .status-picker-input:focus {
@@ -674,7 +704,7 @@
   gap: 6px;
   padding: 8px 12px;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   cursor: pointer;
   border: none;
@@ -695,27 +725,69 @@
 }
 
 
-/* ─── Empty states ─── */
+/* ─── Empty states (UI audit #19: the one EmptyState) ───
+   48 px glass tile + line icon, title 17/600, body 14/400 secondary,
+   at most one primary + one secondary button. No blobs, no dashed boxes. */
 .empty-state {
-  gap: 12px;
+  gap: 8px;
   padding: 32px 20px;
 }
 
-.empty-icon-wrap {
-  width: 88px;
-  height: 88px;
-  border-radius: var(--r-xl);
+.empty-state .empty-tile {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, var(--primary-soft), transparent);
-  color: var(--primary);
+  margin-bottom: 8px;
+  background: var(--gd-glass-fill, var(--g-fill, var(--surface-2)));
+  color: var(--gd-brand, var(--g-brand, #587AF6));
+  box-shadow: inset 0 0 0 0.5px var(--gd-hair, var(--g-hair, var(--border-3)));
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
+}
+
+.empty-state .empty-tile svg { opacity: 1; }
+
+.empty-state h2,
+.empty-state .empty-title {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+}
+
+.empty-state p,
+.empty-state .empty-body {
+  margin: 0;
+  max-width: 320px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.empty-state.compact {
+  flex: 0 0 auto;
+  padding: 20px 12px;
+  gap: 6px;
+}
+
+.empty-state.compact .empty-tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   margin-bottom: 4px;
 }
 
-.empty-icon-wrap svg { opacity: 1; }
+.empty-state.compact .empty-title { font-size: var(--fs-15); }
+.empty-state.compact .empty-body { font-size: var(--fs-13); max-width: 260px; }
 
-.empty-state h2 {
-  color: var(--text-0);
+.empty-state.tone-error .empty-tile {
+  color: var(--g-red, #FF453A);
 }
 
 .empty-cta-row {
@@ -730,31 +802,40 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  border-radius: var(--radius-full);
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: 12px;
   border: 1px solid var(--border-3);
   background: var(--surface-2);
   color: var(--text-1);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform 120ms var(--ease-out);
 }
 
 .empty-cta:hover {
   background: var(--surface-hover);
   border-color: var(--border-4);
-  transform: translateY(-1px);
 }
 
+.empty-cta:active { transform: scale(0.97); }
+
 .empty-cta.primary {
-  background: var(--primary);
+  background: #587AF6;
   border-color: transparent;
   color: #fff;
 }
 
 .empty-cta.primary:hover {
-  background: var(--primary-2);
+  background: #4D6EE8;
+}
+
+.empty-state.compact .empty-cta { min-height: 32px; padding: 6px 14px; font-size: var(--fs-13); }
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-cta:active { transform: none; }
 }
 
 /* ─── Appearance accent swatches ─── */
@@ -858,7 +939,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
 }
 
@@ -876,7 +957,7 @@
   background: var(--success);
   border: none;
   color: #fff;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -1036,12 +1117,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 6px;
   color: #fff;
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .participant-tile.small .participant-tile-label {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--fs-11);
 }
 
 .participant-tile-name {
@@ -1075,7 +1156,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 12px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
 }
 
@@ -1121,7 +1202,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   justify-content: center;
   flex-wrap: wrap;
   gap: 4px;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 650;
   color: #fff;
   text-align: center;
@@ -1149,7 +1230,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: color-mix(in srgb, var(--surface-1) 75%, transparent);
   border: 1px solid var(--border-2);
   backdrop-filter: blur(8px);
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   color: var(--text-2);
 }
@@ -1205,12 +1286,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   cursor: pointer;
 }
 .message-reply-author {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: var(--primary);
 }
 .message-reply-text {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1292,7 +1373,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 6px;
   margin-bottom: 10px;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 750;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1320,7 +1401,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 20px;
+  font-size: var(--fs-20);
   color: var(--text-0);
   background: color-mix(in srgb, var(--primary) 32%, var(--surface-1));
 }
@@ -1400,7 +1481,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   align-items: center;
   gap: 8px;
   min-height: 40px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-2);
 }
 
@@ -1410,7 +1491,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 
 .invite-embed-inline-error {
   margin: 0 0 8px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--danger);
 }
 
@@ -1570,7 +1651,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .slash-embed-user-handle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-2);
 }
 
@@ -1689,7 +1770,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   flex: 1 0 100%;
   order: -2;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   background: color-mix(in srgb, var(--warning, #f0b232) 9%, var(--surface-2));
 }
@@ -1703,12 +1784,12 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .composer-reply-meta strong,
 .composer-attach-meta strong {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-0);
 }
 .composer-reply-meta span,
 .composer-attach-meta span {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1814,7 +1895,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .giphy-logo {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 800;
   letter-spacing: 0.08em;
   background: linear-gradient(90deg, #00cdac, #8ddad5);
@@ -1824,9 +1905,19 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .giphy-sub {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
 }
+
+.giphy-title {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--gd-t1, var(--g-t1, var(--text-0)));
+}
+
+.giphy-state.empty-state { grid-column: 1 / -1; }
 
 .giphy-close {
   width: 28px;
@@ -1866,7 +1957,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-md);
   padding: 9px 34px 9px 34px;
   color: var(--text-0);
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
 }
 .giphy-search input:focus {
@@ -1898,7 +1989,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   padding: 6px 10px;
   border-radius: var(--r-sm);
@@ -1965,7 +2056,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 10px;
   padding: 36px 16px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
   text-align: center;
 }
 .giphy-state.is-error {
@@ -1978,7 +2069,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-sm);
   padding: 7px 14px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
 }
 .giphy-spin {
@@ -2041,13 +2132,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-modal-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-20);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 .invite-modal-header p {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--text-2, var(--text-3));
   line-height: 1.4;
 }
@@ -2077,19 +2168,19 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-modal-group strong {
   display: block;
-  font-size: 15px;
+  font-size: var(--fs-15);
 }
 .invite-modal-group span {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin-top: 3px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted, #949ba4);
 }
 .invite-modal-label {
   display: block;
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2108,7 +2199,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   color: var(--text-1, var(--text-2));
   border-radius: var(--r-pill);
   padding: 6px 11px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2134,7 +2225,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: var(--surface-2);
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-link-box span {
   overflow: hidden;
@@ -2151,7 +2242,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   background: var(--primary, #587af5);
   color: #fff;
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-13);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -2174,7 +2265,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
   background: transparent;
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2191,7 +2282,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-sm);
   background: var(--danger-soft, rgba(237, 66, 69, 0.12));
   color: var(--danger);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .invite-landing {
@@ -2216,7 +2307,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   backdrop-filter: blur(18px);
 }
 .invite-landing-brand {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -2248,7 +2339,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-landing-preview span {
   color: var(--text-muted, var(--text-3));
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-landing-avatar {
   width: 56px;
@@ -2280,7 +2371,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 6px;
   margin-top: 4px;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-landing-state {
   display: flex;
@@ -2299,7 +2390,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 8px;
   padding: 8px 12px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: var(--fs-13);
   margin-bottom: 14px;
 }
 .invite-landing-banner.is-ok {
@@ -2309,7 +2400,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .invite-landing-error {
   margin-bottom: 12px;
   color: var(--danger);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .invite-landing-join {
   width: 100%;
@@ -2322,7 +2413,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border-radius: var(--r-md);
   background: #587af5;
   color: #fff;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 700;
   cursor: pointer;
 }
@@ -2341,7 +2432,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: none;
   background: transparent;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   cursor: pointer;
 }
@@ -2365,7 +2456,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   gap: 1px;
 }
 .friend-custom-status {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2380,11 +2471,11 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 18px 16px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 .sidebar-empty-friends strong {
   color: var(--text-1);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .sidebar-empty-friends-actions {
   display: flex;
@@ -2396,7 +2487,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .sidebar-empty-friends-actions .mkt-btn {
   min-height: 34px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   border-radius: var(--r-md);
   border: 1px solid var(--border-2);
   cursor: pointer;
@@ -2435,7 +2526,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .uhc-banner {
   height: 72px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2) 55%, #7b5cff);
+  background: var(--profile-banner-fallback);
   background-size: cover;
   background-position: center;
   flex-shrink: 0;
@@ -2483,7 +2574,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   word-break: break-word;
 }
 .uhc-handle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-muted);
   margin: 2px 0 6px;
   line-height: 1.2;
@@ -2492,7 +2583,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--text-2);
   line-height: 1.2;
 }
@@ -2508,7 +2599,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .uhc-custom-status,
 .uhc-bio {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   color: var(--text-2);
 }
@@ -2575,7 +2666,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   padding: 8px 6px;
   border-radius: var(--r-md);
@@ -2599,7 +2690,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .us-bubble-demo {
   max-width: 78%;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.35;
 }
 .us-bubble-demo.other { align-self: flex-start; background: var(--surface-2); color: var(--text-1); }
@@ -2629,57 +2720,6 @@ html[data-bubble="minimal"] .message-bubble {
   border: 1px solid var(--border-2) !important;
   border-radius: var(--r-sm) !important;
   box-shadow: none !important;
-}
-
-/* ── Empty illustrations ── */
-.empty-illustration {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 12px;
-  display: grid;
-  place-items: center;
-}
-.empty-illustration.compact {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 4px;
-}
-.empty-illu-blob {
-  position: absolute;
-  inset: 12%;
-  border-radius: 40% 60% 55% 45%;
-  background: radial-gradient(circle at 30% 30%, var(--primary-soft), transparent 70%);
-  filter: blur(2px);
-  /* A3: two slow breaths, then rest on the first keyframe (identical to the
-     static look). Endless, it kept the desktop main panel's two 40px backdrop
-     blurs recompositing every frame while idle (15 fps headless, idle GPU). */
-  animation: emptyBlob 8s ease-in-out 2;
-}
-@media (prefers-reduced-motion: reduce) {
-  .empty-illu-blob { animation: none; }
-}
-.empty-illu-blob.secondary {
-  inset: 22%;
-  background: radial-gradient(circle at 70% 60%, var(--primary-soft), transparent 70%);
-  animation-delay: -3s;
-}
-.empty-illustration .empty-icon-wrap {
-  position: relative;
-  z-index: 1;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--r-lg);
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--border-2);
-  color: var(--primary);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-}
-@keyframes emptyBlob {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(12deg) scale(1.06); }
 }
 
 /* ── Mobile bottom tabs (edge-to-edge; glass styles live in mobile.css) ── */
@@ -2839,7 +2879,7 @@ body.electron-app .modal-backdrop {
 .update-notes-lead {
   margin: 0;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.5;
   color: var(--text-muted, #949ba4);
 }
@@ -2867,7 +2907,7 @@ body.electron-app .modal-backdrop {
 }
 
 .update-notes-version {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #ff7a84;
@@ -2882,7 +2922,7 @@ body.electron-app .modal-backdrop {
 
 .update-notes-item-body {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.45;
   color: var(--text-1, var(--text-2));
 }
@@ -2900,7 +2940,7 @@ body.electron-app .modal-backdrop {
   border-radius: var(--r-md);
   padding: 10px 16px;
   min-height: 44px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 700;
   cursor: pointer;
   color: #fff;
@@ -2967,7 +3007,7 @@ body.electron-app .modal-backdrop {
     width: 100%;
     min-height: 48px;
     border-radius: var(--r-md);
-    font-size: 15px;
+    font-size: var(--fs-15);
     justify-content: center;
   }
 }
@@ -3014,7 +3054,7 @@ body.electron-app .modal-backdrop {
   border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.28);
 }
-.signup-username-label { font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
+.signup-username-label { font-size: var(--fs-12); font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
 .signup-username-field {
   display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 46px; border-radius: 12px;
   background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3022,7 +3062,7 @@ body.electron-app .modal-backdrop {
 }
 .signup-username-field:focus-within { border-color: rgba(120, 140, 255, 0.6); box-shadow: 0 0 0 3px rgba(88, 122, 245, 0.22); }
 .signup-username-at { color: var(--text-muted); font-weight: 600; }
-.signup-username-field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--text-0, #fff); font-size: 17px; letter-spacing: -0.01em; }
+.signup-username-field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--text-0, #fff); font-size: var(--fs-17); letter-spacing: -0.01em; }
 .signup-username-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); transition: background 160ms ease; }
 .signup-username-dot.is-ok { background: #3ba55d; }
 .signup-username-dot.is-checking { background: #faa61a; }
@@ -3031,7 +3071,7 @@ body.electron-app .modal-backdrop {
 .signup-username.is-ok .signup-username-status { color: #3ba55d; }
 .signup-username.is-taken .signup-username-status, .signup-username.is-invalid .signup-username-status { color: #f0797b; }
 .signup-username-suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
-.signup-username-chip { border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: var(--text-0, #fff); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
+.signup-username-chip { border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: var(--text-0, #fff); border-radius: 999px; padding: 6px 12px; font-size: var(--fs-13); cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
 .signup-username-chip:active { transform: scale(0.96); }
 .signup-username-suggest-label { align-self: center; font-size: 12.5px; color: var(--text-2, rgba(255, 255, 255, 0.66)); }
 .signup-username-rules { margin: 0; font-size: 11.5px; color: var(--text-muted); opacity: 0.8; }

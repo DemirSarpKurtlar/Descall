@@ -6,7 +6,6 @@ import { Funnel, getFeatureFlag, getFeatureFlagPayload } from "../analytics";
 import { useMarketingHref } from "../useMarketingHref";
 import { useMirrorCopy } from "../useMirrorCopy";
 import JsonLd, { buildEntityGraphLd } from "../JsonLd";
-import SeoProductPreview from "../components/SeoProductPreview";
 import { APP_STORE_URL } from "../appStoreLink";
 import { useIsAppleMobile } from "../useIsAppleMobile";
 import { useDocumentMarker } from "../../hooks/useDocumentMarker";
@@ -130,34 +129,28 @@ export default function HomePage({ onSignIn, onSignUp }) {
         </div>
       </section>
 
-      <section className="mkt-section">
-        <div className="mkt-servers-panel">
-          <div>
-            <h2>{t("Servers with roles and channels")}</h2>
-            <p className="lead">
-              {t(
-                "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member."
-              )}
-            </p>
-            <ul className="mkt-plain-list">
-              <li>{t("Announcements, squad-up, and staff channels are already in the templates.")}</li>
-              <li>{t("Staff can kick, ban, timeout, and read an audit log.")}</li>
-              <li>{t("Voice channels sit beside the text channels.")}</li>
-            </ul>
-            <div className="mkt-cta-row" style={{ marginTop: 24 }}>
-              <Link to={href("/features")} className="mkt-btn mkt-btn-primary">
-                {t("Explore server features")}
-              </Link>
-              <Link to={mirror.href("/discord-alternative-for-communities")} className="mkt-btn mkt-btn-ghost">
-                {t("For communities")}
-              </Link>
-            </div>
+      <section className="mkt-shot-row mkt-hh-second mkt-hh-servers">
+        <ProductFrame kind="servers" alt={t("Server list with text and voice channels")} />
+        <div className="mkt-shot-copy">
+          <h2>{t("Servers with roles and channels")}</h2>
+          <p>
+            {t(
+              "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member."
+            )}
+          </p>
+          <ul className="mkt-plain-list is-dotted">
+            <li>{t("Announcements, squad-up, and staff channels are already in the templates.")}</li>
+            <li>{t("Staff can kick, ban, or time out members, and every action is logged.")}</li>
+            <li>{t("Voice channels sit beside the text channels.")}</li>
+          </ul>
+          <div className="mkt-cta-row" style={{ marginTop: 24 }}>
+            <Link to={href("/features")} className="mkt-btn mkt-btn-primary">
+              {t("Explore server features")}
+            </Link>
+            <Link to={mirror.href("/discord-alternative-for-communities")} className="mkt-btn mkt-btn-ghost">
+              {t("For communities")}
+            </Link>
           </div>
-          <SeoProductPreview
-            mode="servers"
-            frame="flat"
-            caption={t("Server list with text and voice channels")}
-          />
         </div>
       </section>
 

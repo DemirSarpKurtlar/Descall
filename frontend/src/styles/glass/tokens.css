@@ -24,7 +24,7 @@ html.glass-ui {
   --g-t2: rgba(235,238,255,0.72);
   --g-t3: rgba(235,238,255,0.46);
   --g-t4: rgba(235,238,255,0.28);
-  --g-ok: #30D158; --g-idle: #FFD60A; --g-dnd: #FF453A; --g-off: #8E8E93; --g-red: #FF453A; --g-gold: #FFC94D;
+  --g-ok: #30D158; --g-idle: #FF9F0A; --g-dnd: #FF453A; --g-off: #8E8E93; --g-red: #FF453A; --g-gold: #FFC94D;
   --g-on-brand: #fff;
   --g-edge-rgb: 13,14,19;      /* scroll-edge fade (= --g-deep) */
   --g-ring: #15161d;           /* status-dot ring */

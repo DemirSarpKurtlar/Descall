@@ -99,13 +99,14 @@ assert.equal(/data-theme="iriscape"\] body::before/.test(classic), false);
 
 assert.match(surfaces, /html\.glass-desktop \.us-theme-card[\s\S]*var\(--gd-card-fill\)/);
 assert.match(surfaces, /html\.glass-desktop \.user-settings\.is-desktop \{[\s\S]*var\(--gd-card-fill\)/);
-assert.match(surfaces, /--gd-scrim:\s*color-mix\(in srgb, var\(--surface-0/);
+// UI audit #65: the settings sheet uses the one modal scrim token.
+assert.match(surfaces, /--gd-scrim:\s*var\(--overlay-dim\)/);
 assert.match(palette, /--g-t3: rgba\(28,32,48,0\.70\)/);
 assert.match(palette, /--g-tint-base: rgba\(255,255,255,0\.80\)/);
 assert.match(palette, /--g-heavy-base: rgba\(255,255,255,0\.88\)/);
 const light = readFileSync(join(here, "light.css"), "utf8");
 assert.match(light, /html\.glass-desktop\[data-theme="light"\]/);
-assert.match(light, /--gd-scrim:\s*color-mix\(in srgb, var\(--g-deep\)/);
+assert.match(light, /--gd-scrim:\s*var\(--overlay-dim\)/);
 const settings = readFileSync(join(here, "../settings.css"), "utf8");
 assert.equal(settings.includes("background: #1a1b1e"), false);
 assert.equal(settings.includes("rgba(20, 22, 26, 0.4)"), false);

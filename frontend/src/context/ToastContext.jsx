@@ -117,7 +117,7 @@ export function ToastProvider({ children }) {
       <div className="toast-stack" aria-live="polite">
         <AnimatePresence>
           {toasts.filter((t) => t.type !== "presence").map((t) => {
-            const Icon = ICONS[t.type] || Info;
+            const Icon = t.meta?.icon || ICONS[t.type] || Info;
             return (
               <motion.div
                 key={t.id}
@@ -128,7 +128,19 @@ export function ToastProvider({ children }) {
                 transition={{ type: "spring", stiffness: 420, damping: 28 }}
               >
                 <Icon size={18} className="toast-icon" aria-hidden />
-                {t.meta?.onOpen ? (
+                {t.meta?.onOpen && t.meta?.actionLabel ? (
+                  // UI audit #66: a toast with a named action ("İzin ver") shows it as a button.
+                  <>
+                    <div className="toast-body">{t.message}</div>
+                    <button
+                      type="button"
+                      className="toast-action"
+                      onClick={() => { dismiss(t.id); t.meta.onOpen(); }}
+                    >
+                      {t.meta.actionLabel}
+                    </button>
+                  </>
+                ) : t.meta?.onOpen ? (
                   // 3.7.14: a toast with an action (feedback reply) opens it on click.
                   <button
                     type="button"

@@ -3,14 +3,18 @@
  *  - desktop / iPad: sol menüde bütün bölümler ikonlarıyla, gruplu, aranabilir;
  *  - phone: üst çubuk (menü · bölüm adı · kapat) + tam ekran menü;
  *  - standalone (Electron'daki ayrı yönetici penceresi): kendi başlık çubuğu ve
- *    pencere düğmeleri, ana Descall penceresi serbest kalır.
+ *    pencere düğmeleri, ana Descall penceresi serbest kalır. Tarayıcıda açılan
+ *    /admin/panel aynı standalone düzeni kullanır ama başlık çubuğu çizilmez
+ *    (pencere düğmeleri yalnızca Electron'da işe yarar); panel kenar menüsünden başlar.
  * Menü verisi adminNav.js'ten gelir (tek kaynak, testli).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { List, Search, X } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import AdminVersionBadge from "./AdminVersionBadge.jsx";
+import { AdminSectionBoundary } from "./AdminErrorCard.jsx";
 import { groupAdminTabs } from "./adminNav.js";
+import { isElectronShell } from "../../lib/entryShell.js";
 import logoIcon from "../../assets/admin-logo-icon.png";
 import "../../styles/admin-shell.css";
 
@@ -60,6 +64,12 @@ function SideHead({ t, onClose, closeLabel }) {
   );
 }
 
+function isApplePlatform() {
+  if (typeof navigator === "undefined") return false;
+  const p = navigator.userAgentData?.platform || navigator.platform || "";
+  return /mac|iphone|ipad/i.test(p);
+}
+
 function SearchBox({ value, onChange, inputRef, t, hint }) {
   return (
     <label className="adm-search">
@@ -72,7 +82,7 @@ function SearchBox({ value, onChange, inputRef, t, hint }) {
         placeholder={t("admin.navSearch")}
         aria-label={t("admin.navSearch")}
       />
-      {hint ? <kbd>Ctrl K</kbd> : null}
+      {hint ? <span className="adm-kbd" aria-hidden="true">{isApplePlatform() ? "⌘K" : "Ctrl K"}</span> : null}
     </label>
   );
 }
@@ -131,6 +141,8 @@ export default function AdminShell({
   const searchRef = useRef(null);
   const mainRef = useRef(null);
   const cur = tabs.find((x) => x.id === current) || tabs[0];
+  // Window controls only work inside the Electron admin window; a browser draws its own.
+  const showTitleBar = standalone && isElectronShell();
 
   const pick = (id) => {
     setDrawer(false);
@@ -180,7 +192,9 @@ export default function AdminShell({
           ) : null}
         </header>
         {banner}
-        <main ref={mainRef} className="adm-main" data-tab={current}>{children}</main>
+        <main ref={mainRef} className="adm-main" data-tab={current}>
+          <AdminSectionBoundary scope="pane" resetKey={current}>{children}</AdminSectionBoundary>
+        </main>
         {drawer ? (
           <div className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
             <aside className="adm-side is-drawer">
@@ -199,7 +213,7 @@ export default function AdminShell({
 
   return (
     <div className={`adm adm-${layout}${standalone ? " is-standalone" : ""}`} data-layout={layout}>
-      {standalone ? <TitleBar t={t} /> : null}
+      {showTitleBar ? <TitleBar t={t} /> : null}
       <div className="adm-frame">
         <aside className="adm-side">
           <SideHead t={t} onClose={standalone ? null : onClose} closeLabel={t("Close")} />
@@ -211,7 +225,7 @@ export default function AdminShell({
         </aside>
         <main ref={mainRef} className="adm-main" data-tab={current}>
           {banner}
-          {children}
+          <AdminSectionBoundary scope="pane" resetKey={current}>{children}</AdminSectionBoundary>
         </main>
       </div>
     </div>

@@ -32,7 +32,7 @@ const P = tr.phrases;
 assert.equal(P["Forgot your password?"], "Şifreni mi unuttun?");
 assert.equal(MARKETING_TR["Forgot your password?"], "Şifreni mi unuttun?");
 assert.equal(P["By continuing, you agree to our Terms of Service"], "Devam ederek Hizmet Şartları'nı kabul etmiş olursun");
-assert.equal(P["Do Not Disturb"], "Rahatsız Etmeyin");
+assert.equal(P["Do Not Disturb"], "Rahatsız etme"); // UI audit #69: "sen" form, sentence case (Watch says the same)
 assert.equal(P["Download the desktop app"], "Masaüstü uygulamasını indir");
 for (const k of ["Available", "Sleeping", "Layout", "Toggle mute", "Developer", "Korea"]) assert.notEqual(P[k], k, `${k} untranslated`);
 assert.ok(!("Welcome Back" in P) && !("Get Started" in P), "duplicate-case keys");

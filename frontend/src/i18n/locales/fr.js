@@ -5,6 +5,7 @@ import { UAH_FR } from "./uah.fr.js";
  *   nested  - keyed messages (same paths as en.js nested)
  *   phrases - English source string -> translation
  */
+import { MID_APP_I18N } from "./midApp.i18n.js";
 export const nested = {
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
@@ -2055,6 +2056,10 @@ export const nested = {
     "overviewLive": "En direct",
     "overviewLiveHint": "Sockets connectés. Ouvre un dossier en un clic.",
     "overviewLoadError": "Impossible de charger la vue d'ensemble.",
+    "overviewLoadTitle": "Impossible de charger la vue d'ensemble",
+    "overviewLoadBody": "Vérifie la connexion et réessaie.",
+    "sectionErrorTitle": "Impossible d'ouvrir cette section",
+    "sectionErrorBody": "Le reste du panneau fonctionne toujours. Réessaie dans un instant.",
     "overviewNewFeedback": "Nouveaux, non lus",
     "overviewNoActive": "Pas encore d'activité récente.",
     "overviewNoAudit": "Aucune action admin pour l'instant.",
@@ -2067,7 +2072,7 @@ export const nested = {
     "overviewSanctions": "Bannissements actifs",
     "overviewSpark": "Inscriptions · 7 jours",
     "overviewSparkHint": "Jours à l'heure d'Istanbul. L'entonnoir complet est dans Statistiques.",
-    "overviewSubtitle": "État en direct, dernières activités, nouveaux arrivants et ce qui demande un clic, pas un tas de compteurs bruts.",
+    "overviewSubtitle": "État en direct, utilisateurs actifs et nouvelles inscriptions.",
     "overviewTimeouts": "{count, plural, one {# exclusion temporaire} other {# exclusions temporaires}}",
     "overviewTitle": "En ce moment",
     "overviewUptime": "Disponibilité",
@@ -9573,7 +9578,7 @@ export const phrases = {
   "Squad-ready layout with a squad-up channel, game chats, clip drops, staff ops, and ranked voice lobbies.": "Une disposition pensée pour les squads avec un salon pour former une équipe, des salons par jeu, un salon de clips, des salons staff et des lobbies vocaux classés.",
   "Squad-up channel": "Salon pour former une squad",
   "Stack Trace": "Trace de la pile",
-  "Staff can kick, ban, timeout, and read an audit log.": "L'équipe de modération peut expulser, bannir, exclure temporairement et consulter un journal d'audit.",
+  "Staff can kick, ban, or time out members, and every action is logged.": "L'équipe peut expulser, bannir ou rendre muet temporairement un membre, et chaque action est enregistrée.",
   "Staff roles": "Rôles du staff",
   "Stage": "Scène",
   "Stage channel": "Salon de conférence",
@@ -10126,7 +10131,7 @@ export const phrases = {
   "Watching this hand…": "Tu regardes cette main…",
   "Watching this spin…": "Tu regardes ce tirage…",
   "We are (players already)": "Nous sommes (joueurs déjà présents)",
-  "We care about your privacy": "Nous tenons à ta vie privée",
+  "Your cookie choice": "Ton choix de cookies",
   "We don’t claim Discord’s bot marketplace, Stage events, or every platform client. Honesty ranks better than doorway pages.": "Nous ne prétendons pas avoir la marketplace de bots de Discord, les événements Conférence ou un client pour chaque plateforme. L'honnêteté vaut mieux que les pages satellites.",
   "We focus on real-time messaging, group voice/video, screen share, and a polished desktop experience, without turning private chats into SEO landings.": "Nous nous concentrons sur la messagerie en temps réel, le vocal/vidéo de groupe, le partage d'écran et une expérience de bureau soignée, sans transformer les discussions privées en pages SEO.",
   "We got your note. We’ll reply at the email you gave.": "Nous avons bien reçu ton message. Nous te répondrons à l'adresse e-mail indiquée.",
@@ -10641,7 +10646,13 @@ export const phrases = {
   "🔵 Normal": "🔵 Normal",
   "🛡️ Admins Only": "🛡️ Admins uniquement",
   "🟡 Important": "🟡 Important",
-  "🟢 Online Users": "🟢 Utilisateurs en ligne"
+  "🟢 Online Users": "🟢 Utilisateurs en ligne",
+  "Compare": "Comparer",
+  "Descall features": "Fonctionnalités de Descall",
+  "Discord vs Descall article": "Article Discord vs Descall",
+  "More comparisons": "Autres comparatifs",
+  "Ready-made Gaming template": "Modèle Gaming prêt à l'emploi",
+  ...MID_APP_I18N.fr,
 };
 
 export default { nested, phrases };
