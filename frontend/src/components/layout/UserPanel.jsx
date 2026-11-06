@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, ChevronLeft, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -2922,8 +2922,11 @@ const UserPanel = forwardRef(function UserPanel({
               {t("Cancel")}
             </button>
           ) : isMobile ? (
-            <button type="button" className="us-icon-btn" onClick={backToMenu} aria-label={t("Back")}>
-              <ChevronLeft size={22} />
+            /* UI audit #46: every subpage uses the same iOS "‹ Ayarlar" text back
+               as Görünüm, not a filled circle on some pages. */
+            <button type="button" className="s3-back us-text-back" onClick={backToMenu} aria-label={t("Back")}>
+              <S3Glyph name="chevl" size={22} stroke={2.4} />
+              <span>{t("Settings")}</span>
             </button>
           ) : (
             <div className="us-main-heading">

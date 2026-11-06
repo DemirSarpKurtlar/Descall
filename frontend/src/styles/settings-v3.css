@@ -185,6 +185,9 @@ html.glass-ui .user-settings.s3-tab-v3 .us-main-header.s3-nav {
 .us-main-header.s3-nav .l, .us-main-header.s3-nav .r { display: flex; align-items: center; min-width: 0; }
 .us-main-header.s3-nav .r { justify-content: flex-end; }
 .s3-back { display: inline-flex; align-items: center; gap: 2px; border: 0; padding: 0; margin-left: -6px; background: none; color: var(--g-brand-hi, #8fa6ff); font-size: 17px; cursor: pointer; }
+html[data-theme="light"] .s3-back { color: #3D5BD9; }
+.us-main-header .s3-back.us-text-back { position: relative; z-index: 1; min-height: 44px; flex: none; white-space: nowrap; }
+.s3-back:active { opacity: 0.6; }
 html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll {
   padding: 0 22px 24px !important;
 }
