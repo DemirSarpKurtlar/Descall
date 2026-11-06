@@ -167,6 +167,16 @@ User routes are in `routes/premium.js` (requireAuth):
 | GET | `/api/premium/plans` | Visible, active plans with their features and no prices |
 | POST | `/api/premium/redeem` | Body `{code}`. Limits: 10 tries per 10 min per account, 60 per hour per IP, and 5 wrong or expired codes per 10 min. Sends `premium:updated`. |
 
+## Badges of other people
+
+`lib/premium/badges.js` adds `premium_plan` (`"plus"`, `"ultra"` or `null`) to the public user payloads the client renders for other people:
+- `GET /api/auth/me` and `GET /api/auth/users/:userId` (profile and user card);
+- the friend list and friend requests (`friend:list`, `friend:requests`, through `enrichFriendEntry`);
+- `GET /api/servers/:id/members`, `GET /api/groups/:groupId/members` and the group list members;
+- every `toPublicUser` payload (chat senders, `user:profile:updated`) and the presence roster rows (`users:update` / `presence:delta`).
+
+Lookups use `premium_active_for(uuid[])` in batches of 200, cache each answer for 60 s (the synchronous builders read it for up to 10 minutes) and share one request per id in flight, so a list never costs one query per person. A synchronous builder leaves the key out while a user is still unknown, so the client keeps the last value it saw. `premium:updated` (`emitPremiumUpdated`) drops the entry, reads it again and refreshes the member's roster row. Errors fail closed (no badge). The client `PremiumBadge` reads `premium_plan` for other people and the live `/api/premium/me` store for the signed-in user.
+
 ## Entitlements, socket and scheduler
 
 - `lib/premium/features.js` is the CJS mirror of `frontend/src/premium/features.js` (`FEATURES`, `featuresFor`). `lib/premium/features.selftest.cjs` checks that the client list, the mirror, the CONTRACT table and the migration seed agree.

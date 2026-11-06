@@ -26,6 +26,7 @@ const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
 
 const { toPublicUser, cacheUserProfile, broadcastUserProfileUpdate } = require("../lib/userProfile");
+const premiumBadges = require("../lib/premium/badges");
 const moderation = require("../lib/moderation");
 const accountDeletion = require("../lib/accountDeletion");
 const ageGate = require("../lib/ageGate");
@@ -1316,10 +1317,14 @@ router.get("/me", requireAuth, async (req, res) => {
       return res.status(401).json({ error: "This account is closed.", code: "account_closed" });
     }
 
-    const equipped = await shop.getEquippedCosmeticsForUser(user.id).catch(() => ({}));
+    const [equipped, premiumPlan] = await Promise.all([
+      shop.getEquippedCosmeticsForUser(user.id).catch(() => ({})),
+      premiumBadges.planOf(user.id).catch(() => null),
+    ]);
     return res.status(200).json({
       user: {
         ...toPublicUser(user),
+        premium_plan: premiumPlan,
         birthDate: user.birth_date || null,
         email: user.email || null,
         emailVerified: Boolean(user.email_confirmed_at),
@@ -1365,10 +1370,14 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
 
     if (error || !user) return res.status(404).json({ error: "User not found" });
 
-    const equipped = await shop.getEquippedCosmeticsForUser(user.id).catch(() => ({}));
+    const [equipped, premiumPlan] = await Promise.all([
+      shop.getEquippedCosmeticsForUser(user.id).catch(() => ({})),
+      premiumBadges.planOf(user.id).catch(() => null),
+    ]);
     return res.json({
       user: {
         ...toPublicUser(user),
+        premium_plan: premiumPlan,
         createdAt: user.created_at,
         equippedAvatarFrame: equipped.avatarFrame || null,
         equippedBanner: equipped.banner || null,

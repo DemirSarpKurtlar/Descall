@@ -319,6 +319,15 @@ async function run() {
     assert(all.find((x) => x.action === "premium_bulk").meta.reason === "e2e check", "bulk reason in the log");
     r = await call("GET", `${P}/audit${model.qs({ actor: "nobody_here" })}`);
     assert(r.status === 200 && r.body.items.length === 0, "unknown admin: empty");
+
+    /* ---------- badges for other people (premium_active_for, batched) ---------- */
+    const badges = require("../lib/premium/badges");
+    badges.__resetForTests();
+    const plansNow = await badges.plansFor([U(1), U(2), U(4), U(5)]);
+    assert(plansNow.get(U(1)) === "plus" && plansNow.get(U(2)) === "plus" && plansNow.get(U(5)) === "plus" && plansNow.get(U(4)) === null, `badge plans: ${JSON.stringify([...plansNow])}`);
+    assert(badges.__calls() === 1, "one premium_active_for call for the whole list");
+    const { toPublicUser, enrichFriendEntry } = require("../lib/userProfile");
+    assert(toPublicUser({ id: U(1), username: "user1" }).premium_plan === "plus" && enrichFriendEntry(U(4)).premium_plan === null, "public payloads carry premium_plan");
   } finally {
     server.close();
     db.drop();
