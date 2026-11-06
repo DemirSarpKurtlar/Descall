@@ -392,7 +392,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
                       {b.expiresAt ? `${formatUntil(b.expiresAt, locale, t)} · ${remainingLabel(b.expiresAt, locale, t)}` : t("Permanent")}
                     </small>
                   </div>
-                  <RippleButton type="button" className="small admin-btn-green" disabled={busy} onClick={() => revoke(b)}>
+                  <RippleButton type="button" className="small admin-btn-ghost" disabled={busy} onClick={() => revoke(b)}>
                     {t("Unban")}
                   </RippleButton>
                 </div>
