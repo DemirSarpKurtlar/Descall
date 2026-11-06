@@ -6,7 +6,6 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
-import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
 import VoiceMessagePlayer from "./VoiceMessagePlayer";
@@ -644,10 +643,8 @@ export default function MessageList({
                     imageUrl={pickAvatarUrl(avatarUser)}
                     animate="hover"
                   />
-                  <StatusBadge
-                    status={getPresenceStatus(onlineUsers, avatarUser?.id)}
-                    user={avatarUser}
-                  />
+                  {/* No presence dot on message avatars (as in Messages): the
+                      list could disagree with the live panel status. */}
                 </div>
                 <div className="message-meta">
                   <span
