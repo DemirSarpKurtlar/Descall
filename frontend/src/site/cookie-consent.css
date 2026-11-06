@@ -90,14 +90,15 @@
 .dc-btn:active { transform: scale(0.96); transition-duration: 80ms; }
 .dc-btn.is-ghost { background: transparent; border-color: transparent; box-shadow: none; color: rgba(244, 246, 251, 0.65); padding: 0 10px; }
 .dc-btn.is-ghost:hover { background: rgba(255, 255, 255, 0.06); color: var(--dc-c-t1); }
-/* Same primary as the app Button: flat logo blue, no glow. */
+/* Flat brand blue, no glow. #3a66ee (same as the home hero) keeps white text
+   at 4.87:1 for axe AA; the lighter logo blue #587af5 is only 3.8:1. */
 .dc-btn.is-primary {
-  background: #587af5;
+  background: #3a66ee;
   border-color: transparent;
   box-shadow: none;
   color: #fff;
 }
-.dc-btn.is-primary:hover { background: #6585f6; }
+.dc-btn.is-primary:hover { background: #3563e9; }
 .dc-btn:focus-visible { outline: 2px solid #8fa6ff; outline-offset: 2px; }
 
 /* Ayarlar: the choices open inside the same card. */
