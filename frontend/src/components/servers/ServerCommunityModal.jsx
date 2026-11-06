@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ShieldCheck } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";
 import { serverHasPermission } from "../../lib/serverPermissions";
-import GlassCheckbox from "../ui/GlassCheckbox";
 
 const VERIFICATION_LEVELS = [
   { value: "none", label: "None" },
@@ -19,6 +17,25 @@ const VERIFICATION_LEVELS = [
 /**
  * Community / discovery settings: rules screen, splash, verification.
  */
+function CommunitySwitch({ label, on, disabled, onChange }) {
+  return (
+    <div className="server-community-option">
+      <span className="server-community-option-label">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={Boolean(on)}
+        aria-label={label}
+        disabled={disabled}
+        className={`us-toggle${on ? " active" : ""}`}
+        onClick={() => onChange(!on)}
+      >
+        <span className="us-toggle-knob" />
+      </button>
+    </div>
+  );
+}
+
 export default function ServerCommunityModal({ server, onClose, onServerUpdated }) {
   const t = useT();
   const { toast } = useToast();
@@ -93,31 +110,25 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
         exit={{ scale: 0.94, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3>
-          <ShieldCheck size={18} />
-          {t("Community & Discovery")}
-        </h3>
+        <h3>{t("Community & Discovery")}</h3>
         <p className="server-modal-lead">
           {t("Enable community features, public discovery, and a rules screen for new members.")}
         </p>
         <form onSubmit={save}>
           <div className="server-community-options">
-            <label className="server-community-option">
-              <GlassCheckbox
-                checked={communityEnabled}
-                disabled={!canManage || busy}
-                onChange={(e) => setCommunityEnabled(e.target.checked)}
-              />
-              <span className="server-community-option-label">{t("Enable Community")}</span>
-            </label>
-            <label className="server-community-option">
-              <GlassCheckbox
-                checked={isPublic}
-                disabled={!canManage || busy}
-                onChange={(e) => setIsPublic(e.target.checked)}
-              />
-              <span className="server-community-option-label">{t("List in public discovery")}</span>
-            </label>
+            {/* Same switch as Settings (us-toggle), not a square checkbox. */}
+            <CommunitySwitch
+              label={t("Enable Community")}
+              on={communityEnabled}
+              disabled={!canManage || busy}
+              onChange={setCommunityEnabled}
+            />
+            <CommunitySwitch
+              label={t("List in public discovery")}
+              on={isPublic}
+              disabled={!canManage || busy}
+              onChange={setIsPublic}
+            />
           </div>
           <label className="server-field">
             <span>{t("Verification level")}</span>
@@ -134,7 +145,7 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
             </select>
           </label>
           <label className="server-field">
-            <span>{t("Vanity invite URL")}</span>
+            <span>{t("Custom invite link")}</span>
             <input
               value={vanitySlug}
               disabled={!canManage || busy}
@@ -155,7 +166,7 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
             )}
           </label>
           <label className="server-field">
-            <span>{t("Invite splash image URL")}</span>
+            <span>{t("Invite page image")}</span>
             <input
               value={splashUrl}
               disabled={!canManage || busy}
