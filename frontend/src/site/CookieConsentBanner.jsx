@@ -11,8 +11,9 @@ import "./cookie-consent.css";
 /**
  * Cookie bar (approved 2026-10-19, design/maintenance-and-menus-2026-10-19/1-cerez-*).
  * One card for the app (Electron, web, iPhone) and the public site: heavy frosted
- * glass, cookie tile, "Ayarlar / Reddet / Kabul et". Desktop is a single row;
- * at 600 px and below it stacks with "Kabul et" full width on top.
+ * glass, neutral brand-tinted cookie tile, "Ayarlar / Reddet / Kabul et" with the app
+ * button styles. Desktop is a single row; at 600 px and below it is a compact bottom
+ * strip: one short line + Reddet / Kabul et (Ayarlar as an icon button).
  * "Ayarlar" opens the choices inside the same card (analytics switch + Kaydet).
  */
 export default function CookieConsentBanner({ variant = "marketing", onOpenPrivacy }) {
@@ -71,10 +72,10 @@ export default function CookieConsentBanner({ variant = "marketing", onOpenPriva
           <IconCookie size={24} />
         </span>
         <div className="dc-consent-text">
-          <h2 id={titleId}>{t("We care about your privacy")}</h2>
+          <h2 id={titleId}>{t("Your cookie choice")}</h2>
           <p id={textId}>
             <span className="dc-wide">{t("We only use essential cookies; we ask for your permission for analytics.")}</span>
-            <span className="dc-narrow">{t("We only use the cookies Descall needs to run. We ask for your permission for analytics cookies.")}</span>{" "}
+            <span className="dc-narrow">{t("Optional analytics only. Essentials stay on.")}</span>{" "}
             {policy}
           </p>
         </div>
@@ -120,9 +121,9 @@ export default function CookieConsentBanner({ variant = "marketing", onOpenPriva
         </div>
       ) : (
         <div className="dc-consent-acts">
-          <button type="button" className="dc-btn is-ghost is-settings" onClick={() => setPrefs(true)}>
+          <button type="button" className="dc-btn is-ghost is-settings" onClick={() => setPrefs(true)} aria-label={t("Settings")}>
             <IconGear size={16} />
-            {t("Settings")}
+            <span className="dc-settings-label">{t("Settings")}</span>
           </button>
           <button type="button" className="dc-btn is-reject" onClick={() => decide("rejected")}>
             {t("Reject")}

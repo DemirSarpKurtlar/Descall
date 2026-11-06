@@ -9742,7 +9742,7 @@ export const phrases = {
   "Watching this hand…": "Assistindo a esta mão…",
   "Watching this spin…": "Assistindo a este giro…",
   "We are (players already)": "Somos (jogadores já no grupo)",
-  "We care about your privacy": "Nos importamos com a sua privacidade",
+  "Your cookie choice": "Sua escolha de cookies",
   "We don’t claim Discord’s bot marketplace, Stage events, or every platform client. Honesty ranks better than doorway pages.": "Não dizemos ter o marketplace de bots do Discord, eventos de palco nem clientes para todas as plataformas. Honestidade rende mais do que páginas de isca.",
   "We focus on real-time messaging, group voice/video, screen share, and a polished desktop experience, without turning private chats into SEO landings.": "Focamos em mensagens em tempo real, voz/vídeo em grupo, compartilhamento de tela e uma experiência caprichada no computador, sem transformar chats privados em páginas de SEO.",
   "We got your note. We’ll reply at the email you gave.": "Recebemos sua mensagem. Vamos responder no e-mail que você informou.",
