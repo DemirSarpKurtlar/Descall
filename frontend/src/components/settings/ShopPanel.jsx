@@ -632,6 +632,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             setView("store");
             setActiveCategory("countries");
           }}
+          onBrowseStore={() => setView("store")}
         />
       ) : items.length === 0 ? (
         <EmptyState
@@ -810,8 +811,15 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
           <div className="shop-catalog">
             {chromeSlot ? <div className="shop-view-row">{viewSwitch}</div> : null}
-            {lead}
-            {categoryTabs}
+            {/* UI audit #112: Envanter is its own page: its own title, no
+                daily-reward / invite cards and no store category chips. */}
+            {view === "inventory" ? (
+              <div className="shop-inventory-head">
+                <h3>{t("Your inventory")}</h3>
+                <p className="shop-panel-intro">{t("Everything you own. Apply an item to show it on your profile.")}</p>
+              </div>
+            ) : lead}
+            {view === "inventory" ? null : categoryTabs}
             {/* A broken category (e.g. Ülkeler) shows an inline error with Tekrar dene and
                 never takes Settings or the app down with it (2.13.1). */}
             <ErrorBoundary scope="pane" resetKey={`${view}:${activeCategory || ""}`}>

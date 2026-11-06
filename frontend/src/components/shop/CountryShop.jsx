@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { createPortal } from "react-dom";
-import { Check, CheckCircle2, Coins, Flame, Gift, Search, SortAsc, Undo2, X } from "../ui/Icon.jsx";
+import { Check, CheckCircle2, Coins, Flame, Gift, Package, Search, SortAsc, Undo2, X } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { hapticSelection, hapticTabTick } from "../../lib/fluid/haptics";
 import {
@@ -584,10 +585,22 @@ export function ShopInventoryView({
   retiredTitles = 0,
   categoryLabel,
   onBrowseCountries,
+  onBrowseStore,
 }) {
   const t = useT();
   const { locale } = useLocale();
   const rows = inventory.filter((row) => row?.item);
+  if (rows.length === 0 && retiredTitles <= 0) {
+    return (
+      <EmptyState
+        className="shop-inventory-empty"
+        icon={Package}
+        title={t("Your inventory is empty")}
+        body={t("Items you buy in the store show up here.")}
+        primary={onBrowseStore ? { label: t("Browse the store"), action: onBrowseStore } : undefined}
+      />
+    );
+  }
   const countries = sortCountries(
     rows.map((r) => r.item).filter((i) => i.category === "countries"),
     "az",

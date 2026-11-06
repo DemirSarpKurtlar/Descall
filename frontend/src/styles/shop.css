@@ -819,6 +819,19 @@ html[data-bubble="minimal"] .shop-live-bubble {
   font-size: 13px;
 }
 
+/* UI audit #112: Envanter page head. */
+.shop-inventory-head {
+  margin: 0 0 12px;
+}
+
+.shop-inventory-head h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--gd-t1, var(--g-t1, var(--text-0)));
+}
+
 .shop-load-error {
   display: flex;
   flex-direction: column;
