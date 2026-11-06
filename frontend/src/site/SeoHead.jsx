@@ -4,7 +4,6 @@ import {
   absoluteUrl,
   routeMetaForLocale,
   SITE_NAME,
-  DEFAULT_OG_IMAGE,
   DEFAULT_ORIGIN,
 } from "./seoConfig";
 import { useLocale } from "../context/localeContextInstance";
@@ -14,6 +13,7 @@ import {
   stripLocalePrefix,
 } from "./localePaths";
 import { ogLocaleTag } from "./siteLocales.js";
+import { ogImageFor } from "./ogImages.js";
 import { SITE_OPERATOR } from "./siteIdentity";
 
 function upsertMeta(attr, key, content) {
@@ -70,8 +70,8 @@ export default function SeoHead({ forceNoindex = false, title, description, path
         : pathname;
   const pageLocale = meta.locale || (tr ? "tr" : "en");
   const canonical = absoluteUrl(canonicalPath === "/tr" ? "/tr" : canonicalPath);
-  // Social crawlers prefer PNG; on-page can still preload webp.
-  const ogImage = absoluteUrl(image || meta.image || DEFAULT_OG_IMAGE);
+  // PNG for social crawlers; each language has its own default image (ogImages.js).
+  const ogImage = absoluteUrl(ogImageFor(image || meta.image, pageLocale));
 
   useEffect(() => {
     document.title = pageTitle;
@@ -120,7 +120,7 @@ export default function SeoHead({ forceNoindex = false, title, description, path
     upsertMeta("property", "og:image:type", "image/png");
     upsertMeta("property", "og:image:width", "1200");
     upsertMeta("property", "og:image:height", "630");
-    upsertMeta("property", "og:image:alt", `${SITE_NAME}, Discord alternative`);
+    upsertMeta("property", "og:image:alt", pageTitle);
     // Hint for clients that understand webp (not all social crawlers).
     upsertMeta("property", "og:image:secure_url", ogImage);
 

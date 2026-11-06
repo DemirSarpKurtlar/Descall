@@ -3,6 +3,7 @@ import { organizationLogoLd } from "./siteIcons.js";
 import { SITE_OPERATOR } from "./siteIdentity.js";
 import { SITE_LOCALES } from "./siteLocales.js";
 import { APP_STORE_URL } from "./appStoreLink.js";
+import { ogImageFor } from "./ogImages.js";
 import {
   APP_ID,
   ORG_ID,
@@ -202,7 +203,7 @@ export function buildBreadcrumbLd(crumbs = []) {
   };
 }
 
-export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage }) {
+export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage, image }) {
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -225,7 +226,7 @@ export function buildArticleLd({ title, description, path, datePublished, dateMo
       logo: organizationLogoLd(absoluteUrl),
     },
     copyrightHolder: { "@id": PERSON_ID },
-    image: [absoluteUrl("/og-default.png")],
+    image: [absoluteUrl(ogImageFor(image, inLanguage))],
   };
 }
 

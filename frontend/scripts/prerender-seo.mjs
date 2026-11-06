@@ -15,8 +15,8 @@ const distDir = path.join(root, "dist");
 const indexPath = path.join(distDir, "index.html");
 
 const SITE = "https://descall.com";
-const OG = `${SITE}/og-default.png`;
 
+const { ogImageFor } = await import(pathToFileURL(path.join(root, "src/site/ogImages.js")).href);
 const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG } = await import(
@@ -668,6 +668,7 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
 
   // hreflang only for real translations (served site languages); reciprocal, x-default → EN.
   const loc = routeLocale(route);
+  const ogUrl = `${SITE}${ogImageFor(route.image, loc)}`;
   const alternates = hreflangAlternates(route.path);
   const hreflang = alternates.map(
     (alt) => `<link rel="alternate" hreflang="${alt.hreflang}" href="${SITE}${alt.path}" />`
@@ -698,7 +699,7 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     `<meta property="og:url" content="${url}" />`,
     `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:site_name" content="Descall" />`,
-    `<meta property="og:image" content="${route.image ? `${SITE}${route.image.startsWith("/") ? route.image : `/${route.image}`}` : OG}" />`,
+    `<meta property="og:image" content="${ogUrl}" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:image:alt" content="${title}" />`,
@@ -707,7 +708,7 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${desc}" />`,
-    `<meta name="twitter:image" content="${route.image ? `${SITE}${route.image.startsWith("/") ? route.image : `/${route.image}`}` : OG}" />`,
+    `<meta name="twitter:image" content="${ogUrl}" />`,
     ldScripts,
   ]
     .filter(Boolean)
