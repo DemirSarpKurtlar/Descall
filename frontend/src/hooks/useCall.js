@@ -37,17 +37,15 @@ import { ensureIceServersForCall, getIceConfigStatus, iceServersHaveTurn, preloa
 import { captureVoiceDiagnostics } from "../lib/voiceDiagnostics";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
 import {
-  clampGain,
   micRecapturePlan,
   primeCapturedMic,
   readLocalMute,
-  readParticipantGain,
   tuneAudioReceiver,
   writeLocalMute,
-  writeParticipantGain,
 } from "../lib/voiceProfile";
+import { createPeerVolume } from "../lib/peerVolume";
 import { getUser } from "../lib/storage";
 import { drainNativeTelemetry, getNativeCallSnapshot } from "../lib/iosNativeCall";
 import { nativeOfferVerdict } from "../lib/iosNativeCallState";
@@ -97,6 +95,8 @@ import { createCallRecovery } from "../lib/callConnectionMachine";
 import {
   INCOMING_RING_TIMEOUT_MS,
   createRingChannel,
+  crossedCallRole,
+  outgoingRingGuardMs,
   ringEventMatches,
 } from "../lib/callRingSync";
 import { createLocalLevelProbe, readRemoteAudioLevel } from "../lib/rtpAudioLevel";
@@ -230,8 +230,9 @@ export function useCall(socket, callOccupancyRef = null) {
   const [selectedAudioOutput, setSelectedAudioOutput] = useState(() => (IOS_NATIVE ? "" : readAudioPrefs().output));
   const [selectedVideoInput, setSelectedVideoInput] = useState("");
   const videoInputIdRef = useRef("");
-  const remoteVolumeRef = useRef(1);
-  const lastRemoteVolumeRef = useRef(1);
+  // Playback level of the peer (lib/peerVolume.js): per peer, never carried over.
+  const peerVolumeRef = useRef(null);
+  if (!peerVolumeRef.current) peerVolumeRef.current = createPeerVolume();
   const [screenQuality, setScreenQuality] = useState(DM_SCREEN_DEFAULT_QUALITY);
   const screenQualityRef = useRef(screenQuality);
 
@@ -294,7 +295,18 @@ export function useCall(socket, callOccupancyRef = null) {
   // Bumped on every screen publish/stop so a late `finally` cannot clear the
   // suppress flag that a newer offer is still holding.
   const screenOfferEpochRef = useRef(0);
-  const remoteAudioRef = useRef(null);
+  // Callback ref with a `.current` (read like a ref object): when the overlay
+  // drops the <audio> (call over, incoming → active layout), the old
+  // element's boost graph is closed instead of keeping an AudioContext alive.
+  const [remoteAudioRef] = useState(() => {
+    const ref = (el) => {
+      const prev = ref.current;
+      if (prev && prev !== el) releasePlaybackGain(prev);
+      ref.current = el;
+    };
+    ref.current = null;
+    return ref;
+  });
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
   const screenVideoRef = useRef(null);
@@ -320,6 +332,12 @@ export function useCall(socket, callOccupancyRef = null) {
   const socketRef = useRef(socket);
   const callTypeRef = useRef(callType);
   const makingOfferRef = useRef(false);
+  // Crossed calls (both pressed call): the peer's offer, answered by the
+  // polite side once its own dial is out (lib/callRingSync.js crossedCallRole).
+  const crossedOfferRef = useRef(null);
+  // startCall has not emitted its offer yet (the pc must not be touched).
+  const dialingRef = useRef(false);
+  const takeCrossedOfferRef = useRef(null);
   const negotiationQueuedRef = useRef(false);
   const iceRestartAttemptedRef = useRef(false);
   const iceRecoveryTimerRef = useRef(null);
@@ -539,6 +557,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setDuration(0);
     incomingOfferRef.current = null;
     incomingCallTypeRef.current = null;
+    crossedOfferRef.current = null;
     if (pcRef.current) {
       safeClosePeer(pcRef.current);
       pcRef.current = null;
@@ -702,6 +721,40 @@ export function useCall(socket, callOccupancyRef = null) {
     pendingIceRef.current = [];
   };
 
+  /**
+   * Crossed calls, polite side: answer the peer's offer on our own dialing
+   * connection (our offer is rolled back), same mic, no second ring. The
+   * server drops our reverse ring when it sees this answer.
+   */
+  const takeCrossedOffer = async () => {
+    const crossed = crossedOfferRef.current;
+    const pc = pcRef.current;
+    if (!crossed || !pc || dialingRef.current) return false;
+    crossedOfferRef.current = null;
+    const peerId = peerRef.current?.id;
+    if (modeRef.current !== "outgoing" || String(peerId || "") !== String(crossed.fromId)) return false;
+    try {
+      setupTimelineRef.current?.count("crossed");
+      const { accepted } = await applyRemoteOffer(pc, crossed.offer, { polite: true, makingOffer: false });
+      if (!accepted || pcRef.current !== pc || modeRef.current !== "outgoing") return false;
+      await flushIce(pc);
+      const answer = await pc.createAnswer();
+      await commitLocalDescription(pc, answer);
+      emitWithAck(() => socketRef.current, "call:answer", { toUserId: peerId, answer: pc.localDescription }, {
+        shouldRetry: () => pcRef.current === pc && pc.connectionState !== "connected" && pc.connectionState !== "closed",
+      });
+      if (crossed.callUuid) setCallUuid(crossed.callUuid);
+      hapticCallConnected();
+      setMode("active");
+      modeRef.current = "active";
+      return true;
+    } catch (err) {
+      console.warn("[Call] crossed call answer failed:", err?.name || err?.message || err);
+      return false;
+    }
+  };
+  takeCrossedOfferRef.current = takeCrossedOffer;
+
   const markRemoteMediaReady = useCallback((stream) => {
     if (!stream) return;
     const tracks = stream.getTracks?.() || [];
@@ -737,7 +790,7 @@ export function useCall(socket, callOccupancyRef = null) {
     // srcObject changes only when the mic track set changes (every reassign
     // restarts WebKit's renderer; the overlay used to flip it back and forth).
     if (audio && remoteAudioKeeperRef.current.attach("inbound") !== "cleared") {
-      applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
+      applyPlaybackGain(audio, deafenedRef.current ? 0 : peerVolumeRef.current.level());
     }
     const video = remoteVideoRef.current;
     const cameraTracks = mainStream?.getVideoTracks().filter((track) => track.readyState !== "ended") || [];
@@ -1141,6 +1194,20 @@ export function useCall(socket, callOccupancyRef = null) {
     };
   }, [mode, socket]);
 
+  // Outgoing ring guard: the server ends an unanswered ring at 45 s with
+  // call:declined (no_answer). When that never arrives (backend restarted and
+  // lost the ring, socket stayed down) the ringback looped until the caller
+  // hung up. Give up here a little later, the same way the server would.
+  useEffect(() => {
+    if (mode !== "outgoing") return undefined;
+    const timer = setTimeout(() => {
+      if (modeRef.current !== "outgoing") return;
+      toastRef.current?.(tRuntime("No answer"), "info");
+      endCallRef.current?.(peerRef.current?.id ?? null, "no_answer");
+    }, outgoingRingGuardMs({ calleeAnswering }));
+    return () => clearTimeout(timer);
+  }, [mode, calleeAnswering]);
+
   // Outgoing ring: after the caller's socket comes back (phone was locked /
   // app backgrounded while it rang) fetch an answer that arrived meanwhile.
   useEffect(() => {
@@ -1278,7 +1345,26 @@ export function useCall(socket, callOccupancyRef = null) {
         return;
       }
 
-      // Already ringing / dialing this peer → refresh SDP, keep popup
+      // Crossed calls: we are dialing this peer and they dial us. One side
+      // answers the other's offer (polite peer), the other keeps waiting.
+      const crossedRole = crossedCallRole(
+        { mode: modeRef.current, peerId: peerRef.current?.id },
+        fromUser.id,
+        getUser()?.id || null
+      );
+      if (crossedRole === "wait") return;
+      if (crossedRole === "answer") {
+        crossedOfferRef.current = {
+          fromId: fromUser.id,
+          offer,
+          callUuid: typeof incomingCallUuid === "string" ? incomingCallUuid : null,
+        };
+        // Still dialing: startCall takes it right after its own offer is out.
+        void takeCrossedOfferRef.current?.();
+        return;
+      }
+
+      // Already ringing this peer → refresh SDP, keep popup
       if (
         peerRef.current?.id === fromUser.id &&
         (modeRef.current === "incoming" || modeRef.current === "outgoing")
@@ -1607,6 +1693,8 @@ export function useCall(socket, callOccupancyRef = null) {
       console.warn("[Call] startCall ignored, already in a call:", modeRef.current);
       return;
     }
+    dialingRef.current = true;
+    crossedOfferRef.current = null;
     try {
       callDirectionRef.current = "outgoing";
       setupTimelineRef.current?.start("outgoing", type, { entry: "tap", push: "none" });
@@ -1676,10 +1764,15 @@ export function useCall(socket, callOccupancyRef = null) {
         shouldRetry: () => modeRef.current === "outgoing" && pcRef.current === pc,
       });
       setupTimelineRef.current?.mark("offerSent");
+      dialingRef.current = false;
+      // The peer called us while we were dialing (crossed calls, polite side).
+      if (crossedOfferRef.current) await takeCrossedOfferRef.current?.();
     } catch (err) {
       console.error("[Call] startCall failed:", err?.name || err?.message || err);
       voiceMicErrorToast(err, { toast, t: tRuntime, MicOffIcon: MicOff });
       cleanup();
+    } finally {
+      dialingRef.current = false;
     }
   }, [cleanup, setupPeerConnection, toast, acquireCallMicStream]);
 
@@ -1910,7 +2003,7 @@ export function useCall(socket, callOccupancyRef = null) {
     const audio = remoteAudioRef.current;
     if (audio) {
       audio.muted = next;
-      applyPlaybackGain(audio, next ? 0 : remoteVolumeRef.current);
+      applyPlaybackGain(audio, next ? 0 : peerVolumeRef.current.level());
     }
     const track = localStreamRef.current?.getAudioTracks()?.[0];
     if (next) {
@@ -2389,30 +2482,23 @@ export function useCall(socket, callOccupancyRef = null) {
   }, [cameraOn]);
 
   const setParticipantVolume = useCallback((userId, volume) => {
-    const safe = clampGain(volume);
-    if (safe > 0) lastRemoteVolumeRef.current = safe;
-    remoteVolumeRef.current = safe;
-    if (userId != null) writeParticipantGain(userId, safe);
+    const safe = peerVolumeRef.current.set(userId, volume);
     if (remoteAudioRef.current) {
       applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : safe);
     }
   }, []);
 
+  // Each peer plays at their own remembered level, else 100% (never the
+  // previous call's level, see lib/peerVolume.js).
   useEffect(() => {
-    const id = peer?.id;
-    if (id == null) return;
-    const stored = readParticipantGain(id);
-    if (stored == null) return;
-    remoteVolumeRef.current = stored;
-    if (stored > 0) lastRemoteVolumeRef.current = stored;
-    if (remoteAudioRef.current) {
-      applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : stored);
+    const level = peerVolumeRef.current.forPeer(peer?.id ?? null);
+    if (peer?.id != null && remoteAudioRef.current) {
+      applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : level);
     }
   }, [peer?.id]);
 
   const toggleParticipantMute = useCallback((userId) => {
-    if (remoteVolumeRef.current > 0.001) setParticipantVolume(userId, 0);
-    else setParticipantVolume(userId, lastRemoteVolumeRef.current || 1);
+    setParticipantVolume(userId, peerVolumeRef.current.level() > 0.001 ? 0 : peerVolumeRef.current.lastAudible() || 1);
   }, [setParticipantVolume]);
 
   // ── Native iOS: microphone health + audio output routing ────────────────
@@ -2452,7 +2538,7 @@ export function useCall(socket, callOccupancyRef = null) {
     const audio = remoteAudioRef.current;
     const res = remoteAudioKeeperRef.current?.attach(reason);
     if (audio && res && res !== "cleared" && res !== "none") {
-      applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
+      applyPlaybackGain(audio, deafenedRef.current ? 0 : peerVolumeRef.current.level());
     }
     return res;
   }, []);

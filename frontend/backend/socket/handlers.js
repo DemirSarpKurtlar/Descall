@@ -73,6 +73,7 @@ const { toUtcIso } = require("../lib/datetime");
 const {
   trackOffer,
   markAnswered,
+  dropCrossedRing,
   bufferCalleeIce,
   answerReplayForCaller,
   isActiveDmCall,
@@ -1722,6 +1723,12 @@ function registerSocketHandlers(io) {
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
       markAnswered({ callerId: toUserId, calleeId: myId, answer });
+      // Crossed calls (both pressed call): this answer settles it. Our own
+      // ring to the caller ends quietly on every device of theirs (their
+      // iPhone got a VoIP ring for it) and is never logged as missed.
+      if (dropCrossedRing(myId, toUserId)) {
+        getRingFanout(io).endRingByPair(myId, toUserId, "cancelled");
+      }
       if (wasRinging) {
         // Stop the ring on every other device of the callee: sockets
         // (call:ring-ended + legacy call:answered-elsewhere), the iPhone's
