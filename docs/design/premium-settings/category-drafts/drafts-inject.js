@@ -124,9 +124,9 @@
     custom_layouts: { enabled: true, active: 'oyun' },
     noise_gate: { enabled: true, thresholdDb: -52, hysteresisDb: 10, holdMs: 120, testing: true },
     mic_presets: { enabled: true, gain: 100, active: 'voice' },
-    mic_monitor: { enabled: false, volume: 80 },
+    mic_monitor: { enabled: true, volume: 80 },
     voice_activity_monitor: { enabled: true },
-    auto_device_switch: { enabled: true, headsetFirst: true },
+    auto_device_switch: { enabled: false, headsetFirst: true },
     audio_routing: { enabled: true, callOutput: 'hyperx', notificationOutput: 'realtek' },
     audio_device_profiles: { enabled: true, active: 'masa', newInput: 'yeti', newOutput: 'hyperx', newPreset: 'stream' },
     stream_audio_control: { enabled: true, sendVolume: 100, sendMuted: false, viewVolume: 80, viewMuted: false },
@@ -146,7 +146,7 @@
   const on = (k) => S[k].enabled;
   const tg = (k, p, val, ds) => `<button class="us-toggle${val ? ' active' : ''}" type="button" role="switch" aria-checked="${val}" data-tg="${k}.${p}" data-s="${ds || `${k}.${p}`}"><span class="us-toggle-knob"></span></button>`;
   const grp = (title, body, extra = '') => `<div class="dpc-g ${extra}"><div class="dpc-gt">${title}</div>${body}</div>`;
-  const row = (label, desc, ctrl, icon) => `<div class="dpc-r${ctrl.includes('dpc-sl') ? ' st' : ''}">${icon ? `<span class="dpc-ri">${svg(icon, 15)}</span>` : ''}<div class="dpc-rc"><b>${label}</b>${desc ? `<small>${desc}</small>` : ''}</div><div class="dpc-rx">${ctrl}</div></div>`;
+  const row = (label, desc, ctrl, icon) => `<div class="dpc-r${ctrl.includes('dpc-sl') ? ' dpc-st' : ''}">${icon ? `<span class="dpc-ri">${svg(icon, 15)}</span>` : ''}<div class="dpc-rc"><b>${label}</b>${desc ? `<small>${desc}</small>` : ''}</div><div class="dpc-rx">${ctrl}</div></div>`;
   const hint = (t, ds, tone = '') => `<p class="dpc-hint ${tone}" ${ds ? `data-s="${ds}"` : ''}>${svg(tone === 'warn' ? 'warn' : tone === 'ok' ? 'check' : 'info', 14)}<span>${t}</span></p>`;
   const btn = (label, kind = 'ghost', ds = '', icon = '') => `<button type="button" class="us-btn ${kind} sm" ${ds ? `data-s="${ds}"` : ''}>${icon ? svg(icon, 14) : ''}${label}</button>`;
   const field = (ph, ds) => `<span class="dpc-in" data-s="${ds}">${ph}</span>`;
@@ -462,7 +462,7 @@
         if (k === open) {
           return `<article class="us-card dpc-a-card is-open" data-f="${k}" data-open-card>
             <header class="dpc-a-oh">${ico(k, cat)}<div class="dpc-tt2"><b>${F[k].name}</b>${ultra(k)}<small>${F[k].desc}</small></div>${enabled(k)}<button type="button" class="dpc-x" data-open="" aria-label="Kapat">${svg('up', 16)}</button></header>
-            <div class="dpc-a-body"><div class="dpc-a-pv">${pv(k, 'lg')}${liveCap}</div>${groups(k)}</div></article>`;
+            <div class="dpc-a-body"><div class="dpc-a-pv">${pv(k, 'lg')}<div class="dpc-c-cap">${liveCap}<span class="dpc-chipline">${chips(k)}</span></div></div>${groups(k)}</div></article>`;
         }
         return `<article class="us-card dpc-a-card${on(k) ? '' : ' is-offc'}" data-f="${k}"><button type="button" class="dpc-a-hit" data-open="${k}">${pv(k, 'sm')}</button>
           <div class="dpc-a-meta"><div class="dpc-tt2"><b>${F[k].name}</b>${ultra(k)}</div>${enabled(k)}</div>
@@ -499,7 +499,7 @@
         </article>`;
       const before = keys.slice(0, keys.indexOf(open));
       const after = keys.slice(keys.indexOf(open) + 1);
-      return `<div class="dpc-c-head">${head(cat)}<span class="dpc-c-count"><b class="tnum">${keys.filter(on).length}</b>/${keys.length} özellik açık</span></div>
+      return `<div class="dpc-c-head">${head(cat)}</div>
         ${before.length ? `<div class="dpc-c-grid">${before.map(tile).join('')}</div>` : ''}${stage(open)}
         <h4 class="us-section-label dpc-c-lab">Diğer ${c.name.toLocaleLowerCase('tr')} özellikleri</h4><div class="dpc-c-grid">${after.map(tile).join('')}</div>`;
     },
@@ -516,10 +516,10 @@
           const gs = G[k](k);
           return `<article class="dpc-d-open" data-f="${k}" data-open-card>
             <div class="us-card dpc-d-hero">${pv(k, 'lg')}<div class="dpc-d-ov"><div>${ico(k, cat)}<b>${F[k].name}</b>${ultra(k)}<small>${F[k].desc}</small></div>${enabled(k)}</div>${liveCap}<button type="button" class="dpc-x" data-open="" aria-label="Kapat">${svg('x', 15)}</button></div>
-            ${gs.map((g) => `<div class="us-card dpc-d-gt${on(k) ? '' : ' is-off'}">${g}</div>`).join('')}
+            <div class="dpc-d-stack">${gs.map((g) => `<div class="us-card dpc-d-gt${on(k) ? '' : ' is-off'}">${g}</div>`).join('')}</div>
           </article>`;
         }
-        return `<article class="us-card dpc-d-tile ${SIZE[k] || ''}${on(k) ? '' : ' is-offc'}" data-f="${k}"><button type="button" class="dpc-d-hit" data-open="${k}">${pv(k, (SIZE[k] || '').includes('h2') ? 'md' : 'sm')}</button>
+        return `<article class="us-card dpc-d-tile ${SIZE[k] || ''}${on(k) ? '' : ' is-offc'}" data-f="${k}"><button type="button" class="dpc-d-hit" data-open="${k}">${pv(k, 'sm')}</button>
           <div class="dpc-d-cap"><div class="dpc-tt2"><b>${F[k].name}</b>${ultra(k)}<span class="dpc-chipline">${chips(k)}</span></div>${enabled(k)}</div></article>`;
       };
       return `${head(cat)}<section class="us-section"><div class="dpc-d-grid">${CAT[cat].keys.map(tile).join('')}</div></section>`;
@@ -536,7 +536,7 @@
         if (k === open) {
           return `<article class="us-card dpc-e-card is-open c-${c.color}" data-f="${k}" data-open-card>
             <div class="dpc-e-oh"><span class="dpc-e-num">${num}</span><div class="dpc-tt2"><b>${F[k].name}</b>${ultra(k)}<small>${F[k].desc}</small></div>${enabled(k)}</div>
-            <div class="dpc-e-body"><div class="dpc-e-pv">${pv(k, 'lg')}${liveCap}</div>${groups(k)}</div></article>`;
+            <div class="dpc-e-body"><div class="dpc-e-pv">${pv(k, 'lg')}<div class="dpc-c-cap">${liveCap}<span class="dpc-chipline">${chips(k)}</span></div></div>${groups(k)}</div></article>`;
         }
         return `<article class="us-card dpc-e-card${on(k) ? '' : ' is-offc'}" data-f="${k}"><button type="button" class="dpc-e-hit" data-open="${k}">${pv(k, 'xs')}</button>
           <div class="dpc-e-mid" data-open="${k}"><div class="dpc-tt2"><span class="dpc-e-num sm">${num}</span><b>${F[k].name}</b>${ultra(k)}</div><small>${F[k].desc}</small><span class="dpc-chipline">${chips(k)}</span></div>${enabled(k)}</article>`;
@@ -547,7 +547,8 @@
             <div style="position:absolute;right:12%;bottom:17%;width:24%">${callCard('mini')}</div><div class="dpc-dock"><i></i><i></i><i class="ds"><b>3</b></i><i></i></div>
             ${[['01', 'right:36%;bottom:30%'], ['03', 'left:68%;top:3%'], ['05', 'left:56%;top:40%'], ['09', 'left:3%;top:3%'], ['11', 'right:10%;top:40%'], ['08', 'left:52%;bottom:2%']].map(([t, st]) => `<span class="dpc-e-pin" style="${st}">${t}</span>`).join('')}</div>`
         : `<div class="dpc-e-scene audio"><div class="chain">${[['mic', 'Mikrofon', 'Blue Yeti'], ['gate', 'Gürültü kapısı', `${S.noise_gate.thresholdDb} dB`], ['sliders', 'Ön ayar', 'Konuşma'], ['route', 'Yönlendirme', 'İki çıkış'], ['head', 'Kulaklık', 'HyperX Cloud II']].map(([ic, a, b], i) => `<div class="cn"><span class="dpc-e-pin st">${String([0, 1, 2, 6, 5][i] + 1).padStart(2, '0')}</span><span class="ci">${svg(ic, 18)}</span><b>${a}</b><small>${b}</small></div>`).join(`<span class="cw">${Array.from({ length: 7 }, (_, j) => `<i style="height:${[30, 70, 45, 90, 55, 75, 35][j]}%"></i>`).join('')}</span>`)}</div></div>`;
-      return `<section class="us-card dpc-e-hero c-${c.color}"><div class="dpc-e-ht"><span class="pp-ico c-${c.color}">${svg(c.icon, 20)}</span><div><h2>${c.name}</h2><p>${c.desc}</p></div><span class="dpc-e-cnt"><b class="tnum">${c.keys.filter(on).length}</b> / ${c.keys.length} açık</span></div>${hero}</section>
+      return `<section class="us-card dpc-e-hero c-${c.color}"><div class="dpc-e-ht"><span class="pp-ico c-${c.color}">${svg(c.icon, 20)}</span><div><h2>${c.name}</h2><p>${c.desc}</p></div><span class="dpc-e-cnt"><b class="tnum">${c.keys.filter(on).length}</b> / ${c.keys.length} açık</span>
+        <ol class="dpc-e-toc">${c.chapters.map(([t, , ks], i) => `<li><span>${i + 1}</span>${t}<small>${ks.length} özellik</small></li>`).join('')}</ol></div>${hero}</section>
         ${c.chapters.map(([t, lead, ks], ci) => `<section class="dpc-e-ch"><div class="dpc-e-cht"><span>Bölüm ${ci + 1}</span><h3>${t}</h3><p>${lead}</p></div><div class="dpc-e-list">${ks.map(card).join('')}</div></section>`).join('')}`;
     },
   };
@@ -593,10 +594,10 @@
   .dpc-ib{padding:6px!important;width:30px}
   .dpc-danger{color:#ff7b72!important}
   .dpc-sl{display:inline-flex;align-items:center;gap:10px}
-  .dpc-r.st{flex-wrap:wrap;row-gap:6px}
-  .dpc-r.st>.dpc-rx{flex:1 1 100%;padding-left:0}
-  .dpc-r.st>.dpc-ri+.dpc-rc+.dpc-rx{padding-left:36px}
-  .dpc-r.st .dpc-sl{flex:1}
+  .dpc-r.dpc-st{flex-wrap:wrap;row-gap:6px}
+  .dpc-r.dpc-st>.dpc-rx{flex:1 1 100%;padding-left:0}
+  .dpc-r.dpc-st>.dpc-ri+.dpc-rc+.dpc-rx{padding-left:36px}
+  .dpc-r.dpc-st .dpc-sl{flex:1}
   .dpc-root input.dpc-range{-webkit-appearance:none!important;appearance:none!important;flex:1;min-width:90px;width:auto;height:6px!important;min-height:0!important;padding:0!important;border:0!important;border-radius:3px!important;margin:0!important;box-shadow:none!important;outline:0;background:linear-gradient(90deg,var(--primary,#587af5) var(--p),rgba(255,255,255,.12) var(--p))!important;cursor:pointer}
   .dpc-root input.dpc-range::-webkit-slider-runnable-track{background:transparent!important;border:0!important;height:6px;box-shadow:none!important}
   .dpc-root input.dpc-range::-webkit-slider-thumb{-webkit-appearance:none!important;appearance:none!important;width:16px;height:16px;margin-top:-5px;border:0!important;border-radius:50%;background:#fff!important;box-shadow:0 1px 4px rgba(0,0,0,.45)!important}
@@ -783,7 +784,7 @@
   .pv-gate .lg i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.2)}
   .pv-gate .lg i.hb{background:none;box-shadow:inset 0 0 0 1.5px rgba(48,209,88,.7)}.pv-gate .lg i.pass{background:#30b458}.pv-gate .lg i.hold{background:rgba(48,180,88,.45)}
   .pv-presets{display:flex;align-items:center;justify-content:center;gap:6%}
-  .pv-presets .dial{width:40cqh;max-width:120px;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 225deg,#30b458 0 var(--a),rgba(255,255,255,.1) var(--a) 270deg,transparent 270deg);display:grid;place-items:center;flex:none}
+  .pv-presets .dial{width:clamp(70px,62cqh,130px);aspect-ratio:1;border-radius:50%;background:conic-gradient(from 225deg,#30b458 0 var(--a),rgba(255,255,255,.1) var(--a) 270deg,transparent 270deg);display:grid;place-items:center;flex:none}
   .pv-presets .dial .in{width:78%;aspect-ratio:1;border-radius:50%;background:#151821;display:flex;flex-direction:column;align-items:center;justify-content:center}
   .pv-presets .dial b{font-size:var(--fs-20)}
   .pv-presets .dial small{font-size:var(--fs-11);color:var(--text-muted)}
@@ -815,7 +816,7 @@
   .pv-route .wires{position:absolute;inset:0;width:100%;height:100%}
   .pv-route .wires path{fill:none;stroke:#30b458;stroke-width:1.2;vector-effect:non-scaling-stroke;stroke-width:2}
   .pv-route .wires path.b{stroke:#f0b232}
-  .pv-route .src,.pv-route .dst{position:absolute;display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:9px;background:#232633;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);font-size:var(--fs-11);font-weight:600;white-space:nowrap;max-width:36%}
+  .pv-route .src,.pv-route .dst{position:absolute;display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:9px;background:#232633;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);font-size:var(--fs-11);font-weight:600;white-space:nowrap;max-width:45%}
   .pv-route .src span,.pv-route .dst span{overflow:hidden;text-overflow:ellipsis}
   .pv-route .src{left:4%}.pv-route .dst{right:4%}
   .pv-route .src svg,.pv-route .dst svg{color:#30b458;flex:none}
@@ -896,7 +897,7 @@
   .dpc-c-stage{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:0;margin:0;padding:0;background:radial-gradient(600px 300px at 0% 0%,rgba(62,123,250,.22),transparent 70%),var(--surface-0);box-shadow:inset 0 0 0 1px rgba(88,122,245,.35)}
   .dpc-c-stage.c-green{background:radial-gradient(600px 300px at 0% 0%,rgba(48,180,88,.2),transparent 70%),var(--surface-0);box-shadow:inset 0 0 0 1px rgba(48,180,88,.35)}
   .dpc-c-left{display:flex;flex-direction:column;gap:10px;padding:16px;border-right:1px solid var(--border-2)}
-  .dpc-c-left .dpc-pv{height:250px}
+  .dpc-c-left .dpc-pv{flex:1;min-height:250px}
   .dpc-c-cap{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .dpc-c-right{display:flex;flex-direction:column;gap:6px;padding:16px}
   .dpc-c-top{display:flex;align-items:center;justify-content:space-between}
@@ -913,47 +914,53 @@
 
   /* D: bento */
   .dpc-d-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:118px;gap:10px;grid-auto-flow:dense}
-  .dpc-d-tile{position:relative;margin:0;padding:0;overflow:hidden}
+  .dpc-d-tile{position:relative;margin:0;padding:6px 6px 0;overflow:hidden;display:flex;flex-direction:column}
   .dpc-d-tile.w2{grid-column:span 2}.dpc-d-tile.h2{grid-row:span 2}
-  .dpc-d-hit{position:absolute;inset:0;border:0;padding:0;background:none;cursor:pointer}
-  .dpc-d-hit .dpc-scr{border-radius:0}
-  .dpc-d-cap{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;gap:8px;padding:22px 10px 9px;background:linear-gradient(180deg,transparent,rgba(12,13,19,.88) 55%)}
-  .dpc-d-cap .dpc-tt2>b{font-size:var(--fs-13);color:#fff}
-  .dpc-d-cap .us-toggle{transform:scale(.82);transform-origin:right bottom}
-  .dpc-d-tile:not(.h2):not(.w2) .dpc-chipline{display:none}
-  .dpc-d-open{grid-column:1/-1;grid-row:span 4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,auto);gap:10px}
-  .dpc-d-hero{position:relative;grid-column:span 2;grid-row:span 2;margin:0;min-height:300px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(88,122,245,.5)}
-  .dpc-d-hero>.dpc-pv{position:absolute;inset:0}
-  .dpc-d-hero .dpc-scr{border-radius:0}
-  .dpc-d-ov{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;gap:10px;padding:40px 14px 12px;background:linear-gradient(180deg,transparent,rgba(12,13,19,.92) 50%)}
+  .dpc-d-hit{position:relative;flex:1;min-height:0;border:0;padding:0;background:none;cursor:pointer}
+  .dpc-d-cap{display:flex;align-items:center;gap:8px;padding:7px 6px 8px}
+  .dpc-d-cap .dpc-tt2{flex-wrap:nowrap;overflow:hidden}
+  .dpc-d-cap .dpc-tt2>b{font-size:var(--fs-13);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dpc-d-cap .dpc-chipline{flex-wrap:nowrap}
+  .dpc-d-cap .us-toggle{transform:scale(.8);transform-origin:right center;flex:none}
+  .dpc-d-tile:not(.w2) .dpc-chipline,.dpc-d-tile:not(.w2) .pp-pill{display:none}
+  .dpc-d-open{grid-column:1/-1;grid-row:span 4;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+  .dpc-d-stack{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .dpc-d-hero{position:relative;margin:0;height:340px;overflow:hidden;display:flex;flex-direction:column;padding:6px;box-shadow:inset 0 0 0 1px rgba(88,122,245,.5)}
+  .dpc-d-hero>.dpc-pv{flex:1;min-height:0}
+  .dpc-d-ov{display:flex;align-items:flex-end;gap:10px;padding:10px 8px 6px}
   .dpc-d-ov>div{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
-  .dpc-d-ov b{font-size:var(--fs-17);color:#fff}
-  .dpc-d-ov small{flex-basis:100%;font-size:var(--fs-12);color:rgba(255,255,255,.7)}
-  .dpc-d-hero>.dpc-live{position:absolute;left:12px;top:10px;padding:3px 8px;border-radius:6px;background:rgba(10,12,18,.6);color:#fff}
-  .dpc-d-hero>.dpc-x{position:absolute;right:10px;top:10px;background:rgba(10,12,18,.6)}
-  .dpc-d-gt{grid-column:span 2;margin:0;padding:12px}
+  .dpc-d-ov b{font-size:var(--fs-17);color:var(--text-0)}
+  .dpc-d-ov small{flex-basis:100%;font-size:var(--fs-12);color:var(--text-muted)}
+  .dpc-d-hero>.dpc-live{position:absolute;left:14px;top:14px;padding:3px 8px;border-radius:6px;background:rgba(10,12,18,.6);color:#fff}
+  .dpc-d-hero>.dpc-x{position:absolute;right:14px;top:14px;color:#fff;background:rgba(10,12,18,.6)}
+  .dpc-d-gt{margin:0;padding:12px}
   .dpc-d-gt .dpc-g{padding:0;background:none;box-shadow:none}
   .dpc-d-gt.is-off{opacity:.55}
 
   /* E: story */
-  .dpc-e-hero{margin:0;padding:16px;display:flex;flex-direction:column;gap:14px;background:radial-gradient(500px 240px at 100% 0%,rgba(62,123,250,.2),transparent 70%),var(--surface-0)}
+  .dpc-e-hero{margin:0;padding:14px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:14px;align-items:center;background:radial-gradient(500px 240px at 100% 0%,rgba(62,123,250,.2),transparent 70%),var(--surface-0)}
   .dpc-e-hero.c-green{background:radial-gradient(500px 240px at 100% 0%,rgba(48,180,88,.2),transparent 70%),var(--surface-0)}
-  .dpc-e-ht{display:flex;align-items:center;gap:12px}
+  .dpc-e-ht{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+  .dpc-e-toc{flex-basis:100%;list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+  .dpc-e-toc li{display:flex;align-items:center;gap:8px;font-size:var(--fs-12);font-weight:600}
+  .dpc-e-toc li span{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:var(--fs-11);background:rgba(126,182,255,.16);color:var(--text-link,#7eb6ff)}
+  .dpc-e-toc li small{margin-left:auto;font-weight:500;color:var(--text-muted);font-size:var(--fs-11)}
   .dpc-e-ht .pp-ico{width:40px;height:40px;border-radius:11px}
   .dpc-e-ht h2{margin:0;font-size:var(--fs-20);font-weight:700}
   .dpc-e-ht p{margin:2px 0 0;font-size:var(--fs-13);color:var(--text-muted)}
-  .dpc-e-ht>div{flex:1}
+  .dpc-e-ht>div{flex:1;min-width:0}
+  .dpc-e-ht .dpc-e-cnt{flex-basis:100%}
   .dpc-e-cnt{font-size:var(--fs-12);color:var(--text-muted)}.dpc-e-cnt b{font-size:var(--fs-20);color:var(--text-0)}
-  .dpc-e-scene{position:relative;height:170px;border-radius:12px;overflow:hidden;container-type:size;background:radial-gradient(90% 80% at 15% 0%,rgba(62,123,250,.35),transparent 60%),radial-gradient(80% 90% at 100% 100%,rgba(155,93,229,.3),transparent 60%),#151821;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .dpc-e-scene{position:relative;height:190px;border-radius:12px;overflow:hidden;container-type:size;background:radial-gradient(90% 80% at 15% 0%,rgba(62,123,250,.35),transparent 60%),radial-gradient(80% 90% at 100% 100%,rgba(155,93,229,.3),transparent 60%),#151821;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .dpc-e-scene .dpc-call{width:100%;min-width:0}
   .dpc-e-pin{position:absolute;z-index:9;min-width:24px;height:20px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-size:var(--fs-11);font-weight:800;color:#fff;background:#3e7bfa;box-shadow:0 0 0 3px rgba(62,123,250,.3)}
   .dpc-e-scene.audio{display:flex;align-items:center;justify-content:center;padding:0 14px}
-  .dpc-e-scene .chain{display:flex;align-items:center;gap:8px;width:100%}
-  .dpc-e-scene .cn{position:relative;flex:none;width:92px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
-  .dpc-e-scene .ci{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(48,180,88,.18);box-shadow:inset 0 0 0 1px rgba(48,196,108,.45);color:#7fe0a3}
+  .dpc-e-scene .chain{display:flex;align-items:center;gap:2px;width:100%}
+  .dpc-e-scene .cn{position:relative;flex:none;width:62px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+  .dpc-e-scene .ci{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:rgba(48,180,88,.18);box-shadow:inset 0 0 0 1px rgba(48,196,108,.45);color:#7fe0a3}
   .dpc-e-scene .cn b{font-size:var(--fs-12)}.dpc-e-scene .cn small{font-size:var(--fs-11);color:var(--text-muted)}
-  .dpc-e-pin.st{position:absolute;top:-10px;right:14px;background:#30b458;box-shadow:0 0 0 3px rgba(48,180,88,.3)}
-  .dpc-e-scene .cw{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;height:28px;margin-bottom:26px}
+  .dpc-e-pin.st{position:absolute;top:-12px;right:0;background:#30b458;box-shadow:0 0 0 3px rgba(48,180,88,.3)}
+  .dpc-e-scene .cw{flex:1;display:flex;align-items:center;justify-content:center;gap:2px;height:28px;margin-bottom:26px}
   .dpc-e-scene .cw i{width:3px;border-radius:2px;background:rgba(127,224,163,.7)}
   .dpc-e-ch{display:flex;flex-direction:column;gap:10px}
   .dpc-e-cht span{font-size:var(--fs-11);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-link,#7eb6ff)}
@@ -971,9 +978,10 @@
   .dpc-e-card.is-open.c-green{box-shadow:inset 3px 0 0 #30b458,inset 0 0 0 1px rgba(48,180,88,.4)}
   .dpc-e-oh{display:flex;align-items:center;gap:12px;padding:14px 14px 10px 16px}
   .dpc-e-oh .dpc-e-num{font-size:var(--fs-20)}
-  .dpc-e-body{display:grid;grid-template-columns:280px minmax(0,1fr);gap:14px;padding:0 14px 14px 16px}
+  .dpc-e-body{display:grid;grid-template-columns:250px minmax(0,1fr);gap:14px;padding:0 14px 14px 16px}
   .dpc-e-pv{display:flex;flex-direction:column;gap:8px}
-  .dpc-e-pv .dpc-pv{height:180px}
+  .dpc-e-pv .dpc-pv{height:160px}
+  .dpc-e .dpc-corner{max-width:200px}
   `;
 
   /* ------------------------------------------------------------- render */
@@ -1029,7 +1037,7 @@
     b: { windows: 'screen_edge_actions', audio: 'mic_presets' },
     c: { windows: 'mini_mode', audio: 'noise_gate' },
     d: { windows: 'always_on_top', audio: 'stream_audio_control' },
-    e: { windows: 'mini_mode', audio: 'auto_device_switch' },
+    e: { windows: 'mini_mode', audio: 'mic_monitor' },
   };
 
   /* Scroll so the open card is fully in view with as much of the page above it as fits. */
