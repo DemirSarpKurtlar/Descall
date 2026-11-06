@@ -519,6 +519,18 @@ body.has-mkt .legal-doc-section.is-rights {
   font-size: 13px;
 }
 
+/* Inside the hero: a small label above the title, not a separate half card. */
+.mkt .seo-hero .seo-breadcrumbs {
+  grid-column: 1 / -1;
+  display: flex;
+  height: auto;
+  margin: 0 0 12px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
 .mkt .mkt-download-platform.is-active {
   background: rgba(88, 122, 246, 0.22);
   box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.55);
