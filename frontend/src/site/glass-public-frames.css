@@ -1917,3 +1917,63 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
     order: 0;
   }
 }
+
+/* UI audit #27: the download platform card on phones. The unscoped
+   .mkt-download-platform-top flex rule above beat the 600px `display:
+   contents` grid, so the name and file name overlapped and the check sat on
+   the device icon. A vertical list row: icon, name with the file name under
+   it (13px secondary, not monospace), check on the right. One CTA per action:
+   the hero 'Ücretsiz başla' and the panel's second download button give way
+   to the sticky bar and the hero button. */
+@media (max-width: 600px) {
+  .mkt .mkt-download-platforms .mkt-download-platform {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 24px;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+    min-height: 64px;
+    padding: 12px 14px;
+    text-align: left;
+  }
+  .mkt .mkt-download-platforms .mkt-download-platform-top {
+    display: contents;
+  }
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    justify-self: start;
+  }
+  .mkt .mkt-download-platforms .mkt-download-check {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    justify-self: end;
+    visibility: hidden;
+  }
+  .mkt .mkt-download-platforms .mkt-download-platform.is-active .mkt-download-check {
+    visibility: visible;
+  }
+  .mkt .mkt-download-platforms .mkt-download-platform strong {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    line-height: 1.25;
+  }
+  .mkt .mkt-download-platforms .mkt-download-platform .mkt-mono {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+  }
+  .mkt .mkt-download-hero-start,
+  .mkt .mkt-download-panel-cta {
+    display: none;
+  }
+}
