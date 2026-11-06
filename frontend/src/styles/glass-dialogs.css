@@ -81,6 +81,15 @@
   margin-bottom: 8px;
 }
 
+.g-alert-extra label.g-alert-field input {
+  text-align: left;
+}
+
+.g-alert-extra label.g-alert-field input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px var(--g-brand, #587AF5);
+}
+
 .g-alert-extra label.g-alert-field input::placeholder {
   color: var(--g-t3, rgba(235, 238, 255, 0.46));
   opacity: 0.6;

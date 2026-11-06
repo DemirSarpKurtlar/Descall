@@ -459,6 +459,15 @@ html[data-theme="light"] .activity-web-notice strong {
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
+/* The desktop glass chip fill (server-surfaces.css) out-ranked the segment and
+   painted every unselected slow-mode option as its own grey chip. */
+html .server-slowmode-presets.is-segmented button:not(.active) {
+  background: transparent;
+  box-shadow: none;
+}
+html .server-slowmode-presets.is-segmented button:not(.active):hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
 html[data-theme="light"] .server-type-toggle.is-segmented,
 html[data-theme="light"] .server-slowmode-presets.is-segmented {
   background: #EEF0F5;
