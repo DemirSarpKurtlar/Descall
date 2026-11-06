@@ -10,6 +10,7 @@ export const TR_UI_AUDIT_LOW = {
   "Descall is developed by Demir Sarp Kurtlar.": "Descall’ı Demir Sarp Kurtlar geliştiriyor.",
   "Invite page image": "Davet sayfası görseli",
   "Manage user credits and view Blackjack statistics": "Kullanıcı kredilerini yönet ve Blackjack (21) istatistiklerini gör",
+  "Private messages, group messages and mentions": "Özel mesajlar, grup mesajları ve bahsetmeler",
   "Share product analytics": "Ürün analitiğini paylaş",
   "The link may be outdated or mistyped. Go back home or check the service status.": "Bağlantı eski ya da yanlış yazılmış olabilir. Ana sayfaya dön ya da hizmet durumuna bak.",
   "The shop is empty right now": "Vitrin şu an boş",

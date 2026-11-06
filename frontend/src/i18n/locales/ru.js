@@ -6259,6 +6259,7 @@ export const nested = {
 
 export const phrases = {
   "API reachable": "API доступен",
+  "Private messages, group messages and mentions": "Личные сообщения, групповые сообщения и упоминания",
   "Request timed out": "Время ожидания запроса истекло",
   " (you)": " (вы)",
   "#6678ff": "#6678ff",
