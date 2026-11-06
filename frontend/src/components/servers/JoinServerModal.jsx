@@ -149,7 +149,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
             onClick={() => setTab("invite")}
           >
             <LogIn size={14} />
-            {t("Invite Code")}
+            {t("Invite code")}
           </button>
           <button
             type="button"
@@ -157,7 +157,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
             onClick={() => setTab("discover")}
           >
             <Compass size={14} />
-            {t("Explore Public Servers")}
+            {t("Explore")}
           </button>
         </div>
 
@@ -215,7 +215,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
                 </button>
                 {!preview ? (
                   <button type="submit" className="server-primary-btn" disabled={busy || !code.trim()}>
-                    {busy ? t("Please wait...") : t("Look up")}
+                    {busy ? t("Please wait...") : t("Join")}
                   </button>
                 ) : (
                   <button
@@ -228,7 +228,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
                       ? t("Please wait...")
                       : preview.server?.isMember
                         ? t("Open server")
-                        : t("Join Server")}
+                        : t("Join")}
                   </button>
                 )}
               </div>

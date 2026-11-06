@@ -2629,7 +2629,14 @@ button.member-row.server-member-row {
   margin: 0 0 12px;
 }
 
+/* UI audit #78: short one-line segment labels, title off the top edge. */
+.server-join-modal > h3 {
+  margin: 4px 0 14px;
+}
+
 .server-join-tabs button {
+  white-space: nowrap;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

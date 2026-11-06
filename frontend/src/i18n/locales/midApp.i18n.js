@@ -18,6 +18,8 @@ export const MID_APP_I18N = {
     "It's a tie": "Berabere",
     "GIFs": "GIF",
     "GIFs couldn't load": "GIF'ler yüklenemedi",
+    "Invite code": "Davet kodu",
+    "Explore": "Keşfet",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -31,6 +33,8 @@ export const MID_APP_I18N = {
     "It's a tie": "Unentschieden",
     "GIFs": "GIFs",
     "GIFs couldn't load": "GIFs konnten nicht geladen werden",
+    "Invite code": "Einladungscode",
+    "Explore": "Entdecken",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -44,6 +48,8 @@ export const MID_APP_I18N = {
     "It's a tie": "Empate",
     "GIFs": "GIF",
     "GIFs couldn't load": "No se pudieron cargar los GIF",
+    "Invite code": "Código de invitación",
+    "Explore": "Explorar",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -57,6 +63,8 @@ export const MID_APP_I18N = {
     "It's a tie": "Égalité",
     "GIFs": "GIF",
     "GIFs couldn't load": "Impossible de charger les GIF",
+    "Invite code": "Code d'invitation",
+    "Explore": "Explorer",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -70,6 +78,8 @@ export const MID_APP_I18N = {
     "It's a tie": "Empate",
     "GIFs": "GIFs",
     "GIFs couldn't load": "Não foi possível carregar os GIFs",
+    "Invite code": "Código de convite",
+    "Explore": "Explorar",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -83,5 +93,7 @@ export const MID_APP_I18N = {
     "It's a tie": "Ничья",
     "GIFs": "GIF",
     "GIFs couldn't load": "Не удалось загрузить GIF",
+    "Invite code": "Код приглашения",
+    "Explore": "Обзор",
   },
 };
