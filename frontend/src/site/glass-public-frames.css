@@ -1867,3 +1867,17 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
     order: 0;
   }
 }
+
+/* Narrow phones (375-430 px): the header stays one compact row. "Ücretsiz başla"
+   never wraps onto two lines and the BETA chip gives its room to the button. */
+@media (max-width: 430px) {
+  .mkt .mkt-header-beta { display: none; }
+  .mkt .mkt-header-actions > .mkt-btn-primary {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex: none;
+  }
+}
