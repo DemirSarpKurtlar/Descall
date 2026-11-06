@@ -52,7 +52,7 @@ export const TR_BLOG_META = [
     "h1": "2026’nın en iyi Discord alternatifleri: dürüst kısa liste",
     "description": "Arkadaş grupları, sunucular, sesli sohbet için 2026’nın en iyi Discord alternatifleri; Descall, TeamSpeak, Telegram ve diğerleri gerçekte nasıl kıyaslanıyor?",
     "date": "2026-08-11",
-    "updated": "2026-10-17",
+    "updated": "2026-11-06",
     "tags": [
       "Discord alternatifleri",
       "Liste"
@@ -64,7 +64,7 @@ export const TR_BLOG_META = [
     "h1": "Discord’un rakipleri: 2026’da kim gerçekten rekabet ediyor?",
     "description": "2026’da Discord’un rakiplerinin haritası: hafif arkadaş uygulamaları, oyun toplulukları için araçlar ve klasik ses yazılımları. Descall’ın dürüst konumu.",
     "date": "2026-08-11",
-    "updated": "2026-10-17",
+    "updated": "2026-11-06",
     "tags": [
       "Discord rakipleri",
       "Pazar"
@@ -75,7 +75,7 @@ export const TR_BLOG_META = [
     "title": "Aboneliksiz ücretsiz sesli sohbet: geçiş rehberi",
     "description": "Arkadaş grubunu abonelik alışkanlığından sunucular, ses, görüntü ve ekran paylaşımı ücretsiz olan bir Discord alternatifine taşımanın pratik yolu.",
     "date": "2026-08-11",
-    "updated": "2026-10-17",
+    "updated": "2026-11-06",
     "tags": [
       "Fiyat",
       "Geçiş"
