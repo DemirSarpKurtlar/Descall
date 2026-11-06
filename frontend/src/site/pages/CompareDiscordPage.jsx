@@ -66,7 +66,7 @@ export default function CompareDiscordPage({ onSignIn }) {
       <section className="seo-section">
         <h2>{t("Feature-by-feature comparison")}</h2>
         <div className="seo-table-wrap">
-          <table className="mkt-table">
+          <table className="mkt-table is-compare">
             <thead>
               <tr>
                 <th>{t("Feature")}</th>

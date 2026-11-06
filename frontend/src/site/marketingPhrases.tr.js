@@ -346,5 +346,10 @@ export const MARKETING_TR = {
   "Servers, direct messages, voice, and screen share. Chat and calls stay free.":
     "Sunucular, doğrudan mesajlar, ses ve ekran paylaşımı. Sohbet ve aramalar ücretsiz kalır.",
   ...TR_I18N_GAPS,
+  "Compare": "Karşılaştır",
+  "Ready-made Gaming template": "Hazır oyun şablonu",
+  "More comparisons": "Diğer karşılaştırmalar",
+  "Discord vs Descall article": "Discord ve Descall yazısı",
+  "Descall features": "Descall özellikleri",
   ...TR_APPROVED_UI,
 };

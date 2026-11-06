@@ -1953,3 +1953,29 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
   .mkt .seo-extra.is-split .seo-section > h2 { font-size: 26px; }
 }
 .mkt .seo-extra.is-split .seo-link-list { margin-top: 40px; }
+
+/* Landing hero with a preview: title, lead and buttons stack in the left column,
+   the preview takes the right column (the buttons used to drop ~250 px below). */
+.mkt .seo-landing .seo-hero:has(.seo-product-preview) {
+  row-gap: 0;
+  align-content: center;
+}
+.mkt .seo-landing .seo-hero:has(.seo-product-preview) > :not(.seo-product-preview) {
+  grid-column: 1;
+}
+.mkt .seo-landing .seo-hero:has(.seo-product-preview) > .seo-product-preview {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
+/* Discord comparison: the highlighted column is Descall, not the competitor. */
+.mkt .mkt-table.is-compare th:last-child,
+.mkt .mkt-table.is-compare td:last-child {
+  color: var(--gp-t2);
+  background: transparent;
+}
+.mkt .mkt-table.is-compare th:nth-child(2),
+.mkt .mkt-table.is-compare td:nth-child(2) {
+  color: var(--gp-t1);
+  background: rgba(88, 122, 245, 0.08);
+}
