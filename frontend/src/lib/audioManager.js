@@ -11,20 +11,53 @@
  * - Automatic cleanup and memory management
  */
 
-import { getSoundSettings, setSoundSettings } from "./storage";
+import { getSoundSettings, setSoundSettings } from "./storage.js";
 import { SOFT_CUE_TYPES, softCueVolume } from "./voiceProfile.js";
+import { getOutputSinkId, onOutputSinkChange, routeToSink } from "./callAudioDevices.js";
 import {
   isKnownSoundPack,
   playSoundPackCue,
   preloadSoundPack,
   startSoundPackLoop,
   unlockSoundPackAudio,
-} from "./soundPackSynth";
+} from "./soundPackSynth.js";
 
 // Detect Electron environment
 const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
 
 const SYNTH_TYPES = new Set(["message", "notification", "incomingCall", "outgoingCall", "callStart"]);
+
+/**
+ * Sounds of a call you are in: the ringback while the other side rings,
+ * connect / hang-up, mute / deafen, join / leave, screen share. They play on
+ * the call's speaker (call menus / Settings, callAudioDevices.js), like the
+ * call itself. The incoming ringtone, messages and notifications stay on the
+ * system default (or the Descall+ notification output), so they are heard
+ * without the headset on.
+ */
+export const CALL_OUTPUT_TYPES = new Set([
+  "outgoingCall",
+  "callStart",
+  "callAccept",
+  "callReject",
+  "mute",
+  "unmute",
+  "deafen",
+  "undeafen",
+  "channelJoin",
+  "channelLeave",
+  "userJoin",
+  "userLeave",
+  "screenShareStart",
+  "screenShareStop",
+  "disconnect",
+]);
+
+/** Output a sound plays on: the hook's choice, else the call speaker for call sounds, else the default. */
+export function soundSinkId(type, hookSinkId = null) {
+  if (typeof hookSinkId === "string") return hookSinkId;
+  return CALL_OUTPUT_TYPES.has(type) ? getOutputSinkId() : "";
+}
 
 // Get correct sound path based on environment
 function getSoundPath(filename) {
@@ -105,6 +138,17 @@ class AudioManager {
     this.handleWindowBlur = this.handleWindowBlur.bind(this);
     this.handleWindowFocus = this.handleWindowFocus.bind(this);
     this.unlockAudio = this.unlockAudio.bind(this);
+    this.rerouteCallLoops = this.rerouteCallLoops.bind(this);
+    this.offSinkChange = null;
+  }
+
+  /** The call speaker changed: a ringback that is playing moves with it. */
+  rerouteCallLoops(sinkId) {
+    this.activeLoops.forEach((type) => {
+      if (!CALL_OUTPUT_TYPES.has(type)) return;
+      const el = this.synthLoops.get(type)?.element || this.sounds[type];
+      routeToSink(el, sinkId);
+    });
   }
 
   /**
@@ -134,6 +178,7 @@ class AudioManager {
       window.addEventListener("blur", this.handleWindowBlur);
       window.addEventListener("focus", this.handleWindowFocus);
     }
+    if (!this.offSinkChange) this.offSinkChange = onOutputSinkChange(this.rerouteCallLoops);
 
     this.preloadComplete = true;
 
@@ -180,7 +225,7 @@ class AudioManager {
       : this.settings.volume;
   }
 
-  playSynth(type, { loop = false, volume } = {}) {
+  playSynth(type, { loop = false, volume, sinkId = "" } = {}) {
     const pack = this.soundPackKey;
     if (!pack) return false;
     const vol = this.effectiveVolume(volume);
@@ -194,13 +239,13 @@ class AudioManager {
       } catch {
         /* ignore */
       }
-      const stop = startSoundPackLoop(pack, role, vol);
+      const stop = startSoundPackLoop(pack, role, vol, { sinkId });
       this.synthLoops.set(type, stop);
       this.activeLoops.add(type);
       return true;
     }
 
-    const ok = playSoundPackCue(pack, role, vol);
+    const ok = playSoundPackCue(pack, role, vol, { sinkId });
     if (ok && COOLDOWNS[type]) this.lastPlayed.set(type, Date.now());
     return ok;
   }
@@ -340,10 +385,13 @@ class AudioManager {
 
     if (!this.canPlay(type)) return false;
 
+    // Call sounds (ringback, cues) follow the call speaker; the rest the default.
+    const outputId = soundSinkId(type, sinkId);
+
     // Catalog sound packs: unique Web Audio voices per effect_key
     if (this.soundPackKey && SYNTH_TYPES.has(type)) {
       void unlockSoundPackAudio();
-      const synthOk = this.playSynth(type, { loop, volume });
+      const synthOk = this.playSynth(type, { loop, volume, sinkId: outputId });
       if (synthOk) return true;
       // fall through to MP3 defaults if synth fails
     }
@@ -366,31 +414,41 @@ class AudioManager {
 
     // Clone audio for overlapping sounds (except looping sounds)
     const playAudio = loop ? audio : audio.cloneNode();
-    
+
     // Set volume
-    playAudio.volume = volume !== undefined 
-      ? volume 
+    playAudio.volume = volume !== undefined
+      ? volume
       : (this.isBackgrounded ? this.settings.volume * this.settings.backgroundVolume : this.settings.volume);
 
     // Set loop
     playAudio.loop = loop;
-    if (sinkId && typeof playAudio.setSinkId === "function") {
-      playAudio.setSinkId(sinkId).catch(() => {});
-    }
 
     // Reset and play
     playAudio.currentTime = 0;
-    
-    const playPromise = playAudio.play();
-    if (playPromise) {
-      playPromise.catch((err) => {
-        console.warn(`[AudioManager] Play failed for ${type}:`, err.message);
-      });
-    }
 
-    // Track looping sounds
+    // Track looping sounds (before a deferred start, so stop() can cancel it)
     if (loop) {
       this.activeLoops.add(type);
+    }
+
+    const start = () => {
+      const playPromise = playAudio.play();
+      if (playPromise) {
+        playPromise.catch((err) => {
+          console.warn(`[AudioManager] Play failed for ${type}:`, err.message);
+        });
+      }
+    };
+    // Switch the output first, so the ringback does not start on the old
+    // device. A loop stopped meanwhile (answered at once) never starts.
+    const routing = routeToSink(playAudio, outputId);
+    if (routing) {
+      routing.then(() => {
+        if (loop && (!this.activeLoops.has(type) || this.synthLoops.has(type))) return;
+        start();
+      });
+    } else {
+      start();
     }
 
     // Update cooldown timestamp
@@ -526,6 +584,8 @@ class AudioManager {
       window.removeEventListener("blur", this.handleWindowBlur);
       window.removeEventListener("focus", this.handleWindowFocus);
     }
+    this.offSinkChange?.();
+    this.offSinkChange = null;
 
     // Clear references
     this.sounds = {};

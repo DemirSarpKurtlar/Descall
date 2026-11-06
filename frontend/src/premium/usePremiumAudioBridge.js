@@ -15,7 +15,7 @@
 import { useEffect, useRef } from "react";
 import { t } from "../i18n/runtime.js";
 import { authedRequest } from "../api/authedHttp";
-import { setAudioPlayHook } from "../lib/audioManager";
+import { CALL_OUTPUT_TYPES, setAudioPlayHook } from "../lib/audioManager";
 import notificationService from "../lib/notificationService";
 import { readAudioPrefs, setOutputSink, writeAudioPref } from "../lib/callAudioDevices";
 import { readParticipantGain, readVoiceProfile, writeVoiceProfile } from "../lib/voiceProfile";
@@ -27,7 +27,8 @@ import { featureOn, notificationSinkId, onAudioSettings, settingsOf, startPremiu
 import { getPinnedVoiceUser } from "./audio/pinnedUser.js";
 import { mirrorFocusToMain, premiumSoundAllowed, setDeferredFlusher, setFocus, startPremiumNotifyRuntime } from "./notify/premiumNotify.js";
 
-const CALL_CUES = new Set(["userJoin", "userLeave", "channelJoin", "channelLeave", "mute", "unmute", "deafen", "undeafen", "outgoingCall", "callEnd", "callConnected"]);
+// Call sounds (ringback, accept / reject, cues) follow the call speaker, never the notification output.
+const CALL_CUES = CALL_OUTPUT_TYPES;
 
 function bridge() {
   return typeof window !== "undefined" ? window.descallPremium || null : null;
