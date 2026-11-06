@@ -2,7 +2,7 @@ import { memo, useState, useMemo, useEffect, useRef, useLayoutEffect } from "rea
 import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, RefreshCw, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff, Megaphone as MegaphoneLine } from "../ui/Icon.jsx";
+import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff, Megaphone as MegaphoneLine } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
 import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
@@ -359,13 +359,12 @@ export default function ServerSidebar({
                       ? t("Calls")
                       : t("Chats")
             }
-            sub={activeView === "calls" ? t("Quick-dial friends or jump back into recent DM & group calls.") : ""}
+            sub={activeView === "calls" ? t("Call your friends quickly or go back to your recent calls.") : ""}
             searchCollapsible={activeView === "calls"}
             buttons={
               activeView === "calls"
                 ? [
                     { id: "search", icon: Search, label: t("Search") },
-                    { id: "refresh", icon: RefreshCw, label: t("Refresh"), onClick: () => refreshList() },
                   ]
                 : [
                     { id: "search", icon: Search, label: t("Search") },
@@ -822,7 +821,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
     }
     if (action === "block") {
       try {
-        await confirmToggleBlock({ userId: dm.id, username: dm.username, t });
+        await confirmToggleBlock({ userId: dm.id, username: dm.username, displayName: dm.displayName || dm.display_name, t });
       } catch (err) {
         setActionError(err?.message || t("Something went wrong."));
         setTimeout(() => setActionError(""), 4000);

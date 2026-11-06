@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ScrollText } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { acceptServerRules } from "../../api/servers";
@@ -56,16 +55,10 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
           />
         )}
         <div className="server-rules-body">
-          <h3>
-            <ScrollText size={18} />
-            {t("Server Rules")}
-          </h3>
-          <p className="server-modal-lead">
-            {t("Review and accept the rules for {name} to continue.", {
-              name: server?.name || t("this server"),
-            })}
-          </p>
-          {/* UI audit #124: the same numbered list as the iPhone rules sheet. */}
+          {/* UI audit #125: same content model as the phone sheet (welcome title,
+              numbered rules, accept and join, "not now"). */}
+          <h3>{t("Welcome to {name}", { name: server?.name || t("this server") })}</h3>
+          <p className="server-modal-lead">{t("Read and accept the rules before you start chatting.")}</p>
           <ol className="server-rules-text server-rules-list">
             {rulesList(server?.rulesText).map((line, i) => (
               <li key={`${i}-${line}`}>
@@ -83,13 +76,16 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
             <span>{t("I agree to the server rules")}</span>
           </label>
           <div className="server-modal-actions">
+            <button type="button" className="server-ghost-btn" disabled={busy} onClick={() => onClose?.()}>
+              {t("Not now")}
+            </button>
             <button
               type="button"
               className="server-primary-btn"
               disabled={!checked || busy}
               onClick={accept}
             >
-              {busy ? t("Please wait...") : t("Accept & Continue")}
+              {busy ? t("Please wait...") : t("Accept and join")}
             </button>
           </div>
         </div>

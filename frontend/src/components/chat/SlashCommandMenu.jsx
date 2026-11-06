@@ -14,6 +14,10 @@ import { APP_TIMEZONE } from "../../lib/datetime";
 import "../polls/dsx.css";
 import "./SlashCommandMenu.css";
 
+/** Shortcut glyph for this platform: ⌘ on Apple devices, Ctrl elsewhere. */
+const MOD_KEY =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || "") ? "⌘" : "Ctrl";
+
 /**
  * 2.12.0 slash command menu (design/slash-commands-2026-10-18 · menu, menu-search,
  * menu-empty, ios-menu). Sections and the flat keyboard order come from the
@@ -248,11 +252,9 @@ export default function SlashCommandMenu({
                 role="tab"
                 aria-selected={category === c.id}
                 className={`scm-cat ${category === c.id ? "is-on" : ""}`}
-                style={c.color ? { "--c": c.color } : undefined}
                 onClick={() => onCategory?.(c.id)}
-                title={compact ? undefined : `⌘${i + 1}`}
+                title={compact ? undefined : `${MOD_KEY}${MOD_KEY === "⌘" ? "" : "+"}${i + 1}`}
               >
-                {c.color ? <i /> : null}
                 {c.labelKey ? t(c.labelKey) : c.label}
               </button>
             ))}
@@ -312,7 +314,7 @@ export default function SlashCommandMenu({
             <span><b className="dsx-kbd">↑</b><b className="dsx-kbd">↓</b> {t("slash.menu.kNavigate")}</span>
             <span><b className="dsx-kbd">↵</b> {t("slash.menu.kSelect")}</span>
             <span><b className="dsx-kbd">⇥</b> {t("slash.menu.kComplete")}</span>
-            <span><b className="dsx-kbd">⌘</b><b className="dsx-kbd">1–5</b> {t("slash.menu.kCategory")}</span>
+            <span><b className="dsx-kbd">{MOD_KEY}</b><b className="dsx-kbd">1–5</b> {t("slash.menu.kCategory")}</span>
             <span className="r"><b className="dsx-kbd">esc</b> {t("slash.menu.kClose")}</span>
           </div>
         )}

@@ -11,7 +11,8 @@ const PATHS = {
   ban: <><circle cx="12" cy="12" r="9" /><path d="m5.7 5.7 12.6 12.6" /></>,
   msg: <path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z" />,
   phone: <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />,
-  cam: <><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z" /><circle cx="12" cy="13" r="3.5" /></>,
+  // Video camera (same glyph family as the chat header's video call), not a photo camera.
+  cam: <><rect x="2" y="6" width="14" height="12" rx="2.5" /><path d="m16 10.5 5.2-3a.5.5 0 0 1 .8.43v8.14a.5.5 0 0 1-.8.43L16 13.5" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
   userPlus: <><circle cx="10" cy="8" r="4" /><path d="M2 21a8 8 0 0 1 14.5-4.6M19 14v6M16 17h6" /></>,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,

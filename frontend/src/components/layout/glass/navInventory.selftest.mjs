@@ -38,7 +38,8 @@ const toolActions = [...navConfig.matchAll(/action: "([a-z]+)"/g)].map((m) => m[
 assert.deepEqual(toolActions, ["add", "settings"], "rail tool actions changed, add the glass equivalent and update this test");
 // add → every glass list header has a + that opens the same add flow
 match(sidebar, /plus=\{[\s\S]*?setShowAddModal\(true\)/, "Chats/Groups/Friends + opens the add modal");
-match(activity, /plus=\{\{ icon: UserPlus, label: t\("Add friend"\), onClick: \(\) => onAddFriend\?\.\(\) \}\}/, "Activity + adds a friend");
+// UI audit #156: the same plain "+" primary button as the other tabs.
+match(activity, /plus=\{\{ label: t\("Add friend"\), onClick: \(\) => onAddFriend\?\.\(\) \}\}/, "Activity + adds a friend");
 match(servers, /id: "create"[\s\S]*?setShowCreate\(true\)/, "Servers + → Create server");
 // settings → status menu "User Settings" (rail avatar menu, still mounted)
 match(rail, /setStatusOpen\(false\);\s*onUserClick\?\.\(\);/, "status menu → Kullanıcı Ayarları");
@@ -56,7 +57,10 @@ match(rail, /glass && isAdmin \?[\s\S]*?onAdminClick\?\.\(\)/, "admin panel reac
 /* 5. Classic list-header actions all exist in the glass headers. */
 for (const id of ["search", "announcements", "feedback", "invite"]) match(sidebar, new RegExp(`id: "${id}"`), `Chats/Groups/Friends: ${id}`);
 match(sidebar, /setShowAnnouncements\(!showAnnouncements\)/, "announcements toggles the modal");
-match(sidebar, /id: "refresh"[\s\S]*?glassShell\.onRefresh/, "Calls: refresh");
+// UI audit #93: Calls has no manual Refresh button (classic or glass); the list
+// refreshes itself and by pull-to-refresh.
+assert.ok(!/id: "refresh"/.test(sidebar), "Calls: no refresh button in the glass header");
+match(sidebar, /<PullToRefresh enabled=\{isMobile\} onRefresh=\{refreshList\}>/, "Calls: pull to refresh");
 for (const id of ["create", "join", "folder", "reorder"]) match(servers, new RegExp(`id: "${id}"`), `Servers: ${id}`);
 match(servers, /id: "reorder-done"/, "Servers: leave reorder mode");
 for (const id of ["search", "feedback"]) match(activity, new RegExp(`id: "${id}"`), `Activity: ${id}`);

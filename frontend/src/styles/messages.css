@@ -164,7 +164,7 @@
 }
 
 .message-bubble.own {
-  background: var(--primary-soft, rgba(88, 101, 242, 0.15));
+  background: var(--primary-soft, rgba(88, 122, 245, 0.15));
   border-bottom-right-radius: var(--r-sm);
   margin-left: auto;
 }
@@ -713,7 +713,7 @@
 .mv-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(760px, 100%); padding: 8px 10px 8px 12px; border-radius: 999px; z-index: 2; }
 .mv-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .mv-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.mv-avatar-fallback { display: grid; place-items: center; background: #5865f2; color: #fff; font-weight: 700; }
+.mv-avatar-fallback { display: grid; place-items: center; background: #587af5; color: #fff; font-weight: 700; }
 .mv-who-text { display: flex; flex-direction: column; min-width: 0; }
 .mv-who-text strong { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mv-who-text span { color: rgba(235, 235, 245, 0.6); font-size: 12.5px; }
@@ -822,7 +822,7 @@
 }
 
 .msg-jump-btn:focus-visible {
-  outline: 2px solid var(--primary, #5865f2);
+  outline: 2px solid var(--primary, #587af5);
   outline-offset: 2px;
 }
 
@@ -835,7 +835,7 @@
   padding: 0 6px;
   box-sizing: border-box;
   border-radius: 999px;
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
   font-size: 12px;
   font-weight: 700;

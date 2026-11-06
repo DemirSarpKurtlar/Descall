@@ -42,7 +42,7 @@ import { useToast } from "../../context/ToastContext";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import { formatDate } from "../../i18n/format";
 import "./ProfileSheet.css";
-import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUser, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
+import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -123,7 +123,7 @@ function UserProfileModal({
   const toggleBlock = async () => {
     setBlockError("");
     try {
-      const next = await confirmToggleBlock({ userId, username: profile?.username || username, t });
+      const next = await confirmToggleBlock({ userId, username: profile?.username || username, displayName: profile?.displayName || profile?.display_name, t });
       if (next) setFriendOverride({ userId, state: "none" });
     } catch (err) {
       setBlockError(err?.message || t("Something went wrong."));
@@ -388,7 +388,7 @@ function UserProfileModal({
       canCall ? { id: "video", icon: MICam, label: t("profile.tileVideo"), disabled: blockedByMe, onClick: () => { onClose(); onStartCall(callTarget, "video"); } } : null,
       {
         id: "friend",
-        icon: friendState === "friend" ? MIUser : friendState === "sent" ? MICheck : MIUserPlus,
+        icon: friendState === "friend" || friendState === "sent" ? MICheck : MIUserPlus,
         label: friendState === "friend" ? t("profile.tileFriend") : friendState === "sent" ? t("Sent") : t("profile.tileAdd"),
         disabled: friendLoading || friendState === "sent" || (friendState === "none" && blockedByMe),
         onClick: friendState === "friend" ? handleRemoveFriend : handleAddFriend,

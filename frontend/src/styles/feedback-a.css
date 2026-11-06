@@ -21,7 +21,7 @@
   max-height: min(760px, calc(100vh - 64px - var(--electron-titlebar-h, 0px)));
   padding: 0;
   overflow: hidden;
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   color: var(--fbk-ink);
   box-sizing: border-box;
 }
@@ -52,7 +52,7 @@ html.glass-ui .feedback-modal.fbk {
 /* Header */
 .fbk-hd { display: flex; align-items: center; gap: 12px; padding: 20px 20px 0; flex: none; }
 .fbk-tile {
-  width: 38px; height: 38px; border-radius: 12px; flex: none; display: grid; place-items: center; color: #fff;
+  width: 38px; height: 38px; border-radius: var(--r-md); flex: none; display: grid; place-items: center; color: #fff;
   background: linear-gradient(180deg, rgba(var(--fbk-brand-rgb), 1), rgba(var(--fbk-brand-rgb), 0.78));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 6px 16px rgba(var(--fbk-brand-rgb), 0.35);
 }
@@ -67,13 +67,13 @@ html.glass-ui .feedback-modal.fbk {
 
 /* Segmented tabs (also the "how often" control) */
 .fbk-seg {
-  display: flex; gap: 4px; margin: 16px 20px 0; padding: 4px; border-radius: 14px; flex: none;
+  display: flex; gap: 4px; margin: 16px 20px 0; padding: 4px; border-radius: var(--r-md); flex: none;
   background: var(--fbk-well); box-shadow: inset 0 0 0 1px var(--fbk-hair);
 }
 .fbk-seg.is-inline { margin: 0; }
 .fbk-seg > button {
   flex: 1; min-height: 34px; display: flex; align-items: center; justify-content: center; gap: 7px;
-  border: 0; border-radius: 10px; background: transparent; cursor: pointer;
+  border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer;
   font-size: 13px; font-weight: 600; color: var(--fbk-ink-2);
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -82,7 +82,7 @@ html.glass-ui .feedback-modal.fbk {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 .fbk-badge {
-  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: inline-grid; place-items: center;
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-sm); display: inline-grid; place-items: center;
   font-size: 11px; font-weight: 700; color: #fff; background: #ff453a;
 }
 
@@ -117,7 +117,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .fbk-type {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px; min-height: 96px;
-  border: 0; border-radius: 16px; text-align: left; cursor: pointer;
+  border: 0; border-radius: var(--r-lg); text-align: left; cursor: pointer;
   background: var(--fbk-fill); box-shadow: inset 0 0 0 1px var(--fbk-hair);
   transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
@@ -130,7 +130,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-type.is-on.is-bug { background: rgba(255, 95, 85, 0.12); box-shadow: inset 0 0 0 1.5px rgba(255, 105, 97, 0.75); }
 .fbk-type.is-on.is-praise { background: rgba(255, 90, 170, 0.11); box-shadow: inset 0 0 0 1.5px rgba(255, 122, 182, 0.7); }
 
-.fbk-ti { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none; }
+.fbk-ti { width: 32px; height: 32px; border-radius: var(--r-md); display: grid; place-items: center; flex: none; }
 .fbk-ti.is-suggestion { background: rgba(255, 214, 10, 0.16); color: #ffd60a; }
 .fbk-ti.is-bug { background: rgba(255, 95, 85, 0.16); color: #ff6961; }
 .fbk-ti.is-praise { background: rgba(255, 90, 170, 0.16); color: #ff7ab6; }
@@ -142,7 +142,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-ta-wrap { position: relative; }
 .fbk-ta {
   width: 100%; min-height: 100px; max-height: 240px; resize: vertical; display: block;
-  padding: 12px 14px 26px; border: 0; border-radius: 14px; outline: none;
+  padding: 12px 14px 26px; border: 0; border-radius: var(--r-md); outline: none;
   background: var(--fbk-well); box-shadow: inset 0 0 0 1px var(--fbk-hair);
   font: inherit; font-size: 13.5px; line-height: 1.5; color: var(--fbk-ink);
 }
@@ -153,7 +153,7 @@ html.glass-ui .feedback-modal.fbk {
 /* Chips */
 .fbk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .fbk-chip {
-  min-height: 32px; padding: 0 13px; border: 0; border-radius: 16px; cursor: pointer;
+  min-height: 32px; padding: 0 13px; border: 0; border-radius: var(--r-lg); cursor: pointer;
   font-size: 12.5px; font-weight: 600; color: var(--fbk-ink-2); background: var(--fbk-fill-2);
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -162,14 +162,14 @@ html.glass-ui .feedback-modal.fbk {
 
 /* Boxes: stars, device toggle */
 .fbk-box {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px;
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--r-md);
   background: var(--fbk-fill); box-shadow: inset 0 0 0 1px var(--fbk-hair);
 }
 .fbk-box b { display: block; font-size: 13px; font-weight: 600; color: var(--fbk-ink); }
 .fbk-box small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--fbk-ink-2); }
 .fbk-rate > div:first-child { flex: 1; }
 .fbk-stars { display: flex; gap: 2px; }
-.fbk-stars button { width: 32px; height: 32px; border: 0; border-radius: 8px; display: grid; place-items: center; background: transparent; cursor: pointer; color: var(--fbk-hair); transition: color 0.12s ease, transform 0.12s ease; }
+.fbk-stars button { width: 32px; height: 32px; border: 0; border-radius: var(--r-sm); display: grid; place-items: center; background: transparent; cursor: pointer; color: var(--fbk-hair); transition: color 0.12s ease, transform 0.12s ease; }
 .feedback-modal.fbk .fbk-stars button { color: rgba(127, 127, 140, 0.38); }
 .feedback-modal.fbk .fbk-stars button.is-on { color: #ffd60a; }
 .fbk-stars button:hover { transform: scale(1.08); }
@@ -177,15 +177,15 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-device > span:not(.fbk-switch) { flex: 1; min-width: 0; }
 .fbk-switch {
   display: block; flex: none; position: relative; margin: 0;
-  width: 44px; height: 26px; border-radius: 13px; background: rgba(127, 127, 140, 0.4); transition: background-color 0.18s ease;
+  width: 44px; height: 26px; border-radius: var(--r-md); background: rgba(127, 127, 140, 0.4); transition: background-color 0.18s ease;
 }
 .fbk-switch::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.18s ease; }
-.fbk-switch.is-on { background: #34c759; }
+.fbk-switch.is-on { background: var(--brand, #587af5); }
 .fbk-switch.is-on::after { transform: translateX(18px); }
 
 /* Screenshots */
 .fbk-shots { display: flex; gap: 8px; flex-wrap: wrap; }
-.fbk-shot, .fbk-shot-add { position: relative; width: 76px; height: 56px; border-radius: 11px; flex: none; }
+.fbk-shot, .fbk-shot-add { position: relative; width: 76px; height: 56px; border-radius: var(--r-md); flex: none; }
 .fbk-shot { overflow: hidden; background: var(--fbk-fill-2); box-shadow: inset 0 0 0 1px var(--fbk-hair); }
 .fbk-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fbk-shot.is-error { box-shadow: inset 0 0 0 1.5px #ff453a; }
@@ -219,12 +219,12 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-done-row .fbk-btn { margin: 0; }
 .fbk-state b { font-size: 15px; color: var(--fbk-ink); }
 .fbk-state .fbk-btn { margin: 6px 0 0; }
-.fbk-empty-ic { width: 54px; height: 54px; border-radius: 18px; display: grid; place-items: center; background: var(--fbk-fill-2); color: var(--fbk-ink-2); }
+.fbk-empty-ic { width: 54px; height: 54px; border-radius: var(--r-lg); display: grid; place-items: center; background: var(--fbk-fill-2); color: var(--fbk-ink-2); }
 
 /* My feedback list */
 .fbk-list { display: flex; flex-direction: column; gap: 6px; }
 .fbk-it {
-  display: flex; gap: 11px; align-items: flex-start; width: 100%; padding: 11px 12px; border: 0; border-radius: 14px;
+  display: flex; gap: 11px; align-items: flex-start; width: 100%; padding: 11px 12px; border: 0; border-radius: var(--r-md);
   text-align: left; cursor: pointer; background: var(--fbk-fill); transition: background-color 0.15s ease;
 }
 .fbk-it:hover { background: var(--fbk-fill-2); }
@@ -238,7 +238,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-it-side time { font-size: 11px; color: var(--fbk-ink-3); white-space: nowrap; }
 .fbk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fbk-brand); }
 
-.fbk-pill { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.fbk-pill { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: var(--r-md); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .fbk-pill.is-new { background: var(--fbk-fill-2); color: var(--fbk-ink-2); }
 .fbk-pill.is-in_progress { background: rgba(10, 132, 255, 0.2); color: #6fb6ff; }
 .fbk-pill.is-resolved { background: rgba(48, 209, 88, 0.18); color: #5fdc80; }
@@ -253,20 +253,20 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-back { width: 32px; height: 32px; margin-left: -6px; border: 0; border-radius: 50%; display: grid; place-items: center; background: transparent; cursor: pointer; flex: none; }
 .fbk-back:hover { background: var(--fbk-fill-2); }
 .fbk-kv { display: flex; flex-wrap: wrap; gap: 6px; }
-.fbk-kv span { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 12px; background: var(--fbk-fill); font-size: 11.5px; color: var(--fbk-ink-2); }
+.fbk-kv span { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: var(--r-md); background: var(--fbk-fill); font-size: 11.5px; color: var(--fbk-ink-2); }
 .fbk-th { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
-.fbk-msg { max-width: 84%; padding: 10px 13px; border-radius: 16px; font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fbk-ink); }
+.fbk-msg { max-width: 84%; padding: 10px 13px; border-radius: var(--r-lg); font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fbk-ink); }
 .fbk-msg.is-me { align-self: flex-end; background: rgba(var(--fbk-brand-rgb), 0.3); border-bottom-right-radius: 6px; }
 .fbk-msg.is-team { align-self: flex-start; background: var(--fbk-fill-2); border-bottom-left-radius: 6px; }
 .fbk-msg-shots { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-.fbk-msg-shots a { display: block; width: 104px; height: 70px; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--fbk-hair); }
+.fbk-msg-shots a { display: block; width: 104px; height: 70px; border-radius: var(--r-md); overflow: hidden; box-shadow: inset 0 0 0 1px var(--fbk-hair); }
 .fbk-msg-shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fbk-msg-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.fbk-msg-tags span { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: rgba(255, 255, 255, 0.14); }
+.fbk-msg-tags span { padding: 2px 8px; border-radius: var(--r-md); font-size: 11px; background: rgba(255, 255, 255, 0.14); }
 .fbk-who { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px; white-space: normal; }
 .fbk-who b { font-weight: 650; }
 .fbk-who time { font-size: 11px; color: var(--fbk-ink-3); }
-.fbk-mark { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; background: linear-gradient(180deg, #86a0ff, #4e6ff2); flex: none; }
+.fbk-mark { width: 20px; height: 20px; border-radius: var(--r-sm); display: grid; place-items: center; color: #fff; background: linear-gradient(180deg, #86a0ff, #4e6ff2); flex: none; }
 .fbk-team { display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 5px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; color: #dfe5ff; background: rgba(110, 130, 255, 0.3); }
 :root[data-theme="light"] .fbk-team { color: #3e55d6; background: rgba(78, 111, 242, 0.14); }
 .fbk-sys { align-self: center; display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--fbk-ink-3); text-align: center; }
@@ -292,7 +292,7 @@ html.glass-ui .feedback-modal.fbk {
 
 /* Phone width: bottom sheet sized, 44pt targets, type cards stay one row. */
 @media (max-width: 520px) {
-  .feedback-modal.fbk { width: 100%; max-width: 100%; border-radius: 24px; max-height: calc(100dvh - 24px); }
+  .feedback-modal.fbk { width: 100%; max-width: 100%; border-radius: var(--r-xl); max-height: calc(100dvh - 24px); }
   .fbk-hd { padding: 16px 16px 0; }
   .fbk-seg { margin: 12px 16px 0; }
   .fbk-seg > button { min-height: 40px; }

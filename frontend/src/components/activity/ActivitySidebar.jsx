@@ -6,7 +6,6 @@ import {
   MessageSquarePlus,
   Plus,
   Users,
-  UserPlus,
   Clock,
 } from "../ui/Icon.jsx";
 import { ActivityTypeIcon } from "../../lib/shopIcons";
@@ -25,13 +24,13 @@ import { GlassListHeader, GLASS_STATUS_EVENT, useGlassShell } from "../layout/gl
 const TYPE_COLOR = {
   game: "#23a55a",
   music: "#1db954",
-  dev: "#5865f2",
+  dev: "#587af5",
   creative: "#eb459e",
   browser: "#4f9ef8",
-  communication: "#5865f2",
+  communication: "#587af5",
   media: "#f0b232",
   launcher: "#747f8d",
-  manual: "#5865f2",
+  manual: "#587af5",
   app: "#747f8d",
 };
 
@@ -40,7 +39,7 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
   const glassShell = useGlassShell();
   const status = getPresenceStatus(onlineUsers, friend.id);
   const isOnline = isVisiblyOnline(onlineUsers, friend.id);
-  const accentColor = presence ? TYPE_COLOR[presence.appType] || "#5865f2" : null;
+  const accentColor = presence ? TYPE_COLOR[presence.appType] || "#587af5" : null;
   const label = friend.displayName || friend.display_name || friend.username;
 
   return (
@@ -136,7 +135,7 @@ export default function ActivitySidebar({
               { id: "search", icon: Search, label: t("Search") },
               { id: "feedback", icon: MessageSquarePlus, label: t("Send Feedback"), onClick: () => openFeedbackModal({ type: "suggestion", source: "activity_sidebar" }) },
             ]}
-            plus={{ icon: UserPlus, label: t("Add friend"), onClick: () => onAddFriend?.() }}
+            plus={{ label: t("Add friend"), onClick: () => onAddFriend?.() }}
             search={{ value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), inputRef: searchRef, placeholder: t("Search") }}
           />
         ) : (
@@ -195,7 +194,6 @@ export default function ActivitySidebar({
                 <div className="g-activity-status-top">
                   <div>
                     <div className="g-activity-kicker">{t("Your status")}</div>
-                    <div className="s" style={{ fontSize: 13, color: "var(--g-t3)", marginTop: 2 }}>{t("Your presence and history")}</div>
                   </div>
                   {privacy !== "hidden" && privacy !== "only-me" ? (
                     <div className="g-activity-vis"><Users size={13} /> {t("Visible to Friends")}</div>

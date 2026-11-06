@@ -1,5 +1,6 @@
 /* Descall 3.0.0 server sheets: the approved mockup kit (dev/after/kit.cjs) as React.
  * Every class/size here mirrors kit.cjs 1:1 so the built screens match the mockups. */
+import { serverInitials } from "../../../lib/serverInitials.js";
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
@@ -76,7 +77,7 @@ export const Foot = ({ children, style }) => <div className="svh-foot" style={st
 export const Large = ({ children, style }) => <div className="svh-large" style={style}>{children}</div>;
 
 export function initials(name) {
-  return String(name || "?").trim().split(/\s+/).filter(Boolean).map((p) => Array.from(p)[0] || "").join("").slice(0, 2).toLocaleUpperCase("tr") || "?";
+  return serverInitials(name);
 }
 
 export const PRESENCE_DOT = { online: "#30D158", idle: "#FFD60A", dnd: "#FF453A" };

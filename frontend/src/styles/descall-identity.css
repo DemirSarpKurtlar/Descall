@@ -48,9 +48,6 @@
   padding: 28px 16px;
   text-align: center;
   color: var(--text-2);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border-2);
-  background: var(--surface-1);
 }
 
 .activity-empty-state {

@@ -143,6 +143,8 @@ export default function ServersSidebar({
   const [serverIconCropSrc, setServerIconCropSrc] = useState("");
   const [serverIconBusy, setServerIconBusy] = useState(false);
   const [rulesPrompt, setRulesPrompt] = useState(false);
+  // "Şimdi değil" on the rules screen hides it for this server until the next visit.
+  const [rulesDismissedFor, setRulesDismissedFor] = useState(null);
   const serverIconFileRef = useRef(null);
   // A5 (3.0.0): iPhone / iPad use the new server hub, sheets and long-press menus; desktop keeps the modals.
   const hubMode = useHubMode(isMobile);
@@ -1674,9 +1676,13 @@ export default function ServersSidebar({
               onRequestDelete={(server) => setConfirm({ mode: "delete", server })}
             />
           )}
-          {(needsRulesAccept || rulesPrompt) && (
+          {(needsRulesAccept || rulesPrompt) && rulesDismissedFor !== activeServer?.id && (
             <ServerRulesModal
               server={activeServer}
+              onClose={() => {
+                setRulesPrompt(false);
+                setRulesDismissedFor(activeServer?.id || null);
+              }}
               onAccepted={(rulesAcceptedAt) => {
                 setRulesPrompt(false);
                 onServerUpdated?.({ ...activeServer, rulesAcceptedAt });
@@ -1775,6 +1781,8 @@ export default function ServersSidebar({
           <>
           <div className="sidebar-header">
             <h2 className="sidebar-title">{t("Servers")}</h2>
+            {/* UI audit #139: with no servers the empty state carries Create / Join itself. */}
+            {serversLoaded && servers.length > 0 ? (
             <div className="sidebar-actions">
               <button
                 type="button"
@@ -1811,13 +1819,15 @@ export default function ServersSidebar({
                 <Plus size={18} />
               </button>
             </div>
+            ) : null}
           </div>
 
           </>
         )}
 
-        {/* UI audit #60: counts are unknown after a failed load, so no "0 / 10". */}
-        {loadError && servers.length === 0 ? null : (
+        {/* UI audit #60/#92/#139: no "0 / 10" or drag hint while loading, after a
+            failed load, or with nothing to reorder. */}
+        {!serversLoaded || servers.length === 0 ? null : (
         <div className="server-owned-banner">
           {t("Owned {owned} / {max}", { owned: ownedCount, max: maxOwned })}
           {!isMobile ? (
@@ -3233,15 +3243,16 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
       title={title}
       message={message}
       confirmLabel={busy ? t("Please wait...") : title}
-      cancelLabel={t("Cancel")}
+      cancelLabel={t("Never mind")}
       danger
       busy={busy}
       error={error}
       confirmDisabled={!match}
       onConfirm={confirm}
       onCancel={onCancel}
+      className="g-alert-form"
     >
-      <label>
+      <label className="g-alert-field">
         <span>{t("Server name")}</span>
         <input
           value={value}

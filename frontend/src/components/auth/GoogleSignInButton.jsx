@@ -45,16 +45,22 @@ function GoogleMark() {
  * onCredential(credentialJwt) is called after successful Google picker.
  * appearance="glass" paints a frosted face and keeps the official button as the hit target.
  */
-function GoogleSignInButtonInner({ onCredential, disabled = false, appearance = "standard" }) {
+function GoogleSignInButtonInner({ onCredential, onUnavailable, hideWhenUnavailable = false, disabled = false, appearance = "standard" }) {
   const t = useT();
   const buttonRef = useRef(null);
   const callbackRef = useRef(onCredential);
   const [status, setStatus] = useState("loading"); // loading | ready | unavailable
   const [error, setError] = useState("");
 
+  const unavailableRef = useRef(onUnavailable);
   useEffect(() => {
     callbackRef.current = onCredential;
-  }, [onCredential]);
+    unavailableRef.current = onUnavailable;
+  }, [onCredential, onUnavailable]);
+
+  useEffect(() => {
+    if (status === "unavailable") unavailableRef.current?.();
+  }, [status]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +131,8 @@ function GoogleSignInButtonInner({ onCredential, disabled = false, appearance = 
   }, [appearance]);
 
   if (status === "unavailable") {
+    // Callers that draw an "or" divider hide it and this note together.
+    if (hideWhenUnavailable) return null;
     return (
       <p className="google-signin-hint" role="note">
         {error || t("Google Sign-In is not configured yet.")}

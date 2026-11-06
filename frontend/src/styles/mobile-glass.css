@@ -34,7 +34,7 @@
   inset: 0;
   background:
     radial-gradient(ellipse 80% 50% at 20% -10%, rgba(10, 132, 255, 0.22), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(88, 101, 242, 0.18), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(88, 122, 245, 0.18), transparent 50%),
     radial-gradient(ellipse 70% 50% at 50% 100%, rgba(175, 82, 222, 0.12), transparent 55%),
     linear-gradient(165deg, var(--mobile-gradient-1) 0%, var(--mobile-gradient-2) 45%, var(--mobile-gradient-3) 100%);
   z-index: 0;

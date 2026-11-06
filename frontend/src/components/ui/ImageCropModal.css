@@ -13,7 +13,7 @@
 
 .img-crop-modal {
   width: min(440px, 100%);
-  background: var(--surface-2, #1e1f22);
+  background: var(--surface-2, var(--surface-1));
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.08));
   border-radius: var(--r-lg);
   padding: 18px 18px 16px;
@@ -42,8 +42,8 @@
   height: 34px;
   border-radius: var(--r-md);
   border: 1px solid var(--border-3, rgba(255, 255, 255, 0.1));
-  background: var(--surface-1, #2b2d31);
-  color: var(--text-2, #b5bac1);
+  background: var(--surface-1, var(--surface-2));
+  color: var(--text-2, var(--text-3));
   cursor: pointer;
 }
 
@@ -55,7 +55,7 @@
   margin: 6px 0 12px;
   font-size: 12.5px;
   line-height: 1.4;
-  color: var(--text-2, #b5bac1);
+  color: var(--text-2, var(--text-3));
 }
 
 .img-crop-stage {
@@ -81,13 +81,13 @@
 
 .img-crop-zoom input[type="range"] {
   flex: 1;
-  accent-color: var(--primary, #5865f2);
+  accent-color: var(--primary, #587af5);
   cursor: pointer;
 }
 
 .img-crop-error {
   margin: 8px 0 0;
-  color: var(--danger, #ed4245);
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -119,11 +119,11 @@
 .img-crop-btn.ghost {
   background: transparent;
   border-color: var(--border-3, rgba(255, 255, 255, 0.1));
-  color: var(--text-2, #b5bac1);
+  color: var(--text-2, var(--text-3));
 }
 
 .img-crop-btn.primary {
-  background: var(--primary, #5865f2);
+  background: var(--primary, #587af5);
   color: #fff;
 }
 

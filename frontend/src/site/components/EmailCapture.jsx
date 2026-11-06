@@ -68,7 +68,7 @@ export default function EmailCapture({ source = "marketing_footer" }) {
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t("you@example.com")}
           value={email}
           onChange={(ev) => setEmail(ev.target.value)}
           disabled={status === "loading" || status === "ok"}

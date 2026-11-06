@@ -64,6 +64,28 @@
   padding: 0 16px 14px;
 }
 
+/* Confirm with a typed field (delete / leave server): left-aligned like the
+   other form modals, label 8px above the field, a faint placeholder. */
+.g-alert.g-alert-form .g-alert-copy,
+.g-alert.g-alert-form .g-alert-copy h2,
+.g-alert.g-alert-form .g-alert-copy p {
+  text-align: left;
+}
+
+.g-alert-extra label.g-alert-field {
+  text-align: left;
+}
+
+.g-alert-extra label.g-alert-field > span {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.g-alert-extra label.g-alert-field input::placeholder {
+  color: var(--g-t3, rgba(235, 238, 255, 0.46));
+  opacity: 0.6;
+}
+
 .g-alert-extra label {
   display: block;
   margin: 0 0 6px;
@@ -135,11 +157,12 @@
   background: color-mix(in srgb, var(--g-brand, #587af6) 22%, transparent);
 }
 
+/* Destructive action: system red fill, white label (same in every confirm). */
 .g-alert-btn.is-danger {
   font-weight: 600;
-  color: var(--g-red, #ff453a);
-  background: color-mix(in srgb, var(--g-red, #ff453a) 22%, transparent);
-  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-red, #ff453a) 45%, transparent);
+  color: #fff;
+  background-color: var(--g-red, #ff453a);
+  box-shadow: none;
 }
 
 .g-alert-btn:active,

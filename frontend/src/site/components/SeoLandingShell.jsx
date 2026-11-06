@@ -41,20 +41,19 @@ export default function SeoLandingShell({
     <article className={`seo-landing seo-tone-${tone}`}>
       {jsonLd?.length > 0 && <JsonLd data={jsonLd} />}
 
-      {breadcrumbs.length > 0 && (
-        <nav className="seo-breadcrumbs" aria-label="Breadcrumb">
-          <ol>
-            {breadcrumbs.map((crumb, i) => (
-              <li key={crumb.to || crumb.label}>
-                {i > 0 && <Chevron />}
-                {crumb.to ? <Link to={href(crumb.to)}>{t(crumb.label)}</Link> : <span aria-current="page">{t(crumb.label)}</span>}
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-
       <header className="seo-hero">
+        {breadcrumbs.length > 0 && (
+          <nav className="seo-breadcrumbs" aria-label="Breadcrumb">
+            <ol>
+              {breadcrumbs.map((crumb, i) => (
+                <li key={crumb.to || crumb.label}>
+                  {i > 0 && <Chevron />}
+                  {crumb.to ? <Link to={href(crumb.to)}>{t(crumb.label)}</Link> : <span aria-current="page">{t(crumb.label)}</span>}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
         <h1>{title}</h1>
         {lead && <p className="seo-lead">{lead}</p>}
         {(primaryCta || secondaryCta) && (

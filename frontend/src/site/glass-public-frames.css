@@ -357,29 +357,25 @@
 }
 
 .mkt .mkt-404 {
+  max-width: 640px;
   padding-top: 120px;
-  text-align: center;
-}
-
-.mkt .mkt-404-glass {
-  display: inline-block;
-  border-radius: 40px;
-  padding: 28px 60px 36px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
-    rgba(20, 21, 30, 0.55);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 24px 64px rgba(0, 0, 0, 0.4);
+  text-align: left;
 }
 
 .mkt .mkt-404 h1 {
   margin: 0;
   font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
-  font-size: 220px;
-  line-height: 0.9;
-  font-weight: 800;
-  letter-spacing: -0.06em;
+  font-size: 48px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   background: none;
   color: #f7f8fb;
+}
+
+.mkt .mkt-404 .lead {
+  margin: 12px 0 28px;
+  color: rgba(235, 238, 255, 0.72);
 }
 
 .mkt .mkt-status-card {
@@ -571,6 +567,18 @@ body.has-mkt .legal-doc-section.is-rights {
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
   color: var(--gp-t3);
   font-size: 13px;
+}
+
+/* Inside the hero: a small label above the title, not a separate half card. */
+.mkt .seo-hero .seo-breadcrumbs {
+  grid-column: 1 / -1;
+  display: flex;
+  height: auto;
+  margin: 0 0 12px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .mkt .mkt-download-platform.is-active {
@@ -1092,12 +1100,7 @@ body.has-mkt .login-modal :focus-visible {
   }
 
   .mkt .mkt-404 h1 {
-    font-size: 140px;
-  }
-
-  .mkt .mkt-404-glass {
-    padding: 22px 22px 26px;
-    border-radius: var(--r-xl);
+    font-size: 34px;
   }
 
   .mkt .mkt-footer {
@@ -1613,7 +1616,7 @@ body.has-mkt .login-modal .mkt-auth-logo {
   height: 56px;
   margin: 8px auto 0;
   border-radius: var(--r-lg);
-  box-shadow: 0 10px 28px rgba(88, 122, 246, 0.45);
+  box-shadow: none;
 }
 
 body.has-mkt .login-modal input:-webkit-autofill,
@@ -1853,7 +1856,37 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
 }
 
 .mkt-contact-owner {
-  font-weight: 700;
+  font-weight: 600;
+}
+
+/* One heading, then contact details beside the form (stacks on phones). */
+.mkt-contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px 48px;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .mkt-contact-grid {
+    grid-template-columns: minmax(0, 280px) minmax(0, 560px);
+  }
+}
+
+.mkt .mkt-contact .mkt-contact-aside h2 {
+  margin: 18px 0 6px;
+  font-size: var(--fs-15, 0.9375rem);
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.mkt-contact-aside p {
+  margin: 0 0 8px;
+}
+
+.mkt-contact-form .mkt-btn {
+  align-self: flex-start;
 }
 
 .mkt-success {

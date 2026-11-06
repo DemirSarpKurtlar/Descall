@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement } from "react";
+import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
@@ -22,6 +23,7 @@ import { API_BASE_URL } from "../../config/api";
 import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate, upper } from "../../i18n/format";
 import { displayText } from "../../lib/profanity";
@@ -691,7 +693,7 @@ export default function ChatPanel({
                     danger: !dmBlockedByMe,
                     onSelect: () => {
                       setDmMoreOpen(false);
-                      confirmToggleBlock({ userId: headerDm.id, username: headerDm.username, t }).catch(() => {});
+                      confirmToggleBlock({ userId: headerDm.id, username: headerDm.username, displayName: resolveDisplayName(headerDm), t }).catch(() => {});
                     },
                   },
                 ],
@@ -820,6 +822,10 @@ export default function ChatPanel({
             me={me}
             serverVoice={serverVoice}
           />
+        ) : !activeServer && typeof window !== "undefined" && /^\/servers\/[^/]+/.test(window.location.pathname) ? (
+          /* UI audit #92: a server is already in the URL while the list loads, so
+             show its loading skeleton, not "pick a server on the left". */
+          <DetailPaneSkeleton label={t("Loading servers")} />
         ) : (
         <EmptyState
           className="server-main-placeholder"
@@ -1150,7 +1156,7 @@ export default function ChatPanel({
       items={pinnedMessages}
       t={t}
       resolveName={resolveDisplayName}
-      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
+      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? mediaTypeLabel(pm.mediaType, t) : t("Message"))}
       onUnpin={unpinMessage}
     />
     {groupActions.element}

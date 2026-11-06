@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { serverInitials } from "../../lib/serverInitials.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, ImagePlus, Trash2, X } from "../ui/Icon.jsx";
@@ -65,12 +66,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
   );
 
   const canManage = serverHasPermission(server, "MANAGE_GUILD");
-  const initials = String(name || server?.name || "?")
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = serverInitials(name || server?.name || "?");
 
   const openPicker = (kind) => {
     if (!canManage || busy || uploading) return;

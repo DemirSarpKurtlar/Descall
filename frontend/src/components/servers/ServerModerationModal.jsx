@@ -5,6 +5,7 @@ import { Ban, ScrollText, UserCheck, RefreshCw, X, Search } from "../ui/Icon.jsx
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { Avatar } from "../ui/Avatar";
+import EmptyState from "../ui/EmptyState";
 import { ConversationListSkeleton, BlockListSkeleton } from "../ui/Skeleton";
 import {
   listServerBans,
@@ -158,6 +159,10 @@ export default function ServerModerationModal({
       >
         <div className="server-moderation-head">
           <h3>{t("Server moderation")}</h3>
+          {/* UI audit #122: refresh sits in the title row, not alone under the tabs. */}
+          <button type="button" className="icon-btn" onClick={load} title={t("Refresh")} aria-label={t("Refresh")}>
+            <RefreshCw size={14} />
+          </button>
           <button type="button" className="icon-btn" onClick={onClose} aria-label={t("Close")}>
             <X size={16} />
           </button>
@@ -191,8 +196,9 @@ export default function ServerModerationModal({
           )}
         </div>
 
+        {tab === "audit" && canAudit ? (
         <div className="server-moderation-toolbar">
-          {tab === "audit" && canAudit ? (
+          {(
             <>
               <label className="server-audit-filter">
                 <span className="sr-only">{t("Filter by action")}</span>
@@ -220,11 +226,9 @@ export default function ServerModerationModal({
                 />
               </label>
             </>
-          ) : null}
-          <button type="button" className="icon-btn" onClick={load} title={t("Refresh")} aria-label={t("Refresh")}>
-            <RefreshCw size={14} />
-          </button>
+          )}
         </div>
+        ) : null}
 
         <div className="server-moderation-body">
           {loading ? (
@@ -235,7 +239,13 @@ export default function ServerModerationModal({
             )
           ) : tab === "bans" ? (
             bans.length === 0 ? (
-              <p className="server-empty-hint">{t("No banned members")}</p>
+              <EmptyState
+                className="is-compact server-moderation-empty"
+                illustration="none"
+                icon={Ban}
+                title={t("No banned members")}
+                body={t("People you ban from this server show up here.")}
+              />
             ) : (
               bans.map((ban) => {
                 const name = nameOf(ban);
@@ -277,9 +287,12 @@ export default function ServerModerationModal({
               })
             )
           ) : filteredLogs.length === 0 ? (
-            <p className="server-empty-hint">
-              {logs.length === 0 ? t("No audit events yet") : t("No matching audit events")}
-            </p>
+            <EmptyState
+              className="is-compact server-moderation-empty"
+              illustration="none"
+              icon={ScrollText}
+              title={logs.length === 0 ? t("No audit events yet") : t("No matching audit events")}
+            />
           ) : (
             filteredLogs.map((log) => {
               const actorName = nameOf({

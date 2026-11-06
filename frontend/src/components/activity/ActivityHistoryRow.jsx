@@ -5,11 +5,11 @@ import { formatActivityRange, playingName } from "../../../backend/lib/activityS
 const TYPE_COLOR = {
   game: "#23a55a",
   music: "#1db954",
-  dev: "#5865f2",
+  dev: "#587af5",
   creative: "#eb459e",
   browser: "#4f9ef8",
   media: "#f0b232",
-  manual: "#5865f2",
+  manual: "#587af5",
   app: "#747f8d",
 };
 

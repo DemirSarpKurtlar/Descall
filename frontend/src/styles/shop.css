@@ -136,7 +136,7 @@
 }
 
 .shop-theme-swatch.theme-default {
-  background: linear-gradient(135deg, #111214 0%, #2b2d31 55%, #5865f2 100%);
+  background: linear-gradient(135deg, #111214 0%, var(--surface-2) 55%, #587af5 100%);
 }
 
 .shop-theme-swatch.theme-emerald {
@@ -608,7 +608,7 @@ html[data-theme="light"] .shop-category-tab.active {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--surface-3, #2b2d31);
+  background: var(--surface-3, var(--surface-2));
   border: 1px solid rgba(255, 255, 255, 0.15);
   z-index: 1;
 }
@@ -654,7 +654,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #3f4248, #2b2d31 72%);
+  background: radial-gradient(circle at 35% 30%, #3f4248, var(--surface-2) 72%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   flex-shrink: 0;
 }
@@ -934,7 +934,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   height: 64px;
   margin: 0 auto 12px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6678ff, #a855f7);
+  background: var(--brand, #587af5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1181,7 +1181,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   font-size: 12px;
 }
 .invite-card {
-  background: linear-gradient(160deg, rgba(88, 101, 242, 0.14), rgba(255,255,255,0.02));
+  background: linear-gradient(160deg, rgba(88, 122, 245, 0.14), rgba(255,255,255,0.02));
 }
 .invite-card-link {
   font-size: 12px;
@@ -1222,7 +1222,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   cursor: default;
 }
 .invite-card-btn.primary {
-  background: #5865f2;
+  background: #587af5;
   color: #fff;
 }
 .invite-card-btn:not(.primary) {
@@ -1274,7 +1274,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
 
 .shop-live-profile {
   border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
-  background: var(--surface-1, #1e1f22);
+  background: var(--surface-1);
   box-shadow: none;
   box-sizing: border-box;
   max-width: 100%;
@@ -1338,7 +1338,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #23a559;
+  background: var(--success);
   flex-shrink: 0;
 }
 
@@ -1565,10 +1565,10 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   justify-content: center;
   color: var(--text-0, #fff);
   cursor: pointer;
-  background: var(--surface-2, #2b2d31);
+  background: var(--surface-2);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 100%),
-    color-mix(in srgb, var(--surface-2, #2b2d31) 42%, transparent);
+    color-mix(in srgb, var(--surface-2) 42%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
@@ -1594,7 +1594,7 @@ html.gd-lite .shop-chip-arrow {
   .shop-chip-arrow,
   html.glass-lite .shop-chip-arrow,
   html.gd-lite .shop-chip-arrow {
-    background: var(--surface-2, #2b2d31);
+    background: var(--surface-2);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));
@@ -1602,7 +1602,7 @@ html.gd-lite .shop-chip-arrow {
 }
 
 html.a11y-solid .shop-chip-arrow {
-  background: var(--surface-2, #2b2d31);
+  background: var(--surface-2);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: inset 0 0 0 1px var(--border-2, rgba(255, 255, 255, 0.08));

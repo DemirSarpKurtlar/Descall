@@ -45,7 +45,7 @@ export const SHELL_TR = {
     reduceMotion: "Hareketi azalt",
     reduceMotionSub: "Geçiş ve yay animasyonlarını sadeleştirir",
     savedFoot:
-      "Görünüm hesabına kaydedilir ve tüm cihazlarında aynı olur. Durumunu artık profil menüsünden değiştirirsin.",
+      "Görünüm hesabına kaydedilir ve tüm cihazlarında aynı olur.",
     removed: "Kaldırılanlar:",
     removedDensity: "Yoğunluk",
     removedBubble: "Mesaj balonu stili",

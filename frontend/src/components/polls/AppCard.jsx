@@ -20,14 +20,16 @@ import { useLocale } from "../../context/LocaleContext";
 import { t as rt } from "../../i18n/runtime";
 import { formatNumber, upper } from "../../i18n/format";
 import "./dsx.css";
+import { serverColor, serverInitials } from "../../lib/serverInitials.js";
 
 const CAT = SLASH_GROUP_BY_ID;
+// UI audit #155: flat system-colour tiles (no per-state gradients).
 const HI = {
-  general: CAT.general.gradient,
-  warn: "linear-gradient(160deg,#ffb35c,#e0782f)",
-  danger: "linear-gradient(160deg,#ff7a6b,#e0455f)",
-  ban: "linear-gradient(160deg,#ff5a6b,#b8233f)",
-  ok: "linear-gradient(160deg,#39c99b,#2a8f6e)",
+  general: "#587AF5",
+  warn: "#FF9F0A",
+  danger: "#FF453A",
+  ban: "#FF453A",
+  ok: "#30D158",
 };
 
 const nameOf = (u) => u?.nickname || u?.displayName || u?.display_name || u?.username || rt("polls.user");
@@ -157,7 +159,7 @@ function UserCard({ card, compact, actions }) {
             ) : null}
             {card.accountCreatedAt ? (
               <div className="dsx-dt">
-                <span className="di" style={{ background: "linear-gradient(160deg,#3d5bd8,#2a3a8a)" }}><DescallMark size={15} /></span>
+                <span className="di" style={{ background: "#587AF5" }}><DescallMark size={15} /></span>
                 <div>
                   <b>{appDate(card.accountCreatedAt, locale)}</b>
                   <span>{t("polls.app.joinedDescall")}</span>
@@ -344,7 +346,7 @@ function ServerCard({ card }) {
           height: 96,
           background: s.bannerUrl
             ? `center / cover url("${s.bannerUrl}")`
-            : "radial-gradient(70% 120% at 20% 0%,rgba(110,140,255,.9),transparent 60%),radial-gradient(60% 120% at 90% 100%,rgba(140,110,255,.6),transparent 60%),linear-gradient(120deg,#20285a,#2a3a8a)",
+            : "#393C4D",
         }}
       />
       <div className="dsx-ac" style={{ paddingTop: 0 }}>
@@ -352,11 +354,11 @@ function ServerCard({ card }) {
           <span
             style={{
               width: 64, height: 64, borderRadius: 20, display: "grid", placeItems: "center", flex: "none",
-              background: s.iconUrl ? `center / cover url("${s.iconUrl}")` : "linear-gradient(150deg,#5b8cff,#6b4bd8)",
+              background: s.iconUrl ? `center / cover url("${s.iconUrl}")` : serverColor(s, s.name),
               fontWeight: 800, fontSize: 20, boxShadow: "0 0 0 4px #1b1d2a,0 10px 24px rgba(0,0,0,.4)",
             }}
           >
-            {s.iconUrl ? null : upper(String(s.name || "?").slice(0, 2), locale)}
+            {s.iconUrl ? null : serverInitials(s.name)}
           </span>
           <div style={{ marginTop: 34, minWidth: 0 }}>
             <b style={{ fontSize: 18 }}>{s.name}</b>
@@ -401,7 +403,7 @@ function HelpCard({ card }) {
   };
   return (
     <div className="dsx-card dsx-appcard dsx-ac">
-      <Head icon={SLASH_ICONS.help} bg={CAT.general.gradient} title={card.title || t("polls.app.commands")} sub={card.subtitle} />
+      <Head icon={SLASH_ICONS.help} bg={HI.general} title={card.title || t("polls.app.commands")} sub={card.subtitle} />
       {groups.map((g) => {
         const cat = CAT[catId(g)] || CAT.general;
         return (
@@ -433,7 +435,7 @@ function NickCard({ card, actions }) {
   const after = card.after;
   return (
     <div className="dsx-card dsx-appcard dsx-ac">
-      <Head icon={Pencil} bg={CAT.general.gradient} title={after ? t("polls.app.nickUpdated") : t("polls.app.nickCleared")} sub={card.serverName ? t("polls.app.inServer", { server: card.serverName }) : null} />
+      <Head icon={Pencil} bg={HI.general} title={after ? t("polls.app.nickUpdated") : t("polls.app.nickCleared")} sub={card.serverName ? t("polls.app.inServer", { server: card.serverName }) : null} />
       <div className="dsx-mrow">
         <span style={{ textDecoration: "line-through", color: "var(--dsx-t3)", fontWeight: 600 }}>{card.before || card.baseName || "—"}</span>
         <ChevronRight className="dsx-ico" style={{ color: "var(--dsx-t3)" }} />

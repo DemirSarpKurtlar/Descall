@@ -7,7 +7,6 @@ import {
   PhoneOutgoing,
   PhoneMissed,
   PhoneOff,
-  RefreshCw,
   Search,
   Users,
 } from "../ui/Icon.jsx";
@@ -139,7 +138,7 @@ export default function CallsView({
   };
   const [calls, setCalls] = useState(() => loadCachedCalls(meId));
   const [loading, setLoading] = useState(() => loadCachedCalls(meId).length === 0);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const inflight = useRef(false);
@@ -326,18 +325,8 @@ export default function CallsView({
         <div className="calls-hero">
           <div className="calls-hero-copy">
             <h1>{t("Calls")}</h1>
-            <p>{t("Quick-dial friends or jump back into recent DM & group calls.")}</p>
+            <p>{t("Call your friends quickly or go back to your recent calls.")}</p>
           </div>
-          <button
-            type="button"
-            className="calls-refresh-btn"
-            onClick={() => refresh({ soft: true })}
-            disabled={refreshing}
-            title={t("Refresh")}
-          >
-            <RefreshCw size={16} className={refreshing ? "spin-refresh" : ""} />
-            {t("Refresh")}
-          </button>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
   Search, MessageSquarePlus, Plus, Menu,
+  Gamepad2, Music, BookOpen, Briefcase, Coffee, Clapperboard, Code2,
 } from "../ui/Icon.jsx";
 import { ActivityTypeIcon } from '../../lib/shopIcons';
 import { useT } from '../../context/LocaleContext';
@@ -103,9 +104,10 @@ function ManualStatusModal({ onSet, onClose }) {
   const [text, setText] = useState('');
   const [expiresIn, setExpiresIn] = useState('4h');
 
+  // Line icons, not emoji prefixes: the chip text is exactly what gets saved.
   const SUGGESTIONS = [
-    `🎮 ${t('Gaming')}`, `🎵 ${t('Listening to Music')}`, `📚 ${t('Studying')}`, `💼 ${t('Working')}`,
-    `🍕 ${t('Taking a break')}`, `🎬 ${t('Watching something')}`, `💻 ${t('Coding')}`,
+    [Gamepad2, t('Gaming')], [Music, t('Listening to Music')], [BookOpen, t('Studying')], [Briefcase, t('Working')],
+    [Coffee, t('Taking a break')], [Clapperboard, t('Watching something')], [Code2, t('Coding')],
   ];
 
   if (typeof document === 'undefined') return null;
@@ -144,9 +146,10 @@ function ManualStatusModal({ onSet, onClose }) {
         />
 
         <div className="activity-modal-suggestions">
-          {SUGGESTIONS.map(s => (
-            <button key={s} className="activity-suggestion-chip" onClick={() => setText(s.slice(3).trim())}>
-              {s}
+          {SUGGESTIONS.map(([SuggestionIcon, label]) => (
+            <button key={label} className="activity-suggestion-chip" onClick={() => setText(label)}>
+              <SuggestionIcon size={16} aria-hidden="true" />
+              {label}
             </button>
           ))}
         </div>

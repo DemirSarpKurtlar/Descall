@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import GlassCheckbox from "../ui/GlassCheckbox";
 import "../../styles/admin-edge-realtime.css";
 
 const PLATFORMS = ["web", "electron", "ios", "android"];
+/** Visible platform names (the stored ids stay the same). */
+const PLATFORM_LABEL = { web: "Web", electron: "Desktop", ios: "iOS", android: "Android" };
 
 /**
  * Edge realtime rollout controls (scale plan S2, 2.11.6). Shadow → team
@@ -33,16 +34,24 @@ export default function AdminEdgeRealtime({ system, busy, patchSystem, t }) {
           {edge.enabled ? ` · ${edge.clients || 0} ${t("edge sockets")}` : ""}
         </span>
       </div>
-      <label className="admin-edge-row">
-        <GlassCheckbox
-          checked={enabled}
+      {/* Same switch row as the rest of System (UI audit #117), the effect as the subtitle. */}
+      <div className="admin-edge-row admin-edge-switch">
+        <span className="admin-edge-copy">
+          <span>{t("Master switch")}</span>
+          <small>{t("When off, every client goes back to the main server.")}</small>
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label={t("Master switch")}
           disabled={busy}
-          onChange={(e) =>
-            patchSystem({ featureFlags: { ...(cfg.featureFlags || {}), edgeRealtime: e.target.checked } })
-          }
-        />
-        <span>{t("Master switch (off = everyone back to Render)")}</span>
-      </label>
+          className={`us-toggle${enabled ? " active" : ""}`}
+          onClick={() => patchSystem({ featureFlags: { ...(cfg.featureFlags || {}), edgeRealtime: !enabled } })}
+        >
+          <span className="us-toggle-knob" />
+        </button>
+      </div>
       <label className="admin-edge-row">
         <span>{t("Rollout percent")}</span>
         <input
@@ -57,11 +66,20 @@ export default function AdminEdgeRealtime({ system, busy, patchSystem, t }) {
       </label>
       <div className="admin-edge-row">
         <span>{t("Platforms")}</span>
-        {PLATFORMS.map((p) => (
-          <label key={p} className="admin-edge-chip">
-            <GlassCheckbox checked={platforms.includes(p)} disabled={busy} onChange={() => togglePlatform(p)} /> {p}
-          </label>
-        ))}
+        <span className="admin-edge-seg" role="group" aria-label={t("Platforms")}>
+          {PLATFORMS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`admin-edge-seg-btn${platforms.includes(p) ? " is-on" : ""}`}
+              aria-pressed={platforms.includes(p)}
+              disabled={busy}
+              onClick={() => togglePlatform(p)}
+            >
+              {PLATFORM_LABEL[p] === "Desktop" ? t("Desktop") : PLATFORM_LABEL[p]}
+            </button>
+          ))}
+        </span>
       </div>
       <label className="admin-edge-row">
         <span>{t("Team user ids (any platform)")}</span>
@@ -69,7 +87,7 @@ export default function AdminEdgeRealtime({ system, busy, patchSystem, t }) {
           type="text"
           value={allow}
           disabled={busy}
-          placeholder="uuid, uuid"
+          placeholder={t("User IDs, separated by commas")}
           onChange={(e) => setAllow(e.target.value)}
           onBlur={() => patchSystem({ edgeRealtimeAllowUserIds: allow })}
         />

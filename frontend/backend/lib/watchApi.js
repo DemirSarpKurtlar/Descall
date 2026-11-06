@@ -30,12 +30,18 @@ function clip(s, n) {
   return t.length > n ? `${t.slice(0, n - 1)}…` : t;
 }
 
+/** Same rule as the web letter avatar (src/lib/avatarFallback.js avatarInitials). */
 function initialsOf(name) {
-  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  const parts = String(name || "")
+    .trim()
+    .replace(/^@+/, "")
+    .split(/[\s._\-]+/u)
+    .map((p) => p.replace(/^[^\p{L}\p{N}]+/u, ""))
+    .filter(Boolean);
   if (!parts.length) return "?";
   const first = Array.from(parts[0])[0] || "";
-  const second = parts.length > 1 ? Array.from(parts[1])[0] || "" : Array.from(parts[0])[1] || "";
-  return (first + second).toLocaleUpperCase("tr-TR");
+  const second = parts.length > 1 ? Array.from(parts[1])[0] || "" : "";
+  return (first + second).toLocaleUpperCase("tr-TR") || "?";
 }
 
 function displayName(u) {

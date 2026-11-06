@@ -295,6 +295,16 @@ html.glass-ui .g-edge-top {
 }
 
 html.glass-ui .g-head-search.g-head-has-sub .g-edge-top { height: calc(var(--g-chrome-top) + 196px); }
+/* UI audit #97: rows scrolled under the search strip showed through it. With a
+   search field the top edge is a heavy frost that stays opaque down to the
+   field's bottom and only feathers in the last 16px. */
+html.glass-ui .g-head-search .g-edge-top {
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13,14,19), 0.9) 0%, rgba(var(--g-edge-rgb, 13,14,19), 0.78) calc(100% - 16px), rgba(var(--g-edge-rgb, 13,14,19), 0) 100%);
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 16px), transparent);
+  mask: linear-gradient(180deg, #000 calc(100% - 16px), transparent);
+}
 html.glass-ui .g-head-sub .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
 html.glass-ui .g-head-title .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
 html.glass-ui .g-head-inline .g-edge-top { height: calc(var(--g-chrome-top) + 70px); }
@@ -1078,5 +1088,30 @@ html.glass-ui .g-peer-status {
 
   html.glass-ui .g-peer-name .dsc-admin-badge--inline .dsc-admin-badge-label {
     display: none;
+  }
+}
+
+/* UI audit #133: the phone layout also serves 700-768px (iPad split view and
+   small tablets). Keep it at a readable width there instead of stretching rows
+   and the tab bar edge to edge. */
+@media (min-width: 700px) {
+  html.glass-ui .app-root.is-mobile.g-shell .sidebar-content > * {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  html.glass-ui .g-tabbar {
+    left: 0;
+    right: 0;
+    width: min(600px, calc(100vw - 24px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  html.glass-ui .user-settings.is-mobile .us-tab {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Mic, MicOff, Camera, CameraOff, Monitor, 
+  Mic, MicOff, Video, VideoOff, Monitor, 
   PhoneOff, Users, Settings, Maximize2, Minimize2,
   Volume2, VolumeX, ScreenShare, X
 } from "../ui/Icon.jsx";
@@ -222,7 +222,7 @@ export default function VoiceCallUI({
               onClick={onToggleCamera}
               title={isCameraOn ? t("Turn Off Camera") : t("Turn On Camera")} aria-label={isCameraOn ? t("Turn Off Camera") : t("Turn On Camera")}
             >
-              {isCameraOn ? <Camera size={24} /> : <CameraOff size={24} />}
+              {isCameraOn ? <Video size={24} /> : <VideoOff size={24} />}
             </button>
 
             <button 

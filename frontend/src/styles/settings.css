@@ -339,7 +339,7 @@
 }
 
 .us-nav-item.active .us-nav-ico {
-  background: rgba(88, 101, 242, 0.2);
+  background: rgba(88, 122, 245, 0.2);
 }
 
 .us-nav-copy {
@@ -362,7 +362,7 @@
 }
 
 .us-nav-item.active .us-nav-hint {
-  color: rgba(88, 101, 242, 0.85);
+  color: rgba(88, 122, 245, 0.85);
 }
 
 .us-chevron {
@@ -887,7 +887,8 @@
   border-radius: var(--r-pill);
   border: none;
   padding: 0;
-  background: var(--surface-3);
+  /* Off track: system grey fill, visible on every card (UI audit #151). */
+  background: rgba(120, 120, 128, 0.32);
   cursor: pointer;
   position: relative;
   transition: background 0.2s;
@@ -895,7 +896,7 @@
 }
 
 .us-toggle.active {
-  background: var(--primary);
+  background: var(--brand, #587af5);
 }
 
 .us-toggle-knob {
@@ -1427,6 +1428,11 @@ button.us-row.g-privacy-link:hover {
   flex-wrap: wrap;
 }
 
+/* A lone action button sits on the right, like the 2FA "Kur" button. */
+.us-email-verify-flow.is-end {
+  justify-content: flex-end;
+}
+
 .us-inline-input {
   flex: 1;
   min-width: 140px;
@@ -1552,6 +1558,16 @@ button.us-row.g-privacy-link:hover {
   border: 1px solid rgba(218, 55, 60, 0.28);
 }
 
+/* A slider row inside a grouped card keeps the card's 16px inner padding. */
+.us-card .us-field.us-field-inset {
+  padding: 12px 16px 4px;
+}
+
+.us-card .us-field-inset-hint {
+  margin: 0;
+  padding: 0 16px 14px;
+}
+
 .us-mic-test {
   padding: 14px;
   display: flex;
@@ -1663,7 +1679,13 @@ button.us-row.g-privacy-link:hover {
   }
 }
 
-/* Language picker cards */
+/* Language list: check mark in the accent colour on the selected row */
+.us-lang-list .us-lang-check {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+/* Language picker cards (legacy grid) */
 .us-lang-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

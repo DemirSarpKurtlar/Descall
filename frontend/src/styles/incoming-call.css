@@ -85,7 +85,7 @@
 }
 
 .incoming-call-badge.is-voice { background: #3ba55d; }
-.incoming-call-badge.is-video { background: #5865f2; }
+.incoming-call-badge.is-video { background: #587af5; }
 
 .incoming-call-meta {
   flex: 1;
@@ -94,7 +94,7 @@
 
 .incoming-call-kind {
   font-size: 12px;
-  color: #b5bac1;
+  color: var(--text-3);
   margin-bottom: 3px;
 }
 

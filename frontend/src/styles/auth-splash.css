@@ -32,7 +32,7 @@
 .auth-shell .orb-1 {
   width: min(70vw, 520px);
   height: min(70vw, 520px);
-  background: radial-gradient(circle, var(--primary, #5865f2) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--primary, #587af5) 0%, transparent 70%);
   top: -160px;
   left: -140px;
 }
@@ -62,8 +62,8 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(color-mix(in srgb, var(--primary, #5865f2) 8%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--primary, #5865f2) 8%, transparent) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--primary, #587af5) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary, #587af5) 8%, transparent) 1px, transparent 1px);
   background-size: 48px 48px;
   animation: auth-grid-move 22s linear infinite;
   mask-image: radial-gradient(circle at 32% 46%, #000 18%, transparent 72%);
@@ -101,7 +101,7 @@
   height: 88px;
   border-radius: var(--r-xl);
   object-fit: cover;
-  box-shadow: 0 18px 40px rgba(88, 101, 242, 0.28);
+  box-shadow: 0 18px 40px rgba(88, 122, 245, 0.28);
 }
 
 .auth-brand-title {
@@ -193,7 +193,7 @@
 }
 
 .auth-tab.active {
-  background: var(--primary-soft, rgba(88, 101, 242, 0.22));
+  background: var(--primary-soft, rgba(88, 122, 245, 0.22));
   color: #fff;
 }
 
@@ -214,8 +214,8 @@
 }
 
 .auth-form .input-wrapper:focus-within {
-  border-color: color-mix(in srgb, var(--primary, #5865f2) 65%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #5865f2) 18%, transparent);
+  border-color: color-mix(in srgb, var(--primary, #587af5) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #587af5) 18%, transparent);
 }
 
 .auth-form .input-wrapper input {
@@ -272,7 +272,7 @@
   font-size: 14px;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(180deg, var(--primary-2, #6d78f5), var(--primary, #5865f2));
+  background: linear-gradient(180deg, var(--primary-2, #6d78f5), var(--primary, #587af5));
 }
 
 .auth-submit:hover:not(:disabled) {

@@ -145,7 +145,7 @@ function Toggle({ value, onChange, label }) {
   );
 }
 
-function PrivacySettingsSection() {
+function PrivacySettingsSection({ activitySection = null }) {
   const { t } = useLocale();
   const [choice, setChoice] = useState(() => getCookieConsent()?.choice || "");
   const [legal, setLegal] = useState(null);
@@ -181,41 +181,27 @@ function PrivacySettingsSection() {
                 <Lock size={16} />
               </span>
               <div className="us-row-copy">
-                <span className="us-row-title">{t("Product analytics")}</span>
+                <span className="us-row-title">{t("Share product analytics")}</span>
                 <span className="us-row-desc">{status}</span>
               </div>
             </div>
-          </div>
-          <div className="g-privacy-actions">
-            <button
-              type="button"
-              className={`us-btn ghost${choice === "rejected" ? " is-on" : ""}`}
-              disabled={under16}
-              aria-pressed={choice === "rejected"}
-              onClick={() => apply("rejected")}
-            >
-              {choice === "rejected" ? <Check size={15} /> : null}
-              {t("Reject")}
-            </button>
-            <button
-              type="button"
-              className={`us-btn primary${choice === "accepted" ? " is-on" : ""}`}
-              disabled={under16}
-              aria-pressed={choice === "accepted"}
-              onClick={() => apply("accepted")}
-            >
-              {choice === "accepted" ? <Check size={15} /> : null}
-              {t("Accept")}
-            </button>
+            {under16 ? null : (
+              <Toggle
+                value={choice === "accepted"}
+                onChange={(on) => apply(on ? "accepted" : "rejected")}
+                label={t("Share product analytics")}
+              />
+            )}
           </div>
         </div>
       </section>
+      {activitySection}
       <section className="us-section">
         <h4 className="us-section-label">{t("dex.section")}</h4>
         <DataExportCard />
       </section>
       <section className="us-section">
-        <h4 className="us-section-label">{t("settings.privacy")}</h4>
+        <h4 className="us-section-label">{t("Legal")}</h4>
         <div className="us-card stack">
           <button type="button" className="us-row g-privacy-link" onClick={() => setLegal("privacy")}>
             <span className="us-row-text">
@@ -1853,21 +1839,21 @@ const UserPanel = forwardRef(function UserPanel({
               <div className="us-card us-form">
                 <SettingRow
                   icon={Mail}
-                  title={t("Email address")}
+                  title={emailVerified && me?.email ? me.email : t("Email address")}
                   description={
-                    emailVerified
+                    emailVerified && me?.email
                       ? t("Verified, used for sign-in codes and account alerts.")
                       : t("Verify your email to enable two-factor authentication.")
                   }
                 >
-                  {emailVerified && (
+                  {emailVerified && me?.email && (
                     <span className="us-verified-pill">
                       <CheckCircle2 size={13} /> {t("Verified")}
                     </span>
                   )}
                 </SettingRow>
 
-                {!emailVerified && (
+                {!(emailVerified && me?.email) && (
                   <div className="us-email-verify-flow">
                     <input
                       type="email"
@@ -1946,7 +1932,7 @@ const UserPanel = forwardRef(function UserPanel({
                     </a>
                   </div>
                 ) : pwStage === "idle" || pwStage === "done" ? (
-                  <div className="us-email-verify-flow">
+                  <div className="us-email-verify-flow is-end">
                     <button
                       type="button"
                       className="us-btn primary"
@@ -2166,7 +2152,70 @@ const UserPanel = forwardRef(function UserPanel({
         );
 
       case "privacy":
-        return <PrivacySettingsSection />;
+        return (
+          <PrivacySettingsSection
+            activitySection={(
+                <section className="us-section">
+                  <h4 className="us-section-label">{t("Activity Status")}</h4>
+                  <div className="us-card stack">
+                    {activity?.isElectron && (
+                      <>
+                        <SettingRow
+                          icon={Monitor}
+                          title={t("Game activity")}
+                          description={t("Show friends what game you're playing")}
+                        >
+                          <Toggle
+                            value={activity?.settings?.show_game_activity !== false}
+                            onChange={(v) => activity?.updateSettings?.({ show_game_activity: v })}
+                            label={t("Game activity")}
+                          />
+                        </SettingRow>
+                        <SettingRow
+                          icon={MonitorSpeaker}
+                          title={t("App activity")}
+                          description={t("Show friends what apps you have open")}
+                        >
+                          <Toggle
+                            value={activity?.settings?.show_app_activity !== false}
+                            onChange={(v) => activity?.updateSettings?.({ show_app_activity: v })}
+                            label={t("App activity")}
+                          />
+                        </SettingRow>
+                        <SettingRow
+                          icon={Globe}
+                          title={t("Browser activity")}
+                          description={t("Show friends when you're browsing the web")}
+                        >
+                          <Toggle
+                            value={activity?.settings?.show_browser === true}
+                            onChange={(v) => activity?.updateSettings?.({ show_browser: v })}
+                            label={t("Browser activity")}
+                          />
+                        </SettingRow>
+                      </>
+                    )}
+                    <SettingRow
+                      icon={MonitorSpeaker}
+                      title={t("Descall usage time")}
+                      description={t("Track and show time spent in Descall")}
+                    >
+                      <Toggle
+                        value={activity?.settings?.show_descall_time !== false}
+                        onChange={(v) => activity?.updateSettings?.({ show_descall_time: v })}
+                        label={t("Descall usage time")}
+                      />
+                    </SettingRow>
+                  </div>
+                  {!activity?.isElectron && (
+                    <p className="us-row-desc g-activity-footnote">
+                      {t("Install the Descall desktop app to share game and app activity automatically.")}
+                    </p>
+                  )}
+                </section>
+            )}
+          />
+        );
 
       case "shop":
         return (
@@ -2229,7 +2278,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Bell}
                   title={t("Message notifications")}
-                  description={t("DMs, group messages, and mentions")}
+                  description={t("Private messages, group messages and mentions")}
                 >
                   <Toggle
                     value={msgNotifications}
@@ -2268,64 +2317,6 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
-            <section className="us-section">
-              <h4 className="us-section-label">{t("Activity Status")}</h4>
-              <div className="us-card stack">
-                {activity?.isElectron && (
-                  <>
-                    <SettingRow
-                      icon={Monitor}
-                      title={t("Game activity")}
-                      description={t("Show friends what game you're playing")}
-                    >
-                      <Toggle
-                        value={activity?.settings?.show_game_activity !== false}
-                        onChange={(v) => activity?.updateSettings?.({ show_game_activity: v })}
-                        label={t("Game activity")}
-                      />
-                    </SettingRow>
-                    <SettingRow
-                      icon={MonitorSpeaker}
-                      title={t("App activity")}
-                      description={t("Show friends what apps you have open")}
-                    >
-                      <Toggle
-                        value={activity?.settings?.show_app_activity !== false}
-                        onChange={(v) => activity?.updateSettings?.({ show_app_activity: v })}
-                        label={t("App activity")}
-                      />
-                    </SettingRow>
-                    <SettingRow
-                      icon={Globe}
-                      title={t("Browser activity")}
-                      description={t("Show friends when you're browsing the web")}
-                    >
-                      <Toggle
-                        value={activity?.settings?.show_browser === true}
-                        onChange={(v) => activity?.updateSettings?.({ show_browser: v })}
-                        label={t("Browser activity")}
-                      />
-                    </SettingRow>
-                  </>
-                )}
-                <SettingRow
-                  icon={MonitorSpeaker}
-                  title={t("Descall usage time")}
-                  description={t("Track and show time spent in Descall")}
-                >
-                  <Toggle
-                    value={activity?.settings?.show_descall_time !== false}
-                    onChange={(v) => activity?.updateSettings?.({ show_descall_time: v })}
-                    label={t("Descall usage time")}
-                  />
-                </SettingRow>
-              </div>
-              {!activity?.isElectron && (
-                <p className="us-row-desc g-activity-footnote">
-                  {t("Install the Descall desktop app to share game and app activity automatically.")}
-                </p>
-              )}
-            </section>
           </div>
         );
 
@@ -2333,25 +2324,28 @@ const UserPanel = forwardRef(function UserPanel({
         return (
           <div className="us-tab">
             <p className="us-lead">{t("settings.licensesDesc")}</p>
-            <section className="us-section licenses-list">
-              <div className="licenses-item">
-                <strong>Twemoji</strong>
-                {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
-                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
-                  creativecommons.org/licenses/by/4.0
-                </a>
-              </div>
-              <div className="licenses-item">
-                <strong>country-flag-emoji-polyfill</strong>
-                {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
-              </div>
-              <div className="licenses-item">
-                <strong>Inter</strong>
-                {t("Interface font: Inter, SIL Open Font License 1.1.")}
-              </div>
-              <div className="licenses-item">
-                <strong>Lucide</strong>
-                {t("Icons: Lucide, ISC licence.")}
+            <section className="us-section">
+              {/* One grouped card, rows split by hairlines (same card as every settings page). */}
+              <div className="us-card licenses-list">
+                <div className="licenses-item">
+                  <strong>Twemoji</strong>
+                  {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
+                  <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
+                    creativecommons.org/licenses/by/4.0
+                  </a>
+                </div>
+                <div className="licenses-item">
+                  <strong>country-flag-emoji-polyfill</strong>
+                  {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
+                </div>
+                <div className="licenses-item">
+                  <strong>Inter</strong>
+                  {t("Interface font: Inter, SIL Open Font License 1.1.")}
+                </div>
+                <div className="licenses-item">
+                  <strong>Lucide</strong>
+                  {t("Icons: Lucide, ISC licence.")}
+                </div>
               </div>
             </section>
           </div>
@@ -2363,24 +2357,24 @@ const UserPanel = forwardRef(function UserPanel({
             <p className="us-lead">{t("settings.languageDesc")}</p>
             <section className="us-section">
               <h4 className="us-section-label">{t("settings.appLanguage")}</h4>
-              <div className="us-theme-grid us-lang-grid">
+              {/* One grouped list (name, native name, check on the selected row), like iOS. */}
+              <div className="us-card stack us-lang-list" role="radiogroup" aria-label={t("settings.appLanguage")}>
                 {locales.map((opt) => {
                   const selected = locale === opt.id;
                   return (
                     <button
                       key={opt.id}
                       type="button"
-                      className={`us-theme-card ${selected ? "selected" : ""}`}
+                      role="radio"
+                      aria-checked={selected}
+                      className="us-row g-privacy-link"
                       onClick={() => setLocale(opt.id)}
                     >
-                      <div className="us-theme-meta" style={{ gap: 10 }}>
-                        <Globe size={16} />
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                          <span style={{ fontWeight: 700 }}>{languageLabel(opt.id, locale)}</span>
-                          <span style={{ fontSize: 12, opacity: 0.65 }}>{opt.nativeLabel}</span>
-                        </div>
-                      </div>
-                      {selected && <Check size={14} className="us-theme-check" />}
+                      <span className="us-row-copy">
+                        <span className="us-row-title">{languageLabel(opt.id, locale)}</span>
+                        <span className="us-row-desc">{opt.nativeLabel}</span>
+                      </span>
+                      {selected ? <Check size={18} className="us-lang-check" /> : null}
                     </button>
                   );
                 })}
@@ -2388,9 +2382,6 @@ const UserPanel = forwardRef(function UserPanel({
               <p className="us-row-desc" style={{ marginTop: 14 }}>
                 {t("settings.autoDetectHint")}{" "}
                 ({t("Detected from your device")}: {languageLabel(deviceDefault, locale)})
-              </p>
-              <p className="us-row-desc" style={{ marginTop: 8 }}>
-                {t("settings.appliesInstantly")}
               </p>
             </section>
           </div>
@@ -2495,7 +2486,7 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Auto gain control")}
                   />
                 </SettingRow>
-                <label className="us-field">
+                <label className="us-field us-field-inset">
                   <span>{t("Input sensitivity")}</span>
                   <input
                     type="range"
@@ -2505,7 +2496,7 @@ const UserPanel = forwardRef(function UserPanel({
                     onChange={(event) => patchVoice({ inputSensitivity: Number(event.target.value) })}
                   />
                 </label>
-                <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
+                <p className="us-row-desc us-field-inset-hint">
                   {t("Raise this if people miss quiet speech. Lower it if background noise lights the ring.")}
                 </p>
               </div>
@@ -2893,7 +2884,9 @@ const UserPanel = forwardRef(function UserPanel({
 
       {/* Detail pane */}
       <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
-        {activeTab === "appearance" ? (
+        {/* UI audit #152: desktop keeps the same left-aligned page title as every
+            other settings page; only the phone sheet uses the centred nav bar. */}
+        {activeTab === "appearance" && isMobile ? (
           <>
             <header className="us-main-header s3-nav">
               <span className="l">

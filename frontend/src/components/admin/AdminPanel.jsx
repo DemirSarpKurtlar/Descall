@@ -15,7 +15,7 @@ import {
   MousePointer, Pause, Square, Maximize2, Minimize2, Copy,
   ExternalLink, FileDown, Printer, Share2, Star, ThumbsUp,
   ThumbsDown, Upload, Video, ZoomIn, ZoomOut, Megaphone,
-  Coins, DollarSign, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard, Ticket, Award
+  Coins, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard, Ticket, Award
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
@@ -1229,7 +1229,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                  <Coins size={22} style={{ color: "#f59e0b" }} /> {t("Casino / Credits Management")}
+                  <Coins size={22} style={{ color: "var(--brand, #587af5)" }} /> {t("Casino / Credits Management")}
                 </h2>
                 <p className="muted" style={{ marginTop: 4 }}>{t("Manage user credits and view Blackjack statistics")}</p>
               </div>
@@ -1243,9 +1243,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             {/* Stats Overview */}
             {creditStats && (
               <div className="admin-grid" style={{ marginBottom: 24 }}>
-                <div className="admin-card is-accent">
-                  <span style={{ color: "#f59e0b" }}>{t("Total Credits in System")}</span>
-                  <strong style={{ color: "#f59e0b", fontSize: 24 }}>{formatNumber(creditStats.totalCredits || 0, locale)}</strong>
+                <div className="admin-card">
+                  <span>{t("Total Credits in System")}</span>
+                  <strong>{formatNumber(creditStats.totalCredits || 0, locale)}</strong>
                 </div>
                 <div className="admin-card">
                   <span>{t("Total Players")}</span>
@@ -1294,7 +1294,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ 
                             width: 36, height: 36, borderRadius: "50%", 
-                            background: "linear-gradient(135deg, #6678ff, #7d6bff)",
+                            background: "var(--brand, #587af5)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontWeight: 600, fontSize: 14, color: "white"
                           }}>
@@ -1306,7 +1306,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                           </div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontSize: 16, color: "#f59e0b" }}>
+                          <div style={{ fontWeight: 700, fontSize: 16, color: "var(--brand, #587af5)" }}>
                             <Wallet size={14} style={{ display: "inline", marginRight: 4 }} />
                             {formatNumber(user.credits || 0, locale)}
                           </div>
@@ -1327,7 +1327,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               {/* Credit Operations */}
               <div className="admin-pane">
                 <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <DollarSign size={18} /> {t("Manage Credits")}
+                  <Coins size={18} /> {t("Manage Credits")}
                 </h3>
                 
                 {selectedCreditUser ? (

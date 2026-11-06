@@ -14,12 +14,17 @@ enum DS {
     static let dnd = Color(red: 1, green: 0x45 / 255, blue: 0x3A / 255)
     static let offline = Color(white: 0.45)
 
+    /// Same palette and order as the web/iOS letter avatars (src/lib/avatarFallback.js
+    /// AVATAR_PALETTE), so one person gets the same colour on every device.
     static let avatarPalette: [Color] = [
-        Color(red: 0.18, green: 0.56, blue: 0.36),
-        Color(red: 0.55, green: 0.36, blue: 0.96),
-        Color(red: 0.85, green: 0.51, blue: 0.17),
-        Color(red: 0.17, green: 0.48, blue: 0.85),
-        Color(red: 0.76, green: 0.25, blue: 0.42),
+        Color(red: 0x28 / 255, green: 0x68 / 255, blue: 0xFF / 255),
+        Color(red: 0x22 / 255, green: 0x83 / 255, blue: 0x59 / 255),
+        Color(red: 0xBA / 255, green: 0x59 / 255, blue: 0x0E / 255),
+        Color(red: 0xDB / 255, green: 0x2C / 255, blue: 0x5B / 255),
+        Color(red: 0x7E / 255, green: 0x59 / 255, blue: 0xEE / 255),
+        Color(red: 0x17 / 255, green: 0x7E / 255, blue: 0x96 / 255),
+        Color(red: 0x92 / 255, green: 0x6F / 255, blue: 0x16 / 255),
+        Color(red: 0xDA / 255, green: 0x36 / 255, blue: 0x2C / 255),
     ]
 
     static func presenceColor(_ s: String?) -> Color {
@@ -31,9 +36,38 @@ enum DS {
         }
     }
 
+    /// CRC-32 (IEEE) of the UTF-8 bytes, the hash the web avatar uses.
+    static func crc32(_ text: String) -> UInt32 {
+        var crc: UInt32 = 0xFFFF_FFFF
+        for byte in text.utf8 {
+            crc ^= UInt32(byte)
+            for _ in 0..<8 {
+                crc = (crc & 1) != 0 ? (0xEDB8_8320 ^ (crc >> 1)) : (crc >> 1)
+            }
+        }
+        return crc ^ 0xFFFF_FFFF
+    }
+
+    /// Colour for a letter avatar: palette[crc32(id) % 8], the web rule. The DM/friend
+    /// seed may carry a "dm:" prefix; the user id after it is what the web hashes.
     static func avatarColor(_ seed: String) -> Color {
-        let sum = seed.unicodeScalars.reduce(0) { ($0 &+ Int($1.value)) % 9973 }
-        return avatarPalette[sum % avatarPalette.count]
+        let key = seed.hasPrefix("dm:") ? String(seed.dropFirst(3)) : seed
+        guard !key.isEmpty else { return avatarPalette[0] }
+        return avatarPalette[Int(crc32(key) % UInt32(avatarPalette.count))]
+    }
+
+    /// "Ayşe Yılmaz" -> "AY", "cinar.baskin" -> "CB", "Ayşe" -> "A" (web avatarInitials).
+    static func initials(_ name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let cleaned = trimmed.hasPrefix("@") ? String(trimmed.drop(while: { $0 == "@" })) : trimmed
+        let parts = cleaned
+            .split(whereSeparator: { $0 == " " || $0 == "." || $0 == "_" || $0 == "-" })
+            .map { part in String(part.drop(while: { ch in !ch.isLetter && !ch.isNumber })) }
+            .filter { part in !part.isEmpty }
+        guard let first = parts.first?.first else { return "?" }
+        let second = parts.count > 1 ? parts[1].first.map(String.init) ?? "" : ""
+        let tr = Locale(identifier: "tr_TR")
+        return (String(first) + second).uppercased(with: tr)
     }
 }
 

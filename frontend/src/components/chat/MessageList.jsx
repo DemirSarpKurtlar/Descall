@@ -1,11 +1,11 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
+import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
-import StatusBadge from "../ui/StatusBadge";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
 import VoiceMessagePlayer from "./VoiceMessagePlayer";
@@ -676,10 +676,8 @@ export default function MessageList({
                     imageUrl={pickAvatarUrl(avatarUser)}
                     animate="hover"
                   />
-                  <StatusBadge
-                    status={getPresenceStatus(onlineUsers, avatarUser?.id)}
-                    user={avatarUser}
-                  />
+                  {/* No presence dot on message avatars (as in Messages): the
+                      list could disagree with the live panel status. */}
                 </div>
                 <div className="message-meta">
                   <span
@@ -1545,7 +1543,7 @@ function MessageBubble({
               {reply.text
                 ? displayText(plainText(String(localizedField({ text: reply.text, i18n: textI18n(reply.i18n) }, "text"))).slice(0, 120))
                 : reply.mediaType
-                ? `📎 ${reply.mediaType}`
+                ? mediaTypeLabel(reply.mediaType, t)
                 : t("Original message")}
             </span>
           </button>
