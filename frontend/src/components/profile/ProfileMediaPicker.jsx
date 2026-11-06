@@ -416,7 +416,7 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
         <div className="amp-ctrl">
           <div className="amp-zoom">
             <ZoomOut size={16} aria-hidden />
-            <input type="range" min={zb.min} max={zb.max} step={0.01} value={zoom} onChange={(e) => applyZoom(e.target.value)} style={{ "--amp-zoom": `${zoomFillPercent(zoom, zb.min, zb.max)}%` }} aria-label={t("amp.zoom")} />
+            <input type="range" min={zb.min} max={zb.max} step={0.01} value={zoom} onChange={(e) => applyZoom(e.target.value)} style={{ "--amp-zoom": `${zoomFillPercent(zoom, zb.min, zb.max)}%`, "--amp-p": zoomFillPercent(zoom, zb.min, zb.max) / 100 }} aria-label={t("amp.zoom")} />
             <ZoomIn size={16} aria-hidden />
           </div>
           <button type="button" className="amp-ibtn" onClick={reset}><RefreshCw size={15} />{t("amp.reset")}</button>

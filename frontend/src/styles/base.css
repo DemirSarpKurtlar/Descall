@@ -217,6 +217,16 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 2px var(--primary-soft);
 }
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
+/* Range inputs are not text boxes: the padding, border, box background and focus ring
+   above made every slider a padded box whose thumb stopped short of the visible ends
+   (owner report: the photo zoom bar). Component classes draw their own track. */
+input[type="range"], input[type="range"]:focus {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
 input:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 
 select {
