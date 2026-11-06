@@ -1601,6 +1601,40 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   background: color-mix(in srgb, var(--primary) 14%, var(--surface-1));
 }
 
+/* UI audit #86: the tabs are a segmented control like the other modals
+   (one track, the selected segment filled), not two loose pills. */
+.server-roles-tabs {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-0) 8%, transparent);
+  width: min(320px, 100%);
+}
+
+.server-roles-tabs .server-roles-tab {
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.server-roles-tabs .server-roles-tab.active {
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+}
+
+.server-roles-editor > .empty-state {
+  height: 100%;
+  justify-content: center;
+}
+
 .server-roles-layout {
   display: grid;
   grid-template-columns: 200px 1fr;
@@ -4859,4 +4893,18 @@ html[data-theme="light"] .server-rules-num { color: #3D5BD9; background: rgba(88
 .server-channel-perms-editor > .empty-state.compact {
   height: 100%;
   justify-content: center;
+}
+
+html.glass-desktop .server-roles-tabs .server-roles-tab {
+  background: transparent;
+  box-shadow: none;
+}
+
+html.glass-desktop .server-roles-tabs .server-roles-tab:hover:not(.active) {
+  background: var(--gd-chip-hover);
+}
+
+html.glass-desktop .server-roles-tabs .server-roles-tab.active {
+  background: var(--gd-brand);
+  color: #fff;
 }

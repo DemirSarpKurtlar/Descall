@@ -25,6 +25,9 @@ export const MID_APP_I18N = {
     "Members couldn't load": "Üyeler yüklenemedi",
     "Add role or member": "Rol veya üye ekle",
     "Pick @everyone or add a role or member to change who can see and use this channel.": "Kanalı kimin görüp kullanabileceğini değiştirmek için @everyone'ı seç ya da rol veya üye ekle.",
+    "No roles yet": "Henüz rol yok",
+    "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Roller izinleri bir araya toplar; örneğin mesaj silebilen moderatörler. Bir rol oluştur ve üyelere ver.",
+    "Select a role": "Bir rol seç",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -45,6 +48,9 @@ export const MID_APP_I18N = {
     "Members couldn't load": "Mitglieder konnten nicht geladen werden",
     "Add role or member": "Rolle oder Mitglied hinzufügen",
     "Pick @everyone or add a role or member to change who can see and use this channel.": "Wähle @everyone oder füge eine Rolle oder ein Mitglied hinzu, um festzulegen, wer diesen Kanal sehen und nutzen kann.",
+    "No roles yet": "Noch keine Rollen",
+    "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Rollen bündeln Berechtigungen, etwa Moderatoren, die Nachrichten löschen dürfen. Erstelle eine und gib sie Mitgliedern.",
+    "Select a role": "Wähle eine Rolle",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -65,6 +71,9 @@ export const MID_APP_I18N = {
     "Members couldn't load": "No se pudieron cargar los miembros",
     "Add role or member": "Añadir rol o miembro",
     "Pick @everyone or add a role or member to change who can see and use this channel.": "Elige @everyone o añade un rol o miembro para cambiar quién puede ver y usar este canal.",
+    "No roles yet": "Aún no hay roles",
+    "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Los roles agrupan permisos, como moderadores que pueden borrar mensajes. Crea uno y dáselo a los miembros.",
+    "Select a role": "Elige un rol",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -85,6 +94,9 @@ export const MID_APP_I18N = {
     "Members couldn't load": "Impossible de charger les membres",
     "Add role or member": "Ajouter un rôle ou un membre",
     "Pick @everyone or add a role or member to change who can see and use this channel.": "Choisis @everyone ou ajoute un rôle ou un membre pour changer qui peut voir et utiliser ce salon.",
+    "No roles yet": "Aucun rôle pour l'instant",
+    "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Les rôles regroupent des permissions, par exemple des modérateurs qui peuvent supprimer des messages. Crées-en un et attribue-le aux membres.",
+    "Select a role": "Choisis un rôle",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -105,6 +117,9 @@ export const MID_APP_I18N = {
     "Members couldn't load": "Não foi possível carregar os membros",
     "Add role or member": "Adicionar cargo ou membro",
     "Pick @everyone or add a role or member to change who can see and use this channel.": "Escolha @everyone ou adicione um cargo ou membro para mudar quem pode ver e usar este canal.",
+    "No roles yet": "Ainda não há cargos",
+    "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Cargos agrupam permissões, como moderadores que podem apagar mensagens. Crie um e dê aos membros.",
+    "Select a role": "Escolha um cargo",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -125,5 +140,8 @@ export const MID_APP_I18N = {
     "Members couldn't load": "Не удалось загрузить участников",
     "Add role or member": "Добавить роль или участника",
     "Pick @everyone or add a role or member to change who can see and use this channel.": "Выбери @everyone или добавь роль или участника, чтобы изменить, кто видит и использует этот канал.",
+    "No roles yet": "Ролей пока нет",
+    "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Роли объединяют права, например модераторов, которые могут удалять сообщения. Создай роль и выдай её участникам.",
+    "Select a role": "Выбери роль",
   },
 };

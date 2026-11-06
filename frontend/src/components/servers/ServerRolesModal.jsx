@@ -18,6 +18,7 @@ import { permissionsToFlagMap, isAssignableServerRole, canEditServerRole, canGra
 import ServerMemberRoleAssign from "./ServerMemberRoleAssign";
 import { BlockListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import EmptyState from "../ui/EmptyState";
 
 const PRESET_COLORS = [
   0x5865f2, 0x57f287, 0xfee75c, 0xed4245, 0xeb459e, 0xf47b67, 0x3ba55d, 0x3498db, 0x9b59b6, 0x95a5a6,
@@ -346,7 +347,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
           </button>
         </div>
 
-        <div className="server-roles-tabs">
+        <div className="server-roles-tabs" role="tablist">
           <button
             type="button"
             className={`server-roles-tab ${tab === "roles" ? "active" : ""}`}
@@ -449,7 +450,22 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
 
             <div className="server-roles-editor">
               {!draft ? (
-                <p className="server-empty-hint">{t("Select a role to edit, or create a new one.")}</p>
+                /* UI audit #86: a real empty state, not one grey line. */
+                customRoles.length === 0 ? (
+                  <EmptyState
+                    icon={Shield}
+                    title={t("No roles yet")}
+                    body={t("Roles group permissions, like moderators who can remove messages. Create one and give it to members.")}
+                    primary={{ label: t("Create role"), action: startCreate, icon: Plus }}
+                  />
+                ) : (
+                  <EmptyState
+                    compact
+                    icon={Shield}
+                    title={t("Select a role")}
+                    body={t("Select a role to edit, or create a new one.")}
+                  />
+                )
               ) : (
                 <>
                   {!selectedEditable && !draft.isNew ? (
