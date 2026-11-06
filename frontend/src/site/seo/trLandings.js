@@ -3,7 +3,8 @@
  * EN copy). Only claim what Descall ships today: DMs, groups, servers with
  * roles/channels/templates, voice/video calls, screen share with quality
  * presets, noise suppression, Windows/Android/web, Turkish UI,
- * free core features with optional DesCoin cosmetics. No E2E claim.
+ * free core features; optional Descall+ / Ultra memberships (extra desktop and
+ * productivity tools, no published prices) and optional DesCoin cosmetics. No E2E claim.
  *
  * Shape: { path, title, description, kicker, h1, lead, updated?, sections:
  * [{ h, p: string[], list?: string[] }], faq: [{q,a}], related: [{to,label}] }
@@ -90,7 +91,7 @@ export const TR_LANDINGS = {
         h: "Discord’dan geçince neler tanıdık gelir, neler farklıdır?",
         p: [
           "Discord kullandıysan Descall’da yolunu kaybetmezsin. Sol tarafta sunucuların, sunucu içinde kategoriler ve kanallar, sağda üyeler; ses kanalına tıklayınca bağlanırsın, ekran paylaşımı butonuyla yayına geçersin. Rol hiyerarşisi ve kanal izinleri de aynı mantıkla çalışır: bir kanalı yalnızca moderatörlere açabilir, duyuru kanalında yazmayı yetkililerle sınırlayabilirsin.",
-          "Farklı olan taraf sadelik ve fiyatlandırma. Descall’da sohbet, sunucu, ses, görüntü ve ekran paylaşımı abonelik arkasında değil. Uygulamada satılan tek şey isteğe bağlı kozmetiklerdir (DesCoin ile); bunlar iletişimi hiçbir şekilde kısıtlamaz.",
+          "Farklı olan taraf sadelik ve fiyatlandırma. Descall’da sohbet, sunucu, ses, görüntü ve ekran paylaşımı abonelik arkasında değil. Descall+ ve Descall Ultra adında iki isteğe bağlı üyelik var; çoğu masaüstü uygulamasında çalışan mini mod, genel kısayollar ve ses araçları gibi ek özellikler ekliyorlar ama konuşmak, ekran paylaşmak ya da sunucu kurmak için gerekmiyorlar. Mağazadaki kozmetikler de isteğe bağlı ve uygulamada kazandığın DesCoin ile alınıyor.",
           "Bir de dürüst olalım: Discord’un devasa bot pazarı, on binlerce kişilik herkese açık sunucuları ve yıllar içinde biriken entegrasyonları Descall’da yok. Eğer topluluğun tamamen botlara dayanıyorsa geçiş daha fazla emek ister. Ama çoğu arkadaş grubu ve klan için asıl ihtiyaç ses, sohbet, roller ve düzenli kanallardır; bunlar Descall’da hazır.",
         ],
       },
@@ -128,7 +129,7 @@ export const TR_LANDINGS = {
     faq: [
       {
         q: "Descall ücretsiz mi?",
-        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Uygulamadaki tek ücretli şey isteğe bağlı kozmetiklerdir (DesCoin); iletişimi kısıtlamaz.",
+        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Descall+ ve Descall Ultra üyelikleri isteğe bağlı ek araçlar sunar, kozmetikler de DesCoin ile alınır; ikisi de iletişimi kısıtlamaz.",
       },
       {
         q: "Descall Türkiye’de çalışıyor mu?",
@@ -745,7 +746,7 @@ const EXTRA = {
     faq: [
       {
         q: "Descall ücretsiz mi?",
-        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir; yalnızca isteğe bağlı kozmetikler DesCoin ile alınır.",
+        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Descall+ ve Descall Ultra, ek masaüstü araçları sunan isteğe bağlı üyeliklerdir; mağazadaki kozmetikler ise uygulamada kazanılan DesCoin ile alınır.",
       },
       {
         q: "Descall hangi cihazlarda çalışıyor?",

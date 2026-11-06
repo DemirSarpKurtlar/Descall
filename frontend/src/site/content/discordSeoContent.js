@@ -209,7 +209,7 @@ export const BLOG_POSTS = [
     description:
       "How to move a friend group from Discord Nitro habits to a free Discord alternative with servers, voice, video, and screen share.",
     date: "2026-08-11",
-    updated: "2026-08-14",
+    updated: "2026-11-06",
     tags: ["Pricing", "Migration"],
   },
 ];

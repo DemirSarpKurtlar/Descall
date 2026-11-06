@@ -49,7 +49,7 @@ export const PAGE_EXTRAS = {
         h: "What Descall is",
         p: [
           "Descall is a free chat and calling app for friend groups, gaming squads, study groups, and small communities. It combines direct messages, group chats, and Discord-style servers with voice channels, video calls, and screen sharing, in one account that works on Windows, iPhone and iPad, Android, and in the browser.",
-          "It is built and owned by Demir Sarp Kurtlar, an independent developer in Turkey, and it is currently in beta. Core communication is free: there is no subscription for voice quality, screen share, or servers. The only thing for sale is optional cosmetics bought with DesCoin.",
+          "It is built and owned by Demir Sarp Kurtlar, an independent developer in Turkey, and it is currently in beta. Core communication is free: calls, screen share and servers do not need a membership. Descall+ and Descall Ultra are optional memberships that add extra tools, most of them in the desktop app, such as mini mode, global shortcuts and audio controls. Cosmetics in the shop are optional and paid with DesCoin you earn in the app.",
         ],
       },
       {
@@ -98,7 +98,7 @@ export const PAGE_EXTRAS = {
         h: "Descall nedir?",
         p: [
           "Descall; arkadaş grupları, oyun ekipleri, ders grupları ve küçük topluluklar için ücretsiz bir sohbet ve arama uygulamasıdır. Özel mesajları, grup sohbetlerini ve Discord tarzı sunucuları; ses kanalları, görüntülü arama ve ekran paylaşımıyla tek bir hesapta birleştirir. Windows, iPhone ve iPad, Android ve tarayıcıda çalışır.",
-          "Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor ve uygulama şu an beta aşamasında. Temel iletişim ücretsiz: ses kalitesi, ekran paylaşımı veya sunucular için abonelik yok. Satılan tek şey DesCoin ile alınan isteğe bağlı kozmetikler.",
+          "Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor ve uygulama şu an beta aşamasında. Temel iletişim ücretsiz: aramalar, ekran paylaşımı ve sunucular için üyelik gerekmez. Descall+ ve Descall Ultra, çoğu masaüstü uygulamasında çalışan mini mod, genel kısayollar ve ses araçları gibi ek özellikler sunan isteğe bağlı üyelikler. Mağazadaki kozmetikler de isteğe bağlı ve uygulamada kazandığın DesCoin ile alınıyor.",
         ],
       },
       {
@@ -150,7 +150,7 @@ export const PAGE_EXTRAS = {
       {
         h: "What is free, and what is not",
         p: [
-          "Messaging, servers, voice, video and screen share are free for everyone, with no subscription tier that unlocks better call quality. Descall earns from an optional cosmetic shop: banners, card colors, name and avatar effects and country flags, bought with DesCoin you earn in the app. Nothing in the shop changes how well your voice or stream works.",
+          "Messaging, servers, voice, video and screen share are free for everyone, and none of them needs a membership. Descall+ and Descall Ultra are optional memberships that add extra tools, most of them in the desktop app: mini mode and always-on-top windows, global mute and push to talk, notification history and focus mode, and audio tools such as a noise gate. For now, memberships are given out by the Descall team and through codes, and no prices have been published. The shop sells optional cosmetics, such as banners, card colors, name and avatar effects and country flags, bought with DesCoin you earn in the app. Nothing in the shop changes how well your voice or stream works.",
         ],
       },
       {
@@ -279,7 +279,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Price",
         p: [
-          "Discord is free with an optional Nitro subscription for extras. Descall keeps messaging, servers, voice, video and screen share free and sells only optional cosmetics paid with DesCoin earned in the app.",
+          "Discord is free with an optional Nitro subscription for extras. Descall keeps messaging, servers, voice, video and screen share free. Its optional memberships, Descall+ and Descall Ultra, add extra desktop and productivity tools; for now they are given out by the Descall team and through codes, with no published prices. Cosmetics in the shop are paid with DesCoin earned in the app.",
         ],
       },
       {

@@ -17,11 +17,15 @@ export const BLOG_BODIES = {
       },
       {
         h: "What stays free on Descall",
-        p: "Descall keeps the parts you use every night free. Direct messages, group chats, servers with roles and channels, one-on-one and group voice and video calls, server voice channels and screen share all cost nothing. Search over your whole message history, replies, reactions, polls, pinned messages and voice notes are included too. There is no paid tier that improves call quality or unlocks screen share. Group screen share starts at around 720p and about 20 frames per second, with presets if someone needs a lighter or sharper stream, and the same rules apply to everyone in the call.",
+        p: "Descall keeps the parts you use every night free. Direct messages, group chats, servers with roles and channels, one-on-one and group voice and video calls, server voice channels and screen share all cost nothing. Search over your whole message history, replies, reactions, polls, pinned messages and voice notes are included too. No membership is needed to call, share a screen or run a server. Group screen share starts at around 720p and about 20 frames per second, with presets if someone needs a lighter or sharper stream, and the same rules apply to everyone in the call.",
       },
       {
         h: "Where cosmetics fit",
         p: "If part of the fun of Nitro was a nicer profile, Descall has an optional shop for that. You can pick profile banners, card colors, name effects, avatar effects and country flags. They are paid with DesCoin, which you earn by using the app, not with a monthly subscription. Nothing in the shop changes how calls sound or what you can do in a server, so friends who never touch it miss nothing.",
+      },
+      {
+        h: "What Descall+ and Ultra add",
+        p: "Descall also has two optional memberships, Descall+ and Descall Ultra. They add extra tools, most of them for the desktop app: mini mode and always-on-top windows, global mute and push to talk, notification history and focus mode, and audio tools such as a noise gate. Ultra adds desktop widgets, a command center and workspace profiles on top. None of them is needed to talk, share a screen or run a server, so your group can ignore them completely. For now, memberships are given out by the Descall team and through codes, and no prices have been published.",
       },
       {
         h: "Week one: move the evening call",
