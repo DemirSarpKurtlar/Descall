@@ -282,14 +282,14 @@
       const p = PRESETS.find((x) => x[0] === s.active) || PRESETS[0];
       const ang = Math.min(1, s.gain / 200) * 270;
       const chain = [['Gürültü', p[3][0] ? (p[3][0] === 2 ? 'Güçlü' : 'Açık') : 'Kapalı', p[3][0]], ['Yankı', p[3][1] ? 'Açık' : 'Kapalı', p[3][1]], ['Kazanç', p[3][2] ? 'Otomatik' : 'Sabit', p[3][2]]];
-      return `<div class="dpc-scr pv-presets"><div class="dial" style="--a:${ang}deg"><div class="in"><b class="tnum">%${s.gain}</b><small>Giriş kazancı</small></div></div>
+      return `<div class="dpc-scr pv-presets"><div class="dial" style="--a:${ang}deg"><div class="in"><b class="tnum">%${s.gain}</b><small>Kazanç</small></div></div>
         <div class="chain">${svg('mic', 14)}${chain.map(([a, b, v]) => `<span class="chip ${v ? 'on' : ''}"><small>${a}</small><b>${b}</b></span>`).join(`<i class="ar">${svg('chev', 12)}</i>`)}</div>
         ${lbl(p[1], 'left:6%;top:7%', 'strong')}</div>`;
     },
     mic_monitor(s) {
-      return `<div class="dpc-scr pv-monitor"><div class="flow"><span class="node">${svg('mic', 20)}</span>
-        <span class="wave">${Array.from({ length: 9 }, (_, i) => `<span class="mb${i < Math.round(s.volume / 11) ? ' on' : ''}" style="height:${[30, 55, 80, 45, 95, 60, 75, 40, 25][i]}%"></span>`).join('')}</span>
-        <span class="node">${svg('head', 20)}</span></div>${lbl(`Dinleme sesi %${s.volume}`, 'left:50%;bottom:9%;transform:translateX(-50%)')}</div>`;
+      return `<div class="dpc-scr pv-monitor"><div class="dpc-mflow"><span class="dpc-mnode">${svg('mic', 20)}</span>
+        <span class="dpc-mwave">${Array.from({ length: 9 }, (_, i) => `<span class="dpc-mb${i < Math.round(s.volume / 11) ? ' on' : ''}" style="height:${[30, 55, 80, 45, 95, 60, 75, 40, 25][i]}%"></span>`).join('')}</span>
+        <span class="dpc-mnode">${svg('head', 20)}</span></div>${lbl(`Dinleme sesi %${s.volume}`, 'left:50%;bottom:9%;transform:translateX(-50%)')}</div>`;
     },
     voice_activity_monitor() {
       const ppl = [['A', 'Ayşe', '#e8457a', 82], ['M', 'Mert', '#3e7bfa', 34], ['D', 'Demirr', '#30b458', 58], ['K', 'Kaan', '#f08a24', 8]];
@@ -493,8 +493,9 @@
       const tile = (k) => `<article class="us-card dpc-c-tile${on(k) ? '' : ' is-offc'}" data-f="${k}"><button type="button" class="dpc-c-hit" data-open="${k}">${pv(k, 'xs')}</button>
         <div class="dpc-c-m"><b>${F[k].name}</b>${enabled(k)}</div><div class="dpc-c-s">${ultra(k)}${chips(k)}</div></article>`;
       const stage = (k) => `<article class="us-card dpc-c-stage c-${c.color}" data-f="${k}" data-open-card>
-          <div class="dpc-c-left">${pv(k, 'xl')}<div class="dpc-c-cap">${liveCap}<span class="dpc-chipline">${chips(k)}</span></div></div>
-          <div class="dpc-c-right"><div class="dpc-c-top">${ico(k, cat, 18)}${enabled(k)}</div><h3>${F[k].name} ${ultra(k)}</h3><p>${F[k].desc}</p>${groups(k)}</div>
+          <div class="dpc-c-show">${pv(k, 'xl')}<span class="dpc-c-tag">${liveCap}</span><span class="dpc-c-tag r">${chips(k)}</span></div>
+          <div class="dpc-c-info">${ico(k, cat, 18)}<div class="dpc-tt2"><b>${F[k].name}</b>${ultra(k)}<small>${F[k].desc}</small></div>${enabled(k)}</div>
+          ${groups(k)}
         </article>`;
       const before = keys.slice(0, keys.indexOf(open));
       const after = keys.slice(keys.indexOf(open) + 1);
@@ -782,22 +783,23 @@
   .pv-gate .lg span{display:inline-flex;align-items:center;gap:5px}
   .pv-gate .lg i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.2)}
   .pv-gate .lg i.hb{background:none;box-shadow:inset 0 0 0 1.5px rgba(48,209,88,.7)}.pv-gate .lg i.pass{background:#30b458}.pv-gate .lg i.hold{background:rgba(48,180,88,.45)}
-  .pv-presets{display:flex;align-items:center;justify-content:center;gap:6%}
-  .pv-presets .dial{width:clamp(70px,62cqh,130px);aspect-ratio:1;border-radius:50%;background:conic-gradient(from 225deg,#30b458 0 var(--a),rgba(255,255,255,.1) var(--a) 270deg,transparent 270deg);display:grid;place-items:center;flex:none}
-  .pv-presets .dial .in{width:78%;aspect-ratio:1;border-radius:50%;background:#151821;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .pv-presets .dial b{font-size:var(--fs-20)}
+  .pv-presets{display:flex;align-items:center;justify-content:center;gap:4%;padding:8% 4% 0}
+  .pv-presets .dial{width:96px;height:96px;min-width:96px;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 225deg,#30b458 0 var(--a),rgba(255,255,255,.1) var(--a) 270deg,transparent 270deg);display:grid;place-items:center;flex:none}
+  .pv-presets .dial .in{width:76px;height:76px;border-radius:50%;background:#151821;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .pv-presets .dial b{font-size:var(--fs-17)}
   .pv-presets .dial small{font-size:var(--fs-11);color:var(--text-muted)}
-  .pv-presets .chain{display:flex;align-items:center;gap:5px;color:var(--text-muted)}
+  .pv-presets .chain{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-width:0;flex:0 1 auto;color:var(--text-muted)}
+  .pv-presets .chain>svg,.pv-presets .chain .ar{display:none}
   .pv-presets .chip{display:flex;flex-direction:column;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.06)}
   .pv-presets .chip small{font-size:var(--fs-11);opacity:.7}
   .pv-presets .chip b{font-size:var(--fs-12);color:var(--text-1,#ddd)}
   .pv-presets .chip.on{background:rgba(48,180,88,.18);box-shadow:inset 0 0 0 1px rgba(48,196,108,.45)}
   .pv-presets .ar{display:grid;opacity:.5}
-  .pv-monitor .flow{position:absolute;inset:0 0 18%;display:flex;align-items:center;justify-content:center;gap:6%}
-  .pv-monitor .node{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-  .pv-monitor .wave{display:flex;align-items:center;gap:5px;height:44%}
-  .pv-monitor .wave .mb{display:block;width:5px;border-radius:3px;background:rgba(255,255,255,.14)}
-  .pv-monitor .wave .mb.on{background:linear-gradient(180deg,#c8e35b,#30b458)}
+  .pv-monitor .dpc-mflow{position:absolute;inset:0 0 18%;display:flex;align-items:center;justify-content:center;gap:6%}
+  .pv-monitor .dpc-mnode{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .pv-monitor .dpc-mwave{display:flex;align-items:center;gap:5px;height:44%}
+  .pv-monitor .dpc-mb{display:block;width:5px;border-radius:3px;background:rgba(255,255,255,.14)}
+  .pv-monitor .dpc-mb.on{background:linear-gradient(180deg,#c8e35b,#30b458)}
   .pv-vam .ppl{position:absolute;inset:10% 5%;display:grid;grid-template-columns:1fr 1fr;gap:6%}
   .pv-vam .p{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:8px;background:rgba(255,255,255,.05)}
   .pv-vam .p.talk .dpc-av{box-shadow:0 0 0 2px #30d158}
@@ -845,9 +847,9 @@
     .pv-route .src,.pv-route .dst{padding:4px;font-size:0;gap:0}
     .pv-auto .d{padding:3px 5px}.pv-auto .d b{font-size:0}
     .pv-vam .p b{display:none}
-    .pv-monitor .node{width:30px;height:30px;border-radius:9px}
+    .pv-monitor .dpc-mnode{width:30px;height:30px;border-radius:9px}
     .pv-stream .fd small{display:none}.pv-stream .fd{width:40px}
-    .pv-presets .dial{max-width:70px}
+    .pv-presets .dial{width:64px;height:64px;min-width:64px}.pv-presets .dial .in{width:50px;height:50px}
     .dpc-thumb .tb-btns span{width:13px;height:13px}.dpc-thumb .tb-btns svg{width:8px;height:8px}
   }
   @container (max-height: 90px){
@@ -893,15 +895,20 @@
   .dpc-c-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .dpc-c-count{font-size:var(--fs-12);color:var(--text-muted)}
   .dpc-c-count b{font-size:var(--fs-20);color:var(--text-0);margin-right:2px}
-  .dpc-c-stage{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:0;margin:0;padding:0;background:radial-gradient(600px 300px at 0% 0%,rgba(62,123,250,.22),transparent 70%),var(--surface-0);box-shadow:inset 0 0 0 1px rgba(88,122,245,.35)}
+.dpc-c-stage{display:flex;flex-direction:column;margin:0;padding:0;background:radial-gradient(600px 300px at 0% 0%,rgba(62,123,250,.22),transparent 70%),var(--surface-0);box-shadow:inset 0 0 0 1px rgba(88,122,245,.35)}
   .dpc-c-stage.c-green{background:radial-gradient(600px 300px at 0% 0%,rgba(48,180,88,.2),transparent 70%),var(--surface-0);box-shadow:inset 0 0 0 1px rgba(48,180,88,.35)}
-  .dpc-c-left{display:flex;flex-direction:column;gap:10px;padding:16px;border-right:1px solid var(--border-2)}
-  .dpc-c-left .dpc-pv{flex:1;min-height:250px}
-  .dpc-c-cap{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .dpc-c-right{display:flex;flex-direction:column;gap:6px;padding:16px}
-  .dpc-c-top{display:flex;align-items:center;justify-content:space-between}
-  .dpc-c-right h3{margin:6px 0 0;font-size:var(--fs-20);font-weight:700;display:flex;align-items:center;gap:8px}
-  .dpc-c-right>p{margin:0 0 6px;font-size:var(--fs-13);color:var(--text-muted)}
+  .dpc-c-show{position:relative;height:200px;margin:8px 8px 0}
+  .dpc-c-show .dpc-scr{border-radius:12px}
+  .dpc-c-tag{position:absolute;top:10px;left:10px;z-index:9;display:inline-flex;gap:4px;padding:4px 8px;border-radius:8px;background:rgba(10,12,18,.62);backdrop-filter:blur(6px)}
+  .dpc-c-tag .dpc-live{color:#fff}
+  .dpc-c-tag.r{left:auto;right:10px;padding:3px}
+  .dpc-c-tag.r .dpc-chip{background:rgba(255,255,255,.12);color:#fff}
+  .dpc-c-info{display:flex;align-items:center;gap:12px;padding:14px 16px 10px}
+  .dpc-c-info .pp-ico{width:36px;height:36px;border-radius:10px}
+  .dpc-c-info .dpc-tt2>b{font-size:var(--fs-17);font-weight:700}
+  .dpc-c-stage .dpc-corner{max-width:210px}
+  .dpc-c-stage .dpc-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:start;padding:0 16px 16px}
+  .dpc-c-stage .dpc-groups>.dpc-hint{grid-column:1/-1}
   .dpc-c-lab{margin-top:4px}
   .dpc-c-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
   .dpc-c-tile{margin:0;display:flex;flex-direction:column;padding:8px}
