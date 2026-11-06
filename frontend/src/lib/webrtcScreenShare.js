@@ -4,6 +4,7 @@
  */
 import { classifyInboundMedia, guardDisplayCapture, ROLE_SCREEN } from "./screenShareIdentity.js";
 import { t } from "../i18n/runtime.js";
+import { processScreenShareAudio } from "../premium/audio/streamAudio.js";
 
 export const GROUP_SCREEN_DEFAULT_QUALITY = {
   resolution: "720p",
@@ -375,6 +376,11 @@ export function showElectronScreenPicker(sources = []) {
  * Multiple participants may call this concurrently, there is no single-sharer lock.
  */
 export async function captureScreenShareStream(opts = {}) {
+  // Descall+ stream_audio_control: shared audio through a gain stage (untouched without it).
+  return processScreenShareAudio(await captureScreenShareStreamRaw(opts));
+}
+
+async function captureScreenShareStreamRaw(opts = {}) {
   const { width, height, fps, preferTab, pickSource = showElectronScreenPicker } = opts;
 
   if (isElectronRuntime() && typeof window.electronAPI?.getScreenSources === "function") {

@@ -1,0 +1,88 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.96);
+  font-family: "Inter", -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.stage { width: 100%; height: 100%; padding: 14px; }
+.panel {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Liquid Glass: a separate OS window cannot sample what is behind it, so
+     the tinted base carries the look (sheen + rim), like the capsules. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 40%, rgba(255, 255, 255, 0) 100%),
+    rgba(28, 30, 42, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.search-icon { width: 20px; height: 20px; color: rgba(255, 255, 255, 0.55); flex: none; }
+#q {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 500;
+}
+#q::placeholder { color: rgba(255, 255, 255, 0.42); }
+.results { list-style: none; flex: 1; overflow-y: auto; padding: 6px; }
+.results::-webkit-scrollbar { width: 8px; }
+.results::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 8px; }
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.item[aria-selected="true"] { background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  object-fit: cover;
+}
+.mark.k-action { border-radius: 10px; background: rgba(120, 140, 255, 0.22); }
+.mark.k-channel, .mark.k-server { border-radius: 10px; }
+.copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub { font-size: 12px; color: rgba(255, 255, 255, 0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.state { padding: 0 20px 8px; font-size: 13px; color: rgba(255, 255, 255, 0.55); min-height: 0; }
+.state:empty { display: none; }
+.hint {
+  padding: 8px 18px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+@media (prefers-reduced-transparency: reduce) { .panel { background: #1e2030; } }
+@media (prefers-contrast: more) { .panel { background: #0c0e14; border-color: #fff; } .sub, .hint, .state { color: #fff; } }
