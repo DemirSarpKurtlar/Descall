@@ -579,3 +579,29 @@ html.glass-desktop .server-settings-modal .dc-check input.dc-check-input {
     min-width: 0;
   }
 }
+
+/* #43 Open server on the phone: back + name + meta are one block that keeps
+   its own height, the tools are one "more" button, and the category list
+   starts 12px under the header so 'KATEGORİ 1' never rides on the meta. */
+html.glass-ui .app-root.g-shell .g-server-pane .server-shell-header {
+  align-items: center;
+  margin-bottom: 12px !important;
+}
+html.glass-ui .app-root.g-shell .g-server-pane .server-shell-title-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+html.glass-ui .app-root.g-shell .g-server-pane .server-shell-meta {
+  display: block;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html.glass-ui .app-root.g-shell .g-server-pane .sidebar-actions.is-phone-tools .icon-btn.active {
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+}

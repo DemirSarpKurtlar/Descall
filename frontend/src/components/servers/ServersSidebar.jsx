@@ -42,6 +42,7 @@ import { OwnerLeaveSheet, OwnershipTransferModal } from "./OwnershipTransfer";
 import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
 import { S3Toggle } from "../settings/SettingsV3";
+import GlassActionMenu from "../ui/GlassActionMenu";
 import PullToRefresh from "../ui/PullToRefresh";
 import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
@@ -116,6 +117,9 @@ export default function ServersSidebar({
   const [showModeration, setShowModeration] = useState(null); // 'bans' | 'audit' | null
   const [menuOpen, setMenuOpen] = useState(false);
   const serverMenuBtnRef = useRef(null);
+  // UI audit #43: on the phone the header keeps back + name + meta; the
+  // create / reorder / server tools live in one "more" menu.
+  const [phoneToolsOpen, setPhoneToolsOpen] = useState(false);
   const [dragChannelId, setDragChannelId] = useState(null);
   const [dragOverChannelId, setDragOverChannelId] = useState(null);
   const [dragServerId, setDragServerId] = useState(null);
@@ -1014,6 +1018,47 @@ export default function ServersSidebar({
                 {activeServer.isOwner ? ` · ${t("Owner")}` : ""}
               </span>
             </div>
+            {hubMode === "phone" ? (
+            <div className="sidebar-actions is-phone-tools">
+              {channelReorderMode ? (
+                <button
+                  type="button"
+                  className="icon-btn active"
+                  title={t("Done")} aria-label={t("Done")}
+                  onClick={() => setChannelReorderMode(false)}
+                >
+                  <Check size={18} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  ref={serverMenuBtnRef}
+                  className="icon-btn g-server-menu-btn"
+                  title={t("Server menu")} aria-label={t("Server menu")}
+                  aria-haspopup="menu"
+                  aria-expanded={phoneToolsOpen}
+                  onClick={() => setPhoneToolsOpen((v) => !v)}
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+              )}
+              <GlassActionMenu
+                open={phoneToolsOpen}
+                anchorRef={serverMenuBtnRef}
+                onClose={() => setPhoneToolsOpen(false)}
+                ariaLabel={t("Server menu")}
+                sections={[
+                  canManageChannels
+                    ? [
+                        { id: "create", label: t("Create channel"), icon: Plus, onSelect: () => { setPhoneToolsOpen(false); setMenuOpen(false); setChannelModal({ mode: "create", defaultType: "text" }); } },
+                        { id: "reorder", label: t("Reorder channels"), icon: GripVertical, onSelect: () => { setPhoneToolsOpen(false); setChannelReorderMode(true); } },
+                      ]
+                    : [],
+                  [{ id: "server", label: t("Server menu"), icon: Settings, onSelect: () => { setPhoneToolsOpen(false); setMenuOpen(true); } }],
+                ].filter((group) => group.length)}
+              />
+            </div>
+            ) : (
             <div className="sidebar-actions">
               {canManageChannels && (
                 <button
@@ -1050,6 +1095,7 @@ export default function ServersSidebar({
                 {glassShell ? <ChevronRight size={18} /> : <MoreHorizontal size={18} />}
               </button>
             </div>
+            )}
           </div>
 
           <ServerMenuFrame glass={Boolean(glassShell)} open={!hubMode && menuOpen} onClose={() => setMenuOpen(false)} anchorRef={serverMenuBtnRef}>
