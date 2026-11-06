@@ -89,6 +89,181 @@
       "statusCode": 301
     },
     {
+      "source": "/blog/discord-vs-descall",
+      "destination": "/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/apps-like-discord",
+      "destination": "/apps-like-discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/voice-chat-alternative-to-discord",
+      "destination": "/discord-alternative-for-voice-chat",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/discord-alternative-for-communities-guide",
+      "destination": "/discord-alternative-for-communities",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/migrate-from-discord-to-descall",
+      "destination": "/discord-replacement",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/blog/discord-vs-descall",
+      "destination": "/tr/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/blog/apps-like-discord",
+      "destination": "/tr/discord-yerine-ne-kullanilir",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/blog/voice-chat-alternative-to-discord",
+      "destination": "/tr/sesli-sohbet-uygulamasi",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/blog/discord-alternative-for-communities-guide",
+      "destination": "/tr/discord-alternatifi",
+      "statusCode": 301
+    },
+    {
+      "source": "/tr/blog/migrate-from-discord-to-descall",
+      "destination": "/tr/discord-alternatifi",
+      "statusCode": 301
+    },
+    {
+      "source": "/de/blog/discord-vs-descall",
+      "destination": "/de/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/de/blog/apps-like-discord",
+      "destination": "/de/apps-like-discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/de/blog/voice-chat-alternative-to-discord",
+      "destination": "/de/discord-alternative-for-voice-chat",
+      "statusCode": 301
+    },
+    {
+      "source": "/de/blog/discord-alternative-for-communities-guide",
+      "destination": "/de/discord-alternative-for-communities",
+      "statusCode": 301
+    },
+    {
+      "source": "/de/blog/migrate-from-discord-to-descall",
+      "destination": "/de/discord-replacement",
+      "statusCode": 301
+    },
+    {
+      "source": "/es/blog/discord-vs-descall",
+      "destination": "/es/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/es/blog/apps-like-discord",
+      "destination": "/es/apps-like-discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/es/blog/voice-chat-alternative-to-discord",
+      "destination": "/es/discord-alternative-for-voice-chat",
+      "statusCode": 301
+    },
+    {
+      "source": "/es/blog/discord-alternative-for-communities-guide",
+      "destination": "/es/discord-alternative-for-communities",
+      "statusCode": 301
+    },
+    {
+      "source": "/es/blog/migrate-from-discord-to-descall",
+      "destination": "/es/discord-replacement",
+      "statusCode": 301
+    },
+    {
+      "source": "/fr/blog/discord-vs-descall",
+      "destination": "/fr/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/fr/blog/apps-like-discord",
+      "destination": "/fr/apps-like-discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/fr/blog/voice-chat-alternative-to-discord",
+      "destination": "/fr/discord-alternative-for-voice-chat",
+      "statusCode": 301
+    },
+    {
+      "source": "/fr/blog/discord-alternative-for-communities-guide",
+      "destination": "/fr/discord-alternative-for-communities",
+      "statusCode": 301
+    },
+    {
+      "source": "/fr/blog/migrate-from-discord-to-descall",
+      "destination": "/fr/discord-replacement",
+      "statusCode": 301
+    },
+    {
+      "source": "/pt-br/blog/discord-vs-descall",
+      "destination": "/pt-br/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/pt-br/blog/apps-like-discord",
+      "destination": "/pt-br/apps-like-discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/pt-br/blog/voice-chat-alternative-to-discord",
+      "destination": "/pt-br/discord-alternative-for-voice-chat",
+      "statusCode": 301
+    },
+    {
+      "source": "/pt-br/blog/discord-alternative-for-communities-guide",
+      "destination": "/pt-br/discord-alternative-for-communities",
+      "statusCode": 301
+    },
+    {
+      "source": "/pt-br/blog/migrate-from-discord-to-descall",
+      "destination": "/pt-br/discord-replacement",
+      "statusCode": 301
+    },
+    {
+      "source": "/ru/blog/discord-vs-descall",
+      "destination": "/ru/compare/discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/ru/blog/apps-like-discord",
+      "destination": "/ru/apps-like-discord",
+      "statusCode": 301
+    },
+    {
+      "source": "/ru/blog/voice-chat-alternative-to-discord",
+      "destination": "/ru/discord-alternative-for-voice-chat",
+      "statusCode": 301
+    },
+    {
+      "source": "/ru/blog/discord-alternative-for-communities-guide",
+      "destination": "/ru/discord-alternative-for-communities",
+      "statusCode": 301
+    },
+    {
+      "source": "/ru/blog/migrate-from-discord-to-descall",
+      "destination": "/ru/discord-replacement",
+      "statusCode": 301
+    },
+    {
       "source": "/dimaai",
       "destination": "/",
       "statusCode": 301

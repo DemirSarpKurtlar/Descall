@@ -73,9 +73,9 @@ assert.ok(rows.find((r) => r.en === "Descall Features | Free Voice, Screen Share
 const byEn = new Map(rows.map((r) => [r.en, r]));
 const { BLOG_BODIES } = await imp("src/site/seo/blogBodies.js");
 const { NICHE_LANDINGS } = await imp("src/site/seo/nicheLandings.js");
-const firstPara = BLOG_BODIES["discord-vs-descall"].sections[0].p;
+const firstPara = BLOG_BODIES["discord-competitors"].sections[0].p;
 assert.ok(byEn.has(firstPara), "blog paragraphs are exported");
-assert.match(byEn.get(firstPara).context, /^blog post discord-vs-descall, paragraph 1\b/);
+assert.match(byEn.get(firstPara).context, /^blog post discord-competitors, paragraph 1\b/);
 assert.deepEqual(byEn.get(firstPara).groups, ["blog"]);
 for (const [slug, body] of Object.entries(BLOG_BODIES)) {
   for (const sec of body.sections) {
@@ -84,9 +84,9 @@ for (const [slug, body] of Object.entries(BLOG_BODIES)) {
   }
 }
 assert.ok(rows.every((r) => wordCount(r.en) <= 200), "no row is a whole article");
-const seoTitle = byEn.get("Discord vs Descall (2026) | Which Should Your Group Use?");
+const seoTitle = byEn.get("Discord Competitors in 2026 | Who Actually Competes");
 assert.equal(seoTitle?.max, 70, "post SEO titles carry the limit");
-assert.match(seoTitle.context, /SEO title of \/blog\/discord-vs-descall/);
+assert.match(seoTitle.context, /SEO title of \/blog\/discord-competitors/);
 assert.equal(byEn.get(NICHE_LANDINGS["/apps-like-discord"].answer)?.groups?.[0], "niche");
 assert.equal(byEn.get("Start free").groups, null, "a string a live page uses stays strict");
 assert.equal(byEn.get("Frequently asked questions").groups, null);

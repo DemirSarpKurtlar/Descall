@@ -47,17 +47,6 @@ export const TR_LANDING_META = [
 
 export const TR_BLOG_META = [
   {
-    "slug": "discord-vs-descall",
-    "title": "Discord mu Descall mı? Grubun için 2026’da hangisi?",
-    "description": "Sohbet, sunucular, roller, ses, ekran paylaşımı ve fiyat açısından dürüst bir Discord ve Descall karşılaştırması: hangi grup için hangisi daha uygun?",
-    "date": "2026-08-11",
-    "updated": "2026-10-17",
-    "tags": [
-      "Discord alternatifi",
-      "Karşılaştırma"
-    ]
-  },
-  {
     "slug": "best-discord-alternatives-2026",
     "title": "2026’nın en iyi Discord alternatifleri: dürüst kısa liste",
     "description": "Arkadaş grupları, sunucular, sesli sohbet için 2026’nın en iyi Discord alternatifleri; Descall, TeamSpeak, Telegram ve diğerleri gerçekte nasıl kıyaslanıyor?",
@@ -66,17 +55,6 @@ export const TR_BLOG_META = [
     "tags": [
       "Discord alternatifleri",
       "Liste"
-    ]
-  },
-  {
-    "slug": "apps-like-discord",
-    "title": "Discord benzeri uygulamalar: 2026’da ne kullanmalı?",
-    "description": "Discord benzeri uygulamaları ihtiyaca göre anlatıyoruz: arkadaşlarla sesli sohbet, topluluk sunucusu ya da sadece ses odası. Descall nereye oturuyor?",
-    "date": "2026-08-11",
-    "updated": "2026-10-17",
-    "tags": [
-      "Discord benzeri uygulamalar",
-      "Rehber"
     ]
   },
   {
@@ -99,39 +77,6 @@ export const TR_BLOG_META = [
     "tags": [
       "Fiyat",
       "Geçiş"
-    ]
-  },
-  {
-    "slug": "discord-alternative-for-communities-guide",
-    "title": "Topluluklar için Discord alternatifi: pratik rehber",
-    "description": "Küçük ve orta ölçekli topluluklar Discord alternatifi seçerken nelere bakmalı: sunucular, roller, davetler, sesli buluşmalar ve dürüst sınırlar.",
-    "date": "2026-08-11",
-    "updated": "2026-10-17",
-    "tags": [
-      "Topluluklar",
-      "Rehber"
-    ]
-  },
-  {
-    "slug": "voice-chat-alternative-to-discord",
-    "title": "Discord’a sesli sohbet alternatifi: ücretsiz arama rehberi",
-    "description": "Discord yerine sesli sohbet için ne kullanılır? Descall’da ücretsiz WebRTC aramalar, sunucu ses kanalları, ekran paylaşımı ve oyun akşamları.",
-    "date": "2026-08-11",
-    "updated": "2026-10-17",
-    "tags": [
-      "Sesli sohbet",
-      "Rehber"
-    ]
-  },
-  {
-    "slug": "migrate-from-discord-to-descall",
-    "title": "Discord’dan Descall’a geçiş: adım adım kontrol listesi",
-    "description": "Discord’dan Descall’a adım adım geçiş: arkadaşlarını davet et, sunucunu şablonla yeniden kur ve sesli akşamları ücretsiz sürdür.",
-    "date": "2026-08-14",
-    "updated": "2026-10-17",
-    "tags": [
-      "Geçiş",
-      "Discord alternatifi"
     ]
   }
 ].map((p) => ({ ...p, path: `/tr/blog/${p.slug}` }));

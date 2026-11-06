@@ -183,16 +183,6 @@ export const TURKEY_FAQ = [
 
 export const BLOG_POSTS = [
   {
-    slug: "discord-vs-descall",
-    path: "/blog/discord-vs-descall",
-    title: "Discord vs Descall: which should your group use in 2026?",
-    description:
-      "An honest Discord vs Descall comparison for chat, servers, roles, voice, screen share, and pricing, when a lighter Discord alternative wins.",
-    date: "2026-08-11",
-    updated: "2026-08-14",
-    tags: ["Discord alternative", "Comparison"],
-  },
-  {
     slug: "best-discord-alternatives-2026",
     path: "/blog/best-discord-alternatives-2026",
     title: "Best Discord alternatives in 2026 | honest shortlist",
@@ -201,16 +191,6 @@ export const BLOG_POSTS = [
     date: "2026-08-11",
     updated: "2026-08-14",
     tags: ["Discord alternatives", "Roundup"],
-  },
-  {
-    slug: "apps-like-discord",
-    path: "/blog/apps-like-discord",
-    title: "Apps like Discord | what to use instead in 2026",
-    description:
-      "Apps like Discord explained by job-to-be-done: friend voice, community servers, or pure voice rooms, and where Descall fits.",
-    date: "2026-08-11",
-    updated: "2026-08-14",
-    tags: ["Apps like Discord", "Comparison"],
   },
   {
     slug: "discord-competitors",
@@ -232,51 +212,10 @@ export const BLOG_POSTS = [
     updated: "2026-08-14",
     tags: ["Pricing", "Migration"],
   },
-  {
-    slug: "discord-alternative-for-communities-guide",
-    path: "/blog/discord-alternative-for-communities-guide",
-    title: "Discord alternative for communities | practical guide",
-    description:
-      "How small communities pick a Discord alternative: servers, roles, invites, voice hangouts, and when to stay on Discord.",
-    date: "2026-08-11",
-    updated: "2026-08-14",
-    tags: ["Communities", "Guide"],
-  },
-  {
-    slug: "voice-chat-alternative-to-discord",
-    path: "/blog/voice-chat-alternative-to-discord",
-    title: "Voice chat alternative to Discord | free calls guide",
-    description:
-      "Looking for a voice chat alternative to Discord? How Descall handles free WebRTC calls, server voice, screen share, and gaming nights.",
-    date: "2026-08-11",
-    updated: "2026-08-14",
-    tags: ["Voice", "Guide"],
-  },
-  {
-    slug: "migrate-from-discord-to-descall",
-    path: "/blog/migrate-from-discord-to-descall",
-    title: "Migrate from Discord to Descall | practical checklist",
-    description:
-      "Step-by-step migration from Discord to Descall: invite friends, recreate servers with templates, and keep voice nights free.",
-    date: "2026-08-14",
-    updated: "2026-08-14",
-    tags: ["Migration", "Discord alternative"],
-  },
-
 ];
 
 /** Per-post FAQ, unique questions so blog pages do not clone COMPARE_FAQ schema. */
 export const BLOG_FAQ_BY_SLUG = {
-  "discord-vs-descall": [
-    {
-      q: "Should my group pick Discord or Descall?",
-      a: "Pick Descall for nightly friend voice and servers without Nitro. Keep Discord if you still depend on a large bot marketplace or huge public servers.",
-    },
-    {
-      q: "Is this Discord vs Descall comparison sponsored?",
-      a: "No. Descall makes the product, and the article states where Discord still wins, bots, giant communities, and broader historic client coverage.",
-    },
-  ],
   "leave-nitro-keep-voice-chat": [
     {
       q: "Can I leave Nitro and still have group voice?",
@@ -297,16 +236,6 @@ export const BLOG_FAQ_BY_SLUG = {
       a: "Yes, for friend groups and gamers who want free calls plus real servers. Discord remains the pick for bot-heavy mega-communities.",
     },
   ],
-  "apps-like-discord": [
-    {
-      q: "What counts as an app like Discord?",
-      a: "Anything that combines chat, presence, and group voice. Websites like Discord add servers; some apps are voice-only.",
-    },
-    {
-      q: "Which app like Discord is lightest for friends?",
-      a: "If you do not need a bot store, Descall is a lighter app like Discord for DMs, servers, and calls.",
-    },
-  ],
   "discord-competitors": [
     {
       q: "Who actually competes with Discord in 2026?",
@@ -315,36 +244,6 @@ export const BLOG_FAQ_BY_SLUG = {
     {
       q: "Is every chat app a Discord competitor?",
       a: "No. Slack, Telegram, and TeamSpeak overlap only on some jobs. Compare by voice, servers, and whether core features are free.",
-    },
-  ],
-  "discord-alternative-for-communities-guide": [
-    {
-      q: "Can a small community leave Discord?",
-      a: "Yes if you need roles, channels, invites, and voice hangouts, not a giant bot list. Descall templates cover that setup.",
-    },
-    {
-      q: "When should a community stay on Discord?",
-      a: "Stay if moderation bots, public discovery, or a huge member base are load-bearing. Hybrid setups are common.",
-    },
-  ],
-  "voice-chat-alternative-to-discord": [
-    {
-      q: "What is a good voice chat alternative to Discord?",
-      a: "Look for free WebRTC calls, screen share, and a desktop app. Descall is built for that without paywalling talk time.",
-    },
-    {
-      q: "Does a voice alternative still need text chat?",
-      a: "Most groups want both. Descall pairs DMs and servers with the same voice stack so you are not juggling two apps.",
-    },
-  ],
-  "migrate-from-discord-to-descall": [
-    {
-      q: "How do I migrate from Discord to Descall?",
-      a: "Invite friends, recreate a server from a template, and keep Discord only for bot-heavy rooms you still need.",
-    },
-    {
-      q: "Will message history import from Discord?",
-      a: "There is no bulk Discord history importer today. Pin key links, rebuild channels, and start fresh voice nights on Descall.",
     },
   ],
 };
@@ -357,6 +256,6 @@ export const BLOG_RELATED = [
   { to: "/security", label: "Security & encryption" },
   { to: "/download", label: "Download Descall" },
   { to: "/faq", label: "FAQ" },
-  { to: "/blog/migrate-from-discord-to-descall", label: "Migrate from Discord" },
+  { to: "/discord-replacement", label: "Discord replacement" },
   { to: "/status", label: "Status" },
 ];

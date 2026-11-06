@@ -453,7 +453,7 @@ export function corePageBody(path) {
   <h2>${tr ? "Kısa karar" : escapeHtml(nc("Quick verdict"))}</h2>
   <p><strong>Descall</strong> ${escapeHtml(verdictDescall)}</p>
   <p><strong>Discord</strong> ${escapeHtml(verdictDiscord)}</p>
-  <p><a href="${hn("/alternatives")}">${tr ? "Tüm alternatifler" : escapeHtml(nc("All Discord alternatives"))}</a> · <a href="/blog/discord-vs-descall">${tr ? "Uzun karşılaştırma yazısı" : escapeHtml(nc("Longer comparison article"))}</a></p>
+  <p><a href="${hn("/alternatives")}">${tr ? "Tüm alternatifler" : escapeHtml(nc("All Discord alternatives"))}</a></p>
   ${faqHtml(COMPARE_FAQ, loc)}
   ${navBlock(loc)}
 </main>`;

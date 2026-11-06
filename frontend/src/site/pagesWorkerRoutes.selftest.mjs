@@ -8,6 +8,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import worker from "../../public/_worker.js";
+import { mergedPageRedirects } from "./seo/mergedPages.js";
+import { PUBLIC_ROUTES } from "./seoConfig.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
@@ -62,6 +64,23 @@ for (const [from, to] of Object.entries(owner)) {
   assert.equal(res.headers.get("location"), `https://descall.com${to}`);
   assert.ok(redirectsFile.includes(`${from} ${to} 301`), `_redirects must list ${from}`);
   assert.ok(vercel.redirects.some((r) => r.source === from && r.destination === to), `vercel.json must list ${from}`);
+}
+
+// Merged pages (SEO audit, Nov 2026): every removed URL 301s to the kept page in every
+// language, on Pages (worker + _redirects), Vercel and the Express server, and is no
+// longer a route (so it is out of the sitemaps and hreflang sets).
+const serverJs = fs.readFileSync(path.join(root, "backend/server.js"), "utf8");
+const merged = mergedPageRedirects();
+assert.ok(merged.length >= 35, "five merged pages in seven languages");
+for (const [from, to] of merged) {
+  const res = await get(from);
+  assert.equal(res.status, 301, `${from} must redirect`);
+  assert.equal(res.headers.get("location"), `https://descall.com${to}`, `${from} -> ${to}`);
+  assert.ok(redirectsFile.includes(`${from} ${to} 301`), `_redirects must list ${from}`);
+  assert.ok(vercel.redirects.some((r) => r.source === from && r.destination === to && r.statusCode === 301), `vercel.json must list ${from}`);
+  assert.ok(serverJs.includes(`"${from}": "${to}"`), `backend/server.js must list ${from}`);
+  assert.ok(!PUBLIC_ROUTES.some((r) => r.path === from), `${from} is not a route any more`);
+  assert.ok(PUBLIC_ROUTES.some((r) => r.path === to), `${to} is a live route`);
 }
 
 // Every SPA rewrite on Vercel has a matching shell route on Cloudflare Pages.

@@ -11,6 +11,7 @@ import { signalMarketingEngage } from "./analyticsGate";
 import MarketingLayout from "./MarketingLayout";
 import SeoHead from "./SeoHead";
 import { PREFIXED_SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
+import { mergedPageRedirects } from "./seo/mergedPages.js";
 const MarketingAuthModal = lazy(() => import("./MarketingAuthModal"));
 const AuthView = lazy(() => import("../components/AuthView"));
 
@@ -390,6 +391,11 @@ function MarketingAppSite({
         <Route path="/discord-alternative-turkey" element={<Navigate to="/tr/discord-alternatifi" replace />} />
         <Route path="/discord-alternatives" element={<Navigate to="/alternatives" replace />} />
         <Route path="/best-discord-alternative" element={<Navigate to="/discord-alternative" replace />} />
+        {/* Pages merged into a stronger page (seo/mergedPages.js): the host answers 301; this
+            covers in-app navigation from an old link. */}
+        {mergedPageRedirects().map(([from, to]) => (
+          <Route key={from} path={from} element={<Navigate to={to} replace />} />
+        ))}
         <Route path="/blog" element={withLayout(BlogIndexPage, openAuth)} />
         <Route path="/blog/:slug" element={withLayout(BlogPostPage, openAuth)} />
         {/* Prefixed site languages (/de, /pt-br, ...): same pages, locale from the URL. */}

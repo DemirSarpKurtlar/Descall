@@ -164,15 +164,6 @@ const BASE_ROUTES = [
     priority: "0.8",
   },
   {
-    path: "/blog/discord-vs-descall",
-    title: "Discord vs Descall (2026) | Which Should Your Group Use?",
-    description:
-      "Honest Discord vs Descall comparison for chat, voice, screen share, and pricing, when a lighter Discord alternative wins.",
-    changefreq: "monthly",
-    priority: "0.85",
-    ogType: "article",
-  },
-  {
     path: "/blog/leave-nitro-keep-voice-chat",
     title: "Leave Nitro. Keep Voice Chat. | Migration Guide",
     description:
@@ -191,46 +182,10 @@ const BASE_ROUTES = [
     ogType: "article",
   },
   {
-    path: "/blog/apps-like-discord",
-    title: "Apps Like Discord | What to Use Instead in 2026",
-    description:
-      "Apps like Discord explained by job-to-be-done: friend voice, communities, or pure voice servers, and where Descall fits.",
-    changefreq: "monthly",
-    priority: "0.85",
-    ogType: "article",
-  },
-  {
     path: "/blog/discord-competitors",
     title: "Discord Competitors in 2026 | Who Actually Competes",
     description:
       "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics, plus where Descall competes honestly.",
-    changefreq: "monthly",
-    priority: "0.85",
-    ogType: "article",
-  },
-  {
-    path: "/blog/discord-alternative-for-communities-guide",
-    title: "Discord Alternative for Communities | Practical Guide",
-    description:
-      "How small communities pick a Discord alternative: groups, invites, voice hangouts, and when to stay on Discord.",
-    changefreq: "monthly",
-    priority: "0.8",
-    ogType: "article",
-  },
-  {
-    path: "/blog/voice-chat-alternative-to-discord",
-    title: "Voice Chat Alternative to Discord | Free Calls Guide",
-    description:
-      "Looking for a voice chat alternative to Discord? How Descall handles free WebRTC calls, screen share, and gaming nights.",
-    changefreq: "monthly",
-    priority: "0.8",
-    ogType: "article",
-  },
-  {
-    path: "/blog/migrate-from-discord-to-descall",
-    title: "Migrate from Discord to Descall | practical checklist",
-    description:
-      "Step-by-step migration from Discord to Descall: invite friends, recreate servers with templates, and keep voice nights free.",
     changefreq: "monthly",
     priority: "0.85",
     ogType: "article",

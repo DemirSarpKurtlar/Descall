@@ -1,12 +1,13 @@
-/** Long-form blog bodies keyed by slug. Keep unique; no keyword-spam clones. */
+/**
+ * Long-form blog bodies keyed by slug. Keep unique; no keyword-spam clones.
+ * Five of these posts were merged into stronger pages in Nov 2026 (seo/mergedPages.js):
+ * their URLs 301 and their sections are shown on the kept page through
+ * MERGED_GUIDE_SECTIONS in seo/pageExtras.js. Edit them here.
+ */
 
 export const BLOG_BODIES = {
   "discord-vs-descall": {
     sections: [
-      {
-        h: "The short answer",
-        p: "Pick Descall if your group mostly lives in DMs, a private server and nightly voice, and you want all of that for free. Keep Discord if your community depends on a large bot setup, public server discovery or a member base in the thousands. Plenty of people run both: Discord for the big public spaces they follow, Descall for the friends they actually call. The rest of this comparison walks through each area, so you can decide with your own group in mind instead of a feature checklist.",
-      },
       {
         h: "Who each app is built for",
         p: "Discord grew into a general platform for communities of every size, from a handful of friends to servers with huge public audiences. That breadth is its strength, and it is also why the app can feel crowded when you only need a place to talk. Descall is smaller and newer. It is built by Demir Sarp Kurtlar in Türkiye and focuses on friend groups, gaming squads and small to medium communities. It does not try to be a discovery platform for millions of public servers.",
@@ -22,10 +23,6 @@ export const BLOG_BODIES = {
       {
         h: "Voice, video and screen share",
         p: "Both apps offer one-on-one and group voice and video calls, server voice channels and screen share. Descall runs calls over WebRTC, adds a TURN relay for strict networks such as some school, dorm or mobile connections, and includes noise suppression. Screen share has quality presets, and group calls default to around 720p at about 20 frames per second so the stream stays smooth for everyone watching. Discord has years of tuning at very large scale and is the safer bet for big public events. For a squad call or a movie night with friends, Descall is built for exactly that size.",
-      },
-      {
-        h: "Pricing and what is free",
-        p: "On Descall, chat, voice, video and screen share are free. There is an optional shop with cosmetic items such as profile banners, card colors, name effects, avatar effects and country flags. You pay for them with DesCoin that you earn inside the app, and none of them unlock call quality or core features. Discord pairs a free tier with a paid Nitro subscription that bundles extras on top. If subscription fatigue is the reason you searched for a Discord alternative, this is the clearest difference between the two.",
       },
       {
         h: "Platforms and access",
@@ -124,10 +121,6 @@ export const BLOG_BODIES = {
   "apps-like-discord": {
     sections: [
       {
-        h: "What people mean by apps like Discord",
-        p: "When someone asks for apps like Discord, they usually want three things together: a persistent chat that does not vanish, a shared space for a group, and voice they can drop into without scheduling a call. Some also want screen share and video. Very few apps combine all of these, which is why it helps to start from the job you need done rather than from a generic top ten list.",
-      },
-      {
         h: "Job one: a hangout for your friend group",
         p: "If your group mainly texts during the day and calls at night, you need good DMs, a group chat, presence so you can see who is around, and easy group calls. Descall is built around this case. You get direct messages, group chats, custom status, voice and video calls and screen share, all free. Messengers like WhatsApp or Telegram can carry the texting, but they do not give you the always-there server and voice room that made Discord feel like a hangout.",
       },
@@ -144,20 +137,12 @@ export const BLOG_BODIES = {
         p: "For a workplace, Slack is designed for that environment and fits company tools. For a study group or a side project with friends, the needs are simpler: a shared chat, a place to pin resources, and a call with screen share when you work through something together. Descall handles that with pinned messages, search over the whole history, and screen share with quality presets so a document or code stays readable.",
       },
       {
-        h: "Websites like Discord: no install needed",
-        p: "Not everyone wants to install an app to try something new. Descall runs fully in the browser at descall.com/app, including chat, calls and screen share in supported browsers. That makes it easy to test with a group before anyone commits. When people want a more permanent setup, they can move to the Windows desktop app, which is better for long sessions because a closed browser tab cannot end your call.",
-      },
-      {
         h: "Apps like Discord on your phone",
         p: "A Discord-style app has to work on phones, because that is where most messages are read. Descall is on the App Store for iPhone and iPad and available as an APK for Android. Voice notes help when typing is awkward, and you can join voice from your phone when you are away from your desk. Check that every platform in your group is covered before you move, since one friend left behind is often what ends a switch.",
       },
       {
         h: "Five questions before you pick",
         p: "Ask whether the core features you use are free or behind a subscription. Ask whether group voice works on your friends' real networks, including strict ones. Ask whether it runs on every device in your group. Ask whether you can organize people with roles and channels if you need to. And ask whether you could export your data or leave easily later. An app that passes all five is worth a one-week trial with your group. If it fails one, decide whether that gap matters for how you actually spend your time together.",
-      },
-      {
-        h: "Where Descall fits, and where it does not",
-        p: "Descall is an app like Discord for friend groups, gaming squads and small to medium communities. It is built in Türkiye with a full Turkish and English interface and works in Turkey, where Discord has been blocked by court order since 9 October 2024. It is smaller and newer, with no bot marketplace and no giant public server directory. If those are not what you use Discord for, it is a practical place to start.",
       },
     ],
   },
