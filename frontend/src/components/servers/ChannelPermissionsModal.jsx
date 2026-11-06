@@ -12,6 +12,7 @@ import {
   getServerMembers,
 } from "../../api/servers";
 import { BlockListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
+import EmptyState from "../ui/EmptyState";
 
 const PERM_LABELS = {
   VIEW_CHANNEL: "View channel",
@@ -73,10 +74,11 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
       ]);
       setOverrides(ov?.overrides || []);
       setEditableKeys(ov?.editableKeys || Object.keys(PERM_LABELS));
-      setRoles(rolesRes?.roles || []);
+      const loadedRoles = rolesRes?.roles?.length ? rolesRes.roles : server?.roles || [];
+      setRoles(loadedRoles);
       setMembers(membersRes?.members || []);
       if (!selectedKey) {
-        const everyone = (rolesRes?.roles || []).find((r) => r.isEveryone || r.is_everyone);
+        const everyone = loadedRoles.find((r) => r.isEveryone || r.is_everyone);
         if (everyone) setSelectedKey(`role:${everyone.id}`);
       }
     } catch (err) {
@@ -259,15 +261,17 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
           <aside className="server-channel-perms-targets">
             <div className="server-channel-perms-targets-head">
               <span>{t("Overrides")}</span>
-              <button
-                type="button"
-                className="icon-btn"
-                title={t("Add override")} aria-label={t("Add override")}
-                onClick={() => setAddOpen((v) => !v)}
-              >
-                <UserPlus size={16} />
-              </button>
             </div>
+            {/* UI audit #123: a labelled add button, not a lone icon. */}
+            <button
+              type="button"
+              className="server-ghost-btn server-channel-perms-add-btn"
+              aria-expanded={addOpen}
+              onClick={() => setAddOpen((v) => !v)}
+            >
+              <UserPlus size={15} />
+              <span>{t("Add role or member")}</span>
+            </button>
             {addOpen && (
               <div className="server-channel-perms-add">
                 {addableRoles.length > 0 && (
@@ -330,7 +334,12 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
 
           <div className="server-channel-perms-editor">
             {!selected ? (
-              <p className="server-empty-hint">{t("Select a role or member")}</p>
+              <EmptyState
+                compact
+                icon={Shield}
+                title={t("Select a role or member")}
+                body={t("Pick @everyone or add a role or member to change who can see and use this channel.")}
+              />
             ) : (
               <>
                 <div className="server-channel-perms-editor-head">

@@ -23,6 +23,8 @@ export const MID_APP_I18N = {
     "Welcome to #{channel}": "#{channel} kanalına hoş geldin",
     "This is the start of the #{channel} channel.": "#{channel} kanalının başlangıcı burası.",
     "Members couldn't load": "Üyeler yüklenemedi",
+    "Add role or member": "Rol veya üye ekle",
+    "Pick @everyone or add a role or member to change who can see and use this channel.": "Kanalı kimin görüp kullanabileceğini değiştirmek için @everyone'ı seç ya da rol veya üye ekle.",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -41,6 +43,8 @@ export const MID_APP_I18N = {
     "Welcome to #{channel}": "Willkommen in #{channel}",
     "This is the start of the #{channel} channel.": "Das ist der Anfang des Kanals #{channel}.",
     "Members couldn't load": "Mitglieder konnten nicht geladen werden",
+    "Add role or member": "Rolle oder Mitglied hinzufügen",
+    "Pick @everyone or add a role or member to change who can see and use this channel.": "Wähle @everyone oder füge eine Rolle oder ein Mitglied hinzu, um festzulegen, wer diesen Kanal sehen und nutzen kann.",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -59,6 +63,8 @@ export const MID_APP_I18N = {
     "Welcome to #{channel}": "Te damos la bienvenida a #{channel}",
     "This is the start of the #{channel} channel.": "Este es el comienzo del canal #{channel}.",
     "Members couldn't load": "No se pudieron cargar los miembros",
+    "Add role or member": "Añadir rol o miembro",
+    "Pick @everyone or add a role or member to change who can see and use this channel.": "Elige @everyone o añade un rol o miembro para cambiar quién puede ver y usar este canal.",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -77,6 +83,8 @@ export const MID_APP_I18N = {
     "Welcome to #{channel}": "Bienvenue dans #{channel}",
     "This is the start of the #{channel} channel.": "C'est le début du salon #{channel}.",
     "Members couldn't load": "Impossible de charger les membres",
+    "Add role or member": "Ajouter un rôle ou un membre",
+    "Pick @everyone or add a role or member to change who can see and use this channel.": "Choisis @everyone ou ajoute un rôle ou un membre pour changer qui peut voir et utiliser ce salon.",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -95,6 +103,8 @@ export const MID_APP_I18N = {
     "Welcome to #{channel}": "Boas-vindas ao #{channel}",
     "This is the start of the #{channel} channel.": "Este é o início do canal #{channel}.",
     "Members couldn't load": "Não foi possível carregar os membros",
+    "Add role or member": "Adicionar cargo ou membro",
+    "Pick @everyone or add a role or member to change who can see and use this channel.": "Escolha @everyone ou adicione um cargo ou membro para mudar quem pode ver e usar este canal.",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -113,5 +123,7 @@ export const MID_APP_I18N = {
     "Welcome to #{channel}": "Добро пожаловать в #{channel}",
     "This is the start of the #{channel} channel.": "Это начало канала #{channel}.",
     "Members couldn't load": "Не удалось загрузить участников",
+    "Add role or member": "Добавить роль или участника",
+    "Pick @everyone or add a role or member to change who can see and use this channel.": "Выбери @everyone или добавь роль или участника, чтобы изменить, кто видит и использует этот канал.",
   },
 };

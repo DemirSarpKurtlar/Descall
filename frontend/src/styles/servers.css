@@ -4116,6 +4116,8 @@ button.member-row.server-member-row {
 
 .server-channel-perms-modal {
   width: min(860px, 96vw);
+  /* UI audit #123: never collapse to a 100px strip. */
+  min-height: min(420px, 80vh);
   max-height: min(80vh, 720px);
   display: flex;
   flex-direction: column;
@@ -4842,4 +4844,19 @@ html[data-theme="light"] .server-rules-num { color: #3D5BD9; background: rgba(88
   text-transform: uppercase;
   background: color-mix(in srgb, var(--primary) 18%, transparent);
   color: var(--primary);
+}
+
+.server-channel-perms-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 8px;
+  white-space: nowrap;
+}
+
+.server-channel-perms-editor > .empty-state.compact {
+  height: 100%;
+  justify-content: center;
 }
