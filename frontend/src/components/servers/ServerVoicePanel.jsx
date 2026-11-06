@@ -31,7 +31,7 @@ import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import { nextShareSelection, visibleScreenStream } from "../../lib/screenShareTracks";
 import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../../lib/fluid/springs";
-import { applyPlaybackGain } from "../../lib/voiceGain";
+import RemoteScreenAudioSink from "../call/RemoteScreenAudioSink";
 import ShareFilmstrip from "../voice/ShareFilmstrip";
 import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
@@ -283,45 +283,6 @@ const VoiceTile = memo(function VoiceTile({
   );
 }, sameTile);
 
-/** Dedicated audio element for remote screen/tab audio (video stays muted). */
-function RemoteScreenAudioSink({ stream, volume = 100, enabled = true, sinkId = "" }) {
-  const audioRef = useRef(null);
-  const trackCount =
-    stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
-
-  useEffect(() => {
-    const audioEl = audioRef.current;
-    if (!audioEl) return;
-    applyPlaybackGain(audioEl, enabled ? Math.max(0, Math.min(200, Number(volume) || 0)) / 100 : 0);
-    if (sinkId && typeof audioEl.setSinkId === "function") {
-      audioEl.setSinkId(sinkId).catch(() => {});
-    }
-    if (!enabled || !stream || trackCount === 0) {
-      audioEl.muted = true;
-      if (audioEl.srcObject) audioEl.srcObject = null;
-      return;
-    }
-    audioEl.muted = false;
-    audioEl.srcObject = null;
-    audioEl.srcObject = stream;
-    const play = () => audioEl.play().catch(() => {});
-    play();
-    stream.getAudioTracks().forEach((t) => {
-      const prev = t.onunmute;
-      t.onunmute = (ev) => {
-        try {
-          if (typeof prev === "function") prev.call(t, ev);
-        } catch {
-          /* ignore */
-        }
-        play();
-      };
-    });
-  }, [stream, trackCount, volume, enabled, sinkId]);
-
-  return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
-}
-
 /**
  * Multi-sharer screen stage, same UX as group/DM CallOverlay:
  * switch screens, volume, click-to-fullscreen.
@@ -391,6 +352,7 @@ function ServerScreenShareStage({
   volumes = {},
   onVolumeChange,
   sinkId = "",
+  deafened = false,
   expandToken = 0,
   expandSharerId = null,
 }) {
@@ -537,7 +499,7 @@ function ServerScreenShareStage({
         key={`screen-audio-${s.id}`}
         stream={s.stream}
         volume={volumeFor(s)}
-        enabled
+        deafened={deafened}
         sinkId={sinkId}
       />
     ));
@@ -1045,6 +1007,7 @@ export default function ServerVoicePanel({
             volumes={serverVoice?.screenVolumes || {}}
             onVolumeChange={(id, value) => serverVoice?.setScreenShareVolume?.(id, value)}
             sinkId={serverVoice?.selectedAudioOutput || ""}
+            deafened={Boolean(serverVoice?.deafened || serverVoice?.serverDeafened)}
             expandToken={screenExpand.token}
             expandSharerId={screenExpand.id}
           />

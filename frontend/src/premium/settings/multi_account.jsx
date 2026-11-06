@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
-import { DesktopOnly, PanelShell } from "../gaming/ui.jsx";
 import { failMessage, isDesktop, pinvoke, reportFailure } from "../gaming/bridge.js";
-import { Trash2 } from "../../components/ui/Icon.jsx";
+import { Badge, Btn, Group, Hint, IconBtn, Item, List, Note } from "../story/kit.jsx";
+import { usePublish } from "../story/bus.js";
 
 export const key = "multi_account";
+const ds = (s) => `${key}.${s}`;
 
 export function Panel() {
   const t = useT();
@@ -15,6 +16,7 @@ export function Panel() {
     if (r?.ok) setData({ accounts: r.accounts || [], max: r.max || 3 });
   }, []);
   useEffect(() => { if (isDesktop()) reload(); }, [reload]);
+  usePublish("multi_account.count", data.accounts.length);
   const add = async () => {
     const r = await pinvoke("premium:multi_account:add");
     if (!r?.ok && r?.error !== "limit") reportFailure("multi_account", r);
@@ -22,26 +24,26 @@ export function Panel() {
     reload();
   };
   return (
-    <PanelShell title={t("premiumGaming.multiAccount.title")} desc={t("premiumGaming.multiAccount.desc")} testId="pg-panel-multi_account">
-      {!isDesktop() ? <DesktopOnly /> : null}
-      <div className="pg-row">
-        <button type="button" className="pg-btn is-primary is-small" disabled={!isDesktop() || data.accounts.length >= data.max} onClick={add}>{t("premiumGaming.multiAccount.add")}</button>
-        {err ? <span className="pg-error">{err}</span> : null}
-      </div>
-      {data.accounts.length ? (
-        <ul className="pg-list">
+    <>
+      <Group title={t("premiumGaming.multiAccount.title")} aside={<span className="tnum">{`${data.accounts.length} / ${data.max}`}</span>}>
+        <Note ds={ds("desc")}>{t("premiumGaming.multiAccount.desc")}</Note>
+        {!isDesktop() ? <Hint>{t("premiumGaming.common.desktopOnly")}</Hint> : null}
+        <List ds={ds("list")} empty={data.accounts.length ? null : t("premiumGaming.multiAccount.empty")}>
           {data.accounts.map((a) => (
-            <li key={a.id}>
-              <span className="pg-grow">{a.label || t("premiumGaming.multiAccount.unnamed")}</span>
-              <span className="pg-chip">{a.signedIn ? t("premiumGaming.multiAccount.signedIn") : t("premiumGaming.multiAccount.notSignedIn")}</span>
-              <button type="button" className="pg-btn is-small" onClick={() => pinvoke("premium:multi_account:open", a.id)}>{t("premiumGaming.multiAccount.open")}</button>
-              <button type="button" className="pg-btn is-small is-danger" aria-label={t("premiumGaming.common.remove")} onClick={async () => { await pinvoke("premium:multi_account:remove", a.id); reload(); }}><Trash2 size={14} /></button>
-            </li>
+            <Item key={a.id} icon="user" title={a.label || t("premiumGaming.multiAccount.unnamed")}>
+              <Badge tone={a.signedIn ? "ok" : ""}>{a.signedIn ? t("premiumGaming.multiAccount.signedIn") : t("premiumGaming.multiAccount.notSignedIn")}</Badge>
+              <Btn onClick={() => pinvoke("premium:multi_account:open", a.id)}>{t("premiumGaming.multiAccount.open")}</Btn>
+              <IconBtn icon="trash" danger label={t("premiumGaming.common.remove")} onClick={async () => { await pinvoke("premium:multi_account:remove", a.id); reload(); }} />
+            </Item>
           ))}
-        </ul>
-      ) : <p className="pg-muted">{t("premiumGaming.multiAccount.empty")}</p>}
-      <p className="pg-help">{t("premiumGaming.multiAccount.help", { max: data.max })}</p>
-    </PanelShell>
+        </List>
+        <div className="ps-act">
+          <Btn kind="primary" icon="plus" ds={ds("add")} disabled={!isDesktop() || data.accounts.length >= data.max} onClick={add}>{t("premiumGaming.multiAccount.add")}</Btn>
+        </div>
+        {err ? <Hint tone="err" live>{err}</Hint> : null}
+      </Group>
+      <Hint ds={ds("help")}>{t("premiumGaming.multiAccount.help", { max: data.max })}</Hint>
+    </>
   );
 }
 

@@ -1,4 +1,5 @@
 import { t } from "../i18n/runtime.js";
+import { isPolitePeer } from "./webrtcNegotiation.js";
 
 /**
  * Stop an incoming DM ring everywhere it is showing on this machine.
@@ -16,6 +17,43 @@ import { t } from "../i18n/runtime.js";
 export const RING_CHANNEL = "descall-call-ring";
 /** Server ends an unanswered ring at 45 s; the local guard is a bit later. */
 export const INCOMING_RING_TIMEOUT_MS = 50_000;
+
+/**
+ * Caller side guard: the server answers an unanswered ring with
+ * call:declined (no_answer) at 45 s. When that signal is lost (backend
+ * restart dropped the in-memory ring, the socket stayed down), the ringback
+ * used to loop until the caller hung up. A bit later than the server.
+ */
+export const OUTGOING_RING_TIMEOUT_MS = 50_000;
+/**
+ * The callee answered on a locked iPhone and is unlocking: the server keeps
+ * that ring resumable for 120 s (dmCallLog ANSWERING_MAX_AGE_MS) and the
+ * phone reports "failed" itself after 60 s. Only a lost signal gets this far.
+ */
+export const OUTGOING_ANSWERING_TIMEOUT_MS = 125_000;
+
+/** How long the caller side waits before giving up on its own ring. */
+export function outgoingRingGuardMs({ calleeAnswering = false } = {}) {
+  return calleeAnswering ? OUTGOING_ANSWERING_TIMEOUT_MS : OUTGOING_RING_TIMEOUT_MS;
+}
+
+/**
+ * Crossed calls: we are dialing the peer and their offer for us arrives (both
+ * pressed call at the same moment). Before, each side kept the other's offer
+ * as a "refreshed" ring and both heard their ringback until the 45 s "No
+ * answer". Same polite-peer rule as the renegotiation glare: the polite side
+ * ("answer") answers the peer's offer on its own connection; the other side
+ * ("wait") keeps its offer and gets answered. Exactly one side answers.
+ * @returns {"answer"|"wait"|null} null = not a crossed call
+ */
+export function crossedCallRole(current = {}, offerFromId, myId) {
+  if (!current || current.mode !== "outgoing") return null;
+  const peer = current.peerId != null ? String(current.peerId) : "";
+  const from = offerFromId != null ? String(offerFromId) : "";
+  const me = myId != null ? String(myId) : "";
+  if (!peer || !from || !me || peer !== from || me === from) return null;
+  return isPolitePeer(me, from) ? "answer" : "wait";
+}
 
 /** Does a ring-ended style event refer to the ring this tab shows? */
 export function ringEventMatches(current = {}, event = {}) {

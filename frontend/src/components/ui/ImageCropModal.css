@@ -185,7 +185,8 @@ html.glass-ui .img-crop-zoom input[type="range"] {
 }
 html.glass-ui .img-crop-zoom input[type="range"]::-webkit-slider-runnable-track {
   height: 4px; border-radius: var(--r-sm);
-  background: linear-gradient(90deg, var(--g-brand, #6c86ff) 0 var(--crop-fill, 0%), rgba(120, 120, 128, 0.36) var(--crop-fill, 0%) 100%);
+  /* Fill ends at the thumb centre: thumb/2 + (100% - thumb) * p (thumb 28px). */
+  background: linear-gradient(90deg, var(--g-brand, #6c86ff) 0 calc(14px + (100% - 28px) * var(--crop-p, 0)), rgba(120, 120, 128, 0.36) calc(14px + (100% - 28px) * var(--crop-p, 0)) 100%);
 }
 html.glass-ui .img-crop-zoom input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 28px; height: 28px; margin-top: -12px; border-radius: 50%;

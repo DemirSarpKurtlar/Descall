@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, Users } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import useVoiceActivity from "../../hooks/useVoiceActivity";
+import { useCallTimer } from "../../hooks/useCallTimer";
 import {
   anchorPoint,
   bandAxis,
@@ -77,6 +78,16 @@ function Waveform({ level, active }) {
   );
 }
 
+/** The call timer (or the subtitle before it starts). Ticks on its own each second. */
+function MiniCallSubText({ subtitle, pending, startedAt, stoppedAt }) {
+  const timer = useCallTimer(pending ? null : startedAt, stoppedAt);
+  return (
+    <span className="mcc-sub-text" title={typeof subtitle === "string" && !(timer && !pending) ? subtitle : undefined}>
+      {timer && !pending ? timer : subtitle}
+    </span>
+  );
+}
+
 /**
  * Premium draggable mini call card (2.11.1). Heavy frosted glass, never
  * see-through. Tap the body to return to the call's chat; drag anywhere with
@@ -89,7 +100,8 @@ export default function MiniCallCard({
   peer,
   title,
   subtitle,
-  timer,
+  timerStartedAt = null,
+  timerStoppedAt = null,
   muted,
   deafened,
   screenSharing,
@@ -268,9 +280,7 @@ export default function MiniCallCard({
         <span className="mcc-title" title={typeof title === "string" ? title : undefined}>{title}</span>
         <span className="mcc-sub">
           {pending ? <span className="mcc-dots" aria-hidden="true"><i /><i /><i /></span> : <Waveform level={level} active={voiceLive} />}
-          <span className="mcc-sub-text" title={typeof subtitle === "string" && !(timer && !pending) ? subtitle : undefined}>
-            {timer && !pending ? timer : subtitle}
-          </span>
+          <MiniCallSubText subtitle={subtitle} pending={pending} startedAt={timerStartedAt} stoppedAt={timerStoppedAt} />
         </span>
       </span>
       <span className="mcc-actions">

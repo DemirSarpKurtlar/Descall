@@ -1,3 +1,4 @@
+import { PREMIUM_STORY_ES } from "./premiumStory.es.js";
 import { UAH_ES } from "./uah.es.js";
 /**
  * es catalog (status "draft" in ../locales.json, hidden from users until the
@@ -9,6 +10,7 @@ import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_ES } from "./profileMediaPicker.es.js";
 import { MSG4_ES } from "./msg4.es.js";
 export const nested = {
+  "premiumStory": PREMIUM_STORY_ES,
   "amp": AMP_ES,
   "msg4": MSG4_ES,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)

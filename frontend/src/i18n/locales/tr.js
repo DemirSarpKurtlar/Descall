@@ -2,6 +2,7 @@
 import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
+import { PREMIUM_STORY_TR } from "./premiumStory.tr.js";
 import { PREMIUM_AUDIO_TR } from "./premiumAudio.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
 import { AMP_TR } from "./profileMediaPicker.tr.js";
@@ -37,6 +38,7 @@ export const nested = {
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
+  premiumStory: PREMIUM_STORY_TR,
   premiumAudio: PREMIUM_AUDIO_TR,
   world3d: WORLD3D_TR,
   counts: COUNTS_TR,

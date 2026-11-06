@@ -7,34 +7,32 @@
 import { useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { ANCHORS, readDockAnchor, writeDockAnchor } from "../../lib/miniCallDock.js";
+import { Group, Note, SpotPicker } from "../story/kit.jsx";
+import { usePublish } from "../story/bus.js";
 
 export const key = "mini_mode";
+const ds = (s) => `${key}.${s}`;
 
 export function Panel() {
   const t = useT();
   const [anchor, setAnchor] = useState(() => readDockAnchor());
+  usePublish("mini_mode.dock", anchor);
   const pick = (a) => { writeDockAnchor(a); setAnchor(readDockAnchor()); };
   return (
-    <div className="pp-mini">
-      <p className="pp-mini-info">{t("premium.panel.miniInfo")}</p>
-      <div className="pp-mini-label" id="pp-mini-dock">{t("premium.panel.miniDock")}</div>
-      <div className="pp-mini-screen" role="radiogroup" aria-labelledby="pp-mini-dock">
-        {ANCHORS.map((a) => (
-          <button
-            key={a}
-            type="button"
-            role="radio"
-            aria-checked={anchor === a}
-            aria-label={t(`premium.panel.dock.${a}`)}
-            title={t(`premium.panel.dock.${a}`)}
-            className={`pp-mini-spot is-${a}${anchor === a ? " is-on" : ""}`}
-            data-testid={`premium-mini-dock-${a}`}
-            onClick={() => pick(a)}
-          >
-            <span className="pp-mini-card" aria-hidden="true" />
-          </button>
-        ))}
-      </div>
-    </div>
+    <>
+      <Group title={t("premium.panel.miniDock")}>
+        <SpotPicker
+          value={anchor}
+          spots={ANCHORS.map((a) => ({ id: a, label: t(`premium.panel.dock.${a}`) }))}
+          onChange={pick}
+          label={t("premium.panel.miniDock")}
+          ds={ds("dock")}
+          testIdPrefix="premium-mini-dock-"
+        />
+      </Group>
+      <Group title={t("premiumStory.g.howItWorks")}>
+        <Note ds={ds("info")}>{t("premium.panel.miniInfo")}</Note>
+      </Group>
+    </>
   );
 }

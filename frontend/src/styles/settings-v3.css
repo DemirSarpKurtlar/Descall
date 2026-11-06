@@ -112,12 +112,13 @@ html[data-theme="light"] .s3-sw button.on { box-shadow: 0 0 0 2.5px #fff, 0 0 0 
 
 .s3-fs { display: flex; align-items: center; gap: 14px; padding: 16px 16px 6px; }
 .s3-range, .s3-range:hover, .s3-range:focus { -webkit-appearance: none; appearance: none; flex: 1; min-width: 0; width: auto; height: 26px; margin: 0; padding: 0; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none !important; outline: none; cursor: pointer; }
-.s3-range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--s3-t1) var(--v, 0%), rgba(255, 255, 255, 0.18) var(--v, 0%)); }
+.s3-range { --s3-stop: calc(13px + (100% - 26px) * var(--vp, 0)); }
+.s3-range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--s3-t1) var(--s3-stop), rgba(255, 255, 255, 0.18) var(--s3-stop)); }
 .s3-range::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.18); }
 .s3-range::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--s3-t1); }
 .s3-range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35); border: 0; }
 .s3-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35); border: 0; }
-html[data-theme="light"] .s3-range::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--g-brand, #587af6) var(--v, 0%), rgba(16, 18, 28, 0.14) var(--v, 0%)); }
+html[data-theme="light"] .s3-range::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--g-brand, #587af6) var(--s3-stop), rgba(16, 18, 28, 0.14) var(--s3-stop)); }
 .s3-range:focus-visible { outline: none; }
 .s3-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--s3-link), 0 3px 8px rgba(0, 0, 0, 0.35); }
 .s3-ticks { display: flex; justify-content: space-between; padding: 6px 16px 12px 40px; font-size: 11.5px; color: rgba(235, 238, 255, 0.45); }

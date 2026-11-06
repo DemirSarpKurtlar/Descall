@@ -119,7 +119,7 @@ export default function ImageCropModal({
             step={0.01}
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
-            style={{ "--crop-fill": `${((zoom - 1) / 2) * 100}%` }}
+            style={{ "--crop-fill": `${((zoom - 1) / 2) * 100}%`, "--crop-p": Math.min(1, Math.max(0, (zoom - 1) / 2)) }}
             aria-label={t("Zoom")}
             disabled={busy}
           />

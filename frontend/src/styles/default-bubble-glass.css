@@ -36,8 +36,8 @@ html[data-theme="light"] {
 }
 
 /* Incoming */
-html.glass-desktop .message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only),
-html.glass-ui .app-root.g-shell .message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only) {
+html.glass-desktop .message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card),
+html.glass-ui .app-root.g-shell .message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card) {
   background: var(--dbub-in) !important;
   color: var(--dbub-in-ink);
   border: 0.5px solid var(--dbub-edge);
@@ -45,8 +45,8 @@ html.glass-ui .app-root.g-shell .message-bubble:not(.cosmetic-chat-bubble):not(.
 }
 
 /* Own */
-html.glass-desktop .message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only),
-html.glass-ui .app-root.g-shell .message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only) {
+html.glass-desktop .message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card),
+html.glass-ui .app-root.g-shell .message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card) {
   background: var(--dbub-own) !important;
   color: var(--dbub-own-ink);
   border-color: rgba(255, 255, 255, 0.16);
@@ -86,19 +86,19 @@ html.glass-ui .app-root.g-shell .message-bubble.own.is-editing:not(.cosmetic-cha
 
 /* Reduce Transparency (native → html.a11y-solid), low-power gd-lite, OS query:
    flat opaque fill, no sheen, no lift. Scoped to the glass UIs only. */
-html:is(.a11y-solid, .gd-lite):is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only) {
+html:is(.a11y-solid, .gd-lite):is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card) {
   background: var(--dbub-in-solid) !important;
   box-shadow: none !important;
 }
-html:is(.a11y-solid, .gd-lite):is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only) {
+html:is(.a11y-solid, .gd-lite):is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card) {
   background: var(--dbub-own-solid) !important;
 }
 @media (prefers-reduced-transparency: reduce) {
-  html:is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only) {
+  html:is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card) {
     background: var(--dbub-in-solid) !important;
     box-shadow: none !important;
   }
-  html:is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only) {
+  html:is(.glass-desktop, .glass-ui) body .message-bubble.message-bubble.own:not(.cosmetic-chat-bubble):not(.has-media-only):not(.has-card) {
     background: var(--dbub-own-solid) !important;
   }
 }
