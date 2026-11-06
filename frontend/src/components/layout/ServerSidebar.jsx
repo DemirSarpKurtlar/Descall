@@ -38,7 +38,6 @@ import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import InviteCard from "../friends/InviteCard";
-import EmptyState from "../ui/EmptyState";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate } from "../../lib/datetime";
 import { formatDate, formatTime, upper } from "../../i18n/format";
