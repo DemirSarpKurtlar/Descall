@@ -127,13 +127,14 @@ html[data-theme="light"] .s3-ticks { color: var(--s3-t2); }
 .s3-ticks button.on { color: var(--s3-t1); font-weight: 600; }
 
 /* ── 3.0 settings shell, desktop + iPad (mockups 34 / 36) ── */
-html.glass-desktop .user-settings.is-desktop.s3-shell:not(.is-shop-open) {
+/* UI audit #150: the Shop uses the same card size and scrim as every other page. */
+html.glass-desktop .user-settings.is-desktop.s3-shell {
   width: min(1180px, calc(100vw - 48px)) !important;
   max-width: 1180px !important;
   height: min(800px, var(--us-fit-h)) !important;
   border-radius: 28px !important;
 }
-html.glass-desktop .user-settings.is-desktop.s3-shell.s3-tablet:not(.is-shop-open) {
+html.glass-desktop .user-settings.is-desktop.s3-shell.s3-tablet {
   width: min(1100px, calc(100vw - 40px)) !important;
   max-width: 1100px !important;
   height: min(760px, var(--us-fit-h)) !important;
@@ -273,12 +274,12 @@ html.reduce-motion *::after {
 
 /* Görünüm v3 (mockup 34/36): the app stays visible behind the sheet, only dimmed;
    the heavy frosted material is on the settings panel itself. */
-html.glass-desktop .user-settings-shell.is-desktop:has(> .user-settings.s3-shell:not(.is-shop-open)) {
+html.glass-desktop .user-settings-shell.is-desktop:has(> .user-settings.s3-shell) {
   background: rgba(6, 7, 12, 0.6) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
-html.glass-desktop[data-theme="light"] .user-settings-shell.is-desktop:has(> .user-settings.s3-shell:not(.is-shop-open)) {
+html.glass-desktop[data-theme="light"] .user-settings-shell.is-desktop:has(> .user-settings.s3-shell) {
   background: rgba(16, 18, 28, 0.32) !important;
 }
 
