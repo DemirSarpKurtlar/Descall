@@ -1509,6 +1509,16 @@ button.us-row.g-privacy-link:hover {
   border: 1px solid rgba(218, 55, 60, 0.28);
 }
 
+/* A slider row inside a grouped card keeps the card's 16px inner padding. */
+.us-card .us-field.us-field-inset {
+  padding: 12px 16px 4px;
+}
+
+.us-card .us-field-inset-hint {
+  margin: 0;
+  padding: 0 16px 14px;
+}
+
 .us-mic-test {
   padding: 14px;
   display: flex;

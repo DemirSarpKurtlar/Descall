@@ -2482,7 +2482,7 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Auto gain control")}
                   />
                 </SettingRow>
-                <label className="us-field">
+                <label className="us-field us-field-inset">
                   <span>{t("Input sensitivity")}</span>
                   <input
                     type="range"
@@ -2492,7 +2492,7 @@ const UserPanel = forwardRef(function UserPanel({
                     onChange={(event) => patchVoice({ inputSensitivity: Number(event.target.value) })}
                   />
                 </label>
-                <p className="us-row-desc" style={{ margin: "0 4px 8px" }}>
+                <p className="us-row-desc us-field-inset-hint">
                   {t("Raise this if people miss quiet speech. Lower it if background noise lights the ring.")}
                 </p>
               </div>
