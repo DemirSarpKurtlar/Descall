@@ -8748,6 +8748,7 @@ export const phrases = {
   "Message bubbles": "Bulles de messages",
   "Message cannot be empty.": "Le message ne peut pas être vide.",
   "Message content or media required": "Contenu ou média du message requis",
+  "Message is too long.": "Le message est trop long.",
   "Message from Descall": "Message de Descall",
   "Message must be 5–2000 characters": "Le message doit comporter entre 5 et 2000 caractères",
   "Message must be {max} characters or fewer.": "Le message doit comporter {max} caractères au maximum.",
