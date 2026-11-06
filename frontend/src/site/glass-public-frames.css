@@ -1979,3 +1979,7 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
   color: var(--gp-t1);
   background: rgba(88, 122, 245, 0.08);
 }
+
+/* Features: the H1 keeps clear space under the floating header (it sat ~8 px under it). */
+.mkt .mkt-section.seo-features { margin-top: 48px; }
+@media (max-width: 768px) { .mkt .mkt-section.seo-features { margin-top: 32px; } }

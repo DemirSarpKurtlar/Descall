@@ -54,7 +54,7 @@ export default function FeaturesPage() {
   return (
     <>
       <JsonLd data={[buildBreadcrumbLd(crumbs)]} />
-      <section className="mkt-section seo-features" style={{ marginTop: 12 }}>
+      <section className="mkt-section seo-features">
         <h1 className="seo-page-h1">{t("Features of a modern Discord alternative")}</h1>
         <p className="lead">
           {t("Servers, direct messages, voice, and screen share. Chat and calls stay free.")}

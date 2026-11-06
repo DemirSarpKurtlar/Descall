@@ -21,21 +21,21 @@ const EXTRA_TR = {
   "Full server structure with categories, text, voice, and stage channels":
     "Kategorili metin, ses ve sahne kanallarıyla tam sunucu yapısı",
   "Role hierarchy with hoist/mention and per-channel permission overrides":
-    "Hoist/mention’lı rol hiyerarşisi ve kanal bazlı izinler",
+    "Rolleri sırala, kişileri etiketle; kanal bazlı izinler",
   "Kick, ban, timeout, audit logs, community rules, and invite links":
-    "Kick, ban, timeout, denetim kayıtları, topluluk kuralları ve davet linkleri",
+    "At, yasakla, sustur; işlem kaydı, topluluk kuralları ve davet bağlantıları",
   "Advanced templates with ready-made roles and staff rooms":
-    "Hazır roller ve staff odalarıyla gelişmiş şablonlar",
+    "Hazır roller ve yetkili odalarıyla gelişmiş şablonlar",
   "Chat, calls & screen share": "Sohbet, aramalar ve ekran paylaşımı",
   "Real-time DMs and server chat with typing indicators":
     "Yazıyor göstergeli anlık DM ve sunucu sohbeti",
   "WebRTC voice and HD video for groups and server lobbies":
     "Gruplar ve sunucu lobileri için WebRTC ses ve HD görüntü",
   "Screen share with quality presets for games, VODs, and watch parties":
-    "Oyun, VOD ve izleme partileri için kalite hazır ayarlı ekran paylaşımı",
+    "Oyun, kayıt ve birlikte izleme için kalite ayarlı ekran paylaşımı",
   "Gaming extras": "Oyun ekstraları",
   "Gaming server templates with squad-up and scrim rooms":
-    "Ekip toplama ve scrim odalı oyun sunucusu şablonları",
+    "Ekip toplama ve antrenman odalı oyun sunucusu şablonları",
   "Optional DesCoin cosmetics, core chat and calls stay free":
     "İsteğe bağlı DesCoin kozmetikleri, temel sohbet ve aramalar ücretsiz kalır",
   "Descall vs Discord": "Descall vs Discord",
