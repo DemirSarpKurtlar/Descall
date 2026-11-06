@@ -6,6 +6,7 @@ import { FAQ_ITEMS } from "../faqData.js";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
 import { LEGAL_EMAIL, contactCopy, legalSlug, tocLabel } from "../../legal/legalView.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
+import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
 import { formatDate } from "../../i18n/format.js";
 import {
   ALTERNATIVE_HUB_FAQ,
@@ -302,9 +303,7 @@ export function corePageBody(path) {
     <li>${escapeHtml(nc("Contact"))}: ${mail}</li>
   </ul>
   <h2>${escapeHtml(nc("FAQ"))}</h2>
-  <section><h3>${escapeHtml(nc("Who owns Descall?"))}</h3><p>${escapeHtml(nc("Demir Sarp Kurtlar owns Descall. He is the founder, owner, and CEO of Descall."))}</p></section>
-  <section><h3>${escapeHtml(nc("Who founded Descall?"))}</h3><p>${escapeHtml(nc("Descall was founded by Demir Sarp Kurtlar, who remains the owner and CEO."))}</p></section>
-  <section><h3>${escapeHtml(nc("Who is the CEO of Descall?"))}</h3><p>${escapeHtml(nc("Demir Sarp Kurtlar is the founder, owner, and CEO of Descall."))}</p></section>
+  ${OWNERSHIP_FAQ_EN.map((f) => `<section><h3>${escapeHtml(nc(f.q))}</h3><p>${escapeHtml(nc(f.a))}</p></section>`).join("\n  ")}
   <p><a href="/descall-sahibi">Türkçe: Descall’ın sahibi kim?</a> · <a href="${hn("/about")}">${escapeHtml(nc("About"))}</a></p>
   ${navBlock(loc)}
 </main>`;
@@ -327,9 +326,7 @@ export function corePageBody(path) {
     <li>İletişim: <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></li>
   </ul>
   <h2>SSS</h2>
-  <section><h3>Descall’ın sahibi kim?</h3><p>Descall’ın sahibi Demir Sarp Kurtlar’dır. Demir Sarp Kurtlar, Descall’ın kurucusu, sahibi ve CEO’sudur.</p></section>
-  <section><h3>Descall sahibi kimdir?</h3><p>Descall sahibi Demir Sarp Kurtlar’dır.</p></section>
-  <section><h3>Descall’ı kim kurdu?</h3><p>Descall’ı Demir Sarp Kurtlar kurdu. Hâlâ sahibi ve CEO’sudur.</p></section>
+  ${OWNERSHIP_FAQ_TR.map((f) => `<section><h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p></section>`).join("\n  ")}
   <p><a href="/who-owns-descall">English: Who owns Descall?</a> · <a href="/tr/about">Hakkında</a></p>
   ${navBlock("tr")}
 </main>`;

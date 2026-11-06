@@ -259,6 +259,10 @@ function crawlBodyInner(route) {
               : ""
           }</p>`
         : "";
+      // Same questions as the post's FAQPage JSON-LD, visible on the page.
+      const postFaq = (BLOG_FAQ_BY_SLUG[slug] || [])
+        .map((f) => `<h3>${escapeHtml(tx(f.q))}</h3><p>${escapeHtml(tx(f.a))}</p>`)
+        .join("\n");
       return `
 <main>
   ${brand}
@@ -266,6 +270,7 @@ function crawlBodyInner(route) {
     <h1>${escapeHtml(tx(post.title))}</h1>
     <p>${escapeHtml(tx(post.description))}</p>${dates}
     ${sections}
+    ${postFaq ? `<h2>${escapeHtml(tx("FAQ"))}</h2>\n${postFaq}` : ""}
     ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : tx("All guides"), loc)}
   </article>
   ${seoSiteNav(loc)}
@@ -326,9 +331,6 @@ function localizedJsonLd(route) {
     case "/compare/discord":
       graphs.push(faq(COMPARE_FAQ));
       break;
-    case "/about":
-      graphs.push(faq(OWNERSHIP_FAQ_EN));
-      break;
     case "/who-owns-descall":
       graphs.push(
         buildOwnershipWebPageLd({
@@ -336,7 +338,6 @@ function localizedJsonLd(route) {
           name: t("Who owns Descall?"),
           description: t(OWNERSHIP_STATEMENT_EN),
           inLanguage: loc,
-          faqs: OWNERSHIP_FAQ_EN.map((f) => ({ q: t(f.q), a: t(f.a) })),
         }),
         faq(OWNERSHIP_FAQ_EN)
       );
@@ -392,8 +393,12 @@ function jsonLdForRoute(route) {
   if (route.path === "/alternatives") {
     graphs.push(buildFaqLd(ALTERNATIVES_FAQ));
   }
-  if (route.path === "/compare/discord" || route.path === "/tr/compare/discord") {
+  if (route.path === "/compare/discord") {
     graphs.push(buildFaqLd(COMPARE_FAQ));
+  }
+  // The Turkish compare page shows the questions in Turkish (corePageBodies faqHtml).
+  if (route.path === "/tr/compare/discord") {
+    graphs.push(buildFaqLd(COMPARE_FAQ.map((f) => ({ q: trCopy(f.q, "tr"), a: trCopy(f.a, "tr") }))));
   }
   const trLanding = TR_LANDINGS[route.path];
   if (trLanding) {
@@ -451,7 +456,6 @@ function jsonLdForRoute(route) {
         name: "Who owns Descall?",
         description: OWNERSHIP_STATEMENT_EN,
         inLanguage: "en",
-        faqs: OWNERSHIP_FAQ_EN,
       }),
       buildFaqLd(OWNERSHIP_FAQ_EN)
     );
@@ -463,13 +467,9 @@ function jsonLdForRoute(route) {
         name: "Descall’ın sahibi kim?",
         description: OWNERSHIP_STATEMENT_TR,
         inLanguage: "tr",
-        faqs: OWNERSHIP_FAQ_TR,
       }),
       buildFaqLd(OWNERSHIP_FAQ_TR)
     );
-  }
-  if (route.path === "/about" || route.path === "/tr/about") {
-    graphs.push(buildFaqLd(route.path.startsWith("/tr") ? OWNERSHIP_FAQ_TR : OWNERSHIP_FAQ_EN));
   }
 
   const niche = NICHE_LANDINGS[route.path];
@@ -486,8 +486,9 @@ function jsonLdForRoute(route) {
           title: post.title,
           description: post.description,
           path: route.path,
-          datePublished: post.date || post.publishedAt || "2026-01-01",
-          dateModified: post.updated || post.updatedAt || post.date || "2026-01-01",
+          datePublished: post.date,
+          dateModified: post.updated || post.date,
+          inLanguage: "en",
         })
       );
     }

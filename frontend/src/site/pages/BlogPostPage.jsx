@@ -42,7 +42,7 @@ export default function BlogPostPage({ onSignIn }) {
           path: mirror.href(post.path),
           datePublished: post.date,
           dateModified: post.updated || post.date,
-          ...(mirror.prefixed ? { inLanguage: mirror.locale } : {}),
+          inLanguage: mirror.prefixed ? mirror.locale : "en",
         }),
       ]}
       primaryCta={
