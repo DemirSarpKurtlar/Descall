@@ -526,6 +526,11 @@ function useSignupStats() {
     try {
       const d = await adminFetch(`/signup-stats?${qs(query)}`);
       if (id !== seq.current) return;
+      // A reply without the expected shape is an error state, not a crash.
+      if (!d || typeof d !== "object" || !d.range || !d.kpis || !Array.isArray(d.series)) {
+        setError("error");
+        return;
+      }
       setData(d);
       setError(null);
     } catch (e) {
