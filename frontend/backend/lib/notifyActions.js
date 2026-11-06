@@ -277,7 +277,7 @@ function createNotifyActions(deps = {}) {
 
   // ── Quick reply ──────────────────────────────────────────────────────────
 
-  async function replyDm(io, me, peerId, text) {
+  async function replyDm(io, me, peerId, text, { markRead = true } = {}) {
     const s = state();
     const { convKey, cacheDmMessages, messageSender, isAcceptedFriend } = dm();
     const myId = me.id;
@@ -366,7 +366,8 @@ function createNotifyActions(deps = {}) {
     emitToUser(io, myId, "dm:message", { ...messagePayload, convWith: peerId });
     emitToUser(io, peerId, "dm:unread:sync", { peerId: myId, count: recipientActivePeer !== myId ? unreadCount : 0 });
     // The reply means I have read this chat.
-    await markDmRead(io, myId, peerId).catch(() => {});
+    // A scheduled send (messaging phase 4) is not the sender reading the chat.
+    if (markRead) await markDmRead(io, myId, peerId).catch(() => {});
 
     let mentioned = false;
     const peerName = s.usernameById.get(peerId);
@@ -376,7 +377,9 @@ function createNotifyActions(deps = {}) {
     }
     if (recipientActivePeer !== myId) {
       try {
-        if (!(await prefs().isMuted(peerId, myId))) {
+        const np = deps.notifyPrefs || require("./notifyPrefs");
+        const notifyOk = np.allows(await np.levelFor(peerId, "dm", myId), { mention: mentioned });
+        if (notifyOk && !(await prefs().isMuted(peerId, myId))) {
           const preview = text.slice(0, 140);
           const common = {
             body: preview,
@@ -423,13 +426,13 @@ function createNotifyActions(deps = {}) {
     return readSendOutcome(emitted, { messageEvent: "server:channel:message", errorEvent: "server:channel:message:error", tempId });
   }
 
-  async function reply(io, userId, { conv, text } = {}) {
+  async function reply(io, userId, { conv, text, markRead = true } = {}) {
     const c = parseConversation(conv);
     const s = state();
     const body = normalizeReplyText(text, Number(s.systemConfig?.maxMessageLength) || 2000);
     assertNotTimedOut(userId);
     const me = await loadActor(userId);
-    if (c.type === "dm") return replyDm(io, me, c.id, body);
+    if (c.type === "dm") return replyDm(io, me, c.id, body, { markRead });
     if (c.type === "group") return replyGroup(io, me, c.id, body);
     return replyChannel(io, me, c.id, body);
   }
@@ -515,7 +518,11 @@ function createNotifyActions(deps = {}) {
     if (!s.dmUnreadByUser.has(myId)) s.dmUnreadByUser.set(myId, new Map());
     s.dmUnreadByUser.get(myId).delete(peerId);
     emitToUser(io, myId, "dm:unread:sync", { peerId, count: 0 });
-    emitToUser(io, peerId, "dm:peer_read", { peerId: myId, at });
+    // "Görüldü" (messaging phase 4): only when both people share read receipts.
+    const share = deps.readReceipts ? deps.readReceipts.bothShare : require("./readReceipts").bothShare;
+    if (await Promise.resolve(share(myId, peerId)).catch(() => true)) {
+      emitToUser(io, peerId, "dm:peer_read", { peerId: myId, at });
+    }
     void Promise.resolve(prefs().clearMarkedUnread(myId, peerId)).catch(() => {});
     return at;
   }

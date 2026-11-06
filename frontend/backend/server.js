@@ -493,6 +493,15 @@ app.use("/api/watch", require("./routes/watch"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));
+// Messaging phase 4: link previews, fetched here with SSRF protection (lib/linkPreview.js).
+app.use("/api/link-preview", require("./routes/linkPreview"));
+// Messaging phase 4: "Görüldü" read receipts (privacy switch + group read state).
+app.use("/api/read-receipts", require("./routes/readReceipts"));
+// Messaging phase 4: per-conversation notification options.
+app.use("/api/notify-prefs", require("./routes/notifyPrefs"));
+// Messaging phase 4: scheduled sending; the sender runs here so schedules fire while the author is offline.
+app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
+if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

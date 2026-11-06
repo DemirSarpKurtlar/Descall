@@ -182,6 +182,9 @@ const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
 import CallTapCard from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
+import { setDraftOwner } from "./lib/messageDrafts";
+import ChatSheetsHost from "./components/chat/ChatSheetsHost";
+import { allowNotify } from "./lib/notifyPrefs";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -807,6 +810,8 @@ export default function App() {
 
   useEffect(() => {
     myIdRef.current = me?.id ?? null;
+    // Drafts are per account (lib/messageDrafts): the list rows read them before any composer mounts.
+    if (me?.id) setDraftOwner(me.id);
   }, [me?.id]);
 
   useEffect(() => {
@@ -2094,7 +2099,7 @@ export default function App() {
           }));
         }
         if (activeDmRef.current?.id !== convWith) {
-          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith)) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || t("Someone"),
@@ -2299,7 +2304,7 @@ export default function App() {
       if (!isFromMe && isBlockedByMe(normalized.from?.id)) return;
       if (!isFromMe && !isActiveGroup) {
         setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
-        playUiSound("message");
+        if (allowNotify("group", groupId)) playUiSound("message");
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),
@@ -5923,6 +5928,14 @@ export default function App() {
           </Suspense>
         ) : null}
         <GlassConfirmHost />
+        {me?.id ? (
+          <ChatSheetsHost
+            getSocket={() => socketRef.current}
+            friends={friends}
+            groups={sortedGroups}
+            activeServer={activeView === "servers" ? activeServer : null}
+          />
+        ) : null}
         {IOS_NATIVE && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />

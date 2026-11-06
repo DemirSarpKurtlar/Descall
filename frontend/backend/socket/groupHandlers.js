@@ -3,6 +3,7 @@
  * Simple, reliable, works with 2-15 people
  */
 
+const { forwardedReplyMeta, isMissingColumn } = require("../lib/forwardedMessage");
 const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById, systemConfig } = require("../runtime/sharedState");
 const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
@@ -56,8 +57,10 @@ async function pushGroupMessageToIos({ groupId, groupName, fromId, from, message
       previewKind: isVoice ? "voice" : message?.media_url ? "media" : "text",
       messageId: message?.id || null,
     };
-    const mentioned = memberIds.filter((id) => mentionedUserIds?.has(id));
-    const others = memberIds.filter((id) => !mentionedUserIds?.has(id));
+    // Messaging phase 4: each member's options for this group (all / mentions / none, timed mute).
+    const notifyPrefs = require("../lib/notifyPrefs");
+    const mentioned = await notifyPrefs.filterRecipients(memberIds.filter((id) => mentionedUserIds?.has(id)), "group", groupId, { mention: true });
+    const others = await notifyPrefs.filterRecipients(memberIds.filter((id) => !mentionedUserIds?.has(id)), "group", groupId, { mention: false });
     await Promise.allSettled([
       mentioned.length ? sendIosGroupMentionPush(mentioned, payload) : null,
       others.length ? sendGroupMessagePush(others, payload) : null,
@@ -139,6 +142,31 @@ function registerGroupHandlers(io, socket, state) {
   // activeGroupCalls is imported from sharedState — shared across all socket connections
 
   // Join group room
+  // "Görüldü" (messaging phase 4): the member read the group up to now.
+  const groupReadAt = new Map();
+  socket.on("group:mark_read", async ({ groupId } = {}) => {
+    if (!myId || typeof groupId !== "string" || !/^[0-9a-f-]{36}$/i.test(groupId)) return;
+    const last = groupReadAt.get(groupId) || 0;
+    if (Date.now() - last < 2000) return;
+    groupReadAt.set(groupId, Date.now());
+    try {
+      const { data: member } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("group_id", groupId)
+        .eq("user_id", myId)
+        .maybeSingle();
+      if (!member) return;
+      const rr = require("../lib/readReceipts");
+      const at = await rr.markGroupRead(groupId, myId);
+      if (at && (await rr.receiptsEnabled(myId))) {
+        io.to(`group:${groupId}`).emit("group:read", { groupId, userId: myId, at });
+      }
+    } catch (err) {
+      console.warn("[GroupRead] mark failed:", err?.message || err);
+    }
+  });
+
   socket.on("group:join", async (groupId) => {
     if (!groupId) return;
     const { data: membership } = await supabase
@@ -202,7 +230,7 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Group message — persist to DB then broadcast
-  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, poll: pollInput } = {}) => {
+  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput } = {}) => {
     // Poll from the creation sheet: validated here, stored as a poll_v2 row + polls tables.
     let pollDraft = null;
     if (pollInput) {
@@ -324,18 +352,32 @@ function registerGroupHandlers(io, socket, state) {
       }
     }
 
-    const { data: row, error } = await supabase
+    // Reply quote / forward mark (messaging phase 4): stored in reply_to so history keeps it.
+    const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
+      ? {
+          id: replyTo.id || null,
+          text: replyTo.text || "",
+          mediaType: replyTo.mediaType || null,
+          from: replyTo.from || null,
+        }
+      : null);
+    const baseRow = {
+      group_id: groupId,
+      sender_id: myId,
+      content: trimmedContent,
+      media_url: mediaUrl || null,
+      media_type: isVoice ? "voice" : (mediaType || null),
+      message_type: "text",
+    };
+    let { data: row, error } = await supabase
       .from("group_messages")
-      .insert({
-        group_id: groupId,
-        sender_id: myId,
-        content: trimmedContent,
-        media_url: mediaUrl || null,
-        media_type: isVoice ? "voice" : (mediaType || null),
-        message_type: "text",
-      })
+      .insert(replyMeta ? { ...baseRow, reply_to: replyMeta } : baseRow)
       .select("id, created_at")
       .single();
+    if (error && replyMeta && isMissingColumn(error, "reply_to")) {
+      // group_messages.reply_to not migrated yet (20261108): send without it, the live echo still carries it.
+      ({ data: row, error } = await supabase.from("group_messages").insert(baseRow).select("id, created_at").single());
+    }
 
     if (error) {
       console.error("[GroupMessage] DB insert error:", error.message);
@@ -372,15 +414,6 @@ function registerGroupHandlers(io, socket, state) {
         })
         .catch((err) => console.warn("[DesCoin] group message credit failed:", err?.message || err));
     }
-
-    const replyMeta = replyTo && typeof replyTo === "object"
-      ? {
-          id: replyTo.id || null,
-          text: replyTo.text || "",
-          mediaType: replyTo.mediaType || null,
-          from: replyTo.from || null,
-        }
-      : null;
 
     await ensureCosmeticsCached([myId]).catch(() => {});
 

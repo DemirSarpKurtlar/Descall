@@ -1,5 +1,6 @@
 import { localizeMemberEventPreview } from "./groupMemberEvents.js";
 import { plainText } from "./messageMarkdown.js";
+import { stickerPreviewText } from "./descallStickers.js";
 
 /** English system previews the API stores on DM and group rows. */
 const LIST_PREVIEW_KEYS = ["📞 Call", "📷 Photo", "🎤 Voice message", "📎 Attachment"];
@@ -14,7 +15,8 @@ export function mediaTypeLabel(mediaType, t = (key) => key) {
 
 function localizePreviewBody(body, t) {
   if (LIST_PREVIEW_KEYS.includes(body)) return t(body);
-  return stripPreviewMarkdown(body);
+  // Descall stickers / logo emoji (messaging phase 4) read as words, not tokens.
+  return stripPreviewMarkdown(stickerPreviewText(body, t));
 }
 
 /**
