@@ -1,5 +1,6 @@
 /** Auto-generated + curated en locale */
 import { PREMIUM_EN } from "./premium.en.js";
+import { PREMIUM_AUDIO_EN } from "./premiumAudio.en.js";
 import { WORLD3D_EN } from "./world3d.en.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
@@ -21,6 +22,7 @@ import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
   premium: PREMIUM_EN,
+  premiumAudio: PREMIUM_AUDIO_EN,
   world3d: WORLD3D_EN,
   counts: COUNTS_EN,
   shell: SHELL_EN,

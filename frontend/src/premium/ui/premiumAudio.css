@@ -65,6 +65,12 @@
   background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); }
 .pa-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 14px; }
 
+.pa-block { display: block; }
+.pa-chip { padding: 5px 10px; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; color: inherit;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); }
+.pa-chip.is-on { background: rgba(var(--g-brand-rgb, 120, 140, 255), 0.28); border-color: rgba(var(--g-brand-rgb, 120, 140, 255), 0.55); }
+.pa-chip:focus-visible { outline: 2px solid var(--primary, #7c8cff); outline-offset: 2px; }
+
 /* In-call participant meter (voice_activity_monitor). */
 .pa-vam { display: block; width: 100%; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
 .pa-vam > i { display: block; height: 100%; transform-origin: left center; background: #30c46c; transition: transform 80ms linear; }

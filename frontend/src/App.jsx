@@ -61,6 +61,7 @@ import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
 import { attachPremiumSocket } from "./premium/usePremium.js";
+import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { getVoiceBusy } from "./lib/voiceBusy";
 import { shouldPlayDisconnectSound } from "./lib/connectionSound";
@@ -4278,6 +4279,21 @@ export default function App() {
     try { localStorage.setItem("descall:myStatus", status); } catch {}
     socketRef.current?.emit("status:set", { status });
   };
+
+  // Descall+ hotkeys, push-to-talk, quick launcher, tray, quick reply, audio and
+  // notification features. No-op without a membership.
+  usePremiumAudioBridge({
+    call,
+    groupCall,
+    serverVoice,
+    friends,
+    groups: myGroups,
+    servers: myServers,
+    dmByUserId,
+    onOpenDm: handleOpenDm,
+    onOpenSettings: () => setUserPanelOpen(true),
+    onStatusChange: handleStatusChange,
+  });
 
   const emitTypingDmStart = (toUserId) => {
     socketRef.current?.emit("typing:start", { context: "dm", toUserId });

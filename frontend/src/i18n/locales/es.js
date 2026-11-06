@@ -5,6 +5,346 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  // premiumAudio:start (Descall+ hotkeys, audio, notifications)
+  "premiumAudio": {
+    "common": {
+      "desktopOnly": "Esta función está en la app de escritorio de Descall.",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "apply": "Aplicar",
+      "active": "Activo",
+      "delete": "Eliminar",
+      "deleteNamed": "Eliminar {name}",
+      "remove": "Quitar",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "unnamedDevice": "Dispositivo sin nombre",
+      "micError": "No se pudo abrir el micrófono. Revisa el permiso y el dispositivo elegido.",
+      "ms": "{n} ms",
+      "db": "{n} dB",
+      "seconds": "{n} s",
+      "minutes": "{n} min",
+      "hours": "{n} h"
+    },
+    "hotkeys": {
+      "title": "Atajos personalizados",
+      "hint": "Haz clic en un atajo y pulsa las nuevas teclas. Esc cancela, Retroceso lo borra.",
+      "enable": "Usar mis propios atajos",
+      "enableDesc": "Desactivado: se usan los atajos predeterminados.",
+      "holdDesc": "Mantén pulsado para hablar. También sirve un botón lateral del ratón.",
+      "pressKey": "Pulsa las teclas...",
+      "pressKeyOrMouse": "Pulsa teclas o un botón del ratón...",
+      "unbound": "Sin asignar",
+      "mouse3": "Botón central",
+      "mouse4": "Ratón atrás",
+      "mouse5": "Ratón adelante",
+      "saveAnyway": "Guardar igualmente",
+      "reset": "Restablecer",
+      "saved": "Atajos guardados.",
+      "actions": {
+        "toggle_mute": "Silenciar / activar",
+        "toggle_deafen": "Ensordecer / oír",
+        "push_to_talk": "Pulsar para hablar",
+        "quick_launcher": "Lanzador rápido",
+        "volume_up": "Subir al fijado",
+        "volume_down": "Bajar al fijado"
+      },
+      "reason": {
+        "invalid": "{action}: {accel} no es un atajo válido.",
+        "duplicate": "{action}: {accel} ya se usa para {other}.",
+        "reserved": "{action}: {accel} está reservado por Descall.",
+        "needs_modifier": "{action}: añade Ctrl, Alt o Mayús a {accel}, o bloqueará la escritura en otras apps.",
+        "mouse_not_allowed": "{action}: los botones del ratón solo sirven para pulsar para hablar.",
+        "registered": "{action}: {accel} ya está en uso.",
+        "taken": "{action}: otra app ya usa {accel}."
+      }
+    },
+    "globalMute": {
+      "title": "Silencio global",
+      "hint": "Funciona en cualquier app, también en juegos. Las demás apps no reciben estas teclas.",
+      "enable": "Atajo de silencio global",
+      "enableDesc": "Silencia o activa el micro desde cualquier app durante una llamada.",
+      "deafen": "Atajo para ensordecer",
+      "remap": "Cambia las teclas en Atajos personalizados."
+    },
+    "ptt": {
+      "title": "Pulsar para hablar global",
+      "hint": "Tu micrófono queda silenciado hasta que mantienes la tecla, en cualquier app.",
+      "enable": "Pulsar para hablar global",
+      "enableDesc": "Al activarlo, las llamadas también pasan a pulsar para hablar.",
+      "bindingDesc": "Cámbialo en Atajos personalizados.",
+      "releaseDelay": "Retardo al soltar",
+      "releaseDelayDesc": "El micro sigue abierto un momento al soltar, para no cortar la última palabra.",
+      "forceToggle": "Pulsar para alternar",
+      "forceToggleDesc": "Pulsa una vez para hablar y otra para parar, en vez de mantener.",
+      "toggleTimeout": "Silenciar automáticamente tras",
+      "toggleTimeoutDesc": "En modo alternar, el micro se silencia tras este tiempo.",
+      "modeHold": "Mantener para hablar está activo. La tecla también llega al juego.",
+      "modeToggle": "Modo alternar: pulsa una vez para hablar y otra para parar.",
+      "modeToggleNative": "No se pudo iniciar el detector de teclas en este equipo, así que pulsar para hablar funciona como alternar con silencio automático.",
+      "mouseNeedsNative": "Los botones del ratón necesitan el detector de teclas; elige una tecla del teclado.",
+      "elevated": "Los juegos abiertos como administrador solo envían teclas a apps que también se ejecutan como administrador. Para pulsar para hablar en esos juegos, ejecuta Descall como administrador."
+    },
+    "mediaKeys": {
+      "title": "Teclas multimedia",
+      "hint": "Solo durante llamadas. Fuera de ellas, las teclas siguen en tu reproductor.",
+      "enable": "Controlar llamadas con teclas multimedia",
+      "enableDesc": "Durante una llamada, las teclas multimedia no funcionan en otros reproductores.",
+      "none": "Nada",
+      "taken": "Otra app está usando algunas teclas multimedia ahora mismo.",
+      "keys": {
+        "playPause": "Reproducir / Pausa",
+        "next": "Pista siguiente",
+        "previous": "Pista anterior",
+        "stop": "Detener"
+      }
+    },
+    "launcher": {
+      "title": "Lanzador rápido",
+      "hint": "Busca amigos, chats, servidores, canales y acciones desde cualquier lugar.",
+      "enable": "Atajo del lanzador rápido",
+      "enableDesc": "Abre una pequeña ventana de búsqueda sobre cualquier app.",
+      "tryIt": "Pruébalo",
+      "openNow": "Abrir ahora",
+      "friend": "Amigo",
+      "dm": "Mensaje directo",
+      "group": "Grupo",
+      "server": "Servidor",
+      "mute": "Silenciar",
+      "unmute": "Activar micro",
+      "deafen": "Ensordecer",
+      "undeafen": "Dejar de ensordecer",
+      "voice": "Voz",
+      "status": "Estado",
+      "statusOnline": "Estado: En línea",
+      "statusIdle": "Estado: Ausente",
+      "statusDnd": "Estado: No molestar",
+      "statusInvisible": "Estado: Invisible",
+      "openSettings": "Abrir ajustes",
+      "app": "Descall",
+      "focus": "Modo concentración",
+      "focus60": "Concentrarse 1 hora",
+      "focusOff": "Terminar modo concentración"
+    },
+    "userVolume": {
+      "title": "Atajos de volumen por persona",
+      "hint": "Sube o baja a la persona fijada en un chat de voz sin abrir Descall.",
+      "enable": "Atajos de volumen",
+      "step": "Paso",
+      "pinNote": "Fija a alguien en el canal de voz (haz clic en su recuadro) para elegir a quién cambian las teclas."
+    },
+    "presets": {
+      "title": "Micrófono",
+      "hint": "La ganancia y el procesado se aplican a llamadas y canales de voz.",
+      "gain": "Ganancia de entrada",
+      "gainDesc": "Más alto o más bajo de lo que da el micrófono.",
+      "current": "Ajustes actuales",
+      "list": "Preajustes",
+      "namePlaceholder": "Nombre del preajuste",
+      "saveCurrent": "Guardar los actuales como preajuste",
+      "voice": "Voz",
+      "noisy": "Sala ruidosa",
+      "studio": "Estudio (sin procesado)",
+      "stream": "Streaming",
+      "echoOn": "Cancelación de eco",
+      "echoOff": "Sin cancelación de eco",
+      "agcOn": "Ganancia automática",
+      "agcOff": "Ganancia fija",
+      "noise": {
+        "off": "Sin supresión de ruido",
+        "on": "Supresión de ruido",
+        "strong": "Supresión de ruido fuerte"
+      },
+      "error": {
+        "name": "Escribe un nombre.",
+        "duplicate": "Ese nombre ya existe.",
+        "limit": "Has llegado al límite. Elimina uno primero."
+      }
+    },
+    "gate": {
+      "title": "Puerta de ruido",
+      "hint": "Los sonidos por debajo del umbral no se envían: teclado, ventilador, respiración.",
+      "enable": "Puerta de ruido",
+      "enableDesc": "Usa tu umbral en lugar del integrado.",
+      "threshold": "Umbral",
+      "thresholdDesc": "Habla con normalidad y ponlo justo por debajo de tu voz.",
+      "meter": "Nivel del micrófono",
+      "startTest": "Probar micrófono",
+      "stopTest": "Parar prueba",
+      "open": "Abierta",
+      "closed": "Cerrada",
+      "hysteresis": "Cerrar por debajo del umbral en",
+      "hysteresisDesc": "Evita cortar los finales suaves de las palabras.",
+      "hold": "Retención",
+      "holdDesc": "Cuánto sigue abierta la puerta después de dejar de hablar."
+    },
+    "monitor": {
+      "title": "Escucharte",
+      "hint": "Escucha tu micrófono, tras la supresión de ruido, durante las llamadas.",
+      "enable": "Monitor de micrófono",
+      "enableDesc": "Baja latencia, directo desde la cadena de audio.",
+      "volume": "Volumen del monitor",
+      "headphones": "Usa auriculares, o los demás podrían oír eco."
+    },
+    "vam": {
+      "title": "Actividad de voz",
+      "hint": "Una barra de nivel en directo bajo cada participante en los canales de voz.",
+      "enable": "Medidores de nivel",
+      "enableDesc": "Muestra lo alto que habla cada persona ahora.",
+      "meter": "Nivel de voz"
+    },
+    "autoSwitch": {
+      "title": "Cambio automático de dispositivo",
+      "hint": "Cuando se conecta un dispositivo, Descall cambia al primero de tu lista.",
+      "enable": "Cambiar automáticamente",
+      "enableDesc": "También durante una llamada.",
+      "headsetFirst": "Preferir auriculares nuevos",
+      "headsetFirstDesc": "Si nada de la lista coincide, usa unos auriculares en cuanto se conecten.",
+      "inputs": "Micrófonos por orden",
+      "outputs": "Altavoces y auriculares por orden",
+      "empty": "Aún no hay dispositivos en la lista.",
+      "add": "Añadir dispositivo",
+      "connected": "Conectado",
+      "notConnected": "No conectado"
+    },
+    "routing": {
+      "title": "Salida de audio",
+      "hint": "Elige dónde reproduce Descall las llamadas y dónde los sonidos de aviso.",
+      "enable": "Salida aparte para avisos",
+      "enableDesc": "Desactivado: los sonidos de aviso siguen la salida del sistema.",
+      "call": "Llamadas",
+      "callDesc": "Canales de voz y llamadas.",
+      "notifications": "Sonidos de aviso",
+      "notificationsDesc": "Mensajes, menciones y tonos de llamada.",
+      "systemDefault": "Predeterminado del sistema",
+      "test": "Probar",
+      "unsupported": "Este navegador no puede elegir un dispositivo de salida."
+    },
+    "profiles": {
+      "title": "Perfiles de dispositivo",
+      "hint": "Un perfil cambia el micrófono, la salida y un preajuste a la vez.",
+      "empty": "Aún no hay perfiles.",
+      "new": "Nuevo perfil",
+      "namePlaceholder": "Nombre del perfil, por ejemplo Escritorio o Juegos",
+      "keep": "Mantener el actual",
+      "noPreset": "Sin preajuste",
+      "create": "Crear",
+      "applied": "{name} está activo.",
+      "missing": "Aplicado. No encontrado: {items}.",
+      "trayNote": "En la app de escritorio también puedes cambiar de perfil desde el icono de la bandeja.",
+      "part": {
+        "input": "Micrófono",
+        "output": "Salida",
+        "preset": "Preajuste"
+      }
+    },
+    "stream": {
+      "sendTitle": "Audio compartido (tú)",
+      "sendHint": "Volumen del audio de tu pantalla compartida, para todos los que la ven.",
+      "sendVolume": "Volumen del audio compartido",
+      "sendMute": "Silenciar el audio compartido",
+      "sendMuteDesc": "La imagen sigue.",
+      "viewTitle": "Audio compartido (otros)",
+      "viewHint": "Lo alto que suenan para ti las pantallas compartidas de otros.",
+      "viewVolume": "Volumen",
+      "viewMute": "Silenciar el audio compartido de otros",
+      "note": "Se aplica a la próxima vez que compartas pantalla. Tu volumen para lo que comparten otros se aplica en los canales de voz."
+    },
+    "history": {
+      "title": "Historial de notificaciones",
+      "hint": "Las notificaciones que te perdiste, guardadas solo en este dispositivo (las últimas {cap}).",
+      "enable": "Guardar historial",
+      "unread": "{count, plural, one {# sin leer} other {# sin leer}}",
+      "markAllRead": "Marcar todo como leído",
+      "clear": "Borrar historial",
+      "listTitle": "Notificaciones perdidas",
+      "empty": "No te perdiste nada.",
+      "open": "Abrir"
+    },
+    "focus": {
+      "title": "Modo concentración",
+      "hint": "Las notificaciones guardan silencio un rato. Se siguen guardando en el historial.",
+      "status": "Concentración",
+      "activeFor": "{minutes, plural, one {Activo, queda # minuto} other {Activo, quedan # minutos}}",
+      "inactive": "Desactivado",
+      "end": "Terminar ahora",
+      "allowCalls": "Dejar pasar llamadas",
+      "allowDms": "Dejar pasar mensajes directos",
+      "allowDmsDesc": "Sin sonido.",
+      "trayNote": "También puedes iniciarlo desde el icono de la bandeja o el lanzador rápido."
+    },
+    "rules": {
+      "title": "Perfiles de notificación",
+      "hint": "Decide qué aparece, con o sin sonido, mientras juegas, trabajas o descansas.",
+      "mode": "Perfil activo",
+      "auto": "Automático",
+      "now": "Ahora: {profile}",
+      "schedule": "Horario laboral",
+      "scheduleDesc": "En modo automático, usa el perfil de trabajo en estas horas.",
+      "start": "Inicio",
+      "end": "Fin",
+      "edit": "Editar perfil",
+      "style": "Aspecto",
+      "styleCapsule": "Cápsula de Descall",
+      "styleToast": "Notificación del sistema",
+      "category": "Notificación",
+      "show": "Mostrar",
+      "sound": "Sonido",
+      "activity": {
+        "default": "Predeterminado",
+        "gaming": "Jugando",
+        "working": "Trabajando"
+      },
+      "cat": {
+        "call": "Llamadas",
+        "dm": "Mensajes directos",
+        "mention": "Menciones",
+        "group": "Mensajes de grupo",
+        "server": "Mensajes de servidor",
+        "social": "Amigos",
+        "system": "Otros"
+      },
+      "day": {
+        "0": "Dom",
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mié",
+        "4": "Jue",
+        "5": "Vie",
+        "6": "Sáb"
+      }
+    },
+    "smartGame": {
+      "title": "Notificaciones inteligentes en juegos",
+      "hint": "Mientras un juego está delante, los mensajes esperan. Las llamadas siguen apareciendo.",
+      "enable": "Retener notificaciones al jugar",
+      "enableDesc": "Las urgentes y las llamadas nunca se retienen.",
+      "summary": "Resumen después de jugar",
+      "summaryDesc": "Una sola notificación con lo que te perdiste.",
+      "state": "Ahora mismo",
+      "playing": "{count, plural, one {Jugando a {game}, # en espera} other {Jugando a {game}, # en espera}}",
+      "notPlaying": "No se detecta ningún juego.",
+      "detectNote": "Usa la detección de juegos de tu estado de actividad, sin escaneos extra.",
+      "summaryTitle": "Mientras jugabas",
+      "summaryBody": "{count, plural, one {# notificación de {names}} other {# notificaciones de {names}}}",
+      "summaryBodyMore": "{count, plural, one {# notificación de {names} y {more} más} other {# notificaciones de {names} y {more} más}}"
+    },
+    "quickReply": {
+      "title": "Respuesta rápida",
+      "hint": "Responde a un mensaje directo desde la propia notificación.",
+      "enable": "Responder desde notificaciones",
+      "enableDesc": "Los mensajes directos muestran un campo de respuesta.",
+      "native": "Las respuestas se envían desde la notificación del sistema.",
+      "failedTitle": "No se envió la respuesta",
+      "failedBody": "Abre el chat e inténtalo de nuevo.",
+      "unavailable": {
+        "platform": "Este sistema no tiene campo de respuesta en las notificaciones; los mensajes llegan como siempre.",
+        "identity": "La respuesta rápida necesita Descall instalado (acceso directo del menú Inicio). La versión portátil muestra la notificación habitual.",
+        "unsupported": "Las notificaciones no están disponibles en este sistema."
+      }
+    }
+  },
+  // premiumAudio:end
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "name": {

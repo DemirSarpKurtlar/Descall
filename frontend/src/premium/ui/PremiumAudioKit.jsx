@@ -89,6 +89,15 @@ export function Button({ children, onClick, kind = "default", disabled = false, 
   );
 }
 
+/** Compact toggle chip (weekday pickers). */
+export function GlassCheckboxLite({ checked, onChange, label }) {
+  return (
+    <button type="button" className={`pa-chip${checked ? " is-on" : ""}`} role="checkbox" aria-checked={Boolean(checked)} onClick={() => onChange(!checked)}>
+      {label}
+    </button>
+  );
+}
+
 export function Note({ tone = "info", children }) {
   return <p className={`pa-note pa-note-${tone}`} role={tone === "warn" ? "alert" : undefined}>{children}</p>;
 }

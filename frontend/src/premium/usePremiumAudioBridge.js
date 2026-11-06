@@ -241,6 +241,29 @@ export function usePremiumAudioBridge({ call, groupCall, serverVoice, friends, g
     return () => { offA(); offP(); };
   }, []);
 
+  // stream_audio_control, viewer side: default local volume / mute for received
+  // shares in server voice (applied once per sharer and value, so the per-sharer
+  // slider keeps working afterwards).
+  const sharers = (serverVoice?.participants || []).filter((p) => p?.isScreenSharing).map((p) => String(p.userId ?? p.id)).join(",");
+  const appliedViewRef = useRef(new Map());
+  useEffect(() => {
+    const apply = () => {
+      const sv = ctxRef.current.serverVoice;
+      if (!hasPremiumFeature("stream_audio_control") || typeof sv?.setScreenShareVolume !== "function") return;
+      const s = settingsOf("stream_audio_control");
+      const pct = s.viewMuted ? 0 : Math.max(0, Math.min(200, Number(s.viewVolume ?? 100)));
+      for (const id of sharers ? sharers.split(",") : []) {
+        if (appliedViewRef.current.get(id) === pct) continue;
+        appliedViewRef.current.set(id, pct);
+        if (pct === 100 && !appliedViewRef.current.has(`${id}:touched`)) continue;
+        appliedViewRef.current.set(`${id}:touched`, true);
+        sv.setScreenShareVolume(id, pct);
+      }
+    };
+    apply();
+    return onAudioSettings((key) => { if (key === "stream_audio_control" || key === "*") apply(); });
+  }, [sharers]);
+
   // auto_device_switch: listen to devicechange only while the feature is on.
   useEffect(() => {
     const md = typeof navigator !== "undefined" ? navigator.mediaDevices : null;
