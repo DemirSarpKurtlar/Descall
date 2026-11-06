@@ -296,7 +296,7 @@ function AuthModal({
               <>
                 <img
                   className="mkt-auth-logo"
-                  src={`${import.meta.env.BASE_URL}brand/descall-icon.png`}
+                  src={`${import.meta.env.BASE_URL}brand/descall-appicon-rounded.svg`}
                   alt="Descall"
                   width={56}
                   height={56}

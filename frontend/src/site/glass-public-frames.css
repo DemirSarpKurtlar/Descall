@@ -1548,7 +1548,7 @@ body.has-mkt .login-modal .mkt-auth-logo {
   height: 56px;
   margin: 8px auto 0;
   border-radius: var(--r-lg);
-  box-shadow: 0 10px 28px rgba(88, 122, 246, 0.45);
+  box-shadow: none;
 }
 
 body.has-mkt .login-modal input:-webkit-autofill,
