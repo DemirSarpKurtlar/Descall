@@ -95,9 +95,10 @@ html.glass-desktop body .nav-rail .rail-btn {
 }
 
 html.glass-desktop body .nav-rail .rail-btn:hover:not(.active) {
-  border-color: color-mix(in srgb, var(--rail-accent, var(--gd-brand)) 55%, var(--gd-hair));
+  border-color: var(--gd-hair);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)),
     var(--gd-glass-fill);
   background-color: transparent;
 }

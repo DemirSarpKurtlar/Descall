@@ -15,7 +15,6 @@ import {
   NAV_ICON_SIZE,
   NAV_ICON_STROKE,
 } from "./navConfig";
-import { RAIL_ACCENT } from "./railIcons";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import { GLASS_STATUS_EVENT, GlassMeAvatar } from "./glass/GlassShell";
 import { glassStatusAnchor, glassStatusMenuStyle } from "../../lib/statusMenuAnchor";
@@ -51,7 +50,6 @@ function RailButton({
   badge = 0,
   onClick,
   dismissToken,
-  accent,
   children,
   ...rest
 }) {
@@ -125,7 +123,6 @@ function RailButton({
             ? { duration: 0 }
             : { type: "spring", stiffness: 640, damping: 38, mass: 0.7 }
         }
-        style={accent ? { "--rail-accent": accent } : undefined}
         aria-label={badge > 0 ? `${label} ${badge > 99 ? "99+" : badge}` : label}
         aria-current={active ? "page" : undefined}
         data-tooltip={label}
@@ -547,7 +544,6 @@ export default function NavigationRail({
                 dismissToken={activeView}
                 label={item.label}
                 badge={Number(badges[item.id]) || 0}
-                accent={RAIL_ACCENT[item.id]}
                 onClick={() => onViewChange(item.id)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
@@ -566,7 +562,6 @@ export default function NavigationRail({
                 key={item.id}
                 dismissToken={activeView}
                 label={item.label}
-                accent={RAIL_ACCENT[item.id]}
                 onClick={() => handleToolAction(item.action)}
               >
                 <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />

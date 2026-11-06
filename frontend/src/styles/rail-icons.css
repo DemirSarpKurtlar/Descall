@@ -51,15 +51,22 @@ html body .nav-rail .rail-btn.active .rail-glyph svg {
   fill: #fff;
 }
 
+/* UI audit #72: one hover for every tile (neutral wash + hairline, no
+   per-item colour, no glow); the only colour in the rail is the active blue. */
 html body .nav-rail .rail-btn:hover:not(.active) {
-  border-color: color-mix(in srgb, var(--rail-accent, var(--primary)) 55%, var(--border-3));
+  border-color: var(--border-3, rgba(255, 255, 255, 0.14));
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06)),
-    var(--surface-2);
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+    var(--gd-panel-base, var(--surface-1));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 8px 16px rgba(0, 0, 0, 0.28),
-    0 0 12px color-mix(in srgb, var(--rail-accent, var(--primary)) 42%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+html[data-theme="light"] body .nav-rail .rail-btn:hover:not(.active) {
+  background:
+    linear-gradient(rgba(57, 60, 77, 0.06), rgba(57, 60, 77, 0.06)),
+    var(--gd-panel-base, var(--surface-1));
 }
 
 html body .nav-rail .rail-btn:hover .rail-btn-inner,
@@ -72,11 +79,11 @@ html body .nav-rail .rail-btn.active svg {
 
 html body .nav-rail .rail-btn.active {
   color: var(--g-on-brand, #fff);
-  background: var(--gd-cta, linear-gradient(180deg, color-mix(in srgb, var(--primary, #4f7cff) 70%, white), var(--primary, #4f7cff)));
-  border-color: rgba(255, 255, 255, 0.32);
+  background: var(--g-brand, #587AF6);
+  border-color: rgba(255, 255, 255, 0.24);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 8px 16px color-mix(in srgb, var(--primary, #4f7cff) 36%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 6px 14px rgba(0, 0, 0, 0.22);
 }
 
 html body .nav-rail .rail-btn.active::before {
