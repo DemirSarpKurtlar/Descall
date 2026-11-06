@@ -360,4 +360,6 @@ export const MARKETING_TR = {
   "The API row is checked live from your browser each time you open this page.":
     "API satırı, bu sayfayı her açtığında tarayıcından canlı olarak kontrol edilir.",
   Author: "Yazar",
+  "Download Descall for Windows, iPhone, Android and the web": "Descall’ı indir: Windows, iPhone, Android ve tarayıcı",
+  "iPhone and iPad app on the App Store": "App Store’da iPhone ve iPad uygulaması",
 };

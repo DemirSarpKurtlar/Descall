@@ -10949,6 +10949,8 @@ export const phrases = {
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "O Descall não tem afiliação com a Discord Inc. Discord é uma marca comercial da Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "A linha da API é verificada ao vivo pelo seu navegador sempre que você abre esta página.",
   "Author": "Autor",
+  "Download Descall for Windows, iPhone, Android and the web": "Baixe o Descall para Windows, iPhone, Android e a web",
+  "iPhone and iPad app on the App Store": "App para iPhone e iPad na App Store",
 };
 
 export default { nested, phrases };

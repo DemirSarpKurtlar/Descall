@@ -2,6 +2,7 @@ import { absoluteUrl, SITE_NAME } from "./seoConfig.js";
 import { organizationLogoLd } from "./siteIcons.js";
 import { SITE_OPERATOR } from "./siteIdentity.js";
 import { SITE_LOCALES } from "./siteLocales.js";
+import { APP_STORE_URL } from "./appStoreLink.js";
 import {
   APP_ID,
   ORG_ID,
@@ -104,9 +105,11 @@ export function buildSoftwareApplicationLd() {
     "@id": APP_ID,
     name: SITE_NAME,
     applicationCategory: "CommunicationApplication",
-    operatingSystem: "Windows, Web, Android",
+    operatingSystem: "Windows, iOS, iPadOS, Android, Web",
     url: absoluteUrl("/"),
-    downloadUrl: absoluteUrl("/download"),
+    downloadUrl: [absoluteUrl("/download"), APP_STORE_URL],
+    installUrl: APP_STORE_URL,
+    sameAs: [APP_STORE_URL],
     image: absoluteUrl("/og-default.png"),
     description:
       "Descall is a free Discord alternative with servers, roles, channels, messaging, group calls, and screen share.",

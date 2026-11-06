@@ -7,6 +7,7 @@ import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/l
 import { LEGAL_EMAIL, contactCopy, legalSlug, tocLabel } from "../../legal/legalView.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
+import { APP_STORE_URL } from "../appStoreLink.js";
 import { formatDate } from "../../i18n/format.js";
 import {
   ALTERNATIVE_HUB_FAQ,
@@ -243,11 +244,12 @@ export function corePageBody(path) {
       return `
 <main>
   ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("Download Descall for Windows, Free Voice Chat App"))}</h1>
+  <h1>${escapeHtml(tc("Download Descall for Windows, iPhone, Android and the web"))}</h1>
   <p>${escapeHtml(tc("Get the Windows desktop app, Android builds, or the full web app in your browser."))}</p>
   <h2>${escapeHtml(tc("Platforms"))}</h2>
   <ul>
     <li>${escapeHtml(tc("Windows installer for the native desktop client"))}</li>
+    <li><a href="${APP_STORE_URL}">${escapeHtml(tc("iPhone and iPad app on the App Store"))}</a></li>
     <li>${escapeHtml(tc("Android APK builds for mobile"))}</li>
     <li>${escapeHtml(tc("Full-featured web app at descall.com, no install required"))}</li>
   </ul>

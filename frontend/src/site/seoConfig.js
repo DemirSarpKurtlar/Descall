@@ -52,13 +52,13 @@ const BASE_ROUTES = [
   },
   {
     path: "/download",
-    title: "Download Descall for Windows | Free Voice Chat App",
+    title: "Download Descall for Windows, iPhone and Android",
     description:
-      "Get the Windows desktop app, Android build, or full web app. Free voice, video, screen share, and servers, install in a minute.",
+      "Get the Windows desktop app, the iPhone and iPad app, the Android app, or the full web app. Free voice, video, screen share, and servers.",
     image: "/og-download.png",
     changefreq: "weekly",
     priority: "0.9",
-    keywords: "download descall, descall windows, descall android",
+    keywords: "download descall, descall windows, descall iphone, descall android",
   },
   {
     path: "/features",
@@ -328,9 +328,9 @@ const BASE_ROUTES = [
   },
   {
     path: "/tr/download",
-    title: "Descall İndir | Windows için Ücretsiz Sesli Sohbet",
+    title: "Descall İndir | Windows, iPhone ve Android için Ücretsiz",
     description:
-      "Windows kurucusu, Android APK veya tarayıcı. Ücretsiz ses, görüntü, ekran paylaşımı ve sunucular, bir dakikada kur.",
+      "Windows uygulaması, iPhone ve iPad uygulaması, Android veya tarayıcı. Ücretsiz ses, görüntü, ekran paylaşımı ve sunucular, bir dakikada kur.",
     image: "/og-download.png",
     changefreq: "weekly",
     priority: "0.85",
