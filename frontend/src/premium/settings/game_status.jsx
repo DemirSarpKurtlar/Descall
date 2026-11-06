@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { Field, PanelShell, Switch, formatDuration } from "../gaming/ui.jsx";
-import { useAppBridge } from "../gaming/bridge.js";
+import { failMessage, reportFailure, useAppBridge } from "../gaming/bridge.js";
 import { fetchGamePrefs, saveGamePrefs } from "../gaming/gameData.js";
 import { EXTRA_GAMES } from "../gaming/extraGames.js";
 import { gameNameFromActivity } from "../../lib/gameActivity.js";
@@ -14,11 +14,17 @@ export function Panel() {
   const app = useAppBridge();
   const [vis, setVis] = useState("friends");
   const [state, setState] = useState("");
+  const [failure, setFailure] = useState(null);
   useEffect(() => { fetchGamePrefs().then((p) => { if (p?.game_card) setVis(p.game_card); }); }, []);
   const change = async (v) => {
     setVis(v);
     setState("");
-    try { await saveGamePrefs(v); setState("ok"); } catch { setState("err"); }
+    try { await saveGamePrefs(v); setState("ok"); } catch (err) {
+      const f = { status: err?.status, code: err?.code, error: err?.message };
+      reportFailure("game_status", f);
+      setFailure(f);
+      setState("err");
+    }
   };
   const activity = app.activity || null;
   const game = gameNameFromActivity(activity?.currentActivity);
@@ -39,7 +45,7 @@ export function Panel() {
         </select>
       </Field>
       {state === "ok" ? <span className="pg-ok">{t("premiumGaming.common.saved")}</span> : null}
-      {state === "err" ? <span className="pg-error">{t("premiumGaming.common.failed")}</span> : null}
+      {state === "err" ? <span className="pg-error">{failMessage(t, failure)}</span> : null}
       {activity?.updateSettings ? (
         <Switch checked={sharing} onChange={(on) => activity.updateSettings({ show_game_activity: on })} label={t("premiumGaming.gameStatus.share")} />
       ) : null}

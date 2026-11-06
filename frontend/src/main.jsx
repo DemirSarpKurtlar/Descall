@@ -31,6 +31,11 @@ try {
 // Crash/error reporting (prod only, lazy-loaded after first paint, buffers earlier errors).
 startErrorReporting();
 
+// Uncaught errors and unhandled rejections -> admin Error logs (own chunk, after first paint).
+window.setTimeout(() => {
+  import("./utils/errorHandler.js").then((m) => m.installGlobalErrorReporting()).catch(() => {});
+}, 3000);
+
 try {
   captureVisit();
 } catch {

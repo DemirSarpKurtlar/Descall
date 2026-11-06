@@ -11,6 +11,15 @@ export const PREMIUM_EN = {
     "ultraTip": "Descall Ultra member"
   },
   "hub": {
+    "gate": {
+      "title": "Desktop features are locked on this computer",
+      "checking": "Checking your membership on this computer. This can take a few seconds.",
+      "noToken": "The app could not read the saved session on this computer. Signing out and back in fixes it.",
+      "refused": "The server did not accept the session on this computer. Sign out and sign back in.",
+      "network": "Could not reach the server. The app keeps retrying on its own.",
+      "retry": "Check again",
+      "code": "Code: {code}"
+    },
     "unlimitedMember": "Unlimited membership",
     "until": "Until {date}",
     "statAccess": "features available to you",

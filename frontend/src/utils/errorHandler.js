@@ -82,7 +82,8 @@ function getSystemInfo() {
  */
 async function getUserInfo() {
   try {
-    const user = await getCurrentUser();
+    const raw = localStorage.getItem('descall_user');
+    const user = raw && raw !== 'null' ? JSON.parse(raw) : null;
     return {
       id: user?.id || 'anonymous',
       username: user?.username || 'Unknown',
@@ -133,6 +134,16 @@ function categorizeError(error) {
   return { type: 'unknown', severity: 'error' };
 }
 
+/** Desktop app version (Electron preload), or null on web. */
+function appVersion() {
+  try {
+    const v = window.electronAPI?.appVersion ?? window.electronAPI?.version ?? null;
+    return typeof v === 'string' ? v.slice(0, 32) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Send error to backend
  */
@@ -154,7 +165,8 @@ async function sendToBackend(errorData) {
         userId: errorData.userId,
         username: errorData.username,
         severity: errorData.severity || 'error',
-        source: errorData.type || 'frontend'
+        source: errorData.type || 'frontend',
+        appVersion: appVersion(),
       }),
     });
     
@@ -307,3 +319,51 @@ export default {
   reportError,
   withErrorHandling,
 };
+
+// ---- global reporting (installed after first paint from main.jsx) ----------------------
+
+// Browser / extension noise that says nothing about Descall.
+const NOISE = /ResizeObserver loop|^Script error\.?$|AbortError|The operation was aborted|chrome-extension:|moz-extension:|safari-extension:|Load failed|Failed to fetch|NetworkError|net::ERR_/i;
+const SESSION_CAP = 20;
+const seenThisSession = new Set();
+let installed = false;
+
+function worthReporting(error) {
+  const message = String(error?.message || error || '');
+  const stack = String(error?.stack || '');
+  if (!message || NOISE.test(message) || NOISE.test(stack.split('\n')[1] || '')) return false;
+  if (categorizeError(error).type === 'network') return false;
+  const sig = getErrorSignature(error);
+  if (seenThisSession.has(sig) || seenThisSession.size >= SESSION_CAP) return false;
+  seenThisSession.add(sig);
+  return true;
+}
+
+/**
+ * Report uncaught errors and unhandled rejections to /api/errors (admin > Error logs).
+ * Unlike initErrorHandlers it leaves the console output alone (no preventDefault), skips
+ * network and extension noise, and sends each distinct error at most once per session.
+ */
+export function installGlobalErrorReporting() {
+  if (installed || typeof window === 'undefined') return;
+  installed = true;
+  window.addEventListener('error', (event) => {
+    const error = event.error || new Error(event.message);
+    if (!worthReporting(error)) return;
+    captureError(error, { component: event.filename, action: 'global_error' });
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    if (!worthReporting(error)) return;
+    captureError(error, { action: 'unhandled_promise_rejection' });
+  });
+}
+
+/** A handled failure worth seeing in Error logs (e.g. a Descall+ action that failed). */
+export function reportHandled(message, { severity = 'warning', source = 'handled' } = {}) {
+  const error = new Error(String(message).slice(0, 500));
+  if (!worthReporting(error)) return;
+  if (isRateLimited()) return;
+  const info = getSystemInfo();
+  sendToBackend({ message: error.message, stack: null, component: null, url: info.url, userAgent: info.userAgent, timestamp: info.timestamp, severity, type: source });
+}

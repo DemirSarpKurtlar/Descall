@@ -28,6 +28,41 @@ export async function pinvoke(channel, ...args) {
   }
 }
 
+/**
+ * Short code for a failed pinvoke / request, shown under the panel so a report says what
+ * broke: "locked" = main has not started the feature (membership not verified on this
+ * computer yet, or the feature is off), "forbidden", "network", "http-403", ...
+ */
+export function failCode(r) {
+  const e = String(r?.error ?? "");
+  if (/no handler registered|^locked$/i.test(e)) return "locked";
+  if (/failed to fetch|networkerror|network|timeout/i.test(e)) return "network";
+  const code = String(r?.code ?? "").replace(/[^\w-]/g, "").slice(0, 32);
+  if (code) return code;
+  const status = Number(r?.status) || 0;
+  if (status) return `http-${status}`;
+  return e.replace(/[^\w-]/g, "").slice(0, 32) || "unknown";
+}
+
+/** Send a failed Descall+ action to admin Error logs (lazy, deduplicated per session). */
+export function reportFailure(feature, r) {
+  const code = failCode(r);
+  import("../../utils/errorHandler.js")
+    .then((m) => m.reportHandled(`[premium] ${String(feature).slice(0, 40)} failed: ${code}`, { source: "premium" }))
+    .catch(() => {});
+}
+
+/** Localized failure line with its code, e.g. "... Try again. (Code: locked)". */
+export function failMessage(t, r) {
+  const code = failCode(r);
+  const text = code === "locked"
+    ? t("premiumGaming.common.locked")
+    : code === "network"
+      ? t("premiumGaming.common.offline")
+      : t("premiumGaming.common.failed");
+  return `${text} (${t("premiumGaming.common.code", { code })})`;
+}
+
 export function pon(channel, cb) {
   const b = premiumBridge();
   if (!b) return () => {};

@@ -18,6 +18,24 @@ const { normalizePlan, tierAllows, featuresForPlan, PLAN_RANK } = require('./fea
 
 const REVERIFY_MS = 30 * 60 * 1000;
 const MIN_VERIFY_GAP_MS = 20 * 1000;
+// After a network failure (no answer at all) main retries soon instead of waiting the full
+// REVERIFY_MS: at launch on Windows the network or the API host is often not ready yet, and
+// every desktop feature would stay locked for half an hour.
+// The wait grows with the time since the first failure, not with the number of tries: at
+// launch the renderer pushes its claim several times within a second and each push checks.
+function retryDelay(sinceFirstFailureMs) {
+  if (sinceFirstFailureMs < 60 * 1000) return 5 * 1000;
+  if (sinceFirstFailureMs < 10 * 60 * 1000) return 30 * 1000;
+  return 5 * 60 * 1000;
+}
+
+/** Short reason for the last failed check (shown in Settings > Descall+, never a secret). */
+function failureCode(err) {
+  if (err?.code === 'no-token') return 'no-token';
+  const status = Number(err?.status) || 0;
+  if (status) return `http-${status}`;
+  return 'network';
+}
 
 /** Server body -> { plan, keys:Set }. Unknown keys and keys above the plan are dropped. */
 function parseServer(body) {
@@ -61,6 +79,9 @@ function createGate({ fetchMe = null, log = null, now = () => Date.now(), setTim
   const listeners = new Set();
   let verifying = null;
   let timer = null;
+  let lastError = null; // { code, at } of the last failed check, null after a good answer
+  let failures = 0; // consecutive network failures
+  let firstFailureAt = 0; // when the current run of network failures started
 
   function recompute(reason) {
     const next = intersectEntitlements(renderer.keys, renderer.plan, server.keys, server.plan);
@@ -76,7 +97,8 @@ function createGate({ fetchMe = null, log = null, now = () => Date.now(), setTim
   function schedule() {
     if (timer) { clearTimer(timer); timer = null; }
     if (!renderer.plan) return;
-    timer = setTimer(() => { timer = null; verify({ force: true }); }, REVERIFY_MS);
+    const wait = failures > 0 ? retryDelay(now() - firstFailureAt) : REVERIFY_MS;
+    timer = setTimer(() => { timer = null; verify({ force: true }); }, wait);
     if (timer && typeof timer.unref === 'function') timer.unref();
   }
 
@@ -94,12 +116,19 @@ function createGate({ fetchMe = null, log = null, now = () => Date.now(), setTim
         const body = await fetcher();
         const parsed = parseServer(body);
         server = { keys: parsed.keys, plan: parsed.plan, at: now() };
+        lastError = null;
+        failures = 0;
       } catch (err) {
         const status = Number(err?.status) || 0;
+        lastError = { code: failureCode(err), at: now() };
         if (status === 401 || status === 403 || status === 404 || status === 405 || err?.code === 'no-token') {
           server = { keys: new Set(), plan: null, at: now() };
+          failures = 0;
+          try { logger?.warn?.(`[premium] verify refused (${lastError.code}): desktop features off`); } catch (_) { /* ignore */ }
         } else {
-          try { logger?.warn?.('[premium] verify failed, keeping last answer:', err?.message || err); } catch (_) { /* ignore */ }
+          if (!failures) firstFailureAt = now();
+          failures += 1;
+          try { logger?.warn?.(`[premium] verify failed (${lastError.code}, try ${failures}), keeping last answer:`, err?.message || err); } catch (_) { /* ignore */ }
         }
       } finally {
         verifying = null;
@@ -140,7 +169,14 @@ function createGate({ fetchMe = null, log = null, now = () => Date.now(), setTim
   }
 
   function snapshot() {
-    return { plan: effective.plan, keys: [...effective.keys], verifiedAt: server.at || 0 };
+    return {
+      plan: effective.plan,
+      keys: [...effective.keys],
+      verifiedAt: server.at || 0,
+      claimed: renderer.keys ? renderer.keys.size : 0,
+      lastError: lastError ? { ...lastError } : null,
+      verifying: Boolean(verifying),
+    };
   }
 
   function configure(opts = {}) {
@@ -152,6 +188,8 @@ function createGate({ fetchMe = null, log = null, now = () => Date.now(), setTim
   function reset() {
     renderer = { keys: null, plan: null };
     server = { keys: null, plan: null, at: 0 };
+    lastError = null;
+    failures = 0;
     if (timer) { clearTimer(timer); timer = null; }
     recompute('reset');
   }
@@ -173,4 +211,6 @@ module.exports = {
   createGate,
   intersectEntitlements,
   parseServer,
+  failureCode,
+  retryDelay,
 };

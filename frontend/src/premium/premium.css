@@ -269,3 +269,12 @@ html[data-theme="light"] .pp-pill.is-ultra { background: rgba(239, 143, 91, 0.16
 html[data-theme="light"] .pp-tile:hover,
 html[data-theme="light"] .pp-linkrow:hover { background-color: rgba(57, 60, 77, 0.06); }
 html[data-theme="light"] .pp-list .pp-row + .pp-row { border-top-color: rgba(57, 60, 77, 0.1); }
+
+/* Desktop gate notice (Settings > Descall+, desktop only, shown while main has not verified). */
+.pp-gate { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-left: 3px solid #f0b232; }
+.pp-gate > svg { flex: none; margin-top: 2px; color: #f0b232; }
+.pp-gate-text { flex: 1; min-width: 0; }
+.pp-gate-text b { display: block; font-size: var(--fs-15); }
+.pp-gate-text p { margin: 4px 0 0; font-size: var(--fs-13); color: inherit; opacity: 0.72; }
+.pp-gate-text .pp-gate-code { font-size: var(--fs-12); opacity: 0.55; font-variant-numeric: tabular-nums; }
+.pp-gate > .us-btn { flex: none; align-self: center; }

@@ -795,6 +795,15 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "gate": {
+        "title": "Desktop-Funktionen sind auf diesem Computer gesperrt",
+        "checking": "Deine Mitgliedschaft wird auf diesem Computer geprüft. Das kann ein paar Sekunden dauern.",
+        "noToken": "Die App konnte die gespeicherte Sitzung auf diesem Computer nicht lesen. Ab- und wieder anmelden behebt das.",
+        "refused": "Der Server hat die Sitzung auf diesem Computer nicht akzeptiert. Melde dich ab und wieder an.",
+        "network": "Der Server war nicht erreichbar. Die App versucht es selbst erneut.",
+        "retry": "Erneut prüfen",
+        "code": "Code: {code}"
+      },
       "unlimitedMember": "Unbefristete Mitgliedschaft",
       "until": "Bis {date}",
       "statAccess": "Funktionen für dich verfügbar",
@@ -1205,6 +1214,9 @@ export const nested = {
       "remove": "Entfernen",
       "none": "Keine",
       "failed": "Etwas ist schiefgelaufen. Versuch es erneut.",
+      "locked": "Diese Funktion läuft auf diesem Computer noch nicht. Deine Mitgliedschaft wird eventuell noch geprüft; versuch es in ein paar Sekunden erneut.",
+      "offline": "Der Server war nicht erreichbar. Prüf deine Verbindung und versuch es erneut.",
+      "code": "Code: {code}",
       "saved": "Gespeichert",
       "sending": "Wird gesendet…",
       "hotkey": "Tastenkürzel",

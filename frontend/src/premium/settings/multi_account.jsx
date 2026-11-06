@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { DesktopOnly, PanelShell } from "../gaming/ui.jsx";
-import { isDesktop, pinvoke } from "../gaming/bridge.js";
+import { failMessage, isDesktop, pinvoke, reportFailure } from "../gaming/bridge.js";
 import { Trash2 } from "../../components/ui/Icon.jsx";
 
 export const key = "multi_account";
@@ -17,7 +17,8 @@ export function Panel() {
   useEffect(() => { if (isDesktop()) reload(); }, [reload]);
   const add = async () => {
     const r = await pinvoke("premium:multi_account:add");
-    setErr(r?.ok ? "" : r?.error === "limit" ? t("premiumGaming.multiAccount.limit", { max: data.max }) : t("premiumGaming.common.failed"));
+    if (!r?.ok && r?.error !== "limit") reportFailure("multi_account", r);
+    setErr(r?.ok ? "" : r?.error === "limit" ? t("premiumGaming.multiAccount.limit", { max: data.max }) : failMessage(t, r));
     reload();
   };
   return (

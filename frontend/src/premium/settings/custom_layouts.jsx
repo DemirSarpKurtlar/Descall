@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { useFeatureSettings } from "../featureSettings.js";
 import { DEFAULTS, DesktopOnly, PanelShell } from "../gaming/ui.jsx";
-import { isDesktop, pinvoke } from "../gaming/bridge.js";
+import { failMessage, isDesktop, pinvoke, reportFailure } from "../gaming/bridge.js";
 import { Trash2 } from "../../components/ui/Icon.jsx";
 
 export const key = "custom_layouts";
@@ -21,7 +21,10 @@ export function Panel() {
   const save = async () => {
     const r = await pinvoke("premium:custom_layouts:save", { name, widgets: w.widgets || [] });
     if (r?.ok) { setName(""); setErr(""); setData({ layouts: r.layouts, active: r.active }); }
-    else setErr(r?.error === "limit" ? t("premiumGaming.layouts.limit") : t("premiumGaming.common.failed"));
+    else {
+      if (r?.error !== "limit") reportFailure("custom_layouts", r);
+      setErr(r?.error === "limit" ? t("premiumGaming.layouts.limit") : failMessage(t, r));
+    }
   };
   const apply = async (l) => {
     await updateWidgets({ widgets: l.widgets || [], on: true });
