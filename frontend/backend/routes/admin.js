@@ -61,6 +61,8 @@ const { apiError, apiText } = require("../lib/apiError");
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 
+// Descall+ / Ultra: refused attempts on /premium are logged (before the chain answers 401/403).
+router.use("/premium", require("./adminPremium").logDenied);
 router.use(requireAuth, requireAdmin, adminRateLimit, requireAdmin2fa);
 // Yönetici güvenliği (3.2.0): a fresh code for every change; see middleware/adminSecondFactor.js.
 router.post("/step-up", stepUpHandler);
@@ -78,6 +80,8 @@ router.use(require("./adminOverview"));
 router.use(require("./adminMaintenance"));
 router.use(require("./adminPromo"));
 router.use(require("./adminSpecialBadges"));
+// Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
+router.use("/premium", require("./adminPremium"));
 
 router.get("/directory", async (req, res) => {
   try {

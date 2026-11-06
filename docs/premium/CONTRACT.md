@@ -36,6 +36,11 @@ All times are stored in UTC. All user-visible strings go through i18n in 7 local
   - `premium_expire_due()`
   - `premium_grant_due_coins()`, which credits DesCoin through the existing ledger path, exactly once per cycle.
 
+- Future item, not built in phase 1 (owner decision 2026-11-06): when paid subscriptions start, a new subscriber gets a 3-day free trial. The model leaves room for it:
+  - an optional `user_subscriptions.trial_ends_at`, which stays NULL in phase 1;
+  - an event `kind` value `'trial'`;
+  - one trial per user, enforced by a unique index on `subscription_events (user_id)` where `kind = 'trial'`.
+
 ## Backend (Express, `frontend/backend`)
 
 - Admin router: `routes/adminPremium.js`, mounted inside `routes/admin.js`, so `requireAuth` and `requireAdmin` already apply.

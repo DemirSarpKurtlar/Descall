@@ -136,7 +136,8 @@ async function assertWalletWritable(userId, reason) {
 
 /** Positive ledger rows that are not activity earnings (a purchase refund). */
 // Promo-code DesCoin (reason "promo") is a reward, not earning: it never uses up the daily cap.
-const EXCLUDED_FROM_EARNING_CAP = new Set(["shop_refund", "promo"]);
+// Descall+ / Ultra monthly gifts (reason "premium_gift", written in SQL) are not earning either.
+const EXCLUDED_FROM_EARNING_CAP = new Set(["shop_refund", "promo", "premium_gift"]);
 
 async function sumCreditsSince(userId, sinceIso, reason = null) {
   let query = supabase

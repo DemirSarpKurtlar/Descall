@@ -33,6 +33,7 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "shop",
   "promo",
   "specialBadges",
+  "premium",
   "announcements",
   "livepopup",
   "casino",
@@ -45,7 +46,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
 const ALWAYS = Object.freeze(["overview"]);
 // Reading private messages (3.7.1): never part of the legacy NULL = "every
 // section" default; the owner grants it to an admin explicitly.
-const SENSITIVE_SECTIONS = Object.freeze(["dmReview"]);
+// Descall+ / Ultra (memberships mint DesCoin gifts): also granted explicitly, never by the legacy default.
+const SENSITIVE_SECTIONS = Object.freeze(["dmReview", "premium"]);
 const LEGACY_SECTIONS = Object.freeze(GRANTABLE_SECTIONS.filter((s) => !SENSITIVE_SECTIONS.includes(s)));
 const OWNER_ONLY = Object.freeze(["staff"]);
 
@@ -65,6 +67,7 @@ const RULES = [
   [/^\/reports(\/|$)/, "reports"],
   [/^\/promo-codes(\/|$)/, "promo"],
   [/^\/special-badges(\/|$)/, "specialBadges"],
+  [/^\/premium(\/|$)/, "premium"],
   [/^\/announcements(\/|$)/, "announcements"],
   [/^\/(popup|broadcast)(\/|$)/, "livepopup"],
   [/^\/antibot(\/|$)/, "suspicious"],

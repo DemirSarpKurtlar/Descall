@@ -88,3 +88,7 @@ export function tierAllows(plan, key) {
 export function featuresForPlan(plan) {
   return FEATURE_KEYS.filter((k) => tierAllows(plan, k));
 }
+
+/** Names the backend mirror (backend/lib/premium/features.js) uses; kept equal by its selftest. */
+export const TIERS = PLANS;
+export const featuresFor = featuresForPlan;
