@@ -1,14 +1,6 @@
 import { SkeletonImage } from "../ui/Skeleton";
 import { useHoverGif } from "../../lib/useHoverGif";
-
-function serverInitials(name) {
-  return String(name || "?")
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { serverColor, serverInitials } from "../../lib/serverInitials.js";
 
 /**
  * Server squircle icon that holds a shimmer until the custom photo decodes.
@@ -29,7 +21,7 @@ export function ServerIcon({
   const { src, hoverProps } = useHoverGif(rawSrc || null, { forceAnimate: Boolean(animate) });
   const fallbackNode =
     fallback ?? (
-      <div className={`${className} ${fallbackClassName}`.trim()}>
+      <div className={`${className} ${fallbackClassName}`.trim()} style={{ background: serverColor(server, label), color: "#fff" }}>
         {serverInitials(label)}
       </div>
     );
