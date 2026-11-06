@@ -31,15 +31,8 @@ try {
 // Crash/error reporting (prod only, lazy-loaded after first paint, buffers earlier errors).
 startErrorReporting();
 
-// Desktop app: Ctrl + mouse wheel zooms the page smoothly (own chunk).
-if (typeof window !== "undefined" && window.electronAPI?.zoom) {
-  import("./lib/smoothZoom.js").then((m) => m.installSmoothZoom()).catch(() => {});
-}
-
-// Uncaught errors and unhandled rejections -> admin Error logs (own chunk, after first paint).
-window.setTimeout(() => {
-  import("./utils/errorHandler.js").then((m) => m.installGlobalErrorReporting()).catch(() => {});
-}, 3000);
+// Desktop smooth zoom + uncaught error reporting (lib/lateBoot.js, own chunk).
+import("./lib/lateBoot.js").then((m) => m.lateBoot()).catch(() => {});
 
 try {
   captureVisit();
