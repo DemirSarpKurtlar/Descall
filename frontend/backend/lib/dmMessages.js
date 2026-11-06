@@ -199,12 +199,19 @@ async function loadDmMessagesUncached(myId, peerId, { before, since, limit = 100
   return { messages, hasMore, incremental: false };
 }
 
-function loadDmMessages(myId, peerId, options = {}) {
+async function loadDmMessages(myId, peerId, options = {}) {
   const since = parseSince(options.since) || "";
   const before = options.before || "";
   const limit = Math.min(Math.max(Number(options.limit) || 100, 1), 100);
   const key = `${myId}:${peerId}:${before}:${since}:${limit}`;
-  return dmLoadFlight.run(key, () => loadDmMessagesUncached(myId, peerId, { ...options, limit }));
+  const out = await dmLoadFlight.run(key, () => loadDmMessagesUncached(myId, peerId, { ...options, limit }));
+  // "Görüldü" (messaging phase 4): read times only when both people share read receipts.
+  try {
+    const messages = await require("./readReceipts").maskDmReads(out.messages, myId, peerId);
+    return messages === out.messages ? out : { ...out, messages };
+  } catch {
+    return out;
+  }
 }
 
 async function listAcceptedFriendIds(userId) {

@@ -1,6 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
+import { authedRequest } from "../../api/authedHttp";
+import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -149,6 +151,55 @@ function Toggle({ value, onChange, label }) {
   );
 }
 
+/** "Görüldü bilgisi" (messaging phase 4): read receipts on/off, both ways (server-enforced). */
+function ReadReceiptsRow() {
+  const { t } = useLocale();
+  const [on, setOn] = useState(readReceiptsSetting);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    authedRequest("/api/read-receipts")
+      .then((r) => {
+        if (!alive || typeof r?.enabled !== "boolean") return;
+        setOn(r.enabled);
+        storeReceiptsSetting(r.enabled);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const change = async (next) => {
+    setOn(next);
+    setError("");
+    storeReceiptsSetting(next);
+    try {
+      await authedRequest("/api/read-receipts", { method: "PUT", body: { enabled: next } });
+    } catch {
+      setOn(!next);
+      storeReceiptsSetting(!next);
+      setError(t("msg4.seen.saveError"));
+    }
+  };
+  return (
+    <section className="us-section">
+      <h4 className="us-section-label">{t("msg4.seen.section")}</h4>
+      <div className="us-card">
+        <div className="us-row" data-testid="read-receipts-row">
+          <div className="us-row-text">
+            <span className="us-row-icon" aria-hidden>
+              <Check size={16} />
+            </span>
+            <div className="us-row-copy">
+              <span className="us-row-title">{t("msg4.seen.setting")}</span>
+              <span className="us-row-desc">{error || t("msg4.seen.settingDesc")}</span>
+            </div>
+          </div>
+          <Toggle value={on} onChange={change} label={t("msg4.seen.setting")} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PrivacySettingsSection({ activitySection = null }) {
   const { t } = useLocale();
   const [choice, setChoice] = useState(() => getCookieConsent()?.choice || "");
@@ -199,6 +250,7 @@ function PrivacySettingsSection({ activitySection = null }) {
           </div>
         </div>
       </section>
+      <ReadReceiptsRow />
       {activitySection}
       <section className="us-section">
         <h4 className="us-section-label">{t("dex.section")}</h4>
@@ -837,6 +889,9 @@ const UserPanel = forwardRef(function UserPanel({
   /* ── Notifications ── */
   const [msgNotifications, setMsgNotifications] = useState(stored.msgNotifications !== false);
   const [callNotifications, setCallNotifications] = useState(stored.callNotifications !== false);
+  // Messaging phase 4: mention cards (lib/notificationService read this key already) and message text on cards.
+  const [mentionNotifications, setMentionNotifications] = useState(stored.mentionNotifications !== false);
+  const [notificationPreviews, setNotificationPreviews] = useState(stored.notificationPreviews !== false);
 
   /* ── iPhone push permission (native iOS app only) ── */
   const iosPush = isNativeIosPush();
@@ -903,6 +958,8 @@ const UserPanel = forwardRef(function UserPanel({
       premiumThemeKey: equippedThemeKey,
       msgNotifications,
       callNotifications,
+      mentionNotifications,
+      notificationPreviews,
       msgSounds,
       callSounds,
       selectedAudioIn,
@@ -914,6 +971,8 @@ const UserPanel = forwardRef(function UserPanel({
     equippedThemeKey,
     msgNotifications,
     callNotifications,
+    mentionNotifications,
+    notificationPreviews,
     msgSounds,
     callSounds,
     selectedAudioIn,
@@ -2390,7 +2449,30 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Call notifications")}
                   />
                 </SettingRow>
+                <SettingRow
+                  icon={AtSign}
+                  title={t("msg4.notify.mentionSetting")}
+                  description={t("msg4.notify.mentionSettingDesc")}
+                >
+                  <Toggle
+                    value={mentionNotifications}
+                    onChange={setMentionNotifications}
+                    label={t("msg4.notify.mentionSetting")}
+                  />
+                </SettingRow>
+                <SettingRow
+                  icon={Eye}
+                  title={t("msg4.notify.previewSetting")}
+                  description={t("msg4.notify.previewSettingDesc")}
+                >
+                  <Toggle
+                    value={notificationPreviews}
+                    onChange={setNotificationPreviews}
+                    label={t("msg4.notify.previewSetting")}
+                  />
+                </SettingRow>
               </div>
+              <p className="us-row-desc g-activity-footnote">{t("msg4.notify.perChatHint")}</p>
             </section>
 
           </div>

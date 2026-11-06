@@ -11,6 +11,13 @@ import {
   planIncomingDismiss,
 } from "./callNotificationClose";
 import { premiumNotifyGate, setDeferredFlusher } from "../premium/notify/premiumNotify.js";
+import { allowNotify } from "./notifyPrefs";
+import { stickerPreviewText } from "./descallStickers";
+
+/** Settings › Bildirimler › "Mesaj önizlemesi" off: no message text on this device's cards. */
+function hidePreviews() {
+  return readUserSettings().notificationPreviews === false;
+}
 
 const COOLDOWN_MS = 800;
 const CALL_TAG = DM_INCOMING_TAG;
@@ -285,9 +292,10 @@ class NotificationService {
   async dm({ from, text, conversationId, fromId = null, avatarUrl = null }) {
     if (isDndMuted()) return;
     if (readUserSettings().msgNotifications === false) return;
+    if (!allowNotify("dm", conversationId)) return;
     await this.show({
       title: from,
-      body: text?.substring(0, 120) || t("New message"),
+      body: (!hidePreviews() && stickerPreviewText(text || "", t)?.substring(0, 120)) || t("New message"),
       tag: `dm-${conversationId}`,
       avatarUrl,
       // fromId: letter-avatar colour (same as the app); avatarUrl: desktop capsule photo.
@@ -303,7 +311,8 @@ class NotificationService {
   async groupMessage({ groupName, from, text, groupId, fromId = null, avatarUrl = null }) {
     if (isDndMuted()) return;
     if (readUserSettings().msgNotifications === false) return;
-    const preview = (text || t("New message")).substring(0, 100);
+    if (!allowNotify("group", groupId)) return;
+    const preview = ((!hidePreviews() && stickerPreviewText(text || "", t)) || t("New message")).substring(0, 100);
     await this.show({
       title: groupName,
       body: `${from}: ${preview}`,
@@ -330,15 +339,19 @@ class NotificationService {
     if (settings.msgNotifications === false) return;
     if (settings.mentionNotifications === false) return;
     if (channelId && isChannelMuted(channelId)) return;
+    if (groupId && !allowNotify("group", groupId, { mention: true })) return;
+    if (dmConversationId && !allowNotify("dm", dmConversationId, { mention: true })) return;
     const contextLabel =
       serverName && channelName
         ? `${serverName} #${channelName}`
         : serverName || groupName || null;
     await this.show({
       title: `💬 ${t("{from} mentioned you", { from })}`,
-      body: contextLabel
-        ? `${contextLabel}: ${(text || '').substring(0, 100)}`
-        : (text || '').substring(0, 120),
+      body: hidePreviews()
+        ? (contextLabel || t("New message"))
+        : contextLabel
+          ? `${contextLabel}: ${(text || '').substring(0, 100)}`
+          : (text || '').substring(0, 120),
       tag: `mention-${groupId || dmConversationId || channelId || 'x'}`,
       requireInteraction: true,
       data: {

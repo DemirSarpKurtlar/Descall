@@ -5,6 +5,7 @@
 import { splitHighlightRanges } from "../../lib/textHighlight";
 import { splitBlocks, tokenizeInline } from "../../lib/messageMarkdown";
 import { displayText } from "../../lib/profanity";
+import { splitLogoEmoji } from "../../lib/descallStickers";
 import { isDescallInviteUrl, parseDescallInviteUrl, isVanityServerInvite, vanitySlugFromInviteCode } from "../../lib/inviteLinks";
 
 const URL_RE =
@@ -84,8 +85,26 @@ function renderTokens(tokens, keyPrefix, highlight) {
         </a>
       );
     }
-    return <span key={key}>{highlightPlain(displayText(token.value), highlight, key)}</span>;
+    return <span key={key}>{withLogoEmoji(displayText(token.value), highlight, key)}</span>;
   });
+}
+
+/** Plain text with Descall logo emoji (":descall:", ":ds-love:"...) drawn inline (messaging phase 4). */
+function withLogoEmoji(value, highlight, keyPrefix) {
+  const parts = splitLogoEmoji(value);
+  if (parts.length === 1 && parts[0].text !== undefined) return highlightPlain(value, highlight, keyPrefix);
+  return parts.map((part, i) => (part.emoji ? (
+    <img
+      key={`${keyPrefix}-e${i}`}
+      className="msg-logo-emoji"
+      src={part.emoji.src}
+      alt={part.emoji.token}
+      title={part.emoji.token}
+      draggable={false}
+    />
+  ) : (
+    <span key={`${keyPrefix}-t${i}`}>{highlightPlain(part.text, highlight, `${keyPrefix}-t${i}`)}</span>
+  )));
 }
 
 function renderInline(text, keyPrefix = "t", highlight = "") {

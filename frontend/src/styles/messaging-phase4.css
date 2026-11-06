@@ -1,0 +1,258 @@
+/* Messaging phase 4 (drafts, jump to unread, forwarding, link previews,
+   Görüldü, scheduled sending, Descall stickers): row-level styles that sit
+   inside the chat list and message list. Sheets carry their own CSS
+   (styles/messaging-sheets.css, loaded with them). */
+
+/* Drafts: "Taslak: …" in the conversation list. */
+.dm-preview.has-draft { color: var(--text-secondary, var(--text-muted)); }
+.conv-row-bottom .dm-preview .conv-draft-label,
+.conv-draft-label {
+  color: var(--danger, #ff453a);
+  font-weight: 600;
+}
+
+/* Jump to the first unread: zero-height row on the chat panel, just under
+   the header (MessageList sets `top`), above the phone header's scroll-edge
+   fade (z 45) and below sheets. */
+.main-panel:has(> .msg-unread-dock) { position: relative; }
+.main-panel > .msg-unread-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 46;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+.msg-unread-dock .msg-unread-pill.msg-unread-pill {
+  position: absolute;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  padding: 0 4px 0 6px;
+  border-radius: 999px;
+  pointer-events: auto;
+  color: var(--text-primary, #fff);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  background: rgba(36, 38, 52, 0.86);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 0.5px 0 rgba(255, 255, 255, 0.18);
+}
+.msg-unread-pill button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.msg-unread-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  font-size: var(--fs-13);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.msg-unread-jump svg { color: var(--primary, #587af5); }
+.msg-unread-go {
+  color: var(--primary, #587af5);
+  padding-left: 8px;
+  border-left: 0.5px solid rgba(255, 255, 255, 0.18);
+}
+.msg-unread-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  opacity: 0.7;
+}
+.msg-unread-jump:hover,
+.msg-unread-close:hover { background: rgba(255, 255, 255, 0.08); opacity: 1; }
+.msg-unread-pill button:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 1px; }
+html[data-theme="light"] .msg-unread-dock .msg-unread-pill.msg-unread-pill {
+  color: #111;
+  background: rgba(250, 250, 252, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .msg-unread-go { border-left-color: rgba(0, 0, 0, 0.12); }
+
+/* Link preview card (data from our server, image inline). */
+.msg-link-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin: 8px 0 2px;
+  padding: 10px 12px 10px 14px;
+  box-sizing: border-box;
+  border-radius: var(--r-md, 12px);
+  border-left: 3px solid var(--primary, #587af5);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.msg-link-preview:hover { background: rgba(255, 255, 255, 0.09); text-decoration: none; }
+.msg-link-preview:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 2px; }
+.msg-link-preview-body { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.msg-link-preview-site {
+  font-size: var(--fs-11);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msg-link-preview-title {
+  font-size: var(--fs-15);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--primary, #587af5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msg-link-preview-desc {
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--text-secondary, var(--text-muted));
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msg-link-preview-img {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-sm, 8px);
+  object-fit: cover;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.06);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-link-preview {
+  border-left-color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.14);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-link-preview-title { color: #fff; }
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) :is(.msg-link-preview-site, .msg-link-preview-desc) { color: rgba(255, 255, 255, 0.78); }
+html[data-theme="light"] .msg-link-preview { background: rgba(0, 0, 0, 0.04); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
+
+/* Scheduled sending: "2 zamanlanmış mesaj" over the composer (same strip as the slow mode hint). */
+button.composer-slowmode-hint.ms-sched-hint {
+  appearance: none;
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  color: var(--primary, #587af5);
+  background: color-mix(in srgb, var(--primary, #587af5) 10%, var(--surface-2, rgba(255, 255, 255, 0.06)));
+}
+button.composer-slowmode-hint.ms-sched-hint:hover { background: color-mix(in srgb, var(--primary, #587af5) 16%, var(--surface-2, rgba(255, 255, 255, 0.06))); }
+button.composer-slowmode-hint.ms-sched-hint:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 1px; }
+
+/* Descall logo emoji inline in text, and stickers (drawn large, no bubble). */
+.msg-logo-emoji {
+  display: inline-block;
+  width: 1.35em;
+  height: 1.35em;
+  margin: 0 0.06em;
+  vertical-align: -0.3em;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Beats the glass bubble fills (html.glass-ui .app-root.g-shell .message-bubble.own:not(...), !important). */
+:is(html, html.glass-ui .app-root.g-shell, html.glass-desktop .app-root) .message-bubble.has-sticker.has-sticker.has-sticker.has-sticker {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding: 2px 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.message-bubble.has-sticker::before,
+.message-bubble.has-sticker::after { display: none !important; }
+.msg-sticker {
+  display: block;
+  width: 128px;
+  height: 128px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.28));
+}
+html.glass-ui .app-root.g-shell .msg-sticker { width: 112px; height: 112px; }
+.message-bubble.has-sticker .message-footer { justify-content: flex-start; padding-left: 4px; }
+
+/* Picker: Descall emoji row + sticker grid on top of the emoji list. */
+.ds-emoji-btn img { display: block; width: 26px; height: 26px; margin: auto; }
+.ds-picker .emoji-grid { margin-bottom: 10px; }
+.ds-sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 2px 0 10px;
+}
+.ds-sticker-btn {
+  aspect-ratio: 1;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--r-md, 12px);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.12s, transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ds-sticker-btn img { display: block; width: 100%; height: 100%; }
+.ds-sticker-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.ds-sticker-btn:active:not(:disabled) { transform: scale(0.94); }
+.ds-sticker-btn:disabled { opacity: 0.45; cursor: default; }
+.ds-sticker-btn:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 1px; }
+html[data-theme="light"] .ds-sticker-btn { background: rgba(0, 0, 0, 0.04); }
+
+/* "Görüldü" under my newest message. */
+/* Same left edge as my bubble (chat-left-align.css), checked by the phase 4 e2e. */
+.msg-seen {
+  margin: 0 0 2px 60px;
+  font-size: var(--fs-11);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+html.glass-ui .app-root.g-shell .msg-seen { margin-left: 46px; }
+
+/* Forwarded: a small "İletildi" line above the message (never a quote). */
+.message-forwarded {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  font-size: var(--fs-12);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.message-forwarded svg { flex: 0 0 auto; }
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .message-forwarded {
+  color: rgba(255, 255, 255, 0.82);
+}

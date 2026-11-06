@@ -8,9 +8,11 @@ import { UAH_PT_BR } from "./uah.pt-BR.js";
  */
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
+import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
+  "msg4": MSG4_PT_BR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {

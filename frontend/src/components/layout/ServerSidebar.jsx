@@ -33,6 +33,10 @@ import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { displayText } from "../../lib/profanity";
 import { localizeListPreview } from "../../lib/listPreview";
+import useConversationDraft from "../../hooks/useConversationDraft";
+import { draftPreview } from "../../lib/messageDrafts";
+import useNotifyLevel from "../../hooks/useNotifyLevel";
+import { openNotifyOptions } from "../../lib/notifyPrefs";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
@@ -1051,12 +1055,24 @@ function sameDmRowProps(prev, next) {
   return true;
 }
 
-function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isOnline }) {
+/** "Taslak: …" in the conversation list (messaging phase 4, lib/messageDrafts). */
+function DraftPreview({ text }) {
+  const t = useT();
+  return (
+    <>
+      <span className="conv-draft-label">{t("msg4.draft.label")}</span> {displayText(draftPreview(text))}
+    </>
+  );
+}
+
+function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isOnline, isActive = false }) {
   const t = useT();
   const glass = useGlassUi();
   const presence = rawPresence || (isOnline ? "online" : "offline");
   const preview = displayText(localizeListPreview(dm.lastMessage, t)) || t("No messages yet");
   const typing = glass && /yazıyor|typing/i.test(String(preview));
+  const draft = useConversationDraft(isActive || !dm.id ? null : `dm:${dm.id}`);
+  const silenced = useNotifyLevel("dm", dm.id) === "none";
   return (
     <>
       <div className="dm-avatar">
@@ -1080,13 +1096,13 @@ function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isO
             ) : null}
             <span className="conv-row-flags" aria-hidden>
               {dm.pinned ? <Pin size={11} /> : null}
-              {dm.muted ? <BellOff size={11} /> : null}
+              {dm.muted || silenced ? <BellOff size={11} /> : null}
             </span>
           </span>
         </div>
         <div className="conv-row-bottom">
-          <span className={`dm-preview ${unread > 0 ? "unread" : ""}${typing ? " is-typing" : ""}`}>
-            {preview}
+          <span className={`dm-preview ${unread > 0 ? "unread" : ""}${typing ? " is-typing" : ""}${draft && !typing ? " has-draft" : ""}`}>
+            {draft && !typing ? <DraftPreview text={draft} /> : preview}
           </span>
           <UnreadBadge count={unread} />
         </div>
@@ -1134,6 +1150,7 @@ function SwipeableDmRow({
             timeLabel={timeLabel}
             presence={presence}
             isOnline={isOnline}
+            isActive={isActive}
           />
         </button>
       }
@@ -1195,6 +1212,7 @@ function DmRowFront({
         timeLabel={timeLabel}
         presence={presence}
         isOnline={isOnline}
+        isActive={isActive}
       />
     </motion.button>
   );
@@ -1305,6 +1323,17 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
       >
         {dm.muted ? <Bell size={14} style={{ color: "var(--text-muted)" }} /> : <BellOff size={14} style={{ color: "var(--text-muted)" }} />}
         {dm.muted ? t("Unmute") : t("Mute")}
+      </button>
+      <button
+        type="button"
+        data-testid="dm-menu-notify"
+        onClick={() => { openNotifyOptions({ convType: "dm", convId: dm.id, name: resolveDisplayName(dm) }); onClose(); }}
+        style={itemStyle}
+        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        <Bell size={14} style={{ color: "var(--text-muted)" }} />
+        {t("msg4.notify.menu")}
       </button>
       <button
         type="button"
@@ -1495,6 +1524,9 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
           {item(t("Rename Group"), Edit3, onRename, { testId: "group-menu-rename" })}
           {item(t("Change Group Photo"), ImagePlus, onChangePhoto, { testId: "group-menu-photo" })}
           {groupAvatarUrl(group) ? item(t("Remove Group Photo"), ImageOff, onRemovePhoto, { testId: "group-menu-remove-photo" }) : null}
+        </div>
+        <div className="grp-menu-section">
+          {item(t("msg4.notify.menu"), Bell, () => openNotifyOptions({ convType: "group", convId: group?.id, name: group?.name }), { testId: "group-menu-notify" })}
         </div>
         <div className="grp-menu-section">
           {item(t("Leave Group"), LogOut, onLeave, { danger: true, testId: "group-menu-leave" })}
@@ -1792,8 +1824,10 @@ function glassGroupInitials(name, locale) {
   return upper(parts[0]?.[0] || "", locale);
 }
 
-function GroupRowContent({ group, unread, timeLabel, preview }) {
+function GroupRowContent({ group, unread, timeLabel, preview, isActive = false }) {
   const { t, locale } = useLocale();
+  const draft = useConversationDraft(isActive || !group.id ? null : `group:${group.id}`);
+  const silenced = useNotifyLevel("group", group.id) === "none";
   const glass = useGlassUi();
   const members = glass && Array.isArray(group.members) ? group.members.slice(0, 4) : [];
   const memberCount = group.memberCount || group.members?.length || 0;
@@ -1816,12 +1850,12 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
             ) : null}
             <span className="conv-row-flags" aria-hidden>
               {group.pinned ? <Pin size={11} /> : null}
-              {group.muted ? <BellOff size={11} /> : null}
+              {group.muted || silenced ? <BellOff size={11} /> : null}
             </span>
           </span>
         </div>
         <div className="conv-row-bottom">
-          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(localizeListPreview(preview, t))}</span>
+          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}${draft ? " has-draft" : ""}`}>{draft ? <DraftPreview text={draft} /> : displayText(localizeListPreview(preview, t))}</span>
           <UnreadBadge count={unread} />
         </div>
         {glass && memberCount > 0 ? (
@@ -1898,7 +1932,7 @@ function SwipeableGroupRow({
             onOpen?.();
           }}
         >
-          <GroupRowContent group={group} unread={isActive ? 0 : unread} timeLabel={timeLabel} preview={preview} />
+          <GroupRowContent group={group} unread={isActive ? 0 : unread} timeLabel={timeLabel} preview={preview} isActive={isActive} />
         </button>
       }
       actions={
@@ -1965,6 +1999,7 @@ function GroupRowFront({
         unread={isActive ? 0 : unread}
         timeLabel={timeLabel}
         preview={preview}
+        isActive={isActive}
       />
     </motion.button>
   );
