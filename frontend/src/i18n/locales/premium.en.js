@@ -10,6 +10,61 @@ export const PREMIUM_EN = {
     "plusTip": "Descall+ member",
     "ultraTip": "Descall Ultra member"
   },
+  "hub": {
+    "unlimitedMember": "Unlimited membership",
+    "until": "Until {date}",
+    "statAccess": "features available to you",
+    "statOn": "features on",
+    "statGift": "DesCoin / 30 days",
+    "days": "days",
+    "nextGift": "Next gift",
+    "search": "Search features",
+    "filter": "Filter features",
+    "filterAll": "All",
+    "filterOn": "On",
+    "filterOff": "Off",
+    "results": "{n} results",
+    "noResults": "No feature matches this search.",
+    "onCount": "{on} / {total} on",
+    "desktopOnly": "In the desktop app",
+    "back": "All features",
+    "plansDesc": "Free, Descall+ and Ultra side by side",
+    "redeemDesc": "Have a code? Enter it here",
+    "cat": {
+      "windows": {
+        "name": "Windows",
+        "desc": "Mini mode, always on top, separate windows"
+      },
+      "shortcuts": {
+        "name": "Shortcuts",
+        "desc": "Global mute, push to talk, media keys"
+      },
+      "notifications": {
+        "name": "Notifications",
+        "desc": "History, focus mode, notification profiles"
+      },
+      "audio": {
+        "name": "Audio",
+        "desc": "Noise gate, mic monitoring, device profiles"
+      },
+      "gaming": {
+        "name": "Gaming",
+        "desc": "Game status, HUDs, instant clip"
+      },
+      "productivity": {
+        "name": "Productivity",
+        "desc": "Clipboard history, file drop, app lock"
+      },
+      "desktop_tools": {
+        "name": "Desktop tools",
+        "desc": "Sidebar, widgets, command center"
+      },
+      "automation": {
+        "name": "Automation and profiles",
+        "desc": "Workspaces, automations, multiple accounts"
+      }
+    }
+  },
   "nav": "Descall+",
   "navHint": "Membership, features and desktop tools",
   "status": {

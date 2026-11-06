@@ -216,11 +216,14 @@ async function run(win) {
     const nav = document.querySelector('[data-nav="premium"]');
     if (nav && !document.querySelector('[data-testid="premium-tab"]')) nav.click();
     const tab = document.querySelector('[data-testid="premium-tab"]');
-    return tab ? { ok: true, feats: tab.querySelectorAll('[data-feature]').length, ends: (tab.querySelector('[data-testid="premium-ends"]') || {}).textContent || '', status: (tab.querySelector('[data-testid="premium-status"]') || {}).innerText || '' } : { ok: false, nav: !!nav };
+    return tab ? { ok: true, feats: Number(tab.getAttribute('data-feature-total')) || 0, tiles: tab.querySelectorAll('[data-category]').length, ends: (tab.querySelector('[data-testid="premium-ends"]') || {}).textContent || '', status: (tab.querySelector('[data-testid="premium-status"]') || {}).innerText || '' } : { ok: false, nav: !!nav };
   })()`), 15000);
   expect(tab.feats >= 40, `feature list too short: ${tab.feats}`);
+  expect(tab.tiles === 8, `expected 8 category tiles, got ${tab.tiles}`);
   await sleep(600);
   await shot(win, 'settings-premium.png');
+  await js(win, `(() => { const b = document.querySelector('[data-testid="premium-open-plans"]'); if (b) b.click(); return true; })()`);
+  await sleep(300);
   await js(win, `(() => { const el = document.querySelector('[data-testid="premium-compare"]'); if (el) el.scrollIntoView({ block: 'center' }); return true; })()`);
   await sleep(400);
   await shot(win, 'settings-premium-compare.png');
