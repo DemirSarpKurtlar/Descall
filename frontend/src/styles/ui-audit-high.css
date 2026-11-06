@@ -56,3 +56,109 @@ html.glass-ui .empty-state.is-compact h2 { color: var(--g-t1); }
 html.glass-ui .empty-state.is-compact p { color: var(--g-t2); }
 html.glass-desktop .empty-state.is-compact h2 { color: var(--gd-t1); }
 html.glass-desktop .empty-state.is-compact p { color: var(--gd-t2); }
+
+/* #2 Notification permission: a heavy-frost card in its own row. The shell is
+   pushed down by the card's measured height (--notif-banner-h, AppLayout), so
+   the rail logo and the list / chat / activity titles are never covered. The
+   frost base comes from frost.css (.app-notif-banner is in its lists). */
+.app-root.has-notif-banner {
+  box-sizing: border-box;
+  padding-top: calc(var(--notif-banner-h, 0px) + 16px);
+}
+html.glass-desktop .app-root.has-notif-banner {
+  padding-top: calc(var(--notif-banner-h, 0px) + var(--gd-gap, 8px) * 2);
+}
+.app-notif-banner {
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 7px 7px 7px 12px;
+  border-radius: 14px;
+  border: 0.5px solid var(--border-2, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  color: var(--text-0);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+html.glass-desktop .app-notif-banner {
+  top: var(--gd-gap, 8px);
+  left: var(--gd-gap, 8px);
+  right: var(--gd-gap, 8px);
+  border-color: var(--g-hair, rgba(255, 255, 255, 0.1));
+  color: var(--gd-t1);
+}
+html.glass-ui .app-notif-banner {
+  color: var(--g-t1);
+}
+.app-notif-banner-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--g-brand, var(--primary));
+  background: color-mix(in srgb, var(--g-brand, var(--primary)) 16%, transparent);
+}
+.app-notif-banner-text {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.app-notif-banner-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--g-brand, var(--primary));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+.app-notif-banner-btn:hover { filter: brightness(1.06); }
+.app-notif-banner-btn:active { transform: scale(0.97); }
+.app-notif-banner-dismiss {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  padding: 0;
+  border-radius: 10px;
+  color: var(--text-2);
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+html.glass-ui .app-notif-banner-dismiss { color: var(--g-t2); }
+html.glass-desktop .app-notif-banner-dismiss { color: var(--gd-t2); }
+.app-notif-banner-dismiss:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.app-notif-banner-dismiss:active { transform: scale(0.94); }
+.app-notif-banner-btn:focus-visible,
+.app-notif-banner-dismiss:focus-visible {
+  outline: 2px solid var(--g-brand, var(--primary));
+  outline-offset: 2px;
+}
+/* Phones: the list headers are fixed boxes (large title + search), so nothing
+   can push them. The card docks above the floating tab bar instead, where it
+   covers no title or control (it is hidden inside a conversation and while
+   settings are open, AppLayout / settings.css). */
+@media (max-width: 768px) {
+  .app-notif-banner,
+  html.native-app .app-notif-banner {
+    top: auto;
+    bottom: calc(var(--g-bar-bottom, max(12px, env(safe-area-inset-bottom, 0px))) + var(--g-tab-h, 64px) + 12px);
+    left: calc(env(safe-area-inset-left, 0px) + 12px);
+    right: calc(env(safe-area-inset-right, 0px) + 12px);
+    padding: 8px 6px 8px 10px;
+  }
+  .app-root.has-notif-banner {
+    padding-top: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-notif-banner-btn,
+  .app-notif-banner-dismiss { transition: none; }
+  .app-notif-banner-btn:active,
+  .app-notif-banner-dismiss:active { transform: none; }
+}
