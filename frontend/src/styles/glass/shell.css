@@ -286,6 +286,16 @@ html.glass-ui .g-edge-top {
 }
 
 html.glass-ui .g-head-search.g-head-has-sub .g-edge-top { height: calc(var(--g-chrome-top) + 196px); }
+/* UI audit #97: rows scrolled under the search strip showed through it. With a
+   search field the top edge is a heavy frost that stays opaque down to the
+   field's bottom and only feathers in the last 16px. */
+html.glass-ui .g-head-search .g-edge-top {
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  background: linear-gradient(180deg, rgba(var(--g-edge-rgb, 13,14,19), 0.9) 0%, rgba(var(--g-edge-rgb, 13,14,19), 0.78) calc(100% - 16px), rgba(var(--g-edge-rgb, 13,14,19), 0) 100%);
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 16px), transparent);
+  mask: linear-gradient(180deg, #000 calc(100% - 16px), transparent);
+}
 html.glass-ui .g-head-sub .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
 html.glass-ui .g-head-title .g-edge-top { height: calc(var(--g-chrome-top) + 124px); }
 html.glass-ui .g-head-inline .g-edge-top { height: calc(var(--g-chrome-top) + 70px); }
