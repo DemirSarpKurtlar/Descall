@@ -371,7 +371,7 @@ export default function PremiumGamingHost({
 
   return (
     <>
-      {desktop && has("app_lock") ? <AppLockScreen /> : null}
+      {desktop && has("app_lock") ? <AppLockScreen me={me} /> : null}
       <Suspense fallback={null}>
         {ccOpen && ccAllowed ? <CommandCenterView onClose={() => setCcOpen(false)} /> : null}
         {clip.editor && clipAllowed ? <ClipEditor snap={clip.editor} socket={socket} /> : null}

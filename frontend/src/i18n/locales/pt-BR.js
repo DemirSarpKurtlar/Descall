@@ -1,3 +1,4 @@
+import { PREMIUM_STORY_PT_BR } from "./premiumStory.pt-BR.js";
 import { UAH_PT_BR } from "./uah.pt-BR.js";
 /**
  * pt-BR catalog (status "draft" in ../locales.json, hidden from users until the
@@ -7,8 +8,11 @@ import { UAH_PT_BR } from "./uah.pt-BR.js";
  */
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
+import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 export const nested = {
+  "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
+  "msg4": MSG4_PT_BR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -1389,6 +1393,7 @@ export const nested = {
       "lockedTitle": "O Descall está bloqueado",
       "pin": "PIN",
       "unlock": "Desbloquear",
+      "hint": "Digite seu PIN e pressione Enter",
       "help": "O PIN é guardado como um hash com sal, criptografado com a proteção de dados do Windows. Isso impede que outra pessoa use seu computador enquanto você está longe; não é criptografia de disco e não protege contra programas executados com a sua conta. O Windows Hello ainda não é oferecido: ele precisa de um componente nativo que o Descall não inclui."
     },
     "quickActions": {
@@ -2660,6 +2665,7 @@ export const nested = {
       "ekim29": "Quem estava online em 29 de outubro.",
       "ekip": "A equipe do Descall.",
       "facebook": "Quem sabe, sabe. Não está à venda nem em nenhum código; só é dada manualmente.",
+      "kk22": "Só uma pessoa pode tê-la. Quem sabe, sabe.",
       "finalist": "Finalistas de torneios.",
       "gece": "Quem estava em um canal de voz às 3 da manhã.",
       "glitch": "Quem flagrou um bug visual.",
@@ -2738,6 +2744,7 @@ export const nested = {
       "ekim29": "29 de Outubro",
       "ekip": "Equipe",
       "facebook": "Facebook",
+      "kk22": "KK22",
       "finalist": "Finalista",
       "gece": "Turno da Noite",
       "glitch": "Glitch",

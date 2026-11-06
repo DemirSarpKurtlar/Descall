@@ -8,6 +8,7 @@ import {
 } from "./ui/Icon.jsx";
 import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
+import CallTimer from "./call/CallTimer";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
 import CallWindowButtons from "../premium/desktop/CallWindowButtons.jsx";
@@ -27,7 +28,7 @@ import SpeakingRings from "./voice/SpeakingRings";
 import ParticipantStateIcons from "./voice/ParticipantStateIcons";
 import useVoiceActivity from "../hooks/useVoiceActivity";
 import { networkQualityTooltipKey, participantVolumePercent, readParticipantGain } from "../lib/voiceProfile";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import RemoteScreenAudioSink from "./call/RemoteScreenAudioSink";
 import { nextShareSelection } from "../lib/screenShareTracks";
 import ShareFilmstrip, { ShareGridVideo } from "./voice/ShareFilmstrip";
 import { useT } from "../context/LocaleContext";
@@ -72,49 +73,6 @@ const PULSE_STYLE = `@keyframes callTilePulse { 0%,100%{opacity:1} 50%{opacity:0
 function streamHasLiveVideo(stream) {
   if (!stream?.getVideoTracks) return false;
   return stream.getVideoTracks().some((t) => t && t.readyState !== "ended");
-}
-
-/**
- * Always-mounted sink for remote screen/tab audio.
- * Lives outside ScreenShareLayout so minimize / layout swaps don't mute yayin sesi.
- */
-function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
-  const audioRef = useRef(null);
-  const trackCount =
-    stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
-
-  useEffect(() => {
-    const audioEl = audioRef.current;
-    if (!audioEl) return;
-    applyPlaybackGain(audioEl, Math.max(0, Math.min(200, Number(volume) || 0)) / 100);
-    if (sinkId && typeof audioEl.setSinkId === "function") {
-      audioEl.setSinkId(sinkId).catch(() => {});
-    }
-    if (!stream || trackCount === 0) {
-      audioEl.muted = true;
-      if (audioEl.srcObject) audioEl.srcObject = null;
-      return;
-    }
-    audioEl.muted = false;
-    // Force rebind so late-arriving audio tracks are picked up (mobile).
-    audioEl.srcObject = null;
-    audioEl.srcObject = stream;
-    const play = () => audioEl.play().catch(() => {});
-    play();
-    stream.getAudioTracks().forEach((t) => {
-      const prev = t.onunmute;
-      t.onunmute = (ev) => {
-        try {
-          if (typeof prev === "function") prev.call(t, ev);
-        } catch {
-          /* ignore */
-        }
-        play();
-      };
-    });
-  }, [stream, trackCount, volume, sinkId]);
-
-  return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
 const MINI_DEFAULTS = Object.freeze({ enabled: true });
@@ -254,10 +212,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   const deafened = isDm ? call.deafened : groupCall.deafened;
   const cameraOn = isDm ? call.cameraOn : groupCall.isCameraOn;
   const screenSharing = isDm ? call.screenSharing : groupCall.isScreenSharing;
-  const duration = isDm ? call.duration : groupCall.duration;
-  const formattedDuration = duration
-    ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`
-    : "";
+  // The timer ticks inside <CallTimer> only; this overlay does not re-render each second.
+  const timerStartedAt = isDm ? call.durationStartedAt : groupCall.durationStartedAt;
+  const timerStoppedAt = isDm ? call.durationStoppedAt : groupCall.durationStoppedAt;
   const title = isDm
     ? (peer ? (resolveDisplayName(peer) || peer.username || t("User")) : t("User"))
     : (groupName || t("Group Call"));
@@ -322,6 +279,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       key={`screen-audio-${id}`}
       stream={stream}
       volume={screenVolumes[String(id)] ?? screenShareVolume}
+      deafened={Boolean(deafened)}
       sinkId={(isDm ? call?.selectedAudioOutput : groupCall?.selectedAudioOutput) || ""}
     />
   ));
@@ -369,7 +327,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         >
           <span className="call-return-dot" aria-hidden="true" />
           <span className="call-return-title">{title}</span>
-          <span className="call-return-time tnum">{formattedDuration}</span>
+          <span className="call-return-time tnum"><CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} /></span>
           <span className="call-return-cta">{t("Return to call")}</span>
         </button>
       </>
@@ -386,7 +344,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           peer={peer}
           title={title}
           subtitle={subtitle}
-          timer={formattedDuration}
+          timerStartedAt={timerStartedAt}
+          timerStoppedAt={timerStoppedAt}
           muted={muted}
           deafened={deafened}
           screenSharing={screenSharing}
@@ -465,8 +424,13 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   const returningFromShare = !anyScreenShare && shareEpochRef.current > 0;
   if (!anyScreenShare && screenExpanded) setScreenExpanded(false);
   const desktopGroupLine = glassDesktop && !isDm
-    ? `${formattedDuration ? `${formattedDuration} · ` : ""}${callType === "video" ? t("Video call") : t("Voice call")}`
-    : "";
+    ? (
+      <>
+        <CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} suffix=" · " />
+        {callType === "video" ? t("Video call") : t("Voice call")}
+      </>
+    )
+    : null;
 
   return (
     <>
@@ -546,7 +510,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                 {isDm ? <AdminBadge user={peer} variant="inline" /> : null}
               </div>
               <div className="g-call-sub">
-                {subtitle}{formattedDuration ? ` · ${formattedDuration}` : ""}
+                {subtitle}<CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} prefix=" · " />
                 {anyScreenShare ? ` · ${t("Presenting")}` : ""}
               </div>
             </div>
@@ -598,7 +562,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             </span>
           )}
           <span style={{ fontSize: 13, color: "rgba(235,235,245,0.6)" }}>
-            {desktopGroupLine || `${subtitle}${formattedDuration ? ` · ${formattedDuration}` : ""}`}
+            {desktopGroupLine || (
+              <>
+                {subtitle}
+                <CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} prefix=" · " />
+              </>
+            )}
           </span>
           {isDm && mode === "active" && (
             <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
@@ -790,7 +759,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             mode={mode}
             title={title}
             subtitle={subtitle}
-            formattedDuration={formattedDuration}
             localUsername={localUsername}
             localAvatarUrl={resolveAvatarUrl(me)}
             localUser={me}
@@ -810,7 +778,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
             >
               {t("Call ended")}
-              {formattedDuration ? <span className="call-ended-pill-duration">{formattedDuration}</span> : null}
+              <CallTimer className="call-ended-pill-duration" startedAt={timerStartedAt} stoppedAt={timerStoppedAt} />
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -1199,7 +1167,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         const id = userMenu?.user?.id;
         if (id == null) return;
         const key = String(id);
-        const current = userVolumes[key] ?? 100;
+        // Not touched in this session: the remembered level, not 100%.
+        const current = userVolumes[key] ?? participantVolumePercent(null, id);
         const next = current > 0 ? 0 : (lastUserVolumeRef.current[key] || 100);
         if (current > 0) lastUserVolumeRef.current[key] = current;
         setUserVolumes((prev) => ({ ...prev, [key]: next }));
@@ -1746,7 +1715,7 @@ function TileMotion({ children }) {
   );
 }
 
-function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
+function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
   const t = useT();
   const glass = useGlassUi();
   const dmRemote = useDmRemoteParticipant({

@@ -79,9 +79,62 @@
 .pg-sources span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* App lock screen */
-.pg-lock { position: fixed; inset: 0; z-index: var(--z-system, 2147482000); display: grid; place-items: center; background: rgba(8, 10, 16, 0.86); backdrop-filter: blur(28px) saturate(1.2); }
-.pg-lock form { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 32px; border-radius: 22px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); min-width: 280px; }
-.pg-lock input { text-align: center; letter-spacing: 0.4em; font-size: 20px; width: 200px; }
+/* App lock (approved draft B): opaque phone-style lock screen, clock on top, PIN dots below.
+   Always dark: it covers the app in both themes and nothing behind it may show through. */
+.pg-lock {
+  position: fixed; inset: 0; z-index: var(--z-system, 2147482000); overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: max(64px, 11vh) 24px max(56px, 10vh); color: #fff; user-select: none;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(98, 66, 200, 0.75), transparent 55%),
+    radial-gradient(ellipse at 92% 100%, rgba(32, 92, 178, 0.8), transparent 55%),
+    #0a0b14;
+}
+.pgl-aurora {
+  position: absolute; left: -12%; right: -12%; top: 32%; height: 34vh; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(88, 122, 245, 0.38), rgba(190, 110, 255, 0.32), transparent);
+  filter: blur(64px); transform: rotate(-8deg); animation: pgl-drift 22s ease-in-out infinite alternate;
+}
+@keyframes pgl-drift { from { transform: rotate(-8deg) translateX(-4%); } to { transform: rotate(-5deg) translateX(4%); } }
+.pgl-brand { position: absolute; top: 22px; left: 26px; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--fs-13); opacity: 0.85; }
+.pgl-clock { position: relative; text-align: center; }
+.pgl-date { font-size: var(--fs-20); font-weight: 600; color: rgba(255, 255, 255, 0.82); }
+.pgl-date::first-letter { text-transform: uppercase; }
+.pgl-time {
+  margin-top: 4px; line-height: 1; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+  font-size: clamp(calc(var(--fs-28) * 2.4), 17vh, calc(var(--fs-28) * 4.7));
+  background: linear-gradient(180deg, #fff, #c9d3ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.pgl-auth { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 280px; }
+.pgl-avatar { display: block; width: 72px; height: 72px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16), 0 12px 32px rgba(0, 0, 0, 0.35); }
+.pgl-avatar :is(.ui-avatar, .ui-avatar-inner, img) { display: block; width: 100% !important; height: 100% !important; border-radius: 50%; }
+.pgl-avatar img { object-fit: cover; }
+.pgl-name { margin: 2px 0 0; font-size: var(--fs-17); font-weight: 800; letter-spacing: -0.01em; }
+.pgl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pgl-pin { position: relative; display: flex; align-items: center; justify-content: center; height: 40px; margin-top: 6px; }
+.pgl-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; caret-color: transparent; }
+.pgl-dots { display: flex; gap: 18px; }
+.pgl-dots i { width: 15px; height: 15px; border-radius: 50%; border: 1.6px solid rgba(255, 255, 255, 0.5); transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
+.pgl-dots i.on { background: #fff; border-color: #fff; box-shadow: 0 0 12px rgba(140, 165, 255, 0.85); transform: scale(1.04); }
+.pgl-dots.is-error i { border-color: #ff5a6e; }
+.pgl-dots.is-error i.on, .pgl-dots.is-error.is-shake i { background: #ff5a6e; border-color: #ff5a6e; box-shadow: 0 0 12px rgba(255, 90, 110, 0.7); }
+.pgl-dots.is-shake { animation: pgl-shake 0.42s cubic-bezier(.36, .07, .19, .97); }
+@keyframes pgl-shake { 15%, 55% { transform: translateX(-9px); } 35%, 75% { transform: translateX(9px); } 90% { transform: translateX(-3px); } }
+.pgl-go {
+  position: absolute; left: calc(100% + 16px); width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  color: #fff; background: rgba(255, 255, 255, 0.12); opacity: 0; transform: scale(0.85); transition: opacity 0.15s, transform 0.15s, background 0.15s; cursor: pointer;
+}
+.pgl-go.is-ready { opacity: 1; transform: none; background: linear-gradient(180deg, #6d8cff, #4d6ef0); box-shadow: 0 6px 18px rgba(77, 110, 240, 0.45); }
+.pgl-go:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pgl-hint { min-height: 18px; font-size: var(--fs-13); color: rgba(255, 255, 255, 0.55); }
+.pgl-hint.is-error { color: #ff8a98; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .pgl-aurora, .pgl-dots.is-shake { animation: none; }
+}
+@media (max-height: 520px) {
+  .pg-lock { padding-top: 32px; padding-bottom: 28px; }
+  .pgl-avatar { display: none; }
+}
 
 @media (max-width: 720px) {
   .pg-hub { grid-template-columns: 1fr; }
@@ -89,5 +142,6 @@
   .pg-cc { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .pg-modal-backdrop, .pg-lock { backdrop-filter: none; }
+  .pg-modal-backdrop { backdrop-filter: none; }
+  .pgl-aurora { filter: none; opacity: 0.4; }
 }

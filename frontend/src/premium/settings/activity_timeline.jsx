@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useT, useLocale } from "../../context/LocaleContext";
-import { PanelShell, formatDuration } from "../gaming/ui.jsx";
+import { formatDuration } from "../gaming/ui.jsx";
 import { buildTimeline, dayBounds, dayKey } from "../gaming/timeline.js";
 import { fetchGameSessions, localSessions } from "../gaming/gameData.js";
 import { premiumEvents } from "../gaming/bridge.js";
 import { fetchCallHistory } from "../../api/calls.js";
 import { formatDate, formatTime } from "../../i18n/format.js";
-import { ChevronLeft, ChevronRight } from "../../components/ui/Icon.jsx";
+import { Group, IconBtn, Note } from "../story/kit.jsx";
 
 export const key = "activity_timeline";
+const ds = (s) => `${key}.${s}`;
 
 export function Panel() {
   const t = useT();
@@ -44,32 +45,35 @@ export function Panel() {
   };
   const span = tl.end - tl.start;
   return (
-    <PanelShell title={t("premiumGaming.timeline.title")} desc={t("premiumGaming.timeline.desc")} testId="pg-panel-activity_timeline">
-      <div className="pg-row">
-        <button type="button" className="pg-btn is-small" onClick={() => shift(-1)} aria-label={t("premiumGaming.timeline.prev")}><ChevronLeft size={14} /></button>
-        <b className="pg-grow" style={{ textAlign: "center" }}>{day === dayKey() ? t("premiumGaming.timeline.today") : formatDate(tl.start, locale, { dateStyle: "full" })}</b>
-        <button type="button" className="pg-btn is-small" onClick={() => shift(1)} disabled={day === dayKey()} aria-label={t("premiumGaming.timeline.next")}><ChevronRight size={14} /></button>
-      </div>
-      <div className="pg-card">
-        <span className="pg-muted">{t("premiumGaming.timeline.summary", { games: formatDuration(t, tl.summary.gameSec), calls: formatDuration(t, tl.summary.callSec) })}</span>
-        <div className="pg-tl-bar" aria-hidden="true">
+    <>
+      <Group title={t("premiumGaming.timeline.title")}>
+        <Note ds={ds("desc")}>{t("premiumGaming.timeline.desc")}</Note>
+        <div className="ps-dayline" data-s={ds("day")}>
+          <IconBtn icon="chevL" label={t("premiumGaming.timeline.prev")} onClick={() => shift(-1)} />
+          <b>{day === dayKey() ? t("premiumGaming.timeline.today") : formatDate(tl.start, locale, { dateStyle: "full" })}</b>
+          <IconBtn icon="chev" label={t("premiumGaming.timeline.next")} onClick={() => shift(1)} disabled={day === dayKey()} />
+        </div>
+        <Note ds={ds("summary")}>{t("premiumGaming.timeline.summary", { games: formatDuration(t, tl.summary.gameSec), calls: formatDuration(t, tl.summary.callSec) })}</Note>
+        <div className="ps-tlbar" aria-hidden="true" data-s={ds("bar")}>
           {tl.items.filter((i) => i.kind !== "event").map((i, n) => (
             <span key={n} className={`is-${i.kind}`} style={{ left: `${((i.start - tl.start) / span) * 100}%`, width: `${Math.max(0.4, ((i.end - i.start) / span) * 100)}%` }} />
           ))}
         </div>
-      </div>
-      {tl.items.length ? (
-        <div className="pg-tl" data-testid="pg-timeline">
-          {tl.items.map((i, n) => (
-            <div key={n} className={`pg-tl-item is-${i.kind}`}>
-              <span className="pg-muted pg-num">{formatTime(i.start, locale)}</span>
-              <span className="pg-grow">{i.label}</span>
-              {i.kind !== "event" ? <span className="pg-num pg-muted">{formatDuration(t, i.durationSec)}</span> : null}
-            </div>
-          ))}
-        </div>
-      ) : !src.loading ? <p className="pg-muted">{t("premiumGaming.timeline.empty")}</p> : null}
-    </PanelShell>
+      </Group>
+      <Group title={t("premiumStory.g.dayList")}>
+        {tl.items.length ? (
+          <ol className="ps-tl" data-testid="pg-timeline" data-s={ds("list")}>
+            {tl.items.map((i, n) => (
+              <li key={n} className={`is-${i.kind}`}>
+                <small className="tnum">{formatTime(i.start, locale)}</small>
+                <span>{i.label}</span>
+                {i.kind !== "event" ? <small className="tnum">{formatDuration(t, i.durationSec)}</small> : null}
+              </li>
+            ))}
+          </ol>
+        ) : <p className="ps-empty" data-s={ds("list")}>{src.loading ? "" : t("premiumGaming.timeline.empty")}</p>}
+      </Group>
+    </>
   );
 }
 

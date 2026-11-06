@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useFeatureSettings } from "../featureSettings.js";
 import { useT } from "../../context/localeContextInstance";
 import { NOTIFY_DEFAULTS, deferredCount, gameState } from "../notify/premiumNotify.js";
-import { DesktopOnly, Note, Row, Section, Toggle } from "../ui/PremiumAudioKit.jsx";
+import { isDesktopApp } from "../ui/PremiumAudioKit.jsx";
+import { DesktopOnlyHint, Group, Hint, Note, SetRow, Switch } from "../story/kit.jsx";
 
 export const key = "smart_game_notifications";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
 export const defaultEnabled = true;
+const ds = (s) => `${key}.${s}`;
 
 export function Panel() {
   const t = useT();
@@ -17,21 +19,23 @@ export function Panel() {
     window.addEventListener("descall:activity", on);
     return () => window.removeEventListener("descall:activity", on);
   }, []);
+  if (!isDesktopApp()) return <DesktopOnlyHint t={t} />;
   return (
-    <div className="pa-panel">
-      <DesktopOnly>
-        <Section title={t("premiumAudio.smartGame.title")} hint={t("premiumAudio.smartGame.hint")}>
-          <Row title={t("premiumAudio.smartGame.summary")} description={t("premiumAudio.smartGame.summaryDesc")}>
-            <Toggle value={s.summary !== false} onChange={(v) => update({ summary: v })} label={t("premiumAudio.smartGame.summary")} />
-          </Row>
-          <Row
-            title={t("premiumAudio.smartGame.state")}
-            description={game.active ? t("premiumAudio.smartGame.playing", { game: game.name || "-", count: deferredCount() }) : t("premiumAudio.smartGame.notPlaying")}
-          />
-        </Section>
-        <Note>{t("premiumAudio.smartGame.detectNote")}</Note>
-      </DesktopOnly>
-    </div>
+    <>
+      <Group title={t("premiumAudio.smartGame.title")}>
+        <Note ds={ds("hint")}>{t("premiumAudio.smartGame.hint")}</Note>
+        <SetRow icon="list" label={t("premiumAudio.smartGame.summary")} desc={t("premiumAudio.smartGame.summaryDesc")}>
+          <Switch checked={s.summary !== false} onChange={(v) => update({ summary: v })} label={t("premiumAudio.smartGame.summary")} ds={ds("summary")} />
+        </SetRow>
+        <SetRow
+          icon="gamepad"
+          label={t("premiumAudio.smartGame.state")}
+          desc={game.active ? t("premiumAudio.smartGame.playing", { game: game.name || "-", count: deferredCount() }) : t("premiumAudio.smartGame.notPlaying")}
+          ds={ds("state")}
+        />
+      </Group>
+      <Hint ds={ds("detectNote")}>{t("premiumAudio.smartGame.detectNote")}</Hint>
+    </>
   );
 }
 

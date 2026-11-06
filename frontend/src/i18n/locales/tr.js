@@ -2,9 +2,11 @@
 import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
+import { PREMIUM_STORY_TR } from "./premiumStory.tr.js";
 import { PREMIUM_AUDIO_TR } from "./premiumAudio.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
 import { AMP_TR } from "./profileMediaPicker.tr.js";
+import { MSG4_TR } from "./msg4.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -36,6 +38,7 @@ export const nested = {
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
+  premiumStory: PREMIUM_STORY_TR,
   premiumAudio: PREMIUM_AUDIO_TR,
   world3d: WORLD3D_TR,
   counts: COUNTS_TR,
@@ -53,6 +56,7 @@ export const nested = {
   promo: PROMO_TR,
   nc: NC_TR,
   amp: AMP_TR,
+  msg4: MSG4_TR,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {

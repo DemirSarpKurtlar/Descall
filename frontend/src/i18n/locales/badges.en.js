@@ -169,6 +169,7 @@ export const BADGES_EN = {
     hergun: "Every Day",
     ilkarama: "First Call",
     facebook: "Facebook",
+    kk22: "KK22",
   },
   desc: {
     no001: "The first account ever on Descall. Only one person can hold it.",
@@ -207,5 +208,6 @@ export const BADGES_EN = {
     hergun: "100 days of daily rewards in a row.",
     ilkarama: "People who made their first voice call.",
     facebook: "If you know, you know. Not for sale, not on any code; only given by hand.",
+    kk22: "Only one person can hold it. If you know, you know.",
   },
 };

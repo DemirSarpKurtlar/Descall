@@ -42,7 +42,8 @@ import { useToast } from "../../context/ToastContext";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import { formatDate } from "../../i18n/format";
 import "./ProfileSheet.css";
-import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL } from "./ProfileSheetIcons.jsx";
+import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL, MIBell } from "./ProfileSheetIcons.jsx";
+import { openNotifyOptions } from "../../lib/notifyPrefs";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -512,6 +513,18 @@ function UserProfileModal({
             {!isSelf ? countRow("servers", t("profile.mutualServers"), mutualServers) : null}
             {!isSelf ? countRow("friends", t("profile.mutualFriends"), mutualFriends) : null}
           </div>
+          {!isSelf && userId ? (
+            <>
+              <div className="pfs-sec" aria-hidden="true" />
+              {/* Messaging phase 4: this chat's notification options (all / mentions / none, timed mute). */}
+              <div className="pfs-group" data-testid="profile-notify">
+                <button type="button" className="pfs-row" data-testid="profile-notify-options" onClick={() => { onClose?.(); openNotifyOptions({ convType: "dm", convId: userId, name: displayName || username }); }}>
+                  <span className="pfs-ico"><MIBell /></span>
+                  <span className="lab">{t("msg4.notify.menu")}</span>
+                </button>
+              </div>
+            </>
+          ) : null}
           {!isSelf ? (
             <>
               <div className="pfs-sec" aria-hidden="true" />

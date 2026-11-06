@@ -1,4 +1,4 @@
-// Special badge art (approved mockup 2026-10-26): 36 hand-drawn glyphs on a 24 grid inside a
+// Special badge art (approved mockup 2026-10-26, KK22 added 2026-11-06): 37 hand-drawn glyphs on a 24 grid inside a
 // tier frame. Pure presentation: names, descriptions and holder counts come from the server
 // catalog (GET /api/special-badges/catalog) and the i18n tables in badges.{en,tr}.js.
 import { useId } from "react";
@@ -14,10 +14,15 @@ export const TIER_ORDER = ["tekil", "efsanevi", "epik", "nadir"];
 const P = (d) => ({ d });
 const T = (text, size = 9.5, extra = {}) => ({ text, size, ...extra });
 
-// glyph: array of {d} stroke paths, {text}, {circle:[cx,cy,r]}, {dot:[cx,cy,r]}.
+// glyph: array of {d} stroke paths, {text} (optional y baseline and ls letter spacing),
+// {circle:[cx,cy,r]}, {dot:[cx,cy,r]}.
 // Facebook (#36) keeps the Nadir frame with its own blue tint; an original "f" stroke, not Meta's logo.
 export const BADGE_ART = [
   { id: "no001", tier: "tekil", g: [T("#001", 8.4)] },
+  // KK22 (owner pick 2026-11-06: draft C shape, draft E colours): two mirrored K's back to
+  // back over "22", in its own red-black frame. Tekil: one holder at a time.
+  { id: "kk22", tier: "tekil", tint: { core: ["#5a0f1c", "#12060a"], rim: ["#ffd0d6", "#ff4d6a", "#ffb36b", "#ff7aa8"], glyph: ["#ffffff", "#ffe1e6"], glow: "rgba(255,80,110,.55)" },
+    g: [P("M10.6 3.8v10.4 M13.4 3.8v10.4"), P("M10.6 9l-4.6-5.2 M10.6 9l-4.6 5.2 M13.4 9l4.6-5.2 M13.4 9l4.6 5.2"), T("22", 6.6, { y: 21.2, ls: 0.2 })] },
   { id: "kurucu", tier: "efsanevi", g: [P("M3.8 20h16.4"), P("M6.2 20v-7.2a5.8 5.8 0 0 1 4.1-5.55 M17.8 20v-7.2a5.8 5.8 0 0 0-4.1-5.55"), P("M10.2 4h3.6l-.7 4.6h-2.2z"), P("M9.6 20v-5.2a2.4 2.4 0 0 1 4.8 0V20")] },
   { id: "demironayli", tier: "efsanevi", g: [P("M12 3l2.1 1.6 2.6-.3 1 2.4 2.4 1-.3 2.6L21 12l-1.6 2.1.3 2.6-2.4 1-1 2.4-2.6-.3L12 21l-2.1-1.6-2.6.3-1-2.4-2.4-1 .3-2.6L3 12l1.6-2.1-.3-2.6 2.4-1 1-2.4 2.6.3z"), P("M8.7 12.2l2.3 2.3 4.3-4.5")] },
   { id: "og", tier: "efsanevi", g: [T("OG", 10.5)] },
@@ -131,7 +136,7 @@ function renderGlyph(g, paint, small) {
     if (p.d) return <path key={i} d={p.d} fill="none" stroke={paint} strokeWidth={p.w ? (small ? p.w + 0.6 : p.w) : sw} strokeLinecap="round" strokeLinejoin="round" />;
     if (p.circle) return <circle key={i} cx={p.circle[0]} cy={p.circle[1]} r={p.circle[2]} fill="none" stroke={paint} strokeWidth={sw} />;
     if (p.dot) return <circle key={i} cx={p.dot[0]} cy={p.dot[1]} r={p.dot[2]} fill={paint} />;
-    if (p.text) return <text key={i} x="12" y={13 + p.size * 0.36} textAnchor="middle" fontSize={p.size} fontWeight="800" letterSpacing="-.4" fontFamily='"SF Pro Rounded", "SF Pro Display", Inter, system-ui, sans-serif' fill={paint}>{p.text}</text>;
+    if (p.text) return <text key={i} x="12" y={p.y ?? 13 + p.size * 0.36} textAnchor="middle" fontSize={p.size} fontWeight="800" letterSpacing={p.ls ?? "-.4"} fontFamily='"SF Pro Rounded", "SF Pro Display", Inter, system-ui, sans-serif' fill={paint}>{p.text}</text>;
     return null;
   });
 }

@@ -1,5 +1,8 @@
 "use strict";
 
+const { forwardedReplyMeta } = require("../lib/forwardedMessage");
+const { bothShare: bothShareReceipts } = require("../lib/readReceipts");
+const notifyPrefs = require("../lib/notifyPrefs");
 const { checkMessageSend } = require("../lib/platformPolicy");
 const { fanoutDmMessage } = require("../lib/messageFanout");
 const supabase = require("../db/supabase");
@@ -73,6 +76,7 @@ const { toUtcIso } = require("../lib/datetime");
 const {
   trackOffer,
   markAnswered,
+  dropCrossedRing,
   bufferCalleeIce,
   answerReplayForCaller,
   isActiveDmCall,
@@ -1176,7 +1180,7 @@ function registerSocketHandlers(io) {
       }
     });
 
-    socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, poll: pollInput } = {}) => {
+    socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, forwarded, poll: pollInput } = {}) => {
       let pollDraft = null;
       if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") mediaType = null;
       if (bannedUserIds.has(myId)) {
@@ -1291,14 +1295,15 @@ function registerSocketHandlers(io) {
       socket.data.activeDmPeer = toUserId;
       await ensureCosmeticsCached([myId]).catch(() => {});
       const sender = messageSender(myId, me.username, me.avatar_url || socket.user?.avatar_url);
-      const replyMeta = replyTo && typeof replyTo === "object"
+      // Messaging phase 4: a forward carries { forwarded: true } in reply_to and never quotes.
+      const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
         ? {
             id: replyTo.id || null,
             text: replyTo.text || "",
             mediaType: replyTo.mediaType || null,
             from: replyTo.from || null,
           }
-        : null;
+        : null);
       const isVoice = mediaType === "voice" || mediaType === "audio";
       const voiceDuration = isVoice ? Math.max(0, Math.round(Number(duration) || 0)) : null;
       const storedText = isVoice
@@ -1438,7 +1443,9 @@ function registerSocketHandlers(io) {
       if (recipientActivePeer !== myId) {
         try {
           const muted = await dmPrefs.isMuted(toUserId, myId);
-          if (!muted) {
+          // Messaging phase 4: the recipient's options for this chat (all / mentions / none, timed mute).
+          const notifyOk = notifyPrefs.allows(await notifyPrefs.levelFor(toUserId, "dm", myId), { mention: Boolean(dmMentioned) });
+          if (!muted && notifyOk) {
             const { sendDmMessagePush, sendMentionPush } = require("../lib/webPush");
             // Voice / attachment / empty previews are catalog text, localized per recipient (lib/webPush.js).
             const literalPreview = isVoice || mediaUrl ? "" : String(storedText || text || "").slice(0, 140);
@@ -1527,7 +1534,10 @@ function registerSocketHandlers(io) {
       const umap = ensureDmUnreadMap(myId);
       umap.delete(withUserId);
       emitToUser(io, myId, "dm:unread:sync", { peerId: withUserId, count: 0 });
-      emitToUser(io, withUserId, "dm:peer_read", { peerId: myId, at });
+      // "Görüldü" (messaging phase 4): only when both people share read receipts.
+      if (await bothShareReceipts(myId, withUserId).catch(() => true)) {
+        emitToUser(io, withUserId, "dm:peer_read", { peerId: myId, at });
+      }
       void dmPrefs.clearMarkedUnread(myId, withUserId);
     });
 
@@ -1722,6 +1732,12 @@ function registerSocketHandlers(io) {
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
       markAnswered({ callerId: toUserId, calleeId: myId, answer });
+      // Crossed calls (both pressed call): this answer settles it. Our own
+      // ring to the caller ends quietly on every device of theirs (their
+      // iPhone got a VoIP ring for it) and is never logged as missed.
+      if (dropCrossedRing(myId, toUserId)) {
+        getRingFanout(io).endRingByPair(myId, toUserId, "cancelled");
+      }
       if (wasRinging) {
         // Stop the ring on every other device of the callee: sockets
         // (call:ring-ended + legacy call:answered-elsewhere), the iPhone's

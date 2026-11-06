@@ -72,12 +72,12 @@ export default function ClipEditor({ snap, socket }) {
         <div className="pg-card" style={{ marginTop: 12 }}>
           <label className="pg-row">
             <span className="pg-label" style={{ width: 70 }}>{t("premiumGaming.instantClip.editor.start")}</span>
-            <input className="pg-range pg-grow" type="range" min="0" max={length} step="100" value={trim.from} onChange={(e) => { const n = clampTrim({ from: Number(e.target.value), to: trim.to }, length); setTrim(n); seek(n.from); }} />
+            <input className="pg-range pg-grow" type="range" min="0" max={length} step={length % 100 ? 1 : 100} value={trim.from} onChange={(e) => { const n = clampTrim({ from: Number(e.target.value), to: trim.to }, length); setTrim(n); seek(n.from); }} />
             <span className="pg-num pg-muted">{sec(trim.from)}</span>
           </label>
           <label className="pg-row">
             <span className="pg-label" style={{ width: 70 }}>{t("premiumGaming.instantClip.editor.end")}</span>
-            <input className="pg-range pg-grow" type="range" min="0" max={length} step="100" value={trim.to} onChange={(e) => { const n = clampTrim({ from: trim.from, to: Number(e.target.value) }, length); setTrim(n); seek(n.to); }} />
+            <input className="pg-range pg-grow" type="range" min="0" max={length} step={length % 100 ? 1 : 100} value={trim.to} onChange={(e) => { const n = clampTrim({ from: trim.from, to: Number(e.target.value) }, length); setTrim(n); seek(n.to); }} />
             <span className="pg-num pg-muted">{sec(trim.to)}</span>
           </label>
           <span className="pg-muted">{t("premiumGaming.instantClip.editor.length", { seconds: sec(trim.to - trim.from) })} · {t("premiumGaming.instantClip.editor.keyframeNote")}</span>

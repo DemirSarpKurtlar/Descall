@@ -1912,7 +1912,10 @@ button.dsx-po:focus-visible {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
-/* Phone glass skins paint the bubble (and its pseudo layers); cards bring their own glass. */
+/* Cards bring their own glass, so the bubble behind them paints nothing in any skin
+   (classic, glass desktop, phone glass, cosmetic bubbles); otherwise a second, wider
+   frame shows around the card. The glass bubble rules also skip .has-card. */
+.message-bubble.message-bubble.has-card,
 html.glass-ui .app-root.g-shell .message-bubble.has-card,
 html.glass-desktop .message-bubble.has-card {
   background: transparent !important;
@@ -1922,6 +1925,8 @@ html.glass-desktop .message-bubble.has-card {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+.message-bubble.message-bubble.has-card::before,
+.message-bubble.message-bubble.has-card::after,
 html.glass-ui .app-root.g-shell .message-bubble.has-card::before,
 html.glass-ui .app-root.g-shell .message-bubble.has-card::after,
 html.glass-desktop .message-bubble.has-card::before,

@@ -598,6 +598,7 @@ export default function ChatPanel({
             className={`icon-btn ${showSearch ? "active" : ""}`}
             title={t("Search")}
             aria-label={t("Search")}
+            data-shortcut="chat-search"
             onClick={() => { setShowSearch(!showSearch); setShowMembers(false); }}
           >
             <Search size={20} />

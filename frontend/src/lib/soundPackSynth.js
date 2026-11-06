@@ -6,6 +6,20 @@
  * Replaces the old Web Audio beep synths with real ringtone-quality audio.
  */
 
+import { routeToSink } from "./callAudioDevices.js";
+
+/** Play `audio` on `sinkId` ("" = default): switch the output first, then start. */
+function playOn(audio, sinkId, isCancelled = () => false) {
+  const start = () => {
+    if (isCancelled()) return;
+    const p = audio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  };
+  const routing = routeToSink(audio, sinkId);
+  if (routing) routing.then(start);
+  else start();
+}
+
 const PACK_KEYS = [
   "soft-chime",
   "crystal-ping",
@@ -120,7 +134,7 @@ export function preloadSoundPack(effectKey) {
  * Play a one-shot cue for a pack.
  * @returns {boolean}
  */
-export function playSoundPackCue(effectKey, role = "preview", volume = 1) {
+export function playSoundPackCue(effectKey, role = "preview", volume = 1, { sinkId = "" } = {}) {
   if (!isKnownSoundPack(effectKey) || typeof Audio === "undefined") return false;
   const mapped = role === "preview" ? "notification" : role;
   try {
@@ -129,8 +143,7 @@ export function playSoundPackCue(effectKey, role = "preview", volume = 1) {
     const audio = base.cloneNode(true);
     audio.volume = Math.max(0, Math.min(1, volume));
     audio.currentTime = 0;
-    const p = audio.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
+    playOn(audio, sinkId);
     audio.addEventListener(
       "ended",
       () => {
@@ -153,7 +166,7 @@ export function playSoundPackCue(effectKey, role = "preview", volume = 1) {
  * Start a looping ringtone for a pack.
  * @returns {() => void} stop function
  */
-export function startSoundPackLoop(effectKey, role = "incomingCall", volume = 1) {
+export function startSoundPackLoop(effectKey, role = "incomingCall", volume = 1, { sinkId = "" } = {}) {
   if (!isKnownSoundPack(effectKey) || typeof Audio === "undefined") return () => {};
 
   const mapped = role === "callStart" ? "outgoingCall" : role;
@@ -166,14 +179,13 @@ export function startSoundPackLoop(effectKey, role = "incomingCall", volume = 1)
     audio.loop = true;
     audio.volume = Math.max(0, Math.min(1, volume));
     audio.currentTime = 0;
-    const p = audio.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
+    playOn(audio, sinkId, () => stopped);
   } catch (err) {
     console.warn("[soundPack] loop failed", effectKey, err);
     return () => {};
   }
 
-  return () => {
+  const stop = () => {
     if (stopped) return;
     stopped = true;
     if (!audio) return;
@@ -186,4 +198,7 @@ export function startSoundPackLoop(effectKey, role = "incomingCall", volume = 1)
       /* ignore */
     }
   };
+  // audioManager moves a playing ringback when the call speaker changes.
+  stop.element = audio;
+  return stop;
 }

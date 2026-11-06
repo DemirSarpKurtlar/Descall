@@ -1,3 +1,4 @@
+import { PREMIUM_STORY_RU } from "./premiumStory.ru.js";
 import { UAH_RU } from "./uah.ru.js";
 /**
  * ru catalog (status "draft" in ../locales.json, hidden from users until the
@@ -7,8 +8,11 @@ import { UAH_RU } from "./uah.ru.js";
  */
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_RU } from "./profileMediaPicker.ru.js";
+import { MSG4_RU } from "./msg4.ru.js";
 export const nested = {
+  "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
+  "msg4": MSG4_RU,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -1389,6 +1393,7 @@ export const nested = {
       "lockedTitle": "Descall заблокирован",
       "pin": "PIN-код",
       "unlock": "Разблокировать",
+      "hint": "Введи PIN и нажми Enter",
       "help": "PIN-код хранится как хеш с солью и зашифрован защитой данных Windows. Это останавливает другого человека за твоим компьютером, пока тебя нет; это не шифрование диска и не защита от программ, запущенных под твоей учётной записью. Windows Hello пока недоступен: для него нужен нативный компонент, которого нет в Descall."
     },
     "quickActions": {
@@ -2660,6 +2665,7 @@ export const nested = {
       "ekim29": "Те, кто был в сети 29 октября.",
       "ekip": "Команда Descall.",
       "facebook": "Кто знает, тот знает. Не продаётся и не выдаётся по коду — только вручную.",
+      "kk22": "Может быть только у одного человека. Кто знает, тот знает.",
       "finalist": "Финалисты турниров.",
       "gece": "Те, кто был в голосовом канале в 3 часа ночи.",
       "glitch": "Те, кто поймал визуальный баг.",
@@ -2738,6 +2744,7 @@ export const nested = {
       "ekim29": "29 октября",
       "ekip": "Команда",
       "facebook": "Facebook",
+      "kk22": "KK22",
       "finalist": "Финалист",
       "gece": "Ночная смена",
       "glitch": "Глитч",

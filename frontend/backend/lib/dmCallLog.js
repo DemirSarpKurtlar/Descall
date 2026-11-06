@@ -211,6 +211,23 @@ function markAnswered({ callerId, calleeId, answer = null }) {
 }
 
 /**
+ * Crossed calls: `answererId` just answered `callerId`'s ring while its own
+ * ring to `callerId` was still out (both pressed call at the same moment).
+ * That reverse ring is part of the call that connected: drop it without a
+ * history row (it was not missed). Without this its 45 s timeout logged a
+ * missed call and sent call:declined (no_answer), which hung up the call.
+ * @returns {object|null} the dropped ring
+ */
+function dropCrossedRing(answererId, callerId) {
+  if (!answererId || !callerId) return null;
+  const key = pendingKey(answererId, callerId);
+  const call = pendingDmCalls.get(key);
+  if (!call || call.status !== "ringing") return null;
+  pendingDmCalls.delete(key);
+  return call;
+}
+
+/**
  * Seed / refresh a connected DM after Render restart so Admin Canlı can list it.
  * Connected (active) only — ringing offers stay ringing until markAnswered.
  */
@@ -580,6 +597,7 @@ module.exports = {
   markCalleeAnswering,
   isResumable,
   markAnswered,
+  dropCrossedRing,
   bufferCalleeIce,
   answerReplayForCaller,
   ANSWER_REPLAY_MS,

@@ -6,11 +6,13 @@ import { AUDIO_DEFAULTS } from "../audio/premiumAudioRuntime.js";
 import { BUILTIN_PRESETS, removeById, upsertProfile } from "../audio/audioProfiles.js";
 import { devicesOfKind } from "../audio/devicePreference.js";
 import { applyDeviceProfile } from "../usePremiumAudioBridge.js";
-import { Button, Note, Section, Select, useAudioDevices } from "../ui/PremiumAudioKit.jsx";
+import { useAudioDevices } from "../ui/PremiumAudioKit.jsx";
+import { Actions, Badge, Btn, ChoiceTiles, Group, Hint, Item, List, Note, TextField } from "../story/kit.jsx";
 
 export const key = "audio_device_profiles";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
 export const defaultEnabled = true;
+const ds = (s) => `${key}.${s}`;
 
 export function Panel() {
   const t = useT();
@@ -28,7 +30,12 @@ export function Panel() {
   const outputs = devicesOfKind(devices, "audiooutput");
   const presets = [...BUILTIN_PRESETS.map((p) => ({ id: p.id, name: t(p.nameKey) })), ...((presetSettings.presets) || [])];
   const label = (list, id) => list.find((d) => d.deviceId === id)?.label || "";
-  const deviceOptions = (list) => [{ value: "", label: t("premiumAudio.profiles.keep") }, ...list.map((d) => ({ value: d.deviceId, label: d.label || t("premiumAudio.common.unnamedDevice") }))];
+  const deviceOptions = (list, icon) => [
+    { value: "", label: t("premiumAudio.profiles.keep"), icon: "restore" },
+    ...list.map((d) => ({ value: d.deviceId, label: d.label || t("premiumAudio.common.unnamedDevice"), icon })),
+  ];
+  // A device picked before it was unplugged stays picked (it is still saved as such).
+  const withCurrent = (opts, id, icon) => (id && !opts.some((o) => o.value === id) ? [...opts, { value: id, label: t("premiumAudio.common.unnamedDevice"), icon }] : opts);
 
   const create = () => {
     const r = upsertProfile(profiles, {
@@ -51,39 +58,53 @@ export function Panel() {
   };
 
   return (
-    <div className="pa-panel">
-      <Section title={t("premiumAudio.profiles.title")} hint={t("premiumAudio.profiles.hint")}>
-        <ul className="pa-list">
-          {profiles.length === 0 ? <li className="pa-empty">{t("premiumAudio.profiles.empty")}</li> : null}
+    <>
+      <Group title={t("premiumAudio.profiles.title")}>
+        <Note ds={ds("hint")}>{t("premiumAudio.profiles.hint")}</Note>
+        <List ds={ds("list")} empty={profiles.length === 0 ? t("premiumAudio.profiles.empty") : null}>
           {profiles.map((p) => (
-            <li key={p.id} className="pa-list-item">
-              <div className="pa-list-main">
-                <span className="pa-list-title">{p.name}</span>
-                <span className="pa-list-sub">
-                  {[p.input?.label, p.output?.label, presets.find((x) => x.id === p.presetId)?.name].filter(Boolean).join(" · ") || t("premiumAudio.profiles.keep")}
-                </span>
-              </div>
-              {p.id === s.activeId ? <span className="pa-badge pa-badge-ok">{t("premiumAudio.common.active")}</span> : null}
-              <Button onClick={() => apply(p)}>{t("premiumAudio.common.apply")}</Button>
-              <Button kind="danger" label={t("premiumAudio.common.deleteNamed", { name: p.name })} onClick={() => update({ profiles: removeById(profiles, p.id), activeId: s.activeId === p.id ? null : s.activeId })}>{t("premiumAudio.common.delete")}</Button>
-            </li>
+            <Item
+              key={p.id}
+              icon="head"
+              active={p.id === s.activeId}
+              title={p.name}
+              sub={[p.input?.label, p.output?.label, presets.find((x) => x.id === p.presetId)?.name].filter(Boolean).join(" · ") || t("premiumAudio.profiles.keep")}
+            >
+              {p.id === s.activeId ? <Badge tone="ok">{t("premiumAudio.common.active")}</Badge> : null}
+              <Btn ds={ds("apply")} onClick={() => apply(p)}>{t("premiumAudio.common.apply")}</Btn>
+              <Btn className="is-danger" ds={ds("delete")} aria-label={t("premiumAudio.common.deleteNamed", { name: p.name })} onClick={() => update({ profiles: removeById(profiles, p.id), activeId: s.activeId === p.id ? null : s.activeId })}>{t("premiumAudio.common.delete")}</Btn>
+            </Item>
           ))}
-        </ul>
-      </Section>
-      <Section title={t("premiumAudio.profiles.new")}>
-        <div className="pa-inline">
-          <input className="pa-input" value={name} maxLength={40} placeholder={t("premiumAudio.profiles.namePlaceholder")} aria-label={t("premiumAudio.profiles.namePlaceholder")} onChange={(e) => setName(e.target.value)} />
+        </List>
+      </Group>
+      <Group title={t("premiumAudio.profiles.new")}>
+        <TextField value={name} maxLength={40} placeholder={t("premiumAudio.profiles.namePlaceholder")} onChange={setName} ds={ds("name")} />
+        <div className="ps-field">
+          <small>{t("premiumAudio.profiles.part.input")}</small>
+          <ChoiceTiles mini value={input} onChange={setInput} label={t("premiumAudio.profiles.part.input")} ds={ds("input")} options={withCurrent(deviceOptions(inputs, "mic"), input, "mic")} />
         </div>
-        <div className="pa-inline">
-          <Select value={input} options={deviceOptions(inputs)} onChange={setInput} label={t("premiumAudio.profiles.part.input")} />
-          <Select value={output} options={deviceOptions(outputs)} onChange={setOutput} label={t("premiumAudio.profiles.part.output")} />
-          <Select value={presetId} options={[{ value: "", label: t("premiumAudio.profiles.noPreset") }, ...presets.map((p) => ({ value: p.id, label: p.name }))]} onChange={setPresetId} label={t("premiumAudio.profiles.part.preset")} />
-          <Button kind="primary" onClick={create} disabled={!name.trim()}>{t("premiumAudio.profiles.create")}</Button>
+        <div className="ps-field">
+          <small>{t("premiumAudio.profiles.part.output")}</small>
+          <ChoiceTiles mini value={output} onChange={setOutput} label={t("premiumAudio.profiles.part.output")} ds={ds("output")} options={withCurrent(deviceOptions(outputs, "head"), output, "head")} />
         </div>
-      </Section>
-      {message ? <Note tone={message.tone}>{message.text}</Note> : null}
-      <Note>{t("premiumAudio.profiles.trayNote")}</Note>
-    </div>
+        <div className="ps-field">
+          <small>{t("premiumAudio.profiles.part.preset")}</small>
+          <ChoiceTiles
+            mini
+            value={presetId}
+            onChange={setPresetId}
+            label={t("premiumAudio.profiles.part.preset")}
+            ds={ds("preset")}
+            options={[{ value: "", label: t("premiumAudio.profiles.noPreset"), icon: "x" }, ...presets.map((p) => ({ value: p.id, label: p.name, icon: "sliders" }))]}
+          />
+        </div>
+        <Actions>
+          <Btn kind="primary" icon="plus" ds={ds("create")} onClick={create} disabled={!name.trim()}>{t("premiumAudio.profiles.create")}</Btn>
+        </Actions>
+      </Group>
+      {message ? <Hint tone={message.tone} live>{message.text}</Hint> : null}
+      <Hint ds={ds("trayNote")}>{t("premiumAudio.profiles.trayNote")}</Hint>
+    </>
   );
 }
 

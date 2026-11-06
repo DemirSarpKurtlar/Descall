@@ -133,7 +133,6 @@ html.descall-popout .app-main-slot { grid-column: 1 / -1; width: 100%; max-width
 .pp-feat.is-locked .pp-feat-name { color: var(--text-secondary, rgba(242, 243, 245, 0.75)); }
 .pp-set-row { display: flex; align-items: center; gap: 12px; justify-content: space-between; font-size: 13px; }
 .pp-set-row > span { min-width: 0; }
-.pp-set-row input[type="range"] { width: 160px; accent-color: #8d86ff; }
 .pp-seg { display: inline-flex; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); }
 .pp-seg button { border: 0; background: transparent; color: inherit; font: inherit; font-size: 12.5px; padding: 5px 12px; border-radius: 7px; cursor: pointer; }
 .pp-seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.14); font-weight: 650; }

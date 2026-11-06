@@ -1,10 +1,20 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment } from "react";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown } from "../ui/Icon.jsx";
+import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown, ChevronUp } from "../ui/Icon.jsx";
+import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
+import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
+import ForwardGlyph from "./ForwardGlyph.jsx";
+import { previewUrlOf } from "../../lib/linkPreview";
+import { stickerOf } from "../../lib/descallStickers";
+import { dmSeen, groupSeenBy, namesSummary } from "../../lib/readReceipts";
+import { useGroupReads, useReceiptsSetting } from "../../hooks/useReadReceipts";
+
+// Link preview cards load on first use (messaging phase 4).
+const LinkPreviewCard = lazy(() => import("./LinkPreviewCard.jsx"));
 import { Avatar } from "../ui/Avatar";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
@@ -391,6 +401,87 @@ export default function MessageList({
   }, [conversationId, loading, resolveScroller]);
   useEffect(() => { setJump({ show: false, unseen: 0 }); }, [conversationId]);
 
+  // "Görüldü" (messaging phase 4, lib/readReceipts): under my newest message.
+  const receiptsOn = useReceiptsSetting();
+  const groupIdForReads = conversationType === "group" && activeGroup?.id && !activeGroup?.removed ? activeGroup.id : null;
+  const lastMessageId = Array.isArray(messages) && messages.length ? messages[messages.length - 1]?.id ?? null : null;
+  const groupReads = useGroupReads({ socket, groupId: groupIdForReads, lastMessageId, enabled: receiptsOn });
+  const seen = useMemo(() => {
+    if (!receiptsOn || isSearching || !myId) return null;
+    if (conversationType === "dm") {
+      const s = dmSeen(messages, myId);
+      return s ? { kind: "dm", id: s.id, at: s.at } : null;
+    }
+    if (groupIdForReads) {
+      const g = groupSeenBy({ messages, myId, reads: groupReads, members: activeGroup?.members || [] });
+      return g ? { kind: "group", ...g } : null;
+    }
+    return null;
+  }, [receiptsOn, isSearching, myId, conversationType, messages, groupIdForReads, groupReads, activeGroup?.members]);
+
+  // Jump to the first unread (messaging phase 4, lib/unreadJump): a pill at
+  // the top while the "Yeni mesajlar" separator is above the visible area.
+  const unreadSepRef = useRef(null);
+  const unreadDoneRef = useRef(null); // conversationId whose separator was seen / jumped to
+  const [unreadPill, setUnreadPill] = useState(false);
+  const [unreadDock, setUnreadDock] = useState({ host: null, top: 8 });
+  const unreadActive = unreadCount > 0 && !isSearching && !loading;
+  useEffect(() => {
+    if (!unreadActive) { setUnreadPill(false); return undefined; }
+    const scroller = resolveScroller();
+    if (!scroller) return undefined;
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const sep = unreadSepRef.current;
+      if (!sep || unreadDoneRef.current === conversationId) { setUnreadPill(false); return; }
+      const above = separatorAbove({
+        sepBottom: sep.getBoundingClientRect().bottom,
+        scrollerTop: scroller.getBoundingClientRect().top,
+        headerSpace: headerSpaceOf(scroller),
+      });
+      // The pill lives on the chat panel (above the phone header's scroll-edge fade), under the header.
+      const host = scroller.closest(".main-panel");
+      if (host) {
+        const top = pillTopIn(host);
+        setUnreadDock((prev) => (prev.host === host && prev.top === top ? prev : { host, top }));
+      }
+      if (!above) unreadDoneRef.current = conversationId;
+      setUnreadPill(above);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    // After the open pin and the tail render.
+    const timers = [80, 400, 900].map((ms) => window.setTimeout(check, ms));
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      timers.forEach((id) => window.clearTimeout(id));
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [unreadActive, conversationId, resolveScroller]);
+  const jumpToFirstUnread = useCallback(() => {
+    const sep = unreadSepRef.current;
+    const scroller = resolveScroller();
+    if (!sep || !scroller) return false;
+    pinRef.current?.suspendPin?.(1600);
+    const top = jumpTarget({
+      scrollTop: scroller.scrollTop,
+      sepTop: sep.getBoundingClientRect().top,
+      scrollerTop: scroller.getBoundingClientRect().top,
+      headerSpace: headerSpaceOf(scroller),
+    });
+    if (typeof scroller.scrollTo === "function") scroller.scrollTo({ top, behavior: prefersReducedMotionNow() ? "auto" : "smooth" });
+    else scroller.scrollTop = top;
+    unreadDoneRef.current = conversationId;
+    setUnreadPill(false);
+    return true;
+  }, [conversationId, resolveScroller]);
+  useEffect(() => {
+    const onJump = () => { if (jumpToFirstUnread()) hapticLight(); };
+    window.addEventListener(JUMP_UNREAD_EVENT, onJump);
+    return () => window.removeEventListener(JUMP_UNREAD_EVENT, onJump);
+  }, [jumpToFirstUnread]);
+
   useLayoutEffect(() => {
     if (loading || isSearching) return;
     const pin = pinRef.current;
@@ -591,7 +682,7 @@ export default function MessageList({
         }
         if (group.isUnreadSep) {
           return (
-            <div key={group.id || `unread-${groupIndex}`} className="message-unread-sep">
+            <div key={group.id || `unread-${groupIndex}`} ref={unreadSepRef} className="message-unread-sep">
               <span>{t("New messages")}</span>
             </div>
           );
@@ -747,8 +838,8 @@ export default function MessageList({
                   String(msg.id || "").startsWith("temp-") ||
                   (ts > 0 && Date.now() - ts < 2800);
                 return (
+                <Fragment key={msg.id}>
                 <MessageBubble
-                  key={msg.id}
                   message={msg}
                   isOwn={isOwn}
                   isCompact={group.isCompact}
@@ -780,6 +871,8 @@ export default function MessageList({
                       : avatarUser?.equippedReactionBurst?.effect_key || null
                   }
                 />
+                {seen && seen.id === msg.id ? <SeenLine seen={seen} t={t} /> : null}
+                </Fragment>
               );
               })}
             </div>
@@ -788,6 +881,39 @@ export default function MessageList({
       })}
       <div ref={messagesEndRef} />
 
+      {/* Jump to the first unread (messaging phase 4): on the chat panel, just under the header. */}
+      {unreadDock.host && unreadActive ? createPortal(
+      <div className="msg-unread-dock" style={{ top: unreadDock.top }}>
+        <AnimatePresence>
+          {unreadPill ? (
+            <motion.div
+              key="unread-pill"
+              className="msg-unread-pill g-glass g-heavy"
+              role="status"
+              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.96 }}
+              transition={prefersReducedMotionNow() ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
+            >
+              <button type="button" className="msg-unread-jump" onClick={() => { hapticLight(); jumpToFirstUnread(); }}>
+                <ChevronUp size={16} aria-hidden="true" />
+                <span className="msg-unread-count">{t("msg4.unread.pill", { count: unreadCount })}</span>
+                <span className="msg-unread-go">{t("msg4.unread.jump")}</span>
+              </button>
+              <button
+                type="button"
+                className="msg-unread-close"
+                aria-label={t("msg4.unread.dismiss")}
+                title={t("msg4.unread.dismiss")}
+                onClick={() => { unreadDoneRef.current = conversationId; setUnreadPill(false); }}
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>,
+      unreadDock.host) : null}
       {/* #04 jump to the newest message (PR-7): sticky at the scroller's
           bottom edge, so it rides with the composer and the keyboard. */}
       <div className="msg-jump-dock">
@@ -955,7 +1081,9 @@ function MessageBubble({
   const mediaPreview = visualMediaPreview(message);
   const isVisualMedia = Boolean(mediaPreview);
   const isGif = Boolean(mediaPreview?.isGif);
-  const mediaOnly = isVisualMedia && !String(message.text || "").trim();
+  // A Descall sticker (messaging phase 4): the whole text is one sticker token, drawn large without a bubble.
+  const sticker = !message.mediaUrl && !message.media_url ? stickerOf(message.text) : null;
+  const mediaOnly = (isVisualMedia && !String(message.text || "").trim()) || Boolean(sticker);
   const isPollV2 = mediaTypeNorm === "poll_v2";
   const isPollEnd = mediaTypeNorm === "poll_end";
   const isLegacyPoll = mediaTypeNorm === "poll" || isLegacyPollText(message.text);
@@ -976,7 +1104,14 @@ function MessageBubble({
     () => applyPending(serverReactions, pendingMine, currentUserId, message?.id ?? null),
     [serverReactions, pendingMine, currentUserId, message?.id],
   );
-  const reply = message.replyTo || message.reply_to || null;
+  // A forward carries { forwarded: true } in reply_to (messaging phase 4): a label, never a quote.
+  const rawReply = message.replyTo || message.reply_to || null;
+  const forwarded = isForwardedMeta(rawReply);
+  const reply = forwarded ? null : rawReply;
+  const forwardable = canForward(message);
+  // Link preview (messaging phase 4): first http(s) link, fetched by our server.
+  const previewUrl = useMemo(() => (typeof message.text === "string" ? previewUrlOf(message.text) : null), [message.text]);
+  const forwardMessage = useCallback(() => openForwardSheet(message), [message]);
   const isPinned = Boolean(message.pinnedAt);
   const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
 
@@ -1534,7 +1669,7 @@ function MessageBubble({
         data-no-swipe-back=""
         data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
-        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
@@ -1558,6 +1693,12 @@ function MessageBubble({
           }
         }}
       >
+        {forwarded && (
+          <div className="message-forwarded" data-testid="message-forwarded">
+            <ForwardGlyph size={13} strokeWidth={2.2} />
+            <span>{t("msg4.forward.label")}</span>
+          </div>
+        )}
         {reply && (
           <button
             type="button"
@@ -1646,6 +1787,8 @@ function MessageBubble({
           <SlashCommandEmbed embed={message.embed} type={message.appType || message.type} />
         ) : isLegacyPoll && message.text ? (
           <LegacyPollCard text={message.text} />
+        ) : sticker ? (
+          <img className="msg-sticker" src={sticker.src} alt={t(sticker.label)} title={t(sticker.label)} draggable={false} data-testid="msg-sticker" />
         ) : (
           message.text && (
             <>
@@ -1656,6 +1799,11 @@ function MessageBubble({
                 </span>
               ) : null}
               <InviteLinkEmbedList text={message.text} />
+              {previewUrl ? (
+                <Suspense fallback={null}>
+                  <LinkPreviewCard url={previewUrl} />
+                </Suspense>
+              ) : null}
             </>
           )
         )}
@@ -1960,6 +2108,11 @@ function MessageBubble({
                         <Copy size={16} />{t("Copy")}
                       </button>
                     ) : null}
+                    {forwardable ? (
+                      <button type="button" role="menuitem" className="mhb-mi" data-testid="menu-forward" onClick={() => { setMoreOpen(false); setMenuOpen(false); forwardMessage(); }}>
+                        <ForwardGlyph size={16} />{t("msg4.forward.action")}
+                      </button>
+                    ) : null}
                     {!isOwn && (
                       <button
                         type="button"
@@ -2013,6 +2166,7 @@ function MessageBubble({
             onMore={() => { setMenuOpen(false); setPickerOpen(false); setEmojiSheetOpen(true); }}
             onReply={triggerReply}
             onCopy={message.text ? copyText : null}
+            onForward={forwardable ? forwardMessage : null}
             canPin={canPin}
             isPinned={isPinned}
             onPin={togglePin}
@@ -2057,6 +2211,28 @@ function MessageBubble({
   );
 }
 
+/** "Görüldü" / "Görüldü: Ayşe, Mert +2" / "Herkes gördü" under my newest message. */
+function SeenLine({ seen, t }) {
+  let label = t("msg4.seen.label");
+  let title;
+  if (seen.kind === "dm") {
+    const d = parseAppDate(seen.at);
+    if (d) title = t("msg4.seen.at", { time: formatMessageClock(d, intlLocaleTag(getLocale())) });
+  } else if (seen.everyone) {
+    label = t("msg4.seen.everyone");
+    title = seen.names.join(", ");
+  } else {
+    const { shown, more } = namesSummary(seen.names);
+    label = more ? t("msg4.seen.byMore", { names: shown, count: more }) : t("msg4.seen.by", { names: shown });
+    title = seen.names.join(", ");
+  }
+  return (
+    <div className="msg-seen" data-testid="msg-seen" title={title}>
+      {label}
+    </div>
+  );
+}
+
 function prefersReducedMotionNow() {
   try {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2075,7 +2251,7 @@ function prefersReducedMotionNow() {
  */
 function GlassMessageMenu({
   bubbleRef, isOwn, onClose, quick, onReact, onMore,
-  onReply, onCopy, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
+  onReply, onCopy, onForward, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const [closing, setClosing] = useState(false);
   // #06 lens: the emoji under the finger grows inside a clear glass lens;
@@ -2142,7 +2318,7 @@ function GlassMessageMenu({
   useEffect(() => () => clearTimeout(closeRef.current.timer), []);
 
   if (!lift || typeof document === "undefined") return null;
-  const menuRows = 1 + (onCopy ? 1 : 0) + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
+  const menuRows = 1 + (onCopy ? 1 : 0) + (onForward ? 1 : 0) + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
   // Visible area: with the keyboard up the visual viewport is shorter than
   // the layout viewport, so clamp the bar and menu to what the user sees.
   const vv = window.visualViewport;
@@ -2271,6 +2447,9 @@ function GlassMessageMenu({
             <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
             {onCopy && (
               <button type="button" className="g-mi" {...act(onCopy)}><Copy size={19} />{t("Copy")}</button>
+            )}
+            {onForward && (
+              <button type="button" className="g-mi" data-testid="menu-forward" {...act(() => { beginClose(); onForward(); })}><ForwardGlyph size={19} />{t("msg4.forward.action")}</button>
             )}
             {canPin && (
               <button type="button" className="g-mi" {...act(onPin)}>

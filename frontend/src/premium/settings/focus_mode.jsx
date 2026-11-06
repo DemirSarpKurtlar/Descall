@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useFeatureSettings } from "../featureSettings.js";
 import { useT } from "../../context/localeContextInstance";
 import { NOTIFY_DEFAULTS, setFocus } from "../notify/premiumNotify.js";
-import { Button, Note, Row, Section, Toggle } from "../ui/PremiumAudioKit.jsx";
+import { Btn, Group, Hint, Note, SetRow, ToggleTiles } from "../story/kit.jsx";
 
 export const key = "focus_mode";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
 export const defaultEnabled = true;
+const ds = (s) => `${key}.${s}`;
+const DURATIONS = [15, 30, 60, 120, 240];
 
 export function Panel() {
   const t = useT();
@@ -23,27 +25,30 @@ export function Panel() {
   const start = async (m) => { await setFocus(m); setNow(Date.now()); };
 
   return (
-    <div className="pa-panel">
-      <Section title={t("premiumAudio.focus.title")} hint={t("premiumAudio.focus.hint")}>
-        <Row title={t("premiumAudio.focus.status")} description={active ? t("premiumAudio.focus.activeFor", { minutes: minutesLeft }) : t("premiumAudio.focus.inactive")}>
-          {active ? <Button kind="danger" onClick={() => start(0)}>{t("premiumAudio.focus.end")}</Button> : null}
-        </Row>
-        <div className="pa-inline">
-          {[15, 30, 60, 120, 240].map((m) => (
-            <Button key={m} kind={!active && m === s.lastMinutes ? "primary" : "default"} onClick={() => start(m)}>
-              {m < 60 ? t("premiumAudio.common.minutes", { n: m }) : t("premiumAudio.common.hours", { n: m / 60 })}
-            </Button>
+    <>
+      <Group title={t("premiumAudio.focus.title")}>
+        <Note ds={ds("hint")}>{t("premiumAudio.focus.hint")}</Note>
+        <SetRow icon="moon" label={t("premiumAudio.focus.status")} desc={active ? t("premiumAudio.focus.activeFor", { minutes: minutesLeft }) : t("premiumAudio.focus.inactive")} ds={ds("status")}>
+          {active ? <Btn className="is-danger" ds={ds("end")} onClick={() => start(0)}>{t("premiumAudio.focus.end")}</Btn> : null}
+        </SetRow>
+        <div className="ps-seg" role="group" aria-label={t("premiumAudio.focus.status")} data-s={ds("durations")}>
+          {DURATIONS.map((m) => (
+            <button key={m} type="button" aria-pressed={!active && m === s.lastMinutes} onClick={() => start(m)}>
+              <span>{m < 60 ? t("premiumAudio.common.minutes", { n: m }) : t("premiumAudio.common.hours", { n: m / 60 })}</span>
+            </button>
           ))}
         </div>
-        <Row title={t("premiumAudio.focus.allowCalls")}>
-          <Toggle value={s.allowCalls !== false} onChange={(v) => update({ allowCalls: v })} label={t("premiumAudio.focus.allowCalls")} />
-        </Row>
-        <Row title={t("premiumAudio.focus.allowDms")} description={t("premiumAudio.focus.allowDmsDesc")}>
-          <Toggle value={Boolean(s.allowDms)} onChange={(v) => update({ allowDms: v })} label={t("premiumAudio.focus.allowDms")} />
-        </Row>
-      </Section>
-      <Note>{t("premiumAudio.focus.trayNote")}</Note>
-    </div>
+      </Group>
+      <Group title={t("premiumStory.g.allow")}>
+        <ToggleTiles
+          items={[
+            { id: "allowCalls", icon: "phone", label: t("premiumAudio.focus.allowCalls"), ds: ds("allowCalls"), checked: s.allowCalls !== false, onChange: (v) => update({ allowCalls: v }) },
+            { id: "allowDms", icon: "chat", label: t("premiumAudio.focus.allowDms"), sub: t("premiumAudio.focus.allowDmsDesc"), ds: ds("allowDms"), checked: Boolean(s.allowDms), onChange: (v) => update({ allowDms: v }) },
+          ]}
+        />
+      </Group>
+      <Hint ds={ds("trayNote")}>{t("premiumAudio.focus.trayNote")}</Hint>
+    </>
   );
 }
 

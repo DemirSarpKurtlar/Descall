@@ -81,7 +81,7 @@ export function bindDmCallQa(api) {
     api.setCallType(detail.callType || "video");
     api.setMode(mode);
     api.setCallAnchorAt(Date.now() - (detail.elapsedMs || 754000));
-    api.setDuration(detail.durationSeconds ?? 754);
+    api.setDurationStartedAt(Date.now() - (detail.durationSeconds ?? 754) * 1000);
     document.documentElement.dataset.glassQaSpeaking = "1";
     window.__DESCALL_QA_NET__ = detail.networkStats || {
       rttMs: 18,
@@ -123,7 +123,7 @@ export function bindGroupCallQa(api) {
     api.setCallType(detail.callType || "video");
     api.setIsCameraOn(detail.cameraOn !== false);
     api.setIsMuted(false);
-    api.setDuration(detail.durationSeconds ?? 502);
+    api.setDurationStartedAt(Date.now() - (detail.durationSeconds ?? 502) * 1000);
     document.documentElement.dataset.glassQaSpeaking = "1";
     const local = paint(detail.localColor || "#1f2a44", detail.localLabel || "Sen");
     if (api.localStreamRef) api.localStreamRef.current = local;

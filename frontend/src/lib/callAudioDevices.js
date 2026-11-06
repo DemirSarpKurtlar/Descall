@@ -151,6 +151,13 @@ export function registerSinkContext(ctx) {
  */
 export async function setOutputSink(deviceId, { doc = typeof document !== "undefined" ? document : null } = {}) {
   sink.id = deviceId || "";
+  for (const fn of sinkListeners) {
+    try {
+      fn(sink.id);
+    } catch {
+      /* a listener must not stop the switch */
+    }
+  }
   prune();
   const targets = new Set([...sink.elements, ...sink.contexts]);
   try {
@@ -172,12 +179,60 @@ export async function setOutputSink(deviceId, { doc = typeof document !== "undef
   return { applied, failed, errors };
 }
 
+// ── Sound effects (audioManager, sound packs) ───────────────────────────
+//
+// Ringback and in-call cues play through detached `new Audio()` elements that
+// are in neither the registry nor the document, so setOutputSink() never
+// reached them. audioManager routes each one itself with routeToSink() and
+// follows later switches through onOutputSinkChange().
+
+const sinkListeners = new Set();
+const effectSinks = new WeakMap();
+
+/** Called with the new id ("" = default) every time the call speaker changes. */
+export function onOutputSinkChange(fn) {
+  if (typeof fn !== "function") return () => {};
+  sinkListeners.add(fn);
+  return () => sinkListeners.delete(fn);
+}
+
+/**
+ * Point a sound-effect element at `sinkId` ("" = system default, which is
+ * where a fresh or cloned element starts). Returns null when nothing has to
+ * change, else a promise that settles once the switch is done. A failed
+ * switch resolves too: the sound then plays on the device it had.
+ */
+export function routeToSink(el, sinkId) {
+  const id = typeof sinkId === "string" ? sinkId : "";
+  if (!sinkSupported(el)) return null;
+  const current = effectSinks.has(el) ? effectSinks.get(el) : "";
+  if (current === id) return null;
+  effectSinks.set(el, id);
+  let pending;
+  try {
+    pending = el.setSinkId(id);
+  } catch (err) {
+    effectSinks.set(el, current);
+    sink.log("setSinkId failed", err?.name || String(err));
+    return null;
+  }
+  return Promise.resolve(pending).then(
+    () => true,
+    (err) => {
+      if (effectSinks.get(el) === id) effectSinks.set(el, current);
+      sink.log("setSinkId failed", err?.name || String(err));
+      return false;
+    }
+  );
+}
+
 /** Test hook. */
 export function __resetSinkRegistry(log) {
   sink.id = "";
   sink.elements.clear();
   sink.contexts.clear();
   sink.applied = new WeakMap();
+  sinkListeners.clear();
   if (log) sink.log = log;
 }
 

@@ -5,6 +5,7 @@
  * Gated by VIEW_CHANNEL (join/history) and SEND_MESSAGES (send).
  */
 
+const { forwardedReplyMeta } = require("../lib/forwardedMessage");
 const supabase = require("../db/supabase");
 const { systemConfig } = require("../runtime/sharedState");
 const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
@@ -859,7 +860,7 @@ function registerServerChannelHandlers(io, socket) {
 
   socket.on(
     "server:channel:message",
-    async ({ serverId, channelId, tempId, content, mediaUrl, mediaType, duration, replyTo, poll: pollInput } = {}) => {
+    async ({ serverId, channelId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput } = {}) => {
       try {
         // Poll from the creation sheet: validated here, stored as a poll_v2 row + polls tables.
         let pollDraft = null;
@@ -1101,7 +1102,8 @@ function registerServerChannelHandlers(io, socket) {
 
         // Quote meta is built from the stored message (same channel only). The client used
         // to send text/from itself, so a reply could quote words nobody wrote (T3-2).
-        const replyMeta = await resolveServerReplyMeta(replyTo, channelId);
+        // Messaging phase 4: a forward carries { forwarded: true } and never quotes.
+        const replyMeta = forwardedReplyMeta(forwarded) || await resolveServerReplyMeta(replyTo, channelId);
 
         const { data: row, error } = await supabase
           .from("server_messages")

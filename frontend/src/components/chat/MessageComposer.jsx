@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
   Plus, ImagePlus, Paperclip, Image, FileText, X, StopCircle, Loader2, Reply,
-  Pencil, Timer, CircleHelp,
+  Pencil, Timer, CircleHelp, Clock,
 } from "../ui/Icon.jsx";
 import { SLASH_ICONS } from "../polls/slashIconsMap";
 import PollCreateSheet from "../polls/PollCreateSheet";
@@ -33,6 +33,11 @@ import { getComposerInput, registerComposerInput } from "../../lib/composerFocus
 import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
+import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
+import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
+import {
+  getScheduledSnapshot, openScheduleSheet, pendingFor, scheduleTarget, subscribeScheduled, SCHEDULE_SENT_EVENT,
+} from "../../lib/scheduledMessages";
 
 
 
@@ -130,6 +135,70 @@ export default function MessageComposer({
   const sendingRef = useRef(false);
 
   messageRef.current = message;
+
+  // Drafts (messaging phase 4): one per conversation, kept across chat
+  // switches, reloads and restarts (lib/messageDrafts). Edit mode never
+  // saves: the field then holds the message being edited, the draft waits
+  // in editStashRef.
+  const draftKey = draftKeyFor({ dmUserId: activeDmUser?.id, groupId: activeGroup?.id, channelId: activeChannel?.id });
+  const draftKeyRef = useRef(null);
+  const draftTimerRef = useRef(0);
+  const flushDraft = useCallback(() => {
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = 0;
+    const key = draftKeyRef.current;
+    if (!key || editIdRef.current) return;
+    writeDraft(key, messageRef.current);
+  }, []);
+  useLayoutEffect(() => {
+    if (me?.id) setDraftOwner(me.id);
+    const prev = draftKeyRef.current;
+    if (prev === draftKey) return;
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = 0;
+    if (prev) {
+      writeDraft(prev, editIdRef.current ? editStashRef.current ?? "" : messageRef.current);
+      // The edit (if any) belongs to the chat we leave: do not restore its stash here.
+      editStashRef.current = null;
+    }
+    draftKeyRef.current = draftKey;
+    setMessage(readDraft(draftKey));
+  }, [draftKey, me?.id]);
+  useEffect(() => {
+    if (editIdRef.current || !draftKeyRef.current) return undefined;
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = window.setTimeout(flushDraft, 250);
+    return undefined;
+  }, [message, flushDraft]);
+  // Scheduled sending (messaging phase 4): this chat's pending count, the
+  // sheet (from the + menu or a long press / right click on Send), and
+  // clearing the field once its text was scheduled.
+  const schedTarget = scheduleTarget({ activeDmUser, activeGroup, activeChannel, activeServer });
+  const scheduledAll = useSyncExternalStore(subscribeScheduled, getScheduledSnapshot, getScheduledSnapshot);
+  const scheduledHere = schedTarget ? pendingFor(scheduledAll, schedTarget.convType, schedTarget.convId).length : 0;
+  const openSchedule = useCallback((mode = "new") => {
+    if (!schedTarget) return;
+    setShowAttachmentMenu(false);
+    openScheduleSheet({ mode, target: schedTarget, text: mode === "new" ? messageRef.current : "", fromComposer: mode === "new", draftKey: draftKeyRef.current });
+  }, [schedTarget]);
+  useEffect(() => {
+    const onSent = (e) => {
+      if (e?.detail?.draftKey && e.detail.draftKey === draftKeyRef.current) setMessage("");
+    };
+    window.addEventListener(SCHEDULE_SENT_EVENT, onSent);
+    return () => window.removeEventListener(SCHEDULE_SENT_EVENT, onSent);
+  }, []);
+  const sendHoldRef = useRef(0);
+  const sendHeldRef = useRef(false);
+
+  useEffect(() => {
+    const onHide = () => flushDraft();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      flushDraft();
+    };
+  }, [flushDraft]);
 
   useEffect(() => {
     if (!glass) return undefined;
@@ -678,6 +747,16 @@ export default function MessageComposer({
     flash();
   };
 
+  // A sticker goes out on its own as one token message (lib/descallStickers), like a reply would.
+  const sendSticker = (st) => {
+    if (disabled || slowmodeBlocked || !st?.token) return;
+    hapticImpactLight();
+    onSend?.(withReply(st.token));
+    onClearReply?.();
+    armLocalSlowmode();
+    setShowEmojiPicker(false);
+  };
+
   const handleKeyDown = (e) => {
     // Enter inside an IME composition commits the candidate; never send.
     if (e.key === "Enter" && (composingRef.current || isImeEnter(e))) return;
@@ -1101,6 +1180,24 @@ export default function MessageComposer({
       </AnimatePresence>
 
       <AnimatePresence>
+        {scheduledHere > 0 && !replyTo && !editing && !slowmodeLabel && (
+          <motion.button
+            type="button"
+            key="sched-hint"
+            className="composer-slowmode-hint ms-sched-hint"
+            data-testid="composer-scheduled"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            onClick={() => openSchedule("list")}
+          >
+            <Clock size={13} />
+            <span>{t("msg4.schedule.pending", { count: scheduledHere })}</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {replyTo && !editing && (
           <motion.div
             className="composer-reply-bar"
@@ -1343,6 +1440,12 @@ export default function MessageComposer({
               <div className="attachment-icon"><span className="attachment-gif-badge" aria-hidden="true">GIF</span></div>
               <span className="attachment-label">{t("Send GIF")}</span>
             </button>
+            {schedTarget && !editing ? (
+              <button className="attachment-item" data-testid="attach-schedule" onClick={() => openSchedule("new")}>
+                <div className="attachment-icon"><Clock size={22} /></div>
+                <span className="attachment-label">{t("msg4.schedule.menu")}</span>
+              </button>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1360,6 +1463,25 @@ export default function MessageComposer({
               <button className="emoji-picker-close" onClick={() => setShowEmojiPicker(false)} aria-label={t("Close")}><X size={14} /></button>
             </div>
             <div className="emoji-picker-body">
+              {/* Descall logo emoji (inserted as text) and stickers (sent at once), messaging phase 4. */}
+              <div className="emoji-category ds-picker" data-testid="ds-picker">
+                <span className="emoji-category-name">{t("msg4.stickers.emojiTitle")}</span>
+                <div className="emoji-grid">
+                  {DESCALL_EMOJI.map((em) => (
+                    <button key={em.id} type="button" className="emoji-btn ds-emoji-btn" onClick={() => insertEmoji(`${em.token} `)} title={t(em.label)} aria-label={t(em.label)} data-testid={`ds-emoji-${em.id}`}>
+                      <img src={em.src} alt="" draggable={false} />
+                    </button>
+                  ))}
+                </div>
+                <span className="emoji-category-name">{t("msg4.stickers.stickerTitle")}</span>
+                <div className="ds-sticker-grid">
+                  {DESCALL_STICKERS.map((st) => (
+                    <button key={st.id} type="button" className="ds-sticker-btn" onClick={() => sendSticker(st)} disabled={disabled || slowmodeBlocked || Boolean(editing)} title={t(st.label)} aria-label={t(st.label)} data-testid={`ds-sticker-${st.id}`}>
+                      <img src={st.src} alt="" draggable={false} />
+                    </button>
+                  ))}
+                </div>
+              </div>
               {EMOJI_CATEGORIES.map((cat) => (
                 <div key={cat.nameKey} className="emoji-category">
                   <span className="emoji-category-name">{t(cat.nameKey)}</span>
@@ -1461,7 +1583,28 @@ export default function MessageComposer({
 
         <motion.button
           className={`composer-send-btn ${canSend ? "active" : ""}${sendFlash ? " is-flashing" : ""}`}
-          onClick={handleSend}
+          onClick={() => {
+            if (sendHeldRef.current) { sendHeldRef.current = false; return; }
+            handleSend();
+          }}
+          // Right click / long press on Send: send later (messaging phase 4).
+          onContextMenu={(e) => {
+            if (editing || !schedTarget || !message.trim() || pendingAttach) return;
+            e.preventDefault();
+            openSchedule("new");
+          }}
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse" || editing || !schedTarget || !message.trim() || pendingAttach) return;
+            clearTimeout(sendHoldRef.current);
+            sendHoldRef.current = window.setTimeout(() => {
+              sendHeldRef.current = true;
+              hapticImpactLight();
+              openSchedule("new");
+            }, 520);
+          }}
+          onPointerUp={() => clearTimeout(sendHoldRef.current)}
+          onPointerCancel={() => clearTimeout(sendHoldRef.current)}
+          onPointerLeave={() => clearTimeout(sendHoldRef.current)}
           disabled={!canSend || disabled}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

@@ -254,6 +254,7 @@ html.bp-stacked .bp-toast-host{bottom:calc(96px + env(safe-area-inset-bottom,0px
 
 /* Facebook keeps its own blue */
 .sb-chip-fb{background:rgba(24,119,242,.2);color:#d6e6ff}
+.sb-chip-kk22{background:linear-gradient(90deg,rgba(255,77,106,.24),rgba(255,179,107,.18));color:#fff}
 
 /* light theme: chips and pills keep contrast on light surfaces */
 html[data-theme="light"] .sb-chip{background:rgba(20,22,40,.06);color:#1d2030}
@@ -262,6 +263,7 @@ html[data-theme="light"] .sb-chip-epik{background:rgba(168,85,247,.12);color:#6b
 html[data-theme="light"] .sb-chip-efsanevi{background:rgba(245,158,11,.16);color:#8a5600}
 html[data-theme="light"] .sb-chip-tekil{color:#5b2a6e}
 html[data-theme="light"] .sb-chip-fb{background:rgba(24,119,242,.12);color:#0d4fb0}
+html[data-theme="light"] .sb-chip-kk22{background:linear-gradient(90deg,rgba(255,77,106,.14),rgba(255,179,107,.12));color:#8a1027}
 html[data-theme="light"] .bp-plus{color:#3a3f55;background:rgba(20,22,40,.07);box-shadow:inset 0 0 0 1px rgba(20,22,40,.1)}
 
 @media (prefers-reduced-motion:reduce){
