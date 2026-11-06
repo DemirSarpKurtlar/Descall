@@ -108,7 +108,7 @@
 .birth-select-menu {
   position: fixed;
   /* above every modal/overlay (login modal is 13000, toasts 100050) */
-  z-index: 2147483000;
+  z-index: var(--z-system, 2147482000);
   margin: 0;
   padding: 6px;
   list-style: none;

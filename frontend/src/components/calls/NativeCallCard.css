@@ -4,7 +4,7 @@
   left: 12px;
   right: 12px;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
-  z-index: 2147483000;
+  z-index: var(--z-system, 2147482000);
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-areas: "avatar text" "actions actions";

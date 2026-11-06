@@ -22,6 +22,12 @@
   --z-modal-nested: 30000;
   --z-alert: 100500;
   --z-toast: 110000;
+
+  /* Top stacking layers (UI audit #130). App layers stay below 200000; these
+     are the only ones above, in this order, and nothing goes past the title bar. */
+  --z-fullscreen: 2147481000; /* full-window media (screen share expanded) */
+  --z-system: 2147482000;     /* system prompts: install/push banners, native call card, picker menus */
+  --z-titlebar: 2147483000;   /* Electron title bar, always on top */
 }
 :root[data-theme="light"] {
   --overlay-dim: rgba(20, 22, 30, 0.42);

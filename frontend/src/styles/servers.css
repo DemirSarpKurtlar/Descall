@@ -3730,7 +3730,7 @@ button.member-row.server-member-row {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  z-index: 2147483002;
+  z-index: var(--z-fullscreen, 2147481000);
   background: #000;
   cursor: pointer;
   display: flex;

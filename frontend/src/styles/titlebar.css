@@ -25,7 +25,7 @@ body.electron-app {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 2147483000;
+  z-index: var(--z-titlebar, 2147483000);
   -webkit-app-region: drag;
   box-sizing: border-box;
   isolation: isolate;
