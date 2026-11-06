@@ -1164,6 +1164,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API erişilebilir",
+  "Request timed out": "İstek zaman aşımına uğradı",
   ...API_TR,
   "Close": "Kapat",
   "You": "Sen",

@@ -5891,6 +5891,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API accesible",
+  "Request timed out": "La solicitud agotó el tiempo de espera",
   " (you)": " (tú)",
   "#6678ff": "#6678ff",
   "#general msgs": "mensajes de #general",

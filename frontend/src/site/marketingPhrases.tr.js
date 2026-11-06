@@ -152,6 +152,8 @@ export const MARKETING_TR = {
   "Kick, ban, timeout, audit logs, and community rules for servers that need staff workflows.": "Staff işi olan sunucular için kick, ban, timeout, denetim kaydı ve topluluk kuralları.",
   "Language": "Dil",
   "Last updated": "Son güncelleme",
+  "API reachable": "API erişilebilir",
+  "Request timed out": "İstek zaman aşımına uğradı",
   "Latest release": "Son sürüm",
   "Learn more": "Daha fazla",
   "Leave Nitro guide": "Nitro’dan çıkış rehberi",

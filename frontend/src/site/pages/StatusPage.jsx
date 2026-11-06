@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useT } from "../../context/localeContextInstance";
+import { useLocale } from "../../context/localeContextInstance";
+import { formatDate } from "../../i18n/format";
 import { API_BASE_URL } from "../../config/api";
 import { SITE_OPERATOR } from "../siteIdentity";
 import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
@@ -10,7 +11,7 @@ import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
  * No fabricated uptime percentages.
  */
 export default function StatusPage() {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [api, setApi] = useState({ state: "checking", detail: "" });
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function StatusPage() {
         if (res.ok) {
           setApi({
             state: "ok",
-            detail: body?.status || body?.ok ? "API reachable" : `HTTP ${res.status}`,
+            detail: body?.status || body?.ok ? t("API reachable") : `HTTP ${res.status}`,
           });
         } else {
           setApi({ state: "degraded", detail: `HTTP ${res.status}` });
@@ -34,7 +35,7 @@ export default function StatusPage() {
         if (cancelled) return;
         setApi({
           state: "unreachable",
-          detail: err?.name === "AbortError" ? "Timed out" : "Network error",
+          detail: err?.name === "AbortError" ? t("Request timed out") : t("Network error"),
         });
       }
     })();
@@ -43,7 +44,11 @@ export default function StatusPage() {
       clearTimeout(timer);
       ctrl.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // UI audit #23: the date follows the page language ("25 Ağustos 2026").
+  const updated = formatDate(`${SITE_OPERATOR.lastUpdatedIso}T12:00:00Z`, locale, { dateStyle: "long" }) || SITE_OPERATOR.lastUpdatedLabel;
 
   const crumbs = [
     { label: "Home", to: "/" },
@@ -66,41 +71,48 @@ export default function StatusPage() {
       </nav>
       <h1>{t("Descall service status")}</h1>
       <p className="mkt-lead">
-        {t(SITE_OPERATOR.statusNote)} {t("Last updated")}: {SITE_OPERATOR.lastUpdatedLabel}.
+        {t(SITE_OPERATOR.statusNote)} {t("Last updated")}: {updated}.
       </p>
 
-      <div className={`mkt-status-card is-${badge}`} role="status">
-        <strong>{t("API / realtime")}</strong>
-        <span>
-          {api.state === "checking" && t("Checking…")}
-          {api.state === "ok" && t("Operational")}
-          {api.state === "degraded" && t("Degraded")}
-          {api.state === "unreachable" && t("Unreachable from this browser")}
-          {api.detail ? `, ${api.detail}` : ""}
-        </span>
-      </div>
-
-      <ul className="mkt-status-list">
-        <li>
-          <strong>{t("Product stage")}</strong>: {t("Beta")}
-        </li>
-        <li>
-          <strong>{t("Transport security")}</strong>: TLS / DTLS-SRTP
-        </li>
-        <li>
-          <strong>{t("Operator")}</strong>: {SITE_OPERATOR.operatorName} · {SITE_OPERATOR.country}
-        </li>
-        <li>
-          <strong>{t("Support")}</strong>:{" "}
-          <a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a>
-        </li>
-        <li>
-          <strong>GitHub</strong>:{" "}
-          <a href={SITE_OPERATOR.githubUrl} rel="noopener noreferrer" target="_blank">
-            {SITE_OPERATOR.githubUrl.replace("https://", "")}
-          </a>
-        </li>
-      </ul>
+      {/* UI audit #23: one two-column glass list, the live API state is its
+          first row (status dot), no hand-typed ':' separators. */}
+      <dl className="mkt-status-list">
+        <div className={`mkt-status-row is-api is-${badge}`}>
+          <dt>{t("API / realtime")}</dt>
+          <dd role="status">
+            <span className="mkt-status-dot" aria-hidden="true" />
+            {api.state === "checking" && t("Checking…")}
+            {api.state === "ok" && t("Operational")}
+            {api.state === "degraded" && t("Degraded")}
+            {api.state === "unreachable" && t("Unreachable from this browser")}
+            {api.detail ? ` · ${api.detail}` : ""}
+          </dd>
+        </div>
+        <div className="mkt-status-row">
+          <dt>{t("Product stage")}</dt>
+          <dd>{t("Beta")}</dd>
+        </div>
+        <div className="mkt-status-row">
+          <dt>{t("Transport security")}</dt>
+          <dd>TLS / DTLS-SRTP</dd>
+        </div>
+        <div className="mkt-status-row">
+          <dt>{t("Operator")}</dt>
+          <dd>{SITE_OPERATOR.operatorName} · {SITE_OPERATOR.country}</dd>
+        </div>
+        <div className="mkt-status-row">
+          <dt>{t("Support")}</dt>
+          <dd><a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a></dd>
+        </div>
+        <div className="mkt-status-row">
+          <dt>GitHub</dt>
+          <dd>
+            <a href={SITE_OPERATOR.githubUrl} rel="noopener noreferrer" target="_blank">
+              {SITE_OPERATOR.githubUrl.replace("https://", "")}
+            </a>
+          </dd>
+        </div>
+      </dl>
 
       <p className="seo-note">
         <Link to="/security">{t("Security details")}</Link>

@@ -1156,6 +1156,8 @@ export const nested = {
 };
 
 export const phrases = {
+  "API reachable": "API reachable",
+  "Request timed out": "Request timed out",
   "Close": "Close",
   "You": "You",
   "Primary navigation": "Primary navigation",
