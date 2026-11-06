@@ -30,7 +30,7 @@ import VotersSheet from "../polls/VotersSheet";
 import PollCreateSheet from "../polls/PollCreateSheet";
 import { useCompact } from "../polls/dsxShared";
 import { bindPollSocket, editPollNow } from "../../lib/pollStore";
-import { BarChart3, Hash } from "../ui/Icon.jsx";
+import { BarChart3, Hash, AlertCircle, RefreshCw } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
@@ -175,6 +175,8 @@ export default function MessageList({
   activeServer = null,
   canManageMessages = false,
   loading = false,
+  loadError = false,
+  onRetryLoad,
   unreadCount = 0,
   onReply,
   searchQuery = "",
@@ -488,6 +490,21 @@ export default function MessageList({
     flush();
     return grouped;
   }, [searchedMessages, unreadCount, isSearching, t]);
+
+  if (loading && loadError) {
+    return (
+      <div className="message-list is-load-error" ref={listRef} role="alert">
+        <EmptyState
+          className="is-compact"
+          illustration="none"
+          icon={AlertCircle}
+          title={t("uah.dm.errorTitle")}
+          body={t("uah.dm.errorBody")}
+          primary={onRetryLoad ? { label: t("Try again"), icon: RefreshCw, action: onRetryLoad } : undefined}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

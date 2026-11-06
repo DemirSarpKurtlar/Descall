@@ -122,31 +122,24 @@ function buildOpBody(form, { current = null, now = Date.now() } = {}) {
   if (op === "change_plan" && current?.plan_id && current.plan_id === plan) return { ok: false, error: "samePlan" };
 
   if (op === "grant") {
-    const start = toDate(form.start) || toDate(now);
-    const end = computeEnd({ ...form.duration, start }, now);
+    // The server has no start date: a grant always starts when it is applied. "days" lets the
+    // server count from its own clock; an exact end date is sent as ends_at.
+    const end = computeEnd({ ...form.duration, start: now }, now);
     if (!end.ok) return end;
     if (end.unlimited) {
       body.unlimited = true;
     } else {
       body.unlimited = false;
-      // A grant starting now sends days (the server counts from its clock); a
-      // different start or an exact date sends the end itself.
-      const startsNow = Math.abs(start.getTime() - toDate(now).getTime()) < 60e3;
-      if (form.duration.mode !== "date" && startsNow) body.days = end.days;
-      else body.ends_at = end.endsAt.toISOString();
+      if (form.duration.mode === "date") body.ends_at = end.endsAt.toISOString();
+      else body.days = end.days;
     }
-    if (!(Math.abs(start.getTime() - toDate(now).getTime()) < 60e3)) body.starts_at = start.toISOString();
   } else if (op === "extend") {
     if (form.duration?.mode === "unlimited") return { ok: false, error: "extendUnlimited" };
-    if (form.duration?.mode === "date") {
-      const end = computeEnd({ ...form.duration, start: extendBase(current, now) }, now);
-      if (!end.ok) return end;
-      body.ends_at = end.endsAt.toISOString();
-    } else {
-      const days = parseDays(form.duration?.days);
-      if (days == null) return { ok: false, error: "days" };
-      body.days = days;
-    }
+    // The server extends by whole days only; an exact new end is "set_end".
+    if (form.duration?.mode === "date") return { ok: false, error: "extendDate" };
+    const days = parseDays(form.duration?.days);
+    if (days == null) return { ok: false, error: "days" };
+    body.days = days;
   } else if (op === "set_end") {
     if (form.duration?.mode === "unlimited") return { ok: false, error: "useUnlimited" };
     const end = computeEnd({ ...form.duration, start: now }, now);
@@ -210,6 +203,9 @@ export function buildCampaignPayload(form) {
   const value = form.kind === "free_membership" ? null : optInt(form.value, 1);
   if (value && !value.ok) return { ok: false, error: "value" };
   if (form.kind === "percent" && value?.value != null && value.value > 100) return { ok: false, error: "value" };
+  if (form.kind !== "free_membership" && value?.value == null) return { ok: false, error: "value" };
+  const currency = String(form.currency || "").trim().toUpperCase();
+  if (form.kind === "fixed" && !/^[A-Z]{3}$/.test(currency)) return { ok: false, error: "currency" };
   return {
     ok: true,
     body: {
@@ -218,6 +214,7 @@ export function buildCampaignPayload(form) {
       plan_id: planLimit,
       duration_days: duration,
       value: value ? value.value : null,
+      currency: form.kind === "fixed" ? currency : null,
       starts_at: start ? start.toISOString() : null,
       ends_at: end ? end.toISOString() : null,
       total_limit: total.value,
@@ -417,7 +414,7 @@ export function normalizeAnalytics(raw) {
   const camps = pick(r, "campaigns", "campaign_performance");
   return {
     acquisitions: seriesRows(pick(r, "acquisitions", "new"), ["plus", "ultra"]),
-    active: seriesRows(pick(r, "active", "active_per_day", "active_series"), ["plus", "ultra"]),
+    active: seriesRows(pick(r, "active", "active_per_day", "active_series"), ["total"]),
     planSplit: pair(pick(r, "plan_split", "planSplit"), "plus", "ultra"),
     cancelRenew,
     freePaid: pair(pick(r, "free_paid", "freePaid"), "free", "paid"),

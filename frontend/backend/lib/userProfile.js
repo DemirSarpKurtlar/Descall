@@ -4,6 +4,7 @@
  */
 const supabase = require("../db/supabase");
 const { friends, presence, usernameById, lastSeenByUserId } = require("../runtime/sharedState");
+const premiumBadges = require("./premium/badges");
 
 /** userId -> profile row (+ optional equipped* cosmetics) */
 const userProfileById = new Map();
@@ -148,6 +149,8 @@ function toPublicUser(profile) {
     equippedReactionBurst: profile.equippedReactionBurst || null,
     equippedCallOverlay: profile.equippedCallOverlay || null,
     equippedProfileColor: profile.equippedProfileColor || null,
+    // Descall+ / Ultra badge from the batched cache; left out (undefined) while unknown.
+    premium_plan: premiumBadges.cachedPlan(profile.id),
   };
 }
 
@@ -369,6 +372,7 @@ function enrichFriendEntry(userId) {
     is_admin: admin,
     isAdmin: admin,
     ...pickChatCosmetics(cached),
+    premium_plan: premiumBadges.cachedPlan(userId),
   };
 }
 

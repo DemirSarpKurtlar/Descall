@@ -1,0 +1,20 @@
+{
+  "history": [
+    { "title": "Ayşe", "body": "Akşam maça geliyor musun?", "data": { "type": "dm", "fromId": "u1", "from": "Ayşe" }, "category": "dm" },
+    { "title": "Mert", "body": "@demir yeni harita çıktı", "data": { "type": "mention", "from": "Mert", "serverId": "s1", "channelId": "c1" }, "category": "mention" },
+    { "title": "Hafta Sonu Ekibi", "body": "Zeynep: Ben hazırım", "data": { "type": "group", "groupId": "g1" }, "category": "group" }
+  ],
+  "settings": {
+    "mic_presets": { "gain": 110, "presets": [{ "id": "preset:night", "name": "Gece", "gain": 90, "noiseMode": "strong", "echoCancellation": true, "autoGainControl": true }] },
+    "audio_device_profiles": { "profiles": [
+      { "id": "profile:desk", "name": "Masa", "input": { "deviceId": "a", "label": "Yeti Stereo Microphone" }, "output": { "deviceId": "b", "label": "Speakers (Realtek)" }, "presetId": "builtin:voice" },
+      { "id": "profile:game", "name": "Oyun", "input": { "deviceId": "c", "label": "Headset (Jabra Evolve 65)" }, "output": null, "presetId": "builtin:noisy" }
+    ], "activeId": "profile:game" },
+    "auto_device_switch": { "enabled": true, "headsetFirst": true, "inputOrder": [{ "deviceId": "c", "label": "Headset (Jabra Evolve 65)" }, { "deviceId": "a", "label": "Yeti Stereo Microphone" }], "outputOrder": [] },
+    "noise_gate": { "enabled": true, "thresholdDb": -48, "hysteresisDb": 10, "holdMs": 120 },
+    "global_mute": { "enabled": true, "deafen": true },
+    "global_ptt": { "enabled": true, "releaseDelayMs": 150, "toggleTimeoutMs": 10000, "forceToggle": false },
+    "quick_launcher": { "enabled": true },
+    "media_keys": { "enabled": true }
+  }
+}

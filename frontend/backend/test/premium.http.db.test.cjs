@@ -125,7 +125,7 @@ async function run() {
     r = await call("GET", "/api/admin/premium/dashboard");
     assert(r.status === 200 && r.body.active_total === 2 && r.body.active_plus === 2 && r.body.paid_count === null, `dashboard: ${JSON.stringify(r.body)}`);
     r = await call("GET", "/api/admin/premium/analytics?bucket=week");
-    assert(r.status === 200 && Array.isArray(r.body.series) && r.body.bucket === "week", "analytics");
+    assert(r.status === 200 && Array.isArray(r.body.acquisitions) && Array.isArray(r.body.active) && r.body.bucket === "week", "analytics");
 
     // campaign redeem (campaign rows are written with SQL here; the CRUD route goes through PostgREST)
     one("INSERT INTO premium_campaigns (code, kind, plan_id, duration_days, total_limit) VALUES ('WELCOME7', 'free_membership', 'plus', 7, 1)");

@@ -23,6 +23,8 @@ function buildPresenceEntry(id, { getCachedPublicUser, publicPresenceStatus }) {
     updated_at: cached?.updated_at || null,
     is_admin: isAdmin,
     isAdmin,
+    // Descall+ / Ultra badge (cached by lib/premium/badges.js); absent while unknown.
+    premium_plan: cached?.premium_plan,
   };
 }
 

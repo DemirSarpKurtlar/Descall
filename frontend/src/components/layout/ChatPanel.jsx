@@ -47,6 +47,7 @@ function glassGroupInitials(name, locale) {
 }
 
 export default function ChatPanel({
+  historyLoadError = false,
   onGroupAvatarChanged,
   onGroupLeft,
   onGroupRenamed,
@@ -170,6 +171,7 @@ export default function ChatPanel({
   // DM with someone I blocked: no messages or calls (the server enforces it too).
   const dmBlockedByMe = Boolean(activeDmUser?.id && blockedIds.has(String(activeDmUser.id)));
   const composerDisabled =
+    historyLoadError ||
     Boolean(activeTimeout?.timedOut) ||
     dmBlockedByMe ||
     (!activeDmUser && !activeGroup && !canSendChannel);
@@ -846,7 +848,7 @@ export default function ChatPanel({
               }}
             />
           ) : (
-          <div className="composer-container">
+          <div className={`composer-container${historyLoadError ? " is-history-error" : ""}`} aria-disabled={historyLoadError || undefined}>
             {/* Typing pill rides on the composer (absolute, bottom: 100%), so it
                 always sits just above it, even when the composer is
                 position: fixed (iOS glass capsule, keyboard lift, safe area). */}

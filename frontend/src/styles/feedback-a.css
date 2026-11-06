@@ -105,6 +105,13 @@ html.glass-ui .feedback-modal.fbk {
   box-shadow: none;
 }
 .fbk-kind-hint { margin: -4px 2px 0; font-size: 12.5px; color: var(--fbk-ink-2); }
+/* Light theme (#64 made the segment track light): the kind segment keeps the
+   brand selected state there too. */
+:root[data-theme="light"] .feedback-modal.fbk .fbk-seg.fbk-kind-seg > button.is-on {
+  background: var(--fbk-brand, #587AF6);
+  color: #fff;
+  box-shadow: none;
+}
 
 /* Type cards */
 .fbk-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

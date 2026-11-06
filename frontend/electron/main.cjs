@@ -58,18 +58,25 @@ const {
   normalizeBootReport,
 } = require('./bootWatchdog.cjs');
 const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
+const { encryptText, readEncryptedFile, looksLikeJwt } = require('./tokenCrypto.cjs');
+const { readClipboardImagePng } = require('./clipboardImage.cjs');
 const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
+const premiumNotify = require('./premium/notifyHooks.cjs');
+const { applyToastIdentity } = require('./premium/toastIdentity.cjs');
 // Host hooks for premium modules that need main.cjs internals (multi_account partitions).
 const premiumHooks = require('./premium/hostHooks.cjs');
 
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+// Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
+// toast activator CLSID, both also written on the NSIS Start Menu shortcut.
+applyToastIdentity(app, { log });
 
 // Standard scheme so packaged pages can call https APIs with webSecurity on.
 // file:// cannot. Register before ready.
@@ -270,24 +277,24 @@ onLocaleChange(() => {
   refreshOverlayLanguage();
 });
 
-trustedOn('secure-token:get', (event) => {
+// Electron 45: async safeStorage (tokenCrypto.cjs; the sync methods go away in 46). These stay
+// sendSync channels because secureToken.get() is synchronous in the renderer: the reply is
+// sent when returnValue is assigned, so the renderer waits the few ms the key store takes.
+trustedOn('secure-token:get', async (event) => {
   try {
     const file = tokenFilePath(event);
     if (!fs.existsSync(file)) {
       event.returnValue = null;
       return;
     }
-    const buf = fs.readFileSync(file);
-    event.returnValue = safeStorage.isEncryptionAvailable()
-      ? safeStorage.decryptString(buf)
-      : buf.toString('utf8');
+    event.returnValue = await readEncryptedFile(safeStorage, fs, file, { legacyPlain: looksLikeJwt });
   } catch (err) {
     log.warn('[secure-token] read failed:', err?.message || err);
     event.returnValue = null;
   }
 }, { sync: true, refused: null });
 
-trustedOn('secure-token:set', (event, token) => {
+trustedOn('secure-token:set', async (event, token) => {
   try {
     const file = tokenFilePath(event);
     const value = String(token || '');
@@ -296,10 +303,7 @@ trustedOn('secure-token:set', (event, token) => {
       event.returnValue = true;
       return;
     }
-    const buf = safeStorage.isEncryptionAvailable()
-      ? safeStorage.encryptString(value)
-      : Buffer.from(value, 'utf8');
-    fs.writeFileSync(file, buf);
+    await fs.promises.writeFile(file, await encryptText(safeStorage, value));
     event.returnValue = true;
   } catch (err) {
     log.warn('[secure-token] write failed:', err?.message || err);
@@ -885,8 +889,8 @@ function resolveColdStart() {
   } catch (_) { /* before ready, or the platform has no login-item API */ }
   coldStartDecision = decideColdStart({
     argv: process.argv,
+    // wasOpenedAsHidden was removed in Electron 44 (it only worked on macOS 12 and older).
     wasOpenedAtLogin: Boolean(login.wasOpenedAtLogin),
-    wasOpenedAsHidden: Boolean(login.wasOpenedAsHidden),
     backgroundMode: startInBackgroundMode(),
     updaterRelaunch: consumeUpdaterRelaunch(),
   });
@@ -1045,8 +1049,10 @@ function runBootSmoke() {
   const started = Date.now();
   const win = mainWindow;
   if (!win || win.isDestroyed()) { console.error('[smoke-boot] FAIL no main window'); app.exit(21); return; }
-  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
-    const message = String(e?.message ?? legacyMessage ?? '');
+  // Event object only (level / message on the event): the positional arguments are deprecated
+  // and Electron 45 warns once a listener declares them.
+  win.webContents.on('console-message', (e) => {
+    const message = String(e?.message ?? '');
     if (isInlineCspViolation(message)) {
       smokeCspInlineBlocked += 1;
       console.error(`[smoke-boot] CSP blocked: ${message.slice(0, 300)}`);
@@ -1637,9 +1643,9 @@ function createMainWindow() {
   }
 
   // Renderer warnings/errors and [boot] lines go to main.log (evidence for stuck starts).
-  win.webContents.on('console-message', (e, legacyLevel, legacyMessage) => {
-    const level = e?.level ?? legacyLevel;
-    const message = String(e?.message ?? legacyMessage ?? '');
+  win.webContents.on('console-message', (e) => {
+    const level = e?.level;
+    const message = String(e?.message ?? '');
     const isWarn = level === 'warning' || level === 'error' || level === 2 || level === 3;
     if (!isWarn && !message.startsWith('[boot]')) return;
     if (rendererBoot.painted && !isWarn) return;
@@ -2128,13 +2134,60 @@ function mainWindowInFront() {
   }
 }
 
-function showAppNotification({ title, options = {} } = {}) {
+// Native OS toasts kept referenced until closed (otherwise GC drops the click handler).
+const liveNativeToasts = new Set();
+function showNativeToast({ title, body, tag, data, silent }) {
+  try {
+    const { Notification } = require('electron');
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(data?.from || title || 'Descall').slice(0, 120), body: String(data?.preview || body || '').slice(0, 300), silent });
+    liveNativeToasts.add(n);
+    n.on('click', () => {
+      showMainWindow();
+      mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+    });
+    n.on('close', () => liveNativeToasts.delete(n));
+    n.on('failed', () => liveNativeToasts.delete(n));
+    n.show();
+    if (liveNativeToasts.size > 20) liveNativeToasts.delete(liveNativeToasts.values().next().value);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function showAppNotification(payload = {}) {
+  // Descall+ modules may decorate (quick reply) or skip a toast.
+  const hooked = premiumNotify.run(payload);
+  if (!hooked) return null;
+  const { title, options = {} } = hooked;
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
   // Descall in front: the in-app UI (message list, incoming call card) is
   // already showing this. A toast on top would be a duplicate.
   if (mainWindowInFront() && (isCall || !requireInteraction)) return null;
+
+  // Descall+ quick reply: a DM becomes a native toast with an inline reply
+  // field where the OS supports it; otherwise the capsule below is shown.
+  if (hooked.quickReply && !isCall) {
+    const shown = premiumNotify.showQuickReply({
+      title: data?.from || title,
+      body: data?.preview || body,
+      conv: hooked.quickReply.conv,
+      onClick: () => {
+        showMainWindow();
+        mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+      },
+    });
+    if (shown) return null;
+  }
+
+  // Descall+ notification profiles: "toast" style uses the OS notification
+  // instead of a capsule (the renderer only sends it for entitled users).
+  if (options.style === 'toast' && !isCall && showNativeToast({ title, body, tag, data, silent: Boolean(options.silent) })) {
+    return null;
+  }
 
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;
@@ -2240,17 +2293,9 @@ trustedHandle('show-notification', (_event, payload = {}) => {
 });
 
 // IPC handlers
-// Composer paste fallback: clipboard image as PNG bytes (null when none).
-trustedHandle('clipboard:read-image', () => {
-  try {
-    const img = clipboard.readImage();
-    if (!img || img.isEmpty()) return null;
-    const png = img.toPNG();
-    return png.length > 25 * 1024 * 1024 ? null : png;
-  } catch {
-    return null;
-  }
-});
+// Composer paste fallback: clipboard image as PNG bytes (null when none). Electron 44 removed
+// clipboard.readImage(); clipboardImage.cjs reads it through the async clipboard.read().
+trustedHandle('clipboard:read-image', () => readClipboardImagePng({ clipboard, nativeImage }));
 
 ipcMain.handle('app-version', () => {
   return app.getVersion();

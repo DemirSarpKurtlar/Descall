@@ -19,9 +19,30 @@ function socketHasFeature(socket, feature) {
   return entitlements.hasFeature(userId, feature);
 }
 
+/**
+ * The badge others see: drop the cached plan, read it again, and refresh the member's roster row
+ * (presence fan-out) so online friends and server members see the change without a reload.
+ */
+function refreshBadge(userId) {
+  if (!userId) return;
+  const badges = require("../lib/premium/badges");
+  badges.invalidate(userId);
+  badges
+    .plansFor([userId])
+    .then(() => {
+      try {
+        require("../runtime/presenceFanoutInstance").markPresenceDirty(String(userId));
+      } catch {
+        /* no fan-out in this process */
+      }
+    })
+    .catch(() => {});
+}
+
 /** Tell the account's sockets that its membership changed (clients refetch /api/premium/me). */
 function emitPremiumUpdated(io, userId, payload = {}) {
   entitlements.invalidate(userId);
+  refreshBadge(userId);
   if (!io || !userId) return;
   try {
     io.to(`user:${userId}`).emit("premium:updated", { userId: String(userId), ...payload });

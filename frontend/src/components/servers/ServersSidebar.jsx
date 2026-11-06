@@ -30,6 +30,7 @@ import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { BLANK_TEMPLATE, SERVER_TEMPLATES, getTemplateCard } from "../../lib/serverTemplatesCatalog";
 import ServerRolesModal from "./ServerRolesModal";
+import EmptyState from "../ui/EmptyState";
 import ServerInviteModal from "./ServerInviteModal";
 import JoinServerModal from "./JoinServerModal";
 import ServerModerationModal from "./ServerModerationModal";
@@ -40,7 +41,8 @@ import ServerSettingsModal from "./ServerSettingsModal";
 import { OwnerLeaveSheet, OwnershipTransferModal } from "./OwnershipTransfer";
 import { ChannelListSkeleton, ServerListSkeleton } from "../ui/Skeleton";
 import { ServerIcon } from "./ServerIcon";
-import GlassCheckbox from "../ui/GlassCheckbox";
+import { S3Toggle } from "../settings/SettingsV3";
+import GlassActionMenu from "../ui/GlassActionMenu";
 import PullToRefresh from "../ui/PullToRefresh";
 import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
@@ -70,6 +72,7 @@ const NOTIF_LEVELS = [
 export default function ServersSidebar({
   servers = [],
   serversLoaded = false,
+  loadError = false,
   serverFolders = [],
   onServerFoldersChange,
   onMoveServerToFolder,
@@ -114,6 +117,9 @@ export default function ServersSidebar({
   const [showModeration, setShowModeration] = useState(null); // 'bans' | 'audit' | null
   const [menuOpen, setMenuOpen] = useState(false);
   const serverMenuBtnRef = useRef(null);
+  // UI audit #43: on the phone the header keeps back + name + meta; the
+  // create / reorder / server tools live in one "more" menu.
+  const [phoneToolsOpen, setPhoneToolsOpen] = useState(false);
   const [dragChannelId, setDragChannelId] = useState(null);
   const [dragOverChannelId, setDragOverChannelId] = useState(null);
   const [dragServerId, setDragServerId] = useState(null);
@@ -1012,6 +1018,47 @@ export default function ServersSidebar({
                 {activeServer.isOwner ? ` · ${t("Owner")}` : ""}
               </span>
             </div>
+            {hubMode === "phone" ? (
+            <div className="sidebar-actions is-phone-tools">
+              {channelReorderMode ? (
+                <button
+                  type="button"
+                  className="icon-btn active"
+                  title={t("Done")} aria-label={t("Done")}
+                  onClick={() => setChannelReorderMode(false)}
+                >
+                  <Check size={18} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  ref={serverMenuBtnRef}
+                  className="icon-btn g-server-menu-btn"
+                  title={t("Server menu")} aria-label={t("Server menu")}
+                  aria-haspopup="menu"
+                  aria-expanded={phoneToolsOpen}
+                  onClick={() => setPhoneToolsOpen((v) => !v)}
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+              )}
+              <GlassActionMenu
+                open={phoneToolsOpen}
+                anchorRef={serverMenuBtnRef}
+                onClose={() => setPhoneToolsOpen(false)}
+                ariaLabel={t("Server menu")}
+                sections={[
+                  canManageChannels
+                    ? [
+                        { id: "create", label: t("Create channel"), icon: Plus, onSelect: () => { setPhoneToolsOpen(false); setMenuOpen(false); setChannelModal({ mode: "create", defaultType: "text" }); } },
+                        { id: "reorder", label: t("Reorder channels"), icon: GripVertical, onSelect: () => { setPhoneToolsOpen(false); setChannelReorderMode(true); } },
+                      ]
+                    : [],
+                  [{ id: "server", label: t("Server menu"), icon: Settings, onSelect: () => { setPhoneToolsOpen(false); setMenuOpen(true); } }],
+                ].filter((group) => group.length)}
+              />
+            </div>
+            ) : (
             <div className="sidebar-actions">
               {canManageChannels && (
                 <button
@@ -1048,6 +1095,7 @@ export default function ServersSidebar({
                 {glassShell ? <ChevronRight size={18} /> : <MoreHorizontal size={18} />}
               </button>
             </div>
+            )}
           </div>
 
           <ServerMenuFrame glass={Boolean(glassShell)} open={!hubMode && menuOpen} onClose={() => setMenuOpen(false)} anchorRef={serverMenuBtnRef}>
@@ -1762,6 +1810,8 @@ export default function ServersSidebar({
           </>
         )}
 
+        {/* UI audit #60: counts are unknown after a failed load, so no "0 / 10". */}
+        {loadError && servers.length === 0 ? null : (
         <div className="server-owned-banner">
           {t("Owned {owned} / {max}", { owned: ownedCount, max: maxOwned })}
           {!isMobile ? (
@@ -1770,34 +1820,31 @@ export default function ServersSidebar({
             </span>
           ) : null}
         </div>
+        )}
 
         <div className="sidebar-content">
           <PullToRefresh enabled={isMobile && !serverListReorderMode} onRefresh={() => onRefresh?.()}>
           {!serversLoaded ? (
             <ServerListSkeleton count={6} label={t("Loading servers")} />
+          ) : servers.length === 0 && loadError ? (
+            <EmptyState
+              className="is-compact server-list-state is-error"
+              illustration="none"
+              icon={Server}
+              title={t("uah.servers.errorTitle")}
+              body={t("uah.servers.errorBody")}
+              primary={{ label: t("Try again"), icon: RefreshCw, action: () => onRefresh?.() }}
+            />
           ) : servers.length === 0 ? (
-            <div className="server-empty-state">
-              <Server size={36} strokeWidth={1.5} />
-              <h3>{t("No servers yet")}</h3>
-              <p>{t("Create a server for channels, roles, and voice, or join with an invite.")}</p>
-              <button
-                type="button"
-                className="server-primary-btn"
-                disabled={!canCreate}
-                onClick={() => setShowCreate(true)}
-              >
-                <Plus size={16} />
-                {t("Create server")}
-              </button>
-              <button
-                type="button"
-                className="server-ghost-btn"
-                onClick={() => setShowJoin(true)}
-              >
-                <LogIn size={16} />
-                {t("Join Server")}
-              </button>
-            </div>
+            <EmptyState
+              className="is-compact server-list-state"
+              illustration="none"
+              icon={Server}
+              title={t("No servers yet")}
+              body={t("uah.servers.emptyBody")}
+              primary={canCreate ? { label: t("Create server"), icon: Plus, action: () => setShowCreate(true) } : undefined}
+              secondary={{ label: t("Join Server"), icon: LogIn, action: () => setShowJoin(true) }}
+            />
           ) : (
             <div className="server-list-grouped">
               {groupedServers.folders.map((folder) => {
@@ -2497,6 +2544,16 @@ function buildChannelTree(channels) {
   return tree;
 }
 
+const SLOWMODE_PRESETS = [0, 5, 10, 30, 60, 300, 3600];
+
+/** "5 sn", "1 dk", "1 sa" (UI audit #34: no English s / m / h units). */
+function formatSlowmode(seconds, t) {
+  const n = Number(seconds) || 0;
+  if (n >= 3600 && n % 3600 === 0) return t("uah.slow.hours", { n: n / 3600 });
+  if (n >= 60 && n % 60 === 0) return t("uah.slow.minutes", { n: n / 60 });
+  return t("uah.slow.seconds", { n });
+}
+
 function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null, categories = [], onClose, onSubmit }) {
   const t = useT();
   const isEdit = mode === "edit";
@@ -2591,7 +2648,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
         </p>
 
         {!typeLocked && (
-          <div className="server-type-toggle" role="group" aria-label={t("Channel type")}>
+          <div className="server-type-toggle is-segmented" role="radiogroup" aria-label={t("Channel type")}>
             {[
               { id: "text", label: t("Text"), Icon: Hash },
               { id: "announcement", label: t("Announcement"), Icon: Megaphone },
@@ -2602,11 +2659,13 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
               <button
                 key={id}
                 type="button"
+                role="radio"
+                aria-checked={type === id}
                 className={`server-type-btn ${type === id ? "active" : ""}`}
                 onClick={() => setType(id)}
               >
-                <Icon size={15} />
-                {label}
+                <Icon size={16} aria-hidden="true" />
+                <span>{label}</span>
               </button>
             ))}
           </div>
@@ -2621,8 +2680,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
             placeholder={
               type === "text" || type === "announcement"
                 ? type === "announcement"
-                  ? "announcements"
-                  : "general"
+                  ? t("uah.channel.announcementsName")
+                  : t("uah.channel.generalName")
                 : type === "stage"
                   ? t("Town hall")
                   : type === "voice"
@@ -2662,59 +2721,36 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
               />
             </label>
 
-            <label className="server-field">
-              <span>{t("Slowmode")}</span>
-              <input
-                type="number"
-                min="0"
-                max="21600"
-                step="1"
-                value={Number(slowmodeSeconds) || 0}
-                onChange={(e) => {
-                  const next = Math.floor(Number(e.target.value));
-                  setSlowmodeSeconds(Number.isFinite(next) ? Math.max(0, Math.min(21600, next)) : 0);
-                }}
-                placeholder="0"
-              />
-            </label>
-            <p className="server-modal-sub" style={{ marginTop: -6, marginBottom: 10 }}>
+            <div className="server-field" role="group" aria-labelledby="server-slowmode-label">
+              <span id="server-slowmode-label">{t("Slowmode")}</span>
+              <div className="server-slowmode-presets is-segmented">
+                {SLOWMODE_PRESETS
+                  .concat(SLOWMODE_PRESETS.includes(Number(slowmodeSeconds) || 0) ? [] : [Number(slowmodeSeconds)])
+                  .map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={(Number(slowmodeSeconds) || 0) === value}
+                      className={(Number(slowmodeSeconds) || 0) === value ? "active" : ""}
+                      onClick={() => setSlowmodeSeconds(value)}
+                    >
+                      {value === 0 ? t("Off") : formatSlowmode(value, t)}
+                    </button>
+                  ))}
+              </div>
+            </div>
+            <p className="server-modal-sub server-slowmode-hint">
               {Number(slowmodeSeconds) > 0
-                ? t("Members must wait {time} between messages.", {
-                    time:
-                      Number(slowmodeSeconds) >= 3600
-                        ? `${Math.round(Number(slowmodeSeconds) / 3600)}h`
-                        : Number(slowmodeSeconds) >= 60
-                          ? `${Math.round(Number(slowmodeSeconds) / 60)}m`
-                          : `${Number(slowmodeSeconds)}s`,
-                  })
+                ? t("Members must wait {time} between messages.", { time: formatSlowmode(Number(slowmodeSeconds), t) })
                 : t("Off, members can send freely.")}
             </p>
-            <label className="server-check-row">
-              <GlassCheckbox
+            <div className="server-toggle-row">
+              <span id="server-nsfw-label">{t("Age-restricted (NSFW) channel")}</span>
+              <S3Toggle
                 checked={Boolean(nsfw)}
-                onChange={(e) => setNsfw(e.target.checked)}
+                onChange={(next) => setNsfw(next)}
+                label={t("Age-restricted (NSFW) channel")}
               />
-              <span>{t("Age-restricted (NSFW) channel")}</span>
-            </label>
-            <div className="server-slowmode-presets" role="group" aria-label={t("Slowmode presets")}>
-              {[
-                [0, t("Off")],
-                [5, "5s"],
-                [10, "10s"],
-                [30, "30s"],
-                [60, "1m"],
-                [300, "5m"],
-                [3600, "1h"],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={Number(slowmodeSeconds) === value ? "active" : ""}
-                  onClick={() => setSlowmodeSeconds(value)}
-                >
-                  {label}
-                </button>
-              ))}
             </div>
           </>
         )}

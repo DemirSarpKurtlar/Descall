@@ -403,6 +403,8 @@ jobs:
           grep -q "premium.db.test.cjs: ok" /tmp/pm.log
           node test/premium.http.db.test.cjs | tee /tmp/ph.log
           grep -q "premium.http.db.test.cjs: ok" /tmp/ph.log
+          node test/premiumAdmin.e2e.db.test.cjs | tee /tmp/pa.log
+          grep -q "premiumAdmin.e2e.db.test.cjs: ok" /tmp/pa.log
           node test/premium.integration.test.cjs
           node lib/premium/features.selftest.cjs
 
