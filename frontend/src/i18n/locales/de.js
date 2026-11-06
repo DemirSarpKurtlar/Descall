@@ -6756,6 +6756,7 @@ export const phrases = {
   "Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally on their device, that recording is outside Descall's control.": "Anrufmedien werden mit WebRTC-Sicherheit (DTLS/SRTP) übertragen. Descall zeichnet Audio, Video und Bildschirmübertragungen von Anrufen niemals auf und speichert sie nicht. Wenn ein Teilnehmer lokal auf seinem Gerät aufzeichnet, liegt diese Aufnahme außerhalb der Kontrolle von Descall.",
   "Call notifications": "Anrufbenachrichtigungen",
   "Call sounds": "Anruftöne",
+  "Call your friends quickly or go back to your recent calls.": "Ruf deine Freunde schnell an oder kehre zu deinen letzten Anrufen zurück.",
   "Called": "Gewählt",
   "Calling...": "Ruft an…",
   "Calling…": "Ruft an…",

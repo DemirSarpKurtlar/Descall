@@ -3,6 +3,7 @@
  * Spread last in tr.js so these win over older duplicate keys.
  */
 export const TR_UI_AUDIT_LOW = {
+  "Call your friends quickly or go back to your recent calls.": "Arkadaşlarını hızlıca ara ya da son aramalarına dön.",
   "Descall is developed by Demir Sarp Kurtlar.": "Descall’ı Demir Sarp Kurtlar geliştiriyor.",
   "The link may be outdated or mistyped. Go back home or check the service status.": "Bağlantı eski ya da yanlış yazılmış olabilir. Ana sayfaya dön ya da hizmet durumuna bak.",
   "The shop is empty right now": "Vitrin şu an boş",

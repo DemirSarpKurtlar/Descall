@@ -820,7 +820,8 @@ html.glass-ui .g-incoming .incoming-call-btn:active {
 
 /* ── Calls tab (19) ── */
 html.glass-ui .app-root.g-shell[data-view="calls"] .g-list-head.g-head-sub ~ .sidebar-content {
-  --g-content-top: calc(var(--g-chrome-top) + 142px);
+  /* chip row (top +118px, 34px tall) plus a 20px gap before the first section label */
+  --g-content-top: calc(var(--g-chrome-top) + 172px);
 }
 
 html.glass-ui .app-sidebar-shell .g-calls.calls-view {
@@ -874,8 +875,8 @@ html.glass-ui .g-call-chips .calls-filter-chip {
 
 html.glass-ui .g-call-chips .calls-filter-chip.active {
   color: #fff;
-  background: rgba(var(--g-brand-rgb), 0.32);
-  box-shadow: inset 0 0 0 0.5px rgba(143, 166, 255, 0.55), 0 4px 12px rgba(var(--g-brand-rgb), 0.25);
+  background: rgb(var(--g-brand-rgb));
+  box-shadow: none;
 }
 
 html.glass-ui .g-calls .calls-section-head {
