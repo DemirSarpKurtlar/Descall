@@ -6,7 +6,7 @@
  * (lib/appearanceSync.js) and cached in localStorage.
  */
 import { useEffect, useState } from "react";
-import ayseUrl from "../../assets/preview-ayse.webp";
+import { avatarColor, avatarInitials } from "../../lib/avatarFallback.js";
 import { useLocale } from "../../context/LocaleContext";
 import { ACCENTS, APPEARANCE_EVENT, FONT_STEPS, readAppearance, resolveBaseTheme } from "../../lib/appearancePrefs";
 import { updateAppearance } from "../../lib/appearanceSync";
@@ -26,8 +26,18 @@ export function useAppearancePrefs() {
   return prefs;
 }
 
+/** Same letter avatar the app draws for people without a photo (no stock portrait). */
+const PREVIEW_NAME = "Ayşe";
 function PreviewAvatar({ size }) {
-  return <span className="s3-av" style={{ width: size, height: size, backgroundImage: `url(${ayseUrl})` }} aria-hidden="true" />;
+  return (
+    <span
+      className="s3-av s3-av-letter"
+      style={{ width: size, height: size, background: avatarColor(PREVIEW_NAME), fontSize: Math.round(size * 0.42) }}
+      aria-hidden="true"
+    >
+      {avatarInitials(PREVIEW_NAME)}
+    </span>
+  );
 }
 
 /** The live preview: real bubble shapes, the chosen accent and text size. */

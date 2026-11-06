@@ -62,6 +62,7 @@ button.s3-row:focus-visible { outline: 2px solid var(--s3-link); outline-offset:
 .s3-tg.on::after { left: 22px; }
 .s3-tg:focus-visible { outline: 2px solid var(--s3-link); outline-offset: 2px; }
 .s3-av { border-radius: 50%; flex: none; background-size: cover; background-position: center; display: inline-block; }
+.s3-av-letter { display: inline-grid; place-items: center; color: #fff; font-weight: 600; line-height: 1; }
 
 /* ── Settings › Görünüm ── */
 .s3-two { display: grid; grid-template-columns: 1fr 330px; gap: 22px; align-items: start; }
