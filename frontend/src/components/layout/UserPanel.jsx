@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, 
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -889,6 +889,9 @@ const UserPanel = forwardRef(function UserPanel({
   /* ── Notifications ── */
   const [msgNotifications, setMsgNotifications] = useState(stored.msgNotifications !== false);
   const [callNotifications, setCallNotifications] = useState(stored.callNotifications !== false);
+  // Messaging phase 4: mention cards (lib/notificationService read this key already) and message text on cards.
+  const [mentionNotifications, setMentionNotifications] = useState(stored.mentionNotifications !== false);
+  const [notificationPreviews, setNotificationPreviews] = useState(stored.notificationPreviews !== false);
 
   /* ── iPhone push permission (native iOS app only) ── */
   const iosPush = isNativeIosPush();
@@ -955,6 +958,8 @@ const UserPanel = forwardRef(function UserPanel({
       premiumThemeKey: equippedThemeKey,
       msgNotifications,
       callNotifications,
+      mentionNotifications,
+      notificationPreviews,
       msgSounds,
       callSounds,
       selectedAudioIn,
@@ -966,6 +971,8 @@ const UserPanel = forwardRef(function UserPanel({
     equippedThemeKey,
     msgNotifications,
     callNotifications,
+    mentionNotifications,
+    notificationPreviews,
     msgSounds,
     callSounds,
     selectedAudioIn,
@@ -2442,7 +2449,30 @@ const UserPanel = forwardRef(function UserPanel({
                     label={t("Call notifications")}
                   />
                 </SettingRow>
+                <SettingRow
+                  icon={AtSign}
+                  title={t("msg4.notify.mentionSetting")}
+                  description={t("msg4.notify.mentionSettingDesc")}
+                >
+                  <Toggle
+                    value={mentionNotifications}
+                    onChange={setMentionNotifications}
+                    label={t("msg4.notify.mentionSetting")}
+                  />
+                </SettingRow>
+                <SettingRow
+                  icon={Eye}
+                  title={t("msg4.notify.previewSetting")}
+                  description={t("msg4.notify.previewSettingDesc")}
+                >
+                  <Toggle
+                    value={notificationPreviews}
+                    onChange={setNotificationPreviews}
+                    label={t("msg4.notify.previewSetting")}
+                  />
+                </SettingRow>
               </div>
+              <p className="us-row-desc g-activity-footnote">{t("msg4.notify.perChatHint")}</p>
             </section>
 
           </div>

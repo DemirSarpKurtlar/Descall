@@ -75,6 +75,16 @@
 }
 .ms-keys-plus { color: var(--gs-t3); font-size: var(--fs-12); }
 
+/* Notification options: "Muted until …" banner with its unmute action. */
+.ms-muted-banner { align-items: center; }
+.ms-muted-banner span { flex: 1 1 auto; min-width: 0; }
+.ms-muted-banner .gs-text-btn { flex: 0 0 auto; }
+.gs-row .gs-row-icon { flex: 0 0 auto; display: grid; place-items: center; width: 28px; color: var(--gs-t2); }
+
+/* Option lists are buttons, not a text field: no field focus ring around the whole group. */
+.ms-sheet .gs-group:not(:has(input, textarea)):focus-within { box-shadow: inset 0 0 0 0.5px var(--gs-hair); }
+.ms-sheet button.gs-row:focus-visible { outline: none; background: var(--gs-fill-press); }
+
 /* Notification options + schedule: option rows with a trailing check. */
 .ms-option .gs-row-title { font-weight: 500; }
 .ms-option .ms-tick { color: var(--gs-brand); flex: 0 0 auto; }

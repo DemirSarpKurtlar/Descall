@@ -376,7 +376,9 @@ function createNotifyActions(deps = {}) {
     }
     if (recipientActivePeer !== myId) {
       try {
-        if (!(await prefs().isMuted(peerId, myId))) {
+        const np = deps.notifyPrefs || require("./notifyPrefs");
+        const notifyOk = np.allows(await np.levelFor(peerId, "dm", myId), { mention: mentioned });
+        if (notifyOk && !(await prefs().isMuted(peerId, myId))) {
           const preview = text.slice(0, 140);
           const common = {
             body: preview,

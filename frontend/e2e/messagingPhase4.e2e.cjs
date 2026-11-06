@@ -503,6 +503,51 @@ async function runDevice(browser, base, dev) {
       check(await page.evaluate(() => !!document.querySelector('.chat-search-bar input')), 'Ctrl+Shift+F opens chat search');
       await page.keyboard.press('Escape');
     }
+    // --- notification options ---
+    if (want('notify')) {
+      await openChat(page, 'Ayşe');
+      if (dev === 'desktop') {
+        // Right-click the Mert row: its menu has "Bildirimler".
+        await page.evaluate(() => {
+          const el = [...document.querySelectorAll('.dm-name')].find((e) => e.textContent.trim() === 'Mert');
+          const row = el && el.closest('.dm-item');
+          const r = row.getBoundingClientRect();
+          row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + 40, clientY: r.top + 20 }));
+        });
+        await waitFor(page, 'dm menu', () => ({ ok: !!document.querySelector('[data-testid="dm-menu-notify"]') }), null, 4000);
+        await page.click('[data-testid="dm-menu-notify"]');
+      } else {
+        await page.tap('.header-title-block.is-dm');
+        await waitFor(page, 'profile notify row', () => ({ ok: !!document.querySelector('[data-testid="profile-notify-options"]') }), null, 6000);
+        await sleep(500);
+        await page.evaluate(() => { const b = document.querySelector('[data-testid="profile-notify-options"]'); b.scrollIntoView({ block: 'center' }); b.click(); });
+      }
+      await waitFor(page, 'notify sheet', () => ({ ok: !!document.querySelector('[data-testid="notify-sheet"] [data-testid="notify-level-mentions"]') }), null, 5000);
+      await sleep(400);
+      const before = state.events.length;
+      await page.click('[data-testid="notify-level-mentions"]');
+      await sleep(400);
+      const conv = dev === 'desktop' ? MERT.id : AYSE.id;
+      check(state.events.slice(before).some((e) => e.kind === 'notify-pref' && e.convType === 'dm' && e.convId === conv && e.level === 'mentions'), 'choosing "Yalnızca @bahsetmeler" saves it on the server');
+      check(await page.evaluate(() => document.querySelector('[data-testid="notify-level-mentions"]').getAttribute('aria-checked') === 'true'), 'the choice is ticked');
+      await page.click('[data-testid="notify-mute-8h"]');
+      await sleep(400);
+      const muted = await page.evaluate(() => (document.querySelector('[data-testid="notify-muted"]') || {}).textContent || '');
+      check(/kadar sessizde/.test(muted), `"8 saat" shows the muted-until banner (${muted})`);
+      const saved = state.events.filter((e) => e.kind === 'notify-pref').pop();
+      check(saved && saved.mutedUntil && Math.abs(Date.parse(saved.mutedUntil) - Date.now() - 8 * 3600e3) < 120e3, 'the mute ends in 8 hours');
+      await shot(page, `${P}11-notify-options`);
+      await page.keyboard.press('Escape');
+      await sleep(500);
+      if (dev === 'desktop') {
+        const bell = await page.evaluate(() => {
+          const el = [...document.querySelectorAll('.dm-name')].find((e) => e.textContent.trim() === 'Mert');
+          const row = el && el.closest('.conv-row-body, .dm-info');
+          return !!(row && row.querySelector('.conv-row-flags svg'));
+        });
+        check(bell, 'the muted chat shows the bell-off mark in the list');
+      }
+    }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});
     problems.push(`${dev}: ${err && err.message ? err.message : err}`);

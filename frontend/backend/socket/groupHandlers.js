@@ -57,8 +57,10 @@ async function pushGroupMessageToIos({ groupId, groupName, fromId, from, message
       previewKind: isVoice ? "voice" : message?.media_url ? "media" : "text",
       messageId: message?.id || null,
     };
-    const mentioned = memberIds.filter((id) => mentionedUserIds?.has(id));
-    const others = memberIds.filter((id) => !mentionedUserIds?.has(id));
+    // Messaging phase 4: each member's options for this group (all / mentions / none, timed mute).
+    const notifyPrefs = require("../lib/notifyPrefs");
+    const mentioned = await notifyPrefs.filterRecipients(memberIds.filter((id) => mentionedUserIds?.has(id)), "group", groupId, { mention: true });
+    const others = await notifyPrefs.filterRecipients(memberIds.filter((id) => !mentionedUserIds?.has(id)), "group", groupId, { mention: false });
     await Promise.allSettled([
       mentioned.length ? sendIosGroupMentionPush(mentioned, payload) : null,
       others.length ? sendGroupMessagePush(others, payload) : null,

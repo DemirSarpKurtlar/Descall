@@ -35,6 +35,8 @@ import { displayText } from "../../lib/profanity";
 import { localizeListPreview } from "../../lib/listPreview";
 import useConversationDraft from "../../hooks/useConversationDraft";
 import { draftPreview } from "../../lib/messageDrafts";
+import useNotifyLevel from "../../hooks/useNotifyLevel";
+import { openNotifyOptions } from "../../lib/notifyPrefs";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
@@ -1070,6 +1072,7 @@ function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isO
   const preview = displayText(localizeListPreview(dm.lastMessage, t)) || t("No messages yet");
   const typing = glass && /yazıyor|typing/i.test(String(preview));
   const draft = useConversationDraft(isActive || !dm.id ? null : `dm:${dm.id}`);
+  const silenced = useNotifyLevel("dm", dm.id) === "none";
   return (
     <>
       <div className="dm-avatar">
@@ -1093,7 +1096,7 @@ function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isO
             ) : null}
             <span className="conv-row-flags" aria-hidden>
               {dm.pinned ? <Pin size={11} /> : null}
-              {dm.muted ? <BellOff size={11} /> : null}
+              {dm.muted || silenced ? <BellOff size={11} /> : null}
             </span>
           </span>
         </div>
@@ -1323,6 +1326,17 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
       </button>
       <button
         type="button"
+        data-testid="dm-menu-notify"
+        onClick={() => { openNotifyOptions({ convType: "dm", convId: dm.id, name: resolveDisplayName(dm) }); onClose(); }}
+        style={itemStyle}
+        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        <Bell size={14} style={{ color: "var(--text-muted)" }} />
+        {t("msg4.notify.menu")}
+      </button>
+      <button
+        type="button"
         onClick={() => { onAction?.("unread"); onClose(); }}
         style={itemStyle}
         onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-3)"}
@@ -1510,6 +1524,9 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
           {item(t("Rename Group"), Edit3, onRename, { testId: "group-menu-rename" })}
           {item(t("Change Group Photo"), ImagePlus, onChangePhoto, { testId: "group-menu-photo" })}
           {groupAvatarUrl(group) ? item(t("Remove Group Photo"), ImageOff, onRemovePhoto, { testId: "group-menu-remove-photo" }) : null}
+        </div>
+        <div className="grp-menu-section">
+          {item(t("msg4.notify.menu"), Bell, () => openNotifyOptions({ convType: "group", convId: group?.id, name: group?.name }), { testId: "group-menu-notify" })}
         </div>
         <div className="grp-menu-section">
           {item(t("Leave Group"), LogOut, onLeave, { danger: true, testId: "group-menu-leave" })}
@@ -1810,6 +1827,7 @@ function glassGroupInitials(name, locale) {
 function GroupRowContent({ group, unread, timeLabel, preview, isActive = false }) {
   const { t, locale } = useLocale();
   const draft = useConversationDraft(isActive || !group.id ? null : `group:${group.id}`);
+  const silenced = useNotifyLevel("group", group.id) === "none";
   const glass = useGlassUi();
   const members = glass && Array.isArray(group.members) ? group.members.slice(0, 4) : [];
   const memberCount = group.memberCount || group.members?.length || 0;
@@ -1832,7 +1850,7 @@ function GroupRowContent({ group, unread, timeLabel, preview, isActive = false }
             ) : null}
             <span className="conv-row-flags" aria-hidden>
               {group.pinned ? <Pin size={11} /> : null}
-              {group.muted ? <BellOff size={11} /> : null}
+              {group.muted || silenced ? <BellOff size={11} /> : null}
             </span>
           </span>
         </div>

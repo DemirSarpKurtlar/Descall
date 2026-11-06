@@ -3,12 +3,16 @@ import { OPEN_FORWARD_EVENT } from "../../lib/forwardMessage";
 import { storeReceiptsSetting } from "../../lib/readReceipts";
 import { allowedIn, matchShortcut, stepConversation, OPEN_SHORTCUTS_EVENT } from "../../lib/shortcuts";
 import { JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
+import { OPEN_NOTIFY_OPTIONS_EVENT, putPref, replaceAllPrefs } from "../../lib/notifyPrefs";
 import { useToast } from "../../context/ToastContext";
 import { useT } from "../../context/LocaleContext";
 
 // Sheets load on first use (messaging phase 4): none of this is in the first paint.
 const ForwardSheet = lazy(() => import("./ForwardSheet.jsx"));
 const ShortcutsSheet = lazy(() => import("./ShortcutsSheet.jsx"));
+const NotifyOptionsSheet = lazy(() => import("./NotifyOptionsSheet.jsx"));
+
+const api = (path, opts) => import("../../api/authedHttp").then((m) => m.authedRequest(path, opts));
 
 const ROW_SELECTOR = ".dm-item.conv-row, .group-item.conv-row";
 
@@ -44,6 +48,22 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
   const { toast } = useToast();
   const [forward, setForward] = useState({ open: false, message: null });
   const [help, setHelp] = useState({ open: false, mounted: false });
+  const [notify, setNotify] = useState({ open: false, target: null });
+  const socket = getSocket?.() || null;
+
+  // Notification options (messaging phase 4): load mine, follow my other devices, open the sheet.
+  useEffect(() => {
+    api("/api/notify-prefs").then((r) => { if (Array.isArray(r?.prefs)) replaceAllPrefs(r.prefs); }).catch(() => {});
+    const onOpen = (e) => { if (e?.detail?.convId) setNotify({ open: true, target: e.detail }); };
+    window.addEventListener(OPEN_NOTIFY_OPTIONS_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_NOTIFY_OPTIONS_EVENT, onOpen);
+  }, []);
+  useEffect(() => {
+    if (!socket) return undefined;
+    const onUpdate = (pref) => putPref(pref);
+    socket.on("notify-prefs:update", onUpdate);
+    return () => socket.off("notify-prefs:update", onUpdate);
+  }, [socket]);
 
   // Keyboard shortcuts (messaging phase 4, lib/shortcuts): Ctrl+/ help, Alt+↑/↓ chats,
   // Alt+Shift+↑/↓ unread chats, Shift+PageUp first unread, Ctrl+Shift+F search.
@@ -99,6 +119,14 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
           emit={(event, data) => getSocket?.()?.emit(event, data)}
           onClose={() => setForward((f) => ({ ...f, open: false }))}
           onDone={(count) => toast(t("msg4.forward.done", { count }), "success")}
+        />
+      ) : null}
+      {notify.target ? (
+        <NotifyOptionsSheet
+          open={notify.open}
+          target={notify.target}
+          save={(pref) => api("/api/notify-prefs", { method: "PUT", body: pref })}
+          onClose={() => setNotify((n) => ({ ...n, open: false }))}
         />
       ) : null}
       {help.mounted ? <ShortcutsSheet open={help.open} onClose={() => setHelp((h) => ({ ...h, open: false }))} /> : null}

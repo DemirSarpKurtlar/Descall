@@ -183,6 +183,7 @@ import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
+import { allowNotify } from "./lib/notifyPrefs";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -2094,7 +2095,7 @@ export default function App() {
           }));
         }
         if (activeDmRef.current?.id !== convWith) {
-          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted && allowNotify("dm", convWith)) {
             playUiSound("message");
             notificationService.newMessage({
               from: normalizedMsg.from?.username || t("Someone"),
@@ -2299,7 +2300,7 @@ export default function App() {
       if (!isFromMe && isBlockedByMe(normalized.from?.id)) return;
       if (!isFromMe && !isActiveGroup) {
         setGroupUnread((prev) => ({ ...prev, [groupId]: (prev[groupId] || 0) + 1 }));
-        playUiSound("message");
+        if (allowNotify("group", groupId)) playUiSound("message");
         const grp = myGroupsRef.current.find((g) => g.id === groupId);
         notificationService.groupMessage({
           groupName: grp?.name || t("Group"),

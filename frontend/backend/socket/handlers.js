@@ -2,6 +2,7 @@
 
 const { forwardedReplyMeta } = require("../lib/forwardedMessage");
 const { bothShare: bothShareReceipts } = require("../lib/readReceipts");
+const notifyPrefs = require("../lib/notifyPrefs");
 const { checkMessageSend } = require("../lib/platformPolicy");
 const { fanoutDmMessage } = require("../lib/messageFanout");
 const supabase = require("../db/supabase");
@@ -1441,7 +1442,9 @@ function registerSocketHandlers(io) {
       if (recipientActivePeer !== myId) {
         try {
           const muted = await dmPrefs.isMuted(toUserId, myId);
-          if (!muted) {
+          // Messaging phase 4: the recipient's options for this chat (all / mentions / none, timed mute).
+          const notifyOk = notifyPrefs.allows(await notifyPrefs.levelFor(toUserId, "dm", myId), { mention: Boolean(dmMentioned) });
+          if (!muted && notifyOk) {
             const { sendDmMessagePush, sendMentionPush } = require("../lib/webPush");
             // Voice / attachment / empty previews are catalog text, localized per recipient (lib/webPush.js).
             const literalPreview = isVoice || mediaUrl ? "" : String(storedText || text || "").slice(0, 140);
