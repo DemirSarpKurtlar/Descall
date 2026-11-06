@@ -33,6 +33,7 @@ import { getComposerInput, registerComposerInput } from "../../lib/composerFocus
 import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
+import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
 
 
 
@@ -130,6 +131,49 @@ export default function MessageComposer({
   const sendingRef = useRef(false);
 
   messageRef.current = message;
+
+  // Drafts (messaging phase 4): one per conversation, kept across chat
+  // switches, reloads and restarts (lib/messageDrafts). Edit mode never
+  // saves: the field then holds the message being edited, the draft waits
+  // in editStashRef.
+  const draftKey = draftKeyFor({ dmUserId: activeDmUser?.id, groupId: activeGroup?.id, channelId: activeChannel?.id });
+  const draftKeyRef = useRef(null);
+  const draftTimerRef = useRef(0);
+  const flushDraft = useCallback(() => {
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = 0;
+    const key = draftKeyRef.current;
+    if (!key || editIdRef.current) return;
+    writeDraft(key, messageRef.current);
+  }, []);
+  useLayoutEffect(() => {
+    if (me?.id) setDraftOwner(me.id);
+    const prev = draftKeyRef.current;
+    if (prev === draftKey) return;
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = 0;
+    if (prev) {
+      writeDraft(prev, editIdRef.current ? editStashRef.current ?? "" : messageRef.current);
+      // The edit (if any) belongs to the chat we leave: do not restore its stash here.
+      editStashRef.current = null;
+    }
+    draftKeyRef.current = draftKey;
+    setMessage(readDraft(draftKey));
+  }, [draftKey, me?.id]);
+  useEffect(() => {
+    if (editIdRef.current || !draftKeyRef.current) return undefined;
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = window.setTimeout(flushDraft, 250);
+    return undefined;
+  }, [message, flushDraft]);
+  useEffect(() => {
+    const onHide = () => flushDraft();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      flushDraft();
+    };
+  }, [flushDraft]);
 
   useEffect(() => {
     if (!glass) return undefined;

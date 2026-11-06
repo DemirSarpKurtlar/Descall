@@ -181,6 +181,7 @@ const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
 import CallTapCard from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
+import { setDraftOwner } from "./lib/messageDrafts";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -803,6 +804,8 @@ export default function App() {
 
   useEffect(() => {
     myIdRef.current = me?.id ?? null;
+    // Drafts are per account (lib/messageDrafts): the list rows read them before any composer mounts.
+    if (me?.id) setDraftOwner(me.id);
   }, [me?.id]);
 
   useEffect(() => {

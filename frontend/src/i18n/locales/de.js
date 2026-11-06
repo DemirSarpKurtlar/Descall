@@ -7,8 +7,10 @@ import { UAH_DE } from "./uah.de.js";
  */
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_DE } from "./profileMediaPicker.de.js";
+import { MSG4_DE } from "./msg4.de.js";
 export const nested = {
   "amp": AMP_DE,
+  "msg4": MSG4_DE,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {

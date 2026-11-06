@@ -33,6 +33,8 @@ import { openFeedbackModal } from "../../lib/feedbackNudge";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { displayText } from "../../lib/profanity";
 import { localizeListPreview } from "../../lib/listPreview";
+import useConversationDraft from "../../hooks/useConversationDraft";
+import { draftPreview } from "../../lib/messageDrafts";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
@@ -1051,12 +1053,23 @@ function sameDmRowProps(prev, next) {
   return true;
 }
 
-function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isOnline }) {
+/** "Taslak: …" in the conversation list (messaging phase 4, lib/messageDrafts). */
+function DraftPreview({ text }) {
+  const t = useT();
+  return (
+    <>
+      <span className="conv-draft-label">{t("msg4.draft.label")}</span> {displayText(draftPreview(text))}
+    </>
+  );
+}
+
+function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isOnline, isActive = false }) {
   const t = useT();
   const glass = useGlassUi();
   const presence = rawPresence || (isOnline ? "online" : "offline");
   const preview = displayText(localizeListPreview(dm.lastMessage, t)) || t("No messages yet");
   const typing = glass && /yazıyor|typing/i.test(String(preview));
+  const draft = useConversationDraft(isActive || !dm.id ? null : `dm:${dm.id}`);
   return (
     <>
       <div className="dm-avatar">
@@ -1085,8 +1098,8 @@ function DmRowContent({ dm, unread, timeLabel, presence: rawPresence = null, isO
           </span>
         </div>
         <div className="conv-row-bottom">
-          <span className={`dm-preview ${unread > 0 ? "unread" : ""}${typing ? " is-typing" : ""}`}>
-            {preview}
+          <span className={`dm-preview ${unread > 0 ? "unread" : ""}${typing ? " is-typing" : ""}${draft && !typing ? " has-draft" : ""}`}>
+            {draft && !typing ? <DraftPreview text={draft} /> : preview}
           </span>
           <UnreadBadge count={unread} />
         </div>
@@ -1134,6 +1147,7 @@ function SwipeableDmRow({
             timeLabel={timeLabel}
             presence={presence}
             isOnline={isOnline}
+            isActive={isActive}
           />
         </button>
       }
@@ -1195,6 +1209,7 @@ function DmRowFront({
         timeLabel={timeLabel}
         presence={presence}
         isOnline={isOnline}
+        isActive={isActive}
       />
     </motion.button>
   );
@@ -1792,8 +1807,9 @@ function glassGroupInitials(name, locale) {
   return upper(parts[0]?.[0] || "", locale);
 }
 
-function GroupRowContent({ group, unread, timeLabel, preview }) {
+function GroupRowContent({ group, unread, timeLabel, preview, isActive = false }) {
   const { t, locale } = useLocale();
+  const draft = useConversationDraft(isActive || !group.id ? null : `group:${group.id}`);
   const glass = useGlassUi();
   const members = glass && Array.isArray(group.members) ? group.members.slice(0, 4) : [];
   const memberCount = group.memberCount || group.members?.length || 0;
@@ -1821,7 +1837,7 @@ function GroupRowContent({ group, unread, timeLabel, preview }) {
           </span>
         </div>
         <div className="conv-row-bottom">
-          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}`}>{displayText(localizeListPreview(preview, t))}</span>
+          <span className={`group-members dm-preview ${unread > 0 ? "unread" : ""}${draft ? " has-draft" : ""}`}>{draft ? <DraftPreview text={draft} /> : displayText(localizeListPreview(preview, t))}</span>
           <UnreadBadge count={unread} />
         </div>
         {glass && memberCount > 0 ? (
@@ -1898,7 +1914,7 @@ function SwipeableGroupRow({
             onOpen?.();
           }}
         >
-          <GroupRowContent group={group} unread={isActive ? 0 : unread} timeLabel={timeLabel} preview={preview} />
+          <GroupRowContent group={group} unread={isActive ? 0 : unread} timeLabel={timeLabel} preview={preview} isActive={isActive} />
         </button>
       }
       actions={
@@ -1965,6 +1981,7 @@ function GroupRowFront({
         unread={isActive ? 0 : unread}
         timeLabel={timeLabel}
         preview={preview}
+        isActive={isActive}
       />
     </motion.button>
   );

@@ -1,0 +1,12 @@
+/* Messaging phase 4 (drafts, jump to unread, forwarding, link previews,
+   Görüldü, scheduled sending, Descall stickers): row-level styles that sit
+   inside the chat list and message list. Sheets carry their own CSS
+   (styles/messaging-sheets.css, loaded with them). */
+
+/* Drafts: "Taslak: …" in the conversation list. */
+.dm-preview.has-draft { color: var(--text-secondary, var(--text-muted)); }
+.conv-row-bottom .dm-preview .conv-draft-label,
+.conv-draft-label {
+  color: var(--danger, #ff453a);
+  font-weight: 600;
+}
