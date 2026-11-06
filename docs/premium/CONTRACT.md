@@ -91,7 +91,7 @@ The client and server share these keys through one list, `frontend/src/premium/f
 
 | Key | Tier | Desktop only |
 |---|---|---|
-| mini_mode | plus | yes |
+| mini_mode | plus | no |
 | always_on_top | plus | yes |
 | pip_call | plus | yes |
 | multi_window | plus | yes |

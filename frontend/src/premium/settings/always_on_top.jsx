@@ -4,7 +4,7 @@ import { ToggleRow } from "../panelUi.jsx";
 
 export const key = "always_on_top";
 const DEFAULTS = { main: false, mini: true, call: true, sidebar: true, popout: false };
-const ROWS = [["main", "premium.panel.topMain"], ["mini", "premium.panel.topMini"], ["call", "premium.panel.topCall"], ["sidebar", "premium.win.sidebar"], ["popout", "premium.panel.topPopouts"]];
+const ROWS = [["main", "premium.panel.topMain"], ["call", "premium.panel.topCall"], ["sidebar", "premium.win.sidebar"], ["popout", "premium.panel.topPopouts"]];
 
 export function Panel({ settings, update }) {
   const t = useT();

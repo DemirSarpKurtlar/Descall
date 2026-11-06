@@ -1717,6 +1717,9 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 0 4px;
   font-weight: 600;
 }
+.msg-mention[data-mention] { cursor: pointer; }
+.msg-mention[data-mention]:hover { text-decoration: underline; }
+.msg-mention[data-mention]:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 /* **bold** in chat bubbles (lib/messageMarkdown.js), same weight web uses
    for Descall Apps embeds. Inherits the bubble skin's ink. */
 .message-text .msg-bold {

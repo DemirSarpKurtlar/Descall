@@ -158,6 +158,16 @@ export const PREMIUM_EN = {
   "panel": {
     "open": "Open",
     "openMini": "Open mini mode",
+    "miniInfo": "When you minimise a call, a small card with the name, status and mute, deafen and hang-up buttons stays on screen. Drag it wherever you like. Without Descall+ only a slim \"Return to call\" bar appears at the top.",
+    "miniDock": "Where the card sits",
+    "dock": {
+      "top-left": "Top left",
+      "top-right": "Top right",
+      "mid-left": "Middle left",
+      "mid-right": "Middle right",
+      "bottom-left": "Bottom left",
+      "bottom-right": "Bottom right"
+    },
     "openCall": "Open call window",
     "openSidebar": "Show sidebar",
     "miniAuto": "Open mini mode when I minimize Descall during a call",
@@ -173,7 +183,7 @@ export const PREMIUM_EN = {
     "popoutsHow": "Use Pop out in a chat header to open it in its own window.",
     "closeAll": "Close all",
     "restorePopouts": "Reopen pop-out windows",
-    "restoreMini": "Reopen mini mode and the sidebar",
+    "restoreMini": "Reopen the sidebar",
     "restoreBounds": "Remember window positions and sizes",
     "snap": "Snap windows to screen edges",
     "keepVisible": "Bring windows back when a monitor is removed",
@@ -201,7 +211,7 @@ export const PREMIUM_EN = {
   "f": {
     "mini_mode": {
       "name": "Mini mode",
-      "desc": "A small window with your call controls and unread count."
+      "desc": "A small call card that stays on screen when you minimise a call; drag it to any corner."
     },
     "always_on_top": {
       "name": "Always on top",

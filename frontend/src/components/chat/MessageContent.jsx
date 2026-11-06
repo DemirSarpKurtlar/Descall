@@ -58,7 +58,13 @@ function renderTokens(tokens, keyPrefix, highlight) {
     }
     if (token.type === "mention") {
       return (
-        <span key={key} className="msg-mention">
+        <span
+          key={key}
+          className="msg-mention"
+          data-mention={String(token.value).replace(/^@/, "")}
+          role="button"
+          tabIndex={0}
+        >
           {displayText(token.value)}
         </span>
       );

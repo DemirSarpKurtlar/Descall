@@ -11,6 +11,8 @@ import MiniCallCard from "./call/MiniCallCard";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
 import CallWindowButtons from "../premium/desktop/CallWindowButtons.jsx";
+import { usePremium } from "../premium/usePremium.js";
+import { useFeatureSettings } from "../premium/featureSettings.js";
 import { NameEffectText } from "./ui/Cosmetics";
 import DmRemoteParticipantSlot from "./voice/DmRemoteParticipantSlot";
 import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
@@ -115,12 +117,19 @@ function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
+const MINI_DEFAULTS = Object.freeze({ enabled: true });
+
 export default function CallOverlay({ call, groupCall, me, groupName = "", onReturnToCall, socket = null }) {
   const t = useT();
   const { toast } = useToast();
   const callOverlayKey = me?.equippedCallOverlay?.effect_key || null;
   const callOverlayClass = callOverlayKey ? `cosmetic-call-overlay overlay-${callOverlayKey}` : "";
   const [minimized, setMinimized] = useState(false);
+  // Descall+ mini mode = the draggable floating call card below. Without it (free plan, or
+  // the member turned it off) a minimised call shows only a slim "Return to call" bar.
+  const premium = usePremium();
+  const [miniSettings] = useFeatureSettings("mini_mode", MINI_DEFAULTS);
+  const miniCard = premium.has("mini_mode") && miniSettings.enabled !== false;
   const [showParticipants, setShowParticipants] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [screenExpanded, setScreenExpanded] = useState(false);
@@ -347,6 +356,25 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   }
 
   /* ---------- Minimized widget (2.11.1: draggable glass mini card) ---------- */
+  if (minimized && !miniCard) {
+    return (
+      <>
+        {remoteAudio}
+        {durableScreenAudio}
+        <button
+          type="button"
+          className="call-return-bar"
+          data-testid="call-return-bar"
+          onClick={() => { setMinimized(false); onReturnToCall?.(); }}
+        >
+          <span className="call-return-dot" aria-hidden="true" />
+          <span className="call-return-title">{title}</span>
+          <span className="call-return-time tnum">{formattedDuration}</span>
+          <span className="call-return-cta">{t("Return to call")}</span>
+        </button>
+      </>
+    );
+  }
   if (minimized) {
     return (
       <>

@@ -3,7 +3,7 @@ import { useT } from "../../context/LocaleContext";
 import { SliderRow } from "../panelUi.jsx";
 
 export const key = "window_opacity";
-const ROWS = [["mini", "premium.panel.topMini"], ["call", "premium.panel.topCall"], ["sidebar", "premium.win.sidebar"], ["popout", "premium.panel.topPopouts"]];
+const ROWS = [["call", "premium.panel.topCall"], ["sidebar", "premium.win.sidebar"], ["popout", "premium.panel.topPopouts"]];
 
 export function Panel({ settings, update }) {
   const t = useT();

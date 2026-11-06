@@ -1136,6 +1136,14 @@ html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-ca
   font-size: 12px;
   color: var(--text-muted, #98a2b3);
 }
+/* The mark is a span too: keep its centring grid (the rule above made it a block, so the
+   gift sat in the top-left corner of the tile on desktop). */
+.invite-card-header .invite-card-mark,
+.g-invite-head .invite-card-mark,
+.g-invite-link-head .invite-card-mark {
+  display: grid;
+  place-items: center;
+}
 /* UI audit #4: the same flat brand primary as every other button (no
    orange/yellow gradient), content width; only the coin stays gold. */
 .descoin-daily-claim {

@@ -158,6 +158,16 @@ export const PREMIUM_TR = {
   "panel": {
     "open": "Aç",
     "openMini": "Mini modu aç",
+    "miniInfo": "Aramayı küçültünce adın, durum ve mikrofon, kulaklık, kapat düğmeleriyle küçük bir kart ekranda kalır. Kartı sürükleyip istediğin yere bırakabilirsin. Descall+ olmadan yalnızca üstte ince bir \"Aramaya dön\" çubuğu çıkar.",
+    "miniDock": "Kartın duracağı yer",
+    "dock": {
+      "top-left": "Sol üst",
+      "top-right": "Sağ üst",
+      "mid-left": "Sol orta",
+      "mid-right": "Sağ orta",
+      "bottom-left": "Sol alt",
+      "bottom-right": "Sağ alt"
+    },
     "openCall": "Arama penceresini aç",
     "openSidebar": "Kenar çubuğunu göster",
     "miniAuto": "Arama sırasında Descall'ı küçültünce mini modu aç",
@@ -173,7 +183,7 @@ export const PREMIUM_TR = {
     "popoutsHow": "Bir sohbeti kendi penceresinde açmak için sohbet başlığındaki Ayrı pencerede aç düğmesini kullan.",
     "closeAll": "Hepsini kapat",
     "restorePopouts": "Ayrı pencereleri yeniden aç",
-    "restoreMini": "Mini modu ve kenar çubuğunu yeniden aç",
+    "restoreMini": "Kenar çubuğunu yeniden aç",
     "restoreBounds": "Pencere konum ve boyutlarını hatırla",
     "snap": "Pencereleri ekran kenarlarına yasla",
     "keepVisible": "Bir ekran çıkarılınca pencereleri geri getir",
@@ -201,7 +211,7 @@ export const PREMIUM_TR = {
   "f": {
     "mini_mode": {
       "name": "Mini mod",
-      "desc": "Arama kontrollerin ve okunmamış sayınla küçük bir pencere."
+      "desc": "Aramayı küçültünce ekranda kalan, sürükleyip köşeye bırakabildiğin küçük arama kartı."
     },
     "always_on_top": {
       "name": "Her zaman üstte",

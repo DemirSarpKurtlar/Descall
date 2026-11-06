@@ -29,7 +29,7 @@ import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
-import { registerComposerInput } from "../../lib/composerFocus";
+import { getComposerInput, registerComposerInput } from "../../lib/composerFocus";
 import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
@@ -416,8 +416,19 @@ export default function MessageComposer({
     if (!available || available.locked) return null;
     return st;
   }, [message, slashMenuOpen, pickerDismissedFor, slashCommands]);
+  // "@name" anywhere in a normal message (not a slash command): suggest people to tag, like
+  // the slash user picker. Tab / Enter replaces the typed "@na" with "@username ".
+  const [caretPos, setCaretPos] = useState(0);
+  const mentionState = useMemo(() => {
+    if (argState || slashMenuOpen || message.startsWith("/")) return null;
+    if (pickerDismissedFor !== null && pickerDismissedFor === message) return null;
+    const caret = Math.min(caretPos, message.length);
+    const m = /(^|\s)@([\p{L}\p{N}_.\-]{0,32})$/u.exec(message.slice(0, caret));
+    if (!m) return null;
+    return { start: caret - m[2].length - 1, end: caret, query: m[2] };
+  }, [argState, slashMenuOpen, message, caretPos, pickerDismissedFor]);
   const pickerKind = !argState
-    ? null
+    ? (mentionState ? "user" : null)
     : argState.cmd.userArg && argState.argIndex === 0
       ? "user"
       : argState.cmd.durationArg && argState.argIndex === 1
@@ -441,9 +452,9 @@ export default function MessageComposer({
 
   const pickerUserSections = useMemo(() => {
     if (pickerKind !== "user") return [];
-    const q = foldTr(String(argState.argText || "").replace(/^@/, ""));
+    const q = foldTr(String(argState ? argState.argText || "" : mentionState?.query || "").replace(/^@/, ""));
     const selfId = me?.id || null;
-    const excludeSelf = !["user", "avatar"].includes(argState.cmd.name);
+    const excludeSelf = argState ? !["user", "avatar"].includes(argState.cmd.name) : true;
     const roles = Array.isArray(activeServer?.roles) ? activeServer.roles : [];
     const roleInfo = (roleIds) => {
       const ids = new Set((roleIds || []).map(String));
@@ -495,7 +506,7 @@ export default function MessageComposer({
     if (here.length) out.push({ id: "here", label: t(activeChannel?.id ? "slash.mention.hereChannel" : "slash.mention.hereChat"), items: here.map(decorate) });
     if (rest.length) out.push({ id: "all", label: t(activeChannel?.id ? "slash.mention.server" : activeGroup ? "slash.mention.group" : "slash.mention.chat"), items: rest.map(decorate) });
     return out;
-  }, [pickerKind, argState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
+  }, [pickerKind, argState, mentionState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
   const pickerUsers = useMemo(() => pickerUserSections.flatMap((s) => s.items), [pickerUserSections]);
 
   const timeoutTarget = useMemo(() => {
@@ -510,7 +521,7 @@ export default function MessageComposer({
   useEffect(() => {
     if (pickerKind === "duration") setPickerIndex(1);
     else setPickerIndex(0);
-  }, [pickerKind, argState?.argText]);
+  }, [pickerKind, argState?.argText, mentionState?.query]);
 
   const fillArg = useCallback((value) => {
     const first = message.split(" ")[0];
@@ -520,10 +531,23 @@ export default function MessageComposer({
     focusInputAt(next.length);
   }, [message, argState, focusInputAt]);
 
+  const insertMention = useCallback((username) => {
+    if (!mentionState) return;
+    const tag = `@${username} `;
+    const next = message.slice(0, mentionState.start) + tag + message.slice(mentionState.end).replace(/^ /, "");
+    setMessage(next);
+    const pos = mentionState.start + tag.length;
+    setCaretPos(pos);
+    focusInputAt(pos);
+  }, [mentionState, message, focusInputAt]);
+
   const pickFromPicker = useCallback((index = pickerIndex) => {
     if (pickerKind === "user") {
       const it = pickerUsers[index];
-      if (it) fillArg(`@${it.user.username}`);
+      if (it) {
+        if (mentionState) insertMention(it.user.username);
+        else fillArg(`@${it.user.username}`);
+      }
       return Boolean(it);
     }
     if (pickerKind === "duration") {
@@ -542,7 +566,7 @@ export default function MessageComposer({
       return Boolean(c);
     }
     return false;
-  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt]);
+  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt, mentionState, insertMention]);
 
   const withReply = (payload) => {
     if (!replyTo) return payload;
@@ -740,8 +764,18 @@ export default function MessageComposer({
     }
   };
 
+  // The textarea is swapped for the "Uploading..." bar while a file uploads, so it loses
+  // focus. Put the caret back afterwards: Enter then sends without a click, or you just type.
+  const refocusAfterUploadRef = useRef(false);
+  useEffect(() => {
+    if (uploading || !refocusAfterUploadRef.current) return;
+    refocusAfterUploadRef.current = false;
+    focusInputAt();
+  }, [uploading, focusInputAt]);
+
   const stageFile = async (file) => {
     if (!file) return;
+    refocusAfterUploadRef.current = true;
     setUploading(true);
     setUploadError("");
     const formData = new FormData();
@@ -801,6 +835,35 @@ export default function MessageComposer({
       /* clipboard read is best effort */
     }
   };
+
+  const stageFileRef = useRef(stageFile);
+  stageFileRef.current = stageFile;
+  useEffect(() => {
+    const onDocPaste = (e) => {
+      const input = inputRef.current;
+      if (!input || getComposerInput() !== input || e.defaultPrevented) return;
+      const target = e.target;
+      const editable = target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || ""));
+      if (editable) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      const file = pastedImageFile(e.clipboardData);
+      if (file) {
+        e.preventDefault();
+        stageFileRef.current(file);
+        return;
+      }
+      const text = e.clipboardData?.getData?.("text/plain") || "";
+      if (!text) return;
+      e.preventDefault();
+      setMessage((prev) => {
+        const next = prev + text;
+        focusInputAt(next.length);
+        return next;
+      });
+    };
+    document.addEventListener("paste", onDocPaste);
+    return () => document.removeEventListener("paste", onDocPaste);
+  }, [focusInputAt]);
 
   const uploadFile = async (e) => {
     const file = e.target.files?.[0];
@@ -1167,15 +1230,15 @@ export default function MessageComposer({
             allCommands={slashCommands}
             onPickFrequent={applySlashCommand}
           />
-        ) : pickerKind === "user" ? (
+        ) : pickerKind === "user" && (argState || pickerUsers.length > 0) ? (
           <UserPicker
             key="slash-user"
             menuRef={slashMenuRef}
-            query={String(argState?.argText || "").replace(/^@/, "")}
+            query={String(argState ? argState.argText || "" : mentionState?.query || "").replace(/^@/, "")}
             sections={pickerUserSections}
             activeIndex={pickerIndex}
             onHover={setPickerIndex}
-            onPick={(it) => fillArg(`@${it.user.username}`)}
+            onPick={(it) => (mentionState ? insertMention(it.user.username) : fillArg(`@${it.user.username}`))}
             compact={compactUi}
             self={argState?.cmd.args?.[0]?.optional ? me : null}
           />
@@ -1359,7 +1422,9 @@ export default function MessageComposer({
             ref={setInputEl}
             onPaste={onPaste}
             value={message}
+            onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             onChange={(e) => {
+              setCaretPos(e.target.selectionStart ?? e.target.value.length);
               setMessage(e.target.value);
               if (e.target.value) emitTypingStart();
               else emitTypingStop();

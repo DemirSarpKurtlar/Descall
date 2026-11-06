@@ -8,7 +8,8 @@
  * grants Descall+ ("plus") from /api/premium/me, then:
  *   1. waits for main's own gate check (renderer claim ∩ server answer) to unlock plus keys;
  *   2. a tampered renderer claim for Ultra keys does not unlock them;
- *   3. opens mini mode, the call (PiP) window and a DM pop-out, and checks each window
+ *   3. mini mode is the in-app call card (no window); opens the call (PiP) window and a
+ *      DM pop-out, and checks each window
  *      (always on top, portal content rendered, pop-out chrome);
  *   4. opens Ayarlar > Descall+ and checks the status card and feature list;
  *   5. the server revokes the plan: main closes the windows.
@@ -144,7 +145,7 @@ async function run(win) {
   await until('gate verified (plus)', () => premium.gate.has('mini_mode') && premium.gate.has('pip_call') && premium.gate.has('multi_window'), 20000);
   expect(premium.gate.plan() === 'plus', `gate plan ${premium.gate.plan()}`);
   expect(S.meCalls >= 2, `main and renderer should both read /api/premium/me (calls ${S.meCalls})`);
-  await until('modules running', () => ['mini_mode', 'pip_call', 'multi_window', 'tray_controls_plus'].every((k) => premium.runningKeys().includes(k)), 5000);
+  await until('modules running', () => ['pip_call', 'multi_window', 'tray_controls_plus'].every((k) => premium.runningKeys().includes(k)), 5000);
   log('gate ok', JSON.stringify(premium.gate.snapshot().keys.length), 'running', premium.runningKeys().join(','));
 
   // 2. A tampered renderer claim cannot unlock Ultra keys.
@@ -158,19 +159,11 @@ async function run(win) {
   expect(badChannel === 'rejected', 'bridge must refuse non-premium channels');
   log('tamper check ok');
 
-  // 3a. Mini mode.
+  // 3a. Mini mode is the in-app floating call card now: no window opens for it.
   win.webContents.send('premium:open', { kind: 'mini' });
-  const mini = await until('mini window', () => {
-    const e = premium.windows.list('mini')[0];
-    return e ? { ok: true, e } : null;
-  }, 10000);
-  const miniWin = mini.e.win;
-  await sleep(700);
-  expect(miniWin.isAlwaysOnTop(), 'mini window is not on top');
-  const miniText = await js(win, `(() => { const w = window.open('', 'descall-premium-mini'); const el = w && w.document.querySelector('[data-testid="premium-mini"]'); return el ? el.innerText : ''; })()`);
-  expect(/Mini/i.test(miniText), `mini content not rendered: ${JSON.stringify(miniText)}`);
-  await shot(miniWin, 'mini-mode.png');
-  log('mini ok', JSON.stringify(miniWin.getBounds()));
+  await sleep(800);
+  expect(premium.windows.list('mini').length === 0, 'mini mode must not open a window any more');
+  log('mini ok (no window)');
 
   // 3b. Call (PiP) window.
   win.webContents.send('premium:open', { kind: 'call' });
@@ -228,7 +221,7 @@ async function run(win) {
   await sleep(400);
   await shot(win, 'settings-premium-compare.png');
   log('settings ok', JSON.stringify({ feats: tab.feats, ends: tab.ends }));
-  expect(premium.windows.list('mini').length === 1, 'a router navigation must not close the mini window');
+  expect(premium.windows.list('call').length === 1, 'a router navigation must not close the call window');
 
   // 5. Upgrade to Ultra: reload the app (orphaned portal windows close), sidebar + layouts.
   S.plan = 'ultra';

@@ -12,12 +12,12 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useT } from "../../context/LocaleContext";
 import AuxWindow from "./AuxWindow.jsx";
-import { CallView, MiniView, SidebarView } from "./AuxViews.jsx";
+import { CallView, SidebarView } from "./AuxViews.jsx";
 import { appAction, appSlot, AUX_KINDS, callSlot, onAuxRequest, runCallAction, setAuxOpen } from "./desktopBus.js";
 import { getPremiumState, hasPremiumFeature, subscribePremium } from "../premiumStore.js";
 
-export const AUX_FEATURE = Object.freeze({ mini: "mini_mode", call: "pip_call", sidebar: "desktop_sidebar" });
-const VIEWS = { mini: MiniView, call: CallView, sidebar: SidebarView };
+export const AUX_FEATURE = Object.freeze({ call: "pip_call", sidebar: "desktop_sidebar" });
+const VIEWS = { call: CallView, sidebar: SidebarView };
 const TITLES = { mini: "premium.win.mini", call: "premium.win.call", sidebar: "premium.win.sidebar" };
 
 const bridge = () => (typeof window !== "undefined" ? window.descallPremium : null);

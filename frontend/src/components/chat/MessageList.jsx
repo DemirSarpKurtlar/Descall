@@ -222,6 +222,38 @@ export default function MessageList({
     }, HOVER_CLOSE_GRACE_MS);
   }, [cancelHoverClose]);
   useEffect(() => cancelHoverClose, [cancelHoverClose]);
+  // Clicking (or Enter on) an @mention in a message opens that person's profile, the same
+  // sheet a click on a sender's avatar opens. Resolved from people this chat already knows.
+  const openMention = useCallback((username) => {
+    const want = String(username || "").toLowerCase();
+    if (!want) return;
+    const pools = [
+      (messages || []).map((m) => m?.sender || m?.from || m?.user).filter(Boolean),
+      activeGroup?.members || [],
+      activeDmUser ? [activeDmUser] : [],
+      friends || [],
+      onlineUsers || [],
+      [me, currentUser].filter(Boolean),
+    ];
+    for (const list of pools) {
+      const hit = list.find((u) => String(u?.username || "").toLowerCase() === want);
+      if (hit) {
+        const id = hit.id || hit.userId;
+        if (!id) continue;
+        closeHoverNow();
+        setProfileTarget(enrichAvatarUser({ ...hit, id }, { me, friends, onlineUsers, currentUser }));
+        return;
+      }
+    }
+  }, [messages, activeGroup?.members, activeDmUser, friends, onlineUsers, me, currentUser, closeHoverNow]);
+  const onMentionActivate = useCallback((e) => {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    const el = e.target?.closest?.("[data-mention]");
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openMention(el.getAttribute("data-mention"));
+  }, [openMention]);
   // 2.12.0 polls: one voters sheet / edit sheet for the whole list.
   const [votersPoll, setVotersPoll] = useState(null);
   const [editPoll, setEditPoll] = useState(null);
@@ -543,7 +575,7 @@ export default function MessageList({
     <MediaGalleryContext.Provider value={galleryItems}>
     <SenderLookupContext.Provider value={senderFor}>
     <PinControlContext.Provider value={pinRef}>
-    <div className="message-list" ref={listRef}>
+    <div className="message-list" ref={listRef} onClickCapture={onMentionActivate} onKeyDownCapture={onMentionActivate}>
       {isSearching && (
         <div className="message-search-result-count">
           {t("chatx.matchingMessages", { count: groupedMessages.reduce((n, g) => n + (g.messages?.length || (g.isSummary || g.isGame || g.isActiveBanner ? 1 : 0)), 0) })}

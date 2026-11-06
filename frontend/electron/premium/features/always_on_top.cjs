@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Descall+ always_on_top: per-window "keep on top" for the main window, mini mode, the
+ * Descall+ always_on_top: per-window "keep on top" for the main window, the
  * call window, the sidebar and pop-outs (features.always_on_top.<kind>, booleans).
  * The pin button in the mini / call / sidebar bar flips its own window kind.
  * Without this feature the defaults apply (windowKit.DEFAULT_ON_TOP).
@@ -9,7 +9,7 @@
 
 const kit = require('../windowKit.cjs');
 
-const KINDS = ['main', 'mini', 'call', 'sidebar', 'popout'];
+const KINDS = ['main', 'call', 'sidebar', 'popout'];
 let ctx = null;
 const offs = [];
 
