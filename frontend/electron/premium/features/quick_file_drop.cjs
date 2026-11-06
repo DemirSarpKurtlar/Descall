@@ -27,7 +27,7 @@ function open() {
     opacity: 0.97,
     state,
     onAction: (type, payload) => {
-      if (type === 'close') close();
+      if (type === 'close') { close(); ctx?.sendToRenderer('premium:quick_file_drop:closed', {}); }
       else if (type === 'pick') state = { ...state, target: String(payload?.target || '') };
       else if (type === 'drop') onDrop(payload);
     },

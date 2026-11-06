@@ -6,6 +6,7 @@ import { useAppBridge } from "../gaming/bridge.js";
 import { QUICK_TYPES, STATUSES, cacheQuickActions, runAction } from "../gaming/actions.js";
 import { profileName, useProfiles } from "../gaming/workspaceProfiles.js";
 import { Play, Trash2 } from "../../components/ui/Icon.jsx";
+import { hasPremiumFeature } from "../usePremium.js";
 
 export const key = "quick_actions";
 const MAX = 12;
@@ -56,7 +57,7 @@ export function Panel() {
       <div className="pg-card">
         <Field label={t("premiumGaming.quickActions.type")}>
           <select className="pg-select" value={type} onChange={(e) => { setType(e.target.value); setArg(""); }}>
-            {QUICK_TYPES.map((q) => <option key={q} value={q}>{t(`premiumGaming.quickActions.types.${q}`)}</option>)}
+            {QUICK_TYPES.filter((q) => q !== "workspace" || hasPremiumFeature("workspace_profiles")).map((q) => <option key={q} value={q}>{t(`premiumGaming.quickActions.types.${q}`)}</option>)}
           </select>
         </Field>
         {type === "set_status" ? (

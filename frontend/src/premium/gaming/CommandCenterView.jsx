@@ -6,7 +6,7 @@ import { fetchCallHistory } from "../../api/calls.js";
 import { formatTime } from "../../i18n/format.js";
 import { useFeatureSettings } from "../featureSettings.js";
 import { runAction } from "./actions.js";
-import { Bell, MessageSquare, Phone, Users, X, Zap } from "../../components/ui/Icon.jsx";
+import { Bell, MessageSquare, Phone, Settings, Users, X, Zap } from "../../components/ui/Icon.jsx";
 import "./gaming.css";
 
 const nameOf = (u) => u?.displayName || u?.display_name || u?.username || "";
@@ -29,6 +29,7 @@ export default function CommandCenterView({ onClose }) {
       <div className="pg-modal" role="dialog" aria-modal="true" aria-label={t("premiumGaming.commandCenter.title")} onClick={(e) => e.stopPropagation()}>
         <div className="pg-modal-head">
           <h2>{t("premiumGaming.commandCenter.title")}</h2>
+          <button type="button" className="pg-btn is-small" data-testid="pg-cc-hub" onClick={() => { onClose?.(); try { window.dispatchEvent(new CustomEvent("descall:premium:gaming-hub", { detail: { key: null } })); } catch { /* ignore */ } }}><Settings size={14} />{t("premiumGaming.hub.open")}</button>
           <button type="button" className="pg-btn is-small" onClick={onClose} aria-label={t("premiumGaming.common.close")}><X size={14} /></button>
         </div>
         {Array.isArray(qa.items) && qa.items.length ? (

@@ -317,7 +317,10 @@ export default function PremiumGamingHost({
     });
   }, [dropAllowed, socket, dropTargets, dropLabels, t]);
   // The drop zone's own close button turns the setting off.
-  useEffect(() => { if (!dropAllowed || !dropCfg.on) return undefined; return undefined; }, [dropAllowed, dropCfg.on, updateDrop]);
+  useEffect(() => {
+    if (!dropAllowed || !dropCfg.on) return undefined;
+    return pon("premium:quick_file_drop:closed", () => updateDrop({ on: false }));
+  }, [dropAllowed, dropCfg.on, updateDrop]);
 
   // ---- workspace profiles ----------------------------------------------------------
   const wpAllowed = has("workspace_profiles");
@@ -351,8 +354,19 @@ export default function PremiumGamingHost({
   // ---- hub (panels) -------------------------------------------------------------------
   useEffect(() => {
     const onOpen = (e) => setHub({ key: e?.detail?.key || null });
+    // In-window shortcut (not global): Ctrl/Cmd+Shift+G opens the hub.
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && String(e.key).toLowerCase() === "g") {
+        e.preventDefault();
+        setHub((h) => (h ? null : { key: null }));
+      }
+    };
     window.addEventListener("descall:premium:gaming-hub", onOpen);
-    return () => window.removeEventListener("descall:premium:gaming-hub", onOpen);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("descall:premium:gaming-hub", onOpen);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   return (
