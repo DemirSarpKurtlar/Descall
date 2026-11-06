@@ -159,6 +159,17 @@ html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
+/* UI audit #62: in a 280px sidebar "Arkadaşlar" (24px + 14px padding) and the
+   action pill no longer fit one row, so the icons dropped under the title on
+   Arkadaşlar only. Narrow sidebars use an 18px title with a tighter pill so
+   every tab keeps title + actions on one line (the whole word still shows). */
+@container sidebar-header (max-width: 320px) {
+  html.glass-desktop .sidebar-header .sidebar-title:not(.server-shell-title) {
+    padding: 0 10px;
+    font-size: 18px;
+  }
+}
+
 html.glass-desktop .sidebar-search {
   margin: 12px 12px 4px;
 }
