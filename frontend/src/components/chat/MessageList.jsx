@@ -822,8 +822,8 @@ export default function MessageList({
         onClose={() => setReportTarget(null)}
         targetId={reportTarget?.id}
         targetUsername={reportTarget?.username}
-        targetDisplayName={reportTarget ? resolveDisplayName(reportTarget) : undefined}
-        targetUser={reportTarget}
+        targetDisplayName={reportTarget ? resolveDisplayName(senderFor(reportTarget) || reportTarget) : undefined}
+        targetUser={reportTarget ? senderFor(reportTarget) || reportTarget : null}
         snippet={reportTarget?.snippet}
         contextType={reportTarget?.contextType || conversationType}
         contextId={reportTarget?.contextId}
