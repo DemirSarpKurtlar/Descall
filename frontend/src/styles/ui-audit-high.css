@@ -342,6 +342,36 @@ html[data-theme="light"] .activity-web-notice strong {
   color: #393C4D;
 }
 
+/* #60 Server list: separate error and empty states, both the shared compact
+   EmptyState (no dashed card), stacked buttons in the narrow sidebar. */
+.server-list-state {
+  padding: 28px 12px 20px;
+}
+.server-list-state .empty-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 240px;
+  margin-top: 8px;
+}
+.server-list-state .empty-cta {
+  justify-content: center;
+}
+
+/* #59 DM history that never arrived: centred error state, not a skeleton,
+   and the composer reads as unavailable until the history loads. */
+.composer-container.is-history-error .message-composer {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.message-list.is-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
 /* #102 'Mağaza temaları' was cut to 'Mağaza tem…' by its value on phones:
    the title keeps its width, the value truncates. */
 .s3-store .s3-row .lab {

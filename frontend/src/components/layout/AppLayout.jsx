@@ -125,6 +125,8 @@ export default function AppLayout({
   groupsLoaded = true,
   servers = [],
   serversLoaded = false,
+  historyLoadError = false,
+  serversLoadError = false,
   activeServer = null,
   activeChannel = null,
   channelUnread = {},
@@ -637,6 +639,7 @@ export default function AppLayout({
           <ServersSidebar
             servers={servers}
             serversLoaded={serversLoaded}
+            loadError={serversLoadError}
             serverFolders={serverFolders}
             onServerFoldersChange={onServerFoldersChange}
             onMoveServerToFolder={onMoveServerToFolder}
@@ -762,6 +765,7 @@ export default function AppLayout({
             <div className="app-chat-keep">
               <ErrorBoundary scope="pane">
               <ChatPanel
+                historyLoadError={historyLoadError}
                 dms={dms}
                 onDmPrefAction={onDmPrefAction}
                 onGroupAvatarChanged={onGroupAvatarChanged}

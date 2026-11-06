@@ -6,5 +6,14 @@ export const UAH_TR = {
   ann: {
     emptyTitle: "Henüz duyuru yok",
     emptyBody: "Ekip bir şey paylaşınca burada göreceksin."
+  },
+  servers: {
+    errorTitle: "Sunucular yüklenemedi",
+    errorBody: "Bağlantını kontrol edip tekrar dene. Sunucuların yerinde.",
+    emptyBody: "Bir sunucu kur ya da davetle katıl."
+  },
+  dm: {
+    errorTitle: "Mesajlar yüklenemedi",
+    errorBody: "Bağlantını kontrol edip tekrar dene."
   }
 };

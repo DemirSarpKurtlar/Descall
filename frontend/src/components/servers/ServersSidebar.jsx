@@ -30,6 +30,7 @@ import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { BLANK_TEMPLATE, SERVER_TEMPLATES, getTemplateCard } from "../../lib/serverTemplatesCatalog";
 import ServerRolesModal from "./ServerRolesModal";
+import EmptyState from "../ui/EmptyState";
 import ServerInviteModal from "./ServerInviteModal";
 import JoinServerModal from "./JoinServerModal";
 import ServerModerationModal from "./ServerModerationModal";
@@ -70,6 +71,7 @@ const NOTIF_LEVELS = [
 export default function ServersSidebar({
   servers = [],
   serversLoaded = false,
+  loadError = false,
   serverFolders = [],
   onServerFoldersChange,
   onMoveServerToFolder,
@@ -1751,6 +1753,8 @@ export default function ServersSidebar({
           </>
         )}
 
+        {/* UI audit #60: counts are unknown after a failed load, so no "0 / 10". */}
+        {loadError && servers.length === 0 ? null : (
         <div className="server-owned-banner">
           {t("Owned {owned} / {max}", { owned: ownedCount, max: maxOwned })}
           {!isMobile ? (
@@ -1759,34 +1763,31 @@ export default function ServersSidebar({
             </span>
           ) : null}
         </div>
+        )}
 
         <div className="sidebar-content">
           <PullToRefresh enabled={isMobile && !serverListReorderMode} onRefresh={() => onRefresh?.()}>
           {!serversLoaded ? (
             <ServerListSkeleton count={6} label={t("Loading servers")} />
+          ) : servers.length === 0 && loadError ? (
+            <EmptyState
+              className="is-compact server-list-state is-error"
+              illustration="none"
+              icon={Server}
+              title={t("uah.servers.errorTitle")}
+              body={t("uah.servers.errorBody")}
+              primary={{ label: t("Try again"), icon: RefreshCw, action: () => onRefresh?.() }}
+            />
           ) : servers.length === 0 ? (
-            <div className="server-empty-state">
-              <Server size={36} strokeWidth={1.5} />
-              <h3>{t("No servers yet")}</h3>
-              <p>{t("Create a server for channels, roles, and voice, or join with an invite.")}</p>
-              <button
-                type="button"
-                className="server-primary-btn"
-                disabled={!canCreate}
-                onClick={() => setShowCreate(true)}
-              >
-                <Plus size={16} />
-                {t("Create server")}
-              </button>
-              <button
-                type="button"
-                className="server-ghost-btn"
-                onClick={() => setShowJoin(true)}
-              >
-                <LogIn size={16} />
-                {t("Join Server")}
-              </button>
-            </div>
+            <EmptyState
+              className="is-compact server-list-state"
+              illustration="none"
+              icon={Server}
+              title={t("No servers yet")}
+              body={t("uah.servers.emptyBody")}
+              primary={canCreate ? { label: t("Create server"), icon: Plus, action: () => setShowCreate(true) } : undefined}
+              secondary={{ label: t("Join Server"), icon: LogIn, action: () => setShowJoin(true) }}
+            />
           ) : (
             <div className="server-list-grouped">
               {groupedServers.folders.map((folder) => {
