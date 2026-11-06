@@ -123,7 +123,7 @@ function UserProfileModal({
   const toggleBlock = async () => {
     setBlockError("");
     try {
-      const next = await confirmToggleBlock({ userId, username: profile?.username || username, t });
+      const next = await confirmToggleBlock({ userId, username: profile?.username || username, displayName: profile?.displayName || profile?.display_name, t });
       if (next) setFriendOverride({ userId, state: "none" });
     } catch (err) {
       setBlockError(err?.message || t("Something went wrong."));

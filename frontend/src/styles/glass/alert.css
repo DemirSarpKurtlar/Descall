@@ -133,9 +133,9 @@ html.glass-ui .g-alert-btn.is-action {
 
 html.glass-ui .g-alert-btn.is-danger {
   font-weight: 600;
-  color: var(--g-red);
-  background: color-mix(in srgb, var(--g-red) 22%, transparent);
-  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-red) 45%, transparent);
+  color: #fff;
+  background-color: var(--g-red);
+  box-shadow: none;
 }
 
 html.glass-ui .g-alert-btn:active,

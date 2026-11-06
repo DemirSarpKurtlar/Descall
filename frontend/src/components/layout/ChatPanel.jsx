@@ -652,6 +652,7 @@ export default function ChatPanel({
             <BlockUserButton
               userId={headerDm.id}
               username={headerDm.username}
+              displayName={resolveDisplayName(headerDm)}
               className={`icon-btn header-block-btn${dmBlockedByMe ? " active" : ""}`}
               iconSize={20}
               compact

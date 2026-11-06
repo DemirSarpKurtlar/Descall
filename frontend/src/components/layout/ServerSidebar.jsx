@@ -812,7 +812,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
     }
     if (action === "block") {
       try {
-        await confirmToggleBlock({ userId: dm.id, username: dm.username, t });
+        await confirmToggleBlock({ userId: dm.id, username: dm.username, displayName: dm.displayName || dm.display_name, t });
       } catch (err) {
         setActionError(err?.message || t("Something went wrong."));
         setTimeout(() => setActionError(""), 4000);
