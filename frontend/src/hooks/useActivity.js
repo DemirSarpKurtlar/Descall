@@ -170,7 +170,7 @@ export function useActivity({ socket, me, friends = [] }) {
   const [currentActivity, setCurrentActivity] = useState(() => {
     const m = loadStoredManual();
     return m
-      ? { appName: 'manual', appType: 'manual', displayName: m.displayName, startedAt: m.startedAt, icon: '✏️' }
+      ? { appName: 'manual', appType: 'manual', displayName: m.displayName, startedAt: m.startedAt, icon: null }
       : null;
   });
   const [friendPresence, setFriendPresence]   = useState({});
@@ -524,7 +524,7 @@ export function useActivity({ socket, me, friends = [] }) {
     const startedAt = manualRef.current.startedAt;
     const override  = manualRef.current;
     setManualOverride(override);
-    setCurrentActivity({ appName: 'manual', appType: 'manual', displayName, startedAt, icon: '✏️' });
+    setCurrentActivity({ appName: 'manual', appType: 'manual', displayName, startedAt, icon: null });
     persistManual(override);
 
     socket?.emit('activity:manual', { displayName, expiresIn: expiresIn ?? null });

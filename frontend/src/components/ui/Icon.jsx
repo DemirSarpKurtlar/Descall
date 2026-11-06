@@ -33,6 +33,7 @@ import {
   Bluetooth as PBluetooth,
   Boat as PBoat,
   BookOpen as PBookOpen,
+  Briefcase as PBriefcase,
   Broadcast as PBroadcast,
   Bug as PBug,
   Buildings as PBuildings,
@@ -468,6 +469,7 @@ export const Cake = make(PCake, "Cake");
 export const Bug = make(PBug, "Bug");
 export const Box = make(PCube, "Box");
 export const BookOpen = make(PBookOpen, "BookOpen");
+export const Briefcase = make(PBriefcase, "Briefcase");
 export const BellOff = make(PBellSlash, "BellOff");
 export const SwitchCamera = make(PCameraRotate, "SwitchCamera");
 export const ArchiveRestore = make(PArrowCounterClockwise, "ArchiveRestore");
