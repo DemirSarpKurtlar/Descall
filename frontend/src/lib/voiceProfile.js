@@ -503,20 +503,30 @@ export function claimVoiceAudioSession() {
   }
 }
 
+/**
+ * Receiver jitter buffer for the link quality. jitterBufferTarget is in
+ * MILLISECONDS (null = browser default); the old playoutDelayHint is in
+ * seconds. This used to write the seconds value (0.05-0.16) into
+ * jitterBufferTarget, i.e. 0.16 ms, right after applyAdaptiveJitterBuffer
+ * had set 80-120 ms on the same receivers: on a lossy group / server voice
+ * link the deeper buffer was undone on every stats tick (choppy audio).
+ */
 export function tuneAudioReceiver(receiver, quality = "good") {
   if (!receiver) return;
-  const target = jitterBufferTargetSeconds(quality);
-  try {
-    if ("jitterBufferTarget" in receiver) receiver.jitterBufferTarget = target;
-  } catch {
-    /* older browsers ignore the hint */
+  if ("jitterBufferTarget" in receiver) {
+    try {
+      receiver.jitterBufferTarget = jitterBufferTargetMs(quality);
+    } catch {
+      /* out of range on some builds: keep the browser default */
+    }
+    return;
   }
   try {
     if (typeof receiver.playoutDelayHint === "number" || "playoutDelayHint" in receiver) {
-      receiver.playoutDelayHint = target;
+      receiver.playoutDelayHint = jitterBufferTargetSeconds(quality);
     }
   } catch {
-    /* ignore */
+    /* older browsers ignore the hint */
   }
 }
 
