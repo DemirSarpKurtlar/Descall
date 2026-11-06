@@ -4259,9 +4259,9 @@ export const phrases = {
   "Full server structure with categories, text, voice, and stage channels, topics, slowmode, and NSFW flags included.":
     "Kategoriler, yazı, ses ve stage kanallarıyla tam sunucu yapısı, konu, yavaş mod ve NSFW dahil.",
   "Role hierarchy with hoist/mention, plus per-channel allow/deny overrides for staff rooms, announcements, and VIP spaces.":
-    "Hoist/mention’lı rol hiyerarşisi; staff, duyuru ve VIP için kanal allow/deny override’ları.",
+    "Rolleri sırala, kişileri etiketle; yetkili, duyuru ve VIP kanalları için kanal bazında izin ver.",
   "Kick, ban, timeout, audit logs, community rules, and invite links so servers stay organized as they grow.":
-    "Kick, ban, timeout, denetim kayıtları, topluluk kuralları ve davet linkleri, sunucu büyürken düzenli kalsın.",
+    "At, yasakla, sustur; denetim kaydı, topluluk kuralları ve davet bağlantılarıyla sunucun büyürken düzenli kalsın.",
   "DMs and server chat with typing indicators, a Discord alternative that stays focused on people you know.":
     "Yazıyor göstergeli DM ve sunucu sohbeti, tanıdığın insanlara odaklı Discord alternatifi.",
   "Crystal-clear WebRTC voice and HD video for squads and server lobbies, without Nitro-gated quality of life.":
@@ -4324,7 +4324,7 @@ export const phrases = {
   "Password, Google, optional 2FA": "Parola, Google, isteğe bağlı 2FA",
   "Password, OAuth, 2FA": "Parola, OAuth, 2FA",
   "Moderation": "Moderasyon",
-  "Kick, ban, timeout, audit log, invites": "Kick, ban, timeout, denetim kaydı, davetler",
+  "Kick, ban, timeout, audit log, invites": "At, yasakla, sustur; denetim kaydı, davetler",
   "Deep tools + bots": "Derin araçlar + botlar",
   "Cosmetic shop (core free)": "Kozmetik mağaza (çekirdek ücretsiz)",
   "DesCoin cosmetics; core free": "DesCoin kozmetikleri; çekirdek ücretsiz",
