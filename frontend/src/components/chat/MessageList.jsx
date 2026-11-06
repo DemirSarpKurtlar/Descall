@@ -9,6 +9,7 @@ import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
 import { previewUrlOf } from "../../lib/linkPreview";
+import { stickerOf } from "../../lib/descallStickers";
 import { dmSeen, groupSeenBy, namesSummary } from "../../lib/readReceipts";
 import { useGroupReads, useReceiptsSetting } from "../../hooks/useReadReceipts";
 
@@ -1080,7 +1081,9 @@ function MessageBubble({
   const mediaPreview = visualMediaPreview(message);
   const isVisualMedia = Boolean(mediaPreview);
   const isGif = Boolean(mediaPreview?.isGif);
-  const mediaOnly = isVisualMedia && !String(message.text || "").trim();
+  // A Descall sticker (messaging phase 4): the whole text is one sticker token, drawn large without a bubble.
+  const sticker = !message.mediaUrl && !message.media_url ? stickerOf(message.text) : null;
+  const mediaOnly = (isVisualMedia && !String(message.text || "").trim()) || Boolean(sticker);
   const isPollV2 = mediaTypeNorm === "poll_v2";
   const isPollEnd = mediaTypeNorm === "poll_end";
   const isLegacyPoll = mediaTypeNorm === "poll" || isLegacyPollText(message.text);
@@ -1666,7 +1669,7 @@ function MessageBubble({
         data-no-swipe-back=""
         data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
-        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
@@ -1784,6 +1787,8 @@ function MessageBubble({
           <SlashCommandEmbed embed={message.embed} type={message.appType || message.type} />
         ) : isLegacyPoll && message.text ? (
           <LegacyPollCard text={message.text} />
+        ) : sticker ? (
+          <img className="msg-sticker" src={sticker.src} alt={t(sticker.label)} title={t(sticker.label)} draggable={false} data-testid="msg-sticker" />
         ) : (
           message.text && (
             <>

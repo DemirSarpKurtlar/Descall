@@ -594,6 +594,45 @@ async function runDevice(browser, base, dev) {
       await sleep(500);
       check(await page.evaluate(() => !document.querySelector('[data-testid="composer-scheduled"]')), 'the composer pill goes away');
     }
+    // --- Descall logo emoji and stickers ---
+    if (want('stickers')) {
+      await openChat(page, 'Ayşe');
+      const openPicker = () => page.evaluate(() => {
+        const b = [...document.querySelectorAll('.message-composer button')].find((x) => /moji/i.test(x.getAttribute('aria-label') || ''));
+        if (b) b.click();
+        return !!b;
+      });
+      check(await openPicker(), 'the composer has the emoji button');
+      await waitFor(page, 'Descall picker', () => ({ ok: !!document.querySelector('[data-testid="ds-picker"] [data-testid="ds-sticker-party"]') }), null, 4000);
+      await sleep(300);
+      await shot(page, `${P}15-stickers-picker`);
+      const before = state.events.length;
+      await page.click('[data-testid="ds-sticker-party"]');
+      await sleep(700);
+      check(state.events.slice(before).some((e) => e.kind === 'dm:send' && e.text === ':ds-sticker-party:'), 'a sticker goes out at once as one token');
+      const st = await waitFor(page, 'sticker bubble', () => {
+        const img = [...document.querySelectorAll('[data-testid="msg-sticker"]')].pop();
+        const b = img && img.closest('.message-bubble');
+        return { ok: !!img && img.complete && img.naturalWidth > 0, bg: b && getComputedStyle(b).backgroundColor, w: img && Math.round(img.getBoundingClientRect().width) };
+      }, null, 5000).catch(() => ({ ok: false }));
+      check(st.ok && /rgba\(0, 0, 0, 0\)|transparent/.test(st.bg || ''), `the sticker shows large without a bubble (${st.w}px, ${st.bg})`);
+      await openPicker();
+      await waitFor(page, 'picker again', () => ({ ok: !!document.querySelector('[data-testid="ds-emoji-ds-love"]') }), null, 4000);
+      await page.click('[data-testid="ds-emoji-ds-love"]');
+      await sleep(200);
+      check(/:ds-love: $/.test(await composerValue(page)), 'a logo emoji is inserted as text');
+      await page.click('.composer-container textarea');
+      await page.keyboard.press('End');
+      await page.keyboard.type('Harika oldu', { delay: 5 });
+      await page.keyboard.press('Enter');
+      const inline = await waitFor(page, 'inline emoji', () => {
+        const img = [...document.querySelectorAll('.message-text .msg-logo-emoji')].pop();
+        return { ok: !!img && img.complete && img.naturalWidth > 0, h: img && Math.round(img.getBoundingClientRect().height) };
+      }, null, 5000).catch(() => ({ ok: false }));
+      check(inline.ok, `the emoji is drawn inline in the bubble (${inline.h}px)`);
+      await sleep(400);
+      await shot(page, `${P}16-stickers-chat`);
+    }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});
     problems.push(`${dev}: ${err && err.message ? err.message : err}`);

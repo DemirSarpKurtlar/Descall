@@ -12,6 +12,7 @@ import {
 } from "./callNotificationClose";
 import { premiumNotifyGate, setDeferredFlusher } from "../premium/notify/premiumNotify.js";
 import { allowNotify } from "./notifyPrefs";
+import { stickerPreviewText } from "./descallStickers";
 
 /** Settings › Bildirimler › "Mesaj önizlemesi" off: no message text on this device's cards. */
 function hidePreviews() {
@@ -294,7 +295,7 @@ class NotificationService {
     if (!allowNotify("dm", conversationId)) return;
     await this.show({
       title: from,
-      body: (!hidePreviews() && text?.substring(0, 120)) || t("New message"),
+      body: (!hidePreviews() && stickerPreviewText(text || "", t)?.substring(0, 120)) || t("New message"),
       tag: `dm-${conversationId}`,
       avatarUrl,
       // fromId: letter-avatar colour (same as the app); avatarUrl: desktop capsule photo.
@@ -311,7 +312,7 @@ class NotificationService {
     if (isDndMuted()) return;
     if (readUserSettings().msgNotifications === false) return;
     if (!allowNotify("group", groupId)) return;
-    const preview = ((!hidePreviews() && text) || t("New message")).substring(0, 100);
+    const preview = ((!hidePreviews() && stickerPreviewText(text || "", t)) || t("New message")).substring(0, 100);
     await this.show({
       title: groupName,
       body: `${from}: ${preview}`,

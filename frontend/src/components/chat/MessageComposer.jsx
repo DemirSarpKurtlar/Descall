@@ -33,6 +33,7 @@ import { getComposerInput, registerComposerInput } from "../../lib/composerFocus
 import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnter, isImeEnter } from "../../lib/composerGrow";
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
+import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
 import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
 import {
   getScheduledSnapshot, openScheduleSheet, pendingFor, scheduleTarget, subscribeScheduled, SCHEDULE_SENT_EVENT,
@@ -746,6 +747,16 @@ export default function MessageComposer({
     flash();
   };
 
+  // A sticker goes out on its own as one token message (lib/descallStickers), like a reply would.
+  const sendSticker = (st) => {
+    if (disabled || slowmodeBlocked || !st?.token) return;
+    hapticImpactLight();
+    onSend?.(withReply(st.token));
+    onClearReply?.();
+    armLocalSlowmode();
+    setShowEmojiPicker(false);
+  };
+
   const handleKeyDown = (e) => {
     // Enter inside an IME composition commits the candidate; never send.
     if (e.key === "Enter" && (composingRef.current || isImeEnter(e))) return;
@@ -1452,6 +1463,25 @@ export default function MessageComposer({
               <button className="emoji-picker-close" onClick={() => setShowEmojiPicker(false)} aria-label={t("Close")}><X size={14} /></button>
             </div>
             <div className="emoji-picker-body">
+              {/* Descall logo emoji (inserted as text) and stickers (sent at once), messaging phase 4. */}
+              <div className="emoji-category ds-picker" data-testid="ds-picker">
+                <span className="emoji-category-name">{t("msg4.stickers.emojiTitle")}</span>
+                <div className="emoji-grid">
+                  {DESCALL_EMOJI.map((em) => (
+                    <button key={em.id} type="button" className="emoji-btn ds-emoji-btn" onClick={() => insertEmoji(`${em.token} `)} title={t(em.label)} aria-label={t(em.label)} data-testid={`ds-emoji-${em.id}`}>
+                      <img src={em.src} alt="" draggable={false} />
+                    </button>
+                  ))}
+                </div>
+                <span className="emoji-category-name">{t("msg4.stickers.stickerTitle")}</span>
+                <div className="ds-sticker-grid">
+                  {DESCALL_STICKERS.map((st) => (
+                    <button key={st.id} type="button" className="ds-sticker-btn" onClick={() => sendSticker(st)} disabled={disabled || slowmodeBlocked || Boolean(editing)} title={t(st.label)} aria-label={t(st.label)} data-testid={`ds-sticker-${st.id}`}>
+                      <img src={st.src} alt="" draggable={false} />
+                    </button>
+                  ))}
+                </div>
+              </div>
               {EMOJI_CATEGORIES.map((cat) => (
                 <div key={cat.nameKey} className="emoji-category">
                   <span className="emoji-category-name">{t(cat.nameKey)}</span>
