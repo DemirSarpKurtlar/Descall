@@ -277,7 +277,7 @@ function createNotifyActions(deps = {}) {
 
   // ── Quick reply ──────────────────────────────────────────────────────────
 
-  async function replyDm(io, me, peerId, text) {
+  async function replyDm(io, me, peerId, text, { markRead = true } = {}) {
     const s = state();
     const { convKey, cacheDmMessages, messageSender, isAcceptedFriend } = dm();
     const myId = me.id;
@@ -366,7 +366,8 @@ function createNotifyActions(deps = {}) {
     emitToUser(io, myId, "dm:message", { ...messagePayload, convWith: peerId });
     emitToUser(io, peerId, "dm:unread:sync", { peerId: myId, count: recipientActivePeer !== myId ? unreadCount : 0 });
     // The reply means I have read this chat.
-    await markDmRead(io, myId, peerId).catch(() => {});
+    // A scheduled send (messaging phase 4) is not the sender reading the chat.
+    if (markRead) await markDmRead(io, myId, peerId).catch(() => {});
 
     let mentioned = false;
     const peerName = s.usernameById.get(peerId);
@@ -425,13 +426,13 @@ function createNotifyActions(deps = {}) {
     return readSendOutcome(emitted, { messageEvent: "server:channel:message", errorEvent: "server:channel:message:error", tempId });
   }
 
-  async function reply(io, userId, { conv, text } = {}) {
+  async function reply(io, userId, { conv, text, markRead = true } = {}) {
     const c = parseConversation(conv);
     const s = state();
     const body = normalizeReplyText(text, Number(s.systemConfig?.maxMessageLength) || 2000);
     assertNotTimedOut(userId);
     const me = await loadActor(userId);
-    if (c.type === "dm") return replyDm(io, me, c.id, body);
+    if (c.type === "dm") return replyDm(io, me, c.id, body, { markRead });
     if (c.type === "group") return replyGroup(io, me, c.id, body);
     return replyChannel(io, me, c.id, body);
   }

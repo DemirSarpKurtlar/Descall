@@ -153,6 +153,20 @@ html[data-theme="light"] .msg-unread-go { border-left-color: rgba(0, 0, 0, 0.12)
 :is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) :is(.msg-link-preview-site, .msg-link-preview-desc) { color: rgba(255, 255, 255, 0.78); }
 html[data-theme="light"] .msg-link-preview { background: rgba(0, 0, 0, 0.04); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
 
+/* Scheduled sending: "2 zamanlanmış mesaj" over the composer (same strip as the slow mode hint). */
+button.composer-slowmode-hint.ms-sched-hint {
+  appearance: none;
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  color: var(--primary, #587af5);
+  background: color-mix(in srgb, var(--primary, #587af5) 10%, var(--surface-2, rgba(255, 255, 255, 0.06)));
+}
+button.composer-slowmode-hint.ms-sched-hint:hover { background: color-mix(in srgb, var(--primary, #587af5) 16%, var(--surface-2, rgba(255, 255, 255, 0.06))); }
+button.composer-slowmode-hint.ms-sched-hint:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 1px; }
+
 /* "Görüldü" under my newest message. */
 /* Same left edge as my bubble (chat-left-align.css), checked by the phase 4 e2e. */
 .msg-seen {

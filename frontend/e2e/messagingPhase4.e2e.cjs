@@ -548,6 +548,52 @@ async function runDevice(browser, base, dev) {
         check(bell, 'the muted chat shows the bell-off mark in the list');
       }
     }
+    // --- scheduled sending ---
+    if (want('schedule')) {
+      await openChat(page, 'Ayşe');
+      await typeInComposer(page, 'Yarın sabah toplantıyı unutma!');
+      if (dev === 'desktop') {
+        // Right click on Send: send later.
+        await page.click('.composer-send-btn', { button: 'right' });
+      } else {
+        await page.tap('.composer-left .composer-action-btn');
+        await waitFor(page, 'attachment menu', () => ({ ok: !!document.querySelector('[data-testid="attach-schedule"]') }), null, 4000);
+        await page.tap('[data-testid="attach-schedule"]');
+      }
+      await waitFor(page, 'schedule sheet', () => ({ ok: !!document.querySelector('[data-testid="schedule-sheet"] [data-testid="schedule-submit"]') }), null, 5000);
+      await sleep(400);
+      check(await page.evaluate(() => document.querySelector('[data-testid="schedule-text"]').value) === 'Yarın sabah toplantıyı unutma!', 'the sheet takes the composer text');
+      await page.click('[data-testid="schedule-preset-tomorrow"]');
+      await sleep(250);
+      await shot(page, `${P}12-schedule-new`);
+      const before = state.events.length;
+      await page.click('[data-testid="schedule-submit"]');
+      await sleep(700);
+      const ev = state.events.slice(before).find((e) => e.kind === 'schedule');
+      const at = ev && new Date(ev.sendAt);
+      const local = at && at.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+      check(ev && ev.convType === 'dm' && ev.convId === AYSE.id && ev.content === 'Yarın sabah toplantıyı unutma!', 'the server gets the schedule (text, chat)');
+      check(local === '09:00' && at.getTime() > Date.now() + 3600e3, `"Yarın sabah" is tomorrow 09:00 local (${local})`);
+      check(await page.evaluate(() => !!document.querySelector('[data-testid="schedule-item"]')), 'the sheet then lists it');
+      await page.keyboard.press('Escape');
+      await sleep(500);
+      check((await composerValue(page)) === '', 'the composer is cleared');
+      const pill = await page.evaluate(() => (document.querySelector('[data-testid="composer-scheduled"]') || {}).textContent || '');
+      check(/1 zamanlanmış mesaj/.test(pill), `the composer shows "1 zamanlanmış mesaj" (${pill})`);
+      await shot(page, `${P}13-schedule-pill`);
+      await page.click('[data-testid="composer-scheduled"]');
+      await waitFor(page, 'list', () => ({ ok: !!document.querySelector('[data-testid="schedule-item"]') }), null, 4000);
+      await sleep(400);
+      await shot(page, `${P}14-schedule-list`);
+      const b2 = state.events.length;
+      await page.click('[data-testid="schedule-cancel"]');
+      await sleep(600);
+      check(state.events.slice(b2).some((e) => e.kind === 'schedule-cancel'), 'cancel reaches the server');
+      check(await page.evaluate(() => !document.querySelector('[data-testid="schedule-item"]')), 'the item leaves the list');
+      await page.keyboard.press('Escape');
+      await sleep(500);
+      check(await page.evaluate(() => !document.querySelector('[data-testid="composer-scheduled"]')), 'the composer pill goes away');
+    }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});
     problems.push(`${dev}: ${err && err.message ? err.message : err}`);

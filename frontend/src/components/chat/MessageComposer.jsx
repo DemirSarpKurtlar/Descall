@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
   Plus, ImagePlus, Paperclip, Image, FileText, X, StopCircle, Loader2, Reply,
-  Pencil, Timer, CircleHelp,
+  Pencil, Timer, CircleHelp, Clock,
 } from "../ui/Icon.jsx";
 import { SLASH_ICONS } from "../polls/slashIconsMap";
 import PollCreateSheet from "../polls/PollCreateSheet";
@@ -34,6 +34,9 @@ import { composerDeviceClass, maxComposerHeight, composerHeight, shouldSendOnEnt
 import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
+import {
+  getScheduledSnapshot, openScheduleSheet, pendingFor, scheduleTarget, subscribeScheduled, SCHEDULE_SENT_EVENT,
+} from "../../lib/scheduledMessages";
 
 
 
@@ -166,6 +169,27 @@ export default function MessageComposer({
     draftTimerRef.current = window.setTimeout(flushDraft, 250);
     return undefined;
   }, [message, flushDraft]);
+  // Scheduled sending (messaging phase 4): this chat's pending count, the
+  // sheet (from the + menu or a long press / right click on Send), and
+  // clearing the field once its text was scheduled.
+  const schedTarget = scheduleTarget({ activeDmUser, activeGroup, activeChannel, activeServer });
+  const scheduledAll = useSyncExternalStore(subscribeScheduled, getScheduledSnapshot, getScheduledSnapshot);
+  const scheduledHere = schedTarget ? pendingFor(scheduledAll, schedTarget.convType, schedTarget.convId).length : 0;
+  const openSchedule = useCallback((mode = "new") => {
+    if (!schedTarget) return;
+    setShowAttachmentMenu(false);
+    openScheduleSheet({ mode, target: schedTarget, text: mode === "new" ? messageRef.current : "", fromComposer: mode === "new", draftKey: draftKeyRef.current });
+  }, [schedTarget]);
+  useEffect(() => {
+    const onSent = (e) => {
+      if (e?.detail?.draftKey && e.detail.draftKey === draftKeyRef.current) setMessage("");
+    };
+    window.addEventListener(SCHEDULE_SENT_EVENT, onSent);
+    return () => window.removeEventListener(SCHEDULE_SENT_EVENT, onSent);
+  }, []);
+  const sendHoldRef = useRef(0);
+  const sendHeldRef = useRef(false);
+
   useEffect(() => {
     const onHide = () => flushDraft();
     window.addEventListener("pagehide", onHide);
@@ -1145,6 +1169,24 @@ export default function MessageComposer({
       </AnimatePresence>
 
       <AnimatePresence>
+        {scheduledHere > 0 && !replyTo && !editing && !slowmodeLabel && (
+          <motion.button
+            type="button"
+            key="sched-hint"
+            className="composer-slowmode-hint ms-sched-hint"
+            data-testid="composer-scheduled"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            onClick={() => openSchedule("list")}
+          >
+            <Clock size={13} />
+            <span>{t("msg4.schedule.pending", { count: scheduledHere })}</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {replyTo && !editing && (
           <motion.div
             className="composer-reply-bar"
@@ -1387,6 +1429,12 @@ export default function MessageComposer({
               <div className="attachment-icon"><span className="attachment-gif-badge" aria-hidden="true">GIF</span></div>
               <span className="attachment-label">{t("Send GIF")}</span>
             </button>
+            {schedTarget && !editing ? (
+              <button className="attachment-item" data-testid="attach-schedule" onClick={() => openSchedule("new")}>
+                <div className="attachment-icon"><Clock size={22} /></div>
+                <span className="attachment-label">{t("msg4.schedule.menu")}</span>
+              </button>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1505,7 +1553,28 @@ export default function MessageComposer({
 
         <motion.button
           className={`composer-send-btn ${canSend ? "active" : ""}${sendFlash ? " is-flashing" : ""}`}
-          onClick={handleSend}
+          onClick={() => {
+            if (sendHeldRef.current) { sendHeldRef.current = false; return; }
+            handleSend();
+          }}
+          // Right click / long press on Send: send later (messaging phase 4).
+          onContextMenu={(e) => {
+            if (editing || !schedTarget || !message.trim() || pendingAttach) return;
+            e.preventDefault();
+            openSchedule("new");
+          }}
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse" || editing || !schedTarget || !message.trim() || pendingAttach) return;
+            clearTimeout(sendHoldRef.current);
+            sendHoldRef.current = window.setTimeout(() => {
+              sendHeldRef.current = true;
+              hapticImpactLight();
+              openSchedule("new");
+            }, 520);
+          }}
+          onPointerUp={() => clearTimeout(sendHoldRef.current)}
+          onPointerCancel={() => clearTimeout(sendHoldRef.current)}
+          onPointerLeave={() => clearTimeout(sendHoldRef.current)}
           disabled={!canSend || disabled}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

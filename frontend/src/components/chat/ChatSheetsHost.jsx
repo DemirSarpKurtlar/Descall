@@ -4,6 +4,7 @@ import { storeReceiptsSetting } from "../../lib/readReceipts";
 import { allowedIn, matchShortcut, stepConversation, OPEN_SHORTCUTS_EVENT } from "../../lib/shortcuts";
 import { JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
 import { OPEN_NOTIFY_OPTIONS_EVENT, putPref, replaceAllPrefs } from "../../lib/notifyPrefs";
+import { OPEN_SCHEDULE_EVENT, applyScheduled, setScheduled } from "../../lib/scheduledMessages";
 import { useToast } from "../../context/ToastContext";
 import { useT } from "../../context/LocaleContext";
 
@@ -11,6 +12,7 @@ import { useT } from "../../context/LocaleContext";
 const ForwardSheet = lazy(() => import("./ForwardSheet.jsx"));
 const ShortcutsSheet = lazy(() => import("./ShortcutsSheet.jsx"));
 const NotifyOptionsSheet = lazy(() => import("./NotifyOptionsSheet.jsx"));
+const ScheduleSheet = lazy(() => import("./ScheduleSheet.jsx"));
 
 const api = (path, opts) => import("../../api/authedHttp").then((m) => m.authedRequest(path, opts));
 
@@ -61,9 +63,23 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
   useEffect(() => {
     if (!socket) return undefined;
     const onUpdate = (pref) => putPref(pref);
+    const onScheduled = (item) => applyScheduled(item);
     socket.on("notify-prefs:update", onUpdate);
-    return () => socket.off("notify-prefs:update", onUpdate);
+    socket.on("scheduled:update", onScheduled);
+    return () => {
+      socket.off("notify-prefs:update", onUpdate);
+      socket.off("scheduled:update", onScheduled);
+    };
   }, [socket]);
+
+  // Scheduled sending (messaging phase 4): my pending list, and the sheet.
+  const [schedule, setSchedule] = useState({ open: false, detail: null });
+  useEffect(() => {
+    api("/api/scheduled-messages").then((r) => { if (Array.isArray(r?.items)) setScheduled(r.items); }).catch(() => {});
+    const onOpen = (e) => { if (e?.detail?.target) setSchedule({ open: true, detail: e.detail }); };
+    window.addEventListener(OPEN_SCHEDULE_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SCHEDULE_EVENT, onOpen);
+  }, []);
 
   // Keyboard shortcuts (messaging phase 4, lib/shortcuts): Ctrl+/ help, Alt+↑/↓ chats,
   // Alt+Shift+↑/↓ unread chats, Shift+PageUp first unread, Ctrl+Shift+F search.
@@ -128,6 +144,9 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
           save={(pref) => api("/api/notify-prefs", { method: "PUT", body: pref })}
           onClose={() => setNotify((n) => ({ ...n, open: false }))}
         />
+      ) : null}
+      {schedule.detail ? (
+        <ScheduleSheet open={schedule.open} detail={schedule.detail} onClose={() => setSchedule((s) => ({ ...s, open: false }))} />
       ) : null}
       {help.mounted ? <ShortcutsSheet open={help.open} onClose={() => setHelp((h) => ({ ...h, open: false }))} /> : null}
     </Suspense>
