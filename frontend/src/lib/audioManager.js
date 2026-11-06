@@ -53,6 +53,9 @@ export const CALL_OUTPUT_TYPES = new Set([
   "disconnect",
 ]);
 
+/** Call rings: never softened by the background volume (see effectiveVolume). */
+export const RING_TYPES = new Set(["incomingCall", "outgoingCall"]);
+
 /** Output a sound plays on: the hook's choice, else the call speaker for call sounds, else the default. */
 export function soundSinkId(type, hookSinkId = null) {
   if (typeof hookSinkId === "string") return hookSinkId;
@@ -218,8 +221,15 @@ class AudioManager {
     return this.soundPackKey;
   }
 
-  effectiveVolume(override) {
+  /**
+   * Volume of `type` now. The background multiplier softens chat pings while
+   * the window is not in front; the call rings are exempt: the ringtone
+   * rang at half volume exactly when the app was minimised / behind another
+   * window, and the ringback halved as soon as the caller switched apps.
+   */
+  effectiveVolume(override, type) {
     if (override !== undefined) return override;
+    if (RING_TYPES.has(type)) return this.settings.volume;
     return this.isBackgrounded
       ? this.settings.volume * this.settings.backgroundVolume
       : this.settings.volume;
@@ -228,7 +238,7 @@ class AudioManager {
   playSynth(type, { loop = false, volume, sinkId = "" } = {}) {
     const pack = this.soundPackKey;
     if (!pack) return false;
-    const vol = this.effectiveVolume(volume);
+    const vol = this.effectiveVolume(volume, type);
     const role = type === "callStart" ? "outgoingCall" : type;
 
     if (loop) {
@@ -317,12 +327,12 @@ class AudioManager {
    * Update volume for all sounds based on background state
    */
   updateVolume() {
-    const targetVolume = this.isBackgrounded 
-      ? this.settings.volume * this.settings.backgroundVolume 
-      : this.settings.volume;
-
-    Object.values(this.sounds).forEach(audio => {
-      if (audio) audio.volume = targetVolume;
+    Object.entries(this.sounds).forEach(([type, audio]) => {
+      if (audio) audio.volume = this.effectiveVolume(undefined, type);
+    });
+    // Sound-pack loops play on their own clone.
+    this.synthLoops.forEach((stop, type) => {
+      if (stop?.element) stop.element.volume = this.effectiveVolume(undefined, type);
     });
   }
 
@@ -416,9 +426,7 @@ class AudioManager {
     const playAudio = loop ? audio : audio.cloneNode();
 
     // Set volume
-    playAudio.volume = volume !== undefined
-      ? volume
-      : (this.isBackgrounded ? this.settings.volume * this.settings.backgroundVolume : this.settings.volume);
+    playAudio.volume = this.effectiveVolume(volume, type);
 
     // Set loop
     playAudio.loop = loop;
