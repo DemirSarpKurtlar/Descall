@@ -221,3 +221,21 @@ html[data-theme="light"] .bs-preview-line time {
 html[data-theme="light"] .bs-preview-body p {
   color: rgba(57, 60, 77, 0.82);
 }
+
+/* #101 Settings sub pages, light theme (iPhone): the only way back was a white
+   chevron on a clear circle. Label-ink chevron on a heavy-frost disc. */
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .us-main-header .us-icon-btn {
+  background: var(--frost-sheen-light), var(--frost-base-light);
+  color: #1B1D26;
+  box-shadow: 0 2px 8px rgba(16, 18, 28, 0.08), inset 0 0 0 0.5px rgba(57, 60, 77, 0.16);
+  -webkit-backdrop-filter: blur(var(--frost-blur, 48px)) saturate(var(--frost-saturate, 180%));
+  backdrop-filter: blur(var(--frost-blur, 48px)) saturate(var(--frost-saturate, 180%));
+}
+html.glass-ui[data-theme="light"].a11y-solid .user-settings.is-mobile.g-settings .us-main-header .us-icon-btn {
+  background: var(--frost-solid-light);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .s3-back {
+  color: var(--g-brand, #587AF6);
+}
