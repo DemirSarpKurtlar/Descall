@@ -1002,19 +1002,8 @@ export default function ServerVoicePanel({
           )
         : null}
       <header className="server-voice-room-head">
-        <span className="server-voice-room-mark" aria-hidden>
-          {isStage ? <Radio size={18} /> : <Volume2 size={18} />}
-        </span>
-        <div className="server-voice-room-title">
-          <h2>
-            {channel?.name || t("Voice channel")}
-            {isStage ? <span className="server-stage-pill">{t("Stage")}</span> : null}
-          </h2>
-          <p>
-            {isStage ? t("Stage channel") : t("Voice channel")}
-            {channel?.topic ? ` · ${channel.topic}` : ""}
-          </p>
-        </div>
+        {/* UI audit #114: the chat header above already shows the channel name and
+            "Ses kanalı", so the room head keeps only status and actions. */}
         <div className="server-voice-room-meta">
           {worldAvailable && inThis && !isStage ? (
             <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
@@ -1025,10 +1014,12 @@ export default function ServerVoicePanel({
               {statusLabel}
             </span>
           ) : null}
-          <span className="server-voice-count-pill">
-            <Users size={13} aria-hidden />
-            {countLabel}
-          </span>
+          {count > 0 ? (
+            <span className="server-voice-count-pill">
+              <Users size={13} aria-hidden />
+              {countLabel}
+            </span>
+          ) : null}
           {serverVoice?.mediaMode === "sfu" ? (
             <span className="server-media-mode">{t("SFU voice enabled")}</span>
           ) : null}

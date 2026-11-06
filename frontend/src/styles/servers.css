@@ -2838,9 +2838,14 @@ button.member-row.server-member-row {
     var(--surface-0, #111214);
 }
 
+.server-voice-room-head:not(:has(.server-voice-room-meta > *)) {
+  display: none;
+}
+
 .server-voice-room-head {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
   min-height: 58px;
   min-width: 0;
