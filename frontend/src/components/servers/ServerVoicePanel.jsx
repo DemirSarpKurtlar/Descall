@@ -31,7 +31,7 @@ import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import { nextShareSelection, visibleScreenStream } from "../../lib/screenShareTracks";
 import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../../lib/fluid/springs";
-import { applyPlaybackGain } from "../../lib/voiceGain";
+import { applyPlaybackGain, releasePlaybackGain } from "../../lib/voiceGain";
 import ShareFilmstrip from "../voice/ShareFilmstrip";
 import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
@@ -288,6 +288,12 @@ function RemoteScreenAudioSink({ stream, volume = 100, enabled = true, sinkId = 
   const audioRef = useRef(null);
   const trackCount =
     stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
+
+  // A boosted share keeps an AudioContext: close it with the element.
+  useEffect(() => {
+    const el = audioRef.current;
+    return () => releasePlaybackGain(el);
+  }, []);
 
   useEffect(() => {
     const audioEl = audioRef.current;

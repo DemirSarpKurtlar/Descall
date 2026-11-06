@@ -27,7 +27,7 @@ import SpeakingRings from "./voice/SpeakingRings";
 import ParticipantStateIcons from "./voice/ParticipantStateIcons";
 import useVoiceActivity from "../hooks/useVoiceActivity";
 import { networkQualityTooltipKey, participantVolumePercent, readParticipantGain } from "../lib/voiceProfile";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
 import { nextShareSelection } from "../lib/screenShareTracks";
 import ShareFilmstrip, { ShareGridVideo } from "./voice/ShareFilmstrip";
 import { useT } from "../context/LocaleContext";
@@ -82,6 +82,12 @@ function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
   const audioRef = useRef(null);
   const trackCount =
     stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
+
+  // A boosted share keeps an AudioContext: close it with the element.
+  useEffect(() => {
+    const el = audioRef.current;
+    return () => releasePlaybackGain(el);
+  }, []);
 
   useEffect(() => {
     const audioEl = audioRef.current;

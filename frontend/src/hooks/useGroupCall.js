@@ -35,7 +35,7 @@ import {
 } from "../lib/webrtcNegotiation";
 import { preloadIceServers } from "../lib/iceConfig";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
 import {
   clampGain,
   micRecapturePlan,
@@ -544,6 +544,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         audioEl.pause();
         audioEl.srcObject = null;
         audioEl.remove();
+        releasePlaybackGain(audioEl);
       } catch (e) {
         console.warn(`[GroupCall] Error removing audio for ${userId}:`, e);
       }
@@ -866,6 +867,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       const audioEl = remoteAudioRefs.current.get(userId);
       if (audioEl) {
         try { audioEl.pause(); audioEl.srcObject = null; audioEl.remove(); } catch { /* ignore */ }
+        releasePlaybackGain(audioEl);
         remoteAudioRefs.current.delete(userId);
       }
       try { pc.close(); } catch { /* ignore */ }
@@ -2055,6 +2057,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
         audioEl.pause();
         audioEl.srcObject = null;
         audioEl.remove();
+        releasePlaybackGain(audioEl);
         remoteAudioRefs.current.delete(userId);
       }
 

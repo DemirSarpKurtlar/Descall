@@ -37,7 +37,7 @@ import { ensureIceServersForCall, getIceConfigStatus, iceServersHaveTurn, preloa
 import { captureVoiceDiagnostics } from "../lib/voiceDiagnostics";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
 import {
   micRecapturePlan,
   primeCapturedMic,
@@ -295,7 +295,18 @@ export function useCall(socket, callOccupancyRef = null) {
   // Bumped on every screen publish/stop so a late `finally` cannot clear the
   // suppress flag that a newer offer is still holding.
   const screenOfferEpochRef = useRef(0);
-  const remoteAudioRef = useRef(null);
+  // Callback ref with a `.current` (read like a ref object): when the overlay
+  // drops the <audio> (call over, incoming → active layout), the old
+  // element's boost graph is closed instead of keeping an AudioContext alive.
+  const [remoteAudioRef] = useState(() => {
+    const ref = (el) => {
+      const prev = ref.current;
+      if (prev && prev !== el) releasePlaybackGain(prev);
+      ref.current = el;
+    };
+    ref.current = null;
+    return ref;
+  });
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
   const screenVideoRef = useRef(null);

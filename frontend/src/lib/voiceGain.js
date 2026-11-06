@@ -8,6 +8,10 @@
  * output hard-clipped (crackle on the loud syllables at 150–200%). A limiter
  * (DynamicsCompressorNode set as a brick wall just under 0 dBFS) now sits
  * after the gain, so a boost makes quiet voices louder without clipping.
+ *
+ * Each graph owns an AudioContext (its own audio render thread). They were
+ * never closed: a group / server voice member you had boosted kept one alive
+ * after they left. releasePlaybackGain(el) closes it when the element goes.
  */
 
 import { registerSinkContext, registerSinkElement } from "./callAudioDevices.js";
@@ -59,10 +63,10 @@ export function applyPlaybackGain(el, gain) {
       source.connect(node);
       node.connect(limiter);
       limiter.connect(ctx.destination);
-      graph = { ctx, gain: node, limiter };
-      graphs.set(el, graph);
       // The boost graph plays through the context, not the element's sink.
-      registerSinkContext(ctx);
+      const unregister = registerSinkContext(ctx);
+      graph = { ctx, gain: node, limiter, unregister };
+      graphs.set(el, graph);
     } catch {
       try { ctx?.close?.(); } catch { /* ignore */ }
       el.volume = Math.min(1, level);
@@ -75,6 +79,21 @@ export function applyPlaybackGain(el, gain) {
     graph.ctx.resume().catch(() => {});
   }
   return level;
+}
+
+/** The element is going away (peer left, call ended): close its boost graph. */
+export function releasePlaybackGain(el) {
+  const graph = el ? graphs.get(el) : null;
+  if (!graph) return false;
+  graphs.delete(el);
+  try { graph.unregister?.(); } catch { /* ignore */ }
+  try {
+    const p = graph.ctx.close();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {
+    /* already closed */
+  }
+  return true;
 }
 
 /** Test hook: the graph of an element, or null. */
