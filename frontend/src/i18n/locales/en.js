@@ -661,7 +661,7 @@ export const nested = {
     "dataExport": "Data export (KVKK)",
     "dataExported": "Data file downloaded",
     "errors": "Error logs",
-    "errLead": "Errors from the app, the same error grouped into one line. See how often, for how many people and on which platform; mark it when fixed. A fixed error that comes back reopens itself.",
+    "errLead": "Errors from the app, one line per distinct error.",
     "errKpiEvents": "Errors",
     "errKpiOpen": "Open issues",
     "errKpiNew": "New (24 hours)",

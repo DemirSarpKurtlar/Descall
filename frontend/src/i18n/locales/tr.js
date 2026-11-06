@@ -668,7 +668,7 @@ export const nested = {
     "dataExport": "KVKK dışa aktarma",
     "dataExported": "Veri dosyası indirildi",
     "errors": "Hata Kayıtları",
-    "errLead": "Uygulamada oluşan hatalar, aynı hata tek satırda toplanarak. Kaç kez, kaç kişide, hangi platformda olduğunu gör; çözülünce işaretle. Çözülen hata tekrar ederse kendiliğinden yeniden açılır.",
+    "errLead": "Uygulamadaki hatalar, aynı hata tek satırda.",
     "errKpiEvents": "Hata sayısı",
     "errKpiOpen": "Açık hata",
     "errKpiNew": "Yeni (24 saat)",
