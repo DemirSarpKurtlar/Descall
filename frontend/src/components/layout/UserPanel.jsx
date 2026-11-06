@@ -1421,7 +1421,7 @@ const UserPanel = forwardRef(function UserPanel({
                   className="us-btn us-hero-edit"
                   onClick={() => openTab("profile")}
                 >
-                  <Type size={14} />
+                  <Pencil size={14} />
                   {t("Edit profile")}
                 </button>
                 <div className="us-hero-meta">
@@ -1465,10 +1465,15 @@ const UserPanel = forwardRef(function UserPanel({
                 </div>
                 <div className="us-info-row">
                   <span className="us-muted">{t("User ID")}</span>
-                  <button type="button" className="us-copy-btn" onClick={copyUserId} title={t("Copy ID")} aria-label={t("Copy ID")}>
-                    <span className="us-info-value mono">{me?.id || "—"}</span>
-                    {copiedId ? <Check size={14} /> : <Copy size={14} />}
-                  </button>
+                  {/* UI audit #40: system font, the ID truncates in the middle of
+                      the row and the action says what it does. */}
+                  <span className="us-username-value us-id-row">
+                    <span className="us-info-value us-id-value" title={me?.id || ""}>{me?.id || "—"}</span>
+                    <button type="button" className="us-copy-btn us-copy-text" onClick={copyUserId} aria-label={t("Copy ID")}>
+                      {copiedId ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copiedId ? t("Copied") : t("Copy")}</span>
+                    </button>
+                  </span>
                 </div>
                 <div className="us-info-row">
                   <span className="us-muted">{t("Status")}</span>

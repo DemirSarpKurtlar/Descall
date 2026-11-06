@@ -611,6 +611,36 @@
   color: var(--primary);
 }
 
+/* UI audit #40: Kullanıcı kimliği row = system font value + "Kopyala" chip. */
+.us-id-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 70%;
+}
+.us-id-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.us-copy-btn.us-copy-text {
+  flex: none;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-0) 8%, transparent);
+  color: var(--text-0);
+  font-size: 12.5px;
+  font-weight: 600;
+  max-width: none;
+}
+
 .us-online-dot {
   font-size: 13px;
   font-weight: 600;
