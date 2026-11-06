@@ -333,12 +333,6 @@ export default class ErrorBoundary extends React.Component {
 
     if (!this.state.hasError) return this.props.children;
 
-    // A pane can draw its own inline error card (admin sections); reporting and the
-    // resetKey reset above stay the same.
-    if (this.props.scope === "pane" && typeof this.props.fallback === "function") {
-      return this.props.fallback({ retry: this.handleRetry, supportCode: this.state.supportCode || "" });
-    }
-
     const showDetails = canSeeErrorDetails({
       dev: import.meta.env.DEV,
       admin: Boolean(this.state.userData?.isAdmin),

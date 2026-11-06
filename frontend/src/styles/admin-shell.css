@@ -364,7 +364,8 @@
 
 /* ── Inline error card (section failed to load or crashed): the menu stays put ── */
 .adm-error-card {
-  max-width: 420px;
+  box-sizing: border-box;
+  width: min(420px, calc(100% - 32px));
   margin: 48px auto;
   padding: 28px 24px 24px;
   display: flex;

@@ -193,7 +193,7 @@ export default function AdminShell({
         </header>
         {banner}
         <main ref={mainRef} className="adm-main" data-tab={current}>
-          <AdminSectionBoundary resetKey={current}>{children}</AdminSectionBoundary>
+          <AdminSectionBoundary scope="pane" resetKey={current}>{children}</AdminSectionBoundary>
         </main>
         {drawer ? (
           <div className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
@@ -225,7 +225,7 @@ export default function AdminShell({
         </aside>
         <main ref={mainRef} className="adm-main" data-tab={current}>
           {banner}
-          <AdminSectionBoundary resetKey={current}>{children}</AdminSectionBoundary>
+          <AdminSectionBoundary scope="pane" resetKey={current}>{children}</AdminSectionBoundary>
         </main>
       </div>
     </div>

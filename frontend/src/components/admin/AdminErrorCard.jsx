@@ -5,7 +5,7 @@
  */
 import { AlertCircle, RefreshCw } from "../ui/Icon.jsx";
 import ErrorBoundary from "../ErrorBoundary";
-import { useLocale } from "../../context/LocaleContext";
+import { t } from "../../i18n/runtime";
 
 export default function AdminErrorCard({ title, body, onRetry, retryLabel, busy = false, code = "" }) {
   return (
@@ -26,24 +26,24 @@ export default function AdminErrorCard({ title, body, onRetry, retryLabel, busy 
   );
 }
 
-/** One admin section that crashes shows the card in place; the panel keeps working. */
-export function AdminSectionBoundary({ resetKey, children }) {
-  const { t } = useLocale();
-  return (
-    <ErrorBoundary
-      scope="pane"
-      resetKey={resetKey}
-      fallback={({ retry, supportCode }) => (
-        <AdminErrorCard
-          title={t("admin.sectionErrorTitle")}
-          body={t("admin.sectionErrorBody")}
-          code={supportCode}
-          onRetry={retry}
-          retryLabel={t("common.retry")}
-        />
-      )}
-    >
-      {children}
-    </ErrorBoundary>
-  );
+/**
+ * One admin section that crashes shows the card in place; the panel keeps working.
+ * Extends the app ErrorBoundary (same Sentry + /api/errors report, same pane reset on
+ * resetKey) and only swaps the crash screen for the inline card, so nothing is added
+ * to the marketing first paint.
+ */
+export class AdminSectionBoundary extends ErrorBoundary {
+  render() {
+    if (!this.state.hasError) return super.render();
+    return (
+      <AdminErrorCard
+        title={t("admin.sectionErrorTitle")}
+        body={t("admin.sectionErrorBody")}
+        code={this.state.supportCode || ""}
+        onRetry={this.handleRetry}
+        retryLabel={t("common.retry")}
+      />
+    );
+  }
 }
+
