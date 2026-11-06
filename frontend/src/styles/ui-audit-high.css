@@ -553,3 +553,29 @@ html.glass-desktop .server-settings-modal .dc-check input.dc-check-input {
   background: rgba(88, 122, 245, 0.06);
   box-shadow: inset 0 0 0 1.5px #587AF5;
 }
+
+/* #45 Settings rows with a button group (Ses ve Görüntü > gürültü engelleme
+   Kapalı / Açık / Güçlü): under 480px the group kept its row slot and
+   squeezed the title and description into a ~70px column, one word per line.
+   On narrow screens the group drops under the text at full width. */
+@media (max-width: 479px) {
+  .us-row:has(> .us-row-control > .us-btn-row) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .us-row:has(> .us-row-control > .us-btn-row) > .us-row-control {
+    flex-shrink: 1;
+    width: 100%;
+  }
+  .us-row-control > .us-btn-row {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 6px;
+  }
+  .us-row-control > .us-btn-row > .us-btn {
+    justify-content: center;
+    min-width: 0;
+  }
+}
