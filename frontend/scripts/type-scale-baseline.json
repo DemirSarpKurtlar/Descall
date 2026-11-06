@@ -92,11 +92,11 @@
     "half": 4
   },
   "src/site/cookie-consent.css": {
-    "px": 10,
-    "half": 6
+    "px": 9,
+    "half": 3
   },
   "src/site/glass-public-frames.css": {
-    "px": 53,
+    "px": 63,
     "half": 6
   },
   "src/site/glass-public.css": {
@@ -104,7 +104,7 @@
     "half": 1
   },
   "src/site/home-hero.css": {
-    "px": 7,
+    "px": 8,
     "half": 0
   },
   "src/site/legal-doc.css": {
@@ -120,7 +120,7 @@
     "half": 11
   },
   "src/styles/admin-broadcast.css": {
-    "px": 13,
+    "px": 11,
     "half": 0
   },
   "src/styles/admin-dm.css": {
@@ -140,7 +140,7 @@
     "half": 15
   },
   "src/styles/admin-glass.css": {
-    "px": 74,
+    "px": 75,
     "half": 8
   },
   "src/styles/admin-growth.css": {
@@ -160,7 +160,7 @@
     "half": 9
   },
   "src/styles/admin-shell.css": {
-    "px": 16,
+    "px": 21,
     "half": 6
   },
   "src/styles/admin-signup-stats.css": {
@@ -345,6 +345,10 @@
   },
   "src/styles/incoming-call.css": {
     "px": 3,
+    "half": 0
+  },
+  "src/styles/invite-landing.css": {
+    "px": 2,
     "half": 0
   },
   "src/styles/legal.css": {
