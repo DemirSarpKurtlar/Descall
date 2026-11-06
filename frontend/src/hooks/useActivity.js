@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PROCESS_DB, TYPE_PRIORITY, PROCESS_BLOCKLIST } from '../lib/processDatabase';
+// Descall+ game_status: extra game list for members only (null for everyone else).
+import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
 import { getToken } from '../lib/storage';
 import { API_BASE_URL } from '../config/api';
 import {
@@ -110,11 +112,12 @@ function filterHistory(list) {
 /** Resolve the highest-priority detected app from running process names. */
 function resolveActivity(processList) {
   const candidates = [];
+  const extra = premiumProcessEntries(PROCESS_DB);
 
   for (const proc of processList) {
     const lc = proc.toLowerCase();
     if (PROCESS_BLOCKLIST.has(lc)) continue;
-    const entry = PROCESS_DB[lc];
+    const entry = PROCESS_DB[lc] || (extra && extra[lc]);
     if (!entry) continue;
     if (isJunkResolvedEntry(entry)) continue;
     candidates.push({ ...entry, exe: lc });

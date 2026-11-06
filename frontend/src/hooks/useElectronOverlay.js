@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { resolveAvatarUrl, resolveDisplayName } from "../lib/userProfile.js";
 import { t } from "../i18n/runtime.js";
+import { auxCoversOverlay, auxSlot, callSlot, publishCallState, setCallActionHandler } from "../premium/desktop/desktopBus.js";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
 
@@ -161,6 +162,7 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
         }
         applyDeafen(next);
         window.electronAPI?.overlayUpdate?.({ deafened: next });
+        publishCallState({ ...callSlot.get(), deafened: next });
       }
     },
     [applyDeafen]
@@ -170,6 +172,15 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
     if (!isElectron || !window.electronAPI?.onOverlayAction) return undefined;
     return window.electronAPI.onOverlayAction(handleOverlayAction);
   }, [handleOverlayAction]);
+
+  // Descall+ mini mode / call window / tray / taskbar run the same actions.
+  useEffect(() => {
+    if (!isElectron) return undefined;
+    setCallActionHandler(handleOverlayAction);
+    return () => setCallActionHandler(null);
+  }, [handleOverlayAction]);
+  // While a Descall+ window shows the call, the classic overlay card stays hidden.
+  const auxState = useSyncExternalStore(auxSlot.subscribe, auxSlot.get, auxSlot.get);
 
   useEffect(() => {
     if (!isElectron) return undefined;
@@ -186,6 +197,12 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
         autoMutedByDeafenRef.current = false;
       }
       window.electronAPI?.overlayHide?.();
+      publishCallState(null);
+      return;
+    }
+    publishCallState({ active: true, title, muted, deafened: deafened || deafenedRef.current, pending, kind, since, avatarUrl });
+    if (auxCoversOverlay()) {
+      window.electronAPI?.overlayHide?.();
       return;
     }
     window.electronAPI?.overlayShow?.({
@@ -200,7 +217,7 @@ export function useElectronOverlay({ call, groupCall, serverVoice } = {}) {
       brandRgb: readOverlayBrandRgb(),
       lang: overlayLang(),
     });
-  }, [active, title, muted, deafened, applyDeafen, pending, kind, since, avatarUrl]);
+  }, [active, title, muted, deafened, applyDeafen, pending, kind, since, avatarUrl, auxState]);
 
   // Equipping another theme mid-call re-tints the overlay.
   useEffect(() => {

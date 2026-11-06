@@ -53,7 +53,8 @@ export function settingsOf(key) {
 export function featureOn(key) {
   if (!hasPremiumFeature(key)) return false;
   const s = settingsOf(key);
-  return "enabled" in (AUDIO_DEFAULTS[key] || {}) ? s.enabled !== false && Boolean(s.enabled) : true;
+  // Settings > Descall+ owns features.<key>.enabled; keys without a default are on unless switched off.
+  return "enabled" in (AUDIO_DEFAULTS[key] || {}) ? Boolean(s.enabled) : s.enabled !== false;
 }
 
 export function onAudioSettings(fn) {
@@ -91,7 +92,7 @@ export function startPremiumAudioRuntime() {
  *   monitor: { on, volume 0..1 }
  */
 export function premiumMicChain() {
-  const presetsOn = hasPremiumFeature("mic_presets");
+  const presetsOn = featureOn("mic_presets");
   const gainPct = presetsOn ? Number(settingsOf("mic_presets").gain) : 100;
   const gain = Number.isFinite(gainPct) ? gainFromPercent(gainPct) : 1;
   const gateOn = featureOn("noise_gate");
@@ -117,7 +118,7 @@ export function callSinkId() {
 
 /** Screen-share audio: { send: 0..2, view: 0..2 } gains, or null when the feature is off. */
 export function streamAudioGains() {
-  if (!hasPremiumFeature("stream_audio_control")) return null;
+  if (!featureOn("stream_audio_control")) return null;
   const s = settingsOf("stream_audio_control");
   const g = (v, muted) => (muted ? 0 : Math.max(0, Math.min(2, (Number(v) || 0) / 100)));
   return { send: g(s.sendVolume ?? 100, s.sendMuted), view: g(s.viewVolume ?? 100, s.viewMuted) };

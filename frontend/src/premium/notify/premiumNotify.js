@@ -82,10 +82,14 @@ export function startPremiumNotifyRuntime() {
   }
 }
 
+function on(key) {
+  return hasPremiumFeature(key) && notifySettings(key).enabled !== false;
+}
+
 function features() {
   return {
-    focus_mode: hasPremiumFeature("focus_mode"),
-    notification_profiles: hasPremiumFeature("notification_profiles"),
+    focus_mode: on("focus_mode"),
+    notification_profiles: on("notification_profiles"),
     smart_game_notifications: hasPremiumFeature("smart_game_notifications") && notifySettings("smart_game_notifications").enabled !== false,
   };
 }

@@ -8,6 +8,7 @@ import ChatPanel from "./ChatPanel";
 import UserVoicePanel from "./UserVoicePanel";
 import { shouldShowUserVoicePanel } from "../../lib/userVoicePanel";
 import { isNativeMobileApp } from "../../lib/userVoicePanelEnv";
+import { usePremium } from "../../premium/usePremium.js";
 import ErrorBoundary from "../ErrorBoundary";
 import { preloadWhenIdle } from "../../lib/preloadIdle";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
@@ -32,6 +33,8 @@ import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib
 
 const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
 const UserPanel = lazy(() => import("./UserPanel"));
+// Descall+ / Ultra gaming and productivity (loaded only for members, never on iOS / Android).
+const PremiumGamingHost = lazy(() => import("../../premium/gaming/PremiumGamingHost.jsx"));
 
 const VIEW_EASE = [0.22, 1, 0.36, 1];
 
@@ -181,6 +184,7 @@ export default function AppLayout({
   const [feedbackOpen, setFeedbackOpen] = useState({ tab: "new", id: null, at: 0 });
 
   const activity = useActivity({ socket, me, friends });
+  const { plan: premiumPlan } = usePremium();
 
   // Phone Liquid Glass: at <=768px the "drawer" is the full-screen list page
   // (glass/shell.css), not a side drawer, so its dimming backdrop has nothing
@@ -867,6 +871,31 @@ export default function AppLayout({
           })}
         </nav>
       )}
+      {premiumPlan && !isNativeMobileApp() ? (
+        <Suspense fallback={null}>
+          <PremiumGamingHost
+            me={me}
+            socket={socket}
+            friends={friends}
+            dms={dms}
+            groups={groups}
+            servers={servers}
+            activeServer={activeServer}
+            onlineUsers={onlineUsers}
+            call={call}
+            groupCall={groupCall}
+            serverVoice={serverVoice}
+            myStatus={myStatus}
+            onStatusChange={onStatusChange}
+            onOpenDm={handleOpenChatFromCalls}
+            onGroupSelect={onGroupSelect}
+            activity={activity}
+            dmUnread={dmUnread}
+            groupUnread={groupUnread}
+            friendRequests={friendRequests}
+          />
+        </Suspense>
+      ) : null}
       <CookieConsentBanner variant="app" onOpenPrivacy={() => setConsentLegal("privacy")} />
       <LegalContentModal
         open={Boolean(consentLegal)}

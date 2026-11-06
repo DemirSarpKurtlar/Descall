@@ -176,6 +176,9 @@ async function buildExport(userId, { requestedBy = "self", now = new Date(), lan
   put("purchases", purchases, (r) => ({ item: itemNames[r.item_id] || r.item_id, descoin: r.amount_descoin, cents: r.amount_cents, currency: r.currency, status: r.status, at: r.created_at }));
   put("specialBadges", await readAll("user_special_badges", "badge_id, serial, source, granted_at, equipped, revoked_at, revoke_reason", eq("user_id"), { order: "granted_at" }));
   put("promoRedemptions", await readAll("promo_redemptions", "code_id, reward, descoin_credited, created_at", eq("user_id")));
+  // Descall+ / Ultra: the membership and its history (no admin ids, reasons or notes).
+  put("premiumMembership", await readAll("user_subscriptions", "plan_id, status, started_at, ends_at, unlimited, is_free, source, next_coin_at, coin_cycles_paid", eq("user_id"), { order: null }));
+  put("premiumHistory", await readAll("subscription_events", "kind, prev_plan, new_plan, prev_ends_at, new_ends_at, prev_unlimited, new_unlimited, actor_kind, coins, created_at", eq("user_id")));
   put("games", await readAll("game_history", "game_type, bet_amount, result, win_amount, played_at", eq("user_id"), { order: "played_at" }));
 
   // Activity and settings.

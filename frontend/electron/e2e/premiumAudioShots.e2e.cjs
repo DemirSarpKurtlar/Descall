@@ -21,12 +21,7 @@ app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'descall-pa-shots-
 app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
 app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 
-const PANELS = [
-  'GlobalMute', 'GlobalPtt', 'CustomHotkeys', 'MediaKeys', 'QuickLauncher', 'PerUserVolumeHotkeys',
-  'MicPresets', 'NoiseGate', 'MicMonitor', 'VoiceActivityMonitor', 'AutoDeviceSwitch', 'AudioRouting',
-  'AudioDeviceProfiles', 'StreamAudioControl', 'NotificationHistory', 'FocusMode', 'NotificationProfiles',
-  'SmartGameNotifications', 'QuickReply',
-];
+const PANELS = ['global_mute', 'global_ptt', 'custom_hotkeys', 'media_keys', 'quick_launcher', 'per_user_volume_hotkeys', 'mic_presets', 'noise_gate', 'mic_monitor', 'voice_activity_monitor', 'auto_device_switch', 'audio_routing', 'audio_device_profiles', 'stream_audio_control', 'notification_history', 'focus_mode', 'notification_profiles', 'smart_game_notifications', 'quick_reply'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -38,8 +33,8 @@ app.whenReady().then(async () => {
     let n = 0;
     for (const panel of PANELS) {
       await win.loadURL(`${base}?panel=${panel}&lang=${lang}&desktop=1`);
-      await sleep(panel === 'NoiseGate' ? 1800 : 900);
-      if (panel === 'NoiseGate') {
+      await sleep(panel === 'noise_gate' ? 1800 : 900);
+      if (panel === 'noise_gate') {
         // Start the mic test so the level meter moves (fake device: a tone).
         await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /Test microphone|Mikrofonu dene/.test(x.textContent)); b && b.click(); return true; })()`);
         await sleep(1500);

@@ -10,6 +10,7 @@ import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
+import CallWindowButtons from "../premium/desktop/CallWindowButtons.jsx";
 import { NameEffectText } from "./ui/Cosmetics";
 import DmRemoteParticipantSlot from "./voice/DmRemoteParticipantSlot";
 import { useDmRemoteParticipant } from "../hooks/useDmRemoteParticipant";
@@ -510,6 +511,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           <button type="button" className="g-cbtn g-glass" onClick={() => setMinimized(true)} aria-label={t("Minimize")}>
             <ChevronDown size={22} strokeWidth={1.9} />
           </button>
+          <CallWindowButtons className="g-cbtn g-glass" size={20} />
           <div className="g-call-title g-glass">
             <div className="g-call-title-text">
               <div className="g-call-name">
@@ -581,6 +583,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           ) : null}
           <TopIconBtn onClick={() => setShowParticipants(!showParticipants)} active={showParticipants}><Users size={18} /></TopIconBtn>
           <TopIconBtn onClick={() => setShowChat(!showChat)} active={showChat}><MessageSquare size={18} /></TopIconBtn>
+          <CallWindowButtons style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }} />
           <TopIconBtn onClick={() => setMinimized(true)}><Minus size={18} /></TopIconBtn>
         </div>
       </div>

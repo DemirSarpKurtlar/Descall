@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
@@ -6,6 +6,7 @@ import StatusBadge from "../ui/StatusBadge";
 import { pickAvatarUrl, resolveDisplayName } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import AdminBadge from "./AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { API_BASE_URL } from "../../config/api";
@@ -25,6 +26,9 @@ import {
 import { useHoverCardContext } from "./HoverCardContext";
 import { Gamepad2, Volume2, Monitor, Send } from "../ui/Icon.jsx";
 import "../../styles/user-hover-card.css";
+
+// Descall+ game status card (the member's perk; the server decides who may see it).
+const PremiumGameCard = lazy(() => import("../../premium/gaming/PremiumGameCard.jsx"));
 
 /*
  * Desktop hover profile card, design C "Detaylı" (3.7.13, owner pick).
@@ -217,6 +221,7 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
           <button type="button" className="uhc3-name" onClick={() => onOpenProfile?.(merged)}>
             <NameEffectText user={merged}>{display}</NameEffectText>
             <AdminBadge user={merged} variant="inline" />
+            <PremiumBadge user={merged} variant="inline" />
           </button>
           <div className="uhc3-handle">
             @{merged.username || t("user")}
@@ -247,6 +252,8 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
             </span>
           </div>
         </div>
+      ) : userId ? (
+        <Suspense fallback={null}><PremiumGameCard userId={userId} /></Suspense>
       ) : null}
 
       {model.bio || memberSince || mutualFriends.length || mutualServers.length ? (
