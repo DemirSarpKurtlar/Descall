@@ -26,6 +26,7 @@ import {
 } from "../ui/Icon.jsx";
 import CountryShop, { ShopInventoryView } from "../shop/CountryShop";
 import RippleButton from "../ui/RippleButton";
+import EmptyState from "../ui/EmptyState";
 import ErrorBoundary from "../ErrorBoundary";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import {
@@ -629,7 +630,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
           }}
         />
       ) : items.length === 0 ? (
-        <p className="shop-empty-state">{t("No items available yet, check back soon!")}</p>
+        <EmptyState
+          className="shop-empty-state"
+          icon={Store}
+          title={t("The shop is empty right now")}
+          body={t("You’ll see new items here once they’re added.")}
+          secondary={{ label: t("View your inventory"), icon: Package, action: () => setView("inventory") }}
+        />
       ) : activeCategory === "countries" ? (
         <div className="shop-category-block">
           <h4>{t("Countries")}</h4>
