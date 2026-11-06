@@ -21,6 +21,7 @@ import { API_BASE_URL } from "../../config/api";
 import SearchResults from "../chat/search/SearchResults.jsx";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate, upper } from "../../i18n/format";
 import { displayText } from "../../lib/profanity";
@@ -1114,7 +1115,7 @@ export default function ChatPanel({
       items={pinnedMessages}
       t={t}
       resolveName={resolveDisplayName}
-      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? `📎 ${pm.mediaType}` : t("Message"))}
+      renderText={(pm) => displayText(pm.text) || (pm.mediaType ? mediaTypeLabel(pm.mediaType, t) : t("Message"))}
       onUnpin={unpinMessage}
     />
     {groupActions.element}

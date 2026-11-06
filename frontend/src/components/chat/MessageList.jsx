@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
+import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
@@ -1512,7 +1513,7 @@ function MessageBubble({
               {reply.text
                 ? displayText(plainText(String(localizedField({ text: reply.text, i18n: textI18n(reply.i18n) }, "text"))).slice(0, 120))
                 : reply.mediaType
-                ? `📎 ${reply.mediaType}`
+                ? mediaTypeLabel(reply.mediaType, t)
                 : t("Original message")}
             </span>
           </button>

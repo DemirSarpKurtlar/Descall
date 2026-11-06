@@ -54,7 +54,7 @@ export function AppearancePreview({ prefs, premium }) {
       <div className="hd">
         <PreviewAvatar size={30} />
         <div>
-          Ayşe<small>{t("shell.appearance.previewOnline")}</small>
+          {PREVIEW_NAME}<small>{t("shell.appearance.previewOnline")}</small>
         </div>
         <span className="live">{t("shell.appearance.livePreviewBadge")}</span>
       </div>

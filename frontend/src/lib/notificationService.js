@@ -364,7 +364,7 @@ class NotificationService {
       : serverName || (channelName ? `#${channelName}` : t("New message"));
     const preview = kind === 'voice'
       ? t("🎤 Voice message")
-      : (text || '').trim() || (kind === 'media' ? '📎' : t("New message"));
+      : (text || '').trim() || (kind === 'media' ? t("📎 Attachment") : t("New message"));
     await this.show({
       title: where,
       body: `${from || t("Someone")}: ${preview.substring(0, 100)}`,

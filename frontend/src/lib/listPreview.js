@@ -3,6 +3,14 @@ import { localizeMemberEventPreview } from "./groupMemberEvents.js";
 /** English system previews the API stores on DM and group rows. */
 const LIST_PREVIEW_KEYS = ["📞 Call", "📷 Photo", "🎤 Voice message", "📎 Attachment"];
 
+/** Translated label for a message that only carries media ("Fotoğraf", not "image"). */
+export function mediaTypeLabel(mediaType, t = (key) => key) {
+  const type = String(mediaType || "").toLowerCase();
+  if (type === "image" || type === "photo") return t("📷 Photo");
+  if (type === "voice" || type === "audio") return t("🎤 Voice message");
+  return t("📎 Attachment");
+}
+
 function localizePreviewBody(body, t) {
   if (LIST_PREVIEW_KEYS.includes(body)) return t(body);
   return body;
