@@ -31,7 +31,7 @@ body.electron-app .electron-update-toast.is-chip { top: auto; }
 .eut-card {
   --eut-ink: var(--text-0, #fff);
   --eut-ink-2: var(--text-2, rgba(235, 238, 255, 0.7));
-  --eut-brand: var(--g-brand-rgb, 88, 101, 242);
+  --eut-brand: var(--g-brand-rgb, 88, 122, 245);
   position: relative;
   display: flex;
   align-items: center;

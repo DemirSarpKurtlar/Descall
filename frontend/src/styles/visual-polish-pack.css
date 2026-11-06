@@ -293,8 +293,8 @@
   width: 3px;
   height: 16px;
   border-radius: var(--r-pill);
-  background: #ed4245;
-  box-shadow: 0 0 8px rgba(237, 66, 69, 0.45);
+  background: var(--g-red, #FF453A);
+  box-shadow: 0 0 8px rgba(255, 69, 58, 0.45);
   transform: translateY(-50%);
   opacity: 0.9;
 }

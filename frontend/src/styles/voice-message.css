@@ -17,7 +17,7 @@
 }
 
 .voice-message-bubble.has-error .voice-duration {
-  color: #ed4245;
+  color: var(--g-red, #FF453A);
   font-size: 11px;
 }
 
