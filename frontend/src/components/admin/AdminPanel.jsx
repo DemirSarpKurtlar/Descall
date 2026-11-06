@@ -1337,7 +1337,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         <div style={{ fontWeight: 600 }}>{selectedCreditUser.username}</div>
                         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("Current Balance")}</div>
                       </div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "var(--brand, #587af5)" }}>
                         {formatNumber(selectedCreditUser.credits || 0, locale)}
                       </div>
                     </div>
