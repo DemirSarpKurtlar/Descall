@@ -227,22 +227,27 @@ export default function QuickFeedbackModal({
   const renderForm = () => (
     <>
       <div className="fbk-bd">
-        <div className="fbk-types" role="radiogroup" aria-label={t("fbk.title")}>
-          {KINDS.map((k) => (
-            <button
-              key={k.id}
-              type="button"
-              role="radio"
-              aria-checked={form.kind === k.id}
-              className={`fbk-type is-${k.id}${form.kind === k.id ? " is-on" : ""}`}
-              onClick={() => set({ kind: k.id })}
-            >
-              <KindTile kind={k.id} />
-              <b>{t(k.label)}</b>
-              <small>{t(k.hint)}</small>
-            </button>
-          ))}
+        {/* UI audit #18: one segmented control (Öneri · Hata · Övgü) with the
+            brand selected state and neutral line icons, not three colour cards. */}
+        <div className="fbk-seg is-inline fbk-kind-seg" role="radiogroup" aria-label={t("fbk.title")}>
+          {KINDS.map((k) => {
+            const KindIcon = KIND_ICON[k.id] || Lightbulb;
+            return (
+              <button
+                key={k.id}
+                type="button"
+                role="radio"
+                aria-checked={form.kind === k.id}
+                className={form.kind === k.id ? "is-on" : ""}
+                onClick={() => set({ kind: k.id })}
+              >
+                <KindIcon size={15} aria-hidden="true" />
+                {t(k.label)}
+              </button>
+            );
+          })}
         </div>
+        <p className="fbk-kind-hint">{t((KINDS.find((k) => k.id === form.kind) || KINDS[0]).hint)}</p>
 
         {form.kind === "praise" ? (
           <div className="fbk-box fbk-rate">
