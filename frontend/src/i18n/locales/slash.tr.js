@@ -8,7 +8,7 @@ export const SLASH_TR = {
     general: "Genel",
     moderation: "Moderasyon",
     games: "Oyunlar",
-    credits: "Kredi",
+    credits: "DesCoin",
   },
   perm: {
     USE_APPLICATION_COMMANDS: "Uygulama komutlarını kullan",
