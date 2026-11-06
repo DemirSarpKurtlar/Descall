@@ -73,6 +73,7 @@ import {
 import { voiceMicErrorCopy } from "../lib/voiceMicError";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
+import { createGroupRingback } from "../lib/groupRingback";
 import {
   cameraVideoConstraints,
   captureFacingCamera,
@@ -113,6 +114,21 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   const deafenedRef = useRef(false);
   const mutedByDeafenRef = useRef(false);
   const acceptCueAtRef = useRef(0);
+  // Whether this client started the current call (a phantom start that the
+  // server answered with join-existing is dropped, see onJoinExisting).
+  const isInitiatorRef = useRef(false);
+  // Ringback while the members ring (lib/groupRingback.js): stops on accept,
+  // when everyone declined / was busy, or after the ring time.
+  const ringbackRef = useRef(null);
+  if (!ringbackRef.current) {
+    ringbackRef.current = createGroupRingback({
+      play: () => audioManager.play("outgoingCall", { loop: true }),
+      stop: () => audioManager.stop("outgoingCall"),
+      onEnd: (reason) => {
+        if (reason === "timeout") toastRef.current?.(tRuntime("No answer"), "info");
+      },
+    });
+  }
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -543,6 +559,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     resetCallHaptic();
     setIsInCall(false);
     setIsInitiator(false);
+    isInitiatorRef.current = false;
     setCallType(null);
     setActiveGroupId(null);
     setLocalStream(null);
@@ -558,6 +575,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     setIncomingCall(null);
 
     audioManager.stop("incomingCall");
+    ringbackRef.current?.end("ended");
     audioManager.stop("outgoingCall");
   }, []);
 
@@ -956,6 +974,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       hapticCallConnected();
       setIsInCall(true);
       setIsInitiator(true);
+      isInitiatorRef.current = true;
       setCallType(type);
       setActiveGroupId(groupId);
       setIsCameraOn(type === "video");
@@ -996,7 +1015,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       // Immediately set the banner for the initiator, the server only pushes
       // group:call:active-banner to users who join later via group:join
       if (hangout) audioManager.play("channelJoin");
-      else audioManager.play("outgoingCall", { loop: true });
+      else ringbackRef.current.start(memberIds, myIdRef.current);
 
       setActiveCallBanner({
         groupId,
@@ -1603,9 +1622,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     const onAccept = async ({ groupId, fromUserId, fromUser }) => {
       if (!fromUserId) return;
       const now = Date.now();
+      ringbackRef.current?.answered();
       if (now - acceptCueAtRef.current >= 1200) {
         acceptCueAtRef.current = now;
-        audioManager.stop("outgoingCall");
         audioManager.play("callAccept");
       }
       
@@ -1707,9 +1726,9 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     // chat/banner joiners with silent dead peer connections.
     const playAcceptOnce = () => {
       const now = Date.now();
+      ringbackRef.current?.answered();
       if (now - acceptCueAtRef.current < 1200) return;
       acceptCueAtRef.current = now;
-      audioManager.stop("outgoingCall");
       audioManager.play("callAccept");
     };
 
@@ -1719,7 +1738,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       if (groupId && activeGroupIdRef.current && groupId !== activeGroupIdRef.current) return;
       if (Date.now() - acceptCueAtRef.current < 1200) {
         /* connect cue already played for this pickup */
-      } else if (audioManager.activeLoops.has("outgoingCall")) {
+      } else if (ringbackRef.current?.isRinging()) {
         playAcceptOnce();
       } else {
         audioManager.play("userJoin");
@@ -2104,6 +2123,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     const onDeclined = ({ groupId, fromUserId, fromUser }) => {
       if (fromUserId) audioManager.play("callReject");
+      // Everyone that was rung said no: stop the ringback (the room stays open).
+      if (!groupId || groupId === activeGroupIdRef.current) ringbackRef.current?.declined(fromUserId);
       const peerData = pcMapRef.current.get(fromUserId);
       peerData?.recovery?.dispose();
       safeClosePeer(peerData?.pc);
@@ -2234,9 +2255,13 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
 
     // Handle server telling us to join an existing call instead of starting new
     const onJoinExisting = async ({ groupId, initiatorId, callType: existingCallType, participants: existingParticipants }) => {
-      
       if (isInCallRef.current) {
-        return;
+        // Two members pressed call at the same moment: the server kept the
+        // other call and never created ours. Drop our start (it would sit
+        // alone with the ringback looping) and join theirs.
+        const phantomStart = isInitiatorRef.current && activeGroupIdRef.current === groupId;
+        if (!phantomStart) return;
+        cleanup();
       }
 
       try {
@@ -2301,6 +2326,12 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       }
     };
 
+    // A rung member is already in another call: counts as a decline for the ringback.
+    const onBusy = ({ groupId, fromUserId } = {}) => {
+      if (groupId && groupId !== activeGroupIdRef.current) return;
+      ringbackRef.current?.declined(fromUserId);
+    };
+
     const clearRingingGroup = (groupId) => {
       if (!groupId || incomingCallRef.current?.groupId !== groupId) return;
       audioManager.stop("incomingCall");
@@ -2329,6 +2360,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
     socket.on("group:call:left", onLeft);
     socket.on("group:call:ended", onEnded);
     socket.on("group:call:declined", onDeclined);
+    socket.on("group:call:busy", onBusy);
     socket.on("group:call:answered-elsewhere", onAnsweredElsewhere);
     socket.on("group:call:declined-elsewhere", onDeclinedElsewhere);
     socket.on("group:screen:started", onScreenStarted);
@@ -2352,6 +2384,7 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       socket.off("group:call:left", onLeft);
       socket.off("group:call:ended", onEnded);
       socket.off("group:call:declined", onDeclined);
+      socket.off("group:call:busy", onBusy);
       socket.off("group:call:answered-elsewhere", onAnsweredElsewhere);
       socket.off("group:call:declined-elsewhere", onDeclinedElsewhere);
       socket.off("group:screen:started", onScreenStarted);
