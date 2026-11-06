@@ -14,6 +14,28 @@ import {
   AREAS, AREA_LABEL, FREQUENCIES, FREQ_LABEL, KINDS, LIKES, LIKE_LABEL, MAX_SHOTS, MAX_SHOT_BYTES,
   MAX_TEXT, STATUS_LABEL, buildSubmitBody, canSubmit, emptyForm, relTime, totalUnread,
 } from "../../lib/feedbackForm";
+import { captureVoiceDiagnostics, getLastVoiceDiagnostics } from "../../lib/voiceDiagnostics";
+import { getIceConfigStatus, getLivePeerConnections } from "../../lib/iceConfig";
+import { getNoiseSuppressionDiagnostics, getNoiseSuppressionOutputTrack } from "../../lib/noiseSuppression";
+
+/** In a call (DM, group or server voice) take a fresh snapshot, else the last call's. */
+async function currentVoiceDiagnostics() {
+  try {
+    const pc = getLivePeerConnections()[0];
+    if (pc) {
+      return await captureVoiceDiagnostics({
+        pc,
+        localTrack: getNoiseSuppressionOutputTrack(),
+        ns: getNoiseSuppressionDiagnostics(),
+        ice: getIceConfigStatus(),
+        kind: "live",
+      });
+    }
+  } catch {
+    /* fall back to the last snapshot */
+  }
+  return getLastVoiceDiagnostics();
+}
 import {
   getMyFeedback, getMyFeedbackUnread, listMyFeedback, replyMyFeedback, submitFeedback, uploadFeedbackShot,
 } from "../../api/feedback";
@@ -188,7 +210,7 @@ export default function QuickFeedbackModal({
     setSending(true);
     setError("");
     try {
-      const d = await submitFeedback(buildSubmitBody(form, device));
+      const d = await submitFeedback(buildSubmitBody(form, { ...device, voiceDiag: await currentVoiceDiagnostics() }));
       markFeedbackSubmitted();
       setSent({ id: d?.feedbackId || d?.item?.id || null });
       setList({ items: null, loading: false, error: "" });

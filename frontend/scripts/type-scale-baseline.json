@@ -224,7 +224,7 @@
     "half": 1
   },
   "src/styles/cosmetics-premium.css": {
-    "px": 1,
+    "px": 8,
     "half": 0
   },
   "src/styles/cosmetics.css": {
@@ -395,6 +395,10 @@
     "px": 2,
     "half": 1
   },
+  "src/styles/profile-media-picker.css": {
+    "px": 22,
+    "half": 0
+  },
   "src/styles/promo-mycodes.css": {
     "px": 16,
     "half": 10
@@ -427,9 +431,17 @@
     "px": 2,
     "half": 0
   },
+  "src/styles/screen-share-v1.css": {
+    "px": 5,
+    "half": 0
+  },
   "src/styles/servers.css": {
     "px": 38,
     "half": 8
+  },
+  "src/styles/settings-profile-card.css": {
+    "px": 5,
+    "half": 0
   },
   "src/styles/settings-v3.css": {
     "px": 22,
@@ -476,8 +488,8 @@
     "half": 0
   },
   "src/styles/ui-polish.css": {
-    "px": 33,
-    "half": 14
+    "px": 38,
+    "half": 15
   },
   "src/styles/update-toast.css": {
     "px": 4,

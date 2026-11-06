@@ -1,6 +1,7 @@
 "use strict";
 
 const { checkMessageSend } = require("../lib/platformPolicy");
+const { fanoutDmMessage } = require("../lib/messageFanout");
 const supabase = require("../db/supabase");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const iosPushContext = require("../lib/iosPushContext");
@@ -1400,9 +1401,15 @@ function registerSocketHandlers(io) {
         dmPrefs.revealOnMessage(myId, toUserId),
         dmPrefs.revealOnMessage(toUserId, myId),
       ]);
-      emitToUser(io, toUserId, "dm:message", { ...messagePayload, convWith: myId });
-      // Echo back to sender with tempId so client can replace the optimistic message
-      socket.emit("dm:message", { ...messagePayload, tempId, convWith: toUserId });
+      // Peer + every device of the sender (iOS → Electron / web / other iOS).
+      // Matches notifyActions quick-reply fan-out; tempId lets the sending
+      // socket replace its optimistic row, other devices just append.
+      fanoutDmMessage(io, {
+        senderId: myId,
+        peerId: toUserId,
+        messagePayload,
+        tempId,
+      });
 
       // Sync unread after the message so the list can reorder first, then badge updates
       if (recipientActivePeer !== myId) {

@@ -1,7 +1,8 @@
 /**
  * Advanced mic noise suppression for Descall voice (group DM + server voice).
  *
- * Pipeline (best → fallback):
+ * Pipeline (best → fallback; Firefox and devices that measured overload start
+ * lower, see pickSuppressorOrder in micFailsafe.js):
  *   1) GTCRN neural suppressor
  *   2) RNNoise (SIMD WASM when available)
  *   3) Speex preprocess
@@ -31,6 +32,8 @@ import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWork
 import { primeVoiceActivity } from "./voiceActivity";
 import { onAudioSettings, premiumMicChain } from "../premium/audio/premiumAudioRuntime.js";
 import { registerSinkContext } from "./callAudioDevices.js";
+import { getLivePeerConnections } from "./iceConfig.js";
+import { createSilenceWatchdog, pickSuppressorOrder, rms, swapToRawTrack } from "./micFailsafe.js";
 import {
   agcCompressorSettings,
   applyStoredMute,
@@ -58,13 +61,43 @@ function isNativeIosApp() {
   }
 }
 const ENGINE_KEY = "descall:noiseSuppressionEngine";
+/** 3.7.28: lightest engine that kept up on this device ("rnnoise" | "dsp"), set after measured overload. */
+const ENGINE_CAP_KEY = "descall:noiseSuppressionEngineCap";
+
+/**
+ * Firefox runs the GTCRN worklet ~8-12x slower than Chromium (offline render
+ * bench, e2e/voice-crackle/bench.mjs) and on weaker machines it cannot keep up
+ * with the render quantum: clicks / "cızırtı". Firefox starts at RNNoise.
+ */
+export function isFirefoxBrowser(ua = typeof navigator !== "undefined" ? navigator.userAgent : "") {
+  return /\bFirefox\/\d+/.test(String(ua || ""));
+}
+
+function readEngineCap() {
+  try {
+    return localStorage.getItem(ENGINE_CAP_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+function writeEngineCap(cap) {
+  try {
+    localStorage.setItem(ENGINE_CAP_KEY, cap);
+  } catch {
+    /* ignore */
+  }
+}
 
 /** @type {AudioContext | null} */
 let sharedCtx = null;
 /** Wraps between dispose and the new session: the context must not be closed under them. */
 let wrapsInFlight = 0;
-/** @type {null | { rawStream: MediaStream, processedStream: MediaStream, nodes: any[], engine: string }} */
+/** @type {null | { rawStream: MediaStream, processedStream: MediaStream, processedTrack: MediaStreamTrack | null, nodes: any[], engine: string, watchdog?: any, onState?: any, ctx?: AudioContext, readRaw?: () => number, readOut?: () => number, fallback?: string | null }} */
 let activeSession = null;
+/** Why the last session sends the raw mic ("context-suspended", "processed-silent", …), for diagnostics. */
+let lastFallbackReason = null;
+export const MIC_FALLBACK_EVENT = "descall:mic-fallback";
 
 export function isNoiseSuppressionEnabled() {
   if (isNativeIosApp()) return false;
@@ -88,7 +121,10 @@ export function getNoiseSuppressionEngine() {
 }
 
 export function getVoiceAudioConstraints({ deviceId } = {}) {
-  return { audio: captureConstraints(readVoiceProfile(), deviceId), video: false };
+  // Browser noise suppression stays on whenever our pipeline does not run
+  // (native iOS, no AudioWorklet): never send a raw capture without any NS.
+  const pipeline = isNoiseSuppressionEnabled() && typeof AudioWorkletNode !== "undefined";
+  return { audio: captureConstraints(readVoiceProfile(), deviceId, { pipeline }), video: false };
 }
 
 // 3.7.15: the WASM binaries do not depend on an AudioContext, so they are loaded
@@ -127,28 +163,76 @@ async function ensureAssets(ctx) {
   return wasm;
 }
 
-async function ensureContext() {
-  if (sharedCtx && sharedCtx.state !== "closed") {
-    if (sharedCtx.state === "suspended") {
-      try {
-        await sharedCtx.resume();
-      } catch {
-        /* ignore */
-      }
-    }
-    return sharedCtx;
-  }
-  sharedCtx = new (window.AudioContext || window.webkitAudioContext)({
-    sampleRate: 48000,
-    latencyHint: "interactive",
-  });
-  if (sharedCtx.state === "suspended") {
+function createContext() {
+  const Ctor = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext) : null;
+  if (!Ctor) return null;
+  try {
+    // 3.7.28: Firefox resamples every 44.1 kHz device into a forced 48 kHz
+    // context (extra cost, artifacts): use the device rate there.
+    return isFirefoxBrowser()
+      ? new Ctor({ latencyHint: "interactive" })
+      : new Ctor({ sampleRate: 48000, latencyHint: "interactive" });
+  } catch {
     try {
-      await sharedCtx.resume();
+      return new Ctor();
     } catch {
-      /* ignore */
+      return null;
     }
   }
+}
+
+/**
+ * 3.7.27: create / resume the shared context SYNCHRONOUSLY, in the same turn as
+ * the call / answer tap. Before this the context was created after `await
+ * getUserMedia`, outside the user gesture; Chrome / Safari then kept it
+ * "suspended" (resume() rejected or never settled, and the error was
+ * swallowed), so a live, enabled, unmuted but SILENT track was sent: "ses
+ * gitmiyor, izin verilmiş olsa bile".
+ */
+export function primeNoiseSuppressionContext() {
+  if (!isNoiseSuppressionEnabled()) return null;
+  if (typeof AudioWorkletNode === "undefined") return null;
+  if (!sharedCtx || sharedCtx.state === "closed") {
+    sharedCtx = createContext();
+    workletCtx = null;
+    workletPromise = null;
+  }
+  if (sharedCtx && sharedCtx.state !== "running") {
+    try {
+      const p = sharedCtx.resume();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {
+      /* checked again after wrapping */
+    }
+  }
+  return sharedCtx;
+}
+
+/** Resolve true once `ctx` runs, false after `timeoutMs` (resume rejected / ignored). */
+export async function resumeContext(ctx, timeoutMs = 600) {
+  if (!ctx) return false;
+  if (ctx.state === "running") return true;
+  if (ctx.state === "closed") return false;
+  let timer = null;
+  try {
+    await Promise.race([
+      Promise.resolve().then(() => ctx.resume()).catch(() => {}),
+      new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+  return ctx.state === "running";
+}
+
+async function ensureContext() {
+  if (!sharedCtx || sharedCtx.state === "closed") {
+    sharedCtx = createContext();
+    workletCtx = null;
+    workletPromise = null;
+  }
+  if (!sharedCtx) throw new Error("AudioContext unavailable");
+  await resumeContext(sharedCtx);
   return sharedCtx;
 }
 
@@ -170,6 +254,25 @@ function buildDspFallback(ctx, { agc }) {
   }
 
   return { highpass, compressor, engine: "dsp" };
+}
+
+const SUPPRESSORS = {
+  gtcrn: (ctx, a) => a.gtcrnWasm && new GtcrnWorkletNode(ctx, { wasmBinary: a.gtcrnWasm, maxChannels: 1 }),
+  rnnoise: (ctx, a) => a.rnnoiseWasm && new RnnoiseWorkletNode(ctx, { wasmBinary: a.rnnoiseWasm, maxChannels: 1 }),
+  speex: (ctx, a) => a.speexWasm && new SpeexWorkletNode(ctx, { wasmBinary: a.speexWasm, maxChannels: 1 }),
+};
+
+/** First engine of `engines` that loads; none → plain DSP chain. */
+function createSuppressor(ctx, assets, engines) {
+  for (const engine of engines) {
+    try {
+      const node = SUPPRESSORS[engine]?.(ctx, assets);
+      if (node) return { suppressor: node, engine };
+    } catch (err) {
+      console.warn(`[NoiseSuppression] ${engine} init failed:`, err?.message || err);
+    }
+  }
+  return { suppressor: null, engine: "dsp" };
 }
 
 /**
@@ -232,37 +335,12 @@ async function wrapInto(rawStream) {
   }
   const { highpass, compressor } = buildDspFallback(ctx, { agc: prefs.autoGainControl !== false });
 
-  /** @type {AudioNode | null} */
-  let suppressor = null;
-  let engine = "dsp";
-
-  // Prefer GTCRN (newer neural model) → RNNoise → Speex. Noise suppression
-  // switched off (chain kept for Descall+ gain / gate / monitor): no suppressor.
+  // Noise suppression switched off (chain kept for Descall+ gain / gate /
+  // monitor): no suppressor, plain DSP chain.
   const suppress = prefs.noiseMode !== "off";
-  if (suppress && assets.gtcrnWasm) {
-    try {
-      suppressor = new GtcrnWorkletNode(ctx, { wasmBinary: assets.gtcrnWasm, maxChannels: 1 });
-      engine = "gtcrn";
-    } catch (err) {
-      console.warn("[NoiseSuppression] GTCRN init failed:", err?.message || err);
-    }
-  }
-  if (suppress && !suppressor && assets.rnnoiseWasm) {
-    try {
-      suppressor = new RnnoiseWorkletNode(ctx, { wasmBinary: assets.rnnoiseWasm, maxChannels: 1 });
-      engine = "rnnoise";
-    } catch (err) {
-      console.warn("[NoiseSuppression] RNNoise init failed:", err?.message || err);
-    }
-  }
-  if (suppress && !suppressor && assets.speexWasm) {
-    try {
-      suppressor = new SpeexWorkletNode(ctx, { wasmBinary: assets.speexWasm, maxChannels: 1 });
-      engine = "speex";
-    } catch (err) {
-      console.warn("[NoiseSuppression] Speex init failed:", err?.message || err);
-    }
-  }
+  const order = pickSuppressorOrder({ firefox: isFirefoxBrowser(), cap: readEngineCap() });
+  const { suppressor, engine } = suppress ? createSuppressor(ctx, assets, order.engines) : { suppressor: null, engine: "dsp" };
+  const engineReason = suppress ? order.reason : "off";
 
   let gate = null;
   try {
@@ -287,12 +365,10 @@ async function wrapInto(rawStream) {
     node.connect(suppressor);
     node = suppressor;
   }
-  const beforeGate = node;
   if (gate) {
     node.connect(gate);
     node = gate;
   }
-  const afterGate = compressor || destination;
   if (compressor) {
     node.connect(compressor);
     node = compressor;
@@ -318,20 +394,44 @@ async function wrapInto(rawStream) {
     ...rawStream.getVideoTracks(),
   ]);
 
+  // Level meters for the failsafe: raw mic vs what actually leaves the chain.
+  const rawMeter = makeMeter(ctx, source);
+  const outMeter = makeMeter(ctx, node);
+
   activeSession = {
     rawStream,
     processedStream: out,
-    nodes: [source, inputGain, highpass, suppressor, gate, compressor, destination].filter(Boolean),
+    processedTrack: outTrack || null,
+    nodes: [source, inputGain, highpass, suppressor, gate, compressor, destination, rawMeter?.node, outMeter?.node].filter(Boolean),
     engine,
+    engineReason,
+    underruns: 0,
+    suppressor,
+    gateNode: gate,
+    chainIn: highpass,
+    chainOut: gate || compressor || destination,
     ctx,
+    readRaw: rawMeter ? rawMeter.read : () => 0,
+    readOut: outMeter ? outMeter.read : () => 0,
+    fallback: null,
+    // Descall+ live controls
     inputGain,
-    gate,
-    beforeGate,
-    afterGate,
+    afterGate: compressor || destination,
     tail: node,
     monitor: null,
     gateKey: JSON.stringify(premium.gate || null),
   };
+  lastFallbackReason = null;
+
+  // The tap is over by now. If the context still does not run, the processed
+  // track would be silent from the first frame: send the raw mic instead.
+  if (!(await resumeContext(ctx, 400))) {
+    console.warn(`[NoiseSuppression] AudioContext ${ctx.state}, sending the raw mic`);
+    lastFallbackReason = "context-not-running";
+    disposeNoiseSuppressionSession({ stopRaw: false, keepContext: true });
+    return rawStream;
+  }
+  armFailsafe(activeSession);
   applyMonitor(premium.monitor);
 
   try {
@@ -344,6 +444,233 @@ async function wrapInto(rawStream) {
   return out;
 }
 
+function makeMeter(ctx, from) {
+  try {
+    const node = ctx.createAnalyser();
+    node.fftSize = 1024;
+    from.connect(node);
+    const buf = new Float32Array(node.fftSize);
+    return {
+      node,
+      read: () => {
+        node.getFloatTimeDomainData(buf);
+        return rms(buf);
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * statechange (suspended / interrupted mid-call: device change, OS audio
+ * interruption, sleep) → resume; if the context does not come back, or the
+ * processed output stays silent while the raw mic has signal, switch every
+ * sender to the raw mic (watchdog in micFailsafe.js).
+ */
+function armFailsafe(session) {
+  const { ctx } = session;
+  const watchdog = createSilenceWatchdog({
+    readRaw: session.readRaw,
+    readOut: session.readOut,
+    isEnabled: () => Boolean(session.processedTrack?.enabled),
+    getCtxState: () => ctx.state,
+    tryResume: () => { void resumeContext(ctx, 800); },
+    onFallback: (reason) => { void fallbackToRawMic(reason); },
+    readClock: () => ctx.currentTime,
+    onUnderrun: (count) => { session.underruns = count; },
+    onOverload: () => { void downgradeEngine(session); },
+  });
+  session.watchdog = watchdog;
+  session.onState = () => {
+    if (activeSession !== session) return;
+    if (ctx.state === "running" || ctx.state === "closed") return;
+    void resumeContext(ctx, 800).then((ok) => {
+      if (!ok && activeSession === session && !session.fallback) void fallbackToRawMic("context-suspended");
+    });
+  };
+  try {
+    ctx.addEventListener?.("statechange", session.onState);
+  } catch {
+    /* the watchdog still sees the state */
+  }
+  watchdog.start();
+}
+
+/**
+ * Give up on the processed track: the raw mic goes on the local stream and on
+ * every live sender (DM, group and server voice peers), mute state kept.
+ */
+export async function fallbackToRawMic(reason = "manual") {
+  const session = activeSession;
+  if (!session || session.fallback) return false;
+  const oldRaw = session.rawStream?.getAudioTracks?.()[0];
+  const processedTrack = session.processedTrack;
+  if (!oldRaw || !processedTrack || oldRaw.readyState === "ended") return false;
+  session.fallback = reason;
+  lastFallbackReason = reason;
+  session.watchdog?.stop();
+  // Levels at the moment we gave up (the meters go away with the graph).
+  try {
+    session.lastRawRms = Number(session.readRaw?.()) || 0;
+    session.lastOutRms = Number(session.readOut?.()) || 0;
+  } catch {
+    /* ignore */
+  }
+  // 3.7.28: the raw capture was opened with browser noise suppression OFF (our
+  // pipeline did it): sent as is it hisses. Re-open it with the browser's own
+  // NS / echo cancellation / AGC; keep the old one if that fails.
+  const rawTrack = await reacquireProcessedRawTrack(oldRaw);
+  const switched = await swapToRawTrack({
+    stream: session.processedStream,
+    processedTrack,
+    rawTrack,
+    peers: getLivePeerConnections(),
+  });
+  if (activeSession !== session) {
+    if (rawTrack !== oldRaw) try { rawTrack.stop(); } catch { /* ignore */ }
+    return false;
+  }
+  if (rawTrack !== oldRaw) {
+    session.rawStream = new MediaStream([rawTrack, ...(session.rawStream?.getVideoTracks?.() || [])]);
+    try { oldRaw.stop(); } catch { /* ignore */ }
+  }
+  // The processed graph (and its neural worklet) must not keep burning CPU.
+  teardownGraph(session);
+  try { processedTrack.stop(); } catch { /* ignore */ }
+  session.engine = "raw-fallback";
+  console.warn(`[NoiseSuppression] ${reason}: switched ${switched} sender(s) to the raw mic`);
+  try {
+    window.dispatchEvent(new CustomEvent(MIC_FALLBACK_EVENT, { detail: { reason, switched } }));
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+/** Same device, browser NS + EC + AGC on. Falls back to applyConstraints, then the old track. */
+async function reacquireProcessedRawTrack(oldRaw) {
+  const browserNs = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+  let deviceId;
+  try {
+    deviceId = oldRaw.getSettings?.().deviceId;
+  } catch {
+    deviceId = undefined;
+  }
+  try {
+    const audio = {
+      ...captureConstraints(readVoiceProfile(), deviceId, { pipeline: false }),
+      ...browserNs,
+      googNoiseSuppression: true,
+      googEchoCancellation: true,
+      googAutoGainControl: true,
+    };
+    const s = await navigator.mediaDevices.getUserMedia({ audio, video: false });
+    const t = s.getAudioTracks()[0];
+    if (t) {
+      try { t.contentHint = "speech"; } catch { /* ignore */ }
+      t.enabled = oldRaw.enabled;
+      return t;
+    }
+  } catch (err) {
+    console.warn("[NoiseSuppression] raw re-capture failed:", err?.name || err?.message || err);
+  }
+  try {
+    await oldRaw.applyConstraints?.(browserNs);
+  } catch {
+    /* the old raw track is still better than silence */
+  }
+  return oldRaw;
+}
+
+function teardownGraph(session) {
+  if (session.monitor) {
+    try { session.monitor.node.disconnect(); } catch { /* ignore */ }
+    try { session.monitor.unregister?.(); } catch { /* ignore */ }
+    session.monitor = null;
+  }
+  for (const node of session.nodes || []) {
+    try { node.disconnect?.(); } catch { /* ignore */ }
+    try { node.destroy?.(); } catch { /* ignore */ }
+  }
+  session.nodes = [];
+  session.readRaw = () => 0;
+  session.readOut = () => 0;
+}
+
+/**
+ * Measured overload (render clock falling behind, see micFailsafe.js): step
+ * down GTCRN → RNNoise → DSP for this session and remember it on this device.
+ */
+async function downgradeEngine(session) {
+  if (activeSession !== session || session.fallback) return false;
+  const next = session.engine === "gtcrn" ? "rnnoise" : session.engine === "dsp" ? null : "dsp";
+  if (!next) return false;
+  writeEngineCap(next);
+  console.warn(`[NoiseSuppression] ${session.engine} cannot keep up (${session.underruns} underruns), switching to ${next}`);
+  const assets = await ensureWasm().catch(() => ({}));
+  if (activeSession !== session || session.fallback || !session.chainIn || !session.chainOut) return false;
+  const { suppressor, engine } = next === "dsp" ? { suppressor: null, engine: "dsp" } : createSuppressor(session.ctx, assets, [next]);
+  try {
+    if (session.suppressor) {
+      session.chainIn.disconnect(session.suppressor);
+      session.suppressor.disconnect();
+      session.suppressor.destroy?.();
+      session.nodes = session.nodes.filter((n) => n !== session.suppressor);
+    }
+    if (suppressor) {
+      session.chainIn.connect(suppressor);
+      suppressor.connect(session.chainOut);
+      session.nodes.push(suppressor);
+    } else {
+      session.chainIn.connect(session.chainOut);
+    }
+  } catch (err) {
+    console.warn("[NoiseSuppression] engine switch failed:", err?.message || err);
+    return false;
+  }
+  session.suppressor = suppressor;
+  session.engine = engine;
+  session.engineReason = "overload";
+  try { localStorage.setItem(ENGINE_KEY, engine); } catch { /* ignore */ }
+  return true;
+}
+
+/** Snapshot for the voice diagnostics (no personal data). */
+export function getNoiseSuppressionDiagnostics() {
+  const s = activeSession;
+  let rawRms = null;
+  let outRms = null;
+  try {
+    if (s?.readRaw && s.ctx?.state === "running") rawRms = Number(s.readRaw().toFixed(5));
+    if (s?.readOut && s.ctx?.state === "running" && !s.fallback) outRms = Number(s.readOut().toFixed(5));
+    if (s?.fallback) {
+      rawRms = s.lastRawRms != null ? Number(s.lastRawRms.toFixed(5)) : null;
+      outRms = s.lastOutRms != null ? Number(s.lastOutRms.toFixed(5)) : null;
+    }
+  } catch {
+    /* ignore */
+  }
+  let captureSampleRate = null;
+  try {
+    captureSampleRate = s?.rawStream?.getAudioTracks?.()[0]?.getSettings?.().sampleRate ?? null;
+  } catch {
+    /* ignore */
+  }
+  return {
+    enabled: isNoiseSuppressionEnabled(),
+    engine: s?.engine || (lastFallbackReason ? "raw-fallback" : "off"),
+    audioContextState: sharedCtx ? sharedCtx.state : "none",
+    fallback: s?.fallback || lastFallbackReason || null,
+    rawRms,
+    processedRms: outRms,
+    contextSampleRate: s?.ctx?.sampleRate ?? sharedCtx?.sampleRate ?? null,
+    captureSampleRate,
+    underruns: s?.underruns ?? null,
+    engineReason: s?.engineReason || null,
+  };
+}
+
 /**
  * Capture mic with optimized constraints and apply suppression when enabled.
  */
@@ -352,6 +679,7 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   // an AudioContext created later from the speaking-ring effect.
   claimVoiceAudioSession();
   primeVoiceActivity();
+  primeNoiseSuppressionContext();
   const base = getVoiceAudioConstraints({
     deviceId: extraConstraints?.audio?.deviceId?.exact || extraConstraints?.deviceId,
   });
@@ -393,6 +721,11 @@ export async function acquireVoiceMicStream(extraConstraints = {}) {
   return stream;
 }
 
+/** The audio track the session currently sends (raw after a fallback). */
+export function getNoiseSuppressionOutputTrack() {
+  return activeSession?.processedStream?.getAudioTracks?.()?.[0] || null;
+}
+
 /** Raw capture track behind the processed (noise-suppressed) one, if any. */
 export function getNoiseSuppressionRawTrack() {
   return activeSession?.rawStream?.getAudioTracks?.()?.[0] || null;
@@ -402,6 +735,12 @@ export function disposeNoiseSuppressionSession({ stopRaw = true, keepContext = f
   if (!activeSession) return;
   applyMonitor({ on: false });
   const { rawStream, nodes } = activeSession;
+  try {
+    activeSession.watchdog?.stop();
+    if (activeSession.onState) activeSession.ctx?.removeEventListener?.("statechange", activeSession.onState);
+  } catch {
+    /* ignore */
+  }
   for (const node of nodes) {
     try {
       node.disconnect?.();
@@ -485,7 +824,7 @@ export function suspendIdleContext() {
 function applyMonitor(monitor) {
   const session = activeSession;
   if (!session?.ctx || !session.tail) return;
-  const want = Boolean(monitor?.on);
+  const want = Boolean(monitor?.on) && !session.fallback;
   if (!want) {
     if (session.monitor) {
       try { session.tail.disconnect(session.monitor.node); } catch { /* ignore */ }
@@ -519,7 +858,11 @@ function applyMonitor(monitor) {
 /** Swap the gate node in place when the Descall+ threshold changes mid-call. */
 function retuneGate(params) {
   const session = activeSession;
-  if (!session?.ctx || !session.gate || !session.beforeGate || !session.afterGate) return;
+  if (!session?.ctx || session.fallback || !session.gateNode || !session.afterGate) return;
+  // The gate's input is whatever feeds it now (the suppressor can change on an
+  // engine downgrade).
+  const beforeGate = session.suppressor || session.chainIn;
+  if (!beforeGate) return;
   const key = JSON.stringify(params || null);
   if (key === session.gateKey) return;
   let next;
@@ -528,18 +871,19 @@ function retuneGate(params) {
   } catch {
     return;
   }
-  const old = session.gate;
+  const old = session.gateNode;
   try {
-    session.beforeGate.connect(next);
+    beforeGate.connect(next);
     next.connect(session.afterGate);
-    session.beforeGate.disconnect(old);
+    beforeGate.disconnect(old);
     old.disconnect();
     old.destroy?.();
   } catch {
     try { next.disconnect(); } catch { /* ignore */ }
     return;
   }
-  session.gate = next;
+  session.gateNode = next;
+  if (session.chainOut === old) session.chainOut = next;
   session.gateKey = key;
   session.nodes = session.nodes.map((n) => (n === old ? next : n));
   if (session.tail === old) {

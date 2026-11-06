@@ -19,6 +19,8 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		E57E9D7B4C3CDBB1F27BB291 /* WatchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648D45833A8CB7835EBE7F6 /* WatchCore.swift */; };
+		4F973174F0FBB19FE159CA93 /* WatchTabsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FAA1205A62CE6DCF1A86F55 /* WatchTabsViews.swift */; };
 		72249211F2F6B8BDA50F3DD2 /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10DEFB120AAD22B53527D49 /* WatchStore.swift */; };
 		8B6E5D3AB6C65A074469BD6B /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */; };
 		8BBDE6E1ACB94C29A29D4143 /* WatchAdminModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3155CE73B2690E6CB377DE05 /* WatchAdminModels.swift */; };
@@ -164,6 +166,8 @@
 		B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchModels.swift; sourceTree = "<group>"; };
 		BB7966CCECE892F7690FEEE5 /* es */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		BED3E443ADCF16D6FBDD81B3 /* WatchDemo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchDemo.swift; sourceTree = "<group>"; };
+		3648D45833A8CB7835EBE7F6 /* WatchCore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchCore.swift; sourceTree = "<group>"; };
+		4FAA1205A62CE6DCF1A86F55 /* WatchTabsViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchTabsViews.swift; sourceTree = "<group>"; };
 		C10DEFB120AAD22B53527D49 /* WatchStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchStore.swift; sourceTree = "<group>"; };
 		C1B2C3D41FED79650016851F /* App.debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.debug.entitlements; sourceTree = "<group>"; };
 		C1B2C3D51FED79650016851F /* App.release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.release.entitlements; sourceTree = "<group>"; };
@@ -236,6 +240,8 @@
 				C86C61FA91B959BCEEBF006B /* WatchClient.swift */,
 				BED3E443ADCF16D6FBDD81B3 /* WatchDemo.swift */,
 				B54A6B794037D7A6ACEE3F60 /* WatchModels.swift */,
+				3648D45833A8CB7835EBE7F6 /* WatchCore.swift */,
+				4FAA1205A62CE6DCF1A86F55 /* WatchTabsViews.swift */,
 				C10DEFB120AAD22B53527D49 /* WatchStore.swift */,
 				7F7F14CBBFB911BF288C5BAA /* WatchStrings.swift */,
 				7994526A639F65B4026ADD5B /* WatchTheme.swift */,
@@ -577,6 +583,8 @@
 				F8E52F9ECD3C1CC2885DC91D /* WatchClient.swift in Sources */,
 				F04678C03093F3B21D906693 /* WatchDemo.swift in Sources */,
 				8B6E5D3AB6C65A074469BD6B /* WatchModels.swift in Sources */,
+				E57E9D7B4C3CDBB1F27BB291 /* WatchCore.swift in Sources */,
+				4F973174F0FBB19FE159CA93 /* WatchTabsViews.swift in Sources */,
 				72249211F2F6B8BDA50F3DD2 /* WatchStore.swift in Sources */,
 				180E56F40F10884135FBA4AC /* WatchStrings.swift in Sources */,
 				1B48A714D47C345808A99C09 /* WatchTheme.swift in Sources */,
@@ -678,7 +686,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -814,7 +822,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -837,7 +845,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -861,7 +869,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -886,7 +894,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -911,7 +919,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -936,7 +944,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.NotificationContent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -961,7 +969,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.7.27;
+				MARKETING_VERSION = 3.7.35;
 				PRODUCT_BUNDLE_IDENTIFIER = com.descall.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

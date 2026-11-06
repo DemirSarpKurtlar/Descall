@@ -1,5 +1,29 @@
 /** In-app TR strings that were falling back to English. */
 export const TR_INAPP_GAPS = {
+  // 3.7.31 server invite landing
+  "{name} invited you to a server": "{name} seni bir sunucuya davet etti",
+  "This invite is invalid or has expired.": "Davet geçersiz veya süresi dolmuş.",
+  "Ask the person who sent it for a new invite.": "Daveti gönderen kişiden yeni bir davet iste.",
+  "You are banned from this server.": "Bu sunucudan yasaklandın.",
+  "You have reached the server limit. Leave a server to join this one.":
+    "Sunucu sınırına ulaştın. Buna katılmak için bir sunucudan ayrıl.",
+  "Your account is suspended.": "Hesabın askıya alınmış.",
+  "This server requires extra verification before you can join.":
+    "Bu sunucuya katılmadan önce ek doğrulama gerekiyor.",
+  "Too many attempts. Wait a little and try again.": "Çok fazla deneme yaptın. Biraz bekleyip tekrar dene.",
+  "Your session has ended. Log in again to join.": "Oturumun sona ermiş. Katılmak için tekrar giriş yap.",
+  "Could not reach Descall. Check your connection and try again.":
+    "Descall’a ulaşılamadı. Bağlantını kontrol edip tekrar dene.",
+  "Go to Descall": "Descall’a git",
+  "Go to home page": "Ana sayfaya git",
+  "Log in": "Giriş yap",
+  "Sign up and join": "Kayıt ol ve katıl",
+  "Your invite is kept while you log in or sign up.": "Giriş yaparken veya kayıt olurken davetin kaybolmaz.",
+  "Loading invite…": "Davet yükleniyor…",
+  "Accept Invite": "Daveti kabul et",
+  "Joining…": "Katılınıyor…",
+  "Not now": "Şimdi değil",
+  "{count} members": "{count} üye",
   "A note to include with the DesCoin gift…": "DesCoin hediyesiyle gönderilecek not…",
   "Add banner": "Banner ekle",
   "Adjust banner": "Banner’ı ayarla",
@@ -147,4 +171,5 @@ export const TR_INAPP_GAPS = {
   "Title text (e.g. Elite)": "Başlık metni (ör. Elit)",
   "iOS Liquid Glass": "iOS Liquid Glass",
   "{groupName} | Group Call": "{groupName} | Grup araması",
+  "Couldn't complete, change reverted.": "İşlem tamamlanamadı, değişiklik geri alındı.",
 };

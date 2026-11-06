@@ -6,7 +6,8 @@ import { DoneBtn, PageFrame, Rich, useHub, useRouteDraft, useRun } from "./hubCo
 import { useToast } from "../../../context/ToastContext";
 import { copyText } from "../../../lib/copyText";
 import { promptAction } from "../../../lib/glassConfirm";
-import { hapticSelection, hapticWarning } from "../../../lib/fluid/haptics";
+import { hapticError, hapticSelection, hapticSuccess, hapticWarning } from "../../../lib/fluid/haptics";
+import { runOptimistic, removeMemberOptimistic, patchMemberOptimistic } from "../../../lib/optimisticMembers";
 import { isBlockedByMe, setUserBlocked, useBlockedUserIds } from "../../../lib/blockedUsers";
 import ReportUserModal from "../../social/ReportUserModal";
 import {
@@ -33,6 +34,15 @@ function useRolesById() {
 function presence(hub, m) {
   if (hub.deps.me?.id && String(m.userId) === String(hub.deps.me.id)) return presenceOf(hub.deps.onlineUsers, m.userId) || "online";
   return presenceOf(hub.deps.onlineUsers, m.userId);
+}
+/** 3.7.32: optimistic member change on the shared hub list, rolled back on failure. */
+function optimisticMembers(hub, change, request, onError) {
+  return runOptimistic({
+    update: (fn) => hub.setData((d) => ({ ...d, members: fn(d.members || []) })),
+    change,
+    request,
+    onError,
+  });
 }
 /** Patch one member in the shared hub data. */
 function patchMember(hub, userId, fn) {
@@ -175,25 +185,38 @@ export function MemberBody({ userId }) {
     ],
     onPick: async (id) => {
       if (id === "__clear") {
-        await removeServerMemberTimeout(server.id, m.userId);
-        patchMember(hub, m.userId, (x) => ({ ...x, timeoutUntil: null, timeoutReason: null }));
+        const r = await optimisticMembers(hub, (l) => patchMemberOptimistic(l, m.userId, { timeoutUntil: null, timeoutReason: null }),
+          () => removeServerMemberTimeout(server.id, m.userId));
+        if (!r.ok) throw r.error;
         toast(s.timeoutCleared, "success");
         return true;
       }
       const reason = await promptAction({ title: s.reasonOpt, placeholder: s.reasonOpt, confirmLabel: s.ok, cancelLabel: s.cancel });
       if (reason === null) return false;
-      const { timeout } = await timeoutServerMember(server.id, m.userId, { durationSeconds: id, reason: reason.trim() || undefined });
-      patchMember(hub, m.userId, (x) => ({ ...x, timeoutUntil: timeout?.until || new Date(Date.now() + id * 1000).toISOString(), timeoutReason: timeout?.reason || null }));
+      const until = new Date(Date.now() + id * 1000).toISOString();
+      const r = await optimisticMembers(hub, (l) => patchMemberOptimistic(l, m.userId, { timeoutUntil: until, timeoutReason: reason.trim() || null }),
+        () => timeoutServerMember(server.id, m.userId, { durationSeconds: id, reason: reason.trim() || undefined }));
+      if (!r.ok) throw r.error;
+      const timeout = r.result?.timeout;
+      if (timeout?.until) patchMember(hub, m.userId, (x) => ({ ...x, timeoutUntil: timeout.until }));
       toast(s.timeoutDone, "success");
       return true;
     },
   });
-  const kick = async () => {
-    const ok = await run(() => kickServerMember(server.id, m.userId), { ok: s.kickDone });
-    if (ok) { setSheet(null); afterRemoved(); }
+  // 3.7.32: kick/ban leave the list at once; a failure puts the member back with a toast.
+  const removeOptimistic = async (request, okText) => {
+    setSheet(null);
+    const uid = m.userId;
+    leaveProfile();
+    const r = await optimisticMembers(hub, (l) => removeMemberOptimistic(l, uid), request, (err) => {
+      hapticError();
+      toast(`${s.reverted} ${err?.message || ""}`.trim(), "error");
+    });
+    if (r.ok) { hapticSuccess(); toast(okText, "success"); }
+    return r.ok;
   };
-  const afterRemoved = () => {
-    hub.setData((d) => ({ ...d, members: (d.members || []).filter((x) => String(x.userId) !== String(m.userId)) }));
+  const kick = () => removeOptimistic(() => kickServerMember(server.id, m.userId), s.kickDone);
+  const leaveProfile = () => {
     if (hub.phone && hub.stack.length > 1) hub.pop(); else if (hub.phone) hub.close();
     else hub.updateRoute(hub.stack[hub.stack.length - 1].key, { sel: null });
   };
@@ -201,8 +224,8 @@ export function MemberBody({ userId }) {
     hapticWarning();
     const reason = await promptAction({ title: f("banPrompt", { name }), placeholder: s.reasonOpt, confirmLabel: s.ban, cancelLabel: s.cancel });
     if (reason === null) return;
-    const ok = await run(() => banServerMember(server.id, m.userId, reason.trim() || undefined), { ok: s.banDone });
-    if (ok) { hub.load("bans", true); afterRemoved(); }
+    const ok = await removeOptimistic(() => banServerMember(server.id, m.userId, reason.trim() || undefined), s.banDone);
+    if (ok) hub.load("bans", true);
   };
   const toggleBlock = () => run(async () => {
     await setUserBlocked(m.userId, !blocked);

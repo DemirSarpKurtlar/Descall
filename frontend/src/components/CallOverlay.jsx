@@ -3,7 +3,7 @@ import "../styles/call-people.css";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Headphones, HeadphoneOff, SwitchCamera,
-  Minus, Maximize2, Users, MessageSquare, MoreVertical, Check, X as XIcon,
+  Minus, Maximize2, Eye, Users, MessageSquare, MoreVertical, Check, X as XIcon,
   Volume2, ChevronUp, ChevronDown, Mic2, SlidersHorizontal,
 } from "./ui/Icon.jsx";
 import { Avatar } from "./ui/Avatar";
@@ -37,7 +37,6 @@ import UserProfileModal from "./social/UserProfileModal";
 import { subscribeCallKitUi, getCallKitUiSnapshot } from "../lib/iosCallKitState";
 import useGlassUi from "../hooks/useGlassUi";
 import { useGlassDesktop } from "../hooks/useGlassDesktop";
-import { groupMosaicShape } from "../lib/groupMosaic";
 import { dmRingingLabelKey, planCallGrid } from "../lib/callGridLayout";
 import { hapticImpactLight, hapticImpactMedium, hapticSelection } from "../lib/fluid/haptics";
 import { REDUCED_MOTION_FADE, SPRINGS, framerSpring } from "../lib/fluid/springs";
@@ -589,7 +588,60 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       </div>
       )}
 
-      {isDm && mode === "active" && call?.mediaFlow === "retry" && !call?.ending ? (
+      {isDm && (mode === "active" || mode === "outgoing") && call?.connectFailed && !call?.ending ? (
+        <div
+          className="call-connect-failed"
+          role="alert"
+          style={{
+            position: "absolute",
+            top: "calc(96px + env(safe-area-inset-top, 0px))",
+            left: 16,
+            right: 16,
+            zIndex: 13,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "8px 8px 8px 16px",
+              borderRadius: 999,
+              background: "rgba(20,22,28,0.58)",
+              backdropFilter: "blur(40px) saturate(180%)",
+              WebkitBackdropFilter: "blur(40px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.28)",
+              color: "#fff",
+              fontSize: 14,
+              pointerEvents: "auto",
+            }}
+          >
+            <span>{t("Couldn't connect.")}</span>
+            <button
+              type="button"
+              onClick={() => call?.retryConnection?.()}
+              style={{
+                border: 0,
+                borderRadius: 999,
+                padding: "8px 14px",
+                background: "#34c759",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              {t("Retry audio connection")}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {isDm && mode === "active" && call?.mediaFlow === "retry" && !call?.connectFailed && !call?.ending ? (
         <div
           className="call-media-retry"
           role="status"
@@ -739,7 +791,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
 
       {/* ====== BOTTOM CONTROL BAR ====== */}
       <div
-        className={glass ? "call-control-bar g-call-ctrl" : "call-control-bar"}
+        className={`${glass ? "call-control-bar g-call-ctrl" : "call-control-bar"}${anyScreenShare ? " is-sharing" : ""}`}
         style={{
           position: "absolute",
           bottom: 0,
@@ -1302,6 +1354,8 @@ function ParticipantTile({
   connectionQuality = null,
   onContextMenu,
   mosaicChip = false,
+  shareRow = false,
+  showCameraOff = true,
   reconnecting = false,
   levelProbe = null,
   mirror = false,
@@ -1320,10 +1374,10 @@ function ParticipantTile({
   // the ring / restarts its animation.
   const heldSpeaking = useHeldSpeaking(Boolean(speakingProp || detected) && !muted);
   const isSpeaking = muted ? false : heldSpeaking;
-  const avatarSize = small ? 36 : 96;
+  const avatarSize = shareRow ? 44 : small ? 36 : 96;
   // Frame overlay is ~132% of the avatar, pad the shell so overflow:hidden
   // ancestors (call stage / framer layout) don't clip catalog frames.
-  const shellPad = small ? 6 : Math.round(avatarSize * 0.2);
+  const shellPad = small || shareRow ? 6 : Math.round(avatarSize * 0.2);
   const shellSize = avatarSize + shellPad * 2;
   const presenceStatus = status || (isLocal ? "online" : null);
   // Camera off (signaled or the track went muted / ended / disabled) shows
@@ -1364,7 +1418,7 @@ function ParticipantTile({
   return (
     <div
       ref={setTileEl}
-      className={`participant-tile${small ? " small" : ""}${isSpeaking && !reconnecting ? " is-speaking" : ""}${
+      className={`participant-tile${small ? " small" : ""}${shareRow ? " ss-tile" : ""}${isSpeaking && !reconnecting ? " is-speaking" : ""}${
         showVideo ? "" : " participant-tile--avatar-only"
       }${reconnecting ? " is-reconnecting" : ""}`}
       onContextMenu={
@@ -1458,7 +1512,21 @@ function ParticipantTile({
               <StatusBadge status={presenceStatus} />
             </div>
           </div>
-          {!small && (
+          {shareRow ? (
+            <div className="ss-tile-identity">
+              <span className="ss-tile-name">
+                <NameEffectText user={user}>{displayName}</NameEffectText>
+              </span>
+              <ParticipantStateIcons
+                muted={muted}
+                deafened={deafened}
+                cameraOff={showCameraOff && cameraOn === false}
+                size={11}
+                className="ss-tile-badges"
+              />
+            </div>
+          ) : null}
+          {!small && !shareRow && (
             <div className="participant-tile-identity">
               <span className="participant-tile-identity-name">
                 <NameEffectText user={user}>{displayName}</NameEffectText>
@@ -1479,7 +1547,7 @@ function ParticipantTile({
         </span>
       )}
 
-      {!showVideo && glass && !small && (
+      {!showVideo && glass && !small && !shareRow && (
         <div className="participant-tile-label">
           {isSpeaking ? <span className="speaking-dot" /> : null}
           <span className="participant-tile-name">
@@ -1491,7 +1559,7 @@ function ParticipantTile({
           {isLocal && cameraOn === false && muted && <VideoOff size={14} aria-label={t("Camera off")} title={t("Camera off")} />}
         </div>
       )}
-      {glass && !small && (muted || (isLocal && cameraOn === false)) && (
+      {glass && !small && !shareRow && (muted || (isLocal && cameraOn === false)) && (
         <div className={`g-call-corner${muted ? " is-mic" : " is-cam"}`} aria-hidden>
           {muted ? <MicOff size={14} /> : <VideoOff size={14} />}
         </div>
@@ -1514,7 +1582,7 @@ function ParticipantTile({
           )}
         </div>
       )}
-      {!showVideo && small && (muted || deafened || cameraOn === false) && (
+      {!showVideo && small && !shareRow && (muted || deafened || cameraOn === false) && (
         <div className="participant-tile-avatar-status">
           <ParticipantStateIcons
             muted={muted}
@@ -1782,7 +1850,6 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
   const [activeSharerId, setActiveSharerId] = useState(null);
   const [pinnedSharerId, setPinnedSharerId] = useState(null);
   const [shareLayout, setShareLayout] = useState("stage");
-  const [viewerCount] = useState(0);
   // Keep refs to both the normal and expanded video elements so we can set srcObject on each
   const normalVideoRef = useRef(null);
   const expandedVideoRef = useRef(null);
@@ -1915,122 +1982,29 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
     })),
   ];
 
-  const stripH = narrow ? 72 : 110;
-  const tileW = narrow ? 112 : 160;
-  const tileH = narrow ? 64 : 100;
-  const mosaicSharerId = mosaic && activeSharer && !activeSharer.isLocal ? String(activeSharer.id) : null;
-  const visibleStrip = mosaicSharerId
-    ? stripTiles.filter((tile) => String(tile.id) !== mosaicSharerId)
-    : stripTiles;
-
-  if (mosaic && shareLayout !== "grid") {
-    const mosaicPeople = [
-      ...visibleStrip.filter((tile) => !tile.isLocal),
-      ...visibleStrip.filter((tile) => tile.isLocal),
-    ];
-    const shape = groupMosaicShape(1 + mosaicPeople.length);
-    return (
-      <div className="gd-mosaic-frame">
-        <div
-          className={`call-screen-share-layout gd-group-mosaic${shape.rows > 4 ? " is-scroll" : ""}`}
-          style={{ "--gd-cols": shape.cols, "--gd-rows": shape.rows }}
-        >
-          <div
-            className="gd-mosaic-cell gd-mosaic-screen"
-            onClick={() => setScreenExpanded((v) => !v)}
-          >
-            <video
-              key={`${activeSharer?.id || "none"}-${aspectKey}`}
-              ref={normalVideoCallbackRef}
-              autoPlay
-              playsInline
-              muted
-            />
-            {!screenStream && (
-              <div className="gd-mosaic-wait">{t("Waiting for screen…")}</div>
-            )}
-            <div className="gd-share-label" onClick={(e) => e.stopPropagation()}>
-              <span className="speaking-dot" />
-              <span className="gd-share-name">{sharerLabel}</span>
-            </div>
-            {screenExpanded && (
-              <div
-                className="gd-mosaic-expand"
-                onClick={(e) => { e.stopPropagation(); setScreenExpanded(false); }}
-              >
-                <video
-                  key={`exp-${activeSharer?.id || "none"}-${aspectKey}`}
-                  ref={expandedVideoCallbackRef}
-                  autoPlay
-                  playsInline
-                  muted
-                />
-              </div>
-            )}
-          </div>
-          {mosaicPeople.map((tile) => {
-            const videoRef = tile.isLocal
-              ? (isDm ? call?.localVideoRef : groupCall?.localVideoRef)
-              : null;
-            return (
-              <div key={tile.id} className="gd-mosaic-cell">
-                <ParticipantTile
-                  username={tile.username}
-                  avatarUrl={tile.avatarUrl}
-                  user={tile.user}
-                  isSpeaking={tile.isSpeaking}
-                  videoRef={tile.hasVideo ? videoRef : null}
-                  stream={tile.stream}
-                  hasVideo={tile.hasVideo}
-                  isLocal={tile.isLocal}
-                  mirror={tile.isLocal && localTileMirror(isDm, call, groupCall)}
-                  onFlipCamera={tile.isLocal ? localTileFlip(isDm, call, groupCall) : null}
-                  muted={tile.muted}
-                  deafened={tile.deafened}
-                  cameraOn={tile.cameraOn}
-                  mosaicChip
-                  onContextMenu={
-                    tile.isLocal
-                      ? undefined
-                      : (event) => onOpenUserMenu?.(event, tile.user, Boolean(tile.user?.isScreenSharing || tile.user?.screenStream))
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
-        <ShareFilmstrip
-          sharers={filmSharers}
-          activeId={activeSharer?.id}
-          pinnedId={pinnedSharerId}
-          layout={shareLayout}
-          onSelect={(id) => setActiveSharerId(id)}
-          onTogglePin={(id) => {
-            setPinnedSharerId((current) => (String(current) === String(id) ? null : id));
-            setActiveSharerId(id);
-          }}
-          onToggleLayout={() => setShareLayout("grid")}
-        />
-      </div>
-    );
-  }
-
+  // V1 "Kutucuk satırı" (owner pick, Nov 2026): the stream fills the stage with its
+  // pills on top, one centered glass tile per person underneath (badges attached to
+  // the name, blue speaking ring, decoration frame kept separate), the sharer included.
+  const viewerCount = Math.max(0, stripTiles.length - 1);
   const showGrid = shareLayout === "grid" && filmSharers.length > 1;
+  const multiShare = filmSharers.length > 1;
+  // Camera-off badges only mean something in a video call (a voice call put one on everybody).
+  const videoCall = (isDm ? call?.callType : groupCall?.callType) === "video"
+    || stripTiles.some((tile) => tile.cameraOn);
+  const sharerPill = activeSharer
+    ? (activeSharer.isLocal
+      ? t("callui.share.you")
+      : t("callui.share.sharing", { name: activeSharer.username || "" }))
+    : "";
+  const rowTiles = [
+    ...stripTiles.filter((tile) => !tile.isLocal),
+    ...stripTiles.filter((tile) => tile.isLocal),
+  ];
+  // Keep `mosaic` referenced for the glass-desktop share tint.
+  const rootClass = `call-screen-share-layout ss-v1${narrow ? " is-narrow" : ""}${mosaic ? " is-group-glass" : ""}`;
 
   return (
-    <div
-      className="call-screen-share-layout"
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        gap: narrow ? 6 : 8,
-        padding: narrow ? "2px 8px 0" : "4px 12px",
-        minHeight: 0,
-        overflow: "hidden",
-      }}
-    >
-      {/* ── Main screen share area ── */}
+    <div className={rootClass} data-share-count={filmSharers.length}>
       {showGrid ? (
         <div className={`share-stage-grid is-n${Math.min(filmSharers.length, 6)}`}>
           {filmSharers.map((sharer) => (
@@ -2051,196 +2025,125 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
         </div>
       ) : null}
       <div
-        style={{
-          flex: showGrid ? "0 0 0" : "1 1 auto",
-          display: showGrid ? "none" : "block",
-          position: "relative",
-          borderRadius: narrow ? 12 : 14,
-          overflow: "hidden",
-          background: "#000",
-          cursor: "pointer",
-          minHeight: 0,
-        }}
+        className="ss-stream"
+        hidden={showGrid}
+        title={t("Click to expand")}
         onClick={() => setScreenExpanded((v) => !v)}
       >
         {/* key remounts on sharer change OR orientation flip (portrait↔landscape) */}
         <video
           key={`${activeSharer?.id || "none"}-${aspectKey}`}
           ref={normalVideoCallbackRef}
+          className="ss-stream-video"
           autoPlay
           playsInline
           muted
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            display: "block",
-            // Promote to compositor layer, reduces paint jank on remote screen share
-            transform: "translateZ(0)",
-            willChange: "contents",
-          }}
         />
 
-        {!screenStream && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "rgba(235,235,245,0.6)",
-              fontSize: 14,
-              pointerEvents: "none",
-            }}
-          >
-            {t("Waiting for screen…")}
-          </div>
-        )}
+        {!screenStream && <div className="ss-stream-wait">{t("Waiting for screen…")}</div>}
 
-        {/* Sharer name label, top-left */}
-        <div
-          className="gd-share-label"
-          style={{
-            position: "absolute",
-            top: 12,
-            left: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            background: "rgba(0,0,0,0.65)",
-            backdropFilter: "blur(6px)",
-            borderRadius: 8,
-            padding: "6px 12px",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {mosaic ? <span className="speaking-dot" /> : <Monitor size={13} color="#30d158" />}
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{sharerLabel}</span>
-          {viewerCount > 0 && (
-            <span style={{ fontSize: 11, color: "rgba(235,235,245,0.6)", marginLeft: 4 }}>
-              <Users size={11} style={{ display: "inline", marginRight: 3 }} />
-              {viewerCount} watching
+        <div className="ss-pills ss-pills-start gd-share-label" onClick={(e) => e.stopPropagation()}>
+          <span className="ss-live" role="status">
+            <span className="ss-live-dot" aria-hidden="true" />
+            {t("Live")}
+          </span>
+          {viewerCount > 0 ? (
+            <span className="ss-pill">
+              <Eye size={13} aria-hidden="true" />
+              {t("callui.share.viewers", { n: viewerCount })}
             </span>
-          )}
+          ) : null}
+          {sharerPill ? (
+            <span className="ss-pill ss-pill-sharer">
+              <Monitor size={13} aria-hidden="true" />
+              <span className="ss-pill-text">{sharerPill}</span>
+            </span>
+          ) : null}
         </div>
 
-        {!activeSharer?.isLocal && (
-          <div
-            className="gd-share-volume g-vol-chip gd-mosaic-chrome"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <GlassVolumeSlider
-              compact
-              narrow={narrow}
-              min={0}
-              max={200}
-              step={1}
-              value={screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}
-              label={t("Screen share volume")}
-              onChange={(value) => {
-                if (activeSharer?.id != null) onScreenVolumeForSharer?.(activeSharer.id, value);
-                onScreenShareVolumeChange?.(value);
-              }}
-            />
-          </div>
-        )}
-
-        {/* Expand/collapse hint, bottom-center */}
         <div
-          className="gd-mosaic-chrome"
-          style={{
-            position: "absolute",
-            bottom: 10,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(0,0,0,0.55)",
-            backdropFilter: "blur(4px)",
-            color: "rgba(235,235,245,0.6)",
-            fontSize: 12,
-            padding: "4px 12px",
-            borderRadius: 6,
-            pointerEvents: "none",
-          }}
+          className="ss-pills ss-pills-end"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          {screenExpanded ? t("Click to shrink") : t("Click to expand")}
+          {!activeSharer?.isLocal && (
+            <div className="ss-pill ss-pill-volume gd-share-volume g-vol-chip">
+              <GlassVolumeSlider
+                compact
+                narrow={narrow}
+                min={0}
+                max={200}
+                step={1}
+                value={screenVolumes?.[String(activeSharer?.id)] ?? screenShareVolume}
+                label={t("Screen share volume")}
+                onChange={(value) => {
+                  if (activeSharer?.id != null) onScreenVolumeForSharer?.(activeSharer.id, value);
+                  onScreenShareVolumeChange?.(value);
+                }}
+              />
+            </div>
+          )}
+          <button
+            type="button"
+            className="ss-pill ss-pill-icon"
+            title={t("callui.share.fullscreen")}
+            aria-label={t("callui.share.fullscreen")}
+            onClick={() => setScreenExpanded(true)}
+          >
+            <Maximize2 size={14} aria-hidden="true" />
+          </button>
         </div>
 
         {/* Expanded fullscreen overlay */}
         {screenExpanded && (
           <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 200,
-              background: "#000",
-              cursor: "pointer",
-            }}
+            className="ss-expanded"
             onClick={(e) => { e.stopPropagation(); setScreenExpanded(false); }}
           >
             <video
               key={`exp-${activeSharer?.id || "none"}-${aspectKey}`}
               ref={expandedVideoCallbackRef}
+              className="ss-stream-video"
               autoPlay
               playsInline
               muted
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                transform: "translateZ(0)",
-                willChange: "contents",
-              }}
             />
-            <div style={{ position: "absolute", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "calc(16px + env(safe-area-inset-left, 0px))", display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.7)", borderRadius: 8, padding: "6px 14px" }}>
-              <Monitor size={14} color="#30d158" />
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{sharerLabel}</span>
+            <div className="ss-pills ss-pills-start ss-expanded-top">
+              <span className="ss-live"><span className="ss-live-dot" aria-hidden="true" />{t("Live")}</span>
+              <span className="ss-pill"><Monitor size={13} aria-hidden="true" /><span className="ss-pill-text">{sharerLabel}</span></span>
             </div>
-            <div style={{ position: "absolute", bottom: "calc(20px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "rgba(235,235,245,0.6)", fontSize: 12, padding: "5px 14px", borderRadius: 6 }}>
-              {t("Click anywhere to exit fullscreen")}
-            </div>
+            <div className="ss-pill ss-expanded-hint">{t("Click anywhere to exit fullscreen")}</div>
           </div>
         )}
       </div>
 
-      <ShareFilmstrip
-        sharers={filmSharers}
-        activeId={activeSharer?.id}
-        pinnedId={pinnedSharerId}
-        layout={shareLayout}
-        onSelect={(id) => {
-          setActiveSharerId(id);
-          if (shareLayout === "grid") setShareLayout("stage");
-        }}
-        onTogglePin={(id) => {
-          setPinnedSharerId((current) => (String(current) === String(id) ? null : id));
-          setActiveSharerId(id);
-        }}
-        onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
-      />
+      {multiShare ? (
+        <ShareFilmstrip
+          sharers={filmSharers}
+          activeId={activeSharer?.id}
+          pinnedId={pinnedSharerId}
+          layout={shareLayout}
+          onSelect={(id) => {
+            setActiveSharerId(id);
+            if (shareLayout === "grid") setShareLayout("stage");
+          }}
+          onTogglePin={(id) => {
+            setPinnedSharerId((current) => (String(current) === String(id) ? null : id));
+            setActiveSharerId(id);
+          }}
+          onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
+        />
+      ) : null}
 
-      {/* ── Bottom participant strip ── */}
-      <div
-        className="call-screen-share-strip"
-        style={{
-          height: stripH,
-          display: "flex",
-          gap: 8,
-          overflowX: "auto",
-          overflowY: "hidden",
-          flexShrink: 0,
-          padding: "2px 0 4px",
-          scrollbarWidth: "none",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {visibleStrip.map((tile) => {
+      {/* ── Participant tile row (V1) ── */}
+      <div className="ss-tile-row call-screen-share-strip" role="list" aria-label={t("callui.share.people")}>
+        {rowTiles.map((tile) => {
           const videoRef = tile.isLocal
             ? (isDm ? call?.localVideoRef : groupCall?.localVideoRef)
             : null;
+          const sharing = filmSharers.some((sharer) => String(sharer.id) === String(tile.id) || (sharer.isLocal && tile.isLocal));
           return (
-            <div key={tile.id} style={{ width: tileW, height: tileH, flexShrink: 0 }}>
+            <div key={tile.id} role="listitem" className={`ss-tile-slot${sharing ? " is-sharing" : ""}`}>
               <ParticipantTile
                 username={tile.username}
                 avatarUrl={tile.avatarUrl}
@@ -2255,7 +2158,8 @@ function ScreenShareLayout({ allScreenSharers, screenExpanded, setScreenExpanded
                 muted={tile.muted}
                 deafened={tile.deafened}
                 cameraOn={tile.cameraOn}
-                small={!mosaic}
+                shareRow
+                showCameraOff={videoCall}
                 onContextMenu={
                   tile.isLocal
                     ? undefined

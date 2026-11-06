@@ -132,6 +132,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Desktop screen sharing
   getScreenSources: () => ipcRenderer.invoke('get-screen-sources'),
+  // Pre-select the in-app picker's source for the next getDisplayMedia call.
+  selectDisplaySource: (sourceId) => ipcRenderer.invoke('screen-share:select-source', sourceId),
 
   // Window focus helpers (used by notificationService)
   isWindowFocused: () => ipcRenderer.invoke('is-window-focused'),

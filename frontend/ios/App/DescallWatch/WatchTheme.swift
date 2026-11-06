@@ -13,6 +13,8 @@ enum DS {
     static let idle = Color(red: 1, green: 0x9F / 255, blue: 0x0A / 255)
     static let dnd = Color(red: 1, green: 0x45 / 255, blue: 0x3A / 255)
     static let offline = Color(white: 0.45)
+    /// Dense navy under the frosted cards (heavy glass, never see-through).
+    static let glassTint = Color(red: 0.10, green: 0.12, blue: 0.24)
 
     /// Same palette and order as the web/iOS letter avatars (src/lib/avatarFallback.js
     /// AVATAR_PALETTE), so one person gets the same colour on every device.
@@ -85,19 +87,25 @@ struct DescallBackground: View {
     }
 }
 
+/// 3.7.33 heavy frosted glass (owner rule: no see-through menus or sheets). A thick
+/// material plus a dense navy tint, a top sheen and a hairline: the background light
+/// only glows through, text behind a card never shows.
 struct GlassBackground: ViewModifier {
     var radius: CGFloat
     var highlight: Bool
 
     func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         content
             .background(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(LinearGradient(colors: [Color.white.opacity(0.15), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom))
+                ZStack {
+                    shape.fill(.thickMaterial)
+                    shape.fill(DS.glassTint.opacity(0.82))
+                    shape.fill(LinearGradient(colors: [Color.white.opacity(0.13), Color.white.opacity(0.02)], startPoint: .top, endPoint: .center))
+                }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(highlight ? DS.brandHi.opacity(0.6) : Color.white.opacity(0.16), lineWidth: highlight ? 1 : 0.5)
+                shape.strokeBorder(highlight ? DS.brandHi.opacity(0.65) : Color.white.opacity(0.17), lineWidth: highlight ? 1 : 0.5)
             )
     }
 }
@@ -109,6 +117,12 @@ extension View {
 
     func descallScreen() -> some View {
         containerBackground(for: .navigation) { DescallBackground() }
+    }
+
+    /// Sheets get the same opaque Descall background (never the see-through system sheet).
+    func descallSheet() -> some View {
+        containerBackground(for: .navigation) { DescallBackground() }
+            .background(DescallBackground())
     }
 }
 
@@ -195,20 +209,148 @@ struct AvatarView: View {
 struct ErrorCard: View {
     var error: WatchError
     var retry: () -> Void
+    @State private var busy = false
 
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: error == .unreachable ? "iphone.slash" : "exclamationmark.circle")
-                .font(.system(size: 22))
-                .foregroundStyle(DS.brandHi)
+            Group {
+                if error == .noSession {
+                    Image("DescallMark").resizable().renderingMode(.template).scaledToFit().frame(width: 30, height: 30)
+                } else {
+                    Image(systemName: error.isOffline ? "iphone.slash" : "exclamationmark.circle").font(.system(size: 22))
+                }
+            }
+            .foregroundStyle(DS.brandHi)
             Text(L.error(error))
                 .font(.system(size: 13))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
-            Button(L.retry, action: retry)
-                .buttonStyle(CTAButtonStyle())
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                busy = true
+                retry()
+                Task { try? await Task.sleep(nanoseconds: 900_000_000); busy = false }
+            } label: {
+                if busy { ProgressView() } else { Label(L.retry, systemImage: "arrow.clockwise") }
+            }
+            .buttonStyle(CTAButtonStyle())
+            .disabled(busy)
         }
         .padding(10)
         .glass(18)
+    }
+}
+
+/// "iPhone'una ulaşılamıyor · 3 dk önceki veriler" over cached data (3.7.33 offline state).
+struct OfflineBanner: View {
+    var error: WatchError?
+    var updatedAt: Date?
+
+    var body: some View {
+        if let error, error.isOffline || error.isServerSide {
+            HStack(spacing: 6) {
+                Image(systemName: error.isOffline ? "iphone.slash" : "exclamationmark.triangle.fill").font(.system(size: 11, weight: .semibold))
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(error.isOffline ? L.offlineTitle : L.refreshFailed).font(.system(size: 11.5, weight: .semibold)).lineLimit(1)
+                    if let updatedAt {
+                        Text(L.showingFrom(updatedAt)).font(.system(size: 10.5)).foregroundStyle(DS.ink2).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(DS.idle)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .glass(12)
+            .accessibilityElement(children: .combine)
+        }
+    }
+}
+
+/// "Güncellendi · 2 dk önce" under a screen's content.
+struct UpdatedLine: View {
+    var updatedAt: Date?
+    var loading: Bool
+
+    var body: some View {
+        Text(loading ? L.refreshing : (updatedAt.map { L.updated($0) } ?? ""))
+            .font(.system(size: 10.5))
+            .foregroundStyle(DS.ink2)
+            .monospacedDigit()
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+    }
+}
+
+/// Toolbar refresh: a spinner while loading.
+/// Refresh row at the top of every screen (stats, lists). Fixed size so the row never
+/// changes layout while loading; only opacity changes.
+struct RefreshRowButton: View {
+    var loading: Bool
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold))
+                Text(L.refresh).font(.system(size: 12.5, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity, minHeight: 30)
+            .opacity(loading ? 0.45 : 1)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(DS.brandHi)
+        .disabled(loading)
+        .accessibilityLabel(L.refresh)
+        .accessibilityIdentifier("watch-refresh")
+    }
+}
+
+/// Empty list state with the Descall mark.
+struct EmptyState: View {
+    var text: String
+    var icon: String? = nil
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if let icon {
+                Image(systemName: icon).font(.system(size: 20)).foregroundStyle(DS.brandHi)
+            } else {
+                Image("DescallMark").resizable().renderingMode(.template).scaledToFit().frame(width: 24, height: 24).foregroundStyle(DS.brandHi.opacity(0.8))
+            }
+            Text(text).font(.system(size: 12.5)).foregroundStyle(DS.ink2).multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+    }
+}
+
+/// Row skeleton while a list loads the first time.
+struct LoadingRows: View {
+    var count = 3
+    var body: some View {
+        VStack(spacing: 6) {
+            ForEach(0..<count, id: \.self) { _ in
+                HStack(spacing: 8) {
+                    Circle().fill(Color.white.opacity(0.12)).frame(width: 28, height: 28)
+                    VStack(alignment: .leading, spacing: 4) {
+                        RoundedRectangle(cornerRadius: 3).fill(Color.white.opacity(0.14)).frame(width: 80, height: 9)
+                        RoundedRectangle(cornerRadius: 3).fill(Color.white.opacity(0.08)).frame(width: 110, height: 8)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(9)
+                .glass(16)
+            }
+        }
+        .accessibilityLabel(L.loading)
+    }
+}
+
+extension WatchError {
+    /// A 5xx or a reply the watch could not read.
+    var isServerSide: Bool {
+        if case .http(let code, _) = self { return code >= 500 }
+        return self == .decode
     }
 }

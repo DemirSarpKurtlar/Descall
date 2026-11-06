@@ -207,7 +207,11 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-bar {
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-sidebar {
-  overflow: auto;
+  /* The menu is a vertical list: it pans on Y only (it was overflow:auto on both axes, so any
+     child a few px too wide, like the badge tip, made it slide sideways under the finger). */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-x: none;
   padding-bottom: calc(var(--g-bar-bottom, 24px) + 88px);
 }
 

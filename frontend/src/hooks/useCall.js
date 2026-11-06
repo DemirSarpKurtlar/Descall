@@ -33,7 +33,8 @@ import {
   applyRemoteOffer,
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
-import { ensureIceServersForCall, iceServersHaveTurn, preloadIceServers } from "../lib/iceConfig";
+import { ensureIceServersForCall, getIceConfigStatus, iceServersHaveTurn, preloadIceServers, refreshIceServers } from "../lib/iceConfig";
+import { captureVoiceDiagnostics } from "../lib/voiceDiagnostics";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain } from "../lib/voiceGain";
@@ -55,8 +56,10 @@ import { applyAdaptiveVideoEncoding, applyAdaptiveAudioEncoding, applyAdaptiveJi
 import { acquireCallWakeLock, releaseCallWakeLock, pulseCallWakeLock } from "../lib/callWakeLock";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
+  MIC_FALLBACK_EVENT,
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  getNoiseSuppressionDiagnostics,
   getNoiseSuppressionRawTrack,
   getVoiceAudioConstraints,
   preloadNoiseSuppression,
@@ -152,6 +155,8 @@ export function useCall(socket, callOccupancyRef = null) {
   const [callType, setCallType] = useState(null); // null | "voice" | "video"
   const [peer, setPeer] = useState(null);
   const [muted, setMuted] = useState(readLocalMute);
+  const mutedStateRef = useRef(muted);
+  mutedStateRef.current = muted;
   const [cameraOn, setCameraOn] = useState(false);
   const [remoteMuted, setRemoteMuted] = useState(false);
   const [remoteCameraOn, setRemoteCameraOn] = useState(null);
@@ -163,6 +168,8 @@ export function useCall(socket, callOccupancyRef = null) {
   const [remoteMediaReady, setRemoteMediaReady] = useState(false);
   // 3.0.0 (C2): "idle" | "connecting" | "verified" | "retry" (lib/mediaFlowGate.js).
   const [mediaFlow, setMediaFlow] = useState("idle");
+  // 3.7.27: ICE failed again after restarts on a call that never connected.
+  const [connectFailed, setConnectFailed] = useState(false);
   // Peer's own outbound audio flows (call:media-state `sending`); old clients
   // never send the flag and count as sending.
   const [remoteSending, setRemoteSending] = useState(true);
@@ -513,6 +520,7 @@ export function useCall(socket, callOccupancyRef = null) {
   }, []);
 
   const cleanup = useCallback(() => {
+    setConnectFailed(false);
     setupTimelineRef.current?.end();
     micGuardRef.current?.reset();
     stopInboundProbe();
@@ -816,6 +824,13 @@ export function useCall(socket, callOccupancyRef = null) {
       },
       onStatus: (status) => {
         if (pcRef.current !== pc) return;
+        setConnectFailed(status === "unreachable");
+        if (status === "unreachable") {
+          setPeerConnectionState("failed");
+          setConnectionQuality("failed");
+          setupTimelineRef.current?.mark("unreachable");
+          return;
+        }
         if (status === "connected") {
           setPeerConnectionState("connected");
           setConnectionQuality("good");
@@ -1510,6 +1525,50 @@ export function useCall(socket, callOccupancyRef = null) {
       },
     });
   }
+  // "Bağlantı kurulamadı" → Tekrar dene: fresh TURN credentials, then an ICE restart now.
+  const retryConnection = useCallback(() => {
+    const pc = pcRef.current;
+    if (!pc || pc.connectionState === "closed") return;
+    setConnectFailed(false);
+    setPeerConnectionState("connecting");
+    setConnectionQuality("connecting");
+    refreshIceServers()
+      .catch(() => {})
+      .finally(() => {
+        if (pcRef.current === pc) recoveryRef.current?.retryNow?.();
+      });
+  }, []);
+
+  // Mic failsafe (noiseSuppression.js): the processed track was silent and
+  // every sender moved to the raw mic. Tell the user once, keep the mute state.
+  useEffect(() => {
+    const onFallback = () => {
+      const track = localStreamRef.current?.getAudioTracks?.()[0];
+      if (track) setMuted(!track.enabled);
+      toastRef.current?.(tRuntime("Noise suppression was cutting your voice, switched to the normal mic."), "info");
+    };
+    window.addEventListener(MIC_FALLBACK_EVENT, onFallback);
+    return () => window.removeEventListener(MIC_FALLBACK_EVENT, onFallback);
+  }, []);
+
+  // Voice diagnostic snapshot for call feedback (lib/voiceDiagnostics.js), every 4 s in a call.
+  useEffect(() => {
+    if (mode !== "active" && mode !== "outgoing") return undefined;
+    const take = () => {
+      void captureVoiceDiagnostics({
+        pc: pcRef.current,
+        localTrack: localStreamRef.current?.getAudioTracks?.()[0] || null,
+        uiMuted: mutedStateRef.current,
+        ns: getNoiseSuppressionDiagnostics(),
+        ice: getIceConfigStatus(),
+        kind: "dm",
+      });
+    };
+    take();
+    const id = setInterval(take, 4000);
+    return () => clearInterval(id);
+  }, [mode]);
+
   const retryMediaFlow = useCallback(() => {
     if (modeRef.current !== "active") return;
     mediaFlowGateRef.current?.retry();
@@ -1811,7 +1870,13 @@ export function useCall(socket, callOccupancyRef = null) {
   const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
     if (deafenedRef.current && enabled) return;
     const track = localStreamRef.current?.getAudioTracks()[0];
-    if (!track || track.enabled === enabled) return;
+    if (!track) return;
+    if (track.enabled === enabled) {
+      // UI and track drifted apart (track toggled elsewhere): resync, no sound.
+      setNoiseSuppressedTrackEnabled(enabled);
+      setMuted(!enabled);
+      return;
+    }
     track.enabled = enabled;
     setNoiseSuppressedTrackEnabled(enabled);
     const nextMuted = !enabled;
@@ -2523,6 +2588,8 @@ export function useCall(socket, callOccupancyRef = null) {
     mediaFlow,
     remoteSending,
     retryMediaFlow,
+    connectFailed,
+    retryConnection,
     localStream,
     remoteStream,
     remoteScreenStream,

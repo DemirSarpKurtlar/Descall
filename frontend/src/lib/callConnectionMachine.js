@@ -27,6 +27,13 @@ export const POLITE_EXTRA_MS = 1200;
 export const BACKOFF_MS = Object.freeze([2000, 4000, 8000, 15000]);
 export const GIVE_UP_MS = 60_000;
 export const GIVE_UP_PEER_OFFLINE_MS = 25_000;
+/**
+ * 3.7.27: a call that never connected and whose ICE is "failed" again after
+ * this many restarts (or GIVE_UP_MS of trouble) reports "unreachable" (UI: "Bağlantı kurulamadı" +
+ * Tekrar dene) instead of sitting in silence until GIVE_UP_MS. Restarts go on
+ * in the background; a later "connected" clears it.
+ */
+export const UNREACHABLE_AFTER_RESTARTS = 1;
 
 /** One link state out of connectionState + iceConnectionState. */
 export function deriveLinkState({ connectionState, iceConnectionState } = {}) {
@@ -55,6 +62,7 @@ export function createCallRecovery({
   backoffMs = BACKOFF_MS,
   giveUpMs = GIVE_UP_MS,
   giveUpPeerOfflineMs = GIVE_UP_PEER_OFFLINE_MS,
+  unreachableAfterRestarts = UNREACHABLE_AFTER_RESTARTS,
 } = {}) {
   let link = "new";
   let everConnected = false;
@@ -96,6 +104,11 @@ export function createCallRecovery({
     lostTimer = setTimer(() => {
       lostTimer = null;
       if (disposed || link === "connected" || lost) return;
+      if (!everConnected) {
+        // Never connected: keep trying in the background, but say so (3.7.27).
+        setStatus("unreachable");
+        return;
+      }
       lost = true;
       clearRestart();
       setStatus("lost");
@@ -160,9 +173,12 @@ export function createCallRecovery({
       setStatus("connected");
     } else if (link === "disconnected" || link === "failed") {
       enterTrouble(link);
+      if (link === "failed" && !everConnected && !lost && attempt >= unreachableAfterRestarts) {
+        setStatus("unreachable");
+      }
     } else if (link === "connecting" || link === "new") {
       // A restart in progress keeps the "reconnecting" face; first connect says connecting.
-      if (!everConnected) setStatus("connecting");
+      if (!everConnected && status !== "unreachable") setStatus("connecting");
     } else if (link === "closed") {
       clearRestart();
       clearLost();
@@ -198,6 +214,19 @@ export function createCallRecovery({
     if (troubleSince != null) armLost();
   }
 
+  /** The user tapped "Tekrar dene" on "unreachable": restart now, fresh backoff. */
+  function retryNow() {
+    if (disposed || link === "closed" || link === "connected") return;
+    lost = false;
+    attempt = 0;
+    troubleSince = now();
+    if (status === "unreachable") setStatus("connecting");
+    armLost();
+    clearRestart();
+    pendingRestart = false;
+    restartTimer = setTimer(fire, 0);
+  }
+
   function dispose() {
     disposed = true;
     clearRestart();
@@ -209,6 +238,7 @@ export function createCallRecovery({
     socketChanged,
     networkChanged,
     setPeerOnline,
+    retryNow,
     dispose,
     _state: () => ({ link, status, attempt, pendingRestart, troubleSince, lost, socketConnected, peerOnline, forced }),
   };

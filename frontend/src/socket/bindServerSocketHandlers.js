@@ -13,6 +13,7 @@ import { isBlockedByMe } from "../lib/blockedUsers";
 import { hapticError, hapticWarning } from "../lib/fluid/haptics";
 import { resolveMessageDeleted, resolveMessageDeleteFailedForScope } from "../lib/messageDeleteFeedback";
 import { resolveMessageEdited, resolveMessageEditFailed } from "../lib/messageEditFeedback";
+import { mergeIncomingChatMessage, shouldAcceptLiveMessage } from "../lib/liveMessageMerge";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
@@ -332,16 +333,20 @@ export function bindServerSocketHandlers(socket, ctx) {
       shareable: Boolean(message.shareable),
     };
     setChannelMessagesById((prev) => {
+      if (!shouldAcceptLiveMessage(normalized)) return prev;
       const cur = prev[channelId] ?? [];
-      if (tempId) {
+      // Channel path historically stripped both tempId and real id then re-appended
+      // so the sorted list stays clean; keep that when replacing an optimistic row.
+      if (tempId && cur.some((m) => m.id === tempId)) {
         const withoutTemp = cur.filter((m) => m.id !== tempId && m.id !== normalized.id);
         return {
           ...prev,
           [channelId]: sortMessagesChronologically([...withoutTemp, normalized]),
         };
       }
-      if (cur.some((m) => m.id === normalized.id)) return prev;
-      return { ...prev, [channelId]: sortMessagesChronologically([...cur, normalized]) };
+      const merged = mergeIncomingChatMessage(cur, normalized, tempId);
+      if (merged === cur) return prev;
+      return { ...prev, [channelId]: sortMessagesChronologically(merged) };
     });
     const isFromMe = normalized.from?.id === myIdRef.current;
     const isActive = activeChannelRef.current?.id === channelId;

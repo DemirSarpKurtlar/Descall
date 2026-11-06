@@ -3,6 +3,7 @@
 // flare-*, aura-*, typing-*, burst-chip-*, overlay-*, [data-theme]) so what the modal
 // shows is what the app draws. `item` null means "nothing worn" (the Şu an side).
 import { Mic, MonitorUp, PhoneOff, Plus, ShieldCheck, SmilePlus, Video } from "../../ui/Icon.jsx";
+import { avatarEffectStyle } from "../../../lib/avatarEffectGeometry.js";
 import { CountryBadge } from "../CountryFlag";
 import { profileColorStyle } from "../../../lib/profileColors";
 import { upper } from "../../../i18n/format.js";
@@ -50,9 +51,9 @@ function BadgeRow({ me, c }) {
   );
 }
 
-function AvatarEffect({ item, delay }) {
+function AvatarEffect({ item, delay, size }) {
   if (!item) return null;
-  return <span className={`cosmetic-avatar-effect effect-${keyOf(item)}`} style={delay ? { animationDelay: delay } : undefined} />;
+  return <span className={`cosmetic-avatar-effect effect-${keyOf(item)}`} style={avatarEffectStyle(size, delay ? { animationDelay: delay } : undefined)} />;
 }
 function Name({ item, children }) {
   if (!item) return <span>{children}</span>;
@@ -82,18 +83,18 @@ const S = {
     return (
       <div className="spm-stage">
         <div className="spm-ae">
-          <div className="spm-big"><Av me={me}><AvatarEffect item={item} delay="-1.4s" /></Av></div>
+          <div className="spm-big"><Av me={me}><AvatarEffect item={item} delay="-1.4s" size={104} /></Av></div>
           <div className="spm-list">
             <div className="spm-where">
               <div className="spm-cap2">{c.inMessages}</div>
               <div className="spm-msg">
-                <Av me={me} className="spm-av-34"><AvatarEffect item={item} delay="-3.1s" /></Av>
+                <Av me={me} className="spm-av-34"><AvatarEffect item={item} delay="-3.1s" size={34} /></Av>
                 <div className="spm-body"><div className="spm-h">{name} <time>{c.lines.today} 17:35</time></div><p>{c.lines.ae}</p></div>
               </div>
             </div>
             <div className="spm-where">
               <div className="spm-cap2">{c.inMembers}</div>
-              <div className="spm-mem spm-hl spm-mem-30"><Av me={me} className="spm-av-26"><AvatarEffect item={item} delay="-4.6s" /></Av> {name}</div>
+              <div className="spm-mem spm-hl spm-mem-30"><Av me={me} className="spm-av-26"><AvatarEffect item={item} delay="-4.6s" size={26} /></Av> {name}</div>
             </div>
           </div>
         </div>
@@ -297,7 +298,7 @@ export function PurchaseThumb({ category, item, me, c }) {
     case "profile_background":
       return <div className="spm-th-banner" style={cssUrl(imgOf(item)) ? { backgroundImage: cssUrl(imgOf(item)) } : { background: DEFAULT_BANNER }} />;
     case "avatar_effect":
-      return <div className="spm-th-av"><Av me={me}><AvatarEffect item={item} delay="-2.2s" /></Av></div>;
+      return <div className="spm-th-av"><Av me={me}><AvatarEffect item={item} delay="-2.2s" size={58} /></Av></div>;
     case "theme":
       return <div className={`spm-th-swatch shop-theme-swatch theme-${item.theme_key || "default"}`} data-theme-preview={item.theme_key} />;
     case "name_effect":

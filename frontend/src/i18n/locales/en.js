@@ -4,6 +4,7 @@ import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
 import { PREMIUM_AUDIO_EN } from "./premiumAudio.en.js";
 import { WORLD3D_EN } from "./world3d.en.js";
+import { AMP_EN } from "./profileMediaPicker.en.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -43,6 +44,7 @@ export const nested = {
   maint: MAINT_EN,
   promo: PROMO_EN,
   nc: NC_EN,
+  amp: AMP_EN,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {
@@ -2243,6 +2245,8 @@ export const phrases = {
   "Their microphone is connecting…": "Their microphone is connecting…",
   "Retry audio connection": "Try again",
   "Audio isn't coming through yet.": "Audio isn't coming through yet.",
+  "Couldn't connect.": "Couldn't connect.",
+  "Noise suppression was cutting your voice, switched to the normal mic.": "Noise suppression was cutting your voice, switched to the normal mic.",
   "Join the call": "Join the call",
   "Group voice call in progress": "Group voice call in progress",
   "Group video call in progress": "Group video call in progress",

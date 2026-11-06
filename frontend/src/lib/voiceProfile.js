@@ -147,18 +147,24 @@ export function jitterBufferTargetSeconds(quality) {
   return 0.05;
 }
 
-export function captureConstraints(prefs = readVoiceProfile(), deviceId) {
+/**
+ * `pipeline`: our WebAudio suppressor will process this capture. Only then is
+ * the browser's own noise suppression turned off (no muddy double-NS); a
+ * capture sent as is (native iOS, raw-mic fallback, no AudioWorklet) keeps it.
+ */
+export function captureConstraints(prefs = readVoiceProfile(), deviceId, { pipeline = true } = {}) {
   const neural = prefs.noiseMode !== "off";
+  const browserNs = neural && !pipeline;
   const audio = {
     echoCancellation: { ideal: prefs.echoCancellation !== false },
-    noiseSuppression: { ideal: false },
+    noiseSuppression: { ideal: browserNs },
     autoGainControl: { ideal: prefs.autoGainControl !== false },
     channelCount: { ideal: 1 },
     sampleRate: { ideal: 48000 },
     latency: { ideal: 0.01 },
     googEchoCancellation: prefs.echoCancellation !== false,
     googAutoGainControl: prefs.autoGainControl !== false,
-    googNoiseSuppression: false,
+    googNoiseSuppression: browserNs,
     googHighpassFilter: true,
   };
   if (!neural) {
@@ -169,9 +175,14 @@ export function captureConstraints(prefs = readVoiceProfile(), deviceId) {
   return audio;
 }
 
+// 3.7.27: the gate sits after the neural suppressor, which already removes
+// steady noise. -52 / -62 dB kept quiet mics (laptop arrays, low OS input
+// level) closed for whole sentences, the other side heard nothing. The
+// thresholds are lower now and the mic failsafe (micFailsafe.js) switches to
+// the raw mic if the processed output still stays silent while you talk.
 export function gateSettings(mode) {
-  if (mode === "strong") return { openThreshold: -44, closeThreshold: -56, holdMs: 140 };
-  return { openThreshold: -52, closeThreshold: -62, holdMs: 110 };
+  if (mode === "strong") return { openThreshold: -50, closeThreshold: -60, holdMs: 160 };
+  return { openThreshold: -60, closeThreshold: -70, holdMs: 140 };
 }
 
 export function agcCompressorSettings() {

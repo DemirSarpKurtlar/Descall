@@ -129,6 +129,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Not in the admin windows: no screen capture sources.
   getScreenSources: () => Promise.resolve([]),
+  selectDisplaySource: () => Promise.resolve(false),
 
   isWindowFocused: () => ipcRenderer.invoke('is-window-focused'),
   focusWindow: () => ipcRenderer.invoke('focus-window'),

@@ -599,8 +599,11 @@ html[data-theme="light"] .shop-category-tab.active {
   justify-content: center;
 }
 
-.shop-avatar-effect-preview .cosmetic-avatar-effect {
-  inset: 0;
+/* The ring wraps the 28px sample disc with the shared effect geometry. */
+.shop-avatar-effect-host {
+  position: relative;
+  width: 28px;
+  height: 28px;
 }
 
 .shop-avatar-effect-dot {
@@ -724,6 +727,9 @@ html[data-bubble="minimal"] .shop-live-bubble {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* fills the card so the footer can sit on its bottom edge */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .shop-item-name-row {
@@ -774,7 +780,9 @@ html[data-bubble="minimal"] .shop-live-bubble {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 4px;
+  /* price + Satın Al row pinned to the card bottom, aligned across a row */
+  margin-top: auto;
+  padding-top: 4px;
 }
 
 .shop-item-footer .ripple-btn,

@@ -76,3 +76,67 @@ export function readFileAsDataUrl(file) {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Crop with a quarter-turn rotation (profile media picker). `pixelCrop` is relative to
+ * the ROTATED image, as react-easy-crop reports it. Still images only; GIFs are cropped on the
+ * server so their animation survives.
+ */
+export async function getRotatedCroppedImageFile(imageSrc, pixelCrop, rotation = 0, opts = {}) {
+  const r = ((Math.round(Number(rotation || 0) / 90) * 90 % 360) + 360) % 360;
+  if (!r) return getCroppedImageFile(imageSrc, pixelCrop, opts);
+  const { mimeType = "image/jpeg", quality = 0.92, fileName = "crop.jpg", maxSize = 1024 } = opts;
+  const image = await loadImage(imageSrc);
+  const quarter = r === 90 || r === 270;
+  const bw = quarter ? image.naturalHeight : image.naturalWidth;
+  const bh = quarter ? image.naturalWidth : image.naturalHeight;
+  const rotated = document.createElement("canvas");
+  rotated.width = bw;
+  rotated.height = bh;
+  const rctx = rotated.getContext("2d");
+  if (!rctx) throw new Error("Canvas unavailable");
+  rctx.translate(bw / 2, bh / 2);
+  rctx.rotate((r * Math.PI) / 180);
+  rctx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+  const cropW = Math.max(1, Math.round(pixelCrop.width));
+  const cropH = Math.max(1, Math.round(pixelCrop.height));
+  const scale = Math.min(1, maxSize / Math.max(cropW, cropH));
+  const out = document.createElement("canvas");
+  out.width = Math.max(1, Math.round(cropW * scale));
+  out.height = Math.max(1, Math.round(cropH * scale));
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(rotated, pixelCrop.x, pixelCrop.y, cropW, cropH, 0, 0, out.width, out.height);
+  const blob = await new Promise((resolve, reject) => {
+    out.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to crop image"))), mimeType, quality);
+  });
+  return new File([blob], fileName, { type: mimeType, lastModified: Date.now() });
+}
+
+/**
+ * Crop rectangle that reaches past the picture (picker zoomed out to "contain"). Draws the
+ * whole picture at its offset inside the frame instead of using an out-of-bounds source
+ * rectangle (Safari/WKWebView drew nothing for those). The margin stays transparent, so use
+ * PNG/WebP output.
+ */
+export async function getPaddedCroppedImageFile(imageSrc, pixelCrop, opts = {}) {
+  const { mimeType = "image/png", quality = 0.92, fileName = "crop.png", maxSize = 1024 } = opts;
+  const image = await loadImage(imageSrc);
+  const cropW = Math.max(1, Math.round(pixelCrop.width));
+  const cropH = Math.max(1, Math.round(pixelCrop.height));
+  const scale = Math.min(1, maxSize / Math.max(cropW, cropH));
+  const out = document.createElement("canvas");
+  out.width = Math.max(1, Math.round(cropW * scale));
+  out.height = Math.max(1, Math.round(cropH * scale));
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(image, -pixelCrop.x * scale, -pixelCrop.y * scale, image.naturalWidth * scale, image.naturalHeight * scale);
+  const blob = await new Promise((resolve, reject) => {
+    out.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to crop image"))), mimeType, quality);
+  });
+  return new File([blob], fileName, { type: mimeType, lastModified: Date.now() });
+}

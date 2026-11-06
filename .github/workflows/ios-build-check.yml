@@ -66,8 +66,15 @@ jobs:
         working-directory: frontend/ios
         run: |
           set -euo pipefail
-          swiftc -o "$RUNNER_TEMP/ws" App/WatchShared/DescallWatchProtocol.swift App/DescallWatch/WatchStrings.swift selftest/watchstrings/main.swift
+          swiftc -o "$RUNNER_TEMP/ws" App/WatchShared/DescallWatchProtocol.swift App/DescallWatch/WatchCore.swift App/DescallWatch/WatchStrings.swift selftest/watchstrings/main.swift
           "$RUNNER_TEMP/ws"
+
+      - name: Watch stability core selftest (Swift, retries / timeout / cache)
+        working-directory: frontend/ios
+        run: |
+          set -euo pipefail
+          swiftc -o "$RUNNER_TEMP/wc" App/DescallWatch/WatchCore.swift selftest/watchcore/main.swift
+          "$RUNNER_TEMP/wc"
 
       - name: watchOS platform (3.7.17 Apple Watch app is embedded)
         run: |
@@ -302,13 +309,38 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/watch-shots"
-          for SCREEN in chats chat reply friends status admin reports case stepup feedback maintenance; do
+          for SCREEN in chats chat reply servers server friends status activity calls profile offline admin reports case stepup feedback maintenance; do
             xcrun simctl terminate "$UDID" com.descall.app.watchkitapp || true
             # Turkish, like the App Store listing (primary locale tr).
             xcrun simctl launch "$UDID" com.descall.app.watchkitapp -DescallWatchDemo -DescallWatchDemoScreen "$SCREEN" -AppleLanguages "(tr)" -AppleLocale tr_TR
             sleep 8
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/watch-shots/watch-$SCREEN.png"
+            # 3.7.33: a screen whose app died shows the watch face; record it and fail below.
+            if ! xcrun simctl spawn "$UDID" launchctl list | grep -q "com.descall.app.watchkitapp"; then
+              echo "::error::DescallWatch is not running after launching screen $SCREEN (crash?)"
+              echo "$SCREEN" >> "$RUNNER_TEMP/watch-dead.txt"
+            fi
           done
+          # Crash reports for the watch app (symbol names only, no user data in demo mode).
+          for f in $(ls -t "$HOME"/Library/Logs/DiagnosticReports/DescallWatch* 2>/dev/null | head -n 3); do
+            echo "==== $f"
+            python3 - "$f" <<'PY' || head -c 8000 "$f"
+          import json, sys
+          raw = open(sys.argv[1]).read()
+          body = json.loads(raw.split("\n", 1)[1])
+          print("exception:", body.get("exception"), "termination:", body.get("termination", {}).get("indicator"))
+          for line in (body.get("asi") or {}).values():
+              print("asi:", line)
+          threads = body.get("threads", [])
+          images = body.get("usedImages", [])
+          for t in threads:
+              if t.get("triggered"):
+                  for fr in t.get("frames", [])[:40]:
+                      img = images[fr.get("imageIndex", 0)].get("name", "?") if images else "?"
+                      print(" ", img, fr.get("symbol", "?"), fr.get("sourceFile", ""), fr.get("sourceLine", ""))
+          PY
+          done
+          if [ -s "$RUNNER_TEMP/watch-dead.txt" ]; then cp "$RUNNER_TEMP/watch-dead.txt" "$RUNNER_TEMP/watch-shots/"; fi
           ls -la "$RUNNER_TEMP/watch-shots"
           # Small JPEG copies in the log as base64 (one line each, "WATCHSHOT <name> <data>") so a
           # session that cannot reach artifact storage can still look at the screens.
@@ -322,6 +354,7 @@ jobs:
           for n in chats chat reply friends status; do
             echo "APPSHOT $n $(base64 -i "$RUNNER_TEMP/watch-shots/watch-$n.png" | tr -d '\n')"
           done
+          if [ -s "$RUNNER_TEMP/watch-dead.txt" ]; then echo "::error::Watch app died on: $(tr '\n' ' ' < "$RUNNER_TEMP/watch-dead.txt")"; exit 1; fi
 
       - uses: actions/upload-artifact@v4
         if: always()

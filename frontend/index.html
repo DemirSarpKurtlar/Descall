@@ -308,6 +308,33 @@
       html.native-app #boot-splash {
         background: #1e1f22;
       }
+      /* 3.7.29 animated splash (see bootLogoAnimation below the markup): the
+         video carries its own glass tile, so the static tile steps aside. */
+      #boot-splash .boot-mark.boot-mark--anim {
+        position: relative;
+        background: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        animation: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+      }
+      #boot-splash .boot-mark.boot-mark--anim > :not(video) { display: none !important; }
+      #boot-splash .boot-mark--anim .boot-anim {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 136.4%;
+        height: 136.4%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      #boot-splash .boot-mark--anim .boot-anim[hidden] { display: none; }
+      /* Safari / iOS: opaque MP4, clipped to the glass tile (73.3% of the frame). */
+      #boot-splash .boot-mark--mp4 .boot-anim { clip-path: inset(13.4% round 16.5%); }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash .boot-anim { display: none !important; }
+      }
       #boot-splash.boot-splash--hide {
         opacity: 0;
         visibility: hidden;
@@ -1621,6 +1648,71 @@
         })();
         var el = document.getElementById("boot-splash");
         if (el) el.setAttribute("data-shown-at", String(Date.now()));
+        /* 3.7.29 animated splash: the Konsept 2 logo animation (VP9 + alpha WebM)
+           replaces the static tile on Chromium / Firefox / Electron. The native app
+           has its own (DescallBridgeViewController); Safari has no VP9 alpha and
+           Reduce Motion keeps the static tile. One-shot, then the loop until the
+           app paints and the splash fades out. */
+        (function bootLogoAnimation() {
+          var root = document.documentElement;
+          var mark = el && el.querySelector(".boot-mark");
+          if (!mark || root.classList.contains("native-app")) return;
+          try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) { return; }
+          // VP9 + alpha WebM where it plays (Chromium / Firefox); everywhere
+          // else (Safari, iOS browsers) the opaque H.264 MP4, clipped to the tile.
+          var probe = document.createElement("video");
+          if (!probe.canPlayType) return;
+          var ua = navigator.userAgent || "";
+          var alphaOk = /(Chrome|Chromium|Firefox)\//.test(ua) && !/(CriOS|FxiOS|EdgiOS)\//.test(ua) && !!probe.canPlayType('video/webm; codecs="vp9"');
+          var ext = alphaOk ? "webm" : "mp4";
+          if (!alphaOk && !probe.canPlayType('video/mp4; codecs="avc1.4D401E"')) return;
+          if (!alphaOk) mark.classList.add("boot-mark--mp4");
+          // App boot: keep the splash up until the one-shot has played (cap 4.5 s),
+          // or the app paints in under a second and the animation is never seen.
+          var release = null;
+          if (root.getAttribute("data-app-shell") === "1" && !(window.electronAPI && window.electronAPI.isElectron) && !/Electron/i.test(ua) && typeof window.__descallHoldBootSplash === "function") {
+            release = window.__descallHoldBootSplash();
+            setTimeout(function () { if (release) { release(); release = null; } }, 4500);
+          }
+          function letGo() { if (release) { release(); release = null; } }
+          function make(name, loop) {
+            var v = document.createElement("video");
+            v.className = "boot-anim";
+            v.muted = true;
+            v.defaultMuted = true;
+            v.playsInline = true;
+            v.loop = loop;
+            v.preload = "auto";
+            v.setAttribute("muted", "");
+            v.setAttribute("playsinline", "");
+            v.setAttribute("aria-hidden", "true");
+            v.src = "/brand/splash/descall-splash-" + name + "." + ext;
+            return v;
+          }
+          var oneShot = make("oneshot", false);
+          var loop = make("loop", true);
+          loop.hidden = true;
+          function fallback() {
+            mark.classList.remove("boot-mark--anim");
+            if (oneShot.parentNode) oneShot.parentNode.removeChild(oneShot);
+            if (loop.parentNode) loop.parentNode.removeChild(loop);
+            letGo();
+          }
+          oneShot.addEventListener("error", fallback);
+          loop.addEventListener("error", fallback);
+          oneShot.addEventListener("ended", function () {
+            loop.hidden = false;
+            var lp = loop.play();
+            if (lp && lp.catch) lp.catch(function () {});
+            setTimeout(function () { oneShot.hidden = true; }, 60);
+            letGo();
+          });
+          mark.classList.add("boot-mark--anim");
+          mark.appendChild(loop);
+          mark.appendChild(oneShot);
+          var p = oneShot.play();
+          if (p && p.catch) p.catch(fallback);
+        })();
         /* Native app: tell DescallBridgeViewController the Aurora splash has
            painted (background decoded, two frames later), so the launch screen
            goes only when the identical web picture is under it. */

@@ -57,9 +57,18 @@ function routeForSegments(rawSegments) {
     const id = rest[0] != null ? cleanSegment(rest[0]) : null;
     return id ? `/groups/${encodeURIComponent(id)}` : "/groups";
   }
+  // 3.7.31: server invites keep their code (descall://invite/<code>,
+  // descall://join/<code>, descall://servers/join/<code>, and the
+  // https://descall.com/servers/join/<code> | /invite/s/<code> universal links).
+  if (head === "invite" || head === "join") {
+    const target = String(rest[0] || "").toLowerCase() === "s" ? rest[1] : rest[0];
+    const code = target != null ? cleanSegment(target) : null;
+    return code && /^[A-Za-z0-9_-]{4,32}$/.test(code) ? `/servers/join/${encodeURIComponent(code)}` : "/servers";
+  }
   if (head === "server" || head === "servers") {
     const id = rest[0] != null ? cleanSegment(rest[0]) : null;
     if (!id) return "/servers";
+    if (id.toLowerCase() === "join") return routeForSegments(["join", ...rest.slice(1)]);
     const channel = rest[1] != null ? cleanSegment(rest[1]) : null;
     return channel
       ? `/servers/${encodeURIComponent(id)}/${encodeURIComponent(channel)}`
@@ -77,7 +86,7 @@ function routeForSegments(rawSegments) {
  * Resolve a URL string to `{ path }`, or null when the URL is not a Descall link.
  * Query strings and fragments are ignored (nothing in them is trusted).
  */
-export function resolveDeepLink(raw) {
+function resolveDeepLinkPath(raw) {
   const text = String(raw || "").trim();
   if (!text || text.length > 2048) return null;
   const match = /^([a-z][a-z0-9+.-]*):(.*)$/i.exec(text);
@@ -103,6 +112,12 @@ export function resolveDeepLink(raw) {
     if (head === "app") return { path: routeForSegments(segments.slice(2)) };
     // Only real app routes; a marketing page link is not ours to route.
     if (!head) return { path: HOME_PATH };
+    if (head === "invite" && String(segments[2] || "").toLowerCase() === "s") {
+      return { path: routeForSegments(segments.slice(1)) };
+    }
+    if (head === "servers" && String(segments[2] || "").toLowerCase() === "join") {
+      return { path: routeForSegments(segments) };
+    }
     if (["direct", "groups", "servers", "friends", "calls", "activity", "settings"].includes(head)) {
       const route = parseAppRoute(pathname);
       if (route.unknown) return { path: HOME_PATH };
@@ -118,4 +133,15 @@ export function resolveDeepLink(raw) {
 export function isWhatsNewPath(pathname) {
   const path = String(pathname || "").replace(/\/+$/, "").toLowerCase();
   return path === WHATS_NEW_PATH;
+}
+
+/**
+ * Public resolver. One query value survives: `?picker=avatar|banner` on
+ * /settings/profile, so the desktop "Telefonundan yükle" QR opens the photo/banner picker.
+ */
+export function resolveDeepLink(raw) {
+  const out = resolveDeepLinkPath(raw);
+  if (!out || out.path !== "/settings/profile") return out;
+  const m = /[?&]picker=(avatar|banner)(?:[&#]|$)/.exec(String(raw || ""));
+  return m ? { path: `${out.path}?picker=${m[1]}` } : out;
 }

@@ -1,3 +1,4 @@
+const { setPendingDisplaySource, takePendingDisplaySource, buildDisplayMediaGrant } = require('./displayMediaGrant.cjs');
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
@@ -1002,6 +1003,8 @@ function createSplashWindow() {
   const splashPath = path.join(__dirname, 'splash.html');
   // Language and first status line travel in the query, so the card never flashes another language.
   const query = { lang: getLocale(), status: SPLASH_TEXT.checking, loading: et('splash.loading') };
+  // 3.7.29 animated splash follows the theme (light / dark card under the logo animation).
+  try { query.theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'; } catch (_) { query.theme = 'dark'; }
   const ready = splashWindow.loadFile(splashPath, { query }).catch((err) => {
     log.warn('[splash] loadFile failed, using inline fallback:', err?.message);
     return splashWindow.loadURL(`data:text/html,${encodeURIComponent(
@@ -1380,10 +1383,16 @@ function createMainWindow() {
 
   // Make navigator.mediaDevices.getDisplayMedia work in Electron (DM/group/server).
   // Without this handler Chromium reports screen share as unsupported.
+  // 3.7.33 echo fix: the in-app picker pre-selects its source over IPC and the
+  // renderer asks getDisplayMedia for `restrictOwnAudio`, so Electron (43.4+)
+  // grants `loopbackWithoutChrome`: system audio WITHOUT Descall's own call
+  // playback. The system picker is off, it would bypass this handler and show
+  // a second picker after ours.
   try {
     mainWindow.webContents.session.setDisplayMediaRequestHandler(
       async (request, callback) => {
         try {
+          const pending = takePendingDisplaySource();
           const sources = await desktopCapturer.getSources({
             types: ['screen', 'window'],
             thumbnailSize: { width: 1, height: 1 },
@@ -1392,22 +1401,17 @@ function createMainWindow() {
             callback({});
             return;
           }
-          const screen =
-            sources.find((s) => String(s.id || '').startsWith('screen:')) || sources[0];
-          const wantsAudio = request?.audioRequested !== false;
-          callback({
-            video: screen,
-            // Loopback is system audio. A video-only retry must not require it,
-            // or a Mac/Windows loopback failure cancels the whole share.
-            ...(wantsAudio ? { audio: 'loopback' } : {}),
-          });
+          const chosen =
+            (pending && sources.find((s) => s.id === pending)) ||
+            sources.find((s) => String(s.id || '').startsWith('screen:')) ||
+            sources[0];
+          callback(buildDisplayMediaGrant(chosen, request));
         } catch (err) {
           log.error('setDisplayMediaRequestHandler error:', err);
           callback({});
         }
       },
-      // Prefer the OS picker when the platform supports it (macOS/Windows).
-      { useSystemPicker: true }
+      { useSystemPicker: false }
     );
   } catch (err) {
     log.warn('setDisplayMediaRequestHandler unavailable:', err?.message || err);
@@ -2410,6 +2414,12 @@ trustedHandle('get-screen-sources', async () => {
     log.error('get-screen-sources error:', err);
     return [];
   }
+});
+
+ipcMain.handle('screen-share:select-source', (_e, sourceId) => {
+  if (typeof sourceId !== 'string' || !/^(screen|window):[\w:.-]+$/.test(sourceId)) return false;
+  setPendingDisplaySource(sourceId);
+  return true;
 });
 
 // Security: Handle downloads

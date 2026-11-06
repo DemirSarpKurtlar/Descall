@@ -190,6 +190,101 @@ function shapeThread(out, { lang = "tr" } = {}) {
   };
 }
 
+
+/* ---- 3.7.33: servers, calls, activity (the iOS tab bar on the watch) ---- */
+
+const MAX_SERVERS = 40;
+const MAX_CHANNELS = 30;
+const MAX_CALLS = 25;
+const MAX_REQUESTS = 15;
+// Only text channels open on the watch (voice, stage and categories stay on the phone).
+const WATCH_CHANNEL_TYPES = new Set(["text", "announcement"]);
+
+/**
+ * buildMyServerList() result (channels are already filtered to what the member may view)
+ * → { servers: [{ id, name, initials, iconUrl, memberCount, muted, timedOut, channels: [{ conv, name, category }] }] }
+ */
+function shapeServers(payload, { now = Date.now() } = {}) {
+  const list = Array.isArray(payload?.servers) ? payload.servers : [];
+  const servers = [];
+  for (const s of list) {
+    if (!s?.id) continue;
+    const all = Array.isArray(s.channels) ? s.channels : [];
+    const categories = new Map(all.filter((c) => c?.type === "category").map((c) => [c.id, clip(c.name, 30)]));
+    const channels = all
+      .filter((c) => c?.id && WATCH_CHANNEL_TYPES.has(String(c.type || "text")) && !c.nsfw && validConv(`channel:${c.id}`))
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .slice(0, MAX_CHANNELS)
+      .map((c) => ({ conv: `channel:${c.id}`, name: clip(c.name || "kanal", 40), category: categories.get(c.parentId) || null }));
+    const name = clip(s.name || "Sunucu", 40);
+    const timeoutMs = s.timeoutUntil ? toMs(s.timeoutUntil) : 0;
+    servers.push({
+      id: String(s.id),
+      name,
+      initials: initialsOf(name),
+      iconUrl: safeAvatar(s.iconUrl),
+      memberCount: Number(s.memberCount) || 0,
+      muted: s.notificationLevel === "muted",
+      timedOut: timeoutMs > now,
+      channels,
+    });
+  }
+  return { servers: servers.slice(0, MAX_SERVERS) };
+}
+
+/** listCallsForUser() rows → { calls: [{ id, kind, title, initials, avatarUrl, conv, direction, video, missed, durationSec, at }] } */
+function shapeCalls(rows = []) {
+  const calls = [];
+  for (const c of Array.isArray(rows) ? rows : []) {
+    if (!c?.id) continue;
+    const group = c.kind === "group";
+    const peerName = group ? clip(c.group?.name || "Grup", 40) : displayName(c.peer);
+    const peerId = group ? c.group?.id : c.peer?.id;
+    const conv = peerId && validConv(`${group ? "group" : "dm"}:${peerId}`) ? `${group ? "group" : "dm"}:${peerId}` : null;
+    const status = String(c.status || "");
+    // dm_calls: completed / missed / cancelled / declined. A ring the caller gave up on is
+    // missed for the callee; an outgoing call nobody answered is not "missed" for the caller.
+    const missed = group ? status === "missed" : c.direction === "incoming" && (status === "missed" || status === "cancelled");
+    calls.push({
+      id: String(c.id),
+      kind: group ? "group" : "dm",
+      title: peerName,
+      initials: initialsOf(peerName),
+      avatarUrl: safeAvatar(group ? c.group?.avatarUrl : c.peer?.avatarUrl),
+      conv,
+      direction: group ? "group" : (c.direction === "outgoing" ? "outgoing" : "incoming"),
+      video: c.callType === "video",
+      missed,
+      active: status === "active",
+      durationSec: Number.isFinite(Number(c.durationSeconds)) ? Math.max(0, Math.round(Number(c.durationSeconds))) : null,
+      at: c.createdAt || c.endedAt || c.startedAt || null,
+    });
+  }
+  return { calls: calls.slice(0, MAX_CALLS) };
+}
+
+/**
+ * Notifications on the watch ("Etkinlik"): incoming friend requests + missed calls of
+ * the last 7 days, newest first. → { items: [{ id, type, title, initials, avatarUrl, conv, at }], requestCount, missedCount }
+ */
+function shapeActivity({ requests = [], calls = [], now = Date.now() } = {}) {
+  const items = [];
+  for (const r of (Array.isArray(requests) ? requests : []).slice(0, MAX_REQUESTS)) {
+    if (!r?.id) continue;
+    const name = displayName(r);
+    items.push({ id: `req:${r.id}`, type: "friendRequest", title: name, initials: initialsOf(name), avatarUrl: safeAvatar(r.avatarUrl || r.avatar_url), conv: null, at: r.requestedAt || null });
+  }
+  const weekAgo = now - 7 * 24 * 3600 * 1000;
+  let missedCount = 0;
+  for (const c of shapeCalls(calls).calls) {
+    if (!c.missed || toMs(c.at) < weekAgo) continue;
+    missedCount += 1;
+    items.push({ id: `call:${c.id}`, type: c.video ? "missedVideo" : "missedCall", title: c.title, initials: c.initials, avatarUrl: c.avatarUrl, conv: c.conv, at: c.at });
+  }
+  items.sort((a, b) => toMs(b.at) - toMs(a.at));
+  return { items: items.slice(0, 30), requestCount: Math.min(requests?.length || 0, 99), missedCount };
+}
+
 /** conv must look like dm:<id>, group:<id> or channel:<id> with a uuid-ish id. */
 function validConv(conv) {
   return /^(dm|group|channel):[0-9a-zA-Z-]{1,64}$/.test(String(conv || ""));
@@ -206,4 +301,7 @@ module.exports = {
   shapeFriends,
   shapeThread,
   validConv,
+  shapeServers,
+  shapeCalls,
+  shapeActivity,
 };

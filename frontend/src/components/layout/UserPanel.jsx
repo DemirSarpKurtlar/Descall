@@ -11,6 +11,9 @@ import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import StatusBadge from "../ui/StatusBadge";
 import ImageCropModal from "../ui/ImageCropModal";
+import { useLocation } from "react-router-dom";
+import ProfileMediaPicker from "../profile/ProfileMediaPicker.jsx";
+import { readPickerQuery } from "../../lib/profileMediaPicker";
 import UsernameChangeModal from "../settings/UsernameChangeModal";
 import { getToken, setUser } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
@@ -20,7 +23,7 @@ import "../../styles/promo-mycodes.css"; // Promosyon Kodu nav row badge
 import { STATUS_EMOJIS, splitStatusEmoji } from "../../lib/statusPresets";
 import { PROMO_AVAILABLE_EVENT, PROMO_NUDGE_EVENT, PROMO_REDEEMED_EVENT, summaryOf } from "../../lib/promoAvailable";
 import { readFileAsDataUrl } from "../../lib/cropImage";
-import { uploadAvatar, uploadFile } from "../../api/media";
+import { uploadAvatar, uploadFile, uploadAvatarWithCrop, uploadBannerImage } from "../../api/media";
 import { getMe } from "../../api/auth";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import {
@@ -60,6 +63,7 @@ import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
+import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
 
@@ -456,6 +460,14 @@ const UserPanel = forwardRef(function UserPanel({
   const [usernameFlash, setUsernameFlash] = useState("");
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerCropSrc, setBannerCropSrc] = useState("");
+  // profile photo / banner picker: "avatar" | "banner" | null
+  const [mediaPicker, setMediaPicker] = useState(() => readPickerQuery(typeof window !== "undefined" ? window.location.search : ""));
+  const pickerLocation = useLocation();
+  useEffect(() => {
+    // Phone side of the desktop QR (and descall.com/settings/profile?picker=… links) opens the picker.
+    const q = readPickerQuery(pickerLocation.search);
+    if (q) setMediaPicker(q);
+  }, [pickerLocation.search]);
   const [copiedId, setCopiedId] = useState(false);
   const fileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
@@ -1044,7 +1056,9 @@ const UserPanel = forwardRef(function UserPanel({
     setCustomStatus(keep ? keep.customStatus : me.customStatus || me.custom_status || "");
     setAvatarUrl(me.avatarUrl || me.avatar_url || "");
     setBannerUrl(me.bannerUrl || me.banner_url || "");
-  }, [me?.id, me?.avatarUrl, me?.avatar_url, me?.displayName, me?.display_name, me?.updated_at]);
+  // bannerUrl is listed too: PUT /api/user/profile does not bump updated_at for a banner-only
+  // change, so a new banner arriving from the server (socket / another device) never reached this state.
+  }, [me?.id, me?.avatarUrl, me?.avatar_url, me?.displayName, me?.display_name, me?.updated_at, me?.bannerUrl, me?.banner_url]);
 
   // An equipped shop banner always takes precedence over a manually-set URL —
   // matches how the rest of the app (UserProfileModal, message list) renders it.
@@ -1086,9 +1100,15 @@ const UserPanel = forwardRef(function UserPanel({
     keepDraftsRef.current = { displayName, bio, customStatus };
   };
 
+  // Latest saved profile for async saves: the picker saves avatar THEN banner in one go, and the
+  // banner request used to send the pre-save avatar from the render closure (and vice versa).
+  const meRef = useRef(me);
+  meRef.current = me;
+
   /** Save only photo/banner changes on top of the SAVED profile (never unsaved text drafts). */
   const persistProfilePatch = async (patch) => {
     const token = getToken();
+    const me = meRef.current;
     const body = {
       displayName: me?.displayName || me?.display_name || null,
       bio: me?.bio || "",
@@ -1136,6 +1156,29 @@ const UserPanel = forwardRef(function UserPanel({
     }
   };
 
+  /**
+   * Make an uploaded banner the one everybody sees (picker + old flow).
+   * A shop banner paints over a custom URL, so it is unequipped FIRST: the profile save and its
+   * socket broadcast then already carry `equippedBanner: null`. The old order (save, broadcast
+   * with the shop banner still on, then unequip) let that stale broadcast land after the local
+   * update and put the old banner back. Both `bannerUrl` and `banner_url` are written so no
+   * reader falls back to the previous value.
+   */
+  const applyNewBanner = async (url) => {
+    const before = meRef.current;
+    const hadShopBanner = Boolean(before?.equippedBanner);
+    if (hadShopBanner) await equipShopItem("banner", null);
+    const saved = await persistProfilePatch({ bannerUrl: url });
+    applyProfileLocally({
+      ...(saved || before),
+      ...(hadShopBanner || saved?.equippedBanner ? { equippedBanner: null } : null),
+      bannerUrl: url,
+      banner_url: url,
+    });
+    if (saved?.equippedBanner && !hadShopBanner) await equipShopItem("banner", null);
+    setBannerUrl(url);
+  };
+
   const persistBannerFile = async (file) => {
     setBannerUploading(true);
     setProfileError("");
@@ -1143,19 +1186,52 @@ const UserPanel = forwardRef(function UserPanel({
       const uploaded = await uploadFile(file);
       const url = uploaded?.url || uploaded?.mediaUrl || null;
       if (!url) throw new Error(t("Upload failed"));
-      const saved = await persistProfilePatch({ bannerUrl: url });
-      // A shop banner paints over a custom URL. Unequip it so this upload shows.
-      if (saved?.equippedBanner || me?.equippedBanner) {
-        await equipShopItem("banner", null);
-        applyProfileLocally({ ...(saved || me), equippedBanner: null, bannerUrl: url, banner_url: url });
-      }
-      setBannerUrl(url);
+      await applyNewBanner(url);
     } catch (err) {
       flashProfileError(err?.message || t("Network error during upload"));
     } finally {
       setBannerUploading(false);
       setBannerCropSrc("");
     }
+  };
+
+  /** Picker save. Same storage, profile save and shop-banner rule as the old flow. */
+  const savePickedMedia = async (kind, { file, crop }) => {
+    setProfileError("");
+    if (kind === "avatar") {
+      setAvatarUploading(true);
+      try {
+        const data = await uploadAvatarWithCrop(file, crop);
+        if (!data?.avatarUrl) throw new Error(data?.error || t("Upload failed"));
+        setAvatarUrl(data.avatarUrl);
+        keepTextDrafts();
+        applyProfileLocally(data.user || { ...me, avatarUrl: data.avatarUrl, updated_at: new Date().toISOString() });
+      } finally {
+        setAvatarUploading(false);
+      }
+      return;
+    }
+    setBannerUploading(true);
+    try {
+      const uploaded = await uploadBannerImage(file, crop);
+      const url = uploaded?.url || uploaded?.bannerUrl || null;
+      if (!url) throw new Error(t("Upload failed"));
+      await applyNewBanner(url);
+    } finally {
+      setBannerUploading(false);
+    }
+  };
+
+  const closeMediaPicker = () => {
+    setMediaPicker(null);
+    // The phone side of the desktop QR opens with ?picker=…; drop it so a reload does not reopen.
+    try {
+      if (readPickerQuery(window.location.search)) {
+        const u = new URL(window.location.href);
+        u.searchParams.delete("picker");
+        window.history.replaceState(window.history.state, "", `${u.pathname}${u.search}${u.hash}`);
+      }
+    } catch { /* ignore */ }
   };
 
   const handleBannerPick = async (e) => {
@@ -1374,7 +1450,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <button
                   type="button"
                   className="us-hero-avatar us-hero-avatar-btn"
-                  onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                  onClick={() => !avatarUploading && setMediaPicker("avatar")}
                   disabled={avatarUploading}
                   aria-label={t("Change avatar")}
                   title={t("Change avatar")}
@@ -1503,7 +1579,7 @@ const UserPanel = forwardRef(function UserPanel({
               >
                 <label
                   className="us-pe-banner-hit"
-                  htmlFor={bannerUploading ? undefined : "descall-profile-banner"}
+                  onClick={(e) => { e.preventDefault(); if (!bannerUploading) setMediaPicker("banner"); }}
                   aria-disabled={bannerUploading || undefined}
                   aria-label={effectiveBannerUrl ? t("Change banner") : t("Add banner")}
                 >
@@ -1536,7 +1612,7 @@ const UserPanel = forwardRef(function UserPanel({
                     <button
                       type="button"
                       className="us-pe-chip"
-                      onClick={() => !bannerUploading && bannerInputRef.current?.click()}
+                      onClick={() => !bannerUploading && setMediaPicker("banner")}
                       disabled={bannerUploading}
                     >
                       {bannerUploading ? <RefreshCw size={13} className="us-spin" /> : <Camera size={13} />}
@@ -1550,7 +1626,7 @@ const UserPanel = forwardRef(function UserPanel({
                 <button
                   type="button"
                   className="us-pe-avatar"
-                  onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                  onClick={() => !avatarUploading && setMediaPicker("avatar")}
                   disabled={avatarUploading}
                   aria-label={t("Change avatar")}
                   title={t("Change avatar")}
@@ -1572,7 +1648,7 @@ const UserPanel = forwardRef(function UserPanel({
                   <button
                     type="button"
                     className="g-pe-avatar-link"
-                    onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                    onClick={() => !avatarUploading && setMediaPicker("avatar")}
                     disabled={avatarUploading}
                   >
                     {t("Change avatar")}
@@ -1601,7 +1677,7 @@ const UserPanel = forwardRef(function UserPanel({
                   <button
                     type="button"
                     className="us-btn primary"
-                    onClick={() => !avatarUploading && fileInputRef.current?.click()}
+                    onClick={() => !avatarUploading && setMediaPicker("avatar")}
                     disabled={avatarUploading}
                   >
                     <Upload size={14} />
@@ -2733,14 +2809,15 @@ const UserPanel = forwardRef(function UserPanel({
       <aside ref={menuPaneRef} className="us-sidebar s3 s3-side visible">
         <div className="s3-side-pad" aria-hidden="true" />
         <div className="s3-side-scroll">
-          <button type="button" className="s3-hero" onClick={() => openTab("overview")}>
-            <Avatar name={me?.username || t("User")} size={64} user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }} />
-            <span className="n">{displayName || me?.username || t("User")}</span>
-            <span className="m">
-              @{me?.username?.toLowerCase() || "user"}
-              {isUserAdmin(me) ? ` · ${t("staffBadge.tip")}` : ""}
-            </span>
-          </button>
+          <SettingsProfileCard
+            me={me}
+            avatarUrl={avatarUrl}
+            status={myStatus}
+            isAdmin={isUserAdmin(me)}
+            size={64}
+            onOpen={() => openTab("overview")}
+            onEdit={() => openTab("profile")}
+          />
           <nav aria-label={t("Settings sections")}>
             {navGroups.map((group) => (
               <div key={group.label} className="s3-side-group">
@@ -2800,33 +2877,16 @@ const UserPanel = forwardRef(function UserPanel({
             )}
           </div>
 
-          <button type="button" className="us-mini-profile" onClick={() => openTab("overview")}>
-            <span className="us-mini-avatar">
-              <Avatar
-                name={me?.username || t("User")}
-                size={glassShell && isMobile ? 56 : 40}
-                user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-              />
-              {glassShell && isMobile ? <StatusBadge status={myStatus || "online"} /> : null}
-            </span>
-            <div className="us-mini-meta">
-              <strong style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap" }}>
-                <span className="us-mini-name">{displayName || me?.username || t("User")}</span>
-                <AdminBadge user={me} variant="inline" />
-                <PremiumBadge user={me} variant="inline" />
-              </strong>
-              <span>
-                @{me?.username?.toLowerCase() || "user"}
-                {glassShell && isMobile ? (
-                  <>
-                    {" · "}
-                    <em className="us-descoin">◈ {formatNumber(me?.descoinBalance || 0, locale)} DesCoin</em>
-                  </>
-                ) : null}
-              </span>
-            </div>
-            {isMobile && <ChevronRight size={16} className="us-chevron" />}
-          </button>
+          <SettingsProfileCard
+            me={me}
+            avatarUrl={avatarUrl}
+            status={myStatus}
+            isAdmin={isUserAdmin(me)}
+            size={72}
+            variant="ios"
+            onOpen={() => openTab("overview")}
+            onEdit={() => openTab("profile")}
+          />
         </div>
 
         <nav className="us-nav" aria-label={t("Settings sections")}>
@@ -2991,6 +3051,19 @@ const UserPanel = forwardRef(function UserPanel({
           maxOutputSize={1500}
           onCancel={() => setBannerCropSrc("")}
           onConfirm={persistBannerFile}
+        />
+      ) : null}
+      {mediaPicker ? (
+        <ProfileMediaPicker
+          key="profile-media-picker"
+          initialTarget={mediaPicker}
+          isMobile={isMobile}
+          user={me}
+          displayName={displayName}
+          avatarUrl={avatarUrl || me?.avatarUrl || ""}
+          bannerUrl={effectiveBannerUrl || ""}
+          onClose={closeMediaPicker}
+          onSave={savePickedMedia}
         />
       ) : null}
       {usernameModalOpen && !usernameLocked ? (

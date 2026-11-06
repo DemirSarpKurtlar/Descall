@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { avatarEffectStyle } from "../../lib/avatarEffectGeometry.js";
 import { PROFILE_COLORS, profileColorSwatch } from "../../lib/profileColors";
 import { motion } from "framer-motion";
 import { Gift, Plus, RefreshCw, ShoppingBag, Search, CheckCircle2, XCircle, Coins, Sparkles } from "../ui/Icon.jsx";
@@ -10,6 +11,9 @@ import { BlockListSkeleton } from "../ui/Skeleton";
 import { Avatar } from "../ui/Avatar";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
+import ProfileAuraPreview from "../shop/ProfileAuraPreview.jsx";
+import ReactionBurstPreview from "../shop/ReactionBurstPreview.jsx";
+import CallOverlayPreview from "../shop/CallOverlayPreview.jsx";
 import { CountryFlag } from "../shop/CountryFlag";
 
 /** Label: t(`adminx.shop.cat.${id}`). */
@@ -724,15 +728,15 @@ export default function AdminShop({ children = null }) {
                     ) : item.category === "name_effect" ? (
                       <span className={`cosmetic-name-effect effect-${item.effect_key}`} style={{ fontSize: 13, fontWeight: 700 }}>{t("adminx.shop.sample")}</span>
                     ) : item.category === "avatar_effect" ? (
-                      <div style={{ position: "relative", width: 32, height: 32 }}>
-                        <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} style={{ position: "absolute", inset: -6 }} />
+                      <div style={{ position: "relative", width: 24, height: 24, margin: 4, borderRadius: "50%", background: "var(--surface-3, #2b2d31)" }}>
+                        <div className={`cosmetic-avatar-effect effect-${item.effect_key}`} style={avatarEffectStyle(24)} />
                       </div>
                     ) : item.category === "chat_bubble" ? (
                       <div className={`cosmetic-chat-bubble bubble-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 8 }} />
                     ) : item.category === "presence_flare" ? (
                       <span className={`status-badge status-online cosmetic-presence-flare flare-${item.effect_key}`} style={{ width: 14, height: 14, display: "inline-block", borderRadius: "50%" }} />
                     ) : item.category === "profile_aura" ? (
-                      <div className={`cosmetic-profile-aura aura-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 8, background: "rgba(255,255,255,0.06)" }} />
+                      <ProfileAuraPreview effectKey={item.effect_key} name={item.name} compact />
                     ) : item.category === "sound_pack" ? (
                       <span className="mono" style={{ fontSize: 11 }}>{item.effect_key}</span>
                     ) : item.category === "typing_flare" ? (
@@ -742,11 +746,11 @@ export default function AdminShop({ children = null }) {
                         <span className="typing-dot" style={{ width: 5, height: 5, borderRadius: "50%", display: "inline-block" }} />
                       </div>
                     ) : item.category === "reaction_burst" ? (
-                      <div className={`cosmetic-reaction-burst burst-${item.effect_key}`} style={{ fontSize: 16, display: "inline-flex" }}><Sparkles size={16} /></div>
+                      <ReactionBurstPreview effectKey={item.effect_key} compact />
                     ) : item.category === "profile_color" ? (
                       <div style={{ width: 40, height: 22, borderRadius: 6, background: profileColorSwatch(item) || "rgba(255,255,255,0.06)" }} />
                     ) : item.category === "call_overlay" ? (
-                      <div className={`cosmetic-call-overlay overlay-${item.effect_key}`} style={{ width: 40, height: 22, borderRadius: 6 }} />
+                      <CallOverlayPreview effectKey={item.effect_key} name={item.name} compact />
                     ) : (
                       <img src={item.preview_url || item.asset_url} alt="" style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 6 }} />
                     )}

@@ -52,13 +52,15 @@ for i in 0..<noise.count {
 check(P.encodeReply(noise) == nil, "incompressible 400 KB reply is too large")
 
 // Watch copy language: the iPhone app's UI language, else the watch languages
-// (Turkish device keeps Turkish, first live locale, drafts and unknown -> English).
+// (Turkish device keeps Turkish, first live locale, unknown -> English).
 typealias WL = DescallWatchLocale
 check(WL.ids == ["en", "tr", "de", "es", "fr", "pt-BR", "ru"], "same ids as src/i18n/locales.json")
 check(WL.resolve(phone: "de", preferred: ["tr-TR"]) == "de", "app UI language wins")
 check(WL.resolve(phone: nil, preferred: ["tr-TR"]) == "tr", "Turkish watch")
 check(WL.resolve(phone: nil, preferred: ["en-US", "tr-TR"]) == "tr", "any Turkish language")
-check(WL.resolve(phone: nil, preferred: ["fr-FR"]) == "en", "draft device language -> English")
+check(WL.resolve(phone: nil, preferred: ["fr-FR"]) == "fr", "French watch (fr is live since 3.7.22)")
+check(WL.resolve(phone: nil, preferred: ["de-AT", "en-US"]) == "de", "German watch")
+check(WL.live == Set(WL.ids), "every registered locale is live (src/i18n/locales.json)")
 check(WL.resolve(phone: nil, preferred: ["ja-JP", "en-GB"]) == "en", "first live match")
 check(WL.resolve(phone: nil, preferred: []) == "tr", "nothing known -> Turkish (as before)")
 check(WL.resolve(phone: "zz", preferred: ["en-US"]) == "en", "unknown phone value ignored")

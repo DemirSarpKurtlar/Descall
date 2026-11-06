@@ -4,6 +4,7 @@ import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
 import { PREMIUM_AUDIO_TR } from "./premiumAudio.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
+import { AMP_TR } from "./profileMediaPicker.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -51,6 +52,7 @@ export const nested = {
   maint: MAINT_TR,
   promo: PROMO_TR,
   nc: NC_TR,
+  amp: AMP_TR,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {
@@ -2208,6 +2210,8 @@ export const phrases = {
   "Their microphone is connecting…": "Karşı tarafın mikrofonu bağlanıyor…",
   "Retry audio connection": "Yeniden dene",
   "Audio isn't coming through yet.": "Ses henüz gelmiyor.",
+  "Couldn't connect.": "Bağlantı kurulamadı.",
+  "Noise suppression was cutting your voice, switched to the normal mic.": "Gürültü engelleme sesini kesiyordu, normal mikrofona geçtik.",
   "Join the call": "Aramaya katıl",
   "Group voice call in progress": "Grup sesli araması sürüyor",
   "Group video call in progress": "Grup görüntülü araması sürüyor",

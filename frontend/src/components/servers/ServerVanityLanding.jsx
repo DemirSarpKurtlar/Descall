@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle } from "../ui/Icon.jsx";
+import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, Ban } from "../ui/Icon.jsx";
+import { savePendingLanding, clearPendingLanding, serverInviteErrorKey } from "../../lib/serverInviteRoute";
 import { previewServerVanity, joinServerByVanity } from "../../api/servers";
 import { getToken } from "../../lib/storage";
 import { useT } from "../../context/LocaleContext";
@@ -30,7 +31,7 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
         const data = await previewServerVanity(slug);
         if (!cancelled) setPreview(data);
       } catch (err) {
-        if (!cancelled) setError(err.message || t("Server not found"));
+        if (!cancelled) setError(Number(err?.status) === 404 ? t("Server not found") : t(serverInviteErrorKey(err)));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -38,31 +39,35 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
     return () => {
       cancelled = true;
     };
-  }, [slug, t]);
+    // me?.id: refetch after login so isMember / banned are right.
+  }, [slug, t, me?.id]);
 
-  const handleJoin = async () => {
-    if (!getToken()) {
-      try {
-        sessionStorage.setItem("descall:pendingServerVanity", slug);
-      } catch {
-        /* ignore */
-      }
-      onNeedLogin?.(slug);
+  const handleJoin = async (mode = "login") => {
+    if (!me || !getToken()) {
+      // 3.7.32: same pending slot + /login flow as server invites.
+      savePendingLanding("vanity", slug);
+      onNeedLogin?.(mode, slug);
       return;
     }
     setJoining(true);
     setError("");
     try {
       const res = await joinServerByVanity(slug);
+      clearPendingLanding("vanity");
       onJoined?.(res.server);
     } catch (err) {
-      setError(err.message || t("Could not join server"));
+      if (Number(err?.status) === 401) {
+        handleJoin("login");
+        return;
+      }
+      setError(t(serverInviteErrorKey(err)));
     } finally {
       setJoining(false);
     }
   };
 
   const server = preview?.server;
+  const banned = Boolean(server?.banned && !server?.isMember);
 
   return (
     <div className="invite-landing">
@@ -116,16 +121,29 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
                 </span>
               </div>
             </div>
-            {error ? <p className="invite-landing-error">{error}</p> : null}
+            {banned ? (
+              <p className="invite-landing-error" role="alert" data-testid="server-invite-banned">
+                <Ban size={16} aria-hidden="true" />
+                {t("You are banned from this server.")}
+              </p>
+            ) : null}
+            {error && !banned ? <p className="invite-landing-error" role="alert">{error}</p> : null}
             <div className="invite-landing-actions">
               <button type="button" className="invite-landing-btn ghost" onClick={onDismiss}>
                 {t("Not now")}
               </button>
+              {!me ? (
+                <button type="button" className="invite-landing-btn ghost" onClick={() => handleJoin("register")}>
+                  <UserPlus size={18} />
+                  {t("Sign up and join")}
+                </button>
+              ) : null}
+              {!banned ? (
               <button
                 type="button"
                 className="invite-landing-btn primary"
                 disabled={joining}
-                onClick={handleJoin}
+                onClick={() => handleJoin("login")}
               >
                 {joining ? (
                   <Loader2 size={18} className="spin" />
@@ -142,6 +160,7 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
                       ? t("Accept Invite")
                       : t("Log in to join")}
               </button>
+              ) : null}
             </div>
           </>
         )}

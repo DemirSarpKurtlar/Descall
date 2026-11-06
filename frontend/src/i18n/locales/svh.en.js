@@ -241,6 +241,7 @@ export const SVH_EN = {
   kickMsg: "They can rejoin with a new invite.",
   kickDone: "Member kicked",
   banPrompt: "Ban {name}? Add a reason if you like:",
+  reverted: "Couldn't complete, change reverted.",
   banDone: "Member banned",
   timeoutRemove: "Remove timeout",
   timeoutDone: "Timeout applied",

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";
+import { runOptimistic, removeMemberOptimistic, patchMemberOptimistic } from "../../lib/optimisticMembers";
+import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { createPortal } from "react-dom";
 import { Crown, MoreHorizontal, MessageSquare, User, Users, Copy, Shield, UserX, Ban, Search, X, Pencil, Timer, CircleSlash, Flag } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
@@ -352,6 +354,12 @@ export default function ServerMembersPanel({
     }
   };
 
+  // 3.7.32: moderation is optimistic; a failure puts the row back and says so.
+  const moderationFailed = (err) => {
+    hapticError();
+    toast(`${t("Couldn't complete, change reverted.")} ${err?.message || ""}`.trim(), "error");
+  };
+
   const canActOn = (member) => canActOnServerMember(server, member, me?.id);
 
   const openNicknameModal = (member) => {
@@ -394,25 +402,21 @@ export default function ServerMembersPanel({
       placeholder: t("Reason (optional)"),
     });
     if (reason === null) return;
-    setBusy(true);
-    try {
-      const { timeout } = await timeoutServerMember(server.id, member.userId, {
-        durationSeconds,
-        reason: reason.trim() || undefined,
-      });
-      setMembers((prev) =>
-        prev.map((m) =>
-          String(m.userId) === String(member.userId)
-            ? { ...m, timeoutUntil: timeout.until, timeoutReason: timeout.reason || null }
-            : m
-        )
-      );
+    setMenu(null);
+    const until = new Date(Date.now() + durationSeconds * 1000).toISOString();
+    const r = await runOptimistic({
+      update: setMembers,
+      change: (l) => patchMemberOptimistic(l, member.userId, { timeoutUntil: until, timeoutReason: reason.trim() || null }),
+      request: () => timeoutServerMember(server.id, member.userId, { durationSeconds, reason: reason.trim() || undefined }),
+      onError: moderationFailed,
+    });
+    if (r.ok) {
+      const timeout = r.result?.timeout;
+      if (timeout?.until) {
+        setMembers((prev) => patchMemberOptimistic(prev, member.userId, { timeoutUntil: timeout.until }).next);
+      }
+      hapticSuccess();
       toast(t("Member timed out"), "success");
-      setMenu(null);
-    } catch (err) {
-      toast(err?.message || t("Something went wrong."), "error");
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -434,23 +438,14 @@ export default function ServerMembersPanel({
 
   const removeTimeout = async (member) => {
     if (!server?.id) return;
-    setBusy(true);
-    try {
-      await removeServerMemberTimeout(server.id, member.userId);
-      setMembers((prev) =>
-        prev.map((m) =>
-          String(m.userId) === String(member.userId)
-            ? { ...m, timeoutUntil: null, timeoutReason: null }
-            : m
-        )
-      );
-      toast(t("Timeout removed"), "success");
-      setMenu(null);
-    } catch (err) {
-      toast(err?.message || t("Something went wrong."), "error");
-    } finally {
-      setBusy(false);
-    }
+    setMenu(null);
+    const r = await runOptimistic({
+      update: setMembers,
+      change: (l) => patchMemberOptimistic(l, member.userId, { timeoutUntil: null, timeoutReason: null }),
+      request: () => removeServerMemberTimeout(server.id, member.userId),
+      onError: moderationFailed,
+    });
+    if (r.ok) toast(t("Timeout removed"), "success");
   };
 
   const kick = async (member) => {
@@ -461,16 +456,16 @@ export default function ServerMembersPanel({
       cancelLabel: t("Cancel"),
     });
     if (!ok) return;
-    setBusy(true);
-    try {
-      await kickServerMember(server.id, member.userId);
-      setMembers((prev) => prev.filter((m) => String(m.userId) !== String(member.userId)));
+    setMenu(null);
+    const r = await runOptimistic({
+      update: setMembers,
+      change: (l) => removeMemberOptimistic(l, member.userId),
+      request: () => kickServerMember(server.id, member.userId),
+      onError: moderationFailed,
+    });
+    if (r.ok) {
+      hapticSuccess();
       toast(t("Member kicked"), "success");
-      setMenu(null);
-    } catch (err) {
-      toast(err?.message || t("Something went wrong."), "error");
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -483,16 +478,16 @@ export default function ServerMembersPanel({
       danger: true,
     });
     if (reason === null) return;
-    setBusy(true);
-    try {
-      await banServerMember(server.id, member.userId, reason.trim() || undefined);
-      setMembers((prev) => prev.filter((m) => String(m.userId) !== String(member.userId)));
+    setMenu(null);
+    const r = await runOptimistic({
+      update: setMembers,
+      change: (l) => removeMemberOptimistic(l, member.userId),
+      request: () => banServerMember(server.id, member.userId, reason.trim() || undefined),
+      onError: moderationFailed,
+    });
+    if (r.ok) {
+      hapticSuccess();
       toast(t("Member banned"), "success");
-      setMenu(null);
-    } catch (err) {
-      toast(err?.message || t("Something went wrong."), "error");
-    } finally {
-      setBusy(false);
     }
   };
 

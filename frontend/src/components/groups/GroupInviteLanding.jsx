@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Loader2, LogIn, CheckCircle2, AlertTriangle } from "../ui/Icon.jsx";
+import { Users, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus } from "../ui/Icon.jsx";
+import { savePendingLanding } from "../../lib/serverInviteRoute";
 import { previewGroupInvite, joinGroupByInvite } from "../../api/groups";
 import { getToken } from "../../lib/storage";
 import { Avatar } from "../ui/Avatar";
@@ -46,12 +47,11 @@ export default function GroupInviteLanding({
     };
   }, [code, t]);
 
-  const handleJoin = async () => {
-    if (!getToken()) {
-      try {
-        sessionStorage.setItem("descall:pendingInvite", code);
-      } catch { /* ignore */ }
-      onNeedLogin?.(code);
+  const handleJoin = async (mode = "login") => {
+    if (!me || !getToken()) {
+      // 3.7.32: kept through login / sign-up (web opens /login, not the home page).
+      savePendingLanding("group", code);
+      onNeedLogin?.(mode, code);
       return;
     }
     setJoining(true);
@@ -122,7 +122,7 @@ export default function GroupInviteLanding({
             <button
               type="button"
               className="invite-landing-join"
-              onClick={handleJoin}
+              onClick={() => handleJoin("login")}
               disabled={joining}
             >
               {joining ? (
@@ -137,6 +137,12 @@ export default function GroupInviteLanding({
               )}
             </button>
 
+            {!me ? (
+              <button type="button" className="invite-landing-secondary" onClick={() => handleJoin("register")}>
+                <UserPlus size={16} />
+                {t("Sign up and join")}
+              </button>
+            ) : null}
             <button type="button" className="invite-landing-secondary" onClick={onDismiss}>
               {me ? t("Maybe later") : t("Back")}
             </button>

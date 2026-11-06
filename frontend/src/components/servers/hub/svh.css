@@ -250,3 +250,7 @@ html[data-theme="light"] .svh-dot{box-shadow:0 0 0 2.5px #fff}
 /* Inline accents in sheets.jsx read the same tokens (no hard-coded hex). */
 .svh-root{--svh-link:#8FA6FF;--svh-ok:#30D158;--svh-err:#FF6B63;--svh-ring:rgba(20,21,32,.95);--svh-box:rgba(255,255,255,.35)}
 html[data-theme="light"] .svh-root{--svh-link:#3D5BD9;--svh-ok:#1F8F43;--svh-err:#D12B21;--svh-ring:#fff;--svh-box:rgba(57,60,77,.35)}
+/* 3.7.32 — opaque fallback for the hub glass (Reduce Transparency, low-power, no backdrop-filter). */
+:root:is(.a11y-solid,.gd-lite) .svh-heavy{background:rgba(24,25,36,.97)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+@media (prefers-reduced-transparency: reduce){.svh-heavy{background:rgba(24,25,36,.97)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){.svh-heavy{background:rgba(24,25,36,.97)!important}}

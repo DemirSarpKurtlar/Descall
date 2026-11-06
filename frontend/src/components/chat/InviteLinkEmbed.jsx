@@ -131,6 +131,7 @@ export default function InviteLinkEmbed({ invite }) {
             kind: invite.kind,
             group: preview?.group || null,
             server: preview?.server || null,
+            channelId: preview?.invite?.channelId || null,
           },
         })
       );
@@ -160,7 +161,7 @@ export default function InviteLinkEmbed({ invite }) {
         }));
         toast(t("Joined {name}", { name: server?.name || t("server") }), "success");
         window.dispatchEvent(
-          new CustomEvent("descall:joined-server", { detail: { server } })
+          new CustomEvent("descall:joined-server", { detail: { server, channelId: data?.channelId || null } })
         );
       } else {
         const data = await joinGroupByInvite(invite.code);
