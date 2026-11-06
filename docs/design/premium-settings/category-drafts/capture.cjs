@@ -72,12 +72,18 @@ const CATS = ['windows', 'audio'];
       if (!shell.sidebar || !shell.back || shell.error) { problems++; console.warn(`[${id}/${cat}] shell check failed`, shell); }
       await page.screenshot({ path: path.join(OUT, `${id}-${cat}.png`) });
       if (process.env.CHECK && id !== 'current') {
-        const found = await page.evaluate(() => [...document.querySelectorAll('[data-s]')].map((n) => n.getAttribute('data-s')));
-        const feats2 = await page.evaluate(() => [...document.querySelectorAll('[data-f]')].map((n) => n.getAttribute('data-f')));
         const want = CHECK[cat];
-        const missF = Object.keys(want).filter((f) => !feats2.includes(f));
-        const missS = Object.entries(want).flatMap(([f, ss]) => ss.map((s) => `${f}.${s}`)).filter((k) => !found.includes(k));
-        if (missF.length || missS.length) { problems++; console.warn(`[${id}/${cat}] missing features: ${missF.join(', ') || '-'} | settings: ${missS.join(', ') || '-'}`); }
+        const miss = [];
+        for (const f of Object.keys(want)) {
+          const got = await page.evaluate(([d, c, k]) => {
+            window.__dpcDraft(d, c, k);
+            const card = document.querySelector(`[data-f="${k}"]`);
+            return card ? [...card.querySelectorAll('[data-s]')].map((n) => n.getAttribute('data-s')) : null;
+          }, [id, cat, f]);
+          if (!got) { miss.push(`${f} (no card)`); continue; }
+          for (const s of want[f]) if (!got.includes(`${f}.${s}`)) miss.push(`${f}.${s}`);
+        }
+        if (miss.length) { problems++; console.warn(`[${id}/${cat}] missing: ${miss.join(', ')}`); }
         else console.log(`[${id}/${cat}] ok: ${Object.keys(want).length} features, ${Object.values(want).flat().length} settings`);
       }
       await ctx.close();
