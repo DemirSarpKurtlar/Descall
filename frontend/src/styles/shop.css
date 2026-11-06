@@ -1068,9 +1068,41 @@ html[data-bubble="minimal"] .shop-live-bubble {
 .descoin-daily-head,
 .invite-card-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+/* UI audit #12: the one invite mark (web, iPhone, Arkadaşlar, Mağaza). */
+.invite-card-mark,
+html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-card-mark {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+  box-shadow: none;
+}
+
+.invite-card-mark svg,
+html.glass-ui .user-settings.is-mobile.g-settings .g-invite-link-head .invite-card-mark svg {
+  color: #fff;
+  width: 18px;
+  height: 18px;
+}
+
+.invite-card-header > div,
+.g-invite-copy {
+  min-width: 0;
+}
+
+.invite-card-btn {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .descoin-daily-head strong,
 .invite-card-header strong {
