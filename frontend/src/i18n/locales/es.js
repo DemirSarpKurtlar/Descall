@@ -6259,6 +6259,7 @@ export const nested = {
 
 export const phrases = {
   "API reachable": "API accesible",
+  "Master switch": "Interruptor principal",
   "Private messages, group messages and mentions": "Mensajes privados, mensajes de grupo y menciones",
   "Request timed out": "La solicitud agotó el tiempo de espera",
   " (you)": " (tú)",
@@ -9994,6 +9995,7 @@ export const phrases = {
   "User Growth Analytics": "Analíticas de crecimiento de usuarios",
   "User ID": "ID de usuario",
   "User ID:": "ID de usuario:",
+  "User IDs, separated by commas": "ID de usuario, separados por comas",
   "User Information": "Información del usuario",
   "User Management": "Gestión de usuarios",
   "User Settings": "Ajustes de usuario",
@@ -10185,6 +10187,7 @@ export const phrases = {
   "What's this channel about?": "¿De qué trata este canal?",
   "When": "Cuándo",
   "When friends come online, their activity shows up here.": "Cuando tus amigos se conecten, su actividad aparecerá aquí.",
+  "When off, every client goes back to the main server.": "Si está apagado, todos los clientes vuelven al servidor principal.",
   "When should a community stay on Discord?": "¿Cuándo debería una comunidad quedarse en Discord?",
   "When to pick Descall for communities": "Cuándo elegir Descall para comunidades",
   "Where Descall competes": "Dónde compite Descall",
