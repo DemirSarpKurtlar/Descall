@@ -952,6 +952,16 @@ export const nested = {
     "panel": {
       "open": "Öffnen",
       "openMini": "Minimodus öffnen",
+      "miniInfo": "Wenn du einen Anruf minimierst, bleibt eine kleine Karte mit Name, Status und Tasten für Stummschalten, Taubschalten und Auflegen sichtbar. Du kannst sie überallhin ziehen. Ohne Descall+ erscheint oben nur eine schmale Leiste \"Zurück zum Anruf\".",
+      "miniDock": "Position der Karte",
+      "dock": {
+        "top-left": "Oben links",
+        "top-right": "Oben rechts",
+        "mid-left": "Mitte links",
+        "mid-right": "Mitte rechts",
+        "bottom-left": "Unten links",
+        "bottom-right": "Unten rechts"
+      },
       "openCall": "Anruffenster öffnen",
       "openSidebar": "Seitenleiste zeigen",
       "miniAuto": "Minimodus öffnen, wenn ich Descall während eines Anrufs minimiere",
@@ -967,7 +977,7 @@ export const nested = {
       "popoutsHow": "Mit „In eigenem Fenster öffnen“ im Chat-Kopf öffnest du einen Chat separat.",
       "closeAll": "Alle schließen",
       "restorePopouts": "Separate Fenster wieder öffnen",
-      "restoreMini": "Minimodus und Seitenleiste wieder öffnen",
+      "restoreMini": "Seitenleiste wieder öffnen",
       "restoreBounds": "Fensterpositionen und -größen merken",
       "snap": "Fenster an Bildschirmränder andocken",
       "keepVisible": "Fenster zurückholen, wenn ein Monitor entfernt wird",
@@ -995,7 +1005,7 @@ export const nested = {
     "f": {
       "mini_mode": {
         "name": "Minimodus",
-        "desc": "Ein kleines Fenster mit Anrufsteuerung und Ungelesen-Zähler."
+        "desc": "Eine kleine Anrufkarte, die beim Minimieren eines Anrufs sichtbar bleibt; zieh sie in jede Ecke."
       },
       "always_on_top": {
         "name": "Immer im Vordergrund",

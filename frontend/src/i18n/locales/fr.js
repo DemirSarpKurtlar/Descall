@@ -952,6 +952,16 @@ export const nested = {
     "panel": {
       "open": "Ouvrir",
       "openMini": "Ouvrir le mode mini",
+      "miniInfo": "Quand tu réduis un appel, une petite carte avec le nom, le statut et les boutons micro, casque et raccrocher reste à l'écran. Tu peux la déplacer où tu veux. Sans Descall+, seule une fine barre \"Revenir à l'appel\" apparaît en haut.",
+      "miniDock": "Position de la carte",
+      "dock": {
+        "top-left": "En haut à gauche",
+        "top-right": "En haut à droite",
+        "mid-left": "Au milieu à gauche",
+        "mid-right": "Au milieu à droite",
+        "bottom-left": "En bas à gauche",
+        "bottom-right": "En bas à droite"
+      },
       "openCall": "Ouvrir la fenêtre d'appel",
       "openSidebar": "Afficher la barre latérale",
       "miniAuto": "Ouvrir le mode mini quand je réduis Descall pendant un appel",
@@ -967,7 +977,7 @@ export const nested = {
       "popoutsHow": "Utilise Ouvrir dans une fenêtre dans l'en-tête d'une discussion pour la détacher.",
       "closeAll": "Tout fermer",
       "restorePopouts": "Rouvrir les fenêtres détachées",
-      "restoreMini": "Rouvrir le mode mini et la barre latérale",
+      "restoreMini": "Rouvrir la barre latérale",
       "restoreBounds": "Mémoriser la position et la taille des fenêtres",
       "snap": "Aimanter les fenêtres aux bords",
       "keepVisible": "Ramener les fenêtres quand un écran est retiré",
@@ -995,7 +1005,7 @@ export const nested = {
     "f": {
       "mini_mode": {
         "name": "Mode mini",
-        "desc": "Une petite fenêtre avec les contrôles d'appel et les non lus."
+        "desc": "Une petite carte d'appel qui reste à l'écran quand tu réduis un appel ; fais-la glisser dans un coin."
       },
       "always_on_top": {
         "name": "Toujours au premier plan",

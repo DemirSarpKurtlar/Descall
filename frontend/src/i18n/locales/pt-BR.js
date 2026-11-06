@@ -952,6 +952,16 @@ export const nested = {
     "panel": {
       "open": "Abrir",
       "openMini": "Abrir modo mini",
+      "miniInfo": "Ao minimizar uma chamada, um pequeno cartão com o nome, o status e os botões de mudo, ensurdecer e desligar fica na tela. Você pode arrastá-lo para onde quiser. Sem o Descall+ aparece só uma barra fina \"Voltar à chamada\" no topo.",
+      "miniDock": "Onde o cartão fica",
+      "dock": {
+        "top-left": "Canto superior esquerdo",
+        "top-right": "Canto superior direito",
+        "mid-left": "Meio à esquerda",
+        "mid-right": "Meio à direita",
+        "bottom-left": "Canto inferior esquerdo",
+        "bottom-right": "Canto inferior direito"
+      },
       "openCall": "Abrir janela de chamada",
       "openSidebar": "Mostrar barra lateral",
       "miniAuto": "Abrir o modo mini ao minimizar o Descall durante uma chamada",
@@ -967,7 +977,7 @@ export const nested = {
       "popoutsHow": "Use Abrir em outra janela no topo de uma conversa para abri-la separada.",
       "closeAll": "Fechar todas",
       "restorePopouts": "Reabrir janelas separadas",
-      "restoreMini": "Reabrir o modo mini e a barra lateral",
+      "restoreMini": "Reabrir a barra lateral",
       "restoreBounds": "Lembrar posição e tamanho das janelas",
       "snap": "Encaixar janelas nas bordas",
       "keepVisible": "Trazer janelas de volta ao remover um monitor",
@@ -995,7 +1005,7 @@ export const nested = {
     "f": {
       "mini_mode": {
         "name": "Modo mini",
-        "desc": "Uma janela pequena com controles de chamada e não lidas."
+        "desc": "Um pequeno cartão de chamada que fica na tela ao minimizar uma chamada; arraste para qualquer canto."
       },
       "always_on_top": {
         "name": "Sempre no topo",

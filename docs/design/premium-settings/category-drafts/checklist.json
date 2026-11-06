@@ -1,0 +1,147 @@
+{
+  "_doc": "Every feature of the two drafted categories and every setting its panel (frontend/src/premium/settings/<key>.jsx) exposes. 'enabled' is the row switch from PremiumSettingsTab. Info-only lines (hints, notes) are listed too so none gets dropped. Conditional error and empty-list messages (layoutEmpty, layouts.empty, micError, routing.unsupported) are states, not settings, and are not listed.",
+  "windows": {
+    "mini_mode": [
+      "enabled",
+      "open",
+      "autoOnMinimize"
+    ],
+    "always_on_top": [
+      "enabled",
+      "lead",
+      "main",
+      "mini",
+      "call",
+      "sidebar",
+      "popout"
+    ],
+    "pip_call": [
+      "enabled",
+      "open"
+    ],
+    "multi_window": [
+      "enabled",
+      "how",
+      "list",
+      "count",
+      "closeAll"
+    ],
+    "window_opacity": [
+      "enabled",
+      "lead",
+      "mini",
+      "call",
+      "sidebar",
+      "popout"
+    ],
+    "session_restore": [
+      "enabled",
+      "popouts",
+      "mini",
+      "bounds"
+    ],
+    "tray_controls_plus": [
+      "enabled",
+      "lead"
+    ],
+    "taskbar_plus": [
+      "enabled",
+      "badge",
+      "buttons"
+    ],
+    "window_layouts": [
+      "enabled",
+      "name",
+      "save",
+      "list",
+      "apply",
+      "delete"
+    ],
+    "advanced_window_mgmt": [
+      "enabled",
+      "snap",
+      "keepVisible",
+      "mainMonitor"
+    ],
+    "screen_edge_actions": [
+      "enabled",
+      "lead",
+      "needsSidebar",
+      "edge",
+      "delay"
+    ],
+    "custom_layouts": [
+      "enabled",
+      "name",
+      "save",
+      "list",
+      "apply",
+      "remove",
+      "active"
+    ]
+  },
+  "audio": {
+    "noise_gate": [
+      "enabled",
+      "thresholdDb",
+      "meter",
+      "test",
+      "hysteresisDb",
+      "holdMs"
+    ],
+    "mic_presets": [
+      "enabled",
+      "gain",
+      "current",
+      "list",
+      "apply",
+      "delete",
+      "name",
+      "save"
+    ],
+    "mic_monitor": [
+      "enabled",
+      "volume",
+      "headphones"
+    ],
+    "voice_activity_monitor": [
+      "enabled",
+      "hint"
+    ],
+    "auto_device_switch": [
+      "enabled",
+      "headsetFirst",
+      "inputOrder",
+      "outputOrder",
+      "move",
+      "remove",
+      "add"
+    ],
+    "audio_routing": [
+      "enabled",
+      "callOutput",
+      "notificationOutput",
+      "test"
+    ],
+    "audio_device_profiles": [
+      "enabled",
+      "list",
+      "apply",
+      "delete",
+      "name",
+      "input",
+      "output",
+      "preset",
+      "create",
+      "trayNote"
+    ],
+    "stream_audio_control": [
+      "enabled",
+      "sendVolume",
+      "sendMuted",
+      "viewVolume",
+      "viewMuted",
+      "note"
+    ]
+  }
+}

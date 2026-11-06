@@ -115,38 +115,7 @@ function CallCard({ call }) {
   );
 }
 
-export function MiniView({ onClose }) {
-  const t = useT();
-  const call = useCall();
-  const app = useApp();
-  return (
-    <div className="ax-shell" data-testid="premium-mini">
-      <Bar
-        kind="mini"
-        title={t("premium.win.mini")}
-        onClose={onClose}
-        extra={
-          <span className="ax-unread ax-nodrag" aria-live="polite">
-            {app.unread > 0 ? <span className="ax-pill" title={t("premium.win.unread", { n: app.unread })}>{app.unread > 99 ? "99+" : app.unread}</span> : null}
-          </span>
-        }
-      />
-      <div className="ax-body">
-        {call.active ? (
-          <>
-            <CallCard call={call} />
-            <CallControls call={call} />
-          </>
-        ) : (
-          <>
-            <div className="ax-empty">{t("premium.win.noCall")}</div>
-            <div className="ax-unread">{app.unread > 0 ? t("premium.win.unread", { n: app.unread }) : t("premium.win.allRead")}</div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
+
 
 /** The best live video of the call in the main document: largest painted, else largest stream. */
 export function pickCallVideo(doc = document) {

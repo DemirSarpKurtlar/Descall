@@ -19,7 +19,7 @@ export const PLAN_COIN = Object.freeze({ plus: 5000, ultra: 15000 });
 const f = (tier, desktop) => Object.freeze({ tier, desktop });
 
 export const FEATURES = Object.freeze({
-  mini_mode: f("plus", true),
+  mini_mode: f("plus", false),
   always_on_top: f("plus", true),
   pip_call: f("plus", true),
   multi_window: f("plus", true),

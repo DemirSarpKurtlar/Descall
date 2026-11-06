@@ -27,7 +27,7 @@ function snapshot() {
   if (!ctx || quitting && snapshot.done) return;
   const entries = ctx.windows.list();
   ctx.store.set('session.popouts', entries.filter((e) => e.kind === 'popout').map((e) => ({ route: e.meta.route, bounds: e.win.getBounds() })));
-  ctx.store.set('session.open', entries.filter((e) => e.kind === 'mini' || e.kind === 'sidebar').map((e) => e.kind));
+  ctx.store.set('session.open', entries.filter((e) => e.kind === 'sidebar').map((e) => e.kind));
 }
 
 function saveMain() {
@@ -68,7 +68,7 @@ function restore() {
   }
   if (opt('mini')) {
     for (const kind of ctx.store.get('session.open', []) || []) {
-      if (kind === 'mini' || kind === 'sidebar') ctx.send('premium:open', { kind });
+      if (kind === 'sidebar') ctx.send('premium:open', { kind });
     }
   }
   ctx.log.info('[premium] session restored');

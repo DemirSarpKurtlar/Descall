@@ -8,7 +8,7 @@
 const TIERS = Object.freeze(["plus", "ultra"]);
 
 const FEATURES = Object.freeze([
-  { key: "mini_mode", tier: "plus", desktop: true },
+  { key: "mini_mode", tier: "plus", desktop: false },
   { key: "always_on_top", tier: "plus", desktop: true },
   { key: "pip_call", tier: "plus", desktop: true },
   { key: "multi_window", tier: "plus", desktop: true },

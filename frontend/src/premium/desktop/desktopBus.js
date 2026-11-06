@@ -77,7 +77,7 @@ export function appAction(name, ...args) {
 
 // ---- portal windows ----------------------------------------------------------------------
 
-export const AUX_KINDS = Object.freeze(["mini", "call", "sidebar"]);
+export const AUX_KINDS = Object.freeze(["call", "sidebar"]);
 const openRequests = new Set();
 
 export function isAuxOpen(kind) {
@@ -106,5 +106,5 @@ export function onAuxRequest(fn) {
 
 /** True when a Descall+ window already shows the call, so the classic overlay card stays hidden. */
 export function auxCoversOverlay() {
-  return isAuxOpen("mini") || isAuxOpen("call");
+  return isAuxOpen("call");
 }

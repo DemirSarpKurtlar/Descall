@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 // Expose safe API to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -8,6 +8,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setLocale: (locale) => ipcRenderer.send('app:locale', String(locale || '').slice(0, 16)),
   // Clipboard image (PNG bytes) for Ctrl+V in the composer
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
+  // Page zoom (Ctrl + mouse wheel, src/lib/smoothZoom.js): this window's zoom factor.
+  zoom: {
+    get: () => webFrame.getZoomFactor(),
+    set: (factor) => {
+      const f = Number(factor);
+      if (Number.isFinite(f) && f >= 0.5 && f <= 2) webFrame.setZoomFactor(f);
+    },
+  },
   
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),

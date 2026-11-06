@@ -19,7 +19,8 @@ const edge = require("./features/screen_edge_actions.cjs");
 const multi = require("./features/multi_window.cjs");
 
 test("windowKit: frame names, fitting, snapping, docking, display mapping", () => {
-  assert.equal(kit.kindForFrame("descall-premium-mini"), "mini");
+  assert.equal(kit.kindForFrame("descall-premium-call"), "call");
+  assert.equal(kit.kindForFrame("descall-premium-mini"), null, "mini mode is the in-app call card now, not a window");
   assert.equal(kit.kindForFrame("descall-premium-evil"), null);
   assert.equal(kit.kindForFrame("_blank"), null);
   const primary = { x: 0, y: 0, width: 1920, height: 1040 };
@@ -34,18 +35,18 @@ test("windowKit: frame names, fitting, snapping, docking, display mapping", () =
   const mapped = kit.mapBetweenDisplays({ x: 2560, y: 500, width: 640, height: 400 }, second, primary);
   assert.deepEqual(mapped, { x: 960, y: 520, width: 960, height: 416 });
   assert.equal(kit.boundsKey("popout", "/direct/deniz"), "bounds.popout__direct_deniz");
-  assert.equal(kit.boundsKey("mini"), "bounds.mini");
+  assert.equal(kit.boundsKey("call"), "bounds.call");
 });
 
 test("windowKit: behaviour defaults without always_on_top / window_opacity", () => {
   const ctx = { gate: { has: () => false }, store: { get: (_p, d) => d } };
-  assert.equal(kit.onTopFor(ctx, "mini"), true);
+  assert.equal(kit.onTopFor(ctx, "call"), true);
   assert.equal(kit.onTopFor(ctx, "call"), true);
   assert.equal(kit.onTopFor(ctx, "main"), false);
-  assert.equal(kit.opacityFor(ctx, "mini"), 1);
-  const on = { gate: { has: () => true }, store: { get: (p, d) => ({ "features.always_on_top.main": true, "features.window_opacity.mini": 0.1 })[p] ?? d } };
+  assert.equal(kit.opacityFor(ctx, "call"), 1);
+  const on = { gate: { has: () => true }, store: { get: (p, d) => ({ "features.always_on_top.main": true, "features.window_opacity.call": 0.1 })[p] ?? d } };
   assert.equal(kit.onTopFor(on, "main"), true);
-  assert.equal(kit.opacityFor(on, "mini"), 0.3, "clamped to 30 %");
+  assert.equal(kit.opacityFor(on, "call"), 0.3, "clamped to 30 %");
   assert.equal(kit.opacityFor(on, "main"), 1, "the main window never fades");
 });
 

@@ -4,14 +4,16 @@
  * Shared helpers for the Descall+ window modules: portal window options, bounds memory,
  * multi-monitor fitting, always-on-top and opacity behaviour.
  *
- * Portal windows (mini, call, sidebar) are opened by the main renderer with
+ * Portal windows (call, sidebar) are opened by the main renderer with
  * window.open('about:blank', 'descall-premium-<kind>') and rendered by it (same process,
  * see src/premium/desktop/AuxWindow.jsx). Pop-outs are separate app windows on a route.
  * Pure geometry helpers take plain objects so premium.selftest.mjs can test them.
  */
 
 const FRAME_PREFIX = 'descall-premium-';
-const PORTAL_KINDS = Object.freeze(['mini', 'call', 'sidebar']);
+// Mini mode is no longer a window (it is the in-app floating call card); 'mini' sizes stay
+// only as the geometry reference for where the call window sits.
+const PORTAL_KINDS = Object.freeze(['call', 'sidebar']);
 
 /** Behaviour defaults when always_on_top / window_opacity are not active. */
 const DEFAULT_ON_TOP = Object.freeze({ main: false, mini: true, call: true, sidebar: true, popout: false });

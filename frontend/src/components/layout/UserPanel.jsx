@@ -62,7 +62,7 @@ import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
 import AdminBadge from "../social/AdminBadge";
-import PremiumBadge from "../../premium/PremiumBadge.jsx";
+import PremiumBadge, { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
 import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
@@ -2836,7 +2836,7 @@ const UserPanel = forwardRef(function UserPanel({
                         onClick={() => openTab(item.id)}
                       >
                         <span className={`s3-ico c-${color}`} aria-hidden="true">
-                          <S3Glyph name={icon} size={18} stroke={2.1} />
+                          {item.id === "premium" ? <PremiumGlyph plan="plus" mono size={18} /> : <S3Glyph name={icon} size={18} stroke={2.1} />}
                         </span>
                         <span className="lab">
                           <b>{item.label}</b>
@@ -2908,7 +2908,7 @@ const UserPanel = forwardRef(function UserPanel({
                       const [glyph, color] = S3_NAV_TILES[item.id] || [];
                       return glyph ? (
                         <span className="us-nav-ico" style={{ background: S3_TILE_HEX[color] || S3_TILE_HEX.gray, color: "#fff" }}>
-                          <S3Glyph name={glyph} size={18} stroke={2.1} />
+                          {item.id === "premium" ? <PremiumGlyph plan="plus" mono size={18} /> : <S3Glyph name={glyph} size={18} stroke={2.1} />}
                         </span>
                       ) : (
                         <span className="us-nav-ico">

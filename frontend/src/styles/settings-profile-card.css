@@ -76,12 +76,35 @@ html[data-theme="light"] .spc-avatar .ui-avatar-img { outline-color: rgba(0, 0, 
   background-clip: padding-box;
 }
 html.a11y-solid .spc-avatar .status-badge { border-color: var(--spc-fill); }
-.spc-badges { min-width: 0; margin-bottom: 6px; }
+/* The badge row takes the space right of the avatar and never wraps: a wrapped row grew
+   upwards over the banner as a tall grey box (country + special badge + "+"). When the
+   space is short the country chip shows only its flag. */
+.spc-badges {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  container-type: inline-size;
+}
 .spc-badges .bp-row {
+  flex-wrap: nowrap;
+  max-width: 100%;
   padding: 4px 8px;
   border-radius: 999px;
   background: var(--spc-chip);
   box-shadow: inset 0 0 0 0.5px var(--spc-edge);
+}
+.spc-badges .bp-row > * { flex: none; }
+.spc-badges .cosmetic-country-badge { min-width: 0; flex: 0 1 auto; }
+.spc-badges .cosmetic-country-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container (max-width: 210px) {
+  .spc-badges .cosmetic-country-name { display: none; }
+  .spc-badges .cosmetic-country-badge { flex: none; }
+}
+/* Very narrow (small windows): the special badge shows only its icon too. */
+@container (max-width: 170px) {
+  .spc-badges .sb-chip > span:last-child:not(:first-child) { display: none; }
 }
 .spc-badges .bp-row:empty { display: none; }
 .spc-id {

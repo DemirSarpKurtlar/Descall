@@ -2,9 +2,9 @@
 
 /**
  * Descall+ tray_controls_plus: tray menu entries for the call (mute, deafen, leave),
- * your status, and mini mode. Actions go to the main renderer as premium:action,
+ * and your status. Actions go to the main renderer as premium:action,
  * which runs the same handlers as the call UI. The menu is rebuilt only when the
- * call state, the status or the mini mode entitlement changes.
+ * call state or the status changes.
  */
 
 const { et } = require('../../mainI18n.cjs');
@@ -34,16 +34,13 @@ function items() {
     label: et('premium.tray.status'),
     submenu: STATUSES.map((s) => ({ label: et(`premium.tray.${s}`), type: 'radio', checked: s === status, click: act('status', s) })),
   });
-  if (ctx.gate.has('mini_mode')) {
-    out.push({ label: et('premium.tray.mini'), click: () => { ctx?.send('premium:open', { kind: 'mini' }); } });
-  }
   return out;
 }
 
 function maybeRefresh() {
   if (!ctx) return;
   const c = ctx.state.call || {};
-  const key = [c.active, c.title, c.muted, c.deafened, ctx.state.app?.status, ctx.gate.has('mini_mode')].join('|');
+  const key = [c.active, c.title, c.muted, c.deafened, ctx.state.app?.status].join('|');
   if (key === lastKey) return;
   lastKey = key;
   ctx.refreshTray();
