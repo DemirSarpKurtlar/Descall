@@ -25,6 +25,7 @@ const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
 const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
 const { pageExtrasHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/pageExtras.js")).href);
+const { mergedGuideHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/mergedGuides.js")).href);
 const { TR_LANDINGS, trLandingLabel } = await import(pathToFileURL(path.join(root, "src/site/seo/trLandings.js")).href);
 const { TR_BLOG_POSTS, TR_BLOG_BODIES, TR_BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href
@@ -119,9 +120,19 @@ function stripBootSplash(html) {
     .replace(/<div id="boot-splash"[\s\S]*?data-shown-at=""[\s\S]*?<\/script>\s*/i, "");
 }
 
+/**
+ * The native app's splash CSS (index.html, between the @native-splash markers) is only
+ * used by the app shell at "/": the native app never boots another file. Every other
+ * page sheds it (about 9 KB of inline CSS per page).
+ */
+function stripNativeSplashCss(html) {
+  return html.replace(/[ \t]*\/\* @native-splash-start[\s\S]*?\/\* @native-splash-end \*\/\n?/, "");
+}
+
 function crawlBody(route) {
   const body = crawlBodyInner(route);
-  const extra = pageExtrasHtml(route.path);
+  // Long-form extras, then the sections of a blog post merged into this page.
+  const extra = pageExtrasHtml(route.path) + mergedGuideHtml(route.path, siteText);
   if (!extra) return body;
   return body.includes('<footer class="seo-footer">')
     ? body.replace('<footer class="seo-footer">', `${extra}\n<footer class="seo-footer">`)
@@ -550,7 +561,7 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
   // Vercel rewrites authenticated deep links (/calls, /direct, …) to dist/index.html
   // (the "/" prerender). Stripping #boot-splash there caused 2–4s empty black screens
   // on hard nav. Keep splash on the SPA shell; strip only on niche marketing HTML.
-  let out = keepBootSplash ? html : stripBootSplash(html);
+  let out = keepBootSplash ? html : stripNativeSplashCss(stripBootSplash(html));
   out = stripStaleHeadSeo(out);
   out = out.replace(/<html\s+lang="[^"]*"/i, `<html lang="${lang}"`);
   out = out.replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`);

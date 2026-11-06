@@ -6,6 +6,7 @@ import MarketingLocaleProvider, { resolveBootMarketingLocale } from "./Marketing
 import CookieConsentBanner from "./CookieConsentBanner";
 import { isPrefixedLocale } from "./siteLocales.js";
 import { loadSiteCatalogWithin } from "./loadSiteCatalog.js";
+import { loadMarketingTr } from "./marketingTr.js";
 
 const MarketingBoot = lazy(() => import("./MarketingBoot.jsx"));
 
@@ -25,6 +26,8 @@ export async function hydrateMarketing() {
   await Promise.all([
     import("./marketing-entry.css"),
     isPrefixedLocale(bootLocale) ? loadSiteCatalogWithin(bootLocale) : null,
+    // Turkish phrases (with the 66 KB trGaps table) only for Turkish visitors.
+    bootLocale === "tr" ? loadMarketingTr().catch(() => null) : null,
   ]);
 
   const rootEl = document.getElementById("root");

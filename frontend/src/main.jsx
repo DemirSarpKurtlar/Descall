@@ -1,8 +1,6 @@
 import React, { Suspense, lazy } from "react";
 import { removeBootSplashNow, rootHasPainted } from "./lib/bootSplashDirect.js";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, HashRouter } from "react-router-dom";
-import ErrorBoundary from "./components/ErrorBoundary";
 import { isPublicMarketingPath } from "./site/marketingPaths";
 import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken, hydrateSecureToken } from "./lib/storage";
@@ -100,10 +98,6 @@ function preloadAppStyles() {
   import("./styles/coinflip.css").catch(() => {});
 }
 
-const Router =
-  typeof window !== "undefined" && window.location.protocol === "file:"
-    ? HashRouter
-    : BrowserRouter;
 
 try {
   /* Cheap first-paint theme (marketing pages and the boot splash). The full
@@ -209,17 +203,23 @@ async function bootApp() {
   // One parallel wave (was two sequential ones): providers, styles, i18n,
   // glass flags and the boot skeleton. App.jsx was already requested in
   // boot() (prefetchAppChunk), so it downloads/parses alongside.
+  // react-router and the ErrorBoundary load here, not in the entry chunk: the marketing
+  // first paint never needs them (hydrateMarketing brings its own router).
   const [
     { ToastProvider },
     { LocaleProvider },
     { default: IosPwaInstallBanner },
     { default: AppBootSkeleton },
+    { BrowserRouter, HashRouter },
+    { default: ErrorBoundary },
   ] =
     await Promise.all([
       import("./context/ToastContext"),
       import("./context/LocaleContext"),
       import("./components/IosPwaInstallBanner"),
       import("./components/boot/AppBootSkeleton.jsx"),
+      import("./lib/appRouter.js"),
+      import("./components/ErrorBoundary"),
       // Same cascade order as before: app styles, then the skeleton's.
       import("./styles.css").then(() => import("./styles/boot-skeleton.css")),
       import("./i18n/index.js").then((m) => m.loadI18nCatalogs()),
@@ -231,6 +231,7 @@ async function bootApp() {
       import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); }).catch(() => {}),
     ]);
 
+  const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
   const RootApp = isSignupStatsWindow
     ? lazy(() => import("./components/admin/signupStats/SignupStatsPage.jsx"))
     : isAdminPanelWindow

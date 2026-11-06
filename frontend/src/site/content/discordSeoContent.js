@@ -257,5 +257,6 @@ export const BLOG_RELATED = [
   { to: "/download", label: "Download Descall" },
   { to: "/faq", label: "FAQ" },
   { to: "/discord-replacement", label: "Discord replacement" },
+  { to: "/discord-alternative-for-friends", label: "For friend groups" },
   { to: "/status", label: "Status" },
 ];

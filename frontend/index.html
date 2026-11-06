@@ -528,6 +528,8 @@
         font-weight: 600;
         letter-spacing: -0.01em;
       }
+      /* @native-splash-start: the native app only ever boots this file (/), so
+         scripts/prerender-seo.mjs drops this block from every other page. */
       /* Native iOS/Android app, splash option A "Aurora" (design/ios-splash-glass-2026-10-19).
          First paint = the native launch screen pixel for pixel: the same baked
          background (/brand/splash-aurora-bg.jpg = LaunchAurora without the tile)
@@ -700,6 +702,7 @@
           animation: boot-glow-in 0.2s ease-out 0.3s forwards;
         }
       }
+      /* @native-splash-end */
       /* Static SEO shell, readable first paint before React hydrate (all niche pages). */
       #seo-static {
         --seo-bg: #0b0c10;

@@ -72,7 +72,6 @@ export default function SeoHead({ forceNoindex = false, title, description, path
   const canonical = absoluteUrl(canonicalPath === "/tr" ? "/tr" : canonicalPath);
   // Social crawlers prefer PNG; on-page can still preload webp.
   const ogImage = absoluteUrl(image || meta.image || DEFAULT_OG_IMAGE);
-  const ogImageWebp = absoluteUrl("/og-default.webp");
 
   useEffect(() => {
     document.title = pageTitle;
@@ -124,24 +123,12 @@ export default function SeoHead({ forceNoindex = false, title, description, path
     upsertMeta("property", "og:image:alt", `${SITE_NAME}, Discord alternative`);
     // Hint for clients that understand webp (not all social crawlers).
     upsertMeta("property", "og:image:secure_url", ogImage);
-    let preload = document.head.querySelector('link[rel="preload"][data-og-webp="1"]');
-    if (!preload) {
-      preload = document.createElement("link");
-      preload.rel = "preload";
-      preload.setAttribute("data-og-webp", "1");
-      document.head.appendChild(preload);
-    }
-    preload.setAttribute("as", "image");
-    preload.setAttribute("type", "image/webp");
-    preload.setAttribute("href", ogImageWebp);
-    preload.setAttribute("imagesrcset", `${ogImageWebp} 1200w`);
-    preload.setAttribute("imagesizes", "1200px");
 
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", pageTitle);
     upsertMeta("name", "twitter:description", pageDesc);
     upsertMeta("name", "twitter:image", ogImage);
-  }, [pageTitle, pageDesc, noindex, canonical, ogImage, ogImageWebp, meta.ogType, meta.keywords, rawPath, pageLocale]);
+  }, [pageTitle, pageDesc, noindex, canonical, ogImage, meta.ogType, meta.keywords, rawPath, pageLocale]);
 
   return null;
 }

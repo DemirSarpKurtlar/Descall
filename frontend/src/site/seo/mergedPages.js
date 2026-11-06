@@ -3,7 +3,7 @@
  * search intent, so the two URLs competed with each other. The weaker URL now answers
  * with a 301 to the page that was kept, in every site language, and is gone from the
  * routes, sitemaps and hreflang sets. The useful sections of each merged blog post live
- * on as long-form copy of the kept page (seo/pageExtras.js, MERGED_GUIDE_SECTIONS).
+ * on as long-form copy of the kept page (seo/mergedGuides.js).
  *
  * Keep the hosting rules in sync (selftest: src/site/pagesWorkerRoutes.selftest.mjs):
  * public/_redirects, public/_worker.js (PERMANENT_REDIRECTS), vercel.json, backend/server.js.

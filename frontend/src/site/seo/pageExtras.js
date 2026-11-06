@@ -12,8 +12,6 @@ import {
   withLocalePrefix,
 } from "../siteLocales.js";
 import { siteText } from "../siteText.js";
-import { BLOG_BODIES } from "./blogBodies.js";
-import { NICHE_LANDINGS } from "./nicheLandings.js";
 
 /** /<prefix> twin of a mirrored English link, other links unchanged. */
 function mirrorHref(to, loc) {
@@ -366,8 +364,6 @@ export const PAGE_EXTRAS = {
     ],
     links: [
       { to: "/discord-alternative-for-voice-chat", label: "Voice chat alternative" },
-      // Same link (and translated label) as the communities page's related list.
-      ...NICHE_LANDINGS["/discord-alternative-for-communities"].related.filter((l) => l.to === "/discord-alternative-for-friends"),
       { to: "/download", label: "Download for Windows" },
     ],
   },
@@ -489,27 +485,6 @@ export const PAGE_EXTRAS = {
     ],
   },
 };
-
-/**
- * Blog posts merged into a stronger page (seo/mergedPages.js, Nov 2026): their sections
- * continue the kept page's long-form copy, so no guidance was lost with the 301. Sections
- * that only repeated what the kept page already said were dropped from blogBodies.js.
- * Same English strings as the old posts, so the translations in src/site/i18n/<id>.js
- * still apply.
- */
-export const MERGED_GUIDE_SECTIONS = {
-  "/compare/discord": { slug: "discord-vs-descall" },
-  "/apps-like-discord": { slug: "apps-like-discord" },
-  "/discord-alternative-for-voice-chat": { slug: "voice-chat-alternative-to-discord" },
-  "/discord-alternative-for-communities": { slug: "discord-alternative-for-communities-guide" },
-  "/discord-replacement": { slug: "migrate-from-discord-to-descall" },
-};
-
-for (const [path, { slug }] of Object.entries(MERGED_GUIDE_SECTIONS)) {
-  const sections = BLOG_BODIES[slug].sections.map((s) => ({ h: s.h, p: [s.p] }));
-  const own = PAGE_EXTRAS[path];
-  PAGE_EXTRAS[path] = own ? { ...own, sections: [...own.sections, ...sections] } : { sections, links: [] };
-}
 
 function esc(s) {
   return String(s ?? "")
