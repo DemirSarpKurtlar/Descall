@@ -16,6 +16,7 @@ const { wrapFeature } = require('../compat.cjs');
  */
 
 const { BrowserWindow, session, app, safeStorage } = require('electron');
+const { readEncryptedFile, looksLikeJwt } = require('../../tokenCrypto.cjs');
 const hostHooks = require('../hostHooks.cjs');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -129,6 +130,7 @@ async function remove(id) {
   try { await sessionFor(id).clearStorageData(); } catch (_) { /* ignore */ }
   try { fs.rmSync(path.join(ctx.storeDir(), 'accounts', id), { recursive: true, force: true }); } catch (_) { /* ignore */ }
   sessions.delete(id);
+  usernames.delete(id);
   writeAccounts(list.filter((a) => a.id !== id));
   rebuildTray();
   return { ok: true };
@@ -138,6 +140,8 @@ function rebuildTray() {
   if (!ctx) return;
   if (!labels.menu) { ctx.setTrayItems([]); return; }
   const list = readAccounts();
+  // Names come from the cache; a background re-read rebuilds once more if one changed.
+  refreshUsernames().catch(() => {});
   const items = [
     { label: labels.main || 'Descall', click: () => { const w = ctx.getMainWindow(); if (w) { if (w.isMinimized()) w.restore(); w.show(); w.focus(); } } },
     ...list.map((a) => ({ label: labelFor(a) || labels.unnamed || a.id, click: () => open(a.id) })),
@@ -146,16 +150,37 @@ function rebuildTray() {
   ctx.setTrayItems([{ label: labels.menu, submenu: items }]);
 }
 
-/** Username claim of an account's stored JWT (display only, never trusted for auth). */
-function tokenUsername(id) {
+// Username claim of an account's stored JWT (display only, never trusted for auth).
+// Electron 45: safeStorage is async (tokenCrypto.cjs), so the names are decrypted in the
+// background into this cache; the tray, window titles and the list read the cache.
+const usernames = new Map();
+
+async function refreshUsername(id) {
+  let name = '';
   try {
-    const buf = fs.readFileSync(path.join(app.getPath('userData'), 'premium', 'accounts', id, 'auth-token.bin'));
-    const jwt = safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(buf) : buf.toString('utf8');
-    const payload = JSON.parse(Buffer.from(String(jwt).split('.')[1] || '', 'base64url').toString('utf8'));
-    return String(payload.username || '').slice(0, 40);
-  } catch (_) {
-    return '';
+    const file = path.join(app.getPath('userData'), 'premium', 'accounts', id, 'auth-token.bin');
+    if (fs.existsSync(file)) {
+      const jwt = await readEncryptedFile(safeStorage, fs, file, { legacyPlain: looksLikeJwt });
+      const payload = JSON.parse(Buffer.from(String(jwt).split('.')[1] || '', 'base64url').toString('utf8'));
+      name = String(payload.username || '').slice(0, 40);
+    }
+  } catch (_) { /* unreadable token: no name */ }
+  const changed = (usernames.get(id) || '') !== name;
+  usernames.set(id, name);
+  return changed;
+}
+
+/** Re-read every account's name; rebuilds the tray when one changed. */
+async function refreshUsernames() {
+  let changed = false;
+  for (const a of readAccounts()) {
+    if (await refreshUsername(a.id)) changed = true;
   }
+  if (changed) rebuildTray();
+}
+
+function tokenUsername(id) {
+  return usernames.get(id) || '';
 }
 
 function labelFor(a) {
@@ -179,7 +204,11 @@ module.exports = wrapFeature({
     for (const a of readAccounts()) sessionFor(a.id);
     hostHooks.set('tokenFileForSession', tokenFileForSession);
     hostHooks.set('isAccountWebContents', isAccountWebContents);
-    ctx.handle('premium:multi_account:list', () => ({ ok: true, accounts: listPublic(), max: MAX_EXTRA }));
+    refreshUsernames().catch(() => {});
+    ctx.handle('premium:multi_account:list', async () => {
+      await refreshUsernames().catch(() => {});
+      return { ok: true, accounts: listPublic(), max: MAX_EXTRA };
+    });
     ctx.handle('premium:multi_account:add', () => add());
     ctx.handle('premium:multi_account:open', (_e, id) => open(String(id || '')));
     ctx.handle('premium:multi_account:remove', (_e, id) => remove(String(id || '')));
