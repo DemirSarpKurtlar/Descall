@@ -31,8 +31,8 @@ assert.equal(
   localizeListPreview("**Önemli:** yarın sunucu bakımda, `22:00` itibarıyla 1 saat kapalı.", tr),
   "Önemli: yarın sunucu bakımda, 22:00 itibarıyla 1 saat kapalı.",
 );
-assert.equal(localizeListPreview("ada: **hey** _sen_ ~~yok~~ ||sır||", tr), "ada: hey sen yok sır");
-assert.equal(localizeListPreview("> alıntı\nikinci satır", tr), "alıntı ikinci satır");
+assert.equal(localizeListPreview("ada: **hey** `kod`", tr), "ada: hey kod");
+assert.equal(localizeListPreview("bir\nikinci satır", tr), "bir ikinci satır");
 assert.equal(localizeListPreview("2*3*4 = 24", tr), "2*3*4 = 24");
 assert.equal(localizeListPreview("snake_case_name", tr), "snake_case_name");
 

@@ -1,4 +1,5 @@
 import { localizeMemberEventPreview } from "./groupMemberEvents.js";
+import { plainText } from "./messageMarkdown.js";
 
 /** English system previews the API stores on DM and group rows. */
 const LIST_PREVIEW_KEYS = ["📞 Call", "📷 Photo", "🎤 Voice message", "📎 Attachment"];
@@ -10,23 +11,14 @@ function localizePreviewBody(body, t) {
 
 /**
  * A one-line preview shows the words, not the formatting (UI audit #96):
- * "**Önemli:** yarın `22:00`" -> "Önemli: yarın 22:00". Covers the composer's
- * markdown (bold, italic, underline, strike, spoiler, inline/fenced code,
- * quotes, headings, list bullets) and keeps everything else as typed.
+ * "**Önemli:** yarın `22:00`" -> "Önemli: yarın 22:00". Uses the same parser
+ * as the message renderer (lib/messageMarkdown.js), so the preview strips
+ * exactly the syntax a sent message would format, then folds lines.
  */
 export function stripPreviewMarkdown(text) {
-  let s = String(text ?? "");
+  const s = String(text ?? "");
   if (!s) return s;
-  s = s.replace(/```[a-z0-9_+-]*\n?([\s\S]*?)```/gi, "$1");
-  s = s.replace(/`([^`\n]+)`/g, "$1");
-  s = s.replace(/\|\|([\s\S]+?)\|\|/g, "$1");
-  s = s.replace(/\*\*([^*\n]+)\*\*/g, "$1");
-  s = s.replace(/__([^_\n]+)__/g, "$1");
-  s = s.replace(/~~([^~\n]+)~~/g, "$1");
-  s = s.replace(/(^|[\s(])\*([^*\s][^*\n]*?)\*(?=[\s).,!?:;]|$)/g, "$1$2");
-  s = s.replace(/(^|[\s(])_([^_\s][^_\n]*?)_(?=[\s).,!?:;]|$)/g, "$1$2");
-  s = s.replace(/^\s{0,3}(?:>+|#{1,6}|[-*+])\s+/gm, "");
-  return s.replace(/\s*\n+\s*/g, " ").trim();
+  return plainText(s).replace(/\s*\n+\s*/g, " ").trim();
 }
 
 /**
