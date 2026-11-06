@@ -341,6 +341,71 @@ async function runDevice(browser, base, dev) {
       const after = await rowPreview(page, 'Ayşe');
       check(!/Taslak/.test(after || ''), `sending clears the draft (${after})`);
     }
+    // --- forwarding ---
+    if (want('forward')) {
+      await openChat(page, 'Ayşe');
+      const target = [...state.ayse].reverse().find((m) => m.from.id === AYSE.id && m.text === 'Mert ve Zeynep de gelecek.') || [...state.ayse].reverse().find((m) => m.from.id === AYSE.id);
+      const box = await page.evaluate((id) => {
+        const b = [...document.querySelectorAll('.message-bubble[data-message-id]')].reverse().find((n) => n.getAttribute('data-message-id') === id);
+        if (!b) return null;
+        b.scrollIntoView({ block: 'center' });
+        const r = b.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }, target.id);
+      if (!box) throw new Error('forward: bubble not found');
+      await sleep(300);
+      if (dev === 'desktop') {
+        await page.mouse.move(box.x, box.y);
+        await sleep(350);
+        await page.click('.message-hover-bar [aria-label="Diğer"], .message-hover-bar [aria-haspopup="menu"]');
+        await sleep(250);
+      } else {
+        const cdp = await ctx.newCDPSession(page);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x, y: box.y, id: 1 }] });
+        await sleep(650);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await sleep(600);
+      }
+      const item = await waitFor(page, 'İlet item', () => {
+        const b = document.querySelector('[data-testid="menu-forward"]');
+        return { ok: !!b && b.getBoundingClientRect().width > 0, text: b && b.textContent };
+      }, null, 4000).catch(() => ({ ok: false }));
+      check(item.ok && /İlet/.test(item.text || ''), `the message menu offers "İlet" (${item.text})`);
+      await shot(page, `${P}04-forward-menu`);
+      await page.click('[data-testid="menu-forward"]');
+      await waitFor(page, 'forward sheet', () => ({ ok: !!document.querySelector('[data-testid="forward-sheet"] [data-testid="forward-row"]') }), null, 5000);
+      await sleep(500);
+      const pick = (name) => page.evaluate((name) => {
+        const r = [...document.querySelectorAll('[data-testid="forward-row"]')].find((x) => x.textContent.includes(name));
+        if (r) r.click();
+        return !!r;
+      }, name);
+      check(await pick('Mert'), 'Mert is a target');
+      check(await pick('Hafta Sonu Ekibi'), 'the group is a target');
+      await page.fill('[data-testid="forward-sheet"] .gs-field input', 'Buna bak');
+      await sleep(250);
+      await shot(page, `${P}05-forward-sheet`);
+      const label = await page.evaluate(() => document.querySelector('[data-testid="forward-send"]').textContent.trim());
+      check(/2 sohbete gönder/.test(label), `send button counts the targets (${label})`);
+      const before = state.events.length;
+      await page.click('[data-testid="forward-send"]');
+      await sleep(1600);
+      const sent = state.events.slice(before);
+      const dmFwd = sent.find((e) => e.kind === 'dm:send' && e.toUserId === MERT.id && e.forwarded === true);
+      const grFwd = sent.find((e) => e.kind === 'group:message' && e.groupId === GROUP_ID && e.forwarded === true);
+      check(dmFwd && dmFwd.text === target.text && !dmFwd.replyTo, 'Mert gets dm:send { forwarded: true } with the original text, no quote');
+      check(grFwd && grFwd.content === target.text, 'the group gets group:message { forwarded: true }');
+      check(sent.some((e) => e.kind === 'dm:send' && e.toUserId === MERT.id && e.text === 'Buna bak' && !e.forwarded), 'the note follows as a normal message');
+      check(await page.evaluate(() => !document.querySelector('[data-testid="forward-sheet"]')), 'the sheet closes after sending');
+      await openChat(page, 'Mert');
+      const fl = await waitFor(page, 'İletildi label', () => {
+        const el = document.querySelector('[data-testid="message-forwarded"]');
+        const b = el && el.closest('.message-bubble');
+        return { ok: !!el, text: el && el.textContent, quote: !!(b && b.querySelector('.message-reply-quote')) };
+      }, null, 5000).catch(() => ({ ok: false }));
+      check(fl.ok && /İletildi/.test(fl.text) && !fl.quote, `the forwarded copy shows "İletildi" and no quote (${fl.text})`);
+      await shot(page, `${P}06-forwarded`);
+    }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});
     problems.push(`${dev}: ${err && err.message ? err.message : err}`);

@@ -9,4 +9,18 @@ export const MSG4_FR = {
     jump: "Aller aux non lus",
     dismiss: "Ignorer",
   },
+  forward: {
+    action: "Transférer",
+    label: "Transféré",
+    title: "Transférer",
+    search: "Rechercher des personnes, groupes ou salons",
+    people: "Personnes",
+    groups: "Groupes",
+    channels: "Salons de ce serveur",
+    note: "Ajouter une note (facultatif)",
+    limit: "Tu peux transférer jusqu'à {max} discussions.",
+    send: "Envoyer",
+    sendCount: "{count, plural, one {Envoyer à # discussion} other {Envoyer à # discussions}}",
+    done: "{count, plural, one {Transféré à # discussion} other {Transféré à # discussions}}",
+  },
 };

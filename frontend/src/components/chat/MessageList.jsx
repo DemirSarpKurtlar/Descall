@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown, ChevronUp } from "../ui/Icon.jsx";
 import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
+import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
+import ForwardGlyph from "./ForwardGlyph.jsx";
 import { Avatar } from "../ui/Avatar";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
@@ -1073,7 +1075,12 @@ function MessageBubble({
     () => applyPending(serverReactions, pendingMine, currentUserId, message?.id ?? null),
     [serverReactions, pendingMine, currentUserId, message?.id],
   );
-  const reply = message.replyTo || message.reply_to || null;
+  // A forward carries { forwarded: true } in reply_to (messaging phase 4): a label, never a quote.
+  const rawReply = message.replyTo || message.reply_to || null;
+  const forwarded = isForwardedMeta(rawReply);
+  const reply = forwarded ? null : rawReply;
+  const forwardable = canForward(message);
+  const forwardMessage = useCallback(() => openForwardSheet(message), [message]);
   const isPinned = Boolean(message.pinnedAt);
   const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
 
@@ -1655,6 +1662,12 @@ function MessageBubble({
           }
         }}
       >
+        {forwarded && (
+          <div className="message-forwarded" data-testid="message-forwarded">
+            <ForwardGlyph size={13} strokeWidth={2.2} />
+            <span>{t("msg4.forward.label")}</span>
+          </div>
+        )}
         {reply && (
           <button
             type="button"
@@ -2057,6 +2070,11 @@ function MessageBubble({
                         <Copy size={16} />{t("Copy")}
                       </button>
                     ) : null}
+                    {forwardable ? (
+                      <button type="button" role="menuitem" className="mhb-mi" data-testid="menu-forward" onClick={() => { setMoreOpen(false); setMenuOpen(false); forwardMessage(); }}>
+                        <ForwardGlyph size={16} />{t("msg4.forward.action")}
+                      </button>
+                    ) : null}
                     {!isOwn && (
                       <button
                         type="button"
@@ -2110,6 +2128,7 @@ function MessageBubble({
             onMore={() => { setMenuOpen(false); setPickerOpen(false); setEmojiSheetOpen(true); }}
             onReply={triggerReply}
             onCopy={message.text ? copyText : null}
+            onForward={forwardable ? forwardMessage : null}
             canPin={canPin}
             isPinned={isPinned}
             onPin={togglePin}
@@ -2172,7 +2191,7 @@ function prefersReducedMotionNow() {
  */
 function GlassMessageMenu({
   bubbleRef, isOwn, onClose, quick, onReact, onMore,
-  onReply, onCopy, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
+  onReply, onCopy, onForward, canPin, isPinned, onPin, canEdit, onEdit, canDelete, onDelete, canReport, onReport, t,
 }) {
   const [closing, setClosing] = useState(false);
   // #06 lens: the emoji under the finger grows inside a clear glass lens;
@@ -2239,7 +2258,7 @@ function GlassMessageMenu({
   useEffect(() => () => clearTimeout(closeRef.current.timer), []);
 
   if (!lift || typeof document === "undefined") return null;
-  const menuRows = 1 + (onCopy ? 1 : 0) + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
+  const menuRows = 1 + (onCopy ? 1 : 0) + (onForward ? 1 : 0) + (canPin ? 1 : 0) + (canEdit ? 1 : 0) + (canDelete ? 1 : 0) + (canReport ? 1 : 0);
   // Visible area: with the keyboard up the visual viewport is shorter than
   // the layout viewport, so clamp the bar and menu to what the user sees.
   const vv = window.visualViewport;
@@ -2368,6 +2387,9 @@ function GlassMessageMenu({
             <button type="button" className="g-mi" {...act(onReply)}><Reply size={19} />{t("Reply")}</button>
             {onCopy && (
               <button type="button" className="g-mi" {...act(onCopy)}><Copy size={19} />{t("Copy")}</button>
+            )}
+            {onForward && (
+              <button type="button" className="g-mi" data-testid="menu-forward" {...act(() => { beginClose(); onForward(); })}><ForwardGlyph size={19} />{t("msg4.forward.action")}</button>
             )}
             {canPin && (
               <button type="button" className="g-mi" {...act(onPin)}>

@@ -182,6 +182,7 @@ import CallTapCard from "./components/voice/CallTapCard";
 import { isCallTap, resolveCallTap } from "./lib/callTap";
 import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
+import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -5922,6 +5923,14 @@ export default function App() {
           </Suspense>
         ) : null}
         <GlassConfirmHost />
+        {me?.id ? (
+          <ChatSheetsHost
+            getSocket={() => socketRef.current}
+            friends={friends}
+            groups={sortedGroups}
+            activeServer={activeView === "servers" ? activeServer : null}
+          />
+        ) : null}
         {IOS_NATIVE && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />

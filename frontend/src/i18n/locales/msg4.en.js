@@ -9,4 +9,18 @@ export const MSG4_EN = {
     jump: "Jump to unread",
     dismiss: "Dismiss",
   },
+  forward: {
+    action: "Forward",
+    label: "Forwarded",
+    title: "Forward",
+    search: "Search people, groups or channels",
+    people: "People",
+    groups: "Groups",
+    channels: "Channels in this server",
+    note: "Add a note (optional)",
+    limit: "You can forward to up to {max} chats.",
+    send: "Send",
+    sendCount: "{count, plural, one {Send to # chat} other {Send to # chats}}",
+    done: "{count, plural, one {Forwarded to # chat} other {Forwarded to # chats}}",
+  },
 };

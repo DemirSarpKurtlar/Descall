@@ -1,5 +1,6 @@
 "use strict";
 
+const { forwardedReplyMeta } = require("../lib/forwardedMessage");
 const { checkMessageSend } = require("../lib/platformPolicy");
 const { fanoutDmMessage } = require("../lib/messageFanout");
 const supabase = require("../db/supabase");
@@ -1176,7 +1177,7 @@ function registerSocketHandlers(io) {
       }
     });
 
-    socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, poll: pollInput } = {}) => {
+    socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, forwarded, poll: pollInput } = {}) => {
       let pollDraft = null;
       if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") mediaType = null;
       if (bannedUserIds.has(myId)) {
@@ -1291,14 +1292,15 @@ function registerSocketHandlers(io) {
       socket.data.activeDmPeer = toUserId;
       await ensureCosmeticsCached([myId]).catch(() => {});
       const sender = messageSender(myId, me.username, me.avatar_url || socket.user?.avatar_url);
-      const replyMeta = replyTo && typeof replyTo === "object"
+      // Messaging phase 4: a forward carries { forwarded: true } in reply_to and never quotes.
+      const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
         ? {
             id: replyTo.id || null,
             text: replyTo.text || "",
             mediaType: replyTo.mediaType || null,
             from: replyTo.from || null,
           }
-        : null;
+        : null);
       const isVoice = mediaType === "voice" || mediaType === "audio";
       const voiceDuration = isVoice ? Math.max(0, Math.round(Number(duration) || 0)) : null;
       const storedText = isVoice

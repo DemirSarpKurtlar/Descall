@@ -1,3 +1,4 @@
+const { isMissingColumn } = require("../lib/forwardedMessage");
 const express = require("express");
 const { validateGroupAvatarUrl, canEditGroupAvatar } = require("../lib/groupAvatar");
 const { normalizeGroupName, canRenameGroup } = require("../lib/groupRename");
@@ -461,6 +462,23 @@ router.delete("/:groupId/invite-links/:code", requireAuth, async (req, res) => {
 });
 
 // Get group messages
+// Reply quotes and the forward mark (messaging phase 4) live in group_messages.reply_to,
+// added by supabase/migrations/20261108_group_messages_reply_to.sql. History reads it in a
+// second query so a database without the column still serves messages.
+let groupReplyColumn = true;
+async function withGroupReplyMeta(rows) {
+  if (!groupReplyColumn || !Array.isArray(rows) || !rows.length) return rows;
+  const ids = rows.map((r) => r.id).filter(Boolean);
+  if (!ids.length) return rows;
+  const { data, error } = await supabase.from("group_messages").select("id, reply_to").in("id", ids);
+  if (error) {
+    if (isMissingColumn(error, "reply_to")) groupReplyColumn = false;
+    return rows;
+  }
+  const byId = new Map((data || []).filter((r) => r.reply_to).map((r) => [r.id, r.reply_to]));
+  return byId.size ? rows.map((r) => (byId.has(r.id) ? { ...r, reply_to: byId.get(r.id) } : r)) : rows;
+}
+
 const GROUP_MESSAGE_COLUMNS = `
   id, group_id, sender_id, content, media_url, media_type, created_at, updated_at,
   edited_at, edited_by, is_edited, message_type, original_name, file_size, pinned_at, pinned_by,
@@ -532,6 +550,7 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
       messages = data;
     }
 
+    messages = await withGroupReplyMeta(messages);
     const senderIds = [...new Set((messages || []).map((m) => m.sender_id || m.sender?.id).filter(Boolean))];
     try {
       const { ensureCosmeticsCached, getCachedPublicUser, cacheUserProfile } = require("../lib/userProfile");

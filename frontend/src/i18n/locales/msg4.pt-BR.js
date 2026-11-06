@@ -9,4 +9,18 @@ export const MSG4_PT_BR = {
     jump: "Ir para não lidas",
     dismiss: "Dispensar",
   },
+  forward: {
+    action: "Encaminhar",
+    label: "Encaminhada",
+    title: "Encaminhar",
+    search: "Buscar pessoas, grupos ou canais",
+    people: "Pessoas",
+    groups: "Grupos",
+    channels: "Canais deste servidor",
+    note: "Adicionar uma nota (opcional)",
+    limit: "Você pode encaminhar para até {max} conversas.",
+    send: "Enviar",
+    sendCount: "{count, plural, one {Enviar para # conversa} other {Enviar para # conversas}}",
+    done: "{count, plural, one {Encaminhada para # conversa} other {Encaminhada para # conversas}}",
+  },
 };

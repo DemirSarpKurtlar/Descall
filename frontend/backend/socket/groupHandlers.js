@@ -3,6 +3,7 @@
  * Simple, reliable, works with 2-15 people
  */
 
+const { forwardedReplyMeta, isMissingColumn } = require("../lib/forwardedMessage");
 const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById, systemConfig } = require("../runtime/sharedState");
 const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
@@ -202,7 +203,7 @@ function registerGroupHandlers(io, socket, state) {
   });
 
   // Group message — persist to DB then broadcast
-  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, poll: pollInput } = {}) => {
+  socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput } = {}) => {
     // Poll from the creation sheet: validated here, stored as a poll_v2 row + polls tables.
     let pollDraft = null;
     if (pollInput) {
@@ -324,18 +325,32 @@ function registerGroupHandlers(io, socket, state) {
       }
     }
 
-    const { data: row, error } = await supabase
+    // Reply quote / forward mark (messaging phase 4): stored in reply_to so history keeps it.
+    const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
+      ? {
+          id: replyTo.id || null,
+          text: replyTo.text || "",
+          mediaType: replyTo.mediaType || null,
+          from: replyTo.from || null,
+        }
+      : null);
+    const baseRow = {
+      group_id: groupId,
+      sender_id: myId,
+      content: trimmedContent,
+      media_url: mediaUrl || null,
+      media_type: isVoice ? "voice" : (mediaType || null),
+      message_type: "text",
+    };
+    let { data: row, error } = await supabase
       .from("group_messages")
-      .insert({
-        group_id: groupId,
-        sender_id: myId,
-        content: trimmedContent,
-        media_url: mediaUrl || null,
-        media_type: isVoice ? "voice" : (mediaType || null),
-        message_type: "text",
-      })
+      .insert(replyMeta ? { ...baseRow, reply_to: replyMeta } : baseRow)
       .select("id, created_at")
       .single();
+    if (error && replyMeta && isMissingColumn(error, "reply_to")) {
+      // group_messages.reply_to not migrated yet (20261108): send without it, the live echo still carries it.
+      ({ data: row, error } = await supabase.from("group_messages").insert(baseRow).select("id, created_at").single());
+    }
 
     if (error) {
       console.error("[GroupMessage] DB insert error:", error.message);
@@ -372,15 +387,6 @@ function registerGroupHandlers(io, socket, state) {
         })
         .catch((err) => console.warn("[DesCoin] group message credit failed:", err?.message || err));
     }
-
-    const replyMeta = replyTo && typeof replyTo === "object"
-      ? {
-          id: replyTo.id || null,
-          text: replyTo.text || "",
-          mediaType: replyTo.mediaType || null,
-          from: replyTo.from || null,
-        }
-      : null;
 
     await ensureCosmeticsCached([myId]).catch(() => {});
 

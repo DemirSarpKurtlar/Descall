@@ -9,4 +9,18 @@ export const MSG4_TR = {
     jump: "Okunmamışa git",
     dismiss: "Kapat",
   },
+  forward: {
+    action: "İlet",
+    label: "İletildi",
+    title: "İlet",
+    search: "Kişi, grup veya kanal ara",
+    people: "Kişiler",
+    groups: "Gruplar",
+    channels: "Bu sunucudaki kanallar",
+    note: "Not ekle (isteğe bağlı)",
+    limit: "En fazla {max} sohbete iletebilirsin.",
+    send: "Gönder",
+    sendCount: "{count} sohbete gönder",
+    done: "{count} sohbete iletildi",
+  },
 };

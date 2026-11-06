@@ -9,4 +9,18 @@ export const MSG4_DE = {
     jump: "Zu Ungelesenem",
     dismiss: "Ausblenden",
   },
+  forward: {
+    action: "Weiterleiten",
+    label: "Weitergeleitet",
+    title: "Weiterleiten",
+    search: "Personen, Gruppen oder Kanäle suchen",
+    people: "Personen",
+    groups: "Gruppen",
+    channels: "Kanäle auf diesem Server",
+    note: "Notiz hinzufügen (optional)",
+    limit: "Du kannst an bis zu {max} Chats weiterleiten.",
+    send: "Senden",
+    sendCount: "{count, plural, one {An # Chat senden} other {An # Chats senden}}",
+    done: "{count, plural, one {An # Chat weitergeleitet} other {An # Chats weitergeleitet}}",
+  },
 };

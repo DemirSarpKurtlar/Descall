@@ -85,3 +85,19 @@ html[data-theme="light"] .msg-unread-dock .msg-unread-pill.msg-unread-pill {
   border-color: rgba(0, 0, 0, 0.08);
 }
 html[data-theme="light"] .msg-unread-go { border-left-color: rgba(0, 0, 0, 0.12); }
+
+/* Forwarded: a small "İletildi" line above the message (never a quote). */
+.message-forwarded {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  font-size: var(--fs-12);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.message-forwarded svg { flex: 0 0 auto; }
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .message-forwarded {
+  color: rgba(255, 255, 255, 0.82);
+}
