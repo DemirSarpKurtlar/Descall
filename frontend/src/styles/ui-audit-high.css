@@ -185,3 +185,39 @@ html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .g-invite-
 :root[data-theme="light"] .shop-redeem-btn:focus-visible {
   outline-color: #3D5BD9;
 }
+
+
+/* #100 Badges: the check mark of the selected mode card overlapped the title
+   (all themes), and in the light theme the empty-state copy, 'Kod kullan' and
+   the preview card kept dark-theme ink (white on white / white on grey). */
+.bs-mode .us-theme-card {
+  padding-right: 38px;
+}
+.bs-mode .us-theme-check {
+  top: 12px;
+  right: 12px;
+}
+html[data-theme="light"] .bp-empty h3 {
+  color: #1B1D26;
+}
+html[data-theme="light"] .bp-empty p {
+  color: rgba(57, 60, 77, 0.72);
+}
+html[data-theme="light"] .bp-btn.is-ghost {
+  background: #E9EDFB;
+  box-shadow: none;
+  color: #3D5BD9;
+}
+html[data-theme="light"] .bs-preview {
+  background: #F2F4FA;
+  box-shadow: inset 0 0 0 0.5px rgba(57, 60, 77, 0.14);
+}
+html[data-theme="light"] .bs-preview-line b {
+  color: #1B1D26;
+}
+html[data-theme="light"] .bs-preview-line time {
+  color: rgba(57, 60, 77, 0.55);
+}
+html[data-theme="light"] .bs-preview-body p {
+  color: rgba(57, 60, 77, 0.82);
+}
