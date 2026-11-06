@@ -420,6 +420,7 @@ export default function UserVoicePanel({
       <CallDeviceMenu
         open={menu === "in"}
         anchorRef={micRef}
+        alignRef={panelRef}
         title={t("Choose microphone")}
         groups={inputMenuGroups(deviceHook, t)}
         onClose={closeMenu}
@@ -428,6 +429,7 @@ export default function UserVoicePanel({
       <CallDeviceMenu
         open={menu === "out"}
         anchorRef={outRef}
+        alignRef={panelRef}
         title={t("Choose speaker")}
         groups={outputMenuGroups(deviceHook, t)}
         onClose={closeMenu}
