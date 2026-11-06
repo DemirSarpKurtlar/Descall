@@ -9451,6 +9451,7 @@ export const phrases = {
   "Share a window or browser tab in calls": "Partage une fenêtre ou un onglet du navigateur pendant les appels",
   "Share games, VODs, or docs with quality presets tuned for smooth capture while you play.": "Partage des jeux, des VOD ou des documents avec des préréglages de qualité pensés pour une capture fluide pendant que tu joues.",
   "Share grid": "Grille",
+  "Share product analytics": "Partager les statistiques produit",
   "Share with these settings": "Partager avec ces paramètres",
   "Share your entire screen so switching apps keeps the broadcast alive.": "Partage ton écran entier pour que la diffusion continue quand tu changes d'application.",
   "Share your idea or suggestion…": "Partage ton idée ou ta suggestion…",

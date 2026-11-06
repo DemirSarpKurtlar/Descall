@@ -186,32 +186,17 @@ function PrivacySettingsSection() {
                 <Lock size={16} />
               </span>
               <div className="us-row-copy">
-                <span className="us-row-title">{t("Product analytics")}</span>
+                <span className="us-row-title">{t("Share product analytics")}</span>
                 <span className="us-row-desc">{status}</span>
               </div>
             </div>
-          </div>
-          <div className="g-privacy-actions">
-            <button
-              type="button"
-              className={`us-btn ghost${choice === "rejected" ? " is-on" : ""}`}
-              disabled={under16}
-              aria-pressed={choice === "rejected"}
-              onClick={() => apply("rejected")}
-            >
-              {choice === "rejected" ? <Check size={15} /> : null}
-              {t("Reject")}
-            </button>
-            <button
-              type="button"
-              className={`us-btn primary${choice === "accepted" ? " is-on" : ""}`}
-              disabled={under16}
-              aria-pressed={choice === "accepted"}
-              onClick={() => apply("accepted")}
-            >
-              {choice === "accepted" ? <Check size={15} /> : null}
-              {t("Accept")}
-            </button>
+            {under16 ? null : (
+              <Toggle
+                value={choice === "accepted"}
+                onChange={(on) => apply(on ? "accepted" : "rejected")}
+                label={t("Share product analytics")}
+              />
+            )}
           </div>
         </div>
       </section>
@@ -220,7 +205,7 @@ function PrivacySettingsSection() {
         <DataExportCard />
       </section>
       <section className="us-section">
-        <h4 className="us-section-label">{t("settings.privacy")}</h4>
+        <h4 className="us-section-label">{t("Legal")}</h4>
         <div className="us-card stack">
           <button type="button" className="us-row g-privacy-link" onClick={() => setLegal("privacy")}>
             <span className="us-row-text">

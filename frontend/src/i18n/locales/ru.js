@@ -9451,6 +9451,7 @@ export const phrases = {
   "Share a window or browser tab in calls": "Показывайте окно или вкладку браузера в звонках",
   "Share games, VODs, or docs with quality presets tuned for smooth capture while you play.": "Показывайте игры, записи или документы с пресетами качества для плавного захвата прямо во время игры.",
   "Share grid": "Сетка",
+  "Share product analytics": "Делиться аналитикой продукта",
   "Share with these settings": "Показать с этими настройками",
   "Share your entire screen so switching apps keeps the broadcast alive.": "Показывайте весь экран, чтобы трансляция не прерывалась при переключении приложений.",
   "Share your idea or suggestion…": "Поделитесь идеей или предложением…",
