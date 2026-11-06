@@ -10,7 +10,7 @@ export function Panel({ settings, update }) {
   return (
     <>
       <div className="pp-actions">
-        <button type="button" className="us-btn" data-testid="premium-open-mini" onClick={() => requestAux("mini", true)}>{t("premium.panel.openMini")}</button>
+        <button type="button" className="us-btn ghost" data-testid="premium-open-mini" onClick={() => requestAux("mini", true)}>{t("premium.panel.openMini")}</button>
       </div>
       <ToggleRow label={t("premium.panel.miniAuto")} checked={settings.autoOnMinimize === true} onChange={(v) => update({ autoOnMinimize: v })} />
     </>

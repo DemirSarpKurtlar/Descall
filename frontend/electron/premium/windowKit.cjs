@@ -239,6 +239,23 @@ function setupPortal(ctx, win, kind, featureKey) {
   applyBehaviour(ctx, win, kind);
   if (kind !== 'sidebar') rememberBounds(ctx, win, boundsKey(kind));
   try { win.setVisibleOnAllWorkspaces(kind !== 'call', { visibleOnFullScreen: true }); } catch (_) { /* ignore */ }
+  // The main renderer draws this window: if it reloads or crashes, the window is orphaned.
+  const main = ctx.mainWindow();
+  if (main) {
+    const wc = main.webContents;
+    const close = () => { try { if (!win.isDestroyed()) win.close(); } catch (_) { /* gone */ } };
+    // Router pushState is a same-document navigation and keeps the window.
+    const onNav = (e, _url, inPlace, isMainFrame) => {
+      const sameDoc = e && typeof e.isSameDocument === 'boolean' ? e.isSameDocument : Boolean(inPlace);
+      const mainFrame = e && typeof e.isMainFrame === 'boolean' ? e.isMainFrame : isMainFrame !== false;
+      if (!sameDoc && mainFrame) close();
+    };
+    wc.on('did-start-navigation', onNav);
+    wc.on('render-process-gone', close);
+    win.once('closed', () => {
+      try { wc.removeListener('did-start-navigation', onNav); wc.removeListener('render-process-gone', close); } catch (_) { /* gone */ }
+    });
+  }
 }
 
 /** Close every tracked window of a kind. */

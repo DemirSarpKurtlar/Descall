@@ -153,6 +153,8 @@ html.descall-popout .app-main-slot { grid-column: 1 / -1; width: 100%; max-width
 .pp-plan li svg { flex: none; margin-top: 2px; color: #3ccf84; }
 .pp-current { font-size: 11px; font-weight: 700; color: #a9a4ff; letter-spacing: 0.03em; }
 .pp-more { align-self: flex-start; border: 0; background: none; color: #a9a4ff; font: inherit; font-size: 12.5px; cursor: pointer; padding: 0; }
+.pp-plan-name .dsc-premium-badge--inline,
+.pp-hero-title .dsc-premium-badge--inline { margin-left: 0; transform: none; }
 @media (max-width: 720px) {
   .pp-compare { grid-template-columns: 1fr; }
   .pp-feat-panel { padding-left: 14px; }

@@ -224,8 +224,39 @@ async function run(win) {
   await sleep(400);
   await shot(win, 'settings-premium-compare.png');
   log('settings ok', JSON.stringify({ feats: tab.feats, ends: tab.ends }));
+  expect(premium.windows.list('mini').length === 1, 'a router navigation must not close the mini window');
 
-  // 5. Plan revoked on the server: main's next check closes the windows.
+  // 5. Upgrade to Ultra: reload the app (orphaned portal windows close), sidebar + layouts.
+  S.plan = 'ultra';
+  win.webContents.reload();
+  await until('portal windows closed on reload', () => premium.windows.list('mini').length === 0 && premium.windows.list('call').length === 0, 8000);
+  await until('app repainted', () => js(win, PAINTED), 40000);
+  await until('gate verified (ultra)', () => premium.gate.has('desktop_sidebar') && premium.gate.has('window_layouts'), 20000);
+  await until('sidebar module', () => premium.runningKeys().includes('desktop_sidebar'), 5000);
+  expect(!premium.runningKeys().includes('screen_edge_actions'), 'screen edge polling must stay off by default');
+  const toggled = await js(win, `window.descallPremium.invoke('premium:sidebar:toggle')`);
+  expect(toggled && toggled.ok, `sidebar toggle: ${JSON.stringify(toggled)}`);
+  const side = await until('sidebar window', () => {
+    const e = premium.windows.list('sidebar')[0];
+    return e ? { ok: true, e } : null;
+  }, 10000);
+  await sleep(900);
+  const sb = side.e.win.getBounds();
+  const { screen } = require('electron');
+  const wa = screen.getDisplayMatching(sb).workArea;
+  expect(sb.x + sb.width === wa.x + wa.width && sb.height === wa.height, `sidebar not docked right: ${JSON.stringify({ sb, wa })}`);
+  const sideText = await js(win, `(() => { const w = window.open('', 'descall-premium-sidebar'); const el = w && w.document.querySelector('[data-testid="premium-sidebar"]'); return el ? el.innerText : ''; })()`);
+  expect(sideText.length > 0, 'sidebar content not rendered');
+  await shot(side.e.win, 'desktop-sidebar.png');
+  const saved = await js(win, `window.descallPremium.invoke('premium:layouts:save', 'Oyun')`);
+  expect(saved && saved.ok, `layout save: ${JSON.stringify(saved)}`);
+  const layouts = await js(win, `window.descallPremium.invoke('premium:layouts:list')`);
+  expect(layouts.ok && layouts.layouts.some((l) => l.name === 'Oyun' && l.windows >= 2), `layout list: ${JSON.stringify(layouts)}`);
+  const applied = await js(win, `window.descallPremium.invoke('premium:layouts:apply', ${JSON.stringify(saved.id)})`);
+  expect(applied && applied.ok, `layout apply: ${JSON.stringify(applied)}`);
+  log('ultra ok', JSON.stringify({ sidebar: sb, layouts: layouts.layouts.length }));
+
+  // 6. Plan revoked on the server: main's next check closes the windows.
   S.plan = null;
   await premium.gate.verify({ force: true });
   await until('windows closed after revoke', () => premium.windows.list().length === 0 && !premium.gate.has('mini_mode'), 8000);

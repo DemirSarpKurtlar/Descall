@@ -51,7 +51,7 @@ function StatusCard({ premium, ios }) {
       <div>
         <h2 className="pp-hero-title" id="pp-status-title">
           {planName}
-          {plan ? <PremiumBadge plan={plan} variant="chip" /> : null}
+          {plan ? <PremiumBadge plan={plan} variant="inline" /> : null}
         </h2>
         <div className="pp-hero-sub">{premium.loading ? t("premium.status.loading") : t("premium.status.title")}</div>
       </div>

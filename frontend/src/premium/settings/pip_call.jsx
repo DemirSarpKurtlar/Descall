@@ -8,7 +8,7 @@ export function Panel() {
   const t = useT();
   return (
     <div className="pp-actions">
-      <button type="button" className="us-btn" data-testid="premium-open-call" onClick={() => requestAux("call", true)}>{t("premium.panel.openCall")}</button>
+      <button type="button" className="us-btn ghost" data-testid="premium-open-call" onClick={() => requestAux("call", true)}>{t("premium.panel.openCall")}</button>
     </div>
   );
 }

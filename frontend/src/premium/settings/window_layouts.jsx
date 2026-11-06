@@ -25,7 +25,7 @@ export function Panel() {
     <>
       <form className="pp-redeem" onSubmit={save}>
         <input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder={t("premium.panel.layoutName")} aria-label={t("premium.panel.layoutName")} style={{ textTransform: "none", letterSpacing: 0 }} />
-        <button type="submit" className="us-btn" disabled={!name.trim()}>{t("premium.panel.layoutSave")}</button>
+        <button type="submit" className="us-btn ghost" disabled={!name.trim()}>{t("premium.panel.layoutSave")}</button>
       </form>
       {list.length ? (
         <div className="pp-list">
@@ -33,7 +33,7 @@ export function Panel() {
             <div key={l.id} className="pp-list-row">
               <b>{l.name}</b>
               <span className="pp-hint">{t("premium.panel.layoutWindows", { n: l.windows })} · {formatDate(l.createdAt, locale)}</span>
-              <button type="button" className="us-btn sm" onClick={() => premiumBridge()?.invoke("premium:layouts:apply", l.id).catch(() => {})}>{t("premium.panel.layoutApply")}</button>
+              <button type="button" className="us-btn primary sm" onClick={() => premiumBridge()?.invoke("premium:layouts:apply", l.id).catch(() => {})}>{t("premium.panel.layoutApply")}</button>
               <button type="button" className="us-btn ghost sm" onClick={() => premiumBridge()?.invoke("premium:layouts:delete", l.id).then(load).catch(() => {})}>{t("premium.panel.layoutDelete")}</button>
             </div>
           ))}
