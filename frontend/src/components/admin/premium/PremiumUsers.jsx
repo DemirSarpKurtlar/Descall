@@ -4,7 +4,7 @@ import { Avatar } from "../../ui/Avatar";
 import { useLocale } from "../../../context/LocaleContext";
 import { premiumApply, premiumUser, premiumUserSearch } from "./premiumApi.js";
 import { MONTHLY_DESCOIN, buildApplyPayload, createIdempotency, previewChange, subscriptionState } from "./premiumModel.js";
-import ActionFields, { formForModel, freshActionForm, opAllowed } from "./ActionFields.jsx";
+import ActionFields, { defaultOp, formForModel, freshActionForm, opAllowed } from "./ActionFields.jsx";
 import EventsTable from "./EventsTable.jsx";
 import { ChangeSummary, EndCell, ErrorLine, Modal, PageHead, PlanChip, RefreshButton, StateChip, When, errorText, num } from "./PremiumUi.jsx";
 
@@ -147,8 +147,8 @@ export default function PremiumUsers() {
 
   const sub = data?.subscription || null;
   useEffect(() => {
-    // An op that does not fit this member falls back to "grant".
-    if (data && !opAllowed(form.op, sub)) setForm((f) => ({ ...f, op: "grant" }));
+    // An op that does not fit this member falls back to the first one that does.
+    if (data && !opAllowed(form.op, sub)) setForm((f) => ({ ...f, op: defaultOp(sub) }));
   }, [data, sub, form.op]);
 
   const review = () => {

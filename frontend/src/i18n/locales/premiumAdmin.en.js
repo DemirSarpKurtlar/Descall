@@ -116,6 +116,10 @@ export const PREMIUM_ADMIN_EN = {
   startLocal: "In your local time; stored as UTC.",
   setEndFromNow: "Preset and custom days count from now.",
   stepUpHint: "Changes ask for your authenticator code.",
+  pickDate: "Pick a date",
+  time: "time",
+  clearDate: "Clear date",
+  now: "Now",
 
   err: {
     op: "Choose an action.",

@@ -96,10 +96,10 @@ function CampaignForm({ initial, onSaved, onCancel, t }) {
       ) : null}
       <div className="mt-two">
         <Field label={t("premiumAdmin.camp.starts")} hint={!f.startDate ? t("premiumAdmin.camp.startsNow") : null}>
-          <DateInput label={t("premiumAdmin.camp.starts")} value={f.startDate} onChange={(startDate) => set({ startDate })} time timeValue={f.startTime} onTime={(startTime) => set({ startTime })} />
+          <DateInput empty={t("premiumAdmin.camp.startsNow")} label={t("premiumAdmin.camp.starts")} value={f.startDate} onChange={(startDate) => set({ startDate })} time timeValue={f.startTime} onTime={(startTime) => set({ startTime })} />
         </Field>
         <Field label={t("premiumAdmin.camp.ends")} hint={!f.endDate ? t("premiumAdmin.camp.noEnd") : null}>
-          <DateInput label={t("premiumAdmin.camp.ends")} value={f.endDate} onChange={(endDate) => set({ endDate })} time timeValue={f.endTime} onTime={(endTime) => set({ endTime })} />
+          <DateInput empty={t("premiumAdmin.camp.noEnd")} label={t("premiumAdmin.camp.ends")} value={f.endDate} onChange={(endDate) => set({ endDate })} time timeValue={f.endTime} onTime={(endTime) => set({ endTime })} />
         </Field>
       </div>
       <div className="mt-two">

@@ -24,11 +24,18 @@ export function formForModel(f) {
 export function opAllowed(op, current) {
   if (current === undefined) return true;
   const st = subscriptionState(current).state;
-  if (op === "grant") return true;
+  // An active membership is changed, not granted again (the server answers already_active).
+  if (op === "grant") return st !== "active";
   if (st === "none") return false;
   if (op === "extend") return !current.unlimited;
-  if (op === "cancel") return st === "active";
+  if (op === "cancel" || op === "change_plan") return st === "active";
+  if (op === "set_unlimited") return !current.unlimited || st !== "active";
   return true;
+}
+
+/** The first op that fits this member (extend for an active one, else grant). */
+export function defaultOp(current) {
+  return ["extend", "grant", "change_plan", "set_end", "cancel", "set_unlimited"].find((op) => opAllowed(op, current)) || "grant";
 }
 
 /**
@@ -66,7 +73,7 @@ export default function ActionFields({ form, onChange, t, current, ops = OPS }) 
       ) : null}
       {op === "grant" ? (
         <Field label={t("premiumAdmin.f.start")} hint={form.startDate ? t("premiumAdmin.startLocal") : t("premiumAdmin.startNow")}>
-          <DateInput label={t("premiumAdmin.f.start")} value={form.startDate} onChange={(startDate) => set({ startDate })} time timeValue={form.startTime} onTime={(startTime) => set({ startTime })} />
+          <DateInput empty={t("premiumAdmin.now")} label={t("premiumAdmin.f.start")} value={form.startDate} onChange={(startDate) => set({ startDate })} time timeValue={form.startTime} onTime={(startTime) => set({ startTime })} />
         </Field>
       ) : null}
       {showDuration ? (

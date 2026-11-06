@@ -6,8 +6,9 @@
 import { useEffect } from "react";
 import { AlertTriangle, Calendar, RefreshCw, X } from "../../ui/Icon.jsx";
 import OverlayPortal from "../../ui/OverlayPortal.jsx";
+import { useLocale } from "../../../context/LocaleContext";
 import { formatDate, formatNumber } from "../../../i18n/format.js";
-import { DURATION_PRESETS, dateToLocalInput } from "./premiumModel.js";
+import { DURATION_PRESETS, dateToLocalInput, localInputToDate } from "./premiumModel.js";
 
 export function PageHead({ title, sub, children }) {
   return (
@@ -137,12 +138,42 @@ export function Field({ label, children, hint, className = "" }) {
   );
 }
 
-export function DateInput({ value, onChange, label, time = false, timeValue, onTime }) {
+function openPicker(e) {
+  try {
+    e.currentTarget.showPicker?.();
+  } catch {
+    /* not allowed here */
+  }
+}
+
+/**
+ * Local date (+ time) field: the text is formatted in the UI language, the
+ * native picker sits on top of it (same pattern as the promo / maintenance
+ * forms). Empty = `empty` text; the clear button empties it again.
+ */
+export function DateInput({ value, onChange, label, time = false, timeValue, onTime, empty }) {
+  const { t, locale } = useLocale();
+  const d = value ? localInputToDate(value, "12:00") : null;
+  const text = d ? formatDate(d, locale, { dateStyle: "medium" }) : empty || t("premiumAdmin.pickDate");
   return (
-    <div className="mt-in pa-date">
+    <div className={`mt-in pa-date${value ? "" : " is-empty"}`}>
       <Calendar size={14} className="mt-i" />
-      <input type="date" aria-label={label} value={value || ""} onChange={(e) => onChange(e.target.value)} />
-      {time ? <input type="time" aria-label={label} value={timeValue || ""} onChange={(e) => onTime(e.target.value)} /> : null}
+      <span className="seg-part is-date">
+        <span className="seg-text">{text}</span>
+        <input type="date" aria-label={label} value={value || ""} onChange={(e) => onChange(e.target.value)} onClick={openPicker} />
+      </span>
+      {time && value ? (
+        <>
+          <span className="mt-muted" aria-hidden="true">·</span>
+          <span className="seg-part is-time">
+            <span className="seg-text tnum">{timeValue || "00:00"}</span>
+            <input type="time" aria-label={`${label} ${t("premiumAdmin.time")}`} value={timeValue || ""} onChange={(e) => onTime(e.target.value)} onClick={openPicker} />
+          </span>
+        </>
+      ) : null}
+      {value ? (
+        <button type="button" className="pa-clear" aria-label={t("premiumAdmin.clearDate")} onClick={() => onChange("")}><X size={13} /></button>
+      ) : null}
     </div>
   );
 }

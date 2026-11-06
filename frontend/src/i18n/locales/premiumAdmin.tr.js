@@ -112,6 +112,10 @@ export const PREMIUM_ADMIN_TR = {
   startLocal: "Yerel saatinle; UTC olarak saklanır.",
   setEndFromNow: "Hazır süre ve özel gün şu andan sayılır.",
   stepUpHint: "Değişiklikler doğrulama uygulaması kodunu ister.",
+  pickDate: "Tarih seç",
+  time: "saat",
+  clearDate: "Tarihi temizle",
+  now: "Şimdi",
 
   err: {
     op: "Bir işlem seç.",

@@ -51,9 +51,12 @@
 .pa-ops button:disabled { opacity: 0.38; cursor: default; }
 .pa-ops button:focus-visible, .pa-presets button:focus-visible, .pa-expand:focus-visible, .pa-link:focus-visible { outline: 2px solid #0a84ff; outline-offset: 2px; }
 .pa-days { max-width: 180px; }
+.pa-date .seg-part { flex: 0 1 auto; min-width: 0; }
+.pa-date .seg-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pa-date.is-empty .seg-text { color: rgba(244, 246, 251, 0.45); }
+.pa-clear { margin-left: auto; width: 24px; height: 24px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 7px; background: rgba(255, 255, 255, 0.06); color: rgba(244, 246, 251, 0.65); cursor: pointer; position: relative; z-index: 1; }
+.pa-seg button:disabled { opacity: 0.35; cursor: default; }
 .pa-days input { flex: 1; }
-.pa-date input[type="date"], .pa-date input[type="time"] { color-scheme: dark; flex: 1; min-width: 0; }
-.pa-date input[type="time"] { flex: 0 0 auto; width: 84px; }
 .pa-row { border-top: 1px solid rgba(255, 255, 255, 0.06); margin-bottom: 8px; }
 .pa-root .mt-in.ta { height: auto; padding: 8px 11px; }
 .pa-root .mt-in.ta textarea { width: 100%; resize: vertical; min-height: 40px; }
