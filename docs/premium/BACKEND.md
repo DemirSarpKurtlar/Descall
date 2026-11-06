@@ -124,18 +124,40 @@ Any 401 or 403 on `/premium` is logged by `logDenied` as `premium_denied` (conso
 | GET | `/plans` | All plans |
 | PATCH | `/plans/:id` | Only name, description, features (known keys), visible and status. Price, currency and monthly_descoin answer 400 `field_not_editable`. |
 | GET | `/users/search?q=` | Returns `{users:[{id, username, display_name, avatar_url, email_masked, subscription}]}`. Limited to 120 per minute per admin. |
-| GET | `/users/:id` | Returns `{user, subscription, events}` |
+| GET | `/users/:id` | Returns `{user, subscription, events}`; events carry `user` and `actor_username` like `/events` |
 | POST | `/users/:id/apply` | Body `{op, plan, days?, ends_at?, unlimited?, is_free, reason, note, request_id}`. Returns `{subscription, event, replay}`. Sends `premium:updated`. |
 | POST | `/bulk` | Body `{user_ids[], op, ..., request_id}` (request_id is required). Returns `{batch:{id,total,ok,failed,created_at}, results:[{user_id,ok,error}], replay}` |
 | GET | `/bulk/:batchId` | |
-| GET | `/events?user=&kind=&plan=&actor=&batch=&from=&to=&cursor=&limit=` | Returns `{events, next_cursor}` |
+| GET | `/events?user=&kind=&plan=&actor=&batch=&from=&to=&cursor=&limit=` | Returns `{events, next_cursor}`. `user` and `actor` take an id or a username (an unknown username gives an empty page). Each event also has `user` `{id, username, display_name, avatar_url}` and `actor_username`. |
 | GET | `/dashboard` | Returns `{active_total, active_plus, active_ultra, expired, expiring_7d, new_7d, new_30d, free_count, paid_count:null, payments_integrated:false, ...}` |
-| GET | `/analytics?from=&to=&bucket=day\|week\|month` | Returns series (acquisitions, active, cancellations, expirations, renewals, upgrades and downgrades, coin cycles), plan split, free/paid (`paid: null`), average duration, conversion with its numerator and denominator labels, and per-campaign figures |
-| GET | `/finance` | Returns `{payments_integrated:false, revenue:null, mrr:null, ..., message_key:"premium.finance.notIntegrated"}` |
-| GET | `/audit?actor=&q=&from=&to=` | `premium*` entries from `admin_audit`, merged with memory |
-| GET / POST | `/campaigns` | |
-| PATCH | `/campaigns/:id` | `{active:false}` disables a campaign |
-| GET | `/campaigns/:id/stats` | |
+| GET | `/analytics?from=&to=&bucket=day\|week\|month` | The stable shape below ("Analytics response"), built from `premium_admin_analytics` |
+| GET | `/finance` | Returns `{payments_integrated:false, revenue:null, mrr:null, ..., free_count, active_total, manual_grants, campaign_grants, message_key:"premium.finance.notIntegrated"}`. `manual_grants` counts all-time `grant` events by an admin, `campaign_grants` all-time `campaign_redeem` events; both are membership counts, not money. |
+| GET | `/audit?actor=&q=&from=&to=&cursor=&limit=` | `premium*` entries from `admin_audit`, merged with memory. Returns `{items:[{id, at, actor_id, actor_username, action, target, target_username, meta}], next_cursor, durable}`. `actor` takes an id or a username. `meta.reason` holds the reason of an apply or bulk write. |
+| GET / POST | `/campaigns` | GET returns `{campaigns}`. Each row has the table columns plus `value` (`percent_off` or `amount_off_minor`, by kind) and `allowed_users` `[{id, username, display_name, avatar_url}]`. POST takes the columns, or `value` for percent and fixed coupons (fixed also needs `currency`). Returns 201 `{campaign}`. |
+| PATCH | `/campaigns/:id` | Partial body, same fields. `{active:false}` disables a campaign |
+| GET | `/campaigns/:id/stats` | `premium_campaign_stats` plus `redemptions` (all-time uses, = `used_count`), `still_active` (= `active_now`) and `recent[].at` |
+
+### Analytics response
+
+`GET /analytics` answers one documented shape (`analyticsView` in `lib/premium/service.js`). Buckets are UTC periods. Every per-bucket list is `null` when no subscription event exists yet; nothing is estimated.
+
+| Field | Shape | Meaning |
+|---|---|---|
+| `acquisitions` | `[{bucket, plus, ultra, total, free}]` | `grant` and `campaign_redeem` events per bucket, by plan |
+| `active` | `[{bucket, total}]` | Members active at the end of each bucket, all plans together (the SQL does not split it by plan) |
+| `cancellations_renewals` | `[{bucket, cancellations, renewals, expirations}]` | `cancel`, `extend` and `expire` events |
+| `upgrades_downgrades` | `[{bucket, upgrades, downgrades}]` | `change_plan` events by plan sort order |
+| `coin_cycles` | `[{bucket, total}]` | DesCoin gift cycles |
+| `plan_split` | `{plus, ultra}` or null | Active members right now |
+| `free_paid` | `{free, paid:null, payments_integrated:false}` or null | Active free members right now |
+| `avg_duration_days` | number or null | Average start-to-end days of dated memberships (current rows) |
+| `unlimited_count` | number or null | Active unlimited memberships |
+| `conversion` | `{rate, numerator, denominator, numerator_label, denominator_label}` | `rate` is null when the denominator is 0 |
+| `campaigns` | `[{id, code, kind, plan_id, active, redemptions, unique_users:null, still_active, used_total, total_limit}]` | `redemptions` in the range; `unique_users` per range is not computed yet |
+
+### Start date
+
+The SQL has no start date: every grant starts when it is applied (`started_at = now()`). The admin UI therefore offers no start field; an exact end date is sent as `ends_at`, a duration as `days`. `extend` only takes `days` (an exact new end is `set_end`).
 
 User routes are in `routes/premium.js` (requireAuth):
 

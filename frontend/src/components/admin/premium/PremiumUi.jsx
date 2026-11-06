@@ -61,18 +61,28 @@ export function ErrorLine({ error, t, onRetry }) {
   );
 }
 
-/** Model error keys (premiumAdmin.err.*), server error codes, or the server text. */
+function errKey(code, t) {
+  if (!code || !/^[a-zA-Z_]+$/.test(String(code))) return null;
+  const key = `premiumAdmin.err.${code}`;
+  const s = t(key);
+  return s !== key ? s : null;
+}
+
+/**
+ * Model error keys and server error codes (premiumAdmin.err.<code>: already_active, not_active,
+ * invalid_plan, ... as lib/premium/service.js answers them), else a status-based message.
+ */
 export function errorText(error, t) {
   if (!error) return "";
-  if (typeof error === "string") {
-    const key = `premiumAdmin.err.${error}`;
-    const s = t(key);
-    return s !== key ? s : error;
-  }
+  if (typeof error === "string") return errKey(error, t) || t("premiumAdmin.err.generic");
   if (error.code === "STEP_UP_REQUIRED") return t("premiumAdmin.err.stepUp");
+  const known = errKey(error.code, t);
+  if (known) return known;
   if (error.code === "ADMIN_PERMISSION_DENIED" || error.status === 403) return t("premiumAdmin.err.forbidden");
+  if (error.status === 429) return t("premiumAdmin.err.rateLimited");
   if (error.status === 404) return t("premiumAdmin.err.notReady");
-  return error.message || t("premiumAdmin.err.generic");
+  if (error.code === "transient" && error.message) return error.message;
+  return t("premiumAdmin.err.generic");
 }
 
 export function PlanChip({ plan, t }) {

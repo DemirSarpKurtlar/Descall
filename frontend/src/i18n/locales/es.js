@@ -39,7 +39,7 @@ export const nested = {
     },
     "opHint": {
       "grant": "Inicia una membresía en el plan elegido. El primer regalo mensual de DesCoin se paga al otorgarla.",
-      "extend": "Añade tiempo desde la fecha de fin actual (o desde ahora si ya terminó).",
+      "extend": "Añade días completos a la fecha de fin actual de una membresía activa. Para una nueva fecha de fin exacta, usa \"Fijar fecha de fin\".",
       "change_plan": "Pasa al miembro al otro plan. La fecha de fin no cambia.",
       "cancel": "Termina la membresía ahora. El historial conserva cada cambio anterior.",
       "set_end": "Fija una nueva fecha de fin. Los valores predefinidos cuentan desde ahora.",
@@ -131,14 +131,11 @@ export const nested = {
     "reasonHint": "Obligatorio. Se guarda con el cambio y en el registro de admin.",
     "reasonPh": "¿Por qué se hace este cambio?",
     "notePh": "Nota opcional para otros admins",
-    "startNow": "Vacío = empieza ahora.",
-    "startLocal": "En tu hora local; se guarda en UTC.",
     "setEndFromNow": "Los valores predefinidos y los días a medida cuentan desde ahora.",
     "stepUpHint": "Los cambios piden tu código de autenticación.",
     "pickDate": "Elegir fecha",
     "time": "hora",
     "clearDate": "Borrar fecha",
-    "now": "Ahora",
     "err": {
       "op": "Elige una acción.",
       "reason": "Escribe un motivo (al menos 3 caracteres).",
@@ -166,11 +163,34 @@ export const nested = {
       "forbidden": "No tienes acceso a la gestión premium.",
       "notReady": "Esta parte del servidor aún no está disponible.",
       "generic": "Algo salió mal. No se cambió nada.",
-      "not_found": "Miembro no encontrado.",
-      "no_subscription": "El miembro no tiene una membresía que cambiar.",
+      "not_found": "No encontrado. Puede que se haya eliminado.",
       "already_active": "El miembro ya tiene una membresía activa.",
-      "unlimited": "La membresía no tiene fecha de fin.",
-      "banned": "La cuenta está bloqueada o se está eliminando."
+      "extendDate": "Extender añade días completos. Usa \"Fijar fecha de fin\" para una fecha exacta.",
+      "currency": "Introduce un código de moneda de 3 letras (por ejemplo EUR).",
+      "rateLimited": "Demasiadas solicitudes. Espera un minuto y vuelve a intentarlo.",
+      "not_active": "El miembro no tiene una membresía activa. Dale una membresía nueva.",
+      "invalid_plan": "Este plan no existe.",
+      "plan_archived": "Este plan está archivado. Actívalo primero en Gestión de planes.",
+      "already_unlimited": "La membresía ya es ilimitada.",
+      "not_unlimited": "La membresía no es ilimitada.",
+      "same_plan": "El miembro ya está en este plan.",
+      "invalid_end": "La fecha de fin debe estar en el futuro (como máximo 20 años).",
+      "invalid_duration": "Introduce una duración de 1 a 3650 días.",
+      "invalid_op": "Esta acción no está disponible.",
+      "user_not_found": "Miembro no encontrado, o la cuenta se eliminó.",
+      "reason_required": "Escribe un motivo para este cambio.",
+      "too_long": "El motivo (500 caracteres) o la nota (2000 caracteres) es demasiado largo.",
+      "invalid_request_id": "No se pudo preparar la solicitud. Inténtalo de nuevo.",
+      "invalid_body": "Algunos valores no son válidos. Revisa el formulario.",
+      "no_users": "Elige al menos un miembro.",
+      "too_many_users": "Como máximo 500 miembros por lote.",
+      "code_taken": "Este código de cupón ya está en uso.",
+      "invalid_code": "El código necesita de 4 a 32 letras o dígitos.",
+      "unknown_feature": "Una de las claves de función es desconocida. Usa claves de la lista de funciones.",
+      "field_not_editable": "Los precios y el regalo mensual de DesCoin no se pueden cambiar en la fase 1.",
+      "invalid_range": "Elige un rango de fechas válido.",
+      "premium_unavailable": "Premium aún no está configurado en el servidor (falta la migración de la base de datos).",
+      "server_error": "El servidor no pudo completarlo. No se cambió nada."
     },
     "confirm": {
       "title": "Confirmar el cambio",
@@ -282,16 +302,20 @@ export const nested = {
       "campaigns": "Rendimiento de campañas",
       "def": {
         "acq": "Miembros cuya membresía empezó en cada periodo (otorgada o por cupón), por plan.",
-        "active": "Miembros con membresía activa al final de cada periodo, por plan.",
-        "split": "Miembros activos al final del rango, por plan.",
-        "cancelRenew": "Cancelaciones: membresías canceladas por un admin en el periodo. Renovaciones: membresías extendidas o pagadas de nuevo en el periodo.",
-        "freePaid": "Membresías iniciadas en el rango, gratis frente a de pago. De pago queda vacío hasta integrar los pagos.",
+        "active": "Miembros con una membresía activa al final de cada periodo, todos los planes juntos.",
+        "split": "Miembros activos ahora mismo, por plan.",
+        "cancelRenew": "Cancelaciones: membresías canceladas por un administrador en el periodo. Renovaciones: membresías extendidas por un administrador en el periodo.",
+        "freePaid": "Membresías activas ahora mismo marcadas como gratuitas. De pago queda vacío hasta que se integren los pagos.",
         "upDown": "Mejoras: de Descall+ a Ultra. Bajadas: de Ultra a Descall+. Cambios de plan en el rango.",
-        "avgDuration": "Media de días entre inicio y fin de las membresías que terminaron en el rango. Las ilimitadas no cuentan.",
-        "conversion": "Membresías de pago iniciadas en el rango, divididas por el denominador: miembros que tuvieron una membresía gratuita en el rango.",
-        "campaigns": "Canjes de cupones en el rango, miembros únicos y cuántos siguen activos."
+        "avgDuration": "Días medios desde el inicio hasta el fin de la membresía con fecha actual o última de cada miembro. Las membresías ilimitadas no se cuentan.",
+        "conversion": "Cuentas creadas en el rango que obtuvieron una membresía en el rango, divididas entre todas las cuentas creadas en el rango.",
+        "campaigns": "Canjes de cupones en el rango y cuántos miembros con cupón siguen activos ahora. Aún no se cuentan los miembros únicos por rango."
       },
-      "foot": "Las horas se agrupan en tu hora local. Las cifras vienen del registro de eventos de suscripción."
+      "foot": "Los periodos se agrupan en UTC. Los datos vienen del registro de eventos de suscripción.",
+      "allPlans": "Todos los planes",
+      "convLabel": {
+        "accounts_created_in_range": "Cuentas creadas en el rango"
+      }
     },
     "fin": {
       "sub": "Los ingresos, reembolsos e impuestos aparecerán aquí cuando se integren los pagos. Nada se estima.",
@@ -376,7 +400,9 @@ export const nested = {
         "ended": "Terminado",
         "scheduled": "Programado",
         "full": "Agotado"
-      }
+      },
+      "currency": "Moneda",
+      "fixedHint": "En la unidad mínima (por ejemplo céntimos)."
     },
     "audit": {
       "sub": "Cada cambio premium hecho por un admin, y los intentos denegados.",
@@ -417,7 +443,8 @@ export const nested = {
       "priceHint": "En la fase 1 no se fijan precios.",
       "saved": "Guardado.",
       "foot": "Por ahora la membresía la da el equipo de Descall; no hay botón de compra."
-    }
+    },
+    "grantStartsNow": "La membresía empieza cuando la aplicas. Para que termine un día concreto, elige una fecha de fin exacta."
   },
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)

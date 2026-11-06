@@ -39,7 +39,7 @@ export const nested = {
     },
     "opHint": {
       "grant": "Démarre un abonnement sur l'offre choisie. Le premier cadeau mensuel de DesCoin est versé à l'attribution.",
-      "extend": "Ajoute du temps à partir de la date de fin actuelle (ou de maintenant si elle est passée).",
+      "extend": "Ajoute des jours entiers à la date de fin actuelle d'un abonnement actif. Pour une nouvelle date de fin exacte, utilise \"Fixer la date de fin\".",
       "change_plan": "Passe le membre sur l'autre offre. La date de fin ne change pas.",
       "cancel": "Termine l'abonnement maintenant. L'historique garde chaque changement précédent.",
       "set_end": "Fixe une nouvelle date de fin. Les durées prédéfinies comptent à partir de maintenant.",
@@ -131,14 +131,11 @@ export const nested = {
     "reasonHint": "Obligatoire. Enregistré avec le changement et dans le journal admin.",
     "reasonPh": "Pourquoi ce changement ?",
     "notePh": "Note facultative pour les autres admins",
-    "startNow": "Vide = commence maintenant.",
-    "startLocal": "Dans ton heure locale ; enregistré en UTC.",
     "setEndFromNow": "Les durées prédéfinies et les jours au choix comptent à partir de maintenant.",
     "stepUpHint": "Les changements demandent ton code d'authentification.",
     "pickDate": "Choisir une date",
     "time": "heure",
     "clearDate": "Effacer la date",
-    "now": "Maintenant",
     "err": {
       "op": "Choisis une action.",
       "reason": "Indique un motif (au moins 3 caractères).",
@@ -166,11 +163,34 @@ export const nested = {
       "forbidden": "Tu n'as pas accès à la gestion premium.",
       "notReady": "Cette partie du serveur n'est pas encore disponible.",
       "generic": "Un problème est survenu. Rien n'a changé.",
-      "not_found": "Membre introuvable.",
-      "no_subscription": "Le membre n'a pas d'abonnement à modifier.",
+      "not_found": "Introuvable. Il a peut-être été supprimé.",
       "already_active": "Le membre a déjà un abonnement actif.",
-      "unlimited": "L'abonnement n'a pas de date de fin.",
-      "banned": "Le compte est banni ou en cours de suppression."
+      "extendDate": "Prolonger ajoute des jours entiers. Utilise \"Fixer la date de fin\" pour une date exacte.",
+      "currency": "Saisis un code de devise à 3 lettres (par exemple EUR).",
+      "rateLimited": "Trop de requêtes. Attends une minute et réessaie.",
+      "not_active": "Le membre n'a pas d'abonnement actif. Donne-lui plutôt un nouvel abonnement.",
+      "invalid_plan": "Ce plan n'existe pas.",
+      "plan_archived": "Ce plan est archivé. Réactive-le d'abord dans la gestion des plans.",
+      "already_unlimited": "L'abonnement est déjà illimité.",
+      "not_unlimited": "L'abonnement n'est pas illimité.",
+      "same_plan": "Le membre est déjà sur ce plan.",
+      "invalid_end": "La date de fin doit être dans le futur (20 ans au plus).",
+      "invalid_duration": "Saisis une durée de 1 à 3650 jours.",
+      "invalid_op": "Cette action n'est pas prise en charge.",
+      "user_not_found": "Membre introuvable, ou le compte a été supprimé.",
+      "reason_required": "Indique un motif pour ce changement.",
+      "too_long": "Le motif (500 caractères) ou la note (2000 caractères) est trop long.",
+      "invalid_request_id": "Impossible de préparer la requête. Réessaie.",
+      "invalid_body": "Certaines valeurs ne sont pas valides. Vérifie le formulaire.",
+      "no_users": "Choisis au moins un membre.",
+      "too_many_users": "500 membres au maximum par lot.",
+      "code_taken": "Ce code de coupon est déjà utilisé.",
+      "invalid_code": "Le code doit comporter de 4 à 32 lettres ou chiffres.",
+      "unknown_feature": "Une des clés de fonctionnalité est inconnue. Utilise les clés de la liste des fonctionnalités.",
+      "field_not_editable": "Les prix et le cadeau DesCoin mensuel ne peuvent pas être modifiés en phase 1.",
+      "invalid_range": "Choisis une période valide.",
+      "premium_unavailable": "Premium n'est pas encore configuré sur le serveur (la migration de la base de données manque).",
+      "server_error": "Le serveur n'a pas pu terminer. Rien n'a été modifié."
     },
     "confirm": {
       "title": "Confirmer le changement",
@@ -282,16 +302,20 @@ export const nested = {
       "campaigns": "Performance des campagnes",
       "def": {
         "acq": "Membres dont l'abonnement a commencé sur chaque période (attribué ou par coupon), par offre.",
-        "active": "Membres avec un abonnement actif à la fin de chaque période, par offre.",
-        "split": "Membres actifs à la fin de la période, par offre.",
-        "cancelRenew": "Annulations : abonnements annulés par un admin sur la période. Renouvellements : abonnements prolongés ou repayés sur la période.",
-        "freePaid": "Abonnements commencés sur la période, gratuits ou payants. Payant reste vide tant que les paiements ne sont pas intégrés.",
+        "active": "Membres ayant un abonnement actif à la fin de chaque période, tous plans confondus.",
+        "split": "Membres actifs en ce moment, par plan.",
+        "cancelRenew": "Annulations : abonnements annulés par un administrateur dans la période. Renouvellements : abonnements prolongés par un administrateur dans la période.",
+        "freePaid": "Abonnements actifs en ce moment marqués comme gratuits. Payant reste vide jusqu'à l'intégration des paiements.",
         "upDown": "Montées : de Descall+ à Ultra. Descentes : d'Ultra à Descall+. Changements d'offre sur la période.",
-        "avgDuration": "Nombre moyen de jours entre début et fin des abonnements terminés sur la période. Les abonnements illimités sont exclus.",
-        "conversion": "Abonnements payants commencés sur la période, divisés par le dénominateur : membres ayant eu un abonnement gratuit sur la période.",
-        "campaigns": "Coupons utilisés sur la période, membres uniques et combien sont encore actifs."
+        "avgDuration": "Nombre moyen de jours entre le début et la fin de l'abonnement daté actuel ou dernier de chaque membre. Les abonnements illimités ne sont pas comptés.",
+        "conversion": "Comptes créés dans la période ayant obtenu un abonnement dans la période, divisés par tous les comptes créés dans la période.",
+        "campaigns": "Utilisations de coupons dans la période, et combien de membres venus d'un coupon sont actifs maintenant. Les membres uniques par période ne sont pas encore comptés."
       },
-      "foot": "Les heures sont regroupées selon ton heure locale. Les chiffres viennent du journal des événements d'abonnement."
+      "foot": "Les périodes sont regroupées en UTC. Les chiffres viennent du journal des événements d'abonnement.",
+      "allPlans": "Tous les plans",
+      "convLabel": {
+        "accounts_created_in_range": "Comptes créés dans la période"
+      }
     },
     "fin": {
       "sub": "Chiffre d'affaires, remboursements et taxes apparaîtront ici une fois les paiements intégrés. Rien n'est estimé.",
@@ -376,7 +400,9 @@ export const nested = {
         "ended": "Terminé",
         "scheduled": "Planifié",
         "full": "Épuisé"
-      }
+      },
+      "currency": "Devise",
+      "fixedHint": "En plus petite unité (par exemple centimes)."
     },
     "audit": {
       "sub": "Chaque changement premium fait par un admin, et les tentatives refusées.",
@@ -417,7 +443,8 @@ export const nested = {
       "priceHint": "Aucun prix n'est fixé en phase 1.",
       "saved": "Enregistré.",
       "foot": "Pour l'instant, l'abonnement est offert par l'équipe Descall ; il n'y a pas de bouton d'achat."
-    }
+    },
+    "grantStartsNow": "L'abonnement commence quand tu l'appliques. Pour qu'il se termine un jour précis, choisis une date de fin exacte."
   },
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)

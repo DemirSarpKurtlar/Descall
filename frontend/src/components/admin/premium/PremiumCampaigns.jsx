@@ -13,7 +13,7 @@ import { DateInput, ErrorLine, Field, Kpi, PageHead, PlanChip, RefreshButton, Se
 
 function freshCampaign() {
   return {
-    id: null, code: generateCode().slice(0, 12), kind: "free_membership", planLimit: "plus", durationDays: "30", value: "",
+    id: null, code: generateCode().slice(0, 12), kind: "free_membership", planLimit: "plus", durationDays: "30", value: "", currency: "",
     startDate: "", startTime: "00:00", endDate: "", endTime: "23:59", totalLimit: "", perUserLimit: "1", allowedUsers: [], active: true,
   };
 }
@@ -21,12 +21,13 @@ function freshCampaign() {
 function fromRow(c) {
   const s = dateToLocalInput(c.starts_at);
   const e = dateToLocalInput(c.ends_at);
+  // allowed_users carries the names (GET /campaigns); a deleted account keeps its id.
   const people = Array.isArray(c.allowed_users) && c.allowed_users.length
-    ? c.allowed_users
+    ? c.allowed_users.map((u) => ({ ...u, username: u.username || String(u.id).slice(0, 8) }))
     : (c.allowed_user_ids || []).map((id) => ({ id, username: String(id).slice(0, 8) }));
   return {
     id: c.id, code: c.code || "", kind: c.kind || "free_membership", planLimit: c.plan_id || "", durationDays: c.duration_days ? String(c.duration_days) : "",
-    value: c.value != null ? String(c.value) : "", startDate: s.date, startTime: s.time || "00:00", endDate: e.date, endTime: e.time || "23:59",
+    value: c.value != null ? String(c.value) : "", currency: c.currency || "", startDate: s.date, startTime: s.time || "00:00", endDate: e.date, endTime: e.time || "23:59",
     totalLimit: c.total_limit != null ? String(c.total_limit) : "", perUserLimit: c.per_user_limit != null ? String(c.per_user_limit) : "1",
     allowedUsers: people, active: c.active !== false,
   };
@@ -36,7 +37,7 @@ export function campaignStatus(c, now = Date.now()) {
   if (!c.active) return "disabled";
   if (c.ends_at && new Date(c.ends_at).getTime() <= now) return "ended";
   if (c.starts_at && new Date(c.starts_at).getTime() > now) return "scheduled";
-  if (c.total_limit != null && Number(c.redeemed_count) >= Number(c.total_limit)) return "full";
+  if (c.total_limit != null && Number(c.used_count) >= Number(c.total_limit)) return "full";
   return "active";
 }
 
@@ -90,9 +91,16 @@ function CampaignForm({ initial, onSaved, onCancel, t }) {
         </Field>
       </div>
       {money ? (
-        <Field label={f.kind === "percent" ? t("premiumAdmin.camp.percentValue") : t("premiumAdmin.camp.fixedValue")}>
-          <div className="mt-in"><input className="tnum" type="number" inputMode="numeric" min={1} value={f.value} onChange={(e) => set({ value: e.target.value.replace(/\D/g, "").slice(0, 7) })} /></div>
-        </Field>
+        <div className="mt-two">
+          <Field label={f.kind === "percent" ? t("premiumAdmin.camp.percentValue") : t("premiumAdmin.camp.fixedValue")} hint={f.kind === "fixed" ? t("premiumAdmin.camp.fixedHint") : null}>
+            <div className="mt-in"><input className="tnum" type="number" inputMode="numeric" min={1} value={f.value} onChange={(e) => set({ value: e.target.value.replace(/\D/g, "").slice(0, 7) })} /></div>
+          </Field>
+          {f.kind === "fixed" ? (
+            <Field label={t("premiumAdmin.camp.currency")}>
+              <div className="mt-in"><input className="pa-mono" maxLength={3} autoCapitalize="characters" spellCheck={false} value={f.currency} onChange={(e) => set({ currency: e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) })} /></div>
+            </Field>
+          ) : null}
+        </div>
       ) : null}
       <div className="mt-two">
         <Field label={t("premiumAdmin.camp.starts")} hint={!f.startDate ? t("premiumAdmin.camp.startsNow") : null}>
@@ -211,7 +219,7 @@ export default function PremiumCampaigns() {
                           {c.plan_id ? <PlanChip plan={c.plan_id} t={t} /> : null}
                           {c.duration_days ? <span>{t("premiumAdmin.dur.days", { n: c.duration_days })}</span> : null}
                         </span>
-                        <span className="pa-camp-use tnum">{num(c.redeemed_count ?? 0, locale, t)} / {c.total_limit != null ? num(c.total_limit, locale, t) : "∞"}</span>
+                        <span className="pa-camp-use tnum">{num(c.used_count ?? 0, locale, t)} / {c.total_limit != null ? num(c.total_limit, locale, t) : "∞"}</span>
                       </button>
                       <span className="pa-camp-acts">
                         <button type="button" className="pc-ibtn" aria-label={t("premiumAdmin.camp.edit")} title={t("premiumAdmin.camp.edit")} onClick={() => setEditing(fromRow(c))}><Pencil size={14} /></button>

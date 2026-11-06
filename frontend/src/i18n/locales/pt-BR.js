@@ -39,7 +39,7 @@ export const nested = {
     },
     "opHint": {
       "grant": "Inicia uma assinatura no plano escolhido. O primeiro presente mensal de DesCoin é pago na concessão.",
-      "extend": "Adiciona tempo a partir da data de fim atual (ou de agora, se já terminou).",
+      "extend": "Adiciona dias inteiros à data de término atual de uma assinatura ativa. Para uma nova data de término exata, use \"Definir data de fim\".",
       "change_plan": "Move o membro para o outro plano. A data de fim continua igual.",
       "cancel": "Encerra a assinatura agora. O histórico mantém todas as mudanças anteriores.",
       "set_end": "Define uma nova data de fim. As durações prontas contam a partir de agora.",
@@ -131,14 +131,11 @@ export const nested = {
     "reasonHint": "Obrigatório. Fica salvo com a mudança e no registro de admin.",
     "reasonPh": "Por que esta mudança está sendo feita?",
     "notePh": "Nota opcional para outros admins",
-    "startNow": "Vazio = começa agora.",
-    "startLocal": "No seu horário local; salvo em UTC.",
     "setEndFromNow": "Durações prontas e dias personalizados contam a partir de agora.",
     "stepUpHint": "As mudanças pedem seu código do autenticador.",
     "pickDate": "Escolher data",
     "time": "hora",
     "clearDate": "Limpar data",
-    "now": "Agora",
     "err": {
       "op": "Escolha uma ação.",
       "reason": "Escreva um motivo (pelo menos 3 caracteres).",
@@ -166,11 +163,34 @@ export const nested = {
       "forbidden": "Você não tem acesso à gestão premium.",
       "notReady": "Esta parte do servidor ainda não está disponível.",
       "generic": "Algo deu errado. Nada foi alterado.",
-      "not_found": "Membro não encontrado.",
-      "no_subscription": "O membro não tem uma assinatura para mudar.",
+      "not_found": "Não encontrado. Pode ter sido excluído.",
       "already_active": "O membro já tem uma assinatura ativa.",
-      "unlimited": "A assinatura não tem data de fim.",
-      "banned": "A conta está banida ou sendo excluída."
+      "extendDate": "Estender adiciona dias inteiros. Use \"Definir data de fim\" para uma data exata.",
+      "currency": "Digite um código de moeda de 3 letras (por exemplo EUR).",
+      "rateLimited": "Muitas solicitações. Aguarde um minuto e tente de novo.",
+      "not_active": "O membro não tem assinatura ativa. Dê uma nova assinatura.",
+      "invalid_plan": "Este plano não existe.",
+      "plan_archived": "Este plano está arquivado. Ative-o primeiro em Gestão de planos.",
+      "already_unlimited": "A assinatura já é ilimitada.",
+      "not_unlimited": "A assinatura não é ilimitada.",
+      "same_plan": "O membro já está neste plano.",
+      "invalid_end": "A data de término precisa estar no futuro (no máximo 20 anos).",
+      "invalid_duration": "Digite uma duração de 1 a 3650 dias.",
+      "invalid_op": "Esta ação não é suportada.",
+      "user_not_found": "Membro não encontrado, ou a conta foi excluída.",
+      "reason_required": "Escreva um motivo para esta mudança.",
+      "too_long": "O motivo (500 caracteres) ou a nota (2000 caracteres) é longo demais.",
+      "invalid_request_id": "Não foi possível preparar a solicitação. Tente de novo.",
+      "invalid_body": "Alguns valores não são válidos. Verifique o formulário.",
+      "no_users": "Escolha pelo menos um membro.",
+      "too_many_users": "No máximo 500 membros por lote.",
+      "code_taken": "Este código de cupom já está em uso.",
+      "invalid_code": "O código precisa de 4 a 32 letras ou dígitos.",
+      "unknown_feature": "Uma das chaves de recurso é desconhecida. Use chaves da lista de recursos.",
+      "field_not_editable": "Preços e o presente mensal de DesCoin não podem ser alterados na fase 1.",
+      "invalid_range": "Escolha um intervalo de datas válido.",
+      "premium_unavailable": "O Premium ainda não está configurado no servidor (falta a migração do banco de dados).",
+      "server_error": "O servidor não conseguiu concluir. Nada foi alterado."
     },
     "confirm": {
       "title": "Confirmar a mudança",
@@ -282,16 +302,20 @@ export const nested = {
       "campaigns": "Desempenho das campanhas",
       "def": {
         "acq": "Membros cuja assinatura começou em cada período (concedida ou por cupom), por plano.",
-        "active": "Membros com assinatura ativa no fim de cada período, por plano.",
-        "split": "Membros ativos no fim do intervalo, por plano.",
-        "cancelRenew": "Cancelamentos: assinaturas canceladas por um admin no período. Renovações: assinaturas estendidas ou pagas de novo no período.",
-        "freePaid": "Assinaturas iniciadas no intervalo, grátis ou pagas. Pagas fica vazio até integrar os pagamentos.",
+        "active": "Membros com assinatura ativa no fim de cada período, todos os planos juntos.",
+        "split": "Membros ativos agora, por plano.",
+        "cancelRenew": "Cancelamentos: assinaturas canceladas por um administrador no período. Renovações: assinaturas estendidas por um administrador no período.",
+        "freePaid": "Assinaturas ativas agora marcadas como gratuitas. Paga fica vazia até os pagamentos serem integrados.",
         "upDown": "Upgrades: de Descall+ para Ultra. Downgrades: de Ultra para Descall+. Mudanças de plano no intervalo.",
-        "avgDuration": "Média de dias entre início e fim das assinaturas que terminaram no intervalo. As ilimitadas ficam de fora.",
-        "conversion": "Assinaturas pagas iniciadas no intervalo, divididas pelo denominador: membros que tiveram uma assinatura grátis no intervalo.",
-        "campaigns": "Resgates de cupons no intervalo, membros únicos e quantos ainda estão ativos."
+        "avgDuration": "Média de dias do início ao fim da assinatura datada atual ou última de cada membro. Assinaturas ilimitadas ficam de fora.",
+        "conversion": "Contas criadas no intervalo que receberam uma assinatura no intervalo, divididas por todas as contas criadas no intervalo.",
+        "campaigns": "Resgates de cupons no intervalo e quantos membros vindos de cupom estão ativos agora. Membros únicos por intervalo ainda não são contados."
       },
-      "foot": "Os horários são agrupados no seu horário local. Os números vêm do registro de eventos de assinatura."
+      "foot": "Os períodos são agrupados em UTC. Os números vêm do registro de eventos de assinatura.",
+      "allPlans": "Todos os planos",
+      "convLabel": {
+        "accounts_created_in_range": "Contas criadas no intervalo"
+      }
     },
     "fin": {
       "sub": "Receita, reembolsos e impostos aparecem aqui quando os pagamentos forem integrados. Nada é estimado.",
@@ -376,7 +400,9 @@ export const nested = {
         "ended": "Encerrado",
         "scheduled": "Agendado",
         "full": "Esgotado"
-      }
+      },
+      "currency": "Moeda",
+      "fixedHint": "Na menor unidade (por exemplo centavos)."
     },
     "audit": {
       "sub": "Cada mudança premium feita por um admin, e as tentativas negadas.",
@@ -417,7 +443,8 @@ export const nested = {
       "priceHint": "Na fase 1 não há preços.",
       "saved": "Salvo.",
       "foot": "Por enquanto a assinatura é dada pela equipe Descall; não há botão de compra."
-    }
+    },
+    "grantStartsNow": "A assinatura começa quando você a aplica. Para terminar em um dia específico, escolha uma data de término exata."
   },
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)
