@@ -19,7 +19,7 @@ const OG = `${SITE}/og-default.png`;
 
 const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
-const { BLOG_POSTS, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG } = await import(
+const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG } = await import(
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
 );
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
@@ -60,6 +60,16 @@ const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname,
 /** "2026-08-11" in the page language, same rule as useMirrorCopy.js (Intl, UTC). */
 function formatPostDate(iso, loc) {
   return formatDate(`${iso}T00:00:00Z`, loc, { dateStyle: "long", timeZone: "UTC" }) || iso;
+}
+
+/** "Published · Updated · Author" line of a post with <time> elements (Intl dates, UTC). */
+function postMetaHtml(post, loc, labels, authorHref) {
+  const parts = [`${escapeHtml(labels.published)}: <time datetime="${post.date}">${escapeHtml(formatPostDate(post.date, loc))}</time>`];
+  if (post.updated && post.updated !== post.date) {
+    parts.push(`${escapeHtml(labels.updated)}: <time datetime="${post.updated}">${escapeHtml(formatPostDate(post.updated, loc))}</time>`);
+  }
+  parts.push(`${escapeHtml(labels.author)}: <a href="${authorHref}">Demir Sarp Kurtlar</a>`);
+  return `<p class="seo-note">${parts.join(" · ")}</p>`;
 }
 
 function escapeHtml(s) {
@@ -185,6 +195,9 @@ function crawlBodyInner(route) {
       const faq = (TR_BLOG_FAQ_BY_SLUG[slug] || [])
         .map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`)
         .join("\n");
+      const morePosts = TR_BLOG_POSTS.filter((p) => p.slug !== slug)
+        .map((p) => `<li><a href="${escapeHtml(p.path)}">${escapeHtml(p.h1 || p.title)}</a></li>`)
+        .join("");
       return `
 <main>
   ${seoBrand()}
@@ -192,9 +205,10 @@ function crawlBodyInner(route) {
   <article>
     <h1>${escapeHtml(post.h1 || post.title)}</h1>
     <p>${escapeHtml(post.description)}</p>
-    <p class="seo-note">Yayın: ${post.date} · Güncelleme: ${post.updated}</p>
+    ${postMetaHtml(post, "tr", { published: "Yayın", updated: "Güncelleme", author: "Yazar" }, "/descall-sahibi")}
     ${sections}
     ${faq ? `<h2>Sık sorulan sorular</h2>${faq}` : ""}
+    <nav aria-label="İlgili yazılar"><h2>İlgili yazılar</h2><ul>${morePosts}<li><a href="/tr/discord-alternatifi">Discord alternatifi</a></li><li><a href="/tr/sesli-sohbet-uygulamasi">Sesli sohbet uygulaması</a></li></ul></nav>
     <p><a href="/blog/${slug}">English version</a></p>
     ${seoCtaRow("/tr/blog", "Tüm rehberler", true)}
   </article>
@@ -251,14 +265,15 @@ function crawlBodyInner(route) {
       const sections = body.sections
         .map((s) => `<h2>${escapeHtml(tx(s.h))}</h2><p>${escapeHtml(tx(s.p))}</p>`)
         .join("\n");
-      // Prefixed locales also show the dates, written with Intl in that language.
-      const dates = route.locale
-        ? `\n    <p class="seo-note">${escapeHtml(tx("Published"))}: ${escapeHtml(formatPostDate(post.date, loc))}${
-            post.updated && post.updated !== post.date
-              ? ` · ${escapeHtml(tx("Updated"))}: ${escapeHtml(formatPostDate(post.updated, loc))}`
-              : ""
-          }</p>`
-        : "";
+      // Publish / update dates and author in every language, written with Intl.
+      const dates = `\n    ${postMetaHtml(post, loc, { published: tx("Published"), updated: tx("Updated"), author: tx("Author") }, hx("/who-owns-descall"))}`;
+      // Related reading: the other posts, then the guides the merged posts live on.
+      const related = [
+        ...BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => ({ to: p.path, label: p.title })),
+        ...BLOG_RELATED.filter((l) => l.to !== "/status"),
+      ]
+        .map((l) => `<li><a href="${escapeHtml(hx(l.to))}">${escapeHtml(tx(l.label))}</a></li>`)
+        .join("");
       // Same questions as the post's FAQPage JSON-LD, visible on the page.
       const postFaq = (BLOG_FAQ_BY_SLUG[slug] || [])
         .map((f) => `<h3>${escapeHtml(tx(f.q))}</h3><p>${escapeHtml(tx(f.a))}</p>`)
@@ -271,6 +286,7 @@ function crawlBodyInner(route) {
     <p>${escapeHtml(tx(post.description))}</p>${dates}
     ${sections}
     ${postFaq ? `<h2>${escapeHtml(tx("FAQ"))}</h2>\n${postFaq}` : ""}
+    <nav aria-label="${escapeHtml(tx("Related guides"))}"><h2>${escapeHtml(tx("Related guides"))}</h2><ul>${related}</ul></nav>
     ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : tx("All guides"), loc)}
   </article>
   ${seoSiteNav(loc)}

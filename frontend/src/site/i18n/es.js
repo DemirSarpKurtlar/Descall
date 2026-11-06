@@ -84,6 +84,7 @@ export default {
   "Assign roles and tune channel permissions for staff / announcements.": "Asigna roles y ajusta los permisos de los canales para el personal y los anuncios.",
   "Audit what your group actually uses": "Revisa lo que tu grupo usa de verdad",
   "August 25, 2026": "25 de agosto de 2026",
+  "Author": "Autor",
   "Availability in Türkiye": "Disponibilidad en Turquía",
   "Back": "Atrás",
   "Back to login": "Volver a iniciar sesión",

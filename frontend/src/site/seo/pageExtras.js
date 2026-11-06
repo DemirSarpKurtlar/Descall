@@ -13,6 +13,7 @@ import {
 } from "../siteLocales.js";
 import { siteText } from "../siteText.js";
 import { BLOG_BODIES } from "./blogBodies.js";
+import { NICHE_LANDINGS } from "./nicheLandings.js";
 
 /** /<prefix> twin of a mirrored English link, other links unchanged. */
 function mirrorHref(to, loc) {
@@ -365,6 +366,8 @@ export const PAGE_EXTRAS = {
     ],
     links: [
       { to: "/discord-alternative-for-voice-chat", label: "Voice chat alternative" },
+      // Same link (and translated label) as the communities page's related list.
+      ...NICHE_LANDINGS["/discord-alternative-for-communities"].related.filter((l) => l.to === "/discord-alternative-for-friends"),
       { to: "/download", label: "Download for Windows" },
     ],
   },

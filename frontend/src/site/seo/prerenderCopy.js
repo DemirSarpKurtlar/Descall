@@ -463,6 +463,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
                 footerItem(h("/compare/discord"), n.vsDiscord),
                 footerItem(h("/alternatives"), n.alternatives),
                 footerItem(h("/apps-like-discord"), n.apps),
+                footerItem(h("/best-discord-alternative-for-gamers"), trCopy("For gamers", l)),
                 footerItem(h("/blog"), n.blog),
               ].join("\n        ")
         }
@@ -473,6 +474,8 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
       <ul>
         ${footerItem(h("/about"), n.about)}
         ${footerItem(isTr ? "/descall-sahibi" : h("/who-owns-descall"), isTr ? "Descall’ın sahibi kim?" : newCopy("Who owns Descall?", l))}
+        ${footerItem(h("/security"), trCopy("Security", l))}
+        ${footerItem(h("/status"), trCopy("Status", l))}
         ${footerItem(h("/contact"), n.contact)}
         ${footerItem(h("/privacy"), n.privacy)}
         ${footerItem(h("/terms"), n.terms)}

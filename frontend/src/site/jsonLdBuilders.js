@@ -48,7 +48,7 @@ function organizationNode() {
     email: SITE_OPERATOR.supportEmail,
     sameAs: [SITE_OPERATOR.githubUrl, SITE_OPERATOR.githubProfileUrl],
     description:
-      "Descall is a free chat and calling app with servers, roles, channels, voice and video calls, and screen share, made in Türkiye.",
+      "Descall is a free chat and calling app with servers, roles, channels, voice and video calls, and screen share, based in Turkey.",
     foundingLocation: {
       "@type": "Place",
       address: {

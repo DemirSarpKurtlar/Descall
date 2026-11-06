@@ -342,6 +342,7 @@ text.registerSiteCatalog("de", {
     "What it takes to compete with Discord": "Was es braucht",
     "Who actually competes with Discord in 2026?": "Wer konkurriert 2026 mit Discord?",
     Published: "Veroeffentlicht",
+    Author: "Autor",
     "Descall and Other Apps Like Discord (2026)": "Apps wie Discord (2026)",
   },
   app: {},
@@ -358,7 +359,7 @@ try {
   assert.match(postShell, /hreflang="de" href="https:\/\/descall\.com\/de\/blog\/discord-competitors"/);
   assert.match(postShell, /<h1>Discord-Konkurrenten 2026<\/h1>/);
   assert.match(postShell, /<h2>Was es braucht<\/h2>/);
-  assert.match(postShell, /Veroeffentlicht: 11\. August 2026/, "dates are written with Intl in the page language");
+  assert.match(postShell, /Veroeffentlicht: <time datetime="2026-08-11">11\. August 2026<\/time>/, "dates are written with Intl in the page language");
   const ld = [...postShell.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
   const article = ld.find((g) => g["@type"] === "Article");
   assert.equal(article.inLanguage, "de");
@@ -380,10 +381,11 @@ try {
 } finally {
   sl.setPageGroupPreview(false);
 }
-// The English shell does not change with a catalog registered (no inLanguage, no dates).
+// The English shell does not change with a catalog registered; since the SEO audit
+// (Nov 2026) it carries inLanguage "en" and visible publish dates like every language.
 assert.equal(injectMeta(base, enPostRoute), enPost);
-assert.doesNotMatch(enPost, /"inLanguage":"en"/);
-assert.doesNotMatch(enPost, /Published:/);
+assert.match(enPost, /"inLanguage":"en"/);
+assert.match(enPost, /Published: <time datetime="2026-08-11">11 August 2026<\/time>/);
 
 // --- sitemap alternates -------------------------------------------------------------------
 const { alternateLinks } = await imp("scripts/generate-seo-files.mjs");

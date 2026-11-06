@@ -5,7 +5,8 @@ import { buildArticleLd, buildBreadcrumbLd, buildFaqLd } from "../JsonLd";
 import { BLOG_POSTS, BLOG_RELATED, BLOG_FAQ_BY_SLUG, GAMER_FAQ } from "../content/discordSeoContent";
 import { BLOG_BODIES } from "../seo/blogBodies";
 import { useT } from "../../context/localeContextInstance";
-import { useMirrorCopy } from "../useMirrorCopy";
+import { formatPostDate, useMirrorCopy } from "../useMirrorCopy";
+import { SITE_OPERATOR } from "../siteIdentity";
 import NotFoundPage from "./NotFoundPage";
 
 export default function BlogPostPage({ onSignIn }) {
@@ -20,6 +21,12 @@ export default function BlogPostPage({ onSignIn }) {
   if (!post || !body) return <NotFoundPage />;
 
   const faq = BLOG_FAQ_BY_SLUG[slug] || GAMER_FAQ.slice(0, 2);
+  const dateLocale = mirror.prefixed ? mirror.locale : "en";
+  // The other posts first, then the guides (same list as the prerendered post).
+  const related = [
+    ...BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => ({ to: p.path, label: p.title })),
+    ...BLOG_RELATED.filter((l) => l.to !== "/status"),
+  ];
   const crumbs = [
     { label: "Home", to: "/" },
     { label: "Blog", to: "/blog" },
@@ -57,8 +64,15 @@ export default function BlogPostPage({ onSignIn }) {
       }
     >
       <p className="seo-note">
-        {t("Published")}: {mirror.date(post.date)}
-        {post.updated && post.updated !== post.date ? ` · ${t("Updated")}: ${mirror.date(post.updated)}` : ""}
+        {t("Published")}: <time dateTime={post.date}>{formatPostDate(post.date, dateLocale)}</time>
+        {post.updated && post.updated !== post.date ? (
+          <>
+            {` · ${t("Updated")}: `}
+            <time dateTime={post.updated}>{formatPostDate(post.updated, dateLocale)}</time>
+          </>
+        ) : null}
+        {` · ${t("Author")}: `}
+        <Link to={mirror.href("/who-owns-descall")}>{SITE_OPERATOR.operatorName}</Link>
       </p>
       {body.sections.map((s) => (
         <section className="seo-section" key={s.h}>
@@ -66,7 +80,7 @@ export default function BlogPostPage({ onSignIn }) {
           <p>{t(s.p)}</p>
         </section>
       ))}
-      <SeoRelatedLinks title="Related guides" links={BLOG_RELATED} />
+      <SeoRelatedLinks title="Related guides" links={related} />
       <section className="seo-section">
         <p className="seo-note">
           <Link to={mirror.href("/blog")}>{t("← Back to blog")}</Link>

@@ -10948,6 +10948,7 @@ export const phrases = {
   ...MID_APP_I18N.ru,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall не связан с Discord Inc. Discord является товарным знаком Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "Строка API проверяется в реальном времени из вашего браузера при каждом открытии этой страницы.",
+  "Author": "Автор",
 };
 
 export default { nested, phrases };

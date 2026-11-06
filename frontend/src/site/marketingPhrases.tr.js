@@ -359,4 +359,5 @@ export const MARKETING_TR = {
     "Descall, Discord Inc. ile bağlantılı değildir. Discord, Discord Inc.’in ticari markasıdır.",
   "The API row is checked live from your browser each time you open this page.":
     "API satırı, bu sayfayı her açtığında tarayıcından canlı olarak kontrol edilir.",
+  Author: "Yazar",
 };
