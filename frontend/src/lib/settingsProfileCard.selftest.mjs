@@ -14,13 +14,14 @@ assert.equal(m.bannerFallback, null);
 assert.equal(profileCardModel({ username: "ayse" }, { isAdmin: false, teamLabel: "Descall ekibi" }).meta, "@ayse");
 assert.equal(profileCardModel(null, { fallbackName: "Kullanıcı" }).display, "Kullanıcı");
 
-// Banner sources: equipped item, then bannerUrl / banner_url, else a seeded gradient.
+// Banner sources: equipped item, then bannerUrl / banner_url, else the one default banner token (UI audit #3).
 assert.equal(bannerUrlOf({ bannerUrl: "a" }), "a");
 assert.equal(bannerUrlOf({ banner_url: "b" }), "b");
 const fb = profileCardModel({ username: "ayse" });
 assert.equal(fb.bannerUrl, null);
 assert.equal(fb.bannerFallback, fallbackBanner("ayse"));
-assert.match(fb.bannerFallback, /^linear-gradient/);
+assert.equal(fb.bannerFallback, "var(--profile-banner-fallback)");
+assert.equal(fallbackBanner("mert"), fallbackBanner("ayse"));
 
 // Status: invisible / offline paint no dot.
 assert.equal(statusDotOf("online"), "online");

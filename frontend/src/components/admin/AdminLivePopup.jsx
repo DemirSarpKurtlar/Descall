@@ -346,7 +346,7 @@ export default function AdminLivePopup() {
                 <RippleButton type="button" onClick={() => setConfirm(null)}>
                   {t("Cancel")}
                 </RippleButton>
-                <RippleButton type="button" className="admin-btn-green" disabled={busy || !confirm.count} onClick={sendNow}>
+                <RippleButton type="button" className="admin-btn-primary" disabled={busy || !confirm.count} onClick={sendNow}>
                   <Send size={14} /> {t("Send now")}
                 </RippleButton>
               </div>
@@ -354,7 +354,7 @@ export default function AdminLivePopup() {
           ) : (
             <RippleButton
               type="button"
-              className="admin-btn-green admin-live-popup-send"
+              className="admin-btn-primary admin-live-popup-send"
               disabled={busy || !canCompose || audienceCount <= 0}
               onClick={startConfirm}
             >

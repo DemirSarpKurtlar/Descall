@@ -1,7 +1,7 @@
 /** Premium Yönetimi (Descall+ / Descall Ultra yönetimi, 1. faz). premiumAdmin.en.js ile aynı anahtar ağacı. */
 export const PREMIUM_ADMIN_TR = {
   navGroup: "Premium Yönetimi",
-  navDashboard: "Premium Dashboard",
+  navDashboard: "Premium genel bakış",
   navUsers: "Kullanıcı Abonelikleri",
   navBulk: "Toplu Üyelik İşlemleri",
   navHistory: "Abonelik Geçmişi",

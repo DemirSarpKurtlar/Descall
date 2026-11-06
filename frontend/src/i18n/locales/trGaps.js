@@ -52,7 +52,7 @@ export const TR_I18N_GAPS = {
     "Olmazsa olmaz özellikleri listele (ses, ekran paylaşımı, sunucu, mobil).",
   "Move nightly voice to Descall for two weeks.":
     "İki hafta boyunca gece sesini Descall’a taşı.",
-  "No Nitro paywall on core chat & calls": "Temel sohbet ve aramalarda Nitro duvarı yok",
+  "No Nitro paywall on core chat & calls": "Temel sohbet ve aramalarda ek ücret yok",
   "Open Descall": "Descall’ı aç",
   Operational: "Çalışıyor",
   "Pin the Download link for Windows / Android users.":
@@ -229,7 +229,7 @@ export const TR_I18N_GAPS = {
   "Direct messages with typing indicators": "Yazıyor göstergeli doğrudan mesajlar",
   "How to evaluate platforms like Discord": "Discord benzeri platformlar nasıl değerlendirilir",
   "Replace nightly voice + DMs on day one": "İlk gün gece sesini ve DM’leri taşı",
-  "Kick, ban, timeout, audit log, invites": "Kick, ban, timeout, denetim kaydı, davetler",
+  "Kick, ban, timeout, audit log, invites": "At, yasakla, sustur; denetim kaydı, davetler",
   "Jump into Descall voice with your match": "Eşleşmenle Descall sesine geç",
   "What “good enough voice” actually means": "“Yeterince iyi ses” aslında ne demek",
   "Guilded, structured gaming communities": "Guilded, yapılandırılmış oyun toplulukları",

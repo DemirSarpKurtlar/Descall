@@ -6,13 +6,14 @@ import { avatarEffectGeometry } from "./avatarEffectGeometry.js";
 
 const STATUS_KEYS = new Set(["online", "idle", "away", "dnd", "busy"]);
 
-/** Same seeded fallback as the hover card, so a user without a banner looks the same everywhere. */
-export function fallbackBanner(seed) {
-  const hues = [220, 260, 280, 200, 340, 180, 30];
-  let h = 0;
-  for (const ch of String(seed || "user")) h = (h * 31 + ch.charCodeAt(0)) | 0;
-  const hue = hues[Math.abs(h) % hues.length];
-  return `linear-gradient(135deg, hsl(${hue}, 65%, 30%) 0%, hsl(${(hue + 40) % 360}, 55%, 18%) 100%)`;
+/**
+ * UI audit #3: one default banner for a user without one. The settings card uses
+ * the same token as Hesabım, the profile editor and the shop preview (brand
+ * charcoal with a faint logo-blue wash), never a per-user hue gradient.
+ */
+// eslint-disable-next-line no-unused-vars
+export function fallbackBanner(_seed) {
+  return "var(--profile-banner-fallback)";
 }
 
 export function bannerUrlOf(user) {
