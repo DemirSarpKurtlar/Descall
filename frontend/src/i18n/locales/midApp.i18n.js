@@ -39,6 +39,9 @@ export const MID_APP_I18N = {
     "Cleans up keyboard, fan and background noise.": "Klavye, fan ve arka plan sesini temizler.",
     "Noise suppression is on": "Gürültü engelleme açık",
     "Keeps your voice at an even level.": "Sesini dengeli bir seviyede tutar.",
+    "Voice channel for idle members": "Boşta kalanlar için ses kanalı",
+    "Move idle members after": "Boşta kalanları şu süreden sonra taşı",
+    "{count} min": "{count} dk",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -73,6 +76,9 @@ export const MID_APP_I18N = {
     "Cleans up keyboard, fan and background noise.": "Entfernt Tastatur-, Lüfter- und Hintergrundgeräusche.",
     "Noise suppression is on": "Rauschunterdrückung ist an",
     "Keeps your voice at an even level.": "Hält deine Stimme auf einem gleichmäßigen Pegel.",
+    "Voice channel for idle members": "Sprachkanal für inaktive Mitglieder",
+    "Move idle members after": "Inaktive Mitglieder verschieben nach",
+    "{count} min": "{count} Min.",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -107,6 +113,9 @@ export const MID_APP_I18N = {
     "Cleans up keyboard, fan and background noise.": "Elimina el ruido del teclado, del ventilador y de fondo.",
     "Noise suppression is on": "La supresión de ruido está activada",
     "Keeps your voice at an even level.": "Mantiene tu voz a un nivel uniforme.",
+    "Voice channel for idle members": "Canal de voz para miembros inactivos",
+    "Move idle members after": "Mover a los miembros inactivos tras",
+    "{count} min": "{count} min",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -141,6 +150,9 @@ export const MID_APP_I18N = {
     "Cleans up keyboard, fan and background noise.": "Supprime le bruit du clavier, du ventilateur et de fond.",
     "Noise suppression is on": "La suppression du bruit est activée",
     "Keeps your voice at an even level.": "Garde ta voix à un niveau régulier.",
+    "Voice channel for idle members": "Salon vocal pour les membres inactifs",
+    "Move idle members after": "Déplacer les membres inactifs après",
+    "{count} min": "{count} min",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -175,6 +187,9 @@ export const MID_APP_I18N = {
     "Cleans up keyboard, fan and background noise.": "Remove ruído de teclado, ventilador e de fundo.",
     "Noise suppression is on": "A supressão de ruído está ativada",
     "Keeps your voice at an even level.": "Mantém sua voz em um nível uniforme.",
+    "Voice channel for idle members": "Canal de voz para membros ausentes",
+    "Move idle members after": "Mover membros ausentes após",
+    "{count} min": "{count} min",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -209,5 +224,8 @@ export const MID_APP_I18N = {
     "Cleans up keyboard, fan and background noise.": "Убирает шум клавиатуры, вентилятора и фона.",
     "Noise suppression is on": "Шумоподавление включено",
     "Keeps your voice at an even level.": "Держит громкость голоса ровной.",
+    "Voice channel for idle members": "Голосовой канал для неактивных",
+    "Move idle members after": "Переносить неактивных через",
+    "{count} min": "{count} мин",
   },
 };
