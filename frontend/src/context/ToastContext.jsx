@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "../components/ui/Icon.jsx";
 import { Avatar } from "../components/ui/Avatar";
@@ -59,6 +59,10 @@ export function ToastProvider({ children }) {
     pushWeb(message, t, meta);
   }, [pushWeb]);
 
+  // Stable value: every toast shown / dismissed must not re-render each consumer
+  // (every message bubble reads useToast()).
+  const api = useMemo(() => ({ toast: push }), [push]);
+
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined;
     const onQa = (event) => {
@@ -71,7 +75,7 @@ export function ToastProvider({ children }) {
   }, [push]);
 
   return (
-    <ToastContext.Provider value={{ toast: push }}>
+    <ToastContext.Provider value={api}>
       {children}
       {/* Friend came online (3.1.2): its own stack, top right under the chat
           header pills, in the theme's glass (styles/presence-toast.css). */}

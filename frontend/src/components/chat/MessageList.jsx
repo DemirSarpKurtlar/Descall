@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment, memo } from "react";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
@@ -168,7 +168,7 @@ function galleryItemsFrom(messages, senderFor = (u) => u) {
   return out;
 }
 
-export default function MessageList({
+function MessageList({
   messages,
   currentUser,
   onJoinActiveCall,
@@ -232,6 +232,52 @@ export default function MessageList({
     }, HOVER_CLOSE_GRACE_MS);
   }, [cancelHoverClose]);
   useEffect(() => cancelHoverClose, [cancelHoverClose]);
+  // Per-sender profile (friends / presence / me merged), cached per sender object: a
+  // roster or presence change only yields a new object for the senders it touched,
+  // so the memoized headers of everyone else skip their render.
+  const senderCacheRef = useRef(new WeakMap());
+  const avatarUserFor = (user) => {
+    if (!user || typeof user !== "object" || user.id == null) {
+      return enrichAvatarUser(user, { me, friends, onlineUsers, currentUser });
+    }
+    const key = String(user.id);
+    const same = (x) => x && String(x.id) === key;
+    const friend = Array.isArray(friends) ? friends.find(same) || null : null;
+    const online = Array.isArray(onlineUsers) ? onlineUsers.find(same) || null : null;
+    const mine = same(me) ? me : same(currentUser) ? currentUser : null;
+    const hit = senderCacheRef.current.get(user);
+    if (hit && hit.friend === friend && hit.online === online && hit.mine === mine) return hit.value;
+    const value = enrichAvatarUser(user, { me, friends, onlineUsers, currentUser });
+    senderCacheRef.current.set(user, { friend, online, mine, value });
+    return value;
+  };
+  // Latest values for the header handlers below (stable identities for memoized headers).
+  const hoverLiveRef = useRef(null);
+  hoverLiveRef.current = { glassUi, hoverUser, hoverPos, friends, onlineUsers };
+  const openProfileFor = useCallback((avatarUser) => {
+    closeHoverNow();
+    if (avatarUser?.id) setProfileTarget(avatarUser);
+  }, [closeHoverNow]);
+  const showHoverCardFor = useCallback((avatarUser, el, event) => {
+    // Latest render's values (this handler keeps one identity across renders).
+    const { glassUi, hoverUser, hoverPos, friends, onlineUsers } = hoverLiveRef.current;
+    // iOS turns a tap into mouseenter and leaves the card up. Glass
+    // already presents the profile sheet, so the hover card must not open.
+    if (glassUi) return;
+    if (event?.pointerType === "touch") return;
+    if (!avatarUser?.id || !el) return;
+    cancelHoverClose();
+    if (hoverUser?.id && String(hoverUser.id) === String(avatarUser.id) && hoverPos) return;
+    const rect = el.getBoundingClientRect();
+    const friend = (friends || []).find((f) => f.id === avatarUser.id);
+    const online = (onlineUsers || []).find((u) => u.id === avatarUser.id);
+    setHoverUser(
+      mergeUserProfiles(avatarUser, friend, online, {
+        status: getPresenceStatus(onlineUsers, avatarUser.id),
+      })
+    );
+    setHoverPos(hoverAnchorFromRect(rect));
+  }, [cancelHoverClose]);
   // Clicking (or Enter on) an @mention in a message opens that person's profile, the same
   // sheet a click on a sender's avatar opens. Resolved from people this chat already knows.
   const openMention = useCallback((username) => {
@@ -752,30 +798,7 @@ export default function MessageList({
         }
 
         const isOwn = group.user?.id === currentUser?.id;
-        const avatarUser = enrichAvatarUser(group.user, { me, friends, onlineUsers, currentUser });
-        const openProfile = () => {
-          closeHoverNow();
-          if (avatarUser?.id) setProfileTarget(avatarUser);
-        };
-        const showHoverCard = (el, event) => {
-          // iOS turns a tap into mouseenter and leaves the card up. Glass
-          // already presents the profile sheet, so the hover card must not open.
-          if (glassUi) return;
-          if (event?.pointerType === "touch") return;
-          if (!avatarUser?.id || !el) return;
-          cancelHoverClose();
-          if (hoverUser?.id && String(hoverUser.id) === String(avatarUser.id) && hoverPos) return;
-          const rect = el.getBoundingClientRect();
-          const friend = (friends || []).find((f) => f.id === avatarUser.id);
-          const online = (onlineUsers || []).find((u) => u.id === avatarUser.id);
-          setHoverUser(
-            mergeUserProfiles(avatarUser, friend, online, {
-              status: getPresenceStatus(onlineUsers, avatarUser.id),
-            })
-          );
-          setHoverPos(hoverAnchorFromRect(rect));
-        };
-        const hideHoverCard = () => scheduleHoverClose();
+        const avatarUser = avatarUserFor(group.user);
 
         return (
           <div
@@ -783,52 +806,14 @@ export default function MessageList({
             className={`message-group is-left ${isOwn ? "is-mine" : ""}`}
           >
             {!group.isCompact && (
-              <div className="message-header">
-                <div
-                  className="message-avatar"
-                  onClick={openProfile}
-                  style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
-                  onMouseEnter={glassUi ? undefined : (e) => showHoverCard(e.currentTarget, e)}
-                  onMouseLeave={hideHoverCard}
-                >
-                  <Avatar
-                    key={avatarUser?.id || avatarUser?.username || "msg-avatar"}
-                    name={resolveDisplayName(avatarUser)}
-                    size={40}
-                    user={avatarUser}
-                    imageUrl={pickAvatarUrl(avatarUser)}
-                    animate="hover"
-                  />
-                  {/* No presence dot on message avatars (as in Messages): the
-                      list could disagree with the live panel status. */}
-                </div>
-                <div className="message-meta">
-                  <span
-                    className="message-author"
-                    onClick={openProfile}
-                    style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
-                    onMouseEnter={glassUi ? undefined : (e) => {
-                      if (!avatarUser?.id) return;
-                      e.currentTarget.style.textDecoration = "underline";
-                      showHoverCard(e.currentTarget, e);
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.textDecoration = "";
-                      hideHoverCard();
-                    }}
-                  >
-                    <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
-                    {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
-                      <span className="msg-bot-badge" title="Descall Apps">{t("chatx.appBadge")}</span>
-                    ) : null}
-                    <CountryBadge user={avatarUser} compact />
-                    <AdminBadge user={avatarUser} variant="inline" />
-                  </span>
-                  <span className="message-timestamp">
-                    {formatTimestamp(group.messages[0]?.timestamp)}
-                  </span>
-                </div>
-              </div>
+              <MessageGroupHeader
+                avatarUser={avatarUser}
+                timestamp={group.messages[0]?.timestamp}
+                glassUi={glassUi}
+                onOpenProfile={openProfileFor}
+                onShowHover={showHoverCardFor}
+                scheduleHoverClose={scheduleHoverClose}
+              />
             )}
 
             <div className="message-content-wrapper">
@@ -1009,7 +994,7 @@ export default function MessageList({
   );
 }
 
-function MessageBubble({
+function MessageBubbleView({
   message,
   isOwn,
   isCompact,
@@ -1033,6 +1018,7 @@ function MessageBubble({
   chatBubbleKey = null,
   reactionBurstKey = null,
 }) {
+  countBubbleRender();
   const t = useT();
   const { toast } = useToast();
   const glass = useGlassUi();
@@ -1068,8 +1054,6 @@ function MessageBubble({
   const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const galleryItems = useContext(MediaGalleryContext);
-  const senderFor = useContext(SenderLookupContext);
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.text || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1902,16 +1886,13 @@ function MessageBubble({
         )}
 
         {isVisualMedia && (
-          <MessageMediaLightbox
+          <BubbleMediaLightbox
             open={lightboxOpen}
             src={mediaUrl}
             alt={isGif ? "GIF" : message.originalName || t("Image")}
             onClose={closeLightbox}
-            items={isGif ? null : galleryItems}
-            startId={String(message.id ?? message.tempId ?? "")}
-            sender={senderName(senderFor(message.from) || message.from, message.username || "")}
-            avatar={senderAvatarUrl(senderFor(message.from) || message.from)}
-            at={message.timestamp || message.created_at || null}
+            isGif={isGif}
+            message={message}
           />
         )}
 
@@ -2208,6 +2189,116 @@ function MessageBubble({
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default memo(MessageList);
+
+/**
+ * Sender row above a message group (avatar, name, badges, time). Memoized: it re-renders
+ * when this sender's merged profile changes, not on every list render.
+ */
+const MessageGroupHeader = memo(function MessageGroupHeader({ avatarUser, timestamp, glassUi, onOpenProfile, onShowHover, scheduleHoverClose }) {
+  const t = useT();
+  const openProfile = () => onOpenProfile(avatarUser);
+  const showHoverCard = (el, event) => onShowHover(avatarUser, el, event);
+  const hideHoverCard = () => scheduleHoverClose();
+  return (
+    <div className="message-header">
+      <div
+        className="message-avatar"
+        onClick={openProfile}
+        style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
+        onMouseEnter={glassUi ? undefined : (e) => showHoverCard(e.currentTarget, e)}
+        onMouseLeave={hideHoverCard}
+      >
+        <Avatar
+          key={avatarUser?.id || avatarUser?.username || "msg-avatar"}
+          name={resolveDisplayName(avatarUser)}
+          size={40}
+          user={avatarUser}
+          imageUrl={pickAvatarUrl(avatarUser)}
+          animate="hover"
+        />
+        {/* No presence dot on message avatars (as in Messages): the
+            list could disagree with the live panel status. */}
+      </div>
+      <div className="message-meta">
+        <span
+          className="message-author"
+          onClick={openProfile}
+          style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
+          onMouseEnter={glassUi ? undefined : (e) => {
+            if (!avatarUser?.id) return;
+            e.currentTarget.style.textDecoration = "underline";
+            showHoverCard(e.currentTarget, e);
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.textDecoration = "";
+            hideHoverCard();
+          }}
+        >
+          <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
+          {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
+            <span className="msg-bot-badge" title="Descall Apps">{t("chatx.appBadge")}</span>
+          ) : null}
+          <CountryBadge user={avatarUser} compact />
+          <AdminBadge user={avatarUser} variant="inline" />
+        </span>
+        <span className="message-timestamp">
+          {formatTimestamp(timestamp)}
+        </span>
+      </div>
+    </div>
+  );
+});
+
+// Props read only when a bubble mounts (enter animation): a later change must not
+// re-render the bubble. Everything else is compared by identity, so App and the list
+// pass stable callbacks (useCallback / setState) and keep message objects immutable.
+const BUBBLE_MOUNT_ONLY_PROPS = new Set(["isFresh", "quietUntil"]);
+function sameBubbleProps(prev, next) {
+  for (const k in next) {
+    if (BUBBLE_MOUNT_ONLY_PROPS.has(k)) continue;
+    if (!Object.is(prev[k], next[k])) return false;
+  }
+  for (const k in prev) {
+    if (!(k in next)) return false;
+  }
+  return true;
+}
+/** A bubble re-renders only when its own props change (not on typing / presence / read events). */
+const MessageBubble = memo(MessageBubbleView, sameBubbleProps);
+
+/**
+ * Render counter for the messaging e2e: off unless the page sets
+ * window.__descallBubbleRenders = { n: 0 } (one property read per render otherwise).
+ */
+function countBubbleRender() {
+  if (typeof window === "undefined") return;
+  const rc = window.__descallBubbleRenders;
+  if (rc) rc.n += 1;
+}
+
+/**
+ * The bubble's media viewer. Reads the list-wide gallery and sender lookup here, so a
+ * change to those (new message, profile data) re-renders this viewer, not the bubble.
+ */
+function BubbleMediaLightbox({ open, src, alt, onClose, isGif, message }) {
+  const galleryItems = useContext(MediaGalleryContext);
+  const senderFor = useContext(SenderLookupContext);
+  return (
+    <MessageMediaLightbox
+      open={open}
+      src={src}
+      alt={alt}
+      onClose={onClose}
+      items={isGif ? null : galleryItems}
+      startId={String(message.id ?? message.tempId ?? "")}
+      sender={senderName(senderFor(message.from) || message.from, message.username || "")}
+      avatar={senderAvatarUrl(senderFor(message.from) || message.from)}
+      at={message.timestamp || message.created_at || null}
+    />
   );
 }
 
