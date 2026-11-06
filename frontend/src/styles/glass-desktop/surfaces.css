@@ -61,12 +61,8 @@ html.glass-desktop .user-settings.is-desktop {
   color: var(--gd-t1);
 }
 
-html.glass-desktop .user-settings.is-desktop.is-shop-open {
-  width: min(1480px, calc(100vw - 28px)) !important;
-  height: min(960px, var(--us-fit-h-shop)) !important;
-  max-width: 1480px !important;
-  max-height: min(960px, var(--us-fit-h-shop)) !important;
-}
+/* UI audit #150: the Shop opens in the same Settings card as every other page
+   (no edge-to-edge panel over the rail). */
 
 html.glass-desktop .user-settings.is-desktop .us-sidebar {
   width: 264px;

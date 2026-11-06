@@ -24,7 +24,8 @@ for (const [name, css] of [["settings.css", settings], ["glass-desktop/surfaces.
     assert.ok(!/(?:^|[\s;])(?:max-)?height:[^;]*100vh/.test(m[1]), `${name}: desktop card height still uses 100vh: ${m[1].trim().slice(0, 120)}`);
   }
 }
-assert.match(surfaces, /height: min\(960px, var\(--us-fit-h-shop\)\)/);
+// UI audit #150: the Shop uses the same Settings card size as every other page.
+assert.ok(!/\.user-settings\.is-desktop\.is-shop-open \{[^}]*width:/.test(surfaces), "shop opens in the standard settings card");
 
 // The shell covers the window; the safe-top padding clears the title bar once.
 assert.match(titlebar, /body\.electron-app \.user-settings-shell\.is-desktop \{[^}]*inset: 0 !important/);
