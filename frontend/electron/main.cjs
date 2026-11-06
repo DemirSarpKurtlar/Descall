@@ -64,10 +64,17 @@ const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelW
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
+const premiumNotify = require('./premium/notifyHooks.cjs');
+const { applyToastIdentity } = require('./premium/toastIdentity.cjs');
+// Host hooks for premium modules that need main.cjs internals (multi_account partitions).
+const premiumHooks = require('./premium/hostHooks.cjs');
 
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+// Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
+// toast activator CLSID, both also written on the NSIS Start Menu shortcut.
+applyToastIdentity(app, { log });
 
 // Standard scheme so packaged pages can call https APIs with webSecurity on.
 // file:// cannot. Register before ready.
@@ -83,6 +90,8 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+
+const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
 
 function distRoot() {
   const candidates = [
@@ -119,10 +128,21 @@ function appDocumentCsp(root) {
   return cachedAppCsp;
 }
 
+let descallProtocolHandler = null;
+/** Same descall:// handler on another session (premium multi_account partitions). */
+function registerAppProtocolOn(ses) {
+  if (!descallProtocolHandler || !ses || ses === session.defaultSession) return false;
+  ses.protocol.handle('descall', descallProtocolHandler);
+  return true;
+}
+
+premiumHooks.set('registerAppProtocolOn', registerAppProtocolOn);
+premiumHooks.set('mediaPermissions', MEDIA_PERMISSIONS);
+
 function registerDescallProtocol() {
   const root = distRoot();
   if (!root) return null;
-  protocol.handle('descall', (request) => {
+  protocol.handle('descall', descallProtocolHandler = (request) => {
     try {
       const url = new URL(request.url);
       // SPA routes serve the app document (2.11.11), and the document's relative
@@ -158,7 +178,12 @@ function isDescallWebContents(wc) {
     (w) => w && !w.isDestroyed() && w.webContents === wc,
   )) return true;
   // Descall+ pop-outs, mini mode and PiP load the same app document and need the token.
-  try { return Boolean(premium && premium.isAuxWindow && premium.isAuxWindow(wc)); } catch (_) { return false; }
+  try {
+    if (premium && premium.isAuxWindow && premium.isAuxWindow(wc)) return true;
+    // Descall Ultra extra-account windows (multi_account, own session partition).
+    const isAccount = premiumHooks.get('isAccountWebContents');
+    return Boolean(isAccount && isAccount(wc));
+  } catch (_) { return false; }
 }
 let senderGuard = null;
 function getSenderGuard() {
@@ -192,8 +217,10 @@ function trustedOn(channel, handler, { sync = false, refused = null } = {}) {
   });
 }
 
-function tokenFilePath() {
-  return path.join(app.getPath('userData'), 'auth-token.bin');
+function tokenFilePath(event) {
+  // A premium multi_account window (own session partition) keeps its own token file.
+  const own = event ? premiumHooks.tokenFileForSender(event.sender) : null;
+  return own || path.join(app.getPath('userData'), 'auth-token.bin');
 }
 
 // Renderer boot watchdog / "Tekrar dene" (index.html, 2.11.5): drop the service
@@ -250,7 +277,7 @@ onLocaleChange(() => {
 
 trustedOn('secure-token:get', (event) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (!fs.existsSync(file)) {
       event.returnValue = null;
       return;
@@ -267,7 +294,7 @@ trustedOn('secure-token:get', (event) => {
 
 trustedOn('secure-token:set', (event, token) => {
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     const value = String(token || '');
     if (!value) {
       if (fs.existsSync(file)) fs.unlinkSync(file);
@@ -286,9 +313,9 @@ trustedOn('secure-token:set', (event, token) => {
 }, { sync: true, refused: false });
 
 trustedOn('secure-token:clear', (event) => {
-  premium.gate.reset();
+  if (!premiumHooks.tokenFileForSender(event.sender)) premium.gate.reset();
   try {
-    const file = tokenFilePath();
+    const file = tokenFilePath(event);
     if (fs.existsSync(file)) fs.unlinkSync(file);
     event.returnValue = true;
   } catch {
@@ -1342,7 +1369,6 @@ function createMainWindow() {
   // 'speaker-selection' (2.10.113): without it Chromium rejects
   // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
   // silently did nothing.
-  const MEDIA_PERMISSIONS = ['media', 'display-capture', 'screen', 'audioCapture', 'videoCapture', 'speaker-selection'];
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(MEDIA_PERMISSIONS.includes(permission));
   });
@@ -2107,13 +2133,60 @@ function mainWindowInFront() {
   }
 }
 
-function showAppNotification({ title, options = {} } = {}) {
+// Native OS toasts kept referenced until closed (otherwise GC drops the click handler).
+const liveNativeToasts = new Set();
+function showNativeToast({ title, body, tag, data, silent }) {
+  try {
+    const { Notification } = require('electron');
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(data?.from || title || 'Descall').slice(0, 120), body: String(data?.preview || body || '').slice(0, 300), silent });
+    liveNativeToasts.add(n);
+    n.on('click', () => {
+      showMainWindow();
+      mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+    });
+    n.on('close', () => liveNativeToasts.delete(n));
+    n.on('failed', () => liveNativeToasts.delete(n));
+    n.show();
+    if (liveNativeToasts.size > 20) liveNativeToasts.delete(liveNativeToasts.values().next().value);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function showAppNotification(payload = {}) {
+  // Descall+ modules may decorate (quick reply) or skip a toast.
+  const hooked = premiumNotify.run(payload);
+  if (!hooked) return null;
+  const { title, options = {} } = hooked;
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
   // Descall in front: the in-app UI (message list, incoming call card) is
   // already showing this. A toast on top would be a duplicate.
   if (mainWindowInFront() && (isCall || !requireInteraction)) return null;
+
+  // Descall+ quick reply: a DM becomes a native toast with an inline reply
+  // field where the OS supports it; otherwise the capsule below is shown.
+  if (hooked.quickReply && !isCall) {
+    const shown = premiumNotify.showQuickReply({
+      title: data?.from || title,
+      body: data?.preview || body,
+      conv: hooked.quickReply.conv,
+      onClick: () => {
+        showMainWindow();
+        mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+      },
+    });
+    if (shown) return null;
+  }
+
+  // Descall+ notification profiles: "toast" style uses the OS notification
+  // instead of a capsule (the renderer only sends it for entitled users).
+  if (options.style === 'toast' && !isCall && showNativeToast({ title, body, tag, data, silent: Boolean(options.silent) })) {
+    return null;
+  }
 
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;

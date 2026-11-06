@@ -23,7 +23,9 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
-import useSpeaking from "../../hooks/useSpeaking";
+import useVoiceActivity from "../../hooks/useVoiceActivity";
+import VoiceActivityMeter from "../../premium/ui/VoiceActivityMeter.jsx";
+import { setPinnedVoiceUser } from "../../premium/audio/pinnedUser.js";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
@@ -146,10 +148,12 @@ const VoiceTile = memo(function VoiceTile({
   const videoRef = useRef(null);
   const [tileEl, setTileEl] = useState(null);
   const cameraStream = tile.cameraStream || null;
-  const speakingRaw = useSpeaking(tile.audioStream, {
+  // Same detector as before; its level also feeds the Descall+ activity meter.
+  const vad = useVoiceActivity(tile.audioStream, {
     muted: Boolean(tile.muted),
     observeEl: tileEl,
   });
+  const speakingRaw = vad.speaking;
   // Hold the off-edge so VAD flapping can't blink the speaking state.
   const heldSpeaking = useHeldSpeaking(speakingRaw && !tile.muted);
   const speaking = tile.muted ? false : heldSpeaking;
@@ -219,6 +223,7 @@ const VoiceTile = memo(function VoiceTile({
         </div>
       )}
       <div className="server-voice-tile-meta">
+        <VoiceActivityMeter level={vad.level} muted={Boolean(tile.muted)} />
         <span className="server-voice-tile-name">{name}</span>
         {tile.isLocal ? <span className="server-voice-you">{youLabel}</span> : null}
         {tile.member?.stageRole === "speaker" ? (
@@ -392,6 +397,11 @@ function ServerScreenShareStage({
   const t = useT();
   const [activeId, setActiveId] = useState(null);
   const [pinnedId, setPinnedId] = useState(null);
+  // Descall+ Ultra per-user volume hotkeys act on the pinned participant.
+  useEffect(() => {
+    setPinnedVoiceUser(pinnedId);
+    return () => setPinnedVoiceUser(null);
+  }, [pinnedId]);
   const [shareLayout, setShareLayout] = useState("stage");
   const [expanded, setExpanded] = useState(false);
   const [aspectKey, setAspectKey] = useState("0x0");

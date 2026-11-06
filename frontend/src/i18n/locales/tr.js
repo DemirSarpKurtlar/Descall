@@ -1,5 +1,7 @@
 /** Auto-generated + curated tr locale */
+import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
+import { PREMIUM_AUDIO_TR } from "./premiumAudio.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
@@ -27,7 +29,9 @@ import { COUNTS_TR } from "./counts.tr.js";
 import { API_TR } from "./api.tr.js";
 import { BOT_TR } from "./bot.tr.js";
 export const nested = {
+  premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
+  premiumAudio: PREMIUM_AUDIO_TR,
   world3d: WORLD3D_TR,
   counts: COUNTS_TR,
   shell: SHELL_TR,

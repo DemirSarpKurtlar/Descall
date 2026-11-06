@@ -5,6 +5,346 @@
  *   phrases - English source string -> translation
  */
 export const nested = {
+  // premiumAudio:start (Descall+ hotkeys, audio, notifications)
+  "premiumAudio": {
+    "common": {
+      "desktopOnly": "Este recurso funciona no app Descall para computador.",
+      "save": "Salvar",
+      "cancel": "Cancelar",
+      "apply": "Aplicar",
+      "active": "Ativo",
+      "delete": "Excluir",
+      "deleteNamed": "Excluir {name}",
+      "remove": "Remover",
+      "moveUp": "Subir",
+      "moveDown": "Descer",
+      "unnamedDevice": "Dispositivo sem nome",
+      "micError": "Não foi possível abrir o microfone. Confira a permissão e o dispositivo escolhido.",
+      "ms": "{n} ms",
+      "db": "{n} dB",
+      "seconds": "{n} s",
+      "minutes": "{n} min",
+      "hours": "{n} h"
+    },
+    "hotkeys": {
+      "title": "Atalhos personalizados",
+      "hint": "Clique em um atalho e pressione as novas teclas. Esc cancela, Backspace apaga.",
+      "enable": "Usar meus próprios atalhos",
+      "enableDesc": "Desligado: valem os atalhos padrão.",
+      "holdDesc": "Segure para falar. Um botão lateral do mouse também funciona.",
+      "pressKey": "Pressione as teclas...",
+      "pressKeyOrMouse": "Pressione teclas ou um botão do mouse...",
+      "unbound": "Não definido",
+      "mouse3": "Botão do meio",
+      "mouse4": "Mouse voltar",
+      "mouse5": "Mouse avançar",
+      "saveAnyway": "Salvar mesmo assim",
+      "reset": "Restaurar padrões",
+      "saved": "Atalhos salvos.",
+      "actions": {
+        "toggle_mute": "Silenciar / ativar microfone",
+        "toggle_deafen": "Ensurdecer / ouvir",
+        "push_to_talk": "Apertar para falar",
+        "quick_launcher": "Inicializador rápido",
+        "volume_up": "Aumentar o fixado",
+        "volume_down": "Diminuir o fixado"
+      },
+      "reason": {
+        "invalid": "{action}: {accel} não é um atalho válido.",
+        "duplicate": "{action}: {accel} já é usado para {other}.",
+        "reserved": "{action}: {accel} é reservado pelo Descall.",
+        "needs_modifier": "{action}: adicione Ctrl, Alt ou Shift a {accel}, senão a digitação em outros apps fica bloqueada.",
+        "mouse_not_allowed": "{action}: botões do mouse só servem para apertar para falar.",
+        "registered": "{action}: {accel} já está em uso.",
+        "taken": "{action}: outro app já usa {accel}."
+      }
+    },
+    "globalMute": {
+      "title": "Silêncio global",
+      "hint": "Funciona em qualquer app, inclusive jogos. Os outros apps não recebem essas teclas.",
+      "enable": "Atalho de silêncio global",
+      "enableDesc": "Silencie ou ative o microfone de qualquer app durante uma chamada.",
+      "deafen": "Atalho para ensurdecer",
+      "remap": "Troque as teclas em Atalhos personalizados."
+    },
+    "ptt": {
+      "title": "Apertar para falar global",
+      "hint": "Seu microfone fica mudo até você segurar a tecla, em qualquer app.",
+      "enable": "Apertar para falar global",
+      "enableDesc": "Ao ligar, as chamadas também passam para apertar para falar.",
+      "bindingDesc": "Troque em Atalhos personalizados.",
+      "releaseDelay": "Atraso ao soltar",
+      "releaseDelayDesc": "O microfone fica aberto um instante depois de soltar, para não cortar a última palavra.",
+      "forceToggle": "Apertar para alternar",
+      "forceToggleDesc": "Aperte uma vez para falar e de novo para parar, em vez de segurar.",
+      "toggleTimeout": "Silenciar sozinho após",
+      "toggleTimeoutDesc": "No modo alternar, o microfone silencia depois desse tempo.",
+      "modeHold": "Segurar para falar está ativo. A tecla também chega ao jogo.",
+      "modeToggle": "Modo alternar: aperte uma vez para falar e de novo para parar.",
+      "modeToggleNative": "O leitor de teclas não pôde iniciar neste computador, então apertar para falar funciona como alternar com silêncio automático.",
+      "mouseNeedsNative": "Botões do mouse precisam do leitor de teclas; escolha uma tecla do teclado.",
+      "elevated": "Jogos abertos como administrador só passam teclas para apps que também rodam como administrador. Para apertar para falar nesses jogos, rode o Descall como administrador também."
+    },
+    "mediaKeys": {
+      "title": "Teclas de mídia",
+      "hint": "Só durante chamadas. Fora delas, as teclas continuam com o seu player de música.",
+      "enable": "Controlar chamadas com teclas de mídia",
+      "enableDesc": "Durante uma chamada, as teclas de mídia param de funcionar em outros players.",
+      "none": "Nada",
+      "taken": "Outro app está usando algumas teclas de mídia agora.",
+      "keys": {
+        "playPause": "Reproduzir / Pausar",
+        "next": "Próxima faixa",
+        "previous": "Faixa anterior",
+        "stop": "Parar"
+      }
+    },
+    "launcher": {
+      "title": "Inicializador rápido",
+      "hint": "Busque amigos, conversas, servidores, canais e ações de qualquer lugar.",
+      "enable": "Atalho do inicializador rápido",
+      "enableDesc": "Abre uma pequena janela de busca sobre qualquer app.",
+      "tryIt": "Experimente",
+      "openNow": "Abrir agora",
+      "friend": "Amigo",
+      "dm": "Mensagem direta",
+      "group": "Grupo",
+      "server": "Servidor",
+      "mute": "Silenciar",
+      "unmute": "Ativar microfone",
+      "deafen": "Ensurdecer",
+      "undeafen": "Parar de ensurdecer",
+      "voice": "Voz",
+      "status": "Status",
+      "statusOnline": "Status: Online",
+      "statusIdle": "Status: Ausente",
+      "statusDnd": "Status: Não perturbe",
+      "statusInvisible": "Status: Invisível",
+      "openSettings": "Abrir configurações",
+      "app": "Descall",
+      "focus": "Modo foco",
+      "focus60": "Focar por 1 hora",
+      "focusOff": "Encerrar modo foco"
+    },
+    "userVolume": {
+      "title": "Atalhos de volume por pessoa",
+      "hint": "Aumente ou diminua a pessoa fixada no chat de voz sem abrir o Descall.",
+      "enable": "Atalhos de volume",
+      "step": "Passo",
+      "pinNote": "Fixe alguém no canal de voz (clique no quadro da pessoa) para escolher quem as teclas alteram."
+    },
+    "presets": {
+      "title": "Microfone",
+      "hint": "Ganho e processamento valem para chamadas e canais de voz.",
+      "gain": "Ganho de entrada",
+      "gainDesc": "Mais alto ou mais baixo do que o microfone entrega.",
+      "current": "Configuração atual",
+      "list": "Predefinições",
+      "namePlaceholder": "Nome da predefinição",
+      "saveCurrent": "Salvar a atual como predefinição",
+      "voice": "Voz",
+      "noisy": "Ambiente barulhento",
+      "studio": "Estúdio (sem processamento)",
+      "stream": "Transmissão",
+      "echoOn": "Cancelamento de eco",
+      "echoOff": "Sem cancelamento de eco",
+      "agcOn": "Ganho automático",
+      "agcOff": "Ganho fixo",
+      "noise": {
+        "off": "Sem supressão de ruído",
+        "on": "Supressão de ruído",
+        "strong": "Supressão de ruído forte"
+      },
+      "error": {
+        "name": "Digite um nome.",
+        "duplicate": "Esse nome já existe.",
+        "limit": "Você chegou ao limite. Exclua uma primeiro."
+      }
+    },
+    "gate": {
+      "title": "Noise gate",
+      "hint": "Sons abaixo do limite não são enviados: teclado, ventoinha, respiração.",
+      "enable": "Noise gate",
+      "enableDesc": "Usa o seu limite em vez do embutido.",
+      "threshold": "Limite",
+      "thresholdDesc": "Fale normalmente e ajuste logo abaixo da sua voz.",
+      "meter": "Nível do microfone",
+      "startTest": "Testar microfone",
+      "stopTest": "Parar teste",
+      "open": "Aberto",
+      "closed": "Fechado",
+      "hysteresis": "Fechar abaixo do limite em",
+      "hysteresisDesc": "Evita cortar finais suaves das palavras.",
+      "hold": "Retenção",
+      "holdDesc": "Quanto tempo o gate fica aberto depois que você para de falar."
+    },
+    "monitor": {
+      "title": "Ouvir a si mesmo",
+      "hint": "Ouça seu microfone, depois da supressão de ruído, durante as chamadas.",
+      "enable": "Retorno do microfone",
+      "enableDesc": "Baixa latência, direto da cadeia de áudio.",
+      "volume": "Volume do retorno",
+      "headphones": "Use fones, senão os outros podem ouvir eco."
+    },
+    "vam": {
+      "title": "Atividade de voz",
+      "hint": "Uma barra de nível ao vivo embaixo de cada participante nos canais de voz.",
+      "enable": "Medidores de nível",
+      "enableDesc": "Mostra o quão alto cada pessoa está falando agora.",
+      "meter": "Nível de voz"
+    },
+    "autoSwitch": {
+      "title": "Troca automática de dispositivo",
+      "hint": "Quando um dispositivo conecta, o Descall troca para o mais alto da sua lista.",
+      "enable": "Trocar automaticamente",
+      "enableDesc": "Também durante uma chamada.",
+      "headsetFirst": "Preferir headsets novos",
+      "headsetFirstDesc": "Se nada da lista combinar, usa o headset assim que ele conectar.",
+      "inputs": "Microfones em ordem",
+      "outputs": "Alto-falantes e fones em ordem",
+      "empty": "Ainda não há dispositivos na lista.",
+      "add": "Adicionar dispositivo",
+      "connected": "Conectado",
+      "notConnected": "Desconectado"
+    },
+    "routing": {
+      "title": "Saída de áudio",
+      "hint": "Escolha onde o Descall toca as chamadas e onde toca os sons de notificação.",
+      "enable": "Saída separada para notificações",
+      "enableDesc": "Desligado: os sons de notificação seguem a saída do sistema.",
+      "call": "Chamadas",
+      "callDesc": "Canais de voz e chamadas.",
+      "notifications": "Sons de notificação",
+      "notificationsDesc": "Mensagens, menções e toques.",
+      "systemDefault": "Padrão do sistema",
+      "test": "Testar",
+      "unsupported": "Este navegador não consegue escolher um dispositivo de saída."
+    },
+    "profiles": {
+      "title": "Perfis de dispositivo",
+      "hint": "Um perfil troca o microfone, a saída e uma predefinição de uma vez.",
+      "empty": "Ainda não há perfis.",
+      "new": "Novo perfil",
+      "namePlaceholder": "Nome do perfil, por exemplo Mesa ou Jogos",
+      "keep": "Manter o atual",
+      "noPreset": "Sem predefinição",
+      "create": "Criar",
+      "applied": "{name} está ativo.",
+      "missing": "Aplicado. Não encontrado: {items}.",
+      "trayNote": "No app para computador, você também pode trocar de perfil pelo ícone da bandeja.",
+      "part": {
+        "input": "Microfone",
+        "output": "Saída",
+        "preset": "Predefinição"
+      }
+    },
+    "stream": {
+      "sendTitle": "Áudio compartilhado (você)",
+      "sendHint": "Volume do áudio da sua tela compartilhada, para todos que assistem.",
+      "sendVolume": "Volume do áudio compartilhado",
+      "sendMute": "Silenciar o áudio compartilhado",
+      "sendMuteDesc": "A imagem continua.",
+      "viewTitle": "Áudio compartilhado (outros)",
+      "viewHint": "O volume das telas compartilhadas dos outros para você.",
+      "viewVolume": "Volume",
+      "viewMute": "Silenciar o áudio compartilhado dos outros",
+      "note": "Vale para a próxima tela que você compartilhar. Seu volume para o que os outros compartilham vale nos canais de voz."
+    },
+    "history": {
+      "title": "Histórico de notificações",
+      "hint": "Notificações que você perdeu, guardadas só neste dispositivo (as últimas {cap}).",
+      "enable": "Guardar histórico",
+      "unread": "{count, plural, one {# não lida} other {# não lidas}}",
+      "markAllRead": "Marcar tudo como lido",
+      "clear": "Limpar histórico",
+      "listTitle": "Notificações perdidas",
+      "empty": "Nada perdido.",
+      "open": "Abrir"
+    },
+    "focus": {
+      "title": "Modo foco",
+      "hint": "As notificações ficam em silêncio por um tempo. Elas continuam no histórico.",
+      "status": "Foco",
+      "activeFor": "{minutes, plural, one {Ligado, falta # minuto} other {Ligado, faltam # minutos}}",
+      "inactive": "Desligado",
+      "end": "Encerrar agora",
+      "allowCalls": "Deixar chamadas passarem",
+      "allowDms": "Deixar mensagens diretas passarem",
+      "allowDmsDesc": "Sem som.",
+      "trayNote": "Você também pode iniciar pelo ícone da bandeja ou pelo inicializador rápido."
+    },
+    "rules": {
+      "title": "Perfis de notificação",
+      "hint": "Decida o que aparece, com ou sem som, enquanto você joga, trabalha ou descansa.",
+      "mode": "Perfil ativo",
+      "auto": "Automático",
+      "now": "Agora: {profile}",
+      "schedule": "Horário de trabalho",
+      "scheduleDesc": "No modo automático, usa o perfil de trabalho nesses horários.",
+      "start": "Início",
+      "end": "Fim",
+      "edit": "Editar perfil",
+      "style": "Aparência",
+      "styleCapsule": "Cápsula do Descall",
+      "styleToast": "Notificação do sistema",
+      "category": "Notificação",
+      "show": "Mostrar",
+      "sound": "Som",
+      "activity": {
+        "default": "Padrão",
+        "gaming": "Jogando",
+        "working": "Trabalhando"
+      },
+      "cat": {
+        "call": "Chamadas",
+        "dm": "Mensagens diretas",
+        "mention": "Menções",
+        "group": "Mensagens de grupo",
+        "server": "Mensagens de servidor",
+        "social": "Amigos",
+        "system": "Outros"
+      },
+      "day": {
+        "0": "Dom",
+        "1": "Seg",
+        "2": "Ter",
+        "3": "Qua",
+        "4": "Qui",
+        "5": "Sex",
+        "6": "Sáb"
+      }
+    },
+    "smartGame": {
+      "title": "Notificações inteligentes em jogos",
+      "hint": "Enquanto um jogo está na frente, as mensagens esperam. As chamadas continuam aparecendo.",
+      "enable": "Segurar notificações ao jogar",
+      "enableDesc": "Urgentes e chamadas nunca são seguradas.",
+      "summary": "Resumo depois do jogo",
+      "summaryDesc": "Uma notificação com o que você perdeu.",
+      "state": "Agora",
+      "playing": "{count, plural, one {Jogando {game}, # esperando} other {Jogando {game}, # esperando}}",
+      "notPlaying": "Nenhum jogo detectado.",
+      "detectNote": "Usa a detecção de jogos do seu status de atividade, sem varredura extra.",
+      "summaryTitle": "Enquanto você jogava",
+      "summaryBody": "{count, plural, one {# notificação de {names}} other {# notificações de {names}}}",
+      "summaryBodyMore": "{count, plural, one {# notificação de {names} e mais {more}} other {# notificações de {names} e mais {more}}}"
+    },
+    "quickReply": {
+      "title": "Resposta rápida",
+      "hint": "Responda a uma mensagem direta pela própria notificação.",
+      "enable": "Responder pelas notificações",
+      "enableDesc": "Mensagens diretas mostram um campo de resposta.",
+      "native": "As respostas são enviadas pela notificação do sistema.",
+      "failedTitle": "Resposta não enviada",
+      "failedBody": "Abra a conversa e tente de novo.",
+      "unavailable": {
+        "platform": "Este sistema não tem campo de resposta nas notificações; as mensagens chegam como sempre.",
+        "identity": "A resposta rápida precisa do Descall instalado (atalho do menu Iniciar). A versão portátil mostra a notificação de sempre.",
+        "unsupported": "As notificações não estão disponíveis neste sistema."
+      }
+    }
+  },
+  // premiumAudio:end
   // premiumAdmin:start (Premium Yonetimi admin pages, same tree as premiumAdmin.en.js)
   "premiumAdmin": {
     "navGroup": "Gestão premium",
@@ -775,6 +1115,366 @@ export const nested = {
     }
   },
   // premium:end
+  // premiumGaming:start (Descall+ gaming / HUD / productivity)
+  "premiumGaming": {
+    "names": {
+      "game_status": "Status de jogo",
+      "game_session_history": "Histórico de jogos",
+      "voice_hud": "HUD de voz",
+      "gaming_hud": "HUD de jogo",
+      "instant_clip": "Clipe instantâneo",
+      "clipboard_history": "Histórico da área de transferência",
+      "quick_file_drop": "Envio rápido de arquivos",
+      "app_lock": "Bloqueio do app",
+      "quick_actions": "Ações rápidas",
+      "workspace_profiles": "Perfis de uso",
+      "desktop_automations": "Automações",
+      "activity_timeline": "Linha do tempo de atividade",
+      "command_center": "Central de comando",
+      "widgets": "Estúdio de widgets",
+      "custom_layouts": "Layouts",
+      "multi_account": "Contas"
+    },
+    "hub": {
+      "title": "Jogos e produtividade",
+      "open": "Configurações",
+      "empty": "Nenhum destes recursos está no seu plano."
+    },
+    "common": {
+      "close": "Fechar",
+      "remove": "Remover",
+      "none": "Nenhum",
+      "failed": "Algo deu errado. Tente de novo.",
+      "saved": "Salvo",
+      "sending": "Enviando…",
+      "hotkey": "Atalho",
+      "position": "Posição",
+      "size": "Tamanho",
+      "opacity": "Opacidade",
+      "margin": "Distância da borda",
+      "small": "Pequeno",
+      "medium": "Médio",
+      "large": "Grande",
+      "corner": {
+        "tl": "Superior esquerdo",
+        "tr": "Superior direito",
+        "bl": "Inferior esquerdo",
+        "br": "Inferior direito"
+      },
+      "desktopOnly": "Isto funciona no app Descall para desktop.",
+      "durationHM": "{h} h {m} min",
+      "durationM": "{m} min",
+      "durationS": "{s} s",
+      "minutes": "{count, plural, one {# minuto} other {# minutos}}"
+    },
+    "gameStatus": {
+      "title": "Status de jogo",
+      "desc": "Mostre no seu cartão de perfil o jogo que você está jogando e há quanto tempo.",
+      "now": "Jogando agora",
+      "noGame": "Nenhum jogo detectado",
+      "visibility": "Quem vê seu cartão de jogo",
+      "vis": {
+        "everyone": "Todos",
+        "friends": "Só amigos",
+        "nobody": "Ninguém"
+      },
+      "share": "Compartilhar jogos na minha atividade",
+      "help": "O Descall+ também reconhece mais {count} jogos. A detecção só olha os nomes dos programas em execução no Windows; nada é lido do jogo.",
+      "cardLabel": "Jogando",
+      "forDuration": "há {duration}"
+    },
+    "gameHistory": {
+      "title": "Histórico de jogos",
+      "desc": "Suas sessões de jogo: qual jogo, quando e por quanto tempo.",
+      "lastDays": "{count, plural, one {Último dia} other {Últimos # dias}}",
+      "total": "Total {duration}",
+      "sessions": "{count, plural, one {# sessão} other {# sessões}}",
+      "local": "Este dispositivo",
+      "empty": "Ainda não há sessões de jogo neste período.",
+      "offline": "Não foi possível carregar o histórico sincronizado. Mostrando só este dispositivo."
+    },
+    "voiceHud": {
+      "title": "HUD de voz",
+      "desc": "Um painel pequeno e transparente sobre seus jogos que mostra quem está na chamada e quem está falando.",
+      "show": "Mostrar o HUD de voz",
+      "empty": "Fora de chamada",
+      "muted": "mudo",
+      "help": "Funciona sobre jogos no modo sem bordas ou em janela, não em tela cheia exclusiva. Nada é injetado no jogo, então é seguro com sistemas antitrapaça. Os cliques passam para o jogo."
+    },
+    "gamingHud": {
+      "title": "HUD de jogo",
+      "desc": "Hora, ping, sua chamada e amigos online em um painel pequeno sobre seus jogos.",
+      "show": "Mostrar o HUD de jogo",
+      "clock": "Hora",
+      "ping": "Ping",
+      "call": "Chamada",
+      "friends": "Amigos online",
+      "hudTitle": "Descall",
+      "descallPing": "Ping do Descall",
+      "voicePing": "Ping de voz",
+      "ms": "ms",
+      "noCall": "Sem chamada",
+      "noFriends": "Ninguém online",
+      "people": "{count, plural, one {# pessoa} other {# pessoas}}",
+      "help": "Funciona sobre jogos no modo sem bordas ou em janela, não em tela cheia exclusiva. É uma janela comum por cima: nada é injetado no jogo. O ping é o tempo até o servidor do Descall.",
+      "noFps": "O HUD não mostra FPS. Ler a taxa de quadros de um jogo exige injetar código no jogo ou um rastreamento com permissão de administrador, e os sistemas antitrapaça sinalizam os dois."
+    },
+    "instantClip": {
+      "title": "Clipe instantâneo",
+      "desc": "Guarde os últimos momentos de uma tela ou janela e salve como clipe com uma tecla.",
+      "enable": "Manter um buffer de replay",
+      "source": "Captura",
+      "pickSource": "Escolher uma tela ou janela",
+      "length": "Duração",
+      "sec30": "30 segundos",
+      "sec60": "60 segundos",
+      "quality": "Qualidade",
+      "qualityValue": "720p, 30 fps",
+      "hw": "Codificador por hardware",
+      "sw": "Codificador por software",
+      "status": "{seconds} s prontos, {mb} MB de {cap} MB",
+      "saveNow": "Salvar clipe",
+      "measure": "Medir custo",
+      "cost": "CPU {cpu}%, memória {mem} MB, quadros descartados {dropped}",
+      "unsupported": "Esta versão do Descall não consegue gravar aqui.",
+      "help": "Enquanto estiver ligado, o Descall guarda os últimos {seconds} segundos só na memória. Pressione {hotkey} para salvar um clipe, depois corte e envie para um chat. Desligar libera a memória.",
+      "audioNote": "Os clipes não têm som. No Windows, a única fonte de som do sistema também inclui sua chamada de voz, e o Descall não grava chamadas.",
+      "error": {
+        "unsupported": "Esta versão do Descall não consegue gravar aqui.",
+        "start": "Não foi possível iniciar a captura. Escolha a tela ou a janela de novo.",
+        "no_codec": "Não há codificador de vídeo disponível neste computador.",
+        "encoder": "O codificador de vídeo parou. Desligue e ligue o buffer de novo."
+      },
+      "editor": {
+        "title": "Novo clipe",
+        "muxing": "Preparando o clipe…",
+        "failed": "Não foi possível preparar o clipe.",
+        "start": "Início",
+        "end": "Fim",
+        "length": "{seconds} s",
+        "keyframeNote": "O início volta para o segundo mais próximo.",
+        "sendTo": "Enviar para",
+        "send": "Enviar clipe",
+        "saveFile": "Salvar no disco",
+        "sent": "Clipe enviado",
+        "sendFailed": "Não foi possível enviar o clipe."
+      }
+    },
+    "clipboard": {
+      "title": "Histórico da área de transferência",
+      "desc": "Recupere textos que você copiou ou colou no Descall.",
+      "enable": "Manter um histórico do que eu copio no Descall",
+      "help": "Só o texto que você copia dentro do Descall ou cola no Descall fica guardado, neste dispositivo. O Descall nunca lê o que você copia em outros apps.",
+      "count": "{count} de {max} itens",
+      "clear": "Limpar histórico",
+      "copied": "Copiado",
+      "pasted": "Colado",
+      "copy": "Copiar de novo",
+      "done": "Pronto",
+      "empty": "Nada aqui ainda."
+    },
+    "quickDrop": {
+      "title": "Envio rápido de arquivos",
+      "desc": "Uma pequena área na sua área de trabalho que envia arquivos para um chat recente.",
+      "show": "Mostrar a área de envio",
+      "help": "Solte arquivos nela, escolha o chat e eles são enviados como qualquer anexo (até 100 MB cada). Você também pode abri-la pela bandeja.",
+      "drop": "Solte arquivos para enviar",
+      "target": "Enviar para",
+      "noTargets": "Nenhum chat recente",
+      "tooBig": "Grande demais (no máximo 100 MB)",
+      "sent": "{count, plural, one {# arquivo enviado} other {# arquivos enviados}}",
+      "failed": "Alguns arquivos não puderam ser enviados.",
+      "tray": "Envio rápido de arquivos"
+    },
+    "appLock": {
+      "title": "Bloqueio do app",
+      "desc": "Peça um PIN antes que alguém veja seus chats.",
+      "newPin": "Novo PIN (4 a 12 dígitos)",
+      "currentPin": "PIN atual",
+      "setPin": "Definir PIN",
+      "changePin": "Alterar PIN",
+      "removePin": "Remover PIN",
+      "saved": "PIN salvo",
+      "invalid": "Use de 4 a 12 dígitos.",
+      "wrong": "PIN incorreto",
+      "wait": "Muitas tentativas. Tente de novo em {seconds} s.",
+      "enable": "Bloquear o Descall com meu PIN",
+      "idle": "Bloquear após inatividade",
+      "idleOff": "Nunca",
+      "onMinimize": "Bloquear ao minimizar",
+      "onSystemLock": "Bloquear quando o computador for bloqueado",
+      "lockNow": "Bloquear agora",
+      "lockedTitle": "O Descall está bloqueado",
+      "pin": "PIN",
+      "unlock": "Desbloquear",
+      "help": "O PIN é guardado como um hash com sal, criptografado com a proteção de dados do Windows. Isso impede que outra pessoa use seu computador enquanto você está longe; não é criptografia de disco e não protege contra programas executados com a sua conta. O Windows Hello ainda não é oferecido: ele precisa de um componente nativo que o Descall não inclui."
+    },
+    "quickActions": {
+      "title": "Ações rápidas",
+      "desc": "Seus próprios botões para o que você faz com frequência.",
+      "type": "Ação",
+      "types": {
+        "join_channel": "Entrar em um canal de voz",
+        "set_status": "Definir status",
+        "open_dm": "Abrir uma DM",
+        "toggle_focus": "Ligar ou desligar o modo foco",
+        "workspace": "Trocar de perfil de uso"
+      },
+      "choose": "Escolher",
+      "noChannels": "Abra um servidor primeiro para listar os canais de voz dele.",
+      "labelDm": "Mandar mensagem para {name}",
+      "labelJoin": "Entrar em {name}",
+      "add": "Adicionar ação",
+      "run": "Executar",
+      "empty": "Ainda não há ações rápidas.",
+      "help": "As ações rápidas também aparecem na central de comando e no lançador rápido."
+    },
+    "workspace": {
+      "title": "Perfis de uso",
+      "desc": "Troque status, notificações, widgets e áudio de uma vez.",
+      "names": {
+        "game": "Jogos",
+        "work": "Trabalho",
+        "daily": "Dia a dia"
+      },
+      "active": "Ativo",
+      "switch": "Trocar",
+      "status": "Status",
+      "notifications": "Notificações",
+      "notif": {
+        "keep": "Sem mudança",
+        "all": "Todas",
+        "mentions": "Só menções",
+        "none": "Silencioso"
+      },
+      "audio": "Áudio",
+      "audioChoice": {
+        "keep": "Sem mudança",
+        "noise_on": "Supressão de ruído ligada",
+        "noise_strong": "Supressão de ruído forte",
+        "noise_off": "Supressão de ruído desligada",
+        "ptt_on": "Apertar para falar ligado",
+        "ptt_off": "Apertar para falar desligado"
+      },
+      "layout": "Layout de widgets",
+      "trayTitle": "Perfil de uso",
+      "help": "Troque por aqui, pela bandeja, pelo atalho ou por uma automação. As mudanças de notificação e áudio são aplicadas pelos recursos Descall+ correspondentes."
+    },
+    "automations": {
+      "title": "Automações",
+      "desc": "Deixe o Descall reagir quando um jogo começa, uma chamada começa ou você se afasta.",
+      "enable": "Executar minhas automações",
+      "when": "Quando",
+      "then": "Então",
+      "triggers": {
+        "game_started": "Um jogo começa",
+        "game_stopped": "Um jogo termina",
+        "call_joined": "Eu entro em uma chamada",
+        "call_left": "Eu saio de uma chamada",
+        "time_window": "Um intervalo de horário começa",
+        "idle": "Estou ausente"
+      },
+      "actions": {
+        "switch_profile": "Trocar de perfil",
+        "focus_on": "Ligar o modo foco",
+        "focus_off": "Desligar o modo foco",
+        "set_status": "Definir status",
+        "open_hud": "Abrir um HUD"
+      },
+      "hud": {
+        "voice_hud": "HUD de voz",
+        "gaming_hud": "HUD de jogo"
+      },
+      "gameFilter": "Nome do jogo (opcional)",
+      "between": "Entre",
+      "afterMinutes": "Depois de (minutos)",
+      "add": "Adicionar regra",
+      "ruleOn": "Regra ligada",
+      "ruleText": "Quando {when}: {then}",
+      "empty": "Ainda não há regras.",
+      "help": "As regras só podem usar estes gatilhos e ações. Elas nunca executam programas nem abrem links."
+    },
+    "timeline": {
+      "title": "Linha do tempo de atividade",
+      "desc": "Seu dia num relance: chamadas, jogos e momentos importantes.",
+      "today": "Hoje",
+      "prev": "Dia anterior",
+      "next": "Próximo dia",
+      "summary": "{games} em jogos, {calls} em chamadas",
+      "call": "Chamada com {name}",
+      "groupCall": "Chamada em grupo: {name}",
+      "unknown": "Chamada",
+      "empty": "Nada neste dia.",
+      "ev": {
+        "profile": "Perfil: {name}",
+        "clip": "Clipe salvo",
+        "automation": "Automação: {name}",
+        "lock": "Descall bloqueado",
+        "action": "Ação rápida: {name}",
+        "other": "Evento"
+      }
+    },
+    "commandCenter": {
+      "title": "Central de comando",
+      "desc": "Mensagens, amigos, chamadas e notificações em um só painel.",
+      "open": "Abrir a central de comando",
+      "help": "Abra com o atalho de qualquer lugar, mesmo com o Descall em segundo plano.",
+      "messages": "Mensagens",
+      "friends": "Amigos online",
+      "calls": "Chamadas",
+      "notifications": "Notificações",
+      "inCall": "Em chamada",
+      "unread": "{count} novas",
+      "noMessages": "Nenhuma mensagem recente",
+      "noFriends": "Ninguém online",
+      "noCalls": "Nenhuma chamada recente",
+      "noNotifications": "Você está em dia",
+      "friendRequest": "Pedido de amizade de {name}",
+      "dmUnread": "{name}: {count, plural, one {# mensagem nova} other {# mensagens novas}}",
+      "groupUnread": "{name}: {count, plural, one {# mensagem nova} other {# mensagens novas}}"
+    },
+    "widgets": {
+      "title": "Estúdio de widgets",
+      "desc": "Janelas pequenas, sempre por cima, na sua área de trabalho.",
+      "show": "Mostrar meus widgets",
+      "kinds": {
+        "friends": "Amigos online",
+        "calls": "Chamada ativa",
+        "notifications": "Notificações"
+      },
+      "x": "Esquerda",
+      "y": "Topo",
+      "w": "Largura",
+      "h": "Altura",
+      "empty": "Ainda não há widgets.",
+      "help": "Até {max} widgets. Arraste um widget pelo título para movê-lo; a nova posição é salva."
+    },
+    "layouts": {
+      "title": "Layouts",
+      "desc": "Salve a disposição dos seus widgets e alterne entre disposições.",
+      "name": "Nome do layout",
+      "save": "Salvar os widgets atuais",
+      "apply": "Usar",
+      "count": "{count, plural, one {# widget} other {# widgets}}",
+      "empty": "Ainda não há layouts salvos.",
+      "limit": "Você pode manter 8 layouts."
+    },
+    "multiAccount": {
+      "title": "Contas",
+      "desc": "Use outra conta do Descall ao lado desta.",
+      "add": "Adicionar uma conta",
+      "open": "Abrir",
+      "menu": "Contas",
+      "main": "Conta principal",
+      "unnamed": "Nova conta",
+      "signedIn": "Conectada",
+      "notSignedIn": "Ainda não conectada",
+      "empty": "Ainda não há outras contas.",
+      "limit": "Você pode adicionar {max} contas.",
+      "help": "Cada conta extra abre na própria janela com armazenamento separado, e o login dela é criptografado à parte neste dispositivo. Até {max} contas; cada janela usa mais ou menos a mesma memória que o próprio Descall. Troque por aqui ou pela bandeja."
+    }
+  },
+  // premiumGaming:end
   "world3d": {
     "enter": "Mundo 3D",
     "enterHint": "Abrir esta chamada como uma sala 3D (computador, prévia da equipe). A voz continua ligada.",
