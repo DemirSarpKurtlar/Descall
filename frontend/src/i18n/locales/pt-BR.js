@@ -795,6 +795,15 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "gate": {
+        "title": "Os recursos de desktop estão bloqueados neste computador",
+        "checking": "Verificando sua assinatura neste computador. Pode levar alguns segundos.",
+        "noToken": "O app não conseguiu ler a sessão salva neste computador. Sair e entrar de novo resolve.",
+        "refused": "O servidor não aceitou a sessão deste computador. Saia e entre de novo.",
+        "network": "Não foi possível acessar o servidor. O app tenta de novo sozinho.",
+        "retry": "Verificar de novo",
+        "code": "Código: {code}"
+      },
       "unlimitedMember": "Assinatura sem prazo",
       "until": "Até {date}",
       "statAccess": "recursos disponíveis para você",
@@ -1205,6 +1214,9 @@ export const nested = {
       "remove": "Remover",
       "none": "Nenhum",
       "failed": "Algo deu errado. Tente de novo.",
+      "locked": "Este recurso ainda não está ativo neste computador. Sua assinatura pode estar sendo verificada; tente de novo em alguns segundos.",
+      "offline": "Não foi possível acessar o servidor. Verifique sua conexão e tente de novo.",
+      "code": "Código: {code}",
       "saved": "Salvo",
       "sending": "Enviando…",
       "hotkey": "Atalho",

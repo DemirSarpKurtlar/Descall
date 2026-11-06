@@ -140,13 +140,12 @@ function apiBase() {
   return /^https:\/\//.test(env) ? env : DEFAULT_API;
 }
 
-async function fetchMe() {
-  const token = await readToken();
-  if (!token) {
-    const err = new Error('no token');
-    err.code = 'no-token';
-    throw err;
-  }
+// The session token the main window last pushed with its entitlement claim. Used only when
+// auth-token.bin is missing, unreadable (safeStorage on some Windows profiles) or stale: the
+// server still decides, so this cannot widen anything a valid session would not get.
+let rendererToken = '';
+
+async function fetchMeWith(token) {
   const res = await electron.net.fetch(`${apiBase()}/api/premium/me`, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
@@ -157,6 +156,27 @@ async function fetchMe() {
     throw err;
   }
   return res.json();
+}
+
+async function fetchMe() {
+  const fileToken = await readToken();
+  const tokens = [...new Set([fileToken, rendererToken].filter(Boolean))];
+  if (!tokens.length) {
+    const err = new Error('no token');
+    err.code = 'no-token';
+    throw err;
+  }
+  let last = null;
+  for (const token of tokens) {
+    try {
+      return await fetchMeWith(token);
+    } catch (err) {
+      last = err;
+      // A network failure is the same for the other token: stop here.
+      if (!Number(err?.status)) break;
+    }
+  }
+  throw last;
 }
 
 // ---- module lifecycle ------------------------------------------------------------------
@@ -274,8 +294,15 @@ const SETTINGS_KEY = /^[a-z][a-z0-9_]{1,40}$/;
 
 function registerCore() {
   registerChannel('core', 'premium:entitlements', (payload = {}) => {
+    // Signed out (no plan) or no token sent: forget the previous one.
+    rendererToken = payload.plan && typeof payload.token === 'string' && payload.token.length < 4096 ? payload.token : '';
     const snap = gate.setEntitlements(Array.isArray(payload.keys) ? payload.keys : [], payload.plan || null);
     return { ok: true, ...snap };
+  });
+  // Settings > Descall+ "Check again": main asks the server now.
+  registerChannel('core', 'premium:verify', async () => {
+    const snap = await gate.verify({ force: true });
+    return { ok: true, ...snap, running: [...running.keys()] };
   });
   registerChannel('core', 'premium:status', () => ({
     ok: true,

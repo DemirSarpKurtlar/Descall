@@ -8,7 +8,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { createGate, intersectEntitlements, parseServer } = require("./gate.cjs");
+const { createGate, intersectEntitlements, parseServer, failureCode, retryDelay } = require("./gate.cjs");
 const { createStore } = require("./store.cjs");
 
 const err = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
@@ -72,6 +72,45 @@ test("gate: network failure keeps the last verified answer", async () => {
   assert.equal(gate.has("mini_mode"), true);
   gate.reset();
   assert.equal(gate.has("mini_mode"), false);
+});
+
+test("gate: network failure at launch retries soon and reports why", async () => {
+  let fail = true;
+  const timers = [];
+  const gate = createGate({
+    fetchMe: async () => { if (fail) throw Object.assign(new Error("net::ERR_INTERNET_DISCONNECTED"), {}); return { plan: "ultra", status: "active" }; },
+    setTimer: (fn, ms) => { timers.push({ fn, ms }); return { unref() {} }; },
+    clearTimer: () => {},
+  });
+  gate.setEntitlements(["mini_mode"], "ultra");
+  await flush();
+  await gate.verify({ force: true });
+  assert.equal(gate.has("mini_mode"), false);
+  assert.equal(gate.snapshot().lastError.code, "network");
+  assert.equal(gate.snapshot().claimed, 1);
+  await gate.verify({ force: true });
+  await gate.verify({ force: true });
+  assert.equal(timers.at(-1).ms, 5000, `several quick failures still retry in 5 s, got ${timers.at(-1)?.ms}`);
+  fail = false;
+  timers.at(-1).fn();
+  await flush();
+  await gate.verify();
+  assert.equal(gate.has("mini_mode"), true);
+  assert.equal(gate.snapshot().lastError, null);
+  assert.equal(timers.at(-1).ms, 30 * 60 * 1000, "back to the normal re-check after success");
+});
+
+test("gate: refusal codes are reported (no-token, http-401)", async () => {
+  for (const [failure, code] of [[Object.assign(new Error("x"), { code: "no-token" }), "no-token"], [err(401), "http-401"]]) {
+    const gate = createGate({ fetchMe: async () => { throw failure; } });
+    gate.setEntitlements(["mini_mode"], "plus");
+    await gate.verify({ force: true });
+    assert.equal(gate.snapshot().lastError.code, code);
+  }
+  assert.equal(failureCode(err(502)), "http-502");
+  assert.equal(retryDelay(0), 5000);
+  assert.equal(retryDelay(2 * 60 * 1000), 30000);
+  assert.equal(retryDelay(60 * 60 * 1000), 5 * 60 * 1000);
 });
 
 test("gate: downgrade on the server removes keys at the next verify", async () => {

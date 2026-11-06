@@ -795,6 +795,15 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "gate": {
+        "title": "Les fonctions bureau sont verrouillées sur cet ordinateur",
+        "checking": "Vérification de ton abonnement sur cet ordinateur. Cela peut prendre quelques secondes.",
+        "noToken": "L'app n'a pas pu lire la session enregistrée sur cet ordinateur. Se déconnecter puis se reconnecter règle le problème.",
+        "refused": "Le serveur n'a pas accepté la session de cet ordinateur. Déconnecte-toi puis reconnecte-toi.",
+        "network": "Impossible de joindre le serveur. L'app réessaie toute seule.",
+        "retry": "Vérifier à nouveau",
+        "code": "Code : {code}"
+      },
       "unlimitedMember": "Abonnement sans fin",
       "until": "Jusqu'au {date}",
       "statAccess": "fonctionnalités disponibles pour toi",
@@ -1205,6 +1214,9 @@ export const nested = {
       "remove": "Retirer",
       "none": "Aucun",
       "failed": "Un problème est survenu. Réessaie.",
+      "locked": "Cette fonction ne tourne pas encore sur cet ordinateur. Ton abonnement est peut-être en cours de vérification ; réessaie dans quelques secondes.",
+      "offline": "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.",
+      "code": "Code : {code}",
       "saved": "Enregistré",
       "sending": "Envoi…",
       "hotkey": "Raccourci",

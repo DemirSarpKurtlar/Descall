@@ -361,6 +361,85 @@ function LinkRow({ icon: Glyph, title, desc, onClick, testId }) {
   );
 }
 
+/**
+ * Desktop only: main runs a feature only after its own server check (electron/premium/gate.cjs).
+ * When that check has not passed, every desktop feature is locked and its actions fail, so say
+ * so here with the reason and a retry instead of leaving a generic error under each feature.
+ */
+function DesktopGateNotice({ premium }) {
+  const { t } = useLocale();
+  const [snap, setSnap] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const desktopKeys = useMemo(
+    () => (premium.features || []).filter((k) => FEATURES[k]?.desktop),
+    [premium.features],
+  );
+  const wanted = Boolean(premium.plan) && desktopKeys.length > 0;
+
+  const read = useCallback(async (channel) => {
+    try {
+      const r = await window.descallPremium.invoke(channel);
+      if (r && typeof r === "object" && Array.isArray(r.keys)) setSnap(r);
+      return r;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!wanted || !window.descallPremium) return undefined;
+    let stop = false;
+    let timer = null;
+    const tick = async () => {
+      const r = await read("premium:status");
+      if (stop) return;
+      // Keep watching while locked: main retries on its own and the notice clears itself.
+      if (!r || !Array.isArray(r.keys) || r.keys.length === 0) timer = setTimeout(tick, 4000);
+    };
+    tick();
+    return () => { stop = true; if (timer) clearTimeout(timer); };
+  }, [wanted, read]);
+
+  const locked = Boolean(wanted && snap && snap.keys.length === 0);
+  const code = locked ? snap.lastError?.code || (snap.verifiedAt ? "empty" : "pending") : "";
+  useEffect(() => {
+    // Once per code per session: shows up in admin > Error logs with the reason.
+    if (!code || code === "pending") return;
+    import("../utils/errorHandler.js")
+      .then((m) => m.reportHandled(`[premium] desktop gate locked: ${code}`, { source: "premium" }))
+      .catch(() => {});
+  }, [code]);
+  if (!locked) return null;
+  const why = code === "no-token"
+    ? t("premium.hub.gate.noToken")
+    : /^http-(401|403)$/.test(code)
+      ? t("premium.hub.gate.refused")
+      : code === "network" || /^http-5/.test(code)
+        ? t("premium.hub.gate.network")
+        : t("premium.hub.gate.checking");
+  const retry = async () => {
+    setBusy(true);
+    const r = await read("premium:verify");
+    if (!r) await read("premium:status");
+    setBusy(false);
+  };
+  return (
+    <section className="us-section" data-testid="premium-gate-notice" data-gate-code={code}>
+      <div className="us-card pp-gate" role="status">
+        <Lock size={18} aria-hidden="true" />
+        <div className="pp-gate-text">
+          <b>{t("premium.hub.gate.title")}</b>
+          <p>{why}</p>
+          <p className="pp-gate-code">{t("premium.hub.gate.code", { code })}</p>
+        </div>
+        <button type="button" className="us-btn ghost" onClick={retry} disabled={busy}>
+          {t("premium.hub.gate.retry")}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function PremiumSettingsTab() {
   const { t } = useLocale();
   const premium = usePremium();
@@ -408,6 +487,7 @@ export default function PremiumSettingsTab() {
     return (
       <div className="us-tab pp-tab" data-testid="premium-tab" data-feature-total={FEATURE_KEYS.length} ref={rootRef}>
         <BackLink onBack={() => go({ type: "home" })} />
+        {desktop ? <DesktopGateNotice premium={premium} /> : null}
         <div className="pp-cat-head">
           <Tile icon={cat.icon} color={cat.color} size={20} />
           <div>
@@ -446,6 +526,7 @@ export default function PremiumSettingsTab() {
   return (
     <div className="us-tab pp-tab" data-testid="premium-tab" data-feature-total={FEATURE_KEYS.length} ref={rootRef}>
       <StatusHero premium={premium} onCount={premium.plan ? counts.totalOn : null} />
+      {desktop ? <DesktopGateNotice premium={premium} /> : null}
 
       <section className="us-section" aria-labelledby="pp-feat-title">
         <h4 className="us-section-label" id="pp-feat-title">{t("premium.features.title")}</h4>

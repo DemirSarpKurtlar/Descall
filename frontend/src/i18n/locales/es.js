@@ -795,6 +795,15 @@ export const nested = {
   // premium:start (generated, Descall+ phase 1)
   "premium": {
     "hub": {
+      "gate": {
+        "title": "Las funciones de escritorio están bloqueadas en este equipo",
+        "checking": "Comprobando tu membresía en este equipo. Puede tardar unos segundos.",
+        "noToken": "La app no pudo leer la sesión guardada en este equipo. Cerrar sesión y volver a entrar lo soluciona.",
+        "refused": "El servidor no aceptó la sesión de este equipo. Cierra sesión y vuelve a entrar.",
+        "network": "No se pudo conectar con el servidor. La app lo vuelve a intentar sola.",
+        "retry": "Comprobar de nuevo",
+        "code": "Código: {code}"
+      },
       "unlimitedMember": "Membresía sin vencimiento",
       "until": "Hasta el {date}",
       "statAccess": "funciones disponibles para ti",
@@ -1205,6 +1214,9 @@ export const nested = {
       "remove": "Quitar",
       "none": "Ninguno",
       "failed": "Algo salió mal. Inténtalo de nuevo.",
+      "locked": "Esta función aún no está activa en este equipo. Puede que tu membresía se esté comprobando; inténtalo de nuevo en unos segundos.",
+      "offline": "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+      "code": "Código: {code}",
       "saved": "Guardado",
       "sending": "Enviando…",
       "hotkey": "Atajo",

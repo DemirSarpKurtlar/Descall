@@ -11,6 +11,15 @@ export const PREMIUM_TR = {
     "ultraTip": "Descall Ultra üyesi"
   },
   "hub": {
+    "gate": {
+      "title": "Masaüstü özellikleri bu bilgisayarda kilitli",
+      "checking": "Üyeliğin bu bilgisayarda doğrulanıyor. Birkaç saniye sürebilir.",
+      "noToken": "Uygulama bu bilgisayarda kayıtlı oturumu okuyamadı. Çıkış yapıp tekrar giriş yapmak sorunu çözer.",
+      "refused": "Sunucu bu bilgisayardaki oturumu kabul etmedi. Çıkış yapıp tekrar giriş yap.",
+      "network": "Sunucuya ulaşılamadı. Uygulama kısa aralıklarla kendisi tekrar deniyor.",
+      "retry": "Tekrar doğrula",
+      "code": "Kod: {code}"
+    },
     "unlimitedMember": "Süresiz üyelik",
     "until": "{date} tarihine kadar",
     "statAccess": "özelliğe erişimin var",

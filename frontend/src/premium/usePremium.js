@@ -36,7 +36,8 @@ export function premiumBridge() {
 onPremiumEntitlements((keys, plan) => {
   const bridge = premiumBridge();
   if (!bridge) return;
-  bridge.invoke("premium:entitlements", { keys, plan }).catch(() => {});
+  // The token lets main verify even when its own copy (auth-token.bin) cannot be read.
+  bridge.invoke("premium:entitlements", { keys, plan, token: plan ? getToken() || "" : "" }).catch(() => {});
 });
 
 let started = false;

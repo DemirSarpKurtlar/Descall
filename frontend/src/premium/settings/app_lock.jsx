@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { DesktopOnly, Field, PanelShell, Switch } from "../gaming/ui.jsx";
-import { isDesktop, pinvoke } from "../gaming/bridge.js";
+import { failMessage, isDesktop, pinvoke, reportFailure } from "../gaming/bridge.js";
 
 export const key = "app_lock";
 const PIN_RE = /^\d{4,12}$/;
@@ -32,7 +32,10 @@ export function Panel() {
       setPin(""); setCurrent("");
       setMsg({ ok: t("premiumGaming.appLock.saved"), err: "" });
       await reload();
-    } else setMsg({ ok: "", err: r?.error === "wrong_pin" ? t("premiumGaming.appLock.wrong") : t("premiumGaming.common.failed") });
+    } else {
+      if (r?.error !== "wrong_pin") reportFailure("app_lock", r);
+      setMsg({ ok: "", err: r?.error === "wrong_pin" ? t("premiumGaming.appLock.wrong") : failMessage(t, r) });
+    }
   };
   const removePin = async () => {
     const r = await pinvoke("premium:app_lock:clear-pin", current);
