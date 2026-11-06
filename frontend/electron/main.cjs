@@ -64,12 +64,17 @@ const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelW
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
+const premiumNotify = require('./premium/notifyHooks.cjs');
+const { applyToastIdentity } = require('./premium/toastIdentity.cjs');
 // Host hooks for premium modules that need main.cjs internals (multi_account partitions).
 const premiumHooks = require('./premium/hostHooks.cjs');
 
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+// Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
+// toast activator CLSID, both also written on the NSIS Start Menu shortcut.
+applyToastIdentity(app, { log });
 
 // Standard scheme so packaged pages can call https APIs with webSecurity on.
 // file:// cannot. Register before ready.
@@ -2128,13 +2133,60 @@ function mainWindowInFront() {
   }
 }
 
-function showAppNotification({ title, options = {} } = {}) {
+// Native OS toasts kept referenced until closed (otherwise GC drops the click handler).
+const liveNativeToasts = new Set();
+function showNativeToast({ title, body, tag, data, silent }) {
+  try {
+    const { Notification } = require('electron');
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(data?.from || title || 'Descall').slice(0, 120), body: String(data?.preview || body || '').slice(0, 300), silent });
+    liveNativeToasts.add(n);
+    n.on('click', () => {
+      showMainWindow();
+      mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+    });
+    n.on('close', () => liveNativeToasts.delete(n));
+    n.on('failed', () => liveNativeToasts.delete(n));
+    n.show();
+    if (liveNativeToasts.size > 20) liveNativeToasts.delete(liveNativeToasts.values().next().value);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function showAppNotification(payload = {}) {
+  // Descall+ modules may decorate (quick reply) or skip a toast.
+  const hooked = premiumNotify.run(payload);
+  if (!hooked) return null;
+  const { title, options = {} } = hooked;
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
   // Descall in front: the in-app UI (message list, incoming call card) is
   // already showing this. A toast on top would be a duplicate.
   if (mainWindowInFront() && (isCall || !requireInteraction)) return null;
+
+  // Descall+ quick reply: a DM becomes a native toast with an inline reply
+  // field where the OS supports it; otherwise the capsule below is shown.
+  if (hooked.quickReply && !isCall) {
+    const shown = premiumNotify.showQuickReply({
+      title: data?.from || title,
+      body: data?.preview || body,
+      conv: hooked.quickReply.conv,
+      onClick: () => {
+        showMainWindow();
+        mainWindow?.webContents?.send('notification:click', { title, body, tag, data });
+      },
+    });
+    if (shown) return null;
+  }
+
+  // Descall+ notification profiles: "toast" style uses the OS notification
+  // instead of a capsule (the renderer only sends it for entitled users).
+  if (options.style === 'toast' && !isCall && showNativeToast({ title, body, tag, data, silent: Boolean(options.silent) })) {
+    return null;
+  }
 
   const notifType = isCall ? 'call' : (String(tag).startsWith('mention') ? 'mention' : 'default');
   const duration  = isCall || requireInteraction ? 0 : 5000;

@@ -129,7 +129,12 @@
       ],
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "files": [
+        "!node_modules/uiohook-napi/prebuilds/{linux-*,darwin-*,win32-arm64}/**",
+        "!node_modules/uiohook-napi/{libuiohook,src}/**",
+        "!node_modules/uiohook-napi/binding.gyp"
+      ]
     },
     "mac": {
       "target": [
@@ -152,7 +157,12 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "icon": "electron/icon.icns",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "files": [
+        "!node_modules/uiohook-napi/prebuilds/{linux-*,win32-*}/**",
+        "!node_modules/uiohook-napi/{libuiohook,src}/**",
+        "!node_modules/uiohook-napi/binding.gyp"
+      ]
     },
     "linux": {
       "target": [
@@ -172,7 +182,12 @@
       "category": "Network",
       "maintainer": "Descall Team",
       "vendor": "Descall",
-      "artifactName": "${productName}-${version}.${ext}"
+      "artifactName": "${productName}-${version}.${ext}",
+      "files": [
+        "!node_modules/uiohook-napi/prebuilds/{darwin-*,win32-*}/**",
+        "!node_modules/uiohook-napi/{libuiohook,src}/**",
+        "!node_modules/uiohook-napi/binding.gyp"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -202,10 +217,15 @@
     "portable": {
       "artifactName": "Descall-Portable-${version}.exe"
     },
-    "npmRebuild": true,
+    "npmRebuild": false,
     "asar": true,
-    "asarUnpack": [],
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**"
+    ],
     "compression": "maximum",
     "removePackageScripts": true
+  },
+  "optionalDependencies": {
+    "uiohook-napi": "1.5.5"
   }
 }
