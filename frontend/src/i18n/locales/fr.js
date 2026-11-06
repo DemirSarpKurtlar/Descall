@@ -794,6 +794,61 @@ export const nested = {
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)
   "premium": {
+    "hub": {
+      "unlimitedMember": "Abonnement sans fin",
+      "until": "Jusqu'au {date}",
+      "statAccess": "fonctionnalités disponibles pour toi",
+      "statOn": "fonctionnalités activées",
+      "statGift": "DesCoin / 30 jours",
+      "days": "jours",
+      "nextGift": "Prochain cadeau",
+      "search": "Rechercher une fonctionnalité",
+      "filter": "Filtrer les fonctionnalités",
+      "filterAll": "Toutes",
+      "filterOn": "Activées",
+      "filterOff": "Désactivées",
+      "results": "{n} résultats",
+      "noResults": "Aucune fonctionnalité ne correspond à cette recherche.",
+      "onCount": "{on} / {total} activées",
+      "desktopOnly": "Dans l'application de bureau",
+      "back": "Toutes les fonctionnalités",
+      "plansDesc": "Gratuit, Descall+ et Ultra côte à côte",
+      "redeemDesc": "Tu as un code ? Saisis-le ici",
+      "cat": {
+        "windows": {
+          "name": "Fenêtres",
+          "desc": "Mode mini, toujours au premier plan, fenêtres séparées"
+        },
+        "shortcuts": {
+          "name": "Raccourcis",
+          "desc": "Sourdine globale, appuyer pour parler, touches multimédia"
+        },
+        "notifications": {
+          "name": "Notifications",
+          "desc": "Historique, mode concentration, profils de notification"
+        },
+        "audio": {
+          "name": "Audio",
+          "desc": "Noise gate, retour micro, profils d'appareils"
+        },
+        "gaming": {
+          "name": "Jeu",
+          "desc": "Statut de jeu, HUD, clip instantané"
+        },
+        "productivity": {
+          "name": "Productivité",
+          "desc": "Historique du presse-papiers, dépôt de fichiers, verrouillage"
+        },
+        "desktop_tools": {
+          "name": "Outils de bureau",
+          "desc": "Barre latérale, widgets, centre de commande"
+        },
+        "automation": {
+          "name": "Automatisation et profils",
+          "desc": "Espaces de travail, automatisations, plusieurs comptes"
+        }
+      }
+    },
     "name": {
       "plus": "Descall+",
       "ultra": "Descall Ultra",

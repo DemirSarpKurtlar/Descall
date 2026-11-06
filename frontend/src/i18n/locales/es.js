@@ -794,6 +794,61 @@ export const nested = {
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)
   "premium": {
+    "hub": {
+      "unlimitedMember": "Membresía sin vencimiento",
+      "until": "Hasta el {date}",
+      "statAccess": "funciones disponibles para ti",
+      "statOn": "funciones activadas",
+      "statGift": "DesCoin / 30 días",
+      "days": "días",
+      "nextGift": "Próximo regalo",
+      "search": "Buscar funciones",
+      "filter": "Filtrar funciones",
+      "filterAll": "Todas",
+      "filterOn": "Activadas",
+      "filterOff": "Desactivadas",
+      "results": "{n} resultados",
+      "noResults": "Ninguna función coincide con esta búsqueda.",
+      "onCount": "{on} / {total} activadas",
+      "desktopOnly": "En la app de escritorio",
+      "back": "Todas las funciones",
+      "plansDesc": "Gratis, Descall+ y Ultra lado a lado",
+      "redeemDesc": "¿Tienes un código? Introdúcelo aquí",
+      "cat": {
+        "windows": {
+          "name": "Ventanas",
+          "desc": "Modo mini, siempre visible, ventanas separadas"
+        },
+        "shortcuts": {
+          "name": "Atajos",
+          "desc": "Silencio global, pulsar para hablar, teclas multimedia"
+        },
+        "notifications": {
+          "name": "Notificaciones",
+          "desc": "Historial, modo concentración, perfiles de notificación"
+        },
+        "audio": {
+          "name": "Audio",
+          "desc": "Puerta de ruido, escucha del micrófono, perfiles de dispositivo"
+        },
+        "gaming": {
+          "name": "Juegos",
+          "desc": "Estado de juego, HUD, clip instantáneo"
+        },
+        "productivity": {
+          "name": "Productividad",
+          "desc": "Historial del portapapeles, soltar archivos, bloqueo de app"
+        },
+        "desktop_tools": {
+          "name": "Herramientas de escritorio",
+          "desc": "Barra lateral, widgets, centro de comandos"
+        },
+        "automation": {
+          "name": "Automatización y perfiles",
+          "desc": "Espacios de trabajo, automatizaciones, varias cuentas"
+        }
+      }
+    },
     "name": {
       "plus": "Descall+",
       "ultra": "Descall Ultra",

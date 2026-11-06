@@ -794,6 +794,61 @@ export const nested = {
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)
   "premium": {
+    "hub": {
+      "unlimitedMember": "Unbefristete Mitgliedschaft",
+      "until": "Bis {date}",
+      "statAccess": "Funktionen für dich verfügbar",
+      "statOn": "Funktionen an",
+      "statGift": "DesCoin / 30 Tage",
+      "days": "Tage",
+      "nextGift": "Nächstes Geschenk",
+      "search": "Funktionen suchen",
+      "filter": "Funktionen filtern",
+      "filterAll": "Alle",
+      "filterOn": "An",
+      "filterOff": "Aus",
+      "results": "{n} Ergebnisse",
+      "noResults": "Keine Funktion passt zu dieser Suche.",
+      "onCount": "{on} / {total} an",
+      "desktopOnly": "In der Desktop-App",
+      "back": "Alle Funktionen",
+      "plansDesc": "Kostenlos, Descall+ und Ultra im Vergleich",
+      "redeemDesc": "Du hast einen Code? Gib ihn hier ein",
+      "cat": {
+        "windows": {
+          "name": "Fenster",
+          "desc": "Mini-Modus, immer im Vordergrund, eigene Fenster"
+        },
+        "shortcuts": {
+          "name": "Tastenkürzel",
+          "desc": "Globales Stummschalten, Push-to-Talk, Medientasten"
+        },
+        "notifications": {
+          "name": "Benachrichtigungen",
+          "desc": "Verlauf, Fokusmodus, Benachrichtigungsprofile"
+        },
+        "audio": {
+          "name": "Audio",
+          "desc": "Noise Gate, Mithören, Geräteprofile"
+        },
+        "gaming": {
+          "name": "Gaming",
+          "desc": "Spielstatus, HUDs, Sofort-Clip"
+        },
+        "productivity": {
+          "name": "Produktivität",
+          "desc": "Zwischenablage-Verlauf, Datei-Drop, App-Sperre"
+        },
+        "desktop_tools": {
+          "name": "Desktop-Werkzeuge",
+          "desc": "Seitenleiste, Widgets, Befehlszentrale"
+        },
+        "automation": {
+          "name": "Automatisierung und Profile",
+          "desc": "Arbeitsbereiche, Automatisierungen, mehrere Konten"
+        }
+      }
+    },
     "name": {
       "plus": "Descall+",
       "ultra": "Descall Ultra",

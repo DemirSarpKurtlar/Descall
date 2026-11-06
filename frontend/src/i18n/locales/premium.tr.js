@@ -10,6 +10,61 @@ export const PREMIUM_TR = {
     "plusTip": "Descall+ üyesi",
     "ultraTip": "Descall Ultra üyesi"
   },
+  "hub": {
+    "unlimitedMember": "Süresiz üyelik",
+    "until": "{date} tarihine kadar",
+    "statAccess": "özelliğe erişimin var",
+    "statOn": "özellik açık",
+    "statGift": "DesCoin / 30 gün",
+    "days": "gün",
+    "nextGift": "Sonraki hediye",
+    "search": "Özellik ara",
+    "filter": "Özellikleri süz",
+    "filterAll": "Tümü",
+    "filterOn": "Açık",
+    "filterOff": "Kapalı",
+    "results": "{n} sonuç",
+    "noResults": "Bu aramaya uyan özellik yok.",
+    "onCount": "{on} / {total} açık",
+    "desktopOnly": "Masaüstü uygulamasında",
+    "back": "Tüm özellikler",
+    "plansDesc": "Ücretsiz, Descall+ ve Ultra yan yana",
+    "redeemDesc": "Bir kodun varsa buradan gir",
+    "cat": {
+      "windows": {
+        "name": "Pencereler",
+        "desc": "Mini mod, üstte kalma, ayrı pencereler"
+      },
+      "shortcuts": {
+        "name": "Kısayollar",
+        "desc": "Genel sessize alma, bas-konuş, medya tuşları"
+      },
+      "notifications": {
+        "name": "Bildirimler",
+        "desc": "Geçmiş, odak modu, bildirim profilleri"
+      },
+      "audio": {
+        "name": "Ses",
+        "desc": "Gürültü kapısı, mikrofon dinleme, cihaz profilleri"
+      },
+      "gaming": {
+        "name": "Oyun",
+        "desc": "Oyun durumu, HUD'lar, anlık klip"
+      },
+      "productivity": {
+        "name": "Verimlilik",
+        "desc": "Pano geçmişi, dosya bırakma, uygulama kilidi"
+      },
+      "desktop_tools": {
+        "name": "Masaüstü araçları",
+        "desc": "Kenar çubuğu, bileşenler, komuta merkezi"
+      },
+      "automation": {
+        "name": "Otomasyon ve profiller",
+        "desc": "Çalışma alanları, otomasyonlar, çoklu hesap"
+      }
+    }
+  },
   "nav": "Descall+",
   "navHint": "Üyelik, özellikler ve masaüstü araçları",
   "status": {

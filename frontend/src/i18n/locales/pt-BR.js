@@ -794,6 +794,61 @@ export const nested = {
   // premiumAdmin:end
   // premium:start (generated, Descall+ phase 1)
   "premium": {
+    "hub": {
+      "unlimitedMember": "Assinatura sem prazo",
+      "until": "Até {date}",
+      "statAccess": "recursos disponíveis para você",
+      "statOn": "recursos ativados",
+      "statGift": "DesCoin / 30 dias",
+      "days": "dias",
+      "nextGift": "Próximo presente",
+      "search": "Buscar recursos",
+      "filter": "Filtrar recursos",
+      "filterAll": "Todos",
+      "filterOn": "Ativados",
+      "filterOff": "Desativados",
+      "results": "{n} resultados",
+      "noResults": "Nenhum recurso corresponde a esta busca.",
+      "onCount": "{on} / {total} ativados",
+      "desktopOnly": "No app para desktop",
+      "back": "Todos os recursos",
+      "plansDesc": "Grátis, Descall+ e Ultra lado a lado",
+      "redeemDesc": "Tem um código? Digite aqui",
+      "cat": {
+        "windows": {
+          "name": "Janelas",
+          "desc": "Modo mini, sempre no topo, janelas separadas"
+        },
+        "shortcuts": {
+          "name": "Atalhos",
+          "desc": "Silenciar global, apertar para falar, teclas de mídia"
+        },
+        "notifications": {
+          "name": "Notificações",
+          "desc": "Histórico, modo foco, perfis de notificação"
+        },
+        "audio": {
+          "name": "Áudio",
+          "desc": "Noise gate, retorno do microfone, perfis de dispositivo"
+        },
+        "gaming": {
+          "name": "Jogos",
+          "desc": "Status de jogo, HUDs, clipe instantâneo"
+        },
+        "productivity": {
+          "name": "Produtividade",
+          "desc": "Histórico da área de transferência, soltar arquivos, bloqueio do app"
+        },
+        "desktop_tools": {
+          "name": "Ferramentas de desktop",
+          "desc": "Barra lateral, widgets, central de comandos"
+        },
+        "automation": {
+          "name": "Automação e perfis",
+          "desc": "Espaços de trabalho, automações, várias contas"
+        }
+      }
+    },
     "name": {
       "plus": "Descall+",
       "ultra": "Descall Ultra",
