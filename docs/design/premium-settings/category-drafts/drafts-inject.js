@@ -545,10 +545,10 @@
         ? `<div class="dpc-e-scene">${other('left:20%;top:12%;width:46%;height:58%')}${dsWin('left:4%;top:8%;width:30%;height:54%')}${win('ds pop', 'left:36%;top:44%;width:22%;height:30%', `<div class="pt"><b>#genel</b></div>${lines(2)}`)}
             ${win('ds side', 'right:0;top:0;width:9%;height:84%', `<div class="sd">${av('A', '#e8457a')}${av('M', '#3e7bfa')}${av('K', '#30b458')}</div>`)}${win('ds call', 'left:68%;top:9%;width:20%;height:30%', '<div class="vid"><i></i><i></i></div>')}
             <div style="position:absolute;right:12%;bottom:17%;width:24%">${callCard('mini')}</div><div class="dpc-dock"><i></i><i></i><i class="ds"><b>3</b></i><i></i></div>
-            ${[['01', 'right:36%;bottom:30%'], ['03', 'left:68%;top:3%'], ['05', 'left:56%;top:40%'], ['09', 'left:3%;top:3%'], ['11', 'right:10%;top:40%'], ['08', 'left:52%;bottom:2%']].map(([t, st]) => `<span class="dpc-e-pin" style="${st}">${t}</span>`).join('')}</div>`
-        : `<div class="dpc-e-scene audio"><div class="chain">${[['mic', 'Mikrofon', 'Blue Yeti'], ['gate', 'Gürültü kapısı', `${S.noise_gate.thresholdDb} dB`], ['sliders', 'Ön ayar', 'Konuşma'], ['route', 'Yönlendirme', 'İki çıkış'], ['head', 'Kulaklık', 'HyperX Cloud II']].map(([ic, a, b], i) => `<div class="cn"><span class="dpc-e-pin st">${String([0, 1, 2, 6, 5][i] + 1).padStart(2, '0')}</span><span class="ci">${svg(ic, 18)}</span><b>${a}</b><small>${b}</small></div>`).join(`<span class="cw">${Array.from({ length: 7 }, (_, j) => `<i style="height:${[30, 70, 45, 90, 55, 75, 35][j]}%"></i>`).join('')}</span>`)}</div></div>`;
+            ${[['01', 'right:36%;bottom:30%'], ['02', 'left:68%;top:3%'], ['05', 'left:56%;top:40%'], ['06', 'left:3%;top:3%'], ['09', 'right:10%;top:40%'], ['12', 'left:52%;bottom:2%']].map(([t, st]) => `<span class="dpc-e-pin" style="${st}">${t}</span>`).join('')}</div>`
+        : `<div class="dpc-e-scene audio"><div class="chain">${[['mic', 'Mikrofon', 'Blue Yeti'], ['gate', 'Gürültü kapısı', `${S.noise_gate.thresholdDb} dB`], ['sliders', 'Ön ayar', 'Konuşma'], ['route', 'Yönlendirme', 'İki çıkış'], ['head', 'Kulaklık', 'HyperX Cloud II']].map(([ic, a, b], i) => `<div class="cn"><span class="dpc-e-pin st">${String([3, 0, 1, 5, 4][i] + 1).padStart(2, '0')}</span><span class="ci">${svg(ic, 18)}</span><b>${a}</b><small>${b}</small></div>`).join(`<span class="cw">${Array.from({ length: 7 }, (_, j) => `<i style="height:${[30, 70, 45, 90, 55, 75, 35][j]}%"></i>`).join('')}</span>`)}</div></div>`;
       return `<section class="us-card dpc-e-hero c-${c.color}"><div class="dpc-e-ht"><span class="pp-ico c-${c.color}">${svg(c.icon, 20)}</span><div><h2>${c.name}</h2><p>${c.desc}</p></div><span class="dpc-e-cnt"><b class="tnum">${c.keys.filter(on).length}</b> / ${c.keys.length} açık</span>
-        <ol class="dpc-e-toc">${c.chapters.map(([t, , ks], i) => `<li><span>${i + 1}</span>${t}<small>${ks.length} özellik</small></li>`).join('')}</ol></div>${hero}</section>
+        <ol class="dpc-e-toc">${c.chapters.map(([t, , ks], i) => `<li><span>${i + 1}</span>${t}<small>${ks.filter(on).length} / ${ks.length} açık</small></li>`).join('')}</ol></div>${hero}</section>
         ${c.chapters.map(([t, lead, ks], ci) => `<section class="dpc-e-ch"><div class="dpc-e-cht"><span>Bölüm ${ci + 1}</span><h3>${t}</h3><p>${lead}</p></div><div class="dpc-e-list">${ks.map(card).join('')}</div></section>`).join('')}`;
     },
   };
@@ -949,9 +949,9 @@
   .dpc-e-ht h2{margin:0;font-size:var(--fs-20);font-weight:700}
   .dpc-e-ht p{margin:2px 0 0;font-size:var(--fs-13);color:var(--text-muted)}
   .dpc-e-ht>div{flex:1;min-width:0}
-  .dpc-e-ht .dpc-e-cnt{flex-basis:100%}
+  .dpc-e-ht .dpc-e-cnt{display:none}
   .dpc-e-cnt{font-size:var(--fs-12);color:var(--text-muted)}.dpc-e-cnt b{font-size:var(--fs-20);color:var(--text-0)}
-  .dpc-e-scene{position:relative;height:190px;border-radius:12px;overflow:hidden;container-type:size;background:radial-gradient(90% 80% at 15% 0%,rgba(62,123,250,.35),transparent 60%),radial-gradient(80% 90% at 100% 100%,rgba(155,93,229,.3),transparent 60%),#151821;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .dpc-e-scene{position:relative;height:168px;border-radius:12px;overflow:hidden;container-type:size;background:radial-gradient(90% 80% at 15% 0%,rgba(62,123,250,.35),transparent 60%),radial-gradient(80% 90% at 100% 100%,rgba(155,93,229,.3),transparent 60%),#151821;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .dpc-e-scene .dpc-call{width:100%;min-width:0}
   .dpc-e-pin{position:absolute;z-index:9;min-width:24px;height:20px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-size:var(--fs-11);font-weight:800;color:#fff;background:#3e7bfa;box-shadow:0 0 0 3px rgba(62,123,250,.3)}
   .dpc-e-scene.audio{display:flex;align-items:center;justify-content:center;padding:0 14px}
@@ -965,7 +965,8 @@
   .dpc-e-ch{display:flex;flex-direction:column;gap:10px}
   .dpc-e-cht span{font-size:var(--fs-11);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-link,#7eb6ff)}
   .dpc-e-cht h3{margin:2px 0 0;font-size:var(--fs-17);font-weight:700}
-  .dpc-e-cht p{margin:2px 0 0;font-size:var(--fs-13);color:var(--text-muted)}
+  .dpc-e-ch{gap:8px}
+  .dpc-e-cht p{margin:1px 0 0;font-size:var(--fs-13);color:var(--text-muted)}
   .dpc-e-list{display:flex;flex-direction:column;gap:8px}
   .dpc-e-card{margin:0;display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px}
   .dpc-e-hit{flex:none;width:118px;height:70px;border:0;padding:0;background:none;cursor:pointer}
@@ -978,10 +979,11 @@
   .dpc-e-card.is-open.c-green{box-shadow:inset 3px 0 0 #30b458,inset 0 0 0 1px rgba(48,180,88,.4)}
   .dpc-e-oh{display:flex;align-items:center;gap:12px;padding:14px 14px 10px 16px}
   .dpc-e-oh .dpc-e-num{font-size:var(--fs-20)}
-  .dpc-e-body{display:grid;grid-template-columns:250px minmax(0,1fr);gap:14px;padding:0 14px 14px 16px}
+  .dpc-e-body{display:grid;grid-template-columns:272px minmax(0,1fr);gap:14px;padding:0 14px 14px 16px}
   .dpc-e-pv{display:flex;flex-direction:column;gap:8px}
   .dpc-e-pv .dpc-pv{height:160px}
-  .dpc-e .dpc-corner{max-width:200px}
+  .dpc-e .dpc-corner{max-width:180px}
+  .dpc-c-cap{flex-wrap:wrap}.dpc-c-cap .dpc-live{white-space:nowrap}
   `;
 
   /* ------------------------------------------------------------- render */
