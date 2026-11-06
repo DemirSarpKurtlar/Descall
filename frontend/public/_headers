@@ -9,3 +9,8 @@
 /.well-known/apple-app-site-association
   Content-Type: application/json
   Cache-Control: public, max-age=3600
+
+# Content-hashed build output (Vite): cache for a year. Kept in sync with
+# public/_worker.js (IMMUTABLE_CACHE) and vercel.json.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -99,4 +99,27 @@ const aasaHeaders = vercel.headers.find((h) => h.source === "/.well-known/apple-
 assert.ok(aasaHeaders?.headers.some((h) => h.key === "Content-Type" && h.value === "application/json"), "vercel.json AASA content-type");
 assert.ok(!vercel.rewrites.some((r) => r.source.startsWith("/.well-known")), "no rewrite may swallow /.well-known");
 
+// Hashed build output is immutable (Pages default was 4 h + must-revalidate).
+const assetEnv = {
+  ASSETS: {
+    async fetch(request) {
+      const { pathname } = new URL(request.url);
+      if (pathname === "/assets/index-abc123.js") {
+        return new Response("x", { status: 200, headers: { "content-type": "text/javascript", "cache-control": "public, max-age=14400, must-revalidate" } });
+      }
+      return env.ASSETS.fetch(request);
+    },
+  },
+};
+{
+  const res = await worker.fetch(new Request("https://descall.com/assets/index-abc123.js"), assetEnv);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "public, max-age=31536000, immutable", "/assets/* must be immutable");
+  const missing = await worker.fetch(new Request("https://descall.com/assets/gone-123.js"), assetEnv);
+  assert.equal(missing.status, 404, "a missing asset is still a 404");
+  assert.notEqual(missing.headers.get("cache-control"), "public, max-age=31536000, immutable", "a 404 is never cached for a year");
+}
+assert.match(fs.readFileSync(path.join(root, "public/_headers"), "utf8"), /\/assets\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/, "_headers marks /assets/* immutable");
+assert.ok(vercel.headers.some((h) => h.source === "/assets/(.*)" && h.headers.some((x) => /immutable/.test(x.value))), "vercel.json marks /assets immutable");
+
 console.log("pagesWorkerRoutes selftest ok");

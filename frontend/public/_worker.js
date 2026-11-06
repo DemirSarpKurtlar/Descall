@@ -62,8 +62,17 @@ function isSpaPath(pathname) {
   return SPA_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-function withSecurity(response) {
+/** Vite content-hashes every file under /assets, so a URL never changes content. */
+const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
+
+function isHashedAsset(pathname) {
+  return pathname.startsWith("/assets/");
+}
+
+function withSecurity(response, { immutable = false } = {}) {
   const headers = new Headers(response.headers);
+  // Pages answered /assets/* with max-age=14400, must-revalidate (SEO audit, Nov 2026).
+  if (immutable && response.status === 200) headers.set("cache-control", IMMUTABLE_CACHE);
   // Asset responses sometimes carry a wildcard CORS header. The site is not an API.
   headers.delete("access-control-allow-origin");
   headers.delete("access-control-allow-credentials");
@@ -164,7 +173,7 @@ export default {
     }
 
     const found = await env.ASSETS.fetch(request);
-    if (found.status !== 404) return withSecurity(found);
+    if (found.status !== 404) return withSecurity(found, { immutable: isHashedAsset(url.pathname) });
 
     const notFound = await readAsset(env, request, "/404.html");
     const response = htmlResponse(notFound, 404, "no-store");
