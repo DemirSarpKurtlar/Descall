@@ -328,8 +328,7 @@ export const MARKETING_TR = {
     "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Yönetici, Moderatör, Üye rolleri vardır.",
   "Announcements, squad-up, and staff channels are already in the templates.":
     "Duyuru, ekip toplama ve yetkili kanalları şablonlarda hazırdır.",
-  "Staff can kick, ban, timeout, and read an audit log.":
-    "Staff kick, ban, timeout uygulayabilir ve denetim kaydını okuyabilir.",
+  "Staff can kick, ban, or time out members, and every action is logged.": "Yetkililer üyeleri atabilir, yasaklayabilir veya geçici susturabilir; tüm işlemler kayıt altında.",
   "Voice channels sit beside the text channels.": "Ses kanalları metin kanallarının yanındadır.",
   "Server list with text and voice channels": "Metin ve ses kanallı sunucu listesi",
   "Windows installer and the Android APK. The browser app is the same account, with no install.":

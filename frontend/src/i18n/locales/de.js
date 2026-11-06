@@ -9194,7 +9194,7 @@ export const phrases = {
   "Squad-ready layout with a squad-up channel, game chats, clip drops, staff ops, and ranked voice lobbies.": "Squad-taugliches Layout mit Squad-Up-Kanal, Spiele-Chats, Clip-Drops, Team-Bereich und Sprach-Lobbys für Ranked.",
   "Squad-up channel": "Squad-Up-Kanal",
   "Stack Trace": "Stacktrace",
-  "Staff can kick, ban, timeout, and read an audit log.": "Das Team kann kicken, bannen, Timeouts vergeben und ein Audit-Log einsehen.",
+  "Staff can kick, ban, or time out members, and every action is logged.": "Das Team kann Mitglieder entfernen, sperren oder vorübergehend stummschalten, und jede Aktion wird protokolliert.",
   "Staff roles": "Team-Rollen",
   "Stage": "Stage",
   "Stage channel": "Stage-Kanal",

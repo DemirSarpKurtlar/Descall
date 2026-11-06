@@ -794,7 +794,7 @@ export default {
   "Some groups barely use text and just want a room to talk in while they play or work. Classic voice tools like TeamSpeak and Mumble do this well, especially if someone in the group is happy to run a server. Descall server voice channels cover the same habit without hosting anything yourself: members join the channel when they are free and leave when they are done, with text channels right next to it.": "Manche Gruppen nutzen kaum Text und wollen einfach einen Raum, in dem sie beim Spielen oder Arbeiten reden können. Klassische Sprach-Tools wie TeamSpeak und Mumble können das gut, besonders wenn jemand in der Gruppe gern einen Server betreibt. Sprachkanäle auf Descall-Servern decken dieselbe Gewohnheit ab, ohne dass du selbst etwas hosten musst: Mitglieder kommen in den Kanal, wenn sie Zeit haben, und gehen, wenn sie fertig sind, mit Textkanälen direkt daneben.",
   "Source": "Quelle",
   "Spin up a server": "Server aufsetzen",
-  "Staff can kick, ban, timeout, and read an audit log.": "Das Team kann kicken, bannen, Timeouts vergeben und ein Audit-Log einsehen.",
+  "Staff can kick, ban, or time out members, and every action is logged.": "Das Team kann Mitglieder entfernen, sperren oder vorübergehend stummschalten, und jede Aktion wird protokolliert.",
   "Staff: staff chat and staff voice (moderators only)": "Team: Team-Chat und Team-Sprachkanal (nur Moderatoren)",
   "Start free": "Kostenlos starten",
   "Start from a server template": "Mit einer Servervorlage starten",

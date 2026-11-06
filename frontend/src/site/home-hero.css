@@ -179,8 +179,20 @@ body.has-mkt-hh .mkt-bg {
 
 /* Feature rows share one rhythm: same grid, same frame, no boxed section. */
 .mkt .mkt-hh-servers { margin-top: 96px; }
+.mkt .mkt-plain-list.is-dotted li { position: relative; padding-left: 18px; }
+.mkt .mkt-plain-list.is-dotted li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #587af5;
+}
 @media (max-width: 768px) {
   .mkt .mkt-hh-servers { margin-top: 56px; }
+  .mkt .mkt-plain-list.is-dotted li { font-size: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

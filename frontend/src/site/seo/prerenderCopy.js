@@ -231,7 +231,7 @@ export function homeHero(loc) {
         serversBody: "Şablondan ya da boş bir sunucudan başla. Şablonlarda metin kanalları, ses kanalları ve Yönetici, Moderatör, Üye rolleri vardır.",
         serversPoints: [
           "Duyuru, ekip toplama ve yetkili kanalları şablonlarda hazırdır.",
-          "Staff kick, ban, timeout uygulayabilir ve denetim kaydını okuyabilir.",
+          "Yetkililer üyeleri atabilir, yasaklayabilir veya geçici susturabilir; tüm işlemler kayıt altında.",
           "Ses kanalları metin kanallarının yanındadır.",
         ],
         why: "Ekipler neden geçiyor",
@@ -303,7 +303,7 @@ export function homeHero(loc) {
         serversBody: "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member.",
         serversPoints: [
           "Announcements, squad-up, and staff channels are already in the templates.",
-          "Staff can kick, ban, timeout, and read an audit log.",
+          "Staff can kick, ban, or time out members, and every action is logged.",
           "Voice channels sit beside the text channels.",
         ],
         why: "Why teams switch",

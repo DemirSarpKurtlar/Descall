@@ -138,9 +138,9 @@ export default function HomePage({ onSignIn, onSignUp }) {
               "Start from a template or an empty server. Templates include text channels, voice channels, and roles such as Admin, Moderator, and Member."
             )}
           </p>
-          <ul className="mkt-plain-list">
+          <ul className="mkt-plain-list is-dotted">
             <li>{t("Announcements, squad-up, and staff channels are already in the templates.")}</li>
-            <li>{t("Staff can kick, ban, timeout, and read an audit log.")}</li>
+            <li>{t("Staff can kick, ban, or time out members, and every action is logged.")}</li>
             <li>{t("Voice channels sit beside the text channels.")}</li>
           </ul>
           <div className="mkt-cta-row" style={{ marginTop: 24 }}>
