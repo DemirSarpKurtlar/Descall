@@ -2312,25 +2312,28 @@ const UserPanel = forwardRef(function UserPanel({
         return (
           <div className="us-tab">
             <p className="us-lead">{t("settings.licensesDesc")}</p>
-            <section className="us-section licenses-list">
-              <div className="licenses-item">
-                <strong>Twemoji</strong>
-                {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
-                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
-                  creativecommons.org/licenses/by/4.0
-                </a>
-              </div>
-              <div className="licenses-item">
-                <strong>country-flag-emoji-polyfill</strong>
-                {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
-              </div>
-              <div className="licenses-item">
-                <strong>Inter</strong>
-                {t("Interface font: Inter, SIL Open Font License 1.1.")}
-              </div>
-              <div className="licenses-item">
-                <strong>Lucide</strong>
-                {t("Icons: Lucide, ISC licence.")}
+            <section className="us-section">
+              {/* One grouped card, rows split by hairlines (same card as every settings page). */}
+              <div className="us-card licenses-list">
+                <div className="licenses-item">
+                  <strong>Twemoji</strong>
+                  {t("Flag graphics: Twemoji, © Twitter, Inc. and other contributors, licensed under CC-BY 4.0.")}{" "}
+                  <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer noopener">
+                    creativecommons.org/licenses/by/4.0
+                  </a>
+                </div>
+                <div className="licenses-item">
+                  <strong>country-flag-emoji-polyfill</strong>
+                  {t("Flag font subset: country-flag-emoji-polyfill, MIT licence.")}
+                </div>
+                <div className="licenses-item">
+                  <strong>Inter</strong>
+                  {t("Interface font: Inter, SIL Open Font License 1.1.")}
+                </div>
+                <div className="licenses-item">
+                  <strong>Lucide</strong>
+                  {t("Icons: Lucide, ISC licence.")}
+                </div>
               </div>
             </section>
           </div>
