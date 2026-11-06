@@ -2086,6 +2086,8 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
 .mkt .founder-more { margin: 20px 0 0; color: var(--gp-t2, #d5dbe8); }
 @media (max-width: 600px) {
   .mkt .founder-list > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
 /* UI audit #27: the download platform card on phones. The unscoped
    .mkt-download-platform-top flex rule above beat the 600px `display:
    contents` grid, so the name and file name overlapped and the check sat on
