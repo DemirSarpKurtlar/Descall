@@ -6,6 +6,12 @@
  * glide one step. The level is remembered between launches.
  *
  * The physics run on the zoom's logarithm, so zooming in and out feel the same.
+ *
+ * Performance: setting the real page zoom re-lays out the whole app, which is far too
+ * heavy to do every frame (it dropped to ~5 fps). While the zoom is moving, the page is
+ * only scaled on the GPU (a CSS transform on <body>, origin top-left like page zoom); the
+ * real zoom is applied once when the motion stops, and the transform is removed in the
+ * same frame.
  */
 export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 2;
@@ -14,10 +20,11 @@ const LOG_MAX = Math.log(MAX_ZOOM);
 const STORE_KEY = "descall:zoom";
 
 // One mouse notch (deltaY 100) glides ~10 %: travel = impulse / FRICTION.
-export const IMPULSE_PER_PX = 0.0048; // log-zoom per second added per wheel pixel
-export const FRICTION = 4.6; // 1/s: speed decays as exp(-FRICTION * t)
+// FRICTION 9: the glide settles in ~0.6 s (it was ~1.2 s and felt too slippery).
+export const IMPULSE_PER_PX = 0.00855; // log-zoom per second added per wheel pixel
+export const FRICTION = 9; // 1/s: speed decays as exp(-FRICTION * t)
 const STOP_SPEED = 0.004; // log-zoom per second
-const MAX_SPEED = 6;
+const MAX_SPEED = 9; // a hard flick can still cross the whole 50-200 % range
 const KEY_STEP = 0.1; // Ctrl + = / - : ~10 %
 
 /** Wheel delta in pixels (lines and pages converted), positive = scroll down = zoom out. */
@@ -70,6 +77,13 @@ export function createZoomPhysics(startZoom = 1) {
   };
 }
 
+/** GPU preview scale while moving: the target zoom relative to the zoom actually applied. */
+export function previewScale(zoom, applied) {
+  const a = Number(applied) > 0 ? Number(applied) : 1;
+  const s = clampZoom(zoom) / a;
+  return Math.abs(s - 1) < 0.0005 ? 1 : s;
+}
+
 export function clampZoom(zoom) {
   const n = Number(zoom);
   if (!Number.isFinite(n) || n <= 0) return 1;
@@ -90,7 +104,25 @@ export function installSmoothZoom(bridge = typeof window !== "undefined" ? windo
   if (installed || !bridge || typeof bridge.set !== "function") return () => {};
   installed = true;
   const physics = createZoomPhysics(readStored());
-  bridge.set(physics.zoom);
+  let applied = physics.zoom;
+  bridge.set(applied);
+  const body = typeof document !== "undefined" ? document.body : null;
+  const setPreview = (scale) => {
+    if (!body) return;
+    if (scale === 1) {
+      body.style.removeProperty("transform");
+      body.style.removeProperty("transform-origin");
+      body.style.removeProperty("will-change");
+      return;
+    }
+    body.style.transformOrigin = "0 0";
+    body.style.willChange = "transform";
+    body.style.transform = `scale(${scale.toFixed(4)})`;
+  };
+  const commit = (zoom) => {
+    if (Math.abs(zoom - applied) > 0.0005) { bridge.set(zoom); applied = zoom; }
+    setPreview(1);
+  };
   let raf = 0;
   let last = 0;
   let saveTimer = 0;
@@ -107,7 +139,8 @@ export function installSmoothZoom(bridge = typeof window !== "undefined" ? windo
         pill.className = "dsc-zoom-pill";
         pill.setAttribute("role", "status");
         pill.setAttribute("aria-live", "polite");
-        document.body.appendChild(pill);
+        // On <html>, not <body>: the body is scaled while the zoom moves.
+        document.documentElement.appendChild(pill);
       }
       const lang = document.documentElement.lang || undefined;
       pill.textContent = new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 }).format(zoom);
@@ -121,11 +154,12 @@ export function installSmoothZoom(bridge = typeof window !== "undefined" ? windo
     const dt = last ? (now - last) / 1000 : 1 / 60;
     last = now;
     const zoom = physics.step(dt);
-    bridge.set(zoom);
     showPill(zoom);
     if (physics.moving) {
+      setPreview(previewScale(zoom, applied));
       raf = requestAnimationFrame(frame);
     } else {
+      commit(zoom);
       raf = 0;
       last = 0;
       clearTimeout(saveTimer);
@@ -152,6 +186,7 @@ export function installSmoothZoom(bridge = typeof window !== "undefined" ? windo
     window.removeEventListener("wheel", onWheel, { capture: true });
     window.removeEventListener("keydown", onKey, true);
     if (raf) cancelAnimationFrame(raf);
+    commit(physics.zoom);
     installed = false;
   };
 }
