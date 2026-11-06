@@ -86,7 +86,7 @@ export const MARKETING_TR = {
   "Download & accounts": "İndirme ve hesaplar",
   "Download APK": "APK indir",
   "Download Descall": "Descall indir",
-  "Download for Windows": "Windows için İndir",
+  "Download for Windows": "Windows için indir",
   "Email is required.": "E-posta zorunlu.",
   "Enter a valid email address.": "Geçerli bir e-posta adresi gir.",
   "We'll send a code to this email to verify it. It keeps your account safe: recovery, sign-in codes and two-factor authentication.": "Bu adrese bir doğrulama kodu göndereceğiz. Hesabını korur: kurtarma, giriş kodları ve iki adımlı doğrulama.",

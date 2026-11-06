@@ -1131,7 +1131,7 @@ export const nested = {
   },
   "download": {
     "title": "Descall'ı İndir",
-    "windows": "Windows için İndir",
+    "windows": "Windows için indir",
     "getApp": "Masaüstü uygulamasını indir",
     "openBrowser": "Tarayıcıda devam et"
   },
@@ -2623,7 +2623,7 @@ export const phrases = {
   "Unread": "Okunmamış",
   "Mention": "Bahsetme",
   "Here": "Burada",
-  "Download for Windows": "Windows için İndir",
+  "Download for Windows": "Windows için indir",
   "Download Desktop App": "Masaüstü Uygulamasını İndir",
   "Get the app": "Uygulamayı indir",
   "Open in browser": "Tarayıcıda aç",
