@@ -217,6 +217,11 @@ async function shot(page, name) {
   await page.screenshot({ path: path.join(SHOTS, `${name}.png`) });
 }
 const want = (name) => !ONLY.length || ONLY.includes(name);
+// The browser-notification banner is not part of what is tested: close it (its X) for clean shots.
+async function dismissBanner(page) {
+  await page.evaluate(() => { const b = document.querySelector('.app-notif-banner'); const btns = b ? b.querySelectorAll('button') : []; if (btns.length) btns[btns.length - 1].click(); });
+  await sleep(300);
+}
 
 // Opens a conversation from the sidebar list by its visible name.
 async function openChat(page, name, minBubbles = 5) {
@@ -298,9 +303,7 @@ async function runDevice(browser, base, dev) {
   try {
     await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await waitFor(page, `${dev} chat list`, () => ({ ok: [...document.querySelectorAll('.dm-name')].some((e) => e.textContent.trim() === 'Ayşe' && e.getBoundingClientRect().width > 0) }), null, 30000);
-    // The browser-notification banner is not part of what is tested: close it (its X) for clean shots.
-    await page.evaluate(() => { const b = document.querySelector('.app-notif-banner'); const btns = b ? b.querySelectorAll('button') : []; if (btns.length) btns[btns.length - 1].click(); });
-    await sleep(300);
+    await dismissBanner(page);
 
     // --- jump to the first unread ---
     if (want('unread')) {
@@ -350,6 +353,7 @@ async function runDevice(browser, base, dev) {
       check((await composerValue(page)) === 'Yarın 9da buluşalım mı?', 'coming back restores the draft');
       await page.reload({ waitUntil: 'domcontentloaded' });
       await waitFor(page, 'list after reload', () => ({ ok: [...document.querySelectorAll('.dm-name')].some((e) => e.textContent.trim() === 'Ayşe') }), null, 30000);
+      await dismissBanner(page);
       await openChat(page, 'Ayşe');
       check((await composerValue(page)) === 'Yarın 9da buluşalım mı?', 'the draft survives a reload');
       await page.click('.composer-container textarea');
@@ -444,7 +448,11 @@ async function runDevice(browser, base, dev) {
     }
     // --- "Görüldü" ---
     if (want('seen')) {
+      // Earlier sections sent messages: Ayşe reads them now (live dm:peer_read), and both
+      // group members' positions are set relative to my newest group message.
+      state.groupReads = [{ userId: AYSE.id, at: new Date(Date.now() + 60e3).toISOString() }, { userId: MERT.id, at: iso(250) }];
       await openChat(page, 'Ayşe');
+      for (const s of sockets) s.emit('dm:peer_read', { peerId: AYSE.id, at: new Date().toISOString() });
       const dmSeen = await waitFor(page, 'DM Görüldü', () => {
         const all = document.querySelectorAll('[data-testid="msg-seen"]');
         const el = all[all.length - 1];
@@ -467,7 +475,7 @@ async function runDevice(browser, base, dev) {
       await sleep(600);
       check(state.events.slice(before).some((e) => e.kind === 'group:mark_read' && e.groupId === GROUP_ID), 'opening the group reports my read (group:mark_read)');
       // Mert reads it live.
-      for (const s of sockets) s.emit('group:read', { groupId: GROUP_ID, userId: MERT.id, at: new Date().toISOString() });
+      for (const s of sockets) s.emit('group:read', { groupId: GROUP_ID, userId: MERT.id, at: new Date(Date.now() + 60e3).toISOString() });
       const live = await waitFor(page, 'everyone', () => {
         const el = document.querySelector('[data-testid="msg-seen"]');
         return { ok: !!el && el.textContent === 'Herkes gördü', text: el && el.textContent };
@@ -492,12 +500,15 @@ async function runDevice(browser, base, dev) {
       check(await page.evaluate(() => !document.querySelector('[data-testid="shortcuts-sheet"]') || getComputedStyle(document.querySelector('[data-testid="shortcuts-sheet"]')).opacity === '0'), 'Esc closes it');
       const title = () => page.evaluate(() => (document.querySelector('.panel-header') || {}).textContent || '');
       await page.click('.composer-container textarea');
-      await page.keyboard.press('Alt+ArrowDown');
+      // The list is sorted by activity: step towards Mert from wherever Ayşe is.
+      const order = await page.evaluate(() => [...document.querySelectorAll('.dm-item.conv-row .dm-name')].map((e) => e.textContent.trim()));
+      const down = order.indexOf('Mert') > order.indexOf('Ayşe');
+      await page.keyboard.press(down ? 'Alt+ArrowDown' : 'Alt+ArrowUp');
       await sleep(900);
-      check(/Mert/.test(await title()), 'Alt+↓ opens the next chat (Mert)');
-      await page.keyboard.press('Alt+ArrowUp');
+      check(/Mert/.test(await title()), `${down ? 'Alt+↓' : 'Alt+↑'} opens the next chat in the list (Mert)`);
+      await page.keyboard.press(down ? 'Alt+ArrowUp' : 'Alt+ArrowDown');
       await sleep(900);
-      check(/Ayşe/.test(await title()), 'Alt+↑ goes back (Ayşe)');
+      check(/Ayşe/.test(await title()), 'the other way goes back (Ayşe)');
       await page.keyboard.press('Control+Shift+F');
       await sleep(400);
       check(await page.evaluate(() => !!document.querySelector('.chat-search-bar input')), 'Ctrl+Shift+F opens chat search');
@@ -632,6 +643,41 @@ async function runDevice(browser, base, dev) {
       check(inline.ok, `the emoji is drawn inline in the bubble (${inline.h}px)`);
       await sleep(400);
       await shot(page, `${P}16-stickers-chat`);
+    }
+    // --- settings: "Görüldü bilgisi" and the new notification switches ---
+    if (want('settings')) {
+      const openSettingsTab = async (id) => {
+        if (!(await page.evaluate(() => !!document.querySelector('.user-settings')))) {
+          await page.evaluate(() => {
+            // The gear is the last button of the rail's last group.
+            const groups = document.querySelectorAll('.nav-rail .nav-rail-group');
+            const btns = groups.length ? groups[groups.length - 1].querySelectorAll('button') : [];
+            if (btns.length) btns[btns.length - 1].click();
+          });
+          await waitFor(page, 'settings', () => ({ ok: !!document.querySelector('.user-settings') }), null, 6000);
+        }
+        await page.evaluate((id) => { const n = document.querySelector(`[data-nav="${id}"]`); if (n) n.click(); }, id);
+        await sleep(700);
+      };
+      await openSettingsTab('privacy');
+      const rr = await waitFor(page, 'read receipts row', () => {
+        const r = document.querySelector('[data-testid="read-receipts-row"]');
+        return { ok: !!r, text: r && r.textContent, on: r && r.querySelector('[role="switch"]').getAttribute('aria-checked') };
+      }, null, 6000).catch(() => ({ ok: false }));
+      check(rr.ok && /Görüldü bilgisi/.test(rr.text) && rr.on === 'true', `Gizlilik shows "Görüldü bilgisi", on by default (${rr.on})`);
+      await shot(page, `${P}17-settings-privacy`);
+      const before = state.events.length;
+      await page.click('[data-testid="read-receipts-row"] [role="switch"]');
+      await sleep(500);
+      check(state.events.slice(before).some((e) => e.kind === 'receipts' && e.enabled === false), 'turning it off saves on the server');
+      await page.click('[data-testid="read-receipts-row"] [role="switch"]');
+      await sleep(300);
+      await openSettingsTab('notifications');
+      const rows = await page.evaluate(() => [...document.querySelectorAll('.us-row-title')].map((e) => e.textContent.trim()));
+      check(rows.includes('Bahsetme bildirimleri') && rows.includes('Mesaj önizlemesi'), `Bildirimler has the mention and preview switches (${rows.join(', ')})`);
+      await shot(page, `${P}18-settings-notifications`);
+      await page.keyboard.press('Escape');
+      await sleep(400);
     }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});
