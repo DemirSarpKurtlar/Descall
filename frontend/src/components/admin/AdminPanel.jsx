@@ -1,5 +1,5 @@
 import AdminEdgeRealtime from "./AdminEdgeRealtime";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
   Shield, Users, MessageSquare, Activity, AlertCircle, Settings, 
@@ -49,6 +49,10 @@ import AccessBansTab from "./AccessBansTab.jsx";
 import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
 import AdminTopUsers from "./AdminTopUsers.jsx";
 import AdminDmInbox from "./AdminDmInbox.jsx";
+import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift } from "../ui/Icon.jsx";
+import { sectionOfTab } from "./adminNav.js";
+// Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
+const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
@@ -120,6 +124,16 @@ const TABS = [
   { id: "dmReview", label: "admin.dmReview", icon: MessageCircle },
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "accessBans", label: "admin.accessBans", icon: Ban },
+  // Premium Yönetimi (phase 1): nine pages under the one "premium" section.
+  { id: "premiumDashboard", label: "premiumAdmin.navDashboard", icon: Gauge },
+  { id: "premiumUsers", label: "premiumAdmin.navUsers", icon: Crown },
+  { id: "premiumBulk", label: "premiumAdmin.navBulk", icon: UsersThree },
+  { id: "premiumHistory", label: "premiumAdmin.navHistory", icon: History },
+  { id: "premiumAnalytics", label: "premiumAdmin.navAnalytics", icon: PieChart },
+  { id: "premiumFinance", label: "premiumAdmin.navFinance", icon: Landmark },
+  { id: "premiumCampaigns", label: "premiumAdmin.navCampaigns", icon: Gift },
+  { id: "premiumAudit", label: "premiumAdmin.navAudit", icon: ScrollText },
+  { id: "premiumPlans", label: "premiumAdmin.navPlans", icon: SlidersHorizontal },
   { id: "system", label: "admin.system", icon: Settings },
   { id: "security", label: "admin.security", icon: Lock },
   { id: "errors", label: "admin.errors", icon: Bug },
@@ -136,7 +150,7 @@ const TABS = [
 export function visibleTabs(sections) {
   const allow = new Set(Array.isArray(sections) ? sections : ["overview"]);
   allow.add("overview");
-  return TABS.filter((x) => allow.has(x.id));
+  return TABS.filter((x) => allow.has(sectionOfTab(x.id)));
 }
 
 function useAdminPermissions(socket) {
@@ -844,6 +858,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "economy" && <EconomyTab />}
         {tab === "topUsers" && <AdminTopUsers />}
         {tab === "dmReview" && <AdminDmInbox />}
+        {sectionOfTab(tab) === "premium" && (
+          <Suspense fallback={<p className="muted">{t("Loading...")}</p>}>
+            <PremiumAdmin page={tab} />
+          </Suspense>
+        )}
 
         {tab === "announcements" && (
           <section className="admin-section admin-section-full">

@@ -119,6 +119,7 @@ const SOURCE_GROUPS = {
   screenshare_activity: "activity",
   daily_claim: "daily",
   promo: "promo",
+  premium_gift: "premium",
   referral_welcome: "referral",
   referral_invite: "referral",
   shop_refund: "refund",

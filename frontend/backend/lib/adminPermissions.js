@@ -28,6 +28,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "dmReview",
   "suspicious",
   "accessBans",
+  // Premium Yönetimi (Descall+ / Ultra): every /admin/premium/* page and route.
+  "premium",
   "shop",
   "promo",
   "specialBadges",
@@ -43,7 +45,8 @@ const GRANTABLE_SECTIONS = Object.freeze([
 const ALWAYS = Object.freeze(["overview"]);
 // Reading private messages (3.7.1): never part of the legacy NULL = "every
 // section" default; the owner grants it to an admin explicitly.
-const SENSITIVE_SECTIONS = Object.freeze(["dmReview"]);
+// Descall+ / Ultra (memberships mint DesCoin gifts): also granted explicitly, never by the legacy default.
+const SENSITIVE_SECTIONS = Object.freeze(["dmReview", "premium"]);
 const LEGACY_SECTIONS = Object.freeze(GRANTABLE_SECTIONS.filter((s) => !SENSITIVE_SECTIONS.includes(s)));
 const OWNER_ONLY = Object.freeze(["staff"]);
 
@@ -57,6 +60,7 @@ const RULES = [
   [/^\/staff(\/|$)/, "staff"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],
   [/^\/signup-stats(\/|$)/, "signupStats"],
+  [/^\/premium(\/|$)/, "premium"],
   [/^\/maintenance\/windows(\/|$)/, "maintenance"],
   [/^\/people\//, "people"],
   [/^\/reports(\/|$)/, "reports"],

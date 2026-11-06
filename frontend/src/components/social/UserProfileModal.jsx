@@ -11,6 +11,7 @@ import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { getPresenceStatus } from "../../lib/presence";
 import AdminBadge from "./AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText } from "../ui/Cosmetics";
 import { ProfileBadgeRow } from "../badges/BadgeVault.jsx";
 import { useT } from "../../context/LocaleContext";
@@ -482,6 +483,7 @@ function UserProfileModal({
           <div className="pfs-badges">
             <ProfileBadgeRow user={badgeUser} me={me} size={glassShell ? "ios" : "md"} />
             {isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
+            <PremiumBadge user={viewUser} variant="chip" />
           </div>
           {fetched?.bio ? <p className="pfs-bio">{fetched.bio}</p> : null}
           {tiles.length ? (
@@ -747,7 +749,7 @@ function UserProfileModal({
                   <ProfileBadgeRow
                     user={badgeUser}
                     me={me}
-                    trailing={isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}
+                    trailing={<>{isUserAdmin(viewUser) ? <AdminBadge user={viewUser} variant="chip" /> : null}<PremiumBadge user={viewUser} variant="chip" /></>}
                   />
                 </div>
                 <div

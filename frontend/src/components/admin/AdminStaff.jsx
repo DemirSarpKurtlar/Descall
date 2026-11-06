@@ -10,13 +10,14 @@ import { confirmAction } from "../../lib/glassConfirm";
 import { useLocale } from "../../context/LocaleContext";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import { Lock, Search, ShieldCheck, UserGear, X } from "../ui/Icon.jsx";
-import { ADMIN_NAV_GROUPS } from "./adminNav";
+import { ADMIN_NAV_GROUPS, SECTION_LABEL, sectionOfTab } from "./adminNav";
 import { formatAppDateTime } from "../../lib/datetime";
 import "../../styles/admin-staff.css";
 
 const GROUP_LABEL = {
   general: "admin.navGroupGeneral",
   people: "admin.navGroupPeople",
+  premium: "premiumAdmin.navGroup",
   content: "admin.navGroupContent",
   system: "admin.navGroupSystem",
 };
@@ -24,7 +25,8 @@ const GROUP_LABEL = {
 /** Grantable sections grouped like the menu; overview is always on, staff never. */
 export function staffGroups(grantable) {
   const allow = new Set(grantable || []);
-  return ADMIN_NAV_GROUPS.map(([key, ids]) => ({ key, ids: ids.filter((id) => allow.has(id)) })).filter((g) => g.ids.length);
+  // Pages that share a section (Premium Yönetimi) are granted once, as that section.
+  return ADMIN_NAV_GROUPS.map(([key, ids]) => ({ key, ids: [...new Set(ids.map(sectionOfTab))].filter((id) => allow.has(id)) })).filter((g) => g.ids.length);
 }
 
 /** null (= every section, set before 3.3.0) → the full list, else the list. */
@@ -226,7 +228,7 @@ export default function AdminStaff({ tabs = [] }) {
   const { t } = useLocale();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
-  const labelOf = useCallback((id) => tabs.find((x) => x.id === id)?.label || id, [tabs]);
+  const labelOf = useCallback((id) => tabs.find((x) => x.id === id)?.label || SECTION_LABEL[id] || id, [tabs]);
 
   const load = useCallback(() => {
     setErr("");

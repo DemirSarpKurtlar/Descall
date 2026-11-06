@@ -6,6 +6,7 @@ import { Crown, MoreHorizontal, MessageSquare, User, Copy, Shield, UserX, Ban, S
 import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { CountryBadge } from "../shop/CountryFlag";
 import { getPresenceStatus, STATUS_META, isVisiblyOnline } from "../../lib/presence";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -510,6 +511,7 @@ export default function ServerMembersPanel({
           </span>
           <CountryBadge user={m.user || m} item={m.user?.equippedCountry || m.equippedCountry} compact />
           <AdminBadge user={m.user} variant="inline" />
+          <PremiumBadge user={m.user} variant="inline" />
           {m.isOwner && (
             <span className="member-owner-badge" title={t("Owner")}>
               <Crown size={11} strokeWidth={2.25} aria-hidden="true" />

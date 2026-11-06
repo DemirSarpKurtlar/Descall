@@ -60,6 +60,7 @@ export const PREMIUM_TR = {
     "included": "Dahil",
     "notIncluded": "Dahil değil",
     "featureCount": "{n} özellik",
+    "everythingPlus": "Descall+'taki her şey",
     "showAll": "Tüm özellikleri göster",
     "showLess": "Daha az göster"
   },

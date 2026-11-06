@@ -1952,6 +1952,7 @@ app.whenReady().then(async () => {
     iconPath: resolveAppIcon(),
     isDev,
     rebuildTray: () => rebuildTrayMenu?.(),
+    showMain: () => showMainWindow(),
     log,
   });
 

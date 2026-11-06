@@ -9,6 +9,11 @@
 export const ADMIN_NAV_GROUPS = [
   ["general", ["overview", "maintenance", "analytics", "signupStats", "retention", "economy", "topUsers"]],
   ["people", ["directory", "people", "reports", "feedback", "moderation", "dmReview", "suspicious", "accessBans"]],
+  // Premium Yönetimi (Descall+ / Ultra, phase 1): nine pages, one grantable section "premium".
+  ["premium", [
+    "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
+    "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
+  ]],
   ["content", ["shop", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
   ["system", ["system", "security", "errors", "audit", "staff"]],
 ];
@@ -16,9 +21,39 @@ export const ADMIN_NAV_GROUPS = [
 const GROUP_LABEL = {
   general: "admin.navGroupGeneral",
   people: "admin.navGroupPeople",
+  premium: "premiumAdmin.navGroup",
   content: "admin.navGroupContent",
   system: "admin.navGroupSystem",
 };
+
+/**
+ * Menu pages that share one permission section (the owner grants "premium" once,
+ * every Premium Yönetimi page follows it; the server maps /admin/premium/* to it).
+ */
+export const TAB_SECTION = Object.freeze({
+  premiumDashboard: "premium",
+  premiumUsers: "premium",
+  premiumBulk: "premium",
+  premiumHistory: "premium",
+  premiumAnalytics: "premium",
+  premiumFinance: "premium",
+  premiumCampaigns: "premium",
+  premiumAudit: "premium",
+  premiumPlans: "premium",
+});
+
+/** Label of a section that is not a page of its own (Yöneticiler screen). */
+export const SECTION_LABEL = Object.freeze({ premium: "premiumAdmin.navGroup" });
+
+/** Permission section of a menu page (its own id unless listed in TAB_SECTION). */
+export function sectionOfTab(id) {
+  return TAB_SECTION[id] || id;
+}
+
+/** Permission sections in menu order (pages sharing a section listed once). */
+export function menuSections() {
+  return [...new Set(ADMIN_NAV_GROUPS.flatMap(([, ids]) => ids.map(sectionOfTab)))];
+}
 
 function fold(text) {
   return String(text || "")

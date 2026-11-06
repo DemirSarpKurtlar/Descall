@@ -16,6 +16,18 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const { requireFeature, hasFeature } = require('../lib/premium/entitlements');
 
+/** Like requireFeature, for routes any of several features unlock. */
+function requireAnyFeature(list) {
+  return async (req, res, next) => {
+    const uid = req.user && req.user.id;
+    if (!uid) return res.status(401).json({ error: 'UNAUTHENTICATED', code: 'UNAUTHENTICATED' });
+    for (const f of list) {
+      if (await hasFeature(uid, f)) return next();
+    }
+    return res.status(403).json({ error: 'PREMIUM_REQUIRED', code: 'PREMIUM_REQUIRED', feature: list[0] });
+  };
+}
+
 const router = express.Router();
 const VISIBILITY = ['everyone', 'friends', 'nobody'];
 const MAX_SESSIONS = 1000;
@@ -48,7 +60,7 @@ function summarize(rows) {
   return { totalSec, byGame: [...by.values()].sort((a, b) => b.totalSec - a.totalSec) };
 }
 
-router.get('/sessions', requireAuth, requireFeature(['game_session_history', 'activity_timeline']), async (req, res) => {
+router.get('/sessions', requireAuth, requireAnyFeature(['game_session_history', 'activity_timeline']), async (req, res) => {
   const now = new Date();
   const to = parseDate(req.query.to, now);
   let from = parseDate(req.query.from, new Date(to.getTime() - 30 * 86_400_000));

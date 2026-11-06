@@ -1,94 +1,101 @@
-'use strict';
+"use strict";
 
 /**
- * Premium entitlements (docs/premium/CONTRACT.md, "Entitlements"). Minimal helper:
- *  - featuresFor(plan): feature keys a plan unlocks (mirror of src/premium/features.js,
- *    kept equal by entitlements.selftest.cjs)
- *  - hasFeature(userId, feature): reads the user's current user_subscriptions row, cached 30 s
- *  - requireFeature(feature): Express middleware, 403 PREMIUM_REQUIRED otherwise
- * A missing table or row means no plan (fail closed).
+ * Descall+ / Ultra entitlements on the server (docs/premium/CONTRACT.md, "Entitlements").
+ *  - featuresFor(plan): the feature keys a plan unlocks (features.js, mirrored from the client list).
+ *  - planFor(userId) / hasFeature(userId, key): reads premium_me through the service role, cached
+ *    for CACHE_MS so socket handlers can ask on every event; invalidate(userId) after each change.
+ *  - requireFeature(key): Express middleware (after requireAuth), 403 PREMIUM_REQUIRED otherwise.
+ * Fails closed: an unknown key, a database error or a missing function means "no feature".
+ * Premium-only server behaviour must check these, never only the UI.
  */
 
-const PLUS = [
-  'mini_mode', 'always_on_top', 'pip_call', 'multi_window', 'window_opacity', 'session_restore',
-  'tray_controls_plus', 'taskbar_plus', 'global_mute', 'global_ptt', 'custom_hotkeys', 'media_keys',
-  'quick_launcher', 'notification_history', 'focus_mode', 'notification_profiles', 'mic_presets',
-  'noise_gate', 'mic_monitor', 'voice_activity_monitor', 'auto_device_switch', 'audio_routing',
-  'audio_device_profiles', 'game_status', 'game_session_history', 'smart_game_notifications',
-  'clipboard_history', 'quick_file_drop', 'app_lock', 'quick_actions', 'quick_reply',
-];
-const ULTRA_ONLY = [
-  'desktop_sidebar', 'screen_edge_actions', 'window_layouts', 'advanced_window_mgmt', 'voice_hud',
-  'gaming_hud', 'instant_clip', 'per_user_volume_hotkeys', 'stream_audio_control', 'workspace_profiles',
-  'desktop_automations', 'activity_timeline', 'command_center', 'widgets', 'custom_layouts', 'multi_account',
-];
-const FEATURE_TIER = Object.freeze(Object.fromEntries([
-  ...PLUS.map((k) => [k, 'plus']),
-  ...ULTRA_ONLY.map((k) => [k, 'ultra']),
-]));
-const RANK = { plus: 1, ultra: 2 };
-const CACHE_MS = 30_000;
-const cache = new Map(); // userId -> { at, plan }
+const { FEATURES, featuresFor, isFeatureKey } = require("./features");
 
-function featuresFor(plan) {
-  const have = RANK[plan] || 0;
-  if (!have) return [];
-  return Object.keys(FEATURE_TIER).filter((k) => RANK[FEATURE_TIER[k]] <= have);
-}
+const CACHE_MS = 30 * 1000;
+const cache = new Map(); // userId -> { at, me }
+let dbOverride = null;
+const db = () => dbOverride || require("../../db/supabase");
 
-function activePlan(row, now = Date.now()) {
-  if (!row || row.status !== 'active' || !RANK[row.plan_id]) return null;
-  if (!row.unlimited && row.ends_at && Date.parse(row.ends_at) <= now) return null;
-  return row.plan_id;
-}
+const EMPTY_ME = Object.freeze({ plan: null, status: "none", ends_at: null, unlimited: false, monthly_descoin: null, next_coin_at: null });
 
-let supabaseRef = null;
-function db() {
-  if (!supabaseRef) supabaseRef = require('../../db/supabase');
-  return supabaseRef;
-}
-
-async function planFor(userId) {
-  if (!userId) return null;
-  const hit = cache.get(userId);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.plan;
-  let plan = null;
+/** premium_me for one user, cached. Never throws. */
+async function loadMe(userId, { fresh = false, now = Date.now() } = {}) {
+  const id = String(userId || "");
+  if (!id) return EMPTY_ME;
+  const hit = cache.get(id);
+  if (!fresh && hit && now - hit.at < CACHE_MS) return hit.me;
+  let me = EMPTY_ME;
   try {
-    const { data, error } = await db()
-      .from('user_subscriptions')
-      .select('plan_id,status,ends_at,unlimited')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (!error) plan = activePlan(data);
-  } catch (_) {
-    plan = null;
+    const { data, error } = await db().rpc("premium_me", { p_user: id });
+    if (!error && data && typeof data === "object") me = data;
+    else if (error) me = hit?.me || EMPTY_ME; // keep the last known answer on a transient error
+  } catch {
+    me = hit?.me || EMPTY_ME;
   }
-  cache.set(userId, { at: Date.now(), plan });
-  return plan;
+  cache.set(id, { at: now, me });
+  if (cache.size > 20000) cache.delete(cache.keys().next().value);
+  return me;
 }
 
-async function hasFeature(userId, feature) {
-  const tier = FEATURE_TIER[feature];
-  if (!tier) return false;
-  const plan = await planFor(userId);
-  return (RANK[plan] || 0) >= RANK[tier];
+async function planFor(userId, opts) {
+  const me = await loadMe(userId, opts);
+  return me && me.plan ? me.plan : null;
+}
+
+async function hasFeature(userId, feature, opts) {
+  if (!isFeatureKey(feature)) return false;
+  const plan = await planFor(userId, opts);
+  return featuresFor(plan).includes(String(feature));
 }
 
 function invalidate(userId) {
-  if (userId) cache.delete(userId);
+  if (userId) cache.delete(String(userId));
   else cache.clear();
 }
 
-/** Express middleware: the signed-in user must hold one of the features. */
+/** Express middleware: the signed-in account's plan must include `feature`. */
 function requireFeature(feature) {
-  const list = Array.isArray(feature) ? feature : [feature];
+  if (!isFeatureKey(feature)) throw new Error(`Unknown premium feature: ${feature}`);
   return async (req, res, next) => {
-    const uid = req.user && req.user.id;
-    for (const f of list) {
-      if (await hasFeature(uid, f)) return next();
-    }
-    return res.status(403).json({ error: 'PREMIUM_REQUIRED', feature: list[0] });
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "UNAUTHENTICATED", code: "UNAUTHENTICATED" });
+    if (await hasFeature(userId, feature)) return next();
+    return res.status(403).json({ error: "PREMIUM_REQUIRED", code: "PREMIUM_REQUIRED", feature });
   };
 }
 
-module.exports = { featuresFor, hasFeature, requireFeature, planFor, invalidate, activePlan, FEATURE_TIER, _cache: cache, _setDb: (d) => { supabaseRef = d; } };
+/** The shape GET /api/premium/me returns. */
+function publicMe(me) {
+  const m = me && typeof me === "object" ? me : EMPTY_ME;
+  const plan = m.plan || null;
+  return {
+    plan,
+    status: m.status || (plan ? "active" : "none"),
+    ends_at: plan ? m.ends_at ?? null : null,
+    unlimited: plan ? Boolean(m.unlimited) : false,
+    features: featuresFor(plan),
+    monthly_descoin: plan ? m.monthly_descoin ?? null : null,
+    next_coin_at: plan ? m.next_coin_at ?? null : null,
+    started_at: plan ? m.started_at ?? null : null,
+  };
+}
+
+function __setDbForTests(client) {
+  dbOverride = client;
+  cache.clear();
+}
+
+module.exports = {
+  FEATURES,
+  CACHE_MS,
+  featuresFor,
+  isFeatureKey,
+  loadMe,
+  planFor,
+  hasFeature,
+  invalidate,
+  requireFeature,
+  publicMe,
+  __setDbForTests,
+};

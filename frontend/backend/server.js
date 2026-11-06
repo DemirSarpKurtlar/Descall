@@ -160,6 +160,9 @@ if (isVercel) {
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/promo", promoRoutes);
+// Descall+ / Ultra gaming data (game status card, long game history); entitlement checked per route.
+app.use("/api/premium/gaming", require("./routes/premiumGaming"));
+app.use("/api/premium", require("./routes/premium"));
 app.use("/api/dimaai", goneRouter("This feature has been removed."));
 // 2.13.0: the game tab, its Riot account link and lobbies were removed. Installed
 // older apps get a clean 410 instead of an HTML 404.
@@ -468,8 +471,6 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/reactions", reactionRoutes);
 app.use("/api/friends", friendsRoutes);
 app.use("/api/activity", activityRoutes);
-// Descall+ / Ultra gaming data (game status card, long game history); entitlement checked per route.
-app.use("/api/premium/gaming", require("./routes/premiumGaming"));
 app.use("/api/servers", serverRoutes);
 app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
@@ -978,6 +979,13 @@ async function runBoot() {
     require("./lib/descoinReconcile").startReconcileScheduler();
   } catch (e) {
     console.warn("[boot] descoin reconcile scheduler failed:", e.message);
+  }
+  try {
+    // Descall+ / Ultra: every 5 minutes, expire ended memberships and pay due DesCoin gifts
+    // (premium_run_scheduled holds a Postgres advisory lock, so several instances are safe).
+    require("./lib/premium/service").startPremiumScheduler({ io });
+  } catch (e) {
+    console.warn("[boot] premium scheduler failed:", e.message);
   }
   try {
     // DesCoin anti-bot (Faz 0): monitor-only risk scoring; never changes balances or earning.

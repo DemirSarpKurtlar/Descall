@@ -2,7 +2,7 @@
 // Yöneticiler (3.3.0): section groups follow the menu, legacy null = all, owner-only wiring.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ADMIN_NAV_GROUPS } from "./adminNav.js";
+import { menuSections } from "./adminNav.js";
 
 const rd = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
 const src = rd("./AdminStaff.jsx");
@@ -11,7 +11,8 @@ const backend = rd("../../../backend/lib/adminPermissions.js");
 
 // The client and server agree on the grantable sections.
 const grantable = [...backend.match(/GRANTABLE_SECTIONS = Object\.freeze\(\[([\s\S]*?)\]\)/)[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-const menu = ADMIN_NAV_GROUPS.flatMap(([, ids]) => ids);
+// Pages sharing one section (Premium Yönetimi) count once, as that section.
+const menu = menuSections();
 for (const id of grantable) assert.ok(menu.includes(id), `section ${id} is in the menu`);
 for (const id of menu) {
   if (id === "overview" || id === "staff") continue;

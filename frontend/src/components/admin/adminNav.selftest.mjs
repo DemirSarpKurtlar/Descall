@@ -20,7 +20,7 @@ for (const tab of tabs) assert.ok(known.has(tab.id), `tab ${tab.id} placed in AD
 
 const all = groupAdminTabs(tabs, t);
 assert.equal(all.reduce((n, g) => n + g.items.length, 0), tabs.length, "every tab listed, none hidden");
-assert.deepEqual(all.map((g) => g.key), ["general", "people", "content", "system"]);
+assert.deepEqual(all.map((g) => g.key), ["general", "people", "premium", "content", "system"]);
 assert.equal(all[0].items[0].id, "overview", "Genel Bakış first");
 
 // Unknown ids still show (last group), never vanish.

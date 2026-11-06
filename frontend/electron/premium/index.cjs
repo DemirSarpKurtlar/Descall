@@ -25,6 +25,7 @@ const { EventEmitter } = require('events');
 const gate = require('./gate.cjs');
 const { createStore } = require('./store.cjs');
 const { TIERS } = require('./featureTiers.cjs');
+const { checkTrustedSender } = require('../appTrust.cjs');
 
 const FEATURE_DIR = path.join(__dirname, 'features');
 const DEFAULT_API = 'https://des-call.onrender.com';
@@ -62,6 +63,9 @@ function senderAllowed(event, from) {
   const w = mainWindow();
   const wc = event?.sender;
   if (!wc) return false;
+  // Top frame of an app-origin page only (appTrust.cjs, same rule as main's trusted IPC).
+  const known = (x) => Boolean((w && x === w.webContents) || auxWindows.has(x.id));
+  if (!checkTrustedSender(event, { isDev: Boolean(opts?.isDev), isKnownWebContents: known }).ok) return false;
   if (w && wc === w.webContents) return true;
   if (from === 'app') return auxWindows.has(wc.id);
   return false;
@@ -182,6 +186,7 @@ function makeCtx(mod) {
     icon: opts.iconPath,
     appUrl: (route) => opts.appUrl(route),
     settings: () => ({ ...store.feature(mod.key) }),
+    showMain,
     handle: (channel, fn, o) => registerChannel(mod.key, channel, fn, o),
     send,
     onWindowOpen: (fn) => { reg.windowOpen.push(fn); },
@@ -247,6 +252,18 @@ function loadModules() {
   }
 }
 
+function showMain() {
+  try {
+    if (opts?.showMain) return opts.showMain();
+    const w = mainWindow();
+    if (!w) return undefined;
+    if (w.isMinimized()) w.restore();
+    w.show();
+    w.focus();
+  } catch (_) { /* ignore */ }
+  return undefined;
+}
+
 function refreshTray() {
   try { opts?.rebuildTray?.(); } catch (_) { /* ignore */ }
 }
@@ -282,6 +299,10 @@ function registerCore() {
     send('premium:settings-changed', { key: k, settings: next });
     return { ok: true, settings: next };
   });
+  registerChannel('core', 'premium:focus-main', () => {
+    showMain();
+    return { ok: true };
+  }, { from: 'app' });
   registerChannel('core', 'premium:call-state', (snap = {}) => {
     state.call = {
       active: Boolean(snap.active),
