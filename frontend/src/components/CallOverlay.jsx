@@ -1199,7 +1199,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         const id = userMenu?.user?.id;
         if (id == null) return;
         const key = String(id);
-        const current = userVolumes[key] ?? 100;
+        // Not touched in this session: the remembered level, not 100%.
+        const current = userVolumes[key] ?? participantVolumePercent(null, id);
         const next = current > 0 ? 0 : (lastUserVolumeRef.current[key] || 100);
         if (current > 0) lastUserVolumeRef.current[key] = current;
         setUserVolumes((prev) => ({ ...prev, [key]: next }));

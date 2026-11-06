@@ -39,15 +39,13 @@ import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain } from "../lib/voiceGain";
 import {
-  clampGain,
   micRecapturePlan,
   primeCapturedMic,
   readLocalMute,
-  readParticipantGain,
   tuneAudioReceiver,
   writeLocalMute,
-  writeParticipantGain,
 } from "../lib/voiceProfile";
+import { createPeerVolume } from "../lib/peerVolume";
 import { getUser } from "../lib/storage";
 import { drainNativeTelemetry, getNativeCallSnapshot } from "../lib/iosNativeCall";
 import { nativeOfferVerdict } from "../lib/iosNativeCallState";
@@ -232,8 +230,9 @@ export function useCall(socket, callOccupancyRef = null) {
   const [selectedAudioOutput, setSelectedAudioOutput] = useState(() => (IOS_NATIVE ? "" : readAudioPrefs().output));
   const [selectedVideoInput, setSelectedVideoInput] = useState("");
   const videoInputIdRef = useRef("");
-  const remoteVolumeRef = useRef(1);
-  const lastRemoteVolumeRef = useRef(1);
+  // Playback level of the peer (lib/peerVolume.js): per peer, never carried over.
+  const peerVolumeRef = useRef(null);
+  if (!peerVolumeRef.current) peerVolumeRef.current = createPeerVolume();
   const [screenQuality, setScreenQuality] = useState(DM_SCREEN_DEFAULT_QUALITY);
   const screenQualityRef = useRef(screenQuality);
 
@@ -780,7 +779,7 @@ export function useCall(socket, callOccupancyRef = null) {
     // srcObject changes only when the mic track set changes (every reassign
     // restarts WebKit's renderer; the overlay used to flip it back and forth).
     if (audio && remoteAudioKeeperRef.current.attach("inbound") !== "cleared") {
-      applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
+      applyPlaybackGain(audio, deafenedRef.current ? 0 : peerVolumeRef.current.level());
     }
     const video = remoteVideoRef.current;
     const cameraTracks = mainStream?.getVideoTracks().filter((track) => track.readyState !== "ended") || [];
@@ -1993,7 +1992,7 @@ export function useCall(socket, callOccupancyRef = null) {
     const audio = remoteAudioRef.current;
     if (audio) {
       audio.muted = next;
-      applyPlaybackGain(audio, next ? 0 : remoteVolumeRef.current);
+      applyPlaybackGain(audio, next ? 0 : peerVolumeRef.current.level());
     }
     const track = localStreamRef.current?.getAudioTracks()?.[0];
     if (next) {
@@ -2472,30 +2471,23 @@ export function useCall(socket, callOccupancyRef = null) {
   }, [cameraOn]);
 
   const setParticipantVolume = useCallback((userId, volume) => {
-    const safe = clampGain(volume);
-    if (safe > 0) lastRemoteVolumeRef.current = safe;
-    remoteVolumeRef.current = safe;
-    if (userId != null) writeParticipantGain(userId, safe);
+    const safe = peerVolumeRef.current.set(userId, volume);
     if (remoteAudioRef.current) {
       applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : safe);
     }
   }, []);
 
+  // Each peer plays at their own remembered level, else 100% (never the
+  // previous call's level, see lib/peerVolume.js).
   useEffect(() => {
-    const id = peer?.id;
-    if (id == null) return;
-    const stored = readParticipantGain(id);
-    if (stored == null) return;
-    remoteVolumeRef.current = stored;
-    if (stored > 0) lastRemoteVolumeRef.current = stored;
-    if (remoteAudioRef.current) {
-      applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : stored);
+    const level = peerVolumeRef.current.forPeer(peer?.id ?? null);
+    if (peer?.id != null && remoteAudioRef.current) {
+      applyPlaybackGain(remoteAudioRef.current, deafenedRef.current ? 0 : level);
     }
   }, [peer?.id]);
 
   const toggleParticipantMute = useCallback((userId) => {
-    if (remoteVolumeRef.current > 0.001) setParticipantVolume(userId, 0);
-    else setParticipantVolume(userId, lastRemoteVolumeRef.current || 1);
+    setParticipantVolume(userId, peerVolumeRef.current.level() > 0.001 ? 0 : peerVolumeRef.current.lastAudible() || 1);
   }, [setParticipantVolume]);
 
   // ── Native iOS: microphone health + audio output routing ────────────────
@@ -2535,7 +2527,7 @@ export function useCall(socket, callOccupancyRef = null) {
     const audio = remoteAudioRef.current;
     const res = remoteAudioKeeperRef.current?.attach(reason);
     if (audio && res && res !== "cleared" && res !== "none") {
-      applyPlaybackGain(audio, deafenedRef.current ? 0 : remoteVolumeRef.current);
+      applyPlaybackGain(audio, deafenedRef.current ? 0 : peerVolumeRef.current.level());
     }
     return res;
   }, []);
