@@ -538,6 +538,16 @@ html.glass-ui .g-inline-title {
   text-overflow: unset;
 }
 
+/* UI audit #43: with a server open the small "Sunucular" title sat right of
+   centre, squeezed against the + button. It is the centred nav bar title. */
+html.glass-ui .g-head-inline .g-inline-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  pointer-events: none;
+}
+
 html.glass-ui .g-large-title {
   position: absolute;
   top: calc(var(--g-chrome-top) + 52px);
@@ -1096,6 +1106,16 @@ html.glass-ui .g-peer-status {
    and the tab bar edge to edge. */
 @media (min-width: 700px) {
   html.glass-ui .app-root.is-mobile.g-shell .sidebar-content > * {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* The large title, toolbar and search line up with the list column. */
+  html.glass-ui .app-root.is-mobile.g-shell .g-list-head > .g-toolbar,
+  html.glass-ui .app-root.is-mobile.g-shell .g-list-head > .g-large-title,
+  html.glass-ui .app-root.is-mobile.g-shell .g-list-head > .g-searchbar {
+    width: auto;
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;

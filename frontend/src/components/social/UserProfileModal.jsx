@@ -64,7 +64,7 @@ function generateBannerGradient(username) {
   return `linear-gradient(135deg, hsl(${hue}, 65%, 28%) 0%, hsl(${(hue + 40) % 360}, 55%, 18%) 100%)`;
 }
 
-const STATUS_COLOR = { online: "#23a55a", offline: "#80848e", idle: "#f0b232", dnd: "#f23f43" };
+const STATUS_COLOR = { online: "#30D158", offline: "#8E8E93", idle: "#FF9F0A", dnd: "#FF453A" };
 const MENU_FORM_OFFSET = { x: 10, y: -8 };
 
 function ProfileGlassSkeleton({ label }) {

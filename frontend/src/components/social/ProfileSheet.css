@@ -394,6 +394,16 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4)), rgba(244, 245, 250, 0.9);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22), inset 0 0.5px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
+/* Solid / lite material in the light theme: the opaque fallback above was the
+   dark slab, so the dark ink of the light theme sat on it (unreadable). */
+:root:root:root:root:root[data-theme="light"]:is(.a11y-solid, .gd-lite) :is(.pfs-heavy, .rps-alert) {
+  background: rgb(244, 245, 250) !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root:root:root:root:root[data-theme="light"] :is(.pfs-heavy, .rps-alert) {
+    background: rgb(244, 245, 250) !important;
+  }
+}
 :root[data-theme="light"] :is(.pfs-group, .pfs-act, .rps-field) { background: rgba(0, 0, 0, 0.05); }
 :root[data-theme="light"] :is(.pfs-h, .pfs-sec, .pfs-foot, .pfs-row .val, .rps-head .sub, .rps-done p) { color: rgba(20, 24, 40, 0.55); }
 :root[data-theme="light"] .pfs-row + .pfs-row::before { background: rgba(0, 0, 0, 0.1); }

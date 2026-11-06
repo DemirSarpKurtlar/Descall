@@ -33,7 +33,7 @@ body.electron-app .presence-toasts {
   border-radius: 18px;
   color: var(--pt-ink);
   background:
-    linear-gradient(180deg, rgba(var(--g-brand-rgb, 88, 101, 242), 0.12), rgba(var(--g-brand-rgb, 88, 101, 242), 0.05)),
+    linear-gradient(180deg, rgba(var(--g-brand-rgb, 88, 122, 245), 0.12), rgba(var(--g-brand-rgb, 88, 122, 245), 0.05)),
     rgba(24, 25, 34, 0.86);
   -webkit-backdrop-filter: blur(40px) saturate(170%);
   backdrop-filter: blur(40px) saturate(170%);
@@ -104,7 +104,7 @@ html.gd-lite .presence-toast {
 .presence-toast.is-actionable .presence-toast-main:hover { background: var(--pt-hover); }
 .presence-toast-main:focus-visible,
 .presence-toast-x:focus-visible {
-  outline: 2px solid rgba(var(--g-brand-rgb, 88, 101, 242), 0.85);
+  outline: 2px solid rgba(var(--g-brand-rgb, 88, 122, 245), 0.85);
   outline-offset: -2px;
 }
 

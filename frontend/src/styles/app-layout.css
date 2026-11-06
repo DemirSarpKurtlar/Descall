@@ -1224,13 +1224,13 @@ html.gd-lite .rail-tooltip {
 }
 
 .group-swipe-btn.invite { background: #587af5; }
-.group-swipe-btn.add { background: #3ba55d; }
+.group-swipe-btn.add { background: var(--g-ok, #30D158); }
 .group-swipe-btn.rename { background: #f0b232; color: #1e1f22; }
-.group-swipe-btn.leave { background: #ed4245; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.group-swipe-btn.leave { background: var(--g-red, #FF453A); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .group-swipe-btn.pin { background: #587af5; }
 .group-swipe-btn.mute { background: #4e5058; }
-.group-swipe-btn.unread { background: #3ba55d; }
-.group-swipe-btn.close { background: #ed4245; border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.group-swipe-btn.unread { background: var(--g-ok, #30D158); }
+.group-swipe-btn.close { background: var(--g-red, #FF453A); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 
 .conv-row-flags {
   display: inline-flex;

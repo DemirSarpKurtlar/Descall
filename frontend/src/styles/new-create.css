@@ -20,7 +20,7 @@
   --nc-fill-2: color-mix(in srgb, var(--nc-ink) 10%, transparent);
   --nc-hair: color-mix(in srgb, var(--nc-ink) 8%, transparent);
   --nc-field: rgba(0, 0, 0, 0.26);
-  --nc-brand-rgb: var(--g-brand-rgb, 88, 101, 242);
+  --nc-brand-rgb: var(--g-brand-rgb, 88, 122, 245);
   --nc-brand: rgb(var(--nc-brand-rgb));
   position: relative;
   width: 460px;

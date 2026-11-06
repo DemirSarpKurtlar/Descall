@@ -68,3 +68,11 @@ html.glass-ui[data-theme="light"] .g-invite {
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
 }
+
+/* The secondary "Paylaş" kept the dark 9% white fill and read as bare text on
+   the light card; it is the shared light secondary button (#11, #12). */
+html.glass-ui[data-theme="light"] .g-invite-btn:not(.is-primary) {
+  background: #E9EDFB;
+  box-shadow: none;
+  color: #3D5BD9;
+}

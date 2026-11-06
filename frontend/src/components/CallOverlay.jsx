@@ -625,7 +625,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                 border: 0,
                 borderRadius: 999,
                 padding: "8px 14px",
-                background: "#34c759",
+                background: "#30d158",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 14,
