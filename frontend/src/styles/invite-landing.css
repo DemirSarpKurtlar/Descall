@@ -73,3 +73,4 @@
   .invite-landing .invite-landing-btn,
   .invite-landing .invite-landing-join { transition: none; transform: none; }
 }
+.invite-landing .invite-landing-card h1 { color: #fff; }

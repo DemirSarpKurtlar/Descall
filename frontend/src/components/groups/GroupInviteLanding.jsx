@@ -89,7 +89,6 @@ export default function GroupInviteLanding({
           <div className="invite-landing-state is-error">
             <AlertTriangle size={28} />
             <strong>{t("Invite not found")}</strong>
-            {error && error !== t("Invite not found") ? <p>{error}</p> : null}
             <button type="button" className="invite-landing-secondary" onClick={onDismiss}>
               {t("Back to Descall")}
             </button>

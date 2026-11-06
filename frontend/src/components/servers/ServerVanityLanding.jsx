@@ -88,7 +88,6 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
           <div className="invite-landing-state error" role="alert">
             <AlertTriangle size={28} />
             <strong>{t("Invite not found")}</strong>
-            {error && error !== t("Server not found") ? <span>{error}</span> : null}
             <button type="button" className="invite-landing-btn ghost" onClick={onDismiss}>
               {t("Dismiss")}
             </button>
