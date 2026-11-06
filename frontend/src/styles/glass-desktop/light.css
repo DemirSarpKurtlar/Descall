@@ -2,7 +2,7 @@
    White frost, dark ink, ink hairlines, and accent buttons. */
 
 html.glass-desktop[data-theme="light"] {
-  --gd-scrim: color-mix(in srgb, var(--g-deep) 58%, transparent);
+  --gd-scrim: var(--overlay-dim);
   color-scheme: light;
 }
 

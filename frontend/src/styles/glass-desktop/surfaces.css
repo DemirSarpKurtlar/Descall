@@ -2,8 +2,9 @@
    Visual only. Layout, data, and iOS glass stay as they are. */
 
 html.glass-desktop {
-  --gd-scrim: color-mix(in srgb, var(--surface-0, #111214) 46%, transparent);
-  --gd-scrim-blur: blur(24px) saturate(1.4);
+  /* Same token as every modal backdrop (overlay.css, UI audit #65). */
+  --gd-scrim: var(--overlay-dim);
+  --gd-scrim-blur: blur(var(--overlay-blur)) saturate(var(--overlay-saturate));
 }
 
 /* Full-window dim + blur. The card keeps the pre-glass size (1080×780)
