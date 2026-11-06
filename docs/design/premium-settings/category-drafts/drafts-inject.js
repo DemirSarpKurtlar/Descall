@@ -16,6 +16,7 @@
     micOff: '<path d="M4 4l16 16"/><path d="M9 9v2a3 3 0 0 0 5 2.2M15 10V6a3 3 0 0 0-5.8-1"/><path d="M5.5 11a6.5 6.5 0 0 0 10.6 5M18.5 11a6.4 6.4 0 0 1-.4 2.2M12 17.5V21"/>',
     head: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/>',
     phone: '<path d="M3.5 13.5c4.7-4 12.3-4 17 0l-1.8 2.6a1.4 1.4 0 0 1-1.8.4l-2.3-1.2a1.4 1.4 0 0 1-.7-1.3v-1.3a12 12 0 0 0-4.8 0V14a1.4 1.4 0 0 1-.7 1.3l-2.3 1.2a1.4 1.4 0 0 1-1.8-.4z"/>',
+    card: '<rect x="3" y="8" width="18" height="11" rx="3"/><circle cx="8" cy="13.5" r="2"/><path d="M12 12.5h5M12 15.5h3"/>',
     pin: '<path d="M9 4h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 15v6"/>',
     layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
     drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
@@ -85,7 +86,7 @@
     },
   };
   const F = {
-    mini_mode: { name: 'Mini mod', desc: 'Arama kontrollerin ve okunmamış sayınla küçük bir pencere.', icon: 'phone' },
+    mini_mode: { name: 'Mini mod', desc: 'Arama kontrollerin ve okunmamış sayınla küçük bir pencere.', icon: 'card' },
     always_on_top: { name: 'Her zaman üstte', desc: 'Seçtiğin Descall pencereleri diğer uygulamaların üstünde kalsın.', icon: 'pin' },
     pip_call: { name: 'Resim içinde resim arama', desc: 'Aramayı üstte kalan küçük bir pencerede izle.', icon: 'pip' },
     multi_window: { name: 'Ayrı pencereler', desc: 'Bir sohbeti ya da kanalı kendi penceresinde aç, en fazla 4.', icon: 'wins' },
@@ -115,11 +116,11 @@
     multi_window: { enabled: true, open: 2 },
     window_opacity: { enabled: true, mini: 85, call: 100, sidebar: 70, popout: 90 },
     session_restore: { enabled: true, popouts: true, mini: true, bounds: true },
-    tray_controls_plus: { enabled: true },
+    tray_controls_plus: { enabled: false },
     taskbar_plus: { enabled: true, badge: true, buttons: true },
     window_layouts: { enabled: true },
     advanced_window_mgmt: { enabled: true, snap: true, keepVisible: true, mainMonitor: false },
-    screen_edge_actions: { enabled: false, edge: 'right', delay: 250 },
+    screen_edge_actions: { enabled: true, edge: 'right', delay: 250 },
     custom_layouts: { enabled: true, active: 'oyun' },
     noise_gate: { enabled: true, thresholdDb: -52, hysteresisDb: 10, holdMs: 120, testing: true },
     mic_presets: { enabled: true, gain: 100, active: 'voice' },
@@ -145,7 +146,7 @@
   const on = (k) => S[k].enabled;
   const tg = (k, p, val, ds) => `<button class="us-toggle${val ? ' active' : ''}" type="button" role="switch" aria-checked="${val}" data-tg="${k}.${p}" data-s="${ds || `${k}.${p}`}"><span class="us-toggle-knob"></span></button>`;
   const grp = (title, body, extra = '') => `<div class="dpc-g ${extra}"><div class="dpc-gt">${title}</div>${body}</div>`;
-  const row = (label, desc, ctrl, icon) => `<div class="dpc-r">${icon ? `<span class="dpc-ri">${svg(icon, 15)}</span>` : ''}<div class="dpc-rc"><b>${label}</b>${desc ? `<small>${desc}</small>` : ''}</div><div class="dpc-rx">${ctrl}</div></div>`;
+  const row = (label, desc, ctrl, icon) => `<div class="dpc-r${ctrl.includes('dpc-sl') ? ' st' : ''}">${icon ? `<span class="dpc-ri">${svg(icon, 15)}</span>` : ''}<div class="dpc-rc"><b>${label}</b>${desc ? `<small>${desc}</small>` : ''}</div><div class="dpc-rx">${ctrl}</div></div>`;
   const hint = (t, ds, tone = '') => `<p class="dpc-hint ${tone}" ${ds ? `data-s="${ds}"` : ''}>${svg(tone === 'warn' ? 'warn' : tone === 'ok' ? 'check' : 'info', 14)}<span>${t}</span></p>`;
   const btn = (label, kind = 'ghost', ds = '', icon = '') => `<button type="button" class="us-btn ${kind} sm" ${ds ? `data-s="${ds}"` : ''}>${icon ? svg(icon, 14) : ''}${label}</button>`;
   const field = (ph, ds) => `<span class="dpc-in" data-s="${ds}">${ph}</span>`;
@@ -172,7 +173,7 @@
   const scr = (inner, cls = '') => `<div class="dpc-scr ${cls}">${inner}<div class="dpc-dock"><i></i><i></i><i class="ds"></i><i></i></div></div>`;
   const av = (ch, c) => `<span class="dpc-av" style="background:${c}">${ch}</span>`;
   const callCard = (cls = '', st = '') => `<div class="dpc-call ${cls}" style="${st}">
-      <div class="cc-top">${av('A', 'linear-gradient(135deg,#f08a24,#e8457a)')}<div class="cc-t"><b>Ayşe</b><small><span class="dot"></span>Oyun Gecesi · 12:40</small></div></div>
+      <div class="cc-top">${av('A', 'linear-gradient(135deg,#f08a24,#e8457a)')}<div class="cc-t"><b>Ayşe</b><small><span class="dot"></span>Oyun Gecesi</small></div></div>
       <div class="cc-btns"><span>${svg('mic', 13)}</span><span>${svg('head', 13)}</span><span class="red">${svg('phone', 13)}</span></div>
     </div>`;
   const WAVE = [-70, -66, -58, -40, -30, -26, -33, -45, -62, -71, -68, -50, -36, -28, -24, -29, -38, -55, -64, -72, -74, -69, -61, -48, -35, -31, -42, -57, -67, -73, -70, -66];
@@ -274,8 +275,8 @@
       return `<div class="dpc-scr pv-gate"><div class="meter"><div class="bars">${bars}</div>
         <div class="band" style="top:${y(s.thresholdDb)}%;height:${y(close) - y(s.thresholdDb)}%"></div>
         <div class="th" style="top:${y(s.thresholdDb)}%"><span>Eşik ${s.thresholdDb} dB</span></div>
-        <div class="hold" style="left:56%;width:${holdW}%"><span>Bekleme ${s.holdMs} ms</span></div></div>
-        <div class="lg"><span><i class="pass"></i>Gönderilir</span><span><i></i>Kesilir</span><span><i class="hold"></i>Kapanma payı</span></div></div>`;
+        <div class="hold" style="left:56%;width:${holdW}%"></div></div>
+        <div class="lg"><span><i class="pass"></i>Gönderilir</span><span><i></i>Kesilir</span><span><i class="hold"></i>Pay ${s.hysteresisDb} dB</span><span><i class="hb"></i>Bekleme ${s.holdMs} ms</span></div></div>`;
     },
     mic_presets(s) {
       const p = PRESETS.find((x) => x[0] === s.active) || PRESETS[0];
@@ -592,8 +593,13 @@
   .dpc-ib{padding:6px!important;width:30px}
   .dpc-danger{color:#ff7b72!important}
   .dpc-sl{display:inline-flex;align-items:center;gap:10px}
-  .dpc-range{-webkit-appearance:none;appearance:none;width:150px;height:6px;border-radius:3px;margin:0;background:linear-gradient(90deg,var(--primary,#587af5) var(--p),rgba(255,255,255,.12) var(--p));cursor:pointer}
-  .dpc-range::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .dpc-r.st{flex-wrap:wrap;row-gap:6px}
+  .dpc-r.st>.dpc-rx{flex:1 1 100%;padding-left:0}
+  .dpc-r.st>.dpc-ri+.dpc-rc+.dpc-rx{padding-left:36px}
+  .dpc-r.st .dpc-sl{flex:1}
+  .dpc-root input.dpc-range{-webkit-appearance:none!important;appearance:none!important;flex:1;min-width:90px;width:auto;height:6px!important;min-height:0!important;padding:0!important;border:0!important;border-radius:3px!important;margin:0!important;box-shadow:none!important;outline:0;background:linear-gradient(90deg,var(--primary,#587af5) var(--p),rgba(255,255,255,.12) var(--p))!important;cursor:pointer}
+  .dpc-root input.dpc-range::-webkit-slider-runnable-track{background:transparent!important;border:0!important;height:6px;box-shadow:none!important}
+  .dpc-root input.dpc-range::-webkit-slider-thumb{-webkit-appearance:none!important;appearance:none!important;width:16px;height:16px;margin-top:-5px;border:0!important;border-radius:50%;background:#fff!important;box-shadow:0 1px 4px rgba(0,0,0,.45)!important}
   .dpc-val{min-width:58px;height:24px;display:inline-grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.07);font-size:var(--fs-12);font-weight:650}
   .dpc-seg{display:flex;padding:3px;border-radius:10px;background:rgba(255,255,255,.06);gap:2px}
   .dpc-seg button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:inherit;font:inherit;font-size:var(--fs-12);font-weight:600;padding:6px 8px;border-radius:8px;cursor:pointer;opacity:.75}
@@ -762,7 +768,7 @@
   .pv-widgets .wg{position:absolute;inset:12% 3% 4%}
   .pv-widgets .wgi{position:absolute;border-radius:6px;background:rgba(88,122,245,.16);box-shadow:inset 0 0 0 1px rgba(88,122,245,.4);display:flex;align-items:flex-start;padding:4px 6px}
   .pv-widgets .wgi span{font-size:var(--fs-11);color:#cfd8ff;font-weight:600}
-  .pv-gate .meter{position:absolute;left:5%;right:5%;top:8%;bottom:22%}
+  .pv-gate .meter{position:absolute;left:5%;right:5%;top:8%;bottom:26%}
   .pv-gate .bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2.5%}
   .pv-gate .bars i{flex:1;border-radius:3px 3px 0 0;background:rgba(255,255,255,.16);transition:height .2s}
   .pv-gate .bars i.pass{background:linear-gradient(180deg,#5be38a,#30b458)}
@@ -770,12 +776,12 @@
   .pv-gate .band{position:absolute;left:0;right:0;background:rgba(48,209,88,.1);border-bottom:1px dashed rgba(48,209,88,.5)}
   .pv-gate .th{position:absolute;left:0;right:0;height:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.6)}
   .pv-gate .th span{position:absolute;right:0;bottom:4px;font-size:var(--fs-11);font-weight:700;padding:1px 6px;border-radius:5px;background:rgba(10,12,18,.7);white-space:nowrap}
-  .pv-gate .hold{position:absolute;bottom:-14px;height:8px;border:1.5px solid rgba(48,209,88,.7);border-top:0;border-radius:0 0 4px 4px}
+  .pv-gate .hold{position:absolute;bottom:-9px;height:7px;border:1.5px solid rgba(48,209,88,.7);border-top:0;border-radius:0 0 4px 4px}
   .pv-gate .hold span{position:absolute;left:0;top:10px;font-size:var(--fs-11);color:#7fe0a3;white-space:nowrap}
   .pv-gate .lg{position:absolute;left:5%;bottom:4%;display:flex;gap:12px;font-size:var(--fs-11);color:var(--text-muted)}
   .pv-gate .lg span{display:inline-flex;align-items:center;gap:5px}
   .pv-gate .lg i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.2)}
-  .pv-gate .lg i.pass{background:#30b458}.pv-gate .lg i.hold{background:rgba(48,180,88,.45)}
+  .pv-gate .lg i.hb{background:none;box-shadow:inset 0 0 0 1.5px rgba(48,209,88,.7)}.pv-gate .lg i.pass{background:#30b458}.pv-gate .lg i.hold{background:rgba(48,180,88,.45)}
   .pv-presets{display:flex;align-items:center;justify-content:center;gap:6%}
   .pv-presets .dial{width:40cqh;max-width:120px;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 225deg,#30b458 0 var(--a),rgba(255,255,255,.1) var(--a) 270deg,transparent 270deg);display:grid;place-items:center;flex:none}
   .pv-presets .dial .in{width:78%;aspect-ratio:1;border-radius:50%;background:#151821;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -881,7 +887,7 @@
   .dpc-b-card.is-open .dpc-groups{padding:6px 12px 12px}
   .dpc-b-card .dpc-g{background:transparent;box-shadow:none;padding:6px 0 0;border-top:1px solid var(--border-2);border-radius:0}
   .dpc-b-card .dpc-g:first-child{border-top:0}
-  .dpc-b-card .dpc-range{width:110px}
+  
 
   /* C: showcase */
   .dpc-c-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -1019,8 +1025,8 @@
   }
 
   const DEFAULT_OPEN = {
-    a: { windows: 'mini_mode', audio: 'noise_gate' },
-    b: { windows: 'window_opacity', audio: 'mic_presets' },
+    a: { windows: 'window_opacity', audio: 'audio_routing' },
+    b: { windows: 'screen_edge_actions', audio: 'mic_presets' },
     c: { windows: 'mini_mode', audio: 'noise_gate' },
     d: { windows: 'always_on_top', audio: 'stream_audio_control' },
     e: { windows: 'mini_mode', audio: 'auto_device_switch' },
