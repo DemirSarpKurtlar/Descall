@@ -1758,6 +1758,8 @@ export default function ServersSidebar({
           <>
           <div className="sidebar-header">
             <h2 className="sidebar-title">{t("Servers")}</h2>
+            {/* UI audit #139: with no servers the empty state carries Create / Join itself. */}
+            {serversLoaded && servers.length > 0 ? (
             <div className="sidebar-actions">
               <button
                 type="button"
@@ -1794,13 +1796,15 @@ export default function ServersSidebar({
                 <Plus size={18} />
               </button>
             </div>
+            ) : null}
           </div>
 
           </>
         )}
 
-        {/* UI audit #60: counts are unknown after a failed load, so no "0 / 10". */}
-        {loadError && servers.length === 0 ? null : (
+        {/* UI audit #60/#92/#139: no "0 / 10" or drag hint while loading, after a
+            failed load, or with nothing to reorder. */}
+        {!serversLoaded || servers.length === 0 ? null : (
         <div className="server-owned-banner">
           {t("Owned {owned} / {max}", { owned: ownedCount, max: maxOwned })}
           {!isMobile ? (

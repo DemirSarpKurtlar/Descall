@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement } from "react";
+import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Phone, Video, Users, Hash,
@@ -779,6 +780,10 @@ export default function ChatPanel({
             me={me}
             serverVoice={serverVoice}
           />
+        ) : !activeServer && typeof window !== "undefined" && /^\/servers\/[^/]+/.test(window.location.pathname) ? (
+          /* UI audit #92: a server is already in the URL while the list loads, so
+             show its loading skeleton, not "pick a server on the left". */
+          <DetailPaneSkeleton label={t("Loading servers")} />
         ) : (
         <div className="server-main-placeholder">
           {activeChannel?.type === "voice" || activeChannel?.type === "stage" ? (
