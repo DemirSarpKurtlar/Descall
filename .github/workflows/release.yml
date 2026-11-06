@@ -84,8 +84,24 @@ jobs:
             Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
             Write-Host "No WIN_CSC_LINK secret. Building unsigned. File properties still name Descall; SmartScreen stays Unknown publisher until a trusted cert is configured."
           }
-          npx --yes @electron/rebuild@3.7.2 -f -a x64
-          if ($LASTEXITCODE -ne 0) { throw "electron-rebuild failed with $LASTEXITCODE" }
+          # Rebuild native modules for Electron, except those that ship N-API prebuilds
+          # (ABI-stable, loaded by node-gyp-build from prebuilds/win32-x64): uiohook-napi
+          # (global push-to-talk). Compiling it from source needs Visual Studio C++ on the
+          # runner and fails there (3.7.35). With nothing left to rebuild, skip the step.
+          $napiPrebuilt = @('uiohook-napi')
+          $native = Get-ChildItem -Path node_modules -Filter binding.gyp -Recurse -File -ErrorAction SilentlyContinue |
+            ForEach-Object { Split-Path -Leaf $_.DirectoryName } |
+            Where-Object { $napiPrebuilt -notcontains $_ } | Sort-Object -Unique
+          if ($native) {
+            Write-Host "electron-rebuild: $($native -join ', ')"
+            npx --yes @electron/rebuild@3.7.2 -f -a x64 -o ($native -join ',')
+            if ($LASTEXITCODE -ne 0) { throw "electron-rebuild failed with $LASTEXITCODE" }
+          } else {
+            Write-Host "electron-rebuild: no native modules without N-API prebuilds, skipped"
+          }
+          if (-not (Test-Path node_modules/uiohook-napi/prebuilds/win32-x64/uiohook-napi.node)) {
+            Write-Warning "uiohook-napi win32-x64 prebuild missing: global push-to-talk falls back to toggle mode"
+          }
           npx electron-builder --win --publish=never
       - name: Copy stable latest setup name
         shell: pwsh
