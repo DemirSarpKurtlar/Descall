@@ -154,6 +154,7 @@ export const MARKETING_TR = {
   "Last updated": "Son güncelleme",
   "API reachable": "API erişilebilir",
   "Request timed out": "İstek zaman aşımına uğradı",
+  "Network error": "Ağ hatası",
   "Latest release": "Son sürüm",
   "Learn more": "Daha fazla",
   "Leave Nitro guide": "Nitro’dan çıkış rehberi",
