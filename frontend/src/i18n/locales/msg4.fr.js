@@ -4,4 +4,9 @@ export const MSG4_FR = {
   draft: {
     label: "Brouillon :",
   },
+  unread: {
+    pill: "{count, plural, one {# nouveau message} other {# nouveaux messages}}",
+    jump: "Aller aux non lus",
+    dismiss: "Ignorer",
+  },
 };

@@ -4,4 +4,9 @@ export const MSG4_EN = {
   draft: {
     label: "Draft:",
   },
+  unread: {
+    pill: "{count, plural, one {# new message} other {# new messages}}",
+    jump: "Jump to unread",
+    dismiss: "Dismiss",
+  },
 };

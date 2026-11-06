@@ -4,7 +4,8 @@ import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown } from "../ui/Icon.jsx";
+import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown, ChevronUp } from "../ui/Icon.jsx";
+import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
 import { Avatar } from "../ui/Avatar";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
@@ -391,6 +392,69 @@ export default function MessageList({
   }, [conversationId, loading, resolveScroller]);
   useEffect(() => { setJump({ show: false, unseen: 0 }); }, [conversationId]);
 
+  // Jump to the first unread (messaging phase 4, lib/unreadJump): a pill at
+  // the top while the "Yeni mesajlar" separator is above the visible area.
+  const unreadSepRef = useRef(null);
+  const unreadDoneRef = useRef(null); // conversationId whose separator was seen / jumped to
+  const [unreadPill, setUnreadPill] = useState(false);
+  const [unreadDock, setUnreadDock] = useState({ host: null, top: 8 });
+  const unreadActive = unreadCount > 0 && !isSearching && !loading;
+  useEffect(() => {
+    if (!unreadActive) { setUnreadPill(false); return undefined; }
+    const scroller = resolveScroller();
+    if (!scroller) return undefined;
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const sep = unreadSepRef.current;
+      if (!sep || unreadDoneRef.current === conversationId) { setUnreadPill(false); return; }
+      const above = separatorAbove({
+        sepBottom: sep.getBoundingClientRect().bottom,
+        scrollerTop: scroller.getBoundingClientRect().top,
+        headerSpace: headerSpaceOf(scroller),
+      });
+      // The pill lives on the chat panel (above the phone header's scroll-edge fade), under the header.
+      const host = scroller.closest(".main-panel");
+      if (host) {
+        const top = pillTopIn(host);
+        setUnreadDock((prev) => (prev.host === host && prev.top === top ? prev : { host, top }));
+      }
+      if (!above) unreadDoneRef.current = conversationId;
+      setUnreadPill(above);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    // After the open pin and the tail render.
+    const timers = [80, 400, 900].map((ms) => window.setTimeout(check, ms));
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      timers.forEach((id) => window.clearTimeout(id));
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [unreadActive, conversationId, resolveScroller]);
+  const jumpToFirstUnread = useCallback(() => {
+    const sep = unreadSepRef.current;
+    const scroller = resolveScroller();
+    if (!sep || !scroller) return false;
+    pinRef.current?.suspendPin?.(1600);
+    const top = jumpTarget({
+      scrollTop: scroller.scrollTop,
+      sepTop: sep.getBoundingClientRect().top,
+      scrollerTop: scroller.getBoundingClientRect().top,
+      headerSpace: headerSpaceOf(scroller),
+    });
+    if (typeof scroller.scrollTo === "function") scroller.scrollTo({ top, behavior: prefersReducedMotionNow() ? "auto" : "smooth" });
+    else scroller.scrollTop = top;
+    unreadDoneRef.current = conversationId;
+    setUnreadPill(false);
+    return true;
+  }, [conversationId, resolveScroller]);
+  useEffect(() => {
+    const onJump = () => { if (jumpToFirstUnread()) hapticLight(); };
+    window.addEventListener(JUMP_UNREAD_EVENT, onJump);
+    return () => window.removeEventListener(JUMP_UNREAD_EVENT, onJump);
+  }, [jumpToFirstUnread]);
+
   useLayoutEffect(() => {
     if (loading || isSearching) return;
     const pin = pinRef.current;
@@ -591,7 +655,7 @@ export default function MessageList({
         }
         if (group.isUnreadSep) {
           return (
-            <div key={group.id || `unread-${groupIndex}`} className="message-unread-sep">
+            <div key={group.id || `unread-${groupIndex}`} ref={unreadSepRef} className="message-unread-sep">
               <span>{t("New messages")}</span>
             </div>
           );
@@ -788,6 +852,39 @@ export default function MessageList({
       })}
       <div ref={messagesEndRef} />
 
+      {/* Jump to the first unread (messaging phase 4): on the chat panel, just under the header. */}
+      {unreadDock.host && unreadActive ? createPortal(
+      <div className="msg-unread-dock" style={{ top: unreadDock.top }}>
+        <AnimatePresence>
+          {unreadPill ? (
+            <motion.div
+              key="unread-pill"
+              className="msg-unread-pill g-glass g-heavy"
+              role="status"
+              initial={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={prefersReducedMotionNow() ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.96 }}
+              transition={prefersReducedMotionNow() ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.default)}
+            >
+              <button type="button" className="msg-unread-jump" onClick={() => { hapticLight(); jumpToFirstUnread(); }}>
+                <ChevronUp size={16} aria-hidden="true" />
+                <span className="msg-unread-count">{t("msg4.unread.pill", { count: unreadCount })}</span>
+                <span className="msg-unread-go">{t("msg4.unread.jump")}</span>
+              </button>
+              <button
+                type="button"
+                className="msg-unread-close"
+                aria-label={t("msg4.unread.dismiss")}
+                title={t("msg4.unread.dismiss")}
+                onClick={() => { unreadDoneRef.current = conversationId; setUnreadPill(false); }}
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>,
+      unreadDock.host) : null}
       {/* #04 jump to the newest message (PR-7): sticky at the scroller's
           bottom edge, so it rides with the composer and the keyboard. */}
       <div className="msg-jump-dock">

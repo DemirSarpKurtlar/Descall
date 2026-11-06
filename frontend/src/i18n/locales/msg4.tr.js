@@ -4,4 +4,9 @@ export const MSG4_TR = {
   draft: {
     label: "Taslak:",
   },
+  unread: {
+    pill: "{count} yeni mesaj",
+    jump: "Okunmamışa git",
+    dismiss: "Kapat",
+  },
 };

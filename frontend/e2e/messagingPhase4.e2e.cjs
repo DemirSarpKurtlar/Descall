@@ -283,6 +283,41 @@ async function runDevice(browser, base, dev) {
     await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await waitFor(page, `${dev} chat list`, () => ({ ok: [...document.querySelectorAll('.dm-name')].some((e) => e.textContent.trim() === 'Ayşe' && e.getBoundingClientRect().width > 0) }), null, 30000);
 
+    // --- jump to the first unread ---
+    if (want('unread')) {
+      // Mert has 12 unread (dm:unread:sync on connect); the chat opens at the newest message.
+      await waitFor(page, 'Mert unread badge', () => {
+        const el = [...document.querySelectorAll('.dm-name')].find((e) => e.textContent.trim() === 'Mert');
+        const row = el && el.closest('.conv-row-body, .dm-info');
+        return { ok: !!row && /12/.test(row.textContent) };
+      }, null, 8000).catch(() => null);
+      await openChat(page, 'Mert');
+      const pill = await waitFor(page, 'unread pill', () => {
+        const p = document.querySelector('.msg-unread-pill');
+        const r = p && p.getBoundingClientRect();
+        const hit = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        const hb = (document.querySelector('.panel-header') || { getBoundingClientRect: () => ({ bottom: 0 }) }).getBoundingClientRect().bottom;
+        return { ok: !!p && r.width > 0 && !!hit && p.contains(hit) && r.top >= hb - 1 && r.top <= hb + 40, text: p && p.textContent, top: r && Math.round(r.top), hb: Math.round(hb), op: p && (() => { const o = [...document.querySelectorAll('.g-edge-top, .chat-top-chrome, .chat-scroll-edge')].map((x) => `${x.className}:${Math.round(x.getBoundingClientRect().top)}-${Math.round(x.getBoundingClientRect().bottom)} z${getComputedStyle(x).zIndex}`); for (let e = p; e && o.length < 6; e = e.parentElement) { const cs = getComputedStyle(e); o.push(`${e.className.toString().slice(0, 20)}:${cs.opacity}:${cs.visibility}:${cs.transform.slice(0, 20)}`); } return o.join(' | '); })() };
+      }, null, 6000).catch((e) => ({ ok: false, why: e.message }));
+      check(pill.ok && /12 yeni mesaj/.test(pill.text || ''), `the "12 yeni mesaj" pill shows just under the header, not covered (${pill.text || pill.why} top ${pill.top} header ${pill.hb}) ${process.env.DESCALL_E2E_DEBUG ? pill.op : ''}`);
+      await shot(page, `${P}02-unread-pill`);
+      if (pill.ok) {
+        if (dev === 'desktop') await page.click('.msg-unread-jump');
+        else await page.tap('.msg-unread-jump');
+        const at = await waitFor(page, 'separator in view', () => {
+          const sep = document.querySelector('.message-unread-sep');
+          const head = document.querySelector('.panel-header');
+          if (!sep) return { ok: false };
+          const r = sep.getBoundingClientRect();
+          const hb = head ? head.getBoundingClientRect().bottom : 0;
+          return { ok: r.top >= hb - 2 && r.bottom < innerHeight * 0.6, top: Math.round(r.top), hb: Math.round(hb) };
+        }, null, 4000).catch((e) => ({ ok: false, why: e.message }));
+        check(at.ok, `the pill scrolls the "Yeni mesajlar" separator under the header (${JSON.stringify(at)})`);
+        await sleep(400);
+        check(await page.evaluate(() => !document.querySelector('.msg-unread-pill')), 'the pill goes away after the jump');
+        await shot(page, `${P}03-unread-jumped`);
+      }
+    }
     // --- drafts ---
     if (want('drafts') && dev === 'desktop') {
       await openChat(page, 'Ayşe');

@@ -4,4 +4,9 @@ export const MSG4_RU = {
   draft: {
     label: "Черновик:",
   },
+  unread: {
+    pill: "{count, plural, one {# новое сообщение} few {# новых сообщения} many {# новых сообщений} other {# новых сообщения}}",
+    jump: "К непрочитанным",
+    dismiss: "Скрыть",
+  },
 };
