@@ -82,7 +82,7 @@ function SearchBox({ value, onChange, inputRef, t, hint }) {
         placeholder={t("admin.navSearch")}
         aria-label={t("admin.navSearch")}
       />
-      {hint ? <kbd aria-hidden="true">{isApplePlatform() ? "⌘K" : "Ctrl K"}</kbd> : null}
+      {hint ? <span className="adm-kbd" aria-hidden="true">{isApplePlatform() ? "⌘K" : "Ctrl K"}</span> : null}
     </label>
   );
 }

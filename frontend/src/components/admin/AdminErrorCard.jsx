@@ -15,7 +15,7 @@ export default function AdminErrorCard({ title, body, onRetry, retryLabel, busy 
       </span>
       <h2>{title}</h2>
       {body ? <p>{body}</p> : null}
-      {code ? <p className="adm-error-code tnum">{code}</p> : null}
+      {code ? <p className="adm-error-ref tnum">{code}</p> : null}
       {onRetry ? (
         <button type="button" className="adm-error-retry" onClick={onRetry} disabled={busy}>
           <RefreshCw size={15} className={busy ? "spin" : ""} aria-hidden="true" />
