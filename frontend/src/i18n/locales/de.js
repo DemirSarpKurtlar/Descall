@@ -10623,7 +10623,12 @@ export const phrases = {
   "🔵 Normal": "🔵 Normal",
   "🛡️ Admins Only": "🛡️ Nur Admins",
   "🟡 Important": "🟡 Wichtig",
-  "🟢 Online Users": "🟢 Online-Nutzer"
+  "🟢 Online Users": "🟢 Online-Nutzer",
+  "Compare": "Vergleich",
+  "Descall features": "Descall-Funktionen",
+  "Discord vs Descall article": "Artikel: Discord vs. Descall",
+  "More comparisons": "Weitere Vergleiche",
+  "Ready-made Gaming template": "Fertige Gaming-Vorlage",
 };
 
 export default { nested, phrases };

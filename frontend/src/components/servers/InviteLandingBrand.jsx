@@ -9,7 +9,7 @@ export default function InviteLandingBrand() {
   return (
     <div className="invite-landing-brand">
       <img className="invite-landing-tile" src={`${base}brand/descall-appicon-rounded.svg`} width={48} height={48} alt="" />
-      <img className="invite-landing-wordmark" src={`${base}brand/descall-wordmark-white.svg`} height={18} alt="Descall" />
+      <img className="invite-landing-wordmark" src={`${base}brand/descall-wordmark-white.svg`} height={18} alt="" />
     </div>
   );
 }
