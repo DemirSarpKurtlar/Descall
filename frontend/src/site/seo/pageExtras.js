@@ -21,7 +21,7 @@ function mirrorHref(to, loc) {
 const TR_HUBS = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
   { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri karşılaştırması" },
-  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı? Güncel durum" },
+  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı? Son haberler" },
   { to: "/tr/turk-discord", label: "Türkiye’de geliştirilen sohbet uygulaması" },
   { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
   { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
@@ -104,7 +104,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Discord’a erişemeyenler için",
         p: [
-          "Discord, 9 Ekim 2024’ten bu yana Türkiye’de mahkeme kararıyla erişime kapalı. Her akşam aynı ses kanalında buluşan gruplar için Descall, Türkiye’den doğrudan erişilebilen ve Türkçe kullanılabilen bir seçenek. Sunucu, kanal, rol ve ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelir; şablonlarla sunucunu dakikalar içinde yeniden kurabilirsin.",
+          "Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi; son haberler ve tarihleri “Discord açıldı mı?” sayfasında. Her akşam aynı ses kanalında buluşan gruplar için Descall, Türkiye’den doğrudan erişilebilen ve Türkçe kullanılabilen bir seçenek. Sunucu, kanal, rol ve ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelir; şablonlarla sunucunu dakikalar içinde yeniden kurabilirsin.",
         ],
       },
       {
