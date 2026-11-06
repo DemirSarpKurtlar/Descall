@@ -1,11 +1,37 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { OPEN_FORWARD_EVENT } from "../../lib/forwardMessage";
 import { storeReceiptsSetting } from "../../lib/readReceipts";
+import { allowedIn, matchShortcut, stepConversation, OPEN_SHORTCUTS_EVENT } from "../../lib/shortcuts";
+import { JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
 import { useToast } from "../../context/ToastContext";
 import { useT } from "../../context/LocaleContext";
 
 // Sheets load on first use (messaging phase 4): none of this is in the first paint.
 const ForwardSheet = lazy(() => import("./ForwardSheet.jsx"));
+const ShortcutsSheet = lazy(() => import("./ShortcutsSheet.jsx"));
+
+const ROW_SELECTOR = ".dm-item.conv-row, .group-item.conv-row";
+
+/** Run a messaging shortcut (lib/shortcuts). Returns true when it did something. */
+function runShortcut(id, { openHelp }) {
+  if (id === "help") { openHelp(); return true; }
+  if (id === "jumpUnread") { window.dispatchEvent(new CustomEvent(JUMP_UNREAD_EVENT)); return true; }
+  if (id === "search") {
+    const btn = document.querySelector('[data-shortcut="chat-search"]');
+    if (!btn) return false;
+    btn.click();
+    return true;
+  }
+  const rows = [...document.querySelectorAll(ROW_SELECTOR)].filter((el) => el.getBoundingClientRect().width > 0);
+  const active = rows.findIndex((el) => el.classList.contains("active"));
+  const dir = id === "prevChat" || id === "prevUnread" ? -1 : 1;
+  const unreadOnly = id === "prevUnread" || id === "nextUnread";
+  const next = stepConversation(rows, active, dir, { unreadOnly, isUnread: (el) => el.classList.contains("has-unread") });
+  if (!next) return false;
+  next.click();
+  next.scrollIntoView?.({ block: "nearest" });
+  return true;
+}
 
 /**
  * App-level host for the messaging phase 4 sheets. Message menus and
@@ -17,6 +43,25 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
   const t = useT();
   const { toast } = useToast();
   const [forward, setForward] = useState({ open: false, message: null });
+  const [help, setHelp] = useState({ open: false, mounted: false });
+
+  // Keyboard shortcuts (messaging phase 4, lib/shortcuts): Ctrl+/ help, Alt+↑/↓ chats,
+  // Alt+Shift+↑/↓ unread chats, Shift+PageUp first unread, Ctrl+Shift+F search.
+  useEffect(() => {
+    const openHelp = () => setHelp({ open: true, mounted: true });
+    const onKey = (e) => {
+      if (e.defaultPrevented || e.repeat) return;
+      const id = matchShortcut(e);
+      if (!id || !allowedIn(id, e.target)) return;
+      if (runShortcut(id, { openHelp })) e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener(OPEN_SHORTCUTS_EVENT, openHelp);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_SHORTCUTS_EVENT, openHelp);
+    };
+  }, []);
 
   // Mirror my "Görüldü" switch so the labels follow it from the first chat on.
   useEffect(() => {
@@ -56,6 +101,7 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
           onDone={(count) => toast(t("msg4.forward.done", { count }), "success")}
         />
       ) : null}
+      {help.mounted ? <ShortcutsSheet open={help.open} onClose={() => setHelp((h) => ({ ...h, open: false }))} /> : null}
     </Suspense>
   );
 }

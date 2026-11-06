@@ -298,6 +298,9 @@ async function runDevice(browser, base, dev) {
   try {
     await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await waitFor(page, `${dev} chat list`, () => ({ ok: [...document.querySelectorAll('.dm-name')].some((e) => e.textContent.trim() === 'Ayşe' && e.getBoundingClientRect().width > 0) }), null, 30000);
+    // The browser-notification banner is not part of what is tested: close it (its X) for clean shots.
+    await page.evaluate(() => { const b = document.querySelector('.app-notif-banner'); const btns = b ? b.querySelectorAll('button') : []; if (btns.length) btns[btns.length - 1].click(); });
+    await sleep(300);
 
     // --- jump to the first unread ---
     if (want('unread')) {
@@ -471,6 +474,34 @@ async function runDevice(browser, base, dev) {
       }, null, 4000).catch((e) => ({ ok: false, why: e.message }));
       check(live.ok, `a live group:read updates it ("${live.text}")`);
       await shot(page, `${P}09-seen-group`);
+    }
+    // --- keyboard shortcuts (desktop: a hardware keyboard) ---
+    if (want('keys') && dev === 'desktop') {
+      await openChat(page, 'Ayşe');
+      await page.click('.composer-container textarea');
+      await page.keyboard.press('Control+/');
+      const sheet = await waitFor(page, 'shortcuts sheet', () => {
+        const s = document.querySelector('[data-testid="shortcuts-sheet"]');
+        return { ok: !!s && s.querySelectorAll('[data-shortcut]').length >= 10, rows: s && s.querySelectorAll('[data-shortcut]').length, text: s && s.textContent.slice(0, 80) };
+      }, null, 5000).catch(() => ({ ok: false }));
+      check(sheet.ok && /Klavye kısayolları/.test(sheet.text || ''), `Ctrl+/ opens the shortcuts sheet (${sheet.rows} rows)`);
+      await sleep(400);
+      await shot(page, `${P}10-shortcuts`);
+      await page.keyboard.press('Escape');
+      await sleep(500);
+      check(await page.evaluate(() => !document.querySelector('[data-testid="shortcuts-sheet"]') || getComputedStyle(document.querySelector('[data-testid="shortcuts-sheet"]')).opacity === '0'), 'Esc closes it');
+      const title = () => page.evaluate(() => (document.querySelector('.panel-header') || {}).textContent || '');
+      await page.click('.composer-container textarea');
+      await page.keyboard.press('Alt+ArrowDown');
+      await sleep(900);
+      check(/Mert/.test(await title()), 'Alt+↓ opens the next chat (Mert)');
+      await page.keyboard.press('Alt+ArrowUp');
+      await sleep(900);
+      check(/Ayşe/.test(await title()), 'Alt+↑ goes back (Ayşe)');
+      await page.keyboard.press('Control+Shift+F');
+      await sleep(400);
+      check(await page.evaluate(() => !!document.querySelector('.chat-search-bar input')), 'Ctrl+Shift+F opens chat search');
+      await page.keyboard.press('Escape');
     }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});

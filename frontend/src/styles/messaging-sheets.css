@@ -46,7 +46,10 @@
   background: linear-gradient(180deg, transparent 0, color-mix(in srgb, var(--g-deep, #0d0e13) 94%, transparent) 16px);
 }
 
-/* Keyboard shortcuts sheet. */
+/* Keyboard shortcuts sheet: compact rows so the whole list fits a laptop screen. */
+.gs-sheet.ms-keys-sheet { max-height: min(84vh, 720px); max-height: min(84dvh, 720px); }
+.ms-keys-sheet .gs-body { gap: 12px; }
+.ms-keys-sheet .gs-row { min-height: 40px; padding: 6px 12px 6px 16px; font-size: var(--fs-15); line-height: 20px; }
 .ms-keys-row { justify-content: space-between; }
 .ms-keys-row .gs-row-title { font-weight: 400; white-space: normal; }
 .ms-keys {
