@@ -2336,24 +2336,24 @@ const UserPanel = forwardRef(function UserPanel({
             <p className="us-lead">{t("settings.languageDesc")}</p>
             <section className="us-section">
               <h4 className="us-section-label">{t("settings.appLanguage")}</h4>
-              <div className="us-theme-grid us-lang-grid">
+              {/* One grouped list (name, native name, check on the selected row), like iOS. */}
+              <div className="us-card stack us-lang-list" role="radiogroup" aria-label={t("settings.appLanguage")}>
                 {locales.map((opt) => {
                   const selected = locale === opt.id;
                   return (
                     <button
                       key={opt.id}
                       type="button"
-                      className={`us-theme-card ${selected ? "selected" : ""}`}
+                      role="radio"
+                      aria-checked={selected}
+                      className="us-row g-privacy-link"
                       onClick={() => setLocale(opt.id)}
                     >
-                      <div className="us-theme-meta" style={{ gap: 10 }}>
-                        <Globe size={16} />
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                          <span style={{ fontWeight: 700 }}>{languageLabel(opt.id, locale)}</span>
-                          <span style={{ fontSize: 12, opacity: 0.65 }}>{opt.nativeLabel}</span>
-                        </div>
-                      </div>
-                      {selected && <Check size={14} className="us-theme-check" />}
+                      <span className="us-row-copy">
+                        <span className="us-row-title">{languageLabel(opt.id, locale)}</span>
+                        <span className="us-row-desc">{opt.nativeLabel}</span>
+                      </span>
+                      {selected ? <Check size={18} className="us-lang-check" /> : null}
                     </button>
                   );
                 })}
@@ -2361,9 +2361,6 @@ const UserPanel = forwardRef(function UserPanel({
               <p className="us-row-desc" style={{ marginTop: 14 }}>
                 {t("settings.autoDetectHint")}{" "}
                 ({t("Detected from your device")}: {languageLabel(deviceDefault, locale)})
-              </p>
-              <p className="us-row-desc" style={{ marginTop: 8 }}>
-                {t("settings.appliesInstantly")}
               </p>
             </section>
           </div>

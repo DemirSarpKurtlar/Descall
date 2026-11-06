@@ -1619,7 +1619,13 @@ button.us-row.g-privacy-link:hover {
   }
 }
 
-/* Language picker cards */
+/* Language list: check mark in the accent colour on the selected row */
+.us-lang-list .us-lang-check {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+/* Language picker cards (legacy grid) */
 .us-lang-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
