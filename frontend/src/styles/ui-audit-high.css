@@ -594,6 +594,10 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-shell-title-wrap {
   gap: 2px;
   min-width: 0;
 }
+html.glass-ui .app-root.g-shell .g-server-pane .server-shell-title {
+  align-self: stretch;
+  text-align: left;
+}
 html.glass-ui .app-root.g-shell .g-server-pane .server-shell-meta {
   display: block;
   line-height: 16px;
