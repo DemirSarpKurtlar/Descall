@@ -12,6 +12,10 @@ export const MID_APP_I18N = {
     "View your inventory": "Envanterine bak",
     // #91: sentence case, like every other button.
     "Set Status": "Durum ayarla",
+    "Blackjack!": "Blackjack!",
+    "You won": "Kazandın",
+    "You lost": "Kaybettin",
+    "It's a tie": "Berabere",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -19,6 +23,10 @@ export const MID_APP_I18N = {
     "The shelf is empty for now": "Das Regal ist gerade leer",
     "You'll see new items here as soon as they're added.": "Neue Artikel siehst du hier, sobald sie hinzugefügt werden.",
     "View your inventory": "Inventar ansehen",
+    "Blackjack!": "Blackjack!",
+    "You won": "Gewonnen",
+    "You lost": "Verloren",
+    "It's a tie": "Unentschieden",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -26,6 +34,10 @@ export const MID_APP_I18N = {
     "The shelf is empty for now": "El escaparate está vacío por ahora",
     "You'll see new items here as soon as they're added.": "Verás los nuevos artículos aquí en cuanto se añadan.",
     "View your inventory": "Ver tu inventario",
+    "Blackjack!": "¡Blackjack!",
+    "You won": "Ganaste",
+    "You lost": "Perdiste",
+    "It's a tie": "Empate",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -33,6 +45,10 @@ export const MID_APP_I18N = {
     "The shelf is empty for now": "La vitrine est vide pour l'instant",
     "You'll see new items here as soon as they're added.": "Les nouveaux articles apparaîtront ici dès leur ajout.",
     "View your inventory": "Voir ton inventaire",
+    "Blackjack!": "Blackjack !",
+    "You won": "Gagné",
+    "You lost": "Perdu",
+    "It's a tie": "Égalité",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -40,6 +56,10 @@ export const MID_APP_I18N = {
     "The shelf is empty for now": "A vitrine está vazia por enquanto",
     "You'll see new items here as soon as they're added.": "Você verá novos itens aqui assim que forem adicionados.",
     "View your inventory": "Ver seu inventário",
+    "Blackjack!": "Blackjack!",
+    "You won": "Você ganhou",
+    "You lost": "Você perdeu",
+    "It's a tie": "Empate",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -47,5 +67,9 @@ export const MID_APP_I18N = {
     "The shelf is empty for now": "Витрина пока пуста",
     "You'll see new items here as soon as they're added.": "Новые товары появятся здесь, как только их добавят.",
     "View your inventory": "Открыть инвентарь",
+    "Blackjack!": "Блэкджек!",
+    "You won": "Победа",
+    "You lost": "Поражение",
+    "It's a tie": "Ничья",
   },
 };

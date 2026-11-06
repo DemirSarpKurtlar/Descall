@@ -189,8 +189,8 @@
 
 .bj-stamp strong {
   font-size: 28px;
-  letter-spacing: 0.14em;
-  font-weight: 900;
+  letter-spacing: -0.01em;
+  font-weight: 800;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
   padding: 8px 16px;
   border-radius: var(--r-md);
@@ -396,18 +396,18 @@
   color: #f3e0a8;
 }
 
+/* UI audit #142: sentence case, no shouting tracked caps. */
 .bj-result-title {
-  font-size: 16px;
-  letter-spacing: 0.1em;
-  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  font-weight: 700;
 }
 
 .bj-result-headline {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   opacity: 0.85;
-  text-transform: uppercase;
 }
 
 .bj-result-sub {
