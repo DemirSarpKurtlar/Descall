@@ -968,10 +968,15 @@ html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-label s
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab.active {
-  color: #fff;
-  background: color-mix(in srgb, var(--gd-brand) 32%, transparent);
+  color: #AFC3FF;
+  background: color-mix(in srgb, var(--gd-brand) 22%, transparent);
   border-color: transparent;
-  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--gd-brand-hi) 55%, transparent), 0 4px 12px color-mix(in srgb, var(--gd-brand) 25%, transparent);
+  box-shadow: none;
+}
+
+html.glass-desktop[data-theme="light"] .shop-category-tabs.is-glass-chips .shop-category-tab.active {
+  color: #3D5BD9;
+  background: color-mix(in srgb, var(--gd-brand) 14%, transparent);
 }
 
 html.glass-desktop .shop-category-tabs.is-glass-chips .shop-category-tab-count {
@@ -1011,11 +1016,17 @@ html.glass-desktop .shop-item-price {
 }
 
 html.glass-desktop .shop-item-footer .btn-primary,
-html.glass-desktop .shop-item-footer .btn-secondary,
-html.glass-desktop .descoin-daily-claim {
+html.glass-desktop .shop-item-footer .btn-secondary {
   height: 32px;
   border: none;
   border-radius: var(--r-lg);
+  font-weight: 650;
+}
+
+html.glass-desktop .descoin-daily-claim {
+  height: 32px;
+  min-height: 32px;
+  border: none;
   font-weight: 650;
 }
 

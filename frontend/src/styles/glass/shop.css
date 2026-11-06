@@ -8,11 +8,15 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-pill {
   height: 34px;
   padding: 0 14px;
   border-radius: var(--r-pill);
-  background: rgba(240, 178, 50, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(240, 178, 50, 0.45);
-  color: var(--g-gold);
-  font-weight: 700;
+  background: var(--g-fill);
+  box-shadow: inset 0 0 0 0.5px var(--g-hair);
+  color: var(--g-t1);
+  font-weight: 650;
   font-size: 14px;
+}
+
+html.glass-ui .user-settings.is-mobile.g-settings .shop-wallet-pill > svg {
+  color: var(--g-gold);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .shop-panel-intro {
@@ -98,10 +102,15 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tab {
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tab.active {
-  background: #fff;
-  color: #16171f;
+  background: rgba(var(--g-brand-rgb), 0.22);
+  color: #AFC3FF;
   border-color: transparent;
   box-shadow: none;
+}
+
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .shop-category-tab.active {
+  background: rgba(var(--g-brand-rgb), 0.14);
+  color: #3D5BD9;
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .shop-category-tab-count {
