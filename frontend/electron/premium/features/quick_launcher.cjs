@@ -101,7 +101,8 @@ function createWindow() {
   win.on('blur', () => { if (!process.env.DESCALL_LAUNCHER_KEEP_OPEN) hide(); });
   win.on('closed', () => { win = null; });
   ctx.windows.track(win, { kind: 'launcher', key: 'quick_launcher' });
-  win.loadFile(path.join(__dirname, '..', 'launcher', 'launcher.html'));
+  // App origin (descall://app or the dev server): the premium host only trusts app-origin senders.
+  win.loadURL(ctx.appUrl('/premium-launcher/launcher.html'));
   return win;
 }
 

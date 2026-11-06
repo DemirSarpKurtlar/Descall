@@ -134,7 +134,7 @@ async function run(win) {
   await waitFor('launcher bridge', async () => ({ ok: await js(lw, `Boolean(window.launcherAPI)`) }));
   const all = await js(lw, `window.launcherAPI.query('')`);
   const ids = (all.results || []).map((r) => r.id);
-  expect(ids.includes('action:status:dnd') && ids.includes('action:settings'), 'launcher search goes through the app renderer (actions listed)', ids);
+  expect(ids.includes('action:status:dnd') && ids.includes('action:settings'), 'launcher search goes through the app renderer (actions listed)', { all, ids });
   const dnd = await js(lw, `window.launcherAPI.query('not dist')`);
   expect(dnd.results[0] && dnd.results[0].id === 'action:status:dnd', 'fuzzy search finds Do not disturb', dnd.results.map((r) => r.id));
   await sleep(600);
