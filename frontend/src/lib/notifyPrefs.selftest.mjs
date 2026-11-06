@@ -45,7 +45,7 @@ const svc = read("./notificationService.js");
 assert.ok(svc.includes('if (!allowNotify("dm", conversationId)) return;'));
 assert.ok(svc.includes('if (!allowNotify("group", groupId)) return;'));
 assert.ok(svc.includes('if (groupId && !allowNotify("group", groupId, { mention: true })) return;'));
-assert.ok(svc.includes("(!hidePreviews() && text?.substring(0, 120)) || t(\"New message\")"), "preview switch hides the text");
+assert.ok(svc.includes("(!hidePreviews() && stickerPreviewText(text || \"\", t)?.substring(0, 120)) || t(\"New message\")"), "preview switch hides the text");
 const app = read("../App.jsx");
 assert.ok(app.includes('if (allowNotify("group", groupId)) playUiSound("message");'));
 assert.ok(app.includes('!pref?.muted && allowNotify("dm", convWith)'));
