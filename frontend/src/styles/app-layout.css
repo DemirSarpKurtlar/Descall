@@ -2642,11 +2642,11 @@ button.header-avatar {
 }
 
 .attachment-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-sm);
-  background: var(--primary-soft);
-  color: var(--primary);
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+  background: none;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   justify-content: center;

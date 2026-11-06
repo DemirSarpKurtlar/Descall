@@ -3,7 +3,7 @@ import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
-  Plus, Gift, Image, FileText, X, StopCircle, Loader2, Reply,
+  Plus, ImagePlus, Paperclip, Image, FileText, X, StopCircle, Loader2, Reply,
   Pencil, Timer, CircleHelp,
 } from "../ui/Icon.jsx";
 import { SLASH_ICONS } from "../polls/slashIconsMap";
@@ -1269,15 +1269,15 @@ export default function MessageComposer({
             className={glass ? "attachment-menu g-open" : "attachment-menu"}
           >
             <button className="attachment-item" onClick={() => { imageInputRef.current?.click(); setShowAttachmentMenu(false); }}>
-              <div className="attachment-icon"><Image size={24} /></div>
+              <div className="attachment-icon"><ImagePlus size={22} /></div>
               <span className="attachment-label">{t("Upload Image")}</span>
             </button>
             <button className="attachment-item" onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}>
-              <div className="attachment-icon"><FileText size={24} /></div>
+              <div className="attachment-icon"><Paperclip size={22} /></div>
               <span className="attachment-label">{t("Upload File")}</span>
             </button>
             <button className="attachment-item" onClick={() => { hapticImpactLight(); setShowGiphy(true); setShowAttachmentMenu(false); }}>
-              <div className="attachment-icon"><Gift size={24} /></div>
+              <div className="attachment-icon"><span className="attachment-gif-badge" aria-hidden="true">GIF</span></div>
               <span className="attachment-label">{t("Send GIF")}</span>
             </button>
           </motion.div>
