@@ -153,6 +153,19 @@ html[data-theme="light"] .msg-unread-go { border-left-color: rgba(0, 0, 0, 0.12)
 :is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) :is(.msg-link-preview-site, .msg-link-preview-desc) { color: rgba(255, 255, 255, 0.78); }
 html[data-theme="light"] .msg-link-preview { background: rgba(0, 0, 0, 0.04); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
 
+/* "Görüldü" under my newest message. */
+/* Same left edge as my bubble (chat-left-align.css), checked by the phase 4 e2e. */
+.msg-seen {
+  margin: 0 0 2px 60px;
+  font-size: var(--fs-11);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+html.glass-ui .app-root.g-shell .msg-seen { margin-left: 46px; }
+
 /* Forwarded: a small "İletildi" line above the message (never a quote). */
 .message-forwarded {
   display: flex;

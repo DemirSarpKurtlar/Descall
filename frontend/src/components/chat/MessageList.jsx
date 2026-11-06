@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment } from "react";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
@@ -9,6 +9,8 @@ import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
 import { previewUrlOf } from "../../lib/linkPreview";
+import { dmSeen, groupSeenBy, namesSummary } from "../../lib/readReceipts";
+import { useGroupReads, useReceiptsSetting } from "../../hooks/useReadReceipts";
 
 // Link preview cards load on first use (messaging phase 4).
 const LinkPreviewCard = lazy(() => import("./LinkPreviewCard.jsx"));
@@ -397,6 +399,24 @@ export default function MessageList({
     };
   }, [conversationId, loading, resolveScroller]);
   useEffect(() => { setJump({ show: false, unseen: 0 }); }, [conversationId]);
+
+  // "Görüldü" (messaging phase 4, lib/readReceipts): under my newest message.
+  const receiptsOn = useReceiptsSetting();
+  const groupIdForReads = conversationType === "group" && activeGroup?.id && !activeGroup?.removed ? activeGroup.id : null;
+  const lastMessageId = Array.isArray(messages) && messages.length ? messages[messages.length - 1]?.id ?? null : null;
+  const groupReads = useGroupReads({ socket, groupId: groupIdForReads, lastMessageId, enabled: receiptsOn });
+  const seen = useMemo(() => {
+    if (!receiptsOn || isSearching || !myId) return null;
+    if (conversationType === "dm") {
+      const s = dmSeen(messages, myId);
+      return s ? { kind: "dm", id: s.id, at: s.at } : null;
+    }
+    if (groupIdForReads) {
+      const g = groupSeenBy({ messages, myId, reads: groupReads, members: activeGroup?.members || [] });
+      return g ? { kind: "group", ...g } : null;
+    }
+    return null;
+  }, [receiptsOn, isSearching, myId, conversationType, messages, groupIdForReads, groupReads, activeGroup?.members]);
 
   // Jump to the first unread (messaging phase 4, lib/unreadJump): a pill at
   // the top while the "Yeni mesajlar" separator is above the visible area.
@@ -817,8 +837,8 @@ export default function MessageList({
                   String(msg.id || "").startsWith("temp-") ||
                   (ts > 0 && Date.now() - ts < 2800);
                 return (
+                <Fragment key={msg.id}>
                 <MessageBubble
-                  key={msg.id}
                   message={msg}
                   isOwn={isOwn}
                   isCompact={group.isCompact}
@@ -850,6 +870,8 @@ export default function MessageList({
                       : avatarUser?.equippedReactionBurst?.effect_key || null
                   }
                 />
+                {seen && seen.id === msg.id ? <SeenLine seen={seen} t={t} /> : null}
+                </Fragment>
               );
               })}
             </div>
@@ -2180,6 +2202,28 @@ function MessageBubble({
           />
         )}
       </motion.div>
+    </div>
+  );
+}
+
+/** "Görüldü" / "Görüldü: Ayşe, Mert +2" / "Herkes gördü" under my newest message. */
+function SeenLine({ seen, t }) {
+  let label = t("msg4.seen.label");
+  let title;
+  if (seen.kind === "dm") {
+    const d = parseAppDate(seen.at);
+    if (d) title = t("msg4.seen.at", { time: formatMessageClock(d, intlLocaleTag(getLocale())) });
+  } else if (seen.everyone) {
+    label = t("msg4.seen.everyone");
+    title = seen.names.join(", ");
+  } else {
+    const { shown, more } = namesSummary(seen.names);
+    label = more ? t("msg4.seen.byMore", { names: shown, count: more }) : t("msg4.seen.by", { names: shown });
+    title = seen.names.join(", ");
+  }
+  return (
+    <div className="msg-seen" data-testid="msg-seen" title={title}>
+      {label}
     </div>
   );
 }

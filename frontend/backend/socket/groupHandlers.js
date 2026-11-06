@@ -140,6 +140,31 @@ function registerGroupHandlers(io, socket, state) {
   // activeGroupCalls is imported from sharedState — shared across all socket connections
 
   // Join group room
+  // "Görüldü" (messaging phase 4): the member read the group up to now.
+  const groupReadAt = new Map();
+  socket.on("group:mark_read", async ({ groupId } = {}) => {
+    if (!myId || typeof groupId !== "string" || !/^[0-9a-f-]{36}$/i.test(groupId)) return;
+    const last = groupReadAt.get(groupId) || 0;
+    if (Date.now() - last < 2000) return;
+    groupReadAt.set(groupId, Date.now());
+    try {
+      const { data: member } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("group_id", groupId)
+        .eq("user_id", myId)
+        .maybeSingle();
+      if (!member) return;
+      const rr = require("../lib/readReceipts");
+      const at = await rr.markGroupRead(groupId, myId);
+      if (at && (await rr.receiptsEnabled(myId))) {
+        io.to(`group:${groupId}`).emit("group:read", { groupId, userId: myId, at });
+      }
+    } catch (err) {
+      console.warn("[GroupRead] mark failed:", err?.message || err);
+    }
+  });
+
   socket.on("group:join", async (groupId) => {
     if (!groupId) return;
     const { data: membership } = await supabase

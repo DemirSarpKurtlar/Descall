@@ -1,4 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
+import { authedRequest } from "../../api/authedHttp";
+import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
@@ -149,6 +151,55 @@ function Toggle({ value, onChange, label }) {
   );
 }
 
+/** "Görüldü bilgisi" (messaging phase 4): read receipts on/off, both ways (server-enforced). */
+function ReadReceiptsRow() {
+  const { t } = useLocale();
+  const [on, setOn] = useState(readReceiptsSetting);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    authedRequest("/api/read-receipts")
+      .then((r) => {
+        if (!alive || typeof r?.enabled !== "boolean") return;
+        setOn(r.enabled);
+        storeReceiptsSetting(r.enabled);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const change = async (next) => {
+    setOn(next);
+    setError("");
+    storeReceiptsSetting(next);
+    try {
+      await authedRequest("/api/read-receipts", { method: "PUT", body: { enabled: next } });
+    } catch {
+      setOn(!next);
+      storeReceiptsSetting(!next);
+      setError(t("msg4.seen.saveError"));
+    }
+  };
+  return (
+    <section className="us-section">
+      <h4 className="us-section-label">{t("msg4.seen.section")}</h4>
+      <div className="us-card">
+        <div className="us-row" data-testid="read-receipts-row">
+          <div className="us-row-text">
+            <span className="us-row-icon" aria-hidden>
+              <Check size={16} />
+            </span>
+            <div className="us-row-copy">
+              <span className="us-row-title">{t("msg4.seen.setting")}</span>
+              <span className="us-row-desc">{error || t("msg4.seen.settingDesc")}</span>
+            </div>
+          </div>
+          <Toggle value={on} onChange={change} label={t("msg4.seen.setting")} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PrivacySettingsSection({ activitySection = null }) {
   const { t } = useLocale();
   const [choice, setChoice] = useState(() => getCookieConsent()?.choice || "");
@@ -199,6 +250,7 @@ function PrivacySettingsSection({ activitySection = null }) {
           </div>
         </div>
       </section>
+      <ReadReceiptsRow />
       {activitySection}
       <section className="us-section">
         <h4 className="us-section-label">{t("dex.section")}</h4>

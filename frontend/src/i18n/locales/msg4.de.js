@@ -12,6 +12,17 @@ export const MSG4_DE = {
   preview: {
     open: "Link zu {site} öffnen",
   },
+  seen: {
+    label: "Gesehen",
+    at: "Gesehen um {time}",
+    everyone: "Von allen gesehen",
+    by: "Gesehen von {names}",
+    byMore: "Gesehen von {names} +{count}",
+    section: "Nachrichten",
+    setting: "Lesebestätigungen",
+    settingDesc: "Wenn du das ausschaltest, sieht niemand, wann du Nachrichten gelesen hast, und du siehst es bei anderen auch nicht.",
+    saveError: "Speichern fehlgeschlagen. Versuch es gleich noch einmal.",
+  },
   forward: {
     action: "Weiterleiten",
     label: "Weitergeleitet",

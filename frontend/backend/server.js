@@ -495,6 +495,8 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));
 // Messaging phase 4: link previews, fetched here with SSRF protection (lib/linkPreview.js).
 app.use("/api/link-preview", require("./routes/linkPreview"));
+// Messaging phase 4: "Görüldü" read receipts (privacy switch + group read state).
+app.use("/api/read-receipts", require("./routes/readReceipts"));
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

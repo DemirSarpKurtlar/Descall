@@ -12,6 +12,17 @@ export const MSG4_ES = {
   preview: {
     open: "Abrir enlace a {site}",
   },
+  seen: {
+    label: "Visto",
+    at: "Visto a las {time}",
+    everyone: "Visto por todos",
+    by: "Visto por {names}",
+    byMore: "Visto por {names} +{count}",
+    section: "Mensajes",
+    setting: "Confirmaciones de lectura",
+    settingDesc: "Si lo desactivas, nadie verá cuándo has leído sus mensajes y tú tampoco verás los de los demás.",
+    saveError: "No se pudo guardar. Inténtalo de nuevo en un momento.",
+  },
   forward: {
     action: "Reenviar",
     label: "Reenviado",

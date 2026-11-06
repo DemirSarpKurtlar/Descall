@@ -12,6 +12,17 @@ export const MSG4_PT_BR = {
   preview: {
     open: "Abrir link de {site}",
   },
+  seen: {
+    label: "Visto",
+    at: "Visto às {time}",
+    everyone: "Visto por todos",
+    by: "Visto por {names}",
+    byMore: "Visto por {names} +{count}",
+    section: "Mensagens",
+    setting: "Confirmações de leitura",
+    settingDesc: "Se você desativar, ninguém verá quando você leu as mensagens, e você também não verá as dos outros.",
+    saveError: "Não foi possível salvar. Tente de novo em instantes.",
+  },
   forward: {
     action: "Encaminhar",
     label: "Encaminhada",

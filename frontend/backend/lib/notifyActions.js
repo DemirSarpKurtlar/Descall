@@ -515,7 +515,11 @@ function createNotifyActions(deps = {}) {
     if (!s.dmUnreadByUser.has(myId)) s.dmUnreadByUser.set(myId, new Map());
     s.dmUnreadByUser.get(myId).delete(peerId);
     emitToUser(io, myId, "dm:unread:sync", { peerId, count: 0 });
-    emitToUser(io, peerId, "dm:peer_read", { peerId: myId, at });
+    // "Görüldü" (messaging phase 4): only when both people share read receipts.
+    const share = deps.readReceipts ? deps.readReceipts.bothShare : require("./readReceipts").bothShare;
+    if (await Promise.resolve(share(myId, peerId)).catch(() => true)) {
+      emitToUser(io, peerId, "dm:peer_read", { peerId: myId, at });
+    }
     void Promise.resolve(prefs().clearMarkedUnread(myId, peerId)).catch(() => {});
     return at;
   }

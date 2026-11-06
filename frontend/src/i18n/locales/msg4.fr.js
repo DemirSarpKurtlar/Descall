@@ -12,6 +12,17 @@ export const MSG4_FR = {
   preview: {
     open: "Ouvrir le lien vers {site}",
   },
+  seen: {
+    label: "Vu",
+    at: "Vu à {time}",
+    everyone: "Vu par tout le monde",
+    by: "Vu par {names}",
+    byMore: "Vu par {names} +{count}",
+    section: "Messages",
+    setting: "Confirmations de lecture",
+    settingDesc: "Si tu le désactives, personne ne verra quand tu as lu ses messages, et tu ne verras pas non plus les leurs.",
+    saveError: "Impossible d'enregistrer. Réessaie dans un instant.",
+  },
   forward: {
     action: "Transférer",
     label: "Transféré",

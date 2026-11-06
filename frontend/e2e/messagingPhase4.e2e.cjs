@@ -74,7 +74,7 @@ function freshState() {
     const who = [AYSE, MERT, ME][i % 3];
     group.push({ id: `p4-g-${String(i + 1).padStart(3, '0')}`, group_id: GROUP_ID, sender_id: who.id, sender: sender(who), content: ['Cumartesi pikniğe kim geliyor?', 'Ben varım', 'Ben de', 'Yanımda mangal var', 'Harika', 'Saat 11 uygun mu?'][i % 6], created_at: iso(300 - i * 10), reactions: [] });
   }
-  return { ayse, mert, group, events: [], scheduled: [], previewHits: [], groupReads: [] };
+  return { ayse, mert, group, events: [], scheduled: [], previewHits: [], groupReads: [{ userId: AYSE.id, at: iso(5) }, { userId: MERT.id, at: iso(250) }] };
 }
 let state = freshState();
 const GROUP = () => ({ id: GROUP_ID, name: 'Hafta Sonu Ekibi', ownerId: ME.id, owner_id: ME.id, memberCount: 3, members: [sender(ME), sender(AYSE), sender(MERT)].map((u) => ({ ...u, role: u.id === ME.id ? 'owner' : 'member' })), memberIds: [ME.id, AYSE.id, MERT.id], lastMessage: 'Ayşe: Saat 11 uygun mu?', lastActivity: iso(190) });
@@ -91,7 +91,8 @@ function api(p, method, body, query) {
   if (/\/dm\/previews$/.test(p)) return { dmPreviewsByPeer: { [AYSE.id]: 'Bir bakar mısın?', [MERT.id]: 'Anlaştık' }, dmLastActivityByPeer: { [AYSE.id]: iso(11), [MERT.id]: iso(88) }, previews: {} };
   if (/\/groups\/my$/.test(p)) return { groups: [GROUP()] };
   if (/\/groups\/[^/]+\/messages$/.test(p)) return { messages: state.group, hasMore: false };
-  if (/\/api\/groups\/[^/]+\/read-state$/.test(p)) return { reads: state.groupReads };
+  if (/\/api\/read-receipts\/groups\/[^/]+$/.test(p)) return { reads: state.groupReads };
+  if (/\/api\/read-receipts$/.test(p)) { if (method === 'PUT') state.events.push({ kind: 'receipts', ...body }); return { enabled: method === 'PUT' ? body.enabled : true, ok: true }; }
   if (/\/api\/link-preview$/.test(p)) {
     state.previewHits.push(query.get('url'));
     return { ok: true, preview: { url: query.get('url'), siteName: 'example.com', title: 'Descall Turnuvası 2026', description: 'Kayıtlar açık: takımını kur, haritanı seç, cumartesi 20:00 başlıyoruz.', image: PREVIEW_IMAGE } };
@@ -220,6 +221,19 @@ const want = (name) => !ONLY.length || ONLY.includes(name);
 // Opens a conversation from the sidebar list by its visible name.
 async function openChat(page, name, minBubbles = 5) {
   for (let attempt = 0; attempt < 6; attempt += 1) {
+    // Groups live in their own list: switch lists through the nav (rail / tab bar).
+    await page.evaluate((name) => {
+      const inList = [...document.querySelectorAll('.dm-name, .group-name')].some((e) => e.textContent.trim() === name && e.getBoundingClientRect().width > 0);
+      if (inList) return;
+      const want = name === 'Hafta Sonu Ekibi' ? 'Gruplar' : 'Sohbetler';
+      const nav = [...document.querySelectorAll('button, a, [role="tab"]')].find((b) => (b.getAttribute('aria-label') || b.textContent || '').trim() === want && b.getBoundingClientRect().width > 0);
+      if (nav) nav.click();
+      else {
+        const back = document.querySelector('[data-mobile-back="1"]');
+        if (back) back.click();
+      }
+    }, name);
+    await sleep(500);
     const clicked = await page.evaluate((name) => {
       const el = [...document.querySelectorAll('.dm-name, .group-name')].find((e) => e.textContent.trim() === name && e.getBoundingClientRect().width > 0);
       if (!el) return false;
@@ -424,6 +438,39 @@ async function runDevice(browser, base, dev) {
       check(state.previewHits.includes('https://example.com/turnuva'), 'the preview came from our API');
       await sleep(300);
       await shot(page, `${P}07-link-preview`);
+    }
+    // --- "Görüldü" ---
+    if (want('seen')) {
+      await openChat(page, 'Ayşe');
+      const dmSeen = await waitFor(page, 'DM Görüldü', () => {
+        const all = document.querySelectorAll('[data-testid="msg-seen"]');
+        const el = all[all.length - 1];
+        const bubbles = [...document.querySelectorAll('.message-bubble[data-message-id]')];
+        const last = bubbles[bubbles.length - 1];
+        const prev = el && el.previousElementSibling;
+        const dx = el && last ? Math.round(el.getBoundingClientRect().left - last.getBoundingClientRect().left) : null;
+        return { ok: all.length === 1 && !!el, text: el && el.textContent, title: el && el.getAttribute('title'), underLast: !!prev && (prev === last || prev.contains(last)), dx };
+      }, null, 6000).catch(() => ({ ok: false }));
+      check(dmSeen.ok && dmSeen.text === 'Görüldü' && /^Görüldü \d{2}:\d{2}$/.test(dmSeen.title || ''), `DM: one "Görüldü" with the time on hover (${dmSeen.text} / ${dmSeen.title})`);
+      check(dmSeen.underLast && Math.abs(dmSeen.dx) <= 4, `it sits under my newest message, aligned with the bubble (dx ${dmSeen.dx})`);
+      await shot(page, `${P}08-seen-dm`);
+      const before = state.events.length;
+      await openChat(page, 'Hafta Sonu Ekibi', 5);
+      const gSeen = await waitFor(page, 'group Görüldü', () => {
+        const el = document.querySelector('[data-testid="msg-seen"]');
+        return { ok: !!el, text: el && el.textContent };
+      }, null, 6000).catch(() => ({ ok: false }));
+      check(gSeen.ok && gSeen.text === 'Görüldü: Ayşe', `group: only members who read after my message (${gSeen.text})`);
+      await sleep(600);
+      check(state.events.slice(before).some((e) => e.kind === 'group:mark_read' && e.groupId === GROUP_ID), 'opening the group reports my read (group:mark_read)');
+      // Mert reads it live.
+      for (const s of sockets) s.emit('group:read', { groupId: GROUP_ID, userId: MERT.id, at: new Date().toISOString() });
+      const live = await waitFor(page, 'everyone', () => {
+        const el = document.querySelector('[data-testid="msg-seen"]');
+        return { ok: !!el && el.textContent === 'Herkes gördü', text: el && el.textContent };
+      }, null, 4000).catch((e) => ({ ok: false, why: e.message }));
+      check(live.ok, `a live group:read updates it ("${live.text}")`);
+      await shot(page, `${P}09-seen-group`);
     }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});

@@ -12,6 +12,17 @@ export const MSG4_TR = {
   preview: {
     open: "{site} bağlantısını aç",
   },
+  seen: {
+    label: "Görüldü",
+    at: "Görüldü {time}",
+    everyone: "Herkes gördü",
+    by: "Görüldü: {names}",
+    byMore: "Görüldü: {names} +{count}",
+    section: "Mesajlar",
+    setting: "Görüldü bilgisi",
+    settingDesc: "Kapatırsan okuduğun mesajlarda \"Görüldü\" çıkmaz, sen de başkalarınınkini göremezsin.",
+    saveError: "Kaydedilemedi. Biraz sonra tekrar dene.",
+  },
   forward: {
     action: "İlet",
     label: "İletildi",

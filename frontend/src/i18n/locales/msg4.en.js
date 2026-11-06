@@ -12,6 +12,17 @@ export const MSG4_EN = {
   preview: {
     open: "Open link to {site}",
   },
+  seen: {
+    label: "Seen",
+    at: "Seen at {time}",
+    everyone: "Seen by everyone",
+    by: "Seen by {names}",
+    byMore: "Seen by {names} +{count}",
+    section: "Messages",
+    setting: "Read receipts",
+    settingDesc: "If you turn this off, people will not see when you have read their messages, and you will not see theirs.",
+    saveError: "Could not save. Try again in a moment.",
+  },
   forward: {
     action: "Forward",
     label: "Forwarded",

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { OPEN_FORWARD_EVENT } from "../../lib/forwardMessage";
+import { storeReceiptsSetting } from "../../lib/readReceipts";
 import { useToast } from "../../context/ToastContext";
 import { useT } from "../../context/LocaleContext";
 
@@ -16,6 +17,14 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
   const t = useT();
   const { toast } = useToast();
   const [forward, setForward] = useState({ open: false, message: null });
+
+  // Mirror my "Görüldü" switch so the labels follow it from the first chat on.
+  useEffect(() => {
+    import("../../api/authedHttp")
+      .then((m) => m.authedRequest("/api/read-receipts"))
+      .then((r) => { if (typeof r?.enabled === "boolean") storeReceiptsSetting(r.enabled); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onForward = (e) => {

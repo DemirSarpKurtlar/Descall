@@ -1,6 +1,7 @@
 "use strict";
 
 const { forwardedReplyMeta } = require("../lib/forwardedMessage");
+const { bothShare: bothShareReceipts } = require("../lib/readReceipts");
 const { checkMessageSend } = require("../lib/platformPolicy");
 const { fanoutDmMessage } = require("../lib/messageFanout");
 const supabase = require("../db/supabase");
@@ -1529,7 +1530,10 @@ function registerSocketHandlers(io) {
       const umap = ensureDmUnreadMap(myId);
       umap.delete(withUserId);
       emitToUser(io, myId, "dm:unread:sync", { peerId: withUserId, count: 0 });
-      emitToUser(io, withUserId, "dm:peer_read", { peerId: myId, at });
+      // "Görüldü" (messaging phase 4): only when both people share read receipts.
+      if (await bothShareReceipts(myId, withUserId).catch(() => true)) {
+        emitToUser(io, withUserId, "dm:peer_read", { peerId: myId, at });
+      }
       void dmPrefs.clearMarkedUnread(myId, withUserId);
     });
 
