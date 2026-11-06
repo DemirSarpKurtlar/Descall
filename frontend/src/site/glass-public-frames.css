@@ -1983,3 +1983,13 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
 /* Features: the H1 keeps clear space under the floating header (it sat ~8 px under it). */
 .mkt .mkt-section.seo-features { margin-top: 48px; }
 @media (max-width: 768px) { .mkt .mkt-section.seo-features { margin-top: 32px; } }
+
+/* Info pages (Güvenlik, Descall'ın sahibi) share the legal reader template. */
+.mkt .info-doc { margin-top: 32px; }
+.mkt .info-doc .legal-doc-cards { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.mkt .info-doc-main { max-width: none; margin-top: 28px; }
+.mkt .info-doc-section > p:last-child { margin-bottom: 0; }
+@media (max-width: 768px) {
+  .mkt .info-doc .legal-doc-cards { grid-template-columns: 1fr; }
+  .mkt .info-doc .legal-doc-section { padding: 20px; }
+}

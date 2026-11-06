@@ -172,7 +172,7 @@ export const MARKETING_TR = {
   "Optional analytics only. Essentials stay on.": "İsteğe bağlı analitik. Zorunlu çerezler açık kalır.",
   "Optional cosmetics": "İsteğe bağlı kozmetik",
   "or": "veya",
-  "or open an issue on GitHub. Include enough detail for a safe investigation.": "veya GitHub'da bir issue aç. Güvenli inceleme için yeterli ayrıntı ekle.",
+  "or open an issue on GitHub. Include enough detail for a safe investigation.": "ya da GitHub’da bildir. Güvenli bir inceleme için yeterli ayrıntı ekle.",
   "Password": "Şifre",
   "Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available where configured. Session management lets you revoke devices. Keep credentials private on shared computers.": "Parolalar bcrypt ile hashlenir. İsteğe bağlı e-posta 2FA ve Google ile giriş yapılandırıldığı yerlerde kullanılabilir. Oturum yönetimiyle cihazların oturumunu kapatabilirsin. Paylaşılan bilgisayarlarda giriş bilgilerini gizli tut.",
   "Pick a template (friends, gaming) or start empty. Roles and channels ship ready.": "Şablon seç (arkadaşlar, oyun) veya boş başla. Roller ve kanallar hazır gelir.",

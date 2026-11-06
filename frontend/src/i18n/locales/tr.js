@@ -2669,7 +2669,7 @@ export const phrases = {
   "Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available where configured. Session management lets you revoke devices. Keep credentials private on shared computers.":
     "Parolalar bcrypt ile hashlenir. İsteğe bağlı e-posta 2FA ve Google ile giriş yapılandırıldığı yerlerde kullanılabilir. Oturum yönetimiyle cihazların oturumunu kapatabilirsin. Paylaşılan bilgisayarlarda giriş bilgilerini gizli tut.",
   "or open an issue on GitHub. Include enough detail for a safe investigation.":
-    "veya GitHub'da bir issue aç. Güvenli inceleme için yeterli ayrıntı ekle.",
+    "ya da GitHub’da bildir. Güvenli bir inceleme için yeterli ayrıntı ekle.",
   "Help": "Yardım",
   "Support": "Destek",
   "Terms": "Şartlar",
