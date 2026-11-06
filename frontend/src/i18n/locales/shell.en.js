@@ -45,7 +45,7 @@ export const SHELL_EN = {
     reduceMotion: "Reduce motion",
     reduceMotionSub: "Simplifies transitions and spring animations",
     savedFoot:
-      "Appearance is saved to your account and is the same on all your devices. You now change your status from the profile menu.",
+      "Appearance is saved to your account and is the same on all your devices.",
     removed: "Removed:",
     removedDensity: "Density",
     removedBubble: "Message bubble style",

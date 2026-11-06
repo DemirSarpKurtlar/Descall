@@ -3888,7 +3888,7 @@ export const nested = {
       "removed": "Quitado:",
       "removedBubble": "Estilo de burbuja de mensaje",
       "removedStatus": "Estado (se movió al menú del perfil)",
-      "savedFoot": "La apariencia se guarda en tu cuenta y es la misma en todos tus dispositivos. Ahora cambias tu estado desde el menú del perfil.",
+      "savedFoot": "La apariencia se guarda en tu cuenta y es la misma en todos tus dispositivos.",
       "shopThemes": "Temas de la tienda",
       "textSize": "Tamaño del texto",
       "textSizeFootDesktop": "Se aplica al chat, a la lista de canales y a los menús. Ctrl + / Ctrl − también lo cambian.",

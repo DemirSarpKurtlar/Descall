@@ -3888,7 +3888,7 @@ export const nested = {
       "removed": "Supprimé :",
       "removedBubble": "Style des bulles de messages",
       "removedStatus": "Statut (déplacé dans le menu du profil)",
-      "savedFoot": "L'apparence est enregistrée sur ton compte et reste la même sur tous tes appareils. Tu changes maintenant ton statut depuis le menu du profil.",
+      "savedFoot": "L'apparence est enregistrée sur ton compte et reste la même sur tous tes appareils.",
       "shopThemes": "Thèmes de la boutique",
       "textSize": "Taille du texte",
       "textSizeFootDesktop": "S'applique au chat, à la liste des salons et aux menus. Ctrl + / Ctrl − la modifient aussi.",

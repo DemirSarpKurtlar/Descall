@@ -2874,7 +2874,9 @@ const UserPanel = forwardRef(function UserPanel({
 
       {/* Detail pane */}
       <section ref={detailPaneRef} className={`us-main ${showDetail ? "visible" : "hidden"}`}>
-        {activeTab === "appearance" ? (
+        {/* UI audit #152: desktop keeps the same left-aligned page title as every
+            other settings page; only the phone sheet uses the centred nav bar. */}
+        {activeTab === "appearance" && isMobile ? (
           <>
             <header className="us-main-header s3-nav">
               <span className="l">

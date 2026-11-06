@@ -3888,7 +3888,7 @@ export const nested = {
       "removed": "Entfernt:",
       "removedBubble": "Stil der Nachrichtenblasen",
       "removedStatus": "Status (ins Profilmenü verschoben)",
-      "savedFoot": "Das Erscheinungsbild wird in deinem Konto gespeichert und ist auf all deinen Geräten gleich. Deinen Status änderst du jetzt im Profilmenü.",
+      "savedFoot": "Das Erscheinungsbild wird in deinem Konto gespeichert und ist auf all deinen Geräten gleich.",
       "shopThemes": "Shop-Themes",
       "textSize": "Textgröße",
       "textSizeFootDesktop": "Gilt für Chat, Kanalliste und Menüs. Auch mit Ctrl + / Ctrl − änderbar.",
