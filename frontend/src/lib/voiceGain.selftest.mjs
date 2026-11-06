@@ -97,10 +97,10 @@ const server = read("../hooks/useServerVoice.js");
 assert.match(server, /el\.remove\(\);[\s\S]{0,80}releasePlaybackGain\(el\);/);
 const dm = read("../hooks/useCall.js");
 assert.match(dm, /if \(prev && prev !== el\) releasePlaybackGain\(prev\);/, "DM: the overlay's dropped <audio>");
+const sink = read("../components/call/RemoteScreenAudioSink.jsx");
+assert.match(sink, /return \(\) => releasePlaybackGain\(el\);/, "screen-share sink");
 for (const file of ["../components/CallOverlay.jsx", "../components/servers/ServerVoicePanel.jsx"]) {
-  const src = read(file);
-  const sink = src.slice(src.indexOf("function RemoteScreenAudioSink"));
-  assert.match(sink, /return \(\) => releasePlaybackGain\(el\);/, `${file}: screen-share sink`);
+  assert.match(read(file), /import RemoteScreenAudioSink from "[^"]*call\/RemoteScreenAudioSink";/, `${file} uses the shared sink`);
 }
 
 console.log("voiceGain selftest ok");
