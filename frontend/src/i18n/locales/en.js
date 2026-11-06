@@ -1045,7 +1045,7 @@ export const nested = {
     "tileMessage": "Message",
     "tileCall": "Call",
     "tileVideo": "Video",
-    "tileFriend": "Friend",
+    "tileFriend": "Friends",
     "tileAdd": "Add",
     "about": "About",
     "memberSince": "Member since",
