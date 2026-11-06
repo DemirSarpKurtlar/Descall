@@ -62,6 +62,7 @@ function route(method, pathname) {
   if (pathname === '/api/premium/me') { S.meCalls += 1; return [200, premiumMe()]; }
   if (pathname === '/api/premium/plans') return [200, { plans: [] }];
   if (pathname === '/api/friends/list') return [200, { friends: [FRIEND] }];
+  if (pathname.startsWith('/api/promo/')) return [200, { popup: null, items: [], count: 0, unseen: 0 }];
   const last = pathname.split('/').filter(Boolean).pop() || 'items';
   const empty = { items: [], friends: [], requests: [], servers: [], groups: [], conversations: [], messages: [], notifications: [] };
   empty[last] = [];
@@ -204,6 +205,11 @@ async function run(win) {
   expect(bad && bad.error === 'bad-route', `bad route accepted: ${JSON.stringify(bad)}`);
 
   // 4. Settings > Descall+.
+  for (let i = 0; i < 3; i++) {
+    const had = await js(win, `(() => { const s = document.querySelector('.g-alert-scrim'); if (!s) return false; const b = [...s.querySelectorAll('button')].find((x) => /^(Sonra|Later|Kapat|Close)$/i.test((x.textContent || '').trim())) || s.querySelector('button'); b && b.click(); return true; })()`);
+    if (!had) break;
+    await sleep(500);
+  }
   await js(win, `(() => { history.pushState({}, '', '/settings/premium'); dispatchEvent(new PopStateEvent('popstate')); return true; })()`);
   const tab = await until('settings tab', () => js(win, `(() => {
     const nav = document.querySelector('[data-nav="premium"]');

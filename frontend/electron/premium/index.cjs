@@ -25,6 +25,7 @@ const { EventEmitter } = require('events');
 const gate = require('./gate.cjs');
 const { createStore } = require('./store.cjs');
 const { TIERS } = require('./featureTiers.cjs');
+const { checkTrustedSender } = require('../appTrust.cjs');
 
 const FEATURE_DIR = path.join(__dirname, 'features');
 const DEFAULT_API = 'https://des-call.onrender.com';
@@ -62,6 +63,9 @@ function senderAllowed(event, from) {
   const w = mainWindow();
   const wc = event?.sender;
   if (!wc) return false;
+  // Top frame of an app-origin page only (appTrust.cjs, same rule as main's trusted IPC).
+  const known = (x) => Boolean((w && x === w.webContents) || auxWindows.has(x.id));
+  if (!checkTrustedSender(event, { isDev: Boolean(opts?.isDev), isKnownWebContents: known }).ok) return false;
   if (w && wc === w.webContents) return true;
   if (from === 'app') return auxWindows.has(wc.id);
   return false;
