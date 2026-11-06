@@ -55,7 +55,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OPS = ["grant", "extend", "change_plan", "cancel", "set_end", "set_unlimited"];
 const PLAN_ID = /^[a-z][a-z0-9_]{1,31}$/;
 const REQUEST_ID = /^[A-Za-z0-9:_.-]{8,100}$/;
-const EVENT_KINDS = ["grant", "extend", "change_plan", "cancel", "set_end", "set_unlimited", "expire", "coin_grant", "campaign_redeem"];
+const EVENT_KINDS = ["grant", "extend", "change_plan", "cancel", "set_end", "set_unlimited", "expire", "coin_grant", "campaign_redeem", "trial"];
 
 function isMissing(error) {
   return Boolean(error && (MISSING_FN.has(error.code) || /does not exist|Could not find the function/i.test(error.message || "")));

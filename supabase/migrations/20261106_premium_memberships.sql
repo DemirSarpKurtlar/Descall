@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS public.user_subscriptions (
   source           text NOT NULL CHECK (source IN ('admin', 'campaign', 'payment')),
   next_coin_at     timestamptz,
   coin_cycles_paid integer NOT NULL DEFAULT 0 CHECK (coin_cycles_paid >= 0),
+  -- Future (paid phase, owner decision 2026-11-06): a new paying subscriber gets a 3-day free trial.
+  -- Nothing sets this in phase 1; it stays NULL.
+  trial_ends_at    timestamptz,
   created_at       timestamptz NOT NULL DEFAULT now(),
   updated_at       timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT user_subscriptions_end_shape CHECK (
@@ -107,7 +110,7 @@ CREATE TABLE IF NOT EXISTS public.subscription_events (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id        uuid NOT NULL,
   kind           text NOT NULL CHECK (kind IN ('grant', 'extend', 'change_plan', 'cancel', 'set_end',
-                   'set_unlimited', 'expire', 'coin_grant', 'campaign_redeem')),
+                   'set_unlimited', 'expire', 'coin_grant', 'campaign_redeem', 'trial')),
   prev_plan      text,
   new_plan       text,
   prev_ends_at   timestamptz,
@@ -131,6 +134,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS subscription_events_request_uq
   ON public.subscription_events (request_id, user_id) WHERE request_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS subscription_events_coin_cycle_uq
   ON public.subscription_events (user_id, cycle_at) WHERE kind = 'coin_grant';
+-- Future trial flow: one 'trial' event (= one free trial) per user, ever. No phase 1 code writes 'trial'.
+CREATE UNIQUE INDEX IF NOT EXISTS subscription_events_one_trial_uq
+  ON public.subscription_events (user_id) WHERE kind = 'trial';
 CREATE INDEX IF NOT EXISTS subscription_events_user_idx ON public.subscription_events (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS subscription_events_created_idx ON public.subscription_events (created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS subscription_events_kind_idx ON public.subscription_events (kind, created_at DESC);

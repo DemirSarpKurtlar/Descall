@@ -193,6 +193,12 @@ async function run() {
     await rejects(pg.psqlAsync(url, `DELETE FROM subscription_events WHERE user_id = '${U(1)}'`), /append-only/, "events cannot be deleted");
     await rejects(pg.psqlAsync(url, "TRUNCATE subscription_events"), /append-only/, "events cannot be truncated");
 
+    // ---- room for the future 3-day trial (paid phase): column, kind, one trial per user
+    eq(one("SELECT count(*) FROM user_subscriptions WHERE trial_ends_at IS NOT NULL"), "0", "phase 1 never sets trial_ends_at");
+    one(`INSERT INTO subscription_events (user_id, kind, actor_kind, new_plan) VALUES ('${U(30)}', 'trial', 'payment', 'plus')`);
+    await rejects(pg.psqlAsync(url, `INSERT INTO subscription_events (user_id, kind, actor_kind, new_plan) VALUES ('${U(30)}', 'trial', 'payment', 'ultra')`),
+      /subscription_events_one_trial_uq/, "one trial per user");
+
     // ---- own-row RLS for authenticated
     one(`GRANT USAGE ON SCHEMA public TO authenticated`);
     eq(one(`BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub', '${U(4)}', true);
