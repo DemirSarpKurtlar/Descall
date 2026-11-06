@@ -3028,7 +3028,11 @@ router.get("/:id/members", requireAuth, async (req, res) => {
     }
 
     // Special badge worn next to the flag (one lookup; empty before its migration).
-    const specialByUser = await require("../lib/specialBadges").equippedForUsers(userIds).catch(() => new Map());
+    const [specialByUser, premiumByUser] = await Promise.all([
+      require("../lib/specialBadges").equippedForUsers(userIds).catch(() => new Map()),
+      // Descall+ / Ultra badges: one batched premium_active_for lookup, cached for a minute.
+      require("../lib/premium/badges").plansFor(userIds).catch(() => new Map()),
+    ]);
 
     const { data: server } = await supabase
       .from("servers")
@@ -3068,6 +3072,7 @@ router.get("/:id/members", requireAuth, async (req, res) => {
         avatarUrl: u.avatar_url || null,
         equippedCountry: countryById.get(u.equipped_country_id) || null,
         equippedSpecialBadge: specialByUser.get(m.user_id) || null,
+        premium_plan: premiumByUser.get(String(m.user_id)) ?? null,
         nickname: m.nickname || null,
         joinedAt: m.joined_at,
         timeoutUntil: m.timeout_until || null,

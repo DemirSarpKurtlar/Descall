@@ -10,8 +10,11 @@ import "./premium.css";
  * (AdminBadge): "inline" (18 px square, list rows) and "chip" (square + label, profile
  * card / user panel). Glass tint, no glow, no motion.
  *
- * The plan comes from the user object (premium_plan / premiumPlan / premium.plan,
- * as the server adds it to public user payloads), or for yourself from usePremium's store.
+ * Other people: the server puts `premium_plan` ("plus" | "ultra" | null) on the public
+ * user payloads (/auth/users/:id, friends, server and group members, presence rows),
+ * from one batched premium_active_for lookup. A payload without the key (an older or
+ * merged copy of the same person) falls back to the last value seen for that id.
+ * Yourself: usePremium's store (/api/premium/me), which premium:updated keeps live.
  */
 export function premiumPlanOf(user) {
   if (!user || typeof user !== "object") return null;
@@ -20,10 +23,35 @@ export function premiumPlanOf(user) {
   return normalizePlan(raw);
 }
 
+const lastSeen = new Map(); // user id -> plan from the latest payload that carried it
+const LAST_SEEN_MAX = 2000;
+
+function carriesPlan(user) {
+  return Boolean(user) && typeof user === "object"
+    && (user.premium_plan !== undefined || user.premiumPlan !== undefined || (user.premium !== undefined && user.premium !== null));
+}
+
+/** The plan another person's payload says, remembering it per id for copies without the key. */
+export function otherPlan(user) {
+  const id = user?.id ?? user?.userId ?? user?.user_id;
+  const key = id == null ? null : String(id);
+  if (carriesPlan(user)) {
+    const plan = premiumPlanOf(user);
+    if (key) {
+      lastSeen.delete(key);
+      lastSeen.set(key, plan);
+      if (lastSeen.size > LAST_SEEN_MAX) lastSeen.delete(lastSeen.keys().next().value);
+    }
+    return plan;
+  }
+  return key ? lastSeen.get(key) ?? null : null;
+}
+
 function isSelf(user) {
   try {
     const me = getUser();
-    return Boolean(me?.id && user?.id && String(me.id) === String(user.id));
+    const id = user?.id ?? user?.userId;
+    return Boolean(me?.id && id && String(me.id) === String(id));
   } catch {
     return false;
   }
@@ -47,7 +75,9 @@ export function PremiumGlyph({ plan, size = 11 }) {
 export default function PremiumBadge({ user, plan: planProp, variant = "inline", className = "" }) {
   const t = useT();
   const store = useSyncExternalStore(subscribePremium, getPremiumState, getPremiumState);
-  const plan = normalizePlan(planProp) || premiumPlanOf(user) || (isSelf(user) ? store.plan : null);
+  const self = isSelf(user);
+  // Yourself: the live store once loaded (it follows premium:updated); others: their payload.
+  const plan = normalizePlan(planProp) || (self && store.loaded ? store.plan : otherPlan(user) || (self ? store.plan : null));
   if (!plan) return null;
   const tip = plan === "ultra" ? t("premium.badge.ultraTip") : t("premium.badge.plusTip");
   const label = plan === "ultra" ? t("premium.name.ultraShort") : t("premium.name.plus");

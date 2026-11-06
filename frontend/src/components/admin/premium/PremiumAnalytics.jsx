@@ -13,10 +13,20 @@ const BUCKETS = ["day", "week", "month"];
 
 function tickFor(bucket, locale) {
   return (label) => {
-    const d = new Date(label.length <= 10 ? `${label}T00:00:00` : label);
+    // Buckets are UTC periods (date_trunc on the server), so they are labelled in UTC.
+    const d = new Date(label.length <= 10 ? `${label}T00:00:00Z` : label);
     if (Number.isNaN(d.getTime())) return label;
-    return bucket === "month" ? formatDate(d, locale, { month: "short", year: "2-digit" }) : formatDate(d, locale, { day: "numeric", month: "numeric" });
+    return bucket === "month"
+      ? formatDate(d, locale, { month: "short", year: "2-digit", timeZone: "UTC" })
+      : formatDate(d, locale, { day: "numeric", month: "numeric", timeZone: "UTC" });
   };
+}
+
+/** The server names the conversion denominator with a code; known codes have a translation. */
+function convLabel(code, t) {
+  const key = `premiumAdmin.an.convLabel.${code}`;
+  const s = /^[a-z_]+$/.test(String(code)) ? t(key) : key;
+  return s !== key ? s : String(code);
 }
 
 /** One metric card: title, the definition (always shown), chart or the empty word. */
@@ -82,7 +92,7 @@ export default function PremiumAnalytics() {
               <ColumnChart ariaLabel={t("premiumAdmin.an.acq")} locale={locale} stacked rows={a.acquisitions || []} series={[plus, ultra]} tick={tick} />
             </MetricCard>
             <MetricCard t={t} title={t("premiumAdmin.an.active")} def={t("premiumAdmin.an.def.active")} has={Boolean(a.active)}>
-              <ColumnChart ariaLabel={t("premiumAdmin.an.active")} locale={locale} stacked rows={a.active || []} series={[plus, ultra]} tick={tick} />
+              <ColumnChart ariaLabel={t("premiumAdmin.an.active")} locale={locale} rows={a.active || []} series={[{ label: t("premiumAdmin.an.allPlans"), color: SERIES_A }]} tick={tick} />
             </MetricCard>
             <MetricCard t={t} title={t("premiumAdmin.an.split")} def={t("premiumAdmin.an.def.split")} has={Boolean(a.planSplit)}>
               <BarList locale={locale} items={[
@@ -120,7 +130,7 @@ export default function PremiumAnalytics() {
             <MetricCard t={t} title={t("premiumAdmin.an.conversion")} def={t("premiumAdmin.an.def.conversion")} has={conv?.rate != null} empty={t("premiumAdmin.cannotCompute")}>
               <div className="pa-bignum"><strong className="tnum">{conv?.rate != null ? formatNumber(conv.rate, locale, { style: "percent", maximumFractionDigits: 1 }) : "–"}</strong></div>
               <p className="pc-hint">{t("premiumAdmin.an.convOf", { num: num(conv?.numerator, locale, t), den: num(conv?.denominator, locale, t) })}</p>
-              {conv?.denominatorLabel ? <p className="pc-hint">{t("premiumAdmin.an.denominator")}: {conv.denominatorLabel}</p> : null}
+              {conv?.denominatorLabel ? <p className="pc-hint">{t("premiumAdmin.an.denominator")}: {convLabel(conv.denominatorLabel, t)}</p> : null}
             </MetricCard>
           </div>
           <MetricCard t={t} title={t("premiumAdmin.an.campaigns")} def={t("premiumAdmin.an.def.campaigns")} has={Boolean(a.campaigns)}>
