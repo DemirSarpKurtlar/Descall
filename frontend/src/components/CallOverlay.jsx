@@ -8,6 +8,7 @@ import {
 } from "./ui/Icon.jsx";
 import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
+import CallTimer from "./call/CallTimer";
 import StatusBadge from "./ui/StatusBadge";
 import AdminBadge from "./social/AdminBadge";
 import CallWindowButtons from "../premium/desktop/CallWindowButtons.jsx";
@@ -254,10 +255,9 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   const deafened = isDm ? call.deafened : groupCall.deafened;
   const cameraOn = isDm ? call.cameraOn : groupCall.isCameraOn;
   const screenSharing = isDm ? call.screenSharing : groupCall.isScreenSharing;
-  const duration = isDm ? call.duration : groupCall.duration;
-  const formattedDuration = duration
-    ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`
-    : "";
+  // The timer ticks inside <CallTimer> only; this overlay does not re-render each second.
+  const timerStartedAt = isDm ? call.durationStartedAt : groupCall.durationStartedAt;
+  const timerStoppedAt = isDm ? call.durationStoppedAt : groupCall.durationStoppedAt;
   const title = isDm
     ? (peer ? (resolveDisplayName(peer) || peer.username || t("User")) : t("User"))
     : (groupName || t("Group Call"));
@@ -369,7 +369,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         >
           <span className="call-return-dot" aria-hidden="true" />
           <span className="call-return-title">{title}</span>
-          <span className="call-return-time tnum">{formattedDuration}</span>
+          <span className="call-return-time tnum"><CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} /></span>
           <span className="call-return-cta">{t("Return to call")}</span>
         </button>
       </>
@@ -386,7 +386,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           peer={peer}
           title={title}
           subtitle={subtitle}
-          timer={formattedDuration}
+          timerStartedAt={timerStartedAt}
+          timerStoppedAt={timerStoppedAt}
           muted={muted}
           deafened={deafened}
           screenSharing={screenSharing}
@@ -465,8 +466,13 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   const returningFromShare = !anyScreenShare && shareEpochRef.current > 0;
   if (!anyScreenShare && screenExpanded) setScreenExpanded(false);
   const desktopGroupLine = glassDesktop && !isDm
-    ? `${formattedDuration ? `${formattedDuration} · ` : ""}${callType === "video" ? t("Video call") : t("Voice call")}`
-    : "";
+    ? (
+      <>
+        <CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} suffix=" · " />
+        {callType === "video" ? t("Video call") : t("Voice call")}
+      </>
+    )
+    : null;
 
   return (
     <>
@@ -546,7 +552,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                 {isDm ? <AdminBadge user={peer} variant="inline" /> : null}
               </div>
               <div className="g-call-sub">
-                {subtitle}{formattedDuration ? ` · ${formattedDuration}` : ""}
+                {subtitle}<CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} prefix=" · " />
                 {anyScreenShare ? ` · ${t("Presenting")}` : ""}
               </div>
             </div>
@@ -598,7 +604,12 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             </span>
           )}
           <span style={{ fontSize: 13, color: "rgba(235,235,245,0.6)" }}>
-            {desktopGroupLine || `${subtitle}${formattedDuration ? ` · ${formattedDuration}` : ""}`}
+            {desktopGroupLine || (
+              <>
+                {subtitle}
+                <CallTimer startedAt={timerStartedAt} stoppedAt={timerStoppedAt} prefix=" · " />
+              </>
+            )}
           </span>
           {isDm && mode === "active" && (
             <CallQualityHud quality={call?.connectionQuality || "unknown"} stats={glassQaNetStats(call?.networkStats)} />
@@ -790,7 +801,6 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
             mode={mode}
             title={title}
             subtitle={subtitle}
-            formattedDuration={formattedDuration}
             localUsername={localUsername}
             localAvatarUrl={resolveAvatarUrl(me)}
             localUser={me}
@@ -810,7 +820,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
               transition={reduceMotion ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize)}
             >
               {t("Call ended")}
-              {formattedDuration ? <span className="call-ended-pill-duration">{formattedDuration}</span> : null}
+              <CallTimer className="call-ended-pill-duration" startedAt={timerStartedAt} stoppedAt={timerStoppedAt} />
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -1746,7 +1756,7 @@ function TileMotion({ children }) {
   );
 }
 
-function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, formattedDuration, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
+function ParticipantGrid({ isDm, call, groupCall, remoteParticipants, hasLocalVideo, cameraOn, callType, peer, mode, title, subtitle, localUsername, localAvatarUrl, localUser = null, onOpenUserMenu }) {
   const t = useT();
   const glass = useGlassUi();
   const dmRemote = useDmRemoteParticipant({

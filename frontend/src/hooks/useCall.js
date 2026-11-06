@@ -162,7 +162,9 @@ export function useCall(socket, callOccupancyRef = null) {
   const [remoteCameraOn, setRemoteCameraOn] = useState(null);
   const [remoteDeafened, setRemoteDeafened] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
-  const [duration, setDuration] = useState(0);
+  // Call timer: a stable start (durationStoppedAt below freezes it while the
+  // call ends). Never ticks here; components that show it use useCallTimer.
+  const [durationStartedAt, setDurationStartedAt] = useState(null);
   const [connectionQuality, setConnectionQuality] = useState("unknown");
   const [peerConnectionState, setPeerConnectionState] = useState("idle");
   const [remoteMediaReady, setRemoteMediaReady] = useState(false);
@@ -308,7 +310,6 @@ export function useCall(socket, callOccupancyRef = null) {
   const mutedByDeafenRef = useRef(false);
   const [deafened, setDeafened] = useState(false);
   const peerRef = useRef(null);
-  const timerRef = useRef(null);
   const screenSenderRef = useRef(null);
   const screenAudioSenderRef = useRef(null);
   const screenAudioCtxRef = useRef(null);
@@ -534,9 +535,7 @@ export function useCall(socket, callOccupancyRef = null) {
     setEnding(null);
     callDirectionRef.current = null;
     setCalleeAnswering(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    setDuration(0);
+    setDurationStartedAt(null);
     incomingOfferRef.current = null;
     incomingCallTypeRef.current = null;
     if (pcRef.current) {
@@ -644,8 +643,6 @@ export function useCall(socket, callOccupancyRef = null) {
       if (audio) {
         try { audio.muted = true; audio.srcObject = null; } catch { /* ignore */ }
       }
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
       setEnding({ reason: typeof reason === "string" ? reason : "ended", at: Date.now() });
       setPeerConnectionState("ended");
       cleanupTimerRef.current = setTimeout(() => {
@@ -657,11 +654,13 @@ export function useCall(socket, callOccupancyRef = null) {
     cleanup();
   }, [cleanup]);
 
+  // The timer starts when the call goes active; an ending call stops it at
+  // ending.at (durationStoppedAt below); cleanup() clears it.
   useEffect(() => {
     if (mode !== "active" || ending) return;
-    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    setDurationStartedAt((prev) => prev ?? Date.now());
   }, [mode, ending]);
+  const durationStoppedAt = durationStartedAt && ending ? ending.at : null;
 
   // Handle call sounds based on mode
   useEffect(() => {
@@ -2512,7 +2511,7 @@ export function useCall(socket, callOccupancyRef = null) {
           setPeer,
           setCallType,
           setCallAnchorAt,
-          setDuration,
+          setDurationStartedAt,
           setConnectionQuality,
           setPeerConnectionState,
           setRemoteMediaReady,
@@ -2580,7 +2579,8 @@ export function useCall(socket, callOccupancyRef = null) {
     remoteCameraOn,
     remoteDeafened,
     screenSharing,
-    duration,
+    durationStartedAt,
+    durationStoppedAt,
     connectionQuality,
     networkStats,
     peerConnectionState,

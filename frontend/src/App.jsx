@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
+import { elapsedSeconds } from "./lib/callClock";
 import { sortListItems, orderFriends, newestRequestsFirst, stampArrival } from "./lib/listOrder";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
@@ -693,8 +694,9 @@ export default function App() {
   }, [call?.mode, groupCall?.isInCall, groupCall?.incomingCall]);
   const wasDmInCallRef = useRef(false);
   const wasGroupInCallRef = useRef(false);
-  const lastDmCallDurationRef = useRef(0);
-  const lastGroupCallDurationRef = useRef(0);
+  // Last seen call timer ({ startedAt, stoppedAt }); the hooks clear theirs when the call ends.
+  const lastDmCallTimerRef = useRef(null);
+  const lastGroupCallTimerRef = useRef(null);
 
   // Reflect a live call in the address bar without treating a pasted call URL
   // as permission to start a microphone/camera session. Refreshing the URL
@@ -776,30 +778,32 @@ export default function App() {
   useEffect(() => {
     if (call?.isInCall) {
       wasDmInCallRef.current = true;
-      lastDmCallDurationRef.current = Number(call.duration) || 0;
+      lastDmCallTimerRef.current = { startedAt: call.durationStartedAt, stoppedAt: call.durationStoppedAt };
       return;
     }
     if (wasDmInCallRef.current) {
       wasDmInCallRef.current = false;
-      const secs = lastDmCallDurationRef.current || 0;
-      lastDmCallDurationRef.current = 0;
+      const last = lastDmCallTimerRef.current;
+      const secs = elapsedSeconds(last?.startedAt, last?.stoppedAt);
+      lastDmCallTimerRef.current = null;
       requestFeedbackNudge({ trigger: "after_call", callDurationMs: secs * 1000 });
     }
-  }, [call?.isInCall, call?.duration]);
+  }, [call?.isInCall, call?.durationStartedAt, call?.durationStoppedAt]);
 
   useEffect(() => {
     if (groupCall?.isInCall) {
       wasGroupInCallRef.current = true;
-      lastGroupCallDurationRef.current = Number(groupCall.duration) || 0;
+      lastGroupCallTimerRef.current = { startedAt: groupCall.durationStartedAt, stoppedAt: groupCall.durationStoppedAt };
       return;
     }
     if (wasGroupInCallRef.current) {
       wasGroupInCallRef.current = false;
-      const secs = lastGroupCallDurationRef.current || 0;
-      lastGroupCallDurationRef.current = 0;
+      const last = lastGroupCallTimerRef.current;
+      const secs = elapsedSeconds(last?.startedAt, last?.stoppedAt);
+      lastGroupCallTimerRef.current = null;
       requestFeedbackNudge({ trigger: "after_call", callDurationMs: secs * 1000 });
     }
-  }, [groupCall?.isInCall, groupCall?.duration]);
+  }, [groupCall?.isInCall, groupCall?.durationStartedAt, groupCall?.durationStoppedAt]);
 
   useEffect(() => {
     myIdRef.current = me?.id ?? null;
@@ -3933,7 +3937,7 @@ export default function App() {
       const peer = call.peer;
       endedCallRef.current = {
         kind: "ended", peerId: peer.id, peer, peerName: resolveDisplayName(peer) || peer.username || "",
-        callType: call.callType, duration: Number(call.duration) || 0, endedAt: ending.at || Date.now(),
+        callType: call.callType, duration: elapsedSeconds(call.durationStartedAt, call.durationStoppedAt || ending.at || Date.now()), endedAt: ending.at || Date.now(),
         reason: ending.reason === "remote" ? "remote" : ending.reason === "local" ? "local" : "drop",
       };
     } else if (!ending && !call?.mode && endedCallRef.current) {
