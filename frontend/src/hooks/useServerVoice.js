@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
 import { sampleConnectionStats } from "../lib/connectionStats";
 import { applyAdaptiveAudioEncoding, applyAdaptiveJitterBuffer } from "../lib/adaptiveBitrate";
 import {
@@ -468,6 +468,7 @@ export function useServerVoice(socket) {
       } catch {
         /* ignore */
       }
+      releasePlaybackGain(el);
       remoteAudioRefs.current.delete(userId);
     }
     remoteScreenStreamsRef.current.delete(userId);

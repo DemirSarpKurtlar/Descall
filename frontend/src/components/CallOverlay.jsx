@@ -27,7 +27,7 @@ import SpeakingRings from "./voice/SpeakingRings";
 import ParticipantStateIcons from "./voice/ParticipantStateIcons";
 import useVoiceActivity from "../hooks/useVoiceActivity";
 import { networkQualityTooltipKey, participantVolumePercent, readParticipantGain } from "../lib/voiceProfile";
-import { applyPlaybackGain } from "../lib/voiceGain";
+import RemoteScreenAudioSink from "./call/RemoteScreenAudioSink";
 import { nextShareSelection } from "../lib/screenShareTracks";
 import ShareFilmstrip, { ShareGridVideo } from "./voice/ShareFilmstrip";
 import { useT } from "../context/LocaleContext";
@@ -72,49 +72,6 @@ const PULSE_STYLE = `@keyframes callTilePulse { 0%,100%{opacity:1} 50%{opacity:0
 function streamHasLiveVideo(stream) {
   if (!stream?.getVideoTracks) return false;
   return stream.getVideoTracks().some((t) => t && t.readyState !== "ended");
-}
-
-/**
- * Always-mounted sink for remote screen/tab audio.
- * Lives outside ScreenShareLayout so minimize / layout swaps don't mute yayin sesi.
- */
-function RemoteScreenAudioSink({ stream, volume = 100, sinkId = "" }) {
-  const audioRef = useRef(null);
-  const trackCount =
-    stream?.getAudioTracks?.()?.filter((t) => t && t.readyState !== "ended").length || 0;
-
-  useEffect(() => {
-    const audioEl = audioRef.current;
-    if (!audioEl) return;
-    applyPlaybackGain(audioEl, Math.max(0, Math.min(200, Number(volume) || 0)) / 100);
-    if (sinkId && typeof audioEl.setSinkId === "function") {
-      audioEl.setSinkId(sinkId).catch(() => {});
-    }
-    if (!stream || trackCount === 0) {
-      audioEl.muted = true;
-      if (audioEl.srcObject) audioEl.srcObject = null;
-      return;
-    }
-    audioEl.muted = false;
-    // Force rebind so late-arriving audio tracks are picked up (mobile).
-    audioEl.srcObject = null;
-    audioEl.srcObject = stream;
-    const play = () => audioEl.play().catch(() => {});
-    play();
-    stream.getAudioTracks().forEach((t) => {
-      const prev = t.onunmute;
-      t.onunmute = (ev) => {
-        try {
-          if (typeof prev === "function") prev.call(t, ev);
-        } catch {
-          /* ignore */
-        }
-        play();
-      };
-    });
-  }, [stream, trackCount, volume, sinkId]);
-
-  return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} aria-hidden="true" />;
 }
 
 const MINI_DEFAULTS = Object.freeze({ enabled: true });
@@ -322,6 +279,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       key={`screen-audio-${id}`}
       stream={stream}
       volume={screenVolumes[String(id)] ?? screenShareVolume}
+      deafened={Boolean(deafened)}
       sinkId={(isDm ? call?.selectedAudioOutput : groupCall?.selectedAudioOutput) || ""}
     />
   ));
@@ -1199,7 +1157,8 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
         const id = userMenu?.user?.id;
         if (id == null) return;
         const key = String(id);
-        const current = userVolumes[key] ?? 100;
+        // Not touched in this session: the remembered level, not 100%.
+        const current = userVolumes[key] ?? participantVolumePercent(null, id);
         const next = current > 0 ? 0 : (lastUserVolumeRef.current[key] || 100);
         if (current > 0) lastUserVolumeRef.current[key] = current;
         setUserVolumes((prev) => ({ ...prev, [key]: next }));
