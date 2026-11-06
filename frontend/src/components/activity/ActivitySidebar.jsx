@@ -6,7 +6,6 @@ import {
   MessageSquarePlus,
   Plus,
   Users,
-  UserPlus,
   Clock,
 } from "../ui/Icon.jsx";
 import { ActivityTypeIcon } from "../../lib/shopIcons";
@@ -134,7 +133,7 @@ export default function ActivitySidebar({
               { id: "search", icon: Search, label: t("Search") },
               { id: "feedback", icon: MessageSquarePlus, label: t("Send Feedback"), onClick: () => openFeedbackModal({ type: "suggestion", source: "activity_sidebar" }) },
             ]}
-            plus={{ icon: UserPlus, label: t("Add friend"), onClick: () => onAddFriend?.() }}
+            plus={{ label: t("Add friend"), onClick: () => onAddFriend?.() }}
             search={{ value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), inputRef: searchRef, placeholder: t("Search") }}
           />
         ) : (
@@ -193,7 +192,6 @@ export default function ActivitySidebar({
                 <div className="g-activity-status-top">
                   <div>
                     <div className="g-activity-kicker">{t("Your status")}</div>
-                    <div className="s" style={{ fontSize: 13, color: "var(--g-t3)", marginTop: 2 }}>{t("Your presence and history")}</div>
                   </div>
                   {privacy !== "hidden" && privacy !== "only-me" ? (
                     <div className="g-activity-vis"><Users size={13} /> {t("Visible to Friends")}</div>
