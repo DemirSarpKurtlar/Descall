@@ -40,7 +40,7 @@ export function SpecialBadgeChip({ id, className = "" }) {
   const tier = ART_BY_ID[id]?.tier;
   if (!tier) return null;
   return (
-    <span className={`sb-chip sb-chip-${tier}${id === "facebook" ? " sb-chip-fb" : ""}${className ? ` ${className}` : ""}`} title={`${name(id)} · ${tierLabel(id)}`}>
+    <span className={`sb-chip sb-chip-${tier}${id === "facebook" ? " sb-chip-fb" : id === "kk22" ? " sb-chip-kk22" : ""}${className ? ` ${className}` : ""}`} title={`${name(id)} · ${tierLabel(id)}`}>
       <SpecialBadgeIcon id={id} size={18} />
       <span>{name(id)}</span>
     </span>

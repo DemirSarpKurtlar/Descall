@@ -31,6 +31,12 @@ async function run() {
     eq(pg.q(solo.url, "SELECT count(*) FROM special_badges"), "36", "standalone migration seeds 36 badges");
     pg.q(solo.url, require("fs").readFileSync(pg.BADGE_MIGRATION, "utf8"));
     eq(pg.q(solo.url, "SELECT count(*) FROM special_badges"), "36", "re-running the migration is a no-op");
+    // KK22 (#37) comes in its own migration on top; it is tekil, admin only and re-runnable.
+    const kk22 = require("fs").readFileSync(require("path").join(require("path").dirname(pg.BADGE_MIGRATION), "20261106_special_badge_kk22.sql"), "utf8");
+    pg.q(solo.url, kk22);
+    pg.q(solo.url, kk22);
+    eq(pg.q(solo.url, "SELECT count(*) FROM special_badges"), "37", "KK22 adds one badge");
+    eq(pg.q(solo.url, "SELECT id || ':' || tier || ':' || grant_mode || ':' || no || ':' || max_holders FROM special_badges WHERE id = 'kk22'"), "kk22:tekil:admin_only:37:1", "KK22 is #37, tekil, admin only, one holder");
   } finally {
     solo.drop();
   }
