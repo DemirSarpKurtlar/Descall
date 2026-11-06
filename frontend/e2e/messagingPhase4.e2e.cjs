@@ -43,6 +43,8 @@ const DEVICES = (process.env.DESCALL_E2E_DEVICES || 'desktop,iphone').split(',')
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const ONLY = (process.env.DESCALL_E2E_ONLY || '').split(',').map((s) => s.trim()).filter(Boolean);
 const log = (...a) => console.log('[e2e-p4]', ...a);
+// 152px gradient PNG standing in for a site's og:image (the server returns images as data: URIs).
+const PREVIEW_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJgAAACYCAIAAACXoLd2AAAD0klEQVR42u3RZ1YVQRSF0R4mKjk9cpZoAEQUEUEFRJ0giIiI/pfbVV1d9WZw7vrW2jPYVc/mv56Nv8mj0uMH69GTUm+wZvrMfdKfrN4PlAYzQ08Lw+ZPMPJgpTWaGQuWo/FMJ7rrLJmJzGRu8W4qM12aWQh+P5gtzT2Yj+ZLC8GcWSzcLiWzt8ullczTmcJqZm3m19p0az2z0ahYdLC4MZVFsqi72EayKL24GSJZVF+0SBYdLHZHsii6WESyqLu4lSJZlF6MkSyqL1okiw4W60gW9Re3JptIFqUXn03eVCw6WLRIFh0sdkeyKLpYRLKou/g8RbIovRgjWVRftEgWHSw2kSyKL9aRLOovvpioI1lUX7RIFh0shkgW5ReLSBZ1F1+mSBalF2Mki+qLFsmig8UskkXlxSaSRfHFbYtkUX9xu3NTsehgsTuSRdHFIpJF3cWdFMmi9OJO52fFooNFi2TRwWIRyaLuYhvJovTibohkUX3RIll0sLg7XkayKLpYRLKou/gqRbIovRgjWVRftEgWHSyGSBblF9tIFqUX90Iki+qLFsmig8U6kkX9xb2xLJJF3cXXKZJF6cUYyaL6okWy6GCxiGRRd7GNZFF6cT9Esqi+aJEsOljcH7uuWHSwWEeyqL/4ZrSJZFF6MUayqL5okSw6WCwiWdRdbCNZlF58GyJZVF+0SBYdLKZIFrUXQySL8osHFsmi/uLBSB3JovqiRbLoYLGIZFF3sY1kUXrxXYhkUX3RIll0sFhGsii7mEWyqLx4GCNZFF+sI1nUXzwcvq5YdLB4OPyjYtHBYhvJovTi+xDJovqiRbLoYLE7kkXRxSKSRd3FoxTJovRijGRRfdEiWXSweDQUI1nUXgyRLMovfgiRLKovWiSLDha7I1kUXSwiWdRdPE6RLEovxkgW1RctkkUHi3Uki/qLx4NNJIvSiychkkX1RYtk0cFidySLoosng1cViw4WP6ZIFqUXYySL6osWyaKDxSaSRfHFOpJF/cVPA3Uki+qLFsmig8WuSBZVF/NIFoUXPzeRLGovhkgW5RctkkUHi1kki8qLTSSL4ounFsmi/uJp/1XFooPF7kgWRReLSBZ1F89SJIvSizGSRfVFi2TRwWIRyaLu4ln/ZcWig8XzEMmi+qJFsuhg8byvjGRRdLGIZFF38UuKZFF6MUayqL5okSw6WCwiWdRdbCNZlF68CJEsqi9aJIsOFutIFvUXL3qzSBZ1F7+mSBalF2Mki+qLFsmig8UikkXdxTaSRenFbyGSRfVFi2TRwWIWyaLyYhPJovji997L/9V5JUzlRZauAAAAAElFTkSuQmCC';
 
 const ME = { id: '00000000-0000-4000-8000-0000000000e1', username: 'demir', displayName: 'Demir', display_name: 'Demir', birthDate: '2000-05-05', emailVerified: true, language: 'tr', blockedUsers: [], status: 'online' };
 const AYSE = { id: '00000000-0000-4000-8000-0000000000e2', username: 'ayse', displayName: 'Ayşe', display_name: 'Ayşe', status: 'online', avatarUrl: null, createdAt: '2025-02-22T10:00:00.000Z' };
@@ -92,7 +94,7 @@ function api(p, method, body, query) {
   if (/\/api\/groups\/[^/]+\/read-state$/.test(p)) return { reads: state.groupReads };
   if (/\/api\/link-preview$/.test(p)) {
     state.previewHits.push(query.get('url'));
-    return { ok: true, preview: { url: query.get('url'), siteName: 'example.com', title: 'Descall Turnuvası 2026', description: 'Kayıtlar açık: takımını kur, haritanı seç, cumartesi 20:00 başlıyoruz.', image: null } };
+    return { ok: true, preview: { url: query.get('url'), siteName: 'example.com', title: 'Descall Turnuvası 2026', description: 'Kayıtlar açık: takımını kur, haritanı seç, cumartesi 20:00 başlıyoruz.', image: PREVIEW_IMAGE } };
   }
   if (/\/api\/scheduled-messages(\/[^/]+)?$/.test(p)) {
     const id = p.split('/').pop();
@@ -405,6 +407,23 @@ async function runDevice(browser, base, dev) {
       }, null, 5000).catch(() => ({ ok: false }));
       check(fl.ok && /İletildi/.test(fl.text) && !fl.quote, `the forwarded copy shows "İletildi" and no quote (${fl.text})`);
       await shot(page, `${P}06-forwarded`);
+    }
+    // --- link previews ---
+    if (want('preview')) {
+      await openChat(page, 'Ayşe');
+      const card = await waitFor(page, 'link preview card', () => {
+        const c = document.querySelector('[data-testid="link-preview"]');
+        if (!c) return { ok: false };
+        c.scrollIntoView({ block: 'center' });
+        const img = c.querySelector('img');
+        return { ok: true, text: c.textContent, href: c.getAttribute('href'), img: img ? img.getAttribute('src').slice(0, 22) : null, target: c.getAttribute('target'), rel: c.getAttribute('rel') };
+      }, null, 8000).catch(() => ({ ok: false }));
+      check(card.ok && /Descall Turnuvası 2026/.test(card.text) && /Kayıtlar açık/.test(card.text), `the message shows a preview card (${card.text})`);
+      check(card.href === 'https://example.com/turnuva' && card.target === '_blank' && /noopener/.test(card.rel || ''), 'the card opens the link in a new tab (noopener)');
+      check(card.img === 'data:image/png;base64,', `the picture is an inline data: URI (${card.img})`);
+      check(state.previewHits.includes('https://example.com/turnuva'), 'the preview came from our API');
+      await sleep(300);
+      await shot(page, `${P}07-link-preview`);
     }
   } catch (err) {
     await shot(page, `${P}fail`).catch(() => {});

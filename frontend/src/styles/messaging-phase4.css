@@ -86,6 +86,73 @@ html[data-theme="light"] .msg-unread-dock .msg-unread-pill.msg-unread-pill {
 }
 html[data-theme="light"] .msg-unread-go { border-left-color: rgba(0, 0, 0, 0.12); }
 
+/* Link preview card (data from our server, image inline). */
+.msg-link-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin: 8px 0 2px;
+  padding: 10px 12px 10px 14px;
+  box-sizing: border-box;
+  border-radius: var(--r-md, 12px);
+  border-left: 3px solid var(--primary, #587af5);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.msg-link-preview:hover { background: rgba(255, 255, 255, 0.09); text-decoration: none; }
+.msg-link-preview:focus-visible { outline: 2px solid var(--primary, #587af5); outline-offset: 2px; }
+.msg-link-preview-body { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.msg-link-preview-site {
+  font-size: var(--fs-11);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msg-link-preview-title {
+  font-size: var(--fs-15);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--primary, #587af5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msg-link-preview-desc {
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--text-secondary, var(--text-muted));
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msg-link-preview-img {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-sm, 8px);
+  object-fit: cover;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.06);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-link-preview {
+  border-left-color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.14);
+}
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .msg-link-preview-title { color: #fff; }
+:is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) :is(.msg-link-preview-site, .msg-link-preview-desc) { color: rgba(255, 255, 255, 0.78); }
+html[data-theme="light"] .msg-link-preview { background: rgba(0, 0, 0, 0.04); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
+
 /* Forwarded: a small "İletildi" line above the message (never a quote). */
 .message-forwarded {
   display: flex;

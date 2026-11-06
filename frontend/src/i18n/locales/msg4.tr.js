@@ -9,6 +9,9 @@ export const MSG4_TR = {
     jump: "Okunmamışa git",
     dismiss: "Kapat",
   },
+  preview: {
+    open: "{site} bağlantısını aç",
+  },
   forward: {
     action: "İlet",
     label: "İletildi",

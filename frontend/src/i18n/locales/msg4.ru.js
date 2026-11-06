@@ -9,6 +9,9 @@ export const MSG4_RU = {
     jump: "К непрочитанным",
     dismiss: "Скрыть",
   },
+  preview: {
+    open: "Открыть ссылку на {site}",
+  },
   forward: {
     action: "Переслать",
     label: "Пересланное сообщение",

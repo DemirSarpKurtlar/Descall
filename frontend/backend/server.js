@@ -493,6 +493,8 @@ app.use("/api/watch", require("./routes/watch"));
 app.use("/dm", dmPrefsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/search", require("./routes/search"));
+// Messaging phase 4: link previews, fetched here with SSRF protection (lib/linkPreview.js).
+app.use("/api/link-preview", require("./routes/linkPreview"));
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

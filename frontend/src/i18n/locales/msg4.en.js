@@ -9,6 +9,9 @@ export const MSG4_EN = {
     jump: "Jump to unread",
     dismiss: "Dismiss",
   },
+  preview: {
+    open: "Open link to {site}",
+  },
   forward: {
     action: "Forward",
     label: "Forwarded",

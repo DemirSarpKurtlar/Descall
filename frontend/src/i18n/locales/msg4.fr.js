@@ -9,6 +9,9 @@ export const MSG4_FR = {
     jump: "Aller aux non lus",
     dismiss: "Ignorer",
   },
+  preview: {
+    open: "Ouvrir le lien vers {site}",
+  },
   forward: {
     action: "Transférer",
     label: "Transféré",

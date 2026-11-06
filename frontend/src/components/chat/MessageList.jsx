@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense } from "react";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
@@ -8,6 +8,10 @@ import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2,
 import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
+import { previewUrlOf } from "../../lib/linkPreview";
+
+// Link preview cards load on first use (messaging phase 4).
+const LinkPreviewCard = lazy(() => import("./LinkPreviewCard.jsx"));
 import { Avatar } from "../ui/Avatar";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
@@ -1080,6 +1084,8 @@ function MessageBubble({
   const forwarded = isForwardedMeta(rawReply);
   const reply = forwarded ? null : rawReply;
   const forwardable = canForward(message);
+  // Link preview (messaging phase 4): first http(s) link, fetched by our server.
+  const previewUrl = useMemo(() => (typeof message.text === "string" ? previewUrlOf(message.text) : null), [message.text]);
   const forwardMessage = useCallback(() => openForwardSheet(message), [message]);
   const isPinned = Boolean(message.pinnedAt);
   const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
@@ -1766,6 +1772,11 @@ function MessageBubble({
                 </span>
               ) : null}
               <InviteLinkEmbedList text={message.text} />
+              {previewUrl ? (
+                <Suspense fallback={null}>
+                  <LinkPreviewCard url={previewUrl} />
+                </Suspense>
+              ) : null}
             </>
           )
         )}
