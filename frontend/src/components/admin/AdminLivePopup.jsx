@@ -7,7 +7,9 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import AdminBroadcastPopup from "./AdminBroadcastPopup";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import { announcementIconOrDefault } from "../../lib/announcements";
 
+// Stored values stay the same (old clients read them); the picker and the popup draw line icons.
 const EMOJIS = ["📢", "🚨", "⚠️", "✅", "🎉", "🔧", "🔒", "💬"];
 const DURATIONS = [
   { value: 0, label: "Until dismissed" },
@@ -16,7 +18,7 @@ const DURATIONS = [
   { value: 60_000, label: "1 minute" },
 ];
 const SEVERITIES = [
-  { id: "info", label: "Info", color: "#6ea0ff" },
+  { id: "info", label: "Info", color: "#587AF5" },
   { id: "success", label: "Success", color: "#23a55a" },
   { id: "warning", label: "Warning", color: "#f0b232" },
   { id: "urgent", label: "Urgent", color: "#da373c" },
@@ -215,16 +217,21 @@ export default function AdminLivePopup() {
           <label>
             {t("Icon")}
             <div className="admin-live-popup-emojis">
-              {EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={draft.emoji === emoji ? "is-on" : ""}
-                  onClick={() => patch({ emoji })}
-                >
-                  {emoji}
-                </button>
-              ))}
+              {EMOJIS.map((emoji, i) => {
+                const Glyph = announcementIconOrDefault(emoji);
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={draft.emoji === emoji ? "is-on" : ""}
+                    aria-pressed={draft.emoji === emoji}
+                    aria-label={`${t("Icon")} ${i + 1}`}
+                    onClick={() => patch({ emoji })}
+                  >
+                    <Glyph size={18} weight="regular" aria-hidden="true" />
+                  </button>
+                );
+              })}
             </div>
           </label>
 
