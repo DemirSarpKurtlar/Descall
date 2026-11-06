@@ -1789,6 +1789,9 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
+            {/* UI audit #76: the bar only appears with unsaved edits (or the brief
+                "Kaydedildi" confirmation), so it never covers Biyografi at rest. */}
+            {(profileDirty || profileSaved || savingProfile) && (
             <div className={`us-pe-savebar${profileDirty ? " dirty" : ""}`}>
               <span className="us-pe-savebar-text">
                 {profileSaved
@@ -1819,6 +1822,7 @@ const UserPanel = forwardRef(function UserPanel({
                 </button>
               </div>
             </div>
+            )}
           </div>
         );
       }
