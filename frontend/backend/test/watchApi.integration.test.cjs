@@ -116,7 +116,7 @@ async function run() {
     assert(JSON.stringify(convs) === JSON.stringify(["group:g-1", "dm:u-ayse", "dm:u-sn"]), `newest first, no empty DM, no removed group (${convs})`);
     const sn = r.body.conversations.find((c) => c.conv === "dm:u-sn");
     assert(sn.preview === "Fotoğraf" && sn.presence === "dnd", `photo label in Turkish, presence kept (${JSON.stringify(sn)})`);
-    assert(r.body.me.status === "idle" && r.body.me.initials === "DE", `live status wins, initials (${JSON.stringify(r.body.me)})`);
+    assert(r.body.me.status === "idle" && r.body.me.initials === "D", `live status wins, initials (${JSON.stringify(r.body.me)})`);
     assert(r.body.adminSections === null, "no admin menu for a normal account");
     assert(!JSON.stringify(r.body).includes("data:image"), "no data: avatars");
 

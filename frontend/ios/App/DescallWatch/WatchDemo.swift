@@ -39,20 +39,20 @@ enum WatchDemo {
     static func json(for path: String) -> String {
         if path.hasPrefix("/api/watch/home") {
             return """
-            {"me":{"id":"demo-me","name":"Demirr","initials":"DE","avatarUrl":null,"status":"online"},
+            {"me":{"id":"demo-me","name":"Deniz Kaya","initials":"DK","avatarUrl":null,"status":"online"},
              "conversations":[
-              {"conv":"dm:demo-ayse","kind":"dm","title":"Ayşe","initials":"AY","avatarUrl":null,"presence":"online","preview":"Akşam sesli kanala gelir misin?","at":"\(iso(minutesAgo: 2))"},
-              {"conv":"group:demo-ekip","kind":"group","title":"Ekip","initials":"EK","avatarUrl":null,"presence":null,"preview":"Can: maç 21:00 de","at":"\(iso(minutesAgo: 9))"},
-              {"conv":"dm:demo-mert","kind":"dm","title":"Mert","initials":"ME","avatarUrl":null,"presence":"idle","preview":"Tamam, yarın konuşuruz","at":"\(iso(minutesAgo: 40))"},
-              {"conv":"dm:demo-sn","kind":"dm","title":"sn1pez53","initials":"SN","avatarUrl":null,"presence":"dnd","preview":"Fotoğraf","at":"\(iso(minutesAgo: 300))"}
+              {"conv":"dm:demo-ayse","kind":"dm","title":"Ayşe Yılmaz","initials":"AY","avatarUrl":null,"presence":"online","preview":"Akşam sesli kanala gelir misin?","at":"\(iso(minutesAgo: 2))"},
+              {"conv":"group:demo-ekip","kind":"group","title":"Ekip","initials":"E","avatarUrl":null,"presence":null,"preview":"Can: maç 21:00 de","at":"\(iso(minutesAgo: 9))"},
+              {"conv":"dm:demo-mert","kind":"dm","title":"Mert Şahin","initials":"MŞ","avatarUrl":null,"presence":"idle","preview":"Tamam, yarın konuşuruz","at":"\(iso(minutesAgo: 40))"},
+              {"conv":"dm:demo-sn","kind":"dm","title":"Can Arslan","initials":"CA","avatarUrl":null,"presence":"dnd","preview":"Fotoğraf","at":"\(iso(minutesAgo: 300))"}
              ],"adminSections":["overview","reports","feedback","errors","maintenance"]}
             """
         }
         if path.hasPrefix("/api/watch/thread") {
             return """
-            {"conv":"dm:demo-ayse","title":"Ayşe","subtitle":"","messages":[
+            {"conv":"dm:demo-ayse","title":"Ayşe Yılmaz","subtitle":"","messages":[
               {"id":"1","mine":false,"author":"Ayşe","text":"Selam, naber?","kind":"text","at":"\(iso(minutesAgo: 6))"},
-              {"id":"2","mine":true,"author":"Demirr","text":"İyi, sen?","kind":"text","at":"\(iso(minutesAgo: 5))"},
+              {"id":"2","mine":true,"author":"Deniz Kaya","text":"İyi, sen?","kind":"text","at":"\(iso(minutesAgo: 5))"},
               {"id":"3","mine":false,"author":"Ayşe","text":"Akşam sesli kanala gelir misin?","kind":"text","at":"\(iso(minutesAgo: 2))"}
             ]}
             """
@@ -60,9 +60,9 @@ enum WatchDemo {
         if path.hasPrefix("/api/watch/friends") {
             return """
             {"online":[
-              {"id":"demo-ayse","conv":"dm:demo-ayse","name":"Ayşe","initials":"AY","avatarUrl":null,"presence":"online","customStatus":"Ders çalışıyorum"},
-              {"id":"demo-mert","conv":"dm:demo-mert","name":"Mert","initials":"ME","avatarUrl":null,"presence":"idle","customStatus":null},
-              {"id":"demo-sn","conv":"dm:demo-sn","name":"sn1pez53","initials":"SN","avatarUrl":null,"presence":"dnd","customStatus":null}
+              {"id":"demo-ayse","conv":"dm:demo-ayse","name":"Ayşe Yılmaz","initials":"AY","avatarUrl":null,"presence":"online","customStatus":"Ders çalışıyorum"},
+              {"id":"demo-mert","conv":"dm:demo-mert","name":"Mert Şahin","initials":"MŞ","avatarUrl":null,"presence":"idle","customStatus":null},
+              {"id":"demo-sn","conv":"dm:demo-sn","name":"Can Arslan","initials":"CA","avatarUrl":null,"presence":"dnd","customStatus":null}
             ],"onlineCount":3,"offlineCount":12}
             """
         }

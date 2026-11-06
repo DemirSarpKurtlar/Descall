@@ -255,7 +255,7 @@ struct AdminReportsView: View {
                     ForEach(groups) { g in
                         NavigationLink(value: AdminRoute.reportCase(g)) {
                             HStack(spacing: 8) {
-                                AvatarView(url: g.targetAvatarUrl, initials: String(g.name.prefix(2)).uppercased(), seed: g.targetId, size: 28)
+                                AvatarView(url: g.targetAvatarUrl, initials: DS.initials(g.name), seed: g.targetId, size: 28)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(g.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
                                     Text(g.reports?.first?.reasonLabel ?? g.reports?.first?.reason ?? "")
@@ -313,7 +313,7 @@ struct AdminReportCaseView: View {
         ScrollView {
             VStack(spacing: 6) {
                 HStack(spacing: 8) {
-                    AvatarView(url: group.targetAvatarUrl, initials: String(group.name.prefix(2)).uppercased(), seed: group.targetId, size: 30)
+                    AvatarView(url: group.targetAvatarUrl, initials: DS.initials(group.name), seed: group.targetId, size: 30)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(group.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
                         Text(L.openCount(group.openCount ?? openReports.count)).font(.system(size: 11.5)).foregroundStyle(DS.ink2)
@@ -778,7 +778,7 @@ struct AdminPeopleView: View {
                     ForEach(people) { p in
                         NavigationLink(value: AdminRoute.person(p)) {
                             HStack(spacing: 8) {
-                                AvatarView(url: nil, initials: String(p.name.prefix(2)).uppercased(), seed: p.id, size: 28, presence: p.isOnline == true ? "online" : "offline")
+                                AvatarView(url: nil, initials: DS.initials(p.name), seed: p.id, size: 28, presence: p.isOnline == true ? "online" : "offline")
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(p.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
                                     if let u = p.username { Text("@\(u)").font(.system(size: 11)).foregroundStyle(DS.ink2).lineLimit(1) }
@@ -830,7 +830,7 @@ struct AdminPersonView: View {
         ScrollView {
             VStack(spacing: 6) {
                 HStack(spacing: 8) {
-                    AvatarView(url: nil, initials: String(person.name.prefix(2)).uppercased(), seed: person.id, size: 32, presence: person.isOnline == true ? "online" : "offline")
+                    AvatarView(url: nil, initials: DS.initials(person.name), seed: person.id, size: 32, presence: person.isOnline == true ? "online" : "offline")
                     VStack(alignment: .leading, spacing: 1) {
                         Text(person.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
                         if let u = person.username { Text("@\(u)").font(.system(size: 11)).foregroundStyle(DS.ink2) }
