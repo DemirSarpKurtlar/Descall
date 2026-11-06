@@ -116,6 +116,8 @@
 .pgl-dots { display: flex; gap: 18px; }
 .pgl-dots i { width: 15px; height: 15px; border-radius: 50%; border: 1.6px solid rgba(255, 255, 255, 0.5); transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
 .pgl-dots i.on { background: #fff; border-color: #fff; box-shadow: 0 0 12px rgba(140, 165, 255, 0.85); transform: scale(1.04); }
+/* Focus is always on the hidden PIN field; show it on the empty dots instead of a ring. */
+.pgl-pin:focus-within .pgl-dots:not(.is-error) i:not(.on) { border-color: rgba(255, 255, 255, 0.85); }
 .pgl-dots.is-error i { border-color: #ff5a6e; }
 .pgl-dots.is-error i.on, .pgl-dots.is-error.is-shake i { background: #ff5a6e; border-color: #ff5a6e; box-shadow: 0 0 12px rgba(255, 90, 110, 0.7); }
 .pgl-dots.is-shake { animation: pgl-shake 0.42s cubic-bezier(.36, .07, .19, .97); }

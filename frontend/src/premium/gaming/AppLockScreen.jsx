@@ -3,6 +3,7 @@
  * the person's avatar and name below, and a row of PIN dots fed by a hidden input. The
  * background is opaque, so nothing of the app shows through while it is locked. */
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocale } from "../../context/LocaleContext";
 import { pinvoke, pon, logPremiumEvent } from "./bridge.js";
 import { Avatar } from "../../components/ui/Avatar.jsx";
@@ -13,6 +14,30 @@ import "./gaming.css";
 const MIN = 4;
 const MAX = 12;
 const BASE_SLOTS = 6;
+
+/**
+ * While locked, everything on the page except the lock is inert and hidden from assistive
+ * tech, so Tab, Enter and a screen reader's virtual cursor cannot reach the app behind it.
+ * Returns a function that restores exactly what it changed.
+ */
+export function shieldBehind(lockEl, doc = typeof document !== "undefined" ? document : null) {
+  if (!doc?.body || !lockEl) return () => {};
+  const changed = [];
+  for (const el of Array.from(doc.body.children)) {
+    if (el === lockEl || el.contains(lockEl)) continue;
+    if (el.inert && el.getAttribute("aria-hidden") === "true") continue;
+    changed.push([el, el.inert, el.getAttribute("aria-hidden")]);
+    el.inert = true;
+    el.setAttribute("aria-hidden", "true");
+  }
+  return () => {
+    for (const [el, inert, hidden] of changed) {
+      el.inert = inert;
+      if (hidden == null) el.removeAttribute("aria-hidden");
+      else el.setAttribute("aria-hidden", hidden);
+    }
+  };
+}
 
 /** How many dots to draw: six to start with, one more for each digit past six. */
 export function pinSlots(length) {
@@ -43,6 +68,7 @@ export default function AppLockScreen({ me = null }) {
   const [shake, setShake] = useState(0);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef(null);
+  const lockRef = useRef(null);
   const now = useClock(locked);
 
   useEffect(() => {
@@ -53,6 +79,16 @@ export default function AppLockScreen({ me = null }) {
     });
   }, []);
   useEffect(() => { if (locked) setTimeout(() => inputRef.current?.focus(), 50); }, [locked]);
+  // The lock is portaled to <body>; the app (#root) and any other body-level layer become
+  // inert while it is up. New layers added while locked (toasts, call cards) are caught too.
+  useEffect(() => {
+    if (!locked || typeof document === "undefined") return undefined;
+    const el = lockRef.current;
+    let restore = shieldBehind(el);
+    const mo = typeof MutationObserver === "function" ? new MutationObserver(() => { restore(); restore = shieldBehind(el); }) : null;
+    mo?.observe(document.body, { childList: true });
+    return () => { mo?.disconnect(); restore(); };
+  }, [locked]);
 
   if (!locked) return null;
 
@@ -75,14 +111,25 @@ export default function AppLockScreen({ me = null }) {
   const date = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(now);
   const slots = pinSlots(pin.length);
 
-  return (
+  const onKeyDown = (e) => {
+    // Keep focus inside the lock: the PIN field and, once enabled, the unlock arrow.
+    if (e.key !== "Tab") return;
+    const items = [inputRef.current, lockRef.current?.querySelector(".pgl-go:not(:disabled)")].filter(Boolean);
+    const i = items.indexOf(document.activeElement);
+    e.preventDefault();
+    items[(i + (e.shiftKey ? items.length - 1 : 1)) % items.length]?.focus();
+  };
+
+  const view = (
     <div
+      ref={lockRef}
       className="pg-lock"
       data-testid="pg-app-lock"
       role="dialog"
       aria-modal="true"
       aria-label={t("premiumGaming.appLock.lockedTitle")}
-      onMouseDown={(e) => { if (e.target !== inputRef.current) { e.preventDefault(); inputRef.current?.focus(); } }}
+      onKeyDown={onKeyDown}
+      onMouseDown={(e) => { if (e.target !== inputRef.current && !e.target.closest?.(".pgl-go")) { e.preventDefault(); inputRef.current?.focus(); } }}
     >
       <div className="pgl-aurora" aria-hidden="true" />
       <div className="pgl-brand" aria-hidden="true"><DescallMark size={18} /> <span>Descall</span></div>
@@ -120,4 +167,5 @@ export default function AppLockScreen({ me = null }) {
       </form>
     </div>
   );
+  return typeof document !== "undefined" && document.body ? createPortal(view, document.body) : view;
 }
