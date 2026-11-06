@@ -297,11 +297,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background:
-          radial-gradient(120% 80% at 50% -10%, rgba(88, 101, 242, 0.28), transparent 55%),
-          radial-gradient(90% 60% at 100% 100%, rgba(35, 165, 90, 0.1), transparent 50%),
-          radial-gradient(70% 50% at 0% 80%, rgba(88, 101, 242, 0.12), transparent 45%),
-          #0b0c10;
+        /* UI audit #1: flat brand base, one faint logo-blue halo (::before), no aurora. */
+        background: #1B1D26;
         color: #f2f3f5;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif !important;
         transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
@@ -459,11 +456,7 @@
          keeps the #1E1F22 launch tile above. */
       html.boot-mobile:not(.native-app) #boot-splash,
       html.boot-mobile:not(.native-app) .descall-boot-splash {
-        background:
-          radial-gradient(90% 55% at 50% 16%, rgba(88, 122, 246, 0.42), transparent 62%),
-          radial-gradient(70% 45% at 92% 90%, rgba(62, 207, 142, 0.16), transparent 60%),
-          radial-gradient(60% 40% at 6% 82%, rgba(123, 137, 255, 0.22), transparent 55%),
-          #07080d;
+        background: #1B1D26;
       }
       html.boot-mobile:not(.native-app) #boot-splash .boot-mark,
       html.boot-mobile:not(.native-app) .descall-boot-splash .boot-mark {
@@ -472,7 +465,7 @@
         border-radius: 22px;
         background: none;
         overflow: hidden;
-        box-shadow: 0 18px 40px rgba(88, 101, 242, 0.28);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
         animation: boot-mark-pulse 2.6s ease-in-out infinite;
       }
       html.boot-mobile:not(.native-app) #boot-splash .boot-mark img,
@@ -996,14 +989,14 @@
       .boot-orb--a {
         width: min(48vw, 280px);
         height: min(48vw, 280px);
-        background: rgba(88, 101, 242, 0.45);
+        background: rgba(88, 122, 245, 0.2);
         top: 12%;
         left: 10%;
       }
       .boot-orb--b {
         width: min(40vw, 220px);
         height: min(40vw, 220px);
-        background: rgba(99, 210, 160, 0.22);
+        background: rgba(88, 122, 245, 0.12);
         bottom: 14%;
         right: 12%;
         animation-delay: -2.5s;
@@ -1047,8 +1040,8 @@
         border-radius: inherit;
       }
       @keyframes boot-mark-pulse {
-        0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 0 0 1px rgba(88,101,242,0.15), 0 0 36px rgba(88,101,242,0.22); transform: scale(1); }
-        50% { box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(88,101,242,0.3), 0 0 56px rgba(88,101,242,0.4); transform: scale(1.03); }
+        0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 0 0 1px rgba(88,122,245,0.12); transform: scale(1); }
+        50% { box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(88,122,245,0.2); transform: scale(1.03); }
       }
       .boot-title {
         margin: 4px 0 0;
@@ -1144,12 +1137,22 @@
          only after 4 s, and the error state. Phones keep the launch tile above. */
       .boot-spec, .boot-sheen, .boot-symbol, .boot-wordmark, .boot-slow { display: none; }
       html:not(.boot-mobile) #boot-splash {
-        background:
-          radial-gradient(42% 46% at 24% 22%, rgba(88, 110, 242, 0.34), transparent 70%),
-          radial-gradient(40% 44% at 80% 84%, rgba(62, 190, 140, 0.14), transparent 70%),
-          linear-gradient(170deg, #0d0f17 0%, #0b0c12 55%, #0a0b10 100%);
+        background: #1B1D26;
       }
-      html:not(.boot-mobile) #boot-splash .boot-orb { animation: none; filter: blur(70px); }
+      /* UI audit #1: no colour orbs; one faint #587AF5 halo behind the tile. */
+      html:not(.native-app) #boot-splash .boot-orb { display: none; }
+      html:not(.boot-mobile) #boot-splash::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 420px;
+        height: 420px;
+        margin: -230px 0 0 -210px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(88, 122, 245, 0.12), rgba(88, 122, 245, 0) 100%);
+        pointer-events: none;
+      }
       html:not(.boot-mobile) #boot-splash .boot-card {
         gap: 0;
         padding: 0;

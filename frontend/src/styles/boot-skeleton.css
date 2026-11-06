@@ -20,11 +20,8 @@
   gap: var(--abs-gap);
   padding: var(--abs-gap);
   box-sizing: border-box;
-  background:
-    radial-gradient(60% 38% at 8% 4%, rgba(88, 110, 242, 0.30), transparent 70%),
-    radial-gradient(55% 34% at 100% 22%, rgba(110, 90, 220, 0.16), transparent 70%),
-    radial-gradient(60% 35% at 95% 96%, rgba(62, 190, 140, 0.10), transparent 70%),
-    linear-gradient(170deg, #0e1018 0%, #0c0d14 45%, #0a0b10 100%);
+  /* UI audit #1: flat brand base, no blue/green/violet aurora. */
+  background: #1B1D26;
   color: #f2f3f5;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
   overflow: hidden;
@@ -315,11 +312,7 @@ html[data-theme="borealis"] .app-boot-skeleton {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background:
-    radial-gradient(90% 55% at 50% 16%, rgba(88, 122, 246, 0.42), transparent 62%),
-    radial-gradient(70% 45% at 92% 90%, rgba(62, 207, 142, 0.16), transparent 60%),
-    radial-gradient(60% 40% at 6% 82%, rgba(123, 137, 255, 0.22), transparent 55%),
-    #07080d;
+  background: #1B1D26;
   color: rgba(235, 238, 255, 0.86);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
 }
@@ -328,8 +321,9 @@ html[data-theme="borealis"] .app-boot-skeleton {
   position: absolute;
   inset: -20%;
   pointer-events: none;
+  /* The one faint logo-blue halo behind the mark. */
   background:
-    radial-gradient(closest-side, rgba(89, 123, 246, 0.28), transparent 70%);
+    radial-gradient(closest-side, rgba(88, 122, 245, 0.12), transparent 70%);
   filter: blur(8px);
   animation: route-loading-drift 7s ease-in-out infinite alternate;
 }
