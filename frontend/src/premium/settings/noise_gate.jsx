@@ -4,11 +4,13 @@ import { useT } from "../../context/localeContextInstance";
 import { readAudioPrefs } from "../../lib/callAudioDevices";
 import { AUDIO_DEFAULTS } from "../audio/premiumAudioRuntime.js";
 import { gateParams, stepGate } from "../audio/noiseGateMath.js";
-import { Button, LevelMeter, Note, Row, Section, Slider, Toggle, useMicTestStream } from "../ui/PremiumAudioKit.jsx";
+import { LevelMeter, useMicTestStream } from "../ui/PremiumAudioKit.jsx";
+import { Badge, Btn, Group, Hint, Note, SetRow, Slider } from "../story/kit.jsx";
 
 export const key = "noise_gate";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
 export const defaultEnabled = false;
+const ds = (s) => `${key}.${s}`;
 
 export function Panel() {
   const t = useT();
@@ -22,29 +24,33 @@ export function Panel() {
     gateRef.state = stepGate(gateRef.state, db, performance.now(), params);
     setOpen((prev) => (prev === gateRef.state.open ? prev : gateRef.state.open));
   }, [gateRef, params.openThreshold, params.closeThreshold, params.holdMs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const db = (v) => t("premiumAudio.common.db", { n: v });
 
   return (
-    <div className="pa-panel">
-      <Section title={t("premiumAudio.gate.title")} hint={t("premiumAudio.gate.hint")}>
-        <Row title={t("premiumAudio.gate.threshold")} description={t("premiumAudio.gate.thresholdDesc")}>
-          <Slider value={s.thresholdDb} min={-80} max={-10} onChange={(v) => update({ thresholdDb: v })} label={t("premiumAudio.gate.threshold")} format={(v) => t("premiumAudio.common.db", { n: v })} />
-        </Row>
-        <div className="pa-inline">
+    <>
+      <Group title={t("premiumAudio.gate.threshold")}>
+        <Note ds={ds("hint")}>{t("premiumAudio.gate.hint")}</Note>
+        <SetRow icon="gate" label={t("premiumAudio.gate.threshold")} desc={t("premiumAudio.gate.thresholdDesc")} stack>
+          <Slider value={s.thresholdDb} min={-80} max={-10} ds={ds("threshold")} onChange={(v) => update({ thresholdDb: v })} label={t("premiumAudio.gate.threshold")} format={db} />
+        </SetRow>
+        <div className="ps-test" data-s={ds("meter")}>
           <LevelMeter stream={stream} thresholdDb={params.openThreshold} label={t("premiumAudio.gate.meter")} onLevel={onLevel} />
         </div>
-        <div className="pa-inline">
-          <Button onClick={() => setTesting((v) => !v)}>{testing ? t("premiumAudio.gate.stopTest") : t("premiumAudio.gate.startTest")}</Button>
-          {testing && stream ? <span className={`pa-badge ${open ? "pa-badge-ok" : ""}`}>{open ? t("premiumAudio.gate.open") : t("premiumAudio.gate.closed")}</span> : null}
+        <div className="ps-act">
+          <Btn icon={testing ? "x" : "mic"} ds={ds("test")} onClick={() => setTesting((v) => !v)}>{testing ? t("premiumAudio.gate.stopTest") : t("premiumAudio.gate.startTest")}</Btn>
+          {testing && stream ? <Badge tone={open ? "ok" : ""} ds={ds("state")}>{open ? t("premiumAudio.gate.open") : t("premiumAudio.gate.closed")}</Badge> : null}
         </div>
-        <Row title={t("premiumAudio.gate.hysteresis")} description={t("premiumAudio.gate.hysteresisDesc")}>
-          <Slider value={s.hysteresisDb} min={0} max={30} onChange={(v) => update({ hysteresisDb: v })} label={t("premiumAudio.gate.hysteresis")} format={(v) => t("premiumAudio.common.db", { n: v })} />
-        </Row>
-        <Row title={t("premiumAudio.gate.hold")} description={t("premiumAudio.gate.holdDesc")}>
-          <Slider value={s.holdMs} min={0} max={1000} step={10} onChange={(v) => update({ holdMs: v })} label={t("premiumAudio.gate.hold")} format={(v) => t("premiumAudio.common.ms", { n: v })} />
-        </Row>
-      </Section>
-      {error ? <Note tone="warn">{t("premiumAudio.common.micError")}</Note> : null}
-    </div>
+      </Group>
+      <Group title={t("premiumStory.g.closing")}>
+        <SetRow label={t("premiumAudio.gate.hysteresis")} desc={t("premiumAudio.gate.hysteresisDesc")} stack>
+          <Slider value={s.hysteresisDb} min={0} max={30} ds={ds("hysteresis")} onChange={(v) => update({ hysteresisDb: v })} label={t("premiumAudio.gate.hysteresis")} format={db} />
+        </SetRow>
+        <SetRow label={t("premiumAudio.gate.hold")} desc={t("premiumAudio.gate.holdDesc")} stack>
+          <Slider value={s.holdMs} min={0} max={1000} step={10} ds={ds("hold")} onChange={(v) => update({ holdMs: v })} label={t("premiumAudio.gate.hold")} format={(v) => t("premiumAudio.common.ms", { n: v })} />
+        </SetRow>
+      </Group>
+      {error ? <Hint tone="warn" live ds={ds("micError")}>{t("premiumAudio.common.micError")}</Hint> : null}
+    </>
   );
 }
 

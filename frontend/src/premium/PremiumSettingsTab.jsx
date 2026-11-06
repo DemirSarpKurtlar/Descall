@@ -8,8 +8,10 @@
  *   - Feature search with an all / on / off filter.
  *   - 8 category tiles (categories.js), each showing how many features are on.
  *   - Rows to the plan comparison and the coupon form.
- * Category view: one grouped list. Each feature has its own switch, and its settings
- * panel opens under the row while the feature is on.
+ * Category view (approved draft E, "Hikaye": ./story/StoryCategory.jsx): a scene of the
+ * category with numbered markers, then the features in numbered chapters (chapters.js).
+ * A feature card opens in place: live preview on the left, its panel's settings groups on
+ * the right. Search and filter results use the same cards.
  * Panels come from ./settings/*.jsx; each file exports { key, Panel } and optionally
  * defaultEnabled. Panel props: { settings, update(patch), enabled, desktop, has(key) }.
  * iOS (Capacitor) shows the membership card only: no upsell, no plan page (App Store 3.1.1).
@@ -25,8 +27,9 @@ import {
 import { FEATURES, FEATURE_KEYS, PLAN_COIN, tierAllows, featuresForPlan } from "./features.js";
 import { PREMIUM_CATEGORIES, daysUntil } from "./categories.js";
 import { usePremium, redeemPremiumCode } from "./usePremium.js";
-import { useFeatureSettings, isDesktopApp, getFeatureSettings, onFeatureSettings } from "./featureSettings.js";
+import { isDesktopApp, getFeatureSettings, onFeatureSettings } from "./featureSettings.js";
 import PremiumBadge from "./PremiumBadge.jsx";
+import StoryCategory, { StoryResults } from "./story/StoryCategory.jsx";
 import "./premium.css";
 
 const panelModules = import.meta.glob("./settings/*.jsx", { eager: true });
@@ -39,6 +42,10 @@ export const PANELS = Object.freeze(
 );
 
 const ICONS = { Monitor, Keyboard, Bell, Mic, Gamepad2, Zap, LayoutDashboard, Wand2 };
+/** Category icon in the story pages (./story/icons.jsx names). */
+const STORY_ICON = { Monitor: "monitor", Keyboard: "keyboard", Bell: "bell", Mic: "mic", Gamepad2: "gamepad", Zap: "zap", LayoutDashboard: "dash", Wand2: "wand" };
+const storyIconOf = (catId) => STORY_ICON[PREMIUM_CATEGORIES.find((c) => c.id === catId)?.icon] || "sparkle";
+const catOfKey = (k) => CAT_OF[k] || null;
 const CAT_OF = Object.freeze(Object.fromEntries(PREMIUM_CATEGORIES.flatMap((c) => c.keys.map((k) => [k, c]))));
 
 function isOn(key, settings) {
@@ -143,64 +150,6 @@ function StatusHero({ premium, ios, onCount }) {
         </div>
       ) : null}
     </section>
-  );
-}
-
-function FeatureRow({ fkey, premium, desktop }) {
-  const { t } = useLocale();
-  const def = FEATURES[fkey];
-  const cat = CAT_OF[fkey];
-  const mod = PANELS[fkey];
-  const block = blocker(fkey, premium, desktop);
-  const [settings, update] = useFeatureSettings(fkey, {});
-  const enabled = isOn(fkey, settings);
-  const Panel = mod?.Panel;
-  const name = t(`premium.f.${fkey}.name`);
-  return (
-    <div className={`pp-row${block === "plus" || block === "ultra" ? " is-locked" : ""}`} data-feature={fkey}>
-      <div className="us-row">
-        <div className="us-row-text">
-          {block === "plus" || block === "ultra"
-            ? <span className="pp-ico c-gray" aria-hidden="true"><Lock size={15} /></span>
-            : <Tile icon={cat?.icon} color={cat?.color || "gray"} size={16} />}
-          <div className="us-row-copy">
-            <span className="us-row-title">{name}</span>
-            <span className="us-row-desc">{t(`premium.f.${fkey}.desc`)}</span>
-          </div>
-        </div>
-        <div className="us-row-control">
-          {block === "plus" || block === "ultra" ? (
-            <span className={`pp-pill${block === "ultra" ? " is-ultra" : ""}`}>
-              <Lock size={11} />
-              {block === "ultra" ? t("premium.features.lockedUltra") : t("premium.features.lockedPlus")}
-            </span>
-          ) : block === "desktop" ? (
-            <span className="pp-pill"><Monitor size={11} />{t("premium.features.desktop")}</span>
-          ) : block === "soon" ? (
-            <span className="pp-pill">{t("premium.features.soon")}</span>
-          ) : (
-            <>
-              {def.tier === "ultra" && premium.plan === "ultra" ? <span className="pp-pill is-ultra">{t("premium.name.ultraShort")}</span> : null}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={enabled}
-                aria-label={name}
-                className={`us-toggle${enabled ? " active" : ""}`}
-                onClick={() => update({ enabled: !enabled })}
-              >
-                <span className="us-toggle-knob" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      {!block && enabled && Panel ? (
-        <div className="pp-sub">
-          <Panel settings={settings} update={update} enabled={enabled} desktop={desktop} has={premium.has} />
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -483,23 +432,20 @@ export default function PremiumSettingsTab() {
 
   if (view.type === "cat") {
     const cat = PREMIUM_CATEGORIES.find((c) => c.id === view.id) || PREMIUM_CATEGORIES[0];
-    const count = counts.per[cat.id];
     return (
       <div className="us-tab pp-tab" data-testid="premium-tab" data-feature-total={FEATURE_KEYS.length} ref={rootRef}>
         <BackLink onBack={() => go({ type: "home" })} />
         {desktop ? <DesktopGateNotice premium={premium} /> : null}
-        <div className="pp-cat-head">
-          <Tile icon={cat.icon} color={cat.color} size={20} />
-          <div>
-            <h2>{t(`premium.hub.cat.${cat.id}.name`)}</h2>
-            <p>{t(`premium.hub.cat.${cat.id}.desc`)}{count.usable ? ` · ${t("premium.hub.onCount", { on: count.on, total: count.usable })}` : ""}</p>
-          </div>
-        </div>
-        <section className="us-section">
-          <div className="us-card stack pp-list">
-            {cat.keys.map((k) => <FeatureRow key={k} fkey={k} premium={premium} desktop={desktop} />)}
-          </div>
-        </section>
+        <StoryCategory
+          cat={cat}
+          premium={premium}
+          desktop={desktop}
+          blocker={blocker}
+          isOn={isOn}
+          settingsMap={settingsMap}
+          PANELS={PANELS}
+          storyIcon={storyIconOf(cat.id)}
+        />
       </div>
     );
   }
@@ -555,9 +501,7 @@ export default function PremiumSettingsTab() {
           results.length ? (
             <>
               <p className="pp-results">{t("premium.hub.results", { n: results.length })}</p>
-              <div className="us-card stack pp-list">
-                {results.map((k) => <FeatureRow key={k} fkey={k} premium={premium} desktop={desktop} />)}
-              </div>
+              <StoryResults keys={results} premium={premium} desktop={desktop} blocker={blocker} isOn={isOn} PANELS={PANELS} catOf={catOfKey} iconOf={storyIconOf} />
             </>
           ) : (
             <p className="pp-results">{t("premium.hub.noResults")}</p>

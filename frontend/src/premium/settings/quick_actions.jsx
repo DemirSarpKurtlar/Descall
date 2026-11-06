@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { useFeatureSettings } from "../featureSettings.js";
-import { DEFAULTS, Field, PanelShell } from "../gaming/ui.jsx";
+import { DEFAULTS } from "../gaming/ui.jsx";
 import { useAppBridge } from "../gaming/bridge.js";
 import { QUICK_TYPES, STATUSES, cacheQuickActions, runAction } from "../gaming/actions.js";
 import { profileName, useProfiles } from "../gaming/workspaceProfiles.js";
-import { Play, Trash2 } from "../../components/ui/Icon.jsx";
 import { hasPremiumFeature } from "../usePremium.js";
+import { Actions, Btn, ChoiceTiles, Group, Hint, IconBtn, Item, List, Note, Picker, Seg } from "../story/kit.jsx";
 
 export const key = "quick_actions";
+const ds = (s) => `${key}.${s}`;
 const MAX = 12;
+const TYPE_ICON = { join_channel: "vol", set_status: "user", open_dm: "chat", toggle_focus: "moon", workspace: "layout" };
 
 export function statusLabel(t, s) {
   return { online: t("Online"), idle: t("Idle"), dnd: t("Do Not Disturb"), invisible: t("Invisible") }[s] || s;
@@ -51,65 +53,51 @@ export function Panel() {
     update({ items: [...items, { id: `qa${Date.now().toString(36)}`, ...b }] });
     setArg("");
   };
+  const choose = t("premiumGaming.quickActions.choose");
+  const types = QUICK_TYPES.filter((q) => q !== "workspace" || hasPremiumFeature("workspace_profiles"));
 
   return (
-    <PanelShell title={t("premiumGaming.quickActions.title")} desc={t("premiumGaming.quickActions.desc")} testId="pg-panel-quick_actions">
-      <div className="pg-card">
-        <Field label={t("premiumGaming.quickActions.type")}>
-          <select className="pg-select" value={type} onChange={(e) => { setType(e.target.value); setArg(""); }}>
-            {QUICK_TYPES.filter((q) => q !== "workspace" || hasPremiumFeature("workspace_profiles")).map((q) => <option key={q} value={q}>{t(`premiumGaming.quickActions.types.${q}`)}</option>)}
-          </select>
-        </Field>
+    <>
+      <Group title={t("premiumStory.g.newAction")}>
+        <Note ds={ds("desc")}>{t("premiumGaming.quickActions.desc")}</Note>
+        <ChoiceTiles
+          mini
+          value={type}
+          onChange={(v) => { setType(v); setArg(""); }}
+          label={t("premiumGaming.quickActions.type")}
+          ds={ds("type")}
+          options={types.map((q) => ({ value: q, label: t(`premiumGaming.quickActions.types.${q}`), icon: TYPE_ICON[q] }))}
+        />
         {type === "set_status" ? (
-          <Field label={t("premiumGaming.quickActions.choose")}>
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              <option value="">-</option>
-              {STATUSES.map((st) => <option key={st} value={st}>{statusLabel(t, st)}</option>)}
-            </select>
-          </Field>
+          <Seg wrap value={arg} onChange={setArg} label={choose} ds={ds("choose")} options={STATUSES.map((st) => ({ value: st, label: statusLabel(t, st) }))} />
         ) : null}
         {type === "open_dm" ? (
-          <Field label={t("premiumGaming.quickActions.choose")}>
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              <option value="">-</option>
-              {friends.slice(0, 200).map((f) => <option key={f.id} value={String(f.id)}>{f.displayName || f.display_name || f.username}</option>)}
-            </select>
-          </Field>
+          <Picker value={arg} onChange={setArg} label={choose} ds={ds("choose")} options={[{ value: "", label: choose }, ...friends.slice(0, 200).map((f) => ({ value: String(f.id), label: f.displayName || f.display_name || f.username }))]} />
         ) : null}
         {type === "join_channel" ? (
-          <Field label={t("premiumGaming.quickActions.choose")}>
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              <option value="">-</option>
-              {channels.map((c) => <option key={`${c.serverId}:${c.id}`} value={`${c.serverId}:${c.id}`}>{c.serverName ? `${c.serverName} / ${c.name}` : c.name}</option>)}
-            </select>
-          </Field>
+          channels.length ? (
+            <Picker value={arg} onChange={setArg} label={choose} ds={ds("choose")} options={[{ value: "", label: choose }, ...channels.map((c) => ({ value: `${c.serverId}:${c.id}`, label: c.serverName ? `${c.serverName} / ${c.name}` : c.name }))]} />
+          ) : <Note>{t("premiumGaming.quickActions.noChannels")}</Note>
         ) : null}
-        {type === "join_channel" && !channels.length ? <p className="pg-muted">{t("premiumGaming.quickActions.noChannels")}</p> : null}
         {type === "workspace" ? (
-          <Field label={t("premiumGaming.quickActions.choose")}>
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              <option value="">-</option>
-              {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(t, p)}</option>)}
-            </select>
-          </Field>
+          <Seg wrap value={arg} onChange={setArg} label={choose} ds={ds("choose")} options={profiles.map((p) => ({ value: p.id, label: profileName(t, p) }))} />
         ) : null}
-        <div className="pg-row">
-          <button type="button" className="pg-btn is-primary is-small" onClick={add} disabled={!build() || items.length >= MAX}>{t("premiumGaming.quickActions.add")}</button>
-        </div>
-      </div>
-      {items.length ? (
-        <ul className="pg-list" data-testid="pg-quick-actions">
+        <Actions>
+          <Btn kind="primary" icon="plus" ds={ds("add")} onClick={add} disabled={!build() || items.length >= MAX}>{t("premiumGaming.quickActions.add")}</Btn>
+        </Actions>
+      </Group>
+      <Group title={t("premiumGaming.quickActions.title")} aside={<span className="tnum">{`${items.length} / ${MAX}`}</span>}>
+        <List ds={ds("list")} empty={items.length ? null : t("premiumGaming.quickActions.empty")}>
           {items.map((it) => (
-            <li key={it.id}>
-              <span className="pg-grow">{it.label}</span>
-              <button type="button" className="pg-btn is-small" onClick={() => runAction(it.action)} aria-label={t("premiumGaming.quickActions.run")}><Play size={14} /></button>
-              <button type="button" className="pg-btn is-small" onClick={() => update({ items: items.filter((x) => x.id !== it.id) })} aria-label={t("premiumGaming.common.remove")}><Trash2 size={14} /></button>
-            </li>
+            <Item key={it.id} icon={TYPE_ICON[it.action?.type] || "zap"} title={it.label}>
+              <IconBtn icon="play" label={t("premiumGaming.quickActions.run")} onClick={() => runAction(it.action)} />
+              <IconBtn icon="trash" danger label={t("premiumGaming.common.remove")} onClick={() => update({ items: items.filter((x) => x.id !== it.id) })} />
+            </Item>
           ))}
-        </ul>
-      ) : <p className="pg-muted">{t("premiumGaming.quickActions.empty")}</p>}
-      <p className="pg-help">{t("premiumGaming.quickActions.help")}</p>
-    </PanelShell>
+        </List>
+      </Group>
+      <Hint ds={ds("help")}>{t("premiumGaming.quickActions.help")}</Hint>
+    </>
   );
 }
 

@@ -2,6 +2,7 @@
 import { UAH_EN } from "./uah.en.js";
 import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
+import { PREMIUM_STORY_EN } from "./premiumStory.en.js";
 import { PREMIUM_AUDIO_EN } from "./premiumAudio.en.js";
 import { WORLD3D_EN } from "./world3d.en.js";
 import { AMP_EN } from "./profileMediaPicker.en.js";
@@ -28,6 +29,7 @@ export const nested = {
   uah: UAH_EN,
   premiumGaming: PREMIUM_GAMING_EN,
   premium: PREMIUM_EN,
+  premiumStory: PREMIUM_STORY_EN,
   premiumAudio: PREMIUM_AUDIO_EN,
   world3d: WORLD3D_EN,
   counts: COUNTS_EN,

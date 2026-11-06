@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../../context/localeContextInstance";
 import { linearToDb, meterPercent, rms, smoothLevel } from "../audio/noiseGateMath.js";
+import RangeSlider from "./RangeSlider.jsx";
 import "./premiumAudio.css";
 
 export function isDesktopApp() {
@@ -56,16 +57,7 @@ export function Toggle({ value, onChange, label, disabled = false }) {
 export function Slider({ value, min, max, step = 1, onChange, label, format = (v) => String(v) }) {
   return (
     <span className="pa-slider">
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        aria-label={label}
-        aria-valuetext={format(value)}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
+      <RangeSlider value={value} min={min} max={max} step={step} label={label} valueText={format(value)} onChange={onChange} />
       <span className="pa-slider-value tnum">{format(value)}</span>
     </span>
   );

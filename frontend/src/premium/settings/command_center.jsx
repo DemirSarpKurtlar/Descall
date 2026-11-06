@@ -1,9 +1,11 @@
 import { useT } from "../../context/LocaleContext";
 import { useFeatureSettings } from "../featureSettings.js";
-import { DEFAULTS, Field, HotkeyInput, PanelShell } from "../gaming/ui.jsx";
+import { DEFAULTS } from "../gaming/ui.jsx";
 import { isDesktop } from "../gaming/bridge.js";
+import { Actions, Btn, Group, Hint, HotkeyField, Note, SetRow } from "../story/kit.jsx";
 
 export const key = "command_center";
+const ds = (s) => `${key}.${s}`;
 
 export function openCommandCenter() {
   try { window.dispatchEvent(new CustomEvent("descall:premium:command-center", { detail: { open: true } })); } catch { /* ignore */ }
@@ -13,17 +15,20 @@ export function Panel() {
   const t = useT();
   const [s, update] = useFeatureSettings(key, DEFAULTS.command_center);
   return (
-    <PanelShell title={t("premiumGaming.commandCenter.title")} desc={t("premiumGaming.commandCenter.desc")} testId="pg-panel-command_center">
-      <div className="pg-row">
-        <button type="button" className="pg-btn is-primary" onClick={openCommandCenter} data-testid="pg-cc-open">{t("premiumGaming.commandCenter.open")}</button>
-      </div>
-      {isDesktop() ? (
-        <Field label={t("premiumGaming.common.hotkey")}>
-          <HotkeyInput value={s.hotkey} onChange={(hotkey) => update({ hotkey })} />
-        </Field>
-      ) : null}
-      <p className="pg-help">{t("premiumGaming.commandCenter.help")}</p>
-    </PanelShell>
+    <>
+      <Group title={t("premiumGaming.commandCenter.title")}>
+        <Note ds={ds("desc")}>{t("premiumGaming.commandCenter.desc")}</Note>
+        <Actions>
+          <Btn kind="primary" icon="command" ds={ds("open")} onClick={openCommandCenter} data-testid="pg-cc-open">{t("premiumGaming.commandCenter.open")}</Btn>
+        </Actions>
+        {isDesktop() ? (
+          <SetRow icon="keyboard" label={t("premiumGaming.common.hotkey")}>
+            <HotkeyField value={s.hotkey} onChange={(hotkey) => update({ hotkey })} label={t("premiumGaming.common.hotkey")} ds={ds("hotkey")} none={t("premiumGaming.common.none")} pressKey={t("premiumAudio.hotkeys.pressKey")} />
+          </SetRow>
+        ) : null}
+      </Group>
+      <Hint ds={ds("help")}>{t("premiumGaming.commandCenter.help")}</Hint>
+    </>
   );
 }
 

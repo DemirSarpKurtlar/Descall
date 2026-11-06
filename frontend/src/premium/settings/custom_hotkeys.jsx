@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFeatureSettings } from "../featureSettings.js";
 import { useT } from "../../context/localeContextInstance";
-import { Button, DesktopOnly, KeyRecorder, Note, Row, Section, Toggle } from "../ui/PremiumAudioKit.jsx";
-import { DEFAULT_BINDINGS, HOTKEY_ACTIONS, HotkeyFailures } from "../ui/hotkeyCommon.jsx";
+import { KeyRecorder, isDesktopApp } from "../ui/PremiumAudioKit.jsx";
+import { DEFAULT_BINDINGS, HOTKEY_ACTIONS } from "../ui/hotkeyCommon.jsx";
+import { Actions, Btn, DesktopOnlyHint, Group, Hint, HotkeyFailureHint, Note, SetRow } from "../story/kit.jsx";
+import { usePublish } from "../story/bus.js";
 
 export const key = "custom_hotkeys";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
 export const defaultEnabled = true;
+const ds = (s) => `${key}.${s}`;
+const ICON = { toggle_mute: "micOff", toggle_deafen: "head", push_to_talk: "mouse", quick_launcher: "command", volume_up: "vol", volume_down: "volOff" };
 
 function bridge() {
   return typeof window !== "undefined" ? window.descallPremium : null;
@@ -14,7 +18,7 @@ function bridge() {
 
 export function Panel() {
   const t = useT();
-  const [s, update] = useFeatureSettings(key, { enabled: true, bindings: {} });
+  const [s] = useFeatureSettings(key, { enabled: true, bindings: {} });
   const [draft, setDraft] = useState({});
   const [issues, setIssues] = useState([]);
   const [failures, setFailures] = useState([]);
@@ -22,6 +26,7 @@ export function Panel() {
 
   const current = { ...DEFAULT_BINDINGS, ...(s.bindings || {}), ...draft };
   const dirty = Object.keys(draft).length > 0;
+  usePublish("custom_hotkeys.current", JSON.stringify(current));
 
   const refresh = useCallback(() => {
     const b = bridge();
@@ -71,27 +76,27 @@ export function Panel() {
     setFailures(r?.status?.failures || []);
   };
 
+  if (!isDesktopApp()) return <DesktopOnlyHint t={t} />;
   const hard = issues.filter((i) => i.reason !== "registered" && i.reason !== "taken");
   return (
-    <div className="pa-panel">
-      <DesktopOnly>
-        <Section title={t("premiumAudio.hotkeys.title")} hint={t("premiumAudio.hotkeys.hint")}>
-          {HOTKEY_ACTIONS.map(({ action, hold }) => (
-            <Row key={action} title={t(`premiumAudio.hotkeys.actions.${action}`)} description={hold ? t("premiumAudio.hotkeys.holdDesc") : undefined}>
-              <KeyRecorder value={current[action]} onChange={(v) => set(action, v)} allowMouse={Boolean(hold)} label={t(`premiumAudio.hotkeys.actions.${action}`)} />
-            </Row>
-          ))}
-          <div className="pa-inline">
-            <Button kind="primary" onClick={() => save(false)} disabled={!dirty || hard.length > 0 || s.enabled === false}>{t("premiumAudio.common.save")}</Button>
-            {issues.length && !hard.length ? <Button onClick={() => save(true)}>{t("premiumAudio.hotkeys.saveAnyway")}</Button> : null}
-            <Button onClick={() => { setDraft({}); setIssues([]); }} disabled={!dirty}>{t("premiumAudio.common.cancel")}</Button>
-            <Button kind="danger" onClick={reset} disabled={s.enabled === false}>{t("premiumAudio.hotkeys.reset")}</Button>
-          </div>
-        </Section>
-        <HotkeyFailures failures={issues.length ? issues : failures} />
-        {saved && !failures.length ? <Note tone="ok">{t("premiumAudio.hotkeys.saved")}</Note> : null}
-      </DesktopOnly>
-    </div>
+    <>
+      <Group title={t("premiumAudio.hotkeys.title")}>
+        <Note ds={ds("hint")}>{t("premiumAudio.hotkeys.hint")}</Note>
+        {HOTKEY_ACTIONS.map(({ action, hold }) => (
+          <SetRow key={action} icon={ICON[action]} label={t(`premiumAudio.hotkeys.actions.${action}`)} desc={hold ? t("premiumAudio.hotkeys.holdDesc") : undefined} ds={ds(action)}>
+            <span className="ps-keys"><KeyRecorder value={current[action]} onChange={(v) => set(action, v)} allowMouse={Boolean(hold)} label={t(`premiumAudio.hotkeys.actions.${action}`)} /></span>
+          </SetRow>
+        ))}
+        <Actions>
+          <Btn kind="primary" icon="check" ds={ds("save")} onClick={() => save(false)} disabled={!dirty || hard.length > 0 || s.enabled === false}>{t("premiumAudio.common.save")}</Btn>
+          {issues.length && !hard.length ? <Btn ds={ds("saveAnyway")} onClick={() => save(true)}>{t("premiumAudio.hotkeys.saveAnyway")}</Btn> : null}
+          <Btn ds={ds("cancel")} onClick={() => { setDraft({}); setIssues([]); }} disabled={!dirty}>{t("premiumAudio.common.cancel")}</Btn>
+          <Btn className="is-danger" icon="restore" ds={ds("reset")} onClick={reset} disabled={s.enabled === false}>{t("premiumAudio.hotkeys.reset")}</Btn>
+        </Actions>
+      </Group>
+      <HotkeyFailureHint failures={issues.length ? issues : failures} t={t} ds={ds("failures")} />
+      {saved && !failures.length ? <Hint tone="ok" live ds={ds("saved")}>{t("premiumAudio.hotkeys.saved")}</Hint> : null}
+    </>
   );
 }
 
