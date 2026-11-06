@@ -339,6 +339,24 @@ export const PAGE_EXTRAS = {
         ],
       },
       {
+        h: "Push-to-talk and sound checks on Windows",
+        p: [
+          "In the Windows app you can switch your voice to push-to-talk and pick your own key, so the squad only hears you when you mean it. Before a match, run the mic test in voice settings and turn on “hear yourself” to check your level and noise suppression without bothering anyone.",
+        ],
+      },
+      {
+        h: "Run a match night",
+        p: [
+          "Post the time in the announcements channel, then give each team its own squad voice channel so the general room stays free for everyone else. A stage channel works for tournament nights: a few speakers talk while the rest listen. Moderators can time out or remove a player who ruins the night, and every action is kept in the audit log.",
+        ],
+      },
+      {
+        h: "Getting the whole clan to join",
+        p: [
+          "Share the server invite link where your clan already reads. Whoever opens it sees a preview of the server and joins after signing in, in the browser without installing anything, so nobody waits for a download before the first game. The desktop app is worth installing later for long sessions.",
+        ],
+      },
+      {
         h: "Honest limits",
         p: [
           "Descall does not have Discord’s bot marketplace (music bots, levelling systems, complex automations), and it is not built for public servers with tens of thousands of members. It is not an in-game overlay either. It is a chat app for squads, clans, and small-to-mid communities that want good voice and tidy servers for free.",
@@ -351,6 +369,47 @@ export const PAGE_EXTRAS = {
     ],
   },
 
+  "/discord-alternative-for-friends": {
+    sections: [
+      {
+        h: "Add your friends in a minute",
+        p: [
+          "Every account has a username. Type a friend’s username to send a request, or copy your invite link and drop it into the chat you already use: whoever opens it can sign up for free and lands in your friends list. You decide which requests to accept, and blocking someone stops their messages and calls.",
+        ],
+      },
+      {
+        h: "Group chats for up to 15 people",
+        p: [
+          "A group is the quickest way to get everyone in one place. Pick friends from your list, give the group a name and a photo, and you are done. A group holds up to 15 people including you, which is the size most friend groups actually are. Anyone in it can start a voice or video call from the same window, so there is no server to set up first.",
+        ],
+      },
+      {
+        h: "What you can send",
+        p: [
+          "Messages with typing indicators, photos and files, GIFs from the built-in picker, voice messages when typing is awkward, and quick polls when the group cannot decide what to play or watch. @mentions make sure the right person sees a question in a busy chat.",
+        ],
+      },
+      {
+        h: "Calls that start from the chat",
+        p: [
+          "Call one friend or the whole group from the conversation. Turn the camera on when you want to, or share your screen at up to 720p to show a game, a video or homework. Optional noise suppression cuts keyboard and fan noise, and the mic test in the voice settings lets you check your sound before you join.",
+        ],
+      },
+      {
+        h: "When a server makes sense",
+        p: [
+          "If your group turns into a regular game night or a study circle with topics of its own, create a server from the Friends template. You get text channels for different topics and voice channels that stay open, so people can drop in without a call ringing everyone. Small groups can stay in direct messages and group chats for as long as that works.",
+        ],
+      },
+      {
+        h: "On every device you use",
+        p: [
+          "The same account works on iPhone and iPad, Android, the Windows desktop app and any browser at descall.com. Your friends and messages follow you, so you can answer a message on your phone and join the evening call from your PC.",
+        ],
+      },
+    ],
+    links: [],
+  },
   "/download": {
     sections: [
       {
