@@ -188,7 +188,7 @@ function formatDescoin(amount, locale) {
   return `${formatNumber(Number(amount) || 0, locale)} DesCoin`;
 }
 
-export default function AdminShop() {
+export default function AdminShop({ children = null }) {
   const { t, locale } = useLocale();
   const catLabel = (id) => (CATEGORIES.some((c) => c.id === id) ? t(`adminx.shop.cat.${id}`) : id);
   const [items, setItems] = useState([]);
@@ -397,6 +397,9 @@ export default function AdminShop() {
         </div>
       )}
 
+      {/* DesCoin reconciliation (read-only), under the Mağaza title. */}
+      {children}
+
       {/* DesCoin grant/revoke card */}
       <motion.div className="admin-card admin-shop-gift-card" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h3><Coins size={16} style={{ verticalAlign: "-2px", marginRight: 6 }} /> {t("Grant / revoke DesCoin")}</h3>
@@ -479,10 +482,10 @@ export default function AdminShop() {
 
         {coinNotice && <p className="admin-shop-gift-notice">{coinNotice}</p>}
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="admin-btn-row">
           <RippleButton
             type="button"
-            className="admin-btn-green"
+            className="admin-btn-primary"
             onClick={() => handleGrantCoins(1)}
             disabled={coinSending || !coinTargetUser}
           >
@@ -490,7 +493,7 @@ export default function AdminShop() {
           </RippleButton>
           <RippleButton
             type="button"
-            className="admin-btn-red"
+            className="admin-btn-danger"
             onClick={() => handleGrantCoins(-1)}
             disabled={coinSending || !coinTargetUser}
           >
@@ -571,14 +574,16 @@ export default function AdminShop() {
 
         {giftNotice && <p className="admin-shop-gift-notice">{giftNotice}</p>}
 
-        <RippleButton
-          type="button"
-          className="admin-btn-green"
-          onClick={handleSendGift}
-          disabled={giftSending || !giftTargetUser || !giftItemId}
-        >
-          {giftSending ? t("Sending…") : t("Send gift")}
-        </RippleButton>
+        <div className="admin-btn-row">
+          <RippleButton
+            type="button"
+            className="admin-btn-primary"
+            onClick={handleSendGift}
+            disabled={giftSending || !giftTargetUser || !giftItemId}
+          >
+            {giftSending ? t("Sending…") : t("Send gift")}
+          </RippleButton>
+        </div>
       </motion.div>
 
       {/* Catalog */}
@@ -676,10 +681,10 @@ export default function AdminShop() {
               value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <RippleButton type="submit" className="admin-btn-green" disabled={creating}>
+            <RippleButton type="submit" className="admin-btn-primary" disabled={creating}>
               {creating ? t("Creating…") : t("Create item")}
             </RippleButton>
-            <button type="button" className="admin-btn-red" onClick={() => setShowCreateForm(false)}>
+            <button type="button" className="admin-btn-ghost" onClick={() => setShowCreateForm(false)}>
               {t("Cancel")}
             </button>
           </div>
@@ -770,7 +775,7 @@ export default function AdminShop() {
                     )}
                   </td>
                   <td className="admin-actions">
-                    <button type="button" className={item.active ? "admin-btn-red" : "admin-btn-green"} onClick={() => toggleActive(item)}>
+                    <button type="button" className={item.active ? "admin-btn-danger" : "admin-btn-primary"} onClick={() => toggleActive(item)}>
                       {item.active ? t("Deactivate") : t("Activate")}
                     </button>
                   </td>

@@ -841,8 +841,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       <div className="admin-body">
         {tab === "shop" && (
           <section className="admin-section admin-section-full">
-            <AdminDescoinReconcile />
-            <AdminShop />
+            <AdminShop>
+              <AdminDescoinReconcile />
+            </AdminShop>
           </section>
         )}
 
