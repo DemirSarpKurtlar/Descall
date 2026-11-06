@@ -77,6 +77,36 @@
 
 .toast-info .toast-icon { color: var(--primary); }
 
+/* UI audit #66: errors read red on every surface, a toast can carry one
+   named action, and on desktop the stack sits under the chat header pills
+   (12px gap) instead of covering the call / pin / search buttons. */
+html .toast-item.toast-error .toast-icon { color: #FF453A; }
+
+.toast-action {
+  flex: none;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--g-brand, #587AF6);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.toast-action:active { transform: scale(0.97); }
+
+html.glass-desktop .toast-stack,
+html.glass-desktop body.electron-app .toast-stack {
+  top: calc(var(--electron-titlebar-h, 0px) + 88px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-action:active { transform: none; }
+}
+
 /* ─── Reactions ─── */
 .message-reactions,
 .msg-reactions {

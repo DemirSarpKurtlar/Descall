@@ -29,6 +29,8 @@ export const MID_APP_I18N = {
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Roller izinleri bir araya toplar; örneğin mesaj silebilen moderatörler. Bir rol oluştur ve üyelere ver.",
     "Select a role": "Bir rol seç",
     "Management": "Yönetim",
+    "Allow microphone access to call": "Arama için mikrofon izni ver",
+    "Allow": "İzin ver",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -53,6 +55,8 @@ export const MID_APP_I18N = {
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Rollen bündeln Berechtigungen, etwa Moderatoren, die Nachrichten löschen dürfen. Erstelle eine und gib sie Mitgliedern.",
     "Select a role": "Wähle eine Rolle",
     "Management": "Verwaltung",
+    "Allow microphone access to call": "Erlaube den Mikrofonzugriff, um anzurufen",
+    "Allow": "Erlauben",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -77,6 +81,8 @@ export const MID_APP_I18N = {
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Los roles agrupan permisos, como moderadores que pueden borrar mensajes. Crea uno y dáselo a los miembros.",
     "Select a role": "Elige un rol",
     "Management": "Gestión",
+    "Allow microphone access to call": "Permite el acceso al micrófono para llamar",
+    "Allow": "Permitir",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -101,6 +107,8 @@ export const MID_APP_I18N = {
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Les rôles regroupent des permissions, par exemple des modérateurs qui peuvent supprimer des messages. Crées-en un et attribue-le aux membres.",
     "Select a role": "Choisis un rôle",
     "Management": "Gestion",
+    "Allow microphone access to call": "Autorise l'accès au micro pour appeler",
+    "Allow": "Autoriser",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -125,6 +133,8 @@ export const MID_APP_I18N = {
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Cargos agrupam permissões, como moderadores que podem apagar mensagens. Crie um e dê aos membros.",
     "Select a role": "Escolha um cargo",
     "Management": "Gerenciamento",
+    "Allow microphone access to call": "Permita o acesso ao microfone para ligar",
+    "Allow": "Permitir",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -149,5 +159,7 @@ export const MID_APP_I18N = {
     "Roles group permissions, like moderators who can remove messages. Create one and give it to members.": "Роли объединяют права, например модераторов, которые могут удалять сообщения. Создай роль и выдай её участникам.",
     "Select a role": "Выбери роль",
     "Management": "Управление",
+    "Allow microphone access to call": "Разреши доступ к микрофону, чтобы звонить",
+    "Allow": "Разрешить",
   },
 };
