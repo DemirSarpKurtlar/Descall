@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Filter, Search } from "../../ui/Icon.jsx";
+import { ChevronDown, Filter, Search } from "../../ui/Icon.jsx";
 import { useLocale } from "../../../context/LocaleContext";
 import { premiumEvents } from "./premiumApi.js";
 import { EVENT_KINDS, PLANS, localInputToDate } from "./premiumModel.js";
@@ -66,17 +66,19 @@ export default function PremiumHistory() {
       </PageHead>
       <form className="agr-card pa-filters" onSubmit={apply}>
         <div className="mt-in"><Search size={14} className="mt-i" /><input type="search" value={draft.user} placeholder={t("premiumAdmin.hist.userPh")} aria-label={t("premiumAdmin.f.user")} onChange={(e) => set({ user: e.target.value })} /></div>
-        <div className="mt-in sel">
+        <div className="mt-in pa-sel">
           <select aria-label={t("premiumAdmin.f.kind")} value={draft.kind} onChange={(e) => set({ kind: e.target.value })}>
             <option value="">{t("premiumAdmin.hist.allKinds")}</option>
             {EVENT_KINDS.map((k) => <option key={k} value={k}>{t(`premiumAdmin.kind.${k}`)}</option>)}
           </select>
+          <ChevronDown size={14} className="mt-i" aria-hidden="true" />
         </div>
-        <div className="mt-in sel">
+        <div className="mt-in pa-sel">
           <select aria-label={t("premiumAdmin.f.plan")} value={draft.plan} onChange={(e) => set({ plan: e.target.value })}>
             <option value="">{t("premiumAdmin.hist.allPlans")}</option>
             {PLANS.map((p) => <option key={p} value={p}>{t(`premiumAdmin.plan.${p}`)}</option>)}
           </select>
+          <ChevronDown size={14} className="mt-i" aria-hidden="true" />
         </div>
         <div className="mt-in"><input type="text" value={draft.actor} placeholder={t("premiumAdmin.hist.actorPh")} aria-label={t("premiumAdmin.f.actor")} onChange={(e) => set({ actor: e.target.value })} /></div>
         <DateInput label={t("premiumAdmin.from")} value={draft.from} onChange={(from) => set({ from })} />

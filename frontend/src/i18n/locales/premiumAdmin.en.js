@@ -364,6 +364,7 @@ export const PREMIUM_ADMIN_EN = {
       campaign_create: "Coupon created",
       campaign_update: "Coupon edited",
       denied: "Denied attempt",
+      step_up_required: "Code was asked",
     },
   },
 

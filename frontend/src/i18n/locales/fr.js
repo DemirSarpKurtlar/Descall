@@ -396,7 +396,8 @@ export const nested = {
         "plan_update": "Offre modifiée",
         "campaign_create": "Coupon créé",
         "campaign_update": "Coupon modifié",
-        "denied": "Tentative refusée"
+        "denied": "Tentative refusée",
+        "step_up_required": "Code demandé"
       }
     },
     "plans": {

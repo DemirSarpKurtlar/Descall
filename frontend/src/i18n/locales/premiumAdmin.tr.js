@@ -360,6 +360,7 @@ export const PREMIUM_ADMIN_TR = {
       campaign_create: "Kupon oluşturuldu",
       campaign_update: "Kupon düzenlendi",
       denied: "Reddedilen deneme",
+      step_up_required: "Kod istendi",
     },
   },
 

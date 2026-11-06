@@ -396,7 +396,8 @@ export const nested = {
         "plan_update": "Plano editado",
         "campaign_create": "Cupom criado",
         "campaign_update": "Cupom editado",
-        "denied": "Tentativa negada"
+        "denied": "Tentativa negada",
+        "step_up_required": "Código solicitado"
       }
     },
     "plans": {
