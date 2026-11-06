@@ -503,13 +503,13 @@
 }
 
 .status-badge.status-online { background: var(--success); }
-.status-badge.status-idle { background: var(--warning); }
+.status-badge.status-idle { background: var(--status-idle, #FF9F0A); }
 .status-badge.status-dnd { background: var(--danger); }
 .status-badge.status-invisible,
 .status-badge.status-offline { background: var(--text-muted); }
 
 .rail-user-status-dot.status-online { background: var(--success); }
-.rail-user-status-dot.status-idle { background: var(--warning); }
+.rail-user-status-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .rail-user-status-dot.status-dnd { background: var(--danger); }
 .rail-user-status-dot.status-invisible,
 .rail-user-status-dot.status-offline { background: var(--text-muted); }
@@ -583,7 +583,7 @@
 }
 
 .status-picker-dot.status-online { background: var(--success); }
-.status-picker-dot.status-idle { background: var(--warning); }
+.status-picker-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .status-picker-dot.status-dnd { background: var(--danger); }
 .status-picker-dot.status-invisible { background: var(--text-muted); }
 

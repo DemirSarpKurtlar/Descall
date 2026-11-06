@@ -21,6 +21,8 @@
   --success-soft: rgba(35, 165, 90, 0.12);
   --warning: #F0B232;
   --warning-soft: rgba(240, 178, 50, 0.12);
+  /* Presence "Boşta" on every platform (UI audit #69; same as iOS / Watch). */
+  --status-idle: #FF9F0A;
   --danger: #DA373C;
   --danger-soft: rgba(218, 55, 60, 0.12);
 

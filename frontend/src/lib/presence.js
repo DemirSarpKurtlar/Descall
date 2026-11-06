@@ -19,7 +19,7 @@ export function isVisiblyOnline(onlineUsers, userId) {
 
 export const STATUS_META = {
   online: { label: "Online", color: "var(--success)" },
-  idle: { label: "Idle", color: "var(--warning)" },
+  idle: { label: "Idle", color: "var(--status-idle, #FF9F0A)" },
   dnd: { label: "Do Not Disturb", color: "var(--danger)" },
   invisible: { label: "Invisible", color: "var(--text-muted)" },
   offline: { label: "Offline", color: "var(--text-muted)" },

@@ -1297,7 +1297,7 @@ html[data-bubble="minimal"] .shop-live-bubble {
   flex-shrink: 0;
 }
 
-.shop-live-status-dot.status-idle { background: #f0b232; }
+.shop-live-status-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .shop-live-status-dot.status-dnd { background: #f23f43; }
 .shop-live-status-dot.status-offline,
 .shop-live-status-dot.status-invisible { background: #80848e; }

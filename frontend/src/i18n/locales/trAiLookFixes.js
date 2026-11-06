@@ -32,6 +32,6 @@ export const TR_AI_LOOK_FIXES = {
   "App Store": "App Store",
   "More about Descall": "Descall hakkında daha fazlası",
   "Welcome back": "Tekrar hoş geldin",
-  "Do Not Disturb": "Rahatsız Etmeyin",
+  "Do Not Disturb": "Rahatsız etme",
   "What's on your mind?": "Ne yapıyorsun?",
 };

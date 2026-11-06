@@ -17,6 +17,7 @@ import { API_BASE_URL } from "../../config/api";
 import { normalizeUser } from "../../lib/userProfile";
 import { cssUrl } from "../../lib/cssUrl";
 import "../../styles/promo-mycodes.css"; // Promosyon Kodu nav row badge
+import { STATUS_EMOJIS, splitStatusEmoji } from "../../lib/statusPresets";
 import { PROMO_AVAILABLE_EVENT, PROMO_NUDGE_EVENT, PROMO_REDEEMED_EVENT, summaryOf } from "../../lib/promoAvailable";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { uploadAvatar, uploadFile } from "../../api/media";
@@ -114,13 +115,7 @@ const saveSettings = (obj) => {
 
 
 
-const STATUS_EMOJIS = ["😀", "🎮", "💼", "🎵", "📚", "☕", "🍿", "💤"];
-
-function splitStatusEmoji(value) {
-  const raw = String(value || "");
-  const emoji = STATUS_EMOJIS.find((e) => e && raw.startsWith(e)) || "";
-  return { emoji, text: emoji ? raw.slice(emoji.length).replace(/^\s+/, "") : raw };
-}
+// Custom-status emoji presets: one shared list (UI audit #29), lib/statusPresets.js.
 
 // A purchased premium theme fully re-tints `--primary` (and every other
 // token) via its `[data-theme="…"]` CSS block. The custom "Accent Color"

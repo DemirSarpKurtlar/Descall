@@ -676,7 +676,7 @@ html.gd-lite .rail-tooltip {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-.rail-user-status-dot.status-idle { background: var(--warning); }
+.rail-user-status-dot.status-idle { background: var(--status-idle, #FF9F0A); }
 .rail-user-status-dot.status-dnd { background: var(--danger); }
 .rail-user-status-dot.status-invisible,
 .rail-user-status-dot.status-offline { background: var(--text-muted); }
