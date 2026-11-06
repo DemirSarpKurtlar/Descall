@@ -9,10 +9,12 @@ import { UAH_PT_BR } from "./uah.pt-BR.js";
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
 import { MSG4_PT_BR } from "./msg4.pt-BR.js";
+import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
   "msg4": MSG4_PT_BR,
+  "msg5": MSG5_PT_BR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -5952,7 +5954,8 @@ export const nested = {
     "maxUses25": "25 usos",
     "maxUses5": "5 usos",
     "memberFor": "@{handle} · membro há {age}",
-    "mentionable": "Qualquer um pode @mencionar",
+    "mentionable": "Mencionável",
+    "mentionableSub": "Ligado: qualquer pessoa pode @mencionar este cargo e os membros dele são notificados. Desligado: só quem pode gerenciar cargos.",
     "min1": "1 min",
     "min10": "10 min",
     "min15": "15 min",
@@ -9833,6 +9836,7 @@ export const phrases = {
   "Slow mode is on: you can send another message in {seconds, plural, one {# second} other {# seconds}}.": "O modo lento está ativado: você pode enviar outra mensagem em {seconds, plural, one {# segundo} other {# segundos}}.",
   "Slowmode": "Modo lento",
   "Slowmode is on. Try again in {seconds}s.": "O modo lento está ativado. Tente de novo em {seconds}s.",
+  "You can mention @everyone or @here again in {seconds}s.": "Você pode usar @everyone ou @here de novo em {seconds} s.",
   "Slowmode is on: {time} between messages": "Modo lento ativado: {time} entre mensagens",
   "Slowmode presets": "Predefinições de modo lento",
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.": "Modo lento, tópicos, permissões personalizadas e canais só para a equipe: as ferramentas do dia a dia que as comunidades realmente usam.",

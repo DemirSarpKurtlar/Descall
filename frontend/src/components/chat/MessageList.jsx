@@ -28,6 +28,7 @@ import MessageReactions from "./MessageReactions";
 import EmojiPickerSheet from "./EmojiPickerSheet";
 import MessageContent from "./MessageContent";
 import { plainText } from "../../lib/messageMarkdown";
+import { decodeRoleMentions, encodeRoleMentions } from "../../lib/roleMentions";
 import { displayText } from "../../lib/profanity";
 import { casinoHiddenOnThisDevice, isCasinoChatMessage } from "../../lib/casinoCommands";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
@@ -1071,7 +1072,7 @@ function MessageBubble({
   const galleryItems = useContext(MediaGalleryContext);
   const senderFor = useContext(SenderLookupContext);
   const [editing, setEditing] = useState(false);
-  const [editDraft, setEditDraft] = useState(message.text || "");
+  const [editDraft, setEditDraft] = useState(() => decodeRoleMentions(message.text || "").text);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const hideTimer = useRef(null);
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
@@ -1147,7 +1148,8 @@ function MessageBubble({
   ]);
 
   const saveEdit = useCallback(() => {
-    const next = editDraft.trim();
+    // Role mentions are edited as "@Rol adı" and saved back as tokens (messaging phase 5).
+    const next = encodeRoleMentions(editDraft.trim(), decodeRoleMentions(message.text || "").picked);
     if (!next || !message?.id || String(message.id).startsWith("temp-")) {
       setEditing(false);
       return;
@@ -1240,7 +1242,7 @@ function MessageBubble({
         toUserId,
       });
     } else {
-      setEditDraft(message.text || "");
+      setEditDraft(decodeRoleMentions(message.text || "").text);
       setEditing(true);
     }
     setMenuOpen(false);
@@ -1738,7 +1740,7 @@ function MessageBubble({
               onKeyDown={(e) => {
                 if (e.key === "Enter") saveEdit();
                 if (e.key === "Escape") {
-                  setEditDraft(message.text || "");
+                  setEditDraft(decodeRoleMentions(message.text || "").text);
                   setEditing(false);
                 }
               }}
@@ -1752,7 +1754,7 @@ function MessageBubble({
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => {
-                  setEditDraft(message.text || "");
+                  setEditDraft(decodeRoleMentions(message.text || "").text);
                   setEditing(false);
                 }}
               >

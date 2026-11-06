@@ -277,7 +277,26 @@ function createNotifyActions(deps = {}) {
 
   // ── Quick reply ──────────────────────────────────────────────────────────
 
-  async function replyDm(io, me, peerId, text, { markRead = true } = {}) {
+  /**
+   * Scheduled sending (messaging phase 5): the one stored attachment of a
+   * scheduled row, re-checked like a dm:send attachment (the author must still
+   * be allowed to use that file). Null when there is none.
+   */
+  async function sendableMedia(myId, media) {
+    if (!media?.url) return null;
+    const normalize = deps.normalizeIncomingMediaUrl || require("./privateMedia").normalizeIncomingMediaUrl;
+    const url = await normalize(getDb(), myId, media.url);
+    if (!url) throw new NotifyActionError(409, "attachment_unavailable");
+    return {
+      url,
+      mediaType: media.mediaType || "file",
+      mimeType: media.mimeType || null,
+      size: media.size ?? null,
+      originalName: media.originalName || null,
+    };
+  }
+
+  async function replyDm(io, me, peerId, text, { markRead = true, media = null } = {}) {
     const s = state();
     const { convKey, cacheDmMessages, messageSender, isAcceptedFriend } = dm();
     const myId = me.id;
@@ -298,6 +317,7 @@ function createNotifyActions(deps = {}) {
     // Message requests go through the app (first contact shows a preview card).
     if (!(await isAcceptedFriend(myId, peerId))) throw new NotifyActionError(409, "not_friends");
 
+    const file = await sendableMedia(myId, media);
     await profile().ensureCosmeticsCached([myId]).catch(() => {});
     const sender = messageSender(myId, me.username, me.avatar_url);
     const { data: row, error } = await getDb()
@@ -306,11 +326,11 @@ function createNotifyActions(deps = {}) {
         from_user_id: myId,
         to_user_id: peerId,
         content: text,
-        media_url: null,
-        media_type: null,
-        mime_type: null,
-        file_size: null,
-        original_name: null,
+        media_url: file?.url || null,
+        media_type: file?.mediaType || null,
+        mime_type: file?.mimeType || null,
+        file_size: file?.size ?? null,
+        original_name: file?.originalName || null,
         duration: null,
         reply_to: null,
       })
@@ -359,11 +379,11 @@ function createNotifyActions(deps = {}) {
       id: messageId,
       from: sender,
       text,
-      mediaUrl: null,
-      mediaType: null,
-      mimeType: null,
-      size: null,
-      originalName: null,
+      mediaUrl: file?.url || null,
+      mediaType: file?.mediaType || null,
+      mimeType: file?.mimeType || null,
+      size: file?.size ?? null,
+      originalName: file?.originalName || null,
       duration: null,
       replyTo: null,
       timestamp,
@@ -393,7 +413,9 @@ function createNotifyActions(deps = {}) {
           const common = {
             body: preview,
             rawText: preview,
-            previewKind: "text",
+            previewKind: file ? "media" : "text",
+            // An attachment without a caption reads "sent an attachment" (as dm:send).
+            ...(file && !preview ? { i18n: { body: { key: "push.attachmentPlain" } } } : {}),
             from: me.username,
             fromId: myId,
             messageId,
@@ -417,33 +439,43 @@ function createNotifyActions(deps = {}) {
     return { messageId };
   }
 
-  async function replyGroup(io, me, groupId, text) {
+  async function replyGroup(io, me, groupId, text, { media = null } = {}) {
     const v = createVirtualSocket(io, me);
     registerGroup(io, v.socket);
     const tempId = `notify-${crypto.randomUUID()}`;
-    const emitted = await v.call("group:message", { groupId, tempId, content: text });
+    const attach = media?.url ? { mediaUrl: media.url, mediaType: media.mediaType || "file" } : {};
+    const emitted = await v.call("group:message", { groupId, tempId, content: text, ...attach });
     return readSendOutcome(emitted, { messageEvent: "group:message", errorEvent: "group:message:error", tempId });
   }
 
-  async function replyChannel(io, me, channelId, text) {
+  async function replyChannel(io, me, channelId, text, { media = null } = {}) {
     const v = createVirtualSocket(io, me);
     registerChannel(io, v.socket);
     const tempId = `notify-${crypto.randomUUID()}`;
-    const emitted = await v.call("server:channel:message", { channelId, tempId, content: text });
+    const attach = media?.url ? { mediaUrl: media.url, mediaType: media.mediaType || "file" } : {};
+    const emitted = await v.call("server:channel:message", { channelId, tempId, content: text, ...attach });
     const ack = emitted.find((e) => e.event === "server:channel:message:ack" && e.payload?.tempId === tempId);
     if (ack) return { messageId: null };
     return readSendOutcome(emitted, { messageEvent: "server:channel:message", errorEvent: "server:channel:message:error", tempId });
   }
 
-  async function reply(io, userId, { conv, text, markRead = true } = {}) {
+  /**
+   * `media` (scheduled sending, messaging phase 5): { url: stored ref, mediaType,
+   * mimeType, size, originalName }; the text may then be empty (no caption).
+   */
+  async function reply(io, userId, { conv, text, markRead = true, media = null } = {}) {
     const c = parseConversation(conv);
     const s = state();
-    const body = normalizeReplyText(text, Number(s.systemConfig?.maxMessageLength) || 2000);
+    const hasMedia = Boolean(media?.url);
+    const body = hasMedia && !String(text ?? "").trim()
+      ? ""
+      : normalizeReplyText(text, Number(s.systemConfig?.maxMessageLength) || 2000);
     assertNotTimedOut(userId);
     const me = await loadActor(userId);
-    if (c.type === "dm") return replyDm(io, me, c.id, body, { markRead });
-    if (c.type === "group") return replyGroup(io, me, c.id, body);
-    return replyChannel(io, me, c.id, body);
+    const extra = hasMedia ? { media } : {};
+    if (c.type === "dm") return replyDm(io, me, c.id, body, { markRead, ...extra });
+    if (c.type === "group") return replyGroup(io, me, c.id, body, extra);
+    return replyChannel(io, me, c.id, body, extra);
   }
 
   // ── Quick reaction ───────────────────────────────────────────────────────

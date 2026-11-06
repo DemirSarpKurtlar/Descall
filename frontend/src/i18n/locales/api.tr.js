@@ -518,6 +518,7 @@ export const API_TR = {
   "Sign-in session expired. Please log in again.": "Giriş oturumunun süresi doldu. Lütfen tekrar giriş yap.",
   "Slow mode is on: you can send another message in {seconds, plural, one {# second} other {# seconds}}.": "Yavaş mod açık: {seconds} saniye sonra tekrar mesaj gönderebilirsin.",
   "Slowmode is on. Try again in {seconds}s.": "Yavaş mod açık. {seconds} sn sonra tekrar dene.",
+  "You can mention @everyone or @here again in {seconds}s.": "@everyone veya @here'i {seconds} sn sonra tekrar kullanabilirsin.",
   "Spin failed to settle. Stake returned.": "Çevirme sonuçlanamadı. Bahis iade edildi.",
   "STAND is not available right now.": "STAND şu an kullanılamaz.",
   "Start the setup first.": "Önce kurulumu başlat.",
