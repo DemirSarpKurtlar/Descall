@@ -44,11 +44,10 @@
 .adm.is-standalone {
   position: fixed;
   inset: 0;
+  /* Brand base + one faint logo-blue halo (no teal / green blobs). */
   background:
-    radial-gradient(60% 55% at 12% 8%, rgba(var(--adm-brand), 0.3), transparent 60%),
-    radial-gradient(45% 50% at 92% 18%, rgba(56, 189, 248, 0.13), transparent 60%),
-    radial-gradient(55% 60% at 70% 100%, rgba(16, 185, 129, 0.1), transparent 60%),
-    linear-gradient(180deg, #0e1018, #0b0c12);
+    radial-gradient(60% 55% at 12% 0%, rgba(var(--adm-brand), 0.14), transparent 65%),
+    #1b1d26;
 }
 
 .adm-titlebar {
@@ -167,7 +166,11 @@
 .adm-search input::placeholder { color: var(--adm-t3); }
 .adm-search input::-webkit-search-cancel-button { display: none; }
 .adm-search kbd {
-  font: 500 10.5px/1 inherit;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
   color: var(--adm-t4);
   padding: 3px 5px;
   border-radius: 5px;
