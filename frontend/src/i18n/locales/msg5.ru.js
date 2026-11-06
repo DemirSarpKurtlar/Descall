@@ -1,0 +1,30 @@
+/** Messaging phase 5 ("msg5.*"): role / @everyone / @here mentions, push previews,
+ * scheduled sending with one attachment. Same keys in every msg5.<locale>.js. */
+export const MSG5_RU = {
+  roles: {
+    section: "Роли",
+    subRole: "Роль · её участники получат уведомление",
+    subRoleAdmin: "Роль · упоминать могут только админы",
+    subEveryone: "Уведомит всех, кто видит этот канал",
+    subHere: "Уведомит тех, кто сейчас в сети",
+    unknown: "неизвестная роль",
+    aria: "Роль: {name}",
+    popover: "Роль · {name}",
+    everyoneCooldown: "@everyone или @here снова можно будет использовать через {wait} с.",
+  },
+  preview: {
+    settingDesc: "Если выключить, уведомления в приложении, браузере и на телефоне покажут только «Новое сообщение» вместо текста.",
+    saveError: "Не удалось сохранить. Попробуй ещё раз чуть позже.",
+  },
+  schedule: {
+    addAttachment: "Добавить файл",
+    attachmentHint: "Одно фото или файл, до 100 МБ",
+    attachment: "Вложение",
+    attachmentKept: "Вложение останется; можно изменить текст и время.",
+    removeAttachment: "Убрать вложение",
+    errAttachment: "Этот файл нельзя запланировать. Выбери фото, видео или документ.",
+    errTooLarge: "Файл слишком большой. Максимум 100 МБ.",
+    errAttachNotReady: "Отправка по расписанию с файлом пока не включена на сервере. Убери файл, чтобы запланировать только текст.",
+    errUpload: "Не удалось загрузить файл. Проверь соединение и попробуй ещё раз.",
+  },
+};

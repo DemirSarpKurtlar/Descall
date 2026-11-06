@@ -1720,6 +1720,43 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .msg-mention[data-mention] { cursor: pointer; }
 .msg-mention[data-mention]:hover { text-decoration: underline; }
 .msg-mention[data-mention]:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+/* Role mention pill (messaging phase 5): the role's colour, tap shows the role. */
+.msg-role-mention-wrap { position: relative; display: inline; }
+.msg-role-mention {
+  --role-c: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  line-height: inherit;
+  color: var(--role-c);
+  background: color-mix(in srgb, var(--role-c) 18%, transparent);
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: 0 4px;
+  margin: 0;
+  cursor: pointer;
+  vertical-align: baseline;
+}
+.msg-role-mention:hover { background: color-mix(in srgb, var(--role-c) 28%, transparent); }
+.msg-role-mention:focus-visible { outline: 2px solid var(--role-c); outline-offset: 1px; }
+.msg-role-pop {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}
+.msg-role-pop i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex: none; }
 /* **bold** in chat bubbles (lib/messageMarkdown.js), same weight web uses
    for Descall Apps embeds. Inherits the bubble skin's ink. */
 .message-text .msg-bold {

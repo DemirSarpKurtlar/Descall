@@ -415,6 +415,17 @@ button.scm-chipx {
   text-align: left;
   cursor: pointer;
 }
+/* Messaging phase 5: role / @everyone / @here rows in the @ list. */
+.scm-picker .dsx-mt-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
+}
 .scm-picker .dsx-pr-row mark {
   background: rgba(var(--dsx-brand), 0.32);
   color: inherit;

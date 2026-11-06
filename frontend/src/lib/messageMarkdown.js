@@ -16,7 +16,10 @@
  *   { type: "mention", value }          value includes the leading "@"
  *   { type: "url", value }
  *   { type: "bold", children: Token[] } inner text is tokenized again
+ *   { type: "role", id, value }         `<@&roleId>` role mention (messaging phase 5)
  */
+
+import { ROLE_TOKEN_SRC, roleIdOfToken, roleTokensToText } from "./roleMentions.js";
 
 const ESCAPABLE = "\\*_`~";
 // Private-use placeholders so an escaped char can never open/close a token.
@@ -34,8 +37,8 @@ export function restoreEscapes(text) {
 const LINK_SRC =
   "(?:https?:\\/\\/|(?:www\\.)?descall\\.(?:com|vercel\\.app)\\/|des-call\\.onrender\\.com\\/)[^\\s<]+[^\\s<.,;:!?'\")\\]]";
 
-// Order matters at the same index: code, bold, mention, link.
-const INLINE_RE = new RegExp(`(\`[^\`]+\`)|(\\*\\*[^*]+\\*\\*)|(@[a-zA-Z0-9_]{2,32})|(${LINK_SRC})`, "g");
+// Order matters at the same index: code, bold, mention, link, role mention.
+const INLINE_RE = new RegExp(`(\`[^\`]+\`)|(\\*\\*[^*]+\\*\\*)|(@[a-zA-Z0-9_]{2,32})|(${LINK_SRC})|(${ROLE_TOKEN_SRC})`, "g");
 
 function tokenizeProtected(text, depth) {
   const out = [];
@@ -62,6 +65,7 @@ function tokenizeProtected(text, depth) {
     if (m[1]) out.push({ type: "code", value: token.slice(1, -1) });
     else if (m[2]) out.push({ type: "bold", children: tokenizeProtected(token.slice(2, -2), depth + 1) });
     else if (m[3]) out.push({ type: "mention", value: token });
+    else if (m[5]) out.push({ type: "role", id: roleIdOfToken(token), value: token });
     else out.push({ type: "url", value: token });
     last = m.index + token.length;
   }
@@ -103,7 +107,7 @@ export function splitBlocks(text) {
 
 /** Plain text with markdown markers removed (bold markers and escapes). */
 export function plainText(text) {
-  const flat = (tokens) => tokens.map((t) => (t.children ? flat(t.children) : t.type === "code" ? t.value : t.value)).join("");
+  const flat = (tokens) => tokens.map((t) => (t.children ? flat(t.children) : t.type === "role" ? roleTokensToText(t.value) : t.value)).join("");
   return splitBlocks(text)
     .map((b) => (b.type === "codeblock" ? b.value : flat(tokenizeInline(b.value))))
     .join("");

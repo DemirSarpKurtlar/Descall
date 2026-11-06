@@ -35,6 +35,7 @@ import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
 import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
+import { decodeRoleMentions, encodeRoleMentions, registerRoles, roleSuggestions } from "../../lib/roleMentions";
 import {
   getScheduledSnapshot, openScheduleSheet, pendingFor, scheduleTarget, subscribeScheduled, SCHEDULE_SENT_EVENT,
 } from "../../lib/scheduledMessages";
@@ -118,6 +119,8 @@ export default function MessageComposer({
   const slowmodeBlocked = Boolean(activeChannel?.id) && !bypassSlowmode && slowmodeRemaining > 0;
   const inputRef = useRef(null);
   const messageRef = useRef("");
+  // Messaging phase 5: roles picked from the @ list, "@Rol adı" in the field, `<@&id>` on the wire.
+  const pickedRolesRef = useRef(new Map());
   const editStashRef = useRef(null);
   const editIdRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -179,11 +182,31 @@ export default function MessageComposer({
   const openSchedule = useCallback((mode = "new") => {
     if (!schedTarget) return;
     setShowAttachmentMenu(false);
-    openScheduleSheet({ mode, target: schedTarget, text: mode === "new" ? messageRef.current : "", fromComposer: mode === "new", draftKey: draftKeyRef.current });
-  }, [schedTarget]);
+    const isNew = mode === "new";
+    // Messaging phase 5: an attachment already staged here goes with the schedule (image or file, not voice).
+    const staged = isNew && pendingAttach?.mediaUrl && ["image", "video", "document", "file"].includes(pendingAttach.mediaType)
+      ? { url: pendingAttach.mediaUrl, name: pendingAttach.originalName || "", size: pendingAttach.size || 0, mediaType: pendingAttach.mediaType, previewUrl: pendingAttach.previewUrl || null }
+      : null;
+    openScheduleSheet({
+      mode,
+      target: schedTarget,
+      text: isNew ? messageRef.current : "",
+      fromComposer: isNew,
+      draftKey: draftKeyRef.current,
+      attachment: staged,
+      rolePicks: isNew ? [...pickedRolesRef.current] : [],
+    });
+  }, [schedTarget, pendingAttach]);
   useEffect(() => {
     const onSent = (e) => {
       if (e?.detail?.draftKey && e.detail.draftKey === draftKeyRef.current) setMessage("");
+      // Messaging phase 5: the staged attachment went with the schedule.
+      if (e?.detail?.attachment && e.detail.draftKey === draftKeyRef.current) {
+        setPendingAttach((cur) => {
+          if (cur?.previewUrl) URL.revokeObjectURL(cur.previewUrl);
+          return null;
+        });
+      }
     };
     window.addEventListener(SCHEDULE_SENT_EVENT, onSent);
     return () => window.removeEventListener(SCHEDULE_SENT_EVENT, onSent);
@@ -206,7 +229,10 @@ export default function MessageComposer({
     if (id && editIdRef.current !== id) {
       if (editIdRef.current == null) editStashRef.current = messageRef.current;
       editIdRef.current = id;
-      const text = editingMessage.text || "";
+      // Role mentions read "@Rol adı" while editing (messaging phase 5).
+      const decoded = decodeRoleMentions(editingMessage.text || "");
+      for (const [name, roleId] of decoded.picked) pickedRolesRef.current.set(name, roleId);
+      const text = decoded.text;
       setMessage(text);
       let timer = 0;
       const place = () => {
@@ -473,6 +499,18 @@ export default function MessageComposer({
     return () => window.removeEventListener("descall:composer-insert", onInsert);
   }, [focusInputAt]);
 
+  /* ---------- role mentions (messaging phase 5) ---------- */
+  useEffect(() => {
+    pickedRolesRef.current = new Map();
+  }, [activeChannel?.id]);
+  useEffect(() => {
+    if (activeServer?.id && Array.isArray(activeServer.roles)) registerRoles(activeServer.roles, activeServer.id);
+  }, [activeServer?.id, activeServer?.roles]);
+  const encodeMentions = useCallback(
+    (text) => (activeChannel?.id ? encodeRoleMentions(text, pickedRolesRef.current) : text),
+    [activeChannel?.id]
+  );
+
   /* ---------- argument pickers (user / duration / count) ---------- */
   const [pickerIndex, setPickerIndex] = useState(0);
   const [pickerDismissedFor, setPickerDismissedFor] = useState(null);
@@ -574,8 +612,13 @@ export default function MessageComposer({
     const out = [];
     if (here.length) out.push({ id: "here", label: t(activeChannel?.id ? "slash.mention.hereChannel" : "slash.mention.hereChat"), items: here.map(decorate) });
     if (rest.length) out.push({ id: "all", label: t(activeChannel?.id ? "slash.mention.server" : activeGroup ? "slash.mention.group" : "slash.mention.chat"), items: rest.map(decorate) });
+    // Messaging phase 5: roles (and @everyone / @here for admins) after the people, @ mentions only.
+    if (mentionState && serverIdForPicker) {
+      const roleItems = roleSuggestions(activeServer, mentionState.query || "");
+      if (roleItems.length) out.push({ id: "roles", label: t("msg5.roles.section"), items: roleItems });
+    }
     return out;
-  }, [pickerKind, argState, mentionState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
+  }, [pickerKind, argState, mentionState, me, activeServer, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
   const pickerUsers = useMemo(() => pickerUserSections.flatMap((s) => s.items), [pickerUserSections]);
 
   const timeoutTarget = useMemo(() => {
@@ -600,9 +643,10 @@ export default function MessageComposer({
     focusInputAt(next.length);
   }, [message, argState, focusInputAt]);
 
-  const insertMention = useCallback((username) => {
+  const insertMention = useCallback((username, role = null) => {
     if (!mentionState) return;
-    const tag = `@${username} `;
+    if (role?.id && role?.name) pickedRolesRef.current.set(role.name, role.id);
+    const tag = `@${role?.name || username} `;
     const next = message.slice(0, mentionState.start) + tag + message.slice(mentionState.end).replace(/^ /, "");
     setMessage(next);
     const pos = mentionState.start + tag.length;
@@ -610,13 +654,18 @@ export default function MessageComposer({
     focusInputAt(pos);
   }, [mentionState, message, focusInputAt]);
 
+  const pickMentionItem = useCallback((it) => {
+    if (!it) return;
+    if (it.kind === "role") insertMention(null, it.role);
+    else if (it.kind === "mass") insertMention(it.mass);
+    else if (mentionState) insertMention(it.user.username);
+    else fillArg(`@${it.user.username}`);
+  }, [insertMention, mentionState, fillArg]);
+
   const pickFromPicker = useCallback((index = pickerIndex) => {
     if (pickerKind === "user") {
       const it = pickerUsers[index];
-      if (it) {
-        if (mentionState) insertMention(it.user.username);
-        else fillArg(`@${it.user.username}`);
-      }
+      pickMentionItem(it);
       return Boolean(it);
     }
     if (pickerKind === "duration") {
@@ -635,7 +684,7 @@ export default function MessageComposer({
       return Boolean(c);
     }
     return false;
-  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt, mentionState, insertMention]);
+  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt, pickMentionItem]);
 
   const withReply = (payload) => {
     if (!replyTo) return payload;
@@ -681,7 +730,7 @@ export default function MessageComposer({
 
   const handleSend = () => {
     if (glass && editingMessage) {
-      const next = message.trim();
+      const next = encodeMentions(message.trim());
       const original = String(editingMessage.text || "").trim();
       if (!next || next === original || disabled) return;
       onSaveEdit?.({ ...editingMessage, newText: next });
@@ -702,7 +751,7 @@ export default function MessageComposer({
 
     if (pendingAttach) {
       // Typed text goes with the attachment as its caption (one message).
-      const caption = message.trim();
+      const caption = encodeMentions(message.trim());
       onSend?.(withReply(caption ? { ...pendingAttach, text: caption } : { ...pendingAttach }));
       if (caption) setMessage("");
       setPendingAttach(null);
@@ -740,7 +789,7 @@ export default function MessageComposer({
         return;
       }
     }
-    onSend?.(withReply(text));
+    onSend?.(withReply(typedCmd ? text : encodeMentions(text)));
     setMessage("");
     onClearReply?.();
     armLocalSlowmode();
@@ -1335,7 +1384,7 @@ export default function MessageComposer({
             sections={pickerUserSections}
             activeIndex={pickerIndex}
             onHover={setPickerIndex}
-            onPick={(it) => (mentionState ? insertMention(it.user.username) : fillArg(`@${it.user.username}`))}
+            onPick={pickMentionItem}
             compact={compactUi}
             self={argState?.cmd.args?.[0]?.optional ? me : null}
           />

@@ -344,6 +344,33 @@ function markPrefix(text, q) {
   );
 }
 
+/**
+ * Messaging phase 5: a role (in its colour) or @everyone / @here in the @ list,
+ * after the people. The line under it says who will be notified.
+ */
+function MentionTargetRow({ it, query, active, compact, onHover, onPick }) {
+  const { t } = useLocale();
+  const isRole = it.kind === "role";
+  const name = isRole ? it.role.name : it.mass;
+  const color = isRole ? it.role.hex || "#8a93a8" : "var(--dsx-accent, #587AF5)";
+  const sub = isRole
+    ? t(it.role.mentionable ? "msg5.roles.subRole" : "msg5.roles.subRoleAdmin")
+    : t(it.mass === "everyone" ? "msg5.roles.subEveryone" : "msg5.roles.subHere");
+  const Glyph = isRole ? Shield : Users;
+  return (
+    <button type="button" role="option" aria-selected={active} className={`dsx-pr-row dsx-mention-target ${active ? "is-sel" : ""}`} onMouseMove={onHover} onClick={onPick} data-testid={isRole ? "mention-role" : `mention-${it.mass}`}>
+      <span className="av">
+        <span className="dsx-mt-ico" style={{ "--c": color }} aria-hidden="true"><Glyph size={18} /></span>
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <div className="nm" style={isRole && it.role.hex ? { color: it.role.hex } : undefined}>@{markPrefix(name, query)}</div>
+        <div className="un">{sub}</div>
+      </div>
+      <div className="r">{active && !compact ? <span className="dsx-kbd">↵</span> : null}</div>
+    </button>
+  );
+}
+
 /** "Choose a user · “yi”": recent people here / all members (+ yourself when the arg is optional). */
 export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover, onPick, compact = false, self = null, menuRef }) {
   const { t } = useLocale();
@@ -370,6 +397,9 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
               n += 1;
               const idx = n;
               const active = idx === activeIndex;
+              if (it.kind === "role" || it.kind === "mass") {
+                return <MentionTargetRow key={it.kind === "role" ? `role-${it.role.id}` : `mass-${it.mass}`} it={it} query={query} active={active} compact={compact} onHover={() => !active && onHover?.(idx)} onPick={() => onPick?.(it)} />;
+              }
               const u = it.user;
               const name = u.nickname || u.displayName || u.username;
               return (

@@ -9,10 +9,12 @@ import { UAH_RU } from "./uah.ru.js";
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_RU } from "./profileMediaPicker.ru.js";
 import { MSG4_RU } from "./msg4.ru.js";
+import { MSG5_RU } from "./msg5.ru.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
   "msg4": MSG4_RU,
+  "msg5": MSG5_RU,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -5952,7 +5954,8 @@ export const nested = {
     "maxUses25": "25 использований",
     "maxUses5": "5 использований",
     "memberFor": "@{handle} · на сервере {age}",
-    "mentionable": "Любой может @упомянуть",
+    "mentionable": "Можно упоминать",
+    "mentionableSub": "Если включено, любой может @упомянуть эту роль, и её участники получат уведомление. Если выключено — только те, кто может управлять ролями.",
     "min1": "1 мин",
     "min10": "10 мин",
     "min15": "15 мин",
@@ -9832,6 +9835,7 @@ export const phrases = {
   "Slow mode is on: you can send another message in {seconds, plural, one {# second} other {# seconds}}.": "Включён медленный режим: следующее сообщение можно отправить через {seconds, plural, one {# секунду} few {# секунды} many {# секунд} other {# секунды}}.",
   "Slowmode": "Медленный режим",
   "Slowmode is on. Try again in {seconds}s.": "Включён медленный режим. Попробуйте через {seconds} с.",
+  "You can mention @everyone or @here again in {seconds}s.": "@everyone или @here снова можно будет использовать через {seconds} с.",
   "Slowmode is on: {time} between messages": "Включён медленный режим: {time} между сообщениями",
   "Slowmode presets": "Варианты медленного режима",
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.": "Медленный режим, темы, переопределения прав и каналы только для персонала — повседневные инструменты, которыми сообщества действительно пользуются.",

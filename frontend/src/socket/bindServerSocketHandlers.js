@@ -381,6 +381,8 @@ export function bindServerSocketHandlers(socket, ctx) {
     // A direct @mention is shown by the mention:received handler instead.
     const myName = String(getUser()?.username || "").toLowerCase();
     if (myName && Array.isArray(payload.mentions) && payload.mentions.includes(myName)) return;
+    // Messaging phase 5: pinged through a role / @everyone / @here (decided by the server).
+    if (payload.mentioned) return;
     const isActiveChannel =
       activeViewRef.current === "servers" && activeChannelRef.current?.id === channelId;
     if (!isActiveChannel) {
@@ -445,6 +447,10 @@ export function bindServerSocketHandlers(socket, ctx) {
           detail: { channelId, retryAfterSeconds: wait },
         })
       );
+    } else if (code === "MENTION_RATE_LIMITED") {
+      // Messaging phase 5: one @everyone / @here per minute per channel.
+      const wait = Math.max(1, Math.ceil(Number(retryAfterSeconds) || 1));
+      toast(tRuntime("msg5.roles.everyoneCooldown", { wait }), "warning");
     } else if (code === "RULES_REQUIRED") {
       toast(message || tRuntime("core.server.rulesRequired"), "warning");
       window.dispatchEvent(new CustomEvent("descall:server-rules-required"));

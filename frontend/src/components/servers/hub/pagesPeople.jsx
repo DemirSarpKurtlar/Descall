@@ -402,7 +402,7 @@ function RoleList({ sel, onPick, chev }) {
       <Sec first>{s.rolesSort}</Sec>
       <Reorder.Group as="div" axis="y" values={order} onReorder={setOrder} className="svh-group">
         {order.map((r) => (
-          <RoleItem key={r.id} role={r} sub={f("nMembers", { n: memberCountOf(r, data.members, server) })} chev={chev} sel={sel != null && String(sel) === String(r.id)}
+          <RoleItem key={r.id} role={r} sub={`${f("nMembers", { n: memberCountOf(r, data.members, server) })}${r.mentionable ? ` · ${s.mentionable}` : ""}`} chev={chev} sel={sel != null && String(sel) === String(r.id)}
             draggable={canManage && canEditServerRole(server, r)} onDragEnd={commit} onClick={() => { hapticSelection(); onPick(r); }} />
         ))}
         {everyone ? (
@@ -553,7 +553,7 @@ function RoleEditor({ route, roleId, draftKey }) {
             </span>
           )} />
           <Row t={s.hoist} tg={d.hoist} disabled={!editable || role?.isEveryone} onClick={() => { hapticSelection(); setD((x) => ({ ...x, hoist: !x.hoist })); }} />
-          <Row t={s.mentionable} tg={d.mentionable} disabled={!editable || role?.isEveryone} onClick={() => { hapticSelection(); setD((x) => ({ ...x, mentionable: !x.mentionable })); }} />
+          <Row t={s.mentionable} sub={role?.isEveryone ? null : s.mentionableSub} tg={d.mentionable} disabled={!editable || role?.isEveryone} onClick={() => { hapticSelection(); setD((x) => ({ ...x, mentionable: !x.mentionable })); }} />
         </Group>
         {!isNew && !role.isEveryone ? (
           <>

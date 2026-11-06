@@ -892,6 +892,28 @@ const UserPanel = forwardRef(function UserPanel({
   // Messaging phase 4: mention cards (lib/notificationService read this key already) and message text on cards.
   const [mentionNotifications, setMentionNotifications] = useState(stored.mentionNotifications !== false);
   const [notificationPreviews, setNotificationPreviews] = useState(stored.notificationPreviews !== false);
+  // Messaging phase 5: the switch is stored on the account too, so server pushes (iPhone, web) follow it.
+  const [previewError, setPreviewError] = useState("");
+  useEffect(() => {
+    if (activeTab !== "notifications") return undefined;
+    let alive = true;
+    authedRequest("/api/push-preview")
+      .then((r) => {
+        if (alive && r?.ready && typeof r.enabled === "boolean") setNotificationPreviews(r.enabled);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [activeTab]);
+  const changeNotificationPreviews = async (next) => {
+    setNotificationPreviews(next);
+    setPreviewError("");
+    try {
+      await authedRequest("/api/push-preview", { method: "PUT", body: { enabled: next } });
+    } catch (err) {
+      // 503: not on the server yet; this device still follows the switch.
+      if (Number(err?.status) !== 503) setPreviewError(t("msg5.preview.saveError"));
+    }
+  };
 
   /* ── iPhone push permission (native iOS app only) ── */
   const iosPush = isNativeIosPush();
@@ -2463,11 +2485,11 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Eye}
                   title={t("msg4.notify.previewSetting")}
-                  description={t("msg4.notify.previewSettingDesc")}
+                  description={previewError || t("msg5.preview.settingDesc")}
                 >
                   <Toggle
                     value={notificationPreviews}
-                    onChange={setNotificationPreviews}
+                    onChange={changeNotificationPreviews}
                     label={t("msg4.notify.previewSetting")}
                   />
                 </SettingRow>
