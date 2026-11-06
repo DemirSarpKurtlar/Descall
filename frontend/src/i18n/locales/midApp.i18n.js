@@ -20,6 +20,9 @@ export const MID_APP_I18N = {
     "GIFs couldn't load": "GIF'ler yüklenemedi",
     "Invite code": "Davet kodu",
     "Explore": "Keşfet",
+    "Welcome to #{channel}": "#{channel} kanalına hoş geldin",
+    "This is the start of the #{channel} channel.": "#{channel} kanalının başlangıcı burası.",
+    "Members couldn't load": "Üyeler yüklenemedi",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -35,6 +38,9 @@ export const MID_APP_I18N = {
     "GIFs couldn't load": "GIFs konnten nicht geladen werden",
     "Invite code": "Einladungscode",
     "Explore": "Entdecken",
+    "Welcome to #{channel}": "Willkommen in #{channel}",
+    "This is the start of the #{channel} channel.": "Das ist der Anfang des Kanals #{channel}.",
+    "Members couldn't load": "Mitglieder konnten nicht geladen werden",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -50,6 +56,9 @@ export const MID_APP_I18N = {
     "GIFs couldn't load": "No se pudieron cargar los GIF",
     "Invite code": "Código de invitación",
     "Explore": "Explorar",
+    "Welcome to #{channel}": "Te damos la bienvenida a #{channel}",
+    "This is the start of the #{channel} channel.": "Este es el comienzo del canal #{channel}.",
+    "Members couldn't load": "No se pudieron cargar los miembros",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -65,6 +74,9 @@ export const MID_APP_I18N = {
     "GIFs couldn't load": "Impossible de charger les GIF",
     "Invite code": "Code d'invitation",
     "Explore": "Explorer",
+    "Welcome to #{channel}": "Bienvenue dans #{channel}",
+    "This is the start of the #{channel} channel.": "C'est le début du salon #{channel}.",
+    "Members couldn't load": "Impossible de charger les membres",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -80,6 +92,9 @@ export const MID_APP_I18N = {
     "GIFs couldn't load": "Não foi possível carregar os GIFs",
     "Invite code": "Código de convite",
     "Explore": "Explorar",
+    "Welcome to #{channel}": "Boas-vindas ao #{channel}",
+    "This is the start of the #{channel} channel.": "Este é o início do canal #{channel}.",
+    "Members couldn't load": "Não foi possível carregar os membros",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -95,5 +110,8 @@ export const MID_APP_I18N = {
     "GIFs couldn't load": "Не удалось загрузить GIF",
     "Invite code": "Код приглашения",
     "Explore": "Обзор",
+    "Welcome to #{channel}": "Добро пожаловать в #{channel}",
+    "This is the start of the #{channel} channel.": "Это начало канала #{channel}.",
+    "Members couldn't load": "Не удалось загрузить участников",
   },
 };

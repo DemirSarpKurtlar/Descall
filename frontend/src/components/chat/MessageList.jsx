@@ -30,7 +30,8 @@ import VotersSheet from "../polls/VotersSheet";
 import PollCreateSheet from "../polls/PollCreateSheet";
 import { useCompact } from "../polls/dsxShared";
 import { bindPollSocket, editPollNow } from "../../lib/pollStore";
-import { BarChart3 } from "../ui/Icon.jsx";
+import { BarChart3, Hash } from "../ui/Icon.jsx";
+import EmptyState from "../ui/EmptyState";
 import MessageMediaLightbox from "./MessageMediaLightbox";
 import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";
@@ -492,6 +493,21 @@ export default function MessageList({
     return (
       <div className="message-list is-loading-skeleton" ref={listRef} aria-busy="true">
         <MessageSkeleton count={8} />
+      </div>
+    );
+  }
+
+  // UI audit #144: an empty text channel opens on a start-of-channel block
+  // (the same EmptyState as the rest of the app), not a blank pane.
+  if (activeChannel?.id && !isSearching && groupedMessages.length === 0) {
+    return (
+      <div className="message-list is-channel-start" ref={listRef}>
+        <EmptyState
+          className="channel-start"
+          icon={Hash}
+          title={t("Welcome to #{channel}", { channel: activeChannel.name || "" })}
+          body={activeChannel.topic || t("This is the start of the #{channel} channel.", { channel: activeChannel.name || "" })}
+        />
       </div>
     );
   }
