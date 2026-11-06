@@ -137,7 +137,7 @@ html.glass-ui .user-settings.is-mobile.g-settings .us-toggle {
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-toggle.active {
-  background: var(--g-ok);
+  background: var(--brand, #587af5);
 }
 
 html.glass-ui .user-settings.is-mobile.g-settings .us-toggle-knob {
