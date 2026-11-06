@@ -6,7 +6,7 @@ This is the server side of `docs/premium/CONTRACT.md`. Phase 1 has no payments. 
 
 | File | Live name (Descall-EU) | Status |
 |---|---|---|
-| `supabase/migrations/20261106_premium_memberships.sql` | `20261106_premium_memberships` | **Not applied yet.** The Supabase `apply_migration` call on 2026-11-02 asked for a confirmation that got no answer, and nothing was written. Read-only checks show no premium tables or functions and the old ledger CHECK. Apply the file as it is. |
+| `supabase/migrations/20261106_premium_memberships.sql` | `20261106_premium_memberships` | **Not applied yet.** Two Supabase `apply_migration` calls (2026-11-02 and 2026-11-06) stopped at the server's confirmation question, which got no answer, so nothing was written. Read-only checks afterwards show no premium tables, no premium functions, no `descoin_ledger_premium_gift_key` index, and the old ledger CHECK. Apply the file as it is in the repo (with the Supabase MCP, approving the prompt, or in the SQL editor), then run the checks under "After applying". |
 
 The migration only adds things:
 - New tables.
@@ -16,19 +16,42 @@ The migration only adds things:
 
 Nothing is dropped or renamed. The R3 tables are not touched. You can run the file twice safely.
 
+After applying, run these read-only checks:
+
+```sql
+SELECT (SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN
+         ('premium_plans','user_subscriptions','subscription_events','premium_bulk_batches','premium_bulk_results',
+          'premium_campaigns','premium_campaign_redemptions','payment_transactions')) AS tables,          -- 8
+       (SELECT count(*) FROM pg_proc WHERE pronamespace = 'public'::regnamespace AND proname LIKE 'premium%') AS functions, -- 18
+       (SELECT string_agg(id || ':' || monthly_descoin, ',' ORDER BY sort) FROM public.premium_plans) AS plans,       -- plus:5000,ultra:15000
+       (SELECT pg_get_constraintdef(oid) LIKE '%premium_gift%' FROM pg_constraint WHERE conname = 'descoin_ledger_reason_check') AS ledger_ok, -- true
+       (SELECT bool_and(relrowsecurity) FROM pg_class WHERE relname IN ('premium_plans','user_subscriptions','subscription_events',
+          'premium_bulk_batches','premium_bulk_results','premium_campaigns','premium_campaign_redemptions','payment_transactions')) AS rls, -- true
+       (SELECT has_function_privilege('anon', 'public.premium_campaign_redeem(uuid,text)', 'EXECUTE')) AS anon_exec; -- false
+```
+
 Until the migration is applied, the backend still runs:
 - `/api/premium/me` answers `plan: null`.
 - Admin premium routes answer 503 `premium_unavailable`.
 - `requireFeature` / `hasFeature` fail closed.
 - The scheduler logs one warning.
 
+## Future: 3-day free trial (not built)
+
+Owner decision, 2026-11-06: when paid subscriptions start, a new subscriber gets a 3-day free trial. Phase 1 does **not** build the trial flow. The schema only leaves room for it:
+- `user_subscriptions.trial_ends_at timestamptz` is optional. Nothing sets it in phase 1, so it stays NULL.
+- `subscription_events.kind` accepts `'trial'`. No phase 1 code writes it.
+- The unique index `subscription_events_one_trial_uq` on (`user_id`) where `kind = 'trial'` allows one trial per user, ever.
+
+When payments arrive, the payment flow writes the `trial` event and sets `trial_ends_at` in the same transaction. It must also decide whether the trial pays the DesCoin gift (phase 1 code does not decide this).
+
 ## Data model
 
 | Table | Notes |
 |---|---|
 | `premium_plans` | `plus` and `ultra` are seeded. Price columns stay null. `features` holds the effective key list. |
-| `user_subscriptions` | One row per user (`user_id` is the primary key). The CHECK requires `unlimited` to match `ends_at is null`. Extra columns: `coin_cycles_paid` and `created_at`. |
-| `subscription_events` | Append-only. A trigger rejects UPDATE, DELETE and TRUNCATE. The unique index on (`request_id`, `user_id`) makes retries idempotent. The unique index on (`user_id`, `cycle_at`) where `kind = 'coin_grant'` allows one gift per cycle. Extra columns: `campaign_id`, `coins`, `cycle_at` and `meta`. |
+| `user_subscriptions` | One row per user (`user_id` is the primary key). The CHECK requires `unlimited` to match `ends_at is null`. Extra columns: `coin_cycles_paid`, `created_at` and `trial_ends_at` (future trial, always NULL now). |
+| `subscription_events` | Append-only. A trigger rejects UPDATE, DELETE and TRUNCATE. The unique index on (`request_id`, `user_id`) makes retries idempotent. The unique index on (`user_id`, `cycle_at`) where `kind = 'coin_grant'` allows one gift per cycle, and the one on (`user_id`) where `kind = 'trial'` allows one future trial per user. Extra columns: `campaign_id`, `coins`, `cycle_at` and `meta`. |
 | `premium_bulk_batches` / `premium_bulk_results` | One batch per bulk `request_id`, with one result row per user. |
 | `premium_campaigns` / `premium_campaign_redemptions` | Kinds are `free_membership`, `percent` and `fixed`. Only `free_membership` does anything in phase 1. The other two answer `not_redeemable`. |
 | `payment_transactions` | Empty. Nothing writes to it in phase 1. |
@@ -174,3 +197,7 @@ Never INSERT into `user_subscriptions` or `descoin_ledger` by hand. That would s
 | `backend/lib/premium/features.selftest.cjs` | The feature lists and entitlements | `node scripts/run-tests.mjs` (it also runs in the Premium job) |
 
 Run the Postgres tests locally with `PREMIUM_TEST_PG_URL=postgresql://user@127.0.0.1:5432/postgres`. It must be a throwaway server; Supabase URLs are refused.
+
+## Data export
+
+The KVKK export (`lib/dataExport.js`) includes `premiumMembership` (the subscription row) and `premiumHistory` (events: kind, plans, dates, actor kind, coins). It leaves out admin ids, reasons and notes. Before the migration is applied, both show as `available: false`.
