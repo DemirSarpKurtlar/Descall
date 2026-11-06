@@ -1966,7 +1966,7 @@ a.mkt-feature-link {
   line-height: 1.45;
 }
 
-.mkt-download-platforms {
+.mkt-download-oslist {
   margin: 32px 0 8px;
   text-align: center;
   font-size: var(--fs-15, 0.9375rem);

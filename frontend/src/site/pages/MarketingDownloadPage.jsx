@@ -206,7 +206,7 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
         </div>
       </section>
 
-      <p className="mkt-download-platforms">{t("Works on Windows, Android, iPhone and the web.")}</p>
+      <p className="mkt-download-oslist">{t("Works on Windows, Android, iPhone and the web.")}</p>
 
       <section className="mkt-shot-row">
         <SeoProductPreview
