@@ -94,6 +94,7 @@ export default function ChatPanel({
   onAddClick,
   onViewChange,
   onStartCall,
+  activitySplitView = false,
   onOpenChatFromCalls,
   onStartGroupCall,
   onOpenGroupFromCalls,
@@ -746,7 +747,10 @@ export default function ChatPanel({
           onClearManual={activity?.clearManual}
           onUpdatePrivacy={activity?.updatePrivacy}
           onlineUsers={onlineUsers}
-          isMobile={isMobile}
+          /* UI audit #147: on iPad the list column already shows the friends
+             list (ActivitySidebar); the detail side shows your status and
+             history like desktop instead of a second copy of that list. */
+          isMobile={isMobile && !activitySplitView}
           onRefresh={onRefresh}
           onAddFriend={() => onAddClick?.("friend")}
           onFriendSelect={onStartDm}

@@ -766,6 +766,7 @@ export default function AppLayout({
             <div className="app-chat-keep">
               <ErrorBoundary scope="pane">
               <ChatPanel
+                activitySplitView={isMobile && !drawerIsPage}
                 historyLoadError={historyLoadError}
                 dms={dms}
                 onDmPrefAction={onDmPrefAction}
