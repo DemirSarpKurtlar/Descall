@@ -72,13 +72,17 @@ html[data-theme="light"] .ps-root {
 .us-btn.ps-ib.is-danger, .us-btn.is-danger { color: var(--ps-danger); }
 .ps-sw-sm { transform: scale(0.82); transform-origin: right center; }
 .ps-in, .ps-select {
-  flex: 1 1 160px; min-width: 0; height: 34px; margin: 0; padding: 0 11px;
+  flex: none; min-width: 0; height: 34px; margin: 0; padding: 0 11px;
   border-radius: 9px; border: 0; background: var(--ps-well); box-shadow: inset 0 0 0 1px var(--ps-line2);
   font: inherit; font-size: var(--fs-13); color: inherit; width: auto;
 }
-.ps-select { flex: 0 1 auto; max-width: 100%; padding-right: 30px; }
+.ps-in { width: 100%; }
+.ps-form .ps-in { flex: 1 1 160px; width: auto; }
+.ps-form .ps-in.is-time { flex: 0 0 auto; width: 128px; }
+.ps-in.is-num, .ps-form .ps-in.is-num { flex: 0 0 auto; width: 76px; }
+.ps-select { max-width: 100%; padding-right: 30px; }
 .ps-in:focus, .ps-select:focus { border: 0; box-shadow: inset 0 0 0 1.5px var(--ps-accent); }
-.ps-in.is-time { flex: 0 0 auto; width: 104px; }
+.ps-in.is-time { flex: 0 0 auto; width: 128px; }
 .ps-in.is-num { flex: 0 0 auto; width: 76px; }
 .ps-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ps-badge { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: var(--fs-11); font-weight: 700; background: var(--ps-fill); white-space: nowrap; }
@@ -93,7 +97,8 @@ html[data-theme="light"] .ps-root {
 
 /* segmented control */
 .ps-seg { display: flex; padding: 3px; border-radius: 10px; background: var(--ps-fill); gap: 2px; min-width: 0; }
-.ps-seg.is-wrap { flex-wrap: wrap; }
+.ps-seg.is-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.ps-seg.is-wrap button { white-space: normal; text-align: center; line-height: 1.25; }
 .ps-seg button {
   flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0;
   border: 0; background: transparent; color: inherit; font: inherit; font-size: var(--fs-12); font-weight: 600;
@@ -105,7 +110,7 @@ html[data-theme="light"] .ps-root {
 .ps-seg button span { overflow: hidden; text-overflow: ellipsis; }
 
 /* choice tiles */
-.ps-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+.ps-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; }
 .ps-tile {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; margin: 0;
   border: 0; border-radius: 10px; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0;

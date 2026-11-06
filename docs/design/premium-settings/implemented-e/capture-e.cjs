@@ -242,6 +242,16 @@ async function checkSliders(page, key) {
       await frame(page);
       await page.screenshot({ path: path.join(OUT, `${cat}-dark.png`) });
     }
+    if (process.env.EXTRA) {
+      // One screenshot per card of the category: <key>.png.
+      const keys = await page.$$eval('.ps-card[data-feature]', (els) => els.map((e) => e.getAttribute('data-feature')));
+      for (const k of keys) {
+        if (!(await openCard(page, k))) continue;
+        await page.evaluate((key) => document.querySelector(`[data-feature="${key}"]`)?.scrollIntoView({ block: 'start' }), k);
+        await page.waitForTimeout(250);
+        await page.screenshot({ path: path.join(OUT, `${k}.png`) });
+      }
+    }
     if (process.env.CHECK || process.env.SLIDERS) {
       const keys = await page.$$eval('.ps-card[data-feature]', (els) => els.map((e) => e.getAttribute('data-feature')));
       for (const k of keys) {

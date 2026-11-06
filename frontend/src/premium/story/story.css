@@ -271,7 +271,7 @@
 .pv-route .wires { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pv-route .wires path { fill: none; stroke: #587af5; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .pv-route .wires path.b { stroke: #30b458; }
-.pv-route .src, .pv-route .dst { position: absolute; height: 20%; display: flex; align-items: center; gap: 5px; padding: 0 7px; border-radius: 7px; background: rgba(255, 255, 255, 0.08); font-size: var(--fs-11); font-weight: 600; max-width: 32%; min-width: 0; }
+.pv-route .src, .pv-route .dst { position: absolute; height: 20%; display: flex; align-items: center; gap: 5px; padding: 0 7px; border-radius: 7px; background: rgba(255, 255, 255, 0.08); font-size: var(--fs-11); font-weight: 600; max-width: 40%; min-width: 0; }
 .pv-route .src { left: 4%; color: #b8c8ff; }
 .pv-route .src.b, .pv-route .dst.b { color: #9fe8b6; }
 .pv-route .dst { right: 4%; }
@@ -321,11 +321,12 @@
 .pv-ptt .wave { position: relative; display: flex; align-items: center; height: 44%; width: 46%; }
 .pv-ptt .wave .pv-bars { height: 100%; }
 .pv-ptt .tail { height: 4px; border-radius: 2px; background: repeating-linear-gradient(90deg, #30b458 0 4px, transparent 4px 7px); margin-left: 4px; }
-.pv-hk { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 7% 6%; align-content: center; }
+.pv-hk { display: grid; grid-template-columns: 1fr; gap: 3px; padding: 4% 8%; align-content: center; }
+.ps-pv.is-lg .pv-hk .pa-keycaps kbd { padding: 1px 5px; line-height: 1.3; }
 .pv-hk .hk { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .pv-hk .ic { width: 22px; height: 22px; border-radius: 6px; flex: none; display: grid; place-items: center; background: rgba(88, 122, 245, 0.3); }
 .pv-hk .pa-keycaps { flex-wrap: nowrap; overflow: hidden; }
-.ps-pv.is-xs .pv-hk { gap: 3px; padding: 6%; }
+.ps-pv.is-xs .pv-hk { grid-template-columns: 1fr 1fr; gap: 3px; padding: 6%; }
 .ps-pv.is-xs .pv-hk .pa-keycaps { display: none; }
 .ps-pv.is-xs .pv-hk .ic { width: 12px; height: 12px; border-radius: 3px; }
 .ps-pv.is-xs .pv-hk .ic svg { width: 7px; height: 7px; }
@@ -543,13 +544,13 @@
 .ps-scene.is-keys .kb-wrap .pv-kb i { height: 14px; }
 .ps-scene.is-keys .kb-wrap .pv-kb .row { gap: 4px; }
 .ps-scene.is-keys .mouse { position: absolute; right: 8%; top: 50%; width: 44px; max-width: none; }
-.ps-scene.is-keys .media { position: absolute; left: 30%; top: 8%; display: flex; gap: 4px; }
+.ps-scene.is-keys .media { position: absolute; left: 7%; top: 8%; display: flex; gap: 4px; }
 .ps-scene.is-keys .media span { width: 22px; height: 16px; border-radius: 4px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.1); }
 .ps-scene.is-keys .media span.on { background: #5e5ce6; }
 .ps-scene.is-keys .toast { width: 28%; top: 8%; right: 4%; padding: 6px; flex-direction: row; align-items: center; gap: 6px; }
 .ps-scene.is-keys .toast .pv-av { width: 16px; font-size: 0; }
 .ps-scene.is-keys .toast .rep { width: 14px; height: 14px; border-radius: 4px; display: grid; place-items: center; background: #587af5; flex: none; }
-.ps-scene.is-keys .pal { position: absolute; left: 52%; top: 8%; width: 14%; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 6px; background: rgba(30, 33, 45, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.ps-scene.is-keys .pal { position: absolute; left: 34%; top: 8%; width: 20%; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 6px; background: rgba(30, 33, 45, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
 .ps-scene.is-keys .pal i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.35); }
 .ps-scene.is-notif .game { left: 50%; right: 4%; top: 30%; bottom: 20%; border-radius: 8px; inset: auto; position: absolute; width: 34%; height: 46%; left: 50%; top: 30%; }
 .ps-scene.is-notif .held { position: absolute; left: 66%; top: 34%; display: flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px; background: rgba(10, 12, 18, 0.7); font-size: var(--fs-11); z-index: 3; }

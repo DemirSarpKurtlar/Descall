@@ -71,8 +71,8 @@ function Shortcuts({ pin }) {
       {pin("global_ptt", P("right:3%;top:46%"))}
       {pin("per_user_volume_hotkeys", P("left:66%;bottom:12%"))}
       {pin("custom_hotkeys", P("left:4%;bottom:12%"))}
-      {pin("media_keys", P("left:30%;top:6%"))}
-      {pin("quick_launcher", P("left:47%;top:6%"))}
+      {pin("media_keys", P("left:1%;top:5%"))}
+      {pin("quick_launcher", P("left:29%;top:5%"))}
       {pin("quick_reply", P("right:4%;top:6%"))}
     </div>
   );

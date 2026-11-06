@@ -31,7 +31,7 @@ export function Panel() {
         <SetRow icon="moon" label={t("premiumAudio.focus.status")} desc={active ? t("premiumAudio.focus.activeFor", { minutes: minutesLeft }) : t("premiumAudio.focus.inactive")} ds={ds("status")}>
           {active ? <Btn className="is-danger" ds={ds("end")} onClick={() => start(0)}>{t("premiumAudio.focus.end")}</Btn> : null}
         </SetRow>
-        <div className="ps-seg is-wrap" role="group" aria-label={t("premiumAudio.focus.status")} data-s={ds("durations")}>
+        <div className="ps-seg" role="group" aria-label={t("premiumAudio.focus.status")} data-s={ds("durations")}>
           {DURATIONS.map((m) => (
             <button key={m} type="button" aria-pressed={!active && m === s.lastMinutes} onClick={() => start(m)}>
               <span>{m < 60 ? t("premiumAudio.common.minutes", { n: m }) : t("premiumAudio.common.hours", { n: m / 60 })}</span>
