@@ -56,6 +56,7 @@ const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
+import { announcementIconOrDefault } from "../../lib/announcements";
 import {
   parseAppDate,
   formatAppDateTime,
@@ -242,7 +243,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   // Announcements States
   const [announcements, setAnnouncements] = useState([]);
   const [announcementDraft, setAnnouncementDraft] = useState({
-    title: "", content: "", priority: "normal", color: "#5865F2",
+    title: "", content: "", priority: "normal", color: "#587AF5",
     pinned: false, target: "all", emoji: "📢",
   });
   const [showComposePanel, setShowComposePanel] = useState(false);
@@ -840,8 +841,9 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       <div className="admin-body">
         {tab === "shop" && (
           <section className="admin-section admin-section-full">
-            <AdminDescoinReconcile />
-            <AdminShop />
+            <AdminShop>
+              <AdminDescoinReconcile />
+            </AdminShop>
           </section>
         )}
 
@@ -870,7 +872,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                  <Megaphone size={22} style={{ color: "#5865F2" }} /> {t("Announcements")}
+                  <Megaphone size={22} style={{ color: "#587AF5" }} /> {t("Announcements")}
                 </h2>
                 <p className="muted" style={{ marginTop: 4 }}>{t("Broadcast messages to all users in real-time")}</p>
               </div>
@@ -915,10 +917,12 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                     <div>
                       <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Icon")}</label>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {["📢", "🚨", "✅", "⚠️", "🔔", "🎉", "🔧", "📌"].map((em) => (
+                        {["📢", "🚨", "✅", "⚠️", "🔔", "🎉", "🔧", "📌"].map((em, i) => (
                           <button
                             key={em}
                             type="button"
+                            aria-pressed={announcementDraft.emoji === em}
+                            aria-label={`${t("Icon")} ${i + 1}`}
                             onClick={() => setAnnouncementDraft((d) => ({ ...d, emoji: em }))}
                             style={{
                               width: 36, height: 36, borderRadius: 8, border: "none", cursor: "pointer", fontSize: 18,
@@ -926,7 +930,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                               outline: announcementDraft.emoji === em ? `2px solid ${announcementDraft.color}` : "none",
                               transition: "all 0.15s",
                             }}
-                          >{em}</button>
+                          >{(() => { const Glyph = announcementIconOrDefault(em); return <Glyph size={18} aria-hidden="true" />; })()}</button>
                         ))}
                       </div>
                     </div>
@@ -940,7 +944,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                             className="admin-input"
                             value={announcementDraft.priority}
                             onChange={(e) => {
-                              const colors = { normal: "#5865F2", important: "#F0B232", urgent: "#DA373C" };
+                              const colors = { normal: "#587AF5", important: "#F0B232", urgent: "#DA373C" };
                               setAnnouncementDraft((d) => ({ ...d, priority: e.target.value, color: colors[e.target.value] }));
                             }}
                             style={{ width: "100%" }}
@@ -1035,14 +1039,14 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         border: `1px solid ${announcementDraft.color}33`,
                       }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                          <span style={{ fontSize: 18 }}>{announcementDraft.emoji}</span>
+                          {(() => { const Glyph = announcementIconOrDefault(announcementDraft.emoji); return <Glyph size={18} aria-hidden="true" style={{ color: announcementDraft.color }} />; })()}
                           <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-0)" }}>{announcementDraft.title || t("Untitled")}</span>
                           {announcementDraft.pinned && <Flag size={12} style={{ color: announcementDraft.color }} />}
                           <span style={{
                             marginLeft: "auto", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
                             padding: "2px 8px", borderRadius: 4,
-                            background: announcementDraft.priority === "urgent" ? "#DA373C22" : announcementDraft.priority === "important" ? "#F0B23222" : "#5865F222",
-                            color: announcementDraft.priority === "urgent" ? "#DA373C" : announcementDraft.priority === "important" ? "#F0B232" : "#5865F2",
+                            background: announcementDraft.priority === "urgent" ? "#DA373C22" : announcementDraft.priority === "important" ? "#F0B23222" : "#587AF522",
+                            color: announcementDraft.priority === "urgent" ? "#DA373C" : announcementDraft.priority === "important" ? "#F0B232" : "#587AF5",
                           }}>{announcementDraft.priority}</span>
                         </div>
                         <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{announcementDraft.content || t("No message yet.")}</p>
@@ -1076,7 +1080,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                             const body = await res.json().catch(() => ({}));
                             throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
                           }
-                          setAnnouncementDraft({ title: "", content: "", priority: "normal", color: "#5865F2", pinned: false, target: "all", emoji: "📢" });
+                          setAnnouncementDraft({ title: "", content: "", priority: "normal", color: "#587AF5", pinned: false, target: "all", emoji: "📢" });
                           setShowComposePanel(false);
                           await loadAnnouncements();
                         } catch (e) {
@@ -1114,26 +1118,26 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         background: "var(--surface-2)",
                         borderRadius: 12,
                         padding: "16px 18px",
-                        borderLeft: `4px solid ${a.color || "#5865F2"}`,
-                        border: `1px solid ${(a.color || "#5865F2")}22`,
+                        borderLeft: `4px solid ${a.color || "#587AF5"}`,
+                        border: `1px solid ${(a.color || "#587AF5")}22`,
                         position: "relative",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                        <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0, marginTop: 2 }}>{a.emoji || "📢"}</span>
+                        {(() => { const Glyph = announcementIconOrDefault(a.emoji); return <Glyph size={22} aria-hidden="true" style={{ flexShrink: 0, marginTop: 2, color: a.color || "#587AF5" }} />; })()}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                             <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-0)" }}>{a.title}</span>
                             {a.pinned && (
-                              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: a.color || "#5865F2", fontWeight: 600 }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: a.color || "#587AF5", fontWeight: 600 }}>
                                 <Flag size={11} /> {t("Pinned")}
                               </span>
                             )}
                             <span style={{
                               fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
                               padding: "2px 8px", borderRadius: 4,
-                              background: a.priority === "urgent" ? "#DA373C22" : a.priority === "important" ? "#F0B23222" : "#5865F222",
-                              color: a.priority === "urgent" ? "#DA373C" : a.priority === "important" ? "#F0B232" : "#5865F2",
+                              background: a.priority === "urgent" ? "#DA373C22" : a.priority === "important" ? "#F0B23222" : "#587AF522",
+                              color: a.priority === "urgent" ? "#DA373C" : a.priority === "important" ? "#F0B232" : "#587AF5",
                             }}>{a.priority}</span>
                             {a.target && a.target !== "all" && (
                               <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", background: "var(--surface-3)", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -1171,10 +1175,10 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                               }
                             }}
                             style={{
-                              background: a.pinned ? (a.color || "#5865F2") + "22" : "var(--surface-3)",
+                              background: a.pinned ? (a.color || "#587AF5") + "22" : "var(--surface-3)",
                               border: "none", borderRadius: 7, width: 32, height: 32,
                               display: "flex", alignItems: "center", justifyContent: "center",
-                              cursor: "pointer", color: a.pinned ? (a.color || "#5865F2") : "var(--text-muted)",
+                              cursor: "pointer", color: a.pinned ? (a.color || "#587AF5") : "var(--text-muted)",
                               transition: "all 0.15s",
                             }}
                           >
@@ -1472,7 +1476,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
               <h2>{t("Content filters")}</h2>
               <p className="muted">{t("Profanity filter and flagged messages")}</p>
               <div className="admin-toolbar">
-                <RippleButton type="button" onClick={() => act(loadSystem)} disabled={busy}>
+                <RippleButton type="button" className="admin-btn-ghost" onClick={() => act(loadSystem)} disabled={busy}>
+                  <RefreshCw size={15} className={busy ? "spin" : ""} aria-hidden="true" />
                   {t("Refresh")}
                 </RippleButton>
               </div>

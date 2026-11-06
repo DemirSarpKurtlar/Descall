@@ -9,7 +9,7 @@ export const TR_APPROVED_UI = {
   "Platforms": "Platformlar",
   "A direct message with a poll on Descall": "Descall'da anketli bir özel mesaj",
   // Cookie bar
-  "We care about your privacy": "Gizliliğine önem veriyoruz",
+  "Your cookie choice": "Çerez tercihin",
   "We only use essential cookies; we ask for your permission for analytics.":
     "Yalnızca gerekli çerezleri kullanıyoruz; analiz için iznini istiyoruz.",
   "We only use the cookies Descall needs to run. We ask for your permission for analytics cookies.":
