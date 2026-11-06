@@ -1378,6 +1378,11 @@ button.us-row.g-privacy-link:hover {
   flex-wrap: wrap;
 }
 
+/* A lone action button sits on the right, like the 2FA "Kur" button. */
+.us-email-verify-flow.is-end {
+  justify-content: flex-end;
+}
+
 .us-inline-input {
   flex: 1;
   min-width: 140px;

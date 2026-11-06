@@ -1826,21 +1826,21 @@ const UserPanel = forwardRef(function UserPanel({
               <div className="us-card us-form">
                 <SettingRow
                   icon={Mail}
-                  title={t("Email address")}
+                  title={emailVerified && me?.email ? me.email : t("Email address")}
                   description={
-                    emailVerified
+                    emailVerified && me?.email
                       ? t("Verified, used for sign-in codes and account alerts.")
                       : t("Verify your email to enable two-factor authentication.")
                   }
                 >
-                  {emailVerified && (
+                  {emailVerified && me?.email && (
                     <span className="us-verified-pill">
                       <CheckCircle2 size={13} /> {t("Verified")}
                     </span>
                   )}
                 </SettingRow>
 
-                {!emailVerified && (
+                {!(emailVerified && me?.email) && (
                   <div className="us-email-verify-flow">
                     <input
                       type="email"
@@ -1919,7 +1919,7 @@ const UserPanel = forwardRef(function UserPanel({
                     </a>
                   </div>
                 ) : pwStage === "idle" || pwStage === "done" ? (
-                  <div className="us-email-verify-flow">
+                  <div className="us-email-verify-flow is-end">
                     <button
                       type="button"
                       className="us-btn primary"
