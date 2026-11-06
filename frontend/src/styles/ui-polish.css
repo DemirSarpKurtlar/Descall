@@ -1879,6 +1879,16 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   color: var(--text-muted);
 }
 
+.giphy-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--gd-t1, var(--g-t1, var(--text-0)));
+}
+
+.giphy-state.empty-state { grid-column: 1 / -1; }
+
 .giphy-close {
   width: 28px;
   height: 28px;

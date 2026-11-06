@@ -16,6 +16,8 @@ export const MID_APP_I18N = {
     "You won": "Kazandın",
     "You lost": "Kaybettin",
     "It's a tie": "Berabere",
+    "GIFs": "GIF",
+    "GIFs couldn't load": "GIF'ler yüklenemedi",
   },
   de: {
     "The store couldn't load right now": "Der Shop konnte gerade nicht geladen werden",
@@ -27,6 +29,8 @@ export const MID_APP_I18N = {
     "You won": "Gewonnen",
     "You lost": "Verloren",
     "It's a tie": "Unentschieden",
+    "GIFs": "GIFs",
+    "GIFs couldn't load": "GIFs konnten nicht geladen werden",
   },
   es: {
     "The store couldn't load right now": "La tienda no se pudo cargar ahora",
@@ -38,6 +42,8 @@ export const MID_APP_I18N = {
     "You won": "Ganaste",
     "You lost": "Perdiste",
     "It's a tie": "Empate",
+    "GIFs": "GIF",
+    "GIFs couldn't load": "No se pudieron cargar los GIF",
   },
   fr: {
     "The store couldn't load right now": "La boutique n'a pas pu se charger",
@@ -49,6 +55,8 @@ export const MID_APP_I18N = {
     "You won": "Gagné",
     "You lost": "Perdu",
     "It's a tie": "Égalité",
+    "GIFs": "GIF",
+    "GIFs couldn't load": "Impossible de charger les GIF",
   },
   "pt-BR": {
     "The store couldn't load right now": "A loja não carregou agora",
@@ -60,6 +68,8 @@ export const MID_APP_I18N = {
     "You won": "Você ganhou",
     "You lost": "Você perdeu",
     "It's a tie": "Empate",
+    "GIFs": "GIFs",
+    "GIFs couldn't load": "Não foi possível carregar os GIFs",
   },
   ru: {
     "The store couldn't load right now": "Магазин сейчас не загрузился",
@@ -71,5 +81,7 @@ export const MID_APP_I18N = {
     "You won": "Победа",
     "You lost": "Поражение",
     "It's a tie": "Ничья",
+    "GIFs": "GIF",
+    "GIFs couldn't load": "Не удалось загрузить GIF",
   },
 };
