@@ -46,7 +46,7 @@ button.s3-row:focus-visible { outline: 2px solid var(--s3-link); outline-offset:
 .s3-row .lab { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .s3-row .lab b { font-weight: 500; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .s3-row .lab small { font-size: 13px; color: var(--s3-t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.s3-row .val { color: var(--s3-t2); font-size: 16px; white-space: nowrap; }
+.s3-row .val { color: var(--s3-t2); font-size: 16px; white-space: nowrap; min-width: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
 .s3-chev { width: 8px; height: 13px; flex: none; opacity: 0.32; color: var(--s3-t1); }
 .s3-check { color: var(--s3-link); flex: none; }
 .s3-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #f0453a; color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }

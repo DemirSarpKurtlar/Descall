@@ -206,7 +206,7 @@ export default function AppearancePane({
     ? equipped.name
     : ownedThemes.length
       ? t("shell.appearance.themesOwned", { count: ownedThemes.length })
-      : t("shell.appearance.browseShop");
+      : null; // nothing owned yet: the chevron alone says "opens the shop"
 
   const left = (
     <>
@@ -215,7 +215,7 @@ export default function AppearancePane({
       <S3Group className="s3-store">
         <S3Row
           icon="palette"
-          color="purple"
+          color="brand"
           title={t("shell.appearance.shopThemes")}
           value={storeValue}
           chevron
@@ -233,7 +233,7 @@ export default function AppearancePane({
                   onClick={() => onPickPremiumTheme?.(item)}
                 />
               )),
-              <S3Row key="shop" icon="bag" color="purple" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
+              <S3Row key="shop" icon="bag" color="brand" title={t("shell.appearance.openShop")} chevron onClick={() => onOpenShop?.()} />,
             ]
           : null}
       </S3Group>
