@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
@@ -25,6 +25,9 @@ import {
 import { useHoverCardContext } from "./HoverCardContext";
 import { Gamepad2, Volume2, Monitor, Send } from "../ui/Icon.jsx";
 import "../../styles/user-hover-card.css";
+
+// Descall+ game status card (the member's perk; the server decides who may see it).
+const PremiumGameCard = lazy(() => import("../../premium/gaming/PremiumGameCard.jsx"));
 
 /*
  * Desktop hover profile card, design C "Detaylı" (3.7.13, owner pick).
@@ -247,6 +250,8 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
             </span>
           </div>
         </div>
+      ) : userId ? (
+        <Suspense fallback={null}><PremiumGameCard userId={userId} /></Suspense>
       ) : null}
 
       {model.bio || memberSince || mutualFriends.length || mutualServers.length ? (
