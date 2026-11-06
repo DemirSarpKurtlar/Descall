@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 /**
  * Preload for the admin windows (Kayıt İstatistikleri, Yönetici Paneli). They boot only the
@@ -19,6 +19,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setLocale: (locale) => ipcRenderer.send('app:locale', String(locale || '').slice(0, 16)),
   // Not in the admin windows: no clipboard image (composer paste falls back to the browser).
   readClipboardImage: () => Promise.resolve(null),
+  // Page zoom (Ctrl + mouse wheel, src/lib/smoothZoom.js), same as the main window.
+  zoom: {
+    get: () => webFrame.getZoomFactor(),
+    set: (factor) => {
+      const f = Number(factor);
+      if (Number.isFinite(f) && f >= 0.5 && f <= 2) webFrame.setZoomFactor(f);
+    },
+  },
 
   // Updates are driven by the main window only.
   checkForUpdates: () => Promise.resolve({ success: true, skipped: true }),
