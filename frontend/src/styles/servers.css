@@ -2730,12 +2730,12 @@ button.member-row.server-member-row {
 .server-moderation-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
 }
 
 .server-moderation-head h3 {
-  margin: 0;
+  margin: 0 auto 0 0;
 }
 
 .server-moderation-toolbar {

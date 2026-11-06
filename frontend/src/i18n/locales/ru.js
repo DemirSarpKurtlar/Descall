@@ -6261,6 +6261,7 @@ export const phrases = {
   "API reachable": "API доступен",
   "Master switch": "Главный переключатель",
   "Never mind": "Не нужно",
+  "People you ban from this server show up here.": "Здесь появятся люди, которых ты заблокируешь на этом сервере.",
   "Private messages, group messages and mentions": "Личные сообщения, групповые сообщения и упоминания",
   "Request timed out": "Время ожидания запроса истекло",
   " (you)": " (вы)",

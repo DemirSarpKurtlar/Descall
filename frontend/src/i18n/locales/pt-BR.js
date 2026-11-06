@@ -6261,6 +6261,7 @@ export const phrases = {
   "API reachable": "API acessível",
   "Master switch": "Chave principal",
   "Never mind": "Deixa pra lá",
+  "People you ban from this server show up here.": "As pessoas que você banir deste servidor aparecem aqui.",
   "Private messages, group messages and mentions": "Mensagens privadas, mensagens de grupo e menções",
   "Request timed out": "A solicitação expirou",
   " (you)": " (você)",

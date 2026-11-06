@@ -631,7 +631,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         />
       ) : items.length === 0 ? (
         <EmptyState
-          className="shop-empty-state"
+          className="shop-empty-state is-compact"
+          illustration="none"
           icon={Store}
           title={t("The shop is empty right now")}
           body={t("You’ll see new items here once they’re added.")}
