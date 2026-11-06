@@ -50,7 +50,8 @@ export default function StatusPage() {
   }, []);
 
   // UI audit #23: the date follows the page language (long date style).
-  const updated = formatDate(`${SITE_OPERATOR.lastUpdatedIso}T12:00:00Z`, locale, { dateStyle: "long" }) || SITE_OPERATOR.lastUpdatedLabel;
+  const updated =
+    formatDate(`${SITE_OPERATOR.statusReviewedIso}T12:00:00Z`, locale, { dateStyle: "long" }) || SITE_OPERATOR.statusReviewedIso;
 
   const crumbs = [
     { label: "Home", to: "/" },
@@ -115,6 +116,8 @@ export default function StatusPage() {
           </dd>
         </div>
       </dl>
+
+      <p className="seo-note">{t("The API row is checked live from your browser each time you open this page.")}</p>
 
       <p className="seo-note">
         <Link to="/security">{t("Security details")}</Link>

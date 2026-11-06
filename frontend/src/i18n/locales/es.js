@@ -10954,6 +10954,12 @@ export const phrases = {
   "More comparisons": "Más comparaciones",
   "Ready-made Gaming template": "Plantilla de Gaming lista para usar",
   ...MID_APP_I18N.es,
+  "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall no está afiliado a Discord Inc. Discord es una marca comercial de Discord Inc.",
+  "The API row is checked live from your browser each time you open this page.": "La fila de la API se comprueba en vivo desde tu navegador cada vez que abres esta página.",
+  "Author": "Autor",
+  "Download Descall for Windows, iPhone, Android and the web": "Descarga Descall para Windows, iPhone, Android y la web",
+  "iPhone and iPad app on the App Store": "App para iPhone y iPad en el App Store",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall: chat de voz, servidores y pantalla compartida para amigos",
 };
 
 export default { nested, phrases };

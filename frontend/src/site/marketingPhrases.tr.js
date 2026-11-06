@@ -355,4 +355,12 @@ export const MARKETING_TR = {
   "Discord vs Descall article": "Discord ve Descall yazısı",
   "Descall features": "Descall özellikleri",
   ...TR_APPROVED_UI,
+  "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.":
+    "Descall, Discord Inc. ile bağlantılı değildir. Discord, Discord Inc.’in ticari markasıdır.",
+  "The API row is checked live from your browser each time you open this page.":
+    "API satırı, bu sayfayı her açtığında tarayıcından canlı olarak kontrol edilir.",
+  Author: "Yazar",
+  "Download Descall for Windows, iPhone, Android and the web": "Descall’ı indir: Windows, iPhone, Android ve tarayıcı",
+  "iPhone and iPad app on the App Store": "App Store’da iPhone ve iPad uygulaması",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
 };

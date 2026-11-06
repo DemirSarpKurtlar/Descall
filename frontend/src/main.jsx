@@ -1,8 +1,6 @@
 import React, { Suspense, lazy } from "react";
 import { removeBootSplashNow, rootHasPainted } from "./lib/bootSplashDirect.js";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, HashRouter } from "react-router-dom";
-import ErrorBoundary from "./components/ErrorBoundary";
 import { isPublicMarketingPath } from "./site/marketingPaths";
 import { isCapacitorNativeShell, shouldBootMarketingShell } from "./lib/entryShell";
 import { getToken, hydrateSecureToken } from "./lib/storage";
@@ -100,10 +98,6 @@ function preloadAppStyles() {
   import("./styles/coinflip.css").catch(() => {});
 }
 
-const Router =
-  typeof window !== "undefined" && window.location.protocol === "file:"
-    ? HashRouter
-    : BrowserRouter;
 
 try {
   /* Cheap first-paint theme (marketing pages and the boot splash). The full
@@ -175,10 +169,9 @@ function scheduleMarketingHydration(run) {
     return;
   }
   if (!isPublicMarketingPath(path)) return;
-  // Hydrate right away on every public marketing route. The prerender shell is
-  // for crawlers only: index.html keeps it invisible (html.seo-hold) until the
-  // real page commits, so any delay here would just be a longer blank screen.
-  // (It used to be visible and flashed as a plain "old" landing before the real one.)
+  // Hydrate right away on every public marketing route. The prerendered page is the
+  // first paint (header and home hero mirror the React layout); React takes over with
+  // a short cross-fade (MarketingApp RevealMarketingShell).
   start();
 }
 
@@ -209,17 +202,23 @@ async function bootApp() {
   // One parallel wave (was two sequential ones): providers, styles, i18n,
   // glass flags and the boot skeleton. App.jsx was already requested in
   // boot() (prefetchAppChunk), so it downloads/parses alongside.
+  // react-router and the ErrorBoundary load here, not in the entry chunk: the marketing
+  // first paint never needs them (hydrateMarketing brings its own router).
   const [
     { ToastProvider },
     { LocaleProvider },
     { default: IosPwaInstallBanner },
     { default: AppBootSkeleton },
+    { BrowserRouter, HashRouter },
+    { default: ErrorBoundary },
   ] =
     await Promise.all([
       import("./context/ToastContext"),
       import("./context/LocaleContext"),
       import("./components/IosPwaInstallBanner"),
       import("./components/boot/AppBootSkeleton.jsx"),
+      import("./lib/appRouter.js"),
+      import("./components/ErrorBoundary"),
       // Same cascade order as before: app styles, then the skeleton's.
       import("./styles.css").then(() => import("./styles/boot-skeleton.css")),
       import("./i18n/index.js").then((m) => m.loadI18nCatalogs()),
@@ -231,6 +230,7 @@ async function bootApp() {
       import("./lib/appVisibility.js").then((m) => { m.installAppVisibility(); m.installIdlePause(); }).catch(() => {}),
     ]);
 
+  const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
   const RootApp = isSignupStatsWindow
     ? lazy(() => import("./components/admin/signupStats/SignupStatsPage.jsx"))
     : isAdminPanelWindow
@@ -327,13 +327,8 @@ async function boot() {
     .catch(() => {});
         })
         .catch((err) => {
+          // The prerendered page stays as it is: readable, with working links.
           console.error("[boot] marketing hydrate failed", err);
-          // Show the crawlable shell instead of a blank page if the chunk failed.
-          try {
-            window.__descallReleaseSeoHold?.();
-          } catch {
-            /* ignore */
-          }
         });
     });
     return;

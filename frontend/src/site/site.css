@@ -763,6 +763,11 @@ a.mkt-feature-link {
   line-height: 1.55;
 }
 
+/* Trademark note under the copyright line (every marketing page). */
+.mkt .mkt-footer-legal {
+  margin-top: 2px;
+}
+
 /* Auth modal, must stay in site.css (marketing entry). Without these rules the
    overlay is position:static and Sign In / Google render under the footer. */
 .login-modal-overlay {

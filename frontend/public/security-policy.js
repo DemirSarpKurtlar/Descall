@@ -20,12 +20,11 @@ export const INLINE_SCRIPT_HASHES = [
   "sha256-KaoFSX3TCKiHgad1CVsr8xoDclCAffaQrQtErU7iRqc=",
   "sha256-55Lg65UfHgpMWGmpdWaAw1ij+9uyiGVYnh+XvLULkP0=",
   "sha256-yBF1MUju54iRuL/fti/cWyhku2cnv6Ff2scoFZLOa3c=",
-  "sha256-8O6fXtGVKTVzWNUD8da/uLiptJqxgFDfLe0FJkarXGw=",
   "sha256-eSNFUNqALkZczatvPjUNWi4Zl3/adLqQoBwvL1fvHqo=",
   "sha256-J29WWJ9gW37XLrJy1kUJ5liUM4EpnRuD6JWk2L5GXQQ=",
   "sha256-icl7Mi8wQ4Qeo1kThT8X1XXcRY5zeujWPD+mH/9niW4=",
   "sha256-/Klya6xNTxAqERBzgqp2O3T0Na/gBdvbu0OUya8IKUw=",
-  "sha256-HB4RTzqka2uAWDjXtFNxvglnwQZWsAUFWEhER3B/iUU=",
+  "sha256-eWK7gQ15KEzlqKgGh/awdDXh3n3rfRTqjrkyEUcAHBg=",
   "sha256-uTUWQ7h7HJ1YJi/9oCc8AwDTUAvj+dsZ7s0p5cNMUcs=",
   // @csp-hashes-end
 ];

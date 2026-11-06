@@ -43,7 +43,7 @@ assert.ok(locs.includes(`${ORIGIN}/best-discord-alternative-for-gamers`));
 // /discord-alternative-turkey now 301s to /tr/discord-alternatifi (2.10.x), so it must not be listed.
 assert.ok(!locs.includes(`${ORIGIN}/discord-alternative-turkey`));
 assert.ok(locs.includes(`${ORIGIN}/blog`));
-assert.ok(locs.includes(`${ORIGIN}/blog/discord-vs-descall`));
+assert.ok(locs.includes(`${ORIGIN}/blog/discord-competitors`));
 assert.ok(locs.includes(`${ORIGIN}/apps-like-discord`));
 assert.ok(locs.includes(`${ORIGIN}/discord-replacement`));
 assert.ok(!locs.some((l) => /lfg|valorant|riot/i.test(l)), "retired gaming pages stay out of the sitemap");

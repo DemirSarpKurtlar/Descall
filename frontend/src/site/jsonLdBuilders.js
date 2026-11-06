@@ -1,6 +1,9 @@
 import { absoluteUrl, SITE_NAME } from "./seoConfig.js";
 import { organizationLogoLd } from "./siteIcons.js";
 import { SITE_OPERATOR } from "./siteIdentity.js";
+import { SITE_LOCALES } from "./siteLocales.js";
+import { APP_STORE_URL } from "./appStoreLink.js";
+import { ogImageFor } from "./ogImages.js";
 import {
   APP_ID,
   ORG_ID,
@@ -21,7 +24,6 @@ function personNode() {
     jobTitle: SITE_OPERATOR.founderTitle,
     description: `${OWNER_NAME} is the founder, owner, and CEO of Descall.`,
     url: absoluteUrl(SITE_OPERATOR.personPath),
-    image: absoluteUrl("/icon-512.png"),
     nationality: {
       "@type": "Country",
       name: SITE_OPERATOR.country,
@@ -41,7 +43,6 @@ function organizationNode() {
     "@type": "Organization",
     "@id": ORG_ID,
     name: SITE_NAME,
-    legalName: SITE_NAME,
     alternateName: ["Descall App", "Descall Chat"],
     url: absoluteUrl("/"),
     logo: organizationLogoLd(absoluteUrl),
@@ -49,7 +50,7 @@ function organizationNode() {
     email: SITE_OPERATOR.supportEmail,
     sameAs: [SITE_OPERATOR.githubUrl, SITE_OPERATOR.githubProfileUrl],
     description:
-      "Free Discord alternative for servers, roles, channels, chat, voice, and screen share.",
+      "Descall is a free chat and calling app with servers, roles, channels, voice and video calls, and screen share, based in Turkey.",
     foundingLocation: {
       "@type": "Place",
       address: {
@@ -89,7 +90,8 @@ export function buildWebSiteLd() {
     alternateName: ["Descall App", "Descall Chat"],
     url: absoluteUrl("/"),
     logo: organizationLogoLd(absoluteUrl),
-    inLanguage: ["en", "tr"],
+    // Same codes as the hreflang links: every language the site serves.
+    inLanguage: [...SITE_LOCALES],
     publisher: { "@id": ORG_ID },
     copyrightHolder: { "@id": PERSON_ID },
     author: { "@id": PERSON_ID },
@@ -104,9 +106,11 @@ export function buildSoftwareApplicationLd() {
     "@id": APP_ID,
     name: SITE_NAME,
     applicationCategory: "CommunicationApplication",
-    operatingSystem: "Windows, Web, Android",
+    operatingSystem: "Windows, iOS, iPadOS, Android, Web",
     url: absoluteUrl("/"),
-    downloadUrl: absoluteUrl("/download"),
+    downloadUrl: [absoluteUrl("/download"), APP_STORE_URL],
+    installUrl: APP_STORE_URL,
+    sameAs: [APP_STORE_URL],
     image: absoluteUrl("/og-default.png"),
     description:
       "Descall is a free Discord alternative with servers, roles, channels, messaging, group calls, and screen share.",
@@ -142,7 +146,12 @@ export function buildEntityGraphLd() {
   };
 }
 
-export function buildOwnershipWebPageLd({ path, name, description, inLanguage, faqs = [] }) {
+/**
+ * WebPage node of the ownership pages. The questions are not embedded here (they used to be
+ * a second FAQPage via hasPart): the page carries exactly one FAQPage, built from the
+ * questions it shows (buildFaqLd).
+ */
+export function buildOwnershipWebPageLd({ path, name, description, inLanguage }) {
   const pageId = `${absoluteUrl(path)}#webpage`;
   return {
     "@context": "https://schema.org",
@@ -163,16 +172,6 @@ export function buildOwnershipWebPageLd({ path, name, description, inLanguage, f
     author: { "@id": PERSON_ID },
     publisher: { "@id": ORG_ID },
     mainEntityOfPage: pageId,
-    hasPart: faqs.length
-      ? {
-          "@type": "FAQPage",
-          mainEntity: faqs.map((f) => ({
-            "@type": "Question",
-            name: f.q,
-            acceptedAnswer: { "@type": "Answer", text: f.a },
-          })),
-        }
-      : undefined,
   };
 }
 
@@ -204,7 +203,7 @@ export function buildBreadcrumbLd(crumbs = []) {
   };
 }
 
-export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage }) {
+export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage, image }) {
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -227,7 +226,7 @@ export function buildArticleLd({ title, description, path, datePublished, dateMo
       logo: organizationLogoLd(absoluteUrl),
     },
     copyrightHolder: { "@id": PERSON_ID },
-    image: [absoluteUrl("/og-default.png")],
+    image: [absoluteUrl(ogImageFor(image, inLanguage))],
   };
 }
 

@@ -190,8 +190,8 @@ export function heroCtaHtml(loc = "en") {
   const n = navLabels(loc);
   const h = (path) => prefixHref(path, loc);
   return `<p class="seo-cta-row">
-    <a class="seo-cta-primary" href="${authHref(loc, "register")}" data-hydrate data-auth="register">${n.startFree}</a>
-    <a class="seo-cta-soft" href="${authHref(loc, "login")}" data-hydrate data-auth="login">${n.signIn}</a>
+    <a class="seo-cta-primary" href="${authHref(loc, "register")}" rel="nofollow" data-hydrate data-auth="register">${n.startFree}</a>
+    <a class="seo-cta-soft" href="${authHref(loc, "login")}" rel="nofollow" data-hydrate data-auth="login">${n.signIn}</a>
     <a class="seo-cta-soft" href="${h("/download")}">${n.download}</a>
   </p>`;
 }
@@ -223,7 +223,7 @@ export function homeHero(loc) {
     ? {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
-        h1: "Birlikte konuş",
+        h1: "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
         lead: "Arkadaşlarınla sesli sohbet, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
         voiceTitle: "Sohbetin yanında ses",
         voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
@@ -295,7 +295,7 @@ export function homeHero(loc) {
     : {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
-        h1: "Talk together",
+        h1: "Descall: voice chat, servers and screen sharing for friends",
         lead: "Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.",
         voiceTitle: "Voice next to the chat",
         voiceBody: "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.",
@@ -397,6 +397,16 @@ export function cookieBannerHtml(loc) {
     </div>`;
 }
 
+/**
+ * Trademark note on every page (the footer of every page names Discord). Turkish comes
+ * from MARKETING_TR, prefixed locales from the site catalog (same key as the React footer).
+ */
+export const NOT_AFFILIATED_EN = "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.";
+
+export function notAffiliatedCopy(loc) {
+  return trCopy(NOT_AFFILIATED_EN, loc);
+}
+
 function footerItem(href, label) {
   return `<li><a href="${href}">${label}</a></li>`;
 }
@@ -405,7 +415,7 @@ function footerItem(href, label) {
 export const TR_HUB_LINKS = [
   ["/tr/discord-acildi-mi", "Discord açıldı mı?"],
   ["/tr/discord-alternatifleri", "Discord alternatifleri"],
-  ["/tr/turk-discord", "Türk Discord’u"],
+  ["/tr/turk-discord", "Türk sohbet uygulaması"],
   ["/tr/discord-yerine-ne-kullanilir", "Discord yerine ne kullanılır?"],
   ["/tr/sesli-sohbet-uygulamasi", "Sesli sohbet uygulaması"],
   ["/tr/oyuncu-sohbet-uygulamasi", "Oyuncu sohbet uygulaması"],
@@ -426,7 +436,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
   const h = (path) => prefixHref(path, l);
   const product = isTr ? "Ürün" : newCopy("Product", l);
   const company = isTr ? "Şirket" : newCopy("Company", l);
-  return `<footer class="seo-footer">
+  return `<footer class="seo-footer" id="seo-site-nav">
   ${heroCtaHtml(l)}
   <div class="seo-footer-grid">
     <section>
@@ -453,6 +463,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
                 footerItem(h("/compare/discord"), n.vsDiscord),
                 footerItem(h("/alternatives"), n.alternatives),
                 footerItem(h("/apps-like-discord"), n.apps),
+                footerItem(h("/best-discord-alternative-for-gamers"), trCopy("For gamers", l)),
                 footerItem(h("/blog"), n.blog),
               ].join("\n        ")
         }
@@ -463,6 +474,8 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
       <ul>
         ${footerItem(h("/about"), n.about)}
         ${footerItem(isTr ? "/descall-sahibi" : h("/who-owns-descall"), isTr ? "Descall’ın sahibi kim?" : newCopy("Who owns Descall?", l))}
+        ${footerItem(h("/security"), trCopy("Security", l))}
+        ${footerItem(h("/status"), trCopy("Status", l))}
         ${footerItem(h("/contact"), n.contact)}
         ${footerItem(h("/privacy"), n.privacy)}
         ${footerItem(h("/terms"), n.terms)}
@@ -471,6 +484,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
       </ul>
     </section>
   </div>
+  <p class="seo-legal-note">${notAffiliatedCopy(l)}</p>
 </footer>`;
 }
 

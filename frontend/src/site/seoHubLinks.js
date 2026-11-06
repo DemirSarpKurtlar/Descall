@@ -31,7 +31,6 @@ export const SEO_COMPANY = [
   { to: "/copyright", label: "Copyright" },
   { to: "/contact", label: "Contact" },
   { to: "/blog", label: "Blog" },
-  { to: "/blog/migrate-from-discord-to-descall", label: "Migrate from Discord" },
   { to: "/tr", label: "Türkçe" },
 ];
 

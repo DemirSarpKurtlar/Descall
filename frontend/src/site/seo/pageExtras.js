@@ -21,8 +21,8 @@ function mirrorHref(to, loc) {
 const TR_HUBS = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
   { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri karşılaştırması" },
-  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı? Güncel durum" },
-  { to: "/tr/turk-discord", label: "Türk Discord’u" },
+  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı? Son haberler" },
+  { to: "/tr/turk-discord", label: "Türkiye’de geliştirilen sohbet uygulaması" },
   { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
   { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
   { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },
@@ -49,7 +49,7 @@ export const PAGE_EXTRAS = {
         h: "What Descall is",
         p: [
           "Descall is a free chat and calling app for friend groups, gaming squads, study groups, and small communities. It combines direct messages, group chats, and Discord-style servers with voice channels, video calls, and screen sharing, in one account that works on Windows, iPhone and iPad, Android, and in the browser.",
-          "It is built and owned by Demir Sarp Kurtlar, an independent developer in Turkey, and it is currently in beta. Core communication is free: there is no subscription for voice quality, screen share, or servers. The only thing for sale is optional cosmetics bought with DesCoin.",
+          "It is built and owned by Demir Sarp Kurtlar, an independent developer in Turkey, and it is currently in beta. Core communication is free: calls, screen share and servers do not need a membership. Descall+ and Descall Ultra are optional memberships that add extra tools, most of them in the desktop app, such as mini mode, global shortcuts and audio controls. Cosmetics in the shop are optional and paid with DesCoin you earn in the app.",
         ],
       },
       {
@@ -98,13 +98,13 @@ export const PAGE_EXTRAS = {
         h: "Descall nedir?",
         p: [
           "Descall; arkadaş grupları, oyun ekipleri, ders grupları ve küçük topluluklar için ücretsiz bir sohbet ve arama uygulamasıdır. Özel mesajları, grup sohbetlerini ve Discord tarzı sunucuları; ses kanalları, görüntülü arama ve ekran paylaşımıyla tek bir hesapta birleştirir. Windows, iPhone ve iPad, Android ve tarayıcıda çalışır.",
-          "Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor ve uygulama şu an beta aşamasında. Temel iletişim ücretsiz: ses kalitesi, ekran paylaşımı veya sunucular için abonelik yok. Satılan tek şey DesCoin ile alınan isteğe bağlı kozmetikler.",
+          "Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor ve uygulama şu an beta aşamasında. Temel iletişim ücretsiz: aramalar, ekran paylaşımı ve sunucular için üyelik gerekmez. Descall+ ve Descall Ultra, çoğu masaüstü uygulamasında çalışan mini mod, genel kısayollar ve ses araçları gibi ek özellikler sunan isteğe bağlı üyelikler. Mağazadaki kozmetikler de isteğe bağlı ve uygulamada kazandığın DesCoin ile alınıyor.",
         ],
       },
       {
         h: "Discord’a erişemeyenler için",
         p: [
-          "Discord, 9 Ekim 2024’ten bu yana Türkiye’de mahkeme kararıyla erişime kapalı. Her akşam aynı ses kanalında buluşan gruplar için Descall, Türkiye’den doğrudan erişilebilen ve Türkçe kullanılabilen bir seçenek. Sunucu, kanal, rol ve ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelir; şablonlarla sunucunu dakikalar içinde yeniden kurabilirsin.",
+          "Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi; son haberler ve tarihleri “Discord açıldı mı?” sayfasında. Her akşam aynı ses kanalında buluşan gruplar için Descall, Türkiye’den doğrudan erişilebilen ve Türkçe kullanılabilen bir seçenek. Sunucu, kanal, rol ve ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelir; şablonlarla sunucunu dakikalar içinde yeniden kurabilirsin.",
         ],
       },
       {
@@ -150,7 +150,7 @@ export const PAGE_EXTRAS = {
       {
         h: "What is free, and what is not",
         p: [
-          "Messaging, servers, voice, video and screen share are free for everyone, with no subscription tier that unlocks better call quality. Descall earns from an optional cosmetic shop: banners, card colors, name and avatar effects and country flags, bought with DesCoin you earn in the app. Nothing in the shop changes how well your voice or stream works.",
+          "Messaging, servers, voice, video and screen share are free for everyone, and none of them needs a membership. Descall+ and Descall Ultra are optional memberships that add extra tools, most of them in the desktop app: mini mode and always-on-top windows, global mute and push to talk, notification history and focus mode, and audio tools such as a noise gate. For now, memberships are given out by the Descall team and through codes, and no prices have been published. The shop sells optional cosmetics, such as banners, card colors, name and avatar effects and country flags, bought with DesCoin you earn in the app. Nothing in the shop changes how well your voice or stream works.",
         ],
       },
       {
@@ -279,7 +279,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Price",
         p: [
-          "Discord is free with an optional Nitro subscription for extras. Descall keeps messaging, servers, voice, video and screen share free and sells only optional cosmetics paid with DesCoin earned in the app.",
+          "Discord is free with an optional Nitro subscription for extras. Descall keeps messaging, servers, voice, video and screen share free. Its optional memberships, Descall+ and Descall Ultra, add extra desktop and productivity tools; for now they are given out by the Descall team and through codes, with no published prices. Cosmetics in the shop are paid with DesCoin earned in the app.",
         ],
       },
       {
@@ -338,6 +338,24 @@ export const PAGE_EXTRAS = {
         ],
       },
       {
+        h: "Push-to-talk and sound checks on Windows",
+        p: [
+          "In the Windows app you can switch your voice to push-to-talk and pick your own key, so the squad only hears you when you mean it. Before a match, run the mic test in voice settings and turn on “hear yourself” to check your level and noise suppression without bothering anyone.",
+        ],
+      },
+      {
+        h: "Run a match night",
+        p: [
+          "Post the time in the announcements channel, then give each team its own squad voice channel so the general room stays free for everyone else. A stage channel works for tournament nights: a few speakers talk while the rest listen. Moderators can time out or remove a player who ruins the night, and every action is kept in the audit log.",
+        ],
+      },
+      {
+        h: "Getting the whole clan to join",
+        p: [
+          "Share the server invite link where your clan already reads. Whoever opens it sees a preview of the server and joins after signing in, in the browser without installing anything, so nobody waits for a download before the first game. The desktop app is worth installing later for long sessions.",
+        ],
+      },
+      {
         h: "Honest limits",
         p: [
           "Descall does not have Discord’s bot marketplace (music bots, levelling systems, complex automations), and it is not built for public servers with tens of thousands of members. It is not an in-game overlay either. It is a chat app for squads, clans, and small-to-mid communities that want good voice and tidy servers for free.",
@@ -350,6 +368,47 @@ export const PAGE_EXTRAS = {
     ],
   },
 
+  "/discord-alternative-for-friends": {
+    sections: [
+      {
+        h: "Add your friends in a minute",
+        p: [
+          "Every account has a username. Type a friend’s username to send a request, or copy your invite link and drop it into the chat you already use: whoever opens it can sign up for free and lands in your friends list. You decide which requests to accept, and blocking someone stops their messages and calls.",
+        ],
+      },
+      {
+        h: "Group chats for up to 15 people",
+        p: [
+          "A group is the quickest way to get everyone in one place. Pick friends from your list, give the group a name and a photo, and you are done. A group holds up to 15 people including you, which is the size most friend groups actually are. Anyone in it can start a voice or video call from the same window, so there is no server to set up first.",
+        ],
+      },
+      {
+        h: "What you can send",
+        p: [
+          "Messages with typing indicators, photos and files, GIFs from the built-in picker, voice messages when typing is awkward, and quick polls when the group cannot decide what to play or watch. @mentions make sure the right person sees a question in a busy chat.",
+        ],
+      },
+      {
+        h: "Calls that start from the chat",
+        p: [
+          "Call one friend or the whole group from the conversation. Turn the camera on when you want to, or share your screen at up to 720p to show a game, a video or homework. Optional noise suppression cuts keyboard and fan noise, and the mic test in the voice settings lets you check your sound before you join.",
+        ],
+      },
+      {
+        h: "When a server makes sense",
+        p: [
+          "If your group turns into a regular game night or a study circle with topics of its own, create a server from the Friends template. You get text channels for different topics and voice channels that stay open, so people can drop in without a call ringing everyone. Small groups can stay in direct messages and group chats for as long as that works.",
+        ],
+      },
+      {
+        h: "On every device you use",
+        p: [
+          "The same account works on iPhone and iPad, Android, the Windows desktop app and any browser at descall.com. Your friends and messages follow you, so you can answer a message on your phone and join the evening call from your PC.",
+        ],
+      },
+    ],
+    links: [],
+  },
   "/download": {
     sections: [
       {

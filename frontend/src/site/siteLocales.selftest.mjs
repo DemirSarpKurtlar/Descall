@@ -70,7 +70,7 @@ for (const [group, ids] of Object.entries(SITE_DRAFT_PAGE_GROUPS)) {
   assert.ok(sl.SITE_PAGE_GROUPS[group], `SITE_DRAFT_PAGE_GROUPS names an unknown group: ${group}`);
   for (const id of ids) assert.ok(sl.PREFIXABLE_LOCALES.includes(id), `${group}: ${id} is not a prefixed locale`);
 }
-assert.equal(sl.pageGroupOf("/blog/discord-vs-descall/"), "blog");
+assert.equal(sl.pageGroupOf("/blog/discord-competitors/"), "blog");
 assert.equal(sl.pageGroupOf("/apps-like-discord"), "niche");
 assert.equal(sl.pageGroupOf("/faq"), null);
 assert.equal(sl.isMirrorPath("/faq"), true);
@@ -122,7 +122,7 @@ assert.equal(lp.localizedPathFor("/features", "de", ALL), "/de/features");
 assert.equal(lp.localizedPathFor("/privacy", "tr", ALL), "/gizlilik");
 assert.equal(lp.localizedPathFor("/blog", "de", ALL), null, "a staged blog has no prefixed twin");
 assert.equal(lp.localizedPathFor("/blog", "de", ALL_ON), "/de/blog", "a served blog has one");
-assert.equal(lp.localizedPathFor("/blog/discord-vs-descall", "pt-BR", ALL_ON), "/pt-br/blog/discord-vs-descall", "English slug kept");
+assert.equal(lp.localizedPathFor("/blog/discord-competitors", "pt-BR", ALL_ON), "/pt-br/blog/discord-competitors", "English slug kept");
 assert.equal(lp.localizedPathFor("/apps-like-discord", "ru", ALL_ON), "/ru/apps-like-discord");
 assert.equal(lp.localizedPathFor("/apps-like-discord", "tr", ALL_ON), null, "niche pages have no Turkish twin");
 assert.equal(lp.localizedPathFor("/de/blog/discord-competitors", "tr", ALL_ON), "/tr/blog/discord-competitors");
@@ -140,10 +140,10 @@ assert.equal(lp.localeHomePath("en"), "/");
 
 // Language picker destinations.
 assert.equal(lp.destinationForLocale("/features", "de", ALL), "/de/features");
-assert.equal(lp.destinationForLocale("/blog/discord-vs-descall", "de", ALL), "/de", "no twin -> that language's home");
-assert.equal(lp.destinationForLocale("/blog/discord-vs-descall", "de", ALL_ON), "/de/blog/discord-vs-descall", "picker twin once served");
+assert.equal(lp.destinationForLocale("/blog/discord-competitors", "de", ALL), "/de", "no twin -> that language's home");
+assert.equal(lp.destinationForLocale("/blog/discord-competitors", "de", ALL_ON), "/de/blog/discord-competitors", "picker twin once served");
 assert.equal(lp.destinationForLocale("/de/apps-like-discord", "fr", ALL_ON), "/fr/apps-like-discord");
-assert.equal(lp.destinationForLocale("/de/blog/discord-vs-descall", "tr", ALL_ON), "/tr/blog/discord-vs-descall");
+assert.equal(lp.destinationForLocale("/de/blog/discord-competitors", "tr", ALL_ON), "/tr/blog/discord-competitors");
 assert.equal(lp.destinationForLocale("/de/apps-like-discord", "en", ALL_ON), "/apps-like-discord");
 assert.equal(lp.destinationForLocale("/tr/discord-acildi-mi", "fr", ALL), "/fr");
 assert.equal(lp.destinationForLocale("/de/features", "en", ALL), "/features");
@@ -175,15 +175,15 @@ assert.equal(set("/ru/status")["x-default"], "/status");
 assert.deepEqual(set("/blog"), { en: "/blog", tr: "/tr/blog", "x-default": "/blog" }, "staged blog: en/tr only");
 assert.deepEqual(set("/apps-like-discord"), {}, "staged niche: English only");
 // Served page groups: prefixed twins with English slugs; Turkish only where hreflangPair pairs.
-assert.deepEqual(set("/blog/discord-vs-descall", ALL_ON), {
-  en: "/blog/discord-vs-descall",
-  tr: "/tr/blog/discord-vs-descall",
-  de: "/de/blog/discord-vs-descall",
-  es: "/es/blog/discord-vs-descall",
-  fr: "/fr/blog/discord-vs-descall",
-  "pt-BR": "/pt-br/blog/discord-vs-descall",
-  ru: "/ru/blog/discord-vs-descall",
-  "x-default": "/blog/discord-vs-descall",
+assert.deepEqual(set("/blog/discord-competitors", ALL_ON), {
+  en: "/blog/discord-competitors",
+  tr: "/tr/blog/discord-competitors",
+  de: "/de/blog/discord-competitors",
+  es: "/es/blog/discord-competitors",
+  fr: "/fr/blog/discord-competitors",
+  "pt-BR": "/pt-br/blog/discord-competitors",
+  ru: "/ru/blog/discord-competitors",
+  "x-default": "/blog/discord-competitors",
 });
 assert.equal(set("/de/blog", ALL_ON).tr, "/tr/blog");
 assert.deepEqual(set("/apps-like-discord", ALL_ON), {
@@ -195,7 +195,7 @@ assert.deepEqual(set("/apps-like-discord", ALL_ON), {
   ru: "/ru/apps-like-discord",
   "x-default": "/apps-like-discord",
 }, "niche: no Turkish twin");
-assert.equal(set("/tr/blog/apps-like-discord", ALL_ON).de, "/de/blog/apps-like-discord", "Turkish post lists the new twins");
+assert.equal(set("/tr/blog/discord-competitors", ALL_ON).de, "/de/blog/discord-competitors", "Turkish post lists the new twins");
 assert.deepEqual(set("/de/apps-like-discord", ALL), {}, "a staged twin is not a page");
 for (const p of sl.ALL_MIRROR_PATHS) {
   const alts = lp.hreflangAlternates(p, ALL_ON);
@@ -238,10 +238,10 @@ assert.equal(href("/privacy#rights", "pt-BR"), "/pt-br/privacy#rights");
 assert.equal(href("/blog", "de"), sl.isPageGroupLive("blog", "de") ? "/de/blog" : "/blog", "no twin: English URL");
 const hrefOn = (to, locale, pathname = "/") => marketingHref(to, { locale, pathname, locales: ["de", "pt-BR"], pageDrafts: GROUPS_LIVE });
 const hrefStaged = (to, locale, pathname = "/") => marketingHref(to, { locale, pathname, locales: ["de", "pt-BR"], pageDrafts: STAGED });
-assert.equal(hrefStaged("/blog/discord-vs-descall", "de"), "/blog/discord-vs-descall", "staged: English URL");
-assert.equal(hrefOn("/blog/discord-vs-descall", "de"), "/de/blog/discord-vs-descall", "served: the twin");
+assert.equal(hrefStaged("/blog/discord-competitors", "de"), "/blog/discord-competitors", "staged: English URL");
+assert.equal(hrefOn("/blog/discord-competitors", "de"), "/de/blog/discord-competitors", "served: the twin");
 assert.equal(hrefOn("/apps-like-discord", "pt-BR"), "/pt-br/apps-like-discord");
-assert.equal(hrefOn("/blog/discord-vs-descall", "tr"), "/tr/blog/discord-vs-descall", "Turkish unchanged");
+assert.equal(hrefOn("/blog/discord-competitors", "tr"), "/tr/blog/discord-competitors", "Turkish unchanged");
 assert.equal(href("/de/faq", "de"), "/de/faq", "already localized");
 assert.equal(href("/features", "en", "/de/faq"), "/de/features", "the URL locale wins");
 assert.equal(href("/features", "es"), "/features", "es is not served in this call");
@@ -256,7 +256,7 @@ text.registerSiteCatalog("de", {
   site: {
     Features: "Funktionen (site)",
     "Start free": "Kostenlos starten (site)",
-    "Talk together": "Gemeinsam reden",
+    "Descall: voice chat, servers and screen sharing for friends": "Gemeinsam reden",
     "Optional analytics only. Essentials stay on.": "Nur optionale Analyse.",
     "Descall Features, Free Voice, Screen Share & Servers": "Descall Funktionen",
     "{name} is the founder, owner, and CEO of Descall.": "{name} hat Descall gegründet.",
@@ -280,7 +280,7 @@ assert.equal(copy.navLabels("de").turkish, "Türkçe", "native names are not tra
 assert.deepEqual(copy.navLabels(true), copy.navLabels("tr"));
 assert.deepEqual(copy.navLabels(false), copy.navLabels("en"));
 assert.equal(copy.homeHero("de").h1, "Gemeinsam reden");
-assert.equal(copy.homeHero("tr").h1, "Birlikte konuş");
+assert.equal(copy.homeHero("tr").h1, "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı");
 assert.equal(copy.cookieCopy("de").body, "Nur optionale Analyse.");
 assert.equal(copy.prefixHref("/features", "de"), "/de/features");
 assert.equal(copy.prefixHref("/blog", "de"), sl.isPageGroupLive("blog", "de") ? "/de/blog" : "/blog");
@@ -319,8 +319,8 @@ assert.match(corePageBody("/tr/features"), /Descall Özellikleri/);
 const deRoutes = seo.localeMirrorRoutes("de");
 assert.deepEqual(deRoutes.map((r) => r.enPath), sl.mirrorPathsFor("de"));
 const deAll = seo.localeMirrorRoutes("de", { paths: sl.ALL_MIRROR_PATHS });
-assert.equal(deAll.find((r) => r.enPath === "/blog/discord-vs-descall").path, "/de/blog/discord-vs-descall");
-assert.equal(deAll.find((r) => r.enPath === "/blog/discord-vs-descall").ogType, "article");
+assert.equal(deAll.find((r) => r.enPath === "/blog/discord-competitors").path, "/de/blog/discord-competitors");
+assert.equal(deAll.find((r) => r.enPath === "/blog/discord-competitors").ogType, "article");
 const deFeatures = deRoutes.find((r) => r.enPath === "/features");
 assert.equal(deFeatures.path, "/de/features");
 assert.equal(deFeatures.lang, "de");
@@ -338,38 +338,39 @@ assert.match(shell, /<div id="mkt-consent-static"[^>]*>\s*<p>\s*Nur optionale An
 const base = fs.readFileSync(path.join(root, "index.html"), "utf8");
 text.registerSiteCatalog("de", {
   site: {
-    "Discord vs Descall: which should your group use in 2026?": "Discord oder Descall: was passt 2026?",
-    "The short answer": "Die kurze Antwort",
-    "Should my group pick Discord or Descall?": "Discord oder Descall fuer unsere Gruppe?",
+    "Discord competitors in 2026 | who actually competes": "Discord-Konkurrenten 2026",
+    "What it takes to compete with Discord": "Was es braucht",
+    "Who actually competes with Discord in 2026?": "Wer konkurriert 2026 mit Discord?",
     Published: "Veroeffentlicht",
-    "Apps Like Discord (2026) | Websites & Platforms Compared": "Apps wie Discord (2026)",
+    Author: "Autor",
+    "Descall and Other Apps Like Discord (2026)": "Apps wie Discord (2026)",
   },
   app: {},
 });
-const enPostRoute = seo.PUBLIC_ROUTES.find((r) => r.path === "/blog/discord-vs-descall");
+const enPostRoute = seo.PUBLIC_ROUTES.find((r) => r.path === "/blog/discord-competitors");
 const enPost = injectMeta(base, enPostRoute);
 sl.setPageGroupPreview(true);
 try {
-  const post = deAll.find((r) => r.enPath === "/blog/discord-vs-descall");
+  const post = deAll.find((r) => r.enPath === "/blog/discord-competitors");
   const postShell = injectMeta(base, post);
   assert.match(postShell, /<html lang="de"/);
-  assert.match(postShell, /<link rel="canonical" href="https:\/\/descall\.com\/de\/blog\/discord-vs-descall" \/>/);
-  assert.match(postShell, /hreflang="tr" href="https:\/\/descall\.com\/tr\/blog\/discord-vs-descall"/);
-  assert.match(postShell, /hreflang="de" href="https:\/\/descall\.com\/de\/blog\/discord-vs-descall"/);
-  assert.match(postShell, /<h1>Discord oder Descall: was passt 2026\?<\/h1>/);
-  assert.match(postShell, /<h2>Die kurze Antwort<\/h2>/);
-  assert.match(postShell, /Veroeffentlicht: 11\. August 2026/, "dates are written with Intl in the page language");
+  assert.match(postShell, /<link rel="canonical" href="https:\/\/descall\.com\/de\/blog\/discord-competitors" \/>/);
+  assert.match(postShell, /hreflang="tr" href="https:\/\/descall\.com\/tr\/blog\/discord-competitors"/);
+  assert.match(postShell, /hreflang="de" href="https:\/\/descall\.com\/de\/blog\/discord-competitors"/);
+  assert.match(postShell, /<h1>Discord-Konkurrenten 2026<\/h1>/);
+  assert.match(postShell, /<h2>Was es braucht<\/h2>/);
+  assert.match(postShell, /Veroeffentlicht: <time datetime="2026-08-11">11\. August 2026<\/time>/, "dates are written with Intl in the page language");
   const ld = [...postShell.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
   const article = ld.find((g) => g["@type"] === "Article");
   assert.equal(article.inLanguage, "de");
-  assert.equal(article.headline, "Discord oder Descall: was passt 2026?");
-  assert.equal(article.mainEntityOfPage, "https://descall.com/de/blog/discord-vs-descall");
+  assert.equal(article.headline, "Discord-Konkurrenten 2026");
+  assert.equal(article.mainEntityOfPage, "https://descall.com/de/blog/discord-competitors");
   const faqLd = ld.find((g) => g["@type"] === "FAQPage");
-  assert.equal(faqLd.mainEntity[0].name, "Discord oder Descall fuer unsere Gruppe?");
+  assert.equal(faqLd.mainEntity[0].name, "Wer konkurriert 2026 mit Discord?");
   const crumbsLd = ld.find((g) => g["@type"] === "BreadcrumbList");
   assert.equal(crumbsLd.itemListElement[1].item, "https://descall.com/de/blog");
   const index = injectMeta(base, deAll.find((r) => r.enPath === "/blog"));
-  assert.match(index, /href="\/de\/blog\/discord-vs-descall"><strong>Discord oder Descall: was passt 2026\?<\/strong>/);
+  assert.match(index, /href="\/de\/blog\/discord-competitors"><strong>Discord-Konkurrenten 2026<\/strong>/);
   const niche = injectMeta(base, deAll.find((r) => r.enPath === "/apps-like-discord"));
   assert.match(niche, /<title>Apps wie Discord \(2026\)<\/title>/);
   assert.match(niche, /<link rel="canonical" href="https:\/\/descall\.com\/de\/apps-like-discord" \/>/);
@@ -380,10 +381,11 @@ try {
 } finally {
   sl.setPageGroupPreview(false);
 }
-// The English shell does not change with a catalog registered (no inLanguage, no dates).
+// The English shell does not change with a catalog registered; since the SEO audit
+// (Nov 2026) it carries inLanguage "en" and visible publish dates like every language.
 assert.equal(injectMeta(base, enPostRoute), enPost);
-assert.doesNotMatch(enPost, /"inLanguage":"en"/);
-assert.doesNotMatch(enPost, /Published:/);
+assert.match(enPost, /"inLanguage":"en"/);
+assert.match(enPost, /Published: <time datetime="2026-08-11">11 August 2026<\/time>/);
 
 // --- sitemap alternates -------------------------------------------------------------------
 const { alternateLinks } = await imp("scripts/generate-seo-files.mjs");
@@ -399,7 +401,7 @@ assert.match(
   "served niche: prefixed alternates"
 );
 assert.doesNotMatch(alternateLinks("https://descall.com/apps-like-discord", ALL_ON), /hreflang="tr"/);
-assert.match(alternateLinks("https://descall.com/blog/discord-vs-descall", ALL_ON), /hreflang="tr" href="https:\/\/descall\.com\/tr\/blog\/discord-vs-descall"/);
+assert.match(alternateLinks("https://descall.com/blog/discord-competitors", ALL_ON), /hreflang="tr" href="https:\/\/descall\.com\/tr\/blog\/discord-competitors"/);
 const served = alternateLinks("https://descall.com/features");
 assert.equal((served.match(/<xhtml:link /g) || []).length, sl.SITE_LOCALES.length + 1, "served set only");
 

@@ -34,14 +34,15 @@ body.has-mkt-hh .mkt-bg {
 .mkt .mkt-hh-copy h1 {
   margin: 0;
   font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
-  font-size: 76px;
-  line-height: 0.98;
+  /* Descriptive H1 (SEO audit, Nov 2026): longer than "Talk together", so smaller type;
+     the prerendered twin in index.html (.seo-hh h1) uses the same values. */
+  font-size: 56px;
+  line-height: 1.02;
   font-weight: 750;
   letter-spacing: -0.035em;
   color: #f4f6fb;
   background: none;
   -webkit-text-fill-color: currentColor;
-  max-width: 6.2em;
 }
 
 .mkt .mkt-hh-lead {
@@ -144,7 +145,7 @@ body.has-mkt-hh .mkt-bg {
 /* ≤768 px: portrait phone frame with the real iPhone screen (05-mobile-landing). */
 @media (max-width: 768px) {
   .mkt .mkt-hh { gap: 36px; padding: 28px 0 24px; }
-  .mkt .mkt-hh-copy h1 { font-size: 40px; line-height: 1.05; letter-spacing: -0.03em; }
+  .mkt .mkt-hh-copy h1 { font-size: 34px; line-height: 1.08; letter-spacing: -0.03em; }
   .mkt .mkt-hh-copy h1 br { display: none; }
   .mkt .mkt-hh-lead { margin-top: 12px; font-size: 17px; line-height: 1.4; }
   .mkt .mkt-hh-lead-long { display: none; }

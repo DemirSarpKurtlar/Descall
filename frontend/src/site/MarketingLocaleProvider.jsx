@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LocaleContext } from "../context/localeContextInstance";
-import { MARKETING_TR } from "./marketingPhrases.tr.js";
+import { getMarketingTr, loadMarketingTr } from "./marketingTr.js";
 import { applyDocumentLang, readStoredLanguage, writeStoredLanguage } from "../i18n/storage.js";
 import { normalizeLocale, detectDefaultLocale } from "../i18n/detect.js";
 import { initialMarketingLocale } from "./resolveMarketingLocale.js";
@@ -42,6 +42,7 @@ export function resolveBootMarketingLocale() {
 export default function MarketingLocaleProvider({ children }) {
   const [locale, setLocaleState] = useState(resolveBootMarketingLocale);
   const [extraTr, setExtraTr] = useState(null);
+  const [trTick, setTrTick] = useState(0);
   const [catalogTick, setCatalogTick] = useState(0);
 
   const setLocale = useCallback((next) => {
@@ -70,6 +71,21 @@ export default function MarketingLocaleProvider({ children }) {
       /* ignore */
     }
   }, []);
+
+  // Turkish marketing phrases: already loaded when the page booted in Turkish
+  // (hydrateMarketing), fetched here after a switch to Turkish.
+  useEffect(() => {
+    if (locale !== "tr" || getMarketingTr()) return undefined;
+    let cancelled = false;
+    loadMarketingTr()
+      .then(() => {
+        if (!cancelled) setTrTick((n) => n + 1);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
 
   useEffect(() => {
     if (locale !== "tr") {
@@ -108,7 +124,7 @@ export default function MarketingLocaleProvider({ children }) {
       if (key == null) return "";
       const k = String(key);
       if (locale === "tr") {
-        const translated = MARKETING_TR[k] || extraTr?.[k];
+        const translated = getMarketingTr()?.[k] || extraTr?.[k];
         if (translated) return interpolate(translated, vars);
       } else if (locale !== "en") {
         const translated = siteLookup(k, locale);
@@ -116,9 +132,9 @@ export default function MarketingLocaleProvider({ children }) {
       }
       return interpolate(k, vars);
     },
-    // catalogTick re-creates t once a prefixed catalog arrives.
+    // catalogTick / trTick re-create t once a catalog arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [locale, extraTr, catalogTick]
+    [locale, extraTr, catalogTick, trTick]
   );
 
   const value = useMemo(

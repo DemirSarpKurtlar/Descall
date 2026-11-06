@@ -27,7 +27,7 @@ const { llmsTxt, llmsFullTxt, humansTxt, securityTxt } = await import(
 const { BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href);
 const { TR_BLOG_POSTS } = await import(pathToFileURL(path.join(root, "src/site/seo/trBlog.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
-const { execFileSync } = await import("node:child_process");
+const { contentLastmod } = await import(pathToFileURL(path.join(root, "src/site/seo/contentDates.js")).href);
 const { hreflangAlternates } = await import(pathToFileURL(path.join(root, "src/site/localePaths.js")).href);
 const { PREFIXED_SITE_LOCALES, localePrefix, prefixedLocaleFromPath, stripPrefixedLocale } = await import(
   pathToFileURL(path.join(root, "src/site/siteLocales.js")).href
@@ -35,108 +35,11 @@ const { PREFIXED_SITE_LOCALES, localePrefix, prefixedLocaleFromPath, stripPrefix
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
 
-/** Source files whose last commit date is the page's real lastmod. */
-const PAGE_SOURCES = {
-  "/": ["src/site/pages/HomePage.jsx"],
-  "/download": ["src/site/pages/MarketingDownloadPage.jsx"],
-  "/features": ["src/site/pages/FeaturesPage.jsx"],
-  "/faq": ["src/site/pages/FaqPage.jsx", "src/site/faqData.js"],
-  "/security": ["src/site/pages/SecurityPage.jsx"],
-  "/status": ["src/site/pages/StatusPage.jsx"],
-  "/privacy": ["src/site/pages/PrivacyPage.jsx"],
-  "/gizlilik": ["src/site/pages/PrivacyPage.jsx"],
-  "/terms": ["src/site/pages/TermsPage.jsx"],
-  "/kosullar": ["src/site/pages/TermsPage.jsx"],
-  "/copyright": ["src/site/pages/CopyrightPage.jsx"],
-  "/about": ["src/site/pages/AboutPage.jsx"],
-  "/contact": ["src/site/pages/ContactPage.jsx"],
-  "/iletisim": ["src/site/pages/ContactPage.jsx"],
-  "/who-owns-descall": ["src/site/pages/WhoOwnsDescallPage.jsx", "src/site/ownershipFacts.js"],
-  "/descall-sahibi": ["src/site/pages/WhoOwnsDescallPage.jsx", "src/site/ownershipFacts.js"],
-  "/discord-alternative": ["src/site/pages/DiscordAlternativePage.jsx"],
-  "/alternatives": ["src/site/pages/AlternativesPage.jsx"],
-  "/compare/discord": ["src/site/pages/CompareDiscordPage.jsx"],
-  "/best-discord-alternative-for-gamers": ["src/site/pages/DiscordAlternativeGamersPage.jsx"],
-  "/blog": ["src/site/pages/BlogIndexPage.jsx", "src/site/content/discordSeoContent.js"],
-  "/tr/blog": ["src/site/pages/TrBlogIndexPage.jsx", "src/site/seo/trMeta.js"],
-  "/sitemap": ["src/site/buildSitemapHtml.js", "src/site/seoConfig.js"],
-};
-
-let historyReady = null;
 /**
- * Cloudflare Pages clones with depth 1, so every file would report the deploy
- * commit's date. Fetch commit history (no blobs) once so lastmod is real.
+ * Sitemap lastmod = the day the page's copy last changed (src/site/seo/contentDates.js),
+ * never a git or build date: code and style commits used to move it for most URLs.
  */
-function ensureHistory() {
-  if (historyReady !== null) return historyReady;
-  const git = (args, timeout = 15000) =>
-    execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout }).trim();
-  try {
-    if (git(["rev-parse", "--is-shallow-repository"]) === "true") {
-      try {
-        git(["fetch", "--quiet", "--unshallow", "--filter=blob:none"], 120000);
-      } catch {
-        git(["fetch", "--quiet", "--unshallow"], 180000);
-      }
-    }
-    historyReady = git(["rev-parse", "--is-shallow-repository"]) !== "true";
-  } catch {
-    historyReady = false;
-  }
-  if (!historyReady) console.warn("[generate-seo-files] shallow git history: lastmod falls back to build time");
-  return historyReady;
-}
-
-const lastmodCache = new Map();
-function gitLastmod(files) {
-  if (!ensureHistory()) return null;
-  const key = files.join("|");
-  if (lastmodCache.has(key)) return lastmodCache.get(key);
-  let out = null;
-  try {
-    const iso = execFileSync("git", ["log", "-1", "--format=%cI", "--", ...files], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    if (iso) out = new Date(iso).toISOString();
-  } catch {
-    out = null;
-  }
-  lastmodCache.set(key, out);
-  return out;
-}
-
-/** Real per-page lastmod: editorial date for posts, git mtime of sources otherwise. */
-function lastmodFor(routePath) {
-  const en = BLOG_POSTS.find((p) => p.path === routePath);
-  if (en) return `${en.updated || en.date}T00:00:00.000Z`;
-  const tr = TR_BLOG_POSTS.find((p) => p.path === routePath);
-  if (tr) return `${tr.updated || tr.date}T00:00:00.000Z`;
-  let files = PAGE_SOURCES[routePath];
-  if (!files && NICHE_LANDINGS[routePath]) {
-    files = ["src/site/seo/nicheLandings.js", "src/site/pages/DiscordAlternativeNichePage.jsx"];
-  }
-  if (!files && routePath.startsWith("/tr/")) {
-    const bare = routePath.slice(3);
-    files = PAGE_SOURCES[bare]
-      ? [...PAGE_SOURCES[bare], "src/site/marketingPhrases.tr.js"]
-      : ["src/site/seo/trLandings.js", "src/site/seo/trMeta.js", "src/site/pages/TrLandingPage.jsx"];
-  }
-  if (routePath === "/tr") files = [...PAGE_SOURCES["/"], "src/site/marketingPhrases.tr.js"];
-  const prefixed = prefixedLocaleFromPath(routePath);
-  if (prefixed) {
-    const bare = stripPrefixedLocale(routePath, [prefixed]);
-    // Posts keep their editorial date in every language; other pages add the catalog.
-    const post = BLOG_POSTS.find((p) => p.path === bare);
-    if (post) return `${post.updated || post.date}T00:00:00.000Z`;
-    const base =
-      PAGE_SOURCES[bare] ||
-      (NICHE_LANDINGS[bare] ? ["src/site/seo/nicheLandings.js", "src/site/pages/DiscordAlternativeNichePage.jsx"] : null);
-    files = base ? [...base, `src/site/i18n/${prefixed}.js`] : null;
-  }
-  return files ? gitLastmod(files) : null;
-}
+const lastmodFor = contentLastmod;
 
 function xmlEscape(value) {
   return String(value ?? "")

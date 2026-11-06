@@ -67,7 +67,6 @@ export default function WhoOwnsDescallPage() {
             name: tr ? "Descall’ın sahibi kim?" : x("Who owns Descall?"),
             description: statement,
             inLanguage: tr ? "tr" : isNew ? locale : "en",
-            faqs: faq,
           }),
           buildFaqLd(faq),
           buildBreadcrumbLd(crumbs),
