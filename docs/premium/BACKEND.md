@@ -215,6 +215,7 @@ Never INSERT into `user_subscriptions` or `descoin_ledger` by hand. That would s
 |---|---|---|
 | `backend/test/premium.db.test.cjs` | Real Postgres. Every op; unlimited vs dated; one active membership per user; lazy expiry and the sweeper; one gift per cycle, catch-up and a frozen wallet; idempotent retry; bulk partial failure and retry; append-only events; own-row RLS; campaign limits; read models; races (parallel grants, the same request sent 15 times, extend vs cancel, parallel sweepers, a campaign rush); ledger equals balance; the migration run twice | "Premium (Postgres)" CI job |
 | `backend/test/premium.http.db.test.cjs` | The real routes against the real SQL | "Premium (Postgres)" CI job |
+| `backend/test/premiumAdmin.e2e.db.test.cjs` | Every admin premium page end to end: the real routes against the real SQL functions and tables (`test/pgQuery.cjs` runs the PostgREST-style table queries on Postgres), driven with the bodies `premiumModel.js` builds, and checking every field the pages read and that each error code has a message | "Premium (Postgres)" CI job |
 | `backend/test/premium.integration.test.cjs` | Stubbed database. 401/403 for anonymous users, non-admins and admins without the section; step-up on every write; refused attempts logged; audit entries; `premium:updated`; whitelists; redeem limits | `node scripts/run-tests.mjs` (it also runs in the Premium job) |
 | `backend/lib/premium/features.selftest.cjs` | The feature lists and entitlements | `node scripts/run-tests.mjs` (it also runs in the Premium job) |
 
