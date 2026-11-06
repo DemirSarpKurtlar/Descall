@@ -871,6 +871,7 @@ export default {
   "Terms of Service for Descall web and desktop apps: age requirements (13+), acceptable use, account suspension, DesCoin cosmetics, and liability limits.": "Termos de Serviço dos apps web e desktop do Descall: idade mínima (13+), uso aceitável, suspensão de conta, cosméticos DesCoin e limites de responsabilidade.",
   "Text chat and direct messages": "Chat de texto e mensagens diretas",
   "Text, voice, and stage with categories": "Texto, voz e palco com categorias",
+  "The API row is checked live from your browser each time you open this page.": "A linha da API é verificada ao vivo pelo seu navegador sempre que você abre esta página.",
   "The Gaming template gives your clan squad-up, clip, and scrim channels out of the box. Everyone talks in voice in the same app with the same account, no swapping usernames across three platforms.": "O modelo de Jogos dá ao seu clã canais para montar time, clipes e scrims logo de cara. Todo mundo conversa por voz no mesmo app, com a mesma conta, sem trocar de nome de usuário entre três plataformas.",
   "The Gaming template sets up squad-up, clip, and scrim channels with staff roles in one click, then everyone moves into voice with the same account. No bot commands to learn.": "O modelo Jogos cria canais para montar time, clipes e scrims com cargos da equipe em um clique, e depois todo mundo entra na voz com a mesma conta. Nenhum comando de bot para aprender.",
   "The best free Discord alternative for friends & gamers": "A melhor alternativa grátis ao Discord para amigos e gamers",

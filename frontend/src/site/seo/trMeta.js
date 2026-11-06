@@ -34,7 +34,7 @@ export const TR_LANDING_META = [
   {
     "path": "/tr/discord-acildi-mi",
     "title": "Discord Açıldı mı? Güncel Durum ve Descall Alternatifi",
-    "description": "Kısa cevap: hayır. Discord 9 Ekim 2024’ten beri Türkiye’de erişim engelli ve engel Ekim 2026’da sürüyor. VPN’siz çalışan ücretsiz alternatif: Descall.",
+    "description": "Kısa cevap: hayır. Discord 9 Ekim 2024’ten beri Türkiye’de erişim engelli; son kontrol tarihi sayfada. VPN’siz çalışan ücretsiz alternatif: Descall.",
     "h1": "Discord açıldı mı? Türkiye’de Discord erişim durumu"
   },
   {

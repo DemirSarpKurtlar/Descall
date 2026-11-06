@@ -398,14 +398,13 @@ export function cookieBannerHtml(loc) {
 }
 
 /**
- * Trademark note on every page (the footer of every page names Discord). Turkish has
- * its own sentence; prefixed locales translate the English one through the site catalog.
+ * Trademark note on every page (the footer of every page names Discord). Turkish comes
+ * from MARKETING_TR, prefixed locales from the site catalog (same key as the React footer).
  */
 export const NOT_AFFILIATED_EN = "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.";
-export const NOT_AFFILIATED_TR = "Descall, Discord Inc. ile bağlantılı değildir. Discord, Discord Inc.’in ticari markasıdır.";
 
 export function notAffiliatedCopy(loc) {
-  return siteLoc(loc) === "tr" ? NOT_AFFILIATED_TR : newCopy(NOT_AFFILIATED_EN, loc);
+  return trCopy(NOT_AFFILIATED_EN, loc);
 }
 
 function footerItem(href, label) {

@@ -6,6 +6,7 @@ import { FAQ_ITEMS } from "../faqData.js";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
 import { LEGAL_EMAIL, contactCopy, legalSlug, tocLabel } from "../../legal/legalView.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
+import { formatDate } from "../../i18n/format.js";
 import {
   ALTERNATIVE_HUB_FAQ,
   ALTERNATIVES_FAQ,
@@ -42,6 +43,11 @@ function escapeHtml(s) {
 /** Escaped text with {name} placeholders replaced by ready HTML. */
 function fill(text, html = {}) {
   return escapeHtml(text).replace(/\{(\w+)\}/g, (m, key) => (html[key] != null ? html[key] : m));
+}
+
+/** "2026-11-06" as a long date in the page language (Intl, UTC). */
+function longDate(iso, loc) {
+  return formatDate(`${iso}T12:00:00Z`, siteLoc(loc), { dateStyle: "long", timeZone: "UTC" }) || iso;
 }
 
 function brandBlock(loc = "en") {
@@ -359,7 +365,8 @@ export function corePageBody(path) {
     <li>${escapeHtml(nc("API health"))}: <a href="https://descall.com/api/status">/api/status</a></li>
     <li>${escapeHtml(nc("Source"))}: <a href="${SITE_OPERATOR.githubUrl}">GitHub</a></li>
   </ul>
-  <p>${escapeHtml(nc("Last updated"))}: ${escapeHtml(nc(SITE_OPERATOR.lastUpdatedLabel))}</p>
+  <p>${escapeHtml(nc("The API row is checked live from your browser each time you open this page."))}</p>
+  <p>${escapeHtml(nc("Last updated"))}: <time datetime="${SITE_OPERATOR.statusReviewedIso}">${escapeHtml(longDate(SITE_OPERATOR.statusReviewedIso, loc))}</time></p>
   ${navBlock(loc)}
 </main>`;
 

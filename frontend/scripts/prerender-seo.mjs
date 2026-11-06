@@ -404,6 +404,19 @@ function jsonLdForRoute(route) {
         { name: trLandingLabel(trLanding), path: route.path },
       ])
     );
+    // Dated pages (the Discord access status) are articles with a real dateModified.
+    if (trLanding.published && trLanding.updated) {
+      graphs.push(
+        buildArticleLd({
+          title: trLanding.h1,
+          description: route.description,
+          path: route.path,
+          datePublished: trLanding.published,
+          dateModified: trLanding.updated,
+          inLanguage: "tr",
+        })
+      );
+    }
   }
   if (route.path === "/tr/blog") {
     graphs.push(buildBreadcrumbLd([{ name: "Ana sayfa", path: "/tr" }, { name: "Blog", path: "/tr/blog" }]));

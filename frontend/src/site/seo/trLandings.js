@@ -13,6 +13,16 @@ import { TR_LANDING_META } from "./trMeta.js";
 
 export const TR_LANDING_UPDATED = "2026-10-17";
 
+/**
+ * "Discord açıldı mı?" is evergreen: no month in the title, one "last checked" date.
+ * Re-check the access status (official statements, reliable news) every month and move
+ * DISCORD_TR_STATUS_CHECKED and CHECKED to that day; the page, its Article JSON-LD
+ * (dateModified) and the sitemap lastmod follow. First published 2026-10-17.
+ */
+export const DISCORD_TR_STATUS_PUBLISHED = "2026-10-17";
+export const DISCORD_TR_STATUS_CHECKED = "2026-11-06";
+const CHECKED = "6 Kasım 2026";
+
 const RELATED_CORE = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
   { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri karşılaştırması" },
@@ -46,7 +56,7 @@ export const TR_LANDINGS = {
       {
         h: "Neden bu kadar çok kişi Discord alternatifi arıyor?",
         p: [
-          "Türkiye’de Discord’a erişim, 9 Ekim 2024’te verilen mahkeme kararıyla engellendi ve 2026 Ekim itibarıyla engel sürüyor. Yıllarca her akşam aynı ses kanalında buluşan arkadaş grupları, okul toplulukları ve oyun klanları bir gecede ortak buluşma yerini kaybetti. Bir kısmı geçici çözümlerle idare etmeye çalıştı, bir kısmı WhatsApp gruplarına dağıldı, birçoğu da düzenli bir alternatif aramaya başladı.",
+          "Türkiye’de Discord’a erişim, 9 Ekim 2024’te verilen mahkeme kararıyla engellendi ve engel bugün de sürüyor (güncel durum için “Discord açıldı mı?” sayfasına bak). Yıllarca her akşam aynı ses kanalında buluşan arkadaş grupları, okul toplulukları ve oyun klanları bir gecede ortak buluşma yerini kaybetti. Bir kısmı geçici çözümlerle idare etmeye çalıştı, bir kısmı WhatsApp gruplarına dağıldı, birçoğu da düzenli bir alternatif aramaya başladı.",
           "Engelden bağımsız olarak da Discord’dan uzaklaşmak isteyenler var. Bazıları için en temel özelliklerin etrafındaki abonelik baskısı yorucu; bazıları için yüzlerce botla dolu dev sunucular küçük bir arkadaş grubu için fazla karmaşık. Aranan şey çoğu zaman aynı: herkesin kolayca katılabildiği, sesin net olduğu, düzenli ama sade bir yer.",
           "Descall tam bu ihtiyaç için yapıldı. Discord’u birebir kopyalamaya çalışmıyor; arkadaş gruplarının ve küçük toplulukların gerçekten her gün kullandığı parçaları ücretsiz ve tek bir hesapta topluyor.",
         ],
@@ -486,15 +496,15 @@ export const TR_LANDINGS = {
     path: "/tr/discord-acildi-mi",
     kicker: "Güncel durum",
     h1: "Discord açıldı mı? Türkiye’de Discord erişim durumu",
-    updated: "2026-10-17",
-    updatedLabel: "Son güncelleme: 17 Ekim 2026",
-    lead:
-      "Kısa cevap: Hayır. Discord, 9 Ekim 2024’ten bu yana Türkiye’de mahkeme kararıyla erişime kapalı ve 17 Ekim 2026 itibarıyla engel hâlâ sürüyor. Bu sayfada engelin ne zaman ve nasıl başladığını, bugün neyin geçerli olduğunu ve bu süreçte arkadaşlarınla iletişimde kalmak için hangi seçeneklerin olduğunu özetliyoruz.",
+    published: DISCORD_TR_STATUS_PUBLISHED,
+    updated: DISCORD_TR_STATUS_CHECKED,
+    updatedLabel: `Son kontrol: ${CHECKED}`,
+    lead: `Kısa cevap: Hayır. Discord, 9 Ekim 2024’ten bu yana Türkiye’de mahkeme kararıyla erişime kapalı; son kontrolümüzde (${CHECKED}) engelin kaldırıldığına dair resmi bir karar yoktu. Bu sayfada engelin ne zaman ve nasıl başladığını, bugün neyin geçerli olduğunu ve bu süreçte arkadaşlarınla iletişimde kalmak için hangi seçeneklerin olduğunu özetliyoruz.`,
     sections: [
       {
-        h: "Güncel durum (17 Ekim 2026)",
+        h: "Güncel durum",
         p: [
-          "Discord Türkiye’de erişime kapalı. 9 Ekim 2024’te verilen mahkeme kararıyla başlayan erişim engeli kaldırılmadı; Discord’un web sitesi ve uygulamaları Türkiye’deki internet servis sağlayıcıları üzerinden normal şekilde açılmıyor.",
+          `Son kontrol tarihi itibarıyla (${CHECKED}) Discord Türkiye’de erişime kapalı. 9 Ekim 2024’te verilen mahkeme kararıyla başlayan erişim engeli kaldırılmadı; Discord’un web sitesi ve uygulamaları Türkiye’deki internet servis sağlayıcıları üzerinden normal şekilde açılmıyor.`,
           "Engelin kaldırıldığına dair resmi bir karar duyurulduğunda bu sayfayı güncelleyeceğiz. Sosyal medyada zaman zaman “Discord açıldı” iddiaları dolaşıyor; bunlar genelde kısa süreli bağlantı dalgalanmalarından veya farklı ağlardan yapılan denemelerden kaynaklanıyor. Kesin bilgi için resmi açıklamaları takip etmek en doğrusu.",
         ],
       },
@@ -522,7 +532,7 @@ export const TR_LANDINGS = {
       {
         h: "Arkadaşlarınla iletişimde kalmak için seçenekler",
         p: [
-          "Sadece mesajlaşma yeterliyse WhatsApp veya Telegram grupları iş görür. Kalıcı ses odaları, roller ve kanallarla düzenli bir sunucu, ekran paylaşımı ve oyun arkadaşı bulma gibi Discord’a özgü özellikler istiyorsan Descall gibi Discord tarzı bir uygulama daha uygun olur.",
+          "Sadece mesajlaşma yeterliyse WhatsApp veya Telegram grupları iş görür. Kalıcı ses odaları, roller ve kanallarla düzenli bir sunucu, ve ekran paylaşımı istiyorsan Descall gibi Discord tarzı bir uygulama daha uygun olur.",
           "Descall Türkiye’de geliştirilir, Türkiye’den doğrudan erişilebilir ve şunları ücretsiz sunar: sunucular, roller ve kanal izinleri, hazır şablonlar, sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma, hazır oyun şablonları. Windows, Android ve tarayıcıdan kullanılabilir.",
         ],
       },
@@ -530,14 +540,14 @@ export const TR_LANDINGS = {
         h: "Discord tekrar açılırsa ne olacak?",
         p: [
           "Erişim engeli kaldırılırsa Discord hesapların ve sunucuların büyük ihtimalle olduğu gibi duruyor olacak. Descall’a geçmek, Discord hesabını silmek anlamına gelmez; birçok grup ikisini birlikte kullanabilir. Descall’da kurduğun sunucu, roller ve arkadaş listen de her durumda seninle kalır.",
-          "Bu sayfayı düzenli olarak güncelliyoruz. Sayfanın başındaki “Son güncelleme” tarihi, bilgilerin en son ne zaman kontrol edildiğini gösterir.",
+          "Bu sayfayı her ay yeniden kontrol ediyoruz. Sayfanın başındaki “Son kontrol” tarihi, bilgilerin en son ne zaman doğrulandığını gösterir.",
         ],
       },
     ],
     faq: [
       {
         q: "Discord açıldı mı?",
-        a: "Hayır. Discord 9 Ekim 2024’ten beri Türkiye’de mahkeme kararıyla erişime kapalı ve 17 Ekim 2026 itibarıyla engel sürüyor.",
+        a: `Hayır. Discord 9 Ekim 2024’ten beri Türkiye’de mahkeme kararıyla erişime kapalı ve son kontrolümüzde (${CHECKED}) engel sürüyordu.`,
       },
       {
         q: "Discord neden kapatıldı?",
@@ -838,7 +848,7 @@ const EXTRA = {
           "9 Ekim 2024: Mahkeme kararı doğrultusunda Discord’a Türkiye’den erişim engellendi.",
           "Ekim 2024 sonrası: Web sitesi, masaüstü ve mobil uygulamalar Türkiye’deki internet servis sağlayıcıları üzerinden erişilemez hale geldi.",
           "2025: Engel boyunca kullanıcılar ve topluluklar alternatif uygulamalara yöneldi; erişim engeli kaldırılmadı.",
-          "17 Ekim 2026: Erişim engeli hâlâ sürüyor (bu sayfanın son kontrol tarihi).",
+          `${CHECKED}: Erişim engeli sürüyor, kaldırıldığına dair resmi bir karar yok (bu sayfanın son kontrol tarihi).`,
         ],
       },
       {

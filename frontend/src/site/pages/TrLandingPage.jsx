@@ -3,7 +3,7 @@ import { IconCheck as Check } from "../icons";
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoProductPreview from "../components/SeoProductPreview";
-import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
+import { buildArticleLd, buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { TR_LANDINGS, trLandingLabel } from "../seo/trLandings";
 
 function previewForPath(path) {
@@ -35,7 +35,23 @@ export default function TrLandingPage({ onSignIn, onSignUp }) {
       lead={page.lead}
       tone={preview.tone}
       faq={page.faq}
-      jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(page.faq), buildDiscordAlternativeAppLd(page.path)]}
+      jsonLd={[
+        buildBreadcrumbLd(crumbs),
+        buildFaqLd(page.faq),
+        buildDiscordAlternativeAppLd(page.path),
+        ...(page.published && page.updated
+          ? [
+              buildArticleLd({
+                title: page.h1,
+                description: page.lead,
+                path: page.path,
+                datePublished: page.published,
+                dateModified: page.updated,
+                inLanguage: "tr",
+              }),
+            ]
+          : []),
+      ]}
       primaryCta={
         <button type="button" className="mkt-btn mkt-btn-primary" onClick={startFree}>
           Ücretsiz başla
