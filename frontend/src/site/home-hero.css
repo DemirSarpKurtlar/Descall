@@ -171,6 +171,16 @@ body.has-mkt-hh .mkt-bg {
   }
   .mkt .mkt-hh-second { gap: 24px; }
   .mkt .mkt-hh-second .mkt-shot-copy p { font-size: 15px; }
+  /* A screen with no iPhone capture keeps the desktop window shape. */
+  .mkt .mkt-pf-wide { display: block; }
+  .mkt .mkt-pf-wide .mkt-pf-glass { width: auto; padding: 6px; border-radius: 18px; }
+  .mkt .mkt-pf-wide .mkt-pf-screen { aspect-ratio: 1440 / 900; object-position: left top; border-radius: 12px; }
+}
+
+/* Feature rows share one rhythm: same grid, same frame, no boxed section. */
+.mkt .mkt-hh-servers { margin-top: 96px; }
+@media (max-width: 768px) {
+  .mkt .mkt-hh-servers { margin-top: 56px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
