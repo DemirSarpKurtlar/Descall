@@ -7,6 +7,7 @@ import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
 import { TR_APPROVED_UI } from "./trApprovedUi.js";
+import { TR_UI_AUDIT_LOW } from "./trUiAuditLow.js";
 
 import { CORE_TR } from "./core.tr.js";
 import { MAINT_TR } from "./maintenance.tr.js";
@@ -4514,6 +4515,7 @@ export const phrases = {
   ...TR_INAPP_GAPS,
   ...TR_AI_LOOK_FIXES,
   ...TR_APPROVED_UI,
+  ...TR_UI_AUDIT_LOW,
 };
 
 const locale = { nested, phrases };
