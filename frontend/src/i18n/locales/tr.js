@@ -548,7 +548,7 @@ export const nested = {
     "signupStats": "Kayıt İstatistikleri",
     "announcements": "Duyurular",
     "livePopup": "Canlı popup",
-    "casino": "Casino",
+    "casino": "Oyunlar / Kredi",
     "moderation": "Moderasyon",
     "analytics": "Analitik",
     "people": "Kişiler",

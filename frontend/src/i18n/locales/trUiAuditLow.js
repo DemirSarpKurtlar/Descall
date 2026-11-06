@@ -5,7 +5,9 @@
 export const TR_UI_AUDIT_LOW = {
   "Block {name}?": "{name} engellensin mi?",
   "Call your friends quickly or go back to your recent calls.": "Arkadaşlarını hızlıca ara ya da son aramalarına dön.",
+  "Casino / Credits Management": "Oyunlar / Kredi",
   "Descall is developed by Demir Sarp Kurtlar.": "Descall’ı Demir Sarp Kurtlar geliştiriyor.",
+  "Manage user credits and view Blackjack statistics": "Kullanıcı kredilerini yönet ve Blackjack (21) istatistiklerini gör",
   "Share product analytics": "Ürün analitiğini paylaş",
   "The link may be outdated or mistyped. Go back home or check the service status.": "Bağlantı eski ya da yanlış yazılmış olabilir. Ana sayfaya dön ya da hizmet durumuna bak.",
   "The shop is empty right now": "Vitrin şu an boş",

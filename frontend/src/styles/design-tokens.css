@@ -4,6 +4,12 @@
    NO OLD UI REMNANTS
    ============================================ */
 
+:root {
+  /* Logo blue (Konsept 2). Fixed across themes; --primary is the themeable accent. */
+  --brand: #587AF5;
+  --brand-2: #4A68E0;
+}
+
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
