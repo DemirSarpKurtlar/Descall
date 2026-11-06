@@ -76,9 +76,9 @@
 @import './styles/reaction-pill.css';
 @import './styles/special-badges.css';
 @import './styles/settings-v3.css';
+@import './styles/ui-audit-high.css';
 @import './styles/overlay.css';
 @import './styles/frost.css';
-@import './styles/ui-audit-high.css';
 
 /* Typing indicator: anchored to the composer's top edge on every platform.
    Before 2.13.6 it was a sibling in normal flow under the messages list; on

@@ -10,6 +10,8 @@ import JsonLd, { buildBreadcrumbLd } from "../JsonLd";
  * Public status / trust page, factual Beta note + live API health probe.
  * No fabricated uptime percentages.
  */
+const SITE_TRANSPORT = "TLS / DTLS-SRTP";
+
 export default function StatusPage() {
   const { t, locale } = useLocale();
   const [api, setApi] = useState({ state: "checking", detail: "" });
@@ -47,7 +49,7 @@ export default function StatusPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // UI audit #23: the date follows the page language ("25 Ağustos 2026").
+  // UI audit #23: the date follows the page language (long date style).
   const updated = formatDate(`${SITE_OPERATOR.lastUpdatedIso}T12:00:00Z`, locale, { dateStyle: "long" }) || SITE_OPERATOR.lastUpdatedLabel;
 
   const crumbs = [
@@ -94,11 +96,11 @@ export default function StatusPage() {
         </div>
         <div className="mkt-status-row">
           <dt>{t("Transport security")}</dt>
-          <dd>TLS / DTLS-SRTP</dd>
+          <dd>{SITE_TRANSPORT}</dd>
         </div>
         <div className="mkt-status-row">
           <dt>{t("Operator")}</dt>
-          <dd>{SITE_OPERATOR.operatorName} · {SITE_OPERATOR.country}</dd>
+          <dd>{`${SITE_OPERATOR.operatorName} · ${SITE_OPERATOR.country}`}</dd>
         </div>
         <div className="mkt-status-row">
           <dt>{t("Support")}</dt>
