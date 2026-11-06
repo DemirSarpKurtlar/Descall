@@ -162,3 +162,26 @@ html.glass-desktop .app-notif-banner-dismiss { color: var(--gd-t2); }
   .app-notif-banner-btn:active,
   .app-notif-banner-dismiss:active { transform: none; }
 }
+
+/* #11 Shop, light theme: the invite link field, 'Kod kullan' and 'Paylaş'
+   carried the dark-theme fills (grey bar, pale lilac text, no fill at all). */
+:root[data-theme="light"] .invite-card-link,
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .g-invite-link-field {
+  background: #F2F4FA;
+  box-shadow: inset 0 0 0 0.5px rgba(57, 60, 77, 0.14);
+  color: rgba(57, 60, 77, 0.78);
+}
+:root[data-theme="light"] .shop-redeem-btn,
+:root[data-theme="light"] .invite-card-btn:not(.primary),
+html.glass-ui[data-theme="light"] .user-settings.is-mobile.g-settings .g-invite-link-actions button.secondary {
+  background: #E9EDFB;
+  box-shadow: none;
+  color: #3D5BD9;
+}
+:root[data-theme="light"] .shop-redeem-btn:hover,
+:root[data-theme="light"] .invite-card-btn:not(.primary):hover {
+  background: #DFE5FA;
+}
+:root[data-theme="light"] .shop-redeem-btn:focus-visible {
+  outline-color: #3D5BD9;
+}
