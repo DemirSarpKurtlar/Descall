@@ -96,9 +96,44 @@ async function groupReads(groupId, viewerId) {
     return [];
   }
   const rows = (data || []).filter((r) => r.user_id && r.user_id !== viewerId && r.last_read_at);
+  const enabled = await receiptsEnabledMany(rows.map((r) => r.user_id));
   const out = [];
   for (const r of rows) {
-    if (await receiptsEnabled(r.user_id)) out.push({ userId: r.user_id, at: new Date(r.last_read_at).toISOString() });
+    if (enabled.get(r.user_id) !== false) out.push({ userId: r.user_id, at: new Date(r.last_read_at).toISOString() });
+  }
+  return out;
+}
+
+/**
+ * receiptsEnabled for many users: cached ones from the cache, the rest with one
+ * .in("id") query per 100 ids (was one query per member). Map userId -> boolean;
+ * unknown (failed query) counts as on, like receiptsEnabled.
+ */
+async function receiptsEnabledMany(userIds, { now = Date.now() } = {}) {
+  const out = new Map();
+  const pending = [];
+  for (const uid of new Set((userIds || []).filter(Boolean))) {
+    const hit = columnMissing ? null : cache.get(uid);
+    if (columnMissing) out.set(uid, true);
+    else if (hit && now - hit.at < TTL_MS) out.set(uid, hit.on);
+    else pending.push(uid);
+  }
+  for (let i = 0; i < pending.length; i += 100) {
+    const chunk = pending.slice(i, i + 100);
+    const { data, error } = columnMissing
+      ? { data: null, error: null }
+      : await db().from("users").select("id, read_receipts").in("id", chunk);
+    if (columnMissing || error) {
+      if (error && isMissingColumn(error, "read_receipts")) columnMissing = true;
+      for (const uid of chunk) out.set(uid, true);
+      continue;
+    }
+    const byId = new Map((data || []).map((u) => [u.id, u]));
+    for (const uid of chunk) {
+      const on = byId.get(uid)?.read_receipts !== false;
+      cache.set(uid, { on, at: now });
+      out.set(uid, on);
+    }
   }
   return out;
 }

@@ -463,11 +463,16 @@ router.delete("/:groupId/invite-links/:code", requireAuth, async (req, res) => {
 
 // Get group messages
 // Reply quotes and the forward mark (messaging phase 4) live in group_messages.reply_to,
-// added by supabase/migrations/20261108_group_messages_reply_to.sql. History reads it in a
-// second query so a database without the column still serves messages.
+// added by supabase/migrations/20261108_group_messages_reply_to.sql. History selects it in
+// the main query; a database without the column answers "column does not exist" once, and
+// from then on history is read without it (and this second query is skipped too).
 let groupReplyColumn = true;
 async function withGroupReplyMeta(rows) {
   if (!groupReplyColumn || !Array.isArray(rows) || !rows.length) return rows;
+  if (rows.every((r) => r && Object.prototype.hasOwnProperty.call(r, "reply_to"))) {
+    // Selected with the page: drop empty values so rows look as they did before.
+    return rows.map((r) => (r.reply_to == null ? omitReplyTo(r) : r));
+  }
   const ids = rows.map((r) => r.id).filter(Boolean);
   if (!ids.length) return rows;
   const { data, error } = await supabase.from("group_messages").select("id, reply_to").in("id", ids);
@@ -479,11 +484,32 @@ async function withGroupReplyMeta(rows) {
   return byId.size ? rows.map((r) => (byId.has(r.id) ? { ...r, reply_to: byId.get(r.id) } : r)) : rows;
 }
 
+function omitReplyTo(row) {
+  const { reply_to: _omit, ...rest } = row;
+  return rest;
+}
+
 const GROUP_MESSAGE_COLUMNS = `
   id, group_id, sender_id, content, media_url, media_type, created_at, updated_at,
   edited_at, edited_by, is_edited, message_type, original_name, file_size, pinned_at, pinned_by,
   sender:sender_id (id, username, avatar_url)
 `;
+
+/**
+ * Runs run(columns) for the history page with reply_to selected. When the column is
+ * missing (migration not applied), remembers that and runs again without it.
+ * run returns one { data, error } result or an array of them.
+ */
+async function selectGroupHistory(run) {
+  if (!groupReplyColumn) return run(GROUP_MESSAGE_COLUMNS);
+  const result = await run(`${GROUP_MESSAGE_COLUMNS}, reply_to`);
+  const errors = (Array.isArray(result) ? result : [result]).map((r) => r && r.error).filter(Boolean);
+  if (errors.some((e) => isMissingColumn(e, "reply_to"))) {
+    groupReplyColumn = false;
+    return run(GROUP_MESSAGE_COLUMNS);
+  }
+  return result;
+}
 
 router.get("/:groupId/messages", requireAuth, async (req, res) => {
   const started = Date.now();
@@ -514,38 +540,42 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
     let incremental = false;
     if (sinceIso && !before) {
       incremental = true;
-      let createdQ = supabase
-        .from("group_messages")
-        .select(GROUP_MESSAGE_COLUMNS)
-        .eq("group_id", groupId)
-        .gt("created_at", sinceIso);
-      let editedQ = supabase
-        .from("group_messages")
-        .select(GROUP_MESSAGE_COLUMNS)
-        .eq("group_id", groupId)
-        .gt("edited_at", sinceIso);
-      if (readUntil) {
-        createdQ = createdQ.lte("created_at", readUntil);
-        editedQ = editedQ.lte("created_at", readUntil).lte("edited_at", readUntil);
-      }
-      const [createdRes, editedRes] = await Promise.all([
-        createdQ.order("created_at", { ascending: true }).limit(pageSize),
-        editedQ.order("edited_at", { ascending: false }).limit(pageSize),
-      ]);
+      const [createdRes, editedRes] = await selectGroupHistory((columns) => {
+        let createdQ = supabase
+          .from("group_messages")
+          .select(columns)
+          .eq("group_id", groupId)
+          .gt("created_at", sinceIso);
+        let editedQ = supabase
+          .from("group_messages")
+          .select(columns)
+          .eq("group_id", groupId)
+          .gt("edited_at", sinceIso);
+        if (readUntil) {
+          createdQ = createdQ.lte("created_at", readUntil);
+          editedQ = editedQ.lte("created_at", readUntil).lte("edited_at", readUntil);
+        }
+        return Promise.all([
+          createdQ.order("created_at", { ascending: true }).limit(pageSize),
+          editedQ.order("edited_at", { ascending: false }).limit(pageSize),
+        ]);
+      });
       if (createdRes.error) throw createdRes.error;
       const byId = new Map();
       for (const row of [...(editedRes.data || []), ...(createdRes.data || [])]) byId.set(row.id, row);
       messages = [...byId.values()].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     } else {
-      let query = supabase
-        .from("group_messages")
-        .select(GROUP_MESSAGE_COLUMNS)
-        .eq("group_id", groupId)
-        .order("created_at", { ascending: false })
-        .limit(pageSize);
-      if (before) query = query.lt("created_at", before);
-      if (readUntil) query = query.lte("created_at", readUntil);
-      const { data, error } = await query;
+      const { data, error } = await selectGroupHistory((columns) => {
+        let query = supabase
+          .from("group_messages")
+          .select(columns)
+          .eq("group_id", groupId)
+          .order("created_at", { ascending: false })
+          .limit(pageSize);
+        if (before) query = query.lt("created_at", before);
+        if (readUntil) query = query.lte("created_at", readUntil);
+        return query;
+      });
       if (error) throw error;
       messages = data;
     }
