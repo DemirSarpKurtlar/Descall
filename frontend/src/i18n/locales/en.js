@@ -405,7 +405,7 @@ export const nested = {
     "subtitle": "System administration & moderation",
     "overview": "Overview",
     "overviewTitle": "Right now",
-    "overviewSubtitle": "Live health, who was last active, who just joined, and what needs a click, not a dump of raw counters.",
+    "overviewSubtitle": "Server health, new sign-ups and pending work.",
     "overviewLoadError": "Could not load overview.",
     "overviewGatewayError": "The connection is slow. Retrying.",
     "overviewOnline": "Online now",

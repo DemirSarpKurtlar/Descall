@@ -239,7 +239,7 @@ export default function AdminDmInbox() {
           {loading && !conversations.length ? (
             <ConversationListSkeleton count={6} />
           ) : filtered.length === 0 ? (
-            <div className="empty-state compact">
+            <div className="empty-state">
               <Mail size={32} className="empty-icon" />
               <p>{isGroup ? t("admin.noGroupThreads") : t("admin.noDmThreads")}</p>
             </div>

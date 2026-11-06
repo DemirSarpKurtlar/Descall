@@ -890,13 +890,14 @@
   color: #30d158;
 }
 
+/* Frameless, neutral empty state (no dashed dropzone, no grey slab). */
 .admin-shell .empty-state {
   text-align: center;
   padding: 48px 20px;
   color: rgba(244, 246, 251, 0.45);
   border-radius: var(--r-lg);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border: 0;
+  background: none;
 }
 
 .empty-state .empty-icon {
