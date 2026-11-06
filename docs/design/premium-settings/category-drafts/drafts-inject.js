@@ -963,7 +963,10 @@
   .dpc-e-scene .cw{flex:1;display:flex;align-items:center;justify-content:center;gap:2px;height:28px;margin-bottom:26px}
   .dpc-e-scene .cw i{width:3px;border-radius:2px;background:rgba(127,224,163,.7)}
   .dpc-e-ch{display:flex;flex-direction:column;gap:10px}
-  .dpc-e-cht span{font-size:var(--fs-11);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-link,#7eb6ff)}
+  .dpc-e-cht{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .dpc-e-cht h3,.dpc-e-cht p{margin:0!important;white-space:nowrap}
+  .dpc-e-cht p{overflow:hidden;text-overflow:ellipsis}
+  .dpc-e-cht span{flex:none;font-size:var(--fs-11);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-link,#7eb6ff)}
   .dpc-e-cht h3{margin:2px 0 0;font-size:var(--fs-17);font-weight:700}
   .dpc-e-ch{gap:8px}
   .dpc-e-cht p{margin:1px 0 0;font-size:var(--fs-13);color:var(--text-muted)}
