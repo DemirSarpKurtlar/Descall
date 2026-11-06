@@ -73,16 +73,18 @@ export default function ContactPage() {
     <section className="mkt-section mkt-prose mkt-contact">
       <h1>{t("Contact")}</h1>
       <p className="lead">{t("Get in touch with the Descall team, support, feedback, and press.")}</p>
-      <h2>{t("Owner")}</h2>
-      <p className="mkt-contact-owner">
-        {SITE_OPERATOR.operatorName}
-        {" · "}
-        {t("Descall is owned by Demir Sarp Kurtlar.")}
-      </p>
-      <h2>{t("Support email")}</h2>
-      <p>
-        <a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a>
-      </p>
+      <div className="mkt-contact-grid">
+      <aside className="mkt-contact-aside">
+        <h2>{t("Support email")}</h2>
+        <p>
+          <a href={`mailto:${SITE_OPERATOR.supportEmail}`}>{SITE_OPERATOR.supportEmail}</a>
+        </p>
+        <p className="mkt-contact-owner">{t("Descall is developed by Demir Sarp Kurtlar.")}</p>
+        <h2>{t("Security")}</h2>
+        <p>
+          {t("For security reports, contact us by email and include enough detail for us to investigate safely.")}
+        </p>
+      </aside>
       <form className="mkt-contact-form" onSubmit={submit} noValidate>
         <label htmlFor="contact-name">{t("Your name (optional)")}</label>
         <input
@@ -131,10 +133,7 @@ export default function ContactPage() {
           {status === "loading" ? t("Sending…") : t("Send message")}
         </button>
       </form>
-      <h2>{t("Security")}</h2>
-      <p>
-        {t("For security reports, contact us by email and include enough detail for us to investigate safely.")}
-      </p>
+      </div>
     </section>
   );
 }
