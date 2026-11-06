@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useT, useLocale } from "../../context/LocaleContext";
-import { PanelShell, formatDuration } from "../gaming/ui.jsx";
+import { formatDuration } from "../gaming/ui.jsx";
 import { fetchGameSessions, localSessions, mergeSessions, totalsByGame } from "../gaming/gameData.js";
 import { formatDate } from "../../i18n/format.js";
+import { Badge, Group, Hint, Item, List, Note, Seg } from "../story/kit.jsx";
+import { usePublish } from "../story/bus.js";
 
 export const key = "game_session_history";
+const ds = (s) => `${key}.${s}`;
 const RANGES = [7, 30, 90];
 
 export function Panel() {
@@ -26,40 +29,38 @@ export function Panel() {
   const totals = useMemo(() => totalsByGame(data.sessions), [data.sessions]);
   const total = totals.reduce((n, g) => n + g.totalSec, 0);
   const max = totals[0]?.totalSec || 1;
+  const bars = useMemo(() => totals.slice(0, 4).map((g) => g.totalSec), [totals]);
+  usePublish("game_session_history.totals", bars.length ? bars : undefined);
   return (
-    <PanelShell title={t("premiumGaming.gameHistory.title")} desc={t("premiumGaming.gameHistory.desc")} testId="pg-panel-game_session_history">
-      <div className="pg-row">
-        {RANGES.map((d) => (
-          <button key={d} type="button" className={`pg-btn is-small${d === days ? " is-primary" : ""}`} onClick={() => setDays(d)}>{t("premiumGaming.gameHistory.lastDays", { count: d })}</button>
-        ))}
-        <span className="pg-grow" />
-        <span className="pg-muted pg-num">{t("premiumGaming.gameHistory.total", { duration: formatDuration(t, total) })}</span>
-      </div>
-      {!data.ok ? <p className="pg-error">{t("premiumGaming.gameHistory.offline")}</p> : null}
-      {totals.length ? (
-        <div className="pg-card">
-          {totals.slice(0, 8).map((g) => (
-            <div key={g.game} className="pg-row">
-              <span className="pg-grow">{g.game}</span>
-              <span className="pg-muted pg-num">{t("premiumGaming.gameHistory.sessions", { count: g.count })} · {formatDuration(t, g.totalSec)}</span>
-              <div className="pg-tl-bar" style={{ width: "100%" }}><span className="is-game" style={{ left: 0, width: `${Math.max(2, (g.totalSec / max) * 100)}%` }} /></div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {data.sessions.length ? (
-        <ul className="pg-list" data-testid="pg-game-sessions">
+    <>
+      <Group title={t("premiumGaming.gameHistory.title")}>
+        <Note ds={ds("desc")}>{t("premiumGaming.gameHistory.desc")}</Note>
+        <Seg value={days} onChange={(v) => setDays(Number(v))} label={t("premiumGaming.gameHistory.title")} ds={ds("range")} options={RANGES.map((d) => ({ value: d, label: t("premiumGaming.gameHistory.lastDays", { count: d }) }))} />
+        <div className="ps-stat" data-s={ds("total")}><span>{t("premiumGaming.gameHistory.total", { duration: formatDuration(t, total) })}</span></div>
+        {!data.ok ? <Hint tone="err">{t("premiumGaming.gameHistory.offline")}</Hint> : null}
+        {totals.length ? (
+          <div className="ps-bars" data-s={ds("totals")}>
+            {totals.slice(0, 8).map((g) => (
+              <div key={g.game} className="ps-barrow">
+                <span>{g.game}</span>
+                <small className="tnum">{t("premiumGaming.gameHistory.sessions", { count: g.count })} · {formatDuration(t, g.totalSec)}</small>
+                <i aria-hidden="true"><b style={{ width: `${Math.max(2, (g.totalSec / max) * 100)}%` }} /></i>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </Group>
+      <Group title={t("premiumStory.g.sessions")}>
+        <List ds={ds("list")} empty={!data.sessions.length && !data.loading ? t("premiumGaming.gameHistory.empty") : null}>
           {data.sessions.slice(0, 100).map((s, i) => (
-            <li key={`${s.game}-${s.started_at}-${i}`}>
-              <span className="pg-grow">{s.game}</span>
-              <span className="pg-muted pg-num">{formatDate(s.started_at, locale, { dateStyle: "medium", timeStyle: "short" })}</span>
-              <span className="pg-num">{formatDuration(t, s.duration_sec)}</span>
-              {s.source === "local" ? <span className="pg-chip">{t("premiumGaming.gameHistory.local")}</span> : null}
-            </li>
+            <Item key={`${s.game}-${s.started_at}-${i}`} icon="gamepad" title={s.game} sub={formatDate(s.started_at, locale, { dateStyle: "medium", timeStyle: "short" })}>
+              <span className="tnum ps-dur">{formatDuration(t, s.duration_sec)}</span>
+              {s.source === "local" ? <Badge>{t("premiumGaming.gameHistory.local")}</Badge> : null}
+            </Item>
           ))}
-        </ul>
-      ) : !data.loading ? <p className="pg-muted">{t("premiumGaming.gameHistory.empty")}</p> : null}
-    </PanelShell>
+        </List>
+      </Group>
+    </>
   );
 }
 

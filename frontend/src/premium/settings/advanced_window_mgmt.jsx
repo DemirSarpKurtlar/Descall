@@ -1,16 +1,22 @@
 /** Descall Ultra window management options. */
 import { useT } from "../../context/LocaleContext";
-import { ToggleRow } from "../panelUi.jsx";
+import { Group, ToggleTiles } from "../story/kit.jsx";
 
 export const key = "advanced_window_mgmt";
+const ds = (s) => `${key}.${s}`;
 
 export function Panel({ settings, update }) {
   const t = useT();
+  const tile = (k, label, icon) => ({ id: k, label: t(label), icon, ds: ds(k), checked: settings[k] !== false, onChange: (v) => update({ [k]: v }) });
   return (
-    <>
-      <ToggleRow label={t("premium.panel.snap")} checked={settings.snap !== false} onChange={(v) => update({ snap: v })} />
-      <ToggleRow label={t("premium.panel.keepVisible")} checked={settings.keepVisible !== false} onChange={(v) => update({ keepVisible: v })} />
-      <ToggleRow label={t("premium.panel.mainMonitor")} checked={settings.mainMonitor !== false} onChange={(v) => update({ mainMonitor: v })} />
-    </>
+    <Group title={t("premiumStory.g.windowBehavior")}>
+      <ToggleTiles
+        items={[
+          tile("snap", "premium.panel.snap", "magnet"),
+          tile("keepVisible", "premium.panel.keepVisible", "restore"),
+          tile("mainMonitor", "premium.panel.mainMonitor", "star"),
+        ]}
+      />
+    </Group>
   );
 }

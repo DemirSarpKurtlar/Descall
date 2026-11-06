@@ -2,8 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { premiumBridge } from "../panelUi.jsx";
+import { Btn, Group, Ico, Note, SetRow } from "../story/kit.jsx";
+import { usePublish } from "../story/bus.js";
 
 export const key = "multi_window";
+const ds = (s) => `${key}.${s}`;
+const SLOTS = 4;
 
 export function Panel() {
   const t = useT();
@@ -16,18 +20,28 @@ export function Panel() {
     const id = window.setInterval(load, 4000);
     return () => window.clearInterval(id);
   }, [load]);
+  usePublish("multi_window.count", list.length);
+  const title = (w) => decodeURIComponent(String(w.route).split("/").filter(Boolean).slice(1).join(" / "));
   return (
     <>
-      <p className="pp-hint" style={{ margin: 0 }}>{t("premium.panel.popoutsHow")} {t("premium.win.popOutLimit")}</p>
-      {list.length ? (
-        <div className="pp-list">
-          {list.map((w) => <div key={w.route} className="pp-list-row"><b>{decodeURIComponent(String(w.route).split("/").filter(Boolean).slice(1).join(" / "))}</b></div>)}
-        </div>
-      ) : null}
-      <div className="pp-set-row">
-        <span className="pp-hint">{t("premium.panel.popoutsOpen", { n: list.length })}</span>
-        <button type="button" className="us-btn ghost sm" disabled={!list.length} onClick={() => premiumBridge()?.invoke("premium:popout:close-all").then(load).catch(() => {})}>{t("premium.panel.closeAll")}</button>
-      </div>
+      <Group title={t("premiumStory.g.howToOpen")}>
+        <Note ds={ds("how")}>{t("premium.panel.popoutsHow")} {t("premium.win.popOutLimit")}</Note>
+      </Group>
+      <Group title={t("premiumStory.g.openWindows")}>
+        <ul className="ps-slots" data-s={ds("list")} aria-label={t("premiumStory.g.openWindows")}>
+          {Array.from({ length: SLOTS }, (_, i) => {
+            const w = list[i];
+            return w ? (
+              <li key={w.route} className="sl is-on"><Ico n="wins" size={14} /><b>{title(w)}</b></li>
+            ) : (
+              <li key={`empty-${i}`} className="sl">{t("premiumStory.empty")}</li>
+            );
+          })}
+        </ul>
+        <SetRow label={t("premium.panel.popoutsOpen", { n: list.length })} ds={ds("count")}>
+          <Btn ds={ds("closeAll")} disabled={!list.length} onClick={() => premiumBridge()?.invoke("premium:popout:close-all").then(load).catch(() => {})}>{t("premium.panel.closeAll")}</Btn>
+        </SetRow>
+      </Group>
     </>
   );
 }

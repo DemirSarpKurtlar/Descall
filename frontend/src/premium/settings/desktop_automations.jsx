@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useT } from "../../context/LocaleContext";
 import { useFeatureSettings } from "../featureSettings.js";
-import { DEFAULTS, Field, PanelShell, Switch } from "../gaming/ui.jsx";
+import { DEFAULTS } from "../gaming/ui.jsx";
 import { TRIGGERS, HUDS, MAX_RULES, normalizeRules } from "../gaming/ruleEngine.js";
 import { STATUSES } from "../gaming/actions.js";
 import { mergeProfiles, profileName } from "../gaming/workspaceProfiles.js";
 import { statusLabel } from "./quick_actions.jsx";
-import { Trash2 } from "../../components/ui/Icon.jsx";
+import { Actions, Btn, ChoiceTiles, Group, Hint, IconBtn, Item, List, Note, Seg, SetRow, Switch, TextField } from "../story/kit.jsx";
 
 export const key = "desktop_automations";
+const ds = (s) => `${key}.${s}`;
 const ACTION_CHOICES = ["switch_profile", "focus_on", "focus_off", "set_status", "open_hud"];
+const TRIGGER_ICON = { game_started: "gamepad", game_stopped: "stop", call_joined: "phone", call_left: "x", time_window: "clock", idle: "moon" };
+const ACTION_ICON = { switch_profile: "layout", focus_on: "moon", focus_off: "bell", set_status: "user", open_hud: "hud" };
 
 export function describeRule(t, r, profiles) {
   const tr = r.trigger;
@@ -62,70 +65,72 @@ export function Panel() {
   };
 
   return (
-    <PanelShell title={t("premiumGaming.automations.title")} desc={t("premiumGaming.automations.desc")} testId="pg-panel-desktop_automations">
-      <Switch checked={s.on} onChange={(on) => update({ on })} label={t("premiumGaming.automations.enable")} testId="pg-auto-on" />
-      <div className="pg-card">
-        <Field label={t("premiumGaming.automations.when")}>
-          <select className="pg-select" value={trig} onChange={(e) => setTrig(e.target.value)}>
-            {TRIGGERS.map((x) => <option key={x} value={x}>{t(`premiumGaming.automations.triggers.${x}`)}</option>)}
-          </select>
-        </Field>
+    <>
+      <Group title={t("premiumGaming.automations.title")}>
+        <Note ds={ds("desc")}>{t("premiumGaming.automations.desc")}</Note>
+        <SetRow icon="wand" label={t("premiumGaming.automations.enable")}>
+          <Switch checked={s.on} onChange={(on) => update({ on })} label={t("premiumGaming.automations.enable")} testId="pg-auto-on" ds={ds("on")} />
+        </SetRow>
+      </Group>
+      <Group title={t("premiumStory.g.newRule")}>
+        <div className="ps-field">
+          <small>{t("premiumGaming.automations.when")}</small>
+          <ChoiceTiles mini value={trig} onChange={setTrig} label={t("premiumGaming.automations.when")} ds={ds("when")} options={TRIGGERS.map((x) => ({ value: x, label: t(`premiumGaming.automations.triggers.${x}`), icon: TRIGGER_ICON[x] }))} />
+        </div>
         {trig === "game_started" || trig === "game_stopped" ? (
-          <Field label={t("premiumGaming.automations.gameFilter")}>
-            <input className="pg-input" value={game} maxLength={80} onChange={(e) => setGame(e.target.value)} />
-          </Field>
+          <label className="ps-field">
+            <small>{t("premiumGaming.automations.gameFilter")}</small>
+            <TextField value={game} maxLength={80} onChange={setGame} label={t("premiumGaming.automations.gameFilter")} ds={ds("gameFilter")} />
+          </label>
         ) : null}
         {trig === "time_window" ? (
-          <Field label={t("premiumGaming.automations.between")}>
-            <input className="pg-input" type="time" value={from} onChange={(e) => setFrom(e.target.value)} />
-            <input className="pg-input" type="time" value={to} onChange={(e) => setTo(e.target.value)} />
-          </Field>
+          <div className="ps-field">
+            <small>{t("premiumGaming.automations.between")}</small>
+            <div className="ps-form" data-s={ds("between")}>
+              <input className="ps-in is-time" type="time" value={from} aria-label={t("premiumGaming.automations.between")} onChange={(e) => setFrom(e.target.value)} />
+              <span className="ps-dash" aria-hidden="true" />
+              <input className="ps-in is-time" type="time" value={to} aria-label={t("premiumGaming.automations.between")} onChange={(e) => setTo(e.target.value)} />
+            </div>
+          </div>
         ) : null}
         {trig === "idle" ? (
-          <Field label={t("premiumGaming.automations.afterMinutes")}>
-            <input className="pg-input" type="number" min="1" max="240" value={mins} onChange={(e) => setMins(Number(e.target.value) || 1)} style={{ width: 80 }} />
-          </Field>
+          <label className="ps-field">
+            <small>{t("premiumGaming.automations.afterMinutes")}</small>
+            <input className="ps-in is-num" type="number" min="1" max="240" value={mins} data-s={ds("afterMinutes")} onChange={(e) => setMins(Number(e.target.value) || 1)} />
+          </label>
         ) : null}
-        <Field label={t("premiumGaming.automations.then")}>
-          <select className="pg-select" value={act} onChange={(e) => onAct(e.target.value)}>
-            {ACTION_CHOICES.map((x) => <option key={x} value={x}>{t(`premiumGaming.automations.actions.${x}`)}</option>)}
-          </select>
-          {act === "switch_profile" ? (
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(t, p)}</option>)}
-            </select>
-          ) : null}
-          {act === "set_status" ? (
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              {STATUSES.map((x) => <option key={x} value={x}>{statusLabel(t, x)}</option>)}
-            </select>
-          ) : null}
-          {act === "open_hud" ? (
-            <select className="pg-select" value={arg} onChange={(e) => setArg(e.target.value)}>
-              {HUDS.map((x) => <option key={x} value={x}>{t(`premiumGaming.automations.hud.${x}`)}</option>)}
-            </select>
-          ) : null}
-        </Field>
-        <div className="pg-row">
-          <button type="button" className="pg-btn is-primary is-small" onClick={add} disabled={rules.length >= MAX_RULES}>{t("premiumGaming.automations.add")}</button>
+        <div className="ps-field">
+          <small>{t("premiumGaming.automations.then")}</small>
+          <ChoiceTiles mini value={act} onChange={onAct} label={t("premiumGaming.automations.then")} ds={ds("then")} options={ACTION_CHOICES.map((x) => ({ value: x, label: t(`premiumGaming.automations.actions.${x}`), icon: ACTION_ICON[x] }))} />
         </div>
-      </div>
-      {rules.length ? (
-        <ul className="pg-list" data-testid="pg-rules">
+        {act === "switch_profile" ? (
+          <Seg wrap value={arg} onChange={setArg} label={t("premiumGaming.automations.actions.switch_profile")} ds={ds("thenArg")} options={profiles.map((p) => ({ value: p.id, label: profileName(t, p) }))} />
+        ) : null}
+        {act === "set_status" ? (
+          <Seg wrap value={arg} onChange={setArg} label={t("premiumGaming.automations.actions.set_status")} ds={ds("thenArg")} options={STATUSES.map((x) => ({ value: x, label: statusLabel(t, x) }))} />
+        ) : null}
+        {act === "open_hud" ? (
+          <Seg wrap value={arg} onChange={setArg} label={t("premiumGaming.automations.actions.open_hud")} ds={ds("thenArg")} options={HUDS.map((x) => ({ value: x, label: t(`premiumGaming.automations.hud.${x}`) }))} />
+        ) : null}
+        <Actions>
+          <Btn kind="primary" icon="plus" ds={ds("add")} onClick={add} disabled={rules.length >= MAX_RULES}>{t("premiumGaming.automations.add")}</Btn>
+        </Actions>
+      </Group>
+      <Group title={t("premiumStory.g.yourRules")} aside={<span className="tnum">{`${rules.length} / ${MAX_RULES}`}</span>}>
+        <List ds={ds("rules")} empty={rules.length ? null : t("premiumGaming.automations.empty")}>
           {rules.map((r) => {
             const d = describeRule(t, r, profiles);
             return (
-              <li key={r.id}>
-                <Switch checked={r.enabled} label={t("premiumGaming.automations.ruleOn")} onChange={(on) => update({ rules: rules.map((x) => (x.id === r.id ? { ...x, enabled: on } : x)) })} testId={`pg-rule-${r.id}`} />
-                <span className="pg-grow">{t("premiumGaming.automations.ruleText", { when: d.when, then: d.then })}</span>
-                <button type="button" className="pg-btn is-small" aria-label={t("premiumGaming.common.remove")} onClick={() => update({ rules: rules.filter((x) => x.id !== r.id) })}><Trash2 size={14} /></button>
-              </li>
+              <Item key={r.id} icon={TRIGGER_ICON[r.trigger?.type] || "wand"} title={d.when} sub={d.then}>
+                <Switch small checked={r.enabled} label={`${t("premiumGaming.automations.ruleOn")}: ${t("premiumGaming.automations.ruleText", { when: d.when, then: d.then })}`} onChange={(on) => update({ rules: rules.map((x) => (x.id === r.id ? { ...x, enabled: on } : x)) })} testId={`pg-rule-${r.id}`} />
+                <IconBtn icon="trash" danger label={t("premiumGaming.common.remove")} onClick={() => update({ rules: rules.filter((x) => x.id !== r.id) })} />
+              </Item>
             );
           })}
-        </ul>
-      ) : <p className="pg-muted">{t("premiumGaming.automations.empty")}</p>}
-      <p className="pg-help">{t("premiumGaming.automations.help")}</p>
-    </PanelShell>
+        </List>
+      </Group>
+      <Hint ds={ds("help")}>{t("premiumGaming.automations.help")}</Hint>
+    </>
   );
 }
 

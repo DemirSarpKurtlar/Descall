@@ -1,5 +1,6 @@
 /** Small building blocks for the Descall+ feature panels (src/premium/settings/*.jsx). */
 import { S3Toggle } from "../components/settings/SettingsV3.jsx";
+import RangeSlider from "./ui/RangeSlider.jsx";
 
 export function ToggleRow({ label, checked, onChange }) {
   return (
@@ -15,7 +16,9 @@ export function SliderRow({ label, value, min = 30, max = 100, step = 5, onChang
     <div className="pp-set-row">
       <span>{label}</span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-        <input type="range" min={min} max={max} step={step} value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))} />
+        <span style={{ display: "inline-flex", width: 160 }}>
+          <RangeSlider value={value} min={min} max={max} step={step} label={label} valueText={display} onChange={onChange} />
+        </span>
         <span className="pp-hint tnum" style={{ minWidth: 40, textAlign: "right" }}>{display}</span>
       </span>
     </div>

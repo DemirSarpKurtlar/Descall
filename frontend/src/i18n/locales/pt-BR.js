@@ -1,3 +1,4 @@
+import { PREMIUM_STORY_PT_BR } from "./premiumStory.pt-BR.js";
 import { UAH_PT_BR } from "./uah.pt-BR.js";
 /**
  * pt-BR catalog (status "draft" in ../locales.json, hidden from users until the
@@ -8,6 +9,7 @@ import { UAH_PT_BR } from "./uah.pt-BR.js";
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
 export const nested = {
+  "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {

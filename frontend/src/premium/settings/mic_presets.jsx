@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFeatureSettings } from "../featureSettings.js";
 import { useT } from "../../context/localeContextInstance";
 import { readVoiceProfile } from "../../lib/voiceProfile";
 import { AUDIO_DEFAULTS } from "../audio/premiumAudioRuntime.js";
 import { BUILTIN_PRESETS, matchPreset, presetFromCurrent, removeById, upsertPreset } from "../audio/audioProfiles.js";
 import { applyMicPreset } from "../usePremiumAudioBridge.js";
-import { Button, Note, Row, Section, Slider } from "../ui/PremiumAudioKit.jsx";
+import { Badge, Btn, Group, Hint, Ico, Note, SetRow, Slider, TextField } from "../story/kit.jsx";
+import { usePublish } from "../story/bus.js";
 
 export const key = "mic_presets";
 // Settings > Descall+ shows the on/off switch; the Electron module uses the same default.
 export const defaultEnabled = true;
+const ds = (s) => `${key}.${s}`;
 
 function useVoiceProfile() {
   const [vp, setVp] = useState(() => readVoiceProfile());
@@ -29,8 +31,13 @@ export function Panel() {
   const [error, setError] = useState("");
   const saved = Array.isArray(s.presets) ? s.presets : [];
   const all = [...BUILTIN_PRESETS.map((p) => ({ ...p, name: t(p.nameKey) })), ...saved];
-  const current = { gain: s.gain, noiseMode: vp.noiseMode, echoCancellation: vp.echoCancellation, autoGainControl: vp.autoGainControl };
+  const current = useMemo(
+    () => ({ gain: s.gain, noiseMode: vp.noiseMode, echoCancellation: vp.echoCancellation, autoGainControl: vp.autoGainControl }),
+    [s.gain, vp.noiseMode, vp.echoCancellation, vp.autoGainControl],
+  );
   const activeId = matchPreset(all, current);
+  usePublish("mic_presets.current", current);
+  usePublish("mic_presets.activeName", all.find((p) => p.id === activeId)?.name || "");
 
   const save = () => {
     const r = upsertPreset(saved, presetFromCurrent({ voiceProfile: vp, gain: s.gain }, name));
@@ -46,39 +53,48 @@ export function Panel() {
     p.autoGainControl ? t("premiumAudio.presets.agcOn") : t("premiumAudio.presets.agcOff"),
     `${p.gain}%`,
   ].join(" · ");
+  const flags = (p) => [
+    ["gate", p.noiseMode !== "off", t(`premiumAudio.presets.noise.${p.noiseMode}`)],
+    ["ear", p.echoCancellation, p.echoCancellation ? t("premiumAudio.presets.echoOn") : t("premiumAudio.presets.echoOff")],
+    ["sliders", p.autoGainControl, p.autoGainControl ? t("premiumAudio.presets.agcOn") : t("premiumAudio.presets.agcOff")],
+  ];
 
   return (
-    <div className="pa-panel">
-      <Section title={t("premiumAudio.presets.title")} hint={t("premiumAudio.presets.hint")}>
-        <Row title={t("premiumAudio.presets.gain")} description={t("premiumAudio.presets.gainDesc")}>
-          <Slider value={s.gain} min={0} max={200} step={5} onChange={(v) => update({ gain: v })} label={t("premiumAudio.presets.gain")} format={(v) => `${v}%`} />
-        </Row>
-        <Row title={t("premiumAudio.presets.current")} description={describe({ ...current, gain: s.gain })} />
-      </Section>
-      <Section title={t("premiumAudio.presets.list")}>
-        <ul className="pa-list">
+    <>
+      <Group title={t("premiumAudio.presets.title")}>
+        <Note ds={ds("hint")}>{t("premiumAudio.presets.hint")}</Note>
+        <SetRow icon="mic" label={t("premiumAudio.presets.gain")} desc={t("premiumAudio.presets.gainDesc")} stack>
+          <Slider value={s.gain} min={0} max={200} step={5} ds={ds("gain")} onChange={(v) => update({ gain: v })} label={t("premiumAudio.presets.gain")} format={(v) => t("premium.panel.opacityValue", { value: v })} />
+        </SetRow>
+        <SetRow label={t("premiumAudio.presets.current")} desc={describe({ ...current, gain: s.gain })} ds={ds("current")} />
+      </Group>
+      <Group title={t("premiumAudio.presets.list")}>
+        <ul className="ps-cardsg" data-s={ds("list")} aria-label={t("premiumAudio.presets.list")}>
           {all.map((p) => (
-            <li key={p.id} className="pa-list-item">
-              <div className="pa-list-main">
-                <span className="pa-list-title">{p.name}</span>
-                <span className="pa-list-sub">{describe(p)}</span>
-              </div>
-              {p.id === activeId ? <span className="pa-badge pa-badge-ok">{t("premiumAudio.common.active")}</span> : (
-                <Button onClick={() => applyMicPreset(p)}>{t("premiumAudio.common.apply")}</Button>
-              )}
-              {!p.builtin ? (
-                <Button kind="danger" label={t("premiumAudio.common.deleteNamed", { name: p.name })} onClick={() => update({ presets: removeById(saved, p.id) })}>{t("premiumAudio.common.delete")}</Button>
-              ) : null}
+            <li key={p.id} className={`ps-pcard${p.id === activeId ? " is-on" : ""}`}>
+              <span className="ps-flags">
+                {flags(p).map(([n, on, label]) => <span key={n} className={on ? "y" : ""} title={label} aria-hidden="true"><Ico n={n} size={11} /></span>)}
+              </span>
+              <b>{p.name}</b>
+              <small>{describe(p)}</small>
+              <span className="ps-pa">
+                {p.id === activeId ? <Badge tone="ok">{t("premiumAudio.common.active")}</Badge> : (
+                  <Btn ds={ds("apply")} onClick={() => applyMicPreset(p)}>{t("premiumAudio.common.apply")}</Btn>
+                )}
+                {!p.builtin ? (
+                  <Btn className="is-danger" ds={ds("delete")} aria-label={t("premiumAudio.common.deleteNamed", { name: p.name })} onClick={() => update({ presets: removeById(saved, p.id) })}>{t("premiumAudio.common.delete")}</Btn>
+                ) : null}
+              </span>
             </li>
           ))}
         </ul>
-        <div className="pa-inline">
-          <input className="pa-input" value={name} maxLength={40} placeholder={t("premiumAudio.presets.namePlaceholder")} aria-label={t("premiumAudio.presets.namePlaceholder")} onChange={(e) => setName(e.target.value)} />
-          <Button kind="primary" onClick={save} disabled={!name.trim()}>{t("premiumAudio.presets.saveCurrent")}</Button>
+        <div className="ps-form">
+          <TextField value={name} maxLength={40} placeholder={t("premiumAudio.presets.namePlaceholder")} onChange={setName} ds={ds("name")} />
+          <Btn kind="primary" icon="plus" ds={ds("save")} onClick={save} disabled={!name.trim()}>{t("premiumAudio.presets.saveCurrent")}</Btn>
         </div>
-      </Section>
-      {error ? <Note tone="warn">{error}</Note> : null}
-    </div>
+      </Group>
+      {error ? <Hint tone="warn" live>{error}</Hint> : null}
+    </>
   );
 }
 

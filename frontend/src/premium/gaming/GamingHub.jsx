@@ -56,7 +56,15 @@ export default function GamingHub({ initialKey = null, onClose }) {
             ))}
           </nav>
           <div>
-            <Suspense fallback={null}>{Panel ? <Panel /> : <p className="pg-muted">{t("premiumGaming.hub.empty")}</p>}</Suspense>
+            <Suspense fallback={null}>
+              {Panel ? (
+                // Same panels as Settings > Descall+ (E style controls from ../story/kit.jsx).
+                <div className="ps-root ps-panel" data-testid={`pg-panel-${cur}`}>
+                  <h3 className="ps-hubhead">{t(`premium.f.${cur}.name`)}</h3>
+                  <Panel />
+                </div>
+              ) : <p className="pg-muted">{t("premiumGaming.hub.empty")}</p>}
+            </Suspense>
           </div>
         </div>
       </div>

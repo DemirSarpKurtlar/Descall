@@ -1,0 +1,57 @@
+/* RangeSlider (Descall+ settings). base.css gives every <input> padding, a border, a
+   background and a focus ring; a range input must have none of those, or the thumb stops
+   short of the visible ends. The fill ends at the thumb centre: thumb/2 + (100% - thumb) * p. */
+.dsc-range {
+  --dsc-thumb: 18px;
+  --dsc-fill: var(--primary, #587af5);
+  --dsc-rail: rgba(255, 255, 255, 0.14);
+  --dsc-stop: calc(var(--dsc-thumb) / 2 + (100% - var(--dsc-thumb)) * var(--p, 0));
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: var(--dsc-thumb);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: 0;
+  cursor: pointer;
+  accent-color: auto;
+}
+.dsc-range:focus { border: 0; box-shadow: none; }
+.dsc-range:disabled { opacity: 0.5; cursor: default; }
+.dsc-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--dsc-fill) 0 var(--dsc-stop), var(--dsc-rail) var(--dsc-stop) 100%);
+}
+.dsc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--dsc-thumb);
+  height: var(--dsc-thumb);
+  margin-top: calc((6px - var(--dsc-thumb)) / 2);
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+  transition: transform 0.12s ease;
+}
+.dsc-range:active::-webkit-slider-thumb { transform: scale(1.08); }
+.dsc-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--dsc-fill), 0 1px 4px rgba(0, 0, 0, 0.45); }
+.dsc-range::-moz-range-track { height: 6px; border: 0; border-radius: 3px; background: var(--dsc-rail); }
+.dsc-range::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--dsc-fill); }
+.dsc-range::-moz-range-thumb { width: var(--dsc-thumb); height: var(--dsc-thumb); border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
+.dsc-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--dsc-fill); }
+html[data-theme="light"] .dsc-range { --dsc-rail: rgba(57, 60, 77, 0.16); }
+html[data-theme="light"] .dsc-range::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.2); }
+@media (prefers-reduced-motion: reduce) {
+  .dsc-range::-webkit-slider-thumb { transition: none; }
+  .dsc-range:active::-webkit-slider-thumb { transform: none; }
+}
