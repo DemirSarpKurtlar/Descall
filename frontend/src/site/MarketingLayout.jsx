@@ -321,33 +321,12 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
         <EmailCapture source="footer" />
         <div className="mkt-footer-meta">
           <LanguagePicker locale={locale} locales={locales} onSwitch={switchLocale} placement="up" />
-          <div className="mkt-footer-trust">
-            <span className="mkt-trust-chip">
-              {t("Status")}: {t("Beta")}
-            </span>
-            <span className="mkt-trust-chip">
-              {t("Transport security")}: TLS / DTLS-SRTP
-            </span>
-            <Link className="mkt-trust-chip is-link" to={L("/status")}>
-              {t("Live status")}
-            </Link>
-            <Link className="mkt-trust-chip is-link" to={L("/security")}>
-              {t("Security details")}
-            </Link>
-          </div>
           <a className="mkt-footer-contact" href={`mailto:${SITE_OPERATOR.supportEmail}`}>
             {SITE_OPERATOR.supportEmail}
           </a>
         </div>
         <p className="mkt-footer-copy">
-          © {SITE_OPERATOR.copyrightYear} {SITE_OPERATOR.operatorName}. {t("Descall is owned by Demir Sarp Kurtlar.")}{" "}
-          {t("All rights reserved.")} {t("Last updated")}:{" "}
-          {locale === "tr"
-            ? SITE_OPERATOR.lastUpdatedLabelTr
-            : isPrefixedLocale(locale)
-              ? t(SITE_OPERATOR.lastUpdatedLabel)
-              : SITE_OPERATOR.lastUpdatedLabel}
-          .
+          © {SITE_OPERATOR.copyrightYear} Descall. {t("All rights reserved.")}
         </p>
       </footer>
       <StickyMobileCta onStart={openRegister} downloadTo={L("/download")} />
