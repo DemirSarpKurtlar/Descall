@@ -9,22 +9,22 @@ import { createPortal } from "react-dom";
 import "./gaming.css";
 
 export const HUB_PANELS = [
-  ["game_status", () => import("../settings/GameStatus.jsx")],
-  ["game_session_history", () => import("../settings/GameSessionHistory.jsx")],
-  ["voice_hud", () => import("../settings/VoiceHud.jsx")],
-  ["gaming_hud", () => import("../settings/GamingHud.jsx")],
-  ["instant_clip", () => import("../settings/InstantClip.jsx")],
-  ["clipboard_history", () => import("../settings/ClipboardHistory.jsx")],
-  ["quick_file_drop", () => import("../settings/QuickFileDrop.jsx")],
-  ["app_lock", () => import("../settings/AppLock.jsx")],
-  ["quick_actions", () => import("../settings/QuickActions.jsx")],
-  ["workspace_profiles", () => import("../settings/WorkspaceProfiles.jsx")],
-  ["desktop_automations", () => import("../settings/DesktopAutomations.jsx")],
-  ["activity_timeline", () => import("../settings/ActivityTimeline.jsx")],
-  ["command_center", () => import("../settings/CommandCenter.jsx")],
-  ["widgets", () => import("../settings/Widgets.jsx")],
-  ["custom_layouts", () => import("../settings/CustomLayouts.jsx")],
-  ["multi_account", () => import("../settings/MultiAccount.jsx")],
+  ["game_status", () => import("../settings/game_status.jsx")],
+  ["game_session_history", () => import("../settings/game_session_history.jsx")],
+  ["voice_hud", () => import("../settings/voice_hud.jsx")],
+  ["gaming_hud", () => import("../settings/gaming_hud.jsx")],
+  ["instant_clip", () => import("../settings/instant_clip.jsx")],
+  ["clipboard_history", () => import("../settings/clipboard_history.jsx")],
+  ["quick_file_drop", () => import("../settings/quick_file_drop.jsx")],
+  ["app_lock", () => import("../settings/app_lock.jsx")],
+  ["quick_actions", () => import("../settings/quick_actions.jsx")],
+  ["workspace_profiles", () => import("../settings/workspace_profiles.jsx")],
+  ["desktop_automations", () => import("../settings/desktop_automations.jsx")],
+  ["activity_timeline", () => import("../settings/activity_timeline.jsx")],
+  ["command_center", () => import("../settings/command_center.jsx")],
+  ["widgets", () => import("../settings/widgets.jsx")],
+  ["custom_layouts", () => import("../settings/custom_layouts.jsx")],
+  ["multi_account", () => import("../settings/multi_account.jsx")],
 ];
 
 const LAZY = Object.fromEntries(HUB_PANELS.map(([k, load]) => [k, lazy(() => load().then((m) => ({ default: m.Panel })))]));

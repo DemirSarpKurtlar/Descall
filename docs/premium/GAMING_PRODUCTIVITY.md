@@ -7,7 +7,7 @@ Feature keys from `docs/premium/CONTRACT.md`. Every feature is gated three times
 | Part | Files |
 |---|---|
 | Renderer host (mounted by `AppLayout` only for members, never on iOS / Android) | `frontend/src/premium/gaming/PremiumGamingHost.jsx` |
-| Settings panels (`{ key, Panel }`) | `frontend/src/premium/settings/*.jsx` (GameStatus, GameSessionHistory, VoiceHud, GamingHud, InstantClip, ClipboardHistory, QuickFileDrop, AppLock, QuickActions, WorkspaceProfiles, DesktopAutomations, ActivityTimeline, CommandCenter, Widgets, CustomLayouts, MultiAccount) |
+| Settings panels (`{ key, Panel }`) | `frontend/src/premium/settings/<key>.jsx` for the 16 keys of this group; also rendered by the Descall+ settings tab (`PremiumSettingsTab.jsx` globs the folder) |
 | Hub (all of the above in one window; Ctrl/Cmd+Shift+G, or Settings in the command center) | `frontend/src/premium/gaming/GamingHub.jsx` |
 | Pure logic + selftests | `ruleEngine.js`, `clipRing.js`, `timeline.js`, `clipboardHistory.js` (`premiumGaming.selftest.mjs`), `electron/premium/pinHash.cjs` (`pinHash.selftest.mjs`) |
 | Main-process modules | `frontend/electron/premium/features/{voice_hud,gaming_hud,widgets,custom_layouts,instant_clip,quick_file_drop,app_lock,workspace_profiles,desktop_automations,command_center,multi_account}.cjs`, wrapped by `premium/compat.cjs`; overlay windows from `premium/overlayKit.cjs` + `hudHtml.cjs` + `hudPreload.cjs` |

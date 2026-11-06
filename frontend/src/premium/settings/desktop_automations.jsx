@@ -5,7 +5,7 @@ import { DEFAULTS, Field, PanelShell, Switch } from "../gaming/ui.jsx";
 import { TRIGGERS, HUDS, MAX_RULES, normalizeRules } from "../gaming/ruleEngine.js";
 import { STATUSES } from "../gaming/actions.js";
 import { mergeProfiles, profileName } from "../gaming/workspaceProfiles.js";
-import { statusLabel } from "./QuickActions.jsx";
+import { statusLabel } from "./quick_actions.jsx";
 import { Trash2 } from "../../components/ui/Icon.jsx";
 
 export const key = "desktop_automations";

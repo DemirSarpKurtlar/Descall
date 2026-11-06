@@ -5,7 +5,7 @@ import { DEFAULTS, Field, HotkeyInput, PanelShell } from "../gaming/ui.jsx";
 import { pinvoke } from "../gaming/bridge.js";
 import { AUDIO_CHOICES, NOTIFICATION_CHOICES, applyProfile, mergeProfiles, profileName } from "../gaming/workspaceProfiles.js";
 import { STATUSES } from "../gaming/actions.js";
-import { statusLabel } from "./QuickActions.jsx";
+import { statusLabel } from "./quick_actions.jsx";
 
 export const key = "workspace_profiles";
 
