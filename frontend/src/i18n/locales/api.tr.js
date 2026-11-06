@@ -402,6 +402,7 @@ export const API_TR = {
   "Message body is required.": "Mesaj metni gerekli.",
   "Message cannot be empty.": "Mesaj boş olamaz.",
   "Message content or media required": "Mesaj metni ya da medya gerekli",
+  "Message is too long.": "Mesaj çok uzun.",
   "Message must be {max} characters or fewer.": "Mesaj en fazla {max} karakter olabilir.",
   "Message must be 5–2000 characters": "Mesaj 5–2000 karakter olmalı",
   "Message not found": "Mesaj bulunamadı",

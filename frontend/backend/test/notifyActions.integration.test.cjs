@@ -53,6 +53,7 @@ const fake = createFakeSupabase({
   ],
   reactions: [],
   device_push_tokens: [],
+  scheduled_messages: [],
 });
 require.cache[supabasePath] = { id: supabasePath, filename: supabasePath, loaded: true, exports: fake };
 
@@ -212,6 +213,34 @@ async function run() {
   assert.equal(thg.json.title, "Hafta Sonu Ekibi");
   assert.equal(thg.json.memberCount, 3);
   assert.equal((await request(app, "GET", `/api/messages/notify-thread?conv=${encodeURIComponent("group:g1")}`, { token: carolToken })).status, 403);
+
+  // ── Admin message switches apply to quick reply and scheduled DMs (security review F3) ──
+  const dmCount = rows("dm_messages").length;
+  shared.rateLimitDm.clear();
+  shared.systemConfig.chatFrozen = true;
+  const frozen = await request(app, "POST", "/api/messages/quick-reply", { token, body: { conv: "dm:u-bob", text: "donmuş" } });
+  assert.deepEqual([frozen.status, frozen.json.error], [403, "chat_frozen"], JSON.stringify(frozen.json));
+  const { createScheduledMessages } = require("../lib/scheduledMessages");
+  const scheduler = createScheduledMessages({ getDb: () => fake, actions: notify.createNotifyActions(), log: { warn() {} } });
+  const schedule = (sid) => rows("scheduled_messages").push({
+    id: sid, user_id: "u-alice", conv_type: "dm", conv_id: "u-bob", content: "zamanlı", status: "pending",
+    send_at: new Date(Date.now() - 1000).toISOString(), updated_at: new Date().toISOString(),
+  });
+  schedule("sch-frozen");
+  shared.rateLimitDm.clear();
+  assert.equal(await scheduler.tick(io), 1);
+  let schRow = rows("scheduled_messages").find((r) => r.id === "sch-frozen");
+  assert.deepEqual([schRow.status, schRow.error], ["failed", "chat_frozen"], "frozen chat: the scheduled DM fails with the reason");
+  shared.systemConfig.chatFrozen = false;
+  shared.systemConfig.dmEnabled = false;
+  schedule("sch-dm-off");
+  shared.rateLimitDm.clear();
+  await scheduler.tick(io);
+  schRow = rows("scheduled_messages").find((r) => r.id === "sch-dm-off");
+  assert.deepEqual([schRow.status, schRow.error], ["failed", "dms_disabled"], "DMs off: the scheduled DM fails");
+  assert.equal(rows("dm_messages").length, dmCount, "nothing was sent while the switches were on");
+  shared.systemConfig.dmEnabled = true;
+  require("../lib/platformPolicy").resetPlatformPolicyForTests();
 
   // ── Signed-out session kills the scoped token ──
   fake._tables.users.rows.find((u) => u.id === "u-alice").active_sessions = [];

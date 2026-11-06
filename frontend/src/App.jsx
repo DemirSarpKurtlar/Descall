@@ -2358,24 +2358,19 @@ export default function App() {
       }
     });
 
-    socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt } = {}) => {
-      if (!messageId) return;
+    socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt, editedBy } = {}) => {
+      if (!messageId || !groupId || !editedBy) return;
       const stamp = editedAt || new Date().toISOString();
       setGroupMessagesById((prev) => {
-        const apply = (list) => list.map((m) => (
-          m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
-        ));
-        if (groupId && prev[groupId]?.some((m) => m.id === messageId)) {
-          return { ...prev, [groupId]: apply(prev[groupId]) };
-        }
-        let changed = false;
-        const next = { ...prev };
-        for (const [id, list] of Object.entries(prev)) {
-          if (!list?.some((m) => m.id === messageId)) continue;
-          changed = true;
-          next[id] = apply(list);
-        }
-        return changed ? next : prev;
+        // Only this group, and only the message's own sender may rewrite it.
+        const cur = prev[groupId];
+        if (!cur?.some((m) => m.id === messageId && m.from?.id === editedBy)) return prev;
+        return {
+          ...prev,
+          [groupId]: cur.map((m) => (
+            m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
+          )),
+        };
       });
       resolveMessageEdited(messageId);
     });

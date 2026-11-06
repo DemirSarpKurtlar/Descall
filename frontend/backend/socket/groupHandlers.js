@@ -4,6 +4,7 @@
  */
 
 const { forwardedReplyMeta, isMissingColumn } = require("../lib/forwardedMessage");
+const { resolveGroupReplyMeta } = require("../lib/replyMeta");
 const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById, systemConfig } = require("../runtime/sharedState");
 const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
@@ -160,7 +161,14 @@ function registerGroupHandlers(io, socket, state) {
       const rr = require("../lib/readReceipts");
       const at = await rr.markGroupRead(groupId, myId);
       if (at && (await rr.receiptsEnabled(myId))) {
-        io.to(`group:${groupId}`).emit("group:read", { groupId, userId: myId, at });
+        // Members who turned receipts off do not see anyone else's reads either.
+        const { data: members } = await supabase.from("group_members").select("user_id").eq("group_id", groupId);
+        const off = [];
+        for (const m of members || []) {
+          if (m.user_id && m.user_id !== myId && !(await rr.receiptsEnabled(m.user_id))) off.push(`user:${m.user_id}`);
+        }
+        const room = io.to(`group:${groupId}`);
+        (off.length ? room.except(off) : room).emit("group:read", { groupId, userId: myId, at });
       }
     } catch (err) {
       console.warn("[GroupRead] mark failed:", err?.message || err);
@@ -353,14 +361,8 @@ function registerGroupHandlers(io, socket, state) {
     }
 
     // Reply quote / forward mark (messaging phase 4): stored in reply_to so history keeps it.
-    const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
-      ? {
-          id: replyTo.id || null,
-          text: replyTo.text || "",
-          mediaType: replyTo.mediaType || null,
-          from: replyTo.from || null,
-        }
-      : null);
+    // The quote is read from the database (same group only), never taken from the client.
+    const replyMeta = forwardedReplyMeta(forwarded) || await resolveGroupReplyMeta(supabase, replyTo, groupId).catch(() => null);
     const baseRow = {
       group_id: groupId,
       sender_id: myId,

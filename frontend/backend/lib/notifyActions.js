@@ -286,6 +286,15 @@ function createNotifyActions(deps = {}) {
     const last = s.rateLimitDm.get(myId) || 0;
     if (now - last < s.systemConfig.dmRateLimitMs) throw new NotifyActionError(429, "rate_limited");
     s.rateLimitDm.set(myId, now);
+    {
+      // Yönetici Paneli switches, as in dm:send: freeze, DMs off, slow mode, per-minute cap.
+      const { checkMessageSend } = require("./platformPolicy");
+      const verdict = checkMessageSend({ config: s.systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", kind: "dm", now });
+      if (!verdict.ok) {
+        const code = String(verdict.code || "refused").toLowerCase();
+        throw new NotifyActionError(code === "slow_mode" || code === "rate_limited" ? 429 : 403, code, verdict.message);
+      }
+    }
     // Message requests go through the app (first contact shows a preview card).
     if (!(await isAcceptedFriend(myId, peerId))) throw new NotifyActionError(409, "not_friends");
 

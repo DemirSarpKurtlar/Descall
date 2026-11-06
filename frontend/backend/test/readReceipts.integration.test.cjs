@@ -130,6 +130,6 @@ const rr = require("../lib/readReceipts");
   const groups = read("socket/groupHandlers.js");
   assert.ok(groups.includes('socket.on("group:mark_read"'));
   assert.ok(/if \(!member\) return;[\s\S]{0,200}markGroupRead\(groupId, myId\)/.test(groups), "members only");
-  assert.ok(/if \(at && \(await rr\.receiptsEnabled\(myId\)\)\) \{\s*io\.to\(`group:\$\{groupId\}`\)\.emit\("group:read"/.test(groups), "no broadcast when the reader turned it off");
+  assert.ok(/if \(at && \(await rr\.receiptsEnabled\(myId\)\)\) \{[\s\S]{0,600}room\.except\(off\)[\s\S]{0,40}\.emit\("group:read"/.test(groups), "no broadcast when the reader turned it off; members with receipts off are skipped");
   console.log("readReceipts integration test OK");
 })().catch((err) => { console.error(err); process.exit(1); });

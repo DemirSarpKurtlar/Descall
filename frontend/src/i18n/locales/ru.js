@@ -8748,6 +8748,7 @@ export const phrases = {
   "Message bubbles": "Пузыри сообщений",
   "Message cannot be empty.": "Сообщение не может быть пустым.",
   "Message content or media required": "Требуется текст сообщения или медиафайл",
+  "Message is too long.": "Сообщение слишком длинное.",
   "Message from Descall": "Сообщение от Descall",
   "Message must be 5–2000 characters": "Сообщение должно содержать от 5 до 2000 символов",
   "Message must be {max} characters or fewer.": "Сообщение должно содержать не больше {max, plural, one {# символа} few {# символов} many {# символов} other {# символа}}.",
