@@ -482,6 +482,7 @@ export const nested = {
       "included": "Incluído",
       "notIncluded": "Não incluído",
       "featureCount": "{n} recursos",
+      "everythingPlus": "Tudo do Descall+",
       "showAll": "Mostrar todos os recursos",
       "showLess": "Mostrar menos"
     },

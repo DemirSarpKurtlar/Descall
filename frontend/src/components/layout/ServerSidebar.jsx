@@ -35,6 +35,7 @@ import { localizeListPreview } from "../../lib/listPreview";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
+import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import InviteCard from "../friends/InviteCard";
 import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate } from "../../lib/datetime";
@@ -2074,6 +2075,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       <span className="g-friend-sub">{friendSub(friend)}</span>
                     </div>
@@ -2102,6 +2104,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       <span className="g-friend-sub is-dim">{friendSub(friend)}</span>
                     </div>
@@ -2326,6 +2329,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         {resolveDisplayName(friend)}
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       {(friend.customStatus || friend.custom_status) && (
                         <span className="friend-custom-status">
@@ -2361,6 +2365,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                       <span className="friend-name">
                         {resolveDisplayName(friend)}
                         <AdminBadge user={friend} variant="inline" />
+                        <PremiumBadge user={friend} variant="inline" />
                       </span>
                       {(friend.customStatus || friend.custom_status) && (
                         <span className="friend-custom-status">

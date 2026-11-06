@@ -287,6 +287,8 @@ class AudioManager {
   canPlay(type) {
     // Check global mute
     if (this.settings.globalMute) return false;
+    // Descall+ pop-out window: the main window plays every sound (no double ring).
+    if (typeof document !== "undefined" && document.documentElement.classList.contains("descall-popout")) return false;
 
     // Check per-type mute
     if (this.settings[type] === false) return false;

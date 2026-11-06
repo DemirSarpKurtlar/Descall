@@ -60,6 +60,7 @@ export const PREMIUM_EN = {
     "included": "Included",
     "notIncluded": "Not included",
     "featureCount": "{n} features",
+    "everythingPlus": "Everything in Descall+",
     "showAll": "Show every feature",
     "showLess": "Show fewer"
   },

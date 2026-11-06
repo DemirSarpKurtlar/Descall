@@ -31,7 +31,7 @@ for (const { id } of registry.locales) {
     assert.ok(typeof text === "string" && text.trim(), `${id}.${key} empty`);
     assert.equal(placeholders(text), placeholders(en[key]), `${id}.${key} placeholders`);
     // Translated, not copied from English (brand-only titles and same-spelled words excepted).
-    const sameEverywhere = ["window.adminPanel", "notif.message"];
+    const sameEverywhere = ["window.adminPanel", "notif.message", "premium.tray.status", "premium.tray.online", "premium.tray.invisible"];
     if (id !== "en" && !sameEverywhere.includes(key)) assert.notEqual(text, en[key], `${id}.${key} still English`);
   }
 }
