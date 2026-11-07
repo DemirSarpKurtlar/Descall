@@ -65,7 +65,7 @@ export function pageT(loc) {
 }
 
 /** useMarketingHref() of the page at `pathname`. */
-function hrefFor(loc, pathname) {
+export function hrefFor(loc, pathname) {
   return (to) => marketingHref(to, { locale: loc, pathname });
 }
 

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Hand-over check for the marketing site (SEO round 2, Nov 2026). The prerendered page is
+ * Hand-over check for the marketing site (SEO rounds 2 and 3, Nov 2026). The prerendered page is
  * the first paint and React takes over with a 180 ms cross-fade; the two must have the
  * same layout, or visitors see the page jump (CLS does not count it: React's page is new
  * DOM, not a moved node).
@@ -15,7 +15,7 @@
  * 0.01 or a hand-over score (impact x distance, like CLS) above 0.005.
  *
  *   npm run build:prod
- *   CHROME_PATH=/path/to/chrome node e2e/marketingHandover.e2e.cjs [--dist=dist] [--json]
+ *   CHROME_PATH=/path/to/chrome node e2e/marketingHandover.e2e.cjs [--dist=dist] [--json=out.json] [--pages=/a,/b] [--widths=1280]
  */
 
 const fs = require('fs');
@@ -30,14 +30,23 @@ const MAX_MOVE_PX = 4;
 const MAX_CLS = 0.01;
 const MAX_HANDOVER = 0.005;
 
-/** Twins of this round and of the first SEO round (home, landings). */
+/** Twins of the three SEO rounds: home and landings, the core pages, the info and SeoLandingShell pages. */
 const PAGES = [
   '/', '/features', '/faq', '/download', '/status', '/privacy', '/terms', '/copyright',
   '/de/faq', '/es/download', '/fr/status', '/pt-br/features', '/ru/privacy',
   '/tr', '/tr/features', '/gizlilik', '/discord-alternative-for-friends', '/tr/discord-alternatifi',
   '/blog/discord-competitors', '/de/blog/leave-nitro-keep-voice-chat', '/tr/blog/discord-competitors',
+  // Round 3 (Nov 2026): seo/landingTwins.js and seo/infoTwins.js.
+  '/compare/discord', '/alternatives', '/discord-alternative', '/best-discord-alternative-for-gamers', '/blog',
+  '/about', '/security', '/who-owns-descall',
+  '/de/compare/discord', '/es/alternatives', '/fr/about', '/pt-br/security', '/ru/who-owns-descall',
+  '/de/blog', '/ru/best-discord-alternative-for-gamers',
+  '/tr/compare/discord', '/tr/about', '/descall-sahibi', '/tr/blog',
 ];
 const WIDTHS = [1280, 390];
+// Local runs: --pages=/a,/b and --widths=1280 measure a subset.
+const RUN_PAGES = args.pages ? String(args.pages).split(',') : PAGES;
+const RUN_WIDTHS = args.widths ? String(args.widths).split(',').map(Number) : WIDTHS;
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.json': 'application/json', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.webm': 'video/webm', '.mp4': 'video/mp4', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain', '.xml': 'application/xml' };
 
@@ -151,8 +160,8 @@ async function measure(browser, base, pagePath, width) {
   const rows = [];
   const problems = [];
   try {
-    for (const width of WIDTHS) {
-      for (const p of PAGES) {
+    for (const width of RUN_WIDTHS) {
+      for (const p of RUN_PAGES) {
         const r = await measure(browser, base, p, width);
         rows.push(r);
         console.log(`${p.padEnd(34)} ${String(width).padStart(4)}px  CLS ${r.cls.toFixed(4)}  hand-over ${r.handover.toFixed(4)}  text blocks matched ${r.matched}/${r.blocks}${r.moved.length ? `  moved: ${r.moved.join('; ')}` : ''}`);

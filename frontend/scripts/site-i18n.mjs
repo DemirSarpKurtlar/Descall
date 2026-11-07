@@ -10,12 +10,16 @@
  *       out-*.json files of an earlier round are moved to <id>/stale-out/ first, so an
  *       old translation can never be imported against the new indexes.
  *   node scripts/site-i18n.mjs import --locale=<id>
- *       Merge /tmp/site-i18n/<id>/out-*.json ([{ i, t }]) into src/site/i18n/<id>.js after
+ *       Merge /tmp/site-i18n/<id>/out-*.json ([{ i, t }]) into src/site/i18n/<id>/ after
  *       checking placeholders, HTML tags, length limits and empty values.
  *   node scripts/site-i18n.mjs prune [--locale=<id>]
  *       Remove site-catalog keys no page asks for any more (the "no longer used" warning
  *       of check), e.g. after pages were merged or copy was rewritten. The catalog is what
  *       a /<prefix> visitor downloads, so dead keys cost bytes on every page.
+ *   node scripts/site-i18n.mjs layout [--locale=<id>]
+ *       Rewrite the catalog files of src/site/i18n/<id>/ so every string sits in the part
+ *       its page loads (src/site/siteCatalogParts.js: core + one part per page). import,
+ *       bake and prune write the same layout; check fails when a string is misplaced.
  *   node scripts/site-i18n.mjs check [--allow-draft]
  *       Coverage per locale; exit 1 when a string has no translation (site catalog or app
  *       catalog). --allow-draft tolerates gaps in SITE_DRAFT_LOCALES (what CI runs).
@@ -57,7 +61,10 @@ const { NICHE_LANDINGS } = await imp("src/site/seo/nicheLandings.js");
 const { PAGE_EXTRAS } = await imp("src/site/seo/pageExtras.js");
 const { setSiteTextRecorder, siteLookupSource, siteLookup } = await imp("src/site/siteText.js");
 const { localeMirrorRoutes } = await imp("src/site/seoConfig.js");
-const { registerSiteCatalogs, readSiteCatalog, siteCatalogFile } = await imp("scripts/siteCatalogs.mjs");
+const { registerSiteCatalogs, readSiteCatalog, readSiteCatalogParts, siteCatalogDir, writeSiteCatalogParts } = await imp(
+  "scripts/siteCatalogs.mjs"
+);
+const { CORE_PART, PRERENDER_PART, sitePagePart } = await imp("src/site/siteCatalogParts.js");
 
 // ---------------------------------------------------------------------------
 // Message checks (shared by import and check)
@@ -98,6 +105,11 @@ export function wordCount(s) {
 // ---------------------------------------------------------------------------
 // Collection
 
+/** Page id of the strings every page needs: header, footer, dialogs, cookie banner. */
+export const CHROME = "chrome";
+/** Page id of the strings only the prerendered HTML uses (build time, never downloaded). */
+export const PRERENDER = "prerender";
+
 /**
  * Rows in first-seen order. `group` is the page group being rendered (null for the site
  * chrome and SITE_MIRROR_PATHS): a row first seen on a live page stays `groups: null`
@@ -110,8 +122,10 @@ class StringList {
     this.context = "";
     this.group = null;
     this.hints = null;
+    /** English page being rendered, or CHROME (header, footer, dialogs). */
+    this.page = CHROME;
   }
-  add(en, context = this.context, extra = {}) {
+  add(en, context = this.context, extra = {}, pages = [this.page]) {
     if (en == null) return;
     const key = String(en);
     if (!key.trim() || !/[\p{L}]/u.test(key)) return;
@@ -121,9 +135,10 @@ class StringList {
     if (row) {
       if (extra.max && (!row.max || extra.max < row.max)) row.max = extra.max;
       if (row.groups && this.group && !row.groups.includes(this.group)) row.groups.push(this.group);
+      for (const p of pages) row.pages.add(p);
       return;
     }
-    this.rows.set(key, { en: key, context, ...extra, groups: this.group ? [this.group] : null });
+    this.rows.set(key, { en: key, context, ...extra, groups: this.group ? [this.group] : null, pages: new Set(pages) });
   }
   /** A string a page asked for while rendering (t() or siteText()). */
   record(en) {
@@ -295,7 +310,8 @@ export function renderAuth({ value, url, mode }) {
           // import.meta.glob is Vite-only; SSR never needs the browser catalog loader.
           b.onLoad({ filter: /[\\/]site[\\/]loadSiteCatalog\.js$/ }, () => ({
             contents:
-              "export function loadSiteCatalog() { return Promise.resolve(true); }\nexport function loadSiteCatalogWithin() { return Promise.resolve(true); }",
+              "export function loadSiteCatalog() { return Promise.resolve(true); }\nexport function loadSiteCatalogWithin() { return Promise.resolve(true); }\n" +
+              "export function siteCatalogReady() { return true; }\nexport function onSiteCatalogChange() { return () => {}; }\nexport const onSiteAppCatalog = onSiteCatalogChange;",
             loader: "js",
           }));
         },
@@ -322,7 +338,18 @@ export function renderAuth({ value, url, mode }) {
     groupInputs[group] = ordered.filter((f) => files.has(f) && !claimed.has(f));
     for (const f of files) claimed.add(f);
   }
-  reactBundle = { mod, inputs, groupInputs, pages };
+  // Which pages a source file belongs to (its static t("...") keys go to their catalog
+  // parts): the chrome files to every page, a page file to the pages that render it.
+  const chromeFiles = reachable(result.metafile, coreRoots.slice(0, 2));
+  const fileUsers = new Map();
+  for (const p of siteLocales.ALL_MIRROR_PATHS) {
+    for (const f of reachable(result.metafile, [pages[pageKey(pages, p)].file])) {
+      if (chromeFiles.has(f)) continue;
+      if (!fileUsers.has(f)) fileUsers.set(f, []);
+      fileUsers.get(f).push(p);
+    }
+  }
+  reactBundle = { mod, inputs, groupInputs, pages, fileUsers };
   return reactBundle;
 }
 
@@ -352,7 +379,7 @@ function noteFor(en) {
  */
 export async function collectSiteStrings(locale) {
   const list = new StringList();
-  const { mod, inputs, groupInputs } = await loadReactBundle();
+  const { mod, inputs, groupInputs, fileUsers } = await loadReactBundle();
   const { injectMeta } = await imp("scripts/prerender-seo.mjs");
   const baseHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const locales = siteLocales
@@ -376,11 +403,13 @@ export async function collectSiteStrings(locale) {
   const staticRows = (files) => {
     for (const file of files) {
       const rel = path.relative(root, file).split(path.sep).join("/");
-      for (const key of staticKeys(file)) list.add(key, `${rel} (shown after an interaction)`);
+      const users = fileUsers.get(file) || [CHROME];
+      for (const key of staticKeys(file)) list.add(key, `${rel} (shown after an interaction)`, {}, users);
     }
   };
   const renderRoutes = (routes) => {
     for (const route of routes) {
+      list.page = route.enPath;
       list.add(route.title, `SEO title of ${route.enPath} (max ${TITLE_MAX} characters)`, { max: TITLE_MAX });
       list.add(route.description, `SEO description of ${route.enPath} (max ${DESCRIPTION_MAX} characters)`, {
         max: DESCRIPTION_MAX,
@@ -389,7 +418,11 @@ export async function collectSiteStrings(locale) {
       list.context = `page ${route.enPath}`;
       mod.renderPage({ value, url: route.path, page: route.enPath });
       list.context = `page ${route.enPath} (crawler copy)`;
+      // The prerendered HTML is written at build time; the browser never asks for
+      // strings only it uses.
+      list.page = PRERENDER;
       injectMeta(baseHtml, route);
+      list.page = CHROME;
     }
   };
 
@@ -505,6 +538,10 @@ export async function checkSiteI18n({
         percent: percentOf(own.length - gap.length, own.length),
       };
     }
+    // Layout: each string in the part its pages load (src/site/siteCatalogParts.js).
+    const parts = overrides?.[id] ? null : await readSiteCatalogParts(id);
+    const misplaced = parts ? misplacedRows(parts, rows) : [];
+    const singleFile = parts ? Object.keys(parts).filter((p) => !/^[_a-z0-9-]+$/.test(p)) : [];
     const liveRows = rows.filter(live);
     const total = rows.length;
     report[id] = {
@@ -518,6 +555,9 @@ export async function checkSiteI18n({
       invalidStaged,
       stale,
       groups,
+      misplaced,
+      parts: parts ? Object.keys(parts).length : 0,
+      coreKeys: parts?.[CORE_PART] ? Object.keys(parts[CORE_PART]).length : 0,
       percent: percentOf(site + app, total),
       livePercent: percentOf(liveRows.length - missingLive.length, liveRows.length),
       missingWords: missing.reduce((n, r) => n + wordCount(r.en), 0),
@@ -538,6 +578,11 @@ export async function checkSiteI18n({
       warnings.push(`${id}: ${invalidStaged.length} invalid translations on staged pages (fix them before serving the group)`);
     }
     if (stale.length) warnings.push(`${id}: ${stale.length} site catalog keys are no longer used`);
+    if (misplaced.length || singleFile.length) {
+      errors.push(
+        `${id}: ${misplaced.length} strings sit in a catalog part their page does not load${singleFile.length ? " (single-file catalog)" : ""}, run node scripts/site-i18n.mjs layout --locale=${id}`
+      );
+    }
   }
   return { report, errors, warnings };
 }
@@ -645,19 +690,68 @@ export async function exportSiteStrings({ locales = siteLocales.PREFIXABLE_LOCAL
   return summary;
 }
 
-const CATALOG_HEADER = (id) => `/**
- * Marketing site catalog for ${id}: English source string -> translation.
- * Written by \`node scripts/site-i18n.mjs import --locale=${id}\` and \`bake\` (sorted
- * keys; bake copies the app-catalog strings the site uses, so the browser renders from
- * this file alone). Lookup order: this file, then the app phrases in
+const CATALOG_HEADER = (id, part) => `/**
+ * Marketing site catalog for ${id}, part "${part}": English source string -> translation.
+ * ${
+   part === CORE_PART
+     ? "Site chrome and strings more than one page uses; every page loads this part."
+     : part === PRERENDER_PART
+       ? "Strings only the prerendered HTML uses (build time); the browser never loads this part."
+       : `Strings only the page "${part}" uses; loaded with that page.`
+ }
+ * Written by \`node scripts/site-i18n.mjs import | bake | prune | layout\` (sorted keys,
+ * placed by src/site/siteCatalogParts.js); edit through the tool so every string stays in
+ * the part its page loads. Lookup order: the loaded parts, then the app phrases in
  * src/i18n/locales/${id}.js (loaded only when a lookup misses), then English.
  */
 `;
 
-export function formatCatalog(id, entries) {
+export function formatCatalog(id, entries, part = CORE_PART) {
   const sorted = {};
   for (const k of Object.keys(entries).sort()) sorted[k] = entries[k];
-  return `${CATALOG_HEADER(id)}export default ${JSON.stringify(sorted, null, 2)};\n`;
+  return `${CATALOG_HEADER(id, part)}export default ${JSON.stringify(sorted, null, 2)};\n`;
+}
+
+/**
+ * Catalog part a string belongs in: core for the chrome and for strings two or more
+ * pages use, the page's own part for a string one page uses, the prerender part for
+ * strings only the prerendered HTML asks for.
+ */
+export function partOfRow(row) {
+  const pages = [...(row.pages || [])].filter((p) => p !== PRERENDER);
+  if (pages.includes(CHROME) || pages.length > 1) return CORE_PART;
+  if (pages.length === 1) return sitePagePart(pages[0]);
+  return PRERENDER_PART;
+}
+
+/** { part: { english: translation } } of a catalog; keys no page uses go to the prerender part. */
+export function layoutCatalog(entries, rows) {
+  const where = new Map(rows.map((r) => [r.en, partOfRow(r)]));
+  const parts = {};
+  for (const [en, tr] of Object.entries(entries)) {
+    const part = where.get(en) || PRERENDER_PART;
+    (parts[part] ||= {})[en] = tr;
+  }
+  return parts;
+}
+
+async function writeCatalog(id, entries, rows) {
+  const parts = layoutCatalog(entries, rows);
+  writeSiteCatalogParts(id, parts, formatCatalog);
+  // Read the files back: the split must hold exactly the catalog it was given.
+  const back = await readSiteCatalog(id);
+  const lost = Object.keys(entries).filter((k) => back[k] !== entries[k]);
+  if (lost.length || Object.keys(back).length !== Object.keys(entries).length) {
+    throw new Error(`[site-i18n] ${id}: catalog files do not read back (${lost.length} entries differ)`);
+  }
+  return parts;
+}
+
+/** Strings whose translation sits in another part than the one its pages load. */
+export function misplacedRows(parts, rows) {
+  const holder = new Map();
+  for (const [part, entries] of Object.entries(parts)) for (const en of Object.keys(entries)) holder.set(en, part);
+  return rows.filter((r) => holder.has(r.en) && holder.get(r.en) !== partOfRow(r)).map((r) => ({ en: r.en, in: holder.get(r.en), want: partOfRow(r) }));
 }
 
 export async function importSiteStrings(id, { dir = EXPORT_DIR } = {}) {
@@ -702,7 +796,7 @@ export async function importSiteStrings(id, { dir = EXPORT_DIR } = {}) {
     }
   }
   if (problems.length) return { ok: false, problems, added: 0 };
-  fs.writeFileSync(siteCatalogFile(id), formatCatalog(id, next), "utf8");
+  await writeCatalog(id, next, await collectSiteStrings(id));
   return { ok: true, problems, added, total: Object.keys(next).length };
 }
 
@@ -722,7 +816,7 @@ export async function bakeSiteStrings(id) {
     next[r.en] = siteLookup(r.en, id);
     added += 1;
   }
-  fs.writeFileSync(siteCatalogFile(id), formatCatalog(id, next), "utf8");
+  await writeCatalog(id, next, rows);
   return { added, total: Object.keys(next).length };
 }
 
@@ -738,8 +832,16 @@ export async function pruneSiteStrings(id) {
     if (used.has(en)) next[en] = tr;
     else removed += 1;
   }
-  fs.writeFileSync(siteCatalogFile(id), formatCatalog(id, next), "utf8");
+  await writeCatalog(id, next, rows);
   return { removed, total: Object.keys(next).length };
+}
+
+/** Rewrite a locale's catalog files so every string sits in the part its pages load. */
+export async function layoutSiteStrings(id) {
+  if (!siteLocales.isPrefixedLocale(id)) throw new Error(`[site-i18n] ${id} is not a prefixed site locale`);
+  const rows = await collectSiteStrings(id);
+  const parts = await writeCatalog(id, await readSiteCatalog(id), rows);
+  return { parts: Object.keys(parts).length, total: Object.values(parts).reduce((n, p) => n + Object.keys(p).length, 0) };
 }
 
 // ---------------------------------------------------------------------------
@@ -773,7 +875,7 @@ async function main() {
       for (const p of res.problems.slice(0, 80)) console.error(`  - ${p}`);
       process.exit(1);
     }
-    console.log(`site-i18n import ${args.locale}: ${res.added} new or changed, ${res.total} entries in ${path.relative(root, siteCatalogFile(String(args.locale)))}`);
+    console.log(`site-i18n import ${args.locale}: ${res.added} new or changed, ${res.total} entries in ${path.relative(root, siteCatalogDir(String(args.locale)))}/`);
     return;
   }
   if (cmd === "bake") {
@@ -792,6 +894,14 @@ async function main() {
     }
     return;
   }
+  if (cmd === "layout") {
+    const ids = args.locale && args.locale !== true ? [String(args.locale)] : siteLocales.PREFIXABLE_LOCALES;
+    for (const id of ids) {
+      const res = await layoutSiteStrings(id);
+      console.log(`site-i18n layout ${id}: ${res.total} entries in ${res.parts} part files (${path.relative(root, siteCatalogDir(id))}/)`);
+    }
+    return;
+  }
   if (cmd === "check") {
     const { report, errors, warnings } = await checkSiteI18n({ allowDraft: Boolean(args["allow-draft"]) });
     for (const [id, r] of Object.entries(report)) {
@@ -804,6 +914,8 @@ async function main() {
         );
       }
       if (args.missing === id) for (const m of r.missing) console.log(`      ${JSON.stringify(m.en)}  [${m.context}]`);
+      console.log(`         catalog: ${r.parts} part files, ${r.coreKeys} strings in ${CORE_PART} (loaded by every page)`);
+      for (const m of r.misplaced.slice(0, 10)) console.log(`      misplaced: ${JSON.stringify(m.en.slice(0, 60))} in ${m.in}, belongs in ${m.want}`);
       for (const inv of r.invalid.slice(0, 20)) console.log(`      invalid: ${inv}`);
       for (const inv of r.invalidStaged.slice(0, 20)) console.log(`      invalid (staged page): ${inv}`);
     }
@@ -816,7 +928,7 @@ async function main() {
     console.log("site-i18n check: ok");
     return;
   }
-  console.error("usage: node scripts/site-i18n.mjs export | import --locale=<id> | bake [--locale=<id>] | prune [--locale=<id>] | check [--allow-draft] [--missing=<id>]");
+  console.error("usage: node scripts/site-i18n.mjs export | import --locale=<id> | bake [--locale=<id>] | prune [--locale=<id>] | layout [--locale=<id>] | check [--allow-draft] [--missing=<id>]");
   process.exit(2);
 }
 

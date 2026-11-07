@@ -6,8 +6,8 @@ import { normalizeLocale, detectDefaultLocale } from "../i18n/detect.js";
 import { initialMarketingLocale } from "./resolveMarketingLocale.js";
 import { forcedLocaleForPath } from "./localePaths.js";
 import { SITE_LOCALES, isPrefixedLocale, isSiteLocale, localeNativeName } from "./siteLocales.js";
-import { hasSiteCatalog, siteLookup } from "./siteText.js";
-import { loadSiteCatalog, onSiteAppCatalog } from "./loadSiteCatalog.js";
+import { siteLookup } from "./siteText.js";
+import { loadSiteCatalog, onSiteCatalogChange, siteCatalogReady } from "./loadSiteCatalog.js";
 
 const LOCALES = SITE_LOCALES.map((id) => ({ id, nativeLabel: localeNativeName(id) }));
 
@@ -103,13 +103,14 @@ export default function MarketingLocaleProvider({ children }) {
     };
   }, [locale]);
 
-  // The app catalog arrives later, only when a string is missing from the site catalog.
-  useEffect(() => onSiteAppCatalog((id) => {
+  // A catalog part of another page (route change) or the app catalog (a string missing
+  // from the site catalog) arrived: re-render with it.
+  useEffect(() => onSiteCatalogChange((id) => {
     if (id === locale) setCatalogTick((n) => n + 1);
   }), [locale]);
 
   useEffect(() => {
-    if (!isPrefixedLocale(locale) || hasSiteCatalog(locale)) return undefined;
+    if (!isPrefixedLocale(locale) || siteCatalogReady(locale)) return undefined;
     let cancelled = false;
     loadSiteCatalog(locale).then(() => {
       if (!cancelled) setCatalogTick((n) => n + 1);
