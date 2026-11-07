@@ -133,3 +133,11 @@ html.glass-desktop[data-theme="light"] .calls-search svg {
   color: rgba(60, 60, 67, 0.6);
   z-index: 1;
 }
+
+/* Server settings: the banner upload target kept the dark 8% white fill and
+   vanished on the white card (UI audit #85, light theme). */
+html.glass-desktop[data-theme="light"] .server-settings-banner-btn,
+html.glass-desktop[data-theme="light"] .server-settings-media-chip {
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--g-t1);
+}

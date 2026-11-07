@@ -428,5 +428,5 @@
 }
 .voice-room-bar-btn.leave {
   background: rgba(237, 66, 69, 0.18);
-  color: #ed4245;
+  color: var(--g-red, #FF453A);
 }

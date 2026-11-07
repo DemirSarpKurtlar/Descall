@@ -3,6 +3,7 @@ import { IconCheck as Check } from "../icons";
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoExtraContent from "../components/SeoExtraContent";
+import MergedGuideSections from "../components/MergedGuideSections";
 import SeoProductPreview from "../components/SeoProductPreview";
 import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
 import { NICHE_LANDINGS } from "../seo/nicheLandings";
@@ -80,6 +81,7 @@ export default function DiscordAlternativeNichePage({ onSignIn }) {
       ))}
 
       <SeoExtraContent showLinks={false} />
+      <MergedGuideSections />
       <SeoRelatedLinks links={page.related} />
     </SeoLandingShell>
   );

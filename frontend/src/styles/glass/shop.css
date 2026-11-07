@@ -75,6 +75,15 @@ html.glass-ui .user-settings.is-mobile.g-settings .shop-category-block,
 html.glass-ui .user-settings.is-mobile.g-settings .shop-load-error,
 html.glass-ui .user-settings.is-mobile.g-settings .shop-empty-state { order: 4; }
 
+/* UI audit #5 / #61: the generic .empty-state is flex 1 1 0 + overflow auto; in the
+   phone shop column that squeezed it to ~56px, clipping its icon tile and button. */
+html.glass-ui .user-settings.is-mobile.g-settings .shop-load-error,
+html.glass-ui .user-settings.is-mobile.g-settings .shop-empty-state,
+html.glass-ui .user-settings.is-mobile.g-settings .shop-inventory-empty {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 html.glass-ui .user-settings.is-mobile.g-settings .shop-chip-rail .shop-category-tabs {
   flex-direction: row;
   flex-wrap: nowrap;

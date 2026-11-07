@@ -5,6 +5,7 @@
 
 import { PUBLIC_ROUTES, DEFAULT_ORIGIN } from "./seoConfig.js";
 import { prefixedLocaleFromPath, stripPrefixedLocale } from "./siteLocales.js";
+import { contentLastmod } from "./seo/contentDates.js";
 
 export const SITE = DEFAULT_ORIGIN;
 
@@ -39,42 +40,6 @@ export const SITEMAP_TABLES = [
     title: "Company & legal",
     description: "About, contact, security, privacy, terms, human sitemap.",
   },
-];
-
-/** Highest-value URLs to push first when requesting indexing (daily quota). */
-export const INDEXING_PRIORITY_PATHS = [
-  "/",
-  "/discord-alternative",
-  "/alternatives",
-  "/compare/discord",
-  "/download",
-  "/best-discord-alternative-for-gamers",
-  "/apps-like-discord",
-  "/tr/discord-alternatifi",
-  "/discord-replacement",
-  "/discord-alternative-for-voice-chat",
-  "/discord-alternative-for-friends",
-  "/discord-alternative-for-communities",
-  "/features",
-  "/blog",
-  "/blog/discord-vs-descall",
-  "/blog/best-discord-alternatives-2026",
-  "/blog/apps-like-discord",
-  "/blog/discord-competitors",
-  "/faq",
-  "/blog/leave-nitro-keep-voice-chat",
-  "/blog/discord-alternative-for-communities-guide",
-  "/blog/voice-chat-alternative-to-discord",
-  "/blog/migrate-from-discord-to-descall",
-  "/about",
-  "/who-owns-descall",
-  "/descall-sahibi",
-  "/contact",
-  "/security",
-  "/status",
-  "/tr",
-  "/tr/compare/discord",
-  "/tr/download",
 ];
 
 function tableIdForPath(path) {
@@ -113,10 +78,11 @@ export function routesForTable(tableId) {
 
 /**
  * @param {string} origin
- * @param {string} now fallback lastmod (ISO)
- * @param {(path: string) => string | null} [lastmodFor] real per-page lastmod (e.g. git)
+ * @param {string} now fallback lastmod (ISO), only for a path without a content date
+ * @param {(path: string) => string | null} [lastmodFor] per-page lastmod; defaults to the
+ *   editorial content date (seo/contentDates.js) so the static and the Render sitemaps agree
  */
-export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
+export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
   const lm = (p) => (lastmodFor && lastmodFor(p)) || now;
   const entries = indexableRoutes().map((r) => ({
     path: r.path,
@@ -144,27 +110,6 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
   return entries;
 }
 
-export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = null) {
+export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
   return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.tableId === tableId);
-}
-
-/** Deduped absolute URLs ordered by INDEXING_PRIORITY_PATHS then remaining. */
-export function indexingUrlQueue(origin = SITE) {
-  const all = allSitemapEntries(origin);
-  const byPath = new Map(all.map((e) => [e.path, e.loc]));
-  const seen = new Set();
-  const out = [];
-
-  for (const path of INDEXING_PRIORITY_PATHS) {
-    const loc = byPath.get(path);
-    if (!loc || seen.has(loc)) continue;
-    seen.add(loc);
-    out.push(loc);
-  }
-  for (const entry of all) {
-    if (seen.has(entry.loc)) continue;
-    seen.add(entry.loc);
-    out.push(entry.loc);
-  }
-  return out;
 }

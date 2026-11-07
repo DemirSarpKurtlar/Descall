@@ -9,10 +9,28 @@ import { UAH_RU } from "./uah.ru.js";
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_RU } from "./profileMediaPicker.ru.js";
 import { MSG4_RU } from "./msg4.ru.js";
+import { MSG5_RU } from "./msg5.ru.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
   "msg4": MSG4_RU,
+  "a11y": {
+    "chat": {
+      "newMessage": "{name}: {text}",
+      "skipToConversation": "Перейти к беседе"
+    },
+    "servers": {
+      "inVoice": "{count, plural, one {# в голосовом} few {# в голосовом} many {# в голосовом} other {# в голосовом}}"
+    },
+    "forward": {
+      "limitReached": "Достигнут лимит: {max}. Сними выбор с одного чата, чтобы выбрать другой."
+    },
+    "schedule": {
+      "editItem": "Изменить запланированное сообщение: {item}",
+      "cancelItem": "Отменить запланированное сообщение: {item}"
+    }
+  },
+  "msg5": MSG5_RU,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -5952,7 +5970,8 @@ export const nested = {
     "maxUses25": "25 использований",
     "maxUses5": "5 использований",
     "memberFor": "@{handle} · на сервере {age}",
-    "mentionable": "Любой может @упомянуть",
+    "mentionable": "Можно упоминать",
+    "mentionableSub": "Если включено, любой может @упомянуть эту роль, и её участники получат уведомление. Если выключено — только те, кто может управлять ролями.",
     "min1": "1 мин",
     "min10": "10 мин",
     "min15": "15 мин",
@@ -8748,6 +8767,7 @@ export const phrases = {
   "Message bubbles": "Пузыри сообщений",
   "Message cannot be empty.": "Сообщение не может быть пустым.",
   "Message content or media required": "Требуется текст сообщения или медиафайл",
+  "Message is too long.": "Сообщение слишком длинное.",
   "Message from Descall": "Сообщение от Descall",
   "Message must be 5–2000 characters": "Сообщение должно содержать от 5 до 2000 символов",
   "Message must be {max} characters or fewer.": "Сообщение должно содержать не больше {max, plural, one {# символа} few {# символов} many {# символов} other {# символа}}.",
@@ -9832,6 +9852,7 @@ export const phrases = {
   "Slow mode is on: you can send another message in {seconds, plural, one {# second} other {# seconds}}.": "Включён медленный режим: следующее сообщение можно отправить через {seconds, plural, one {# секунду} few {# секунды} many {# секунд} other {# секунды}}.",
   "Slowmode": "Медленный режим",
   "Slowmode is on. Try again in {seconds}s.": "Включён медленный режим. Попробуйте через {seconds} с.",
+  "You can mention @everyone or @here again in {seconds}s.": "@everyone или @here снова можно будет использовать через {seconds} с.",
   "Slowmode is on: {time} between messages": "Включён медленный режим: {time} между сообщениями",
   "Slowmode presets": "Варианты медленного режима",
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.": "Медленный режим, темы, переопределения прав и каналы только для персонала — повседневные инструменты, которыми сообщества действительно пользуются.",
@@ -10953,6 +10974,12 @@ export const phrases = {
   "More comparisons": "Другие сравнения",
   "Ready-made Gaming template": "Готовый шаблон «Игры»",
   ...MID_APP_I18N.ru,
+  "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall не связан с Discord Inc. Discord является товарным знаком Discord Inc.",
+  "The API row is checked live from your browser each time you open this page.": "Строка API проверяется в реальном времени из вашего браузера при каждом открытии этой страницы.",
+  "Author": "Автор",
+  "Download Descall for Windows, iPhone, Android and the web": "Скачать Descall для Windows, iPhone, Android и веба",
+  "iPhone and iPad app on the App Store": "Приложение для iPhone и iPad в App Store",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall: голосовой чат, серверы и демонстрация экрана для друзей",
 };
 
 export default { nested, phrases };

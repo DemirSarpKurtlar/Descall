@@ -529,7 +529,7 @@ export const PROCESS_DB = {
 };
 
 /** Type priority for when multiple processes are detected simultaneously. */
-export const TYPE_PRIORITY = ['game', 'music', 'creative', 'dev', 'communication', 'media', 'browser', 'launcher', 'productivity', 'app'];
+export { TYPE_PRIORITY } from './activityTypePriority.js';
 
 /**
  * Processes that should always be ignored regardless of name matching.

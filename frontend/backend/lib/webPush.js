@@ -5,6 +5,7 @@ const supabase = require("../db/supabase");
 const { sendFcmToUsers } = require("./fcm");
 const { sendIosAlertToUsers } = require("./iosAlertPush");
 const { bt, pickLang } = require("./i18n");
+const pushPreview = require("./pushPreview");
 
 let configured = false;
 
@@ -129,6 +130,24 @@ async function deliverPush(userIds, payload = {}, iosEvent = null) {
   ]);
 }
 
+/**
+ * Messaging phase 5: recipients with "Mesaj önizlemesi" off (users.push_preview)
+ * get `send` with the text stripped (lib/pushPreview.js); the rest get it as is.
+ */
+async function withPreviewSplit(userIds, payload, send) {
+  let show = userIds || [];
+  let hide = [];
+  try {
+    ({ show, hide } = await pushPreview.splitByPreview(userIds));
+  } catch {
+    /* unknown: as before */
+  }
+  await Promise.allSettled([
+    show.length ? send(show, payload) : null,
+    hide.length ? send(hide, pushPreview.stripPreview(payload)) : null,
+  ]);
+}
+
 function previewKindOf(payload = {}) {
   const kind = String(payload.previewKind || "");
   return kind === "voice" || kind === "media" ? kind : "text";
@@ -217,7 +236,11 @@ async function sendCallRingEndedPush(userIds, payload = {}) {
 }
 
 /** Direct message while recipient is backgrounded / offline. */
-async function sendDmMessagePush(userIds, payload = {}) {
+function sendDmMessagePush(userIds, payload = {}) {
+  return withPreviewSplit(userIds, payload, deliverDmMessagePush);
+}
+
+async function deliverDmMessagePush(userIds, payload = {}) {
   const literal = String(payload.body || payload.text || "").slice(0, 140);
   const preview = literal || bt("en", "push.newMessage");
   const body = {
@@ -243,7 +266,11 @@ async function sendDmMessagePush(userIds, payload = {}) {
 }
 
 /** @mention in a server channel or DM. */
-async function sendMentionPush(userIds, payload = {}) {
+function sendMentionPush(userIds, payload = {}) {
+  return withPreviewSplit(userIds, payload, deliverMentionPush);
+}
+
+async function deliverMentionPush(userIds, payload = {}) {
   const literal = String(payload.body || payload.text || "").slice(0, 140);
   const preview = literal || bt("en", "push.mentionedShort");
   const deepLink =
@@ -292,6 +319,10 @@ async function sendMentionPush(userIds, payload = {}) {
 
 /** New group DM message. Mentioned members get sendIosGroupMentionPush instead. */
 function sendGroupMessagePush(userIds, payload = {}) {
+  return withPreviewSplit(userIds, payload, deliverGroupMessagePush);
+}
+
+function deliverGroupMessagePush(userIds, payload = {}) {
   return sendIosAlertToUsers(userIds, {
     type: "group",
     groupId: payload.groupId,
@@ -306,6 +337,10 @@ function sendGroupMessagePush(userIds, payload = {}) {
 
 /** @mention inside a group DM. */
 function sendIosGroupMentionPush(userIds, payload = {}) {
+  return withPreviewSplit(userIds, payload, deliverIosGroupMentionPush);
+}
+
+function deliverIosGroupMentionPush(userIds, payload = {}) {
   return sendIosAlertToUsers(userIds, {
     type: "mention",
     groupId: payload.groupId,
@@ -320,6 +355,10 @@ function sendIosGroupMentionPush(userIds, payload = {}) {
 
 /** New server text channel message for members whose notification level is "all". */
 function sendServerMessagePush(userIds, payload = {}) {
+  return withPreviewSplit(userIds, payload, deliverServerMessagePush);
+}
+
+function deliverServerMessagePush(userIds, payload = {}) {
   return sendIosAlertToUsers(userIds, {
     type: "server-message",
     serverId: payload.serverId,
@@ -335,7 +374,12 @@ function sendServerMessagePush(userIds, payload = {}) {
 }
 
 /** Message request from someone who is not a friend yet. No message body is stored. */
-function sendMessageRequestPush(userId, payload = {}) {
+async function sendMessageRequestPush(userId, payload = {}) {
+  const shown = await pushPreview.previewEnabled(userId).catch(() => true);
+  return deliverMessageRequestPush(userId, shown ? payload : pushPreview.stripPreview(payload));
+}
+
+function deliverMessageRequestPush(userId, payload = {}) {
   const preview = payload.preview ? String(payload.preview).slice(0, 140) : "";
   const fromRef = payload.from ? String(payload.from) : { key: "push.someone" };
   const body = preview || bt("en", "push.messageRequestBody", { from: fromRef });
@@ -367,6 +411,7 @@ function sendFriendRequestPush(userId, payload = {}) {
 }
 
 module.exports = {
+  withPreviewSplit,
   sendCallRingEndedPush,
   sendWebPushToUsers,
   sendGroupCallPush,

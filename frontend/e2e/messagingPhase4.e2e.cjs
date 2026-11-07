@@ -482,6 +482,31 @@ async function runDevice(browser, base, dev) {
       }, null, 4000).catch((e) => ({ ok: false, why: e.message }));
       check(live.ok, `a live group:read updates it ("${live.text}")`);
       await shot(page, `${P}09-seen-group`);
+
+      // Render count (perf): typing (this chat and others), a presence change and a read
+      // receipt must not re-render the bubbles already on screen; a new message renders.
+      await page.evaluate(() => { window.__descallBubbleRenders = { n: 0 }; });
+      await sleep(400);
+      await page.evaluate(() => { window.__descallBubbleRenders.n = 0; });
+      const typist = sender(AYSE);
+      for (const s of sockets) {
+        s.emit('typing:update', { context: 'group', groupId: 'p4-other-group', fromUser: typist, typing: true });
+        s.emit('typing:update', { context: 'server', channelId: 'p4-other-channel', fromUser: typist, typing: true });
+        s.emit('typing:update', { context: 'dm', fromUser: sender(MERT), typing: false });
+        s.emit('typing:update', { context: 'group', groupId: GROUP_ID, fromUser: typist, typing: true });
+        s.emit('presence:delta', { up: [{ ...sender(MERT), status: 'idle' }] });
+        s.emit('group:read', { groupId: GROUP_ID, userId: AYSE.id, at: new Date(Date.now() + 120e3).toISOString() });
+      }
+      await sleep(900);
+      const quiet = await page.evaluate(() => window.__descallBubbleRenders.n);
+      check(quiet === 0, `typing, presence and read events re-render no existing bubble (${quiet} renders)`);
+      for (const s of sockets) s.emit('typing:update', { context: 'group', groupId: GROUP_ID, fromUser: typist, typing: false });
+      const row = { id: `p4-g-rc-${Date.now()}`, group_id: GROUP_ID, sender_id: MERT.id, sender: sender(MERT), content: 'Yoldayım', created_at: new Date().toISOString(), reactions: [] };
+      state.group.push(row);
+      for (const s of sockets) s.emit('group:message', { groupId: GROUP_ID, message: row });
+      const grew = await waitFor(page, 'new bubble renders', () => ({ ok: window.__descallBubbleRenders.n > 0, n: window.__descallBubbleRenders.n }), null, 4000).catch(() => ({ ok: false, n: 0 }));
+      check(grew.ok && grew.n <= 3, `a new message renders only its own bubble (${grew.n} renders)`);
+      await page.evaluate(() => { window.__descallBubbleRenders = null; });
     }
     // --- keyboard shortcuts (desktop: a hardware keyboard) ---
     if (want('keys') && dev === 'desktop') {

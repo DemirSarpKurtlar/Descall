@@ -92,7 +92,7 @@ function registerActivityHandlers(io, socket) {
       .from('user_activity_settings')
       .select('privacy')
       .eq('user_id', myId)
-      .single();
+      .maybeSingle();
 
     if (settingsErr && !['PGRST116', '42P01'].includes(settingsErr.code)) {
       console.error('[activity:update] settings error:', settingsErr.message);

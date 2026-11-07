@@ -7,6 +7,8 @@ import { PREMIUM_AUDIO_EN } from "./premiumAudio.en.js";
 import { WORLD3D_EN } from "./world3d.en.js";
 import { AMP_EN } from "./profileMediaPicker.en.js";
 import { MSG4_EN } from "./msg4.en.js";
+import { A11Y_EN } from "./a11y.en.js";
+import { MSG5_EN } from "./msg5.en.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -49,6 +51,8 @@ export const nested = {
   nc: NC_EN,
   amp: AMP_EN,
   msg4: MSG4_EN,
+  a11y: A11Y_EN,
+  msg5: MSG5_EN,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {

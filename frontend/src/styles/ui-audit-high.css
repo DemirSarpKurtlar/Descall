@@ -117,6 +117,10 @@ html.glass-ui .app-notif-banner {
   font-weight: 600;
   transition: transform 120ms ease, filter 120ms ease;
 }
+/* White label >= 4.5:1: the default azure is deepened under text; other themes keep their accent. */
+html:not([data-theme]) .app-notif-banner-btn,
+html[data-theme="dark"] .app-notif-banner-btn,
+html[data-theme="light"] .app-notif-banner-btn { background: #4562E0; }
 .app-notif-banner-btn:hover { filter: brightness(1.06); }
 .app-notif-banner-btn:active { transform: scale(0.97); }
 .app-notif-banner-dismiss {
@@ -458,6 +462,15 @@ html[data-theme="light"] .activity-web-notice strong {
   font-weight: 600;
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+/* The desktop glass chip fill (server-surfaces.css) out-ranked the segment and
+   painted every unselected slow-mode option as its own grey chip. */
+html .server-slowmode-presets.is-segmented button:not(.active) {
+  background: transparent;
+  box-shadow: none;
+}
+html .server-slowmode-presets.is-segmented button:not(.active):hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 html[data-theme="light"] .server-type-toggle.is-segmented,
 html[data-theme="light"] .server-slowmode-presets.is-segmented {

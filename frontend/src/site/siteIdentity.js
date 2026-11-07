@@ -17,6 +17,9 @@ export const SITE_OPERATOR = {
   lastUpdatedIso: "2026-08-25",
   lastUpdatedLabel: "August 25, 2026",
   lastUpdatedLabelTr: "25 Ağustos 2026",
+  // /status: the facts on the page were last reviewed on this day (the API row is live).
+  // Move it whenever the status page is re-checked.
+  statusReviewedIso: "2026-11-06",
   status: "Beta",
   statusNote:
     "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",

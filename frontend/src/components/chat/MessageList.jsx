@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment, memo } from "react";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
@@ -28,6 +28,7 @@ import MessageReactions from "./MessageReactions";
 import EmojiPickerSheet from "./EmojiPickerSheet";
 import MessageContent from "./MessageContent";
 import { plainText } from "../../lib/messageMarkdown";
+import { decodeRoleMentions, encodeRoleMentions } from "../../lib/roleMentions";
 import { displayText } from "../../lib/profanity";
 import { casinoHiddenOnThisDevice, isCasinoChatMessage } from "../../lib/casinoCommands";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
@@ -54,6 +55,7 @@ import { enrichSender, senderAvatarUrl, senderName } from "../../lib/mediaViewer
 import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS, installHoverTrail } from "../../lib/singleActiveHover";
 import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
+import { isContextMenuKey, menuArrowKeys } from "../../lib/menuKeys";
 import { getLocale } from "../../i18n/runtime";
 import { formatNumber } from "../../i18n/format";
 import { GroupMemberEventRow } from "../groups/GroupMemberRemoval";
@@ -168,7 +170,7 @@ function galleryItemsFrom(messages, senderFor = (u) => u) {
   return out;
 }
 
-export default function MessageList({
+function MessageList({
   messages,
   currentUser,
   onJoinActiveCall,
@@ -232,6 +234,52 @@ export default function MessageList({
     }, HOVER_CLOSE_GRACE_MS);
   }, [cancelHoverClose]);
   useEffect(() => cancelHoverClose, [cancelHoverClose]);
+  // Per-sender profile (friends / presence / me merged), cached per sender object: a
+  // roster or presence change only yields a new object for the senders it touched,
+  // so the memoized headers of everyone else skip their render.
+  const senderCacheRef = useRef(new WeakMap());
+  const avatarUserFor = (user) => {
+    if (!user || typeof user !== "object" || user.id == null) {
+      return enrichAvatarUser(user, { me, friends, onlineUsers, currentUser });
+    }
+    const key = String(user.id);
+    const same = (x) => x && String(x.id) === key;
+    const friend = Array.isArray(friends) ? friends.find(same) || null : null;
+    const online = Array.isArray(onlineUsers) ? onlineUsers.find(same) || null : null;
+    const mine = same(me) ? me : same(currentUser) ? currentUser : null;
+    const hit = senderCacheRef.current.get(user);
+    if (hit && hit.friend === friend && hit.online === online && hit.mine === mine) return hit.value;
+    const value = enrichAvatarUser(user, { me, friends, onlineUsers, currentUser });
+    senderCacheRef.current.set(user, { friend, online, mine, value });
+    return value;
+  };
+  // Latest values for the header handlers below (stable identities for memoized headers).
+  const hoverLiveRef = useRef(null);
+  hoverLiveRef.current = { glassUi, hoverUser, hoverPos, friends, onlineUsers };
+  const openProfileFor = useCallback((avatarUser) => {
+    closeHoverNow();
+    if (avatarUser?.id) setProfileTarget(avatarUser);
+  }, [closeHoverNow]);
+  const showHoverCardFor = useCallback((avatarUser, el, event) => {
+    // Latest render's values (this handler keeps one identity across renders).
+    const { glassUi, hoverUser, hoverPos, friends, onlineUsers } = hoverLiveRef.current;
+    // iOS turns a tap into mouseenter and leaves the card up. Glass
+    // already presents the profile sheet, so the hover card must not open.
+    if (glassUi) return;
+    if (event?.pointerType === "touch") return;
+    if (!avatarUser?.id || !el) return;
+    cancelHoverClose();
+    if (hoverUser?.id && String(hoverUser.id) === String(avatarUser.id) && hoverPos) return;
+    const rect = el.getBoundingClientRect();
+    const friend = (friends || []).find((f) => f.id === avatarUser.id);
+    const online = (onlineUsers || []).find((u) => u.id === avatarUser.id);
+    setHoverUser(
+      mergeUserProfiles(avatarUser, friend, online, {
+        status: getPresenceStatus(onlineUsers, avatarUser.id),
+      })
+    );
+    setHoverPos(hoverAnchorFromRect(rect));
+  }, [cancelHoverClose]);
   // Clicking (or Enter on) an @mention in a message opens that person's profile, the same
   // sheet a click on a sender's avatar opens. Resolved from people this chat already knows.
   const openMention = useCallback((username) => {
@@ -614,6 +662,65 @@ export default function MessageList({
     return grouped;
   }, [searchedMessages, unreadCount, isSearching, t]);
 
+  // Roving focus over the bubbles (DOM only, so no bubble re-renders): one bubble is in
+  // the Tab order, the newest unless focus is already in the list.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const bubbles = list.querySelectorAll(".message-bubble[tabindex]");
+    if (!bubbles.length) return;
+    const current = list.querySelector('.message-bubble[tabindex="0"]');
+    if (current && list.contains(document.activeElement)) return;
+    const newest = bubbles[bubbles.length - 1];
+    if (current === newest) return;
+    if (current) current.tabIndex = -1;
+    newest.tabIndex = 0;
+  });
+  const onBubbleArrows = useCallback((e) => {
+    const bubble = e.target;
+    if (!bubble?.classList?.contains("message-bubble") || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) return;
+    const all = [...(listRef.current?.querySelectorAll(".message-bubble[tabindex]") || [])];
+    const i = all.indexOf(bubble);
+    if (i < 0) return;
+    e.preventDefault();
+    const j = e.key === "ArrowUp" ? i - 1 : e.key === "ArrowDown" ? i + 1 : e.key === "Home" ? 0 : all.length - 1;
+    const next = all[Math.max(0, Math.min(all.length - 1, j))];
+    if (!next || next === bubble) return;
+    bubble.tabIndex = -1;
+    next.tabIndex = 0;
+    next.focus();
+  }, []);
+
+  // New incoming messages are read out politely ("Ayse: text"); never my own, never the
+  // history that loads when a chat opens or scrolls back. Written to the DOM, no re-render.
+  const liveRef = useRef(null);
+  const newsRef = useRef({ conversationId: null, lastId: null });
+  useEffect(() => {
+    const msgs = Array.isArray(messages) ? messages : [];
+    const last = msgs[msgs.length - 1];
+    const lastId = last?.id ?? null;
+    const prev = newsRef.current;
+    newsRef.current = { conversationId, lastId };
+    if (loading || isSearching || prev.conversationId !== conversationId) return;
+    if (prev.lastId == null || lastId == null || lastId === prev.lastId) return;
+    if (!msgs.some((m) => m?.id === prev.lastId) || ownMessage(last, myId)) return;
+    const el = liveRef.current;
+    if (!el) return;
+    // Only people's messages (no call summaries, member events or game boards).
+    const kind = String(last.type || "");
+    if (!last.from?.id || last.isGameMessage || /^(call_summary|member_removed|member_left|active_call|game_)/.test(kind)) return;
+    const who = resolveDisplayName(senderFor(last.from)) || last.from?.username || "";
+    let body = typeof last.text === "string" && last.text.trim()
+      ? displayText(plainText(last.text)).replace(/\s+/g, " ").trim()
+      : mediaTypeLabel(last.mediaType || last.media_type, t) || "";
+    if (body.length > NEWS_MAX) body = `${body.slice(0, NEWS_MAX - 1)}\u2026`;
+    const line = t("a11y.chat.newMessage", { name: who, text: body });
+    // Cleared first so the same text twice in a row is still announced.
+    el.textContent = "";
+    requestAnimationFrame(() => { if (liveRef.current === el) el.textContent = line; });
+  }, [messages, conversationId, loading, isSearching, myId, senderFor, t]);
+
   if (loading && loadError) {
     return (
       <div className="message-list is-load-error" ref={listRef} role="alert">
@@ -666,7 +773,8 @@ export default function MessageList({
     <MediaGalleryContext.Provider value={galleryItems}>
     <SenderLookupContext.Provider value={senderFor}>
     <PinControlContext.Provider value={pinRef}>
-    <div className="message-list" ref={listRef} onClickCapture={onMentionActivate} onKeyDownCapture={onMentionActivate}>
+    <div className="message-list" ref={listRef} onClickCapture={onMentionActivate} onKeyDownCapture={onMentionActivate} onKeyDown={onBubbleArrows}>
+      <div className="a11y-sr" ref={liveRef} aria-live="polite" aria-atomic="true" />
       {isSearching && (
         <div className="message-search-result-count">
           {t("chatx.matchingMessages", { count: groupedMessages.reduce((n, g) => n + (g.messages?.length || (g.isSummary || g.isGame || g.isActiveBanner ? 1 : 0)), 0) })}
@@ -752,30 +860,7 @@ export default function MessageList({
         }
 
         const isOwn = group.user?.id === currentUser?.id;
-        const avatarUser = enrichAvatarUser(group.user, { me, friends, onlineUsers, currentUser });
-        const openProfile = () => {
-          closeHoverNow();
-          if (avatarUser?.id) setProfileTarget(avatarUser);
-        };
-        const showHoverCard = (el, event) => {
-          // iOS turns a tap into mouseenter and leaves the card up. Glass
-          // already presents the profile sheet, so the hover card must not open.
-          if (glassUi) return;
-          if (event?.pointerType === "touch") return;
-          if (!avatarUser?.id || !el) return;
-          cancelHoverClose();
-          if (hoverUser?.id && String(hoverUser.id) === String(avatarUser.id) && hoverPos) return;
-          const rect = el.getBoundingClientRect();
-          const friend = (friends || []).find((f) => f.id === avatarUser.id);
-          const online = (onlineUsers || []).find((u) => u.id === avatarUser.id);
-          setHoverUser(
-            mergeUserProfiles(avatarUser, friend, online, {
-              status: getPresenceStatus(onlineUsers, avatarUser.id),
-            })
-          );
-          setHoverPos(hoverAnchorFromRect(rect));
-        };
-        const hideHoverCard = () => scheduleHoverClose();
+        const avatarUser = avatarUserFor(group.user);
 
         return (
           <div
@@ -783,52 +868,14 @@ export default function MessageList({
             className={`message-group is-left ${isOwn ? "is-mine" : ""}`}
           >
             {!group.isCompact && (
-              <div className="message-header">
-                <div
-                  className="message-avatar"
-                  onClick={openProfile}
-                  style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
-                  onMouseEnter={glassUi ? undefined : (e) => showHoverCard(e.currentTarget, e)}
-                  onMouseLeave={hideHoverCard}
-                >
-                  <Avatar
-                    key={avatarUser?.id || avatarUser?.username || "msg-avatar"}
-                    name={resolveDisplayName(avatarUser)}
-                    size={40}
-                    user={avatarUser}
-                    imageUrl={pickAvatarUrl(avatarUser)}
-                    animate="hover"
-                  />
-                  {/* No presence dot on message avatars (as in Messages): the
-                      list could disagree with the live panel status. */}
-                </div>
-                <div className="message-meta">
-                  <span
-                    className="message-author"
-                    onClick={openProfile}
-                    style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
-                    onMouseEnter={glassUi ? undefined : (e) => {
-                      if (!avatarUser?.id) return;
-                      e.currentTarget.style.textDecoration = "underline";
-                      showHoverCard(e.currentTarget, e);
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.textDecoration = "";
-                      hideHoverCard();
-                    }}
-                  >
-                    <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
-                    {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
-                      <span className="msg-bot-badge" title="Descall Apps">{t("chatx.appBadge")}</span>
-                    ) : null}
-                    <CountryBadge user={avatarUser} compact />
-                    <AdminBadge user={avatarUser} variant="inline" />
-                  </span>
-                  <span className="message-timestamp">
-                    {formatTimestamp(group.messages[0]?.timestamp)}
-                  </span>
-                </div>
-              </div>
+              <MessageGroupHeader
+                avatarUser={avatarUser}
+                timestamp={group.messages[0]?.timestamp}
+                glassUi={glassUi}
+                onOpenProfile={openProfileFor}
+                onShowHover={showHoverCardFor}
+                scheduleHoverClose={scheduleHoverClose}
+              />
             )}
 
             <div className="message-content-wrapper">
@@ -1009,7 +1056,7 @@ export default function MessageList({
   );
 }
 
-function MessageBubble({
+function MessageBubbleView({
   message,
   isOwn,
   isCompact,
@@ -1033,6 +1080,7 @@ function MessageBubble({
   chatBubbleKey = null,
   reactionBurstKey = null,
 }) {
+  countBubbleRender();
   const t = useT();
   const { toast } = useToast();
   const glass = useGlassUi();
@@ -1068,10 +1116,8 @@ function MessageBubble({
   const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const galleryItems = useContext(MediaGalleryContext);
-  const senderFor = useContext(SenderLookupContext);
   const [editing, setEditing] = useState(false);
-  const [editDraft, setEditDraft] = useState(message.text || "");
+  const [editDraft, setEditDraft] = useState(() => decodeRoleMentions(message.text || "").text);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const hideTimer = useRef(null);
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
@@ -1147,7 +1193,8 @@ function MessageBubble({
   ]);
 
   const saveEdit = useCallback(() => {
-    const next = editDraft.trim();
+    // Role mentions are edited as "@Rol adı" and saved back as tokens (messaging phase 5).
+    const next = encodeRoleMentions(editDraft.trim(), decodeRoleMentions(message.text || "").picked);
     if (!next || !message?.id || String(message.id).startsWith("temp-")) {
       setEditing(false);
       return;
@@ -1240,7 +1287,7 @@ function MessageBubble({
         toUserId,
       });
     } else {
-      setEditDraft(message.text || "");
+      setEditDraft(decodeRoleMentions(message.text || "").text);
       setEditing(true);
     }
     setMenuOpen(false);
@@ -1625,6 +1672,91 @@ function MessageBubble({
     heartToggle(e.clientX, e.clientY);
   }, [heartToggle, overTextAt]);
 
+  // Keyboard path (WCAG 2.1.1). The list moves focus between bubbles (Arrow Up/Down);
+  // a focused bubble shows its toolbar, Shift+F10 / the menu key opens "More",
+  // Enter replies and E edits my own message. Keys act only on the bubble itself, so
+  // typing in the composer or in an inline field never triggers them.
+  const focusOpenedRef = useRef(false);
+  const focusMoreRef = useRef(false);
+  const kbdMenuAt = useRef(0);
+  const openFromKeyboard = (withMore) => {
+    focusOpenedRef.current = true;
+    clearHide();
+    messageHoverToolbar.activate(hoverKey.current, closeFromOwner, { getRect: barRect });
+    grantMenu();
+    if (withMore) {
+      setPickerOpen(false);
+      focusMoreRef.current = true;
+      setMoreOpen(true);
+    }
+  };
+  const onBubbleFocus = (e) => {
+    if (glass || editing || e.target !== e.currentTarget) return;
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    let keyboard = false;
+    try { keyboard = e.currentTarget.matches(":focus-visible"); } catch { keyboard = false; }
+    if (keyboard) openFromKeyboard(false);
+  };
+  const onBubbleBlur = (e) => {
+    if (!focusOpenedRef.current || e.currentTarget.contains(e.relatedTarget)) return;
+    focusOpenedRef.current = false;
+    setMenuOpen(false);
+    setPickerOpen(false);
+  };
+  const onBubbleKeyDown = (e) => {
+    if (editing) return;
+    if (e.key === "Escape" && (menuOpen || pickerOpen || moreOpen) && !glass) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pickerOpen || moreOpen) { setPickerOpen(false); setMoreOpen(false); }
+      else { focusOpenedRef.current = false; setMenuOpen(false); }
+      bubbleRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (e.target !== e.currentTarget || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (isContextMenuKey(e)) {
+      e.preventDefault();
+      kbdMenuAt.current = Date.now();
+      if (glass) { setMenuOpen(true); setPickerOpen(false); }
+      else openFromKeyboard(true);
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      triggerReply();
+      return;
+    }
+    if ((e.key === "e" || e.key === "E") && !e.shiftKey && canEdit) {
+      e.preventDefault();
+      beginEdit();
+    }
+  };
+  // The menu key also fires a contextmenu event: no native menu on top of ours.
+  const onBubbleContextMenu = (e) => {
+    if (Date.now() - kbdMenuAt.current < 800) e.preventDefault();
+  };
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return undefined;
+    if (moreOpen && focusMoreRef.current) {
+      focusMoreRef.current = false;
+      const id = requestAnimationFrame(() => el.querySelector('.mhb-more [role="menuitem"]')?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+    // An item ran (or Escape): focus returns to the bubble, not to <body>.
+    if (!moreOpen && el.querySelector(".mhb-more")?.contains(document.activeElement)) el.focus({ preventScroll: true });
+    return undefined;
+  }, [moreOpen]);
+  const wasEditing = useRef(false);
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (wasEditing.current && !editing && el?.hasAttribute("tabindex")) {
+      const a = document.activeElement;
+      if (!a || a === document.body) el.focus({ preventScroll: true });
+    }
+    wasEditing.current = editing;
+  }, [editing]);
+
   if (hideCasino) return null;
 
   return (
@@ -1667,6 +1799,12 @@ function MessageBubble({
           if (shouldReply) triggerReply();
         }}
         data-no-swipe-back=""
+        // Roving focus: every bubble is -1, MessageList gives one of them 0 (DOM only).
+        tabIndex={glass || !bubbleKeyboardFocus() ? undefined : -1}
+        onFocus={onBubbleFocus}
+        onBlur={onBubbleBlur}
+        onKeyDown={onBubbleKeyDown}
+        onContextMenu={onBubbleContextMenu}
         data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
         className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
@@ -1738,7 +1876,7 @@ function MessageBubble({
               onKeyDown={(e) => {
                 if (e.key === "Enter") saveEdit();
                 if (e.key === "Escape") {
-                  setEditDraft(message.text || "");
+                  setEditDraft(decodeRoleMentions(message.text || "").text);
                   setEditing(false);
                 }
               }}
@@ -1752,7 +1890,7 @@ function MessageBubble({
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => {
-                  setEditDraft(message.text || "");
+                  setEditDraft(decodeRoleMentions(message.text || "").text);
                   setEditing(false);
                 }}
               >
@@ -1902,16 +2040,13 @@ function MessageBubble({
         )}
 
         {isVisualMedia && (
-          <MessageMediaLightbox
+          <BubbleMediaLightbox
             open={lightboxOpen}
             src={mediaUrl}
             alt={isGif ? "GIF" : message.originalName || t("Image")}
             onClose={closeLightbox}
-            items={isGif ? null : galleryItems}
-            startId={String(message.id ?? message.tempId ?? "")}
-            sender={senderName(senderFor(message.from) || message.from, message.username || "")}
-            avatar={senderAvatarUrl(senderFor(message.from) || message.from)}
-            at={message.timestamp || message.created_at || null}
+            isGif={isGif}
+            message={message}
           />
         )}
 
@@ -2001,6 +2136,7 @@ function MessageBubble({
                   onClick={(ev) => {
                     ev.stopPropagation();
                     setPickerOpen(false);
+                    if (ev.detail === 0 && !moreOpen) focusMoreRef.current = true;
                     setMoreOpen((v) => !v);
                   }}
                 >
@@ -2086,6 +2222,8 @@ function MessageBubble({
                     key="mhb-more"
                     className="g-toolbar-menu mhb-more"
                     role="menu"
+                    aria-label={t("More")}
+                    onKeyDown={menuArrowKeys}
                     initial={{ opacity: 0, scale: 0.95, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.08 } }}
@@ -2211,6 +2349,116 @@ function MessageBubble({
   );
 }
 
+export default memo(MessageList);
+
+/**
+ * Sender row above a message group (avatar, name, badges, time). Memoized: it re-renders
+ * when this sender's merged profile changes, not on every list render.
+ */
+const MessageGroupHeader = memo(function MessageGroupHeader({ avatarUser, timestamp, glassUi, onOpenProfile, onShowHover, scheduleHoverClose }) {
+  const t = useT();
+  const openProfile = () => onOpenProfile(avatarUser);
+  const showHoverCard = (el, event) => onShowHover(avatarUser, el, event);
+  const hideHoverCard = () => scheduleHoverClose();
+  return (
+    <div className="message-header">
+      <div
+        className="message-avatar"
+        onClick={openProfile}
+        style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
+        onMouseEnter={glassUi ? undefined : (e) => showHoverCard(e.currentTarget, e)}
+        onMouseLeave={hideHoverCard}
+      >
+        <Avatar
+          key={avatarUser?.id || avatarUser?.username || "msg-avatar"}
+          name={resolveDisplayName(avatarUser)}
+          size={40}
+          user={avatarUser}
+          imageUrl={pickAvatarUrl(avatarUser)}
+          animate="hover"
+        />
+        {/* No presence dot on message avatars (as in Messages): the
+            list could disagree with the live panel status. */}
+      </div>
+      <div className="message-meta">
+        <span
+          className="message-author"
+          onClick={openProfile}
+          style={{ cursor: avatarUser?.id ? "pointer" : "default" }}
+          onMouseEnter={glassUi ? undefined : (e) => {
+            if (!avatarUser?.id) return;
+            e.currentTarget.style.textDecoration = "underline";
+            showHoverCard(e.currentTarget, e);
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.textDecoration = "";
+            hideHoverCard();
+          }}
+        >
+          <NameEffectText user={avatarUser}>{resolveDisplayName(avatarUser)}</NameEffectText>
+          {(avatarUser?.isBot || avatarUser?.id === "descall-apps") ? (
+            <span className="msg-bot-badge" title="Descall Apps">{t("chatx.appBadge")}</span>
+          ) : null}
+          <CountryBadge user={avatarUser} compact />
+          <AdminBadge user={avatarUser} variant="inline" />
+        </span>
+        <span className="message-timestamp">
+          {formatTimestamp(timestamp)}
+        </span>
+      </div>
+    </div>
+  );
+});
+
+// Props read only when a bubble mounts (enter animation): a later change must not
+// re-render the bubble. Everything else is compared by identity, so App and the list
+// pass stable callbacks (useCallback / setState) and keep message objects immutable.
+const BUBBLE_MOUNT_ONLY_PROPS = new Set(["isFresh", "quietUntil"]);
+function sameBubbleProps(prev, next) {
+  for (const k in next) {
+    if (BUBBLE_MOUNT_ONLY_PROPS.has(k)) continue;
+    if (!Object.is(prev[k], next[k])) return false;
+  }
+  for (const k in prev) {
+    if (!(k in next)) return false;
+  }
+  return true;
+}
+/** A bubble re-renders only when its own props change (not on typing / presence / read events). */
+const MessageBubble = memo(MessageBubbleView, sameBubbleProps);
+
+/**
+ * Render counter for the messaging e2e: off unless the page sets
+ * window.__descallBubbleRenders = { n: 0 } (one property read per render otherwise).
+ */
+function countBubbleRender() {
+  if (typeof window === "undefined") return;
+  const rc = window.__descallBubbleRenders;
+  if (rc) rc.n += 1;
+}
+
+/**
+ * The bubble's media viewer. Reads the list-wide gallery and sender lookup here, so a
+ * change to those (new message, profile data) re-renders this viewer, not the bubble.
+ */
+function BubbleMediaLightbox({ open, src, alt, onClose, isGif, message }) {
+  const galleryItems = useContext(MediaGalleryContext);
+  const senderFor = useContext(SenderLookupContext);
+  return (
+    <MessageMediaLightbox
+      open={open}
+      src={src}
+      alt={alt}
+      onClose={onClose}
+      items={isGif ? null : galleryItems}
+      startId={String(message.id ?? message.tempId ?? "")}
+      sender={senderName(senderFor(message.from) || message.from, message.username || "")}
+      avatar={senderAvatarUrl(senderFor(message.from) || message.from)}
+      at={message.timestamp || message.created_at || null}
+    />
+  );
+}
+
 /** "Görüldü" / "Görüldü: Ayşe, Mert +2" / "Herkes gördü" under my newest message. */
 function SeenLine({ seen, t }) {
   let label = t("msg4.seen.label");
@@ -2231,6 +2479,26 @@ function SeenLine({ seen, t }) {
       {label}
     </div>
   );
+}
+
+// Bubbles take keyboard focus where there is a fine pointer (desktop, Electron, iPad with a
+// trackpad); touch-only phones keep tap behaviour unchanged (a focusable bubble would steal
+// focus from the composer and close the keyboard).
+let bubbleFocusCache = null;
+function bubbleKeyboardFocus() {
+  if (bubbleFocusCache == null) {
+    try {
+      bubbleFocusCache = typeof window !== "undefined" && Boolean(window.matchMedia?.("(any-pointer: fine)").matches);
+    } catch {
+      bubbleFocusCache = false;
+    }
+  }
+  return bubbleFocusCache;
+}
+
+const NEWS_MAX = 140;
+function ownMessage(m, myId) {
+  return Boolean(m) && (m.from?.id === myId || m.sender_id === myId || m.userId === myId || String(m.id || "").startsWith("temp-"));
 }
 
 function prefersReducedMotionNow() {

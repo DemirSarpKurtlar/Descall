@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PROCESS_DB, TYPE_PRIORITY, PROCESS_BLOCKLIST } from '../lib/processDatabase';
+import { TYPE_PRIORITY } from '../lib/activityTypePriority';
 // Descall+ game_status: extra game list for members only (null for everyone else).
 import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
 import { getToken } from '../lib/storage';
@@ -18,6 +18,22 @@ const DESCALL_APP_NAME    = 'Descall';
 const SETTINGS_STORAGE_KEY  = 'descall_activity_settings';
 const MANUAL_STORAGE_KEY    = 'descall_manual_status';
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
+
+// The process database (~128 KB) is only needed by the Electron scan: load it on demand
+// so web and iOS never download it. Session logging only runs after a scan, by which
+// time the module is loaded; until then PROCESS_DB reads as empty (same fallbacks).
+let processDb = null;
+let processDbPromise = null;
+function loadProcessDb() {
+  if (!processDbPromise) {
+    processDbPromise = import('../lib/processDatabase').then(
+      (m) => { processDb = m; return m; },
+      (err) => { processDbPromise = null; throw err; },
+    );
+  }
+  return processDbPromise;
+}
+const currentProcessDb = () => processDb?.PROCESS_DB || {};
 
 const DEFAULT_SETTINGS = {
   privacy: 'friends',
@@ -110,7 +126,7 @@ function filterHistory(list) {
 }
 
 /** Resolve the highest-priority detected app from running process names. */
-function resolveActivity(processList) {
+function resolveActivity(processList, { PROCESS_DB, PROCESS_BLOCKLIST }) {
   const candidates = [];
   const extra = premiumProcessEntries(PROCESS_DB);
 
@@ -297,7 +313,12 @@ export function useActivity({ socket, me, friends = [] }) {
       processList = await window.electronAPI.scanProcesses();
     } catch { return; }
 
-    const detected = resolveActivity(processList);
+    let db;
+    try {
+      db = await loadProcessDb();
+    } catch { return; }
+
+    const detected = resolveActivity(processList, db);
 
     // Filter per user settings
     if (detected) {
@@ -366,7 +387,7 @@ export function useActivity({ socket, me, friends = [] }) {
     const token = getToken();
     if (!token || !appName || !startedAt || !shouldLogSession({ durationSec })) return;
 
-    const entry = Object.values(PROCESS_DB).find(e => e.name === appName);
+    const entry = Object.values(currentProcessDb()).find(e => e.name === appName);
 
     await fetch(`${API_BASE_URL}/api/activity/session`, {
       method: 'POST',
@@ -401,7 +422,7 @@ export function useActivity({ socket, me, friends = [] }) {
     const token = getToken();
     if (!token) return;
     const { appName, startedAt, endedAt, durationSec, meta } = closed.log;
-    const entry = Object.values(PROCESS_DB).find(e => e.name === appName);
+    const entry = Object.values(currentProcessDb()).find(e => e.name === appName);
     fetch(`${API_BASE_URL}/api/activity/session`, {
       method: 'POST',
       keepalive: !!keepalive,

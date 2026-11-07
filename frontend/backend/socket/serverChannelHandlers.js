@@ -20,6 +20,7 @@ const {
   Permissions,
   hasPermission,
   resolveChannelPermissions,
+  resolveChannelPermissionsBulk,
   resolveMemberPermissions,
 } = require("../lib/serverPermissions");
 const {
@@ -31,9 +32,12 @@ const {
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 const { apiError, apiText } = require("../lib/apiError");
+const serverMentions = require("../lib/serverMentions");
 const { errorFields } = require("../lib/apiError");
 
 const slowmodeLastSend = new Map();
+// Messaging phase 5: one @everyone / @here per sender per channel per minute (lib/serverMentions.js).
+const massPingLimiter = serverMentions.createMassPingLimiter();
 
 function slowmodeKey(channelId, userId) {
   return `${channelId}:${userId}`;
@@ -239,11 +243,12 @@ function buildChannelNotifyPayload({ serverId, serverName, channelId, channelNam
  * muted, not the sender, and not a member who is @mentioned (they get the
  * mention push). Never throws.
  */
-async function pushChannelMessageToIos({ serverId, channelId, viewerIds, payload }) {
+async function pushChannelMessageToIos({ serverId, channelId, viewerIds, payload, pingedIds = null }) {
   try {
     const { usersWithIosAlertTokens } = require("../lib/iosAlertPush");
+    // Members pinged through a role / @everyone / @here get the mention push instead.
     const withTokens = await usersWithIosAlertTokens(
-      viewerIds.filter((uid) => uid && uid !== payload.senderId)
+      viewerIds.filter((uid) => uid && uid !== payload.senderId && !pingedIds?.has(uid))
     );
     if (!withTokens.size) return;
     const ids = [...withTokens];
@@ -304,19 +309,9 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = nul
       const userIds = (members || []).map((m) => m.user_id).filter(Boolean);
       if (!userIds.length) return;
 
-      const viewerIds = [];
-      await Promise.all(
-        userIds.map(async (uid) => {
-          try {
-            const resolved = await resolveChannelPermissions(supabase, serverId, uid, channelId);
-            if (resolved.isMember && hasPermission(resolved.bits, Permissions.VIEW_CHANNEL)) {
-              viewerIds.push(uid);
-            }
-          } catch {
-            /* skip members who cannot view */
-          }
-        })
-      );
+      // One bulk resolve (5 queries) instead of resolveChannelPermissions per member.
+      const bitsByUser = await resolveChannelPermissionsBulk(supabase, serverId, channelId, userIds);
+      const viewerIds = userIds.filter((uid) => hasPermission(bitsByUser.get(uid) || 0n, Permissions.VIEW_CHANNEL));
       if (!viewerIds.length) return;
 
       // Desktop notification fan-out: every member who can see the channel
@@ -340,46 +335,166 @@ function bumpChannelUnreadForMembers(serverId, channelId, senderId, notify = nul
             channelName: notify.channelName,
             message: notify.message,
           });
+          // Role mentions read "@Rol adı" on cards and pushes, not the <@&id> token.
+          if (notify.displayText != null && payload.kind !== "voice") payload.text = String(notify.displayText).slice(0, 160);
+          const pinged = notify.pingedIds instanceof Set ? notify.pingedIds : null;
           for (const uid of viewerIds) {
-            notify.io.to(`user:${uid}`).emit("server:channel:notify", payload);
+            // `mentioned`: this member was pinged (role / @everyone / @here); the
+            // mention:received card shows it, so the plain card is skipped.
+            notify.io.to(`user:${uid}`).emit("server:channel:notify", pinged?.has(uid) ? { ...payload, mentioned: true } : payload);
           }
-          void pushChannelMessageToIos({ serverId, channelId, viewerIds, payload });
+          void pushChannelMessageToIos({ serverId, channelId, viewerIds, payload, pingedIds: pinged });
         } catch (err) {
           console.warn("[ServerChannel] notify fan-out failed:", err?.message || err);
         }
       }
 
-      const { data: existing, error: rErr } = await supabase
-        .from("server_channel_reads")
-        .select("user_id, unread_count")
-        .eq("channel_id", channelId)
-        .in("user_id", viewerIds);
-      if (rErr) throw rErr;
-
-      const byUser = new Map((existing || []).map((r) => [r.user_id, r]));
-      await Promise.all(
-        viewerIds.map(async (uid) => {
-          const row = byUser.get(uid);
-          if (row) {
-            await supabase
-              .from("server_channel_reads")
-              .update({ unread_count: Math.max(0, Number(row.unread_count) || 0) + 1 })
-              .eq("user_id", uid)
-              .eq("channel_id", channelId);
-          } else {
-            await supabase.from("server_channel_reads").insert({
-              user_id: uid,
-              channel_id: channelId,
-              unread_count: 1,
-              last_read_at: null,
-            });
-          }
-        })
-      );
+      await bumpChannelUnreadCounts(supabase, channelId, viewerIds);
     } catch (err) {
       console.warn("[ServerChannel] unread bump failed:", err?.message || err);
     }
   })();
+}
+
+// bump_channel_unread (supabase/migrations/20261109_channel_unread_bump.sql) does the
+// whole bump in one atomic statement. Until that migration runs, the RPC answers
+// "function not found" once and the per-row path below is used from then on.
+let unreadRpcMissing = false;
+
+function isMissingFunctionError(error, name) {
+  if (!error) return false;
+  const code = String(error.code || "");
+  const text = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`;
+  if (code === "PGRST202" || code === "42883") return true;
+  return /could not find the function|function .* does not exist/i.test(text) && text.includes(name);
+}
+
+/** +1 unread_count of `channelId` for every user in userIds (row created when missing). */
+async function bumpChannelUnreadCounts(db, channelId, userIds) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  if (!channelId || !ids.length) return;
+  if (!unreadRpcMissing) {
+    const { error } = await db.rpc("bump_channel_unread", { p_channel_id: channelId, p_user_ids: ids });
+    if (!error) return;
+    if (!isMissingFunctionError(error, "bump_channel_unread")) throw error;
+    unreadRpcMissing = true;
+  }
+  await bumpChannelUnreadPerRow(db, channelId, ids);
+}
+
+/**
+ * Fallback without the RPC. New rows are inserted with unread_count 1 and the column
+ * default for last_read_at (it is NOT NULL; sending null failed every insert). An
+ * existing row is bumped by compare-and-set on its unread_count, re-read and retried
+ * when a concurrent bump won, so increments are not lost the way read-then-write lost them.
+ */
+async function bumpChannelUnreadPerRow(db, channelId, ids) {
+  const table = "server_channel_reads";
+  const { data: existing, error: rErr } = await db
+    .from(table)
+    .select("user_id, unread_count")
+    .eq("channel_id", channelId)
+    .in("user_id", ids);
+  if (rErr) throw rErr;
+  const byUser = new Map((existing || []).map((r) => [r.user_id, r]));
+
+  const readCount = async (uid) => {
+    const { data, error } = await db
+      .from(table)
+      .select("unread_count")
+      .eq("user_id", uid)
+      .eq("channel_id", channelId)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? data.unread_count : undefined;
+  };
+
+  const bumpOne = async (uid) => {
+    let current = byUser.has(uid) ? byUser.get(uid).unread_count : undefined;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      if (current === undefined) {
+        const { data, error } = await db
+          .from(table)
+          .upsert(
+            { user_id: uid, channel_id: channelId, unread_count: 1 },
+            { onConflict: "user_id,channel_id", ignoreDuplicates: true }
+          )
+          .select("user_id");
+        if (error) throw error;
+        if (data && data.length) return;
+        current = await readCount(uid); // created concurrently: bump it instead
+        continue;
+      }
+      const { data, error } = await db
+        .from(table)
+        .update({ unread_count: Math.max(0, Number(current) || 0) + 1 })
+        .eq("user_id", uid)
+        .eq("channel_id", channelId)
+        .eq("unread_count", current)
+        .select("user_id");
+      if (error) throw error;
+      if (data && data.length) return;
+      current = await readCount(uid);
+    }
+  };
+
+  await Promise.all(
+    ids.map((uid) =>
+      bumpOne(uid).catch((err) => console.warn("[ServerChannel] unread bump row failed:", err?.message || err))
+    )
+  );
+}
+
+function __resetUnreadRpcState() {
+  unreadRpcMissing = false;
+}
+
+/**
+ * mention:received + mention push for members pinged through a role, @everyone
+ * or @here (lib/serverMentions.js already kept only notifiable members). A
+ * member also named directly (@username) is left to the direct mention path.
+ * Never throws.
+ */
+async function notifyMassPing({ io, channel, channelId, message, fromName, fromId, text, userIds, directNames = [] }) {
+  try {
+    let targets = userIds;
+    if (directNames.length) {
+      const { data: named } = await supabase.from("users").select("id, username").in("id", userIds);
+      const direct = new Set(
+        (named || []).filter((u) => directNames.includes(String(u.username || "").toLowerCase())).map((u) => u.id)
+      );
+      targets = userIds.filter((uid) => !direct.has(uid));
+    }
+    if (!targets.length) return;
+    const { data: serverMeta } = await supabase.from("servers").select("name").eq("id", channel.server_id).maybeSingle();
+    const payload = {
+      serverId: channel.server_id,
+      channelId,
+      channelName: channel.name || null,
+      serverName: serverMeta?.name || null,
+      messageId: message.id,
+      from: fromName,
+      fromId,
+      text,
+    };
+    for (const uid of targets) io.to(`user:${uid}`).emit("mention:received", payload);
+    const { sendMentionPush } = require("../lib/webPush");
+    await sendMentionPush(targets, {
+      i18n: { title: { key: "push.mentioned", vars: { from: fromName } } },
+      body: String(text || "").slice(0, 140),
+      text: String(text || "").slice(0, 140),
+      from: fromName,
+      fromId,
+      serverId: channel.server_id,
+      channelId,
+      channelName: channel.name || null,
+      serverName: serverMeta?.name || null,
+      messageId: message.id,
+      deepLink: `/?server=${encodeURIComponent(channel.server_id)}&channel=${encodeURIComponent(channelId)}`,
+    });
+  } catch (err) {
+    console.warn("[ServerChannel] role mention notify failed:", err?.message || err);
+  }
 }
 
 function mapPinnedServerMessage(row, senderProfile) {
@@ -1019,19 +1134,32 @@ function registerServerChannelHandlers(io, socket) {
           }
         }
 
-        // Gate @everyone / @here without MENTION_EVERYONE
-        if (
-          trimmedContent &&
-          /(^|\s)@(everyone|here)\b/i.test(trimmedContent) &&
-          !hasPermission(channelBits, Permissions.MENTION_EVERYONE)
-        ) {
-          socket.emit("server:channel:message:error", {
-            channelId,
-            tempId: tempId || null,
-            message: "You cannot mention @everyone here.",
-            code: "MISSING_PERMISSION",
-          });
-          return;
+        // Messaging phase 5: @everyone / @here only for the owner and members who may
+        // manage roles (lib/serverMentions.js), at most once a minute per channel.
+        const mentionParts = trimmedContent ? serverMentions.parseServerMentions(trimmedContent) : null;
+        const massMention = Boolean(mentionParts && (mentionParts.everyone || mentionParts.here));
+        if (massMention) {
+          if (!serverMentions.canPingEveryone({ bits: channelBits, isOwner: Boolean(resolved?.isOwner) })) {
+            socket.emit("server:channel:message:error", {
+              channelId,
+              tempId: tempId || null,
+              message: "You cannot mention @everyone here.",
+              code: "MISSING_PERMISSION",
+            });
+            return;
+          }
+          const limit = massPingLimiter.check(channelId, myId);
+          if (!limit.ok) {
+            const retryAfterSeconds = Math.max(1, Math.ceil(limit.retryAfterMs / 1000));
+            socket.emit("server:channel:message:error", {
+              channelId,
+              tempId: tempId || null,
+              ...apiText("message", "You can mention @everyone or @here again in {seconds}s.", { seconds: retryAfterSeconds }),
+              code: "MENTION_RATE_LIMITED",
+              retryAfterSeconds,
+            });
+            return;
+          }
         }
 
         // Slash commands — casino stays delegated to gameHandlers; app commands use the registry.
@@ -1149,6 +1277,7 @@ function registerServerChannelHandlers(io, socket) {
           }
         }
         markSlowmodeSend(channelId, myId);
+        if (massMention) massPingLimiter.mark(channelId, myId);
         void recordFirstMessage(myId);
 
         // Anti-bot monitor (Faz 0): shadow evaluation only; earning below is unchanged.
@@ -1221,11 +1350,52 @@ function registerServerChannelHandlers(io, socket) {
           payload: { serverId: channel.server_id, channelId, message },
         });
 
+        // Messaging phase 5: who a role / @everyone / @here ping reaches (server-side only).
+        let massPing = { userIds: [], roles: [] };
+        if (mentionParts && (mentionParts.roleIds.length || massMention)) {
+          try {
+            massPing = await serverMentions.resolveMassPingTargets(supabase, {
+              serverId: channel.server_id,
+              channelId,
+              senderId: myId,
+              resolved: { bits: channelBits, isOwner: Boolean(resolved?.isOwner) },
+              text: trimmedContent,
+              presence: require("../runtime/sharedState").presence,
+              canView: async (uid) => {
+                const r = await resolveChannelPermissions(supabase, channel.server_id, uid, channelId);
+                return r.isMember && hasPermission(r.bits, Permissions.VIEW_CHANNEL);
+              },
+            });
+          } catch (pingErr) {
+            console.warn("[ServerChannel] role mention lookup failed:", pingErr?.message || pingErr);
+          }
+        }
+        const notifyText = trimmedContent && massPing.roles?.length
+          ? serverMentions.roleTokensToText(trimmedContent, massPing.roles)
+          : trimmedContent;
+        const pingedIds = new Set(massPing.userIds || []);
+
         bumpChannelUnreadForMembers(channel.server_id, channelId, myId, {
           io,
           channelName: channel.name || null,
           message,
+          displayText: notifyText,
+          pingedIds,
         });
+
+        if (pingedIds.size) {
+          void notifyMassPing({
+            io,
+            channel,
+            channelId,
+            message,
+            fromName: message.sender?.username || socket.user?.username || "Someone",
+            fromId: myId,
+            text: notifyText,
+            userIds: [...pingedIds],
+            directNames: [...new Set([...trimmedContent.matchAll(/@(\w{1,32})/g)].map((m) => m[1].toLowerCase()))],
+          });
+        }
 
         // Direct @mention alerts (works even if the target is not in the channel room)
         if (trimmedContent) {
@@ -1276,7 +1446,7 @@ function registerServerChannelHandlers(io, socket) {
                   messageId: message.id,
                   from: fromName,
                   fromId: socket.user?.id || null,
-                  text: trimmedContent,
+                  text: notifyText,
                 });
               }
               if (mentionTargets.length > 0) {
@@ -1305,8 +1475,8 @@ function registerServerChannelHandlers(io, socket) {
                     const { sendMentionPush } = require("../lib/webPush");
                     void sendMentionPush(pushTargets, {
                       i18n: { title: { key: "push.mentioned", vars: { from: fromName } } },
-                      body: trimmedContent.slice(0, 140),
-                      text: trimmedContent.slice(0, 140),
+                      body: notifyText.slice(0, 140),
+                      text: notifyText.slice(0, 140),
                       from: fromName,
                       serverId: channel.server_id,
                       channelId,
@@ -1339,8 +1509,12 @@ function registerServerChannelHandlers(io, socket) {
 
 module.exports = {
   registerServerChannelHandlers,
+  notifyMassPing,
+  __massPingLimiter: massPingLimiter,
   buildChannelNotifyPayload,
   bumpChannelUnreadForMembers,
+  bumpChannelUnreadCounts,
+  __resetUnreadRpcState,
   assertTextChannelAccess,
   pushChannelMessageToIos,
 };

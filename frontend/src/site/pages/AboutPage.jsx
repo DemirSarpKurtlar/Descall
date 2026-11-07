@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import { useT, useLocale } from "../../context/localeContextInstance";
 import { SITE_OPERATOR } from "../siteIdentity";
-import JsonLd, { buildEntityGraphLd, buildFaqLd } from "../JsonLd";
-import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts";
+import JsonLd, { buildEntityGraphLd } from "../JsonLd";
 import { useMarketingHref } from "../useMarketingHref";
 import { isPrefixedLocale } from "../siteLocales.js";
 
@@ -12,12 +11,8 @@ export default function AboutPage() {
   const href = useMarketingHref();
   return (
     <>
-      <JsonLd
-        data={[
-          buildEntityGraphLd(),
-          buildFaqLd(locale === "tr" ? OWNERSHIP_FAQ_TR : OWNERSHIP_FAQ_EN),
-        ]}
-      />
+      {/* No FAQPage here: the ownership questions are shown (and marked up) on /who-owns-descall. */}
+      <JsonLd data={[buildEntityGraphLd()]} />
       <section className="mkt-section mkt-prose" style={{ marginTop: 12 }}>
         <p role="status">
           {t("Beta")}. {t(SITE_OPERATOR.statusNote)}

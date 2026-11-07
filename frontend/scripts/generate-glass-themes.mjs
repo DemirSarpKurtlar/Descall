@@ -100,7 +100,7 @@ export function themeBlock(t, scope = "html.glass-ui") {
   --g-base-0: ${hex(mix(s1, brand, 0.06))};
   --g-base-1: ${hex(mix(s0, s1, 0.6))};
   --g-base-2: ${hex(mix(s0, [0, 0, 0], 0.1))};
-  --g-t1: rgba(${rgb(mix(text, [255, 255, 255], 0.5))},0.96); --g-t2: rgba(${rgb(text)},0.72); --g-t3: rgba(${rgb(text)},0.46); --g-t4: rgba(${rgb(text)},0.28);
+  --g-t1: rgba(${rgb(mix(text, [255, 255, 255], 0.5))},0.96); --g-t2: rgba(${rgb(text)},0.72); --g-t3: rgba(${rgb(text)},0.54); --g-t4: rgba(${rgb(text)},0.28);
   --g-tint-base: rgba(${rgb(s1)},0.22);
   --g-heavy-base: rgba(${rgb(mix(s1, [0, 0, 0], 0.15))},0.62);
   --g-solid: ${hex(mix(s1, [0, 0, 0], 0.05))}; --g-solid-heavy: ${hex(s1)};

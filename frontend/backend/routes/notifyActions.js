@@ -133,6 +133,11 @@ function createNotifyActionsRouter(deps = {}) {
         messageId: req.query?.messageId ? String(req.query.messageId) : null,
       });
       res.set("Cache-Control", "no-store");
+      // Messaging phase 5: "Mesaj önizlemesi" off keeps message text out of the expanded notification too.
+      const shown = await require("../lib/pushPreview").previewEnabled(req.notifyUser.id).catch(() => true);
+      if (!shown && Array.isArray(out?.messages)) {
+        return res.json({ ok: true, ...out, previewHidden: true, messages: out.messages.map((m) => ({ ...m, text: "" })) });
+      }
       return res.json({ ok: true, ...out });
     } catch (err) {
       return fail(res, err);

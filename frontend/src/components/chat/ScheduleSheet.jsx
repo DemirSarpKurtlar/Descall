@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { AlertCircle, Clock, Loader2, Pencil, Trash2 } from "../ui/Icon.jsx";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { AlertCircle, Clock, FileText, Loader2, Paperclip, Pencil, Trash2, X } from "../ui/Icon.jsx";
 import GroupSheet from "../groups/GroupSheet";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate } from "../../i18n/format";
@@ -9,9 +9,28 @@ import {
   applyScheduled, fromLocalInput, getScheduledSnapshot, pendingFor, schedulePresets, subscribeScheduled,
   toLocalInput, validSendAt, SCHEDULE_SENT_EVENT,
 } from "../../lib/scheduledMessages";
+import { decodeRoleMentions, encodeRoleMentions, roleTokensToText } from "../../lib/roleMentions";
+import { ATTACH_ACCEPT, attachmentKind, attachmentProblem, formatBytes } from "../../lib/scheduledAttachment";
+import { getToken } from "../../lib/storage";
+import { API_BASE_URL } from "../../config/api";
 import "../../styles/messaging-sheets.css";
 
 const api = (path, opts) => import("../../api/authedHttp").then((m) => m.authedRequest(path, opts));
+
+/** Same upload as the composer (private chat attachment, /api/media/upload limits). */
+async function uploadAttachment(file) {
+  const form = new FormData();
+  form.append("purpose", "message");
+  form.append("file", file);
+  const res = await fetch(`${API_BASE_URL}/api/media/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data?.url) throw Object.assign(new Error("upload_failed"), { upload: true });
+  return data;
+}
 
 const ERRORS = {
   too_soon: "msg4.schedule.errSoon",
@@ -21,6 +40,10 @@ const ERRORS = {
   already_sent: "msg4.schedule.errSent",
   not_ready: "msg4.schedule.errNotReady",
   no_commands: "msg4.schedule.errCommand",
+  bad_attachment: "msg5.schedule.errAttachment",
+  attachment_too_large: "msg5.schedule.errTooLarge",
+  attach_not_ready: "msg5.schedule.errAttachNotReady",
+  upload_failed: "msg5.schedule.errUpload",
 };
 
 /**
@@ -28,6 +51,11 @@ const ERRORS = {
  * composer's text), pick a time (presets or a date), Zamanla. "list": this
  * chat's pending messages with edit and cancel. The server sends them, also
  * when Descall is closed.
+ *
+ * Messaging phase 5: one attachment (image or file). It is uploaded when you
+ * tap Zamanla (or was already uploaded in the composer) and the server sends
+ * it with the message; cancelling deletes it. Role mentions picked in the
+ * composer go out as role mentions.
  */
 export default function ScheduleSheet({ open, detail, onClose }) {
   const { t, locale } = useLocale();
@@ -37,6 +65,10 @@ export default function ScheduleSheet({ open, detail, onClose }) {
   const [when, setWhen] = useState(() => schedulePresets()[0].at);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // { url?, file?, name, size, mediaType, previewUrl? } (url = already uploaded)
+  const [attachment, setAttachment] = useState(null);
+  const fileRef = useRef(null);
+  const picksRef = useRef(new Map());
   const all = useSyncExternalStore(subscribeScheduled, getScheduledSnapshot, getScheduledSnapshot);
   const target = detail?.target;
   const pending = useMemo(() => (target ? pendingFor(all, target.convType, target.convId) : []), [all, target]);
@@ -47,32 +79,71 @@ export default function ScheduleSheet({ open, detail, onClose }) {
     setMode(detail?.mode || "new");
     setEditing(null);
     setText(detail?.text || "");
+    setAttachment(detail?.attachment || null);
+    picksRef.current = new Map(Array.isArray(detail?.rolePicks) ? detail.rolePicks : []);
     setWhen(schedulePresets()[0].at);
     setError("");
     setBusy(false);
   }, [open, detail]);
 
   const fmt = (d) => formatDate(d, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  const failText = (err) => t(ERRORS[err?.message] || "msg4.schedule.errFailed");
+  const failText = (err) => {
+    // 503 reaches here as a "slow connection" error: with a file it means attachments are not on yet.
+    if (attachment && Number(err?.status) === 503) return t("msg5.schedule.errAttachNotReady");
+    return t(ERRORS[err?.message] || "msg4.schedule.errFailed");
+  };
+
+  const pickFile = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const problem = attachmentProblem(file);
+    if (problem) { setError(t(ERRORS[problem])); hapticError(); return; }
+    setError("");
+    hapticSelection();
+    setAttachment({
+      file,
+      name: file.name,
+      size: file.size,
+      mediaType: attachmentKind(file),
+      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    });
+  };
+  const dropAttachment = () => {
+    if (attachment?.file && attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
+    setAttachment(null);
+  };
 
   const submit = async () => {
-    const body = text.trim();
-    if (!body || busy) return;
+    const typed = text.trim();
+    const hasFile = Boolean(attachment) && !editing;
+    if ((!typed && !hasFile && !editing?.attachment) || busy) return;
     if (!validSendAt(when)) { setError(t("msg4.schedule.errSoon")); return; }
+    // Roles picked in the composer (or kept while editing) go out as role mentions.
+    const body = target?.convType === "channel" ? encodeRoleMentions(typed, picksRef.current) : typed;
     setBusy(true);
     setError("");
     try {
+      let attach = null;
+      if (hasFile) {
+        const uploaded = attachment.url ? { url: attachment.url } : await uploadAttachment(attachment.file);
+        // A retry after a refused schedule reuses this upload instead of sending the file again.
+        if (!attachment.url) setAttachment((cur) => (cur ? { ...cur, url: uploaded.url } : cur));
+        attach = { url: uploaded.url };
+      }
       const res = editing
         ? await api(`/api/scheduled-messages/${encodeURIComponent(editing.id)}`, { method: "PATCH", body: { content: body, sendAt: when.toISOString() } })
-        : await api("/api/scheduled-messages", { method: "POST", body: { convType: target.convType, convId: target.convId, content: body, sendAt: when.toISOString() } });
+        : await api("/api/scheduled-messages", { method: "POST", body: { convType: target.convType, convId: target.convId, content: body, sendAt: when.toISOString(), ...(attach ? { attachment: attach } : {}) } });
       if (res?.item) applyScheduled(res.item);
       hapticSuccess();
-      if (!editing && detail?.fromComposer) window.dispatchEvent(new CustomEvent(SCHEDULE_SENT_EVENT, { detail: { draftKey: detail.draftKey } }));
+      if (!editing && detail?.fromComposer) window.dispatchEvent(new CustomEvent(SCHEDULE_SENT_EVENT, { detail: { draftKey: detail.draftKey, attachment: Boolean(attach && detail?.attachment) } }));
+      if (hasFile && attachment.file && attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
+      setAttachment(null);
       setEditing(null);
       setMode("list");
     } catch (err) {
       hapticError();
-      setError(failText(err));
+      setError(err?.upload ? t("msg5.schedule.errUpload") : failText(err));
     } finally {
       setBusy(false);
     }
@@ -91,9 +162,24 @@ export default function ScheduleSheet({ open, detail, onClose }) {
 
   const startEdit = (item) => {
     setEditing(item);
-    setText(item.content);
+    const decoded = decodeRoleMentions(item.content);
+    for (const [name, id] of decoded.picked) picksRef.current.set(name, id);
+    setText(decoded.text);
+    setAttachment(null);
     setWhen(new Date(item.sendAt));
     setMode("new");
+  };
+
+  const onPresetKeys = (e) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!step || !presets.length) return;
+    const cur = Number(e.target?.dataset?.preset);
+    if (!Number.isFinite(cur)) return;
+    e.preventDefault();
+    const next = (cur + step + presets.length) % presets.length;
+    hapticSelection();
+    setWhen(presets[next].at);
+    e.currentTarget.querySelector(`[data-preset="${next}"]`)?.focus();
   };
 
   const editor = (
@@ -111,17 +197,57 @@ export default function ScheduleSheet({ open, detail, onClose }) {
           />
         </label>
       </div>
+      {editing?.attachment ? (
+        <div className="gs-group">
+          <div className="gs-row ms-attach-row" data-testid="schedule-attachment">
+            <span className="ms-attach-ico" aria-hidden="true">{editing.attachment.mediaType === "image" ? <Paperclip size={17} /> : <FileText size={17} />}</span>
+            <span className="gs-row-text">
+              <span className="gs-row-title">{editing.attachment.originalName || t("msg5.schedule.attachment")}</span>
+              <span className="gs-row-sub">{t("msg5.schedule.attachmentKept")}</span>
+            </span>
+          </div>
+        </div>
+      ) : attachment ? (
+        <div className="gs-group">
+          <div className="gs-row ms-attach-row" data-testid="schedule-attachment">
+            {attachment.previewUrl ? (
+              <img className="ms-attach-thumb" src={attachment.previewUrl} alt="" />
+            ) : (
+              <span className="ms-attach-ico" aria-hidden="true"><FileText size={17} /></span>
+            )}
+            <span className="gs-row-text">
+              <span className="gs-row-title">{attachment.name}</span>
+              <span className="gs-row-sub">{formatBytes(attachment.size, locale)}</span>
+            </span>
+            <button type="button" className="gs-pill" onClick={dropAttachment} aria-label={t("msg5.schedule.removeAttachment")} title={t("msg5.schedule.removeAttachment")} data-testid="schedule-attachment-remove">
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+      ) : !editing ? (
+        <div className="ms-attach-add">
+          <input ref={fileRef} type="file" accept={ATTACH_ACCEPT} hidden onChange={pickFile} data-testid="schedule-file" />
+          <button type="button" className="gs-pill ms-chip" onClick={() => fileRef.current?.click()} data-testid="schedule-attach">
+            <span className="ms-attach-add-label"><Paperclip size={15} aria-hidden="true" />{t("msg5.schedule.addAttachment")}</span>
+          </button>
+          <small>{t("msg5.schedule.attachmentHint")}</small>
+        </div>
+      ) : null}
       <section className="gs-section">
         <h3 className="gs-section-title"><span>{t("msg4.schedule.when")}</span></h3>
-        <div className="ms-chips" role="radiogroup" aria-label={t("msg4.schedule.when")}>
-          {presets.map((p) => {
+        <div className="ms-chips" role="radiogroup" aria-label={t("msg4.schedule.when")} onKeyDown={onPresetKeys}>
+          {presets.map((p, i) => {
             const on = Math.abs(p.at.getTime() - when.getTime()) < 60000;
+            // Radio group: one Tab stop (the checked chip, else the first), arrows move and select.
+            const tabStop = on || (i === 0 && !presets.some((q) => Math.abs(q.at.getTime() - when.getTime()) < 60000));
             return (
               <button
                 key={p.id}
                 type="button"
                 role="radio"
                 aria-checked={on}
+                tabIndex={tabStop ? 0 : -1}
+                data-preset={i}
                 className={`gs-pill ms-chip${on ? " is-on" : ""}`}
                 data-testid={`schedule-preset-${p.id}`}
                 onClick={() => { hapticSelection(); setWhen(p.at); }}
@@ -149,7 +275,7 @@ export default function ScheduleSheet({ open, detail, onClose }) {
         <p className="gs-footnote"><span>{t("msg4.schedule.foot", { time: fmt(when) })}</span></p>
       </section>
       <div className="ms-sheet-foot">
-        <button type="button" className="gs-primary" disabled={!text.trim() || busy} onClick={submit} data-testid="schedule-submit">
+        <button type="button" className="gs-primary" disabled={(!text.trim() && !(attachment && !editing) && !editing?.attachment) || busy} onClick={submit} data-testid="schedule-submit">
           {busy ? <Loader2 size={18} className="gs-spin" /> : <Clock size={18} />}
           {editing ? t("msg4.schedule.save") : t("msg4.schedule.submit")}
         </button>
@@ -163,27 +289,34 @@ export default function ScheduleSheet({ open, detail, onClose }) {
         <div className="gs-empty">{t("msg4.schedule.empty")}</div>
       ) : (
         <div className="gs-group">
-          {pending.map((item) => (
+          {pending.map((item) => {
+            // The icon buttons name their message: "Edit scheduled message: Fri 21:00, Hello".
+            const what = [fmt(new Date(item.sendAt)), item.content ? displayText(roleTokensToText(item.content)).slice(0, 60) : item.attachment?.originalName || ""].filter(Boolean).join(", ");
+            return (
             <div key={item.id} className="gs-row ms-sched-item" data-testid="schedule-item">
               <span className="gs-row-text">
                 <span className="gs-row-title">{fmt(new Date(item.sendAt))}</span>
-                <span className="gs-row-sub">{displayText(item.content)}</span>
+                {item.content ? <span className="gs-row-sub">{displayText(roleTokensToText(item.content))}</span> : null}
+                {item.attachment ? (
+                  <span className="gs-row-sub ms-sched-file"><Paperclip size={13} aria-hidden="true" />{item.attachment.originalName || t("msg5.schedule.attachment")}</span>
+                ) : null}
               </span>
               <span className="ms-sched-actions">
-                <button type="button" className="gs-pill" onClick={() => startEdit(item)} aria-label={t("msg4.schedule.edit")} title={t("msg4.schedule.edit")} data-testid="schedule-edit">
+                <button type="button" className="gs-pill" onClick={() => startEdit(item)} aria-label={t("a11y.schedule.editItem", { item: what })} title={t("msg4.schedule.edit")} data-testid="schedule-edit">
                   <Pencil size={15} />
                 </button>
-                <button type="button" className="gs-pill is-danger" onClick={() => cancelItem(item)} aria-label={t("msg4.schedule.cancel")} title={t("msg4.schedule.cancel")} data-testid="schedule-cancel">
+                <button type="button" className="gs-pill is-danger" onClick={() => cancelItem(item)} aria-label={t("a11y.schedule.cancelItem", { item: what })} title={t("msg4.schedule.cancel")} data-testid="schedule-cancel">
                   <Trash2 size={15} />
                 </button>
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       <p className="gs-footnote"><span>{t("msg4.schedule.listFoot")}</span></p>
       <div className="ms-sheet-foot">
-        <button type="button" className="gs-primary" onClick={() => { setEditing(null); setText(""); setMode("new"); }} data-testid="schedule-new">
+        <button type="button" className="gs-primary" onClick={() => { setEditing(null); setText(""); setAttachment(null); setMode("new"); }} data-testid="schedule-new">
           <Clock size={18} />
           {t("msg4.schedule.new")}
         </button>

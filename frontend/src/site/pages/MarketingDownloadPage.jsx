@@ -233,16 +233,21 @@ export default function MarketingDownloadPage({ onOpenRegister, onSignIn }) {
           </li>
         </ul>
         <div className="mkt-cta-row" style={{ marginTop: 28 }}>
-          <a
-            className="mkt-btn mkt-btn-primary"
-            href={downloadUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={trackDownload}
-          >
-            <IconDownload size={18} />
-            {selectedPlatform === "android" ? t("Download APK") : t("Download for Windows")}
-          </a>
+          {/* UI audit #108 / #27: the platform card holds the one primary download
+              button; this repeat is secondary, and an iPhone / iPad visitor never
+              gets a Windows download here. */}
+          {appleMobile ? null : (
+            <a
+              className="mkt-btn mkt-btn-soft"
+              href={downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={trackDownload}
+            >
+              <IconDownload size={18} />
+              {selectedPlatform === "android" ? t("Download APK") : t("Download for Windows")}
+            </a>
+          )}
           <Link to={href("/features")} className="mkt-btn mkt-btn-soft">
             {t("See all features")}
           </Link>

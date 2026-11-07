@@ -3,7 +3,8 @@
  * EN copy). Only claim what Descall ships today: DMs, groups, servers with
  * roles/channels/templates, voice/video calls, screen share with quality
  * presets, noise suppression, Windows/Android/web, Turkish UI,
- * free core features with optional DesCoin cosmetics. No E2E claim.
+ * free core features; optional Descall+ / Ultra memberships (extra desktop and
+ * productivity tools, no published prices) and optional DesCoin cosmetics. No E2E claim.
  *
  * Shape: { path, title, description, kicker, h1, lead, updated?, sections:
  * [{ h, p: string[], list?: string[] }], faq: [{q,a}], related: [{to,label}] }
@@ -13,11 +14,28 @@ import { TR_LANDING_META } from "./trMeta.js";
 
 export const TR_LANDING_UPDATED = "2026-10-17";
 
+/**
+ * "Discord açıldı mı?" is evergreen: no month in the title. We do not test access from
+ * Turkey ourselves and the owner has not confirmed the status, so the page only reports
+ * what dated public sources said. Every month: read the latest reliable reports (BTK
+ * notice, ministers' statements, national news), then
+ *   - set CHECKED to the month of the latest public report the page cites,
+ *   - add or update the dated entry in the "Zaman çizelgesi" list (EXTRA sections below),
+ *   - move DISCORD_TR_STATUS_CHECKED to the day you reviewed the sources (Article
+ *     dateModified, the visible page date and the sitemap lastmod follow).
+ * First published 2026-10-17.
+ */
+export const DISCORD_TR_STATUS_PUBLISHED = "2026-10-17";
+export const DISCORD_TR_STATUS_CHECKED = "2026-11-06";
+const REVIEWED = "6 Kasım 2026";
+/** Month of the latest public report cited on the page (not a live access test). */
+const CHECKED = "Ekim 2026";
+
 const RELATED_CORE = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
   { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri karşılaştırması" },
   { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı?" },
-  { to: "/tr/turk-discord", label: "Türk Discord’u" },
+  { to: "/tr/turk-discord", label: "Türkiye’de geliştirilen sohbet uygulaması" },
   { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
   { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
   { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },
@@ -28,6 +46,11 @@ const RELATED_CORE = [
 
 function related(self) {
   return RELATED_CORE.filter((l) => l.to !== self);
+}
+
+/** Short label of a Turkish landing for breadcrumbs and hub lists. */
+export function trLandingLabel(page) {
+  return page.short || page.h1.split(":")[0].trim();
 }
 
 export const TR_LANDINGS = {
@@ -41,7 +64,7 @@ export const TR_LANDINGS = {
       {
         h: "Neden bu kadar çok kişi Discord alternatifi arıyor?",
         p: [
-          "Türkiye’de Discord’a erişim, 9 Ekim 2024’te verilen mahkeme kararıyla engellendi ve 2026 Ekim itibarıyla engel sürüyor. Yıllarca her akşam aynı ses kanalında buluşan arkadaş grupları, okul toplulukları ve oyun klanları bir gecede ortak buluşma yerini kaybetti. Bir kısmı geçici çözümlerle idare etmeye çalıştı, bir kısmı WhatsApp gruplarına dağıldı, birçoğu da düzenli bir alternatif aramaya başladı.",
+          `Türkiye’de Discord’a erişim, 9 Ekim 2024’te verilen mahkeme kararıyla engellendi; ${CHECKED} tarihli haberlere göre engel kaldırılmamıştı (kaynaklar ve tarihler için “Discord açıldı mı?” sayfasına bak). Yıllarca her akşam aynı ses kanalında buluşan arkadaş grupları, okul toplulukları ve oyun klanları bir gecede ortak buluşma yerini kaybetti. Bir kısmı geçici çözümlerle idare etmeye çalıştı, bir kısmı WhatsApp gruplarına dağıldı, birçoğu da düzenli bir alternatif aramaya başladı.`,
           "Engelden bağımsız olarak da Discord’dan uzaklaşmak isteyenler var. Bazıları için en temel özelliklerin etrafındaki abonelik baskısı yorucu; bazıları için yüzlerce botla dolu dev sunucular küçük bir arkadaş grubu için fazla karmaşık. Aranan şey çoğu zaman aynı: herkesin kolayca katılabildiği, sesin net olduğu, düzenli ama sade bir yer.",
           "Descall tam bu ihtiyaç için yapıldı. Discord’u birebir kopyalamaya çalışmıyor; arkadaş gruplarının ve küçük toplulukların gerçekten her gün kullandığı parçaları ücretsiz ve tek bir hesapta topluyor.",
         ],
@@ -68,7 +91,7 @@ export const TR_LANDINGS = {
         h: "Discord’dan geçince neler tanıdık gelir, neler farklıdır?",
         p: [
           "Discord kullandıysan Descall’da yolunu kaybetmezsin. Sol tarafta sunucuların, sunucu içinde kategoriler ve kanallar, sağda üyeler; ses kanalına tıklayınca bağlanırsın, ekran paylaşımı butonuyla yayına geçersin. Rol hiyerarşisi ve kanal izinleri de aynı mantıkla çalışır: bir kanalı yalnızca moderatörlere açabilir, duyuru kanalında yazmayı yetkililerle sınırlayabilirsin.",
-          "Farklı olan taraf sadelik ve fiyatlandırma. Descall’da sohbet, sunucu, ses, görüntü ve ekran paylaşımı abonelik arkasında değil. Uygulamada satılan tek şey isteğe bağlı kozmetiklerdir (DesCoin ile); bunlar iletişimi hiçbir şekilde kısıtlamaz.",
+          "Farklı olan taraf sadelik ve fiyatlandırma. Descall’da sohbet, sunucu, ses, görüntü ve ekran paylaşımı abonelik arkasında değil. Descall+ ve Descall Ultra adında iki isteğe bağlı üyelik var; çoğu masaüstü uygulamasında çalışan mini mod, genel kısayollar ve ses araçları gibi ek özellikler ekliyorlar ama konuşmak, ekran paylaşmak ya da sunucu kurmak için gerekmiyorlar. Mağazadaki kozmetikler de isteğe bağlı ve uygulamada kazandığın DesCoin ile alınıyor.",
           "Bir de dürüst olalım: Discord’un devasa bot pazarı, on binlerce kişilik herkese açık sunucuları ve yıllar içinde biriken entegrasyonları Descall’da yok. Eğer topluluğun tamamen botlara dayanıyorsa geçiş daha fazla emek ister. Ama çoğu arkadaş grubu ve klan için asıl ihtiyaç ses, sohbet, roller ve düzenli kanallardır; bunlar Descall’da hazır.",
         ],
       },
@@ -106,7 +129,7 @@ export const TR_LANDINGS = {
     faq: [
       {
         q: "Descall ücretsiz mi?",
-        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Uygulamadaki tek ücretli şey isteğe bağlı kozmetiklerdir (DesCoin); iletişimi kısıtlamaz.",
+        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Descall+ ve Descall Ultra üyelikleri isteğe bağlı ek araçlar sunar, kozmetikler de DesCoin ile alınır; ikisi de iletişimi kısıtlamaz.",
       },
       {
         q: "Descall Türkiye’de çalışıyor mu?",
@@ -130,16 +153,18 @@ export const TR_LANDINGS = {
 
   "/tr/turk-discord": {
     path: "/tr/turk-discord",
-    kicker: "Yerli · Türkçe · Ücretsiz",
-    h1: "Türk Discord’u: Türkiye’de geliştirilen Descall",
+    kicker: "Türkiye’de geliştirildi · Türkçe · Ücretsiz",
+    h1: "Descall: Türkiye’de geliştirilen sesli sohbet ve topluluk uygulaması",
+    // Breadcrumb / hub-list label (the H1 starts with the brand name).
+    short: "Türkiye’de geliştirilen sohbet uygulaması",
     lead:
-      "“Türk Discord’u var mı?” sorusunun bir cevabı Descall. Türkiye’de, bağımsız bir geliştirici olan Demir Sarp Kurtlar tarafından geliştirilen Descall; sunucular, roller, sesli ve görüntülü sohbet, ekran paylaşımı ve oyun arkadaşı bulma özelliklerini Türkçe bir arayüzde ve ücretsiz olarak sunar.",
+      "Türkiye’de geliştirilen, Türkçe bir sohbet uygulaması mı arıyorsun? Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor. Sunucular, roller, sesli ve görüntülü sohbet ve ekran paylaşımı Türkçe bir arayüzde ve ücretsiz olarak sunuluyor.",
     sections: [
       {
-        h: "“Türk Discord’u” ne demek?",
+        h: "Türkiye’de geliştirilen bir sohbet uygulamasından ne beklenir?",
         p: [
-          "Discord’a erişim Ekim 2024’te Türkiye’de engellendikten sonra arama motorlarında “Türk Discord’u”, “yerli Discord” ve “Discord’un Türk versiyonu” aramaları hızla arttı. Bu aramaların arkasında genelde üç beklenti var: Türkiye’den sorunsuz çalışması, Türkçe olması ve Discord’a alışkın birinin hemen anlayabileceği bir yapıda olması.",
-          "Descall bu üç beklentiye de doğrudan cevap verir. Uygulama Türkiye’de geliştirilir, arayüz baştan sona Türkçe kullanılabilir ve sunucu, kanal, rol, ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelecek şekilde tasarlanmıştır. Ama Descall bir kopya değil; kendi tasarım dili ve abonelik gerektirmeyen yaklaşımıyla ayrı bir üründür.",
+          "Discord’a erişim Ekim 2024’te Türkiye’de engellendikten sonra pek çok kişi Türkiye’de geliştirilen, Türkçe bir sohbet uygulaması aramaya başladı. Bu aramaların arkasında genelde üç beklenti var: Türkiye’den sorunsuz çalışması, Türkçe olması ve sunucu, kanal, ses odası gibi alışık olunan kavramları sunması.",
+          "Descall bu üç beklentiye de doğrudan cevap verir. Uygulama Türkiye’de geliştirilir, arayüz baştan sona Türkçe kullanılabilir ve sunucu, kanal, rol, ses odası gibi kavramlar başka sohbet uygulamalarından gelenlere tanıdık gelecek şekilde tasarlanmıştır. Descall bir kopya değil; kendi tasarım dili ve abonelik gerektirmeyen yaklaşımıyla ayrı bir üründür ve Discord Inc. ile bağlantılı değildir.",
         ],
       },
       {
@@ -152,7 +177,7 @@ export const TR_LANDINGS = {
       },
       {
         h: "Descall’ın özellikleri",
-        p: ["Türk Discord’u olarak düşünebileceğin Descall’da bugün kullanabileceğin özellikler:"],
+        p: ["Descall’da bugün kullanabileceğin özellikler:"],
         list: [
           "Sunucular, kategoriler, yazı, ses ve sahne kanalları",
           "Rol hiyerarşisi ve kanal bazlı izin ayarları",
@@ -162,7 +187,6 @@ export const TR_LANDINGS = {
           "Birebir ve grup halinde sesli/görüntülü arama",
           "Kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
-          "Arkadaşlar ve durum Descall içinde",
           "Windows, Android ve tarayıcı; tek hesap",
         ],
       },
@@ -191,8 +215,8 @@ export const TR_LANDINGS = {
     ],
     faq: [
       {
-        q: "Türk Discord’u hangisi?",
-        a: "Tek bir resmi “Türk Discord’u” yok; ama Descall, Türkiye’de geliştirilen, Türkçe arayüzlü ve Discord’a benzer yapıda (sunucular, roller, ses kanalları) ücretsiz bir alternatiftir.",
+        q: "Türkiye’de geliştirilen bir sohbet uygulaması var mı?",
+        a: "Evet. Descall Türkiye’de geliştirilen, Türkçe arayüzlü ve sunucular, roller ve ses kanalları sunan ücretsiz bir sohbet uygulamasıdır. Discord’a alternatif olarak kullanılabilir, ama Discord Inc. ile bağlantılı değildir.",
       },
       {
         q: "Descall’ı kim geliştiriyor?",
@@ -200,7 +224,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Descall Discord’un kopyası mı?",
-        a: "Hayır. Kavramlar Discord kullanıcılarına tanıdık gelir (sunucu, kanal, rol), ama Descall kendi tasarımı ve abonelik gerektirmeyen yapısıyla ayrı bir üründür.",
+        a: "Hayır. Sunucu, kanal ve rol gibi kavramlar tanıdık gelir, ama Descall kendi tasarımı ve abonelik gerektirmeyen yapısıyla ayrı bir üründür. Discord Inc. ile bir bağlantısı yoktur.",
       },
       {
         q: "Türkçe destek alabilir miyim?",
@@ -443,7 +467,6 @@ export const TR_LANDINGS = {
           "Kalıcı ses kanalları ve sahne kanalları",
           "Sesli/görüntülü arama ve kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
-          "Arkadaşlar ve durum Descall içinde",
           "Atma, yasaklama, zaman aşımı ve denetim kayıtları",
           "Windows, Android ve tarayıcı",
           "Ücretsiz; kozmetikler isteğe bağlı (DesCoin)",
@@ -479,32 +502,32 @@ export const TR_LANDINGS = {
 
   "/tr/discord-acildi-mi": {
     path: "/tr/discord-acildi-mi",
-    kicker: "Güncel durum",
+    kicker: "Erişim durumu · kaynaklı özet",
     h1: "Discord açıldı mı? Türkiye’de Discord erişim durumu",
-    updated: "2026-10-17",
-    updatedLabel: "Son güncelleme: 17 Ekim 2026",
-    lead:
-      "Kısa cevap: Hayır. Discord, 9 Ekim 2024’ten bu yana Türkiye’de mahkeme kararıyla erişime kapalı ve 17 Ekim 2026 itibarıyla engel hâlâ sürüyor. Bu sayfada engelin ne zaman ve nasıl başladığını, bugün neyin geçerli olduğunu ve bu süreçte arkadaşlarınla iletişimde kalmak için hangi seçeneklerin olduğunu özetliyoruz.",
+    published: DISCORD_TR_STATUS_PUBLISHED,
+    updated: DISCORD_TR_STATUS_CHECKED,
+    updatedLabel: `Sayfa güncellemesi: ${REVIEWED} · Aktarılan en son haberler: ${CHECKED}`,
+    lead: `Kısa cevap: ${CHECKED} tarihli haberlere göre hayır. Discord’a Türkiye’den erişim 9 Ekim 2024’te bir mahkeme kararıyla engellendi ve bu haberlerde engelin kaldırıldığına dair resmi bir karar yer almıyordu. Erişimi kendimiz test etmiyoruz; bu sayfa yalnızca kamuya açık, tarihli kaynakların ne söylediğini özetliyor. Durum o tarihten sonra değişmiş olabilir.`,
     sections: [
       {
-        h: "Güncel durum (17 Ekim 2026)",
+        h: "Son haberler ne diyor?",
         p: [
-          "Discord Türkiye’de erişime kapalı. 9 Ekim 2024’te verilen mahkeme kararıyla başlayan erişim engeli kaldırılmadı; Discord’un web sitesi ve uygulamaları Türkiye’deki internet servis sağlayıcıları üzerinden normal şekilde açılmıyor.",
-          "Engelin kaldırıldığına dair resmi bir karar duyurulduğunda bu sayfayı güncelleyeceğiz. Sosyal medyada zaman zaman “Discord açıldı” iddiaları dolaşıyor; bunlar genelde kısa süreli bağlantı dalgalanmalarından veya farklı ağlardan yapılan denemelerden kaynaklanıyor. Kesin bilgi için resmi açıklamaları takip etmek en doğrusu.",
+          `${CHECKED} tarihli haberler, Discord’a Türkiye’deki internet servis sağlayıcıları üzerinden erişimin hâlâ kapalı olduğunu ve engelin kaldırıldığına dair resmi bir duyuru bulunmadığını bildiriyordu. Haziran 2026’da ise Ulaştırma ve Altyapı Bakanı Abdulkadir Uraloğlu’nun, Discord’un istenen kriterleri karşıladığını ve platformun yakında yeniden erişime açılabileceğini söylediği haberler çıkmıştı. Bu açıklamalardan sonra yayımlanan haberlerde erişimin açıldığına dair bir bilgi yer almıyordu.`,
+          "Sosyal medyada zaman zaman “Discord açıldı” iddiaları dolaşıyor. Bu iddialar çoğu zaman kısa süreli bağlantı farklılıklarından ya da farklı ağlardan yapılan denemelerden kaynaklanıyor. Kesin bilgi için BTK’nın internet sitesindeki site sorgulama aracına ve resmi açıklamalara bakmak en doğrusu.",
         ],
       },
       {
         h: "Engel ne zaman ve nasıl başladı?",
         p: [
-          "Discord’a erişim 9 Ekim 2024’te, bir sulh ceza hâkimliğinin verdiği karar doğrultusunda Bilgi Teknolojileri ve İletişim Kurumu (BTK) tarafından uygulanan erişim engeliyle kapatıldı. Engelden önceki günlerde platformdaki bazı içerikler kamuoyunda tartışılmış, Adalet Bakanlığı ve yetkililer de platformla ilgili açıklamalar yapmıştı.",
-          "Karar sonrasında Discord’un web sitesi, masaüstü ve mobil uygulamaları Türkiye’den erişilemez hale geldi. Uygulama mağazalarındaki erişim de etkilendi. O tarihten bu yana engel yürürlükte.",
+          "Discord’a erişim 9 Ekim 2024’te engellendi. O gün yayımlanan haberlere göre Bilgi Teknolojileri ve İletişim Kurumu (BTK), Ankara 1. Sulh Ceza Hâkimliği’nin 9 Ekim 2024 tarihli ve 2024/12907 D. İş sayılı kararını uyguladı. Karar, Ankara Cumhuriyet Başsavcılığının talebiyle ve 5651 sayılı Kanun’un 8. maddesi kapsamında, platformda çocukların cinsel istismarı ve müstehcenlik suçlarının işlendiğine dair yeterli şüphe bulunduğu gerekçesiyle verildi.",
+          "Engelden önceki günlerde platformdaki bazı içerikler kamuoyunda tartışılmış, Adalet Bakanı da konuyla ilgili açıklama yapmıştı. Karar sonrasında Discord’un web sitesi ile masaüstü ve mobil uygulamaları Türkiye’den normal şekilde açılmaz hale geldi.",
         ],
       },
       {
         h: "Bu süreçte ne değişti?",
         p: [
-          "Engel, Türkiye’deki milyonlarca Discord kullanıcısını etkiledi: oyun klanları, okul toplulukları, yazılım ve tasarım toplulukları, yayıncılar ve en çok da her akşam sesli sohbette buluşan arkadaş grupları. Bir kısmı geçici çözümlerle Discord’u kullanmaya devam etmeye çalıştı, bir kısmı mesajlaşma uygulamalarına dağıldı, birçok topluluk da yeni bir ortak alan aradı.",
-          "Bu dönemde Türkiye’den erişilebilen, Discord’a benzer yapıda (sunucular, ses kanalları, roller) uygulamalara ilgi belirgin şekilde arttı. Descall da bu ihtiyaca Türkçe ve ücretsiz bir seçenek olarak cevap veriyor.",
+          "Engel, Türkiye’deki çok sayıda Discord kullanıcısını etkiledi: oyun klanları, okul toplulukları, yazılım ve tasarım toplulukları, yayıncılar ve en çok da her akşam sesli sohbette buluşan arkadaş grupları. Bir kısmı geçici çözümlerle Discord’u kullanmaya devam etmeye çalıştı, bir kısmı mesajlaşma uygulamalarına dağıldı, birçok topluluk da yeni bir ortak alan aradı.",
+          "Bu dönemde Türkiye’den erişilebilen, Discord’a benzer yapıda (sunucular, ses kanalları, roller) uygulamalara ilgi arttı. Descall da bu ihtiyaca Türkçe ve ücretsiz bir seçenek olarak cevap veriyor.",
         ],
       },
       {
@@ -517,30 +540,30 @@ export const TR_LANDINGS = {
       {
         h: "Arkadaşlarınla iletişimde kalmak için seçenekler",
         p: [
-          "Sadece mesajlaşma yeterliyse WhatsApp veya Telegram grupları iş görür. Kalıcı ses odaları, roller ve kanallarla düzenli bir sunucu, ekran paylaşımı ve oyun arkadaşı bulma gibi Discord’a özgü özellikler istiyorsan Descall gibi Discord tarzı bir uygulama daha uygun olur.",
-          "Descall Türkiye’de geliştirilir, Türkiye’den doğrudan erişilebilir ve şunları ücretsiz sunar: sunucular, roller ve kanal izinleri, hazır şablonlar, sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma, hazır oyun şablonları. Windows, Android ve tarayıcıdan kullanılabilir.",
+          "Sadece mesajlaşma yeterliyse WhatsApp veya Telegram grupları iş görür. Kalıcı ses odaları, roller ve kanallarla düzenli bir sunucu, ve ekran paylaşımı istiyorsan Descall gibi Discord tarzı bir uygulama daha uygun olur.",
+          "Descall Türkiye’de geliştirilir, Türkiye’den doğrudan erişilebilir ve şunları ücretsiz sunar: sunucular, roller ve kanal izinleri, hazır şablonlar, sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma, hazır oyun şablonları. Windows, iPhone ve iPad, Android ve tarayıcıdan kullanılabilir.",
         ],
       },
       {
         h: "Discord tekrar açılırsa ne olacak?",
         p: [
           "Erişim engeli kaldırılırsa Discord hesapların ve sunucuların büyük ihtimalle olduğu gibi duruyor olacak. Descall’a geçmek, Discord hesabını silmek anlamına gelmez; birçok grup ikisini birlikte kullanabilir. Descall’da kurduğun sunucu, roller ve arkadaş listen de her durumda seninle kalır.",
-          "Bu sayfayı düzenli olarak güncelliyoruz. Sayfanın başındaki “Son güncelleme” tarihi, bilgilerin en son ne zaman kontrol edildiğini gösterir.",
+          "Bu sayfadaki kaynakları her ay yeniden gözden geçiriyoruz. Başlığın altındaki tarihler, sayfanın en son ne zaman güncellendiğini ve aktarılan en yeni haberlerin hangi aya ait olduğunu gösterir. Bunlar kendi yaptığımız bir erişim testinin tarihi değildir.",
         ],
       },
     ],
     faq: [
       {
         q: "Discord açıldı mı?",
-        a: "Hayır. Discord 9 Ekim 2024’ten beri Türkiye’de mahkeme kararıyla erişime kapalı ve 17 Ekim 2026 itibarıyla engel sürüyor.",
+        a: `${CHECKED} tarihli haberlere göre hayır. Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi ve bu haberlerde engelin kaldırıldığına dair resmi bir karar yer almıyordu. Erişimi kendimiz test etmiyoruz.`,
       },
       {
         q: "Discord neden kapatıldı?",
-        a: "Erişim engeli 9 Ekim 2024’te bir sulh ceza hâkimliği kararı doğrultusunda BTK tarafından uygulandı. Engelden önce platformdaki bazı içerikler kamuoyunda tartışılmıştı.",
+        a: "Haberlere göre BTK, Ankara 1. Sulh Ceza Hâkimliği’nin 9 Ekim 2024 tarihli kararını uyguladı. Karar, 5651 sayılı Kanun’un 8. maddesi kapsamında çocukların cinsel istismarı ve müstehcenlik suçlarına dair yeterli şüphe gerekçesiyle verildi.",
       },
       {
         q: "Discord ne zaman açılacak?",
-        a: "Açıklanmış bir tarih yok. Engelin kaldırıldığına dair resmi bir karar duyurulduğunda bu sayfa güncellenecek.",
+        a: "Açıklanmış kesin bir tarih yok. Haziran 2026’da Bakan Uraloğlu’nun platformun yakında açılabileceğini söylediği haberler çıktı, ancak sonraki haberlerde erişimin açıldığına dair bir bilgi yer almıyordu.",
       },
       {
         q: "Discord yerine ne kullanabilirim?",
@@ -722,7 +745,7 @@ const EXTRA = {
     faq: [
       {
         q: "Descall ücretsiz mi?",
-        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir; yalnızca isteğe bağlı kozmetikler DesCoin ile alınır.",
+        a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Descall+ ve Descall Ultra, ek masaüstü araçları sunan isteğe bağlı üyeliklerdir; mağazadaki kozmetikler ise uygulamada kazanılan DesCoin ile alınır.",
       },
       {
         q: "Descall hangi cihazlarda çalışıyor?",
@@ -830,10 +853,11 @@ const EXTRA = {
         h: "Zaman çizelgesi",
         p: ["Discord’un Türkiye’deki erişim durumunun kısa özeti:"],
         list: [
-          "9 Ekim 2024: Mahkeme kararı doğrultusunda Discord’a Türkiye’den erişim engellendi.",
-          "Ekim 2024 sonrası: Web sitesi, masaüstü ve mobil uygulamalar Türkiye’deki internet servis sağlayıcıları üzerinden erişilemez hale geldi.",
-          "2025: Engel boyunca kullanıcılar ve topluluklar alternatif uygulamalara yöneldi; erişim engeli kaldırılmadı.",
-          "17 Ekim 2026: Erişim engeli hâlâ sürüyor (bu sayfanın son kontrol tarihi).",
+          "9 Ekim 2024: BTK, Ankara 1. Sulh Ceza Hâkimliği’nin 2024/12907 D. İş sayılı kararıyla Discord’a Türkiye’den erişimi engelledi (aynı gün yayımlanan ulusal haberler).",
+          "Ekim 2024 sonrası: Web sitesi, masaüstü ve mobil uygulamalar Türkiye’deki internet servis sağlayıcıları üzerinden normal şekilde açılmaz hale geldi.",
+          "2025: Haberlere göre engel yıl boyunca sürdü; kullanıcılar ve topluluklar alternatif uygulamalara yöneldi.",
+          "Haziran 2026: Bakan Uraloğlu’nun, Discord’un istenen kriterleri karşıladığını ve yakında açılabileceğini söylediği haberler çıktı.",
+          `${CHECKED}: Bu ay yayımlanan haberlere göre erişim hâlâ kapalıydı ve engelin kaldırıldığına dair resmi bir karar yoktu.`,
         ],
       },
       {
@@ -934,7 +958,7 @@ const EXTRA2 = {
   "/tr/discord-acildi-mi": {
     h: "Bu sayfadaki bilgiler hakkında",
     p: [
-      "Bu sayfa, Türkiye’deki kullanıcıların “Discord açıldı mı?” sorusuna net bir cevap bulabilmesi için hazırlandı. Bilgiler kamuya açık resmi açıklamalara ve yaygın şekilde haberleştirilmiş gelişmelere dayanıyor; hukuki tavsiye niteliği taşımıyor. Engelle ilgili resmi bir değişiklik olduğunda sayfayı güncelliyor ve başlığın altındaki “Son güncelleme” tarihini değiştiriyoruz.",
+      "Bu sayfa, Türkiye’deki kullanıcıların “Discord açıldı mı?” sorusuna net bir cevap bulabilmesi için hazırlandı. Bilgiler kamuya açık resmi açıklamalara ve yaygın şekilde haberleştirilmiş gelişmelere dayanıyor; hukuki tavsiye niteliği taşımıyor. Erişimi kendimiz test etmiyoruz ve bir durumu “doğrulanmış” olarak sunmuyoruz; her bilginin hangi tarihte yayımlanan haberlere dayandığını belirtiyoruz. Kaynakları her ay gözden geçiriyor, başlığın altındaki tarihleri buna göre güncelliyoruz.",
       "Descall, Discord ile bağlantılı değildir ve Discord’un bir parçası değildir. Descall, Türkiye’de Demir Sarp Kurtlar tarafından geliştirilen bağımsız bir sohbet uygulamasıdır. Bu sayfada Descall’dan söz etmemizin nedeni, engel sürecinde arkadaşlarıyla iletişimde kalmak isteyenlere Türkiye’den doğrudan erişilebilen bir seçenek sunmak.",
       "Bir bilginin eksik ya da yanlış olduğunu düşünüyorsan contact@descall.com adresine yazabilirsin; kontrol edip gerekirse sayfayı düzeltiriz.",
     ],

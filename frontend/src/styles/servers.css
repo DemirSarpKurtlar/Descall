@@ -2945,7 +2945,7 @@ button.member-row.server-member-row {
   flex-shrink: 0;
 }
 
-.server-voice-status.is-ok { color: #3ba55d; }
+.server-voice-status.is-ok { color: var(--g-ok, #30D158); }
 .server-voice-status.is-wait { color: #f0b429; }
 .server-voice-status.is-bad { color: var(--danger, #ed4245); }
 
@@ -3255,7 +3255,7 @@ button.member-row.server-member-row {
   color: #fff;
 }
 
-.server-voice-flag.is-speak { color: #3ba55d; }
+.server-voice-flag.is-speak { color: var(--g-ok, #30D158); }
 .server-voice-flag.is-muted,
 .server-voice-flag.is-deaf { color: #ff8a82; }
 .server-voice-flag.is-share,
@@ -3400,6 +3400,12 @@ button.member-row.server-member-row {
   justify-content: center;
   cursor: pointer;
   z-index: 2;
+}
+/* Hit area >= 24px (WCAG 2.5.8), the badge itself stays small. */
+.server-voice-dock-chevron::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
 }
 
 .server-voice-dock-chevron.is-open,

@@ -1,4 +1,11 @@
-import { isUserAdmin } from "./userProfile.js";
+// Inlined from userProfile.js (keep in sync): importing it hoisted userProfile and
+// friendNicknames into the first-paint entry chunk.
+function isUserAdmin(user) {
+  if (!user) return false;
+  if (user.is_admin === true || user.isAdmin === true) return true;
+  if (user.role === "admin") return true;
+  return user.username === "admin";
+}
 
 /** Short support id shown on the crash screen and prefixed onto the log. */
 export function makeSupportCode(random = Math.random) {

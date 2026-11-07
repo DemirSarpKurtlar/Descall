@@ -24,7 +24,7 @@ const PERM_LABELS = {
   EMBED_LINKS: "Embed links",
   ADD_REACTIONS: "Add reactions",
   READ_MESSAGE_HISTORY: "Read message history",
-  CONNECT: "Connect",
+  CONNECT: "Join voice",
   SPEAK: "Speak",
   REQUEST_TO_SPEAK: "Request to Speak",
   PRIORITY_SPEAKER: "Priority speaker",

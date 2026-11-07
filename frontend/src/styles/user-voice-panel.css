@@ -411,7 +411,8 @@ html[data-theme="light"] .uvp-voice-inner {
   border-radius: var(--r-md);
   border: 1px solid var(--uvp-hair);
   background: var(--uvp-btn);
-  overflow: hidden;
+  /* Not overflow:hidden: it would clip the chevron's wider hit area below. The halves
+     carry the inner radius instead, so the hover fill still follows the corners. */
   transition: background-color 0.12s ease;
 }
 .uvp-split.is-open { background: var(--uvp-btn-press); }
@@ -430,13 +431,17 @@ html[data-theme="light"] .uvp-voice-inner {
   cursor: pointer;
   transition: background-color 0.12s ease, transform 0.12s ease;
 }
-.uvp-split-main { width: 34px; }
+.uvp-split-main { width: 34px; border-radius: calc(var(--r-md) - 1px) 0 0 calc(var(--r-md) - 1px); }
 .uvp-split-chev {
+  position: relative;
+  border-radius: 0 calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 0;
   width: 18px;
   border-left: 1px solid var(--uvp-hair) !important;
   color: var(--uvp-ink-2) !important;
 }
 .uvp-split-chev svg { transition: transform 0.2s ease; }
+/* Hit area >= 24px wide (WCAG 2.5.8) without a wider chevron: 9px more, mostly outward. */
+.uvp-split-chev::before { content: ""; position: absolute; inset: 0 -5px 0 -4px; }
 .uvp-split.is-open .uvp-split-chev svg { transform: rotate(180deg); }
 .uvp-split-main:hover,
 .uvp-split-chev:hover { background: var(--uvp-btn-hover); }

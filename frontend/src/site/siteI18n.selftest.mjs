@@ -57,7 +57,7 @@ const rows = await collectSiteStrings("de");
 const en = new Set(rows.map((r) => r.en));
 for (const s of [
   "Start free", // header (React)
-  "Talk together", // home page (React)
+  "Descall: voice chat, servers and screen sharing for friends", // home page H1 (React + prerender)
   "Is Descall free?", // FAQ data
   "Descall Features | Free Voice, Screen Share & Servers", // SEO title
   "Optional analytics only. Essentials stay on.", // cookie banner (cookieCopy)
@@ -67,15 +67,15 @@ for (const s of [
 ]) {
   assert.ok(en.has(s), `export is missing ${JSON.stringify(s)}`);
 }
-assert.ok(rows.find((r) => r.en === "Descall Features | Free Voice, Screen Share & Servers").max === 70, "SEO titles carry their length limit");
+assert.ok(rows.find((r) => r.en === "Descall Features | Free Voice, Screen Share & Servers").max === 60, "SEO titles carry their length limit");
 
 // 2b. The page groups are recorded too, with paragraph-sized rows and precise contexts.
 const byEn = new Map(rows.map((r) => [r.en, r]));
 const { BLOG_BODIES } = await imp("src/site/seo/blogBodies.js");
 const { NICHE_LANDINGS } = await imp("src/site/seo/nicheLandings.js");
-const firstPara = BLOG_BODIES["discord-vs-descall"].sections[0].p;
+const firstPara = BLOG_BODIES["discord-competitors"].sections[0].p;
 assert.ok(byEn.has(firstPara), "blog paragraphs are exported");
-assert.match(byEn.get(firstPara).context, /^blog post discord-vs-descall, paragraph 1\b/);
+assert.match(byEn.get(firstPara).context, /^blog post discord-competitors, paragraph 1\b/);
 assert.deepEqual(byEn.get(firstPara).groups, ["blog"]);
 for (const [slug, body] of Object.entries(BLOG_BODIES)) {
   for (const sec of body.sections) {
@@ -84,9 +84,9 @@ for (const [slug, body] of Object.entries(BLOG_BODIES)) {
   }
 }
 assert.ok(rows.every((r) => wordCount(r.en) <= 200), "no row is a whole article");
-const seoTitle = byEn.get("Discord vs Descall (2026) | Which Should Your Group Use?");
-assert.equal(seoTitle?.max, 70, "post SEO titles carry the limit");
-assert.match(seoTitle.context, /SEO title of \/blog\/discord-vs-descall/);
+const seoTitle = byEn.get("Descall Blog: Discord Competitors in 2026");
+assert.equal(seoTitle?.max, 60, "post SEO titles carry the limit");
+assert.match(seoTitle.context, /SEO title of \/blog\/discord-competitors/);
 assert.equal(byEn.get(NICHE_LANDINGS["/apps-like-discord"].answer)?.groups?.[0], "niche");
 assert.equal(byEn.get("Start free").groups, null, "a string a live page uses stays strict");
 assert.equal(byEn.get("Frequently asked questions").groups, null);

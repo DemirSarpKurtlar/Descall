@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createZoomPhysics, wheelPixels, clampZoom, MIN_ZOOM, MAX_ZOOM } from "./smoothZoom.js";
+import { createZoomPhysics, wheelPixels, clampZoom, previewScale, MIN_ZOOM, MAX_ZOOM } from "./smoothZoom.js";
 
 const run = (p, seconds) => { let z = p.zoom; for (let t = 0; t < seconds; t += 1 / 60) z = p.step(1 / 60); return z; };
 
@@ -37,6 +37,18 @@ const run = (p, seconds) => { let z = p.zoom; for (let t = 0; t < seconds; t += 
   const up = run(p, 1);
   assert.ok(up > 1.09 && up < 1.12, `nudge ~10 % (${up})`);
 }
+// The glide is short: one notch settles within 0.8 s.
+{
+  const p = createZoomPhysics(1);
+  p.push(100);
+  run(p, 0.8);
+  assert.equal(p.moving, false, "settles within 0.8 s");
+}
+// GPU preview scale is relative to the applied zoom; ~1 means no transform.
+assert.equal(previewScale(1.1, 1.1), 1);
+assert.ok(Math.abs(previewScale(1.2, 1) - 1.2) < 1e-9);
+assert.ok(Math.abs(previewScale(0.75, 1.5) - 0.5) < 1e-9);
+assert.equal(previewScale(9, 1), MAX_ZOOM);
 assert.equal(wheelPixels({ deltaY: 3, deltaMode: 1 }), 48);
 assert.equal(clampZoom("x"), 1);
 assert.equal(clampZoom(9), MAX_ZOOM);

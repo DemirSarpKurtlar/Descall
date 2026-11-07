@@ -1303,6 +1303,13 @@
   background: var(--primary);
   color: #fff;
 }
+/* White text needs 4.5:1: the default azure primary (#4F7CFF, 3.8:1) gets a deeper fill
+   under the label (also the Descall+ filter chips); other themes keep their accent. */
+html:not([data-theme]) .us-btn.primary:not(.success),
+html[data-theme="dark"] .us-btn.primary:not(.success),
+html[data-theme="light"] .us-btn.primary:not(.success) {
+  background: #4562E0;
+}
 
 .us-btn.primary:hover:not(:disabled) {
   filter: brightness(1.08);

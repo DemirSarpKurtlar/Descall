@@ -3,8 +3,8 @@ import { IconCheck as Check } from "../icons";
 import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import SeoProductPreview from "../components/SeoProductPreview";
-import { buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
-import { TR_LANDINGS } from "../seo/trLandings";
+import { buildArticleLd, buildBreadcrumbLd, buildFaqLd, buildDiscordAlternativeAppLd } from "../JsonLd";
+import { TR_LANDINGS, trLandingLabel } from "../seo/trLandings";
 
 function previewForPath(path) {
   if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
@@ -24,7 +24,7 @@ export default function TrLandingPage({ onSignIn, onSignUp }) {
 
   const crumbs = [
     { label: "Ana sayfa", to: "/tr" },
-    { label: page.h1.split(":")[0].trim(), to: page.path },
+    { label: trLandingLabel(page), to: page.path },
   ];
 
   return (
@@ -35,7 +35,23 @@ export default function TrLandingPage({ onSignIn, onSignUp }) {
       lead={page.lead}
       tone={preview.tone}
       faq={page.faq}
-      jsonLd={[buildBreadcrumbLd(crumbs), buildFaqLd(page.faq), buildDiscordAlternativeAppLd(page.path)]}
+      jsonLd={[
+        buildBreadcrumbLd(crumbs),
+        buildFaqLd(page.faq),
+        buildDiscordAlternativeAppLd(page.path),
+        ...(page.published && page.updated
+          ? [
+              buildArticleLd({
+                title: page.h1,
+                description: page.lead,
+                path: page.path,
+                datePublished: page.published,
+                dateModified: page.updated,
+                inLanguage: "tr",
+              }),
+            ]
+          : []),
+      ]}
       primaryCta={
         <button type="button" className="mkt-btn mkt-btn-primary" onClick={startFree}>
           Ücretsiz başla

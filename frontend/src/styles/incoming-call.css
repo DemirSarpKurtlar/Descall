@@ -133,8 +133,8 @@
   cursor: pointer;
 }
 
-.incoming-call-btn--decline { background: #ed4245; }
-.incoming-call-btn--accept { background: #3ba55d; }
+.incoming-call-btn--decline { background: var(--g-red, #FF453A); }
+.incoming-call-btn--accept { background: var(--g-ok, #30D158); }
 
 @media (max-width: 420px) {
   .incoming-call-card {

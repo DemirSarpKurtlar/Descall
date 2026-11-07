@@ -291,6 +291,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
               <>
                 <Link to={L("/discord-alternative")}>{t("Discord alternative")}</Link>
                 <Link to={L("/compare/discord")}>{t("vs Discord")}</Link>
+                <Link to={L("/best-discord-alternative-for-gamers")}>{t("For gamers")}</Link>
                 <Link to="/tr/discord-alternatifi">Türkçe: Discord alternatifi</Link>
                 <Link to={L("/blog")}>{t("Blog")}</Link>
               </>
@@ -327,6 +328,9 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
         </div>
         <p className="mkt-footer-copy">
           © {SITE_OPERATOR.copyrightYear} Descall. {t("All rights reserved.")}
+        </p>
+        <p className="mkt-footer-copy mkt-footer-legal">
+          {t("Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.")}
         </p>
       </footer>
       <StickyMobileCta onStart={openRegister} downloadTo={L("/download")} />

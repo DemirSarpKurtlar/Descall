@@ -73,12 +73,12 @@ export const KEYWORD_STRATEGY = [
   { keyword: "discord alternatifi", intent: "commercial", targetPath: "/tr/discord-alternatifi", priority: "P0", funnel: "BOF", commercialIntent: "high", cluster: "i18n" },
   { keyword: "discord alternatifleri", intent: "commercial", targetPath: "/tr/discord-alternatifleri", priority: "P1", funnel: "MOF", commercialIntent: "high", cluster: "i18n" },
   { keyword: "discord muadili", intent: "commercial", targetPath: "/tr/discord-alternatifi", priority: "P1", funnel: "MOF", commercialIntent: "high", cluster: "i18n" },
-  { keyword: "discord benzeri uygulamalar", intent: "commercial", targetPath: "/tr/blog/apps-like-discord", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "discord benzeri uygulamalar", intent: "commercial", targetPath: "/tr/discord-yerine-ne-kullanilir", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
   { keyword: "discord açıldı mı", intent: "informational", targetPath: "/tr/discord-acildi-mi", priority: "P0", funnel: "TOF", commercialIntent: "low", cluster: "i18n" },
   { keyword: "discord yerine ne kullanılır", intent: "informational", targetPath: "/tr/discord-yerine-ne-kullanilir", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
   { keyword: "sesli sohbet uygulaması", intent: "commercial", targetPath: "/tr/sesli-sohbet-uygulamasi", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
   { keyword: "oyuncu sohbet uygulaması", intent: "commercial", targetPath: "/tr/oyuncu-sohbet-uygulamasi", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
-  { keyword: "türk discord alternatifi", intent: "commercial", targetPath: "/tr/turk-discord", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "i18n" },
+  { keyword: "türk sohbet uygulaması", intent: "commercial", targetPath: "/tr/turk-discord", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "i18n" },
 
   // Brand
   { keyword: "descall", intent: "navigational", targetPath: "/", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "brand" },
@@ -121,7 +121,6 @@ export const CONTENT_CLUSTERS = {
     children: [
       "/alternatives",
       "/apps-like-discord",
-      "/blog/discord-vs-descall",
       "/blog/discord-competitors",
       "/discord-replacement",
     ],

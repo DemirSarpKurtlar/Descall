@@ -20,7 +20,7 @@
   --gs-hair: rgba(255, 255, 255, 0.12);
   --gs-t1: var(--g-t1, #fff);
   --gs-t2: var(--g-t2, rgba(235, 235, 245, 0.68));
-  --gs-t3: var(--g-t3, rgba(235, 235, 245, 0.46));
+  --gs-t3: var(--g-t3, rgba(235, 235, 245, 0.54));
   --gs-brand: var(--g-brand, #6c86ff);
   --gs-danger: #ff453a;
   --gs-green: #30d158;
@@ -356,6 +356,10 @@ button.gs-row:active:not(:disabled) { background: var(--gs-fill-press); }
   cursor: pointer;
   transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s;
 }
+/* White label >= 4.5:1: the default azure (3.8:1) is deepened under text; other themes keep their accent. */
+html:not([data-theme]) .gs-primary:not(.is-done),
+html[data-theme="dark"] .gs-primary:not(.is-done),
+html[data-theme="light"] .gs-primary:not(.is-done) { background: #4562E0; }
 .gs-primary:active:not(:disabled) { transform: scale(0.97); filter: brightness(0.92); }
 .gs-primary:disabled { opacity: 0.45; cursor: default; }
 .gs-primary.is-done { background: #248a3d; }

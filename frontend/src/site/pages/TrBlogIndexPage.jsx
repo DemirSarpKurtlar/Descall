@@ -3,7 +3,7 @@ import SeoLandingShell from "../components/SeoLandingShell";
 import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import { buildBreadcrumbLd } from "../JsonLd";
 import { TR_BLOG_POSTS } from "../seo/trBlog";
-import { TR_LANDINGS } from "../seo/trLandings";
+import { TR_LANDINGS, trLandingLabel } from "../seo/trLandings";
 
 const crumbs = [
   { label: "Ana sayfa", to: "/tr" },
@@ -11,7 +11,7 @@ const crumbs = [
 ];
 
 export default function TrBlogIndexPage() {
-  const hubs = Object.values(TR_LANDINGS).map((p) => ({ to: p.path, label: p.h1.split(":")[0].trim() }));
+  const hubs = Object.values(TR_LANDINGS).map((p) => ({ to: p.path, label: trLandingLabel(p) }));
   return (
     <SeoLandingShell
       breadcrumbs={crumbs}
@@ -26,7 +26,7 @@ export default function TrBlogIndexPage() {
             <article key={post.slug} className="seo-blog-card">
               <time dateTime={post.date}>{post.date}</time>
               <h2>
-                <Link to={post.path}>{post.title}</Link>
+                <Link to={post.path}>{post.h1 || post.title}</Link>
               </h2>
               <p>{post.description}</p>
               <div className="seo-tags">

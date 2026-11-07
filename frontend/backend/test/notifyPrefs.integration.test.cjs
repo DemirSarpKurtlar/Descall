@@ -17,10 +17,15 @@ const assert = require("node:assert/strict");
 const { createFakeSupabase } = require("./fakeSupabase.cjs");
 
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const A = id(1), B = id(2), C = id(3), G = id(10);
+const A = id(1), B = id(2), C = id(3), D = id(4), G = id(10), H = id(11);
 const fake = createFakeSupabase({
   users: [{ id: A, username: "alice", active_sessions: [{ id: "s-a" }] }],
   conversation_notify_prefs: [],
+  // A and B are friends; A and D have an existing conversation; C is a stranger.
+  friendships: [{ id: "f1", user_id: A, friend_id: B, status: "accepted" }],
+  dm_messages: [{ id: id(50), from_user_id: D, to_user_id: A, content: "selam" }],
+  // A is in G, not in H.
+  group_members: [{ group_id: G, user_id: A }, { group_id: H, user_id: B }],
 });
 const supabasePath = require.resolve("../db/supabase");
 require.cache[supabasePath] = { id: supabasePath, filename: supabasePath, loaded: true, exports: fake };
@@ -83,6 +88,28 @@ const np = require("../lib/notifyPrefs");
   assert.equal(await np.levelFor(A, "dm", B), "none", "muted for an hour");
   res = await fetch(base);
   assert.equal(res.status, 401);
+
+  // Only members / peers may write (security review F5).
+  const put = (body) => fetch(base, { method: "PUT", headers, body: JSON.stringify(body) });
+  res = await put({ convType: "dm", convId: C, level: "none" });
+  assert.deepEqual([res.status, (await res.json()).error], [403, "not_allowed"], "a stranger's DM");
+  res = await put({ convType: "group", convId: H, level: "none" });
+  assert.deepEqual([res.status, (await res.json()).error], [403, "not_allowed"], "a group I am not in");
+  res = await put({ convType: "dm", convId: A, level: "none" });
+  assert.equal(res.status, 403, "my own id is not a DM");
+  res = await put({ convType: "dm", convId: D, level: "mentions" });
+  assert.equal(res.status, 200, "an existing conversation (not a friend)");
+  res = await put({ convType: "group", convId: G, level: "mentions" });
+  assert.equal(res.status, 200, "my group");
+  assert.ok(!fake._tables.conversation_notify_prefs.rows.some((r) => r.conv_id === C || r.conv_id === H), "nothing stored for refused writes");
+  // Rate limit: the PUT route is capped per user.
+  let limited = null;
+  for (let i = 0; i < 40 && !limited; i += 1) {
+    const r = await put({ convType: "group", convId: G, level: i % 2 ? "all" : "mentions" });
+    if (r.status === 429) limited = r;
+  }
+  assert.ok(limited, "PUT is rate limited");
+  require("../lib/rateLimit").resetLimits();
 
   // Before the migration: everything is 'all', saving says not_ready.
   np.__resetNotifyPrefs();

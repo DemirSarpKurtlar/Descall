@@ -148,9 +148,33 @@ html[data-theme="light"] .ms-datetime { color-scheme: light; }
 .gs-pill.ms-chip small { font-size: var(--fs-12); font-weight: 500; color: var(--gs-t2); }
 .gs-pill.ms-chip.is-on { color: #fff; background: var(--gs-brand); box-shadow: none; }
 .gs-pill.ms-chip.is-on small { color: rgba(255, 255, 255, 0.85); }
+/* White text needs 4.5:1: the default azure (3.8:1) is deepened under the label; other themes keep their accent. */
+html:not([data-theme]) .gs-pill.ms-chip.is-on,
+html[data-theme="dark"] .gs-pill.ms-chip.is-on,
+html[data-theme="light"] .gs-pill.ms-chip.is-on { background: #4562E0; }
+html:not([data-theme]) .gs-pill.ms-chip.is-on small,
+html[data-theme="dark"] .gs-pill.ms-chip.is-on small,
+html[data-theme="light"] .gs-pill.ms-chip.is-on small { color: rgba(255, 255, 255, 0.95); }
 .ms-datetime-row { display: flex; align-items: center; gap: 4px; padding-left: 16px; color: var(--gs-t2); }
 .ms-datetime-row .ms-datetime { padding-left: 6px; }
 .ms-sched-item .gs-row-sub { white-space: normal; }
+/* Messaging phase 5: one attachment on a scheduled message. */
+.ms-attach-add { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 2px 4px 0; }
+.ms-attach-add small { font-size: var(--fs-12); color: var(--gs-t3); }
+.ms-attach-add-label { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-13); font-weight: 600; }
+.ms-attach-row { gap: 10px; }
+.ms-attach-thumb { width: 40px; height: 40px; border-radius: var(--r-sm); object-fit: cover; flex: 0 0 auto; }
+.ms-attach-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--gs-brand);
+  background: rgba(88, 122, 245, 0.16);
+}
+.ms-sched-file { display: inline-flex; align-items: center; gap: 5px; }
 .ms-sched-actions { display: inline-flex; gap: 6px; flex: 0 0 auto; }
 .ms-sched-actions .gs-pill { min-width: 0; }
 .ms-sched-actions .gs-pill.is-danger { color: var(--gs-danger); background: rgba(255, 69, 58, 0.14); }

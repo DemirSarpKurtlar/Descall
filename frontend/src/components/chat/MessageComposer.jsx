@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore, useId } from "react";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -22,7 +22,7 @@ import {
   getSlashCommandsForSurface, slashInsertText, searchSlashCommands, slashMenuSections, slashQueryOf,
   slashArgState, slashNameOf, findSlashCommand, foldTr, TIMEOUT_DURATIONS, PURGE_COUNTS,
 } from "../../lib/slashCommands";
-import SlashCommandMenu, { SLASH_CATEGORIES, UserPicker, DurationPicker, CountPicker } from "./SlashCommandMenu";
+import SlashCommandMenu, { SLASH_CATEGORIES, UserPicker, DurationPicker, CountPicker, optionId } from "./SlashCommandMenu";
 import { hapticWarning } from "../../lib/fluid/haptics";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import { displayText } from "../../lib/profanity";
@@ -35,6 +35,7 @@ import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
 import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
+import { decodeRoleMentions, encodeRoleMentions, registerRoles, roleSuggestions } from "../../lib/roleMentions";
 import {
   getScheduledSnapshot, openScheduleSheet, pendingFor, scheduleTarget, subscribeScheduled, SCHEDULE_SENT_EVENT,
 } from "../../lib/scheduledMessages";
@@ -42,6 +43,44 @@ import {
 
 
 /** "5 min" / "5 dk." (Intl unit names in the UI language). */
+/** Arrow keys in the emoji grid (roving tabindex): Left/Right step, Up/Down go to the
+ * nearest button in the next / previous row, Home/End jump to the ends. */
+function emojiGridStep(items, i, key) {
+  if (key === "ArrowRight") return Math.min(items.length - 1, i + 1);
+  if (key === "ArrowLeft") return Math.max(0, i - 1);
+  if (key === "Home") return 0;
+  if (key === "End") return items.length - 1;
+  const r = items[i].getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const down = key === "ArrowDown";
+  let best = -1;
+  let bestDy = Infinity;
+  let bestDx = Infinity;
+  items.forEach((el, j) => {
+    const b = el.getBoundingClientRect();
+    const dy = down ? b.top - r.top : r.top - b.top;
+    if (dy <= 2) return;
+    const dx = Math.abs(b.left + b.width / 2 - cx);
+    if (dy < bestDy - 2 || (Math.abs(dy - bestDy) <= 2 && dx < bestDx)) {
+      best = j;
+      bestDy = dy;
+      bestDx = dx;
+    }
+  });
+  return best < 0 ? i : best;
+}
+
+/** Popups opened from the keyboard (or on a desktop) take focus; a tap on a phone does not
+ * (focusing a button there would close the on-screen keyboard). */
+function popupTakesFocus(event) {
+  if (event?.detail === 0) return true;
+  try {
+    return Boolean(window.matchMedia?.("(pointer: fine)").matches);
+  } catch {
+    return false;
+  }
+}
+
 function formatSlowmode(seconds, locale) {
   const n = Math.max(0, Math.floor(Number(seconds) || 0));
   if (!n) return "";
@@ -118,6 +157,8 @@ export default function MessageComposer({
   const slowmodeBlocked = Boolean(activeChannel?.id) && !bypassSlowmode && slowmodeRemaining > 0;
   const inputRef = useRef(null);
   const messageRef = useRef("");
+  // Messaging phase 5: roles picked from the @ list, "@Rol adı" in the field, `<@&id>` on the wire.
+  const pickedRolesRef = useRef(new Map());
   const editStashRef = useRef(null);
   const editIdRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -129,6 +170,14 @@ export default function MessageComposer({
   const typingTimerRef = useRef(null);
   const isTypingRef = useRef(false);
   const attachBtnRef = useRef(null);
+  const emojiBtnRef = useRef(null);
+  const emojiPickerRef = useRef(null);
+  const attachMenuRef = useRef(null);
+  const popupFocusRef = useRef(false);
+  const popupIds = useId();
+  const emojiPopupId = `${popupIds}-emoji`;
+  const attachPopupId = `${popupIds}-attach`;
+  const suggestId = `${popupIds}-suggest`;
   const analyserRef = useRef(null);
   const rafRef = useRef(null);
   const audioCtxRef = useRef(null);
@@ -179,11 +228,31 @@ export default function MessageComposer({
   const openSchedule = useCallback((mode = "new") => {
     if (!schedTarget) return;
     setShowAttachmentMenu(false);
-    openScheduleSheet({ mode, target: schedTarget, text: mode === "new" ? messageRef.current : "", fromComposer: mode === "new", draftKey: draftKeyRef.current });
-  }, [schedTarget]);
+    const isNew = mode === "new";
+    // Messaging phase 5: an attachment already staged here goes with the schedule (image or file, not voice).
+    const staged = isNew && pendingAttach?.mediaUrl && ["image", "video", "document", "file"].includes(pendingAttach.mediaType)
+      ? { url: pendingAttach.mediaUrl, name: pendingAttach.originalName || "", size: pendingAttach.size || 0, mediaType: pendingAttach.mediaType, previewUrl: pendingAttach.previewUrl || null }
+      : null;
+    openScheduleSheet({
+      mode,
+      target: schedTarget,
+      text: isNew ? messageRef.current : "",
+      fromComposer: isNew,
+      draftKey: draftKeyRef.current,
+      attachment: staged,
+      rolePicks: isNew ? [...pickedRolesRef.current] : [],
+    });
+  }, [schedTarget, pendingAttach]);
   useEffect(() => {
     const onSent = (e) => {
       if (e?.detail?.draftKey && e.detail.draftKey === draftKeyRef.current) setMessage("");
+      // Messaging phase 5: the staged attachment went with the schedule.
+      if (e?.detail?.attachment && e.detail.draftKey === draftKeyRef.current) {
+        setPendingAttach((cur) => {
+          if (cur?.previewUrl) URL.revokeObjectURL(cur.previewUrl);
+          return null;
+        });
+      }
     };
     window.addEventListener(SCHEDULE_SENT_EVENT, onSent);
     return () => window.removeEventListener(SCHEDULE_SENT_EVENT, onSent);
@@ -206,7 +275,10 @@ export default function MessageComposer({
     if (id && editIdRef.current !== id) {
       if (editIdRef.current == null) editStashRef.current = messageRef.current;
       editIdRef.current = id;
-      const text = editingMessage.text || "";
+      // Role mentions read "@Rol adı" while editing (messaging phase 5).
+      const decoded = decodeRoleMentions(editingMessage.text || "");
+      for (const [name, roleId] of decoded.picked) pickedRolesRef.current.set(name, roleId);
+      const text = decoded.text;
       setMessage(text);
       let timer = 0;
       const place = () => {
@@ -335,6 +407,77 @@ export default function MessageComposer({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  useEffect(() => {
+    if (!showEmojiPicker) return undefined;
+    const body = emojiPickerRef.current?.querySelector(".emoji-picker-body");
+    if (!body) return undefined;
+    const items = [...body.querySelectorAll("button:not(:disabled)")];
+    items.forEach((b, i) => { b.tabIndex = i === 0 ? 0 : -1; });
+    if (!popupFocusRef.current) return undefined;
+    popupFocusRef.current = false;
+    const id = requestAnimationFrame(() => items[0]?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(id);
+  }, [showEmojiPicker]);
+  useEffect(() => {
+    if (!showAttachmentMenu || !popupFocusRef.current) return undefined;
+    popupFocusRef.current = false;
+    const id = requestAnimationFrame(() => attachMenuRef.current?.querySelector('[role="menuitem"]')?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(id);
+  }, [showAttachmentMenu]);
+  const closeEmojiPicker = () => {
+    setShowEmojiPicker(false);
+    emojiBtnRef.current?.focus({ preventScroll: true });
+  };
+  const closeAttachMenu = () => {
+    setShowAttachmentMenu(false);
+    attachBtnRef.current?.focus({ preventScroll: true });
+  };
+  const onEmojiPickerKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      closeEmojiPicker();
+      return;
+    }
+    if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) return;
+    const body = e.currentTarget.querySelector(".emoji-picker-body");
+    if (!body?.contains(e.target)) return;
+    const items = [...body.querySelectorAll("button:not(:disabled)")];
+    const i = items.indexOf(e.target);
+    if (i < 0) return;
+    e.preventDefault();
+    const next = items[emojiGridStep(items, i, e.key)];
+    if (!next || next === e.target) return;
+    e.target.tabIndex = -1;
+    next.tabIndex = 0;
+    next.focus();
+  };
+  const onAttachMenuKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAttachMenu();
+      return;
+    }
+    const items = [...e.currentTarget.querySelectorAll('[role="menuitem"]')];
+    const i = items.indexOf(document.activeElement);
+    let next = -1;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") next = (i + 1) % items.length;
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") next = (i - 1 + items.length) % items.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    if (next < 0 || !items.length) return;
+    e.preventDefault();
+    items[next].focus();
+  };
+  const onPopupToggleKeyDown = (open, close) => (e) => {
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    }
+  };
 
   const emitTypingStop = useCallback(() => {
     if (!isTypingRef.current) return;
@@ -473,6 +616,18 @@ export default function MessageComposer({
     return () => window.removeEventListener("descall:composer-insert", onInsert);
   }, [focusInputAt]);
 
+  /* ---------- role mentions (messaging phase 5) ---------- */
+  useEffect(() => {
+    pickedRolesRef.current = new Map();
+  }, [activeChannel?.id]);
+  useEffect(() => {
+    if (activeServer?.id && Array.isArray(activeServer.roles)) registerRoles(activeServer.roles, activeServer.id);
+  }, [activeServer?.id, activeServer?.roles]);
+  const encodeMentions = useCallback(
+    (text) => (activeChannel?.id ? encodeRoleMentions(text, pickedRolesRef.current) : text),
+    [activeChannel?.id]
+  );
+
   /* ---------- argument pickers (user / duration / count) ---------- */
   const [pickerIndex, setPickerIndex] = useState(0);
   const [pickerDismissedFor, setPickerDismissedFor] = useState(null);
@@ -574,8 +729,13 @@ export default function MessageComposer({
     const out = [];
     if (here.length) out.push({ id: "here", label: t(activeChannel?.id ? "slash.mention.hereChannel" : "slash.mention.hereChat"), items: here.map(decorate) });
     if (rest.length) out.push({ id: "all", label: t(activeChannel?.id ? "slash.mention.server" : activeGroup ? "slash.mention.group" : "slash.mention.chat"), items: rest.map(decorate) });
+    // Messaging phase 5: roles (and @everyone / @here for admins) after the people, @ mentions only.
+    if (mentionState && serverIdForPicker) {
+      const roleItems = roleSuggestions(activeServer, mentionState.query || "");
+      if (roleItems.length) out.push({ id: "roles", label: t("msg5.roles.section"), items: roleItems });
+    }
     return out;
-  }, [pickerKind, argState, mentionState, me, activeServer?.roles, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
+  }, [pickerKind, argState, mentionState, me, activeServer, serverIdForPicker, serverMembers, activeGroup, activeDmUser, recentMessages, onlineUsers, activeChannel?.id, t]);
   const pickerUsers = useMemo(() => pickerUserSections.flatMap((s) => s.items), [pickerUserSections]);
 
   const timeoutTarget = useMemo(() => {
@@ -587,6 +747,12 @@ export default function MessageComposer({
   }, [pickerKind, argState, serverMembers.list]);
 
   const pickerCount = pickerKind === "user" ? pickerUsers.length : pickerKind === "duration" ? TIMEOUT_DURATIONS.length : pickerKind === "count" ? PURGE_COUNTS.length : 0;
+  // The textarea is the combobox of the mention / slash suggestion list (WCAG 4.1.2).
+  const suggestOpen = slashMenuOpen
+    || (pickerKind === "user" && Boolean(argState || pickerUsers.length > 0))
+    || pickerKind === "duration"
+    || pickerKind === "count";
+  const suggestActive = !suggestOpen ? -1 : slashMenuOpen ? (slashMatches.length > 0 ? slashIndex : -1) : (pickerCount > 0 ? pickerIndex : -1);
   useEffect(() => {
     if (pickerKind === "duration") setPickerIndex(1);
     else setPickerIndex(0);
@@ -600,9 +766,10 @@ export default function MessageComposer({
     focusInputAt(next.length);
   }, [message, argState, focusInputAt]);
 
-  const insertMention = useCallback((username) => {
+  const insertMention = useCallback((username, role = null) => {
     if (!mentionState) return;
-    const tag = `@${username} `;
+    if (role?.id && role?.name) pickedRolesRef.current.set(role.name, role.id);
+    const tag = `@${role?.name || username} `;
     const next = message.slice(0, mentionState.start) + tag + message.slice(mentionState.end).replace(/^ /, "");
     setMessage(next);
     const pos = mentionState.start + tag.length;
@@ -610,13 +777,18 @@ export default function MessageComposer({
     focusInputAt(pos);
   }, [mentionState, message, focusInputAt]);
 
+  const pickMentionItem = useCallback((it) => {
+    if (!it) return;
+    if (it.kind === "role") insertMention(null, it.role);
+    else if (it.kind === "mass") insertMention(it.mass);
+    else if (mentionState) insertMention(it.user.username);
+    else fillArg(`@${it.user.username}`);
+  }, [insertMention, mentionState, fillArg]);
+
   const pickFromPicker = useCallback((index = pickerIndex) => {
     if (pickerKind === "user") {
       const it = pickerUsers[index];
-      if (it) {
-        if (mentionState) insertMention(it.user.username);
-        else fillArg(`@${it.user.username}`);
-      }
+      pickMentionItem(it);
       return Boolean(it);
     }
     if (pickerKind === "duration") {
@@ -635,7 +807,7 @@ export default function MessageComposer({
       return Boolean(c);
     }
     return false;
-  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt, mentionState, insertMention]);
+  }, [pickerKind, pickerUsers, pickerIndex, fillArg, message, focusInputAt, pickMentionItem]);
 
   const withReply = (payload) => {
     if (!replyTo) return payload;
@@ -681,7 +853,7 @@ export default function MessageComposer({
 
   const handleSend = () => {
     if (glass && editingMessage) {
-      const next = message.trim();
+      const next = encodeMentions(message.trim());
       const original = String(editingMessage.text || "").trim();
       if (!next || next === original || disabled) return;
       onSaveEdit?.({ ...editingMessage, newText: next });
@@ -702,7 +874,7 @@ export default function MessageComposer({
 
     if (pendingAttach) {
       // Typed text goes with the attachment as its caption (one message).
-      const caption = message.trim();
+      const caption = encodeMentions(message.trim());
       onSend?.(withReply(caption ? { ...pendingAttach, text: caption } : { ...pendingAttach }));
       if (caption) setMessage("");
       setPendingAttach(null);
@@ -740,7 +912,7 @@ export default function MessageComposer({
         return;
       }
     }
-    onSend?.(withReply(text));
+    onSend?.(withReply(typedCmd ? text : encodeMentions(text)));
     setMessage("");
     onClearReply?.();
     armLocalSlowmode();
@@ -1314,6 +1486,7 @@ export default function MessageComposer({
           <SlashCommandMenu
             key="slash-menu"
             menuRef={slashMenuRef}
+            listId={suggestId}
             sections={slashSections}
             flat={slashMatches}
             activeIndex={slashIndex}
@@ -1331,11 +1504,12 @@ export default function MessageComposer({
           <UserPicker
             key="slash-user"
             menuRef={slashMenuRef}
+            listId={suggestId}
             query={String(argState ? argState.argText || "" : mentionState?.query || "").replace(/^@/, "")}
             sections={pickerUserSections}
             activeIndex={pickerIndex}
             onHover={setPickerIndex}
-            onPick={(it) => (mentionState ? insertMention(it.user.username) : fillArg(`@${it.user.username}`))}
+            onPick={pickMentionItem}
             compact={compactUi}
             self={argState?.cmd.args?.[0]?.optional ? me : null}
           />
@@ -1343,6 +1517,7 @@ export default function MessageComposer({
           <DurationPicker
             key="slash-duration"
             menuRef={slashMenuRef}
+            listId={suggestId}
             durations={TIMEOUT_DURATIONS}
             activeIndex={pickerIndex}
             onHover={setPickerIndex}
@@ -1354,6 +1529,7 @@ export default function MessageComposer({
           <CountPicker
             key="slash-count"
             menuRef={slashMenuRef}
+            listId={suggestId}
             counts={PURGE_COUNTS}
             activeIndex={pickerIndex}
             onHover={setPickerIndex}
@@ -1427,21 +1603,26 @@ export default function MessageComposer({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className={glass ? "attachment-menu g-open" : "attachment-menu"}
+            ref={attachMenuRef}
+            id={attachPopupId}
+            role="menu"
+            aria-label={t("Add Attachment")}
+            onKeyDown={onAttachMenuKeyDown}
           >
-            <button className="attachment-item" onClick={() => { imageInputRef.current?.click(); setShowAttachmentMenu(false); }}>
+            <button type="button" role="menuitem" className="attachment-item" onClick={() => { imageInputRef.current?.click(); setShowAttachmentMenu(false); }}>
               <div className="attachment-icon"><ImagePlus size={22} /></div>
               <span className="attachment-label">{t("Upload Image")}</span>
             </button>
-            <button className="attachment-item" onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}>
+            <button type="button" role="menuitem" className="attachment-item" onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}>
               <div className="attachment-icon"><Paperclip size={22} /></div>
               <span className="attachment-label">{t("Upload File")}</span>
             </button>
-            <button className="attachment-item" onClick={() => { hapticImpactLight(); setShowGiphy(true); setShowAttachmentMenu(false); }}>
+            <button type="button" role="menuitem" className="attachment-item" onClick={() => { hapticImpactLight(); setShowGiphy(true); setShowAttachmentMenu(false); }}>
               <div className="attachment-icon"><span className="attachment-gif-badge" aria-hidden="true">GIF</span></div>
               <span className="attachment-label">{t("Send GIF")}</span>
             </button>
             {schedTarget && !editing ? (
-              <button className="attachment-item" data-testid="attach-schedule" onClick={() => openSchedule("new")}>
+              <button type="button" role="menuitem" className="attachment-item" data-testid="attach-schedule" onClick={() => openSchedule("new")}>
                 <div className="attachment-icon"><Clock size={22} /></div>
                 <span className="attachment-label">{t("msg4.schedule.menu")}</span>
               </button>
@@ -1457,10 +1638,15 @@ export default function MessageComposer({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             className="emoji-picker"
+            ref={emojiPickerRef}
+            id={emojiPopupId}
+            role="dialog"
+            aria-label={t("Emojis")}
+            onKeyDown={onEmojiPickerKeyDown}
           >
             <div className="emoji-picker-header">
               <span>{t("Emojis")}</span>
-              <button className="emoji-picker-close" onClick={() => setShowEmojiPicker(false)} aria-label={t("Close")}><X size={14} /></button>
+              <button type="button" className="emoji-picker-close" onClick={closeEmojiPicker} aria-label={t("Close")}><X size={14} /></button>
             </div>
             <div className="emoji-picker-body">
               {/* Descall logo emoji (inserted as text) and stickers (sent at once), messaging phase 4. */}
@@ -1487,7 +1673,7 @@ export default function MessageComposer({
                   <span className="emoji-category-name">{t(cat.nameKey)}</span>
                   <div className="emoji-grid">
                     {cat.emojis.map((em) => (
-                      <button key={em} className="emoji-btn" onClick={() => insertEmoji(em)}>{em}</button>
+                      <button key={em} type="button" className="emoji-btn" onClick={() => insertEmoji(em)}>{em}</button>
                     ))}
                   </div>
                 </div>
@@ -1505,10 +1691,17 @@ export default function MessageComposer({
         <motion.button
           ref={attachBtnRef}
           className={`composer-action-btn${glass && showAttachmentMenu ? " is-open" : ""}`}
-          onClick={() => {
-            if (!showAttachmentMenu) hapticImpactLight();
+          onClick={(e) => {
+            if (!showAttachmentMenu) {
+              hapticImpactLight();
+              popupFocusRef.current = popupTakesFocus(e);
+            }
             setShowAttachmentMenu(!showAttachmentMenu);
           }}
+          onKeyDown={onPopupToggleKeyDown(showAttachmentMenu, closeAttachMenu)}
+          aria-haspopup="menu"
+          aria-expanded={showAttachmentMenu}
+          aria-controls={showAttachmentMenu ? attachPopupId : undefined}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           title={t("Add Attachment")}
@@ -1554,6 +1747,12 @@ export default function MessageComposer({
             onCompositionStart={() => { composingRef.current = true; }}
             onCompositionEnd={() => { composingRef.current = false; }}
             onKeyDown={handleKeyDown}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-expanded={suggestOpen}
+            aria-controls={suggestOpen ? suggestId : undefined}
+            aria-activedescendant={suggestActive >= 0 ? optionId(suggestId, suggestActive) : undefined}
             enterKeyHint="send"
             placeholder={dragOver ? t("Drop file to attach…") : (glass && activeChannel?.name && !activeDmUser && !activeGroup ? t("Message #{name}…", { name: activeChannel.name }) : t("Message…"))}
             className="composer-input"
@@ -1564,10 +1763,14 @@ export default function MessageComposer({
       </div>
 
       <div className="composer-right">
-        <motion.button className="composer-action-btn" onClick={() => {
-          if (!showEmojiPicker) hapticImpactLight();
+        <motion.button ref={emojiBtnRef} className="composer-action-btn" onClick={(e) => {
+          if (!showEmojiPicker) {
+            hapticImpactLight();
+            popupFocusRef.current = popupTakesFocus(e);
+          }
           setShowEmojiPicker(!showEmojiPicker);
-        }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Emoji")} aria-label={t("Emoji")}>
+        }} onKeyDown={onPopupToggleKeyDown(showEmojiPicker, closeEmojiPicker)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Emoji")} aria-label={t("Emoji")}
+          aria-haspopup="dialog" aria-expanded={showEmojiPicker} aria-controls={showEmojiPicker ? emojiPopupId : undefined}>
           <Smile size={24} />
         </motion.button>
 

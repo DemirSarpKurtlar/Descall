@@ -38,20 +38,15 @@ export const SITE_MIRROR_PATHS = [
 
 /**
  * English pages mirrored per group, staged with SITE_DRAFT_PAGE_GROUPS. English slugs stay
- * in the localized URLs (/de/blog/discord-vs-descall, /de/apps-like-discord). The blog
+ * in the localized URLs (/de/blog/discord-competitors, /de/apps-like-discord). The blog
  * paths follow BLOG_POSTS in content/discordSeoContent.js (siteLocales.selftest.mjs).
  */
 export const SITE_PAGE_GROUPS = Object.freeze({
   blog: [
     "/blog",
-    "/blog/discord-vs-descall",
     "/blog/best-discord-alternatives-2026",
-    "/blog/apps-like-discord",
     "/blog/discord-competitors",
     "/blog/leave-nitro-keep-voice-chat",
-    "/blog/discord-alternative-for-communities-guide",
-    "/blog/voice-chat-alternative-to-discord",
-    "/blog/migrate-from-discord-to-descall",
   ],
   niche: [
     "/best-discord-alternative-for-gamers",

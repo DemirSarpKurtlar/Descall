@@ -161,7 +161,11 @@ export default function ForwardSheet({ open, message, friends = [], groups = [],
             />
           </label>
         </div>
-        <p className="gs-footnote"><span>{t("msg4.forward.limit", { max: FORWARD_MAX_TARGETS })}</span></p>
+        {/* Live: when the limit greys out the other rows, a screen reader hears why. */}
+        <p className="gs-footnote" aria-live="polite">
+          <span>{t("msg4.forward.limit", { max: FORWARD_MAX_TARGETS })}</span>
+          {full ? <span className="a11y-sr">{` ${t("a11y.forward.limitReached", { max: FORWARD_MAX_TARGETS })}`}</span> : null}
+        </p>
         <button type="button" className="gs-primary" disabled={!picked.length || busy} onClick={send} data-testid="forward-send">
           {busy ? <Loader2 size={18} className="gs-spin" /> : <ForwardGlyph size={18} />}
           {picked.length ? t("msg4.forward.sendCount", { count: picked.length }) : t("msg4.forward.send")}

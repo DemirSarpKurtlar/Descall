@@ -11,10 +11,9 @@ import { applyStoredAppearance, setPremiumThemeKey } from "../../lib/appearanceS
 import { copyText } from "../../lib/copyText";
 import { Avatar } from "../ui/Avatar";
 import { ConversationListSkeleton } from "../ui/Skeleton";
-import StatusBadge from "../ui/StatusBadge";
-import ImageCropModal from "../ui/ImageCropModal";
+import ImageCropModal from "../ui/LazyImageCropModal";
 import { useLocation } from "react-router-dom";
-import ProfileMediaPicker from "../profile/ProfileMediaPicker.jsx";
+import ProfileMediaPicker from "../profile/LazyProfileMediaPicker.jsx";
 import { readPickerQuery } from "../../lib/profileMediaPicker";
 import UsernameChangeModal from "../settings/UsernameChangeModal";
 import { getToken, setUser } from "../../lib/storage";
@@ -28,6 +27,7 @@ import { readFileAsDataUrl } from "../../lib/cropImage";
 import { uploadAvatar, uploadFile, uploadAvatarWithCrop, uploadBannerImage } from "../../api/media";
 import { getMe } from "../../api/auth";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
+import useModalFocus from "../../hooks/useModalFocus";
 import {
   setEmail as apiSetEmail,
   resendEmailCode,
@@ -63,8 +63,7 @@ import { getLocaleMeta, PSEUDO_LOCALE } from "../../i18n/registry.js";
 import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.js";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
-import AdminBadge from "../social/AdminBadge";
-import PremiumBadge, { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
+import { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
 import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
@@ -77,7 +76,7 @@ const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.j
 import { getPremiumState, subscribePremium } from "../../premium/premiumStore.js";
 import { isNativeIOS } from "../../lib/platform.js";
 import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
-import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
+import { NameEffectText } from "../ui/Cosmetics";
 import {
   getNoiseSuppressionEngine,
   preloadNoiseSuppression,
@@ -892,6 +891,28 @@ const UserPanel = forwardRef(function UserPanel({
   // Messaging phase 4: mention cards (lib/notificationService read this key already) and message text on cards.
   const [mentionNotifications, setMentionNotifications] = useState(stored.mentionNotifications !== false);
   const [notificationPreviews, setNotificationPreviews] = useState(stored.notificationPreviews !== false);
+  // Messaging phase 5: the switch is stored on the account too, so server pushes (iPhone, web) follow it.
+  const [previewError, setPreviewError] = useState("");
+  useEffect(() => {
+    if (activeTab !== "notifications") return undefined;
+    let alive = true;
+    authedRequest("/api/push-preview")
+      .then((r) => {
+        if (alive && r?.ready && typeof r.enabled === "boolean") setNotificationPreviews(r.enabled);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [activeTab]);
+  const changeNotificationPreviews = async (next) => {
+    setNotificationPreviews(next);
+    setPreviewError("");
+    try {
+      await authedRequest("/api/push-preview", { method: "PUT", body: { enabled: next } });
+    } catch (err) {
+      // 503: not on the server yet; this device still follows the switch.
+      if (Number(err?.status) !== 503) setPreviewError(t("msg5.preview.saveError"));
+    }
+  };
 
   /* ── iPhone push permission (native iOS app only) ── */
   const iosPush = isNativeIosPush();
@@ -1494,72 +1515,9 @@ const UserPanel = forwardRef(function UserPanel({
       case "overview":
         return (
           <div className="us-tab">
-            <div className="us-hero">
-            <div
-              className="us-hero-banner"
-              style={
-                effectiveBannerUrl
-                  ? { backgroundImage: cssUrl(effectiveBannerUrl) }
-                  : undefined
-              }
-            />
-              <div className="us-hero-body">
-                {/* Same avatar picker as the Profile tab: tap the photo → file picker →
-                    crop/zoom (GIFs keep animation) → saved immediately. */}
-                <button
-                  type="button"
-                  className="us-hero-avatar us-hero-avatar-btn"
-                  onClick={() => !avatarUploading && setMediaPicker("avatar")}
-                  disabled={avatarUploading}
-                  aria-label={t("Change avatar")}
-                  title={t("Change avatar")}
-                >
-                  <Avatar
-                    name={me?.username || "User"}
-                    size={84}
-                    user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
-                    animate="always"
-                  />
-                  <span className="us-avatar-overlay" aria-hidden="true">
-                    {avatarUploading ? <RefreshCw size={20} className="us-spin" /> : <Camera size={20} />}
-                  </span>
-                  <span className="us-hero-camera" aria-hidden="true">
-                    {avatarUploading ? <RefreshCw size={13} className="us-spin" /> : <Camera size={13} />}
-                  </span>
-                  <StatusBadge
-                    status={myStatus === "invisible" ? "offline" : myStatus}
-                  />
-                </button>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  ref={fileInputRef}
-                  className="us-hidden"
-                  onChange={handleAvatarUpload}
-                />
-                <button
-                  type="button"
-                  className="us-btn us-hero-edit"
-                  onClick={() => openTab("profile")}
-                >
-                  <Pencil size={14} />
-                  {t("Edit profile")}
-                </button>
-                <div className="us-hero-meta">
-                  <h3 style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "4px 6px" }}>
-                    <NameEffectText user={me}>{displayName || me?.username || "User"}</NameEffectText>
-                  </h3>
-                  <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
-                  <div className="user-profile-badges">
-                    <CountryBadge user={me} />
-                    <AdminBadge user={me} variant="chip" />
-                    <PremiumBadge user={me} variant="chip" />
-                  </div>
-                  {customStatus && <span className="us-status-pill">{customStatus}</span>}
-                </div>
-              </div>
-            </div>
-
+            {/* UI audit #40: the profile card (avatar, name, badges, the one
+                "Profili düzenle") lives once, in the settings sidebar / list
+                header (SettingsProfileCard). Hesabım shows only the account details. */}
             {profileError && (
               <div className="us-alert danger">
                 <AlertTriangle size={15} />
@@ -1803,7 +1761,7 @@ const UserPanel = forwardRef(function UserPanel({
                   </div>
                 </section>
                 <section className="us-section g-pe-glass" style={{ order: 4 }}>
-                  <h4 className="us-section-label">{t("About me")}</h4>
+                  <h4 className="us-section-label">{t("Bio")}</h4>
                   <label className="g-pe-bio">
                     <textarea
                       value={bio}
@@ -2463,11 +2421,11 @@ const UserPanel = forwardRef(function UserPanel({
                 <SettingRow
                   icon={Eye}
                   title={t("msg4.notify.previewSetting")}
-                  description={t("msg4.notify.previewSettingDesc")}
+                  description={previewError || t("msg5.preview.settingDesc")}
                 >
                   <Toggle
                     value={notificationPreviews}
-                    onChange={setNotificationPreviews}
+                    onChange={changeNotificationPreviews}
                     label={t("msg4.notify.previewSetting")}
                   />
                 </SettingRow>
@@ -2757,6 +2715,12 @@ const UserPanel = forwardRef(function UserPanel({
   const panelRef = useRef(null);
   const menuPaneRef = useRef(null);
   const detailPaneRef = useRef(null);
+  // Desktop dialog: focus starts on the selected section, Tab stays inside, the app
+  // behind is inert, focus goes back to the opener on close (WCAG 2.4.3).
+  useModalFocus(true, panelRef, {
+    enabled: !isMobile,
+    initialFocus: () => panelRef.current?.querySelector(".s3-row.sel"),
+  });
 
   // iOS edge swipe-back. Section → menu runs the header ‹ (backToMenu) with the
   // live menu sliding in underneath; on the menu itself it runs the same close
@@ -3093,7 +3057,9 @@ const UserPanel = forwardRef(function UserPanel({
               transition={{ duration: 0.16 }}
               className="us-main-scroll"
             >
-              {!isMobile && activeTab !== "overview" && activeTab !== "appearance" && (
+              {/* UI audit #40 / #152: Hesabım and Görünüm get the same left-aligned
+                  page title as every other desktop settings page. */}
+              {!isMobile && (
                 <h3 className="us-page-title">{tabTitles[activeTab]}</h3>
               )}
               <ErrorBoundary scope="pane" resetKey={activeTab}>

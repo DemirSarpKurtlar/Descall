@@ -9,10 +9,28 @@ import { UAH_FR } from "./uah.fr.js";
 import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_FR } from "./profileMediaPicker.fr.js";
 import { MSG4_FR } from "./msg4.fr.js";
+import { MSG5_FR } from "./msg5.fr.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_FR,
   "amp": AMP_FR,
   "msg4": MSG4_FR,
+  "a11y": {
+    "chat": {
+      "newMessage": "{name} : {text}",
+      "skipToConversation": "Aller à la discussion"
+    },
+    "servers": {
+      "inVoice": "{count, plural, one {# en vocal} other {# en vocal}}"
+    },
+    "forward": {
+      "limitReached": "Limite de {max} atteinte. Retire une discussion pour en choisir une autre."
+    },
+    "schedule": {
+      "editItem": "Modifier le message programmé : {item}",
+      "cancelItem": "Annuler le message programmé : {item}"
+    }
+  },
+  "msg5": MSG5_FR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -5952,7 +5970,8 @@ export const nested = {
     "maxUses25": "25 utilisations",
     "maxUses5": "5 utilisations",
     "memberFor": "@{handle} · membre depuis {age}",
-    "mentionable": "Tout le monde peut le @mentionner",
+    "mentionable": "Mentionnable",
+    "mentionableSub": "Activé : tout le monde peut @mentionner ce rôle et ses membres sont notifiés. Désactivé : seules les personnes qui gèrent les rôles le peuvent.",
     "min1": "1 min",
     "min10": "10 min",
     "min15": "15 min",
@@ -8748,6 +8767,7 @@ export const phrases = {
   "Message bubbles": "Bulles de messages",
   "Message cannot be empty.": "Le message ne peut pas être vide.",
   "Message content or media required": "Contenu ou média du message requis",
+  "Message is too long.": "Le message est trop long.",
   "Message from Descall": "Message de Descall",
   "Message must be 5–2000 characters": "Le message doit comporter entre 5 et 2000 caractères",
   "Message must be {max} characters or fewer.": "Le message doit comporter {max} caractères au maximum.",
@@ -9832,6 +9852,7 @@ export const phrases = {
   "Slow mode is on: you can send another message in {seconds, plural, one {# second} other {# seconds}}.": "Le mode lent est activé : tu pourras envoyer un autre message dans {seconds, plural, one {# seconde} other {# secondes}}.",
   "Slowmode": "Mode lent",
   "Slowmode is on. Try again in {seconds}s.": "Le mode lent est activé. Réessaie dans {seconds} s.",
+  "You can mention @everyone or @here again in {seconds}s.": "Tu pourras utiliser @everyone ou @here à nouveau dans {seconds} s.",
   "Slowmode is on: {time} between messages": "Mode lent activé : {time} entre chaque message",
   "Slowmode presets": "Préréglages du mode lent",
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.": "Mode lent, sujets, permissions spécifiques et salons réservés au staff : les outils du quotidien que les communautés utilisent vraiment.",
@@ -10953,6 +10974,12 @@ export const phrases = {
   "More comparisons": "Autres comparatifs",
   "Ready-made Gaming template": "Modèle Gaming prêt à l'emploi",
   ...MID_APP_I18N.fr,
+  "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall n'est pas affilié à Discord Inc. Discord est une marque de Discord Inc.",
+  "The API row is checked live from your browser each time you open this page.": "La ligne API est vérifiée en direct depuis ton navigateur à chaque ouverture de cette page.",
+  "Author": "Auteur",
+  "Download Descall for Windows, iPhone, Android and the web": "Télécharger Descall pour Windows, iPhone, Android et le web",
+  "iPhone and iPad app on the App Store": "Appli iPhone et iPad sur l'App Store",
+  "Descall: voice chat, servers and screen sharing for friends": "Descall : chat vocal, serveurs et partage d'écran entre amis",
 };
 
 export default { nested, phrases };

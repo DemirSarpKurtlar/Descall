@@ -50,6 +50,7 @@ import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import useGlassUi from "../../hooks/useGlassUi";
 import { requestChatPrefetch } from "../../lib/chatPrefetch";
+import { isContextMenuKey, menuArrowKeys, useKeyboardMenuFocus } from "../../lib/menuKeys";
 
 
 
@@ -772,12 +773,22 @@ const LIST_LAYOUT_TRANSITION = {
   opacity: { duration: 0.2 },
 };
 
+// The menu key also fires contextmenu right after our keydown opened the menu: that echo
+// keeps the keyboard-opened menu where it is. Any other right-click clears the keyboard mark.
+function keyMenuEcho(ref, id) {
+  const hit = ref.current.id === id && Date.now() - ref.current.at < 800;
+  if (!hit) ref.current = { id: null, at: 0 };
+  return hit;
+}
+
 function ConvMoreButton({ buttonRef, open, label, onToggle }) {
   return (
     <button
       ref={buttonRef}
       type="button"
       className={`conv-more-btn${open ? " is-open" : ""}`}
+      // One Tab stop per row (the row itself); the menu key / Shift+F10 on the row opens this menu.
+      tabIndex={-1}
       aria-label={label}
       aria-haspopup="menu"
       aria-expanded={open}
@@ -844,6 +855,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
   // change does not re-render every DM row (that work sat between the tap and
   // the page transition). Rows call back through this always-current ref.
   const rowApiRef = useRef(null);
+  const kbdMenuRef = useRef({ id: null, at: 0 });
   rowApiRef.current = {
     select: (dm) => onDmSelect?.(dm),
     runAction,
@@ -854,6 +866,7 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
       if (isMobile) return;
       e.preventDefault();
       e.stopPropagation();
+      if (keyMenuEcho(kbdMenuRef, dm.id)) return;
       // Native feel: the menu opens right under the cursor.
       setMenuPoint({ id: dm.id, x: e.clientX, y: e.clientY });
       setOpenMenuId(dm.id);
@@ -866,9 +879,19 @@ function DMList({ dms, activeDmUser, onlineUsers, expanded, onToggle, onDmSelect
       if (swipeOpenId && swipeOpenId !== dm.id) setSwipeOpenId(null);
     },
     toggleMenu: (dm) => {
+      kbdMenuRef.current = { id: null, at: 0 };
       setMenuPoint(null);
       setOpenMenuId(openMenuId === dm.id ? null : dm.id);
     },
+    keyMenu: (dm, e) => {
+      if (isMobile || !isContextMenuKey(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      kbdMenuRef.current = { id: dm.id, at: Date.now() };
+      setMenuPoint(null);
+      setOpenMenuId(dm.id);
+    },
+    keyboardMenu: (dm) => kbdMenuRef.current.id === dm.id,
   };
   const rowApi = rowApiRef;
 
@@ -985,6 +1008,7 @@ const DmListRow = memo(function DmListRow({ dm, isActive, unread, presence, isOn
       style={{ position: "relative" }}
       onMouseEnter={() => api().prefetch(dm.id)}
       onContextMenu={(e) => api().contextMenu(dm, e)}
+      onKeyDown={(e) => api().keyMenu(dm, e)}
     >
       {isMobile ? (
         <SwipeableDmRow
@@ -1028,6 +1052,7 @@ const DmListRow = memo(function DmListRow({ dm, isActive, unread, presence, isOn
                 onAction={(action) => api().runAction(dm, action)}
                 anchorRef={{ current: rowApi.current.dotBtnRefs.current[dm.id] }}
                 anchorPoint={menuPoint}
+                fromKeyboard={api().keyboardMenu(dm)}
               />
             )}
           </AnimatePresence>
@@ -1218,11 +1243,12 @@ function DmRowFront({
   );
 }
 
-function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint = null }) {
+function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint = null, fromKeyboard = false }) {
   const t = useT();
   const blockedIds = useBlockedUserIds();
   const reduceMotion = useReducedMotion();
   const menuRef = useRef(null);
+  useKeyboardMenuFocus(menuRef, fromKeyboard);
   const [position, setPosition] = useState({ top: 0, left: 0, origin: "top right", visibility: "hidden" });
 
   useLayoutEffect(() => {
@@ -1285,6 +1311,7 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
       ref={menuRef}
       role="menu"
       className="gd-row-menu"
+      onKeyDown={menuArrowKeys}
       {...rowMenuMotion(reduceMotion)}
       style={{
         position: "fixed",
@@ -1382,10 +1409,11 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
   );
 }
 
-function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null, onChangePhoto, onRemovePhoto }) {
+function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onInvite, anchorRef, anchorPoint = null, onChangePhoto, onRemovePhoto, fromKeyboard = false }) {
   const t = useT();
   const reduceMotion = useReducedMotion();
   const menuRef = useRef(null);
+  useKeyboardMenuFocus(menuRef, fromKeyboard);
   const [position, setPosition] = useState({ top: 0, left: 0, origin: "top right", visibility: "hidden" });
 
   useLayoutEffect(() => {
@@ -1506,6 +1534,7 @@ function GroupContextMenu({ group, onClose, onLeave, onRename, onAddMember, onIn
         role="menu"
         aria-label={group?.name}
         className="grp-menu"
+        onKeyDown={menuArrowKeys}
         data-testid="group-menu"
         {...rowMenuMotion(reduceMotion)}
         style={{
@@ -1662,6 +1691,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
   const [swipeOpenId, setSwipeOpenId] = useState(null);
   const menuRef = useRef(null);
   const dotBtnRefs = useRef({});
+  const kbdMenuRef = useRef({ id: null, at: 0 });
   // Same handlers drive the row menu, the swipe actions and the group info sheet.
   const groupActions = useGroupActions({ friends, onGroupLeft, onGroupRenamed, onGroupAvatarChanged, onMemberAdded: onGroupMemberAdded });
 
@@ -1726,9 +1756,17 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                       onContextMenu={(e) => {
                         if (isMobile) return;
                         e.preventDefault();
-                        e.stopPropagation();
-                        // Native feel: the menu opens right under the cursor.
+                        e.stopPropagation(); if (keyMenuEcho(kbdMenuRef, group.id)) return;
+                        // Native feel: opens under the cursor.
                         setMenuPoint({ id: group.id, x: e.clientX, y: e.clientY });
+                        setOpenMenuId(group.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (isMobile || !isContextMenuKey(e)) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        kbdMenuRef.current = { id: group.id, at: Date.now() };
+                        setMenuPoint(null);
                         setOpenMenuId(group.id);
                       }}
                     >
@@ -1769,6 +1807,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                             open={openMenuId === group.id}
                             label={t("More")}
                             onToggle={() => {
+                              kbdMenuRef.current = { id: null, at: 0 };
                               setMenuPoint(null);
                               setOpenMenuId(openMenuId === group.id ? null : group.id);
                             }}
@@ -1789,6 +1828,7 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
                             onInvite={() => openAction(group, "invite")}
                             anchorRef={{ current: isMobile ? null : dotBtnRefs.current[group.id] }}
                             anchorPoint={menuPoint?.id === group.id ? menuPoint : null}
+                            fromKeyboard={kbdMenuRef.current.id === group.id}
                           />
                         )}
                       </AnimatePresence>

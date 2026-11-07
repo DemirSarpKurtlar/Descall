@@ -50,7 +50,12 @@ function Marked({ text, ranges }) {
   return out;
 }
 
-function CommandRow({ cmd, active, compact, onHover, onPick, index }) {
+/** Option ids for the composer's aria-activedescendant: `${listId}-${index}` (index in the flat list). */
+export function optionId(listId, index) {
+  return listId ? `${listId}-${index}` : undefined;
+}
+
+function CommandRow({ cmd, active, compact, onHover, onPick, index, listId }) {
   const { t } = useLocale();
   const Icon = iconFor(cmd);
   const hl = cmd.highlight;
@@ -58,7 +63,8 @@ function CommandRow({ cmd, active, compact, onHover, onPick, index }) {
   return (
     <button
       type="button"
-      id={`scm-${cmd.id}`}
+      id={optionId(listId, index)}
+      tabIndex={-1}
       role="option"
       aria-selected={active}
       aria-disabled={cmd.locked || undefined}
@@ -208,6 +214,7 @@ export default function SlashCommandMenu({
   menuRef,
   allCommands = [],
   onPickFrequent,
+  listId,
 }) {
   const { t, locale } = useLocale();
   const listRef = useRef(null);
@@ -231,9 +238,6 @@ export default function SlashCommandMenu({
     <motion.div
       ref={menuRef}
       className={`slash-command-menu scm dsx-heavy ${compact ? "is-compact" : ""} ${detailOn ? "" : "is-single"}`}
-      role="listbox"
-      aria-label={t("slash.menu.aria")}
-      aria-activedescendant={flat[activeIndex] ? `scm-${flat[activeIndex].id}` : undefined}
       onMouseDown={(e) => e.preventDefault()}
       {...motionProps}
     >
@@ -260,7 +264,8 @@ export default function SlashCommandMenu({
             ))}
           </div>
         )}
-        <div className="scm-list" ref={listRef}>
+        {/* The listbox is the list itself: the category tabs and the detail pane sit beside it. */}
+        <div className="scm-list" ref={listRef} id={listId} role="listbox" aria-label={t("slash.menu.aria")}>
           {noResults ? (
             <div className="scm-empty">
               <span className="eic">
@@ -302,7 +307,7 @@ export default function SlashCommandMenu({
                 {s.items.map((cmd) => {
                   n += 1;
                   return (
-                    <CommandRow key={`${s.id}-${cmd.id}`} cmd={cmd} index={n} active={n === activeIndex} compact={compact} onHover={onHover} onPick={onPick} />
+                    <CommandRow key={`${s.id}-${cmd.id}`} cmd={cmd} index={n} listId={listId} active={n === activeIndex} compact={compact} onHover={onHover} onPick={onPick} />
                   );
                 })}
               </div>
@@ -344,8 +349,35 @@ function markPrefix(text, q) {
   );
 }
 
+/**
+ * Messaging phase 5: a role (in its colour) or @everyone / @here in the @ list,
+ * after the people. The line under it says who will be notified.
+ */
+function MentionTargetRow({ it, query, active, compact, onHover, onPick, id }) {
+  const { t } = useLocale();
+  const isRole = it.kind === "role";
+  const name = isRole ? it.role.name : it.mass;
+  const color = isRole ? it.role.hex || "#8a93a8" : "var(--dsx-accent, #587AF5)";
+  const sub = isRole
+    ? t(it.role.mentionable ? "msg5.roles.subRole" : "msg5.roles.subRoleAdmin")
+    : t(it.mass === "everyone" ? "msg5.roles.subEveryone" : "msg5.roles.subHere");
+  const Glyph = isRole ? Shield : Users;
+  return (
+    <button type="button" id={id} tabIndex={-1} role="option" aria-selected={active} className={`dsx-pr-row dsx-mention-target ${active ? "is-sel" : ""}`} onMouseMove={onHover} onClick={onPick} data-testid={isRole ? "mention-role" : `mention-${it.mass}`}>
+      <span className="av">
+        <span className="dsx-mt-ico" style={{ "--c": color }} aria-hidden="true"><Glyph size={18} /></span>
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <div className="nm" style={isRole && it.role.hex ? { color: it.role.hex } : undefined}>@{markPrefix(name, query)}</div>
+        <div className="un">{sub}</div>
+      </div>
+      <div className="r">{active && !compact ? <span className="dsx-kbd">↵</span> : null}</div>
+    </button>
+  );
+}
+
 /** "Choose a user · “yi”": recent people here / all members (+ yourself when the arg is optional). */
-export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover, onPick, compact = false, self = null, menuRef }) {
+export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover, onPick, compact = false, self = null, menuRef, listId }) {
   const { t } = useLocale();
   const motionProps = useMenuMotion();
   const listRef = useRef(null);
@@ -355,7 +387,7 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
   let n = -1;
   const total = sections.reduce((s, x) => s + x.items.length, 0);
   return (
-    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label={t("slash.picker.user")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
+    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} id={listId} role="listbox" aria-label={t("slash.picker.user")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
       <div className="dsx-pk-h">
         <User className="dsx-ico" size={16} />
         <b>{t("slash.picker.user")}</b>
@@ -370,10 +402,13 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
               n += 1;
               const idx = n;
               const active = idx === activeIndex;
+              if (it.kind === "role" || it.kind === "mass") {
+                return <MentionTargetRow key={it.kind === "role" ? `role-${it.role.id}` : `mass-${it.mass}`} id={optionId(listId, idx)} it={it} query={query} active={active} compact={compact} onHover={() => !active && onHover?.(idx)} onPick={() => onPick?.(it)} />;
+              }
               const u = it.user;
               const name = u.nickname || u.displayName || u.username;
               return (
-                <button key={u.id} type="button" role="option" aria-selected={active} className={`dsx-pr-row ${active ? "is-sel" : ""}`} onMouseMove={() => !active && onHover?.(idx)} onClick={() => onPick?.(it)}>
+                <button key={u.id} type="button" id={optionId(listId, idx)} tabIndex={-1} role="option" aria-selected={active} className={`dsx-pr-row ${active ? "is-sel" : ""}`} onMouseMove={() => !active && onHover?.(idx)} onClick={() => onPick?.(it)}>
                   <span className="av">
                     <Avatar size={38} name={name} user={u} imageUrl={u.avatarUrl || undefined} animate="never" />
                     <Pres status={it.presence} />
@@ -418,7 +453,7 @@ export function UserPicker({ query = "", sections = [], activeIndex = 0, onHover
 }
 
 /** "Choose a duration" for /timeout, with the effect spelled out. */
-export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHover, target = null, reason = "", compact = false, menuRef }) {
+export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHover, target = null, reason = "", compact = false, menuRef, listId }) {
   const { t, locale } = useLocale();
   const motionProps = useMenuMotion();
   const d = durations[activeIndex] || durations[0];
@@ -430,7 +465,7 @@ export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHove
     : "";
   const tname = target ? target.nickname || target.displayName || target.username : null;
   return (
-    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label={t("slash.picker.duration")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
+    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} id={listId} role="listbox" aria-label={t("slash.picker.duration")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
       <div className="dsx-pk-h">
         <Timer className="dsx-ico" size={16} />
         <b>{t("slash.picker.duration")}</b>
@@ -438,7 +473,7 @@ export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHove
       </div>
       <div className="dsx-durs">
         {durations.map((x, i) => (
-          <button key={x.token} type="button" role="option" aria-selected={i === activeIndex} className={`dsx-dur ${i === activeIndex ? "is-on" : ""}`} onMouseMove={() => i !== activeIndex && onHover?.(i)} onClick={() => onPick?.(x)}>
+          <button key={x.token} type="button" id={optionId(listId, i)} tabIndex={-1} role="option" aria-selected={i === activeIndex} className={`dsx-dur ${i === activeIndex ? "is-on" : ""}`} onMouseMove={() => i !== activeIndex && onHover?.(i)} onClick={() => onPick?.(x)}>
             {x.label}
           </button>
         ))}
@@ -463,11 +498,11 @@ export function DurationPicker({ durations = [], activeIndex = 0, onPick, onHove
 }
 
 /** /purge: how many messages. */
-export function CountPicker({ counts = [], activeIndex = 0, onPick, onHover, compact = false, menuRef }) {
+export function CountPicker({ counts = [], activeIndex = 0, onPick, onHover, compact = false, menuRef, listId }) {
   const { t } = useLocale();
   const motionProps = useMenuMotion();
   return (
-    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} role="listbox" aria-label={t("slash.picker.countAria")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
+    <motion.div ref={menuRef} className={`slash-command-menu scm-picker dsx-heavy ${compact ? "is-compact" : ""}`} id={listId} role="listbox" aria-label={t("slash.picker.countAria")} onMouseDown={(e) => e.preventDefault()} {...motionProps}>
       <div className="dsx-pk-h">
         <Eraser className="dsx-ico" size={16} />
         <b>{t("slash.picker.countTitle")}</b>
@@ -475,7 +510,7 @@ export function CountPicker({ counts = [], activeIndex = 0, onPick, onHover, com
       </div>
       <div className="dsx-durs" style={{ paddingBottom: 16 }}>
         {counts.map((c, i) => (
-          <button key={c} type="button" role="option" aria-selected={i === activeIndex} className={`dsx-dur ${i === activeIndex ? "is-on" : ""}`} onMouseMove={() => i !== activeIndex && onHover?.(i)} onClick={() => onPick?.(c)}>
+          <button key={c} type="button" id={optionId(listId, i)} tabIndex={-1} role="option" aria-selected={i === activeIndex} className={`dsx-dur ${i === activeIndex ? "is-on" : ""}`} onMouseMove={() => i !== activeIndex && onHover?.(i)} onClick={() => onPick?.(c)}>
             {c}
           </button>
         ))}

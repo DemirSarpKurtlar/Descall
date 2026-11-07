@@ -1,7 +1,10 @@
 /**
- * Lightweight rich-text renderer: **bold**, autolinks, `inline code`, ```code blocks```, @mentions.
- * Keeps the wire format as plain strings.
+ * Lightweight rich-text renderer: **bold**, autolinks, `inline code`, ```code blocks```, @mentions,
+ * role mentions (`<@&id>`, messaging phase 5). Keeps the wire format as plain strings.
  */
+import { useState, useSyncExternalStore } from "react";
+import { useLocale } from "../../context/LocaleContext";
+import { getRole, roleColorHex, rolesVersion, subscribeRoles } from "../../lib/roleMentions";
 import { splitHighlightRanges } from "../../lib/textHighlight";
 import { splitBlocks, tokenizeInline } from "../../lib/messageMarkdown";
 import { displayText } from "../../lib/profanity";
@@ -40,9 +43,47 @@ function highlightPlain(value, needle, keyPrefix) {
   );
 }
 
+/**
+ * "@Rol adı" pill in the role's colour. Tap / click shows which role it is;
+ * the server already decided who was notified.
+ */
+function RoleMentionPill({ id }) {
+  const { t } = useLocale();
+  useSyncExternalStore(subscribeRoles, rolesVersion, rolesVersion);
+  const [open, setOpen] = useState(false);
+  const role = getRole(id);
+  const name = role?.name || t("msg5.roles.unknown");
+  const hex = roleColorHex(role?.color);
+  return (
+    <span className="msg-role-mention-wrap">
+      <button
+        type="button"
+        className="msg-role-mention"
+        style={hex ? { "--role-c": hex } : undefined}
+        data-role-mention={id || ""}
+        aria-expanded={open}
+        aria-label={t("msg5.roles.aria", { name })}
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onBlur={() => setOpen(false)}
+      >
+        @{displayText(name)}
+      </button>
+      {open ? (
+        <span className="msg-role-pop" role="tooltip">
+          <i style={hex ? { background: hex } : undefined} aria-hidden="true" />
+          {t("msg5.roles.popover", { name: displayText(name) })}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function renderTokens(tokens, keyPrefix, highlight) {
   return tokens.map((token, i) => {
     const key = `${keyPrefix}-${i}`;
+    if (token.type === "role") {
+      return <RoleMentionPill key={key} id={token.id} />;
+    }
     if (token.type === "bold") {
       return (
         <strong key={key} className="msg-bold">

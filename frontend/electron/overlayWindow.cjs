@@ -14,9 +14,13 @@ const os   = require('os');
 const { buildOverlayHtml, OVERLAY_WIDTH, OVERLAY_HEIGHT } = require('./overlayHtml.cjs');
 const { getLocale } = require('./mainI18n.cjs');
 const OVERLAY_MARGIN = 16;
+// A hidden overlay is destroyed after this long (its renderer process is freed);
+// showing it again cancels the timer, and ensureOverlayWindow recreates it on demand.
+const OVERLAY_IDLE_DESTROY_MS = 60_000;
 
 let overlayWin  = null;
 let overlayFile = null;
+let idleDestroyTimer = null;
 let currentState = { title: '', muted: false, deafened: false, connected: false, pending: false, kind: 'dm', since: 0, lang: getLocale(), avatarUrl: '', brandRgb: '' };
 
 function getDefaultPosition() {
@@ -70,16 +74,17 @@ function ensureOverlayWindow() {
   try { overlayWin.setHasShadow(false); } catch (_) { /* ignore */ }
   overlayWin.setAlwaysOnTop(true, 'screen-saver');
 
-  overlayFile = path.join(os.tmpdir(), `descall-overlay-${Date.now()}.html`);
-  fs.writeFileSync(overlayFile, buildHtml(), 'utf8');
-  overlayWin.loadFile(overlayFile).catch(() => {});
+  const file = path.join(os.tmpdir(), `descall-overlay-${Date.now()}.html`);
+  overlayFile = file;
+  fs.writeFileSync(file, buildHtml(), 'utf8');
+  overlayWin.loadFile(file).catch(() => {});
 
-  overlayWin.once('closed', () => {
-    overlayWin = null;
-    if (overlayFile) {
-      try { fs.unlinkSync(overlayFile); } catch (_) { /* ignore */ }
-      overlayFile = null;
-    }
+  // Per-window cleanup: a window closed by the idle timer must not clear a newer one.
+  const win = overlayWin;
+  win.once('closed', () => {
+    if (overlayWin === win) overlayWin = null;
+    try { fs.unlinkSync(file); } catch (_) { /* ignore */ }
+    if (overlayFile === file) overlayFile = null;
   });
 
   return overlayWin;
@@ -95,7 +100,15 @@ function pushState() {
 
 // The overlay speaks the main-process language (the UI language the renderer reports),
 // whatever lang the payload carries.
+function cancelIdleDestroy() {
+  if (idleDestroyTimer) {
+    clearTimeout(idleDestroyTimer);
+    idleDestroyTimer = null;
+  }
+}
+
 function showOverlayWindow(payload = {}) {
+  cancelIdleDestroy();
   currentState = { ...currentState, ...payload, connected: true, lang: getLocale() };
   const win = ensureOverlayWindow();
 
@@ -129,10 +142,17 @@ function hideOverlayWindow() {
   currentState = { ...currentState, connected: false };
   if (overlayWin && !overlayWin.isDestroyed()) {
     overlayWin.hide();
+    cancelIdleDestroy();
+    idleDestroyTimer = setTimeout(() => {
+      idleDestroyTimer = null;
+      if (overlayWin && !overlayWin.isDestroyed() && !overlayWin.isVisible()) destroyOverlayWindow();
+    }, OVERLAY_IDLE_DESTROY_MS);
+    if (typeof idleDestroyTimer.unref === 'function') idleDestroyTimer.unref();
   }
 }
 
 function destroyOverlayWindow() {
+  cancelIdleDestroy();
   if (overlayWin && !overlayWin.isDestroyed()) {
     try { overlayWin.close(); } catch (_) { /* ignore */ }
   }
@@ -170,4 +190,5 @@ module.exports = {
   isOverlayWindowVisible,
   refreshOverlayLanguage,
   registerOverlayIPC,
+  OVERLAY_IDLE_DESTROY_MS,
 };

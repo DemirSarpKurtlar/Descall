@@ -45,11 +45,11 @@ function ConnectionBadge({ status }) {
         WebkitBackdropFilter: "blur(12px) saturate(140%)",
         boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.08)",
         background: isDisconnected
-          ? "rgba(237,66,69,0.2)"
+          ? "rgba(255,69,58,0.2)"
           : isReconnecting
-          ? "rgba(240,178,50,0.18)"
-          : "rgba(59,165,93,0.18)",
-        color: isDisconnected ? "#ed4245" : isReconnecting ? "#f0b232" : "#3ba55d",
+          ? "rgba(255,159,10,0.18)"
+          : "rgba(48,209,88,0.18)",
+        color: isDisconnected ? "#FF453A" : isReconnecting ? "#FF9F0A" : "#30D158",
         fontSize: 11,
         fontWeight: 600,
         letterSpacing: "0.01em",
@@ -302,7 +302,7 @@ export default function DmRemoteParticipantSlot({
                     width: 7,
                     height: 7,
                     borderRadius: "50%",
-                    background: "#3ba55d",
+                    background: "#30D158",
                     flexShrink: 0,
                     animation: "callTilePulse 1.2s infinite",
                   }}

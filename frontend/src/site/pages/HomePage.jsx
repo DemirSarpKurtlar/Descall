@@ -49,7 +49,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
       <JsonLd data={[buildEntityGraphLd()]} />
       <section className="mkt-hh" aria-labelledby="mkt-hh-title">
         <div className="mkt-hh-copy">
-          <h1 id="mkt-hh-title">{t("Talk together")}</h1>
+          <h1 id="mkt-hh-title">{t("Descall: voice chat, servers and screen sharing for friends")}</h1>
           <p className="mkt-hh-lead">
             {useExperimentCopy && heroPayload.sub ? (
               String(heroPayload.sub)

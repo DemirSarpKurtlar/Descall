@@ -882,7 +882,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                 </RippleButton>
                 <RippleButton
                   type="button"
-                  className={showComposePanel ? "admin-btn-red" : "admin-btn-green"}
+                  className={showComposePanel ? "admin-btn-ghost" : "admin-btn-primary"}
                   onClick={() => { setShowComposePanel((v) => !v); setAnnouncementError(""); }}
                 >
                   {showComposePanel ? <><X size={14} /> {t("Cancel")}</> : <><Send size={14} /> {t("Compose")}</>}
@@ -1064,7 +1064,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                     <RippleButton type="button" onClick={() => setShowComposePanel(false)}>{t("Cancel")}</RippleButton>
                     <RippleButton
                       type="button"
-                      className="admin-btn-green"
+                      className="admin-btn-primary"
                       disabled={announcementSubmitting || !announcementDraft.title.trim() || !announcementDraft.content.trim()}
                       onClick={async () => {
                         setAnnouncementSubmitting(true);
@@ -1337,7 +1337,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
                         <div style={{ fontWeight: 600 }}>{selectedCreditUser.username}</div>
                         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("Current Balance")}</div>
                       </div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "var(--brand, #587af5)" }}>
                         {formatNumber(selectedCreditUser.credits || 0, locale)}
                       </div>
                     </div>
@@ -1388,7 +1388,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
                       <RippleButton
                         type="button"
-                        className={creditOperation === "add" ? "admin-btn-green" : "admin-btn-red"}
+                        className={creditOperation === "add" ? "admin-btn-primary" : "admin-btn-danger"}
                         onClick={() => act(() => updateUserCredits(selectedCreditUser.user_id, creditAmount, creditOperation, creditReason))}
                         disabled={busy || creditAmount <= 0}
                         style={{ width: "100%", marginTop: 8 }}

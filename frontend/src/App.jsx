@@ -69,6 +69,7 @@ import { optimisticSessionReady } from "./lib/bootSession";
 import { mergeIncomingDmMessage, mergeIncomingChatMessage, shouldAcceptLiveMessage } from "./lib/liveMessageMerge";
 import { matchPushToTalkEvent, readVoiceProfile } from "./lib/voiceProfile";
 import { useCall } from "./hooks/useCall";
+import { useStableHandler } from "./hooks/useStableHandler";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
 import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
 import { useGroupCall } from "./hooks/useGroupCall";
@@ -583,6 +584,9 @@ export default function App() {
   const [typingGroupUsers, setTypingGroupUsers] = useState({});
   // channelId -> Map<userId, {id, username}>
   const [typingChannelUsers, setTypingChannelUsers] = useState({});
+  // Every chat's typing (the state above only follows the open chat, see typing:update).
+  const typingGroupAllRef = useRef(typingGroupUsers);
+  const typingChannelAllRef = useRef(typingChannelUsers);
   const [dmHasMore, setDmHasMore] = useState(true);
   const [loadingOlderDm, setLoadingOlderDm] = useState(false);
   const [reconnectState, setReconnectState] = useState("idle");
@@ -868,6 +872,14 @@ export default function App() {
   useEffect(() => {
     activeChannelRef.current = activeChannel;
   }, [activeChannel]);
+
+  // Opening a group / channel shows who is already typing there.
+  useEffect(() => {
+    setTypingGroupUsers(typingGroupAllRef.current);
+  }, [activeGroup?.id]);
+  useEffect(() => {
+    setTypingChannelUsers(typingChannelAllRef.current);
+  }, [activeChannel?.id]);
 
   useEffect(() => {
     activeServerRef.current = activeServer;
@@ -1340,6 +1352,34 @@ export default function App() {
     me?.username,
   ]);
 
+  // Message list handlers with fixed identities (the list and its bubbles are memoized;
+  // inline arrows here re-rendered every bubble on each App state change).
+  const listStartDm = useCallback((user) => setActiveDmUser(user), []);
+  const listStartCall = useStableHandler((user, type = "voice") => {
+    if (groupCall?.isInCall) return;
+    if (user && call?.startCall) call.startCall(user, type);
+  });
+  const listReply = useStableHandler((msg) => {
+    if (editingMessage?.id) cancelMessageEdit(editingMessage.id);
+    setEditingMessage(null);
+    setReplyTo(msg);
+  });
+  const listStartEdit = useCallback((payload) => {
+    setReplyTo(null);
+    setEditingMessage(payload);
+  }, []);
+  const listJoinActiveCall = useStableHandler(() => {
+    if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
+      call.acceptIncoming?.();
+      return;
+    }
+    if (!activeGroup || !groupCall?.activeCallBanner) return;
+    groupCall.joinActiveCall(groupCall.activeCallBanner);
+  });
+  const listRetryLoad = useStableHandler(() => {
+    if (activeDmUser?.id) loadDmMessagesRest(activeDmUser.id);
+  });
+
   // Boot session check (2.11.5): every /auth/me attempt is capped and retried
   // (lib/bootSessionCheck.js). Nothing answering used to keep the skeleton up
   // forever. With no cached session we now show BootErrorScreen + "Tekrar dene".
@@ -1725,6 +1765,21 @@ export default function App() {
       if (pref?.peerId) setDmPrefs((prev) => mergePrefIntoMap(prev, pref));
     });
 
+    // Group / channel typing for every chat lives in refs; only a change in the open
+    // chat is copied into state, so typing in chats that are not open does not
+    // re-render App and the open chat (opening a chat syncs the snapshot, see below).
+    const updateTyping = (allRef, setState, isOpen, id, change) => {
+      const prev = allRef.current;
+      const cur = prev[id];
+      const map = cur instanceof Map ? new Map(cur) : new Map();
+      change(map);
+      const next = { ...prev, [id]: map };
+      allRef.current = next;
+      if (isOpen()) setState(next);
+    };
+    const isOpenGroup = (groupId) => () => activeGroupRef.current?.id === groupId;
+    const isOpenChannel = (channelId) => () => activeChannelRef.current?.id === channelId;
+
     socket.on("typing:update", (payload = {}) => {
       const { context, fromUser, typing, groupId, channelId } = payload;
       if (!fromUser?.id || fromUser.id === myIdRef.current) return;
@@ -1743,15 +1798,12 @@ export default function App() {
           }, 3500);
         }
       } else if (context === "group" && groupId) {
-        setTypingGroupUsers((prev) => {
-          const cur = prev[groupId];
-          const groupMap = cur instanceof Map ? new Map(cur) : new Map();
+        updateTyping(typingGroupAllRef, setTypingGroupUsers, isOpenGroup(groupId), groupId, (groupMap) => {
           if (typing) {
             groupMap.set(fromUser.id, fromUser);
           } else {
             groupMap.delete(fromUser.id);
           }
-          return { ...prev, [groupId]: groupMap };
         });
         const key = `${groupId}:${fromUser.id}`;
         if (typingGroupTimeoutsRef.current.has(key)) {
@@ -1760,26 +1812,20 @@ export default function App() {
         }
         if (typing) {
           const t = setTimeout(() => {
-            setTypingGroupUsers((prev) => {
-              const cur = prev[groupId];
-              const groupMap = cur instanceof Map ? new Map(cur) : new Map();
+            updateTyping(typingGroupAllRef, setTypingGroupUsers, isOpenGroup(groupId), groupId, (groupMap) => {
               groupMap.delete(fromUser.id);
-              return { ...prev, [groupId]: groupMap };
             });
             typingGroupTimeoutsRef.current.delete(key);
           }, 3500);
           typingGroupTimeoutsRef.current.set(key, t);
         }
       } else if (context === "server" && channelId) {
-        setTypingChannelUsers((prev) => {
-          const cur = prev[channelId];
-          const channelMap = cur instanceof Map ? new Map(cur) : new Map();
+        updateTyping(typingChannelAllRef, setTypingChannelUsers, isOpenChannel(channelId), channelId, (channelMap) => {
           if (typing) {
             channelMap.set(fromUser.id, fromUser);
           } else {
             channelMap.delete(fromUser.id);
           }
-          return { ...prev, [channelId]: channelMap };
         });
         const key = `${channelId}:${fromUser.id}`;
         if (typingChannelTimeoutsRef.current.has(key)) {
@@ -1788,11 +1834,8 @@ export default function App() {
         }
         if (typing) {
           const t = setTimeout(() => {
-            setTypingChannelUsers((prev) => {
-              const cur = prev[channelId];
-              const channelMap = cur instanceof Map ? new Map(cur) : new Map();
+            updateTyping(typingChannelAllRef, setTypingChannelUsers, isOpenChannel(channelId), channelId, (channelMap) => {
               channelMap.delete(fromUser.id);
-              return { ...prev, [channelId]: channelMap };
             });
             typingChannelTimeoutsRef.current.delete(key);
           }, 3500);
@@ -2358,24 +2401,19 @@ export default function App() {
       }
     });
 
-    socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt } = {}) => {
-      if (!messageId) return;
+    socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt, editedBy } = {}) => {
+      if (!messageId || !groupId || !editedBy) return;
       const stamp = editedAt || new Date().toISOString();
       setGroupMessagesById((prev) => {
-        const apply = (list) => list.map((m) => (
-          m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
-        ));
-        if (groupId && prev[groupId]?.some((m) => m.id === messageId)) {
-          return { ...prev, [groupId]: apply(prev[groupId]) };
-        }
-        let changed = false;
-        const next = { ...prev };
-        for (const [id, list] of Object.entries(prev)) {
-          if (!list?.some((m) => m.id === messageId)) continue;
-          changed = true;
-          next[id] = apply(list);
-        }
-        return changed ? next : prev;
+        // Only this group, and only the message's own sender may rewrite it.
+        const cur = prev[groupId];
+        if (!cur?.some((m) => m.id === messageId && m.from?.id === editedBy)) return prev;
+        return {
+          ...prev,
+          [groupId]: cur.map((m) => (
+            m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
+          )),
+        };
       });
       resolveMessageEdited(messageId);
     });
@@ -5814,29 +5852,12 @@ export default function App() {
             me={me}
             friends={friends}
             onlineUsers={onlineUsers}
-            onStartDm={(user) => setActiveDmUser(user)}
-            onStartCall={(user, type = "voice") => {
-              if (groupCall?.isInCall) return;
-              if (user && call?.startCall) call.startCall(user, type);
-            }}
-            onReply={(msg) => {
-              if (editingMessage?.id) cancelMessageEdit(editingMessage.id);
-              setEditingMessage(null);
-              setReplyTo(msg);
-            }}
+            onStartDm={listStartDm}
+            onStartCall={listStartCall}
+            onReply={listReply}
             editingMessageId={editingMessage?.id || null}
-            onStartEdit={(payload) => {
-              setReplyTo(null);
-              setEditingMessage(payload);
-            }}
-            onJoinActiveCall={() => {
-              if (call?.mode === "incoming" && call?.peer?.id && call.peer.id === activeDmUser?.id) {
-                call.acceptIncoming?.();
-                return;
-              }
-              if (!activeGroup || !groupCall?.activeCallBanner) return;
-              groupCall.joinActiveCall(groupCall.activeCallBanner);
-            }}
+            onStartEdit={listStartEdit}
+            onJoinActiveCall={listJoinActiveCall}
             onDismissActiveBanner={groupCall?.dismissActiveBanner}
             socket={socketRef.current}
             activeGroup={activeGroup}
@@ -5857,9 +5878,7 @@ export default function App() {
                   channelMessagesById[activeChannel.id] === undefined)
             )}
             loadError={dmHistoryFailed}
-            onRetryLoad={() => {
-              if (activeDmUser?.id) loadDmMessagesRest(activeDmUser.id);
-            }}
+            onRetryLoad={listRetryLoad}
             unreadCount={
               unreadMarker &&
               ((activeDmUser && unreadMarker.key === `dm:${activeDmUser.id}`) ||

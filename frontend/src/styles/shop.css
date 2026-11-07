@@ -832,6 +832,12 @@ html[data-bubble="minimal"] .shop-live-bubble {
   margin: 0 0 12px;
 }
 
+/* UI audit #112: on Envanter the page title is "Envanterin" only; the settings
+   pane's "Mağaza" title above it would read as two stacked headings. */
+.us-main-scroll:has(.shop-inventory-head) > .us-page-title {
+  display: none;
+}
+
 .shop-inventory-head h3 {
   margin: 0 0 4px;
   font-size: 20px;

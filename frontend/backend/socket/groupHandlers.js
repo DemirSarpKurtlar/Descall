@@ -4,6 +4,7 @@
  */
 
 const { forwardedReplyMeta, isMissingColumn } = require("../lib/forwardedMessage");
+const { resolveGroupReplyMeta } = require("../lib/replyMeta");
 const { appendErrorLog, activeGroupCalls, screenShareSessions, presence, usernameById, systemConfig } = require("../runtime/sharedState");
 const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
@@ -68,6 +69,35 @@ async function pushGroupMessageToIos({ groupId, groupName, fromId, from, message
   } catch (err) {
     console.warn("[GroupMessage] iOS push skipped:", err?.message || err);
   }
+}
+
+/**
+ * Set of String(groupId) among groupIds that userId is a member of (groups:rejoin).
+ * One .in() query per 100 ids instead of one query per group. When a chunk errors
+ * (e.g. one malformed id fails the whole uuid list), that chunk is checked id by id
+ * as before, so one bad id still only skips itself.
+ */
+async function groupsUserBelongsTo(groupIds, userId, db = supabase) {
+  const out = new Set();
+  const ids = [...new Set((groupIds || []).filter(Boolean))];
+  for (let i = 0; i < ids.length; i += 100) {
+    const chunk = ids.slice(i, i + 100);
+    const { data, error } = await db.from("group_members").select("group_id").in("group_id", chunk).eq("user_id", userId);
+    if (!error) {
+      for (const row of data || []) out.add(String(row.group_id));
+      continue;
+    }
+    for (const groupId of chunk) {
+      const { data: membership } = await db
+        .from("group_members")
+        .select("group_id")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (membership) out.add(String(groupId));
+    }
+  }
+  return out;
 }
 
 function resolveSocketAvatar(socket) {
@@ -160,7 +190,14 @@ function registerGroupHandlers(io, socket, state) {
       const rr = require("../lib/readReceipts");
       const at = await rr.markGroupRead(groupId, myId);
       if (at && (await rr.receiptsEnabled(myId))) {
-        io.to(`group:${groupId}`).emit("group:read", { groupId, userId: myId, at });
+        // Members who turned receipts off do not see anyone else's reads either.
+        const { data: members } = await supabase.from("group_members").select("user_id").eq("group_id", groupId);
+        const off = [];
+        for (const m of members || []) {
+          if (m.user_id && m.user_id !== myId && !(await rr.receiptsEnabled(m.user_id))) off.push(`user:${m.user_id}`);
+        }
+        const room = io.to(`group:${groupId}`);
+        (off.length ? room.except(off) : room).emit("group:read", { groupId, userId: myId, at });
       }
     } catch (err) {
       console.warn("[GroupRead] mark failed:", err?.message || err);
@@ -197,15 +234,10 @@ function registerGroupHandlers(io, socket, state) {
   // Restores active-banner state without requiring a page reload
   socket.on("groups:rejoin", async (groupIds) => {
     if (!Array.isArray(groupIds)) return;
+    const memberOf = await groupsUserBelongsTo(groupIds.filter(Boolean), myId);
     for (const groupId of groupIds) {
       if (!groupId) continue;
-      const { data: membership } = await supabase
-        .from("group_members")
-        .select("group_id")
-        .eq("group_id", groupId)
-        .eq("user_id", myId)
-        .maybeSingle();
-      if (!membership) continue;
+      if (!memberOf.has(String(groupId))) continue;
       socket.join(`group:${groupId}`);
       const activeCall = activeGroupCalls.get(groupId);
       if (activeCall && activeCall.participants.size > 0) {
@@ -353,14 +385,8 @@ function registerGroupHandlers(io, socket, state) {
     }
 
     // Reply quote / forward mark (messaging phase 4): stored in reply_to so history keeps it.
-    const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
-      ? {
-          id: replyTo.id || null,
-          text: replyTo.text || "",
-          mediaType: replyTo.mediaType || null,
-          from: replyTo.from || null,
-        }
-      : null);
+    // The quote is read from the database (same group only), never taken from the client.
+    const replyMeta = forwardedReplyMeta(forwarded) || await resolveGroupReplyMeta(supabase, replyTo, groupId).catch(() => null);
     const baseRow = {
       group_id: groupId,
       sender_id: myId,
@@ -963,4 +989,4 @@ function registerGroupHandlers(io, socket, state) {
   });
 }
 
-module.exports = { registerGroupHandlers, removeUserFromAllGroupCalls, pushGroupMessageToIos };
+module.exports = { registerGroupHandlers, removeUserFromAllGroupCalls, pushGroupMessageToIos, groupsUserBelongsTo };

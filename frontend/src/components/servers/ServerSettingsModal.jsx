@@ -10,7 +10,7 @@ import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
 import { serverHasPermission } from "../../lib/serverPermissions";
-import ImageCropModal from "../ui/ImageCropModal";
+import ImageCropModal from "../ui/LazyImageCropModal";
 import { ServerDangerZone } from "./OwnershipTransfer";
 import { ServerIcon } from "./ServerIcon";
 

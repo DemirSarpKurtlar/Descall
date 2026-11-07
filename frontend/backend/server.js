@@ -384,6 +384,46 @@ app.post("/api/marketing/consent-event", (req, res, next) => {
 app.get(["/dimaai", "/dimaai/*"], (_req, res) => res.redirect(301, "/"));
 app.get(["/tr/dimaai", "/tr/dimaai/*"], (_req, res) => res.redirect(301, "/tr"));
 app.get(["/play", "/play/*", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"], (_req, res) => res.redirect(301, "/"));
+// Merged marketing pages (SEO audit, Nov 2026): same 301s as public/_redirects,
+// public/_worker.js and vercel.json. Source of truth: src/site/seo/mergedPages.js.
+const MERGED_PAGE_REDIRECTS = {
+  "/blog/discord-vs-descall": "/compare/discord",
+  "/blog/apps-like-discord": "/apps-like-discord",
+  "/blog/voice-chat-alternative-to-discord": "/discord-alternative-for-voice-chat",
+  "/blog/discord-alternative-for-communities-guide": "/discord-alternative-for-communities",
+  "/blog/migrate-from-discord-to-descall": "/discord-replacement",
+  "/tr/blog/discord-vs-descall": "/tr/compare/discord",
+  "/tr/blog/apps-like-discord": "/tr/discord-yerine-ne-kullanilir",
+  "/tr/blog/voice-chat-alternative-to-discord": "/tr/sesli-sohbet-uygulamasi",
+  "/tr/blog/discord-alternative-for-communities-guide": "/tr/discord-alternatifi",
+  "/tr/blog/migrate-from-discord-to-descall": "/tr/discord-alternatifi",
+  "/de/blog/discord-vs-descall": "/de/compare/discord",
+  "/de/blog/apps-like-discord": "/de/apps-like-discord",
+  "/de/blog/voice-chat-alternative-to-discord": "/de/discord-alternative-for-voice-chat",
+  "/de/blog/discord-alternative-for-communities-guide": "/de/discord-alternative-for-communities",
+  "/de/blog/migrate-from-discord-to-descall": "/de/discord-replacement",
+  "/es/blog/discord-vs-descall": "/es/compare/discord",
+  "/es/blog/apps-like-discord": "/es/apps-like-discord",
+  "/es/blog/voice-chat-alternative-to-discord": "/es/discord-alternative-for-voice-chat",
+  "/es/blog/discord-alternative-for-communities-guide": "/es/discord-alternative-for-communities",
+  "/es/blog/migrate-from-discord-to-descall": "/es/discord-replacement",
+  "/fr/blog/discord-vs-descall": "/fr/compare/discord",
+  "/fr/blog/apps-like-discord": "/fr/apps-like-discord",
+  "/fr/blog/voice-chat-alternative-to-discord": "/fr/discord-alternative-for-voice-chat",
+  "/fr/blog/discord-alternative-for-communities-guide": "/fr/discord-alternative-for-communities",
+  "/fr/blog/migrate-from-discord-to-descall": "/fr/discord-replacement",
+  "/pt-br/blog/discord-vs-descall": "/pt-br/compare/discord",
+  "/pt-br/blog/apps-like-discord": "/pt-br/apps-like-discord",
+  "/pt-br/blog/voice-chat-alternative-to-discord": "/pt-br/discord-alternative-for-voice-chat",
+  "/pt-br/blog/discord-alternative-for-communities-guide": "/pt-br/discord-alternative-for-communities",
+  "/pt-br/blog/migrate-from-discord-to-descall": "/pt-br/discord-replacement",
+  "/ru/blog/discord-vs-descall": "/ru/compare/discord",
+  "/ru/blog/apps-like-discord": "/ru/apps-like-discord",
+  "/ru/blog/voice-chat-alternative-to-discord": "/ru/discord-alternative-for-voice-chat",
+  "/ru/blog/discord-alternative-for-communities-guide": "/ru/discord-alternative-for-communities",
+  "/ru/blog/migrate-from-discord-to-descall": "/ru/discord-replacement",
+};
+app.get(Object.keys(MERGED_PAGE_REDIRECTS), (req, res) => res.redirect(301, MERGED_PAGE_REDIRECTS[req.path.replace(/\/+$/, "")] || "/"));
 app.use(sitemapRouter);
 
 // Test endpoint - no auth required
@@ -502,6 +542,8 @@ app.use("/api/notify-prefs", require("./routes/notifyPrefs"));
 // Messaging phase 4: scheduled sending; the sender runs here so schedules fire while the author is offline.
 app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
 if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
+// Messaging phase 5: "Mesaj önizlemesi" for server-sent pushes (users.push_preview).
+app.use("/api/push-preview", require("./routes/pushPreview"));
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

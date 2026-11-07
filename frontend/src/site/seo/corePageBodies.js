@@ -6,6 +6,9 @@ import { FAQ_ITEMS } from "../faqData.js";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
 import { LEGAL_EMAIL, contactCopy, legalSlug, tocLabel } from "../../legal/legalView.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
+import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
+import { APP_STORE_URL } from "../appStoreLink.js";
+import { formatDate } from "../../i18n/format.js";
 import {
   ALTERNATIVE_HUB_FAQ,
   ALTERNATIVES_FAQ,
@@ -42,6 +45,11 @@ function escapeHtml(s) {
 /** Escaped text with {name} placeholders replaced by ready HTML. */
 function fill(text, html = {}) {
   return escapeHtml(text).replace(/\{(\w+)\}/g, (m, key) => (html[key] != null ? html[key] : m));
+}
+
+/** "2026-11-06" as a long date in the page language (Intl, UTC). */
+function longDate(iso, loc) {
+  return formatDate(`${iso}T12:00:00Z`, siteLoc(loc), { dateStyle: "long", timeZone: "UTC" }) || iso;
 }
 
 function brandBlock(loc = "en") {
@@ -171,12 +179,19 @@ export function corePageBody(path) {
   switch (bare) {
     case "/": {
       const copy = homeHero(loc);
+      const n = navLabels(loc);
+      // Same grid, copy and product shot as HomePage.jsx (.mkt-hh), see index.html .seo-hh.
       return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(copy.h1)}</h1>
-  <p class="seo-lead">${escapeHtml(copy.lead)}</p>
-  ${heroCtaHtml(loc)}
+<main class="seo-main-home">
+  <section class="seo-hh">
+    <div class="seo-hh-copy">
+      <h1>${escapeHtml(copy.h1)}</h1>
+      <p class="seo-hh-lead"><span class="seo-hh-lead-long">${escapeHtml(copy.lead)}</span><span class="seo-hh-lead-short">${escapeHtml(tc("Voice chat, screen sharing, and servers."))}</span></p>
+      <p class="seo-hh-cta"><a class="seo-hh-btn is-primary" href="${homeHref(loc)}?auth=register" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(n.startFree)}</a><a class="seo-hh-btn is-secondary" href="${h("/download")}">${escapeHtml(tc("Download the desktop app"))}</a></p>
+      <ul class="seo-hh-platforms"><li>iPhone</li><li>Android</li><li>Windows</li><li>Web</li></ul>
+    </div>
+    <figure class="seo-pf"><div class="seo-pf-glass"><picture><source media="(max-width: 768px)" srcset="/brand/previews/hero-ios-chats.webp" width="780" height="1688" /><img class="seo-pf-screen" src="/brand/previews/hero-desktop-dm.webp" width="1440" height="900" alt="${escapeHtml(tc("Descall chat, with servers and a voice channel in the same window"))}" fetchpriority="high" decoding="async" /></picture></div></figure>
+  </section>
   <h2>${escapeHtml(copy.voiceTitle)}</h2>
   <p>${escapeHtml(copy.voiceBody)}</p>
   <h2>${escapeHtml(copy.serversTitle)}</h2>
@@ -236,11 +251,12 @@ export function corePageBody(path) {
       return `
 <main>
   ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("Download Descall for Windows, Free Voice Chat App"))}</h1>
+  <h1>${escapeHtml(tc("Download Descall for Windows, iPhone, Android and the web"))}</h1>
   <p>${escapeHtml(tc("Get the Windows desktop app, Android builds, or the full web app in your browser."))}</p>
   <h2>${escapeHtml(tc("Platforms"))}</h2>
   <ul>
     <li>${escapeHtml(tc("Windows installer for the native desktop client"))}</li>
+    <li><a href="${APP_STORE_URL}">${escapeHtml(tc("iPhone and iPad app on the App Store"))}</a></li>
     <li>${escapeHtml(tc("Android APK builds for mobile"))}</li>
     <li>${escapeHtml(tc("Full-featured web app at descall.com, no install required"))}</li>
   </ul>
@@ -296,9 +312,7 @@ export function corePageBody(path) {
     <li>${escapeHtml(nc("Contact"))}: ${mail}</li>
   </ul>
   <h2>${escapeHtml(nc("FAQ"))}</h2>
-  <section><h3>${escapeHtml(nc("Who owns Descall?"))}</h3><p>${escapeHtml(nc("Demir Sarp Kurtlar owns Descall. He is the founder, owner, and CEO of Descall."))}</p></section>
-  <section><h3>${escapeHtml(nc("Who founded Descall?"))}</h3><p>${escapeHtml(nc("Descall was founded by Demir Sarp Kurtlar, who remains the owner and CEO."))}</p></section>
-  <section><h3>${escapeHtml(nc("Who is the CEO of Descall?"))}</h3><p>${escapeHtml(nc("Demir Sarp Kurtlar is the founder, owner, and CEO of Descall."))}</p></section>
+  ${OWNERSHIP_FAQ_EN.map((f) => `<section><h3>${escapeHtml(nc(f.q))}</h3><p>${escapeHtml(nc(f.a))}</p></section>`).join("\n  ")}
   <p><a href="/descall-sahibi">Türkçe: Descall’ın sahibi kim?</a> · <a href="${hn("/about")}">${escapeHtml(nc("About"))}</a></p>
   ${navBlock(loc)}
 </main>`;
@@ -321,9 +335,7 @@ export function corePageBody(path) {
     <li>İletişim: <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></li>
   </ul>
   <h2>SSS</h2>
-  <section><h3>Descall’ın sahibi kim?</h3><p>Descall’ın sahibi Demir Sarp Kurtlar’dır. Demir Sarp Kurtlar, Descall’ın kurucusu, sahibi ve CEO’sudur.</p></section>
-  <section><h3>Descall sahibi kimdir?</h3><p>Descall sahibi Demir Sarp Kurtlar’dır.</p></section>
-  <section><h3>Descall’ı kim kurdu?</h3><p>Descall’ı Demir Sarp Kurtlar kurdu. Hâlâ sahibi ve CEO’sudur.</p></section>
+  ${OWNERSHIP_FAQ_TR.map((f) => `<section><h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p></section>`).join("\n  ")}
   <p><a href="/who-owns-descall">English: Who owns Descall?</a> · <a href="/tr/about">Hakkında</a></p>
   ${navBlock("tr")}
 </main>`;
@@ -359,7 +371,8 @@ export function corePageBody(path) {
     <li>${escapeHtml(nc("API health"))}: <a href="https://descall.com/api/status">/api/status</a></li>
     <li>${escapeHtml(nc("Source"))}: <a href="${SITE_OPERATOR.githubUrl}">GitHub</a></li>
   </ul>
-  <p>${escapeHtml(nc("Last updated"))}: ${escapeHtml(nc(SITE_OPERATOR.lastUpdatedLabel))}</p>
+  <p>${escapeHtml(nc("The API row is checked live from your browser each time you open this page."))}</p>
+  <p>${escapeHtml(nc("Last updated"))}: <time datetime="${SITE_OPERATOR.statusReviewedIso}">${escapeHtml(longDate(SITE_OPERATOR.statusReviewedIso, loc))}</time></p>
   ${navBlock(loc)}
 </main>`;
 
@@ -453,7 +466,7 @@ export function corePageBody(path) {
   <h2>${tr ? "Kısa karar" : escapeHtml(nc("Quick verdict"))}</h2>
   <p><strong>Descall</strong> ${escapeHtml(verdictDescall)}</p>
   <p><strong>Discord</strong> ${escapeHtml(verdictDiscord)}</p>
-  <p><a href="${hn("/alternatives")}">${tr ? "Tüm alternatifler" : escapeHtml(nc("All Discord alternatives"))}</a> · <a href="/blog/discord-vs-descall">${tr ? "Uzun karşılaştırma yazısı" : escapeHtml(nc("Longer comparison article"))}</a></p>
+  <p><a href="${hn("/alternatives")}">${tr ? "Tüm alternatifler" : escapeHtml(nc("All Discord alternatives"))}</a></p>
   ${faqHtml(COMPARE_FAQ, loc)}
   ${navBlock(loc)}
 </main>`;

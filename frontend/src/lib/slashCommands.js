@@ -19,11 +19,13 @@ const withText = (obj, props) => {
   return obj;
 };
 
+// UI audit #143 / #155: flat system-colour tiles, brand blue for general and
+// games (no per-group gradients, no purple game tiles).
 export const SLASH_GROUPS = [
-  { id: "general", color: "#6d8cff", gradient: "linear-gradient(160deg,#6d8cff,#4a5fe0)" },
-  { id: "moderation", color: "#ff7a6b", gradient: "linear-gradient(160deg,#ff7a6b,#e0455f)" },
-  { id: "games", color: "#b77bff", gradient: "linear-gradient(160deg,#b77bff,#7a4fe0)" },
-  { id: "credits", color: "#ffc95c", gradient: "linear-gradient(160deg,#ffc95c,#e79a2c)" },
+  { id: "general", color: "#587AF5", gradient: "#587AF5" },
+  { id: "moderation", color: "#FF453A", gradient: "#FF453A" },
+  { id: "games", color: "#587AF5", gradient: "#587AF5" },
+  { id: "credits", color: "#FF9F0A", gradient: "#FF9F0A" },
 ].map((g) => withText(g, { label: () => t(`slash.group.${g.id}`) }));
 
 export const SLASH_GROUP_BY_ID = Object.fromEntries(SLASH_GROUPS.map((g) => [g.id, g]));

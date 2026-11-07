@@ -1,6 +1,7 @@
 "use strict";
 
 const { forwardedReplyMeta } = require("../lib/forwardedMessage");
+const { resolveDmReplyMeta } = require("../lib/replyMeta");
 const { bothShare: bothShareReceipts } = require("../lib/readReceipts");
 const notifyPrefs = require("../lib/notifyPrefs");
 const { checkMessageSend } = require("../lib/platformPolicy");
@@ -1296,14 +1297,8 @@ function registerSocketHandlers(io) {
       await ensureCosmeticsCached([myId]).catch(() => {});
       const sender = messageSender(myId, me.username, me.avatar_url || socket.user?.avatar_url);
       // Messaging phase 4: a forward carries { forwarded: true } in reply_to and never quotes.
-      const replyMeta = forwardedReplyMeta(forwarded) || (replyTo && typeof replyTo === "object"
-        ? {
-            id: replyTo.id || null,
-            text: replyTo.text || "",
-            mediaType: replyTo.mediaType || null,
-            from: replyTo.from || null,
-          }
-        : null);
+      // The quote is read from the database (this conversation only), never taken from the client.
+      const replyMeta = forwardedReplyMeta(forwarded) || await resolveDmReplyMeta(supabase, replyTo, myId, toUserId).catch(() => null);
       const isVoice = mediaType === "voice" || mediaType === "audio";
       const voiceDuration = isVoice ? Math.max(0, Math.round(Number(duration) || 0)) : null;
       const storedText = isVoice
@@ -2417,7 +2412,10 @@ function registerSocketHandlers(io) {
         message: message || "Failed to edit message.",
         code: "EDIT_FAILED",
       });
-      if (!messageId || !newText || !groupId) return fail("Failed to edit message.");
+      if (!messageId || typeof newText !== "string" || !groupId) return fail("Failed to edit message.");
+      const trimmed = newText.trim();
+      if (!trimmed) return fail("Message cannot be empty.");
+      if (trimmed.length > (Number(systemConfig.maxMessageLength) || 2000)) return fail("Message is too long.");
 
       // Check membership
       if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to edit message.");
@@ -2430,27 +2428,32 @@ function registerSocketHandlers(io) {
       
       try {
         // Update message in Supabase
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from("group_messages")
           .update({
-            content: newText,
+            content: trimmed,
             edited_at: editedAt,
             edited_by: myId,
             is_edited: true
           })
           .eq("id", messageId)
-          .eq("sender_id", myId); // Only edit own messages
+          .eq("group_id", groupId)
+          .eq("sender_id", myId) // Only edit own messages
+          .select("id")
+          .maybeSingle();
         
         if (error) {
           console.error("[group:message:edit] Error updating message:", error);
           return fail("Failed to edit message.");
         }
+        // Not my message (or not in this group): nothing changed, nothing to broadcast.
+        if (!updated) return fail("You can only edit your own messages.");
         
         // Broadcast edit to group room
         const editData = {
           groupId,
           messageId,
-          newText,
+          newText: trimmed,
           editedAt,
           editedBy: myId,
           username: me.username
