@@ -65,10 +65,18 @@ function lock(reason) {
   return { ok: true, locked: true };
 }
 
+/** Digits in the PIN, so the lock screen can draw exactly that many dots. PINs saved before
+ *  3.7.40 have no length; it is learned on the next successful unlock. */
+function pinLength() {
+  const n = Number(readRecord()?.len);
+  return Number.isInteger(n) && n >= 4 && n <= 12 ? n : null;
+}
+
 function status() {
   return {
     ok: true,
     hasPin: Boolean(readRecord()),
+    pinLength: pinLength(),
     locked,
     config,
     encrypted,
@@ -122,7 +130,7 @@ module.exports = wrapFeature({
       if (!validPin(pin)) return { ok: false, error: 'invalid' };
       const rec = readRecord();
       if (rec && !verifyPin(currentPin, rec)) return { ok: false, error: 'wrong_pin' };
-      try { await writeRecord(hashPin(pin)); } catch (_) { return { ok: false, error: 'write_failed' }; }
+      try { await writeRecord({ ...hashPin(pin), len: String(pin).length }); } catch (_) { return { ok: false, error: 'write_failed' }; }
       return { ok: true };
     });
     ctx.handle('premium:app_lock:clear-pin', async (_e, currentPin) => {
@@ -165,6 +173,7 @@ module.exports = wrapFeature({
       failures = 0;
       blockedUntil = 0;
       locked = false;
+      if (!pinLength()) { try { await writeRecord({ ...rec, len: String(pin).length }); } catch (_) { /* ignore */ } }
       ctx.sendToRenderer('premium:app_lock:locked', { locked: false });
       return { ok: true, locked: false };
     });

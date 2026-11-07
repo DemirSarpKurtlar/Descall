@@ -39,8 +39,11 @@ export function shieldBehind(lockEl, doc = typeof document !== "undefined" ? doc
   };
 }
 
-/** How many dots to draw: six to start with, one more for each digit past six. */
-export function pinSlots(length) {
+/** How many dots to draw: exactly the PIN's length when known (a 4-digit PIN shows 4 dots),
+ *  otherwise six to start with and one more for each digit past six. */
+export function pinSlots(length, known = null) {
+  const k = Number(known);
+  if (Number.isInteger(k) && k >= MIN && k <= MAX) return k;
   return Math.min(MAX, Math.max(BASE_SLOTS, length));
 }
 
@@ -67,15 +70,22 @@ export default function AppLockScreen({ me = null }) {
   const [err, setErr] = useState("");
   const [shake, setShake] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [pinLen, setPinLen] = useState(null);
   const inputRef = useRef(null);
   const lockRef = useRef(null);
   const now = useClock(locked);
 
   useEffect(() => {
-    pinvoke("premium:app_lock:status").then((r) => { if (r?.ok && r.locked) setLocked(true); });
+    pinvoke("premium:app_lock:status").then((r) => {
+      if (r?.ok) setPinLen(r.pinLength || null);
+      if (r?.ok && r.locked) setLocked(true);
+    });
     return pon("premium:app_lock:locked", (m) => {
       setLocked(Boolean(m?.locked));
-      if (m?.locked) { setPin(""); setErr(""); logPremiumEvent("lock", ""); }
+      if (m?.locked) {
+        setPin(""); setErr(""); logPremiumEvent("lock", "");
+        pinvoke("premium:app_lock:status").then((r) => { if (r?.ok) setPinLen(r.pinLength || null); });
+      }
     });
   }, []);
   useEffect(() => { if (locked) setTimeout(() => inputRef.current?.focus(), 50); }, [locked]);
@@ -92,11 +102,11 @@ export default function AppLockScreen({ me = null }) {
 
   if (!locked) return null;
 
-  const submit = async (e) => {
+  const submit = async (e, value = pin) => {
     e?.preventDefault();
-    if (pin.length < MIN || busy) return;
+    if (value.length < MIN || busy) return;
     setBusy(true);
-    const r = await pinvoke("premium:app_lock:unlock", pin);
+    const r = await pinvoke("premium:app_lock:unlock", value);
     setBusy(false);
     setPin("");
     if (r?.ok) { setErr(""); setLocked(false); return; }
@@ -109,7 +119,8 @@ export default function AppLockScreen({ me = null }) {
   const name = resolveDisplayName(me) || me?.username || "";
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(now);
   const date = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(now);
-  const slots = pinSlots(pin.length);
+  const slots = pinSlots(pin.length, pinLen);
+  const maxLen = pinLen || MAX;
 
   const onKeyDown = (e) => {
     // Keep focus inside the lock: the PIN field and, once enabled, the unlock arrow.
@@ -151,8 +162,14 @@ export default function AppLockScreen({ me = null }) {
             aria-label={t("premiumGaming.appLock.pin")}
             aria-describedby="pgl-hint"
             value={pin}
-            maxLength={MAX}
-            onChange={(e) => { setPin(e.target.value.replace(/\D/g, "").slice(0, MAX)); if (err) setErr(""); }}
+            maxLength={maxLen}
+            onChange={(e) => {
+              const next = e.target.value.replace(/\D/g, "").slice(0, maxLen);
+              setPin(next);
+              if (err) setErr("");
+              // Known length: the last digit unlocks on its own, like a phone.
+              if (pinLen && next.length === pinLen) submit(null, next);
+            }}
           />
           <div key={shake} className={`pgl-dots${err ? " is-error" : ""}${shake ? " is-shake" : ""}`} aria-hidden="true">
             {Array.from({ length: slots }, (_, i) => <i key={i} className={i < pin.length ? "on" : ""} />)}
