@@ -474,6 +474,11 @@ app.get(["/.well-known/apple-app-site-association", "/apple-app-site-association
   });
 });
 
+// Letter case (SEO round 2): /Features -> /features when that page is in the build,
+// same rule as public/_worker.js. On Render the marketing host hop (canonicalHost)
+// runs first and the Pages worker folds the case; this covers self-hosted deployments.
+app.use(require("./lib/letterCaseRedirect").letterCaseRedirect(distPath));
+
 const { shouldServeSpaShell } = require("./lib/spaNavigation");
 // Same SPA-vs-API disambiguation on Vercel and elsewhere. vercel.json also
 // rewrites document navigations to /index.html, but the function can still
