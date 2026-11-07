@@ -44,6 +44,7 @@ export default function BlogPostPage({ onSignIn }) {
         buildBreadcrumbLd(mirror.crumbs(crumbs)),
         buildFaqLd(mirror.faq(faq)),
         buildArticleLd({
+          type: "BlogPosting",
           title: mirror.text(post.title),
           description: mirror.text(post.description),
           path: mirror.href(post.path),

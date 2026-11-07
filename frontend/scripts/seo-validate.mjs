@@ -24,6 +24,7 @@ function warn(msg) {
   warnings.push(msg);
 }
 
+const { checkStructuredData } = await import(pathToFileURL(path.join(__dirname, "seoStructuredData.mjs")).href);
 const seoConfig = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
@@ -346,9 +347,19 @@ if (checkDist) {
       if (page === "/" && !html.includes("Demir Sarp Kurtlar")) {
         fail(`Homepage shell missing owner name ${rel}`);
       }
+      // Structured data rules (scripts/seoStructuredData.mjs): entity graph, platforms,
+      // no ratings, breadcrumbs, BlogPosting, FAQPage only with visible questions.
+      const pageLang = html.match(/<html lang="([^"]+)"/)?.[1] || "en";
+      const pageHome = pageLang === "en" ? "/" : `/${pageLang.toLowerCase()}`;
       const articlePath = route.enPath || route.path;
-      if (articlePath.startsWith("/blog/") && !html.includes('"@type":"Article"') && !html.includes('"@type": "Article"')) {
-        warn(`Article JSON-LD missing in ${rel}`);
+      for (const problem of checkStructuredData(html, {
+        path: route.path,
+        canonical: route.path === "/" ? "https://descall.com/" : `https://descall.com${route.path}`,
+        lang: pageLang,
+        home: pageHome,
+        isBlogPost: articlePath.startsWith("/blog/") || route.path.startsWith("/tr/blog/"),
+      })) {
+        fail(`${rel}: ${problem}`);
       }
       if (/rel="canonical"[^>]*http:\/\//i.test(html)) fail(`HTTP canonical in ${rel}`);
       if (/rel="canonical"[^>]*(onrender\.com|vercel\.app|localhost)/i.test(html)) {

@@ -33,6 +33,7 @@ export default function TrBlogPostPage({ onSignIn, onSignUp }) {
         buildBreadcrumbLd(crumbs),
         ...(faq.length ? [buildFaqLd(faq)] : []),
         buildArticleLd({
+          type: "BlogPosting",
           title: post.h1 || post.title,
           description: post.description,
           path: post.path,

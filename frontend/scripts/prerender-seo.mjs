@@ -634,12 +634,14 @@ function localizedJsonLd(route) {
       const home = withLocalePrefix("/", loc);
       graphs.push(
         buildArticleLd({
+          type: "BlogPosting",
           title: t(post.title),
           description: t(post.description),
           path: route.path,
           datePublished: post.date,
           dateModified: post.updated || post.date,
           inLanguage: loc,
+          image: route.image,
         }),
         buildBreadcrumbLd([
           { name: t("Home"), path: home },
@@ -714,12 +716,14 @@ function jsonLdForRoute(route) {
     if (post) {
       graphs.push(
         buildArticleLd({
+          type: "BlogPosting",
           title: post.h1 || post.title,
           description: post.description,
           path: route.path,
           datePublished: post.date,
           dateModified: post.updated || post.date,
           inLanguage: "tr",
+          image: route.image,
         }),
         buildBreadcrumbLd([
           { name: "Ana sayfa", path: "/tr" },
@@ -765,12 +769,14 @@ function jsonLdForRoute(route) {
     if (post && typeof buildArticleLd === "function") {
       graphs.push(
         buildArticleLd({
+          type: "BlogPosting",
           title: post.title,
           description: post.description,
           path: route.path,
           datePublished: post.date,
           dateModified: post.updated || post.date,
           inLanguage: "en",
+          image: route.image,
         })
       );
     }
@@ -786,6 +792,54 @@ function jsonLdForRoute(route) {
   }
 
   return graphs;
+}
+
+/** Short page names for the breadcrumb trail (React t() keys, translated per language). */
+const CRUMB_LABELS = {
+  "/features": "Features",
+  "/download": "Download",
+  "/faq": "FAQ",
+  "/status": "Status",
+  "/privacy": "Privacy",
+  "/terms": "Terms",
+  "/copyright": "Copyright",
+  "/about": "About",
+  "/contact": "Contact",
+  "/security": "Security",
+  "/compare/discord": "Descall vs Discord",
+  "/alternatives": "Alternatives",
+  "/discord-alternative": "Discord alternative",
+  "/who-owns-descall": "Who owns Descall?",
+  "/blog": "Blog",
+  "/best-discord-alternative-for-gamers": "For gamers",
+};
+const TR_ALIAS_BARE = { "/iletisim": "/contact", "/gizlilik": "/privacy", "/kosullar": "/terms", "/descall-sahibi": "/who-owns-descall" };
+
+/** Home > (Discord alternative >) page, in the page language; null for a home page. */
+export function breadcrumbsForRoute(route) {
+  const loc = routeLocale(route);
+  const home = homeHref(loc);
+  if (route.path === home || route.path === "/") return null;
+  const t = pageT(loc);
+  const bare =
+    route.enPath ||
+    TR_ALIAS_BARE[route.path] ||
+    (route.path.startsWith("/tr/") ? route.path.slice(3) : route.path);
+  const crumbs = [{ name: loc === "tr" ? "Ana sayfa" : t("Home"), path: home }];
+  const niche = NICHE_LANDINGS[bare];
+  if (niche) {
+    crumbs.push({ name: t("Discord alternative"), path: prefixHref("/discord-alternative", loc) });
+    crumbs.push({ name: t(niche.h1.split(" | ")[0].trim()), path: route.path });
+    return crumbs;
+  }
+  const label = CRUMB_LABELS[bare];
+  const name = label
+    ? loc === "tr" && route.path === "/descall-sahibi"
+      ? "Descall’ın sahibi kim?"
+      : t(label)
+    : (route.h1 || route.title || "").replace(/\s*[|—-]\s*Descall\s*$/i, "");
+  crumbs.push({ name, path: route.path });
+  return crumbs;
 }
 
 function stripStaleHeadSeo(html) {
@@ -832,7 +886,14 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     .filter((alt) => alt.hreflang !== "x-default" && alt.hreflang !== loc)
     .map((alt) => `<meta property="og:locale:alternate" content="${ogLocaleTag(alt.hreflang)}" />`);
 
-  const ldScripts = jsonLdForRoute(route)
+  const ldGraphs = jsonLdForRoute(route);
+  // Every page below a home gets a BreadcrumbList (React's own copy is dropped when the
+  // prerendered JSON-LD is present, see JsonLd.jsx).
+  if (!ldGraphs.some((g) => g["@type"] === "BreadcrumbList")) {
+    const crumbs = breadcrumbsForRoute(route);
+    if (crumbs) ldGraphs.push(buildBreadcrumbLd(crumbs));
+  }
+  const ldScripts = ldGraphs
     .map(
       (data) =>
         `<script type="application/ld+json" data-prerendered-jsonld="${route.path}">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`
