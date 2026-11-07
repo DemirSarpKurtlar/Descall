@@ -758,7 +758,7 @@ const EXTRA = {
       {
         h: "Senaryo 6: Yayıncılar ve içerik üreticileri",
         p: [
-          "Yayıncılar topluluklarıyla yayın dışında da iletişimde kalmak ister: duyurular, etkinlik planlama, izleyicilerle sesli sohbet ve sadece belirli izleyicilerin görebildiği özel kanallar. Discord bu konuda yaygın bir tercih olsa da Türkiye’deki erişim engeli birçok yayıncıyı yeni bir alan aramaya itti.",
+          "Yayıncılar topluluklarıyla yayın dışında da iletişimde kalmak ister: duyurular, etkinlik planlama, izleyicilerle sesli sohbet ve sadece belirli izleyicilerin görebildiği özel kanallar. Discord bu konuda yaygın bir tercih olsa da, Ekim 2024’te haberlere yansıyan erişim engeli birçok yayıncıyı yeni bir alan aramaya itti (güncel durum ve tarihli kaynaklar için “Discord açıldı mı?” sayfasına bak).",
           "Descall’ın Yayın şablonu duyuru, sohbet, etkinlik ve sahne kanallarıyla gelir. Sahne kanalları, bir kişinin konuşup diğerlerinin dinlediği soru‑cevap veya sohbet etkinlikleri için uygundur. Roller ile destekçilere veya moderatörlere özel kanallar açabilirsin. Ancak Discord’daki gibi yayın platformlarıyla otomatik abonelik entegrasyonları veya özel botlar Descall’da yok; bunu bilerek karar vermek önemli.",
         ],
       },

@@ -254,7 +254,7 @@ export const BLOG_POSTS = [
     description:
       "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics, plus where Descall competes honestly.",
     date: "2026-08-11",
-    updated: "2026-08-14",
+    updated: "2026-11-07",
     tags: ["Discord competitors", "Market"],
   },
   {
@@ -397,5 +397,6 @@ export const BLOG_RELATED = [
   { to: "/faq", label: "FAQ" },
   { to: "/discord-replacement", label: "Discord replacement" },
   { to: "/discord-alternative-for-friends", label: "For friend groups" },
+  { to: "/tr/discord-acildi-mi", label: "Discord in Türkiye: dated reports (Turkish)" },
   { to: "/status", label: "Status" },
 ];

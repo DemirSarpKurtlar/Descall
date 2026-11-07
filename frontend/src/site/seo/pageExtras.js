@@ -42,6 +42,9 @@ const EN_HUBS = [
   { to: "/download", label: "Download Descall" },
 ];
 
+/** Comparison pages that mention Discord's status in Türkiye link to the dated sources. */
+const EN_HUBS_TR_STATUS = [...EN_HUBS, { to: "/tr/discord-acildi-mi", label: "Discord in Türkiye: dated reports (Turkish)" }];
+
 export const PAGE_EXTRAS = {
   "/": {
     sections: [
@@ -104,7 +107,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Discord’a erişemeyenler için",
         p: [
-          "Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi; son haberler ve tarihleri “Discord açıldı mı?” sayfasında. Her akşam aynı ses kanalında buluşan gruplar için Descall, Türkiye’den doğrudan erişilebilen ve Türkçe kullanılabilen bir seçenek. Sunucu, kanal, rol ve ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelir; şablonlarla sunucunu dakikalar içinde yeniden kurabilirsin.",
+          "Kamuya açık haberlere göre Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi. Erişimi kendimiz test etmiyoruz ve durum o tarihten sonra değişmiş olabilir; tarihli kaynaklar ve son haberler “Discord açıldı mı?” sayfasında. Her akşam aynı ses kanalında buluşan gruplar için Descall, Türkiye’den doğrudan erişilebilen ve Türkçe kullanılabilen bir seçenek. Sunucu, kanal, rol ve ses odası gibi kavramlar Discord kullanıcılarına tanıdık gelir; şablonlarla sunucunu dakikalar içinde yeniden kurabilirsin.",
         ],
       },
       {
@@ -135,7 +138,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Why people look for a Discord alternative",
         p: [
-          "Most people who search for a Discord alternative are not unhappy with group chat itself. They want the same habits (a server for the group, voice rooms you can drop into, screen share for games and homework) without the parts that get in the way. For some it is the price of extras like better stream quality. For others it is an app that feels too big for a group of eight friends. In Türkiye there is a third reason: Discord has been blocked by court order since 9 October 2024, so it only works through a VPN.",
+          "Most people who search for a Discord alternative are not unhappy with group chat itself. They want the same habits (a server for the group, voice rooms you can drop into, screen share for games and homework) without the parts that get in the way. For some it is the price of extras like better stream quality. For others it is an app that feels too big for a group of eight friends. In Türkiye there is a third reason: public reports say Discord was blocked there by a court order on 9 October 2024 and could only be reached through a VPN. We do not test access ourselves and it may have changed since; our Turkish page “Discord açıldı mı?” lists the dated sources.",
           "Descall is built for that situation. It keeps the server, channel and voice model people already know, and it keeps the core of it free.",
         ],
       },
@@ -178,7 +181,7 @@ export const PAGE_EXTRAS = {
         ],
       },
     ],
-    links: EN_HUBS,
+    links: EN_HUBS_TR_STATUS,
   },
   "/alternatives": {
     sections: [
@@ -191,7 +194,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Descall",
         p: [
-          "A free app with Discord-style servers, roles, voice channels, video calls and screen share on Windows, iPhone, Android and the web. Strong fit for friend groups, gaming squads and small to medium communities, and for groups in Türkiye where Discord is blocked. Weaker fit if you depend on bots.",
+          "A free app with Discord-style servers, roles, voice channels, video calls and screen share on Windows, iPhone, Android and the web. Strong fit for friend groups, gaming squads and small to medium communities, and for groups in Türkiye, where public reports have described Discord as blocked since a court order in October 2024 (the situation may have changed). Weaker fit if you depend on bots.",
         ],
       },
       {
@@ -225,7 +228,7 @@ export const PAGE_EXTRAS = {
         ],
       },
     ],
-    links: EN_HUBS,
+    links: EN_HUBS_TR_STATUS,
   },
   "/apps-like-discord": {
     sections: [
@@ -285,7 +288,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Availability in Türkiye",
         p: [
-          "Discord has been blocked in Türkiye by court order since 9 October 2024 and needs a VPN there. Descall is built in Türkiye, has a full Turkish interface and works without a VPN.",
+          "Public reports say access to Discord from Türkiye was blocked by a court order on 9 October 2024. We do not test access ourselves and the situation may have changed since; our Turkish page “Discord açıldı mı?” lists the dated sources. Descall is built in Türkiye, has a full Turkish interface and works there without a VPN.",
         ],
       },
       {
@@ -301,7 +304,7 @@ export const PAGE_EXTRAS = {
         ],
       },
     ],
-    links: EN_HUBS,
+    links: EN_HUBS_TR_STATUS,
   },
   "/best-discord-alternative-for-gamers": {
     sections: [

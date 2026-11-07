@@ -33,7 +33,7 @@ export const MERGED_GUIDES = {
       },
       {
         h: "Platforms and access",
-        p: "Descall runs as a Windows desktop app, on iPhone and iPad from the App Store, on Android through an APK, and in any modern browser at descall.com/app. Discord covers more desktop operating systems, so check that everyone in your group has a supported device before you move. Access matters too. Discord has been blocked in Turkey by court order since 9 October 2024, while Descall works there and has a full Turkish and English interface. For mixed groups with friends in Türkiye, that alone can settle the question.",
+        p: "Descall runs as a Windows desktop app, on iPhone and iPad from the App Store, on Android through an APK, and in any modern browser at descall.com/app. Discord covers more desktop operating systems, so check that everyone in your group has a supported device before you move. Access matters too. Public reports say Discord was blocked in Türkiye by a court order on 9 October 2024; we do not test this ourselves and it may have changed, so check the dated sources on our Turkish page “Discord açıldı mı?”. Descall works there and has a full Turkish and English interface. For mixed groups with friends in Türkiye, that can settle the question.",
       },
       {
         h: "Account security",
@@ -111,7 +111,7 @@ export const MERGED_GUIDES = {
       },
       {
         h: "When voice still feels off",
-        p: "If someone sounds choppy, check their connection first; a busy Wi-Fi network is the usual culprit, and a cable or a closer router often fixes it. If there is echo, find the person without headphones. If screen share lags, lower the preset. If a friend cannot connect at all, try the desktop or mobile app instead of the browser. And if Discord does not work for you because you are in Turkey, where it has been blocked by court order since 9 October 2024, Descall works there without extra steps.",
+        p: "If someone sounds choppy, check their connection first; a busy Wi-Fi network is the usual culprit, and a cable or a closer router often fixes it. If there is echo, find the person without headphones. If screen share lags, lower the preset. If a friend cannot connect at all, try the desktop or mobile app instead of the browser. And if Discord does not work for you in Türkiye, where public reports describe a court-ordered block since 9 October 2024 (our Turkish page “Discord açıldı mı?” collects the dated sources, and the situation may have changed), Descall works there without extra steps.",
       },
     ],
   },
@@ -193,7 +193,7 @@ export const MERGED_GUIDES = {
       },
       {
         h: "What stays on Discord",
-        p: "Be honest about what Descall does not replace. It has no bot marketplace, so a bot-heavy setup will need a rethink or can stay on Discord. It has no big public server directory, so public servers you follow stay where they are. Many groups keep a free Discord account for those and use Descall for their own server and calls. If your members are in Turkey, where Discord has been blocked by court order since 9 October 2024, the new home also removes the workarounds they needed.",
+        p: "Be honest about what Descall does not replace. It has no bot marketplace, so a bot-heavy setup will need a rethink or can stay on Discord. It has no big public server directory, so public servers you follow stay where they are. Many groups keep a free Discord account for those and use Descall for their own server and calls. If your members are in Türkiye, where public reports describe Discord as blocked by a court order since 9 October 2024 (it may have changed; the dated sources are on our Turkish page “Discord açıldı mı?”), the new home also removes the workarounds they may have needed.",
       },
     ],
   },
