@@ -10,6 +10,7 @@ import { Avatar } from "./ui/Avatar";
 import MiniCallCard from "./call/MiniCallCard";
 import CallTimer from "./call/CallTimer";
 import StatusBadge from "./ui/StatusBadge";
+import { inertOutside } from "../hooks/useModalFocus";
 import AdminBadge from "./social/AdminBadge";
 import CallWindowButtons from "../premium/desktop/CallWindowButtons.jsx";
 import { usePremium } from "../premium/usePremium.js";
@@ -198,6 +199,29 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
     if (!isDm || !call?.remoteStream) return;
     call?.ensureRemoteAudio?.("overlay");
   }, [isDm, call?.mode, call?.remoteAudioRef, call?.remoteStream, call?.ensureRemoteAudio]);
+
+  // Full-screen overlay (not the minimised card / bar): the app behind is inert and focus
+  // starts on the call controls; on minimise or hang-up focus goes back to where it was.
+  const fullScreenUndo = useRef(null);
+  const fullScreenRef = useCallback((el) => {
+    fullScreenUndo.current?.();
+    fullScreenUndo.current = null;
+    if (!el || typeof document === "undefined") return;
+    const prev = document.activeElement;
+    const restoreInert = inertOutside(el);
+    const timer = setTimeout(() => {
+      if (el.contains(document.activeElement)) return;
+      el.querySelector(".call-control-bar button:not([disabled])")?.focus({ preventScroll: true });
+    }, 60);
+    fullScreenUndo.current = () => {
+      clearTimeout(timer);
+      restoreInert();
+      const now = document.activeElement;
+      if (now && now !== document.body && !el.contains(now)) return;
+      if (prev && prev !== document.body && prev.isConnected) prev.focus?.({ preventScroll: true });
+    };
+  }, []);
+  useEffect(() => () => fullScreenUndo.current?.(), []);
 
   if (!active) {
     const shot = glass && typeof window !== "undefined" ? window.__DESCALL_SHOT_CALL : null;
@@ -437,6 +461,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
     {remoteAudio}
     {durableScreenAudio}
     <motion.div
+      ref={fullScreenRef}
       data-call-overlay="true"
       className={`call-overlay-root ${callOverlayClass}${glass ? ` g-call${isDm ? " is-dm" : " is-group"}` : ""}`.trim()}
       initial={{ opacity: 0 }}
@@ -577,10 +602,10 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
           {!isDm && worldAvailable ? (
             <World3DButton label={t("world3d.enter")} hint={t("world3d.enterHint")} onClick={() => setWorldOpen(true)} />
           ) : null}
-          <TopIconBtn onClick={() => setShowParticipants(!showParticipants)} active={showParticipants}><Users size={18} /></TopIconBtn>
-          <TopIconBtn onClick={() => setShowChat(!showChat)} active={showChat}><MessageSquare size={18} /></TopIconBtn>
+          <TopIconBtn onClick={() => setShowParticipants(!showParticipants)} active={showParticipants} label={t("Participants")}><Users size={18} aria-hidden="true" /></TopIconBtn>
+          <TopIconBtn onClick={() => setShowChat(!showChat)} active={showChat} label={t("Chat")}><MessageSquare size={18} aria-hidden="true" /></TopIconBtn>
           <CallWindowButtons style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }} />
-          <TopIconBtn onClick={() => setMinimized(true)}><Minus size={18} /></TopIconBtn>
+          <TopIconBtn onClick={() => setMinimized(true)} label={t("Minimize")}><Minus size={18} aria-hidden="true" /></TopIconBtn>
         </div>
       </div>
       )}
@@ -2204,10 +2229,15 @@ function CircleBtn({ children, color = "rgba(118,118,128,0.32)", size = 52, onCl
   );
 }
 
-function TopIconBtn({ children, onClick, active }) {
+function TopIconBtn({ children, onClick, active, label }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-label={label}
+      title={label}
+      // Toggles (participants, chat) report their state; minimise is a plain button.
+      aria-pressed={active === undefined ? undefined : Boolean(active)}
       style={{
         width: 40,
         height: 40,

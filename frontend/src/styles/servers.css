@@ -3401,6 +3401,12 @@ button.member-row.server-member-row {
   cursor: pointer;
   z-index: 2;
 }
+/* Hit area >= 24px (WCAG 2.5.8), the badge itself stays small. */
+.server-voice-dock-chevron::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
 
 .server-voice-dock-chevron.is-open,
 .server-voice-dock-chevron:hover {

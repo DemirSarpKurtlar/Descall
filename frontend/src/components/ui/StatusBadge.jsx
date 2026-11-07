@@ -24,6 +24,7 @@ export default function StatusBadge({ status = "offline", user = null, flareKey 
     <span
       className={`status-badge status-${status}${flare ? ` cosmetic-presence-flare flare-${flare}` : ""}`}
       title={label}
+      role="img"
       aria-label={label}
     />
   );

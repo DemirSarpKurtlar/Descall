@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, PhoneOff, Video, Users, BellOff } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
@@ -50,6 +50,23 @@ export default function IncomingCallCard({
   const photoUrl = look && user ? resolveAvatarUrl(user) : null;
   const handle = user?.username && user.username !== name ? `@${user.username} · Descall` : null;
   const glassSub = subtitle || (isGroup ? t("Group call") : handle);
+  // Announced as an alert dialog ("Incoming voice call, Ayse is calling"); focus goes to
+  // Accept, unless the person is typing (a keystroke must never answer the call).
+  const kindId = useId();
+  const nameId = useId();
+  const acceptRef = useRef(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const prev = document.activeElement;
+    const typing = Boolean(prev && (prev.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(prev.tagName)));
+    const timer = typing ? 0 : setTimeout(() => acceptRef.current?.focus({ preventScroll: true }), 80);
+    return () => {
+      clearTimeout(timer);
+      if (typing || !prev || prev === document.body || !prev.isConnected) return;
+      const now = document.activeElement;
+      if (!now || now === document.body || now === acceptRef.current) prev.focus?.({ preventScroll: true });
+    };
+  }, []);
 
   return (
     <motion.div
@@ -58,6 +75,8 @@ export default function IncomingCallCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -48, scale: 0.96 }}
       transition={{ type: "spring", damping: 24, stiffness: 280 }}
+      role="alertdialog"
+      aria-labelledby={`${kindId} ${nameId}`}
     >
       {look ? (
         <div
@@ -86,11 +105,11 @@ export default function IncomingCallCard({
         </div>
 
         <div className="incoming-call-meta">
-          <div className="incoming-call-kind">
+          <div className="incoming-call-kind" id={kindId}>
             {look ? (isVideo ? <Video size={14} strokeWidth={1.9} /> : <Phone size={14} strokeWidth={1.9} />) : null}
             {isVideo ? t("Incoming video call") : t("Incoming voice call")}
           </div>
-          <div className="incoming-call-name">{look && !isGroup ? name : t("{name} is calling", { name })}</div>
+          <div className="incoming-call-name" id={nameId}>{look && !isGroup ? name : t("{name} is calling", { name })}</div>
           {look ? (
             glassSub ? (
               <div className="incoming-call-sub">
@@ -139,6 +158,7 @@ export default function IncomingCallCard({
             <div className="g-incoming-choice">
               <motion.button
                 type="button"
+                ref={acceptRef}
                 className="incoming-call-btn incoming-call-btn--accept"
                 whileTap={{ scale: 0.97 }}
                 onClick={onAccept}
@@ -163,6 +183,7 @@ export default function IncomingCallCard({
           </motion.button>
           <motion.button
             type="button"
+            ref={acceptRef}
             className="incoming-call-btn incoming-call-btn--accept"
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}

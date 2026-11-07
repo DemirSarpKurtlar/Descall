@@ -66,7 +66,7 @@ for (const exact of [
   "--g-deep: #0D0E13",
   "--g-t1: rgba(255,255,255,0.96)",
   "--g-t2: rgba(235,238,255,0.72)",
-  "--g-t3: rgba(235,238,255,0.46)",
+  "--g-t3: rgba(235,238,255,0.54)", // a11y A10: raised from 0.46 for >= 4.5:1 on the glass fills
 ]) {
   assert.ok(tokens.includes(exact), `tokens.css keeps ${exact}`);
 }

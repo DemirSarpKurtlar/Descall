@@ -27,6 +27,7 @@ import { readFileAsDataUrl } from "../../lib/cropImage";
 import { uploadAvatar, uploadFile, uploadAvatarWithCrop, uploadBannerImage } from "../../api/media";
 import { getMe } from "../../api/auth";
 import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
+import useModalFocus from "../../hooks/useModalFocus";
 import {
   setEmail as apiSetEmail,
   resendEmailCode,
@@ -2714,6 +2715,12 @@ const UserPanel = forwardRef(function UserPanel({
   const panelRef = useRef(null);
   const menuPaneRef = useRef(null);
   const detailPaneRef = useRef(null);
+  // Desktop dialog: focus starts on the selected section, Tab stays inside, the app
+  // behind is inert, focus goes back to the opener on close (WCAG 2.4.3).
+  useModalFocus(true, panelRef, {
+    enabled: !isMobile,
+    initialFocus: () => panelRef.current?.querySelector(".s3-row.sel"),
+  });
 
   // iOS edge swipe-back. Section → menu runs the header ‹ (backToMenu) with the
   // live menu sliding in underneath; on the menu itself it runs the same close

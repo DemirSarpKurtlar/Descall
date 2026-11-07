@@ -5,6 +5,7 @@ import { X } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
 import { shouldDismissSheet } from "../../lib/groupInfo";
+import useModalFocus from "../../hooks/useModalFocus";
 import "./GroupSheet.css";
 
 /**
@@ -45,16 +46,17 @@ export default function GroupSheet({
       if (dismissible) onCloseRef.current?.();
     };
     window.addEventListener("keydown", onKey, true);
-    // Focus after the presentation spring has started so iOS doesn't scroll the page.
-    const id = setTimeout(() => {
-      const target = initialFocusRef?.current || closeRef.current;
-      target?.focus?.({ preventScroll: true });
-    }, initialFocusRef ? 260 : 0);
     return () => {
       window.removeEventListener("keydown", onKey, true);
-      clearTimeout(id);
     };
-  }, [open, dismissible, initialFocusRef]);
+  }, [open, dismissible]);
+  // Focus moves in (after the presentation spring has started so iOS doesn't scroll the
+  // page), Tab stays in the sheet, the page behind is inert, focus returns on close.
+  const sheetRef = useRef(null);
+  useModalFocus(open, sheetRef, {
+    initialFocus: () => initialFocusRef?.current || closeRef.current,
+    delay: initialFocusRef ? 260 : 0,
+  });
 
   const dismiss = (velocity = 0) => {
     if (!dismissible) return;
@@ -75,6 +77,7 @@ export default function GroupSheet({
           onClick={() => dismiss(0)}
         >
           <motion.div
+            ref={sheetRef}
             className={`gs-sheet ${className}`.trim()}
             role="dialog"
             aria-modal="true"

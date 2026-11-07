@@ -148,6 +148,13 @@ html[data-theme="light"] .ms-datetime { color-scheme: light; }
 .gs-pill.ms-chip small { font-size: var(--fs-12); font-weight: 500; color: var(--gs-t2); }
 .gs-pill.ms-chip.is-on { color: #fff; background: var(--gs-brand); box-shadow: none; }
 .gs-pill.ms-chip.is-on small { color: rgba(255, 255, 255, 0.85); }
+/* White text needs 4.5:1: the default azure (3.8:1) is deepened under the label; other themes keep their accent. */
+html:not([data-theme]) .gs-pill.ms-chip.is-on,
+html[data-theme="dark"] .gs-pill.ms-chip.is-on,
+html[data-theme="light"] .gs-pill.ms-chip.is-on { background: #4562E0; }
+html:not([data-theme]) .gs-pill.ms-chip.is-on small,
+html[data-theme="dark"] .gs-pill.ms-chip.is-on small,
+html[data-theme="light"] .gs-pill.ms-chip.is-on small { color: rgba(255, 255, 255, 0.95); }
 .ms-datetime-row { display: flex; align-items: center; gap: 4px; padding-left: 16px; color: var(--gs-t2); }
 .ms-datetime-row .ms-datetime { padding-left: 6px; }
 .ms-sched-item .gs-row-sub { white-space: normal; }

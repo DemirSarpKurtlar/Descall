@@ -14,6 +14,22 @@ export const nested = {
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
   "msg4": MSG4_PT_BR,
+  "a11y": {
+    "chat": {
+      "newMessage": "{name}: {text}",
+      "skipToConversation": "Ir para a conversa"
+    },
+    "servers": {
+      "inVoice": "{count, plural, one {# na voz} other {# na voz}}"
+    },
+    "forward": {
+      "limitReached": "Limite de {max} atingido. Desmarque uma conversa para escolher outra."
+    },
+    "schedule": {
+      "editItem": "Editar mensagem agendada: {item}",
+      "cancelItem": "Cancelar mensagem agendada: {item}"
+    }
+  },
   "msg5": MSG5_PT_BR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {

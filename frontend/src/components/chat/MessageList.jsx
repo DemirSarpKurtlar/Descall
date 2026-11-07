@@ -55,6 +55,7 @@ import { enrichSender, senderAvatarUrl, senderName } from "../../lib/mediaViewer
 import { useT } from "../../context/LocaleContext";
 import { messageHoverToolbar, HOVER_TOOLBAR_GRACE_MS, installHoverTrail } from "../../lib/singleActiveHover";
 import { placeHoverToolbar } from "../../lib/hoverToolbarPlacement";
+import { isContextMenuKey, menuArrowKeys } from "../../lib/menuKeys";
 import { getLocale } from "../../i18n/runtime";
 import { formatNumber } from "../../i18n/format";
 import { GroupMemberEventRow } from "../groups/GroupMemberRemoval";
@@ -661,6 +662,65 @@ function MessageList({
     return grouped;
   }, [searchedMessages, unreadCount, isSearching, t]);
 
+  // Roving focus over the bubbles (DOM only, so no bubble re-renders): one bubble is in
+  // the Tab order, the newest unless focus is already in the list.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const bubbles = list.querySelectorAll(".message-bubble[tabindex]");
+    if (!bubbles.length) return;
+    const current = list.querySelector('.message-bubble[tabindex="0"]');
+    if (current && list.contains(document.activeElement)) return;
+    const newest = bubbles[bubbles.length - 1];
+    if (current === newest) return;
+    if (current) current.tabIndex = -1;
+    newest.tabIndex = 0;
+  });
+  const onBubbleArrows = useCallback((e) => {
+    const bubble = e.target;
+    if (!bubble?.classList?.contains("message-bubble") || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) return;
+    const all = [...(listRef.current?.querySelectorAll(".message-bubble[tabindex]") || [])];
+    const i = all.indexOf(bubble);
+    if (i < 0) return;
+    e.preventDefault();
+    const j = e.key === "ArrowUp" ? i - 1 : e.key === "ArrowDown" ? i + 1 : e.key === "Home" ? 0 : all.length - 1;
+    const next = all[Math.max(0, Math.min(all.length - 1, j))];
+    if (!next || next === bubble) return;
+    bubble.tabIndex = -1;
+    next.tabIndex = 0;
+    next.focus();
+  }, []);
+
+  // New incoming messages are read out politely ("Ayse: text"); never my own, never the
+  // history that loads when a chat opens or scrolls back. Written to the DOM, no re-render.
+  const liveRef = useRef(null);
+  const newsRef = useRef({ conversationId: null, lastId: null });
+  useEffect(() => {
+    const msgs = Array.isArray(messages) ? messages : [];
+    const last = msgs[msgs.length - 1];
+    const lastId = last?.id ?? null;
+    const prev = newsRef.current;
+    newsRef.current = { conversationId, lastId };
+    if (loading || isSearching || prev.conversationId !== conversationId) return;
+    if (prev.lastId == null || lastId == null || lastId === prev.lastId) return;
+    if (!msgs.some((m) => m?.id === prev.lastId) || ownMessage(last, myId)) return;
+    const el = liveRef.current;
+    if (!el) return;
+    // Only people's messages (no call summaries, member events or game boards).
+    const kind = String(last.type || "");
+    if (!last.from?.id || last.isGameMessage || /^(call_summary|member_removed|member_left|active_call|game_)/.test(kind)) return;
+    const who = resolveDisplayName(senderFor(last.from)) || last.from?.username || "";
+    let body = typeof last.text === "string" && last.text.trim()
+      ? displayText(plainText(last.text)).replace(/\s+/g, " ").trim()
+      : mediaTypeLabel(last.mediaType || last.media_type, t) || "";
+    if (body.length > NEWS_MAX) body = `${body.slice(0, NEWS_MAX - 1)}\u2026`;
+    const line = t("a11y.chat.newMessage", { name: who, text: body });
+    // Cleared first so the same text twice in a row is still announced.
+    el.textContent = "";
+    requestAnimationFrame(() => { if (liveRef.current === el) el.textContent = line; });
+  }, [messages, conversationId, loading, isSearching, myId, senderFor, t]);
+
   if (loading && loadError) {
     return (
       <div className="message-list is-load-error" ref={listRef} role="alert">
@@ -713,7 +773,8 @@ function MessageList({
     <MediaGalleryContext.Provider value={galleryItems}>
     <SenderLookupContext.Provider value={senderFor}>
     <PinControlContext.Provider value={pinRef}>
-    <div className="message-list" ref={listRef} onClickCapture={onMentionActivate} onKeyDownCapture={onMentionActivate}>
+    <div className="message-list" ref={listRef} onClickCapture={onMentionActivate} onKeyDownCapture={onMentionActivate} onKeyDown={onBubbleArrows}>
+      <div className="a11y-sr" ref={liveRef} aria-live="polite" aria-atomic="true" />
       {isSearching && (
         <div className="message-search-result-count">
           {t("chatx.matchingMessages", { count: groupedMessages.reduce((n, g) => n + (g.messages?.length || (g.isSummary || g.isGame || g.isActiveBanner ? 1 : 0)), 0) })}
@@ -1611,6 +1672,91 @@ function MessageBubbleView({
     heartToggle(e.clientX, e.clientY);
   }, [heartToggle, overTextAt]);
 
+  // Keyboard path (WCAG 2.1.1). The list moves focus between bubbles (Arrow Up/Down);
+  // a focused bubble shows its toolbar, Shift+F10 / the menu key opens "More",
+  // Enter replies and E edits my own message. Keys act only on the bubble itself, so
+  // typing in the composer or in an inline field never triggers them.
+  const focusOpenedRef = useRef(false);
+  const focusMoreRef = useRef(false);
+  const kbdMenuAt = useRef(0);
+  const openFromKeyboard = (withMore) => {
+    focusOpenedRef.current = true;
+    clearHide();
+    messageHoverToolbar.activate(hoverKey.current, closeFromOwner, { getRect: barRect });
+    grantMenu();
+    if (withMore) {
+      setPickerOpen(false);
+      focusMoreRef.current = true;
+      setMoreOpen(true);
+    }
+  };
+  const onBubbleFocus = (e) => {
+    if (glass || editing || e.target !== e.currentTarget) return;
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    let keyboard = false;
+    try { keyboard = e.currentTarget.matches(":focus-visible"); } catch { keyboard = false; }
+    if (keyboard) openFromKeyboard(false);
+  };
+  const onBubbleBlur = (e) => {
+    if (!focusOpenedRef.current || e.currentTarget.contains(e.relatedTarget)) return;
+    focusOpenedRef.current = false;
+    setMenuOpen(false);
+    setPickerOpen(false);
+  };
+  const onBubbleKeyDown = (e) => {
+    if (editing) return;
+    if (e.key === "Escape" && (menuOpen || pickerOpen || moreOpen) && !glass) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pickerOpen || moreOpen) { setPickerOpen(false); setMoreOpen(false); }
+      else { focusOpenedRef.current = false; setMenuOpen(false); }
+      bubbleRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (e.target !== e.currentTarget || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (isContextMenuKey(e)) {
+      e.preventDefault();
+      kbdMenuAt.current = Date.now();
+      if (glass) { setMenuOpen(true); setPickerOpen(false); }
+      else openFromKeyboard(true);
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      triggerReply();
+      return;
+    }
+    if ((e.key === "e" || e.key === "E") && !e.shiftKey && canEdit) {
+      e.preventDefault();
+      beginEdit();
+    }
+  };
+  // The menu key also fires a contextmenu event: no native menu on top of ours.
+  const onBubbleContextMenu = (e) => {
+    if (Date.now() - kbdMenuAt.current < 800) e.preventDefault();
+  };
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return undefined;
+    if (moreOpen && focusMoreRef.current) {
+      focusMoreRef.current = false;
+      const id = requestAnimationFrame(() => el.querySelector('.mhb-more [role="menuitem"]')?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+    // An item ran (or Escape): focus returns to the bubble, not to <body>.
+    if (!moreOpen && el.querySelector(".mhb-more")?.contains(document.activeElement)) el.focus({ preventScroll: true });
+    return undefined;
+  }, [moreOpen]);
+  const wasEditing = useRef(false);
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (wasEditing.current && !editing && el?.hasAttribute("tabindex")) {
+      const a = document.activeElement;
+      if (!a || a === document.body) el.focus({ preventScroll: true });
+    }
+    wasEditing.current = editing;
+  }, [editing]);
+
   if (hideCasino) return null;
 
   return (
@@ -1653,6 +1799,12 @@ function MessageBubbleView({
           if (shouldReply) triggerReply();
         }}
         data-no-swipe-back=""
+        // Roving focus: every bubble is -1, MessageList gives one of them 0 (DOM only).
+        tabIndex={glass || !bubbleKeyboardFocus() ? undefined : -1}
+        onFocus={onBubbleFocus}
+        onBlur={onBubbleBlur}
+        onKeyDown={onBubbleKeyDown}
+        onContextMenu={onBubbleContextMenu}
         data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
         className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
@@ -1984,6 +2136,7 @@ function MessageBubbleView({
                   onClick={(ev) => {
                     ev.stopPropagation();
                     setPickerOpen(false);
+                    if (ev.detail === 0 && !moreOpen) focusMoreRef.current = true;
                     setMoreOpen((v) => !v);
                   }}
                 >
@@ -2069,6 +2222,8 @@ function MessageBubbleView({
                     key="mhb-more"
                     className="g-toolbar-menu mhb-more"
                     role="menu"
+                    aria-label={t("More")}
+                    onKeyDown={menuArrowKeys}
                     initial={{ opacity: 0, scale: 0.95, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.08 } }}
@@ -2324,6 +2479,26 @@ function SeenLine({ seen, t }) {
       {label}
     </div>
   );
+}
+
+// Bubbles take keyboard focus where there is a fine pointer (desktop, Electron, iPad with a
+// trackpad); touch-only phones keep tap behaviour unchanged (a focusable bubble would steal
+// focus from the composer and close the keyboard).
+let bubbleFocusCache = null;
+function bubbleKeyboardFocus() {
+  if (bubbleFocusCache == null) {
+    try {
+      bubbleFocusCache = typeof window !== "undefined" && Boolean(window.matchMedia?.("(any-pointer: fine)").matches);
+    } catch {
+      bubbleFocusCache = false;
+    }
+  }
+  return bubbleFocusCache;
+}
+
+const NEWS_MAX = 140;
+function ownMessage(m, myId) {
+  return Boolean(m) && (m.from?.id === myId || m.sender_id === myId || m.userId === myId || String(m.id || "").startsWith("temp-"));
 }
 
 function prefersReducedMotionNow() {
