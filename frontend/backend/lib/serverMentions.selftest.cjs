@@ -38,7 +38,8 @@ assert.equal(sm.canManageMentions(owner), true);
 assert.equal(sm.canManageMentions(null), false);
 
 assert.equal(sm.canPingEveryone(plain), false);
-assert.equal(sm.canPingEveryone(vip), false, "default policy: admins only");
+assert.equal(sm.canPingEveryone(vip), true, "default policy: MENTION_EVERYONE counts (Discord style)");
+assert.equal(sm.canPingEveryone(vip, { policy: "admins" }), false, "admins policy: owner / admins only");
 assert.equal(sm.canPingEveryone(vip, { policy: "permission" }), true, "permission policy: MENTION_EVERYONE counts");
 assert.equal(sm.canPingEveryone(plain, { policy: "permission" }), false);
 assert.equal(sm.canPingEveryone(mod), true);

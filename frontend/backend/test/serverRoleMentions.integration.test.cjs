@@ -4,7 +4,7 @@
  * Messaging phase 5: role, @everyone and @here mentions in server channels,
  * through the real server:channel:message handler.
  *   - who may ping (mentionable role / owner / ADMINISTRATOR / MANAGE_ROLES;
- *     MENTION_EVERYONE alone is not enough by default)
+ *     plus MENTION_EVERYONE by default; owner/admins only with the "admins" policy)
  *   - who is notified (members who see the channel, minus the sender, server
  *     level "muted" and channel mutes; level "mentions" counts pings;
  *     @here = online and not invisible)
@@ -156,9 +156,16 @@ async function send(sock, content, channelId = C) {
   assert.equal(stored().length, before, "nothing stored");
   assert.deepEqual(pinged(), []);
 
-  // 2. MENTION_EVERYONE alone is not enough with the default policy (owner/admins only).
+  // 2. Default policy (Discord style): a role the server gave MENTION_EVERYONE may ping
+  //    @everyone. The "admins" policy restricts it to owner / admins.
+  process.env.SERVER_EVERYONE_PING_POLICY = "admins";
   r = await send(sk.vip, "@everyone duyuru");
-  assert.equal(r.err?.code, "MISSING_PERMISSION", "MENTION_EVERYONE without manage roles rejected");
+  assert.equal(r.err?.code, "MISSING_PERMISSION", "admins policy: MENTION_EVERYONE alone rejected");
+  delete process.env.SERVER_EVERYONE_PING_POLICY;
+  before = stored().length;
+  r = await send(sk.vip, "@everyone duyuru", C2);
+  assert.equal(r.err, null, "default policy: MENTION_EVERYONE accepted");
+  assert.equal(stored().length, before + 1, "stored");
 
   // 3. MANAGE_ROLES may: everyone who sees the channel, minus sender, muted level and channel mutes.
   before = stored().length;

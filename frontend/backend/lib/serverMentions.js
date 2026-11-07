@@ -11,9 +11,10 @@
  *   - a role: when the role is marked mentionable ("Bahsedilebilir"), or the
  *     sender may manage mentions (server owner, ADMINISTRATOR or MANAGE_ROLES,
  *     the same permission that edits roles). @everyone itself is never a role ping.
- *   - @everyone / @here: only senders who may manage mentions. With
- *     SERVER_EVERYONE_PING_POLICY=permission the MENTION_EVERYONE bit also
- *     counts (Discord style); the default ("admins") ignores it.
+ *   - @everyone / @here: senders who may manage mentions, plus roles that the
+ *     server gave the MENTION_EVERYONE permission (Discord style, the default
+ *     "permission" policy, so templates such as VIP keep working).
+ *     SERVER_EVERYONE_PING_POLICY=admins restricts it to owner / admins only.
  *   - @here reaches members who are online right now (not invisible).
  * A role the sender may not ping stays in the text but notifies nobody.
  *
@@ -32,7 +33,7 @@ const MASS_RE = /(^|[^\w@])@(everyone|here)(?![\p{L}\p{N}_])/giu;
 const MAX_ROLE_PINGS = Math.max(1, Number(process.env.SERVER_MAX_ROLE_PINGS) || 10);
 
 function envPolicy() {
-  return String(process.env.SERVER_EVERYONE_PING_POLICY || "admins").trim().toLowerCase() === "permission" ? "permission" : "admins";
+  return String(process.env.SERVER_EVERYONE_PING_POLICY || "permission").trim().toLowerCase() === "admins" ? "admins" : "permission";
 }
 
 function cooldownMs() {
