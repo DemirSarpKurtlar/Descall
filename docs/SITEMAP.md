@@ -23,6 +23,14 @@ Audit: `docs/reports/2026-11-06-seo-denetimi.md`.
 - **How-to guides (Nov 7).** Six non-Discord guides under `/blog/*` and `/tr/blog/*` (EN bodies `src/site/seo/guideBodies.js`, TR bodies `src/site/seo/trGuideBodies.js`, meta and FAQ with the other posts): screen sharing, study groups, mic and noise, community servers, chat privacy, which app per device. They are in the blog page group, so every prefixed language serves them; claims were checked against the code on the day they were written (see the file headers).
 - **Structured data.** A FAQPage only where its questions are visible on the page, in the page language, at most one per page. `SoftwareApplication` lists Windows, iOS, iPadOS, Android and Web with the App Store URL (`src/site/appStoreLink.js`).
 - **First paint.** The prerendered page is visible immediately (no `html.seo-hold`); see `frontend/docs/SEO_INDEXING.md`.
+
+## Nov 2026 round 2 rules
+
+- **Sitemaps per language.** `/sitemap.xml` lists `sitemap-en.xml`, `sitemap-tr.xml`, `sitemap-de.xml`, `sitemap-es.xml`, `sitemap-fr.xml`, `sitemap-pt-br.xml`, `sitemap-ru.xml` (`SITEMAP_LANG_TABLES` in `src/site/sitemapCatalog.js`); every URL is in exactly one (its language: `/tr/...` and the Turkish-only pages are `tr`). Each `<url>` has `image:image` entries for the product shots of its page. The topic tables (`sitemap-core.xml` ...) are still served but not in the index. The Render backend answers the same files.
+- **Letter case.** The Pages worker 301s `/Features` or `/TR/Download` to the existing lower-case page. Only page paths that 404 as typed; files and app paths (case-sensitive invite codes) are never folded.
+- **Structured data** (`scripts/seoStructuredData.mjs`, run by `seo-validate --dist`): every page has Organization, WebSite (7 languages) and SoftwareApplication (Windows, iOS, Android, Web, App Store URL, price 0); no rating or review markup; every page below a home has one BreadcrumbList from the language home to its canonical (`breadcrumbsForRoute` in `prerender-seo.mjs`); blog posts are `BlogPosting` with dates, author, publisher logo, image, language; FAQPage at most once, every question and answer visible on the page.
+- **Links and images** (`scripts/seo-link-audit.mjs`): at least 3 linking pages per route, every page within 4 clicks of `/`, no link to a redirect or a 404 (checked through the production worker), every shell image with alt (empty only when `aria-hidden`) and width / height.
+- **hreflang** reciprocity, self reference and x-default are checked without a build by `scripts/hreflang.selftest.mjs` and on the built HTML by `seo-validate --dist`.
 - **Indexing.** No Google Indexing API (`scripts/request-indexing.mjs` refuses to run); the sitemap is the discovery path.
 
 ## Policy
