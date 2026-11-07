@@ -8,7 +8,7 @@
  *
  * A locale in SITE_DRAFT_LOCALES (siteDraftLocales.js) is known (its prefix can be
  * parsed, its strings can be exported) but not served. Adding a language = an entry in
- * locales.json + src/site/i18n/<id>.js; no code changes.
+ * locales.json + src/site/i18n/<id>/ (node scripts/site-i18n.mjs writes it); no code changes.
  *
  * SITE_PAGE_GROUPS are English pages mirrored after launch (blog, niche landings). Each
  * group is served per locale: a locale listed for the group in SITE_DRAFT_PAGE_GROUPS

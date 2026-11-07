@@ -10,8 +10,10 @@ import { Funnel, trackPageView } from "./analytics";
 import { signalMarketingEngage } from "./analyticsGate";
 import MarketingLayout from "./MarketingLayout";
 import SeoHead from "./SeoHead";
-import { PREFIXED_SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
+import { PREFIXED_SITE_LOCALES, isPrefixedLocale, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
 import { mergedPageRedirects } from "./seo/mergedPages.js";
+import { useLocale } from "../context/localeContextInstance";
+import { loadSiteCatalog, siteCatalogReady } from "./loadSiteCatalog.js";
 const MarketingAuthModal = lazy(() => import("./MarketingAuthModal"));
 const AuthView = lazy(() => import("../components/AuthView"));
 
@@ -147,19 +149,34 @@ function enableMarketingScroll() {
 }
 
 
+/**
+ * A prefixed-language page (/de/blog/...) renders once its site catalog parts are here
+ * (loadSiteCatalog.js): until then it suspends like a page chunk that is still loading,
+ * so the page never paints in English first. hydrateMarketing loads the first page's
+ * parts before React starts; this covers client-side route changes.
+ */
+function SiteCatalogGate({ children }) {
+  const { locale } = useLocale();
+  const { pathname } = useLocation();
+  if (isPrefixedLocale(locale) && !siteCatalogReady(locale, pathname)) throw loadSiteCatalog(locale, pathname);
+  return children;
+}
+
 function withLayout(Page, openAuth, pageProps = {}) {
   // Suspend the whole layout (not just the page) so #root stays empty while the
   // chunk loads and #seo-static remains the only visible H1/body.
   return (
     <Suspense fallback={null}>
-      <MarketingLayout onSignIn={openAuth} onSignUp={(opts) => openAuth({ mode: "register", ...opts })}>
-        <Page
-          onSignIn={openAuth}
-          onSignUp={(opts) => openAuth({ mode: "register", ...opts })}
-          {...pageProps}
-        />
-        <RevealMarketingShell />
-      </MarketingLayout>
+      <SiteCatalogGate>
+        <MarketingLayout onSignIn={openAuth} onSignUp={(opts) => openAuth({ mode: "register", ...opts })}>
+          <Page
+            onSignIn={openAuth}
+            onSignUp={(opts) => openAuth({ mode: "register", ...opts })}
+            {...pageProps}
+          />
+          <RevealMarketingShell />
+        </MarketingLayout>
+      </SiteCatalogGate>
     </Suspense>
   );
 }

@@ -182,4 +182,41 @@ assert.ok(text.indexOf('"a"') < text.indexOf('"b"'), "keys are sorted");
 const mod = await import(`data:text/javascript,${encodeURIComponent(text)}`);
 assert.deepEqual(mod.default, { a: "1", b: "2" });
 
+// 6. Catalog split by page (src/site/siteCatalogParts.js): a page loads core + its own part.
+{
+  const { partOfRow, layoutCatalog, misplacedRows, CHROME, PRERENDER } = await imp("scripts/site-i18n.mjs");
+  const { sitePagePart, sitePartsForPath, CORE_PART, PRERENDER_PART } = await imp("src/site/siteCatalogParts.js");
+  const { readSiteCatalogParts } = await imp("scripts/siteCatalogs.mjs");
+  assert.equal(sitePagePart("/"), "home");
+  assert.equal(sitePagePart("/compare/discord/"), "compare-discord");
+  assert.deepEqual(sitePartsForPath("/de/blog/discord-competitors"), [CORE_PART, "blog-discord-competitors"]);
+  assert.deepEqual(sitePartsForPath("/pt-br"), [CORE_PART, "home"]);
+  const row = (pages) => ({ en: "x", pages: new Set(pages) });
+  assert.equal(partOfRow(row([CHROME, "/faq"])), CORE_PART, "chrome strings are core");
+  assert.equal(partOfRow(row(["/faq", "/features"])), CORE_PART, "strings of two pages are core");
+  assert.equal(partOfRow(row(["/faq", PRERENDER])), "faq", "one page (the prerender does not count)");
+  assert.equal(partOfRow(row([PRERENDER])), PRERENDER_PART, "prerender-only strings are never downloaded");
+  const rowsX = [
+    { en: "a", pages: new Set([CHROME]) },
+    { en: "b", pages: new Set(["/blog/discord-competitors"]) },
+  ];
+  const laid = layoutCatalog({ a: "A", b: "B", gone: "G" }, rowsX);
+  assert.deepEqual(laid, { core: { a: "A" }, "blog-discord-competitors": { b: "B" }, [PRERENDER_PART]: { gone: "G" } });
+  assert.deepEqual(misplacedRows(laid, rowsX), []);
+  assert.equal(misplacedRows({ core: { a: "A", b: "B" } }, rowsX).length, 1, "a page string in core is misplaced");
+  // The real catalogs: every string the de pages use is in the part those pages load.
+  const deParts = await readSiteCatalogParts("de");
+  assert.ok(deParts.core && deParts.features && deParts["blog-discord-competitors"], "de is split by page");
+  assert.deepEqual(misplacedRows(deParts, rows), [], "de catalog follows the layout (site-i18n.mjs layout)");
+  for (const r of rows.filter((x) => partOfRow(x) !== PRERENDER_PART && deParts[partOfRow(x)]?.[x.en] == null)) {
+    assert.fail(`de: ${JSON.stringify(r.en.slice(0, 50))} has no translation in ${partOfRow(r)}`);
+  }
+  // The browser loader never bundles "_" files, and English never loads the part map.
+  const loader = fs.readFileSync(path.join(root, "src/site/siteCatalogLoaders.js"), "utf8");
+  assert.match(loader, /"!\.\/i18n\/\*\/_\*\.js"/);
+  assert.match(fs.readFileSync(path.join(root, "src/site/loadSiteCatalog.js"), "utf8"), /import\("\.\/siteCatalogLoaders\.js"\)/);
+  const header = formatCatalog("de", { a: "1" }, "features");
+  assert.match(header, /part "features"/);
+}
+
 console.log("siteI18n.selftest ok");

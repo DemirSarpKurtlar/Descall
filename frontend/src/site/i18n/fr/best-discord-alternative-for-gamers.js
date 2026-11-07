@@ -1,0 +1,51 @@
+/**
+ * Marketing site catalog for fr, part "best-discord-alternative-for-gamers": English source string -> translation.
+ * Strings only the page "best-discord-alternative-for-gamers" uses; loaded with that page.
+ * Written by `node scripts/site-i18n.mjs import | bake | prune | layout` (sorted keys,
+ * placed by src/site/siteCatalogParts.js); edit through the tool so every string stays in
+ * the part its page loads. Lookup order: the loaded parts, then the app phrases in
+ * src/i18n/locales/fr.js (loaded only when a lookup misses), then English.
+ */
+export default {
+  "A classic Discord gaming server means bots, roles, and channel spam.": "Un serveur de jeu Discord classique, c'est des bots, des rôles et une avalanche de salons.",
+  "Can I screen share while gaming?": "Puis-je partager mon écran en jouant ?",
+  "Chat: general, clips and screenshots, off-topic": "Chat : général, clips et captures d'écran, hors-sujet",
+  "Clear, low-latency voice. Channels you can drop into without ringing anyone. Screen share that does not turn a replay into a slideshow. And for clans, some structure: roles, a staff room, and an announcements channel only leaders can post in.": "Un vocal clair et à faible latence. Des salons où passer sans faire sonner qui que ce soit. Un partage d'écran qui ne transforme pas un replay en diaporama. Et pour les clans, un peu de structure : des rôles, un salon staff et un salon d'annonces où seuls les leaders peuvent publier.",
+  "Descall does not have Discord’s bot marketplace (music bots, levelling systems, complex automations), and it is not built for public servers with tens of thousands of members. It is not an in-game overlay either. It is a chat app for squads, clans, and small-to-mid communities that want good voice and tidy servers for free.": "Descall n'a pas la marketplace de bots de Discord (bots musicaux, systèmes de niveaux, automatisations complexes), et il n'est pas conçu pour les serveurs publics de dizaines de milliers de membres. Ce n'est pas non plus un overlay en jeu. C'est une appli de chat pour les squads, les clans et les communautés petites à moyennes qui veulent un bon vocal et des serveurs bien rangés, gratuitement.",
+  "Descall for Gamers: A Free Discord Alternative": "Descall pour les gamers : une alternative gratuite à Discord",
+  "Descall puts those pieces in one free app. You do not need a subscription for better voice or screen share, and you do not need bots for basic moderation.": "Descall réunit tout ça dans une seule appli gratuite. Pas besoin d'abonnement pour un meilleur vocal ou partage d'écran, ni de bots pour la modération de base.",
+  "Desktop app for low-friction gaming sessions": "Appli de bureau pour des sessions de jeu sans friction",
+  "Discord alternative for gamers: free voice, screen share, and gaming server templates without Nitro or bot hell.": "Alternative à Discord pour les gamers : vocal gratuit, partage d'écran et modèles de serveur gaming, sans Nitro ni l'enfer des bots.",
+  "Does Descall have gaming server templates?": "Descall a-t-il des modèles de serveur gaming ?",
+  "Events: a stage channel for tournament nights": "Événements : un salon de conférence pour les soirées tournoi",
+  "Free core, cosmetics optional": "Base gratuite, cosmétiques optionnels",
+  "Friends and presence inside Descall": "Amis et présence dans Descall",
+  "Gamer checklist": "Checklist du joueur",
+  "Gamers don’t need another bloated server, they need voice and screen share that actually work. Descall is the Discord alternative built around squads and playing together.": "Les joueurs n'ont pas besoin d'un énième serveur surchargé, ils ont besoin d'un vocal et d'un partage d'écran qui fonctionnent vraiment. Descall est l'alternative à Discord pensée pour les équipes et pour jouer ensemble.",
+  "Gaming templates built in": "Modèles gaming intégrés",
+  "Gaming templates with squad-up rooms": "Modèles gaming avec salons pour former une squad",
+  "Getting the whole clan to join": "Faire venir tout le clan",
+  "Group voice/video with screen share": "Vocal/vidéo de groupe avec partage d'écran",
+  "Honest limits": "Nos limites, en toute honnêteté",
+  "If you want chat, servers with voice lobbies, and screen share without Nitro, Descall is a strong Discord alternative for gaming friend groups.": "Si tu veux du chat, des serveurs avec lobbies vocaux et le partage d'écran sans Nitro, Descall est une solide alternative à Discord pour les groupes d'amis gamers.",
+  "In the Windows app you can switch your voice to push-to-talk and pick your own key, so the squad only hears you when you mean it. Before a match, run the mic test in voice settings and turn on “hear yourself” to check your level and noise suppression without bothering anyone.": "Dans l'appli Windows, tu peux passer ta voix en mode appuyer pour parler et choisir ta propre touche : ton escouade ne t'entend que quand tu le veux. Avant un match, lance le test du micro dans les réglages vocaux et active « m'entendre » pour vérifier ton niveau et la suppression du bruit sans déranger personne.",
+  "Info: announcements (leaders only), rules, new members": "Infos : annonces (leaders uniquement), règles, nouveaux membres",
+  "Keep reading": "Continuer la lecture",
+  "Open Descall": "Ouvrir Descall",
+  "Post the time in the announcements channel, then give each team its own squad voice channel so the general room stays free for everyone else. A stage channel works for tournament nights: a few speakers talk while the rest listen. Moderators can time out or remove a player who ruins the night, and every action is kept in the audit log.": "Publie l'heure dans le salon d'annonces, puis donne à chaque équipe son propre salon vocal pour que la salle générale reste libre pour les autres. Un salon de scène convient aux soirées de tournoi : quelques intervenants parlent pendant que les autres écoutent. Les modérateurs peuvent exclure temporairement ou retirer un joueur qui gâche la soirée, et chaque action est conservée dans le journal d'audit.",
+  "Push-to-talk and sound checks on Windows": "Appuyer pour parler et test du son sous Windows",
+  "Run a match night": "Organiser une soirée de match",
+  "Set up a clan server in minutes": "Monte un serveur de clan en quelques minutes",
+  "Share the server invite link where your clan already reads. Whoever opens it sees a preview of the server and joins after signing in, in the browser without installing anything, so nobody waits for a download before the first game. The desktop app is worth installing later for long sessions.": "Partage le lien d'invitation du serveur là où ton clan lit déjà. Celui qui l'ouvre voit un aperçu du serveur et le rejoint après s'être connecté, dans le navigateur sans rien installer : personne n'attend un téléchargement avant la première partie. L'appli de bureau vaut la peine d'être installée plus tard pour les longues sessions.",
+  "Staff: staff chat and staff voice (moderators only)": "Staff : chat staff et vocal staff (modérateurs uniquement)",
+  "Start from the Gaming template and you get announcements, general chat, clips, voice rooms, a staff room, and Admin / Moderator / Member roles already wired up. Rename channels to match your old server so members find their way. Invite links let new players preview the server and join after signing in.": "Pars du modèle Gaming et tu obtiens les annonces, le chat général, les clips, les salons vocaux, un salon staff et les rôles Admin / Modérateur / Membre déjà configurés. Renomme les salons comme sur ton ancien serveur pour que les membres s'y retrouvent. Les liens d'invitation permettent aux nouveaux joueurs d'avoir un aperçu du serveur et de le rejoindre après connexion.",
+  "The Gaming template gives your clan squad-up, clip, and scrim channels out of the box. Everyone talks in voice in the same app with the same account, no swapping usernames across three platforms.": "Le modèle Gaming donne à ton clan des salons pour former une squad, partager des clips et organiser des scrims, prêts à l'emploi. Tout le monde parle en vocal dans la même appli avec le même compte, sans jongler entre des pseudos sur trois plateformes.",
+  "Voice and screen share while you play": "Vocal et partage d'écran pendant que tu joues",
+  "Voice channels are persistent, with a speaking indicator, mute, and deafen one click away. Optional noise suppression keeps mechanical keyboards and fans out of your squad’s ears. Screen share has quality presets, so you can favour smooth motion when showing gameplay or sharp detail when going over a strategy. On Windows, the desktop app avoids browser tab throttling and runs quietly in the background.": "Les salons vocaux sont permanents, avec un indicateur de parole, et la coupure du micro comme la sourdine sont à un clic. La suppression du bruit, optionnelle, garde les claviers mécaniques et les ventilateurs loin des oreilles de ta squad. Le partage d'écran a des préréglages de qualité, pour privilégier la fluidité quand tu montres du gameplay ou la netteté quand vous parlez stratégie. Sur Windows, l'appli de bureau évite le bridage des onglets du navigateur et tourne discrètement en arrière-plan.",
+  "Voice: ranked squad 1, ranked squad 2, casual, AFK": "Vocal : squad classée 1, squad classée 2, détente, AFK",
+  "What gamers actually need from a chat app": "Ce dont les joueurs ont vraiment besoin dans une appli de chat",
+  "What is the best Discord alternative for gamers in 2026?": "Quelle est la meilleure alternative à Discord pour les gamers en 2026 ?",
+  "Why gamers leave Discord": "Pourquoi les joueurs quittent Discord",
+  "Yes. Create a Gaming hub server with squad-up channels, clip drops, scrim voice rooms, and staff roles already configured.": "Oui. Crée un serveur Hub gaming avec des salons pour former une squad, un salon de clips, des salons vocaux de scrim et des rôles staff déjà configurés.",
+  "Yes. Use Descall voice/video calls with screen share quality presets, useful for reviewing VODs, showing loadouts, or watching together.": "Oui. Utilise les appels vocaux/vidéo de Descall avec les préréglages de qualité du partage d'écran, pratiques pour analyser des VOD, montrer ton équipement ou regarder ensemble."
+};

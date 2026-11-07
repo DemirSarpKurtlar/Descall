@@ -344,6 +344,37 @@ export function interFontFaceCss(assetsDir = path.join(distDir, "assets")) {
 
 let shellFonts = { style: "", preload: "", preloadExt: "" };
 
+const { sitePartsForPath } = await import(pathToFileURL(path.join(root, "src/site/siteCatalogParts.js")).href);
+
+/**
+ * modulepreload of the site catalog a prefixed page waits for before React renders
+ * (src/site/loadSiteCatalog.js): the part loaders and the page's parts (core + its own,
+ * chunks site-<id>-<part>-<hash>.js). They download with the HTML instead of after the
+ * hydrate chain asked for them. Empty for English and Turkish pages.
+ */
+export function siteCatalogPreload(route, files = assetFileList()) {
+  if (!route.locale) return "";
+  // Vite hashes are 8 characters: "site-de-blog" must not pick "site-de-blog-discord-...".
+  const pick = (name) => files.find((f) => f.startsWith(`${name}-`) && /^[\w-]{8}\.js$/.test(f.slice(name.length + 1)));
+  return ["siteCatalogLoaders", ...sitePartsForPath(route.path).map((part) => `site-${route.locale}-${part}`)]
+    .map(pick)
+    .filter(Boolean)
+    .map((f) => `<link rel="modulepreload" crossorigin href="/assets/${f}" />`)
+    .join("\n    ");
+}
+
+let assetFiles = null;
+function assetFileList() {
+  if (!assetFiles) {
+    try {
+      assetFiles = fs.readdirSync(path.join(distDir, "assets"));
+    } catch {
+      assetFiles = [];
+    }
+  }
+  return assetFiles;
+}
+
 function twinKindOf(body) {
   return body.match(/<main class="seo-twin seo-twin-([a-z]+)"/)?.[1] || null;
 }
@@ -904,6 +935,7 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     // Turkish pages always set latin-ext letters in bold (header "Giriş Yap", titles).
     lang === "tr" ? shellFonts.preloadExt : "",
     shellFonts.style,
+    siteCatalogPreload(route),
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
     `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
