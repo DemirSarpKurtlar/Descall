@@ -63,7 +63,7 @@ for (const s of [
   "Optional analytics only. Essentials stay on.", // cookie banner (cookieCopy)
   "Why people look for a Discord alternative", // page extras
   "{name} is the founder, owner, and CEO of Descall.", // crawler body with a placeholder
-  "Descall is currently in <strong>Beta</strong>.", // crawler body with a tag
+  "Features of a modern Discord alternative", // React page + its prerendered twin (seo/pageTwins.js)
 ]) {
   assert.ok(en.has(s), `export is missing ${JSON.stringify(s)}`);
 }

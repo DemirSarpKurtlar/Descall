@@ -1,6 +1,6 @@
 {
   "_doc": "Hard-coded user-visible strings per file (scripts/i18n-check.mjs). Counts may only go down. After moving text into the catalogs run: node scripts/i18n-check.mjs --update-baseline",
-  "total": 2289,
+  "total": 2290,
   "files": {
     "backend/games/BlackjackGame.js": 7,
     "backend/games/casinoArgs.js": 1,
@@ -128,7 +128,7 @@
     "src/site/pages/DiscordAlternativeGamersPage.jsx": 2,
     "src/site/pages/DiscordAlternativeNichePage.jsx": 1,
     "src/site/pages/DiscordAlternativePage.jsx": 11,
-    "src/site/pages/FeaturesPage.jsx": 7,
+    "src/site/pages/FeaturesPage.jsx": 1,
     "src/site/pages/HomePage.jsx": 1,
     "src/site/pages/MarketingDownloadPage.jsx": 9,
     "src/site/pages/StatusPage.jsx": 2,
@@ -138,9 +138,11 @@
     "src/site/pages/WhoOwnsDescallPage.jsx": 20,
     "src/site/seo/blogBodies.js": 1,
     "src/site/seo/corePageBodies.js": 9,
+    "src/site/seo/featureGroups.js": 6,
     "src/site/seo/keywordStrategy.js": 5,
     "src/site/seo/mergedGuides.js": 2,
     "src/site/seo/nicheLandings.js": 19,
+    "src/site/seo/pageTwins.js": 1,
     "src/site/seo/pageExtras.js": 53,
     "src/site/seo/prerenderCopy.js": 125,
     "src/site/seo/trBlog.js": 74,

@@ -308,7 +308,12 @@ if (checkDist) {
       if (!html.includes("<title>")) fail(`No <title> in ${rel}`);
       if (!html.includes('rel="canonical"')) fail(`No canonical in ${rel}`);
       if (!html.includes("<h1")) fail(`No <h1> crawl content in ${rel}`);
-      if (/\bLoading\b/i.test(html)) fail(`Loading placeholder found in ${rel}`);
+      // Visible text only: loading="lazy" on an image is not a placeholder.
+      const visibleText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+        .replace(/<[^>]+>/g, " ");
+      if (/\bLoading\b/i.test(visibleText)) fail(`Loading placeholder found in ${rel}`);
       const mainMatch = html.match(/<main[\s\S]*?<\/main>/i);
       if (!mainMatch || mainMatch[0].length < 400) {
         fail(`Thin crawl <main> in ${rel} (${mainMatch ? mainMatch[0].length : 0} chars)`);
