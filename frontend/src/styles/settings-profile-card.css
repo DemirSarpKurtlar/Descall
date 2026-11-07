@@ -144,7 +144,7 @@ html.a11y-solid .spc-avatar .status-badge { border-color: var(--spc-fill); }
   padding: 0 16px;
   border: 0;
   border-radius: 12px; /* concentric: 20 card − ~8 inset feel */
-  background: #4F7CFF;
+  background: #4562E0; /* white text >= 4.5:1 (the brand #4F7CFF is 3.8:1) */
   color: #fff;
   font-size: 14px;
   font-weight: 600;

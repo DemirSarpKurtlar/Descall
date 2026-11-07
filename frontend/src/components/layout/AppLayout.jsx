@@ -378,6 +378,16 @@ export default function AppLayout({
   const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
   const inServersChannel = activeView === "servers" && !!activeServer && !!activeChannel;
   const inConversation = !!(activeDmUser || activeGroup || inServersChannel);
+  const skipToConversation = (e) => {
+    e.preventDefault();
+    const panel = document.querySelector(".main-panel");
+    if (!panel) return;
+    // The newest message (the list's roving focus stop), else the composer, else the panel.
+    const target = panel.querySelector('.message-bubble[tabindex="0"]') || panel.querySelector("textarea.composer-input");
+    if (target) { target.focus(); return; }
+    if (!panel.hasAttribute("tabindex")) panel.setAttribute("tabindex", "-1");
+    panel.focus();
+  };
   // Mobile main navigation: the bottom tab bar and the rail + list drawer only
   // show on root tabs. Inner screens (open DM / group / channel, settings) hide
   // it. Only those screens
@@ -540,6 +550,12 @@ export default function AppLayout({
       data-view={activeView}
       style={showNotifBanner && notifBannerH ? { "--notif-banner-h": `${notifBannerH}px` } : undefined}
     >
+      {inConversation && !isMobile ? (
+        // Past the rail and the chat list straight to the open conversation (WCAG 2.4.1).
+        <a href="#conversation" className="a11y-skip" onClick={skipToConversation}>
+          {t("a11y.chat.skipToConversation")}
+        </a>
+      ) : null}
       <div className="g-theme-stage" aria-hidden="true">
         <span className="g-theme-wash" />
         <span className="g-theme-drift" />

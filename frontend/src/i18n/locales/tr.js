@@ -7,6 +7,7 @@ import { PREMIUM_AUDIO_TR } from "./premiumAudio.tr.js";
 import { WORLD3D_TR } from "./world3d.tr.js";
 import { AMP_TR } from "./profileMediaPicker.tr.js";
 import { MSG4_TR } from "./msg4.tr.js";
+import { A11Y_TR } from "./a11y.tr.js";
 import { MSG5_TR } from "./msg5.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
@@ -58,6 +59,7 @@ export const nested = {
   nc: NC_TR,
   amp: AMP_TR,
   msg4: MSG4_TR,
+  a11y: A11Y_TR,
   msg5: MSG5_TR,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)

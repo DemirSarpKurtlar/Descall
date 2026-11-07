@@ -170,6 +170,18 @@ export default function ScheduleSheet({ open, detail, onClose }) {
     setMode("new");
   };
 
+  const onPresetKeys = (e) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!step || !presets.length) return;
+    const cur = Number(e.target?.dataset?.preset);
+    if (!Number.isFinite(cur)) return;
+    e.preventDefault();
+    const next = (cur + step + presets.length) % presets.length;
+    hapticSelection();
+    setWhen(presets[next].at);
+    e.currentTarget.querySelector(`[data-preset="${next}"]`)?.focus();
+  };
+
   const editor = (
     <>
       <div className="gs-group">
@@ -223,15 +235,19 @@ export default function ScheduleSheet({ open, detail, onClose }) {
       ) : null}
       <section className="gs-section">
         <h3 className="gs-section-title"><span>{t("msg4.schedule.when")}</span></h3>
-        <div className="ms-chips" role="radiogroup" aria-label={t("msg4.schedule.when")}>
-          {presets.map((p) => {
+        <div className="ms-chips" role="radiogroup" aria-label={t("msg4.schedule.when")} onKeyDown={onPresetKeys}>
+          {presets.map((p, i) => {
             const on = Math.abs(p.at.getTime() - when.getTime()) < 60000;
+            // Radio group: one Tab stop (the checked chip, else the first), arrows move and select.
+            const tabStop = on || (i === 0 && !presets.some((q) => Math.abs(q.at.getTime() - when.getTime()) < 60000));
             return (
               <button
                 key={p.id}
                 type="button"
                 role="radio"
                 aria-checked={on}
+                tabIndex={tabStop ? 0 : -1}
+                data-preset={i}
                 className={`gs-pill ms-chip${on ? " is-on" : ""}`}
                 data-testid={`schedule-preset-${p.id}`}
                 onClick={() => { hapticSelection(); setWhen(p.at); }}
@@ -273,7 +289,10 @@ export default function ScheduleSheet({ open, detail, onClose }) {
         <div className="gs-empty">{t("msg4.schedule.empty")}</div>
       ) : (
         <div className="gs-group">
-          {pending.map((item) => (
+          {pending.map((item) => {
+            // The icon buttons name their message: "Edit scheduled message: Fri 21:00, Hello".
+            const what = [fmt(new Date(item.sendAt)), item.content ? displayText(roleTokensToText(item.content)).slice(0, 60) : item.attachment?.originalName || ""].filter(Boolean).join(", ");
+            return (
             <div key={item.id} className="gs-row ms-sched-item" data-testid="schedule-item">
               <span className="gs-row-text">
                 <span className="gs-row-title">{fmt(new Date(item.sendAt))}</span>
@@ -283,15 +302,16 @@ export default function ScheduleSheet({ open, detail, onClose }) {
                 ) : null}
               </span>
               <span className="ms-sched-actions">
-                <button type="button" className="gs-pill" onClick={() => startEdit(item)} aria-label={t("msg4.schedule.edit")} title={t("msg4.schedule.edit")} data-testid="schedule-edit">
+                <button type="button" className="gs-pill" onClick={() => startEdit(item)} aria-label={t("a11y.schedule.editItem", { item: what })} title={t("msg4.schedule.edit")} data-testid="schedule-edit">
                   <Pencil size={15} />
                 </button>
-                <button type="button" className="gs-pill is-danger" onClick={() => cancelItem(item)} aria-label={t("msg4.schedule.cancel")} title={t("msg4.schedule.cancel")} data-testid="schedule-cancel">
+                <button type="button" className="gs-pill is-danger" onClick={() => cancelItem(item)} aria-label={t("a11y.schedule.cancelItem", { item: what })} title={t("msg4.schedule.cancel")} data-testid="schedule-cancel">
                   <Trash2 size={15} />
                 </button>
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       <p className="gs-footnote"><span>{t("msg4.schedule.listFoot")}</span></p>

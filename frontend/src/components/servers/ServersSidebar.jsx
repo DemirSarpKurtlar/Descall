@@ -1356,6 +1356,7 @@ export default function ServersSidebar({
                       <button
                         type="button"
                         className="server-channel-cat-btn"
+                        aria-expanded={!closed}
                         onClick={() =>
                           setCollapsedCats((prev) => ({ ...prev, [node.id]: !prev[node.id] }))
                         }
@@ -2360,10 +2361,17 @@ function ChannelRow({
         type="button"
         className={`server-channel-row ${active ? "active" : ""}`}
         title={channel.name}
+        aria-current={active ? "page" : undefined}
         onClick={onSelect}
       >
-        <Icon size={16} />
+        <Icon size={16} aria-hidden="true" />
         <span>{channel.name}</span>
+        {/* Read after the name: "general, Text channel, Muted" / "lobby, Voice channel, 3 in voice". */}
+        <span className="a11y-sr">
+          {`, ${t(channel.type === "voice" ? "Voice channel" : channel.type === "stage" ? "Stage channel" : "Text channel")}`}
+          {muted ? `, ${t("Muted")}` : ""}
+          {isVoiceLike && voiceMembers.length > 0 ? `, ${t("a11y.servers.inVoice", { count: voiceMembers.length })}` : ""}
+        </span>
         {channel.nsfw ? (
           <span className="server-channel-nsfw" title={t("NSFW")} style={{ fontSize: 10, opacity: 0.75 }}>
             {t("svh.badgeNsfw")}
@@ -2376,7 +2384,7 @@ function ChannelRow({
         ) : null}
         {muted ? <BellOff size={12} className="server-channel-mute-icon" aria-hidden /> : null}
         {isVoiceLike && voiceMembers.length > 0 && (
-          <span className="server-voice-count">{voiceMembers.length}</span>
+          <span className="server-voice-count" aria-hidden="true">{voiceMembers.length}</span>
         )}
         {(channel.type === "text" || channel.type === "announcement") && unreadCount > 0 ? (
           <ServerUnreadBadge count={unreadCount} />
