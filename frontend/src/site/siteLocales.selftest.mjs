@@ -303,8 +303,9 @@ assert.match(copy.noscriptNavHtml("de"), /<a href="\/de">Descall<\/a>/);
 const features = corePageBody("/de/features");
 assert.match(features, /<h1>Descall Funktionen<\/h1>/);
 assert.match(features, /href="\/de"/, "brand links to the locale home");
-const about = corePageBody("/de/about");
-assert.match(about, /<strong class="ownership-name">Demir Sarp Kurtlar<\/strong> hat Descall gegründet\./);
+// The ownership record twin (seo/infoTwins.js) puts the name into the translated sentence.
+const owner = corePageBody("/de/who-owns-descall");
+assert.match(owner, /<strong class="ownership-name">Demir Sarp Kurtlar<\/strong> hat Descall gegründet\./);
 assert.match(corePageBody("/de/privacy"), /<h1>Datenschutz/, "legal pages use the translated legal document");
 assert.equal(corePageBody("/de/descall-sahibi"), null, "only mirrored pages exist under a prefix");
 assert.equal(corePageBody("/de/blog"), null);
@@ -370,7 +371,7 @@ try {
   const crumbsLd = ld.find((g) => g["@type"] === "BreadcrumbList");
   assert.equal(crumbsLd.itemListElement[1].item, "https://descall.com/de/blog");
   const index = injectMeta(base, deAll.find((r) => r.enPath === "/blog"));
-  assert.match(index, /href="\/de\/blog\/discord-competitors"><strong>Discord-Konkurrenten 2026<\/strong>/);
+  assert.match(index, /<h2><a href="\/de\/blog\/discord-competitors">Discord-Konkurrenten 2026<\/a><\/h2>/, "blog index twin card");
   const niche = injectMeta(base, deAll.find((r) => r.enPath === "/apps-like-discord"));
   assert.match(niche, /<title>Apps wie Discord \(2026\)<\/title>/);
   assert.match(niche, /<link rel="canonical" href="https:\/\/descall\.com\/de\/apps-like-discord" \/>/);

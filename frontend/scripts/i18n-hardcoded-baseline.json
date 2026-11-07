@@ -1,6 +1,6 @@
 {
   "_doc": "Hard-coded user-visible strings per file (scripts/i18n-check.mjs). Counts may only go down. After moving text into the catalogs run: node scripts/i18n-check.mjs --update-baseline",
-  "total": 2466,
+  "total": 2504,
   "files": {
     "backend/games/BlackjackGame.js": 7,
     "backend/games/casinoArgs.js": 1,
@@ -138,9 +138,11 @@
     "src/site/pages/WhoOwnsDescallPage.jsx": 20,
     "src/site/seo/blogBodies.js": 2,
     "src/site/seo/blogLinks.js": 5,
-    "src/site/seo/corePageBodies.js": 9,
+    "src/site/seo/corePageBodies.js": 1,
     "src/site/seo/featureGroups.js": 6,
+    "src/site/seo/infoTwins.js": 13,
     "src/site/seo/keywordStrategy.js": 5,
+    "src/site/seo/landingTwins.js": 33,
     "src/site/seo/mergedGuides.js": 4,
     "src/site/seo/nicheLandings.js": 29,
     "src/site/seo/pageTwins.js": 1,

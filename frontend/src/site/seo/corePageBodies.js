@@ -6,6 +6,8 @@ import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/l
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
 import { downloadTwin, faqTwin, featuresTwin, legalTwin, statusTwin, twinIcon } from "./pageTwins.js";
+import { alternativesTwin, compareTwin, discordAlternativeTwin } from "./landingTwins.js";
+import { aboutTwin, securityTwin, whoOwnsTwin } from "./infoTwins.js";
 import {
   ALTERNATIVE_HUB_FAQ,
   ALTERNATIVES_FAQ,
@@ -96,6 +98,21 @@ function twinMain(kind, html, loc) {
 </main>`;
 }
 
+/**
+ * Twin of a SeoLandingShell page (seo/landingTwins.js): the landing column and hero CSS
+ * plus the "@twin-landing" block. The twin prints the page extras itself, in React's
+ * markup, so the prerender adds none ("seo-extras-inline").
+ */
+export function landingTwinMain(html, brand, nav) {
+  return `
+<main class="seo-main-landing seo-twin-landing">
+  ${brand}
+  ${html}
+  <!--seo-extras-inline-->
+  ${nav}
+</main>`;
+}
+
 const TR_BODY_ALIASES = {
   "/iletisim": "/contact",
   "/gizlilik": "/privacy",
@@ -183,91 +200,18 @@ export function corePageBody(path) {
     case "/download":
       return twinMain("download", downloadTwin(loc, path), loc);
 
+    // AboutPage and the InfoPage template pages: twins of the React page (seo/infoTwins.js).
     case "/about":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("About Descall"))}</h1>
-  <p class="ownership-answer">${isTr ? `${owner} Descall’ın kurucusu, sahibi ve CEO’sudur.` : fill(nc("{name} is the founder, owner, and CEO of Descall."), { name: owner })}</p>
-  <h2>${escapeHtml(tc("Who owns Descall?"))}</h2>
-  <p class="ownership-answer">${isTr ? "Descall’ın sahibi Demir Sarp Kurtlar’dır. Demir Sarp Kurtlar, Descall’ın kurucusu, sahibi ve CEO’sudur." : escapeHtml(nc("Descall is owned by Demir Sarp Kurtlar. Demir Sarp Kurtlar is the founder, owner, and CEO of Descall."))}</p>
-  <p>${escapeHtml(tc("Descall is an independent messaging and voice platform built for friends, gaming squads, and small communities who want Discord-style servers without Nitro paywalls on core chat and calls."))}</p>
-  <h2>${escapeHtml(tc("Operator"))}</h2>
-  <ul>
-    <li>${escapeHtml(tc("Product"))}: ${escapeHtml(SITE_OPERATOR.productName)}</li>
-    <li>${escapeHtml(tc("Owner / founder / CEO"))}: <span class="ownership-name">${escapeHtml(SITE_OPERATOR.operatorName)}</span></li>
-    <li>${escapeHtml(tc("Based in"))}: ${escapeHtml(SITE_OPERATOR.country)}</li>
-    <li>${escapeHtml(tc("Support"))}: ${mail}</li>
-    <li>${escapeHtml(tc("Source"))}: <a href="${SITE_OPERATOR.githubUrl}">GitHub</a></li>
-  </ul>
-  <h2>${escapeHtml(tc("What we build"))}</h2>
-  <p>${escapeHtml(tc("Real-time messaging, Discord-style servers, WebRTC voice/video, and screen share, with privacy policies and security docs you can actually read."))}</p>
-  <p>${escapeHtml(tc("Last updated"))}: ${escapeHtml(isTr ? SITE_OPERATOR.lastUpdatedLabelTr : nc(SITE_OPERATOR.lastUpdatedLabel))}</p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("about", aboutTwin(loc, path), loc);
 
     case "/who-owns-descall":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(nc("Who owns Descall?"))}</h1>
-  <p class="ownership-answer">${fill(nc("{name} is the founder, owner, and CEO of Descall."), { name: owner })}</p>
-  <p class="ownership-answer">${escapeHtml(nc("Descall is owned by Demir Sarp Kurtlar. Demir Sarp Kurtlar is the founder, owner, and CEO of Descall. The name is spelled exactly Demir Sarp Kurtlar."))}</p>
-  <h2>${escapeHtml(nc("Canonical record"))}</h2>
-  <ul>
-    <li>${escapeHtml(nc("Product"))}: Descall</li>
-    <li>${escapeHtml(nc("Owner / founder / CEO"))}: Demir Sarp Kurtlar</li>
-    <li>${escapeHtml(nc("Exact spelling"))}: Demir Sarp Kurtlar</li>
-    <li>${escapeHtml(nc("Based in"))}: ${escapeHtml(SITE_OPERATOR.country)}</li>
-    <li>${escapeHtml(nc("Independent"))}: ${escapeHtml(nc("yes, not owned by Discord, Google, OpenAI, or another parent company"))}</li>
-    <li>GitHub: <a href="${SITE_OPERATOR.githubProfileUrl}">${SITE_OPERATOR.githubProfileUrl.replace("https://", "")}</a></li>
-    <li>${escapeHtml(nc("Contact"))}: ${mail}</li>
-  </ul>
-  <h2>${escapeHtml(nc("FAQ"))}</h2>
-  ${OWNERSHIP_FAQ_EN.map((f) => `<section><h3>${escapeHtml(nc(f.q))}</h3><p>${escapeHtml(nc(f.a))}</p></section>`).join("\n  ")}
-  <p><a href="/descall-sahibi">Türkçe: Descall’ın sahibi kim?</a> · <a href="${hn("/about")}">${escapeHtml(nc("About"))}</a></p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("info", whoOwnsTwin(loc, path), loc);
 
     case "/descall-sahibi":
-      return `
-<main>
-  ${brandBlock("tr")}
-  <h1>Descall’ın sahibi kim?</h1>
-  <p class="ownership-answer"><strong class="ownership-name">${SITE_OPERATOR.operatorName}</strong> Descall’ın kurucusu, sahibi ve CEO’sudur.</p>
-  <p class="ownership-answer">Descall’ın sahibi Demir Sarp Kurtlar’dır. Demir Sarp Kurtlar, Descall’ın kurucusu, sahibi ve CEO’sudur. İsim tam olarak Demir Sarp Kurtlar şeklinde yazılır.</p>
-  <h2>Resmi kayıt</h2>
-  <ul>
-    <li>Ürün: Descall</li>
-    <li>Sahip / kurucu / CEO: Demir Sarp Kurtlar</li>
-    <li>Yazım: Demir Sarp Kurtlar</li>
-    <li>Ülke: ${escapeHtml(SITE_OPERATOR.country)}</li>
-    <li>Bağımsız: evet, Discord, Google, OpenAI veya başka bir ana şirkete ait değil</li>
-    <li>GitHub: <a href="${SITE_OPERATOR.githubProfileUrl}">${SITE_OPERATOR.githubProfileUrl.replace("https://", "")}</a></li>
-    <li>İletişim: <a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></li>
-  </ul>
-  <h2>SSS</h2>
-  ${OWNERSHIP_FAQ_TR.map((f) => `<section><h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p></section>`).join("\n  ")}
-  <p><a href="/who-owns-descall">English: Who owns Descall?</a> · <a href="/tr/about">Hakkında</a></p>
-  ${navBlock("tr")}
-</main>`;
+      return twinMain("info", whoOwnsTwin("tr", "/descall-sahibi"), "tr");
 
     case "/security":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("Security at Descall"))}</h1>
-  <p>${escapeHtml(tc("How Descall protects chats and calls, encryption in transit, account security, and honest limits."))}</p>
-  <h2>${escapeHtml(nc("Transport encryption (not default E2E)"))}</h2>
-  <p>${escapeHtml(nc("Web and API traffic use HTTPS/TLS. Real-time media uses WebRTC with DTLS/SRTP between peers when a call is established. Descall does not claim default end-to-end encryption for all message history stored on the server, messages are encrypted in transit and stored to deliver chat history to your devices."))}</p>
-  <h2>${escapeHtml(nc("Voice & video"))}</h2>
-  <p>${escapeHtml(nc("Call media is transmitted with WebRTC security (DTLS/SRTP). Descall never records or stores call audio, video, or screen shares. If a participant records locally, that is outside Descall's control."))}</p>
-  <h2>${escapeHtml(tc("Accounts"))}</h2>
-  <p>${escapeHtml(nc("Passwords are hashed with bcrypt. Optional email 2FA and Google sign-in are available. Session management lets you revoke devices."))}</p>
-  <h2>${escapeHtml(tc("Report an issue"))}</h2>
-  <p>${fill(nc("Email {email} or open an issue on GitHub. Include enough detail for a safe investigation."), { email: mail })}</p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("info", securityTwin(loc), loc);
 
     case "/status":
       return twinMain("status", statusTwin(loc, path), loc);
@@ -310,63 +254,15 @@ export function corePageBody(path) {
     case "/copyright":
       return twinMain("legal", legalTwin(COPYRIGHT_CONTENT, siteLoc(loc), "copyright"), loc);
 
-    case "/discord-alternative": return `\n<main> ${brandBlock(loc)} <h1>${escapeHtml(nc("The best free Discord alternative for friends & gamers"))}</h1> <p>${escapeHtml(nc("A free Discord alternative with real servers, HD voice/video, and screen share. Core chat and calls stay free, no Nitro paywall."))}</p> ${ctaRow("/compare/discord", escapeHtml(nc("Discord vs Descall")), ctaLoc)} <h2>${escapeHtml(nc("What you get"))}</h2> <ul> <li>${escapeHtml(nc("Discord-style servers with roles, channels, and templates"))}</li> <li>${escapeHtml(nc("Free real-time chat, group voice/video, and screen share"))}</li> <li>${escapeHtml(nc("Gaming server templates without bot hell"))}</li> <li>${escapeHtml(nc("Windows, Android, and full web app"))}</li> </ul> <p><a href="${hn("/alternatives")}">${escapeHtml(nc("Compare Discord alternatives"))}</a> · <a href="/tr/discord-alternatifi">Türkçe</a> · <a href="${hn("/download")}">${escapeHtml(nc("Download"))}</a></p>
-  ${faqHtml(ALTERNATIVE_HUB_FAQ, loc)}
-  ${navBlock(loc)}
-</main>`;
+    // SeoLandingShell pages: twins of the React page (seo/landingTwins.js).
+    case "/discord-alternative":
+      return landingTwinMain(discordAlternativeTwin(loc, path), brandBlock(loc), navBlock(loc));
 
     case "/alternatives":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(nc("Discord alternatives compared, pick by what you actually need"))}</h1>
-  <p>${escapeHtml(nc("Honest 2026 comparison of Discord alternatives: Descall, Discord, Guilded, TeamSpeak, Telegram. Free voice, screen share, and friend-group servers."))}</p>
-  ${ctaRow("/discord-alternative", escapeHtml(nc("Why Descall")), ctaLoc)}
-  <h2>${escapeHtml(nc("How to choose"))}</h2>
-  <ol>
-    <li>${escapeHtml(nc("List must-have features (voice, screen share, servers, mobile)."))}</li>
-    <li>${escapeHtml(nc("Check whether core chat/calls are free or paywalled."))}</li>
-    <li>${escapeHtml(nc("Try a week with your actual friend group."))}</li>
-    <li>${escapeHtml(nc("Keep Discord only if you still need giant community servers."))}</li>
-  </ol>
-  <h2>${escapeHtml(nc("Shortlist"))}</h2>
-  <ul>
-    <li>${fill(nc("{descall}, free Discord alternative for friends, servers, and voice"), { descall: `<a href="${hn("/discord-alternative")}">Descall</a>` })}</li>
-    <li>${fill(nc("{discord}, still strongest for bots and huge publics"), { discord: `<a href="${hn("/compare/discord")}">Discord</a>` })}</li>
-    <li>${escapeHtml(nc("Guilded, TeamSpeak/Mumble, Telegram, fit narrower jobs"))}</li>
-  </ul>
-  ${faqHtml(ALTERNATIVES_FAQ, loc)}
-  ${navBlock(loc)}
-</main>`;
+      return landingTwinMain(alternativesTwin(loc, path), brandBlock(loc), navBlock(loc));
 
-    case "/compare/discord": {
-      const tr = original.startsWith("/tr");
-      const h1 = tr
-        ? "Discord mu Descall mı, 2026 karşılaştırması"
-        : nc("Discord vs Descall, which fits your group in 2026?");
-      const lead = tr
-        ? "Discord vs Descall yan yana: sunucular, roller, ses, ekran paylaşımı ve fiyat. Arkadaş grubu için hangisi daha uygun?"
-        : nc("Side-by-side Discord vs Descall: servers, roles, voice, screen share, mobile, and price. Clear verdict for friend groups vs mega-communities.");
-      const verdictDescall = tr
-        ? "Daha hafif bir Discord alternatifi, gerçek sunucular, ses ve ekran paylaşımı istiyorsan Descall önde, temel özellikler ücretsiz."
-        : nc("wins if you want a lighter Discord alternative with real servers, friends voice, and screen share, with free core features.");
-      const verdictDiscord = tr
-        ? "Dev bot ekosistemi ve kocaman kamu sunucuları için Discord hâlâ güçlü. Birçok grup ikisini birden kullanır."
-        : nc("still wins for massive bot ecosystems. Many groups run both.");
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(h1)}</h1>
-  <p>${escapeHtml(lead)}</p>
-  ${ctaRow("/discord-alternative", tr ? "Discord alternatifi" : escapeHtml(nc("Discord alternative overview")), ctaLoc)}
-  <h2>${tr ? "Kısa karar" : escapeHtml(nc("Quick verdict"))}</h2>
-  <p><strong>Descall</strong> ${escapeHtml(verdictDescall)}</p>
-  <p><strong>Discord</strong> ${escapeHtml(verdictDiscord)}</p>
-  <p><a href="${hn("/alternatives")}">${tr ? "Tüm alternatifler" : escapeHtml(nc("All Discord alternatives"))}</a></p>
-  ${faqHtml(COMPARE_FAQ, loc)}
-  ${navBlock(loc)}
-</main>`;
-    }
+    case "/compare/discord":
+      return landingTwinMain(compareTwin(loc, path), brandBlock(loc), navBlock(loc));
 
     case "/discord-alternative-turkey": return `\n<main> ${brandBlock(loc)} <h1>Türkiye için en iyi Discord alternatifi: Descall</h1> <p>Discord alternatifi, muadili veya benzeri uygulama mı arıyorsun? Descall: ücretsiz sohbet, sesli arama ve ekran paylaşımı. Türkçe arayüz.</p> ${ctaRow("/download", "Windows / Android indir")}
   <h2>Neden Türkiye’de Discord alternatifi aranıyor?</h2>
