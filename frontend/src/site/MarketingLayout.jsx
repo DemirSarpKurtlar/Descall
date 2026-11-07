@@ -142,7 +142,7 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
       setLocale(next);
       if (dest && dest !== from) navigate(dest + search);
     };
-    if (isPrefixedLocale(next)) loadSiteCatalog(next).then(go);
+    if (isPrefixedLocale(next)) loadSiteCatalog(next, dest || from).then(go);
     else go();
   };
 

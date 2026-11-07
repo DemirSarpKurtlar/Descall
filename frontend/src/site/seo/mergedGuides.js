@@ -2,7 +2,7 @@
  * Sections of the five blog posts merged into stronger pages in Nov 2026 (see
  * seo/mergedPages.js). Each kept page shows them after its own copy, so no guidance was
  * lost with the 301. The English strings are the ones the posts had, so the existing
- * translations in src/site/i18n/<id>.js still apply.
+ * translations in src/site/i18n/<id>/ still apply.
  *
  * Kept out of seo/pageExtras.js on purpose: that module ships with every marketing page,
  * this one only with the pages that render it (DiscordAlternativeNichePage,

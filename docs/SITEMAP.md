@@ -33,6 +33,12 @@ Audit: `docs/reports/2026-11-06-seo-denetimi.md`.
 - **hreflang** reciprocity, self reference and x-default are checked without a build by `scripts/hreflang.selftest.mjs` and on the built HTML by `seo-validate --dist`.
 - **Indexing.** No Google Indexing API (`scripts/request-indexing.mjs` refuses to run); the sitemap is the discovery path.
 
+## Nov 2026 round 3 rules
+
+- **Letter case.** `backend/server.js` folds `/Features` to `/features` with the same rule as the Pages worker (`backend/lib/letterCaseRedirect.js`: only page paths in `dist`, never files, API paths or invite codes). On Render the canonical-host hop to descall.com comes first and the worker folds the case. `vercel.json` has no such rule: descall.com is not served by Vercel, and a redirect there cannot check that the lower-case page exists.
+- **Hand-over twins** for the compare, alternatives, gamers, blog index, about, security and ownership pages: see `frontend/docs/SEO_INDEXING.md`.
+- **Site catalogs per page.** `src/site/i18n/<id>/` holds `core.js` plus one file per page; `node scripts/site-i18n.mjs layout` rewrites it, `check` fails when a string is in a part its page does not load.
+
 ## Policy
 
 **Only real, indexable marketing URLs** are published. Group invites and `?announcement=` query URLs are **not** in the sitemap index (they are ephemeral / have no public landing).

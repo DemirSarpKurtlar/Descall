@@ -137,7 +137,8 @@ function chainFor(page, localeId) {
   const blockingCss = [...shell.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="(\/assets\/[^"]+\.css)"/g)].map((m) => m[1]);
   const contentVisible = [shellRel, ...blockingCss];
   // Chain: entry -> hydrateMarketing -> MarketingBoot -> MarketingApp -> page chunk.
-  const pageChunk = { "/features": "FeaturesPage", "/": "HomePage" }[page.replace(/^\/(de|es|fr|pt-br|ru|tr)(?=\/|$)/, "") || "/"] || "FeaturesPage";
+  const enPage = page.replace(/^\/(de|es|fr|pt-br|ru|tr)(?=\/|$)/, "") || "/";
+  const pageChunk = { "/features": "FeaturesPage", "/": "HomePage", "/download": "MarketingDownloadPage" }[enPage] || "FeaturesPage";
   const hops = [
     ["entry", entry, null],
     ["hydrateMarketing", chunkNamed("hydrateMarketing"), entry],
@@ -159,10 +160,13 @@ function chainFor(page, localeId) {
   const entryCss = chunkNamed("marketing-entry", "css");
   if (entryCss) files.add(entryCss);
   if (localeId) {
-    // Two chunks are named after the locale (site catalog, app catalog); the site one is smaller.
-    const re = new RegExp(`^${localeId}-[\\w-]{6,}\\.js$`);
-    const cats = assetFiles.filter((f) => re.test(f)).map((f) => `/assets/${f}`).sort((a, b) => fileSize(a) - fileSize(b));
-    if (cats[0]) files.add(cats[0]);
+    // The site catalog parts this page loads (src/site/siteCatalogParts.js): core + the
+    // page's own part, chunks named site-<id>-<part>-<hash>.js (vite.config.js).
+    const part = enPage === "/" ? "home" : enPage.slice(1).replace(/[^a-z0-9]+/g, "-");
+    for (const name of ["siteCatalogLoaders", `site-${localeId}-core`, `site-${localeId}-${part}`]) {
+      const hit = chunkNamed(name);
+      if (hit) files.add(hit);
+    }
   }
   const sum = (list) => list.reduce((s, f) => s + gzipSize(f), 0);
   const all = [...files];
@@ -180,7 +184,7 @@ function chainFor(page, localeId) {
 }
 
 console.log("\nCritical path (gzip, what the network sends):");
-for (const [page, loc] of [["/features", null], ["/de/features", "de"], ["/", null]]) {
+for (const [page, loc] of [["/features", null], ["/de/features", "de"], ["/es/download", "es"], ["/ru", "ru"], ["/", null]]) {
   try {
     const c = chainFor(page, loc);
     if (process.argv.includes("--verbose")) {

@@ -95,6 +95,12 @@ export default defineConfig({
       output: electronBase
         ? { format: "iife" }
         : {
+            // Site catalog parts (src/site/i18n/<id>/<part>.js) are named after locale and
+            // part ("site-de-features-x.js"): every locale has a core.js, features.js, ...
+            chunkFileNames(chunk) {
+              const m = (chunk.facadeModuleId || "").match(/[\\/]src[\\/]site[\\/]i18n[\\/]([\w-]+)[\\/]([\w-]+)\.js$/);
+              return m ? `assets/site-${m[1]}-${m[2]}-[hash].js` : "assets/[name]-[hash].js";
+            },
             manualChunks(id) {
               if (id.includes("node_modules")) {
                 // Lazy-loaded error reporting; must stay out of vendor-react ("/@sentry/react/" matches "/react/").

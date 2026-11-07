@@ -2,7 +2,8 @@
  * Translation store for the prefixed site languages (de, es, ...). English and Turkish
  * never go through here: English is the source, Turkish has its own hand-written copy.
  *
- * Lookup for a locale: the site catalog (src/site/i18n/<id>.js), then the app phrases
+ * Lookup for a locale: the site catalog (src/site/i18n/<id>/, the parts the page loaded,
+ * see siteCatalogParts.js), then the app phrases
  * (src/i18n/locales/<id>.js `phrases`), then the English text itself.
  *
  * Nothing is imported here: the prerender registers catalogs it imported directly, the

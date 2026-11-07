@@ -138,4 +138,81 @@ assert.match(read("src/site/fonts-inter.css"), /unicode-range/);
   assert.equal(html, "", "blog posts are not core bodies (prerender-seo.mjs renders them)");
 }
 
+// 10. Round 3: SeoLandingShell pages, About and the InfoPage pages are twins too.
+{
+  const landing = await import("./landingTwins.js");
+  const prerender = await import(pathToFileURL(join(frontend, "scripts/prerender-seo.mjs")).href);
+  // The kicker prop is never rendered by SeoLandingShell; its "Start free" link only
+  // shows on pages without a primary button (the blog index).
+  const KICKERS = ["Discord alternatives · 2026", "Discord alternative · 2026"];
+  const shell = keysOf(read("src/site/components/SeoLandingShell.jsx"));
+  const ROUND3 = [
+    { jsx: "src/site/pages/CompareDiscordPage.jsx", html: corePageBody("/compare/discord"), shell: true },
+    { jsx: "src/site/pages/AlternativesPage.jsx", html: corePageBody("/alternatives"), shell: true },
+    { jsx: "src/site/pages/DiscordAlternativePage.jsx", html: corePageBody("/discord-alternative"), shell: true },
+    { jsx: "src/site/pages/DiscordAlternativeGamersPage.jsx", html: landing.gamersTwin("en", "/best-discord-alternative-for-gamers"), shell: true },
+    // No FAQ on the blog index.
+    { jsx: "src/site/pages/BlogIndexPage.jsx", html: landing.blogIndexTwin("en", "/blog"), shell: true, skip: ["Frequently asked questions"] },
+    { jsx: "src/site/pages/AboutPage.jsx", html: corePageBody("/about") },
+    { jsx: "src/site/pages/SecurityPage.jsx", html: corePageBody("/security") },
+  ];
+  for (const page of ROUND3) {
+    const html = decode(page.html);
+    for (const key of [...keysOf(read(page.jsx)), ...(page.shell ? shell : [])]) {
+      if (KICKERS.includes(key) || page.skip?.includes(key)) continue;
+      if (key === "Start free" && page.shell && !page.jsx.includes("BlogIndex") && !read(page.jsx).includes('t("Start free")')) continue;
+      assert.ok(html.includes(key), `${page.jsx}: twin shows "${key}"`);
+    }
+  }
+  // Who owns Descall uses x() for its English record (t() on prefixed locales).
+  const whoOwns = decode(corePageBody("/who-owns-descall"));
+  for (const key of [...read("src/site/pages/WhoOwnsDescallPage.jsx").matchAll(/\bx\(\s*"((?:\\.|[^"\\])*)"/g)].map((m) => m[1])) {
+    if (key.includes("{name}") || key === "Home") continue; // "Home": JSON-LD breadcrumbs only
+    assert.ok(whoOwns.includes(key), `who-owns twin shows "${key}"`);
+  }
+  const { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } = await import("../ownershipFacts.js");
+  for (const f of OWNERSHIP_FAQ_EN) assert.ok(whoOwns.includes(`<summary>${f.q}</summary>`) || decode(whoOwns).includes(f.q), f.q);
+  assert.ok(decode(corePageBody("/descall-sahibi")).includes(OWNERSHIP_FAQ_TR[0].q), "Turkish record page has the Turkish FAQ");
+  // Translated: the text goes through the React t() of that language.
+  assert.ok(corePageBody("/de/compare/discord").includes(twins.escapeHtml(deT("Quick verdict"))));
+  assert.ok(corePageBody("/tr/compare/discord").includes(twins.escapeHtml(trT("Quick verdict"))));
+  assert.ok(corePageBody("/ru/security").includes(twins.escapeHtml(twins.pageT("ru")("Security at Descall"))));
+  assert.ok(landing.blogIndexTwin("de", "/de/blog").includes('href="/de/blog/discord-competitors"'), "blog index links the /de posts");
+  assert.match(landing.trBlogIndexTwin(), /<h1>Descall blog: Discord alternatifleri/);
+  // Main element and CSS blocks: landing twins keep only their block, info pages reuse legal + FAQ.
+  assert.match(corePageBody("/compare/discord"), /<main class="seo-main-landing seo-twin-landing">/);
+  assert.match(corePageBody("/security"), /<main class="seo-twin seo-twin-info">/);
+  assert.match(corePageBody("/about"), /<main class="seo-twin seo-twin-about">/);
+  for (const kind of ["landing", "info", "about"]) assert.ok(index.includes(`/* @twin-${kind}-start`) && index.includes(`/* @twin-${kind}-end */`), kind);
+  const landingCss = stripTwinCss(index, "landing");
+  assert.ok(landingCss.includes(".seo-tl-verdict") && !landingCss.includes("@twin-base-start"), "landing: own block, no base");
+  const infoCss = stripTwinCss(index, "info");
+  for (const b of ["base", "legal", "faq", "info"]) assert.ok(infoCss.includes(`@twin-${b}-start`), `info keeps ${b}`);
+  assert.ok(!infoCss.includes("@twin-landing-start"));
+  for (const [html, kind] of [
+    [corePageBody("/compare/discord"), "landing"],
+    [landing.blogIndexTwin("en", "/blog"), "landing"],
+    [corePageBody("/who-owns-descall"), "info"],
+    [corePageBody("/about"), "about"],
+  ]) {
+    const kept = stripTwinCss(index, kind);
+    for (const cls of new Set([...html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/)).filter((c) => /^seo-(tw|tl)-/.test(c)))) {
+      assert.ok(kept.includes(`.${cls}`), `${kind}: .${cls} has CSS on the page`);
+    }
+  }
+  // The twin prints the page extras itself (React markup), the prerender adds none.
+  assert.ok(corePageBody("/compare/discord").includes("<!--seo-extras-inline-->"));
+  // FAQ answers stay in <details> (FAQPage JSON-LD questions are visible).
+  assert.match(corePageBody("/alternatives"), /<details><summary>[^<]+<\/summary><p>/);
+
+  // 11. Prefixed shells modulepreload their site catalog parts (src/site/siteCatalogParts.js).
+  const files = ["siteCatalogLoaders-AbCd1234.js", "site-de-core-Zz9_-x12.js", "site-de-blog-QQqq1111.js", "site-de-blog-discord-competitors-RRrr2222.js"];
+  const pre = prerender.siteCatalogPreload({ locale: "de", path: "/de/blog" }, files);
+  assert.match(pre, /href="\/assets\/siteCatalogLoaders-AbCd1234\.js"/);
+  assert.match(pre, /href="\/assets\/site-de-core-Zz9_-x12\.js"/);
+  assert.match(pre, /site-de-blog-QQqq1111\.js/);
+  assert.doesNotMatch(pre, /discord-competitors/, "the blog index does not preload a post's part");
+  assert.equal(prerender.siteCatalogPreload({ path: "/blog" }, files), "", "English pages preload no catalog");
+}
+
 console.log("pageTwins.selftest.mjs: ok");

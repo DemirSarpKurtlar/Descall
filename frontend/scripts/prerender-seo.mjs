@@ -25,7 +25,8 @@ const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE
 const { PREVIEW_SIZES, previewSrcset } = await import(pathToFileURL(path.join(root, "src/site/seo/featureGroups.js")).href);
 const { TR_BLOG_RELATED, relatedForPost } = await import(pathToFileURL(path.join(root, "src/site/seo/blogLinks.js")).href);
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
-const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
+const { corePageBody, landingTwinMain } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
+const { blogIndexTwin, gamersTwin, trBlogIndexTwin } = await import(pathToFileURL(path.join(root, "src/site/seo/landingTwins.js")).href);
 const { pageT } = await import(pathToFileURL(path.join(root, "src/site/seo/pageTwins.js")).href);
 const { pageExtrasHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/pageExtras.js")).href);
 const { mergedGuideHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/mergedGuides.js")).href);
@@ -271,13 +272,19 @@ function stripNativeSplashCss(html) {
 
 /**
  * Page-twin CSS (index.html, "@twin-<kind>-start" ... "@twin-<kind>-end" blocks) is kept
- * only on the page that renders that twin (<main class="seo-twin seo-twin-<kind>">); the
- * shared "base" block stays on every twin page. Other pages shed all of it.
+ * only on the page that renders that twin (<main class="... seo-twin-<kind>">) with the
+ * blocks of TWIN_CSS_WITH (the shared "base" by default). Other pages shed all of it.
  */
+/**
+ * Blocks a twin kind uses besides its own: "base" by default; the info pages also reuse
+ * the legal reader and FAQ blocks; landing twins sit on the landing hero CSS (always
+ * present) and need no base.
+ */
+const TWIN_CSS_WITH = { info: ["base", "legal", "faq"], landing: [] };
+
 export function stripTwinCss(html, kind) {
-  return html.replace(/[ \t]*\/\* @twin-([a-z]+)-start[\s\S]*?\/\* @twin-\1-end \*\/\n?/g, (block, name) =>
-    kind && (name === kind || name === "base") ? block : ""
-  );
+  const keep = new Set(kind ? [kind, ...(TWIN_CSS_WITH[kind] || ["base"])] : []);
+  return html.replace(/[ \t]*\/\* @twin-([a-z]+)-start[\s\S]*?\/\* @twin-\1-end \*\/\n?/g, (block, name) => (keep.has(name) ? block : ""));
 }
 
 /**
@@ -344,12 +351,45 @@ export function interFontFaceCss(assetsDir = path.join(distDir, "assets")) {
 
 let shellFonts = { style: "", preload: "", preloadExt: "" };
 
+const { sitePartsForPath } = await import(pathToFileURL(path.join(root, "src/site/siteCatalogParts.js")).href);
+
+/**
+ * modulepreload of the site catalog a prefixed page waits for before React renders
+ * (src/site/loadSiteCatalog.js): the part loaders and the page's parts (core + its own,
+ * chunks site-<id>-<part>-<hash>.js). They download with the HTML instead of after the
+ * hydrate chain asked for them. Empty for English and Turkish pages.
+ */
+export function siteCatalogPreload(route, files = assetFileList()) {
+  if (!route.locale) return "";
+  // Vite hashes are 8 characters: "site-de-blog" must not pick "site-de-blog-discord-...".
+  const pick = (name) => files.find((f) => f.startsWith(`${name}-`) && /^[\w-]{8}\.js$/.test(f.slice(name.length + 1)));
+  return ["siteCatalogLoaders", ...sitePartsForPath(route.path).map((part) => `site-${route.locale}-${part}`)]
+    .map(pick)
+    .filter(Boolean)
+    .map((f) => `<link rel="modulepreload" crossorigin href="/assets/${f}" />`)
+    .join("\n    ");
+}
+
+let assetFiles = null;
+function assetFileList() {
+  if (!assetFiles) {
+    try {
+      assetFiles = fs.readdirSync(path.join(distDir, "assets"));
+    } catch {
+      assetFiles = [];
+    }
+  }
+  return assetFiles;
+}
+
 function twinKindOf(body) {
-  return body.match(/<main class="seo-twin seo-twin-([a-z]+)"/)?.[1] || null;
+  return body.match(/<main class="[^"]*\bseo-twin-([a-z]+)\b/)?.[1] || null;
 }
 
 function crawlBody(route) {
   const body = crawlBodyInner(route);
+  // A landing twin prints the extras itself, in the React page's markup.
+  if (body.includes("<!--seo-extras-inline-->")) return body;
   // Long-form extras, then the sections of a blog post merged into this page.
   const extra = pageExtrasHtml(route.path) + mergedGuideHtml(route.path, siteText);
   // A page twin marks where the React page renders its extras (seo/pageTwins.js).
@@ -410,26 +450,7 @@ function crawlBodyInner(route) {
 </main>`;
   }
 
-  if (route.path === "/tr/blog") {
-    const posts = TR_BLOG_POSTS.map(
-      (p) =>
-        `<li><a href="${escapeHtml(p.path)}"><strong>${escapeHtml(p.h1 || p.title)}</strong></a> — ${escapeHtml(p.description)}</li>`
-    ).join("");
-    const hubs = Object.values(TR_LANDINGS)
-      .map((p) => `<li><a href="${p.path}">${escapeHtml(trLandingLabel(p))}</a></li>`)
-      .join("");
-    return `
-<main>
-  ${seoBrand()}
-  <h1>Descall blog: Discord alternatifleri ve sesli sohbet rehberleri</h1>
-  <p>Discord alternatifleri, Discord’dan geçiş, sesli sohbet ve topluluk yönetimi üzerine Türkçe, pratik rehberler.</p>
-  <ul>${posts}</ul>
-  <h2>Türkçe rehber sayfaları</h2>
-  <ul>${hubs}</ul>
-  ${seoCtaRow("/tr/download", n.download, true)}
-  ${seoSiteNav(true)}
-</main>`;
-  }
+  if (route.path === "/tr/blog") return landingTwinMain(trBlogIndexTwin(), seoBrand(), seoSiteNav("tr"));
 
   if (route.path.startsWith("/tr/blog/")) {
     const slug = route.path.slice("/tr/blog/".length);
@@ -472,6 +493,10 @@ function crawlBodyInner(route) {
   const tx = (s) => newCopy(s, loc);
   const hx = (href) => prefixHref(href, loc);
   const brand = route.locale ? seoBrandFor(loc) : seoBrand();
+
+  // SeoLandingShell twins of the gamers page and the blog index (seo/landingTwins.js).
+  if (enPath === "/best-discord-alternative-for-gamers") return landingTwinMain(gamersTwin(loc, route.path), brand, seoSiteNav(loc));
+  if (enPath === "/blog") return landingTwinMain(blogIndexTwin(loc, route.path), brand, seoSiteNav(loc));
 
   const niche = NICHE_LANDINGS[enPath];
   if (niche) {
@@ -550,22 +575,6 @@ function crawlBodyInner(route) {
         faq: faq.map((f) => ({ q: t(f.q), a: t(f.a) })),
       });
     }
-  }
-
-  if (enPath === "/blog") {
-    const posts = BLOG_POSTS.map(
-      (p) =>
-        `<li><a href="${escapeHtml(hx(`/blog/${p.slug}`))}"><strong>${escapeHtml(tx(p.title))}</strong></a> — ${escapeHtml(tx(p.description))}</li>`
-    ).join("");
-    return `
-<main>
-  ${brand}
-  <h1>${escapeHtml(tx("Descall Blog"))}</h1>
-  <p>${escapeHtml(tx("Guides on Discord alternatives, servers, and voice chat."))}</p>
-  <ul>${posts}</ul>
-  ${seoCtaRow("/download", n.download, loc)}
-  ${seoSiteNav(loc)}
-</main>`;
   }
 
   const h1 = route.h1 || route.title.replace(/\s*\|\s*Descall\s*$/i, "").replace(/\s*—\s*Descall\s*$/i, "");
@@ -904,6 +913,7 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     // Turkish pages always set latin-ext letters in bold (header "Giriş Yap", titles).
     lang === "tr" ? shellFonts.preloadExt : "",
     shellFonts.style,
+    siteCatalogPreload(route),
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
     `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
