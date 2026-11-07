@@ -154,7 +154,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
         </div>
       </section>
 
-      <SeoExtraContent collapsible showLinks={false} />
+      <SeoExtraContent collapsible />
     </>
   );
 }

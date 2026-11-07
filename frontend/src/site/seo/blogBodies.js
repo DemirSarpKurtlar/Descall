@@ -2,9 +2,12 @@
  * Long-form blog bodies keyed by slug. Keep unique; no keyword-spam clones.
  * Five posts were merged into stronger pages in Nov 2026 (seo/mergedPages.js); their
  * sections moved to seo/mergedGuides.js and are shown on the kept pages.
+ * The how-to guides of the Nov 2026 content round live in seo/guideBodies.js.
  */
+import { GUIDE_BODIES } from "./guideBodies.js";
 
 export const BLOG_BODIES = {
+  ...GUIDE_BODIES,
   "leave-nitro-keep-voice-chat": {
     sections: [
       {
@@ -41,7 +44,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "Getting the holdouts on board",
-        p: "Every group has one person who will not install another app. Send them the web link, descall.com/app, so they can join the call from a browser in a minute. Friends on iPhone, iPad or Android can install the mobile app later, and the Windows app is there for long sessions. If someone in your group lives in Turkey, where Discord has been blocked by court order since 9 October 2024, Descall also removes the workarounds they may have needed.",
+        p: "Every group has one person who will not install another app. Send them the web link, descall.com/app, so they can join the call from a browser in a minute. Friends on iPhone, iPad or Android can install the mobile app later, and the Windows app is there for long sessions. If someone in your group lives in Türkiye, where public reports describe Discord as blocked by a court order since 9 October 2024 (the situation may have changed; our Turkish page “Discord açıldı mı?” lists the dated sources), Descall also removes the workarounds they may have needed.",
       },
       {
         h: "Cancel on your own schedule",
@@ -117,7 +120,7 @@ export const BLOG_BODIES = {
       },
       {
         h: "Where Descall competes",
-        p: "Descall competes directly with Discord for friend groups and small to medium communities. Its main arguments are free voice, video and screen share, servers with roles and permissions, server templates, search across the whole message history, and an interface in Turkish and English. It also works in Turkey, where Discord has been blocked by court order since 9 October 2024, which matters for any group with members there. Account security is covered with two-step verification and a data export, so you are not locked in.",
+        p: "Descall competes directly with Discord for friend groups and small to medium communities. Its main arguments are free voice, video and screen share, servers with roles and permissions, server templates, search across the whole message history, and an interface in Turkish and English. It also works in Türkiye. Public reports say Discord was blocked there by a court order on 9 October 2024; we do not test access ourselves and it may have changed since (our Turkish page “Discord açıldı mı?” lists the dated sources). For groups with members there, that difference can matter. Account security is covered with two-step verification and a data export, so you are not locked in.",
       },
       {
         h: "Where Descall does not compete",

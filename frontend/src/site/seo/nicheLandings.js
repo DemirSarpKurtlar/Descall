@@ -54,6 +54,8 @@ export const NICHE_LANDINGS = {
       { to: "/discord-alternative-for-friends", label: "For friend groups" },
       { to: "/compare/discord", label: "Descall vs Discord" },
       { to: "/features", label: "All features" },
+      { to: "/blog/set-up-a-community-server", label: "Set up a community server" },
+      { to: "/blog/online-study-group-voice-chat", label: "Run an online study group" },
     ],
   },
 
@@ -106,6 +108,9 @@ export const NICHE_LANDINGS = {
       { to: "/features", label: "Voice & screen share features" },
       { to: "/compare/discord", label: "Descall vs Discord" },
       { to: "/blog/leave-nitro-keep-voice-chat", label: "Leave Nitro guide" },
+      { to: "/blog/better-mic-sound-voice-chat", label: "Sound better in voice chat" },
+      { to: "/blog/screen-share-with-friends", label: "Screen sharing with friends: a guide" },
+      { to: "/tr/discord-acildi-mi", label: "Discord in Türkiye: dated reports (Turkish)" },
     ],
   },
 
@@ -159,6 +164,8 @@ export const NICHE_LANDINGS = {
       { to: "/discord-alternative-for-communities", label: "For communities" },
       { to: "/discord-replacement", label: "Discord replacement guide" },
       { to: "/download", label: "Get the app" },
+      { to: "/blog/screen-share-with-friends", label: "Screen sharing with friends: a guide" },
+      { to: "/blog/descall-on-every-device", label: "Which Descall app to use" },
     ],
   },
 
@@ -211,6 +218,7 @@ export const NICHE_LANDINGS = {
       { to: "/blog/discord-competitors", label: "Discord competitors 2026" },
       { to: "/compare/discord", label: "Descall vs Discord" },
       { to: "/discord-alternative", label: "Why Descall" },
+      { to: "/blog/descall-on-every-device", label: "Which Descall app to use" },
     ],
   },
 
@@ -263,6 +271,8 @@ export const NICHE_LANDINGS = {
       { to: "/compare/discord", label: "Feature comparison" },
       { to: "/discord-alternative-for-friends", label: "For friends" },
       { to: "/download", label: "Download Descall" },
+      { to: "/blog/set-up-a-community-server", label: "Set up a community server" },
+      { to: "/tr/discord-acildi-mi", label: "Discord in Türkiye: dated reports (Turkish)" },
     ],
   },
 };

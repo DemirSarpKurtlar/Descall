@@ -133,6 +133,7 @@ export default function CompareDiscordPage({ onSignIn }) {
           { to: "/blog/best-discord-alternatives-2026", label: "Best Discord alternatives in 2026 | honest shortlist" },
           { to: "/discord-replacement", label: "Discord replacement" },
           { to: "/features", label: "Descall features" },
+          { to: "/tr/discord-acildi-mi", label: "Discord in Türkiye: dated reports (Turkish)" },
         ]}
       />
     </SeoLandingShell>
