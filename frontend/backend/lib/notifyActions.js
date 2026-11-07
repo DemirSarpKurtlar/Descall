@@ -642,6 +642,13 @@ function createNotifyActions(deps = {}) {
       header.title = channel.name || "";
       header.subtitle = server?.name || "";
       rows = data || [];
+      // Role mentions are stored as <@&roleId>: show "@Rol adı" on the watch and in the
+      // expanded notification, never the raw token.
+      if (rows.some((r) => String(r.content || "").includes("<@&"))) {
+        const { data: roles } = await db.from("server_roles").select("id, name").eq("server_id", channel.server_id);
+        const { roleTokensToText } = require("./serverMentions");
+        rows = rows.map((r) => ({ ...r, content: roleTokensToText(r.content, roles || []) }));
+      }
     }
     // Up to and including the notified message, oldest first.
     let list = rows;
