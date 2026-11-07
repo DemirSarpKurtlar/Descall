@@ -2,9 +2,12 @@
  * Long-form blog bodies keyed by slug. Keep unique; no keyword-spam clones.
  * Five posts were merged into stronger pages in Nov 2026 (seo/mergedPages.js); their
  * sections moved to seo/mergedGuides.js and are shown on the kept pages.
+ * The how-to guides of the Nov 2026 content round live in seo/guideBodies.js.
  */
+import { GUIDE_BODIES } from "./guideBodies.js";
 
 export const BLOG_BODIES = {
+  ...GUIDE_BODIES,
   "leave-nitro-keep-voice-chat": {
     sections: [
       {

@@ -182,6 +182,61 @@ export const TURKEY_FAQ = [
 ];
 
 export const BLOG_POSTS = [
+  // How-to guides (Nov 2026 content round); bodies in seo/guideBodies.js.
+  {
+    slug: "screen-share-with-friends",
+    path: "/blog/screen-share-with-friends",
+    title: "How to share your screen with friends in a voice call",
+    description:
+      "Share a game, slides or homework in a DM call, group call or server voice channel: quality settings, sound, privacy tips and fixes for lag.",
+    date: "2026-11-07",
+    tags: ["Screen share", "How-to"],
+  },
+  {
+    slug: "online-study-group-voice-chat",
+    path: "/blog/online-study-group-voice-chat",
+    title: "How to run an online study group with voice chat",
+    description:
+      "Set up a study server with subject channels, focus rooms and a quiet voice room, then run sessions that people actually join. Free on Descall.",
+    date: "2026-11-07",
+    tags: ["Study groups", "How-to"],
+  },
+  {
+    slug: "better-mic-sound-voice-chat",
+    path: "/blog/better-mic-sound-voice-chat",
+    title: "How to sound better in voice chat: mic, noise and push-to-talk",
+    description:
+      "Fix echo, background noise and quiet mics in group voice chat with headphones, a mic test, noise suppression, push-to-talk and per-person volume.",
+    date: "2026-11-07",
+    tags: ["Voice chat", "Audio"],
+  },
+  {
+    slug: "set-up-a-community-server",
+    path: "/blog/set-up-a-community-server",
+    title: "How to set up a server for a small community",
+    description:
+      "Plan channels, roles and permissions for a small community server, then add rules, invites, moderation and your first event, step by step.",
+    date: "2026-11-07",
+    tags: ["Communities", "Servers"],
+  },
+  {
+    slug: "private-group-chat-guide",
+    path: "/blog/private-group-chat-guide",
+    title: "How private is your group chat? A plain guide",
+    description:
+      "What a chat app can see, what encryption in transit means, and the privacy settings worth changing: read receipts, previews, status and 2FA.",
+    date: "2026-11-07",
+    tags: ["Privacy", "Security"],
+  },
+  {
+    slug: "descall-on-every-device",
+    path: "/blog/descall-on-every-device",
+    title: "Descall on Windows, iPhone, Android and the web: which to use",
+    description:
+      "Which Descall app fits you: the Windows desktop app, iPhone and iPad, Android or the browser, what each does best and how one account syncs.",
+    date: "2026-11-07",
+    tags: ["Apps", "Download"],
+  },
   {
     slug: "best-discord-alternatives-2026",
     path: "/blog/best-discord-alternatives-2026",
@@ -209,13 +264,97 @@ export const BLOG_POSTS = [
     description:
       "How to move a friend group from Discord Nitro habits to a free Discord alternative with servers, voice, video, and screen share.",
     date: "2026-08-11",
-    updated: "2026-11-06",
+    updated: "2026-11-07",
     tags: ["Pricing", "Migration"],
   },
 ];
 
 /** Per-post FAQ, unique questions so blog pages do not clone COMPARE_FAQ schema. */
 export const BLOG_FAQ_BY_SLUG = {
+  "screen-share-with-friends": [
+    {
+      q: "Is screen sharing free on Descall?",
+      a: "Yes. You can share your screen in DM calls, group calls and server voice channels without a membership, and watching a share is free too.",
+    },
+    {
+      q: "Can I share my screen from an iPhone or iPad?",
+      a: "Not at the moment. The iPhone and iPad app can watch other people's shares, but it cannot share your own screen. Use the Windows app or a browser on a computer for that.",
+    },
+    {
+      q: "What quality should I use in a group call?",
+      a: "Start at 720p and 20 frames per second, which is what Descall recommends for group calls. Lower it if anyone sees stutter, and pick Text, code for slides or documents.",
+    },
+  ],
+  "online-study-group-voice-chat": [
+    {
+      q: "Is Descall free for study groups?",
+      a: "Yes. Servers, the Study & campus template, voice rooms, screen share, polls and scheduled messages are all free.",
+    },
+    {
+      q: "Can we study together on a school computer?",
+      a: "Yes. Open descall.com/app in the browser and sign in; nothing needs to be installed. The browser asks for microphone permission when you join a voice room.",
+    },
+    {
+      q: "Do we need a server, or is a group chat enough?",
+      a: "A group chat holds up to 15 members and can start a group call, which is enough for a small group. A server adds channels per subject, open voice rooms, roles and a stage channel.",
+    },
+  ],
+  "better-mic-sound-voice-chat": [
+    {
+      q: "Why do my friends hear an echo of themselves?",
+      a: "Someone in the call is using speakers, and their microphone picks the voices up again. Headphones fix it; keep echo cancellation on for anyone who has none.",
+    },
+    {
+      q: "Is AI noise suppression free?",
+      a: "Yes. It is in the voice settings for everyone and cuts keyboard, fan and other background noise. It cannot remove another person talking next to you.",
+    },
+    {
+      q: "Does push-to-talk work while I am in another app?",
+      a: "In the free Windows app, push-to-talk works while Descall is the active window. Push-to-talk that works in any app is part of the optional Descall+ membership.",
+    },
+  ],
+  "set-up-a-community-server": [
+    {
+      q: "Does it cost anything to run a community server?",
+      a: "No. Servers, templates, roles, channels, voice and stage channels, invites and moderation tools are free on Descall.",
+    },
+    {
+      q: "Can I make a channel that only staff can see?",
+      a: "Yes. In the channel permissions, deny View channel for @everyone and allow it for your staff roles. The templates already include a staff room set up this way.",
+    },
+    {
+      q: "How do I stop members from pinging everyone?",
+      a: "You do not need to do anything special: @everyone and @here only work for the owner, admins and roles with that permission, and only once a minute per channel.",
+    },
+  ],
+  "private-group-chat-guide": [
+    {
+      q: "Is Descall end-to-end encrypted?",
+      a: "No, not by default for message history. Messages and calls are encrypted in transit (TLS, and DTLS/SRTP for calls), and messages are stored on Descall's servers so your history loads on every device.",
+    },
+    {
+      q: "Can I stop people from seeing that I read their message?",
+      a: "Yes. Turn off read receipts in the privacy settings. You will then not see when other people have read your messages either.",
+    },
+    {
+      q: "Can I get a copy of my data?",
+      a: "Yes. Use Download my data in the settings. You get one file with your profile, settings, friends, the messages you sent and more, up to three times a day.",
+    },
+  ],
+  "descall-on-every-device": [
+    {
+      q: "Is there a Descall app for Mac or Linux?",
+      a: "There is no desktop app for macOS or Linux. Use the full web app at descall.com/app in your browser; it has messages, servers, calls and screen sharing.",
+    },
+    {
+      q: "Does Descall work on iPad?",
+      a: "Yes. The App Store app runs on iPhone and iPad, with messages, calls and servers. It can watch screen shares but not share your own screen.",
+    },
+    {
+      q: "Do my messages sync between devices?",
+      a: "Yes. Every device uses the same account, and your chat history is stored on Descall's servers, so it loads wherever you sign in.",
+    },
+  ],
   "leave-nitro-keep-voice-chat": [
     {
       q: "Can I leave Nitro and still have group voice?",
