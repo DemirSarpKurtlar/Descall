@@ -37,6 +37,9 @@ export const SEO_COMPANY = [
 /** Default related set for any marketing page missing a custom cluster. */
 export const SEO_DEFAULT_RELATED = [
   ...SEO_PILLARS,
+  { to: "/blog/screen-share-with-friends", label: "Screen sharing with friends: a guide" },
+  { to: "/blog/set-up-a-community-server", label: "Set up a community server" },
+  { to: "/blog/private-group-chat-guide", label: "How private is your group chat?" },
   { to: "/blog", label: "Guides & blog" },
   { to: "/security", label: "How calls are secured" },
 ];

@@ -27,6 +27,10 @@ const TR_HUBS = [
   { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
   { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },
   { to: "/tr/compare/discord", label: "Discord mu Descall mı?" },
+  { to: "/tr/blog/screen-share-with-friends", label: "Ekran paylaşımı rehberi" },
+  { to: "/tr/blog/better-mic-sound-voice-chat", label: "Sesli sohbette mikrofon sesini iyileştirmek" },
+  { to: "/tr/blog/online-study-group-voice-chat", label: "Online ders çalışma grubu kurmak" },
+  { to: "/tr/blog/set-up-a-community-server", label: "Topluluk sunucusu kurmak" },
   { to: "/tr/blog", label: "Türkçe blog ve rehberler" },
 ];
 
@@ -90,6 +94,10 @@ export const PAGE_EXTRAS = {
       { to: "/discord-alternative", label: "Discord alternative" },
       { to: "/compare/discord", label: "Descall vs Discord" },
       { to: "/best-discord-alternative-for-gamers", label: "For gamers" },
+      { to: "/blog/screen-share-with-friends", label: "Screen sharing with friends: a guide" },
+      { to: "/blog/online-study-group-voice-chat", label: "Run an online study group" },
+      { to: "/blog/set-up-a-community-server", label: "Set up a community server" },
+      { to: "/blog/private-group-chat-guide", label: "How private is your group chat?" },
       { to: "/download", label: "Download" },
       { to: "/tr", label: "Türkçe" },
     ],
@@ -125,7 +133,7 @@ export const PAGE_EXTRAS = {
       {
         h: "Türkçe rehberler",
         p: [
-          "Discord’un Türkiye’deki durumu, alternatiflerin dürüst karşılaştırması ve geçiş adımları için hazırladığımız Türkçe sayfalar:",
+          "Discord’un Türkiye’deki durumu, alternatiflerin dürüst karşılaştırması, geçiş adımları ve ekran paylaşımından ders gruplarına kadar pratik konular için hazırladığımız Türkçe sayfalar:",
         ],
       },
     ],
@@ -367,6 +375,8 @@ export const PAGE_EXTRAS = {
     ],
     links: [
       { to: "/discord-alternative-for-voice-chat", label: "Voice chat alternative" },
+      { to: "/blog/better-mic-sound-voice-chat", label: "Sound better in voice chat" },
+      { to: "/blog/screen-share-with-friends", label: "Screen sharing with friends: a guide" },
       { to: "/download", label: "Download for Windows" },
     ],
   },
@@ -444,6 +454,8 @@ export const PAGE_EXTRAS = {
     ],
     links: [
       { to: "/features", label: "All features" },
+      { to: "/blog/descall-on-every-device", label: "Which Descall app to use" },
+      { to: "/blog/better-mic-sound-voice-chat", label: "Sound better in voice chat" },
       { to: "/faq", label: "FAQ" },
       { to: "/security", label: "Security" },
       { to: "/tr/download", label: "Türkçe: İndir" },
@@ -482,6 +494,8 @@ export const PAGE_EXTRAS = {
     ],
     links: [
       { to: "/tr/features", label: "Tüm özellikler" },
+      { to: "/tr/blog/descall-on-every-device", label: "Hangi Descall uygulamasını kullanmalı?" },
+      { to: "/tr/blog/better-mic-sound-voice-chat", label: "Sesli sohbette mikrofon sesini iyileştirmek" },
       { to: "/tr/faq", label: "SSS" },
       { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
       { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },

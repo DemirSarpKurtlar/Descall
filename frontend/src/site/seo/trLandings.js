@@ -44,8 +44,18 @@ const RELATED_CORE = [
   { to: "/tr/download", label: "Descall’ı indir" },
 ];
 
-function related(self) {
-  return RELATED_CORE.filter((l) => l.to !== self);
+/** Turkish how-to guides (seo/trGuideBodies.js), linked from the landings they fit. */
+const TR_GUIDES = {
+  screen: { to: "/tr/blog/screen-share-with-friends", label: "Ekran paylaşımı rehberi" },
+  study: { to: "/tr/blog/online-study-group-voice-chat", label: "Online ders çalışma grubu kurmak" },
+  mic: { to: "/tr/blog/better-mic-sound-voice-chat", label: "Sesli sohbette mikrofon sesini iyileştirmek" },
+  server: { to: "/tr/blog/set-up-a-community-server", label: "Topluluk sunucusu kurmak" },
+  privacy: { to: "/tr/blog/private-group-chat-guide", label: "Grup sohbetin ne kadar gizli?" },
+  devices: { to: "/tr/blog/descall-on-every-device", label: "Hangi Descall uygulamasını kullanmalı?" },
+};
+
+function related(self, guides = []) {
+  return [...guides.map((g) => TR_GUIDES[g]), ...RELATED_CORE.filter((l) => l.to !== self)];
 }
 
 /** Short label of a Turkish landing for breadcrumbs and hub lists. */
@@ -148,7 +158,7 @@ export const TR_LANDINGS = {
         a: "Android uygulaması var; ayrıca tarayıcı sürümü telefon tarayıcısında da açılır. Masaüstünde Windows uygulaması bulunur.",
       },
     ],
-    related: related("/tr/discord-alternatifi"),
+    related: related("/tr/discord-alternatifi", ["server", "devices"]),
   },
 
   "/tr/turk-discord": {
@@ -231,7 +241,7 @@ export const TR_LANDINGS = {
         a: "Evet. Uygulama içi geri bildirimden veya contact@descall.com adresinden Türkçe yazabilirsin.",
       },
     ],
-    related: related("/tr/turk-discord"),
+    related: related("/tr/turk-discord", ["privacy", "study"]),
   },
 
   "/tr/discord-yerine-ne-kullanilir": {
@@ -328,7 +338,7 @@ export const TR_LANDINGS = {
         a: "Discord’dan başka bir uygulamaya mesaj geçmişini otomatik aktaran resmi bir yol yok. Sunucu yapısını şablonlarla yeniden kurmak en pratik yöntem.",
       },
     ],
-    related: related("/tr/discord-yerine-ne-kullanilir"),
+    related: related("/tr/discord-yerine-ne-kullanilir", ["study", "server"]),
   },
 
   "/tr/sesli-sohbet-uygulamasi": {
@@ -414,7 +424,7 @@ export const TR_LANDINGS = {
         a: "Evet. Android uygulamasıyla veya telefon tarayıcısından tarayıcı sürümüyle ses kanallarına katılabilirsin.",
       },
     ],
-    related: related("/tr/sesli-sohbet-uygulamasi"),
+    related: related("/tr/sesli-sohbet-uygulamasi", ["mic", "screen", "devices"]),
   },
 
   "/tr/oyuncu-sohbet-uygulamasi": {
@@ -497,7 +507,7 @@ export const TR_LANDINGS = {
         a: "Evet. Android uygulaması ya da telefon tarayıcısındaki tarayıcı sürümüyle katılabilirler.",
       },
     ],
-    related: related("/tr/oyuncu-sohbet-uygulamasi"),
+    related: related("/tr/oyuncu-sohbet-uygulamasi", ["screen", "mic"]),
   },
 
   "/tr/discord-acildi-mi": {
@@ -570,7 +580,7 @@ export const TR_LANDINGS = {
         a: "Mesajlaşma için WhatsApp veya Telegram; sunucu, ses kanalı ve ekran paylaşımı için Türkiye’de geliştirilen ücretsiz Descall kullanılabilir.",
       },
     ],
-    related: related("/tr/discord-acildi-mi"),
+    related: related("/tr/discord-acildi-mi", ["devices"]),
   },
 
   "/tr/discord-alternatifleri": {
@@ -681,7 +691,7 @@ export const TR_LANDINGS = {
         a: "Descall’ı biz geliştiriyoruz; bu yüzden tamamen tarafsız olduğumuzu iddia etmiyoruz. Bunun yerine her uygulamanın, Descall dahil, zayıf yanlarını da açıkça yazdık.",
       },
     ],
-    related: related("/tr/discord-alternatifleri"),
+    related: related("/tr/discord-alternatifleri", ["privacy", "devices"]),
   },
 };
 
