@@ -47,3 +47,16 @@ export const PREVIEW_SHOT_FILES = {
   call: "/brand/previews/09-server-voice.webp",
   friends: "/brand/previews/11-friends.webp",
 };
+
+/**
+ * Responsive candidates of a product shot: the 2880 px original plus 1440 and 720 px
+ * copies (public/brand/previews/<name>-1440.webp, -720.webp). A phone downloads ~20 KB
+ * instead of ~150 KB for the same picture.
+ */
+export function previewSrcset(src) {
+  const base = src.replace(/\.webp$/, "");
+  return `${base}-720.webp 720w, ${base}-1440.webp 1440w, ${src} 2880w`;
+}
+
+/** Shown at most 720 px wide (the frame's max-width), full width on phones. */
+export const PREVIEW_SIZES = "(max-width: 800px) 100vw, 720px";

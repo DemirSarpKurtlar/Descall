@@ -300,7 +300,7 @@
         /* UI audit #1: flat brand base, one faint logo-blue halo (::before), no aurora. */
         background: #1B1D26;
         color: #f2f3f5;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif !important;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif !important;
         transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
       }
       /* Native app: continue the launch screen (app-icon tile on #1E1F22, same
@@ -719,7 +719,7 @@
         background:
           radial-gradient(120% 70% at 70% -10%, #1a2240 0%, rgba(14, 17, 32, 0.9) 48%, rgba(10, 12, 20, 0) 78%) no-repeat 0 0 / 100% 100vh,
           var(--seo-bg);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Inter Fallback", "Segoe UI", system-ui, sans-serif;
         line-height: 1.55;
         /* flow-root: the header's top margin stays inside, so the box does not move
            when the hand-over takes it out of the flow (position: absolute). */
@@ -901,7 +901,7 @@
       #seo-static .seo-crumbs svg { display: block; }
       #seo-static .seo-lhero h1 {
         margin: 10px 0 14px;
-        font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-family: -apple-system, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif;
         font-size: 52px;
         line-height: 1.05;
         font-weight: 740;
@@ -947,7 +947,7 @@
       #seo-static .seo-lbody { display: flex; flex-direction: column; gap: 40px; }
       #seo-static .seo-lbody .seo-note { margin: 14px 0 0; font-size: 14px; color: #d4dbe6; }
       #seo-static .seo-lbody .seo-note a { color: #c5ccff; font-weight: 600; }
-      #seo-static .seo-lsec h2 { margin: 0 0 12px; font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif; font-size: 40px; line-height: 1.1; font-weight: 720; letter-spacing: -0.034em; color: #f4f6fb; }
+      #seo-static .seo-lsec h2 { margin: 0 0 12px; font-family: -apple-system, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif; font-size: 40px; line-height: 1.1; font-weight: 720; letter-spacing: -0.034em; color: #f4f6fb; }
       #seo-static .seo-lsec > p { max-width: 68ch; margin: 0 0 16px; line-height: 1.6; }
       #seo-static .seo-lcheck { margin: 0; padding: 0; list-style: none; }
       #seo-static .seo-lcheck li { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: #f4f6fb; }
@@ -985,7 +985,7 @@
          The prerender keeps only the blocks a page uses. */
       #seo-static main.seo-twin { padding: 0; }
       #seo-static .seo-twin h1,
-      #seo-static .seo-twin h2 { font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif; color: #f7f8fb; }
+      #seo-static .seo-twin h2 { font-family: -apple-system, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif; color: #f7f8fb; }
       #seo-static .seo-twin :where(p, ul, ol, li, dl, dt, dd, figure) { margin: 0; padding: 0; list-style: none; color: inherit; }
       #seo-static .seo-tw-btn {
         display: inline-flex;
@@ -1358,7 +1358,7 @@
       }
       #seo-static .seo-hh h1 {
         margin: 0;
-        font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-family: -apple-system, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif;
         font-size: 56px;
         line-height: 1.02;
         font-weight: 750;
@@ -1462,7 +1462,7 @@
         margin: 0 0 1.35rem;
         text-decoration: none;
         color: var(--seo-text);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif;
         font-weight: 700;
         font-size: 1.15rem;
         letter-spacing: -0.02em;
@@ -1487,7 +1487,7 @@
         padding: 0.15rem 0.45rem;
       }
       #seo-static h1 {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif;
         font-size: clamp(1.65rem, 5.5vw, 2.35rem);
         font-weight: 700;
         letter-spacing: -0.03em;
@@ -1496,7 +1496,7 @@
         color: #f4f6f8;
       }
       #seo-static h2 {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif;
         font-size: 1.2rem;
         font-weight: 650;
         letter-spacing: -0.02em;
@@ -1592,7 +1592,7 @@
       #seo-static .seo-card h3 {
         margin: 0 0 0.35rem;
         font-size: 1rem;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, "Inter Fallback", system-ui, sans-serif;
       }
       #seo-static .seo-card p {
         margin: 0;

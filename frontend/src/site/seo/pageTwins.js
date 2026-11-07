@@ -20,7 +20,7 @@ import { isPrefixedLocale } from "../siteLocales.js";
 import { marketingHref } from "../marketingHref.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import { SEO_DEFAULT_RELATED, SEO_PILLARS } from "../seoHubLinks.js";
-import { FEATURE_GROUPS, PREVIEW_SHOT_FILES } from "./featureGroups.js";
+import { FEATURE_GROUPS, PREVIEW_SHOT_FILES, PREVIEW_SIZES, previewSrcset } from "./featureGroups.js";
 import { authHref } from "./prerenderCopy.js";
 import { formatDate } from "../../i18n/format.js";
 import { DESKTOP_RELEASE_FALLBACK } from "../../lib/desktopRelease.js";
@@ -90,7 +90,7 @@ export function twinIcon(name, size) {
 function shotHtml(mode, caption, { priority = false } = {}) {
   const src = PREVIEW_SHOT_FILES[mode] || PREVIEW_SHOT_FILES.chat;
   const load = priority ? 'fetchpriority="high"' : 'loading="lazy"';
-  return `<figure class="seo-tw-shot"><div class="seo-tw-dev"><div class="seo-tw-scr"><img src="${src}" alt="${escapeHtml(caption)}" width="1440" height="900" ${load} decoding="async" /></div></div><figcaption>${escapeHtml(caption)}</figcaption></figure>`;
+  return `<figure class="seo-tw-shot"><div class="seo-tw-dev"><div class="seo-tw-scr"><img src="${src}" srcset="${previewSrcset(src)}" sizes="${PREVIEW_SIZES}" alt="${escapeHtml(caption)}" width="1440" height="900" ${load} decoding="async" /></div></div><figcaption>${escapeHtml(caption)}</figcaption></figure>`;
 }
 
 const CHEVRON =

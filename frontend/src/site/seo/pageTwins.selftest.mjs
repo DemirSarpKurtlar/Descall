@@ -20,7 +20,7 @@ const { registerSiteCatalogs } = await import(pathToFileURL(join(frontend, "scri
 await registerSiteCatalogs();
 const twins = await import("./pageTwins.js");
 const { corePageBody } = await import("./corePageBodies.js");
-const { stripTwinCss } = await import(pathToFileURL(join(frontend, "scripts/prerender-seo.mjs")).href);
+const { stripTwinCss, lcpImagePreload, interFontFaceCss } = await import(pathToFileURL(join(frontend, "scripts/prerender-seo.mjs")).href);
 
 // 1. Icons are the ones the React pages draw.
 const icons = read("src/site/icons.jsx");
@@ -91,5 +91,35 @@ assert.doesNotMatch(stripTwinCss(sample, "faq"), /L\/\*/);
 assert.match(corePageBody("/faq"), /<details><summary>Is Descall a Discord alternative\?<\/summary><p>Yes\./);
 assert.match(corePageBody("/download"), /href="https:\/\/github\.com\/DemirSarpKurtlar\/Descall\/releases\/latest\/download\/Descall-Setup\.exe"/);
 assert.match(corePageBody("/features"), /<img src="\/brand\/previews\/06-server\.webp"[^>]*fetchpriority="high"/, "first shot is the LCP candidate");
+
+// 7. Responsive shots: every candidate file exists, the LCP shot is preloaded from the head.
+const { PREVIEW_SHOT_FILES, previewSrcset } = await import("./featureGroups.js");
+const { existsSync } = await import("node:fs");
+for (const src of Object.values(PREVIEW_SHOT_FILES)) {
+  for (const cand of previewSrcset(src).split(", ").map((c) => c.split(" ")[0])) {
+    assert.ok(existsSync(join(frontend, "public", cand)), `${cand} exists`);
+  }
+}
+for (const f of ["hero-ios-chats-480.webp", "hero-ios-dm-480.webp"]) assert.ok(existsSync(join(frontend, "public/brand/previews", f)), f);
+assert.match(lcpImagePreload(corePageBody("/features")), /<link rel="preload" as="image" href="\/brand\/previews\/06-server\.webp" imagesrcset="[^"]*-720\.webp 720w/);
+assert.match(lcpImagePreload(corePageBody("/")), /imagesrcset="\/brand\/previews\/hero-ios-chats-480\.webp 480w[^"]*" imagesizes="[^"]+" media="\(max-width: 768px\)"/);
+assert.equal(lcpImagePreload(corePageBody("/status")), "", "no image, no preload");
+// 8. Fonts: the marketing CSS no longer declares Inter (the shell head does).
+assert.doesNotMatch(read("src/site/marketing-entry.css"), /@fontsource\/inter\/latin/);
+assert.match(read("src/site/fonts-inter.css"), /unicode-range/);
+{
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const dir = mkdtempSync(join(tmpdir(), "twin-fonts-"));
+  for (const sub of ["latin", "latin-ext"]) for (const w of [400, 600, 700]) writeFileSync(join(dir, `inter-${sub}-${w}-normal-HASH${w}.woff2`), "");
+  const fonts = interFontFaceCss(dir);
+  rmSync(dir, { recursive: true });
+  assert.match(fonts.style, /^<style id="shell-fonts">/);
+  assert.equal((fonts.style.match(/font-family: "Inter";/g) || []).length, 6, "six Inter faces in the shell");
+  assert.match(fonts.style, /url\("\/assets\/inter-latin-700-normal-HASH700\.woff2"\)/);
+  assert.match(fonts.style, /font-family: "Inter Fallback"/);
+  assert.match(fonts.preload, /as="font" type="font\/woff2" href="\/assets\/inter-latin-400-normal-HASH400\.woff2" crossorigin/);
+  assert.deepEqual(interFontFaceCss(join(tmpdir(), "no-such-dir-x")).style, "", "no files, no faces (hydrateMarketing loads them)");
+}
 
 console.log("pageTwins.selftest.mjs: ok");

@@ -22,6 +22,7 @@ const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/
 const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG, GAMER_FAQ } = await import(
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
 );
+const { PREVIEW_SIZES, previewSrcset } = await import(pathToFileURL(path.join(root, "src/site/seo/featureGroups.js")).href);
 const { TR_BLOG_RELATED } = await import(pathToFileURL(path.join(root, "src/site/seo/blogLinks.js")).href);
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
 const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
@@ -211,7 +212,7 @@ function landingHeroHtml({ loc, crumbs, h1, lead, shot, alt, tone = "compare", s
     .map(([href, label], i) => `<li>${i > 0 ? CRUMB_CHEVRON : ""}<a href="${escapeHtml(href)}">${escapeHtml(label)}</a></li>`)
     .join("");
   const img = shot
-    ? `<figure class="seo-lhero-shot"><div class="seo-lhero-wrap"><div class="seo-lhero-halo" aria-hidden="true"></div><div class="seo-lhero-dev"><div class="seo-lhero-scr"><img src="${shot}" width="1440" height="900" alt="${escapeHtml(alt)}" fetchpriority="high" decoding="async" /></div></div></div><figcaption>${escapeHtml(alt)}</figcaption></figure>`
+    ? `<figure class="seo-lhero-shot"><div class="seo-lhero-wrap"><div class="seo-lhero-halo" aria-hidden="true"></div><div class="seo-lhero-dev"><div class="seo-lhero-scr"><img src="${shot}" srcset="${previewSrcset(shot)}" sizes="${PREVIEW_SIZES}" width="1440" height="900" alt="${escapeHtml(alt)}" fetchpriority="high" decoding="async" /></div></div></div><figcaption>${escapeHtml(alt)}</figcaption></figure>`
     : "";
   return `<header class="seo-lhero ${shot ? `seo-tone-${tone}` : "is-single"}">
     <nav class="seo-crumbs" aria-label="Breadcrumb"><ol>${trail}</ol></nav>
@@ -278,6 +279,70 @@ export function stripTwinCss(html, kind) {
     kind && (name === kind || name === "base") ? block : ""
   );
 }
+
+/**
+ * <link rel="preload"> for the first-viewport product shot of a page (the img with
+ * fetchpriority="high" and a srcset): the browser starts it with the HTML head instead of
+ * after parsing ~60 KB of body, and picks the same candidate (imagesrcset / imagesizes).
+ * The home hero is a <picture> with a phone and a desktop source and is left alone.
+ */
+export function lcpImagePreload(body) {
+  const m = body.match(/<img src="([^"]+)" srcset="([^"]+)" sizes="([^"]+)"[^>]*fetchpriority="high"/);
+  if (m) return `<link rel="preload" as="image" href="${m[1]}" imagesrcset="${m[2]}" imagesizes="${m[3]}" fetchpriority="high" />`;
+  // Home hero: <picture> with one phone source (max-width query) and the desktop img.
+  const pic = body.match(/<picture><source media="\(max-width: (\d+)px\)" srcset="([^"]+)" sizes="([^"]+)"[^>]*><img [^>]*src="([^"]+)"[^>]*fetchpriority="high"/);
+  if (!pic) return "";
+  const [, max, phoneSet, phoneSizes, desktop] = pic;
+  return [
+    `<link rel="preload" as="image" imagesrcset="${phoneSet}" imagesizes="${phoneSizes}" media="(max-width: ${max}px)" fetchpriority="high" />`,
+    `<link rel="preload" as="image" href="${desktop}" media="(min-width: ${Number(max) + 1}px)" fetchpriority="high" />`,
+  ].join("\n    ");
+}
+
+/**
+ * Inter in the shell head: the faces of src/site/fonts-inter.css (font-display: optional)
+ * with the hashed files Vite emitted, a metric-matched local fallback, and a preload of
+ * the weights the first viewport uses most. The React page renders with the same faces.
+ * Without it the shell painted in Segoe UI / Roboto and React in Inter, so text re-wrapped
+ * at the hand-over on Windows, Android and Linux (up to 30 px in the lab).
+ */
+export function interFontFaceCss(assetsDir = path.join(distDir, "assets")) {
+  let files = [];
+  try {
+    files = fs.readdirSync(assetsDir);
+  } catch {
+    return { style: "", preload: "" };
+  }
+  const src = fs.readFileSync(path.join(root, "src/site/fonts-inter.css"), "utf8");
+  const missing = [];
+  const css = src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/url\("[^"]*\/(inter-[a-z-]+-\d+-normal)\.woff2"\)/g, (m, name) => {
+      const hit = files.find((f) => f.startsWith(`${name}-`) && f.endsWith(".woff2"));
+      if (!hit) missing.push(name);
+      return `url("/assets/${hit}")`;
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+  if (missing.length) return { style: "", preload: "" };
+  // Metric-matched local fallback (Arial scaled to Inter), only drawn when a font file has
+  // not arrived within the 3 s block period. Latin only: Cyrillic and other scripts fall
+  // through to the system font, as on the React page.
+  const fallback =
+    '@font-face { font-family: "Inter Fallback"; src: local("Arial"), local("Helvetica"), local("Roboto"), local("Liberation Sans"); size-adjust: 107.4%; ascent-override: 90.2%; descent-override: 22.48%; line-gap-override: 0%; unicode-range: U+0000-02FF, U+1E00-1EFF, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215; }';
+  const links = (names) =>
+    names
+      .map((name) => files.find((f) => f.startsWith(`${name}-`) && f.endsWith(".woff2")))
+      .filter(Boolean)
+      .map((f) => `<link rel="preload" as="font" type="font/woff2" href="/assets/${f}" crossorigin />`)
+      .join("\n    ");
+  const preload = links(["inter-latin-400-normal", "inter-latin-700-normal"]);
+  // Turkish pages (lang tr) also preload the latin-ext files: ş, ğ, İ are in every header.
+  const preloadExt = links(["inter-latin-ext-400-normal", "inter-latin-ext-700-normal"]);
+  return { style: `<style id="shell-fonts">${css} ${fallback}</style>`, preload, preloadExt };
+}
+
+let shellFonts = { style: "", preload: "", preloadExt: "" };
 
 function twinKindOf(body) {
   return body.match(/<main class="seo-twin seo-twin-([a-z]+)"/)?.[1] || null;
@@ -774,7 +839,16 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     )
     .join("\n    ");
 
+  // The page body first: its LCP image is preloaded from the head.
+  const inner = crawlBody(route);
   const metaBlock = [
+    // The LCP image first: it is the largest paint on most pages and must not queue
+    // behind the font files.
+    lcpImagePreload(inner),
+    shellFonts.preload,
+    // Turkish pages always set latin-ext letters in bold (header "Giriş Yap", titles).
+    lang === "tr" ? shellFonts.preloadExt : "",
+    shellFonts.style,
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
     `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
@@ -807,7 +881,6 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
   out = out.replace(/<\/title>/i, `</title>\n    ${metaBlock}`);
 
   // The page header (React twin) replaces the old brand-only line at the top of each body.
-  const inner = crawlBody(route);
   out = stripTwinCss(out, twinKindOf(inner));
   const body = `${seoTopHtml(loc, route.path)}\n${inner.replace(/<a class="seo-brand"[\s\S]*?<\/a>/, "")}`;
   if (/<div id="seo-static"><\/div>/i.test(out)) {
@@ -880,6 +953,8 @@ async function main() {
     process.exit(1);
   }
   const base = fs.readFileSync(indexPath, "utf8");
+  shellFonts = interFontFaceCss();
+  if (!shellFonts.style) console.warn("[prerender-seo] Inter woff2 files not found in dist/assets: the shell paints in the system font");
   const routes = PUBLIC_ROUTES.filter((r) => !r.noindex);
   for (const route of routes) {
     writeRoute(route, base);

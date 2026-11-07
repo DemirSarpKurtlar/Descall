@@ -161,7 +161,7 @@ export function corePageBody(path) {
       <p class="seo-hh-cta"><a class="seo-hh-btn is-primary" href="${homeHref(loc)}?auth=register" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(n.startFree)}</a><a class="seo-hh-btn is-secondary" href="${h("/download")}">${twinIcon("Windows", 18)}${escapeHtml(tc("Download the desktop app"))}</a></p>
       <ul class="seo-hh-platforms"><li>${twinIcon("Apple", 16)}iPhone</li><li>${twinIcon("Android", 16)}Android</li><li>${twinIcon("Windows", 16)}Windows</li><li>${twinIcon("Browser", 16)}Web</li></ul>
     </div>
-    <figure class="seo-pf"><div class="seo-pf-glass"><picture><source media="(max-width: 768px)" srcset="/brand/previews/hero-ios-chats.webp" width="780" height="1688" /><img class="seo-pf-screen" src="/brand/previews/hero-desktop-dm.webp" width="1440" height="900" alt="${escapeHtml(tc("Descall chat, with servers and a voice channel in the same window"))}" fetchpriority="high" decoding="async" /></picture></div></figure>
+    <figure class="seo-pf"><div class="seo-pf-glass"><picture><source media="(max-width: 768px)" srcset="/brand/previews/hero-ios-chats-480.webp 480w, /brand/previews/hero-ios-chats.webp 780w" sizes="min(220px, 60vw)" width="780" height="1688" /><img class="seo-pf-screen" src="/brand/previews/hero-desktop-dm.webp" width="1440" height="900" alt="${escapeHtml(tc("Descall chat, with servers and a voice channel in the same window"))}" fetchpriority="high" decoding="async" /></picture></div></figure>
   </section>
   <h2>${escapeHtml(copy.voiceTitle)}</h2>
   <p>${escapeHtml(copy.voiceBody)}</p>
