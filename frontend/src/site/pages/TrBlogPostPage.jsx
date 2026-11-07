@@ -7,14 +7,7 @@ import NotFoundPage from "./NotFoundPage";
 import { formatPostDate } from "../useMirrorCopy";
 import { SITE_OPERATOR } from "../siteIdentity";
 import { MARKETING_TR } from "../marketingPhrases.tr.js";
-
-const RELATED = [
-  { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
-  { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri" },
-  { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı?" },
-  { to: "/tr/compare/discord", label: "Discord mu Descall mı?" },
-  { to: "/tr/blog", label: "Tüm rehberler" },
-];
+import { TR_BLOG_RELATED as RELATED } from "../seo/blogLinks.js";
 
 export default function TrBlogPostPage({ onSignIn, onSignUp }) {
   const { slug } = useParams();
