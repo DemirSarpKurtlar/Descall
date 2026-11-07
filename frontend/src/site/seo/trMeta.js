@@ -46,13 +46,80 @@ export const TR_LANDING_META = [
 ];
 
 export const TR_BLOG_META = [
+  // How-to guides (Nov 2026 content round); bodies in seo/trGuideBodies.js.
+  {
+    "slug": "screen-share-with-friends",
+    "title": "Arkadaşlarınla Ekran Paylaşımı Nasıl Yapılır? | Descall",
+    "h1": "Sesli aramada arkadaşlarınla ekran paylaşımı nasıl yapılır?",
+    "description": "DM aramasında, grup aramasında ya da sunucu ses kanalında oyun, sunum veya ödev paylaş: kalite ayarları, ses, gizlilik ve takılmalara çözümler.",
+    "date": "2026-11-07",
+    "tags": [
+      "Ekran paylaşımı",
+      "Rehber"
+    ]
+  },
+  {
+    "slug": "online-study-group-voice-chat",
+    "title": "Online Ders Çalışma Grubu: Sesli Sohbet Rehberi | Descall",
+    "h1": "Sesli sohbetle online ders çalışma grubu nasıl kurulur?",
+    "description": "Ders kanalları, odak odaları ve sessiz bir ses odasıyla çalışma sunucusu kur, insanların gerçekten katıldığı oturumlar düzenle. Descall’da ücretsiz.",
+    "date": "2026-11-07",
+    "tags": [
+      "Ders grupları",
+      "Rehber"
+    ]
+  },
+  {
+    "slug": "better-mic-sound-voice-chat",
+    "title": "Sesli Sohbette Mikrofon Sesi Nasıl İyileşir? | Descall",
+    "h1": "Sesli sohbette daha iyi duyulmak: mikrofon, gürültü ve bas-konuş",
+    "description": "Sesli sohbette yankıyı, arka plan gürültüsünü ve kısık mikrofonu düzelt: kulaklık, mikrofon testi, gürültü engelleme, bas-konuş ve kişi bazlı ses.",
+    "date": "2026-11-07",
+    "tags": [
+      "Sesli sohbet",
+      "Ses"
+    ]
+  },
+  {
+    "slug": "set-up-a-community-server",
+    "title": "Topluluk Sunucusu Nasıl Kurulur? | Descall Rehberi",
+    "h1": "Küçük bir topluluk için sunucu nasıl kurulur?",
+    "description": "Küçük bir topluluk sunucusu için kanalları, rolleri ve izinleri planla; sonra kuralları, davetleri, moderasyonu ve ilk etkinliği adım adım ekle.",
+    "date": "2026-11-07",
+    "tags": [
+      "Topluluklar",
+      "Sunucular"
+    ]
+  },
+  {
+    "slug": "private-group-chat-guide",
+    "title": "Grup Sohbetin Ne Kadar Gizli? | Descall Rehberi",
+    "h1": "Grup sohbetin ne kadar gizli? Sade bir rehber",
+    "description": "Bir sohbet uygulaması neyi görebilir, aktarım sırasında şifreleme ne demek ve hangi ayarları değiştirmeli: Görüldü bilgisi, önizleme, durum ve 2FA.",
+    "date": "2026-11-07",
+    "tags": [
+      "Gizlilik",
+      "Güvenlik"
+    ]
+  },
+  {
+    "slug": "descall-on-every-device",
+    "title": "Descall Uygulamaları: Windows, iPhone, Android, Tarayıcı",
+    "h1": "Windows, iPhone, Android ve web’de Descall: hangisini kullanmalı?",
+    "description": "Hangi Descall uygulaması sana uyar: Windows masaüstü, iPhone ve iPad, Android ya da tarayıcı; her biri neyde iyi ve tek hesap nasıl eşitlenir?",
+    "date": "2026-11-07",
+    "tags": [
+      "Uygulamalar",
+      "İndirme"
+    ]
+  },
   {
     "slug": "best-discord-alternatives-2026",
     "title": "Descall Blog: 2026’nın En İyi Discord Alternatifleri",
     "h1": "2026’nın en iyi Discord alternatifleri: dürüst kısa liste",
     "description": "Arkadaş grupları, sunucular, sesli sohbet için 2026’nın en iyi Discord alternatifleri; Descall, TeamSpeak, Telegram ve diğerleri gerçekte nasıl kıyaslanıyor?",
     "date": "2026-08-11",
-    "updated": "2026-11-06",
+    "updated": "2026-11-07",
     "tags": [
       "Discord alternatifleri",
       "Liste"
@@ -64,7 +131,7 @@ export const TR_BLOG_META = [
     "h1": "Discord’un rakipleri: 2026’da kim gerçekten rekabet ediyor?",
     "description": "2026’da Discord’un rakiplerinin haritası: hafif arkadaş uygulamaları, oyun toplulukları için araçlar ve klasik ses yazılımları. Descall’ın dürüst konumu.",
     "date": "2026-08-11",
-    "updated": "2026-11-06",
+    "updated": "2026-11-07",
     "tags": [
       "Discord rakipleri",
       "Pazar"
@@ -75,7 +142,7 @@ export const TR_BLOG_META = [
     "title": "Aboneliksiz ücretsiz sesli sohbet: geçiş rehberi",
     "description": "Arkadaş grubunu abonelik alışkanlığından sunucular, ses, görüntü ve ekran paylaşımı ücretsiz olan bir Discord alternatifine taşımanın pratik yolu.",
     "date": "2026-08-11",
-    "updated": "2026-11-06",
+    "updated": "2026-11-07",
     "tags": [
       "Fiyat",
       "Geçiş"

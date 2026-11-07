@@ -191,6 +191,60 @@ const BASE_ROUTES = [
     ogType: "article",
   },
   {
+    path: "/blog/screen-share-with-friends",
+    title: "How to Screen Share With Friends for Free | Descall",
+    description:
+      "Share a game, slides or homework in a DM call, group call or server voice channel: quality settings, sound, privacy tips and fixes for lag.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/online-study-group-voice-chat",
+    title: "Online Study Group With Voice Chat: A Guide | Descall",
+    description:
+      "Set up a study server with subject channels, focus rooms and a quiet voice room, then run sessions that people actually join. Free on Descall.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/better-mic-sound-voice-chat",
+    title: "Sound Better in Voice Chat: Mic and Noise Tips | Descall",
+    description:
+      "Fix echo, background noise and quiet mics in group voice chat with headphones, a mic test, noise suppression, push-to-talk and per-person volume.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/set-up-a-community-server",
+    title: "How to Set Up a Community Server | Descall Guide",
+    description:
+      "Plan channels, roles and permissions for a small community server, then add rules, invites, moderation and your first event, step by step.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/private-group-chat-guide",
+    title: "How Private Is Your Group Chat? | Descall Guide",
+    description:
+      "What a chat app can see, what encryption in transit means, and the privacy settings worth changing: read receipts, previews, status and 2FA.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/descall-on-every-device",
+    title: "Descall Apps: Windows, iPhone, Android or Browser?",
+    description:
+      "Which Descall app fits you: the Windows desktop app, iPhone and iPad, Android or the browser, what each does best and how one account syncs.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
     path: "/faq",
     title: "Descall FAQ | Is It Free? Voice, Screen Share & Apps",
     description:

@@ -5,9 +5,12 @@
  * Nov 2026 (seo/mergedPages.js); their /tr/blog URLs 301 to the Turkish hubs.
  */
 
+import { TR_GUIDE_BODIES, TR_GUIDE_FAQ } from "./trGuideBodies.js";
+
 export { TR_BLOG_META as TR_BLOG_POSTS } from "./trMeta.js";
 
 export const TR_BLOG_BODIES = {
+  ...TR_GUIDE_BODIES,
   "best-discord-alternatives-2026": {
     sections: [
       {
@@ -40,7 +43,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "Discord: kalmanın doğru cevap olduğu durumlar",
-        p: "Discord, büyük herkese açık topluluklar için hâlâ varsayılan seçim. Sunucun botlarla dönüyorsa, herkese açık keşfe dayanıyorsa ya da binlerce aktif üyesi varsa, taşınmak gerçek maliyetleri olan büyük bir proje. Birçok kişi o alanlar için Discord’u tutuyor ve sadece özel arkadaş aramalarını taşıyor. Bu ayrım gayet iyi bir sonuç; çoğu zaman bir alternatifi baskı olmadan denemenin en kolay yolu da bu. Türkiye’deysen bir not: Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi. Engelle ilgili son haberleri ve tarihlerini “Discord açıldı mı?” sayfamızda topluyoruz.",
+        p: "Discord, büyük herkese açık topluluklar için hâlâ varsayılan seçim. Sunucun botlarla dönüyorsa, herkese açık keşfe dayanıyorsa ya da binlerce aktif üyesi varsa, taşınmak gerçek maliyetleri olan büyük bir proje. Birçok kişi o alanlar için Discord’u tutuyor ve sadece özel arkadaş aramalarını taşıyor. Bu ayrım gayet iyi bir sonuç; çoğu zaman bir alternatifi baskı olmadan denemenin en kolay yolu da bu. Türkiye’deysen bir not: kamuya açık haberlere göre Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi. Erişimi kendimiz test etmiyoruz ve durum o tarihten sonra değişmiş olabilir; tarihli kaynakları ve son haberleri “Discord açıldı mı?” sayfamızda topluyoruz.",
       },
       {
         h: "Önce hangisini denemelisin?",
@@ -76,7 +79,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "Descall’ın rekabet ettiği yer",
-        p: "Descall, arkadaş grupları ve küçük-orta topluluklar için Discord’la doğrudan rekabet ediyor. Ana argümanları şunlar: ücretsiz ses, görüntü ve ekran paylaşımı; rol ve izinli sunucular; sunucu şablonları; tüm mesaj geçmişinde arama ve Türkçe ile İngilizce dahil yedi dilde arayüz. Türkiye’den de doğrudan erişilebiliyor. Discord’a Türkiye’den erişim ise 9 Ekim 2024’te mahkeme kararıyla engellendi; bu, orada üyesi olan her grup için önemli. Hesap güvenliği iki adımlı doğrulama ve veri dışa aktarımıyla sağlanıyor, yani Descall’a kilitlenip kalmıyorsun.",
+        p: "Descall, arkadaş grupları ve küçük-orta topluluklar için Discord’la doğrudan rekabet ediyor. Ana argümanları şunlar: ücretsiz ses, görüntü ve ekran paylaşımı; rol ve izinli sunucular; sunucu şablonları; tüm mesaj geçmişinde arama ve Türkçe ile İngilizce dahil yedi dilde arayüz. Türkiye’den de doğrudan erişilebiliyor. Haberlere göre Discord’a Türkiye’den erişim ise 9 Ekim 2024’te mahkeme kararıyla engellendi; erişimi kendimiz test etmiyoruz ve durum değişmiş olabilir (tarihli kaynaklar “Discord açıldı mı?” sayfasında). Orada üyesi olan gruplar için bu fark önemli olabilir. Hesap güvenliği iki adımlı doğrulama ve veri dışa aktarımıyla sağlanıyor, yani Descall’a kilitlenip kalmıyorsun.",
       },
       {
         h: "Descall’ın rekabet etmediği yerler",
@@ -124,7 +127,7 @@ export const TR_BLOG_BODIES = {
       },
       {
         h: "Direnenleri ikna etmek",
-        p: "Her grupta bir uygulama daha kurmak istemeyen biri vardır. Ona web bağlantısını, yani descall.com/app adresini gönder; bir dakika içinde tarayıcıdan aramaya katılabilsin. iPhone, iPad veya Android kullanan arkadaşlar mobil uygulamayı sonra kurabilir; uzun oturumlar için de Windows uygulaması var. Grubunda Türkiye’de yaşayan biri varsa: Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi ve Descall, o arkadaşının belki de ihtiyaç duyduğu dolambaçlı çözümleri ortadan kaldırıyor.",
+        p: "Her grupta bir uygulama daha kurmak istemeyen biri vardır. Ona web bağlantısını, yani descall.com/app adresini gönder; bir dakika içinde tarayıcıdan aramaya katılabilsin. iPhone, iPad veya Android kullanan arkadaşlar mobil uygulamayı sonra kurabilir; uzun oturumlar için de Windows uygulaması var. Grubunda Türkiye’de yaşayan biri varsa: haberlere göre Discord’a Türkiye’den erişim 9 Ekim 2024’te mahkeme kararıyla engellendi (durum değişmiş olabilir; tarihli kaynaklar “Discord açıldı mı?” sayfasında). Descall, o arkadaşının belki de ihtiyaç duyduğu dolambaçlı çözümleri ortadan kaldırıyor.",
       },
       {
         h: "İptali kendi takviminle yap",
@@ -135,6 +138,7 @@ export const TR_BLOG_BODIES = {
 };
 
 export const TR_BLOG_FAQ_BY_SLUG = {
+  ...TR_GUIDE_FAQ,
   "best-discord-alternatives-2026": [
     { q: "2026’da Discord alternatiflerini nasıl kısa listeye alırım?", a: "İşe göre eşleştir: arkadaşlarla ses, topluluk sunucuları ya da sadece ses odaları. Sonra aramaların ve ekran paylaşımının ücretsiz olup olmadığına bak." },
     { q: "Descall bu 2026 kısa listesinde var mı?", a: "Evet; ücretsiz aramalar ve gerçek sunucular isteyen arkadaş grupları ve oyuncular için. Botlara dayanan dev topluluklar için Discord hâlâ doğru seçim." },
