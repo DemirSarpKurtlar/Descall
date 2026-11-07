@@ -110,11 +110,6 @@
   backface-visibility: hidden;
 }
 
-.user-settings.is-desktop.is-shop-open {
-  width: min(1480px, calc(100vw - 28px));
-  height: min(960px, var(--us-fit-h-shop));
-  max-height: var(--us-fit-h-shop);
-}
 
 .user-settings.is-desktop.is-shop-open .us-main-scroll {
   overflow: hidden;

@@ -888,11 +888,11 @@ const EXTRA = {
     faq: [
       {
         q: "Discord’u telefondan kullanabilir miyim?",
-        a: "Erişim engeli mobil uygulamaları da kapsıyor; Türkiye’deki internet bağlantıları üzerinden Discord mobil uygulaması da normal şekilde çalışmıyor.",
+        a: "Aktarılan haberlere göre erişim engeli mobil uygulamaları da kapsıyordu; engel sürdüğü sürece Türkiye’deki internet bağlantıları üzerinden Discord mobil uygulaması da normal şekilde çalışmıyordu. Durum o tarihten sonra değişmiş olabilir.",
       },
       {
         q: "Discord hesabım silindi mi?",
-        a: "Erişim engeli hesapları silmez; sadece Türkiye’den erişimi engeller. Hesabın ve sunucuların Discord tarafında durmaya devam eder.",
+        a: "Haberlere göre erişim engeli hesapları silmedi; yalnızca Türkiye’den erişimi kısıtladı. Hesabın ve sunucuların Discord tarafında durmaya devam ediyor olmalı; kesin bilgi için Discord’un kendi açıklamalarına bakmak en doğrusu.",
       },
     ],
   },
