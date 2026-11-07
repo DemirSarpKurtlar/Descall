@@ -23,7 +23,7 @@ const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
 );
 const { PREVIEW_SIZES, previewSrcset } = await import(pathToFileURL(path.join(root, "src/site/seo/featureGroups.js")).href);
-const { TR_BLOG_RELATED } = await import(pathToFileURL(path.join(root, "src/site/seo/blogLinks.js")).href);
+const { TR_BLOG_RELATED, relatedForPost } = await import(pathToFileURL(path.join(root, "src/site/seo/blogLinks.js")).href);
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
 const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
 const { pageT } = await import(pathToFileURL(path.join(root, "src/site/seo/pageTwins.js")).href);
@@ -453,10 +453,7 @@ function crawlBodyInner(route) {
         meta: postMetaHtml(post, "tr", { published: "Yayın", updated: "Güncelleme", author: trCopy("Author", "tr") }, SITE_OPERATOR.personPathTr),
         sections: body.sections,
         relatedTitle: "İlgili rehberler",
-        related: [
-          ...TR_BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => ({ to: p.path, label: p.h1 || p.title })),
-          ...TR_BLOG_RELATED,
-        ],
+        related: relatedForPost(post, TR_BLOG_POSTS, TR_BLOG_RELATED, { labelOf: (p) => p.h1 || p.title }),
         backHref: "/tr/blog",
         backLabel: "← Bloga dön",
         faqTitle: trCopy("Frequently asked questions", "tr"),
@@ -544,11 +541,8 @@ function crawlBodyInner(route) {
         meta: postMetaHtml(post, loc, { published: t("Published"), updated: t("Updated"), author: t("Author") }, hx("/who-owns-descall")),
         sections: body.sections.map((s) => ({ h: t(s.h), p: t(s.p) })),
         relatedTitle: t("Related guides"),
-        // The other posts, then the guides the merged posts live on (as BlogPostPage).
-        related: [
-          ...BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => ({ to: p.path, label: p.title })),
-          ...BLOG_RELATED.filter((l) => l.to !== "/status"),
-        ].map((l) => ({ to: hx(l.to), label: t(l.label) })),
+        // The closest posts, then two guides (as BlogPostPage).
+        related: relatedForPost(post, BLOG_POSTS, BLOG_RELATED.filter((l) => l.to !== "/status")).map((l) => ({ to: hx(l.to), label: t(l.label) })),
         backHref: hx("/blog"),
         backLabel: t("← Back to blog"),
         faqTitle: t("Frequently asked questions"),

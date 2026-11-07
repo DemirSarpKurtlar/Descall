@@ -361,7 +361,7 @@ try {
   assert.match(postShell, /<h2>Was es braucht<\/h2>/);
   assert.match(postShell, /Veroeffentlicht: <time datetime="2026-08-11">11\. August 2026<\/time>/, "dates are written with Intl in the page language");
   const ld = [...postShell.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
-  const article = ld.find((g) => g["@type"] === "Article");
+  const article = ld.find((g) => g["@type"] === "BlogPosting");
   assert.equal(article.inLanguage, "de");
   assert.equal(article.headline, "Discord-Konkurrenten 2026");
   assert.equal(article.mainEntityOfPage, "https://descall.com/de/blog/discord-competitors");

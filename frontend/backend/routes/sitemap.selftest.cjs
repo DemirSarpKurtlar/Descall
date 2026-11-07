@@ -52,6 +52,14 @@ assert.ok(!locs.some((l) => /lfg|valorant|riot/i.test(l)), "retired gaming pages
 assert.ok(!pages.some((p) => p.alternates?.length));
 assert.ok(!locs.some((l) => l.includes("invite=") || l.includes("announcement=")));
 
+// Every entry carries its site language (one child sitemap per language).
+const byLang = (l) => pages.filter((p) => String(p.lang).toLowerCase() === l).map((p) => p.loc);
+assert.ok(byLang("en").includes(`${ORIGIN}/features`));
+assert.ok(byLang("tr").includes(`${ORIGIN}/gizlilik`), "Turkish-only pages are Turkish");
+assert.ok(byLang("de").every((l) => l.startsWith(`${ORIGIN}/de`)));
+assert.ok(byLang("pt-br").every((l) => l.startsWith(`${ORIGIN}/pt-br`)));
+assert.strictEqual(["en", "tr", "de", "es", "fr", "pt-br", "ru"].reduce((n, l) => n + byLang(l).length, 0), pages.length, "each page in exactly one language");
+
 // Hard SEO invariants
 assert.ok(pages.length >= 28);
 assert.ok(locs.every((l) => l.startsWith("https://descall.com")));

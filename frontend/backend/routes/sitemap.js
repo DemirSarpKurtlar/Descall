@@ -9,6 +9,7 @@
  * Endpoints:
  *   GET /robots.txt
  *   GET /sitemap.xml              — sitemap index (child tables)
+ *   GET /sitemap-en.xml ... /sitemap-ru.xml   — one per site language (the index lists these)
  *   GET /sitemap-core.xml
  *   GET /sitemap-niches.xml
  *   GET /sitemap-blog.xml
@@ -147,6 +148,7 @@ async function catalogEntries(origin, tableId = null) {
     priority: e.priority,
     title: e.title,
     path: e.path,
+    lang: e.lang,
   }));
 }
 
@@ -358,12 +360,13 @@ router.get("/sitemap.xml", async (req, res) => {
   try {
     const origin = siteOrigin(req);
     const now = isoDate();
-    const { SITEMAP_TABLES } = await loadSitemapCatalog();
+    // One child per site language (sitemapCatalog SITEMAP_LANG_TABLES), as the static build.
+    const { SITEMAP_LANG_TABLES } = await loadSitemapCatalog();
     return sendXml(
       res,
       buildIndex(
         origin,
-        SITEMAP_TABLES.map((t) => ({ loc: `${origin}/${t.file}`, lastmod: now }))
+        SITEMAP_LANG_TABLES.map((t) => ({ loc: `${origin}/${t.file}`, lastmod: now }))
       )
     );
   } catch (err) {
@@ -387,6 +390,18 @@ for (const tableId of ["core", "niches", "blog", "company"]) {
       return sendXml(res, buildUrlset(await catalogEntries(origin, tableId)));
     } catch (err) {
       return res.status(500).type("text/plain").send(err?.message || "sitemap table unavailable");
+    }
+  });
+}
+
+for (const lang of ["en", "tr", "de", "es", "fr", "pt-br", "ru"]) {
+  router.get(`/sitemap-${lang}.xml`, async (req, res) => {
+    try {
+      const origin = siteOrigin(req);
+      const all = await catalogEntries(origin);
+      return sendXml(res, buildUrlset(all.filter((e) => String(e.lang || "en").toLowerCase() === lang)));
+    } catch (err) {
+      return res.status(500).type("text/plain").send(err?.message || "sitemap language unavailable");
     }
   });
 }

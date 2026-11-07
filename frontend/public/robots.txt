@@ -72,6 +72,13 @@ Allow: /humans.txt
 Allow: /.well-known/security.txt
 Allow: /sitemap.xml
 Allow: /sitemap-pages.xml
+Allow: /sitemap-en.xml
+Allow: /sitemap-tr.xml
+Allow: /sitemap-de.xml
+Allow: /sitemap-es.xml
+Allow: /sitemap-fr.xml
+Allow: /sitemap-pt-br.xml
+Allow: /sitemap-ru.xml
 Allow: /sitemap-core.xml
 Allow: /sitemap-niches.xml
 Allow: /sitemap-blog.xml

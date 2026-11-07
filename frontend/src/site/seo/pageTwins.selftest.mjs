@@ -122,4 +122,20 @@ assert.match(read("src/site/fonts-inter.css"), /unicode-range/);
   assert.deepEqual(interFontFaceCss(join(tmpdir(), "no-such-dir-x")).style, "", "no files, no faces (hydrateMarketing loads them)");
 }
 
+// 9. Related guides under blog posts: 4 posts + the family guides, never itself, every post linked.
+{
+  const { relatedForPost } = await import("./blogLinks.js");
+  const { BLOG_POSTS, BLOG_RELATED } = await import("../content/discordSeoContent.js");
+  const linked = new Set();
+  for (const post of BLOG_POSTS) {
+    const rel = relatedForPost(post, BLOG_POSTS, BLOG_RELATED);
+    assert.ok(rel.length >= 6 && rel.length <= 12, `${post.slug}: 6-12 related links (was every post and guide)`);
+    assert.ok(!rel.some((l) => l.to === post.path), `${post.slug}: no self link`);
+    rel.forEach((l) => linked.add(l.to));
+  }
+  for (const post of BLOG_POSTS) assert.ok(linked.has(post.path), `${post.slug} is related from another post`);
+  const html = corePageBody("/blog/discord-competitors") || "";
+  assert.equal(html, "", "blog posts are not core bodies (prerender-seo.mjs renders them)");
+}
+
 console.log("pageTwins.selftest.mjs: ok");

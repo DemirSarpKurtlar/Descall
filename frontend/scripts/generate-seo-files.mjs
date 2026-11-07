@@ -17,8 +17,10 @@ const { buildHumanSitemapHtml, SITEMAP_XSL } = await import(
 );
 const {
   SITEMAP_TABLES,
+  SITEMAP_LANG_TABLES,
   allSitemapEntries,
   entriesForTable,
+  entriesForLanguage,
 } = await import(pathToFileURL(path.join(root, "src/site/sitemapCatalog.js")).href);
 const { llmsTxt, llmsFullTxt, humansTxt, securityTxt } = await import(
   pathToFileURL(path.join(root, "src/site/ownershipFacts.js")).href
@@ -127,6 +129,7 @@ Allow: /humans.txt
 Allow: /.well-known/security.txt
 Allow: /sitemap.xml
 Allow: /sitemap-pages.xml
+${SITEMAP_LANG_TABLES.map((t) => `Allow: /${t.file}`).join("\n")}
 ${childAllows}
 Allow: /sitemap
 Allow: /sitemap.html
@@ -184,29 +187,59 @@ export function alternateLinks(loc, { locales, pageDrafts } = {}) {
   );
 }
 
+/**
+ * Image sitemap entries of a page: the product shots and screenshots of its prerendered
+ * HTML (not the logo or icons), with their alt text as the title.
+ */
+export function pageImages(loc) {
+  let pathname = "/";
+  try {
+    pathname = new URL(loc).pathname || "/";
+  } catch {
+    return [];
+  }
+  const file = path.join(distDir, pathname === "/" ? "index.html" : `${pathname.replace(/^\//, "")}.html`);
+  if (!fs.existsSync(file)) return [];
+  const html = fs.readFileSync(file, "utf8");
+  const body = html.slice(html.indexOf('<div id="seo-static"'));
+  const out = new Map();
+  for (const m of body.matchAll(/<img\b[^>]*>/g)) {
+    const src = m[0].match(/\ssrc="(\/brand\/previews\/[^"]+\.(?:webp|png|jpe?g))"/)?.[1];
+    if (!src || out.has(src)) continue;
+    out.set(src, (m[0].match(/\salt="([^"]*)"/)?.[1] || "").trim());
+  }
+  return [...out].map(([src, alt]) => ({ loc: `${SITE}${src}`, title: alt }));
+}
+
+function imageLinks(loc) {
+  return pageImages(loc)
+    .map((img) => `    <image:image>\n      <image:loc>${xmlEscape(img.loc)}</image:loc>\n    </image:image>\n`)
+    .join("");
+}
+
 export function buildUrlset(entries) {
   const urls = entries.map((e) => {
     assertHttpsDescall(e.loc);
     return `  <url>
     <loc>${xmlEscape(e.loc)}</loc>
-${alternateLinks(e.loc)}    <lastmod>${xmlEscape(e.lastmod)}</lastmod>
+${alternateLinks(e.loc)}${imageLinks(e.loc)}    <lastmod>${xmlEscape(e.lastmod)}</lastmod>
     <changefreq>${xmlEscape(e.changefreq || "weekly")}</changefreq>
     <priority>${xmlEscape(e.priority || "0.5")}</priority>
   </url>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${urls.join("\n")}
 </urlset>
 `;
 }
 
 function buildSitemapIndex(now) {
-  const children = SITEMAP_TABLES.map((t) => {
+  const children = SITEMAP_LANG_TABLES.map((t) => {
     const loc = `${SITE}/${t.file}`;
     assertHttpsDescall(loc);
-    const newest = entriesForTable(t.id, SITE, now, lastmodFor)
+    const newest = entriesForLanguage(t.lang, SITE, now, lastmodFor)
       .map((e) => e.lastmod)
       .sort()
       .pop();
@@ -256,10 +289,10 @@ async function main() {
   const index = buildSitemapIndex(now);
   const pages = buildUrlset(allEntries);
   const html = buildSitemapHtml();
-  const tableBodies = SITEMAP_TABLES.map((t) => ({
-    file: t.file,
-    body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor)),
-  }));
+  const tableBodies = [
+    ...SITEMAP_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor)) })),
+    ...SITEMAP_LANG_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForLanguage(t.lang, SITE, now, lastmodFor)) })),
+  ];
 
   for (const [name, body] of [
     ["robots", robots],
