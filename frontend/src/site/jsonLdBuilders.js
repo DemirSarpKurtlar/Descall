@@ -203,10 +203,11 @@ export function buildBreadcrumbLd(crumbs = []) {
   };
 }
 
-export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage, image }) {
+/** Article (dated pages) or BlogPosting (blog posts, type: "BlogPosting"). */
+export function buildArticleLd({ title, description, path, datePublished, dateModified, inLanguage, image, type = "Article" }) {
   return {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": type,
     headline: title,
     ...(inLanguage ? { inLanguage } : {}),
     description,

@@ -4,7 +4,7 @@
  */
 
 import { PUBLIC_ROUTES, DEFAULT_ORIGIN } from "./seoConfig.js";
-import { prefixedLocaleFromPath, stripPrefixedLocale } from "./siteLocales.js";
+import { SITE_LOCALES, localeNativeName, prefixedLocaleFromPath, stripPrefixedLocale } from "./siteLocales.js";
 import { contentLastmod } from "./seo/contentDates.js";
 
 export const SITE = DEFAULT_ORIGIN;
@@ -41,6 +41,29 @@ export const SITEMAP_TABLES = [
     description: "About, contact, security, privacy, terms, human sitemap.",
   },
 ];
+
+/**
+ * SEO round 2 (Nov 2026): /sitemap.xml lists one child sitemap per site language
+ * (sitemap-en.xml, sitemap-tr.xml, sitemap-de.xml, ...), each URL in exactly one, so
+ * Search Console reports coverage per language. The topic tables above stay served
+ * (old bookmarks, the human sitemap) but are no longer in the index.
+ */
+export const SITEMAP_LANG_TABLES = SITE_LOCALES.map((lang) => ({
+  id: `lang-${lang.toLowerCase()}`,
+  lang,
+  file: `sitemap-${lang.toLowerCase()}.xml`,
+  title: localeNativeName(lang),
+  description: `Every public page in ${lang}.`,
+}));
+
+const TR_ONLY = new Set(["/descall-sahibi", "/iletisim", "/gizlilik", "/kosullar"]);
+
+/** Site language of a URL path: "tr" for /tr and the Turkish-only pages, the prefix, else "en". */
+export function sitemapLangForPath(path) {
+  const p = path || "/";
+  if (p === "/tr" || p.startsWith("/tr/") || TR_ONLY.has(p)) return "tr";
+  return prefixedLocaleFromPath(p) || "en";
+}
 
 function tableIdForPath(path) {
   // Prefixed site languages (/de/faq) sit in the same table as their English page.
@@ -93,6 +116,7 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
     title: r.title,
     description: r.description || "",
     tableId: tableIdForPath(r.path),
+    lang: sitemapLangForPath(r.path),
   }));
 
   // Human sitemap page
@@ -105,6 +129,7 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
     title: "Sitemap",
     description: "Human-readable sitemap of public Descall pages.",
     tableId: "company",
+    lang: "en",
   });
 
   return entries;
@@ -112,4 +137,8 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
 
 export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
   return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.tableId === tableId);
+}
+
+export function entriesForLanguage(lang, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
+  return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.lang === lang);
 }

@@ -1,0 +1,62 @@
+/* Inter for the marketing site: latin + latin-ext (Turkish) at 400 / 600 / 700, WOFF2 only.
+   - unicode-range: the per-subset files of @fontsource (latin-400.css, ...) carry none, so
+     the latin-ext face (declared last) was tried first for every character and both files
+     were downloaded on every page. An English page now fetches only the latin files.
+   - font-display: block + preload: the prerendered shell is the first paint and React
+     takes over without a reflow. With "swap", Windows / Android / Linux visitors saw the
+     shell in Segoe UI / Roboto and then Inter (text re-wrapped up to 30 px, CLS up to 0.3
+     in the lab). With "block" text waits for the preloaded files (about 0.5 s on slow 4G)
+     and is drawn once, in Inter; "optional" let React draw Inter where the shell had not.
+   - The prerender declares these faces in every shell head (scripts/prerender-seo.mjs
+     interFontFaceCss, id="shell-fonts") with the hashed files Vite emits for this file.
+     hydrateMarketing.jsx loads this file only where there is no shell (dev server,
+     desktop app): declaring the faces twice would make React use Inter where the shell
+     had already settled on the fallback. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: block;
+  font-weight: 400;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: block;
+  font-weight: 400;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: block;
+  font-weight: 600;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: block;
+  font-weight: 600;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: block;
+  font-weight: 700;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: block;
+  font-weight: 700;
+  src: url("../../node_modules/@fontsource/inter/files/inter-latin-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}

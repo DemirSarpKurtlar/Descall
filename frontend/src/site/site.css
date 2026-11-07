@@ -215,6 +215,7 @@ html.has-mkt:not([data-app-shell="1"]) #root {
   border-radius: var(--r-sm);
   color: var(--mkt-text);
   background: rgba(255, 255, 255, 0.04);
+  font-family: inherit;
   font-size: 11px;
   font-weight: 750;
   letter-spacing: 0.04em;
@@ -313,6 +314,9 @@ html.has-mkt:not([data-app-shell="1"]) #root {
   border: 1px solid transparent;
   cursor: pointer;
   box-sizing: border-box;
+  /* <button class="mkt-btn"> would otherwise fall back to the UA font (Arial) next to
+     <a class="mkt-btn"> links in the page font. */
+  font-family: inherit;
   transition: transform 0.15s, background 0.15s, border-color 0.15s;
 }
 

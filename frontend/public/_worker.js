@@ -211,6 +211,22 @@ export default {
     const found = await env.ASSETS.fetch(request);
     if (found.status !== 404) return withSecurity(found, { immutable: isHashedAsset(url.pathname) });
 
+    // SEO round 2 (Nov 2026): one URL per page in letter case too. /Features or /TR/Blog
+    // 301 to the lower-case page when that page exists. Only for page paths (no file
+    // extension) that 404 as typed, so hashed assets and case-sensitive invite codes
+    // (/s/AbC, served by the app shell above) are never touched.
+    if (/[A-Z]/.test(path) && !/\.[a-z0-9]+$/i.test(path)) {
+      const lower = path.toLowerCase();
+      const probe = await env.ASSETS.fetch(new Request(new URL(lower, url).toString(), { method: "GET", redirect: "manual" }));
+      if (probe.status === 200) {
+        const headers = new Headers();
+        applySecurityHeaders(headers);
+        headers.set("cache-control", "public, max-age=3600");
+        headers.set("location", new URL(lower + url.search, url).toString());
+        return new Response(null, { status: 301, headers });
+      }
+    }
+
     const notFound = await readAsset(env, request, "/404.html");
     const response = htmlResponse(notFound, 404, "no-store");
     response.headers.set("x-robots-tag", "noindex");

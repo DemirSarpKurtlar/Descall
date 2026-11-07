@@ -25,6 +25,9 @@ export async function hydrateMarketing() {
   const bootLocale = resolveBootMarketingLocale();
   await Promise.all([
     import("./marketing-entry.css"),
+    // The prerendered shell declares Inter itself (id="shell-fonts"); elsewhere (dev
+    // server, desktop app) the faces come from here.
+    document.getElementById("shell-fonts") ? null : import("./fonts-inter.css"),
     isPrefixedLocale(bootLocale) ? loadSiteCatalogWithin(bootLocale) : null,
     // Turkish phrases (with the 66 KB trGaps table) only for Turkish visitors.
     bootLocale === "tr" ? loadMarketingTr().catch(() => null) : null,

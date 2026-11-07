@@ -23,6 +23,8 @@ const env = {
       const { pathname } = new URL(request.url);
       if (pathname === "/index.html") return new Response(null, { status: 308, headers: { location: "/" } });
       if (FILES.has(pathname)) return new Response(pathname === "/" ? SHELL : "page", { status: 200, headers: { "content-type": "text/html" } });
+      // Pages serves /tr/download from tr/download.html.
+      if (FILES.has(`${pathname}.html`)) return new Response("page", { status: 200, headers: { "content-type": "text/html" } });
       return new Response("missing", { status: 404 });
     },
   },
@@ -48,6 +50,15 @@ for (const [from, to] of [["/tr/", "/tr"], ["/tr/download/", "/tr/download"], ["
   assert.equal(res.status, 301, `${from} redirects`);
   assert.equal(res.headers.get("location"), `https://descall.com${to}`, `${from} -> ${to}`);
 }
+// Letter case: an existing page answers 301 to its lower-case URL, anything else stays 404.
+for (const [from, to] of [["/TR/Download", "/tr/download"], ["/tr/DOWNLOAD?x=1", "/tr/download?x=1"]]) {
+  const res = await get(from);
+  assert.equal(res.status, 301, `${from} redirects`);
+  assert.equal(res.headers.get("location"), `https://descall.com${to}`, `${from} -> ${to}`);
+}
+assert.equal((await get("/Nope")).status, 404, "unknown upper-case path stays 404");
+assert.equal((await get("/assets/App-X.js")).status, 404, "files are never case-folded");
+assert.equal((await get("/s/AbC")).status, 200, "invite codes keep their case (app shell)");
 assert.equal((await get("/")).status, 200, "the root is served, never redirected");
 assert.equal((await get("/")).headers.get("x-robots-tag"), null, "marketing pages stay indexable");
 

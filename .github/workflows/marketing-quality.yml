@@ -77,6 +77,18 @@ jobs:
           npx --yes @axe-core/cli http://127.0.0.1:4173/ $AXE_ARGS
           npx --yes @axe-core/cli http://127.0.0.1:4173/faq $AXE_ARGS
 
+      # The prerendered page is the first paint; React must take over without moving
+      # anything (CLS and text blocks matched between the two, 1280 and 390 px).
+      - name: Install playwright-core (driver only, the Chrome above)
+        run: npm install --no-save --no-audit --no-fund --prefix "$RUNNER_TEMP/pw" playwright-core@1.64.1
+
+      - name: Marketing hand-over (prerender to React) layout check
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+        run: |
+          if [ -z "${CHROME_PATH:-}" ]; then export CHROME_PATH="$(command -v google-chrome || command -v chromium)"; fi
+          node e2e/marketingHandover.e2e.cjs --dist=dist
+
       # Render builds with the real VITE_* values baked into the entry chunk; this job's
       # build above has none. 3.0.0 passed here at 234.9 KB but failed every Render
       # deploy at 235.1-235.3 KB, so production kept an old backend for 15 merges.

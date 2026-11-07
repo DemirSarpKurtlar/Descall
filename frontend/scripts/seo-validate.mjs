@@ -24,6 +24,7 @@ function warn(msg) {
   warnings.push(msg);
 }
 
+const { checkStructuredData } = await import(pathToFileURL(path.join(__dirname, "seoStructuredData.mjs")).href);
 const seoConfig = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
@@ -55,6 +56,8 @@ const robotsTxt = fs.readFileSync(path.join(root, "public/robots.txt"), "utf8");
 }
 const {
   SITEMAP_TABLES,
+  SITEMAP_LANG_TABLES,
+  sitemapLangForPath,
   allSitemapEntries,
 } = await import(pathToFileURL(path.join(root, "src/site/sitemapCatalog.js")).href);
 
@@ -269,10 +272,37 @@ if (checkDist) {
     if (!indexXml.includes("<sitemapindex")) {
       fail("dist/sitemap.xml must be a sitemapindex of child tables");
     }
-    for (const table of SITEMAP_TABLES) {
-      if (!indexXml.includes(`https://descall.com/${table.file}`)) {
-        fail(`dist/sitemap.xml missing child ${table.file}`);
+    // The not-found page: noindex, no canonical, not in a sitemap.
+    const notFoundFile = path.join(dist, "404.html");
+    if (!fs.existsSync(notFoundFile)) fail("Missing dist/404.html");
+    else {
+      const nf = fs.readFileSync(notFoundFile, "utf8");
+      if (!/<meta name="robots" content="noindex/.test(nf)) fail("dist/404.html must be noindex");
+      if (/rel="canonical"/.test(nf)) fail("dist/404.html must not carry a canonical");
+    }
+    // One child sitemap per site language, every page in exactly one of them.
+    const seenInLang = new Map();
+    for (const table of SITEMAP_LANG_TABLES) {
+      if (!indexXml.includes(`https://descall.com/${table.file}`)) fail(`dist/sitemap.xml missing child ${table.file}`);
+      const file = path.join(dist, table.file);
+      if (!fs.existsSync(file)) {
+        fail(`Missing dist/${table.file}`);
+        continue;
       }
+      for (const m of fs.readFileSync(file, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)) {
+        if (m[1].includes("/brand/")) continue;
+        if (seenInLang.has(m[1])) fail(`${m[1]} is in ${seenInLang.get(m[1])} and ${table.file}`);
+        seenInLang.set(m[1], table.file);
+      }
+    }
+    for (const route of PUBLIC_ROUTES) {
+      if (route.noindex) continue;
+      const loc = route.path === "/" ? "https://descall.com/" : `https://descall.com${route.path}`;
+      const want = `sitemap-${sitemapLangForPath(route.path).toLowerCase()}.xml`;
+      if (seenInLang.get(loc) !== want) fail(`${loc} should be in ${want} (found ${seenInLang.get(loc) || "none"})`);
+    }
+    for (const table of SITEMAP_TABLES) {
+      if (indexXml.includes(`https://descall.com/${table.file}`)) fail(`dist/sitemap.xml still lists the topic table ${table.file}`);
     }
 
     const humanSitemap = fs.readFileSync(path.join(dist, "sitemap.html"), "utf8");
@@ -308,7 +338,12 @@ if (checkDist) {
       if (!html.includes("<title>")) fail(`No <title> in ${rel}`);
       if (!html.includes('rel="canonical"')) fail(`No canonical in ${rel}`);
       if (!html.includes("<h1")) fail(`No <h1> crawl content in ${rel}`);
-      if (/\bLoading\b/i.test(html)) fail(`Loading placeholder found in ${rel}`);
+      // Visible text only: loading="lazy" on an image is not a placeholder.
+      const visibleText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+        .replace(/<[^>]+>/g, " ");
+      if (/\bLoading\b/i.test(visibleText)) fail(`Loading placeholder found in ${rel}`);
       const mainMatch = html.match(/<main[\s\S]*?<\/main>/i);
       if (!mainMatch || mainMatch[0].length < 400) {
         fail(`Thin crawl <main> in ${rel} (${mainMatch ? mainMatch[0].length : 0} chars)`);
@@ -341,9 +376,19 @@ if (checkDist) {
       if (page === "/" && !html.includes("Demir Sarp Kurtlar")) {
         fail(`Homepage shell missing owner name ${rel}`);
       }
+      // Structured data rules (scripts/seoStructuredData.mjs): entity graph, platforms,
+      // no ratings, breadcrumbs, BlogPosting, FAQPage only with visible questions.
+      const pageLang = html.match(/<html lang="([^"]+)"/)?.[1] || "en";
+      const pageHome = pageLang === "en" ? "/" : `/${pageLang.toLowerCase()}`;
       const articlePath = route.enPath || route.path;
-      if (articlePath.startsWith("/blog/") && !html.includes('"@type":"Article"') && !html.includes('"@type": "Article"')) {
-        warn(`Article JSON-LD missing in ${rel}`);
+      for (const problem of checkStructuredData(html, {
+        path: route.path,
+        canonical: route.path === "/" ? "https://descall.com/" : `https://descall.com${route.path}`,
+        lang: pageLang,
+        home: pageHome,
+        isBlogPost: articlePath.startsWith("/blog/") || route.path.startsWith("/tr/blog/"),
+      })) {
+        fail(`${rel}: ${problem}`);
       }
       if (/rel="canonical"[^>]*http:\/\//i.test(html)) fail(`HTTP canonical in ${rel}`);
       if (/rel="canonical"[^>]*(onrender\.com|vercel\.app|localhost)/i.test(html)) {

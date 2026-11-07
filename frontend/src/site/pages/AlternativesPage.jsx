@@ -135,6 +135,7 @@ export default function AlternativesPage() {
           { to: "/apps-like-discord", label: "Apps like Discord" },
           { to: "/discord-replacement", label: "Discord replacement" },
           { to: "/tr/discord-alternatifi", label: "Discord alternatifi (TR)" },
+          { to: "/tr/discord-acildi-mi", label: "Discord in Türkiye: dated reports (Turkish)" },
           { to: "/download", label: "Download" },
         ]}
       />

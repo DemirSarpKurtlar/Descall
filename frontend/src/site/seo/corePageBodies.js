@@ -2,13 +2,10 @@
  * Rich crawlable HTML bodies for core marketing pages (used by prerender-seo.mjs).
  * Keep in sync with React pages, this is the bot-visible body, not a thin meta stub.
  */
-import { FAQ_ITEMS } from "../faqData.js";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent.js";
-import { LEGAL_EMAIL, contactCopy, legalSlug, tocLabel } from "../../legal/legalView.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
-import { APP_STORE_URL } from "../appStoreLink.js";
-import { formatDate } from "../../i18n/format.js";
+import { downloadTwin, faqTwin, featuresTwin, legalTwin, statusTwin, twinIcon } from "./pageTwins.js";
 import {
   ALTERNATIVE_HUB_FAQ,
   ALTERNATIVES_FAQ,
@@ -45,11 +42,6 @@ function escapeHtml(s) {
 /** Escaped text with {name} placeholders replaced by ready HTML. */
 function fill(text, html = {}) {
   return escapeHtml(text).replace(/\{(\w+)\}/g, (m, key) => (html[key] != null ? html[key] : m));
-}
-
-/** "2026-11-06" as a long date in the page language (Intl, UTC). */
-function longDate(iso, loc) {
-  return formatDate(`${iso}T12:00:00Z`, siteLoc(loc), { dateStyle: "long", timeZone: "UTC" }) || iso;
 }
 
 function brandBlock(loc = "en") {
@@ -91,37 +83,16 @@ function faqHtml(items, loc = "en") {
     .join("\n")}`;
 }
 
-function legalHtml(content, loc = "en", type = "privacy") {
-  const locale = siteLoc(loc);
-  const data = content[locale] || content.en;
-  const contact = contactCopy(type, locale);
-  const toc = (data.sections || [])
-    .map((section, index) => {
-      const id = legalSlug(section.heading, index);
-      return `<li><a href="#${id}">${escapeHtml(section.heading)}</a></li>`;
-    })
-    .join("");
-  const sections = (data.sections || [])
-    .map((section, index) => {
-      const id = legalSlug(section.heading, index);
-      return `<h2 id="${id}">${escapeHtml(section.heading)}</h2>${(section.paragraphs || [])
-        .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
-        .join("\n")}`;
-    })
-    .join("\n");
+/**
+ * Page twin (seo/pageTwins.js) inside the shell <main>: the brand line is stripped by the
+ * prerender (the header replaces it), the site footer follows the twin.
+ */
+function twinMain(kind, html, loc) {
   return `
-<main>
-  ${brandBlock(locale)}
-  <article>
-    <h1>${escapeHtml(data.title)}</h1>
-    <p><strong>${escapeHtml(data.updated)}</strong></p>
-    <p>${escapeHtml(data.intro)}</p>
-    <nav aria-label="${escapeHtml(tocLabel(locale))}"><ol>${toc}</ol></nav>
-    ${sections}
-    <h2>${escapeHtml(contact.heading)}</h2>
-    <p>${escapeHtml(contact.before)} <a href="mailto:${LEGAL_EMAIL}">${LEGAL_EMAIL}</a>${escapeHtml(contact.after)}</p>
-  </article>
-  ${navBlock(locale)}
+<main class="seo-twin seo-twin-${kind}">
+  ${brandBlock(loc)}
+  ${html}
+  ${navBlock(loc)}
 </main>`;
 }
 
@@ -187,10 +158,10 @@ export function corePageBody(path) {
     <div class="seo-hh-copy">
       <h1>${escapeHtml(copy.h1)}</h1>
       <p class="seo-hh-lead"><span class="seo-hh-lead-long">${escapeHtml(copy.lead)}</span><span class="seo-hh-lead-short">${escapeHtml(tc("Voice chat, screen sharing, and servers."))}</span></p>
-      <p class="seo-hh-cta"><a class="seo-hh-btn is-primary" href="${homeHref(loc)}?auth=register" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(n.startFree)}</a><a class="seo-hh-btn is-secondary" href="${h("/download")}">${escapeHtml(tc("Download the desktop app"))}</a></p>
-      <ul class="seo-hh-platforms"><li>iPhone</li><li>Android</li><li>Windows</li><li>Web</li></ul>
+      <p class="seo-hh-cta"><a class="seo-hh-btn is-primary" href="${homeHref(loc)}?auth=register" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(n.startFree)}</a><a class="seo-hh-btn is-secondary" href="${h("/download")}">${twinIcon("Windows", 18)}${escapeHtml(tc("Download the desktop app"))}</a></p>
+      <ul class="seo-hh-platforms"><li>${twinIcon("Apple", 16)}iPhone</li><li>${twinIcon("Android", 16)}Android</li><li>${twinIcon("Windows", 16)}Windows</li><li>${twinIcon("Browser", 16)}Web</li></ul>
     </div>
-    <figure class="seo-pf"><div class="seo-pf-glass"><picture><source media="(max-width: 768px)" srcset="/brand/previews/hero-ios-chats.webp" width="780" height="1688" /><img class="seo-pf-screen" src="/brand/previews/hero-desktop-dm.webp" width="1440" height="900" alt="${escapeHtml(tc("Descall chat, with servers and a voice channel in the same window"))}" fetchpriority="high" decoding="async" /></picture></div></figure>
+    <figure class="seo-pf"><div class="seo-pf-glass"><picture><source media="(max-width: 768px)" srcset="/brand/previews/hero-ios-chats-480.webp 480w, /brand/previews/hero-ios-chats.webp 780w" sizes="min(220px, 60vw)" width="780" height="1688" /><img class="seo-pf-screen" src="/brand/previews/hero-desktop-dm.webp" width="1440" height="900" alt="${escapeHtml(tc("Descall chat, with servers and a voice channel in the same window"))}" fetchpriority="high" decoding="async" /></picture></div></figure>
   </section>
   <h2>${escapeHtml(copy.voiceTitle)}</h2>
   <p>${escapeHtml(copy.voiceBody)}</p>
@@ -204,72 +175,13 @@ export function corePageBody(path) {
     }
 
     case "/features":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("Descall Features, Free Voice, Screen Share & Servers"))}</h1>
-  <p>${escapeHtml(tc("See what’s included for free: HD voice/video, screen share, Discord-style servers, roles, and templates."))}</p>
-  <h2>${escapeHtml(tc("Servers & community tools"))}</h2>
-  <ul>
-    <li>${escapeHtml(tc("Full server structure with categories, text, voice, and stage channels"))}</li>
-    <li>${escapeHtml(tc("Role hierarchy with hoist/mention and per-channel permission overrides"))}</li>
-    <li>${escapeHtml(tc("Kick, ban, timeout, audit logs, community rules, and invite links"))}</li>
-    <li>${escapeHtml(tc("Advanced templates with ready-made roles and staff rooms"))}</li>
-  </ul>
-  <h2>${escapeHtml(tc("Chat, calls & screen share"))}</h2>
-  <ul>
-    <li>${escapeHtml(tc("Real-time DMs and server chat with typing indicators"))}</li>
-    <li>${escapeHtml(tc("WebRTC voice and HD video for groups and server lobbies"))}</li>
-    <li>${escapeHtml(tc("Screen share with quality presets for games, VODs, and watch parties"))}</li>
-  </ul>
-  <h2>${escapeHtml(tc("Gaming extras"))}</h2>
-  <ul>
-    <li>${escapeHtml(tc("Gaming server templates with squad-up and scrim rooms"))}</li>
-    <li>${escapeHtml(tc("Optional DesCoin cosmetics, core chat and calls stay free"))}</li>
-  </ul>
-  <p><a href="${h("/download")}">${escapeHtml(n.download)}</a> · <a href="${h("/compare/discord")}">${escapeHtml(tc("Descall vs Discord"))}</a></p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("features", featuresTwin(loc, path), loc);
 
-    case "/faq": {
-      const items = FAQ_ITEMS.map(
-        (f) =>
-          `<section><h2>${escapeHtml(tc(f.q))}</h2><p>${escapeHtml(tc(f.a))}</p></section>`
-      ).join("\n");
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("Frequently asked questions about Descall"))}</h1>
-  <p>${escapeHtml(tc("Answers about accounts, servers, desktop download, calls, screen share, and privacy."))}</p>
-  ${items}
-  <p><a href="${h("/contact")}">${escapeHtml(tc("Contact support"))}</a> · <a href="${h("/download")}">${escapeHtml(n.download)}</a></p>
-  ${navBlock(loc)}
-</main>`;
-    }
+    case "/faq":
+      return twinMain("faq", faqTwin(loc, path), loc);
 
     case "/download":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(tc("Download Descall for Windows, iPhone, Android and the web"))}</h1>
-  <p>${escapeHtml(tc("Get the Windows desktop app, Android builds, or the full web app in your browser."))}</p>
-  <h2>${escapeHtml(tc("Platforms"))}</h2>
-  <ul>
-    <li>${escapeHtml(tc("Windows installer for the native desktop client"))}</li>
-    <li><a href="${APP_STORE_URL}">${escapeHtml(tc("iPhone and iPad app on the App Store"))}</a></li>
-    <li>${escapeHtml(tc("Android APK builds for mobile"))}</li>
-    <li>${escapeHtml(tc("Full-featured web app at descall.com, no install required"))}</li>
-  </ul>
-  <h2>${escapeHtml(tc("What you get"))}</h2>
-  <ul>
-    <li>${escapeHtml(tc("Servers, roles, channels, and moderation tools"))}</li>
-    <li>${escapeHtml(tc("Chat, voice, video, and screen share"))}</li>
-    <li>${escapeHtml(tc("Friend presence and activity"))}</li>
-  </ul>
-  <p>${nc("Descall is currently in <strong>Beta</strong>.")} ${escapeHtml(tc("Chat, voice, video, and screen share"))}.</p>
-  <p><a href="${h("/features")}">${escapeHtml(tc("See features"))}</a> · <a href="${h("/faq")}">${escapeHtml(n.faq)}</a></p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("download", downloadTwin(loc, path), loc);
 
     case "/about":
       return `
@@ -358,23 +270,7 @@ export function corePageBody(path) {
 </main>`;
 
     case "/status":
-      return `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(nc("Descall service status"))}</h1>
-  <p>${escapeHtml(nc(SITE_OPERATOR.statusNote))}</p>
-  <ul>
-    <li>${escapeHtml(nc("Product stage"))}: Beta</li>
-    <li>${escapeHtml(nc("Transport security"))}: TLS / DTLS-SRTP</li>
-    <li>${escapeHtml(nc("Operator"))}: ${escapeHtml(SITE_OPERATOR.operatorName)} · ${escapeHtml(SITE_OPERATOR.country)}</li>
-    <li>${escapeHtml(nc("Support"))}: ${mail}</li>
-    <li>${escapeHtml(nc("API health"))}: <a href="https://descall.com/api/status">/api/status</a></li>
-    <li>${escapeHtml(nc("Source"))}: <a href="${SITE_OPERATOR.githubUrl}">GitHub</a></li>
-  </ul>
-  <p>${escapeHtml(nc("The API row is checked live from your browser each time you open this page."))}</p>
-  <p>${escapeHtml(nc("Last updated"))}: <time datetime="${SITE_OPERATOR.statusReviewedIso}">${escapeHtml(longDate(SITE_OPERATOR.statusReviewedIso, loc))}</time></p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("status", statusTwin(loc, path), loc);
 
     case "/contact":
       return isTr
@@ -406,13 +302,13 @@ export function corePageBody(path) {
 </main>`;
 
     case "/privacy":
-      return legalHtml(PRIVACY_CONTENT, loc, "privacy");
+      return twinMain("legal", legalTwin(PRIVACY_CONTENT, siteLoc(loc), "privacy"), loc);
 
     case "/terms":
-      return legalHtml(TERMS_CONTENT, loc, "terms");
+      return twinMain("legal", legalTwin(TERMS_CONTENT, siteLoc(loc), "terms"), loc);
 
     case "/copyright":
-      return legalHtml(COPYRIGHT_CONTENT, loc, "copyright");
+      return twinMain("legal", legalTwin(COPYRIGHT_CONTENT, siteLoc(loc), "copyright"), loc);
 
     case "/discord-alternative": return `\n<main> ${brandBlock(loc)} <h1>${escapeHtml(nc("The best free Discord alternative for friends & gamers"))}</h1> <p>${escapeHtml(nc("A free Discord alternative with real servers, HD voice/video, and screen share. Core chat and calls stay free, no Nitro paywall."))}</p> ${ctaRow("/compare/discord", escapeHtml(nc("Discord vs Descall")), ctaLoc)} <h2>${escapeHtml(nc("What you get"))}</h2> <ul> <li>${escapeHtml(nc("Discord-style servers with roles, channels, and templates"))}</li> <li>${escapeHtml(nc("Free real-time chat, group voice/video, and screen share"))}</li> <li>${escapeHtml(nc("Gaming server templates without bot hell"))}</li> <li>${escapeHtml(nc("Windows, Android, and full web app"))}</li> </ul> <p><a href="${hn("/alternatives")}">${escapeHtml(nc("Compare Discord alternatives"))}</a> · <a href="/tr/discord-alternatifi">Türkçe</a> · <a href="${hn("/download")}">${escapeHtml(nc("Download"))}</a></p>
   ${faqHtml(ALTERNATIVE_HUB_FAQ, loc)}

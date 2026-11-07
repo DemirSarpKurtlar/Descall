@@ -44,6 +44,12 @@ export const SITE_MIRROR_PATHS = [
 export const SITE_PAGE_GROUPS = Object.freeze({
   blog: [
     "/blog",
+    "/blog/screen-share-with-friends",
+    "/blog/online-study-group-voice-chat",
+    "/blog/better-mic-sound-voice-chat",
+    "/blog/set-up-a-community-server",
+    "/blog/private-group-chat-guide",
+    "/blog/descall-on-every-device",
     "/blog/best-discord-alternatives-2026",
     "/blog/discord-competitors",
     "/blog/leave-nitro-keep-voice-chat",

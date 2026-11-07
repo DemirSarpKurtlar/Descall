@@ -258,7 +258,7 @@ text.registerSiteCatalog("de", {
     "Start free": "Kostenlos starten (site)",
     "Descall: voice chat, servers and screen sharing for friends": "Gemeinsam reden",
     "Optional analytics only. Essentials stay on.": "Nur optionale Analyse.",
-    "Descall Features, Free Voice, Screen Share & Servers": "Descall Funktionen",
+    "Features of a modern Discord alternative": "Descall Funktionen",
     "{name} is the founder, owner, and CEO of Descall.": "{name} hat Descall gegründet.",
     "Why people look for a Discord alternative": "Warum eine Discord-Alternative",
   },
@@ -312,8 +312,8 @@ assert.match(pageExtrasHtml("/de/discord-alternative"), /<h2>Warum eine Discord-
 assert.match(pageExtrasHtml("/de/discord-alternative"), /href="\/de\/compare\/discord"/);
 if (!sl.isPageGroupLive("niche", "de")) assert.equal(pageExtrasHtml("/de/apps-like-discord"), "", "staged: not a mirror yet");
 // English and Turkish bodies do not change with a catalog registered.
-assert.match(corePageBody("/features"), /<h1>Descall Features, Free Voice, Screen Share &amp; Servers<\/h1>/);
-assert.match(corePageBody("/tr/features"), /Descall Özellikleri/);
+assert.match(corePageBody("/features"), /<h1>Features of a modern Discord alternative<\/h1>/);
+assert.match(corePageBody("/tr/features"), /<h1>Modern bir Discord alternatifinin özellikleri<\/h1>/);
 
 // Routes and the prerendered shell of a prefixed locale.
 const deRoutes = seo.localeMirrorRoutes("de");
@@ -361,7 +361,7 @@ try {
   assert.match(postShell, /<h2>Was es braucht<\/h2>/);
   assert.match(postShell, /Veroeffentlicht: <time datetime="2026-08-11">11\. August 2026<\/time>/, "dates are written with Intl in the page language");
   const ld = [...postShell.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
-  const article = ld.find((g) => g["@type"] === "Article");
+  const article = ld.find((g) => g["@type"] === "BlogPosting");
   assert.equal(article.inLanguage, "de");
   assert.equal(article.headline, "Discord-Konkurrenten 2026");
   assert.equal(article.mainEntityOfPage, "https://descall.com/de/blog/discord-competitors");

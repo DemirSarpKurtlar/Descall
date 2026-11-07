@@ -4,6 +4,7 @@ import SeoRelatedLinks from "../components/SeoRelatedLinks";
 import { buildArticleLd, buildBreadcrumbLd, buildFaqLd } from "../JsonLd";
 import { BLOG_POSTS, BLOG_RELATED, BLOG_FAQ_BY_SLUG, GAMER_FAQ } from "../content/discordSeoContent";
 import { BLOG_BODIES } from "../seo/blogBodies";
+import { relatedForPost } from "../seo/blogLinks.js";
 import { useT } from "../../context/localeContextInstance";
 import { formatPostDate, useMirrorCopy } from "../useMirrorCopy";
 import { SITE_OPERATOR } from "../siteIdentity";
@@ -22,11 +23,8 @@ export default function BlogPostPage({ onSignIn }) {
 
   const faq = BLOG_FAQ_BY_SLUG[slug] || GAMER_FAQ.slice(0, 2);
   const dateLocale = mirror.prefixed ? mirror.locale : "en";
-  // The other posts first, then the guides (same list as the prerendered post).
-  const related = [
-    ...BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => ({ to: p.path, label: p.title })),
-    ...BLOG_RELATED.filter((l) => l.to !== "/status"),
-  ];
+  // The closest posts, then two guides (same list as the prerendered post).
+  const related = relatedForPost(post, BLOG_POSTS, BLOG_RELATED.filter((l) => l.to !== "/status"));
   const crumbs = [
     { label: "Home", to: "/" },
     { label: "Blog", to: "/blog" },
@@ -44,6 +42,7 @@ export default function BlogPostPage({ onSignIn }) {
         buildBreadcrumbLd(mirror.crumbs(crumbs)),
         buildFaqLd(mirror.faq(faq)),
         buildArticleLd({
+          type: "BlogPosting",
           title: mirror.text(post.title),
           description: mirror.text(post.description),
           path: mirror.href(post.path),

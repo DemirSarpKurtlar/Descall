@@ -19,11 +19,14 @@ const SITE = "https://descall.com";
 const { ogImageFor } = await import(pathToFileURL(path.join(root, "src/site/ogImages.js")).href);
 const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
-const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG } = await import(
+const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG, GAMER_FAQ } = await import(
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
 );
+const { PREVIEW_SIZES, previewSrcset } = await import(pathToFileURL(path.join(root, "src/site/seo/featureGroups.js")).href);
+const { TR_BLOG_RELATED, relatedForPost } = await import(pathToFileURL(path.join(root, "src/site/seo/blogLinks.js")).href);
 const { BLOG_BODIES } = await import(pathToFileURL(path.join(root, "src/site/seo/blogBodies.js")).href);
 const { corePageBody } = await import(pathToFileURL(path.join(root, "src/site/seo/corePageBodies.js")).href);
+const { pageT } = await import(pathToFileURL(path.join(root, "src/site/seo/pageTwins.js")).href);
 const { pageExtrasHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/pageExtras.js")).href);
 const { mergedGuideHtml } = await import(pathToFileURL(path.join(root, "src/site/seo/mergedGuides.js")).href);
 const { TR_LANDINGS, trLandingLabel } = await import(pathToFileURL(path.join(root, "src/site/seo/trLandings.js")).href);
@@ -54,6 +57,7 @@ const { hreflangAlternates } = await import(
 const { ogLocaleTag, isPrefixedLocale, withLocalePrefix } = await import(
   pathToFileURL(path.join(root, "src/site/siteLocales.js")).href
 );
+const { SITE_OPERATOR } = await import(pathToFileURL(path.join(root, "src/site/siteIdentity.js")).href);
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { formatDate } = await import(pathToFileURL(path.join(root, "src/i18n/format.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
@@ -101,21 +105,39 @@ const ICON_MENU =
  * when React takes over. Works without JavaScript: the buttons are real links, the
  * menu button jumps to the footer navigation.
  */
-function seoTopHtml(loc = "en") {
+/** MarketingLayout NAV (+ NAV_TR_EXTRA on Turkish pages). */
+const TOP_NAV = [
+  { to: "/features", label: "Features" },
+  { to: "/download", label: "Download" },
+  { to: "/faq", label: "FAQ" },
+];
+const TOP_NAV_TR_EXTRA = [
+  { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
+  { to: "/tr/blog", label: "Blog" },
+];
+
+function seoTopHtml(loc = "en", path = "/") {
   const l = loc;
-  const n = navLabels(l);
-  const h = (path) => prefixHref(path, l);
+  const t = pageT(l);
+  const h = (p) => prefixHref(p, l);
   const code = (l === "pt-BR" ? "pt" : l).split("-")[0].toUpperCase();
-  const signIn = trCopy("Sign In", l);
+  const items = l === "tr" ? [...TOP_NAV, ...TOP_NAV_TR_EXTRA] : TOP_NAV;
+  const nav = items
+    .map((item) => {
+      const to = h(item.to);
+      const active = to === path || item.to === path;
+      return `<a href="${to}"${active ? ' class="is-active" aria-current="page"' : ""}>${escapeHtml(t(item.label))}</a>`;
+    })
+    .join("");
   return `<header class="seo-top">
-  <a class="seo-top-brand" href="${homeHref(l)}"><img src="/brand/descall-lockup.svg" alt="Descall" width="123" height="28" decoding="async" /><span class="seo-top-beta">Beta</span></a>
-  <nav class="seo-top-nav" aria-label="${trCopy("Primary navigation", l)}"><a href="${h("/features")}">${n.features}</a><a href="${h("/download")}">${n.download}</a><a href="${h("/faq")}">${n.faq}</a></nav>
+  <a class="seo-top-brand" href="${homeHref(l)}"><img src="/brand/descall-lockup.svg" alt="Descall" width="123" height="28" decoding="async" /><span class="seo-top-beta">${escapeHtml(t("Beta"))}</span></a>
+  <nav class="seo-top-nav" aria-label="${escapeHtml(t("Primary navigation"))}">${nav}</nav>
   <div class="seo-top-actions">
-    <span class="seo-top-lang" aria-hidden="true">${code}</span>
-    <a class="seo-top-btn" href="${authHref(l, "login")}" rel="nofollow" data-hydrate data-auth="login">${signIn}</a>
-    <a class="seo-top-btn is-primary" href="${authHref(l, "register")}" rel="nofollow" data-hydrate data-auth="register">${n.startFree}</a>
-    <a class="seo-top-icon seo-top-dl" href="${h("/download")}" aria-label="${n.download}" title="${n.download}">${ICON_DOWNLOAD}</a>
-    <a class="seo-top-icon seo-top-menu" href="#seo-site-nav" aria-label="${trCopy("Open menu", l)}">${ICON_MENU}</a>
+    <span class="seo-top-lang" aria-hidden="true"><span>${code}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <a class="seo-top-btn" href="${authHref(l, "login")}" rel="nofollow" data-hydrate data-auth="login">${escapeHtml(t("Sign In"))}</a>
+    <a class="seo-top-btn is-primary" href="${authHref(l, "register")}" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(t("Start free"))}</a>
+    <a class="seo-top-icon seo-top-dl" href="${h("/download")}" aria-label="${escapeHtml(t("Download"))}" title="${escapeHtml(t("Download"))}">${ICON_DOWNLOAD}</a>
+    <a class="seo-top-icon seo-top-menu" href="#seo-site-nav" aria-label="${escapeHtml(t("Open menu"))}">${ICON_MENU}</a>
   </div>
 </header>`;
 }
@@ -128,40 +150,79 @@ const PREVIEW_SHOTS = {
   friends: "/brand/previews/11-friends.webp",
 };
 
-/** Same mapping as DiscordAlternativeNichePage previewForPath. */
+/** Same mapping as DiscordAlternativeNichePage previewForPath: hero tone and shot. */
 function nichePreview(path) {
-  if (path.includes("communities")) return "servers";
-  if (path.includes("voice")) return "call";
-  return "chat";
+  if (path.includes("gamers")) return { tone: "gaming", mode: "friends" };
+  if (path.includes("communities")) return { tone: "community", mode: "servers" };
+  if (path.includes("voice")) return { tone: "voice", mode: "call" };
+  if (path.includes("friends")) return { tone: "friends", mode: "chat" };
+  return { tone: "compare", mode: "chat" };
 }
 
 /** Same mapping as TrLandingPage previewForPath. */
 function trPreview(path) {
-  if (path.includes("oyuncu")) return "friends";
-  if (path.includes("sesli")) return "call";
-  if (path.includes("turk")) return "servers";
-  return "chat";
+  if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
+  if (path.includes("sesli")) return { tone: "voice", mode: "call" };
+  if (path.includes("turk")) return { tone: "community", mode: "servers" };
+  return { tone: "compare", mode: "chat" };
+}
+
+const CRUMB_CHEVRON =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK_16 =
+  '<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>';
+
+/** SeoLandingShell .seo-checklist (check icon + text). */
+function checklistHtml(items) {
+  return `<ul class="seo-lcheck">${items.map((li) => `<li>${CHECK_16}<span>${escapeHtml(li)}</span></li>`).join("")}</ul>`;
+}
+
+/**
+ * A blog post, twin of BlogPostPage / TrBlogPostPage (SeoLandingShell without a shot):
+ * breadcrumbs, title, lead, two buttons, then the date line, sections, related guides and
+ * the way back, then the FAQ (the questions of the post's FAQPage JSON-LD).
+ */
+function blogPostHtml({ hero, meta, sections, relatedTitle, related, backHref, backLabel, faqTitle, faq, after = "" }) {
+  return `
+<main class="seo-main-landing">
+  <article class="seo-landing">
+  ${landingHeroHtml(hero)}
+  <div class="seo-lbody">
+    ${meta}
+    ${sections.map((s) => `<section class="seo-lsec"><h2>${escapeHtml(s.h)}</h2><p>${escapeHtml(s.p)}</p></section>`).join("\n    ")}
+    <nav class="seo-lrelated" aria-label="${escapeHtml(relatedTitle)}"><h2>${escapeHtml(relatedTitle)}</h2><ul>${related
+      .map((l) => `<li><a href="${escapeHtml(l.to)}">${escapeHtml(l.label)}</a></li>`)
+      .join("")}</ul></nav>
+    <section class="seo-lsec"><p class="seo-note"><a href="${backHref}">${escapeHtml(backLabel)}</a></p></section>
+  </div>
+  ${faq.length ? `<section class="seo-lfaq"><h2>${escapeHtml(faqTitle)}</h2>${faq.map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`).join("\n")}</section>` : ""}
+  ${after}
+  </article>
+</main>`;
 }
 
 /**
  * Hero of a landing page, twin of SeoLandingShell (breadcrumbs, title, lead, Start free +
- * Download, product shot): same boxes as the React page, see index.html .seo-lhero.
+ * Download, tilted product shot with its caption): the same grid and boxes as the React
+ * page, see index.html .seo-lhero.
  */
-function landingHeroHtml({ loc, crumbs, h1, lead, shot, alt }) {
-  const n = navLabels(loc);
+function landingHeroHtml({ loc, crumbs, h1, lead, shot, alt, tone = "compare", startLabel, downloadLabel, secondary = null }) {
+  const t = pageT(loc);
   const trail = crumbs
-    .map(([href, label]) => (href ? `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>` : `<span aria-current="page">${escapeHtml(label)}</span>`))
-    .join(" › ");
+    .map(([href, label], i) => `<li>${i > 0 ? CRUMB_CHEVRON : ""}<a href="${escapeHtml(href)}">${escapeHtml(label)}</a></li>`)
+    .join("");
   const img = shot
-    ? `<figure class="seo-lhero-shot"><img src="${shot}" width="1440" height="900" alt="${escapeHtml(alt)}" fetchpriority="high" decoding="async" /></figure>`
+    ? `<figure class="seo-lhero-shot"><div class="seo-lhero-wrap"><div class="seo-lhero-halo" aria-hidden="true"></div><div class="seo-lhero-dev"><div class="seo-lhero-scr"><img src="${shot}" srcset="${previewSrcset(shot)}" sizes="${PREVIEW_SIZES}" width="1440" height="900" alt="${escapeHtml(alt)}" fetchpriority="high" decoding="async" /></div></div></div><figcaption>${escapeHtml(alt)}</figcaption></figure>`
     : "";
-  return `<header class="seo-lhero${shot ? "" : " is-single"}">
-    <nav class="seo-crumbs" aria-label="Breadcrumb">${trail}</nav>
-    <div class="seo-lhero-copy">
-      <h1>${escapeHtml(h1)}</h1>
-      <p class="seo-lhero-lead">${escapeHtml(lead)}</p>
-      <p class="seo-cta-row"><a class="seo-cta-primary" href="${authHref(loc, "register")}" rel="nofollow" data-hydrate data-auth="register">${n.startFree}</a><a class="seo-cta-soft" href="${prefixHref("/download", loc)}">${n.download}</a></p>
-    </div>
+  return `<header class="seo-lhero ${shot ? `seo-tone-${tone}` : "is-single"}">
+    <nav class="seo-crumbs" aria-label="Breadcrumb"><ol>${trail}</ol></nav>
+    <h1>${escapeHtml(h1)}</h1>
+    <p class="seo-lhero-lead">${escapeHtml(lead)}</p>
+    <p class="seo-lhero-cta"><a class="seo-lbtn is-primary" href="${authHref(loc, "register")}" rel="nofollow" data-hydrate data-auth="register">${escapeHtml(startLabel || t("Start free"))}</a>${
+      secondary
+        ? `<a class="seo-lbtn is-ghost" href="${escapeHtml(secondary.href)}">${escapeHtml(secondary.label)}</a>`
+        : `<a class="seo-lbtn is-soft" href="${prefixHref("/download", loc)}">${escapeHtml(downloadLabel || t("Download"))}</a>`
+    }</p>
     ${img}
   </header>`;
 }
@@ -208,10 +269,91 @@ function stripNativeSplashCss(html) {
   return html.replace(/[ \t]*\/\* @native-splash-start[\s\S]*?\/\* @native-splash-end \*\/\n?/, "");
 }
 
+/**
+ * Page-twin CSS (index.html, "@twin-<kind>-start" ... "@twin-<kind>-end" blocks) is kept
+ * only on the page that renders that twin (<main class="seo-twin seo-twin-<kind>">); the
+ * shared "base" block stays on every twin page. Other pages shed all of it.
+ */
+export function stripTwinCss(html, kind) {
+  return html.replace(/[ \t]*\/\* @twin-([a-z]+)-start[\s\S]*?\/\* @twin-\1-end \*\/\n?/g, (block, name) =>
+    kind && (name === kind || name === "base") ? block : ""
+  );
+}
+
+/**
+ * <link rel="preload"> for the first-viewport product shot of a page (the img with
+ * fetchpriority="high" and a srcset): the browser starts it with the HTML head instead of
+ * after parsing ~60 KB of body, and picks the same candidate (imagesrcset / imagesizes).
+ * The home hero is a <picture> with a phone and a desktop source and is left alone.
+ */
+export function lcpImagePreload(body) {
+  const m = body.match(/<img src="([^"]+)" srcset="([^"]+)" sizes="([^"]+)"[^>]*fetchpriority="high"/);
+  if (m) return `<link rel="preload" as="image" href="${m[1]}" imagesrcset="${m[2]}" imagesizes="${m[3]}" fetchpriority="high" />`;
+  // Home hero: <picture> with one phone source (max-width query) and the desktop img.
+  const pic = body.match(/<picture><source media="\(max-width: (\d+)px\)" srcset="([^"]+)" sizes="([^"]+)"[^>]*><img [^>]*src="([^"]+)"[^>]*fetchpriority="high"/);
+  if (!pic) return "";
+  const [, max, phoneSet, phoneSizes, desktop] = pic;
+  return [
+    `<link rel="preload" as="image" imagesrcset="${phoneSet}" imagesizes="${phoneSizes}" media="(max-width: ${max}px)" fetchpriority="high" />`,
+    `<link rel="preload" as="image" href="${desktop}" media="(min-width: ${Number(max) + 1}px)" fetchpriority="high" />`,
+  ].join("\n    ");
+}
+
+/**
+ * Inter in the shell head: the faces of src/site/fonts-inter.css (font-display: optional)
+ * with the hashed files Vite emitted, a metric-matched local fallback, and a preload of
+ * the weights the first viewport uses most. The React page renders with the same faces.
+ * Without it the shell painted in Segoe UI / Roboto and React in Inter, so text re-wrapped
+ * at the hand-over on Windows, Android and Linux (up to 30 px in the lab).
+ */
+export function interFontFaceCss(assetsDir = path.join(distDir, "assets")) {
+  let files = [];
+  try {
+    files = fs.readdirSync(assetsDir);
+  } catch {
+    return { style: "", preload: "" };
+  }
+  const src = fs.readFileSync(path.join(root, "src/site/fonts-inter.css"), "utf8");
+  const missing = [];
+  const css = src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/url\("[^"]*\/(inter-[a-z-]+-\d+-normal)\.woff2"\)/g, (m, name) => {
+      const hit = files.find((f) => f.startsWith(`${name}-`) && f.endsWith(".woff2"));
+      if (!hit) missing.push(name);
+      return `url("/assets/${hit}")`;
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+  if (missing.length) return { style: "", preload: "" };
+  // Metric-matched local fallback (Arial scaled to Inter), only drawn when a font file has
+  // not arrived within the 3 s block period. Latin only: Cyrillic and other scripts fall
+  // through to the system font, as on the React page.
+  const fallback =
+    '@font-face { font-family: "Inter Fallback"; src: local("Arial"), local("Helvetica"), local("Roboto"), local("Liberation Sans"); size-adjust: 107.4%; ascent-override: 90.2%; descent-override: 22.48%; line-gap-override: 0%; unicode-range: U+0000-02FF, U+1E00-1EFF, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215; }';
+  const links = (names) =>
+    names
+      .map((name) => files.find((f) => f.startsWith(`${name}-`) && f.endsWith(".woff2")))
+      .filter(Boolean)
+      .map((f) => `<link rel="preload" as="font" type="font/woff2" href="/assets/${f}" crossorigin />`)
+      .join("\n    ");
+  const preload = links(["inter-latin-400-normal", "inter-latin-700-normal"]);
+  // Turkish pages (lang tr) also preload the latin-ext files: ş, ğ, İ are in every header.
+  const preloadExt = links(["inter-latin-ext-400-normal", "inter-latin-ext-700-normal"]);
+  return { style: `<style id="shell-fonts">${css} ${fallback}</style>`, preload, preloadExt };
+}
+
+let shellFonts = { style: "", preload: "", preloadExt: "" };
+
+function twinKindOf(body) {
+  return body.match(/<main class="seo-twin seo-twin-([a-z]+)"/)?.[1] || null;
+}
+
 function crawlBody(route) {
   const body = crawlBodyInner(route);
   // Long-form extras, then the sections of a blog post merged into this page.
   const extra = pageExtrasHtml(route.path) + mergedGuideHtml(route.path, siteText);
+  // A page twin marks where the React page renders its extras (seo/pageTwins.js).
+  if (body.includes("<!--seo-extras-->")) return body.replace("<!--seo-extras-->", extra);
   if (!extra) return body;
   return body.includes('<footer class="seo-footer">')
     ? body.replace('<footer class="seo-footer">', `${extra}\n<footer class="seo-footer">`)
@@ -227,9 +369,9 @@ function crawlBodyInner(route) {
     const sections = trLanding.sections
       .map(
         (s) =>
-          `<h2>${escapeHtml(s.h)}</h2>\n${s.p.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n")}${
-            s.list?.length ? `\n<ul>${s.list.map((li) => `<li>${escapeHtml(li)}</li>`).join("")}</ul>` : ""
-          }`
+          `<section class="seo-lsec"><h2>${escapeHtml(s.h)}</h2>\n${s.p.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n")}${
+            s.list?.length ? `\n${checklistHtml(s.list)}` : ""
+          }</section>`
       )
       .join("\n");
     const faq = trLanding.faq
@@ -246,15 +388,20 @@ function crawlBodyInner(route) {
     loc: "tr",
     crumbs: [
       ["/tr", "Ana sayfa"],
-      [null, trLandingLabel(trLanding)],
+      [route.path, trLandingLabel(trLanding)],
     ],
     h1: trLanding.h1,
     lead: trLanding.lead,
-    shot: PREVIEW_SHOTS[trPreview(route.path)],
+    shot: PREVIEW_SHOTS[trPreview(route.path).mode],
+    tone: trPreview(route.path).tone,
     alt: trLanding.h1,
+    startLabel: "Ücretsiz başla",
+    downloadLabel: "İndir",
   })}
+  <div class="seo-lbody">
   ${trLanding.updatedLabel ? `<p class="seo-note"><time datetime="${trLanding.updated}">${escapeHtml(trLanding.updatedLabel)}</time></p>` : ""}
   ${sections}
+  </div>
   <h2>Sık sorulan sorular</h2>
   ${faq}
   <nav aria-label="İlgili sayfalar"><h2>İlgili sayfalar</h2><ul>${links}</ul></nav>
@@ -289,31 +436,30 @@ function crawlBodyInner(route) {
     const post = TR_BLOG_POSTS.find((p) => p.slug === slug);
     const body = TR_BLOG_BODIES[slug];
     if (post && body) {
-      const sections = body.sections
-        .map((s) => `<h2>${escapeHtml(s.h)}</h2><p>${escapeHtml(s.p)}</p>`)
-        .join("\n");
-      const faq = (TR_BLOG_FAQ_BY_SLUG[slug] || [])
-        .map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`)
-        .join("\n");
-      const morePosts = TR_BLOG_POSTS.filter((p) => p.slug !== slug)
-        .map((p) => `<li><a href="${escapeHtml(p.path)}">${escapeHtml(p.h1 || p.title)}</a></li>`)
-        .join("");
-      return `
-<main>
-  ${seoBrand()}
-  <nav aria-label="Breadcrumb"><a href="/tr">Ana sayfa</a> › <a href="/tr/blog">Blog</a></nav>
-  <article>
-    <h1>${escapeHtml(post.h1 || post.title)}</h1>
-    <p>${escapeHtml(post.description)}</p>
-    ${postMetaHtml(post, "tr", { published: "Yayın", updated: "Güncelleme", author: "Yazar" }, "/descall-sahibi")}
-    ${sections}
-    ${faq ? `<h2>Sık sorulan sorular</h2>${faq}` : ""}
-    <nav aria-label="İlgili yazılar"><h2>İlgili yazılar</h2><ul>${morePosts}<li><a href="/tr/discord-alternatifi">Discord alternatifi</a></li><li><a href="/tr/sesli-sohbet-uygulamasi">Sesli sohbet uygulaması</a></li></ul></nav>
-    <p><a href="/blog/${slug}">English version</a></p>
-    ${seoCtaRow("/tr/blog", "Tüm rehberler", true)}
-  </article>
-  ${seoSiteNav(true)}
-</main>`;
+      const title = post.h1 || post.title;
+      return blogPostHtml({
+        hero: {
+          loc: "tr",
+          crumbs: [
+            ["/tr", "Ana sayfa"],
+            ["/tr/blog", "Blog"],
+            [post.path, title],
+          ],
+          h1: title,
+          lead: post.description,
+          startLabel: "Descall’ı dene",
+          secondary: { href: "/tr/discord-alternatifi", label: "Discord alternatifi" },
+        },
+        meta: postMetaHtml(post, "tr", { published: "Yayın", updated: "Güncelleme", author: trCopy("Author", "tr") }, SITE_OPERATOR.personPathTr),
+        sections: body.sections,
+        relatedTitle: "İlgili rehberler",
+        related: relatedForPost(post, TR_BLOG_POSTS, TR_BLOG_RELATED, { labelOf: (p) => p.h1 || p.title }),
+        backHref: "/tr/blog",
+        backLabel: "← Bloga dön",
+        faqTitle: trCopy("Frequently asked questions", "tr"),
+        faq: TR_BLOG_FAQ_BY_SLUG[slug] || [],
+        after: `<p class="seo-note"><a href="/blog/${slug}">English version</a></p>`,
+      });
     }
   }
 
@@ -330,7 +476,7 @@ function crawlBodyInner(route) {
   const niche = NICHE_LANDINGS[enPath];
   if (niche) {
     const sections = niche.sections
-      .map((s) => `<h2>${escapeHtml(tx(s.h))}</h2><p>${escapeHtml(tx(s.p))}</p>`)
+      .map((s) => `<section class="seo-lsec"><h2>${escapeHtml(tx(s.h))}</h2><p>${escapeHtml(tx(s.p))}</p></section>`)
       .join("\n");
     const links = niche.related
       .map((l) => `<li><a href="${escapeHtml(hx(l.to))}">${escapeHtml(tx(l.label))}</a></li>`)
@@ -350,17 +496,20 @@ function crawlBodyInner(route) {
     crumbs: [
       [homeHref(loc), tx("Home")],
       [hx("/discord-alternative"), tx("Discord alternative")],
-      [null, tx(niche.h1.split(" | ")[0].trim())],
+      [hx(enPath), tx(niche.h1.split(" | ")[0].trim())],
     ],
     h1: tx(niche.h1),
     lead: tx(niche.lead),
-    shot: PREVIEW_SHOTS[nichePreview(enPath)],
+    shot: PREVIEW_SHOTS[nichePreview(enPath).mode],
+    tone: nichePreview(enPath).tone,
     alt: tx(niche.h1),
   })}
-  <h2>${escapeHtml(tx(niche.answerTitle))}</h2>
+  <div class="seo-lbody">
+  <section class="seo-lsec"><h2>${escapeHtml(tx(niche.answerTitle))}</h2>
   <p>${escapeHtml(tx(niche.answer))}</p>
-  <ul>${niche.bullets.map((b) => `<li>${escapeHtml(tx(b))}</li>`).join("")}</ul>
+  ${checklistHtml(niche.bullets.map(tx))}</section>
   ${sections}
+  </div>
   ${faq}
   <nav aria-label="${escapeHtml(tx("Related"))}"><ul>${links}</ul></nav>
   </article>
@@ -373,35 +522,33 @@ function crawlBodyInner(route) {
     const post = BLOG_POSTS.find((p) => p.slug === slug);
     const body = BLOG_BODIES[slug];
     if (post && body) {
-      const sections = body.sections
-        .map((s) => `<h2>${escapeHtml(tx(s.h))}</h2><p>${escapeHtml(tx(s.p))}</p>`)
-        .join("\n");
-      // Publish / update dates and author in every language, written with Intl.
-      const dates = `\n    ${postMetaHtml(post, loc, { published: tx("Published"), updated: tx("Updated"), author: tx("Author") }, hx("/who-owns-descall"))}`;
-      // Related reading: the other posts, then the guides the merged posts live on.
-      const related = [
-        ...BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => ({ to: p.path, label: p.title })),
-        ...BLOG_RELATED.filter((l) => l.to !== "/status"),
-      ]
-        .map((l) => `<li><a href="${escapeHtml(hx(l.to))}">${escapeHtml(tx(l.label))}</a></li>`)
-        .join("");
-      // Same questions as the post's FAQPage JSON-LD, visible on the page.
-      const postFaq = (BLOG_FAQ_BY_SLUG[slug] || [])
-        .map((f) => `<h3>${escapeHtml(tx(f.q))}</h3><p>${escapeHtml(tx(f.a))}</p>`)
-        .join("\n");
-      return `
-<main>
-  ${brand}
-  <article>
-    <h1>${escapeHtml(tx(post.title))}</h1>
-    <p>${escapeHtml(tx(post.description))}</p>${dates}
-    ${sections}
-    ${postFaq ? `<h2>${escapeHtml(tx("FAQ"))}</h2>\n${postFaq}` : ""}
-    <nav aria-label="${escapeHtml(tx("Related guides"))}"><h2>${escapeHtml(tx("Related guides"))}</h2><ul>${related}</ul></nav>
-    ${seoCtaRow("/blog", isTr ? "Tüm rehberler" : tx("All guides"), loc)}
-  </article>
-  ${seoSiteNav(loc)}
-</main>`;
+      const t = pageT(loc);
+      const faq = BLOG_FAQ_BY_SLUG[slug] || GAMER_FAQ.slice(0, 2);
+      return blogPostHtml({
+        hero: {
+          loc,
+          crumbs: [
+            [homeHref(loc), t("Home")],
+            [hx("/blog"), t("Blog")],
+            [hx(post.path), t(post.title)],
+          ],
+          h1: t(post.title),
+          lead: t(post.description),
+          startLabel: t("Try Descall"),
+          secondary: { href: hx("/discord-alternative"), label: t("Discord alternative") },
+        },
+        // Publish / update dates and author in every language, written with Intl.
+        meta: postMetaHtml(post, loc, { published: t("Published"), updated: t("Updated"), author: t("Author") }, hx("/who-owns-descall")),
+        sections: body.sections.map((s) => ({ h: t(s.h), p: t(s.p) })),
+        relatedTitle: t("Related guides"),
+        // The closest posts, then two guides (as BlogPostPage).
+        related: relatedForPost(post, BLOG_POSTS, BLOG_RELATED.filter((l) => l.to !== "/status")).map((l) => ({ to: hx(l.to), label: t(l.label) })),
+        backHref: hx("/blog"),
+        backLabel: t("← Back to blog"),
+        faqTitle: t("Frequently asked questions"),
+        // Same questions as the post's FAQPage JSON-LD, visible on the page.
+        faq: faq.map((f) => ({ q: t(f.q), a: t(f.a) })),
+      });
     }
   }
 
@@ -481,12 +628,14 @@ function localizedJsonLd(route) {
       const home = withLocalePrefix("/", loc);
       graphs.push(
         buildArticleLd({
+          type: "BlogPosting",
           title: t(post.title),
           description: t(post.description),
           path: route.path,
           datePublished: post.date,
           dateModified: post.updated || post.date,
           inLanguage: loc,
+          image: route.image,
         }),
         buildBreadcrumbLd([
           { name: t("Home"), path: home },
@@ -512,7 +661,9 @@ function jsonLdForRoute(route) {
     graphs.push(buildFaqLd(FAQ_ITEMS));
   }
   if (route.path === "/tr/faq") {
-    graphs.push(buildFaqLd(FAQ_ITEMS.map((f) => ({ q: trCopy(f.q, true), a: trCopy(f.a, true) }))));
+    // Same text as the visible questions (the page twin reads React's t()).
+    const t = pageT("tr");
+    graphs.push(buildFaqLd(FAQ_ITEMS.map((f) => ({ q: t(f.q), a: t(f.a) }))));
   }
   if (route.path === "/discord-alternative") {
     graphs.push(buildFaqLd(ALTERNATIVE_HUB_FAQ));
@@ -559,12 +710,14 @@ function jsonLdForRoute(route) {
     if (post) {
       graphs.push(
         buildArticleLd({
+          type: "BlogPosting",
           title: post.h1 || post.title,
           description: post.description,
           path: route.path,
           datePublished: post.date,
           dateModified: post.updated || post.date,
           inLanguage: "tr",
+          image: route.image,
         }),
         buildBreadcrumbLd([
           { name: "Ana sayfa", path: "/tr" },
@@ -610,12 +763,14 @@ function jsonLdForRoute(route) {
     if (post && typeof buildArticleLd === "function") {
       graphs.push(
         buildArticleLd({
+          type: "BlogPosting",
           title: post.title,
           description: post.description,
           path: route.path,
           datePublished: post.date,
           dateModified: post.updated || post.date,
           inLanguage: "en",
+          image: route.image,
         })
       );
     }
@@ -631,6 +786,54 @@ function jsonLdForRoute(route) {
   }
 
   return graphs;
+}
+
+/** Short page names for the breadcrumb trail (React t() keys, translated per language). */
+const CRUMB_LABELS = {
+  "/features": "Features",
+  "/download": "Download",
+  "/faq": "FAQ",
+  "/status": "Status",
+  "/privacy": "Privacy",
+  "/terms": "Terms",
+  "/copyright": "Copyright",
+  "/about": "About",
+  "/contact": "Contact",
+  "/security": "Security",
+  "/compare/discord": "Descall vs Discord",
+  "/alternatives": "Alternatives",
+  "/discord-alternative": "Discord alternative",
+  "/who-owns-descall": "Who owns Descall?",
+  "/blog": "Blog",
+  "/best-discord-alternative-for-gamers": "For gamers",
+};
+const TR_ALIAS_BARE = { "/iletisim": "/contact", "/gizlilik": "/privacy", "/kosullar": "/terms", "/descall-sahibi": "/who-owns-descall" };
+
+/** Home > (Discord alternative >) page, in the page language; null for a home page. */
+export function breadcrumbsForRoute(route) {
+  const loc = routeLocale(route);
+  const home = homeHref(loc);
+  if (route.path === home || route.path === "/") return null;
+  const t = pageT(loc);
+  const bare =
+    route.enPath ||
+    TR_ALIAS_BARE[route.path] ||
+    (route.path.startsWith("/tr/") ? route.path.slice(3) : route.path);
+  const crumbs = [{ name: loc === "tr" ? "Ana sayfa" : t("Home"), path: home }];
+  const niche = NICHE_LANDINGS[bare];
+  if (niche) {
+    crumbs.push({ name: t("Discord alternative"), path: prefixHref("/discord-alternative", loc) });
+    crumbs.push({ name: t(niche.h1.split(" | ")[0].trim()), path: route.path });
+    return crumbs;
+  }
+  const label = CRUMB_LABELS[bare];
+  const name = label
+    ? loc === "tr" && route.path === "/descall-sahibi"
+      ? "Descall’ın sahibi kim?"
+      : t(label)
+    : (route.h1 || route.title || "").replace(/\s*[|—-]\s*Descall\s*$/i, "");
+  crumbs.push({ name, path: route.path });
+  return crumbs;
 }
 
 function stripStaleHeadSeo(html) {
@@ -677,14 +880,30 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     .filter((alt) => alt.hreflang !== "x-default" && alt.hreflang !== loc)
     .map((alt) => `<meta property="og:locale:alternate" content="${ogLocaleTag(alt.hreflang)}" />`);
 
-  const ldScripts = jsonLdForRoute(route)
+  const ldGraphs = jsonLdForRoute(route);
+  // Every page below a home gets a BreadcrumbList (React's own copy is dropped when the
+  // prerendered JSON-LD is present, see JsonLd.jsx).
+  if (!ldGraphs.some((g) => g["@type"] === "BreadcrumbList")) {
+    const crumbs = breadcrumbsForRoute(route);
+    if (crumbs) ldGraphs.push(buildBreadcrumbLd(crumbs));
+  }
+  const ldScripts = ldGraphs
     .map(
       (data) =>
         `<script type="application/ld+json" data-prerendered-jsonld="${route.path}">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`
     )
     .join("\n    ");
 
+  // The page body first: its LCP image is preloaded from the head.
+  const inner = crawlBody(route);
   const metaBlock = [
+    // The LCP image first: it is the largest paint on most pages and must not queue
+    // behind the font files.
+    lcpImagePreload(inner),
+    shellFonts.preload,
+    // Turkish pages always set latin-ext letters in bold (header "Giriş Yap", titles).
+    lang === "tr" ? shellFonts.preloadExt : "",
+    shellFonts.style,
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
     `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
@@ -717,7 +936,8 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
   out = out.replace(/<\/title>/i, `</title>\n    ${metaBlock}`);
 
   // The page header (React twin) replaces the old brand-only line at the top of each body.
-  const body = `${seoTopHtml(loc)}\n${crawlBody(route).replace(/<a class="seo-brand"[\s\S]*?<\/a>/, "")}`;
+  out = stripTwinCss(out, twinKindOf(inner));
+  const body = `${seoTopHtml(loc, route.path)}\n${inner.replace(/<a class="seo-brand"[\s\S]*?<\/a>/, "")}`;
   if (/<div id="seo-static"><\/div>/i.test(out)) {
     out = out.replace(
       /<div id="seo-static"><\/div>/i,
@@ -788,6 +1008,8 @@ async function main() {
     process.exit(1);
   }
   const base = fs.readFileSync(indexPath, "utf8");
+  shellFonts = interFontFaceCss();
+  if (!shellFonts.style) console.warn("[prerender-seo] Inter woff2 files not found in dist/assets: the shell paints in the system font");
   const routes = PUBLIC_ROUTES.filter((r) => !r.noindex);
   for (const route of routes) {
     writeRoute(route, base);
