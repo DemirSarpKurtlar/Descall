@@ -52,11 +52,12 @@ const CHECK_16 =
   '<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>';
 
 /**
- * A hero / bottom button. `auth`: a React <button> that opens the sign-in dialog (a real
- * link here, the hydrate hook picks it up); otherwise a <Link>.
+ * A hero / bottom button. `auth`: opens the sign-in dialog (a real link to the auth URL
+ * here, the hydrate hook picks it up); `button`: React renders a <button> (its line
+ * height differs from a <Link>); otherwise a <Link> to `href`.
  */
-function button(loc, { label, href, style = "primary", auth = null }) {
-  const cls = `seo-lbtn is-${style}${auth ? " is-btn" : ""}`;
+function button(loc, { label, href, style = "primary", auth = null, button: isButton = false }) {
+  const cls = `seo-lbtn is-${style}${isButton ? " is-btn" : ""}`;
   if (auth) return `<a class="${cls}" href="${authHref(loc, auth)}" rel="nofollow" data-hydrate data-auth="${auth}">${esc(label)}</a>`;
   return `<a class="${cls}" href="${esc(href)}">${esc(label)}</a>`;
 }
@@ -135,7 +136,8 @@ function shellHtml(loc, pathname, { hero, body, faq = [], tone = "default", prim
         .map((f) => `<details><summary>${esc(t(f.q))}</summary><p>${esc(t(f.a))}</p></details>`)
         .join("")}</div></section>`
     : "";
-  const bottomPrimary = primary || { label: t("Start free"), href: "/register" };
+  // SeoLandingShell's own link to /register when the page has no primary button.
+  const bottomPrimary = primary || { label: t("Start free"), auth: "register" };
   return `<article class="seo-landing seo-tl seo-tone-${tone}">
   ${heroHtml(loc, href, t, { ...hero, tone, primary: hero.primary === undefined ? primary : hero.primary })}
   <div class="seo-tl-main">
@@ -161,7 +163,7 @@ export function compareTwin(loc, pathname) {
   const t = pageT(loc);
   const href = hrefFor(loc, pathname);
   const mirror = mirrorHref(loc, pathname);
-  const primary = { label: t("Try Descall free"), auth: "login" };
+  const primary = { label: t("Try Descall free"), auth: "login", button: true };
   const table = `<div class="seo-tl-table"><table class="is-compare"><thead><tr><th>${esc(t("Feature"))}</th><th>Descall</th><th>Discord</th></tr></thead><tbody>${COMPARE_ROWS.map(
     (r) => `<tr><td>${esc(t(r.feature))}</td><td>${esc(t(r.descall))}</td><td>${esc(t(r.discord))}</td></tr>`
   ).join("")}</tbody></table></div>`;
@@ -365,7 +367,7 @@ export function discordAlternativeTwin(loc, pathname) {
       { to: "/blog", label: "Descall blog" },
     ]),
   ].join("\n    ");
-  const primary = { label: t("Start free"), auth: "register" };
+  const primary = { label: t("Start free"), auth: "register", button: true };
   return shellHtml(loc, pathname, {
     primary,
     tone: "compare",
@@ -406,7 +408,7 @@ export function gamersTwin(loc, pathname) {
       ])
     ),
   ].join("\n    ");
-  const primary = { label: t("Open Descall"), auth: "login" };
+  const primary = { label: t("Open Descall"), auth: "login", button: true };
   return shellHtml(loc, pathname, {
     primary,
     tone: "gaming",
