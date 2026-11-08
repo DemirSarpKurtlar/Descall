@@ -5,7 +5,9 @@
  *   og-default.png, og-default-<lang>.png   one default per site language (src/site/ogImages.js)
  *   og-discord.png                          the comparison / niche pages; led by the Descall
  *                                           name, no competitor name in the image
+ *   og-invite.png, og-invite-tr.png         invite link previews without a server icon
  *
+ *   node scripts/generate-og-images.mjs --only=invite-tr   one invite image
  *   node scripts/generate-og-images.mjs            write every image
  *   node scripts/generate-og-images.mjs --only=tr  one language (or "discord")
  *
@@ -24,7 +26,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { OG_DEFAULT_IMAGES, OG_DISCORD_IMAGE } from "../src/site/ogImages.js";
+import { OG_DEFAULT_IMAGES, OG_DISCORD_IMAGE, OG_INVITE_IMAGES } from "../src/site/ogImages.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -75,6 +77,19 @@ const COPY = {
     headline: "Free voice, video and servers",
     tagline: "Group calls, screen share and roles. No membership needed to talk.",
     chips: CHIPS("Free"),
+  },
+  // Invite links whose server or group has no icon (public/invite-preview.js).
+  "invite-en": {
+    lang: "en",
+    headline: "You're invited to join a community",
+    tagline: "Voice chat, servers and screen share with your friends",
+    chips: CHIPS("Free to join"),
+  },
+  "invite-tr": {
+    lang: "tr",
+    headline: "Bir topluluğa katılmaya davet edildin",
+    tagline: "Arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
+    chips: CHIPS("Katılmak ücretsiz"),
   },
 };
 
@@ -162,10 +177,11 @@ function jobs(only) {
   const list = Object.entries(COPY).map(([key, copy]) => ({
     key,
     lang: copy.lang || key,
-    file: key === "discord" ? OG_DISCORD_IMAGE : OG_DEFAULT_IMAGES[key],
+    file: key === "discord" ? OG_DISCORD_IMAGE : key.startsWith("invite-") ? OG_INVITE_IMAGES[key.slice(7)] : OG_DEFAULT_IMAGES[key],
     ...copy,
   }));
   for (const key of Object.keys(OG_DEFAULT_IMAGES)) if (!COPY[key]) throw new Error(`no image copy for ${key}`);
+  for (const key of Object.keys(OG_INVITE_IMAGES)) if (!COPY[`invite-${key}`]) throw new Error(`no image copy for invite-${key}`);
   return only ? list.filter((j) => j.key === only) : list;
 }
 

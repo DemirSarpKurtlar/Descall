@@ -279,6 +279,7 @@ if (checkDist) {
       const nf = fs.readFileSync(notFoundFile, "utf8");
       if (!/<meta name="robots" content="noindex/.test(nf)) fail("dist/404.html must be noindex");
       if (/rel="canonical"/.test(nf)) fail("dist/404.html must not carry a canonical");
+      if (/apple-itunes-app/.test(nf)) fail("dist/404.html must not carry the Smart App Banner");
     }
     // One child sitemap per site language, every page in exactly one of them.
     const seenInLang = new Map();
@@ -338,6 +339,11 @@ if (checkDist) {
       if (!html.includes("<title>")) fail(`No <title> in ${rel}`);
       if (!html.includes('rel="canonical"')) fail(`No canonical in ${rel}`);
       if (!html.includes("<h1")) fail(`No <h1> crawl content in ${rel}`);
+      // iOS Smart App Banner on every indexable marketing page, exactly once, App Store id only.
+      const banners = [...html.matchAll(/<meta name="apple-itunes-app" content="([^"]*)"/g)];
+      if (banners.length !== 1 || banners[0][1] !== "app-id=6820558264") {
+        fail(`Smart App Banner (apple-itunes-app app-id=6820558264) missing or repeated in ${rel}`);
+      }
       // Visible text only: loading="lazy" on an image is not a placeholder.
       const visibleText = html
         .replace(/<script[\s\S]*?<\/script>/gi, " ")

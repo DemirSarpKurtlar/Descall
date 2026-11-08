@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus } from "../ui/Icon.jsx";
 import { savePendingLanding } from "../../lib/serverInviteRoute";
@@ -13,10 +13,14 @@ import InviteLandingBrand from "../servers/InviteLandingBrand";
 
 /**
  * Discord-style invite landing, shown for /invite/:code
+ *
+ * Logged out: one "Join with a free account" button (sign-up keeps the code). Back signed in
+ * from that flow (autoJoin), the invite is redeemed right away.
  */
 export default function GroupInviteLanding({
   code,
   me,
+  autoJoin = false,
   onJoined,
   onNeedLogin,
   onDismiss,
@@ -65,6 +69,15 @@ export default function GroupInviteLanding({
       setJoining(false);
     }
   };
+
+  const joinRef = useRef(null);
+  joinRef.current = handleJoin;
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!autoJoin || !me || loading || !preview?.group || autoTried.current) return;
+    autoTried.current = true;
+    joinRef.current?.();
+  }, [autoJoin, me, loading, preview]);
 
   return (
     <div className="invite-landing">
@@ -122,7 +135,8 @@ export default function GroupInviteLanding({
             <button
               type="button"
               className="invite-landing-join"
-              onClick={() => handleJoin("login")}
+              data-testid={me ? undefined : "group-invite-join-free"}
+              onClick={() => handleJoin(me ? "login" : "register")}
               disabled={joining}
             >
               {joining ? (
@@ -131,18 +145,19 @@ export default function GroupInviteLanding({
                 preview?.alreadyMember ? t("Open group") : t("Accept invite")
               ) : (
                 <>
-                  <LogIn size={18} />
-                  {t("Log in to join")}
+                  <UserPlus size={18} />
+                  {t("invl.joinFree")}
                 </>
               )}
             </button>
 
             {!me ? (
-              <button type="button" className="invite-landing-secondary" onClick={() => handleJoin("register")}>
-                <UserPlus size={16} />
-                {t("Sign up and join")}
+              <button type="button" className="invite-landing-secondary" onClick={() => handleJoin("login")}>
+                <LogIn size={16} />
+                {t("invl.haveAccount")}
               </button>
             ) : null}
+            {!me ? <p className="invite-landing-hint">{t("Your invite is kept while you log in or sign up.")}</p> : null}
             <button type="button" className="invite-landing-secondary" onClick={onDismiss}>
               {me ? t("Maybe later") : t("Back")}
             </button>

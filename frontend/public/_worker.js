@@ -15,6 +15,18 @@
  */
 
 import { applySecurityHeaders, canonicalRedirect } from "./security-policy.js";
+import {
+  BOT_TIMEOUT_MS,
+  VISITOR_TIMEOUT_MS,
+  bannerArgumentFor,
+  fetchInvitePreview,
+  inviteHeadHtml,
+  inviteTarget,
+  inviteUrl,
+  isPreviewBot,
+  previewLang,
+  rewriteShell,
+} from "./invite-preview.js";
 
 const SPA_PREFIXES = [
   "/direct",
@@ -146,8 +158,38 @@ function htmlResponse(source, status, cacheControl) {
   return new Response(source.body, { status, headers });
 }
 
+/**
+ * Invite links (WhatsApp, Instagram, Telegram, X, iMessage previews): the shell gets the
+ * invite's own title, description, Open Graph / Twitter card and Smart App Banner.
+ * Other app paths lose the Smart App Banner (marketing pages only). Any failure: the plain shell.
+ */
+async function appShellResponse(response, request, env, ctx, path) {
+  const target = inviteTarget(path);
+  if (!target) return rewriteShell(response);
+  const url = inviteUrl(path);
+  let cache = null;
+  try {
+    cache = typeof caches !== "undefined" && caches.default ? caches.default : null;
+  } catch {
+    cache = null;
+  }
+  const ua = request.headers.get("user-agent") || "";
+  const preview = await fetchInvitePreview(target, {
+    apiOrigin: env?.API_ORIGIN || undefined,
+    cache,
+    timeoutMs: isPreviewBot(ua) ? BOT_TIMEOUT_MS : VISITOR_TIMEOUT_MS,
+    clientIp: request.headers.get("cf-connecting-ip") || "",
+    waitUntil: ctx && typeof ctx.waitUntil === "function" ? (p) => ctx.waitUntil(p) : null,
+  });
+  const appArgument = bannerArgumentFor(target, url);
+  if (!preview) return rewriteShell(response, { banner: appArgument || true });
+  const lang = previewLang(request.headers.get("accept-language"));
+  response.headers.append("vary", "accept-language");
+  return rewriteShell(response, { headHtml: inviteHeadHtml(preview, { lang, url, appArgument }) });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const dest = canonicalRedirect(url);
     if (dest) {
@@ -194,7 +236,7 @@ export default {
       // without this /app, /login, /register, /s/... looked like duplicate
       // homepages to crawlers that do not run JS. The app is never a search result.
       response.headers.set("x-robots-tag", "noindex, follow");
-      return response;
+      return appShellResponse(response, request, env, ctx, path);
     }
 
     // SEO (3.7.14): one URL per page. /tr/ and /tr, /features/ and /features

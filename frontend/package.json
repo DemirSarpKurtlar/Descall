@@ -38,6 +38,7 @@
     "android:open": "cap open android",
     "ios:sync": "VITE_WORLD3D=0 npm run build && npx cap sync ios",
     "ios:open": "npx cap open ios",
+    "capacitor:copy:after": "node scripts/strip-smart-banner.mjs",
     "android:apk:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:apk:release": "npm run android:sync && cd android && ./gradlew assembleRelease",
     "android:aab:release": "npm run android:sync && cd android && ./gradlew bundleRelease"
