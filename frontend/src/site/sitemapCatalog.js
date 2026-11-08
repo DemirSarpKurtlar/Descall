@@ -6,6 +6,7 @@
 import { PUBLIC_ROUTES, DEFAULT_ORIGIN } from "./seoConfig.js";
 import { SITE_LOCALES, localeNativeName, prefixedLocaleFromPath, stripPrefixedLocale } from "./siteLocales.js";
 import { contentLastmod } from "./seo/contentDates.js";
+import { isDirectoryPath } from "./directory/directoryPaths.js";
 
 export const SITE = DEFAULT_ORIGIN;
 
@@ -70,6 +71,8 @@ function tableIdForPath(path) {
   const prefixed = prefixedLocaleFromPath(path || "/");
   const p = prefixed ? stripPrefixedLocale(path, [prefixed]) : path || "/";
   if (p.startsWith("/blog") || p.startsWith("/tr/blog")) return "blog";
+  // Public server directory (item 8): discovery pages, next to the hubs.
+  if (isDirectoryPath(p)) return "niches";
   if (p === "/tr" || p.startsWith("/tr/")) return "niches";
   if (p === "/status") return "company";
   if (
@@ -104,10 +107,14 @@ export function routesForTable(tableId) {
  * @param {string} now fallback lastmod (ISO), only for a path without a content date
  * @param {(path: string) => string | null} [lastmodFor] per-page lastmod; defaults to the
  *   editorial content date (seo/contentDates.js) so the static and the Render sitemaps agree
+ * @param {{ exclude?: Iterable<string> }} [options] exclude: paths left out for this build,
+ *   the server directory category pages that list fewer than 3 servers (noindex until they
+ *   grow, see directory/directoryPaths.js thinDirectoryPaths)
  */
-export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
+export function allSitemapEntries(origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod, { exclude } = {}) {
   const lm = (p) => (lastmodFor && lastmodFor(p)) || now;
-  const entries = indexableRoutes().map((r) => ({
+  const skip = new Set(exclude || []);
+  const entries = indexableRoutes().filter((r) => !skip.has(r.path)).map((r) => ({
     path: r.path,
     loc: absoluteLoc(r.path, origin),
     lastmod: lm(r.path),
@@ -135,10 +142,10 @@ export function allSitemapEntries(origin = SITE, now = new Date().toISOString(),
   return entries;
 }
 
-export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
-  return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.tableId === tableId);
+export function entriesForTable(tableId, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod, options = {}) {
+  return allSitemapEntries(origin, now, lastmodFor, options).filter((e) => e.tableId === tableId);
 }
 
-export function entriesForLanguage(lang, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod) {
-  return allSitemapEntries(origin, now, lastmodFor).filter((e) => e.lang === lang);
+export function entriesForLanguage(lang, origin = SITE, now = new Date().toISOString(), lastmodFor = contentLastmod, options = {}) {
+  return allSitemapEntries(origin, now, lastmodFor, options).filter((e) => e.lang === lang);
 }

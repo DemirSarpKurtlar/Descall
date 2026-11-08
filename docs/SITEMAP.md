@@ -39,6 +39,13 @@ Audit: `docs/reports/2026-11-06-seo-denetimi.md`.
 - **Hand-over twins** for the compare, alternatives, gamers, blog index, about, security and ownership pages: see `frontend/docs/SEO_INDEXING.md`.
 - **Site catalogs per page.** `src/site/i18n/<id>/` holds `core.js` plus one file per page; `node scripts/site-i18n.mjs layout` rewrites it, `check` fails when a string is in a part its page does not load.
 
+## Server directory (item 8, Nov 2026)
+
+- **Pages.** `/communities` and `/tr/topluluklar` plus one page per topic (`/communities/<slug>`, `/tr/topluluklar/<slug>`, slugs in `src/site/directory/directoryPaths.js`). English pages list servers in every language, Turkish pages list servers whose main language is Turkish, so they carry no hreflang pair (only a visible link to the other language). Copy: `src/i18n/locales/dirSeo.{en,tr}.js`. Not mirrored under `/de`, `/es`, ... on purpose.
+- **Build data.** `scripts/prerender-seo.mjs` reads `GET <api>/api/directory/snapshot` (`DIRECTORY_API_URL`, else `VITE_API_BASE_URL`, else production; `DIRECTORY_SNAPSHOT_FILE` for a saved JSON, `DIRECTORY_PRERENDER=0` to skip). Any failure renders empty lists; the build never fails.
+- **Thin pages.** A topic page that lists fewer than 3 servers is `noindex,follow` and out of every sitemap. The prerender writes the decision to `dist/directory-manifest.json`; `generate-seo-files.mjs` and `seo-validate.mjs --dist` read it. The Render sitemap uses the live directory. The two index pages are always indexable.
+- **Structured data.** BreadcrumbList (home > directory > topic) and an ItemList (topic pages on the index, server cards on a topic page). Lastmod is the copy date (`DIRECTORY_COPY_UPDATED`), not the list.
+
 ## Policy
 
 **Only real, indexable marketing URLs** are published. Group invites and `?announcement=` query URLs are **not** in the sitemap index (they are ephemeral / have no public landing).

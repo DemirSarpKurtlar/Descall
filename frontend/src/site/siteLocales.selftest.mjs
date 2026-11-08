@@ -63,8 +63,10 @@ assert.deepEqual(
   "niche group = gamers + NICHE_LANDINGS"
 );
 assert.equal(new Set(sl.ALL_MIRROR_PATHS).size, sl.ALL_MIRROR_PATHS.length, "no page in two lists");
-// Every English page in PUBLIC_ROUTES is mirrored (Turkish pages excepted).
-const enRoutes = seo.PUBLIC_ROUTES.filter((r) => !r.locale && r.lang !== "tr" && !r.path.startsWith("/tr"));
+// Every English page in PUBLIC_ROUTES is mirrored (Turkish pages excepted). The server
+// directory (item 8, /communities) is English and Turkish only on purpose: its pages list
+// servers by language, see src/site/directory/directoryPaths.js.
+const enRoutes = seo.PUBLIC_ROUTES.filter((r) => !r.locale && r.lang !== "tr" && !r.path.startsWith("/tr") && !r.directory);
 for (const r of enRoutes) assert.ok(sl.ALL_MIRROR_PATHS.includes(r.path), `${r.path} has no prefixed twin`);
 for (const [group, ids] of Object.entries(SITE_DRAFT_PAGE_GROUPS)) {
   assert.ok(sl.SITE_PAGE_GROUPS[group], `SITE_DRAFT_PAGE_GROUPS names an unknown group: ${group}`);

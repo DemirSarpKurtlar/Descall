@@ -10,6 +10,7 @@ import { MSG4_EN } from "./msg4.en.js";
 import { A11Y_EN } from "./a11y.en.js";
 import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
+import { DIR_EN } from "./dir.en.js";
 import { AGENTX_EN } from "./agentx.en.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
@@ -56,6 +57,7 @@ export const nested = {
   a11y: A11Y_EN,
   msg5: MSG5_EN,
   act: ACT_EN,
+  dir: DIR_EN,
   agentx: AGENTX_EN,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)

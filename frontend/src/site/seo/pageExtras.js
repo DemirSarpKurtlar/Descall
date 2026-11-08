@@ -12,6 +12,7 @@ import {
   withLocalePrefix,
 } from "../siteLocales.js";
 import { siteText } from "../siteText.js";
+import { directoryHubLink } from "../directory/directoryRoutes.js";
 
 /** /<prefix> twin of a mirrored English link, other links unchanged. */
 function mirrorHref(to, loc) {
@@ -100,6 +101,7 @@ export const PAGE_EXTRAS = {
       { to: "/blog/private-group-chat-guide", label: "How private is your group chat?" },
       { to: "/download", label: "Download" },
       { to: "/tr", label: "Türkçe" },
+      directoryHubLink("en"),
     ],
   },
 
@@ -137,7 +139,7 @@ export const PAGE_EXTRAS = {
         ],
       },
     ],
-    links: TR_HUBS,
+    links: [...TR_HUBS, directoryHubLink("tr")],
   },
 
   // SEO 3.7.14: the English hubs were ~300 words each; Google ranked them on page 5-9.
@@ -459,6 +461,7 @@ export const PAGE_EXTRAS = {
       { to: "/faq", label: "FAQ" },
       { to: "/security", label: "Security" },
       { to: "/tr/download", label: "Türkçe: İndir" },
+      directoryHubLink("en"),
     ],
   },
 
@@ -499,6 +502,7 @@ export const PAGE_EXTRAS = {
       { to: "/tr/faq", label: "SSS" },
       { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
       { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
+      directoryHubLink("tr"),
     ],
   },
 };
@@ -536,7 +540,8 @@ export function localizedPageExtras(routePath, { text, href } = {}) {
         p: s.p.map(tx),
         ...(s.list ? { list: s.list.map(tx) } : {}),
       })),
-      links: (source.links || []).map((l) => ({ to: hx(l.to), label: tx(l.label) })),
+      // The server directory is English and Turkish only: no link from /de, /es, ...
+      links: (source.links || []).filter((l) => !l.directory).map((l) => ({ to: hx(l.to), label: tx(l.label) })),
     },
   };
 }

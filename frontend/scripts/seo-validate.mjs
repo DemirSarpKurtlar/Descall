@@ -30,7 +30,14 @@ const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteTe
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
 await registerSiteCatalogs();
 // Prefixed site languages (/de/...) are checked with their translated title / description.
-const PUBLIC_ROUTES = seoConfig.PUBLIC_ROUTES.map((r) => seoConfig.localizeRouteMeta(r, siteText));
+// Server directory category pages that this build left noindex (fewer than 3 listed
+// servers, dist/directory-manifest.json) are checked as noindex pages outside the sitemap.
+const directoryThin = checkDist
+  ? new Set((await import(pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href)).readDirectoryThinPaths(path.join(root, "dist")))
+  : new Set();
+const PUBLIC_ROUTES = seoConfig.PUBLIC_ROUTES.map((r) => seoConfig.localizeRouteMeta(r, siteText)).map((r) =>
+  directoryThin.has(r.path) ? { ...r, noindex: true } : r
+);
 const { KEYWORD_STRATEGY } = await import(
   pathToFileURL(path.join(root, "src/site/seo/keywordStrategy.js")).href
 );
@@ -114,6 +121,9 @@ for (const route of PUBLIC_ROUTES) {
     if (!marketingApp.includes('path="/blog/:slug"')) fail("MarketingApp missing /blog/:slug");
     if (!BLOG_POSTS.some((p) => p.slug === slug)) fail(`Blog slug missing from BLOG_POSTS: ${slug}`);
     if (!BLOG_BODIES[slug]) fail(`Blog body missing: ${slug}`);
+  } else if (route.directory) {
+    // Server directory pages: one generated <Route> per path (directoryPagePaths()).
+    if (!marketingApp.includes("directoryPagePaths()") || !marketingApp.includes("DirectoryPage")) fail(`MarketingApp missing the directory routes (${route.path})`);
   } else if (NICHE_LANDINGS[route.path]) {
     if (!marketingApp.includes("DiscordAlternativeNichePage")) {
       fail("MarketingApp missing DiscordAlternativeNichePage");
@@ -317,6 +327,10 @@ if (checkDist) {
     const pagesXml = fs.readFileSync(path.join(dist, "sitemap-pages.xml"), "utf8");
     for (const route of PUBLIC_ROUTES) {
       const loc = route.path === "/" ? "https://descall.com/" : `https://descall.com${route.path}`;
+      if (route.noindex) {
+        if (pagesXml.includes(`<loc>${loc}</loc>`)) fail(`sitemap-pages.xml lists the noindex page ${loc}`);
+        continue;
+      }
       if (!pagesXml.includes(`<loc>${loc}</loc>`)) {
         fail(`sitemap-pages.xml missing ${loc}`);
       }
@@ -404,6 +418,7 @@ if (checkDist) {
       }
       // noindex should not appear on indexable shells
       if (/noindex/i.test(html) && !route.noindex) fail(`noindex found on indexable shell ${rel}`);
+      if (route.noindex && !/<meta name="robots" content="noindex/.test(html)) fail(`noindex page without a robots noindex meta: ${rel}`);
       const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
       if (h1Count !== 1) warn(`Expected 1 H1 in ${rel}, found ${h1Count}`);
     }

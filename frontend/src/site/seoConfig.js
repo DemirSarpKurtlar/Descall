@@ -3,6 +3,7 @@
 import { stripLocalePrefix } from "./localePaths.js";
 import { TR_LANDING_META, TR_BLOG_META } from "./seo/trMeta.js";
 import { PREFIXED_SITE_LOCALES, SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
+import { directoryRoutes } from "./directory/directoryRoutes.js";
 
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
@@ -452,6 +453,10 @@ const BASE_ROUTES = [
     priority: "0.5",
     lang: "tr",
   })),
+  // Public server directory (item 8): /communities and /tr/topluluklar, one page per
+  // category. Category pages with fewer than 3 listed servers are noindex at build time
+  // (scripts/prerender-seo.mjs writes dist/directory-manifest.json).
+  ...directoryRoutes(),
 ];
 
 /**
