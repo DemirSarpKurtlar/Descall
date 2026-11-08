@@ -72,6 +72,7 @@ import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
 import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
+import { hasHeardAboutPendingFlag, markHeardAboutPending } from "./lib/heardAbout";
 import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
@@ -167,6 +168,7 @@ import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/d
 import { mergeServerDetail } from "./lib/serverDetail";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
+const HeardAboutPrompt = lazy(() => import("./components/HeardAboutPrompt"));
 // Descall+ desktop windows (mini mode, call window, sidebar): Electron main window only.
 const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHost.jsx"));
 // Descall+ pop-out window (Electron multi_window): conversation-only chrome, set before first render.
@@ -502,6 +504,9 @@ export default function App() {
   const { toast } = useToast();
   const { t, locale, setLocale } = useLocale();
   const [authError, setAuthError] = useState("");
+  // "How did you hear about us?" once after sign-up (lib/heardAbout.js); the prompt's
+  // chunk only loads when a sign-up left the question waiting.
+  const [heardAboutAsk, setHeardAboutAsk] = useState(() => hasHeardAboutPendingFlag());
   // Paint the app from the cached session; /auth/me revalidates in the background.
   const [sessionChecked, setSessionChecked] = useState(() =>
     optimisticSessionReady({ token: getToken(), cachedUser: normalizeUser(getUser()) })
@@ -2948,6 +2953,8 @@ export default function App() {
           } catch {
             /* ignore */
           }
+          markHeardAboutPending(data.user?.id);
+          setHeardAboutAsk(true);
           Funnel.registerComplete({
             method,
             has_invite: Boolean(data.inviteLinked || invitedBy),
@@ -2991,6 +2998,8 @@ export default function App() {
       } catch {
         /* ignore */
       }
+      markHeardAboutPending(reg?.user?.id);
+      setHeardAboutAsk(true);
       if (reg?.token && reg?.user) {
         transportFallbackStepRef.current = 0;
         setToken(reg.token);
@@ -5973,6 +5982,11 @@ export default function App() {
         {IOS_NATIVE && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
+          </Suspense>
+        ) : null}
+        {me?.id && heardAboutAsk ? (
+          <Suspense fallback={null}>
+            <HeardAboutPrompt userId={me.id} />
           </Suspense>
         ) : null}
       </div>

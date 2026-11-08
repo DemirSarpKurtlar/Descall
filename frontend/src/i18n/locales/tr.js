@@ -12,6 +12,7 @@ import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
 import { INVL_TR } from "./invl.tr.js";
+import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -67,6 +68,7 @@ export const nested = {
   act: ACT_TR,
   agentx: AGENTX_TR,
   invl: INVL_TR,
+  sgx: SIGNUP_GROWTH.tr.nested,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {
@@ -4544,6 +4546,7 @@ export const phrases = {
   ...TR_APPROVED_UI,
   ...TR_UI_AUDIT_LOW,
   ...MID_APP_I18N.tr,
+  ...SIGNUP_GROWTH.tr.phrases,
 };
 
 const locale = { nested, phrases };

@@ -8,6 +8,7 @@ import {
   isSocialSignupRequired,
 } from "../api/auth";
 import { setToken, setUser } from "../lib/storage";
+import { markHeardAboutPending } from "../lib/heardAbout";
 
 /** onVerify2fa(pendingToken, code) or onVerify2fa({ pendingToken, code }). */
 export function verify2faArgs(payloadOrToken, codeArg) {
@@ -82,6 +83,7 @@ export default function MarketingBoot() {
             } catch {
               /* ignore */
             }
+            markHeardAboutPending(loggedIn.user?.id);
             enterApp();
             return loggedIn;
           }
@@ -96,6 +98,7 @@ export default function MarketingBoot() {
         } catch {
           /* ignore */
         }
+        markHeardAboutPending(res?.user?.id);
         enterApp();
         return res;
       } catch (err) {
@@ -126,6 +129,7 @@ export default function MarketingBoot() {
           } catch {
             /* ignore */
           }
+          markHeardAboutPending(res?.user?.id);
         }
         enterApp();
         return res;

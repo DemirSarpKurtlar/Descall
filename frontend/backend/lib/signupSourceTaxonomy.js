@@ -397,9 +397,12 @@ function aggregateSourceBreakdown(rows = []) {
   };
 }
 
-/** New nullable users columns written at signup. */
-function buildSignupSourceColumns({ snapshot = {}, invitedBy, userAgent } = {}) {
-  const platform = resolvePlatform({ clientPlatform: snapshot.client_platform, userAgent });
+/**
+ * New nullable users columns written at signup. `clientPlatform` is the hint the app
+ * sends with the sign-up request (it wins over an older first-touch snapshot's).
+ */
+function buildSignupSourceColumns({ snapshot = {}, invitedBy, userAgent, clientPlatform } = {}) {
+  const platform = resolvePlatform({ clientPlatform: clientPlatform || snapshot.client_platform, userAgent });
   const hasSnapshot = Boolean(snapshot && (snapshot.landing_page || snapshot.landing_path || snapshot.captured_at));
   const c = classifySignupSource({ ...snapshot, invitedBy, platform, has_snapshot: hasSnapshot });
   return {

@@ -2,6 +2,7 @@ import { API_ROUTES } from "../config/api";
 import { httpRequest } from "./http";
 import { peekAttribution } from "../lib/attribution";
 import { pendingSignupInvite } from "../lib/serverInviteRoute";
+import { withSignupContext } from "../lib/signupContext";
 
 function withAttribution(payload = {}) {
   if (payload?.attribution) return payload;
@@ -28,7 +29,7 @@ function withSignupInvite(payload = {}) {
 export function register(payload) {
   return httpRequest(API_ROUTES.register, {
     method: "POST",
-    body: JSON.stringify(withSignupInvite(withAttribution(payload || {}))),
+    body: JSON.stringify(withSignupContext(withSignupInvite(withAttribution(payload || {})))),
   });
 }
 
@@ -63,7 +64,7 @@ export function loginWithGoogle(credential, extra = {}) {
   if (extra?.attribution) payload.attribution = extra.attribution;
   return httpRequest(API_ROUTES.google, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withSignupContext(payload)),
   });
 }
 
@@ -84,7 +85,7 @@ export function loginWithApple(apple, extra = {}) {
   if (extra?.username) payload.username = extra.username;
   return httpRequest(API_ROUTES.apple, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withSignupContext(payload)),
   });
 }
 
@@ -146,6 +147,15 @@ export function changeUsername(token, { username, password }) {
 }
 
 /** Sign-up username step: { available, error?, suggestions? } (public, no account yet). */
+/** POST /auth/heard-about: the optional "How did you hear about us?" answer (or "skipped"). */
+export function sendHeardAbout(token, answer) {
+  return httpRequest("/auth/heard-about", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ answer }),
+  });
+}
+
 export function checkSignupUsername(username) {
   return httpRequest(`/auth/username/check?username=${encodeURIComponent(username)}`, { method: "GET" });
 }

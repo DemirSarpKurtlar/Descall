@@ -12,6 +12,7 @@ import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
 import { AGENTX_EN } from "./agentx.en.js";
 import { INVL_EN } from "./invl.en.js";
+import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 import { CORE_EN } from "./core.en.js";
 import { MAINT_EN } from "./maintenance.en.js";
 import { PROMO_EN } from "./promo.en.js";
@@ -59,6 +60,7 @@ export const nested = {
   act: ACT_EN,
   agentx: AGENTX_EN,
   invl: INVL_EN,
+  sgx: SIGNUP_GROWTH.en.nested,
   fbk: FBK_EN,
   // Group member removal (Oct 2026)
   gk: {

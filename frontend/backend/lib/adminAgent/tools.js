@@ -43,7 +43,7 @@ const TOOLS = [
     about: "Where new users come from (referrers, campaigns, search).",
     path: () => "/attribution" },
   { name: "signup_stats", section: "signupStats",
-    about: "Signup statistics by day, platform and source.",
+    about: "Signup statistics by day, platform and source; which form field made sign-ups fail; how new users heard about Descall; sign-ups that came through an invite.",
     path: () => "/signup-stats" },
   { name: "retention", section: "retention",
     about: "Cohort retention: how many signups come back after 1, 7 and 30 days.",

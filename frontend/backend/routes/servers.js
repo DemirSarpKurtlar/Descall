@@ -55,6 +55,7 @@ const router = express.Router();
 const MAX_OWNED_SERVERS = 10;
 const { acquireCapLock } = require("../lib/capLock");
 const { apiError, apiText, templatedError, errorFields } = require("../lib/apiError");
+const { recordJoinedViaInvite } = require("../lib/inviteAttribution");
 const MAX_CHANNELS_PER_SERVER = 500;
 const MAX_ROLES_PER_SERVER = 50;
 const MAX_SERVER_FOLDERS = 50;
@@ -2338,6 +2339,8 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
       targetId: userId,
       changes: { via: "invite", code },
     });
+    // A fresh account that came in through this invite (Kayıt İstatistikleri).
+    void recordJoinedViaInvite(userId, `server:${code}`);
 
     const { bundle, myPermissions } = await afterMemberJoined(
       req,
@@ -2496,6 +2499,7 @@ router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
       targetId: userId,
       changes: { via: "vanity", slug },
     });
+    void recordJoinedViaInvite(userId, `vanity:${slug}`);
 
     const { bundle, myPermissions } = await afterMemberJoined(req, server, userId, server.id);
     const channels = await publicVisibleChannels(server.id, userId, bundle.channels);
