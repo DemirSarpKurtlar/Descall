@@ -103,7 +103,7 @@ const TOOLS = [
     query: ["userId", "limit"], params: { userId: str("User id."), limit: int("Max rows.") },
     path: () => "/moderation/history" },
   { name: "access_bans", section: "accessBans",
-    about: "IP and device bans.",
+    about: "IP and device bans in effect: what is banned, why and by which admin.",
     path: () => "/access-bans" },
   { name: "access_ban_hits", section: "accessBans",
     about: "Recent attempts to sign in or sign up from a banned IP or device (ban evasion).",
@@ -198,7 +198,7 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 function toolDefinitions() {
   return TOOLS.map((t) => ({
     name: t.name,
-    about: t.description,
+    description: t.about,
     input_schema: {
       type: "object",
       properties: t.params || {},

@@ -105,6 +105,7 @@ function fakeClient(script) {
   assert.equal(dmReq.method, "POST");
   assert.equal(dmReq.body.reason, "[Ajan] Rapor 12 inceleniyor", "the audit row shows the read came through the agent");
   assert.ok(tools.toolDefinitions().every((d) => d.input_schema.additionalProperties === false));
+  assert.ok(tools.toolDefinitions().every((d) => typeof d.description === "string" && d.description.length > 20 && !("about" in d)));
 
   // No key on the server: refused before any call.
   await assert.rejects(run.runChat({ adminUser: { id: "a1" }, authHeader: "Bearer t", text: "selam", onEvent() {} }), (e) => e.code === "AGENT_NO_KEY");
