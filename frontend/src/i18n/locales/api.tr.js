@@ -700,4 +700,13 @@ export const API_TR = {
   "Your account has no password yet. Set one with \"Forgot password\" on the sign-in page, then try again.": "Hesabının henüz şifresi yok. Giriş sayfasındaki \"Şifremi unuttum\" ile bir şifre belirleyip tekrar dene.",
   "Your account is blocked.": "Hesabın engellendi.",
   "Your date of birth is already set.": "Doğum tarihin zaten kayıtlı.",
+  "Could not load the agent status.": "Ajan durumu yüklenemedi.",
+  "Only the owner can change the agent settings.": "Ajan ayarlarını yalnızca sahip değiştirebilir.",
+  "Budget must be between 0 and 10000 dollars.": "Bütçe 0 ile 10000 dolar arasında olmalı.",
+  "Could not save the agent settings.": "Ajan ayarları kaydedilemedi.",
+  "Could not load the conversations.": "Sohbetler yüklenemedi.",
+  "Conversation not found.": "Sohbet bulunamadı.",
+  "Could not load the conversation.": "Sohbet yüklenemedi.",
+  "Could not delete the conversation.": "Sohbet silinemedi.",
+  "The agent could not answer. Try again.": "Ajan cevap veremedi. Tekrar dene.",
 };

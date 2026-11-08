@@ -11,6 +11,7 @@ import { AMP_FR } from "./profileMediaPicker.fr.js";
 import { MSG4_FR } from "./msg4.fr.js";
 import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
+import { AGENTX_FR } from "./agentx.fr.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_FR,
   "amp": AMP_FR,
@@ -33,6 +34,7 @@ export const nested = {
   },
   "msg5": MSG5_FR,
   "act": ACT_FR,
+  "agentx": AGENTX_FR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -8418,6 +8420,15 @@ export const phrases = {
   "Invalid channel.": "Salon invalide.",
   "Invalid code": "Code invalide",
   "Invalid conversation key.": "Clé de conversation invalide.",
+  "Budget must be between 0 and 10000 dollars.": "Le budget doit être compris entre 0 et 10000 dollars.",
+  "Conversation not found.": "Conversation introuvable.",
+  "Could not delete the conversation.": "Impossible de supprimer la conversation.",
+  "Could not load the agent status.": "Impossible de charger l'état de l'agent.",
+  "Could not load the conversation.": "Impossible de charger la conversation.",
+  "Could not load the conversations.": "Impossible de charger les conversations.",
+  "Could not save the agent settings.": "Impossible d'enregistrer les réglages de l'agent.",
+  "Only the owner can change the agent settings.": "Seul le propriétaire peut modifier les réglages de l'agent.",
+  "The agent could not answer. Try again.": "L'agent n'a pas pu répondre. Réessaie.",
   "Invalid conversation.": "Conversation invalide.",
   "Invalid duration": "Durée invalide",
   "Invalid duration.": "Durée invalide.",

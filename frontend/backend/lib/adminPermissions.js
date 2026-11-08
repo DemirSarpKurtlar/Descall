@@ -40,6 +40,9 @@ const GRANTABLE_SECTIONS = Object.freeze([
   "security",
   "errors",
   "audit",
+  // Admin agent (phase 1): the Claude assistant. It only sees what the asking admin's
+  // own sections allow (its tools call the same routes with the admin's session).
+  "agent",
 ]);
 
 const ALWAYS = Object.freeze(["overview"]);
@@ -58,6 +61,7 @@ const RULES = [
   [/^\/step-up$/, null],
   [/^\/(overview|stats|health|me\/permissions)(\/|$)/, "overview"],
   [/^\/staff(\/|$)/, "staff"],
+  [/^\/agent(\/|$)/, "agent"],
   [/^\/(make-admin|remove-admin)(\/|$)/, "staff"],
   [/^\/signup-stats(\/|$)/, "signupStats"],
   [/^\/premium(\/|$)/, "premium"],

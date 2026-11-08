@@ -11,6 +11,7 @@ import { AMP_RU } from "./profileMediaPicker.ru.js";
 import { MSG4_RU } from "./msg4.ru.js";
 import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
+import { AGENTX_RU } from "./agentx.ru.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
@@ -33,6 +34,7 @@ export const nested = {
   },
   "msg5": MSG5_RU,
   "act": ACT_RU,
+  "agentx": AGENTX_RU,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -8418,6 +8420,15 @@ export const phrases = {
   "Invalid channel.": "Недопустимый канал.",
   "Invalid code": "Неверный код",
   "Invalid conversation key.": "Недопустимый ключ переписки.",
+  "Budget must be between 0 and 10000 dollars.": "Бюджет должен быть от 0 до 10000 долларов.",
+  "Conversation not found.": "Переписка не найдена.",
+  "Could not delete the conversation.": "Не удалось удалить переписку.",
+  "Could not load the agent status.": "Не удалось загрузить состояние агента.",
+  "Could not load the conversation.": "Не удалось загрузить переписку.",
+  "Could not load the conversations.": "Не удалось загрузить переписки.",
+  "Could not save the agent settings.": "Не удалось сохранить настройки агента.",
+  "Only the owner can change the agent settings.": "Только владелец может менять настройки агента.",
+  "The agent could not answer. Try again.": "Агент не смог ответить. Попробуй снова.",
   "Invalid conversation.": "Недопустимая переписка.",
   "Invalid duration": "Неверная длительность",
   "Invalid duration.": "Недопустимая длительность.",
