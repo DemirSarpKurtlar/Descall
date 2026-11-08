@@ -11,6 +11,7 @@ import { AMP_DE } from "./profileMediaPicker.de.js";
 import { MSG4_DE } from "./msg4.de.js";
 import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
+import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { AGENTX_DE } from "./agentx.de.js";
 import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -36,6 +37,7 @@ export const nested = {
   },
   "msg5": MSG5_DE,
   "act": ACT_DE,
+  "dir": DIR_DE,
   "agentx": AGENTX_DE,
   "invl": INVL_DE,
   "sgx": SIGNUP_GROWTH.de.nested,
@@ -11006,6 +11008,7 @@ export const phrases = {
   "Download Descall for Windows, iPhone, Android and the web": "Descall für Windows, iPhone, Android und das Web herunterladen",
   "iPhone and iPad app on the App Store": "App für iPhone und iPad im App Store",
   "Descall: voice chat, servers and screen sharing for friends": "Descall: Sprachchat, Server und Bildschirmübertragung für Freunde",
+  ...DIR_API_DE,
 };
 
 export default { nested, phrases };

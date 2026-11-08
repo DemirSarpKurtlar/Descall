@@ -47,6 +47,13 @@ Audit: `docs/reports/2026-11-06-seo-denetimi.md`.
 - **Guides of Nov 8.** Four posts (`move-discord-community-to-descall`, `descall-voice-settings-guide`, `game-team-voice-setup`, `screen-share-online-classes`) are live in English and Turkish. They form the page group `guides` (`SITE_PAGE_GROUPS` in `src/site/siteLocales.js`), staged for de, es, fr, pt-BR and ru in `SITE_DRAFT_PAGE_GROUPS` until their bodies are translated (`node scripts/site-i18n.mjs export`, translate the parts, `import`, then remove the locales from the list). Their titles and descriptions are already translated because the served blog index links them.
 - **Search Console data.** `.github/workflows/search-console-sync.yml` copies the last 28 days of query data into `public.seo_search_console_daily` every day; owner steps in `docs/ops/search-console-sync.md`.
 
+## Server directory (item 8, Nov 2026)
+
+- **Pages.** `/communities` and `/tr/topluluklar` plus one page per topic (`/communities/<slug>`, `/tr/topluluklar/<slug>`, slugs in `src/site/directory/directoryPaths.js`). English pages list servers in every language, Turkish pages list servers whose main language is Turkish, so they carry no hreflang pair (only a visible link to the other language). Copy: `src/i18n/locales/dirSeo.{en,tr}.js`. Not mirrored under `/de`, `/es`, ... on purpose.
+- **Build data.** `scripts/prerender-seo.mjs` reads `GET <api>/api/directory/snapshot` (`DIRECTORY_API_URL`, else `VITE_API_BASE_URL`, else production; `DIRECTORY_SNAPSHOT_FILE` for a saved JSON, `DIRECTORY_PRERENDER=0` to skip). Any failure renders empty lists; the build never fails.
+- **Thin pages.** A topic page that lists fewer than 3 servers is `noindex,follow` and out of every sitemap. The prerender writes the decision to `dist/directory-manifest.json`; `generate-seo-files.mjs` and `seo-validate.mjs --dist` read it. The Render sitemap uses the live directory. The two index pages are always indexable.
+- **Structured data.** BreadcrumbList (home > directory > topic) and an ItemList (topic pages on the index, server cards on a topic page). Lastmod is the copy date (`DIRECTORY_COPY_UPDATED`), not the list.
+
 ## Policy
 
 **Only real, indexable marketing URLs** are published. Group invites and `?announcement=` query URLs are **not** in the sitemap index (they are ephemeral / have no public landing).

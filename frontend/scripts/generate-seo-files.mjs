@@ -36,6 +36,13 @@ const { PREFIXED_SITE_LOCALES, localePrefix, prefixedLocaleFromPath, stripPrefix
 );
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
+const { readDirectoryThinPaths } = await import(pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href);
+
+/**
+ * Server directory category pages this build left noindex (fewer than 3 listed servers,
+ * dist/directory-manifest.json from prerender-seo): not in any sitemap.
+ */
+let sitemapOptions = { exclude: [] };
 
 /**
  * Sitemap lastmod = the day the page's copy last changed (src/site/seo/contentDates.js),
@@ -131,6 +138,7 @@ Allow: /discord-replacement
 Allow: /alternatives
 Allow: /blog
 Allow: /blog/
+Allow: /communities
 Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /humans.txt
@@ -234,7 +242,7 @@ function buildSitemapIndex(now) {
   const children = SITEMAP_LANG_TABLES.map((t) => {
     const loc = `${SITE}/${t.file}`;
     assertHttpsDescall(loc);
-    const newest = entriesForLanguage(t.lang, SITE, now, lastmodFor)
+    const newest = entriesForLanguage(t.lang, SITE, now, lastmodFor, sitemapOptions)
       .map((e) => e.lastmod)
       .sort()
       .pop();
@@ -254,7 +262,7 @@ ${children.join("\n")}
 function buildSitemapHtml() {
   return buildHumanSitemapHtml({
     origin: SITE,
-    routes: PUBLIC_ROUTES.filter((r) => !r.noindex).map((r) => localizeRouteMeta(r, siteText)),
+    routes: PUBLIC_ROUTES.filter((r) => !r.noindex && !sitemapOptions.exclude.includes(r.path)).map((r) => localizeRouteMeta(r, siteText)),
     lang: "en",
   });
 }
@@ -278,15 +286,16 @@ async function main() {
     process.exit(1);
   }
 
+  sitemapOptions = { exclude: readDirectoryThinPaths(distDir) };
   const now = new Date().toISOString();
-  const allEntries = allSitemapEntries(SITE, now, lastmodFor);
+  const allEntries = allSitemapEntries(SITE, now, lastmodFor, sitemapOptions);
   const robots = buildRobots();
   const index = buildSitemapIndex(now);
   const pages = buildUrlset(allEntries);
   const html = buildSitemapHtml();
   const tableBodies = [
-    ...SITEMAP_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor)) })),
-    ...SITEMAP_LANG_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForLanguage(t.lang, SITE, now, lastmodFor)) })),
+    ...SITEMAP_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor, sitemapOptions)) })),
+    ...SITEMAP_LANG_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForLanguage(t.lang, SITE, now, lastmodFor, sitemapOptions)) })),
   ];
 
   for (const [name, body] of [

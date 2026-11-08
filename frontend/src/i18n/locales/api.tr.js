@@ -713,4 +713,14 @@ export const API_TR = {
   "Could not load the conversation.": "Sohbet yüklenemedi.",
   "Could not delete the conversation.": "Sohbet silinemedi.",
   "The agent could not answer. Try again.": "Ajan cevap veremedi. Tekrar dene.",
+  // Public server directory (item 8)
+  "Pick a category for the directory.": "Dizin için bir konu seç.",
+  "Pick the main language of the server.": "Sunucunun ana dilini seç.",
+  "The directory description can be at most {max} characters.": "Dizin açıklaması en fazla {max} karakter olabilir.",
+  "Use at most {max} tags, each up to {len} characters.": "En fazla {max} etiket kullan, her biri en fazla {len} karakter.",
+  "This server is not listed in the directory.": "Bu sunucu dizinde listelenmiyor.",
+  "Could not load the directory.": "Dizin yüklenemedi.",
+  "Could not save the directory listing.": "Dizin listelemesi kaydedilemedi.",
+  "The directory is not available yet.": "Dizin henüz kullanılamıyor.",
+  "Could not create an invite for this server.": "Bu sunucu için davet oluşturulamadı.",
 };

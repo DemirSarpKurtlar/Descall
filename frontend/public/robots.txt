@@ -61,6 +61,7 @@ Allow: /discord-replacement
 Allow: /alternatives
 Allow: /blog
 Allow: /blog/
+Allow: /communities
 Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /humans.txt

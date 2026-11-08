@@ -18,6 +18,7 @@ import { TR_BLOG_META } from "./trMeta.js";
 import { TR_LANDINGS, TR_LANDING_UPDATED } from "./trLandings.js";
 import { prefixedLocaleFromPath, stripPrefixedLocale } from "../siteLocales.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
+import { DIRECTORY_COPY_UPDATED, directoryPagePaths } from "../directory/directoryPaths.js";
 
 /** English and Turkish pages (path -> YYYY-MM-DD of the last copy change). */
 export const PAGE_UPDATED = {
@@ -63,6 +64,8 @@ export const PAGE_UPDATED = {
   "/tr/oyuncu-sohbet-uygulamasi": "2026-11-08",
   "/tr/discord-alternatifleri": "2026-11-07",
   "/tr/sesli-sohbet-uygulamasi": "2026-11-08",
+  // Public server directory (item 8): the page copy, not the server list, sets the date.
+  ...Object.fromEntries(directoryPagePaths().map((p) => [p, DIRECTORY_COPY_UPDATED])),
 };
 
 /** First day each prefixed language was served (3.7.23 / 3.7.24). */

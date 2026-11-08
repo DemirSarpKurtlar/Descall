@@ -11,6 +11,7 @@ import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
 import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
+import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -36,6 +37,7 @@ export const nested = {
   },
   "msg5": MSG5_PT_BR,
   "act": ACT_PT_BR,
+  "dir": DIR_PT_BR,
   "agentx": AGENTX_PT_BR,
   "invl": INVL_PT_BR,
   "sgx": SIGNUP_GROWTH["pt-BR"].nested,
@@ -11006,6 +11008,7 @@ export const phrases = {
   "Download Descall for Windows, iPhone, Android and the web": "Baixe o Descall para Windows, iPhone, Android e a web",
   "iPhone and iPad app on the App Store": "App para iPhone e iPad na App Store",
   "Descall: voice chat, servers and screen sharing for friends": "Descall: chat de voz, servidores e tela compartilhada para amigos",
+  ...DIR_API_PT_BR,
 };
 
 export default { nested, phrases };

@@ -1,4 +1,5 @@
 /* 04 Genel bakış, 16 Topluluk ve Keşif, Kurallar, 19 Bildirimler, Klasör. */
+import ServerDirectorySettings from "../ServerDirectorySettings";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ActionSheet, Chip, Field, Foot, Group, I, Row, Sec, Sq } from "./kit";
@@ -212,6 +213,10 @@ export function CommunityPage({ route }) {
           <div style={{ fontWeight: 650 }}>{server?.name}</div>
           <div style={{ fontSize: 13, color: "rgba(235,238,255,.55)" }}>{server?.description ? f("previewMeta", { desc: server.description, n: members }) : f("previewMetaNoDesc", { n: members })}</div>
         </div>
+      </div>
+      {/* Public web directory (item 8): own opt-in and Save, owner / administrator only. */}
+      <div className="svh-group dir-hub">
+        <ServerDirectorySettings server={server} />
       </div>
     </PageFrame>
   );

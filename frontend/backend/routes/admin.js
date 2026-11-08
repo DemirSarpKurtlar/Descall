@@ -2414,4 +2414,33 @@ router.post("/shop/gift", async (req, res) => {
   }
 });
 
+/**
+ * Server directory moderation (item 8): hide a listed server from the public directory
+ * (web pages and Discover) or show it again. The owner's listing settings stay as they
+ * are; while directory_hidden_at is set the server is never shown.
+ */
+router.post("/moderation/server-directory/:serverId", async (req, res) => {
+  try {
+    const hidden = Boolean(req.body?.hidden);
+    const note = req.body?.reason ? String(req.body.reason).trim().slice(0, 300) : null;
+    const patch = hidden
+      ? { directory_hidden_at: new Date().toISOString(), directory_hidden_reason: note }
+      : { directory_hidden_at: null, directory_hidden_reason: null };
+    const { data, error } = await supabase.from("servers").update(patch).eq("id", req.params.serverId).select("id").maybeSingle();
+    if (error) {
+      if (require("../lib/serverDirectory").isMissingSchemaError(error)) {
+        return res.status(503).json(apiError("The directory is not available yet.", null, { code: "DIRECTORY_UNAVAILABLE" }));
+      }
+      throw error;
+    }
+    if (!data) return res.status(404).json(apiError("Server not found."));
+    audit(req.user, hidden ? "server_directory_hide" : "server_directory_show", req.params.serverId, { note });
+    require("./directory").__resetDirectoryCache();
+    return res.json({ ok: true, hidden });
+  } catch (e) {
+    console.error("[admin] server-directory:", e?.message || e);
+    return res.status(500).json(apiError("Could not save the directory listing."));
+  }
+});
+
 module.exports = router;

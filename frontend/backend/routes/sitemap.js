@@ -135,12 +135,39 @@ function staticPages(origin) {
   }));
 }
 
+let _directoryPathsPromise = null;
+function loadDirectoryPaths() {
+  if (!_directoryPathsPromise) {
+    const modPath = path.join(__dirname, "../../src/site/directory/directoryPaths.js");
+    _directoryPathsPromise = import(pathToFileURL(modPath).href);
+  }
+  return _directoryPathsPromise;
+}
+
+/**
+ * Server directory category pages that list fewer than 3 servers right now (noindex on
+ * the static build too): left out of the sitemap. Without directory data (no database,
+ * migration not applied) every category page is left out; the index pages stay.
+ */
+async function directoryThinPaths() {
+  const paths = await loadDirectoryPaths();
+  try {
+    // eslint-disable-next-line global-require
+    const snap = await require("./directory").__service.snapshot();
+    const usable = snap && snap.available && snap.cards.length > 0;
+    return paths.thinDirectoryPaths(usable ? paths.summarizeDirectoryCards(snap.cards) : null);
+  } catch {
+    return paths.thinDirectoryPaths(null);
+  }
+}
+
 async function catalogEntries(origin, tableId = null) {
   const catalog = await loadSitemapCatalog();
   const now = new Date().toISOString();
+  const options = { exclude: await directoryThinPaths().catch(() => []) };
   const entries = tableId
-    ? catalog.entriesForTable(tableId, origin, now)
-    : catalog.allSitemapEntries(origin, now);
+    ? catalog.entriesForTable(tableId, origin, now, undefined, options)
+    : catalog.allSitemapEntries(origin, now, undefined, options);
   return entries.map((e) => ({
     loc: e.loc,
     lastmod: e.lastmod,
