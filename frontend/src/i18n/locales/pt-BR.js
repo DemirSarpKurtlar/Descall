@@ -12,6 +12,7 @@ import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
+import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
@@ -35,6 +36,7 @@ export const nested = {
   "msg5": MSG5_PT_BR,
   "act": ACT_PT_BR,
   "agentx": AGENTX_PT_BR,
+  "sgx": SIGNUP_GROWTH["pt-BR"].nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -10987,6 +10989,7 @@ export const phrases = {
   "More comparisons": "Mais comparações",
   "Ready-made Gaming template": "Modelo pronto para jogos",
   ...MID_APP_I18N["pt-BR"],
+  ...SIGNUP_GROWTH["pt-BR"].phrases,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "O Descall não tem afiliação com a Discord Inc. Discord é uma marca comercial da Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "A linha da API é verificada ao vivo pelo seu navegador sempre que você abre esta página.",
   "Author": "Autor",

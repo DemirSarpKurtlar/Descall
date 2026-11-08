@@ -363,4 +363,18 @@ export const MARKETING_TR = {
   "Download Descall for Windows, iPhone, Android and the web": "Descall’ı indir: Windows, iPhone, Android ve tarayıcı",
   "iPhone and iPad app on the App Store": "App Store’da iPhone ve iPad uygulaması",
   "Descall: voice chat, servers and screen sharing for friends": "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
+  // Register form, as-you-type checks (components/auth/SignupFieldMessage.jsx): the same
+  // Turkish as the app catalog, here so the modal does not wait for it.
+  "Username must be at least 2 characters.": "Kullanıcı adı en az 2 karakter olmalı.",
+  "Username must be at most 24 characters.": "Kullanıcı adı en fazla 24 karakter olabilir.",
+  "Username may only contain letters, numbers, underscores, hyphens, and dots.": "Kullanıcı adı yalnızca harf, rakam, alt çizgi, tire ve nokta içerebilir.",
+  "That username is reserved. Please pick another one.": "Bu kullanıcı adı ayrılmış. Lütfen başka bir tane seç.",
+  "Username is already taken.": "Bu kullanıcı adı alınmış.",
+  "This username is taken. Try one of these:": "Bu kullanıcı adı alınmış. Bunlardan birini dene:",
+  "This username is yours to take.": "Bu kullanıcı adı boşta, senin olabilir.",
+  "Checking…": "Kontrol ediliyor…",
+  "Use @{name}": "@{name} kullan",
+  "Password must be at least 8 characters.": "Şifre en az 8 karakter olmalı.",
+  "This password has appeared in data breaches. Choose a different password.": "Bu şifre veri ihlallerinde görünmüş. Başka bir şifre seç.",
+  "Email is already in use.": "Bu e-posta zaten kullanılıyor.",
 };

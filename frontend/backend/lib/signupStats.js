@@ -131,9 +131,10 @@ function delta(cur, prev, { percent }) {
 }
 
 /**
- * users:        [{ id, created_at, signup_at, auth_method, first_touch_source, signup_country, first_app_opened_at, deleted_at }]
+ * users:        [{ id, created_at, signup_at, auth_method, first_touch_source, signup_country, first_app_opened_at, deleted_at,
+ *                  heard_about?, joined_via_invite_code?, referred_by? }]
  * startedDays:  ["2026-10-01", …] Istanbul day of each signup_started event (one per visitor)
- * attempts:     [{ created_at, status, attempt_key }]
+ * attempts:     [{ created_at, status, attempt_key, reason?, reason_detail? }]
  * activeDays:   [{ user_id, day }]
  */
 function computeSignupStats({ users = [], startedDays = [], attempts = [], activeDays = [], range, now = new Date(), lang = "tr" }) {
@@ -218,6 +219,9 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
   for (const k of failKeys) if (!okKeys.has(k)) failed += 1;
   const startedTotal = Math.max(started, completed + failed);
   const funnel = { started: startedTotal, completed, appOpened, failed, abandoned: Math.max(0, startedTotal - completed - failed), completedPct: pct(completed, startedTotal) };
+  const failures = failureBreakdown(attempts, inRange);
+  const heardAbout = heardAboutBreakdown(rangeUsers);
+  const invites = inviteBreakdown(rangeUsers);
 
   // Sources (all time).
   const src = new Map();
@@ -293,6 +297,9 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
     series,
     avgSpan: span,
     funnel,
+    failures,
+    heardAbout,
+    invites,
     sources,
     total: users.length,
     authMethods,
@@ -301,6 +308,69 @@ function computeSignupStats({ users = [], startedDays = [], attempts = [], activ
     countrySince: countrySince ? dayLabel(countrySince, { year: true }) : null,
     countrySinceDay: countrySince,
   };
+}
+
+/**
+ * Failed register attempts in the range by the rule that stopped them. Rows from
+ * before reason_detail existed only say "validation" / "conflict" and keep that key.
+ */
+function failureBreakdown(attempts, inRange) {
+  const by = new Map();
+  let total = 0;
+  let detailed = 0;
+  for (const a of attempts) {
+    if (a.status !== "failed" || !inRange(istDay(a.created_at))) continue;
+    total += 1;
+    const detail = String(a.reason_detail || "").trim();
+    if (detail) detailed += 1;
+    const key = detail || String(a.reason || "").trim() || "unknown";
+    by.set(key, (by.get(key) || 0) + 1);
+  }
+  const rows = [...by.entries()].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+  return { total, detailed, rows };
+}
+
+const HEARD_ABOUT_KEYS = ["google", "ai_assistant", "instagram", "tiktok", "youtube", "friend", "discord", "forum", "other"];
+
+/** "How did you hear about us?" answers of the sign-ups in the range (users.heard_about). */
+function heardAboutBreakdown(rangeUsers) {
+  const tracked = rangeUsers.some((u) => u && Object.prototype.hasOwnProperty.call(u, "heard_about"));
+  const by = new Map(HEARD_ABOUT_KEYS.map((k) => [k, 0]));
+  let answered = 0;
+  let skipped = 0;
+  for (const u of rangeUsers) {
+    const v = String(u?.heard_about || "").trim();
+    if (!v) continue;
+    if (v === "skipped") { skipped += 1; continue; }
+    answered += 1;
+    const key = by.has(v) ? v : "other";
+    by.set(key, by.get(key) + 1);
+  }
+  const rows = [...by.entries()].filter(([, c]) => c > 0).map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
+  return { tracked, answered, skipped, noAnswer: Math.max(0, rangeUsers.length - answered - skipped), rows };
+}
+
+/** Invite kind of a stored users.joined_via_invite_code ("server:abc", "friend:ali", ...). */
+function inviteKindOf(u) {
+  const raw = String(u?.joined_via_invite_code || "");
+  const kind = raw.includes(":") ? raw.slice(0, raw.indexOf(":")) : "";
+  if (["server", "vanity", "group", "friend"].includes(kind)) return kind;
+  if (u?.referred_by) return "friend";
+  return null;
+}
+
+/** Sign-ups in the range that came through an invite, by kind. */
+function inviteBreakdown(rangeUsers) {
+  const tracked = rangeUsers.some((u) => u && Object.prototype.hasOwnProperty.call(u, "joined_via_invite_code"));
+  const byKind = { server: 0, vanity: 0, group: 0, friend: 0 };
+  let total = 0;
+  for (const u of rangeUsers) {
+    const kind = inviteKindOf(u);
+    if (!kind) continue;
+    byKind[kind] += 1;
+    total += 1;
+  }
+  return { tracked, total, signups: rangeUsers.length, byKind };
 }
 
 /** CSV of the trend buckets (UTF-8 BOM so Excel opens Turkish characters). */
@@ -350,6 +420,31 @@ function failureReason(status) {
   return "error";
 }
 
+const DETAIL_RE = /^[a-z0-9_]{1,40}$/;
+
+/**
+ * Which rule stopped this sign-up (lib/signupRules.js codes, e.g. "password_short").
+ * Stored next to the coarse reason in signup_attempts.reason_detail.
+ */
+function noteSignupFailure(res, detail) {
+  if (!res || !DETAIL_RE.test(String(detail || ""))) return;
+  res.locals = res.locals || {};
+  res.locals.signupFailDetail = String(detail);
+}
+
+const isMissingColumn = (e) => /column|schema cache|does not exist|42703|PGRST204/i.test(`${e?.code || ""} ${e?.message || ""}`);
+
+async function insertAttempt(row) {
+  let r = await supabase.from("signup_attempts").insert(row);
+  // reason_detail is newer than the table (20261111_signup_measurement.sql): keep the
+  // coarse row when that column is not there yet.
+  if (r?.error && "reason_detail" in row && isMissingColumn(r.error)) {
+    const { reason_detail: _drop, ...rest } = row;
+    r = await supabase.from("signup_attempts").insert(rest);
+  }
+  return r;
+}
+
 /** Express helper: call at the top of POST /auth/register; records the outcome when the response ends. */
 function trackSignupAttempt(req, res, { method = "email", countryFromHeaders } = {}) {
   const day = istDay(new Date());
@@ -364,7 +459,9 @@ function trackSignupAttempt(req, res, { method = "email", countryFromHeaders } =
   res.on("finish", () => {
     const ok = res.statusCode >= 200 && res.statusCode < 300;
     const row = { status: ok ? "completed" : "failed", reason: ok ? null : failureReason(res.statusCode), method, attempt_key: key, country };
-    Promise.resolve(supabase.from("signup_attempts").insert(row))
+    const detail = res.locals?.signupFailDetail;
+    if (!ok && detail && DETAIL_RE.test(detail)) row.reason_detail = detail;
+    Promise.resolve(insertAttempt(row))
       .then((r) => {
         if (r?.error && !/does not exist|schema cache/i.test(String(r.error.message || ""))) console.warn("[signup-stats] attempt write failed");
       })
@@ -399,10 +496,16 @@ module.exports = {
   dayLabel,
   resolveRange,
   computeSignupStats,
+  failureBreakdown,
+  heardAboutBreakdown,
+  inviteBreakdown,
+  HEARD_ABOUT_KEYS,
   statsCsv,
   attemptKey,
   recordActiveDay,
   trackSignupAttempt,
+  noteSignupFailure,
+  failureReason,
   pruneOldRows,
   startRetention,
 };

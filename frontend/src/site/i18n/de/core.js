@@ -245,6 +245,7 @@ export default {
   "Try Descall": "Descall ausprobieren",
   "Two-Factor Verification": "Zwei-Faktor-Verifizierung",
   "Updated": "Aktualisiert",
+  "Use @{name}": "@{name} verwenden",
   "Use a recovery code": "Wiederherstellungscode verwenden",
   "Use at least 8 characters. A mix of letters and numbers is safer.": "Verwende mindestens 8 Zeichen. Eine Mischung aus Buchstaben und Zahlen ist sicherer.",
   "Use the app code": "App-Code verwenden",

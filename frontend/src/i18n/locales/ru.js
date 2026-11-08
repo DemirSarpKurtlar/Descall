@@ -12,6 +12,7 @@ import { MSG4_RU } from "./msg4.ru.js";
 import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
+import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
@@ -35,6 +36,7 @@ export const nested = {
   "msg5": MSG5_RU,
   "act": ACT_RU,
   "agentx": AGENTX_RU,
+  "sgx": SIGNUP_GROWTH.ru.nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -10987,6 +10989,7 @@ export const phrases = {
   "More comparisons": "Другие сравнения",
   "Ready-made Gaming template": "Готовый шаблон «Игры»",
   ...MID_APP_I18N.ru,
+  ...SIGNUP_GROWTH.ru.phrases,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall не связан с Discord Inc. Discord является товарным знаком Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "Строка API проверяется в реальном времени из вашего браузера при каждом открытии этой страницы.",
   "Author": "Автор",

@@ -12,7 +12,9 @@ const { buildCodeEmail, langFrom } = require("../lib/emailTemplates");
 const { bt } = require("../lib/i18n");
 const { notifyTeamNewSignup } = require("../lib/signupReport");
 const { buildUserAttributionColumns, isMissingColumnError, countryFromHeaders } = require("../lib/signupAttribution");
-const { trackSignupAttempt } = require("../lib/signupStats");
+const { trackSignupAttempt, noteSignupFailure, HEARD_ABOUT_KEYS } = require("../lib/signupStats");
+const signupRules = require("../lib/signupRules");
+const inviteAttribution = require("../lib/inviteAttribution");
 const { sanitizeVisitorKey } = require("../lib/userAnalytics");
 const { recordSignupAnalytics, flagSuspiciousSignup, recordAppOpened, recordAnalyticsEvent } = require("../lib/userAnalyticsStore");
 const { hashCode, verifyStoredCode, isCodeFresh } = require("../lib/authCodes");
@@ -97,7 +99,7 @@ async function secondFactorGate(res, user) {
   return true;
 }
 
-const { buildSignupSourceColumns, inviteFromPath } = require("../lib/signupSourceTaxonomy");
+const { buildSignupSourceColumns, inviteFromPath, resolvePlatform } = require("../lib/signupSourceTaxonomy");
 
 async function insertUserWithAttribution(basePayload, selectCols, attribution, authMethod, extra = {}) {
   const attributionColumns = buildUserAttributionColumns({
@@ -109,6 +111,10 @@ async function insertUserWithAttribution(basePayload, selectCols, attribution, a
   const visitorKey = sanitizeVisitorKey(attribution?.visitorKey);
   const full = { ...basePayload, ...attributionColumns };
   if (visitorKey) full.signup_visitor_key = visitorKey;
+  const userAgent = extra.req?.headers?.["user-agent"] || "";
+  // What the app says it is (src/api/auth.js signupContext: web | electron | ios | ipad |
+  // android). Without it a Capacitor WebView looks like mobile Safari / Chrome.
+  const clientPlatform = signupClientPlatform(extra.req);
   let sourceColumns = null;
   try {
     const snap = attribution && typeof attribution === "object" ? attribution.first || attribution : {};
@@ -116,29 +122,41 @@ async function insertUserWithAttribution(basePayload, selectCols, attribution, a
       snapshot: {
         ...snap,
         invite_kind:
+          (extra.inviteCode ? inviteAttribution.inviteKindForTaxonomy(extra.inviteCode) : "") ||
           inviteFromPath(snap?.landing_page || snap?.landing_path) ||
           inviteFromPath(attribution?.last?.landing_page || attribution?.last?.landing_path) ||
           "",
       },
       invitedBy: extra.invitedBy,
-      userAgent: extra.req?.headers?.["user-agent"] || "",
+      userAgent,
+      clientPlatform,
     });
   } catch {
     sourceColumns = null;
   }
-  let first = sourceColumns
-    ? await supabase.from("users").insert({ ...full, ...sourceColumns }).select(selectCols).single()
-    : { error: { code: "42703", message: "skip" } };
-  if (first.error && isMissingColumnError(first.error)) {
+  // signup_platform is written on every path, also when the source classifier failed.
+  const platformOnly = { signup_platform: sourceColumns?.signup_platform || resolvePlatform({ clientPlatform, userAgent }) };
+  const attempts = [
+    sourceColumns ? { ...full, ...sourceColumns } : { ...full, ...platformOnly },
     // Granular source columns not migrated yet: keep the legacy attribution.
-    first = await supabase.from("users").insert(full).select(selectCols).single();
+    full,
+    // Legacy attribution columns missing but the 20261105 ones exist.
+    { ...basePayload, ...platformOnly },
+    basePayload,
+  ];
+  let result = { error: { code: "42703", message: "skip" } };
+  for (let i = 0; i < attempts.length; i += 1) {
+    if (i === attempts.length - 1) console.warn("[AUTH] attribution columns missing; creating user without them");
+    result = await supabase.from("users").insert(attempts[i]).select(selectCols).single();
+    if (!result.error || !isMissingColumnError(result.error)) break;
   }
-  if (first.error && isMissingColumnError(first.error)) {
-    console.warn("[AUTH] attribution columns missing; creating user without them");
-    const fallback = await supabase.from("users").insert(basePayload).select(selectCols).single();
-    return { ...fallback, attributionColumns };
-  }
-  return { ...first, attributionColumns };
+  return { ...result, attributionColumns };
+}
+
+const CLIENT_PLATFORMS = new Set(["web", "electron", "ios", "ipad", "android", "watch"]);
+function signupClientPlatform(req) {
+  const raw = String(req?.body?.clientPlatform || req?.get?.("x-descall-platform") || "").trim().toLowerCase();
+  return CLIENT_PLATFORMS.has(raw) ? raw : "";
 }
 
 const USER_BAN_COLS =
@@ -369,15 +387,20 @@ async function usernameSuggestions(candidate) {
   return out;
 }
 
+/** English message of the first failing username rule (lib/signupRules.js), or null. */
 function validateUsername(username) {
-  if (typeof username !== "string") return "Username must be a string.";
-  const trimmed = username.trim();
-  if (trimmed.length < 2) return "Username must be at least 2 characters.";
-  if (trimmed.length > 24) return "Username must be at most 24 characters.";
-  if (!/^[a-zA-Z0-9_.-]+$/.test(trimmed))
-    return "Username may only contain letters, numbers, underscores, hyphens, and dots.";
-  if (isReservedUsername(trimmed)) return "That username is reserved. Please pick another one.";
-  return null;
+  const issue = signupRules.usernameIssue(username);
+  return issue ? issue.message : null;
+}
+
+/**
+ * A failed POST /auth/register: the response says which field to fix (`field`, `code`)
+ * and Kayıt İstatistikleri records the rule (signup_attempts.reason_detail).
+ */
+function rejectSignup(res, status, detail, body) {
+  noteSignupFailure(res, detail);
+  const field = signupRules.fieldOf(detail);
+  return res.status(status).json({ ...body, ...(field ? { field } : {}), code: body.code || detail });
 }
 
 async function validatePassword(password) {
@@ -457,6 +480,9 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
     return { linked: false };
   }
 
+  // Attribution on every friend-invite sign-up, not only when the DesCoin reward is paid.
+  await supabase.from("users").update({ referred_by: inviter.id }).eq("id", newUserId).is("referred_by", null).then(() => {}, () => {});
+
   const { data: existingRows } = await supabase
     .from("friendships")
     .select("id, status")
@@ -525,6 +551,17 @@ async function applyFriendInvite(newUserId, invitedByRaw, io) {
 }
 
 /**
+ * users.joined_via_invite_code for a new account (lib/inviteAttribution.js): the server /
+ * group invite the app sent with the sign-up (`inviteCode`), else the friend invite.
+ */
+function noteSignupInvite(userId, body, invite) {
+  const value =
+    inviteAttribution.normalizeInviteAttribution(body?.inviteCode) ||
+    (invite?.inviterUsername ? inviteAttribution.inviteValue("friend", invite.inviterUsername) : null);
+  if (value) void inviteAttribution.recordJoinedViaInvite(userId, value);
+}
+
+/**
  * Erişim yasakları (3.5.0, lib/accessBans.js): a banned IP, network or device
  * cannot sign in, sign up or finish a Google / Apple sign-in. Admin accounts
  * are exempt (a ban on a shared network must not lock the team out).
@@ -544,41 +581,48 @@ router.post("/register", async (req, res) => {
     {
       // Yönetici Paneli › Güvenlik: "Kayıtlara izin ver" kapalıyken yeni hesap yok (3.1.3).
       const closed = platformPolicy.checkRegistration({ config: systemConfig });
-      if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
+      if (!closed.ok) {
+        noteSignupFailure(res, "registration_closed");
+        return res.status(403).json({ error: closed.message, code: closed.code });
+      }
     }
+    noteSignupFailure(res, "access_banned");
     if (await accessGate(req, res, { action: "register" })) return;
+    res.locals.signupFailDetail = null;
     const ip = clientIp(req);
     if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;
     recordFailure(`register:ip:${ip}`, { max: 20 });
     const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution, birthDate } = req.body ?? {};
 
     if (!termsAccepted) {
-      return res.status(400).json({ error: "You must accept the Terms of Service and Privacy Policy to register." });
+      return rejectSignup(res, 400, "terms_missing", { error: "You must accept the Terms of Service and Privacy Policy to register." });
     }
 
     const birth = ageGate.validateBirthDate(birthDate);
     if (!birth.ok) {
-      return res.status(birth.status).json({ error: birth.error, code: birth.code });
+      return rejectSignup(res, birth.status, birth.code === "under_age" ? "under_age" : "birth_date_invalid", { error: birth.error, code: birth.code });
     }
 
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      return res.status(400).json({ error: usernameError });
+    const usernameIssue = signupRules.usernameIssue(username);
+    if (usernameIssue) {
+      return rejectSignup(res, 400, usernameIssue.code, { error: usernameIssue.message });
     }
 
     const passwordCheck = await checkNewPassword(password);
     if (passwordCheck.error) {
-      return res.status(400).json({ error: passwordCheck.error, code: passwordCheck.code });
+      const detail = passwordCheck.code === "pwned" ? "password_breached" : signupRules.passwordLengthCode(password) || "password_short";
+      return rejectSignup(res, 400, detail, { error: passwordCheck.error, code: passwordCheck.code });
     }
 
     // 3.7.17 (owner rule): a new password account needs an email; it gets the
     // verification code right away. Existing accounts without one are unchanged.
     const email = rawEmail ? String(rawEmail).trim().toLowerCase() : null;
-    if (!email) {
-      return res.status(400).json({ error: "Email is required.", code: "EMAIL_REQUIRED" });
+    const emailCode = signupRules.emailIssueCode(email);
+    if (emailCode === "email_missing") {
+      return rejectSignup(res, 400, emailCode, { error: "Email is required.", code: "EMAIL_REQUIRED" });
     }
-    if (!EMAIL_RE.test(email)) {
-      return res.status(400).json({ error: "Enter a valid email address.", code: "EMAIL_INVALID" });
+    if (emailCode) {
+      return rejectSignup(res, 400, emailCode, { error: "Enter a valid email address.", code: "EMAIL_INVALID" });
     }
 
     const cleanUsername = username.trim();
@@ -594,7 +638,7 @@ router.post("/register", async (req, res) => {
     }
 
     if (existing) {
-      return res.status(409).json({ error: "Username is already taken." });
+      return rejectSignup(res, 409, "username_taken", { error: "Username is already taken.", suggestions: await usernameSuggestions(cleanUsername).catch(() => []) });
     }
 
     if (email) {
@@ -605,7 +649,7 @@ router.post("/register", async (req, res) => {
         .not("email_confirmed_at", "is", null)
         .maybeSingle();
       if (emailTaken) {
-        return res.status(409).json({ error: "Email is already in use." });
+        return rejectSignup(res, 409, "email_taken", { error: "Email is already in use." });
       }
     }
 
@@ -616,7 +660,7 @@ router.post("/register", async (req, res) => {
       "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
       attribution,
       "email",
-      { req, invitedBy },
+      { req, invitedBy, inviteCode: req.body?.inviteCode },
     );
 
     if (insertError) {
@@ -625,9 +669,9 @@ router.post("/register", async (req, res) => {
       const msg = String(insertError.message || "");
       if (code === "23505" || /duplicate|unique/i.test(msg)) {
         if (/email/i.test(msg)) {
-          return res.status(409).json({ error: "Email is already in use." });
+          return rejectSignup(res, 409, "email_taken", { error: "Email is already in use." });
         }
-        return res.status(409).json({ error: "Username is already taken." });
+        return rejectSignup(res, 409, "username_taken", { error: "Username is already taken." });
       }
       if (code === "42703") {
         return res.status(500).json({
@@ -656,6 +700,7 @@ router.post("/register", async (req, res) => {
       console.warn("[AUTH] invite apply failed:", err?.message);
       return { linked: false };
     });
+    noteSignupInvite(newUser.id, req.body, invite);
 
     void recordSignupAnalytics(newUser, attributionColumns);
     void flagSuspiciousSignup(newUser.id, attribution?.visitorKey);
@@ -1033,6 +1078,7 @@ router.post("/google", async (req, res) => {
       } = await insertUserWithAttribution(insertPayload, googleSelect, attribution, "google", {
         req,
         invitedBy,
+        inviteCode: req.body?.inviteCode,
       });
 
       if (insertError || !created) {
@@ -1053,6 +1099,7 @@ router.post("/google", async (req, res) => {
         console.warn("[AUTH] Google invite apply failed:", err?.message);
         return { linked: false };
       });
+      noteSignupInvite(user.id, req.body, invite);
       void recordSignupAnalytics(user, attributionColumns);
       void flagSuspiciousSignup(user.id, attribution?.visitorKey);
       void notifyTeamNewSignup({
@@ -1248,7 +1295,7 @@ router.post("/apple", async (req, res) => {
           "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
           attribution,
           "apple",
-          { req, invitedBy }
+          { req, invitedBy, inviteCode: req.body?.inviteCode }
         );
       if (insertError || !created) {
         console.error("[AUTH] Apple register error:", insertError);
@@ -1274,6 +1321,7 @@ router.post("/apple", async (req, res) => {
     let invite = { linked: false };
     if (isNewUser) {
       invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io")).catch(() => ({ linked: false }));
+      noteSignupInvite(user.id, req.body, invite);
       void recordSignupAnalytics(user, attributionColumns);
       void flagSuspiciousSignup(user.id, attribution?.visitorKey);
       void notifyTeamNewSignup({
@@ -1723,6 +1771,34 @@ function noteUsernameChangeFail(userId) {
     entry.count += 1;
   }
 }
+
+const HEARD_ABOUT_ANSWERS = new Set([...HEARD_ABOUT_KEYS, "skipped"]);
+const INTERNAL_ERROR = "Internal server error.";
+
+/**
+ * POST /api/auth/heard-about { answer } → { ok, stored }
+ * The optional "How did you hear about us?" question shown once after sign-up. The
+ * first answer (or "skipped") is kept; later calls change nothing. A database without
+ * users.heard_about (20261111_signup_measurement.sql) answers ok with stored: false.
+ */
+router.post("/heard-about", requireAuth, async (req, res) => {
+  try {
+    const answer = String(req.body?.answer || "").trim().toLowerCase();
+    if (!HEARD_ABOUT_ANSWERS.has(answer)) return res.status(400).json({ error: "invalid_answer" });
+    const { data, error } = await supabase
+      .from("users")
+      .update({ heard_about: answer, heard_about_at: new Date().toISOString() })
+      .eq("id", req.user.id)
+      .is("heard_about", null)
+      .select("id");
+    if (error && isMissingColumnError(error)) return res.json({ ok: true, stored: false });
+    if (error) throw error;
+    return res.json({ ok: true, stored: Array.isArray(data) && data.length > 0 });
+  } catch (err) {
+    console.error("[AUTH] heard-about error:", err?.message || err);
+    return res.status(500).json({ error: INTERNAL_ERROR });
+  }
+});
 
 /**
  * GET /api/auth/username/check?username=foo → { available, error?, suggestions? }

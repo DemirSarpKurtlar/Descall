@@ -14,6 +14,8 @@ import TermsConsent from "./auth/TermsConsent";
 import SocialSignupStep from "./auth/SocialSignupStep";
 import { usernameFromName } from "./auth/SignupUsernamePicker";
 import PasswordStrength from "./auth/PasswordStrength";
+import useSignupFieldChecks from "./auth/useSignupFieldChecks";
+import SignupFieldMessage from "./auth/SignupFieldMessage";
 import { isSocialSignupRequired } from "../api/auth";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { peekInviteRef, persistInviteRef, readInviteRefFromLocation } from "../lib/referral";
@@ -108,6 +110,16 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
   }, [birthDate, mode, socialSignup, t]);
 
   const needsTerms = mode === "register" && (!termsAccepted || !isEligibleBirthDate(birthDate));
+  // As-you-type checks with the server's rules (lib/signupRules.js), register tab only.
+  const checks = useSignupFieldChecks({ username, password, email, enabled: mode === "register" && !twoFa });
+  const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);
+  const focusFirstInvalid = () => {
+    const first = ["username", "password", "email"].find((name) => checks.fields[name]?.code);
+    if (first) document.getElementById(`auth-${first}`)?.focus?.();
+  };
+  // Apple / Google on the Register tab work before Terms + date of birth are filled
+  // in: a new account then gets the Terms + date-of-birth step (SocialSignupStep).
+  const socialSignupExtra = () => (mode === "register" && !needsTerms ? { termsAccepted: true, birthDate } : {});
   const productTagline = t("Connect with friends through voice, video, and messaging");
 
   const submit = async (event) => {
@@ -123,21 +135,32 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       setFormError(t(DEVICE_SIGNUP_BLOCK_MESSAGE));
       return;
     }
+    checks.touchAll();
+    if (checks.hasErrors) {
+      focusFirstInvalid();
+      return;
+    }
     const emailError = signupEmailError(email);
     if (emailError) {
       setFormError(t(emailError));
       return;
     }
+    setFormError("");
     const trimmedEmail = email.trim();
     const invitedBy = inviteRef || peekInviteRef();
-    await onRegister({
-      username: username.trim(),
-      password,
-      termsAccepted: true,
-      birthDate,
-      ...(trimmedEmail ? { email: trimmedEmail } : {}),
-      ...(invitedBy ? { invitedBy } : {}),
-    });
+    try {
+      await onRegister({
+        username: username.trim(),
+        password,
+        termsAccepted: true,
+        birthDate,
+        ...(trimmedEmail ? { email: trimmedEmail } : {}),
+        ...(invitedBy ? { invitedBy } : {}),
+      });
+    } catch (err) {
+      // The error prop shows the message; the field it is about is marked too.
+      checks.noteServerError(err);
+    }
   };
 
   const submitSocialSignup = async () => {
@@ -312,15 +335,18 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         </button>
       </div>
 
+      {mode === "register" && (isNativeIOS() || isGoogleSignInOffered()) && (
+        <p className="auth-field-hint auth-social-lead">
+          {isNativeIOS() ? t("Fastest path: continue with Apple, then you’re in.") : t("Fastest path: continue with Google, then you’re in.")}
+        </p>
+      )}
       <AppleSignInButton
-        disabled={loading || needsTerms}
+        disabled={loading}
         onApple={async (apple) => {
-          if (needsTerms) return;
           const invitedBy = inviteRef || peekInviteRef();
           try {
             const res = await onAppleLogin?.(apple, {
-              termsAccepted: mode === "register",
-              ...(mode === "register" ? { birthDate } : {}),
+              ...socialSignupExtra(),
               ...(invitedBy ? { invitedBy } : {}),
             });
             openTwoFa(res);
@@ -336,14 +362,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
       />
       <GoogleSignInButton
         appearance="glass"
-        disabled={loading || needsTerms}
+        disabled={loading}
         onCredential={async (credential) => {
-          if (needsTerms) return;
           const invitedBy = inviteRef || peekInviteRef();
           try {
             const res = await onGoogleLogin?.(credential, {
-              termsAccepted: mode === "register",
-              ...(mode === "register" ? { birthDate } : {}),
+              ...socialSignupExtra(),
               ...(invitedBy ? { invitedBy } : {}),
             });
             openTwoFa(res);
@@ -378,13 +402,19 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             placeholder={t("Username")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            onBlur={() => checks.blur("username")}
             maxLength={24}
             autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
             required
-            aria-invalid={error || formError ? "true" : undefined}
-            aria-describedby={error || formError ? "auth-form-error" : undefined}
+            aria-invalid={error || formError || fieldInvalid("username") ? "true" : undefined}
+            aria-describedby={fieldInvalid("username") ? "auth-username-msg" : error || formError ? "auth-form-error" : undefined}
           />
         </div>
+        {mode === "register" ? (
+          <SignupFieldMessage id="auth-username-msg" kind="username" field={checks.fields.username} onPick={setUsername} />
+        ) : null}
 
         <div className="input-wrapper has-toggle">
           <Lock className="input-icon" size={20} />
@@ -394,11 +424,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             placeholder={t("Password")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => checks.blur("password")}
             maxLength={72}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
             required
-            aria-invalid={error || formError ? "true" : undefined}
-            aria-describedby={error || formError ? "auth-form-error" : undefined}
+            aria-invalid={error || formError || fieldInvalid("password") ? "true" : undefined}
+            aria-describedby={fieldInvalid("password") ? "auth-password-msg" : error || formError ? "auth-form-error" : undefined}
           />
           <button
             type="button"
@@ -412,6 +443,9 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           </button>
         </div>
         {mode === "register" ? <PasswordStrength password={password} /> : null}
+        {mode === "register" && checks.fields.password?.code !== "password_short" ? (
+          <SignupFieldMessage id="auth-password-msg" kind="password" field={checks.fields.password} />
+        ) : null}
 
         {mode === "login" && (
           <div className="auth-forgot-row">
@@ -429,17 +463,24 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
           <div className="input-wrapper">
             <Mail className="input-icon" size={20} />
             <input
+              id="auth-email"
               type="email"
               placeholder={t("Email")}
               aria-label={t("Email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => checks.blur("email")}
               maxLength={254}
               autoComplete="email"
               required
+              aria-invalid={fieldInvalid("email") ? "true" : undefined}
+              aria-describedby={fieldInvalid("email") ? "auth-email-msg" : undefined}
             />
           </div>
         )}
+        {mode === "register" ? (
+          <SignupFieldMessage id="auth-email-msg" kind="email" field={checks.fields.email} />
+        ) : null}
         {mode === "register" && (
           <p className="auth-field-hint">
             {t(SIGNUP_EMAIL_HINT)}

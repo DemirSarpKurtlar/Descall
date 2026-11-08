@@ -944,6 +944,39 @@ a.mkt-feature-link {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Register form as-you-type checks (components/auth/SignupFieldMessage.jsx). */
+.signup-field-msg.is-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: #ff8e92;
+}
+.signup-field-msg.is-ok {
+  color: #57d98a;
+}
+.signup-field-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.signup-field-chip {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f2f3f5;
+  font: inherit;
+  font-size: var(--fs-12);
+  cursor: pointer;
+}
+.signup-field-chip:hover,
+.signup-field-chip:focus-visible {
+  border-color: #7b89ff;
+  background: rgba(123, 137, 255, 0.18);
+}
+
 .login-modal form input:focus {
   outline: none;
   border-color: #7b89ff;

@@ -34,17 +34,24 @@ async function loadStats(query, lang = "tr") {
   const range = ss.resolveRange(query);
   const sinceIso = new Date(Date.parse(`${ss.addDays(range.from, -1)}T00:00:00Z`)).toISOString();
   const full = "id, created_at, signup_at, auth_method, first_touch_source, signup_country, first_app_opened_at, deleted_at";
-  let users = await pageAll(() => supabase.from("users").select(full).order("id", { ascending: true }));
-  if (users.error && isMissingColumnError(users.error)) {
-    users = await pageAll(() => supabase.from("users").select("id, created_at").order("id", { ascending: true }));
+  // Newest columns first (20261111_signup_measurement.sql), then the older sets, so a
+  // database that is not migrated yet still gets every stat it has columns for.
+  const userCols = [`${full}, referred_by, heard_about, joined_via_invite_code`, `${full}, referred_by`, full, "id, created_at"];
+  let users = { data: [], error: { code: "42703" } };
+  for (const cols of userCols) {
+    users = await pageAll(() => supabase.from("users").select(cols).order("id", { ascending: true }));
+    if (!users.error || !isMissingColumnError(users.error)) break;
   }
   if (users.error) throw new Error("users");
 
-  const [events, attempts, active] = await Promise.all([
+  const attemptsQuery = (cols) => pageAll(() => supabase.from("signup_attempts").select(cols).gte("created_at", sinceIso).order("created_at", { ascending: true }));
+  const [events, attemptsFull, active] = await Promise.all([
     pageAll(() => supabase.from("analytics_events").select("visitor_key, occurred_at").eq("event", "signup_started").gte("occurred_at", sinceIso).order("occurred_at", { ascending: true })),
-    pageAll(() => supabase.from("signup_attempts").select("created_at, status, attempt_key").gte("created_at", sinceIso).order("created_at", { ascending: true })),
+    attemptsQuery("created_at, status, attempt_key, reason, reason_detail"),
     pageAll(() => supabase.from("user_active_days").select("user_id, day").gte("day", range.from).order("day", { ascending: true })),
   ]);
+  // reason_detail not migrated yet: the coarse reason still splits validation / conflict.
+  const attempts = attemptsFull.error && isMissingColumnError(attemptsFull.error) ? await attemptsQuery("created_at, status, attempt_key, reason") : attemptsFull;
   // One "started" per visitor per day (reloads of the form are not new starts).
   const seen = new Set();
   const startedDays = [];

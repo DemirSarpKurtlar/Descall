@@ -20,6 +20,7 @@ const { areAcceptedFriends, isUniqueViolation, publicMember, isSafeId } = requir
 const { parseSince } = require("../lib/messagePage");
 const { attachReactions } = require("../lib/dmMessages");
 const { apiError, apiText } = require("../lib/apiError");
+const { recordJoinedViaInvite } = require("../lib/inviteAttribution");
 
 const router = express.Router();
 const MAX_GROUP_SIZE = 15;
@@ -232,6 +233,8 @@ router.post("/invite-links/:code/join", requireAuth, async (req, res) => {
       return res.status(500).json({ error: "Failed to join group" });
     }
     await removals.markReadded(invite.group_id, userId).catch(() => {});
+    // A fresh account that came in through this link (Kayıt İstatistikleri).
+    void recordJoinedViaInvite(userId, `group:${code}`);
 
     const nextUses = (invite.uses || 0) + 1;
     if (invite.max_uses != null && nextUses >= invite.max_uses) {
