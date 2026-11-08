@@ -69,6 +69,7 @@
    OLD CSS REMOVED, Using new modular system
    ============================================ */
 @import './styles/call-device-menu.css';
+@import './styles/activity-pano.css';
 @import './styles/user-voice-panel.css';
 @import './styles/mini-call-card.css';
 @import './styles/chat-left-align.css';

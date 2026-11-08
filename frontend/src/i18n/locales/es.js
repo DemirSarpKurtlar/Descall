@@ -10,6 +10,7 @@ import { MID_APP_I18N } from "./midApp.i18n.js";
 import { AMP_ES } from "./profileMediaPicker.es.js";
 import { MSG4_ES } from "./msg4.es.js";
 import { MSG5_ES } from "./msg5.es.js";
+import { ACT_ES } from "./act.es.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_ES,
   "amp": AMP_ES,
@@ -31,6 +32,7 @@ export const nested = {
     }
   },
   "msg5": MSG5_ES,
+  "act": ACT_ES,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
