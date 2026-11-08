@@ -37,7 +37,8 @@ for (const [kind, state] of [["server", "serverInviteCode"], ["vanity", "serverV
 }
 
 const api = read("api/auth.js");
-assert.ok(/JSON\.stringify\(withSignupInvite\(withAttribution\(payload \|\| \{\}\)\)\)/.test(api), "register sends the invite");
+// The signup-context wrapper (client platform) may sit outside the invite wrapper.
+assert.ok(/JSON\.stringify\((?:withSignupContext\()?withSignupInvite\(withAttribution\(payload \|\| \{\}\)\)\)/.test(api), "register sends the invite");
 assert.equal((api.match(/withSignupInvite\(withAttribution\(/g) || []).length, 3, "register, Google and Apple send it");
 
 console.log("inviteLandingAutoJoin.source selftest ok");
