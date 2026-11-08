@@ -129,6 +129,47 @@ const aasaHeaders = vercel.headers.find((h) => h.source === "/.well-known/apple-
 assert.ok(aasaHeaders?.headers.some((h) => h.key === "Content-Type" && h.value === "application/json"), "vercel.json AASA content-type");
 assert.ok(!vercel.rewrites.some((r) => r.source.startsWith("/.well-known")), "no rewrite may swallow /.well-known");
 
+// Android App Links: assetlinks.json is JSON, 200, no redirect once deployed. It goes into
+// public/ only with the real fingerprints (docs/play-store/README.md); until then the path
+// is a 404, never the SPA shell. A placeholder must never ship.
+const assetLinksFile = path.join(root, "public/.well-known/assetlinks.json");
+if (fs.existsSync(assetLinksFile)) {
+  const links = JSON.parse(fs.readFileSync(assetLinksFile, "utf8"));
+  assert.ok(Array.isArray(links) && links.length > 0, "assetlinks.json is a statement list");
+  for (const s of links) {
+    assert.deepEqual(s.relation, ["delegate_permission/common.handle_all_urls"]);
+    assert.equal(s.target?.namespace, "android_app");
+    assert.equal(s.target?.package_name, "com.descall.app");
+    assert.ok(s.target.sha256_cert_fingerprints.length > 0);
+    for (const fp of s.target.sha256_cert_fingerprints) {
+      assert.match(fp, /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/, `assetlinks.json fingerprint ${fp} is a real SHA-256`);
+    }
+  }
+}
+{
+  const missing = await get("/.well-known/assetlinks.json");
+  assert.equal(missing.status, 404, "assetlinks.json is 404 until deployed");
+  assert.notEqual(await missing.text(), SHELL);
+  const body = JSON.stringify([{ relation: ["delegate_permission/common.handle_all_urls"], target: { namespace: "android_app", package_name: "com.descall.app", sha256_cert_fingerprints: ["AA:BB"] } }]);
+  const linksEnv = {
+    ASSETS: {
+      async fetch(request) {
+        if (new URL(request.url).pathname === "/.well-known/assetlinks.json") {
+          return new Response(body, { status: 200, headers: { "content-type": "application/octet-stream" } });
+        }
+        return env.ASSETS.fetch(request);
+      },
+    },
+  };
+  const res = await worker.fetch(new Request("https://descall.com/.well-known/assetlinks.json"), linksEnv);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("location"), null);
+  assert.match(res.headers.get("content-type") || "", /^application\/json/);
+  assert.deepEqual(JSON.parse(await res.text()), JSON.parse(body));
+  const linksHeaders = vercel.headers.find((h) => h.source === "/.well-known/assetlinks.json");
+  assert.ok(linksHeaders?.headers.some((h) => h.key === "Content-Type" && h.value === "application/json"), "vercel.json assetlinks content-type");
+}
+
 // Hashed build output is immutable (Pages default was 4 h + must-revalidate).
 const assetEnv = {
   ASSETS: {
