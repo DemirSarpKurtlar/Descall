@@ -754,7 +754,7 @@ export default function App() {
     preloadIceServers().catch(() => {});
   }, []);
 
-  // 3.0.1: descall:// and https://descall.com links opened on iOS route here
+  // 3.0.1: descall:// and https://descall.com links opened on iOS and Android route here
   // (DescallDeepLinkPlugin). The route effect below does the rest.
   const deepLinkNavigateRef = useRef(navigate);
   deepLinkNavigateRef.current = navigate;
@@ -4582,6 +4582,26 @@ export default function App() {
       setServerInviteAuthOpen(false);
     }
   }, [location.pathname, location.search]);
+
+  // Same for group invites (/invite/:code, /i/:code) and server vanity URLs
+  // (/s/:slug): their state is read from the URL only at mount, and an Android
+  // App Link reaches the running app as a navigate (nativeDeepLinks.js).
+  useEffect(() => {
+    const path = location.pathname || "";
+    const group = path.match(/^\/(?:invite|i)\/([A-Za-z0-9_-]+)\/?$/i);
+    if (group && group[1].toLowerCase() !== "s") {
+      const code = group[1];
+      setInviteCode((prev) => (prev === code ? prev : code));
+      setInviteAuthOpen(false);
+      return;
+    }
+    const vanity = path.match(/^\/s\/([a-z0-9][a-z0-9-]{2,31})\/?$/i);
+    if (vanity) {
+      const slug = vanity[1].toLowerCase();
+      setServerVanitySlug((prev) => (prev === slug ? prev : slug));
+      setServerVanityAuthOpen(false);
+    }
+  }, [location.pathname]);
 
   // After login, resume a pending group invite or server vanity link
   useEffect(() => {

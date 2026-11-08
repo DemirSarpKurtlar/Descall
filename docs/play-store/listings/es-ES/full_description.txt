@@ -1,0 +1,41 @@
+Descall es una app de chat y llamadas para hablar con tus amigos, tu equipo y tus comunidades. Desde mensajes privados hasta llamadas de grupo llenas de gente y servidores, todas tus conversaciones están en un solo lugar.
+
+MENSAJES
+• Mensajes privados uno a uno y chats de grupo con amigos
+• Comparte fotos, vídeos, archivos, GIF y emojis
+• Graba y envía mensajes de voz
+• Reacciona con emojis, responde, edita y fija mensajes
+• Busca mensajes dentro de un chat
+• Notificaciones push de nuevos mensajes y llamadas
+
+LLAMADAS DE VOZ Y VÍDEO
+• Llamadas de voz y videollamadas uno a uno con amigos
+• Inicia con un toque una llamada de voz o una videollamada en grupo con toda tu gente desde un chat de grupo
+• Las llamadas entrantes llegan como una notificación que suena; al tocarla, Descall se abre y te conecta a la llamada
+• Silencia el micro, activa o desactiva la cámara y mira quién está hablando
+• Llamadas recientes y marcación rápida en la pestaña Llamadas; las tarjetas de llamada del chat muestran la duración y los participantes
+
+SERVIDORES Y COMUNIDADES
+• Crea tu propio servidor con canales de texto y salas de voz
+• Organiza los canales en categorías y gestiona los permisos con roles
+• Únete a una sala de voz con un solo toque, mira quién habla y activa la cámara si quieres
+• Herramientas para expulsar, banear, aislar temporalmente y eliminar mensajes para propietarios y moderadores de servidores
+• Descubre servidores públicos o únete con un enlace de invitación
+
+AMIGOS Y PERFIL
+• Añade amigos y mira quién está en línea y qué está haciendo
+• Haz tuyo tu perfil con una foto, un banner, una biografía y un estado
+
+SEGURIDAD Y CONTROL
+• Inicia sesión con un nombre de usuario y una contraseña
+• Bloquea usuarios: las personas que bloquees no podrán enviarte mensajes, llamarte ni mandarte solicitudes de amistad
+• Denuncia mensajes y usuarios inapropiados desde la propia app
+• Las palabrotas de los mensajes se ocultan automáticamente con ***
+• Las llamadas nunca se graban
+• Verificación en dos pasos y una lista de sesiones activas que puedes cerrar a distancia
+• Elimina tu cuenta cuando quieras desde Ajustes
+
+Descall está dirigida a usuarios a partir de 13 años.
+
+Términos de uso: https://descall.com/terms
+Política de privacidad: https://descall.com/privacy

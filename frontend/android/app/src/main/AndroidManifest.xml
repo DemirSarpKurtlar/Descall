@@ -23,6 +23,31 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Android App Links for invite URLs. Verified against
+                 https://descall.com/.well-known/assetlinks.json (template and steps:
+                 docs/play-store/README.md). Only the apex host: www.descall.com
+                 301-redirects, and a redirecting host can never verify. The URL is
+                 routed in JS (DescallDeepLinkPlugin.java -> src/lib/nativeDeepLinks.js). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="descall.com" />
+                <data android:pathPrefix="/servers/join/" />
+                <data android:pathPrefix="/invite/" />
+                <data android:pathPrefix="/i/" />
+                <data android:pathPrefix="/s/" />
+            </intent-filter>
+
+            <!-- descall:// custom scheme, same routes as the iOS app (src/lib/deepLinks.js). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="descall" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -50,13 +75,18 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Only the foreground service types CallForegroundService really starts with
+         (microphone|mediaPlayback). Google Play asks for a declaration and a video
+         for every type, so unused FOREGROUND_SERVICE_CAMERA / _MEDIA_PROJECTION
+         and USE_FULL_SCREEN_INTENT (nothing posts a full-screen intent; Play
+         restricts it to calling/alarm apps that do) are not declared. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <!-- WebView getDisplayMedia uses MediaProjection. Android 14+ refuses the capture without this. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <!-- Bluetooth headset mic/speaker routing in the WebView's WebRTC stack on
+         Android 11 and lower (install-time permission). Android 12+ needs the
+         runtime BLUETOOTH_CONNECT permission, which the app does not request yet. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
 
     <uses-feature
         android:name="android.hardware.camera"

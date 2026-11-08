@@ -78,6 +78,32 @@ const universal = {
 };
 for (const [url, want] of Object.entries(universal)) assert.equal(p(url), want, url);
 
+// Invite landings (Android App Links): group invites and server vanity URLs keep
+// their code and open the landing App.jsx shows for these paths.
+const landings = {
+  "https://descall.com/invite/AbC123": "/invite/AbC123",
+  "https://descall.com/invite/AbC123/": "/invite/AbC123",
+  "https://descall.com/i/AbC123": "/invite/AbC123",
+  "https://descall.com/I/x_y-z?utm=1": "/invite/x_y-z",
+  "https://descall.com/s/My-Clan": "/s/my-clan",
+  "https://www.descall.com/s/crew42/": "/s/crew42",
+  "https://descall.com/invite/s/AbCd12": "/servers/join/AbCd12",
+  "https://descall.com/servers/join/AbCd12": "/servers/join/AbCd12",
+};
+for (const [url, want] of Object.entries(landings)) assert.equal(p(url), want, url);
+for (const bad of [
+  "https://descall.com/invite/a%2Fb",
+  "https://descall.com/invite/..",
+  "https://descall.com/invite/<x>",
+  "https://descall.com/invite/abc/extra",
+  "https://descall.com/s/ab",
+  "https://descall.com/s/-bad",
+  "https://descall.com/s/a.b.c",
+  "https://descall.com/i/",
+]) {
+  assert.equal(resolveDeepLink(bad), null, `${bad} must not be routed`);
+}
+
 // Not ours → null (the app must not hijack these)
 for (const foreign of [
   "",
@@ -131,6 +157,25 @@ for (const f of ["App.release.entitlements", "App.debug.entitlements"]) {
   const ent = fs.readFileSync(path.join(root, "ios/App/App", f), "utf8");
   assert.match(ent, /com\.apple\.developer\.associated-domains<\/key>\s*<array>\s*<string>applinks:descall\.com<\/string>/, f);
 }
+
+// Android: App Links filter (apex host only, verified) for the invite paths, every
+// one of them resolves in the app, plus the descall:// scheme and the native plugin.
+const manifest = fs.readFileSync(path.join(root, "android/app/src/main/AndroidManifest.xml"), "utf8");
+const appLinks = /<intent-filter android:autoVerify="true">([\s\S]*?)<\/intent-filter>/.exec(manifest);
+assert.ok(appLinks, "AndroidManifest has a verified App Links filter");
+assert.match(appLinks[1], /<data android:scheme="https" \/>/);
+assert.deepEqual([...appLinks[1].matchAll(/android:host="([^"]+)"/g)].map((m) => m[1]), ["descall.com"]);
+const prefixes = [...appLinks[1].matchAll(/android:pathPrefix="([^"]+)"/g)].map((m) => m[1]);
+assert.deepEqual(prefixes, ["/servers/join/", "/invite/", "/i/", "/s/"]);
+for (const prefix of prefixes) {
+  assert.ok(p(`https://descall.com${prefix}abcd12`), `App Link ${prefix} must resolve in the app`);
+}
+assert.match(manifest, /<data android:scheme="descall" \/>/);
+const mainActivity = fs.readFileSync(path.join(root, "android/app/src/main/java/com/descall/app/MainActivity.java"), "utf8");
+assert.match(mainActivity, /registerPlugin\(DescallDeepLinkPlugin\.class\)/);
+const androidPlugin = fs.readFileSync(path.join(root, "android/app/src/main/java/com/descall/app/DescallDeepLinkPlugin.java"), "utf8");
+assert.match(androidPlugin, /@CapacitorPlugin\(name = "DescallDeepLink"\)/);
+assert.match(androidPlugin, /public void takePending\(PluginCall call\)/);
 
 // 3.0 notes copy exists in both languages.
 for (const loc of ["en", "tr"]) {

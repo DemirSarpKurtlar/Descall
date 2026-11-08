@@ -1,4 +1,4 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { notificationTapAction } from "./callTap.js";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { API_BASE_URL } from "../config/api";
@@ -9,7 +9,8 @@ import { clearNotifyActionToken, refreshNotifyActionToken } from "./notifyAction
 /**
  * Native push (Capacitor @capacitor/push-notifications).
  *
- * - Android: FCM token, permission asked at startup (unchanged).
+ * - Android: FCM token, permission asked at startup. Builds without Firebase
+ *   (no google-services.json) skip register() instead of crashing.
  * - iOS: raw APNs device token, platform "ios" (backend lib/iosAlertPush.js).
  *   Permission is never asked at startup; the app asks after login
  *   (IosPushPermissionPrompt / notification settings). The token is uploaded
@@ -25,6 +26,34 @@ const IOS_TOKEN_KEY = "descall.iosAlertToken";
 
 function pushAllowedHere() {
   return IS_NATIVE;
+}
+
+let androidFirebaseReady = null;
+
+/**
+ * Android only: an APK built without app/google-services.json has no Firebase,
+ * and @capacitor/push-notifications' register() then crashes the app natively.
+ * DescallPushConfigPlugin.java reports whether Firebase is configured. APKs
+ * older than the plugin keep the previous behaviour (always register).
+ */
+async function pushServiceReady() {
+  if (IS_IOS) return true;
+  if (androidFirebaseReady === null) {
+    try {
+      const res = await registerPlugin("DescallPushConfig").status();
+      androidFirebaseReady = res?.firebase !== false;
+    } catch {
+      androidFirebaseReady = true;
+    }
+    if (!androidFirebaseReady) console.warn("[NativePush] Firebase is not configured in this build; push disabled");
+  }
+  return androidFirebaseReady;
+}
+
+async function registerForPush() {
+  if (!(await pushServiceReady())) return false;
+  await PushNotifications.register();
+  return true;
 }
 
 let listenersAttached = false;
@@ -230,7 +259,7 @@ export async function requestNativePushPermission() {
     permission = await PushNotifications.requestPermissions();
   }
   if (permission.receive !== "granted") return normalizePermission(permission.receive);
-  await PushNotifications.register();
+  await registerForPush();
   return "granted";
 }
 
@@ -258,7 +287,7 @@ export async function syncNativePushToken() {
   try {
     const permission = await PushNotifications.checkPermissions();
     if (permission.receive !== "granted") return false;
-    await PushNotifications.register();
+    if (!(await registerForPush())) return false;
     if (lastToken) await uploadFcmToken(lastToken);
     return true;
   } catch (err) {

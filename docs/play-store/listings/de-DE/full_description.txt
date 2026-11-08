@@ -1,0 +1,41 @@
+Descall ist eine Chat- und Anruf-App, mit der du mit deinen Freunden, deinem Squad und deinen Communitys redest. Von Einzelnachrichten bis zu vollen Gruppenanrufen und Servern: Alle deine Unterhaltungen sind an einem Ort.
+
+NACHRICHTEN
+• Private Einzelnachrichten und Gruppenchats mit Freunden
+• Fotos, Videos, Dateien, GIFs und Emojis teilen
+• Sprachnachrichten aufnehmen und senden
+• Mit Emojis reagieren, Nachrichten beantworten, bearbeiten und anpinnen
+• Nachrichten innerhalb eines Chats durchsuchen
+• Push-Benachrichtigungen für neue Nachrichten und Anrufe
+
+SPRACH- UND VIDEOANRUFE
+• Sprach- und Videoanrufe zu zweit mit Freunden
+• Starte im Gruppenchat mit einem Tippen einen Sprach- oder Videoanruf mit deiner ganzen Crew
+• Eingehende Anrufe kommen als klingelnde Benachrichtigung; tippst du darauf, öffnet sich Descall und verbindet dich mit dem Anruf
+• Mikro stummschalten, Kamera ein- und ausschalten und sehen, wer gerade spricht
+• Letzte Anrufe und Schnellwahl im Tab „Anrufe“; Anrufkarten im Chat zeigen Dauer und Teilnehmende
+
+SERVER UND COMMUNITYS
+• Erstelle deinen eigenen Server mit Textkanälen und Sprachräumen
+• Ordne Kanäle in Kategorien und verwalte Berechtigungen mit Rollen
+• Tritt Sprachräumen mit einem Tippen bei, sieh, wer spricht, und schalte bei Bedarf deine Kamera ein
+• Kicken, Bannen, Timeouts und Löschen von Nachrichten: Tools für Serverinhaber und Moderatoren
+• Entdecke öffentliche Server oder tritt über einen Einladungslink bei
+
+FREUNDE UND PROFIL
+• Füge Freunde hinzu und sieh, wer online ist und was sie gerade machen
+• Gestalte dein Profil mit Foto, Banner, Bio und Status ganz nach deinem Geschmack
+
+SICHERHEIT UND KONTROLLE
+• Anmeldung mit Benutzername und Passwort
+• Nutzer blockieren: Blockierte Personen können dir keine Nachrichten schreiben, dich nicht anrufen und dir keine Freundschaftsanfragen senden
+• Anstößige Nachrichten und Nutzer direkt in der App melden
+• Schimpfwörter in Nachrichten werden automatisch mit *** maskiert
+• Anrufe werden niemals aufgezeichnet
+• Bestätigung in zwei Schritten und eine Liste aktiver Sitzungen, die du aus der Ferne abmelden kannst
+• Lösche dein Konto jederzeit in den Einstellungen
+
+Descall ist für Nutzer ab 13 Jahren bestimmt.
+
+Nutzungsbedingungen: https://descall.com/terms
+Datenschutzrichtlinie: https://descall.com/privacy

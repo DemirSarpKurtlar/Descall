@@ -216,6 +216,20 @@ export default {
       }
     }
 
+    // Android App Links (docs/play-store/README.md). Google fetches this exact path and
+    // needs 200 + application/json without redirects. The file is only deployed once the
+    // real signing-key fingerprint exists; until then this is a plain 404, never the shell.
+    if (path === "/.well-known/assetlinks.json") {
+      const res = await readAsset(env, request, "/.well-known/assetlinks.json");
+      if (res.ok) {
+        const headers = new Headers();
+        headers.set("content-type", "application/json");
+        headers.set("cache-control", "public, max-age=3600");
+        applySecurityHeaders(headers);
+        return new Response(res.body, { status: 200, headers });
+      }
+    }
+
     if (PERMANENT_REDIRECTS[path]) {
       const headers = new Headers();
       applySecurityHeaders(headers);

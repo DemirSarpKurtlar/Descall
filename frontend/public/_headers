@@ -10,6 +10,10 @@
   Content-Type: application/json
   Cache-Control: public, max-age=3600
 
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600
+
 # Content-hashed build output (Vite): cache for a year. Kept in sync with
 # public/_worker.js (IMMUTABLE_CACHE) and vercel.json.
 /assets/*

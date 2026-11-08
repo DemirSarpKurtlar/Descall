@@ -14,6 +14,8 @@ import { parseAppRoute } from "./appRoutes.js";
  *   descall://friends | calls | activity             → /friends | /calls | /activity
  *   descall://settings[/<tab>]                       → /settings[/<tab>]
  *   https://descall.com/<same app path>              → that path
+ *   https://descall.com/invite/<code>, /i/<code>      → /invite/<code> (group invite)
+ *   https://descall.com/s/<slug>                      → /s/<slug> (server vanity URL)
  * Anything else that is ours opens the home screen; foreign URLs return null.
  */
 
@@ -82,6 +84,26 @@ function routeForSegments(rawSegments) {
   return HOME_PATH;
 }
 
+const GROUP_INVITE_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const VANITY_SLUG_RE = /^[a-z0-9][a-z0-9-]{2,31}$/i;
+
+/**
+ * Landing path for a group invite or vanity URL (segments after the host,
+ * trailing slash allowed), or null. Same patterns App.jsx parses at startup.
+ */
+function invitePathForSegments(rawSegments) {
+  const segments = rawSegments.length === 3 && rawSegments[2] === "" ? rawSegments.slice(0, 2) : rawSegments;
+  if (segments.length !== 2) return null;
+  const head = String(segments[0] || "").toLowerCase();
+  const value = cleanSegment(segments[1]);
+  if (!value) return null;
+  if ((head === "invite" || head === "i") && GROUP_INVITE_RE.test(value) && value.toLowerCase() !== "s") {
+    return `/invite/${value}`;
+  }
+  if (head === "s" && VANITY_SLUG_RE.test(value)) return `/s/${value.toLowerCase()}`;
+  return null;
+}
+
 /**
  * Resolve a URL string to `{ path }`, or null when the URL is not a Descall link.
  * Query strings and fragments are ignored (nothing in them is trusted).
@@ -118,6 +140,10 @@ function resolveDeepLinkPath(raw) {
     if (head === "servers" && String(segments[2] || "").toLowerCase() === "join") {
       return { path: routeForSegments(segments) };
     }
+    // Android App Links: group invites (/invite/<code>, /i/<code>) and server
+    // vanity URLs (/s/<slug>) open their landing (App.jsx reads these paths).
+    const landing = invitePathForSegments(segments.slice(1));
+    if (landing) return { path: landing };
     if (["direct", "groups", "servers", "friends", "calls", "activity", "settings"].includes(head)) {
       const route = parseAppRoute(pathname);
       if (route.unknown) return { path: HOME_PATH };

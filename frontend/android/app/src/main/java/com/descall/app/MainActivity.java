@@ -10,6 +10,8 @@ public class MainActivity extends BridgeActivity {
   public void onCreate(Bundle savedInstanceState) {
     SplashScreen.installSplashScreen(this);
     registerPlugin(CallKeepAlivePlugin.class);
+    registerPlugin(DescallDeepLinkPlugin.class);
+    registerPlugin(DescallPushConfigPlugin.class);
     super.onCreate(savedInstanceState);
 
     getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

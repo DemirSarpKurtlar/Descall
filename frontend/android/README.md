@@ -2,6 +2,12 @@
 
 The Android app uses Capacitor and the package ID `com.descall.app`.
 
+Google Play builds (signed AAB + universal APK) come from
+`.github/workflows/android-build.yml`; owner steps, store listing drafts and the
+App Links `assetlinks.json` template are in `docs/play-store/`.
+`versionName` follows `frontend/package.json`; `versionCode` is passed by CI
+(`-PdescallVersionCode`) and derived from the version for local builds.
+
 ## Local development
 
 ```bash
@@ -40,7 +46,8 @@ the same Android application.
 ## Firebase stage
 
 When the Descall Firebase project is created, add its Android app with
-package ID `com.descall.app`, download `google-services.json` into
-`android/app/`, then add the native FCM integration. This is required for
-reliable background call and message notifications; browser Web Push alone
-is not sufficient for a native Android app.
+package ID `com.descall.app` and download `google-services.json` into
+`android/app/` (CI: the `ANDROID_GOOGLE_SERVICES_JSON` secret). The
+google-services Gradle plugin is applied only when that file exists. Without
+it the app still runs and skips push registration (`DescallPushConfigPlugin`),
+because `@capacitor/push-notifications` crashes when Firebase is missing.
