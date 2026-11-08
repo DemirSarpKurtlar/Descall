@@ -461,6 +461,20 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             echo "npm ci failed (attempt $i), retrying in 20s"; sleep 20
           done
+      # Electron 45 fetches its binary on first use, not in npm ci. Keep the zip in
+      # @electron/get's cache so a GitHub releases outage (504) cannot stop this job.
+      - name: Cache the Electron binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('frontend/node_modules/electron/package.json') }}
+      - name: Download the Electron binary
+        run: |
+          for i in 1 2 3 4 5; do
+            node node_modules/electron/install.js && node -e "require('fs').accessSync(require('electron'))" && exit 0
+            echo "Electron download failed (attempt $i), retrying in 30s"; sleep 30
+          done
+          exit 1
       - name: Electron production build
         env:
           ELECTRON_BUILD: "1"
