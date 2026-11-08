@@ -98,6 +98,7 @@ async function secondFactorGate(res, user) {
 }
 
 const { buildSignupSourceColumns, inviteFromPath } = require("../lib/signupSourceTaxonomy");
+const { applySignupInvite, signupInviteKind } = require("../lib/signupInvite");
 
 async function insertUserWithAttribution(basePayload, selectCols, attribution, authMethod, extra = {}) {
   const attributionColumns = buildUserAttributionColumns({
@@ -118,6 +119,8 @@ async function insertUserWithAttribution(basePayload, selectCols, attribution, a
         invite_kind:
           inviteFromPath(snap?.landing_page || snap?.landing_path) ||
           inviteFromPath(attribution?.last?.landing_page || attribution?.last?.landing_path) ||
+          // The invite landing the sign-up started from (even when the first visit was elsewhere).
+          signupInviteKind(extra.signupInvite) ||
           "",
       },
       invitedBy: extra.invitedBy,
@@ -550,7 +553,7 @@ router.post("/register", async (req, res) => {
     const ip = clientIp(req);
     if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;
     recordFailure(`register:ip:${ip}`, { max: 20 });
-    const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution, birthDate } = req.body ?? {};
+    const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution, birthDate, signupInvite } = req.body ?? {};
 
     if (!termsAccepted) {
       return res.status(400).json({ error: "You must accept the Terms of Service and Privacy Policy to register." });
@@ -616,7 +619,7 @@ router.post("/register", async (req, res) => {
       "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
       attribution,
       "email",
-      { req, invitedBy },
+      { req, invitedBy, signupInvite },
     );
 
     if (insertError) {
@@ -656,6 +659,8 @@ router.post("/register", async (req, res) => {
       console.warn("[AUTH] invite apply failed:", err?.message);
       return { linked: false };
     });
+    // After the friend invite: a personal invite link that already set referred_by wins.
+    await applySignupInvite(supabase, newUser.id, signupInvite);
 
     void recordSignupAnalytics(newUser, attributionColumns);
     void flagSuspiciousSignup(newUser.id, attribution?.visitorKey);
@@ -899,6 +904,7 @@ router.post("/google", async (req, res) => {
     const credential = req.body?.credential;
     const invitedBy = req.body?.invitedBy;
     const attribution = req.body?.attribution;
+    const signupInvite = req.body?.signupInvite;
     if (!credential || typeof credential !== "string") {
       recordFailure(`oauth:ip:${ip}`, { max: 60 });
       return res.status(400).json({ error: "Google credential is required." });
@@ -1033,6 +1039,7 @@ router.post("/google", async (req, res) => {
       } = await insertUserWithAttribution(insertPayload, googleSelect, attribution, "google", {
         req,
         invitedBy,
+        signupInvite,
       });
 
       if (insertError || !created) {
@@ -1053,6 +1060,7 @@ router.post("/google", async (req, res) => {
         console.warn("[AUTH] Google invite apply failed:", err?.message);
         return { linked: false };
       });
+      await applySignupInvite(supabase, user.id, signupInvite);
       void recordSignupAnalytics(user, attributionColumns);
       void flagSuspiciousSignup(user.id, attribution?.visitorKey);
       void notifyTeamNewSignup({
@@ -1116,7 +1124,7 @@ router.post("/apple", async (req, res) => {
     if (req.body?.termsAccepted && (await accessGate(req, res, { action: "register" }))) return;
     const ip = clientIp(req);
     if (guard(res, `oauth:ip:${ip}`, null, { max: 60 })) return;
-    const { identityToken, authorizationCode, givenName, familyName, nonce, invitedBy, attribution } = req.body ?? {};
+    const { identityToken, authorizationCode, givenName, familyName, nonce, invitedBy, attribution, signupInvite } = req.body ?? {};
     if (!identityToken || typeof identityToken !== "string") {
       recordFailure(`oauth:ip:${ip}`, { max: 60 });
       return res.status(400).json({ error: "Apple identity token is required." });
@@ -1248,7 +1256,7 @@ router.post("/apple", async (req, res) => {
           "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, is_admin, descoin_balance, birth_date",
           attribution,
           "apple",
-          { req, invitedBy }
+          { req, invitedBy, signupInvite }
         );
       if (insertError || !created) {
         console.error("[AUTH] Apple register error:", insertError);
@@ -1274,6 +1282,7 @@ router.post("/apple", async (req, res) => {
     let invite = { linked: false };
     if (isNewUser) {
       invite = await applyFriendInvite(user.id, invitedBy, req.app.get("io")).catch(() => ({ linked: false }));
+      await applySignupInvite(supabase, user.id, signupInvite);
       void recordSignupAnalytics(user, attributionColumns);
       void flagSuspiciousSignup(user.id, attribution?.visitorKey);
       void notifyTeamNewSignup({

@@ -12,6 +12,7 @@ import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
+import { INVL_PT_BR } from "./invl.pt-BR.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
@@ -35,6 +36,7 @@ export const nested = {
   "msg5": MSG5_PT_BR,
   "act": ACT_PT_BR,
   "agentx": AGENTX_PT_BR,
+  "invl": INVL_PT_BR,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {

@@ -11,6 +11,7 @@ import { A11Y_TR } from "./a11y.tr.js";
 import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
+import { INVL_TR } from "./invl.tr.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
 import { TR_INAPP_GAPS } from "./trInAppGaps.js";
 import { TR_AI_LOOK_FIXES } from "./trAiLookFixes.js";
@@ -65,6 +66,7 @@ export const nested = {
   msg5: MSG5_TR,
   act: ACT_TR,
   agentx: AGENTX_TR,
+  invl: INVL_TR,
   fbk: FBK_TR,
   // Group member removal (Oct 2026)
   gk: {

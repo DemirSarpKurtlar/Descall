@@ -8,8 +8,9 @@
  *
  * Per viewport (desktop web, iPhone mobile web):
  *   1. logged in  → invite preview (name, member count) → "Daveti kabul et" → the server opens
- *   2. logged out → preview → "Giriş yap" → /login with the code kept
- *   3. after login (token present, back on "/") → preview comes back → join works
+ *   2. logged out → preview → one "Ücretsiz hesapla katıl" button (→ /register) and
+ *      "Zaten hesabım var" → /login, the code kept either way
+ *   3. after login (token present, back on "/") → the invite is redeemed by itself and the server opens
  *   4. expired code → "Davet geçersiz veya süresi dolmuş."
  *
  *   VITE_API_BASE_URL=http://127.0.0.1:5361 VITE_SOCKET_URL=http://127.0.0.1:5361 npx vite build --outDir dist-e2e
@@ -125,8 +126,16 @@ async function main() {
         await page.waitForTimeout(2500);
         await shot(page, '2-logged-out');
         if (!SHOTS_ONLY && (await expectLanding(page, 'logged out'))) {
-          await page.getByRole('button', { name: 'Giriş yap' }).first().click();
-          await page.waitForURL((u) => u.pathname === '/login', { timeout: 10000 }).catch(() => fails.push(`${vp.name}: "Giriş yap" did not open /login (url ${page.url()})`));
+          const joinFree = page.locator('[data-testid="server-invite-join-free"]');
+          if ((await joinFree.innerText().catch(() => '')).trim() !== 'Ücretsiz hesapla katıl') fails.push(`${vp.name}: no "Ücretsiz hesapla katıl" button`);
+          await joinFree.click();
+          await page.waitForURL((u) => u.pathname === '/register', { timeout: 10000 }).catch(() => fails.push(`${vp.name}: "Ücretsiz hesapla katıl" did not open /register (url ${page.url()})`));
+          const pendingRegister = await page.evaluate(() => localStorage.getItem('descall:pendingServerInvite'));
+          if (!pendingRegister || !pendingRegister.includes('GOODCODE')) fails.push(`${vp.name}: invite code not kept for sign-up`);
+          await page.goto(`${base}/servers/join/GOODCODE`, { waitUntil: 'load' });
+          await page.waitForTimeout(2000);
+          await page.getByRole('button', { name: 'Zaten hesabım var' }).first().click();
+          await page.waitForURL((u) => u.pathname === '/login', { timeout: 10000 }).catch(() => fails.push(`${vp.name}: "Zaten hesabım var" did not open /login (url ${page.url()})`));
           const pending = await page.evaluate(() => localStorage.getItem('descall:pendingServerInvite'));
           if (!pending || !pending.includes('GOODCODE')) fails.push(`${vp.name}: invite code not kept for login`);
           await shot(page, '2b-login');
@@ -134,10 +143,10 @@ async function main() {
           await page.evaluate((me) => { localStorage.setItem('descall_token', 'e2e.fake.token'); localStorage.setItem('descall_user', JSON.stringify(me)); }, mock.ME);
           await page.goto(`${base}/`, { waitUntil: 'load' });
           await page.waitForTimeout(2000);
-          if (await expectLanding(page, 'after login')) {
+          {
+            // Back signed in from the landing's own flow: joined without a second click.
+            await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 15000 }).catch(() => fails.push(`${vp.name}: after login the invite was not redeemed by itself (url ${page.url()})`));
             await shot(page, '3-after-login');
-            await page.getByRole('button', { name: 'Daveti kabul et' }).click();
-            await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 15000 }).catch(() => fails.push(`${vp.name}: after login join did not open the server (url ${page.url()})`));
             const left = await page.evaluate(() => localStorage.getItem('descall:pendingServerInvite'));
             if (left) fails.push(`${vp.name}: pending invite not cleared after join`);
           }

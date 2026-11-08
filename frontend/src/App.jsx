@@ -524,6 +524,10 @@ export default function App() {
     }
   });
   const [serverInviteAuthOpen, setServerInviteAuthOpen] = useState(false);
+  // Nov 2026: the landing ({ kind: "server" | "vanity" | "group", value: code / slug }) resumed
+  // right after the visitor signed up / logged in from it. That landing joins by itself, once.
+  // Keyed by the code: another invite opened later in the app stays a click.
+  const [landingAutoJoin, setLandingAutoJoin] = useState(null);
   const [activeTimeout, setActiveTimeout] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [myStatus, setMyStatus] = useState(() => {
@@ -4577,6 +4581,7 @@ export default function App() {
       if (pendingServerInvite) {
         setServerInviteCode(pendingServerInvite);
         setServerInviteAuthOpen(false);
+        setLandingAutoJoin({ kind: "server", value: pendingServerInvite });
         const nextPath = serverInvitePath(pendingServerInvite);
         if (nextPath && location.pathname !== nextPath) navigate(nextPath, { replace: true });
         return;
@@ -4585,6 +4590,7 @@ export default function App() {
       if (pendingVanity) {
         setServerVanitySlug(pendingVanity);
         setServerVanityAuthOpen(false);
+        setLandingAutoJoin({ kind: "vanity", value: pendingVanity });
         writeServerVanityPath(pendingVanity);
         return;
       }
@@ -4592,6 +4598,7 @@ export default function App() {
       if (!pending) return;
       setInviteCode(pending);
       setInviteAuthOpen(false);
+      setLandingAutoJoin({ kind: "group", value: pending });
       writeInvitePath(pending);
     } catch {
       /* ignore */
@@ -4624,6 +4631,7 @@ export default function App() {
       clearServerVanityPath();
       setServerVanitySlug(null);
       setServerVanityAuthOpen(false);
+      setLandingAutoJoin(null);
     },
     [location.pathname, navigate]
   );
@@ -4648,6 +4656,7 @@ export default function App() {
     clearInvitePath();
     setInviteCode(null);
     setInviteAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   // In-chat Discord-style invite embeds → join / open group or server
@@ -4706,6 +4715,7 @@ export default function App() {
     clearPendingServerInvite();
     setServerInviteCode(null);
     setServerInviteAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   const handleServerInviteJoined = useCallback(
@@ -4767,6 +4777,7 @@ export default function App() {
     clearServerVanityPath();
     setServerVanitySlug(null);
     setServerVanityAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   const dismissInvite = useCallback(() => {
@@ -4774,6 +4785,7 @@ export default function App() {
     clearInvitePath();
     setInviteCode(null);
     setInviteAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   // Descall+ desktop windows (Electron): unread, friends, DMs, status. Before the early returns.
@@ -4812,6 +4824,7 @@ export default function App() {
         <ServerInviteLanding
           code={serverInviteCode}
           me={me}
+          autoJoin={landingAutoJoin?.kind === "server" && landingAutoJoin.value === serverInviteCode}
           onJoined={handleServerInviteJoined}
           onNeedAuth={openServerInviteAuth}
           onDismiss={dismissServerInvite}
@@ -4829,6 +4842,7 @@ export default function App() {
         <ServerVanityLanding
           slug={serverVanitySlug}
           me={me}
+          autoJoin={landingAutoJoin?.kind === "vanity" && landingAutoJoin.value === serverVanitySlug}
           onJoined={handleServerVanityJoined}
           onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
           onDismiss={dismissServerVanity}
@@ -4846,6 +4860,7 @@ export default function App() {
         <GroupInviteLanding
           code={inviteCode}
           me={me}
+          autoJoin={landingAutoJoin?.kind === "group" && landingAutoJoin.value === inviteCode}
           onJoined={handleInviteJoined}
           onNeedLogin={(mode) => openLandingAuth("group", mode)}
           onDismiss={dismissInvite}

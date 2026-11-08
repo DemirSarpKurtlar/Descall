@@ -272,3 +272,19 @@ export function takePendingLanding(kind, opts = {}) {
   clearPendingLanding(kind, opts);
   return v;
 }
+
+/**
+ * The invite landing a sign-up started from, sent with register / Google / Apple sign-up
+ * (backend/lib/signupInvite.js: signup source + referred_by). Read, not taken: the landing
+ * still needs the code to join right after the account exists. Null when there is none.
+ * @returns {{ kind: "server"|"vanity"|"group", code: string } | null}
+ */
+export function pendingSignupInvite(opts = {}) {
+  const server = peekPendingServerInvite(opts);
+  if (server) return { kind: "server", code: server };
+  const vanity = peekPendingLanding("vanity", opts);
+  if (vanity) return { kind: "vanity", code: vanity };
+  const group = peekPendingLanding("group", opts);
+  if (group) return { kind: "group", code: group };
+  return null;
+}

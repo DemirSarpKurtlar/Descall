@@ -24,6 +24,15 @@ export const OG_DEFAULT_IMAGES = {
 /** Comparison and niche pages (English): led by the Descall name, no competitor name. */
 export const OG_DISCORD_IMAGE = "/og-discord.png";
 
+/**
+ * Invite link previews without a server / group icon (public/invite-preview.js, used by the
+ * Pages worker; that file cannot import this one, so the selftest keeps the two in sync).
+ */
+export const OG_INVITE_IMAGES = {
+  en: "/og-invite.png",
+  tr: "/og-invite-tr.png",
+};
+
 /** English images whose text is English words; localized pages use their own default. */
 const ENGLISH_TEXT_IMAGES = new Set([
   OG_DISCORD_IMAGE,

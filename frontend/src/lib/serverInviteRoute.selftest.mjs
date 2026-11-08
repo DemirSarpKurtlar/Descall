@@ -9,6 +9,8 @@ import {
   PENDING_TTL_MS,
   serverInviteErrorKey,
   isFinalInviteError,
+  savePendingLanding,
+  pendingSignupInvite,
 } from "./serverInviteRoute.js";
 import { resolveDeepLink } from "./deepLinks.js";
 import { parseDescallInviteUrl } from "./inviteLinks.js";
@@ -45,6 +47,21 @@ assert.equal(peekPendingServerInvite({ storage: s, now: 2000 }), null, "taken on
 assert.equal(savePendingServerInvite("bad code!", { storage: s }), false);
 s.setItem("descall:pendingServerInvite", "{not json");
 assert.equal(peekPendingServerInvite({ storage: s }), null);
+
+// Nov 2026: sign-up sends the landing it started from (server > vanity > group), read only:
+// the landing still needs the code to join right after the account exists.
+{
+  const st = mem();
+  assert.equal(pendingSignupInvite({ storage: st }), null);
+  savePendingLanding("group", "grp42", { storage: st, now: 1000 });
+  assert.deepEqual(pendingSignupInvite({ storage: st, now: 2000 }), { kind: "group", code: "grp42" });
+  savePendingLanding("vanity", "Night-Owls", { storage: st, now: 1000 });
+  assert.deepEqual(pendingSignupInvite({ storage: st, now: 2000 }), { kind: "vanity", code: "night-owls" });
+  savePendingServerInvite("K7QM2XRD", { storage: st, now: 1000 });
+  assert.deepEqual(pendingSignupInvite({ storage: st, now: 2000 }), { kind: "server", code: "K7QM2XRD" });
+  assert.equal(peekPendingServerInvite({ storage: st, now: 2000 }), "K7QM2XRD", "not consumed");
+  assert.equal(pendingSignupInvite({ storage: st, now: 1000 + PENDING_TTL_MS + 1 }), null, "stale slots are ignored");
+}
 
 // Error copy.
 assert.equal(serverInviteErrorKey({ status: 410, code: "INVITE_EXPIRED" }), "This invite is invalid or has expired.");
