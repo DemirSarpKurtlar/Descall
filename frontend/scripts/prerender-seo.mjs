@@ -17,6 +17,7 @@ const indexPath = path.join(distDir, "index.html");
 const SITE = "https://descall.com";
 
 const { ogImageFor } = await import(pathToFileURL(path.join(root, "src/site/ogImages.js")).href);
+const { SMART_APP_BANNER_META } = await import(pathToFileURL(path.join(root, "src/site/appStoreLink.js")).href);
 const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG, GAMER_FAQ } = await import(
@@ -850,6 +851,7 @@ function stripStaleHeadSeo(html) {
     .replace(/<meta\s+name="description"[^>]*>\s*/gi, "")
     .replace(/<meta\s+name="keywords"[^>]*>\s*/gi, "")
     .replace(/<meta\s+name="robots"[^>]*>\s*/gi, "")
+    .replace(/<meta\s+name="apple-itunes-app"[^>]*>\s*/gi, "")
     .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, "")
     .replace(/<link\s+rel="alternate"[^>]*hreflang="[^"]*"[^>]*>\s*/gi, "")
     .replace(/<meta\s+property="og:[^"]*"[^>]*>\s*/gi, "")
@@ -917,6 +919,8 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
     `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
+    // iOS Smart App Banner: indexable marketing pages only (this list never has noindex routes).
+    SMART_APP_BANNER_META,
     `<meta name="author" content="Demir Sarp Kurtlar" />`,
     `<meta name="citation_author" content="Demir Sarp Kurtlar" />`,
     `<link rel="canonical" href="${url}" />`,
