@@ -8,16 +8,23 @@
       "mcp__Supabase__list_projects"
     ]
   },
+  "enabledPlugins": {
+    "ruflo-core@ruflo": true,
+    "ruflo-swarm@ruflo": true,
+    "obsidian-wiki@agricidaniel-claude-obsidian": true
+  },
   "extraKnownMarketplaces": {
     "ruflo": {
       "source": {
         "source": "github",
         "repo": "ruvnet/claude-flow"
       }
+    },
+    "agricidaniel-claude-obsidian": {
+      "source": {
+        "source": "directory",
+        "path": "./.claude/plugins/obsidian-wiki"
+      }
     }
-  },
-  "enabledPlugins": {
-    "ruflo-core@ruflo": true,
-    "ruflo-swarm@ruflo": true
   }
 }
