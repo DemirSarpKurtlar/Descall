@@ -1,0 +1,90 @@
+[
+  {
+    "id": "oyun-ne-oynuyorsun",
+    "theme": "oyun",
+    "title": "Windows uygulaması oynadığın oyunu gösterir",
+    "hook": { "lines": ["Arkadaşların ne oynuyor?", "*Arkadaş listende gör*"] },
+    "scenes": [
+      {
+        "lines": ["Windows uygulaması", "*oyununu tanır*"],
+        "visual": { "type": "chips", "items": ["Minecraft", "Counter-Strike 2", "Fortnite", "Roblox"] }
+      },
+      {
+        "lines": ["Arkadaşların", "*ne yaptığını görür*"],
+        "visual": { "type": "voice", "items": ["Mert", "Ayşe", "Can", "Deniz"] }
+      },
+      {
+        "lines": ["Aynı oyundaysanız", "*ses kanalına atla*"],
+        "visual": { "type": "channels", "items": [{ "kind": "voice", "name": "Lobby", "active": true }, { "kind": "voice", "name": "Duo Queue" }, { "kind": "voice", "name": "Five Stack" }] }
+      }
+    ],
+    "caption": "Descall'ın Windows uygulaması bilgisayarında açık olan oyunu tanır: Minecraft, Counter-Strike 2, Fortnite, Roblox ve daha birçoğu. Arkadaşların kimin çevrimiçi olduğunu ve ne yaptığını görür.\n\nAynı oyundaysanız sunucundaki ses kanalına geç; Oyun merkezi şablonu Lobby, Duo Queue ve Five Stack ses kanallarıyla hazır gelir.",
+    "hashtags": ["#descall", "#minecraft", "#cs2", "#oyuncu", "#seslisohbet"],
+    "sources": [
+      { "claim": "Windows uygulaması süreç taraması", "file": "frontend/src/hooks/useActivity.js", "match": "window.electronAPI.scanProcesses" },
+      { "claim": "Counter-Strike 2", "file": "frontend/src/lib/processDatabase.js", "match": "'cs2.exe':\\s*\\{ name: 'Counter-Strike 2'" },
+      { "claim": "Minecraft", "file": "frontend/src/lib/processDatabase.js", "match": "name: 'Minecraft'" },
+      { "claim": "Fortnite", "file": "frontend/src/lib/processDatabase.js", "match": "name: 'Fortnite'" },
+      { "claim": "Roblox", "file": "frontend/src/lib/processDatabase.js", "match": "name: 'Roblox'" },
+      { "claim": "Arkadaşlar ne yaptığını görür", "file": "appstore/metadata.json", "match": "kimin çevrimiçi olduğunu ve ne yaptığını gör" },
+      { "claim": "Oyun şablonu ses kanalları", "file": "frontend/backend/lib/serverTemplates.js", "match": "\\{ name: \"Lobby\", type: \"voice\" \\},\\s*\\{ name: \"Duo Queue\", type: \"voice\" \\},\\s*\\{ name: \"Five Stack\", type: \"voice\" \\}" }
+    ]
+  },
+  {
+    "id": "oyun-cs2-ekip",
+    "theme": "oyun",
+    "title": "CS2 ekibi için ses ve ekran",
+    "hook": { "lines": ["CS2 maçından önce", "*ekibini topla*"] },
+    "scenes": [
+      {
+        "lines": ["Beş kişilik ekip için", "*Five Stack* kanalı hazır"],
+        "visual": { "type": "voice", "items": ["Emre", "Kaan", "Ece", "Sena"] }
+      },
+      {
+        "lines": ["Bas-konuş ile", "*sadece gerekince konuş*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+Shift+M", "name": "Bas-konuş (varsayılan)" }] }
+      },
+      {
+        "lines": ["Maç tekrarını", "*birebir 60 FPS paylaş*"],
+        "visual": { "type": "stat", "value": "60 FPS", "label": "Oyun yakalama (1:1)" }
+      }
+    ],
+    "caption": "Counter-Strike 2 akşamı için: Oyun merkezi şablonuyla kurduğun sunucuda Five Stack ses kanalı hazır. Bas-konuş'u açarsan mikrofonun yalnızca kısayola basınca açılır (varsayılan Ctrl+Shift+M).\n\nMaç tekrarına birlikte bakmak için birebir aramada ekran paylaşımını 60 FPS'e alabilirsin.",
+    "hashtags": ["#descall", "#cs2", "#counterstrike2", "#oyuncu", "#ekranpaylaşımı"],
+    "sources": [
+      { "claim": "Five Stack ses kanalı", "file": "frontend/backend/lib/serverTemplates.js", "match": "\\{ name: \"Five Stack\", type: \"voice\" \\}" },
+      { "claim": "Bas-konuş varsayılan kısayolu", "file": "frontend/src/lib/voiceProfile.js", "match": "pttAccelerator: \"mod\\+shift\\+m\"" },
+      { "claim": "60 FPS oyun yakalama (1:1)", "file": "frontend/src/components/voice/ScreenShareQualityPanel.jsx", "match": "value: 60, label: \"60\", hintKey: \"Game capture \\(1:1\\)\"" },
+      { "claim": "Oyun yakalama etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Game capture \\(1:1\\)\": \"Oyun yakalama \\(1:1\\)\"" }
+    ]
+  },
+  {
+    "id": "oyun-minecraft-sunucu",
+    "theme": "oyun",
+    "title": "Minecraft ekibine sunucu",
+    "hook": { "lines": ["Minecraft ekibine", "*kendi sunucusu*"] },
+    "scenes": [
+      {
+        "lines": ["Klipler, planlar,", "*ses lobisi*"],
+        "visual": { "type": "channels", "items": [{ "kind": "text", "name": "squad-up" }, { "kind": "text", "name": "clips-and-highlights", "active": true }, { "kind": "voice", "name": "AFK / Chill" }, { "kind": "stage", "name": "Tournament Stage" }] }
+      },
+      {
+        "lines": ["Yapı turunu", "*ekran paylaşımıyla göster*"],
+        "visual": { "type": "chips", "items": ["Oyun, video", "Uygulama", "Yazı, kod"] }
+      },
+      {
+        "lines": ["Kim ne kadar oynadı?", "*Aktivite sayfasında*"],
+        "visual": { "type": "checklist", "items": ["Şu an kartı", "Haftalık özet", "En çok oynananlar"] }
+      }
+    ],
+    "caption": "Minecraft ekibin için Oyun merkezi şablonuyla bir sunucu kur: squad-up ve clips-and-highlights yazı kanalları, AFK / Chill ses kanalı ve Tournament Stage sahne kanalı hazır gelir. Yeni yapını göstermek için ekran paylaşımında Oyun, video seçeneğini seç.\n\nWindows uygulamasındaki Aktivite sayfası şu an oynadığın oyunu, haftalık özetini ve en çok oynadığın oyunları gösterir.",
+    "hashtags": ["#descall", "#minecraft", "#minecrafttürkiye", "#oyuncu"],
+    "sources": [
+      { "claim": "Oyun şablonu kanalları", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"squad-up\"[\\s\\S]*name: \"clips-and-highlights\"[\\s\\S]*\\{ name: \"AFK / Chill\", type: \"voice\" \\}[\\s\\S]*name: \"Tournament Stage\"" },
+      { "claim": "Ekran paylaşımı içerik seçimi", "file": "frontend/src/components/voice/ScreenShareQualityPanel.jsx", "match": "labelKey: \"Games, video\"" },
+      { "claim": "Aktivite sayfası", "file": "docs/release-notes/v3.7.41.md", "match": "Şu an kartı:\\*\\* oynadığın oyun" },
+      { "claim": "Haftalık özet ve en çok oynananlar", "file": "docs/release-notes/v3.7.41.md", "match": "Haftalık özet:[\\s\\S]*En çok oynananlar:" },
+      { "claim": "Minecraft tanınır", "file": "frontend/src/lib/processDatabase.js", "match": "name: 'Minecraft'" }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "$comment": "App screenshots a Reel may show. Each one was looked at by a person: no emoji in the visible area, no third-party logo, Turkish UI. Add a new one only after the same check. crop is in source pixels.",
+  "servers-ios": {
+    "file": "appstore/screenshots/iphone69/03.png",
+    "width": 1320,
+    "height": 2868,
+    "crop": { "x": 150, "y": 868, "w": 1020, "h": 1950 },
+    "review": "Sunucular screen (Gece Ekibi): text and voice channels, member list, voice bar. No emoji, no third-party logo.",
+    "showsPhone": true
+  }
+}

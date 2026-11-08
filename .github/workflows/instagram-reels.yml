@@ -1,0 +1,155 @@
+# Daily Instagram Reel for Descall (marketing/instagram).
+#
+# Schedule: 16:15 UTC = 19:15 Europe/Istanbul (UTC+3 all year). GitHub may start a
+# scheduled run late; bin/gate.mjs skips a scheduled run that starts after 22:59 Istanbul.
+# Real posting needs ALL of:
+#   - repository variable IG_AUTOPOST_ENABLED = true   (kill switch)
+#   - secrets IG_USER_ID and IG_ACCESS_TOKEN
+#   - secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (public bucket "marketing-reels"),
+#     or repository variable IG_MEDIA_FALLBACK = github-release
+# Without them the run ends green with a "skip" notice. Manual runs default to a dry run that
+# renders the Reel and uploads it as an artifact without posting anything.
+name: Instagram Reels
+
+on:
+  schedule:
+    - cron: "15 16 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: render + artifact only, nothing is posted"
+        type: boolean
+        default: true
+      script_id:
+        description: "Optional script id from marketing/instagram/content (default: next in rotation)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instagram-reels
+  cancel-in-progress: false
+
+jobs:
+  reel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: marketing/instagram
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Library check needs no dependencies; it runs on every trigger.
+      - name: Validate content library
+        run: node bin/validate.mjs
+
+      - name: Gate (kill switch, secrets, one post per day)
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          IG_AUTOPOST_ENABLED: ${{ vars.IG_AUTOPOST_ENABLED }}
+          IG_MEDIA_FALLBACK: ${{ vars.IG_MEDIA_FALLBACK }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node bin/gate.mjs
+
+      - name: Install dependencies (retries)
+        if: steps.gate.outputs.mode != 'skip'
+        run: |
+          for i in 1 2 3; do
+            npm ci --no-audit --no-fund && break
+            echo "npm ci failed (attempt $i), retrying in 20s"; sleep 20
+            [ "$i" = 3 ] && exit 1
+          done
+          if ! command -v ffmpeg >/dev/null; then
+            for i in 1 2 3; do
+              sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg && break
+              echo "apt failed (attempt $i), retrying in 20s"; sleep 20
+              [ "$i" = 3 ] && exit 1
+            done
+          fi
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && break
+            echo "playwright install failed (attempt $i), retrying in 20s"; sleep 20
+            [ "$i" = 3 ] && exit 1
+          done
+          ffmpeg -version | head -1
+
+      - name: Unit tests
+        if: steps.gate.outputs.mode != 'skip'
+        run: npm run test:unit
+
+      - name: Render (dry run)
+        id: dry
+        if: steps.gate.outputs.mode == 'dry-run'
+        env:
+          SCRIPT_ID: ${{ inputs.script_id }}
+        run: node bin/daily.mjs --mode dry-run --script-id "$SCRIPT_ID" --out "$RUNNER_TEMP/reel"
+
+      - name: Upload dry-run Reel
+        if: steps.gate.outputs.mode == 'dry-run' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-reel-dry-run
+          path: |
+            ${{ runner.temp }}/reel/*.mp4
+            ${{ runner.temp }}/reel/*.jpg
+            ${{ runner.temp }}/reel/*.txt
+            ${{ runner.temp }}/reel/*.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Render and publish
+        id: publish
+        if: steps.gate.outputs.mode == 'publish'
+        env:
+          SCRIPT_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.script_id || '' }}
+          IG_AUTOPOST_ENABLED: ${{ vars.IG_AUTOPOST_ENABLED }}
+          IG_GRAPH_VERSION: ${{ vars.IG_GRAPH_VERSION }}
+          IG_MEDIA_FALLBACK: ${{ vars.IG_MEDIA_FALLBACK }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node bin/daily.mjs --mode publish --script-id "$SCRIPT_ID" --out "$RUNNER_TEMP/reel"
+
+      # The posted log is the "never twice" memory. Commit it even if a later step fails.
+      - name: Commit posted log
+        if: steps.gate.outputs.mode == 'publish' && always()
+        working-directory: ${{ github.workspace }}
+        run: |
+          if git diff --quiet -- marketing/instagram/posted-log.json; then
+            echo "posted log unchanged"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add marketing/instagram/posted-log.json
+          git commit -m "Instagram: log Reel ${{ steps.publish.outputs.script_id }}"
+          for i in 1 2 3; do
+            git pull --rebase --quiet origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            echo "push failed (attempt $i), retrying"; sleep 10
+          done
+          echo "::error::Could not push the posted log. The Instagram caption check still blocks a repost, but add the entry by hand."
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Instagram Reels"
+            echo "- gate: ${{ steps.gate.outputs.mode }} (${{ steps.gate.outputs.reason }})"
+            echo "- dry run: ${{ steps.dry.outputs.status }} ${{ steps.dry.outputs.script_id }}"
+            echo "- publish: ${{ steps.publish.outputs.status }} ${{ steps.publish.outputs.script_id }} ${{ steps.publish.outputs.permalink }}"
+          } >> "$GITHUB_STEP_SUMMARY"

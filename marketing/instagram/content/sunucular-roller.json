@@ -1,0 +1,117 @@
+[
+  {
+    "id": "sunucu-sablonla-kur",
+    "theme": "sunucular-roller",
+    "title": "Şablonla sunucu kurmak",
+    "hook": { "lines": ["Boş sunucuyla", "*uğraşma*"] },
+    "scenes": [
+      {
+        "lines": ["Bir şablon seç", "ya da *sıfırdan başla*"],
+        "visual": { "type": "chips", "items": ["Oyun merkezi", "Ders & kampüs", "Arkadaş takılması", "Topluluk & içerik üreticileri"] }
+      },
+      {
+        "lines": ["Kanallar *kategorileriyle*", "hazır gelir"],
+        "visual": { "type": "channels", "items": [{ "kind": "text", "name": "announcements" }, { "kind": "text", "name": "general", "active": true }, { "kind": "voice", "name": "Lobby" }, { "kind": "stage", "name": "Tournament Stage" }] }
+      },
+      {
+        "lines": ["Roller ve yetkiler", "*kurulu gelir*"],
+        "visual": { "type": "roles", "items": ["Admin", "Moderator", "Helper", "VIP", "Member"] }
+      }
+    ],
+    "caption": "Descall'da sunucu kurarken boş bir sayfayla başlamak zorunda değilsin. Oyun merkezi, Ders & kampüs, Arkadaş takılması ya da Topluluk & içerik üreticileri şablonlarından birini seç: kategoriler, yazı ve ses kanalları, sahne kanalı, roller ve kanal izinleri hazır gelir. İstersen sıfırdan da kurabilirsin.\n\nGörseldeki kanal ve rol adları Oyun merkezi şablonundan.",
+    "hashtags": ["#descall", "#sunucu", "#topluluk", "#oyuncu"],
+    "sources": [
+      { "claim": "Şablondan ya da sıfırdan sunucu", "file": "frontend/src/site/faqData.js", "match": "Create a server from scratch or pick an advanced template" },
+      { "claim": "Oyun şablonu kanalları", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"announcements\"[\\s\\S]*name: \"general\"[\\s\\S]*\\{ name: \"Lobby\", type: \"voice\" \\}[\\s\\S]*name: \"Tournament Stage\"" },
+      { "claim": "Oyun şablonu rolleri", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"Admin\"[\\s\\S]*name: \"Moderator\"[\\s\\S]*name: \"Helper\"[\\s\\S]*name: \"VIP\"[\\s\\S]*name: \"Member\"" },
+      { "claim": "Şablon adları", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Gaming hub\": \"Oyun merkezi\"" },
+      { "claim": "Şablonlarda rol ve kanal izinleri", "file": "frontend/src/site/faqData.js", "match": "plus channel permission overrides" }
+    ]
+  },
+  {
+    "id": "sunucu-rol-etiketleme",
+    "theme": "sunucular-roller",
+    "title": "Rolleri etiketlemek",
+    "hook": { "lines": ["Tüm moderatörlere", "*tek etiketle* ulaş"] },
+    "scenes": [
+      {
+        "lines": ["@ yaz,", "*roller de çıksın*"],
+        "visual": { "type": "roles", "items": ["@Moderatör", "@Etkinlik", "@Yeni üye"] }
+      },
+      {
+        "lines": ["Kimin etiketleyeceğine", "*sen karar ver*"],
+        "visual": { "type": "checklist", "items": ["Bahsedilebilir roller", "Sahip ve yöneticiler", "İzinli roller"] }
+      },
+      {
+        "lines": ["@everyone ve @here", "*kanal başına dakikada bir*"],
+        "visual": { "type": "stat", "value": "1/dk", "label": "Kanal başına sınır" }
+      }
+    ],
+    "caption": "Sunucularda @ yazınca kişilerin yanında roller de çıkar; tek etiketle bütün moderatörlere ya da bir etkinlik ekibine ulaşırsın. Herkes \"Bahsedilebilir\" işaretli rolleri etiketleyebilir, sahip ve yöneticiler bütün rolleri.\n\n@everyone ve @here'i sahip, yöneticiler ve buna izin verilen roller kullanabilir; spam olmasın diye kanal başına dakikada bir kez.",
+    "hashtags": ["#descall", "#sunucu", "#topluluk", "#moderasyon"],
+    "sources": [
+      { "claim": "Rol etiketleme ve kuralları", "file": "docs/release-notes/v3.7.39.md", "match": "Rol etiketleme:\\*\\* sunucularda @ yazınca roller de çıkıyor" },
+      { "claim": "Bahsedilebilir roller, sahip ve yöneticiler", "file": "docs/release-notes/v3.7.39.md", "match": "Herkes \"Bahsedilebilir\" işaretli rolleri etiketleyebiliyor; sahip ve yöneticiler bütün rolleri" },
+      { "claim": "@everyone / @here kanal başına dakikada bir", "file": "docs/release-notes/v3.7.39.md", "match": "kanal başına dakikada bir kez" }
+    ]
+  },
+  {
+    "id": "sunucu-moderasyon",
+    "theme": "sunucular-roller",
+    "title": "Moderasyon araçları",
+    "hook": { "lines": ["Sunucun büyüyorsa", "*moderasyon şart*"] },
+    "scenes": [
+      {
+        "lines": ["Kuralı çiğneyene", "*anında müdahale*"],
+        "visual": { "type": "checklist", "items": ["At", "Yasakla", "Sustur", "Mesajı sil"] }
+      },
+      {
+        "lines": ["Kim ne yaptı?", "*Denetim kaydında* gör"],
+        "visual": { "type": "steps", "items": ["İşlem yapılır", "Kayda düşer", "Yönetim inceler"] }
+      },
+      {
+        "lines": ["Küfürlü kelimeler", "*otomatik gizlenir*"],
+        "visual": { "type": "chips", "items": ["Otomatik maske", "Bildir", "Engelle"] }
+      }
+    ],
+    "caption": "Sunucu sahipleri ve moderatörler için Descall'da üyeyi atma, yasaklama, susturma ve mesaj silme araçları var. Yapılan işlemler denetim kaydına düşer, böylece ekip içinde kimin ne yaptığı görünür.\n\nMesajlardaki küfürlü kelimeler otomatik olarak *** ile gizlenir; uygunsuz mesajları ve kullanıcıları uygulama içinden bildirebilirsin.",
+    "hashtags": ["#descall", "#moderasyon", "#sunucu", "#topluluk"],
+    "sources": [
+      { "claim": "Atma, yasaklama, susturma, mesaj silme", "file": "appstore/metadata.json", "match": "üyeyi atma, yasaklama, susturma ve mesaj silme araçları" },
+      { "claim": "Denetim kaydı", "file": "frontend/backend/routes/servers.js", "match": "router.get\\(\"/:id/audit-logs\"" },
+      { "claim": "Küfür maskeleme", "file": "appstore/metadata.json", "match": "küfürlü kelimeler otomatik olarak \\*\\*\\* ile gizlenir" },
+      { "claim": "Uygulama içinden bildirme", "file": "appstore/metadata.json", "match": "Uygunsuz mesajları ve kullanıcıları uygulama içinden bildir" },
+      { "claim": "Engelleme", "file": "appstore/metadata.json", "match": "Kullanıcıları engelle: engellediğin kişiler sana mesaj atamaz" }
+    ]
+  },
+  {
+    "id": "sunucu-klasorler",
+    "theme": "sunucular-roller",
+    "title": "Sunucu klasörleri ve keşfet",
+    "hook": { "lines": ["Çok sunucun mu var?", "*Klasörle topla*"] },
+    "scenes": [
+      {
+        "lines": ["Sunucularını", "*klasörlerde grupla*"],
+        "visual": { "type": "chips", "items": ["Oyun", "Okul", "Arkadaşlar", "Yeni klasör"] }
+      },
+      {
+        "lines": ["Gürültülü kanalı", "*sessize al*"],
+        "visual": { "type": "toggles", "items": ["Kanalı sessize al"] }
+      },
+      {
+        "lines": ["Yeni topluluklar için", "*herkese açık sunucuları keşfet*"],
+        "visual": { "type": "steps", "items": ["Keşfet", "Önizle", "Katıl"] }
+      }
+    ],
+    "caption": "Sunucu listen kalabalıklaştıysa sunucularını klasörlerde toplayabilirsin. Gürültülü bir kanalı tek tek sessize alabilir, yeni topluluklar ararken herkese açık sunucuları keşfedebilirsin.\n\nDavet bağlantısıyla gelen bir sunucuyu da katılmadan önce önizleyebilirsin.",
+    "hashtags": ["#descall", "#sunucu", "#topluluk", "#ipucu"],
+    "sources": [
+      { "claim": "Sunucu klasörleri", "file": "frontend/backend/routes/servers.js", "match": "router.post\\(\"/me/folders\"" },
+      { "claim": "Yeni klasör etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"New folder\": \"Yeni klasör\"" },
+      { "claim": "Kanal sessize alma", "file": "frontend/backend/routes/servers.js", "match": "router.put\\(\"/:id/channels/:channelId/mute\"" },
+      { "claim": "Herkese açık sunucuları keşfet", "file": "appstore/metadata.json", "match": "Herkese açık sunucuları keşfet veya davet bağlantısıyla katıl" },
+      { "claim": "Keşfet ve katıl", "file": "frontend/backend/routes/servers.js", "match": "router.post\\(\"/discover/:id/join\"" },
+      { "claim": "Davet önizlemesi", "file": "frontend/src/site/faqData.js", "match": "Opening an invite lets you preview the server and join after signing in" }
+    ]
+  }
+]

@@ -1,0 +1,89 @@
+[
+  {
+    "id": "ucretsiz-temel-ozellikler",
+    "theme": "ucretsiz",
+    "title": "Temel özellikler ücretsiz",
+    "hook": { "lines": ["Sohbet, ses, sunucu", "*hepsi ücretsiz*"] },
+    "scenes": [
+      {
+        "lines": ["Bunlar için", "*ücret yok*"],
+        "visual": { "type": "checklist", "items": ["Sohbet", "Sunucular", "Sesli ve görüntülü arama", "Ekran paylaşımı"] }
+      },
+      {
+        "lines": ["DesCoin eşyaları", "*tamamen isteğe bağlı*"],
+        "visual": { "type": "chips", "items": ["Temalar", "Mesaj balonları", "Ülke bayrakları"] }
+      },
+      {
+        "lines": ["Her gün", "*günlük ödülünü al*"],
+        "visual": { "type": "steps", "items": ["Mağaza'yı aç", "Günlük ödül", "DesCoin cüzdanına"] }
+      }
+    ],
+    "caption": "Descall'da sohbet, sunucular, sesli ve görüntülü aramalar ve ekran paylaşımı ücretsiz. DesCoin ile alınan kozmetikler (temalar, mesaj balonları, ülke bayrakları) tamamen isteğe bağlı; temel mesajlaşmayı ya da aramaları hiçbir zaman kilitlemez.\n\nDesCoin kazanmak için Mağaza'daki günlük ödülü her gün alabilirsin.",
+    "hashtags": ["#descall", "#ücretsiz", "#seslisohbet", "#arkadaşlar"],
+    "sources": [
+      { "claim": "Sohbet, sunucu, ses, video ve ekran paylaşımı ücretsiz", "file": "frontend/src/site/faqData.js", "match": "Chat, servers, voice, video, and screen share are free" },
+      { "claim": "DesCoin kozmetikleri isteğe bağlı, temel özellikleri kilitlemez", "file": "frontend/src/site/faqData.js", "match": "Optional cosmetics use DesCoin and never gate core messaging or calls" },
+      { "claim": "Ülke bayrakları DesCoin ile", "file": "docs/release-notes/v2.13.0.md", "match": "245 ülke ve bölge, her biri 250 DesCoin" },
+      { "claim": "Mağazada mesaj balonları", "file": "frontend/backend/lib/chatBubbleCatalog.js", "match": "category: \"chat_bubble" },
+      { "claim": "Mağazada temalar", "file": "frontend/backend/test/shop.integration.test.cjs", "match": "category: \"theme\"" },
+      { "claim": "Günlük ödül", "file": "frontend/backend/routes/shop.js", "match": "router.post\\(\"/daily/claim\"" },
+      { "claim": "Ücretsiz temel özellikler premium listesinde değil", "file": "frontend/src/premium/features.js", "match": "Free baseline keys stay free" }
+    ]
+  },
+  {
+    "id": "ucretsiz-mesajlasma",
+    "theme": "ucretsiz",
+    "title": "Mesajlaşmada ücretsiz olanlar",
+    "hook": { "lines": ["Sadece yazışma değil,", "*fazlası var*"] },
+    "scenes": [
+      {
+        "lines": ["Fotoğraf, video, dosya", "ve *sesli mesaj*"],
+        "visual": { "type": "chips", "items": ["Fotoğraf", "Video", "Dosya", "GIF", "Sesli mesaj"] }
+      },
+      {
+        "lines": ["Tepki ver, yanıtla,", "*sabitle*"],
+        "visual": { "type": "checklist", "items": ["Tepkiler", "Yanıtlar", "Düzenleme", "Sabitleme"] }
+      },
+      {
+        "lines": ["Grupta karar mı lazım?", "*Anket aç*"],
+        "visual": { "type": "steps", "items": ["Soruyu yaz", "Seçenek ekle", "Herkes oylasın"] }
+      }
+    ],
+    "caption": "Descall'da arkadaşlarınla birebir ya da grup halinde yazışırken fotoğraf, video, dosya ve GIF paylaşabilir, sesli mesaj kaydedip gönderebilirsin. Mesajlara tepki verebilir, yanıtlayabilir, düzenleyebilir ve sabitleyebilirsin.\n\nGrupta bir karar vermeniz gerekiyorsa anket aç, herkes oylasın. Hepsi ücretsiz.",
+    "hashtags": ["#descall", "#mesajlaşma", "#grupsohbeti", "#ücretsiz"],
+    "sources": [
+      { "claim": "Fotoğraf, video, dosya, GIF paylaşımı", "file": "appstore/metadata.json", "match": "Fotoğraf, video, dosya, GIF ve emoji paylaşımı" },
+      { "claim": "Sesli mesaj", "file": "appstore/metadata.json", "match": "Sesli mesaj kaydedip gönderme" },
+      { "claim": "Tepki, yanıt, düzenleme, sabitleme", "file": "appstore/metadata.json", "match": "yanıtlama, düzenleme ve sabitleme" },
+      { "claim": "Anketler", "file": "frontend/backend/lib/polls.js", "match": "poll" },
+      { "claim": "Ücretsiz sohbet", "file": "frontend/src/site/faqData.js", "match": "Chat, servers, voice, video, and screen share are free" }
+    ]
+  },
+  {
+    "id": "ucretsiz-arkadaslar",
+    "theme": "ucretsiz",
+    "title": "Arkadaşlar ve profil",
+    "hook": { "lines": ["Kim çevrimiçi?", "*Tek bakışta gör*"] },
+    "scenes": [
+      {
+        "lines": ["Arkadaşlarını ekle,", "*ne yaptıklarını gör*"],
+        "visual": { "type": "voice", "items": ["Ayşe", "Can", "Zeynep", "Mert"] }
+      },
+      {
+        "lines": ["Profilini", "*kendine göre düzenle*"],
+        "visual": { "type": "chips", "items": ["Fotoğraf", "Banner", "Hakkımda", "Durum mesajı"] }
+      },
+      {
+        "lines": ["İstemediğin kişiyi", "*engelle*"],
+        "visual": { "type": "checklist", "items": ["Mesaj atamaz", "Arayamaz", "İstek gönderemez"] }
+      }
+    ],
+    "caption": "Arkadaşlarını ekle; kimin çevrimiçi olduğunu ve ne yaptığını gör. Profilini fotoğraf, banner, hakkımda yazısı ve durum mesajıyla kendine göre düzenle.\n\nİstemediğin biri olursa engelle: engellediğin kişiler sana mesaj atamaz, seni arayamaz, arkadaşlık isteği gönderemez.",
+    "hashtags": ["#descall", "#arkadaşlar", "#profil", "#ücretsiz"],
+    "sources": [
+      { "claim": "Arkadaş ekleme, çevrimiçi ve etkinlik", "file": "appstore/metadata.json", "match": "Arkadaş ekle; kimin çevrimiçi olduğunu ve ne yaptığını gör" },
+      { "claim": "Profil düzenleme", "file": "appstore/metadata.json", "match": "Profil fotoğrafı, banner, hakkımda yazısı ve durum mesajıyla profilini kendine göre düzenle" },
+      { "claim": "Engelleme", "file": "appstore/metadata.json", "match": "engellediğin kişiler sana mesaj atamaz, seni arayamaz, arkadaşlık isteği gönderemez" }
+    ]
+  }
+]

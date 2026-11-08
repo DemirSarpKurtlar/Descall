@@ -1,0 +1,90 @@
+[
+  {
+    "id": "ders-kampus-sablonu",
+    "theme": "ders-grubu",
+    "title": "Ders & kampüs şablonu",
+    "hook": { "lines": ["Sınav haftası geliyor,", "*çalışma sunucunu kur*"] },
+    "scenes": [
+      {
+        "lines": ["*Ders & kampüs* şablonu", "kanallarıyla hazır"],
+        "visual": { "type": "channels", "items": [{ "kind": "text", "name": "homework-help", "active": true }, { "kind": "text", "name": "resources" }, { "kind": "text", "name": "accountability" }] }
+      },
+      {
+        "lines": ["Odaklanmak için", "*sessiz ses odaları*"],
+        "visual": { "type": "channels", "items": [{ "kind": "voice", "name": "Silent Focus" }, { "kind": "voice", "name": "Pomodoro Room", "active": true }, { "kind": "voice", "name": "Group Project A" }] }
+      },
+      {
+        "lines": ["Mentor, çalışma arkadaşı,", "*öğrenci rolleri*"],
+        "visual": { "type": "roles", "items": ["Admin", "Moderator", "Mentor", "Study Buddy", "Student"] }
+      }
+    ],
+    "caption": "Ders çalışma grubun için Descall'da Ders & kampüs şablonunu seç: homework-help, resources ve accountability yazı kanalları, Silent Focus, Pomodoro Room ve grup projesi ses odaları, Office Hours sahne kanalı ve Mentor, Study Buddy, Student rolleri hazır gelir.\n\nKanal ve rol adlarını sonra istediğin gibi değiştirebilirsin.",
+    "hashtags": ["#descall", "#dersçalış", "#üniversite", "#sınavhaftası", "#çalışmagrubu"],
+    "sources": [
+      { "claim": "Ders & kampüs şablonu", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Study & campus\": \"Ders & kampüs\"" },
+      { "claim": "Yazı kanalları", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"homework-help\"[\\s\\S]*name: \"resources\"[\\s\\S]*name: \"accountability\"" },
+      { "claim": "Odak ses odaları", "file": "frontend/backend/lib/serverTemplates.js", "match": "\\{ name: \"Silent Focus\", type: \"voice\" \\},\\s*\\{ name: \"Pomodoro Room\", type: \"voice\" \\},\\s*\\{ name: \"Group Project A\", type: \"voice\" \\}" },
+      { "claim": "Office Hours sahne kanalı", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"Office Hours\",\\s*type: \"stage\"" },
+      { "claim": "Ders şablonu rolleri", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"Mentor\"[\\s\\S]*name: \"Study Buddy\"[\\s\\S]*name: \"Student\"" },
+      { "claim": "Rolleri düzenleme", "file": "frontend/backend/routes/servers.js", "match": "router.patch\\(\"/:id/roles/:roleId\"" },
+      { "claim": "Kanalları düzenleme", "file": "frontend/backend/routes/servers.js", "match": "router.patch\\(\"/:id/channels/:channelId\"" }
+    ]
+  },
+  {
+    "id": "ders-zamanlanmis-hatirlatma",
+    "theme": "ders-grubu",
+    "title": "Zamanlanmış mesajla hatırlatma",
+    "hook": { "lines": ["Yarın 09.00 sınav,", "*hatırlatmayı şimdi kur*"] },
+    "scenes": [
+      {
+        "lines": ["Gönder'e sağ tıkla,", "*ileri bir saate kur*"],
+        "visual": { "type": "steps", "items": ["Mesajı yaz", "Gönder'e sağ tıkla", "Saati seç"] }
+      },
+      {
+        "lines": ["Sen çevrimdışıyken", "*de gönderilir*"],
+        "visual": { "type": "checklist", "items": ["Birebir sohbet", "Grup", "Sunucu kanalı"] }
+      },
+      {
+        "lines": ["Ders notunu da", "*dosya olarak ekle*"],
+        "visual": { "type": "chips", "items": ["Zamanlanmış mesaj", "Dosya eki"] }
+      }
+    ],
+    "caption": "Çalışma grubuna yarın sabah hatırlatma mı atacaksın? Mesajı şimdi yaz, bilgisayarda Gönder düğmesine sağ tıkla ve ileri bir saat seç. Mesaj sen çevrimdışıyken de gider; istersen bir dosya da ekleyebilirsin.\n\nZamanlanmış mesajlar birebir sohbetlerde, gruplarda ve sunucu kanallarında çalışır.",
+    "hashtags": ["#descall", "#dersçalış", "#çalışmagrubu", "#ipucu"],
+    "sources": [
+      { "claim": "Sağ tık ya da basılı tutma ile zamanlama, dosya ekleme, çevrimdışıyken gönderim", "file": "docs/release-notes/v3.7.39.md", "match": "Gönder'e sağ tıklayıp \\(telefonda basılı tutup\\) ileri bir saate mesaj kurabiliyorsun; bir dosya da ekleyebilirsin. Sen çevrimdışıyken de gidiyor" },
+      { "claim": "Sunucu tarafında gönderim, uygulama kapalıyken de", "file": "frontend/src/lib/scheduledMessages.js", "match": "also while the app is closed" },
+      { "claim": "DM, grup, kanal", "file": "frontend/src/lib/scheduledMessages.js", "match": "convType: \"dm\"\\|\"group\"\\|\"channel\"" },
+      { "claim": "Zamanlanmış dosya eki", "file": "frontend/src/lib/scheduledAttachment.js", "match": "Scheduled sending with one attachment" }
+    ]
+  },
+  {
+    "id": "ders-ekran-sunum",
+    "theme": "ders-grubu",
+    "title": "Grup çalışmasında sunum ve anket",
+    "hook": { "lines": ["Proje ödevi mi?", "*Herkes aynı odada*"] },
+    "scenes": [
+      {
+        "lines": ["Slaytlarını", "*ekranından paylaş*"],
+        "visual": { "type": "stat", "value": "15 FPS", "label": "Sunum / slayt önerisi" }
+      },
+      {
+        "lines": ["Kodu ve notları", "*keskin göster*"],
+        "visual": { "type": "chips", "items": ["Yazı, kod", "1080p"] }
+      },
+      {
+        "lines": ["Buluşma saatine", "*anketle karar verin*"],
+        "visual": { "type": "steps", "items": ["Anket aç", "Saatleri ekle", "Herkes oylasın"] }
+      }
+    ],
+    "caption": "Grup ödevinde herkes aynı ses odasında: slaytlarını ekran paylaşımıyla göster (sunumlar için 15 FPS önerisi var), kod ve notlar için Yazı, kod seçeneği metni 1080p'de keskin tutar.\n\nBuluşma saatine karar veremediniz mi? Grupta bir anket aç, herkes oylasın.",
+    "hashtags": ["#descall", "#ödev", "#üniversite", "#çalışmagrubu"],
+    "sources": [
+      { "claim": "Sunum / slayt 15 FPS", "file": "frontend/src/components/voice/ScreenShareQualityPanel.jsx", "match": "value: 15, label: \"15\", hintKey: \"Presentations / slides\"" },
+      { "claim": "Sunum / slayt etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Presentations / slides\": \"Sunum / slayt\"" },
+      { "claim": "Yazı ön ayarı 1080p", "file": "frontend/src/lib/webrtcScreenShare.js", "match": "text: \\{\\s*id: \"text\",\\s*resolution: \"1080p\"" },
+      { "claim": "Yazı, kod etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Text, code\": \"Yazı, kod\"" },
+      { "claim": "Anketler", "file": "frontend/backend/lib/polls.js", "match": "poll" }
+    ]
+  }
+]
