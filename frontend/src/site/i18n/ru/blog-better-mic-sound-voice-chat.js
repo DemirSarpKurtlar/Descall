@@ -29,7 +29,6 @@ export default {
   "Turn down the loud friend, not the whole call": "Убавьте громкого друга, а не весь звонок",
   "Turn on noise suppression": "Включите шумоподавление",
   "Use push-to-talk in noisy rooms": "Используйте рацию в шумной комнате",
-  "What is free and what is extra": "Что бесплатно, а что дополнительно",
   "Why do my friends hear an echo of themselves?": "Почему друзья слышат эхо собственного голоса?",
   "Yes. It is in the voice settings for everyone and cuts keyboard, fan and other background noise. It cannot remove another person talking next to you.": "Да. Оно есть в голосовых настройках у всех и приглушает клавиатуру, вентилятор и другой фоновый шум. Голос другого человека рядом с вами оно убрать не может."
 };

@@ -8,10 +8,10 @@ export const TR_LANDING_META = [
     "h1": "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı"
   },
   {
-    "path": "/tr/turk-discord",
-    "title": "Descall: Türk Sesli Sohbet ve Topluluk Uygulaması",
-    "description": "Descall Türkiye’de geliştirilen, Türkçe bir sohbet uygulaması: erişim engeli yok, ücretsiz sunucular, sesli sohbet ve ekran paylaşımı. Hemen indir.",
-    "h1": "Descall: Türkiye’de geliştirilen sesli sohbet ve topluluk uygulaması"
+    "path": "/tr/turk-sohbet-uygulamasi",
+    "title": "Descall: Türkiye’de Geliştirilen Ücretsiz Sohbet Uygulaması",
+    "description": "Türkiye’de geliştirilen ücretsiz sesli sohbet uygulaması Descall: Türkçe arayüz, sunucular, sesli ve görüntülü arama, ekran paylaşımı. Windows, iPhone, web.",
+    "h1": "Descall: Türkiye’de geliştirilen ücretsiz sesli sohbet uygulaması"
   },
   {
     "path": "/tr/discord-yerine-ne-kullanilir",
@@ -46,6 +46,51 @@ export const TR_LANDING_META = [
 ];
 
 export const TR_BLOG_META = [
+  // 8 Kasım 2026 rehberleri; bodies in seo/trGuideBodies.js.
+  {
+    "slug": "move-discord-community-to-descall",
+    "title": "Discord Topluluğunu Descall’a Taşımak: Adım Adım",
+    "h1": "Discord topluluğunu Descall’a adım adım nasıl taşırsın?",
+    "description": "Discord topluluğunu kimseyi kaybetmeden Descall’da yeniden kur: kanalları ve rolleri eşleştir, davetleri ayarla, ses akşamlarını taşı ve geçişi tamamla.",
+    "date": "2026-11-08",
+    "tags": [
+      "Geçiş",
+      "Sunucular"
+    ]
+  },
+  {
+    "slug": "descall-voice-settings-guide",
+    "title": "Descall Ses Ayarları: Net Ses İçin En İyi Kurulum",
+    "h1": "Descall ses ayarları: net ses için en iyi kurulum",
+    "description": "Descall’daki her ses ayarı: gürültü bastırma seviyeleri, yankı engelleme, ses dengeleme, giriş hassasiyeti, mikrofon testi, bas-konuş ve hazır ayarlar.",
+    "date": "2026-11-08",
+    "tags": [
+      "Sesli sohbet",
+      "Ayarlar"
+    ]
+  },
+  {
+    "slug": "game-team-voice-setup",
+    "title": "Minecraft ve FPS Takımları için Sesli Sohbet | Descall",
+    "h1": "Oyun takımı için sesli sohbet: Minecraft ve FPS için Descall kurulumu",
+    "description": "Minecraft ekibin ya da beş kişilik FPS takımın için Descall’da ses kur: ses lobileri, bildirim ayarları, kişi bazlı ses düzeyi ve oyunda akıcı ses.",
+    "date": "2026-11-08",
+    "tags": [
+      "Oyun",
+      "Sesli sohbet"
+    ]
+  },
+  {
+    "slug": "screen-share-online-classes",
+    "title": "Online Derste ve Çalışma Grubunda Ekran Paylaşımı",
+    "h1": "Online derslerde ve çalışma gruplarında ekran paylaşımı",
+    "description": "Descall’da birlikte ders anlat ya da çalış: anlatım için sahne kanalı, slaytlar için “Yazı, kod” ayarı, paylaşım izinleri ve öğrenciler için ipuçları.",
+    "date": "2026-11-08",
+    "tags": [
+      "Ekran paylaşımı",
+      "Dersler"
+    ]
+  },
   // How-to guides (Nov 2026 content round); bodies in seo/trGuideBodies.js.
   {
     "slug": "screen-share-with-friends",

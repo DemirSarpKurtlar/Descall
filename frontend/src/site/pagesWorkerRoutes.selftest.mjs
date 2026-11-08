@@ -77,6 +77,22 @@ for (const [from, to] of Object.entries(owner)) {
   assert.ok(vercel.redirects.some((r) => r.source === from && r.destination === to), `vercel.json must list ${from}`);
 }
 
+// Own-brand Turkish URL (SEO audit item 9, Nov 2026): the old slug named Discord.
+{
+  const [from, to] = ["/tr/turk-discord", "/tr/turk-sohbet-uygulamasi"];
+  for (const p of [from, `${from}/`]) {
+    const res = await get(p);
+    assert.equal(res.status, 301, `${p} must redirect`);
+    assert.equal(res.headers.get("location"), `https://descall.com${to}`, `${p} -> ${to}`);
+  }
+  assert.ok(redirectsFile.includes(`${from} ${to} 301`), `_redirects must list ${from}`);
+  assert.ok(vercel.redirects.some((r) => r.source === from && r.destination === to && r.statusCode === 301), `vercel.json must list ${from}`);
+  const server = fs.readFileSync(path.join(root, "backend/server.js"), "utf8");
+  assert.ok(server.includes(`app.get("${from}", (_req, res) => res.redirect(301, "${to}"))`), `backend/server.js must redirect ${from}`);
+  assert.ok(!PUBLIC_ROUTES.some((r) => r.path === from), `${from} is not a route any more`);
+  assert.ok(PUBLIC_ROUTES.some((r) => r.path === to && r.lang === "tr"), `${to} is a live Turkish route`);
+}
+
 // Merged pages (SEO audit, Nov 2026): every removed URL 301s to the kept page in every
 // language, on Pages (worker + _redirects), Vercel and the Express server, and is no
 // longer a route (so it is out of the sitemaps and hreflang sets).

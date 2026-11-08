@@ -182,6 +182,43 @@ export const TURKEY_FAQ = [
 ];
 
 export const BLOG_POSTS = [
+  // Nov 8 2026 guides (page group "guides" in siteLocales.js; bodies in seo/guideBodies.js).
+  {
+    slug: "move-discord-community-to-descall",
+    path: "/blog/move-discord-community-to-descall",
+    title: "How to move a Discord community to Descall, step by step",
+    description:
+      "Rebuild a Discord community on Descall without losing people: map channels and roles, set up invites, move the voice nights, then switch over.",
+    date: "2026-11-08",
+    tags: ["Migration", "Servers"],
+  },
+  {
+    slug: "descall-voice-settings-guide",
+    path: "/blog/descall-voice-settings-guide",
+    title: "Descall voice settings explained: the best setup for clear sound",
+    description:
+      "Every Descall voice setting explained: noise suppression levels, echo cancellation, gain, input sensitivity, mic test and push-to-talk, with setups.",
+    date: "2026-11-08",
+    tags: ["Voice chat", "Settings"],
+  },
+  {
+    slug: "game-team-voice-setup",
+    path: "/blog/game-team-voice-setup",
+    title: "Voice chat for game teams: a Descall setup for Minecraft and shooters",
+    description:
+      "Set up Descall voice for a Minecraft crew or a five-person shooter team: voice lobbies, callout settings, per-person volume and smooth voice in game.",
+    date: "2026-11-08",
+    tags: ["Gaming", "Voice chat"],
+  },
+  {
+    slug: "screen-share-online-classes",
+    path: "/blog/screen-share-online-classes",
+    title: "Screen sharing for online classes and study groups",
+    description:
+      "Teach or study together on Descall: a stage channel for lectures, the Text, code preset for slides, who may share, and tips for students joining.",
+    date: "2026-11-08",
+    tags: ["Screen share", "Classes"],
+  },
   // How-to guides (Nov 2026 content round); bodies in seo/guideBodies.js.
   {
     slug: "screen-share-with-friends",
@@ -271,6 +308,62 @@ export const BLOG_POSTS = [
 
 /** Per-post FAQ, unique questions so blog pages do not clone COMPARE_FAQ schema. */
 export const BLOG_FAQ_BY_SLUG = {
+  "move-discord-community-to-descall": [
+    {
+      q: "Can I import my Discord server into Descall?",
+      a: "No. There is no import tool, so you rebuild channels and roles, ideally from a server template. The old message history stays on Discord, where members can still read it.",
+    },
+    {
+      q: "Do members need to install anything to join?",
+      a: "No. They can join from a browser at descall.com/app, or use the Windows, iPhone and iPad or Android app. Signing up is free with an e-mail address or a Google account.",
+    },
+    {
+      q: "Which bot jobs does Descall cover?",
+      a: "Built-in slash commands handle polls (/poll), moderation (/timeout, /kick, /ban), clearing spam (/purge) and nicknames (/nick). There is no bot marketplace, so keep custom bots where they are for now.",
+    },
+  ],
+  "descall-voice-settings-guide": [
+    {
+      q: "What is the difference between On and Strong noise suppression?",
+      a: "On removes steady background noise and suits most rooms. Strong adds a firmer gate that cuts quiet sound between your sentences; switch back to On if the start of your words gets lost.",
+    },
+    {
+      q: "Are my voice settings saved to my account?",
+      a: "No. They are saved on the device you change them on, so check the Voice & Video page once on each device you use.",
+    },
+    {
+      q: "Which push-to-talk keys can I use?",
+      a: "In the Windows app: Ctrl+Shift+M, Ctrl+Shift+Space or Alt+Shift+M. It works while Descall is the active window; push-to-talk in any app is part of Descall+.",
+    },
+  ],
+  "game-team-voice-setup": [
+    {
+      q: "Can I use push-to-talk while the game is in front?",
+      a: "In the free Windows app, push-to-talk works while Descall is the active window. Push-to-talk and mute that work in any app are part of the optional Descall+ membership; without it, tune the input sensitivity and use voice activation.",
+    },
+    {
+      q: "Can friends hear the game when I share my screen?",
+      a: "Yes. In the Windows app, the sound of what you share goes out with the picture. In a browser it depends on the browser and on what you pick in its sharing dialog.",
+    },
+    {
+      q: "Which voice rooms does the Gaming hub template create?",
+      a: "Lobby, Duo Queue, Five Stack, AFK / Chill and a Tournament Stage stage channel, plus a Staff Voice room that only staff can see. You can rename all of them.",
+    },
+  ],
+  "screen-share-online-classes": [
+    {
+      q: "Can I make sure only the teacher shares a screen?",
+      a: "Yes. In the lecture channel, deny Stream and camera for @everyone and allow it for the teacher role. In a stage channel, only people on stage can share.",
+    },
+    {
+      q: "How do students ask a question in a stage channel?",
+      a: "They press Request to Speak. Someone with the Move members permission brings them on stage, and moves them back with Move to Audience when they are done.",
+    },
+    {
+      q: "Which screen share setting is best for slides?",
+      a: "Text, code at 1080p and 15 or 20 frames per second. Drop to 720p if students on weak connections see a blurry or frozen picture.",
+    },
+  ],
   "screen-share-with-friends": [
     {
       q: "Is screen sharing free on Descall?",

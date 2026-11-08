@@ -127,7 +127,7 @@ export function faqTwin(loc, pathname) {
   const jump = FAQ_GROUPS.map((g) => `<a href="#faq-${g.id}">${escapeHtml(t(g.title))}<span>${g.items.length}</span></a>`).join("");
   const groups = FAQ_GROUPS.map(
     (g) => `<div class="seo-tw-faq-group" id="faq-${g.id}"><h2>${escapeHtml(t(g.title))}</h2><div class="seo-tw-faq">${g.items
-      .map((it) => `<details><summary>${escapeHtml(t(it.q))}</summary><p>${escapeHtml(t(it.a))}</p></details>`)
+      .map((it) => `<details${g.open ? " open" : ""}><summary>${escapeHtml(t(it.q))}</summary><p>${escapeHtml(t(it.a))}</p></details>`)
       .join("")}</div></div>`
   ).join("\n    ");
   return `<section class="seo-tw-faq-layout">

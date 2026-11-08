@@ -24,7 +24,7 @@ export const PAGE_UPDATED = {
   "/": "2026-11-07",
   "/features": "2026-11-07",
   "/download": "2026-11-07",
-  "/faq": "2026-10-19",
+  "/faq": "2026-11-08",
   "/security": "2026-10-14",
   "/status": SITE_OPERATOR.statusReviewedIso,
   "/privacy": "2026-10-26",
@@ -43,8 +43,8 @@ export const PAGE_UPDATED = {
   "/discord-alternative-for-friends": "2026-11-07",
   "/apps-like-discord": "2026-11-07",
   "/discord-replacement": "2026-11-07",
-  "/blog": "2026-11-07",
-  "/sitemap": "2026-11-07",
+  "/blog": "2026-11-08",
+  "/sitemap": "2026-11-08",
   // Turkish-only URLs (the /tr mirrors of English pages follow the English date).
   "/descall-sahibi": "2026-11-06",
   "/iletisim": "2026-10-14",
@@ -52,15 +52,17 @@ export const PAGE_UPDATED = {
   "/kosullar": "2026-10-10",
   "/tr": "2026-11-07",
   "/tr/compare/discord": "2026-11-06",
-  "/tr/blog": "2026-11-07",
+  "/tr/blog": "2026-11-08",
   // Turkish landings whose title or copy changed after TR_LANDING_UPDATED.
+  // 2026-11-08: own-brand URL /tr/turk-sohbet-uygulamasi (was /tr/turk-discord), links to the
+  // Nov 8 guides; /faq gained the Quick answers group, /blog and /tr/blog the four guides.
   // 2026-11-07: guide links added to their related lists (second content round).
-  "/tr/discord-alternatifi": "2026-11-07",
-  "/tr/turk-discord": "2026-11-07",
-  "/tr/discord-yerine-ne-kullanilir": "2026-11-07",
-  "/tr/oyuncu-sohbet-uygulamasi": "2026-11-07",
+  "/tr/discord-alternatifi": "2026-11-08",
+  "/tr/turk-sohbet-uygulamasi": "2026-11-08",
+  "/tr/discord-yerine-ne-kullanilir": "2026-11-08",
+  "/tr/oyuncu-sohbet-uygulamasi": "2026-11-08",
   "/tr/discord-alternatifleri": "2026-11-07",
-  "/tr/sesli-sohbet-uygulamasi": "2026-11-07",
+  "/tr/sesli-sohbet-uygulamasi": "2026-11-08",
 };
 
 /** First day each prefixed language was served (3.7.23 / 3.7.24). */

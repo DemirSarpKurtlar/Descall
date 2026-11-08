@@ -54,6 +54,14 @@ export const SITE_PAGE_GROUPS = Object.freeze({
     "/blog/discord-competitors",
     "/blog/leave-nitro-keep-voice-chat",
   ],
+  // Nov 8 2026 guides: English and Turkish are live; the prefixed twins wait for their
+  // translation (SITE_DRAFT_PAGE_GROUPS.guides in siteDraftLocales.js).
+  guides: [
+    "/blog/move-discord-community-to-descall",
+    "/blog/descall-voice-settings-guide",
+    "/blog/game-team-voice-setup",
+    "/blog/screen-share-online-classes",
+  ],
   niche: [
     "/best-discord-alternative-for-gamers",
     "/discord-alternative-for-communities",

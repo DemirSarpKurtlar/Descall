@@ -260,9 +260,226 @@ export const TR_GUIDE_BODIES = {
       },
     ],
   },
+
+  // 8 Kasım 2026 rehberleri (seo/guideBodies.js ile aynı iddialar; kod 2026-11-08'de kontrol edildi).
+  "move-discord-community-to-descall": {
+    sections: [
+      {
+        h: "Ne taşınır, ne geride kalır?",
+        p: "Bir topluluğu taşımak veriden çok insanlarla ilgili bir iş. Bir Discord sunucusunu Descall’a kopyalayan bir araç yok: kanalları, rolleri ve ayarları elle yeniden kurarsın, mesaj geçmişi de olduğu yerde kalır. Kulağa yorucu geliyor, ama çoğu sunucu kanal listesinin gösterdiğinden küçüktür ve yeniden kurmak, kimsenin kullanmadığı her şeyi bırakmak için iyi bir fırsattır. Yeni sunucu dolarken üyelerin eski sunucuyu arşiv gibi okumaya devam edebilir. Asıl taşınması gereken şey, herkesin aynı yerde buluşma alışkanlığı; aşağıdaki adımlar da bunun etrafında kurulu.",
+      },
+      {
+        h: "1. adım: topluluğunun gerçekten neyi kullandığını yaz",
+        p: "Eski sunucuyu aç ve son bir aya dürüstçe bak. Hangi kanallarda mesaj vardı, hangi ses odaları hangi akşamlar doluydu, moderasyonu kim yaptı, hangi botlar gerçekten iş gördü? Bunu kısa bir liste olarak yaz. Çoğu toplulukta liste şuna benzer: bir duyuru kanalı, bir genel sohbet, iki üç konu kanalı, birkaç ses odası ve bir yetkili odası. Botların yaptığı işleri de not et; hoş geldin mesajı, anket, zaman aşımı ya da spam temizliği gibi. Böylece bu işlerden hangilerinin hâlâ gerekli olduğunu bilirsin. Bu liste senin planın; listede olmayan her şey biri isteyene kadar bekleyebilir.",
+      },
+      {
+        h: "2. adım: sunucuyu bir şablonla aç",
+        p: "Descall’da bir şablon kanalları, kategorileri, rolleri ve izinleri tek seferde kurar; bu da sana bir akşamlık tıklamayı kazandırır. Oyun merkezi klanlara ve oyun gruplarına, Topluluk & içerik üreticileri etkinlikleri ve destek masası olan açık topluluklara, Arkadaş takılması kapalı bir arkadaş grubuna, Ders & kampüs sınıflara ve çalışma gruplarına, Yayıncı & içerik de bir yayıncıya ve izleyicilerine uyar. Eski düzenini birebir kurmak istiyorsan Sıfırdan başla, yalnızca @everyone rolü olan boş bir sunucu açar. Hangisini seçersen seç, sonradan her kanalı ve rolü yeniden adlandırabilir, taşıyabilir ya da silebilirsin; o yüzden sana en yakın şablonu seç ve üzerinde düzenle.",
+      },
+      {
+        h: "3. adım: kanalları ve kategorileri eşleştir",
+        p: "Listendeki her eski kanala yeni sunucuda bir yer ver. Üyelerin bildiği kanal adlarını koru; tanıdık isimler ilk günleri çok kolaylaştırır. Kanalları kategorilere topla, her yazı kanalına yeni gelenlerin oraya ne yazacağını anlatan kısa bir konu ekle, sık sık taşan bir kanalda yavaş modu aç. Descall’da yazı, ses ve sahne kanalları var: insanların uğrayıp çıktığı odalar için ses kanalı, birkaç kişinin konuşup herkesin dinlediği sohbetler ve soru-cevap saatleri için sahne kanalı kullan. Her arşiv kanalını yeniden kurma isteğine direnç göster. Eski kanal daha çok okunmak içinse, duyurularda ona bağlantı vermen yeterli.",
+      },
+      {
+        h: "4. adım: rolleri ve izinleri yeniden kur",
+        p: "Sorumluluk taşıyan rollerle başla: sahip ekibi, yöneticiler, moderatörler ve belki üyelerin yapabildiklerini değiştiren bir iki üye rolü. Her rolün bir rengi olabilir, üye listesinde ayrı gösterilebilir ve etiketlenebilir yapılabilir; üstteki roller alttakileri yönetir. Çoğu sunucuda iki tür kanal izni yeterli. Duyuru kanalında @everyone için Mesaj gönder iznini kapat, yetkililere aç. Yetkili odasında @everyone için Kanalı gör iznini kapat, moderatörlere aç. Kendi izinleri olmayan bir kanal kategorisinin izinlerini izler; bu yüzden izinleri kategoriye vermek çoğu zaman yeter. Süs rolleri sonra gelebilir, önce insanlar yerleşsin.",
+      },
+      {
+        h: "5. adım: kurallar, moderasyon ve botların yaptığı işler",
+        p: "Kuralları bir kurallar kanalına yaz ve yeni üyelerin katılmadan önce kabul etmesini iste; Descall bunu zorunlu tutabiliyor. Moderatörler mesaj silebilir, üyelere zaman aşımı uygulayabilir, atabilir ya da yasaklayabilir; her yetkili işlemi denetim kaydına yazılır. Başka yerlerde bot gerektiren birkaç iş Descall’da hazır eğik çizgi komutu olarak geliyor: hızlı oylama için /poll ya da /anket, moderasyon için /timeout, /kick ve /ban, spam dalgasını temizlemek için /purge, takma ad değiştirmek için /nick. Toplu etiketler de baştan sınırlı: @everyone ve @here yalnızca sahip, yöneticiler ve bu izni olan roller tarafından, kanal başına dakikada bir kez kullanılabiliyor. Descall’da bot pazarı yok; topluluğun özel bir bota bağlıysa o kısmı şimdilik olduğu yerde tut.",
+      },
+      {
+        h: "6. adım: kontrolü sende kalan davetler",
+        p: "Taşınma için bir davet bağlantısı oluştur ve ne kadar açık olacağına karar ver. Bağlantıyı oluştururken ne zaman sona ereceğini ve kaç kez kullanılabileceğini seçebilirsin; böylece herkese açık bir yere koyduğun bağlantı sonsuza kadar geçerli kalmaz. Bağlantıyı açan kişi sunucunun önizlemesini görür ve giriş yaptıktan ya da e-posta adresi veya Google hesabıyla ücretsiz hesap açtıktan sonra katılır. Descall hesapları 13 yaş ve üzeri içindir. Bağlantıyı eski sunucunun duyurularına ve topluluğunun kullandığı WhatsApp ya da Telegram grubuna sabitle; kimse iki kez sormak zorunda kalmasın.",
+      },
+      {
+        h: "7. adım: ilk ses akşamını taşı",
+        p: "İlk gün herkesi davet etme. En aktif beş-on üyenden önce yeni sunucuya katılmalarını ve orada sıradan bir ses akşamı yapmalarını iste. Pürüzleri onlar bulur, mikrofonlarını onlar ayarlar ve sonra diğerlerine yardım eden kişiler onlar olur. Herkesten kulaklık kullanmasını, aramadan önce ses ayarlarındaki mikrofon testini denemesini ve yapay zekâ gürültü bastırmayı açık tutmasını iste. İnsanlar Windows uygulamasından, iPhone ve iPad uygulamasından, Android uygulamasından ya da tarayıcıda descall.com/app adresinden katılabilir; kimse cihazı yüzünden dışarıda kalmaz.",
+      },
+      {
+        h: "8. adım: taşınmayı duyur ve kısa bir süre ikisini birden kullan",
+        p: "İlk akşam iyi geçtiyse taşınmayı eski sunucuda duyur: neden taşındığınızı, davet bağlantısını, ses akşamlarının hangi tarihte Descall’a geçeceğini ve yardım için kime yazılacağını yaz. Sonra bir iki hafta iki sunucuyu birlikte yürüt. Bütün etkinlikleri ve ses akşamlarını Descall’da yap; eski sunucuyu okumak ve henüz geçmeyenler için bırak. İlk büyük etkinlikten önceki akşam için bir hatırlatma mesajı zamanla; Descall mesajları bir yıl sonrasına kadar zamanlayabiliyor. Net bir tarih, yavaş yavaş sönmekten daha iyi çalışır, çünkü insanlar herkesin nerede olacağını bildiklerinde taşınır.",
+      },
+      {
+        h: "Geçişten sonra: toparla",
+        p: "Bir ay sonra hangi kanalların sessiz kaldığına bak; onları birleştir ya da sil. Moderatörlerin ihtiyaç duydukları izinlere sahip olduğunu, fazlasına sahip olmadığını kontrol et. Artık kullanmadığın davet bağlantılarını silebilirsin. Geç kalanlar için eski sunucudaki duyuruyu yeni bağlantıyla sabit tut. Bu rehberdeki her şey, şablonlar ve rollerden sahne kanallarına, davetlere ve moderasyona kadar, Descall’da ücretsiz. Descall’ın Discord Inc. ile bir bağlantısı yoktur; bu rehber yalnızca bir topluluğun Descall’da nasıl yeniden kurulacağını anlatır.",
+      },
+    ],
+  },
+
+  "descall-voice-settings-guide": {
+    sections: [
+      {
+        h: "Ses ayarları nerede?",
+        p: "Descall’daki bütün ses ayarları tek sayfada: ayarları aç ve Ses ve Görüntü’yü seç. Aynı ayarlar DM aramalarında, grup aramalarında ve sunucu ses kanallarında kullanılır. Ayarlar, onları değiştirdiğin cihazda saklanır; yani masaüstündeki kulaklık ayarın telefonunun sesini değiştirmez. Kullandığın her cihazda bu sayfaya bir kez bakmaya değer. Bu rehber sayfayı yukarıdan aşağı geziyor, her ayarın ne yaptığını ve varsayılan değerini anlatıyor ve en sık karşılaşılan durumlar için hazır ayarlarla bitiyor.",
+      },
+      {
+        h: "Mikrofon, hoparlör ve kamera",
+        p: "İlk bölüm cihazlarını seçer. Mikrofonunu ve hoparlörünü Sistem varsayılanı’nda bırakmak yerine adıyla seç; dizüstü bilgisayarlar ve web kameraları çoğu zaman, kulaklık takılıyken bile sistemin tercih ettiği yerleşik bir mikrofonla gelir. Uygulama açıldıktan sonra taktığın kulaklık listede yoksa Cihazları yenile’ye bas. Arama sırasında seçtiğin mikrofon kaybolursa, örneğin kablosunu çektiysen, Descall arama sürsün diye başka bir mikrofona geçer. Aynı sayfadaki kamera seçimi görüntülü aramalarda kullanılır.",
+      },
+      {
+        h: "Yapay zekâ gürültü bastırma: Kapalı, Açık ya da Güçlü",
+        p: "Yapay zekâ gürültü bastırma; klavye tıklamalarını, fan sesini ve diğer sürekli arka plan seslerini, sesin cihazından çıkmadan önce temizler. Üç seviyesi var. Açık varsayılandır ve çoğu odaya uyar. Güçlü bunun üstüne daha sıkı bir kapı ekler; cümlelerinin arasındaki hafif arka plan sesi daha kesin biçimde kesilir. Gürültülü bir odada bunu kullan; arkadaşların kelimelerinin başının kaybolduğunu söylerse Açık’a dön. Kapalı, mikrofonunu bu işlem olmadan gönderir. Descall, cihazının akıcı çalıştırabileceği en güçlü yöntemi kullanır, yavaş cihazlarda daha hafif bir yönteme geçer. Gürültü bastırma açıkken tarayıcının kendi gürültü filtresi kapatılır; böylece iki filtre birbiriyle çatışıp sesini boğuk yapmaz. Sen açıkça konuşurken temizlenmiş ses sessiz kalırsa Descall sesin kesilmesin diye düz mikrofonuna geri döner.",
+      },
+      {
+        h: "Yankı engelleme ve otomatik ses dengeleme",
+        p: "Yankı engelleme varsayılan olarak açık. Hoparlörden gelen arkadaş seslerinin yeniden mikrofonuna girmesini önler. Birinin hoparlör kullanma ihtimali varsa açık bırak. Kapalı kulaklık takıyorsan ve sesin boğuk, kutudan geliyormuş gibi olmaya başladıysa kapatmayı deneyebilirsin; çünkü işlemin engelleyecek bir şeyi kalmaz. Yine varsayılan olarak açık olan otomatik ses dengeleme, sesini düzgün bir seviyede tutar: alçak sesle konuşurken mikrofona eğilmen gerekmez, gülerken de herkesin kulağını patlatmazsın. Bunu yalnızca seviyesi sabit, iyi bir mikrofon kullanıyorsan, örneğin bir ses kartı üzerinden, kapat ve seviyeyi kendin ayarla.",
+      },
+      {
+        h: "Giriş hassasiyeti",
+        p: "Giriş hassasiyeti, Descall’ın seni ne zaman konuşuyor sayacağını ve profil resminin etrafındaki halkayı ne zaman yakacağını belirler. 0 ile 100 arasında ayarlanır ve 45’ten başlar; bu, dizüstü ya da telefon mikrofonundaki normal konuşmaya uyar. Arkadaşların cümlelerinin başını ya da alçak sesle söylediklerini kaçırıyorsa yükselt. Sen sessizken halka arka plan gürültüsüyle yanıyorsa düşür. Küçük adımlarla değiştir ve her seferinde test et; hassasiyet, ses dengeleme ve gürültü bastırma birbirini etkiler.",
+      },
+      {
+        h: "Katılmadan önce test et",
+        p: "Mikrofon testi, konuşurken hareket eden bir seviye çubuğu gösterir; böylece kimse seni duymadan doğru mikrofonun çalıştığını görürsün. Test sırasında kendi mikrofonunu dinlemek için Kendini duy’u aç; bunun için kulaklık tak, yoksa bir döngü duyarsın. Uğultuya, nefes sesine ve mesafeye kulak ver. Kulaklık mikrofonu ağız köşesinden yaklaşık iki parmak uzakta ve biraz yanda en iyi sonucu verir. İşin bitince Durdur’a bas; test mikrofonu açık tutar.",
+      },
+      {
+        h: "Windows uygulamasında bas-konuş",
+        p: "Windows uygulamasında bu sayfada bir de bas-konuş anahtarı var. Açıkken mikrofonun yalnızca tuşu basılı tuttuğunda açılır; gürültülü bir klavye ya da paylaşılan bir oda için en güvenilir çözüm bu. Üç tuş arasından seçim yapabilirsin: Ctrl+Shift+M, Ctrl+Shift+Space ve Alt+Shift+M. Ücretsiz uygulamada bas-konuş, Descall etkin pencereyken çalışır. Bir oyun ya da başka bir uygulama öndeyken de çalışan bas-konuş, her yerde çalışan bir sessize alma tuşuyla birlikte isteğe bağlı Descall+ üyeliğinin parçası.",
+      },
+      {
+        h: "Hazır ayarlar",
+        p: "Masada oyuncu kulaklığı: mikrofon ve hoparlör için kulaklığı adıyla seç, gürültü bastırma Açık, yankı engelleme ve otomatik ses dengeleme açık, hassasiyet 45; klavyen gürültülüyse bas-konuş. Sessiz bir odada dizüstü: yerleşik mikrofon, gürültü bastırma Açık, yankı engelleme açık, çünkü dizüstü hoparlörleri kolayca geri besleme yapar; mümkünse kulak içi kulaklık tak. Gürültülü ortak oda ya da yurt: gürültü bastırma Güçlü, Windows uygulamasında bas-konuş açık, hassasiyet biraz daha düşük. Telefon: iPhone ve iPad’de yankıyı ve gürültüyü sistemin kendi ses işleme özelliği halleder; yapabileceğin en iyi iyileştirme bir çift kulaklık.",
+      },
+      {
+        h: "Beş dakikalık kontrol listesi",
+        p: "Yeni bir kulaklık aldıysan, bilgisayar değiştirdiysen ya da arkadaşların seni iyi duyamadığını söylüyorsa bu sırayla git. Önce Ses ve Görüntü sayfasında mikrofonu ve hoparlörü adıyla seç; liste eksikse Cihazları yenile’ye bas. Sonra mikrofon testini başlat, Kendini duy’u aç ve normal sesinle birkaç cümle söyle. Çubuk hareket etmiyorsa yanlış mikrofon seçilidir ya da işletim sistemi uygulamaya mikrofon izni vermemiştir. Ses boğuksa yankı engellemeyi, uğultu varsa gürültü bastırma seviyesini kontrol et. Halka sen susarken yanıyorsa hassasiyeti biraz düşür. En sonunda testi durdur ve bir arkadaşınla kısa bir DM araması yap; gerçek bir arama, ayar sayfasının söyleyemediği şeyleri hemen gösterir.",
+      },
+      {
+        h: "Sorun bağlantıdaysa",
+        p: "Bir sunucu ses kanalında her kişinin yanındaki küçük bağlantı göstergesi, bağlantısının nasıl gittiğini söyler. Bağlantı kötüleştiğinde Descall ses hızını düşürür; çok zayıf bir bağlantıda da kaybolan paketlere rağmen konuşma kopmasın diye ek yedeklilik ekler, karşı taraf da biraz daha fazla sesi ara belleğe alır. Başkalarına robot gibi geliyorsan bunu ayar sayfası düzeltmez: modeme yaklaş, kablo kullan ya da büyük indirmeleri durdur. Bir ağ doğrudan bağlantıyı engellediğinde aramalar aktarma sunucularına geçer; bu yüzden katı ev ya da okul ağları da çoğu zaman bağlanabilir.",
+      },
+      {
+        h: "Ne ücretsiz, ne ek?",
+        p: "Ses ve Görüntü sayfasındaki her şey ücretsiz: cihaz seçimi, gürültü bastırmanın üç seviyesi, yankı engelleme, otomatik ses dengeleme, giriş hassasiyeti, mikrofon testi ve Windows uygulamasındaki bas-konuş. Sunucu ses kanalında kişi bazlı ses düzeyi, sessizden iki kat yükseğe kadar, yine ücretsiz. Descall+ bunların üstüne ek ses araçları getirir: kendi eşiğini seçtiğin bir gürültü kapısı, mikrofon ön ayarları, mikrofon dinleme, ses cihazı profilleri, otomatik cihaz geçişi ve her uygulamada çalışan bas-konuş ile sessize alma. Ultra, Descall+’ın her şeyini içerir. Üyelikler şimdilik Descall ekibi tarafından ve kodlarla veriliyor, yayımlanmış bir fiyat yok.",
+      },
+    ],
+  },
+
+  "game-team-voice-setup": {
+    sections: [
+      {
+        h: "İki tür takım, iki tür ses",
+        p: "Bir Minecraft ekibiyle beş kişilik bir FPS takımı sesli sohbetten çok farklı şeyler ister. İnşa ya da hayatta kalma sunucusu saatlerce sürer, insanlar girip çıkar, sohbet rahattır. FPS takımı ise kısa, gergin raundlar oynar; bir bildirim anında ulaşmalı ve kimse onun üstüne konuşmamalı. Tek bir Descall sunucusu ikisini de taşıyabilir, çünkü ses kanalları sürekli açık kalır ve insanlar sadece uğrar. Bu rehber önce bir oyun grubu için sunucuyu kuruyor, sonra mikrofonu ve odaları her oyun tarzına göre ayarlıyor.",
+      },
+      {
+        h: "Oyun merkezi şablonuyla başla",
+        p: "Bir sunucu oluştur ve Oyun merkezi şablonunu seç. Şablon; duyurular, kurallar ve tanışma kanallarıyla bir Welcome kategorisi, general, squad-up, clips-and-highlights ve memes kanallarıyla bir Community kategorisi ve Lobby, Duo Queue, Five Stack, AFK / Chill ses odalarıyla Tournament Stage adında bir sahne kanalı olan Voice lobbies kategorisi kurar. Ayrıca özel bir sohbet, moderasyon kayıtları ve Staff Voice odasıyla bir yetkili alanı da gelir. Roller hazır: Admin, Moderator, Helper, VIP ve Member. Kanal adları şablonda İngilizce; hepsini grubuna göre Türkçe adlandırabilirsin. Şablon bir başlangıç noktası, kural değil.",
+      },
+      {
+        h: "Minecraft ekibi için odalar",
+        p: "Uzun soluklu bir Minecraft dünyasında tek büyük lobi yerine birkaç adlandırılmış ses odası daha iyi çalışır. Lobileri insanların yaptığı işe göre adlandır: örneğin bir inşaat odası, bir keşif odası ve biri çiftlik kurarken sohbet edilen bir oda. Arkadaşların nereye katılacaklarını bir bakışta görür. Konuşmadan dinlemek isteyenler için AFK / Chill’i koru. Koordinatlar, sunucu adresleri ve planlar için bir yazı kanalı kullan, insanların tekrar tekrar aradığı mesajları sabitle. Biri bir yapıyı bitirdiğinde ses odasında “Oyun, video” ayarıyla ekranını paylaşıp herkesi gezdirebilir.",
+      },
+      {
+        h: "FPS takımı için odalar",
+        p: "Rekabetçi bir takım genelde daha az odaya ve daha net kurallara ihtiyaç duyar. Maç sırasında aktif takım için Five Stack’i, ısınan iki kişi için Duo Queue’yu, geri kalan herkes için Lobby’yi kullan. Maç odasının yalnızca bildirimler için olduğunda anlaşın: kısa, sakin ve raund sürerken başka hiçbir şey yok. Moderator ve Helper rolleri seste üyeleri susturabilir ve odalar arasında taşıyabilir (bir kaptan rolüne de aynı iki izni verebilirsin); biri yanlış anda katıldığında maç odası temiz kalır. İzleyicili bir antrenman maçı ya da turnuva akşamı için Tournament Stage sahne kanalında birkaç kişi konuşur, herkes dinler; dinleyiciler de söz isteyebilir.",
+      },
+      {
+        h: "Bildirimler için mikrofon ayarları",
+        p: "Ayarları aç, Ses ve Görüntü’yü seç ve mikrofon ile hoparlör için kulaklığını adıyla seç. Klavye ve fare tıklamaları aramaya girmesin diye yapay zekâ gürültü bastırmayı Açık tut; düzenin gürültülüyse Güçlü yap. Doğru mikrofonun çalıştığından emin olmak için mikrofon testini bir kez yap. Ücretsiz Windows uygulamasında bas-konuş, Descall etkin pencereyken çalışır; FPS oynarken öndeki pencere oyundur, bu yüzden çoğu oyuncu ses etkinliğini kullanır. Giriş hassasiyetini, profil resminin etrafındaki halka konuşunca yanacak, tıklamalarda sönük kalacak şekilde ayarla. Oyun öndeyken de çalışan bas-konuş ve sessize alma, isteğe bağlı Descall+ üyeliğinin parçası.",
+      },
+      {
+        h: "Herkesi doğru seviyede duy",
+        p: "Her takımda herkesten iki kat yüksek konuşan bir arkadaş vardır. Sunucu ses kanalında o kişinin menüsünü aç ve ses kaydırıcısını sessizden iki kat yükseğe kadar istediğin yere getir; değişikliği yalnızca sen duyarsın ve oyunun ses seviyesine dokunmaz. Ekran paylaşımının sesi için ayrı bir kaydırıcı var; yüksek bir yayın bildirimleri bastırmaz. Kulaklık tak: hoparlörle mikrofonun aramayı yeniden yakalar ve herkes kendi sesinin yankısını duyar.",
+      },
+      {
+        h: "Raundları ve yapıları birlikte incele",
+        p: "Takım ekran paylaşımıyla öğrenir. Maçtan sonra biri ses odasında bir tekrarı ya da klibi paylaşırken diğerleri hataları gösterebilir. Hızlı hareket için kalite panelinde “Oyun, video”yu seç. Grup aramasında Descall paylaşımı 720p ve saniyede 20 kareyle başlatır, kalabalık bir aramada daha yükseğe çıkarsan seni uyarır. DM aramasındaki birebir koçlukta paylaşım daha yüksek kalitede başlar; saniyede 60 kare tam da bunun için. Windows uygulamasında oyunun sesi görüntüyle birlikte gider; diğerleri senin duyduğunu duyar.",
+      },
+      {
+        h: "Ne oynadığını göster",
+        p: "Windows uygulamasında Descall, arkadaşlarına hangi oyunu oynadığını gösterebilir; böylece ne zaman katılacaklarını bilirler. Anahtarı Gizlilik, Aktivite durumu, Oyun aktivitesi altında bulursun ve istediğin zaman kapatabilirsin. Bildirim almadan oynamak istediğinde durumunu Rahatsız Etme yap ya da klip kanalını Sadece @bahsetmeler’e al; maç sırasında seni rahatsız etmesin. squad-up kanalındaki bir anket, bir sonraki oturumun saatinde anlaşmanın hızlı bir yolu.",
+      },
+      {
+        h: "Oynarken sesi akıcı tut",
+        p: "Ses ve oyun aynı bağlantıyı paylaşır. Kablo Wi-Fi’dan iyidir; maçtan önce büyük indirmeleri ve güncellemeleri durdurmak ikisine de yardım eder. Bağlantı kötüleştiğinde Descall ses hızını düşürür, çok zayıf bir bağlantıda ek yedeklilik ekler; böylece bildirimler kaybolan paketlere rağmen ulaşır. Her kişinin yanındaki bağlantı göstergesi bağlantısının nasıl gittiğini gösterir. Bir arkadaşın robot gibi geliyorsa sorun genelde onun bağlantısındadır, uygulamada değil. Bir ağ doğrudan bağlantıyı engellediğinde aramalar aktarma sunucularına geçer. Uzun oturumlarda Windows uygulaması bir tarayıcı sekmesinden daha kararlıdır.",
+      },
+      {
+        h: "İlk takım akşamı için kontrol listesi",
+        p: "İlk akşamdan önce herkesin şunları yaptığından emin ol. Windows uygulamasını kur ya da tarayıcıda descall.com/app adresini aç, sunucuya davet bağlantısıyla katıl ve Ses ve Görüntü sayfasında kulaklığını adıyla seç. Mikrofon testini bir kez çalıştır ve gürültü bastırmayı Açık bırak. Maç odasında kimin konuşacağını, bildirimlerin nasıl söyleneceğini ve raund arasında ne zaman sohbet edileceğini önceden konuşun. Sonra ilk on dakikayı sadece ayar için ayır: herkes sırayla konuşsun, gerekirse kişi bazlı ses düzeylerini düzelt ve yüksek gelen arkadaşı kendi tarafında kıs. Bu kısa hazırlık, maç ortasında mikrofon aramaktan çok daha az zaman alır.",
+      },
+      {
+        h: "Ne kadar tutar?",
+        p: "Bu rehberdeki her şey ücretsiz: Oyun merkezi şablonu, ses ve sahne kanalları, gürültü bastırma, Descall öndeyken bas-konuş, kişi bazlı ses düzeyi, Windows uygulamasında oyun sesiyle ekran paylaşımı ve oyun aktivitesi. Descall+ oyuncular için ekler getirir: her uygulamada çalışan bas-konuş ve sessize alma, sen oyundayken yalnızca önemli olanları gösteren bildirimler gibi. Ultra, Descall+’ın her şeyini içerir. Üyelikler şimdilik Descall ekibi tarafından ve kodlarla veriliyor, yayımlanmış bir fiyat yok.",
+      },
+    ],
+  },
+
+  "screen-share-online-classes": {
+    sections: [
+      {
+        h: "Ders için doğru odayı seç",
+        p: "Descall’da bir ders üç tür odada yapılabilir ve doğru olanı seçmek çoğu sorunu baştan önler. Çok dinleyicili bir anlatım ya da konuşma için sahne kanalı kullan: birkaç kişi konuşur ve paylaşır, herkes dinler ve söz isteyebilir. Herkesin konuştuğu küçük bir çalışma grubu ya da atölye için normal bir ses kanalı kullan. Birebir özel ders için DM araması en basit yol; yalnızca iki kişi izlediği için ekran paylaşımı daha yüksek kalitede başlar. Üçü de ücretsiz ve ekran paylaşımı hepsinde aynı şekilde çalışır.",
+      },
+      {
+        h: "Dakikalar içinde bir sınıf sunucusu kur",
+        p: "Ders & kampüs şablonuyla bir sunucu oluştur. Şablon; duyurular, kurallar ve tanışma kanallarıyla bir Campus kategorisi, general, homework-help, resources ve accountability kanallarıyla bir Study kategorisi ve Silent Focus, Pomodoro Room, Group Project A ve B ile Office Hours adında bir sahne kanalı olan Focus voice kategorisi getirir. Roller hazır: Admin, Moderator, Mentor, Study Buddy ve Student. Bir kurs için Mentor’u Öğretmen ya da Eğitmen olarak, Student’ı da Öğrenci olarak yeniden adlandır. Kanal adları şablonda İngilizce; hepsini, örneğin derslerinin adlarıyla, değiştirebilirsin.",
+      },
+      {
+        h: "Kimin paylaşabileceğine karar ver",
+        p: "Bir derste genelde yalnızca öğretmen ekran paylaşmalı. Bunun arkasındaki izin Yayın ve kamera. Ders kanalının izinlerini aç, @everyone için Yayın ve kamera’yı kapat ve Öğretmen rolüne aç; öğrenciler yine dinleyebilir, izleyebilir ve yazabilir. Sahne kanalında bu kısmen hazır gelir: yalnızca sahnedekiler paylaşabilir, dinleyiciler de dinleyici olarak katılır. Herkesin birlikte çalıştığı çalışma odalarında izni açık bırak ki isteyen notlarını ya da kodunu gösterebilsin.",
+      },
+      {
+        h: "Sahne kanalında ders anlat",
+        p: "Sahne kanalına katılan herkes mikrofonu kapalı olarak dinleyici tarafında başlar; geç gelenler dersi hiç bölmez. Sorusu olan öğrenci Konuşma İste’ye basar. Öğretmen ya da bir moderatör gibi Üyeleri taşı iznine sahip biri o öğrenciyi konuşması için sahneye alır, işi bitince Dinleyiciye Al ile geri gönderir. Böylece ek bir araç olmadan söz isteme düzenin olur. Sınıf sunucusunda Öğretmen rolüne Üyeleri taşı iznini ver; şablondaki Office Hours kanalı hemen bir derslik gibi çalışır.",
+      },
+      {
+        h: "Slayt, belge ve kod için ayarlar",
+        p: "Ekran paylaşımı düğmesine bastığında kalite paneli “Ne paylaşıyorsun?” diye sorar. Slayt, PDF, tablo ve kod için “Yazı, kod”u seç: kodlayıcıya akıcı hareketten çok keskin harflerin önemli olduğunu söyler. Bir sunum için saniyede 15 ya da 20 kare fazlasıyla yeterli, 1080p de küçük yazıları okunur tutar; zayıf bağlantılı öğrenciler bulanık ya da donmuş görüntü görürse 720p’ye in. Dersin içinde bir video klip göstereceksen “Oyun, video”ya geç. Yayındayken kaliteyi değiştirirsen Descall paylaşımı yeni ayarlarla bir anlığına yeniden başlatır; elle durdurup başlatman gerekmez.",
+      },
+      {
+        h: "Tüm ekranı değil, bir pencereyi paylaş",
+        p: "Tüm ekran paylaşımı her şeyi gösterir: açılan bildirimleri, başka sohbetleri ve açık sekmeleri. Tek bir pencereden ya da tek bir tarayıcı sekmesinden ders anlatmak dersi hem odaklı hem gizli tutar. Dersten önce öğrencilerle dolu bir odaya göstermeyeceğin şeyleri kapat ve sunum yaparken mesaj bildirimleri sussun diye durumunu Rahatsız Etme yap. Ders bitince paylaşımı arka planda açık bırakmak yerine hemen durdur.",
+      },
+      {
+        h: "Derste ses",
+        p: "Bir video ya da ses örneği oynatırsan Windows uygulaması paylaştığın şeyin sesini görüntüyle birlikte gönderir ve Descall’ın kendi çıkışını bunun dışında tutar; öğrenciler aramanın yankısını duymaz. Tarayıcıda sesin paylaşılıp paylaşılmayacağı tarayıcıya ve paylaşım penceresinde seçtiğin şeye bağlıdır; sesli bir video için bir tarayıcı sekmesini paylaşmak çoğu zaman en kolay yoldur. Sunucu ses kanalında her öğrenci ekran paylaşımının sesini senin konuşma sesinden ayrı ayarlayabilir.",
+      },
+      {
+        h: "Öğrenciler her cihazdan katılabilir",
+        p: "Öğrenciler Windows uygulamasından, iPhone ve iPad uygulamasından, Android uygulamasından ya da herhangi bir güncel tarayıcıda descall.com/app adresinden katılır; bu, hiçbir şeyin kurulamadığı okul bilgisayarlarında işe yarar. Telefonlar ve tabletler bir paylaşımı izleyebilir. iPhone ve iPad uygulaması kendi ekranını paylaşamaz; sunum yapmak isteyen öğrencinin bir bilgisayara ihtiyacı var. Descall hesapları 13 yaş ve üzeri içindir; 18 yaşından küçükler bir ebeveyn ya da vasinin iznine ihtiyaç duyar.",
+      },
+      {
+        h: "Ders sırasında yazılı sohbeti kullan",
+        p: "Herkes mikrofonla soru sormak istemez. Ders kanalının yazılı sohbetini açık tut ve öğrencilerin kısa sorularını oraya yazmalarını iste; anlatımın bir bölümü bitince soruları toplu olarak cevapla. Bir bağlantıyı, bir formülü ya da bir ödev tarihini sözle söylemek yerine yazmak, sonradan arayan öğrenciler için de kalıcı bir kayıt bırakır. Kalabalık bir sınıfta yavaş modu açmak, aynı anda gelen onlarca mesajın soruları boğmasını önler.",
+      },
+      {
+        h: "Dersten önce ve sonra",
+        p: "Ders programı için duyuru kanalını kullan ve @everyone için Mesaj gönder’i kapatıp öğretmenlere açarak öğrencilere salt okunur yap. Bir sonraki dersin hatırlatmasını bu ders biter bitmez zamanla; Descall mesajları bir yıl sonrasına kadar zamanlayabiliyor. Hızlı bir anket, ek bir oturum için saat seçmene yardım eder. Slaytları, bağlantıları ve ödevleri resources kanalına koy, öğrencilerin tekrar ihtiyaç duyacaklarını sabitle. Descall bütün mesaj geçmişinde arama yapabildiği için geçen ayki anlatım da kolayca bulunur.",
+      },
+      {
+        h: "İlk ders için kontrol listesi",
+        p: "İlk dersten bir gün önce beş dakikalık bir prova yap. Sunucuyu kur, Öğretmen rolünü kendine ver ve ders kanalında Yayın ve kamera iznini ayarla. Ses ve Görüntü sayfasında mikrofonunu adıyla seç, mikrofon testini çalıştır ve gürültü bastırmayı Açık bırak. Ardından ikinci bir hesapla ya da bir arkadaşınla sahne kanalına katıl ve ekranını “Yazı, kod” ayarıyla paylaş: slaytların okunuyor mu, ses geliyor mu, Konuşma İste düzgün çalışıyor mu? Davet bağlantısını ne zaman sona ereceğini ve kaç kez kullanılabileceğini seçerek oluştur ve öğrencilere okulun alışık olduğu kanaldan gönder. Dersin başında bir dakikanı katılım kurallarına ayır: sorular için Konuşma İste, kısa notlar için kanal sohbeti.",
+      },
+      {
+        h: "Öğrenciler iyi göremiyorsa",
+        p: "Birkaç öğrenci görüntünün takıldığını söylüyorsa önce çözünürlüğü, sonra kare hızını düşür. Sorun yalnızca bir öğrencideyse genelde onun bağlantısındadır; diğerleri temiz bir görüntü görmeye devam eder. En çok da paylaşan kişiye kablo ya da modeme daha yakın bir yer yardım eder. Bir ağ doğrudan bağlantıyı engellediğinde aramalar aktarma sunucularına geçer; bu yüzden katı okul ağları da çoğu zaman katılabilir. Bu rehberdeki her şey öğretmenler ve öğrenciler için Descall’da ücretsiz.",
+      },
+    ],
+  },
 };
 
 export const TR_GUIDE_FAQ = {
+  "move-discord-community-to-descall": [
+    { q: "Discord sunucumu Descall’a aktarabilir miyim?", a: "Hayır. Bir aktarma aracı yok; kanalları ve rolleri, tercihen bir sunucu şablonundan başlayarak yeniden kurarsın. Eski mesaj geçmişi Discord’da kalır, üyeler orada okumaya devam edebilir." },
+    { q: "Üyelerin katılmak için bir şey kurması gerekiyor mu?", a: "Hayır. Tarayıcıda descall.com/app adresinden katılabilir ya da Windows, iPhone ve iPad veya Android uygulamasını kullanabilirler. Kayıt, e-posta adresi ya da Google hesabıyla ücretsiz." },
+    { q: "Botların yaptığı hangi işler Descall’da hazır?", a: "Hazır eğik çizgi komutları anketleri (/poll), moderasyonu (/timeout, /kick, /ban), spam temizliğini (/purge) ve takma adları (/nick) karşılar. Bot pazarı yok; özel botlarını şimdilik olduğu yerde tut." },
+  ],
+  "descall-voice-settings-guide": [
+    { q: "Gürültü bastırmada Açık ile Güçlü arasındaki fark ne?", a: "Açık, sürekli arka plan gürültüsünü temizler ve çoğu odaya uyar. Güçlü, cümlelerinin arasındaki hafif sesi kesen daha sıkı bir kapı ekler; kelimelerinin başı kayboluyorsa Açık’a dön." },
+    { q: "Ses ayarlarım hesabıma kaydediliyor mu?", a: "Hayır. Ayarlar, onları değiştirdiğin cihazda saklanır; kullandığın her cihazda Ses ve Görüntü sayfasına bir kez bak." },
+    { q: "Bas-konuş için hangi tuşları kullanabilirim?", a: "Windows uygulamasında Ctrl+Shift+M, Ctrl+Shift+Space ya da Alt+Shift+M. Descall etkin pencereyken çalışır; her uygulamada çalışan bas-konuş Descall+’ın parçası." },
+  ],
+  "game-team-voice-setup": [
+    { q: "Oyun öndeyken bas-konuş kullanabilir miyim?", a: "Ücretsiz Windows uygulamasında bas-konuş, Descall etkin pencereyken çalışır. Her uygulamada çalışan bas-konuş ve sessize alma isteğe bağlı Descall+ üyeliğinin parçası; üyelik olmadan giriş hassasiyetini ayarla ve ses etkinliğini kullan." },
+    { q: "Ekranımı paylaşınca arkadaşlarım oyunun sesini duyar mı?", a: "Evet. Windows uygulamasında paylaştığın şeyin sesi görüntüyle birlikte gider. Tarayıcıda bu, tarayıcıya ve paylaşım penceresinde seçtiğin şeye bağlıdır." },
+    { q: "Oyun merkezi şablonu hangi ses odalarını kurar?", a: "Lobby, Duo Queue, Five Stack, AFK / Chill ve Tournament Stage adında bir sahne kanalı; ayrıca yalnızca yetkililerin gördüğü bir Staff Voice odası. Hepsini yeniden adlandırabilirsin." },
+  ],
+  "screen-share-online-classes": [
+    { q: "Ekranı yalnızca öğretmenin paylaşmasını sağlayabilir miyim?", a: "Evet. Ders kanalında @everyone için Yayın ve kamera iznini kapat, öğretmen rolüne aç. Sahne kanalında zaten yalnızca sahnedekiler paylaşabilir." },
+    { q: "Öğrenciler sahne kanalında nasıl soru sorar?", a: "Konuşma İste’ye basarlar. Üyeleri taşı iznine sahip biri onları sahneye alır, işleri bitince Dinleyiciye Al ile geri gönderir." },
+    { q: "Slaytlar için en iyi ekran paylaşımı ayarı hangisi?", a: "1080p’de ve saniyede 15 ya da 20 karede “Yazı, kod”. Zayıf bağlantılı öğrenciler bulanık ya da donmuş görüntü görürse 720p’ye in." },
+  ],
   "screen-share-with-friends": [
     { q: "Descall’da ekran paylaşımı ücretsiz mi?", a: "Evet. DM aramalarında, grup aramalarında ve sunucu ses kanallarında ekranını üyelik olmadan paylaşabilirsin; paylaşımı izlemek de ücretsiz." },
     { q: "iPhone ya da iPad’den ekranımı paylaşabilir miyim?", a: "Şu an hayır. iPhone ve iPad uygulaması başkalarının paylaşımlarını izleyebilir, ama kendi ekranını paylaşamaz. Bunun için Windows uygulamasını ya da bilgisayardaki bir tarayıcıyı kullan." },
