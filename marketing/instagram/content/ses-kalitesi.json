@@ -1,0 +1,92 @@
+[
+  {
+    "id": "ses-klavye-sesi",
+    "theme": "ses-kalitesi",
+    "title": "Gürültü engelleme varsayılan olarak açık",
+    "hook": { "lines": ["Klavye sesin", "*arkadaşına gitmesin*"] },
+    "scenes": [
+      {
+        "lines": ["Bu üçü", "*varsayılan olarak açık*"],
+        "visual": { "type": "toggles", "items": ["Gürültü engelleme", "Yankı engelleme", "Otomatik ses dengeleme"] }
+      },
+      {
+        "lines": ["Sesin karşıya gitmeden", "*filtreden geçiyor*"],
+        "visual": { "type": "steps", "items": ["Mikrofonun", "Yapay zekâ filtresi", "Arkadaşın"] }
+      },
+      {
+        "lines": ["Ortam çok mu gürültülü?", "*Güçlü* modu seç"],
+        "visual": { "type": "chips", "items": ["Kapalı", "Açık", "*Güçlü*"] }
+      }
+    ],
+    "caption": "Mikrofonun klavye, fan ya da oda sesini de topluyorsa Descall'ın ses filtresi devrede. Bilgisayarda ve web'de gürültü engelleme, yankı engelleme ve otomatik ses dengeleme varsayılan olarak açık geliyor.\n\nOrtam çok gürültülüyse Ayarlar > Ses ve Görüntü bölümünden gürültü engellemeyi Güçlü moda alabilirsin.",
+    "hashtags": ["#descall", "#seslisohbet", "#mikrofon", "#oyuncu", "#gürültüengelleme"],
+    "sources": [
+      { "claim": "Gürültü engelleme varsayılan olarak açık", "file": "frontend/src/lib/voiceProfile.js", "match": "noiseMode: \"on\"" },
+      { "claim": "Yankı engelleme ve otomatik ses dengeleme varsayılan olarak açık", "file": "frontend/src/lib/voiceProfile.js", "match": "echoCancellation: true,\\s*autoGainControl: true" },
+      { "claim": "Yapay zekâ tabanlı gürültü filtresi (GTCRN, RNNoise)", "file": "frontend/src/lib/noiseSuppression.js", "match": "GTCRN neural suppressor" },
+      { "claim": "Arayüz etiketleri", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Auto gain control\": \"Otomatik ses dengeleme\"" },
+      { "claim": "Kapalı / Açık / Güçlü modları", "file": "frontend/src/components/layout/UserPanel.jsx", "match": "\\[\"strong\", \"Noise: strong\"\\]" },
+      { "claim": "Güçlü etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Noise: strong\": \"Güçlü\"" },
+      { "claim": "Ses ve Görüntü ayar sayfası", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Voice & Video\": \"Ses ve Görüntü\"" }
+    ]
+  },
+  {
+    "id": "ses-mikrofon-testi",
+    "theme": "ses-kalitesi",
+    "title": "Aramadan önce mikrofon testi",
+    "hook": { "lines": ["Sesin nasıl gidiyor?", "*Aramadan önce dinle*"] },
+    "scenes": [
+      {
+        "lines": ["Ayarlar'da", "*Mikrofon testi* var"],
+        "visual": { "type": "steps", "items": ["Ayarlar", "Ses ve Görüntü", "Mikrofonu test et"] }
+      },
+      {
+        "lines": ["Kulaklık tak,", "*Kendini duy*'u aç"],
+        "visual": { "type": "toggles", "items": ["Kendini duy"] }
+      },
+      {
+        "lines": ["Sessiz konuşman kaçıyorsa", "*giriş hassasiyetini* ayarla"],
+        "visual": { "type": "stat", "value": "45", "label": "Varsayılan hassasiyet" }
+      }
+    ],
+    "caption": "Bir aramaya girmeden önce sesinin nasıl duyulduğunu kontrol edebilirsin. Ayarlar > Ses ve Görüntü > Mikrofon testi bölümünde Mikrofonu test et düğmesine bas. Kendini duy açıkken test sırasında kendi sesini dinlersin; bunun için kulaklık kullan.\n\nSessiz konuşmaların karşıya ulaşmıyorsa giriş hassasiyetini artır, arka plan sesi göstergeyi yakıyorsa azalt.",
+    "hashtags": ["#descall", "#mikrofon", "#seslisohbet", "#ipucu"],
+    "sources": [
+      { "claim": "Mikrofon testi bölümü", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Microphone test\": \"Mikrofon testi\"" },
+      { "claim": "Mikrofonu test et düğmesi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Test mic\": \"Mikrofonu test et\"" },
+      { "claim": "Kendini duy anahtarı", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Hear yourself\": \"Kendini duy\"" },
+      { "claim": "Kendini duy kulaklık uyarısı", "file": "frontend/src/components/layout/UserPanel.jsx", "match": "Plays your mic back while the test is running. Use headphones." },
+      { "claim": "Giriş hassasiyeti açıklaması", "file": "frontend/src/components/layout/UserPanel.jsx", "match": "Raise this if people miss quiet speech" },
+      { "claim": "Varsayılan hassasiyet 45", "file": "frontend/src/lib/voiceProfile.js", "match": "inputSensitivity: 45" }
+    ]
+  },
+  {
+    "id": "ses-bas-konus",
+    "theme": "ses-kalitesi",
+    "title": "Bas-konuş ve kısayollar",
+    "hook": { "lines": ["Sadece konuşurken", "*mikrofonun açık olsun*"] },
+    "scenes": [
+      {
+        "lines": ["*Bas-konuş* ile", "tuşa basınca konuşursun"],
+        "visual": { "type": "toggles", "items": ["Bas-konuş"] }
+      },
+      {
+        "lines": ["Üç kısayoldan", "*birini seç*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+Shift+M" }, { "keys": "Ctrl+Shift+Space" }, { "keys": "Alt+Shift+M" }] }
+      },
+      {
+        "lines": ["Aramada karşındakinin sesini", "*kendin ayarla*"],
+        "visual": { "type": "stat", "value": "%0-200", "label": "Kişi başına ses seviyesi" }
+      }
+    ],
+    "caption": "Bas-konuş açıkken mikrofonun yalnızca kısayola basılı tuttuğunda açılır. Ayarlar > Ses ve Görüntü bölümünden açabilir, üç kısayoldan birini seçebilirsin: Ctrl+Shift+M, Ctrl+Shift+Space ya da Alt+Shift+M (Mac'te Ctrl yerine Cmd).\n\nBirebir aramada karşındakinin ses seviyesini de ayrı ayarlayabilirsin; Descall bu ayarı o kişi için hatırlar.",
+    "hashtags": ["#descall", "#baskonuş", "#seslisohbet", "#oyuncu", "#kısayol"],
+    "sources": [
+      { "claim": "Bas-konuş ayarı", "file": "frontend/src/lib/voiceProfile.js", "match": "pushToTalk: false" },
+      { "claim": "Bas-konuş etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Push-to-talk\": \"Bas-konuş\"" },
+      { "claim": "Üç bas-konuş kısayolu", "file": "frontend/src/lib/voiceProfile.js", "match": "mod\\+shift\\+m[\\s\\S]*mod\\+shift\\+space[\\s\\S]*alt\\+shift\\+m" },
+      { "claim": "Karşıdakinin ses seviyesi 0-2 (yüzde 0-200) ve kişi başına hatırlanır", "file": "frontend/src/lib/peerVolume.js", "match": "Playback level of the person on the other end of a DM call \\(0\\.\\.2, 1 = 100%\\)" },
+      { "claim": "Her kişi kendi hatırlanan seviyesinden başlar", "file": "frontend/src/lib/peerVolume.js", "match": "every peer starts from their own remembered level" }
+    ]
+  }
+]

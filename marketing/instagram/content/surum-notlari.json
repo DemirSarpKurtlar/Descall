@@ -1,0 +1,93 @@
+[
+  {
+    "id": "surum-3-7-41-aktivite",
+    "theme": "surum-notlari",
+    "title": "3.7.41: yeni Aktivite sayfası",
+    "hook": { "lines": ["Bu hafta ne kadar oynadın?", "*Yeni Aktivite sayfası*"] },
+    "scenes": [
+      {
+        "lines": ["*Şu an kartı:*", "oyun, süre, canlı sayaç"],
+        "visual": { "type": "stat", "value": "01:24:09", "label": "Bugünkü oturum" }
+      },
+      {
+        "lines": ["Haftalık özet ve", "*arka arkaya oynama serisi*"],
+        "visual": { "type": "checklist", "items": ["Haftalık toplam süre", "Oturum sayısı", "Seri"] }
+      },
+      {
+        "lines": ["Son 7 gün grafiği,", "*günlere ayrılmış geçmiş*"],
+        "visual": { "type": "chips", "items": ["Bugün", "Dün", "Önceki günler"] }
+      }
+    ],
+    "caption": "Descall 3.7.41 ile Aktivite sayfası baştan yenilendi. Şu an kartında oynadığın oyun, başlangıç saati ve saniye saniye ilerleyen bir sayaç var. Haftalık özet bu haftanın toplam süresini, oturum sayını ve kaç gündür arka arkaya oynadığını gösteriyor. Son 7 gün grafiği ve günlere ayrılmış geçmiş de sayfada.\n\nOyun takibi Windows uygulamasında çalışır.",
+    "hashtags": ["#descall", "#yenisürüm", "#oyuncu", "#windows"],
+    "sources": [
+      { "claim": "Aktivite sayfası yenilendi", "file": "docs/release-notes/v3.7.41.md", "match": "Aktivite sayfası baştan yenilendi" },
+      { "claim": "Şu an kartı ve sayaç", "file": "docs/release-notes/v3.7.41.md", "match": "Şu an kartı:\\*\\* oynadığın oyun, başlangıç saati, bugünün kaçıncı oturumu olduğu ve saniye saniye ilerleyen bir sayaç" },
+      { "claim": "Haftalık özet ve seri", "file": "docs/release-notes/v3.7.41.md", "match": "oturum sayısı ve ortalama süresi, kaç gündür arka arkaya oynadığın \\(seri\\)" },
+      { "claim": "Son 7 gün grafiği ve geçmiş", "file": "docs/release-notes/v3.7.41.md", "match": "Son 7 gün grafiği:[\\s\\S]*Bugün, Dün ve önceki günler diye gruplanıyor" },
+      { "claim": "Oyun takibi Windows uygulamasında", "file": "frontend/src/hooks/useActivity.js", "match": "every scan spawns tasklist.exe" }
+    ]
+  },
+  {
+    "id": "surum-3-7-39-mesajlasma",
+    "theme": "surum-notlari",
+    "title": "3.7.39: mesajlaşmada büyük güncelleme",
+    "hook": { "lines": ["Mesajlaşmaya", "*dört yeni özellik*"] },
+    "scenes": [
+      {
+        "lines": ["*Taslaklar:* yarım mesajın", "sohbette bekler"],
+        "visual": { "type": "chips", "items": ["Taslak: akşam geliyor musun"] }
+      },
+      {
+        "lines": ["*Görüldü:* kim okudu,", "DM'de ve grupta gör"],
+        "visual": { "type": "toggles", "items": ["Görüldü bilgisi"] }
+      },
+      {
+        "lines": ["*Bağlantı önizlemesi:*", "başlık ve resim görünür"],
+        "visual": { "type": "checklist", "items": ["Önizlemeyi sunucu getirir", "Cihazın siteye bağlanmaz"] }
+      },
+      {
+        "lines": ["*Zamanlanmış mesaj:*", "ileri bir saate kur"],
+        "visual": { "type": "steps", "items": ["Yaz", "Gönder'e sağ tıkla", "Saati seç"] }
+      }
+    ],
+    "caption": "Descall 3.7.39 mesajlaşmaya dört yenilik getirdi: her sohbetin yarım kalan mesajı taslak olarak saklanıyor; DM'de ve gruplarda kimin gördüğü görünüyor (Ayarlar > Gizlilik'ten kapatılabilir); bağlantıların başlığı ve resmi önizleniyor, önizlemeyi sunucu getiriyor ve senin cihazın o siteye bağlanmıyor; Gönder'e sağ tıklayıp ileri bir saate mesaj kurabiliyorsun.\n\nWindows uygulamasında ve web'de.",
+    "hashtags": ["#descall", "#yenisürüm", "#mesajlaşma", "#güncelleme"],
+    "sources": [
+      { "claim": "Taslaklar", "file": "docs/release-notes/v3.7.39.md", "match": "Taslaklar:\\*\\* her sohbetin yarım kalan mesajı saklanıyor" },
+      { "claim": "Görüldü", "file": "docs/release-notes/v3.7.39.md", "match": "\"Görüldü\":\\*\\* DM'de ve gruplarda kimin gördüğü görünüyor" },
+      { "claim": "Bağlantı önizlemesi sunucudan", "file": "docs/release-notes/v3.7.39.md", "match": "Önizlemeyi sunucu getiriyor; senin cihazın o siteye bağlanmıyor" },
+      { "claim": "Zamanlanmış mesaj", "file": "docs/release-notes/v3.7.39.md", "match": "Zamanlanmış mesaj:\\*\\* Gönder'e sağ tıklayıp" },
+      { "claim": "Bağlantı önizleme uç noktası", "file": "frontend/backend/routes/linkPreview.js", "match": "router" }
+    ]
+  },
+  {
+    "id": "surum-2-13-ulke-bayraklari",
+    "theme": "surum-notlari",
+    "title": "2.13.0: ülke bayrakları",
+    "hook": { "lines": ["Profilinde", "*ülkenin bayrağı*"] },
+    "scenes": [
+      {
+        "lines": ["Mağaza'da yeni sekme:", "*Ülkeler*"],
+        "visual": { "type": "stat", "value": "245", "label": "Ülke ve bölge" }
+      },
+      {
+        "lines": ["Türkçe, İngilizce ad", "ya da *kodla ara*"],
+        "visual": { "type": "chips", "items": ["turk", "Japan", "JP"] }
+      },
+      {
+        "lines": ["Takılı bayrağın", "*adının yanında görünür*"],
+        "visual": { "type": "checklist", "items": ["Profil kartı", "Mesajlar", "Sunucu üye listesi"] }
+      }
+    ],
+    "caption": "Descall 2.13.0 ile Mağaza'ya Ülkeler sekmesi geldi: 245 ülke ve bölge, her biri 250 DesCoin. Türkçe ya da İngilizce adla veya ISO koduyla arayabilirsin. Birden fazla bayrağın olabilir, aynı anda biri takılı olur.\n\nTakılı bayrak profil kartında, mesajlardaki adının yanında ve sunucu üye listesinde görünür. Windows'ta da renkli görünmesi için uygulama kendi bayrak yazı tipini taşıyor.",
+    "hashtags": ["#descall", "#yenisürüm", "#türkiye", "#profil"],
+    "sources": [
+      { "claim": "Ülkeler sekmesi, 245 ülke, 250 DesCoin", "file": "docs/release-notes/v2.13.0.md", "match": "Mağazada yeni bir \\*\\*Ülkeler\\*\\* sekmesi var: 245 ülke ve bölge, her biri 250 DesCoin" },
+      { "claim": "Birden fazla bayrak, biri takılı", "file": "docs/release-notes/v2.13.0.md", "match": "Bir kişi birden fazla bayrak alabilir ama aynı anda yalnızca biri takılı olur" },
+      { "claim": "Arama", "file": "docs/release-notes/v2.13.0.md", "match": "Türkçe, İngilizce ad veya ISO koduyla arama \\(ör. \"turk\", \"Japan\", \"JP\"\\)" },
+      { "claim": "Görünen yerler", "file": "docs/release-notes/v2.13.0.md", "match": "Bayrak profil kartında, kullanıcı kartında, profil penceresinde, mesajlardaki adın yanında ve sunucu üye listesinde görünür" },
+      { "claim": "Windows bayrak yazı tipi", "file": "docs/release-notes/v2.13.0.md", "match": "uygulama kendi bayrak yazı tipini \\(Twemoji\\) taşıyor" }
+    ]
+  }
+]

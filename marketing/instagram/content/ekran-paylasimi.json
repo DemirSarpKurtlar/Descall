@@ -1,0 +1,90 @@
+[
+  {
+    "id": "ekran-ne-paylasiyorsun",
+    "theme": "ekran-paylasimi",
+    "title": "Ne paylaştığını seç, kalite ona göre ayarlansın",
+    "hook": { "lines": ["Ekran paylaşırken", "*önce şunu seç*"] },
+    "scenes": [
+      {
+        "lines": ["Descall sorar:", "*Ne paylaşıyorsun?*"],
+        "visual": { "type": "chips", "items": ["Oyun, video", "Uygulama", "Yazı, kod"] }
+      },
+      {
+        "lines": ["Oyun ve video için", "*akıcı hareket*"],
+        "visual": { "type": "stat", "value": "60 FPS", "label": "Birebir aramada oyun yakalama" }
+      },
+      {
+        "lines": ["Kod ve yazı için", "*keskin metin*"],
+        "visual": { "type": "stat", "value": "1080p", "label": "Yazı, kod ön ayarı" }
+      }
+    ],
+    "caption": "Ekran paylaşımını başlatınca Descall ne paylaştığını sorar: Oyun, video / Uygulama / Yazı, kod. Seçimine göre çözünürlük ve kare hızı başlangıçta ona uygun ayarlanır, sonra istersen kendin ince ayar yaparsın.\n\nYazı ve kod için ön ayar 1080p'de keskin metne öncelik verir. Birebir aramada oyun yakalama için 60 FPS seçebilirsin.",
+    "hashtags": ["#descall", "#ekranpaylaşımı", "#oyuncu", "#yazılım", "#seslisohbet"],
+    "sources": [
+      { "claim": "Ne paylaşıyorsun? sorusu ve üç seçenek", "file": "frontend/src/components/voice/ScreenShareQualityPanel.jsx", "match": "labelKey: \"Games, video\"[\\s\\S]*labelKey: \"Apps\"[\\s\\S]*labelKey: \"Text, code\"" },
+      { "claim": "Türkçe etiketler", "file": "frontend/src/i18n/locales/tr.js", "match": "\"What are you sharing\\?\": \"Ne paylaşıyorsun\\?\",\\s*\"Games, video\": \"Oyun, video\"" },
+      { "claim": "Uygulama / Yazı, kod etiketleri", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Apps\": \"Uygulama\",\\s*\"Text, code\": \"Yazı, kod\"" },
+      { "claim": "60 FPS oyun yakalama (birebir)", "file": "frontend/src/components/voice/ScreenShareQualityPanel.jsx", "match": "value: 60, label: \"60\", hintKey: \"Game capture \\(1:1\\)\"" },
+      { "claim": "Yazı ön ayarı 1080p", "file": "frontend/src/lib/webrtcScreenShare.js", "match": "text: \\{\\s*id: \"text\",\\s*resolution: \"1080p\"" }
+    ]
+  },
+  {
+    "id": "ekran-dm-1080p",
+    "theme": "ekran-paylasimi",
+    "title": "Birebir ve grup aramada ekran paylaşımı",
+    "hook": { "lines": ["Arkadaşına ekranını", "*canlı göster*"] },
+    "scenes": [
+      {
+        "lines": ["Birebir aramada", "*varsayılan kalite*"],
+        "visual": { "type": "stat", "value": "1080p", "label": "30 kare/saniye" }
+      },
+      {
+        "lines": ["Grup ve sunucu aramalarında", "*da çalışır*"],
+        "visual": { "type": "voice", "items": ["Ayşe", "Can", "Mert", "Deniz"] }
+      },
+      {
+        "lines": ["Kaliteyi *kendin seç*", "480p'den 1440p'ye"],
+        "visual": { "type": "chips", "items": ["Akıcı", "Dengeli", "Yüksek", "Çok yüksek"] }
+      }
+    ],
+    "caption": "Descall'da ekran paylaşımı birebir aramalarda ve grup ya da sunucu aramalarında çalışır. Birebir aramada varsayılan kalite 1080p ve saniyede 30 kare.\n\nKalite panelinden 480p ile 1440p arasında seçim yapabilirsin; 1440p birebir aramalar için.",
+    "hashtags": ["#descall", "#ekranpaylaşımı", "#görüntülüarama", "#oyuncu"],
+    "sources": [
+      { "claim": "Birebir varsayılan 1080p 30 fps", "file": "frontend/src/lib/webrtcScreenShare.js", "match": "DM_SCREEN_DEFAULT_QUALITY = \\{\\s*resolution: \"1080p\",\\s*fps: 30" },
+      { "claim": "Grup ve sunucu aramalarında ekran paylaşımı", "file": "frontend/src/site/faqData.js", "match": "Screen share works in DM and group/server calls" },
+      { "claim": "480p ile 1440p arası ön ayarlar", "file": "frontend/src/lib/webrtcScreenShare.js", "match": "resolution: \"480p\"[\\s\\S]*resolution: \"1440p\"" },
+      { "claim": "1440p birebir aramalar için", "file": "frontend/src/components/voice/ScreenShareQualityPanel.jsx", "match": "Ultra clarity \\(1:1\\)" },
+      { "claim": "Akıcı / Dengeli / Çok yüksek etiketleri", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Smooth\": \"Akıcı\"" },
+      { "claim": "Dengeli", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Balanced\": \"Dengeli\"" },
+      { "claim": "Çok yüksek", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Ultra\": \"Çok yüksek\"" },
+      { "claim": "Yüksek", "file": "frontend/src/i18n/locales/tr.js", "match": "\"High\": \"Yüksek\"" }
+    ]
+  },
+  {
+    "id": "ekran-grup-izle",
+    "theme": "ekran-paylasimi",
+    "title": "Grup aramasında birlikte izle",
+    "hook": { "lines": ["Plan yaparken", "*herkes aynı ekrana baksın*"] },
+    "scenes": [
+      {
+        "lines": ["Grup aramasında", "*ekranını paylaş*"],
+        "visual": { "type": "voice", "items": ["Ayşe", "Can", "Mert", "Sen"] }
+      },
+      {
+        "lines": ["Herkes ekranı", "*canlı izler*"],
+        "visual": { "type": "checklist", "items": ["Sunum", "Harita", "Oyun", "Kod"] }
+      },
+      {
+        "lines": ["Kamera ve mikrofon", "*tek dokunuş uzakta*"],
+        "visual": { "type": "chips", "items": ["Mikrofon", "Kamera", "Ekran paylaşımı"] }
+      }
+    ],
+    "caption": "Hafta sonu planı, ders sunumu ya da maç tekrarı: grup aramasında ekranını paylaş, herkes canlı izlesin. Aramada mikrofonunu sessize alabilir, kameranı açıp kapatabilir ve kimin konuştuğunu görebilirsin.\n\nEkran paylaşımı bilgisayarda ve web'de başlatılır.",
+    "hashtags": ["#descall", "#ekranpaylaşımı", "#grupsohbeti", "#arkadaşlar"],
+    "sources": [
+      { "claim": "Grup aramalarında ekran paylaşımı", "file": "frontend/src/site/faqData.js", "match": "Screen share works in DM and group/server calls" },
+      { "claim": "Sessize alma, kamera, kimin konuştuğu", "file": "appstore/metadata.json", "match": "Mikrofonu sessize alma, kamerayı açıp kapatma ve kimin konuştuğunu görme" },
+      { "claim": "Bilgisayar ve tarayıcı yakalama yolları", "file": "frontend/src/lib/webrtcScreenShare.js", "match": "captureElectronDesktop[\\s\\S]*getDisplayMediaStream" }
+    ]
+  }
+]

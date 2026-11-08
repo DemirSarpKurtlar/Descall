@@ -1,0 +1,96 @@
+[
+  {
+    "id": "discord-tasima-uc-adim",
+    "theme": "discord-tasima",
+    "title": "Topluluğu üç adımda Descall'a taşımak",
+    "hook": { "lines": ["Topluluğunu taşımak", "*üç adım*"] },
+    "scenes": [
+      {
+        "lines": ["1. Hazır bir şablonla", "*sunucunu kur*"],
+        "visual": { "type": "chips", "items": ["Oyun merkezi", "Ders & kampüs", "Arkadaş takılması", "Topluluk & içerik üreticileri"] }
+      },
+      {
+        "lines": ["2. Roller ve izinler", "*hazır gelir*"],
+        "visual": { "type": "roles", "items": ["Admin", "Moderator", "Helper", "VIP", "Member"] }
+      },
+      {
+        "lines": ["3. Davet bağlantısını", "*topluluğunla paylaş*"],
+        "visual": { "type": "steps", "items": ["Davet oluştur", "Bağlantıyı paylaş", "Üyeler katılsın"] }
+      }
+    ],
+    "caption": "Discord'da bir topluluk yönetiyorsan ve Descall'ı da denemek istiyorsan başlangıç kısa. Sunucu oluştururken Oyun merkezi, Ders & kampüs, Arkadaş takılması ya da Topluluk & içerik üreticileri şablonlarından birini seç; roller, kanallar ve kanal izinleri hazır gelir. Sonra bir davet bağlantısı oluşturup üyelerinle paylaş.\n\nBilmen gereken: Descall, Discord'daki kanalları ya da mesajları otomatik olarak içe aktarmaz. Kanallarını şablonun üstüne kendin düzenlersin.",
+    "hashtags": ["#descall", "#discordalternatifi", "#topluluk", "#sunucu", "#oyuncu"],
+    "sources": [
+      { "claim": "Sunucu şablonları (oyun, arkadaş, topluluk, ders)", "file": "frontend/backend/lib/serverTemplates.js", "match": "id: \"gaming\"[\\s\\S]*id: \"friends\"[\\s\\S]*id: \"community\"[\\s\\S]*id: \"study\"" },
+      { "claim": "Şablon adlarının Türkçesi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Gaming hub\": \"Oyun merkezi\"" },
+      { "claim": "Ders & kampüs", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Study & campus\": \"Ders & kampüs\"" },
+      { "claim": "Arkadaş takılması", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Friends hangout\": \"Arkadaş takılması\"" },
+      { "claim": "Topluluk & içerik üreticileri", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Community & creators\": \"Topluluk & içerik üreticileri\"" },
+      { "claim": "Oyun şablonunun rolleri Admin, Moderator, Helper, VIP, Member", "file": "frontend/backend/lib/serverTemplates.js", "match": "name: \"Admin\"[\\s\\S]*name: \"Moderator\"[\\s\\S]*name: \"Helper\"[\\s\\S]*name: \"VIP\"[\\s\\S]*name: \"Member\"" },
+      { "claim": "Şablonlar rol ve kanal izinleriyle gelir", "file": "frontend/src/site/faqData.js", "match": "ship with ready-made roles \\(Admin, Moderator, VIP, and more\\) plus channel permission overrides" },
+      { "claim": "Davet bağlantıları", "file": "frontend/backend/routes/servers.js", "match": "router.post\\(\"/invites/:code/join\"" }
+    ]
+  },
+  {
+    "id": "discord-tasima-tanidik-duzen",
+    "theme": "discord-tasima",
+    "title": "Discord'a alışkın topluluklar için tanıdık düzen",
+    "hook": { "lines": ["Discord'a alışkın topluluğun", "*yabancılık çekmez*"] },
+    "scenes": [
+      {
+        "lines": ["Kategoriler, yazı, ses", "ve *sahne kanalları*"],
+        "visual": { "type": "channels", "items": [{ "kind": "text", "name": "duyurular" }, { "kind": "text", "name": "genel", "active": true }, { "kind": "voice", "name": "Lobi" }, { "kind": "stage", "name": "Turnuva sahnesi" }] }
+      },
+      {
+        "lines": ["Rollerle yetki ver,", "*kanal izinlerini* ayarla"],
+        "visual": { "type": "chips", "items": ["Roller", "Kanal izinleri", "Kategoriler"] }
+      },
+      {
+        "lines": ["Moderasyon araçları", "*ilk günden hazır*"],
+        "visual": { "type": "checklist", "items": ["At", "Yasakla", "Sustur", "Denetim kaydı"] }
+      }
+    ],
+    "caption": "Discord'dan gelen bir topluluk Descall'da tanıdık bir yapı bulur: kategoriler, yazı kanalları, ses kanalları ve sahne kanalları. Rollerle yetki verir, her kanal için ayrı izin ayarlarsın.\n\nSunucu sahipleri ve moderatörler üyeyi atabilir, yasaklayabilir, susturabilir; yapılan işlemler denetim kaydında görünür.",
+    "hashtags": ["#descall", "#discordalternatifi", "#topluluk", "#moderasyon"],
+    "sources": [
+      { "claim": "Yazı, ses ve sahne kanalları", "file": "frontend/backend/lib/serverTemplates.js", "match": "type: \"stage\"" },
+      { "claim": "Kategoriler ve rollerle yetki", "file": "appstore/metadata.json", "match": "Kanalları kategorilerle düzenle, rollerle yetki ver" },
+      { "claim": "Kanal izinleri (override)", "file": "frontend/backend/routes/servers.js", "match": "router.put\\(\"/:id/channels/:channelId/overrides\"" },
+      { "claim": "Atma, yasaklama, susturma", "file": "frontend/backend/routes/servers.js", "match": "router.post\\(\"/:id/members/:userId/timeout\"" },
+      { "claim": "Yasaklama", "file": "frontend/backend/routes/servers.js", "match": "router.put\\(\"/:id/bans/:userId\"" },
+      { "claim": "Denetim kaydı", "file": "frontend/backend/routes/servers.js", "match": "router.get\\(\"/:id/audit-logs\"" },
+      { "claim": "Arayüz etiketleri At / Yasakla / Sustur / Denetim kaydı", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Kick\": \"At\",\\s*\"Ban\": \"Yasakla\"[\\s\\S]*\"Timeout\": \"Sustur\"" },
+      { "claim": "Denetim kaydı etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Audit log\": \"Denetim kaydı\"" }
+    ]
+  },
+  {
+    "id": "discord-tasima-kurallar",
+    "theme": "discord-tasima",
+    "title": "Yeni gelenler için kurallar ve özel davet adresi",
+    "hook": { "lines": ["Topluluğun taşınırken", "*düzen bozulmasın*"] },
+    "scenes": [
+      {
+        "lines": ["Sunucuna *kurallar* yaz,", "üyeler onaylayıp girsin"],
+        "visual": { "type": "steps", "items": ["Kuralları yaz", "Üye onaylar", "Kanallar açılır"] }
+      },
+      {
+        "lines": ["Akılda kalan bir", "*özel davet adresi* al"],
+        "visual": { "type": "chips", "items": ["Özel davet URL'si"] }
+      },
+      {
+        "lines": ["Sunucu sahipliğini", "*başkasına devredebilirsin*"],
+        "visual": { "type": "checklist", "items": ["Sahiplik devri", "Davet yönetimi", "Hoş geldin kanalı"] }
+      }
+    ],
+    "caption": "Discord'dan bir topluluk taşırken düzeni baştan kurmak işini kolaylaştırır. Descall sunucularında kurallar metni yazabilir, yeni üyelerin kuralları onaylamasını isteyebilirsin. Akılda kalan bir özel davet adresi belirleyebilir, sunucunun sahipliğini gerektiğinde başka bir üyeye devredebilirsin.",
+    "hashtags": ["#descall", "#discordalternatifi", "#topluluk", "#sunucu"],
+    "sources": [
+      { "claim": "Kuralları onaylama", "file": "frontend/backend/routes/servers.js", "match": "router.post\\(\"/:id/accept-rules\"" },
+      { "claim": "Kurallar metni ve hoş geldin kanalı", "file": "frontend/backend/routes/servers.js", "match": "rules_text, verification_level, welcome_channel_id" },
+      { "claim": "Özel davet adresi", "file": "frontend/backend/routes/servers.js", "match": "router.get\\(\"/vanity/:slug\"" },
+      { "claim": "Özel davet URL etiketi", "file": "frontend/src/i18n/locales/tr.js", "match": "\"Vanity invite URL\": \"Özel davet URL" },
+      { "claim": "Sahiplik devri", "file": "frontend/backend/routes/servers.js", "match": "router.post\\(\"/:id/ownership/transfer\"" },
+      { "claim": "Davet yönetimi", "file": "frontend/backend/routes/servers.js", "match": "router.delete\\(\"/:id/invites/:code\"" }
+    ]
+  }
+]
