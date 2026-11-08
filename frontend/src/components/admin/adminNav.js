@@ -7,7 +7,7 @@
 
 /** Group key → section ids, in menu order. Unknown ids fall into "system". */
 export const ADMIN_NAV_GROUPS = [
-  ["general", ["overview", "maintenance", "analytics", "signupStats", "retention", "economy", "topUsers"]],
+  ["general", ["overview", "maintenance", "agent", "analytics", "signupStats", "retention", "economy", "topUsers"]],
   ["people", ["directory", "people", "reports", "feedback", "moderation", "dmReview", "suspicious", "accessBans"]],
   // Premium Yönetimi (Descall+ / Ultra, phase 1): nine pages, one grantable section "premium".
   ["premium", [

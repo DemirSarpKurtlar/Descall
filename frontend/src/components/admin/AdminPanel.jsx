@@ -15,7 +15,7 @@ import {
   MousePointer, Pause, Square, Maximize2, Minimize2, Copy,
   ExternalLink, FileDown, Printer, Share2, Star, ThumbsUp,
   ThumbsDown, Upload, Video, ZoomIn, ZoomOut, Megaphone,
-  Coins, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard, Ticket, Award
+  Coins, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard, Ticket, Award, Bot
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
@@ -53,6 +53,7 @@ import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift
 import { sectionOfTab } from "./adminNav.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
+const AdminAgent = lazy(() => import("./AdminAgent.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
@@ -104,6 +105,8 @@ const TABS = [
   { id: "overview", label: "admin.overview", icon: LayoutDashboard },
   // Bakım sits right after Genel Bakış so it is reachable from the front of the list.
   { id: "maintenance", label: "admin.maintenance", icon: Wrench },
+  // Ajan (2026-11-08, phase 1): the Claude assistant; reads with the admin's own sections.
+  { id: "agent", label: "agentx.title", icon: Bot },
   { id: "directory", label: "admin.users", icon: Users },
   { id: "analytics", label: "admin.analytics", icon: Activity },
   // Kayıt İstatistikleri opens in its own window (Electron) or an in-app window (web / iPad).
@@ -850,6 +853,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
 
         {tab === "livepopup" && <AdminLivePopup />}
+        {tab === "agent" && (
+          <Suspense fallback={null}>
+            <AdminAgent />
+          </Suspense>
+        )}
 
         {tab === "staff" && perm.owner && <AdminStaff tabs={TABS} />}
 

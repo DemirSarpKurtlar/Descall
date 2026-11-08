@@ -21,7 +21,10 @@ const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
 const STEP_UP_HEADER = "x-admin-step-up";
 const STEP_UP_LIMIT = { windowMs: 15 * 60 * 1000, max: 10 };
 // Reads sent as POST and the step-up call itself.
-const STEP_UP_EXEMPT = [/^\/step-up\/?$/, /\/search\/?$/, /\/preview\/?$/];
+// Admin agent (phase 1): sending a chat message and deleting one's own conversation
+// change nothing on the platform. Tool calls inside the chat still go through the admin
+// routes, so a DM read still needs the step-up token.
+const STEP_UP_EXEMPT = [/^\/step-up\/?$/, /\/search\/?$/, /\/preview\/?$/, /^\/agent\/chat\/?$/, /^\/agent\/threads\/[^/]+\/?$/];
 let warned = false;
 
 async function totpEnabled(userId) {

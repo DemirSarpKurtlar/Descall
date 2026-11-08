@@ -30,6 +30,8 @@ const INTERNAL_ONLY = new Set([
   "lib/reportAlertEmail.js",
   "lib/feedbackEmail.js",
   "lib/descoinAntibot/alerts.js",
+  // Admin agent: tool descriptions written for the Claude model, never shown in the app.
+  "lib/adminAgent/tools.js",
 ]);
 
 // Developer / diagnostic text: never shown in the app (logs, health checks, protocol
