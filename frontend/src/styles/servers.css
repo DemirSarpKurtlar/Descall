@@ -3862,14 +3862,12 @@ button.member-row.server-member-row {
   color: var(--success);
 }
 
+/* Role badges in a voice row never get cut: they keep their full width and the name
+   shortens with an ellipsis instead ("Konuşmacı" used to be clipped at the row edge). */
 .server-voice-user .server-stage-speaker-badge,
 .server-voice-user .server-stage-request-badge,
 .server-voice-user .server-priority-speaker-badge {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 4.1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 
@@ -4102,7 +4100,7 @@ button.member-row.server-member-row {
 
 .server-voice-user-name {
   flex: 1 1 auto;
-  min-width: 6.25rem;
+  min-width: 2.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
