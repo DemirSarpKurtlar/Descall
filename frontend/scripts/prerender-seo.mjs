@@ -940,8 +940,8 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     directoryThin.has(route.path)
       ? `<meta name="robots" content="noindex,follow" />`
       : `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
-    // iOS Smart App Banner: indexable marketing pages only.
-    directoryThin.has(route.path) ? "" : SMART_APP_BANNER_META,
+    // iOS Smart App Banner: every marketing shell this list emits (thin directory pages included).
+    SMART_APP_BANNER_META,
     `<meta name="author" content="Demir Sarp Kurtlar" />`,
     `<meta name="citation_author" content="Demir Sarp Kurtlar" />`,
     `<link rel="canonical" href="${url}" />`,
