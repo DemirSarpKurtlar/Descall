@@ -39,7 +39,7 @@ jobs:
         run: npm ci --no-audit --no-fund --ignore-scripts
       - name: Install backend deps (lockfile)
         working-directory: frontend/backend
-        run: npm ci --no-audit --no-fund
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/backend-npm-ci.sh"
       - name: Run all tests (shard ${{ matrix.shard }})
         run: node scripts/run-tests.mjs --shard=${{ matrix.shard }}
 
@@ -67,7 +67,7 @@ jobs:
         run: npm ci --no-audit --no-fund --ignore-scripts
       - name: Install backend deps (lockfile, for socket.io)
         working-directory: frontend/backend
-        run: npm ci --no-audit --no-fund
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/backend-npm-ci.sh"
       - name: Install playwright-core (driver only, system Chrome)
         run: npm install --no-save --no-audit --no-fund --prefix "$RUNNER_TEMP/pw" playwright-core@1.64.1
       - name: Build against the local mock
@@ -128,7 +128,7 @@ jobs:
       # frontend/backend/node_modules is no longer committed (2.11.2): install from the lockfile.
       - name: Install backend dependencies
         working-directory: frontend/backend
-        run: npm ci --no-audit --no-fund
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/backend-npm-ci.sh"
       - name: Run release selftests
         run: |
           set -euo pipefail
@@ -294,7 +294,13 @@ jobs:
           node src/styles/admin-liquid.selftest.mjs
           node electron/adminStatsWindow.selftest.mjs
       - name: Install frontend dependencies (render selftests)
-        run: npm ci --no-audit --no-fund
+        run: |
+          # GitHub release downloads (ffmpeg-static, Electron) sometimes answer 504; retry the install.
+          for i in 1 2 3; do
+            npm ci --no-audit --no-fund && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            echo "npm ci failed (attempt $i), retrying in 20s"; sleep 20
+          done
       - name: Server voice channel render selftest
         run: node src/components/servers/ServerVoicePanel.render.selftest.mjs
       - name: Native iOS call logic selftest (Swift, Foundation only)
@@ -336,7 +342,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/backend/package-lock.json
       - name: Install backend dependencies
-        run: npm ci --no-audit --no-fund
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/backend-npm-ci.sh"
       - name: Promo migration + redemption tests
         run: |
           set -euo pipefail
@@ -377,7 +383,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/backend/package-lock.json
       - name: Install backend dependencies
-        run: npm ci --no-audit --no-fund
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/backend-npm-ci.sh"
       - name: Special badge migration + rules tests
         run: |
           set -euo pipefail
@@ -416,7 +422,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/backend/package-lock.json
       - name: Install backend dependencies
-        run: npm ci --no-audit --no-fund
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/backend-npm-ci.sh"
       - name: Premium migration + membership tests
         run: |
           set -euo pipefail
@@ -448,7 +454,27 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install frontend deps (with the Electron binary)
-        run: npm ci --no-audit --no-fund
+        run: |
+          # GitHub release downloads (ffmpeg-static, Electron) sometimes answer 504; retry the install.
+          for i in 1 2 3; do
+            npm ci --no-audit --no-fund && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            echo "npm ci failed (attempt $i), retrying in 20s"; sleep 20
+          done
+      # Electron 45 fetches its binary on first use, not in npm ci. Keep the zip in
+      # @electron/get's cache so a GitHub releases outage (504) cannot stop this job.
+      - name: Cache the Electron binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('frontend/node_modules/electron/package.json') }}
+      - name: Download the Electron binary
+        run: |
+          for i in 1 2 3 4 5; do
+            node node_modules/electron/install.js && node -e "require('fs').accessSync(require('electron'))" && exit 0
+            echo "Electron download failed (attempt $i), retrying in 30s"; sleep 30
+          done
+          exit 1
       - name: Electron production build
         env:
           ELECTRON_BUILD: "1"
