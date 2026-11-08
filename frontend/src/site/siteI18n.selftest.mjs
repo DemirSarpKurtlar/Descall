@@ -107,7 +107,7 @@ const full = Object.fromEntries(rows.map((r) => [r.en, r.en]));
 const strictFull = await checkSiteI18n({ allowDraft: false, locales: ["de"], drafts: [], overrides: { de: full } });
 assert.deepEqual(strictFull.errors, [], "a complete catalog passes the strict check");
 assert.equal(strictFull.report.de.percent, 100);
-const broken = { ...full, "{name} is the owner and founder of Descall.": "Descall gehört {owner}." };
+const broken = { ...full, "{name} is the founder, owner, and CEO of Descall.": "Descall gehört {owner}." };
 const strictBroken = await checkSiteI18n({ allowDraft: false, locales: ["de"], drafts: [], overrides: { de: broken } });
 assert.ok(strictBroken.errors.some((e) => /placeholders, tags or length/.test(e)), "a broken placeholder fails");
 // 3b. Staged groups: their gaps never fail, the same gaps fail once the group is served.

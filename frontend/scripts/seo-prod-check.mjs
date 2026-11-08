@@ -25,11 +25,20 @@ function ok(msg) {
   console.log("OK:", msg);
 }
 
+/** Text a reader sees: no style or script blocks and no tags, so attributes such as
+ *  loading="lazy" on images never count as a "Loading" placeholder. */
+function visibleText(html) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ");
+}
+
 const html = await get("/features");
 if (html.status !== 200) fail(`/features status ${html.status}`);
 else ok(`/features ${html.status}`);
 
-if (/\bLoading\b/i.test(html.text.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<script[\s\S]*?<\/script>/gi, ""))) {
+if (/\bLoading\b/i.test(visibleText(html.text))) {
   fail("/features still contains Loading");
 } else ok("/features has no Loading placeholder");
 
@@ -42,7 +51,7 @@ else ok("/features has h1");
 const home = await get("/");
 if (home.status !== 200) fail(`/ status ${home.status}`);
 else ok(`/ ${home.status}`);
-if (/\bLoading\b/i.test(home.text.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<script[\s\S]*?<\/script>/gi, ""))) {
+if (/\bLoading\b/i.test(visibleText(home.text))) {
   fail("/ still contains Loading in body");
 } else ok("/ has no Loading placeholder in body");
 if (!/<h1[\s\S]*?Descall/i.test(home.text)) fail("home missing Descall h1");
@@ -54,7 +63,7 @@ for (const p of ["/about", "/contact", "/privacy"]) {
   const page = await get(p);
   if (page.status !== 200) fail(`${p} status ${page.status}`);
   else ok(`${p} ${page.status}`);
-  const body = page.text.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<script[\s\S]*?<\/script>/gi, "");
+  const body = visibleText(page.text);
   if (/\bLoading\b/i.test(body)) fail(`${p} contains Loading in body`);
   else ok(`${p} has no Loading placeholder in body`);
   if (!/<h1[\s\S]*?<\/h1>/i.test(page.text)) fail(`${p} missing h1`);
@@ -70,7 +79,7 @@ if (!/sitemapindex/i.test(sitemap.text)) fail("sitemap index missing");
 else ok("sitemap.xml index present");
 
 const faq = await get("/faq");
-const ldBlocks = [...faq.text.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi)].map(
+const ldBlocks = [...faq.text.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)].map(
   (m) => {
     try {
       return JSON.parse(m[1]);

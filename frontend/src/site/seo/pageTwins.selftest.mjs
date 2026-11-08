@@ -155,6 +155,19 @@ assert.match(read("src/site/fonts-inter.css"), /unicode-range/);
     { jsx: "src/site/pages/BlogIndexPage.jsx", html: landing.blogIndexTwin("en", "/blog"), shell: true, skip: ["Frequently asked questions"] },
     { jsx: "src/site/pages/AboutPage.jsx", html: corePageBody("/about") },
     { jsx: "src/site/pages/SecurityPage.jsx", html: corePageBody("/security") },
+    // Shown only after a submit: the sending label, the field errors, the success card.
+    {
+      jsx: "src/site/pages/ContactPage.jsx",
+      html: corePageBody("/contact"),
+      skip: [
+        "Enter a valid email",
+        "Write at least 5 characters.",
+        "Could not send that message. Email us instead.",
+        "Message received",
+        "We got your note. We’ll reply at the email you gave.",
+        "Sending…",
+      ],
+    },
   ];
   for (const page of ROUND3) {
     const html = decode(page.html);
@@ -177,13 +190,26 @@ assert.match(read("src/site/fonts-inter.css"), /unicode-range/);
   assert.ok(corePageBody("/de/compare/discord").includes(twins.escapeHtml(deT("Quick verdict"))));
   assert.ok(corePageBody("/tr/compare/discord").includes(twins.escapeHtml(trT("Quick verdict"))));
   assert.ok(corePageBody("/ru/security").includes(twins.escapeHtml(twins.pageT("ru")("Security at Descall"))));
+  assert.ok(corePageBody("/de/contact").includes(`<h1>${twins.escapeHtml(deT("Contact"))}</h1>`), "German contact twin");
+  assert.ok(corePageBody("/iletisim").includes(`<h1>${twins.escapeHtml(trT("Contact"))}</h1>`), "Turkish contact twin (/iletisim)");
+  // The twin's form cannot take input that the hand-over would throw away; its ids are not React's.
+  {
+    const contact = corePageBody("/contact");
+    const controls = [...contact.matchAll(/<(input|textarea|button)\b[^>]*>/g)].map((m) => m[0]);
+    assert.equal(controls.length, 4, "name, email, message, send");
+    for (const c of controls) assert.match(c, /\sdisabled\b/, `${c} is disabled`);
+    assert.doesNotMatch(contact, /id="contact-/, "React's field ids are not reused");
+    for (const id of ["name", "email", "message"]) assert.ok(contact.includes(`<label for="seo-contact-${id}">`), `label for ${id}`);
+  }
   assert.ok(landing.blogIndexTwin("de", "/de/blog").includes('href="/de/blog/discord-competitors"'), "blog index links the /de posts");
   assert.match(landing.trBlogIndexTwin(), /<h1>Descall blog: Discord alternatifleri/);
   // Main element and CSS blocks: landing twins keep only their block, info pages reuse legal + FAQ.
   assert.match(corePageBody("/compare/discord"), /<main class="seo-main-landing seo-twin-landing">/);
   assert.match(corePageBody("/security"), /<main class="seo-twin seo-twin-info">/);
   assert.match(corePageBody("/about"), /<main class="seo-twin seo-twin-about">/);
-  for (const kind of ["landing", "info", "about"]) assert.ok(index.includes(`/* @twin-${kind}-start`) && index.includes(`/* @twin-${kind}-end */`), kind);
+  assert.match(corePageBody("/contact"), /<main class="seo-twin seo-twin-contact">/);
+  assert.match(corePageBody("/iletisim"), /<main class="seo-twin seo-twin-contact">/);
+  for (const kind of ["landing", "info", "about", "contact"]) assert.ok(index.includes(`/* @twin-${kind}-start`) && index.includes(`/* @twin-${kind}-end */`), kind);
   const landingCss = stripTwinCss(index, "landing");
   assert.ok(landingCss.includes(".seo-tl-verdict") && !landingCss.includes("@twin-base-start"), "landing: own block, no base");
   const infoCss = stripTwinCss(index, "info");
@@ -194,6 +220,7 @@ assert.match(read("src/site/fonts-inter.css"), /unicode-range/);
     [landing.blogIndexTwin("en", "/blog"), "landing"],
     [corePageBody("/who-owns-descall"), "info"],
     [corePageBody("/about"), "about"],
+    [corePageBody("/contact"), "contact"],
   ]) {
     const kept = stripTwinCss(index, kind);
     for (const cls of new Set([...html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/)).filter((c) => /^seo-(tw|tl)-/.test(c)))) {

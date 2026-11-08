@@ -1595,6 +1595,40 @@
         #seo-static .seo-tw-founder-list > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
       }
       /* @twin-info-end */
+      /* @twin-contact-start: ContactPage (.mkt-section.mkt-prose.mkt-contact), src/site/seo/infoTwins.js;
+         the fields are disabled until React's form replaces them. */
+      #seo-static .seo-tw-contact { margin-top: 112px; font-size: 15px; line-height: 1.7; color: #d4dbe6; }
+      #seo-static .seo-tw-contact h1 { margin: 0.67em 0; font-size: 56px; line-height: 1.05; font-weight: 740; letter-spacing: -0.04em; }
+      #seo-static .seo-tw-contact .seo-tw-ct-lead { max-width: 560px; margin: 0 0 24px; line-height: 1.5; }
+      #seo-static .seo-tw-ct-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px 48px; align-items: start; }
+      #seo-static .seo-tw-ct-aside h2 { margin: 18px 0 6px; font-size: 15px; line-height: 1.3; font-weight: 650; letter-spacing: 0; color: #f4f6fb; }
+      #seo-static .seo-tw-ct-aside p { margin: 0 0 8px; }
+      #seo-static .seo-tw-ct-aside a { color: #8eacff; text-decoration: underline; }
+      #seo-static .seo-tw-ct-aside .seo-tw-ct-owner { font-weight: 600; }
+      #seo-static .seo-tw-ct-form { display: flex; flex-direction: column; gap: 8px; max-width: 560px; margin: 18px 0 28px; }
+      #seo-static .seo-tw-ct-form label { margin-top: 8px; font-size: 13px; font-weight: 650; }
+      #seo-static .seo-tw-ct-form input,
+      #seo-static .seo-tw-ct-form textarea {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        border: 0;
+        border-radius: 18px;
+        padding: 12px 14px;
+        color: inherit;
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+        font: inherit;
+      }
+      #seo-static .seo-tw-ct-form .seo-tw-btn { align-self: flex-start; font-family: inherit; cursor: default; }
+      @media (min-width: 860px) {
+        #seo-static .seo-tw-ct-grid { grid-template-columns: minmax(0, 280px) minmax(0, 560px); }
+      }
+      @media (max-width: 600px) {
+        #seo-static .seo-tw-contact { margin-top: 72px; }
+        #seo-static .seo-tw-contact h1 { font-size: clamp(32px, 9vw, 42px); overflow-wrap: anywhere; }
+      }
+      /* @twin-contact-end */
       /* Home hero, same grid and type as home-hero.css (.mkt-hh). */
       #seo-static .seo-hh {
         display: grid;

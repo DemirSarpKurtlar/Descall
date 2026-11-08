@@ -1,13 +1,15 @@
 /**
  * Prerendered twins of the info pages (SEO round 3, Nov 2026): /about (AboutPage) and the
  * InfoPage template pages /security and /who-owns-descall (+ /descall-sahibi), in every
- * site language. Same idea as seo/pageTwins.js: React's own t() text, order and boxes, so
- * the hand-over to React moves nothing. CSS: index.html "@twin-about" and "@twin-info"
- * (the info pages also keep the legal reader and FAQ blocks, see prerender-seo.mjs).
+ * site language; then /contact (+ /iletisim), whose form is drawn with disabled fields
+ * until React's form replaces it. Same idea as seo/pageTwins.js: React's own t() text,
+ * order and boxes, so the hand-over to React moves nothing. CSS: index.html "@twin-about",
+ * "@twin-info" and "@twin-contact" (the info pages also keep the legal reader and FAQ
+ * blocks, see prerender-seo.mjs).
  *
  * Keep in step with: pages/AboutPage.jsx, pages/SecurityPage.jsx,
- * pages/WhoOwnsDescallPage.jsx, components/InfoPage.jsx, components/SeoRelatedLinks.jsx
- * (selftest: pageTwins.selftest.mjs).
+ * pages/WhoOwnsDescallPage.jsx, pages/ContactPage.jsx, components/InfoPage.jsx,
+ * components/SeoRelatedLinks.jsx (selftest: pageTwins.selftest.mjs).
  */
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import { OWNER_NAME, OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
@@ -188,4 +190,36 @@ export function whoOwnsTwin(loc, pathname) {
     summary,
     body,
   });
+}
+
+/**
+ * ContactPage before anything is sent: H1, lead, the support / security column and the
+ * form. The fields and the button are disabled (text typed before the hand-over would be
+ * lost); React's form takes their place. Field ids differ from React's, which renders its
+ * own while the two cross-fade.
+ */
+export function contactTwin(loc) {
+  const t = pageT(loc);
+  // <label> and its disabled control (attributes as ContactPage.jsx, ids prefixed).
+  const field = (id, label, tag, attrs) =>
+    `<label for="seo-contact-${id}">${esc(t(label))}</label><${tag} id="seo-contact-${id}" name="${id}" ${attrs} disabled${tag === "textarea" ? "></textarea>" : " />"}`;
+  return `<section class="seo-tw-contact">
+  <h1>${esc(t("Contact"))}</h1>
+  <p class="seo-tw-ct-lead">${esc(t("Get in touch with the Descall team, support, feedback, and press."))}</p>
+  <div class="seo-tw-ct-grid">
+    <aside class="seo-tw-ct-aside">
+      <h2>${esc(t("Support email"))}</h2>
+      <p>${mail}</p>
+      <p class="seo-tw-ct-owner">${esc(t("Descall is developed by Demir Sarp Kurtlar."))}</p>
+      <h2>${esc(t("Security"))}</h2>
+      <p>${esc(t("For security reports, contact us by email and include enough detail for us to investigate safely."))}</p>
+    </aside>
+    <form class="seo-tw-ct-form" novalidate>
+      ${field("name", "Your name (optional)", "input", 'type="text" autocomplete="name" maxlength="80"')}
+      ${field("email", "Email", "input", 'type="email" autocomplete="email" required maxlength="254"')}
+      ${field("message", "Message", "textarea", 'required rows="6" maxlength="2000"')}
+      <button type="submit" class="seo-tw-btn is-primary" disabled>${esc(t("Send message"))}</button>
+    </form>
+  </div>
+</section>`;
 }
