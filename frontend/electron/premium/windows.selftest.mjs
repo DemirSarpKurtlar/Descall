@@ -10,6 +10,15 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+// Several feature modules `require('electron')` at load time. Under plain Node that resolves
+// to the npm package, which downloads the Electron binary on first use (and fails when
+// GitHub releases are down). These checks only read each module's key and start/stop, so
+// give them an empty electron API instead.
+{
+  const electronId = require.resolve("electron");
+  require.cache[electronId] = { id: electronId, filename: electronId, loaded: true, exports: {} };
+}
 const kit = require("./windowKit.cjs");
 const icons = require("./badgeIcon.cjs");
 const tiers = require("./featureTiers.cjs");
