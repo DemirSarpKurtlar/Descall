@@ -1,0 +1,673 @@
+/* Activity page "Pano" (approved draft A, 2026-11-08): components/activity/ActivityPano.jsx.
+   Cards use the app tokens; the glass desktop and the light theme override the plate only. */
+
+.act-pano,
+.act-history {
+  --act-card-bg: var(--surface-1);
+  --act-card-line: var(--border-2);
+  --act-card-shadow: none;
+  --act-soft: color-mix(in srgb, var(--text-0) 7%, transparent);
+  --act-up: #4fd17f;
+  --act-down: #ff8a8a;
+  --act-live: #23a55a;
+}
+
+.act-pano {
+  display: grid;
+  gap: 14px;
+  container: act-pano / inline-size;
+}
+
+html.glass-desktop :is(.act-pano, .act-history),
+html.glass-ui :is(.act-pano, .act-history) {
+  --act-card-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(22, 24, 36, 0.32);
+  --act-card-line: rgba(255, 255, 255, 0.14);
+  --act-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 28px rgba(0, 0, 0, 0.14);
+  --act-soft: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="light"] :is(.act-pano, .act-history) {
+  --act-card-bg: #ffffff;
+  --act-card-line: rgba(57, 60, 77, 0.1);
+  --act-card-shadow: 0 1px 2px rgba(16, 18, 28, 0.04);
+  --act-soft: rgba(57, 60, 77, 0.07);
+  --act-up: #178a45;
+  --act-down: #c93a3a;
+}
+
+.act-card {
+  background: var(--act-card-bg);
+  border: 1px solid var(--act-card-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--act-card-shadow);
+  min-width: 0;
+}
+
+html.glass-desktop .act-card {
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+html.glass-desktop.gd-lite .act-card,
+html[data-theme="light"] .act-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.act-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.act-eyebrow {
+  font-size: var(--fs-11);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.act-sub {
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+
+.act-small {
+  font-size: var(--fs-12);
+}
+
+.act-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Game tile: monogram on the game's colour (no cover art exists for detected games). */
+.act-tile {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  overflow: hidden;
+  color: #fff;
+  font-weight: 800;
+  font-size: var(--fs-13);
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.act-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.3), transparent 55%);
+  pointer-events: none;
+}
+
+.act-tile-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: var(--fs-11);
+}
+
+.act-tile-lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  font-size: var(--fs-28);
+}
+
+.act-tile-idle {
+  background: var(--act-soft);
+  color: var(--text-muted);
+  text-shadow: none;
+}
+
+.act-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  color: var(--text-1);
+  background: var(--act-soft);
+  border: 1px solid var(--act-card-line);
+}
+
+.act-chip-live {
+  height: 20px;
+  padding: 0 7px;
+  color: var(--act-live);
+  border-color: color-mix(in srgb, var(--act-live) 35%, transparent);
+  background: color-mix(in srgb, var(--act-live) 12%, transparent);
+}
+
+.act-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  border: 0;
+  background: var(--act-soft);
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+.act-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--act-card-line);
+  background: var(--act-soft);
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.act-icon-btn:focus-visible,
+.act-btn:focus-visible,
+.act-seg button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.act-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--r-md);
+  background: var(--act-soft);
+}
+
+.act-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.act-seg button.on {
+  background: var(--surface-3, rgba(255, 255, 255, 0.14));
+  color: var(--text-0);
+}
+
+html.glass-desktop .act-seg button.on {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+html[data-theme="light"] .act-seg button.on {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 18, 28, 0.08);
+}
+
+/* Top row: now card | stats + most played */
+.act-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.act-side {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+/* Now card */
+.act-now {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.act-now::before {
+  content: "";
+  position: absolute;
+  top: -45%;
+  right: -12%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--act-glow, var(--primary)) 38%, transparent), transparent 65%);
+  pointer-events: none;
+}
+
+html[data-theme="light"] .act-now::before {
+  opacity: 0.45;
+}
+
+.act-now > * {
+  position: relative;
+}
+
+.act-now-top,
+.act-now-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.act-now-bottom {
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.act-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.act-eyebrow-live {
+  color: var(--act-live);
+}
+
+.act-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--act-live);
+  animation: act-pulse 1.8s ease-out infinite;
+}
+
+@keyframes act-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--act-live) 55%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act-live-dot { animation: none; }
+}
+
+.act-now-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.act-now-text {
+  min-width: 0;
+}
+
+.act-now-title {
+  font-size: var(--fs-20);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-0);
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.act-timer {
+  display: block;
+  font-size: var(--fs-28);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-0);
+  line-height: 1.15;
+}
+
+.act-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.act-web-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--act-soft);
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+}
+
+.act-now-idle {
+  justify-content: center;
+}
+
+.act-now-idle-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.act-now-idle .act-now-title {
+  font-size: var(--fs-17);
+  margin-bottom: 2px;
+}
+
+/* Stat tiles */
+.act-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.act-stat {
+  padding: 12px 14px;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+}
+
+.act-stat b {
+  font-size: var(--fs-17);
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-stat-label,
+.act-tile-note {
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+}
+
+.act-tile-note {
+  line-height: 1.3;
+}
+
+.act-up { color: var(--act-up); font-weight: 600; }
+.act-down { color: var(--act-down); font-weight: 600; }
+
+/* Most played */
+.act-top {
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.act-top-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.act-top-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.act-top-name b {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-share {
+  height: 6px;
+  margin-top: 5px;
+  border-radius: var(--r-pill);
+  background: var(--act-soft);
+  overflow: hidden;
+}
+
+.act-share i {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+}
+
+.act-top-dur {
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.act-top-empty {
+  margin: 4px 0;
+}
+
+/* 7-day chart */
+.act-chart {
+  padding: 14px 16px 12px;
+}
+
+.act-bars {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  height: 150px;
+  margin-top: 12px;
+}
+
+.act-bars-grid {
+  position: absolute;
+  inset: 18px 0 22px;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  pointer-events: none;
+}
+
+.act-bars-grid i {
+  border-top: 1px dashed var(--act-card-line);
+}
+
+.act-bar {
+  position: relative;
+  display: grid;
+  grid-template-rows: 18px 1fr 22px;
+  justify-items: center;
+  min-width: 0;
+}
+
+.act-bar-val {
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+  align-self: end;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+.act-bar-stack {
+  align-self: end;
+  width: 100%;
+  max-width: 30px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 7px 7px 4px 4px;
+  overflow: hidden;
+}
+
+.act-bar-stack i {
+  display: block;
+  min-height: 2px;
+}
+
+.act-bar small {
+  align-self: center;
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.act-bar.is-today small {
+  color: var(--text-0);
+  font-weight: 700;
+}
+
+/* History by day */
+.act-history {
+  padding: 0 4px 12px;
+  container: act-history / inline-size;
+}
+
+.act-day + .act-day {
+  margin-top: 6px;
+}
+
+.act-day-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 6px;
+}
+
+.act-day-head b {
+  font-size: var(--fs-13);
+  color: var(--text-0);
+}
+
+.act-day-line {
+  flex: 1;
+  height: 1px;
+  background: var(--act-card-line);
+}
+
+.act-day-total {
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.act-sess {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, 210px) 76px;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  transition: background 0.12s;
+}
+
+.act-sess:hover {
+  background: var(--act-soft);
+}
+
+.act-sess-text {
+  min-width: 0;
+}
+
+.act-sess-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-13);
+  font-weight: 650;
+  color: var(--text-0);
+}
+
+.act-sess-name > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-sess-when {
+  font-size: var(--fs-12);
+  color: var(--text-muted);
+}
+
+.act-dayline {
+  position: relative;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--act-soft);
+}
+
+.act-dayline i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 4px;
+  border-radius: var(--r-pill);
+}
+
+.act-sess-dur {
+  text-align: right;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: var(--text-0);
+}
+
+.act-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+/* Narrow panels and phones: sized by the panel, not the window. */
+@container act-pano (max-width: 760px) {
+  .act-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container act-pano (max-width: 440px) {
+  .act-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .act-stats .act-stat:last-child {
+    grid-column: 1 / -1;
+  }
+  .act-now {
+    padding: 16px;
+  }
+  .act-tile-lg {
+    width: 60px;
+    height: 60px;
+    border-radius: 17px;
+    font-size: var(--fs-20);
+  }
+  .act-timer {
+    font-size: var(--fs-28);
+  }
+  .act-bars {
+    gap: 6px;
+  }
+}
+
+@container act-pano (max-width: 520px) {
+  .act-bar-val {
+    visibility: hidden;
+  }
+}
+
+@container act-history (max-width: 600px) {
+  .act-sess {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .act-dayline {
+    display: none;
+  }
+}

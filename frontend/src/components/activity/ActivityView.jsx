@@ -2,16 +2,17 @@ import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff, Monitor,
+  Zap, Clock, Edit3, X, ChevronDown, Lock, Users, EyeOff,
   Search, MessageSquarePlus, Plus, Menu,
   Gamepad2, Music, BookOpen, Briefcase, Coffee, Clapperboard, Code2,
 } from "../ui/Icon.jsx";
-import { ActivityTypeIcon } from '../../lib/shopIcons';
 import { useT } from '../../context/LocaleContext';
 import { openFeedbackModal } from '../../lib/feedbackNudge';
 import AnnouncementsButton from '../social/AnnouncementsModal';
 import { PresenceCard, useOnlinePresenceLists } from './ActivitySidebar';
-import ActivityHistoryRow, { localizeActivityLabel } from './ActivityHistoryRow';
+import { localizeActivityLabel } from './ActivityHistoryRow';
+import ActivityPano, { DayHistory, GameColorProvider, usePanoRows } from './ActivityPano';
+import { activityName } from '../../lib/activityStats.js';
 import { TYPE_PRIORITY } from '../../lib/activityTypePriority';
 import { isVisiblyOnline } from '../../lib/presence';
 import { Avatar } from '../ui/Avatar';
@@ -51,52 +52,6 @@ function formatRelativeTime(dateStr, t) {
   if (h > 0) return t('{count}h ago', { count: h });
   if (m > 0) return t('{count}m ago', { count: m });
   return t('just now');
-}
-
-function CurrentActivityCard({ activity, manualOverride, onClearManual, isElectron }) {
-  const t = useT();
-  // UI audit #6: the card keeps the standard hairline glass edge (no coloured
-  // border or glow); only the icon carries the activity colour, and the idle
-  // moon stays neutral.
-  const accentColor = activity ? (TYPE_COLOR[activity.appType] || '#587AF5') : null;
-
-  return (
-    <div className="activity-current-card">
-      <div className="activity-current-header">
-        <div className="activity-current-icon-wrap" style={accentColor ? { background: `${accentColor}22` } : undefined}>
-          <span style={{ color: accentColor || 'var(--text-2)', display: "inline-flex" }}>
-            <ActivityTypeIcon type={activity?.appType} size={28} />
-          </span>
-        </div>
-        <div className="activity-current-info">
-          <div className="activity-current-label">
-            {activity ? t('Currently Active') : t('No Activity Detected')}
-          </div>
-          <div className="activity-current-display" style={{ color: activity ? accentColor : 'var(--text-muted)' }}>
-            {activity?.displayName
-              ? localizeActivityLabel(activity.displayName, t)
-              : (isElectron ? t('Launch a game or app to start tracking') : t('Manual status only in browser'))}
-          </div>
-          {activity?.startedAt && (
-            <div className="activity-current-since">
-              {t('Started {time}', { time: formatRelativeTime(activity.startedAt, t) })}
-            </div>
-          )}
-        </div>
-        {manualOverride && (
-          <button className="activity-clear-manual-btn" onClick={onClearManual} title={t('Clear manual status')} aria-label={t('Clear manual status')}>
-            <X size={16} />
-          </button>
-        )}
-      </div>
-      {!isElectron && (
-        <div className="activity-web-notice">
-          <Monitor size={14} />
-          <span>{t('Automatic activity detection requires the')} <strong>{t('Descall desktop app')}</strong></span>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function ManualStatusModal({ onSet, onClose }) {
@@ -233,13 +188,14 @@ export default function ActivityView({
       return new Date(b.pres.startedAt || 0) - new Date(a.pres.startedAt || 0);
     });
 
-  const sortedHistory = [...(history || [])].sort((a, b) => {
-    const tr = typeRank(a.app_type) - typeRank(b.app_type);
-    if (tr !== 0) return tr;
-    return new Date(b.started_at || 0) - new Date(a.started_at || 0);
-  });
+  const { rows: panoRows, now: panoNow, historyOnly, colorOf } = usePanoRows(history, currentActivity);
+  const currentName = currentActivity ? activityName(currentActivity) : '';
+  const sameGameFriends = currentName && currentActivity?.appType !== 'manual'
+    ? friendFeed.filter(({ pres }) => activityName(pres) === currentName).length
+    : 0;
 
   return (
+    <GameColorProvider value={colorOf}>
     <div className={`activity-view${isMobile ? ' activity-view-mobile' : ''}`}>
       {/* Mobile: Friends-style bar + search + online friends (desktop uses ActivitySidebar) */}
       {isMobile && (
@@ -376,7 +332,7 @@ export default function ActivityView({
           </div>
           <div className="activity-view-heading">
             <h1 className="activity-view-title">{isMobile ? t('Your status') : t('Activity')}</h1>
-            <p className="activity-view-subtitle">{t('Your presence and history')}</p>
+            <p className="activity-view-subtitle">{t('act.subtitle')}</p>
           </div>
         </div>
 
@@ -430,11 +386,15 @@ export default function ActivityView({
       </div>
 
       <div className="activity-view-section">
-        <CurrentActivityCard
-          activity={currentActivity}
+        <ActivityPano
+          currentActivity={currentActivity}
           manualOverride={manualOverride}
           onClearManual={onClearManual}
           isElectron={isElectron}
+          rows={panoRows}
+          historyOnly={historyOnly}
+          now={panoNow}
+          sameGameFriends={sameGameFriends}
         />
       </div>
 
@@ -447,7 +407,7 @@ export default function ActivityView({
             onClick={() => setActiveTab(tab)}
           >
             {tab === 'history' ? (
-              <><Clock size={14} /> {t('History')}</>
+              <><Clock size={14} /> {t('act.history.title')}</>
             ) : (
               <><Zap size={14} /> {t('Friends')}</>
             )}
@@ -465,12 +425,8 @@ export default function ActivityView({
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
             >
-              {sortedHistory.length > 0 ? (
-                <div className="activity-history-list">
-                  {sortedHistory.map(entry => (
-                    <ActivityHistoryRow key={entry.id} entry={entry} />
-                  ))}
-                </div>
+              {panoRows.length > 0 ? (
+                <DayHistory rows={panoRows} now={panoNow} />
               ) : !historyLoaded ? (
                 <ConversationListSkeleton count={5} label={t('Loading…')} />
               ) : (
@@ -544,5 +500,6 @@ export default function ActivityView({
         )}
       </AnimatePresence>
     </div>
+    </GameColorProvider>
   );
 }

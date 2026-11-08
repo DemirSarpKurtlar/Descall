@@ -1,6 +1,7 @@
 import { ActivityTypeIcon } from "../../lib/shopIcons";
 import { useLocale, useT } from "../../context/localeContextInstance";
-import { formatActivityRange, playingName } from "../../../backend/lib/activitySessions.mjs";
+import { formatActivityRange } from "../../../backend/lib/activitySessions.mjs";
+import { parseActivityLabel } from "../../lib/activityStats.js";
 
 const TYPE_COLOR = {
   game: "#23a55a",
@@ -13,10 +14,11 @@ const TYPE_COLOR = {
   app: "#747f8d",
 };
 
+/** "Playing X" / "Using X" / ... in the reader's language; a custom status stays as typed. */
 export function localizeActivityLabel(label, t) {
-  const name = playingName(label);
-  if (!name || typeof t !== "function") return label || "";
-  return t("Playing {name}", { name });
+  if (typeof t !== "function") return label || "";
+  const { verb, name } = parseActivityLabel(label);
+  return verb ? t(`act.label.${verb}`, { name }) : (label || "");
 }
 
 function formatDuration(seconds) {
