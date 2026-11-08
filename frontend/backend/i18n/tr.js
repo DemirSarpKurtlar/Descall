@@ -134,6 +134,64 @@ module.exports = {
     messageRequestBody: "{from} sana mesaj isteği gönderdi",
   },
 
+  // Re-engagement (lib/reengage.js): friend-in-voice push, friend request / server invite
+  // fallback emails, day 3 / day 7 lifecycle emails and the unsubscribe page.
+  reengage: {
+    push: {
+      friendVoiceTitle: "{friend} sesli sohbette",
+      friendVoiceBody: "{server} sunucusunda, {channel} kanalında. Sen de katıl.",
+    },
+    email: {
+      hi: "Merhaba {name},",
+      openApp: "Descall'ı aç",
+      unsubscribe: "Bu e-postaların aboneliğinden çık",
+      unsubscribeText: "Abonelikten çık:",
+      whyActivity: "Bu e-postayı, sen Descall'dan uzaktayken bu gerçekleştiği için aldın. Bu türden günde en fazla bir e-posta göndeririz.",
+      whyLifecycle: "Bu e-postayı Descall ürün e-postalarına abone olduğun için aldın.",
+      friendRequest: {
+        subject: "{from} sana Descall'da arkadaşlık isteği gönderdi",
+        preheader: "Kabul etmek ya da reddetmek için Descall'ı aç.",
+        eyebrow: "Arkadaşlık isteği",
+        title: "{from} seninle arkadaş olmak istiyor",
+        intro: "{from} sana Descall'da arkadaşlık isteği gönderdi. Kabul etmek ya da reddetmek için uygulamayı aç.",
+        cta: "İsteği gör",
+      },
+      serverInvite: {
+        subject: "{from} seni {server} sunucusuna davet etti",
+        preheader: "{server} sunucusu için davetin Descall'da seni bekliyor.",
+        eyebrow: "Sunucu daveti",
+        title: "{server} sunucusuna davetlisin",
+        intro: "{from} sana Descall'da {server} sunucusu için bir davet gönderdi.",
+        cta: "Daveti gör",
+      },
+      day3: {
+        subject: "{name}, arkadaşların Descall'da seni bekliyor",
+        preheader: "Başlamanın iki kolay yolu.",
+        eyebrow: "Başlarken",
+        title: "Arkadaşların seni bekliyor",
+        intro: "Birkaç gün önce Descall'a katıldın. Konuşacak insanlar olunca çok daha keyifli. Başlamanın iki kolay yolu:",
+      },
+      day7: {
+        subject: "{name}, arkadaşlarını Descall'a getir",
+        preheader: "Descall birkaç arkadaşla en güzel hâlini alıyor.",
+        eyebrow: "Başlarken",
+        title: "Arkadaşlarını Descall'a getir",
+        intro: "Katılalı bir hafta oldu. Descall birkaç arkadaşla en güzel hâlini alıyor. İşte başlamanın iki kolay yolu:",
+        last: "Bu türdeki son ipucu e-postamız bu.",
+      },
+      tipInviteTitle: "Bir arkadaşını davet et",
+      tipInviteBody: "Bu bağlantıyı ona gönder. Bir dakikada kaydolup seni hemen bulabilir.",
+      tipServersTitle: "Herkese açık bir sunucuya katıl",
+      tipServersBody: "Sevdiğin bir oyun ya da konu etrafındaki bir topluluğu bul ve merhaba de.",
+      tipServersCta: "Sunuculara göz at",
+    },
+    unsubscribe: {
+      pageTitle: "Abonelikten çıktın",
+      pageBody: "Bu e-postaları artık Descall'dan almayacaksın. Ayarlar > Bildirimler bölümünden yeniden açabilirsin.",
+      pageBad: "Bu bağlantı geçersiz.",
+    },
+  },
+
   maintenance: {
     emergencyTitle: "Acil bakım",
     plannedTitle: "Planlı bakım",

@@ -27,4 +27,10 @@ export const MSG5_TR = {
     errAttachNotReady: "Ekli zamanlama sunucuda henüz açılmadı. Eki kaldırıp yalnızca metni zamanlayabilirsin.",
     errUpload: "Dosya yüklenemedi. Bağlantını kontrol edip tekrar dene.",
   },
+  reengage: {
+    friendVoice: "Arkadaşın sesli sohbette",
+    friendVoiceDesc: "Sen uzaktayken bir arkadaşın katılabileceğin bir ses kanalına girince bildirim. Günde en fazla birkaç tane, gece asla.",
+    email: "E-posta bildirimleri",
+    emailDesc: "Kaçırdığın arkadaşlık istekleri ve davetler hakkında e-postalar, yeni hesaplar için birkaç ipucu.",
+  },
 };

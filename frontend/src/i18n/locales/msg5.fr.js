@@ -27,4 +27,10 @@ export const MSG5_FR = {
     errAttachNotReady: "La programmation avec fichier n'est pas encore active sur le serveur. Retire le fichier pour programmer seulement le texte.",
     errUpload: "Le fichier n'a pas pu être envoyé. Vérifie ta connexion et réessaie.",
   },
+  reengage: {
+    friendVoice: "Un ami est en vocal",
+    friendVoiceDesc: "Une notification quand un ami rejoint un salon vocal que tu peux rejoindre pendant ton absence. Quelques-unes par jour au plus, jamais la nuit.",
+    email: "Notifications par e-mail",
+    emailDesc: "Des e-mails sur les demandes d'ami et invitations manquées, et quelques conseils pour les nouveaux comptes.",
+  },
 };

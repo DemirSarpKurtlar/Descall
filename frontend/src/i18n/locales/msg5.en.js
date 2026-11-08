@@ -27,4 +27,10 @@ export const MSG5_EN = {
     errAttachNotReady: "Scheduling with a file isn't on the server yet. Remove the file to schedule just the text.",
     errUpload: "The file couldn't be uploaded. Check your connection and try again.",
   },
+  reengage: {
+    friendVoice: "Friend is in voice",
+    friendVoiceDesc: "A notification when a friend joins a voice channel you can join while you are away. At most a few a day, never at night.",
+    email: "Email notifications",
+    emailDesc: "Emails about friend requests and invites you missed, and a few tips for new accounts.",
+  },
 };

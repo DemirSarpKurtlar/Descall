@@ -914,6 +914,34 @@ const UserPanel = forwardRef(function UserPanel({
     }
   };
 
+  // Re-engagement switches, stored on the account (backend routes/reengage.js).
+  const [friendVoiceNotify, setFriendVoiceNotify] = useState(true);
+  const [emailNotify, setEmailNotify] = useState(true);
+  const [reengageError, setReengageError] = useState("");
+  useEffect(() => {
+    if (activeTab !== "notifications") return undefined;
+    let alive = true;
+    authedRequest("/api/reengage/prefs")
+      .then((r) => {
+        if (!alive || !r?.ready) return;
+        if (typeof r.friendVoice === "boolean") setFriendVoiceNotify(r.friendVoice);
+        if (typeof r.email === "boolean") setEmailNotify(r.email);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [activeTab]);
+  const changeReengagePref = async (key, next) => {
+    const set = key === "friendVoice" ? setFriendVoiceNotify : setEmailNotify;
+    set(next);
+    setReengageError("");
+    try {
+      await authedRequest("/api/reengage/prefs", { method: "PUT", body: { [key]: next } });
+    } catch {
+      set(!next);
+      setReengageError(t("msg5.preview.saveError"));
+    }
+  };
+
   /* ── iPhone push permission (native iOS app only) ── */
   const iosPush = isNativeIosPush();
   const [iosPushPermission, setIosPushPermission] = useState(null);
@@ -2427,6 +2455,28 @@ const UserPanel = forwardRef(function UserPanel({
                     value={notificationPreviews}
                     onChange={changeNotificationPreviews}
                     label={t("msg4.notify.previewSetting")}
+                  />
+                </SettingRow>
+                <SettingRow
+                  icon={Headphones}
+                  title={t("msg5.reengage.friendVoice")}
+                  description={reengageError || t("msg5.reengage.friendVoiceDesc")}
+                >
+                  <Toggle
+                    value={friendVoiceNotify}
+                    onChange={(next) => changeReengagePref("friendVoice", next)}
+                    label={t("msg5.reengage.friendVoice")}
+                  />
+                </SettingRow>
+                <SettingRow
+                  icon={Mail}
+                  title={t("msg5.reengage.email")}
+                  description={t("msg5.reengage.emailDesc")}
+                >
+                  <Toggle
+                    value={emailNotify}
+                    onChange={(next) => changeReengagePref("email", next)}
+                    label={t("msg5.reengage.email")}
                   />
                 </SettingRow>
               </div>

@@ -95,8 +95,14 @@ router.get("/growth/retention", async (req, res) => {
       // signup_started fires before an account exists: count events, else distinct accounts.
       funnel[step] = step === "signup_started" ? rows.length : new Set(rows.map((r) => r.user_id).filter(Boolean)).size;
     }
+    // Re-engagement sends per day and kind (lib/reengage.js); null before the migration.
+    const reengagement = await require("../lib/reengage")
+      .reengage()
+      .adminCounts({ days })
+      .then((r) => (r.available ? r : { ...r, rows: null }))
+      .catch(() => null);
     res.set("Cache-Control", "no-store");
-    res.json({ ...report, funnel, days, today: t, generatedAt: new Date().toISOString() });
+    res.json({ ...report, funnel, reengagement, days, today: t, generatedAt: new Date().toISOString() });
   } catch (err) {
     unavailable(res, err);
   }
