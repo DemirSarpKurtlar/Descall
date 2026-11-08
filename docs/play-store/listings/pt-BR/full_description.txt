@@ -1,0 +1,41 @@
+O Descall é um app de chat e chamadas para conversar com seus amigos, seu squad e suas comunidades. De mensagens individuais a chamadas em grupo lotadas e servidores, todas as suas conversas ficam em um só lugar.
+
+MENSAGENS
+• Mensagens privadas individuais e chats em grupo com amigos
+• Compartilhe fotos, vídeos, arquivos, GIFs e emojis
+• Grave e envie mensagens de voz
+• Reaja com emojis, responda, edite e fixe mensagens
+• Pesquise mensagens dentro de um chat
+• Notificações push de novas mensagens e chamadas
+
+CHAMADAS DE VOZ E VÍDEO
+• Chamadas de voz e vídeo individuais com amigos
+• Em um chat em grupo, inicie com um toque uma chamada de voz ou vídeo com toda a galera
+• As chamadas recebidas chegam como uma notificação que toca; ao tocar nela, o Descall abre e conecta você à chamada
+• Silencie o microfone, ligue e desligue a câmera e veja quem está falando
+• Chamadas recentes e discagem rápida na aba Chamadas; os cartões de chamada no chat mostram a duração e os participantes
+
+SERVIDORES E COMUNIDADES
+• Crie seu próprio servidor com canais de texto e salas de voz
+• Organize os canais em categorias e gerencie as permissões com cargos
+• Entre nas salas de voz com um toque, veja quem está falando e ligue sua câmera se quiser
+• Ferramentas de expulsão, banimento, castigo e exclusão de mensagens para donos e moderadores de servidores
+• Descubra servidores públicos ou entre com um link de convite
+
+AMIGOS E PERFIL
+• Adicione amigos e veja quem está online e o que estão fazendo
+• Deixe o perfil com a sua cara, com foto, banner, bio e status
+
+SEGURANÇA E CONTROLE
+• Entre com nome de usuário e senha
+• Bloqueie usuários: quem você bloqueia não pode mandar mensagens, ligar para você nem enviar pedidos de amizade
+• Denuncie mensagens e usuários impróprios dentro do app
+• Palavrões nas mensagens são ocultados automaticamente com ***
+• As chamadas nunca são gravadas
+• Verificação em duas etapas e uma lista de sessões ativas que você pode encerrar remotamente
+• Exclua sua conta quando quiser em Configurações
+
+O Descall é destinado a usuários a partir de 13 anos.
+
+Termos de Uso: https://descall.com/terms
+Política de Privacidade: https://descall.com/privacy

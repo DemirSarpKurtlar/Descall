@@ -1,0 +1,4 @@
+Nouveautés de cette version :
+• [Nouveauté 1]
+• [Nouveauté 2]
+• Corrections de bugs et améliorations.

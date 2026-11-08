@@ -1,0 +1,4 @@
+Bu sürümde neler var:
+• [Yenilik 1]
+• [Yenilik 2]
+• Hata düzeltmeleri ve iyileştirmeler.

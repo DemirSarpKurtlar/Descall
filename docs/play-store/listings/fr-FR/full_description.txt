@@ -1,0 +1,41 @@
+Descall est une app de chat et d'appels pour discuter avec tes amis, ta team et tes communautés. Des messages privés aux appels de groupe bien remplis en passant par les serveurs, toutes tes conversations sont réunies au même endroit.
+
+MESSAGERIE
+• Messages privés en tête-à-tête et discussions de groupe avec tes amis
+• Partage de photos, vidéos, fichiers, GIF et emoji
+• Enregistrement et envoi de messages vocaux
+• Réagis avec des emoji, réponds aux messages, modifie-les et épingle-les
+• Recherche de messages dans une discussion
+• Notifications push pour les nouveaux messages et appels
+
+APPELS VOCAUX ET VIDÉO
+• Appels vocaux et vidéo en tête-à-tête avec tes amis
+• Dans une discussion de groupe, lance d'un simple toucher un appel vocal ou vidéo avec toute ta bande
+• Les appels entrants arrivent sous forme de notification qui sonne ; touche-la et Descall s'ouvre et te connecte à l'appel
+• Coupe ton micro, active ou désactive ta caméra et vois qui parle
+• Appels récents et appel rapide dans l'onglet Appels ; les cartes d'appel dans les discussions affichent la durée et les participants
+
+SERVEURS ET COMMUNAUTÉS
+• Crée ton propre serveur avec des salons textuels et des salons vocaux
+• Organise les salons en catégories et gère les autorisations avec des rôles
+• Rejoins un salon vocal d'un simple toucher, vois qui parle et allume ta caméra si tu veux
+• Outils d'expulsion, de bannissement, d'exclusion temporaire et de suppression de messages pour les propriétaires et modérateurs de serveurs
+• Découvre des serveurs publics ou rejoins-en un avec un lien d'invitation
+
+AMIS ET PROFIL
+• Ajoute des amis et vois qui est en ligne et ce qu'ils font
+• Personnalise ton profil avec une photo, une bannière, une bio et un statut
+
+SÉCURITÉ ET CONTRÔLE
+• Connexion avec un nom d'utilisateur et un mot de passe
+• Bloque des utilisateurs : les personnes que tu bloques ne peuvent ni t'envoyer de messages, ni t'appeler, ni t'envoyer de demandes d'ami
+• Signale les messages et utilisateurs inappropriés directement depuis l'app
+• Les grossièretés dans les messages sont automatiquement masquées par ***
+• Les appels ne sont jamais enregistrés
+• Validation en deux étapes et liste des sessions actives que tu peux déconnecter à distance
+• Supprime ton compte à tout moment depuis les Paramètres
+
+Descall est destinée aux utilisateurs de 13 ans et plus.
+
+Conditions d'utilisation : https://descall.com/terms
+Politique de confidentialité : https://descall.com/privacy
