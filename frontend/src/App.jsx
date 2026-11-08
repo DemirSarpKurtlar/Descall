@@ -4108,7 +4108,7 @@ export default function App() {
         return;
       }
 
-      if ((type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
+      if ((type === "friend-voice" || type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
         setReplyTo(null);
@@ -4122,10 +4122,11 @@ export default function App() {
         if (channelId) {
           const channel =
             (server.channels || []).find((c) => c.id === channelId) ||
-            { id: channelId, name: data.channelName || "channel", type: "text" };
+            // "Friend is in voice" opens the voice channel preview (joining stays a tap away).
+            { id: channelId, name: data.channelName || "channel", type: type === "friend-voice" ? "voice" : "text" };
           setActiveChannel(channel);
           navigate(serverPath(server, channel));
-          socketRef.current?.emit("server:channel:join", channelId);
+          if (type !== "friend-voice") socketRef.current?.emit("server:channel:join", channelId);
         } else {
           setActiveChannel(null);
           navigate(serverPath(server));

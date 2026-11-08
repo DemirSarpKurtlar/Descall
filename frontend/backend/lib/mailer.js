@@ -9,7 +9,7 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const SUPPORT_EMAIL = "support@descall.com";
 
 async function sendEmail(
-  { to, subject, text, html, replyTo },
+  { to, subject, text, html, replyTo, headers },
   { fetchImpl = fetch, env = process.env } = {}
 ) {
   const apiKey = env.RESEND_API_KEY;
@@ -31,6 +31,8 @@ async function sendEmail(
       text,
       ...(html ? { html } : {}),
       ...(replyTo ? { reply_to: replyTo } : { reply_to: SUPPORT_EMAIL }),
+      // Extra mail headers (e.g. List-Unsubscribe for lib/reengage.js).
+      ...(headers && Object.keys(headers).length ? { headers } : {}),
     }),
   });
 

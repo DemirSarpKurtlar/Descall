@@ -532,6 +532,16 @@ function registerServerVoiceHandlers(io, socket) {
       });
 
       emitChannelState(io, channel.server_id, channelId);
+      // Re-engagement: "<friend> is in voice" push to away friends (lib/reengage.js, off by default).
+      if (!alreadySeated) {
+        require("../lib/reengage").fire("onVoiceJoin", {
+          joinerId: myUid,
+          serverId: channel.server_id,
+          channelId,
+          channelName: channel.name,
+          channelType: channel.type,
+        });
+      }
     } catch (err) {
       if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
       console.error("[ServerVoice] join error:", err.message || err);

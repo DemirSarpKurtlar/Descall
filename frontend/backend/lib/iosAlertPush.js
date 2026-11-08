@@ -301,6 +301,31 @@ function describeEvent(event = {}, lang = "tr") {
       data: { type: "friend-request", fromId: event.fromId, from },
     };
   }
+  // Re-engagement (lib/reengage.js): a friend joined a voice channel the recipient can join.
+  if (type === "friend-voice") {
+    const serverName = clip(event.serverName, 60) || s.t("ownerServerFallback");
+    const channelName = clip(event.channelName, 60) || "voice";
+    return {
+      ...base,
+      threadId: "friend-voice",
+      priority: 5,
+      // A voice hangout is stale after a couple of hours.
+      expiresInSec: 2 * 3600,
+      collapseId: event.channelId ? `fvoice-${event.channelId}`.slice(0, 64) : "",
+      title: bt(s.lang, "reengage.push.friendVoiceTitle", { friend: from }),
+      body: bt(s.lang, "reengage.push.friendVoiceBody", { server: serverName, channel: channelName }),
+      data: {
+        type: "friend-voice",
+        serverId: event.serverId,
+        channelId: event.channelId,
+        serverName: event.serverName ? serverName : null,
+        channelName: event.channelName ? channelName : null,
+        channelType: "voice",
+        fromId: event.fromId || null,
+        from,
+      },
+    };
+  }
   if (type === "server-owner") {
     const serverName = clip(event.serverName, 60) || s.t("ownerServerFallback");
     const body = s.t("ownerBody", { serverName, serverNameGen: s.lang === "tr" ? trGenitive(serverName) : serverName });

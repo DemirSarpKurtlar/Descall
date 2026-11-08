@@ -27,4 +27,10 @@ export const MSG5_PT_BR = {
     errAttachNotReady: "Agendar com arquivo ainda não está ativo no servidor. Remova o arquivo para agendar só o texto.",
     errUpload: "Não foi possível enviar o arquivo. Verifique sua conexão e tente de novo.",
   },
+  reengage: {
+    friendVoice: "Amigo no canal de voz",
+    friendVoiceDesc: "Uma notificação quando um amigo entra em um canal de voz em que você pode entrar enquanto está fora. No máximo algumas por dia, nunca à noite.",
+    email: "Notificações por e-mail",
+    emailDesc: "E-mails sobre pedidos de amizade e convites que você perdeu, e algumas dicas para contas novas.",
+  },
 };

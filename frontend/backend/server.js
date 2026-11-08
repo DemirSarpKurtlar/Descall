@@ -553,6 +553,10 @@ app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
 if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
 // Messaging phase 5: "Mesaj önizlemesi" for server-sent pushes (users.push_preview).
 app.use("/api/push-preview", require("./routes/pushPreview"));
+// Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
+// Everything is off until REENGAGE_ENABLED=1 (or REENGAGE_DRY_RUN=1 to only log).
+app.use("/api/reengage", require("./routes/reengage"));
+if (process.env.NODE_ENV !== "test") require("./lib/reengage").reengage().start();
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

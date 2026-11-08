@@ -133,6 +133,64 @@ module.exports = {
     messageRequestBody: "{from} enviou um pedido de mensagem para você",
   },
 
+  // Re-engagement (lib/reengage.js): friend-in-voice push, friend request / server invite
+  // fallback emails, day 3 / day 7 lifecycle emails and the unsubscribe page.
+  reengage: {
+    push: {
+      friendVoiceTitle: "{friend} está no canal de voz",
+      friendVoiceBody: "Em {channel} no {server}. Entre também.",
+    },
+    email: {
+      hi: "Olá, {name},",
+      openApp: "Abrir o Descall",
+      unsubscribe: "Cancelar a inscrição nestes e-mails",
+      unsubscribeText: "Cancelar inscrição:",
+      whyActivity: "Você recebeu este e-mail porque isso aconteceu enquanto você estava fora do Descall. Enviamos no máximo um destes por dia.",
+      whyLifecycle: "Você recebeu este e-mail porque se inscreveu nos e-mails de produto do Descall.",
+      friendRequest: {
+        subject: "{from} enviou um pedido de amizade no Descall",
+        preheader: "Abra o Descall para aceitar ou recusar.",
+        eyebrow: "Pedido de amizade",
+        title: "{from} quer ser seu amigo",
+        intro: "{from} enviou um pedido de amizade para você no Descall. Abra o app para aceitar ou recusar.",
+        cta: "Ver o pedido",
+      },
+      serverInvite: {
+        subject: "{from} convidou você para {server}",
+        preheader: "Seu convite para {server} está esperando no Descall.",
+        eyebrow: "Convite para servidor",
+        title: "Você foi convidado para {server}",
+        intro: "{from} enviou um convite para o servidor {server} no Descall.",
+        cta: "Ver o convite",
+      },
+      day3: {
+        subject: "{name}, seus amigos estão esperando no Descall",
+        preheader: "Duas formas rápidas de começar.",
+        eyebrow: "Primeiros passos",
+        title: "Seus amigos estão esperando",
+        intro: "Você entrou no Descall há alguns dias. Fica muito melhor com gente para conversar. Duas formas rápidas de começar:",
+      },
+      day7: {
+        subject: "{name}, traga sua turma para o Descall",
+        preheader: "O Descall é melhor com alguns amigos.",
+        eyebrow: "Primeiros passos",
+        title: "Traga sua turma para o Descall",
+        intro: "Já faz uma semana que você entrou. O Descall é melhor com alguns amigos. Aqui estão duas formas fáceis de começar:",
+        last: "Este é o último e-mail de dicas deste tipo.",
+      },
+      tipInviteTitle: "Convide um amigo",
+      tipInviteBody: "Envie este link. A pessoa se cadastra em um minuto e encontra você na hora.",
+      tipServersTitle: "Entre em um servidor público",
+      tipServersBody: "Encontre uma comunidade sobre um jogo ou assunto de que você gosta e diga oi.",
+      tipServersCta: "Explorar servidores",
+    },
+    unsubscribe: {
+      pageTitle: "Inscrição cancelada",
+      pageBody: "Você não vai mais receber estes e-mails do Descall. Você pode reativá-los em Configurações > Notificações.",
+      pageBad: "Este link é inválido.",
+    },
+  },
+
   maintenance: {
     emergencyTitle: "Manutenção de emergência",
     plannedTitle: "Manutenção programada",

@@ -912,6 +912,8 @@ function registerSocketHandlers(io) {
             fromId: myId,
             from: me.username,
           });
+          // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
+          require("../lib/reengage").fire("onFriendRequest", { toUserId: target.id, fromId: myId, fromName: me.username });
         } catch (pushErr) {
           console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
         }
@@ -1477,6 +1479,10 @@ function registerSocketHandlers(io) {
                 messageId,
                 deepLink: `/?dm=${encodeURIComponent(myId)}`,
               });
+            }
+            // Re-engagement: a server invite link in the DM also gets an email fallback (lib/reengage.js).
+            if (text && /\/(?:servers\/join|invite\/s)\//i.test(String(text))) {
+              require("../lib/reengage").fire("onServerInviteDm", { toUserId, fromId: myId, fromName: me.username, text: String(text) });
             }
           }
         } catch (pushErr) {

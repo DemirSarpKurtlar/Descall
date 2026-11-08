@@ -133,6 +133,64 @@ module.exports = {
     messageRequestBody: "{from} t'a envoyé une demande de message",
   },
 
+  // Re-engagement (lib/reengage.js): friend-in-voice push, friend request / server invite
+  // fallback emails, day 3 / day 7 lifecycle emails and the unsubscribe page.
+  reengage: {
+    push: {
+      friendVoiceTitle: "{friend} est en vocal",
+      friendVoiceBody: "Dans {channel} sur {server}. Rejoins-le.",
+    },
+    email: {
+      hi: "Bonjour {name},",
+      openApp: "Ouvrir Descall",
+      unsubscribe: "Se désabonner de ces e-mails",
+      unsubscribeText: "Se désabonner :",
+      whyActivity: "Tu reçois cet e-mail parce que cela s'est produit pendant ton absence de Descall. Nous en envoyons au plus un par jour.",
+      whyLifecycle: "Tu reçois cet e-mail parce que tu t'es abonné aux e-mails produit de Descall.",
+      friendRequest: {
+        subject: "{from} t'a envoyé une demande d'ami sur Descall",
+        preheader: "Ouvre Descall pour l'accepter ou la refuser.",
+        eyebrow: "Demande d'ami",
+        title: "{from} veut devenir ton ami",
+        intro: "{from} t'a envoyé une demande d'ami sur Descall. Ouvre l'app pour l'accepter ou la refuser.",
+        cta: "Voir la demande",
+      },
+      serverInvite: {
+        subject: "{from} t'a invité sur {server}",
+        preheader: "Ton invitation pour {server} t'attend sur Descall.",
+        eyebrow: "Invitation au serveur",
+        title: "Tu es invité sur {server}",
+        intro: "{from} t'a envoyé une invitation au serveur {server} sur Descall.",
+        cta: "Voir l'invitation",
+      },
+      day3: {
+        subject: "{name}, tes amis t'attendent sur Descall",
+        preheader: "Deux façons rapides de commencer.",
+        eyebrow: "Premiers pas",
+        title: "Tes amis t'attendent",
+        intro: "Tu as rejoint Descall il y a quelques jours. C'est bien mieux avec des gens à qui parler. Deux façons rapides de commencer :",
+      },
+      day7: {
+        subject: "{name}, fais venir tes proches sur Descall",
+        preheader: "Descall, c'est mieux avec quelques amis.",
+        eyebrow: "Premiers pas",
+        title: "Fais venir tes proches sur Descall",
+        intro: "Cela fait une semaine que tu nous as rejoints. Descall, c'est mieux avec quelques amis. Voici deux façons simples de commencer :",
+        last: "C'est le dernier e-mail de conseils de ce type.",
+      },
+      tipInviteTitle: "Invite un ami",
+      tipInviteBody: "Envoie-lui ce lien. L'inscription prend une minute et il te trouve tout de suite.",
+      tipServersTitle: "Rejoins un serveur public",
+      tipServersBody: "Trouve une communauté autour d'un jeu ou d'un sujet que tu aimes et dis bonjour.",
+      tipServersCta: "Parcourir les serveurs",
+    },
+    unsubscribe: {
+      pageTitle: "Désabonnement confirmé",
+      pageBody: "Tu ne recevras plus ces e-mails de Descall. Tu peux les réactiver dans Paramètres > Notifications.",
+      pageBad: "Ce lien n'est pas valide.",
+    },
+  },
+
   maintenance: {
     emergencyTitle: "Maintenance d'urgence",
     plannedTitle: "Maintenance planifiée",

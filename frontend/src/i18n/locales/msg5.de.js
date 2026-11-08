@@ -27,4 +27,10 @@ export const MSG5_DE = {
     errAttachNotReady: "Planen mit Datei ist auf dem Server noch nicht aktiv. Entferne die Datei, um nur den Text zu planen.",
     errUpload: "Die Datei konnte nicht hochgeladen werden. Prüf deine Verbindung und versuch es noch einmal.",
   },
+  reengage: {
+    friendVoice: "Freund im Sprachkanal",
+    friendVoiceDesc: "Eine Benachrichtigung, wenn ein Freund einem Sprachkanal beitritt, dem du beitreten kannst, während du weg bist. Höchstens ein paar am Tag, nie nachts.",
+    email: "E-Mail-Benachrichtigungen",
+    emailDesc: "E-Mails zu verpassten Freundschaftsanfragen und Einladungen sowie ein paar Tipps für neue Konten.",
+  },
 };
