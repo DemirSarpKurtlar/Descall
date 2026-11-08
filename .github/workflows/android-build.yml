@@ -1,0 +1,306 @@
+# Builds the Capacitor Android app (com.descall.app) on a GitHub Linux runner: a release AAB
+# (Google Play) and a universal APK (one APK for every device; the app ships no native
+# libraries, so no ABI splits). Nothing is published unless the Play upload job is enabled.
+#
+# Signing (all four secrets, or none):
+#   ANDROID_KEYSTORE_BASE64   base64 of the upload keystore (.jks)
+#   ANDROID_KEYSTORE_PASSWORD keystore password
+#   ANDROID_KEY_ALIAS         key alias inside the keystore
+#   ANDROID_KEY_PASSWORD      key password
+# The keystore is written to RUNNER_TEMP with 600 permissions, referenced from a temporary
+# frontend/android/keystore.properties (git-ignored) and both are removed at the end.
+# Without the secrets the run still passes: it builds a debug-signed APK (installable for
+# testing) and an UNSIGNED release AAB (proves the R8 release build), never for distribution.
+#
+# Push: optional secret ANDROID_GOOGLE_SERVICES_JSON (the Firebase google-services.json text
+# for package com.descall.app). Without it the app builds and runs, push is just disabled
+# (src/lib/nativePush.js asks DescallPushConfigPlugin first).
+#
+# Play upload (job play-upload): off unless the repository variable PLAY_UPLOAD_ENABLED is
+# "true" and the build was signed. Secret PLAY_SERVICE_ACCOUNT_JSON (service account JSON key
+# with release rights on the app in Play Console). Uses .github/scripts/play_upload.py
+# (Google Play Developer API v3, edits -> bundles.upload -> tracks.update -> commit).
+# The very first AAB of a new app has to be uploaded by hand in Play Console.
+#
+# Versions: versionName = frontend/package.json version (the iOS MARKETING_VERSION too).
+# versionCode = UTC minutes since 2020-01-01, so every build is higher than the previous one
+# regardless of tag, re-run or manual dispatch (same idea as the iOS timestamp build number).
+#
+# Owner steps: docs/play-store/README.md.
+
+name: Android build
+
+on:
+  workflow_dispatch:
+    inputs:
+      play_track:
+        description: "Play track for the optional upload job (needs vars.PLAY_UPLOAD_ENABLED == 'true')"
+        type: choice
+        options: [internal, alpha]
+        default: internal
+      play_status:
+        description: "Release status on that track (draft is required while the app is not published yet)"
+        type: choice
+        options: [draft, completed]
+        default: draft
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build AAB and APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      signed: ${{ steps.signing.outputs.signed }}
+      version_name: ${{ steps.versions.outputs.version_name }}
+      version_code: ${{ steps.versions.outputs.version_code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install JDK 21 (Capacitor 8 / AGP 8.13)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Caches the Gradle wrapper distribution and dependencies between runs and validates
+      # the wrapper jar checksum.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        env:
+          # The Electron binary is a GitHub release download and the Android build does not
+          # need it (same as marketing-quality.yml).
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: |
+          # Registry/GitHub downloads sometimes answer 5xx for minutes; retry the install
+          # (same pattern as .github/scripts/backend-npm-ci.sh).
+          for i in 1 2 3; do
+            npm ci --no-audit --no-fund && exit 0
+            echo "npm ci failed (attempt $i), retrying in 20s"
+            sleep 20
+          done
+          exit 1
+
+      - name: Build web assets (same production build as iOS)
+        working-directory: frontend
+        # 3D world is desktop only: no engine bundle or world assets in the mobile apps.
+        env:
+          VITE_WORLD3D: "0"
+        run: npm run build:prod
+
+      - name: Sync Capacitor Android
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Versions
+        id: versions
+        run: |
+          set -euo pipefail
+          VERSION_NAME="$(node -p "require('./frontend/package.json').version")"
+          VERSION_CODE="$(( ($(date -u +%s) - 1577836800) / 60 ))"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME#v}" != "$VERSION_NAME" ]; then
+            echo "::warning::Tag ${GITHUB_REF_NAME} differs from package.json ($VERSION_NAME); using package.json."
+          fi
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Building Descall $VERSION_NAME ($VERSION_CODE)"
+
+      - name: Firebase config (optional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::notice::ANDROID_GOOGLE_SERVICES_JSON not set: building without Firebase (no native push)."
+            exit 0
+          fi
+          umask 077
+          printf '%s' "$GOOGLE_SERVICES_JSON" > frontend/android/app/google-services.json
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("frontend/android/app/google-services.json"))
+          names = [c.get("client_info", {}).get("android_client_info", {}).get("package_name") for c in data.get("client", [])]
+          if "com.descall.app" not in names:
+              print("::error::google-services.json has no client for com.descall.app")
+              sys.exit(1)
+          print("google-services.json OK for com.descall.app")
+          PY
+
+      - name: Signing config
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          present=0
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -n "${!name}" ]; then present=$((present + 1)); fi
+          done
+          if [ "$present" -eq 0 ]; then
+            echo "::notice::No ANDROID_KEYSTORE_* secrets: building a debug APK and an unsigned release AAB."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$present" -ne 4 ]; then
+            echo "::error::Set all four secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (or none)."
+            exit 1
+          fi
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/descall-upload.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          if ! keytool -list -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Keystore could not be opened with ANDROID_KEYSTORE_PASSWORD, or alias ANDROID_KEY_ALIAS is missing."
+            exit 1
+          fi
+          # Public certificate fingerprint only (for assetlinks.json / Play Console checks).
+          FP="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | awk '/SHA256:/ {print $2; exit}')"
+          echo "Upload key certificate SHA-256: $FP"
+          {
+            echo "storeFile=$KEYSTORE"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > frontend/android/keystore.properties
+          chmod 600 frontend/android/keystore.properties
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Gradle wrapper (download with retries)
+        working-directory: frontend/android
+        run: |
+          chmod +x gradlew
+          # services.gradle.org downloads sometimes fail; setup-gradle caches it after the first run.
+          for i in 1 2 3; do
+            ./gradlew --version && exit 0
+            echo "Gradle wrapper download failed (attempt $i), retrying in 20s"
+            sleep 20
+          done
+          exit 1
+
+      - name: Build
+        working-directory: frontend/android
+        env:
+          SIGNED: ${{ steps.signing.outputs.signed }}
+          VERSION_NAME: ${{ steps.versions.outputs.version_name }}
+          VERSION_CODE: ${{ steps.versions.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          tasks="bundleRelease"
+          if [ "$SIGNED" = "true" ]; then tasks="$tasks assembleRelease"; else tasks="$tasks assembleDebug"; fi
+          # Dependency downloads (Google Maven / Maven Central) are retried once on failure.
+          for i in 1 2; do
+            ./gradlew --no-daemon --stacktrace $tasks \
+              -PdescallVersionName="$VERSION_NAME" -PdescallVersionCode="$VERSION_CODE" && exit 0
+            echo "Gradle build failed (attempt $i)"
+            [ "$i" = 2 ] || sleep 30
+          done
+          exit 1
+
+      - name: Collect artifacts
+        env:
+          SIGNED: ${{ steps.signing.outputs.signed }}
+          VERSION_NAME: ${{ steps.versions.outputs.version_name }}
+          VERSION_CODE: ${{ steps.versions.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/android-out"
+          mkdir -p "$OUT"
+          BASE="frontend/android/app/build/outputs"
+          NAME="Descall-${VERSION_NAME}-${VERSION_CODE}"
+          if [ "$SIGNED" = "true" ]; then
+            cp "$BASE/bundle/release/app-release.aab" "$OUT/${NAME}-release.aab"
+            cp "$BASE/apk/release/app-release.apk" "$OUT/${NAME}-universal.apk"
+            APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+            "$APKSIGNER" verify --print-certs "$OUT/${NAME}-universal.apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+            jarsigner -verify "$OUT/${NAME}-release.aab" | tail -1
+          else
+            cp "$BASE/bundle/release/app-release.aab" "$OUT/${NAME}-release-UNSIGNED.aab"
+            cp "$BASE/apk/debug/app-debug.apk" "$OUT/${NAME}-debug.apk"
+          fi
+          ( cd "$OUT" && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt )
+          echo "ARTIFACT_DIR=$OUT" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=descall-android-${VERSION_NAME}-${VERSION_CODE}" >> "$GITHUB_ENV"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_DIR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/descall-upload.jks" frontend/android/keystore.properties frontend/android/app/google-services.json
+
+  play-upload:
+    name: Upload to Google Play (disabled by default)
+    needs: [build]
+    if: vars.PLAY_UPLOAD_ENABLED == 'true' && needs.build.outputs.signed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: descall-android-${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.version_code }}
+          path: ${{ runner.temp }}/android-out
+
+      - name: Install Google auth library
+        run: |
+          for i in 1 2 3; do
+            python3 -m pip install --quiet --disable-pip-version-check "google-auth==2.40.3" "requests==2.32.4" && exit 0
+            echo "pip install failed (attempt $i), retrying in 15s"
+            sleep 15
+          done
+          exit 1
+
+      - name: Upload AAB
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ inputs.play_track || 'internal' }}
+          PLAY_STATUS: ${{ inputs.play_status || 'draft' }}
+          RELEASE_NAME: ${{ needs.build.outputs.version_name }} (${{ needs.build.outputs.version_code }})
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_UPLOAD_ENABLED is true but the PLAY_SERVICE_ACCOUNT_JSON secret is missing."
+            exit 1
+          fi
+          AAB="$(ls "$RUNNER_TEMP"/android-out/*-release.aab)"
+          python3 .github/scripts/play_upload.py \
+            --package com.descall.app \
+            --aab "$AAB" \
+            --track "$PLAY_TRACK" \
+            --status "$PLAY_STATUS" \
+            --release-name "$RELEASE_NAME"

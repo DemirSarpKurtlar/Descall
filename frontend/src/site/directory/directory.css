@@ -1,0 +1,221 @@
+/* Public server directory pages (src/site/pages/DirectoryPage.jsx, item 8).
+   Marketing tokens (--mkt-*) for colour, type scale tokens for size. The prerendered
+   shell uses the landing classes of index.html (seo-lhero, seo-lsec, seo-lrelated). */
+
+.mkt-dir .seo-hero {
+  margin-bottom: 20px;
+}
+.mkt-dir-twin {
+  margin: 0;
+  font-size: var(--fs-13);
+}
+.mkt-dir-twin a {
+  color: var(--mkt-accent);
+}
+
+.mkt-dir-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 28px;
+}
+.mkt-dir-topics a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--mkt-border);
+  color: var(--mkt-text);
+  text-decoration: none;
+  font-size: var(--fs-13);
+  background: rgba(255, 255, 255, 0.03);
+}
+.mkt-dir-topics a:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.mkt-dir-topics a.is-on {
+  border-color: transparent;
+  background: var(--mkt-accent);
+  color: #0b0d14;
+}
+.mkt-dir-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: var(--fs-11);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.mkt-dir-topics a.is-on .mkt-dir-count {
+  background: rgba(11, 13, 20, 0.16);
+}
+
+.mkt-dir-list-wrap {
+  margin-bottom: 40px;
+}
+.mkt-dir-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mkt-dir-bar h2 {
+  margin: 0;
+  font-family: var(--mkt-font-display);
+  font-size: var(--fs-20);
+  letter-spacing: -0.02em;
+}
+.mkt-dir-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.mkt-dir-search input,
+.mkt-dir-sort select {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--mkt-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--mkt-text);
+  font: inherit;
+  font-size: var(--fs-13);
+}
+.mkt-dir-search input {
+  width: min(260px, 70vw);
+}
+.mkt-dir-search input:focus,
+.mkt-dir-sort select:focus {
+  outline: 2px solid var(--mkt-accent);
+  outline-offset: 1px;
+}
+.mkt-dir-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mkt-muted);
+  font-size: var(--fs-13);
+}
+.mkt-dir-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mkt-dir-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: 12px;
+}
+.mkt-dir-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 14px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--mkt-border);
+  background: var(--mkt-surface);
+  scroll-margin-top: 96px;
+}
+.mkt-dir-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-md);
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.06);
+}
+.mkt-dir-icon.is-letter {
+  display: grid;
+  place-items: center;
+  font-family: var(--mkt-font-display);
+  font-size: var(--fs-20);
+  font-weight: 700;
+  color: var(--mkt-text);
+  background: linear-gradient(135deg, rgba(42, 212, 184, 0.28), rgba(88, 122, 245, 0.28));
+}
+.mkt-dir-copy {
+  min-width: 0;
+}
+.mkt-dir-copy h3 {
+  margin: 0 0 4px;
+  font-size: var(--fs-17);
+  overflow-wrap: anywhere;
+}
+.mkt-dir-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 6px;
+  color: var(--mkt-muted);
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+}
+.mkt-dir-meta .is-online {
+  color: var(--mkt-accent-2);
+}
+.mkt-dir-desc {
+  margin: 0 0 6px;
+  color: var(--mkt-muted);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.mkt-dir-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.mkt-dir-tags span {
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mkt-muted);
+  font-size: var(--fs-11);
+}
+.mkt-dir-join {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.mkt-dir-empty {
+  padding: 28px 20px;
+  border-radius: var(--r-lg);
+  border: 1px dashed var(--mkt-border);
+  color: var(--mkt-muted);
+  font-size: var(--fs-15);
+  line-height: 1.55;
+}
+.mkt-dir-empty h3 {
+  margin: 0 0 6px;
+  color: var(--mkt-text);
+  font-size: var(--fs-17);
+}
+.mkt-dir-empty p {
+  margin: 0;
+}
+.mkt-dir-error {
+  margin: 0 0 12px;
+  color: #ff8a8a;
+  font-size: var(--fs-13);
+}
+.mkt-dir-how {
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-dir-topics a {
+    transition: none;
+  }
+}

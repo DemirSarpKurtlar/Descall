@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import GlassConfirm from "../ui/GlassConfirm";
@@ -33,6 +33,7 @@ import ServerRolesModal from "./ServerRolesModal";
 import EmptyState from "../ui/EmptyState";
 import ServerInviteModal from "./ServerInviteModal";
 import JoinServerModal from "./JoinServerModal";
+import DirectorySuggestCard from "./DirectorySuggestCard";
 import ServerModerationModal from "./ServerModerationModal";
 import ChannelPermissionsModal from "./ChannelPermissionsModal";
 import ServerCommunityModal from "./ServerCommunityModal";
@@ -47,6 +48,9 @@ import PullToRefresh from "../ui/PullToRefresh";
 import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
 import { isServerMuted, subscribeServerMutes } from "./hub/serverMute";
+
+// Public server directory inside the app (item 8), loaded when first opened.
+const DirectoryDiscoverModal = lazy(() => import("./DirectoryDiscoverModal"));
 
 const TEMPLATE_ICONS = {
   Gamepad2,
@@ -111,6 +115,7 @@ export default function ServersSidebar({
   const { toast } = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [showDiscover, setShowDiscover] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -946,6 +951,7 @@ export default function ServersSidebar({
             onClick: () => canCreate && setShowCreate(true),
           },
           { id: "join", icon: LogIn, label: t("Join Server"), onClick: () => setShowJoin(true) },
+          { id: "discover", icon: Compass, label: t("dir.discover.entry"), onClick: () => setShowDiscover(true) },
           { id: "folder", icon: FolderPlus, label: t("New folder"), onClick: handleCreateFolder },
           { id: "sep", sep: true },
           {
@@ -1788,6 +1794,14 @@ export default function ServersSidebar({
               <button
                 type="button"
                 className="icon-btn"
+                title={t("dir.discover.entry")} aria-label={t("dir.discover.entry")}
+                onClick={() => setShowDiscover(true)}
+              >
+                <Compass size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
                 title={t("Join Server")} aria-label={t("Join Server")}
                 onClick={() => setShowJoin(true)}
               >
@@ -1853,6 +1867,7 @@ export default function ServersSidebar({
               primary={{ label: t("Try again"), icon: RefreshCw, action: () => onRefresh?.() }}
             />
           ) : servers.length === 0 ? (
+            <>
             <EmptyState
               className="is-compact server-list-state"
               illustration="none"
@@ -1862,6 +1877,9 @@ export default function ServersSidebar({
               primary={canCreate ? { label: t("Create server"), icon: Plus, action: () => setShowCreate(true) } : undefined}
               secondary={{ label: t("Join Server"), icon: LogIn, action: () => setShowJoin(true) }}
             />
+            {/* Item 8: brand-new users with no server get one non-blocking nudge to Discover. */}
+            <DirectorySuggestCard onDiscover={() => setShowDiscover(true)} />
+            </>
           ) : (
             <div className="server-list-grouped">
               {groupedServers.folders.map((folder) => {
@@ -1967,6 +1985,18 @@ export default function ServersSidebar({
               setShowJoin(false);
             }}
           />
+        )}
+        {showDiscover && (
+          <Suspense key="discover" fallback={null}>
+            <DirectoryDiscoverModal
+              myServers={servers}
+              onClose={() => setShowDiscover(false)}
+              onJoined={(server) => {
+                onJoinServer?.(server);
+                setShowDiscover(false);
+              }}
+            />
+          </Suspense>
         )}
         {serverIconCropSrc ? (
           <ImageCropModal

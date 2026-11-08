@@ -34,7 +34,7 @@ export default function FaqPage() {
               <h2>{t(group.title)}</h2>
               <div className="mkt-faq">
                 {group.items.map((item) => (
-                  <details key={item.q}>
+                  <details key={item.q} open={group.open || undefined}>
                     <summary>{t(item.q)}</summary>
                     <p>{t(item.a)}</p>
                   </details>

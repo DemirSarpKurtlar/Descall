@@ -14,6 +14,7 @@ import {
   stripPrefixedLocale,
   withLocalePrefix,
 } from "./siteLocales.js";
+import { directoryTwinPath } from "./directory/directoryPaths.js";
 
 export const TR_LOCALE_PREFIX = "/tr";
 
@@ -173,6 +174,12 @@ export function localizedPathFor(pathname = "/", locale = "en", { locales = SITE
  * long-standing behaviour). Prefixed locales: their twin, else their home page.
  */
 export function destinationForLocale(pathname = "/", locale = "en", { locales = SITE_LOCALES, pageDrafts } = {}) {
+  // Server directory pages (item 8) exist in English and Turkish; they are not hreflang
+  // translations (different server lists) but the picker still lands on the same topic.
+  if (locale === "en" || locale === "tr") {
+    const twin = directoryTwinPath(pathname, locale);
+    if (twin) return twin;
+  }
   if (locale === "tr") {
     return localizedPathFor(pathname, "tr", { locales }) || englishPathFor(pathname, { locales }) || "/tr";
   }

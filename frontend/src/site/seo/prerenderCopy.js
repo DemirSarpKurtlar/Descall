@@ -415,7 +415,7 @@ function footerItem(href, label) {
 export const TR_HUB_LINKS = [
   ["/tr/discord-acildi-mi", "Discord açıldı mı?"],
   ["/tr/discord-alternatifleri", "Discord alternatifleri"],
-  ["/tr/turk-discord", "Türk sohbet uygulaması"],
+  ["/tr/turk-sohbet-uygulamasi", "Türk sohbet uygulaması"],
   ["/tr/discord-yerine-ne-kullanilir", "Discord yerine ne kullanılır?"],
   ["/tr/sesli-sohbet-uygulamasi", "Sesli sohbet uygulaması"],
   ["/tr/oyuncu-sohbet-uygulamasi", "Oyuncu sohbet uygulaması"],

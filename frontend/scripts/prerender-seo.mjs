@@ -17,6 +17,7 @@ const indexPath = path.join(distDir, "index.html");
 const SITE = "https://descall.com";
 
 const { ogImageFor } = await import(pathToFileURL(path.join(root, "src/site/ogImages.js")).href);
+const { SMART_APP_BANNER_META } = await import(pathToFileURL(path.join(root, "src/site/appStoreLink.js")).href);
 const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG, GAMER_FAQ } = await import(
@@ -62,6 +63,17 @@ const { SITE_OPERATOR } = await import(pathToFileURL(path.join(root, "src/site/s
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { formatDate } = await import(pathToFileURL(path.join(root, "src/i18n/format.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
+const { loadDirectoryData, emptyDirectoryData, writeDirectoryManifest, directoryBodyHtml, directoryJsonLd } = await import(
+  pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href
+);
+
+/** Public server directory (item 8): build-time data and the category pages left noindex. */
+let directoryData = null;
+let directoryThin = new Set();
+function currentDirectoryData() {
+  if (!directoryData) directoryData = emptyDirectoryData("fallback");
+  return directoryData;
+}
 
 /** "2026-08-11" in the page language, same rule as useMirrorCopy.js (Intl, UTC). */
 function formatPostDate(iso, loc) {
@@ -401,6 +413,9 @@ function crawlBody(route) {
 }
 
 function crawlBodyInner(route) {
+  if (route.directory) {
+    return directoryBodyHtml(route, currentDirectoryData(), { landingHeroHtml, seoSiteNav, brand: seoBrand() });
+  }
   const isTr = routeIsTr(route);
   const loc = routeLocale(route);
   const n = navLabels(loc);
@@ -662,6 +677,10 @@ function localizedJsonLd(route) {
 function jsonLdForRoute(route) {
   if (route.locale) return localizedJsonLd(route);
   const graphs = [buildEntityGraphLd()];
+  if (route.directory) {
+    graphs.push(...directoryJsonLd(route, currentDirectoryData(), buildBreadcrumbLd));
+    return graphs;
+  }
 
   // SoftwareApplication already lives in the entity @graph (same @id) on every
   // page; a second standalone copy was a duplicate.
@@ -850,6 +869,7 @@ function stripStaleHeadSeo(html) {
     .replace(/<meta\s+name="description"[^>]*>\s*/gi, "")
     .replace(/<meta\s+name="keywords"[^>]*>\s*/gi, "")
     .replace(/<meta\s+name="robots"[^>]*>\s*/gi, "")
+    .replace(/<meta\s+name="apple-itunes-app"[^>]*>\s*/gi, "")
     .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, "")
     .replace(/<link\s+rel="alternate"[^>]*hreflang="[^"]*"[^>]*>\s*/gi, "")
     .replace(/<meta\s+property="og:[^"]*"[^>]*>\s*/gi, "")
@@ -916,7 +936,12 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     siteCatalogPreload(route),
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
-    `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
+    // Directory category pages with fewer than 3 listed servers stay out of the index.
+    directoryThin.has(route.path)
+      ? `<meta name="robots" content="noindex,follow" />`
+      : `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
+    // iOS Smart App Banner: every marketing shell this list emits (thin directory pages included).
+    SMART_APP_BANNER_META,
     `<meta name="author" content="Demir Sarp Kurtlar" />`,
     `<meta name="citation_author" content="Demir Sarp Kurtlar" />`,
     `<link rel="canonical" href="${url}" />`,
@@ -1020,10 +1045,14 @@ async function main() {
   const base = fs.readFileSync(indexPath, "utf8");
   shellFonts = interFontFaceCss();
   if (!shellFonts.style) console.warn("[prerender-seo] Inter woff2 files not found in dist/assets: the shell paints in the system font");
+  directoryData = await loadDirectoryData();
+  directoryThin = new Set(directoryData.thin);
   const routes = PUBLIC_ROUTES.filter((r) => !r.noindex);
   for (const route of routes) {
     writeRoute(route, base);
   }
+  const manifest = writeDirectoryManifest(distDir, directoryData);
+  console.log(`[prerender-seo] directory: ${manifest.source}, ${manifest.thin.length} category pages noindex (dist/directory-manifest.json)`);
   console.log(`[prerender-seo] wrote ${routes.length} SEO shells with crawlable HTML`);
 }
 

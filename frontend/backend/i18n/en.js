@@ -138,6 +138,64 @@ module.exports = {
     messageRequestBody: "{from} sent you a message request",
   },
 
+  // Re-engagement (lib/reengage.js): friend-in-voice push, friend request / server invite
+  // fallback emails, day 3 / day 7 lifecycle emails and the unsubscribe page.
+  reengage: {
+    push: {
+      friendVoiceTitle: "{friend} is in voice",
+      friendVoiceBody: "In {channel} on {server}. Join them.",
+    },
+    email: {
+      hi: "Hi {name},",
+      openApp: "Open Descall",
+      unsubscribe: "Unsubscribe from these emails",
+      unsubscribeText: "Unsubscribe:",
+      whyActivity: "You got this email because this happened while you were away from Descall. We send at most one of these a day.",
+      whyLifecycle: "You got this email because you signed up for Descall product emails.",
+      friendRequest: {
+        subject: "{from} sent you a friend request on Descall",
+        preheader: "Open Descall to accept or decline it.",
+        eyebrow: "Friend request",
+        title: "{from} wants to be friends",
+        intro: "{from} sent you a friend request on Descall. Open the app to accept or decline it.",
+        cta: "See the request",
+      },
+      serverInvite: {
+        subject: "{from} invited you to {server}",
+        preheader: "Your invite to {server} is waiting on Descall.",
+        eyebrow: "Server invite",
+        title: "You are invited to {server}",
+        intro: "{from} sent you an invite to the {server} server on Descall.",
+        cta: "View the invite",
+      },
+      day3: {
+        subject: "{name}, your friends are waiting on Descall",
+        preheader: "Two quick ways to get started.",
+        eyebrow: "Getting started",
+        title: "Your friends are waiting",
+        intro: "You joined Descall a few days ago. It gets much better with people to talk to. Two quick ways to start:",
+      },
+      day7: {
+        subject: "{name}, bring your people to Descall",
+        preheader: "Descall is best with a few friends.",
+        eyebrow: "Getting started",
+        title: "Bring your people to Descall",
+        intro: "It has been a week since you joined. Descall is best with a few friends. Here are two easy ways to begin:",
+        last: "This is the last tip email of this kind.",
+      },
+      tipInviteTitle: "Invite a friend",
+      tipInviteBody: "Send them this link. They can sign up in a minute and find you right away.",
+      tipServersTitle: "Join a public server",
+      tipServersBody: "Find a community around a game or topic you like and say hi.",
+      tipServersCta: "Browse servers",
+    },
+    unsubscribe: {
+      pageTitle: "Unsubscribed",
+      pageBody: "You will not get these emails from Descall any more. You can turn them back on in Settings > Notifications.",
+      pageBad: "This link is invalid.",
+    },
+  },
+
   // Default titles of maintenance windows (lib/maintenance.js).
   maintenance: {
     emergencyTitle: "Emergency maintenance",

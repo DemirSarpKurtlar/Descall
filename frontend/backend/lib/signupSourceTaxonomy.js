@@ -166,6 +166,8 @@ function siteDetail(host) {
 function inviteFromPath(path) {
   const p = String(path || "");
   if (/^\/(servers\/join|invite\/s)\/[A-Za-z0-9_-]+/i.test(p) || /[?&]si=[A-Za-z0-9_-]+/.test(p)) return "server_invite";
+  // Server vanity links (/s/:slug, rewritten to /?sv=:slug by the app).
+  if (/^\/s\/[a-z0-9][a-z0-9-]{2,31}\/?(?:[?#]|$)/i.test(p) || /[?&]sv=[a-z0-9][a-z0-9-]{2,31}/i.test(p)) return "server_invite";
   if (/^\/(invite|i)\/[A-Za-z0-9_-]+/i.test(p) || /[?&](invite|i)=[A-Za-z0-9_-]+/.test(p)) return "group_invite";
   if (/[?&](ref|inviteBy)=[A-Za-z0-9_.-]{2,24}/.test(p)) return "friend_invite";
   if (/[?&](code|referral|promo)=[A-Za-z0-9_-]{3,}/i.test(p)) return "referral_code";
@@ -395,9 +397,12 @@ function aggregateSourceBreakdown(rows = []) {
   };
 }
 
-/** New nullable users columns written at signup. */
-function buildSignupSourceColumns({ snapshot = {}, invitedBy, userAgent } = {}) {
-  const platform = resolvePlatform({ clientPlatform: snapshot.client_platform, userAgent });
+/**
+ * New nullable users columns written at signup. `clientPlatform` is the hint the app
+ * sends with the sign-up request (it wins over an older first-touch snapshot's).
+ */
+function buildSignupSourceColumns({ snapshot = {}, invitedBy, userAgent, clientPlatform } = {}) {
+  const platform = resolvePlatform({ clientPlatform: clientPlatform || snapshot.client_platform, userAgent });
   const hasSnapshot = Boolean(snapshot && (snapshot.landing_page || snapshot.landing_path || snapshot.captured_at));
   const c = classifySignupSource({ ...snapshot, invitedBy, platform, has_snapshot: hasSnapshot });
   return {

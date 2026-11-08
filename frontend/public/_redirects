@@ -19,6 +19,8 @@
 /discord-alternative-turkey /tr/discord-alternatifi 301
 /tr/discord-alternative /tr/discord-alternatifi 301
 /tr/contact /iletisim 301
+# Own-brand Turkish URL (SEO audit item 9, Nov 2026): the old slug used the Discord name.
+/tr/turk-discord /tr/turk-sohbet-uygulamasi 301
 
 # Owner pages (kept in sync with vercel.json and _worker.js).
 /founder /who-owns-descall 301

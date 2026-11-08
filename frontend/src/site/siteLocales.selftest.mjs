@@ -56,15 +56,23 @@ assert.equal(sl.SITE_MIRROR_PATHS.length, 15);
 // --- page groups (blog, niche landings) -------------------------------------------------
 const content = await imp("src/site/content/discordSeoContent.js");
 const { NICHE_LANDINGS } = await imp("src/site/seo/nicheLandings.js");
-assert.deepEqual(sl.SITE_PAGE_GROUPS.blog, ["/blog", ...content.BLOG_POSTS.map((p) => p.path)], "blog group = index + BLOG_POSTS");
+// The blog is split in two groups: "blog" (served in every language) and "guides" (the
+// Nov 8 2026 posts, staged until their translation lands); together they are BLOG_POSTS.
+assert.deepEqual(
+  [...sl.SITE_PAGE_GROUPS.blog, ...sl.SITE_PAGE_GROUPS.guides].sort(),
+  ["/blog", ...content.BLOG_POSTS.map((p) => p.path)].sort(),
+  "blog + guides groups = index + BLOG_POSTS"
+);
 assert.deepEqual(
   [...sl.SITE_PAGE_GROUPS.niche].sort(),
   ["/best-discord-alternative-for-gamers", ...Object.keys(NICHE_LANDINGS)].sort(),
   "niche group = gamers + NICHE_LANDINGS"
 );
 assert.equal(new Set(sl.ALL_MIRROR_PATHS).size, sl.ALL_MIRROR_PATHS.length, "no page in two lists");
-// Every English page in PUBLIC_ROUTES is mirrored (Turkish pages excepted).
-const enRoutes = seo.PUBLIC_ROUTES.filter((r) => !r.locale && r.lang !== "tr" && !r.path.startsWith("/tr"));
+// Every English page in PUBLIC_ROUTES is mirrored (Turkish pages excepted). The server
+// directory (item 8, /communities) is English and Turkish only on purpose: its pages list
+// servers by language, see src/site/directory/directoryPaths.js.
+const enRoutes = seo.PUBLIC_ROUTES.filter((r) => !r.locale && r.lang !== "tr" && !r.path.startsWith("/tr") && !r.directory);
 for (const r of enRoutes) assert.ok(sl.ALL_MIRROR_PATHS.includes(r.path), `${r.path} has no prefixed twin`);
 for (const [group, ids] of Object.entries(SITE_DRAFT_PAGE_GROUPS)) {
   assert.ok(sl.SITE_PAGE_GROUPS[group], `SITE_DRAFT_PAGE_GROUPS names an unknown group: ${group}`);
@@ -82,8 +90,8 @@ assert.deepEqual(sl.mirrorPathsFor("de", { pageDrafts: STAGED }), sl.SITE_MIRROR
 assert.deepEqual(sl.mirrorPathsFor("de", { pageDrafts: GROUPS_LIVE }), sl.ALL_MIRROR_PATHS);
 assert.deepEqual(
   sl.mirrorPathsFor("de", { pageDrafts: { blog: ["de"] } }),
-  [...sl.SITE_MIRROR_PATHS, ...sl.SITE_PAGE_GROUPS.niche],
-  "one group staged, the other served"
+  [...sl.SITE_MIRROR_PATHS, ...sl.SITE_PAGE_GROUPS.guides, ...sl.SITE_PAGE_GROUPS.niche],
+  "one group staged, the others served"
 );
 sl.setPageGroupPreview(true);
 assert.equal(sl.isMirrorPath("/blog", "de", { pageDrafts: STAGED }), true, "preview serves every group (tooling only)");

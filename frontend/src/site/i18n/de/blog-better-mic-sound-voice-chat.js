@@ -29,7 +29,6 @@ export default {
   "Turn down the loud friend, not the whole call": "Stell den lauten Freund leiser, nicht den ganzen Anruf",
   "Turn on noise suppression": "Schalte die Rauschunterdrückung ein",
   "Use push-to-talk in noisy rooms": "Nutze Push-to-Talk in lauten Räumen",
-  "What is free and what is extra": "Was kostenlos ist und was extra",
   "Why do my friends hear an echo of themselves?": "Warum hören meine Freunde ein Echo von sich selbst?",
   "Yes. It is in the voice settings for everyone and cuts keyboard, fan and other background noise. It cannot remove another person talking next to you.": "Ja. Sie steht allen in den Spracheinstellungen zur Verfügung und dämpft Tastatur, Lüfter und andere Hintergrundgeräusche. Eine andere Person, die neben dir spricht, kann sie nicht entfernen."
 };

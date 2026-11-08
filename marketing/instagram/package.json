@@ -1,0 +1,22 @@
+{
+  "name": "descall-instagram-reels",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Code-driven Instagram Reels pipeline for Descall: curated scripts, Playwright + ffmpeg renderer, Instagram Graph API publisher.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate": "node bin/validate.mjs",
+    "render": "node bin/render.mjs",
+    "daily": "node bin/daily.mjs",
+    "check-limit": "node bin/check-limit.mjs",
+    "refresh-token": "node bin/refresh-token.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:unit": "node --test test/validator.test.mjs test/picker.test.mjs test/caption.test.mjs test/graph.test.mjs test/storage.test.mjs test/daily.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

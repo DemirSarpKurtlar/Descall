@@ -384,6 +384,8 @@ app.post("/api/marketing/consent-event", (req, res, next) => {
 app.get(["/dimaai", "/dimaai/*"], (_req, res) => res.redirect(301, "/"));
 app.get(["/tr/dimaai", "/tr/dimaai/*"], (_req, res) => res.redirect(301, "/tr"));
 app.get(["/play", "/play/*", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"], (_req, res) => res.redirect(301, "/"));
+// Own-brand Turkish URL (Nov 2026): same 301 as public/_redirects, public/_worker.js and vercel.json.
+app.get("/tr/turk-discord", (_req, res) => res.redirect(301, "/tr/turk-sohbet-uygulamasi"));
 // Merged marketing pages (SEO audit, Nov 2026): same 301s as public/_redirects,
 // public/_worker.js and vercel.json. Source of truth: src/site/seo/mergedPages.js.
 const MERGED_PAGE_REDIRECTS = {
@@ -517,6 +519,8 @@ app.use("/api/reactions", reactionRoutes);
 app.use("/api/friends", friendsRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/servers", serverRoutes);
+// Public server directory (item 8): read-only cards, no auth; owner settings signed in.
+app.use("/api/directory", require("./routes/directory"));
 app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);
@@ -549,6 +553,10 @@ app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
 if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
 // Messaging phase 5: "Mesaj önizlemesi" for server-sent pushes (users.push_preview).
 app.use("/api/push-preview", require("./routes/pushPreview"));
+// Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
+// Everything is off until REENGAGE_ENABLED=1 (or REENGAGE_DRY_RUN=1 to only log).
+app.use("/api/reengage", require("./routes/reengage"));
+if (process.env.NODE_ENV !== "test") require("./lib/reengage").reengage().start();
 app.use("/reports", reportsRoutes);
 // Call recording was removed: uploads from old clients are refused and never stored.
 const voiceRecordingsGone = goneRouter("Call recording has been removed. Calls are not recorded.");

@@ -1,0 +1,4 @@
+Neu in dieser Version:
+• [Neuerung 1]
+• [Neuerung 2]
+• Fehlerbehebungen und Verbesserungen.

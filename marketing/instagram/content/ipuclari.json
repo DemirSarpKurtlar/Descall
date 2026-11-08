@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ipucu-klavye-kisayollari",
+    "theme": "ipuclari",
+    "title": "Mesajlaşma kısayolları",
+    "hook": { "lines": ["Fareye dokunmadan", "*sohbetler arasında gez*"] },
+    "scenes": [
+      {
+        "lines": ["Tüm kısayolların listesi", "*tek tuşta*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+/", "name": "Kısayolları göster" }] }
+      },
+      {
+        "lines": ["Sohbetler arasında", "*yukarı aşağı geç*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Alt+↑", "name": "Önceki sohbet" }, { "keys": "Alt+↓", "name": "Sonraki sohbet" }] }
+      },
+      {
+        "lines": ["Açık sohbette", "*mesaj ara*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+Shift+F", "name": "Sohbette ara" }] }
+      },
+      {
+        "lines": ["Kaçırdıklarına", "*tek tuşla dön*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Shift+PageUp", "name": "İlk okunmamış mesaja git" }] }
+      }
+    ],
+    "caption": "Descall'da klavyeden ayrılmadan: Ctrl+/ ile kısayol listesini aç, Alt+Yukarı ve Alt+Aşağı ile sohbetler arasında geç, Ctrl+Shift+F ile açık sohbette ara, Shift+PageUp ile ilk okunmamış mesaja git. Mac'te Ctrl yerine Cmd kullan.",
+    "hashtags": ["#descall", "#kısayol", "#ipucu", "#verimlilik"],
+    "sources": [
+      { "claim": "Ctrl+/ kısayol listesi", "file": "frontend/src/lib/shortcuts.js", "match": "id: \"help\", mod: true, key: \"/\"" },
+      { "claim": "Alt+Yukarı/Aşağı", "file": "frontend/src/lib/shortcuts.js", "match": "id: \"prevChat\", alt: true, key: \"ArrowUp\"[\\s\\S]*id: \"nextChat\", alt: true, key: \"ArrowDown\"" },
+      { "claim": "Ctrl+Shift+F sohbette ara", "file": "frontend/src/lib/shortcuts.js", "match": "id: \"search\", mod: true, shift: true, key: \"f\"" },
+      { "claim": "Shift+PageUp ilk okunmamış", "file": "frontend/src/lib/shortcuts.js", "match": "id: \"jumpUnread\", shift: true, key: \"PageUp\"" },
+      { "claim": "Türkçe etiketler", "file": "frontend/src/i18n/locales/msg4.tr.js", "match": "help: \"Kısayolları göster\",\\s*search: \"Sohbette ara\",\\s*prevChat: \"Önceki sohbet\",\\s*nextChat: \"Sonraki sohbet\"" },
+      { "claim": "İlk okunmamış mesaja git etiketi", "file": "frontend/src/i18n/locales/msg4.tr.js", "match": "jumpUnread: \"İlk okunmamış mesaja git\"" },
+      { "claim": "Mac'te Cmd", "file": "frontend/src/lib/shortcuts.js", "match": "mod = Ctrl on Windows/Linux, ⌘ on a Mac" }
+    ]
+  },
+  {
+    "id": "ipucu-ses-kisayollari",
+    "theme": "ipuclari",
+    "title": "Ses kısayolları",
+    "hook": { "lines": ["Arama sırasında", "*iki kısayolu bil*"] },
+    "scenes": [
+      {
+        "lines": ["Mikrofonunu", "*anında kapat, aç*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+Shift+M", "name": "Mikrofonu kapat / aç" }] }
+      },
+      {
+        "lines": ["Tüm sesi", "*bir anda kapat*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+Shift+D", "name": "Sesi kapat / aç" }] }
+      },
+      {
+        "lines": ["Yazılar küçük mü?", "*büyüt, küçült, sıfırla*"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl++", "name": "Büyüt" }, { "keys": "Ctrl+-", "name": "Küçült" }, { "keys": "Ctrl+0", "name": "Sıfırla" }] }
+      }
+    ],
+    "caption": "Aramadayken iki kısayol işini kolaylaştırır: Ctrl+Shift+M mikrofonunu kapatıp açar, Ctrl+Shift+D tüm sesi kapatıp açar. Yazılar küçük geliyorsa Ctrl ve + ile büyüt, Ctrl ve - ile küçült, Ctrl+0 ile sıfırla. Mac'te Ctrl yerine Cmd kullan.",
+    "hashtags": ["#descall", "#kısayol", "#ipucu", "#seslisohbet"],
+    "sources": [
+      { "claim": "Ctrl+Shift+M sessize alma, Ctrl+Shift+D sesi kapatma", "file": "frontend/src/lib/shortcuts.js", "match": "\\{ mod: true, shift: true, key: \"m\" \\}, // mute[\\s\\S]*\\{ mod: true, shift: true, key: \"d\" \\}, // deafen" },
+      { "claim": "Yakınlaştırma kısayolları", "file": "frontend/src/lib/shortcuts.js", "match": "\\{ mod: true, key: \"0\" \\}, \\{ mod: true, key: \"=\" \\}, \\{ mod: true, key: \"\\+\" \\}, \\{ mod: true, key: \"-\" \\}, // zoom / text size" },
+      { "claim": "Türkçe etiketler", "file": "frontend/src/i18n/locales/msg4.tr.js", "match": "mute: \"Mikrofonu kapat / aç\",\\s*deafen: \"Sesi kapat / aç\"" },
+      { "claim": "Yazı boyutu etiketleri", "file": "frontend/src/i18n/locales/msg4.tr.js", "match": "zoomReset: \"Yazı boyutunu sıfırla\"" }
+    ]
+  },
+  {
+    "id": "ipucu-taslak-iletme",
+    "theme": "ipuclari",
+    "title": "Taslaklar ve iletme",
+    "hook": { "lines": ["Yarım kalan mesajın", "*kaybolmaz*"] },
+    "scenes": [
+      {
+        "lines": ["Her sohbetin taslağı", "*ayrı saklanır*"],
+        "visual": { "type": "chips", "items": ["Taslak: yarın saat kaçta?"] }
+      },
+      {
+        "lines": ["Uygulamayı kapatsan da", "*taslak yerinde*"],
+        "visual": { "type": "checklist", "items": ["Sohbet değişince", "Sayfa yenilenince", "Uygulama kapanınca"] }
+      },
+      {
+        "lines": ["Bir mesajı", "*beş sohbete ilet*"],
+        "visual": { "type": "stat", "value": "5", "label": "Sohbete kadar iletme" }
+      }
+    ],
+    "caption": "Bir sohbette yazmaya başlayıp başka sohbete geçtin mi? Yarım kalan mesajın taslak olarak saklanır; sohbet listesinde \"Taslak:\" diye görünür. Sayfa yenilense ya da uygulama kapansa da taslak yerinde kalır.\n\nBir mesajı aynı anda en fazla 5 arkadaşa, gruba ya da kanala iletebilirsin; iletilen mesajda \"İletildi\" yazar.",
+    "hashtags": ["#descall", "#ipucu", "#mesajlaşma", "#verimlilik"],
+    "sources": [
+      { "claim": "Taslak sohbet değişince, yenilenince ve yeniden başlatınca kalır", "file": "frontend/src/lib/messageDrafts.js", "match": "unsent composer text survives a chat\\s*\\n?\\s*\\*?\\s*switch, a reload and an app restart, one draft per conversation" },
+      { "claim": "Taslak etiketi", "file": "frontend/src/i18n/locales/msg4.tr.js", "match": "label: \"Taslak:\"" },
+      { "claim": "En fazla 5 hedefe iletme", "file": "frontend/src/lib/forwardMessage.js", "match": "FORWARD_MAX_TARGETS = 5" },
+      { "claim": "İletildi etiketi", "file": "docs/release-notes/v3.7.39.md", "match": "İletilen mesajda \"İletildi\" yazıyor" }
+    ]
+  },
+  {
+    "id": "ipucu-bildirim-gorulmedi",
+    "theme": "ipuclari",
+    "title": "Sohbet başına bildirim ve Görüldü ayarı",
+    "hook": { "lines": ["Kalabalık grup", "*telefonunu susturmasın*"] },
+    "scenes": [
+      {
+        "lines": ["Her sohbet için", "*ayrı bildirim ayarı*"],
+        "visual": { "type": "chips", "items": ["Hepsi", "Sadece bahsetmeler", "Hiçbiri"] }
+      },
+      {
+        "lines": ["Ya da bir süreliğine", "*sessize al*"],
+        "visual": { "type": "chips", "items": ["1 saat", "8 saat", "1 gün", "1 hafta"] }
+      },
+      {
+        "lines": ["*Görüldü* bilgisini", "istersen kapat"],
+        "visual": { "type": "toggles", "items": ["Görüldü bilgisi"] }
+      }
+    ],
+    "caption": "Kalabalık bir grup sürekli bildirim mi gönderiyor? Her sohbet için bildirimi Hepsi, Sadece bahsetmeler ya da Hiçbiri olarak ayarlayabilir veya sohbeti 1 saatten 1 haftaya kadar sessize alabilirsin.\n\nAyarlar > Gizlilik'te Görüldü bilgisini kapatabilirsin; kapatınca sen de başkalarınınkini görmezsin.",
+    "hashtags": ["#descall", "#ipucu", "#bildirim", "#gizlilik"],
+    "sources": [
+      { "claim": "Sohbet başına bildirim ve sessize alma", "file": "docs/release-notes/v3.7.39.md", "match": "her sohbet için \"Hepsi / Sadece bahsetmeler / Hiçbiri\" ve 1 saat - 1 hafta sessize alma" },
+      { "claim": "Sessize alma süreleri 1 saat, 8 saat, 1 gün, 1 hafta", "file": "frontend/src/lib/notifyPrefs.js", "match": "id: \"1h\"[\\s\\S]*id: \"8h\"[\\s\\S]*id: \"24h\"[\\s\\S]*id: \"7d\"" },
+      { "claim": "Görüldü ayarı ve karşılıklılık", "file": "frontend/src/i18n/locales/msg4.tr.js", "match": "setting: \"Görüldü bilgisi\"" },
+      { "claim": "Kapatınca başkalarınınkini görmezsin", "file": "docs/release-notes/v3.7.39.md", "match": "Ayarlar > Gizlilik'ten kapatabilirsin; kapatınca sen de başkalarınınkini görmezsin" },
+      { "claim": "Sunucu tarafında uygulanır", "file": "frontend/src/lib/readReceipts.js", "match": "the server enforces it" }
+    ]
+  }
+]

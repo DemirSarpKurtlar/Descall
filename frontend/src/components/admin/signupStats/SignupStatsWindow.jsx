@@ -84,6 +84,18 @@ function Slotted({ text, slot }) {
 }
 const SLOT = "\u0001";
 
+// signup_attempts.reason_detail codes (backend lib/signupRules.js) and the older coarse reasons.
+const FAIL_KEYS = new Set([
+  "registration_closed", "access_banned", "terms_missing", "birth_date_invalid", "under_age",
+  "username_type", "username_short", "username_long", "username_chars", "username_reserved", "username_taken",
+  "password_type", "password_short", "password_long", "password_breached",
+  "email_missing", "email_invalid", "email_taken",
+  "validation", "conflict", "rate_limited", "error", "unknown",
+]);
+function failLabel(key, t) {
+  return t(`sgx.admin.fail.${FAIL_KEYS.has(key) ? key : "unknown"}`);
+}
+
 const isElectron = () => typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
 
 /** Electron desktop: open the real window. Returns false when the caller should show the in-app one. */
@@ -384,6 +396,54 @@ function StatsContent({ data, W, controls }) {
     </Card>
   );
 
+  // Sign-up measurement (20261111_signup_measurement.sql): which field stopped people,
+  // "How did you hear about us?" and invite attribution. Older backends send none.
+  const fails = data.failures;
+  const failCard = fails ? (
+    <Card title={t("sgx.admin.failTitle")} extra={<span className="mut">{cap}</span>}>
+      {fails.total ? (
+        <>
+          <div className="st-sub">{t("sgx.admin.failCount", { value: n(fails.total) })}</div>
+          <Bars rows={fails.rows.slice(0, 8).map((row) => ({ ...row, label: failLabel(row.key, t), color: "#FF6B6B" }))} total={fails.total} />
+          {fails.detailed < fails.total ? (
+            <div className="st-note">
+              <I n="bolt" s={13} w={2} />
+              <span>{t("sgx.admin.failLegacy")}</span>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <div className="st-sub">{t("sgx.admin.failEmpty")}</div>
+      )}
+    </Card>
+  ) : null;
+  const heard = data.heardAbout;
+  const heardCard = heard ? (
+    <Card title={t("sgx.admin.heardTitle")} extra={<span className="mut">{cap}</span>}>
+      {!heard.tracked ? (
+        <div className="st-sub">{t("sgx.admin.heardNotTracked")}</div>
+      ) : heard.answered ? (
+        <>
+          <div className="st-sub">{t("sgx.admin.heardCount", { answered: n(heard.answered), skipped: n(heard.skipped) })}</div>
+          <Bars rows={heard.rows.map((row) => ({ ...row, label: t(`sgx.heard.option.${row.key}`) }))} total={heard.answered} />
+        </>
+      ) : (
+        <div className="st-sub">{t("sgx.admin.heardEmpty")}</div>
+      )}
+    </Card>
+  ) : null;
+  const inv = data.invites;
+  const inviteCard = inv ? (
+    <Card title={t("sgx.admin.inviteTitle")} extra={<span className="mut">{cap}</span>}>
+      <div className="st-sub">{t("sgx.admin.inviteCount", { value: n(inv.total), total: n(inv.signups) })}</div>
+      <Bars
+        rows={["server", "vanity", "group", "friend"].map((key) => ({ key, label: t(`sgx.admin.invite.${key}`), count: inv.byKind?.[key] || 0, color: "#30D158" }))}
+        total={inv.signups}
+      />
+    </Card>
+  ) : null;
+  const measurement = failCard || heardCard || inviteCard;
+
   return (
     <div className={narrow ? "st-narrow" : ""}>
       <div className="st-hd">
@@ -416,6 +476,13 @@ function StatsContent({ data, W, controls }) {
             {ret}
             {ctry}
           </div>
+          {measurement ? (
+            <div className="st-grid" style={{ gridTemplateColumns: "1.25fr 1fr 1fr", marginTop: 12 }}>
+              {failCard}
+              {heardCard}
+              {inviteCard}
+            </div>
+          ) : null}
         </>
       ) : (
         <>
@@ -425,6 +492,9 @@ function StatsContent({ data, W, controls }) {
             {ret}
             {src}
             {ctry}
+            {failCard}
+            {heardCard}
+            {inviteCard}
           </div>
         </>
       )}

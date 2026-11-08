@@ -30,7 +30,14 @@ const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteTe
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
 await registerSiteCatalogs();
 // Prefixed site languages (/de/...) are checked with their translated title / description.
-const PUBLIC_ROUTES = seoConfig.PUBLIC_ROUTES.map((r) => seoConfig.localizeRouteMeta(r, siteText));
+// Server directory category pages that this build left noindex (fewer than 3 listed
+// servers, dist/directory-manifest.json) are checked as noindex pages outside the sitemap.
+const directoryThin = checkDist
+  ? new Set((await import(pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href)).readDirectoryThinPaths(path.join(root, "dist")))
+  : new Set();
+const PUBLIC_ROUTES = seoConfig.PUBLIC_ROUTES.map((r) => seoConfig.localizeRouteMeta(r, siteText)).map((r) =>
+  directoryThin.has(r.path) ? { ...r, noindex: true } : r
+);
 const { KEYWORD_STRATEGY } = await import(
   pathToFileURL(path.join(root, "src/site/seo/keywordStrategy.js")).href
 );
@@ -114,6 +121,9 @@ for (const route of PUBLIC_ROUTES) {
     if (!marketingApp.includes('path="/blog/:slug"')) fail("MarketingApp missing /blog/:slug");
     if (!BLOG_POSTS.some((p) => p.slug === slug)) fail(`Blog slug missing from BLOG_POSTS: ${slug}`);
     if (!BLOG_BODIES[slug]) fail(`Blog body missing: ${slug}`);
+  } else if (route.directory) {
+    // Server directory pages: one generated <Route> per path (directoryPagePaths()).
+    if (!marketingApp.includes("directoryPagePaths()") || !marketingApp.includes("DirectoryPage")) fail(`MarketingApp missing the directory routes (${route.path})`);
   } else if (NICHE_LANDINGS[route.path]) {
     if (!marketingApp.includes("DiscordAlternativeNichePage")) {
       fail("MarketingApp missing DiscordAlternativeNichePage");
@@ -222,6 +232,18 @@ if (!/discord alternative/i.test(pillar?.title || "")) {
   fail("/discord-alternative title should include the exact-match query");
 }
 
+// llms.txt / llms-full.txt (read by AI assistants): every descall.com page link is live,
+// never a redirect or a removed page.
+{
+  const { llmsFullTxt } = await import(pathToFileURL(path.join(root, "src/site/ownershipFacts.js")).href);
+  const FILES = new Set(["/", "/app", "/llms.txt", "/llms-full.txt"]);
+  const livePaths = new Set(PUBLIC_ROUTES.map((r) => r.path));
+  for (const [, p] of llmsFullTxt().matchAll(/https:\/\/descall\.com(\/[^\s),"]*)?/g)) {
+    const page = p || "/";
+    if (!FILES.has(page) && !livePaths.has(page)) fail(`llms.txt links ${page}, which is not a live page`);
+  }
+}
+
 const seoConfigSrc = fs.readFileSync(path.join(root, "src/site/seoConfig.js"), "utf8");
 if (!seoConfigSrc.includes("canonicalOrigin") || !seoConfigSrc.includes("https://descall.com")) {
   fail("seoConfig.js must pin canonicalOrigin to https://descall.com");
@@ -267,6 +289,17 @@ if (checkDist) {
       if (!robotsBody.includes("User-agent: GPTBot") || !robotsBody.includes("Allow: /llms.txt")) {
         fail("dist/robots.txt must allow GPTBot and /llms.txt");
       }
+      // Every AI assistant crawler is allowed, and its group (a named group replaces `*`)
+      // still closes the app paths.
+      for (const group of robotsBody.split(/\n\s*\n/)) {
+        if (!/^User-agent:/m.test(group) || /^User-agent: \*$/m.test(group)) continue;
+        if (!/^Allow: \/$/m.test(group) || !/^Disallow: \/app\/$/m.test(group) || !/^Disallow: \/api\/$/m.test(group)) {
+          fail(`dist/robots.txt: the group of ${group.match(/^User-agent: (.+)$/m)?.[1]} must allow / and disallow /app/ and /api/`);
+        }
+      }
+      for (const ua of ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "PerplexityBot", "ClaudeBot", "Google-Extended"]) {
+        if (!robotsBody.includes(`User-agent: ${ua}\n`)) fail(`dist/robots.txt must name ${ua}`);
+      }
 
       const indexXml = fs.readFileSync(path.join(dist, "sitemap.xml"), "utf8");
     if (!indexXml.includes("<sitemapindex")) {
@@ -279,6 +312,7 @@ if (checkDist) {
       const nf = fs.readFileSync(notFoundFile, "utf8");
       if (!/<meta name="robots" content="noindex/.test(nf)) fail("dist/404.html must be noindex");
       if (/rel="canonical"/.test(nf)) fail("dist/404.html must not carry a canonical");
+      if (/apple-itunes-app/.test(nf)) fail("dist/404.html must not carry the Smart App Banner");
     }
     // One child sitemap per site language, every page in exactly one of them.
     const seenInLang = new Map();
@@ -317,6 +351,10 @@ if (checkDist) {
     const pagesXml = fs.readFileSync(path.join(dist, "sitemap-pages.xml"), "utf8");
     for (const route of PUBLIC_ROUTES) {
       const loc = route.path === "/" ? "https://descall.com/" : `https://descall.com${route.path}`;
+      if (route.noindex) {
+        if (pagesXml.includes(`<loc>${loc}</loc>`)) fail(`sitemap-pages.xml lists the noindex page ${loc}`);
+        continue;
+      }
       if (!pagesXml.includes(`<loc>${loc}</loc>`)) {
         fail(`sitemap-pages.xml missing ${loc}`);
       }
@@ -338,6 +376,11 @@ if (checkDist) {
       if (!html.includes("<title>")) fail(`No <title> in ${rel}`);
       if (!html.includes('rel="canonical"')) fail(`No canonical in ${rel}`);
       if (!html.includes("<h1")) fail(`No <h1> crawl content in ${rel}`);
+      // iOS Smart App Banner on every indexable marketing page, exactly once, App Store id only.
+      const banners = [...html.matchAll(/<meta name="apple-itunes-app" content="([^"]*)"/g)];
+      if (banners.length !== 1 || banners[0][1] !== "app-id=6820558264") {
+        fail(`Smart App Banner (apple-itunes-app app-id=6820558264) missing or repeated in ${rel}`);
+      }
       // Visible text only: loading="lazy" on an image is not a placeholder.
       const visibleText = html
         .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -404,6 +447,7 @@ if (checkDist) {
       }
       // noindex should not appear on indexable shells
       if (/noindex/i.test(html) && !route.noindex) fail(`noindex found on indexable shell ${rel}`);
+      if (route.noindex && !/<meta name="robots" content="noindex/.test(html)) fail(`noindex page without a robots noindex meta: ${rel}`);
       const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
       if (h1Count !== 1) warn(`Expected 1 H1 in ${rel}, found ${h1Count}`);
     }

@@ -1,6 +1,8 @@
 import { API_ROUTES } from "../config/api";
 import { httpRequest } from "./http";
 import { peekAttribution } from "../lib/attribution";
+import { pendingSignupInvite } from "../lib/serverInviteRoute";
+import { withSignupContext } from "../lib/signupContext";
 
 function withAttribution(payload = {}) {
   if (payload?.attribution) return payload;
@@ -9,10 +11,25 @@ function withAttribution(payload = {}) {
   return { ...payload, attribution };
 }
 
+/**
+ * The invite landing the visitor signed up from (pending slot in local + session storage,
+ * so it survives Google / Apple redirects). The backend only uses it for a new account.
+ */
+function withSignupInvite(payload = {}) {
+  if (payload?.signupInvite) return payload;
+  let signupInvite = null;
+  try {
+    signupInvite = pendingSignupInvite();
+  } catch {
+    signupInvite = null;
+  }
+  return signupInvite ? { ...payload, signupInvite } : payload;
+}
+
 export function register(payload) {
   return httpRequest(API_ROUTES.register, {
     method: "POST",
-    body: JSON.stringify(withAttribution(payload || {})),
+    body: JSON.stringify(withSignupContext(withSignupInvite(withAttribution(payload || {})))),
   });
 }
 
@@ -40,26 +57,26 @@ export function isSocialSignupRequired(error) {
 }
 
 export function loginWithGoogle(credential, extra = {}) {
-  const payload = withAttribution({ credential });
+  const payload = withSignupInvite(withAttribution({ credential }));
   if (extra?.invitedBy) payload.invitedBy = extra.invitedBy;
   if (extra?.termsAccepted) payload.termsAccepted = true;
   if (extra?.birthDate) payload.birthDate = extra.birthDate;
   if (extra?.attribution) payload.attribution = extra.attribution;
   return httpRequest(API_ROUTES.google, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withSignupContext(payload)),
   });
 }
 
 /** Sign in with Apple (native iOS). `apple` is the AppleSignIn plugin result plus the raw nonce. */
 export function loginWithApple(apple, extra = {}) {
-  const payload = withAttribution({
+  const payload = withSignupInvite(withAttribution({
     identityToken: apple?.identityToken,
     authorizationCode: apple?.authorizationCode || undefined,
     givenName: apple?.givenName || undefined,
     familyName: apple?.familyName || undefined,
     nonce: apple?.nonce || undefined,
-  });
+  }));
   if (extra?.invitedBy) payload.invitedBy = extra.invitedBy;
   if (extra?.termsAccepted) payload.termsAccepted = true;
   if (extra?.birthDate) payload.birthDate = extra.birthDate;
@@ -68,7 +85,7 @@ export function loginWithApple(apple, extra = {}) {
   if (extra?.username) payload.username = extra.username;
   return httpRequest(API_ROUTES.apple, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withSignupContext(payload)),
   });
 }
 
@@ -130,6 +147,15 @@ export function changeUsername(token, { username, password }) {
 }
 
 /** Sign-up username step: { available, error?, suggestions? } (public, no account yet). */
+/** POST /auth/heard-about: the optional "How did you hear about us?" answer (or "skipped"). */
+export function sendHeardAbout(token, answer) {
+  return httpRequest("/auth/heard-about", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ answer }),
+  });
+}
+
 export function checkSignupUsername(username) {
   return httpRequest(`/auth/username/check?username=${encodeURIComponent(username)}`, { method: "GET" });
 }

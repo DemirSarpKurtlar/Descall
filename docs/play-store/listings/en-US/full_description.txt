@@ -1,0 +1,41 @@
+Descall is a chat and calling app for talking with your friends, your squad and your communities. From one-on-one messages to busy group calls and servers, all your conversations live in one place.
+
+MESSAGING
+• Private one-on-one messages and group chats with friends
+• Share photos, videos, files, GIFs and emoji
+• Record and send voice messages
+• React with emoji, reply to, edit and pin messages
+• Search messages within a chat
+• Push notifications for new messages and calls
+
+VOICE AND VIDEO CALLS
+• One-on-one voice and video calls with friends
+• Start a group voice or video call with your whole crew in a group chat with one tap
+• Incoming calls arrive as a ringing notification; tap it and Descall opens and connects you to the call
+• Mute your mic, turn your camera on and off, and see who is talking
+• Recent calls and quick dial in the Calls tab; call cards in chats show duration and participants
+
+SERVERS AND COMMUNITIES
+• Create your own server with text channels and voice rooms
+• Organize channels into categories and manage permissions with roles
+• Join voice rooms with a single tap, see who is talking and turn on your camera if you like
+• Kick, ban, timeout and message-deletion tools for server owners and moderators
+• Discover public servers or join with an invite link
+
+FRIENDS AND PROFILE
+• Add friends and see who is online and what they are up to
+• Make your profile yours with a photo, banner, bio and status
+
+SAFETY AND CONTROL
+• Sign in with a username and password
+• Block users: people you block can't message you, call you or send you friend requests
+• Report objectionable messages and users from inside the app
+• Profanity in messages is automatically masked with ***
+• Calls are never recorded
+• Two-step verification, plus a list of active sessions you can sign out remotely
+• Delete your account at any time from Settings
+
+Descall is intended for users aged 13 and over.
+
+Terms of Use: https://descall.com/terms
+Privacy Policy: https://descall.com/privacy

@@ -1,0 +1,41 @@
+Descall; arkadaşlarınla, ekibinle ve topluluklarınla mesajlaşıp konuşabileceğin bir sohbet ve arama uygulamasıdır. Birebir mesajlardan kalabalık grup aramalarına ve sunuculara kadar tüm konuşmaların tek yerde.
+
+MESAJLAŞMA
+• Arkadaşlarınla birebir özel mesajlar ve grup sohbetleri
+• Fotoğraf, video, dosya, GIF ve emoji paylaşımı
+• Sesli mesaj kaydedip gönderme
+• Mesajlara emojiyle tepki verme, yanıtlama, düzenleme ve sabitleme
+• Sohbet içinde mesaj arama
+• Yeni mesajlar ve aramalar için anlık bildirimler
+
+SESLİ VE GÖRÜNTÜLÜ ARAMA
+• Arkadaşlarınla birebir sesli ve görüntülü aramalar
+• Grup sohbetlerinde tüm ekibinle tek dokunuşla sesli veya görüntülü grup araması
+• Gelen aramalar sesli bir bildirimle gelir; dokunduğunda Descall açılır ve görüşmeye bağlanırsın
+• Mikrofonu sessize alma, kamerayı açıp kapatma ve kimin konuştuğunu görme
+• Aramalar sekmesinde son aramalar ve hızlı arama; sohbetteki arama kartlarında süre ve katılımcılar
+
+SUNUCULAR VE TOPLULUKLAR
+• Kendi sunucunu kur; metin kanalları ve sesli odalar oluştur
+• Kanalları kategorilerle düzenle, rollerle yetki ver
+• Sesli odalara tek dokunuşla katıl, kimin konuştuğunu gör, istersen kameranı aç
+• Sunucu sahipleri ve moderatörler için üyeyi atma, yasaklama, susturma ve mesaj silme araçları
+• Herkese açık sunucuları keşfet veya davet bağlantısıyla katıl
+
+ARKADAŞLAR VE PROFİL
+• Arkadaş ekle; kimin çevrimiçi olduğunu ve ne yaptığını gör
+• Profil fotoğrafı, banner, hakkımda yazısı ve durum mesajıyla profilini kendine göre düzenle
+
+GÜVENLİK VE KONTROL
+• Kullanıcı adı ve şifreyle giriş
+• Kullanıcıları engelle: engellediğin kişiler sana mesaj atamaz, seni arayamaz, arkadaşlık isteği gönderemez
+• Uygunsuz mesajları ve kullanıcıları uygulama içinden bildir
+• Mesajlardaki küfürlü kelimeler otomatik olarak *** ile gizlenir
+• Aramalar hiçbir zaman kaydedilmez
+• İki adımlı doğrulama, etkin oturumları görme ve uzaktan kapatma
+• Hesabını istediğin zaman Ayarlar'dan silebilirsin
+
+Descall 13 yaş ve üzeri kullanıcılar içindir.
+
+Kullanım Koşulları: https://descall.com/terms
+Gizlilik Politikası: https://descall.com/privacy

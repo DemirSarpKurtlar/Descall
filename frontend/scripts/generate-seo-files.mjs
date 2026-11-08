@@ -36,6 +36,13 @@ const { PREFIXED_SITE_LOCALES, localePrefix, prefixedLocaleFromPath, stripPrefix
 );
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
+const { readDirectoryThinPaths } = await import(pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href);
+
+/**
+ * Server directory category pages this build left noindex (fewer than 3 listed servers,
+ * dist/directory-manifest.json from prerender-seo): not in any sitemap.
+ */
+let sitemapOptions = { exclude: [] };
 
 /**
  * Sitemap lastmod = the day the page's copy last changed (src/site/seo/contentDates.js),
@@ -58,46 +65,54 @@ function assertHttpsDescall(url) {
   }
 }
 
-function buildRobots() {
+/**
+ * Crawlers of AI assistants and AI search (ChatGPT, Claude, Perplexity, Gemini, ...).
+ * They get their own group, and a crawler that matches a named group ignores the `*`
+ * group, so the group repeats the app-path Disallow lines: marketing pages and the
+ * llms.txt files are open, the app, API and invite URLs stay closed for every bot.
+ */
+export const AI_CRAWLERS = [
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "ClaudeBot",
+  "Claude-SearchBot",
+  "Claude-User",
+  "anthropic-ai",
+  "PerplexityBot",
+  "Perplexity-User",
+  "Google-Extended",
+  "Applebot-Extended",
+  "CCBot",
+];
+
+/** Private and ephemeral paths, closed for every crawler. */
+export const ROBOTS_DISALLOW = `Disallow: /app/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /media/
+Disallow: /groups/
+Disallow: /friends/
+Disallow: /guilds/
+Disallow: /invite/
+Disallow: /i/
+Disallow: /debug/
+Disallow: /health
+Disallow: /*?*invite=
+Disallow: /*?*announcement=`;
+
+export function buildRobots() {
   const childAllows = SITEMAP_TABLES.map((t) => `Allow: /${t.file}`).join("\n");
   return `# Descall robots.txt — production (static, served from descall.com)
 # Ownership facts for language models: https://descall.com/llms.txt
 
-User-agent: GPTBot
+# AI assistants and AI search
+${AI_CRAWLERS.map((ua) => `User-agent: ${ua}`).join("\n")}
 Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Claude-SearchBot
-Allow: /
-
-User-agent: Claude-User
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Perplexity-User
-Allow: /
-
-User-agent: Applebot-Extended
-Allow: /
-
-User-agent: CCBot
-Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+${ROBOTS_DISALLOW}
 
 User-agent: *
 Allow: /
@@ -123,6 +138,7 @@ Allow: /discord-replacement
 Allow: /alternatives
 Allow: /blog
 Allow: /blog/
+Allow: /communities
 Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /humans.txt
@@ -145,20 +161,7 @@ Allow: /icon-512.png
 Allow: /apple-touch-icon.png
 Allow: /manifest.webmanifest
 
-Disallow: /app/
-Disallow: /api/
-Disallow: /auth/
-Disallow: /admin/
-Disallow: /media/
-Disallow: /groups/
-Disallow: /friends/
-Disallow: /guilds/
-Disallow: /invite/
-Disallow: /i/
-Disallow: /debug/
-Disallow: /health
-Disallow: /*?*invite=
-Disallow: /*?*announcement=
+${ROBOTS_DISALLOW}
 
 Sitemap: ${SITE}/sitemap.xml
 `;
@@ -239,7 +242,7 @@ function buildSitemapIndex(now) {
   const children = SITEMAP_LANG_TABLES.map((t) => {
     const loc = `${SITE}/${t.file}`;
     assertHttpsDescall(loc);
-    const newest = entriesForLanguage(t.lang, SITE, now, lastmodFor)
+    const newest = entriesForLanguage(t.lang, SITE, now, lastmodFor, sitemapOptions)
       .map((e) => e.lastmod)
       .sort()
       .pop();
@@ -259,7 +262,7 @@ ${children.join("\n")}
 function buildSitemapHtml() {
   return buildHumanSitemapHtml({
     origin: SITE,
-    routes: PUBLIC_ROUTES.filter((r) => !r.noindex).map((r) => localizeRouteMeta(r, siteText)),
+    routes: PUBLIC_ROUTES.filter((r) => !r.noindex && !sitemapOptions.exclude.includes(r.path)).map((r) => localizeRouteMeta(r, siteText)),
     lang: "en",
   });
 }
@@ -283,15 +286,16 @@ async function main() {
     process.exit(1);
   }
 
+  sitemapOptions = { exclude: readDirectoryThinPaths(distDir) };
   const now = new Date().toISOString();
-  const allEntries = allSitemapEntries(SITE, now, lastmodFor);
+  const allEntries = allSitemapEntries(SITE, now, lastmodFor, sitemapOptions);
   const robots = buildRobots();
   const index = buildSitemapIndex(now);
   const pages = buildUrlset(allEntries);
   const html = buildSitemapHtml();
   const tableBodies = [
-    ...SITEMAP_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor)) })),
-    ...SITEMAP_LANG_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForLanguage(t.lang, SITE, now, lastmodFor)) })),
+    ...SITEMAP_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForTable(t.id, SITE, now, lastmodFor, sitemapOptions)) })),
+    ...SITEMAP_LANG_TABLES.map((t) => ({ file: t.file, body: buildUrlset(entriesForLanguage(t.lang, SITE, now, lastmodFor, sitemapOptions)) })),
   ];
 
   for (const [name, body] of [

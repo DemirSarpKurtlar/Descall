@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, RefreshCw, Ban } from "../ui/Icon.jsx";
 import { previewServerInvite, joinServerByInvite } from "../../api/servers";
@@ -19,8 +19,12 @@ import "../../site/glass-public-frames.css";
  * 3.7.31: landing for server invite links (descall.com/servers/join/:code).
  * Works logged out (public preview), logged in, and right after login /
  * sign-up (the code is kept in a pending slot by savePendingServerInvite).
+ *
+ * Nov 2026: a logged-out visitor gets one clear "Join with a free account" button. When the
+ * visitor comes back signed in from that flow (autoJoin), the invite is redeemed right away
+ * and onJoined lands them in the server.
  */
-export default function ServerInviteLanding({ code, me, onJoined, onNeedAuth, onDismiss }) {
+export default function ServerInviteLanding({ code, me, autoJoin = false, onJoined, onNeedAuth, onDismiss }) {
   const t = useT();
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -84,6 +88,17 @@ export default function ServerInviteLanding({ code, me, onJoined, onNeedAuth, on
       setJoining(false);
     }
   };
+
+  // Back from sign-up / login started on this page: join once, without a second click.
+  const joinRef = useRef(null);
+  joinRef.current = handleJoin;
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!autoJoin || !me || loading || loadError || !preview?.server || autoTried.current) return;
+    if (preview.server.banned && !preview.server.isMember) return;
+    autoTried.current = true;
+    joinRef.current?.();
+  }, [autoJoin, me, loading, loadError, preview]);
 
   const server = preview?.server;
   const inviter = preview?.invite?.inviter;
@@ -193,13 +208,23 @@ export default function ServerInviteLanding({ code, me, onJoined, onNeedAuth, on
                 </>
               ) : (
                 <>
-                  <button type="button" className="invite-landing-btn ghost" onClick={() => needAuth("login")}>
+                  <button
+                    type="button"
+                    className="invite-landing-btn ghost"
+                    data-testid="server-invite-login"
+                    onClick={() => needAuth("login")}
+                  >
                     <LogIn size={18} />
-                    {t("Log in")}
+                    {t("invl.haveAccount")}
                   </button>
-                  <button type="button" className="invite-landing-btn primary" onClick={() => needAuth("register")}>
+                  <button
+                    type="button"
+                    className="invite-landing-btn primary"
+                    data-testid="server-invite-join-free"
+                    onClick={() => needAuth("register")}
+                  >
                     <UserPlus size={18} />
-                    {t("Sign up and join")}
+                    {t("invl.joinFree")}
                   </button>
                 </>
               )}

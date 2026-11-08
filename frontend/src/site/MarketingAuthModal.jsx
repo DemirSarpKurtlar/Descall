@@ -10,6 +10,8 @@ import { isSocialSignupRequired } from "../api/auth";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
 import GlassCheckbox from "../components/ui/GlassCheckbox";
+import useSignupFieldChecks from "../components/auth/useSignupFieldChecks";
+import SignupFieldMessage from "../components/auth/SignupFieldMessage";
 
 const GoogleSignInButton = lazy(() => import("../components/auth/GoogleSignInButton"));
 const ForgotPasswordFlow = lazy(() => import("../components/auth/ForgotPasswordFlow"));
@@ -75,6 +77,9 @@ function AuthModal({
   // Terms + date of birth first. { provider: "google", credential }.
   const [socialSignup, setSocialSignup] = useState(null);
   const [googleUnavailable, setGoogleUnavailable] = useState(false);
+  // As-you-type checks with the server's rules (lib/signupRules.js), register only.
+  const checks = useSignupFieldChecks({ username, password, email, enabled: Boolean(open && isRegistering && !twoFa && !forgotMode) });
+  const fieldInvalid = (name) => Boolean(checks.fields[name]?.visible && checks.fields[name]?.message);
 
   useEffect(() => {
     if (!isRegistering && !socialSignup) return;
@@ -176,11 +181,18 @@ function AuthModal({
       return;
     }
     if (isRegistering) {
+      checks.touchAll();
+      if (checks.hasErrors) {
+        const first = ["username", "password", "email"].find((name) => checks.fields[name]?.code);
+        if (first) document.getElementById(`mkt-auth-${first}`)?.focus?.();
+        return;
+      }
       const emailError = signupEmailError(email);
       if (emailError) {
         setDeviceBlock(t(emailError));
         return;
       }
+      setDeviceBlock("");
     }
     setIsSubmitting(true);
     try {
@@ -199,6 +211,9 @@ function AuthModal({
         const result = await onLogin?.({ username, password });
         openTwoFa(result);
       }
+    } catch (err) {
+      // authError shows the message; on register the field it is about is marked too.
+      if (isRegistering) checks.noteServerError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -374,12 +389,13 @@ function AuthModal({
                   appearance="glass"
                   hideWhenUnavailable
                   onUnavailable={() => setGoogleUnavailable(true)}
-                  disabled={isSubmitting || authLoading || signupBlocked}
+                  disabled={isSubmitting || authLoading}
                   onCredential={async (credential) => {
-                    if (signupBlocked) return;
                     setIsSubmitting(true);
                     try {
-                      openTwoFa(await onGoogleLogin?.(credential, withInvite({ termsAccepted: isRegistering, ...(isRegistering ? { birthDate } : {}) })));
+                      // Works before Terms + date of birth are filled in: a new account
+                      // then gets the Terms + date-of-birth step (SocialSignupStep).
+                      openTwoFa(await onGoogleLogin?.(credential, withInvite(isRegistering && !signupBlocked ? { termsAccepted: true, birthDate } : {})));
                     } catch (err) {
                       if (isSocialSignupRequired(err)) setSocialSignup({ provider: "google", credential });
                       /* other errors: authError shows them */
@@ -406,23 +422,35 @@ function AuthModal({
                     id="mkt-auth-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    onBlur={() => checks.blur("username")}
                     placeholder={t("Username")}
                     autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={isRegistering ? 24 : undefined}
                     required
-                    aria-invalid={authError || deviceBlock ? "true" : undefined}
-                    aria-describedby={authError || deviceBlock ? "mkt-auth-error" : undefined}
+                    aria-invalid={authError || deviceBlock || fieldInvalid("username") ? "true" : undefined}
+                    aria-describedby={fieldInvalid("username") ? "mkt-auth-username-msg" : authError || deviceBlock ? "mkt-auth-error" : undefined}
                   />
+                  {isRegistering ? (
+                    <SignupFieldMessage id="mkt-auth-username-msg" kind="username" className="mkt-auth-field-hint" field={checks.fields.username} onPick={setUsername} />
+                  ) : null}
                   <input
                     id="mkt-auth-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => checks.blur("password")}
                     placeholder={t("Password")}
                     autoComplete={isRegistering ? "new-password" : "current-password"}
+                    maxLength={72}
                     required
-                    aria-invalid={authError || deviceBlock ? "true" : undefined}
-                    aria-describedby={authError || deviceBlock ? "mkt-auth-error" : undefined}
+                    aria-invalid={authError || deviceBlock || fieldInvalid("password") ? "true" : undefined}
+                    aria-describedby={fieldInvalid("password") ? "mkt-auth-password-msg" : authError || deviceBlock ? "mkt-auth-error" : undefined}
                   />
+                  {isRegistering ? (
+                    <SignupFieldMessage id="mkt-auth-password-msg" kind="password" className="mkt-auth-field-hint" field={checks.fields.password} />
+                  ) : null}
                   {!isRegistering && (
                     <div className="mkt-forgot-row">
                       <button type="button" className="mkt-forgot-link" onClick={() => setForgotMode(true)}>
@@ -435,16 +463,23 @@ function AuthModal({
                   )}
                   {isRegistering && (
                     <input
+                      id="mkt-auth-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => checks.blur("email")}
                       placeholder={t("Email")}
                       aria-label={t("Email")}
                       autoComplete="email"
                       maxLength={254}
                       required
+                      aria-invalid={fieldInvalid("email") ? "true" : undefined}
+                      aria-describedby={fieldInvalid("email") ? "mkt-auth-email-msg" : undefined}
                     />
                   )}
+                  {isRegistering ? (
+                    <SignupFieldMessage id="mkt-auth-email-msg" kind="email" className="mkt-auth-field-hint" field={checks.fields.email} />
+                  ) : null}
                   {isRegistering && (
                     <p className="mkt-auth-field-hint">
                       {t(SIGNUP_EMAIL_HINT)}

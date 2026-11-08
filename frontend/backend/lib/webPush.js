@@ -401,12 +401,60 @@ function deliverMessageRequestPush(userId, payload = {}) {
   });
 }
 
-/** Incoming friend request. */
-function sendFriendRequestPush(userId, payload = {}) {
-  return sendIosAlertToUsers([userId], {
+/**
+ * Incoming friend request. iOS alert as before; web push + Android (FCM) too
+ * (re-engagement item 4: those devices used to get nothing while the app was closed).
+ */
+async function sendFriendRequestPush(userId, payload = {}) {
+  const fromRef = payload.from ? String(payload.from).slice(0, 64) : { key: "push.someone" };
+  const web = {
+    type: "friend-request",
+    tag: `friend-request-${payload.fromId || userId}`,
+    deepLink: "/friends",
+    fromId: payload.fromId || null,
+    from: payload.from || null,
+    i18n: { title: ref("push.friendTitle"), body: ref("push.friendBody", { from: fromRef }) },
+  };
+  await deliverPush([userId], web, {
     type: "friend-request",
     fromId: payload.fromId,
     fromName: payload.from,
+  });
+}
+
+/**
+ * Re-engagement: "<friend> is in voice in <server>" (lib/reengage.js decides who
+ * gets it). Web push, Android and iOS; the tap opens the voice channel.
+ */
+async function sendFriendVoicePush(userIds, payload = {}) {
+  const friend = String(payload.friendName || "").slice(0, 48) || { key: "push.someone" };
+  const server = String(payload.serverName || "").slice(0, 60) || { key: "push.ownerServerFallback" };
+  const channel = String(payload.channelName || "").slice(0, 60) || "voice";
+  const deepLink =
+    payload.serverId && payload.channelId
+      ? `/servers/${encodeURIComponent(payload.serverId)}/${encodeURIComponent(payload.channelId)}`
+      : "/servers";
+  const web = {
+    type: "friend-voice",
+    tag: `friend-voice-${payload.channelId || "x"}`,
+    deepLink,
+    serverId: payload.serverId || null,
+    channelId: payload.channelId || null,
+    channelType: "voice",
+    fromId: payload.friendId || null,
+    i18n: {
+      title: ref("reengage.push.friendVoiceTitle", { friend }),
+      body: ref("reengage.push.friendVoiceBody", { server, channel }),
+    },
+  };
+  await deliverPush(userIds, web, {
+    type: "friend-voice",
+    fromId: payload.friendId,
+    fromName: payload.friendName,
+    serverId: payload.serverId,
+    serverName: payload.serverName,
+    channelId: payload.channelId,
+    channelName: payload.channelName,
   });
 }
 
@@ -422,5 +470,6 @@ module.exports = {
   sendIosGroupMentionPush,
   sendServerMessagePush,
   sendFriendRequestPush,
+  sendFriendVoicePush,
   sendMessageRequestPush,
 };

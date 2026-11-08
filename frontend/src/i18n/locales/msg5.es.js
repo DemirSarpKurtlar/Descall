@@ -27,4 +27,10 @@ export const MSG5_ES = {
     errAttachNotReady: "Programar con archivo aún no está activo en el servidor. Quita el archivo para programar solo el texto.",
     errUpload: "No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo.",
   },
+  reengage: {
+    friendVoice: "Un amigo está en voz",
+    friendVoiceDesc: "Una notificación cuando un amigo entra en un canal de voz al que puedes unirte mientras no estás. Como mucho unas pocas al día, nunca de noche.",
+    email: "Notificaciones por correo",
+    emailDesc: "Correos sobre solicitudes de amistad e invitaciones que te perdiste, y algunos consejos para cuentas nuevas.",
+  },
 };

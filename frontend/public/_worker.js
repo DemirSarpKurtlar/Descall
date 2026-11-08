@@ -15,6 +15,18 @@
  */
 
 import { applySecurityHeaders, canonicalRedirect } from "./security-policy.js";
+import {
+  BOT_TIMEOUT_MS,
+  VISITOR_TIMEOUT_MS,
+  bannerArgumentFor,
+  fetchInvitePreview,
+  inviteHeadHtml,
+  inviteTarget,
+  inviteUrl,
+  isPreviewBot,
+  previewLang,
+  rewriteShell,
+} from "./invite-preview.js";
 
 const SPA_PREFIXES = [
   "/direct",
@@ -41,6 +53,7 @@ const PERMANENT_REDIRECTS = {
   "/discord-alternative-turkey": "/tr/discord-alternatifi",
   "/tr/discord-alternative": "/tr/discord-alternatifi",
   "/tr/contact": "/iletisim",
+  "/tr/turk-discord": "/tr/turk-sohbet-uygulamasi",
   "/founder": "/who-owns-descall",
   "/owner": "/who-owns-descall",
   "/kurucu": "/descall-sahibi",
@@ -146,8 +159,38 @@ function htmlResponse(source, status, cacheControl) {
   return new Response(source.body, { status, headers });
 }
 
+/**
+ * Invite links (WhatsApp, Instagram, Telegram, X, iMessage previews): the shell gets the
+ * invite's own title, description, Open Graph / Twitter card and Smart App Banner.
+ * Other app paths lose the Smart App Banner (marketing pages only). Any failure: the plain shell.
+ */
+async function appShellResponse(response, request, env, ctx, path) {
+  const target = inviteTarget(path);
+  if (!target) return rewriteShell(response);
+  const url = inviteUrl(path);
+  let cache = null;
+  try {
+    cache = typeof caches !== "undefined" && caches.default ? caches.default : null;
+  } catch {
+    cache = null;
+  }
+  const ua = request.headers.get("user-agent") || "";
+  const preview = await fetchInvitePreview(target, {
+    apiOrigin: env?.API_ORIGIN || undefined,
+    cache,
+    timeoutMs: isPreviewBot(ua) ? BOT_TIMEOUT_MS : VISITOR_TIMEOUT_MS,
+    clientIp: request.headers.get("cf-connecting-ip") || "",
+    waitUntil: ctx && typeof ctx.waitUntil === "function" ? (p) => ctx.waitUntil(p) : null,
+  });
+  const appArgument = bannerArgumentFor(target, url);
+  if (!preview) return rewriteShell(response, { banner: appArgument || true });
+  const lang = previewLang(request.headers.get("accept-language"));
+  response.headers.append("vary", "accept-language");
+  return rewriteShell(response, { headHtml: inviteHeadHtml(preview, { lang, url, appArgument }) });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const dest = canonicalRedirect(url);
     if (dest) {
@@ -164,6 +207,20 @@ export default {
     // JSON). The asset has no extension, so set the type here.
     if (path === "/.well-known/apple-app-site-association" || path === "/apple-app-site-association") {
       const res = await readAsset(env, request, "/.well-known/apple-app-site-association");
+      if (res.ok) {
+        const headers = new Headers();
+        headers.set("content-type", "application/json");
+        headers.set("cache-control", "public, max-age=3600");
+        applySecurityHeaders(headers);
+        return new Response(res.body, { status: 200, headers });
+      }
+    }
+
+    // Android App Links (docs/play-store/README.md). Google fetches this exact path and
+    // needs 200 + application/json without redirects. The file is only deployed once the
+    // real signing-key fingerprint exists; until then this is a plain 404, never the shell.
+    if (path === "/.well-known/assetlinks.json") {
+      const res = await readAsset(env, request, "/.well-known/assetlinks.json");
       if (res.ok) {
         const headers = new Headers();
         headers.set("content-type", "application/json");
@@ -194,7 +251,7 @@ export default {
       // without this /app, /login, /register, /s/... looked like duplicate
       // homepages to crawlers that do not run JS. The app is never a search result.
       response.headers.set("x-robots-tag", "noindex, follow");
-      return response;
+      return appShellResponse(response, request, env, ctx, path);
     }
 
     // SEO (3.7.14): one URL per page. /tr/ and /tr, /features/ and /features

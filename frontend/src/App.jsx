@@ -72,6 +72,7 @@ import { useCall } from "./hooks/useCall";
 import { useStableHandler } from "./hooks/useStableHandler";
 import { useIosCallKitBridge } from "./hooks/useIosCallKitBridge";
 import { IOS_NATIVE, unregisterIosVoipToken } from "./lib/iosCallKit";
+import { hasHeardAboutPendingFlag, markHeardAboutPending } from "./lib/heardAbout";
 import { useGroupCall } from "./hooks/useGroupCall";
 import { useServerVoice } from "./hooks/useServerVoice";
 import { useElectronOverlay } from "./hooks/useElectronOverlay";
@@ -167,6 +168,7 @@ import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/d
 import { mergeServerDetail } from "./lib/serverDetail";
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
+const HeardAboutPrompt = lazy(() => import("./components/HeardAboutPrompt"));
 // Descall+ desktop windows (mini mode, call window, sidebar): Electron main window only.
 const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHost.jsx"));
 // Descall+ pop-out window (Electron multi_window): conversation-only chrome, set before first render.
@@ -502,6 +504,9 @@ export default function App() {
   const { toast } = useToast();
   const { t, locale, setLocale } = useLocale();
   const [authError, setAuthError] = useState("");
+  // "How did you hear about us?" once after sign-up (lib/heardAbout.js); the prompt's
+  // chunk only loads when a sign-up left the question waiting.
+  const [heardAboutAsk, setHeardAboutAsk] = useState(() => hasHeardAboutPendingFlag());
   // Paint the app from the cached session; /auth/me revalidates in the background.
   const [sessionChecked, setSessionChecked] = useState(() =>
     optimisticSessionReady({ token: getToken(), cachedUser: normalizeUser(getUser()) })
@@ -524,6 +529,10 @@ export default function App() {
     }
   });
   const [serverInviteAuthOpen, setServerInviteAuthOpen] = useState(false);
+  // Nov 2026: the landing ({ kind: "server" | "vanity" | "group", value: code / slug }) resumed
+  // right after the visitor signed up / logged in from it. That landing joins by itself, once.
+  // Keyed by the code: another invite opened later in the app stays a click.
+  const [landingAutoJoin, setLandingAutoJoin] = useState(null);
   const [activeTimeout, setActiveTimeout] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [myStatus, setMyStatus] = useState(() => {
@@ -745,7 +754,7 @@ export default function App() {
     preloadIceServers().catch(() => {});
   }, []);
 
-  // 3.0.1: descall:// and https://descall.com links opened on iOS route here
+  // 3.0.1: descall:// and https://descall.com links opened on iOS and Android route here
   // (DescallDeepLinkPlugin). The route effect below does the rest.
   const deepLinkNavigateRef = useRef(navigate);
   deepLinkNavigateRef.current = navigate;
@@ -2944,6 +2953,8 @@ export default function App() {
           } catch {
             /* ignore */
           }
+          markHeardAboutPending(data.user?.id);
+          setHeardAboutAsk(true);
           Funnel.registerComplete({
             method,
             has_invite: Boolean(data.inviteLinked || invitedBy),
@@ -2987,6 +2998,8 @@ export default function App() {
       } catch {
         /* ignore */
       }
+      markHeardAboutPending(reg?.user?.id);
+      setHeardAboutAsk(true);
       if (reg?.token && reg?.user) {
         transportFallbackStepRef.current = 0;
         setToken(reg.token);
@@ -4095,7 +4108,7 @@ export default function App() {
         return;
       }
 
-      if ((type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
+      if ((type === "friend-voice" || type === "mention" || type === "server-message" || type === "server-owner") && data.serverId) {
         const serverId = data.serverId;
         const channelId = data.channelId || null;
         setReplyTo(null);
@@ -4109,10 +4122,11 @@ export default function App() {
         if (channelId) {
           const channel =
             (server.channels || []).find((c) => c.id === channelId) ||
-            { id: channelId, name: data.channelName || "channel", type: "text" };
+            // "Friend is in voice" opens the voice channel preview (joining stays a tap away).
+            { id: channelId, name: data.channelName || "channel", type: type === "friend-voice" ? "voice" : "text" };
           setActiveChannel(channel);
           navigate(serverPath(server, channel));
-          socketRef.current?.emit("server:channel:join", channelId);
+          if (type !== "friend-voice") socketRef.current?.emit("server:channel:join", channelId);
         } else {
           setActiveChannel(null);
           navigate(serverPath(server));
@@ -4569,6 +4583,26 @@ export default function App() {
     }
   }, [location.pathname, location.search]);
 
+  // Same for group invites (/invite/:code, /i/:code) and server vanity URLs
+  // (/s/:slug): their state is read from the URL only at mount, and an Android
+  // App Link reaches the running app as a navigate (nativeDeepLinks.js).
+  useEffect(() => {
+    const path = location.pathname || "";
+    const group = path.match(/^\/(?:invite|i)\/([A-Za-z0-9_-]+)\/?$/i);
+    if (group && group[1].toLowerCase() !== "s") {
+      const code = group[1];
+      setInviteCode((prev) => (prev === code ? prev : code));
+      setInviteAuthOpen(false);
+      return;
+    }
+    const vanity = path.match(/^\/s\/([a-z0-9][a-z0-9-]{2,31})\/?$/i);
+    if (vanity) {
+      const slug = vanity[1].toLowerCase();
+      setServerVanitySlug((prev) => (prev === slug ? prev : slug));
+      setServerVanityAuthOpen(false);
+    }
+  }, [location.pathname]);
+
   // After login, resume a pending group invite or server vanity link
   useEffect(() => {
     if (!me?.id) return;
@@ -4577,6 +4611,7 @@ export default function App() {
       if (pendingServerInvite) {
         setServerInviteCode(pendingServerInvite);
         setServerInviteAuthOpen(false);
+        setLandingAutoJoin({ kind: "server", value: pendingServerInvite });
         const nextPath = serverInvitePath(pendingServerInvite);
         if (nextPath && location.pathname !== nextPath) navigate(nextPath, { replace: true });
         return;
@@ -4585,6 +4620,7 @@ export default function App() {
       if (pendingVanity) {
         setServerVanitySlug(pendingVanity);
         setServerVanityAuthOpen(false);
+        setLandingAutoJoin({ kind: "vanity", value: pendingVanity });
         writeServerVanityPath(pendingVanity);
         return;
       }
@@ -4592,6 +4628,7 @@ export default function App() {
       if (!pending) return;
       setInviteCode(pending);
       setInviteAuthOpen(false);
+      setLandingAutoJoin({ kind: "group", value: pending });
       writeInvitePath(pending);
     } catch {
       /* ignore */
@@ -4624,6 +4661,7 @@ export default function App() {
       clearServerVanityPath();
       setServerVanitySlug(null);
       setServerVanityAuthOpen(false);
+      setLandingAutoJoin(null);
     },
     [location.pathname, navigate]
   );
@@ -4648,6 +4686,7 @@ export default function App() {
     clearInvitePath();
     setInviteCode(null);
     setInviteAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   // In-chat Discord-style invite embeds → join / open group or server
@@ -4706,6 +4745,7 @@ export default function App() {
     clearPendingServerInvite();
     setServerInviteCode(null);
     setServerInviteAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   const handleServerInviteJoined = useCallback(
@@ -4767,6 +4807,7 @@ export default function App() {
     clearServerVanityPath();
     setServerVanitySlug(null);
     setServerVanityAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   const dismissInvite = useCallback(() => {
@@ -4774,6 +4815,7 @@ export default function App() {
     clearInvitePath();
     setInviteCode(null);
     setInviteAuthOpen(false);
+    setLandingAutoJoin(null);
   }, []);
 
   // Descall+ desktop windows (Electron): unread, friends, DMs, status. Before the early returns.
@@ -4812,6 +4854,7 @@ export default function App() {
         <ServerInviteLanding
           code={serverInviteCode}
           me={me}
+          autoJoin={landingAutoJoin?.kind === "server" && landingAutoJoin.value === serverInviteCode}
           onJoined={handleServerInviteJoined}
           onNeedAuth={openServerInviteAuth}
           onDismiss={dismissServerInvite}
@@ -4829,6 +4872,7 @@ export default function App() {
         <ServerVanityLanding
           slug={serverVanitySlug}
           me={me}
+          autoJoin={landingAutoJoin?.kind === "vanity" && landingAutoJoin.value === serverVanitySlug}
           onJoined={handleServerVanityJoined}
           onNeedLogin={(mode) => openLandingAuth("vanity", mode)}
           onDismiss={dismissServerVanity}
@@ -4846,6 +4890,7 @@ export default function App() {
         <GroupInviteLanding
           code={inviteCode}
           me={me}
+          autoJoin={landingAutoJoin?.kind === "group" && landingAutoJoin.value === inviteCode}
           onJoined={handleInviteJoined}
           onNeedLogin={(mode) => openLandingAuth("group", mode)}
           onDismiss={dismissInvite}
@@ -5958,6 +6003,11 @@ export default function App() {
         {IOS_NATIVE && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
+          </Suspense>
+        ) : null}
+        {me?.id && heardAboutAsk ? (
+          <Suspense fallback={null}>
+            <HeardAboutPrompt userId={me.id} />
           </Suspense>
         ) : null}
       </div>

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "platform-tek-hesap",
+    "theme": "platformlar",
+    "title": "Tek hesap, her cihaz",
+    "hook": { "lines": ["Telefonda başla,", "*bilgisayarda devam et*"] },
+    "scenes": [
+      {
+        "lines": ["Descall nerede çalışıyor?", "*Hepsinde aynı hesap*"],
+        "visual": { "type": "chips", "items": ["iPhone", "Windows", "Web", "Android"] }
+      },
+      {
+        "lines": ["iPhone'da", "*App Store'dan indir*"],
+        "visual": { "type": "screenshot", "ref": "servers-ios" }
+      },
+      {
+        "lines": ["Kurulum istemiyorsan", "*tarayıcıdan aç*"],
+        "visual": { "type": "steps", "items": ["descall.com", "Giriş yap", "Sohbete devam"] }
+      }
+    ],
+    "caption": "Descall iPhone'da App Store'dan, Windows'ta masaüstü uygulamasıyla, Android'de APK ile ve tarayıcıda kurulum olmadan çalışır. Hepsinde aynı hesabı kullanırsın; sohbetlerin, sunucuların ve arkadaşların seninle gelir.\n\nİndirme bağlantılarının hepsi descall.com'da.",
+    "hashtags": ["#descall", "#iphone", "#windows", "#seslisohbet", "#uygulama"],
+    "sources": [
+      { "claim": "App Store listesi", "file": "frontend/src/site/appStoreLink.js", "match": "apps.apple.com/app/id6820558264" },
+      { "claim": "Windows kurulum, Android APK, tarayıcıda aynı hesap", "file": "frontend/src/site/pages/MarketingDownloadPage.jsx", "match": "Windows installer and the Android APK. The browser app is the same account, with no install." },
+      { "claim": "Ekran görüntüsü iPhone uygulamasından", "file": "appstore/metadata.json", "match": "Kendi sunucunu kur; metin kanalları ve sesli odalar oluştur" }
+    ]
+  },
+  {
+    "id": "platform-iphone-arama",
+    "theme": "platformlar",
+    "title": "iPhone'da arama ekranında çalan aramalar",
+    "hook": { "lines": ["Descall araması", "*iPhone'unda normal arama gibi*"] },
+    "scenes": [
+      {
+        "lines": ["Birebir aramalar", "*iPhone'un arama ekranında çalar*"],
+        "visual": { "type": "steps", "items": ["Arama gelir", "Yanıtla", "Descall bağlanır"] }
+      },
+      {
+        "lines": ["Grup sohbetinde", "*tek dokunuşla grup araması*"],
+        "visual": { "type": "voice", "items": ["Zeynep", "Elif", "Burak", "Selin"] }
+      },
+      {
+        "lines": ["Son aramaların", "*Aramalar sekmesinde*"],
+        "visual": { "type": "checklist", "items": ["Son aramalar", "Hızlı arama", "Süre ve katılımcılar"] }
+      }
+    ],
+    "caption": "iPhone'da birebir Descall aramaları telefonun kendi arama ekranında çalar; yanıtladığında Descall açılır ve görüşmeye bağlanırsın. Grup sohbetlerinde tüm ekibinle tek dokunuşla sesli ya da görüntülü grup araması başlatabilirsin.\n\nAramalar sekmesinde son aramaların ve hızlı arama var. Aramalar hiçbir zaman kaydedilmez.",
+    "hashtags": ["#descall", "#iphone", "#seslisohbet", "#görüntülüarama"],
+    "sources": [
+      { "claim": "iPhone arama ekranında çalma", "file": "appstore/metadata.json", "match": "Birebir aramalar iPhone'un arama ekranında çalar; yanıtladığında Descall açılır ve görüşmeye bağlanırsın" },
+      { "claim": "Tek dokunuşla grup araması", "file": "appstore/metadata.json", "match": "Grup sohbetlerinde tüm ekibinle tek dokunuşla sesli veya görüntülü grup araması" },
+      { "claim": "Aramalar sekmesi", "file": "appstore/metadata.json", "match": "Aramalar sekmesinde son aramalar ve hızlı arama; sohbetteki arama kartlarında süre ve katılımcılar" },
+      { "claim": "Aramalar kaydedilmez", "file": "appstore/metadata.json", "match": "Aramalar hiçbir zaman kaydedilmez" }
+    ]
+  },
+  {
+    "id": "platform-giris-dil",
+    "theme": "platformlar",
+    "title": "Giriş seçenekleri ve Türkçe arayüz",
+    "hook": { "lines": ["Descall'a girmenin", "*üç yolu var*"] },
+    "scenes": [
+      {
+        "lines": ["İstediğin yoldan", "*giriş yap*"],
+        "visual": { "type": "chips", "items": ["Kullanıcı adı", "Google", "Apple"] }
+      },
+      {
+        "lines": ["Arayüz *Türkçe*,", "istersen altı dil daha"],
+        "visual": { "type": "chips", "items": ["Türkçe", "English", "Deutsch", "Español", "Français", "+2"] }
+      },
+      {
+        "lines": ["Hesabını korumak için", "*iki adımlı doğrulama*"],
+        "visual": { "type": "checklist", "items": ["İki adımlı doğrulama", "Etkin oturumlar", "Uzaktan çıkış"] }
+      }
+    ],
+    "caption": "Descall'a kullanıcı adı ve şifreyle, Google ile ya da iPhone'da Apple ile giriş yapabilirsin. Arayüz Türkçe; Ayarlar'dan İngilizce, Almanca, İspanyolca, Fransızca, Portekizce (Brezilya) ve Rusça da seçilebilir.\n\nHesabın için iki adımlı doğrulamayı açabilir, etkin oturumlarını görüp uzaktan kapatabilirsin.",
+    "hashtags": ["#descall", "#güvenlik", "#uygulama", "#seslisohbet"],
+    "sources": [
+      { "claim": "Google ile giriş", "file": "frontend/backend/routes/auth.js", "match": "router.post\\(\"/google\"" },
+      { "claim": "Apple ile giriş ve kullanıcı adı/şifre", "file": "appstore/metadata.json", "match": "Apple ile Giriş Yap veya kullanıcı adı ve şifreyle giriş" },
+      { "claim": "Yedi dil", "file": "frontend/src/i18n/locales.json", "match": "\"id\": \"tr\"[\\s\\S]*\"id\": \"de\"[\\s\\S]*\"id\": \"es\"[\\s\\S]*\"id\": \"fr\"[\\s\\S]*\"id\": \"pt-BR\"[\\s\\S]*\"id\": \"ru\"" },
+      { "claim": "İki adımlı doğrulama ve oturumlar", "file": "appstore/metadata.json", "match": "İki adımlı doğrulama, etkin oturumları görme ve uzaktan kapatma" },
+      { "claim": "2FA uç noktası", "file": "frontend/backend/routes/twoFactor.js", "match": "router" }
+    ]
+  }
+]

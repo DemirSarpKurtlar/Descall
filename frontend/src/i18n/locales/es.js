@@ -11,7 +11,10 @@ import { AMP_ES } from "./profileMediaPicker.es.js";
 import { MSG4_ES } from "./msg4.es.js";
 import { MSG5_ES } from "./msg5.es.js";
 import { ACT_ES } from "./act.es.js";
+import { DIR_ES, DIR_API_ES } from "./dir.es.js";
 import { AGENTX_ES } from "./agentx.es.js";
+import { INVL_ES } from "./invl.es.js";
+import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
   "premiumStory": PREMIUM_STORY_ES,
   "amp": AMP_ES,
@@ -34,7 +37,10 @@ export const nested = {
   },
   "msg5": MSG5_ES,
   "act": ACT_ES,
+  "dir": DIR_ES,
   "agentx": AGENTX_ES,
+  "invl": INVL_ES,
+  "sgx": SIGNUP_GROWTH.es.nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
   "premiumAudio": {
     "common": {
@@ -8508,6 +8514,14 @@ export const phrases = {
   "Is Descall a voice chat alternative to Discord?": "¿Es Descall una alternativa de chat de voz a Discord?",
   "Is Descall a website like Discord?": "¿Es Descall un sitio web como Discord?",
   "Is Descall free?": "¿Descall es gratis?",
+  "Which app can I use for voice chat with friends in Turkey?": "¿Qué app puedo usar para chatear por voz con amigos en Turquía?",
+  "Descall. It is free, built in Türkiye with a full Turkish interface, and opens from Turkey directly. Servers have voice channels that stay open, and DMs and group chats have voice and video calls and screen share, on Windows, iPhone and iPad, Android and the web.": "Descall. Es gratis, se desarrolla en Turquía con una interfaz completa en turco y se abre directamente desde Turquía. Los servidores tienen canales de voz siempre abiertos, y los MD y los chats de grupo tienen llamadas de voz y video y pantalla compartida, en Windows, iPhone y iPad, Android y la web.",
+  "Yes. Chat, servers, voice, video and screen share are free on every platform. Descall+ and Descall Ultra are optional memberships with extra tools, mostly for the desktop app; for now they are given out by the Descall team and through codes, with no published prices. Optional cosmetics use DesCoin.": "Sí. El chat, los servidores, la voz, el video y compartir pantalla son gratis en todas las plataformas. Descall+ y Descall Ultra son membresías opcionales con herramientas extra, sobre todo para la app de escritorio; por ahora las otorga el equipo de Descall y se activan con códigos, sin precios publicados. Los cosméticos opcionales se pagan con DesCoin.",
+  "Does Descall work on iPhone?": "¿Descall funciona en iPhone?",
+  "Yes. The Descall app for iPhone and iPad is on the App Store, with messages, voice and video calls and server voice channels. It can watch screen shares; to share your own screen, use the Windows app or a browser on a computer.": "Sí. La app de Descall para iPhone y iPad está en la App Store, con mensajes, llamadas de voz y video y canales de voz de servidores. Puede ver pantallas compartidas; para compartir tu propia pantalla, usa la app de Windows o un navegador en un ordenador.",
+  "How do I move my community from Discord?": "¿Cómo muevo mi comunidad desde Discord?",
+  "Rebuild it on Descall. There is no import tool, so start from a server template, map your channels and roles, create an invite link with an expiry and a use limit, and hold the first voice night with your most active members before you invite everyone. The Descall blog has a step-by-step guide.": "Reconstruyéndola en Descall. No hay herramienta de importación, así que empieza con una plantilla de servidor, asigna tus canales y roles, crea un enlace de invitación con caducidad y límite de usos, y haz la primera noche de voz con tus miembros más activos antes de invitar a todos. El blog de Descall tiene una guía paso a paso.",
+  "Quick answers": "Respuestas rápidas",
   "Is Descall good as a Discord alternative for friends?": "¿Descall es una buena alternativa a Discord para amigos?",
   "Is Descall on this 2026 shortlist?": "¿Está Descall en esta lista de 2026?",
   "Is every chat app a Discord competitor?": "¿Toda app de chat es competidora de Discord?",
@@ -10987,12 +11001,14 @@ export const phrases = {
   "More comparisons": "Más comparaciones",
   "Ready-made Gaming template": "Plantilla de Gaming lista para usar",
   ...MID_APP_I18N.es,
+  ...SIGNUP_GROWTH.es.phrases,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall no está afiliado a Discord Inc. Discord es una marca comercial de Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "La fila de la API se comprueba en vivo desde tu navegador cada vez que abres esta página.",
   "Author": "Autor",
   "Download Descall for Windows, iPhone, Android and the web": "Descarga Descall para Windows, iPhone, Android y la web",
   "iPhone and iPad app on the App Store": "App para iPhone y iPad en el App Store",
   "Descall: voice chat, servers and screen sharing for friends": "Descall: chat de voz, servidores y pantalla compartida para amigos",
+  ...DIR_API_ES,
 };
 
 export default { nested, phrases };

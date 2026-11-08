@@ -12,6 +12,7 @@ import MarketingLayout from "./MarketingLayout";
 import SeoHead from "./SeoHead";
 import { PREFIXED_SITE_LOCALES, isPrefixedLocale, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
 import { mergedPageRedirects } from "./seo/mergedPages.js";
+import { directoryPagePaths } from "./directory/directoryPaths.js";
 import { useLocale } from "../context/localeContextInstance";
 import { loadSiteCatalog, siteCatalogReady } from "./loadSiteCatalog.js";
 const MarketingAuthModal = lazy(() => import("./MarketingAuthModal"));
@@ -40,6 +41,8 @@ const DiscordAlternativeNichePage = lazy(() => import("./pages/DiscordAlternativ
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+// Public server directory (item 8): /communities, /tr/topluluklar and one page per topic.
+const DirectoryPage = lazy(() => import("./pages/DirectoryPage"));
 
 /**
  * Page of each mirrored English path; /de, /de/features, ... render the same pages.
@@ -401,7 +404,7 @@ function MarketingAppSite({
         <Route path="/tr/faq" element={withLayout(FaqPage, openAuth)} />
         <Route path="/tr/discord-alternative" element={<Navigate to="/tr/discord-alternatifi" replace />} />
         <Route path="/tr/discord-alternatifi" element={withLayout(TrLandingPage, openAuth)} />
-        <Route path="/tr/turk-discord" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/turk-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/discord-yerine-ne-kullanilir" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/sesli-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/oyuncu-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
@@ -440,6 +443,9 @@ function MarketingAppSite({
             covers in-app navigation from an old link. */}
         {mergedPageRedirects().map(([from, to]) => (
           <Route key={from} path={from} element={<Navigate to={to} replace />} />
+        ))}
+        {directoryPagePaths().map((p) => (
+          <Route key={p} path={p} element={withLayout(DirectoryPage, openAuth)} />
         ))}
         <Route path="/blog" element={withLayout(BlogIndexPage, openAuth)} />
         <Route path="/blog/:slug" element={withLayout(BlogPostPage, openAuth)} />

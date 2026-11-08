@@ -74,6 +74,9 @@ test("invites: server, group, friend, referral code", () => {
   assert.equal(pick(c({ ...WEB, invitedBy: "ali" })), "invite/friend_invite");
   assert.equal(pick(c({ ...WEB, landing_page: "https://descall.com/servers/join/abc123" })), "invite/server_invite");
   assert.equal(pick(c({ ...WEB, landing_page: "https://descall.com/invite/abc123" })), "invite/group_invite");
+  assert.equal(inviteFromPath("/s/night-owls"), "server_invite");
+  assert.equal(inviteFromPath("/?sv=night-owls"), "server_invite");
+  assert.equal(inviteFromPath("/security"), "");
   assert.equal(inviteFromPath("/register?ref=ali"), "friend_invite");
   assert.equal(inviteFromPath("/?referral=CODE12"), "referral_code");
   // paid click beats invite

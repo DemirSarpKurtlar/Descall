@@ -259,4 +259,206 @@ export const GUIDE_BODIES = {
       },
     ],
   },
+  // Nov 8 2026 guides (fourth content round). Checked against the code on 2026-11-08:
+  // server templates (backend/lib/serverTemplates.js), invites with expiry and use limit
+  // (backend/routes/servers.js), built-in slash commands (backend/lib/slashCommands.js),
+  // voice settings and their defaults (src/components/layout/UserPanel.jsx,
+  // src/lib/voiceProfile.js, src/lib/noiseSuppression.js, src/lib/adaptiveBitrate.js),
+  // stage channels and the Stream and camera permission (backend/socket/serverVoiceHandlers.js),
+  // screen share presets (src/lib/webrtcScreenShare.js) and game activity (src/hooks/useActivity.js).
+  "move-discord-community-to-descall": {
+    sections: [
+      {
+        h: "What moves, and what stays behind",
+        p: "Moving a community is mostly about people, not data. There is no tool that copies a Discord server into Descall: channels, roles and settings are rebuilt by hand, and the message history stays where it is. That sounds like a lot of work, but most servers are smaller than their channel list suggests, and rebuilding is the moment to drop everything nobody uses. Your members can still read the old server for reference while the new one fills up. What really has to move is the habit of meeting in one place, and that is what the steps below are built around.",
+      },
+      {
+        h: "Step 1: write down what your community really uses",
+        p: "Open the old server and look at the last month. Which channels had messages, which voice rooms were busy and on which evenings, who did the moderation, and which bots did real work? Write it down as a short list: for many communities it is an announcements channel, a general chat, two or three topic channels, a couple of voice rooms and one staff room. Note the jobs your bots did as well, such as welcome messages, polls, timeouts or clearing spam, because you will want to know which of those jobs still need doing. This list is your plan, and anything not on it can wait until someone asks for it.",
+      },
+      {
+        h: "Step 2: create the server from a template",
+        p: "On Descall, a template sets up channels, categories, roles and permissions in one go, which saves an evening of clicking. Gaming hub fits clans and gaming groups, Community & creators fits public communities with events and a support desk, Friends hangout fits a private group, Study & campus fits classes and study groups, and Streamer & content fits a creator and their audience. Start from scratch gives you an empty server with only the @everyone role if you want to copy your old layout exactly. Whatever you pick, you can rename, move or delete every channel and role afterwards, so choose the template that is closest and adjust it.",
+      },
+      {
+        h: "Step 3: map your channels and categories",
+        p: "Go through your list and give each old channel a home in the new server. Keep the channel names your members know, because familiar names make the first days easier. Group them into categories, give each text channel a short topic so newcomers know what belongs there, and turn on slowmode in a channel that tends to get flooded. Descall has text, voice and stage channels: use voice channels for rooms people drop into, and a stage channel for talks and question rounds where a few people speak and everyone else listens. Resist the urge to recreate every archive channel. If an old channel was mainly for reading, link to it from your announcements instead.",
+      },
+      {
+        h: "Step 4: rebuild roles and permissions",
+        p: "Start with the roles that carry responsibility: owner team, admins, moderators, and maybe one or two member roles that change what people can do. Each role can have a colour, can be shown separately in the member list and can be made mentionable, and higher roles manage the ones below them. Most servers need only two kinds of channel override. In an announcements channel, deny Send messages for @everyone and allow it for staff. In a staff room, deny View channel for @everyone and allow it for your moderators. A channel without its own overrides follows its category, so setting permissions on a category is often enough. Cosmetic roles can come later, once people have settled in.",
+      },
+      {
+        h: "Step 5: rules, moderation and the jobs bots used to do",
+        p: "Write your rules in a rules channel and ask new members to accept them before they take part; Descall can require that. Moderators can delete messages, time members out, kick or ban, and every staff action is written to the audit log. Several jobs that need a bot elsewhere are built in as slash commands: /poll for a quick vote, /timeout, /kick and /ban for moderation, /purge to clear a burst of spam, and /nick to change a nickname. Mass mentions are limited by default, because @everyone and @here only work for the owner, admins and roles with that permission, and only once a minute per channel. Descall has no bot marketplace, so if your community depends on a custom bot, keep that part where it is for now.",
+      },
+      {
+        h: "Step 6: invites you stay in control of",
+        p: "Create an invite link for the move and decide how open it should be. When you create a link you can set when it expires and how many times it can be used, so a link posted somewhere public does not stay valid for ever. Someone who opens the link sees a preview of the server and joins after signing in or creating a free account with an e-mail address or a Google account. Descall accounts are for people aged 13 and over. Pin the link in the old server's announcements and in any group chat your community uses, so nobody has to ask for it twice.",
+      },
+      {
+        h: "Step 7: move the first voice night",
+        p: "Do not invite everyone on day one. Ask your most active members, five to ten people, to join the new server first and hold one normal voice evening there. They find the rough edges, set up their microphones and become the people who help others later. Ask everyone to use headphones and to try the microphone test in the voice settings before the call, and to keep AI noise suppression on. People can join from the Windows app, the iPhone and iPad app, the Android app or a browser at descall.com/app, so nobody is left out because of their device.",
+      },
+      {
+        h: "Step 8: announce the move and run both for a short while",
+        p: "Once the first evening worked, post the move in the old server: why you are moving, the invite link, the date when the voice nights switch, and who to ask for help. Then run both servers for a week or two. Hold every event and voice night on Descall, and leave the old server for reading and for people who have not made the jump yet. Schedule a reminder message for the evening before your first big event; Descall can send scheduled messages up to a year ahead. A clear date works better than a slow fade, because people move when they know where everyone else will be.",
+      },
+      {
+        h: "After the switch: tidy up",
+        p: "After a month, look at which channels stayed quiet and merge or delete them, and check that the moderators still have the permissions they need and no more. Invite links you no longer use can be deleted. Keep the old server's announcement pinned to the new link for latecomers. Everything in this guide, from templates and roles to stage channels, invites and moderation, is free on Descall. Descall is not affiliated with Discord Inc.; this guide only describes how to rebuild a community on Descall.",
+      },
+    ],
+  },
+
+  "descall-voice-settings-guide": {
+    sections: [
+      {
+        h: "Where the voice settings live",
+        p: "Every voice setting in Descall is on one page: open the settings and choose Voice & Video. The same settings are used in DM calls, group calls and server voice channels. They are saved on the device you change them on, so a headset setup on your desktop does not change how your phone sounds, and it is worth checking the page once on each device you use. This guide goes through the page from top to bottom, says what each setting does and what it is set to by default, and ends with ready-made setups for the most common situations.",
+      },
+      {
+        h: "Microphone, speaker and camera",
+        p: "The first block picks your devices. Choose your microphone and speaker by name instead of leaving them on System default, because laptops and webcams often bring a built-in microphone that the system prefers even when a headset is plugged in. If you connect a headset after the app has started and it is not in the list, press Refresh devices. If the microphone you selected disappears during a call, for example because you unplugged it, Descall switches to another microphone so the call keeps going. The camera choice on the same page is used for video calls.",
+      },
+      {
+        h: "AI noise suppression: Off, On or Strong",
+        p: "AI noise suppression removes keyboard clicks, fan noise and other steady background sound before your voice leaves your device. It has three levels. On is the default and suits most rooms. Strong adds a firmer gate on top, so quiet background sound between your sentences is cut more decisively; use it in a noisy room, and switch back to On if friends say the start of your words gets lost. Off sends your microphone without this processing. Descall runs the strongest method your device can handle smoothly and uses a lighter one on slower devices, and while suppression is on the browser's own noise filter is switched off, so two filters do not fight and make you sound muddy. If the cleaned-up signal stays silent while you are clearly talking, Descall falls back to your plain microphone so you are not cut off.",
+      },
+      {
+        h: "Echo cancellation and auto gain control",
+        p: "Echo cancellation is on by default. It stops your friends' voices, coming out of your speakers, from going back into your microphone. Leave it on whenever anyone might use speakers. If you wear closed headphones and your voice starts to sound hollow, you can try turning it off, because the processing has nothing to cancel. Auto gain control, also on by default, keeps your voice at an even level, so you do not have to lean in for quiet sentences and do not blast everyone when you laugh. Turn it off only if you use a good microphone with a fixed level, for example through an audio interface, and set the level yourself.",
+      },
+      {
+        h: "Input sensitivity",
+        p: "Input sensitivity decides when Descall treats you as speaking and lights the ring around your avatar. It goes from 0 to 100 and starts at 45, which suits normal speech on a laptop or phone microphone. Raise it if people miss the start of your sentences or your quiet speech. Lower it if the ring lights up from background noise while you are silent. Change it in small steps and test after each change, because sensitivity, gain and noise suppression affect each other.",
+      },
+      {
+        h: "Test before you join",
+        p: "The microphone test shows a level bar that moves while you talk, so you can see that the right microphone is working before anyone hears you. Turn on Hear yourself to listen to your own microphone while the test runs; wear headphones for this, or you will hear a loop. Listen for hum, breathing and distance. A headset microphone sounds best about two finger widths from the corner of your mouth, slightly to the side. Press Stop when you are done, because the test keeps the microphone open.",
+      },
+      {
+        h: "Push-to-talk in the Windows app",
+        p: "In the Windows app the page also has a push-to-talk switch. With it on, your microphone only opens while you hold the key, which is the most reliable fix for a loud keyboard or a shared room. You can choose between three keys: Ctrl+Shift+M, Ctrl+Shift+Space and Alt+Shift+M. In the free app, push-to-talk works while Descall is the active window. Push-to-talk that also works while a game or another app is in front is part of the optional Descall+ membership, together with a global mute key.",
+      },
+      {
+        h: "Ready-made setups",
+        p: "Gaming headset at a desk: pick the headset by name for both microphone and speaker, noise suppression On, echo cancellation and auto gain on, sensitivity at 45, and push-to-talk if your keyboard is loud. Laptop in a quiet room: built-in microphone, noise suppression On, echo cancellation on, because laptop speakers feed back easily, and wear earbuds if you can. Noisy shared room or dorm: noise suppression Strong, push-to-talk on in the Windows app, and sensitivity a little lower. Phone: on iPhone and iPad the system's own voice processing handles echo and noise, so a pair of earbuds is the best upgrade you can make.",
+      },
+      {
+        h: "A five-minute checklist",
+        p: "If you bought a new headset, switched computers or friends say they cannot hear you well, go through this in order. First pick your microphone and speaker by name on the Voice & Video page, and press Refresh devices if the list is incomplete. Start the microphone test, turn on Hear yourself and say a few sentences at your normal volume. If the bar does not move, the wrong microphone is selected or the operating system has not given the app microphone permission. If you sound hollow, check echo cancellation; if there is hum, check the noise suppression level. If the ring lights up while you are silent, lower the sensitivity a little. Finally, stop the test and make a short DM call with a friend, because a real call shows at once what the settings page cannot.",
+      },
+      {
+        h: "When the connection is the problem",
+        p: "In a server voice channel, the small connection indicator next to a person tells you how their link is doing. When a connection gets worse, Descall lowers the voice bitrate and, on a poor link, adds extra redundancy so speech survives lost packets instead of breaking up; the receiving side also buffers a little more audio. If you sound robotic to others, the settings page will not fix it: move closer to the router, use a cable, or pause big downloads. Calls switch to relay servers when a network blocks direct connections, so strict home or school networks can usually still connect.",
+      },
+      {
+        h: "What is free and what is extra",
+        p: "Everything on the Voice & Video page is free: device choice, the three noise suppression levels, echo cancellation, auto gain control, input sensitivity, the microphone test and push-to-talk in the Windows app. In a server voice channel, per-person volume from silent to twice as loud is free too. Descall+ adds audio tools on top, such as a noise gate with your own threshold, microphone presets, a microphone monitor, audio device profiles, automatic device switching and push-to-talk and mute that work in any app. Ultra includes everything in Descall+. For now, memberships are given out by the Descall team and through codes, with no published prices.",
+      },
+    ],
+  },
+
+  "game-team-voice-setup": {
+    sections: [
+      {
+        h: "Two kinds of team, two kinds of voice",
+        p: "A Minecraft crew and a five-person shooter team want very different things from voice chat. A building or survival server runs for hours, people drift in and out, and the talk is relaxed. A shooter team plays short, tense rounds where a callout has to arrive at once and nobody should talk over it. One Descall server can handle both, because voice channels stay open and people simply drop in. This guide sets up a server for a gaming group, then tunes the microphone and the rooms for each style of play.",
+      },
+      {
+        h: "Start from the Gaming hub template",
+        p: "Create a server and pick the Gaming hub template. It sets up a Welcome category with announcements, rules and introductions, a Community category with general, squad-up, clips-and-highlights and memes, and a Voice lobbies category with Lobby, Duo Queue, Five Stack, AFK / Chill and a Tournament Stage stage channel. There is also a staff area with a private chat, mod logs and Staff Voice. Roles come ready: Admin, Moderator, Helper, VIP and Member. Rename anything to fit your group; the template is a starting point, not a rule.",
+      },
+      {
+        h: "Rooms for a Minecraft crew",
+        p: "For a long-running Minecraft world, a few named voice rooms work better than one big lobby. Rename the lobbies after what people do, for example a building room, a room for exploring and one for chatting while someone farms, so friends can see at a glance where to join. Keep AFK / Chill for people who want to listen without talking. Use a text channel for coordinates, server addresses and plans, and pin the messages people look for again and again. When someone finishes a build, they can share their screen in the voice room with the Games, video setting and walk everyone through it.",
+      },
+      {
+        h: "Rooms for a shooter team",
+        p: "A competitive team usually needs fewer rooms with clearer rules. Use Five Stack for the active team during a match, Duo Queue for two people warming up, and Lobby for everyone else. Agree that the match room is for callouts only: short, calm, and nothing else while a round is live. Moderators and Helpers can mute members in voice and move them between rooms (give a captain role the same two permissions), which keeps the match room clean when someone joins at the wrong moment. For a scrim or tournament night with viewers, the Tournament Stage stage channel lets a few people talk while everyone else listens, and listeners can request to speak.",
+      },
+      {
+        h: "Microphone settings for callouts",
+        p: "Open the settings, choose Voice & Video, and pick your headset by name for both microphone and speaker. Keep AI noise suppression On so keyboard and mouse clicks stay out of the call, or set it to Strong if your setup is loud. Run the microphone test once so you know the right microphone is working. In the free Windows app, push-to-talk works while Descall is the active window, and in a shooter the game is in front, so most players use voice activation instead: tune the input sensitivity until the ring around your avatar lights up for speech and stays dark for clicks. Push-to-talk and mute that work while the game is in front are part of the optional Descall+ membership.",
+      },
+      {
+        h: "Hear everyone at the right volume",
+        p: "Every team has one friend who is twice as loud as everyone else. In a server voice channel, open the menu on that person and move their volume slider anywhere from silent to twice as loud; only you hear the change, and it does not touch your game volume. There is a separate slider for the sound of their screen share, so a loud stream does not drown out the callouts. Wear headphones: with speakers, your microphone picks the call up again and everyone hears an echo of themselves.",
+      },
+      {
+        h: "Review rounds and builds together",
+        p: "Screen sharing is how a team learns. After a match, one person can share a replay or a clip in the voice room while the others point out mistakes. For fast motion, choose Games, video in the quality panel. In a group call, Descall starts shares at 720p and 20 frames per second and warns you if you push it higher in a busy call; for one-to-one coaching in a DM call, the share starts at a higher quality and 60 frames per second is meant for exactly that. In the Windows app, the game's sound goes out with the picture, so the others hear what you hear.",
+      },
+      {
+        h: "Show what you are playing",
+        p: "In the Windows app, Descall can show your friends which game you are playing, so they know when to join. You find the switch under Privacy, Activity Status, Game activity, and you can turn it off at any time. Set your status to Do Not Disturb when you want to play without notifications, or set the clips channel to Only @mentions so it does not ping you during a match. Polls in the squad-up channel are a quick way to agree on a time for the next session.",
+      },
+      {
+        h: "Keep voice smooth while you play",
+        p: "Voice and the game share your connection. A cable beats Wi-Fi, and pausing big downloads and updates before a match helps both. Descall lowers the voice bitrate when a link gets worse and adds extra redundancy on a poor one, so callouts survive lost packets; the connection indicator next to each person shows how their link is doing. If one friend sounds robotic, the problem is usually their connection, not the app. Calls switch to relay servers when a network blocks a direct connection, so strict networks can usually still join. For long sessions, the Windows app is steadier than a browser tab.",
+      },
+      {
+        h: "A checklist for the first team night",
+        p: "Before the first evening, make sure everyone has done the following. Install the Windows app or open descall.com/app in a browser, join the server with the invite link and pick their headset by name on the Voice & Video page. Run the microphone test once and leave noise suppression On. Agree in advance who talks in the match room, how callouts are said and when there is time to chat between rounds. Then spend the first ten minutes on setup only: everyone talks in turn, per-person volumes get fixed, and the loud friend gets turned down on each listener's side. This short preparation takes far less time than hunting for a microphone in the middle of a match.",
+      },
+      {
+        h: "What it costs",
+        p: "Everything in this guide is free: the Gaming hub template, voice and stage channels, noise suppression, push-to-talk while Descall is in focus, per-person volume, screen share with game sound in the Windows app and game activity. Descall+ adds extras for players, such as push-to-talk and mute that work in any app and notifications that stay quiet while you are in a game except for the important ones. Ultra includes everything in Descall+. For now, memberships are given out by the Descall team and through codes, with no published prices.",
+      },
+    ],
+  },
+
+  "screen-share-online-classes": {
+    sections: [
+      {
+        h: "Pick the right room for the lesson",
+        p: "A class on Descall can happen in three kinds of room, and picking the right one avoids most problems. For a lecture or a talk with many listeners, use a stage channel: a few people speak and share, everyone else listens and can ask to speak. For a small study group or a workshop where everyone talks, use a normal voice channel. For one-to-one tutoring, a DM call is the simplest and starts screen shares at a higher quality, because only two people watch. All three are free and work the same way when you share a screen.",
+      },
+      {
+        h: "Set up a class server in minutes",
+        p: "Create a server with the Study & campus template. It brings a Campus category with announcements, rules and introductions, a Study category with general, homework-help, resources and accountability channels, and a Focus voice category with Silent Focus, Pomodoro Room, Group Project A and B and an Office Hours stage channel. Roles come ready: Admin, Moderator, Mentor, Study Buddy and Student. For a course, rename Mentor to Teacher or Tutor and keep Student for the class. The channel names are in English in the template, and you can rename every one of them, for example after your subjects.",
+      },
+      {
+        h: "Decide who can share",
+        p: "In a class, usually only the teacher should share a screen. The permission behind it is called Stream and camera. Open the permissions of your lecture channel, deny Stream and camera for @everyone and allow it for the Teacher role; students can still listen, watch and chat. In a stage channel this is partly built in: only people on stage can share, and listeners join as audience. In study rooms where everyone works together, leave the permission on so anyone can show their notes or code.",
+      },
+      {
+        h: "Run a lecture in a stage channel",
+        p: "In a stage channel, everyone who joins starts in the audience with their microphone off, so latecomers never interrupt. A student who has a question presses Request to Speak. Anyone with the Move members permission, such as the teacher or a moderator, can bring that student on stage to talk, and move them back with Move to Audience when they are done. That gives you a raised-hand system without extra tools. Give the Teacher role Move members in the class server, and the Office Hours channel from the template works as a lecture hall straight away.",
+      },
+      {
+        h: "Settings for slides, documents and code",
+        p: "When you press the screen share button, the quality panel asks what you are sharing. For slides, PDFs, spreadsheets and code, choose Text, code: it tells the encoder that sharp letters matter more than smooth motion. Fifteen or twenty frames per second is plenty for a presentation, and 1080p keeps small text readable; drop to 720p if students on weak connections see a blurry or frozen picture. For a video clip in the lesson, switch to Games, video. If you change the quality while you are live, Descall restarts the share for a moment with the new settings, so you do not have to stop and start it by hand.",
+      },
+      {
+        h: "Share a window, not your whole screen",
+        p: "A whole-screen share shows everything, including pop-up notifications, other chats and open tabs. Teaching from one window or one browser tab keeps the lesson focused and private. Before class, close what you would not show to a room full of students, and set your status to Do Not Disturb so message notifications stay quiet while you present. When the lesson ends, stop the share straight away instead of leaving it running.",
+      },
+      {
+        h: "Sound in the lesson",
+        p: "If you play a video or an audio example, the Windows app sends the sound of what you share together with the picture, and leaves Descall's own playback out, so students do not hear the call echoed back. In a browser, whether sound is shared depends on the browser and on what you choose in its sharing dialog; a browser tab is often the easiest way to share a video with sound. In a server voice channel, each student can set the volume of your screen share separately from your voice.",
+      },
+      {
+        h: "Students can join from anything",
+        p: "Students join from the Windows app, from the iPhone and iPad app, from the Android app, or from any modern browser at descall.com/app, which is useful on a school computer where nothing can be installed. Phones and tablets can watch a share. The iPhone and iPad app cannot share its own screen, so a student who wants to present needs a computer. Descall accounts are for people aged 13 and over, and under-18s need a parent's or guardian's permission.",
+      },
+      {
+        h: "Use the text chat during the lesson",
+        p: "Not everyone wants to ask a question out loud. Keep the lecture channel's text chat open and ask students to type short questions there, then answer them together when a part of the lesson is done. Writing down a link, a formula or a homework date instead of saying it also leaves a record for students who look for it later. In a big class, slowmode keeps dozens of messages arriving at once from burying the questions.",
+      },
+      {
+        h: "Before and after class",
+        p: "Use the announcements channel for the timetable and keep it read-only for students by denying Send messages for @everyone and allowing it for teachers. Schedule the reminder for the next lesson right after the current one; Descall can send scheduled messages up to a year ahead. A quick poll helps you pick a time for an extra session. Put slides, links and homework in the resources channel and pin what students need again, and because Descall can search the whole message history, last month's explanation is still easy to find.",
+      },
+      {
+        h: "A checklist for the first lesson",
+        p: "A day before the first lesson, do a five-minute rehearsal. Set up the server, give yourself the Teacher role and set the Stream and camera permission in the lecture channel. On the Voice & Video page, pick your microphone by name, run the microphone test and leave noise suppression On. Then join the stage channel with a second account or a friend and share your screen with Text, code: can the slides be read, does the sound come through, does Request to Speak work? Create the invite link with an expiry and a use limit and send it to the students through the channel the school already uses. At the start of the lesson, spend a minute on the ground rules: Request to Speak for questions, the channel chat for short notes.",
+      },
+      {
+        h: "When students cannot see well",
+        p: "If several students say the picture stutters, lower the resolution first and the frame rate second. If only one student has trouble, the problem is usually their connection, and the others still see a clean picture. A cable or a spot closer to the router helps the person sharing most of all. Calls switch to relay servers when a network blocks a direct connection, so strict school networks can usually still join. Everything in this guide is free on Descall, for teachers and students alike.",
+      },
+    ],
+  },
 };

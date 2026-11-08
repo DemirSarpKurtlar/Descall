@@ -121,6 +121,8 @@ router.post("/request", requireAuth, async (req, res) => {
     try {
       const { sendFriendRequestPush } = require("../lib/webPush");
       void sendFriendRequestPush(targetUser.id, { fromId: userId, from: senderUsername });
+      // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
+      require("../lib/reengage").fire("onFriendRequest", { toUserId: targetUser.id, fromId: userId, fromName: senderUsername });
     } catch (pushErr) {
       console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
     }

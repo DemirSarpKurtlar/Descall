@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Server, Loader2, LogIn, CheckCircle2, AlertTriangle, UserPlus, Ban } from "../ui/Icon.jsx";
 import { savePendingLanding, clearPendingLanding, serverInviteErrorKey } from "../../lib/serverInviteRoute";
@@ -13,8 +13,11 @@ import InviteLandingBrand from "./InviteLandingBrand";
 
 /**
  * Landing page for /s/:vanitySlug server vanity URLs.
+ *
+ * Logged out: one "Join with a free account" button (sign-up keeps the slug). Back signed in
+ * from that flow (autoJoin), the server is joined right away.
  */
-export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, onDismiss }) {
+export default function ServerVanityLanding({ slug, me, autoJoin = false, onJoined, onNeedLogin, onDismiss }) {
   const t = useT();
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -68,6 +71,15 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
 
   const server = preview?.server;
   const banned = Boolean(server?.banned && !server?.isMember);
+
+  const joinRef = useRef(null);
+  joinRef.current = handleJoin;
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!autoJoin || !me || loading || !server || banned || autoTried.current) return;
+    autoTried.current = true;
+    joinRef.current?.();
+  }, [autoJoin, me, loading, server, banned]);
 
   return (
     <div className="invite-landing">
@@ -133,12 +145,23 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
                 {t("Not now")}
               </button>
               {!me ? (
-                <button type="button" className="invite-landing-btn ghost" onClick={() => handleJoin("register")}>
-                  <UserPlus size={18} />
-                  {t("Sign up and join")}
-                </button>
+                <>
+                  <button type="button" className="invite-landing-btn ghost" onClick={() => handleJoin("login")}>
+                    <LogIn size={18} />
+                    {t("invl.haveAccount")}
+                  </button>
+                  <button
+                    type="button"
+                    className="invite-landing-btn primary"
+                    data-testid="server-vanity-join-free"
+                    onClick={() => handleJoin("register")}
+                  >
+                    <UserPlus size={18} />
+                    {t("invl.joinFree")}
+                  </button>
+                </>
               ) : null}
-              {!banned ? (
+              {me && !banned ? (
               <button
                 type="button"
                 className="invite-landing-btn primary"
@@ -156,12 +179,11 @@ export default function ServerVanityLanding({ slug, me, onJoined, onNeedLogin, o
                   ? t("Joining…")
                   : server.isMember
                     ? t("Open server")
-                    : me
-                      ? t("Accept Invite")
-                      : t("Log in to join")}
+                    : t("Accept Invite")}
               </button>
               ) : null}
             </div>
+            {!me ? <p className="invite-landing-hint">{t("Your invite is kept while you log in or sign up.")}</p> : null}
           </>
         )}
       </motion.div>

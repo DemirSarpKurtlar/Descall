@@ -1,0 +1,184 @@
+{
+  "$comment": "Guardrails for every Reel. The validator (lib/validator.mjs) enforces all of this before anything is rendered or posted. Phrases are matched case-insensitively (Turkish and plain lowercase) at a word start; a trailing * also matches suffixes (kötü* matches kötüdür). The retired game product terms (removed from the app in 2.13.0) are built in code (lib/validator.mjs RETIRED_TERMS) so this file never names them.",
+  "themes": {
+    "discord-tasima": "Topluluğunu Discord'dan taşımak (olgusal, kötüleme yok, Discord logosu yok)",
+    "ses-kalitesi": "Ses kalitesi ve gürültü engelleme",
+    "ekran-paylasimi": "Ekran paylaşımı",
+    "sunucular-roller": "Sunucular, kanallar ve roller",
+    "platformlar": "iPhone, Windows ve web",
+    "ucretsiz": "Ücretsiz özellikler",
+    "descall-plus": "Descall+ ayrıcalıkları",
+    "oyun": "Oyuncular için (Minecraft, CS2 ve diğerleri)",
+    "ders-grubu": "Ders ve çalışma grupları",
+    "ipuclari": "İpuçları ve kısayollar",
+    "surum-notlari": "Sürüm notlarından öne çıkanlar"
+  },
+  "limits": {
+    "minDurationSec": 10,
+    "maxDurationSec": 30,
+    "maxHookSec": 2.5,
+    "minScenes": 3,
+    "maxScenes": 6,
+    "maxWordsPerLine": 7,
+    "maxCharsPerLine": 34,
+    "maxLinesPerBlock": 3,
+    "maxHookLines": 2,
+    "maxVisualItems": 6,
+    "maxWordsPerVisualItem": 4,
+    "maxCaptionChars": 2200,
+    "minHashtags": 3,
+    "maxHashtags": 8,
+    "duplicateWindow": 30
+  },
+  "ctaMustContain": "descall.com",
+  "bannedPhrases": [
+    {
+      "reason": "disparaging language",
+      "phrases": [
+        "berbat*",
+        "rezalet*",
+        "rezil*",
+        "çöp*",
+        "kötü*",
+        "saçma*",
+        "felaket*",
+        "öldü*",
+        "pahalı*",
+        "kazık*",
+        "sömür*",
+        "kandır*",
+        "aptal*",
+        "beceriksiz*",
+        "terk et*",
+        "bıktı*",
+        "sıkıldın*"
+      ]
+    },
+    {
+      "reason": "unverifiable superlative or comparative claim",
+      "phrases": [
+        "en iyi*",
+        "en hızlı*",
+        "en güvenli*",
+        "en kaliteli*",
+        "en kolay*",
+        "en ucuz*",
+        "en temiz*",
+        "en net*",
+        "bir numara*",
+        "1 numara*",
+        "no 1",
+        "no. 1",
+        "#1",
+        "dünyanın*",
+        "türkiye'nin en*",
+        "lider*",
+        "rakipsiz*",
+        "eşsiz*",
+        "kusursuz*",
+        "mükemmel*",
+        "garanti*",
+        "%100",
+        "yüzde yüz",
+        "sıfır gecikme*",
+        "gecikmesiz*",
+        "hiç kopma*",
+        "hiç donma*",
+        "kesintisiz*",
+        "sınırsız*",
+        "limitsiz*",
+        "reklamsız*",
+        "uçtan uca*",
+        "daha iyi*",
+        "daha hızlı*",
+        "daha güvenli*",
+        "daha kaliteli*",
+        "daha ucuz*",
+        "daha hafif*",
+        "daha net*",
+        "milyon*",
+        "binlerce*",
+        "yüz binlerce*",
+        "herkes geçiyor*",
+        "herkes kullanıyor*",
+        "yerli",
+        "milli",
+        "kristal*",
+        "stüdyo kalitesi*"
+      ]
+    },
+    {
+      "reason": "legal or access topics we do not make claims about",
+      "phrases": [
+        "vpn",
+        "engellendi*",
+        "erişim engel*",
+        "yasaklandı*",
+        "yasağı*",
+        "yasaklı*",
+        "kapatıldı*",
+        "açıldı mı*",
+        "mahkeme*",
+        "dns"
+      ]
+    },
+    {
+      "reason": "competitor product names and pricing talk (Descall+ has no public purchase yet)",
+      "phrases": [
+        "nitro*",
+        "satın al*",
+        "abone ol*",
+        "fiyat*",
+        "indirim*",
+        "kampanya*",
+        "ödeme*",
+        "lira*",
+        "tl",
+        "₺",
+        "dolar*",
+        "$"
+      ]
+    },
+    {
+      "reason": "not confirmed as publicly shipped on the App Store",
+      "phrases": [
+        "apple watch*",
+        "saat uygulama*",
+        "testflight*"
+      ]
+    }
+  ],
+  "restrictedPhrases": [
+    {
+      "reason": "Discord is named only in the factual moving theme",
+      "phrases": [
+        "discord*"
+      ],
+      "onlyThemes": [
+        "discord-tasima"
+      ]
+    },
+    {
+      "reason": "release highlights ship to Windows and web first; the App Store build may lag",
+      "phrases": [
+        "iphone*",
+        "ipad*",
+        "app store*",
+        "ios"
+      ],
+      "notThemes": [
+        "surum-notlari",
+        "descall-plus"
+      ]
+    }
+  ],
+  "screenshotAllowlist": "screenshots.json",
+  "sourceRoots": [
+    "frontend/src",
+    "frontend/backend",
+    "frontend/electron",
+    "frontend/ios",
+    "appstore",
+    "docs/release-notes"
+  ]
+}

@@ -5,6 +5,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";
 import { serverHasPermission } from "../../lib/serverPermissions";
+import ServerDirectorySettings from "./ServerDirectorySettings";
 
 const VERIFICATION_LEVELS = [
   { value: "none", label: "None" },
@@ -194,6 +195,8 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
             </button>
           </div>
         </form>
+        {/* Public web directory (item 8): its own opt-in and Save, owner / administrator only. */}
+        <ServerDirectorySettings server={server} />
       </motion.div>
     </motion.div>,
     document.body

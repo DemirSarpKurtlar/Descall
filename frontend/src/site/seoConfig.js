@@ -3,6 +3,7 @@
 import { stripLocalePrefix } from "./localePaths.js";
 import { TR_LANDING_META, TR_BLOG_META } from "./seo/trMeta.js";
 import { PREFIXED_SITE_LOCALES, SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
+import { directoryRoutes } from "./directory/directoryRoutes.js";
 
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
@@ -188,6 +189,42 @@ const BASE_ROUTES = [
       "Map of Discord competitors in 2026: lighter friend apps, gaming suites, and voice classics, plus where Descall competes honestly.",
     changefreq: "monthly",
     priority: "0.85",
+    ogType: "article",
+  },
+  {
+    path: "/blog/move-discord-community-to-descall",
+    title: "Move a Discord Community to Descall, Step by Step",
+    description:
+      "Rebuild a Discord community on Descall without losing people: map channels and roles, set up invites, move the voice nights, then switch over.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/descall-voice-settings-guide",
+    title: "Descall Voice Settings: Best Setup for Clear Sound",
+    description:
+      "Every Descall voice setting explained: noise suppression levels, echo cancellation, gain, input sensitivity, mic test and push-to-talk, with setups.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/game-team-voice-setup",
+    title: "Game Team Voice Chat for Minecraft and Shooters | Descall",
+    description:
+      "Set up Descall voice for a Minecraft crew or a five-person shooter team: voice lobbies, callout settings, per-person volume and smooth voice in game.",
+    changefreq: "monthly",
+    priority: "0.8",
+    ogType: "article",
+  },
+  {
+    path: "/blog/screen-share-online-classes",
+    title: "Screen Sharing for Online Classes and Study Groups | Descall",
+    description:
+      "Teach or study together on Descall: a stage channel for lectures, the Text, code preset for slides, who may share, and tips for students joining.",
+    changefreq: "monthly",
+    priority: "0.8",
     ogType: "article",
   },
   {
@@ -452,6 +489,10 @@ const BASE_ROUTES = [
     priority: "0.5",
     lang: "tr",
   })),
+  // Public server directory (item 8): /communities and /tr/topluluklar, one page per
+  // category. Category pages with fewer than 3 listed servers are noindex at build time
+  // (scripts/prerender-seo.mjs writes dist/directory-manifest.json).
+  ...directoryRoutes(),
 ];
 
 /**

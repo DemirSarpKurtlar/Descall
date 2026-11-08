@@ -1,0 +1,72 @@
+# Daily copy of Google Search Console query data into Supabase
+# (public.seo_search_console_daily, supabase/migrations/20261111_search_console.sql).
+# Script: frontend/scripts/search-console-sync.mjs. Owner steps: docs/ops/search-console-sync.md.
+#
+# Needs:
+#   secret   GSC_SERVICE_ACCOUNT_JSON   the service account key file (JSON)
+#   variable GSC_SITE_URL               e.g. sc-domain:descall.com
+#   secret   SUPABASE_URL               same names as the backend (render.yaml)
+#   secret   SUPABASE_SERVICE_ROLE_KEY
+# Without GSC_SERVICE_ACCOUNT_JSON the job prints a notice and ends green.
+name: Search Console sync
+
+on:
+  schedule:
+    # Every day at 05:17 UTC (08:17 in Türkiye); Search Console data lags by 2-3 days.
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days to read (1-90)"
+        required: false
+        default: "28"
+      dry_run:
+        description: "Read from Google only, write nothing"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: search-console-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+      GSC_SITE_URL: ${{ vars.GSC_SITE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GSC_DAYS: ${{ github.event.inputs.days || '28' }}
+      GSC_DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '' }}
+    steps:
+      - name: Check configuration
+        id: gate
+        run: |
+          if [ -z "$GSC_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::notice title=Search Console sync skipped::Repository secret GSC_SERVICE_ACCOUNT_JSON is not set. See docs/ops/search-console-sync.md."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          sparse-checkout: |
+            frontend/scripts
+          sparse-checkout-cone-mode: true
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: 24
+
+      - name: Sync the last days of Search Console data
+        if: steps.gate.outputs.run == 'true'
+        run: node frontend/scripts/search-console-sync.mjs

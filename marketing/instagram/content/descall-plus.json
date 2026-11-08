@@ -1,0 +1,94 @@
+[
+  {
+    "id": "plus-mini-mod",
+    "theme": "descall-plus",
+    "title": "Descall+ pencere özellikleri",
+    "hook": { "lines": ["Arama ekranı", "*oyunun önünü kapatmasın*"] },
+    "scenes": [
+      {
+        "lines": ["*Mini mod:* küçük arama kartı", "istediğin köşede"],
+        "visual": { "type": "chips", "items": ["Mini mod", "Her zaman üstte", "Resim içinde resim"] }
+      },
+      {
+        "lines": ["Bir sohbeti", "*ayrı pencerede aç*"],
+        "visual": { "type": "stat", "value": "4", "label": "Ayrı pencereye kadar" }
+      },
+      {
+        "lines": ["Pencereleri", "*yarı saydam yap*"],
+        "visual": { "type": "toggles", "items": ["Pencere saydamlığı", "Oturumu geri yükle"] }
+      }
+    ],
+    "caption": "Descall+ üyelerine bilgisayar uygulamasında ek pencere özellikleri: aramayı küçültünce ekranda kalan ve köşeye sürükleyebildiğin mini mod, seçtiğin pencereleri her zaman üstte tutma, resim içinde resim arama ve bir sohbeti ya da kanalı ayrı pencerede açma (en fazla 4).\n\nNot: Descall+ üyelikleri şu an Descall ekibi tarafından veriliyor. Sohbet, ses ve sunucular herkes için ücretsiz.",
+    "hashtags": ["#descall", "#descallplus", "#windows", "#oyuncu"],
+    "sources": [
+      { "claim": "Mini mod Descall+ özelliği", "file": "frontend/src/premium/features.js", "match": "mini_mode: f\\(\"plus\"" },
+      { "claim": "Mini mod açıklaması", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Aramayı küçültünce ekranda kalan, sürükleyip köşeye bırakabildiğin küçük arama kartı" },
+      { "claim": "Her zaman üstte, resim içinde resim", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "\"name\": \"Her zaman üstte\"[\\s\\S]*\"name\": \"Resim içinde resim arama\"" },
+      { "claim": "Ayrı pencereler en fazla 4", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Bir sohbeti ya da kanalı kendi penceresinde aç, en fazla 4" },
+      { "claim": "Saydamlık ve oturumu geri yükleme", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "\"name\": \"Pencere saydamlığı\"[\\s\\S]*\"name\": \"Oturumu geri yükle\"" },
+      { "claim": "Üyelikler Descall ekibi tarafından veriliyor", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Üyelikler şu an Descall ekibi tarafından veriliyor" }
+    ]
+  },
+  {
+    "id": "plus-genel-kisayollar",
+    "theme": "descall-plus",
+    "title": "Descall+ genel kısayollar",
+    "hook": { "lines": ["Oyundan çıkmadan", "*sessize al*"] },
+    "scenes": [
+      {
+        "lines": ["*Genel sessize alma:*", "her uygulamadan tek kısayol"],
+        "visual": { "type": "keys", "items": [{ "keys": "Ctrl+Shift+M", "name": "Örnek kısayol" }] }
+      },
+      {
+        "lines": ["*Genel bas-konuş*", "başka uygulamadayken de çalışır"],
+        "visual": { "type": "checklist", "items": ["Genel bas-konuş", "Özel kısayollar", "Medya tuşları"] }
+      },
+      {
+        "lines": ["Her 30 günde", "*5.000 DesCoin hediye*"],
+        "visual": { "type": "stat", "value": "5.000", "label": "DesCoin / 30 gün" }
+      }
+    ],
+    "caption": "Descall+ ile bilgisayar uygulamasında kısayollar her yerde çalışır: genel sessize alma ile hangi uygulamadaysan tek kısayolla sessize alırsın, genel bas-konuş başka uygulamaları kullanırken de çalışır. Kendi kısayollarını seçebilir, aramalar için klavyendeki medya tuşlarını kullanabilirsin.\n\nDescall+ üyeliğinin her 30 günlük döneminde 5.000 DesCoin hediye edilir. Üyelikler şu an Descall ekibi tarafından veriliyor.",
+    "hashtags": ["#descall", "#descallplus", "#kısayol", "#oyuncu"],
+    "sources": [
+      { "claim": "Genel sessize alma ve bas-konuş Descall+ özelliği", "file": "frontend/src/premium/features.js", "match": "global_mute: f\\(\"plus\", true\\),\\s*global_ptt: f\\(\"plus\", true\\)" },
+      { "claim": "Genel sessize alma açıklaması", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Her uygulamadan bir kısayolla sessize al" },
+      { "claim": "Genel bas-konuş açıklaması", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Bas-konuş diğer uygulamaları kullanırken de çalışır" },
+      { "claim": "Özel kısayollar ve medya tuşları", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "\"name\": \"Özel kısayollar\"[\\s\\S]*\"name\": \"Medya tuşları\"" },
+      { "claim": "Varsayılan sessize alma kısayolu Ctrl+Shift+M", "file": "frontend/src/lib/shortcuts.js", "match": "\\{ mod: true, shift: true, key: \"m\" \\}, // mute" },
+      { "claim": "30 günde 5.000 DesCoin", "file": "frontend/src/premium/features.js", "match": "PLAN_COIN = Object.freeze\\(\\{ plus: 5000" },
+      { "claim": "Üyelikler Descall ekibi tarafından veriliyor", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Üyelikler şu an Descall ekibi tarafından veriliyor" }
+    ]
+  },
+  {
+    "id": "plus-ses-araclari",
+    "theme": "descall-plus",
+    "title": "Descall+ ses araçları",
+    "hook": { "lines": ["Mikrofonun üzerinde", "*tam kontrol*"] },
+    "scenes": [
+      {
+        "lines": ["*Gürültü kapısı:*", "eşiği sen belirle"],
+        "visual": { "type": "toggles", "items": ["Gürültü kapısı", "Ses etkinliği göstergesi"] }
+      },
+      {
+        "lines": ["Ayarlarını kaydet,", "*tek tıkla değiştir*"],
+        "visual": { "type": "chips", "items": ["Mikrofon ön ayarları", "Ses cihazı profilleri"] }
+      },
+      {
+        "lines": ["Yeni kulaklık takınca", "*otomatik geçiş*"],
+        "visual": { "type": "steps", "items": ["Kulaklığı tak", "Descall algılar", "Ses ona geçer"] }
+      }
+    ],
+    "caption": "Descall+ ses araçları: arka plan gürültüsü için kendi eşiğini ayarladığın gürültü kapısı, sesinin ne kadar yüksek olduğunu anlık gösteren ses etkinliği göstergesi, kaydedip değiştirebildiğin mikrofon ön ayarları ve her kulaklık için ayarları hatırlayan ses cihazı profilleri. Yeni bir kulaklık takınca Descall hemen ona geçebilir.\n\nÜyelikler şu an Descall ekibi tarafından veriliyor; temel gürültü engelleme herkes için ücretsiz ve açık.",
+    "hashtags": ["#descall", "#descallplus", "#mikrofon", "#seslisohbet"],
+    "sources": [
+      { "claim": "Ses araçları Descall+ özelliği", "file": "frontend/src/premium/features.js", "match": "mic_presets: f\\(\"plus\", false\\),\\s*noise_gate: f\\(\"plus\", false\\)" },
+      { "claim": "Gürültü kapısı açıklaması", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Arka plan gürültüsü için kendi eşiğini ayarla" },
+      { "claim": "Ses etkinliği göstergesi", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Sesinin ne kadar yüksek olduğunu anlık gör" },
+      { "claim": "Mikrofon ön ayarları ve cihaz profilleri", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "\"name\": \"Mikrofon ön ayarları\"[\\s\\S]*Her kulaklık için ayarları hatırla" },
+      { "claim": "Otomatik cihaz geçişi", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Yeni bir kulaklık takınca hemen ona geç" },
+      { "claim": "Temel gürültü engelleme varsayılan açık", "file": "frontend/src/lib/voiceProfile.js", "match": "noiseMode: \"on\"" },
+      { "claim": "Üyelikler Descall ekibi tarafından veriliyor", "file": "frontend/src/i18n/locales/premium.tr.js", "match": "Üyelikler şu an Descall ekibi tarafından veriliyor" }
+    ]
+  }
+]
