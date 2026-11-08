@@ -7,7 +7,7 @@ import { SITE_OPERATOR } from "../siteIdentity.js";
 import { OWNERSHIP_FAQ_EN, OWNERSHIP_FAQ_TR } from "../ownershipFacts.js";
 import { downloadTwin, faqTwin, featuresTwin, legalTwin, statusTwin, twinIcon } from "./pageTwins.js";
 import { alternativesTwin, compareTwin, discordAlternativeTwin } from "./landingTwins.js";
-import { aboutTwin, securityTwin, whoOwnsTwin } from "./infoTwins.js";
+import { aboutTwin, contactTwin, securityTwin, whoOwnsTwin } from "./infoTwins.js";
 import {
   ALTERNATIVE_HUB_FAQ,
   ALTERNATIVES_FAQ,
@@ -39,11 +39,6 @@ function escapeHtml(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-/** Escaped text with {name} placeholders replaced by ready HTML. */
-function fill(text, html = {}) {
-  return escapeHtml(text).replace(/\{(\w+)\}/g, (m, key) => (html[key] != null ? html[key] : m));
 }
 
 function brandBlock(loc = "en") {
@@ -153,7 +148,6 @@ export function corePageBody(path) {
   const target = bodyTarget(path);
   if (!target) return null;
   const { loc, bare, original } = target;
-  const isTr = loc === "tr";
   const isNew = isPrefixedLocale(loc);
   const n = navLabels(loc);
   const h = (p) => prefixHref(p, loc);
@@ -161,9 +155,7 @@ export function corePageBody(path) {
   const hn = (p) => (isNew ? prefixHref(p, loc) : p);
   const ctaLoc = isNew ? loc : "en";
   const tc = (s) => trCopy(s, loc);
-  const nc = (s) => newCopy(s, loc);
   const owner = `<strong class="ownership-name">${SITE_OPERATOR.operatorName}</strong>`;
-  const mail = `<a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a>`;
   switch (bare) {
     case "/": {
       const copy = homeHero(loc);
@@ -216,34 +208,9 @@ export function corePageBody(path) {
     case "/status":
       return twinMain("status", statusTwin(loc, path), loc);
 
+    // ContactPage (also /iletisim): the form is drawn with disabled fields (seo/infoTwins.js).
     case "/contact":
-      return isTr
-        ? `
-<main>
-  ${brandBlock("tr")}
-  <h1>Descall İletişim</h1>
-  <p>Destek, geri bildirim, basın ve güvenlik bildirimleri.</p>
-  <h2>Sahip</h2>
-  <p>${escapeHtml(SITE_OPERATOR.operatorName)}, Descall’ın sahibi ve kurucusudur. ${escapeHtml(SITE_OPERATOR.country)}</p>
-  <h2>Destek e-postası</h2>
-  <p><a href="mailto:${SITE_OPERATOR.supportEmail}">${SITE_OPERATOR.supportEmail}</a></p>
-  <h2>Güvenlik</h2>
-  <p>Güvenlik bildirimleri için aynı adrese yazın ve inceleyebilmemiz için yeterli ayrıntıyı ekleyin.</p>
-  ${navBlock("tr")}
-</main>`
-        : `
-<main>
-  ${brandBlock(loc)}
-  <h1>${escapeHtml(nc("Contact Descall"))}</h1>
-  <p>${escapeHtml(nc("Support, feedback, press, and security reports."))}</p>
-  <h2>${escapeHtml(nc("Owner"))}</h2>
-  <p>${fill(nc("{name} is the owner and founder of Descall."), { name: escapeHtml(SITE_OPERATOR.operatorName) })} ${escapeHtml(SITE_OPERATOR.country)}</p>
-  <h2>${escapeHtml(nc("Support email"))}</h2>
-  <p>${mail}</p>
-  <h2>${escapeHtml(nc("Security"))}</h2>
-  <p>${escapeHtml(nc("For security reports, email us and include enough detail to investigate safely."))}</p>
-  ${navBlock(loc)}
-</main>`;
+      return twinMain("contact", contactTwin(loc), loc);
 
     case "/privacy":
       return twinMain("legal", legalTwin(PRIVACY_CONTENT, siteLoc(loc), "privacy"), loc);

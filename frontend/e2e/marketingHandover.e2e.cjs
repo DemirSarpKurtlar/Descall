@@ -30,7 +30,7 @@ const MAX_MOVE_PX = 4;
 const MAX_CLS = 0.01;
 const MAX_HANDOVER = 0.005;
 
-/** Twins of the three SEO rounds: home and landings, the core pages, the info and SeoLandingShell pages. */
+/** Twins of the SEO rounds: home and landings, the core pages, the info and SeoLandingShell pages, contact. */
 const PAGES = [
   '/', '/features', '/faq', '/download', '/status', '/privacy', '/terms', '/copyright',
   '/de/faq', '/es/download', '/fr/status', '/pt-br/features', '/ru/privacy',
@@ -42,6 +42,8 @@ const PAGES = [
   '/de/compare/discord', '/es/alternatives', '/fr/about', '/pt-br/security', '/ru/who-owns-descall',
   '/de/blog', '/ru/best-discord-alternative-for-gamers',
   '/tr/compare/discord', '/tr/about', '/descall-sahibi', '/tr/blog',
+  // The contact page and its form (seo/infoTwins.js contactTwin).
+  '/contact', '/de/contact', '/ru/contact', '/iletisim',
 ];
 const WIDTHS = [1280, 390];
 // Local runs: --pages=/a,/b and --widths=1280 measure a subset.
