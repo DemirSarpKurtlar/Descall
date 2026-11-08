@@ -22,7 +22,7 @@ const TR_HUBS = [
   { to: "/tr/discord-alternatifi", label: "Discord alternatifi" },
   { to: "/tr/discord-alternatifleri", label: "Discord alternatifleri karşılaştırması" },
   { to: "/tr/discord-acildi-mi", label: "Discord açıldı mı? Son haberler" },
-  { to: "/tr/turk-discord", label: "Türkiye’de geliştirilen sohbet uygulaması" },
+  { to: "/tr/turk-sohbet-uygulamasi", label: "Türkiye’de geliştirilen sohbet uygulaması" },
   { to: "/tr/discord-yerine-ne-kullanilir", label: "Discord yerine ne kullanılır?" },
   { to: "/tr/sesli-sohbet-uygulamasi", label: "Sesli sohbet uygulaması" },
   { to: "/tr/oyuncu-sohbet-uygulamasi", label: "Oyuncu sohbet uygulaması" },

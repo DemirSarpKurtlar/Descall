@@ -53,6 +53,7 @@ const PERMANENT_REDIRECTS = {
   "/discord-alternative-turkey": "/tr/discord-alternatifi",
   "/tr/discord-alternative": "/tr/discord-alternatifi",
   "/tr/contact": "/iletisim",
+  "/tr/turk-discord": "/tr/turk-sohbet-uygulamasi",
   "/founder": "/who-owns-descall",
   "/owner": "/who-owns-descall",
   "/kurucu": "/descall-sahibi",

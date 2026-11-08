@@ -1,4 +1,29 @@
+/**
+ * FAQ page (/faq, /tr/faq, /<prefix>/faq). Every question here is visible on the page and
+ * in its FAQPage JSON-LD. The "quick" group answers what people ask AI assistants
+ * (Nov 2026, item 7 of the SEO audit); keep those answers short and checkable.
+ */
 export const FAQ_ITEMS = [
+  {
+    group: "quick",
+    q: "Which app can I use for voice chat with friends in Turkey?",
+    a: "Descall. It is free, built in Türkiye with a full Turkish interface, and opens from Turkey directly. Servers have voice channels that stay open, and DMs and group chats have voice and video calls and screen share, on Windows, iPhone and iPad, Android and the web.",
+  },
+  {
+    group: "quick",
+    q: "Is Descall free?",
+    a: "Yes. Chat, servers, voice, video and screen share are free on every platform. Descall+ and Descall Ultra are optional memberships with extra tools, mostly for the desktop app; for now they are given out by the Descall team and through codes, with no published prices. Optional cosmetics use DesCoin.",
+  },
+  {
+    group: "quick",
+    q: "Does Descall work on iPhone?",
+    a: "Yes. The Descall app for iPhone and iPad is on the App Store, with messages, voice and video calls and server voice channels. It can watch screen shares; to share your own screen, use the Windows app or a browser on a computer.",
+  },
+  {
+    group: "quick",
+    q: "How do I move my community from Discord?",
+    a: "Rebuild it on Descall. There is no import tool, so start from a server template, map your channels and roles, create an invite link with an expiry and a use limit, and hold the first voice night with your most active members before you invite everyone. The Descall blog has a step-by-step guide.",
+  },
   {
     group: "product",
     q: "Is Descall a Discord alternative?",
@@ -8,11 +33,6 @@ export const FAQ_ITEMS = [
     group: "product",
     q: "What is Descall?",
     a: "Descall is a modern messaging and calling app with DMs, real servers, WebRTC voice/video, screen share quality controls, a Windows desktop client, Android builds, and a browser app.",
-  },
-  {
-    group: "product",
-    q: "Is Descall free?",
-    a: "Yes. Chat, servers, voice, video, and screen share are free. Optional cosmetics use DesCoin and never gate core messaging or calls.",
   },
   {
     group: "product",
@@ -72,6 +92,8 @@ export const FAQ_ITEMS = [
 ];
 
 const GROUP_META = [
+  // Open by default: the short answers are visible without a click.
+  { id: "quick", title: "Quick answers", open: true },
   { id: "product", title: "Product" },
   { id: "servers", title: "Servers & communities" },
   { id: "download", title: "Download & accounts" },

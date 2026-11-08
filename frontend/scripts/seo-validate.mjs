@@ -222,6 +222,18 @@ if (!/discord alternative/i.test(pillar?.title || "")) {
   fail("/discord-alternative title should include the exact-match query");
 }
 
+// llms.txt / llms-full.txt (read by AI assistants): every descall.com page link is live,
+// never a redirect or a removed page.
+{
+  const { llmsFullTxt } = await import(pathToFileURL(path.join(root, "src/site/ownershipFacts.js")).href);
+  const FILES = new Set(["/", "/app", "/llms.txt", "/llms-full.txt"]);
+  const livePaths = new Set(PUBLIC_ROUTES.map((r) => r.path));
+  for (const [, p] of llmsFullTxt().matchAll(/https:\/\/descall\.com(\/[^\s),"]*)?/g)) {
+    const page = p || "/";
+    if (!FILES.has(page) && !livePaths.has(page)) fail(`llms.txt links ${page}, which is not a live page`);
+  }
+}
+
 const seoConfigSrc = fs.readFileSync(path.join(root, "src/site/seoConfig.js"), "utf8");
 if (!seoConfigSrc.includes("canonicalOrigin") || !seoConfigSrc.includes("https://descall.com")) {
   fail("seoConfig.js must pin canonicalOrigin to https://descall.com");
@@ -266,6 +278,17 @@ if (checkDist) {
       const robotsBody = fs.readFileSync(path.join(dist, "robots.txt"), "utf8");
       if (!robotsBody.includes("User-agent: GPTBot") || !robotsBody.includes("Allow: /llms.txt")) {
         fail("dist/robots.txt must allow GPTBot and /llms.txt");
+      }
+      // Every AI assistant crawler is allowed, and its group (a named group replaces `*`)
+      // still closes the app paths.
+      for (const group of robotsBody.split(/\n\s*\n/)) {
+        if (!/^User-agent:/m.test(group) || /^User-agent: \*$/m.test(group)) continue;
+        if (!/^Allow: \/$/m.test(group) || !/^Disallow: \/app\/$/m.test(group) || !/^Disallow: \/api\/$/m.test(group)) {
+          fail(`dist/robots.txt: the group of ${group.match(/^User-agent: (.+)$/m)?.[1]} must allow / and disallow /app/ and /api/`);
+        }
+      }
+      for (const ua of ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "PerplexityBot", "ClaudeBot", "Google-Extended"]) {
+        if (!robotsBody.includes(`User-agent: ${ua}\n`)) fail(`dist/robots.txt must name ${ua}`);
       }
 
       const indexXml = fs.readFileSync(path.join(dist, "sitemap.xml"), "utf8");

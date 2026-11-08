@@ -13,7 +13,7 @@ function previewForPath(path) {
   return { tone: "compare", mode: "chat" };
 }
 
-/** Turkish long-form landings (/tr/discord-alternatifi, /tr/turk-discord, …). */
+/** Turkish long-form landings (/tr/discord-alternatifi, /tr/turk-sohbet-uygulamasi, …). */
 export default function TrLandingPage({ onSignIn, onSignUp }) {
   const { pathname } = useLocation();
   const clean = (pathname || "/").replace(/\/+$/, "") || "/";

@@ -119,7 +119,7 @@ assert.ok(staged.report.de.missing.length > 0 && staged.report.de.missingLive.le
 assert.equal(staged.report.de.livePercent, 100);
 const servedGroups = await checkSiteI18n({ locales: ["de"], drafts: [], pageDrafts: {}, overrides: { de: deStaged } });
 assert.ok(servedGroups.errors.some((e) => /^de: \d+ strings without a translation/.test(e)), "served groups are strict");
-const onlyBlog = await checkSiteI18n({ locales: ["de"], drafts: [], pageDrafts: { niche: ["de"] }, overrides: { de: deStaged } });
+const onlyBlog = await checkSiteI18n({ locales: ["de"], drafts: [], pageDrafts: { niche: ["de"], guides: ["de"] }, overrides: { de: deStaged } });
 assert.ok(onlyBlog.report.de.groups.blog.live && !onlyBlog.report.de.groups.niche.live);
 assert.ok(onlyBlog.report.de.missingLive.length > 0, "the served group's gaps fail");
 assert.equal(onlyBlog.report.de.missingLive.length, onlyBlog.report.de.groups.blog.missing, "serving one group makes exactly its strings strict");
@@ -208,7 +208,8 @@ assert.deepEqual(mod.default, { a: "1", b: "2" });
   const deParts = await readSiteCatalogParts("de");
   assert.ok(deParts.core && deParts.features && deParts["blog-discord-competitors"], "de is split by page");
   assert.deepEqual(misplacedRows(deParts, rows), [], "de catalog follows the layout (site-i18n.mjs layout)");
-  for (const r of rows.filter((x) => partOfRow(x) !== PRERENDER_PART && deParts[partOfRow(x)]?.[x.en] == null)) {
+  // Strings only staged pages use (SITE_DRAFT_PAGE_GROUPS) may still be untranslated.
+  for (const r of rows.filter((x) => rowIsLive(x, "de") && partOfRow(x) !== PRERENDER_PART && deParts[partOfRow(x)]?.[x.en] == null)) {
     assert.fail(`de: ${JSON.stringify(r.en.slice(0, 50))} has no translation in ${partOfRow(r)}`);
   }
   // The browser loader never bundles "_" files, and English never loads the part map.

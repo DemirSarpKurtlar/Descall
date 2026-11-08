@@ -8,7 +8,7 @@ In production descall.com is a static Cloudflare Pages build: `npm run build:pro
 - App shell routes (`/app`, `/login`, `/register`, ...) send `x-robots-tag: noindex, follow`; they are never in a sitemap.
 - Each sitemap `<url>` carries `xhtml:link` alternates for every served language (en, tr, de, es, fr, pt-BR, ru) plus x-default, the same set as the page `<link rel=alternate>` (`hreflangAlternates` in `src/site/localePaths.js`).
 - Prerendered JSON-LD has `data-prerendered-jsonld="<path>"`; `JsonLd.jsx` keeps it on that path instead of adding a second copy, and replaces it after a client-side route change.
-- `robots.txt` names the AI search crawlers (OAI-SearchBot, Claude-SearchBot, Claude-User, Perplexity-User) and allows them; `llms.txt` keeps the Ownership section first.
+- `robots.txt` names the AI crawlers in one group (see round 5) and allows them, app paths excepted; `llms.txt` keeps the Ownership section first.
 - `node scripts/seo-validate.mjs` (part of `build:prod`): title <= 60, description <= 160 in every language (Nov 2026; it prints a per-language length report). `scripts/site-i18n.mjs` applies the same limits to translated titles.
 
 ## Nov 2026 SEO audit rules
@@ -38,6 +38,14 @@ Audit: `docs/reports/2026-11-06-seo-denetimi.md`.
 - **Letter case.** `backend/server.js` folds `/Features` to `/features` with the same rule as the Pages worker (`backend/lib/letterCaseRedirect.js`: only page paths in `dist`, never files, API paths or invite codes). On Render the canonical-host hop to descall.com comes first and the worker folds the case. `vercel.json` has no such rule: descall.com is not served by Vercel, and a redirect there cannot check that the lower-case page exists.
 - **Hand-over twins** for the compare, alternatives, gamers, blog index, about, security and ownership pages: see `frontend/docs/SEO_INDEXING.md`.
 - **Site catalogs per page.** `src/site/i18n/<id>/` holds `core.js` plus one file per page; `node scripts/site-i18n.mjs layout` rewrites it, `check` fails when a string is in a part its page does not load.
+
+## Nov 2026 round 5 rules (Nov 8)
+
+- **Own-brand Turkish URL.** `/tr/turk-discord` moved to `/tr/turk-sohbet-uygulamasi` (title "Descall: Türkiye’de Geliştirilen Ücretsiz Sohbet Uygulaması"); the old URL answers 301 in `public/_redirects`, `public/_worker.js` (`PERMANENT_REDIRECTS`), `vercel.json` and `backend/server.js` (`pagesWorkerRoutes.selftest.mjs` checks all four). Never put a competitor's brand in a slug, title or H1 as a generic word.
+- **AI assistants.** `robots.txt` has one group for the AI crawlers (`AI_CRAWLERS` in `scripts/generate-seo-files.mjs`: GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, Claude-User, PerplexityBot, Perplexity-User, Google-Extended, ...). A named group replaces `*` for that crawler, so the group repeats the app-path `Disallow` lines; `seo-validate --dist` fails if a named group lacks them. `llms.txt` / `llms-full.txt` come from `src/site/ownershipFacts.js`; `seo-validate` fails when they link a page that is not a live route.
+- **Quick answers.** The FAQ page starts with an open "Quick answers" group (free, iPhone, voice chat in Turkey, moving from Discord); its FAQPage JSON-LD carries the same visible questions. The Turkish own-brand landing shows the same questions in Turkish.
+- **Guides of Nov 8.** Four posts (`move-discord-community-to-descall`, `descall-voice-settings-guide`, `game-team-voice-setup`, `screen-share-online-classes`) are live in English and Turkish. They form the page group `guides` (`SITE_PAGE_GROUPS` in `src/site/siteLocales.js`), staged for de, es, fr, pt-BR and ru in `SITE_DRAFT_PAGE_GROUPS` until their bodies are translated (`node scripts/site-i18n.mjs export`, translate the parts, `import`, then remove the locales from the list). Their titles and descriptions are already translated because the served blog index links them.
+- **Search Console data.** `.github/workflows/search-console-sync.yml` copies the last 28 days of query data into `public.seo_search_console_daily` every day; owner steps in `docs/ops/search-console-sync.md`.
 
 ## Policy
 

@@ -56,7 +56,13 @@ assert.equal(sl.SITE_MIRROR_PATHS.length, 15);
 // --- page groups (blog, niche landings) -------------------------------------------------
 const content = await imp("src/site/content/discordSeoContent.js");
 const { NICHE_LANDINGS } = await imp("src/site/seo/nicheLandings.js");
-assert.deepEqual(sl.SITE_PAGE_GROUPS.blog, ["/blog", ...content.BLOG_POSTS.map((p) => p.path)], "blog group = index + BLOG_POSTS");
+// The blog is split in two groups: "blog" (served in every language) and "guides" (the
+// Nov 8 2026 posts, staged until their translation lands); together they are BLOG_POSTS.
+assert.deepEqual(
+  [...sl.SITE_PAGE_GROUPS.blog, ...sl.SITE_PAGE_GROUPS.guides].sort(),
+  ["/blog", ...content.BLOG_POSTS.map((p) => p.path)].sort(),
+  "blog + guides groups = index + BLOG_POSTS"
+);
 assert.deepEqual(
   [...sl.SITE_PAGE_GROUPS.niche].sort(),
   ["/best-discord-alternative-for-gamers", ...Object.keys(NICHE_LANDINGS)].sort(),
@@ -82,8 +88,8 @@ assert.deepEqual(sl.mirrorPathsFor("de", { pageDrafts: STAGED }), sl.SITE_MIRROR
 assert.deepEqual(sl.mirrorPathsFor("de", { pageDrafts: GROUPS_LIVE }), sl.ALL_MIRROR_PATHS);
 assert.deepEqual(
   sl.mirrorPathsFor("de", { pageDrafts: { blog: ["de"] } }),
-  [...sl.SITE_MIRROR_PATHS, ...sl.SITE_PAGE_GROUPS.niche],
-  "one group staged, the other served"
+  [...sl.SITE_MIRROR_PATHS, ...sl.SITE_PAGE_GROUPS.guides, ...sl.SITE_PAGE_GROUPS.niche],
+  "one group staged, the others served"
 );
 sl.setPageGroupPreview(true);
 assert.equal(sl.isMirrorPath("/blog", "de", { pageDrafts: STAGED }), true, "preview serves every group (tooling only)");

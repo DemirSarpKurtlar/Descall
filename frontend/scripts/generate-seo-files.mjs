@@ -58,46 +58,54 @@ function assertHttpsDescall(url) {
   }
 }
 
-function buildRobots() {
+/**
+ * Crawlers of AI assistants and AI search (ChatGPT, Claude, Perplexity, Gemini, ...).
+ * They get their own group, and a crawler that matches a named group ignores the `*`
+ * group, so the group repeats the app-path Disallow lines: marketing pages and the
+ * llms.txt files are open, the app, API and invite URLs stay closed for every bot.
+ */
+export const AI_CRAWLERS = [
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "ClaudeBot",
+  "Claude-SearchBot",
+  "Claude-User",
+  "anthropic-ai",
+  "PerplexityBot",
+  "Perplexity-User",
+  "Google-Extended",
+  "Applebot-Extended",
+  "CCBot",
+];
+
+/** Private and ephemeral paths, closed for every crawler. */
+export const ROBOTS_DISALLOW = `Disallow: /app/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /media/
+Disallow: /groups/
+Disallow: /friends/
+Disallow: /guilds/
+Disallow: /invite/
+Disallow: /i/
+Disallow: /debug/
+Disallow: /health
+Disallow: /*?*invite=
+Disallow: /*?*announcement=`;
+
+export function buildRobots() {
   const childAllows = SITEMAP_TABLES.map((t) => `Allow: /${t.file}`).join("\n");
   return `# Descall robots.txt — production (static, served from descall.com)
 # Ownership facts for language models: https://descall.com/llms.txt
 
-User-agent: GPTBot
+# AI assistants and AI search
+${AI_CRAWLERS.map((ua) => `User-agent: ${ua}`).join("\n")}
 Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Claude-SearchBot
-Allow: /
-
-User-agent: Claude-User
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Perplexity-User
-Allow: /
-
-User-agent: Applebot-Extended
-Allow: /
-
-User-agent: CCBot
-Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+${ROBOTS_DISALLOW}
 
 User-agent: *
 Allow: /
@@ -145,20 +153,7 @@ Allow: /icon-512.png
 Allow: /apple-touch-icon.png
 Allow: /manifest.webmanifest
 
-Disallow: /app/
-Disallow: /api/
-Disallow: /auth/
-Disallow: /admin/
-Disallow: /media/
-Disallow: /groups/
-Disallow: /friends/
-Disallow: /guilds/
-Disallow: /invite/
-Disallow: /i/
-Disallow: /debug/
-Disallow: /health
-Disallow: /*?*invite=
-Disallow: /*?*announcement=
+${ROBOTS_DISALLOW}
 
 Sitemap: ${SITE}/sitemap.xml
 `;

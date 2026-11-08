@@ -30,4 +30,7 @@ export const SITE_DRAFT_LOCALES = [];
 export const SITE_DRAFT_PAGE_GROUPS = {
   blog: [],
   niche: [],
+  // Four guides added on 2026-11-08 (English + Turkish live); their bodies are not
+  // translated yet. Titles and descriptions are, because live pages link to them.
+  guides: ["de", "es", "fr", "pt-BR", "ru"],
 };

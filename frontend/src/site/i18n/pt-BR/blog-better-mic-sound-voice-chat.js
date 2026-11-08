@@ -29,7 +29,6 @@ export default {
   "Turn down the loud friend, not the whole call": "Abaixe o amigo barulhento, não a chamada inteira",
   "Turn on noise suppression": "Ative a supressão de ruído",
   "Use push-to-talk in noisy rooms": "Use pressionar para falar em cômodos barulhentos",
-  "What is free and what is extra": "O que é grátis e o que é extra",
   "Why do my friends hear an echo of themselves?": "Por que meus amigos ouvem o eco da própria voz?",
   "Yes. It is in the voice settings for everyone and cuts keyboard, fan and other background noise. It cannot remove another person talking next to you.": "Sim. Ela fica nas configurações de voz para todos e reduz teclado, ventilador e outros ruídos de fundo. Ela não consegue apagar outra pessoa falando do seu lado."
 };

@@ -401,7 +401,7 @@ function MarketingAppSite({
         <Route path="/tr/faq" element={withLayout(FaqPage, openAuth)} />
         <Route path="/tr/discord-alternative" element={<Navigate to="/tr/discord-alternatifi" replace />} />
         <Route path="/tr/discord-alternatifi" element={withLayout(TrLandingPage, openAuth)} />
-        <Route path="/tr/turk-discord" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/turk-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/discord-yerine-ne-kullanilir" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/sesli-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/oyuncu-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />

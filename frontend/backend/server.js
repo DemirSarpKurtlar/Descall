@@ -384,6 +384,8 @@ app.post("/api/marketing/consent-event", (req, res, next) => {
 app.get(["/dimaai", "/dimaai/*"], (_req, res) => res.redirect(301, "/"));
 app.get(["/tr/dimaai", "/tr/dimaai/*"], (_req, res) => res.redirect(301, "/tr"));
 app.get(["/play", "/play/*", "/discord-alternative-for-lfg", "/blog/best-discord-alternative-for-lfg"], (_req, res) => res.redirect(301, "/"));
+// Own-brand Turkish URL (Nov 2026): same 301 as public/_redirects, public/_worker.js and vercel.json.
+app.get("/tr/turk-discord", (_req, res) => res.redirect(301, "/tr/turk-sohbet-uygulamasi"));
 // Merged marketing pages (SEO audit, Nov 2026): same 301s as public/_redirects,
 // public/_worker.js and vercel.json. Source of truth: src/site/seo/mergedPages.js.
 const MERGED_PAGE_REDIRECTS = {

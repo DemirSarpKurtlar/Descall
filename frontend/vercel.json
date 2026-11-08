@@ -64,6 +64,11 @@
       "statusCode": 301
     },
     {
+      "source": "/tr/turk-discord",
+      "destination": "/tr/turk-sohbet-uygulamasi",
+      "statusCode": 301
+    },
+    {
       "source": "/founder",
       "destination": "/who-owns-descall",
       "statusCode": 301
