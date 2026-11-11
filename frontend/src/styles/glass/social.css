@@ -1390,7 +1390,7 @@ html.glass-ui .user-settings.is-mobile.g-profile-edit .us-field span {
   font-size: 13px;
 }
 
-html.glass-ui .user-settings.is-mobile.g-profile-edit .us-field input,
+html.glass-ui .user-settings.is-mobile.g-profile-edit .us-field input:not([type="range"]),
 html.glass-ui .user-settings.is-mobile.g-profile-edit .us-field textarea {
   color: var(--g-t1);
   font-size: 16px;

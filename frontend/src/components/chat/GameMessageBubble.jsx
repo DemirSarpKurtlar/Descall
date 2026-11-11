@@ -9,6 +9,7 @@ const num = (n) => formatNumber(n, getLocale());
 import { casinoHiddenOnThisDevice } from "../../lib/casinoCommands";
 import SlotCabinet from "../games/SlotCabinet";
 import CoinFlipTable from "../games/CoinFlipTable";
+import RangeSlider from "../../premium/ui/RangeSlider.jsx";
 
 /* ── Playing card ─────────────────────────────────────────────── */
 
@@ -290,13 +291,14 @@ function LobbyTable({ credits, onBet, onHelp }) {
         </div>
         <div className="bj-bet-slider-row">
           <button type="button" onClick={() => setBet((b) => Math.max(10, b - 10))} aria-label={t("Decrease bet")}>−</button>
-          <input
-            type="range"
+          <RangeSlider
+            className="bj-range"
             min={10}
             max={Math.max(10, Math.min(25000, credits || 10))}
             step={10}
             value={Math.min(bet, Math.max(10, credits || 10))}
-            onChange={(e) => setBet(Number(e.target.value))}
+            onChange={(value) => setBet(Math.round(value))}
+            label={t("Bet")}
           />
           <button type="button" onClick={() => setBet((b) => Math.min(credits, b + 10))} aria-label={t("Increase bet")}>+</button>
         </div>

@@ -151,6 +151,7 @@ import { profanityMaskingActive, setExtraProfanityWords } from "./lib/profanity"
 import { isBlockedByMe, setBlockedUserIds } from "./lib/blockedUsers";
 import MessageComposer from "./components/chat/MessageComposer";
 import { requestFeedbackNudge } from "./components/feedback/FeedbackNudgeBanner";
+import { maybeRequestAppReview, noteAppOpen } from "./lib/appReview";
 import { openFeedbackModal } from "./lib/feedbackNudge";
 import { parseVoiceMeta, encodeVoiceContent } from "./lib/voiceMessage";
 import { applyGroupAvatar } from "./lib/avatarFile";
@@ -790,7 +791,13 @@ export default function App() {
     }
   }, [me?.language, setLocale]);
 
-  // Soft feedback nudge after voice/video calls end (≥45s)
+  // iOS app: remember the days the app is used, for the App Store rating request below.
+  useEffect(() => {
+    noteAppOpen();
+  }, []);
+
+  // After a call ends: the App Store rating sheet (iOS, a good long call, rarely),
+  // otherwise the soft feedback nudge (≥45s).
   useEffect(() => {
     if (call?.isInCall) {
       wasDmInCallRef.current = true;
@@ -802,7 +809,7 @@ export default function App() {
       const last = lastDmCallTimerRef.current;
       const secs = elapsedSeconds(last?.startedAt, last?.stoppedAt);
       lastDmCallTimerRef.current = null;
-      requestFeedbackNudge({ trigger: "after_call", callDurationMs: secs * 1000 });
+      if (!maybeRequestAppReview({ callMs: secs * 1000 })) requestFeedbackNudge({ trigger: "after_call", callDurationMs: secs * 1000 });
     }
   }, [call?.isInCall, call?.durationStartedAt, call?.durationStoppedAt]);
 
@@ -817,7 +824,7 @@ export default function App() {
       const last = lastGroupCallTimerRef.current;
       const secs = elapsedSeconds(last?.startedAt, last?.stoppedAt);
       lastGroupCallTimerRef.current = null;
-      requestFeedbackNudge({ trigger: "after_call", callDurationMs: secs * 1000 });
+      if (!maybeRequestAppReview({ callMs: secs * 1000 })) requestFeedbackNudge({ trigger: "after_call", callDurationMs: secs * 1000 });
     }
   }, [groupCall?.isInCall, groupCall?.durationStartedAt, groupCall?.durationStoppedAt]);
 
