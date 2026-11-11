@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import StoreKit
 import Capacitor
 
 /// Display / accessibility / power state for the Liquid Glass UI (2.9.151),
@@ -22,6 +23,7 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setStatusBarStyle", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAppInfo", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
     ]
 
     private var observers: [NSObjectProtocol] = []
@@ -102,5 +104,25 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
             "version": info["CFBundleShortVersionString"] as? String ?? "",
             "build": info["CFBundleVersion"] as? String ?? "",
         ])
+    }
+
+    /// Asks StoreKit to show Apple's own rating sheet ("Enjoying Descall?"). Apple decides
+    /// whether it appears (at most three times a year, never in TestFlight builds), so
+    /// `requested` only says the request was made. src/lib/appReview.js picks the moment.
+    @objc func requestReview(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let scene = UIApplication.shared.connectedScenes
+                .first { $0.activationState == .foregroundActive } as? UIWindowScene
+            guard let scene = scene else {
+                call.resolve(["requested": false])
+                return
+            }
+            if #available(iOS 16.0, *) {
+                AppStore.requestReview(in: scene)
+            } else {
+                SKStoreReviewController.requestReview(in: scene)
+            }
+            call.resolve(["requested": true])
+        }
     }
 }
