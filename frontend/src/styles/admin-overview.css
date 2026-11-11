@@ -178,6 +178,23 @@ button.aov-kpi:focus-visible { outline: 2px solid rgba(var(--adm-brand), 0.8); o
 .aov-src.is-google_ads { color: #93c5fd; }
 .aov-src.is-direct { color: #c4b5fd; }
 .aov-src.is-referral { color: #86efac; }
+.aov-origin { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.aov-origin i {
+  font-style: normal;
+  font-size: var(--fs-11);
+  line-height: 1.4;
+  padding: 0 6px;
+  border-radius: 6px;
+  color: var(--adm-t2);
+  background: color-mix(in srgb, var(--adm-t3) 14%, transparent);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aov-origin i.is-app { color: #93c5fd; }
+.aov-origin i.is-invite { color: #86efac; }
+.aov-origin i.is-heard { color: #fcd34d; }
 .aov-row-when { flex: none; text-align: right; font-size: 12px; line-height: 1.35; color: var(--adm-t3); }
 .aov-row-when b { display: block; font-weight: 500; color: var(--adm-t2); }
 .aov-empty { margin: 0; padding: 14px 16px 16px; font-size: 12.5px; color: var(--adm-t3); }

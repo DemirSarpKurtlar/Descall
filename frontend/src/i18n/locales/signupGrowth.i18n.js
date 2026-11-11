@@ -35,6 +35,15 @@ const FAIL_EN = {
 export const SIGNUP_GROWTH = {
   en: {
     nested: {
+      origin: {
+        method: { email: "Email", google: "Google", apple: "Apple", other: "Other sign-in" },
+        invite: { server: "Server invite", vanity: "Server link", group: "Group invite", friend: "Friend invite" },
+        guessed: "likely",
+        heardPrefix: "Said:",
+        searchTerm: "Searched:",
+        campaign: "Campaign:",
+        landing: "First page",
+      },
       heard: {
         title: "How did you hear about Descall?",
         lead: "Optional, one tap. It helps us reach more people like you.",
@@ -76,6 +85,15 @@ export const SIGNUP_GROWTH = {
   },
   tr: {
     nested: {
+      origin: {
+        method: { email: "E-posta", google: "Google", apple: "Apple", other: "Diğer giriş" },
+        invite: { server: "Sunucu daveti", vanity: "Sunucu bağlantısı", group: "Grup daveti", friend: "Arkadaş daveti" },
+        guessed: "tahmini",
+        heardPrefix: "Cevabı:",
+        searchTerm: "Aradığı:",
+        campaign: "Kampanya:",
+        landing: "İlk sayfa",
+      },
       heard: {
         title: "Descall'ı nereden duydun?",
         lead: "İsteğe bağlı, tek dokunuş. Senin gibi daha çok kişiye ulaşmamıza yardım eder.",
@@ -144,6 +162,15 @@ export const SIGNUP_GROWTH = {
   },
   de: {
     nested: {
+      origin: {
+        method: { email: "E-Mail", google: "Google", apple: "Apple", other: "Andere Anmeldung" },
+        invite: { server: "Servereinladung", vanity: "Serverlink", group: "Gruppeneinladung", friend: "Freundeseinladung" },
+        guessed: "vermutlich",
+        heardPrefix: "Antwort:",
+        searchTerm: "Gesucht:",
+        campaign: "Kampagne:",
+        landing: "Erste Seite",
+      },
       heard: {
         title: "Wie hast du von Descall erfahren?",
         lead: "Freiwillig, ein Tipp genügt. So erreichen wir mehr Leute wie dich.",
@@ -212,6 +239,15 @@ export const SIGNUP_GROWTH = {
   },
   es: {
     nested: {
+      origin: {
+        method: { email: "Correo", google: "Google", apple: "Apple", other: "Otro inicio de sesión" },
+        invite: { server: "Invitación a servidor", vanity: "Enlace de servidor", group: "Invitación a grupo", friend: "Invitación de amigo" },
+        guessed: "probable",
+        heardPrefix: "Respuesta:",
+        searchTerm: "Buscó:",
+        campaign: "Campaña:",
+        landing: "Primera página",
+      },
       heard: {
         title: "¿Cómo conociste Descall?",
         lead: "Opcional, un toque. Nos ayuda a llegar a más gente como tú.",
@@ -280,6 +316,15 @@ export const SIGNUP_GROWTH = {
   },
   fr: {
     nested: {
+      origin: {
+        method: { email: "E-mail", google: "Google", apple: "Apple", other: "Autre connexion" },
+        invite: { server: "Invitation serveur", vanity: "Lien de serveur", group: "Invitation de groupe", friend: "Invitation d’un ami" },
+        guessed: "probable",
+        heardPrefix: "Réponse :",
+        searchTerm: "Recherche :",
+        campaign: "Campagne :",
+        landing: "Première page",
+      },
       heard: {
         title: "Comment as-tu connu Descall ?",
         lead: "Facultatif, un seul geste. Ça nous aide à toucher plus de gens comme toi.",
@@ -348,6 +393,15 @@ export const SIGNUP_GROWTH = {
   },
   "pt-BR": {
     nested: {
+      origin: {
+        method: { email: "E-mail", google: "Google", apple: "Apple", other: "Outro login" },
+        invite: { server: "Convite de servidor", vanity: "Link de servidor", group: "Convite de grupo", friend: "Convite de amigo" },
+        guessed: "provável",
+        heardPrefix: "Resposta:",
+        searchTerm: "Pesquisou:",
+        campaign: "Campanha:",
+        landing: "Primeira página",
+      },
       heard: {
         title: "Como você conheceu o Descall?",
         lead: "Opcional, um toque. Isso nos ajuda a alcançar mais gente como você.",
@@ -416,6 +470,15 @@ export const SIGNUP_GROWTH = {
   },
   ru: {
     nested: {
+      origin: {
+        method: { email: "Почта", google: "Google", apple: "Apple", other: "Другой вход" },
+        invite: { server: "Приглашение на сервер", vanity: "Ссылка на сервер", group: "Приглашение в группу", friend: "Приглашение друга" },
+        guessed: "вероятно",
+        heardPrefix: "Ответ:",
+        searchTerm: "Искал:",
+        campaign: "Кампания:",
+        landing: "Первая страница",
+      },
       heard: {
         title: "Как вы узнали о Descall?",
         lead: "Необязательно, одно касание. Это помогает нам находить больше таких людей, как вы.",

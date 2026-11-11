@@ -28,7 +28,11 @@ const { loadSystemSettings, applySystemConfigToState } = require("../lib/systemS
 
 const ROSTER_LIMIT = 20;
 const QUERY_MS = 5000;
-const JOINED_COLS = "id, username, display_name, avatar_url, created_at, signup_at, last_seen, first_touch_source";
+const { signupOrigin, ORIGIN_COLS } = require("../lib/signupOrigin");
+
+const JOINED_COLS_BASE = "id, username, display_name, avatar_url, created_at, signup_at, last_seen, first_touch_source";
+// Origin detail for the newly-joined list; falls back to JOINED_COLS_BASE when a column is missing.
+const JOINED_COLS = `${JOINED_COLS_BASE}, ${ORIGIN_COLS.join(", ")}`;
 const JOINED_COLS_FALLBACK = "id, username, display_name, avatar_url, created_at, last_seen";
 const ACTIVE_COLS = "id, username, display_name, avatar_url, created_at, last_seen";
 
@@ -156,6 +160,13 @@ router.get("/overview", async (req, res) => {
 
     if (joinedRes.error && isMissingColumnError(joinedRes.error)) {
       joinedRes = await withTimeout(
+        supabase.from("users").select(JOINED_COLS_BASE).order("created_at", { ascending: false }).limit(ROSTER_LIMIT),
+        QUERY_MS,
+        { error: { message: "timeout" } }
+      );
+    }
+    if (joinedRes.error && isMissingColumnError(joinedRes.error)) {
+      joinedRes = await withTimeout(
         supabase
           .from("users")
           .select(JOINED_COLS_FALLBACK)
@@ -190,7 +201,10 @@ router.get("/overview", async (req, res) => {
     }));
 
     const live = livePulse.slice(0, 12).map(publicPerson);
-    const newlyJoined = joinedRows.map((u) => publicPerson(enrichDbRow(u, liveIds, onlineById)));
+    const newlyJoined = joinedRows.map((u) => ({
+      ...publicPerson(enrichDbRow(u, liveIds, onlineById)),
+      origin: signupOrigin(u),
+    }));
     const recentlyActive = mergeRecentlyActive({
       liveRows: livePulse,
       dbRows: activeRows.map((u) => enrichDbRow(u, liveIds, onlineById)),
