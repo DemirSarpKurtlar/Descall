@@ -1198,7 +1198,8 @@
   color: var(--text-muted);
 }
 
-.us-field input,
+/* Text-like fields only: a range input drawn as a padded box loses its track and thumb. */
+.us-field input:not([type="range"]),
 .us-field textarea,
 .us-field select {
   width: 100%;
@@ -1237,7 +1238,7 @@
   font-size: 12.5px;
 }
 
-.us-field input:focus,
+.us-field input:not([type="range"]):focus,
 .us-field textarea:focus,
 .us-field select:focus {
   border-color: var(--primary);

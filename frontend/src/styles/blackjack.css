@@ -495,9 +495,9 @@
   cursor: pointer;
 }
 
-.bj-bet-slider-row input[type="range"] {
+.bj-bet-slider-row .bj-range {
   flex: 1;
-  accent-color: var(--bj-gold);
+  --dsc-fill: var(--bj-gold);
 }
 
 .bj-deal-btn {

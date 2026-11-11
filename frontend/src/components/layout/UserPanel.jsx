@@ -83,6 +83,7 @@ import {
   setNoiseMode,
 } from "../../lib/noiseSuppression";
 import { PTT_ACCELERATORS, readVoiceProfile, writeVoiceProfile } from "../../lib/voiceProfile";
+import RangeSlider from "../../premium/ui/RangeSlider.jsx";
 
 /** Language name in the current UI language ("de" -> "Almanca" in Turkish), from Intl. */
 function languageLabel(id, uiLocale) {
@@ -2654,12 +2655,13 @@ const UserPanel = forwardRef(function UserPanel({
                 </SettingRow>
                 <label className="us-field us-field-inset">
                   <span>{t("Input sensitivity")}</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={voiceProfile.inputSensitivity}
-                    onChange={(event) => patchVoice({ inputSensitivity: Number(event.target.value) })}
+                  <RangeSlider
+                    min={0}
+                    max={100}
+                    value={Number(voiceProfile.inputSensitivity) || 0}
+                    onChange={(value) => patchVoice({ inputSensitivity: Math.round(value) })}
+                    label={t("Input sensitivity")}
+                    valueText={`${Math.round(Number(voiceProfile.inputSensitivity) || 0)}%`}
                   />
                 </label>
                 <p className="us-row-desc us-field-inset-hint">
