@@ -54,6 +54,27 @@ function sourceLabel(key, t) {
   return map[key] || key;
 }
 
+/** One short line of chips for a new signup: platform, referrer and first page, country, sign-in, invite, answer. */
+function originBits(origin, t) {
+  if (!origin) return [];
+  const bits = [];
+  if (origin.platform) {
+    const label = t(`adminx.signupSource.platforms.${origin.platform}`);
+    bits.push({ key: "pl", text: origin.appGuessed ? `${label} (${t("sgx.origin.guessed")})` : label, tone: origin.app ? "app" : "" });
+  }
+  if (origin.referrer || origin.landing) {
+    const where = [origin.referrer, origin.landing].filter(Boolean).join(" \u2192 ");
+    bits.push({ key: "ref", text: where, title: origin.landing ? `${t("sgx.origin.landing")}: ${origin.landing}` : undefined });
+  }
+  if (origin.term) bits.push({ key: "term", text: `${t("sgx.origin.searchTerm")} ${origin.term}` });
+  if (origin.campaign) bits.push({ key: "cmp", text: `${t("sgx.origin.campaign")} ${origin.campaign}` });
+  if (origin.invite) bits.push({ key: "inv", text: t(`sgx.origin.invite.${origin.invite}`), tone: "invite" });
+  if (origin.method) bits.push({ key: "m", text: t(`sgx.origin.method.${["email", "google", "apple"].includes(origin.method) ? origin.method : "other"}`) });
+  if (origin.country) bits.push({ key: "cc", text: origin.country });
+  if (origin.heard) bits.push({ key: "h", text: `${t("sgx.origin.heardPrefix")} ${t(`sgx.heard.option.${origin.heard}`)}`, tone: "heard" });
+  return bits;
+}
+
 function personName(user) {
   return user.displayName || user.username || "\u2014";
 }
@@ -274,7 +295,16 @@ export default function AdminOverview({ onOpenPerson, onGoto }) {
                     {user.username && user.displayName && user.displayName !== user.username ? <small>@{user.username}</small> : null}
                   </b>
                   {kind === "joined" ? (
-                    <em className={`aov-src is-${user.source || "unknown"}`}>{source || t("admin.other")}</em>
+                    <>
+                      <em className={`aov-src is-${user.source || "unknown"}`}>{source || t("admin.other")}</em>
+                      {originBits(user.origin, t).length > 0 ? (
+                        <span className="aov-origin">
+                          {originBits(user.origin, t).map((bit) => (
+                            <i key={bit.key} className={bit.tone ? `is-${bit.tone}` : undefined} title={bit.title}>{bit.text}</i>
+                          ))}
+                        </span>
+                      ) : null}
+                    </>
                   ) : (
                     <em><span className={`aov-dot is-${status}`} />{presenceLabel(status, t)}</em>
                   )}
