@@ -304,7 +304,13 @@ jobs:
         run: |
           set -euo pipefail
           # altool finds the key in ~/.appstoreconnect/private_keys/AuthKey_<id>.p8
-          xcrun altool --upload-app --type ios --file "$IPA_PATH" \
+          # --upload-package with the app's numeric Apple ID: Xcode 26's `--upload-app`
+          # looks the app up from the bundle ID and failed with "Cannot determine the
+          # Apple ID from Bundle ID" on 2026-11-13 (3.7.44), while the same key signed
+          # the export fine. Passing the IDs skips that lookup.
+          xcrun altool --upload-package "$IPA_PATH" --type ios \
+            --apple-id "$ASC_APP_ID" --bundle-id "$BUNDLE_ID" \
+            --bundle-version "$BUILD_NUMBER" --bundle-short-version-string "$MARKETING_VERSION" \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
             --show-progress --output-format normal 2>&1 | tee "$LOG_DIR/upload.log"
           grep -Ei "UPLOAD SUCCEEDED|Delivery UUID" "$LOG_DIR/upload.log"
