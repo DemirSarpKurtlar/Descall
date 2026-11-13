@@ -220,7 +220,15 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="server-modal-overlay" role="presentation" onClick={onClose}>
+    <motion.div
+      className="server-modal-overlay"
+      role="presentation"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      onClick={onClose}
+    >
       <motion.div
         className="server-modal server-channel-perms-modal"
         role="dialog"
@@ -403,7 +411,7 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
           </>
         )}
       </motion.div>
-    </div>,
+    </motion.div>,
     document.body
   );
 }
