@@ -33,4 +33,8 @@ export const MSG5_ES = {
     email: "Notificaciones por correo",
     emailDesc: "Correos sobre solicitudes de amistad e invitaciones que te perdiste, y algunos consejos para cuentas nuevas.",
   },
+  media: {
+    imageFailed: "No se pudo cargar la imagen",
+    videoFailed: "No se pudo cargar el video",
+  },
 };

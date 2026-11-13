@@ -112,7 +112,7 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-ide
   transition: background 0.15s;
 }
 .group-photo-card-btn:hover { background: rgba(255, 255, 255, 0.14); }
-.group-photo-card-btn.is-danger { color: var(--danger, #ff5a5f); }
+.group-photo-card-btn.is-danger { color: var(--danger-text, #ff5a5f); }
 .group-photo-card-btn:disabled { opacity: 0.55; cursor: progress; }
 html[data-theme="light"] .group-photo-card { background: rgba(0, 0, 0, 0.035); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
 html[data-theme="light"] .group-photo-card-btn { background: rgba(0, 0, 0, 0.05); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); color: var(--text-0, #111); }

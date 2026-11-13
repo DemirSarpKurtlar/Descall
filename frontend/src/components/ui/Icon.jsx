@@ -122,6 +122,7 @@ import {
   GridFour as PGridFour,
   Hammer as PHammer,
   HandPalm as PHandPalm,
+  HandWaving as PHandWaving,
   Handshake as PHandshake,
   HardDrive as PHardDrive,
   HardDrives as PHardDrives,
@@ -449,6 +450,7 @@ export const ImageOff = make(PImageBroken, "ImageOff");
 export const HelpCircle = make(PQuestion, "HelpCircle");
 export const Heart = make(PHeart, "Heart");
 export const HandMetal = make(PHandPalm, "HandMetal");
+export const HandWaving = make(PHandWaving, "HandWaving");
 export const GripVertical = make(PDotsSixVertical, "GripVertical");
 export const GitBranch = make(PGitBranch, "GitBranch");
 export const Gavel = make(PGavel, "Gavel");
@@ -727,6 +729,7 @@ const BY_NAME = {
   HelpCircle,
   Heart,
   HandMetal,
+  HandWaving,
   GripVertical,
   GitBranch,
   Gavel,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useMemo, Suspense, lazy, useSyncExternalStore } from "react";
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
@@ -429,6 +429,7 @@ const UserPanel = forwardRef(function UserPanel({
   // 3.0: a wide iPad gets the desktop form sheet (sidebar + detail, mockup 36), not the phone stack.
   const ipadSheet = useIpadSettingsSheet(isMobileViewport && !glassShell);
   const isMobile = isMobileViewport && !ipadSheet;
+  const reduceMotion = useReducedMotion();
   const { t, locale, setLocale, locales } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -2820,6 +2821,9 @@ const UserPanel = forwardRef(function UserPanel({
     if (panelRef.current && !panelRef.current.contains(e.target)) onClose?.();
   };
 
+  const desktopFade = reduceMotion
+    ? { duration: 0.1, ease: "linear" }
+    : { duration: 0.18, ease: "easeOut" };
   const shellVariants = isMobile
     ? {
         // Mobile sheet: dim backdrop in parallel with the slide-up panel
@@ -2834,27 +2838,18 @@ const UserPanel = forwardRef(function UserPanel({
         },
       }
     : {
+        // Desktop: the dim fades in and out together with the card. It used to
+        // run first ("beforeChildren": ~200 ms of dark, empty window before the
+        // card) and last ("afterChildren": the window stayed dark after the
+        // card was gone), with a curve that reached 50% in one frame, so the
+        // whole window read as a hard flash to black on open and close.
         hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            duration: 0.2,
-            ease: [0.22, 1, 0.36, 1],
-            when: "beforeChildren",
-          },
-        },
-        exit: {
-          opacity: 0,
-          transition: {
-            duration: 0.18,
-            ease: [0.4, 0, 1, 1],
-            when: "afterChildren",
-          },
-        },
+        visible: { opacity: 1, transition: desktopFade },
+        exit: { opacity: 0, transition: desktopFade },
       };
 
   // Mobile: full-screen sheet from the bottom (clearly visible).
-  // Desktop: centered card scale + rise.
+  // Desktop: centered card scale + rise (a plain fade with reduced motion).
   const panelVariants = isMobile
     ? {
         hidden: { y: "100%" },
@@ -2866,6 +2861,12 @@ const UserPanel = forwardRef(function UserPanel({
           y: "100%",
           transition: { duration: 0.22, ease: [0.4, 0, 1, 1] },
         },
+      }
+    : reduceMotion
+    ? {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: desktopFade },
+        exit: { opacity: 0, transition: desktopFade },
       }
     : {
         hidden: { opacity: 0, scale: 0.92, y: 24 },

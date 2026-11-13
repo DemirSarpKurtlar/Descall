@@ -267,7 +267,7 @@
   font-variant-numeric: tabular-nums;
 }
 .dir-invalid {
-  color: var(--danger, #f23f43);
+  color: var(--danger-text, #f23f43);
 }
 .dir-status {
   margin: 0;
@@ -275,7 +275,7 @@
   color: var(--text-2);
 }
 .dir-status.is-on {
-  color: var(--success, #23a55a);
+  color: var(--success-text, #23a55a);
 }
 .svh-group.dir-hub {
   padding: 4px 14px 14px;

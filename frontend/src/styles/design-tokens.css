@@ -34,6 +34,14 @@
   --profile-banner-fallback: linear-gradient(180deg, rgba(88, 122, 245, 0.22), rgba(88, 122, 245, 0.06)), #393C4D;
   --danger: #DA373C;
   --danger-soft: rgba(218, 55, 60, 0.12);
+  /* Status ink for text and icons. --danger / --success / --warning stay the
+     fill colours (buttons, dots, badges with white text). As text on the dark
+     surfaces they are too dark (#DA373C is 3.0:1 on --surface-2), so text uses
+     these lighter inks: >= 4.8:1 on --surface-0..3. Light theme and desktop
+     glass set their own values (see below and glass-desktop/tokens.css). */
+  --danger-text: #FF7B7B;
+  --success-text: #3DDC84;
+  --warning-text: #F0B232;
 
   /* 🏗️ Surface Colors, Premium dark gray theme */
   --surface-0: #111214;
@@ -202,6 +210,10 @@
   --text-3: #61636B;
   --text-muted: #60636B;
   --text-link: #006CE7;
+  /* Darker status ink on white / light grey (>= 4.5:1 on #E3E5E8). */
+  --danger-text: #B42318;
+  --success-text: #13703A;
+  --warning-text: #8A5A00;
 
   --border-0: rgba(0, 0, 0, 0.0);
   --border-1: rgba(0, 0, 0, 0.04);

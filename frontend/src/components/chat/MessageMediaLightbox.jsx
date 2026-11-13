@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { X, Download, Copy, ExternalLink, ChevronLeft, ChevronRight, Plus, Minus } from "../ui/Icon.jsx";
+import { X, Download, Copy, ExternalLink, ChevronLeft, ChevronRight, Plus, Minus, ImageOff } from "../ui/Icon.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatViewerTime } from "../../lib/mediaViewerHeader";
 import { usePrivateMediaUrl } from "../../lib/privateMediaUrls";
+import { computeMediaBox, mediaBoxStyle, rememberMediaDims, rememberedMediaDims } from "../../lib/mediaBox";
 import {
   DOUBLE_TAP_SCALE, MAX_SCALE, clampPan, rubberBand, shouldDismiss, swipeStep, zoomAt,
 } from "../../lib/mediaViewerMath";
@@ -42,6 +43,9 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
   const url = item?.raw === src && src ? src : resolved.url;
 
   const [view, setView] = useState(FIT);
+  // Per URL: "loading" (shimmer in the frame) until the full image decodes, then a short fade.
+  const [viewState, setViewState] = useState({ url: "", status: "loading", instant: false });
+  const viewStatus = viewState.url === url ? viewState.status : "loading";
   const [drag, setDrag] = useState({ dx: 0, dy: 0, active: false, mode: null });
   const [toast, setToast] = useState("");
   // A broken avatar URL falls back to the letter (per URL, so the next item retries).
@@ -251,17 +255,40 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
           >
-            <div className="mv-frame g-glass-heavy" style={{ transform: `translate3d(${drag.dx}px, ${drag.dy}px, 0) scale(${1 - dismissProgress * 0.12})`, transition: spring }}>
-              <img
-                ref={imgRef}
-                key={url}
-                src={url}
-                alt={item?.name || alt || t("Image")}
-                className="mv-img message-media-lightbox-img"
-                style={{ ...imgStyle, transform: `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.scale})` }}
-                draggable={false}
-                onError={resolved.onMediaError}
-              />
+            <div
+              className={`mv-frame g-glass-heavy${viewStatus === "ready" ? "" : ` is-${viewStatus}`}`}
+              style={{ transform: `translate3d(${drag.dx}px, ${drag.dy}px, 0) scale(${1 - dismissProgress * 0.12})`, transition: spring, ...(viewStatus === "ready" ? null : mediaBoxStyle(computeMediaBox({ dims: rememberedMediaDims(item?.raw || url) }))) }}
+            >
+              {viewStatus === "loading" ? <span className="skeleton-line mv-skeleton" aria-hidden="true" /> : null}
+              {viewStatus === "error" ? (
+                <span className="chat-media-error mv-error" role="img" aria-label={t("msg5.media.imageFailed")}>
+                  <ImageOff size={22} aria-hidden="true" />
+                  <span className="chat-media-error-text">{t("msg5.media.imageFailed")}</span>
+                </span>
+              ) : (
+                <img
+                  ref={(el) => {
+                    imgRef.current = el;
+                    // Already decoded (it was just on screen in the chat): no skeleton, no fade.
+                    if (el && el.complete && el.naturalWidth > 0 && viewState.url !== url) setViewState({ url, status: "ready", instant: true });
+                  }}
+                  key={url}
+                  src={url}
+                  alt={item?.name || alt || t("Image")}
+                  className={`mv-img message-media-lightbox-img${viewStatus === "ready" && !viewState.instant ? " mv-img-fade" : ""}`}
+                  style={{ ...imgStyle, transform: `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.scale})` }}
+                  draggable={false}
+                  decoding="async"
+                  onLoad={(e) => {
+                    rememberMediaDims(item?.raw || url, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight);
+                    setViewState({ url, status: "ready" });
+                  }}
+                  onError={(e) => {
+                    setViewState({ url, status: "error" });
+                    resolved.onMediaError?.(e);
+                  }}
+                />
+              )}
             </div>
           </div>
 

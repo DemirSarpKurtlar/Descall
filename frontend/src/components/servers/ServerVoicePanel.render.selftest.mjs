@@ -96,4 +96,20 @@ for (const [name, serverVoice] of Object.entries(cases)) {
   assert.ok(html.length > 200, `ServerVoicePanel (${name}) rendered`);
   assert.ok(html.includes("Staff Voice") || name === "stage" || html.length > 200);
 }
-console.log(`ServerVoicePanel.render.selftest ok (${Object.keys(cases).length} states)`);
+// Empty room, not joined (2026-11): one centred composition with the channel name,
+// the hint and the join button; no separate dock with a lone join button.
+{
+  const empty = render({ channel, server, me, serverVoice: { ...base, voiceStatesByServer: {} } });
+  assert.match(empty, /class="conv-start is-voice"/, "empty room renders ConversationStart");
+  assert.match(empty, /conv-start-seats/, "empty room shows the seat illustration");
+  assert.match(empty, /class="conv-start-title"[^>]*>Staff Voice</, "empty room title is the channel name");
+  const startAt = empty.indexOf("conv-start is-voice");
+  const joinAt = empty.indexOf("server-voice-dock-btn join");
+  assert.ok(joinAt > startAt, "join button sits inside the empty composition");
+  assert.equal(/class="server-voice-dock"/.test(empty), false, "no bottom dock while the room is empty");
+  // Joined: the dock (mute, deafen, leave) is back and there is no empty composition.
+  const joined = render({ channel, server, me, serverVoice: cases.joined });
+  assert.match(joined, /class="server-voice-dock"/);
+  assert.equal(/conv-start is-voice/.test(joined), false);
+}
+console.log(`ServerVoicePanel.render.selftest ok (${Object.keys(cases).length + 1} states)`);

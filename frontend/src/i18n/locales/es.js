@@ -7,6 +7,8 @@ import { UAH_ES } from "./uah.es.js";
  *   phrases - English source string -> translation
  */
 import { MID_APP_I18N } from "./midApp.i18n.js";
+import { CONV_START_I18N } from "./convStart.i18n.js";
+import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 import { AMP_ES } from "./profileMediaPicker.es.js";
 import { MSG4_ES } from "./msg4.es.js";
 import { MSG5_ES } from "./msg5.es.js";
@@ -11001,6 +11003,8 @@ export const phrases = {
   "More comparisons": "Más comparaciones",
   "Ready-made Gaming template": "Plantilla de Gaming lista para usar",
   ...MID_APP_I18N.es,
+  ...CONV_START_I18N.es,
+  ...SERVER_TEMPLATE_TOPICS_I18N.es,
   ...SIGNUP_GROWTH.es.phrases,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "Descall no está afiliado a Discord Inc. Discord es una marca comercial de Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "La fila de la API se comprueba en vivo desde tu navegador cada vez que abres esta página.",

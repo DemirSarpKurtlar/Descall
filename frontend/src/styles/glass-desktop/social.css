@@ -30,6 +30,11 @@ html.glass-desktop .friend-item:hover {
   background-color: var(--gd-row-hover);
 }
 
+/* Offline friends stay dimmed, but 0.5 left the name at 4.2:1 on the glass. */
+html.glass-desktop .friend-item.offline {
+  opacity: 0.68;
+}
+
 html.glass-desktop .friend-name {
   font-size: 14.5px;
   font-weight: 600;

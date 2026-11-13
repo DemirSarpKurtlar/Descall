@@ -53,7 +53,7 @@ assert.equal(stickerPreviewText("düz metin", t), "düz metin");
 
 // Wiring: bubbles, inline text, picker, list previews and notifications.
 const list = readFileSync(join(here, "../components/chat/MessageList.jsx"), "utf8");
-assert.ok(list.includes('<img className="msg-sticker" src={sticker.src}'));
+assert.ok(list.includes(`<MessageMediaImage kind="sticker" fixed className="msg-sticker"`) && list.includes(`data-testid="msg-sticker"`), "stickers render through the shared media frame (skeleton + fade)");
 assert.ok(list.includes('${sticker ? "has-sticker" : ""}'));
 assert.ok(readFileSync(join(here, "../components/chat/MessageContent.jsx"), "utf8").includes('className="msg-logo-emoji"'));
 const composer = readFileSync(join(here, "../components/chat/MessageComposer.jsx"), "utf8");

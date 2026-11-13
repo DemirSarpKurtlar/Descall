@@ -34,7 +34,7 @@
 .svh-row .lab small{font-size:13px;color:rgba(235,238,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .svh-row .val{color:rgba(235,238,255,.5);font-size:16px;white-space:nowrap}
 .svh-row .chev{width:8px;height:13px;flex:none;opacity:.32}
-.svh-row.red{color:#FF453A}.svh-row.blue{color:#8FA6FF}
+.svh-row.red{color:var(--danger-text)}.svh-row.blue{color:#8FA6FF}
 .svh-row.center{justify-content:center}
 .svh-row.sel{background:rgba(88,122,246,.22)}
 .svh-ico{width:30px;height:30px;border-radius:var(--r-sm);display:grid;place-items:center;flex:none;color:#fff;box-shadow:inset 0 .5px 0 rgba(255,255,255,.3)}
@@ -73,7 +73,7 @@
 .svh-mi{display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;font-size:16.5px;position:relative;letter-spacing:-.015em}
 .svh-mi .x{flex:1;white-space:nowrap}
 .svh-mi svg{width:19px;height:19px;opacity:.92;flex:none}
-.svh-mi.red{color:#FF453A}
+.svh-mi.red{color:var(--danger-text)}
 .svh-mi .sub{font-size:13px;color:rgba(235,238,255,.5)}
 .svh-msep{height:7px;background:rgba(0,0,0,.18);margin:4px 0}
 .svh-mi+.svh-mi:before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:rgba(255,255,255,.1)}
@@ -87,7 +87,7 @@
 .svh-alert .bt{display:grid;grid-template-columns:1fr 1fr;border-top:.5px solid rgba(255,255,255,.14)}
 .svh-alert .bt>span{height:46px;display:grid;place-items:center;font-size:17px;color:#8FA6FF}
 .svh-alert .bt>span+span{border-left:.5px solid rgba(255,255,255,.14)}
-.svh-alert .bt .red{color:#FF453A;font-weight:600}
+.svh-alert .bt .red{color:var(--danger-text);font-weight:600}
 /* action sheet (iOS) */
 .svh-as{position:absolute;left:8px;right:8px;bottom:10px;display:flex;flex-direction:column;gap:8px}
 .svh-as .grp{border-radius:22px;overflow:hidden}
@@ -139,7 +139,7 @@
 .svh-btn.svh-tap[data-pressed],.svh-btn.svh-tap:active{filter:brightness(.92)}
 .svh-alert .bt>button{height:46px;display:grid;place-items:center;font-size:17px;color:#8FA6FF;width:100%}
 .svh-alert .bt>button+button{border-left:.5px solid rgba(255,255,255,.14)}
-.svh-alert .bt>button.red{color:#FF453A;font-weight:600}
+.svh-alert .bt>button.red{color:var(--danger-text);font-weight:600}
 .svh-alert .bt>button[data-pressed],.svh-alert .bt>button:active{background:rgba(255,255,255,.1)}
 .svh-row:disabled,.svh-mi:disabled{opacity:.45}
 .svh-row{width:100%;text-align:left}

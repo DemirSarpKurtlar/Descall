@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo, cloneElement, isValidElement } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback, cloneElement, isValidElement } from "react";
 import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -25,6 +25,7 @@ import { resolveDisplayName } from "../../lib/userProfile";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
 import { useLocale } from "../../context/LocaleContext";
 import { formatDate, upper } from "../../i18n/format";
+import { channelTopicText } from "../../i18n/serverTemplateTopics.js";
 import { displayText } from "../../lib/profanity";
 import { useBlockedUserIds } from "../../lib/blockedUsers";
 import BlockUserButton from "../social/BlockUserButton";
@@ -41,6 +42,7 @@ import GroupInfoSheet from "../groups/GroupInfoSheet";
 import { useGroupActions } from "./ServerSidebar";
 import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
+import { HELLO_STICKER_TOKEN } from "../../lib/descallStickers";
 
 function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -178,6 +180,37 @@ export default function ChatPanel({
     Boolean(activeTimeout?.timedOut) ||
     dmBlockedByMe ||
     (!activeDmUser && !activeGroup && !canSendChannel);
+
+  // Quick actions on an empty DM / group (ConversationStart in MessageList): the same
+  // handlers as the composer's hello sticker, the header call button, the header
+  // avatar and the group info "Add". The callbacks are stable (they read the latest
+  // props from a ref) so the memoized MessageList does not re-render for them.
+  const startRef = useRef(null);
+  startRef.current = { onSendMessage, onVoiceCall, onGroupVoiceCall, activeDmUser, activeGroup, groupActions };
+  const startSayHi = useCallback(() => startRef.current.onSendMessage?.(HELLO_STICKER_TOKEN), []);
+  const startCall = useCallback(() => {
+    const cur = startRef.current;
+    if (cur.activeGroup) cur.onGroupVoiceCall?.();
+    else cur.onVoiceCall?.();
+  }, []);
+  const startProfile = useCallback(() => {
+    const user = startRef.current.activeDmUser;
+    if (user) setProfileTarget(user);
+  }, []);
+  const startAddPeople = useCallback(() => {
+    const cur = startRef.current;
+    if (cur.activeGroup) cur.groupActions.run(cur.activeGroup, "add");
+  }, []);
+  const startOwnDm = Boolean(activeDmUser?.id && me?.id && String(activeDmUser.id) === String(me.id));
+  const startCanSend = Boolean(showComposer && !composerDisabled && !groupRemoved);
+  const startCanCall = Boolean(!dmBlockedByMe && !groupRemoved && !startOwnDm);
+  const startCanAdd = Boolean(activeGroup && !groupRemoved);
+  const conversationStart = useMemo(() => ({
+    onSayHi: startCanSend ? startSayHi : null,
+    onCall: startCanCall ? startCall : null,
+    onProfile: startProfile,
+    onAddPeople: startCanAdd ? startAddPeople : null,
+  }), [startCanSend, startCanCall, startCanAdd, startSayHi, startCall, startProfile, startAddPeople]);
 
   useEffect(() => {
     if (!socket) return undefined;
@@ -363,7 +396,8 @@ export default function ChatPanel({
         const count = activeServer.memberCount || 0;
         return `${activeServer.name} · ${t("{count} members", { count })}`;
       }
-      if (activeChannel.topic) return activeChannel.topic;
+      const topic = channelTopicText(activeChannel, t);
+      if (topic) return topic;
       if (activeChannel.type === "voice") return t("Voice channel");
       if (activeChannel.type === "stage") return t("Stage channel");
       return activeServer?.name || t("Text channel");
@@ -523,7 +557,7 @@ export default function ChatPanel({
               {showMobileBack ? <ChevronLeft size={22} /> : <Menu size={20} />}
             </button>
           )}
-          <div className={`header-identity${glassConv ? " g-peer" : ""}`}>
+          <div className={`header-identity${glassConv ? " g-peer" : ""}${headerDm || headerGroup || glassHash ? " has-lead" : ""}`}>
             {headerDm ? (
               <button
                 type="button"
@@ -801,8 +835,8 @@ export default function ChatPanel({
             : activeServer
               ? activeServer.name
               : t("Servers")}
-          body={activeChannel?.topic
-            ? activeChannel.topic
+          body={channelTopicText(activeChannel, t)
+            ? channelTopicText(activeChannel, t)
             : !activeServer
               ? t("Pick a server on the left, or create a new one with +.")
               : t("Pick a text or voice channel from the list on the left.")}
@@ -816,7 +850,7 @@ export default function ChatPanel({
       >
         {(activeDmUser || activeGroup) ? (
           isValidElement(children)
-            ? cloneElement(children, { searchQuery: "" })
+            ? cloneElement(children, { searchQuery: "", conversationStart })
             : children
         ) : (
           <EmptyState

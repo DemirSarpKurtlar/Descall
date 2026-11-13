@@ -54,7 +54,7 @@
 }
 
 .agx-switch.is-on {
-  color: var(--danger, #e5484d);
+  color: var(--danger-text, #e5484d);
 }
 
 .agx-side-label {
@@ -288,7 +288,7 @@
 }
 
 .agx-chip.is-error {
-  color: var(--danger, #e5484d);
+  color: var(--danger-text, #e5484d);
 }
 
 .agx-md {
@@ -358,7 +358,7 @@
 .agx-notice {
   margin: 0;
   font-size: var(--fs-12);
-  color: var(--warning, #f0b232);
+  color: var(--warning-text, #f0b232);
 }
 
 .agx-cost {
@@ -387,7 +387,7 @@
 .agx-error {
   margin: 0 16px 8px;
   font-size: var(--fs-13);
-  color: var(--danger, #e5484d);
+  color: var(--danger-text, #e5484d);
 }
 
 .agx-compose {

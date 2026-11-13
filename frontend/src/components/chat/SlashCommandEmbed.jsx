@@ -3,6 +3,8 @@ import { localizeDeep } from "../../i18n/serverText.js";
 import { casinoHiddenOnThisDevice, isCasinoEmbed, isCasinoGameCommandName } from "../../lib/casinoCommands";
 import { displayText } from "../../lib/profanity";
 import { useT } from "../../context/LocaleContext";
+import { MessageMediaImage } from "./MessageMedia";
+import { readMediaDims } from "../../lib/mediaBox";
 
 function colorToCss(color) {
   const n = Number(color);
@@ -116,7 +118,7 @@ export default function SlashCommandEmbed({ embed: rawEmbed, type }) {
           </div>
 
           {thumbUrl ? (
-            <img src={thumbUrl} alt="" className="slash-embed-thumb" loading="lazy" />
+            <MessageMediaImage kind="thumb" fixed className="slash-embed-thumb" src={thumbUrl} alt="" />
           ) : null}
         </div>
 
@@ -127,7 +129,7 @@ export default function SlashCommandEmbed({ embed: rawEmbed, type }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <img src={imageUrl} alt="" className="slash-embed-image" loading="lazy" />
+            <MessageMediaImage kind="embed" src={imageUrl} dims={readMediaDims(embed.image)} imgClassName="slash-embed-image" alt="" />
           </a>
         ) : null}
 

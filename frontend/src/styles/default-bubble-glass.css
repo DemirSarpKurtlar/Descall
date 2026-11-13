@@ -18,7 +18,7 @@
     color-mix(in srgb, rgb(var(--g-brand-rgb, 79, 124, 255)) 80%, #0c1640) 100%);
   --dbub-own-solid: color-mix(in srgb, rgb(var(--g-brand-rgb, 79, 124, 255)) 88%, #0c1640);
   --dbub-own-ink: #FFFFFF;
-  --dbub-own-ink-2: rgba(255, 255, 255, 0.74);
+  --dbub-own-ink-2: rgba(255, 255, 255, 0.88);
   --dbub-edge: rgba(var(--g-brand-rgb, 79, 124, 255), 0.22);
   --dbub-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(0, 0, 0, 0.14);
   --dbub-own-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(0, 0, 0, 0.14);

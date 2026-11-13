@@ -61,19 +61,19 @@
   border-color: rgba(35, 165, 90, 0.35);
   background: color-mix(in srgb, var(--surface-2) 88%, var(--success) 12%);
 }
-.toast-success .toast-icon { color: var(--success); }
+.toast-success .toast-icon { color: var(--success-text); }
 
 .toast-error {
   border-color: rgba(218, 55, 60, 0.4);
   background: color-mix(in srgb, var(--surface-2) 88%, var(--danger) 12%);
 }
-.toast-error .toast-icon { color: var(--danger); }
+.toast-error .toast-icon { color: var(--danger-text); }
 
 .toast-warning {
   border-color: rgba(240, 178, 50, 0.4);
   background: color-mix(in srgb, var(--surface-2) 88%, var(--warning) 12%);
 }
-.toast-warning .toast-icon { color: var(--warning); }
+.toast-warning .toast-icon { color: var(--warning-text); }
 
 .toast-info .toast-icon { color: var(--primary); }
 
@@ -451,7 +451,7 @@ html.glass-desktop body.electron-app .toast-stack {
 }
 
 .toolbar-btn:hover { background: var(--surface-hover); color: var(--text-1); }
-.toolbar-btn.danger:hover { background: var(--danger-soft); color: var(--danger); }
+.toolbar-btn.danger:hover { background: var(--danger-soft); color: var(--danger-text); }
 
 /* Chat font size token */
 .message-text,
@@ -944,7 +944,7 @@ html.glass-desktop body.electron-app .toast-stack {
 }
 
 .call-banner-live {
-  color: var(--success);
+  color: var(--success-text);
   font-weight: 600;
 }
 
@@ -1257,9 +1257,9 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 .call-quality-hud.poor .call-quality-bars span.on { background: var(--warning); }
 .call-quality-hud.failed .call-quality-bars span.on { background: var(--danger); }
 
-.call-quality-hud.good { color: var(--success); }
-.call-quality-hud.poor { color: var(--warning); }
-.call-quality-hud.failed { color: var(--danger); }
+.call-quality-hud.good { color: var(--success-text); }
+.call-quality-hud.poor { color: var(--warning-text); }
+.call-quality-hud.failed { color: var(--danger-text); }
 
 @media (prefers-reduced-motion: reduce) {
   .call-tile.is-speaking,
@@ -1440,7 +1440,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   font-size: 11.5px;
   font-style: normal;
   font-weight: 650;
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .invite-embed-cta {
@@ -1486,13 +1486,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 
 .invite-embed-error {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .invite-embed-inline-error {
   margin: 0 0 8px;
   font-size: var(--fs-12);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .invite-embed-friend .invite-embed-accent {
@@ -2100,7 +2100,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   text-align: center;
 }
 .giphy-state.is-error {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 .giphy-state button {
   background: var(--primary, #587af5);
@@ -2321,7 +2321,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 8px 10px;
   border-radius: var(--r-sm);
   background: var(--danger-soft, rgba(237, 66, 69, 0.12));
-  color: var(--danger);
+  color: var(--danger-text);
   font-size: var(--fs-12);
 }
 
@@ -2422,7 +2422,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   padding: 18px 0;
 }
 .invite-landing-state.is-error {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 .invite-landing-banner {
   display: inline-flex;
@@ -2439,7 +2439,7 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
 }
 .invite-landing-error {
   margin-bottom: 12px;
-  color: var(--danger);
+  color: var(--danger-text);
   font-size: var(--fs-13);
 }
 .invite-landing-join {
