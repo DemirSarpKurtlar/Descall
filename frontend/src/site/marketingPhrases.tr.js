@@ -243,7 +243,7 @@ export const MARKETING_TR = {
   "Switch in three steps": "Üç adımda geçiş",
   "Talk": "Birlikte",
   "Talk together": "Birlikte konuş",
-  "Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.": "Arkadaşlarınla sesli sohbet, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
+  "Descall is a free voice chat app for you and your friends: voice channels, screen sharing, and servers. One account on iPhone, Android, Windows, and the browser.": "Descall, arkadaşlarınla konuşman için ücretsiz bir sesli sohbet uygulaması: ses kanalları, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
   "Voice chat, screen sharing, and servers.": "Sesli sohbet, ekran paylaşımı ve sunucular.",
   "Platforms": "Platformlar",
   "A direct message with a poll on Descall": "Descall'da anketli bir özel mesaj",

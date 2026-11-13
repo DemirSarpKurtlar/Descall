@@ -15,6 +15,7 @@ import {
 import { ogLocaleTag } from "./siteLocales.js";
 import { ogImageFor } from "./ogImages.js";
 import { SITE_OPERATOR } from "./siteIdentity";
+import { prerenderedNoindexPath, robotsContent } from "./seo/indexPolicy.js";
 
 function upsertMeta(attr, key, content) {
   if (content == null) return;
@@ -57,7 +58,10 @@ export default function SeoHead({ forceNoindex = false, title, description, path
   // Prefixed-locale routes (/de/...) carry their locale; the site catalog has their copy.
   const pageTitle = title || (meta.locale ? t(meta.title) : meta.title);
   const pageDesc = description || (meta.locale ? t(meta.description) : meta.description);
-  const noindex = forceNoindex || meta.noindex;
+  const cleanPath = rawPath.replace(/\/+$/, "") || "/";
+  const noindexFollow = Boolean(meta.noindexFollow) || prerenderedNoindexPath() === cleanPath;
+  const robots = robotsContent({ forceNoindex, metaNoindex: meta.noindex, noindexFollow });
+  const noindex = forceNoindex || meta.noindex || noindexFollow;
   const tr = !meta.locale && (locale === "tr" || isTrPath(rawPath) || meta.lang === "tr");
   const canonicalPath = meta.locale
     ? meta.path
@@ -76,11 +80,7 @@ export default function SeoHead({ forceNoindex = false, title, description, path
   useEffect(() => {
     document.title = pageTitle;
     upsertMeta("name", "description", pageDesc);
-    upsertMeta(
-      "name",
-      "robots",
-      noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
-    );
+    upsertMeta("name", "robots", robots);
     if (meta.keywords) {
       upsertMeta("name", "keywords", meta.keywords);
     } else {
@@ -128,7 +128,7 @@ export default function SeoHead({ forceNoindex = false, title, description, path
     upsertMeta("name", "twitter:title", pageTitle);
     upsertMeta("name", "twitter:description", pageDesc);
     upsertMeta("name", "twitter:image", ogImage);
-  }, [pageTitle, pageDesc, noindex, canonical, ogImage, meta.ogType, meta.keywords, rawPath, pageLocale]);
+  }, [pageTitle, pageDesc, noindex, robots, canonical, ogImage, meta.ogType, meta.keywords, rawPath, pageLocale]);
 
   return null;
 }

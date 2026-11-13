@@ -22,7 +22,8 @@ import { DIRECTORY_COPY_UPDATED, directoryPagePaths } from "../directory/directo
 
 /** English and Turkish pages (path -> YYYY-MM-DD of the last copy change). */
 export const PAGE_UPDATED = {
-  "/": "2026-11-07",
+  // 2026-11-13: title, description and first paragraph name Descall as a voice chat app.
+  "/": "2026-11-13",
   "/features": "2026-11-07",
   "/download": "2026-11-07",
   "/faq": "2026-11-08",
@@ -51,7 +52,7 @@ export const PAGE_UPDATED = {
   "/iletisim": "2026-10-14",
   "/gizlilik": "2026-10-26",
   "/kosullar": "2026-10-10",
-  "/tr": "2026-11-07",
+  "/tr": "2026-11-13",
   "/tr/compare/discord": "2026-11-06",
   "/tr/blog": "2026-11-08",
   // Turkish landings whose title or copy changed after TR_LANDING_UPDATED.
@@ -63,7 +64,8 @@ export const PAGE_UPDATED = {
   "/tr/discord-yerine-ne-kullanilir": "2026-11-08",
   "/tr/oyuncu-sohbet-uygulamasi": "2026-11-08",
   "/tr/discord-alternatifleri": "2026-11-07",
-  "/tr/sesli-sohbet-uygulamasi": "2026-11-08",
+  // 2026-11-13: title and description start with Descall (brand query).
+  "/tr/sesli-sohbet-uygulamasi": "2026-11-13",
   // Public server directory (item 8): the page copy, not the server list, sets the date.
   ...Object.fromEntries(directoryPagePaths().map((p) => [p, DIRECTORY_COPY_UPDATED])),
 };

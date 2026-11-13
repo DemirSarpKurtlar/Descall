@@ -1,0 +1,88 @@
+# IndexNow after each production deploy (Bing, Yandex, Seznam, Naver; Google ignores it
+# and reads the sitemaps). Cloudflare Pages builds main on its own; this job:
+#   1. reads the live sitemaps before the new build is live,
+#   2. waits until https://descall.com/build-id.txt names the pushed commit
+#      (written by frontend/scripts/generate-seo-files.mjs),
+#   3. submits the sitemap URLs that are new or whose <lastmod> moved.
+# Key file: frontend/public/4f463b15fd51f502c6bb73abbeb38e3c.txt. Script and tests:
+# frontend/scripts/indexnow-submit.mjs (+ .selftest.mjs). No secrets needed.
+# Never add the Google Indexing API here (frontend/scripts/request-indexing.mjs).
+name: IndexNow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "all = every sitemap URL; urls = only the URLs below"
+        type: choice
+        options: [all, urls]
+        default: all
+      urls:
+        description: "Space-separated https://descall.com URLs (mode urls)"
+        required: false
+        default: ""
+      dry_run:
+        description: "List the URLs, send nothing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            frontend/scripts
+          sparse-checkout-cone-mode: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Snapshot the live sitemaps (before the deploy)
+        if: github.event_name == 'push'
+        run: node frontend/scripts/indexnow-submit.mjs snapshot --out "$RUNNER_TEMP/before.json"
+
+      - name: Wait for Cloudflare Pages to serve this commit
+        id: wait
+        if: github.event_name == 'push'
+        run: node frontend/scripts/indexnow-submit.mjs wait --sha "$GITHUB_SHA" --timeout 2400
+
+      - name: Submit changed URLs
+        if: github.event_name == 'push' && steps.wait.outputs.deployed == 'true'
+        env:
+          COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
+        run: |
+          # Fallback when the snapshot was taken after the deploy: pages whose content
+          # date is on or after the day before this commit.
+          SINCE="$(date -u -d "$COMMIT_TIME - 1 day" +%F 2>/dev/null || date -u +%F)"
+          node frontend/scripts/indexnow-submit.mjs submit --before "$RUNNER_TEMP/before.json" --sha "$GITHUB_SHA" --since "$SINCE"
+
+      - name: Submit (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          MODE: ${{ inputs.mode }}
+          URLS: ${{ inputs.urls }}
+          DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          if [ "$MODE" = "urls" ]; then
+            set -- $URLS
+            ARGS=""
+            for u in "$@"; do ARGS="$ARGS --url $u"; done
+            node frontend/scripts/indexnow-submit.mjs submit $ARGS $DRY
+          else
+            node frontend/scripts/indexnow-submit.mjs submit --all $DRY
+          fi

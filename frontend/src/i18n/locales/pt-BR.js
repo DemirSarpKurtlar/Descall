@@ -10443,7 +10443,7 @@ export const phrases = {
   "Voice chat alternative to Discord, clear calls, free core": "Alternativa de chat de voz ao Discord: chamadas nítidas, essencial grátis",
   "Voice chat alternative to Discord, free calls guide": "Alternativa de chat de voz ao Discord: guia de chamadas grátis",
   "Voice chat, screen share and servers with your friends, on Windows and Android.": "Chat de voz, compartilhamento de tela e servidores com seus amigos, no Windows e no Android.",
-  "Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.": "Chat de voz, compartilhamento de tela e servidores com seus amigos. Uma só conta no iPhone, Android, Windows e navegador.",
+  "Descall is a free voice chat app for you and your friends: voice channels, screen sharing, and servers. One account on iPhone, Android, Windows, and the browser.": "Descall é um app de chat de voz grátis para você e seus amigos: canais de voz, compartilhamento de tela e servidores. Uma conta no iPhone, Android, Windows e no navegador.",
   "Voice chat, screen sharing, and servers.": "Chat de voz, compartilhamento de tela e servidores.",
   "Voice connect for server channels arrives in a later step.": "A conexão de voz nos canais do servidor chega em uma etapa futura.",
   "Voice effects failed to start": "Os efeitos de voz não iniciaram",
