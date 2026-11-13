@@ -8,7 +8,8 @@ import { useLocale } from "../../context/LocaleContext";
 import { pinvoke, pon, logPremiumEvent } from "./bridge.js";
 import { Avatar } from "../../components/ui/Avatar.jsx";
 import { resolveDisplayName } from "../../lib/userProfile.js";
-import { DescallMark } from "../../components/polls/dsxShared.jsx";
+import DescallBrand from "../../components/brand/DescallBrand";
+import { Minus, Square, X } from "../../components/ui/Icon.jsx";
 import "./gaming.css";
 
 const MIN = 4;
@@ -120,6 +121,9 @@ export default function AppLockScreen({ me = null }) {
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(now);
   const date = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(now);
   const slots = pinSlots(pin.length, pinLen);
+  // The app behind the lock (title bar included) is inert, so the lock draws its own bar:
+  // one brand, a fixed colour, and window buttons that still work while locked.
+  const winApi = typeof window !== "undefined" && window.electronAPI?.isElectron ? window.electronAPI : null;
   const maxLen = pinLen || MAX;
 
   const onKeyDown = (e) => {
@@ -140,10 +144,19 @@ export default function AppLockScreen({ me = null }) {
       aria-modal="true"
       aria-label={t("premiumGaming.appLock.lockedTitle")}
       onKeyDown={onKeyDown}
-      onMouseDown={(e) => { if (e.target !== inputRef.current && !e.target.closest?.(".pgl-go")) { e.preventDefault(); inputRef.current?.focus(); } }}
+      onMouseDown={(e) => { if (e.target !== inputRef.current && !e.target.closest?.(".pgl-go, .pgl-bar")) { e.preventDefault(); inputRef.current?.focus(); } }}
     >
       <div className="pgl-aurora" aria-hidden="true" />
-      <div className="pgl-brand" aria-hidden="true"><DescallMark size={18} /> <span>Descall</span></div>
+      {winApi ? (
+        <div className="pgl-bar">
+          <div className="pgl-bar-brand" aria-hidden="true"><DescallBrand /></div>
+          <div className="pgl-bar-controls">
+            <button type="button" className="pgl-winbtn" onClick={() => winApi.minimizeWindow?.()} title={t("Minimize")} aria-label={t("Minimize")}><Minus size={16} strokeWidth={2} /></button>
+            <button type="button" className="pgl-winbtn" onClick={() => winApi.maximizeWindow?.()} title={t("Maximize")} aria-label={t("Maximize")}><Square size={13} strokeWidth={2} /></button>
+            <button type="button" className="pgl-winbtn is-close" onClick={() => winApi.closeWindow?.()} title={t("Close")} aria-label={t("Close")}><X size={16} strokeWidth={2} /></button>
+          </div>
+        </div>
+      ) : null}
       <div className="pgl-clock">
         <div className="pgl-date">{date}</div>
         <div className="pgl-time">{time}</div>
