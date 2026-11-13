@@ -2330,20 +2330,23 @@ function MessageBubbleView({
             t={t}
           />
         )}
-        {confirmDelete && (
-          <GlassConfirm
-            title={t("Delete message")}
-            message={t("This message will be deleted for everyone. This cannot be undone.")}
-            confirmLabel={t("Delete")}
-            cancelLabel={t("Cancel")}
-            danger
-            onConfirm={() => {
-              setConfirmDelete(false);
-              emitDelete();
-            }}
-            onCancel={() => setConfirmDelete(false)}
-          />
-        )}
+        <AnimatePresence>
+          {confirmDelete && (
+            <GlassConfirm
+              key="confirm-delete"
+              title={t("Delete message")}
+              message={t("This message will be deleted for everyone. This cannot be undone.")}
+              confirmLabel={t("Delete")}
+              cancelLabel={t("Cancel")}
+              danger
+              onConfirm={() => {
+                setConfirmDelete(false);
+                emitDelete();
+              }}
+              onCancel={() => setConfirmDelete(false)}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

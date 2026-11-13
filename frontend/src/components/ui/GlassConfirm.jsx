@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "framer-motion";
 import { hapticWarning } from "../../lib/fluid/haptics";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { registerGlassConfirm } from "../../lib/glassConfirm";
@@ -42,6 +42,15 @@ export default function GlassConfirm({
   className = "",
 }) {
   const reduce = useReducedMotion();
+  // False while an AnimatePresence plays the exit: the answered alert is still
+  // on screen for its fade, but a second click / Escape / Enter must do nothing.
+  const isPresent = useIsPresent();
+  const answerConfirm = (value) => {
+    if (isPresent) onConfirm?.(value);
+  };
+  const answerCancel = () => {
+    if (isPresent) onCancel?.();
+  };
   const [draft, setDraft] = useState(input?.defaultValue ?? "");
   useEffect(() => {
     if (danger) hapticWarning();
@@ -49,13 +58,13 @@ export default function GlassConfirm({
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key !== "Escape" || busy) return;
+      if (e.key !== "Escape" || busy || !isPresent) return;
       e.preventDefault();
       onCancel?.();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onCancel, busy]);
+  }, [onCancel, busy, isPresent]);
 
   const confirmText = String(confirmLabel || "");
   const cancelText = String(cancelLabel || "");
@@ -63,16 +72,22 @@ export default function GlassConfirm({
   const transition = reduce ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize);
   const cardInitial = reduce ? { opacity: 0 } : { opacity: 0, scale: 1.1 };
   const cardAnimate = reduce ? { opacity: 1 } : { opacity: 1, scale: 1 };
+  // Scrim and card leave together (under an AnimatePresence, e.g. the host
+  // below): never a dim window after the alert is gone, never a one-frame drop.
+  const scrimFade = reduce ? REDUCED_MOTION_FADE : { duration: 0.18, ease: "easeOut" };
+  const cardExit = reduce
+    ? { opacity: 0, transition: REDUCED_MOTION_FADE }
+    : { opacity: 0, scale: 0.96, transition: { duration: 0.16, ease: "easeOut" } };
 
   const cancelBtn = (
-    <AlertButton className="g-alert-btn is-cancel" onClick={onCancel} disabled={busy}>
+    <AlertButton className="g-alert-btn is-cancel" onClick={answerCancel} disabled={busy}>
       {cancelLabel}
     </AlertButton>
   );
   const confirmBtn = (
     <AlertButton
       className={`g-alert-btn${danger ? " is-danger" : " is-action"}`}
-      onClick={() => onConfirm?.(input ? draft : undefined)}
+      onClick={() => answerConfirm(input ? draft : undefined)}
       disabled={busy || confirmDisabled}
     >
       {confirmLabel}
@@ -86,7 +101,8 @@ export default function GlassConfirm({
       className="g-alert-scrim"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={reduce ? REDUCED_MOTION_FADE : { duration: 0.2, ease: "easeOut" }}
+      exit={{ opacity: 0 }}
+      transition={scrimFade}
       onClick={() => {
         /* Alerts do not dismiss from the scrim. */
       }}
@@ -99,6 +115,7 @@ export default function GlassConfirm({
         aria-describedby={message ? "g-alert-body" : undefined}
         initial={cardInitial}
         animate={cardAnimate}
+        exit={cardExit}
         transition={transition}
         onClick={(e) => e.stopPropagation()}
       >
@@ -122,7 +139,7 @@ export default function GlassConfirm({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !busy && !confirmDisabled) {
                   e.preventDefault();
-                  onConfirm?.(draft);
+                  answerConfirm(draft);
                 }
               }}
             />
@@ -166,23 +183,28 @@ export function GlassConfirmHost() {
     }));
   }, []);
 
-  if (!current) return null;
   const finish = (value) => {
     current.resolve(value);
     setCurrent(queue.current.shift() || null);
   };
-  const o = current.options || {};
+  const o = current?.options || {};
+  // AnimatePresence: the answered alert fades out with its scrim instead of
+  // vanishing in one frame (GlassConfirm ignores input while it leaves).
   return (
-    <GlassConfirm
-      key={current.id}
-      title={o.title}
-      message={o.message}
-      confirmLabel={o.confirmLabel}
-      cancelLabel={o.cancelLabel}
-      danger={o.danger !== false}
-      input={o.input}
-      onConfirm={(value) => finish(o.input ? String(value ?? "") : true)}
-      onCancel={() => finish(o.input ? null : false)}
-    />
+    <AnimatePresence>
+      {current ? (
+        <GlassConfirm
+          key={current.id}
+          title={o.title}
+          message={o.message}
+          confirmLabel={o.confirmLabel}
+          cancelLabel={o.cancelLabel}
+          danger={o.danger !== false}
+          input={o.input}
+          onConfirm={(value) => finish(o.input ? String(value ?? "") : true)}
+          onCancel={() => finish(o.input ? null : false)}
+        />
+      ) : null}
+    </AnimatePresence>
   );
 }
