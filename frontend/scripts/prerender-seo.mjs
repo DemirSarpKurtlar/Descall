@@ -175,9 +175,18 @@ function nichePreview(path) {
 /** Same mapping as TrLandingPage previewForPath. */
 function trPreview(path) {
   if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
-  if (path.includes("sesli")) return { tone: "voice", mode: "call" };
+  if (path.includes("sesli") || path.includes("teamspeak") || path.includes("ekran")) return { tone: "voice", mode: "call" };
   if (path.includes("turk")) return { tone: "community", mode: "servers" };
   return { tone: "compare", mode: "chat" };
+}
+
+/** Comparison table of a Turkish landing section ({ head, rows }), same text as TrLandingPage. */
+function trTableHtml(table) {
+  const head = table.head.map((c) => `<th scope="col">${escapeHtml(c)}</th>`).join("");
+  const rows = table.rows
+    .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`)
+    .join("");
+  return `<div class="seo-tl-table"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 const CRUMB_CHEVRON =
@@ -426,7 +435,7 @@ function crawlBodyInner(route) {
         (s) =>
           `<section class="seo-lsec"><h2>${escapeHtml(s.h)}</h2>\n${s.p.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n")}${
             s.list?.length ? `\n${checklistHtml(s.list)}` : ""
-          }</section>`
+          }${s.table ? `\n${trTableHtml(s.table)}` : ""}</section>`
       )
       .join("\n");
     const faq = trLanding.faq

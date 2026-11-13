@@ -8,7 +8,7 @@ import { TR_LANDINGS, trLandingLabel } from "../seo/trLandings";
 
 function previewForPath(path) {
   if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
-  if (path.includes("sesli")) return { tone: "voice", mode: "call" };
+  if (path.includes("sesli") || path.includes("teamspeak") || path.includes("ekran")) return { tone: "voice", mode: "call" };
   if (path.includes("turk")) return { tone: "community", mode: "servers" };
   return { tone: "compare", mode: "chat" };
 }
@@ -84,6 +84,30 @@ export default function TrLandingPage({ onSignIn, onSignUp }) {
                 </li>
               ))}
             </ul>
+          )}
+          {s.table && (
+            <div className="seo-table-wrap">
+              <table className="mkt-table">
+                <thead>
+                  <tr>
+                    {s.table.head.map((cell, i) => (
+                      <th key={i} scope="col">
+                        {cell}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.table.rows.map((row) => (
+                    <tr key={row[0]}>
+                      {row.map((cell, i) => (
+                        <td key={i}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       ))}

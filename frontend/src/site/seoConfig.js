@@ -401,9 +401,9 @@ const BASE_ROUTES = [
   },
   {
     path: "/tr",
-    title: "Descall | Sesli Sohbet, Sunucular ve Ekran Paylaşımı",
+    title: "Descall: Ücretsiz Sesli Sohbet, Sunucular, Ekran Paylaşımı",
     description:
-      "HD ses, görüntü, ekran paylaşımı ve sunucular. Arkadaş grupları ve oyuncular için ücretsiz sohbet. Tarayıcı veya Windows.",
+      "Arkadaşların ve oyuncular için ücretsiz sesli sohbet uygulaması: ses kanalları, görüntülü arama, ekran paylaşımı, sunucular. Windows, iPhone, Android, web.",
     image: "/og-default.png",
     changefreq: "weekly",
     priority: "0.9",
