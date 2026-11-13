@@ -46,6 +46,7 @@ const {
   getTemplate,
   localizeTemplate,
   seedServerFromTemplate,
+  templateTopicKey,
 } = require("../lib/serverTemplates");
 
 const { starterChannelNames } = require("../lib/starterChannelNames");
@@ -631,6 +632,11 @@ function publicServer(row, extra = {}) {
 
 function publicChannel(row) {
   if (!row) return null;
+  // A topic written by a server template is shown in each viewer's language
+  // (i18n.topic.key = the English sentence, .source = the stored text it was read
+  // from, so a client that merges in an edited topic drops the stale key). A
+  // member's own topic has no key.
+  const topicKey = templateTopicKey(row.topic);
   return {
     id: row.id,
     serverId: row.server_id,
@@ -642,6 +648,7 @@ function publicChannel(row) {
     slowmodeSeconds: row.slowmode_seconds ?? 0,
     nsfw: Boolean(row.nsfw),
     createdAt: row.created_at,
+    ...(topicKey ? { i18n: { topic: { key: topicKey, source: row.topic } } } : {}),
   };
 }
 

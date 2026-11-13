@@ -41,6 +41,8 @@ import { COUNTS_TR } from "./counts.tr.js";
 import { API_TR } from "./api.tr.js";
 import { BOT_TR } from "./bot.tr.js";
 import { MID_APP_I18N } from "./midApp.i18n.js";
+import { CONV_START_I18N } from "./convStart.i18n.js";
+import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 export const nested = {
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
@@ -4548,6 +4550,8 @@ export const phrases = {
   ...TR_APPROVED_UI,
   ...TR_UI_AUDIT_LOW,
   ...MID_APP_I18N.tr,
+  ...CONV_START_I18N.tr,
+  ...SERVER_TEMPLATE_TOPICS_I18N.tr,
   ...SIGNUP_GROWTH.tr.phrases,
 };
 

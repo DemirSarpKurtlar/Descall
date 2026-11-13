@@ -7,6 +7,8 @@ import { UAH_PT_BR } from "./uah.pt-BR.js";
  *   phrases - English source string -> translation
  */
 import { MID_APP_I18N } from "./midApp.i18n.js";
+import { CONV_START_I18N } from "./convStart.i18n.js";
+import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 import { AMP_PT_BR } from "./profileMediaPicker.pt-BR.js";
 import { MSG4_PT_BR } from "./msg4.pt-BR.js";
 import { MSG5_PT_BR } from "./msg5.pt-BR.js";
@@ -11001,6 +11003,8 @@ export const phrases = {
   "More comparisons": "Mais comparações",
   "Ready-made Gaming template": "Modelo pronto para jogos",
   ...MID_APP_I18N["pt-BR"],
+  ...CONV_START_I18N["pt-BR"],
+  ...SERVER_TEMPLATE_TOPICS_I18N["pt-BR"],
   ...SIGNUP_GROWTH["pt-BR"].phrases,
   "Descall is not affiliated with Discord Inc. Discord is a trademark of Discord Inc.": "O Descall não tem afiliação com a Discord Inc. Discord é uma marca comercial da Discord Inc.",
   "The API row is checked live from your browser each time you open this page.": "A linha da API é verificada ao vivo pelo seu navegador sempre que você abre esta página.",

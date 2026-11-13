@@ -984,6 +984,34 @@ function localizeTemplate(template, lang = "en") {
   };
 }
 
+/**
+ * Stored channel topic -> the English template sentence it came from, in any
+ * catalog language (built once, on first use). A topic a member typed returns null.
+ * publicChannel sends it as i18n.topic.key so each viewer reads the template topic
+ * in their own language (src/i18n/serverTemplateTopics.js). Display only: the
+ * stored topic is never rewritten.
+ */
+let topicKeyIndex = null;
+function templateTopicKey(topic) {
+  const text = typeof topic === "string" ? topic.trim() : "";
+  if (!text) return null;
+  if (!topicKeyIndex) {
+    const { availableLangs } = require("./i18n");
+    const index = new Map();
+    for (const raw of TEMPLATES) {
+      for (const lang of ["en", ...availableLangs()]) {
+        const loc = localizeTemplate(raw, lang);
+        (raw.categories || []).forEach((c, ci) => (c.channels || []).forEach((ch, chi) => {
+          const shown = loc.categories?.[ci]?.channels?.[chi]?.topic;
+          if (ch.topic && shown && !index.has(shown.trim())) index.set(shown.trim(), ch.topic);
+        }));
+      }
+    }
+    topicKeyIndex = index;
+  }
+  return topicKeyIndex.get(text) || null;
+}
+
 function listTemplateSummaries(lang = "en") {
   return TEMPLATES.map((raw) => localizeTemplate(raw, lang)).map((t) => ({
     id: t.id,
@@ -1244,6 +1272,7 @@ module.exports = {
   getTemplate,
   localizeTemplate,
   templateCatalog,
+  templateTopicKey,
   seedServerFromTemplate,
   countChannels,
 };

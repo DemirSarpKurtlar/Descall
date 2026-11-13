@@ -1,0 +1,347 @@
+/* Start of an empty conversation (components/chat/ConversationStart.jsx,
+   2026-11 owner request). A DM or group with no messages, an empty text channel
+   and an empty voice room open on one centred composition: a large avatar /
+   icon on a soft brand halo, the name on one line, a quiet second line, one
+   friendly sentence and the quick actions (the shared .empty-cta buttons).
+   Theme colours come from the platform tokens below; nothing else is hard-coded
+   except the white hairlines, which flip for light themes. */
+
+.conv-start {
+  --cs-t1: var(--text-0, #fff);
+  --cs-t2: var(--text-1, #f2f3f5);
+  --cs-t3: var(--text-muted, #c5cdd8);
+  --cs-brand: var(--primary, #587af6);
+  --cs-brand-hi: var(--primary, #8fa7ff);
+  --cs-fill: color-mix(in srgb, var(--surface-2, #2b2d31) 78%, transparent);
+  --cs-hair: rgba(255, 255, 255, 0.14);
+  --cs-spec: rgba(255, 255, 255, 0.2);
+  --cs-shadow: rgba(0, 0, 0, 0.3);
+  --cs-media: 96px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+html.glass-desktop .conv-start {
+  --cs-t1: var(--gd-t1);
+  --cs-t2: var(--gd-t2);
+  --cs-t3: var(--gd-t3);
+  --cs-brand: var(--gd-brand);
+  --cs-brand-hi: var(--gd-brand-hi);
+  --cs-fill: var(--gd-glass-fill);
+  --cs-hair: var(--gd-hair, rgba(255, 255, 255, 0.14));
+}
+
+html.glass-ui .conv-start {
+  --cs-t1: var(--g-t1);
+  --cs-t2: var(--g-t2);
+  --cs-t3: var(--g-t3);
+  --cs-brand: var(--g-brand);
+  --cs-brand-hi: var(--g-brand-hi);
+  --cs-fill: var(--g-fill);
+  --cs-hair: var(--g-hair, rgba(255, 255, 255, 0.14));
+}
+
+html[data-theme="light"] .conv-start {
+  --cs-hair: rgba(0, 0, 0, 0.08);
+  --cs-spec: rgba(255, 255, 255, 0.75);
+  --cs-shadow: rgba(30, 40, 80, 0.14);
+}
+
+/* The list (or the voice stage) gives the block the whole free space and
+   centres it; `safe` keeps the top reachable when the window is short. */
+.message-list.is-conv-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.server-voice-empty {
+  justify-content: safe center;
+}
+
+/* Media: avatar / icon on a glass rim over a soft brand halo. */
+.conv-start-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin-bottom: 22px;
+  isolation: isolate;
+}
+
+.conv-start-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--cs-media) * 2.1);
+  height: calc(var(--cs-media) * 2.1);
+  transform: translate(-50%, -50%);
+  z-index: -2;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(closest-side,
+    color-mix(in srgb, var(--cs-brand) 30%, transparent) 0%,
+    color-mix(in srgb, var(--cs-brand) 10%, transparent) 55%,
+    transparent 100%);
+}
+
+.conv-start.is-dm .conv-start-media::before,
+.conv-start.is-group .conv-start-media::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03));
+  box-shadow:
+    inset 0 1px 0 var(--cs-spec),
+    inset 0 0 0 0.5px var(--cs-hair),
+    0 14px 34px var(--cs-shadow);
+}
+
+html[data-theme="light"] .conv-start.is-dm .conv-start-media::before,
+html[data-theme="light"] .conv-start.is-group .conv-start-media::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.45));
+}
+
+.conv-start.is-dm .conv-start-media .ui-avatar,
+.conv-start.is-group .conv-start-media > :not(.conv-start-halo) {
+  width: var(--cs-media);
+  height: var(--cs-media);
+  font-size: calc(var(--cs-media) * 0.4);
+}
+
+/* Text channel: a rounded glass tile in the brand tint. */
+.conv-start-tile {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 26px;
+  color: var(--cs-brand-hi);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)),
+    color-mix(in srgb, var(--cs-brand) 22%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--cs-spec),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--cs-brand-hi) 45%, transparent),
+    0 14px 34px color-mix(in srgb, var(--cs-brand) 24%, transparent);
+}
+
+html[data-theme="light"] .conv-start-tile {
+  color: var(--cs-brand);
+}
+
+/* Text. */
+.conv-start-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.conv-start-title {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-28);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--cs-t1);
+}
+
+.conv-start-handle {
+  max-width: 100%;
+  margin: 4px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-13);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--cs-t3);
+}
+
+.conv-start-body {
+  max-width: 380px;
+  margin: 12px 0 0;
+  font-size: var(--fs-15);
+  line-height: 1.5;
+  color: var(--cs-t2);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Actions: the shared .empty-cta buttons, a touch larger here. */
+.conv-start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.conv-start .conv-start-action {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+}
+
+.conv-start .conv-start-action svg {
+  flex: none;
+}
+
+.conv-start .conv-start-action:focus-visible,
+.conv-start .server-voice-dock-btn:focus-visible {
+  outline: 2px solid var(--cs-brand-hi);
+  outline-offset: 2px;
+}
+
+/* Voice room: the channel's speaker in a ring, flanked by empty seats. */
+.conv-start.is-voice {
+  --cs-media: 104px;
+  max-width: 520px;
+}
+
+.conv-start-seats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.conv-start-seat {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  color: var(--cs-t3);
+  background: var(--cs-fill);
+  box-shadow: inset 0 1px 0 var(--cs-spec), inset 0 0 0 0.5px var(--cs-hair);
+}
+
+.conv-start-seat.is-far {
+  width: 44px;
+  height: 44px;
+  opacity: 0.42;
+}
+
+.conv-start-seat.is-near {
+  width: 58px;
+  height: 58px;
+  opacity: 0.72;
+}
+
+.conv-start-seat.is-main {
+  width: var(--cs-media);
+  height: var(--cs-media);
+  margin: 0 8px;
+  opacity: 1;
+  color: var(--cs-brand-hi);
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--cs-brand) 42%, transparent), color-mix(in srgb, var(--cs-brand) 16%, transparent) 70%),
+    var(--cs-fill);
+  box-shadow:
+    inset 0 1px 0 var(--cs-spec),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--cs-brand-hi) 55%, transparent),
+    0 16px 40px color-mix(in srgb, var(--cs-brand) 30%, transparent);
+}
+
+html[data-theme="light"] .conv-start-seat.is-main {
+  color: var(--cs-brand);
+}
+
+/* Two rings breathe out of the speaker, like a room waiting for a voice. */
+.conv-start-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--cs-brand-hi) 55%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: conv-start-ring 3.6s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+}
+
+.conv-start-ring.is-late {
+  animation-delay: 1.8s;
+}
+
+@keyframes conv-start-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Reduced motion: the rings stand still at two sizes. */
+@media (prefers-reduced-motion: reduce) {
+  .conv-start-ring { animation: none; opacity: 0.32; transform: scale(1.18); }
+  .conv-start-ring.is-late { opacity: 0.14; transform: scale(1.36); }
+}
+
+html.reduce-motion .conv-start-ring { animation: none; opacity: 0.32; transform: scale(1.18); }
+html.reduce-motion .conv-start-ring.is-late { opacity: 0.14; transform: scale(1.36); }
+
+.conv-start.is-voice .conv-start-halo {
+  width: calc(var(--cs-media) * 3.6);
+  height: calc(var(--cs-media) * 1.9);
+}
+
+.conv-start.is-voice .conv-start-media {
+  margin-bottom: 26px;
+}
+
+.conv-start.is-voice .conv-start-handle {
+  margin-top: 6px;
+  font-size: var(--fs-15);
+  color: var(--cs-t2);
+}
+
+.conv-start.is-voice .conv-start-body {
+  margin-top: 4px;
+  font-size: var(--fs-13);
+  color: var(--cs-t3);
+}
+
+.conv-start.is-voice .conv-start-actions {
+  margin-top: 26px;
+}
+
+/* Solid themes and Reduce Transparency: no glass rim gradients. */
+html.a11y-solid .conv-start.is-dm .conv-start-media::before,
+html.a11y-solid .conv-start.is-group .conv-start-media::before,
+html.glass-desktop.gd-lite:not(.electron-app) .conv-start.is-dm .conv-start-media::before,
+html.glass-desktop.gd-lite:not(.electron-app) .conv-start.is-group .conv-start-media::before {
+  background: var(--gd-solid, var(--g-solid, var(--surface-2, #2b2d31)));
+}
+
+@media (forced-colors: active) {
+  .conv-start-halo { display: none; }
+  .conv-start-seat,
+  .conv-start-tile { border: 1px solid CanvasText; }
+}
+
+/* Narrow panes (iPad portrait split, phones). */
+@media (max-width: 600px) {
+  .conv-start {
+    --cs-media: 84px;
+    padding: 24px 16px;
+  }
+  .conv-start.is-voice { --cs-media: 88px; }
+  .conv-start-title { font-size: var(--fs-20); }
+  .conv-start-seat.is-far { display: none; }
+  .conv-start-actions { gap: 8px; margin-top: 20px; }
+}
