@@ -3291,15 +3291,8 @@ button.member-row.server-member-row {
   text-align: center;
   color: var(--text-muted);
   padding: 24px;
-}
-
-.server-voice-empty p {
-  margin: 0;
-}
-
-.server-voice-empty p:first-child {
-  color: var(--text-0);
-  font-weight: 700;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .server-voice-dock {

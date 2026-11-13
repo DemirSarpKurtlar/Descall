@@ -126,6 +126,9 @@ export const DESCALL_STICKERS = Object.freeze(Object.keys(STICKER_ART).map((id) 
   src: dataUri(STICKER_ART[id]),
 })));
 
+/** The hello sticker: the "Say hi" action on an empty conversation sends it. */
+export const HELLO_STICKER_TOKEN = ":ds-sticker-hello:";
+
 const EMOJI_BY_TOKEN = new Map(DESCALL_EMOJI.map((e) => [e.token, e]));
 const STICKER_BY_TOKEN = new Map(DESCALL_STICKERS.map((s) => [s.token, s]));
 export const EMOJI_TOKEN_RE = /:(descall|ds-love|ds-ok|ds-hype|ds-gg|ds-call):/g;

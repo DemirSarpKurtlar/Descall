@@ -815,8 +815,8 @@ html.glass-desktop .main-panel .server-voice-room-error {
   background: rgba(255, 69, 58, 0.12);
   box-shadow: inset 0 0 0 0.5px rgba(255, 105, 97, 0.35);
 }
+/* The empty room is a ConversationStart (styles/conversation-start.css). */
 html.glass-desktop .main-panel .server-voice-empty { color: var(--gd-t2); }
-html.glass-desktop .main-panel .server-voice-empty p:first-child { color: var(--gd-t1); font-size: 16px; }
 
 /* Dock: no band, the controls float as one glass capsule. */
 html.glass-desktop .main-panel .server-voice-dock {

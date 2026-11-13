@@ -35,6 +35,7 @@ import RemoteScreenAudioSink from "../call/RemoteScreenAudioSink";
 import ShareFilmstrip from "../voice/ShareFilmstrip";
 import GlassVolumeSlider from "../ui/GlassVolumeSlider";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
+import ConversationStart, { VoiceSeats } from "../chat/ConversationStart";
 import { DockDeviceSlot } from "../call/DevicePicker";
 import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
@@ -912,6 +913,22 @@ export default function ServerVoicePanel({
 
   const openMemberMenu = useCallback((next) => setMemberMenu(next), []);
 
+  const joinButton = (
+    <button
+      type="button"
+      className="server-voice-dock-btn join"
+      disabled={!canConnect || serverVoice?.connecting}
+      onClick={() => serverVoice.join?.(server.id, channel)}
+      aria-label={t("Join Voice")}
+    >
+      <LogIn size={18} />
+      {serverVoice?.connecting ? t("Please wait...") : t("Join Voice")}
+    </button>
+  );
+  // Nobody in the room and you are not in it: the join button sits in the empty
+  // composition instead of alone at the bottom of a blank stage.
+  const joinInEmptyRoom = !inThis && tiles.length === 0 && !sharing;
+
   return (
     <div className="server-voice-panel server-voice-room" style={worldOpen ? { position: "relative" } : undefined}>
       {worldOpen ? (
@@ -1032,17 +1049,26 @@ export default function ServerVoicePanel({
             </div>
           </div>
         ) : (
+          /* 2026-11 owner request: an empty room is one centred composition (the
+             channel's speaker in a soft ring with the empty seats people fill),
+             the channel name, the hint and, until you are in, the join button. */
           <div className="server-voice-empty">
-            <p>{t("Nobody here yet")}</p>
-            <p>
-              {isStage
+            <ConversationStart
+              variant="voice"
+              media={<VoiceSeats icon={isStage ? Radio : Volume2} />}
+              title={channel?.name || t("Voice channel")}
+              handle={t("Nobody here yet")}
+              body={isStage
                 ? t("Join as audience, then request to speak.")
                 : t("Join to talk, no ringing, drop in anytime.")}
-            </p>
+            >
+              {joinInEmptyRoom ? <div className="conv-start-actions">{joinButton}</div> : null}
+            </ConversationStart>
           </div>
         )}
       </motion.div>
 
+      {joinInEmptyRoom ? null : (
       <footer className="server-voice-dock">
         {inThis ? (
           <>
@@ -1161,19 +1187,9 @@ export default function ServerVoicePanel({
               {t("Leave")}
             </button>
           </>
-        ) : (
-          <button
-            type="button"
-            className="server-voice-dock-btn join"
-            disabled={!canConnect || serverVoice?.connecting}
-            onClick={() => serverVoice.join?.(server.id, channel)}
-            aria-label={t("Join Voice")}
-          >
-            <LogIn size={18} />
-            {serverVoice?.connecting ? t("Please wait...") : t("Join Voice")}
-          </button>
-        )}
+        ) : joinButton}
       </footer>
+      )}
 
       <VoiceMemberContextMenu
         menu={memberMenu}

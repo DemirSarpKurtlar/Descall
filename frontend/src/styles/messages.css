@@ -987,17 +987,5 @@ html[data-theme="light"] .msg-jump-btn {
   border-color: rgba(0, 0, 0, 0.08);
 }
 
-/* Start of an empty text channel (UI audit #144): the shared EmptyState,
-   seated at the bottom like the first message would be. */
-.message-list.is-channel-start {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.message-list.is-channel-start .channel-start {
-  flex: 0 0 auto;
-  align-items: flex-start;
-  text-align: left;
-  padding: 24px 20px 28px;
-}
+/* Start of an empty text channel, DM or group (UI audit #144, 2026-11 owner
+   request): ConversationStart, styled in conversation-start.css. */
