@@ -1,103 +1,211 @@
-/* "How did you hear about us?" card (HeardAboutPrompt.jsx). No backdrop: the app
-   stays usable underneath. Corner card on wide screens, bottom sheet on phones. */
-.heard-about {
+/* "How did you hear about us?" popup (HeardAboutPrompt.jsx). Centred heavy-glass card
+   over a dim scrim on wide screens, a bottom sheet on phones. Same glass recipe as the
+   profile / report sheets (ProfileSheet.css .pfs-heavy). */
+.heard-about-scrim {
+  box-sizing: border-box;
   position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: var(--z-popover, 12000);
-  width: min(360px, calc(100vw - 32px));
+  inset: 0;
+  z-index: var(--z-modal, 20000);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(6, 7, 12, 0.55);
+  -webkit-app-region: no-drag;
+  animation: heard-about-fade 180ms ease-out;
+}
+.heard-about {
+  position: relative;
+  box-sizing: border-box;
+  width: min(460px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 18px 16px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--r-lg, 18px);
-  background: var(--surface-1, #1e1f22);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
-  color: var(--text-1, #f2f3f5);
+  align-items: center;
+  padding: 28px 22px 16px;
+  border-radius: 28px;
+  outline: none;
+  color: rgba(255, 255, 255, 0.96);
   font-size: var(--fs-13);
   line-height: 1.45;
+  text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    rgba(24, 25, 36, 0.9);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  animation: heard-about-rise 240ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 .heard-about__close {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(235, 238, 255, 0.7);
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.heard-about__close:hover,
+.heard-about__close:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.heard-about__badge {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(145deg, #6d8cff, #587af5 55%, #4a5fd6);
+  box-shadow: 0 8px 22px rgba(88, 122, 245, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.heard-about__title {
+  margin: 0;
+  padding: 0 28px;
+  font-size: var(--fs-17);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.heard-about__lead {
+  margin: 6px 0 18px;
+  max-width: 34ch;
+  color: rgba(235, 238, 255, 0.6);
+  font-size: var(--fs-13);
+}
+.heard-about__options {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.heard-about__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px 8px 8px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.94);
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
+}
+.heard-about__option:hover,
+.heard-about__option:focus-visible {
+  background: rgba(88, 122, 245, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(120, 148, 255, 0.55);
+  outline: none;
+}
+.heard-about__option:active { transform: scale(0.98); }
+/* Last option alone on its row spans both columns. */
+.heard-about__option:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.heard-about__option-icon {
+  flex: none;
   display: grid;
   place-items: center;
   width: 32px;
   height: 32px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: #b5bac1;
-  cursor: pointer;
-}
-.heard-about__close:hover,
-.heard-about__close:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-1, #f2f3f5);
-}
-.heard-about__title {
-  margin: 0;
-  padding-right: 32px;
-  font-size: var(--fs-15);
-  font-weight: 700;
-}
-.heard-about__lead {
-  margin: 0;
-  color: #b5bac1;
-  font-size: var(--fs-12);
-}
-.heard-about__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.heard-about__option {
-  min-height: 36px;
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-1, #f2f3f5);
-  font: inherit;
-  font-size: var(--fs-13);
-  text-align: left;
-  cursor: pointer;
-}
-.heard-about__option:hover,
-.heard-about__option:focus-visible {
-  border-color: #587af5;
+  border-radius: 10px;
   background: rgba(88, 122, 245, 0.18);
+  color: #a9b9ff;
 }
+.heard-about__option-label { min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
 .heard-about__skip {
-  align-self: flex-end;
+  margin-top: 12px;
   min-height: 36px;
-  padding: 6px 10px;
+  padding: 6px 14px;
   border: 0;
+  border-radius: 999px;
   background: transparent;
-  color: #b5bac1;
+  color: rgba(235, 238, 255, 0.55);
   font: inherit;
   font-size: var(--fs-13);
+  font-weight: 550;
   cursor: pointer;
 }
 .heard-about__skip:hover,
 .heard-about__skip:focus-visible {
-  color: var(--text-1, #f2f3f5);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
 }
 .heard-about__thanks {
-  margin: 6px 32px 8px 0;
-  font-size: var(--fs-15);
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 8px 18px;
 }
+.heard-about__thanks p { margin: 0; font-size: var(--fs-15); font-weight: 650; }
+.heard-about__thanks-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #34c77b, #24a866);
+  box-shadow: 0 8px 22px rgba(52, 199, 123, 0.4);
+}
+
+@keyframes heard-about-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes heard-about-rise { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes heard-about-sheet { from { transform: translateY(100%); } to { transform: none; } }
+
+/* Light theme */
+:root[data-theme="light"] .heard-about {
+  color: rgba(16, 18, 30, 0.95);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.7)),
+    rgba(246, 247, 252, 0.92);
+  box-shadow: 0 24px 64px rgba(20, 24, 40, 0.22), inset 0 0 0 1px rgba(20, 24, 40, 0.06);
+}
+:root[data-theme="light"] .heard-about__lead,
+:root[data-theme="light"] .heard-about__skip { color: rgba(20, 24, 40, 0.58); }
+:root[data-theme="light"] .heard-about__close { background: rgba(20, 24, 40, 0.06); color: rgba(20, 24, 40, 0.6); }
+:root[data-theme="light"] .heard-about__option {
+  background: rgba(20, 24, 40, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(20, 24, 40, 0.08);
+  color: rgba(16, 18, 30, 0.92);
+}
+:root[data-theme="light"] .heard-about__option-icon { color: #4a5fd6; background: rgba(88, 122, 245, 0.12); }
+:root[data-theme="light"] .heard-about__skip:hover { color: rgba(16, 18, 30, 0.9); background: rgba(20, 24, 40, 0.06); }
+
+/* Phones: bottom sheet. */
 @media (max-width: 640px) {
+  .heard-about-scrim { place-items: end stretch; padding: 0; }
   .heard-about {
-    left: 12px;
-    right: 12px;
-    bottom: max(12px, env(safe-area-inset-bottom));
-    width: auto;
+    width: 100%;
+    max-height: calc(100vh - env(safe-area-inset-top, 0px) - 24px);
+    border-radius: 28px 28px 0 0;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    animation: heard-about-sheet 260ms cubic-bezier(0.2, 0.9, 0.3, 1);
   }
-  .heard-about__option {
-    min-height: 44px;
-  }
+  .heard-about__option { min-height: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heard-about-scrim, .heard-about { animation: none; }
+  .heard-about__option { transition: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .heard-about { -webkit-backdrop-filter: none; backdrop-filter: none; background: #181924; }
 }

@@ -81,10 +81,15 @@ assert.equal((app.match(/markHeardAboutPending\(/g) || []).length, 2, "App: pass
 const boot = src("site/MarketingBoot.jsx");
 assert.equal((boot.match(/markHeardAboutPending\(/g) || []).length, 3, "web: register, register+login, Google");
 const prompt = src("components/HeardAboutPrompt.jsx");
-assert.match(prompt, /aria-modal="false"/, "never modal");
-assert.match(prompt, /finish\("skipped"\)/, "skippable");
+// Owner decision (2026-11-13): a centred, themed popup over a scrim instead of a corner card.
+// It stays optional: skip, close, Escape and a backdrop click all end it without an answer.
+assert.match(prompt, /aria-modal="true"/, "popup dialog");
+assert.match(prompt, /className="heard-about-scrim"[^>]*onClick=\{\(\) => finish\("skipped"\)\}/, "backdrop click skips");
+assert.match(prompt, /e\.key === "Escape"[\s\S]{0,60}finish\("skipped"\)/, "Escape skips");
+assert.ok((prompt.match(/finish\("skipped"\)/g) || []).length >= 4, "skip, close, Escape, backdrop");
 const css = src("components/HeardAboutPrompt.css");
-assert.doesNotMatch(css.replace(/\/\*[\s\S]*?\*\//g, ""), /backdrop-filter|\binset:\s*0|top:\s*0;[\s\S]*left:\s*0;/, "no backdrop over the app");
+assert.match(css, /@media \(max-width: 640px\)[\s\S]*border-radius: 28px 28px 0 0/, "bottom sheet on phones");
+assert.match(css, /prefers-reduced-motion: reduce/, "reduced motion");
 for (const m of css.matchAll(/font-size:\s*([^;]+);/g)) assert.match(m[1], /^var\(--fs-(11|12|13|15|17|20|28)\)$/, `type scale: ${m[1]}`);
 
 console.log("heardAbout.selftest.mjs: ok");
