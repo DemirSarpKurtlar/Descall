@@ -410,6 +410,15 @@ function MarketingAppSite({
         <Route path="/tr/oyuncu-sohbet-uygulamasi" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/discord-acildi-mi" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/discord-alternatifleri" element={withLayout(TrLandingPage, openAuth)} />
+        {/* 13 Kasım 2026 (seo/trLandingsNov13.js) */}
+        <Route path="/tr/sesli-sohbet-programi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/teamspeak-alternatifi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/ekran-paylasimi-programi" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/ucretsiz-grup-sesli-arama" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/minecraft-sesli-sohbet" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/cs2-sesli-sohbet" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/lol-sesli-sohbet" element={withLayout(TrLandingPage, openAuth)} />
+        <Route path="/tr/pubg-mobile-sesli-sohbet" element={withLayout(TrLandingPage, openAuth)} />
         <Route path="/tr/blog" element={withLayout(TrBlogIndexPage, openAuth)} />
         <Route path="/tr/blog/:slug" element={withLayout(TrBlogPostPage, openAuth)} />
         <Route path="/tr/about" element={withLayout(AboutPage, openAuth)} />

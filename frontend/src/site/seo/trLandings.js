@@ -2,15 +2,18 @@
  * Turkish landing pages under /tr/*. Written in Turkish (not machine-swapped
  * EN copy). Only claim what Descall ships today: DMs, groups, servers with
  * roles/channels/templates, voice/video calls, screen share with quality
- * presets, noise suppression, Windows/Android/web, Turkish UI,
+ * presets, noise suppression, Windows/iPhone and iPad/Android/web, Turkish UI,
  * free core features; optional Descall+ / Ultra memberships (extra desktop and
  * productivity tools, no published prices) and optional DesCoin cosmetics. No E2E claim.
  *
  * Shape: { path, title, description, kicker, h1, lead, updated?, sections:
- * [{ h, p: string[], list?: string[] }], faq: [{q,a}], related: [{to,label}] }
+ * [{ h, p: string[], list?: string[], table?: { head: string[], rows: string[][] } }], faq: [{q,a}],
+ * related: [{to,label}] }
  */
 
 import { TR_LANDING_META } from "./trMeta.js";
+import { TR_LANDINGS_NOV13 } from "./trLandingsNov13.js";
+import { SYSTEM_REQUIREMENTS } from "./trSystemRequirements.js";
 
 export const TR_LANDING_UPDATED = "2026-10-17";
 
@@ -57,11 +60,37 @@ const TR_GUIDES = {
   voice: { to: "/tr/blog/descall-voice-settings-guide", label: "Descall ses ayarları rehberi" },
   team: { to: "/tr/blog/game-team-voice-setup", label: "Oyun takımı için sesli sohbet kurulumu" },
   classes: { to: "/tr/blog/screen-share-online-classes", label: "Online ders ve çalışma grubunda ekran paylaşımı" },
+  // Nov 13 2026 landings (seo/trLandingsNov13.js), linked from the money pages they fit.
+  program: { to: "/tr/sesli-sohbet-programi", label: "Oyun için sesli sohbet programı" },
+  teamspeak: { to: "/tr/teamspeak-alternatifi", label: "TeamSpeak alternatifi" },
+  screenProgram: { to: "/tr/ekran-paylasimi-programi", label: "Ekran paylaşımı programı" },
+  group: { to: "/tr/ucretsiz-grup-sesli-arama", label: "Ücretsiz grup sesli arama" },
+  minecraft: { to: "/tr/minecraft-sesli-sohbet", label: "Minecraft sesli sohbet" },
+  cs2: { to: "/tr/cs2-sesli-sohbet", label: "CS2 sesli sohbet" },
+  lol: { to: "/tr/lol-sesli-sohbet", label: "League of Legends sesli sohbet" },
+  pubg: { to: "/tr/pubg-mobile-sesli-sohbet", label: "PUBG Mobile sesli sohbet" },
 };
 
 function related(self, guides = []) {
   return [...guides.map((g) => TR_GUIDES[g]), ...RELATED_CORE.filter((l) => l.to !== self)];
 }
+
+/*
+ * Answers people search for on the money pages (Nov 13 2026): system requirements, does it
+ * work in Türkiye without a VPN, is it safe. Descall's own service only: we never say
+ * anything here about access to Discord (that stays on /tr/discord-acildi-mi).
+ */
+const SECTION_SYSTEM = {
+  h: "Sistem gereksinimleri",
+  p: ["Descall bugün şu cihazlarda çalışıyor; hepsi aynı ücretsiz hesabı kullanır:"],
+  list: SYSTEM_REQUIREMENTS,
+};
+const SECTION_NO_VPN = {
+  h: "Türkiye’de VPN olmadan çalışır mı?",
+  p: [
+    "Evet. Descall Türkiye’de geliştirilir ve descall.com, Windows uygulaması, App Store’daki iPhone ve iPad uygulaması, Android uygulaması ve tarayıcı sürümü Türkiye’den doğrudan açılır; VPN ya da DNS ayarı gerekmez. Sesli ve görüntülü aramalar, doğrudan bağlantının kurulamadığı katı ev, yurt ya da okul ağlarında aktarma sunucularına geçer, bu yüzden çoğu ağdan bağlanabilirsin.",
+  ],
+};
 
 /** Short label of a Turkish landing for breadcrumbs and hub lists. */
 export function trLandingLabel(page) {
@@ -72,9 +101,11 @@ export const TR_LANDINGS = {
   "/tr/discord-alternatifi": {
     path: "/tr/discord-alternatifi",
     kicker: "Türkiye · Discord alternatifi",
-    h1: "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı",
+    h1: "Discord alternatifi Descall: Türk yapımı, ücretsiz ses, sunucu ve ekran paylaşımı",
+    // Breadcrumb / hub-list label.
+    short: "Discord alternatifi",
     lead:
-      "Descall, arkadaş grupları, klanlar, sınıflar ve küçük topluluklar için Türkiye’de geliştirilen ücretsiz bir Discord alternatifidir. Sunucularını roller ve kanallarla kurarsın, sesli ve görüntülü konuşursun, ekranını paylaşırsın ve hazır oyun şablonlarıyla sunucunu dakikalar içinde kurarsın. Temel iletişim için abonelik yoktur; arayüz tamamen Türkçedir.",
+      "Türk yapımı bir Discord alternatifi mi arıyorsun? Descall, arkadaş grupları, klanlar, sınıflar ve küçük topluluklar için Türkiye’de geliştirilen ücretsiz bir sohbet uygulamasıdır; Türkiye’den VPN gerekmeden açılır ve Windows, iPhone, Android ve tarayıcıda çalışır. Sunucularını roller ve kanallarla kurarsın, sesli ve görüntülü konuşursun, ekranını paylaşırsın ve hazır oyun şablonlarıyla sunucunu dakikalar içinde kurarsın. Temel iletişim için abonelik yoktur; arayüz tamamen Türkçedir.",
     sections: [
       {
         h: "Neden bu kadar çok kişi Discord alternatifi arıyor?",
@@ -99,7 +130,7 @@ export const TR_LANDINGS = {
           "Ekran paylaşımı: kalite ön ayarlarıyla oyun, sunum veya ders paylaşımı",
           "Gürültü azaltma: klavye ve fan sesini bastıran isteğe bağlı mikrofon filtresi",
           "Oyun şablonu: ekip toplama, klip ve scrim kanallarıyla hazır sunucu",
-          "Windows masaüstü uygulaması, Android uygulaması ve kurulum gerektirmeyen tarayıcı sürümü",
+          "Windows masaüstü uygulaması, App Store’da iPhone ve iPad uygulaması, Android uygulaması ve kurulum gerektirmeyen tarayıcı sürümü",
         ],
       },
       {
@@ -124,7 +155,7 @@ export const TR_LANDINGS = {
           "2. Sunucunu kur: boş bir sunucuyla başla ya da Oyun, Arkadaşlar, Topluluk, Ders veya Yayın şablonlarından birini seç. Roller ve kanallar otomatik gelir; isimleri dilediğin gibi değiştir.",
           "3. Arkadaşlarını davet et: davet bağlantısı oluştur ve grup sohbetine at. Bağlantıyı açan kişi sunucuyu önizler ve giriş yaptıktan sonra katılır.",
           "4. İlk sesli akşamı Descall’da yap: alışkanlık sesle taşınır. Bir akşam herkes aynı ses kanalına girdiğinde geçişin en zor kısmı biter.",
-          "5. Masaüstü ve mobil: Windows kullananlar masaüstü uygulamasını, telefondan bağlanacaklar Android uygulamasını kurabilir. Aynı hesap her yerde çalışır.",
+          "5. Masaüstü ve mobil: Windows kullananlar masaüstü uygulamasını, telefondan bağlanacaklar App Store’daki iPhone ve iPad uygulamasını ya da Android uygulamasını kurabilir. Aynı hesap her yerde çalışır.",
         ],
       },
       {
@@ -148,7 +179,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Descall Türkiye’de çalışıyor mu?",
-        a: "Evet. Descall Türkiye’de geliştirilir ve descall.com, Windows uygulaması, Android uygulaması ve tarayıcı sürümü Türkiye’den normal şekilde kullanılabilir.",
+        a: "Evet. Descall Türkiye’de geliştirilir; descall.com, Windows uygulaması, iPhone ve iPad uygulaması, Android uygulaması ve tarayıcı sürümü Türkiye’den VPN gerekmeden kullanılabilir.",
       },
       {
         q: "Discord sunucumu Descall’a taşıyabilir miyim?",
@@ -160,20 +191,20 @@ export const TR_LANDINGS = {
       },
       {
         q: "Telefonda kullanabilir miyim?",
-        a: "Android uygulaması var; ayrıca tarayıcı sürümü telefon tarayıcısında da açılır. Masaüstünde Windows uygulaması bulunur.",
+        a: "Evet. App Store’da iPhone ve iPad uygulaması (iOS 15 ve üzeri), Android uygulaması (Android 7.0 ve üzeri) var; masaüstünde Windows uygulaması ve tarayıcı sürümü bulunur. iPhone ve iPad başkalarının ekran paylaşımını izleyebilir, kendi ekranını paylaşmak için bilgisayar gerekir.",
       },
     ],
-    related: related("/tr/discord-alternatifi", ["migrate", "server", "devices"]),
+    related: related("/tr/discord-alternatifi", ["migrate", "program", "teamspeak", "screenProgram", "group", "devices"]),
   },
 
   "/tr/turk-sohbet-uygulamasi": {
     path: "/tr/turk-sohbet-uygulamasi",
     kicker: "Türkiye’de geliştirildi · Türkçe · Ücretsiz",
-    h1: "Descall: Türkiye’de geliştirilen ücretsiz sesli sohbet uygulaması",
-    // Breadcrumb / hub-list label (the H1 starts with the brand name).
+    h1: "Türk sohbet uygulaması Descall: Türkiye’de geliştirilen, Türkçe ve ücretsiz",
+    // Breadcrumb / hub-list label.
     short: "Türkiye’de geliştirilen sohbet uygulaması",
     lead:
-      "Türkiye’de geliştirilen, Türkçe bir sesli sohbet uygulaması mı arıyorsun? Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor. Sunucular, roller, sesli ve görüntülü sohbet ve ekran paylaşımı Türkçe bir arayüzde ve ücretsiz olarak sunuluyor; Windows, iPhone ve iPad, Android ve tarayıcıda aynı hesapla çalışıyor.",
+      "Türk sohbet uygulaması, yani Türkiye’de geliştirilen, Türkçe bir sesli sohbet uygulaması mı arıyorsun? Descall’ı Türkiye’de bağımsız bir geliştirici olan Demir Sarp Kurtlar geliştiriyor. Sunucular, roller, sesli ve görüntülü sohbet ve ekran paylaşımı Türkçe bir arayüzde ve ücretsiz olarak sunuluyor; Windows, iPhone ve iPad, Android ve tarayıcıda aynı hesapla çalışıyor.",
     sections: [
       {
         h: "Türkiye’de geliştirilen bir sohbet uygulamasından ne beklenir?",
@@ -260,7 +291,7 @@ export const TR_LANDINGS = {
         a: "Discord’daki mesaj geçmişini taşıyan bir araç yok; sunucuyu Descall’da yeniden kurarsın. Bir şablonla başla, rolleri ve kanalları eşleştir, davet bağlantısını sabitle ve önce en aktif üyelerle bir ses akşamı yap. Adımları taşıma rehberimizde anlattık.",
       },
     ],
-    related: related("/tr/turk-sohbet-uygulamasi", ["migrate", "devices", "privacy"]),
+    related: related("/tr/turk-sohbet-uygulamasi", ["migrate", "group", "program", "devices", "privacy"]),
   },
 
   "/tr/discord-yerine-ne-kullanilir": {
@@ -287,7 +318,7 @@ export const TR_LANDINGS = {
         h: "Senaryo 1: Arkadaş grubuyla akşam sesli sohbet",
         p: [
           "En yaygın kullanım bu. Burada önemli olan sesin net olması, herkesin tek tıkla aynı odaya girebilmesi ve gerektiğinde ekran paylaşabilmek. WhatsApp veya Telegram grup aramaları kısa konuşmalar için iş görür ama saatlerce açık kalan, girilip çıkılan kalıcı bir “oda” hissi vermez.",
-          "Descall bu senaryo için tasarlandı: bir sunucu kur, birkaç ses kanalı aç, arkadaşların istedikleri zaman girip çıksın. Sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı ve isteğe bağlı gürültü azaltma ücretsiz. Windows’ta masaüstü uygulaması, telefonda Android uygulaması, kurulum istemeyenler için tarayıcı sürümü var.",
+          "Descall bu senaryo için tasarlandı: bir sunucu kur, birkaç ses kanalı aç, arkadaşların istedikleri zaman girip çıksın. Sesli ve görüntülü arama, kalite ön ayarlı ekran paylaşımı ve isteğe bağlı gürültü azaltma ücretsiz. Windows’ta masaüstü uygulaması, telefonda iPhone ve Android uygulamaları, kurulum istemeyenler için tarayıcı sürümü var.",
         ],
       },
       {
@@ -357,15 +388,15 @@ export const TR_LANDINGS = {
         a: "Discord’dan başka bir uygulamaya mesaj geçmişini otomatik aktaran resmi bir yol yok. Sunucu yapısını şablonlarla yeniden kurmak en pratik yöntem.",
       },
     ],
-    related: related("/tr/discord-yerine-ne-kullanilir", ["study", "classes", "server"]),
+    related: related("/tr/discord-yerine-ne-kullanilir", ["teamspeak", "group", "study", "classes", "server"]),
   },
 
   "/tr/sesli-sohbet-uygulamasi": {
     path: "/tr/sesli-sohbet-uygulamasi",
     kicker: "Sesli sohbet · Ücretsiz",
-    h1: "Ücretsiz sesli sohbet uygulaması: arkadaşlarınla her akşam aynı odada",
+    h1: "Sesli sohbet uygulaması: arkadaşlarınla ücretsiz, her akşam aynı odada",
     lead:
-      "Descall, arkadaş grupları ve topluluklar için ücretsiz bir sesli sohbet uygulamasıdır. Telefon araması gibi tek seferlik değil, istediğin zaman girip çıkabildiğin kalıcı ses odaları sunar. Sesli ve görüntülü arama, ekran paylaşımı ve gürültü azaltma ücretsizdir; Windows, Android ve tarayıcıdan aynı hesapla bağlanırsın.",
+      "Descall, arkadaş grupları ve topluluklar için ücretsiz bir sesli sohbet uygulamasıdır. Telefon araması gibi tek seferlik değil, istediğin zaman girip çıkabildiğin kalıcı ses odaları sunar. Sesli ve görüntülü arama, ekran paylaşımı ve gürültü azaltma ücretsizdir; Windows, iPhone ve iPad, Android ve tarayıcıdan aynı hesapla bağlanırsın. Türkiye’de geliştirilir, Türkçedir ve Türkiye’den VPN gerekmeden açılır.",
     sections: [
       {
         h: "Sesli sohbet uygulamasından ne beklemeli?",
@@ -391,7 +422,7 @@ export const TR_LANDINGS = {
           "İsteğe bağlı gürültü azaltma (klavye, fan, arka plan sesi)",
           "Konuşan kişi göstergesi, susturma ve sağırlaştırma",
           "Rol bazlı kanal izinleri: belirli ses odalarını sadece belirli rollere aç",
-          "Windows masaüstü uygulaması, Android uygulaması ve tarayıcı sürümü",
+          "Windows masaüstü uygulaması, iPhone ve iPad uygulaması, Android uygulaması ve tarayıcı sürümü",
           "Hepsi ücretsiz; abonelik gerekmez",
         ],
       },
@@ -413,15 +444,18 @@ export const TR_LANDINGS = {
         ],
       },
       {
-        h: "Gizlilik",
+        h: "Sesli sohbet uygulaması olarak Descall güvenli mi?",
         p: [
-          "Sesli ve görüntülü aramalar aktarım sırasında şifrelenir. Descall varsayılan uçtan uca şifreleme iddiasında bulunmaz; ne yaptığımızı ve ne yapmadığımızı Güvenlik sayfasında açıkça yazıyoruz. Kanal izinleriyle bir ses odasını yalnızca seçtiğin rollere açabilir, davet bağlantılarıyla sunucuna kimin katılacağını kontrol edebilirsin.",
+          "Sesli ve görüntülü aramalar WebRTC ile taşınır ve aktarım sırasında DTLS/SRTP ile şifrelenir; web ve uygulama trafiği HTTPS/TLS kullanır. Descall varsayılan uçtan uca şifreleme iddiasında bulunmaz; ne yaptığımızı ve ne yapmadığımızı Güvenlik sayfasında açıkça yazıyoruz. Hesabını iki adımlı doğrulamayla koruyabilirsin; Descall hesapları 13 yaş ve üzeri içindir.",
+          "Kanal izinleriyle bir ses odasını yalnızca seçtiğin rollere açabilir, davet bağlantılarının ne zaman sona ereceğini ve kaç kez kullanılabileceğini seçerek sunucuna kimin katılacağını kontrol edebilirsin.",
         ],
       },
+      SECTION_NO_VPN,
+      SECTION_SYSTEM,
       {
         h: "Hemen başla",
         p: [
-          "Ücretsiz hesap aç, bir sunucu oluştur ve davet bağlantısını arkadaşlarına gönder. Kurulum istemeyenler tarayıcıdan, Windows kullananlar masaüstü uygulamasından, telefondan bağlanmak isteyenler Android uygulamasından katılabilir. İlk ses kanalına girmen bir dakikadan kısa sürer.",
+          "Ücretsiz hesap aç, bir sunucu oluştur ve davet bağlantısını arkadaşlarına gönder. Kurulum istemeyenler tarayıcıdan, Windows kullananlar masaüstü uygulamasından, telefondan bağlanmak isteyenler iPhone ve iPad ya da Android uygulamasından katılabilir. İlk ses kanalına girmen bir dakikadan kısa sürer.",
         ],
       },
     ],
@@ -432,7 +466,7 @@ export const TR_LANDINGS = {
       },
       {
         q: "Bir ses kanalına kaç kişi girebilir?",
-        a: "Descall arkadaş grupları ve küçük‑orta topluluklar için optimize edilmiştir. Bu ölçekteki gruplar ses kanallarını rahatça kullanabilir.",
+        a: "Grup sohbetleri ve grup aramaları seninle birlikte en fazla 15 kişiliktir. Daha kalabalık gruplar için sunucu ses kanalları var; Descall arkadaş grupları ve küçük‑orta topluluklar için optimize edilmiştir.",
       },
       {
         q: "Gürültü azaltma var mı?",
@@ -440,10 +474,10 @@ export const TR_LANDINGS = {
       },
       {
         q: "Telefondan sesli sohbete katılabilir miyim?",
-        a: "Evet. Android uygulamasıyla veya telefon tarayıcısından tarayıcı sürümüyle ses kanallarına katılabilirsin.",
+        a: "Evet. App Store’daki iPhone ve iPad uygulamasıyla, Android uygulamasıyla ya da telefon tarayıcısından ses kanallarına katılabilirsin. Telefon uygulamaları arka plana alındığında ses bağlantısını sürdürür.",
       },
     ],
-    related: related("/tr/sesli-sohbet-uygulamasi", ["voice", "mic", "screen", "devices"]),
+    related: related("/tr/sesli-sohbet-uygulamasi", ["group", "program", "screenProgram", "voice", "mic", "devices"]),
   },
 
   "/tr/oyuncu-sohbet-uygulamasi": {
@@ -497,7 +531,7 @@ export const TR_LANDINGS = {
           "Sesli/görüntülü arama ve kalite ön ayarlı ekran paylaşımı",
           "İsteğe bağlı gürültü azaltma",
           "Atma, yasaklama, zaman aşımı ve denetim kayıtları",
-          "Windows, Android ve tarayıcı",
+          "Windows, iPhone ve iPad, Android ve tarayıcı",
           "Ücretsiz; kozmetikler isteğe bağlı (DesCoin)",
         ],
       },
@@ -523,10 +557,10 @@ export const TR_LANDINGS = {
       },
       {
         q: "Takım arkadaşlarım telefondan katılabilir mi?",
-        a: "Evet. Android uygulaması ya da telefon tarayıcısındaki tarayıcı sürümüyle katılabilirler.",
+        a: "Evet. iPhone ve iPad uygulaması, Android uygulaması ya da telefon tarayıcısındaki tarayıcı sürümüyle katılabilirler.",
       },
     ],
-    related: related("/tr/oyuncu-sohbet-uygulamasi", ["team", "screen", "mic"]),
+    related: related("/tr/oyuncu-sohbet-uygulamasi", ["program", "minecraft", "cs2", "lol", "pubg", "team", "screen"]),
   },
 
   "/tr/discord-acildi-mi": {
@@ -612,13 +646,13 @@ export const TR_LANDINGS = {
       {
         h: "Nasıl değerlendirdik?",
         p: [
-          "Her uygulamayı Discord’un en çok kullanılan beş işine göre değerlendirdik: kalıcı ses odaları, grup mesajlaşma, sunucu/kanal/rol yapısı, ekran paylaşımı ve hazır sunucu şablonları. Bunlara fiyat, Türkçe arayüz, Türkiye’den erişim ve platform desteğini (Windows, Android, tarayıcı) ekledik. Özellik bilgileri, uygulamaların genel ve uzun süredir bilinen yeteneklerine dayanıyor; fiyat ve özellik ayrıntıları zamanla değişebilir, karar vermeden önce resmi sitelerini kontrol etmeni öneririz.",
+          "Her uygulamayı Discord’un en çok kullanılan beş işine göre değerlendirdik: kalıcı ses odaları, grup mesajlaşma, sunucu/kanal/rol yapısı, ekran paylaşımı ve hazır sunucu şablonları. Bunlara fiyat, Türkçe arayüz, Türkiye’den erişim ve platform desteğini (Windows, iPhone, Android, tarayıcı) ekledik. Özellik bilgileri, uygulamaların genel ve uzun süredir bilinen yeteneklerine dayanıyor; fiyat ve özellik ayrıntıları zamanla değişebilir, karar vermeden önce resmi sitelerini kontrol etmeni öneririz.",
         ],
       },
       {
         h: "Descall",
         p: [
-          "Güçlü yanları: Discord’a en yakın yapı. Sunucular, kategoriler, yazı/ses/sahne kanalları, rol hiyerarşisi ve kanal izinleri, hazır şablonlar, davet bağlantıları ve yerleşik moderasyon var. Sesli/görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma ve hazır oyun şablonları ücretsiz. Türkiye’de geliştiriliyor, Türkçe arayüzü var, Türkiye’den doğrudan erişiliyor. Windows, Android ve tarayıcıda çalışıyor.",
+          "Güçlü yanları: Discord’a en yakın yapı. Sunucular, kategoriler, yazı/ses/sahne kanalları, rol hiyerarşisi ve kanal izinleri, hazır şablonlar, davet bağlantıları ve yerleşik moderasyon var. Sesli/görüntülü arama, kalite ön ayarlı ekran paylaşımı, gürültü azaltma ve hazır oyun şablonları ücretsiz. Türkiye’de geliştiriliyor, Türkçe arayüzü var, Türkiye’den doğrudan erişiliyor. Windows, iPhone ve iPad, Android ve tarayıcıda çalışıyor.",
           "Zayıf yanları: Discord’un bot pazarı ve entegrasyon ekosistemi yok. Beta aşamasında olduğu için zaman zaman hatalarla karşılaşılabilir. Çok büyük, herkese açık topluluklar için tasarlanmadı; arkadaş grupları, klanlar ve küçük‑orta topluluklar için en iyi sonucu verir. Tüm mesaj geçmişi için varsayılan uçtan uca şifreleme iddiası yok.",
           "Kimin için: Discord’daki sunucu + ses + ekran paylaşımı alışkanlığını korumak isteyen arkadaş grupları, oyun klanları ve öğrenci toplulukları.",
         ],
@@ -710,7 +744,7 @@ export const TR_LANDINGS = {
         a: "Descall’ı biz geliştiriyoruz; bu yüzden tamamen tarafsız olduğumuzu iddia etmiyoruz. Bunun yerine her uygulamanın, Descall dahil, zayıf yanlarını da açıkça yazdık.",
       },
     ],
-    related: related("/tr/discord-alternatifleri", ["privacy", "devices"]),
+    related: related("/tr/discord-alternatifleri", ["teamspeak", "program", "privacy", "devices"]),
   },
 };
 
@@ -725,7 +759,7 @@ const EXTRA = {
           "Ses kalitesi ve kararlılık: Discord alışkanlığının merkezinde ses kanalları var. Ses kopuyorsa ya da yankı yapıyorsa diğer özelliklerin pek önemi kalmaz. Descall sesi WebRTC ile taşır, zor ağlarda bağlantı için TURN sunucuları kullanır ve isteğe bağlı gürültü azaltma sunar.",
           "Düzen: Roller, kanal izinleri ve kategoriler, büyüyen bir grubun dağılmasını önler. Sadece tek bir grup sohbeti sunan uygulamalar beş kişilik bir ekip için yeterli olabilir, ama yirmi kişilik bir klan için kısa sürede kaosa dönüşür.",
           "Fiyat: Temel iletişimin ücretli bir aboneliğe bağlanmaması, herkesin eşit şartlarda katılabilmesi demek. Descall’da sohbet, ses, görüntü ve ekran paylaşımı ücretsizdir.",
-          "Platformlar: Grubunda Windows, Android ve sadece tarayıcı kullanan kişiler olabilir. Tek hesapla her yerden bağlanabilmek, kimsenin dışarıda kalmamasını sağlar.",
+          "Platformlar: Grubunda Windows, iPhone, Android ve sadece tarayıcı kullanan kişiler olabilir. Tek hesapla her yerden bağlanabilmek, kimsenin dışarıda kalmamasını sağlar.",
         ],
       },
       {
@@ -736,8 +770,25 @@ const EXTRA = {
           "Yetkili belirlememek: Sunucuyu kuran kişi her şeyi tek başına yönetmeye çalışırsa kısa sürede yorulur. Moderatör rolünü güvendiğin birkaç kişiye ver; Descall’da roller ve izinler bunun için var.",
         ],
       },
+      SECTION_NO_VPN,
+      SECTION_SYSTEM,
+      {
+        h: "Oyuncular, TeamSpeak’ten gelenler ve ekran paylaşanlar için",
+        p: [
+          "Discord’u en çok oyun akşamları için kullanıyorduysanız, oyun için sesli sohbet programı sayfası Windows uygulamasını, bas-konuşu ve gürültü bastırmayı oyuncu gözüyle anlatıyor; Minecraft, CS2, League of Legends ve PUBG Mobile için de ayrı kurulum önerileri var. Klanın eskiden TeamSpeak kullanıyorduysa TeamSpeak alternatifi sayfasında kavramların Descall’daki karşılıklarını bulursun.",
+          "Sadece arkadaşlarınla konuşup ekran paylaşmak istiyorsan ücretsiz grup sesli arama ve ekran paylaşımı programı sayfaları, grup araması ile ses kanalı arasındaki farkı ve kalite ayarlarını adım adım anlatıyor. Bağlantılar sayfanın sonundaki ilgili sayfalar listesinde.",
+        ],
+      },
     ],
     faq: [
+      {
+        q: "Descall’ı kullanmak için VPN gerekir mi?",
+        a: "Hayır. Descall Türkiye’de geliştirilir ve web sitesi, Windows, iPhone, iPad ve Android uygulamaları Türkiye’den doğrudan açılır.",
+      },
+      {
+        q: "Descall güvenli mi?",
+        a: "Trafik HTTPS/TLS ile, sesli ve görüntülü aramalar DTLS/SRTP ile aktarım sırasında şifrelenir; hesabını iki adımlı doğrulamayla koruyabilirsin. Mesajlar cihazlar arasında eşitlenmek için sunucuda saklanır ve varsayılan uçtan uca şifreleme iddiası yoktur.",
+      },
       {
         q: "Descall’da Türkçe arayüz var mı?",
         a: "Evet. Descall’ın arayüzü Türkçe kullanılabilir; bu web sitesinin Türkçe bölümü de Türkçe konuşan kullanıcılar için hazırlandı.",
@@ -767,18 +818,24 @@ const EXTRA = {
       {
         h: "Gizlilik ve güvenlik",
         p: [
-          "Web ve API trafiği HTTPS/TLS ile, sesli ve görüntülü aramalar WebRTC’nin DTLS/SRTP şifrelemesiyle taşınır. Mesajlar cihazlarının sohbet geçmişini yükleyebilmesi için sunucuda saklanır; Descall tüm mesajlar için varsayılan uçtan uca şifreleme iddiasında bulunmaz. Hangi verilerin neden tutulduğu, ne kadar saklandığı ve nasıl silinebileceği Gizlilik sayfasında Türkçe olarak açıklanır.",
+          "Web ve API trafiği HTTPS/TLS ile, sesli ve görüntülü aramalar WebRTC’nin DTLS/SRTP şifrelemesiyle taşınır. Mesajlar cihazlarının sohbet geçmişini yükleyebilmesi için sunucuda saklanır; Descall tüm mesajlar için varsayılan uçtan uca şifreleme iddiasında bulunmaz. Hangi verilerin neden tutulduğu, ne kadar saklandığı ve nasıl silinebileceği Gizlilik sayfasında Türkçe olarak açıklanır. Hesabını iki adımlı doğrulamayla koruyabilirsin; Descall hesapları 13 yaş ve üzeri içindir.",
         ],
       },
+      SECTION_NO_VPN,
+      SECTION_SYSTEM,
     ],
     faq: [
+      {
+        q: "Türk sohbet uygulaması Descall’ı kullanmak için VPN gerekir mi?",
+        a: "Hayır. Descall Türkiye’de geliştirilir; web sitesi, Windows, iPhone, iPad ve Android uygulamaları Türkiye’den doğrudan açılır.",
+      },
       {
         q: "Descall ücretsiz mi?",
         a: "Evet. Sohbet, sunucular, sesli ve görüntülü arama ve ekran paylaşımı ücretsizdir. Descall+ ve Descall Ultra, ek masaüstü araçları sunan isteğe bağlı üyeliklerdir; mağazadaki kozmetikler ise uygulamada kazanılan DesCoin ile alınır.",
       },
       {
         q: "Descall hangi cihazlarda çalışıyor?",
-        a: "Windows masaüstü uygulaması, Android uygulaması ve kurulum gerektirmeyen tarayıcı sürümü var. Aynı hesapla hepsinden bağlanabilirsin.",
+        a: "Windows masaüstü uygulaması (Windows 10 ve 11, 64 bit), App Store’da iPhone ve iPad uygulaması (iOS 15 ve üzeri), Android uygulaması (Android 7.0 ve üzeri) ve kurulum gerektirmeyen tarayıcı sürümü var. Aynı hesapla hepsinden bağlanabilirsin.",
       },
     ],
   },
@@ -998,6 +1055,9 @@ for (const [p, section] of Object.entries(EXTRA2)) {
   const page = TR_LANDINGS[p];
   page.sections.splice(page.sections.length - 1, 0, section);
 }
+
+// 13 Kasım 2026 sayfaları (seo/trLandingsNov13.js): own sections, FAQ and related links.
+Object.assign(TR_LANDINGS, TR_LANDINGS_NOV13);
 
 for (const meta of TR_LANDING_META) Object.assign(TR_LANDINGS[meta.path], meta);
 

@@ -79,6 +79,18 @@ export const KEYWORD_STRATEGY = [
   { keyword: "sesli sohbet uygulaması", intent: "commercial", targetPath: "/tr/sesli-sohbet-uygulamasi", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
   { keyword: "oyuncu sohbet uygulaması", intent: "commercial", targetPath: "/tr/oyuncu-sohbet-uygulamasi", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
   { keyword: "türk sohbet uygulaması", intent: "commercial", targetPath: "/tr/turk-sohbet-uygulamasi", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "i18n" },
+  // Turkish keyword gaps of 13 Nov 2026 (docs/seo/keyword-map-tr.md, seo/trLandingsNov13.js).
+  { keyword: "arkadaşlarla sesli sohbet uygulaması", intent: "commercial", targetPath: "/tr/sesli-sohbet-uygulamasi", priority: "P1", funnel: "MOF", commercialIntent: "high", cluster: "i18n" },
+  { keyword: "sesli sohbet programı", intent: "commercial", targetPath: "/tr/sesli-sohbet-programi", priority: "P1", funnel: "MOF", commercialIntent: "high", cluster: "i18n" },
+  { keyword: "oyun için sesli sohbet programı", intent: "commercial", targetPath: "/tr/sesli-sohbet-programi", priority: "P1", funnel: "MOF", commercialIntent: "high", cluster: "i18n" },
+  { keyword: "teamspeak alternatifi", intent: "commercial", targetPath: "/tr/teamspeak-alternatifi", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "i18n" },
+  { keyword: "ekran paylaşımı programı", intent: "commercial", targetPath: "/tr/ekran-paylasimi-programi", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "ücretsiz grup sesli arama", intent: "commercial", targetPath: "/tr/ucretsiz-grup-sesli-arama", priority: "P1", funnel: "MOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "minecraft sesli sohbet", intent: "informational", targetPath: "/tr/minecraft-sesli-sohbet", priority: "P2", funnel: "TOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "cs2 sesli sohbet", intent: "informational", targetPath: "/tr/cs2-sesli-sohbet", priority: "P2", funnel: "TOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "lol sesli sohbet", intent: "informational", targetPath: "/tr/lol-sesli-sohbet", priority: "P2", funnel: "TOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "pubg mobile sesli sohbet", intent: "informational", targetPath: "/tr/pubg-mobile-sesli-sohbet", priority: "P2", funnel: "TOF", commercialIntent: "medium", cluster: "i18n" },
+  { keyword: "descall indir", intent: "navigational", targetPath: "/tr/download", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "i18n" },
 
   // Brand
   { keyword: "descall", intent: "navigational", targetPath: "/", priority: "P1", funnel: "BOF", commercialIntent: "high", cluster: "brand" },
