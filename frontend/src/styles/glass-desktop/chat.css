@@ -189,7 +189,7 @@ html.glass-desktop .sidebar-search input {
 
 html.glass-desktop .search-input::placeholder,
 html.glass-desktop .sidebar-search input::placeholder {
-  color: var(--gd-t3);
+  color: var(--gd-t2);
 }
 
 html.glass-desktop .sidebar-content {
@@ -592,7 +592,7 @@ html.glass-desktop .chat-search-field input {
 }
 
 html.glass-desktop .chat-search-field input::placeholder {
-  color: var(--gd-t3);
+  color: var(--gd-t2);
 }
 
 html.glass-desktop .chat-search-field input:focus,

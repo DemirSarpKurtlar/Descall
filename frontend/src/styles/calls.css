@@ -95,7 +95,7 @@
 }
 
 .calls-section-head em.is-missed {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .calls-quick-dial {
@@ -237,7 +237,7 @@
   padding: 10px 12px;
   border-radius: var(--r-md);
   background: rgba(237, 66, 69, 0.12);
-  color: var(--danger);
+  color: var(--danger-text);
   font-size: 12px;
 }
 
@@ -275,7 +275,7 @@
 }
 
 .calls-row.tone-danger .calls-row-sub {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .calls-row-main {

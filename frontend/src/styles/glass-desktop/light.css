@@ -141,3 +141,27 @@ html.glass-desktop[data-theme="light"] .server-settings-media-chip {
   background: rgba(118, 118, 128, 0.12);
   color: var(--g-t1);
 }
+
+/* Contrast pass: the dark-glass reds (#ff6961) and the white add icon on a
+   pale brand tint measured 1.5-2.6:1 on the white frost. */
+html.glass-desktop[data-theme="light"] .gd-row-menu button.is-danger,
+html.glass-desktop[data-theme="light"] .gd-row-menu button.is-danger svg,
+html.glass-desktop[data-theme="light"] .server-dropdown-item.danger,
+html.glass-desktop[data-theme="light"] .server-dropdown-item.danger svg,
+html.glass-desktop[data-theme="light"] .server-dropdown-item.is-leave,
+html.glass-desktop[data-theme="light"] .conv-confirm-btn.danger,
+html.glass-desktop[data-theme="light"] .user-settings.is-desktop .us-logout {
+  color: var(--danger-text) !important;
+}
+
+html.glass-desktop[data-theme="light"] .friends-quick-add-btn {
+  color: var(--gd-accent-ink);
+}
+
+/* Dark glass moved the search placeholders up to t2; on the white frost t3
+   is already 5.6:1 and reads as a placeholder, not typed text. */
+html.glass-desktop[data-theme="light"] .search-input::placeholder,
+html.glass-desktop[data-theme="light"] .sidebar-search input::placeholder,
+html.glass-desktop[data-theme="light"] .chat-search-field input::placeholder {
+  color: var(--g-t3);
+}

@@ -186,7 +186,7 @@
 }
 .un-state-taken .un-status,
 .un-state-invalid .un-status {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .un-hint {
@@ -201,7 +201,7 @@
 }
 .un-hint-taken,
 .un-hint-invalid {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .un-note {
@@ -227,7 +227,7 @@
   padding: 9px 12px;
   border-radius: var(--r-md);
   background: rgba(237, 66, 69, 0.12);
-  color: var(--danger);
+  color: var(--danger-text);
   font-size: 13px;
   font-weight: 600;
 }

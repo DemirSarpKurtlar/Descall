@@ -154,7 +154,7 @@
 .pfs-h { margin: 2px 4px 12px; font-size: 15px; color: rgba(235, 238, 255, 0.55); overflow-wrap: anywhere; }
 .pfs-h b { color: #30D158; font-weight: 500; }
 .pfs-h b.is-idle { color: #FFD60A; }
-.pfs-h b.is-dnd { color: #FF453A; }
+.pfs-h b.is-dnd { color: var(--danger-text); }
 .pfs-h b.is-off { color: rgba(235, 238, 255, 0.55); }
 .pfs-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 4px 12px; }
 .pfs-badges:empty { display: none; }
@@ -217,7 +217,7 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 .pfs-row .lab.wrap { white-space: normal; overflow-wrap: anywhere; padding: 12px 0; font-weight: 400; color: rgba(235, 238, 255, 0.85); }
 .pfs-row .val { color: rgba(235, 238, 255, 0.5); font-size: 16px; white-space: nowrap; }
 .pfs-row .chev { width: 8px; height: 13px; flex: none; opacity: 0.32; }
-.pfs-row.is-red { color: #FF453A; }
+.pfs-row.is-red { color: var(--danger-text); }
 .pfs-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; background: #F0453A; box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3); }
 .pfs-skel { display: inline-block; width: 64px; height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); }
 .pfs-err { margin: 10px 16px 0; font-size: 13px; color: #FF6961; line-height: 1.38; }
@@ -315,7 +315,7 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 }
 .rps-alert .bt > button + button { border-left: 0.5px solid rgba(255, 255, 255, 0.14); }
 .rps-alert .bt > button:active { background: rgba(255, 255, 255, 0.08); }
-.rps-alert .bt .red { color: #FF453A; font-weight: 600; }
+.rps-alert .bt .red { color: var(--danger-text); font-weight: 600; }
 .rps-alert .bt > button:disabled { opacity: 0.5; }
 
 /* Profile ⋯ menu: iOS context menu of the mockup (both platforms). */
@@ -366,8 +366,8 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 :root .grp-menu.g-action-menu--ios .grp-menu-item:hover,
 :root .grp-menu.g-action-menu--ios .grp-menu-item:focus-visible,
 :root .grp-menu.g-action-menu--ios .grp-menu-item:active { background: rgba(255, 255, 255, 0.1); color: inherit; }
-:root .grp-menu.g-action-menu--ios .grp-menu-item.is-danger { color: #FF453A; }
-:root .grp-menu.g-action-menu--ios .grp-menu-item.is-danger:hover { background: rgba(255, 69, 58, 0.14); color: #FF453A; }
+:root .grp-menu.g-action-menu--ios .grp-menu-item.is-danger { color: var(--danger-text); }
+:root .grp-menu.g-action-menu--ios .grp-menu-item.is-danger:hover { background: rgba(255, 69, 58, 0.14); color: var(--danger-text); }
 :root .grp-menu.g-action-menu--ios .grp-menu-item svg { width: 19px; height: 19px; opacity: 0.92; }
 :root .grp-menu.g-action-menu--ios .g-action-menu-label { white-space: nowrap; }
 

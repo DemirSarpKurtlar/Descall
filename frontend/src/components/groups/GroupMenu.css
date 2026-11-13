@@ -68,7 +68,7 @@ html.glass-ui .grp-menu-catcher {
 .grp-menu-item:active,
 .grp-menu-item:focus-visible,
 .grp-menu-item:hover { background: rgba(255, 255, 255, 0.12); outline: none; }
-.grp-menu-item.is-danger { color: #ff453a; }
+.grp-menu-item.is-danger { color: var(--danger-text); }
 .grp-menu-item.is-danger:active,
 .grp-menu-item.is-danger:hover { background: rgba(255, 69, 58, 0.14); }
 

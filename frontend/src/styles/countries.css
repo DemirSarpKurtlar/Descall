@@ -288,10 +288,10 @@ html.flag-font {
 .cs-card-name { font-size: 14px; font-weight: 700; color: var(--text-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-card-region { font-size: 12px; color: var(--text-3); }
 .cs-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
-.cs-price { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--warning); font-variant-numeric: tabular-nums; }
-.cs-price.is-free { color: var(--success); }
+.cs-price { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--warning-text); font-variant-numeric: tabular-nums; }
+.cs-price.is-free { color: var(--success-text); }
 .cs-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; }
-.cs-pill.is-equipped { color: var(--success); }
+.cs-pill.is-equipped { color: var(--success-text); }
 .cs-pill.is-owned { color: var(--text-2); }
 
 .cs-letter-rail {
@@ -361,9 +361,9 @@ html.flag-font {
 }
 .cs-ledger span { font-size: 11.5px; color: var(--text-3); font-weight: 600; }
 .cs-ledger b { font-size: 15px; color: var(--text-0); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; }
-.cs-ledger b.is-coin { color: var(--warning); }
-.cs-ledger b.is-free { color: var(--success); }
-.cs-voucher-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 12.5px; color: var(--success); font-weight: 600; }
+.cs-ledger b.is-coin { color: var(--warning-text); }
+.cs-ledger b.is-free { color: var(--success-text); }
+.cs-voucher-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 12.5px; color: var(--success-text); font-weight: 600; }
 .cs-dialog-actions { display: flex; gap: 10px; }
 .cs-footnote { margin: 0; font-size: 11.5px; color: var(--text-3); text-align: center; }
 

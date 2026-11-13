@@ -7,7 +7,7 @@
 .dm-preview.has-draft { color: var(--text-secondary, var(--text-muted)); }
 .conv-row-bottom .dm-preview .conv-draft-label,
 .conv-draft-label {
-  color: var(--danger, #ff453a);
+  color: var(--danger-text, #ff453a);
   font-weight: 600;
 }
 

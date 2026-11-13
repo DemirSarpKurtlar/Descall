@@ -283,6 +283,55 @@ html.glass-desktop .calls-search input {
   color: var(--gd-t1);
 }
 
+/* Contrast pass (owner report: missed / declined, chips, placeholder and the
+   call buttons were hard to read on the glass cards). Measured on the
+   composited cards: status red 1.8:1 -> 4.6:1, call icons 2.9:1 -> 4.1:1,
+   placeholder 2.0-4.2:1 -> 4.8:1. Hierarchy stays: names t1, meta
+   --text-muted (the t2 glass ink on dark themes, #60636B on light). */
+html.glass-desktop .calls-search input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+html.glass-desktop .calls-search > svg {
+  color: var(--text-muted);
+}
+
+html.glass-desktop .calls-filter-chip:not(.active) {
+  border-color: var(--gd-hair);
+  color: var(--text-muted);
+}
+
+html.glass-desktop .calls-filter-chip:not(.active):hover {
+  background: var(--gd-chip);
+  color: var(--gd-t1);
+}
+
+html.glass-desktop .calls-row-top span,
+html.glass-desktop .calls-row-sub,
+html.glass-desktop .calls-hero-copy p {
+  color: var(--text-muted);
+}
+
+html.glass-desktop .calls-row.tone-danger .calls-row-sub,
+html.glass-desktop .calls-section-head em.is-missed {
+  color: var(--danger-text);
+}
+
+html.glass-desktop .calls-row.tone-danger .calls-row-sub span {
+  font-weight: 600;
+}
+
+html.glass-desktop .calls-icon-btn {
+  background: color-mix(in srgb, var(--gd-brand) 22%, transparent);
+  color: var(--gd-accent-ink);
+}
+
+html.glass-desktop .calls-icon-btn:hover {
+  background: color-mix(in srgb, var(--gd-brand) 34%, transparent);
+  color: var(--gd-t1);
+}
+
 html.glass-desktop .screen-quality-panel,
 html.glass-desktop .call-quality-hud {
   border: none;
@@ -811,7 +860,7 @@ html.glass-desktop .main-panel .server-voice-room-error {
   margin: 4px 16px 0;
   padding: 8px 12px;
   border-radius: 12px;
-  color: #ff8a80;
+  color: var(--danger-text);
   background: rgba(255, 69, 58, 0.12);
   box-shadow: inset 0 0 0 0.5px rgba(255, 105, 97, 0.35);
 }

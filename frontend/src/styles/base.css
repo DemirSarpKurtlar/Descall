@@ -197,7 +197,7 @@ button {
 }
 .btn-icon:hover { background: var(--surface-2); color: var(--text-0); }
 .btn-icon.active { background: var(--primary-soft); color: var(--primary); }
-.btn-icon.danger { color: var(--danger); }
+.btn-icon.danger { color: var(--danger-text); }
 .btn-icon.danger:hover { background: var(--danger-soft); }
 
 /* 🔤 Inputs */
