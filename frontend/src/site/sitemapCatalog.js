@@ -88,8 +88,9 @@ function tableIdForPath(path) {
   return "company";
 }
 
+/** Routes that belong in the sitemaps: not noindex, not noindex,follow (seo/indexPolicy.js). */
 export function indexableRoutes() {
-  return PUBLIC_ROUTES.filter((r) => !r.noindex);
+  return PUBLIC_ROUTES.filter((r) => !r.noindex && !r.noindexFollow);
 }
 
 export function absoluteLoc(path, origin = SITE) {

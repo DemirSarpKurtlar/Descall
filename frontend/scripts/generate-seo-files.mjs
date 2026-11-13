@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -37,6 +38,18 @@ const { PREFIXED_SITE_LOCALES, localePrefix, prefixedLocaleFromPath, stripPrefix
 const { siteText } = await import(pathToFileURL(path.join(root, "src/site/siteText.js")).href);
 const { registerSiteCatalogs } = await import(pathToFileURL(path.join(__dirname, "siteCatalogs.mjs")).href);
 const { readDirectoryThinPaths } = await import(pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href);
+const { INDEXNOW_KEY, BUILD_ID_FILE } = await import(pathToFileURL(path.join(__dirname, "indexnow-submit.mjs")).href);
+
+/** Commit of this build: Cloudflare Pages sets CF_PAGES_COMMIT_SHA, GitHub Actions GITHUB_SHA. */
+function buildCommit() {
+  const fromEnv = process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA;
+  if (fromEnv) return fromEnv.trim();
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 /**
  * Server directory category pages this build left noindex (fewer than 3 listed servers,
@@ -223,12 +236,15 @@ function imageLinks(loc) {
 export function buildUrlset(entries) {
   const urls = entries.map((e) => {
     assertHttpsDescall(e.loc);
+    // sitemaps.org schema order: loc, lastmod, changefreq, priority, then the extension
+    // elements (xhtml:link, image:image). They used to come before lastmod, which a strict
+    // validator rejects (seo-validate --dist checks the order).
     return `  <url>
     <loc>${xmlEscape(e.loc)}</loc>
-${alternateLinks(e.loc)}${imageLinks(e.loc)}    <lastmod>${xmlEscape(e.lastmod)}</lastmod>
+    <lastmod>${xmlEscape(e.lastmod)}</lastmod>
     <changefreq>${xmlEscape(e.changefreq || "weekly")}</changefreq>
     <priority>${xmlEscape(e.priority || "0.5")}</priority>
-  </url>`;
+${alternateLinks(e.loc)}${imageLinks(e.loc)}  </url>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
@@ -262,7 +278,7 @@ ${children.join("\n")}
 function buildSitemapHtml() {
   return buildHumanSitemapHtml({
     origin: SITE,
-    routes: PUBLIC_ROUTES.filter((r) => !r.noindex && !sitemapOptions.exclude.includes(r.path)).map((r) => localizeRouteMeta(r, siteText)),
+    routes: PUBLIC_ROUTES.filter((r) => !r.noindex && !r.noindexFollow && !sitemapOptions.exclude.includes(r.path)).map((r) => localizeRouteMeta(r, siteText)),
     lang: "en",
   });
 }
@@ -332,11 +348,15 @@ async function main() {
   fs.writeFileSync(path.join(distDir, "humans.txt"), humans, "utf8");
   fs.writeFileSync(path.join(wellKnownDist, "security.txt"), security, "utf8");
 
-  // IndexNow ownership key (Bing / Yandex / etc.)
-  const indexNowKey = "4f463b15fd51f502c6bb73abbeb38e3c";
-  const indexNowBody = `${indexNowKey}\n`;
-  fs.writeFileSync(path.join(distDir, `${indexNowKey}.txt`), indexNowBody, "utf8");
-  fs.writeFileSync(path.join(root, "public", `${indexNowKey}.txt`), indexNowBody, "utf8");
+  // IndexNow key file (Bing, Yandex, Seznam, Naver): .github/workflows/indexnow.yml submits
+  // the changed URLs after each deploy (scripts/indexnow-submit.mjs).
+  const indexNowBody = `${INDEXNOW_KEY}\n`;
+  fs.writeFileSync(path.join(distDir, `${INDEXNOW_KEY}.txt`), indexNowBody, "utf8");
+  fs.writeFileSync(path.join(root, "public", `${INDEXNOW_KEY}.txt`), indexNowBody, "utf8");
+
+  // Deploy marker: the commit this build came from. The IndexNow workflow waits until
+  // descall.com serves its own commit before it reads the new sitemaps.
+  fs.writeFileSync(path.join(distDir, BUILD_ID_FILE), `${buildCommit()}\n`, "utf8");
 
   // Also refresh public/ copies so Vite copies them on next builds too
   fs.writeFileSync(path.join(root, "public/robots.txt"), robots, "utf8");

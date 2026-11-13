@@ -65,7 +65,8 @@ const known = new Set(routes.map((r) => r.path));
 const inbound = new Map(routes.map((r) => [r.path, new Set()]));
 const problems = [];
 
-const MAX_DEPTH = 4;
+// Nov 13: 3 clicks (was 4); every page of the build is within 3 of the English home.
+const MAX_DEPTH = 3;
 const outbound = new Map();
 const unknownTargets = new Map(); // target -> first page linking to it
 let images = 0;

@@ -48,9 +48,11 @@ function organizationNode() {
     logo: organizationLogoLd(absoluteUrl),
     image: absoluteUrl("/og-default.png"),
     email: SITE_OPERATOR.supportEmail,
-    sameAs: [SITE_OPERATOR.githubUrl, SITE_OPERATOR.githubProfileUrl],
+    // Official profiles only (no social account is configured in the repo yet): the App
+    // Store app and the source repository. Add a profile here once it exists.
+    sameAs: [APP_STORE_URL, SITE_OPERATOR.githubUrl, SITE_OPERATOR.githubProfileUrl],
     description:
-      "Descall is a free chat and calling app with servers, roles, channels, voice and video calls, and screen share, based in Turkey.",
+      "Descall is a free voice chat app with servers, roles, channels, voice and video calls, and screen share, made in Turkey.",
     foundingLocation: {
       "@type": "Place",
       address: {
@@ -89,7 +91,8 @@ export function buildWebSiteLd() {
     name: SITE_NAME,
     alternateName: ["Descall App", "Descall Chat"],
     url: absoluteUrl("/"),
-    logo: organizationLogoLd(absoluteUrl),
+    // No `logo` here: it is not a WebSite property (the logo is on the Organization). No
+    // SearchAction either: the site has no search results page.
     // Same codes as the hreflang links: every language the site serves.
     inLanguage: [...SITE_LOCALES],
     publisher: { "@id": ORG_ID },
@@ -113,19 +116,19 @@ export function buildSoftwareApplicationLd() {
     sameAs: [APP_STORE_URL],
     image: absoluteUrl("/og-default.png"),
     description:
-      "Descall is a free Discord alternative with servers, roles, channels, messaging, group calls, and screen share.",
+      "Descall is a free voice chat app with servers, roles, channels, messaging, group voice and video calls, and screen share.",
     offers: {
       "@type": "Offer",
       price: "0",
       priceCurrency: "USD",
     },
     featureList: [
-      "Discord-style servers",
+      "Servers with text and voice channels",
       "Roles and channel permissions",
       "Server templates",
       "Real-time messaging",
       "Group voice and video calls",
-      "Screen share"
+      "Screen share",
     ],
     author: { "@id": PERSON_ID },
     creator: { "@id": PERSON_ID },

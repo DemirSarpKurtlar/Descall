@@ -21,8 +21,8 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/sesli-sohbet-uygulamasi",
-    "title": "Sesli Sohbet Uygulaması | Ücretsiz Sesli ve Görüntülü Sohbet",
-    "description": "Arkadaşlarınla ücretsiz sesli sohbet uygulaması: kalıcı ses odaları, görüntülü arama, ekran paylaşımı ve gürültü azaltma. Windows, Android ve tarayıcı.",
+    "title": "Descall: Ücretsiz Sesli ve Görüntülü Sohbet Uygulaması",
+    "description": "Descall, arkadaşlarınla ücretsiz sesli sohbet uygulaması: kalıcı ses odaları, görüntülü arama, ekran paylaşımı, gürültü azaltma. Windows, iPhone, Android, web.",
     "h1": "Ücretsiz sesli sohbet uygulaması: arkadaşlarınla her akşam aynı odada"
   },
   {

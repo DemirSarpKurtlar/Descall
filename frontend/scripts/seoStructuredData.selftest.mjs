@@ -55,6 +55,25 @@ assert.match(checkStructuredData(rated, fpage).join("\n"), /rating \/ review mar
 const noIos = features.replace(/"operatingSystem":"[^"]*"/, '"operatingSystem":"Windows, Android, Web"');
 assert.match(checkStructuredData(noIos, fpage).join("\n"), /operatingSystem misses iOS/);
 
+// Brand entity: App Store in Organization.sameAs, square logo, no WebSite.logo, no fake search.
+const home = shell("/");
+const hpage = pageOf("/", "en", "/");
+assert.deepEqual(checkStructuredData(home, hpage), [], "home structured data");
+const ldNodes = [...home.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap((m) => {
+  const j = JSON.parse(m[1]);
+  return j["@graph"] || [j];
+});
+const orgNode = ldNodes.find((n) => n["@type"] === "Organization");
+assert.ok(orgNode.sameAs.includes("https://apps.apple.com/app/id6820558264"), "Organization.sameAs lists the App Store app");
+assert.ok(!/free Discord alternative/i.test(JSON.stringify(ldNodes)), "the entity graph describes Descall, not a competitor");
+const noStore = home.replace('"sameAs":["https://apps.apple.com/app/id6820558264",', '"sameAs":[');
+assert.notEqual(noStore, home, "test removed the App Store sameAs");
+assert.match(checkStructuredData(noStore, hpage).join("\n"), /Organization.sameAs has no App Store URL/);
+const siteLogo = home.replace('"@type":"WebSite",', '"@type":"WebSite","logo":"https://descall.com/favicon-512.png",');
+assert.match(checkStructuredData(siteLogo, hpage).join("\n"), /WebSite.logo/);
+const search = home.replace('"@type":"WebSite",', '"@type":"WebSite","potentialAction":{"@type":"SearchAction"},');
+assert.match(checkStructuredData(search, hpage).join("\n"), /SearchAction/);
+
 const faq = shell("/faq");
 const hiddenQ = faq.replace(/<summary>Is Descall free\?<\/summary>/, "<summary>Gone</summary>");
 assert.match(checkStructuredData(hiddenQ, pageOf("/faq", "en", "/")).join("\n"), /FAQPage question not on the page: "Is Descall free\?"/);

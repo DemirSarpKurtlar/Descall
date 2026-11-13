@@ -4,6 +4,7 @@ import { stripLocalePrefix } from "./localePaths.js";
 import { TR_LANDING_META, TR_BLOG_META } from "./seo/trMeta.js";
 import { PREFIXED_SITE_LOCALES, SITE_LOCALES, mirrorPathsFor, withLocalePrefix } from "./siteLocales.js";
 import { directoryRoutes } from "./directory/directoryRoutes.js";
+import { isNoindexFollowPath } from "./seo/indexPolicy.js";
 
 export const SITE_NAME = "Descall";
 // descall.com is the canonical public host; the Render hostname is infrastructure.
@@ -44,9 +45,9 @@ export function absoluteUrl(path = "/") {
 const BASE_ROUTES = [
   {
     path: "/",
-    title: "Descall | Voice Chat, Servers & Screen Share",
+    title: "Descall: Free Voice Chat App with Servers & Screen Share",
     description:
-      "HD voice, video, screen share, and Discord-style servers. Free chat for friends and gamers. Start in the browser or download Windows.",
+      "Descall is a free voice chat app for friends and gamers: HD voice and video, screen share, and servers. On iPhone, Android, Windows, and the web.",
     image: "/og-default.png",
     changefreq: "daily",
     priority: "1.0",
@@ -401,9 +402,9 @@ const BASE_ROUTES = [
   },
   {
     path: "/tr",
-    title: "Descall | Sesli Sohbet, Sunucular ve Ekran Paylaşımı",
+    title: "Descall: Sesli Sohbet Uygulaması, Sunucular, Ekran Paylaşımı",
     description:
-      "HD ses, görüntü, ekran paylaşımı ve sunucular. Arkadaş grupları ve oyuncular için ücretsiz sohbet. Tarayıcı veya Windows.",
+      "Descall, arkadaşlar ve oyuncular için ücretsiz sesli sohbet uygulaması: HD ses ve görüntü, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve web.",
     image: "/og-default.png",
     changefreq: "weekly",
     priority: "0.9",
@@ -511,8 +512,14 @@ export function localeMirrorRoutes(locale, { paths = mirrorPathsFor(locale) } = 
   });
 }
 
-/** Public indexable routes (must match sitemap staticPages + MarketingApp). */
-export const PUBLIC_ROUTES = [...BASE_ROUTES, ...PREFIXED_SITE_LOCALES.flatMap((id) => localeMirrorRoutes(id))];
+/**
+ * Public routes (must match sitemap staticPages + MarketingApp). Every one is prerendered;
+ * `noindexFollow` pages (seo/indexPolicy.js) are served with noindex,follow and left out of
+ * the sitemaps and hreflang sets.
+ */
+export const PUBLIC_ROUTES = [...BASE_ROUTES, ...PREFIXED_SITE_LOCALES.flatMap((id) => localeMirrorRoutes(id))].map((r) =>
+  isNoindexFollowPath(r.path) ? { ...r, noindexFollow: true } : r
+);
 
 /** Title / description / h1 of a prefixed-locale route through `translate(text, locale)`. */
 export function localizeRouteMeta(route, translate) {

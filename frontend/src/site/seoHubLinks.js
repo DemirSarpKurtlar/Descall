@@ -1,3 +1,8 @@
+import { localeNativeName } from "./siteLocales.js";
+
+/** "Türkçe", the language's own name (siteLocales). */
+const TURKISH = localeNativeName("tr");
+
 /**
  * Canonical internal-link hub for SEO crawl depth + topical clustering.
  * Used by React pages, prerender bodies, and footer “Explore” blocks.
@@ -21,6 +26,15 @@ export const SEO_NICHES = [
   { to: "/alternatives", label: "Alternatives list" },
 ];
 
+/**
+ * The main Turkish pages, linked from the footer of every non-Turkish page (React and the
+ * prerendered shell), so the English home reaches them in one click with Turkish anchors.
+ */
+export const TR_MONEY_LINKS = [
+  { to: "/tr/sesli-sohbet-uygulamasi", label: `${TURKISH}: Sesli sohbet uygulaması` },
+  { to: "/tr/discord-alternatifi", label: `${TURKISH}: Discord alternatifi` },
+];
+
 export const SEO_COMPANY = [
   { to: "/about", label: "About" },
   { to: "/who-owns-descall", label: "Who owns Descall?" },
@@ -31,7 +45,7 @@ export const SEO_COMPANY = [
   { to: "/copyright", label: "Copyright" },
   { to: "/contact", label: "Contact" },
   { to: "/blog", label: "Blog" },
-  { to: "/tr", label: "Türkçe" },
+  { to: "/tr", label: TURKISH },
 ];
 
 /** Default related set for any marketing page missing a custom cluster. */

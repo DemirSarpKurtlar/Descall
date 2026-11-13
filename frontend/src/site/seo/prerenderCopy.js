@@ -8,6 +8,7 @@
  */
 import { MARKETING_TR } from "../marketingPhrases.tr.js";
 import { hreflangPair } from "../localePaths.js";
+import { TR_MONEY_LINKS } from "../seoHubLinks.js";
 import { siteText } from "../siteText.js";
 import { SITE_LOCALES, isMirrorPath, isPrefixedLocale, localeNativeName, localePrefix, withLocalePrefix } from "../siteLocales.js";
 
@@ -224,7 +225,7 @@ export function homeHero(loc) {
         statusNote:
           "Descall bağımsız bir beta üründür. Temel sohbet, sunucular ve ses, gerçek topluluklarla büyürken ücretsizdir.",
         h1: "Descall: arkadaşlarınla sesli sohbet, sunucular ve ekran paylaşımı",
-        lead: "Arkadaşlarınla sesli sohbet, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
+        lead: "Descall, arkadaşlarınla konuşman için ücretsiz bir sesli sohbet uygulaması: ses kanalları, ekran paylaşımı ve sunucular. iPhone, Android, Windows ve tarayıcıda aynı hesap.",
         voiceTitle: "Sohbetin yanında ses",
         voiceBody: "Ses kanalına sunucu listesinden katıl. Ekranı 720p paylaş. iPhone, Android, Windows ve tarayıcı aynı hesabı kullanır.",
         serversTitle: "Rol ve kanallı sunucular",
@@ -296,7 +297,7 @@ export function homeHero(loc) {
         statusNote:
           "Descall is an independent beta product. Core chat, servers, and voice are free while we grow with real communities.",
         h1: "Descall: voice chat, servers and screen sharing for friends",
-        lead: "Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.",
+        lead: "Descall is a free voice chat app for you and your friends: voice channels, screen sharing, and servers. One account on iPhone, Android, Windows, and the browser.",
         voiceTitle: "Voice next to the chat",
         voiceBody: "Join a voice channel from the server list. Share your screen at 720p. iPhone, Android, Windows, and the browser use one account.",
         serversTitle: "Servers with roles and channels",
@@ -407,8 +408,8 @@ export function notAffiliatedCopy(loc) {
   return trCopy(NOT_AFFILIATED_EN, loc);
 }
 
-function footerItem(href, label) {
-  return `<li><a href="${href}">${label}</a></li>`;
+function footerItem(href, label, lang = "") {
+  return `<li><a href="${href}"${lang ? ` lang="${lang}"` : ""}>${label}</a></li>`;
 }
 
 /** Turkish hub pages linked from every Turkish shell footer. */
@@ -464,6 +465,7 @@ export function seoSiteNavHtml(loc = "en", { locales = SITE_LOCALES } = {}) {
                 footerItem(h("/alternatives"), n.alternatives),
                 footerItem(h("/apps-like-discord"), n.apps),
                 footerItem(h("/best-discord-alternative-for-gamers"), trCopy("For gamers", l)),
+                ...TR_MONEY_LINKS.map((item) => footerItem(item.to, item.label, "tr")),
                 footerItem(h("/blog"), n.blog),
               ].join("\n        ")
         }

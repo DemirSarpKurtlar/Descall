@@ -55,8 +55,23 @@ export function checkStructuredData(html, page) {
   for (const t of ["Organization", "WebSite", "SoftwareApplication"]) {
     if (!of(t).length) problems.push(`${t} JSON-LD missing`);
   }
+  // Brand entity (Nov 13): the Organization names the brand, its home, a square logo of at
+  // least 112 px and the App Store app in sameAs, so Google can tie "Descall" to the site.
+  const org = of("Organization").find((n) => n["@id"] === "https://descall.com/#organization") || of("Organization")[0];
+  if (org) {
+    if (org.name !== "Descall") problems.push(`Organization.name is ${org.name}, not Descall`);
+    if (org.url !== "https://descall.com/") problems.push("Organization.url is not https://descall.com/");
+    const logo = typeof org.logo === "string" ? { url: org.logo } : org.logo || {};
+    if (!/^https:\/\/descall\.com\/.+\.png(\?|$)/.test(String(logo.url || ""))) problems.push("Organization.logo is not a descall.com PNG");
+    if (logo.width && (logo.width !== logo.height || logo.width < 112)) problems.push("Organization.logo is not square or under 112 px");
+    if (![].concat(org.sameAs || []).some((u) => /^https:\/\/apps\.apple\.com\/app\/id\d+$/.test(u))) {
+      problems.push("Organization.sameAs has no App Store URL");
+    }
+  }
   const site = of("WebSite")[0];
   if (site) {
+    if (site.logo) problems.push("WebSite.logo is not a WebSite property (the logo belongs on the Organization)");
+    if (site.potentialAction) problems.push("WebSite.potentialAction (SearchAction) without a site search page");
     const langs = [].concat(site.inLanguage || []);
     const missing = SITE_LANGS.filter((l) => !langs.includes(l));
     if (missing.length) problems.push(`WebSite.inLanguage misses ${missing.join(", ")}`);
