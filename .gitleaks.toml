@@ -15,4 +15,5 @@ paths = [
   '''(?:^|/)frontend/src/components/chat/GiphyPicker\.jsx$''',
   '''(?:^|/)frontend/scripts/generate-seo-files\.mjs$''',
   '''(?:^|/)frontend/scripts/request-indexing\.mjs$''',
+  '''(?:^|/)frontend/scripts/indexnow-submit\.mjs$''',
 ]

@@ -56,7 +56,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
             ) : (
               <>
                 <span className="mkt-hh-lead-long">
-                  {t("Voice chat, screen sharing, and servers with your friends. One account on iPhone, Android, Windows, and the browser.")}
+                  {t("Descall is a free voice chat app for you and your friends: voice channels, screen sharing, and servers. One account on iPhone, Android, Windows, and the browser.")}
                 </span>
                 <span className="mkt-hh-lead-short">{t("Voice chat, screen sharing, and servers.")}</span>
               </>

@@ -8,6 +8,7 @@ import { isAnalyticsAllowed } from "./site/analyticsGate";
 import { clearModuleLoadRecovery } from "./lib/moduleLoadError";
 import { captureVisit } from "./lib/attribution";
 import { installFlagFont } from "./lib/flagFont.js";
+import { installDragClickGuard } from "./lib/dragClickGuard.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
 
@@ -38,6 +39,8 @@ try {
 }
 // Windows has no flag emoji glyphs: use the bundled Twemoji flag subset there.
 installFlagFont();
+// Selecting text in a modal and releasing over its backdrop must not close the modal.
+installDragClickGuard();
 // Lazy so the marketing first-paint bundle does not pull Capacitor in.
 if (isCapacitorNativeShell()) {
   // Android system back (MainActivity calls window.__descallAndroidBack): native shell only.

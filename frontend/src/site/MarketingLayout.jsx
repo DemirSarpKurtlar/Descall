@@ -20,6 +20,7 @@ import { loadSiteCatalog } from "./loadSiteCatalog.js";
 import { marketingHref } from "./useMarketingHref";
 import EmailCapture from "./components/EmailCapture";
 import { APP_STORE_URL } from "./appStoreLink";
+import { TR_MONEY_LINKS } from "./seoHubLinks.js";
 import { useIsAppleMobile } from "./useIsAppleMobile";
 import { useDocumentMarker } from "../hooks/useDocumentMarker";
 import "./site.css";
@@ -292,7 +293,11 @@ export default function MarketingLayout({ children, onSignIn, onSignUp }) {
                 <Link to={L("/discord-alternative")}>{t("Discord alternative")}</Link>
                 <Link to={L("/compare/discord")}>{t("vs Discord")}</Link>
                 <Link to={L("/best-discord-alternative-for-gamers")}>{t("For gamers")}</Link>
-                <Link to="/tr/discord-alternatifi">Türkçe: Discord alternatifi</Link>
+                {TR_MONEY_LINKS.map((item) => (
+                  <Link key={item.to} to={item.to} lang="tr">
+                    {item.label}
+                  </Link>
+                ))}
                 <Link to={L("/blog")}>{t("Blog")}</Link>
               </>
             )}

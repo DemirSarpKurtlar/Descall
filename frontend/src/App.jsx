@@ -2867,7 +2867,8 @@ export default function App() {
       }
       return parts.filter(Boolean).join(", ");
     }
-    return error?.message || t("Something went wrong");
+    // Server messages are English; the catalogs translate the known ones (api.tr.js etc.).
+    return error?.message ? t(error.message) : t("Something went wrong");
   };
 
   const handleLogin = async (payload) => {

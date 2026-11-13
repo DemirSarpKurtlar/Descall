@@ -19,6 +19,7 @@ const SITE = "https://descall.com";
 const { ogImageFor } = await import(pathToFileURL(path.join(root, "src/site/ogImages.js")).href);
 const { SMART_APP_BANNER_META } = await import(pathToFileURL(path.join(root, "src/site/appStoreLink.js")).href);
 const { PUBLIC_ROUTES, localizeRouteMeta } = await import(pathToFileURL(path.join(root, "src/site/seoConfig.js")).href);
+const { ROBOTS_INDEX, ROBOTS_NOINDEX_FOLLOW } = await import(pathToFileURL(path.join(root, "src/site/seo/indexPolicy.js")).href);
 const { NICHE_LANDINGS } = await import(pathToFileURL(path.join(root, "src/site/seo/nicheLandings.js")).href);
 const { BLOG_POSTS, BLOG_RELATED, ALTERNATIVE_HUB_FAQ, ALTERNATIVES_FAQ, COMPARE_FAQ, TURKEY_FAQ, BLOG_FAQ_BY_SLUG, GAMER_FAQ } = await import(
   pathToFileURL(path.join(root, "src/site/content/discordSeoContent.js")).href
@@ -175,9 +176,18 @@ function nichePreview(path) {
 /** Same mapping as TrLandingPage previewForPath. */
 function trPreview(path) {
   if (path.includes("oyuncu")) return { tone: "gaming", mode: "friends" };
-  if (path.includes("sesli")) return { tone: "voice", mode: "call" };
+  if (path.includes("sesli") || path.includes("teamspeak") || path.includes("ekran")) return { tone: "voice", mode: "call" };
   if (path.includes("turk")) return { tone: "community", mode: "servers" };
   return { tone: "compare", mode: "chat" };
+}
+
+/** Comparison table of a Turkish landing section ({ head, rows }), same text as TrLandingPage. */
+function trTableHtml(table) {
+  const head = table.head.map((c) => `<th scope="col">${escapeHtml(c)}</th>`).join("");
+  const rows = table.rows
+    .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`)
+    .join("");
+  return `<div class="seo-tl-table"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 const CRUMB_CHEVRON =
@@ -426,7 +436,7 @@ function crawlBodyInner(route) {
         (s) =>
           `<section class="seo-lsec"><h2>${escapeHtml(s.h)}</h2>\n${s.p.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n")}${
             s.list?.length ? `\n${checklistHtml(s.list)}` : ""
-          }</section>`
+          }${s.table ? `\n${trTableHtml(s.table)}` : ""}</section>`
       )
       .join("\n");
     const faq = trLanding.faq
@@ -901,7 +911,9 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
   // hreflang only for real translations (served site languages); reciprocal, x-default → EN.
   const loc = routeLocale(route);
   const ogUrl = `${SITE}${ogImageFor(route.image, loc)}`;
-  const alternates = hreflangAlternates(route.path);
+  // noindex,follow pages (seo/indexPolicy.js, thin directory pages) are in no hreflang set.
+  const noindexFollow = Boolean(route.noindexFollow) || directoryThin.has(route.path);
+  const alternates = noindexFollow ? [] : hreflangAlternates(route.path);
   const hreflang = alternates.map(
     (alt) => `<link rel="alternate" hreflang="${alt.hreflang}" href="${SITE}${alt.path}" />`
   );
@@ -936,10 +948,12 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
     siteCatalogPreload(route),
     `<meta name="description" content="${desc}" />`,
     keywords ? `<meta name="keywords" content="${keywords}" />` : "",
-    // Directory category pages with fewer than 3 listed servers stay out of the index.
-    directoryThin.has(route.path)
-      ? `<meta name="robots" content="noindex,follow" />`
-      : `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />`,
+    // Directory category pages with fewer than 3 listed servers and the pages of
+    // seo/indexPolicy.js stay out of the index. data-noindex-path tells SeoHead (React)
+    // to keep the noindex after hydration.
+    noindexFollow
+      ? `<meta name="robots" content="${ROBOTS_NOINDEX_FOLLOW}" data-noindex-path="${escapeHtml(route.path)}" />`
+      : `<meta name="robots" content="${ROBOTS_INDEX}" />`,
     // iOS Smart App Banner: every marketing shell this list emits (thin directory pages included).
     SMART_APP_BANNER_META,
     `<meta name="author" content="Demir Sarp Kurtlar" />`,
@@ -972,7 +986,10 @@ export function injectMeta(html, sourceRoute, { keepBootSplash = false } = {}) {
 
   // The page header (React twin) replaces the old brand-only line at the top of each body.
   out = stripTwinCss(out, twinKindOf(inner));
-  const body = `${seoTopHtml(loc, route.path)}\n${inner.replace(/<a class="seo-brand"[\s\S]*?<\/a>/, "")}`;
+  // <!--email_off-->: Cloudflare's email obfuscation (Scrape Shield) would otherwise turn
+  // every mailto link of the shell into a /cdn-cgi/l/email-protection link and the address
+  // into "[email protected]" for crawlers.
+  const body = `<!--email_off-->${seoTopHtml(loc, route.path)}\n${inner.replace(/<a class="seo-brand"[\s\S]*?<\/a>/, "")}<!--/email_off-->`;
   if (/<div id="seo-static"><\/div>/i.test(out)) {
     out = out.replace(
       /<div id="seo-static"><\/div>/i,

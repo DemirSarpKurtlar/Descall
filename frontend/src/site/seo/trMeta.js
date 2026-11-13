@@ -3,15 +3,15 @@
 export const TR_LANDING_META = [
   {
     "path": "/tr/discord-alternatifi",
-    "title": "Descall: Ücretsiz ve Türkçe Discord Alternatifi (2026)",
+    "title": "Descall: Türk Yapımı, Ücretsiz Discord Alternatifi (2026)",
     "description": "Discord’a Türkiye’den erişemiyor musun? Descall VPN gerekmeden çalışır: ücretsiz sunucular, sesli ve görüntülü arama, ekran paylaşımı. Windows, iPhone, Android.",
-    "h1": "Discord alternatifi: Türkiye’de ücretsiz sunucu, ses ve ekran paylaşımı"
+    "h1": "Discord alternatifi Descall: Türk yapımı, ücretsiz ses, sunucu ve ekran paylaşımı"
   },
   {
     "path": "/tr/turk-sohbet-uygulamasi",
-    "title": "Descall: Türkiye’de Geliştirilen Ücretsiz Sohbet Uygulaması",
-    "description": "Türkiye’de geliştirilen ücretsiz sesli sohbet uygulaması Descall: Türkçe arayüz, sunucular, sesli ve görüntülü arama, ekran paylaşımı. Windows, iPhone, web.",
-    "h1": "Descall: Türkiye’de geliştirilen ücretsiz sesli sohbet uygulaması"
+    "title": "Türk Sohbet Uygulaması: Türkiye’de Geliştirilen Descall",
+    "description": "Türk sohbet uygulaması Descall: Türkiye’de geliştirilen, Türkçe ve ücretsiz. Sunucular, sesli ve görüntülü arama, ekran paylaşımı: Windows, iPhone, Android.",
+    "h1": "Türk sohbet uygulaması Descall: Türkiye’de geliştirilen, Türkçe ve ücretsiz"
   },
   {
     "path": "/tr/discord-yerine-ne-kullanilir",
@@ -21,9 +21,9 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/sesli-sohbet-uygulamasi",
-    "title": "Sesli Sohbet Uygulaması | Ücretsiz Sesli ve Görüntülü Sohbet",
-    "description": "Arkadaşlarınla ücretsiz sesli sohbet uygulaması: kalıcı ses odaları, görüntülü arama, ekran paylaşımı ve gürültü azaltma. Windows, Android ve tarayıcı.",
-    "h1": "Ücretsiz sesli sohbet uygulaması: arkadaşlarınla her akşam aynı odada"
+    "title": "Sesli Sohbet Uygulaması: Arkadaşlarla Ücretsiz | Descall",
+    "description": "Ücretsiz sesli sohbet uygulaması Descall: arkadaşlarınla kalıcı ses odaları, görüntülü arama, ekran paylaşımı ve gürültü bastırma. iPhone, Android, Windows.",
+    "h1": "Sesli sohbet uygulaması: arkadaşlarınla ücretsiz, her akşam aynı odada"
   },
   {
     "path": "/tr/oyuncu-sohbet-uygulamasi",
@@ -33,8 +33,8 @@ export const TR_LANDING_META = [
   },
   {
     "path": "/tr/discord-acildi-mi",
-    "title": "Discord Açıldı mı? Erişim Engeli ve Son Haberler | Descall",
-    "description": "Discord’a Türkiye’den erişim 9 Ekim 2024’te engellendi. Son haberler ne diyor? Tarihli kaynaklar, zaman çizelgesi ve ücretsiz bir alternatif: Descall.",
+    "title": "Discord Açıldı mı? 2026 Güncel Erişim Durumu | Descall",
+    "description": "Discord Türkiye’de açıldı mı? 9 Ekim 2024’teki erişim engelinin güncel durumu, tarihli kaynaklar ve VPN gerektirmeyen ücretsiz alternatif: Descall.",
     "h1": "Discord açıldı mı? Türkiye’de Discord erişim durumu"
   },
   {
@@ -42,6 +42,55 @@ export const TR_LANDING_META = [
     "title": "Descall Karşılaştırması: Discord Alternatifleri (2026)",
     "description": "Discord alternatifleri karşılaştırması: Descall, TeamSpeak, Mumble, Telegram, WhatsApp, Slack ve Element. Hangisi sesli sohbet, klan veya mesajlaşma için uygun?",
     "h1": "Discord alternatifleri: 2026 için dürüst karşılaştırma"
+  },
+  // 13 Kasım 2026 sayfaları (bodies in seo/trLandingsNov13.js, map in docs/seo/keyword-map-tr.md).
+  {
+    "path": "/tr/sesli-sohbet-programi",
+    "title": "Oyun için Sesli Sohbet Programı: Ücretsiz Descall",
+    "description": "Oyun için sesli sohbet programı mı arıyorsun? Descall Windows’ta ücretsiz: kalıcı ses kanalları, gürültü bastırma, bas-konuş ve oyun sesiyle ekran paylaşımı.",
+    "h1": "Oyun için sesli sohbet programı: Windows’ta ücretsiz Descall"
+  },
+  {
+    "path": "/tr/teamspeak-alternatifi",
+    "title": "Descall: Ücretsiz TeamSpeak Alternatifi, Sunucu Kiralamadan",
+    "description": "TeamSpeak alternatifi mi arıyorsun? Descall’da sunucu kiralamadan ücretsiz ses kanalları, yazılı sohbet, roller ve ekran paylaşımı: Windows, iPhone, Android.",
+    "h1": "TeamSpeak alternatifi: sunucu kiralamadan ücretsiz ses kanalları"
+  },
+  {
+    "path": "/tr/ekran-paylasimi-programi",
+    "title": "Ekran Paylaşımı Programı: Sesli ve Ücretsiz | Descall",
+    "description": "Arkadaşlarınla sesli ekran paylaşımı için ücretsiz program: oyun, video ve kod için kalite ayarları, 1440p ve 60 FPS’ye kadar seçenek. Windows ve tarayıcı.",
+    "h1": "Ekran paylaşımı programı: arkadaşlarınla sesli ve ücretsiz"
+  },
+  {
+    "path": "/tr/ucretsiz-grup-sesli-arama",
+    "title": "Ücretsiz Grup Sesli Arama: Telefon ve Bilgisayar | Descall",
+    "description": "Arkadaşlarınla ücretsiz grup sesli ve görüntülü arama: 15 kişilik grup sohbetleri, her an açık ses kanalları ve ekran paylaşımı. iPhone, Android, Windows, web.",
+    "h1": "Ücretsiz grup sesli arama: 15 kişilik grup ya da her an açık ses kanalı"
+  },
+  {
+    "path": "/tr/minecraft-sesli-sohbet",
+    "title": "Minecraft Sesli Sohbet: Arkadaşlarınla Konuşma | Descall",
+    "description": "Minecraft’ta arkadaşlarınla nasıl sesli konuşursun? Ses modu ile ayrı sesli sohbet uygulamasının karşılaştırması ve Descall’da ücretsiz Minecraft ses odası.",
+    "h1": "Minecraft sesli sohbet: arkadaşlarınla konuşmanın yolları"
+  },
+  {
+    "path": "/tr/cs2-sesli-sohbet",
+    "title": "CS2 Sesli Sohbet: Takım İletişimi için Ücretsiz | Descall",
+    "description": "CS2 takımın için ücretsiz sesli sohbet: aktif kadro ve bekleme odaları, kaptana susturma yetkisi, gürültü bastırma ve maç sonrası tekrar için ekran paylaşımı.",
+    "h1": "CS2 sesli sohbet: maçtan önce, maç arasında ve sonrasında takım iletişimi"
+  },
+  {
+    "path": "/tr/lol-sesli-sohbet",
+    "title": "LoL Sesli Sohbet: Arkadaş Grubun için Ses Odası | Descall",
+    "description": "League of Legends arkadaş grubun için ücretsiz sesli sohbet: hazır grup sesinin yanında lobi, Flex ve ARAM odaları, turnuva için sahne kanalı, ekran paylaşımı.",
+    "h1": "League of Legends sesli sohbet: arkadaş grubun için ayrı bir ses odası"
+  },
+  {
+    "path": "/tr/pubg-mobile-sesli-sohbet",
+    "title": "PUBG Mobile Sesli Sohbet: Klan ve Ekip Odası | Descall",
+    "description": "PUBG Mobile klanın için ücretsiz sesli sohbet: maç dışında da açık ses odaları, roller ve duyurular. iPhone ve Android uygulaması arka planda da çalışır.",
+    "h1": "PUBG Mobile sesli sohbet: klanın için maç dışında da açık bir oda"
   }
 ];
 

@@ -35,8 +35,9 @@ await registerSiteCatalogs();
 const directoryThin = checkDist
   ? new Set((await import(pathToFileURL(path.join(__dirname, "directoryPrerender.mjs")).href)).readDirectoryThinPaths(path.join(root, "dist")))
   : new Set();
+// Pages of src/site/seo/indexPolicy.js (noindexFollow) are checked the same way.
 const PUBLIC_ROUTES = seoConfig.PUBLIC_ROUTES.map((r) => seoConfig.localizeRouteMeta(r, siteText)).map((r) =>
-  directoryThin.has(r.path) ? { ...r, noindex: true } : r
+  directoryThin.has(r.path) || r.noindexFollow ? { ...r, noindex: true, noindexFollow: true } : r
 );
 const { KEYWORD_STRATEGY } = await import(
   pathToFileURL(path.join(root, "src/site/seo/keywordStrategy.js")).href
@@ -323,7 +324,28 @@ if (checkDist) {
         fail(`Missing dist/${table.file}`);
         continue;
       }
-      for (const m of fs.readFileSync(file, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)) {
+      // sitemaps.org schema: <url> = loc, lastmod, changefreq, priority, then extensions
+      // (xhtml:link, image:image); lastmod is a W3C date, not in the future.
+      const childXml = fs.readFileSync(file, "utf8");
+      const urlBlocks = [...childXml.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => m[1]);
+      if (urlBlocks.length !== (childXml.match(/<url>/g) || []).length) fail(`dist/${table.file}: unbalanced <url> elements`);
+      const tomorrow = new Date(Date.now() + 86400000).toISOString();
+      for (const block of urlBlocks) {
+        const order = [...block.matchAll(/<(loc|lastmod|changefreq|priority|xhtml:link|image:image)\b/g)].map((m) => m[1]);
+        const core = order.filter((t) => !t.includes(":"));
+        const firstExt = order.findIndex((t) => t.includes(":"));
+        const lastCore = order.map((t) => !t.includes(":")).lastIndexOf(true);
+        if (core[0] !== "loc" || (firstExt !== -1 && firstExt < lastCore)) {
+          fail(`dist/${table.file}: <url> children out of schema order (${order.filter((t, i) => order.indexOf(t) === i).join(", ")})`);
+          break;
+        }
+        const lastmod = block.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1] || "";
+        if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?Z)?$/.test(lastmod) || lastmod > tomorrow) {
+          fail(`dist/${table.file}: bad lastmod "${lastmod}"`);
+          break;
+        }
+      }
+      for (const m of childXml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
         if (m[1].includes("/brand/")) continue;
         if (seenInLang.has(m[1])) fail(`${m[1]} is in ${seenInLang.get(m[1])} and ${table.file}`);
         seenInLang.set(m[1], table.file);
@@ -448,6 +470,18 @@ if (checkDist) {
       // noindex should not appear on indexable shells
       if (/noindex/i.test(html) && !route.noindex) fail(`noindex found on indexable shell ${rel}`);
       if (route.noindex && !/<meta name="robots" content="noindex/.test(html)) fail(`noindex page without a robots noindex meta: ${rel}`);
+      // noindex,follow pages: links still pass, React keeps the noindex (data-noindex-path),
+      // and no hreflang set includes them.
+      if (route.noindexFollow) {
+        if (!html.includes(`<meta name="robots" content="noindex,follow" data-noindex-path="${route.path}"`)) {
+          fail(`${rel}: expected <meta name="robots" content="noindex,follow" data-noindex-path="${route.path}">`);
+        }
+        if (/<link rel="alternate" hreflang=/i.test(html)) fail(`${rel}: a noindex page must not carry hreflang links`);
+      }
+      // Cloudflare's email obfuscation rewrites mailto links in the HTML into
+      // /cdn-cgi/l/email-protection links and "[email protected]" text; the shell body is
+      // wrapped in <!--email_off--> so crawlers see the real address.
+      if (!/<!--email_off-->[\s\S]*<!--\/email_off-->/.test(html)) fail(`${rel}: shell body is not wrapped in <!--email_off-->`);
       const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
       if (h1Count !== 1) warn(`Expected 1 H1 in ${rel}, found ${h1Count}`);
     }

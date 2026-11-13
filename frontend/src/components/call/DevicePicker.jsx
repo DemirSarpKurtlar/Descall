@@ -161,9 +161,12 @@ export function CallDeviceMenu({ open, anchorRef, alignRef, title, groups = [], 
   const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
   const vh = typeof window !== "undefined" ? window.innerHeight : 768;
   const w = Math.min(size.w || 260, DEVICE_MENU_MAX_W, vw - EDGE * 2);
-  let left = alignRef && alignRect ? alignRect.left : rect ? rect.left + rect.width / 2 - w / 2 : EDGE;
+  // alignRef (user panel): open right above the button that opened it, its right edge
+  // flush with the button and kept inside the panel, instead of at the panel's left edge.
+  let left = rect ? rect.left + rect.width / 2 - w / 2 : EDGE;
+  if (alignRef && alignRect && rect) left = Math.max(alignRect.left, rect.right - w);
   left = Math.max(EDGE, Math.min(left, vw - w - EDGE));
-  const above = alignRef && alignRect ? alignRect.top - 8 : rect ? rect.top - MENU_GAP : vh / 2;
+  const above = rect ? rect.top - (alignRef ? 8 : MENU_GAP) : vh / 2;
   const fitsAbove = !rect || above - (size.h || 0) >= EDGE;
   const style = rect
     ? fitsAbove

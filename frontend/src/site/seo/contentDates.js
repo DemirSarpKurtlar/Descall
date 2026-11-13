@@ -16,13 +16,15 @@
 import { BLOG_POSTS } from "../content/discordSeoContent.js";
 import { TR_BLOG_META } from "./trMeta.js";
 import { TR_LANDINGS, TR_LANDING_UPDATED } from "./trLandings.js";
+import { TR_LANDINGS_NOV13, TR_NOV13_UPDATED } from "./trLandingsNov13.js";
 import { prefixedLocaleFromPath, stripPrefixedLocale } from "../siteLocales.js";
 import { SITE_OPERATOR } from "../siteIdentity.js";
 import { DIRECTORY_COPY_UPDATED, directoryPagePaths } from "../directory/directoryPaths.js";
 
 /** English and Turkish pages (path -> YYYY-MM-DD of the last copy change). */
 export const PAGE_UPDATED = {
-  "/": "2026-11-07",
+  // 2026-11-13: title, description and first paragraph name Descall as a voice chat app.
+  "/": "2026-11-13",
   "/features": "2026-11-07",
   "/download": "2026-11-07",
   "/faq": "2026-11-08",
@@ -45,25 +47,35 @@ export const PAGE_UPDATED = {
   "/apps-like-discord": "2026-11-07",
   "/discord-replacement": "2026-11-07",
   "/blog": "2026-11-08",
-  "/sitemap": "2026-11-08",
+  // 2026-11-13: the HTML sitemap lists the eight new Turkish pages.
+  "/sitemap": "2026-11-13",
   // Turkish-only URLs (the /tr mirrors of English pages follow the English date).
   "/descall-sahibi": "2026-11-06",
   "/iletisim": "2026-10-14",
   "/gizlilik": "2026-10-26",
   "/kosullar": "2026-10-10",
-  "/tr": "2026-11-07",
+  // 2026-11-13: /tr title and description, free / iPhone / VPN / safety / system requirements
+  // answers; /tr/download the iPhone app, system requirements, safety and VPN answers;
+  // /tr/blog lists the new landings.
+  "/tr": "2026-11-13",
+  "/tr/download": "2026-11-13",
   "/tr/compare/discord": "2026-11-06",
-  "/tr/blog": "2026-11-08",
+  "/tr/blog": "2026-11-13",
   // Turkish landings whose title or copy changed after TR_LANDING_UPDATED.
+  // 2026-11-13: titles / H1 of /tr/sesli-sohbet-uygulamasi and /tr/turk-sohbet-uygulamasi match
+  // their main query; the iPhone app named where only Android was; VPN, safety and system
+  // requirements sections; links to the 13 Nov pages.
   // 2026-11-08: own-brand URL /tr/turk-sohbet-uygulamasi (was /tr/turk-discord), links to the
   // Nov 8 guides; /faq gained the Quick answers group, /blog and /tr/blog the four guides.
   // 2026-11-07: guide links added to their related lists (second content round).
-  "/tr/discord-alternatifi": "2026-11-08",
-  "/tr/turk-sohbet-uygulamasi": "2026-11-08",
-  "/tr/discord-yerine-ne-kullanilir": "2026-11-08",
-  "/tr/oyuncu-sohbet-uygulamasi": "2026-11-08",
-  "/tr/discord-alternatifleri": "2026-11-07",
-  "/tr/sesli-sohbet-uygulamasi": "2026-11-08",
+  "/tr/discord-alternatifi": "2026-11-13",
+  "/tr/turk-sohbet-uygulamasi": "2026-11-13",
+  "/tr/discord-yerine-ne-kullanilir": "2026-11-13",
+  "/tr/oyuncu-sohbet-uygulamasi": "2026-11-13",
+  "/tr/discord-alternatifleri": "2026-11-13",
+  "/tr/sesli-sohbet-uygulamasi": "2026-11-13",
+  // 2026-11-13: Turkish keyword-gap pages (seo/trLandingsNov13.js, docs/seo/keyword-map-tr.md).
+  ...Object.fromEntries(Object.keys(TR_LANDINGS_NOV13).map((p) => [p, TR_NOV13_UPDATED])),
   // Public server directory (item 8): the page copy, not the server list, sets the date.
   ...Object.fromEntries(directoryPagePaths().map((p) => [p, DIRECTORY_COPY_UPDATED])),
 };

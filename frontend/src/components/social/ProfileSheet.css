@@ -257,7 +257,7 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 .rps-head .ttl { font-weight: 650; font-size: 17px; margin-top: 8px; }
 .rps-head .sub { font-size: 13.5px; color: rgba(235, 238, 255, 0.55); margin-top: 3px; }
 /* Mockup #30 keeps the 56pt avatar on the leading edge above the centred title. */
-.rps-head .av { display: block; width: 56px; line-height: 0; }
+.rps-head .av { display: block; width: 56px; margin: 0 auto; line-height: 0; }
 .rps-snippet { margin: 12px 4px 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 14px; color: rgba(235, 238, 255, 0.75); overflow-wrap: anywhere; }
 .rps-radio { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3); flex: none; }
 .rps-radio.is-on { background: #587AF6; box-shadow: none; display: grid; place-items: center; }

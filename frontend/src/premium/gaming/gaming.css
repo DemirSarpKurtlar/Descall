@@ -82,7 +82,8 @@
 /* App lock (approved draft B): opaque phone-style lock screen, clock on top, PIN dots below.
    Always dark: it covers the app in both themes and nothing behind it may show through. */
 .pg-lock {
-  position: fixed; inset: 0; z-index: var(--z-system, 2147482000); overflow: hidden;
+  /* Above the Electron title bar: the lock draws its own (.pgl-bar). */
+  position: fixed; inset: 0; z-index: calc(var(--z-titlebar, 2147483000) + 10); overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between;
   padding: max(64px, 11vh) 24px max(56px, 10vh); color: #fff; user-select: none;
   background:
@@ -96,7 +97,24 @@
   filter: blur(64px); transform: rotate(-8deg); animation: pgl-drift 22s ease-in-out infinite alternate;
 }
 @keyframes pgl-drift { from { transform: rotate(-8deg) translateX(-4%); } to { transform: rotate(-5deg) translateX(4%); } }
-.pgl-brand { position: absolute; top: 22px; left: 26px; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--fs-13); opacity: 0.85; }
+/* Window bar while locked: same height as the app's title bar, one solid colour that does
+   not change with the backdrop, draggable, with working window buttons. */
+.pgl-bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  height: var(--electron-titlebar-h, 40px); padding: 0 8px 0 12px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between;
+  background: #0a0b14; -webkit-app-region: drag;
+}
+.pgl-bar-brand { display: flex; align-items: center; min-width: 0; font-size: 13px; font-weight: 650; color: #fff; }
+.pgl-bar-controls { display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
+.pgl-winbtn {
+  width: 40px; height: 30px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm, 8px);
+  background: transparent; color: rgba(255, 255, 255, 0.78); cursor: pointer; -webkit-app-region: no-drag;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.pgl-winbtn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.pgl-winbtn.is-close:hover { background: #e5484d; color: #fff; }
+.pgl-winbtn:focus-visible { outline: 2px solid rgba(160, 180, 255, 0.9); outline-offset: -2px; }
 .pgl-clock { position: relative; text-align: center; }
 .pgl-date { font-size: var(--fs-20); font-weight: 600; color: rgba(255, 255, 255, 0.82); }
 .pgl-date::first-letter { text-transform: uppercase; }

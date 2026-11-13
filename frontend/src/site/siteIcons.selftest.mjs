@@ -45,10 +45,13 @@ for (const line of faviconLinksHtml("  ").split("\n")) {
 }
 
 const logoUrl = `https://descall.com/favicon-512.png?v=${FAVICON_VERSION}`;
-for (const ld of [buildOrganizationLd(), buildWebSiteLd()]) {
+for (const ld of [buildOrganizationLd()]) {
   assert(ld.logo?.url === logoUrl, `${ld["@type"]} logo url`);
   assert(ld.logo?.width === 512 && ld.logo?.height === 512, `${ld["@type"]} logo size`);
 }
+// `logo` is an Organization property, not a WebSite one (schema.org); the site's logo is
+// read from the Organization it is published by.
+assert(!buildWebSiteLd().logo, "WebSite has no logo property");
 assert(indexHtml.includes(logoUrl), "index.html JSON-LD logo");
 assert(indexHtml.includes('property="og:image" content="https://descall.com/og-default.png"'), "index og:image");
 const firstIcon = links.split("\n")[0];
