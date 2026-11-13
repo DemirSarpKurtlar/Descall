@@ -33,4 +33,8 @@ export const MSG5_EN = {
     email: "Email notifications",
     emailDesc: "Emails about friend requests and invites you missed, and a few tips for new accounts.",
   },
+  media: {
+    imageFailed: "Image couldn't load",
+    videoFailed: "Video couldn't load",
+  },
 };

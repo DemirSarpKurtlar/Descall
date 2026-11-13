@@ -33,4 +33,8 @@ export const MSG5_TR = {
     email: "E-posta bildirimleri",
     emailDesc: "Kaçırdığın arkadaşlık istekleri ve davetler hakkında e-postalar, yeni hesaplar için birkaç ipucu.",
   },
+  media: {
+    imageFailed: "Görsel yüklenemedi",
+    videoFailed: "Video yüklenemedi",
+  },
 };

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { cachedPreview, fetchLinkPreview } from "../../lib/linkPreview";
 import { displayText } from "../../lib/profanity";
 import { useT } from "../../context/LocaleContext";
+import { MessageMediaImage } from "./MessageMedia";
 
 /**
  * Link preview card under a message (messaging phase 4). Loaded lazily, only
@@ -43,7 +44,7 @@ export default function LinkPreviewCard({ url }) {
         {preview.title ? <span className="msg-link-preview-title">{displayText(preview.title)}</span> : null}
         {preview.description ? <span className="msg-link-preview-desc">{displayText(preview.description)}</span> : null}
       </span>
-      {preview.image ? <img className="msg-link-preview-img" src={preview.image} alt="" loading="lazy" decoding="async" /> : null}
+      {preview.image ? <MessageMediaImage kind="thumb" fixed className="msg-link-preview-img" src={preview.image} alt="" /> : null}
     </a>
   );
 }

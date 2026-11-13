@@ -7,6 +7,7 @@ import { useT } from "../../context/LocaleContext";
 import useGlassUi from "../../hooks/useGlassUi";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import { masonryColumns, masonryColumnCount, giphyThumb, gifRatio } from "../../lib/gifMasonry";
+import { rememberMediaDims } from "../../lib/mediaBox";
 import "../../styles/gif-masonry.css";
 
 export const GIPHY_API_KEY = "dtgxSdCkeVkjYcEeEpSYlqP4mmv4LQgi";
@@ -154,9 +155,12 @@ export default function GiphyPicker({ isOpen, onClose, onSelectGif, anchorRef })
   }, [isOpen, loading, gifs.length]);
 
   const handleSelect = (gif) => {
-    const gifUrl = gif.images?.fixed_height?.url || gif.images?.original?.url;
+    const rendition = gif.images?.fixed_height?.url ? gif.images.fixed_height : gif.images?.original;
+    const gifUrl = rendition?.url;
     const previewUrl = gif.images?.fixed_height_small?.url || gif.images?.preview_gif?.url;
     if (!gifUrl) return;
+    // Giphy tells us the size: the sent bubble reserves the exact box at once.
+    rememberMediaDims(gifUrl, rendition.width, rendition.height);
     onSelectGif?.({
       url: gifUrl,
       previewUrl: previewUrl || gifUrl,

@@ -33,4 +33,8 @@ export const MSG5_FR = {
     email: "Notifications par e-mail",
     emailDesc: "Des e-mails sur les demandes d'ami et invitations manquées, et quelques conseils pour les nouveaux comptes.",
   },
+  media: {
+    imageFailed: "Impossible de charger l'image",
+    videoFailed: "Impossible de charger la vidéo",
+  },
 };
