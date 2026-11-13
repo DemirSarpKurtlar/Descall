@@ -201,6 +201,10 @@ button.composer-slowmode-hint.ms-sched-hint:focus-visible { outline: 2px solid v
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.28));
 }
 html.glass-ui .app-root.g-shell .msg-sticker { width: 112px; height: 112px; }
+/* Sticker frame (MessageMedia, fixed box): shimmer while loading, then the art. */
+.msg-sticker.chat-media { border-radius: var(--r-lg, 16px); overflow: visible; }
+.msg-sticker.chat-media.is-loading { filter: none; }
+.msg-sticker.chat-media > .chat-media-el { object-fit: contain; border-radius: 0; }
 .message-bubble.has-sticker .message-footer { justify-content: flex-start; padding-left: 4px; }
 
 /* Picker: Descall emoji row + sticker grid on top of the emoji list. */

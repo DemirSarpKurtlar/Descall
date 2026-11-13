@@ -278,19 +278,11 @@
   height: auto;
   max-height: min(480px, 60vh);
   object-fit: contain;
-  /* Progressive: soft placeholder until the full image decodes. */
-  transition: opacity 180ms ease, filter 220ms ease;
   object-position: center;
   vertical-align: middle;
-  background: rgba(0, 0, 0, 0.12);
   /* Prevent replaced-element min-content from blowing past the bubble */
   min-width: 0;
   min-height: 0;
-}
-
-.message-image.is-loading {
-  opacity: 0.55;
-  filter: blur(10px);
 }
 
 .message-media-badge {
@@ -325,6 +317,116 @@
   max-height: min(280px, 48vh);
   border-radius: var(--r-md);
   background: #000;
+}
+
+/* ─── Chat media: reserved box, shimmer, fade-in, fallback ───
+   components/chat/MessageMedia.jsx, ratio in lib/mediaBox.js. The frame has
+   its final size before the file arrives, the same box the decoded picture
+   used to get: full bubble width, height = width / --media-ar, capped at the
+   max height (480px / 60vh, video 280px / 48vh, embeds 280px, phones
+   240px / 42vh); the file is letterboxed inside (object-fit: contain). */
+.chat-media {
+  --media-max-h: min(480px, 60vh);
+  --media-fade: 200ms;
+  position: relative;
+  display: block;
+  max-width: 100%;
+  line-height: 0;
+  border-radius: inherit;
+}
+.chat-media.is-boxed {
+  width: 100%;
+  aspect-ratio: var(--media-ar, 4 / 3);
+  max-height: var(--media-max-h);
+  overflow: hidden;
+}
+.chat-media.is-fixed { overflow: hidden; }
+.chat-media-video { --media-max-h: min(280px, 48vh); border-radius: var(--r-md); }
+.chat-media-embed { --media-max-h: 280px; }
+.chat-media-embed.is-boxed > .chat-media-el { object-fit: cover; }
+
+/* The shared skeleton (base.css .skeleton-line: shimmer keyframes, reduced
+   motion, idle rules) on a soft ink fill so it reads on glass and solid themes. */
+.chat-media-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(100deg, transparent 20%, var(--border-2) 50%, transparent 80%) 0 0 / 200% 100% no-repeat,
+    color-mix(in srgb, var(--text-1, #fff) 6%, transparent);
+  transition: opacity var(--media-fade) ease-out, visibility 0s linear var(--media-fade);
+}
+.chat-media.is-ready .chat-media-skeleton,
+.chat-media.is-error .chat-media-skeleton {
+  opacity: 0;
+  visibility: hidden;
+  animation: none;
+}
+/* Far off screen (useOffscreenRows): no shimmer work at all. */
+.message-group.is-offscreen .chat-media-skeleton { animation-play-state: paused; }
+
+.chat-media-el {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--media-fade) ease-out;
+}
+.chat-media.is-boxed > .chat-media-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border-radius: inherit;
+  object-fit: contain;
+}
+.chat-media.is-fixed > .chat-media-el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.chat-media.is-ready > .chat-media-el { opacity: 1; }
+.chat-media.is-instant > .chat-media-el,
+.chat-media.is-instant > .chat-media-skeleton { transition: none; }
+.chat-media.is-loading > video.chat-media-el { background: transparent; }
+
+.chat-media-error {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: inherit;
+  color: var(--text-2, rgba(235, 235, 245, 0.6));
+  background: color-mix(in srgb, var(--text-1, #fff) 5%, transparent);
+  font-size: var(--fs-12, 12px);
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  cursor: default;
+}
+.chat-media-error svg { opacity: 0.8; flex-shrink: 0; }
+.chat-media-thumb .chat-media-error-text { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* No sweep (base.css stops the shimmer) and no fade: a plain soft block. */
+  .chat-media { --media-fade: 0ms; }
+  .chat-media-skeleton { background: color-mix(in srgb, var(--text-1, #fff) 6%, transparent); }
+  .mv-skeleton { background: rgba(255, 255, 255, 0.06); }
+  .mv-img-fade { animation: none; }
 }
 
 /* ─── Chat media lightbox ─── */
@@ -399,6 +501,12 @@
   .message-image,
   .message-video {
     max-height: min(240px, 42vh);
+  }
+
+  .chat-media-image,
+  .chat-media-gif,
+  .chat-media-video {
+    --media-max-h: min(240px, 42vh);
   }
 
   .message-media-lightbox-img {
@@ -736,6 +844,28 @@
 @supports (height: 1cqh) {
   .mv-img { max-width: min(calc(1100px - 28px), calc(100cqw - 28px)); max-height: calc(100cqh - 28px); }
 }
+/* Viewer while the full image loads: the frame keeps the picture's shape
+   (size remembered from the chat bubble) with the shared shimmer inside. */
+.mv-frame.is-loading,
+.mv-frame.is-error {
+  position: relative;
+  width: min(560px, 100%);
+  aspect-ratio: var(--media-ar, 4 / 3);
+  max-height: 100%;
+}
+.mv-frame.is-loading .mv-img { opacity: 0; }
+.mv-skeleton {
+  position: absolute;
+  inset: 14px;
+  border-radius: 12px;
+  pointer-events: none;
+  background:
+    linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.1) 50%, transparent 80%) 0 0 / 200% 100% no-repeat,
+    rgba(255, 255, 255, 0.06);
+}
+.mv-error { inset: 14px; color: rgba(235, 235, 245, 0.7); background: rgba(255, 255, 255, 0.06); }
+.mv-img-fade { animation: mv-img-in 200ms ease-out both; }
+@keyframes mv-img-in { from { opacity: 0; } }
 .mv-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border-radius: 50%; color: #fff; display: grid; place-items: center; cursor: pointer; z-index: 2; transition: transform 140ms ease; }
 .mv-nav:active { transform: translateY(-50%) scale(0.92); }
 .mv-prev { left: 18px; }

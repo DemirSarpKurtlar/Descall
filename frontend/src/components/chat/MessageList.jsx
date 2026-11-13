@@ -44,6 +44,8 @@ import { bindPollSocket, editPollNow } from "../../lib/pollStore";
 import { BarChart3, Hash, AlertCircle, RefreshCw } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
 import MessageMediaLightbox from "./MessageMediaLightbox";
+import { MessageMediaImage, MessageMediaVideo } from "./MessageMedia";
+import { readMediaDims } from "../../lib/mediaBox";
 import { MessageSkeleton } from "../ui/Skeleton";
 import { getPresenceStatus } from "../../lib/presence";
 import UserHoverCard from "../social/UserHoverCard";
@@ -1123,7 +1125,6 @@ function MessageBubbleView({
   const mediaTypeNorm = String(message.mediaType || "").toLowerCase();
   const rawMediaUrl = message.mediaUrl || message.media_url || "";
   const { url: mediaUrl, onMediaError } = usePrivateMediaUrl(rawMediaUrl);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const mediaPreview = visualMediaPreview(message);
   const isVisualMedia = Boolean(mediaPreview);
   const isGif = Boolean(mediaPreview?.isGif);
@@ -1926,7 +1927,7 @@ function MessageBubbleView({
         ) : isLegacyPoll && message.text ? (
           <LegacyPollCard text={message.text} />
         ) : sticker ? (
-          <img className="msg-sticker" src={sticker.src} alt={t(sticker.label)} title={t(sticker.label)} draggable={false} data-testid="msg-sticker" />
+          <MessageMediaImage kind="sticker" fixed className="msg-sticker" imgClassName="msg-sticker-img" src={sticker.src} alt={t(sticker.label)} title={t(sticker.label)} loading="eager" data-testid="msg-sticker" />
         ) : (
           message.text && (
             <>
@@ -1968,32 +1969,30 @@ function MessageBubbleView({
                 }}
                 aria-label={isGif ? t("Open GIF") : t("Open image")}
               >
-                <img
+                <MessageMediaImage
                   src={mediaUrl}
+                  cacheKey={rawMediaUrl}
+                  kind={isGif ? "gif" : "image"}
+                  dims={readMediaDims(message)}
                   alt={
                     isGif
                       ? "GIF"
                       : message.originalName || t("Image")
                   }
-                  className={`message-image${imageLoaded ? "" : " is-loading"}`}
-                  loading="lazy"
-                  decoding="async"
-                  draggable={false}
-                  onLoad={() => setImageLoaded(true)}
-                  onError={(e) => {
-                    setImageLoaded(true);
-                    onMediaError?.(e);
-                  }}
-                />
-                {isGif && (
-                  <span className="message-media-badge" aria-hidden="true">GIF</span>
-                )}
+                  imgClassName="message-image"
+                  onError={onMediaError}
+                >
+                  {isGif && (
+                    <span className="message-media-badge" aria-hidden="true">GIF</span>
+                  )}
+                </MessageMediaImage>
               </button>
             ) : mediaTypeNorm === "video" ? (
-              <video
+              <MessageMediaVideo
                 src={mediaUrl}
-                controls
-                className="message-video"
+                cacheKey={rawMediaUrl}
+                dims={readMediaDims(message)}
+                videoClassName="message-video"
                 onError={onMediaError}
                 onClick={(e) => e.stopPropagation()}
               />
