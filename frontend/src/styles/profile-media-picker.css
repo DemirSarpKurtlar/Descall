@@ -219,7 +219,7 @@
 .amp-btn.is-primary { background: var(--amp-brand); color: #fff; box-shadow: 0 6px 18px rgba(79, 124, 255, 0.35); }
 .amp-btn.is-ghost { background: var(--amp-fill); color: var(--amp-ink); }
 .amp-btn:disabled { opacity: 0.55; cursor: default; }
-.amp-error { display: flex; align-items: center; gap: 6px; margin: 14px 0 0; font-size: 13px; color: #FF453A; }
+.amp-error { display: flex; align-items: center; gap: 6px; margin: 14px 0 0; font-size: 13px; color: var(--danger-text); }
 
 /* Phone: one column, editor on top, preview under it, full-width buttons. */
 .amp-sheet.is-mobile .amp-tiles { gap: 12px; }

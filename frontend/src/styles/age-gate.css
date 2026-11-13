@@ -215,7 +215,7 @@
 }
 
 .birth-input-error {
-  color: var(--danger, #ff6b6b);
+  color: var(--danger-text, #ff6b6b);
   font-weight: 600;
 }
 

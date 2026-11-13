@@ -800,7 +800,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-dropdown-item.danger {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .server-modal-overlay {
@@ -1206,7 +1206,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 
 .server-modal-error {
   margin: 0 0 10px;
-  color: var(--danger);
+  color: var(--danger-text);
   font-size: var(--fs-13);
 }
 
@@ -1432,7 +1432,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .server-ghost-btn.is-danger-ghost {
-  color: var(--danger) !important;
+  color: var(--danger-text) !important;
   border-color: color-mix(in srgb, var(--danger) 35%, var(--border-3)) !important;
 }
 
@@ -2361,7 +2361,7 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 }
 
 .sra-remove:hover:not(:disabled) {
-  color: var(--danger);
+  color: var(--danger-text);
   border-color: color-mix(in srgb, var(--danger) 45%, var(--border-3));
 }
 
@@ -2628,7 +2628,7 @@ button.member-row.server-member-row {
 }
 
 .server-invite-item-actions .icon-btn.danger {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .server-public-toggle {
@@ -2947,7 +2947,7 @@ button.member-row.server-member-row {
 
 .server-voice-status.is-ok { color: var(--g-ok, #30D158); }
 .server-voice-status.is-wait { color: #f0b429; }
-.server-voice-status.is-bad { color: var(--danger, #ed4245); }
+.server-voice-status.is-bad { color: var(--danger-text, #ed4245); }
 
 .server-voice-count-pill {
   display: inline-flex;
@@ -3343,12 +3343,12 @@ button.member-row.server-member-row {
 
 .server-voice-dock-btn.is-off {
   background: color-mix(in srgb, var(--danger) 22%, transparent);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .server-voice-dock-btn.is-live {
   background: color-mix(in srgb, var(--success) 22%, transparent);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .server-voice-dock-btn.leave {
@@ -3603,13 +3603,13 @@ button.member-row.server-member-row {
 
 .server-voice-btn.is-screen-on {
   background: color-mix(in srgb, var(--success) 22%, var(--surface-2));
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .server-voice-btn.leave,
 .server-voice-btn.is-off {
   background: color-mix(in srgb, var(--danger) 18%, var(--surface-2));
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .server-voice-screen-stage {
@@ -3833,7 +3833,7 @@ button.member-row.server-member-row {
 }
 
 .server-voice-member-screen {
-  color: var(--success);
+  color: var(--success-text);
   flex-shrink: 0;
 }
 
@@ -3852,7 +3852,7 @@ button.member-row.server-member-row {
   font-weight: 800;
   line-height: 1.2;
   background: color-mix(in srgb, var(--success) 16%, transparent);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 /* Role badges in a voice row never get cut: they keep their full width and the name
@@ -4111,7 +4111,7 @@ button.member-row.server-member-row {
 .server-voice-user-mic,
 .server-voice-user-deafen {
   flex-shrink: 0;
-  color: var(--danger);
+  color: var(--danger-text);
   opacity: 0.9;
 }
 
@@ -4145,7 +4145,7 @@ button.member-row.server-member-row {
 }
 
 .server-channel-row-wrap.is-joined-voice > .server-channel-row {
-  color: var(--success);
+  color: var(--success-text);
   box-shadow: inset 3px 0 0 var(--success);
   background: color-mix(in srgb, var(--success) 10%, transparent);
 }
@@ -4340,12 +4340,12 @@ button.member-row.server-member-row {
 
 .server-perm-tri.is-allow {
   background: color-mix(in srgb, var(--success) 28%, transparent);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .server-perm-tri.is-deny {
   background: color-mix(in srgb, var(--danger) 24%, transparent);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .server-perm-tri.is-inherit {

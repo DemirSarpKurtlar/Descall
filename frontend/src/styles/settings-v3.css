@@ -22,8 +22,9 @@
 .s3 *, .s3 *::before, .s3 *::after { box-sizing: border-box; }
 html[data-theme="light"] .s3 {
   --s3-t1: rgba(16, 18, 28, 0.94);
-  --s3-t2: rgba(30, 34, 52, 0.55);
-  --s3-t3: rgba(30, 34, 52, 0.5);
+  /* 0.55 / 0.5 measured 3.6:1 on the light sidebar; these are >= 4.6:1. */
+  --s3-t2: rgba(30, 34, 52, 0.68);
+  --s3-t3: rgba(30, 34, 52, 0.64);
   --s3-val: var(--s3-t2);
   --s3-group: rgba(255, 255, 255, 0.72);
   --s3-hair: rgba(16, 18, 28, 0.1);
@@ -44,7 +45,7 @@ button.s3-row:focus-visible { outline: 2px solid var(--s3-link); outline-offset:
 .s3-row.sel { background: var(--s3-sel); }
 .s3-row.center { justify-content: center; }
 .s3-row.center .lab { flex: 0 1 auto; align-items: center; }
-.s3-row.tone-red { color: #ff453a; }
+.s3-row.tone-red { color: var(--danger-text); }
 .s3-row.tone-blue { color: var(--s3-link); }
 .s3-row .lab { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .s3-row .lab b { font-weight: 500; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

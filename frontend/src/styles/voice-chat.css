@@ -307,8 +307,8 @@
 }
 
 /* ─── Screen indicator ─── */
-.screen-indicator { color: var(--success); font-size: var(--text-xs); }
-.quality-warn { color: var(--warning); font-size: var(--text-xs); }
+.screen-indicator { color: var(--success-text); font-size: var(--text-xs); }
+.quality-warn { color: var(--warning-text); font-size: var(--text-xs); }
 
 /* ─── Call Bar outside VC ─── */
 .call-minimized-btn {

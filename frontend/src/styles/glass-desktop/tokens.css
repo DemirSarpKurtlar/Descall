@@ -49,8 +49,15 @@ html.glass-desktop {
   --gd-cta: linear-gradient(180deg, var(--g-cta-top), var(--g-cta-bot));
   --gd-deep: #0D0E13;
   --gd-t1: var(--g-t1);
-  --gd-t2: var(--g-t2);
-  --gd-t3: var(--g-t3);
+  /* Secondary / meta ink. The shared --g-t2 / --g-t3 (0.72 / 0.54 alpha) were
+     tuned for the darker iPhone fills; on the desktop glass cards (composited
+     #3E404E..#4E4D62, fields up to #5B5B6A) t3 measured 2.9-3.9:1. Mixing in
+     t1 keeps each theme's tint and lifts them to ~0.82 / ~0.72 alpha:
+     t2 >= 4.5:1 on every surface incl. fields, t3 >= 4.5:1 on cards and
+     panels. t1 > t2 > t3 > t4 hierarchy stays. The light theme keeps the
+     shared values (already AA on the white frost), see the end of the file. */
+  --gd-t2: color-mix(in srgb, var(--g-t2), var(--g-t1) 40%);
+  --gd-t3: color-mix(in srgb, var(--g-t3), var(--g-t1) 42%);
   --gd-t4: var(--g-t4);
   --gd-font: -apple-system, "SF Pro Text", "SF Pro Display", Inter, "Segoe UI Variable", system-ui, sans-serif;
   --gd-tb: 40px;
@@ -107,4 +114,29 @@ html.glass-desktop {
   --gd-field-shadow: var(--g-field-shadow);
   --gd-shadow: var(--g-shadow);
   --gd-shadow-heavy: var(--g-shadow-heavy);
+}
+
+/* Readable ink on the dark glass (contrast pass). Premium themes tune
+   --text-muted / --text-3 for their opaque surfaces (#8B84BE, #A98686, ...);
+   over the translucent glass cards they measured 1.9-2.9:1. Every dark theme
+   uses the glass ink here instead. Status ink (text and icons; the --danger /
+   --success / --warning fills stay) is lighter than the classic dark values
+   because the glass cards are mid grey: >= 4.5:1 on the call-history cards
+   (#4C4E5C) and >= 3:1 on the lightest fields. The light theme keeps the
+   design-tokens.css values. */
+html.glass-desktop:not([data-theme="light"]) {
+  --text-muted: var(--gd-t2);
+  --text-3: var(--gd-t3);
+  --danger-text: #FFADA6;
+  --success-text: #7EE8A6;
+  --warning-text: #FFD27A;
+  /* Brand-coloured icons on a brand-tinted chip (call / video buttons):
+     brand-hi itself is 2.9:1 on its own 18% tint. */
+  --gd-accent-ink: color-mix(in srgb, var(--g-brand-hi) 55%, #fff);
+}
+
+html.glass-desktop[data-theme="light"] {
+  --gd-t2: var(--g-t2);
+  --gd-t3: var(--g-t3);
+  --gd-accent-ink: var(--g-brand-hi);
 }
