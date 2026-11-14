@@ -30,6 +30,7 @@ const shop = require("../lib/shop");
 const { toPublicUser, cacheUserProfile, broadcastUserProfileUpdate } = require("../lib/userProfile");
 const premiumBadges = require("../lib/premium/badges");
 const moderation = require("../lib/moderation");
+const banExperience = require("../lib/banExperience");
 const accountDeletion = require("../lib/accountDeletion");
 const ageGate = require("../lib/ageGate");
 const appleAuth = require("../lib/appleAuth");
@@ -61,6 +62,17 @@ function guard(res, ipKey, accountKey, opts, accountOpts) {
  * Used by password, Google and Apple sign-in for existing accounts. Responds
  * and returns true when a code is required; false = issue the session now.
  */
+/** Whether this account signs in with a second factor (TOTP or email code). */
+async function hasSecondFactor(user) {
+  let row = null;
+  try {
+    row = await twoFactor.loadTotp(user.id);
+  } catch {
+    row = null;
+  }
+  return Boolean(twoFactor.methodFor(user, row));
+}
+
 async function secondFactorGate(res, user) {
   let row = null;
   try {
@@ -165,6 +177,11 @@ function signupClientPlatform(req) {
 const USER_BAN_COLS =
   "is_banned, ban_category, ban_reason, ban_message, banned_at, ban_expires_at";
 
+/**
+ * Banned account: 403 with the CONTRACT section 1 body (ban detail, a 30 min
+ * banTicket for the ban screen's appeal / export / delete, appeal state).
+ * Only called after the password, OAuth identity or 2FA code was verified.
+ */
 async function rejectIfBanned(res, user) {
   if (!user?.is_banned) return false;
   const expired = user.ban_expires_at && new Date(user.ban_expires_at).getTime() <= Date.now();
@@ -172,26 +189,13 @@ async function rejectIfBanned(res, user) {
     await moderation.revokeBan({ targetUserId: user.id, actorUserId: null, note: "Expired ban auto-clear" }).catch(() => {});
     return false;
   }
-  const ban = moderation.publicBanPayload(user);
-  res.status(403).json({
-    error: "Account is banned.",
-    code: "ACCOUNT_BANNED",
-    ban: ban
-      ? {
-          category: ban.category,
-          reason: ban.reason,
-          message: ban.message,
-          bannedAt: ban.bannedAt,
-          expiresAt: ban.expiresAt,
-        }
-      : {
-          category: user.ban_category || "other",
-          reason: user.ban_reason || null,
-          message: user.ban_message || null,
-          bannedAt: user.banned_at || null,
-          expiresAt: user.ban_expires_at || null,
-        },
-  });
+  res.status(403).json(
+    await banExperience.accountBanBody({
+      userId: user.id,
+      username: user.username,
+      detail: banExperience.detailFromUserRow(user),
+    })
+  );
   return true;
 }
 
@@ -802,11 +806,17 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
     }
 
-    if (await rejectIfBanned(res, user)) return;
+    // A banned account with two-factor sign-in proves the second factor before it gets the
+    // ban answer: its ban ticket can export and delete the account, which a password alone
+    // must not allow. /2fa/verify-login answers the ban once the code is right.
+    const banActive = Boolean(user.is_banned) && !(user.ban_expires_at && new Date(user.ban_expires_at).getTime() <= Date.now());
+    const deferBan = banActive && (await hasSecondFactor(user));
+    if (!deferBan && (await rejectIfBanned(res, user))) return;
     if (await rejectIfChildAccount(req, res, user)) return;
-    await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
-
     if (await accessGate(req, res, { action: "login", user })) return;
+    // Signing in again cancels a pending deletion, only once every gate passed (never for a
+    // banned account still on its way through two-factor).
+    if (!deferBan) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
     if (await secondFactorGate(res, user)) return;
 
     const { session } = await createSession(user.id, {
@@ -855,7 +865,7 @@ router.post("/2fa/verify-login", async (req, res) => {
     const { data: user, error } = await supabase
       .from("users")
       .select(
-        "id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, reauthentication_token, reauthentication_sent_at, is_admin, descoin_balance, birth_date"
+        `id, username, avatar_url, display_name, bio, custom_status, banner_url, updated_at, email, email_confirmed_at, two_factor_enabled, reauthentication_token, reauthentication_sent_at, is_admin, descoin_balance, birth_date, ${USER_BAN_COLS}`
       )
       .eq("id", decoded.sub)
       .maybeSingle();
@@ -905,12 +915,13 @@ router.post("/2fa/verify-login", async (req, res) => {
       return res.status(401).json({ error: message });
     }
 
-    if (await rejectIfChildAccount(req, res, user)) return;
     await supabase
       .from("users")
       .update({ reauthentication_token: null, reauthentication_sent_at: null })
       .eq("id", user.id);
-
+    // The account may have been banned between the password step and this code.
+    if (await rejectIfBanned(res, user)) return;
+    if (await rejectIfChildAccount(req, res, user)) return;
     if (await accessGate(req, res, { action: "login", user })) return;
     const { session } = await createSession(user.id, {
       userAgent: req.headers["user-agent"],
@@ -987,6 +998,9 @@ router.post("/google", async (req, res) => {
       console.error("[AUTH] Google lookup error:", byGoogleError);
       return res.status(500).json({ error: "Database error." });
     }
+    // Ban and access gates run before any email is linked or a 2FA code is sent.
+    if (user && (await rejectIfBanned(res, user))) return;
+    if (user && (await accessGate(req, res, { action: "oauth", user }))) return;
 
     // Link an existing account with the same email only when Descall itself has verified that
     // email (and Google has too); otherwise someone could pre-register a victim's address and
@@ -1009,6 +1023,8 @@ router.post("/google", async (req, res) => {
         if (byEmail.google_id && byEmail.google_id !== googleId) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
+        if (await rejectIfBanned(res, byEmail)) return;
+        if (await accessGate(req, res, { action: "oauth", user: byEmail })) return;
 
         const linkUpdate = {
           google_id: googleId,
@@ -1033,8 +1049,9 @@ router.post("/google", async (req, res) => {
       }
     }
 
-    if (user && (await rejectIfBanned(res, user))) return;
     if (user && (await rejectIfChildAccount(req, res, user))) return;
+    // A new account from a banned device / network is never created.
+    if (!user && (await accessGate(req, res, { action: "register" }))) return;
     if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let newBirthDate = null;
@@ -1201,6 +1218,9 @@ router.post("/apple", async (req, res) => {
       console.error("[AUTH] Apple lookup error:", lookupError);
       return res.status(500).json({ error: "Database error." });
     }
+    // Ban and access gates run before any email is linked or a 2FA code is sent.
+    if (user && (await rejectIfBanned(res, user))) return;
+    if (user && (await accessGate(req, res, { action: "oauth", user }))) return;
 
     // Link an existing account with the same email only when Descall itself has verified that
     // email; otherwise someone could pre-register a victim's address and capture their Apple login.
@@ -1212,6 +1232,8 @@ router.post("/apple", async (req, res) => {
         if (byEmail.apple_sub && byEmail.apple_sub !== apple.sub) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
+        if (await rejectIfBanned(res, byEmail)) return;
+        if (await accessGate(req, res, { action: "oauth", user: byEmail })) return;
         const provider = String(byEmail.auth_provider || "local");
         const { data: linked, error: linkError } = await supabase
           .from("users")
@@ -1230,8 +1252,9 @@ router.post("/apple", async (req, res) => {
       }
     }
 
-    if (user && (await rejectIfBanned(res, user))) return;
     if (user && (await rejectIfChildAccount(req, res, user))) return;
+    // A new account from a banned device / network is never created.
+    if (!user && (await accessGate(req, res, { action: "register" }))) return;
     if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let isNewUser = false;
@@ -2041,12 +2064,8 @@ router.post("/account/delete", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Type your username to confirm.", code: "confirm_username" });
     }
 
-    if (user.apple_refresh_token) {
-      // App Review: deleting an account must also revoke its Sign in with Apple grant.
-      const revoked = await appleAuth.revokeRefreshToken(user.apple_refresh_token);
-      if (revoked) await supabase.from("users").update({ apple_refresh_token: null }).eq("id", user.id);
-    }
-    const result = await accountDeletion.requestDeletion(user.id);
+    // App Review: deleting an account also revokes its Sign in with Apple grant.
+    const result = await accountDeletion.closeAccountNow(user);
     const ids = new Set([...(result.sessionIds || []), req.user.sid].filter(Boolean));
     ids.forEach((sid) => {
       revokedSessionIds.add(sid);
@@ -2425,5 +2444,7 @@ router.post("/password/confirm", requireAuth, async (req, res) => {
 
 // Authenticator app (3.2.0): /2fa/status, /2fa/totp/*, /2fa/recovery/regenerate.
 router.use(require("./twoFactor"));
+// Ban screen (ticket-scoped) and access-ban appeals (CONTRACT sections 3 and 4).
+router.use(require("./authBan"));
 
 module.exports = router;

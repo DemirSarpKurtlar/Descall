@@ -23,7 +23,7 @@ assert.deepEqual(keys, ["general", "people", "premium", "content", "system"], "p
 assert.deepEqual(ADMIN_NAV_GROUPS.find(([k]) => k === "premium")[1], PAGES, "nine pages in menu order");
 for (const id of PAGES) assert.equal(sectionOfTab(id), "premium");
 assert.equal(sectionOfTab("promo"), "promo", "other pages are their own section");
-assert.deepEqual(Object.keys(TAB_SECTION), PAGES);
+assert.deepEqual(Object.keys(TAB_SECTION).filter((id) => TAB_SECTION[id] === "premium"), PAGES);
 assert.equal(menuSections().filter((s) => s === "premium").length, 1, "one section for the nine pages");
 assert.equal(SECTION_LABEL.premium, "premiumAdmin.navGroup");
 

@@ -11,6 +11,7 @@ import { isNativeMobileApp } from "../../lib/userVoicePanelEnv";
 import { usePremium } from "../../premium/usePremium.js";
 import ErrorBoundary from "../ErrorBoundary";
 import { preloadWhenIdle } from "../../lib/preloadIdle";
+import { preloadableLazy } from "../../lib/preloadableLazy";
 import FeedbackNudgeBanner from "../feedback/FeedbackNudgeBanner";
 import QuickFeedbackModal from "../feedback/QuickFeedbackModal";
 import { feedbackOpenDetail } from "../../lib/feedbackForm";
@@ -31,8 +32,12 @@ import { HoverCardContext } from "../social/HoverCardContext";
 import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
 import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib/bottomTabBar";
 
-const ActivitySidebar = lazy(() => import("../activity/ActivitySidebar"));
-const UserPanel = lazy(() => import("./UserPanel"));
+// preloadableLazy, not lazy(): once the idle preload below has the chunk, these
+// render at once. A plain lazy() still suspends on its first render, so the
+// sidebar column showed its null fallback (no panel, the dark window behind it)
+// until the retry render landed.
+const ActivitySidebar = preloadableLazy(() => import("../activity/ActivitySidebar"));
+const UserPanel = preloadableLazy(() => import("./UserPanel"));
 // Descall+ / Ultra gaming and productivity (loaded only for members, never on iOS / Android).
 const PremiumGamingHost = lazy(() => import("../../premium/gaming/PremiumGamingHost.jsx"));
 
@@ -223,10 +228,7 @@ export default function AppLayout({
 
   useEffect(
     () =>
-      preloadWhenIdle([
-        () => import("../activity/ActivitySidebar"),
-        () => import("./UserPanel"),
-      ]),
+      preloadWhenIdle([ActivitySidebar.preload, UserPanel.preload]),
     []
   );
 
@@ -633,7 +635,9 @@ export default function AppLayout({
         />
 
         {activeView === "activity" ? (
-          <Suspense fallback={null}>
+          // Not loaded yet (first open before the idle preload): keep an empty
+          // frosted list panel in the column instead of a hole.
+          <Suspense fallback={<aside className="sidebar-secondary activity-sidebar" aria-busy="true" />}>
             <ErrorBoundary scope="pane">
               <ActivitySidebar
                 friends={friends}

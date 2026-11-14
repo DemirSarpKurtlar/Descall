@@ -156,7 +156,7 @@ router.get("/invite-links/:code", async (req, res) => {
         // lightly reuse requireAuth pattern without failing public access
         const { verifyToken } = require("../config/jwt");
         const decoded = verifyToken(auth.slice(7));
-        if (decoded?.sub) {
+        if (decoded?.sub && !decoded.scope && !decoded.pending2fa) {
           alreadyMember = await isGroupMember(group.id, decoded.sub);
         }
       }

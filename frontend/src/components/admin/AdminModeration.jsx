@@ -11,6 +11,8 @@ import RippleButton from "../ui/RippleButton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime, parseAppDate } from "../../lib/datetime";
 import { formatRelativeTime } from "../../i18n/format.js";
+import BanDialog from "./BanDialog.jsx";
+import { primeModerationMeta } from "./moderationMeta.js";
 
 const ACTION_TABS = [
   { id: "timeout", label: "Timeout", icon: Timer, tone: "brand" },
@@ -50,6 +52,8 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
   const [message, setMessage] = useState("");
   const [presetId, setPresetId] = useState("1h");
   const [customMinutes, setCustomMinutes] = useState("");
+  // Ban goes through the shared ban dialog (draft 5-admin); timeout and kick stay inline.
+  const [banOpen, setBanOpen] = useState(false);
 
   const loadAll = useCallback(async () => {
     const [m, a, h] = await Promise.all([
@@ -58,6 +62,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
       adminFetch("/moderation/history?limit=80"),
     ]);
     setMeta(m || { categories: [], timeoutPresets: [], banPresets: [] });
+    primeModerationMeta(m);
     setActive({ bans: a?.bans || [], timeouts: a?.timeouts || [] });
     setHistory(h?.history || []);
   }, []);
@@ -68,7 +73,6 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
 
   useEffect(() => {
     if (action === "timeout") setPresetId("1h");
-    else if (action === "ban") setPresetId("permanent");
   }, [action]);
 
   const filteredUsers = useMemo(() => {
@@ -83,7 +87,7 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
       .slice(0, 40);
   }, [users, userQuery]);
 
-  const presets = action === "ban" ? meta.banPresets : meta.timeoutPresets;
+  const presets = meta.timeoutPresets;
   const categoryGroups = useMemo(() => {
     const map = new Map();
     for (const c of meta.categories || []) {
@@ -124,19 +128,11 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
         durationSeconds,
       };
       const path =
-        action === "ban"
-          ? `/users/${selectedUser.id}/ban`
-          : action === "timeout"
-            ? `/users/${selectedUser.id}/timeout`
-            : `/users/${selectedUser.id}/kick`;
+        action === "timeout"
+          ? `/users/${selectedUser.id}/timeout`
+          : `/users/${selectedUser.id}/kick`;
       await adminFetch(path, { method: "POST", body: JSON.stringify(body) });
-      setOk(
-        action === "ban"
-          ? t("User banned")
-          : action === "timeout"
-            ? t("User timed out")
-            : t("User kicked")
-      );
+      setOk(action === "timeout" ? t("User timed out") : t("User kicked"));
       setMessage("");
       setOtherText("");
       await loadAll();
@@ -262,6 +258,21 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
               ))}
             </div>
 
+            {action === "ban" ? (
+              <div className="mod-ban-cta">
+                <p className="muted">{t("banAdmin.openDialogHint")}</p>
+                <RippleButton
+                  type="button"
+                  className="mod-submit tone-red"
+                  disabled={busy || !selectedUser}
+                  onClick={() => setBanOpen(true)}
+                >
+                  <Ban size={16} />
+                  {selectedUser ? t("banAdmin.openDialog") : t("banAdmin.selectUserFirst")}
+                </RippleButton>
+              </div>
+            ) : (
+              <>
             {action !== "kick" && (
               <>
                 <h4>{t("Duration")}</h4>
@@ -359,18 +370,28 @@ export default function AdminModeration({ users = [], onRefreshUsers }) {
               disabled={busy || !selectedUser}
               onClick={submitSanction}
             >
-              {action === "ban" && <Ban size={16} />}
               {action === "timeout" && <Clock size={16} />}
               {action === "kick" && <UserX size={16} />}
-              {action === "ban"
-                ? t("Ban user")
-                : action === "timeout"
-                  ? t("Apply timeout")
-                  : t("Kick user")}
+              {action === "timeout" ? t("Apply timeout") : t("Kick user")}
             </RippleButton>
+              </>
+            )}
           </div>
         </div>
       )}
+
+      <BanDialog
+        open={banOpen}
+        target={selectedUser}
+        meta={meta}
+        onClose={() => setBanOpen(false)}
+        onBanned={({ message: done }) => {
+          setErr("");
+          setOk(done);
+          loadAll().catch(() => {});
+          onRefreshUsers?.();
+        }}
+      />
 
       {panel === "active" && (
         <div className="mod-active-grid">

@@ -93,7 +93,7 @@ function isIosPushRow(row) {
 }
 
 async function sendFcmToUsers(userIds, payload = {}) {
-  const recipients = [...new Set((userIds || []).filter(Boolean))];
+  const recipients = require("./bannedRecipients").withoutBanned([...new Set((userIds || []).filter(Boolean))]);
   if (!recipients.length) return { sent: 0 };
   const msg = getMessaging();
   if (!msg) return { sent: 0 };

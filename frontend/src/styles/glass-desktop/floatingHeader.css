@@ -145,6 +145,13 @@ html.glass-desktop .main-panel.is-floating-header .chat-top-chrome[data-scrolled
   opacity: 1;
 }
 
+/* A freshly opened conversation takes its edge state at once (ChatPanel sets
+   data-edge-init for the first two frames). Fading it in on every DM / channel
+   switch blinked the dark band across the top of the panel. */
+html.glass-desktop .main-panel.is-floating-header .chat-top-chrome[data-edge-init="1"] .chat-scroll-edge {
+  transition: none;
+}
+
 /* 4. Capsules: heavy frosted glass (blur 44, saturate 190, brightness .96). */
 html.glass-desktop .main-panel.is-floating-header .panel-header .header-identity,
 html.glass-desktop .main-panel.is-floating-header .panel-header .header-right {

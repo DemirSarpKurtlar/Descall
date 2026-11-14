@@ -7,6 +7,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import AdminUserDossier from "./AdminUserDossier";
 import { AssigneeButton, CaseTimeline } from "./ReportCase.jsx";
+import BanDialog from "./BanDialog.jsx";
 import "../../styles/report-case.css";
 
 export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUser }) {
@@ -19,6 +20,8 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
   const [autoOpened, setAutoOpened] = useState(null);
+  // Ban from a report opens the shared ban dialog (draft 5-admin) instead of a one-click permanent ban.
+  const [banFor, setBanFor] = useState(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -197,12 +200,7 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
                             type="button"
                             className="dossier-act red"
                             disabled={busy}
-                            onClick={() =>
-                              act(
-                                () => adminFetch(`/reports/${r.id}/ban`, { method: "POST", body: JSON.stringify({ presetId: "permanent" }) }),
-                                t("User banned")
-                              )
-                            }
+                            onClick={() => setBanFor({ group: g, report: r })}
                           >
                             <Ban size={13} /> {t("Ban")}
                           </button>
@@ -222,6 +220,30 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
           ) : null}
         </div>
       )}
+
+      <BanDialog
+        open={Boolean(banFor)}
+        target={
+          banFor
+            ? {
+                id: banFor.group.targetId,
+                username: banFor.group.targetUsername,
+                displayName: banFor.group.targetDisplayName,
+                avatarUrl: banFor.group.targetAvatarUrl,
+                isAdmin: banFor.group.targetIsAdmin,
+              }
+            : null
+        }
+        endpoint={banFor ? `/reports/${encodeURIComponent(banFor.report.id)}/ban` : undefined}
+        reportCount={banFor ? banFor.group.totalCount : undefined}
+        defaultCategory={banFor?.report.reason}
+        onClose={() => setBanFor(null)}
+        onBanned={({ message: done }) => {
+          setError("");
+          setOk(done);
+          load().catch(() => {});
+        }}
+      />
     </section>
   );
 }

@@ -8,7 +8,7 @@
 /** Group key → section ids, in menu order. Unknown ids fall into "system". */
 export const ADMIN_NAV_GROUPS = [
   ["general", ["overview", "maintenance", "agent", "analytics", "signupStats", "retention", "economy", "topUsers"]],
-  ["people", ["directory", "people", "reports", "feedback", "moderation", "dmReview", "suspicious", "accessBans"]],
+  ["people", ["directory", "people", "reports", "feedback", "moderation", "appeals", "dmReview", "suspicious", "accessBans"]],
   // Premium Yönetimi (Descall+ / Ultra, phase 1): nine pages, one grantable section "premium".
   ["premium", [
     "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
@@ -28,9 +28,12 @@ const GROUP_LABEL = {
 
 /**
  * Menu pages that share one permission section (the owner grants "premium" once,
- * every Premium Yönetimi page follows it; the server maps /admin/premium/* to it).
+ * every Premium Yönetimi page follows it; the server maps /admin/premium/* to it;
+ * İtirazlar follows "moderation", like /admin/appeals on the server).
  */
 export const TAB_SECTION = Object.freeze({
+  // İtirazlar (ban experience): read and decided by whoever holds "moderation".
+  appeals: "moderation",
   premiumDashboard: "premium",
   premiumUsers: "premium",
   premiumBulk: "premium",

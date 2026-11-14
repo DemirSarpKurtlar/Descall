@@ -5,13 +5,14 @@ const supabase = require("../db/supabase");
 const state = require("../runtime/sharedState");
 const { kickUser, notifyAdminRoom } = require("../socket/adminHandlers");
 const moderation = require("../lib/moderation");
+const banExperience = require("../lib/banExperience");
 const descoin = require("../lib/descoin");
 const { listSessions } = require("../lib/sessions");
 const { buildDossier } = require("../lib/userDossier");
 const { buildLens } = require("../lib/userLens");
 const reports = require("../lib/userReports");
 const workflow = require("../lib/reportWorkflow");
-const { errorFields } = require("../lib/apiError");
+const { errorFields, apiError } = require("../lib/apiError");
 
 const router = express.Router();
 
@@ -198,23 +199,21 @@ async function applyFromReport(req, res, kind) {
       audit(req.user, "timeout", targetId, { fromReport: row.id, category });
       notifyAdminRoom(io, { type: "timeout", userId: targetId, ...result });
     } else if (kind === "ban") {
-      const result = await moderation.applyBan({
+      if (targetId === req.user.id) return res.status(400).json(apiError("Cannot ban yourself."));
+      const target = await banExperience.banTarget(targetId);
+      if (target.protected) return res.status(403).json({ ...banExperience.ADMIN_PROTECTED });
+      const result = await banExperience.performBan({
+        io,
+        actor: req.user,
         targetUserId: targetId,
-        actorUserId: req.user.id,
-        category,
+        username: target.row?.username || null,
+        // The ban dialog sends the admin's choice; older clients only send a preset.
+        category: req.body?.category || category,
+        otherText: req.body?.otherText || undefined,
         message,
         presetId: presetId || "permanent",
         durationSeconds,
-      });
-      kickUser(io, {
-        actorId: req.user.id,
-        actorUsername: req.user.username,
-        targetUserId: targetId,
-        reason: result.message || result.reason || "Banned",
-        action: "ban",
-        category: result.category,
-        message: result.message,
-        expiresAt: result.expiresAt,
+        ...banExperience.banOptionsFrom(req.body || {}),
       });
       audit(req.user, "ban", targetId, { fromReport: row.id, category });
       notifyAdminRoom(io, { type: "ban", userId: targetId, ...result });

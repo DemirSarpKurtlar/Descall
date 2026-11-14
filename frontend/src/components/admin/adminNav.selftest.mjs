@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ADMIN_NAV_GROUPS, groupAdminTabs, openAdminPanelWindow, ADMIN_PANEL_PATH } from "./adminNav.js";
+import { ADMIN_NAV_GROUPS, groupAdminTabs, openAdminPanelWindow, ADMIN_PANEL_PATH, sectionOfTab, menuSections } from "./adminNav.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const panel = readFileSync(join(here, "AdminPanel.jsx"), "utf8");
@@ -31,6 +31,17 @@ assert.equal(extra.at(-1).items.at(-1).id, "future");
 const mod = groupAdminTabs(tabs.filter((x) => x.id === "suspicious"), t);
 assert.equal(mod.length, 1);
 assert.equal(mod[0].items.length, 1);
+
+// İtirazlar (ban experience): in Kullanıcılar right after Ban & Timeout, under the "moderation"
+// section, so it never shows up as a grantable section of its own.
+const people = all.find((g) => g.key === "people").items.map((x) => x.id);
+assert.ok(people.includes("appeals"), "İtirazlar listed under Kullanıcılar");
+assert.equal(people.indexOf("appeals"), people.indexOf("moderation") + 1, "İtirazlar right after Ban & Timeout");
+assert.equal(sectionOfTab("appeals"), "moderation");
+assert.ok(!menuSections().includes("appeals"), "no separate appeals section to grant");
+assert.ok(menuSections().includes("moderation"));
+const modOnly = groupAdminTabs(tabs.filter((x) => sectionOfTab(x.id) === "moderation"), t);
+assert.deepEqual(modOnly.flatMap((g) => g.items.map((x) => x.id)), ["moderation", "appeals"], "a moderation admin sees both pages");
 
 // Search: Turkish folding, id match, no match = empty.
 assert.deepEqual(groupAdminTabs(tabs, t, "sup").flatMap((g) => g.items.map((x) => x.id)), ["suspicious"]);

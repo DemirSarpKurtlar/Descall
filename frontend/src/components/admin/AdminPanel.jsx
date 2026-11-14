@@ -46,10 +46,11 @@ import RetentionTab from "./growth/RetentionTab.jsx";
 import EconomyTab from "./growth/EconomyTab.jsx";
 import AdminStaff from "./AdminStaff.jsx";
 import AccessBansTab from "./AccessBansTab.jsx";
+import AdminAppeals from "./AdminAppeals.jsx";
 import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
 import AdminTopUsers from "./AdminTopUsers.jsx";
 import AdminDmInbox from "./AdminDmInbox.jsx";
-import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift } from "../ui/Icon.jsx";
+import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
 import { sectionOfTab } from "./adminNav.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
@@ -124,6 +125,8 @@ const TABS = [
   { id: "livepopup", label: "admin.livePopup", icon: BellRing },
   { id: "casino", label: "admin.casino", icon: Coins },
   { id: "moderation", label: "admin.moderation", icon: Shield },
+  // İtirazlar (ban experience): appeals against bans; shares the "moderation" section.
+  { id: "appeals", label: "banAdmin.navAppeals", icon: Scale },
   // DM inceleme (3.7.1): never in the legacy "all sections" default; owner grants it.
   { id: "dmReview", label: "admin.dmReview", icon: MessageCircle },
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
@@ -862,6 +865,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "staff" && perm.owner && <AdminStaff tabs={TABS} />}
 
         {tab === "accessBans" && <AccessBansTab />}
+        {tab === "appeals" && <AdminAppeals />}
 
         {tab === "errors" && <ErrorIssuesTab />}
         {tab === "retention" && <RetentionTab />}

@@ -13,6 +13,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
 import { formatNumber } from "../../i18n/format.js";
 import { SkeletonLine } from "../ui/Skeleton";
+import BanDialog from "./BanDialog.jsx";
 
 function sourceLabel(key, t) {
   if (!key) return t("common.unknown");
@@ -58,6 +59,8 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState(null);
   const [lensOpen, setLensOpen] = useState(false);
+  // Ban opens the shared ban dialog (draft 5-admin); timeout stays inline below.
+  const [banOpen, setBanOpen] = useState(false);
   const [message, setMessage] = useState("");
   const walletBtnRef = useRef(null);
   const [walletHint, setWalletHint] = useState(false);
@@ -82,7 +85,8 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
   useEffect(() => {
     if (!intent || !dossier || usedIntent.current === intent.at) return undefined;
     usedIntent.current = intent.at;
-    if (intent.intent === "timeout" || intent.intent === "ban") setAction(intent.intent);
+    if (intent.intent === "timeout") setAction("timeout");
+    if (intent.intent === "ban") setBanOpen(true);
     if (intent.intent === "freeze") {
       setWalletHint(true);
       walletBtnRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
@@ -194,7 +198,15 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
               <button type="button" className="dossier-act amber" disabled={busy} onClick={() => setAction("timeout")}>
                 <Timer size={14} /> {t("Timeout")}
               </button>
-              <button type="button" className="dossier-act red" disabled={busy} onClick={() => setAction("ban")}>
+              <button
+                type="button"
+                className="dossier-act red"
+                disabled={busy}
+                onClick={() => {
+                  setAction(null);
+                  setBanOpen(true);
+                }}
+              >
                 <Ban size={14} /> {t("Ban")}
               </button>
               <button
@@ -271,9 +283,9 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
             </div>
           ) : null}
 
-          {action ? (
+          {action === "timeout" ? (
             <div className="dossier-sanction">
-              <strong>{action === "ban" ? t("Ban") : t("Timeout")}</strong>
+              <strong>{t("Timeout")}</strong>
               <input
                 className="admin-input"
                 value={message}
@@ -287,19 +299,19 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
                   onClick={() =>
                     act(
                       () =>
-                        adminFetch(`/users/${userId}/${action}`, {
+                        adminFetch(`/users/${userId}/timeout`, {
                           method: "POST",
                           body: JSON.stringify({
                             category: reports.against[0]?.reason || "other",
                             message: message.trim() || undefined,
-                            presetId: action === "ban" ? "permanent" : "1h",
+                            presetId: "1h",
                           }),
                         }),
-                      action === "ban" ? t("User banned") : t("User timed out")
+                      t("User timed out")
                     )
                   }
                 >
-                  {action === "ban" ? t("Ban") : t("Timeout")} · {action === "ban" ? t("Permanent") : "1h"}
+                  {t("Timeout")} · 1h
                 </RippleButton>
                 <button type="button" className="dossier-act slate" onClick={() => setAction(null)}>
                   {t("common.cancel")}
@@ -414,6 +426,20 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
         </>
       ) : null}
       {lensOpen ? <UserLens userId={userId} onClose={() => setLensOpen(false)} /> : null}
+      <BanDialog
+        open={banOpen && Boolean(dossier)}
+        target={dossier ? { ...identity, id: identity.id || userId } : null}
+        reportCount={reports.against.length}
+        deviceCount={Array.isArray(dossier?.sessions) ? dossier.sessions.length : undefined}
+        defaultCategory={reports.against[0]?.reason}
+        onClose={() => setBanOpen(false)}
+        onBanned={({ message: done }) => {
+          setError("");
+          setOk(done);
+          load().catch(() => {});
+          onRefreshInbox?.();
+        }}
+      />
     </div>
   );
 }

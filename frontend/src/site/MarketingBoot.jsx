@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import MarketingApp from "./MarketingApp";
 import {
   login as apiLogin,
@@ -9,6 +9,10 @@ import {
 } from "../api/auth";
 import { setToken, setUser } from "../lib/storage";
 import { markHeardAboutPending } from "../lib/heardAbout";
+import { banStateFromError } from "../lib/banState.js";
+
+// Ban notice (docs/design/ban-experience), loaded only when a sign-in is refused for a ban.
+const BanScreen = lazy(() => import("../components/ban/BanScreenStandalone.jsx"));
 
 /** onVerify2fa(pendingToken, code) or onVerify2fa({ pendingToken, code }). */
 export function verify2faArgs(payloadOrToken, codeArg) {
@@ -28,6 +32,17 @@ export function verify2faArgs(payloadOrToken, codeArg) {
 export default function MarketingBoot() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [banState, setBanState] = useState(null);
+  // A ban opens the ban screen; anything else stays the one-line error.
+  const fail = useCallback((err, fallback) => {
+    const ban = banStateFromError(err);
+    if (ban) {
+      setAuthError("");
+      setBanState(ban);
+    } else {
+      setAuthError(err?.message || fallback);
+    }
+  }, []);
 
   useEffect(() => {
     // Mark React as alive (cookie banner / consent padding) but keep #seo-static
@@ -57,7 +72,7 @@ export default function MarketingBoot() {
         enterApp();
         return res;
       } catch (err) {
-        setAuthError(err?.message || "Login failed");
+        fail(err, "Login failed");
         throw err;
       } finally {
         setAuthLoading(false);
@@ -102,7 +117,7 @@ export default function MarketingBoot() {
         enterApp();
         return res;
       } catch (err) {
-        setAuthError(err?.message || "Registration failed");
+        fail(err, "Registration failed");
         throw err;
       } finally {
         setAuthLoading(false);
@@ -136,7 +151,7 @@ export default function MarketingBoot() {
       } catch (err) {
         // New Google account: the auth UI shows the Terms + date-of-birth step instead of an error.
         if (isSocialSignupRequired(err)) throw err;
-        setAuthError(err?.message || "Google sign-in failed");
+        fail(err, "Google sign-in failed");
         throw err;
       } finally {
         setAuthLoading(false);
@@ -160,7 +175,7 @@ export default function MarketingBoot() {
         enterApp();
         return res;
       } catch (err) {
-        setAuthError(err?.message || "2FA failed");
+        fail(err, "2FA failed");
         throw err;
       } finally {
         setAuthLoading(false);
@@ -170,13 +185,20 @@ export default function MarketingBoot() {
   );
 
   return (
-    <MarketingApp
-      onLogin={onLogin}
-      onRegister={onRegister}
-      onGoogleLogin={onGoogleLogin}
-      onVerify2fa={onVerify2fa}
-      authLoading={authLoading}
-      authError={authError}
-    />
+    <>
+      <MarketingApp
+        onLogin={onLogin}
+        onRegister={onRegister}
+        onGoogleLogin={onGoogleLogin}
+        onVerify2fa={onVerify2fa}
+        authLoading={authLoading}
+        authError={authError}
+      />
+      {banState ? (
+        <Suspense fallback={null}>
+          <BanScreen state={banState} onClose={() => setBanState(null)} />
+        </Suspense>
+      ) : null}
+    </>
   );
 }

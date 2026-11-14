@@ -75,6 +75,17 @@ function signStepUpToken({ id, sid }) {
   return sign({ sub: id, sid: sid || null, stepUp: true }, "15m");
 }
 
+/**
+ * Ban ticket (ban experience, 2026-11-14): issued with an ACCOUNT_BANNED answer
+ * once the password, OAuth identity or 2FA code was verified. It proves account
+ * ownership for the ban-scoped endpoints only (/api/auth/ban/*); requireAuth,
+ * socket auth and step-up checks refuse any token that carries a scope.
+ */
+const BAN_TICKET_TTL = "30m";
+function signBanTicket({ id }) {
+  return sign({ sub: id, scope: "ban" }, BAN_TICKET_TTL);
+}
+
 function headerAlg(token) {
   try {
     const head = JSON.parse(Buffer.from(String(token).split(".")[0] || "", "base64url").toString("utf8"));
@@ -101,6 +112,7 @@ module.exports = {
   signToken,
   signPending2faToken,
   signStepUpToken,
+  signBanTicket,
   verifyToken,
   publicJwks,
   signAlg,

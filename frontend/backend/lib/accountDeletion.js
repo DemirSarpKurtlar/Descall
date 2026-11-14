@@ -66,6 +66,21 @@ async function requestDeletion(userId) {
   return { requestedAt: now, purgeAfter: new Date(Date.now() + GRACE_DAYS * 86400000).toISOString(), sessionIds };
 }
 
+/**
+ * Close an account now (POST /api/auth/account/delete and the banned user's
+ * POST /api/auth/ban/delete): revoke the Sign in with Apple grant when there
+ * is one (App Review), then requestDeletion. `user` = { id, apple_refresh_token }.
+ * The caller revokes the returned sessionIds and disconnects their sockets.
+ */
+async function closeAccountNow(user) {
+  if (user.apple_refresh_token) {
+    const appleAuth = require("./appleAuth");
+    const revoked = await appleAuth.revokeRefreshToken(user.apple_refresh_token);
+    if (revoked) await supabase.from("users").update({ apple_refresh_token: null }).eq("id", user.id);
+  }
+  return requestDeletion(user.id);
+}
+
 /** Called after a successful sign-in. Returns true when a pending deletion was cancelled. */
 async function cancelDeletionIfPending(userId) {
   const { data } = await supabase
@@ -160,4 +175,4 @@ function startDeletionSweeper() {
   setInterval(run, 60 * 60 * 1000).unref?.();
 }
 
-module.exports = { GRACE_DAYS, requestDeletion, cancelDeletionIfPending, anonymizeUser, purgeDueAccounts, startDeletionSweeper };
+module.exports = { GRACE_DAYS, requestDeletion, closeAccountNow, cancelDeletionIfPending, anonymizeUser, purgeDueAccounts, startDeletionSweeper };

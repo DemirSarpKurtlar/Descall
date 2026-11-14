@@ -229,15 +229,18 @@ async function applyBan({
 
   if (error) throw new Error(error.message);
 
-  state.bannedUserIds.add(String(targetUserId));
-  state.timedOutUsers.delete(String(targetUserId));
-  state.banDetailsByUser.set(String(targetUserId), {
+  const detail = {
     category: cat,
     reason,
     message: msg,
     bannedAt: now,
     expiresAt,
-  });
+    bannedBy: actorUserId || null,
+  };
+  state.bannedUserIds.add(String(targetUserId));
+  state.timedOutUsers.delete(String(targetUserId));
+  state.banDetailsByUser.set(String(targetUserId), detail);
+  noteLocalBanChange(targetUserId, detail);
 
   await recordAction({
     actionType: "ban",
@@ -277,6 +280,8 @@ async function revokeBan({ targetUserId, actorUserId, note }) {
 
   state.bannedUserIds.delete(String(targetUserId));
   state.banDetailsByUser.delete(String(targetUserId));
+  noteLocalBanChange(targetUserId, null);
+  forgetBanRevokedSessions(targetUserId);
 
   await recordAction({
     actionType: "unban",
@@ -363,11 +368,105 @@ async function revokeTimeout({ targetUserId, actorUserId, note }) {
   return { ok: true };
 }
 
-async function loadModerationStateFromDb() {
-  try {
-    const nowIso = new Date().toISOString();
+/* ---------------- ban state sync ---------------- */
 
-    // Expire temporary bans whose clock has elapsed
+const SYNC_INTERVAL_MS = 60 * 1000;
+const PAGE_SIZE = 1000;
+const sync = {
+  loadedOnce: false,
+  lastLoadAt: 0,
+  timer: null,
+  retryTimer: null,
+  retryDelayMs: 0,
+  running: null,
+  // Bans / unbans made by this process while a reload is in flight: a reload that
+  // started before the change must not undo it.
+  localChanges: new Map(),
+};
+
+function noteLocalBanChange(userId, detail) {
+  sync.localChanges.set(String(userId), { at: Date.now(), detail });
+  if (sync.localChanges.size > 2000) {
+    const cutoff = Date.now() - 10 * SYNC_INTERVAL_MS;
+    for (const [id, c] of sync.localChanges) if (c.at < cutoff) sync.localChanges.delete(id);
+  }
+}
+
+/**
+ * Sessions the ban signed out (revokeSessions). Their tokens still get the ban
+ * screen (with a ticket) instead of a silent sign-out. In memory only: after a
+ * restart those tokens answer 401 and the user sees the ban at the next sign-in.
+ */
+const banRevokedSessions = new Map(); // userId -> Set(sid)
+
+function noteBanRevokedSessions(userId, sessionIds) {
+  const ids = (sessionIds || []).filter(Boolean).map(String);
+  if (!ids.length) return;
+  const key = String(userId);
+  const set = banRevokedSessions.get(key) || new Set();
+  for (const id of ids) set.add(id);
+  banRevokedSessions.set(key, set);
+}
+
+function wasRevokedByBan(userId, sid) {
+  if (!sid) return false;
+  return Boolean(banRevokedSessions.get(String(userId))?.has(String(sid)));
+}
+
+function forgetBanRevokedSessions(userId) {
+  banRevokedSessions.delete(String(userId));
+}
+
+/** Active ban detail from memory ({ category, reason, message, bannedAt, expiresAt, bannedBy }) or null. */
+function activeBanDetail(userId) {
+  const id = String(userId);
+  if (!state.bannedUserIds.has(id)) return null;
+  const detail = state.banDetailsByUser.get(id) || {};
+  if (detail.expiresAt && new Date(detail.expiresAt).getTime() <= Date.now()) {
+    state.bannedUserIds.delete(id);
+    state.banDetailsByUser.delete(id);
+    return null;
+  }
+  return detail;
+}
+
+/** Every row of a select, read in pages of 1000 (PostgREST caps a single read). */
+async function selectAllPages(build, pageSize = PAGE_SIZE) {
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await build().range(from, from + pageSize - 1);
+    if (error) throw new Error(error.message || String(error));
+    const page = data || [];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return rows;
+}
+
+function banDetailFromRow(row) {
+  return {
+    category: row.ban_category || "other",
+    reason: row.ban_reason || null,
+    message: row.ban_message || null,
+    bannedAt: row.banned_at || null,
+    expiresAt: row.ban_expires_at || null,
+    bannedBy: row.banned_by || null,
+  };
+}
+
+const BAN_SELECT = "id, ban_category, ban_reason, ban_message, banned_at, banned_by, ban_expires_at";
+
+/**
+ * Load bans and timeouts from the database into memory. Throws when the ban
+ * list could not be read; the in-memory state is then left as it was (never
+ * cleared), so a failing reload does not lift every ban.
+ */
+async function reloadModerationState() {
+  const startedAt = Date.now();
+  const nowIso = new Date(startedAt).toISOString();
+
+  // Expire temporary bans whose clock has elapsed (best effort).
+  try {
     await supabase
       .from("users")
       .update({
@@ -382,30 +481,41 @@ async function loadModerationStateFromDb() {
       .eq("is_banned", true)
       .not("ban_expires_at", "is", null)
       .lte("ban_expires_at", nowIso);
+  } catch (e) {
+    console.warn("[moderation] expire bans:", e?.message || e);
+  }
 
-    const { data: banned, error: banErr } = await supabase
-      .from("users")
-      .select("id, ban_category, ban_reason, ban_message, banned_at, ban_expires_at")
-      .eq("is_banned", true);
-    if (banErr) {
-      console.warn("[moderation] load bans:", banErr.message);
+  const banned = await selectAllPages(() =>
+    supabase.from("users").select(BAN_SELECT).eq("is_banned", true).order("id", { ascending: true })
+  );
+
+  const nextIds = new Set();
+  const nextDetails = new Map();
+  for (const row of banned) {
+    if (row.ban_expires_at && new Date(row.ban_expires_at).getTime() <= startedAt) continue;
+    const id = String(row.id);
+    nextIds.add(id);
+    nextDetails.set(id, banDetailFromRow(row));
+  }
+  // Changes this process made after the read started win over the read.
+  for (const [id, change] of sync.localChanges) {
+    if (change.at < startedAt - 1000) continue;
+    if (change.detail) {
+      nextIds.add(id);
+      nextDetails.set(id, change.detail);
     } else {
-      state.bannedUserIds.clear();
-      state.banDetailsByUser.clear();
-      for (const row of banned || []) {
-        const id = String(row.id);
-        state.bannedUserIds.add(id);
-        state.banDetailsByUser.set(id, {
-          category: row.ban_category || "other",
-          reason: row.ban_reason || null,
-          message: row.ban_message || null,
-          bannedAt: row.banned_at || null,
-          expiresAt: row.ban_expires_at || null,
-        });
-      }
+      nextIds.delete(id);
+      nextDetails.delete(id);
     }
+  }
+  state.bannedUserIds.clear();
+  state.banDetailsByUser.clear();
+  for (const id of nextIds) state.bannedUserIds.add(id);
+  for (const [id, d] of nextDetails) state.banDetailsByUser.set(id, d);
+  for (const id of [...banRevokedSessions.keys()]) if (!nextIds.has(id)) banRevokedSessions.delete(id);
 
-    // Clear expired timeouts in DB
+  // Timeouts: same rule, a failed read keeps the current map.
+  try {
     await supabase
       .from("users")
       .update({
@@ -418,34 +528,112 @@ async function loadModerationStateFromDb() {
       })
       .not("timeout_until", "is", null)
       .lte("timeout_until", nowIso);
-
-    const { data: timed, error: tErr } = await supabase
-      .from("users")
-      .select("id, timeout_until, timeout_category, timeout_reason, timeout_message, timed_out_at, timed_out_by")
-      .not("timeout_until", "is", null)
-      .gt("timeout_until", nowIso);
-    if (tErr) {
-      console.warn("[moderation] load timeouts:", tErr.message);
-    } else {
-      state.timedOutUsers.clear();
-      for (const row of timed || []) {
-        state.timedOutUsers.set(String(row.id), {
-          until: row.timeout_until,
-          category: row.timeout_category || "other",
-          reason: row.timeout_reason || null,
-          message: row.timeout_message || null,
-          timedOutAt: row.timed_out_at || null,
-          actorId: row.timed_out_by || null,
-        });
-      }
-    }
-
-    console.log(
-      `[moderation] Loaded bans=${state.bannedUserIds.size} timeouts=${state.timedOutUsers.size}`
-    );
   } catch (e) {
-    console.warn("[moderation] loadModerationStateFromDb:", e.message);
+    console.warn("[moderation] expire timeouts:", e?.message || e);
   }
+  try {
+    const timed = await selectAllPages(() =>
+      supabase
+        .from("users")
+        .select("id, timeout_until, timeout_category, timeout_reason, timeout_message, timed_out_at, timed_out_by")
+        .not("timeout_until", "is", null)
+        .gt("timeout_until", nowIso)
+        .order("id", { ascending: true })
+    );
+    state.timedOutUsers.clear();
+    for (const row of timed) {
+      state.timedOutUsers.set(String(row.id), {
+        until: row.timeout_until,
+        category: row.timeout_category || "other",
+        reason: row.timeout_reason || null,
+        message: row.timeout_message || null,
+        timedOutAt: row.timed_out_at || null,
+        actorId: row.timed_out_by || null,
+      });
+    }
+  } catch (e) {
+    console.warn("[moderation] load timeouts (kept previous):", e?.message || e);
+  }
+
+  sync.loadedOnce = true;
+  sync.lastLoadAt = Date.now();
+  for (const [id, change] of sync.localChanges) if (change.at < startedAt - 1000) sync.localChanges.delete(id);
+  return { bans: state.bannedUserIds.size, timeouts: state.timedOutUsers.size };
+}
+
+/**
+ * Load bans now. Never throws; resolves true on success. A failure before the
+ * first successful load is logged loudly and retried with backoff (5 s,
+ * doubling to 60 s) until one succeeds; a later failure keeps the last good state.
+ */
+async function loadModerationStateFromDb() {
+  if (sync.running) return sync.running;
+  sync.running = (async () => {
+    try {
+      const counts = await reloadModerationState();
+      sync.retryDelayMs = 0;
+      if (!sync.loggedLoad) {
+        sync.loggedLoad = true;
+        console.log(`[moderation] Loaded bans=${counts.bans} timeouts=${counts.timeouts}`);
+      }
+      return true;
+    } catch (e) {
+      if (!sync.loadedOnce) {
+        sync.retryDelayMs = Math.min(60 * 1000, sync.retryDelayMs ? sync.retryDelayMs * 2 : 5000);
+        console.error(
+          `[moderation] CRITICAL: could not load account bans (${e?.message || e}). ` +
+            `Banned accounts are NOT enforced until this succeeds. Retrying in ${sync.retryDelayMs / 1000}s.`
+        );
+        if (!sync.retryTimer) {
+          sync.retryTimer = setTimeout(() => {
+            sync.retryTimer = null;
+            loadModerationStateFromDb();
+          }, sync.retryDelayMs);
+          sync.retryTimer.unref?.();
+        }
+      } else {
+        console.warn("[moderation] ban reload failed, keeping the last good state:", e?.message || e);
+      }
+      return false;
+    } finally {
+      sync.running = null;
+    }
+  })();
+  return sync.running;
+}
+
+/** First load now, then a reload every 60 s (bans made on other instances, expiries). */
+async function startModerationSync({ intervalMs = SYNC_INTERVAL_MS } = {}) {
+  const ok = await loadModerationStateFromDb();
+  if (!sync.timer) {
+    sync.timer = setInterval(() => {
+      loadModerationStateFromDb();
+    }, intervalMs);
+    sync.timer.unref?.();
+  }
+  return ok;
+}
+
+function stopModerationSync() {
+  if (sync.timer) clearInterval(sync.timer);
+  if (sync.retryTimer) clearTimeout(sync.retryTimer);
+  sync.timer = null;
+  sync.retryTimer = null;
+}
+
+function syncStatus() {
+  return { loadedOnce: sync.loadedOnce, lastLoadAt: sync.lastLoadAt, retryDelayMs: sync.retryDelayMs };
+}
+
+function __resetSyncForTests() {
+  stopModerationSync();
+  sync.loadedOnce = false;
+  sync.loggedLoad = false;
+  sync.lastLoadAt = 0;
+  sync.retryDelayMs = 0;
+  sync.running = null;
+  sync.localChanges.clear();
+  banRevokedSessions.clear();
 }
 
 async function listActiveSanctions() {
@@ -575,6 +763,15 @@ module.exports = {
   applyTimeout,
   revokeTimeout,
   loadModerationStateFromDb,
+  reloadModerationState,
+  startModerationSync,
+  stopModerationSync,
+  syncStatus,
+  activeBanDetail,
+  noteBanRevokedSessions,
+  wasRevokedByBan,
+  forgetBanRevokedSessions,
+  __resetSyncForTests,
   listActiveSanctions,
   listHistory,
   fetchUserBanRow,

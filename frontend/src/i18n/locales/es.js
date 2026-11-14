@@ -1,3 +1,4 @@
+import { API_ES } from "./api.es.js";
 import { PREMIUM_STORY_ES } from "./premiumStory.es.js";
 import { UAH_ES } from "./uah.es.js";
 /**
@@ -14,6 +15,8 @@ import { MSG4_ES } from "./msg4.es.js";
 import { MSG5_ES } from "./msg5.es.js";
 import { ACT_ES } from "./act.es.js";
 import { DIR_ES, DIR_API_ES } from "./dir.es.js";
+import { BAN_ES } from "./ban.es.js";
+import { BAN_ADMIN_ES } from "./banAdmin.es.js";
 import { AGENTX_ES } from "./agentx.es.js";
 import { INVL_ES } from "./invl.es.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -40,6 +43,8 @@ export const nested = {
   "msg5": MSG5_ES,
   "act": ACT_ES,
   "dir": DIR_ES,
+  "ban": BAN_ES,
+  "banAdmin": BAN_ADMIN_ES,
   "agentx": AGENTX_ES,
   "invl": INVL_ES,
   "sgx": SIGNUP_GROWTH.es.nested,
@@ -11013,6 +11018,7 @@ export const phrases = {
   "iPhone and iPad app on the App Store": "App para iPhone y iPad en el App Store",
   "Descall: voice chat, servers and screen sharing for friends": "Descall: chat de voz, servidores y pantalla compartida para amigos",
   ...DIR_API_ES,
+  ...API_ES,
 };
 
 export default { nested, phrases };

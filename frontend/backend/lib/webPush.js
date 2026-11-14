@@ -23,7 +23,7 @@ function configureWebPush() {
 }
 
 async function sendWebPushToUsers(userIds, payload) {
-  const recipients = [...new Set((userIds || []).filter(Boolean))];
+  const recipients = require("./bannedRecipients").withoutBanned([...new Set((userIds || []).filter(Boolean))]);
   if (!recipients.length || !configureWebPush()) return;
 
   const { data: subscriptions, error } = await supabase

@@ -86,6 +86,7 @@ const RULES = [
   [/^\/users\/[^/]+\/(ban|unban|timeout|untimeout|kick|status)$/, "moderation"],
   [/^\/users\/bulk$/, "moderation"],
   [/^\/moderation(\/|$)/, "moderation"],
+  [/^\/appeals(\/|$)/, "moderation"],
   [/^\/dm(\/|$)/, "dmReview"],
   [/^\/(messages|export\/messages)(\/|$)/, "moderation"],
   [/^\/activity\/leaderboard$/, "topUsers"],
