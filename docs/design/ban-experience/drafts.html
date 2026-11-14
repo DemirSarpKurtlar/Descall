@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b0c10;font-family:Inter,system-ui,sans-serif;color:rgba(255,255,255,.95);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+.frame{position:relative;width:1280px;height:800px;overflow:hidden;display:grid;place-items:center;margin-bottom:40px;
+  background:radial-gradient(900px 500px at 15% 10%,rgba(88,122,245,.18),transparent 60%),radial-gradient(700px 500px at 90% 90%,rgba(155,93,229,.14),transparent 60%),#0d0e13}
+.frame.red{background:radial-gradient(900px 520px at 50% 0%,rgba(242,63,67,.16),transparent 60%),radial-gradient(700px 500px at 90% 90%,rgba(155,93,229,.10),transparent 60%),#0d0e13}
+.frame.app::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.035) 0 72px,transparent 72px 312px,rgba(255,255,255,.02) 312px),repeating-linear-gradient(180deg,transparent 0 56px,rgba(255,255,255,.02) 56px 58px);filter:blur(3px)}
+.frame.app::after{content:"";position:absolute;inset:0;background:rgba(6,7,12,.6);backdrop-filter:blur(10px)}
+.tag{position:absolute;top:50px;left:22px;z-index:5;font:600 13px Inter;color:rgba(235,238,255,.55)}
+.tag b{color:#fff}
+.bar{position:absolute;top:0;left:0;right:0;height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 96px;z-index:4;color:rgba(235,238,255,.6);font:700 13px "Inter Display"}
+.bar i{display:flex;gap:18px;font-style:normal;font-weight:400}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.glass{position:relative;z-index:2;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025)),rgba(24,25,36,.94);box-shadow:0 30px 80px rgba(0,0,0,.6),0 4px 14px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.1),inset 0 0 0 1px rgba(255,255,255,.07)}
+.card{width:520px;padding:30px 30px 22px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.seal{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;color:#fff;margin-bottom:10px}
+.seal svg.i{width:30px;height:30px}
+.seal.r{background:linear-gradient(145deg,#ff6b6e,#e5383c 55%,#b8252a);box-shadow:0 10px 28px rgba(242,63,67,.42),inset 0 1px 0 rgba(255,255,255,.3)}
+.seal.o{background:linear-gradient(145deg,#ffb35c,#f08a24 55%,#c96a12);box-shadow:0 10px 28px rgba(240,138,36,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+.kick{font:700 11.5px Inter;letter-spacing:.08em;text-transform:uppercase;color:#ff8a8d}
+.kick.o{color:#ffbf7a}
+h2{margin:2px 0 0;font:700 23px/1.2 "Inter Display";letter-spacing:-.02em}
+.lead{margin:4px 0 0;font-size:14px;line-height:1.5;color:rgba(235,238,255,.68);max-width:44ch}
+.facts{width:100%;margin-top:18px;border-radius:18px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);text-align:left;overflow:hidden}
+.fact{display:flex;justify-content:space-between;gap:16px;padding:12px 16px;font-size:13.5px;border-top:1px solid rgba(255,255,255,.06)}
+.fact:first-child{border-top:0}
+.fact span{color:rgba(235,238,255,.55);font-weight:500}
+.fact b{font-weight:650;text-align:right}
+.fact b.red{color:#ff8a8d}
+.note{width:100%;margin-top:12px;padding:14px 16px;border-radius:16px;text-align:left;background:rgba(242,63,67,.08);box-shadow:inset 0 0 0 1px rgba(242,63,67,.22)}
+.note small{display:block;font:700 11px Inter;letter-spacing:.06em;text-transform:uppercase;color:#ff9a9c;margin-bottom:6px}
+.note p{margin:0;font-size:13.5px;line-height:1.5;color:rgba(255,255,255,.88)}
+.cd{display:flex;gap:8px;margin-top:16px}
+.cd div{width:72px;padding:10px 0;border-radius:14px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.cd b{display:block;font:700 22px "Inter Display";font-variant-numeric:tabular-nums}
+.cd span{font-size:11px;color:rgba(235,238,255,.5);font-weight:600}
+.acts{display:flex;gap:8px;width:100%;margin-top:18px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 16px;border-radius:13px;font:650 13.5px Inter;white-space:nowrap}
+.btn.p{background:linear-gradient(180deg,#6788ff,#587af5);color:#fff;box-shadow:0 6px 16px rgba(88,122,245,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn.g{background:rgba(255,255,255,.08);color:rgba(255,255,255,.92);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.links{display:flex;gap:16px;margin-top:14px;font-size:12.5px;font-weight:600;color:rgba(169,185,255,.9)}
+.fine{margin-top:12px;font-size:11.5px;color:rgba(235,238,255,.42);max-width:52ch;line-height:1.45}
+/* admin */
+.adm{width:900px;display:grid;grid-template-columns:1fr 360px;overflow:hidden}
+.adm .l{padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px}
+.adm .prev{padding:22px;background:rgba(0,0,0,.18);box-shadow:inset 1px 0 0 rgba(255,255,255,.06);display:flex;flex-direction:column;gap:12px}
+.uh{display:flex;align-items:center;gap:12px}
+.av{width:44px;height:44px;border-radius:50%;background:linear-gradient(145deg,#9b5de5,#5b2fa8);display:grid;place-items:center;font:800 16px Inter}
+.lab{font:700 11.5px Inter;letter-spacing:.06em;text-transform:uppercase;color:rgba(235,238,255,.45);margin-bottom:6px}
+.inp{height:42px;border-radius:12px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);display:flex;align-items:center;padding:0 12px;font-size:13.5px;color:rgba(255,255,255,.9);justify-content:space-between}
+.ta{height:84px;align-items:flex-start;padding-top:11px;line-height:1.45}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills span{padding:7px 11px;border-radius:10px;background:rgba(255,255,255,.06);font-size:12.5px;font-weight:600;color:rgba(235,238,255,.75)}
+.pills span.on{background:rgba(242,63,67,.2);color:#ffb3b5;box-shadow:inset 0 0 0 1px rgba(242,63,67,.45)}
+.chk{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(235,238,255,.82)}
+.chk i{width:18px;height:18px;border-radius:6px;background:#587af5;display:grid;place-items:center}
+.chk i.off{background:rgba(255,255,255,.1)}
+.mini{width:520px;transform:scale(.6);transform-origin:top left;margin-bottom:-260px;pointer-events:none}
+.warn{display:flex;gap:10px;padding:11px 12px;border-radius:12px;background:rgba(240,138,36,.1);box-shadow:inset 0 0 0 1px rgba(240,138,36,.3);font-size:12.5px;line-height:1.45;color:#ffd2a1}
+/* phone */
+.phone{width:390px;height:760px;border-radius:44px;overflow:hidden;position:relative;z-index:2;background:radial-gradient(500px 300px at 50% 0%,rgba(242,63,67,.2),transparent 60%),#0f1016;box-shadow:0 0 0 10px #1b1c22,0 30px 80px rgba(0,0,0,.6)}
+.phone .acts .btn{flex:none;width:100%}
+.phone .card{width:100%;padding:70px 22px 22px;background:none;box-shadow:none}
+</style></head><body><div id="root"></div>
+<script>
+const I={
+ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+wifi:'<path d="M12 20h.01"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/><path d="M5 12.86a10 10 0 0 1 5.17-2.69"/><path d="M19 12.86a10 10 0 0 0-2.01-1.53"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="m2 2 20 20"/>',
+mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+msg:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+check:'<path d="M20 6 9 17l-5-5"/>',
+eye:'<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
+alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+};
+const ic=(n)=>`<svg class="i" viewBox="0 0 24 24">${I[n]}</svg>`;
+const bar=`<div class="bar">Descall<i><span>&#8212;</span><span>&#9633;</span><span>&#10005;</span></i></div>`;
+const accountTimed=`<div class="glass card">
+ <div class="seal r">${ic('ban')}</div>
+ <div class="kick">Descall yönetimi kararı</div>
+ <h2>Hesabın 7 gün askıya alındı</h2>
+ <p class="lead">@kaanyilmaz hesabı, Descall Topluluk Kuralları'nı ihlal ettiği için yönetim ekibimiz tarafından geçici olarak kapatıldı.</p>
+ <div class="cd"><div><b>6</b><span>gün</span></div><div><b>14</b><span>saat</span></div><div><b>22</b><span>dakika</span></div></div>
+ <div class="facts">
+  <div class="fact"><span>Sebep</span><b class="red">Taciz / Zorbalık</b></div>
+  <div class="fact"><span>Karar tarihi</span><b>14 Kasım 2026, 16:20</b></div>
+  <div class="fact"><span>Açılış</span><b>21 Kasım 2026, 16:20</b></div>
+ </div>
+ <div class="note"><small>Yönetimden not</small><p>Bir sunucuda başka bir üyeye defalarca hakaret ettin. Süre bitince hesabın kendiliğinden açılacak.</p></div>
+ <div class="acts"><span class="btn p">${ic('msg')}İtiraz et</span><span class="btn g">${ic('out')}Başka hesapla giriş</span></div>
+ <div class="links"><span>Topluluk Kuralları</span><span>Verilerimi indir</span><span>Hesabımı sil</span></div>
+</div>`;
+const accountPerm=`<div class="glass card">
+ <div class="seal r">${ic('ban')}</div>
+ <div class="kick">Descall yönetimi kararı</div>
+ <h2>Hesabın kalıcı olarak kapatıldı</h2>
+ <p class="lead">@kaanyilmaz hesabı, ciddi bir kural ihlali nedeniyle yönetim ekibimiz tarafından kalıcı olarak kapatıldı. Bu hesapla artık giriş yapamazsın.</p>
+ <div class="facts">
+  <div class="fact"><span>Sebep</span><b class="red">Dolandırıcılık / Oltalama</b></div>
+  <div class="fact"><span>Karar tarihi</span><b>14 Kasım 2026, 16:20</b></div>
+  <div class="fact"><span>Süre</span><b class="red">Kalıcı</b></div>
+ </div>
+ <div class="note"><small>Yönetimden not</small><p>Kullanıcılardan sahte bir çekiliş bağlantısıyla şifre topladığın tespit edildi.</p></div>
+ <div class="acts"><span class="btn p">${ic('msg')}İtiraz et</span><span class="btn g">${ic('out')}Başka hesapla giriş</span></div>
+ <div class="links"><span>Topluluk Kuralları</span><span>Verilerimi indir</span><span>Hesabımı sil</span></div>
+ <p class="fine">İtirazlar 3 iş günü içinde bir yönetici tarafından incelenir ve sonucu e-postana gönderilir.</p>
+</div>`;
+const access=`<div class="glass card">
+ <div class="seal o">${ic('wifi')}</div>
+ <div class="kick o">Erişim engeli</div>
+ <h2>Bu cihazdan Descall'a erişim engellendi</h2>
+ <p class="lead">Bu cihaz veya internet bağlantısı, kural ihlalleri nedeniyle Descall yönetimi tarafından engellendi. Engel sürdükçe bu cihazdan hiçbir hesapla giriş yapılamaz ve yeni hesap açılamaz.</p>
+ <div class="facts">
+  <div class="fact"><span>Kapsam</span><b>Bu cihaz ve bağlantı</b></div>
+  <div class="fact"><span>Karar tarihi</span><b>14 Kasım 2026</b></div>
+  <div class="fact"><span>Açılış</span><b>14 Aralık 2026</b></div>
+ </div>
+ <div class="acts"><span class="btn p">${ic('msg')}İtiraz et</span><span class="btn g">${ic('mail')}Destek ile iletişim</span></div>
+ <p class="fine">Ortak bir ağdaysan (okul, iş yeri, yurt) ve bir hata olduğunu düşünüyorsan itiraz et; inceleyip engeli kaldırabiliriz. Kod: ACC-7F2K</p>
+</div>`;
+const live=`<div class="glass card">
+ <div class="seal r">${ic('ban')}</div>
+ <div class="kick">Descall yönetimi kararı</div>
+ <h2>Oturumun kapatıldı</h2>
+ <p class="lead">Az önce hesabın yönetim ekibimiz tarafından 24 saat askıya alındı. Bu süre boyunca mesaj gönderemez, sesli kanallara katılamazsın.</p>
+ <div class="facts">
+  <div class="fact"><span>Sebep</span><b class="red">Spam</b></div>
+  <div class="fact"><span>Açılış</span><b>15 Kasım 2026, 16:20</b></div>
+ </div>
+ <div class="note"><small>Yönetimden not</small><p>Aynı reklam mesajını 40 sunucuya gönderdin.</p></div>
+ <div class="acts"><span class="btn p">${ic('msg')}İtiraz et</span><span class="btn g">Tamam</span></div>
+</div>`;
+const admin=`<div class="glass adm">
+ <div class="l">
+  <div class="uh"><div class="av">K</div><div><div style="font:700 16px Inter Display">Kaan Yılmaz</div><div style="font-size:12.5px;color:rgba(235,238,255,.55)">@kaanyilmaz · 3 şikayet · 2 cihaz</div></div></div>
+  <div><div class="lab">Sebep</div><div class="pills"><span class="on">Taciz / Zorbalık</span><span>Spam</span><span>Nefret söylemi</span><span>Dolandırıcılık</span><span>Diğer…</span></div></div>
+  <div><div class="lab">Süre</div><div class="pills"><span>24 saat</span><span>3 gün</span><span class="on">7 gün</span><span>30 gün</span><span>90 gün</span><span>Kalıcı</span></div></div>
+  <div><div class="lab">Kullanıcıya not (kullanıcı görür)</div><div class="inp ta">Bir sunucuda başka bir üyeye defalarca hakaret ettin. Süre bitince hesabın kendiliğinden açılacak.</div></div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+   <div class="chk"><i>${ic('check')}</i>Açık oturumlarını hemen kapat (tüm cihazlar)</div>
+   <div class="chk"><i>${ic('check')}</i>Kullanıcıya e-posta ile bildir</div>
+   <div class="chk"><i class="off"></i>Cihazlarını ve ağını da engelle (yeni hesap açamasın)</div>
+  </div>
+  <div class="warn">${ic('alert')}<span>Bu hesap bir yönetici değil. Yönetici ve sahip hesapları yasaklanamaz.</span></div>
+  <div class="acts" style="margin-top:2px"><span class="btn g">Vazgeç</span><span class="btn p" style="background:linear-gradient(180deg,#ff6b6e,#e5383c);box-shadow:0 6px 16px rgba(242,63,67,.35)">${ic('ban')}7 gün yasakla</span></div>
+ </div>
+ <div class="prev"><div class="lab" style="display:flex;align-items:center;gap:6px">${ic('eye')}Kullanıcının göreceği ekran</div><div class="mini">${accountTimed}</div></div>
+</div>`;
+const phone=`<div class="phone"><div class="card">
+ <div class="seal r">${ic('ban')}</div>
+ <div class="kick">Descall yönetimi kararı</div>
+ <h2 style="font-size:21px">Hesabın 7 gün askıya alındı</h2>
+ <p class="lead" style="font-size:13.5px">@kaanyilmaz hesabı, Topluluk Kuralları'nı ihlal ettiği için yönetim ekibimiz tarafından geçici olarak kapatıldı.</p>
+ <div class="cd"><div><b>6</b><span>gün</span></div><div><b>14</b><span>saat</span></div><div><b>22</b><span>dakika</span></div></div>
+ <div class="facts"><div class="fact"><span>Sebep</span><b class="red">Taciz / Zorbalık</b></div><div class="fact"><span>Açılış</span><b>21 Kas 16:20</b></div></div>
+ <div class="note"><small>Yönetimden not</small><p>Bir sunucuda başka bir üyeye defalarca hakaret ettin.</p></div>
+ <div class="acts" style="flex-direction:column"><span class="btn p">${ic('msg')}İtiraz et</span><span class="btn g">${ic('out')}Başka hesapla giriş</span></div>
+</div></div>`;
+const F=[
+ ["1-sureli","red app","Girişte hesap yasağı (süreli)",bar+accountTimed],
+ ["2-kalici","red app","Girişte hesap yasağı (kalıcı)",bar+accountPerm],
+ ["3-ip","app","IP / cihaz engeli: hiçbir hesapla giriş ve kayıt yok",bar+access],
+ ["4-canli","red app","Uygulama açıkken yasaklanma",bar+live],
+ ["5-admin","app","Yönetici paneli: yasaklama penceresi + kullanıcının göreceği önizleme",admin],
+ ["6-iphone","red","iPhone",phone],
+];
+document.getElementById('root').innerHTML=F.map(f=>`<section class="frame ${f[1]}" id="${f[0]}"><span class="tag">Taslak · <b>${f[2]}</b></span>${f[3]}</section>`).join('');
+</script></body></html>
