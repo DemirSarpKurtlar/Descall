@@ -15,6 +15,7 @@ const {
   buildSnapshot,
 } = require("../socket/adminHandlers");
 const moderation = require("../lib/moderation");
+const banExperience = require("../lib/banExperience");
 const {
   pruneDeadPresence,
   summarizePresence,
@@ -71,6 +72,7 @@ router.use(requireStepUp);
 router.use(adminPermissions.requireAdminSection);
 router.use(require("./adminStaff"));
 router.use(require("./adminAccess"));
+router.use(require("./adminAppeals"));
 router.use(require("./adminErrors"));
 router.use(require("./adminGrowth"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
@@ -699,31 +701,30 @@ router.post("/users/:id/ban", async (req, res) => {
   try {
     const id = req.params.id;
     if (id === req.user.id) return res.status(400).json({ error: "Cannot ban yourself." });
+    const target = await banExperience.banTarget(id);
+    if (!target.found) return res.status(404).json({ error: "User not found." });
+    if (target.protected) return res.status(403).json({ ...banExperience.ADMIN_PROTECTED });
     const body = req.body || {};
-    const result = await moderation.applyBan({
+    const result = await banExperience.performBan({
+      io: getIo(req),
+      actor: req.user,
       targetUserId: id,
-      actorUserId: req.user.id,
+      username: target.row?.username || null,
       category: body.category,
       otherText: body.otherText || body.reason,
       message: body.message,
       presetId: body.presetId || "permanent",
       durationSeconds: body.durationSeconds,
-    });
-    kickUser(getIo(req), {
-      actorId: req.user.id,
-      actorUsername: req.user.username,
-      targetUserId: id,
-      reason: result.message || result.reason || "Banned",
-      action: "ban",
-      category: result.category,
-      message: result.message,
-      expiresAt: result.expiresAt,
+      ...banExperience.banOptionsFrom(body),
     });
     audit(req.user, "ban", id, {
       category: result.category,
       reason: result.reason,
       message: result.message,
       expiresAt: result.expiresAt,
+      sessionsRevoked: result.sessionsRevoked,
+      emailed: result.emailed,
+      accessBan: result.accessBan ? result.accessBan.added : 0,
     });
     notifyAdminRoom(getIo(req), { type: "ban", userId: id, ...result });
     res.json({ ok: true, ...result });
@@ -806,7 +807,7 @@ router.post("/users/:id/kick", (req, res) => {
     actorId: req.user.id,
     actorUsername: req.user.username,
     targetUserId: id,
-    reason: message || reason || "Kicked",
+    reason: reason || "Kicked",
     action: "kick",
     category: cat,
     message,
@@ -842,27 +843,31 @@ router.post("/users/bulk", async (req, res) => {
   const { userIds, action } = req.body || {};
   if (!Array.isArray(userIds)) return res.status(400).json({ error: "userIds array required." });
   const io = getIo(req);
+  if (action === "ban") {
+    // Owner and admin accounts are never banned: refuse the whole batch.
+    const protectedIds = [];
+    for (const id of userIds) {
+      if (typeof id !== "string" || id === req.user.id) continue;
+      if ((await banExperience.banTarget(id)).protected) protectedIds.push(id);
+    }
+    if (protectedIds.length) {
+      return res.status(403).json({ ...banExperience.ADMIN_PROTECTED, userIds: protectedIds });
+    }
+  }
+  const banOptions = banExperience.banOptionsFrom(req.body || {});
   let n = 0;
   for (const id of userIds) {
     if (typeof id !== "string" || id === req.user.id) continue;
     if (action === "ban") {
-      const result = await moderation.applyBan({
+      await banExperience.performBan({
+        io,
+        actor: req.user,
         targetUserId: id,
-        actorUserId: req.user.id,
         category: "other",
         otherText: "Bulk ban",
-        message: "Bulk ban",
+        message: null,
         presetId: "permanent",
-      });
-      kickUser(io, {
-        actorId: req.user.id,
-        actorUsername: req.user.username,
-        targetUserId: id,
-        reason: result.message || result.reason || "Bulk ban",
-        action: "ban",
-        category: result.category,
-        message: result.message,
-        expiresAt: result.expiresAt,
+        ...banOptions,
       });
       n++;
     } else if (action === "unban") {

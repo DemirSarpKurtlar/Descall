@@ -37,7 +37,7 @@ function optionalUser(req) {
   if (!header.startsWith("Bearer ")) return null;
   try {
     const decoded = verifyToken(header.slice(7));
-    if (decoded?.pending2fa || !decoded?.sub) return null;
+    if (decoded?.pending2fa || decoded?.scope || !decoded?.sub) return null;
     return { id: decoded.sub, username: decoded.username };
   } catch {
     return null;

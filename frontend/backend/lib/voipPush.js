@@ -130,6 +130,8 @@ function createVoipPusher(deps = {}) {
     const result = { sent: 0, dropped: 0, failed: 0, skipped: false };
     try {
       if (!userId || !call.callUuid) return { ...result, skipped: true };
+      // Banned accounts get no pushes (lib/bannedRecipients.js).
+      if (require("./bannedRecipients").isBannedNow(userId)) return { ...result, skipped: true };
       const cfg = fcm.apnsConfig();
       const tokens = await loadVoipTokens(userId);
       if (!tokens.length) return result;

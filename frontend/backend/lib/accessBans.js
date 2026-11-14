@@ -92,7 +92,7 @@ async function refresh({ force = false } = {}) {
       // Expired rows are dropped by indexRows (isActive).
       const { data, error } = await db()
         .from("access_bans")
-        .select("id, kind, hash, label, reason, expires_at, revoked_at")
+        .select("id, kind, hash, label, reason, created_at, expires_at, revoked_at")
         .is("revoked_at", null)
         .limit(5000);
       if (error) throw error;
@@ -124,7 +124,18 @@ function match(fp) {
   return null;
 }
 
+const HIT_THROTTLE_MS = 60 * 1000;
+const lastHitAt = new Map();
+
 async function recordHit(ban, { action, ip, userId = null }) {
+  // REST calls (action "api") can repeat quickly; keep one row per ban and visitor a minute.
+  if (action === "api") {
+    const k = `${ban.id}:${userId || maskIp(ip)}`;
+    const now = Date.now();
+    if (now - (lastHitAt.get(k) || 0) < HIT_THROTTLE_MS) return;
+    lastHitAt.set(k, now);
+    if (lastHitAt.size > 5000) lastHitAt.clear();
+  }
   try {
     await db().from("access_ban_hits").insert({ ban_id: ban.id, action, ip_masked: maskIp(ip), user_id: userId });
     await db().rpc?.("access_ban_touch", { p_ban: ban.id });
@@ -133,25 +144,91 @@ async function recordHit(ban, { action, ip, userId = null }) {
   }
 }
 
+const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
 /**
- * Check a visitor. `action` = "login" | "register" | "socket" | "oauth".
+ * Short public reference of a ban ("ACC-7F2K"): the first 4 base32 characters
+ * of a SHA-256 of the row id. Shown on the blocked screen and typed into an
+ * appeal; it never reveals the address or device.
+ */
+function accessCode(id) {
+  if (!id) return null;
+  const digest = crypto.createHash("sha256").update(`descall:access-code:${id}`).digest();
+  let bits = 0;
+  let value = 0;
+  let out = "";
+  for (const byte of digest) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5 && out.length < 4) {
+      out += BASE32[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+    if (out.length >= 4) break;
+  }
+  return `ACC-${out}`;
+}
+
+function normalizeAccessCode(raw) {
+  const s = String(raw || "").trim().toUpperCase().replace(/\s+/g, "");
+  const body = s.startsWith("ACC-") ? s.slice(4) : s.startsWith("ACC") ? s.slice(3) : s;
+  return /^[A-Z2-7]{4}$/.test(body) ? `ACC-${body}` : null;
+}
+
+/** { code, kind, createdAt, expiresAt } for the blocked screen (no address, no label). */
+function publicAccess(row) {
+  return {
+    code: accessCode(row.id),
+    kind: row.kind,
+    createdAt: row.created_at || null,
+    expiresAt: row.expires_at || null,
+  };
+}
+
+/** 403 body for a blocked visitor (CONTRACT section 2). */
+function publicAccessBody(row) {
+  return {
+    error: "Access to Descall from this device or network is blocked.",
+    code: "ACCESS_BANNED",
+    expiresAt: row.expires_at || null,
+    access: publicAccess(row),
+  };
+}
+
+/** The active ban whose public code is `code`, or null. */
+async function findActiveByCode(code) {
+  const want = normalizeAccessCode(code);
+  if (!want) return null;
+  await refresh();
+  for (const row of state.byHash.values()) {
+    if (isActive(row) && accessCode(row.id) === want) return row;
+  }
+  return null;
+}
+
+/**
+ * Check a visitor. `action` = "login" | "register" | "socket" | "oauth" | "api".
+ * `resolveIsAdmin` (optional, async) is only called when a ban matches, so the
+ * common path never loads the account row.
  * Returns null (allowed) or { ban, publicBody } to send as 403.
  */
-async function check({ ip, deviceId, action, userId = null, isAdmin = false } = {}) {
+async function check({ ip, deviceId, action, userId = null, isAdmin = false, resolveIsAdmin = null } = {}) {
   if (isAdmin) return null;
   await refresh();
   if (state.unavailable || state.byHash.size === 0) return null;
   const ban = match(fingerprintOf({ ip, deviceId }));
   if (!ban) return null;
+  if (resolveIsAdmin) {
+    let admin = false;
+    try {
+      admin = Boolean(await resolveIsAdmin());
+    } catch {
+      admin = false;
+    }
+    if (admin) return null;
+  }
   recordHit(ban, { action, ip, userId });
-  return {
-    ban,
-    publicBody: {
-      error: "Access to Descall from this device or network is blocked.",
-      code: "ACCESS_BANNED",
-      expiresAt: ban.expires_at || null,
-    },
-  };
+  return { ban, publicBody: publicAccessBody(ban) };
 }
 
 /**
@@ -327,6 +404,11 @@ module.exports = {
   isActive,
   match,
   check,
+  accessCode,
+  normalizeAccessCode,
+  publicAccess,
+  publicAccessBody,
+  findActiveByCode,
   peek,
   refresh,
   banAddress,

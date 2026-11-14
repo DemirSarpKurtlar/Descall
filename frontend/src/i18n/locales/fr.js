@@ -1,3 +1,4 @@
+import { API_FR } from "./api.fr.js";
 import { PREMIUM_STORY_FR } from "./premiumStory.fr.js";
 import { UAH_FR } from "./uah.fr.js";
 /**
@@ -11015,6 +11016,7 @@ export const phrases = {
   "iPhone and iPad app on the App Store": "Appli iPhone et iPad sur l'App Store",
   "Descall: voice chat, servers and screen sharing for friends": "Descall : chat vocal, serveurs et partage d'écran entre amis",
   ...DIR_API_FR,
+  ...API_FR,
 };
 
 export default { nested, phrases };

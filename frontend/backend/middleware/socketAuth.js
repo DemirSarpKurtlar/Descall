@@ -44,6 +44,10 @@ function socketAuthMiddleware(socket, next) {
     if (decoded.pending2fa || decoded.stepUp) {
       return next(new Error("Authentication failed: two-factor verification required."));
     }
+    // Scoped tokens (the ban ticket) never open a socket.
+    if (decoded.scope || !decoded.sub) {
+      return next(new Error("Authentication failed: invalid token."));
+    }
     if (bannedUserIds.has(decoded.sub)) {
       const detail = banDetailsByUser.get(decoded.sub);
       if (detail?.expiresAt && new Date(detail.expiresAt).getTime() <= Date.now()) {

@@ -1060,8 +1060,9 @@ async function runBoot() {
     console.warn("[boot] descoin antibot scheduler failed:", e.message);
   }
   try {
-    const { loadModerationStateFromDb } = require("./lib/moderation");
-    await loadModerationStateFromDb();
+    // Account bans: first load now (retried with backoff if it fails), then every 60 s.
+    const { startModerationSync } = require("./lib/moderation");
+    await startModerationSync();
   } catch (e) {
     console.warn("[boot] moderation load failed:", e.message);
   }

@@ -1,0 +1,23 @@
+/**
+ * German for API / socket messages added with the ban experience (2026-11-14).
+ * Keys are the exact English server texts (see api.tr.js). Spread into de.js phrases.
+ */
+export const API_DE = {
+  "Appeals are not available yet. Try again later.": "Einsprüche sind noch nicht verfügbar. Versuch es später noch einmal.",
+  "Owner and admin accounts cannot be banned.": "Inhaber- und Admin-Konten können nicht gebannt werden.",
+  "Could not load appeals.": "Einsprüche konnten nicht geladen werden.",
+  "Invalid appeal.": "Ungültiger Einspruch.",
+  "Choose accept or reject.": "Wähle Annehmen oder Ablehnen.",
+  "Appeal not found.": "Einspruch nicht gefunden.",
+  "This appeal was already decided.": "Über diesen Einspruch wurde bereits entschieden.",
+  "Could not save the decision.": "Die Entscheidung konnte nicht gespeichert werden.",
+  "Could not send your appeal. Try again in a bit.": "Dein Einspruch konnte nicht gesendet werden. Versuch es gleich noch einmal.",
+  "Ban ticket has expired. Sign in again.": "Die Sperrseite ist abgelaufen. Melde dich erneut an.",
+  "This account is not banned.": "Dieses Konto ist nicht gebannt.",
+  "Write between {min} and {max} characters.": "Schreib zwischen {min} und {max} Zeichen.",
+  "You already appealed this ban.": "Du hast gegen diesen Bann bereits Einspruch eingelegt.",
+  "Your data could not be prepared. Try again in a bit.": "Deine Daten konnten nicht vorbereitet werden. Versuch es gleich noch einmal.",
+  "Type DELETE to confirm.": "Gib zur Bestätigung DELETE ein.",
+  "Enter the code shown on the blocked screen.": "Gib den Code ein, der auf der Sperrseite angezeigt wird.",
+  "No active access block has this code.": "Keine aktive Zugriffssperre hat diesen Code.",
+};

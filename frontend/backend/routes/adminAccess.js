@@ -36,11 +36,19 @@ async function kickMatching(io) {
     const userId = sock.user?.id;
     if (!userId) continue;
     const fp = accessBans.fingerprintOf({ ip: ipOfSocket(sock), deviceId: sock.handshake?.auth?.device });
-    if (!accessBans.match(fp)) continue;
+    const ban = accessBans.match(fp);
+    if (!ban) continue;
     const row = await perms.loadRow(userId).catch(() => null);
     if (row?.is_admin || row?.username === "admin") continue;
     try {
-      sock.emit("system:kick", { reason: "Access from this device or network is blocked.", action: "ban", category: "access" });
+      // CONTRACT section 5: the blocked screen's code / kind / dates, never the address.
+      sock.emit("system:kick", {
+        action: "access_ban",
+        reason: "Access from this device or network is blocked.",
+        category: "access",
+        message: null,
+        access: accessBans.publicAccess(ban),
+      });
       sock.disconnect(true);
       kicked += 1;
     } catch {

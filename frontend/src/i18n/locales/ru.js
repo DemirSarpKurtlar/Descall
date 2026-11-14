@@ -1,3 +1,4 @@
+import { API_RU } from "./api.ru.js";
 import { PREMIUM_STORY_RU } from "./premiumStory.ru.js";
 import { UAH_RU } from "./uah.ru.js";
 /**
@@ -11015,6 +11016,7 @@ export const phrases = {
   "iPhone and iPad app on the App Store": "Приложение для iPhone и iPad в App Store",
   "Descall: voice chat, servers and screen sharing for friends": "Descall: голосовой чат, серверы и демонстрация экрана для друзей",
   ...DIR_API_RU,
+  ...API_RU,
 };
 
 export default { nested, phrases };

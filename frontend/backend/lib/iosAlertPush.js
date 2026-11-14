@@ -644,7 +644,9 @@ function createIosAlertPusher(deps = {}) {
     const result = { sent: 0, dropped: 0, failed: 0, suppressed: 0, skipped: false };
     try {
       const exclude = event.excludeUserId ? String(event.excludeUserId) : "";
-      const recipients = [...new Set((userIds || []).filter(Boolean).map(String))].filter((id) => id !== exclude);
+      const recipients = require("./bannedRecipients").withoutBanned(
+        [...new Set((userIds || []).filter(Boolean).map(String))].filter((id) => id !== exclude)
+      );
       if (!recipients.length || !describeEvent(event, "tr")) return { ...result, skipped: true };
 
       const targets = await loadTargets(recipients);
