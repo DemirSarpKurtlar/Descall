@@ -1,12 +1,13 @@
 # Free Turkish voiceover for marketing videos: Chatterbox Multilingual (MIT) on a CPU
-# runner. Runs when a script in marketing/voiceover/ changes on a claude/ work branch;
-# the WAV lines are uploaded as the "voiceover" artifact.
+# runner. Runs when a script in marketing/voiceover/ changes on a claude/ work branch.
+# Each line is then trimmed to its spoken words (faster-whisper, MIT) and normalised;
+# raw and trimmed lines are uploaded as the "voiceover" artifact (out/<name>/clean).
 name: Voiceover TTS
 
 on:
   push:
     branches: ["claude/**"]
-    paths: ["marketing/voiceover/*.txt", ".github/scripts/tts_chatterbox.py", ".github/workflows/voiceover-tts.yml"]
+    paths: ["marketing/voiceover/*.txt", ".github/scripts/tts_chatterbox.py", ".github/scripts/voiceover_trim.py", ".github/workflows/voiceover-tts.yml"]
 
 permissions:
   contents: read
@@ -27,12 +28,13 @@ jobs:
       - name: Install CPU torch + Chatterbox
         run: |
           pip install --no-cache-dir torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
-          pip install --no-cache-dir chatterbox-tts
+          pip install --no-cache-dir chatterbox-tts faster-whisper
       - name: Synthesise
         run: |
           for f in marketing/voiceover/*.txt; do
             name="$(basename "$f" .txt)"
             python .github/scripts/tts_chatterbox.py "$f" "out/$name"
+            python .github/scripts/voiceover_trim.py "out/$name" "out/$name/clean"
           done
       - uses: actions/upload-artifact@v4
         with:
