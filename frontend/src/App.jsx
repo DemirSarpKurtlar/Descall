@@ -22,6 +22,7 @@ import {
   clearPendingLanding,
   inviteLandingChannel,
 } from "./lib/serverInviteRoute";
+import { mergeFetchedServers, rememberLocalJoin } from "./lib/serverListMerge.js";
 import MarketingApp from "./site/MarketingApp";
 import SeoHead from "./site/SeoHead";
 import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest, register, verify2faLogin } from "./api/auth";
@@ -560,6 +561,9 @@ export default function App() {
   const listCommitRef = useRef({ friends: false, groups: false, servers: false });
   const groupsFlightRef = useRef(null);
   const serversFlightRef = useRef(null);
+  // Servers joined on this device and when (lib/serverListMerge.js): a list request
+  // that started before the join must not drop them.
+  const localJoinsRef = useRef(new Map());
   const previewsFlightRef = useRef(null);
   const fetchGroupsRef = useRef(null);
   const fetchServersRef = useRef(null);
@@ -955,8 +959,9 @@ export default function App() {
     if (serversFlightRef.current) return serversFlightRef.current;
     const run = (async () => {
     try {
+      const startedAt = Date.now();
       const data = await getMyServers();
-      setMyServers(data?.servers || []);
+      setMyServers((prev) => mergeFetchedServers(data?.servers, prev, localJoinsRef.current, startedAt));
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
       listCommitRef.current.servers = true;
@@ -4765,6 +4770,7 @@ export default function App() {
         navigate("/servers", { replace: true });
         return;
       }
+      rememberLocalJoin(localJoinsRef.current, server.id);
       setMyServers((prev) => {
         const list = Array.isArray(prev) ? prev : [];
         if (list.some((s) => s.id === server.id)) {
@@ -4987,8 +4993,9 @@ export default function App() {
 
   const handleRefreshServers = async () => {
     try {
+      const startedAt = Date.now();
       const data = await getMyServers();
-      setMyServers(data?.servers || []);
+      setMyServers((prev) => mergeFetchedServers(data?.servers, prev, localJoinsRef.current, startedAt));
       setOwnedServerCount(data?.ownedCount || 0);
       setMaxOwnedServers(data?.maxOwned || 10);
       setServersLoadError(false);
@@ -5024,6 +5031,7 @@ export default function App() {
   const handleCreateServer = async ({ name, iconUrl, templateId, starterLocale }) => {
     const { server, ownedCount, maxOwned } = await createServer({ name, iconUrl, templateId, starterLocale });
     if (server) {
+      rememberLocalJoin(localJoinsRef.current, server.id);
       setMyServers((prev) => (prev.some((s) => s.id === server.id) ? prev : [...prev, server]));
       setOwnedServerCount(ownedCount ?? ((ownedServerCount || 0) + 1));
       if (maxOwned) setMaxOwnedServers(maxOwned);
