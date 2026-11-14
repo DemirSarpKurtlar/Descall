@@ -1,0 +1,41 @@
+# Free Turkish voiceover for marketing videos: Chatterbox Multilingual (MIT) on a CPU
+# runner. Runs when a script in marketing/voiceover/ changes on a claude/ work branch;
+# the WAV lines are uploaded as the "voiceover" artifact.
+name: Voiceover TTS
+
+on:
+  push:
+    branches: ["claude/**"]
+    paths: ["marketing/voiceover/*.txt", ".github/scripts/tts_chatterbox.py", ".github/workflows/voiceover-tts.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: voiceover-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU torch + Chatterbox
+        run: |
+          pip install --no-cache-dir torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir chatterbox-tts
+      - name: Synthesise
+        run: |
+          for f in marketing/voiceover/*.txt; do
+            name="$(basename "$f" .txt)"
+            python .github/scripts/tts_chatterbox.py "$f" "out/$name"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voiceover
+          path: out
+          retention-days: 14
