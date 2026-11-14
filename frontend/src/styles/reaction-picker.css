@@ -122,6 +122,8 @@
   transform-origin: 100% 0%;
   z-index: 31;
 }
+/* Opens above the bar when the list (or the floating composer) leaves no room below. */
+.mhb-more.flip-up { top: auto; bottom: calc(100% + 6px); transform-origin: 100% 100%; }
 .mhb-mi {
   display: flex;
   align-items: center;

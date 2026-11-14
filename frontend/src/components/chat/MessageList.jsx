@@ -77,6 +77,7 @@ import { attachStickToBottom, JUMP_BUTTON_PX } from "../../lib/stickToBottom";
 import { applyPending, getPendingSnapshot, subscribePending, toggleReaction } from "../../lib/reactionsOptimistic";
 import { createDoubleTapDetector, hasTextSelection, isIgnoredTapTarget, pointIsOverText } from "../../lib/doubleTap";
 import { useToast } from "../../context/ToastContext";
+import { shouldFlipMenuUp } from "../../lib/menuFlip.js";
 import { cancelSwipeBackIfPending, swipeBackEdgeBand } from "../../hooks/useEdgeSwipeBack";
 import {
   MESSAGE_MENU_LONG_PRESS_MS,
@@ -92,6 +93,9 @@ import {
   reactBarWidth,
 } from "../../lib/glassMessageMenu";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
+
+/** Parts of a message's own toolbar; a press inside them does not close it. */
+const MESSAGE_TOOLBAR_SURFACES = ".message-hover-bar, .reaction-picker, .mhb-more, .message-inline-picker";
 
 // Reaction picker (approved 2026-10-19, maintenance-and-menus 2-tepki-secici-*):
 // six quick reactions, a separator, then "+" for every emoji.
@@ -1519,10 +1523,16 @@ function MessageBubbleView({
     // pill never lands on them (3.1), it moves beside the bubble instead.
     const b = rect(el);
     const barH = bar.offsetHeight || 44;
-    const others = [
-      ...[...list.querySelectorAll(".message-bubble")].filter((n) => n !== el && !el.contains(n) && !n.contains(el)),
-      ...[...list.querySelectorAll(".message-group > .message-header")].filter((n) => !row.contains(n)),
-    ];
+    // Only the rows next to this one can sit under the pill; measuring every bubble in a
+    // long chat on each hover made opening the bar stutter.
+    const near = [row];
+    for (let n = row.previousElementSibling, i = 0; n && i < 3; n = n.previousElementSibling, i += 1) near.push(n);
+    for (let n = row.nextElementSibling, i = 0; n && i < 3; n = n.nextElementSibling, i += 1) near.push(n);
+    const others = [];
+    for (const r of near) {
+      for (const n of r.querySelectorAll(".message-bubble")) if (n !== el && !el.contains(n) && !n.contains(el)) others.push(n);
+      if (r !== row) others.push(...r.querySelectorAll(":scope > .message-header"));
+    }
     const content = others
       .map(rect)
       .filter((r) => r.width > 0 && r.height > 0 && r.bottom > b.top - barH - 24 && r.top < b.bottom + 24);
@@ -1569,6 +1579,42 @@ function MessageBubbleView({
     const need = 160;
     setPickerFlip(b.bottom + need > l.bottom && b.top - need >= l.top - 4);
   }, [pickerOpen, fullPicker]);
+
+  // A locked toolbar (reaction pill, full picker or "⋯" menu open) ignores hover-out, so a
+  // press anywhere outside it closes it. Capture phase: inner handlers that stop
+  // propagation (the bar, the composer) cannot keep it open.
+  useEffect(() => {
+    if (glass || !(pickerOpen || moreOpen)) return undefined;
+    const onDown = (e) => {
+      const el = bubbleRef.current;
+      const target = e.target;
+      if (el && target instanceof Element && el.contains(target) && target.closest(MESSAGE_TOOLBAR_SURFACES)) return;
+      setPickerOpen(false);
+      setMoreOpen(false);
+      setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [glass, pickerOpen, moreOpen]);
+
+  // "⋯" menu: opens below the bar; above it when the bottom of the visible list (or the
+  // floating composer over it) would cover the last items, e.g. on the newest message.
+  const [moreFlip, setMoreFlip] = useState(false);
+  useLayoutEffect(() => {
+    if (!moreOpen) { setMoreFlip(false); return; }
+    const el = bubbleRef.current;
+    const bar = el?.querySelector(".message-hover-bar");
+    const menu = el?.querySelector(".mhb-more");
+    const list = el?.closest(".message-list");
+    if (!bar || !menu || !list) return;
+    setMoreFlip(shouldFlipMenuUp({
+      bar: bar.getBoundingClientRect(),
+      list: list.getBoundingClientRect(),
+      menuHeight: menu.offsetHeight,
+      composerTops: Array.from(document.querySelectorAll(".message-composer"), (n) => n.getBoundingClientRect().top),
+      viewportHeight: window.innerHeight,
+    }));
+  }, [moreOpen]);
 
   useEffect(() => {
     pressGate.current.noteLightbox(lightboxOpen);
@@ -2147,10 +2193,10 @@ function MessageBubbleView({
           {menuOpen && !editing && !glass && (
             <motion.div
               className={`message-hover-bar other${barCompact ? " is-compact" : ""}`}
-              initial={{ opacity: 0, y: 6, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 2, scale: 0.98, transition: { duration: 0.08, ease: "easeOut" } }}
-              transition={{ duration: 0.14 }}
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeOut" } }}
+              transition={{ duration: 0.12, ease: [0.2, 0.9, 0.3, 1] }}
               onMouseEnter={openMenu}
               onMouseLeave={scheduleClose}
               onPointerDown={(e) => e.stopPropagation()}
@@ -2270,7 +2316,7 @@ function MessageBubbleView({
                 {moreOpen && (
                   <motion.div
                     key="mhb-more"
-                    className="g-toolbar-menu mhb-more"
+                    className={`g-toolbar-menu mhb-more${moreFlip ? " flip-up" : ""}`}
                     role="menu"
                     aria-label={t("More")}
                     onKeyDown={menuArrowKeys}
