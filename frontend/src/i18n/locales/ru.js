@@ -16,6 +16,7 @@ import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
+import { BAN_ADMIN_RU } from "./banAdmin.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -43,6 +44,7 @@ export const nested = {
   "act": ACT_RU,
   "dir": DIR_RU,
   "ban": BAN_RU,
+  "banAdmin": BAN_ADMIN_RU,
   "agentx": AGENTX_RU,
   "invl": INVL_RU,
   "sgx": SIGNUP_GROWTH.ru.nested,

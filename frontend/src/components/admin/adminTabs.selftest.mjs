@@ -18,6 +18,25 @@ assert.equal(tabs.length, entries, "every TABS entry parsed");
 for (const must of ["overview", "maintenance", "directory", "promo", "shop", "security", "audit"]) {
   assert.ok(tabs.some((x) => x.id === must), `tab ${must} registered`);
 }
+// İtirazlar (ban experience): registered, labelled from the banAdmin namespace, rendered.
+assert.ok(tabs.some((x) => x.id === "appeals" && x.label === "banAdmin.navAppeals"), "İtirazlar tab registered");
+assert.match(src, /import AdminAppeals from "\.\/AdminAppeals\.jsx";/);
+assert.match(src, /\{tab === "appeals" && <AdminAppeals \/>\}/, "İtirazlar tab rendered");
+// banAdmin.<locale>.js: same keys in every language, registered as "banAdmin" in each catalog.
+const leafKeys = (obj, p = "") =>
+  Object.entries(obj).flatMap(([k, v]) => (v && typeof v === "object" ? leafKeys(v, `${p}${k}.`) : [`${p}${k}`])).sort();
+const BAN_LOCALES = { tr: "TR", en: "EN", de: "DE", es: "ES", fr: "FR", "pt-BR": "PT_BR", ru: "RU" };
+let banKeys = null;
+for (const [loc, suf] of Object.entries(BAN_LOCALES)) {
+  const mod = await import(new URL(`../../i18n/locales/banAdmin.${loc}.js`, import.meta.url).href);
+  const keys = leafKeys(mod[`BAN_ADMIN_${suf}`]);
+  if (!banKeys) banKeys = keys;
+  assert.deepEqual(keys, banKeys, `banAdmin.${loc}.js has the same keys as banAdmin.tr.js`);
+  const cat = readFileSync(join(here, `../../i18n/locales/${loc}.js`), "utf8");
+  assert.match(cat, new RegExp(`import \\{ BAN_ADMIN_${suf} \\} from "\\./banAdmin\\.${loc.replace("-", "\\-")}\\.js";`), `${loc}.js imports banAdmin`);
+  assert.match(cat, new RegExp(`"?banAdmin"?: BAN_ADMIN_${suf},`), `${loc}.js registers banAdmin`);
+}
+assert.ok(banKeys.includes("navAppeals"));
 // 3.3.0: no moderator mode. Each admin sees the sections the owner granted
 // (GET /admin/me/permissions); the server checks the same list on every request.
 assert.ok(!/moderatorOnly|MODERATOR_TABS/.test(src), "moderator mode is gone");
