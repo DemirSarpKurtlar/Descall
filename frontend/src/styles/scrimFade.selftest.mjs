@@ -33,6 +33,10 @@ assert.ok(blurDurations.length > 0 && blurDurations.every((d) => d === "0s"), "t
 assert.match(overlay, /^\.titlebar::after \{[^}]*opacity:\s*0;[^}]*transition:\s*opacity/m, "title bar dim fades out");
 assert.match(overlay, /html\.glass-desktop:not\(\.gd-lite\):not\(\.a11y-solid\) \.titlebar::after \{ background: transparent; \}/);
 assert.doesNotMatch(overlay, /\.titlebar::after \{[^}]*animation:/, "no CSS animation that ends the moment :has() stops matching");
+// The always-present layer must never block the window buttons (3.7.44 regression:
+// minimize / maximize / close did nothing): hidden at rest, buttons always on top.
+assert.match(overlay, /^\.titlebar::after \{[^}]*visibility:\s*hidden;/m, "title bar dim is hidden at rest");
+assert.match(overlay, /^\.titlebar-controls \{ position: relative; z-index: 2; \}/m, "window buttons always sit above the dim layer");
 
 // Confirm alerts leave with a fade instead of disappearing.
 const alert = read("components/ui/GlassConfirm.jsx");
