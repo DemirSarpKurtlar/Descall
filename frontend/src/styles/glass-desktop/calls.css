@@ -883,7 +883,9 @@ html.glass-desktop .main-panel .server-voice-dock-group {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px var(--gd-hair, rgba(255, 255, 255, 0.14)), 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 html.glass-desktop .main-panel .server-voice-dock-btn { border-radius: 999px; color: var(--gd-t1); }
-html.glass-desktop .main-panel .server-voice-dock-btn:hover:not(:disabled) { background: var(--gd-chip-hover, rgba(255, 255, 255, 0.1)); }
+@media (hover: hover) {
+  html.glass-desktop .main-panel .server-voice-dock-btn:hover:not(:disabled) { background: var(--gd-chip-hover, rgba(255, 255, 255, 0.1)); }
+}
 html.glass-desktop .main-panel .server-voice-dock-btn.join {
   height: 46px;
   padding: 0 22px;

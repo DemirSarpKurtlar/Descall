@@ -3222,6 +3222,18 @@ button.member-row.server-member-row {
   backdrop-filter: blur(8px);
 }
 
+/* Descall+ voice activity meter: a thin line along the bottom of the name pill.
+   It must not join the flex row, or its width: 100% squeezes the name to "De...". */
+.server-voice-tile-meta > .pa-vam {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 2px;
+  width: auto;
+  height: 2px;
+  pointer-events: none;
+}
+
 .server-voice-tile-name {
   min-width: 0;
   overflow: hidden;
@@ -3337,8 +3349,11 @@ button.member-row.server-member-row {
   font-size: var(--fs-13);
 }
 
-.server-voice-dock-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
+/* Touch screens keep :hover after a tap, which left the last pressed dock button highlighted. */
+@media (hover: hover) {
+  .server-voice-dock-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+  }
 }
 
 .server-voice-dock-btn.is-off {
