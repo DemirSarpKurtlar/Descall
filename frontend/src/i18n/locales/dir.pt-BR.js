@@ -28,7 +28,7 @@ export const DIR_PT_BR = {
   "discover": {
     "entry": "Descobrir comunidades",
     "title": "Descobrir comunidades",
-    "lead": "Servidores públicos listados pelos donos. Escolha um tema, pesquise e entre.",
+    "lead": "Servidores públicos listados pelos donos. Escolha um tema, pesquise e entre com um clique.",
     "all": "Todas",
     "categories": "Temas",
     "search": "Pesquisar comunidades",
@@ -42,13 +42,20 @@ export const DIR_PT_BR = {
     "open": "Abrir",
     "joining": "Entrando...",
     "joined": "Você entrou em {name}",
-    "empty": "Ainda não há comunidades aqui.",
-    "emptyHint": "Os donos podem listar o servidor nas configurações de Comunidade e descoberta.",
+    "empty": "Ainda não há comunidades listadas",
+    "emptyHint": "Seja o primeiro a listar seu servidor. Servidores com pelo menos 3 membros aparecem aqui quando o dono os lista.",
     "error": "Não foi possível carregar as comunidades.",
     "retry": "Tentar de novo",
     "more": "Mostrar mais",
     "close": "Fechar",
-    "web": "Abrir o diretório público"
+    "web": "Abrir o diretório público",
+    "emptyCategory": "Ainda não há comunidades de {category}",
+    "emptySearch": "Nenhuma comunidade corresponde à sua pesquisa",
+    "listMine": "Listar meu servidor",
+    "allTopics": "Ver todos os temas",
+    "step1": "Menu do servidor",
+    "step2": "Comunidade e descoberta",
+    "step3": "Listar no diretório do Descall"
   },
   "suggest": {
     "title": "Encontre sua turma",

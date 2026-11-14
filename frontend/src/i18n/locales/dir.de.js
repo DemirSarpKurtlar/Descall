@@ -28,7 +28,7 @@ export const DIR_DE = {
   "discover": {
     "entry": "Communitys entdecken",
     "title": "Communitys entdecken",
-    "lead": "Öffentliche Server, von ihren Besitzern eingetragen. Wähle ein Thema, suche und tritt bei.",
+    "lead": "Öffentliche Server, von ihren Besitzern eingetragen. Wähle ein Thema, suche und tritt mit einem Klick bei.",
     "all": "Alle",
     "categories": "Themen",
     "search": "Communitys suchen",
@@ -42,13 +42,20 @@ export const DIR_DE = {
     "open": "Öffnen",
     "joining": "Trete bei...",
     "joined": "Du bist {name} beigetreten",
-    "empty": "Hier gibt es noch keine Communitys.",
-    "emptyHint": "Besitzer können ihren Server in den Einstellungen unter Community und Entdecken eintragen.",
+    "empty": "Noch keine Communitys eingetragen",
+    "emptyHint": "Trag deinen Server als Erste oder Erster ein. Server mit mindestens 3 Mitgliedern erscheinen hier, sobald ihre Besitzer sie eintragen.",
     "error": "Communitys konnten nicht geladen werden.",
     "retry": "Erneut versuchen",
     "more": "Mehr anzeigen",
     "close": "Schließen",
-    "web": "Öffentliches Verzeichnis öffnen"
+    "web": "Öffentliches Verzeichnis öffnen",
+    "emptyCategory": "Noch keine Communitys zum Thema {category}",
+    "emptySearch": "Keine Community passt zu deiner Suche",
+    "listMine": "Meinen Server eintragen",
+    "allTopics": "Alle Themen ansehen",
+    "step1": "Servermenü",
+    "step2": "Community & Entdecken",
+    "step3": "Im Descall-Verzeichnis eintragen"
   },
   "suggest": {
     "title": "Finde deine Leute",

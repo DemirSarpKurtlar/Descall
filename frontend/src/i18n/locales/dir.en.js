@@ -28,7 +28,7 @@ export const DIR_EN = {
   "discover": {
     "entry": "Discover communities",
     "title": "Discover communities",
-    "lead": "Public servers listed by their owners. Pick a topic, search, and join.",
+    "lead": "Public servers listed by their owners. Pick a topic, search and join in one click.",
     "all": "All",
     "categories": "Topics",
     "search": "Search communities",
@@ -42,13 +42,20 @@ export const DIR_EN = {
     "open": "Open",
     "joining": "Joining...",
     "joined": "You joined {name}",
-    "empty": "No communities here yet.",
-    "emptyHint": "Owners can list their server in Community and Discovery settings.",
+    "empty": "No communities listed yet",
+    "emptyHint": "Be the first to list your server. Servers with at least 3 members show up here once their owner lists them.",
     "error": "Could not load communities.",
     "retry": "Try again",
     "more": "Show more",
     "close": "Close",
-    "web": "Open the public directory"
+    "web": "Open the public directory",
+    "emptyCategory": "No {category} communities yet",
+    "emptySearch": "No communities match your search",
+    "listMine": "List my server",
+    "allTopics": "See all topics",
+    "step1": "Server menu",
+    "step2": "Community & Discovery",
+    "step3": "List on the Descall directory"
   },
   "suggest": {
     "title": "Find your people",

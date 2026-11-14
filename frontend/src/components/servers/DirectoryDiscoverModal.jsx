@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Compass, Search, Server, X } from "../ui/Icon.jsx";
+import {
+  BookOpen, Box, Check, Compass, Cpu, Crosshair, ExternalLink, Gamepad2, Globe, LayoutGrid, MessageCircle,
+  MoreHorizontal, Music, Palette, Plus, Search, Sparkles, Swords, Target, Trophy, Users, X,
+} from "../ui/Icon.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { getDirectoryInvite, listDirectoryServers } from "../../api/directory";
@@ -10,18 +13,79 @@ import { serverMessage } from "../../i18n/serverText.js";
 import { DIRECTORY_CATEGORIES, DIRECTORY_SORTS } from "../../lib/serverDirectory.js";
 import { directoryPath } from "../../site/directory/directoryPaths.js";
 import { ServerIcon } from "./ServerIcon";
-import { ServerListSkeleton } from "../ui/Skeleton";
 import "../../styles/server-directory.css";
 
 const PAGE = 24;
 const SORT_KEYS = { members: "dir.discover.sortMembers", online: "dir.discover.sortOnline", newest: "dir.discover.sortNewest" };
+/** Topic icon on the chips and the card banners. */
+const CATEGORY_ICONS = {
+  "gaming-minecraft": Box,
+  "gaming-fps": Crosshair,
+  "gaming-cs2": Target,
+  "gaming-lol": Swords,
+  "gaming-other": Gamepad2,
+  study: BookOpen,
+  music: Music,
+  art: Palette,
+  tech: Cpu,
+  anime: Sparkles,
+  sports: Trophy,
+  "chat-friends": MessageCircle,
+  other: MoreHorizontal,
+};
+
+/** Wheel over the topic row scrolls it sideways (it has no visible scrollbar). */
+function useSidewaysWheel(ref) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || el.scrollWidth <= el.clientWidth) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [ref]);
+}
+
+function DiscoverCardSkeleton() {
+  return (
+    <div className="dir-card dir-card--skeleton" aria-hidden="true">
+      <div className="dir-card-banner skeleton-line" />
+      <div className="dir-card-body">
+        <div className="dir-card-icon skeleton-line" />
+        <div className="skeleton-line" style={{ width: "62%", height: 13 }} />
+        <div className="skeleton-line" style={{ width: "44%", height: 10 }} />
+        <div className="skeleton-line" style={{ width: "92%", height: 10 }} />
+      </div>
+    </div>
+  );
+}
+
+function EmptyArt() {
+  return (
+    <div className="dir-empty-art" aria-hidden="true">
+      <span className="dir-empty-ghost is-left"><i /><b /></span>
+      <span className="dir-empty-ghost is-right"><i /><b /></span>
+      <span className="dir-empty-front">
+        <i><Compass size={18} /></i>
+        <b />
+      </span>
+    </div>
+  );
+}
 
 /**
  * Discover (item 8): the public server directory inside the app, opened from the servers
  * sidebar. Topic chips, search, sort; Join asks the directory for the server's public
  * invite and joins through the normal invite flow (bans, verification, rules).
+ * Gallery layout (owner-picked draft A): two columns of cards with a topic-coloured banner.
+ * onListServer is passed only when the open server can be listed by this user (owner or
+ * admin); it opens that server's Community and Discovery settings. Without it the empty
+ * state shows where the setting lives instead.
  */
-export default function DirectoryDiscoverModal({ onClose, onJoined, myServers = [] }) {
+export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer, myServers = [] }) {
   const t = useT();
   const { locale } = useLocale();
   const { toast } = useToast();
@@ -35,6 +99,8 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, myServers = 
   const [busyId, setBusyId] = useState(null);
   const [reload, setReload] = useState(0);
   const searchRef = useRef(null);
+  const chipsRef = useRef(null);
+  useSidewaysWheel(chipsRef);
 
   const mine = useMemo(() => new Map((myServers || []).map((s) => [String(s.id), s])), [myServers]);
 
@@ -114,7 +180,7 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, myServers = 
   return createPortal(
     <motion.div className="server-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
       <motion.div
-        className="server-modal dir-modal"
+        className="server-modal dir-modal dir-glass"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dir-modal-title"
@@ -125,20 +191,20 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, myServers = 
       >
         <div className="dir-head">
           <span className="dir-head-icon" aria-hidden="true">
-            <Compass size={20} />
+            <Compass size={22} />
           </span>
           <div className="dir-head-copy">
             <h3 id="dir-modal-title">{t("dir.discover.title")}</h3>
             <p className="server-modal-lead">{t("dir.discover.lead")}</p>
           </div>
-          <button type="button" className="icon-btn dir-close" onClick={onClose} aria-label={t("dir.discover.close")} title={t("dir.discover.close")}>
+          <button type="button" className="dir-close" onClick={onClose} aria-label={t("dir.discover.close")} title={t("dir.discover.close")}>
             <X size={18} />
           </button>
         </div>
 
         <div className="dir-tools">
           <label className="dir-search">
-            <Search size={16} aria-hidden="true" />
+            <Search size={17} aria-hidden="true" />
             <input
               ref={searchRef}
               type="search"
@@ -149,90 +215,160 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, myServers = 
               maxLength={80}
             />
           </label>
-          <label className="dir-sort">
-            <span>{t("dir.discover.sortLabel")}</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value)}>
-              {DIRECTORY_SORTS.map((id) => (
-                <option key={id} value={id}>
-                  {t(SORT_KEYS[id])}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="dir-sort" role="radiogroup" aria-label={t("dir.discover.sortLabel")}>
+            {DIRECTORY_SORTS.map((id) => (
+              <button key={id} type="button" role="radio" aria-checked={sort === id} className={sort === id ? "is-on" : ""} onClick={() => setSort(id)}>
+                {t(SORT_KEYS[id])}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="dir-chips" role="tablist" aria-label={t("dir.discover.categories")}>
+        <div className="dir-chips" ref={chipsRef} role="tablist" aria-label={t("dir.discover.categories")}>
           <button type="button" role="tab" aria-selected={category === null} className={`dir-chip${category === null ? " is-on" : ""}`} onClick={() => setCategory(null)}>
+            <LayoutGrid size={15} aria-hidden="true" />
             {t("dir.discover.all")}
           </button>
-          {DIRECTORY_CATEGORIES.map((id) => (
-            <button key={id} type="button" role="tab" aria-selected={category === id} className={`dir-chip${category === id ? " is-on" : ""}`} onClick={() => setCategory(id)}>
-              {t(`dir.cat.${id}`)}
-            </button>
-          ))}
+          {DIRECTORY_CATEGORIES.map((id) => {
+            const Icon = CATEGORY_ICONS[id] || MoreHorizontal;
+            return (
+              <button key={id} type="button" role="tab" aria-selected={category === id} className={`dir-chip${category === id ? " is-on" : ""}`} onClick={() => setCategory(id)}>
+                <Icon size={15} aria-hidden="true" />
+                {t(`dir.cat.${id}`)}
+              </button>
+            );
+          })}
         </div>
 
         <div className="dir-list" aria-busy={loading}>
           {loading && rows.length === 0 ? (
-            <ServerListSkeleton count={5} label={t("dir.discover.title")} />
+            <div className="dir-grid" aria-label={t("dir.discover.title")}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <DiscoverCardSkeleton key={i} />
+              ))}
+            </div>
           ) : error ? (
-            <div className="server-empty-state compact dir-empty">
-              <p>{error}</p>
-              <button type="button" className="server-ghost-btn" onClick={() => setReload((n) => n + 1)}>
-                {t("dir.discover.retry")}
-              </button>
+            <div className="dir-empty">
+              <EmptyArt />
+              <h4>{error}</h4>
+              <div className="dir-empty-actions">
+                <button type="button" className="dir-btn" onClick={() => setReload((n) => n + 1)}>
+                  {t("dir.discover.retry")}
+                </button>
+              </div>
             </div>
           ) : rows.length === 0 ? (
-            <div className="server-empty-state compact dir-empty">
-              <Server size={28} strokeWidth={1.5} />
-              <p>{t("dir.discover.empty")}</p>
-              <p className="dir-muted">{t("dir.discover.emptyHint")}</p>
+            <div className="dir-empty">
+              <EmptyArt />
+              <h4>
+                {query.trim()
+                  ? t("dir.discover.emptySearch")
+                  : category
+                    ? t("dir.discover.emptyCategory", { category: t(`dir.cat.${category}`) })
+                    : t("dir.discover.empty")}
+              </h4>
+              <p>{t("dir.discover.emptyHint")}</p>
+              <div className="dir-empty-actions">
+                {onListServer ? (
+                  <button type="button" className="dir-btn is-primary" onClick={onListServer}>
+                    <Plus size={16} aria-hidden="true" />
+                    {t("dir.discover.listMine")}
+                  </button>
+                ) : null}
+                {category || query.trim() ? (
+                  <button
+                    type="button"
+                    className="dir-btn"
+                    onClick={() => {
+                      setCategory(null);
+                      setQuery("");
+                    }}
+                  >
+                    {t("dir.discover.allTopics")}
+                  </button>
+                ) : null}
+              </div>
+              {!onListServer ? (
+                <ol className="dir-steps">
+                  <li>{t("dir.discover.step1")}</li>
+                  <li>{t("dir.discover.step2")}</li>
+                  <li>{t("dir.discover.step3")}</li>
+                </ol>
+              ) : null}
             </div>
           ) : (
-            rows.map((s) => {
-              const member = mine.has(String(s.id));
-              return (
-                <article key={s.id} className="dir-card">
-                  <ServerIcon server={s} />
-                  <div className="dir-card-copy">
-                    <strong className="dir-card-name">{s.name}</strong>
-                    <span className="dir-card-meta">
-                      {t("dir.discover.members", { count: s.memberCount })}
-                      {s.onlineCount ? <span className="dir-dot">{t("dir.discover.online", { count: s.onlineCount })}</span> : null}
-                      <span className="dir-dot">{t(`dir.lang.${s.language}`)}</span>
-                    </span>
-                    {s.description ? <p className="dir-card-desc">{s.description}</p> : null}
-                    {s.tags?.length ? (
-                      <span className="dir-tags">
-                        {s.tags.map((tag) => (
-                          <span key={tag} className="dir-tag">
-                            {`#${tag}`}
-                          </span>
-                        ))}
+            <div className="dir-grid">
+              {rows.map((s) => {
+                const member = mine.has(String(s.id));
+                const Icon = CATEGORY_ICONS[s.category] || Compass;
+                return (
+                  <article key={s.id} className="dir-card" data-cat={s.category || "other"}>
+                    <div className="dir-card-banner" aria-hidden="true">
+                      <Icon size={42} strokeWidth={1.6} />
+                    </div>
+                    <div className="dir-card-body">
+                      <ServerIcon server={s} className="dir-card-icon" fallbackClassName="dir-card-icon-fallback" />
+                      <div className="dir-card-row">
+                        <strong className="dir-card-name" title={s.name}>
+                          {s.name}
+                        </strong>
+                        <button
+                          type="button"
+                          className={`dir-btn dir-join${member ? " is-member" : " is-primary"}`}
+                          disabled={busyId != null}
+                          onClick={() => join(s)}
+                        >
+                          {member ? <Check size={15} aria-hidden="true" /> : null}
+                          {busyId === s.id ? t("dir.discover.joining") : member ? t("dir.discover.open") : t("dir.discover.join")}
+                        </button>
+                      </div>
+                      <span className="dir-card-meta">
+                        <span className="dir-meta-members">
+                          <Users size={13} aria-hidden="true" />
+                          {t("dir.discover.members", { count: s.memberCount })}
+                        </span>
+                        {s.onlineCount ? <span className="dir-meta-online">{t("dir.discover.online", { count: s.onlineCount })}</span> : null}
+                        {s.language ? <span>{t(`dir.lang.${s.language}`)}</span> : null}
                       </span>
-                    ) : null}
-                  </div>
-                  <button type="button" className="server-primary-btn sm dir-join" disabled={busyId != null} onClick={() => join(s)}>
-                    {busyId === s.id ? t("dir.discover.joining") : member ? t("dir.discover.open") : t("dir.discover.join")}
-                  </button>
-                </article>
-              );
-            })
+                      {s.description ? <p className="dir-card-desc">{s.description}</p> : null}
+                      {s.tags?.length ? (
+                        <span className="dir-tags">
+                          {s.tags.map((tag) => (
+                            <span key={tag} className="dir-tag">
+                              {`#${tag}`}
+                            </span>
+                          ))}
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           )}
-        </div>
-
-        <div className="server-modal-actions dir-actions">
-          <a className="dir-web" href={webPath} target="_blank" rel="noopener noreferrer">
-            {t("dir.discover.web")}
-          </a>
-          {nextOffset != null ? (
-            <button type="button" className="server-ghost-btn" disabled={loading} onClick={loadMore}>
-              {t("dir.discover.more")}
+          {nextOffset != null && rows.length > 0 ? (
+            <button type="button" className="dir-btn dir-more" disabled={loading} onClick={loadMore}>
+              {loading ? t("Loading…") : t("dir.discover.more")}
             </button>
           ) : null}
-          <button type="button" className="server-ghost-btn" onClick={onClose}>
-            {t("dir.discover.close")}
-          </button>
+        </div>
+
+        <div className="dir-actions">
+          <a className="dir-web" href={webPath} target="_blank" rel="noopener noreferrer">
+            <Globe size={15} aria-hidden="true" />
+            {t("dir.discover.web")}
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
+          {onListServer && rows.length > 0 ? (
+            <button type="button" className="dir-btn" onClick={onListServer}>
+              <Plus size={16} aria-hidden="true" />
+              {t("dir.discover.listMine")}
+            </button>
+          ) : (
+            <button type="button" className="dir-btn" onClick={onClose}>
+              {t("dir.discover.close")}
+            </button>
+          )}
         </div>
       </motion.div>
     </motion.div>,
