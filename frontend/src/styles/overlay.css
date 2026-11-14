@@ -129,12 +129,17 @@
   pointer-events: none;
   background: var(--overlay-dim);
   opacity: 0;
-  transition: opacity 160ms ease-out, -webkit-backdrop-filter 0s linear 160ms, backdrop-filter 0s linear 160ms;
+  /* Hidden at rest so Electron's drag-region map and hit testing never see it (an
+     always-present layer over the bar made the window buttons dead, 3.7.44); it
+     turns visible at once when a modal opens and hides after its fade-out. */
+  visibility: hidden;
+  transition: opacity 160ms ease-out, visibility 0s linear 160ms, -webkit-backdrop-filter 0s linear 160ms, backdrop-filter 0s linear 160ms;
 }
 html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.amp-scrim,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay,.message-media-lightbox,.spm-scrim):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar::after {
   opacity: 1;
   -webkit-backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate));
   backdrop-filter: blur(var(--overlay-blur)) saturate(var(--overlay-saturate));
+  visibility: visible;
   transition: opacity 180ms ease-out;
 }
 /* Desktop glass: the title bar is transparent over the full-window scrim,
@@ -143,7 +148,8 @@ html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-o
    the title); the dim is the scrim's own. */
 html.glass-desktop:not(.gd-lite):not(.a11y-solid) .titlebar::after { background: transparent; }
 html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.amp-scrim,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay,.message-media-lightbox,.spm-scrim):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar { border-bottom-color: transparent; }
-html:has(:is(.modal-backdrop,.user-profile-scrim,.add-modal-backdrop,.feedback-overlay,.server-modal-overlay,.legal-modal-backdrop,.activity-modal-backdrop,.invite-modal-overlay,.conv-confirm-overlay,.g-alert-scrim,.img-crop-overlay,.amp-scrim,.report-modal-overlay,.o3-scrim,.gs-scrim,.group-info-scrim,.g-profile-scrim,.un-overlay,.server-rules-overlay,.dsx-scrim,.age-gate-backdrop,.voice-modal-overlay,.shop-gift-backdrop,.login-modal-overlay,.admin-user-analytics-overlay,.admin-broadcast-backdrop,.settings-overlay,.user-panel-backdrop,.voice-effects-panel-overlay,.electron-screen-picker-overlay,.mobile-sheet-backdrop,.giphy-overlay,.message-media-lightbox,.spm-scrim):not(.g-server-menu-scrim), .user-settings-shell.is-desktop) .titlebar-controls { position: relative; z-index: 2; }
+/* Window buttons always sit above the title bar dim layer. */
+.titlebar-controls { position: relative; z-index: 2; }
 @keyframes dc-overlay-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .titlebar::after,
