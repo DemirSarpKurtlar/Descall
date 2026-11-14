@@ -11,7 +11,8 @@
   "enabledPlugins": {
     "ruflo-core@ruflo": true,
     "ruflo-swarm@ruflo": true,
-    "obsidian-wiki@agricidaniel-claude-obsidian": true
+    "obsidian-wiki@agricidaniel-claude-obsidian": true,
+    "brag@brag": true
   },
   "extraKnownMarketplaces": {
     "ruflo": {
@@ -24,6 +25,12 @@
       "source": {
         "source": "directory",
         "path": "./.claude/plugins/obsidian-wiki"
+      }
+    },
+    "brag": {
+      "source": {
+        "source": "github",
+        "repo": "latent-spaces/brag"
       }
     }
   }
