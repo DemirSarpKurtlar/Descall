@@ -2,11 +2,9 @@
  * "Kullanıcının göreceği ekran" in the admin ban dialog: a scaled-down,
  * non-interactive copy of the user's ban screen.
  *
- * The real screen lives in components/ban/BanScreen.jsx (built separately,
- * props `{ state, preview: true }`). It is loaded lazily through
- * import.meta.glob so the bundle still builds while that file does not exist;
- * until then, or if it throws, a static card that mirrors the approved draft
- * is shown instead.
+ * The real screen is components/ban/BanScreen.jsx (props `{ state, preview: true }`),
+ * loaded lazily; while it loads, or if it throws, a static card that mirrors the
+ * approved draft is shown instead.
  */
 import { Component, Suspense, lazy, useLayoutEffect, useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
@@ -14,14 +12,12 @@ import { formatAppDateTime } from "../../lib/datetime";
 import { Ban, MessageCircle, LogOut } from "../ui/Icon.jsx";
 import { countdownParts } from "./banDialogModel.js";
 
-const realModules = import.meta.glob("../ban/BanScreen.jsx");
-const loadReal = realModules["../ban/BanScreen.jsx"];
-const RealBanScreen = loadReal
-  ? lazy(() =>
-      loadReal().then((m) => ({ default: m.default || m.BanScreen || FallbackBanCard }))
-        .catch(() => ({ default: FallbackBanCard }))
-    )
-  : null;
+// The real user-facing screen; the static card stays as the fallback if the chunk fails.
+const RealBanScreen = lazy(() =>
+  import("../ban/BanScreen.jsx")
+    .then((m) => ({ default: m.default || FallbackBanCard }))
+    .catch(() => ({ default: FallbackBanCard }))
+);
 
 /** Draft width of the ban card; the preview shows it at SCALE. */
 const CARD_WIDTH = 520;

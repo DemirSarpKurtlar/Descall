@@ -48,6 +48,8 @@
 }
 .ban-card.is-preview {
   animation: none;
+  pointer-events: none;
+  user-select: none;
 }
 .ban-seal {
   display: grid;

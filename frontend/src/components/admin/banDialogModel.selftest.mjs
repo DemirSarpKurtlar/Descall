@@ -193,7 +193,7 @@ assert.match(dialog, /import BanPreview from "\.\/BanPreview\.jsx";/);
 assert.match(dialog, /isProtectedError\(e\)/, "403 ADMIN_PROTECTED handled");
 assert.match(dialog, /disabled=\{buttonDisabled\}/);
 assert.ok(!/type="checkbox"/.test(dialog), "GlassCheckbox only");
-assert.match(preview, /import\.meta\.glob\("\.\.\/ban\/BanScreen\.jsx"\)/, "real screen loaded lazily when present");
+assert.match(preview, /lazy\(\(\) =>\s*import\("\.\.\/ban\/BanScreen\.jsx"\)/, "real screen loaded lazily when present");
 assert.match(preview, /<RealBanScreen state=\{state\} preview \/>/);
 assert.match(preview, /export function FallbackBanCard/);
 for (const [name, src] of [["BanDialog", dialog], ["BanPreview", preview], ["AdminAppeals", rd("./AdminAppeals.jsx")]]) {

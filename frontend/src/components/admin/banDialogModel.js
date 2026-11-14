@@ -178,6 +178,10 @@ export function previewBanState({ target, form, categories, banPresets, now = Da
       username: target?.username || "",
       byAdmin: true,
     },
+    // The banned user signs in with a ban ticket, so the real screen offers Appeal and the
+    // data links; the preview shows that (it is inert, nothing is sent).
+    ticket: "preview",
+    appeal: { status: "none", submittedAt: null, canAppeal: true },
     live: false,
   };
 }
