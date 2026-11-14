@@ -86,6 +86,10 @@ async function main() {
         }, [base, mock.ME, loggedIn]);
         const page = await ctx.newPage();
         const errors = [];
+        // URL history of this page, printed when a step fails (CI-only timing failures).
+        const navs = [];
+        page.on('framenavigated', (f) => { if (f === page.mainFrame()) navs.push(new URL(f.url()).pathname); });
+        page.navs = navs;
         page.on('pageerror', (e) => errors.push(String(e.message || e)));
         return { ctx, page, errors };
       };
@@ -145,7 +149,7 @@ async function main() {
           await page.waitForTimeout(2000);
           {
             // Back signed in from the landing's own flow: joined without a second click.
-            await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 15000 }).catch(() => fails.push(`${vp.name}: after login the invite was not redeemed by itself (url ${page.url()})`));
+            await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 15000 }).catch(() => fails.push(`${vp.name}: after login the invite was not redeemed by itself (url ${page.url()}; path history ${page.navs.slice(-8).join(' > ')})`));
             await shot(page, '3-after-login');
             const left = await page.evaluate(() => localStorage.getItem('descall:pendingServerInvite'));
             if (left) fails.push(`${vp.name}: pending invite not cleared after join`);
