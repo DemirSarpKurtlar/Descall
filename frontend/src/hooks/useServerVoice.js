@@ -68,6 +68,7 @@ import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
 import { primeVoiceActivity } from "../lib/voiceActivity";
+import { registerLiveKitVideoTrack, unregisterLiveKitVideoTrack } from "../lib/liveKitVideoBinding";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
 
@@ -508,6 +509,9 @@ export function useServerVoice(socket) {
           label: mediaTrack.label,
           announcement: screenAnnouncementsRef.current.get(String(userId)) || null,
         });
+        // adaptiveStream: the panel's <video> elements report size/visibility
+        // for this track (lib/liveKitVideoBinding.js), or the SFU pauses it.
+        if (track.kind === "video") registerLiveKitVideoTrack(mediaTrack, track);
         if (role === "screen") {
           const merged = nextScreenStream(remoteScreenStreamsRef.current.get(userId) || null, mediaTrack);
           remoteScreenStreamsRef.current.set(userId, merged);
@@ -529,6 +533,7 @@ export function useServerVoice(socket) {
         if (!userId) return;
         const source = publication?.source || track?.source;
         const mediaTrack = track?.mediaStreamTrack;
+        if (track?.kind === "video") unregisterLiveKitVideoTrack(mediaTrack);
         const role = classifyLiveKitTrack({
           kind: track.kind,
           source,

@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { LayoutGrid, Pin, RectangleHorizontal } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import { bindLiveKitVideo } from "../../lib/liveKitVideoBinding";
 
 export function ShareGridVideo({ stream }) {
   const ref = useRef(null);
@@ -17,6 +18,8 @@ export function ShareGridVideo({ stream }) {
     if (el.srcObject !== stream) el.srcObject = stream;
     el.play?.().catch(() => {});
   }, [stream]);
+  // Server voice (LiveKit adaptiveStream) only; mesh streams are not registered.
+  useEffect(() => bindLiveKitVideo(ref.current, stream), [stream]);
   return <video ref={ref} className="share-film-video" autoPlay playsInline muted />;
 }
 

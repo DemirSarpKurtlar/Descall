@@ -48,6 +48,7 @@ import PullToRefresh from "../ui/PullToRefresh";
 import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
 import { isServerMuted, subscribeServerMutes } from "./hub/serverMute";
+import { VOICE_LIST_COLLAPSED, visibleVoiceMembers } from "../../lib/voiceMemberList";
 
 // Public server directory inside the app (item 8), loaded when first opened.
 const DirectoryDiscoverModal = lazy(() => import("./DirectoryDiscoverModal"));
@@ -2270,6 +2271,8 @@ function ChannelRow({
           ? Megaphone
           : Hash;
   const voiceMembers = isVoiceLike ? voiceState?.members || [] : [];
+  const [voiceListExpanded, setVoiceListExpanded] = useState(false);
+  const voiceList = visibleVoiceMembers(voiceMembers, { expanded: voiceListExpanded, pinId: myUserId });
   const canMute = channel.type === "text" || channel.type === "announcement";
   const canAccess = Boolean(canManageRoles);
   const showMenu = canManage || canAccess || canMute;
@@ -2492,7 +2495,7 @@ function ChannelRow({
       )}
       {isVoiceLike && voiceMembers.length > 0 && (
         <ul className="server-voice-user-list" aria-label={t("In this channel")}>
-          {voiceMembers.slice(0, 12).map((m) => {
+          {voiceList.shown.map((m) => {
             const stream = resolveMemberVoiceStream(m, {
               joinedHere,
               myUserId,
@@ -2517,6 +2520,23 @@ function ChannelRow({
               />
             );
           })}
+          {voiceList.hiddenCount > 0 || (voiceListExpanded && voiceMembers.length > VOICE_LIST_COLLAPSED) ? (
+            <li className="server-voice-user-more-row">
+              <button
+                type="button"
+                className="server-voice-user-more-toggle"
+                aria-expanded={voiceListExpanded}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVoiceListExpanded((open) => !open);
+                }}
+              >
+                {voiceListExpanded
+                  ? t("Show less")
+                  : `${t("More")} (+${voiceList.hiddenCount})`}
+              </button>
+            </li>
+          ) : null}
         </ul>
       )}
     </div>
