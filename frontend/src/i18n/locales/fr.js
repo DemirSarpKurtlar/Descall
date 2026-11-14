@@ -14,6 +14,7 @@ import { MSG4_FR } from "./msg4.fr.js";
 import { MSG5_FR } from "./msg5.fr.js";
 import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
+import { BAN_FR } from "./ban.fr.js";
 import { AGENTX_FR } from "./agentx.fr.js";
 import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -40,6 +41,7 @@ export const nested = {
   "msg5": MSG5_FR,
   "act": ACT_FR,
   "dir": DIR_FR,
+  "ban": BAN_FR,
   "agentx": AGENTX_FR,
   "invl": INVL_FR,
   "sgx": SIGNUP_GROWTH.fr.nested,

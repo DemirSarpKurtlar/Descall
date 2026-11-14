@@ -29,6 +29,7 @@ import { getMe, login, loginWithApple, loginWithGoogle, logout as logoutRequest,
 import AppBootSkeleton from "./components/boot/AppBootSkeleton";
 import BootErrorScreen from "./components/boot/BootErrorScreen";
 import { checkBootSession } from "./lib/bootSessionCheck";
+import { banStateFromError, banStateFromKick, isBanSocketMessage } from "./lib/banState.js";
 import { getMyGroups, getGroupMessages } from "./api/groups";
 import { getBlockedUsers, getFriendsList, getFriendRequestsList } from "./api/friends";
 import { getDmPrefs, patchDmPref } from "./api/dmPrefs";
@@ -168,6 +169,8 @@ import { dismissRemovedGroup } from "./api/groups";
 import { segmentsText, memberEventSegments, memberEventFromMessage } from "./lib/groupMemberEvents";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 import { mergeServerDetail } from "./lib/serverDetail";
+// Ban notice (docs/design/ban-experience): only loaded when someone is actually banned.
+const BanScreen = lazy(() => import("./components/ban/BanScreen.jsx"));
 // Native iOS only, so the web bundle doesn't carry it.
 const IosPushPermissionPrompt = lazy(() => import("./components/IosPushPermissionPrompt"));
 const HeardAboutPrompt = lazy(() => import("./components/HeardAboutPrompt"));
@@ -503,6 +506,8 @@ export default function App() {
   requestedRouteRef.current = requestedRoute;
   const publicFeatures = usePublicFeatures();
   const [authLoading, setAuthLoading] = useState(false);
+  // Account / device ban shown full screen instead of a one-line login error (lib/banState.js).
+  const [banState, setBanState] = useState(null);
   const { toast } = useToast();
   const { t, locale, setLocale } = useLocale();
   const [authError, setAuthError] = useState("");
@@ -1433,6 +1438,8 @@ export default function App() {
         commitSessionUser(result.user);
         if (bootStatus) bootStatus.textContent = tRuntime("Welcome back");
       } else if (result.status === "auth") {
+        const ban = banStateFromError(result.error);
+        if (ban) setBanState(ban);
         clearToken();
         clearUser();
         setMe(null);
@@ -1717,6 +1724,17 @@ export default function App() {
     socket.on("connect_error", (error) => {
       setIsConnected(false);
       const msg = error?.message || "Socket authentication failed";
+      if (isBanSocketMessage(msg)) {
+        // Banned or blocked: no transport retries. Ask the API for the details (it answers the
+        // ban body for this token) so the ban screen, not a raw English error, is shown.
+        socket.disconnect();
+        const fallback = /blocked/i.test(msg) ? { kind: "access", access: {}, live: true } : { kind: "account", ban: {}, appeal: null, live: true };
+        getMe(token)
+          .then(() => setBanState(fallback))
+          .catch((err) => setBanState(banStateFromError(err) || fallback))
+          .finally(() => { clearToken(); clearUser(); setMe(null); });
+        return;
+      }
       if (socket.edge && !/authentication failed|authentication required/i.test(msg)) {
         // Edge trouble is never shown to the user: two misses → Render.
         if (edgeFailures.fail()) {
@@ -2822,9 +2840,15 @@ export default function App() {
     serverSocketUnbindRef.current = unbindServerSocketHandlers;
 
     socket.on("system:kick", (payload = {}) => {
-      const detail = [payload.message, payload.reason].filter(Boolean).join(", ");
-      const prefix = payload.action === "ban" ? t("You are banned") : t("Removed by moderator");
-      setAuthError(detail ? `${prefix}: ${detail}` : prefix);
+      const ban = banStateFromKick(payload);
+      if (ban) {
+        setAuthError("");
+        setBanState(ban);
+      } else {
+        const detail = [payload.message, payload.reason].filter((v, i, a) => v && a.indexOf(v) === i).join(", ");
+        const prefix = t("Removed by moderator");
+        setAuthError(detail ? `${prefix}: ${detail}` : prefix);
+      }
       clearToken();
       clearUser();
       setMe(null);
@@ -2853,6 +2877,17 @@ export default function App() {
     });
 
     socket.connect();
+  };
+
+  // A ban opens the ban screen (reason, dates, appeal); anything else stays a one-line error.
+  const showAuthFailure = (error) => {
+    const ban = banStateFromError(error);
+    if (ban) {
+      setAuthError("");
+      setBanState(ban);
+      return;
+    }
+    setAuthError(formatBanAuthError(error));
   };
 
   const formatBanAuthError = (error) => {
@@ -2902,7 +2937,7 @@ export default function App() {
       }
       return null;
     } catch (error) {
-      setAuthError(formatBanAuthError(error));
+      showAuthFailure(error);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -2925,7 +2960,7 @@ export default function App() {
         /* analytics optional */
       }
     } catch (error) {
-      setAuthError(formatBanAuthError(error));
+      showAuthFailure(error);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -2988,7 +3023,7 @@ export default function App() {
     } catch (error) {
       // New Apple / Google account: AuthView shows the Terms + date-of-birth step instead of an error.
       if (error?.code === "apple_signup_required" || error?.code === "apple_username_required" || error?.code === "google_signup_required" || (method === "apple" && error?.code === "username_taken")) throw error;
-      setAuthError(formatBanAuthError(error));
+      showAuthFailure(error);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -4913,6 +4948,12 @@ export default function App() {
     );
   }
 
+  const banLayer = banState ? (
+    <Suspense fallback={null}>
+      <BanScreen state={banState} onClose={() => setBanState(null)} />
+    </Suspense>
+  ) : null;
+
   // Public marketing site for logged-out users (real SEO routes)
   if (!me) {
     const isElectronDesktop =
@@ -4926,6 +4967,7 @@ export default function App() {
         <>
           <TitleBar />
           <AppBootSkeleton />
+          {banLayer}
         </>
       );
     }
@@ -4955,6 +4997,7 @@ export default function App() {
             loading={authLoading}
             error={authError}
           />
+          {banLayer}
         </>
       );
     }
@@ -4972,6 +5015,7 @@ export default function App() {
           authLoading={authLoading}
           authError={authError}
         />
+        {banLayer}
       </>
     );
   }

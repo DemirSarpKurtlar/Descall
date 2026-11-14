@@ -11,6 +11,7 @@ import { A11Y_TR } from "./a11y.tr.js";
 import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
+import { BAN_TR } from "./ban.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -70,6 +71,7 @@ export const nested = {
   msg5: MSG5_TR,
   act: ACT_TR,
   dir: DIR_TR,
+  ban: BAN_TR,
   agentx: AGENTX_TR,
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,
