@@ -218,11 +218,13 @@ html.glass-desktop :is(.dsr, .dsr-page, .dsr-scrim, .dsr-menu) :is(button, input
 .dsr-dot.is-idle { background: #f2a93b; }
 .dsr-dot.is-dnd { background: #f23f43; }
 .dsr-hid { position: relative; flex: 1; min-width: 0; padding-top: 30px; }
-.dsr-hname { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.dsr-hname { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; min-width: 0; overflow: hidden; }
+.dsr-hname > :not(h2) { flex: none; white-space: nowrap; }
+.dsr-hname h2 { flex: 0 1 auto; min-width: 0; }
 .dsr-hname h2 { margin: 0; max-width: 100%; font-size: var(--fs-20); font-weight: 700; letter-spacing: -0.02em; color: var(--dsr-t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dsr-hmeta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; font-size: var(--fs-13); color: rgba(235, 238, 255, 0.6); }
 .dsr-hmeta span { display: inline-flex; align-items: center; gap: 5px; }
-.dsr-stats { position: relative; display: grid; grid-template-columns: repeat(5, minmax(84px, 96px)); gap: 8px; align-self: flex-end; }
+.dsr-stats { position: relative; display: grid; grid-template-columns: repeat(5, minmax(76px, 90px)); gap: 8px; align-self: flex-end; }
 .dsr-st {
   display: flex;
   flex-direction: column;
@@ -616,6 +618,7 @@ html.glass-desktop .dsr-dlg:focus-visible { outline: none; }
 /* ── Narrow containers (report queue split view, iPad, phones) ── */
 @container dsr (max-width: 1040px) {
   .dsr-hero { flex-wrap: wrap; }
+  .dsr-hname { flex-wrap: wrap; overflow: visible; }
   .dsr-stats { width: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 @container dsr (max-width: 1000px) {
