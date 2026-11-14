@@ -334,6 +334,15 @@ async function run() {
     assertBanBody(r.body, { username: "twofa", label: "2fa" });
     assert(r.body.ban.expiresAt === null && r.body.ban.categoryId === "spam", "permanent spam ban");
 
+    // Already banned + two-factor: the password alone gets no ban body and no ticket (the
+    // ticket can export and delete the account); the ban answer comes after the code.
+    r = await call(base, "POST", "/api/auth/login", { body: { username: "twofa", password: "password123" } });
+    assert(r.status === 200 && r.body.requires2fa && r.body.pendingToken && !r.body.banTicket && !r.body.ban, "banned 2FA account goes to the code step first " + r.raw);
+    const pending2 = r.body.pendingToken;
+    const code2 = String(sentEmails.filter((m) => m.to[0] === "twofa@example.com").slice(-1)[0]?.text || "").match(/\b(\d{6})\b/)?.[1];
+    r = await call(base, "POST", "/api/auth/2fa/verify-login", { body: { pendingToken: pending2, code: code2 } });
+    assert(r.status === 403 && r.body.code === "ACCOUNT_BANNED" && r.body.banTicket, "ban body + ticket only after the code " + r.raw);
+
     /* ---- 7. admin lists and decides the account appeal ---- */
     r = await call(base, "GET", "/api/admin/appeals?status=pending&type=account", { token: mod });
     assert(r.status === 200 && r.body.appeals.length === 1 && r.body.appeals[0].username === "prebanned", "pending list " + r.raw);

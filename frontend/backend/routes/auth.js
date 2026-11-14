@@ -62,6 +62,17 @@ function guard(res, ipKey, accountKey, opts, accountOpts) {
  * Used by password, Google and Apple sign-in for existing accounts. Responds
  * and returns true when a code is required; false = issue the session now.
  */
+/** Whether this account signs in with a second factor (TOTP or email code). */
+async function hasSecondFactor(user) {
+  let row = null;
+  try {
+    row = await twoFactor.loadTotp(user.id);
+  } catch {
+    row = null;
+  }
+  return Boolean(twoFactor.methodFor(user, row));
+}
+
 async function secondFactorGate(res, user) {
   let row = null;
   try {
@@ -795,11 +806,17 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
     }
 
-    if (await rejectIfBanned(res, user)) return;
+    // A banned account with two-factor sign-in proves the second factor before it gets the
+    // ban answer: its ban ticket can export and delete the account, which a password alone
+    // must not allow. /2fa/verify-login answers the ban once the code is right.
+    const banActive = Boolean(user.is_banned) && !(user.ban_expires_at && new Date(user.ban_expires_at).getTime() <= Date.now());
+    const deferBan = banActive && (await hasSecondFactor(user));
+    if (!deferBan && (await rejectIfBanned(res, user))) return;
     if (await rejectIfChildAccount(req, res, user)) return;
     if (await accessGate(req, res, { action: "login", user })) return;
-    // Signing in again cancels a pending deletion, only once every gate passed.
-    await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+    // Signing in again cancels a pending deletion, only once every gate passed (never for a
+    // banned account still on its way through two-factor).
+    if (!deferBan) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
     if (await secondFactorGate(res, user)) return;
 
     const { session } = await createSession(user.id, {
