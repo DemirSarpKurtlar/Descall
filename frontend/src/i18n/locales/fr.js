@@ -17,6 +17,7 @@ import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { BAN_ADMIN_FR } from "./banAdmin.fr.js";
+import { SERVER_REVIEW_FR } from "./serverReview.fr.js";
 import { AGENTX_FR } from "./agentx.fr.js";
 import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -45,6 +46,7 @@ export const nested = {
   "dir": DIR_FR,
   "ban": BAN_FR,
   "banAdmin": BAN_ADMIN_FR,
+  "serverReview": SERVER_REVIEW_FR,
   "agentx": AGENTX_FR,
   "invl": INVL_FR,
   "sgx": SIGNUP_GROWTH.fr.nested,

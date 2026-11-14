@@ -13,6 +13,7 @@ import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { BAN_ADMIN_TR } from "./banAdmin.tr.js";
+import { SERVER_REVIEW_TR } from "./serverReview.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -74,6 +75,7 @@ export const nested = {
   dir: DIR_TR,
   ban: BAN_TR,
   banAdmin: BAN_ADMIN_TR,
+  serverReview: SERVER_REVIEW_TR,
   agentx: AGENTX_TR,
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,

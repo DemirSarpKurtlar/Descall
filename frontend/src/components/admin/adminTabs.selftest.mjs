@@ -37,6 +37,16 @@ for (const [loc, suf] of Object.entries(BAN_LOCALES)) {
   assert.match(cat, new RegExp(`"?banAdmin"?: BAN_ADMIN_${suf},`), `${loc}.js registers banAdmin`);
 }
 assert.ok(banKeys.includes("navAppeals"));
+// Sunucu inceleme: registered with a namespaced label, rendered, its namespace in every catalog.
+assert.ok(tabs.some((x) => x.id === "serverReview" && x.label === "serverReview.nav"), "Sunucu inceleme tab registered");
+assert.match(src, /import AdminServerReview from "\.\/AdminServerReview\.jsx";/);
+assert.match(src, /\{tab === "serverReview" && \(\s*<AdminServerReview/, "Sunucu inceleme tab rendered");
+for (const [loc, suf] of Object.entries(BAN_LOCALES)) {
+  const mod = await import(new URL(`../../i18n/locales/serverReview.${loc}.js`, import.meta.url).href);
+  assert.ok(typeof mod[`SERVER_REVIEW_${suf}`]?.nav === "string", `serverReview.${loc}.js has the nav label`);
+  const cat = readFileSync(join(here, `../../i18n/locales/${loc}.js`), "utf8");
+  assert.match(cat, new RegExp(`"?serverReview"?: SERVER_REVIEW_${suf},`), `${loc}.js registers serverReview`);
+}
 // 3.3.0: no moderator mode. Each admin sees the sections the owner granted
 // (GET /admin/me/permissions); the server checks the same list on every request.
 assert.ok(!/moderatorOnly|MODERATOR_TABS/.test(src), "moderator mode is gone");

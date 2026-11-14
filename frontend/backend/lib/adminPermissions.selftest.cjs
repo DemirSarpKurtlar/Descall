@@ -47,6 +47,12 @@ ok("paths map to panel sections", () => {
     "/moderation/history": "moderation",
     "/dm/conversations": "dmReview",
     "/dm/a::b/view": "dmReview",
+    "/server-review/servers": "serverReview",
+    "/server-review/servers/s1": "serverReview",
+    "/server-review/servers/s1/channels/c1/view": "serverReview",
+    "/server-review/servers/s1/invites/revoke-all": "serverReview",
+    "/server-reviewx": "system",
+    "/moderation/server-directory/s1": "moderation",
     "/activity/leaderboard": "topUsers",
     "/growth/retention": "retention",
     "/growth/economy": "economy",
@@ -83,6 +89,12 @@ ok("owner sees everything incl. staff; nobody else gets staff", () => {
   assert(!legacy.includes("dmReview"), "legacy admins never get DM inceleme by default");
   assert(perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["dmReview"] }).includes("dmReview"), "granted explicitly");
   assert(perms.sectionsFor({ username: "admin" }, { is_admin: true }).includes("dmReview"), "owner sees it");
+  // Sunucu inceleme: sensitive like DM inceleme, only by an explicit grant.
+  assert(perms.SENSITIVE_SECTIONS.includes("serverReview") && perms.GRANTABLE_SECTIONS.includes("serverReview"));
+  assert(!legacy.includes("serverReview"), "legacy admins never get Sunucu inceleme by default");
+  assert(perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["serverReview"] }).includes("serverReview"), "granted explicitly");
+  assert(!perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["dmReview"] }).includes("serverReview"), "DM grant does not imply servers");
+  assert(perms.sectionsFor({ username: "admin" }, { is_admin: true }).includes("serverReview"), "owner sees it");
   const tried = perms.sectionsFor({ username: "x" }, { is_admin: true, admin_permissions: ["staff", "reports"] });
   assert.deepStrictEqual(tried, ["overview", "reports"]);
 });

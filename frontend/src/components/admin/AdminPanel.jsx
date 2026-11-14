@@ -50,6 +50,7 @@ import AdminAppeals from "./AdminAppeals.jsx";
 import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
 import AdminTopUsers from "./AdminTopUsers.jsx";
 import AdminDmInbox from "./AdminDmInbox.jsx";
+import AdminServerReview from "./AdminServerReview.jsx";
 import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
 import { sectionOfTab } from "./adminNav.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
@@ -129,6 +130,8 @@ const TABS = [
   { id: "appeals", label: "banAdmin.navAppeals", icon: Scale },
   // DM inceleme (3.7.1): never in the legacy "all sections" default; owner grants it.
   { id: "dmReview", label: "admin.dmReview", icon: MessageCircle },
+  // Sunucu inceleme: same gate as DM inceleme (metadata lists, content by reason + audit); owner grants it.
+  { id: "serverReview", label: "serverReview.nav", icon: Server },
   { id: "suspicious", label: "sx.tab", icon: ShieldWarning },
   { id: "accessBans", label: "admin.accessBans", icon: Ban },
   // Premium Yönetimi (phase 1): nine pages under the one "premium" section.
@@ -872,6 +875,19 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "economy" && <EconomyTab />}
         {tab === "topUsers" && <AdminTopUsers />}
         {tab === "dmReview" && <AdminDmInbox />}
+        {tab === "serverReview" && (
+          <AdminServerReview
+            canBan={can("moderation")}
+            onOpenPerson={
+              can("people")
+                ? (id) => {
+                    setDossierUserId(id);
+                    setTab("people");
+                  }
+                : undefined
+            }
+          />
+        )}
         {sectionOfTab(tab) === "premium" && (
           <Suspense fallback={<p className="muted">{t("Loading...")}</p>}>
             <PremiumAdmin page={tab} />

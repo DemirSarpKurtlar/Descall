@@ -43,6 +43,13 @@ assert.ok(menuSections().includes("moderation"));
 const modOnly = groupAdminTabs(tabs.filter((x) => sectionOfTab(x.id) === "moderation"), t);
 assert.deepEqual(modOnly.flatMap((g) => g.items.map((x) => x.id)), ["moderation", "appeals"], "a moderation admin sees both pages");
 
+// Sunucu inceleme: in Kullanıcılar right after DM inceleme, a section of its own (sensitive, granted by the owner).
+assert.equal(people.indexOf("serverReview"), people.indexOf("dmReview") + 1, "Sunucu inceleme right after DM inceleme");
+assert.equal(sectionOfTab("serverReview"), "serverReview");
+assert.ok(menuSections().includes("serverReview"), "grantable as its own section");
+const srOnly = groupAdminTabs(tabs.filter((x) => sectionOfTab(x.id) === "serverReview"), t);
+assert.deepEqual(srOnly.flatMap((g) => g.items.map((x) => x.id)), ["serverReview"], "a serverReview admin sees exactly that page");
+
 // Search: Turkish folding, id match, no match = empty.
 assert.deepEqual(groupAdminTabs(tabs, t, "sup").flatMap((g) => g.items.map((x) => x.id)), ["suspicious"]);
 assert.deepEqual(groupAdminTabs(tabs, t, "BAKIM").flatMap((g) => g.items.map((x) => x.id)), ["maintenance"]);
