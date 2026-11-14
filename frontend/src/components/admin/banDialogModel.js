@@ -241,7 +241,7 @@ export function normalizeAppeal(raw) {
     createdAt: pick(r.createdAt, r.created_at, r.submittedAt, r.submitted_at, null),
     decidedAt: pick(r.decidedAt, r.decided_at, null),
     decidedBy: pick(r.decidedByUsername, r.decidedBy, r.decided_by_username, r.decided_by, null),
-    note: pick(r.note, r.decisionNote, r.decision_note, null),
+    note: pick(r.note, r.decidedNote, r.decided_note, r.decisionNote, r.decision_note, null),
     user: {
       id: pick(user.id, r.userId, r.user_id, null),
       username: pick(user.username, r.username, null),

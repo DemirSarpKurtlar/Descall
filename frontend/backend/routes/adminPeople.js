@@ -207,7 +207,9 @@ async function applyFromReport(req, res, kind) {
         actor: req.user,
         targetUserId: targetId,
         username: target.row?.username || null,
-        category,
+        // The ban dialog sends the admin's choice; older clients only send a preset.
+        category: req.body?.category || category,
+        otherText: req.body?.otherText || undefined,
         message,
         presetId: presetId || "permanent",
         durationSeconds,
