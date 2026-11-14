@@ -28,7 +28,7 @@ export const DIR_FR = {
   "discover": {
     "entry": "Découvrir des communautés",
     "title": "Découvrir des communautés",
-    "lead": "Des serveurs publics, listés par leurs propriétaires. Choisis un thème, cherche et rejoins.",
+    "lead": "Des serveurs publics, listés par leurs propriétaires. Choisis un thème, cherche et rejoins en un clic.",
     "all": "Toutes",
     "categories": "Thèmes",
     "search": "Rechercher des communautés",
@@ -42,13 +42,20 @@ export const DIR_FR = {
     "open": "Ouvrir",
     "joining": "Connexion au serveur...",
     "joined": "Tu as rejoint {name}",
-    "empty": "Pas encore de communauté ici.",
-    "emptyHint": "Les propriétaires peuvent lister leur serveur dans les réglages Communauté et découverte.",
+    "empty": "Aucune communauté listée pour l’instant",
+    "emptyHint": "Sois le premier à lister ton serveur. Les serveurs d’au moins 3 membres apparaissent ici dès que leur propriétaire les liste.",
     "error": "Impossible de charger les communautés.",
     "retry": "Réessayer",
     "more": "Voir plus",
     "close": "Fermer",
-    "web": "Ouvrir l’annuaire public"
+    "web": "Ouvrir l’annuaire public",
+    "emptyCategory": "Pas encore de communauté {category}",
+    "emptySearch": "Aucune communauté ne correspond à ta recherche",
+    "listMine": "Lister mon serveur",
+    "allTopics": "Voir tous les thèmes",
+    "step1": "Menu du serveur",
+    "step2": "Communauté et découverte",
+    "step3": "Lister dans l’annuaire Descall"
   },
   "suggest": {
     "title": "Trouve ta communauté",

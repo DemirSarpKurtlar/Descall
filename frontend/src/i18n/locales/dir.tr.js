@@ -28,7 +28,7 @@ export const DIR_TR = {
   "discover": {
     "entry": "Toplulukları keşfet",
     "title": "Toplulukları keşfet",
-    "lead": "Sahiplerinin listelediği herkese açık sunucular. Bir konu seç, ara ve katıl.",
+    "lead": "Sahiplerinin listelediği herkese açık sunucular. Bir konu seç, ara ve tek tıkla katıl.",
     "all": "Tümü",
     "categories": "Konular",
     "search": "Topluluk ara",
@@ -42,13 +42,20 @@ export const DIR_TR = {
     "open": "Aç",
     "joining": "Katılınıyor…",
     "joined": "{name} sunucusuna katıldın",
-    "empty": "Burada henüz topluluk yok.",
-    "emptyHint": "Sunucu sahipleri sunucularını Topluluk ve Keşif ayarlarından listeleyebilir.",
+    "empty": "Henüz listelenen topluluk yok",
+    "emptyHint": "İlk listelenen sunucu sen ol. En az 3 üyesi olan sunucular, sahipleri listeleyince burada görünür.",
     "error": "Topluluklar yüklenemedi.",
     "retry": "Tekrar dene",
     "more": "Daha fazla göster",
     "close": "Kapat",
-    "web": "Herkese açık dizini aç"
+    "web": "Herkese açık dizini aç",
+    "emptyCategory": "{category} konusunda henüz topluluk yok",
+    "emptySearch": "Aramana uyan topluluk bulunamadı",
+    "listMine": "Sunucumu listele",
+    "allTopics": "Tüm konulara bak",
+    "step1": "Sunucu menüsü",
+    "step2": "Topluluk ve Keşif",
+    "step3": "Descall dizininde listele"
   },
   "suggest": {
     "title": "Kendi topluluğunu bul",

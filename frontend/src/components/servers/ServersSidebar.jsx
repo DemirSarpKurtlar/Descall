@@ -211,6 +211,10 @@ export default function ServersSidebar({
   // Channel list waits for myPermissions so VIEW_CHANNEL filtering can land before paint.
   const channelListReady = serverPermissionsLoaded(activeServer);
   const canManageGuild = permissionsReady && serverHasPermission(activeServer, "MANAGE_GUILD");
+  // Discover's "List my server" opens Community & Discovery for the open server; the
+  // directory listing itself is owner/admin only (ServerDirectorySettings).
+  const canListActiveServer =
+    Boolean(activeServer?.id) && canManageGuild && Boolean(activeServer?.isOwner || serverHasPermission(activeServer, "ADMINISTRATOR"));
   const notifLevel = ["all", "mentions", "muted"].includes(activeServer?.notificationLevel)
     ? activeServer.notificationLevel
     : "all";
@@ -1990,6 +1994,14 @@ export default function ServersSidebar({
           <Suspense key="discover" fallback={null}>
             <DirectoryDiscoverModal
               myServers={servers}
+              onListServer={
+                canListActiveServer
+                  ? () => {
+                      setShowDiscover(false);
+                      setShowCommunity(true);
+                    }
+                  : undefined
+              }
               onClose={() => setShowDiscover(false)}
               onJoined={(server) => {
                 onJoinServer?.(server);

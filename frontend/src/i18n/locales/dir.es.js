@@ -28,7 +28,7 @@ export const DIR_ES = {
   "discover": {
     "entry": "Descubrir comunidades",
     "title": "Descubrir comunidades",
-    "lead": "Servidores públicos publicados por sus dueños. Elige un tema, busca y únete.",
+    "lead": "Servidores públicos publicados por sus dueños. Elige un tema, busca y únete con un clic.",
     "all": "Todas",
     "categories": "Temas",
     "search": "Buscar comunidades",
@@ -42,13 +42,20 @@ export const DIR_ES = {
     "open": "Abrir",
     "joining": "Uniéndote...",
     "joined": "Te uniste a {name}",
-    "empty": "Todavía no hay comunidades aquí.",
-    "emptyHint": "Los dueños pueden publicar su servidor en los ajustes de Comunidad y descubrimiento.",
+    "empty": "Todavía no hay comunidades publicadas",
+    "emptyHint": "Sé el primero en publicar tu servidor. Los servidores con al menos 3 miembros aparecen aquí cuando su dueño los publica.",
     "error": "No se pudieron cargar las comunidades.",
     "retry": "Reintentar",
     "more": "Ver más",
     "close": "Cerrar",
-    "web": "Abrir el directorio público"
+    "web": "Abrir el directorio público",
+    "emptyCategory": "Todavía no hay comunidades de {category}",
+    "emptySearch": "Ninguna comunidad coincide con tu búsqueda",
+    "listMine": "Publicar mi servidor",
+    "allTopics": "Ver todos los temas",
+    "step1": "Menú del servidor",
+    "step2": "Comunidad y descubrimiento",
+    "step3": "Publicar en el directorio de Descall"
   },
   "suggest": {
     "title": "Encuentra a tu gente",
