@@ -908,18 +908,19 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
 
 /* ---------- The section ---------- */
 
-export default function AdminServerReview({ canBan = false, onOpenPerson }) {
+export default function AdminServerReview({ canBan = false, onOpenPerson, initialQuery = "", initialServerId = "" }) {
   const { t, locale } = useLocale();
   const errorText = useErrorText(t);
-  const [query, setQuery] = useState("");
-  const [debounced, setDebounced] = useState("");
+  // The user file opens this page pre-filtered (owner "@username" or a server name / id).
+  const [query, setQuery] = useState(initialQuery || "");
+  const [debounced, setDebounced] = useState((initialQuery || "").trim());
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("risk");
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedId, setSelectedId] = useState(initialServerId || "");
   const [notice, setNotice] = useState("");
   const [asking, setAsking] = useState(null);
   const [askError, setAskError] = useState("");

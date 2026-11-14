@@ -18,6 +18,7 @@ import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { BAN_ADMIN_RU } from "./banAdmin.ru.js";
 import { SERVER_REVIEW_RU } from "./serverReview.ru.js";
+import { DOSSIER_RU } from "./dossier.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -47,6 +48,7 @@ export const nested = {
   "ban": BAN_RU,
   "banAdmin": BAN_ADMIN_RU,
   "serverReview": SERVER_REVIEW_RU,
+  "dossier": DOSSIER_RU,
   "agentx": AGENTX_RU,
   "invl": INVL_RU,
   "sgx": SIGNUP_GROWTH.ru.nested,
@@ -2973,7 +2975,9 @@ export const nested = {
       "reportNoViolation": "Мы проверили вашу жалобу и не нашли нарушений правил. Спасибо.",
       "reportReviewedTitle": "Ваша жалоба рассмотрена",
       "serverOwnerBody": "Теперь вы владелец сервера {serverName}",
-      "serverOwnerTitle": "Владение сервером"
+      "serverOwnerTitle": "Владение сервером",
+      "timeoutBody": "Вы можете читать и слушать, но какое-то время не сможете писать сообщения и говорить в голосовых каналах.",
+      "timeoutTitle": "Вам временно ограничили отправку сообщений"
     },
     "opt": {
       "amount": "сумма",

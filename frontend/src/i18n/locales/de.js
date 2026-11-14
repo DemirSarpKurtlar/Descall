@@ -18,6 +18,7 @@ import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
+import { DOSSIER_DE } from "./dossier.de.js";
 import { AGENTX_DE } from "./agentx.de.js";
 import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -47,6 +48,7 @@ export const nested = {
   "ban": BAN_DE,
   "banAdmin": BAN_ADMIN_DE,
   "serverReview": SERVER_REVIEW_DE,
+  "dossier": DOSSIER_DE,
   "agentx": AGENTX_DE,
   "invl": INVL_DE,
   "sgx": SIGNUP_GROWTH.de.nested,
@@ -2973,7 +2975,9 @@ export const nested = {
       "reportNoViolation": "Wir haben deine Meldung geprüft und keinen Regelverstoß festgestellt. Danke.",
       "reportReviewedTitle": "Deine Meldung wurde geprüft",
       "serverOwnerBody": "Du bist jetzt Besitzer von {serverName}",
-      "serverOwnerTitle": "Server-Eigentümerschaft"
+      "serverOwnerTitle": "Server-Eigentümerschaft",
+      "timeoutBody": "Du kannst weiter lesen und zuhören, aber eine Zeit lang keine Nachrichten senden und im Sprachkanal nicht sprechen.",
+      "timeoutTitle": "Du wurdest stummgeschaltet"
     },
     "opt": {
       "amount": "betrag",

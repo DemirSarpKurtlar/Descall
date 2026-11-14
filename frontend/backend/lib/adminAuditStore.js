@@ -91,11 +91,12 @@ function persist(entry, { now = Date.now() } = {}) {
 }
 
 /** Newest first. Missing table / error → null (caller falls back to memory). */
-async function list({ limit = 200, action = null, actorId = null, before = null } = {}) {
+async function list({ limit = 200, action = null, actorId = null, before = null, target = null } = {}) {
   try {
     let q = db().from("admin_audit").select("id, at, actor_id, actor_username, action, target, meta");
     if (action) q = q.eq("action", action);
     if (actorId) q = q.eq("actor_id", actorId);
+    if (target) q = q.eq("target", String(target));
     if (before) q = q.lt("at", before);
     const res = await q.order("at", { ascending: false }).limit(Math.min(500, Math.max(1, limit)));
     if (res?.error) return null;

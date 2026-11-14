@@ -112,10 +112,11 @@ assert.equal(nodeLabels(["averyveryverylongname", "x"])[0], "averyveryv…");
   const app = rd("../App.jsx");
   assert.doesNotMatch(app, /staff:role|isModerator|moderatorOnly/);
   const dossier = rd("../components/admin/AdminUserDossier.jsx");
-  // Timeout pre-selects the inline form; ban opens the shared ban dialog (ban experience), nothing is sent by itself.
+  // Kullanıcı dosyası remake: each shortcut only opens its dialog (timeout, BanDialog, wallet in freeze mode); nothing is sent by itself.
   assert.match(dossier, /intent\.intent === "timeout"\) setAction\("timeout"\)/);
-  assert.match(dossier, /intent\.intent === "ban"\) setBanOpen\(true\)/);
-  assert.equal(/intent[^\n]*toggleWalletFreeze|freeze[^\n]*adminFetch/.test(dossier.split("Shortcut from")[1]?.split("useEffect(() => {\n    load()")[0] || ""), false, "freeze shortcut must not run by itself");
+  assert.match(dossier, /intent\.intent === "ban"\) setAction\("ban"\)/);
+  assert.match(dossier, /intent\.intent === "freeze"\) setAction\("freeze"\)/);
+  assert.equal(/intent[^\n]*toggleWalletFreeze|freeze[^\n]*adminFetch/.test(dossier.split("Shortcut from")[1]?.split("const wantTimeline")[0] || ""), false, "freeze shortcut must not run by itself");
   assert.doesNotMatch(rd("../../backend/routes/auth.js"), /staffRole/);
 }
 console.log("antibot tab selftest: ok");

@@ -14,6 +14,7 @@ import { DIR_EN } from "./dir.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { BAN_ADMIN_EN } from "./banAdmin.en.js";
 import { SERVER_REVIEW_EN } from "./serverReview.en.js";
+import { DOSSIER_EN } from "./dossier.en.js";
 import { AGENTX_EN } from "./agentx.en.js";
 import { INVL_EN } from "./invl.en.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -66,6 +67,7 @@ export const nested = {
   ban: BAN_EN,
   banAdmin: BAN_ADMIN_EN,
   serverReview: SERVER_REVIEW_EN,
+  dossier: DOSSIER_EN,
   agentx: AGENTX_EN,
   invl: INVL_EN,
   sgx: SIGNUP_GROWTH.en.nested,

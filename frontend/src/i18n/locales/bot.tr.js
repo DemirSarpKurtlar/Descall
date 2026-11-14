@@ -108,6 +108,8 @@ export const BOT_TR = {
     reportReviewedTitle: "Şikayetin incelendi",
     reportActioned: "Şikayet ettiğin hesap hakkında işlem yapıldı. Teşekkürler.",
     reportNoViolation: "Şikayetini inceledik ve kurallara aykırı bir şey bulmadık. Teşekkürler.",
+    timeoutTitle: "Susturuldun",
+    timeoutBody: "Bir süre mesaj gönderemez ve seste konuşamazsın; okuyabilir ve dinleyebilirsin.",
   },
   poll: {
     fallbackTitle: "📊 Anket: {question}",

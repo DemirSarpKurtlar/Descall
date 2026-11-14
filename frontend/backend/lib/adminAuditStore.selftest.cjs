@@ -76,7 +76,7 @@ function fakeClient({ error = null, rows = [] } = {}) {
   // Wiring: the single choke point persists; the audit tab and overview read the table.
   const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
   assert.match(read("runtime/sharedState.js"), /require\("\.\.\/lib\/adminAuditStore"\)\.persist\(entry\)/);
-  assert.match(read("routes/admin.js"), /adminAuditStore\.list\(\{ limit \}\)/);
+  assert.match(read("routes/admin.js"), /adminAuditStore\.list\(\{ limit(, target)? \}\)/);
   assert.match(read("routes/adminOverview.js"), /adminAuditStore\.list\(\{ limit: 8 \}\)/);
   const sql = fs.readFileSync(path.join(__dirname, "../../../supabase/migrations/20261030_admin_audit.sql"), "utf8");
   assert.match(sql, /BEFORE UPDATE OR DELETE ON public\.admin_audit/);

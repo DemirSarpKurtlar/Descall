@@ -768,11 +768,28 @@ router.post("/users/:id/timeout", async (req, res) => {
     });
     const io = getIo(req);
     io.to(`user:${id}`).emit("system:timeout", result);
+    // Kullanıcı dosyası: "Kullanıcıya bildirim gönder" also leaves a bell notification
+    // (the admin's note as the body, else the standard line). Off = only the in-app lock.
+    const notify = body.notify === true;
+    if (notify) {
+      try {
+        const { pushNotification } = require("../socket/handlers");
+        pushNotification(io, id, {
+          type: "moderation_timeout",
+          titleKey: "bot.notify.timeoutTitle",
+          ...(result.message ? { body: result.message } : { bodyKey: "bot.notify.timeoutBody" }),
+          meta: { until: result.until, category: result.category },
+        });
+      } catch {
+        /* the notification is best effort; the timeout itself is applied */
+      }
+    }
     audit(req.user, "timeout", id, {
       category: result.category,
       reason: result.reason,
       message: result.message,
       until: result.until,
+      notified: notify,
     });
     notifyAdminRoom(io, { type: "timeout", userId: id, ...result });
     res.json({ ok: true, ...result });
@@ -1287,13 +1304,20 @@ router.post("/popup", (req, res) => {
   const built = popupBroadcast.buildPopupPayload(req.body || {}, { actor: req.user });
   if (!built.ok) return res.status(400).json({ error: built.error, errorKey: built.errorKey, errorVars: built.errorVars });
 
-  const audience = req.body?.audience === "visible" ? "visible" : "connected";
+  // Kullanıcı dosyası: one person only (targetUserId), when they are connected right now.
+  const targetUserId = req.body?.targetUserId ? String(req.body.targetUserId) : null;
+  const audience = targetUserId ? "user" : req.body?.audience === "visible" ? "visible" : "connected";
   const includeSelf = req.body?.includeSelf !== false;
-  const recipients = popupBroadcast.selectRecipients(roster.live, {
-    audience,
-    includeSelf,
-    actorId: req.user.id,
-  });
+  const recipients = targetUserId
+    ? (roster.live || []).filter((row) => String(row?.id) === targetUserId)
+    : popupBroadcast.selectRecipients(roster.live, {
+        audience,
+        includeSelf,
+        actorId: req.user.id,
+      });
+  if (targetUserId && !recipients.length && !req.body?.preview) {
+    return res.status(400).json(apiError("This person is not online right now.", null, { code: "USER_OFFLINE" }));
+  }
 
   if (req.body?.preview) {
     return res.json({
@@ -1328,7 +1352,8 @@ router.post("/popup", (req, res) => {
     skipped,
     audience,
   });
-  audit(req.user, "live_popup", audience, {
+  audit(req.user, "live_popup", targetUserId || audience, {
+    ...(targetUserId ? { single: true } : {}),
     id: built.popup.id,
     title: built.popup.title,
     severity: built.popup.severity,
@@ -1371,16 +1396,18 @@ router.get("/sockets", (_req, res) => {
 router.get("/audit", async (req, res) => {
   try {
     const limit = Math.min(500, parseInt(req.query.limit || "200", 10) || 200);
-    const memory = (state.auditLog || []).slice(0, limit);
+    // Kullanıcı dosyası › "İşlem kaydında gör": only what was done to one account.
+    const target = req.query.target ? String(req.query.target).slice(0, 200) : null;
+    const memory = (state.auditLog || []).filter((e) => !target || String(e?.target) === target).slice(0, limit);
     // 3.1.3: durable admin_audit rows survive restarts; memory only fills a gap
     // (table missing, or a write still in flight).
-    const durable = (await withTimeout(adminAuditStore.list({ limit }), 5000, null)) || [];
+    const durable = (await withTimeout(adminAuditStore.list({ limit, target }), 5000, null)) || [];
+    let modQuery = supabase
+      .from("moderation_actions")
+      .select("id, action_type, target_user_id, actor_user_id, created_at, category, reason, meta");
+    if (target) modQuery = modQuery.eq("target_user_id", target);
     const dbRes = await withTimeout(
-      supabase
-        .from("moderation_actions")
-        .select("id, action_type, target_user_id, actor_user_id, created_at, category, reason, meta")
-        .order("created_at", { ascending: false })
-        .limit(limit),
+      modQuery.order("created_at", { ascending: false }).limit(limit),
       5000,
       { data: [], error: { message: "timeout" } }
     );

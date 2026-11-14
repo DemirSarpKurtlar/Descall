@@ -1,11 +1,60 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Mail, RefreshCw, Search, Users } from "../ui/Icon.jsx";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Ban, ChevronLeft, ChevronRight, Coins, FolderSearch, Gift, Mail, MoreHorizontal, RefreshCw, Search, Timer, UserX, Users } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { Avatar } from "../ui/Avatar";
 import RippleButton from "../ui/RippleButton";
 import { SkeletonLine } from "../ui/Skeleton";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime, formatTimeAgo, intlLocaleTag } from "../../lib/datetime";
+import { useAdminPerms } from "./dossier/adminPerms.js";
+import DossierMenu from "./dossier/DossierMenu.jsx";
+import { UserActionHost } from "./dossier/UserActionDialogs.jsx";
+import { rowMenuItems } from "./dossier/dossierModel.js";
+import "../../styles/admin-dossier.css";
+
+const ROW_ICONS = { open: FolderSearch, wallet: Coins, timeout: Timer, ban: Ban, kick: UserX, gift: Gift };
+
+/** "⋯" on a row: the same dialogs as the user file (Kullanıcı dosyası quick actions). */
+function RowMenu({ user, items, onPick }) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  if (!items.length) return null;
+  return (
+    <>
+      <button
+        type="button"
+        ref={ref}
+        className={`dir-more${open ? " is-open" : ""}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t("dossier.rowMenu", { user: `@${user.username}` })}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        data-testid={`dir-more-${user.id}`}
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      <DossierMenu
+        open={open}
+        anchorRef={ref}
+        onClose={() => setOpen(false)}
+        label={t("dossier.rowMenu", { user: `@${user.username}` })}
+        width={230}
+        testId="dir-row-menu"
+        items={items.map((id) => ({
+          id,
+          label: t(`dossier.row_${id}`),
+          icon: ROW_ICONS[id],
+          danger: id === "ban",
+          onSelect: () => onPick(id),
+        }))}
+      />
+    </>
+  );
+}
 
 const FILTERS = [
   { id: "all", label: "admin.directoryFilterAll" },
@@ -37,6 +86,10 @@ function providerLabel(provider) {
 
 export default function AdminUserDirectory({ onOpenPerson }) {
   const { t, locale } = useLocale();
+  const perms = useAdminPerms();
+  const rowItems = useMemo(() => rowMenuItems(perms).filter((id) => id !== "open" || onOpenPerson), [perms, onOpenPerson]);
+  const [quick, setQuick] = useState(null);
+  const [quickNote, setQuickNote] = useState(null);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -210,7 +263,7 @@ export default function AdminUserDirectory({ onOpenPerson }) {
               ? formatTimeAgo(user.lastSeen, t, undefined, locale) || formatAppDateTime(user.lastSeen, locale)
               : t("admin.directoryNever");
             return (
-              <li key={user.id}>
+              <li key={user.id} className={rowItems.length ? "dir-li has-more" : "dir-li"}>
                 <button type="button" className="dir-row" onClick={() => onOpenPerson?.(user.id)}>
                   <span className={`dir-avatar${user.isOnline ? " is-on" : ""}`}>
                     <Avatar
@@ -248,10 +301,38 @@ export default function AdminUserDirectory({ onOpenPerson }) {
                   </span>
                   <ChevronRight size={16} className="dir-chevron" />
                 </button>
+                <RowMenu
+                  user={user}
+                  items={rowItems}
+                  onPick={(id) => {
+                    if (id === "open") onOpenPerson?.(user.id);
+                    else setQuick({ id, user: { id: user.id, username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl, isAdmin: Boolean(user.isAdmin) } });
+                  }}
+                />
               </li>
             );
           })}
         </ol>
+      ) : null}
+
+      {quickNote ? (
+        <div className="dsr-toast" role="status">
+          <span>{quickNote}</span>
+        </div>
+      ) : null}
+      {quick ? (
+        <UserActionHost
+          action={quick.id}
+          user={quick.user}
+          can={perms.can}
+          onClose={() => setQuick(null)}
+          onDone={(message) => {
+            setQuick(null);
+            setQuickNote(message);
+            setTimeout(() => setQuickNote(null), 5000);
+            load().catch(() => {});
+          }}
+        />
       ) : null}
 
       {data ? (

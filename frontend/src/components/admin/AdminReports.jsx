@@ -216,7 +216,7 @@ export default function AdminReports({ onOpenDossier, selectedUserId, onSelectUs
             ))}
           </div>
           {selectedUserId ? (
-            <AdminUserDossier userId={selectedUserId} onRefreshInbox={load} />
+            <AdminUserDossier userId={selectedUserId} onRefreshInbox={load} onOpenPerson={onSelectUser} />
           ) : null}
         </div>
       )}

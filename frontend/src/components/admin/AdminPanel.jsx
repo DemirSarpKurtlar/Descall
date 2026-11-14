@@ -53,6 +53,7 @@ import AdminDmInbox from "./AdminDmInbox.jsx";
 import AdminServerReview from "./AdminServerReview.jsx";
 import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
 import { sectionOfTab } from "./adminNav.js";
+import { AdminPermsContext } from "./dossier/adminPerms.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
 const AdminAgent = lazy(() => import("./AdminAgent.jsx"));
@@ -220,6 +221,34 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [feedbackUnread, setFeedbackUnread] = useState(0);
   // Ban / timeout / wallet-freeze shortcuts from the suspicious tab open the existing dossier tools.
   const [dossierIntent, setDossierIntent] = useState(null);
+  // Kullanıcı dosyası: "DM inceleme'de aç" / "Sunucu inceleme'de aç" open those pages pre-filtered.
+  const [reviewNav, setReviewNav] = useState(null);
+  const navigateFromDossier = useCallback(
+    (target, params = {}) => {
+      if (target === "people" && params.userId) {
+        setDossierIntent(null);
+        setDossierUserId(params.userId);
+        setTab("people");
+        return;
+      }
+      if (target === "dmReview" || target === "serverReview") {
+        setReviewNav({ tab: target, query: params.query || "", serverId: params.serverId || "", at: Date.now() });
+        setTab(target);
+      }
+    },
+    []
+  );
+  const permsValue = useMemo(
+    () => ({
+      can,
+      owner: Boolean(perm.owner),
+      navigate: (target, params) => {
+        if (target !== "people" && !can(target)) return;
+        navigateFromDossier(target, params);
+      },
+    }),
+    [can, perm.owner, navigateFromDossier]
+  );
   const [openReportCount, setOpenReportCount] = useState(0);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -828,6 +857,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       banner={banner}
     >
       <AdminStepUpHost />
+      <AdminPermsContext.Provider value={permsValue}>
       <Fragment key={panelEpoch}>
       {admin2faRequired ? (
         <Admin2faGate onReady={() => { setAdmin2faRequired(false); setPanelEpoch((n) => n + 1); }} />
@@ -874,9 +904,17 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "retention" && <RetentionTab />}
         {tab === "economy" && <EconomyTab />}
         {tab === "topUsers" && <AdminTopUsers />}
-        {tab === "dmReview" && <AdminDmInbox />}
+        {tab === "dmReview" && (
+          <AdminDmInbox
+            key={reviewNav?.tab === "dmReview" ? reviewNav.at : "dm"}
+            initialQuery={reviewNav?.tab === "dmReview" ? reviewNav.query : ""}
+          />
+        )}
         {tab === "serverReview" && (
           <AdminServerReview
+            key={reviewNav?.tab === "serverReview" ? reviewNav.at : "sr"}
+            initialQuery={reviewNav?.tab === "serverReview" ? reviewNav.query : ""}
+            initialServerId={reviewNav?.tab === "serverReview" ? reviewNav.serverId : ""}
             canBan={can("moderation")}
             onOpenPerson={
               can("people")
@@ -1953,6 +1991,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       </div>
       )}
       </Fragment>
+      </AdminPermsContext.Provider>
     </AdminShell>
   );
 }
