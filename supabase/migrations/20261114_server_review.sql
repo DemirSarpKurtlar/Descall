@@ -81,3 +81,5 @@ $$;
 
 revoke all on function public.admin_server_overview(timestamptz, timestamptz) from public, anon, authenticated;
 revoke all on function public.admin_server_channel_stats(uuid) from public, anon, authenticated;
+grant execute on function public.admin_server_overview(timestamptz, timestamptz) to service_role;
+grant execute on function public.admin_server_channel_stats(uuid) to service_role;
