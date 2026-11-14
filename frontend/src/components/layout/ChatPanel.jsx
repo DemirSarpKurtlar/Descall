@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo, useCallback, cloneElement, isValidElement } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, cloneElement, isValidElement } from "react";
 import { DetailPaneSkeleton } from "../ui/Skeleton";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -465,23 +465,47 @@ export default function ChatPanel({
 
   // Scroll-edge layer shows only once a message sits under the pills.
   // Attribute write, no React state: scrolling must not re-render the panel.
-  useEffect(() => {
+  // The chrome is keyed per conversation, so every DM / channel switch mounts a
+  // fresh one. Two things used to blink the dark frosted band across the top of
+  // the panel on each switch: the first decision ran after paint (the band was
+  // gone for a frame, then faded back in), and the loading skeleton overflows
+  // the list by a few px, so the band faded in for the skeleton and straight
+  // out again when a short channel replaced it. Now the first decision lands
+  // before paint with no transition, and a loading list never counts as
+  // "under the pills" (styles/glass-desktop/floatingHeader.css, selftest
+  // chatScrollEdge.selftest.mjs).
+  useLayoutEffect(() => {
     if (!floatingHeader) return undefined;
     const scroller = messagesRef.current;
     const chrome = chromeRef.current;
     if (!scroller || !chrome) return undefined;
     let frame = 0;
+    let settle = 0;
     const sync = () => {
       frame = 0;
-      const under = scroller.scrollTop > 2;
+      const loading = Boolean(scroller.querySelector(".is-loading-skeleton"));
+      const under = !loading && scroller.scrollTop > 2;
       if ((chrome.dataset.scrolled === "1") !== under) chrome.dataset.scrolled = under ? "1" : "0";
     };
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(sync); };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(sync); };
+    chrome.dataset.edgeInit = "1";
     sync();
-    scroller.addEventListener("scroll", onScroll, { passive: true });
+    settle = requestAnimationFrame(() => {
+      settle = requestAnimationFrame(() => {
+        settle = 0;
+        delete chrome.dataset.edgeInit;
+      });
+    });
+    scroller.addEventListener("scroll", schedule, { passive: true });
+    // Skeleton -> messages does not always move scrollTop (a list that fits).
+    const mo = typeof MutationObserver === "function" ? new MutationObserver(schedule) : null;
+    mo?.observe(scroller, { childList: true, subtree: true });
     return () => {
-      scroller.removeEventListener("scroll", onScroll);
+      scroller.removeEventListener("scroll", schedule);
+      mo?.disconnect();
       if (frame) cancelAnimationFrame(frame);
+      if (settle) cancelAnimationFrame(settle);
+      delete chrome.dataset.edgeInit;
     };
   }, [floatingHeader, headerConversationKey, activeDmUser?.id, activeGroup?.id, activeChannel?.id]);
 
