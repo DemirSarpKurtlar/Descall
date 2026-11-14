@@ -33,6 +33,7 @@ const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 const { apiError, apiText } = require("../lib/apiError");
 const serverMentions = require("../lib/serverMentions");
+const { updateServerMessageWithHistory } = require("../lib/serverMessageHistory");
 const { errorFields } = require("../lib/apiError");
 
 const slowmodeLastSend = new Map();
@@ -682,7 +683,7 @@ function registerServerChannelHandlers(io, socket) {
       }
       const { data: row, error } = await supabase
         .from("server_messages")
-        .select("id, sender_id, channel_id, server_id, media_type")
+        .select("id, sender_id, channel_id, server_id, media_type, content")
         .eq("id", messageId)
         .eq("channel_id", channelId)
         .maybeSingle();
@@ -691,12 +692,15 @@ function registerServerChannelHandlers(io, socket) {
       if (row.sender_id !== myId) return fail("You can only edit your own messages.", "MISSING_PERMISSION");
       if (["poll_v2", "poll_end", "app_card"].includes(row.media_type)) return fail("This message can't be edited as text.", "NOT_EDITABLE");
       const editedAt = new Date().toISOString();
-      const { error: updErr } = await supabase
-        .from("server_messages")
-        .update({ content: trimmed, edited_at: editedAt, updated_at: editedAt })
-        .eq("id", messageId)
-        .eq("channel_id", channelId)
-        .eq("sender_id", myId);
+      // Like DMs, the text before the edit is kept in edit_history (admin review only).
+      const { error: updErr } = await updateServerMessageWithHistory(supabase, {
+        messageId,
+        channelId,
+        senderId: myId,
+        previousText: typeof row.content === "string" ? row.content : null,
+        newText: trimmed,
+        editedAt,
+      });
       if (updErr) throw updErr;
       const payload = {
         serverId: channel.server_id,

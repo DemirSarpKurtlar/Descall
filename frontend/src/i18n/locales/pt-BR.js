@@ -17,6 +17,7 @@ import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { BAN_ADMIN_PT_BR } from "./banAdmin.pt-BR.js";
+import { SERVER_REVIEW_PT_BR } from "./serverReview.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
@@ -45,6 +46,7 @@ export const nested = {
   "dir": DIR_PT_BR,
   "ban": BAN_PT_BR,
   "banAdmin": BAN_ADMIN_PT_BR,
+  "serverReview": SERVER_REVIEW_PT_BR,
   "agentx": AGENTX_PT_BR,
   "invl": INVL_PT_BR,
   "sgx": SIGNUP_GROWTH["pt-BR"].nested,

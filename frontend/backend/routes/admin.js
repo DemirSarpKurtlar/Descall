@@ -74,6 +74,8 @@ router.use(require("./adminStaff"));
 router.use(require("./adminAccess"));
 router.use(require("./adminAppeals"));
 router.use(require("./adminErrors"));
+// Sunucu inceleme (section serverReview): metadata lists, channel text only behind purpose + reason + audit.
+router.use(require("./adminServerReview"));
 router.use(require("./adminGrowth"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));

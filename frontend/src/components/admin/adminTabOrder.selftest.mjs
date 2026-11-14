@@ -11,4 +11,5 @@ if (ids[1] !== "maintenance") throw new Error(`Bakım must be the 2nd admin tab 
 if (ids.indexOf("maintenance") !== ids.lastIndexOf("maintenance")) throw new Error("Bakım listed twice");
 if (new Set(ids).size !== ids.length) throw new Error("duplicate admin tab id");
 if (ids.indexOf("appeals") !== ids.indexOf("moderation") + 1) throw new Error("İtirazlar must follow Ban & Timeout (moderation) in TABS");
+if (ids.indexOf("serverReview") !== ids.indexOf("dmReview") + 1) throw new Error("Sunucu inceleme must follow DM inceleme (dmReview) in TABS");
 console.log(`adminTabOrder ok (${ids.length} tabs, Bakım 2nd)`);
