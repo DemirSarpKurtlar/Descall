@@ -1,0 +1,523 @@
+/* Market 2.0, catalog group C2: chat bubbles, name effects, card colours (set name colour)
+   and typing flares. New effect_keys only (all start with "s2-"); the old renderers in
+   cosmetics*.css, chat-bubbles-atelier.css and name-effects-sigil.css are untouched.
+
+   Chat bubbles
+   - Every bubble is an opaque painted surface (no backdrop blur), so text never sits on
+     whatever is behind the chat. The base rule reads per-item custom properties:
+       --s2-bg      background layers (required)
+       --s2-ink     message text        --s2-ink-2  meta (time, status, edited, reply text)
+       --s2-link    links / reply bar   --s2-edge   1px border colour
+       --s2-glow    soft outer light    --s2-inset  extra inset shadows
+       --s2-quote   reply / code panel fill
+   - ::before is the art layer (texture, light, motion), painted under the text.
+     ::after is a small ornament on an edge or corner. Neither takes layout space.
+   - The bubble box itself never moves: Framer Motion owns transform on .message-bubble.
+     Motion uses background-position, opacity or transforms on the pseudo-elements only,
+     stays slow, and stops under prefers-reduced-motion, html.reduce-motion and gd-lite.
+   Name effects: inline-block gradient text, readable on dark and light surfaces (light
+   theme deepens the ink through a filter), motion only on background-position.
+   Typing flares: restyle the three framer-animated .typing-dot spans and their shell. */
+
+/* ───────────────────────────── Bubble base ───────────────────────────── */
+
+.cosmetic-chat-bubble[class*="bubble-s2-"] {
+  --s2-ink: #f5f6fa;
+  --s2-ink-2: rgba(245, 246, 250, 0.7);
+  --s2-link: #a9c4ff;
+  --s2-edge: rgba(255, 255, 255, 0.14);
+  --s2-glow: rgba(0, 0, 0, 0);
+  --s2-inset: inset 0 0 0 0 transparent;
+  --s2-quote: rgba(255, 255, 255, 0.09);
+  --s2-lift: 0 6px 18px -6px rgba(0, 0, 0, 0.55);
+  --text-0: var(--s2-ink);
+  --text-1: var(--s2-ink);
+  --text-2: var(--s2-ink-2);
+  --text-muted: var(--s2-ink-2);
+  position: relative;
+  isolation: isolate;
+  color: var(--s2-ink) !important;
+  background: var(--s2-bg) !important;
+  border: 1px solid var(--s2-edge) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    var(--s2-inset),
+    0 0 18px -4px var(--s2-glow),
+    var(--s2-lift) !important;
+  text-shadow: none;
+}
+html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
+  --s2-lift: 0 6px 16px -8px rgba(20, 24, 40, 0.38);
+}
+
+.cosmetic-chat-bubble[class*="bubble-s2-"]::before,
+.cosmetic-chat-bubble[class*="bubble-s2-"]::after {
+  content: none;
+  position: absolute;
+  pointer-events: none;
+}
+.cosmetic-chat-bubble[class*="bubble-s2-"]::before {
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+}
+.cosmetic-chat-bubble[class*="bubble-s2-"]::after {
+  z-index: 2;
+}
+
+/* Ink inside the bubble. */
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] :is(.message-text, .msg-bold, .message-reply-author, .message-forwarded) {
+  color: var(--s2-ink) !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] :is(.message-footer, .message-status, .message-timestamp, .msg-edited, .message-reply-text, .message-pinned-badge) {
+  color: var(--s2-ink-2) !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] .msg-link {
+  color: var(--s2-link) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] .msg-mention {
+  color: var(--s2-ink) !important;
+  background: color-mix(in srgb, var(--s2-link) 28%, transparent) !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] .message-reply-quote {
+  background: var(--s2-quote) !important;
+  border-left: 2px solid var(--s2-link) !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] .msg-inline-code,
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] .msg-code-block {
+  background: var(--s2-quote) !important;
+  border-color: color-mix(in srgb, var(--s2-ink) 18%, transparent) !important;
+  color: var(--s2-ink) !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"] .msg-code-block code {
+  color: var(--s2-ink) !important;
+}
+/* Media-only bubbles keep the art as a thin frame around the picture; no ornament. */
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"]:is(.has-media-only, .has-sticker)::after {
+  content: none !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"].has-sticker {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.message-bubble.cosmetic-chat-bubble[class*="bubble-s2-"].has-sticker::before {
+  content: none !important;
+}
+
+/* ───────────────────────────── Bubbles: paper and print ───────────────────────────── */
+
+/* Washi: hand-made paper fibres, a red carved seal on the corner. */
+.cosmetic-chat-bubble.bubble-s2-washi {
+  --s2-ink: #2b2420;
+  --s2-ink-2: rgba(43, 36, 32, 0.6);
+  --s2-link: #b0301c;
+  --s2-edge: rgba(122, 92, 58, 0.34);
+  --s2-quote: rgba(122, 92, 58, 0.1);
+  --s2-inset: inset 0 0 12px rgba(150, 112, 64, 0.16);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='60'><g fill='none' stroke='%23a07a48' stroke-linecap='round'><path d='M4 12c14-6 26 4 40-2' stroke-width='.6' opacity='.35'/><path d='M50 30c10 6 22-2 36 4' stroke-width='.5' opacity='.3'/><path d='M10 48c8-4 18 2 24-3' stroke-width='.7' opacity='.28'/><path d='M60 8c-4 10 2 18-2 26' stroke-width='.5' opacity='.25'/><path d='M30 26c-3 7 3 14 0 22' stroke-width='.4' opacity='.3'/><path d='M70 50c8-2 12 4 18 1' stroke-width='.6' opacity='.3'/></g><g fill='%23b08850' opacity='.22'><circle cx='22' cy='34' r='.8'/><circle cx='74' cy='18' r='.6'/><circle cx='46' cy='54' r='.7'/></g></svg>") 0 0 / 90px 60px,
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.8), transparent 55%),
+    radial-gradient(90% 80% at 100% 100%, rgba(214, 188, 146, 0.35), transparent 60%),
+    linear-gradient(180deg, #fcf7ee, #efe3cd);
+}
+.cosmetic-chat-bubble.bubble-s2-washi::after {
+  content: "";
+  right: -6px;
+  bottom: -7px;
+  width: 18px;
+  height: 18px;
+  transform: rotate(-8deg);
+  filter: drop-shadow(0 1px 1px rgba(80, 20, 10, 0.35));
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='1' y='1' width='14' height='14' rx='2.6' fill='%23c4321e'/><rect x='2.6' y='2.6' width='10.8' height='10.8' rx='1.4' fill='none' stroke='%23f7d9cc' stroke-width='.9'/><path d='M5 5.4h6M8 4v8M5.3 8.6h5.4M6 11h4' stroke='%23f7e2d8' stroke-width='1.2' stroke-linecap='round' fill='none'/></svg>") center / contain no-repeat;
+}
+
+/* Airmail: the striped envelope edge and a faint postmark. */
+.cosmetic-chat-bubble.bubble-s2-airmail {
+  --s2-ink: #1d2742;
+  --s2-ink-2: rgba(29, 39, 66, 0.6);
+  --s2-link: #b92d27;
+  --s2-edge: rgba(29, 63, 138, 0.35);
+  --s2-quote: rgba(29, 63, 138, 0.08);
+  --s2-bg:
+    radial-gradient(60% 120% at 100% 0%, rgba(29, 63, 138, 0.06), transparent 60%),
+    linear-gradient(180deg, #fdfbf5, #f3eee2);
+}
+.cosmetic-chat-bubble.bubble-s2-airmail::before {
+  content: "";
+  padding: 3px;
+  background: repeating-linear-gradient(135deg, #cf3a31 0 7px, #fdfbf5 7px 10px, #1f3f8c 10px 17px, #fdfbf5 17px 20px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+}
+.cosmetic-chat-bubble.bubble-s2-airmail::after {
+  content: "";
+  top: -9px;
+  right: 8px;
+  width: 38px;
+  height: 20px;
+  opacity: 0.85;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 16'><circle cx='8' cy='8' r='6.4' fill='none' stroke='%231f3f8c' stroke-width='1.1'/><circle cx='8' cy='8' r='4.2' fill='none' stroke='%231f3f8c' stroke-width='.6'/><path d='M15 5c2.5-1.6 4.5 1.6 7 0s4.5 1.6 7 0M15 8c2.5-1.6 4.5 1.6 7 0s4.5 1.6 7 0M15 11c2.5-1.6 4.5 1.6 7 0s4.5 1.6 7 0' fill='none' stroke='%231f3f8c' stroke-width='1'/></svg>") center / contain no-repeat;
+}
+
+/* Iznik tile: glazed white, cobalt and turquoise rosette quarters on every corner. */
+.cosmetic-chat-bubble.bubble-s2-iznik {
+  --s2-ink: #142357;
+  --s2-ink-2: rgba(20, 35, 87, 0.62);
+  --s2-link: #0b6a88;
+  --s2-edge: rgba(29, 78, 216, 0.45);
+  --s2-quote: rgba(29, 78, 216, 0.08);
+  --s2-inset: inset 0 0 0 2px #f7fbff, inset 0 0 0 3px rgba(29, 78, 216, 0.4);
+  --s2-glow: rgba(56, 132, 255, 0.28);
+  --s2-bg:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 38%),
+    radial-gradient(140% 120% at 50% 120%, #dfe9f7, transparent 70%),
+    linear-gradient(180deg, #fbfdff, #edf3fb);
+}
+.cosmetic-chat-bubble.bubble-s2-iznik::before {
+  content: "";
+  --band: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='6'><path d='M0 3c2-2.6 6-2.6 8 0s6 2.6 8 0' fill='none' stroke='%231d4ed8' stroke-width='1.3'/><circle cx='4' cy='3' r='1' fill='%2314b8c4'/><circle cx='12' cy='3' r='1' fill='%23d6332a'/></svg>");
+  background:
+    var(--band) 0 3px / 16px 6px repeat-x,
+    var(--band) 8px calc(100% - 3px) / 16px 6px repeat-x;
+  -webkit-mask: linear-gradient(90deg, transparent 0 10px, #000 22px calc(100% - 22px), transparent calc(100% - 10px));
+  mask: linear-gradient(90deg, transparent 0 10px, #000 22px calc(100% - 22px), transparent calc(100% - 10px));
+}
+.cosmetic-chat-bubble.bubble-s2-iznik::after {
+  content: "";
+  top: -9px;
+  left: -8px;
+  width: 22px;
+  height: 22px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'><circle cx='11' cy='11' r='10' fill='%23f7fbff' stroke='%231d4ed8' stroke-width='1.2'/><g fill='%231d4ed8'><ellipse cx='11' cy='5.6' rx='2.2' ry='3.4'/><ellipse cx='11' cy='16.4' rx='2.2' ry='3.4'/><ellipse cx='5.6' cy='11' rx='3.4' ry='2.2'/><ellipse cx='16.4' cy='11' rx='3.4' ry='2.2'/></g><g fill='%2314b8c4'><circle cx='7.2' cy='7.2' r='1.5'/><circle cx='14.8' cy='7.2' r='1.5'/><circle cx='7.2' cy='14.8' r='1.5'/><circle cx='14.8' cy='14.8' r='1.5'/></g><circle cx='11' cy='11' r='2.4' fill='%23d6332a'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 1.5px rgba(10, 30, 90, 0.4));
+}
+
+/* Sticky note: warm yellow sheet, curled lower corner, a strip of tape. */
+.cosmetic-chat-bubble.bubble-s2-sticky-note {
+  --s2-ink: #3a2e08;
+  --s2-ink-2: rgba(58, 46, 8, 0.62);
+  --s2-link: #9a3412;
+  --s2-edge: rgba(161, 120, 20, 0.35);
+  --s2-quote: rgba(120, 90, 10, 0.1);
+  --s2-bg:
+    radial-gradient(40px 26px at 100% 100%, rgba(120, 82, 0, 0.28), transparent 70%),
+    linear-gradient(172deg, rgba(255, 255, 255, 0.45) 0%, transparent 30%),
+    repeating-linear-gradient(180deg, transparent 0 21px, rgba(180, 130, 20, 0.12) 21px 22px),
+    linear-gradient(180deg, #fff1a6, #fbd860);
+}
+.cosmetic-chat-bubble.bubble-s2-sticky-note::after {
+  content: "";
+  top: -7px;
+  left: 50%;
+  width: 42px;
+  height: 13px;
+  margin-left: -21px;
+  transform: rotate(-4deg);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.0), rgba(255, 255, 255, 0.35) 30%, rgba(255, 255, 255, 0.1) 70%, rgba(255, 255, 255, 0.0)),
+    linear-gradient(180deg, rgba(236, 240, 246, 0.82), rgba(214, 222, 232, 0.72));
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 13' preserveAspectRatio='none'><path d='M1 0l1 2-1 2 1 2-1 2 1 2-1 3h40l1-2-1-2 1-2-1-2 1-2-1-2 1-1z'/></svg>") center / 100% 100%;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 13' preserveAspectRatio='none'><path d='M1 0l1 2-1 2 1 2-1 2 1 2-1 3h40l1-2-1-2 1-2-1-2 1-2-1-2 1-1z'/></svg>") center / 100% 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Cork board: speckled cork, a red push pin. */
+.cosmetic-chat-bubble.bubble-s2-corkboard {
+  --s2-ink: #24160a;
+  --s2-ink-2: rgba(36, 22, 10, 0.66);
+  --s2-link: #7c1d0e;
+  --s2-edge: rgba(96, 60, 24, 0.55);
+  --s2-quote: rgba(255, 240, 215, 0.4);
+  --s2-inset: inset 0 0 0 2px rgba(255, 226, 180, 0.18), inset 0 -8px 14px rgba(90, 50, 10, 0.18);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><g fill='%237a4a1c' opacity='.45'><circle cx='3' cy='5' r='1.1'/><circle cx='17' cy='3' r='.8'/><circle cx='29' cy='9' r='1.3'/><circle cx='9' cy='18' r='.9'/><circle cx='23' cy='21' r='1.2'/><circle cx='36' cy='24' r='.8'/><circle cx='5' cy='31' r='1.3'/><circle cx='18' cy='35' r='.8'/><circle cx='31' cy='36' r='1'/></g><g fill='%23f2d3a2' opacity='.5'><circle cx='12' cy='9' r='.8'/><circle cx='34' cy='15' r='.7'/><circle cx='14' cy='27' r='.9'/><circle cx='26' cy='30' r='.6'/><circle cx='38' cy='2' r='.6'/></g></svg>") 0 0 / 40px 40px,
+    radial-gradient(120% 100% at 30% 0%, rgba(255, 230, 190, 0.35), transparent 60%),
+    linear-gradient(180deg, #d9ab72, #c08b52);
+}
+.cosmetic-chat-bubble.bubble-s2-corkboard::after {
+  content: "";
+  top: -8px;
+  left: 12px;
+  width: 16px;
+  height: 18px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'><ellipse cx='9' cy='16' rx='4' ry='1.4' fill='%23000' opacity='.28'/><path d='M8 9.5l.6 6.5' stroke='%23b8b8c0' stroke-width='1.2' stroke-linecap='round'/><circle cx='8' cy='7' r='6.2' fill='%23c81e1e'/><circle cx='8' cy='7' r='6.2' fill='url(%23g)'/><defs><radialGradient id='g' cx='.35' cy='.3' r='.7'><stop offset='0' stop-color='%23ff8a7a'/><stop offset='.45' stop-color='%23d72a24' stop-opacity='.4'/><stop offset='1' stop-color='%237a0a0a' stop-opacity='.6'/></radialGradient></defs><ellipse cx='6' cy='4.6' rx='1.8' ry='1.1' fill='%23fff' opacity='.7'/></svg>") center / contain no-repeat;
+}
+
+/* Chalkboard: slate green, chalk dust, a wooden rail and a stick of chalk. */
+.cosmetic-chat-bubble.bubble-s2-chalkboard {
+  --s2-ink: #f4f2e6;
+  --s2-ink-2: rgba(244, 242, 230, 0.66);
+  --s2-link: #ffe28a;
+  --s2-edge: #6a4524;
+  --s2-quote: rgba(255, 255, 255, 0.08);
+  --s2-inset: inset 0 0 0 2px #8a5c30, inset 0 0 0 3px rgba(20, 10, 0, 0.5), inset 0 0 18px rgba(0, 0, 0, 0.45);
+  --s2-bg:
+    radial-gradient(60% 50% at 20% 30%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(50% 40% at 80% 70%, rgba(255, 255, 255, 0.06), transparent 70%),
+    repeating-linear-gradient(170deg, transparent 0 6px, rgba(255, 255, 255, 0.025) 6px 7px, transparent 7px 15px),
+    linear-gradient(180deg, #24443a, #18302a);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-chalkboard .message-text {
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.55), 0 0 6px rgba(255, 255, 255, 0.12);
+}
+.cosmetic-chat-bubble.bubble-s2-chalkboard::after {
+  content: "";
+  bottom: -5px;
+  left: 14px;
+  width: 26px;
+  height: 7px;
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  background: linear-gradient(180deg, #ffffff, #e8e4d6 60%, #c9c3b0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), -8px 0 0 -2px rgba(255, 255, 255, 0);
+}
+
+/* Denim: indigo twill, amber stitching, a copper rivet. */
+.cosmetic-chat-bubble.bubble-s2-denim {
+  --s2-ink: #f1f5ff;
+  --s2-ink-2: rgba(241, 245, 255, 0.68);
+  --s2-link: #ffc46b;
+  --s2-edge: rgba(20, 34, 70, 0.9);
+  --s2-quote: rgba(255, 255, 255, 0.1);
+  --s2-bg:
+    radial-gradient(90% 70% at 50% 0%, rgba(160, 190, 255, 0.22), transparent 70%),
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(28deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #34508e, #233a6c);
+}
+.cosmetic-chat-bubble.bubble-s2-denim::before {
+  content: "";
+  inset: 3px;
+  border-radius: 9px;
+  border: 1.4px dashed rgba(240, 168, 64, 0.9);
+}
+.cosmetic-chat-bubble.bubble-s2-denim::after {
+  content: "";
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffd9a8, #c27a3a 45%, #6e3a14 100%);
+  box-shadow: 0 0 0 1px rgba(60, 30, 8, 0.6), 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+
+/* Tartan: deep wool plaid under a dark centre so text stays clear. */
+.cosmetic-chat-bubble.bubble-s2-tartan {
+  --s2-ink: #fbf7ee;
+  --s2-ink-2: rgba(251, 247, 238, 0.68);
+  --s2-link: #ffd36a;
+  --s2-edge: rgba(240, 200, 90, 0.4);
+  --s2-quote: rgba(0, 0, 0, 0.28);
+  --s2-bg:
+    radial-gradient(85% 70% at 50% 50%, rgba(14, 20, 18, 0.55), transparent 100%),
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(240, 200, 90, 0.45) 14px 15px, transparent 15px 28px),
+    repeating-linear-gradient(0deg, transparent 0 14px, rgba(240, 200, 90, 0.38) 14px 15px, transparent 15px 28px),
+    repeating-linear-gradient(90deg, rgba(150, 26, 36, 0.55) 0 8px, transparent 8px 20px, rgba(14, 40, 30, 0.7) 20px 28px),
+    repeating-linear-gradient(0deg, rgba(150, 26, 36, 0.5) 0 8px, transparent 8px 20px, rgba(14, 40, 30, 0.7) 20px 28px),
+    linear-gradient(180deg, #1f3a2c, #13261d);
+}
+
+/* Terrazzo: stone chips set in warm white. */
+.cosmetic-chat-bubble.bubble-s2-terrazzo {
+  --s2-ink: #262220;
+  --s2-ink-2: rgba(38, 34, 32, 0.6);
+  --s2-link: #a33a1c;
+  --s2-edge: rgba(110, 90, 76, 0.3);
+  --s2-quote: rgba(110, 90, 76, 0.1);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='46'><g opacity='.4'><path d='M6 6l5-2 2 4-4 3z' fill='%23c8664a'/><path d='M30 4l4 1-1 4-4-1z' fill='%237d9a86'/><path d='M52 10l6-1 1 3-5 3z' fill='%23d6a24a'/><path d='M16 26l3-3 4 2-2 4z' fill='%235c6f8a'/><path d='M40 22l5 1-2 5-4-2z' fill='%23c8664a'/><path d='M60 32l4-3 2 4-3 2z' fill='%237d9a86'/><path d='M8 38l4 0 1 3-4 2z' fill='%23d6a24a'/><path d='M28 38l2-3 3 2-2 3z' fill='%23a7a29a'/></g><g fill='%238a8178' opacity='.35'><circle cx='22' cy='12' r='.9'/><circle cx='47' cy='36' r='.8'/><circle cx='66' cy='18' r='.7'/><circle cx='4' cy='20' r='.6'/></g></svg>") 0 0 / 70px 46px,
+    radial-gradient(120% 90% at 0% 0%, #ffffff, transparent 55%),
+    linear-gradient(180deg, #f6f1ea, #e9e1d6);
+}
+
+/* Blueprint: drafting grid and a compass mark. */
+.cosmetic-chat-bubble.bubble-s2-blueprint {
+  --s2-ink: #f2f7ff;
+  --s2-ink-2: rgba(242, 247, 255, 0.7);
+  --s2-link: #9fe3ff;
+  --s2-edge: rgba(190, 220, 255, 0.5);
+  --s2-quote: rgba(255, 255, 255, 0.1);
+  --s2-bg:
+    linear-gradient(rgba(220, 236, 255, 0.2) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgba(220, 236, 255, 0.2) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(rgba(220, 236, 255, 0.08) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(220, 236, 255, 0.08) 1px, transparent 1px) 0 0 / 8px 8px,
+    radial-gradient(90% 80% at 30% 0%, rgba(80, 150, 255, 0.35), transparent 70%),
+    linear-gradient(180deg, #1a4f9c, #113a78);
+}
+.cosmetic-chat-bubble.bubble-s2-blueprint::after {
+  content: "";
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22' fill='none' stroke='%23e8f2ff' stroke-width='1'><circle cx='11' cy='11' r='7.5'/><circle cx='11' cy='11' r='3' stroke-dasharray='1.5 1.5'/><path d='M11 1v20M1 11h20'/><path d='M11 3.5l1.2 2.2M11 3.5l-1.2 2.2' stroke-linecap='round'/></svg>") center / contain no-repeat, radial-gradient(circle, #164488 0 9px, transparent 9.5px);
+  filter: drop-shadow(0 1px 2px rgba(0, 20, 60, 0.6));
+}
+
+/* Latte: steamed-milk cream, a rosetta poured into the corner, two beans. */
+.cosmetic-chat-bubble.bubble-s2-latte {
+  --s2-ink: #3a2414;
+  --s2-ink-2: rgba(58, 36, 20, 0.62);
+  --s2-link: #8a3b12;
+  --s2-edge: rgba(140, 90, 50, 0.35);
+  --s2-quote: rgba(120, 70, 30, 0.1);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'><g fill='none' stroke='%23b07a4c' stroke-width='3' stroke-linecap='round' opacity='.24'><path d='M30 54C30 40 30 22 30 8'/><path d='M30 44c-10-2-14-8-14-8M30 44c10-2 14-8 14-8M30 34c-8-1-11-6-11-6M30 34c8-1 11-6 11-6M30 25c-6-1-8-5-8-5M30 25c6-1 8-5 8-5M30 17c-4 0-5-3-5-3M30 17c4 0 5-3 5-3'/></g></svg>") right -4px center / auto 120% no-repeat,
+    radial-gradient(70% 90% at 100% 50%, rgba(196, 140, 90, 0.35), transparent 70%),
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 252, 245, 0.9), transparent 55%),
+    linear-gradient(180deg, #f6e8d3, #e8cfac);
+}
+.cosmetic-chat-bubble.bubble-s2-latte::after {
+  content: "";
+  top: -7px;
+  right: 10px;
+  width: 24px;
+  height: 14px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 14'><g transform='rotate(-24 7 7)'><ellipse cx='7' cy='7' rx='4.6' ry='6' fill='%234a2512'/><path d='M7 1.6c-1.6 2.6 1.6 8 0 10.8' stroke='%23200d04' stroke-width='1' fill='none'/></g><g transform='rotate(30 17 7)'><ellipse cx='17' cy='7' rx='4.2' ry='5.5' fill='%235a2e16'/><path d='M17 2c-1.4 2.4 1.4 7.2 0 10' stroke='%23200d04' stroke-width='1' fill='none'/></g></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(40, 20, 6, 0.35));
+}
+
+/* Demli çay: the colour of steeped tea in a tulip glass, gold rim and a curl of steam. */
+.cosmetic-chat-bubble.bubble-s2-demli-cay {
+  --s2-ink: #fff4e8;
+  --s2-ink-2: rgba(255, 244, 232, 0.72);
+  --s2-link: #ffd08a;
+  --s2-edge: rgba(255, 196, 120, 0.45);
+  --s2-glow: rgba(196, 64, 18, 0.35);
+  --s2-quote: rgba(40, 6, 0, 0.3);
+  --s2-bg:
+    linear-gradient(90deg, rgba(255, 220, 180, 0.28) 0 3px, transparent 10px calc(100% - 12px), rgba(255, 220, 180, 0.18) calc(100% - 4px)),
+    radial-gradient(80% 120% at 50% 110%, rgba(255, 120, 40, 0.45), transparent 60%),
+    linear-gradient(180deg, #7c1c08, #a8360f 60%, #c24714);
+}
+.cosmetic-chat-bubble.bubble-s2-demli-cay::before {
+  content: "";
+  background: linear-gradient(180deg, transparent calc(100% - 4px), #e9b75a calc(100% - 4px) calc(100% - 2.5px), #9a6a1c calc(100% - 2.5px));
+}
+.cosmetic-chat-bubble.bubble-s2-demli-cay::after {
+  content: "";
+  top: -14px;
+  right: 14px;
+  width: 16px;
+  height: 18px;
+  opacity: 0.75;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18' fill='none' stroke='%23fff' stroke-linecap='round'><path d='M5 17c-3-3 3-5 0-8s2-5 1-8' stroke-width='1.3' opacity='.8'/><path d='M11 17c-2-2.5 2.5-4 0-6.5s1.5-4 .5-6' stroke-width='1' opacity='.55'/></svg>") center / contain no-repeat;
+}
+
+/* Bonbon: pastel candy stripes with a twisted wrapper on the corner. */
+.cosmetic-chat-bubble.bubble-s2-bonbon {
+  --s2-ink: #3c1636;
+  --s2-ink-2: rgba(60, 22, 54, 0.6);
+  --s2-link: #b0175c;
+  --s2-edge: rgba(214, 90, 150, 0.4);
+  --s2-quote: rgba(176, 23, 92, 0.08);
+  --s2-glow: rgba(255, 140, 190, 0.35);
+  --s2-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 45%),
+    repeating-linear-gradient(-45deg, #ffe1ee 0 12px, #fff5f9 12px 20px, #dff7ee 20px 32px, #fff5f9 32px 40px);
+}
+.cosmetic-chat-bubble.bubble-s2-bonbon::after {
+  content: "";
+  top: -9px;
+  right: -9px;
+  width: 30px;
+  height: 18px;
+  transform: rotate(18deg);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'><path d='M9 9L1 3l2 6-2 6z' fill='%23ff8fc0'/><path d='M21 9l8-6-2 6 2 6z' fill='%23ff8fc0'/><ellipse cx='15' cy='9' rx='7' ry='6' fill='%23ff5fa2'/><path d='M10 6c3-2 7-2 10 0M9.5 10c3.5-2 7.5-2 11 0' stroke='%23fff' stroke-width='1.4' fill='none' opacity='.8'/><ellipse cx='12.5' cy='6.5' rx='2' ry='1' fill='%23fff' opacity='.8'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 1.5px rgba(120, 20, 70, 0.35));
+}
+
+/* Cloud puff: clear sky with soft clouds rolling along the lower edge. */
+.cosmetic-chat-bubble.bubble-s2-cloud-puff {
+  --s2-ink: #0e2a48;
+  --s2-ink-2: rgba(14, 42, 72, 0.62);
+  --s2-link: #0b4fb3;
+  --s2-edge: rgba(255, 255, 255, 0.7);
+  --s2-quote: rgba(255, 255, 255, 0.45);
+  --s2-glow: rgba(120, 190, 255, 0.4);
+  --s2-bg:
+    radial-gradient(14px 11px at 8% 100%, #fff 96%, transparent),
+    radial-gradient(20px 14px at 24% 104%, #fff 96%, transparent),
+    radial-gradient(16px 11px at 42% 100%, #f4f9ff 96%, transparent),
+    radial-gradient(22px 13px at 62% 104%, #fff 96%, transparent),
+    radial-gradient(15px 10px at 80% 100%, #f4f9ff 96%, transparent),
+    radial-gradient(18px 12px at 96% 104%, #fff 96%, transparent),
+    radial-gradient(80% 70% at 80% 0%, rgba(255, 255, 255, 0.5), transparent 70%),
+    linear-gradient(180deg, #a9dcff, #7cc0f5);
+}
+
+/* Winter knit: burgundy wool in V stitches. */
+.cosmetic-chat-bubble.bubble-s2-knit {
+  --s2-ink: #fff4f0;
+  --s2-ink-2: rgba(255, 244, 240, 0.7);
+  --s2-link: #ffd2a1;
+  --s2-edge: rgba(255, 200, 190, 0.25);
+  --s2-quote: rgba(0, 0, 0, 0.22);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='10'><path d='M0 0c1.5 4 4 6 6 9M12 0c-1.5 4-4 6-6 9' stroke='%23ffffff' stroke-opacity='.13' stroke-width='3.2' fill='none' stroke-linecap='round'/><path d='M0 0c1.5 4 4 6 6 9M12 0c-1.5 4-4 6-6 9' stroke='%23000' stroke-opacity='.16' stroke-width='.8' fill='none' transform='translate(.8 .8)'/></svg>") 0 0 / 12px 10px,
+    radial-gradient(100% 80% at 50% 0%, rgba(255, 160, 150, 0.25), transparent 70%),
+    linear-gradient(180deg, #8a2433, #641723);
+}
+.cosmetic-chat-bubble.bubble-s2-knit::after {
+  content: "";
+  top: -8px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(from 10deg, #fff4ee 0 12deg, #f2d8d0 12deg 24deg);
+  -webkit-mask: radial-gradient(circle, #000 60%, transparent 62%) center / 100% 100%;
+  mask: radial-gradient(circle, #000 60%, transparent 62%) center / 100% 100%;
+  filter: drop-shadow(0 1px 1px rgba(60, 10, 20, 0.5));
+}
+
+/* Concert ticket: punched holes on both sides and a dashed tear line. */
+.cosmetic-chat-bubble.bubble-s2-ticket {
+  --s2-ink: #fff7f2;
+  --s2-ink-2: rgba(255, 247, 242, 0.74);
+  --s2-link: #fff07a;
+  --s2-edge: rgba(255, 210, 150, 0.45);
+  --s2-glow: rgba(255, 70, 120, 0.35);
+  --s2-quote: rgba(40, 0, 30, 0.25);
+  --s2-bg:
+    radial-gradient(circle at 0 50%, rgba(18, 8, 24, 0.85) 0 5px, rgba(255, 255, 255, 0.3) 5.5px, transparent 6.5px),
+    radial-gradient(circle at 100% 50%, rgba(18, 8, 24, 0.85) 0 5px, rgba(255, 255, 255, 0.3) 5.5px, transparent 6.5px),
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 210, 120, 0.45), transparent 60%),
+    linear-gradient(110deg, #b0175c, #d7385e 50%, #e8743a);
+}
+.cosmetic-chat-bubble.bubble-s2-ticket::before {
+  content: "";
+  inset: 4px 9px;
+  border-radius: 6px;
+  border: 1px dashed rgba(255, 240, 220, 0.45);
+}
+
+/* Postcard: a perforated stamp with a cancellation mark. */
+.cosmetic-chat-bubble.bubble-s2-postcard {
+  --s2-ink: #22303f;
+  --s2-ink-2: rgba(34, 48, 63, 0.6);
+  --s2-link: #1d5fa8;
+  --s2-edge: rgba(90, 100, 110, 0.28);
+  --s2-quote: rgba(34, 48, 63, 0.07);
+  --s2-bg:
+    radial-gradient(120% 90% at 0% 0%, #ffffff, transparent 55%),
+    linear-gradient(180deg, #fbf8f2, #efe9de);
+}
+.cosmetic-chat-bubble.bubble-s2-postcard::after {
+  content: "";
+  top: -10px;
+  right: -7px;
+  width: 22px;
+  height: 26px;
+  transform: rotate(6deg);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 26'><path d='M1 1h20v24H1z' fill='%23fff'/><rect x='3' y='3' width='16' height='20' fill='%232a6fb5'/><circle cx='14' cy='9' r='3' fill='%23ffd166'/><path d='M3 23l6-8 4 5 3-3 3 6z' fill='%231b4f7d'/><path d='M3 23l6-8 3 4z' fill='%23e8f1f8' opacity='.5'/><g fill='%23efe9de'><circle cx='1' cy='3' r='1'/><circle cx='1' cy='8' r='1'/><circle cx='1' cy='13' r='1'/><circle cx='1' cy='18' r='1'/><circle cx='1' cy='23' r='1'/><circle cx='21' cy='3' r='1'/><circle cx='21' cy='8' r='1'/><circle cx='21' cy='13' r='1'/><circle cx='21' cy='18' r='1'/><circle cx='21' cy='23' r='1'/><circle cx='6' cy='1' r='1'/><circle cx='11' cy='1' r='1'/><circle cx='16' cy='1' r='1'/><circle cx='6' cy='25' r='1'/><circle cx='11' cy='25' r='1'/><circle cx='16' cy='25' r='1'/></g><path d='M-2 12c3-2 5 2 8 0s5 2 8 0 5 2 8 0' stroke='%23333' stroke-width='.8' fill='none' opacity='.55'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.3));
+}
