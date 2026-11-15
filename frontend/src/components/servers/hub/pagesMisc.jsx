@@ -61,7 +61,7 @@ export function InvitePage({ route }) {
 
   const url = link ? shareUrl(link.url) : "";
   const msg = url ? f("inviteMsg", { server: server?.name, url }) : "";
-  const copy = async () => { if (!url) return; await copyText(url); toast(s.copied, "success"); };
+  const copy = async () => { if (!url) return; if (await copyText(url)) toast(s.copied, "success"); };
   const share = async () => {
     if (!url) return;
     if (navigator.share) {
@@ -166,7 +166,7 @@ export function InviteDetailPage({ route }) {
       <Foot>{inviteSub(inv, creatorName(hub, inv), f)}</Foot>
       <Sec>{""}</Sec>
       <Group>
-        <Row t={s.copy} blue center onClick={async () => { await copyText(shareUrl(inv.url)); toast(s.copied, "success"); }} />
+        <Row t={s.copy} blue center onClick={async () => { if (await copyText(shareUrl(inv.url))) toast(s.copied, "success"); }} />
         <Row t={s.revoke} red center onClick={revoke} disabled={busy} />
       </Group>
     </PageFrame>

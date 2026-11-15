@@ -151,13 +151,13 @@ function UserProfileModal({
       }
     }
     const ok = await copyText(url);
-    toast(ok ? t("profile.linkCopied") : t("Something went wrong."), ok ? "success" : "error", { duration: 1800 });
+    toast(ok ? t("profile.linkCopied") : t("Could not copy to clipboard"), ok ? "success" : "error", { duration: 1800 });
   };
   const copyUsername = async () => {
     const handle = profileHandle();
     if (!handle) return;
     const ok = await copyText(handle);
-    toast(ok ? t("profile.usernameCopied") : t("Something went wrong."), ok ? "success" : "error", { duration: 1800 });
+    toast(ok ? t("profile.usernameCopied") : t("Could not copy to clipboard"), ok ? "success" : "error", { duration: 1800 });
   };
   const editNickname = async () => {
     const base = profile?.displayName || profile?.display_name || displayNameProp || profileHandle();

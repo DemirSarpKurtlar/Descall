@@ -1102,9 +1102,11 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
                         const info = isDm
                           ? `Call with ${peer?.username}`
                           : t("Group call · {count} participants", { count: groupCall.participants?.length ?? 0 });
-                        copyText(info).catch(() => {});
-                        setCopiedInfo(true);
-                        setTimeout(() => setCopiedInfo(false), 2000);
+                        copyText(info).then((ok) => {
+                          if (!ok) { toast(t("Could not copy to clipboard"), "error"); return; }
+                          setCopiedInfo(true);
+                          setTimeout(() => setCopiedInfo(false), 2000);
+                        });
                       }}
                     />
                     <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "4px 0" }} />
@@ -1213,7 +1215,7 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
       onCopyId={() => {
         const id = userMenu?.user?.id;
         if (id == null) return;
-        copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+        copyText(String(id)).then((ok) => (ok ? toast(t("Copied"), "success") : toast(t("Could not copy to clipboard"), "error")));
         setUserMenu(null);
       }}
       onClose={() => setUserMenu(null)}

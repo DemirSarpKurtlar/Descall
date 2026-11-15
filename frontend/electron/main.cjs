@@ -61,6 +61,7 @@ const {
 const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs');
 const { encryptText, readEncryptedFile, looksLikeJwt } = require('./tokenCrypto.cjs');
 const { readClipboardImagePng } = require('./clipboardImage.cjs');
+const { isPermissionAllowed, permissionUrl, writeClipboardText } = require('./clipboardText.cjs');
 const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
@@ -141,6 +142,11 @@ function registerAppProtocolOn(ses) {
 
 premiumHooks.set('registerAppProtocolOn', registerAppProtocolOn);
 premiumHooks.set('mediaPermissions', MEDIA_PERMISSIONS);
+// Media list plus clipboard-sanitized-write for the app origin only (clipboardText.cjs).
+function appPermissionAllowed(webContents, permission, url) {
+  return isPermissionAllowed(permission, permissionUrl(webContents, url), { mediaPermissions: MEDIA_PERMISSIONS, isAppUrl, isDev });
+}
+premiumHooks.set('permissionAllowed', appPermissionAllowed);
 
 function registerDescallProtocol() {
   const root = distRoot();
@@ -1373,12 +1379,14 @@ function createMainWindow() {
   // 'speaker-selection' (2.10.113): without it Chromium rejects
   // HTMLMediaElement/AudioContext.setSinkId, so picking a speaker in a call
   // silently did nothing.
-  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(MEDIA_PERMISSIONS.includes(permission));
+  // 'clipboard-sanitized-write' (navigator.clipboard.writeText) is allowed for the app
+  // origin only; refusing it was the "Write permission denied" copy failure (clipboardText.cjs).
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    callback(appPermissionAllowed(webContents, permission, details?.requestingUrl));
   });
 
-  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
-    return MEDIA_PERMISSIONS.includes(permission);
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    return appPermissionAllowed(webContents, permission, requestingOrigin || details?.requestingUrl);
   });
 
   // Make navigator.mediaDevices.getDisplayMedia work in Electron (DM/group/server).
@@ -2300,6 +2308,9 @@ trustedHandle('show-notification', (_event, payload = {}) => {
 // Composer paste fallback: clipboard image as PNG bytes (null when none). Electron 44 removed
 // clipboard.readImage(); clipboardImage.cjs reads it through the async clipboard.read().
 trustedHandle('clipboard:read-image', () => readClipboardImagePng({ clipboard, nativeImage }));
+// Copy fallback (src/lib/copyText.js) when navigator.clipboard.writeText is refused: string
+// only, size-capped, resolves { ok } and never rejects.
+trustedHandle('clipboard:write-text', (_event, text) => writeClipboardText({ clipboard, text }));
 
 ipcMain.handle('app-version', () => {
   return app.getVersion();

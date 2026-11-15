@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
+import { copyText } from "../../../lib/copyText.js";
 import DossierMenu from "../dossier/DossierMenu.jsx";
 import {
   BarChart3, CheckCircle2, ChevronDown, CircleSlash, Clock, Coins, Download, Edit3, Filter, Gift, Layers, MoreHorizontal,
@@ -482,12 +483,8 @@ function CatalogRow({ item, selected, onSelect, onOpen, onActive, busy, onGift, 
               label: t("shopDesk.menu.copySku"),
               icon: Copy,
               onSelect: async () => {
-                try {
-                  await navigator.clipboard.writeText(item.sku);
-                  showToast(t("shopDesk.toastCopied", { sku: item.sku }));
-                } catch {
-                  /* clipboard blocked */
-                }
+                if (await copyText(item.sku)) showToast(t("shopDesk.toastCopied", { sku: item.sku }));
+                else showToast(t("Could not copy to clipboard"), null, "bad");
               },
             },
             "sep",

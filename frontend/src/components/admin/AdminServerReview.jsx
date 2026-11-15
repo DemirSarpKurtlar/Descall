@@ -29,6 +29,7 @@ import {
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
+import { copyText } from "../../lib/copyText.js";
 import { Avatar } from "../ui/Avatar";
 import OverlayPortal from "../ui/OverlayPortal.jsx";
 import { useLocale } from "../../context/LocaleContext";
@@ -832,7 +833,7 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
         <div className="asr-detail-title">
           <h2>{s.name}</h2>
           <div className="asr-meta">
-            <button type="button" className="asr-id" onClick={() => { navigator.clipboard?.writeText(s.id).then(() => notify(t("serverReview.copied"))).catch(() => {}); }} title={t("serverReview.copyId")} aria-label={t("serverReview.copyId")}>
+            <button type="button" className="asr-id" onClick={() => { copyText(s.id).then((ok) => notify(ok ? t("serverReview.copied") : t("Could not copy to clipboard"))); }} title={t("serverReview.copyId")} aria-label={t("serverReview.copyId")}>
               <Copy size={11} /> {s.id.slice(0, 8)}
             </button>
             <span><Clock size={11} /> {t("serverReview.createdOn", { date: formatAppDate(s.createdAt, locale) })}</span>

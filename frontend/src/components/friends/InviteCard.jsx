@@ -3,37 +3,9 @@ import { Check, Coins, Copy, Gift, Share2 } from "../ui/Icon.jsx";
 import { buildFriendInviteUrl, toPublicShareUrl } from "../../lib/referral";
 import { Funnel } from "../../site/analytics";
 import { useT } from "../../context/LocaleContext";
+import { useToast } from "../../context/ToastContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
-import { hapticSuccess } from "../../lib/fluid/haptics";
-
-async function copyText(text) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      hapticSuccess();
-      return true;
-    }
-  } catch {
-    /* fall through */
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    ta.setSelectionRange(0, text.length);
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    if (ok) hapticSuccess();
-    return ok;
-  } catch {
-    return false;
-  }
-}
+import { copyText } from "../../lib/copyText.js";
 
 /**
  * Shareable personal invite card with DesCoin reward copy. UI audit #12: every
@@ -43,6 +15,7 @@ async function copyText(text) {
  */
 export default function InviteCard({ username, compact = false, onCopied, onShared, variant = "friends" }) {
   const t = useT();
+  const { toast } = useToast();
   const glassShell = useGlassShell();
   const [copied, setCopied] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
@@ -64,6 +37,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
   const copy = async () => {
     const ok = await copyText(url);
     if (ok) markCopied("invite_card");
+    else toast(t("Could not copy to clipboard"), "error");
     return ok;
   };
 
@@ -101,6 +75,7 @@ export default function InviteCard({ username, compact = false, onCopied, onShar
       }
 
       const ok = await copyText(url);
+      if (!ok) toast(t("Could not copy to clipboard"), "error");
       if (ok) {
         markCopied("clipboard_fallback");
         try {

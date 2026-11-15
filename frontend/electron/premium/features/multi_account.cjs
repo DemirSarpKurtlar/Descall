@@ -57,8 +57,11 @@ function sessionFor(id) {
     protocolDone.add(ses);
     try { host.registerAppProtocolOn?.(ses); } catch (err) { ctx.log('protocol on partition failed', err?.message || err); }
     const allowed = Array.isArray(host.mediaPermissions) ? host.mediaPermissions : [];
-    ses.setPermissionRequestHandler((_wc, permission, cb) => cb(allowed.includes(permission)));
-    ses.setPermissionCheckHandler((_wc, permission) => allowed.includes(permission));
+    // Same rule as the default session: media list, plus clipboard-sanitized-write for the app origin.
+    const decide = hostHooks.get('permissionAllowed');
+    const ok = (wc, permission, url) => (decide ? decide(wc, permission, url) : allowed.includes(permission));
+    ses.setPermissionRequestHandler((wc, permission, cb, details) => cb(ok(wc, permission, details?.requestingUrl)));
+    ses.setPermissionCheckHandler((wc, permission, origin, details) => ok(wc, permission, origin || details?.requestingUrl));
   }
   return ses;
 }

@@ -59,7 +59,7 @@ function RecoveryList({ codes, t }) {
         {codes.map((c) => <li key={c} className="tnum">{c}</li>)}
       </ol>
       <div className="tfa-row">
-        <button type="button" className="us-btn" onClick={async () => { await copyText(text); setCopied(true); setTimeout(() => setCopied(false), 1800); }}>
+        <button type="button" className="us-btn" onClick={async () => { if (!(await copyText(text))) return; setCopied(true); setTimeout(() => setCopied(false), 1800); }}>
           <Copy size={15} /> {copied ? t("tfa.copied") : t("tfa.copyAll")}
         </button>
         <button type="button" className="us-btn" onClick={download}>
@@ -130,7 +130,7 @@ function SetupSheet({ open, onClose, onDone, t }) {
             <div className="tfa-key">
               <span>{t("tfa.manualKey")}</span>
               <code className="tnum">{setup.secret}</code>
-              <button type="button" className="us-link-btn" onClick={async () => { await copyText(setup.secret.replace(/\s/g, "")); setKeyCopied(true); setTimeout(() => setKeyCopied(false), 1600); }}>
+              <button type="button" className="us-link-btn" onClick={async () => { if (!(await copyText(setup.secret.replace(/\s/g, "")))) return; setKeyCopied(true); setTimeout(() => setKeyCopied(false), 1600); }}>
                 <Copy size={14} /> {keyCopied ? t("tfa.copied") : t("tfa.copy")}
               </button>
             </div>

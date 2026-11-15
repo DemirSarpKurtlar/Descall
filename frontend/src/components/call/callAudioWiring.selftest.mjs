@@ -42,7 +42,9 @@ assert.ok(!/\.server-voice-dock-chevron\s*\{\s*display:\s*none/.test(glassCall),
 
 const main = read("electron/main.cjs");
 assert.match(main, /MEDIA_PERMISSIONS = \[[^\]]*'speaker-selection'/);
-assert.equal((main.match(/MEDIA_PERMISSIONS\.includes\(permission\)/g) || []).length, 2, "request + check handlers");
+// Both session handlers go through appPermissionAllowed (media list + app-origin clipboard write).
+assert.match(main, /isPermissionAllowed\(permission, [^)]*\), \{ mediaPermissions: MEDIA_PERMISSIONS/);
+assert.equal((main.match(/=> \{\s*(?:callback\(|return )appPermissionAllowed\(webContents, permission/g) || []).length, 2, "request + check handlers");
 
 for (const hook of ["src/hooks/useCall.js", "src/hooks/useGroupCall.js", "src/hooks/useServerVoice.js"]) {
   const src = read(hook);

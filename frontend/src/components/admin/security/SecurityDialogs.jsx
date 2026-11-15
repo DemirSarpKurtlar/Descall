@@ -10,6 +10,7 @@ import { AlertTriangle, Ban, Bell, Check, Copy, ExternalLink, Info, Lock, Networ
 import GlassCheckbox from "../../ui/GlassCheckbox";
 import { Dialog, Drawer, ICONS, Popover } from "./ui.jsx";
 import { securityApi } from "./securityApi.js";
+import { copyText } from "../../../lib/copyText.js";
 import { countryName } from "./SecurityCards.jsx";
 import {
   BAN_DURATIONS,
@@ -135,14 +136,10 @@ export function EventDrawer({ open, eventId, onClose, t, locale, now, onBanSourc
             <button
               type="button"
               className="sc-btn"
-              onClick={() => {
-                try {
-                  navigator.clipboard?.writeText(`${t(`secCenter.ev.${e.type}.title`)} · ${eventLine(e, t, locale)} · ${e.ipMasked || ""} · ${e.at} · ${e.id}`);
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 1600);
-                } catch {
-                  /* no clipboard */
-                }
+              onClick={async () => {
+                if (!(await copyText(`${t(`secCenter.ev.${e.type}.title`)} · ${eventLine(e, t, locale)} · ${e.ipMasked || ""} · ${e.at} · ${e.id}`))) return;
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1600);
               }}
             >
               {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}

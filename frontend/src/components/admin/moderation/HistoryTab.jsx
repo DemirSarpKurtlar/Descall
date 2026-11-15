@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
+import { copyText } from "../../../lib/copyText.js";
 import { Search, Download, FileText, Code, Copy, ChevronDown, AlertTriangle } from "../../ui/Icon.jsx";
 import DossierMenu from "../dossier/DossierMenu.jsx";
 import { ModAvatar, Chip, Select, durationShort, categoryText } from "./ModParts.jsx";
@@ -84,8 +85,8 @@ export default function HistoryTab({ meta, epoch, onToast, onOpenPerson }) {
       if (kind === "csv") download(`moderation-history-${stamp}.csv`, historyCsv(list), "text/csv;charset=utf-8");
       else if (kind === "json") download(`moderation-history-${stamp}.json`, JSON.stringify(list, null, 2), "application/json");
       else {
-        await navigator.clipboard.writeText(historyTsv(list));
-        onToast(t("modDesk.hist.copied", { count: list.length }));
+        if (await copyText(historyTsv(list))) onToast(t("modDesk.hist.copied", { count: list.length }));
+        else onToast(t("Could not copy to clipboard"), "red");
       }
     } catch (e) {
       onToast(e?.message || t("modDesk.actionFailed"), "red");

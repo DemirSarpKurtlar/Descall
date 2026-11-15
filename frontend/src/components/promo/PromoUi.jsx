@@ -162,8 +162,7 @@ export function PromoGiftPopup({ popup, onLater, onUse, onClose }) {
         <PressButton
           className={`pc-copy${copied ? " is-done" : ""}`}
           onClick={async () => {
-            await copyText(displayCode(popup.code, "-"));
-            setCopied(true);
+            if (await copyText(displayCode(popup.code, "-"))) setCopied(true);
           }}
         >
           {copied ? <><Check size={14} /> {t("promo.copied")}</> : <><Copy size={14} /> {t("promo.copy")}</>}

@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setLocale: (locale) => ipcRenderer.send('app:locale', String(locale || '').slice(0, 16)),
   // Not in the admin windows: no clipboard image (composer paste falls back to the browser).
   readClipboardImage: () => Promise.resolve(null),
+  // Copy fallback (src/lib/copyText.js): admin pages copy IDs, links and logs. Write only.
+  writeClipboardText: (text) => (typeof text === 'string'
+    ? ipcRenderer.invoke('clipboard:write-text', text)
+    : Promise.resolve({ ok: false })),
   // Page zoom (Ctrl + mouse wheel, src/lib/smoothZoom.js), same as the main window.
   zoom: {
     get: () => webFrame.getZoomFactor(),

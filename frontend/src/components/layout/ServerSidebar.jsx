@@ -472,7 +472,7 @@ export default function ServerSidebar({
                   const { buildFriendInviteUrl, toPublicShareUrl } = await import("../../lib/referral");
                   const { Funnel } = await import("../../site/analytics");
                   const url = toPublicShareUrl(buildFriendInviteUrl(me?.username));
-                  await copyText(url);
+                  if (!(await copyText(url))) throw new Error("copy failed");
                   Funnel.inviteGenerated({ method: "empty_state", username: me?.username });
                   setAddSuccess(t("Invite link copied"));
                   setTimeout(() => setAddSuccess(""), 3000);

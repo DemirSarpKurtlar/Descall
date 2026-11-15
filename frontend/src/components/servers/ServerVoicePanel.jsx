@@ -1272,7 +1272,7 @@ export default function ServerVoicePanel({
         onCopyId={() => {
           const id = memberMenu?.user?.id;
           if (id == null) return;
-          copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+          copyText(String(id)).then((ok) => (ok ? toast(t("Copied"), "success") : toast(t("Could not copy to clipboard"), "error")));
           setMemberMenu(null);
         }}
         onClose={() => setMemberMenu(null)}

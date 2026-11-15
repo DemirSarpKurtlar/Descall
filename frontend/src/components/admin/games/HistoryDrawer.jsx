@@ -9,6 +9,7 @@ import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatNumber } from "../../../i18n/format.js";
 import { formatAppDate } from "../../../lib/datetime";
+import { copyText } from "../../../lib/copyText.js";
 import { Calendar, ChevronDown, Download, Link2, Play, Shield, X } from "../../ui/Icon.jsx";
 import DossierMenu from "../dossier/DossierMenu.jsx";
 import { CardHand, Delta, GAvatar, GDrawer, ResultChip, Seg, Skel, downloadCsv } from "./GamesUi.jsx";
@@ -196,12 +197,8 @@ export default function HistoryDrawer({ open, onClose, player, stats, focusHandI
   const copyLink = async () => {
     if (!openId) return;
     const link = handLink(window.location.origin, player.id, openId);
-    try {
-      await navigator.clipboard.writeText(link);
-      onNotify?.(t("gamesAdmin.drawer.linkCopied"));
-    } catch {
-      onNotify?.(link);
-    }
+    // Not copied: the toast shows the link so it can still be selected by hand.
+    onNotify?.((await copyText(link)) ? t("gamesAdmin.drawer.linkCopied") : link);
   };
 
   const fp = state.fairPlay;

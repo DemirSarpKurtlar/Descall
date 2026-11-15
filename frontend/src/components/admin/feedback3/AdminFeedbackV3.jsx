@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
 import { useLocale } from "../../../context/LocaleContext";
 import { upper } from "../../../i18n/format.js";
+import { copyText } from "../../../lib/copyText.js";
 import { S3Glyph as I } from "../../settings/SettingsV3.jsx";
 import logoIcon from "../../../assets/admin-logo-icon.png";
 import {
@@ -451,12 +452,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
 
   const copyId = async () => {
     if (!sel) return;
-    try {
-      await navigator.clipboard.writeText(String(sel.user.id));
-      flash(t("adminx.fb.idCopied"));
-    } catch {
-      flash(t("adminx.fb.copyError"));
-    }
+    flash(t((await copyText(String(sel.user.id))) ? "adminx.fb.idCopied" : "adminx.fb.copyError"));
   };
 
   const allLabel = t("adminx.fb.all");

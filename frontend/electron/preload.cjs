@@ -8,6 +8,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setLocale: (locale) => ipcRenderer.send('app:locale', String(locale || '').slice(0, 16)),
   // Clipboard image (PNG bytes) for Ctrl+V in the composer
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
+  // Copy fallback (src/lib/copyText.js): OS clipboard through main. Resolves { ok }.
+  writeClipboardText: (text) => (typeof text === 'string'
+    ? ipcRenderer.invoke('clipboard:write-text', text)
+    : Promise.resolve({ ok: false })),
   // Page zoom (Ctrl + mouse wheel, src/lib/smoothZoom.js): this window's zoom factor.
   zoom: {
     get: () => webFrame.getZoomFactor(),
