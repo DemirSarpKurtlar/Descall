@@ -78,6 +78,7 @@ export {
   SlidersHorizontal,
   Smartphone,
   Sparkles,
+  Star,
   Store,
   Sun,
   Undo2,
