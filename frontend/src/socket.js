@@ -35,6 +35,14 @@ function appPlatform() {
   return "web";
 }
 
+function uiLanguage() {
+  try {
+    return String(window.localStorage?.getItem("descall_language") || document.documentElement.lang || "").slice(0, 10);
+  } catch {
+    return "";
+  }
+}
+
 function isLocalVite() {
   if (typeof window === "undefined") return false;
   if (isElectronRuntime()) return false;
@@ -95,6 +103,9 @@ export function createSocket(token, options = {}) {
       const base = isNativeIOS()
         ? { token, platform: "ios", presence: 2, app: "ios", device: getDeviceId() }
         : { token, presence: 2, app: appPlatform(), device: getDeviceId() };
+      // UI language (Canlı popup language targeting and stats).
+      const lang = uiLanguage();
+      if (lang) base.lang = lang;
       const bootFriends = bootHashByToken.get(token);
       cb(bootFriends ? { ...base, bootFriends } : base);
     },
