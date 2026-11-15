@@ -235,5 +235,271 @@ add("cloud-sea", "common", 270, false,
       `<g fill='url(#c1)'>${cloudBand(4, 118, 14, 28)}</g><g fill='url(#c2)'>${cloudBand(7, 146, 16, 32)}</g><g fill='url(#c3)'>${cloudBand(9, 176, 18, 34)}</g>`;
     return bannerDoc(s.d + glow("g", "#fff0c8", 0.85) + lg("c1", ["#ffe6d0", "#d8a8c8"]) + lg("c2", ["#fff3e6", "#e0b8d0"]) + lg("c3", ["#ffffff", "#f0d0e0"]), body, 0.25);
   });
+// ================================================================= rare
+add("fairy-chimneys", "rare", 480, false,
+  N("Peri Bacaları", "Fairy Chimneys", "Feenkamine", "Chimeneas de hadas", "Cheminées de fées", "Chaminés de fada", "Сказочные дымоходы"),
+  N("Gün doğarken peri bacalarının üstünde süzülen sıcak hava balonları.", "Hot air balloons drifting over fairy chimney rocks at sunrise.", "Heißluftballons über Feenkaminen im Sonnenaufgang.", "Globos aerostáticos sobre chimeneas de hadas al amanecer.", "Des montgolfières qui flottent au-dessus des cheminées de fées au lever du soleil.", "Balões de ar quente sobre chaminés de fada ao nascer do sol.", "Воздушные шары над сказочными скалами-дымоходами на рассвете."),
+  () => {
+    const s = sky("s", [[0, "#3a5aa8"], [0.5, "#f2a8a0"], [0.85, "#ffd6a0"], [1, "#ffe8c0"]]);
+    const chim = (x, base, h, w, c) => `<path d='M${x - w} ${base}C${x - w} ${base - h * 0.5} ${x - w * 0.55} ${base - h * 0.8} ${x - w * 0.3} ${base - h}H${x + w * 0.3}C${x + w * 0.55} ${base - h * 0.8} ${x + w} ${base - h * 0.5} ${x + w} ${base}Z' fill='${c}'/><path d='M${x - w * 0.45} ${base - h}Q${x} ${base - h - w * 0.9} ${x + w * 0.45} ${base - h}Z' fill='#6a3a2a'/><path d='M${x + w * 0.1} ${base - h + 4}C${x + w * 0.5} ${base - h * 0.6} ${x + w * 0.7} ${base - h * 0.3} ${x + w * 0.8} ${base}' stroke='#7a4a32' stroke-opacity='.4' stroke-width='3' fill='none'/>`;
+    const balloon = (x, y, s, c1, c2) => `<g transform='translate(${x} ${y}) scale(${s})'><path d='M0 -22C14 -22 20 -10 18 0C16 8 8 14 4 18H-4C-8 14 -16 8 -18 0C-20 -10 -14 -22 0 -22Z' fill='url(#${c1})'/><path d='M0 -22C5 -22 7 -10 6 0C5 8 3 14 2 18H-2C-3 14 -5 8 -6 0C-7 -10 -5 -22 0 -22Z' fill='${c2}' opacity='.85'/><path d='M-4 18L-3 24M4 18L3 24' stroke='#3a2a1a' stroke-width='.8'/><rect x='-3.5' y='24' width='7' height='5' rx='1' fill='#6a4a2a'/></g>`;
+    const body = s.b + `<circle cx='470' cy='120' r='110' fill='url(#g)'/><path d='${ridge(2, 128, 14, 0.5)}' fill='#c89a8a' opacity='.6'/>` +
+      chim(330, 170, 70, 22, "#e0b090") + chim(380, 175, 54, 18, "#d0a080") + chim(520, 170, 80, 24, "#e8b898") + chim(570, 176, 50, 16, "#c89070") + chim(450, 180, 40, 15, "#d8a888") + `<path d='${hills(172, [[6, 200, 1], [3, 70, 2]])}' fill='#a8705a'/>` +
+      balloon(420, 50, 1.2, "b1", "#ffd36a") + balloon(510, 34, 0.85, "b2", "#fff") + balloon(300, 70, 0.7, "b3", "#ffd36a") + balloon(560, 92, 0.55, "b1", "#fff") + balloon(230, 40, 0.5, "b2", "#ffd36a");
+    return bannerDoc(s.d + glow("g", "#fff0c8", 0.7) + lg("b1", ["#ff6a5a", "#c02a3a"], 0, 0, 1, 0) + lg("b2", ["#5ac8ff", "#2a5ad8"], 0, 0, 1, 0) + lg("b3", ["#7ae0a0", "#1f8a5a"], 0, 0, 1, 0), body, 0.3);
+  });
+
+add("bosphorus-night", "rare", 520, false,
+  N("Boğaz Gecesi", "Bosphorus Night", "Bosporusnacht", "Noche en el Bósforo", "Nuit sur le Bosphore", "Noite no Bósforo", "Ночь на Босфоре"),
+  N("Işıklı köprü, minareli siluet ve suya düşen yansımalar.", "A lit bridge, a skyline of domes and minarets, and reflections on the water.", "Eine beleuchtete Brücke, eine Silhouette aus Kuppeln und Minaretten, Spiegelungen im Wasser.", "Un puente iluminado, una silueta de cúpulas y minaretes y reflejos en el agua.", "Un pont illuminé, une silhouette de coupoles et de minarets, des reflets sur l'eau.", "Uma ponte iluminada, uma silhueta de cúpulas e minaretes e reflexos na água.", "Подсвеченный мост, силуэт куполов и минаретов и отражения в воде."),
+  () => {
+    const s = sky("s", [[0, "#070b24"], [0.6, "#1e2a5e"], [1, "#4a3a7a"]]);
+    const dome = (x, w, h) => `M${x - w} 130Q${x - w} ${130 - h} ${x} ${130 - h * 1.15}Q${x + w} ${130 - h} ${x + w} 130Z`;
+    const min = (x, h) => `M${x - 2} 130V${130 - h}L${x} ${130 - h - 8}L${x + 2} ${130 - h}V130ZM${x - 3} ${130 - h * 0.7}h6v2h-6Z`;
+    const city = `<path d='${skyline(8, 130, 6, 22, 0, 600, 10, 22).body}' fill='#141a44'/><g transform='translate(330 0)'><path d='${dome(110, 30, 26)}${dome(150, 16, 16)}${dome(76, 14, 14)}${min(60, 50)}${min(160, 56)}${min(38, 40)}${min(184, 44)}' fill='#0a0d28'/></g><g fill='#ffd27a' opacity='.7'>${scatter(17, 40, (r) => `<rect x='${f(r() * 600)}' y='${f(112 + r() * 16)}' width='2' height='2'/>`)}</g>`;
+    const bridge = `<path d='M240 108L600 92' stroke='#2a2e5e' stroke-width='3'/><path d='M300 106V50M500 97V44' stroke='#3a3e7e' stroke-width='5'/><path d='M240 108Q300 60 300 50Q330 92 400 101Q470 90 500 44Q500 70 600 92' fill='none' stroke='#ffd27a' stroke-width='1.6'/>` + Array.from({ length: 30 }, (_, i) => { const x = 245 + i * 12; return `<circle cx='${x}' cy='${f(108 - (x - 240) * 0.044)}' r='1.6' fill='${i % 3 ? "#ffd27a" : "#7ae0ff"}'/>`; }).join("");
+    const water = `<rect y='130' width='600' height='70' fill='url(#w)'/>` + scatter(5, 40, (r) => { const x = r() * 600; return `<path d='M${f(x)} ${f(134 + r() * 60)}h${f(6 + r() * 26)}' stroke='${r() > 0.5 ? "#ffd27a" : "#9fb6ff"}' stroke-opacity='${f(0.25 + r() * 0.5)}' stroke-width='1.4'/>`; });
+    const body = s.b + stars(5, 70, [0, 0, 600, 90], ["#fff", "#cfd8ff"], 1, 3) + `<circle cx='540' cy='34' r='12' fill='#fff2d0'/><circle cx='540' cy='34' r='40' fill='url(#g)'/>` + city + bridge + water + `<path d='M380 150h40l-6 6h-30z' fill='#141838'/><rect x='392' y='144' width='14' height='6' fill='#141838'/><circle cx='396' cy='147' r='1' fill='#ffd27a'/><circle cx='401' cy='147' r='1' fill='#ffd27a'/>`;
+    return bannerDoc(s.d + glow("g", "#fff2d0", 0.5) + lg("w", ["#1a2050", "#06081c"]), body, 0.45);
+  });
+
+add("iznik-tiles", "rare", 460, false,
+  N("İznik Çinisi", "Iznik Tiles", "Iznik-Fliesen", "Azulejos de Iznik", "Carreaux d'Iznik", "Azulejos de Iznik", "Изникские изразцы"),
+  N("Kobalt ve turkuaz lale, karanfil desenli sırlı çini.", "Glazed tiles patterned with cobalt and turquoise tulips and carnations.", "Glasierte Fliesen mit Tulpen und Nelken in Kobalt und Türkis.", "Azulejos vidriados con tulipanes y claveles en cobalto y turquesa.", "Des carreaux émaillés ornés de tulipes et d'œillets cobalt et turquoise.", "Azulejos vitrificados com tulipas e cravos em cobalto e turquesa.", "Глазурованные изразцы с кобальтовыми и бирюзовыми тюльпанами и гвоздиками."),
+  () => {
+    const T = 100;
+    const tulip = `<path d='M0 18C-8 10 -9 -2 -4 -10L-2 -2L0 -14L2 -2L4 -10C9 -2 8 10 0 18Z' fill='#1f4fb8' stroke='#0a1f5a' stroke-width='1'/><path d='M0 18C-3 10 -3 0 0 -8C3 0 3 10 0 18Z' fill='#d03a3a'/>`;
+    const tile = `<g id='t'><rect width='${T}' height='${T}' fill='url(#gl)'/><rect x='2' y='2' width='${T - 4}' height='${T - 4}' fill='none' stroke='#1f4fb8' stroke-width='2'/>` +
+      `<g transform='translate(50 50)'><circle r='14' fill='#2ab0b8' stroke='#0a1f5a' stroke-width='1'/>${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<path d='M0 -14C6 -18 6 -26 0 -30C-6 -26 -6 -18 0 -14Z' transform='rotate(${a})' fill='${a % 90 ? "#2ab0b8" : "#1f4fb8"}' stroke='#0a1f5a' stroke-width='.8'/>`).join("")}<circle r='6' fill='#d03a3a' stroke='#0a1f5a' stroke-width='.8'/></g>` +
+      [[0, 0, 45], [100, 0, 135], [100, 100, 225], [0, 100, 315]].map(([x, y, a]) => `<g transform='translate(${x} ${y}) rotate(${a}) translate(0 -20)'>${tulip}</g>`).join("") + `<path d='M50 0Q40 20 50 36M50 100Q60 80 50 64M0 50Q20 60 36 50M100 50Q80 40 64 50' fill='none' stroke='#3a8a4a' stroke-width='2'/></g>`;
+    let s = "";
+    for (let y = -40; y < 200; y += T) for (let x = -30; x < 600; x += T) s += `<use href='#t' x='${x}' y='${y}'/>`;
+    return bannerDoc(lg("gl", ["#fbf6ec", "#efe4d0"], 0, 0, 1, 1) + tile + lg("sh", [[0, "#fff", 0.35], [0.4, "#fff", 0], [1, "#000", 0.15]], 0, 0, 1, 1), s + `<rect width='600' height='200' fill='url(#sh)'/>`, 0.35);
+  });
+
+add("kilim-weave", "rare", 380, false,
+  N("Kilim Dokuma", "Kilim Weave", "Kelimgewebe", "Tejido kilim", "Tissage kilim", "Tecido kilim", "Килим"),
+  N("Sıcak kırmızı ve hardal tonlarında el dokuması geometrik kilim deseni.", "A hand-woven geometric kilim pattern in warm red and mustard.", "Ein handgewebtes geometrisches Kelimmuster in warmem Rot und Senf.", "Un patrón geométrico de kilim tejido a mano en rojo cálido y mostaza.", "Un motif géométrique de kilim tissé main, en rouge chaud et moutarde.", "Um padrão geométrico de kilim tecido à mão em vermelho quente e mostarda.", "Геометрический узор ручного килима в тёплых красных и горчичных тонах."),
+  () => {
+    const U = 80;
+    const motif = `<g id='k'><rect width='${U}' height='${U * 1.25}' fill='#a8241e'/><path d='M40 6L72 50L40 94L8 50Z' fill='#f2b630'/><path d='M40 18L62 50L40 82L18 50Z' fill='#1e2a5a'/><path d='M40 30L52 50L40 70L28 50Z' fill='#f6ecdc'/><path d='M40 42L46 50L40 58L34 50Z' fill='#a8241e'/>` +
+      [6, 94].map((y) => `<path d='M0 ${y}L8 ${y - 6}L16 ${y}L24 ${y - 6}L32 ${y}L40 ${y - 6}L48 ${y}L56 ${y - 6}L64 ${y}L72 ${y - 6}L80 ${y}' fill='none' stroke='#f6ecdc' stroke-width='2'/>`).join("") + `<path d='M0 0V100M80 0V100' stroke='#5a1410' stroke-width='3'/></g>`;
+    let s = "";
+    for (let x = -20; x < 600; x += U) s += `<use href='#k' x='${x}' y='-2'/><use href='#k' x='${x + U / 2}' y='98'/>`;
+    const weave = scatter(4, 1, () => `<path d='${Array.from({ length: 100 }, (_, i) => `M0 ${i * 2}H600`).join("")}' stroke='#000' stroke-opacity='.06' stroke-width='1'/>`);
+    return bannerDoc(motif, `<rect width='600' height='200' fill='#a8241e'/>` + s + weave, 0.45);
+  });
+
+add("koi-pond", "rare", 500, false,
+  N("Koi Havuzu", "Koi Pond", "Koiteich", "Estanque koi", "Bassin à koïs", "Lago de carpas", "Пруд с кои"),
+  N("Yukarıdan bakış: nilüferler arasında süzülen koi balıkları.", "Seen from above: koi gliding between water lilies.", "Von oben gesehen: Koi gleiten zwischen Seerosen.", "Vista desde arriba: carpas koi deslizándose entre nenúfares.", "Vu d'en haut : des koïs glissant entre les nénuphars.", "Visto de cima: carpas koi deslizando entre vitórias-régias.", "Вид сверху: кои скользят между кувшинками."),
+  () => {
+    const koi = (x, y, rot, s, c, spot) => `<g transform='translate(${x} ${y}) rotate(${rot}) scale(${s})'><ellipse rx='6' ry='16' fill='#000' opacity='.18' transform='translate(4 6)'/><path d='M0 -16C6 -14 6 -2 4 6C3 10 1 13 0 15C-1 13 -3 10 -4 6C-6 -2 -6 -14 0 -16Z' fill='${c}'/><path d='M0 14L-6 24L0 20L6 24Z' fill='${c}' opacity='.85'/><path d='M-4 -2L-10 2L-4 3ZM4 -2L10 2L4 3Z' fill='${c}' opacity='.85'/><path d='M-3 -10C0 -13 4 -10 3 -6C1 -3 -3 -5 -3 -10Z' fill='${spot}'/><path d='M-2 2C1 0 4 3 2 6C0 8 -3 6 -2 2Z' fill='${spot}'/></g>`;
+    const pad = (x, y, r, rot) => `<g transform='translate(${x} ${y}) rotate(${rot})'><path d='M0 0L${r} -4A${r} ${r} 0 1 1 ${r} 4Z' fill='url(#pd)' stroke='#1a5a2a' stroke-width='1'/><path d='M0 0L${-r * 0.7} ${-r * 0.4}M0 0L${-r * 0.6} ${r * 0.5}M0 0L0 ${-r * 0.8}' stroke='#4aa85a' stroke-opacity='.5'/></g>`;
+    const flower = (x, y) => `<g transform='translate(${x} ${y})'>${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<path d='${petal(9, 3.4)}' transform='rotate(${a})' fill='#ffd6ea' stroke='#d0608a' stroke-width='.5'/>`).join("")}<circle r='3' fill='#ffd36a'/></g>`;
+    const caust = scatter(9, 30, (r) => `<path d='M${f(r() * 600)} ${f(r() * 200)}q8 -6 16 0t16 0' fill='none' stroke='#bff6ff' stroke-opacity='${f(0.1 + r() * 0.15)}' stroke-width='1.4'/>`);
+    const body = `<rect width='600' height='200' fill='url(#wt)'/>` + caust + koi(380, 90, 60, 1.6, "#fff4ea", "#ff5a1f") + koi(470, 130, -110, 1.4, "#ff7a2a", "#fff") + koi(300, 150, 20, 1.2, "#1a1a22", "#f2b630") + koi(540, 60, 160, 1.1, "#ffd6a0", "#e03a1a") +
+      pad(250, 40, 22, 30) + pad(540, 160, 26, 200) + pad(200, 120, 16, 100) + pad(430, 30, 18, -40) + flower(256, 36) + flower(530, 158) + `<circle cx='360' cy='40' r='12' fill='none' stroke='#bff6ff' stroke-opacity='.4'/><circle cx='360' cy='40' r='22' fill='none' stroke='#bff6ff' stroke-opacity='.2'/>`;
+    return bannerDoc(rg("wt", ["#1f8a8a", "#0f5a6a", "#062a3a"], 0.6, 0.4, 0.8) + rg("pd", ["#7ad06a", "#2f8a3a"], 0.3, 0.3, 0.9), body, 0.4);
+  });
+
+add("bamboo-grove", "rare", 340, false,
+  N("Bambu Korusu", "Bamboo Grove", "Bambushain", "Bosque de bambú", "Bambouseraie", "Bosque de bambu", "Бамбуковая роща"),
+  N("Sisli bir bambu korusunda gövdeler arasından süzülen yeşil ışık.", "Green light filtering between the stalks of a misty bamboo grove.", "Grünes Licht, das zwischen den Halmen eines nebligen Bambushains fällt.", "Luz verde que se filtra entre las cañas de un bambusal brumoso.", "Une lumière verte qui filtre entre les tiges d'une bambouseraie brumeuse.", "Luz verde filtrando entre os colmos de um bambuzal enevoado.", "Зелёный свет, пробивающийся между стеблями туманной бамбуковой рощи."),
+  () => {
+    const stalk = (x, w, c, hi, seed) => { const r = rnd(seed); let s = `<rect x='${x}' y='-10' width='${w}' height='220' fill='${c}'/><rect x='${x + w * 0.2}' y='-10' width='${f(w * 0.18)}' height='220' fill='${hi}' opacity='.5'/>`; for (let y = 10 + r() * 30; y < 200; y += 40 + r() * 20) s += `<rect x='${x - 1}' y='${f(y)}' width='${w + 2}' height='3' rx='1.5' fill='${hi}' opacity='.8'/><rect x='${x}' y='${f(y + 3)}' width='${w}' height='2' fill='#000' opacity='.25'/>`; return s; };
+    const lvs = (x, y, flip, seed) => scatter(seed, 4, (r, i) => `<path d='${leaf(26 + r() * 10, 5)}' transform='translate(${x} ${y + i * 6}) rotate(${flip * (50 + i * 14)})' fill='#3aa85a' stroke='#1a5a2a' stroke-width='.6'/>`);
+    let back = "", front = "";
+    [40, 90, 150, 230, 300, 360, 420, 480, 550].forEach((x, i) => (back += stalk(x, 10, "#3a7a5a", "#7ac89a", i + 3)));
+    [200, 330, 470, 560].forEach((x, i) => (front += stalk(x, 18, "#2a6a3a", "#9fe0a0", i + 20)));
+    const body = `<rect width='600' height='200' fill='url(#bg)'/><g opacity='.55'>${back}</g><rect width='600' height='200' fill='url(#mist)'/><rect x='300' y='0' width='160' height='200' fill='url(#beam)'/>` + front + lvs(208, 50, 1, 4) + lvs(338, 90, -1, 5) + lvs(478, 30, 1, 6) + lvs(568, 120, -1, 7);
+    return bannerDoc(lg("bg", ["#cfeccf", "#6aa87a", "#1e4a32"]) + lg("mist", [[0, "#e8f8e8", 0], [0.6, "#e8f8e8", 0.3], [1, "#e8f8e8", 0]]) + lg("beam", [[0, "#fff8d0", 0], [0.5, "#fff8d0", 0.28], [1, "#fff8d0", 0]], 0, 0, 1, 0), body, 0.35);
+  });
+
+add("coral-reef", "rare", 420, false,
+  N("Mercan Kayalığı", "Coral Reef", "Korallenriff", "Arrecife de coral", "Récif corallien", "Recife de coral", "Коралловый риф"),
+  N("Işık huzmeleri altında renkli mercanlar ve küçük balık sürüsü.", "Colourful corals and a small school of fish under shafts of light.", "Bunte Korallen und ein kleiner Fischschwarm unter Lichtstrahlen.", "Corales de colores y un pequeño banco de peces bajo haces de luz.", "Des coraux colorés et un petit banc de poissons sous des rais de lumière.", "Corais coloridos e um pequeno cardume sob feixes de luz.", "Разноцветные кораллы и стайка рыбок в лучах света."),
+  () => {
+    const s = sky("s", [[0, "#2ab0d8"], [0.5, "#0f6a9a"], [1, "#062a4a"]]);
+    const rays = [0, 1, 2, 3, 4].map((i) => `<path d='M${300 + i * 60} -5L${260 + i * 80} 210H${290 + i * 80}L${330 + i * 60} -5Z' fill='#e6fbff' opacity='.07'/>`).join("");
+    const branch = (x, y, h, c, seed) => { const r = rnd(seed); let d = ""; const grow = (x0, y0, len, ang, depth) => { const x1 = x0 + len * Math.sin(ang), y1 = y0 - len * Math.cos(ang); d += `M${f(x0)} ${f(y0)}L${f(x1)} ${f(y1)}`; if (depth > 0) { grow(x1, y1, len * 0.7, ang - 0.45 - r() * 0.2, depth - 1); grow(x1, y1, len * 0.7, ang + 0.45 + r() * 0.2, depth - 1); } }; grow(x, y, h, 0, 3); return `<path d='${d}' stroke='${c}' stroke-width='5' stroke-linecap='round' fill='none'/>`; };
+    const fan = (x, y, r, c) => `<path d='M${x} ${y}L${x - r} ${y - r * 0.6}A${r} ${r} 0 0 1 ${x + r} ${y - r * 0.6}Z' fill='${c}' opacity='.85'/>` + Array.from({ length: 7 }, (_, i) => `<path d='M${x} ${y}L${f(x + r * Math.cos(Math.PI + 0.55 + i * 0.34))} ${f(y + r * Math.sin(Math.PI + 0.55 + i * 0.34))}' stroke='#5a1a3a' stroke-opacity='.4'/>`).join("");
+    const brain = (x, y, r, c) => `<ellipse cx='${x}' cy='${y}' rx='${r}' ry='${r * 0.7}' fill='${c}'/>` + [0.3, 0.55, 0.8].map((k) => `<path d='M${x - r * k} ${y}q${r * k * 0.5} ${-r * 0.5 * k} ${r * k} 0t${r * k} 0' fill='none' stroke='#5a2a0a' stroke-opacity='.35' stroke-width='1.4'/>`).join("");
+    const fish = scatter(3, 9, (r) => { const x = 340 + r() * 160, y = 40 + r() * 60, s = 0.6 + r() * 0.5; return `<g transform='translate(${f(x)} ${f(y)}) scale(${f(s)})'><path d='M-8 0C-4 -5 4 -5 8 0C4 5 -4 5 -8 0ZM8 0L13 -4V4Z' fill='#ffcf3a' stroke='#5a3a0a' stroke-width='.5'/><path d='M-2 -3.6V3.6' stroke='#1a2a5a' stroke-width='2'/><circle cx='-5' cy='-1' r='.8' fill='#000'/></g>`; });
+    const body = s.b + rays + `<path d='${hills(170, [[8, 260, 1], [4, 80, 2]])}' fill='#c8a878'/>` + fan(470, 168, 40, "#ff6a9a") + branch(390, 175, 34, "#ff8a5a", 4) + branch(540, 178, 30, "#c86aff", 6) + brain(330, 172, 20, "#f2b630") + brain(590, 170, 18, "#7ad0a0") + branch(260, 180, 22, "#ff5a7a", 7) + fish +
+      scatter(6, 18, (r) => `<circle cx='${f(300 + r() * 300)}' cy='${f(r() * 160)}' r='${f(1 + r() * 2)}' fill='none' stroke='#e6fbff' stroke-opacity='.5'/>`);
+    return bannerDoc(s.d, body, 0.4);
+  });
+
+add("jellyfish-drift", "rare", 460, false,
+  N("Denizanası Akıntısı", "Jellyfish Drift", "Quallendrift", "Deriva de medusas", "Dérive de méduses", "Deriva de águas-vivas", "Дрейф медуз"),
+  N("Derin mavide kendi ışığıyla parlayan denizanaları.", "Jellyfish glowing with their own light in the deep blue.", "Quallen, die im tiefen Blau aus eigenem Licht leuchten.", "Medusas que brillan con luz propia en el azul profundo.", "Des méduses qui luisent de leur propre lumière dans le bleu profond.", "Águas-vivas brilhando com luz própria no azul profundo.", "Медузы, светящиеся собственным светом в глубокой синеве."),
+  () => {
+    const s = sky("s", [[0, "#0a2a5a"], [1, "#020818"]]);
+    const jelly = (x, y, s, c, id) => `<g transform='translate(${x} ${y}) scale(${s})'><circle r='26' fill='url(#${id})' opacity='.55'/><path d='M-14 0C-14 -12 -7 -17 0 -17C7 -17 14 -12 14 0C10 2 6 0 3 2C0 0 -3 2 -6 0C-9 2 -12 0 -14 0Z' fill='${c}' fill-opacity='.55' stroke='${c}' stroke-width='1'/><path d='M-8 -8C-6 -12 -2 -13 2 -12' stroke='#fff' stroke-opacity='.7' stroke-width='1.4' fill='none'/>` + [-10, -5, 0, 5, 10].map((tx, i) => `<path d='M${tx} 1q${3 - i} 10 ${-1} 18t${1} 16' fill='none' stroke='${c}' stroke-opacity='.6' stroke-width='${i % 2 ? 0.8 : 1.4}'/>`).join("") + `</g>`;
+    const motes = scatter(8, 50, (r) => `<circle cx='${f(r() * 600)}' cy='${f(r() * 200)}' r='${f(0.5 + r() * 1.4)}' fill='#9fe8ff' opacity='${f(0.2 + r() * 0.6)}'/>`);
+    const body = s.b + `<rect width='600' height='120' fill='url(#top)'/>` + motes + jelly(410, 62, 2.3, "#ff8ad8", "gp") + jelly(520, 110, 1.6, "#7ae0ff", "gc") + jelly(310, 120, 1.3, "#b08aff", "gv") + jelly(575, 36, 1, "#ff8ad8", "gp") + jelly(230, 44, 0.9, "#7ae0ff", "gc");
+    return bannerDoc(s.d + lg("top", [[0, "#5ac8ff", 0.25], [1, "#5ac8ff", 0]]) + glow("gp", "#ff8ad8", 0.6) + glow("gc", "#7ae0ff", 0.6) + glow("gv", "#b08aff", 0.6), body, 0.4);
+  });
+
+add("synth-horizon", "rare", 400, false,
+  N("Sentez Ufku", "Synth Horizon", "Synthhorizont", "Horizonte synth", "Horizon synth", "Horizonte synth", "Синт-горизонт"),
+  N("Çizgili güneş, mor dağlar ve ufka akan parlak ızgara.", "A striped sun, violet mountains and a glowing grid running to the horizon.", "Eine gestreifte Sonne, violette Berge und ein leuchtendes Gitter bis zum Horizont.", "Un sol a rayas, montañas violetas y una cuadrícula brillante hacia el horizonte.", "Un soleil rayé, des montagnes violettes et une grille lumineuse jusqu'à l'horizon.", "Um sol listrado, montanhas violetas e uma grade brilhante rumo ao horizonte.", "Полосатое солнце, фиолетовые горы и светящаяся сетка до горизонта."),
+  () => {
+    const s = sky("s", [[0, "#0a0420"], [0.6, "#3a0a5a"], [1, "#ff3a8a"]]);
+    const hz = 120, vx = 420;
+    let grid = "";
+    for (let i = -16; i <= 16; i++) grid += `M${vx + i * 6} ${hz}L${vx + i * 70} 200`;
+    for (let k = 0; k < 9; k++) { const y = hz + Math.pow(k / 8, 1.8) * 80; grid += `M0 ${f(y)}H600`; }
+    const sun = `<circle cx='${vx}' cy='76' r='46' fill='url(#sun)' clip-path='url(#cut)'/><clipPath id='cut'>${[0, 1, 2, 3, 4, 5].map((i) => `<rect x='300' y='${30 + i * 15 - (i > 2 ? (i - 2) * 2 : 0)}' width='240' height='${15 - (i > 2 ? (i - 1) * 2 : 0)}'/>`).join("")}</clipPath>`;
+    const body = s.b + stars(2, 50, [0, 0, 600, 80], ["#fff", "#ffc0f0"], 0.9) + sun + `<path d='${ridge(9, hz - 4, 26, 0.5, hz, 48, [[300, 22, 80], [540, 18, 70]])}' fill='#2a0a4a'/><path d='${ridge(9, hz - 4, 26, 0.5, hz, 48, [[300, 22, 80], [540, 18, 70]]).replace(/L600 \d+Z$/, "").replace(/^M0 \d+/, "M0 999")}' fill='none' stroke='#ff4ad0' stroke-width='1.2'/>` +
+      `<rect y='${hz}' width='600' height='80' fill='#120424'/><path d='${grid}' stroke='#ff3ad0' stroke-width='1.2' fill='none' filter='url(#b)'/><path d='${grid}' stroke='#ffb0f0' stroke-width='.6' fill='none'/><rect y='${hz}' width='600' height='30' fill='url(#fade)'/>`;
+    return bannerDoc(s.d + lg("sun", ["#fff36a", "#ff8a3a", "#ff2a8a"]) + blur("b", 2) + lg("fade", [[0, "#ff3a8a", 0.45], [1, "#ff3a8a", 0]]), body, 0.4);
+  });
+
+add("circuit-board", "rare", 360, false,
+  N("Devre Kartı", "Circuit Board", "Platine", "Placa de circuito", "Circuit imprimé", "Placa de circuito", "Печатная плата"),
+  N("Koyu yeşil kartta çipler, parlayan yollar ve akan sinyaller.", "Chips, glowing traces and flowing signals on a dark green board.", "Chips, leuchtende Leiterbahnen und fließende Signale auf dunkelgrüner Platine.", "Chips, pistas brillantes y señales que fluyen sobre una placa verde oscuro.", "Des puces, des pistes lumineuses et des signaux qui circulent sur une carte vert sombre.", "Chips, trilhas brilhantes e sinais fluindo em uma placa verde-escura.", "Чипы, светящиеся дорожки и бегущие сигналы на тёмно-зелёной плате."),
+  () => {
+    const r = rnd(33);
+    let tr = "", pads = "";
+    for (let i = 0; i < 34; i++) {
+      let x = Math.round(r() * 30) * 20, y = Math.round(r() * 10) * 20; let d = `M${x} ${y}`;
+      for (let k = 0; k < 4; k++) { const dir = Math.floor(r() * 4), len = (1 + Math.floor(r() * 4)) * 20; if (dir === 0) x += len; else if (dir === 1) y += len; else if (dir === 2) { x += len * 0.5; y += len * 0.5; } else { x += len * 0.5; y -= len * 0.5; } d += `L${x} ${y}`; }
+      tr += d; pads += `<circle cx='${x}' cy='${y}' r='3' fill='#0a1a14' stroke='#5affb0' stroke-width='1.4'/>`;
+    }
+    const chip = (x, y, w, h) => `<rect x='${x}' y='${y}' width='${w}' height='${h}' rx='3' fill='#121c1a' stroke='#3a5a50'/>` + Array.from({ length: Math.floor(w / 8) }, (_, i) => `<path d='M${x + 6 + i * 8} ${y}v-5M${x + 6 + i * 8} ${y + h}v5' stroke='#b8c8c0' stroke-width='2'/>`).join("") + `<circle cx='${x + 8}' cy='${y + 8}' r='2' fill='#3a5a50'/>`;
+    const body = `<rect width='600' height='200' fill='url(#pc)'/><path d='${tr}' fill='none' stroke='#1fe090' stroke-width='3' stroke-opacity='.25' filter='url(#b)'/><path d='${tr}' fill='none' stroke='#2a8a5a' stroke-width='2'/><path d='${tr}' fill='none' stroke='#9fffd0' stroke-width='2' stroke-dasharray='6 60'/>` + pads + chip(380, 60, 90, 56) + chip(500, 120, 50, 36) + chip(260, 20, 40, 30) + `<rect x='390' y='70' width='70' height='36' rx='2' fill='url(#die)'/>`;
+    return bannerDoc(rg("pc", ["#0f3a2a", "#062018"], 0.7, 0.4, 0.9) + blur("b", 2.4) + lg("die", ["#2a3a36", "#121c1a"], 0, 0, 1, 1), body, 0.45);
+  });
+
+add("black-marble", "rare", 440, false,
+  N("Altın Damarlı Mermer", "Black Marble", "Schwarzer Marmor", "Mármol negro", "Marbre noir", "Mármore negro", "Чёрный мрамор"),
+  N("Cilalı siyah mermerde akan altın damarlar.", "Gold veins running through polished black marble.", "Goldene Adern, die sich durch polierten schwarzen Marmor ziehen.", "Vetas doradas que recorren un mármol negro pulido.", "Des veines d'or qui serpentent dans un marbre noir poli.", "Veios dourados correndo por um mármore negro polido.", "Золотые прожилки в полированном чёрном мраморе."),
+  () => {
+    const r = rnd(44);
+    const vein = (x0, y0, len, w) => { let d = `M${x0} ${y0}`, x = x0, y = y0; for (let i = 0; i < len; i++) { x += 10 + r() * 20; y += (r() - 0.45) * 22; d += `L${f(x)} ${f(y)}`; } return `<path d='${d}' fill='none' stroke='url(#gv)' stroke-width='${w}' stroke-linejoin='round'/><path d='${d}' fill='none' stroke='#fff6d0' stroke-width='${f(w * 0.3)}' stroke-opacity='.7'/>`; };
+    const faint = scatter(5, 18, (r2) => { let x = r2() * 600, y = r2() * 200, d = `M${f(x)} ${f(y)}`; for (let i = 0; i < 6; i++) { x += 14 + r2() * 20; y += (r2() - 0.5) * 18; d += `L${f(x)} ${f(y)}`; } return `<path d='${d}' fill='none' stroke='#9aa0b8' stroke-opacity='${f(0.08 + r2() * 0.12)}' stroke-width='${f(0.6 + r2() * 1.2)}'/>`; });
+    const body = `<rect width='600' height='200' fill='url(#mb)'/>` + faint + vein(160, 200, 26, 3) + vein(300, 0, 18, 1.6) + vein(380, 120, 14, 2.4) + vein(220, 60, 10, 1) + vein(420, 20, 12, 1.4) + vein(330, 170, 14, 1.8) + `<rect width='600' height='200' fill='url(#sh)'/>`;
+    return bannerDoc(lg("mb", ["#1a1a22", "#0a0a10", "#22222c"], 0, 0, 1, 1) + lg("gv", ["#8a5a10", "#ffd76a", "#c8901f", "#fff3c0"], 0, 0, 1, 0) + lg("sh", [[0, "#fff", 0], [0.45, "#fff", 0.07], [0.55, "#fff", 0], [1, "#fff", 0]], 0, 0, 1, 0.6), body, 0.4);
+  });
+
+add("stained-glass", "rare", 500, false,
+  N("Vitray", "Stained Glass", "Bleiglas", "Vitral", "Vitrail", "Vitral", "Витраж"),
+  N("Kurşun çizgilerle ayrılmış, arkadan ışık alan renkli cam parçaları.", "Pieces of coloured glass lit from behind, divided by lead lines.", "Von hinten beleuchtete Farbglasstücke, durch Bleiruten getrennt.", "Piezas de vidrio de colores iluminadas desde atrás y unidas por plomo.", "Des morceaux de verre coloré éclairés par l'arrière, cernés de plomb.", "Pedaços de vidro colorido iluminados por trás, unidos por chumbo.", "Кусочки цветного стекла, подсвеченные сзади и разделённые свинцовыми линиями."),
+  () => {
+    const r = rnd(55);
+    const cols = ["#d0304a", "#2a5ad0", "#f2b630", "#2aa070", "#8a3ad0", "#ff7a3a", "#3ac0d0"];
+    const G = 40, P = [];
+    for (let j = 0; j <= 6; j++) { P.push([]); for (let i = 0; i <= 16; i++) P[j].push([i * G - 20 + (i && i < 16 ? (r() - 0.5) * 22 : 0), j * G - 20 + (j && j < 6 ? (r() - 0.5) * 22 : 0)]); }
+    let cells = "";
+    for (let j = 0; j < 6; j++) for (let i = 0; i < 16; i++) {
+      const q = [P[j][i], P[j][i + 1], P[j + 1][i + 1], P[j + 1][i]];
+      const split = r() > 0.5;
+      const tris = split ? [[q[0], q[1], q[2]], [q[0], q[2], q[3]]] : [[q[0], q[1], q[3]], [q[1], q[2], q[3]]];
+      for (const t of tris) cells += `<path d='M${t.map((p) => `${f(p[0])} ${f(p[1])}`).join("L")}Z' fill='${cols[Math.floor(r() * cols.length)]}' fill-opacity='${f(0.75 + r() * 0.25)}'/>`;
+    }
+    const rose = `<g transform='translate(450 90)'><circle r='60' fill='none' stroke='#1a1420' stroke-width='5'/>${Array.from({ length: 12 }, (_, i) => `<path d='M0 0L${f(60 * Math.cos(i * Math.PI / 6))} ${f(60 * Math.sin(i * Math.PI / 6))}' stroke='#1a1420' stroke-width='4'/><circle cx='${f(42 * Math.cos(i * Math.PI / 6 + 0.26))}' cy='${f(42 * Math.sin(i * Math.PI / 6 + 0.26))}' r='9' fill='${cols[i % 7]}' stroke='#1a1420' stroke-width='3'/>`).join("")}<circle r='18' fill='#f2b630' stroke='#1a1420' stroke-width='4'/></g>`;
+    const body = `<rect width='600' height='200' fill='#1a1420'/><g stroke='#1a1420' stroke-width='3.4' stroke-linejoin='round'>${cells}</g>` + rose + `<rect width='600' height='200' fill='url(#li)'/>` + `<rect width='600' height='200' fill='none' stroke='#1a1420' stroke-width='10'/>`;
+    return bannerDoc(rg("li", [[0, "#fff8e0", 0.45], [0.6, "#fff8e0", 0.08], [1, "#000", 0.3]], 0.75, 0.4, 0.8), body, 0.3);
+  });
+
+add("low-poly-peaks", "rare", 380, false,
+  N("Poligon Zirveler", "Low Poly Peaks", "Low-Poly-Gipfel", "Picos low poly", "Sommets low poly", "Picos low poly", "Низкополигональные вершины"),
+  N("Üçgen yüzeylerle kurulmuş, gün batımı ışığı alan dağlar.", "Mountains built from triangular facets, catching the sunset light.", "Aus Dreiecksflächen gebaute Berge im Licht des Sonnenuntergangs.", "Montañas hechas de facetas triangulares que atrapan la luz del ocaso.", "Des montagnes taillées en facettes triangulaires, dans la lumière du couchant.", "Montanhas feitas de facetas triangulares sob a luz do pôr do sol.", "Горы из треугольных граней в свете заката."),
+  () => {
+    const s = sky("s", [[0, "#1a1a4a"], [0.6, "#a84a7a"], [1, "#ffb06a"]]);
+    const peaks = [[250, 70], [330, 40], [420, 22], [500, 52], [580, 36]];
+    let tris = "";
+    const base = 170;
+    peaks.forEach(([px, py], i) => { const l = px - 90, rr = px + 90, mid = (py + base) / 2; const tri = (a, b, c, col) => `<path d='M${a}L${b}L${c}Z' fill='${col}' stroke='${col}' stroke-width='.6'/>`; tris += tri(`${l} ${base}`, `${px} ${py}`, `${px - 30} ${f(mid)}`, "#3a2a5a") + tri(`${px - 30} ${f(mid)}`, `${px} ${py}`, `${px + 10} ${f(mid + 20)}`, "#6a3a6a") + tri(`${px} ${py}`, `${rr} ${base}`, `${px + 10} ${f(mid + 20)}`, "#c86a6a") + tri(`${px + 10} ${f(mid + 20)}`, `${rr} ${base}`, `${px - 30} ${f(mid)}`, "#8a4a6a") + tri(`${l} ${base}`, `${px - 30} ${f(mid)}`, `${px + 10} ${f(mid + 20)}`, "#4a2a5a") + tri(`${px} ${py}`, `${px - 8} ${py + 16}`, `${px + 8} ${py + 18}`, "#ffe0d0"); });
+    const fg = (y, c, n, seed) => { const r = rnd(seed); let p = `M0 ${y}`; for (let i = 0; i <= n; i++) p += `L${f((i / n) * 600)} ${f(y - r() * 14)}`; return `<path d='${p}L600 200L0 200Z' fill='${c}'/>`; };
+    return bannerDoc(s.d, s.b + `<circle cx='180' cy='90' r='22' fill='#ffe0b0' opacity='.9'/>` + tris + fg(178, "#2a1a3a", 14, 3) + fg(192, "#140c22", 10, 5), 0.3);
+  });
+
+add("ink-mountains", "rare", 420, false,
+  N("Mürekkep Dağlar", "Ink Mountains", "Tuschberge", "Montañas de tinta", "Montagnes à l'encre", "Montanhas de nanquim", "Тушевые горы"),
+  N("Pirinç kâğıdında mürekkep lekesi dağlar ve kırmızı bir güneş.", "Ink-wash mountains on rice paper under a red sun.", "Tuschberge auf Reispapier unter einer roten Sonne.", "Montañas a la aguada sobre papel de arroz bajo un sol rojo.", "Des montagnes au lavis sur papier de riz, sous un soleil rouge.", "Montanhas em aguada sobre papel de arroz sob um sol vermelho.", "Горы, написанные тушью на рисовой бумаге, под красным солнцем."),
+  () => {
+    const body = `<rect width='600' height='200' fill='url(#pp)'/>` + `<circle cx='470' cy='56' r='26' fill='#d0302a' opacity='.9'/>` +
+      [[100, 30, "#8a8a90", 0.35], [118, 26, "#5a5a62", 0.55], [140, 30, "#2a2a32", 0.8]].map(([y, a, c, o], i) => `<path d='${ridge(i * 13 + 2, y, a, 0.6, 210, 64, i === 1 ? [[380, 60, 70], [520, 40, 60]] : i === 0 ? [[300, 30, 80]] : [[450, 30, 90]])}' fill='${c}' opacity='${o}' filter='url(#ink)'/>`).join("") +
+      `<rect y='120' width='600' height='40' fill='url(#mist)'/><path d='M330 150c10 -2 20 -1 30 2' stroke='#2a2a32' stroke-width='1.2' fill='none'/><path d='M346 151l-4 -6h10z' fill='#2a2a32'/>` + `<path d='M150 70l4 3l4 -3M164 64l3 2l3 -2' stroke='#2a2a32' stroke-width='1' fill='none'/>` + `<rect x='540' y='140' width='20' height='28' rx='2' fill='#c0302a' opacity='.85'/><path d='M545 146h10M545 152h10M550 146v18M545 160h10' stroke='#f2e6d0' stroke-width='1.6'/>`;
+    return bannerDoc(lg("pp", ["#f6efe0", "#e8dcc4"], 0, 0, 1, 1) + lg("mist", [[0, "#f6efe0", 0], [0.5, "#f6efe0", 0.8], [1, "#f6efe0", 0]]) + `<filter id='ink'><feTurbulence type='fractalNoise' baseFrequency='.04' numOctaves='2' seed='3'/><feDisplacementMap in='SourceGraphic' scale='6'/></filter>`, body, 0.15);
+  });
+
+add("sunflower-field", "rare", 360, false,
+  N("Ayçiçeği Tarlası", "Sunflower Field", "Sonnenblumenfeld", "Campo de girasoles", "Champ de tournesols", "Campo de girassóis", "Подсолнуховое поле"),
+  N("Mavi gökyüzü altında güneşe dönmüş ayçiçekleri.", "Sunflowers turned toward the sun under a blue sky.", "Sonnenblumen, die sich unter blauem Himmel der Sonne zuwenden.", "Girasoles vueltos hacia el sol bajo un cielo azul.", "Des tournesols tournés vers le soleil sous un ciel bleu.", "Girassóis voltados para o sol sob um céu azul.", "Подсолнухи, повернувшиеся к солнцу под синим небом."),
+  () => {
+    const s = sky("s", [[0, "#2a7ad8"], [0.7, "#8ac8f2"], [1, "#e0f2ff"]]);
+    const sf = `<g id='sf'>${Array.from({ length: 14 }, (_, i) => `<path d='${leaf(13, 4)}' transform='rotate(${i * 25.7})' fill='url(#pt)' stroke='#b8700a' stroke-width='.5'/>`).join("")}<circle r='7.5' fill='url(#ct)'/><circle r='7.5' fill='none' stroke='#2a1404' stroke-width='1' stroke-dasharray='1 1.5'/></g>`;
+    const r = rnd(12);
+    let field = "";
+    for (let row = 0; row < 4; row++) { const y = 120 + row * 22, sc = 0.45 + row * 0.3; for (let x = (row % 2) * 20 + 120; x < 620; x += 34 + row * 18) { const xx = f(x + r() * 10); field += `<path d='M${xx} ${y}V${y + 50}' stroke='#3a7a2a' stroke-width='${f(1 + row)}'/><path d='${leaf(10 * sc + 4, 4 * sc + 1)}' transform='translate(${xx} ${y + 16}) rotate(60)' fill='#4a9a3a'/><use href='#sf' transform='translate(${xx} ${y}) scale(${f(sc)})'/>`; } }
+    return bannerDoc(s.d + sf + rg("pt", ["#fff3a0", "#ffc21a", "#e08a0a"], 0.5, 0.9, 1) + rg("ct", ["#6a3a14", "#3a1e08"]) + glow("g", "#fff", 0.8),
+      s.b + cloud(150, 40, 1.2, "#fff", 0.85) + cloud(260, 60, 0.7, "#fff", 0.7) + `<circle cx='520' cy='36' r='60' fill='url(#g)'/><circle cx='520' cy='36' r='16' fill='#fffbe0'/><path d='${hills(118, [[5, 260, 1]])}' fill='#5aa83a'/>` + field, 0.25);
+  });
+
+add("waterfall-cliff", "rare", 480, false,
+  N("Şelale Yarı", "Waterfall Cliff", "Wasserfallklippe", "Acantilado de la cascada", "Falaise de la cascade", "Penhasco da cachoeira", "Утёс с водопадом"),
+  N("Yosunlu kayalardan dökülen şelale, sis ve gökkuşağı.", "A waterfall pouring from mossy cliffs into mist, with a rainbow.", "Ein Wasserfall stürzt von moosigen Klippen in den Nebel, dazu ein Regenbogen.", "Una cascada que cae de acantilados con musgo entre bruma y un arcoíris.", "Une cascade tombant de falaises moussues dans la brume, avec un arc-en-ciel.", "Uma cachoeira despencando de penhascos cobertos de musgo, névoa e arco-íris.", "Водопад падает с замшелых скал в туман, над ним радуга."),
+  () => {
+    const s = sky("s", [[0, "#6ab0e0"], [1, "#d8f0ff"]]);
+    const fall = `<path d='M410 40C412 90 408 140 414 200H470C474 140 468 90 470 40Z' fill='url(#fw)'/>` + scatter(3, 16, (r) => { const x = f(414 + r() * 54); return `<path d='M${x} ${f(40 + r() * 30)}V${f(120 + r() * 80)}' stroke='#fff' stroke-opacity='${f(0.3 + r() * 0.5)}' stroke-width='${f(1 + r() * 2)}'/>`; });
+    const cliffL = `<path d='M300 200V60L330 36L380 30L412 40V200Z' fill='url(#rk)'/><path d='M300 60L330 36L380 30L412 40' fill='none' stroke='#3a8a3a' stroke-width='8' stroke-linejoin='round'/>`;
+    const cliffR = `<path d='M468 40L500 28L560 36L600 30V200H470Z' fill='url(#rk)'/><path d='M468 40L500 28L560 36L600 30' fill='none' stroke='#3a8a3a' stroke-width='8' stroke-linejoin='round'/>`;
+    const rainbow = ["#ff5a5a", "#ffb03a", "#ffe04a", "#5ad07a", "#4a9aff", "#9a6aff"].map((c, i) => `<path d='M340 200A110 110 0 0 1 560 200' fill='none' stroke='${c}' stroke-width='3' stroke-opacity='.35' transform='translate(0 ${i * 3}) scale(1 .9)'/>`).join("");
+    const mist = `<g fill='#fff' opacity='.8'>${cloudBand(9, 176, 12, 22, 360, 540)}</g>`;
+    const trees = `<path d='${pineRow(4, 34, 14, 24, 300, 410, 10)}${pineRow(5, 30, 14, 26, 470, 600, 11)}' fill='#1f5a2a'/>`;
+    return bannerDoc(s.d + lg("fw", ["#e6faff", "#9fe0ff", "#5ab0e0"], 0, 0, 1, 0) + lg("rk", ["#6a6a72", "#3a3a44", "#1e1e26"], 0, 0, 1, 1), s.b + `<path d='${ridge(3, 110, 20)}' fill='#9ac0d8'/>` + rainbow + cliffL + cliffR + fall + trees + mist, 0.3);
+  });
+
+add("rooftop-rain", "rare", 400, false,
+  N("Yağmurlu Çatılar", "Rooftop Rain", "Regen über den Dächern", "Lluvia en los tejados", "Pluie sur les toits", "Chuva nos telhados", "Дождь над крышами"),
+  N("Su depolu çatılar, sisli neon ve çapraz yağan yağmur.", "Rooftops with water towers, misty neon and slanting rain.", "Dächer mit Wassertürmen, neblige Neonlichter und schräger Regen.", "Tejados con depósitos de agua, neón brumoso y lluvia oblicua.", "Des toits à châteaux d'eau, des néons dans la brume et une pluie oblique.", "Telhados com caixas-d'água, neon enevoado e chuva inclinada.", "Крыши с водонапорными баками, неон в тумане и косой дождь."),
+  () => {
+    const s = sky("s", [[0, "#141a2e"], [1, "#3a2a4a"]]);
+    const far = skyline(13, 150, 40, 110, -10, 610, 20, 46, "#ffb04a", 0.22);
+    const tower = (x, y) => `<g transform='translate(${x} ${y})'><path d='M-14 0L-10 -26H10L14 0Z' fill='#2a1e1a'/><path d='M-12 -26Q0 -36 12 -26Z' fill='#3a2a24'/><path d='M-12 0L-14 18M12 0L14 18M-12 0L12 18M12 0L-12 18' stroke='#2a1e1a' stroke-width='1.6'/><path d='M-14 -8H14M-13 -16H13' stroke='#4a3a32' stroke-width='1'/></g>`;
+    const neon = `<rect x='360' y='60' width='70' height='22' rx='4' fill='none' stroke='#ff4a9a' stroke-width='2.4' filter='url(#b)'/><rect x='360' y='60' width='70' height='22' rx='4' fill='none' stroke='#ffc0e0' stroke-width='1'/><rect x='470' y='90' width='14' height='50' rx='3' fill='none' stroke='#4af0ff' stroke-width='2.4' filter='url(#b)'/><rect x='470' y='90' width='14' height='50' rx='3' fill='none' stroke='#c0faff' stroke-width='1'/>`;
+    const rain = scatter(7, 90, (r) => { const x = r() * 640, y = r() * 200; return `<path d='M${f(x)} ${f(y)}l-6 16' stroke='#c8d8ff' stroke-opacity='${f(0.15 + r() * 0.35)}' stroke-width='1'/>`; });
+    const body = s.b + `<circle cx='420' cy='70' r='160' fill='url(#cg)'/><path d='${far.body}' fill='#2e2644'/><path d='${far.windows}' fill='#ffb04a' opacity='.75'/><rect y='90' width='600' height='70' fill='url(#fog)'/>` + neon + `<path d='M0 200V160H140V150H260V170H600V200Z' fill='#0e0a14'/>` + tower(90, 150) + tower(320, 170) + `<rect y='150' width='600' height='50' fill='url(#fog)'/>` + rain;
+    return bannerDoc(s.d + blur("b", 3) + lg("fog", [[0, "#ff8ac0", 0], [0.6, "#ff8ac0", 0.18], [1, "#ff8ac0", 0.05]]) + glow("cg", "#ff6aa8", 0.3), body, 0.4);
+  });
+
+add("night-train", "rare", 540, false,
+  N("Gece Treni", "Night Train", "Nachtzug", "Tren nocturno", "Train de nuit", "Trem noturno", "Ночной поезд"),
+  N("Yıldızlı bir vadide köprüden geçen, pencereleri yanan tren.", "A train with glowing windows crossing a bridge over a starry valley.", "Ein Zug mit leuchtenden Fenstern überquert eine Brücke über einem Sternental.", "Un tren con ventanas encendidas cruza un puente sobre un valle estrellado.", "Un train aux fenêtres allumées traverse un pont au-dessus d'une vallée étoilée.", "Um trem de janelas acesas cruzando uma ponte sobre um vale estrelado.", "Поезд с горящими окнами пересекает мост над звёздной долиной."),
+  () => {
+    const s = sky("s", [[0, "#06081e"], [0.7, "#1a2458"], [1, "#3a3a7a"]]);
+    const arches = Array.from({ length: 8 }, (_, i) => `M${200 + i * 50} 200V140A25 22 0 0 1 ${250 + i * 50} 140V200`).join("");
+    const cars = Array.from({ length: 5 }, (_, i) => { const x = 260 + i * 62; return `<rect x='${x}' y='104' width='58' height='18' rx='3' fill='#1a1430'/>` + [0, 1, 2, 3, 4].map((k) => `<rect x='${x + 5 + k * 10.6}' y='108' width='7' height='6' rx='1' fill='#ffd27a'/>`).join(""); }).join("");
+    const loco = `<path d='M570 104H600V122H564Z' fill='#1a1430'/><circle cx='600' cy='112' r='22' fill='url(#hl)'/>`;
+    const body = s.b + stars(41, 110, [0, 0, 600, 110], ["#fff", "#cfd8ff", "#ffe9c8"], 1.1, 6) + `<path d='M60 60C200 30 400 20 600 40' fill='none' stroke='#c6b7ff' stroke-opacity='.1' stroke-width='30'/>` + `<path d='${ridge(7, 140, 30, 0.55, 200, 48, [[120, 30, 90]])}' fill='#141a40'/>` +
+      `<rect x='180' y='122' width='420' height='8' fill='#0e1030'/><path d='${arches}H200Z' fill='#0e1030'/>` + `<g fill='url(#wg)'>${cars.replace(/fill='#1a1430'/g, "fill='#1a1430'")}</g>` + `<rect x='256' y='120' width='310' height='60' fill='url(#refl)'/>` + loco + `<path d='${ridge(9, 176, 10, 0.5)}' fill='#080a20'/>`;
+    return bannerDoc(s.d + rg("hl", [[0, "#fff6d0", 0.8], [1, "#fff6d0", 0]]) + lg("refl", [[0, "#ffd27a", 0.15], [1, "#ffd27a", 0]]), body, 0.4);
+  });
+
+add("art-deco", "rare", 450, false,
+  N("Art Deco Yelpaze", "Art Deco Fans", "Art-déco-Fächer", "Abanicos art déco", "Éventails Art déco", "Leques art déco", "Веера ар-деко"),
+  N("Siyah zeminde ince altın çizgili, iç içe yelpaze deseni.", "Nested fan motifs drawn in fine gold lines on black.", "Verschachtelte Fächermotive in feinen Goldlinien auf Schwarz.", "Motivos de abanicos anidados en finas líneas doradas sobre negro.", "Des motifs d'éventails imbriqués en fins traits d'or sur fond noir.", "Motivos de leques aninhados em finas linhas douradas sobre preto.", "Вложенные веера тонкими золотыми линиями на чёрном."),
+  () => {
+    const R = 40;
+    const fan = `<g id='fn'><path d='M${-R} 0A${R} ${R} 0 0 1 ${R} 0Z' fill='#0e0e14' stroke='url(#gd)' stroke-width='1.6'/>${[0.78, 0.56, 0.34].map((k) => `<path d='M${-R * k} 0A${R * k} ${R * k} 0 0 1 ${R * k} 0' fill='none' stroke='url(#gd)' stroke-width='1.2'/>`).join("")}${Array.from({ length: 9 }, (_, i) => `<path d='M0 0L${f(R * Math.cos(Math.PI + (i + 0.5) * Math.PI / 9))} ${f(R * Math.sin(Math.PI + (i + 0.5) * Math.PI / 9))}' stroke='url(#gd)' stroke-width='.8'/>`).join("")}<circle r='4' fill='url(#gd)'/></g>`;
+    let s = "";
+    for (let row = 0; row < 7; row++) for (let col = -1; col < 9; col++) s += `<use href='#fn' x='${col * R * 2 + (row % 2) * R}' y='${row * R * 0.75 - 10}'/>`;
+    return bannerDoc(`<linearGradient id='gd' gradientUnits='userSpaceOnUse' x1='0' y1='0' x2='600' y2='200'><stop offset='0' stop-color='#8a6a2a'/><stop offset='.45' stop-color='#ffe6a0'/><stop offset='.6' stop-color='#c8901f'/><stop offset='1' stop-color='#6a4a14'/></linearGradient>` + fan + rg("sp", [[0, "#ffe6a0", 0.25], [1, "#ffe6a0", 0]]), `<rect width='600' height='200' fill='#0e0e14'/>` + s + `<circle cx='440' cy='60' r='180' fill='url(#sp)'/>`, 0.45);
+  });
+
+add("glacier-bay", "rare", 420, false,
+  N("Buzul Koyu", "Glacier Bay", "Gletscherbucht", "Bahía glaciar", "Baie des glaciers", "Baía glacial", "Ледниковый залив"),
+  N("Sakin suda yüzen buz kütleleri ve yansıyan turkuaz buzul.", "Icebergs floating on still water beneath a turquoise glacier.", "Eisberge auf stillem Wasser vor einem türkisfarbenen Gletscher.", "Icebergs flotando en aguas quietas bajo un glaciar turquesa.", "Des icebergs sur une eau immobile, sous un glacier turquoise.", "Icebergs boiando em águas calmas sob uma geleira turquesa.", "Айсберги на спокойной воде под бирюзовым ледником."),
+  () => {
+    const s = sky("s", [[0, "#8ab8e0"], [1, "#f0f8ff"]]);
+    const glacier = `<path d='M200 120L240 70L290 82L330 50L380 66L430 40L480 60L540 46L600 64V120Z' fill='url(#gl)'/><path d='M240 70L250 120M330 50L320 120M430 40L440 120M540 46L530 120' stroke='#fff' stroke-opacity='.6' stroke-width='2'/>`;
+    const berg = (x, w, h) => `<path d='M${x - w} 140L${x - w * 0.5} ${140 - h}L${x + w * 0.2} ${140 - h * 0.8}L${x + w} 140Z' fill='url(#ib)'/><path d='M${x - w * 0.5} ${140 - h}L${x - w * 0.1} 140' stroke='#5ac8e0' stroke-opacity='.5' stroke-width='2'/><path d='M${x - w} 140L${x - w * 0.6} ${140 + h * 0.6}L${x + w * 0.7} ${140 + h * 0.5}L${x + w} 140Z' fill='#5ac8e0' opacity='.35'/>`;
+    const body = s.b + `<path d='${ridge(5, 90, 30, 0.55, 130, 48, [[120, 30, 90]])}' fill='#b0c8e0'/>` + glacier + `<rect y='120' width='600' height='80' fill='url(#wt)'/>` + `<use href='#gk' transform='translate(0 240) scale(1 -1)' opacity='.25'/>` + berg(330, 30, 22) + berg(460, 46, 30) + berg(560, 20, 12) + scatter(4, 20, (r) => `<path d='M${f(r() * 600)} ${f(126 + r() * 70)}h${f(10 + r() * 40)}' stroke='#fff' stroke-opacity='${f(0.2 + r() * 0.3)}'/>`);
+    return bannerDoc(s.d + `<g id='gk'>${glacier}</g>` + lg("gl", ["#ffffff", "#bff0ff", "#5ac0e0"]) + lg("ib", ["#ffffff", "#d0f4ff"], 0, 0, 1, 1) + lg("wt", ["#4a9ac0", "#1a4a6a"]), body, 0.3);
+  });
 
 module.exports = { BANNERS };
