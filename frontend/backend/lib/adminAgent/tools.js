@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Admin agent tools (phase 1: read only). Each tool is one Yönetici Paneli endpoint,
+ * Admin agent tools. Each read tool is one Yönetici Paneli endpoint,
  * called over loopback with the asking admin's own session (see run.js), so the agent
  * can never see more than that admin: the admin router re-checks admin rights, 2FA,
  * the section permission and the rate limit on every call.
@@ -161,6 +161,9 @@ const TOOLS = [
   { name: "special_badges", section: "specialBadges",
     about: "Special badges and their holders.",
     path: () => "/special-badges" },
+  { name: "shop_items", section: "shop",
+    about: "Shop catalogue: item ids, names, categories and prices (for shop_gift plan items).",
+    path: () => "/shop/items" },
 
   // Private messages: list (metadata) and read (purpose + reason + 2FA, audited)
   { name: "dm_conversations", section: "dmReview",
@@ -193,6 +196,81 @@ const TOOLS = [
 ];
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
+
+/* ---------- phase 2: the plan tool (stores a proposal, never executes) ---------- */
+
+const ACTION_NAMES = ["ban", "timeout", "kick", "revoke_sessions", "unban", "untimeout", "wallet_freeze", "wallet_unfreeze", "descoin_grant", "badge_grant", "badge_revoke", "shop_gift", "announcement", "live_popup"];
+const toneProp = { type: "string", enum: ["hot", "warn", "info"] };
+
+const d = (description) => ({ description });
+const PROPOSE_PLAN = {
+  name: "propose_plan",
+  description:
+    "Propose a plan of actions for the admin to review in the plan panel. This changes nothing: an admin must approve it with 2FA, then the server applies it item by item. " +
+    "Actions and params: ban {category, otherText?, message?, presetId: 24h|3d|7d|30d|90d|365d|permanent, revokeSessions?, notifyEmail?, alsoAccessBan?}; " +
+    "timeout {category, message?, presetId: 1h|6h|12h|24h|3d|7d|14d|30d, notify?}; kick {category, message?}; revoke_sessions {}; unban {note?}; untimeout {note?}; " +
+    "wallet_freeze {reason}; wallet_unfreeze {reason}; descoin_grant {amount (negative takes DesCoin back), reason, message?}; badge_grant {badgeId, note?}; badge_revoke {badgeId, reason?}; " +
+    "shop_gift {itemId, message?}; announcement {title, content, priority?, pinned?} (no userId); live_popup {title, body, severity?} (userId optional: one online user, else everyone online). " +
+    "To change an open plan, send the full new item list with revisesPlanId.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string", ...d("Short plan title, e.g. 'Suspicious accounts' (in the admin's language).") },
+      summary: { type: "string", ...d("One or two sentences: what the plan does and why.") },
+      revisesPlanId: { type: "string", ...d("Id of the open plan this replaces (new version).") },
+      suggestions: { type: "array", items: { type: "string" }, ...d("Up to 3 short follow-up requests the admin may click.") },
+      items: {
+        type: "array",
+        ...d("One entry per account and action."),
+        items: {
+          type: "object",
+          properties: {
+            action: { type: "string", enum: ACTION_NAMES },
+            userId: { type: "string", ...d("Target user id (uuid) from a read tool.") },
+            params: { type: "object", ...d("Action parameters (see the tool description).") },
+            risk: { type: "integer", ...d("0-100.") },
+            cluster: { type: "string", ...d("Name of the group of related accounts, if any.") },
+            evidence: {
+              type: "object",
+              properties: {
+                signals: { type: "array", items: { type: "object", properties: { label: { type: "string" }, tone: toneProp }, required: ["label"] } },
+                reason: { type: "string", ...d("Why this action, one or two sentences.") },
+                quote: { type: "string", ...d("Offending text, if any.") },
+                stats: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] } },
+                links: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { username: { type: "string" }, userId: { type: "string" }, relation: { type: "string" }, tone: toneProp, note: { type: "string" } },
+                    required: ["username", "relation"],
+                  },
+                },
+              },
+            },
+          },
+          required: ["action"],
+        },
+      },
+    },
+    required: ["title", "items"],
+  },
+};
+
+/** Read tools a scope switch turns off: "read" = every read tool except the DM ones; "dm" = the DM text readers. */
+const DM_TOOLS = new Set(["read_dm", "read_group"]);
+
+/**
+ * Tool definitions for one chat turn, plus the set of read tools allowed.
+ * @param {{mode?: string, scopes?: object, plansAvailable?: boolean}} p
+ */
+function toolsForMode({ mode = "dry", scopes = null, plansAvailable = true } = {}) {
+  const readOn = scopes?.read ? scopes.read.on !== false : true;
+  const dmOn = scopes?.dm ? scopes.dm.on === true : true;
+  const allowed = new Set(TOOLS.filter((t) => (DM_TOOLS.has(t.name) ? dmOn : readOn)).map((t) => t.name));
+  const defs = toolDefinitions().filter((d) => allowed.has(d.name));
+  if (mode !== "read" && plansAvailable) defs.push({ name: PROPOSE_PLAN.name, description: PROPOSE_PLAN.description, input_schema: PROPOSE_PLAN.input_schema });
+  return { tools: defs, allowed };
+}
 
 /** API tool definitions (stable order, so the prompt cache prefix stays the same). */
 function toolDefinitions() {
@@ -244,4 +322,4 @@ function buildRequest(tool, input) {
   return { method, path, body: tool.body ? tool.body(input) : undefined };
 }
 
-module.exports = { TOOLS, BY_NAME, toolDefinitions, validateInput, buildRequest, cleanId };
+module.exports = { TOOLS, BY_NAME, toolDefinitions, validateInput, buildRequest, cleanId, PROPOSE_PLAN, ACTION_NAMES, toolsForMode };

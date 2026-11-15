@@ -13,10 +13,11 @@ const store = require("../lib/adminAgent/store");
 const run = require("../lib/adminAgent/run");
 const tools = require("../lib/adminAgent/tools");
 const { displayMessages } = require("../routes/adminAgent");
+const planStore = require("../lib/adminAgent/planStore");
 
 /* ---------- tiny in-memory Supabase ---------- */
 function fakeDb() {
-  const tables = { admin_agent_settings: [{ id: 1, enabled: true, monthly_budget_usd: 50 }], admin_agent_threads: [], admin_agent_messages: [], admin_agent_usage: [] };
+  const tables = { admin_agent_settings: [{ id: 1, enabled: true, monthly_budget_usd: 50 }], admin_agent_threads: [], admin_agent_messages: [], admin_agent_usage: [], agent_scopes: [{ id: 1, scopes: { dm: { on: true } }, require_2fa_each: true, owner_approval_permanent: true, exclude_premium: true }] };
   let seq = 0;
   function q(name) {
     const st = { name, filters: [], order: null, limit: null, op: "select", payload: null, single: false };
@@ -87,6 +88,7 @@ function fakeClient(script) {
   const db = fakeDb();
   const audits = [];
   store.__setDbForTests(db, (e) => { audits.push(e); return true; });
+  planStore.__setDbForTests(db);
 
   // Pricing: Opus 5.5 at $4 / $20 per million.
   assert.equal(store.costOf("claude-opus-5-5", { input_tokens: 1_000_000, output_tokens: 1_000_000 }), 24);
@@ -181,6 +183,25 @@ function fakeClient(script) {
   const r3 = client3.calls[1].messages.at(-1).content[0];
   assert.equal(r3.is_error, true);
   assert.match(r3.content, /STEP_UP_REQUIRED/);
+
+  // Phase 2: the read tools and propose_plan follow the owner's scopes and the admin's mode.
+  const sent3 = client3.calls[0].tools.map((t) => t.name);
+  assert.ok(sent3.includes("read_dm") && sent3.includes("propose_plan"), "DM scope on, plan mode: both offered");
+  db.tables.agent_scopes[0].scopes = { dm: { on: false } };
+  const client4 = fakeClient([
+    { stop_reason: "tool_use", content: [{ type: "tool_use", id: "tu10", name: "read_dm", input: { conversationKey: "a:b", purpose: "report", reason: "Rapor 12 inceleniyor" } }] },
+    { stop_reason: "end_turn", content: [{ type: "text", text: "Kapalı." }] },
+  ]);
+  run.__setClientForTests(client4);
+  let dmFetches = 0;
+  await run.runChat({
+    adminUser: { id: "a1", username: "demir" }, authHeader: "Bearer tok", text: "DM oku", onEvent() {}, baseUrl: "http://x", mode: "read",
+    fetchImpl: async () => { dmFetches += 1; return { ok: true, status: 200, text: async () => "{}" }; },
+  });
+  const sent4 = client4.calls[0].tools.map((t) => t.name);
+  assert.ok(!sent4.includes("read_dm") && !sent4.includes("propose_plan"), "DM scope off and read-only mode: neither offered");
+  assert.equal(dmFetches, 0, "a switched-off tool is refused even if the model calls it");
+  assert.match(client4.calls[1].messages.at(-1).content[0].content, /switched off/);
 
   // Kill switch and budget.
   db.tables.admin_agent_settings[0].enabled = false;

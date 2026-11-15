@@ -24,7 +24,13 @@ const STEP_UP_LIMIT = { windowMs: 15 * 60 * 1000, max: 10 };
 // Admin agent (phase 1): sending a chat message and deleting one's own conversation
 // change nothing on the platform. Tool calls inside the chat still go through the admin
 // routes, so a DM read still needs the step-up token.
-const STEP_UP_EXEMPT = [/^\/step-up\/?$/, /\/search\/?$/, /\/preview\/?$/, /^\/agent\/chat\/?$/, /^\/agent\/threads\/[^/]+\/?$/];
+// Admin agent (phase 2): ticking plan rows, the dry run, an admin edit (a new plan version),
+// discarding a proposal and saved prompts change nothing on the platform either. Approving,
+// pausing, cancelling, undoing and scheduled tasks still need the code (approval a fresh one).
+const STEP_UP_EXEMPT = [
+  /^\/step-up\/?$/, /\/search\/?$/, /\/preview\/?$/, /^\/agent\/chat\/?$/, /^\/agent\/threads\/[^/]+\/?$/,
+  /^\/agent\/plans\/[^/]+\/(selection|dry-run|edit|discard)\/?$/, /^\/agent\/prompts(\/[^/]+(\/use)?)?\/?$/,
+];
 let warned = false;
 
 async function totpEnabled(userId) {

@@ -33,6 +33,7 @@ import {
   Bluetooth as PBluetooth,
   Boat as PBoat,
   BookOpen as PBookOpen,
+  BookmarkSimple as PBookmarkSimple,
   Briefcase as PBriefcase,
   Broadcast as PBroadcast,
   Bug as PBug,
@@ -97,6 +98,7 @@ import {
   FilmSlate as PFilmSlate,
   Fire as PFire,
   Fish as PFish,
+  Flask as PFlask,
   Flag as PFlag,
   FlagBanner as PFlagBanner,
   FloppyDisk as PFloppyDisk,
@@ -183,6 +185,7 @@ import {
   Planet as PPlanet,
   Play as PPlay,
   Plus as PPlus,
+  PlusMinus as PPlusMinus,
   Printer as PPrinter,
   Prohibit as PProhibit,
   Pulse as PPulse,
@@ -506,6 +509,10 @@ export const Droplets = make(PDrop, "Droplets");
 export const Earth = make(PGlobeHemisphereWest, "Earth");
 export const Fan = make(PFan, "Fan");
 export const Fish = make(PFish, "Fish");
+// Admin agent (Taslak B): dry run, saved prompts, plan version diff.
+export const FlaskConical = make(PFlask, "FlaskConical");
+export const Bookmark = make(PBookmarkSimple, "Bookmark");
+export const PlusMinus = make(PPlusMinus, "PlusMinus");
 export const Flower2 = make(PFlower, "Flower2");
 export const Folder = make(PFolder, "Folder");
 export const FolderPlus = make(PFolderPlus, "FolderPlus");

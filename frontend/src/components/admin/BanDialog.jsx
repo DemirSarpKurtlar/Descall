@@ -5,6 +5,12 @@
  * session / email / device options; right: a live preview of the screen the
  * user will see. Body mapping lives in banDialogModel.js (selftested).
  * Contract: docs/design/ban-experience/CONTRACT.md, section 7.
+ *
+ * Bulk mode (admin agent, Taslak B "Plan paneli"): pass `targets` (2+ accounts) and
+ * `onSaveBulk`; the same form then edits the settings of a whole plan group instead of
+ * banning one person. Nothing is sent from here: `onSaveBulk(body, form)` gets the same
+ * body buildBanPayload makes, and the preview pages through the accounts. Without
+ * `targets` the dialog is exactly the single-target dialog.
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -12,7 +18,7 @@ import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
 import { Avatar } from "../ui/Avatar";
 import GlassCheckbox from "../ui/GlassCheckbox";
-import { AlertTriangle, Ban, Eye } from "../ui/Icon.jsx";
+import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Eye, X } from "../ui/Icon.jsx";
 import BanPreview from "./BanPreview.jsx";
 import { categoryLabel, loadModerationMeta } from "./moderationMeta.js";
 import {
@@ -37,8 +43,10 @@ import {
   previewBanState,
 } from "./banDialogModel.js";
 import "../../styles/admin-ban.css";
+import "../../styles/admin-ban-bulk.css";
 
-function initialForm(defaultCategory, defaultMessage) {
+function initialForm(defaultCategory, defaultMessage, preset) {
+  if (preset) return { ...preset, flags: { ...DEFAULT_FLAGS, ...(preset.flags || {}) } };
   return {
     category: defaultCategory && defaultCategory !== OTHER_CATEGORY ? defaultCategory : DEFAULT_CATEGORY,
     otherText: "",
@@ -60,6 +68,10 @@ function initialForm(defaultCategory, defaultMessage) {
  * @param {number} [props.reportCount]
  * @param {number} [props.deviceCount]
  * @param {string} [props.defaultCategory]
+ * @param {object[]} [props.targets] bulk mode: every account the settings apply to
+ * @param {{code: string, version: number}} [props.bulk] bulk mode: the plan the group belongs to
+ * @param {object} [props.initialForm] bulk mode: the group's current settings (banDialogModel form)
+ * @param {(body: object, form: object) => Promise<void>|void} [props.onSaveBulk]
  */
 export default function BanDialog({
   open,
@@ -72,8 +84,15 @@ export default function BanDialog({
   deviceCount,
   defaultCategory,
   defaultMessage,
+  targets,
+  bulk,
+  initialForm: presetForm,
+  onSaveBulk,
 }) {
   const { t } = useLocale();
+  const bulkMode = Array.isArray(targets) && targets.length > 0 && typeof onSaveBulk === "function";
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [listOpen, setListOpen] = useState(false);
   const titleId = useId();
   const dialogRef = useRef(null);
   const [meta, setMeta] = useState(metaProp || null);
@@ -85,12 +104,15 @@ export default function BanDialog({
   const [protectedHit, setProtectedHit] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  const targetId = target?.id || null;
+  const subjectTarget = bulkMode ? targets[Math.min(previewIndex, targets.length - 1)] : target;
+  const targetId = bulkMode ? `bulk:${targets.length}` : target?.id || null;
 
   // Fresh form each time the dialog opens for a user.
   useEffect(() => {
     if (!open) return;
-    const f = initialForm(defaultCategory, defaultMessage);
+    const f = initialForm(defaultCategory, defaultMessage, bulkMode ? presetForm : null);
+    setPreviewIndex(0);
+    setListOpen(false);
     setForm(f);
     setOtherOpen(!FEATURED_CATEGORIES.includes(f.category));
     setErr("");
@@ -117,7 +139,7 @@ export default function BanDialog({
 
   // Report / device counts and the admin flag come from the user file when the caller did not pass them.
   useEffect(() => {
-    if (!open || !targetId) return undefined;
+    if (!open || !targetId || bulkMode) return undefined;
     if (Number.isFinite(reportCount) && Number.isFinite(deviceCount)) return undefined;
     let alive = true;
     adminFetch(`/people/${encodeURIComponent(targetId)}/dossier`)
@@ -134,7 +156,7 @@ export default function BanDialog({
     return () => {
       alive = false;
     };
-  }, [open, targetId, reportCount, deviceCount]);
+  }, [open, targetId, reportCount, deviceCount, bulkMode]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -167,11 +189,11 @@ export default function BanDialog({
 
   const subject = useMemo(
     () => ({
-      ...(target || {}),
-      isAdmin: Boolean(target?.isAdmin || target?.is_admin || facts.isAdmin),
-      isOwner: Boolean(target?.isOwner || facts.isOwner),
+      ...(subjectTarget || {}),
+      isAdmin: Boolean(subjectTarget?.isAdmin || subjectTarget?.is_admin || facts.isAdmin),
+      isOwner: Boolean(subjectTarget?.isOwner || facts.isOwner),
     }),
-    [target, facts.isAdmin, facts.isOwner]
+    [subjectTarget, facts.isAdmin, facts.isOwner]
   );
   const blocked = protectedHit || isProtectedTarget(subject);
   const canSubmit = canSubmitBan({ form, target: subject, busy, protectedHit });
@@ -205,6 +227,17 @@ export default function BanDialog({
     }
     setBusy(true);
     setErr("");
+    if (bulkMode) {
+      try {
+        await onSaveBulk(buildBanPayload(form), form);
+        onClose?.();
+      } catch (e) {
+        setErr(e?.message || t("banAdmin.failed"));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     try {
       const body = buildBanPayload(form);
       const path = endpoint || `/users/${encodeURIComponent(targetId)}/ban`;
@@ -223,7 +256,254 @@ export default function BanDialog({
     }
   };
 
-  if (!open || !target || typeof document === "undefined") return null;
+  const otherActive = !featured.includes(form.category);
+
+  function formFields() {
+    return (
+      <>
+        <section className="bad-field">
+          <div className="bad-lab" id={`${titleId}-reason`}>{t("banAdmin.reason")}</div>
+          <div className="bad-pills" role="group" aria-labelledby={`${titleId}-reason`}>
+            {featured.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={`bad-pill${form.category === id ? " is-on" : ""}`}
+                aria-pressed={form.category === id}
+                onClick={() => {
+                  set({ category: id });
+                  setOtherOpen(false);
+                }}
+              >
+                {t(`banAdmin.cat.${id}`)}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`bad-pill${otherActive ? " is-on" : ""}`}
+              aria-pressed={otherActive}
+              aria-expanded={otherOpen}
+              onClick={() => {
+                setOtherOpen(true);
+                if (!otherActive) set({ category: OTHER_CATEGORY });
+              }}
+            >
+              {t("banAdmin.other")}
+            </button>
+          </div>
+          {otherOpen ? (
+            <div className="bad-more">
+              {restCategories.length ? (
+                <div className="bad-pills is-small" role="group" aria-label={t("banAdmin.otherCategories")}>
+                  {/* Free-text "Other" first, so it is never scrolled out of view. */}
+                  <button
+                    type="button"
+                    className={`bad-pill is-small${form.category === OTHER_CATEGORY ? " is-on" : ""}`}
+                    aria-pressed={form.category === OTHER_CATEGORY}
+                    onClick={() => set({ category: OTHER_CATEGORY })}
+                  >
+                    {t("Other")}
+                  </button>
+                  {restCategories.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={`bad-pill is-small${form.category === c.id ? " is-on" : ""}`}
+                      aria-pressed={form.category === c.id}
+                      onClick={() => set({ category: c.id })}
+                    >
+                      {t(c.label)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {form.category === OTHER_CATEGORY ? (
+                <label className="bad-sub">
+                  <span>{t("banAdmin.otherTextLabel")}</span>
+                  <input
+                    className="bad-input"
+                    value={form.otherText}
+                    onChange={(e) => set({ otherText: e.target.value })}
+                    placeholder={t("banAdmin.otherTextPh")}
+                    maxLength={OTHER_TEXT_MAX}
+                    autoFocus
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="bad-field">
+          <div className="bad-lab" id={`${titleId}-dur`}>{t("banAdmin.duration")}</div>
+          <div className="bad-pills" role="group" aria-labelledby={`${titleId}-dur`}>
+            {pills.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={`bad-pill${form.durationId === id ? " is-on" : ""}`}
+                aria-pressed={form.durationId === id}
+                onClick={() => set({ durationId: id })}
+              >
+                {t(`banAdmin.dur.${id}`)}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`bad-pill is-small is-quiet${form.durationId === CUSTOM_DURATION ? " is-on" : ""}`}
+              aria-pressed={form.durationId === CUSTOM_DURATION}
+              onClick={() => set({ durationId: CUSTOM_DURATION })}
+            >
+              {t("banAdmin.custom")}
+            </button>
+          </div>
+          {form.durationId === CUSTOM_DURATION ? (
+            <label className="bad-sub is-inline">
+              <span>{t("banAdmin.customMinutes")}</span>
+              <input
+                className="bad-input is-num"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={form.customMinutes}
+                onChange={(e) => set({ customMinutes: e.target.value })}
+                placeholder="60"
+                autoFocus
+              />
+            </label>
+          ) : null}
+        </section>
+
+        <label className="bad-field">
+          <span className="bad-lab">{t("banAdmin.noteLabel")}</span>
+          <textarea
+            className="bad-input bad-textarea"
+            value={form.message}
+            onChange={(e) => set({ message: e.target.value })}
+            placeholder={t("banAdmin.notePh")}
+            maxLength={MESSAGE_MAX}
+            rows={3}
+          />
+        </label>
+
+        <div className="bad-checks">
+          <label className="bad-check">
+            <GlassCheckbox checked={form.flags.revokeSessions} onChange={(e) => setFlag("revokeSessions", e.target.checked)} />
+            <span>{t("banAdmin.revokeSessions")}</span>
+          </label>
+          <label className="bad-check">
+            <GlassCheckbox checked={form.flags.notifyEmail} onChange={(e) => setFlag("notifyEmail", e.target.checked)} />
+            <span>{t("banAdmin.notifyEmail")}</span>
+          </label>
+          <label className="bad-check">
+            <GlassCheckbox checked={form.flags.alsoAccessBan} onChange={(e) => setFlag("alsoAccessBan", e.target.checked)} />
+            <span>{t("banAdmin.alsoAccessBan")}</span>
+          </label>
+        </div>
+      </>
+    );
+  }
+
+  function renderBulk() {
+    const count = targets.length;
+    const who = (u) => u?.username || u?.displayName || u?.display_name || "?";
+    const stack = targets.slice(0, 5);
+    return createPortal(
+      <div
+        className="bad-scrim"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget && !busy) onClose?.();
+        }}
+      >
+        <div className="bad is-bulk" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={dialogRef}>
+          <div className="bad-form">
+            <header className="bad-head bbk-head">
+              <span className="bbk-ic" aria-hidden="true"><Ban size={22} /></span>
+              <div className="bad-head-text">
+                <h2 id={titleId}>{t("banAdmin.dialogTitle")}</h2>
+                <p>{t("agentOps.bulk.subtitle", { count })}</p>
+              </div>
+              <button type="button" className="bbk-x" onClick={() => onClose?.()} disabled={busy} aria-label={t("agentOps.close")}>
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="bbk-banner">
+              <span className="bbk-stack" aria-hidden="true">
+                {stack.map((u, i) => (
+                  <Avatar key={u.id || i} name={who(u)} size={26} user={{ username: u.username, displayName: who(u), avatarUrl: u.avatarUrl || u.avatar_url, avatar_url: u.avatar_url || u.avatarUrl }} />
+                ))}
+              </span>
+              <span className="bbk-banner-text">
+                <b>{t("agentOps.bulk.banner", { count })}</b>
+                {bulk?.code ? ` · ${t("agentOps.bulk.bannerTail", { code: bulk.code, v: bulk.version })}` : ""}
+              </span>
+              <button type="button" className="bbk-link" aria-expanded={listOpen} onClick={() => setListOpen((v) => !v)}>
+                {listOpen ? t("agentOps.bulk.hideList") : t("agentOps.bulk.list")}
+              </button>
+            </div>
+            {listOpen ? (
+              <ul className="bbk-list">
+                {targets.map((u, i) => (
+                  <li key={u.id || i}>
+                    <button type="button" className={i === previewIndex ? "is-on" : ""} aria-label={`@${who(u)}`} aria-pressed={i === previewIndex} onClick={() => setPreviewIndex(i)}>@{who(u)}</button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {formFields()}
+
+            <div className="bad-warn" role="note">
+              <AlertTriangle size={18} />
+              <span>{t("agentOps.bulk.warn", { count })}</span>
+            </div>
+
+            {err ? (
+              <p className="bad-err" role="alert">
+                {err}
+              </p>
+            ) : null}
+
+            <div className="bad-acts">
+              <button type="button" className="bad-btn is-ghost" onClick={() => onClose?.()} disabled={busy}>
+                {t("banAdmin.cancel")}
+              </button>
+              <button type="button" className="bad-btn is-danger" disabled={busy} onClick={submit}>
+                <Check size={18} />
+                {busy ? t("agentOps.bulk.saving") : t("agentOps.bulk.save", { duration: durationText(form.durationId) })}
+              </button>
+            </div>
+          </div>
+
+          <aside className="bad-prev bbk-prev" aria-label={t("banAdmin.previewTitle")}>
+            <div className="bad-lab bad-prev-lab">
+              <Eye size={16} />
+              {t("banAdmin.previewTitle")}
+            </div>
+            <BanPreview state={previewState} categoryLabel={catText} durationLabel={durationText(form.durationId)} />
+            <p className="bbk-note">{t("agentOps.bulk.previewNote")}</p>
+            <div className="bbk-pager">
+              <span>{t("agentOps.bulk.preview")}</span>
+              <span className="bbk-pager-nav">
+                <button type="button" onClick={() => setPreviewIndex((i) => (i - 1 + count) % count)} aria-label={t("agentOps.bulk.prev")}>
+                  <ChevronLeft size={14} />
+                </button>
+                <b className="tnum">{previewIndex + 1} / {count}</b>
+                <button type="button" onClick={() => setPreviewIndex((i) => (i + 1) % count)} aria-label={t("agentOps.bulk.next")}>
+                  <ChevronRight size={14} />
+                </button>
+              </span>
+            </div>
+          </aside>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
+  if (!open || !subjectTarget || typeof document === "undefined") return null;
+  if (bulkMode) return renderBulk();
 
   const name = target.displayName || target.display_name || target.username || "?";
   const factList = headerFacts({
@@ -231,7 +511,6 @@ export default function BanDialog({
     reportCount: Number.isFinite(reportCount) ? reportCount : facts.reportCount,
     deviceCount: Number.isFinite(deviceCount) ? deviceCount : facts.deviceCount,
   });
-  const otherActive = !featured.includes(form.category);
 
   return createPortal(
     <div
@@ -270,145 +549,7 @@ export default function BanDialog({
             </div>
           </header>
 
-          <section className="bad-field">
-            <div className="bad-lab" id={`${titleId}-reason`}>{t("banAdmin.reason")}</div>
-            <div className="bad-pills" role="group" aria-labelledby={`${titleId}-reason`}>
-              {featured.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`bad-pill${form.category === id ? " is-on" : ""}`}
-                  aria-pressed={form.category === id}
-                  onClick={() => {
-                    set({ category: id });
-                    setOtherOpen(false);
-                  }}
-                >
-                  {t(`banAdmin.cat.${id}`)}
-                </button>
-              ))}
-              <button
-                type="button"
-                className={`bad-pill${otherActive ? " is-on" : ""}`}
-                aria-pressed={otherActive}
-                aria-expanded={otherOpen}
-                onClick={() => {
-                  setOtherOpen(true);
-                  if (!otherActive) set({ category: OTHER_CATEGORY });
-                }}
-              >
-                {t("banAdmin.other")}
-              </button>
-            </div>
-            {otherOpen ? (
-              <div className="bad-more">
-                {restCategories.length ? (
-                  <div className="bad-pills is-small" role="group" aria-label={t("banAdmin.otherCategories")}>
-                    {/* Free-text "Other" first, so it is never scrolled out of view. */}
-                    <button
-                      type="button"
-                      className={`bad-pill is-small${form.category === OTHER_CATEGORY ? " is-on" : ""}`}
-                      aria-pressed={form.category === OTHER_CATEGORY}
-                      onClick={() => set({ category: OTHER_CATEGORY })}
-                    >
-                      {t("Other")}
-                    </button>
-                    {restCategories.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className={`bad-pill is-small${form.category === c.id ? " is-on" : ""}`}
-                        aria-pressed={form.category === c.id}
-                        onClick={() => set({ category: c.id })}
-                      >
-                        {t(c.label)}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                {form.category === OTHER_CATEGORY ? (
-                  <label className="bad-sub">
-                    <span>{t("banAdmin.otherTextLabel")}</span>
-                    <input
-                      className="bad-input"
-                      value={form.otherText}
-                      onChange={(e) => set({ otherText: e.target.value })}
-                      placeholder={t("banAdmin.otherTextPh")}
-                      maxLength={OTHER_TEXT_MAX}
-                      autoFocus
-                    />
-                  </label>
-                ) : null}
-              </div>
-            ) : null}
-          </section>
-
-          <section className="bad-field">
-            <div className="bad-lab" id={`${titleId}-dur`}>{t("banAdmin.duration")}</div>
-            <div className="bad-pills" role="group" aria-labelledby={`${titleId}-dur`}>
-              {pills.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`bad-pill${form.durationId === id ? " is-on" : ""}`}
-                  aria-pressed={form.durationId === id}
-                  onClick={() => set({ durationId: id })}
-                >
-                  {t(`banAdmin.dur.${id}`)}
-                </button>
-              ))}
-              <button
-                type="button"
-                className={`bad-pill is-small is-quiet${form.durationId === CUSTOM_DURATION ? " is-on" : ""}`}
-                aria-pressed={form.durationId === CUSTOM_DURATION}
-                onClick={() => set({ durationId: CUSTOM_DURATION })}
-              >
-                {t("banAdmin.custom")}
-              </button>
-            </div>
-            {form.durationId === CUSTOM_DURATION ? (
-              <label className="bad-sub is-inline">
-                <span>{t("banAdmin.customMinutes")}</span>
-                <input
-                  className="bad-input is-num"
-                  type="number"
-                  min={1}
-                  inputMode="numeric"
-                  value={form.customMinutes}
-                  onChange={(e) => set({ customMinutes: e.target.value })}
-                  placeholder="60"
-                  autoFocus
-                />
-              </label>
-            ) : null}
-          </section>
-
-          <label className="bad-field">
-            <span className="bad-lab">{t("banAdmin.noteLabel")}</span>
-            <textarea
-              className="bad-input bad-textarea"
-              value={form.message}
-              onChange={(e) => set({ message: e.target.value })}
-              placeholder={t("banAdmin.notePh")}
-              maxLength={MESSAGE_MAX}
-              rows={3}
-            />
-          </label>
-
-          <div className="bad-checks">
-            <label className="bad-check">
-              <GlassCheckbox checked={form.flags.revokeSessions} onChange={(e) => setFlag("revokeSessions", e.target.checked)} />
-              <span>{t("banAdmin.revokeSessions")}</span>
-            </label>
-            <label className="bad-check">
-              <GlassCheckbox checked={form.flags.notifyEmail} onChange={(e) => setFlag("notifyEmail", e.target.checked)} />
-              <span>{t("banAdmin.notifyEmail")}</span>
-            </label>
-            <label className="bad-check">
-              <GlassCheckbox checked={form.flags.alsoAccessBan} onChange={(e) => setFlag("alsoAccessBan", e.target.checked)} />
-              <span>{t("banAdmin.alsoAccessBan")}</span>
-            </label>
-          </div>
+          {formFields()}
 
           <div className={`bad-warn${blocked ? " is-blocked" : ""}`} role={blocked ? "alert" : undefined}>
             <AlertTriangle size={18} />

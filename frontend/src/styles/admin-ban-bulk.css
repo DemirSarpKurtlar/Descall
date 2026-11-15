@@ -1,0 +1,113 @@
+/* BanDialog bulk mode (admin agent, Taslak B "Plan paneli", frame B2): the same dialog
+   editing a whole plan group. Lives next to admin-ban.css and only adds .bbk-* parts. */
+
+.bad.is-bulk { width: min(940px, 100%); grid-template-columns: minmax(0, 1fr) 340px; }
+.bad.is-bulk .bad-form { gap: 13px; }
+
+.bbk-head { align-items: center; }
+.bbk-ic {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(145deg, #ff6b6e, #e5383c);
+  box-shadow: 0 6px 16px rgba(242, 63, 67, 0.3);
+}
+.bbk-head .bad-head-text { flex: 1; }
+.bbk-head p { font-size: var(--fs-13); }
+.bbk-x {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bad-t2);
+}
+.bbk-x:hover { background: rgba(255, 255, 255, 0.08); }
+
+.bbk-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: var(--fs-13);
+  line-height: 1.35;
+  color: var(--bad-t2);
+  background: rgba(var(--bad-brand), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--bad-brand), 0.35);
+}
+.bbk-banner b { color: var(--bad-t1); }
+.bbk-banner-text { flex: 1; min-width: 0; }
+.bbk-stack { display: flex; flex: none; }
+.bbk-stack > * { margin-left: -6px; border-radius: 8px; box-shadow: 0 0 0 2px #1b1c28; }
+.bbk-stack > *:first-child { margin-left: 0; }
+.bbk-link {
+  flex: none;
+  border: 0;
+  padding: 4px 2px;
+  background: none;
+  font-size: var(--fs-13) !important;
+  font-weight: 650;
+  color: #a9b9ff !important;
+  white-space: nowrap;
+}
+.bbk-link:hover { text-decoration: underline; }
+
+.bbk-list {
+  margin: -4px 0 0;
+  padding: 8px;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px var(--bad-hair);
+}
+.bbk-list button {
+  border: 0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: var(--fs-12) !important;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--bad-t2) !important;
+}
+.bbk-list button.is-on { background: rgba(var(--bad-brand), 0.22); color: #c9d4ff !important; }
+
+.bbk-prev { display: flex; flex-direction: column; gap: 10px; }
+.bbk-note { margin: 0; font-size: var(--fs-12); line-height: 1.45; color: var(--bad-t3); }
+.bbk-pager {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-13);
+  color: var(--bad-t3);
+}
+.bbk-pager-nav { display: inline-flex; align-items: center; gap: 2px; color: #a9b9ff; }
+.bbk-pager-nav b { font-weight: 700; min-width: 44px; text-align: center; }
+.bbk-pager-nav button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #a9b9ff !important;
+}
+.bbk-pager-nav button:hover { background: rgba(var(--bad-brand), 0.16); }
+
+@media (max-width: 760px) {
+  .bad.is-bulk { grid-template-columns: minmax(0, 1fr); }
+}

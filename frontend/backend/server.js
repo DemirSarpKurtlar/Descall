@@ -551,6 +551,8 @@ app.use("/api/notify-prefs", require("./routes/notifyPrefs"));
 // Messaging phase 4: scheduled sending; the sender runs here so schedules fire while the author is offline.
 app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
 if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
+// Admin agent: resumes approved plans after a restart, starts scheduled plans and runs scheduled tasks.
+if (process.env.NODE_ENV !== "test") require("./lib/adminAgent/scheduler").start({ getIo: () => app.get("io") });
 // Messaging phase 5: "Mesaj önizlemesi" for server-sent pushes (users.push_preview).
 app.use("/api/push-preview", require("./routes/pushPreview"));
 // Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
