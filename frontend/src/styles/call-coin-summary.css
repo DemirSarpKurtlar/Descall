@@ -1110,3 +1110,351 @@ html.user-solid .ccw-drawer {
   backdrop-filter: none;
   background: #181924;
 }
+
+/* ---------------------------------------------------------------- Settings › Cüzdan ve kazanç */
+.ccset {
+  color: var(--text-primary, rgba(255, 255, 255, 0.95));
+  font-size: var(--fs-13);
+}
+.ccset-hd h1 {
+  margin: 0;
+  font-size: var(--fs-28);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.ccset-hd p {
+  margin: 4px 0 16px;
+  font-size: var(--fs-13);
+  color: var(--text-secondary, rgba(235, 238, 255, 0.6));
+}
+.ccset-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .ccset-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ccset-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.ccset-card,
+.ccset-pvw {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  min-width: 0;
+}
+.ccset-pvw {
+  background: rgba(0, 0, 0, 0.22);
+}
+.ccset-card h3 {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-15);
+  font-weight: 700;
+}
+.ccset-muted {
+  color: var(--text-secondary, rgba(235, 238, 255, 0.5));
+  font-weight: 500;
+  font-size: var(--fs-12);
+}
+.ccset-card h3 .ccset-muted {
+  margin-left: auto;
+}
+.ccset-opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+.ccset-opt:last-child {
+  box-shadow: none;
+}
+.ccset-opt.is-off {
+  opacity: 0.55;
+}
+.ccset-c {
+  flex: 1;
+  min-width: 0;
+}
+.ccset-c b {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: 650;
+}
+.ccset-c small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-12);
+  line-height: 1.4;
+  color: var(--text-secondary, rgba(235, 238, 255, 0.52));
+}
+.ccset-ctx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+.ccset-seg {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+.ccset-seg button {
+  min-width: 38px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 650;
+  color: rgba(235, 238, 255, 0.7);
+  background: none;
+  cursor: pointer;
+}
+.ccset-seg button.on {
+  background: #587af5;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(88, 122, 245, 0.35);
+}
+.ccset-seg button:disabled {
+  cursor: default;
+}
+.ccset-bar {
+  margin-top: 10px;
+}
+.ccset-bar-t {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-13);
+}
+.ccset-bar-t span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+.ccset-bar-t b {
+  font-weight: 700;
+}
+.ccset-track {
+  height: 7px;
+  border-radius: 7px;
+  margin-top: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+.ccset-track i {
+  display: block;
+  height: 100%;
+  border-radius: 7px;
+}
+.ccset-track.is-voice i {
+  background: linear-gradient(90deg, #587af5, #f5b73a);
+}
+.ccset-track.is-screen i {
+  background: linear-gradient(90deg, #9b5de5, #d6a0ff);
+}
+.ccset-track.is-total i {
+  background: linear-gradient(90deg, #ffd76a, #f08a24);
+}
+.ccset-foot {
+  margin: 12px 0 0;
+  font-size: var(--fs-12);
+  color: var(--text-secondary, rgba(235, 238, 255, 0.5));
+}
+.ccset-lab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary, rgba(235, 238, 255, 0.55));
+}
+.ccset-lab-r {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #a9b9ff;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  font-size: var(--fs-12);
+}
+.ccset-lab .ccs-link {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ccset-frames {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: flex-start;
+}
+.ccset-frames.is-off .ccset-desk,
+.ccset-frames.is-off .ccset-phone {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+.ccset-offtag {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+.ccset-desk {
+  width: 216px;
+  height: 300px;
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    radial-gradient(240px 120px at 20% 0%, rgba(88, 122, 245, 0.18), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+.ccset-phone {
+  width: 128px;
+  height: 300px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 24px;
+  background: #0d0e13;
+  box-shadow: inset 0 0 0 3px #2a2b3a;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.ccset-scale {
+  flex: none;
+  pointer-events: none;
+}
+.ccset-scale.is-desk {
+  width: 560px;
+  transform: scale(0.37);
+  transform-origin: top center;
+}
+.ccset-scale.is-phone {
+  width: 390px;
+  transform: scale(0.31);
+  transform-origin: bottom center;
+}
+.ccset-scale .ccs-card {
+  max-height: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.ccset-play {
+  width: 100%;
+  margin-top: 12px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 13px;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 650;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+.ccset-play:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.ccset-hist {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+.ccset-hist:last-child {
+  box-shadow: none;
+}
+.ccset-hist-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: rgba(52, 199, 123, 0.15);
+  color: #6fe0a3;
+}
+.ccset-hist-ic.is-dim {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(235, 238, 255, 0.6);
+}
+.ccset-hist-t {
+  flex: 1;
+  min-width: 0;
+}
+.ccset-hist-t b {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: 650;
+}
+.ccset-hist-t small {
+  display: block;
+  font-size: var(--fs-12);
+  color: var(--text-secondary, rgba(235, 238, 255, 0.5));
+}
+.ccset-hist em {
+  font-style: normal;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: #ffd76a;
+}
+.ccset-hist em.is-dim {
+  color: rgba(235, 238, 255, 0.4);
+  font-weight: 600;
+}
+.ccset-empty {
+  margin: 4px 0;
+}
+.ccset :focus-visible,
+html.glass-desktop .ccset :focus-visible {
+  outline: 2px solid #8fa6ff;
+  outline-offset: 2px;
+}
+.ccset .num {
+  font-variant-numeric: tabular-nums;
+}

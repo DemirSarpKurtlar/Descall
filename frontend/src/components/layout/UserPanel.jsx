@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, 
 import { authedRequest } from "../../api/authedHttp";
 import { readReceiptsSetting, storeReceiptsSetting } from "../../lib/readReceipts";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye } from "../ui/Icon.jsx";
+import { X, Mic, Headphones, Bell, User, LogOut, Moon, Sun, ChevronRight, Palette, Volume2, Camera, Type, Upload, Check, MonitorSpeaker, AlertTriangle, Copy, Image as ImageIcon, RefreshCw, Globe, Shield, FileText, ShoppingBag, Mail, Monitor, CheckCircle2, UserX, KeyRound, Smile, Trash2, AtSign, Lock, Waveform, Ticket, Award, Sparkles, Pencil, Eye, Coins } from "../ui/Icon.jsx";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import AppearancePane from "../settings/AppearancePane";
 import { S3Glyph, S3Chevron } from "../settings/SettingsV3";
@@ -70,6 +70,7 @@ import ErrorBoundary from "../ErrorBoundary";
 
 const ShopPanel = lazy(() => import("../settings/ShopPanel"));
 const PromoSettingsTab = lazy(() => import("../promo/PromoSettingsTab"));
+const WalletSettingsTab = lazy(() => import("../settings/WalletSettingsTab"));
 const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
 // Ayarlar > Descall+ (status, coupon, features, plan comparison; iOS: status only).
 const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.jsx"));
@@ -338,6 +339,7 @@ const NAV_GROUPS_DEF = [
     items: [
       { id: "premium", labelKey: "premium.nav", icon: Sparkles, hintKey: "premium.navHint" },
       { id: "shop", labelKey: "settings.shop", icon: ShoppingBag, hintKey: "settings.shopHint" },
+      { id: "wallet", labelKey: "coinpop.settings.nav", icon: Coins, hintKey: "coinpop.settings.navHint" },
       { id: "badges", labelKey: "badges.navTitle", icon: Award, hintKey: "badges.navHint" },
       { id: "promo", labelKey: "settings.promo", icon: Ticket, hintKey: "settings.promoHint" },
     ],
@@ -360,6 +362,7 @@ const S3_NAV_TILES = {
   sound: ["music", "teal"],
   premium: ["sparkle", "purple"],
   shop: ["bag", "purple"],
+  wallet: ["coin", "yellow"],
   badges: ["award", "yellow"],
   promo: ["ticket", "pink"],
 };
@@ -382,6 +385,7 @@ const TAB_TITLE_KEYS = {
   voice: "settings.voiceVideo",
   sound: "settings.soundEffects",
   shop: "settings.shop",
+  wallet: "coinpop.settings.nav",
   badges: "badges.navTitle",
   promo: "settings.promo",
   premium: "premium.nav",
@@ -2362,6 +2366,15 @@ const UserPanel = forwardRef(function UserPanel({
           <Suspense fallback={null}>
             <BadgeSettingsTab me={me} />
           </Suspense>
+        );
+
+      case "wallet":
+        return (
+          <div className="us-tab">
+            <Suspense fallback={null}>
+              <WalletSettingsTab />
+            </Suspense>
+          </div>
         );
 
       case "promo":
