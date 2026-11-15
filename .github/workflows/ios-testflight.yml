@@ -81,6 +81,25 @@ jobs:
           echo "LOG_DIR=$RUNNER_TEMP/ios-logs" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/ios-logs"
 
+      - name: Register the broadcast extension App ID (only when it ships)
+        if: env.SHIP_BROADCAST == '1'
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          REG_BUNDLE_ID: com.descall.app.broadcast
+          REG_NAME: Descall Broadcast
+          REG_CAPABILITIES: APP_GROUPS
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 -m venv "$RUNNER_TEMP/ascreg"
+          "$RUNNER_TEMP/ascreg/bin/pip" install --quiet pyjwt cryptography requests
+          export ASC_KEY_PATH="$RUNNER_TEMP/asc_reg_key.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          trap 'rm -f "$ASC_KEY_PATH"' EXIT
+          "$RUNNER_TEMP/ascreg/bin/python" appstore/asc_register_bundle.py
+
       - name: Select Xcode (App Store uploads need Xcode 26+ / iOS 26 SDK)
         run: |
           set -euo pipefail
