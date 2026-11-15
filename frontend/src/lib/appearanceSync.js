@@ -12,6 +12,13 @@ import {
   readStoredSettings,
   writeAppearance,
 } from "./appearancePrefs.js";
+import {
+  CALL_COIN_PREFS_EVENT,
+  callCoinSyncFields,
+  readCallCoinPrefs,
+  sanitizeCallCoinPatch,
+  writeCallCoinPrefs,
+} from "./callCoinPrefs.js";
 
 const FONT_STEP_MAX = FONT_STEPS.length - 1;
 let premiumThemeKey = null;
@@ -106,7 +113,27 @@ function emit(prefs) {
 
 function pickSync(prefs) {
   const p = normalizeAppearance(prefs);
-  return Object.fromEntries(SYNC_KEYS.map((k) => [k, p[k]]));
+  // The end-of-call DesCoin summary setting rides on the same account copy.
+  return { ...Object.fromEntries(SYNC_KEYS.map((k) => [k, p[k]])), ...callCoinSyncFields(readCallCoinPrefs()) };
+}
+
+function emitCallCoin(prefs) {
+  try {
+    window.dispatchEvent(new CustomEvent(CALL_COIN_PREFS_EVENT, { detail: prefs }));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Settings › Cüzdan ve kazanç: cache, tell open views, push to the account (debounced). */
+export function updateCallCoinPrefs(patch) {
+  const next = writeCallCoinPrefs(patch, { updatedAt: new Date().toISOString() });
+  emitCallCoin(next);
+  if (typeof window !== "undefined") {
+    window.clearTimeout(pushTimer);
+    pushTimer = window.setTimeout(pushNow, 600);
+  }
+  return next;
 }
 
 async function pushNow() {
@@ -143,6 +170,8 @@ export async function pullAccountAppearance() {
     if (res?.appearance && remoteAt > localAt) {
       const next = normalizeAppearance({ ...readAppearance(), ...res.appearance });
       writeAppearance(next, { updatedAt: res.updatedAt });
+      const coin = sanitizeCallCoinPatch(res.appearance);
+      if (Object.keys(coin).length) emitCallCoin(writeCallCoinPrefs(coin));
       applyNow(next);
       emit(next);
       return next;

@@ -3,6 +3,8 @@
  * (or screensharing). Server validates against its own call state.
  */
 
+import { markCallContextSeen } from "./callCoinPrefs.js";
+
 const INTERVAL_MS = 16_000;
 
 function createSpeakingDetector(stream) {
@@ -47,7 +49,7 @@ function createSpeakingDetector(stream) {
  * @param {() => MediaStream|null} opts.getLocalStream
  * @param {() => boolean} opts.isActive
  * @param {() => boolean} opts.isScreenSharing
- * @param {() => ({ context: 'dm'|'group', peerId?: string, groupId?: string })} opts.getContext
+ * @param {() => ({ context: 'dm'|'group'|'server', peerId?: string, groupId?: string, channelId?: string })} opts.getContext
  */
 export function startDesCoinHeartbeat({
   getSocket,
@@ -65,6 +67,8 @@ export function startDesCoinHeartbeat({
     if (!socket?.connected) return;
     const ctx = getContext?.() || {};
     if (!ctx.context) return;
+    // This device is in the call: its end-of-call DesCoin summary may show here.
+    markCallContextSeen(ctx);
 
     const stream = getLocalStream?.() || null;
     if (stream !== lastStream) {
@@ -97,6 +101,12 @@ export function startDesCoinHeartbeat({
   const boot = setTimeout(tick, 2_500);
 
   return () => {
+    try {
+      const ctx = getContext?.();
+      if (ctx?.context) markCallContextSeen(ctx);
+    } catch {
+      /* ignore */
+    }
     clearInterval(id);
     clearTimeout(boot);
     detector?.stop?.();

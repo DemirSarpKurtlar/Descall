@@ -22,6 +22,7 @@ import {
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
 import { emitRoomOnce } from "../lib/socketResubscribe";
+import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
@@ -209,6 +210,24 @@ export function useServerVoice(socket) {
   useEffect(() => {
     activeChannelIdRef.current = activeChannelId;
     if (activeChannelId) lastVoiceChannelIdRef.current = activeChannelId;
+  }, [activeChannelId]);
+
+  // DesCoin in server voice channels (owner approved, Nov 2026): same heartbeat as DM /
+  // group calls. The server pays only for a real seat held by this socket, with someone
+  // else seated, speaking (not muted / server-muted / timed out) or actually sharing.
+  useEffect(() => {
+    if (!activeChannelId) return undefined;
+    return startDesCoinHeartbeat({
+      getSocket: () => socketRef.current,
+      getLocalStream: () => (mutedRef.current ? null : localStreamRef.current),
+      isActive: () => Boolean(activeChannelIdRef.current),
+      isScreenSharing: () => Boolean(screenStreamRef.current),
+      getContext: () => ({
+        context: "server",
+        channelId: activeChannelIdRef.current || activeChannelId,
+        serverId: activeServerIdRef.current || null,
+      }),
+    });
   }, [activeChannelId]);
 
   // wifi ↔ cellular (and coming back online) while a voice channel is open.
