@@ -14,6 +14,9 @@ import {
   applyUndo, formatCoins, formatOwnedDate, isAnimatedItem, purchaseView, RARITY_COLORS, rarityKey, undoTarget,
 } from "../../../lib/storePurchaseState";
 import { PurchasePreview, PurchaseThumb } from "./StorePurchasePreviews";
+import ShopMerchTags from "../ShopMerchTags.jsx";
+import { purchasable, saleOf, stockOf } from "../../../lib/shopMerchView.js";
+import { useLocale } from "../../../context/LocaleContext";
 
 const CAT_ICON = {
   banner: ImageIcon, avatar_effect: Sparkles, profile_background: ImageIcon, theme: Palette,
@@ -76,6 +79,7 @@ export default function StorePurchaseModal({
 }) {
   const category = item.category;
   const c = purchaseCopy(locale);
+  const { t: tx } = useLocale();
   const cat = c.cat[category] || c.cat.banner;
   const L = localizeShopItem(item, locale);
   const rk = rarityKey(item.rarity);
@@ -284,6 +288,12 @@ export default function StorePurchaseModal({
   );
 
   const fmt = formatCoins;
+  // Mağaza remake: sale price (list price struck through), stock left, countdown, sold out.
+  const sale = saleOf(item);
+  const canBuyNow = purchasable(item);
+  const listPrice = sale.onSale ? <s className="spm-list-price">{fmt(sale.list)}</s> : null;
+  const saleBadge = sale.onSale ? <span className="spm-sale-badge">{tx("shopMerch.off", { n: sale.pct })}</span> : null;
+  const merchTags = <ShopMerchTags item={item} placement="body" />;
   let body = null;
   let foot = cat.foot;
   let actions = null;
@@ -292,10 +302,11 @@ export default function StorePurchaseModal({
     body = (
       <>
         <div className="spm-ledger">
-          <div className="spm-lt"><small>{c.price}</small><b className="gold"><Coin />{fmt(view.price)}</b></div>
+          <div className="spm-lt"><small>{c.price}{saleBadge}</small><b className="gold"><Coin />{listPrice}{fmt(view.price)}</b></div>
           <div className="spm-lt"><small>{c.balance}</small><b>{fmt(view.balance)}</b></div>
           <div className="spm-lt"><small>{c.after}</small><b>{fmt(view.after)}<span className="spm-delta">−{fmt(view.price)}</span></b></div>
         </div>
+        {merchTags}
         <label className="spm-row">
           <button
             type="button"
@@ -314,8 +325,8 @@ export default function StorePurchaseModal({
     actions = (
       <>
         <button type="button" className="spm-btn spm-btn-ghost spm-btn-cancel" onClick={close} disabled={phase === "buying"}>{c.cancel}</button>
-        <button type="button" ref={primaryRef} className="spm-btn spm-btn-primary" onClick={buy} disabled={phase === "buying"} data-action="buy" aria-label={phase === "buying" ? c.buying : c.buyFor(fmt(view.price))}>
-          <Coin />{phase === "buying" ? c.buying : c.buyFor(fmt(view.price))}
+        <button type="button" ref={primaryRef} className="spm-btn spm-btn-primary" onClick={buy} disabled={phase === "buying" || !canBuyNow} data-action="buy" aria-label={!canBuyNow ? tx(stockOf(item).soldOut ? "shopMerch.soldOut" : "shopMerch.ended") : phase === "buying" ? c.buying : c.buyFor(fmt(view.price))}>
+          {!canBuyNow ? tx(stockOf(item).soldOut ? "shopMerch.soldOut" : "shopMerch.ended") : <><Coin />{phase === "buying" ? c.buying : c.buyFor(fmt(view.price))}</>}
         </button>
       </>
     );

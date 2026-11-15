@@ -40,4 +40,8 @@ export const API_DE = {
   "Nothing to change.": "Es gibt nichts zu ändern.",
   "Game limits are not set up yet.": "Spiellimits sind noch nicht eingerichtet.",
   "Check the limit values.": "Prüfe die Limitwerte.",
+  // Mağaza: sale price, limited stock and time windows at checkout.
+  "This item is not on sale right now.": "Dieser Artikel ist gerade nicht im Verkauf.",
+  "This item is sold out.": "Dieser Artikel ist ausverkauft.",
+  "The price changed. Check the new price and try again.": "Der Preis hat sich geändert. Prüfe den neuen Preis und versuche es erneut.",
 };

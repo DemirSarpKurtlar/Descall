@@ -58,7 +58,11 @@ import { rarityKey, usesPurchaseModal } from "../../lib/storePurchaseState.js";
 import { formatNumber } from "../../i18n/format.js";
 import StorePurchaseModal from "../shop/purchase/StorePurchaseModal";
 import { openPromoRedeem } from "../../lib/promoBus";
+import ShopMerchTags, { ShopPriceTag } from "../shop/ShopMerchTags.jsx";
+import ShopStorefront from "../shop/ShopStorefront.jsx";
+import { purchasable, stockOf } from "../../lib/shopMerchView.js";
 import "../../styles/promo.css";
+import "../../styles/shop-merch.css";
 
 /** Short tab labels, same pattern as admin top nav. Source: lib/shopCategories.js. */
 const CATEGORY_ICONS = {
@@ -218,6 +222,9 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const [view, setView] = useState("store");
   // Purchase modal (2.13.1): the item id it is open for, null when closed.
   const [purchaseItemId, setPurchaseItemId] = useState(null);
+  // Admin storefront (Mağaza remake): featured sections in admin order + shop updates.
+  const [sections, setSections] = useState([]);
+  const [updates, setUpdates] = useState([]);
   const dailyCardRef = useRef(null);
   const inviteRef = useRef(null);
   const loadedAssetCategories = useRef(new Set());
@@ -225,13 +232,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   const buyLockRef = useRef(new Set());
   itemsRef.current = items;
 
-  const load = useCallback(async ({ silent = false } = {}) => {
+  const load = useCallback(async ({ silent = false, fresh = false } = {}) => {
     // Full loading flash unmounts the grid and resets .us-main-scroll to top.
     // Only show it on the first open, refresh after buy/equip stays silent.
     if (!silent) setLoading(true);
     if (!silent) setCatalogError("");
     const [catalogRes, inventoryRes, dailyRes, vouchersRes] = await Promise.allSettled([
-      getShopCatalog(),
+      getShopCatalog({ fresh }),
       getShopInventory(),
       getDesCoinDaily(),
       getShopVouchers(),
@@ -241,6 +248,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       loadedAssetCategories.current = new Set();
       setServerRetired(Array.isArray(catalogRes.value?.retiredCategories) ? catalogRes.value.retiredCategories : []);
       setItems(visibleShopItems(catalogRes.value?.items || [], catalogRes.value?.retiredCategories));
+      setSections(Array.isArray(catalogRes.value?.sections) ? catalogRes.value.sections : []);
+      setUpdates(Array.isArray(catalogRes.value?.updates) ? catalogRes.value.updates : []);
       setCatalogError("");
       setCatalogGeneration((n) => n + 1);
     } else if (!silent) {
@@ -283,6 +292,22 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Live: an admin changed a price, a sale, stock or the storefront, or took back a gift.
+  useEffect(() => {
+    let timer = null;
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => load({ silent: true, fresh: true }), 400);
+    };
+    window.addEventListener("descall:shop-catalog-changed", refresh);
+    window.addEventListener("descall:shop-inventory-changed", refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("descall:shop-catalog-changed", refresh);
+      window.removeEventListener("descall:shop-inventory-changed", refresh);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -388,7 +413,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     setNotice("");
     try {
       await preserveShopScroll(async () => {
-        const result = await purchaseShopItem(item.id, { useVoucher });
+        const result = await purchaseShopItem(item.id, { useVoucher, expectedPrice: Number(item.price_descoin) || 0 });
         if (result?.balance != null) onBalanceChange?.(result.balance);
         if (result?.voucher) {
           setVouchers((prev) => ({ ...prev, [item.category]: Math.max(0, (prev[item.category] || 0) - 1) }));
@@ -408,11 +433,17 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       });
     } catch (err) {
       if (typeof err.balance === "number") onBalanceChange?.(err.balance);
-      if (err.status === 409 && err.code !== "theme_client" && err.code !== "no_voucher") {
+      if (err.status === 409 && !["theme_client", "no_voucher", "sold_out", "price_changed"].includes(err.code)) {
         await load({ silent: true });
         return false;
       }
       if (err.code === "no_voucher") setVouchers((prev) => ({ ...prev, [item.category]: 0 }));
+      if (["sold_out", "not_available", "price_changed"].includes(err.code)) {
+        hapticError();
+        setNotice(t(`shopMerch.err.${err.code}`));
+        await load({ silent: true, fresh: true });
+        return false;
+      }
       hapticError();
       setNotice(err.message || t("Purchase failed. Please try again."));
     } finally {
@@ -691,6 +722,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                       <span className="shop-item-new">{t("New")}</span>
                     ) : null}
                     <ShopItemPreview category={category} item={item} t={t} name={label.name} />
+                    <ShopMerchTags item={item} placement="thumb" />
                   </div>
                   <div className="shop-item-body">
                     <div className="shop-item-name-row">
@@ -700,15 +732,14 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                       )}
                     </div>
                     {label.description && <p className="shop-item-desc">{label.description}</p>}
+                    <ShopMerchTags item={item} placement="body" />
                     <div className="shop-item-footer">
                       {owned && !buying ? (
                         <span className="shop-item-owned-pill">
                           <CheckCircle2 size={13} /> {t("Owned")}
                         </span>
                       ) : (
-                        <span className="shop-item-price">
-                          <Coins size={13} /> {formatNumber(item.price_descoin || 0, locale)}
-                        </span>
+                        <ShopPriceTag item={item} />
                       )}
                       {owned && !buying ? (
                         <RippleButton
@@ -717,6 +748,10 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                           disabled={equipping}
                         >
                           {equipping ? t("Applying…") : isEquipped ? t("Unequip") : t("Apply")}
+                        </RippleButton>
+                      ) : !purchasable(item) ? (
+                        <RippleButton className="btn-secondary sm" disabled data-soldout="true">
+                          {stockOf(item).soldOut ? t("shopMerch.soldOut") : t("shopMerch.ended")}
                         </RippleButton>
                       ) : (
                         <RippleButton
@@ -817,6 +852,18 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                 <p className="shop-panel-intro">{t("Everything you own. Apply an item to show it on your profile.")}</p>
               </div>
             ) : lead}
+            {view === "store" && !loading ? (
+              <ShopStorefront
+                sections={sections}
+                updates={updates}
+                items={items}
+                ownedItemIds={ownedItemIds}
+                onOpen={(item) => {
+                  if (usesPurchaseModal(item.category)) openPurchase(item);
+                  else setActiveCategory(item.category);
+                }}
+              />
+            ) : null}
             {view === "inventory" ? null : categoryTabs}
             {/* A broken category (e.g. Ülkeler) shows an inline error with Tekrar dene and
                 never takes Settings or the app down with it (2.13.1). */}

@@ -1,0 +1,161 @@
+/* User shop merchandising (Mağaza remake, Nov 2026): sale price with the list price struck
+   through + discount badge, limited stock left, sold out, countdowns, the admin-ordered
+   storefront rails and the shared item thumbnail (.shm-th, also used by the admin desk).
+   Type sizes only from the --fs-* scale. */
+
+/* ── Shared thumbnail ── */
+.shm-th {
+  --th: 40px;
+  position: relative;
+  width: calc(var(--th) * 1.36);
+  height: var(--th);
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 11px;
+  color: rgba(235, 238, 255, 0.74);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  isolation: isolate;
+}
+.shm-th-img,
+.shm-th-fill { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; object-fit: cover; border-radius: 0 !important; }
+.shm-th-aa { font-size: calc(var(--th) * 0.42); font-weight: 850; letter-spacing: -0.02em; }
+.shm-th.is-name_effect { background: rgba(0, 0, 0, 0.35); }
+.shm-th-av { position: relative; width: calc(var(--th) * 0.55); height: calc(var(--th) * 0.55); }
+.shm-th-av-face { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(145deg, #ff9b5c, #f06a3c); }
+.shm-th-bubble { width: 70%; height: 46%; border-radius: 9px; }
+.shm-th-dot { width: 14px; height: 14px; border-radius: 50%; position: static !important; }
+.shm-th-typing { display: flex; gap: 3px; }
+.shm-th-typing .typing-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+/* ── Price ── */
+.shm-price { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.shm-price .shm-list { font-weight: 500; color: var(--text-muted, rgba(235, 238, 255, 0.5)); text-decoration-thickness: 1.5px; }
+.shm-price.is-sale b { color: #fbbf24; font-weight: 800; }
+
+/* ── Badges over the preview ── */
+.shop-item-preview,
+.shm-card-thumb { position: relative; }
+.shm-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  height: 22px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  font-size: var(--fs-12);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #2a1a04;
+  background: linear-gradient(180deg, #ffd37a, #f5a623);
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);
+}
+.shm-soldout {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-13);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(10, 11, 18, 0.62);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* ── Stock + countdown chips ── */
+.shm-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+.shm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #c4b5fd;
+  background: rgba(155, 93, 229, 0.16);
+}
+.shm-chip.is-low { color: #fbbf24; background: rgba(245, 166, 35, 0.16); }
+.shm-chip.is-time { color: #a9bcff; background: rgba(88, 122, 245, 0.16); }
+.shm-chip.is-urgent { color: #fda4a6; background: rgba(242, 72, 76, 0.16); }
+.shm-meter { position: relative; width: 34px; height: 4px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, 0.14); }
+.shm-meter i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: currentColor; }
+
+/* ── Storefront rails ── */
+.shm-front { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 14px; }
+.shm-update {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--r-md, 12px);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  color: #fde68a;
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+}
+.shm-update svg { flex: none; }
+.shm-rail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.shm-rail-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.shm-rail-head h4 { margin: 0; font-size: var(--fs-15); font-weight: 750; letter-spacing: -0.01em; color: var(--text-primary, #fff); }
+.shm-rail-sub { font-size: var(--fs-12); color: var(--text-muted, rgba(235, 238, 255, 0.55)); }
+.shm-rail-timer { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; font-size: var(--fs-12); font-weight: 650; font-variant-numeric: tabular-nums; color: #a9bcff; }
+.shm-rail-timer.is-urgent { color: #fda4a6; }
+.shm-rail-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 168px;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+.shm-card {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 8px 10px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--r-md, 14px);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.shm-card:hover { transform: translateY(-2px); border-color: rgba(88, 122, 245, 0.45); }
+.shm-card:focus-visible { outline: 2px solid rgba(88, 122, 245, 0.85); outline-offset: 2px; }
+.shm-card-thumb { width: 100%; }
+.shm-card-thumb .shm-th { width: 100%; height: 86px; border-radius: 10px; }
+.shm-card-name { width: 100%; font-size: var(--fs-13); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shm-card .shop-item-price { font-size: var(--fs-13); }
+.shm-owned { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-11); font-weight: 650; color: #4ade80; }
+.shop-item-card button[data-soldout="true"] { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shm-card { transition: none; }
+  .shm-card:hover { transform: none; }
+}
+
+/* ── Purchase modal ── */
+.spm-root .spm-list-price { margin-right: 6px; font-weight: 500; color: var(--ink3, rgba(226, 230, 248, 0.52)); text-decoration-thickness: 1.5px; }
+.spm-root .spm-sale-badge { display: inline-flex; align-items: center; height: 16px; margin-left: 6px; padding: 0 6px; border-radius: 6px; font-size: var(--fs-11); font-weight: 800; color: #2a1a04; background: linear-gradient(180deg, #ffd37a, #f5a623); vertical-align: middle; }
+.spm-root .shm-tags { margin: 10px 0 0; }

@@ -84,7 +84,7 @@ const RULES = [
   [/^\/(audit)(\/|$)/, "audit"],
   [/^\/(errors|security-logs)(\/|$)/, "security"],
   [/^\/(credits|descoin)(\/|$)/, "casino"],
-  [/^\/shop\/gift$/, "casino"],
+  [/^\/shop\/gifts?(\/|$)/, "casino"],
   [/^\/shop(\/|$)/, "shop"],
   [/^\/users\/[^/]+\/(ban|unban|timeout|untimeout|kick|status)$/, "moderation"],
   [/^\/users\/bulk$/, "moderation"],

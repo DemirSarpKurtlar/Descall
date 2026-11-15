@@ -5,8 +5,9 @@ import { authedRequest } from "./authedHttp";
  * Full catalog: through the Cloudflare edge (public, identical for everyone)
  * when it is live, else the signed-in route as before.
  */
-export const getShopCatalog = async ({ category, assets } = {}) => {
-  if (!category && !assets && edgeApiBase()) {
+export const getShopCatalog = async ({ category, assets, fresh = false } = {}) => {
+  // fresh: a live "shop:catalog:changed" (sale, stock, storefront) skips the edge cache.
+  if (!category && !assets && !fresh && edgeApiBase()) {
     try {
       const res = await fetchPublic("/api/shop/catalog/public", { headers: { Accept: "application/json" } });
       if (res.ok) {
@@ -32,10 +33,16 @@ export const getDesCoinLedger = (limit = 50) => authedRequest(`/api/shop/ledger?
 export const getDesCoinDaily = () => authedRequest("/api/shop/daily");
 export const claimDesCoinDaily = () =>
   authedRequest("/api/shop/daily/claim", { method: "POST", body: {} });
-export const purchaseShopItem = (itemId, { useVoucher = false } = {}) =>
+/** expectedPrice: the price the buyer saw; the server refuses (price_changed) if it went up. */
+export const purchaseShopItem = (itemId, { useVoucher = false, expectedPrice } = {}) =>
   authedRequest("/api/shop/purchase", {
     method: "POST",
-    body: useVoucher ? { itemId, themeEngine: "scenes-1", useVoucher: true } : { itemId, themeEngine: "scenes-1" },
+    body: {
+      itemId,
+      themeEngine: "scenes-1",
+      ...(useVoucher ? { useVoucher: true } : {}),
+      ...(Number.isFinite(expectedPrice) ? { expectedPrice } : {}),
+    },
   });
 /** Open free-item vouchers by category, e.g. `{ countries: 1 }` (2.13.0). */
 export const getShopVouchers = () => authedRequest("/api/shop/vouchers");
