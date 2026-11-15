@@ -18,9 +18,17 @@
  * write it, so a cached off stays off.
  *
  * Low-performance mode (`html.gd-lite`) drops backdrop-filter. It turns on for
- * reduced transparency, forced colors, 4 or fewer CPU cores, a slow frame
- * sample, or Settings › Görünüm. A manual "off" beats the automatic triggers
- * except the accessibility ones.
+ * reduced transparency, forced colors, 4 or fewer CPU cores (Chromium only,
+ * see below), a slow frame sample, or Settings › Görünüm. A manual "off"
+ * beats the automatic triggers except the accessibility ones.
+ *
+ * iPad (native app and Safari) must not take that path from WebKit's core
+ * count. WebKit never reports the real number: NavigatorBase.cpp returns 4
+ * for every device with fewer than 8 cores and 8 otherwise (4 or 8 again
+ * under fingerprinting protection), so every A-series iPad and every iPhone
+ * reported "4" and latched the opaque #1B1C24 panels. WebKit also has no
+ * `prefers-reduced-transparency` media feature, so the native iPad reads
+ * Reduce Transparency / Increase Contrast from DescallDisplayPlugin instead.
  *
  * Electron must not take that path from signals Chrome ignores. The
  * `prefers-reduced-transparency` media query sticks on `reduce` inside
@@ -195,12 +203,49 @@ export function shouldCountGlassFrame({ hidden = false, deltaMs = 0 } = {}) {
   return dt > 0 && dt < 100;
 }
 
+/** Frames skipped after the page becomes visible (boot work, first route). */
+export const GLASS_FRAME_GRACE_MS = 2500;
+/** Visible frames judged per sample. */
+export const GLASS_FRAME_SAMPLES = 90;
+/** Median frame time that counts as a slow GPU (under ~25 fps sustained). */
+export const GLASS_FRAME_SLOW_MS = 40;
+
+/**
+ * Slow-GPU verdict from visible frame deltas. The median ignores the odd long
+ * task (socket connect, a big list mount) that used to drag a 45-frame mean
+ * over the line. iOS Low Power Mode caps rAF at 30 fps (~33 ms) and stays full glass.
+ */
+export function isGlassFrameRateLow(deltas, { minSamples = GLASS_FRAME_SAMPLES, slowMs = GLASS_FRAME_SLOW_MS } = {}) {
+  const list = (Array.isArray(deltas) ? deltas : []).filter((n) => Number.isFinite(n) && n > 0 && n < 100);
+  if (list.length < minSamples) return false;
+  const sorted = [...list].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return median > slowMs;
+}
+
+/**
+ * True when navigator.hardwareConcurrency is WebKit's 4/8 bucket rather than
+ * a core count: the native iOS shell, every iOS / iPadOS browser (all are
+ * WebKit, including the desktop-class "Macintosh" iPad UA), and Safari / WKWebView
+ * on the Mac. Chromium (Chrome, Edge, Electron) and Firefox report real cores.
+ */
+export function reportsBucketedCores({ userAgent = "", maxTouchPoints = 0, isNativeIos = false, isElectron = false } = {}) {
+  if (isElectron) return false;
+  if (isNativeIos) return true;
+  const ua = String(userAgent || "");
+  if (/\b(iPad|iPhone|iPod)\b/.test(ua)) return true;
+  if (/\bMacintosh\b/.test(ua) && Number(maxTouchPoints) > 1) return true;
+  return /AppleWebKit\//.test(ua) && !/(Chrome|Chromium|CriOS|Edg|OPR|Electron|Android|Firefox|FxiOS)\//.test(ua);
+}
+
 /** Pure low-performance decision. */
 export function shouldUseGlassDesktopLite({
   reducedTransparency = false,
   forcedColors = false,
   contrastMore = false,
   cores = 8,
+  coresReliable = true,
   manual = null,
   fpsLow = false,
 } = {}) {
@@ -209,7 +254,7 @@ export function shouldUseGlassDesktopLite({
   if (manual === "0") return false;
   if (fpsLow) return true;
   const n = Number(cores);
-  if (n > 0 && n <= 4) return true;
+  if (coresReliable !== false && n > 0 && n <= 4) return true;
   void contrastMore;
   return false;
 }
@@ -294,6 +339,8 @@ let fpsLow = false;
 let inputs = null;
 const listeners = new Set();
 let watching = false;
+/** Native iPad: Reduce Transparency / Increase Contrast from DescallDisplayPlugin. */
+let nativeA11y = { reduceTransparency: false, darkerColors: false };
 
 export function isGlassDesktopEnabled() {
   return enabled;
@@ -347,14 +394,21 @@ function readLiteInputs(w) {
   };
   const isElectron = Boolean(w?.electronAPI?.isElectron);
   return {
-    reducedTransparency: resolveReducedTransparency({
-      isElectron,
-      media: match("(prefers-reduced-transparency: reduce)"),
-      native: readNativeReducedTransparency(w),
-    }),
+    reducedTransparency:
+      resolveReducedTransparency({
+        isElectron,
+        media: match("(prefers-reduced-transparency: reduce)"),
+        native: readNativeReducedTransparency(w),
+      }) || nativeA11y.reduceTransparency === true,
     forcedColors: match("(forced-colors: active)"),
-    contrastMore: match("(prefers-contrast: more)"),
+    contrastMore: match("(prefers-contrast: more)") || nativeA11y.darkerColors === true,
     cores: Number(w?.navigator?.hardwareConcurrency) || 8,
+    coresReliable: !reportsBucketedCores({
+      userAgent: w?.navigator?.userAgent,
+      maxTouchPoints: w?.navigator?.maxTouchPoints,
+      isNativeIos: nativeShellPlatform(w) === "ios",
+      isElectron,
+    }),
     manual: readStorage(w, GLASS_DESKTOP_LITE_KEY),
     fpsLow,
   };
@@ -412,34 +466,69 @@ function startWatchers(w) {
       /* ignore */
     }
   }
+  watchNativeAccessibility(w);
   sampleFrameRate(w);
+}
+
+/**
+ * Native iPad: WKWebView has no prefers-reduced-transparency, so the shell
+ * reports Reduce Transparency / Increase Contrast (and keeps the status bar
+ * readable on the light theme). iPhone gets the same through glassDisplay's
+ * glass-ui path; the iPad only takes the accessibility part.
+ */
+function watchNativeAccessibility(w) {
+  if (nativeShellPlatform(w) !== "ios") return;
+  import("./glassDisplay.js")
+    .then((m) =>
+      m.watchNativeAccessibility?.((next) => {
+        nativeA11y = {
+          reduceTransparency: next?.reduceTransparency === true,
+          darkerColors: next?.darkerColors === true,
+        };
+        if (enabled) refreshPresentation(w);
+      }),
+    )
+    .catch(() => {});
+}
+
+function isPageHidden(w) {
+  const doc = w?.document;
+  if (!doc) return false;
+  if (doc.hidden) return true;
+  return typeof doc.visibilityState === "string" && doc.visibilityState !== "visible";
 }
 
 function sampleFrameRate(w) {
   const raf = w?.requestAnimationFrame;
   if (typeof raf !== "function") return;
-  let frames = 0;
+  const deltas = [];
   let last = 0;
-  let acc = 0;
+  let visibleSince = 0;
   const step = (now) => {
     if (!enabled) return;
-    const hidden = Boolean(w.document?.hidden);
+    const hidden = isPageHidden(w);
+    if (hidden) {
+      // A hidden page (Electron's show:false boot, a backgrounded iPad app)
+      // restarts the grace period: its rAF gaps are not a slow GPU.
+      last = 0;
+      visibleSince = 0;
+      raf.call(w, step);
+      return;
+    }
+    if (!visibleSince) visibleSince = now;
+    if (now - visibleSince < GLASS_FRAME_GRACE_MS) {
+      last = now;
+      raf.call(w, step);
+      return;
+    }
     const deltaMs = last ? now - last : 0;
-    if (!shouldCountGlassFrame({ hidden, deltaMs })) {
-      // Drop the baseline across a hide so the next visible frame is not a stall.
-      last = hidden ? 0 : now;
-      raf.call(w, step);
-      return;
-    }
-    acc += deltaMs;
-    frames += 1;
     last = now;
-    if (frames < 45) {
+    if (shouldCountGlassFrame({ hidden, deltaMs })) deltas.push(deltaMs);
+    if (deltas.length < GLASS_FRAME_SAMPLES) {
       raf.call(w, step);
       return;
     }
-    const avg = acc / frames;
-    if (avg > 40) {
+    if (isGlassFrameRateLow(deltas)) {
       fpsLow = true;
       refreshPresentation(w);
     }
