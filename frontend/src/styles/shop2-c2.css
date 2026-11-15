@@ -929,3 +929,717 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
 .message-bubble.cosmetic-chat-bubble.bubble-s2-stained-glass .message-text {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
+
+/* ───────────────────────────── Bubbles: light and motion (epic) ───────────────────────────── */
+
+@keyframes s2c2-shimmer-x { 0%, 100% { background-size: 15px 100%, 21px 100%; opacity: 0.7; } 50% { background-size: 19px 100%, 15px 100%; opacity: 1; } }
+@keyframes s2c2-fall { to { background-position: 0 120px, 30px 180px, 0 0; } }
+@keyframes s2c2-rain { to { background-position: -24px 96px, 0 0; } }
+@keyframes s2c2-drift-a { to { background-position: 160px 40px, -120px -30px, 0 0; } }
+@keyframes s2c2-rise { 0%, 100% { background-position: 0 0, 0 0; } 50% { background-position: 0 -3px, 0 -2px; } }
+@keyframes s2c2-blink { 0%, 100% { opacity: 0.25; } 45% { opacity: 1; } 60% { opacity: 0.85; } }
+@keyframes s2c2-scan { from { background-position: 0 -40px, 0 0; } to { background-position: 0 140px, 0 0; } }
+@keyframes s2c2-sweep { 0% { background-position: -150% 0; } 55%, 100% { background-position: 250% 0; } }
+@keyframes s2c2-spin { to { transform: rotate(360deg); } }
+@keyframes s2c2-eq { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes s2c2-flicker { 0%, 100% { opacity: 1; } 91% { opacity: 1; } 92% { opacity: 0.35; } 93% { opacity: 1; } 95% { opacity: 0.55; } 96% { opacity: 1; } }
+@keyframes s2c2-twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+@keyframes s2c2-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes s2c2-pass { to { background-position: -220px 0, 0 0; } }
+@keyframes s2c2-candle { 0%, 100% { opacity: 0.85; } 30% { opacity: 1; } 55% { opacity: 0.7; } 75% { opacity: 0.95; } }
+
+/* Moon lake: a moon on the corner and its broken reflection trembling on the water. */
+.cosmetic-chat-bubble.bubble-s2-moon-lake {
+  --s2-ink: #eef4ff;
+  --s2-ink-2: rgba(238, 244, 255, 0.7);
+  --s2-link: #ffe7a8;
+  --s2-edge: rgba(190, 210, 255, 0.3);
+  --s2-glow: rgba(150, 180, 255, 0.28);
+  --s2-quote: rgba(0, 8, 30, 0.35);
+  --s2-bg:
+    radial-gradient(circle at calc(100% - 16px) 9px, #fffbe8 0 3.4px, rgba(255, 244, 210, 0.5) 4.4px, rgba(255, 244, 210, 0.12) 10px, transparent 18px),
+    radial-gradient(70% 60% at 85% 0%, rgba(140, 170, 255, 0.25), transparent 70%),
+    linear-gradient(180deg, transparent 50%, rgba(80, 120, 200, 0.18)),
+    linear-gradient(180deg, #0b1630 0%, #102650 60%, #163566 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-moon-lake::before {
+  content: "";
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(255, 240, 200, 0.42) 3px 4px) calc(100% - 9px) 0 / 15px 100% no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 5px, rgba(255, 240, 200, 0.3) 5px 6px) calc(100% - 6px) 2px / 21px 100% no-repeat;
+  -webkit-mask: linear-gradient(180deg, transparent 0 22px, #000 70%, transparent 100%);
+  mask: linear-gradient(180deg, transparent 0 22px, #000 70%, transparent 100%);
+  animation: s2c2-shimmer-x 3.6s ease-in-out infinite;
+}
+
+/* Heavy snow: two layers of flakes falling at different speeds, a drift on the floor. */
+.cosmetic-chat-bubble.bubble-s2-snowfall {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.72);
+  --s2-link: #bfe3ff;
+  --s2-edge: rgba(220, 235, 255, 0.35);
+  --s2-glow: rgba(160, 190, 255, 0.3);
+  --s2-quote: rgba(0, 0, 30, 0.3);
+  --s2-bg:
+    radial-gradient(60% 14px at 30% 100%, rgba(255, 255, 255, 0.85), transparent 100%),
+    radial-gradient(50% 12px at 85% 100%, rgba(240, 246, 255, 0.8), transparent 100%),
+    radial-gradient(90% 70% at 50% 0%, rgba(120, 140, 230, 0.35), transparent 70%),
+    linear-gradient(180deg, #1c2458, #2c3477);
+}
+.cosmetic-chat-bubble.bubble-s2-snowfall::before {
+  content: "";
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><g fill='%23fff' opacity='.85'><circle cx='6' cy='8' r='1.2'/><circle cx='28' cy='22' r='.9'/><circle cx='48' cy='6' r='1.3'/><circle cx='18' cy='44' r='1.1'/><circle cx='42' cy='38' r='.9'/><circle cx='56' cy='52' r='1'/></g></svg>") 0 0 / 60px 60px,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><g fill='%23fff' opacity='.55'><circle cx='12' cy='30' r='.8'/><circle cx='40' cy='10' r='.7'/><circle cx='70' cy='40' r='.9'/><circle cx='30' cy='70' r='.7'/><circle cx='80' cy='80' r='.8'/><circle cx='56' cy='62' r='.6'/></g></svg>") 0 0 / 90px 90px,
+    linear-gradient(transparent, transparent);
+  animation: s2c2-fall 9s linear infinite;
+}
+
+/* Rainy window: city lights out of focus, rain running down the glass. */
+.cosmetic-chat-bubble.bubble-s2-rain-window {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.7);
+  --s2-link: #ffd38a;
+  --s2-edge: rgba(200, 220, 255, 0.25);
+  --s2-quote: rgba(0, 0, 0, 0.35);
+  --s2-bg:
+    radial-gradient(circle at 12% 30%, rgba(255, 170, 60, 0.45) 0 5px, transparent 13px),
+    radial-gradient(circle at 34% 80%, rgba(255, 80, 140, 0.4) 0 6px, transparent 15px),
+    radial-gradient(circle at 70% 20%, rgba(80, 200, 255, 0.38) 0 5px, transparent 14px),
+    radial-gradient(circle at 90% 75%, rgba(255, 210, 90, 0.4) 0 7px, transparent 16px),
+    radial-gradient(circle at 54% 50%, rgba(160, 120, 255, 0.3) 0 4px, transparent 12px),
+    linear-gradient(180deg, #151a2c, #1d2238);
+}
+.cosmetic-chat-bubble.bubble-s2-rain-window::before {
+  content: "";
+  background:
+    repeating-linear-gradient(104deg, transparent 0 9px, rgba(200, 225, 255, 0.22) 9px 10px, transparent 10px 23px) 0 0 / 120px 96px,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='44'><g fill='%23cfe6ff' fill-opacity='.35'><ellipse cx='8' cy='10' rx='1.6' ry='2.1'/><ellipse cx='40' cy='30' rx='1.4' ry='1.9'/><ellipse cx='60' cy='8' rx='1.2' ry='1.6'/><ellipse cx='24' cy='38' rx='1' ry='1.4'/></g><g fill='%23fff' fill-opacity='.7'><circle cx='7.4' cy='9.2' r='.5'/><circle cx='39.5' cy='29.3' r='.45'/></g></svg>") 0 0 / 70px 44px;
+  animation: s2c2-rain 1.6s linear infinite;
+}
+
+/* Underwater light: caustic net drifting over teal, rays from the surface. */
+.cosmetic-chat-bubble.bubble-s2-caustics {
+  --s2-ink: #f0fffd;
+  --s2-ink-2: rgba(240, 255, 253, 0.72);
+  --s2-link: #ffef9a;
+  --s2-edge: rgba(140, 255, 240, 0.3);
+  --s2-glow: rgba(40, 200, 200, 0.3);
+  --s2-quote: rgba(0, 30, 40, 0.35);
+  --s2-bg:
+    linear-gradient(100deg, transparent 20%, rgba(200, 255, 250, 0.12) 24%, transparent 30%, transparent 50%, rgba(200, 255, 250, 0.1) 54%, transparent 60%),
+    linear-gradient(180deg, #0f6d78 0%, #0a4d63 60%, #073a52 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-caustics::before {
+  content: "";
+  --cn: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='60'><path d='M0 20c10-6 18 4 28-2s12-14 24-10 18 10 28 4M4 0c2 10-6 16 0 26s16 8 20 18-4 16 0 16M40 8c-4 10 6 16 2 26s-12 12-6 26M60 0c4 12-4 18 2 28s14 10 12 32M0 44c14-6 22 6 34-2s16-8 26-2 14 6 20 2' fill='none' stroke='%23c9fff6' stroke-width='1.6' stroke-linecap='round'/></svg>");
+  background: var(--cn) 0 0 / 80px 60px, var(--cn) 20px 14px / 110px 82px, linear-gradient(transparent, transparent);
+  opacity: 0.17;
+  filter: blur(0.8px);
+  animation: s2c2-drift-a 26s linear infinite;
+}
+
+/* Daybreak: indigo sky warming to amber, the sun clearing the horizon. */
+.cosmetic-chat-bubble.bubble-s2-dawn {
+  --s2-ink: #fff8f0;
+  --s2-ink-2: rgba(255, 248, 240, 0.74);
+  --s2-link: #ffe08a;
+  --s2-edge: rgba(255, 200, 150, 0.35);
+  --s2-glow: rgba(255, 130, 80, 0.3);
+  --s2-quote: rgba(30, 10, 40, 0.32);
+  --s2-bg:
+    linear-gradient(180deg, transparent calc(100% - 5px), rgba(40, 12, 40, 0.75) calc(100% - 5px)),
+    linear-gradient(180deg, #24205a 0%, #5a2a6e 45%, #a5405a 78%, #c8603a 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-dawn::before {
+  content: "";
+  background:
+    radial-gradient(circle at calc(100% - 6px) calc(100% + 1px), #fff3c4 0 7px, rgba(255, 200, 110, 0.7) 8px, rgba(255, 140, 80, 0.25) 18px, transparent 34px),
+    radial-gradient(120% 50% at 100% 100%, rgba(255, 150, 90, 0.35), transparent 70%);
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 5px), transparent calc(100% - 5px));
+  mask: linear-gradient(180deg, #000 calc(100% - 5px), transparent calc(100% - 5px));
+  animation: s2c2-rise 8s ease-in-out infinite;
+}
+
+/* Firefly meadow: a dark field and small lights that wake and fade. */
+.cosmetic-chat-bubble.bubble-s2-fireflies {
+  --s2-ink: #f3ffe9;
+  --s2-ink-2: rgba(243, 255, 233, 0.7);
+  --s2-link: #e9ff8a;
+  --s2-edge: rgba(200, 255, 140, 0.25);
+  --s2-glow: rgba(190, 255, 90, 0.22);
+  --s2-quote: rgba(0, 0, 0, 0.3);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='20' preserveAspectRatio='none'><path d='M0 20V12l4-6 2 7 4-9 3 8 5-5 2 6 6-8 3 7 4-4 5 6 3-9 4 8 6-5 3 6 5-7 2 6 5-4 4 6 3-8 4 7 6-5 2 6 5-7 3 7 4-3 4 5 3-7 4 8V20z' fill='%23061a0c' fill-opacity='.7'/></svg>") left bottom / 120px 12px repeat-x,
+    radial-gradient(90% 80% at 50% 0%, rgba(60, 110, 70, 0.4), transparent 70%),
+    linear-gradient(180deg, #0f2a1d, #0a1f15);
+}
+.cosmetic-chat-bubble.bubble-s2-fireflies::before {
+  content: "";
+  background:
+    radial-gradient(circle at 12% 34%, #f6ff9a 0 1.4px, rgba(220, 255, 90, 0.45) 2.4px, transparent 6px),
+    radial-gradient(circle at 46% 72%, #f6ff9a 0 1.2px, rgba(220, 255, 90, 0.4) 2.2px, transparent 5px),
+    radial-gradient(circle at 82% 28%, #f6ff9a 0 1.5px, rgba(220, 255, 90, 0.45) 2.6px, transparent 6px),
+    radial-gradient(circle at 64% 18%, #f6ff9a 0 1px, rgba(220, 255, 90, 0.4) 2px, transparent 4.5px);
+  animation: s2c2-blink 3.4s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-fireflies::after {
+  content: "";
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 28% 60%, #f6ff9a 0 1.2px, rgba(220, 255, 90, 0.4) 2.2px, transparent 5px),
+    radial-gradient(circle at 92% 66%, #f6ff9a 0 1.3px, rgba(220, 255, 90, 0.4) 2.4px, transparent 5.5px),
+    radial-gradient(circle at 36% 14%, #f6ff9a 0 1px, rgba(220, 255, 90, 0.35) 2px, transparent 4px);
+  animation: s2c2-blink 4.6s ease-in-out 1.7s infinite;
+}
+
+/* Phosphor screen: green CRT glow, scanlines and a slow refresh bar. */
+.cosmetic-chat-bubble.bubble-s2-crt {
+  --s2-ink: #b9ffd2;
+  --s2-ink-2: rgba(185, 255, 210, 0.66);
+  --s2-link: #eaffa0;
+  --s2-edge: rgba(80, 255, 150, 0.35);
+  --s2-glow: rgba(60, 255, 140, 0.25);
+  --s2-quote: rgba(60, 255, 140, 0.08);
+  --s2-inset: inset 0 0 22px rgba(0, 0, 0, 0.75);
+  --s2-bg:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0 1px, transparent 1px 3px),
+    radial-gradient(90% 90% at 50% 50%, #0e2a1a, #06140c 80%);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-crt :is(.message-text, .msg-link) {
+  text-shadow: 0 0 6px rgba(80, 255, 150, 0.55);
+}
+.cosmetic-chat-bubble.bubble-s2-crt::before {
+  content: "";
+  background:
+    linear-gradient(180deg, transparent, rgba(120, 255, 170, 0.14) 45%, rgba(160, 255, 200, 0.2) 50%, transparent) 0 0 / 100% 30px no-repeat,
+    linear-gradient(transparent, transparent);
+  animation: s2c2-scan 5.5s linear infinite;
+}
+
+/* Hologram interface: cyan corner brackets, tick marks and a scanning line. */
+.cosmetic-chat-bubble.bubble-s2-hud {
+  --s2-ink: #e9fcff;
+  --s2-ink-2: rgba(233, 252, 255, 0.66);
+  --s2-link: #7ff9ff;
+  --s2-edge: rgba(90, 230, 255, 0.28);
+  --s2-glow: rgba(40, 210, 255, 0.3);
+  --s2-quote: rgba(40, 210, 255, 0.08);
+  --s2-bg:
+    linear-gradient(#5ef0ff, #5ef0ff) 4px 4px / 10px 1.5px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) 4px 4px / 1.5px 10px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) calc(100% - 4px) 4px / 10px 1.5px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) calc(100% - 4px) 4px / 1.5px 10px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) 4px calc(100% - 4px) / 10px 1.5px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) 4px calc(100% - 4px) / 1.5px 10px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) calc(100% - 4px) calc(100% - 4px) / 10px 1.5px no-repeat,
+    linear-gradient(#5ef0ff, #5ef0ff) calc(100% - 4px) calc(100% - 4px) / 1.5px 10px no-repeat,
+    repeating-linear-gradient(90deg, rgba(94, 240, 255, 0.5) 0 1px, transparent 1px 6px) 50% 1px / 40% 3px no-repeat,
+    linear-gradient(rgba(94, 240, 255, 0.05) 1px, transparent 1px) 0 0 / 100% 6px,
+    radial-gradient(100% 90% at 50% 0%, rgba(40, 140, 200, 0.35), transparent 70%),
+    linear-gradient(180deg, #0a1d33, #071426);
+}
+.cosmetic-chat-bubble.bubble-s2-hud::before {
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(94, 240, 255, 0.0) 40%, rgba(94, 240, 255, 0.28) 49%, rgba(200, 255, 255, 0.55) 50%, transparent 51%) 0 0 / 200% 100% no-repeat;
+  animation: s2c2-sweep 5s ease-in-out infinite;
+}
+
+/* Radar: a scope on the corner with a turning sweep, range rings in the field. */
+.cosmetic-chat-bubble.bubble-s2-radar {
+  --s2-ink: #dcffe8;
+  --s2-ink-2: rgba(220, 255, 232, 0.66);
+  --s2-link: #aaff6a;
+  --s2-edge: rgba(80, 255, 140, 0.3);
+  --s2-glow: rgba(60, 255, 120, 0.22);
+  --s2-quote: rgba(0, 0, 0, 0.3);
+  --s2-bg:
+    repeating-radial-gradient(circle at 100% 0%, transparent 0 15px, rgba(90, 255, 150, 0.14) 15px 16px),
+    linear-gradient(rgba(90, 255, 150, 0.06) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, rgba(90, 255, 150, 0.06) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(180deg, #0b2216, #071710);
+}
+.cosmetic-chat-bubble.bubble-s2-radar::after {
+  content: "";
+  top: -10px;
+  right: -10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg, rgba(120, 255, 160, 0.85), rgba(120, 255, 160, 0.0) 28%, transparent 100%),
+    radial-gradient(circle, transparent 0 5px, rgba(120, 255, 160, 0.5) 5.5px 6px, transparent 6.5px 9px, rgba(120, 255, 160, 0.5) 9.5px 10px, transparent 10.5px),
+    #082015;
+  box-shadow: 0 0 0 1.5px #3dff8a, 0 0 8px rgba(60, 255, 120, 0.6);
+  animation: s2c2-spin 3.2s linear infinite;
+}
+
+/* Sound wave: a live equaliser along the floor of a violet room. */
+.cosmetic-chat-bubble.bubble-s2-waveform {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.72);
+  --s2-link: #ffd0f2;
+  --s2-edge: rgba(220, 160, 255, 0.35);
+  --s2-glow: rgba(190, 90, 255, 0.3);
+  --s2-quote: rgba(10, 0, 30, 0.35);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='12' preserveAspectRatio='none'><g fill='%23ff7ad9' fill-opacity='.5'><rect x='1' y='7' width='2' height='5' rx='1'/><rect x='5' y='3' width='2' height='9' rx='1'/><rect x='9' y='6' width='2' height='6' rx='1'/><rect x='13' y='1' width='2' height='11' rx='1'/><rect x='17' y='5' width='2' height='7' rx='1'/><rect x='21' y='8' width='2' height='4' rx='1'/><rect x='25' y='4' width='2' height='8' rx='1'/><rect x='29' y='2' width='2' height='10' rx='1'/><rect x='33' y='6' width='2' height='6' rx='1'/><rect x='37' y='9' width='2' height='3' rx='1'/><rect x='41' y='4' width='2' height='8' rx='1'/><rect x='45' y='7' width='2' height='5' rx='1'/></g></svg>") left bottom 2px / 48px 12px repeat-x,
+    radial-gradient(90% 90% at 50% 100%, rgba(255, 90, 200, 0.28), transparent 70%),
+    linear-gradient(180deg, #2a0e5a, #3c1270);
+}
+.cosmetic-chat-bubble.bubble-s2-waveform::before {
+  content: "";
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='12' preserveAspectRatio='none'><g fill='%23ffc4f0' fill-opacity='.65'><rect x='1' y='3' width='2' height='9' rx='1'/><rect x='5' y='7' width='2' height='5' rx='1'/><rect x='9' y='2' width='2' height='10' rx='1'/><rect x='13' y='6' width='2' height='6' rx='1'/><rect x='17' y='1' width='2' height='11' rx='1'/><rect x='21' y='4' width='2' height='8' rx='1'/><rect x='25' y='8' width='2' height='4' rx='1'/><rect x='29' y='5' width='2' height='7' rx='1'/><rect x='33' y='2' width='2' height='10' rx='1'/><rect x='37' y='6' width='2' height='6' rx='1'/><rect x='41' y='9' width='2' height='3' rx='1'/><rect x='45' y='3' width='2' height='9' rx='1'/></g></svg>") left bottom 2px / 48px 12px repeat-x;
+  animation: s2c2-eq 1.1s ease-in-out infinite;
+}
+
+/* Neon tube: a violet tube bent around the message on dark brick, with a rare stutter. */
+.cosmetic-chat-bubble.bubble-s2-neon-tube {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.7);
+  --s2-link: #c7ff6a;
+  --s2-edge: rgba(0, 0, 0, 0.8);
+  --s2-glow: rgba(190, 100, 255, 0.45);
+  --s2-quote: rgba(0, 0, 0, 0.4);
+  --s2-bg:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 100% 9px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 22px 18px,
+    radial-gradient(90% 90% at 50% 50%, rgba(140, 60, 220, 0.22), transparent 75%),
+    linear-gradient(180deg, #19121f, #120d17);
+}
+.cosmetic-chat-bubble.bubble-s2-neon-tube::before {
+  content: "";
+  inset: 3px;
+  border-radius: 9px;
+  border: 1.6px solid #f3dcff;
+  box-shadow: 0 0 2px #d18cff, 0 0 6px #b45cff, inset 0 0 2px #d18cff, inset 0 0 8px rgba(180, 92, 255, 0.55);
+  animation: s2c2-flicker 7s linear infinite;
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-neon-tube .message-text {
+  text-shadow: 0 0 8px rgba(200, 120, 255, 0.45);
+}
+
+/* Mirror chrome: polished metal with sky and ground in it, a highlight running across. */
+.cosmetic-chat-bubble.bubble-s2-chrome {
+  --s2-ink: #0f131b;
+  --s2-ink-2: rgba(15, 19, 27, 0.62);
+  --s2-link: #1846b0;
+  --s2-edge: rgba(70, 80, 100, 0.55);
+  --s2-quote: rgba(255, 255, 255, 0.45);
+  --s2-inset: inset 0 -1px 0 rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  --s2-bg:
+    linear-gradient(90deg, rgba(60, 70, 90, 0.25), transparent 12%, transparent 88%, rgba(60, 70, 90, 0.25)),
+    linear-gradient(180deg, #ffffff 0%, #e2e9f2 36%, #b4c0cf 47%, #8d9bb0 50%, #cfd8e3 53%, #eef2f7 80%, #dde4ed 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-chrome::before {
+  content: "";
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.95) 49%, rgba(200, 220, 255, 0.6) 52%, transparent 60%) 0 0 / 250% 100% no-repeat;
+  animation: s2c2-sweep 6.5s ease-in-out infinite;
+}
+
+/* Gold leaf: black lacquer with torn gold leaf and points of light. */
+.cosmetic-chat-bubble.bubble-s2-gold-leaf {
+  --s2-ink: #fff4d8;
+  --s2-ink-2: rgba(255, 244, 216, 0.68);
+  --s2-link: #ffd36a;
+  --s2-edge: rgba(230, 180, 80, 0.55);
+  --s2-glow: rgba(255, 190, 70, 0.22);
+  --s2-quote: rgba(0, 0, 0, 0.4);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='22'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23fff0b0'/><stop offset='.5' stop-color='%23e0a930'/><stop offset='1' stop-color='%239a6a12'/></linearGradient></defs><g fill='url(%23g)'><path d='M0 0h18l-3 5 4 4-9 3-10-2z'/><path d='M22 3l4 1-1 3-4-1z' opacity='.75'/><path d='M8 16l2-1 1 2-2 1z' opacity='.6'/></g></svg>") left top / 34px 22px no-repeat,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='38' height='22'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23fff0b0'/><stop offset='.5' stop-color='%23e0a930'/><stop offset='1' stop-color='%239a6a12'/></linearGradient></defs><g fill='url(%23g)'><path d='M38 22H14l6-5 6 3 4-6 8-2z'/><path d='M6 14l3-1 1 3-3 1z' opacity='.7'/><path d='M22 6l2 0 0 2-2 0z' opacity='.55'/></g></svg>") right bottom / 38px 22px no-repeat,
+    radial-gradient(90% 90% at 50% 0%, rgba(90, 60, 20, 0.35), transparent 70%),
+    linear-gradient(180deg, #17120b, #0b0805);
+}
+.cosmetic-chat-bubble.bubble-s2-gold-leaf::before {
+  content: "";
+  --gl: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M5 0l.8 4.2L10 5l-4.2.8L5 10l-.8-4.2L0 5l4.2-.8z' fill='%23fff6d0'/></svg>");
+  background:
+    var(--gl) 8px 5px / 8px 8px no-repeat,
+    var(--gl) calc(100% - 10px) calc(100% - 6px) / 9px 9px no-repeat;
+  animation: s2c2-twinkle 2.8s ease-in-out infinite;
+}
+
+/* Amethyst geode: agate rim bands and crystal points around a deep violet heart. */
+.cosmetic-chat-bubble.bubble-s2-geode {
+  --s2-ink: #fbf5ff;
+  --s2-ink-2: rgba(251, 245, 255, 0.72);
+  --s2-link: #ffd6ff;
+  --s2-edge: #2a1838;
+  --s2-glow: rgba(170, 90, 255, 0.35);
+  --s2-quote: rgba(10, 0, 20, 0.4);
+  --s2-inset: inset 0 0 0 2px #8f7fa0, inset 0 0 0 3px #e9e2f0, inset 0 0 0 4.5px #5a3f70, inset 0 0 14px 4px rgba(200, 140, 255, 0.35);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='22'><path d='M0 0l9 3-9 3 11 4-11 4 8 3-8 3 10 2H0z' fill='%23d8b4ff' fill-opacity='.42'/><path d='M9 3L0 6M11 10L0 14' stroke='%23fff' stroke-opacity='.5' stroke-width='.6'/></svg>") left 4px top 0 / 12px 22px repeat-y,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='22'><path d='M12 0L3 3l9 3-11 4 11 4-8 3 8 3-10 2h10z' fill='%23c290ff' fill-opacity='.38'/><path d='M3 3l9 3M1 10l11 4' stroke='%23fff' stroke-opacity='.45' stroke-width='.6'/></svg>") right 4px top 7px / 12px 22px repeat-y,
+    radial-gradient(70% 70% at 50% 50%, #3a1460, #24093e 70%, #170628);
+}
+.cosmetic-chat-bubble.bubble-s2-geode::before {
+  content: "";
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.9) 0 1px, transparent 3px),
+    radial-gradient(circle at 76% 80%, rgba(255, 255, 255, 0.85) 0 1px, transparent 3px);
+  animation: s2c2-twinkle 3.6s ease-in-out infinite;
+}
+
+/* Volcanic glass: black obsidian split by glowing seams that breathe. */
+.cosmetic-chat-bubble.bubble-s2-lava-glass {
+  --s2-ink: #fff1e6;
+  --s2-ink-2: rgba(255, 241, 230, 0.7);
+  --s2-link: #ffb36a;
+  --s2-edge: rgba(255, 110, 40, 0.4);
+  --s2-glow: rgba(255, 80, 20, 0.35);
+  --s2-quote: rgba(0, 0, 0, 0.45);
+  --s2-bg:
+    radial-gradient(80% 60% at 30% 0%, rgba(255, 255, 255, 0.08), transparent 70%),
+    linear-gradient(160deg, #1b1414, #0b0808 60%, #160b08);
+}
+.cosmetic-chat-bubble.bubble-s2-lava-glass::before {
+  content: "";
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='60' viewBox='0 0 200 60' preserveAspectRatio='none'><g fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M0 46l18-4 10 6 16-10 8 4M180 0l-6 12 8 8-10 10 6 8M120 60l6-10 14-2 6-8M60 0l4 8-6 6' stroke='%23ff5a10' stroke-width='3' opacity='.55'/><path d='M0 46l18-4 10 6 16-10 8 4M180 0l-6 12 8 8-10 10 6 8M120 60l6-10 14-2 6-8M60 0l4 8-6 6' stroke='%23ffd28a' stroke-width='1'/></g></svg>") 0 0 / 100% 100% no-repeat;
+  filter: drop-shadow(0 0 3px rgba(255, 90, 20, 0.8));
+  animation: s2c2-pulse 3.2s ease-in-out infinite;
+}
+
+/* Night train: the lit windows of a passing train streak behind the words. */
+.cosmetic-chat-bubble.bubble-s2-night-train {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.7);
+  --s2-link: #ffd88a;
+  --s2-edge: rgba(180, 200, 255, 0.25);
+  --s2-quote: rgba(0, 0, 0, 0.35);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='14' preserveAspectRatio='none'><path d='M0 14V9l12-3 14 4 20-6 16 5 18-4 22 6 14-5 20 4 24-5V14z' fill='%23050814'/></svg>") left bottom / 160px 9px repeat-x,
+    radial-gradient(100% 70% at 70% 0%, rgba(80, 100, 200, 0.35), transparent 70%),
+    linear-gradient(180deg, #121a3c, #0b1028);
+}
+.cosmetic-chat-bubble.bubble-s2-night-train::before {
+  content: "";
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, rgba(255, 214, 140, 0.5) 6px 20px, transparent 20px 26px, rgba(255, 236, 190, 0.38) 26px 38px, transparent 38px 55px) 0 4px / 220px 2px repeat-x,
+    linear-gradient(transparent, transparent);
+  filter: blur(0.5px);
+  animation: s2c2-pass 2.4s linear infinite;
+}
+
+/* Sealed letter: parchment by candlelight and a pressed red wax seal. */
+.cosmetic-chat-bubble.bubble-s2-wax-seal {
+  --s2-ink: #2e1f10;
+  --s2-ink-2: rgba(46, 31, 16, 0.62);
+  --s2-link: #8a1c10;
+  --s2-edge: rgba(120, 80, 30, 0.45);
+  --s2-quote: rgba(120, 80, 30, 0.12);
+  --s2-inset: inset 0 0 14px rgba(140, 80, 20, 0.35);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='40'><g fill='%238a5a20' opacity='.12'><circle cx='10' cy='12' r='6'/><circle cx='60' cy='28' r='8'/><circle cx='40' cy='6' r='3'/></g></svg>") 0 0 / 80px 40px,
+    linear-gradient(180deg, #f6e7c4, #e8d2a0);
+}
+.cosmetic-chat-bubble.bubble-s2-wax-seal::before {
+  content: "";
+  background: radial-gradient(90% 120% at 20% 0%, rgba(255, 220, 140, 0.45), transparent 60%);
+  animation: s2c2-candle 2.6s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-wax-seal::after {
+  content: "";
+  bottom: -9px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><defs><radialGradient id='w' cx='.38' cy='.32' r='.75'><stop offset='0' stop-color='%23e04a3a'/><stop offset='.6' stop-color='%23a5141a'/><stop offset='1' stop-color='%23650a0e'/></radialGradient></defs><path d='M12 1.5c2 .2 3.4 1.6 5.2 1.4 1.8.8 2.2 2.8 3.6 4 .6 1.8-.2 3.4.6 5.2-.2 2-1.8 3-2.4 4.8-1.2 1.4-3.2 1.4-4.6 2.6-1.8.4-3.2-.6-5-.4-1.8-.8-2.4-2.6-3.8-3.8C5 15.5 3.6 14.6 3.4 12.6c.2-1.8 1.4-3 1.2-4.8.8-1.6 2.6-2.2 3.6-3.6C9.6 3 10.4 1.6 12 1.5z' fill='url(%23w)'/><circle cx='12' cy='11.6' r='5.6' fill='none' stroke='%23520608' stroke-width='1' opacity='.65'/><path d='M9.2 9.2c1.8 0 3 1 2.8 2.4s-1.6 2.6 0 3.2M14.8 8.8c-.6 1.6.4 2.6 1 3.4' stroke='%23ff9a8a' stroke-width='1' fill='none' stroke-linecap='round' opacity='.75'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1.5px 1.5px rgba(60, 10, 0, 0.45));
+}
+
+/* Rose gold: brushed warm metal, ink-dark text, a slow polish sweep. */
+.cosmetic-chat-bubble.bubble-s2-rose-gold {
+  --s2-ink: #3a1a14;
+  --s2-ink-2: rgba(58, 26, 20, 0.62);
+  --s2-link: #8a1e2c;
+  --s2-edge: rgba(150, 80, 60, 0.5);
+  --s2-quote: rgba(255, 255, 255, 0.35);
+  --s2-glow: rgba(255, 160, 140, 0.3);
+  --s2-bg:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px, rgba(120, 50, 40, 0.06) 2px 3px),
+    linear-gradient(180deg, #fbe0d4 0%, #eebca8 45%, #d9967f 60%, #f1c7b5 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-rose-gold::before {
+  content: "";
+  background: linear-gradient(100deg, transparent 42%, rgba(255, 245, 240, 0.85) 50%, transparent 58%) 0 0 / 250% 100% no-repeat;
+  animation: s2c2-sweep 7s ease-in-out 1s infinite;
+}
+
+/* ───────────────────────────── Bubbles: legendary ───────────────────────────── */
+
+@keyframes s2c2-glint { 0% { background-position: -120% 0, 0 0; } 60%, 100% { background-position: 220% 0, 0 0; } }
+@keyframes s2c2-swim { to { background-position: -200px 100%, 0 0; } }
+@keyframes s2c2-flame { to { background-position: 0 -40px, 14px -60px; } }
+@keyframes s2c2-fly { to { background-position: 210px 1px; } }
+@keyframes s2c2-plume { 0%, 100% { opacity: 0.8; filter: blur(1.5px); } 50% { opacity: 1; filter: blur(2.6px); } }
+@keyframes s2c2-uv { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } 70% { opacity: 0.9; } }
+@keyframes s2c2-corona { 0%, 100% { box-shadow: 0 0 0 1px #fff5d6, 0 0 6px 2px rgba(255, 230, 160, 0.7); } 50% { box-shadow: 0 0 0 1px #fffaf0, 0 0 10px 4px rgba(255, 236, 180, 0.95); } }
+@keyframes s2c2-spectrum { 0%, 100% { opacity: 0.75; background-position: 0 0, 0 0; } 50% { opacity: 1; background-position: 0 -3px, 0 0; } }
+
+/* Emerald cut: step-cut facets catching a travelling light. */
+.cosmetic-chat-bubble.bubble-s2-emerald-cut {
+  --s2-ink: #f1fff6;
+  --s2-ink-2: rgba(241, 255, 246, 0.72);
+  --s2-link: #b8ffd8;
+  --s2-edge: rgba(180, 255, 210, 0.5);
+  --s2-glow: rgba(40, 220, 130, 0.38);
+  --s2-quote: rgba(0, 30, 16, 0.35);
+  --s2-inset: inset 0 0 0 2px rgba(10, 60, 36, 0.9), inset 0 0 0 3px rgba(150, 255, 200, 0.45), inset 0 0 0 6px rgba(8, 70, 40, 0.75), inset 0 0 0 7px rgba(120, 240, 180, 0.3), inset 0 0 0 11px rgba(6, 60, 34, 0.5), inset 0 0 0 12px rgba(120, 240, 180, 0.16);
+  --s2-bg:
+    linear-gradient(135deg, rgba(200, 255, 225, 0.35) 0 12%, transparent 12% 88%, rgba(0, 40, 20, 0.4) 88%),
+    linear-gradient(45deg, rgba(0, 40, 20, 0.3) 0 10%, transparent 10% 90%, rgba(200, 255, 225, 0.25) 90%),
+    radial-gradient(80% 90% at 50% 50%, #0f7a47, #075a33 70%, #04401f);
+}
+.cosmetic-chat-bubble.bubble-s2-emerald-cut::before {
+  content: "";
+  background:
+    linear-gradient(115deg, transparent 40%, rgba(220, 255, 235, 0.45) 48%, rgba(255, 255, 255, 0.7) 50%, rgba(220, 255, 235, 0.45) 52%, transparent 60%) 0 0 / 200% 100% no-repeat,
+    linear-gradient(transparent, transparent);
+  animation: s2c2-glint 5.5s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+
+/* Light through a prism: a white beam enters, the spectrum fans out at the far end. */
+.cosmetic-chat-bubble.bubble-s2-prism {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.72);
+  --s2-link: #b6e4ff;
+  --s2-edge: rgba(220, 230, 255, 0.4);
+  --s2-glow: rgba(160, 140, 255, 0.35);
+  --s2-quote: rgba(0, 0, 0, 0.35);
+  --s2-bg:
+    radial-gradient(70% 90% at 30% 60%, rgba(10, 12, 26, 0.55), transparent 80%),
+    linear-gradient(180deg, #14162c, #0c0e1e);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-prism .message-text {
+  text-shadow: 0 1px 2px rgba(5, 6, 16, 0.85);
+}
+.cosmetic-chat-bubble.bubble-s2-prism::before {
+  content: "";
+  background:
+    conic-gradient(from 96deg at 0 0, transparent 0deg, rgba(255, 60, 90, 0.5) 3deg, rgba(255, 170, 40, 0.5) 8deg, rgba(255, 240, 60, 0.45) 13deg, rgba(60, 230, 120, 0.45) 18deg, rgba(40, 170, 255, 0.5) 23deg, rgba(150, 90, 255, 0.5) 28deg, transparent 33deg),
+    linear-gradient(transparent, transparent);
+  -webkit-mask: linear-gradient(90deg, rgba(0, 0, 0, 0.25), #000 80%);
+  mask: linear-gradient(90deg, rgba(0, 0, 0, 0.25), #000 80%);
+  filter: blur(1.2px);
+  animation: s2c2-spectrum 4.5s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-prism::after {
+  content: "";
+  top: -8px;
+  left: -7px;
+  width: 16px;
+  height: 14px;
+  background: linear-gradient(160deg, #ffffff, rgba(190, 210, 255, 0.55) 60%, rgba(150, 120, 255, 0.6));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 3px rgba(200, 210, 255, 0.9));
+}
+
+/* Eclipse: a black disc wearing a living corona, with the diamond ring on the corner. */
+.cosmetic-chat-bubble.bubble-s2-eclipse {
+  --s2-ink: #fffaf0;
+  --s2-ink-2: rgba(255, 250, 240, 0.7);
+  --s2-link: #ffe6a6;
+  --s2-edge: rgba(255, 240, 200, 0.65);
+  --s2-glow: rgba(255, 220, 150, 0.45);
+  --s2-quote: rgba(255, 255, 255, 0.06);
+  --s2-inset: inset 0 0 12px rgba(255, 220, 160, 0.3), inset 0 0 2px rgba(255, 245, 220, 0.8);
+  --s2-bg:
+    radial-gradient(120% 140% at 50% 50%, #050507 60%, #1d1a14 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-eclipse::after {
+  content: "";
+  top: -9px;
+  right: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #0a0a0c 0 60%, #1a1712);
+  animation: s2c2-corona 3.4s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-eclipse::before {
+  content: "";
+  background: radial-gradient(circle at calc(100% - 3px) 3px, #ffffff 0 1.5px, rgba(255, 245, 220, 0.6) 3px, transparent 7px);
+  z-index: 3;
+  animation: s2c2-pulse 3.4s ease-in-out infinite;
+}
+
+/* Koi pond: two koi circle slowly under the surface, ripples on top. */
+.cosmetic-chat-bubble.bubble-s2-koi {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.72);
+  --s2-link: #ffe1a0;
+  --s2-edge: rgba(150, 230, 220, 0.35);
+  --s2-glow: rgba(40, 180, 170, 0.3);
+  --s2-quote: rgba(0, 20, 24, 0.4);
+  --s2-bg:
+    repeating-radial-gradient(circle at 12% 20%, transparent 0 8px, rgba(200, 255, 245, 0.12) 8px 9px, transparent 9px 16px),
+    radial-gradient(90% 90% at 50% 0%, rgba(80, 200, 190, 0.35), transparent 70%),
+    linear-gradient(180deg, #0d4d55, #083740);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-koi .message-text {
+  text-shadow: 0 1px 2px rgba(0, 20, 24, 0.85);
+}
+.cosmetic-chat-bubble.bubble-s2-koi::before {
+  content: "";
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='40'><g opacity='.62'><path d='M30 24c10-7 26-8 36-2-10 5-26 6-36 2z' fill='%23fff3e6'/><path d='M40 20c4-2 8-2 10 0-3 2-7 3-10 0zM52 24c4 0 8 2 10 0-3-2-7-2-10 0z' fill='%23ff6a2a'/><path d='M66 22l9-5-3 5 3 5z' fill='%23ffd2b8'/><circle cx='34' cy='22.6' r='.9' fill='%23222'/><path d='M168 12c12-6 28-5 36 1-10 4-26 5-36-1z' fill='%23ff7a2a'/><path d='M178 10c4-1 8 0 10 2-4 1-7 0-10-2z' fill='%23fff3e6'/><path d='M204 13l10-5-3 5 3 5z' fill='%23ff9a5a'/><circle cx='172' cy='11.5' r='.9' fill='%23222'/></g></svg>") 0 bottom / 200px 30px repeat-x,
+    linear-gradient(transparent, transparent);
+  opacity: 0.8;
+  animation: s2c2-swim 22s linear infinite;
+}
+
+/* Phoenix feather: flame rising from the floor, embers, a golden feather on the corner. */
+.cosmetic-chat-bubble.bubble-s2-phoenix {
+  --s2-ink: #fffaf2;
+  --s2-ink-2: rgba(255, 250, 242, 0.74);
+  --s2-link: #ffe27a;
+  --s2-edge: rgba(255, 180, 80, 0.5);
+  --s2-glow: rgba(255, 90, 30, 0.45);
+  --s2-quote: rgba(40, 0, 0, 0.35);
+  --s2-bg:
+    radial-gradient(90% 60% at 50% 120%, rgba(255, 160, 40, 0.7), transparent 70%),
+    linear-gradient(180deg, #3a0608 0%, #6e0f0c 55%, #a52a0c 100%);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-phoenix .message-text {
+  text-shadow: 0 1px 2px rgba(50, 0, 0, 0.75);
+}
+.cosmetic-chat-bubble.bubble-s2-phoenix::before {
+  content: "";
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><g fill='%23ffd27a'><circle cx='6' cy='34' r='1'/><circle cx='22' cy='18' r='.8'/><circle cx='34' cy='6' r='1.1'/><circle cx='14' cy='4' r='.6'/></g></svg>") 0 0 / 40px 40px,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><g fill='%23ff8a3a'><circle cx='10' cy='50' r='.8'/><circle cx='40' cy='30' r='1'/><circle cx='52' cy='10' r='.7'/></g></svg>") 0 0 / 60px 60px;
+  -webkit-mask: linear-gradient(0deg, #000, transparent 85%);
+  mask: linear-gradient(0deg, #000, transparent 85%);
+  animation: s2c2-flame 3.5s linear infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-phoenix::after {
+  content: "";
+  top: -12px;
+  right: -10px;
+  width: 30px;
+  height: 22px;
+  transform: rotate(-12deg);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 22'><defs><linearGradient id='f' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='%23b8200c'/><stop offset='.45' stop-color='%23ff7a1a'/><stop offset='.8' stop-color='%23ffd25a'/><stop offset='1' stop-color='%23fff4c0'/></linearGradient></defs><path d='M2 20C8 12 16 4 28 2c-2 8-10 16-20 18z' fill='url(%23f)'/><path d='M2 20C10 14 18 8 27 3' stroke='%23fff0b0' stroke-width='.8' fill='none'/><path d='M8 16l-2-4M12 13l-2-5M16 10l-1-5M20 7l0-4M11 14l5 1M15 11l5 1M19 8l5 0' stroke='%23801808' stroke-width='.5' opacity='.6'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(255, 140, 40, 0.8));
+}
+
+/* Paper cranes: a flight of folded cranes crossing a dusk sky. */
+.cosmetic-chat-bubble.bubble-s2-crane {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.74);
+  --s2-link: #ffe3c2;
+  --s2-edge: rgba(255, 210, 190, 0.4);
+  --s2-glow: rgba(255, 150, 140, 0.28);
+  --s2-quote: rgba(20, 10, 40, 0.32);
+  --s2-bg:
+    radial-gradient(70% 90% at 100% 100%, rgba(255, 170, 130, 0.55), transparent 70%),
+    linear-gradient(180deg, #2c2a6a 0%, #57407e 55%, #8c5379 100%);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-crane .message-text {
+  text-shadow: 0 1px 2px rgba(20, 10, 40, 0.6);
+}
+.cosmetic-chat-bubble.bubble-s2-crane::before {
+  content: "";
+  --cr: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='210' height='12'><g fill='%23fff7f0'><path d='M14 7l6-6 1.5 5 6-2-4.5 4.5 4.5 1.5-7.5.8-2 3.6-.8-4.4z'/><path d='M150 6l4.5-4.5 1.1 3.8 4.5-1.5-3.4 3.4 3.4 1.1-5.6.6-1.5 2.7-.6-3.3z' opacity='.75'/><path d='M84 8l5-5 1.2 4.2 5-1.7-3.8 3.8 3.8 1.3-6.2.7-1.7 3-.7-3.6z' opacity='.9'/></g><g fill='%23f3c6c0'><path d='M20 1l1.5 5-3-.8z'/><path d='M89 3l1.2 4.2-2.5-.7z'/></g></svg>");
+  background: var(--cr) 0 1px / 210px 12px repeat-x;
+  -webkit-mask: linear-gradient(180deg, #000 0 11px, transparent 13px);
+  mask: linear-gradient(180deg, #000 0 11px, transparent 13px);
+  animation: s2c2-fly 30s linear infinite;
+}
+
+/* Clockwork: smoked steel, brass edge, a gear turning on the corner. */
+.cosmetic-chat-bubble.bubble-s2-clockwork {
+  --s2-ink: #fff4dc;
+  --s2-ink-2: rgba(255, 244, 220, 0.7);
+  --s2-link: #ffd27a;
+  --s2-edge: rgba(214, 170, 90, 0.75);
+  --s2-glow: rgba(214, 160, 70, 0.25);
+  --s2-quote: rgba(0, 0, 0, 0.35);
+  --s2-inset: inset 0 0 0 2px rgba(60, 40, 14, 0.8), inset 0 0 0 3px rgba(214, 170, 90, 0.35);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><g fill='none' stroke='%23d6aa5a' stroke-opacity='.14' stroke-width='1.2'><circle cx='20' cy='48' r='16' stroke-dasharray='3 2'/><circle cx='20' cy='48' r='9'/><circle cx='96' cy='10' r='20' stroke-dasharray='4 2.5'/><circle cx='96' cy='10' r='12'/><circle cx='64' cy='52' r='8' stroke-dasharray='2 1.6'/></g></svg>") 0 0 / 120px 60px,
+    radial-gradient(90% 80% at 30% 0%, rgba(255, 220, 160, 0.14), transparent 70%),
+    linear-gradient(180deg, #2b2a2e, #1b1a1e);
+}
+.cosmetic-chat-bubble.bubble-s2-clockwork::after {
+  content: "";
+  top: -11px;
+  right: -11px;
+  width: 24px;
+  height: 24px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><defs><radialGradient id='b' cx='.35' cy='.3' r='.8'><stop offset='0' stop-color='%23ffe2a0'/><stop offset='.5' stop-color='%23c8913a'/><stop offset='1' stop-color='%237a5212'/></radialGradient></defs><path d='M10.6 1h2.8l.5 2.6 1.8.7 2.2-1.5 2 2-1.5 2.2.7 1.8 2.6.5v2.8l-2.6.5-.7 1.8 1.5 2.2-2 2-2.2-1.5-1.8.7-.5 2.6h-2.8l-.5-2.6-1.8-.7-2.2 1.5-2-2 1.5-2.2-.7-1.8L1 13.4v-2.8l2.6-.5.7-1.8-1.5-2.2 2-2 2.2 1.5 1.8-.7z' fill='url(%23b)'/><circle cx='12' cy='12' r='4.5' fill='%232b2a2e'/><circle cx='12' cy='12' r='2' fill='url(%23b)'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  animation: s2c2-spin 12s linear infinite;
+}
+
+/* Ink in water: violet and indigo plumes unfurl at the edges of clear water. */
+.cosmetic-chat-bubble.bubble-s2-ink-cloud {
+  --s2-ink: #141a33;
+  --s2-ink-2: rgba(20, 26, 51, 0.62);
+  --s2-link: #3b2fc4;
+  --s2-edge: rgba(80, 90, 160, 0.3);
+  --s2-quote: rgba(255, 255, 255, 0.55);
+  --s2-glow: rgba(120, 110, 255, 0.25);
+  --s2-bg:
+    radial-gradient(120% 100% at 50% 50%, #f6f9fc 40%, #e7eef6);
+}
+.cosmetic-chat-bubble.bubble-s2-ink-cloud::before {
+  content: "";
+  background:
+    radial-gradient(14px 12px at 10px calc(100% - 4px), rgba(40, 24, 120, 0.95), transparent),
+    radial-gradient(18px 16px at 26px calc(100% + 2px), rgba(80, 48, 190, 0.70), transparent),
+    radial-gradient(12px 14px at 4px calc(100% - 18px), rgba(110, 70, 220, 0.58), transparent),
+    radial-gradient(22px 14px at 44px calc(100% + 4px), rgba(140, 100, 240, 0.38), transparent),
+    radial-gradient(14px 12px at calc(100% - 10px) 4px, rgba(26, 40, 130, 0.92), transparent),
+    radial-gradient(18px 14px at calc(100% - 28px) -2px, rgba(70, 90, 210, 0.64), transparent),
+    radial-gradient(12px 14px at calc(100% - 4px) 18px, rgba(120, 90, 230, 0.54), transparent);
+  filter: blur(1.5px);
+  animation: s2c2-plume 9s ease-in-out infinite;
+}
+
+/* Dragon scale: overlapping iridescent scales, a sheen sliding across them. */
+.cosmetic-chat-bubble.bubble-s2-dragon-scale {
+  --s2-ink: #f6fffd;
+  --s2-ink-2: rgba(246, 255, 253, 0.72);
+  --s2-link: #b8fff0;
+  --s2-edge: rgba(120, 240, 220, 0.45);
+  --s2-glow: rgba(60, 200, 190, 0.35);
+  --s2-quote: rgba(0, 10, 20, 0.5);
+  --s2-bg:
+    linear-gradient(90deg, rgba(5, 14, 24, 0.2), rgba(5, 14, 24, 0.74) 16%, rgba(5, 14, 24, 0.74) 84%, rgba(5, 14, 24, 0.2)),
+    linear-gradient(115deg, rgba(40, 200, 180, 0.12), rgba(140, 70, 230, 0.4) 60%, rgba(220, 90, 200, 0.3)),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='14'><defs><radialGradient id='s' cx='.5' cy='.1' r='.95'><stop offset='0' stop-color='%23051018'/><stop offset='.55' stop-color='%23126a70'/><stop offset='.85' stop-color='%2348d6c0'/><stop offset='1' stop-color='%23c6fff2'/></radialGradient></defs><path d='M0 0a10 10 0 0 0 20 0' fill='url(%23s)'/><path d='M-10 7a10 10 0 0 0 20 0M10 7a10 10 0 0 0 20 0' fill='url(%23s)'/><path d='M0 0a10 10 0 0 0 20 0' fill='none' stroke='%23d8fff6' stroke-opacity='.55' stroke-width='.6'/></svg>") 0 0 / 20px 14px,
+    linear-gradient(115deg, #0d5a5a, #3a2f8a);
+}
+.cosmetic-chat-bubble.bubble-s2-dragon-scale::before {
+  content: "";
+  background:
+    linear-gradient(110deg, transparent 35%, rgba(180, 255, 230, 0.35) 46%, rgba(255, 200, 255, 0.3) 52%, transparent 62%) 0 0 / 220% 100% no-repeat,
+    linear-gradient(transparent, transparent);
+  animation: s2c2-glint 6s ease-in-out infinite;
+}
+
+/* Ultraviolet: blacklight room, fluorescent splashes glowing at the edges. */
+.cosmetic-chat-bubble.bubble-s2-ultraviolet {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.72);
+  --s2-link: #d4ff3a;
+  --s2-edge: rgba(190, 120, 255, 0.5);
+  --s2-glow: rgba(170, 60, 255, 0.45);
+  --s2-quote: rgba(0, 0, 0, 0.35);
+  --s2-bg:
+    radial-gradient(80% 80% at 50% 50%, #1a0638, #12042a 80%);
+}
+.cosmetic-chat-bubble.bubble-s2-ultraviolet::before {
+  content: "";
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'><path d='M0 0h20c-3 3-7 2-9 5s2 6-3 7-5-3-8 0z' fill='%23d4ff3a'/><circle cx='24' cy='4' r='1.6' fill='%23d4ff3a'/><circle cx='14' cy='16' r='1.2' fill='%23ff3ad4'/><circle cx='6' cy='18' r='.9' fill='%23d4ff3a'/></svg>") left top / 40px 30px no-repeat,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'><path d='M40 30H18c3-3 6-2 8-5s-2-6 3-7 6 3 11 0z' fill='%23ff3ad4'/><circle cx='12' cy='26' r='1.6' fill='%233af0ff'/><circle cx='26' cy='14' r='1.2' fill='%23ff3ad4'/><circle cx='34' cy='8' r='1' fill='%233af0ff'/></svg>") right bottom / 40px 30px no-repeat;
+  filter: drop-shadow(0 0 3px rgba(212, 255, 58, 0.55)) drop-shadow(0 0 4px rgba(255, 58, 212, 0.45));
+  animation: s2c2-uv 2.2s ease-in-out infinite;
+}
