@@ -6,7 +6,7 @@
 // Art lives in c1-frames.js, c1-banners.js, c1-badges.js (singles) and c1-sets.js (the 16 set
 // themes); geometry and helpers in c1-lib.js. asset_url is an inline SVG data URI; the shop
 // asset route (`/api/shop/assets/:id`) decodes and serves it, so catalog payloads stay small.
-const { dataUri } = require("./c1-lib");
+const { dataUri, minifyBanner } = require("./c1-lib");
 const { FRAMES } = require("./c1-frames");
 const BANNERS = (() => { try { return require("./c1-banners").BANNERS; } catch (e) { if (e.code !== "MODULE_NOT_FOUND") throw e; return []; } })();
 const BADGES = (() => { try { return require("./c1-badges").BADGES; } catch (e) { if (e.code !== "MODULE_NOT_FOUND") throw e; return []; } })();
@@ -16,7 +16,8 @@ const LOCALES = ["tr", "en", "de", "es", "fr", "pt-BR", "ru"];
 const CATEGORY_BASE = { avatar_frame: 20000, banner: 21000, profile_badge: 22000 };
 
 function toItem(category, def, index, setKey = null) {
-  const svg = def.art();
+  const raw = def.art();
+  const svg = category === "banner" ? minifyBanner(raw) : raw;
   const tags = ["shop2", "c1", ...(def.tags || [])];
   if (def.anim && !tags.includes("animated")) tags.push("animated");
   if (setKey) tags.push("set", `set:${setKey}`);

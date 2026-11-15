@@ -50,6 +50,20 @@ function dataUri(svg) {
   );
 }
 
+/**
+ * Size pass for the 600 x 200 banner grid: path data and positions to whole units (invisible at
+ * any banner display size), leading zeros dropped. Opacity, radii and stop offsets keep decimals.
+ */
+function minifyBanner(svg) {
+  const roundNums = (str) => str.replace(/-?\d*\.\d+/g, (n) => String(Math.round(+n)));
+  return svg
+    .replace(/ d='([^']*)'/g, (m, d) => ` d='${roundNums(d)}'`)
+    .replace(/ (cx|cy|x|y|x1|y1|x2|y2|width|height|rx|ry)='(-?[\d.]+)'/g, (m, k, v) => ` ${k}='${+v >= 4 || +v <= -4 ? Math.round(+v) : v}'`)
+    .replace(/translate\(([^)]*)\)/g, (m, v) => `translate(${roundNums(v)})`)
+    .replace(/([ ,(;'"])0\.(\d)/g, "$1.$2")
+    .replace(/([ ,(;'"])-0\.(\d)/g, "$1-.$2");
+}
+
 function svgDoc(w, h, defs, body, extra = "") {
   return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${w} ${h}' width='${w}' height='${h}'${extra}>${
     defs ? `<defs>${defs}</defs>` : ""
@@ -233,6 +247,8 @@ const pulse = (attr, values, dur, n = 3, begin = 0) =>
 
 // ---------- banner helpers (600 x 200) ----------
 const BW = 600, BH = 200;
+/** Integer rounding for the 600 x 200 banner grid (keeps data URIs small). */
+const fi = (n) => Math.round(n);
 
 /** Ridge line path from x=0..600 with midpoint displacement; fills down to `bottom`. */
 function ridge(seed, base, amp, rough = 0.55, bottom = 200, pts = 64, peaks = null) {
@@ -253,7 +269,7 @@ function ridge(seed, base, amp, rough = 0.55, bottom = 200, pts = 64, peaks = nu
     const x = (i / n) * BW;
     let y = base + ys[i];
     if (peaks) for (const [px, ph, pw] of peaks) y -= ph * Math.max(0, 1 - Math.abs(x - px) / pw);
-    d += `L${f(x)} ${f(y)}`;
+    d += `L${fi(x)} ${fi(y)}`;
   }
   return d + `L${BW} ${bottom}Z`;
 }
@@ -264,7 +280,7 @@ function hills(base, waves, bottom = 200, step = 12) {
   for (let x = 0; x <= BW; x += step) {
     let y = base;
     for (const [a, wl, ph] of waves) y += a * Math.sin((x / wl) * Math.PI * 2 + ph);
-    d += `L${x} ${f(y)}`;
+    d += `L${x} ${fi(y)}`;
   }
   return d + `L${BW} ${bottom}Z`;
 }
@@ -272,7 +288,7 @@ function hills(base, waves, bottom = 200, step = 12) {
 /** Wave line (stroke) or band. */
 function waveLine(y, amp, wl, ph = 0, x0 = 0, x1 = BW, step = 6) {
   let d = "";
-  for (let x = x0; x <= x1; x += step) d += (x === x0 ? "M" : "L") + x + " " + f(y + amp * Math.sin((x / wl) * Math.PI * 2 + ph));
+  for (let x = x0; x <= x1; x += step) d += (x === x0 ? "M" : "L") + x + " " + fi(y + amp * Math.sin((x / wl) * Math.PI * 2 + ph));
   return d;
 }
 
@@ -282,11 +298,11 @@ function stars(seed, n, box = [0, 0, BW, 120], colors = ["#fff"], rmax = 1.3, sp
   let s = "";
   for (let i = 0; i < n; i++) {
     const x = box[0] + r() * box[2], y = box[1] + r() * box[3];
-    s += `<circle cx='${f(x)}' cy='${f(y)}' r='${f(0.3 + r() * rmax)}' fill='${colors[Math.floor(r() * colors.length)]}' opacity='${f(0.35 + r() * 0.65)}'/>`;
+    s += `<circle cx='${fi(x)}' cy='${fi(y)}' r='${f(0.3 + r() * rmax)}' fill='${colors[Math.floor(r() * colors.length)]}' opacity='${f(0.35 + r() * 0.65)}'/>`;
   }
   for (let i = 0; i < sparkN; i++) {
     const x = box[0] + r() * box[2], y = box[1] + r() * box[3];
-    s += `<path d='${sparkle(2.5 + r() * 3.5)}' transform='translate(${f(x)} ${f(y)})' fill='${sparkColor}' opacity='${f(0.6 + r() * 0.4)}'/>`;
+    s += `<path d='${sparkle(f(2.5 + r() * 3.5))}' transform='translate(${fi(x)} ${fi(y)})' fill='${sparkColor}' opacity='${f(0.6 + r() * 0.4)}'/>`;
   }
   return s;
 }
@@ -297,7 +313,7 @@ function twinkles(seed, n, box, color = "#fff", dur = 3, rep = 3) {
   let s = "";
   for (let i = 0; i < n; i++) {
     const x = box[0] + r() * box[2], y = box[1] + r() * box[3];
-    s += `<path d='${sparkle(2 + r() * 3)}' transform='translate(${f(x)} ${f(y)})' fill='${color}' opacity='.9'>${pulse("opacity", ".9;.15;.9", f(dur + r() * 2), rep, f(r() * 2))}</path>`;
+    s += `<path d='${sparkle(f(2 + r() * 3))}' transform='translate(${fi(x)} ${fi(y)})' fill='${color}' opacity='.9'>${pulse("opacity", ".9;.15;.9", f(dur + r() * 2), rep, f(r() * 2))}</path>`;
   }
   return s;
 }
@@ -310,9 +326,9 @@ function pine(x, y, h, w = h * 0.38) {
     const ty = y - h + (h * 0.78 * i) / tiers;
     const by = ty + h * 0.34;
     const hw = (w * (i + 1.4)) / (tiers + 0.4);
-    t.push(`M${f(x)} ${f(ty)}L${f(x + hw)} ${f(by)}H${f(x - hw)}Z`);
+    t.push(`M${fi(x)} ${fi(ty)}L${fi(x + hw)} ${fi(by)}H${fi(x - hw)}Z`);
   }
-  return t.join("") + `M${f(x - w * 0.06)} ${f(y - h * 0.12)}h${f(w * 0.12)}V${f(y)}h${f(-w * 0.12)}Z`;
+  return t.join("") + `M${fi(x - w * 0.06)} ${fi(y - h * 0.12)}h${fi(w * 0.12)}V${fi(y)}h${fi(-w * 0.12)}Z`;
 }
 
 /** Row of pines along a baseline. */
@@ -333,11 +349,11 @@ function skyline(seed, base, hmin, hmax, x0 = 0, x1 = BW, wmin = 14, wmax = 34, 
     const bw = wmin + r() * (wmax - wmin);
     const bh = hmin + r() * (hmax - hmin);
     const top = base - bh;
-    d += `M${f(x)} ${base}V${f(top)}h${f(bw)}V${base}Z`;
-    if (r() > 0.6) d += `M${f(x + bw / 2 - 1)} ${f(top)}v-${f(4 + r() * 10)}h2V${f(top)}Z`;
+    d += `M${fi(x)} ${base}V${fi(top)}h${fi(bw)}V${base}Z`;
+    if (r() > 0.6) d += `M${fi(x + bw / 2 - 1)} ${fi(top)}v-${fi(4 + r() * 10)}h2V${fi(top)}Z`;
     for (let wy = top + 5; wy < base - 4; wy += 6)
       for (let wx = x + 3; wx < x + bw - 3; wx += 5)
-        if (r() < winP) w += `M${f(wx)} ${f(wy)}h2v2.4h-2Z`;
+        if (r() < winP) w += `M${fi(wx)} ${fi(wy)}h2v2.4h-2Z`;
     x += bw + r() * 2;
   }
   return { body: d, windows: w };
@@ -345,7 +361,27 @@ function skyline(seed, base, hmin, hmax, x0 = 0, x1 = BW, wmin = 14, wmax = 34, 
 
 /** Puffy cloud group from overlapping circles, gradient fill id. */
 function cloud(x, y, s, fill, op = 1) {
-  return `<g transform='translate(${f(x)} ${f(y)}) scale(${f(s * 100) / 100})' fill='${fill}' opacity='${op}'><ellipse cx='0' cy='0' rx='30' ry='12'/><circle cx='-12' cy='-6' r='11'/><circle cx='6' cy='-11' r='14'/><circle cx='20' cy='-4' r='9'/></g>`;
+  return `<g transform='translate(${fi(x)} ${fi(y)}) scale(${f(s * 100) / 100})' fill='${fill}' opacity='${op}'><ellipse cx='0' cy='0' rx='30' ry='12'/><circle cx='-12' cy='-6' r='11'/><circle cx='6' cy='-11' r='14'/><circle cx='20' cy='-4' r='9'/></g>`;
+}
+
+/** A band of overlapping circles (cloud bank / foam); returns circles string (fill set by parent g). */
+function cloudBand(seed, y, rmin, rmax, x0 = -20, x1 = BW + 20, jitter = 6) {
+  const r = rnd(seed);
+  let s = "";
+  for (let x = x0; x < x1; ) {
+    const rr = rmin + r() * (rmax - rmin);
+    s += `<circle cx='${fi(x)}' cy='${fi(y + (r() - 0.5) * jitter)}' r='${fi(rr)}'/>`;
+    x += rr * (0.7 + r() * 0.5);
+  }
+  return s + `<rect x='${x0}' y='${y}' width='${x1 - x0}' height='${BH - y + 10}'/>`;
+}
+
+/** Scatter: n items from fn(r, i) -> string. */
+function scatter(seed, n, fn) {
+  const r = rnd(seed);
+  let s = "";
+  for (let i = 0; i < n; i++) s += fn(r, i);
+  return s;
 }
 
 /** Vignette + top light, shared finishing pass for banners. */
@@ -369,8 +405,8 @@ const frameDoc = (defs, body) => svgDoc(200, 200, defs, body);
 const badgeDoc = (defs, body) => svgDoc(24, 24, defs, body);
 
 module.exports = {
-  f, rnd, seedOf, dataUri, svgDoc, stopsOf, lg, rg, lgU, rgU, blur, METAL, metalGrad,
+  minifyBanner, fi: Math.round, f, rnd, seedOf, dataUri, svgDoc, stopsOf, lg, rg, lgU, rgU, blur, METAL, metalGrad,
   C, AV, pol, arc, annulus, circ, band, around, at, gemDefs, cabDefs, sparkle, star5, poly, leaf, petal, blade,
-  spin, pulse, BW, BH, ridge, hills, waveLine, stars, twinkles, pine, pineRow, skyline, cloud,
+  spin, pulse, BW, BH, ridge, hills, waveLine, stars, twinkles, pine, pineRow, skyline, cloud, cloudBand, scatter,
   bannerDoc, frameDoc, badgeDoc,
 };
