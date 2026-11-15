@@ -27,6 +27,8 @@ const { AsyncLocalStorage } = require("async_hooks");
 const { resolveCasinoTarget, dmRoomId } = require("../lib/casinoRoomAccess");
 const { ref: G, en } = require("../lib/botText");
 const { apiText } = require("../lib/apiError");
+const gameLimits = require("../lib/gameLimits");
+const casinoLedger = require("../lib/casinoLedger");
 
 // Engine errors (games/*.js, static English) -> bot catalog keys for the board text.
 const ENGINE_ERRORS = {
@@ -102,6 +104,20 @@ const VALID_COMMANDS = new Set([
 
 const DAILY_BONUS = 250;
 
+// An idle blackjack hand is dropped after 10 minutes with its escrowed stake:
+// the ledger keeps that loss so the running balance stays right.
+GameManager.onAbandon = (game) => {
+  casinoLedger.record({
+    userId: game.userId,
+    kind: "game",
+    gameType: "blackjack",
+    result: "abandoned",
+    bet: game.bet,
+    delta: -game.bet,
+    meta: { abandoned: true, handId: game.id },
+  });
+};
+
 function msgId() {
   return `game-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -142,6 +158,21 @@ function createGameMessage(content, gameData = null, type = "game_action", owner
     created_at: new Date().toISOString(),
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * Bot reply for a personal limit (gamesAdmin.bot.* ref from lib/gameLimits.js):
+ * English fallback + i18n ref the viewer's app translates.
+ */
+function limitMessage(limitRef, gameData, userId, type = "game_lobby") {
+  const msg = createGameMessage(gameLimits.englishOf(limitRef), gameData, type, userId);
+  msg.i18n = { content: limitRef };
+  return msg;
+}
+
+/** Ledger context (group / server channel / DM) of the running command. */
+function ledgerContext(userId) {
+  return casinoLedger.contextOf(currentEmitRoom(), userId);
 }
 
 async function getUserCredits(userId) {
@@ -240,7 +271,7 @@ function withCreditLocks(userIds, fn) {
   return ordered.reduceRight((next, id) => () => withCreditLock(id, next), fn)();
 }
 
-async function saveGameHistory(userId, groupId, instance) {
+async function saveGameHistory(userId, groupId, instance, extra = {}) {
   try {
     const opts = currentEmitRoom();
     const payload = instance.toHistoryPayload();
@@ -251,16 +282,25 @@ async function saveGameHistory(userId, groupId, instance) {
       bet_amount: payload.bet,
       result: payload.result,
       win_amount: payload.winAmount,
-      player_hand: payload.player_hand,
+      // Replay data for the admin hand history: the action order and the balance after.
+      player_hand: {
+        ...payload.player_hand,
+        steps: (instance.history || []).map((h) => h.action).filter((a) => a && a !== "finish"),
+        originalBet: payload.originalBet,
+        doubled: Boolean(instance.doubled),
+        balanceAfter: extra.balanceAfter ?? null,
+      },
       dealer_hand: payload.dealer_hand,
     };
     if (isGroupTarget(opts) && groupId) {
       row.group_id = groupId;
     }
-    const { error } = await supabase.from("game_history").insert(row);
+    const { data, error } = await supabase.from("game_history").insert(row).select("id").maybeSingle();
     if (error) console.error("[Game] saveGameHistory:", error.message || error);
+    return data?.id || null;
   } catch (err) {
     console.error("[Game] saveGameHistory exception:", err.message || err);
+    return null;
   }
 }
 
@@ -559,6 +599,12 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
     return;
   }
 
+  const limitBlock = await gameLimits.checkPlay(userId, bet);
+  if (limitBlock) {
+    emitToGroup(io, socket, groupId, limitMessage(limitBlock, { status: "lobby", userId, limit: true }, userId));
+    return;
+  }
+
   const credits = await getUserCredits(userId);
   if ((credits.credits || 0) < bet) {
     emitToGroup(
@@ -658,6 +704,11 @@ async function handleBlackjackAction(io, socket, userId, username, groupId, acti
       return;
     }
     const extra = instance.originalBet;
+    const extraBlock = await gameLimits.checkExtraStake(userId, instance.originalBet * 2, extra);
+    if (extraBlock) {
+      emitGameUpdate(io, socket, groupId, limitMessage(extraBlock, instance.getPublicState(), userId, "game_update"));
+      return;
+    }
     const credits = await getUserCredits(userId);
     if ((credits.credits || 0) < extra) {
       emitGameUpdate(
@@ -750,14 +801,22 @@ async function settleFinishedHand(userId, groupId, instance) {
     meta.lostInc = instance.bet;
   }
 
-  if (payout > 0) {
-    await applyCreditDelta(userId, payout, meta);
-  } else {
-    await applyCreditDelta(userId, 0, meta);
-  }
+  const settled = payout > 0 ? await applyCreditDelta(userId, payout, meta) : await applyCreditDelta(userId, 0, meta);
+  const balanceAfter = settled ? Number(settled.credits) : null;
 
-  await saveGameHistory(userId, groupId, instance);
+  const historyId = await saveGameHistory(userId, groupId, instance, { balanceAfter });
   GameManager.remove(userId, groupId);
+  casinoLedger.record({
+    userId,
+    kind: "game",
+    gameType: "blackjack",
+    result: instance.result,
+    bet: instance.bet,
+    delta: payout - instance.bet,
+    balanceAfter,
+    refId: historyId,
+    context: ledgerContext(userId),
+  });
 }
 
 /** Ref of the finished-hand text (bot.game.bjResult). */
@@ -828,6 +887,7 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
         .from("user_credits")
         .update({ last_daily_claim: now.toISOString() })
         .eq("user_id", userId);
+      if (updated) casinoLedger.record({ userId, kind: "daily", delta: DAILY_BONUS, balanceAfter: updated.credits, context: ledgerContext(userId) });
       emitToGroup(
         io,
         socket,
@@ -859,6 +919,7 @@ async function handleDailyClaim(io, socket, userId, username, groupId) {
       return;
     }
 
+    casinoLedger.record({ userId, kind: "daily", delta: DAILY_BONUS, balanceAfter: data.credits, context: ledgerContext(userId) });
     emitToGroup(
       io,
       socket,
@@ -895,13 +956,16 @@ async function handleCreditsCheck(io, socket, userId, groupId) {
 
 async function handleLeaderboard(io, socket, userId, groupId) {
   try {
-    const { data: topUsers, error } = await supabase
+    // Accounts hidden by an admin (Oyunlar / Kredi) keep playing but are not ranked.
+    const hidden = await gameLimits.hiddenUserIds();
+    const { data: ranked, error } = await supabase
       .from("user_credits")
       .select("user_id, credits, total_won, games_played")
       .order("credits", { ascending: false })
-      .limit(10);
+      .limit(10 + hidden.size);
 
     if (error) throw error;
+    const topUsers = (ranked || []).filter((row) => !hidden.has(String(row.user_id))).slice(0, 10);
 
     let content = G("bot.game.leaderboardEmpty");
     if (topUsers?.length) {
@@ -977,10 +1041,12 @@ async function saveRound(userId, groupId, { gameType, bet, result, winAmount, pl
       dealer_hand: dealer || null,
     };
     if (isGroupTarget(opts) && groupId) row.group_id = groupId;
-    const { error } = await supabase.from("game_history").insert(row);
+    const { data, error } = await supabase.from("game_history").insert(row).select("id").maybeSingle();
     if (error) console.error("[Game] saveRound:", error.message || error);
+    return data?.id || null;
   } catch (err) {
     console.error("[Game] saveRound exception:", err.message || err);
+    return null;
   }
 }
 
@@ -1022,6 +1088,12 @@ async function handlePay(io, socket, userId, username, groupId, arg) {
         "game_transfer"
       )
     );
+    return;
+  }
+
+  const transferBlock = await gameLimits.checkTransfer(userId);
+  if (transferBlock) {
+    emitToGroup(io, socket, groupId, limitMessage(transferBlock, { fromUserId: userId, limit: true }, null, "game_transfer"));
     return;
   }
 
@@ -1082,6 +1154,12 @@ async function handlePay(io, socket, userId, username, groupId, arg) {
       return;
     }
     const toName = recipient.username || "player";
+    const context = ledgerContext(userId);
+    const transferId = await casinoLedger.recordTransfer({ fromUserId: userId, toUserId: recipient.id, amount: parsed.amount, context });
+    casinoLedger.record([
+      { userId, kind: "transfer_out", delta: -parsed.amount, balanceAfter: debited.credits, counterpartyId: recipient.id, refId: transferId, context },
+      { userId: recipient.id, kind: "transfer_in", delta: parsed.amount, balanceAfter: credited.credits, counterpartyId: userId, refId: transferId, context },
+    ]);
     emitToGroup(
       io,
       socket,
@@ -1136,6 +1214,12 @@ async function handleSlot(io, socket, userId, username, groupId, arg) {
         userId
       )
     );
+    return;
+  }
+
+  const slotBlock = await gameLimits.checkPlay(userId, bet);
+  if (slotBlock) {
+    emitToGroup(io, socket, groupId, limitMessage(slotBlock, { game: "slot", status: "lobby", userId, limit: true }, userId));
     return;
   }
 
@@ -1196,12 +1280,23 @@ async function handleSlot(io, socket, userId, username, groupId, arg) {
         userId
       )
     );
-    await saveRound(userId, groupId, {
+    const slotHistoryId = await saveRound(userId, groupId, {
       gameType: "slot",
       bet,
       result: round.result,
       winAmount: round.prize,
-      player: { grid: round.phases[0].grid, freeSpins: round.freeSpins, profit: round.profit },
+      player: { grid: round.phases[0].grid, freeSpins: round.freeSpins, profit: round.profit, balanceAfter: balance },
+    });
+    casinoLedger.record({
+      userId,
+      kind: "game",
+      gameType: "slot",
+      result: round.result,
+      bet,
+      delta: round.profit,
+      balanceAfter: balance,
+      refId: slotHistoryId,
+      context: ledgerContext(userId),
     });
   });
 }
@@ -1214,12 +1309,24 @@ async function settleCoin(userId, groupId, round) {
     round.winAmount > 0
       ? await applyCreditDelta(userId, round.winAmount, meta)
       : await applyCreditDelta(userId, 0, meta);
-  await saveRound(userId, groupId, {
+  const balanceAfter = paid ? Number(paid.credits) : null;
+  const coinHistoryId = await saveRound(userId, groupId, {
     gameType: "coinflip",
     bet: round.bet,
     result: round.result,
     winAmount: round.winAmount,
-    player: round.toHistoryPayload().player_hand,
+    player: { ...round.toHistoryPayload().player_hand, balanceAfter },
+  });
+  casinoLedger.record({
+    userId,
+    kind: "game",
+    gameType: "coinflip",
+    result: round.result,
+    bet: round.bet,
+    delta: (round.winAmount || 0) - round.bet,
+    balanceAfter,
+    refId: coinHistoryId,
+    context: ledgerContext(userId),
   });
   return paid;
 }
@@ -1330,6 +1437,12 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
     return;
   }
 
+  const coinBlock = await gameLimits.checkPlay(userId, bet);
+  if (coinBlock) {
+    emitToGroup(io, socket, groupId, limitMessage(coinBlock, { game: "coinflip", status: "lobby", userId, limit: true }, userId));
+    return;
+  }
+
   await withCreditLock(userId, async () => {
     const credits = await getUserCredits(userId);
     if ((credits.credits || 0) < bet) {
@@ -1407,9 +1520,18 @@ async function handleCoinFlip(io, socket, userId, username, groupId, arg) {
   });
 }
 
+/** Hands escrowed for `userId` but not settled for over 10 minutes (admin fair play card). */
+function openHandsFor(userId, olderThanMs = 10 * 60 * 1000) {
+  return typeof GameManager.openFor === "function" ? GameManager.openFor(userId, olderThanMs) : 0;
+}
+
 module.exports = {
   registerGameHandlers,
   getUserCredits,
+  openHandsFor,
+  withCreditLock,
+  STARTING_CREDITS,
+  DAILY_BONUS,
   BOT_USER,
   handleGameCommand,
   createGameMessage,

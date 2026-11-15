@@ -407,11 +407,31 @@ const GameManager = {
     return { game: result.state, instance: game };
   },
 
+  /** Unfinished hands of `userId` idle for longer than `olderThanMs` (stake escrowed). */
+  openFor(userId, olderThanMs = 10 * 60 * 1000) {
+    const now = Date.now();
+    let n = 0;
+    for (const game of activeGames.values()) {
+      if (game.userId === userId && game.status !== "finished" && now - game.updatedAt > olderThanMs) n += 1;
+    }
+    return n;
+  },
+
+  /** Set by socket/gameHandlers.js: an idle hand is dropped with its stake (credit ledger row). */
+  onAbandon: null,
+
   cleanup(maxAgeMs = 10 * 60 * 1000) {
     const now = Date.now();
     for (const [key, game] of activeGames.entries()) {
       if (game.status === "finished" || now - game.updatedAt > maxAgeMs) {
         activeGames.delete(key);
+        if (game.status !== "finished" && typeof GameManager.onAbandon === "function") {
+          try {
+            GameManager.onAbandon(game);
+          } catch {
+            /* the ledger write is best effort */
+          }
+        }
       }
     }
   },

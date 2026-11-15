@@ -37,7 +37,8 @@ assert(
   /flex-direction:\s*column/.test(css) && !/overflow-x:\s*auto/.test(css.split(".shop-category-tab:hover")[0]),
   "category tabs are a vertical list without a horizontal scroller",
 );
-const admin = readFileSync(join(root, "../../../backend/routes/admin.js"), "utf8");
+// /credits/update goes through routes/adminCasino.js adjustCredits (Oyunlar / Kredi).
+const admin = readFileSync(join(root, "../../../backend/routes/admin.js"), "utf8") + readFileSync(join(root, "../../../backend/routes/adminCasino.js"), "utf8");
 assert(
   /user_credits[\s\S]{0,500}onConflict:\s*"user_id"/.test(admin),
   "credit updates must upsert on user_id",

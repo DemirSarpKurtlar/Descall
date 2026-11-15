@@ -29,7 +29,8 @@ assert.match(panel, /<AdminShell/);
 assert.doesNotMatch(panel, /RippleButton[\s\S]{0,80}admin-close/);
 assert.match(panel, /role="switch"/);
 assert.match(panel, /onClick=\{\(\) => onChange\(!checked\)\}/);
-assert.match(panel, /className="admin-pane"/);
-assert.match(panel, /className="admin-split"/);
+// The old casino tab was the last user of .admin-split / .admin-pane; Oyunlar / Kredi is
+// now its own page (components/admin/games/AdminGames.jsx, styles/admin-games.css).
+assert.match(panel, /tab === "casino" && <AdminGames/);
 
 console.log("admin-liquid.selftest ok");

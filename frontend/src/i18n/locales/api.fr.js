@@ -32,4 +32,12 @@ export const API_FR = {
   "Invalid session.": "Session non valide.",
   "Could not end the session.": "Impossible de fermer la session.",
   "Session not found.": "Session introuvable.",
+  // Oyunlar / Kredi (routes/adminCasino.js)
+  "Operation must be add, remove or set.": "L'action doit être ajouter, retirer ou fixer.",
+  "Enter an amount between 1 and 10,000,000.": "Saisis un montant entre 1 et 10 000 000.",
+  "Write a reason of at least 5 characters.": "Écris un motif d'au moins 5 caractères.",
+  "Hand not found.": "Main introuvable.",
+  "Nothing to change.": "Rien à changer.",
+  "Game limits are not set up yet.": "Les limites de jeu ne sont pas encore installées.",
+  "Check the limit values.": "Vérifie les valeurs des limites.",
 };

@@ -32,4 +32,12 @@ export const API_RU = {
   "Invalid session.": "Недопустимый сеанс.",
   "Could not end the session.": "Не удалось завершить сеанс.",
   "Session not found.": "Сеанс не найден.",
+  // Oyunlar / Kredi (routes/adminCasino.js)
+  "Operation must be add, remove or set.": "Действие должно быть: добавить, списать или задать.",
+  "Enter an amount between 1 and 10,000,000.": "Введи сумму от 1 до 10 000 000.",
+  "Write a reason of at least 5 characters.": "Напиши причину хотя бы из 5 символов.",
+  "Hand not found.": "Раздача не найдена.",
+  "Nothing to change.": "Нечего менять.",
+  "Game limits are not set up yet.": "Игровые лимиты ещё не настроены.",
+  "Check the limit values.": "Проверь значения лимитов.",
 };
