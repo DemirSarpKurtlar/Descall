@@ -1409,6 +1409,432 @@ html.glass-ui .app-root.g-shell .dm-avatar .status-badge.cosmetic-presence-flare
   animation: s2fx-twinkle 3.4s ease-in-out infinite;
 }
 
+/* Reaction bursts: one shot, inside the 520 ms the chip wears burst-chip-<key>.
+   Resting declarations = peak frame (the reduced-motion still frame). */
+@keyframes s2rb-ring { 0% { opacity: 0; transform: scale(0.35); } 15% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3); } }
+@keyframes s2rb-spin-out { 0% { opacity: 0; transform: scale(0.4) rotate(0deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2) rotate(70deg); } }
+@keyframes s2rb-rays { 0% { opacity: 0; transform: scale(0.5) rotate(-10deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.15) rotate(12deg); } }
+@keyframes s2rb-flash { 0% { opacity: 0; transform: scale(0.6); } 30% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+@keyframes s2rb-stamp { 0% { opacity: 0; transform: scale(1.5); } 30% { opacity: 1; transform: scale(0.96); } 55% { transform: scale(1.02); } 100% { opacity: 0; transform: scale(1.08); } }
+@keyframes s2rb-flame { 0% { opacity: 0; transform: scale(0.6, 0.3); } 30% { opacity: 1; transform: scale(1, 1.1); } 100% { opacity: 0; transform: translateY(-10px) scale(0.7, 1.25); } }
+@keyframes s2rb-rise { 0% { opacity: 0; transform: translateY(6px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes s2rb-implode { 0% { opacity: 0; transform: scale(1.5) rotate(0deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(0.25) rotate(-220deg); } }
+@keyframes s2rb-fall { 0% { opacity: 0; transform: translateY(-8px) scale(0.7); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px) scale(1); } }
+@keyframes s2rb-zap { 0% { opacity: 1; transform: rotate(0deg); } 25% { opacity: 0.1; transform: rotate(30deg); } 45% { opacity: 1; transform: rotate(-20deg); } 70% { opacity: 0.3; transform: rotate(60deg); } 100% { opacity: 0; } }
+@keyframes s2rb-petal { 0% { opacity: 0; transform: scale(0.2) rotate(-60deg); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1) rotate(30deg); } }
+@keyframes s2rb-split-l { 0% { opacity: 0; transform: translateX(0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(-6px) scale(1.25); } }
+@keyframes s2rb-split-r { 0% { opacity: 0; transform: translateX(0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(6px) scale(1.25); } }
+@keyframes s2rb-splat { 0% { opacity: 0; transform: scale(0.2); } 20% { opacity: 1; transform: scale(1.05); } 35% { transform: scale(0.96); } 100% { opacity: 0; transform: scale(1); } }
+@keyframes s2rb-pop { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes s2rb-nova { 0% { opacity: 0; transform: scale(0.2); } 18% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes s2rb-whirl { 0% { opacity: 0; transform: scale(0.3) rotate(-90deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.15) rotate(200deg); } }
+@keyframes s2rb-chip-pop { 0% { transform: scale(0.82); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes s2rb-chip-wiggle { 0% { transform: rotate(0deg) scale(0.9); } 25% { transform: rotate(-6deg) scale(1.1); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-2deg); } 100% { transform: rotate(0deg) scale(1); } }
+@keyframes s2rb-chip-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.16); } 30% { transform: scale(1.02); } 45% { transform: scale(1.12); } }
+@keyframes s2rb-chip-stamp { 0% { transform: scale(1.35); } 35% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes s2rb-chip-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-2px); } 40% { transform: translateX(2px); } 60% { transform: translateX(-1.5px); } 80% { transform: translateX(1px); } }
+.cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"] {
+  isolation: isolate;
+}
+.cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::before,
+.cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-sok-dalgasi {
+  background: linear-gradient(180deg, rgba(120,170,255,0.32), rgba(88,122,245,0.22)) !important;
+  border-color: #9fbaff !important;
+  box-shadow: inset 0 0 0 1px rgba(159,186,255,0.7), 0 0 16px rgba(88,122,245,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-sok-dalgasi::before {
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  background: radial-gradient(closest-side, transparent 78%, #cfe0ff 84%, transparent 90%);
+  animation: s2rb-ring 0.48s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-sok-dalgasi::after {
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  background: radial-gradient(closest-side, transparent 78%, rgba(122,162,255,0.85) 82%, transparent 86%);
+  animation: s2rb-ring 0.42s cubic-bezier(.2,.8,.3,1) 0.08s both;
+}
+.cosmetic-reaction-burst.burst-s2-sok-dalgasi .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(143,176,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-konfeti {
+  background: linear-gradient(120deg, rgba(255,90,170,0.3), rgba(255,210,70,0.26), rgba(80,220,255,0.28)) !important;
+  border-color: #ffd2ea !important;
+  box-shadow: inset 0 0 0 1px rgba(255,210,234,0.7), 0 0 16px rgba(255,90,170,0.6) !important;
+  animation: s2rb-chip-wiggle 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-konfeti::before {
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  background: radial-gradient(closest-side, transparent 72%, rgba(255,210,234,0.7) 80%, transparent 88%);
+  animation: s2rb-ring 0.4s ease-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-konfeti::after {
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  background: radial-gradient(ellipse 1.4px 3.4px at 50.0% 10.0%, #ff5aaa 0 100%, transparent), radial-gradient(ellipse 3.2px 1.4px at 70.0% 15.4%, #ffd246 0 100%, transparent), radial-gradient(ellipse 1.4px 3.4px at 84.6% 30.0%, #50dcff 0 100%, transparent), radial-gradient(ellipse 3.2px 1.4px at 90.0% 50.0%, #8cff6a 0 100%, transparent), radial-gradient(ellipse 1.4px 3.4px at 84.6% 70.0%, #b38cff 0 100%, transparent), radial-gradient(ellipse 3.2px 1.4px at 70.0% 84.6%, #ff8a3d 0 100%, transparent), radial-gradient(ellipse 1.4px 3.4px at 50.0% 90.0%, #ff5aaa 0 100%, transparent), radial-gradient(ellipse 3.2px 1.4px at 30.0% 84.6%, #ffd246 0 100%, transparent), radial-gradient(ellipse 1.4px 3.4px at 15.4% 70.0%, #50dcff 0 100%, transparent), radial-gradient(ellipse 3.2px 1.4px at 10.0% 50.0%, #8cff6a 0 100%, transparent), radial-gradient(ellipse 1.4px 3.4px at 15.4% 30.0%, #b38cff 0 100%, transparent), radial-gradient(ellipse 3.2px 1.4px at 30.0% 15.4%, #ff8a3d 0 100%, transparent);
+  animation: s2rb-spin-out 0.5s cubic-bezier(.15,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-konfeti .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,138,203,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-yildiz-patlamasi {
+  background: linear-gradient(180deg, rgba(255,214,90,0.36), rgba(255,150,30,0.24)) !important;
+  border-color: #ffe08a !important;
+  box-shadow: inset 0 0 0 1px rgba(255,224,138,0.7), 0 0 16px rgba(255,176,46,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-yildiz-patlamasi::before {
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  background: radial-gradient(closest-side, rgba(255,240,180,0.9), rgba(255,190,60,0.45) 50%, transparent);
+  animation: s2rb-flash 0.36s ease-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-yildiz-patlamasi::after {
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  background: repeating-conic-gradient(from 0deg, rgba(255,232,150,0.95) 0 5deg, transparent 5deg 45deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 34%, #000 42%, #000 70%, transparent 100%);
+  mask: radial-gradient(closest-side, transparent 34%, #000 42%, #000 70%, transparent 100%);
+  animation: s2rb-rays 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-yildiz-patlamasi .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,207,90,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-kalp-dalgasi {
+  background: linear-gradient(180deg, rgba(255,120,160,0.34), rgba(255,77,115,0.22)) !important;
+  border-color: #ffb3c8 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,179,200,0.7), 0 0 16px rgba(255,77,115,0.6) !important;
+  animation: s2rb-chip-beat 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-kalp-dalgasi::before {
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  background: radial-gradient(closest-side, rgba(255,143,176,0.35), transparent 70%), radial-gradient(closest-side, transparent 81%, #ffb3c8 86%, transparent 91%);
+  animation: s2rb-ring 0.46s ease-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-kalp-dalgasi::after {
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  background: radial-gradient(closest-side, transparent 82%, rgba(255,111,154,0.85) 86%, transparent 90%);
+  animation: s2rb-ring 0.4s ease-out 0.12s both;
+}
+.cosmetic-reaction-burst.burst-s2-kalp-dalgasi .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,143,176,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-neon-damga {
+  background: rgba(46,242,255,0.16) !important;
+  border-color: #2ef2ff !important;
+  box-shadow: inset 0 0 0 1px rgba(46,242,255,0.7), 0 0 16px rgba(46,242,255,0.6) !important;
+  animation: s2rb-chip-stamp 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-neon-damga::before {
+  width: 74px;
+  height: 40px;
+  margin: -20px 0 0 -37px;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1.5px #2ef2ff, 0 0 12px rgba(46,242,255,0.8), inset 0 0 10px rgba(46,242,255,0.4);
+  animation: s2rb-stamp 0.42s cubic-bezier(.3,1.4,.5,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-neon-damga::after {
+  width: 90px;
+  height: 50px;
+  margin: -25px 0 0 -45px;
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px rgba(255,46,136,0.85), 0 0 10px rgba(255,46,136,0.6);
+  animation: s2rb-stamp 0.46s cubic-bezier(.3,1.4,.5,1) 0.06s both;
+}
+.cosmetic-reaction-burst.burst-s2-neon-damga .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(46,242,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-buz-kirigi {
+  background: linear-gradient(180deg, rgba(200,240,255,0.32), rgba(80,170,230,0.2)) !important;
+  border-color: #d6f4ff !important;
+  box-shadow: inset 0 0 0 1px rgba(214,244,255,0.7), 0 0 16px rgba(124,208,255,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-buz-kirigi::before {
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  background: radial-gradient(closest-side, rgba(230,248,255,0.5), rgba(124,208,255,0.2) 60%, transparent), radial-gradient(closest-side, transparent 86%, #e6f8ff 90%, transparent 94%);
+  animation: s2rb-ring 0.4s ease-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-buz-kirigi::after {
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  background: conic-gradient(from 0deg, transparent 0 8deg, rgba(230,248,255,0.95) 8deg 11deg, transparent 11deg 52deg, rgba(166,231,255,0.9) 52deg 54deg, transparent 54deg 96deg, rgba(230,248,255,0.95) 96deg 99deg, transparent 99deg 140deg, rgba(166,231,255,0.85) 140deg 142deg, transparent 142deg 188deg, rgba(230,248,255,0.95) 188deg 191deg, transparent 191deg 232deg, rgba(166,231,255,0.9) 232deg 234deg, transparent 234deg 276deg, rgba(230,248,255,0.95) 276deg 279deg, transparent 279deg 318deg, rgba(166,231,255,0.9) 318deg 320deg, transparent 320deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 36%, #000 46%, #000 76%, transparent 100%);
+  mask: radial-gradient(closest-side, transparent 36%, #000 46%, #000 76%, transparent 100%);
+  animation: s2rb-spin-out 0.44s cubic-bezier(.1,.9,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-buz-kirigi .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(166,231,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-alev-dili {
+  background: linear-gradient(0deg, rgba(255,90,20,0.4), rgba(255,200,80,0.22)) !important;
+  border-color: #ffc26b !important;
+  box-shadow: inset 0 0 0 1px rgba(255,194,107,0.7), 0 0 16px rgba(255,106,31,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-alev-dili::before {
+  width: 46px;
+  height: 70px;
+  margin: -35px 0 0 -23px;
+  border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  background: radial-gradient(ellipse 46% 56% at 50% 64%, #fff3b0 0%, #ffb02e 30%, rgba(255,90,20,0.75) 55%, transparent 78%);
+  transform-origin: 50% 85%;
+  animation: s2rb-flame 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-alev-dili::after {
+  width: 70px;
+  height: 70px;
+  margin: -35px 0 0 -35px;
+  background: radial-gradient(circle at 30% 30%, #ffd27a 0 1.6px, transparent 2.6px), radial-gradient(circle at 64% 22%, #ff8a3d 0 1.6px, transparent 2.6px), radial-gradient(circle at 48% 12%, #fff3b0 0 1.6px, transparent 2.6px), radial-gradient(circle at 74% 40%, #ff6a2b 0 1.6px, transparent 2.6px), radial-gradient(circle at 24% 46%, #ffb35a 0 1.6px, transparent 2.6px);
+  animation: s2rb-rise 0.5s ease-out both;
+}
+.cosmetic-reaction-burst.burst-s2-alev-dili .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,138,61,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-mor-girdap {
+  background: linear-gradient(180deg, rgba(150,90,255,0.36), rgba(70,30,160,0.3)) !important;
+  border-color: #c6a8ff !important;
+  box-shadow: inset 0 0 0 1px rgba(198,168,255,0.7), 0 0 16px rgba(138,77,255,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-mor-girdap::before {
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  background: radial-gradient(closest-side, rgba(20,8,40,0.7), rgba(124,77,255,0.45) 60%, transparent);
+  animation: s2rb-flash 0.5s ease-in-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-mor-girdap::after {
+  width: 66px;
+  height: 66px;
+  margin: -33px 0 0 -33px;
+  background: repeating-conic-gradient(from 0deg, rgba(220,200,255,0.95) 0deg, rgba(140,90,255,0.55) 16deg, transparent 24deg, transparent 45deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 20%, #000 34%, #000 70%, transparent 100%);
+  mask: radial-gradient(closest-side, transparent 20%, #000 34%, #000 70%, transparent 100%);
+  animation: s2rb-implode 0.5s cubic-bezier(.5,0,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-mor-girdap .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(167,123,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-altin-yagmur {
+  background: linear-gradient(180deg, rgba(255,220,110,0.34), rgba(200,140,20,0.24)) !important;
+  border-color: #ffe08a !important;
+  box-shadow: inset 0 0 0 1px rgba(255,224,138,0.7), 0 0 16px rgba(242,194,48,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-altin-yagmur::before {
+  width: 50px;
+  height: 50px;
+  margin: -25px 0 0 -25px;
+  background: radial-gradient(closest-side, rgba(255,230,140,0.6), rgba(242,194,48,0.25) 55%, transparent);
+  animation: s2rb-flash 0.4s ease-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-altin-yagmur::after {
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  background: radial-gradient(circle at 22% 20%, #fff6cf 0 1.7px, transparent 2.8px), radial-gradient(circle at 38% 8%, #ffd65a 0 1.3px, transparent 2.2px), radial-gradient(circle at 56% 16%, #ffd65a 0 1.3px, transparent 2.2px), radial-gradient(circle at 72% 6%, #fff6cf 0 1.7px, transparent 2.8px), radial-gradient(circle at 84% 22%, #ffd65a 0 1.3px, transparent 2.2px), radial-gradient(circle at 30% 34%, #ffd65a 0 1.3px, transparent 2.2px), radial-gradient(circle at 64% 30%, #fff6cf 0 1.7px, transparent 2.8px), radial-gradient(circle at 48% 26%, #ffd65a 0 1.3px, transparent 2.2px), radial-gradient(circle at 14% 36%, #ffd65a 0 1.3px, transparent 2.2px), radial-gradient(circle at 88% 36%, #fff6cf 0 1.7px, transparent 2.8px);
+  animation: s2rb-fall 0.5s ease-in both;
+}
+.cosmetic-reaction-burst.burst-s2-altin-yagmur .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,214,90,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-elektrik {
+  background: linear-gradient(180deg, rgba(150,190,255,0.34), rgba(60,100,220,0.24)) !important;
+  border-color: #e6efff !important;
+  box-shadow: inset 0 0 0 1px rgba(230,239,255,0.7), 0 0 16px rgba(122,167,255,0.6) !important;
+  animation: s2rb-chip-shake 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-elektrik::before {
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  background: radial-gradient(closest-side, rgba(230,240,255,0.75), rgba(122,167,255,0.3) 55%, transparent);
+  animation: s2rb-zap 0.46s steps(1) 0.06s both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-elektrik::after {
+  width: 78px;
+  height: 78px;
+  margin: -39px 0 0 -39px;
+  background: conic-gradient(from 10deg, transparent 0 30deg, #f5f9ff 30deg 33deg, transparent 33deg 100deg, #b8d0ff 100deg 102deg, transparent 102deg 170deg, #f5f9ff 170deg 173deg, transparent 173deg 250deg, #b8d0ff 250deg 252deg, transparent 252deg 320deg, #f5f9ff 320deg 322deg, transparent 322deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 38%, #000 46%, #000 78%, transparent 100%);
+  mask: radial-gradient(closest-side, transparent 38%, #000 46%, #000 78%, transparent 100%);
+  animation: s2rb-zap 0.46s steps(1) both;
+}
+.cosmetic-reaction-burst.burst-s2-elektrik .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(184,208,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-cicek-acimi {
+  background: linear-gradient(180deg, rgba(255,170,200,0.34), rgba(220,90,150,0.22)) !important;
+  border-color: #ffd6e2 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,214,226,0.7), 0 0 16px rgba(255,143,176,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-cicek-acimi::before {
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  background: radial-gradient(closest-side, rgba(255,240,200,0.8), rgba(255,180,120,0.35) 55%, transparent);
+  animation: s2rb-flash 0.4s ease-out both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-cicek-acimi::after {
+  width: 74px;
+  height: 74px;
+  margin: -37px 0 0 -37px;
+  background: radial-gradient(circle at 50.0% 20.0%, #ffe3ec 0 3px, rgba(255,143,176,0.85) 5px, transparent 8px), radial-gradient(circle at 76.0% 35.0%, #ffe3ec 0 3px, rgba(255,143,176,0.85) 5px, transparent 8px), radial-gradient(circle at 76.0% 65.0%, #ffe3ec 0 3px, rgba(255,143,176,0.85) 5px, transparent 8px), radial-gradient(circle at 50.0% 80.0%, #ffe3ec 0 3px, rgba(255,143,176,0.85) 5px, transparent 8px), radial-gradient(circle at 24.0% 65.0%, #ffe3ec 0 3px, rgba(255,143,176,0.85) 5px, transparent 8px), radial-gradient(circle at 24.0% 35.0%, #ffe3ec 0 3px, rgba(255,143,176,0.85) 5px, transparent 8px);
+  animation: s2rb-petal 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-cicek-acimi .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,179,200,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-prizma-ayrimi {
+  background: linear-gradient(115deg, rgba(255,60,110,0.26), rgba(255,255,255,0.12), rgba(60,200,255,0.26)) !important;
+  border-color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7), 0 0 16px rgba(166,140,255,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-prizma-ayrimi::before {
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  background: radial-gradient(closest-side, transparent 78%, rgba(255,59,107,0.95) 84%, transparent 90%);
+  animation: s2rb-split-l 0.48s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-prizma-ayrimi::after {
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  background: radial-gradient(closest-side, transparent 78%, rgba(59,200,255,0.95) 84%, transparent 90%);
+  animation: s2rb-split-r 0.48s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-prizma-ayrimi .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(200,184,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-murekkep {
+  background: linear-gradient(180deg, rgba(110,60,200,0.36), rgba(50,20,110,0.3)) !important;
+  border-color: #b49cff !important;
+  box-shadow: inset 0 0 0 1px rgba(180,156,255,0.7), 0 0 16px rgba(106,60,216,0.6) !important;
+  animation: s2rb-chip-stamp 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-murekkep::before {
+  width: 66px;
+  height: 66px;
+  margin: -33px 0 0 -33px;
+  background: radial-gradient(circle at 50% 50%, rgba(80,40,170,0.85) 0 34%, transparent 35%), radial-gradient(circle at 22% 30%, rgba(90,50,190,0.85) 0 12%, transparent 13%), radial-gradient(circle at 80% 26%, rgba(90,50,190,0.8) 0 9%, transparent 10%), radial-gradient(circle at 76% 76%, rgba(80,40,170,0.85) 0 13%, transparent 14%), radial-gradient(circle at 18% 74%, rgba(90,50,190,0.8) 0 8%, transparent 9%), radial-gradient(circle at 50% 8%, rgba(120,80,220,0.8) 0 5%, transparent 6%);
+  animation: s2rb-splat 0.5s cubic-bezier(.2,.9,.3,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-murekkep::after {
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  background: radial-gradient(circle at 92% 50%, rgba(160,120,255,0.9) 0 3px, transparent 4px), radial-gradient(circle at 8% 52%, rgba(160,120,255,0.9) 0 2.5px, transparent 3.5px), radial-gradient(circle at 50% 94%, rgba(160,120,255,0.8) 0 2px, transparent 3px);
+  animation: s2rb-pop 0.5s ease-out both;
+}
+.cosmetic-reaction-burst.burst-s2-murekkep .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(138,92,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-halka-zinciri {
+  background: linear-gradient(180deg, rgba(255,214,120,0.36), rgba(255,170,60,0.24)) !important;
+  border-color: #fff1c2 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,241,194,0.7), 0 0 16px rgba(255,191,58,0.6) !important;
+  animation: s2rb-chip-pop 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-halka-zinciri::before {
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  background: radial-gradient(closest-side, transparent 89%, #fff1c2 92%, transparent 95%), radial-gradient(closest-side, transparent 67%, rgba(255,210,110,0.85) 70%, transparent 73%), radial-gradient(closest-side, transparent 45%, rgba(255,154,46,0.75) 48%, transparent 51%);
+  animation: s2rb-ring 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-halka-zinciri::after {
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  background: radial-gradient(circle at 50.0% 8.0%, #fff 0 1.3px, rgba(255,210,110,0.7) 2px, transparent 3.4px), radial-gradient(circle at 86.4% 29.0%, #fff 0 1.3px, rgba(255,210,110,0.7) 2px, transparent 3.4px), radial-gradient(circle at 86.4% 71.0%, #fff 0 1.3px, rgba(255,210,110,0.7) 2px, transparent 3.4px), radial-gradient(circle at 50.0% 92.0%, #fff 0 1.3px, rgba(255,210,110,0.7) 2px, transparent 3.4px), radial-gradient(circle at 13.6% 71.0%, #fff 0 1.3px, rgba(255,210,110,0.7) 2px, transparent 3.4px), radial-gradient(circle at 13.6% 29.0%, #fff 0 1.3px, rgba(255,210,110,0.7) 2px, transparent 3.4px);
+  animation: s2rb-spin-out 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-halka-zinciri .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,224,138,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-supernova {
+  background: linear-gradient(180deg, rgba(220,200,255,0.4), rgba(110,70,230,0.3)) !important;
+  border-color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7), 0 0 16px rgba(167,123,255,0.6) !important;
+  animation: s2rb-chip-stamp 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-supernova::before {
+  width: 70px;
+  height: 70px;
+  margin: -35px 0 0 -35px;
+  background: radial-gradient(closest-side, #ffffff 0%, rgba(230,220,255,0.85) 22%, rgba(167,123,255,0.45) 44%, transparent 60%), radial-gradient(closest-side, transparent 78%, rgba(198,183,255,0.85) 86%, transparent 94%);
+  animation: s2rb-nova 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-supernova::after {
+  width: 92px;
+  height: 92px;
+  margin: -46px 0 0 -46px;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.85) 0 2deg, transparent 2deg 22.5deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 30%, #000 40%, #000 64%, transparent 100%);
+  mask: radial-gradient(closest-side, transparent 30%, #000 40%, #000 64%, transparent 100%);
+  animation: s2rb-rays 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-supernova .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(230,220,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-ruzgar-gulu {
+  background: linear-gradient(120deg, rgba(255,124,229,0.3), rgba(124,243,255,0.26), rgba(255,242,124,0.26)) !important;
+  border-color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7), 0 0 16px rgba(124,243,255,0.6) !important;
+  animation: s2rb-chip-wiggle 0.5s cubic-bezier(.2,.9,.3,1.2);
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-ruzgar-gulu::before {
+  width: 50px;
+  height: 50px;
+  margin: -25px 0 0 -25px;
+  background: radial-gradient(closest-side, transparent 81%, rgba(255,255,255,0.8) 86%, transparent 91%);
+  animation: s2rb-ring 0.42s ease-out 0.05s both;
+}
+.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-ruzgar-gulu::after {
+  width: 82px;
+  height: 82px;
+  margin: -41px 0 0 -41px;
+  background: conic-gradient(from 0deg, rgba(255,124,229,0.9) 0 30deg, transparent 30deg 60deg, rgba(124,243,255,0.9) 60deg 90deg, transparent 90deg 120deg, rgba(255,242,124,0.9) 120deg 150deg, transparent 150deg 180deg, rgba(179,255,124,0.9) 180deg 210deg, transparent 210deg 240deg, rgba(200,124,255,0.9) 240deg 270deg, transparent 270deg 300deg, rgba(255,154,124,0.9) 300deg 330deg, transparent 330deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 34%, #000 44%, #000 66%, transparent 92%);
+  mask: radial-gradient(closest-side, transparent 34%, #000 44%, #000 66%, transparent 92%);
+  animation: s2rb-whirl 0.5s cubic-bezier(.2,.8,.3,1) both;
+}
+.cosmetic-reaction-burst.burst-s2-ruzgar-gulu .reaction-burst-pop-emoji {
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.85)) drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+}
+.shop-reaction-burst-preview.is-still .reaction-chip[class*="burst-chip-s2-"]::before,
+.shop-reaction-burst-preview.is-still .reaction-chip[class*="burst-chip-s2-"]::after {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cosmetic-avatar-effect[class*="effect-s2-"],
   .cosmetic-avatar-effect[class*="effect-s2-"]::before,
@@ -1417,7 +1843,10 @@ html.glass-ui .app-root.g-shell .dm-avatar .status-badge.cosmetic-presence-flare
   .cosmetic-profile-aura[class*="aura-s2-"]::after,
   .cosmetic-presence-flare[class*="flare-s2-"],
   .cosmetic-presence-flare[class*="flare-s2-"]::before,
-  .cosmetic-presence-flare[class*="flare-s2-"]::after {
+  .cosmetic-presence-flare[class*="flare-s2-"]::after,
+  .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"],
+  .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::before,
+  .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after {
     animation: none !important;
   }
 }
@@ -1428,6 +1857,9 @@ html.gd-lite .cosmetic-profile-aura[class*="aura-s2-"]::before,
 html.gd-lite .cosmetic-profile-aura[class*="aura-s2-"]::after,
 html.gd-lite .cosmetic-presence-flare[class*="flare-s2-"],
 html.gd-lite .cosmetic-presence-flare[class*="flare-s2-"]::before,
-html.gd-lite .cosmetic-presence-flare[class*="flare-s2-"]::after {
+html.gd-lite .cosmetic-presence-flare[class*="flare-s2-"]::after,
+html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"],
+html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::before,
+html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after {
   animation: none !important;
 }

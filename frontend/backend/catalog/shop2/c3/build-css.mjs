@@ -199,6 +199,78 @@ for (const f of FLARE) {
 }
 sections.push(flareRules.join("\n"));
 
+/* ── Reaction bursts ─────────────────────────────────────────────── */
+const { BURST } = require("./burst.js");
+const burstRules = [];
+const RB = '.cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]';
+burstRules.push(`/* Reaction bursts: one shot, inside the 520 ms the chip wears burst-chip-<key>.
+   Resting declarations = peak frame (the reduced-motion still frame). */
+@keyframes s2rb-ring { 0% { opacity: 0; transform: scale(0.35); } 15% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3); } }
+@keyframes s2rb-spin-out { 0% { opacity: 0; transform: scale(0.4) rotate(0deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2) rotate(70deg); } }
+@keyframes s2rb-rays { 0% { opacity: 0; transform: scale(0.5) rotate(-10deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.15) rotate(12deg); } }
+@keyframes s2rb-flash { 0% { opacity: 0; transform: scale(0.6); } 30% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+@keyframes s2rb-stamp { 0% { opacity: 0; transform: scale(1.5); } 30% { opacity: 1; transform: scale(0.96); } 55% { transform: scale(1.02); } 100% { opacity: 0; transform: scale(1.08); } }
+@keyframes s2rb-flame { 0% { opacity: 0; transform: scale(0.6, 0.3); } 30% { opacity: 1; transform: scale(1, 1.1); } 100% { opacity: 0; transform: translateY(-10px) scale(0.7, 1.25); } }
+@keyframes s2rb-rise { 0% { opacity: 0; transform: translateY(6px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes s2rb-implode { 0% { opacity: 0; transform: scale(1.5) rotate(0deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(0.25) rotate(-220deg); } }
+@keyframes s2rb-fall { 0% { opacity: 0; transform: translateY(-8px) scale(0.7); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px) scale(1); } }
+@keyframes s2rb-zap { 0% { opacity: 1; transform: rotate(0deg); } 25% { opacity: 0.1; transform: rotate(30deg); } 45% { opacity: 1; transform: rotate(-20deg); } 70% { opacity: 0.3; transform: rotate(60deg); } 100% { opacity: 0; } }
+@keyframes s2rb-petal { 0% { opacity: 0; transform: scale(0.2) rotate(-60deg); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1) rotate(30deg); } }
+@keyframes s2rb-split-l { 0% { opacity: 0; transform: translateX(0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(-6px) scale(1.25); } }
+@keyframes s2rb-split-r { 0% { opacity: 0; transform: translateX(0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(6px) scale(1.25); } }
+@keyframes s2rb-splat { 0% { opacity: 0; transform: scale(0.2); } 20% { opacity: 1; transform: scale(1.05); } 35% { transform: scale(0.96); } 100% { opacity: 0; transform: scale(1); } }
+@keyframes s2rb-pop { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes s2rb-nova { 0% { opacity: 0; transform: scale(0.2); } 18% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes s2rb-whirl { 0% { opacity: 0; transform: scale(0.3) rotate(-90deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.15) rotate(200deg); } }
+@keyframes s2rb-chip-pop { 0% { transform: scale(0.82); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes s2rb-chip-wiggle { 0% { transform: rotate(0deg) scale(0.9); } 25% { transform: rotate(-6deg) scale(1.1); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-2deg); } 100% { transform: rotate(0deg) scale(1); } }
+@keyframes s2rb-chip-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.16); } 30% { transform: scale(1.02); } 45% { transform: scale(1.12); } }
+@keyframes s2rb-chip-stamp { 0% { transform: scale(1.35); } 35% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes s2rb-chip-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-2px); } 40% { transform: translateX(2px); } 60% { transform: translateX(-1.5px); } 80% { transform: translateX(1px); } }
+${RB} {
+  isolation: isolate;
+}
+${RB}::before,
+${RB}::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}`);
+for (const b of BURST) {
+  const chipSel = `.cosmetic-reaction-burst .reaction-chip.burst-chip-s2-${b.slug}`;
+  const c = b.chip;
+  burstRules.push(`${chipSel} {
+  background: ${c.bg} !important;
+  border-color: ${c.border} !important;
+  box-shadow: inset 0 0 0 1px ${rgbaOf(c.border, 0.7)}, 0 0 16px ${rgbaOf(c.glow, 0.6)} !important;
+  animation: ${c.anim} 0.5s cubic-bezier(.2,.9,.3,1.2);
+}`);
+  for (const [k, pseudo] of [["b", "before"], ["a", "after"]]) {
+    const l = b[k];
+    if (!l) continue;
+    const w = l.w || l.size;
+    const h = l.h || l.size;
+    const d = [`width: ${w}px;`, `height: ${h}px;`, `margin: ${-h / 2}px 0 0 ${-w / 2}px;`];
+    if (l.round) d.push(`border-radius: ${l.round};`);
+    if (l.bg) d.push(`background: ${l.bg};`);
+    if (l.mask) d.push(`-webkit-mask: ${l.mask};`, `mask: ${l.mask};`);
+    if (l.origin) d.push(`transform-origin: ${l.origin};`);
+    if (l.css) d.push(l.css);
+    if (l.anim) d.push(`animation: ${l.anim};`);
+    burstRules.push(`${chipSel}::${pseudo} {\n  ${d.join("\n  ")}\n}`);
+  }
+  burstRules.push(`.cosmetic-reaction-burst.burst-s2-${b.slug} .reaction-burst-pop-emoji {\n  filter: drop-shadow(0 0 5px ${rgbaOf(b.glow, 0.85)}) drop-shadow(0 2px 5px rgba(0,0,0,0.35));\n}`);
+}
+burstRules.push(`.shop-reaction-burst-preview.is-still .reaction-chip[class*="burst-chip-s2-"]::before,
+.shop-reaction-burst-preview.is-still .reaction-chip[class*="burst-chip-s2-"]::after {
+  animation: none !important;
+}`);
+sections.push(burstRules.join("\n"));
+
 /* ── Still frames ─────────────────────────────────────────────────── */
 const STILL_TARGETS = [
   '.cosmetic-avatar-effect[class*="effect-s2-"]',
@@ -209,6 +281,9 @@ const STILL_TARGETS = [
   '.cosmetic-presence-flare[class*="flare-s2-"]',
   '.cosmetic-presence-flare[class*="flare-s2-"]::before',
   '.cosmetic-presence-flare[class*="flare-s2-"]::after',
+  RB,
+  `${RB}::before`,
+  `${RB}::after`,
 ];
 
 function stillBlock(targets) {
