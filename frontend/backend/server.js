@@ -78,6 +78,10 @@ const io = new Server(httpServer, {
   // 12 s + 10 s keeps that under ~22 s at a negligible ping cost.
   pingInterval: 12000,
   pingTimeout: 10000,
+  // Largest client frame (server audit SK-5): the 1 MB default let one chat event carry
+  // a 1 MB "message" / "emoji". Text is capped far lower in the handlers; 512 KB still
+  // leaves room for WebRTC SDP and every other legitimate payload.
+  maxHttpBufferSize: 512 * 1024,
   // 2.11.4 (scale S0): compress only big frames (boot lists, roster
   // snapshots). Small chat/typing frames stay raw. Small zlib window and no
   // context takeover keep memory per socket at ~12 KB instead of ~300 KB.
@@ -824,6 +828,8 @@ io.use(socketAuthMiddleware);
 require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
+// Temporary server memberships also expire after a restart or for REST-only joins (IM-8).
+require("./lib/serverMemberJoin").startTemporaryMemberSweeper(io);
 // 3D world (phase 1): separate /world namespace, desktop + admins only (socket/worldHandlers.js).
 require("./socket/worldHandlers").registerWorldNamespace(io);
 {

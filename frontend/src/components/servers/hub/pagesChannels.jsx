@@ -5,6 +5,7 @@ import { AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from 
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import { usePerms } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";
+import { useT } from "../../../context/LocaleContext";
 import { getChannelOverrides, putChannelOverride, deleteChannelOverride, getChannelMessageCount } from "../../../api/servers";
 import { isChannelMuted, setChannelMutedAsync } from "../../../lib/serverChannelMutes";
 import { hapticSelection, hapticWarning } from "../../../lib/fluid/haptics";
@@ -39,7 +40,23 @@ export function useOverrides(channelId) {
   const reload = async () => {
     try {
       const r = await getChannelOverrides(hub.server.id, channelId);
-      hub.setData((d) => ({ ...d, overrides: { ...(d.overrides || {}), [channelId]: { editableKeys: r?.editableKeys || [], overrides: r?.overrides || [] } } }));
+      // A channel with no rules of its own follows its category (synced): show the
+      // category's rules, marked as inherited (server audit P5: "all inherit / not private").
+      const own = r?.overrides || [];
+      const parentId = findChannel(hub.server, channelId)?.parentId || null;
+      let inherited = null;
+      if (!own.length && parentId) {
+        if (Array.isArray(r?.inherited)) inherited = r.inherited;
+        else {
+          try {
+            inherited = (await getChannelOverrides(hub.server.id, parentId))?.overrides || [];
+          } catch {
+            inherited = null;
+          }
+        }
+      }
+      const synced = Boolean(inherited && inherited.length);
+      hub.setData((d) => ({ ...d, overrides: { ...(d.overrides || {}), [channelId]: { editableKeys: r?.editableKeys || [], overrides: synced ? inherited : own, synced, parentId: synced ? parentId : null } } }));
       setErr(null);
     } catch (e) {
       setErr(e?.message || "error");
@@ -47,17 +64,6 @@ export function useOverrides(channelId) {
   };
   useEffect(() => { if (channelId && !entry) reload(); }, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
   return { entry, reload, err };
-}
-
-/** Make a just-created channel private: @everyone can't see it, the creator still can. */
-export async function makePrivate(server, channel, roles, me) {
-  const everyone = everyoneRole(roles);
-  if (!everyone) return;
-  await putChannelOverride(server.id, channel.id, { targetType: "role", targetId: everyone.id, permissions: { VIEW_CHANNEL: "deny" } });
-  const isOwner = String(server.ownerId) === String(me?.id);
-  if (!isOwner && me?.id) {
-    await putChannelOverride(server.id, channel.id, { targetType: "member", targetId: me.id, permissions: { VIEW_CHANNEL: "allow" } });
-  }
 }
 
 /* ───────────────────────── Kanallar ───────────────────────── */
@@ -93,6 +99,23 @@ export function ChannelsPage({ route }) {
   );
 }
 
+/** Voice / stage "User limit" (0-99, 0 = no limit; server audit V12). */
+function UserLimitRow({ value, onChange }) {
+  const hub = useHub();
+  const t = useT();
+  const n = Number(value) || 0;
+  return (
+    <Row ico="users" c="green" t={t("chperm.userLimit")} sub={t("chperm.userLimitSub")} val={n ? String(n) : t("chperm.userLimitNone")} chev onClick={() => hub.push({
+      id: "text", title: t("chperm.userLimit"), value: String(n), placeholder: "0", maxLength: 2,
+      onDone: (v) => {
+        const next = Number(String(v || "0").trim() || "0");
+        if (!Number.isInteger(next) || next < 0 || next > 99) throw new Error(t("chperm.userLimitInvalid"));
+        onChange(next);
+      },
+    })} />
+  );
+}
+
 /* ───────────────────────── 06 Kanal oluştur ───────────────────────── */
 // Without an explicit target, a new channel lands in the first category that already holds
 // channels of the same kind (Metin Kanalları for text, Ses Kanalları for voice), else uncategorised.
@@ -119,7 +142,9 @@ export function ChannelCreatePage({ route }) {
     const ok = await run(async () => {
       await deps.onCreateChannel?.({
         name: normalizeChannelName(name, d.type).replace(/^-+|-+$/g, "") || name, type: d.type, parentId: d.parentId || null,
-        beforeOpen: d.priv ? (ch) => makePrivate(server, ch, data.roles, deps.me) : undefined,
+        // Private in the same request: never public in between, creator keeps access.
+        private: d.priv || undefined,
+        ...((d.type === "voice" || d.type === "stage") && Number(d.userLimit) > 0 ? { userLimit: Number(d.userLimit) } : {}),
       });
     }, { ok: s.channelCreated });
     if (ok) hub.close();
@@ -140,6 +165,7 @@ export function ChannelCreatePage({ route }) {
           onPick: (id) => setD((x) => ({ ...x, parentId: id || null })),
         })} />
         <Row ico="lock" c="gray" t={s.privateChannel} sub={s.privateChannelSub} tg={d.priv} disabled={!p.roles} onClick={() => { hapticSelection(); setD((x) => ({ ...x, priv: !x.priv })); }} />
+        {d.type === "voice" || d.type === "stage" ? <UserLimitRow value={d.userLimit} onChange={(n) => setD((x) => ({ ...x, userLimit: n }))} /> : null}
       </Group>
       <Foot>{s.createChannelFoot}</Foot>
     </PageFrame>
@@ -159,7 +185,7 @@ export function CategoryCreatePage({ route }) {
     if (!name || busy) return;
     const ok = await run(() => deps.onCreateChannel?.({
       name, type: "category", parentId: null,
-      beforeOpen: d.priv ? (ch) => makePrivate(server, ch, data.roles, deps.me) : undefined,
+      private: d.priv || undefined,
     }), { ok: s.categoryCreated });
     if (ok) { if (route.returnTo) hub.restore(route.returnTo); else if (hub.stack.length > 1) hub.pop(); else hub.close(); }
   };
@@ -216,6 +242,7 @@ export function ChannelEditPage({ route }) {
   const ch = findChannel(server, route.channelId);
   const base = useMemo(() => ({
     name: ch?.name || "", topic: ch?.topic || "", parentId: ch?.parentId || null, slowmodeSeconds: Number(ch?.slowmodeSeconds) || 0, nsfw: Boolean(ch?.nsfw),
+    ...(ch && (ch.type === "voice" || ch.type === "stage") ? { userLimit: Number(ch.userLimit) || 0 } : {}),
   }), [ch]);
   const [d, setD] = useRouteDraft(route, base);
   const [run, busy] = useRun();
@@ -260,6 +287,11 @@ export function ChannelEditPage({ route }) {
           onPick: (id) => setD((x) => ({ ...x, parentId: id || null })),
         })} /> : null}
       </Group>
+      {ch.type === "voice" || ch.type === "stage" ? (
+        <Group>
+          <UserLimitRow value={d.userLimit} onChange={(n) => setD((x) => ({ ...x, userLimit: n }))} />
+        </Group>
+      ) : null}
       {textLike ? (
         <>
           <Sec>{s.secChat}</Sec>
@@ -334,6 +366,14 @@ function useAccessData(channelId) {
   return o;
 }
 
+/** "Synced with category X": the rules shown are the category's (server audit P5). */
+function SyncedNote({ entry, server }) {
+  const t = useT();
+  if (!entry?.synced) return null;
+  const cat = findChannel(server, entry.parentId);
+  return <Foot style={{ margin: "0 16px 10px" }}>{t("chperm.syncedWith", { name: cat?.name || t("chperm.category") })}</Foot>;
+}
+
 /** iPhone: target list page. iPad: the split's left column (sel kept in the route). */
 export function AccessPage({ route }) {
   const hub = useHub();
@@ -349,6 +389,7 @@ export function AccessPage({ route }) {
   return (
     <PageFrame route={route} title={channelLabel(ch)}>
       <Sec first>{f("accessTitle", { channel: channelLabel(ch) })}</Sec>
+      <SyncedNote entry={entry} server={server} />
       {entry ? <Group><TargetRows targets={targets} s={s} f={f} onPick={(x) => hub.push({ id: "perm", channelId: route.channelId, targetType: x.type, targetId: x.id })} /></Group> : <div style={{ display: "grid", placeItems: "center", height: 120 }}><span className="svh-spin" /></div>}
       <Row t={<><I n="plus" s={18} /> {s.addRoleOrMember}</>} blue style={{ marginTop: 12, padding: "0 6px" }} onClick={() => hub.push({ id: "addTarget", channelId: route.channelId })} />
     </PageFrame>
@@ -367,6 +408,7 @@ export function AccessSide({ route }) {
       <Nav style={{ height: 18 }} />
       <Scroll style={{ padding: "0 14px" }}>
         <Sec first>{f("accessTitle", { channel: channelLabel(ch) })}</Sec>
+        <SyncedNote entry={entry} server={server} />
         <Group><TargetRows targets={targets} sel={sel} s={s} f={f} onPick={(x) => { hapticSelection(); hub.updateRoute(route.key, { sel: { type: x.type, id: x.id } }); }} /></Group>
         <Row t={<><I n="plus" s={18} /> {s.addRoleOrMember}</>} blue style={{ marginTop: 12, padding: "0 6px" }} onClick={() => hub.push({ id: "addTarget", channelId: route.channelId, accessKey: route.key })} />
       </Scroll>

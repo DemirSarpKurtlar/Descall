@@ -61,6 +61,10 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [inheritedFrom, setInheritedFrom] = useState(null); // category id when synced
+  const inheritedCategory = inheritedFrom
+    ? (server?.channels || []).find((c) => String(c.id) === String(inheritedFrom)) || null
+    : null;
 
   const load = async ({ silent = false } = {}) => {
     if (!server?.id || !channel?.id) return;
@@ -72,7 +76,22 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
         getServerRoles(server.id),
         getServerMembers(server.id),
       ]);
-      setOverrides(ov?.overrides || []);
+      // Synced child (no own rules): show the category's rules as inherited (server audit P5).
+      const own = ov?.overrides || [];
+      const parentId = channel?.parentId || channel?.parent_id || null;
+      let inherited = null;
+      if (!own.length && parentId && channel?.type !== "category") {
+        if (Array.isArray(ov?.inherited)) inherited = ov.inherited;
+        else {
+          try {
+            inherited = (await getChannelOverrides(server.id, parentId))?.overrides || [];
+          } catch {
+            inherited = null;
+          }
+        }
+      }
+      setInheritedFrom(inherited && inherited.length ? parentId : null);
+      setOverrides(inherited && inherited.length ? inherited : own);
       setEditableKeys(ov?.editableKeys || Object.keys(PERM_LABELS));
       const loadedRoles = rolesRes?.roles?.length ? rolesRes.roles : server?.roles || [];
       setRoles(loadedRoles);
@@ -253,6 +272,11 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
         </header>
 
         {error ? <p className="server-modal-error">{error}</p> : null}
+        {!loading && inheritedFrom ? (
+          <p className="server-modal-sub chperm-synced-note" role="status">
+            {t("chperm.syncedWith", { name: inheritedCategory?.name || t("chperm.category") })}
+          </p>
+        ) : null}
 
         {loading ? (
           <div className="server-channel-perms-layout" aria-busy="true">

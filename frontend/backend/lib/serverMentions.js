@@ -122,7 +122,27 @@ function createMassPingLimiter({ windowMs = cooldownMs(), now = () => Date.now()
     }
     last.set(key(channelId, userId), now());
   }
-  return { check, mark, windowMs };
+  /**
+   * check + mark in one synchronous step (server audit MSG-12: parallel sends all
+   * passed check before any mark). `undo()` gives the slot back when the send fails.
+   */
+  function reserve(channelId, userId) {
+    const res = check(channelId, userId);
+    if (!res.ok) return { ...res, undo() {} };
+    const k = key(channelId, userId);
+    const prev = last.get(k);
+    mark(channelId, userId);
+    const at = last.get(k);
+    return {
+      ...res,
+      undo() {
+        if (last.get(k) !== at) return;
+        if (prev == null) last.delete(k);
+        else last.set(k, prev);
+      },
+    };
+  }
+  return { check, mark, reserve, windowMs };
 }
 
 /** Online for @here: a live presence entry that is not invisible. */
@@ -134,7 +154,8 @@ function isOnlineFor(presence, userId) {
 
 /**
  * Members to notify for the role / @everyone / @here part of a message.
- * `canView(uid)` (async) says whether a member can see the channel.
+ * `canView(uid)` (async) says whether a member can see the channel; `canViewMany(uids)`
+ * (async, returns a Set of the uids that can) is preferred when given.
  * Returns { userIds, roles, roleIds } (roles = the server's role rows, for text).
  */
 async function resolveMassPingTargets(db, {
@@ -144,6 +165,7 @@ async function resolveMassPingTargets(db, {
   resolved,
   text,
   canView,
+  canViewMany = null,
   presence = null,
   policy = envPolicy(),
 } = {}) {
@@ -185,11 +207,23 @@ async function resolveMassPingTargets(db, {
   if (!candidates.size) return { userIds: [], roles: roles || [], roleIds, everyone, here };
 
   const visible = [];
-  for (const uid of candidates) {
+  if (typeof canViewMany === "function") {
+    // One bulk permission read for every candidate (server audit MSG-13: one full
+    // resolve per member, sequentially, for a large role or @everyone).
+    let allowed = null;
     try {
-      if (await canView(uid)) visible.push(uid);
+      allowed = await canViewMany([...candidates]);
     } catch {
-      /* cannot resolve: no ping */
+      allowed = null; /* cannot resolve: no ping */
+    }
+    for (const uid of candidates) if (allowed?.has?.(uid)) visible.push(uid);
+  } else {
+    for (const uid of candidates) {
+      try {
+        if (await canView(uid)) visible.push(uid);
+      } catch {
+        /* cannot resolve: no ping */
+      }
     }
   }
   const userIds = await filterNotifiable(db, { serverId, channelId, userIds: visible });

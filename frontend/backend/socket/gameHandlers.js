@@ -380,6 +380,36 @@ async function authorizeTarget(socket, userId, { groupId, channelId, dmUserId, t
   return res.target;
 }
 
+/** Chat freeze + channel slowmode for a new game post in a server channel. */
+async function channelGamePostAllowed(socket, userId, channelId) {
+  try {
+    const { checkChatFrozen, isPlatformAdmin } = require("../lib/platformPolicy");
+    const { systemConfig } = require("../runtime/sharedState");
+    const frozen = checkChatFrozen({ config: systemConfig, isAdmin: isPlatformAdmin(socket) });
+    if (!frozen.ok) {
+      socket.emit("game:notice", { groupId: channelId, text: frozen.message, code: "chat_frozen" });
+      return false;
+    }
+    const { assertTextChannelAccess, assertSlowmode } = require("./serverChannelHandlers");
+    let access;
+    try {
+      access = await assertTextChannelAccess(userId, channelId, require("../lib/serverPermissions").Permissions.SEND_MESSAGES);
+    } catch {
+      return true; // resolveCasinoTarget refuses it with its own notice
+    }
+    const slow = await assertSlowmode({ userId, channel: access.channel, channelId, channelBits: access.permissions, tempId: null, socket });
+    if (slow.blocked) {
+      socket.emit("game:notice", { groupId: channelId, text: "Slowmode is on in this channel. Try again later.", code: "slowmode" });
+      return false;
+    }
+    slow.commit();
+    return true;
+  } catch (err) {
+    console.warn("[Game] channel post check failed:", err?.message || err);
+    return false;
+  }
+}
+
 function registerGameHandlers(io, socket) {
   const myId = socket.user?.id;
   const myUsername = socket.user?.username;
@@ -390,7 +420,13 @@ function registerGameHandlers(io, socket) {
 
   socket.on("game:command", async ({ groupId, channelId, dmUserId, command, args } = {}) => {
     if (!command || (!groupId && !channelId && !dmUserId)) return;
+    if (typeof command !== "string" || command.length > 32 || (args != null && String(args).length > 200)) return;
     const full = `/${command}${args != null && args !== "" ? ` ${args}` : ""}`.trim();
+    // A game started in a server channel is a post: chat freeze and the channel's
+    // slowmode apply like for a message (server audit MSG-8). Moves (game:action) do not.
+    if (channelId && !dmUserId) {
+      if (!(await channelGamePostAllowed(socket, myId, channelId))) return;
+    }
     await handleGameCommand(io, socket, myId, myUsername, channelId || groupId || null, full, {
       channelId: channelId || null,
       dmUserId: dmUserId || null,

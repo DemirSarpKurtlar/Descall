@@ -28,6 +28,7 @@ import { SYSX_DE } from "./sysx.de.js";
 import { AUDIT_LOG_DE } from "./auditLog.de.js";
 import { LIVE_POPUP_DE } from "./livePopup.de.js";
 import { ANNC_DE } from "./annc.de.js";
+import { CHPERM_DE } from "./chperm.de.js";
 import { SEC_CENTER_DE } from "./secCenter.de.js";
 import { AGENTX_DE } from "./agentx.de.js";
 import { AGENT_OPS_DE } from "./agentOps.de.js";
@@ -69,6 +70,7 @@ export const nested = {
   "auditLog": AUDIT_LOG_DE,
   "livePopup": LIVE_POPUP_DE,
   "annc": ANNC_DE,
+  "chperm": CHPERM_DE,
   "secCenter": SEC_CENTER_DE,
   "agentx": AGENTX_DE,
   "agentOps": AGENT_OPS_DE,
@@ -6134,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} im Sprachchat",
     "slowmode": "Langsamer Modus",
     "systemFoot": "Begrüßungen neuer Mitglieder und Systemnachrichten landen in diesem Kanal. Inaktive Mitglieder werden nach dem AFK-Timeout in den AFK-Kanal verschoben.",
+    "defaultNotif": "Standardbenachrichtigungen",
     "systemMsgs": "Systemnachrichten",
     "tAnnSub": "Nur das Team postet, Mitglieder folgen",
     "tStageSub": "Sprecher und Zuhörer",
@@ -10760,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Du hast DesCoin erhalten!",
   "You received a gift!": "Du hast ein Geschenk erhalten!",
   "You were banned from {name}": "Du wurdest von {name} gebannt",
+  "You were timed out in {name}": "Du hast in {name} ein Timeout bekommen",
+  "Your timeout in {name} was lifted": "Dein Timeout in {name} wurde aufgehoben",
   "You were kicked from {name}": "Du wurdest von {name} gekickt",
   "You win": "Du gewinnst",
   "You win!": "Du gewinnst!",

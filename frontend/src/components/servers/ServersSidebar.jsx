@@ -19,12 +19,14 @@ import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/vo
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isChannelMuted, setChannelMutedAsync } from "../../lib/serverChannelMutes";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
+import { useChannelPerms, channelHasPermission, channelPermsKnown } from "../../lib/channelPermissions";
 import {
   updateServerNotificationLevel,
   updateServer,
   createServerFolder,
   deleteServerFolder,
   setServerFolder,
+  getOwnershipTransferInfo,
 } from "../../api/servers";
 import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
@@ -367,6 +369,12 @@ export default function ServersSidebar({
   const canMoveMembers = permissionsReady && serverHasPermission(activeServer, "MOVE_MEMBERS");
   const canMuteMembers = permissionsReady && serverHasPermission(activeServer, "MUTE_MEMBERS");
   const canDeafenMembers = permissionsReady && serverHasPermission(activeServer, "DEAFEN_MEMBERS");
+  // Voice member menu: the bits of the channel the member sits in (overwrites; audit DF-4).
+  const sidebarChanPerms = useChannelPerms(null, activeServer?.id);
+  const voiceMenuCan = (key, fallback) =>
+    voiceMenu?.channelId && channelPermsKnown(sidebarChanPerms, voiceMenu.channelId)
+      ? channelHasPermission(activeServer, voiceMenu.channelId, key, sidebarChanPerms)
+      : fallback;
   const [channelAccess, setChannelAccess] = useState(null); // channel
   const [voiceMenu, setVoiceMenu] = useState(null); // { user, channelId, x, y }
   const voiceStates = serverVoice?.voiceStatesByServer?.[activeServer?.id] || {};
@@ -385,7 +393,7 @@ export default function ServersSidebar({
       // A5: a muted server shows no badge (mockup 24 "Sessize al").
       if (isServerMuted(server.id)) continue;
       for (const ch of server.channels || []) {
-        if (ch.type !== "text") continue;
+        if (ch.type !== "text" && ch.type !== "announcement") continue;
         sum += Number(channelUnread[ch.id]) || 0;
       }
       if (sum > 0) map[server.id] = sum;
@@ -836,10 +844,11 @@ export default function ServersSidebar({
             mode={confirm.mode === "leave-delete" ? "leave" : "delete"}
             serverName={confirm.server.name}
             onCancel={() => setConfirm(null)}
-            onConfirm={async (confirmName) => {
+            serverId={confirm.server.id}
+            onConfirm={async (confirmName, password) => {
               const server = confirm.server;
               const mode = confirm.mode === "leave-delete" ? "leave" : "delete";
-              await runLeaveOrDelete(mode, server, confirmName);
+              await runLeaveOrDelete(mode, server, confirmName, password);
               setConfirm(null);
               if (transfer?.server?.id === server.id) setTransfer(null);
               setShowSettings(false);
@@ -890,9 +899,9 @@ export default function ServersSidebar({
     </>
   );
 
-  const runLeaveOrDelete = async (mode, server, confirmName) => {
-    if (mode === "delete") await onDeleteServer?.(server.id, confirmName);
-    else await onLeaveServer?.(server.id, confirmName);
+  const runLeaveOrDelete = async (mode, server, confirmName, password) => {
+    if (mode === "delete") await onDeleteServer?.(server.id, confirmName, password);
+    else await onLeaveServer?.(server.id, confirmName, password);
   };
 
   const hubCallbacks = {
@@ -1720,9 +1729,9 @@ export default function ServersSidebar({
         {voiceMenu && (
           <VoiceMemberContextMenu
             menu={voiceMenu}
-            canMove={canMoveMembers}
-            canMute={canMuteMembers}
-            canDeafen={canDeafenMembers}
+            canMove={voiceMenuCan("MOVE_MEMBERS", canMoveMembers)}
+            canMute={voiceMenuCan("MUTE_MEMBERS", canMuteMembers)}
+            canDeafen={voiceMenuCan("DEAFEN_MEMBERS", canDeafenMembers)}
             voiceChannels={(activeServer?.channels || []).filter((c) => c.type === "voice" || c.type === "stage")}
             serverId={activeServer?.id}
             serverVoice={serverVoice}
@@ -2651,6 +2660,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
     isEdit ? Number(channel.slowmodeSeconds) || 0 : 0
   );
   const [nsfw, setNsfw] = useState(isEdit ? Boolean(channel.nsfw) : false);
+  // Voice / stage: at most this many people (0 = no limit, server audit V12).
+  const [userLimit, setUserLimit] = useState(isEdit ? String(Number(channel.userLimit) || 0) : "0");
   const [selectedParent, setSelectedParent] = useState(
     isEdit ? channel.parentId || "" : parentId || ""
   );
@@ -2660,12 +2671,18 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
   const typeLocked = isEdit;
   const showParent = type !== "category";
   const showTopic = type === "text" || type === "announcement";
+  const showUserLimit = type === "voice" || type === "stage";
 
   const submit = async (e) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
       setError(t("Channel name is required."));
+      return;
+    }
+    const limitNum = Number(String(userLimit).trim() || "0");
+    if (showUserLimit && (!Number.isInteger(limitNum) || limitNum < 0 || limitNum > 99)) {
+      setError(t("chperm.userLimitInvalid"));
       return;
     }
     setBusy(true);
@@ -2679,6 +2696,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
       if (showTopic) payload.topic = topic.trim() || null;
       if (showTopic) payload.slowmodeSeconds = Math.max(0, Math.min(21600, Math.floor(Number(slowmodeSeconds) || 0)));
       if (showTopic) payload.nsfw = Boolean(nsfw);
+      if (showUserLimit) payload.userLimit = limitNum;
       if (isEdit) {
         await onSubmit({
           name: payload.name,
@@ -2686,6 +2704,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
           parentId: showParent ? payload.parentId : undefined,
           slowmodeSeconds: showTopic ? payload.slowmodeSeconds : undefined,
           nsfw: showTopic ? payload.nsfw : undefined,
+          userLimit: showUserLimit ? payload.userLimit : undefined,
         });
       } else {
         await onSubmit(payload);
@@ -2792,6 +2811,23 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
                   </option>
                 ))}
             </select>
+          </label>
+        )}
+
+        {showUserLimit && (
+          <label className="server-field">
+            <span>{t("chperm.userLimit")}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={99}
+              step={1}
+              value={userLimit}
+              onChange={(e) => setUserLimit(e.target.value.replace(/[^0-9]/g, "").slice(0, 2))}
+              aria-describedby="chperm-user-limit-hint"
+            />
+            <small id="chperm-user-limit-hint" className="server-field-hint">{t("chperm.userLimitSub")}</small>
           </label>
         )}
 
@@ -3279,12 +3315,24 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
   );
 }
 
-function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
+function ConfirmNameDialog({ mode, serverName, serverId, onConfirm, onCancel }) {
   const t = useT();
   const [value, setValue] = useState("");
+  const [password, setPassword] = useState("");
+  // Deleting a server asks for the account password, like an ownership transfer
+  // (accounts signed in with Google / Apple have none).
+  const [passwordRequired, setPasswordRequired] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const match = value.trim().toLowerCase() === String(serverName || "").toLowerCase();
+  useEffect(() => {
+    if (!serverId) return undefined;
+    let alive = true;
+    getOwnershipTransferInfo(serverId)
+      .then((r) => alive && setPasswordRequired(r?.passwordRequired !== false))
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [serverId]);
 
   const title = mode === "delete" ? t("Delete server") : t("Leave server");
   const message =
@@ -3300,8 +3348,9 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
     setBusy(true);
     setError("");
     try {
-      await onConfirm(value.trim());
+      await onConfirm(value.trim(), passwordRequired ? password : undefined);
     } catch (err) {
+      if (err?.code === "PASSWORD_REQUIRED") setPassword("");
       setError(err?.message || t("Something went wrong."));
       setBusy(false);
     }
@@ -3317,7 +3366,7 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
       danger
       busy={busy}
       error={error}
-      confirmDisabled={!match}
+      confirmDisabled={!match || (passwordRequired && !password)}
       onConfirm={confirm}
       onCancel={onCancel}
       className="g-alert-form"
@@ -3331,6 +3380,17 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
           autoFocus
         />
       </label>
+      {passwordRequired ? (
+        <label className="g-alert-field">
+          <span>{t("o3.password")}</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+      ) : null}
     </GlassConfirm>
   );
 }

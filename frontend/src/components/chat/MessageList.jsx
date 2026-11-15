@@ -2100,12 +2100,17 @@ function MessageBubbleView({
               />
             ) : (mediaTypeNorm === "document" || mediaTypeNorm === "file") ? (
               <a
-                href={mediaUrl}
+                href={/^https?:\/\//i.test(String(mediaUrl || "")) ? mediaUrl : undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 download={message.originalName || true}
                 className="message-file-chip"
                 onClick={(e) => {
+                  // Only http(s) links open (server audit MSG-3: a stored javascript: URL ran on click).
+                  if (!/^https?:\/\//i.test(String(mediaUrl || ""))) {
+                    e.preventDefault();
+                    return;
+                  }
                   if (!needsPrivateMediaRefresh(mediaUrl)) return;
                   e.preventDefault();
                   const popup = window.open("about:blank", "_blank", "noopener");

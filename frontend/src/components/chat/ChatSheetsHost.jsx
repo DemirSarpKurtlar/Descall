@@ -119,7 +119,7 @@ export default function ChatSheetsHost({ getSocket, friends, groups, activeServe
   const channels = useMemo(() => {
     if (!activeServer?.id) return [];
     return (activeServer.channels || [])
-      .filter((c) => c && c.type === "text")
+      .filter((c) => c && (c.type === "text" || c.type === "announcement"))
       .map((c) => ({ id: c.id, name: c.name, serverId: activeServer.id, serverName: activeServer.name }));
   }, [activeServer]);
 

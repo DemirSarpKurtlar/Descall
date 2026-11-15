@@ -24,6 +24,7 @@ import { SYSX_TR } from "./sysx.tr.js";
 import { AUDIT_LOG_TR } from "./auditLog.tr.js";
 import { LIVE_POPUP_TR } from "./livePopup.tr.js";
 import { ANNC_TR } from "./annc.tr.js";
+import { CHPERM_TR } from "./chperm.tr.js";
 import { SEC_CENTER_TR } from "./secCenter.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
 import { AGENT_OPS_TR } from "./agentOps.tr.js";
@@ -98,6 +99,7 @@ export const nested = {
   auditLog: AUDIT_LOG_TR,
   livePopup: LIVE_POPUP_TR,
   annc: ANNC_TR,
+  chperm: CHPERM_TR,
   secCenter: SEC_CENTER_TR,
   agentx: AGENTX_TR,
   agentOps: AGENT_OPS_TR,
@@ -2558,6 +2560,8 @@ export const phrases = {
   "{name} was deleted": "{name} silindi",
   "An admin changed visibility / invite settings of {name}": "Bir yönetici {name} sunucusunun görünürlük / davet ayarlarını değiştirdi",
   "You were banned from {name}": "{name} sunucusundan yasaklandın",
+  "You were timed out in {name}": "{name} sunucusunda zaman aşımına alındın",
+  "Your timeout in {name} was lifted": "{name} sunucusundaki zaman aşımın kaldırıldı",
   "Connect (voice)": "Bağlan (ses)",
   "Speak": "Konuş",
   "Mute members": "Üyeleri sustur",

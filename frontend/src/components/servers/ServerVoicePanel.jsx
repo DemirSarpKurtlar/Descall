@@ -23,6 +23,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
+import { useChannelPerms, channelHasPermission, channelPermsKnown } from "../../lib/channelPermissions";
 import useVoiceActivity from "../../hooks/useVoiceActivity";
 import VoiceActivityMeter from "../../premium/ui/VoiceActivityMeter.jsx";
 import { setPinnedVoiceUser } from "../../premium/audio/pinnedUser.js";
@@ -722,10 +723,15 @@ export default function ServerVoicePanel({
     ? (serverVoice.participants?.length || 0) + 1
     : state?.memberCount || 0;
 
+  // This channel's bits (overwrites) once known, else the server-wide flags (server audit P2).
+  const chanPerms = useChannelPerms(null, server?.id);
+  const chanKnown = channelPermsKnown(chanPerms, channel?.id);
   const voicePermissionsReady =
-    serverPermissionsLoaded(server) || Boolean(server?.isOwner);
-  const canConnect = voicePermissionsReady && serverHasPermission(server, "CONNECT");
-  const canStream = voicePermissionsReady && serverHasPermission(server, "STREAM");
+    chanKnown || serverPermissionsLoaded(server) || Boolean(server?.isOwner);
+  const chanCan = (key) =>
+    chanKnown ? channelHasPermission(server, channel?.id, key, chanPerms) : serverHasPermission(server, key);
+  const canConnect = voicePermissionsReady && chanCan("CONNECT");
+  const canStream = voicePermissionsReady && chanCan("STREAM");
   const canPublishMedia = Boolean(serverVoice?.canSpeak && isStageSpeaker);
   const canVideo = Boolean(canStream && serverVoice?.canStream && canPublishMedia);
 
@@ -816,9 +822,9 @@ export default function ServerVoicePanel({
     () => (server?.channels || []).filter((c) => c?.type === "voice" || c?.type === "stage"),
     [server?.channels]
   );
-  const canMoveMembers = voicePermissionsReady && serverHasPermission(server, "MOVE_MEMBERS");
-  const canMuteMembers = voicePermissionsReady && serverHasPermission(server, "MUTE_MEMBERS");
-  const canDeafenMembers = voicePermissionsReady && serverHasPermission(server, "DEAFEN_MEMBERS");
+  const canMoveMembers = voicePermissionsReady && chanCan("MOVE_MEMBERS");
+  const canMuteMembers = voicePermissionsReady && chanCan("MUTE_MEMBERS");
+  const canDeafenMembers = voicePermissionsReady && chanCan("DEAFEN_MEMBERS");
 
   const tiles = useMemo(() => {
     const list = [];

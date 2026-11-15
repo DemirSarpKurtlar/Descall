@@ -2040,6 +2040,13 @@ function registerSocketHandlers(io) {
       if (!messageId || !conversationType || !conversationId || !emoji) {
         return refuse("rejected");
       }
+      // One emoji or a custom emoji token, nothing else (server audit MSG-9), and a
+      // per-socket budget shared with reaction:remove.
+      const { isValidReactionEmoji, MAX_DISTINCT_REACTIONS } = require("../lib/reactionEmoji");
+      if (!isValidReactionEmoji(emoji) || typeof messageId !== "string" || messageId.length > 128 || typeof conversationId !== "string") {
+        return refuse("rejected");
+      }
+      if (!require("./serverChannelHandlers").allowSocketEvent(socket, "reaction", 20)) return refuse("rate_limited");
       
       // Verify user is part of this conversation
       let otherId = null;
@@ -2102,8 +2109,8 @@ function registerSocketHandlers(io) {
           if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) {
             return refuse("rejected");
           }
-          // Timed-out members are refused inside assertTextChannelAccess(ADD_REACTIONS);
-          // removing your own reaction stays allowed.
+          // Timed-out members (server or site-wide) are refused inside
+          // assertTextChannelAccess(ADD_REACTIONS); removing your own reaction stays allowed.
           // A stored message (uuid id) must live in that channel; a foreign
           // messageId used to be accepted. Live-only app/game messages have
           // non-uuid ids, are never stored, and keep working as before.
@@ -2129,6 +2136,18 @@ function registerSocketHandlers(io) {
       }
 
       try {
+        // At most MAX_DISTINCT_REACTIONS different emojis on one message (Discord: 20).
+        const { data: existing, error: exErr } = await supabase
+          .from("reactions")
+          .select("emoji")
+          .eq("message_id", messageId)
+          .eq("conversation_type", conversationType)
+          .eq("conversation_id", conversationId)
+          .limit(5000);
+        if (exErr) throw exErr;
+        const distinct = new Set((existing || []).map((r) => r.emoji));
+        if (!distinct.has(emoji) && distinct.size >= MAX_DISTINCT_REACTIONS) return refuse("limit");
+
         const { data, error } = await supabase
           .from("reactions")
           .upsert({
@@ -2180,6 +2199,8 @@ function registerSocketHandlers(io) {
       const refuse = (error) => { reply({ ok: false, error }); };
       let { messageId, conversationType, conversationId, emoji } = payload || {};
       if (!messageId || !conversationType || !conversationId || !emoji) return refuse("rejected");
+      if (typeof emoji !== "string" || emoji.length > 256 || typeof messageId !== "string" || typeof conversationId !== "string") return refuse("rejected");
+      if (!require("./serverChannelHandlers").allowSocketEvent(socket, "reaction", 20)) return refuse("rate_limited");
 
       // Get otherId for DM
       let otherId = null;
@@ -2198,7 +2219,9 @@ function registerSocketHandlers(io) {
         try {
           const { assertTextChannelAccess } = require("./serverChannelHandlers");
           const { Permissions, hasPermission } = require("../lib/serverPermissions");
-          const { permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          // Removing your own reaction needs no ADD_REACTIONS and works while timed out
+          // (server audit MSG-15 / SK-11); you must still see and read the channel.
+          const { permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.VIEW_CHANNEL);
           if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) return refuse("rejected");
         } catch {
           return refuse("rejected");

@@ -38,6 +38,7 @@ create index if not exists idx_server_member_timeouts_until
 
 alter table public.server_member_timeouts enable row level security;
 revoke all on table public.server_member_timeouts from anon, authenticated;
+grant all on table public.server_member_timeouts to service_role;
 
 -- Running timeouts of current members are carried over.
 insert into public.server_member_timeouts (server_id, user_id, until, reason, moderator_id)
@@ -57,11 +58,7 @@ begin
       add constraint servers_default_notification_level_check
       check (default_notification_level in ('all', 'mentions')) not valid;
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'servers_afk_channel_fk') then
-    alter table public.servers
-      add constraint servers_afk_channel_fk foreign key (afk_channel_id)
-      references public.server_channels(id) on delete set null not valid;
-  end if;
+  -- afk_channel_id already has a foreign key (servers_afk_channel_id_fkey, 20261115_server_audit_voice.sql).
   if not exists (select 1 from pg_constraint where conname = 'servers_system_channel_fk') then
     alter table public.servers
       add constraint servers_system_channel_fk foreign key (system_channel_id)

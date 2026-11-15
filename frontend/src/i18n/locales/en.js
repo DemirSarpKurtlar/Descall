@@ -24,6 +24,7 @@ import { SYSX_EN } from "./sysx.en.js";
 import { AUDIT_LOG_EN } from "./auditLog.en.js";
 import { LIVE_POPUP_EN } from "./livePopup.en.js";
 import { ANNC_EN } from "./annc.en.js";
+import { CHPERM_EN } from "./chperm.en.js";
 import { SEC_CENTER_EN } from "./secCenter.en.js";
 import { AGENTX_EN } from "./agentx.en.js";
 import { AGENT_OPS_EN } from "./agentOps.en.js";
@@ -88,6 +89,7 @@ export const nested = {
   auditLog: AUDIT_LOG_EN,
   livePopup: LIVE_POPUP_EN,
   annc: ANNC_EN,
+  chperm: CHPERM_EN,
   secCenter: SEC_CENTER_EN,
   agentx: AGENTX_EN,
   agentOps: AGENT_OPS_EN,
@@ -2591,6 +2593,8 @@ export const phrases = {
   "{name} was deleted": "{name} was deleted",
   "An admin changed visibility / invite settings of {name}": "An admin changed visibility / invite settings of {name}",
   "You were banned from {name}": "You were banned from {name}",
+  "You were timed out in {name}": "You were timed out in {name}",
+  "Your timeout in {name} was lifted": "Your timeout in {name} was lifted",
   "Connect (voice)": "Connect (voice)",
   "Speak": "Speak",
   "Mute members": "Mute members",

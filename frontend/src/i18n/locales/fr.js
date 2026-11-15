@@ -28,6 +28,7 @@ import { SYSX_FR } from "./sysx.fr.js";
 import { AUDIT_LOG_FR } from "./auditLog.fr.js";
 import { LIVE_POPUP_FR } from "./livePopup.fr.js";
 import { ANNC_FR } from "./annc.fr.js";
+import { CHPERM_FR } from "./chperm.fr.js";
 import { SEC_CENTER_FR } from "./secCenter.fr.js";
 import { AGENTX_FR } from "./agentx.fr.js";
 import { AGENT_OPS_FR } from "./agentOps.fr.js";
@@ -69,6 +70,7 @@ export const nested = {
   "auditLog": AUDIT_LOG_FR,
   "livePopup": LIVE_POPUP_FR,
   "annc": ANNC_FR,
+  "chperm": CHPERM_FR,
   "secCenter": SEC_CENTER_FR,
   "agentx": AGENTX_FR,
   "agentOps": AGENT_OPS_FR,
@@ -6134,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} en vocal",
     "slowmode": "Mode lent",
     "systemFoot": "Les messages de bienvenue des nouveaux membres et les messages système arrivent dans ce salon. Les membres inactifs sont déplacés vers le salon AFK après le délai d'inactivité AFK.",
+    "defaultNotif": "Notifications par défaut",
     "systemMsgs": "Messages système",
     "tAnnSub": "Seul le staff publie, les membres suivent",
     "tStageSub": "Intervenants et auditeurs",
@@ -10760,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Tu as reçu des DesCoin !",
   "You received a gift!": "Tu as reçu un cadeau !",
   "You were banned from {name}": "Tu as été banni de {name}",
+  "You were timed out in {name}": "Tu as été mis en sourdine temporaire sur {name}",
+  "Your timeout in {name} was lifted": "Ta sourdine temporaire sur {name} a été levée",
   "You were kicked from {name}": "Tu as été expulsé de {name}",
   "You win": "Tu gagnes",
   "You win!": "Tu as gagné !",

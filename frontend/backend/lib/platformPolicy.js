@@ -90,6 +90,17 @@ function checkMessageSend({ config, userId, isAdmin = false, kind, now = Date.no
   return { ok: true };
 }
 
+/**
+ * Chat freeze / read-only lock only (no rate history): for edits, game posts and other
+ * writes that are not a new message but must stop while chat is frozen (server audit MSG-6).
+ */
+function checkChatFrozen({ config, isAdmin = false, now = Date.now() } = {}) {
+  const cfg = config || {};
+  if (isAdmin) return { ok: true };
+  if (cfg.chatFrozen || lockActive(cfg, "readOnly", now)) return block("CHAT_FROZEN", MESSAGES.frozen);
+  return { ok: true };
+}
+
 function checkGroupCreate({ config, isAdmin = false, now = Date.now() }) {
   if (isAdmin) return { ok: true };
   if (lockActive(config || {}, "readOnly", now)) return block("READ_ONLY", MESSAGES.readOnly);
@@ -129,6 +140,7 @@ function resetPlatformPolicyForTests() {
 module.exports = {
   MESSAGES,
   checkMessageSend,
+  checkChatFrozen,
   checkGroupCreate,
   checkServerCreate,
   checkRegistration,

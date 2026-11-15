@@ -28,6 +28,7 @@ import { SYSX_RU } from "./sysx.ru.js";
 import { AUDIT_LOG_RU } from "./auditLog.ru.js";
 import { LIVE_POPUP_RU } from "./livePopup.ru.js";
 import { ANNC_RU } from "./annc.ru.js";
+import { CHPERM_RU } from "./chperm.ru.js";
 import { SEC_CENTER_RU } from "./secCenter.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
 import { AGENT_OPS_RU } from "./agentOps.ru.js";
@@ -69,6 +70,7 @@ export const nested = {
   "auditLog": AUDIT_LOG_RU,
   "livePopup": LIVE_POPUP_RU,
   "annc": ANNC_RU,
+  "chperm": CHPERM_RU,
   "secCenter": SEC_CENTER_RU,
   "agentx": AGENTX_RU,
   "agentOps": AGENT_OPS_RU,
@@ -6134,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} в голосовом",
     "slowmode": "Медленный режим",
     "systemFoot": "Приветствия новых участников и системные сообщения приходят в этот канал. Неактивные участники переносятся в канал AFK по истечении тайм-аута AFK.",
+    "defaultNotif": "Уведомления по умолчанию",
     "systemMsgs": "Системные сообщения",
     "tAnnSub": "Пишет только команда, участники читают",
     "tStageSub": "Выступающие и слушатели",
@@ -10760,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Вы получили DesCoin!",
   "You received a gift!": "Вы получили подарок!",
   "You were banned from {name}": "Вас забанили: {name}",
+  "You were timed out in {name}": "Вам выдали тайм-аут: {name}",
+  "Your timeout in {name} was lifted": "Тайм-аут снят: {name}",
   "You were kicked from {name}": "Вас выгнали: {name}",
   "You win": "Вы выиграли",
   "You win!": "Вы выиграли!",

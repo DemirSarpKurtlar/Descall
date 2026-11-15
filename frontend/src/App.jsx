@@ -173,6 +173,7 @@ import { dismissRemovedGroup } from "./api/groups";
 import { segmentsText, memberEventSegments, memberEventFromMessage } from "./lib/groupMemberEvents";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 import { mergeServerDetail } from "./lib/serverDetail";
+import { isTextLikeChannel, useChannelPerms, channelHasPermission } from "./lib/channelPermissions";
 // Ban notice (docs/design/ban-experience): only loaded when someone is actually banned.
 const BanScreen = lazy(() => import("./components/ban/BanScreen.jsx"));
 // Native iOS only, so the web bundle doesn't carry it.
@@ -1320,8 +1321,11 @@ export default function App() {
     loadDmMessagesRest(peerId);
   }, [activeDmUser?.id, loadDmMessagesRest]);
 
+  // This member's per-channel bits (overwrites, announcement rule, timeouts; audit P2 / DF-4).
+  const activeChannelPerms = useChannelPerms(socketRef.current, activeView === "servers" ? activeServer?.id : null);
+
   const dmMessages = useMemo(() => {
-    if (activeView === "servers" && activeChannel?.type === "text") {
+    if (activeView === "servers" && isTextLikeChannel(activeChannel)) {
       return channelMessagesById[activeChannel.id] ?? [];
     }
     if (activeGroup) {
@@ -1689,7 +1693,7 @@ export default function App() {
       emitRoomOnce(socket, "server:subscribe", { serverId: server.id });
       emitRoomOnce(socket, "server:voice:subscribe", { serverId: server.id });
       const textIds = (server.channels || [])
-        .filter((c) => c.type === "text" && c.id)
+        .filter((c) => isTextLikeChannel(c) && c.id)
         .map((c) => c.id);
       if (textIds.length) emitRoomOnce(socket, "server:channels:rejoin", textIds);
       const voiceLike = activeChannelRef.current;
@@ -3440,7 +3444,7 @@ export default function App() {
   useEffect(() => {
     if (activeView !== "servers" || !activeServer?.id) return undefined;
     const textIds = (activeServer.channels || [])
-      .filter((c) => c.type === "text" && c.id)
+      .filter((c) => isTextLikeChannel(c) && c.id)
       .map((c) => c.id);
     if (textIds.length) {
       socketRef.current?.emit("server:channels:rejoin", textIds);
@@ -3455,7 +3459,7 @@ export default function App() {
     activeServer?.id,
     // Rejoin when channel set changes (create/delete)
     (activeServer?.channels || [])
-      .filter((c) => c.type === "text")
+      .filter((c) => isTextLikeChannel(c))
       .map((c) => c.id)
       .join(","),
   ]);
@@ -3464,7 +3468,7 @@ export default function App() {
   // Older responses must not clear loading or fill a channel the user left.
   useEffect(() => {
     if (activeView !== "servers" || !activeServer?.id || !activeChannel?.id) return undefined;
-    if (activeChannel.type !== "text") {
+    if (!isTextLikeChannel(activeChannel)) {
       setMessagesLoading(false);
       return undefined;
     }
@@ -3526,7 +3530,7 @@ export default function App() {
 
   // Clear unread when opening a channel + persist read state
   useEffect(() => {
-    if (!activeChannel?.id || activeChannel.type !== "text" || !activeServer?.id) return;
+    if (!activeChannel?.id || !isTextLikeChannel(activeChannel) || !activeServer?.id) return;
     setChannelUnread((prev) => {
       if (!prev[activeChannel.id]) return prev;
       const next = { ...prev };
@@ -4333,7 +4337,7 @@ export default function App() {
     const path = location.pathname || "";
     if (path.startsWith("/direct/") && activeDmUser?.id) return { kind: "dm", id: activeDmUser.id };
     if (path.startsWith("/groups/") && activeGroup?.id) return { kind: "group", id: activeGroup.id };
-    if (path.startsWith("/servers/") && activeView === "servers" && activeChannel?.id && activeChannel.type === "text") {
+    if (path.startsWith("/servers/") && activeView === "servers" && activeChannel?.id && isTextLikeChannel(activeChannel)) {
       return { kind: "channel", id: activeChannel.id };
     }
     return null;
@@ -5161,8 +5165,8 @@ export default function App() {
     setMyServers((prev) => prev.map((s) => (s.id === server.id ? { ...s, ...server } : s)));
   };
 
-  const handleDeleteServer = async (serverId, confirmName) => {
-    await deleteServer(serverId, confirmName);
+  const handleDeleteServer = async (serverId, confirmName, password) => {
+    await deleteServer(serverId, confirmName, password);
     setMyServers((prev) => prev.filter((s) => s.id !== serverId));
     setOwnedServerCount((c) => Math.max(0, (c || 1) - 1));
     if (activeServer?.id === serverId) {
@@ -5172,8 +5176,8 @@ export default function App() {
     }
   };
 
-  const handleLeaveServer = async (serverId, confirmName) => {
-    const result = await leaveServer(serverId, confirmName);
+  const handleLeaveServer = async (serverId, confirmName, password) => {
+    const result = await leaveServer(serverId, confirmName, password);
     setMyServers((prev) => prev.filter((s) => s.id !== serverId));
     if (result?.deleted) setOwnedServerCount((c) => Math.max(0, (c || 1) - 1));
     if (activeServer?.id === serverId) {
@@ -5233,14 +5237,18 @@ export default function App() {
     if (location.pathname !== nextPath) navigate(nextPath);
   };
 
-  const handleCreateChannel = async ({ name, type, parentId, topic, slowmodeSeconds, beforeOpen }) => {
+  const handleCreateChannel = async ({ name, type, parentId, topic, slowmodeSeconds, userLimit, beforeOpen, private: isPrivate }) => {
     if (!activeServer?.id) return;
+    // isPrivate: the server writes the private rules in the same request (audit P3 / CA-3).
     const { channel } = await createChannel(activeServer.id, {
       name,
       type,
       parentId,
       topic,
       slowmodeSeconds,
+      // Voice / stage user limit (0 = none, server audit V12).
+      ...(Number(userLimit) > 0 ? { userLimit: Number(userLimit) } : {}),
+      ...(isPrivate ? { private: true } : {}),
     });
     if (!channel) return;
     patchServerChannels(activeServer.id, (channels) => [...channels, channel]);
@@ -5690,7 +5698,7 @@ export default function App() {
                 socketRef.current?.emit("dm:send", { toUserId: activeDmUser.id, tempId, text: "", poll: msg.poll });
               } else if (activeGroup) {
                 socketRef.current?.emit("group:message", { groupId: activeGroup.id, tempId, content: "", poll: msg.poll });
-              } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
+              } else if (activeView === "servers" && isTextLikeChannel(activeChannel) && activeServer?.id) {
                 socketRef.current?.emit("server:channel:message", {
                   serverId: activeServer.id,
                   channelId: activeChannel.id,
@@ -5850,7 +5858,7 @@ export default function App() {
               }
               hapticSuccess();
               setReplyTo(null);
-            } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
+            } else if (activeView === "servers" && isTextLikeChannel(activeChannel) && activeServer?.id) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
               if (isNativeIOS() && isCasinoSlash(textStr)) {
@@ -6015,15 +6023,15 @@ export default function App() {
             activeServer={activeView === "servers" ? activeServer : null}
             canManageMessages={
               activeView === "servers" &&
-              (activeServer?.isOwner ||
-                Boolean(activeServer?.myPermissions?.flags?.MANAGE_MESSAGES) ||
-                Boolean(activeServer?.myPermissions?.flags?.ADMINISTRATOR))
+              Boolean(activeServer) &&
+              (activeServer.isOwner ||
+                channelHasPermission(activeServer, activeChannel?.id, "MANAGE_MESSAGES", activeChannelPerms))
             }
             loading={Boolean(
               (activeDmUser && dmByUserId[activeDmUser.id] === undefined) ||
                 (activeGroup && groupMessagesById[activeGroup.id] === undefined) ||
                 (activeView === "servers" &&
-                  activeChannel?.type === "text" &&
+                  isTextLikeChannel(activeChannel) &&
                   channelMessagesById[activeChannel.id] === undefined)
             )}
             loadError={dmHistoryFailed}

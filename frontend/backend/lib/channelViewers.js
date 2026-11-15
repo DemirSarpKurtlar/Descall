@@ -39,6 +39,12 @@ async function canViewChannel(serverId, channelId, userId) {
   } catch {
     ok = false;
   }
+  // Expired entries are dropped once the map grows (server audit SK-9: never evicted).
+  if (cache.size >= 5000) {
+    const now = Date.now();
+    for (const [k, v] of cache) if (now - v.at >= TTL_MS) cache.delete(k);
+    if (cache.size >= 20000) cache.clear();
+  }
   cache.set(key, { ok, at: Date.now() });
   return ok;
 }

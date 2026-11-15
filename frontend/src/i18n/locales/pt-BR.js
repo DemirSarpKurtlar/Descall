@@ -28,6 +28,7 @@ import { SYSX_PT_BR } from "./sysx.pt-BR.js";
 import { AUDIT_LOG_PT_BR } from "./auditLog.pt-BR.js";
 import { LIVE_POPUP_PT_BR } from "./livePopup.pt-BR.js";
 import { ANNC_PT_BR } from "./annc.pt-BR.js";
+import { CHPERM_PT_BR } from "./chperm.pt-BR.js";
 import { SEC_CENTER_PT_BR } from "./secCenter.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
 import { AGENT_OPS_PT_BR } from "./agentOps.pt-BR.js";
@@ -69,6 +70,7 @@ export const nested = {
   "auditLog": AUDIT_LOG_PT_BR,
   "livePopup": LIVE_POPUP_PT_BR,
   "annc": ANNC_PT_BR,
+  "chperm": CHPERM_PT_BR,
   "secCenter": SEC_CENTER_PT_BR,
   "agentx": AGENTX_PT_BR,
   "agentOps": AGENT_OPS_PT_BR,
@@ -6134,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} na voz",
     "slowmode": "Modo lento",
     "systemFoot": "Boas-vindas a novos membros e mensagens do sistema chegam neste canal. Membros inativos vão para o canal AFK depois do tempo para AFK.",
+    "defaultNotif": "Notificações padrão",
     "systemMsgs": "Mensagens do sistema",
     "tAnnSub": "Só a equipe publica, os membros acompanham",
     "tStageSub": "Palestrantes e ouvintes",
@@ -10760,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Você recebeu DesCoin!",
   "You received a gift!": "Você recebeu um presente!",
   "You were banned from {name}": "Você foi banido de {name}",
+  "You were timed out in {name}": "Você recebeu um castigo temporário em {name}",
+  "Your timeout in {name} was lifted": "Seu castigo temporário em {name} foi removido",
   "You were kicked from {name}": "Você foi expulso de {name}",
   "You win": "Você ganhou",
   "You win!": "Você ganhou!",

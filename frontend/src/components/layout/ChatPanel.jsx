@@ -36,6 +36,7 @@ import UserProfileModal from "../social/UserProfileModal";
 import ServerMembersPanel from "../servers/ServerMembersPanel";
 import ServerVoicePanel from "../servers/ServerVoicePanel";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
+import { isTextLikeChannel, useChannelPerms, channelHasPermission, channelPermsKnown } from "../../lib/channelPermissions";
 import useGlassUi from "../../hooks/useGlassUi";
 import GroupIcon from "../groups/GroupIcon";
 import GroupInfoSheet from "../groups/GroupInfoSheet";
@@ -154,7 +155,7 @@ export default function ChatPanel({
     ? { kind: "group", groupId: activeGroup.id }
     : activeDmUser?.id
       ? { kind: "dm", withUserId: activeDmUser.id }
-      : activeView === "servers" && activeChannel?.type === "text" && activeChannel?.id
+      : activeView === "servers" && isTextLikeChannel(activeChannel) && activeChannel?.id
         ? { kind: "server", channelId: activeChannel.id, serverId: activeServer?.id }
         : null;
 
@@ -162,16 +163,34 @@ export default function ChatPanel({
     !activeServer ||
     serverPermissionsLoaded(activeServer) ||
     Boolean(activeServer?.isOwner);
+  // Channel bits from the server (overwrites, read-only announcements, timeouts); the
+  // server-wide flag only until they arrive (server audit P2 / DF-4).
+  const chanPerms = useChannelPerms(socket, activeView === "servers" ? activeServer?.id : null);
+  const chanPermsKnown = channelPermsKnown(chanPerms, activeChannel?.id);
   const canSendChannel =
     activeView === "servers" &&
-    activeChannel?.type === "text" &&
-    serverPermissionsReady &&
-    serverHasPermission(activeServer, "SEND_MESSAGES");
+    isTextLikeChannel(activeChannel) &&
+    (chanPermsKnown
+      ? channelHasPermission(activeServer, activeChannel?.id, "SEND_MESSAGES", chanPerms)
+      : serverPermissionsReady && serverHasPermission(activeServer, "SEND_MESSAGES"));
   const showComposer =
     Boolean(activeDmUser || activeGroup) ||
     (activeView === "servers" &&
-      activeChannel?.type === "text" &&
-      (canSendChannel || !serverPermissionsReady));
+      isTextLikeChannel(activeChannel) &&
+      (canSendChannel || (!serverPermissionsReady && !chanPermsKnown)));
+  // Read-only text channel (no SEND, or a members-read-only announcement channel):
+  // say so instead of an empty space. A timeout has its own banner.
+  const readOnlyChannelNotice =
+    activeView === "servers" &&
+    isTextLikeChannel(activeChannel) &&
+    !canSendChannel &&
+    (chanPermsKnown || serverPermissionsReady) &&
+    !chanPerms?.timedOut &&
+    !activeTimeout?.timedOut
+      ? activeChannel?.type === "announcement"
+        ? t("chperm.readOnlyAnnouncement")
+        : t("chperm.readOnlyChannel")
+      : null;
   const blockedIds = useBlockedUserIds();
   // DM with someone I blocked: no messages or calls (the server enforces it too).
   const dmBlockedByMe = Boolean(activeDmUser?.id && blockedIds.has(String(activeDmUser.id)));
@@ -298,7 +317,7 @@ export default function ChatPanel({
       if (!(groupMap instanceof Map)) return [];
       return Array.from(groupMap.values()).map((u) => resolveDisplayName(u));
     }
-    if (activeView === "servers" && activeChannel?.type === "text" && activeChannel?.id) {
+    if (activeView === "servers" && isTextLikeChannel(activeChannel) && activeChannel?.id) {
       const channelMap = typingChannelUsers?.[activeChannel.id];
       if (!(channelMap instanceof Map)) return [];
       return Array.from(channelMap.values()).map((u) => resolveDisplayName(u));
@@ -353,7 +372,7 @@ export default function ChatPanel({
   const floatingHeader = Boolean(
     !isMobile
       && activeView !== "activity" && activeView !== "friends" && activeView !== "calls"
-      && (activeView === "servers" ? activeChannel?.type === "text" : Boolean(headerDm || headerGroup))
+      && (activeView === "servers" ? isTextLikeChannel(activeChannel) : Boolean(headerDm || headerGroup))
   );
   const chromeRef = useRef(null);
   const headerConversationKey = headerGroup
@@ -671,7 +690,7 @@ export default function ChatPanel({
               <Users size={20} />
             </button>
           )}
-          {(headerDm || headerGroup || (activeView === "servers" && activeChannel?.type === "text")) && (
+          {(headerDm || headerGroup || (activeView === "servers" && isTextLikeChannel(activeChannel))) && (
             <button
               ref={pinButtonRef}
               className={`icon-btn ${showPinned ? "active" : ""}`}
@@ -830,7 +849,7 @@ export default function ChatPanel({
           onOpenChat={onOpenChatFromCalls}
           onOpenGroup={onOpenGroupFromCalls}
         />
-      ) : activeView === "servers" && activeChannel?.type === "text" ? (
+      ) : activeView === "servers" && isTextLikeChannel(activeChannel) ? (
       <div className="messages-container" ref={messagesRef}>
         {isValidElement(children)
           ? cloneElement(children, { searchQuery: "" })
@@ -889,6 +908,14 @@ export default function ChatPanel({
       </div>
       )}
 
+      {activeView !== "activity" && !showComposer && readOnlyChannelNotice && (
+        <div className="composer-container chperm-readonly" role="status">
+          <div className="chperm-readonly-bar">
+            <Hash size={15} aria-hidden="true" />
+            <span>{readOnlyChannelNotice}</span>
+          </div>
+        </div>
+      )}
       {/* Typing + composer only on real chat surfaces, never under Activity */}
       {activeView !== "activity" && showComposer && (
         <>
