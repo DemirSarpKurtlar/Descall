@@ -398,12 +398,39 @@ async function raceTests() {
   const left = fakeSocks.filter((s) => s.rooms.has(`server-channel:${STAFF}`)).length;
   check("CA-2 every socket that lost VIEW_CHANNEL is evicted", left === 0, `left=${left}`);
   check("CA-2 eviction uses a bounded number of queries", queries <= 20, `queries=${queries}`);
+
+  // CA-2 scoping: a change limited to one channel leaves other rooms alone, and a
+  // member who lost the channel loses its unread row (CA-6).
+  const other = { user: { id: "u-alice" }, rooms: new Set(), join(r) { other.rooms.add(r); if (!roomMembers.has(r)) roomMembers.set(r, new Set()); roomMembers.get(r).add(other); }, leave(r) { other.rooms.delete(r); roomMembers.get(r)?.delete(other); }, emit() {} };
+  other.join(`server-channel:${STAFF}`);
+  other.join(`server-channel:${TXT}`);
+  fake._tables.server_channel_reads.rows.push({ user_id: "u-alice", channel_id: STAFF, unread_count: 3 });
+  fake._tables.server_channel_overrides.rows.push({ id: "ov-txt", channel_id: TXT, target_type: "member", target_id: "u-alice", allow_permissions: "0", deny_permissions: toPgBigint(F.VIEW_CHANNEL) });
+  await evictUnauthorizedChannelSockets(io, S, { channelId: STAFF });
+  check("CA-2 scoped eviction removes the socket from the changed channel", !other.rooms.has(`server-channel:${STAFF}`));
+  check("CA-2 scoped eviction does not re-check other channels", other.rooms.has(`server-channel:${TXT}`));
+  check("CA-6 the evicted member's unread row for that channel is gone", !fake._tables.server_channel_reads.rows.some((r) => r.user_id === "u-alice" && r.channel_id === STAFF));
+  await evictUnauthorizedChannelSockets(io, S, {});
+  check("CA-2 an unscoped run checks every channel", !other.rooms.has(`server-channel:${TXT}`));
+  fake._tables.server_channel_overrides.rows = fake._tables.server_channel_overrides.rows.filter((r) => r.id !== "ov-txt");
+}
+
+async function ownerTimeoutTest() {
+  // A timeout row left on the owner (e.g. from before an ownership transfer) holds nothing.
+  fake._tables.server_members.rows.find((r) => r.user_id === "u-own").timeout_until = future;
+  const own = makeSocket("u-own");
+  const r = await send(own, TXT, { content: "owner still talks" });
+  check("Owner is exempt from a server timeout row (send)", r.stored && !r.err, r.err?.code);
+  await act(own, "server:channel:message:pin", { serverId: S, channelId: TXT, messageId: uuid(4) });
+  check("Owner is exempt from a server timeout row (pin)", Boolean(rows().find((x) => x.id === uuid(4))?.pinned_at));
+  fake._tables.server_members.rows.find((x) => x.user_id === "u-own").timeout_until = null;
 }
 
 (async () => {
   await messageTests();
   await reactionTests();
   await raceTests();
+  await ownerTimeoutTest();
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   process.exit(failed.length ? 1 : 0);

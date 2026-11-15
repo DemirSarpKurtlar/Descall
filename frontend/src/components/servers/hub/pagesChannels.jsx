@@ -1,11 +1,12 @@
 /* Kanallar list, 06 Kanal oluştur, 07 Kategori oluştur, 08 Kanal ayarları, 09 silme uyarısı, 10 Kanal erişimi. */
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from "./kit";
+import { ActionSheet, AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from "./kit";
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import { usePerms } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";
 import { useT } from "../../../context/LocaleContext";
+import { overridesView, moveNeedsSyncChoice } from "../../../lib/channelOverridesView";
 import { getChannelOverrides, putChannelOverride, deleteChannelOverride, getChannelMessageCount } from "../../../api/servers";
 import { isChannelMuted, setChannelMutedAsync } from "../../../lib/serverChannelMutes";
 import { hapticSelection, hapticWarning } from "../../../lib/fluid/haptics";
@@ -42,21 +43,13 @@ export function useOverrides(channelId) {
       const r = await getChannelOverrides(hub.server.id, channelId);
       // A channel with no rules of its own follows its category (synced): show the
       // category's rules, marked as inherited (server audit P5: "all inherit / not private").
-      const own = r?.overrides || [];
-      const parentId = findChannel(hub.server, channelId)?.parentId || null;
-      let inherited = null;
-      if (!own.length && parentId) {
-        if (Array.isArray(r?.inherited)) inherited = r.inherited;
-        else {
-          try {
-            inherited = (await getChannelOverrides(hub.server.id, parentId))?.overrides || [];
-          } catch {
-            inherited = null;
-          }
-        }
-      }
-      const synced = Boolean(inherited && inherited.length);
-      hub.setData((d) => ({ ...d, overrides: { ...(d.overrides || {}), [channelId]: { editableKeys: r?.editableKeys || [], overrides: synced ? inherited : own, synced, parentId: synced ? parentId : null } } }));
+      const ch = findChannel(hub.server, channelId);
+      const view = await overridesView(r, {
+        parentId: ch?.parentId || null,
+        isCategory: ch?.type === "category",
+        fetchParent: (id) => getChannelOverrides(hub.server.id, id),
+      });
+      hub.setData((d) => ({ ...d, overrides: { ...(d.overrides || {}), [channelId]: { editableKeys: r?.editableKeys || [], overrides: view.rows, own: view.own, synced: view.synced, parentId: view.synced ? view.parentId : null } } }));
       setErr(null);
     } catch (e) {
       setErr(e?.message || "error");
@@ -247,8 +240,11 @@ export function ChannelEditPage({ route }) {
   const [d, setD] = useRouteDraft(route, base);
   const [run, busy] = useRun();
   const [del, setDel] = useState(false);
+  const [syncAsk, setSyncAsk] = useState(null); // patch waiting for the sync choice (P8)
   const [, setTick] = useState(0);
-  const { entry } = useOverridesMaybe(p.roles ? route.channelId : null);
+  const { entry, reload: reloadOverrides } = useOverridesMaybe(p.roles ? route.channelId : null);
+  const t = useT();
+  const { toast } = useToast();
   useEffect(() => { if (p.roles && !hub.data.roles) hub.load("roles"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!ch) {
     return <PageFrame route={route} title={s.secChannel}><Foot>{s.failed}</Foot></PageFrame>;
@@ -261,16 +257,32 @@ export function ChannelEditPage({ route }) {
   const priv = entry && everyone ? Boolean(entry.overrides.find((o) => o.targetType === "role" && String(o.targetId) === String(everyone.id))?.deny?.VIEW_CHANNEL) : false;
   const muted = isChannelMuted(ch.id);
   const dirty = Object.keys(base).some((k) => String(base[k] ?? "") !== String(d[k] ?? ""));
+  const leave = () => { if (hub.stack.length > 1) hub.pop(); else hub.close(); };
+  const save = async (patch) => {
+    const ok = await run(async () => {
+      const res = await deps.onUpdateChannel?.(ch.id, patch);
+      // Moved with its own rules and nobody chose: it kept them (the server says so).
+      if (res?.needsSyncChoice && patch.lockPermissions === undefined) {
+        const target = findChannel(server, patch.parentId);
+        toast(t("chperm.movedKeptOwn", { channel: ch.name, category: target?.name || t("chperm.category") }), "info");
+      }
+      if (patch.parentId !== undefined) reloadOverrides?.();
+    }, { ok: s.saved });
+    if (ok) leave();
+  };
   const done = async () => {
     if (busy) return;
-    if (dirty) {
-      const patch = {};
-      for (const k of Object.keys(base)) if (String(base[k] ?? "") !== String(d[k] ?? "")) patch[k] = k === "topic" ? (d.topic.trim() || null) : d[k];
-      const ok = await run(() => deps.onUpdateChannel?.(ch.id, patch), { ok: s.saved });
-      if (!ok) return;
+    if (!dirty) return leave();
+    const patch = {};
+    for (const k of Object.keys(base)) if (String(base[k] ?? "") !== String(d[k] ?? "")) patch[k] = k === "topic" ? (d.topic.trim() || null) : d[k];
+    // Into a category with other rules while it has its own: ask, like Discord (P8).
+    if (patch.parentId && (await moveNeedsSyncChoice({ channel: ch, newParentId: patch.parentId, getOverrides: (id) => getChannelOverrides(server.id, id) }))) {
+      setSyncAsk(patch);
+      return;
     }
-    if (hub.stack.length > 1) hub.pop(); else hub.close();
+    await save(patch);
   };
+  const syncCat = syncAsk ? findChannel(server, syncAsk.parentId) : null;
   const label = isCat ? ch.name : channelLabel({ ...ch, name: d.name });
   return (
     <PageFrame route={route} title={channelLabel(ch)} right={<DoneBtn label={s.done} onClick={done} disabled={busy} />}>
@@ -321,6 +333,15 @@ export function ChannelEditPage({ route }) {
           <DeleteChannelAlert key="del" server={server} channel={ch} s={s} f={f} onCancel={() => setDel(false)} onDelete={(id) => deps.onDeleteChannel?.(id)}
             onDeleted={() => { setDel(false); if (hub.stack.length > 1) hub.pop(); else hub.close(); }} />
         ) : null}
+        {syncAsk ? (
+          <ActionSheet key="sync" title={t("chperm.moveSyncTitle")}
+            sub={t("chperm.moveSyncMsg", { channel: ch.name, category: syncCat?.name || t("chperm.category") })}
+            cancel={s.giveUp} onCancel={() => setSyncAsk(null)}
+            actions={[
+              { t: t("chperm.moveSyncUse", { category: syncCat?.name || t("chperm.category") }), onClick: () => { const p2 = { ...syncAsk, lockPermissions: true }; setSyncAsk(null); save(p2); } },
+              { t: t("chperm.moveSyncKeep"), onClick: () => { const p2 = { ...syncAsk, lockPermissions: false }; setSyncAsk(null); save(p2); } },
+            ]} />
+        ) : null}
       </AnimatePresence>
     </PageFrame>
   );
@@ -346,16 +367,19 @@ function targetsFor(entry, roles, members, pending) {
 }
 
 function TargetRows({ targets, sel, onPick, s, f }) {
+  const t = useT();
   return targets.map((x) => {
     const n = overrideChangedCount(x.ov);
-    const sub = x.everyone ? s.everyoneSub : n ? f("nChanged", { n }) : s.noOverride;
+    // A synced channel lists its category's rules: say where they come from (P5).
+    const from = x.ov?.inherited ? ` · ${t("chperm.fromCategory")}` : "";
+    const sub = (x.everyone ? s.everyoneSub : n ? f("nChanged", { n }) : s.noOverride) + from;
     const isSel = sel && sel.type === x.type && String(sel.id) === String(x.id);
     if (x.everyone) return <Row key="everyone" ico="users" c="gray" t="@everyone" sub={sub} chev sel={isSel} onClick={() => onPick(x)} />;
     if (x.type === "role") {
       const c = roleHex(x.role);
       return <Row key={`r${x.id}`} lead={<span className="svh-ico" style={{ background: `${c}22`, color: c }}><I n="shield" s={17} w={2.2} /></span>} t={x.name} sub={sub} chev sel={isSel} onClick={() => onPick(x)} />;
     }
-    return <Row key={`m${x.id}`} av={<Av user={x.member ? { ...x.member, id: x.member.userId } : null} name={x.name} s={30} />} t={x.name} sub={n ? f("nChanged", { n }) : s.noOverride} chev sel={isSel} onClick={() => onPick(x)} />;
+    return <Row key={`m${x.id}`} av={<Av user={x.member ? { ...x.member, id: x.member.userId } : null} name={x.name} s={30} />} t={x.name} sub={(n ? f("nChanged", { n }) : s.noOverride) + from} chev sel={isSel} onClick={() => onPick(x)} />;
   });
 }
 

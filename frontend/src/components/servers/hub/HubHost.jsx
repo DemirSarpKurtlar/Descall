@@ -124,9 +124,11 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
       },
       onUpdateChannel: async (channelId, patch) => {
         if (isActive(sv)) return cb.onUpdateChannel?.(channelId, patch);
-        const { channel } = await updateChannel(sv.id, channelId, patch);
+        const res = await updateChannel(sv.id, channelId, patch);
+        const channel = res?.channel;
         if (channel) cb.onServerUpdated?.({ ...sv, channels: (sv.channels || []).map((c) => (same(c.id, channel.id) ? { ...c, ...channel } : c)) });
-        return channel;
+        // The whole answer: the move UI reads needsSyncChoice / permissionsSynced (P8).
+        return res;
       },
       onDeleteChannel: async (channelId) => {
         if (isActive(sv)) return cb.onDeleteChannel?.(channelId);

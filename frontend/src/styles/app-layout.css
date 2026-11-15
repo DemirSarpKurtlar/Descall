@@ -1671,6 +1671,30 @@ button.header-avatar {
   font-size: var(--fs-12);
 }
 
+.chperm-from-cat {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(88, 122, 245, 0.14);
+  color: #aebcff;
+  font-size: var(--fs-11);
+  white-space: nowrap;
+}
+
+.chperm-move-sync {
+  margin: 4px 0 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(88, 122, 245, 0.35);
+  background: rgba(88, 122, 245, 0.08);
+}
+
+.chperm-move-sync p {
+  margin: 6px 0 10px;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+
 .chperm-synced-note {
   margin: 0 20px 10px;
   padding: 8px 12px;

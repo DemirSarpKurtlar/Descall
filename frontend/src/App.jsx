@@ -5263,12 +5263,15 @@ export default function App() {
 
   const handleUpdateChannel = async (channelId, patch) => {
     if (!activeServer?.id) return;
-    const { channel } = await updateChannel(activeServer.id, channelId, patch);
-    if (!channel) return;
+    const res = await updateChannel(activeServer.id, channelId, patch);
+    const channel = res?.channel;
+    if (!channel) return res;
     patchServerChannels(activeServer.id, (channels) =>
       channels.map((c) => (c.id === channel.id ? { ...c, ...channel } : c))
     );
     if (activeChannel?.id === channel.id) setActiveChannel(channel);
+    // { channel, permissionsSynced?, needsSyncChoice? }: the move UI reads the sync answer (P8).
+    return res;
   };
 
   const handleReorderServers = async (orderedServers) => {

@@ -1,4 +1,4 @@
-/** Channel permission notices: read-only channels, attachments, synced category rules ("chperm.*", server audit P2 / P5). Same keys in every chperm.<locale>.js. */
+/** Channel permission notices: read-only channels, attachments, synced category rules, channel moves, user limit ("chperm.*", server audit P2 / P5). Same keys in every chperm.<locale>.js. */
 export const CHPERM_FR = {
   "readOnlyChannel": "Tu ne peux pas envoyer de messages dans ce salon.",
   "readOnlyAnnouncement": "Seuls les modérateurs peuvent publier dans ce salon d'annonces.",
@@ -10,4 +10,10 @@ export const CHPERM_FR = {
   "userLimitSub": "Nombre de personnes pouvant rejoindre en même temps. 0 = sans limite (jusqu'à 99).",
   "userLimitNone": "Sans limite",
   "userLimitInvalid": "Saisis un nombre de 0 à 99.",
+  "fromCategory": "De la catégorie",
+  "moveSyncTitle": "Permissions dans la nouvelle catégorie",
+  "moveSyncMsg": "#{channel} a ses propres permissions et {category} en a d'autres. Lesquelles utiliser ?",
+  "moveSyncUse": "Synchroniser avec {category}",
+  "moveSyncKeep": "Garder ses propres permissions",
+  "movedKeptOwn": "#{channel} a gardé ses propres permissions dans {category}.",
 };

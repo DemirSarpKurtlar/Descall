@@ -47,16 +47,35 @@ function emitServerChannelsResync(io, serverId, extra = {}) {
   }
 }
 
-async function evictUnauthorizedChannelSockets(io, serverId) {
+/** Channel ids an access change is limited to ({ channelId } / { channelIds }), or null = all. */
+function scopeIds(opts) {
+  const ids = [opts?.channelId, ...(Array.isArray(opts?.channelIds) ? opts.channelIds : [])].filter(Boolean).map(String);
+  return ids.length ? new Set(ids) : null;
+}
+
+/**
+ * opts.channelId / opts.channelIds: only those channels and, for a category, its
+ * children (an override PUT on one channel used to re-check every room of the server,
+ * channel-access CA-2). opts.userId: only that user's sockets. A member who loses
+ * VIEW_CHANNEL also loses the channel's unread row, so GET /servers/me/unread stops
+ * returning a channel they can no longer see (CA-6).
+ */
+async function evictUnauthorizedChannelSockets(io, serverId, opts = {}) {
   if (!io || !serverId) return { kicked: 0 };
-  const { data: channels, error } = await supabase
+  const { data: allChannels, error } = await supabase
     .from("server_channels")
-    .select("id, type")
+    .select("id, type, parent_id")
     .eq("server_id", serverId);
   if (error) throw error;
+  const only = scopeIds(opts);
+  const channels = only
+    ? (allChannels || []).filter((c) => only.has(String(c.id)) || (c.parent_id && only.has(String(c.parent_id))))
+    : allChannels || [];
+  const onlyUser = opts?.userId != null ? String(opts.userId) : null;
+  const readsToClear = new Map(); // channelId -> Set(userId)
 
   let kicked = 0;
-  for (const channel of channels || []) {
+  for (const channel of channels) {
     const type = String(channel.type || "").toLowerCase();
     const prefixes = [];
     if (type === "text" || type === "announcement") prefixes.push("server-channel:");
@@ -71,6 +90,7 @@ async function evictUnauthorizedChannelSockets(io, serverId) {
       } catch {
         continue;
       }
+      if (onlyUser) sockets = sockets.filter((sk) => String(sk.user?.id || "") === onlyUser);
       if (!sockets.length) continue;
       const userIds = [...new Set(sockets.map((s) => s.user?.id).filter(Boolean).map(String))];
       // Who is still a member: bits for non-members would be computed as members'.
@@ -99,6 +119,11 @@ async function evictUnauthorizedChannelSockets(io, serverId) {
         if (memberSet.has(String(userId)) && b != null && hasPermission(b, Permissions.VIEW_CHANNEL)) continue;
         socket.leave(room);
         kicked += 1;
+        // Decided (not a failed lookup): a member who cannot see it any more.
+        if (prefix === "server-channel:" && memberSet.has(String(userId)) && b != null) {
+          if (!readsToClear.has(channel.id)) readsToClear.set(channel.id, new Set());
+          readsToClear.get(channel.id).add(String(userId));
+        }
         try {
           socket.emit("server:channel:hidden", { serverId, channelId: channel.id });
         } catch {
@@ -107,14 +132,33 @@ async function evictUnauthorizedChannelSockets(io, serverId) {
       }
     }
   }
+  for (const [channelId, users] of readsToClear) {
+    const ids = [...users];
+    for (let i = 0; i < ids.length; i += 100) {
+      try {
+        await supabase.from("server_channel_reads").delete().eq("channel_id", channelId).in("user_id", ids.slice(i, i + 100));
+      } catch {
+        /* best effort */
+      }
+    }
+  }
   return { kicked };
 }
 
-const running = new Map(); // serverId -> { pending: boolean, promise }
+const running = new Map(); // serverId -> { pending: boolean, promise, opts }
 
-async function runAccessPass(io, serverId) {
+/** Two scoped changes merge their channels; any unscoped one makes the run unscoped. */
+function mergeScope(a, b) {
+  const sa = scopeIds(a);
+  const sb = scopeIds(b);
+  const userId = a?.userId != null && b?.userId != null && String(a.userId) === String(b.userId) ? a.userId : null;
+  if (!sa || !sb) return { userId };
+  return { channelIds: [...new Set([...sa, ...sb])], userId };
+}
+
+async function runAccessPass(io, serverId, opts = {}) {
   try {
-    await evictUnauthorizedChannelSockets(io, serverId);
+    await evictUnauthorizedChannelSockets(io, serverId, opts);
   } catch (err) {
     console.warn("[SERVERS] access eviction failed:", err?.message || err);
   }
@@ -136,18 +180,25 @@ async function notifyServerAccessChanged(io, serverId, extra = {}) {
   emitServerChannelsResync(io, serverId, extra);
   const key = String(serverId || "");
   if (!key) return;
+  const scope = {
+    channelId: extra?.channelId || null,
+    channelIds: Array.isArray(extra?.channelIds) ? extra.channelIds : null,
+    userId: extra?.userId ?? null,
+  };
   const current = running.get(key);
   if (current) {
+    current.opts = current.pending ? mergeScope(current.opts, scope) : scope;
     current.pending = true;
     return current.promise;
   }
-  const state = { pending: false, promise: null };
+  const state = { pending: false, promise: null, opts: scope };
   running.set(key, state);
   state.promise = (async () => {
     try {
       do {
         state.pending = false;
-        await runAccessPass(io, serverId);
+        const opts = state.opts;
+        await runAccessPass(io, serverId, opts);
       } while (state.pending);
     } finally {
       running.delete(key);

@@ -51,6 +51,8 @@ import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
 import { isServerMuted, subscribeServerMutes } from "./hub/serverMute";
 import { VOICE_LIST_COLLAPSED, visibleVoiceMembers } from "../../lib/voiceMemberList";
+import { getChannelOverrides as getChannelOverridesForMove } from "../../api/servers";
+import { moveNeedsSyncChoice } from "../../lib/channelOverridesView";
 
 // Public server directory inside the app (item 8), loaded when first opened.
 const DirectoryDiscoverModal = lazy(() => import("./DirectoryDiscoverModal"));
@@ -1649,6 +1651,7 @@ export default function ServersSidebar({
               mode="edit"
               channel={channelModal.channel}
               categories={categories}
+              serverId={activeServer?.id || null}
               onClose={() => setChannelModal(null)}
               onSubmit={async (payload) => {
                 await onUpdateChannel?.(channelModal.channel.id, payload);
@@ -2649,7 +2652,7 @@ function formatSlowmode(seconds, t) {
   return t("uah.slow.seconds", { n });
 }
 
-function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null, categories = [], onClose, onSubmit }) {
+function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null, categories = [], serverId = null, onClose, onSubmit }) {
   const t = useT();
   const isEdit = mode === "edit";
   const initialType = isEdit ? channel.type : defaultType;
@@ -2667,14 +2670,16 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Moving a channel with its own rules into a category with rules: sync or keep (P8).
+  const [syncAsk, setSyncAsk] = useState(false);
 
   const typeLocked = isEdit;
   const showParent = type !== "category";
   const showTopic = type === "text" || type === "announcement";
   const showUserLimit = type === "voice" || type === "stage";
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (e, lockPermissions) => {
+    e?.preventDefault?.();
     const trimmed = name.trim();
     if (!trimmed) {
       setError(t("Channel name is required."));
@@ -2687,11 +2692,24 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
     }
     setBusy(true);
     setError("");
+    const nextParent = showParent && selectedParent ? selectedParent : null;
+    if (
+      isEdit &&
+      lockPermissions === undefined &&
+      serverId &&
+      nextParent &&
+      (await moveNeedsSyncChoice({ channel, newParentId: nextParent, getOverrides: (id) => getChannelOverridesForMove(serverId, id) }))
+    ) {
+      setSyncAsk(true);
+      setBusy(false);
+      return;
+    }
+    setSyncAsk(false);
     try {
       const payload = {
         name: trimmed,
         type,
-        parentId: showParent && selectedParent ? selectedParent : null,
+        parentId: nextParent,
       };
       if (showTopic) payload.topic = topic.trim() || null;
       if (showTopic) payload.slowmodeSeconds = Math.max(0, Math.min(21600, Math.floor(Number(slowmodeSeconds) || 0)));
@@ -2705,6 +2723,7 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
           slowmodeSeconds: showTopic ? payload.slowmodeSeconds : undefined,
           nsfw: showTopic ? payload.nsfw : undefined,
           userLimit: showUserLimit ? payload.userLimit : undefined,
+          ...(lockPermissions !== undefined ? { lockPermissions } : {}),
         });
       } else {
         await onSubmit(payload);
@@ -2878,11 +2897,32 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
         )}
 
         {error && <p className="server-modal-error">{error}</p>}
+        {syncAsk ? (
+          <div className="chperm-move-sync" role="group" aria-label={t("chperm.moveSyncTitle")}>
+            <strong>{t("chperm.moveSyncTitle")}</strong>
+            <p>
+              {t("chperm.moveSyncMsg", {
+                channel: channel?.name || "",
+                category: categories.find((c) => String(c.id) === String(selectedParent))?.name || t("chperm.category"),
+              })}
+            </p>
+            <div className="server-modal-actions">
+              <button type="button" className="server-ghost-btn" onClick={() => submit(null, false)} disabled={busy}>
+                {t("chperm.moveSyncKeep")}
+              </button>
+              <button type="button" className="server-primary-btn" onClick={() => submit(null, true)} disabled={busy}>
+                {t("chperm.moveSyncUse", {
+                  category: categories.find((c) => String(c.id) === String(selectedParent))?.name || t("chperm.category"),
+                })}
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="server-modal-actions">
           <button type="button" className="server-ghost-btn" onClick={onClose} disabled={busy}>
             {t("Cancel")}
           </button>
-          <button type="submit" className="server-primary-btn" disabled={busy || !name.trim()}>
+          <button type="submit" className="server-primary-btn" disabled={busy || !name.trim() || syncAsk}>
             {busy ? t("Please wait...") : isEdit ? t("Save") : t("Create")}
           </button>
         </div>
