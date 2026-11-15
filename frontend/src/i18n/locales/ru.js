@@ -28,6 +28,7 @@ import { SYSX_RU } from "./sysx.ru.js";
 import { AUDIT_LOG_RU } from "./auditLog.ru.js";
 import { LIVE_POPUP_RU } from "./livePopup.ru.js";
 import { ANNC_RU } from "./annc.ru.js";
+import { COINPOP_RU } from "./coinpop.ru.js";
 import { CHPERM_RU } from "./chperm.ru.js";
 import { SEC_CENTER_RU } from "./secCenter.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
@@ -70,6 +71,7 @@ export const nested = {
   "auditLog": AUDIT_LOG_RU,
   "livePopup": LIVE_POPUP_RU,
   "annc": ANNC_RU,
+  "coinpop": COINPOP_RU,
   "chperm": CHPERM_RU,
   "secCenter": SEC_CENTER_RU,
   "agentx": AGENTX_RU,
