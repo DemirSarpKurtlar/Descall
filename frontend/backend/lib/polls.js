@@ -103,10 +103,16 @@ async function resolvePollAccess(userId, poll) {
   if (!poll || !userId) return none;
   if (poll.scope === "server") {
     const resolved = await resolveChannelPermissions(supabase, poll.server_id, userId, poll.channel_id);
-    if (!resolved?.isMember || !hasPermission(resolved.bits, Permissions.VIEW_CHANNEL)) return none;
+    // Old poll messages are history: READ_MESSAGE_HISTORY too (server audit SK-14 / CA-7).
+    if (!resolved?.isMember || !hasPermission(resolved.bits, Permissions.VIEW_CHANNEL) || !hasPermission(resolved.bits, Permissions.READ_MESSAGE_HISTORY)) return none;
     const manage = hasPermission(resolved.bits, Permissions.MANAGE_MESSAGES);
     let timedOut = false;
-    if (!resolved.isOwner) {
+    try {
+      timedOut = Boolean(require("./moderation").getActiveTimeout(userId));
+    } catch {
+      timedOut = false;
+    }
+    if (!timedOut && !resolved.isOwner && !hasPermission(resolved.bits, Permissions.ADMINISTRATOR)) {
       const { getActiveServerTimeout } = require("./serverTimeoutState");
       timedOut = Boolean(await getActiveServerTimeout(poll.server_id, userId));
     }

@@ -14,6 +14,12 @@
 # Secrets: ASC_KEY_P8 (raw .p8 text), ASC_KEY_ID, ASC_ISSUER_ID, APPLE_TEAM_ID.
 # The key is written to a 600-permission file outside the workspace and removed at the end.
 #
+# iOS screen sharing (docs/ios-screen-share.md): the DescallBroadcast ReplayKit extension
+# (com.descall.app.broadcast, App Group group.com.descall.app) is always compiled, but it is only
+# shipped when the repository variable IOS_BROADCAST_EXTENSION is "1" (or the manual run ticks
+# broadcast_extension). Until the owner registered that identifier in the Apple Developer portal
+# the appex is removed from the archive before signing, and the app hides Share Screen on iOS.
+#
 # Versions: CFBundleShortVersionString = frontend/package.json version (sync-version.cjs keeps the
 # iOS MARKETING_VERSION in sync). CFBundleVersion = UTC timestamp YYYYMMDD.HHMM, so every build
 # number is higher than the previous one regardless of tag, re-run or manual dispatch.
@@ -22,6 +28,11 @@ name: iOS TestFlight
 
 on:
   workflow_dispatch:
+    inputs:
+      broadcast_extension:
+        description: "Ship the iOS screen broadcast extension (needs the Apple portal setup in docs/ios-screen-share.md)"
+        type: boolean
+        default: false
   push:
     tags: ["v*"]
 
@@ -50,6 +61,7 @@ jobs:
       ASC_APP_ID: "6820558264"
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       XCODE_APP: /Applications/Xcode_26.6.app
+      SHIP_BROADCAST: ${{ (inputs.broadcast_extension == true || vars.IOS_BROADCAST_EXTENSION == '1') && '1' || '0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -174,6 +186,29 @@ jobs:
           test -d "$ARCHIVE_PATH/Products/Applications/App.app"
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
 
+      - name: Screen broadcast extension (shipped only when IOS_BROADCAST_EXTENSION=1)
+        run: |
+          set -euo pipefail
+          APP="$ARCHIVE_PATH/Products/Applications/App.app"
+          BAPPEX="$APP/PlugIns/DescallBroadcast.appex"
+          test -d "$BAPPEX" || { echo "::error::DescallBroadcast.appex missing from the archive"; exit 1; }
+          if [ "$SHIP_BROADCAST" != "1" ]; then
+            rm -rf "$BAPPEX"
+            echo "::notice::Screen broadcast extension compiled but not shipped. Do the Apple portal steps in docs/ios-screen-share.md, then set the repository variable IOS_BROADCAST_EXTENSION=1. Without it the app hides Share Screen on iOS."
+            exit 0
+          fi
+          # Shared frameworks live in App.app/Frameworks (the appex runpath has @executable_path/../../Frameworks);
+          # an appex with its own Frameworks folder is rejected by App Store Connect.
+          if [ -d "$BAPPEX/Frameworks" ]; then
+            for fw in "$BAPPEX/Frameworks"/*; do
+              [ -e "$fw" ] || continue
+              name="$(basename "$fw")"
+              if [ -e "$APP/Frameworks/$name" ]; then rm -rf "$fw"; else mkdir -p "$APP/Frameworks" && mv "$fw" "$APP/Frameworks/"; fi
+            done
+            rmdir "$BAPPEX/Frameworks"
+          fi
+          echo "Shipping DescallBroadcast.appex ($(du -sh "$BAPPEX" | cut -f1))"
+
       - name: Embed release entitlements in the archive (ad-hoc, re-signed at export)
         run: |
           set -euo pipefail
@@ -192,6 +227,13 @@ jobs:
               --entitlements "frontend/ios/App/$EXT/$EXT.entitlements" --generate-entitlement-der "$APPEX"
             codesign -d --entitlements - --xml "$APPEX" 2>/dev/null | plutil -p -
           done
+          # Screen broadcast extension (App Group), when this build ships it.
+          BAPPEX="$APP/PlugIns/DescallBroadcast.appex"
+          if [ -d "$BAPPEX" ]; then
+            codesign --force --sign - --timestamp=none \
+              --entitlements "frontend/ios/App/DescallBroadcast/DescallBroadcast.entitlements" --generate-entitlement-der "$BAPPEX"
+            codesign -d --entitlements - --xml "$BAPPEX" 2>/dev/null | plutil -p -
+          fi
           # 3.7.17: the embedded Apple Watch app (no entitlements of its own), before the outer app.
           WAPP="$APP/Watch/DescallWatch.app"
           test -d "$WAPP" || { echo "::error::DescallWatch.app missing from the archive"; exit 1; }
@@ -279,6 +321,29 @@ jobs:
             [ "$es" = "$as" ] || { echo "::error::$EXT CFBundleShortVersionString $es != app $as"; ok=0; }
             echo "$EXT: $es ($ev) matches app $as ($av)"
           done
+          # Screen broadcast extension: present (App Group, id, same version) only when shipped.
+          BAPPEX="$APP/PlugIns/DescallBroadcast.appex"
+          if [ "$SHIP_BROADCAST" = "1" ]; then
+            if [ -d "$BAPPEX" ]; then
+              codesign -dvv "$BAPPEX" 2>&1 | grep -E '^(Authority|Identifier)=' || true
+              codesign -d --entitlements - --xml "$BAPPEX" > "$WORK/DescallBroadcast.plist" 2>/dev/null || true
+              bg="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$WORK/DescallBroadcast.plist" 2>/dev/null || true)"
+              [ "$bg" = "group.com.descall.app" ] || { echo "::error::DescallBroadcast has no App Group ('$bg')"; ok=0; }
+              bid="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$BAPPEX/Info.plist")"
+              [ "$bid" = "com.descall.app.broadcast" ] || { echo "::error::broadcast extension id is $bid"; ok=0; }
+              bv="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$BAPPEX/Info.plist")"
+              bs="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$BAPPEX/Info.plist")"
+              av="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+              as="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+              [ "$bv" = "$av" ] && [ "$bs" = "$as" ] || { echo "::error::DescallBroadcast $bs ($bv) != app $as ($av)"; ok=0; }
+              [ ! -d "$BAPPEX/Frameworks" ] || { echo "::error::DescallBroadcast.appex has its own Frameworks folder"; ok=0; }
+              echo "DescallBroadcast: $bs ($bv) matches app $as ($av)"
+            else
+              echo "::error::DescallBroadcast.appex missing from the IPA (IOS_BROADCAST_EXTENSION=1)"; ok=0
+            fi
+          elif [ -d "$BAPPEX" ]; then
+            echo "::error::DescallBroadcast.appex shipped although IOS_BROADCAST_EXTENSION is not 1"; ok=0
+          fi
           # 3.7.17: Apple Watch app signed for distribution, same version and build as the app.
           WAPP="$APP/Watch/DescallWatch.app"
           if [ -d "$WAPP" ]; then

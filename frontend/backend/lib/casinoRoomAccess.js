@@ -8,8 +8,9 @@
  * id and broadcast casino boards into it.
  *
  *   group   → caller is a row in group_members
- *   channel → caller is a server member with VIEW_CHANNEL + SEND_MESSAGES on a
- *             text channel and is not server-timed-out
+ *   channel → caller may send a message there (serverChannelHandlers
+ *             assertTextChannelAccess: VIEW + SEND, announcement rule, not timed out
+ *             site-wide or in the server) and accepted the server rules
  *   dm      → caller and peer are accepted friends (no message requests), the
  *             pair is not blocked either way, caller is not banned / timed out
  *
@@ -44,7 +45,7 @@ function isId(v) {
 
 function defaultDeps() {
   const supabase = require("../db/supabase");
-  const { Permissions, hasPermission, resolveChannelPermissions } = require("./serverPermissions");
+  const { Permissions } = require("./serverPermissions");
   const state = require("../runtime/sharedState");
   const { isAcceptedFriend, convKey } = require("./dmMessages");
   const { isBlockedEitherWay } = require("./blocking");
@@ -60,27 +61,22 @@ function defaultDeps() {
         .maybeSingle();
       return Boolean(data);
     },
+    // Same gate as a channel message (server audit MSG-8): membership, VIEW + SEND,
+    // read-only announcement channels, site-wide and server timeouts, rules acceptance.
+    // Slowmode and chat freeze are checked for new game posts in gameHandlers.
     async channelAccess(channelId, userId) {
-      const { data: channel } = await supabase
-        .from("server_channels")
-        .select("id, server_id, type")
-        .eq("id", channelId)
-        .maybeSingle();
-      if (!channel || (channel.type !== "text" && channel.type !== "announcement")) return { ok: false };
-      const resolved = await resolveChannelPermissions(supabase, channel.server_id, userId, channelId);
-      if (!resolved?.isMember) return { ok: false };
-      if (!hasPermission(resolved.bits, Permissions.VIEW_CHANNEL) || !hasPermission(resolved.bits, Permissions.SEND_MESSAGES)) {
+      const { assertTextChannelAccess } = require("../socket/serverChannelHandlers");
+      let access;
+      try {
+        access = await assertTextChannelAccess(userId, channelId, Permissions.SEND_MESSAGES);
+      } catch (err) {
+        return { ok: false, timedOut: err?.code === "TIMED_OUT" };
+      }
+      const { needsRulesAcceptance } = require("./serverRulesGate");
+      if (await needsRulesAcceptance(supabase, access.channel.server_id, userId, { isOwner: access.resolved?.isOwner })) {
         return { ok: false };
       }
-      const { data: member } = await supabase
-        .from("server_members")
-        .select("timeout_until")
-        .eq("server_id", channel.server_id)
-        .eq("user_id", userId)
-        .maybeSingle();
-      const until = member?.timeout_until ? new Date(member.timeout_until).getTime() : 0;
-      if (until && until > Date.now()) return { ok: false, timedOut: true };
-      return { ok: true, serverId: channel.server_id };
+      return { ok: true, serverId: access.channel.server_id };
     },
     isBanned: (userId) => Boolean(state.bannedUserIds?.has?.(userId)),
     isTimedOut: (userId) => Boolean(getActiveTimeout(userId)),

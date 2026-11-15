@@ -7,6 +7,11 @@ const { edgePublicBase, publicCache } = require("../lib/edgeConfig");
 
 const router = express.Router();
 
+function platformNoticeField() {
+  const notice = require("../lib/securitySettings").publicNotice(state.systemConfig);
+  return notice ? { platformNotice: notice } : {};
+}
+
 router.get("/", (_req, res) => {
   // 2.11.5: short shared cache (edge 30 s, browser 15 s). Live flips still
   // reach open apps at once through the `features:updated` socket event.
@@ -15,6 +20,8 @@ router.get("/", (_req, res) => {
   res.json({
     ...publicFeatureFlags(state.systemConfig?.featureFlags),
     ...(edgeApiBase ? { edgeApiBase } : {}),
+    // Güvenlik Merkezi emergency lock info band (only while one is on); live changes arrive as `platform:notice`.
+    ...platformNoticeField(),
   });
 });
 

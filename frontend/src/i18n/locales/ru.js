@@ -16,9 +16,22 @@ import { MSG5_RU } from "./msg5.ru.js";
 import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
+import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { BAN_ADMIN_RU } from "./banAdmin.ru.js";
 import { SERVER_REVIEW_RU } from "./serverReview.ru.js";
+import { DOSSIER_RU } from "./dossier.ru.js";
+import { SHOP_DESK_RU } from "./shopDesk.ru.js";
+import { SHOP_MERCH_RU } from "./shopMerch.ru.js";
+import { MOD_DESK_RU, MOD_DESK_API_RU } from "./modDesk.ru.js";
+import { GAMES_ADMIN_RU } from "./gamesAdmin.ru.js";
+import { SYSX_RU } from "./sysx.ru.js";
+import { AUDIT_LOG_RU } from "./auditLog.ru.js";
+import { LIVE_POPUP_RU } from "./livePopup.ru.js";
+import { ANNC_RU } from "./annc.ru.js";
+import { CHPERM_RU } from "./chperm.ru.js";
+import { SEC_CENTER_RU } from "./secCenter.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
+import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
@@ -45,9 +58,22 @@ export const nested = {
   "act": ACT_RU,
   "dir": DIR_RU,
   "ban": BAN_RU,
+  "iosShare": IOS_SHARE_RU,
   "banAdmin": BAN_ADMIN_RU,
   "serverReview": SERVER_REVIEW_RU,
+  "dossier": DOSSIER_RU,
+  "shopDesk": SHOP_DESK_RU,
+  "shopMerch": SHOP_MERCH_RU,
+  "modDesk": MOD_DESK_RU,
+  "gamesAdmin": GAMES_ADMIN_RU,
+  "sysx": SYSX_RU,
+  "auditLog": AUDIT_LOG_RU,
+  "livePopup": LIVE_POPUP_RU,
+  "annc": ANNC_RU,
+  "chperm": CHPERM_RU,
+  "secCenter": SEC_CENTER_RU,
   "agentx": AGENTX_RU,
+  "agentOps": AGENT_OPS_RU,
   "invl": INVL_RU,
   "sgx": SIGNUP_GROWTH.ru.nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
@@ -2973,7 +2999,9 @@ export const nested = {
       "reportNoViolation": "Мы проверили вашу жалобу и не нашли нарушений правил. Спасибо.",
       "reportReviewedTitle": "Ваша жалоба рассмотрена",
       "serverOwnerBody": "Теперь вы владелец сервера {serverName}",
-      "serverOwnerTitle": "Владение сервером"
+      "serverOwnerTitle": "Владение сервером",
+      "timeoutBody": "Вы можете читать и слушать, но какое-то время не сможете писать сообщения и говорить в голосовых каналах.",
+      "timeoutTitle": "Вам временно ограничили отправку сообщений"
     },
     "opt": {
       "amount": "сумма",
@@ -6108,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} в голосовом",
     "slowmode": "Медленный режим",
     "systemFoot": "Приветствия новых участников и системные сообщения приходят в этот канал. Неактивные участники переносятся в канал AFK по истечении тайм-аута AFK.",
+    "defaultNotif": "Уведомления по умолчанию",
     "systemMsgs": "Системные сообщения",
     "tAnnSub": "Пишет только команда, участники читают",
     "tStageSub": "Выступающие и слушатели",
@@ -10734,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Вы получили DesCoin!",
   "You received a gift!": "Вы получили подарок!",
   "You were banned from {name}": "Вас забанили: {name}",
+  "You were timed out in {name}": "Вам выдали тайм-аут: {name}",
+  "Your timeout in {name} was lifted": "Тайм-аут снят: {name}",
   "You were kicked from {name}": "Вас выгнали: {name}",
   "You win": "Вы выиграли",
   "You win!": "Вы выиграли!",
@@ -11021,6 +11052,7 @@ export const phrases = {
   "Descall: voice chat, servers and screen sharing for friends": "Descall: голосовой чат, серверы и демонстрация экрана для друзей",
   ...DIR_API_RU,
   ...API_RU,
+  ...MOD_DESK_API_RU,
 };
 
 export default { nested, phrases };

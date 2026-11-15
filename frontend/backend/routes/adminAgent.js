@@ -1,10 +1,12 @@
 "use strict";
 
 /**
- * Admin agent API (phase 1). Mounted inside the admin router, so every route already
- * passed requireAuth, requireAdmin, the admin rate limit, admin 2FA and the "agent"
- * section check. Chat streams Server-Sent Events. Settings (on/off, monthly budget)
- * are owner-only and, as a change, need the 2FA step-up.
+ * Admin agent API. Mounted inside the admin router, so every route already passed
+ * requireAuth, requireAdmin, the admin rate limit, admin 2FA and the "agent" section
+ * check. Chat streams Server-Sent Events. Settings (on/off, monthly budget) are
+ * owner-only and, as a change, need the 2FA step-up.
+ *
+ * Phase 2 (plans, scopes, saved prompts, scheduled tasks) lives in routes/adminAgentPlans.js.
  */
 
 const express = require("express");
@@ -42,7 +44,7 @@ router.get("/agent/status", async (req, res) => {
       keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
       model: MODEL,
       owner,
-      phase: 1,
+      phase: 2,
       tablesMissing: Boolean(settings.missing),
     });
   } catch (e) {
@@ -99,8 +101,8 @@ function displayMessages(rows) {
     const text = blocks.filter((b) => b.type === "text").map((b) => b.text).join("");
     const tools = blocks
       .filter((b) => b.type === "tool_use")
-      .filter((b) => BY_NAME.has(b.name))
-      .map((b) => ({ name: b.name }));
+      .filter((b) => BY_NAME.has(b.name) || b.name === "propose_plan")
+      .map((b) => ({ name: b.name, id: b.id }));
     const prev = out[out.length - 1];
     if (prev && prev.role === "assistant") {
       prev.text += text;
@@ -138,6 +140,9 @@ router.delete("/agent/threads/:id", async (req, res) => {
 router.post("/agent/chat", async (req, res) => {
   const threadId = req.body?.threadId ? String(req.body.threadId) : null;
   if (threadId && !UUID.test(threadId)) return fail(res, 400, "BAD_THREAD");
+  const planId = req.body?.planId && UUID.test(String(req.body.planId)) ? String(req.body.planId) : null;
+  const mode = ["read", "dry", "apply"].includes(req.body?.mode) ? req.body.mode : "dry";
+  require("../lib/adminAgent/plans").setIo(req.app.get("io"));
 
   res.status(200);
   res.set({
@@ -164,6 +169,8 @@ router.post("/agent/chat", async (req, res) => {
       threadId,
       text: req.body?.message,
       onEvent: send,
+      mode,
+      planId,
     });
   } catch (e) {
     const code = e?.code || (e?.status === 429 ? "RATE_LIMITED" : "AGENT_FAILED");
@@ -174,6 +181,9 @@ router.post("/agent/chat", async (req, res) => {
     if (open) res.end();
   }
 });
+
+// Phase 2: plans, scopes, saved prompts, scheduled tasks.
+router.use(require("./adminAgentPlans"));
 
 module.exports = router;
 module.exports.displayMessages = displayMessages;

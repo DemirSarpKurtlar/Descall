@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { acceptServerRules } from "../../api/servers";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import { rulesList } from "./hub/hubData";
+import { cssUrl } from "../../lib/cssUrl";
 
 /**
  * Community onboarding rules accept screen.
@@ -50,7 +51,7 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
           <div
             className="server-rules-splash"
             style={{
-              backgroundImage: `url(${server.splashUrl || server.bannerUrl})`,
+              backgroundImage: cssUrl(server.splashUrl || server.bannerUrl),
             }}
           />
         )}

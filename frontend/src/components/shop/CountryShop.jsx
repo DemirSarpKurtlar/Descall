@@ -22,6 +22,7 @@ import AdminBadge from "../social/AdminBadge";
 import { CountryBadge, CountryFlag } from "./CountryFlag";
 import { condenseLetters, railCapacity } from "../../lib/letterRail";
 import { formatNumber } from "../../i18n/format.js";
+import { purchasable, saleOf } from "../../lib/shopMerchView.js";
 
 const REGION_LABEL = Object.fromEntries(COUNTRY_REGIONS.map((r) => [r.id, r.labelKey]));
 
@@ -64,12 +65,16 @@ function CountryAction({ item, state, busy, affordable, hasVoucher, onBuy, onEqu
       {hasVoucher ? (
         <span className="cs-price is-free"><Gift size={12} /> {t("Free")}</span>
       ) : (
-        <span className="cs-price"><Coins size={12} /> {formatNumber(item.price_descoin || 0, locale)}</span>
+        <span className="cs-price">
+          <Coins size={12} />{" "}
+          {saleOf(item).onSale ? <s className="shm-list">{formatNumber(saleOf(item).list, locale)}</s> : null}{" "}
+          {formatNumber(item.price_descoin || 0, locale)}
+        </span>
       )}
       <button
         type="button"
         className="cs-btn is-primary"
-        disabled={busy || (!affordable && !hasVoucher)}
+        disabled={busy || !purchasable(item) || (!affordable && !hasVoucher)}
         title={!affordable && !hasVoucher ? t("Not enough DesCoin yet") : undefined}
         onClick={() => onBuy(item)}
       >

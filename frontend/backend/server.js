@@ -78,6 +78,10 @@ const io = new Server(httpServer, {
   // 12 s + 10 s keeps that under ~22 s at a negligible ping cost.
   pingInterval: 12000,
   pingTimeout: 10000,
+  // Largest client frame (server audit SK-5): the 1 MB default let one chat event carry
+  // a 1 MB "message" / "emoji". Text is capped far lower in the handlers; 512 KB still
+  // leaves room for WebRTC SDP and every other legitimate payload.
+  maxHttpBufferSize: 512 * 1024,
   // 2.11.4 (scale S0): compress only big frames (boot lists, roster
   // snapshots). Small chat/typing frames stay raw. Small zlib window and no
   // context takeover keep memory per socket at ~12 KB instead of ~300 KB.
@@ -91,6 +95,8 @@ const io = new Server(httpServer, {
 });
 
 app.set("io", io);
+// Güvenlik Merkezi: live feed pushes to admins with the section, emergency lock expiry timer.
+require("./lib/securityCenter").attach(io);
 // 2.11.2: private message media. Every outgoing Socket.IO payload / JSON body gets its
 // sb://media-private/... refs replaced with short-lived signed URLs.
 require("./lib/privateMedia").installPrivateMediaHooks({ io, express });
@@ -230,8 +236,10 @@ app.get("/api/jwks.json", (_req, res) => {
 
 // Health check
 function sendHealth(_req, res) {
+  // Sistem › Güvenli yeniden başlat: "draining" while sockets are being moved off.
+  const draining = require("./lib/systemRestart").isDraining();
   res.json({
-    status: "healthy",
+    status: draining ? "draining" : "healthy",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
@@ -551,6 +559,8 @@ app.use("/api/notify-prefs", require("./routes/notifyPrefs"));
 // Messaging phase 4: scheduled sending; the sender runs here so schedules fire while the author is offline.
 app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
 if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
+// Admin agent: resumes approved plans after a restart, starts scheduled plans and runs scheduled tasks.
+if (process.env.NODE_ENV !== "test") require("./lib/adminAgent/scheduler").start({ getIo: () => app.get("io") });
 // Messaging phase 5: "Mesaj önizlemesi" for server-sent pushes (users.push_preview).
 app.use("/api/push-preview", require("./routes/pushPreview"));
 // Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.
@@ -712,204 +722,13 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
   }
 });
 
-// ========== ANNOUNCEMENTS ENDPOINTS ==========
-
-// Get all active announcements - GET /api/announcements
-// 2.11.5: same list for everyone → 30 s memory cache (cleared by the admin
-// routes below) + shared edge cache 60 s.
-const announcementsCache = { at: 0, rows: null };
-function invalidateAnnouncementsCache() {
-  announcementsCache.at = 0;
-  announcementsCache.rows = null;
-}
-app.get("/api/announcements", async (req, res) => {
-  try {
-    if (announcementsCache.rows && Date.now() - announcementsCache.at < 30_000) {
-      require("./lib/edgeConfig").publicCache(res, { maxAge: 30, sMaxAge: 60 });
-      return res.json({ success: true, announcements: announcementsCache.rows });
-    }
-    const { data, error } = await supabase
-      .from("announcements")
-      .select("id, title, content, created_at, priority, color, emoji, pinned, target, author")
-      .eq("is_active", true)
-      .order("pinned", { ascending: false })
-      .order("created_at", { ascending: false });
-    
-    if (error) return res.status(500).json({ success: false, error: "Failed to load announcements." });
-    announcementsCache.rows = data || [];
-    announcementsCache.at = Date.now();
-    require("./lib/edgeConfig").publicCache(res, { maxAge: 30, sMaxAge: 60 });
-    return res.json({ success: true, announcements: data || [] });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Create announcement - POST /api/admin/announcements
-app.post("/api/admin/announcements", requireAuth, async (req, res) => {
-  res.on("finish", invalidateAnnouncementsCache);
-  try {
-    const { data: requester } = await supabase
-      .from("users")
-      .select("username, is_admin")
-      .eq("id", req.user.id)
-      .single();
-    
-    const isAdmin = requester?.is_admin || req.user.username === "admin";
-    
-    if (!isAdmin) {
-      return res.status(403).json({ success: false, error: "Not authorized" });
-    }
-    
-    const { title, content, priority = "normal", color = "#5865F2", emoji = "📢", pinned = false, target = "all" } = req.body;
-    
-    if (!title?.trim() || !content?.trim()) {
-      return res.status(400).json({ success: false, error: "Title and content are required" });
-    }
-
-    const { data, error } = await supabase
-      .from("announcements")
-      .insert({
-        title: title.trim(),
-        content: content.trim(),
-        created_by: req.user.id,
-        author: requester.username,
-        priority,
-        color,
-        emoji,
-        pinned,
-        target,
-      })
-      .select()
-      .single();
-    
-    if (error) return sendServerError(req, res, error);
-    
-    // Broadcast to all connected users
-    const io = req.app.get("io");
-    io.emit("announcement:new", data);
-    
-    return res.json({ success: true, announcement: data });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Toggle pin on announcement - PATCH /api/admin/announcements/:id
-app.patch("/api/admin/announcements/:id", requireAuth, async (req, res) => {
-  res.on("finish", invalidateAnnouncementsCache);
-  try {
-    const { data: requester } = await supabase
-      .from("users")
-      .select("username, is_admin")
-      .eq("id", req.user.id)
-      .single();
-    
-    const isAdmin = requester?.is_admin || req.user.username === "admin";
-    if (!isAdmin) return res.status(403).json({ success: false, error: "Not authorized" });
-
-    const { pinned } = req.body;
-    if (typeof pinned !== "boolean") {
-      return res.status(400).json({ success: false, error: "pinned must be a boolean" });
-    }
-
-    const { data, error } = await supabase
-      .from("announcements")
-      .update({ pinned })
-      .eq("id", req.params.id)
-      .select()
-      .single();
-    
-    if (error) return sendServerError(req, res, error);
-
-    const io = req.app.get("io");
-    io.emit("announcement:updated", data);
-
-    return res.json({ success: true, announcement: data });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Delete announcement - DELETE /api/admin/announcements/:id
-app.delete("/api/admin/announcements/:id", requireAuth, async (req, res) => {
-  res.on("finish", invalidateAnnouncementsCache);
-  try {
-    const { data: requester } = await supabase
-      .from("users")
-      .select("username, is_admin")
-      .eq("id", req.user.id)
-      .single();
-    
-    const isAdmin = requester?.is_admin || req.user.username === "admin";
-    
-    if (!isAdmin) {
-      return res.status(403).json({ success: false, error: "Not authorized" });
-    }
-    
-    const { error } = await supabase
-      .from("announcements")
-      .update({ is_active: false })
-      .eq("id", req.params.id);
-    
-    if (error) return sendServerError(req, res, error);
-    
-    // Broadcast deletion
-    const io = req.app.get("io");
-    io.emit("announcement:deleted", { id: req.params.id });
-    
-    return res.json({ success: true });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Mark announcement as read - POST /api/announcements/:id/read
-app.post("/api/announcements/:id/read", requireAuth, async (req, res) => {
-  try {
-    const { error } = await supabase
-      .from("announcement_reads")
-      .upsert({
-        user_id: req.user.id,
-        announcement_id: req.params.id,
-        read_at: new Date().toISOString(),
-      }, { onConflict: ["user_id", "announcement_id"] });
-    
-    if (error) return sendServerError(req, res, error);
-    
-    return res.json({ success: true });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
-
-// Get unread announcement count - GET /api/announcements/unread/count
-app.get("/api/announcements/unread/count", requireAuth, async (req, res) => {
-  try {
-    // Get all active announcements
-    const { data: announcements, error: annError } = await supabase
-      .from("announcements")
-      .select("id")
-      .eq("is_active", true);
-    
-    if (annError) return sendServerError(req, res, annError);
-    
-    // Get read announcements for this user
-    const { data: reads, error: readError } = await supabase
-      .from("announcement_reads")
-      .select("announcement_id")
-      .eq("user_id", req.user.id);
-    
-    if (readError) return sendServerError(req, res, readError);
-    
-    const readIds = new Set((reads || []).map((r) => r.announcement_id));
-    const unreadCount = (announcements || []).filter((a) => !readIds.has(a.id)).length;
-    
-    return res.json({ success: true, count: unreadCount });
-  } catch (err) {
-    return sendServerError(req, res, err);
-  }
-});
+// ========== ANNOUNCEMENTS ==========
+// Duyurular (remake Nov 2026): public list for everyone-audience rows, the per-person
+// feed filtered on the server, seen / read / click marks (routes/announcements.js).
+// Admin routes live in routes/adminAnnouncements.js (mounted in routes/admin.js).
+// The scheduler publishes scheduled rows and ends expired ones.
+app.use(require("./routes/announcements"));
+require("./lib/announcements/service").start(io);
 
 // Admin role changes and the user list live in routes/admin.js (owner-only make/remove-admin,
 // section permissions); the old duplicates here were shadowed by that router and are gone.
@@ -1009,6 +828,8 @@ io.use(socketAuthMiddleware);
 require("./runtime/edgeRuntime").startEdgeBridgeFromEnv(io);
 io.engine.on("connection_error", () => {});
 registerSocketHandlers(io);
+// Temporary server memberships also expire after a restart or for REST-only joins (IM-8).
+require("./lib/serverMemberJoin").startTemporaryMemberSweeper(io);
 // 3D world (phase 1): separate /world namespace, desktop + admins only (socket/worldHandlers.js).
 require("./socket/worldHandlers").registerWorldNamespace(io);
 {

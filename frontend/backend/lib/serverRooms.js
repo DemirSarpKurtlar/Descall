@@ -36,6 +36,12 @@ async function evictFromServerRooms(io, serverId, { userId = null, rooms = null 
 /** Remove a user from this server's rooms and voice calls (kick / ban / leave). */
 function dropUserFromServer(io, serverId, userId, reason) {
   if (!io || !serverId || userId == null) return Promise.resolve();
+  // Joins in flight re-check access after joining (server audit CA-1).
+  try {
+    require("./serverAccessRealtime").bumpServerAccessEpoch();
+  } catch {
+    /* ignore */
+  }
   return (async () => {
     try {
       await evictFromServerRooms(io, serverId, { userId });

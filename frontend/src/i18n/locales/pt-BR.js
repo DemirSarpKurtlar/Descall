@@ -16,9 +16,22 @@ import { MSG5_PT_BR } from "./msg5.pt-BR.js";
 import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
+import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { BAN_ADMIN_PT_BR } from "./banAdmin.pt-BR.js";
 import { SERVER_REVIEW_PT_BR } from "./serverReview.pt-BR.js";
+import { DOSSIER_PT_BR } from "./dossier.pt-BR.js";
+import { SHOP_DESK_PT_BR } from "./shopDesk.pt-BR.js";
+import { SHOP_MERCH_PT_BR } from "./shopMerch.pt-BR.js";
+import { MOD_DESK_PT_BR, MOD_DESK_API_PT_BR } from "./modDesk.pt-BR.js";
+import { GAMES_ADMIN_PT_BR } from "./gamesAdmin.pt-BR.js";
+import { SYSX_PT_BR } from "./sysx.pt-BR.js";
+import { AUDIT_LOG_PT_BR } from "./auditLog.pt-BR.js";
+import { LIVE_POPUP_PT_BR } from "./livePopup.pt-BR.js";
+import { ANNC_PT_BR } from "./annc.pt-BR.js";
+import { CHPERM_PT_BR } from "./chperm.pt-BR.js";
+import { SEC_CENTER_PT_BR } from "./secCenter.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
+import { AGENT_OPS_PT_BR } from "./agentOps.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
@@ -45,9 +58,22 @@ export const nested = {
   "act": ACT_PT_BR,
   "dir": DIR_PT_BR,
   "ban": BAN_PT_BR,
+  "iosShare": IOS_SHARE_PT_BR,
   "banAdmin": BAN_ADMIN_PT_BR,
   "serverReview": SERVER_REVIEW_PT_BR,
+  "dossier": DOSSIER_PT_BR,
+  "shopDesk": SHOP_DESK_PT_BR,
+  "shopMerch": SHOP_MERCH_PT_BR,
+  "modDesk": MOD_DESK_PT_BR,
+  "gamesAdmin": GAMES_ADMIN_PT_BR,
+  "sysx": SYSX_PT_BR,
+  "auditLog": AUDIT_LOG_PT_BR,
+  "livePopup": LIVE_POPUP_PT_BR,
+  "annc": ANNC_PT_BR,
+  "chperm": CHPERM_PT_BR,
+  "secCenter": SEC_CENTER_PT_BR,
   "agentx": AGENTX_PT_BR,
+  "agentOps": AGENT_OPS_PT_BR,
   "invl": INVL_PT_BR,
   "sgx": SIGNUP_GROWTH["pt-BR"].nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
@@ -2973,7 +2999,9 @@ export const nested = {
       "reportNoViolation": "Analisamos sua denúncia e não encontramos nada contra as regras. Obrigado.",
       "reportReviewedTitle": "Sua denúncia foi analisada",
       "serverOwnerBody": "Agora o servidor {serverName} é seu",
-      "serverOwnerTitle": "Posse do servidor"
+      "serverOwnerTitle": "Posse do servidor",
+      "timeoutBody": "Você ainda pode ler e ouvir, mas por um tempo não pode enviar mensagens nem falar em voz.",
+      "timeoutTitle": "Você foi silenciado"
     },
     "opt": {
       "amount": "valor",
@@ -6108,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} na voz",
     "slowmode": "Modo lento",
     "systemFoot": "Boas-vindas a novos membros e mensagens do sistema chegam neste canal. Membros inativos vão para o canal AFK depois do tempo para AFK.",
+    "defaultNotif": "Notificações padrão",
     "systemMsgs": "Mensagens do sistema",
     "tAnnSub": "Só a equipe publica, os membros acompanham",
     "tStageSub": "Palestrantes e ouvintes",
@@ -10734,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Você recebeu DesCoin!",
   "You received a gift!": "Você recebeu um presente!",
   "You were banned from {name}": "Você foi banido de {name}",
+  "You were timed out in {name}": "Você recebeu um castigo temporário em {name}",
+  "Your timeout in {name} was lifted": "Seu castigo temporário em {name} foi removido",
   "You were kicked from {name}": "Você foi expulso de {name}",
   "You win": "Você ganhou",
   "You win!": "Você ganhou!",
@@ -11021,6 +11052,7 @@ export const phrases = {
   "Descall: voice chat, servers and screen sharing for friends": "Descall: chat de voz, servidores e tela compartilhada para amigos",
   ...DIR_API_PT_BR,
   ...API_PT_BR,
+  ...MOD_DESK_API_PT_BR,
 };
 
 export default { nested, phrases };

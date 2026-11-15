@@ -15,6 +15,7 @@ import { getServerMute, setServerMute, clearServerMute, MUTE_DURATIONS, subscrib
 import { AFK_TIMEOUT_OPTIONS, VERIFICATION_LEVELS, channelIcon, channelLabel, durationLabel, isTextLike, longDate, memberName, rulesList, vanityValid } from "./hubData";
 import { hapticSelection } from "../../../lib/fluid/haptics";
 import { formatDate } from "../../../i18n/format.js";
+import { cssUrl } from "../../../lib/cssUrl";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const VANITY_PREFIX = "descall.com/s/";
@@ -40,6 +41,7 @@ export function OverviewPage({ route }) {
   const base = useMemo(() => ({
     name: server?.name || "", description: server?.description || "", iconUrl: server?.iconUrl || null, bannerUrl: server?.bannerUrl || null,
     systemChannelId: server?.systemChannelId || null, afkChannelId: server?.afkChannelId || null, afkTimeoutSeconds: Number(server?.afkTimeoutSeconds) || 300,
+    defaultNotificationLevel: server?.defaultNotificationLevel === "mentions" ? "mentions" : "all",
   }), [server]);
   const [d, setD] = useRouteDraft(route, base);
   const [save, busy] = useSaveServer();
@@ -100,7 +102,7 @@ export function OverviewPage({ route }) {
       <input ref={iconRef} type="file" accept={IMAGE_TYPES.join(",")} hidden onChange={(e) => onFile(e, "icon")} />
       <input ref={bannerRef} type="file" accept={IMAGE_TYPES.join(",")} hidden onChange={(e) => onFile(e, "banner")} />
       <div className="svh-group" style={{ overflow: "hidden" }}>
-        <div style={{ height: tablet ? 150 : 118, position: "relative", background: d.bannerUrl ? `url("${d.bannerUrl}") center/cover` : "linear-gradient(120deg,#26315f,#4b3a8c 55%,#1e5a74)" }}>
+        <div style={{ height: tablet ? 150 : 118, position: "relative", background: d.bannerUrl ? `${cssUrl(d.bannerUrl)} center/cover` : "linear-gradient(120deg,#26315f,#4b3a8c 55%,#1e5a74)" }}>
           <Chip style={{ position: "absolute", right: 10, top: 10, background: "rgba(0,0,0,.35)" }} onClick={() => tapImage("banner")}>
             <I n="img" s={14} /> {uploading === "banner" ? s.uploading : s.changeBanner}
           </Chip>
@@ -135,6 +137,11 @@ export function OverviewPage({ route }) {
           id: "pick", title: s.afkTimeout, value: d.afkTimeoutSeconds,
           options: AFK_TIMEOUT_OPTIONS.map((n) => ({ id: n, t: durationLabel(n, f) })),
           onPick: (id) => setD((x) => ({ ...x, afkTimeoutSeconds: Number(id) })),
+        })} />
+        <Row ico="bell" c="gray" t={s.defaultNotif} val={d.defaultNotificationLevel === "mentions" ? s.lvlMentions : s.lvlAll} chev onClick={() => hub.push({
+          id: "pick", title: s.defaultNotif, value: d.defaultNotificationLevel,
+          options: [{ id: "all", t: s.lvlAll }, { id: "mentions", t: s.lvlMentions }],
+          onPick: (id) => setD((x) => ({ ...x, defaultNotificationLevel: id === "mentions" ? "mentions" : "all" })),
         })} />
       </Group>
       <Foot>{s.systemFoot}</Foot>

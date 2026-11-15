@@ -24,7 +24,15 @@ const STEP_UP_LIMIT = { windowMs: 15 * 60 * 1000, max: 10 };
 // Admin agent (phase 1): sending a chat message and deleting one's own conversation
 // change nothing on the platform. Tool calls inside the chat still go through the admin
 // routes, so a DM read still needs the step-up token.
-const STEP_UP_EXEMPT = [/^\/step-up\/?$/, /\/search\/?$/, /\/preview\/?$/, /^\/agent\/chat\/?$/, /^\/agent\/threads\/[^/]+\/?$/];
+// Admin agent (phase 2): ticking plan rows, the dry run, an admin edit (a new plan version),
+// discarding a proposal and saved prompts change nothing on the platform either. Approving,
+// pausing, cancelling, undoing and scheduled tasks still need the code (approval a fresh one).
+const STEP_UP_EXEMPT = [
+  /^\/step-up\/?$/, /\/search\/?$/, /\/preview\/?$/, /^\/agent\/chat\/?$/, /^\/agent\/threads\/[^/]+\/?$/,
+  /^\/agent\/plans\/[^/]+\/(selection|dry-run|edit|discard)\/?$/, /^\/agent\/prompts(\/[^/]+(\/use)?)?\/?$/,
+  // İşlem kaydı: saving / deleting one's own saved view changes nothing on the platform.
+  /^\/audit\/views(\/[^/]+)?\/?$/,
+];
 let warned = false;
 
 async function totpEnabled(userId) {
@@ -75,15 +83,26 @@ function requireStepUp(req, res, next) {
   return res.status(403).json({ error: "This action needs a verification code.", code: "STEP_UP_REQUIRED" });
 }
 
+/** Güvenlik Merkezi live feed: "Yönetici adım doğrulaması" (never breaks the call). */
+function noteStepUp(req, ok, how) {
+  try {
+    require("../lib/securityEvents").note("admin_step_up", { req, userId: req.user?.id, username: req.user?.username, reason: ok ? "ok" : "fail", detail: { ok, how: how ? String(how).slice(0, 20) : null } });
+  } catch {
+    /* feed optional */
+  }
+}
+
 async function stepUpHandler(req, res) {
   const key = `admin:stepup:${req.user.id}`;
   if (rejectIfLimited(res, [peek(key, STEP_UP_LIMIT)])) return undefined;
   const v = await twoFactor.verifySecondFactor(req.user.id, req.body?.code);
   if (!v.ok) {
     recordFailure(key, STEP_UP_LIMIT);
+    noteStepUp(req, false, v.reason);
     const msg = v.reason === "replay" ? "This code was already used. Wait for the next code." : "Wrong code.";
     return res.status(400).json({ error: msg, code: v.reason });
   }
+  noteStepUp(req, true, v.via);
   res.set("Cache-Control", "no-store");
   return res.json({ ok: true, token: signStepUpToken({ id: req.user.id, sid: req.user.sid }), expiresInSec: 15 * 60, via: v.via, recoveryLeft: v.recoveryLeft });
 }

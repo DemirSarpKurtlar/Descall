@@ -10,6 +10,7 @@ import {
   createServerRole,
   updateServerRole,
   deleteServerRole,
+  reorderServerRoles,
   getServerMembers,
   assignMemberRole,
   removeMemberRole,
@@ -178,17 +179,18 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
     setError("");
     try {
       if (draft.isNew) {
-        const { role } = await createServerRole(server.id, {
+        const { role, roles: serverRoles } = await createServerRole(server.id, {
           name,
           color: draft.color,
           hoist: draft.hoist,
           mentionable: draft.mentionable,
           permissions: draft.flags,
         });
+        // New roles start at the bottom and the others move up one: take the server's
+        // full list when it comes back.
         setRoles((prev) => {
-          const next = [...prev.filter((r) => r.id !== role.id), role].sort(
-            (a, b) => (b.position || 0) - (a.position || 0)
-          );
+          const base = Array.isArray(serverRoles) && serverRoles.length ? serverRoles : [...prev.filter((r) => r.id !== role.id), role];
+          const next = [...base].sort((a, b) => (b.position || 0) - (a.position || 0));
           onRolesChanged?.(next);
           return next;
         });
@@ -307,9 +309,13 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
     setBusy(true);
     setError("");
     try {
-      await Promise.all(
-        toSave.map((role) => updateServerRole(server.id, role.id, { position: role.position }))
-      );
+      // One request for the whole order (the server keeps roles above you in place).
+      const { roles: saved } = await reorderServerRoles(server.id, list.map((r) => r.id));
+      if (Array.isArray(saved) && saved.length) {
+        const sorted = [...saved].sort((a, b) => (b.position || 0) - (a.position || 0));
+        setRoles(sorted);
+        onRolesChanged?.(sorted);
+      }
     } catch (err) {
       setError(err?.message || t("Something went wrong."));
       load();

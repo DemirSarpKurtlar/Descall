@@ -60,7 +60,7 @@ assert.ok(!/preview/.test(ui) && !/exportJson|dm\/export/.test(ui));
 assert.ok(![...ui].some((c) => (c.codePointAt(0) >= 0x1f300 && c.codePointAt(0) <= 0x1faff) || (c.codePointAt(0) >= 0x2600 && c.codePointAt(0) <= 0x27bf)), "no emoji");
 assert.match(panel, /\{ id: "dmReview", label: "admin\.dmReview"/);
 assert.match(panel, /\{ id: "topUsers", label: "admin\.topUsers"/);
-assert.match(panel, /tab === "dmReview" && <AdminDmInbox \/>/);
+assert.match(panel, /tab === "dmReview" && \(\s*<AdminDmInbox\b/);
 assert.match(panel, /tab === "topUsers" && <AdminTopUsers \/>/);
 const menu = ADMIN_NAV_GROUPS.flatMap(([, ids]) => ids);
 assert.ok(menu.includes("dmReview") && menu.includes("topUsers"));

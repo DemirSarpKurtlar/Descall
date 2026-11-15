@@ -188,7 +188,7 @@ export function getSlashCommandsForSurface({
   isOwner = false,
   hideCasino = casinoHiddenOnThisDevice(),
 } = {}) {
-  const inServerText = activeChannel?.type === "text";
+  const inServerText = activeChannel?.type === "text" || activeChannel?.type === "announcement";
   const inGroup = !inServerText && Boolean(activeGroup);
   const inDm = !inServerText && !inGroup && Boolean(activeDmUser?.id);
   if (!inServerText && !inGroup && !inDm) return [];

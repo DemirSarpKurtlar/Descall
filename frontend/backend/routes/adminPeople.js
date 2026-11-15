@@ -7,9 +7,10 @@ const { kickUser, notifyAdminRoom } = require("../socket/adminHandlers");
 const moderation = require("../lib/moderation");
 const banExperience = require("../lib/banExperience");
 const descoin = require("../lib/descoin");
-const { listSessions } = require("../lib/sessions");
+const { listSessions, removeSession } = require("../lib/sessions");
 const { buildDossier } = require("../lib/userDossier");
 const { buildLens } = require("../lib/userLens");
+const dossierSections = require("../lib/userDossierSections");
 const reports = require("../lib/userReports");
 const workflow = require("../lib/reportWorkflow");
 const { errorFields, apiError } = require("../lib/apiError");
@@ -68,6 +69,104 @@ router.get("/people/:id/dossier", async (req, res) => {
   }
 });
 
+/* ---------- Kullanıcı dosyası (Nov 2026 remake): heavy tabs load on their own ---------- */
+
+const DOSSIER_SECTIONS = {
+  timeline: (id) => dossierSections.loadTimeline(id),
+  linked: (id) => dossierSections.loadLinked(id),
+  communities: (id) => dossierSections.loadCommunities(id),
+  activity: (id) => dossierSections.loadActivity(id),
+  wallet: (id) => dossierSections.loadWallet(id),
+  badges: (id) => dossierSections.loadBadges(id),
+};
+
+router.get("/people/:id/dossier/:section", async (req, res) => {
+  const id = String(req.params.id || "");
+  const load = DOSSIER_SECTIONS[req.params.section];
+  if (!load) return res.status(404).json(apiError("Unknown section."));
+  if (!workflow.isUuid(id)) return res.status(400).json(apiError("Invalid user."));
+  try {
+    res.set("Cache-Control", "no-store");
+    res.json(await load(id));
+  } catch (err) {
+    if (err.code === "NOT_FOUND") return res.status(404).json(apiError("User not found."));
+    console.error(`[dossier:${req.params.section}]`, err?.message || err);
+    res.status(500).json(apiError("Could not load this part of the user file."));
+  }
+});
+
+/* Yönetici notları: admins only (table admin_user_notes, service role). */
+function notesError(res, err, fallback) {
+  const status = err?.status || (err?.code === "NOTES_UNAVAILABLE" ? 503 : 500);
+  return res.status(status).json({ error: err?.status ? err.message : fallback, code: err?.code });
+}
+
+router.get("/people/:id/notes", async (req, res) => {
+  const id = String(req.params.id || "");
+  if (!workflow.isUuid(id)) return res.status(400).json(apiError("Invalid user."));
+  res.set("Cache-Control", "no-store");
+  res.json(await dossierSections.listNotes(id));
+});
+
+router.post("/people/:id/notes", async (req, res) => {
+  const id = String(req.params.id || "");
+  if (!workflow.isUuid(id)) return res.status(400).json(apiError("Invalid user."));
+  try {
+    const note = await dossierSections.addNote(id, { body: req.body?.body, actor: req.user });
+    audit(req.user, "user_note_add", id, { length: note.body.length });
+    notifyAdminRoom(getIo(req), { type: "user_note", userId: id });
+    res.status(201).json({ ok: true, note });
+  } catch (err) {
+    notesError(res, err, "Could not save the note.");
+  }
+});
+
+router.delete("/people/:id/notes/:noteId", async (req, res) => {
+  const id = String(req.params.id || "");
+  const noteId = String(req.params.noteId || "");
+  if (!workflow.isUuid(id) || !workflow.isUuid(noteId)) return res.status(400).json(apiError("Invalid note."));
+  try {
+    await dossierSections.deleteNote(id, noteId, { actor: req.user });
+    audit(req.user, "user_note_delete", id, { noteId });
+    res.json({ ok: true });
+  } catch (err) {
+    notesError(res, err, "Could not delete the note.");
+  }
+});
+
+/* One session: same as the account owner's own "end this session" (revoked id + its sockets). */
+router.post("/people/:id/sessions/:sessionId/revoke", async (req, res) => {
+  const id = String(req.params.id || "");
+  const sessionId = String(req.params.sessionId || "").slice(0, 80);
+  if (!workflow.isUuid(id) || !sessionId) return res.status(400).json(apiError("Invalid session."));
+  if (id === req.user.id) return res.status(400).json(apiError("Cannot sign out your own sessions from here."));
+  try {
+    const before = await listSessions(id);
+    const found = before.find((s) => s?.id === sessionId);
+    if (!found) return res.status(404).json(apiError("Session not found.", null, { code: "NOT_FOUND" }));
+    const sessions = await removeSession(id, sessionId);
+    state.revokedSessionIds.add(sessionId);
+    let disconnected = 0;
+    const io = getIo(req);
+    for (const [, sock] of io?.sockets?.sockets || []) {
+      if (String(sock.user?.id) === id && sock.user?.sid === sessionId) {
+        try {
+          sock.emit("session:revoked", { sessionId });
+          sock.disconnect(true);
+          disconnected += 1;
+        } catch {
+          /* already gone */
+        }
+      }
+    }
+    audit(req.user, "revoke_session", id, { device: found.device || null, disconnected });
+    notifyAdminRoom(io, { type: "revoke_session", userId: id });
+    res.json({ ok: true, remaining: sessions.length, disconnected });
+  } catch (err) {
+    res.status(500).json({ ...errorFields(err), ...apiError("Could not end the session.") });
+  }
+});
+
 // Kullanıcının gözünden (3.7.2): what this account can / cannot do right now.
 // Read-only and without message content; the view is audited.
 router.get("/people/:id/lens", async (req, res) => {
@@ -87,7 +186,8 @@ router.post("/people/:id/wallet-freeze", async (req, res) => {
   try {
     const frozen = req.body?.frozen !== false;
     const result = await descoin.setWalletFrozen(req.params.id, frozen);
-    audit(req.user, frozen ? "wallet_freeze" : "wallet_unfreeze", req.params.id, {});
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) || null : null;
+    audit(req.user, frozen ? "wallet_freeze" : "wallet_unfreeze", req.params.id, { reason });
     const io = getIo(req);
     io.to(`user:${req.params.id}`).emit("descoin:frozen", { frozen: result.frozen });
     notifyAdminRoom(io, { type: frozen ? "wallet_freeze" : "wallet_unfreeze", userId: req.params.id });

@@ -356,6 +356,11 @@ async function run() {
     r = await call(base, "POST", `${P}/${S1}/directory`, { token: sr, stepUp: srStep, body: { hidden: false } });
     assert(r.status === 200 && !fake._tables.servers.rows.find((s) => s.id === S1).directory_hidden_at && lastAudit("server_directory_show"), "show again");
 
+    // Hiding the server took its permanent directory invite with it (server audit IM-13).
+    assert(!fake._tables.server_invites.rows.some((i) => i.code === "pazar01"), "directory invite removed on hide");
+    assert(!fake._tables.servers.rows.find((s) => s.id === S1).directory_invite_code, "directory invite column cleared");
+    fake._tables.server_invites.rows.push({ code: "pazar01", server_id: S1, creator_id: KAAN, channel_id: C_GENEL, uses: 40, max_uses: null, max_age_seconds: null, temporary: false, created_at: ago(3), expires_at: null });
+
     /* ---- 7. invites ---- */
     r = await call(base, "DELETE", `${P}/${S2}/invites/pazar01`, { token: sr, stepUp: srStep });
     assert(r.status === 404, "invite of another server");

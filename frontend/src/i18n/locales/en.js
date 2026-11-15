@@ -12,9 +12,22 @@ import { MSG5_EN } from "./msg5.en.js";
 import { ACT_EN } from "./act.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { BAN_EN } from "./ban.en.js";
+import { IOS_SHARE_EN } from "./iosShare.en.js";
 import { BAN_ADMIN_EN } from "./banAdmin.en.js";
 import { SERVER_REVIEW_EN } from "./serverReview.en.js";
+import { DOSSIER_EN } from "./dossier.en.js";
+import { SHOP_DESK_EN } from "./shopDesk.en.js";
+import { SHOP_MERCH_EN } from "./shopMerch.en.js";
+import { MOD_DESK_EN } from "./modDesk.en.js";
+import { GAMES_ADMIN_EN } from "./gamesAdmin.en.js";
+import { SYSX_EN } from "./sysx.en.js";
+import { AUDIT_LOG_EN } from "./auditLog.en.js";
+import { LIVE_POPUP_EN } from "./livePopup.en.js";
+import { ANNC_EN } from "./annc.en.js";
+import { CHPERM_EN } from "./chperm.en.js";
+import { SEC_CENTER_EN } from "./secCenter.en.js";
 import { AGENTX_EN } from "./agentx.en.js";
+import { AGENT_OPS_EN } from "./agentOps.en.js";
 import { INVL_EN } from "./invl.en.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 import { CORE_EN } from "./core.en.js";
@@ -64,9 +77,22 @@ export const nested = {
   act: ACT_EN,
   dir: DIR_EN,
   ban: BAN_EN,
+  iosShare: IOS_SHARE_EN,
   banAdmin: BAN_ADMIN_EN,
   serverReview: SERVER_REVIEW_EN,
+  dossier: DOSSIER_EN,
+  shopDesk: SHOP_DESK_EN,
+  shopMerch: SHOP_MERCH_EN,
+  modDesk: MOD_DESK_EN,
+  gamesAdmin: GAMES_ADMIN_EN,
+  sysx: SYSX_EN,
+  auditLog: AUDIT_LOG_EN,
+  livePopup: LIVE_POPUP_EN,
+  annc: ANNC_EN,
+  chperm: CHPERM_EN,
+  secCenter: SEC_CENTER_EN,
   agentx: AGENTX_EN,
+  agentOps: AGENT_OPS_EN,
   invl: INVL_EN,
   sgx: SIGNUP_GROWTH.en.nested,
   fbk: FBK_EN,
@@ -581,7 +607,7 @@ export const nested = {
     "system": "System",
     "security": "Security",
     "maintenance": "Maintenance",
-    "audit": "Audit",
+    "audit": "Audit log",
     "peopleTitle": "User dossier",
     "peopleSubtitle": "Search a username and open one file, identity, sessions, reports, wallet, and sanctions.",
     "peopleSearch": "Search username or display name…",
@@ -2567,6 +2593,8 @@ export const phrases = {
   "{name} was deleted": "{name} was deleted",
   "An admin changed visibility / invite settings of {name}": "An admin changed visibility / invite settings of {name}",
   "You were banned from {name}": "You were banned from {name}",
+  "You were timed out in {name}": "You were timed out in {name}",
+  "Your timeout in {name} was lifted": "Your timeout in {name} was lifted",
   "Connect (voice)": "Connect (voice)",
   "Speak": "Speak",
   "Mute members": "Mute members",

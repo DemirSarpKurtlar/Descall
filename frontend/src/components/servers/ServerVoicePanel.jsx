@@ -23,6 +23,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
+import { useChannelPerms, channelHasPermission, channelPermsKnown } from "../../lib/channelPermissions";
 import useVoiceActivity from "../../hooks/useVoiceActivity";
 import VoiceActivityMeter from "../../premium/ui/VoiceActivityMeter.jsx";
 import { setPinnedVoiceUser } from "../../premium/audio/pinnedUser.js";
@@ -39,15 +40,58 @@ import ConversationStart, { VoiceSeats } from "../chat/ConversationStart";
 import { DockDeviceSlot } from "../call/DevicePicker";
 import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
+import { useScreenShareCapability } from "../../lib/iosScreenBroadcast";
+import { anchorFromRect } from "../../lib/iosScreenBroadcastModel";
+import IosBroadcastShareChip from "../voice/IosBroadcastShareChip";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
 import { World3DButton, World3DStage, useWorld3DAvailable } from "../../world3d/World3DLauncher.jsx";
 import { subscribeActiveSpeakers } from "../../lib/activeSpeakers";
 import { SOCKET_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
+import { bindLiveKitVideo } from "../../lib/liveKitVideoBinding";
+import { VOICE_GRID_FIT_FROM, avatarSizeFor, fitVoiceGrid, gridBand, sameVoiceGridFit } from "../../lib/voiceGridLayout";
+
+/**
+ * 10+ people: measure the room and pick equal tiles that fill it
+ * (lib/voiceGridLayout.js). State only changes when the layout does.
+ */
+function useVoiceGridFit(gridEl, count, enabled) {
+  const [fit, setFit] = useState(null);
+  useEffect(() => {
+    if (!enabled || !gridEl) {
+      setFit(null);
+      return undefined;
+    }
+    const measure = () => {
+      const flow = gridEl.firstElementChild;
+      const style = flow && typeof getComputedStyle === "function" ? getComputedStyle(flow) : null;
+      const next = fitVoiceGrid({
+        count,
+        width: gridEl.clientWidth,
+        height: gridEl.clientHeight,
+        gap: style ? parseFloat(style.columnGap || style.gap) || 12 : 12,
+        padding: style ? parseFloat(style.paddingLeft) || 16 : 16,
+      });
+      setFit((prev) => (sameVoiceGridFit(prev, next) ? prev : next));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(gridEl);
+    return () => ro.disconnect();
+  }, [gridEl, count, enabled]);
+  return enabled ? fit : null;
+}
+
+/** Report this <video> to LiveKit adaptiveStream (size + on/off screen). */
+function useLiveKitVideoBinding(ref, stream, remountKey) {
+  useEffect(() => bindLiveKitVideo(ref.current, stream), [ref, stream, remountKey]);
+}
 
 function TileFullscreenVideo({ stream }) {
   const ref = useRef(null);
+  useLiveKitVideoBinding(ref, stream);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -91,28 +135,12 @@ function presentScreenFullscreen(root, onFallback) {
   onFallback?.();
 }
 
-function gridBand(count) {
-  if (count <= 1) return "is-1";
-  if (count === 2) return "is-2";
-  if (count <= 4) return "is-4";
-  if (count <= 6) return "is-6";
-  if (count <= 9) return "is-9";
-  return "is-many";
-}
-
-function avatarSizeFor(count, compact) {
-  if (compact) return 52;
-  if (count <= 1) return 112;
-  if (count === 2) return 88;
-  if (count <= 4) return 72;
-  return 56;
-}
-
 function sameTile(prev, next) {
   if (
     prev.compact !== next.compact ||
     prev.count !== next.count ||
     prev.youLabel !== next.youLabel ||
+    prev.avatarSize !== next.avatarSize ||
     prev.onOpenMenu !== next.onOpenMenu ||
     prev.onExpandShare !== next.onExpandShare
   ) {
@@ -131,6 +159,7 @@ function sameTile(prev, next) {
     a?.cameraStream === b?.cameraStream &&
     a?.audioStream === b?.audioStream &&
     a?.isLocal === b?.isLocal &&
+    a?.linkQuality === b?.linkQuality &&
     a?.member === b?.member &&
     a?.member?.stageRole === b?.member?.stageRole &&
     a?.member?.requestedToSpeak === b?.member?.requestedToSpeak
@@ -141,6 +170,7 @@ const VoiceTile = memo(function VoiceTile({
   tile,
   compact = false,
   count = 1,
+  avatarSize = 0,
   youLabel = "",
   onOpenMenu,
   onExpandShare,
@@ -163,8 +193,12 @@ const VoiceTile = memo(function VoiceTile({
   // LiveKit camera mute keeps the track "live" but stops frames (muted):
   // show the avatar again instead of a black frame (lib/videoPresence.js).
   const presence = useVideoPresence(cameraStream, { cameraOn: tile.isLocal ? null : tile.member?.cameraOn === false ? false : null });
-  const mountVideo = streamHasLiveVideo(cameraStream) && presence.mount;
+  // Remote video stays mounted while its track is not ended, even with no
+  // frames: LiveKit pauses an off-screen tile (adaptiveStream), and an
+  // unmounted <video> could never report it back on screen.
+  const mountVideo = presence.mount && (tile.isLocal ? streamHasLiveVideo(cameraStream) : Boolean(cameraStream));
   const showVideo = mountVideo && presence.show;
+  useLiveKitVideoBinding(videoRef, tile.isLocal ? null : cameraStream, mountVideo);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -216,7 +250,7 @@ const VoiceTile = memo(function VoiceTile({
         <div className="server-voice-tile-avatar tile-avatar-layer">
           <Avatar
             name={name}
-            size={avatarSizeFor(count, compact)}
+            size={avatarSize || avatarSizeFor(count, compact)}
             user={tile.member}
             animate="speaking"
             isSpeaking={speaking}
@@ -292,6 +326,7 @@ function ScreenShareCard({ sharer, label, volume, onVolumeChange, onOpen }) {
   const t = useT();
   const videoRef = useRef(null);
   const stream = sharer?.stream || null;
+  useLiveKitVideoBinding(videoRef, sharer?.isLocal ? null : stream);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -396,6 +431,9 @@ function ServerScreenShareStage({
 
   const active = sharers.find((sharer) => String(sharer.id) === String(activeId)) || sharers[0] || null;
   const screenStream = active?.stream || null;
+  const remoteScreenStream = active?.isLocal ? null : screenStream;
+  useLiveKitVideoBinding(normalVideoRef, remoteScreenStream, `${active?.id}-${aspectKey}-${shareLayout}-${expanded}`);
+  useLiveKitVideoBinding(expandedVideoRef, expanded ? remoteScreenStream : null, `${active?.id}-${aspectKey}`);
 
   useEffect(() => {
     const track = screenStream?.getVideoTracks?.()[0];
@@ -685,10 +723,15 @@ export default function ServerVoicePanel({
     ? (serverVoice.participants?.length || 0) + 1
     : state?.memberCount || 0;
 
+  // This channel's bits (overwrites) once known, else the server-wide flags (server audit P2).
+  const chanPerms = useChannelPerms(null, server?.id);
+  const chanKnown = channelPermsKnown(chanPerms, channel?.id);
   const voicePermissionsReady =
-    serverPermissionsLoaded(server) || Boolean(server?.isOwner);
-  const canConnect = voicePermissionsReady && serverHasPermission(server, "CONNECT");
-  const canStream = voicePermissionsReady && serverHasPermission(server, "STREAM");
+    chanKnown || serverPermissionsLoaded(server) || Boolean(server?.isOwner);
+  const chanCan = (key) =>
+    chanKnown ? channelHasPermission(server, channel?.id, key, chanPerms) : serverHasPermission(server, key);
+  const canConnect = voicePermissionsReady && chanCan("CONNECT");
+  const canStream = voicePermissionsReady && chanCan("STREAM");
   const canPublishMedia = Boolean(serverVoice?.canSpeak && isStageSpeaker);
   const canVideo = Boolean(canStream && serverVoice?.canStream && canPublishMedia);
 
@@ -779,9 +822,9 @@ export default function ServerVoicePanel({
     () => (server?.channels || []).filter((c) => c?.type === "voice" || c?.type === "stage"),
     [server?.channels]
   );
-  const canMoveMembers = voicePermissionsReady && serverHasPermission(server, "MOVE_MEMBERS");
-  const canMuteMembers = voicePermissionsReady && serverHasPermission(server, "MUTE_MEMBERS");
-  const canDeafenMembers = voicePermissionsReady && serverHasPermission(server, "DEAFEN_MEMBERS");
+  const canMoveMembers = voicePermissionsReady && chanCan("MOVE_MEMBERS");
+  const canMuteMembers = voicePermissionsReady && chanCan("MUTE_MEMBERS");
+  const canDeafenMembers = voicePermissionsReady && chanCan("DEAFEN_MEMBERS");
 
   const tiles = useMemo(() => {
     const list = [];
@@ -859,6 +902,9 @@ export default function ServerVoicePanel({
   }, [tileFullscreen, closeTileFullscreen]);
 
   const sharing = screenSharers.length > 0;
+  const [gridEl, setGridEl] = useState(null);
+  const gridFit = useVoiceGridFit(gridEl, tiles.length, !sharing && tiles.length >= VOICE_GRID_FIT_FROM);
+  const fittedAvatar = gridFit ? avatarSizeFor(tiles.length, false, gridFit.tileWidth) : 0;
   // Declared after `sharing`: its dependency array is read during render,
   // so above the const it threw "Cannot access before initialization" (2.10.114).
   useEffect(() => {
@@ -892,17 +938,25 @@ export default function ServerVoicePanel({
     statusTone = "ok";
   }
 
+  // Native iOS app: whole-screen ReplayKit broadcast when this build ships the
+  // extension; builds without it keep the Share Screen button hidden.
+  const shareCapability = useScreenShareCapability();
+  const screenShareHidden = screenShareUnavailableOnIos() && shareCapability !== "broadcast";
+  const nativeSharePhase = serverVoice?.nativeScreenShare?.phase || "idle";
+
   const countLabel = isStage
     ? t("{count} in stage", { count })
     : t("{count} in voice", { count });
 
-  const onToggleScreen = async () => {
+  const onToggleScreen = async (event) => {
     if (!canVideo) return;
-    if (!serverVoice?.isScreenSharing && screenShareUnavailableOnIos()) return;
-    if (serverVoice?.isScreenSharing) {
+    if (!serverVoice?.isScreenSharing && screenShareHidden) return;
+    if (serverVoice?.isScreenSharing || nativeSharePhase !== "idle") {
       await serverVoice.stopScreenShare?.();
     } else {
-      await serverVoice.startScreenShare?.();
+      // iPhone / iPad: the system broadcast picker (on iPad a popover from this button).
+      const rect = event?.currentTarget?.getBoundingClientRect?.();
+      await serverVoice.startScreenShare?.({ anchor: anchorFromRect(rect) });
     }
   };
 
@@ -950,7 +1004,7 @@ export default function ServerVoicePanel({
             toggleMute: () => serverVoice?.toggleMute?.(),
             toggleDeafen: () => serverVoice?.toggleDeafen?.(),
             isScreenSharing: Boolean(serverVoice?.isScreenSharing),
-            toggleScreen: screenShareUnavailableOnIos() ? null : onToggleScreen,
+            toggleScreen: screenShareHidden ? null : onToggleScreen,
             isCameraOn: Boolean(serverVoice?.isCameraOn),
             toggleCamera: onToggleCamera,
             canVideo,
@@ -1031,7 +1085,9 @@ export default function ServerVoicePanel({
         ) : null}
         {tiles.length > 0 ? (
           <div
-            className={`server-voice-grid ${gridBand(tiles.length)}${sharing ? " is-rail" : ""}`}
+            ref={setGridEl}
+            className={`server-voice-grid ${gridBand(tiles.length)}${sharing ? " is-rail" : ""}${gridFit ? " is-fit" : ""}`}
+            style={gridFit ? { "--vg-tile-w": `${gridFit.tileWidth}px`, "--vg-flow-w": `${gridFit.flowWidth}px` } : undefined}
             aria-label={t("In this channel")}
           >
             <div className="server-voice-grid-flow">
@@ -1041,6 +1097,7 @@ export default function ServerVoicePanel({
                   tile={tile}
                   compact={sharing}
                   count={tiles.length}
+                  avatarSize={fittedAvatar}
                   youLabel={t("You")}
                   onOpenMenu={openMemberMenu}
                   onExpandShare={expandShare}
@@ -1072,6 +1129,10 @@ export default function ServerVoicePanel({
       <footer className="server-voice-dock">
         {inThis ? (
           <>
+            <IosBroadcastShareChip
+              share={serverVoice?.nativeScreenShare}
+              onStop={() => serverVoice?.stopScreenShare?.()}
+            />
             <div className="server-voice-dock-group" role="group" aria-label={t("Voice channel")}>
               {/* Mic → input menu, deafen → output menu (chevron, long press, right click). */}
               <DockDeviceSlot
@@ -1155,13 +1216,13 @@ export default function ServerVoicePanel({
                   {serverVoice.isCameraOn ? <VideoOff size={18} /> : <Video size={18} />}
                 </button>
               </DockDeviceSlot>
-              {/* iPhone (native app): no screen sharing, so the button is not shown. */}
-              {!screenShareUnavailableOnIos() && (
+              {/* iPhone / iPad app: shown only when the broadcast extension ships (whole-screen share). */}
+              {!screenShareHidden && (
               <button
                 type="button"
-                className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}`}
+                className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}${nativeSharePhase === "preparing" || nativeSharePhase === "picker" ? " is-pending" : ""}`}
                 onClick={onToggleScreen}
-                disabled={!canVideo}
+                disabled={!canVideo || nativeSharePhase === "stopping"}
                 aria-pressed={Boolean(serverVoice.isScreenSharing)}
                 aria-label={serverVoice.isScreenSharing ? t("Stop Screen Share") : t("Share Screen")}
                 title={
@@ -1217,7 +1278,7 @@ export default function ServerVoicePanel({
         onCopyId={() => {
           const id = memberMenu?.user?.id;
           if (id == null) return;
-          copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+          copyText(String(id)).then((ok) => (ok ? toast(t("Copied"), "success") : toast(t("Could not copy to clipboard"), "error")));
           setMemberMenu(null);
         }}
         onClose={() => setMemberMenu(null)}

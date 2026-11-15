@@ -73,10 +73,38 @@ function fakeClient({ error = null, rows = [] } = {}) {
   store.__setClientForTests(fakeClient({ error: { message: "boom" } }));
   assert.equal(await store.list({}), null);
 
+  // İşlem kaydı: request facts go to their columns; before 20261115_audit_console.sql they ride in meta._req.
+  const req = { ipMasked: "88.230.x.x", userAgent: "Descall Desktop", requestId: "req_abc123", endpoint: "POST /admin/users/:id/ban", stepUp: true };
+  const withCols = fakeClient();
+  store.__setClientForTests(withCols);
+  await store.persist({ id: "q1", action: "ban", meta: {}, request: req });
+  assert.equal(withCols.inserts[0].ip_masked, "88.230.x.x");
+  assert.equal(withCols.inserts[0].step_up, true);
+  assert.equal(withCols.inserts[0].meta._req, undefined);
+  const noCols = {
+    inserts: [],
+    from() {
+      return {
+        insert: (row) => {
+          noCols.inserts.push(row);
+          return Promise.resolve({ error: "ip_masked" in row ? { code: "PGRST204", message: "Could not find the 'ip_masked' column" } : null });
+        },
+      };
+    },
+  };
+  store.__setClientForTests(noCols);
+  assert.equal(await store.persist({ id: "q2", action: "ban", meta: {}, request: req }), true, "retried without the columns");
+  assert.deepEqual(noCols.inserts[1].meta._req, { ip: "88.230.x.x", ua: "Descall Desktop", rid: "req_abc123", ep: "POST /admin/users/:id/ban", su: true });
+  assert.equal(store.requestColumns(), false);
+  assert.equal(store.fromRow({ id: "q2", meta: noCols.inserts[1].meta }).request.requestId, "req_abc123");
+
   // Wiring: the single choke point persists; the audit tab and overview read the table.
   const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
   assert.match(read("runtime/sharedState.js"), /require\("\.\.\/lib\/adminAuditStore"\)\.persist\(entry\)/);
-  assert.match(read("routes/admin.js"), /adminAuditStore\.list\(\{ limit \}\)/);
+  // GET /admin/audit (İşlem kaydı console) reads admin_audit first, memory fills the gap.
+  assert.match(read("routes/admin.js"), /require\("\.\/adminAuditConsole"\)/);
+  assert.match(read("lib/auditConsoleStore.js"), /from\("admin_audit"\)/);
+  assert.match(read("lib/auditConsoleStore.js"), /state\(\)\.auditLog/);
   assert.match(read("routes/adminOverview.js"), /adminAuditStore\.list\(\{ limit: 8 \}\)/);
   const sql = fs.readFileSync(path.join(__dirname, "../../../supabase/migrations/20261030_admin_audit.sql"), "utf8");
   assert.match(sql, /BEFORE UPDATE OR DELETE ON public\.admin_audit/);

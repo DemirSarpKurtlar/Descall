@@ -20,110 +20,131 @@
 }
 
 .admin-broadcast-card {
+  /* Canlı popup card (Draft B, Nov 2026): accent glow, icon tile, kicker, centered copy. */
   position: relative;
   width: 100%;
-  max-width: 400px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ab-accent, #587AF5) 16%, #171c2b) 0%, #0d1019 42%);
-  border: 1px solid color-mix(in srgb, var(--ab-accent, #587AF5) 45%, rgba(255, 255, 255, 0.08));
-  border-radius: var(--r-xl);
-  padding: 28px 24px 22px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 22px 18px;
+  overflow: hidden;
   text-align: center;
+  border-radius: 22px;
+  color: rgba(255, 255, 255, 0.95);
+  background:
+    radial-gradient(260px 130px at 50% 0%, color-mix(in srgb, var(--ab-accent, #587af5) 30%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+    #1c1d2a;
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px color-mix(in srgb, var(--ab-accent, #587af5) 35%, rgba(255, 255, 255, 0.08));
 }
 
 .admin-broadcast-close {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: none;
-  border-radius: var(--r-pill);
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(235, 238, 255, 0.5);
   cursor: pointer;
 }
 .admin-broadcast-close:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .admin-broadcast-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 12px;
-  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+  border-radius: 17px;
   display: grid;
   place-items: center;
   color: #fff;
-  background: color-mix(in srgb, var(--ab-accent, #587AF5) 28%, #1a2030);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ab-accent, #587AF5) 14%, transparent);
+  background: color-mix(in srgb, var(--ab-accent, #587af5) 85%, #000);
+  box-shadow:
+    0 10px 24px color-mix(in srgb, var(--ab-accent, #587af5) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .admin-broadcast-kicker {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 0 auto 10px;
-  color: #c5cce0;
-  font-size: 11px;
+  color: rgba(235, 238, 255, 0.55);
+  font-size: var(--fs-11, 11px);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .admin-broadcast-sev {
-  padding: 2px 8px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--ab-accent, #587AF5) 22%, transparent);
-  color: var(--ab-accent, #587AF5);
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ab-accent, #587af5) 20%, transparent);
+  color: color-mix(in srgb, var(--ab-accent, #587af5) 70%, #fff);
 }
 
 .admin-broadcast-card h3 {
-  margin: 0 0 4px;
-  font-size: 20px;
-  letter-spacing: -0.03em;
+  margin: 2px 0 0;
+  font-size: var(--fs-17, 17px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
 
 .admin-broadcast-from {
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: var(--text-muted, #98a2b3);
+  margin: 0;
+  font-size: var(--fs-12, 12px);
+  color: rgba(235, 238, 255, 0.5);
 }
 
 .admin-broadcast-body {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #e8edf7;
+  margin: 4px 0 6px;
+  font-size: var(--fs-13, 13px);
+  line-height: 1.5;
+  color: rgba(235, 238, 255, 0.78);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  text-align: left;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--r-md);
-  padding: 12px 14px;
 }
 
 .admin-broadcast-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 6px;
+  width: 100%;
 }
 .admin-broadcast-actions .ripple-btn,
 .admin-broadcast-actions .btn-primary {
   width: 100%;
-  border-radius: var(--r-pill);
-  padding: 10px 16px;
-  font-weight: 700;
+  min-height: 38px;
+  border-radius: 11px;
+  padding: 9px 16px;
+  font-weight: 650;
+  color: #fff;
+  background: linear-gradient(180deg, #6788ff, #587af5);
+  box-shadow: 0 6px 16px rgba(88, 122, 245, 0.3);
 }
+.admin-broadcast-actions .us-link-btn {
+  font-size: var(--fs-12, 12px);
+  font-weight: 600;
+  color: rgba(235, 238, 255, 0.55);
+}
+.admin-broadcast-card.is-compact { padding: 16px 16px 14px; gap: 4px; border-radius: 18px; }
+.admin-broadcast-card.is-compact .admin-broadcast-icon { width: 40px; height: 40px; border-radius: 13px; }
 
 .admin-live-popup-head {
   display: flex;

@@ -1641,6 +1641,68 @@ button.header-avatar {
   line-height: 1.5;
 }
 
+/* Read-only server channel: no SEND, or a members-read-only announcement channel (server audit P2 / DF-5) */
+.chperm-readonly-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px 12px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.08));
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+
+.chperm-readonly-bar svg {
+  flex-shrink: 0;
+  color: #587af5;
+}
+
+.composer-action-btn.is-disabled {
+  opacity: 0.45;
+}
+
+.server-field .server-field-hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+}
+
+.chperm-from-cat {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(88, 122, 245, 0.14);
+  color: #aebcff;
+  font-size: var(--fs-11);
+  white-space: nowrap;
+}
+
+.chperm-move-sync {
+  margin: 4px 0 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(88, 122, 245, 0.35);
+  background: rgba(88, 122, 245, 0.08);
+}
+
+.chperm-move-sync p {
+  margin: 6px 0 10px;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+
+.chperm-synced-note {
+  margin: 0 20px 10px;
+  padding: 8px 12px;
+  border-left: 3px solid #587af5;
+  border-radius: 6px;
+  background: rgba(88, 122, 245, 0.08);
+}
+
 /* DM with a user I blocked (2.9.141) */
 .dm-blocked-banner {
   display: flex;

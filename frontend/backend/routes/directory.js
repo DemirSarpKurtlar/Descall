@@ -155,13 +155,14 @@ router.post("/servers/:id/invite", async (req, res) => {
     const serverId = String(req.params.id || "");
     const card = await visibleCard(serverId);
     if (!card) return res.status(404).json(apiError("This server is not listed in the directory.", null, { code: "NOT_LISTED" }));
-    const { data: server, error } = await supabase
-      .from("servers")
-      .select("id, owner_id, directory_invite_code")
-      .eq("id", serverId)
-      .maybeSingle();
+    // "*": invites_paused_at only exists once its migration ran.
+    const { data: server, error } = await supabase.from("servers").select("*").eq("id", serverId).maybeSingle();
     if (error) throw error;
     if (!server) return res.status(404).json(apiError("This server is not listed in the directory.", null, { code: "NOT_LISTED" }));
+    // Descall staff closed this server's invites: no new directory invite either (IM-4).
+    if (server.invites_paused_at) {
+      return res.status(403).json(apiError("Joining this server is paused right now.", null, { code: "JOINS_PAUSED" }));
+    }
     res.set("Cache-Control", "no-store");
     if (server.directory_invite_code) {
       const { data: existing } = await supabase
@@ -286,6 +287,10 @@ router.put("/manage/:serverId", requireAuth, async (req, res) => {
       reason: null,
     });
     if (auditErr) console.warn("[directory] audit log insert failed:", auditErr.message);
+    // Unlisted: the directory's permanent invite goes with the listing (IM-13).
+    if (patch.listed_in_directory === false && server.directory_invite_code) {
+      await require("../lib/serverMemberState").dropDirectoryInvite(server.id);
+    }
     service.invalidate();
     return res.json(await listingState(updated || { ...server, ...patch }));
   } catch (err) {

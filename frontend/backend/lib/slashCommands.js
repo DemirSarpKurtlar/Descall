@@ -18,7 +18,9 @@ const {
   Permissions,
   hasPermission,
   assertHierarchy,
+  sameId,
 } = require("./serverPermissions");
+const memberState = require("./serverMemberState");
 const { handleGameCommand, VALID_COMMANDS } = require("../socket/gameHandlers");
 const pollCore = require("./pollCore");
 const { ref, en, put } = require("./botText");
@@ -780,15 +782,19 @@ async function handleAvatarCommand(ctx) {
 }
 
 async function handleNickCommand(ctx) {
-  const nickname = String(ctx.parsed.args || "").trim().slice(0, MAX_NICKNAME_LENGTH) || null;
+  const rawNickname = String(ctx.parsed.args || "").trim().slice(0, MAX_NICKNAME_LENGTH) || null;
   if (!hasPermission(ctx.permissions, Permissions.CHANGE_NICKNAME)) throw missingPermission("CHANGE_NICKNAME");
   const before = await loadUserWithMembership(ctx.serverId, ctx.userId);
-  await updateMemberNickname({
+  // Cleaned, masked, audited and pushed live (IM-17).
+  const saved = await updateMemberNickname({
     serverId: ctx.serverId,
     actorId: ctx.userId,
     targetUserId: ctx.userId,
-    nickname,
+    nickname: rawNickname,
+    io: ctx.io,
+    audit: true,
   });
+  const nickname = saved?.nickname || null;
   const { data: server } = await supabase.from("servers").select("name").eq("id", ctx.serverId).maybeSingle();
   const previous = before?.member?.nickname || null;
   const baseName = before?.display_name || before?.username || "";
@@ -855,6 +861,7 @@ const MODERATION_ERRORS = [
   [/member not found|not in this server/i, "bot.slash.errNotMember"],
   [/hierarchy|higher role|role position|cannot moderate|cannot manage a member/i, "bot.slash.errHierarchy"],
   [/timeout expiry|timeout must end in the future/i, "bot.slash.errTimeoutFuture"],
+  [/administrators cannot be timed out/i, "bot.slash.errHierarchy"],
 ];
 
 function moderationErrorRef(err, fallbackKey) {
@@ -892,21 +899,18 @@ async function handleTimeoutCommand(ctx) {
   const reason = reasonParts.join(" ").trim().slice(0, 512) || null;
   let timeout;
   try {
+    // Audit row (M7), live member update, voice eviction and typing-cache reset all
+    // happen inside applyServerTimeout, for REST and slash alike.
     timeout = await applyServerTimeout({
       serverId: ctx.serverId,
       actorId: ctx.userId,
       targetUserId: target.id,
       durationSeconds,
       reason,
+      io: ctx.io,
     });
   } catch (err) {
     return errorReply(ctx, { title: ref("bot.slash.timeoutFailedTitle"), description: moderationErrorRef(err, "bot.slash.timeoutFailedDesc") });
-  }
-  try {
-    const { removeUserFromServerVoice } = require("../socket/serverVoiceHandlers");
-    removeUserFromServerVoice(ctx.io, ctx.serverId, target.id, "timeout");
-  } catch (err) {
-    console.warn("[slashCommands] voice cleanup after timeout failed:", err?.message || err);
   }
   const display = target.member?.nickname || target.display_name || target.username || en("bot.slash.memberFallback");
   return {
@@ -941,13 +945,14 @@ async function handleTimeoutCommand(ctx) {
     }),
   };
 }
-async function writeServerAudit({ serverId, actorId, action, targetType, targetId, reason }) {
+async function writeServerAudit({ serverId, actorId, action, targetType, targetId, reason, changes = null }) {
   const { error } = await supabase.from("server_audit_logs").insert({
     server_id: serverId,
     actor_id: actorId || null,
     action,
     target_type: targetType || null,
     target_id: targetId ? String(targetId) : null,
+    changes: changes || null,
     reason: reason || null,
   });
   if (error) console.warn("[slashCommands] audit log insert failed:", error.message);
@@ -960,25 +965,34 @@ function notifyServerMemberRemoved(io, {
   action,
   reason,
   actorId,
+  wasMember = true,
 }) {
   if (!io || !serverId || !targetUserId) return;
-  const payload = {
+  void actorId;
+  const kind = action === "ban" ? "ban" : "kick";
+  // Same split as the REST route (audit M5): the target hears the reason, never the
+  // moderator; members only learn who left, and only when that person was a member.
+  io.to(`user:${targetUserId}`).emit("server:member:removed", {
     serverId,
     serverName: serverName || null,
     userId: targetUserId,
-    action: action === "ban" ? "ban" : "kick",
+    action: kind,
     reason: reason || null,
-    actorId: actorId || null,
-  };
-  io.to(`user:${targetUserId}`).emit("server:member:removed", payload);
-  io.to(`server:${serverId}`).emit("server:member:removed", payload);
+  });
+  if (wasMember) {
+    const room = io.to(`server:${serverId}`);
+    const target = typeof room.except === "function" ? room.except(`user:${targetUserId}`) : room;
+    target.emit("server:member:removed", { serverId, userId: targetUserId, action: kind });
+  }
   // Only this server's rooms and voice calls (other servers' were dropped too before).
-  void require("./serverRooms").dropUserFromServer(io, serverId, targetUserId, action === "ban" ? "ban" : "kick");
+  void require("./serverRooms").dropUserFromServer(io, serverId, targetUserId, kind);
+  void memberState.callVoice("evictFromServerVoice", io, { serverId, userId: targetUserId, reason: kind });
 
 }
 
-async function kickServerMember({ io, serverId, actorId, targetUserId, reason }) {
-  if (String(actorId) === String(targetUserId)) {
+async function kickServerMember({ io, serverId, actorId, targetUserId: rawTargetId, reason }) {
+  const targetUserId = memberState.canonId(rawTargetId);
+  if (sameId(actorId, targetUserId)) {
     const err = new Error("You can't kick yourself.");
     err.status = 400;
     throw err;
@@ -994,7 +1008,7 @@ async function kickServerMember({ io, serverId, actorId, targetUserId, reason })
     err.status = 404;
     throw err;
   }
-  if (server.owner_id === targetUserId) {
+  if (sameId(server.owner_id, targetUserId)) {
     const err = new Error("You can't do this to the server owner.");
     err.status = 403;
     throw err;
@@ -1019,11 +1033,7 @@ async function kickServerMember({ io, serverId, actorId, targetUserId, reason })
     .eq("server_id", serverId)
     .eq("user_id", targetUserId);
   if (delErr) throw delErr;
-  await supabase
-    .from("server_member_roles")
-    .delete()
-    .eq("server_id", serverId)
-    .eq("user_id", targetUserId);
+  await memberState.purgeMemberState(serverId, targetUserId);
 
   const trimmedReason = reason ? String(reason).slice(0, 200) : null;
   await writeServerAudit({
@@ -1045,8 +1055,9 @@ async function kickServerMember({ io, serverId, actorId, targetUserId, reason })
   return { server, reason: trimmedReason };
 }
 
-async function banServerMember({ io, serverId, actorId, targetUserId, reason }) {
-  if (String(actorId) === String(targetUserId)) {
+async function banServerMember({ io, serverId, actorId, targetUserId: rawTargetId, reason }) {
+  const targetUserId = memberState.canonId(rawTargetId);
+  if (sameId(actorId, targetUserId)) {
     const err = new Error("You can't ban yourself.");
     err.status = 400;
     throw err;
@@ -1062,7 +1073,7 @@ async function banServerMember({ io, serverId, actorId, targetUserId, reason }) 
     err.status = 404;
     throw err;
   }
-  if (server.owner_id === targetUserId) {
+  if (sameId(server.owner_id, targetUserId)) {
     const err = new Error("You can't do this to the server owner.");
     err.status = 403;
     throw err;
@@ -1091,11 +1102,7 @@ async function banServerMember({ io, serverId, actorId, targetUserId, reason }) 
   if (banErr) throw banErr;
 
   await supabase.from("server_members").delete().eq("server_id", serverId).eq("user_id", targetUserId);
-  await supabase
-    .from("server_member_roles")
-    .delete()
-    .eq("server_id", serverId)
-    .eq("user_id", targetUserId);
+  await memberState.purgeMemberState(serverId, targetUserId);
 
   await writeServerAudit({
     serverId,
@@ -1112,6 +1119,7 @@ async function banServerMember({ io, serverId, actorId, targetUserId, reason }) 
     action: "ban",
     reason: trimmedReason,
     actorId,
+    wasMember: Boolean(membership),
   });
   return { server, reason: trimmedReason };
 }
@@ -1211,6 +1219,15 @@ async function handlePurgeCommand(ctx) {
 
   const { error: delErr } = await supabase.from("server_messages").delete().in("id", ids).eq("channel_id", ctx.channelId);
   if (delErr) throw delErr;
+  // Bulk deletes show up in the server audit log like every other moderation action (M7).
+  await writeServerAudit({
+    serverId: ctx.serverId,
+    actorId: ctx.userId,
+    action: "MESSAGE_BULK_DELETE",
+    targetType: "channel",
+    targetId: ctx.channelId,
+    changes: { channelId: ctx.channelId, count: ids.length },
+  });
 
   for (const messageId of ids) {
     ctx.io.to(`server-channel:${ctx.channelId}`).emit("server:channel:message:deleted", {
@@ -1421,11 +1438,41 @@ async function loadUserWithMembership(serverId, userId) {
   return { ...user, member: member || null };
 }
 
-async function updateMemberNickname({ serverId, actorId, targetUserId, nickname }) {
-  const targetIsActor = String(actorId) === String(targetUserId);
+/**
+ * Nickname hygiene (IM-17): control / format characters (zero-width, bidi overrides)
+ * are stripped, whitespace collapsed, profanity masked, and names that impersonate the
+ * product or its system accounts are refused. Returns null for "no nickname".
+ */
+const RESERVED_NICKNAMES = /^(descall( apps| team| support| staff| official)?|system|admin|administrator|moderator|@?everyone|@?here)$/i;
+function cleanNickname(raw) {
+  if (raw == null) return null;
+  let s = String(raw)
+    .normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u061c\u115f\u1160\u17b4\u17b5\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufeff\uffa0]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_NICKNAME_LENGTH);
+  if (!s) return null;
+  if (RESERVED_NICKNAMES.test(s.replace(/\s+/g, " "))) {
+    const err = new Error("That nickname is reserved.");
+    err.status = 400;
+    err.code = "NICKNAME_RESERVED";
+    throw err;
+  }
+  try {
+    s = require("./profanity").maskProfanity(s);
+  } catch {
+    /* keep */
+  }
+  return s;
+}
+
+async function updateMemberNickname({ serverId, actorId, targetUserId, nickname: rawNickname, io = null, audit = false }) {
+  const targetIsActor = sameId(actorId, targetUserId);
   if (!targetIsActor) {
     await assertHierarchy(supabase, serverId, actorId, targetUserId);
   }
+  const nickname = cleanNickname(rawNickname);
 
   const { data: member, error } = await supabase
     .from("server_members")
@@ -1435,11 +1482,40 @@ async function updateMemberNickname({ serverId, actorId, targetUserId, nickname 
     .select("server_id, user_id, nickname")
     .single();
   if (error) throw error;
+  if (audit) {
+    await writeServerAudit({
+      serverId,
+      actorId,
+      action: targetIsActor ? "MEMBER_NICKNAME_SELF" : "MEMBER_NICKNAME_UPDATE",
+      targetType: "member",
+      targetId: targetUserId,
+      changes: { nickname },
+    });
+  }
+  if (io) {
+    try {
+      io.to(`server:${serverId}`).emit("server:member:updated", {
+        serverId,
+        member: { serverId: member.server_id, userId: member.user_id, nickname: member.nickname || null },
+      });
+    } catch {
+      /* ignore */
+    }
+  }
   return member;
 }
 
-async function applyServerTimeout({ serverId, actorId, targetUserId, until, durationSeconds, reason }) {
-  await assertHierarchy(supabase, serverId, actorId, targetUserId);
+async function applyServerTimeout({ serverId, actorId, targetUserId: rawTargetId, until, durationSeconds, reason, io = null }) {
+  const targetUserId = memberState.canonId(rawTargetId);
+  const { targetResolved } = await assertHierarchy(supabase, serverId, actorId, targetUserId);
+  // Discord parity: administrators cannot be timed out (a timeout strips every
+  // permission but read access, which an administrator would ignore anyway).
+  if (hasPermission(targetResolved?.bits || 0n, Permissions.ADMINISTRATOR)) {
+    const err = new Error("Administrators cannot be timed out.");
+    err.status = 403;
+    err.code = "CANNOT_TIMEOUT_ADMIN";
+    throw err;
+  }
   const untilDate = until ? new Date(until) : new Date(Date.now() + clampTimeoutSeconds(durationSeconds) * 1000);
   if (!Number.isFinite(untilDate.getTime()) || untilDate <= new Date()) {
     const err = new Error("The timeout must end in the future.");
@@ -1461,6 +1537,25 @@ async function applyServerTimeout({ serverId, actorId, targetUserId, until, dura
     .select("server_id, user_id, timeout_until, timeout_reason, timed_out_by")
     .single();
   if (error) throw error;
+  // The timeout outlives the membership row: leave + rejoin restores it (M3 / IM-1).
+  await memberState.saveTimeoutRecord({
+    serverId,
+    userId: targetUserId,
+    until: data.timeout_until,
+    reason: data.timeout_reason,
+    moderatorId: actorId,
+  });
+  // One audit row for REST and slash alike (the slash path wrote none, M7).
+  await writeServerAudit({
+    serverId,
+    actorId,
+    action: "MEMBER_TIMEOUT",
+    targetType: "member",
+    targetId: targetUserId,
+    reason: reason || null,
+    changes: { until: data.timeout_until },
+  });
+  await afterTimeoutChange(io, { serverId, userId: targetUserId, until: data.timeout_until, reason: data.timeout_reason });
   return {
     member: data,
     until: data.timeout_until,
@@ -1469,8 +1564,12 @@ async function applyServerTimeout({ serverId, actorId, targetUserId, until, dura
   };
 }
 
-async function clearServerTimeout({ serverId, actorId, targetUserId }) {
-  await assertHierarchy(supabase, serverId, actorId, targetUserId);
+async function clearServerTimeout({ serverId, actorId, targetUserId: rawTargetId, io = null, allowSelfOwner = false }) {
+  const targetUserId = memberState.canonId(rawTargetId);
+  // The owner may lift a timeout that was put on them before they owned the server.
+  if (!(allowSelfOwner && sameId(actorId, targetUserId))) {
+    await assertHierarchy(supabase, serverId, actorId, targetUserId);
+  }
   const { data, error } = await supabase
     .from("server_members")
     .update({ timeout_until: null, timeout_reason: null, timed_out_by: null })
@@ -1479,7 +1578,51 @@ async function clearServerTimeout({ serverId, actorId, targetUserId }) {
     .select("server_id, user_id, timeout_until")
     .single();
   if (error) throw error;
+  await memberState.clearTimeoutRecord(serverId, targetUserId);
+  await writeServerAudit({
+    serverId,
+    actorId,
+    action: "MEMBER_TIMEOUT_CLEAR",
+    targetType: "member",
+    targetId: targetUserId,
+  });
+  await afterTimeoutChange(io, { serverId, userId: targetUserId, until: null, reason: null });
   return data;
+}
+
+/**
+ * Live side of a timeout change (M10 / M12 / M2): members see the badge change, the
+ * target gets a toast, their cached "may type" answer is dropped, and a new timeout
+ * removes them from server voice (seat and LiveKit). Best effort, never throws.
+ */
+async function afterTimeoutChange(io, { serverId, userId, until, reason }) {
+  if (!io) return;
+  try {
+    io.to(`server:${serverId}`).emit("server:member:updated", {
+      serverId,
+      member: { serverId, userId, timeoutUntil: until || null },
+    });
+    io.to(`user:${userId}`).emit("server:member:timeout", { serverId, userId, until: until || null, reason: reason || null });
+  } catch {
+    /* ignore */
+  }
+  try {
+    const sockets = await io.in(`user:${userId}`).fetchSockets();
+    for (const sock of sockets || []) {
+      if (sock?.data && typeof sock.data === "object") delete sock.data.typingOk;
+    }
+  } catch {
+    /* adapter without fetchSockets */
+  }
+  if (until) {
+    try {
+      const { removeUserFromServerVoice } = require("../socket/serverVoiceHandlers");
+      removeUserFromServerVoice(io, serverId, userId, "timeout");
+    } catch (err) {
+      console.warn("[slashCommands] voice cleanup after timeout failed:", err?.message || err);
+    }
+    void memberState.callVoice("evictFromServerVoice", io, { serverId, userId, reason: "timeout" });
+  }
 }
 
 function parseDurationSeconds(raw) {
@@ -1522,6 +1665,9 @@ module.exports = {
   applyServerTimeout,
   clearServerTimeout,
   updateMemberNickname,
+  cleanNickname,
+  kickServerMember,
+  banServerMember,
   parseDurationSeconds,
   shareAppMessage,
   rememberShareable,

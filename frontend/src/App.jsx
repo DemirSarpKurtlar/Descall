@@ -138,9 +138,13 @@ import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPa
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
+  remoteFlag,
   usePublicFeatures,
 } from "./lib/publicFeatures";
 import { applyRemoteGlassFlag } from "./lib/glassUi";
+// Güvenlik Merkezi emergency lock info band (GET /api/features + `platform:notice`).
+import { applyPlatformNotice } from "./lib/platformNotice";
+import PlatformNoticeBanner from "./components/security/PlatformNoticeBanner";
 import { applyRemoteGlassDesktopFlag, shouldPreviewDesktopAuth, syncGlassDesktop } from "./lib/glassDesktop";
 import { parseAppDate } from "./lib/datetime";
 import { preloadWhenIdle } from "./lib/preloadIdle";
@@ -169,6 +173,7 @@ import { dismissRemovedGroup } from "./api/groups";
 import { segmentsText, memberEventSegments, memberEventFromMessage } from "./lib/groupMemberEvents";
 import { readCachedDmPrefs, writeCachedDmPrefs, reconcileDmPrefs } from "./lib/dmPrefsCache";
 import { mergeServerDetail } from "./lib/serverDetail";
+import { isTextLikeChannel, useChannelPerms, channelHasPermission } from "./lib/channelPermissions";
 // Ban notice (docs/design/ban-experience): only loaded when someone is actually banned.
 const BanScreen = lazy(() => import("./components/ban/BanScreen.jsx"));
 // Native iOS only, so the web bundle doesn't carry it.
@@ -180,10 +185,13 @@ const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHo
 applyPopoutMode();
 const premiumDesktopHost = typeof window !== "undefined" && Boolean(window.descallPremium) && !isPopoutWindow();
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
+const ServerRestartStrip = lazy(() => import("./components/system/ServerRestartStrip.jsx"));
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
+// Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
+const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
@@ -193,6 +201,7 @@ import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
+import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -1312,8 +1321,11 @@ export default function App() {
     loadDmMessagesRest(peerId);
   }, [activeDmUser?.id, loadDmMessagesRest]);
 
+  // This member's per-channel bits (overwrites, announcement rule, timeouts; audit P2 / DF-4).
+  const activeChannelPerms = useChannelPerms(socketRef.current, activeView === "servers" ? activeServer?.id : null);
+
   const dmMessages = useMemo(() => {
-    if (activeView === "servers" && activeChannel?.type === "text") {
+    if (activeView === "servers" && isTextLikeChannel(activeChannel)) {
       return channelMessagesById[activeChannel.id] ?? [];
     }
     if (activeGroup) {
@@ -1525,8 +1537,10 @@ export default function App() {
         // S1: the server advertises the Cloudflare host once it is live.
         rememberEdgeApiBase(data.edgeApiBase);
         applyPublicFeatures(data);
-        applyRemoteGlassFlag(data.iosGlass);
-        applyRemoteGlassDesktopFlag(data.desktopGlass);
+        applyPlatformNotice(data.platformNotice || null);
+        // Sistem page rollout rules (flagRules) are checked here with this user and platform.
+        applyRemoteGlassFlag(remoteFlag(data, "iosGlass"));
+        applyRemoteGlassDesktopFlag(remoteFlag(data, "desktopGlass"));
       })
       .catch((err) => {
         if (!cancelled) applyRemoteGlassDesktopFlag(undefined);
@@ -1679,7 +1693,7 @@ export default function App() {
       emitRoomOnce(socket, "server:subscribe", { serverId: server.id });
       emitRoomOnce(socket, "server:voice:subscribe", { serverId: server.id });
       const textIds = (server.channels || [])
-        .filter((c) => c.type === "text" && c.id)
+        .filter((c) => isTextLikeChannel(c) && c.id)
         .map((c) => c.id);
       if (textIds.length) emitRoomOnce(socket, "server:channels:rejoin", textIds);
       const voiceLike = activeChannelRef.current;
@@ -2764,19 +2778,42 @@ export default function App() {
       playUiSound("notification");
     });
 
+    // Mağaza remake: sale / stock / storefront changes and gift take-backs reach an open shop live.
+    socket.on("shop:catalog:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop-catalog-changed", { detail: payload })); } catch { /* ignore */ }
+    });
+    socket.on("shop:inventory:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
+    });
+
+    socket.on("platform:notice", (payload) => {
+      applyPlatformNotice(payload || null);
+    });
+
     socket.on("features:updated", (payload) => {
       applyPublicFeatures(payload);
-      applyRemoteGlassFlag(payload?.iosGlass);
-      applyRemoteGlassDesktopFlag(payload?.desktopGlass);
+      applyRemoteGlassFlag(remoteFlag(payload, "iosGlass"));
+      applyRemoteGlassDesktopFlag(remoteFlag(payload, "desktopGlass"));
     });
 
     socket.on("admin:popup", (payload = {}) => {
       if (!payload?.id || !payload?.body) return;
+      sendPopupReceipt(socket, payload, "delivered");
       setAdminPopupQueue((prev) => {
         if (prev.some((row) => row.id === payload.id)) return prev;
         return [...prev, payload].slice(-6);
       });
       playUiSound("notification");
+    });
+
+    // Canlı popup: an admin took it back (optional short correction) / closed on my other device.
+    socket.on("admin:popup:recall", (payload = {}) => {
+      setAdminPopupQueue((prev) =>
+        applyPopupRecall(prev, payload, (p) => ({ id: `${p.id}:note`, kind: "correction", title: "", body: p.note, severity: "info", icon: "chat", requireAck: false, track: false }))
+      );
+    });
+    socket.on("admin:popup:close", (payload = {}) => {
+      setAdminPopupQueue((prev) => applyPopupClose(prev, payload));
     });
 
     socket.on("descoin:balance", ({ balance } = {}) => {
@@ -3407,7 +3444,7 @@ export default function App() {
   useEffect(() => {
     if (activeView !== "servers" || !activeServer?.id) return undefined;
     const textIds = (activeServer.channels || [])
-      .filter((c) => c.type === "text" && c.id)
+      .filter((c) => isTextLikeChannel(c) && c.id)
       .map((c) => c.id);
     if (textIds.length) {
       socketRef.current?.emit("server:channels:rejoin", textIds);
@@ -3422,7 +3459,7 @@ export default function App() {
     activeServer?.id,
     // Rejoin when channel set changes (create/delete)
     (activeServer?.channels || [])
-      .filter((c) => c.type === "text")
+      .filter((c) => isTextLikeChannel(c))
       .map((c) => c.id)
       .join(","),
   ]);
@@ -3431,7 +3468,7 @@ export default function App() {
   // Older responses must not clear loading or fill a channel the user left.
   useEffect(() => {
     if (activeView !== "servers" || !activeServer?.id || !activeChannel?.id) return undefined;
-    if (activeChannel.type !== "text") {
+    if (!isTextLikeChannel(activeChannel)) {
       setMessagesLoading(false);
       return undefined;
     }
@@ -3493,7 +3530,7 @@ export default function App() {
 
   // Clear unread when opening a channel + persist read state
   useEffect(() => {
-    if (!activeChannel?.id || activeChannel.type !== "text" || !activeServer?.id) return;
+    if (!activeChannel?.id || !isTextLikeChannel(activeChannel) || !activeServer?.id) return;
     setChannelUnread((prev) => {
       if (!prev[activeChannel.id]) return prev;
       const next = { ...prev };
@@ -4300,7 +4337,7 @@ export default function App() {
     const path = location.pathname || "";
     if (path.startsWith("/direct/") && activeDmUser?.id) return { kind: "dm", id: activeDmUser.id };
     if (path.startsWith("/groups/") && activeGroup?.id) return { kind: "group", id: activeGroup.id };
-    if (path.startsWith("/servers/") && activeView === "servers" && activeChannel?.id && activeChannel.type === "text") {
+    if (path.startsWith("/servers/") && activeView === "servers" && activeChannel?.id && isTextLikeChannel(activeChannel)) {
       return { kind: "channel", id: activeChannel.id };
     }
     return null;
@@ -5128,8 +5165,8 @@ export default function App() {
     setMyServers((prev) => prev.map((s) => (s.id === server.id ? { ...s, ...server } : s)));
   };
 
-  const handleDeleteServer = async (serverId, confirmName) => {
-    await deleteServer(serverId, confirmName);
+  const handleDeleteServer = async (serverId, confirmName, password) => {
+    await deleteServer(serverId, confirmName, password);
     setMyServers((prev) => prev.filter((s) => s.id !== serverId));
     setOwnedServerCount((c) => Math.max(0, (c || 1) - 1));
     if (activeServer?.id === serverId) {
@@ -5139,8 +5176,8 @@ export default function App() {
     }
   };
 
-  const handleLeaveServer = async (serverId, confirmName) => {
-    const result = await leaveServer(serverId, confirmName);
+  const handleLeaveServer = async (serverId, confirmName, password) => {
+    const result = await leaveServer(serverId, confirmName, password);
     setMyServers((prev) => prev.filter((s) => s.id !== serverId));
     if (result?.deleted) setOwnedServerCount((c) => Math.max(0, (c || 1) - 1));
     if (activeServer?.id === serverId) {
@@ -5200,14 +5237,18 @@ export default function App() {
     if (location.pathname !== nextPath) navigate(nextPath);
   };
 
-  const handleCreateChannel = async ({ name, type, parentId, topic, slowmodeSeconds, beforeOpen }) => {
+  const handleCreateChannel = async ({ name, type, parentId, topic, slowmodeSeconds, userLimit, beforeOpen, private: isPrivate }) => {
     if (!activeServer?.id) return;
+    // isPrivate: the server writes the private rules in the same request (audit P3 / CA-3).
     const { channel } = await createChannel(activeServer.id, {
       name,
       type,
       parentId,
       topic,
       slowmodeSeconds,
+      // Voice / stage user limit (0 = none, server audit V12).
+      ...(Number(userLimit) > 0 ? { userLimit: Number(userLimit) } : {}),
+      ...(isPrivate ? { private: true } : {}),
     });
     if (!channel) return;
     patchServerChannels(activeServer.id, (channels) => [...channels, channel]);
@@ -5222,12 +5263,15 @@ export default function App() {
 
   const handleUpdateChannel = async (channelId, patch) => {
     if (!activeServer?.id) return;
-    const { channel } = await updateChannel(activeServer.id, channelId, patch);
-    if (!channel) return;
+    const res = await updateChannel(activeServer.id, channelId, patch);
+    const channel = res?.channel;
+    if (!channel) return res;
     patchServerChannels(activeServer.id, (channels) =>
       channels.map((c) => (c.id === channel.id ? { ...c, ...channel } : c))
     );
     if (activeChannel?.id === channel.id) setActiveChannel(channel);
+    // { channel, permissionsSynced?, needsSyncChoice? }: the move UI reads the sync answer (P8).
+    return res;
   };
 
   const handleReorderServers = async (orderedServers) => {
@@ -5325,6 +5369,8 @@ export default function App() {
         />
         <Suspense fallback={null}>
           <MaintenanceGate socket={socketApi} isAdmin={Boolean(me?.is_admin || me?.username === "admin")} />
+          {/* Sistem › Güvenli yeniden başlat: countdown strip, then "reconnecting" until the socket is back. */}
+          <ServerRestartStrip socket={socketApi} />
         </Suspense>
         {isFullAdmin && adminOpen && (
           <Suspense fallback={null}>
@@ -5367,10 +5413,19 @@ export default function App() {
           />
         </Suspense>
 
+        {me?.id ? (
+          <Suspense fallback={null}>
+            <AnnouncementLive socket={socketApi} enabled={Boolean(me?.id)} navigate={navigate} />
+          </Suspense>
+        ) : null}
+
+        <PlatformNoticeBanner enabled={Boolean(me?.id)} />
+
         {adminPopupQueue[0] && (
           <Suspense fallback={null}>
             <AdminBroadcastPopup
               popup={adminPopupQueue[0]}
+              socket={socketApi}
               onDismiss={() => setAdminPopupQueue((prev) => prev.slice(1))}
             />
           </Suspense>
@@ -5646,7 +5701,7 @@ export default function App() {
                 socketRef.current?.emit("dm:send", { toUserId: activeDmUser.id, tempId, text: "", poll: msg.poll });
               } else if (activeGroup) {
                 socketRef.current?.emit("group:message", { groupId: activeGroup.id, tempId, content: "", poll: msg.poll });
-              } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
+              } else if (activeView === "servers" && isTextLikeChannel(activeChannel) && activeServer?.id) {
                 socketRef.current?.emit("server:channel:message", {
                   serverId: activeServer.id,
                   channelId: activeChannel.id,
@@ -5806,7 +5861,7 @@ export default function App() {
               }
               hapticSuccess();
               setReplyTo(null);
-            } else if (activeView === "servers" && activeChannel?.type === "text" && activeServer?.id) {
+            } else if (activeView === "servers" && isTextLikeChannel(activeChannel) && activeServer?.id) {
               const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               const textStr = isMediaObject ? "" : String(textPayload || "");
               if (isNativeIOS() && isCasinoSlash(textStr)) {
@@ -5971,15 +6026,15 @@ export default function App() {
             activeServer={activeView === "servers" ? activeServer : null}
             canManageMessages={
               activeView === "servers" &&
-              (activeServer?.isOwner ||
-                Boolean(activeServer?.myPermissions?.flags?.MANAGE_MESSAGES) ||
-                Boolean(activeServer?.myPermissions?.flags?.ADMINISTRATOR))
+              Boolean(activeServer) &&
+              (activeServer.isOwner ||
+                channelHasPermission(activeServer, activeChannel?.id, "MANAGE_MESSAGES", activeChannelPerms))
             }
             loading={Boolean(
               (activeDmUser && dmByUserId[activeDmUser.id] === undefined) ||
                 (activeGroup && groupMessagesById[activeGroup.id] === undefined) ||
                 (activeView === "servers" &&
-                  activeChannel?.type === "text" &&
+                  isTextLikeChannel(activeChannel) &&
                   channelMessagesById[activeChannel.id] === undefined)
             )}
             loadError={dmHistoryFailed}

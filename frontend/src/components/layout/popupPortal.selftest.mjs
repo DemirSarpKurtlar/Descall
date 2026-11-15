@@ -41,7 +41,10 @@ assert(quickFeedback.includes("document.body"), "QuickFeedbackModal must portal 
 assert(quickFeedback.includes("feedback-overlay"), "QuickFeedbackModal uses feedback-overlay");
 // 3.7.14: the old wizard (FeedbackModal) and floating UserFeedbackButton were dead code and are gone.
 // 3.7.14: the add / create-group sheet portals from its own component (NewCreateModal).
-assert((ss.match(/createPortal\(\s*\n?\s*<AnimatePresence>/g) || []).length >= 1 || ss.split("createPortal(").length >= 6, "modals portaled");
+// Duyurular (Nov 2026): the announcements window portals from its own component (AnnouncementsSheet).
+assert((ss.match(/createPortal\(\s*\n?\s*<AnimatePresence>/g) || []).length >= 1 || ss.split("createPortal(").length >= 6 || ss.includes("<AnnouncementsSheet"), "modals portaled");
+const annSheet = readFileSync(pathJoin(root, "../announcements/AnnouncementsSheet.jsx"), "utf8");
+assert(annSheet.includes("createPortal(") && annSheet.includes("document.body"), "AnnouncementsSheet portals to document.body");
 assert(ss.includes("document.body"), "portals to document.body");
 assert(!/includes\(query\.toLowerCase\(\)\)\s*, document\.body\)/.test(ss), "filter not corrupted");
 

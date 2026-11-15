@@ -30,7 +30,7 @@ export function Panel() {
           {items.map((it) => (
             <Item key={it.at} icon={it.source === "paste" ? "clipboard" : "copy"} title={it.text}>
               <Badge>{it.source === "paste" ? t("premiumGaming.clipboard.pasted") : t("premiumGaming.clipboard.copied")}</Badge>
-              <Btn icon={copied === it.at ? "check" : "copy"} aria-label={t("premiumGaming.clipboard.copy")} onClick={async () => { await copyText(it.text); setCopied(it.at); }}>
+              <Btn icon={copied === it.at ? "check" : "copy"} aria-label={t("premiumGaming.clipboard.copy")} onClick={async () => { if (await copyText(it.text)) setCopied(it.at); }}>
                 {copied === it.at ? t("premiumGaming.clipboard.done") : null}
               </Btn>
               <IconBtn icon="trash" danger label={t("premiumGaming.common.remove")} onClick={() => removeClipboardItem(it.at)} />

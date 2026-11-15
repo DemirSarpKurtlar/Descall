@@ -289,11 +289,41 @@ async function canAccessPath(supabase, userId, path) {
  *  - our signed URL or a ref       → ref (sender must be allowed to use that file)
  *  - legacy public images/files URL uploaded by the sender (pre-2.11.2 clients) → copied into
  *    the private bucket, stored as a ref
- *  - anything else (GIF providers, avatars) → unchanged
+ *  - an https GIF provider URL or a public asset in our own storage (avatars) → unchanged
+ *  - anything else (javascript:, data:, any other host) → null (server audit MSG-3: any
+ *    string used to be stored and rendered as a file chip / auto-loaded image)
  */
+const GIF_HOSTS = /(^|\.)(giphy\.com|tenor\.com|tenor\.googleapis\.com)$/i;
+
+function storageHosts() {
+  const hosts = new Set();
+  for (const raw of [process.env.SUPABASE_URL, process.env.MEDIA_PUBLIC_BASE_URL, process.env.PUBLIC_API_URL, process.env.VITE_API_BASE_URL, process.env.RENDER_EXTERNAL_URL, "https://des-call.onrender.com"]) {
+    try { if (raw) hosts.add(new URL(raw).hostname.toLowerCase()); } catch { /* ignore */ }
+  }
+  return hosts;
+}
+
+/** True for a URL a message may carry that is not one of our private media refs. */
+function isAllowedExternalMediaUrl(value) {
+  if (typeof value !== "string" || value.length > 2048) return false;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.username || url.password) return false;
+  const host = url.hostname.toLowerCase();
+  if (GIF_HOSTS.test(host)) return true;
+  // Public bucket of our own Supabase project (avatars, banners, server icons).
+  if (!url.pathname.startsWith("/storage/v1/object/public/")) return false;
+  if (storageHosts().has(host)) return true;
+  return !process.env.SUPABASE_URL && /\.supabase\.(co|in)$/i.test(host);
+}
+
 async function normalizeIncomingMediaUrl(supabase, senderId, mediaUrl) {
   const parsed = parseMediaUrl(mediaUrl);
-  if (!parsed) return mediaUrl;
+  if (!parsed) return isAllowedExternalMediaUrl(mediaUrl) ? mediaUrl : null;
   if (parsed.path.startsWith("quarantine/")) return null;
   if (parsed.kind === "legacy") {
     const { data: up } = await supabase
@@ -338,6 +368,7 @@ module.exports = {
   supabaseSignedUrl,
   canAccessPath,
   normalizeIncomingMediaUrl,
+  isAllowedExternalMediaUrl,
   ensurePrivateCopy,
   _resetForTests() {
     keyCache = null;

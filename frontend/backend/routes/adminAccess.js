@@ -7,10 +7,12 @@
  *   GET    /access-bans/hits                    → { hits }
  *   POST   /access-bans { mode: "address", ip, kind: "ip"|"network", duration, reason }
  *   POST   /access-bans { mode: "account", userId, duration, reason, includeNetwork }
+ *   POST   /access-bans { mode: "source", sourceRef, kind: "ip"|"network", duration, reason } (Güvenlik Merkezi)
  *   DELETE /access-bans/:id                     → revoke
  * Creating a ban also disconnects matching live sockets (admins excluded).
  */
 
+const { apiError } = require("../lib/apiError");
 const express = require("express");
 const supabase = require("../db/supabase");
 const accessBans = require("../lib/accessBans");
@@ -121,21 +123,28 @@ router.post("/access-bans", async (req, res) => {
         const { data } = await supabase.from("users").select("id").ilike("username", body.username.trim().replace(/[%_]/g, "")).maybeSingle();
         userId = data?.id || "";
       }
-      if (!UUID_RE.test(userId)) return res.status(400).json({ error: "User not found.", code: "NOT_FOUND" });
+      if (!UUID_RE.test(userId)) return res.status(400).json(apiError("User not found.", null, { code: "NOT_FOUND" }));
       const result = await accessBans.banAccountAccess({ userId, duration, reason, actor: req.user, includeNetwork: Boolean(body.includeNetwork) });
       added = result.added;
       skipped = result.skipped;
       target = added[0]?.sourceUsername || userId;
       if (!added.length && !skipped) {
-        return res.status(409).json({ error: "This account has no recorded device or IP address.", code: "NOTHING_TO_BAN" });
+        return res.status(409).json(apiError("This account has no recorded device or IP address.", null, { code: "NOTHING_TO_BAN" }));
       }
+    } else if (body.mode === "source") {
+      // Güvenlik Merkezi feed / "En çok deneme yapan kaynaklar": the event keeps only a
+      // keyed hash of the address, so the ban is made from that hash.
+      const source = await require("../lib/securityEvents").findSource(body.sourceRef);
+      if (!source) return res.status(404).json(apiError("This source is no longer in the security feed.", null, { code: "SOURCE_NOT_FOUND" }));
+      added = await accessBans.banSource({ source, kind: body.kind === "network" ? "network" : "ip", duration, reason, actor: req.user });
+      target = added[0]?.label || null;
     } else {
       added = await accessBans.banAddress({ ip: body.ip, kind: body.kind === "network" ? "network" : "ip", duration, reason, actor: req.user });
       target = added[0]?.label || null;
     }
     const kicked = await kickMatching(req.app?.get?.("io"));
     appendAudit(req.user.id, req.user.username, "access_ban", target, {
-      mode: body.mode === "account" ? "account" : "address",
+      mode: body.mode === "account" ? "account" : body.mode === "source" ? "source" : "address",
       count: added.length,
       kinds: [...new Set(added.map((b) => b.kind))],
       duration,
@@ -149,7 +158,7 @@ router.post("/access-bans", async (req, res) => {
 });
 
 router.delete("/access-bans/:id", async (req, res) => {
-  if (!UUID_RE.test(String(req.params.id))) return res.status(400).json({ error: "Invalid ban." });
+  if (!UUID_RE.test(String(req.params.id))) return res.status(400).json(apiError("Invalid ban."));
   try {
     const ban = await accessBans.revokeBan({ id: req.params.id, actor: req.user });
     appendAudit(req.user.id, req.user.username, "access_unban", ban.label, { kind: ban.kind });

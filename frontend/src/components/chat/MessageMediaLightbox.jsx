@@ -5,6 +5,7 @@ import { X, Download, Copy, ExternalLink, ChevronLeft, ChevronRight, Plus, Minus
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatViewerTime } from "../../lib/mediaViewerHeader";
 import { usePrivateMediaUrl } from "../../lib/privateMediaUrls";
+import { copyText } from "../../lib/copyText.js";
 import { computeMediaBox, mediaBoxStyle, rememberMediaDims, rememberedMediaDims } from "../../lib/mediaBox";
 import {
   DOUBLE_TAP_SCALE, MAX_SCALE, clampPan, rubberBand, shouldDismiss, swipeStep, zoomAt,
@@ -189,7 +190,7 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
       await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]);
       flash(t("Image copied"));
     } catch {
-      try { await navigator.clipboard.writeText(url); flash(t("Link copied")); } catch { flash(t("Couldn't copy")); }
+      flash((await copyText(url)) ? t("Link copied") : t("Couldn't copy"));
     }
   };
   const openOriginal = () => window.open(url, "_blank", "noopener,noreferrer");

@@ -14,11 +14,18 @@ const {
   resolveMemberPermissions,
   resolveChannelPermissions,
   assertHierarchy,
+  isTimeoutRestricted,
+  timeoutRestrictedError,
 } = require("../lib/serverPermissions");
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { emitToChannelViewers, canViewChannel } = require("../lib/channelViewers");
 const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutState");
 const { errorFields } = require("../lib/apiError");
+const { screenCompanionIdentity, takeCompanionIssued } = require("../lib/screenCompanion");
+const ve = require("../lib/serverVoiceEnforce");
+
+/** Channel / user ids are lowercase UUIDs; spelling variants must not open parallel calls (V11). */
+const normId = (v) => ve.normalizeId(v);
 
 function resolvePublicUser(socket) {
   const myId = socket.user?.id;
@@ -84,7 +91,7 @@ async function assertVoiceAccess(userId, channelId, { bypassConnectView = false 
   const { data: channel, error } = await supabase
     .from("server_channels")
     .select("id, server_id, type, name")
-    .eq("id", channelId)
+    .eq("id", normId(channelId))
     .maybeSingle();
   if (error) throw error;
   if (!channel) {
@@ -97,12 +104,7 @@ async function assertVoiceAccess(userId, channelId, { bypassConnectView = false 
     err.code = "NOT_VOICE_CHANNEL";
     throw err;
   }
-  const resolved = await resolveChannelPermissions(
-    supabase,
-    channel.server_id,
-    userId,
-    channelId
-  );
+  const resolved = await resolveChannelPermissions(supabase, channel.server_id, userId, channel.id);
   if (!resolved.isMember) {
     const err = new Error("You are not a member of this server.");
     err.code = "NOT_MEMBER";
@@ -141,13 +143,13 @@ function canStreamInChannel(channel, resolved, participant = null) {
   return canSpeakInChannel(channel, resolved, participant);
 }
 
+/** STREAM + SPEAK, stage speaker, not server-muted / deafened / AFK-locked (V5, V10). */
 function participantCanStream(participant) {
-  if (!participant?.canStream || !participant?.canSpeakPermission) return false;
-  return participant.channelType !== "stage" || participant.stageRole === "speaker";
+  return ve.canStreamSeat(participant);
 }
 
-async function assertStageChannel(userId, channelId) {
-  const { channel, resolved } = await assertVoiceAccess(userId, channelId);
+async function assertStageChannel(userId, channelId, opts = {}) {
+  const { channel, resolved } = await assertVoiceAccess(userId, channelId, opts);
   if (channel.type !== "stage") {
     const err = new Error("Not a stage channel.");
     err.code = "NOT_STAGE_CHANNEL";
@@ -189,35 +191,29 @@ function setParticipant(call, userId, member) {
   return next;
 }
 
-async function kickLiveKitParticipant(channelId, userId) {
-  try {
-    if (
-      !process.env.LIVEKIT_URL ||
-      !process.env.LIVEKIT_API_KEY ||
-      !process.env.LIVEKIT_API_SECRET ||
-      !channelId ||
-      userId == null
-    ) {
-      return;
-    }
-    const { RoomServiceClient } = require("livekit-server-sdk");
-    const host = String(process.env.LIVEKIT_URL).replace(/^ws/i, "http");
-    const svc = new RoomServiceClient(
-      host,
-      process.env.LIVEKIT_API_KEY,
-      process.env.LIVEKIT_API_SECRET
-    );
-    await svc.removeParticipant(`server-voice-${channelId}`, String(userId));
-  } catch {
-    /* occupancy drop still runs */
-  }
+/**
+ * Remove an identity from the channel's LiveKit room and revoke the tokens it holds
+ * (revokeTokenTs), so a kept JWT cannot be used to come back (M2, SK-3). Failures are
+ * logged with one retry (V15); occupancy drop still runs.
+ */
+function kickLiveKitParticipant(channelId, userId) {
+  if (!channelId || userId == null) return Promise.resolve(false);
+  return ve.removeLiveKitIdentity(channelId, String(userId)).catch(() => false);
 }
 
+/** `${channelId}|${userId}` -> socket id that holds the seat (V9; never sent to clients). */
+const seatOwners = new Map();
+const seatOwnerKey = (channelId, userId) => `${normId(channelId)}|${normId(userId)}`;
+
 function removeFromVoice(io, channelId, userId) {
+  channelId = normId(channelId);
+  seatOwners.delete(seatOwnerKey(channelId, userId));
   const call = activeServerVoiceCalls.get(channelId);
   if (!call) return null;
   const uid = String(userId);
   void kickLiveKitParticipant(channelId, uid);
+  // iOS screen broadcast companion (`<userId>:screen`) leaves with its owner.
+  if (takeCompanionIssued(channelId, uid)) void kickLiveKitParticipant(channelId, screenCompanionIdentity(uid));
   const entry = getParticipantEntry(call, uid);
   if (entry) call.participants.delete(entry.key);
   // Also drop string/uuid key variants if present
@@ -253,14 +249,23 @@ function removeUserFromAllServerVoice(io, userId) {
   }
 }
 
-/** Drop a user from every voice channel of one server and tell their clients (timeout). */
+/**
+ * Drop a user from every voice channel of one server and tell their clients (kick, ban,
+ * leave, timeout). Also removes (and revokes) their LiveKit identity and screen companion
+ * in every voice room of the server, seated or not (ghost listeners, V2 / M2). Returns
+ * the LiveKit cleanup promise; callers may ignore it.
+ */
 function removeUserFromServerVoice(io, serverId, userId, reason = null) {
-  const uid = String(userId);
-  for (const [channelId, call] of activeServerVoiceCalls.entries()) {
-    if (!sameUserId(call.serverId, serverId) || !getParticipantEntry(call, uid)) continue;
+  const uid = normId(userId);
+  for (const [channelId, call] of [...activeServerVoiceCalls.entries()]) {
+    if (!sameUserId(normId(call.serverId), normId(serverId)) || !getParticipantEntry(call, uid)) continue;
     removeFromVoice(io, channelId, uid);
     io?.to?.(`user:${uid}`).emit("server:voice:force-disconnected", { serverId, channelId, reason });
   }
+  if (["kick", "kicked", "ban", "banned", "leave", "left"].includes(String(reason || "").toLowerCase())) {
+    ve.forgetVoiceModState(serverId, uid);
+  }
+  return ve.evictLiveKitFromServerRooms(serverId, uid).catch(() => 0);
 }
 
 /**
@@ -268,6 +273,9 @@ function removeUserFromServerVoice(io, serverId, userId, reason = null) {
  * 2026-10-19 the in-memory call and the LiveKit room outlived a deleted channel.
  */
 function endServerVoiceChannel(io, channelId, reason = "channel_deleted") {
+  channelId = normId(channelId);
+  // Also drops identities that joined with a token but no seat.
+  void ve.deleteLiveKitRoom(channelId);
   const call = activeServerVoiceCalls.get(channelId);
   if (!call) return 0;
   const serverId = call.serverId;
@@ -307,6 +315,7 @@ function findUserVoiceChannel(userId) {
 
 function findUserInChannel(channelId, userId) {
   if (!channelId || userId == null) return null;
+  channelId = normId(channelId);
   const call = activeServerVoiceCalls.get(channelId);
   if (!call) return null;
   const entry = getParticipantEntry(call, userId);
@@ -314,12 +323,34 @@ function findUserInChannel(channelId, userId) {
   return { channelId, call, entry };
 }
 
-async function assertVoiceMod(actorId, serverId, flag) {
+/**
+ * Voice moderation right. With channelIds the flag comes from that channel's bits
+ * (overwrite allows and denies count, Discord parity; server audit P4): a channel
+ * allow of MUTE_MEMBERS / DEAFEN_MEMBERS / MOVE_MEMBERS works without the server-wide
+ * bit, and a deny removes it. Without channels (target not in voice) the server bits
+ * decide. A timed-out moderator cannot moderate (M4).
+ */
+async function assertVoiceMod(actorId, serverId, flag, { channelIds = [] } = {}) {
   const resolved = await resolveMemberPermissions(supabase, serverId, actorId);
   if (!resolved.isMember) {
     const err = new Error("You are not a member of this server.");
     err.code = "NOT_MEMBER";
     throw err;
+  }
+  if (typeof isTimeoutRestricted === "function" && isTimeoutRestricted(resolved)) {
+    throw timeoutRestrictedError(resolved);
+  }
+  const ids = [...new Set((channelIds || []).filter(Boolean).map(normId))];
+  if (ids.length) {
+    for (const chId of ids) {
+      const r = await resolveChannelPermissions(supabase, serverId, actorId, chId);
+      if (r.channelMissing || !hasPermission(r.bits, flag)) {
+        const err = new Error("Missing permission.");
+        err.code = "MISSING_PERMISSION";
+        throw err;
+      }
+    }
+    return resolved;
   }
   if (!hasPermission(resolved.bits, flag)) {
     const err = new Error("Missing permission.");
@@ -362,8 +393,59 @@ async function assertVoiceTarget(actorId, serverId, targetId, { flag = null, cha
   }
 }
 
+/** Optional per-channel user limit (server_channels.user_limit, migration 20261115). 0 = none. */
+async function channelUserLimit(channelId) {
+  try {
+    const { data, error } = await supabase
+      .from("server_channels")
+      .select("user_limit")
+      .eq("id", channelId)
+      .maybeSingle();
+    if (error || !data) return 0;
+    const n = Number(data.user_limit);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** The server's AFK channel id (members there cannot speak, Discord parity), or null. */
+async function serverAfkChannelId(serverId) {
+  try {
+    const { data, error } = await supabase
+      .from("servers")
+      .select("afk_channel_id")
+      .eq("id", serverId)
+      .maybeSingle();
+    if (error || !data?.afk_channel_id) return null;
+    return normId(data.afk_channel_id);
+  } catch {
+    return null;
+  }
+}
+
+/** Fixed-window per-socket limiter for chatty voice events (SK-7). */
+function makeSocketLimiter(socket) {
+  const buckets = new Map();
+  return (key, max, windowMs) => {
+    const now = Date.now();
+    const b = buckets.get(key);
+    if (!b || now - b.start >= windowMs) {
+      buckets.set(key, { start: now, n: 1 });
+      return true;
+    }
+    b.n += 1;
+    return b.n <= max;
+  };
+}
+
+/** A disconnected socket's seat stays this long for a reconnect, then goes (V9). */
+const SEAT_RECONNECT_GRACE_MS = Number(process.env.VOICE_SEAT_GRACE_MS) || 20_000;
+const STAGE_REQUEST_COOLDOWN_MS = 5_000;
+
 function registerServerVoiceHandlers(io, socket) {
-  const myId = socket.user?.id;
+  const myId = socket.user?.id != null ? normId(socket.user.id) : socket.user?.id;
+  const allow = makeSocketLimiter(socket);
 
   /** Timed out while seated (e.g. timeout raced the disconnect): no new media, drop the seat. */
   async function rejectIfTimedOut(call, channelId) {
@@ -392,6 +474,12 @@ function registerServerVoiceHandlers(io, socket) {
       const resolved = await resolveMemberPermissions(supabase, serverId, myId);
       if (!resolved.isMember) return;
       socket.join(`server:${serverId}`);
+      // A kick / ban can land between the check and the join (SK-13): check again.
+      const again = await resolveMemberPermissions(supabase, serverId, myId);
+      if (!again.isMember) {
+        socket.leave(`server:${serverId}`);
+        return;
+      }
       const states = [];
       for (const [channelId, call] of activeServerVoiceCalls.entries()) {
         if (sameUserId(call.serverId, serverId)) {
@@ -413,6 +501,7 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:check", async ({ channelId } = {}) => {
     if (!channelId) return;
+    channelId = normId(channelId);
     try {
       const { channel } = await assertVoiceAccess(myId, channelId);
       socket.join(`server:${channel.server_id}`);
@@ -440,16 +529,20 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:join", async ({ serverId, channelId } = {}) => {
     if (!channelId) return;
+    channelId = normId(channelId);
     const epoch = bumpVoiceJoin();
     try {
-      // Already seated by MOVE_MEMBERS (or AFK move): allow media rejoin without
-      // VIEW/CONNECT so private/staff voice channels work like Discord.
-      const alreadySeated = Boolean(findUserInChannel(channelId, myId));
-      const { channel, resolved } = await assertVoiceAccess(myId, channelId, {
-        bypassConnectView: alreadySeated,
+      // Only a member a mover (MOVE_MEMBERS) placed here may re-join media without
+      // VIEW/CONNECT (Discord parity); any other seat is checked like a new join (V6).
+      const seatedFound = findUserInChannel(channelId, myId);
+      const alreadySeated = Boolean(seatedFound);
+      const previous = seatedFound?.entry?.member || null;
+      const { channel, resolved, canView, canConnect } = await assertVoiceAccess(myId, channelId, {
+        bypassConnectView: Boolean(previous?.forceMovedIn),
       });
+      channelId = normId(channel.id);
       if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
-      if (serverId && serverId !== channel.server_id) {
+      if (serverId && normId(serverId) !== normId(channel.server_id)) {
         socket.emit("server:voice:error", {
           channelId,
           message: "Server mismatch.",
@@ -473,6 +566,30 @@ function registerServerVoiceHandlers(io, socket) {
       }
       if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
 
+      // Per-channel user limit (V12): MOVE_MEMBERS holders and existing seats bypass it.
+      if (!alreadySeated) {
+        const existing = activeServerVoiceCalls.get(channelId);
+        const count = existing?.participants?.size || 0;
+        if (count > 0 && !hasPermission(resolved.bits, Permissions.MOVE_MEMBERS)) {
+          const limit = await channelUserLimit(channelId);
+          if (limit && count >= limit) {
+            if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
+            socket.emit("server:voice:error", {
+              channelId,
+              message: "This voice channel is full.",
+              code: "CHANNEL_FULL",
+            });
+            return;
+          }
+        }
+      }
+
+      const [mod, afkChannelId] = await Promise.all([
+        ve.getVoiceModState(channel.server_id, myId),
+        serverAfkChannelId(channel.server_id),
+      ]);
+      if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
+
       const myUid = String(myId);
       for (const [otherId, call] of activeServerVoiceCalls.entries()) {
         if (otherId !== channelId && getParticipantEntry(call, myUid)) {
@@ -494,21 +611,48 @@ function registerServerVoiceHandlers(io, socket) {
 
       const mePublic = resolvePublicUser(socket);
       mePublic.channelType = channel.type;
-      mePublic.stageRole = channel.type === "stage" ? "audience" : "speaker";
+      // Re-join of the same seat (reconnect, media retry) keeps the stage role, the
+      // hand raise and the self-mute; server mute / deafen come from the stored state
+      // and survive leave + join (V3).
+      const keepSeat = Boolean(previous && previous.channelType === channel.type);
+      mePublic.stageRole =
+        channel.type === "stage" ? (keepSeat && previous.stageRole === "speaker" ? "speaker" : "audience") : "speaker";
+      mePublic.requestedToSpeak = keepSeat ? Boolean(previous.requestedToSpeak) : false;
+      if (keepSeat) {
+        mePublic.muted = Boolean(previous.muted);
+        mePublic.deafened = Boolean(previous.deafened);
+      }
       mePublic.canSpeakPermission = hasPermission(resolved.bits, Permissions.SPEAK);
       mePublic.canStream = hasPermission(resolved.bits, Permissions.STREAM);
       mePublic.canRequestToSpeak = hasPermission(resolved.bits, Permissions.REQUEST_TO_SPEAK);
       mePublic.canPrioritySpeaker = hasPermission(resolved.bits, Permissions.PRIORITY_SPEAKER);
+      mePublic.modMuted = Boolean(mod.muted);
+      mePublic.modDeafened = Boolean(mod.deafened);
+      mePublic.afkLocked = Boolean(afkChannelId && afkChannelId === channelId);
+      mePublic.forceMovedIn = Boolean(previous?.forceMovedIn) && !(canView && canConnect);
+      mePublic.joinedAt = keepSeat && previous.joinedAt ? previous.joinedAt : Date.now();
+      if (channel.type === "stage" && mePublic.stageRole !== "speaker") mePublic.muted = true;
+      ve.recomputeSeatLocks(mePublic);
       const canSpeak = canSpeakInChannel(channel, resolved, mePublic);
-      if (!canSpeak) {
-        mePublic.muted = true;
-        mePublic.serverMuted = channel.type !== "stage";
-      }
-      mePublic.afkIdleSince = mePublic.muted ? Date.now() : null;
+      mePublic.afkIdleSince = mePublic.muted
+        ? (keepSeat && previous.afkIdleSince) || Date.now()
+        : null;
       setParticipant(call, myUid, mePublic);
+      if (socket.id) seatOwners.set(seatOwnerKey(channelId, myUid), socket.id);
 
       socket.join(`server:${channel.server_id}`);
       socket.join(`server-voice:${channelId}`);
+
+      // The LiveKit token comes with the confirmed seat (V2): minted after the seat
+      // exists, with grants that match it. Older clients still use /livekit-token.
+      let livekit = null;
+      try {
+        livekit = await ve.mintVoiceToken({ userId: myUid, channelId, seat: mePublic });
+      } catch (err) {
+        console.warn("[ServerVoice] token mint failed:", err?.message || err);
+      }
+      if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
+      if (alreadySeated) void ve.pushSeatToLiveKit(channelId, mePublic);
 
       const others = Array.from(call.participants.values()).filter((p) => !sameUserId(p.id, myUid));
       socket.emit("server:voice:joined", {
@@ -521,8 +665,11 @@ function registerServerVoiceHandlers(io, socket) {
         canStream: canStreamInChannel(channel, resolved, mePublic),
         canRequestToSpeak: mePublic.canRequestToSpeak,
         stageRole: mePublic.stageRole,
-        requestedToSpeak: false,
+        requestedToSpeak: Boolean(mePublic.requestedToSpeak),
         serverMuted: Boolean(mePublic.serverMuted),
+        serverDeafened: Boolean(mePublic.serverDeafened),
+        afkChannel: Boolean(mePublic.afkLocked),
+        ...(livekit ? { livekit } : {}),
       });
 
       socket.to(`server-voice:${channelId}`).emit("server:voice:member-joined", {
@@ -556,6 +703,7 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:leave", ({ channelId } = {}) => {
     bumpVoiceJoin();
+    channelId = channelId ? normId(channelId) : channelId;
     if (channelId && findUserInChannel(channelId, myId)) {
       removeFromVoice(io, channelId, myId);
       socket.leave(`server-voice:${channelId}`);
@@ -574,22 +722,51 @@ function registerServerVoiceHandlers(io, socket) {
     socket.emit("server:voice:left", { channelId: channelId || null });
   });
 
+  // V9: a seat belongs to the socket that joined it. When that socket goes away while
+  // another socket of the user stays connected (phone app open), the seat used to stay
+  // forever. Give a reconnect a short grace (the client re-emits join on connect).
+  socket.on("disconnect", () => {
+    const sid = socket.id;
+    if (!sid) return;
+    const owned = [];
+    for (const [channelId, call] of activeServerVoiceCalls.entries()) {
+      if (getParticipantEntry(call, myId) && seatOwners.get(seatOwnerKey(channelId, myId)) === sid) owned.push(channelId);
+    }
+    if (!owned.length) return;
+    const timer = setTimeout(() => {
+      for (const channelId of owned) {
+        const call = activeServerVoiceCalls.get(channelId);
+        const entry = getParticipantEntry(call, myId);
+        if (!entry || seatOwners.get(seatOwnerKey(channelId, myId)) !== sid) continue;
+        removeFromVoice(io, channelId, myId);
+        io.to(`user:${myId}`).emit("server:voice:force-disconnected", {
+          serverId: call?.serverId,
+          channelId,
+          reason: "disconnected",
+        });
+      }
+    }, SEAT_RECONNECT_GRACE_MS);
+    timer.unref?.();
+  });
+
   /** Force-disconnect a member from voice (MOVE_MEMBERS). */
   socket.on("server:voice:disconnect", async ({ serverId, channelId, userId } = {}) => {
     if (!serverId || !userId) return;
-    const targetId = String(userId);
+    serverId = normId(serverId);
+    channelId = channelId ? normId(channelId) : channelId;
+    const targetId = normId(userId);
     try {
-      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS);
       if (sameUserId(targetId, myId)) {
         socket.emit("server:voice:error", { message: "Cannot disconnect yourself this way." });
         return;
       }
       const found =
         (channelId && findUserInChannel(channelId, targetId)) || findUserVoiceChannel(targetId);
-      if (!found || !sameUserId(found.call.serverId, serverId)) {
+      if (!found || !sameUserId(normId(found.call.serverId), serverId)) {
         socket.emit("server:voice:error", { message: "User is not in a voice channel." });
         return;
       }
+      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS, { channelIds: [found.channelId] });
       await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [found.channelId] });
       removeFromVoice(io, found.channelId, targetId);
       io.to(`user:${targetId}`).emit("server:voice:force-disconnected", {
@@ -616,17 +793,18 @@ function registerServerVoiceHandlers(io, socket) {
     "server:voice:move",
     async ({ serverId, userId, fromChannelId, toChannelId } = {}) => {
       if (!serverId || !userId || !toChannelId) return;
-      const targetId = String(userId);
-      const destId = String(toChannelId);
+      serverId = normId(serverId);
+      fromChannelId = fromChannelId ? normId(fromChannelId) : fromChannelId;
+      const targetId = normId(userId);
+      const destId = normId(toChannelId);
       try {
-        await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS);
         // Discord: movers can seat members into channels the member cannot see.
-        const { channel: dest, resolved: destPerms, canView } = await assertVoiceAccess(
+        const { channel: dest, resolved: destPerms, canView, canConnect } = await assertVoiceAccess(
           targetId,
           destId,
           { bypassConnectView: true }
         );
-        if (dest.server_id !== serverId) {
+        if (normId(dest.server_id) !== serverId) {
           socket.emit("server:voice:error", { message: "Target channel is on another server." });
           return;
         }
@@ -634,10 +812,11 @@ function registerServerVoiceHandlers(io, socket) {
         const found =
           (fromChannelId && findUserInChannel(fromChannelId, targetId)) ||
           findUserVoiceChannel(targetId);
-        if (!found || found.call.serverId !== serverId) {
+        if (!found || normId(found.call.serverId) !== serverId) {
           socket.emit("server:voice:error", { message: "User is not in a voice channel." });
           return;
         }
+        await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS, { channelIds: [found.channelId, destId] });
         await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [found.channelId, destId], connectIds: [destId] });
         if (String(found.channelId) === destId) return;
 
@@ -645,7 +824,9 @@ function registerServerVoiceHandlers(io, socket) {
           ...(found.entry?.member || { id: targetId }),
           id: targetId,
         };
+        const owner = seatOwners.get(seatOwnerKey(found.channelId, targetId));
         removeFromVoice(io, found.channelId, targetId);
+        if (owner) seatOwners.set(seatOwnerKey(destId, targetId), owner);
 
         let destCall = activeServerVoiceCalls.get(destId);
         if (!destCall) {
@@ -663,12 +844,21 @@ function registerServerVoiceHandlers(io, socket) {
         snapshot.canSpeakPermission = hasPermission(destPerms.bits, Permissions.SPEAK);
         snapshot.canStream = hasPermission(destPerms.bits, Permissions.STREAM);
         snapshot.canRequestToSpeak = hasPermission(destPerms.bits, Permissions.REQUEST_TO_SPEAK);
+        snapshot.canPrioritySpeaker = hasPermission(destPerms.bits, Permissions.PRIORITY_SPEAKER);
         snapshot.muted = dest.type === "stage" ? true : Boolean(snapshot.muted);
-        snapshot.serverMuted = dest.type === "stage" ? false : Boolean(snapshot.serverMuted);
         snapshot.cameraOn = false;
         snapshot.isScreenSharing = false;
+        // Server mute / deafen are stored per member and follow the move (V3); no SPEAK
+        // at the destination locks the mic like a join does (V10).
+        const destMod = await ve.getVoiceModState(serverId, targetId);
+        snapshot.modMuted = Boolean(destMod.muted);
+        snapshot.modDeafened = Boolean(destMod.deafened);
+        snapshot.afkLocked = (await serverAfkChannelId(serverId)) === destId;
         // Session-only seat into a private channel (cleared on leave).
-        snapshot.forceMovedIn = !canView;
+        snapshot.forceMovedIn = !canView || !canConnect;
+        snapshot.joinedAt = Date.now();
+        ve.recomputeSeatLocks(snapshot);
+        snapshot.afkIdleSince = snapshot.muted ? Date.now() : null;
         setParticipant(destCall, targetId, snapshot);
 
         // Put every socket for the user into the destination voice room immediately
@@ -718,101 +908,67 @@ function registerServerVoiceHandlers(io, socket) {
     }
   );
 
-  /** Server-mute / unmute a member (MUTE_MEMBERS). */
-  socket.on("server:voice:server-mute", async ({ serverId, channelId, userId, muted } = {}) => {
+  /**
+   * Server-mute / server-deafen a member (MUTE_MEMBERS / DEAFEN_MEMBERS). The state is
+   * stored per member (survives leave + join, moves, AFK; V3 / SK-1) and enforced in
+   * LiveKit with updateParticipant (V4): no publishing while muted, no subscribing
+   * while deafened. A member who is not in voice can still be (un)muted.
+   */
+  async function serverMuteOrDeafen({ serverId, channelId, userId, value, kind }) {
     if (!serverId || !userId) return;
-    const targetId = String(userId);
+    serverId = normId(serverId);
+    channelId = channelId ? normId(channelId) : channelId;
+    const targetId = normId(userId);
+    const flag = kind === "deafen" ? Permissions.DEAFEN_MEMBERS : Permissions.MUTE_MEMBERS;
     try {
-      await assertVoiceMod(myId, serverId, Permissions.MUTE_MEMBERS);
       const found =
         (channelId && findUserInChannel(channelId, targetId)) || findUserVoiceChannel(targetId);
-      if (!found || found.call.serverId !== serverId) {
-        socket.emit("server:voice:error", { message: "User is not in a voice channel." });
-        return;
+      const inThisServer = found && normId(found.call.serverId) === serverId;
+      await assertVoiceMod(myId, serverId, flag, { channelIds: inThisServer ? [found.channelId] : [] });
+      if (!inThisServer) {
+        const target = await resolveMemberPermissions(supabase, serverId, targetId);
+        if (!target.isMember) {
+          socket.emit("server:voice:error", { message: "User is not in a voice channel." });
+          return;
+        }
       }
-      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MUTE_MEMBERS, channelIds: [found.channelId] });
-      const member = { ...(found.entry?.member || { id: targetId }) };
-      member.serverMuted = Boolean(muted);
-      if (muted) member.muted = true;
-      setParticipant(found.call, targetId, member);
-      emitChannelState(io, serverId, found.channelId);
-      io.to(`user:${targetId}`).emit("server:voice:force-mute", {
+      await assertVoiceTarget(myId, serverId, targetId, {
+        flag,
+        channelIds: inThisServer ? [found.channelId] : [],
+      });
+      const on = Boolean(value);
+      const applied = await ve.applyServerVoiceMute(io, {
         serverId,
-        channelId: found.channelId,
-        muted: Boolean(muted),
+        userId: targetId,
+        ...(kind === "deafen" ? { deafened: on } : { muted: on }),
         byUserId: myId,
       });
-      io.to(`server-voice:${found.channelId}`).emit("server:voice:media-state", {
-        channelId: found.channelId,
-        fromUserId: targetId,
-        muted: Boolean(member.muted),
-        serverMuted: Boolean(member.serverMuted),
-      });
+      if (!applied) throw new Error(kind === "deafen" ? "Deafen failed." : "Mute failed.");
       socket.emit("server:voice:mod-ok", {
-        action: muted ? "server-mute" : "server-unmute",
+        action: kind === "deafen" ? (on ? "server-deafen" : "server-undeafen") : on ? "server-mute" : "server-unmute",
         userId: targetId,
-        channelId: found.channelId,
+        channelId: inThisServer ? found.channelId : null,
       });
     } catch (err) {
       socket.emit("server:voice:error", {
         ...errorFields(err, "message"),
-        message: err.message || "Mute failed.",
+        message: err.message || (kind === "deafen" ? "Deafen failed." : "Mute failed."),
         code: err.code || null,
       });
     }
-  });
+  }
 
-  /** Server-deafen / undeafen a member (DEAFEN_MEMBERS). */
-  socket.on("server:voice:server-deafen", async ({ serverId, channelId, userId, deafened } = {}) => {
-    if (!serverId || !userId) return;
-    const targetId = String(userId);
-    try {
-      await assertVoiceMod(myId, serverId, Permissions.DEAFEN_MEMBERS);
-      const found =
-        (channelId && findUserInChannel(channelId, targetId)) || findUserVoiceChannel(targetId);
-      if (!found || found.call.serverId !== serverId) {
-        socket.emit("server:voice:error", { message: "User is not in a voice channel." });
-        return;
-      }
-      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.DEAFEN_MEMBERS, channelIds: [found.channelId] });
-      const member = { ...(found.entry?.member || { id: targetId }) };
-      member.serverDeafened = Boolean(deafened);
-      if (deafened) {
-        member.muted = true;
-        member.serverMuted = true;
-      }
-      setParticipant(found.call, targetId, member);
-      emitChannelState(io, serverId, found.channelId);
-      io.to(`user:${targetId}`).emit("server:voice:force-deafen", {
-        serverId,
-        channelId: found.channelId,
-        deafened: Boolean(deafened),
-        byUserId: myId,
-      });
-      io.to(`server-voice:${found.channelId}`).emit("server:voice:media-state", {
-        channelId: found.channelId,
-        fromUserId: targetId,
-        muted: Boolean(member.muted),
-        serverMuted: Boolean(member.serverMuted),
-        serverDeafened: Boolean(member.serverDeafened),
-        cameraOn: Boolean(member.cameraOn),
-      });
-      socket.emit("server:voice:mod-ok", {
-        action: deafened ? "server-deafen" : "server-undeafen",
-        userId: targetId,
-        channelId: found.channelId,
-      });
-    } catch (err) {
-      socket.emit("server:voice:error", {
-        ...errorFields(err, "message"),
-        message: err.message || "Deafen failed.",
-        code: err.code || null,
-      });
-    }
-  });
+  socket.on("server:voice:server-mute", ({ serverId, channelId, userId, muted } = {}) =>
+    serverMuteOrDeafen({ serverId, channelId, userId, value: muted, kind: "mute" })
+  );
+
+  socket.on("server:voice:server-deafen", ({ serverId, channelId, userId, deafened } = {}) =>
+    serverMuteOrDeafen({ serverId, channelId, userId, value: deafened, kind: "deafen" })
+  );
 
   socket.on("server:voice:offer", ({ channelId, toUserId, offer, screen } = {}) => {
     if (!channelId || !toUserId || !offer) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
@@ -831,6 +987,7 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:answer", ({ channelId, toUserId, answer } = {}) => {
     if (!channelId || !toUserId || !answer) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
     if (!getParticipantEntry(call, toUserId)) return;
@@ -843,6 +1000,7 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:ice", ({ channelId, toUserId, candidate } = {}) => {
     if (!channelId || !toUserId || !candidate) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
     if (!getParticipantEntry(call, toUserId)) return;
@@ -855,6 +1013,8 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:screen:start", async ({ channelId, screen } = {}) => {
     if (!channelId) return;
+    if (!allow("media", 20, 5000)) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
@@ -886,6 +1046,8 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:screen:stop", ({ channelId } = {}) => {
     if (!channelId) return;
+    if (!allow("media", 20, 5000)) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
@@ -904,6 +1066,8 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:camera:start", async ({ channelId } = {}) => {
     if (!channelId) return;
+    if (!allow("media", 20, 5000)) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self?.member) return;
@@ -930,6 +1094,8 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:camera:stop", ({ channelId } = {}) => {
     if (!channelId) return;
+    if (!allow("media", 20, 5000)) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
@@ -948,8 +1114,12 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:stage:request", async ({ channelId } = {}) => {
     if (!channelId) return;
+    channelId = normId(channelId);
+    // Hand raises broadcast to the whole stage: one per few seconds (V13).
+    if (!allow("stage-request", 1, STAGE_REQUEST_COOLDOWN_MS)) return;
     try {
-      const { resolved } = await assertStageChannel(myId, channelId);
+      const seat = findUserInChannel(channelId, myId)?.entry?.member;
+      const { resolved } = await assertStageChannel(myId, channelId, { bypassConnectView: Boolean(seat?.forceMovedIn) });
       if (!hasPermission(resolved.bits, Permissions.REQUEST_TO_SPEAK)) {
         socket.emit("server:voice:error", {
           channelId,
@@ -958,7 +1128,8 @@ function registerServerVoiceHandlers(io, socket) {
         });
         return;
       }
-      const call = activeServerVoiceCalls.get(channelId);
+      channelId = normId(channelId);
+    const call = activeServerVoiceCalls.get(channelId);
       const self = getParticipantEntry(call, myId);
       const me = self?.member;
       if (!call || !me || me.stageRole === "speaker") return;
@@ -982,23 +1153,34 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
+  /**
+   * Invite to speak / move to audience. Stage moderators need MOVE_MEMBERS and
+   * MUTE_MEMBERS (V13, Discord parity). A server mute stays in place; LiveKit rights
+   * follow the role at once (V4), the iOS screen companion goes on demotion.
+   */
   socket.on("server:voice:stage:set-role", async ({ serverId, channelId, userId, stageRole } = {}) => {
     if (!serverId || !channelId || !userId) return;
-    const targetId = String(userId);
+    serverId = normId(serverId);
+    channelId = normId(channelId);
+    const targetId = normId(userId);
     try {
-      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS);
-      const { channel, resolved } = await assertStageChannel(targetId, channelId);
-      if (channel.server_id !== serverId) {
+      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS, { channelIds: [channelId] });
+      await assertVoiceMod(myId, serverId, Permissions.MUTE_MEMBERS, { channelIds: [channelId] });
+      const found = findUserInChannel(channelId, targetId);
+      const member = found?.entry?.member;
+      const { channel, resolved } = await assertStageChannel(targetId, channelId, {
+        bypassConnectView: Boolean(member?.forceMovedIn),
+      });
+      if (normId(channel.server_id) !== serverId) {
         socket.emit("server:voice:error", { channelId, message: "Server mismatch.", code: "SERVER_MISMATCH" });
         return;
       }
-      const found = findUserInChannel(channelId, targetId);
-      const member = found?.entry?.member;
       if (!found || !member) {
         socket.emit("server:voice:error", { channelId, message: "User is not in this stage." });
         return;
       }
       await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [channelId] });
+      await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MUTE_MEMBERS, channelIds: [channelId] });
       const nextRole = stageRole === "speaker" ? "speaker" : "audience";
       if (nextRole === "speaker" && !hasPermission(resolved.bits, Permissions.SPEAK)) {
         socket.emit("server:voice:error", {
@@ -1010,17 +1192,21 @@ function registerServerVoiceHandlers(io, socket) {
       }
       member.stageRole = nextRole;
       member.requestedToSpeak = false;
-      member.serverMuted = false;
+      member.canSpeakPermission = hasPermission(resolved.bits, Permissions.SPEAK);
+      member.canStream = hasPermission(resolved.bits, Permissions.STREAM);
       if (nextRole === "audience") {
         member.muted = true;
         member.cameraOn = false;
         member.isScreenSharing = false;
       }
+      ve.recomputeSeatLocks(member);
       setParticipant(found.call, targetId, member);
+      void ve.pushSeatToLiveKit(channelId, member);
       io.to(`user:${targetId}`).emit("server:voice:stage-role", {
         serverId,
         channelId,
         stageRole: nextRole,
+        serverMuted: Boolean(member.serverMuted),
         byUserId: myId,
       });
       io.to(`server-voice:${channelId}`).emit("server:voice:stage-state", {
@@ -1035,6 +1221,7 @@ function registerServerVoiceHandlers(io, socket) {
         fromUserId: targetId,
         muted: Boolean(member.muted),
         serverMuted: Boolean(member.serverMuted),
+        serverDeafened: Boolean(member.serverDeafened),
         cameraOn: Boolean(member.cameraOn),
       });
       emitChannelState(io, serverId, channelId);
@@ -1056,54 +1243,52 @@ function registerServerVoiceHandlers(io, socket) {
 
   socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened } = {}) => {
     if (!channelId) return;
+    if (!allow("media", 20, 5000)) return;
+    channelId = normId(channelId);
     const call = activeServerVoiceCalls.get(channelId);
     const self = getParticipantEntry(call, myId);
     if (!self) return;
     const me = self.member;
     if (me) {
-      // Server mute locks self-unmute
-      if (me.serverMuted && !muted) {
-        socket.emit("server:voice:force-mute", {
-          serverId: call.serverId,
-          channelId,
-          muted: true,
-          byUserId: null,
-        });
+      // Server mute, server deafen, AFK lock, no SPEAK or a stage audience role lock
+      // the mic (V10): only an unmute is refused, muting is always fine.
+      if (!muted && !ve.canPublishSeat(me)) {
+        if (me.serverDeafened) {
+          socket.emit("server:voice:force-deafen", {
+            serverId: call.serverId,
+            channelId,
+            deafened: true,
+            byUserId: null,
+          });
+        } else {
+          socket.emit("server:voice:force-mute", {
+            serverId: call.serverId,
+            channelId,
+            muted: true,
+            byUserId: null,
+          });
+        }
         return;
       }
-      if (me.serverDeafened && !muted) {
-        socket.emit("server:voice:force-deafen", {
-          serverId: call.serverId,
-          channelId,
-          deafened: true,
-          byUserId: null,
-        });
-        return;
-      }
-      if (me.channelType === "stage" && me.stageRole !== "speaker" && !muted) {
-        socket.emit("server:voice:force-mute", {
-          serverId: call.serverId,
-          channelId,
-          muted: true,
-          byUserId: null,
-        });
-        return;
-      }
+      // Read before assigning: the AFK clock starts on the mute transition (SC-6).
+      const wasMuted = Boolean(me.muted);
       me.muted = Boolean(muted);
-      if (cameraOn !== undefined) me.cameraOn = Boolean(cameraOn);
+      // A camera flag without STREAM is ignored (it bypassed camera:start's check).
+      if (cameraOn !== undefined) me.cameraOn = Boolean(cameraOn) && participantCanStream(me);
       if (deafened !== undefined) me.deafened = Boolean(deafened);
-      const wasMuted = Boolean(self.member?.muted);
       if (me.muted && !wasMuted) {
         me.afkIdleSince = Date.now();
       } else if (!me.muted) {
         me.afkIdleSince = null;
+      } else if (!me.afkIdleSince) {
+        me.afkIdleSince = Date.now();
       }
       setParticipant(call, myId, me);
     }
     socket.to(`server-voice:${channelId}`).emit("server:voice:media-state", {
       channelId,
       fromUserId: String(myId),
-      muted: Boolean(muted),
+      muted: Boolean(me?.muted),
       serverMuted: Boolean(me?.serverMuted),
       serverDeafened: Boolean(me?.serverDeafened),
       deafened: Boolean(me?.deafened),
@@ -1113,65 +1298,172 @@ function registerServerVoiceHandlers(io, socket) {
   });
 }
 
+/**
+ * AFK move. The target must be able to see and connect to the AFK channel; if not, the
+ * member is disconnected instead (SC-1: a private channel set as AFK must not seat
+ * anyone who could not join it). In the AFK channel members cannot speak (afkLocked),
+ * moderator mute / deafen carry over (V3).
+ */
 async function moveParticipantToChannel(io, serverId, userId, fromChannelId, toChannelId) {
-  const targetId = String(userId);
-  const destId = String(toChannelId);
-  const { channel: dest, resolved: destPerms, canView } = await assertVoiceAccess(targetId, destId, {
-    bypassConnectView: true,
-  });
-  if (dest.server_id !== serverId) return false;
-
+  const targetId = normId(userId);
+  const destId = normId(toChannelId);
+  serverId = normId(serverId);
   const found =
     (fromChannelId && findUserInChannel(fromChannelId, targetId)) || findUserVoiceChannel(targetId);
-  if (!found || found.call.serverId !== serverId) return false;
+  if (!found || normId(found.call.serverId) !== serverId) return false;
   if (String(found.channelId) === destId) return true;
 
+  let access;
+  try {
+    access = await assertVoiceAccess(targetId, destId, { bypassConnectView: true });
+  } catch (err) {
+    // Timed out / no longer a member: leave voice. A missing AFK channel is handled by
+    // the scanner (it clears the setting); nobody is moved.
+    if (err?.code === "TIMED_OUT" || err?.code === "NOT_MEMBER") {
+      removeFromVoice(io, found.channelId, targetId);
+      io.to(`user:${targetId}`).emit("server:voice:force-disconnected", {
+        serverId,
+        channelId: found.channelId,
+        reason: err.code === "TIMED_OUT" ? "timeout" : "not_member",
+      });
+      return false;
+    }
+    throw err;
+  }
+  const { channel: dest, resolved: destPerms, canView, canConnect } = access;
+  if (normId(dest.server_id) !== serverId) return false;
+
+  if (!canView || !canConnect) {
+    removeFromVoice(io, found.channelId, targetId);
+    io.to(`user:${targetId}`).emit("server:voice:force-disconnected", {
+      serverId,
+      channelId: found.channelId,
+      reason: "afk",
+    });
+    return false;
+  }
+
   const snapshot = { ...(found.entry?.member || { id: targetId }), id: targetId };
+  const owner = seatOwners.get(seatOwnerKey(found.channelId, targetId));
   removeFromVoice(io, found.channelId, targetId);
+  if (owner) seatOwners.set(seatOwnerKey(destId, targetId), owner);
 
   let destCall = activeServerVoiceCalls.get(destId);
   if (!destCall) {
     destCall = {
-      serverId,
+      serverId: dest.server_id,
       channelName: dest.name,
       participants: new Map(),
       startTime: Date.now(),
     };
     activeServerVoiceCalls.set(destId, destCall);
   }
+  const mod = await ve.getVoiceModState(serverId, targetId);
   snapshot.channelType = dest.type;
   snapshot.stageRole = dest.type === "stage" ? "audience" : "speaker";
   snapshot.requestedToSpeak = false;
   snapshot.canSpeakPermission = hasPermission(destPerms.bits, Permissions.SPEAK);
   snapshot.canStream = hasPermission(destPerms.bits, Permissions.STREAM);
   snapshot.canRequestToSpeak = hasPermission(destPerms.bits, Permissions.REQUEST_TO_SPEAK);
+  snapshot.canPrioritySpeaker = hasPermission(destPerms.bits, Permissions.PRIORITY_SPEAKER);
+  snapshot.modMuted = Boolean(mod.muted);
+  snapshot.modDeafened = Boolean(mod.deafened);
+  snapshot.afkLocked = true;
   snapshot.muted = true;
-  snapshot.serverMuted = false;
   snapshot.cameraOn = false;
   snapshot.isScreenSharing = false;
   snapshot.afkIdleSince = Date.now();
-  snapshot.forceMovedIn = !canView;
+  snapshot.joinedAt = Date.now();
+  snapshot.forceMovedIn = false;
+  ve.recomputeSeatLocks(snapshot);
   setParticipant(destCall, targetId, snapshot);
 
   try {
     io.in(`user:${targetId}`).socketsJoin(`server-voice:${destId}`);
-    io.in(`user:${targetId}`).socketsJoin(`server:${serverId}`);
+    io.in(`user:${targetId}`).socketsJoin(`server:${dest.server_id}`);
   } catch {
     /* ignore */
   }
 
-  emitChannelState(io, serverId, destId);
+  emitChannelState(io, dest.server_id, destId);
   io.to(`user:${targetId}`).emit("server:voice:force-moved", {
-    serverId,
+    serverId: dest.server_id,
     fromChannelId: found.channelId,
     toChannelId: destId,
     channelName: dest.name,
     channelType: dest.type,
     byUserId: null,
     reason: "afk",
-    hiddenChannel: !canView,
+    hiddenChannel: false,
   });
   return true;
+}
+
+/** Clear a dangling AFK setting (channel deleted or no longer voice; V8 / SC-5). */
+async function clearDanglingAfkChannel(serverId, afkChannelId) {
+  try {
+    const { error } = await supabase
+      .from("servers")
+      .update({ afk_channel_id: null })
+      .eq("id", serverId)
+      .eq("afk_channel_id", afkChannelId);
+    if (error) throw error;
+  } catch (err) {
+    console.warn("[ServerVoice] AFK setting cleanup failed:", err?.message || err);
+  }
+}
+
+/**
+ * One AFK pass. Errors are contained per server and per member (V8 / SC-3 / SK-10): a
+ * deleted AFK channel or one timed-out member no longer stops AFK for everyone. Stage
+ * channels are skipped (their audience is muted by design, SC-6). Idle time counts from
+ * the self-mute (or the join while muted).
+ */
+async function runAfkScan(io, now = Date.now()) {
+  const { data: servers, error } = await supabase
+    .from("servers")
+    .select("id, afk_channel_id, afk_timeout_seconds")
+    .not("afk_channel_id", "is", null);
+  if (error || !servers?.length) return { moved: 0, failed: 0 };
+
+  const afkByServer = new Map(
+    servers.map((s) => [
+      normId(s.id),
+      {
+        afkChannelId: normId(s.afk_channel_id),
+        timeoutMs: Math.max(60, Number(s.afk_timeout_seconds) || 300) * 1000,
+      },
+    ])
+  );
+
+  let moved = 0;
+  let failed = 0;
+  const brokenServers = new Set();
+  for (const [channelId, call] of [...activeServerVoiceCalls.entries()]) {
+    const sid = normId(call.serverId);
+    const cfg = afkByServer.get(sid);
+    if (!cfg || brokenServers.has(sid) || String(channelId) === cfg.afkChannelId) continue;
+    const first = call.participants.values().next().value;
+    if (first?.channelType === "stage") continue;
+
+    for (const [uid, member] of [...call.participants.entries()]) {
+      if (!member?.muted || member.channelType === "stage") continue;
+      const idleSince = member.afkIdleSince || member.joinedAt || now;
+      if (now - idleSince < cfg.timeoutMs) continue;
+      try {
+        if (await moveParticipantToChannel(io, sid, uid, channelId, cfg.afkChannelId)) moved += 1;
+      } catch (err) {
+        failed += 1;
+        if (err?.code === "NOT_FOUND" || err?.code === "NOT_VOICE_CHANNEL") {
+          brokenServers.add(sid);
+          await clearDanglingAfkChannel(sid, cfg.afkChannelId);
+          break;
+        }
+        console.warn("[ServerVoice] AFK move failed:", err?.message || err);
+      }
+    }
+  }
+  return { moved, failed };
 }
 
 let afkScannerTimer = null;
@@ -1180,37 +1472,19 @@ function startAfkIdleScanner(io) {
   if (afkScannerTimer || !io) return;
   afkScannerTimer = setInterval(async () => {
     try {
-      const { data: servers, error } = await supabase
-        .from("servers")
-        .select("id, afk_channel_id, afk_timeout_seconds")
-        .not("afk_channel_id", "is", null);
-      if (error || !servers?.length) return;
-
-      const afkByServer = new Map(
-        servers.map((s) => [
-          s.id,
-          {
-            afkChannelId: String(s.afk_channel_id),
-            timeoutMs: Math.max(60, Number(s.afk_timeout_seconds) || 300) * 1000,
-          },
-        ])
-      );
-
-      for (const [channelId, call] of activeServerVoiceCalls.entries()) {
-        const cfg = afkByServer.get(call.serverId);
-        if (!cfg || String(channelId) === cfg.afkChannelId) continue;
-
-        for (const [uid, member] of call.participants.entries()) {
-          if (!member?.muted) continue;
-          const idleSince = member.afkIdleSince || member.joinedAt || Date.now();
-          if (Date.now() - idleSince < cfg.timeoutMs) continue;
-          await moveParticipantToChannel(io, call.serverId, uid, channelId, cfg.afkChannelId);
-        }
-      }
+      await runAfkScan(io);
     } catch (err) {
       console.warn("[ServerVoice] AFK scan failed:", err?.message || err);
     }
+    // LiveKit sweep: identities in a server voice room without a seat (ghost tokens,
+    // kept JWTs) are removed even when the LiveKit webhook is not configured.
+    try {
+      await ve.reconcileAllLiveKitRooms();
+    } catch (err) {
+      console.warn("[ServerVoice] LiveKit sweep failed:", err?.message || err);
+    }
   }, 60_000);
+  afkScannerTimer.unref?.();
 }
 
 module.exports = {
@@ -1221,4 +1495,7 @@ module.exports = {
   endAllServerVoice,
   findUserVoiceChannel,
   startAfkIdleScanner,
+  runAfkScan,
+  // lib/serverVoiceEnforce.js (contract for the other server modules) uses these.
+  _internals: { removeFromVoice, emitChannelState, setParticipant, getParticipantEntry, moveParticipantToChannel },
 };

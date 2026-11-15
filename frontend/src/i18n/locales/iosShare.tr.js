@@ -1,0 +1,21 @@
+/** iPhone / iPad whole-screen sharing ("iosShare.*", components/voice/IosBroadcastShareChip.jsx, hooks/useServerVoice.js). Same keys in every iosShare.<locale>.js. */
+export const IOS_SHARE_TR = {
+  "preparingTitle": "Ekran paylaşımı hazırlanıyor…",
+  "pickerTitle": "Yayını başlat",
+  "pickerHint": "Descall seçili. Tüm ekranını paylaşmak için Yayını Başlat'a dokun.",
+  "liveTitle": "Ekranını paylaşıyorsun",
+  "liveHint": "Bu kanaldaki herkes tüm ekranını görüyor. Kırmızı durum işaretinden veya Denetim Merkezi'nden de durdurabilirsin.",
+  "stoppingTitle": "Ekran paylaşımı durduruluyor…",
+  "stop": "Durdur",
+  "cancel": "Vazgeç",
+  "stopAria": "Ekran paylaşımını durdur",
+  "cancelAria": "Ekran paylaşımından vazgeç",
+  "errNotInChannel": "Ekranını paylaşmadan önce ses kanalına katıl.",
+  "errPermission": "Burada ekran paylaşmak için KONUŞ ve YAYIN izinlerin olmalı.",
+  "errRateLimited": "Çok fazla deneme yapıldı. Birkaç dakika sonra tekrar dene.",
+  "errNeedsSfu": "iPhone ve iPad'den ekran paylaşımı ses sunucusu gerektirir. Kanala yeniden katılıp tekrar dene.",
+  "errUnavailable": "Ekran paylaşımı uygulamanın bu sürümünde yok. Descall'ı güncelleyip tekrar dene.",
+  "errConnection": "Ekran paylaşımının bağlantısı koptu. Tekrar dene.",
+  "errGeneric": "Ekran paylaşımı başlatılamadı. Tekrar dene.",
+  "errJoinFirst": "Önce bir ses kanalına katıl, sonra ekran yayınını başlat.",
+};

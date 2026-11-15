@@ -24,7 +24,8 @@ import {
 } from "../../lib/slashCommands";
 import SlashCommandMenu, { SLASH_CATEGORIES, UserPicker, DurationPicker, CountPicker, optionId } from "./SlashCommandMenu";
 import { hapticWarning } from "../../lib/fluid/haptics";
-import { serverHasPermission } from "../../lib/serverPermissions";
+import { PERM_BITS } from "../../lib/serverPermissions";
+import { useChannelPerms, channelHasPermission, channelPermsKnown } from "../../lib/channelPermissions";
 import { displayText } from "../../lib/profanity";
 import useGlassUi from "../../hooks/useGlassUi";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
@@ -149,10 +150,14 @@ export default function MessageComposer({
   const [nowTick, setNowTick] = useState(() => Date.now());
   const slowmodeSeconds = Math.max(0, Math.floor(Number(activeChannel?.slowmodeSeconds) || 0));
   const slowmodeLabel = formatSlowmode(slowmodeSeconds, locale);
-  const bypassSlowmode =
-    Boolean(activeServer) &&
-    (serverHasPermission(activeServer, "MANAGE_MESSAGES") ||
-      serverHasPermission(activeServer, "ADMINISTRATOR"));
+  // Channel-level bits (overwrites), not the server-wide flags (server audit P2 / DF-4).
+  const inServerChannel = Boolean(activeChannel?.id && activeServer);
+  const chanPerms = useChannelPerms(null, inServerChannel ? activeServer?.id : null);
+  const chanCan = (key) => channelHasPermission(activeServer, activeChannel?.id, key, chanPerms);
+  const bypassSlowmode = inServerChannel && Boolean(activeServer?.isOwner || chanCan("MANAGE_MESSAGES"));
+  const canAttachHere = !inServerChannel || chanCan("ATTACH_FILES");
+  const canVoiceHere = !inServerChannel || chanCan("SEND_VOICE_MESSAGES");
+  const channelFlagsKnown = inServerChannel && channelPermsKnown(chanPerms, activeChannel?.id);
   const slowmodeRemaining = Math.max(0, Math.ceil((slowmodeUntil - nowTick) / 1000));
   const slowmodeBlocked = Boolean(activeChannel?.id) && !bypassSlowmode && slowmodeRemaining > 0;
   const inputRef = useRef(null);
@@ -529,13 +534,16 @@ export default function MessageComposer({
         activeChannel,
         activeGroup,
         activeDmUser,
-        permissionFlags: activeServer?.myPermissions?.flags || {},
+        permissionFlags: channelFlagsKnown
+          ? Object.fromEntries(Object.keys(PERM_BITS).map((k) => [k, channelHasPermission(activeServer, activeChannel?.id, k, chanPerms)]))
+          : activeServer?.myPermissions?.flags || {},
         isOwner: Boolean(activeServer?.isOwner),
       }).map((cmd) => ({
         ...cmd,
         Icon: SLASH_ICONS[cmd.name] || CircleHelp,
       })),
-    [activeChannel, activeGroup, activeDmUser, activeServer?.isOwner, activeServer?.myPermissions?.flags]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeChannel, activeGroup, activeDmUser, activeServer?.isOwner, activeServer?.myPermissions?.flags, channelFlagsKnown, chanPerms]
   );
 
   // Esc closes the menu for the text typed so far; typing again reopens it.
@@ -1026,6 +1034,12 @@ export default function MessageComposer({
 
   const stageFile = async (file) => {
     if (!file) return;
+    // Refused before the upload: the server would reject the message and leave an orphan file.
+    if (!canAttachHere) {
+      setUploadError(t("chperm.noAttachments"));
+      setTimeout(() => setUploadError(""), 4000);
+      return;
+    }
     refocusAfterUploadRef.current = true;
     setUploading(true);
     setUploadError("");
@@ -1779,7 +1793,22 @@ export default function MessageComposer({
             <StopCircle size={24} color="#f23f43" />
           </motion.button>
         ) : (
-          <motion.button className="composer-action-btn" onClick={startRecording} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} title={t("Voice Message")} aria-label={t("Voice Message")}>
+          <motion.button
+            className={`composer-action-btn${canVoiceHere ? "" : " is-disabled"}`}
+            onClick={() => {
+              if (!canVoiceHere) {
+                setUploadError(t("chperm.noVoiceMessages"));
+                setTimeout(() => setUploadError(""), 4000);
+                return;
+              }
+              startRecording();
+            }}
+            aria-disabled={canVoiceHere ? undefined : true}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title={canVoiceHere ? t("Voice Message") : t("chperm.noVoiceMessages")}
+            aria-label={t("Voice Message")}
+          >
             <Mic size={24} />
           </motion.button>
         )}

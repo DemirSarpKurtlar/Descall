@@ -177,9 +177,13 @@ assert.equal(appealsFromResponse(null).length, 0);
 
 // Every ban entry point opens the dialog; none bans permanently in one click any more.
 const rd = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
-for (const file of ["./AdminModeration.jsx", "./AdminUserDossier.jsx", "./AdminReports.jsx"]) {
+// Kullanıcı dosyası (Nov 2026 remake): the user file and the Kullanıcılar row menu ban through
+// the shared action host (dossier/UserActionDialogs.jsx), which renders BanDialog.
+assert.match(rd("./AdminUserDossier.jsx"), /<UserActionHost\b/, "the user file opens its dialogs through UserActionHost");
+assert.match(rd("./AdminUserDirectory.jsx"), /<UserActionHost\b/, "the users list row menu uses the same dialogs");
+for (const file of ["./moderation/ModerationDesk.jsx", "./dossier/UserActionDialogs.jsx", "./AdminReports.jsx"]) {
   const src = rd(file);
-  assert.match(src, /import BanDialog from "\.\/BanDialog\.jsx";/, `${file} uses BanDialog`);
+  assert.match(src, /import BanDialog from "\.\.?\/BanDialog\.jsx";/, `${file} uses BanDialog`);
   assert.match(src, /<BanDialog\b/, `${file} renders BanDialog`);
   assert.ok(!/presetId:\s*"permanent"/.test(src), `${file}: no one-click permanent ban`);
   assert.ok(!/\/ban`,\s*\{\s*method/.test(src), `${file}: no direct ban POST`);

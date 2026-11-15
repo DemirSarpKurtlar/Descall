@@ -159,7 +159,7 @@ function PromoForm({ overview, onCreated, t }) {
           <span className="pc-code-acts">
             {f.mode === "random" ? <button type="button" className="pc-ibtn" aria-label={t("promo.regenerate")} title={t("promo.regenerate")} onClick={() => set({ code: generateCode() })}><RefreshCw size={15} /></button> : null}
             <button type="button" className="pc-ibtn" aria-label={copied ? t("promo.copied") : t("promo.copyCode")} title={t("promo.copyCode")} disabled={code.length < 16}
-              onClick={async () => { await copyText(codeGroups(code).join("-")); setCopied(true); }}>
+              onClick={async () => { if (await copyText(codeGroups(code).join("-"))) setCopied(true); }}>
               {copied ? <Check size={15} /> : <Copy size={15} />}
             </button>
           </span>

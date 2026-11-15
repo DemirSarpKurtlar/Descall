@@ -1,0 +1,14 @@
+{
+  "tr": {
+    "subject": "Descall hesabındaki yasak kaldırıldı",
+    "hello": "Merhaba {name},",
+    "helloAnon": "Merhaba,",
+    "body": "Hesabına uygulanan yasak yönetim ekibimiz tarafından kaldırıldı. Descall'a yeniden giriş yapabilirsin. Yaşanan aksaklık için özür dileriz."
+  },
+  "en": {
+    "subject": "The ban on your Descall account was lifted",
+    "hello": "Hi {name},",
+    "helloAnon": "Hi,",
+    "body": "Our team has lifted the ban on your account. You can sign in to Descall again. We are sorry for the trouble."
+  }
+}

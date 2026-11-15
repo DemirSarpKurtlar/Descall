@@ -12,9 +12,22 @@ import { MSG5_TR } from "./msg5.tr.js";
 import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { BAN_TR } from "./ban.tr.js";
+import { IOS_SHARE_TR } from "./iosShare.tr.js";
 import { BAN_ADMIN_TR } from "./banAdmin.tr.js";
 import { SERVER_REVIEW_TR } from "./serverReview.tr.js";
+import { DOSSIER_TR } from "./dossier.tr.js";
+import { SHOP_DESK_TR } from "./shopDesk.tr.js";
+import { SHOP_MERCH_TR } from "./shopMerch.tr.js";
+import { MOD_DESK_TR, MOD_DESK_API_TR } from "./modDesk.tr.js";
+import { GAMES_ADMIN_TR } from "./gamesAdmin.tr.js";
+import { SYSX_TR } from "./sysx.tr.js";
+import { AUDIT_LOG_TR } from "./auditLog.tr.js";
+import { LIVE_POPUP_TR } from "./livePopup.tr.js";
+import { ANNC_TR } from "./annc.tr.js";
+import { CHPERM_TR } from "./chperm.tr.js";
+import { SEC_CENTER_TR } from "./secCenter.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
+import { AGENT_OPS_TR } from "./agentOps.tr.js";
 import { INVL_TR } from "./invl.tr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 import { TR_I18N_GAPS } from "./trGaps.js";
@@ -74,9 +87,22 @@ export const nested = {
   act: ACT_TR,
   dir: DIR_TR,
   ban: BAN_TR,
+  iosShare: IOS_SHARE_TR,
   banAdmin: BAN_ADMIN_TR,
   serverReview: SERVER_REVIEW_TR,
+  dossier: DOSSIER_TR,
+  shopDesk: SHOP_DESK_TR,
+  shopMerch: SHOP_MERCH_TR,
+  modDesk: MOD_DESK_TR,
+  gamesAdmin: GAMES_ADMIN_TR,
+  sysx: SYSX_TR,
+  auditLog: AUDIT_LOG_TR,
+  livePopup: LIVE_POPUP_TR,
+  annc: ANNC_TR,
+  chperm: CHPERM_TR,
+  secCenter: SEC_CENTER_TR,
   agentx: AGENTX_TR,
+  agentOps: AGENT_OPS_TR,
   invl: INVL_TR,
   sgx: SIGNUP_GROWTH.tr.nested,
   fbk: FBK_TR,
@@ -591,7 +617,7 @@ export const nested = {
     "system": "Sistem",
     "security": "Güvenlik",
     "maintenance": "Bakım",
-    "audit": "Denetim",
+    "audit": "İşlem kaydı",
     "peopleTitle": "Kullanıcı dosyası",
     "peopleSubtitle": "Kullanıcı adı ara, tek sayfada kim olduklarını, oturumlarını, raporları, cüzdanı ve yaptırımları gör.",
     "peopleSearch": "Kullanıcı adı veya görünür isim ara…",
@@ -1203,6 +1229,7 @@ export const phrases = {
   "API reachable": "API erişilebilir",
   "Request timed out": "İstek zaman aşımına uğradı",
   ...API_TR,
+  ...MOD_DESK_API_TR,
   "Close": "Kapat",
   "You": "Sen",
   "Medium": "Orta",
@@ -2533,6 +2560,8 @@ export const phrases = {
   "{name} was deleted": "{name} silindi",
   "An admin changed visibility / invite settings of {name}": "Bir yönetici {name} sunucusunun görünürlük / davet ayarlarını değiştirdi",
   "You were banned from {name}": "{name} sunucusundan yasaklandın",
+  "You were timed out in {name}": "{name} sunucusunda zaman aşımına alındın",
+  "Your timeout in {name} was lifted": "{name} sunucusundaki zaman aşımın kaldırıldı",
   "Connect (voice)": "Bağlan (ses)",
   "Speak": "Konuş",
   "Mute members": "Üyeleri sustur",

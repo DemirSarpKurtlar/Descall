@@ -71,12 +71,13 @@ function ViewReasonDialog({ conversation, onCancel, onSubmit, busy, error, t }) 
   );
 }
 
-export default function AdminDmInbox() {
+/** initialQuery: the user file's "DM inceleme'de aç" pre-fills the search with the username. */
+export default function AdminDmInbox({ initialQuery = "" } = {}) {
   const { t, locale } = useLocale();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery || "");
   const [activeKey, setActiveKey] = useState("");
   const [thread, setThread] = useState(null);
   const [threadLoading, setThreadLoading] = useState(false);

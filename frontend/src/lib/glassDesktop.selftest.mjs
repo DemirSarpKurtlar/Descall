@@ -8,6 +8,9 @@ import {
   shouldUseGlassDesktopLite,
   resolveReducedTransparency,
   shouldCountGlassFrame,
+  isGlassFrameRateLow,
+  reportsBucketedCores,
+  GLASS_FRAME_SAMPLES,
   readGlassDesktopQuery,
   isGlassDesktopSurface,
   shouldPreviewDesktopAuth,
@@ -94,6 +97,41 @@ assert.equal(shouldUseGlassDesktopLite({ reducedTransparency: true, manual: "0" 
 assert.equal(shouldUseGlassDesktopLite({ forcedColors: true, manual: "0" }), true, "forced colors wins");
 assert.equal(shouldUseGlassDesktopLite({ fpsLow: true }), true, "slow frames → lite");
 
+// iPad: WebKit reports 4 for every device under 8 cores (NavigatorBase.cpp),
+// so "4" is a bucket, not a slow machine. Native iPad + iPad Safari stay glassy.
+const IPAD_SAFARI_UA = "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+const MAC_SAFARI_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15";
+const WKWEBVIEW_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)";
+const CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+const ELECTRON_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Descall/3.9.0 Chrome/138.0.0.0 Electron/37.0.0 Safari/537.36";
+assert.equal(reportsBucketedCores({ isNativeIos: true }), true, "native iOS shell is WebKit");
+assert.equal(reportsBucketedCores({ userAgent: IPAD_SAFARI_UA, maxTouchPoints: 5 }), true, "iPad Safari (mobile UA)");
+assert.equal(reportsBucketedCores({ userAgent: MAC_SAFARI_UA, maxTouchPoints: 5 }), true, "iPadOS desktop-class Safari (Mac UA + touch)");
+assert.equal(reportsBucketedCores({ userAgent: WKWEBVIEW_UA, maxTouchPoints: 5 }), true, "WKWebView (no Safari token)");
+assert.equal(reportsBucketedCores({ userAgent: MAC_SAFARI_UA, maxTouchPoints: 0 }), true, "Mac Safari is WebKit too");
+assert.equal(reportsBucketedCores({ userAgent: CHROME_UA }), false, "Chrome reports real cores");
+assert.equal(reportsBucketedCores({ userAgent: ELECTRON_UA, isElectron: true }), false, "Electron reports real cores");
+assert.equal(reportsBucketedCores({ userAgent: ELECTRON_UA }), false, "Electron UA alone is Chromium");
+assert.equal(shouldUseGlassDesktopLite({ cores: 4, coresReliable: false }), false, "iPad's bucketed 4 is not a slow machine");
+assert.equal(shouldUseGlassDesktopLite({ cores: 4, coresReliable: true }), true, "a real 4-core Chromium machine still goes lite");
+assert.equal(shouldUseGlassDesktopLite({ cores: 4, coresReliable: false, fpsLow: true }), true, "iPad keeps the measured low-fps fallback");
+assert.equal(shouldUseGlassDesktopLite({ cores: 4, coresReliable: false, reducedTransparency: true }), true, "iPad Reduce Transparency still drops blur");
+assert.equal(shouldUseGlassDesktopLite({ cores: 4, coresReliable: false, manual: "1" }), true, "Settings › Görünüm still forces lite on iPad");
+
+// Frame verdict: median of visible frames, not a 45-frame mean.
+const frames = (n, ms) => Array.from({ length: n }, () => ms);
+assert.equal(isGlassFrameRateLow(frames(GLASS_FRAME_SAMPLES, 16.7)), false, "60 Hz is fast");
+assert.equal(isGlassFrameRateLow(frames(GLASS_FRAME_SAMPLES, 8.3)), false, "120 Hz ProMotion is fast");
+assert.equal(isGlassFrameRateLow(frames(GLASS_FRAME_SAMPLES, 33.4)), false, "Low Power Mode 30 fps stays glass");
+assert.equal(isGlassFrameRateLow(frames(GLASS_FRAME_SAMPLES, 55)), true, "a sustained ~18 fps is slow");
+assert.equal(isGlassFrameRateLow(frames(20, 60)), false, "too few samples is no verdict");
+assert.equal(
+  isGlassFrameRateLow([...frames(60, 16.7), ...frames(30, 90)]),
+  false,
+  "boot long tasks (a third of the frames at 90 ms) do not latch lite"
+);
+assert.equal(isGlassFrameRateLow(frames(GLASS_FRAME_SAMPLES, 400)), false, "stalls (hidden WKWebView) are not frames");
+
 const cap = (platform, native = true) => ({
   Capacitor: { getPlatform: () => platform, isNativePlatform: () => native },
 });
@@ -102,12 +140,12 @@ assert.equal(nativeShellPlatform(cap("android")), "android");
 assert.equal(nativeShellPlatform(cap("ios", false)), null);
 assert.equal(nativeShellPlatform({}), null);
 
-function fakeWindow({ platform = null, width = 1440, height = 900, store = {}, search = "" } = {}) {
+function fakeWindow({ platform = null, width = 1440, height = 900, store = {}, search = "", cores = 8, ua = "", touch = 0 } = {}) {
   const classes = new Set();
   const win = {
     innerWidth: width,
     innerHeight: height,
-    navigator: { hardwareConcurrency: 8 },
+    navigator: { hardwareConcurrency: cores, userAgent: ua, maxTouchPoints: touch },
     location: { href: `https://descall.com/login${search}`, search, pathname: "/login", hash: "" },
     history: {
       state: null,
@@ -163,6 +201,23 @@ for (const [w, h] of [[820, 1180], [1180, 820], [744, 1133], [1366, 1024]]) {
   assert.equal(initGlassDesktop(ipad), true, `iPad app ${w}x${h} gets Liquid Glass`);
   assert.ok(ipad._classes.has(GLASS_DESKTOP_CLASS));
 }
+
+// Native iPad with WebKit's bucketed core count: full glass, not gd-lite.
+for (const [w, h] of [[1194, 834], [834, 1194], [1180, 820], [820, 1180]]) {
+  const ipad = fakeWindow({ platform: "ios", width: w, height: h, cores: 4, ua: WKWEBVIEW_UA, touch: 5 });
+  assert.equal(initGlassDesktop(ipad), true);
+  assert.ok(!ipad._classes.has(GLASS_DESKTOP_LITE_CLASS), `iPad app ${w}x${h} with 4 reported cores stays frosted`);
+  assert.equal(setGlassDesktopLiteManual(true, ipad), true, "Settings › Görünüm forces lite on the iPad app");
+  assert.ok(ipad._classes.has(GLASS_DESKTOP_LITE_CLASS));
+}
+for (const ua of [IPAD_SAFARI_UA, MAC_SAFARI_UA]) {
+  const safari = fakeWindow({ width: 1180, height: 820, cores: 4, ua, touch: 5 });
+  assert.equal(initGlassDesktop(safari), true, "iPad Safari gets glass-desktop");
+  assert.ok(!safari._classes.has(GLASS_DESKTOP_LITE_CLASS), "iPad Safari with 4 reported cores stays frosted");
+}
+const slowPc = fakeWindow({ cores: 4, ua: CHROME_UA });
+assert.equal(initGlassDesktop(slowPc), true);
+assert.ok(slowPc._classes.has(GLASS_DESKTOP_LITE_CLASS), "a real 4-core Chrome PC keeps the CPU fallback");
 
 const android = fakeWindow({ platform: "android", store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
 assert.equal(initGlassDesktop(android), false);

@@ -296,6 +296,14 @@ function registerGroupHandlers(io, socket, state) {
       /* ignore */
     }
 
+    // Moderasyon kelime filtresi (lib/contentFilter.js): block / flag / auto-timeout rules.
+    const groupFilterCtx = { convType: "group", groupId };
+    const groupFiltered = require("../lib/contentFilter").gate({ io, userId: myId, text: content, ctx: groupFilterCtx });
+    if (groupFiltered.blocked) {
+      socket.emit("group:message:error", { groupId, tempId: tempId || null, ...require("../lib/contentFilter").blockedPayload() });
+      return;
+    }
+
     if (!groupId || (!content?.trim() && !mediaUrl)) {
       appendErrorLog("group:message", "Missing required parameters", { groupId, hasContent: !!content, hasMedia: !!mediaUrl }, myId, socket.user?.username);
       if (tempId) {
@@ -414,6 +422,7 @@ function registerGroupHandlers(io, socket, state) {
       });
       return;
     }
+    require("../lib/contentFilter").after(groupFiltered.verdict, { io, userId: myId, text: baseRow.content, messageId: row.id, ctx: groupFilterCtx });
     let pollSnapshot = null;
     if (pollDraft) {
       try {

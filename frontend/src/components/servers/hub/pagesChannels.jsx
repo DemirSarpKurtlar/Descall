@@ -1,10 +1,12 @@
 /* Kanallar list, 06 Kanal oluştur, 07 Kategori oluştur, 08 Kanal ayarları, 09 silme uyarısı, 10 Kanal erişimi. */
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from "./kit";
+import { ActionSheet, AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from "./kit";
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import { usePerms } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";
+import { useT } from "../../../context/LocaleContext";
+import { overridesView, moveNeedsSyncChoice } from "../../../lib/channelOverridesView";
 import { getChannelOverrides, putChannelOverride, deleteChannelOverride, getChannelMessageCount } from "../../../api/servers";
 import { isChannelMuted, setChannelMutedAsync } from "../../../lib/serverChannelMutes";
 import { hapticSelection, hapticWarning } from "../../../lib/fluid/haptics";
@@ -39,7 +41,15 @@ export function useOverrides(channelId) {
   const reload = async () => {
     try {
       const r = await getChannelOverrides(hub.server.id, channelId);
-      hub.setData((d) => ({ ...d, overrides: { ...(d.overrides || {}), [channelId]: { editableKeys: r?.editableKeys || [], overrides: r?.overrides || [] } } }));
+      // A channel with no rules of its own follows its category (synced): show the
+      // category's rules, marked as inherited (server audit P5: "all inherit / not private").
+      const ch = findChannel(hub.server, channelId);
+      const view = await overridesView(r, {
+        parentId: ch?.parentId || null,
+        isCategory: ch?.type === "category",
+        fetchParent: (id) => getChannelOverrides(hub.server.id, id),
+      });
+      hub.setData((d) => ({ ...d, overrides: { ...(d.overrides || {}), [channelId]: { editableKeys: r?.editableKeys || [], overrides: view.rows, own: view.own, synced: view.synced, parentId: view.synced ? view.parentId : null } } }));
       setErr(null);
     } catch (e) {
       setErr(e?.message || "error");
@@ -47,17 +57,6 @@ export function useOverrides(channelId) {
   };
   useEffect(() => { if (channelId && !entry) reload(); }, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
   return { entry, reload, err };
-}
-
-/** Make a just-created channel private: @everyone can't see it, the creator still can. */
-export async function makePrivate(server, channel, roles, me) {
-  const everyone = everyoneRole(roles);
-  if (!everyone) return;
-  await putChannelOverride(server.id, channel.id, { targetType: "role", targetId: everyone.id, permissions: { VIEW_CHANNEL: "deny" } });
-  const isOwner = String(server.ownerId) === String(me?.id);
-  if (!isOwner && me?.id) {
-    await putChannelOverride(server.id, channel.id, { targetType: "member", targetId: me.id, permissions: { VIEW_CHANNEL: "allow" } });
-  }
 }
 
 /* ───────────────────────── Kanallar ───────────────────────── */
@@ -93,6 +92,23 @@ export function ChannelsPage({ route }) {
   );
 }
 
+/** Voice / stage "User limit" (0-99, 0 = no limit; server audit V12). */
+function UserLimitRow({ value, onChange }) {
+  const hub = useHub();
+  const t = useT();
+  const n = Number(value) || 0;
+  return (
+    <Row ico="users" c="green" t={t("chperm.userLimit")} sub={t("chperm.userLimitSub")} val={n ? String(n) : t("chperm.userLimitNone")} chev onClick={() => hub.push({
+      id: "text", title: t("chperm.userLimit"), value: String(n), placeholder: "0", maxLength: 2,
+      onDone: (v) => {
+        const next = Number(String(v || "0").trim() || "0");
+        if (!Number.isInteger(next) || next < 0 || next > 99) throw new Error(t("chperm.userLimitInvalid"));
+        onChange(next);
+      },
+    })} />
+  );
+}
+
 /* ───────────────────────── 06 Kanal oluştur ───────────────────────── */
 // Without an explicit target, a new channel lands in the first category that already holds
 // channels of the same kind (Metin Kanalları for text, Ses Kanalları for voice), else uncategorised.
@@ -119,7 +135,9 @@ export function ChannelCreatePage({ route }) {
     const ok = await run(async () => {
       await deps.onCreateChannel?.({
         name: normalizeChannelName(name, d.type).replace(/^-+|-+$/g, "") || name, type: d.type, parentId: d.parentId || null,
-        beforeOpen: d.priv ? (ch) => makePrivate(server, ch, data.roles, deps.me) : undefined,
+        // Private in the same request: never public in between, creator keeps access.
+        private: d.priv || undefined,
+        ...((d.type === "voice" || d.type === "stage") && Number(d.userLimit) > 0 ? { userLimit: Number(d.userLimit) } : {}),
       });
     }, { ok: s.channelCreated });
     if (ok) hub.close();
@@ -140,6 +158,7 @@ export function ChannelCreatePage({ route }) {
           onPick: (id) => setD((x) => ({ ...x, parentId: id || null })),
         })} />
         <Row ico="lock" c="gray" t={s.privateChannel} sub={s.privateChannelSub} tg={d.priv} disabled={!p.roles} onClick={() => { hapticSelection(); setD((x) => ({ ...x, priv: !x.priv })); }} />
+        {d.type === "voice" || d.type === "stage" ? <UserLimitRow value={d.userLimit} onChange={(n) => setD((x) => ({ ...x, userLimit: n }))} /> : null}
       </Group>
       <Foot>{s.createChannelFoot}</Foot>
     </PageFrame>
@@ -159,7 +178,7 @@ export function CategoryCreatePage({ route }) {
     if (!name || busy) return;
     const ok = await run(() => deps.onCreateChannel?.({
       name, type: "category", parentId: null,
-      beforeOpen: d.priv ? (ch) => makePrivate(server, ch, data.roles, deps.me) : undefined,
+      private: d.priv || undefined,
     }), { ok: s.categoryCreated });
     if (ok) { if (route.returnTo) hub.restore(route.returnTo); else if (hub.stack.length > 1) hub.pop(); else hub.close(); }
   };
@@ -216,12 +235,16 @@ export function ChannelEditPage({ route }) {
   const ch = findChannel(server, route.channelId);
   const base = useMemo(() => ({
     name: ch?.name || "", topic: ch?.topic || "", parentId: ch?.parentId || null, slowmodeSeconds: Number(ch?.slowmodeSeconds) || 0, nsfw: Boolean(ch?.nsfw),
+    ...(ch && (ch.type === "voice" || ch.type === "stage") ? { userLimit: Number(ch.userLimit) || 0 } : {}),
   }), [ch]);
   const [d, setD] = useRouteDraft(route, base);
   const [run, busy] = useRun();
   const [del, setDel] = useState(false);
+  const [syncAsk, setSyncAsk] = useState(null); // patch waiting for the sync choice (P8)
   const [, setTick] = useState(0);
-  const { entry } = useOverridesMaybe(p.roles ? route.channelId : null);
+  const { entry, reload: reloadOverrides } = useOverridesMaybe(p.roles ? route.channelId : null);
+  const t = useT();
+  const { toast } = useToast();
   useEffect(() => { if (p.roles && !hub.data.roles) hub.load("roles"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!ch) {
     return <PageFrame route={route} title={s.secChannel}><Foot>{s.failed}</Foot></PageFrame>;
@@ -234,16 +257,32 @@ export function ChannelEditPage({ route }) {
   const priv = entry && everyone ? Boolean(entry.overrides.find((o) => o.targetType === "role" && String(o.targetId) === String(everyone.id))?.deny?.VIEW_CHANNEL) : false;
   const muted = isChannelMuted(ch.id);
   const dirty = Object.keys(base).some((k) => String(base[k] ?? "") !== String(d[k] ?? ""));
+  const leave = () => { if (hub.stack.length > 1) hub.pop(); else hub.close(); };
+  const save = async (patch) => {
+    const ok = await run(async () => {
+      const res = await deps.onUpdateChannel?.(ch.id, patch);
+      // Moved with its own rules and nobody chose: it kept them (the server says so).
+      if (res?.needsSyncChoice && patch.lockPermissions === undefined) {
+        const target = findChannel(server, patch.parentId);
+        toast(t("chperm.movedKeptOwn", { channel: ch.name, category: target?.name || t("chperm.category") }), "info");
+      }
+      if (patch.parentId !== undefined) reloadOverrides?.();
+    }, { ok: s.saved });
+    if (ok) leave();
+  };
   const done = async () => {
     if (busy) return;
-    if (dirty) {
-      const patch = {};
-      for (const k of Object.keys(base)) if (String(base[k] ?? "") !== String(d[k] ?? "")) patch[k] = k === "topic" ? (d.topic.trim() || null) : d[k];
-      const ok = await run(() => deps.onUpdateChannel?.(ch.id, patch), { ok: s.saved });
-      if (!ok) return;
+    if (!dirty) return leave();
+    const patch = {};
+    for (const k of Object.keys(base)) if (String(base[k] ?? "") !== String(d[k] ?? "")) patch[k] = k === "topic" ? (d.topic.trim() || null) : d[k];
+    // Into a category with other rules while it has its own: ask, like Discord (P8).
+    if (patch.parentId && (await moveNeedsSyncChoice({ channel: ch, newParentId: patch.parentId, getOverrides: (id) => getChannelOverrides(server.id, id) }))) {
+      setSyncAsk(patch);
+      return;
     }
-    if (hub.stack.length > 1) hub.pop(); else hub.close();
+    await save(patch);
   };
+  const syncCat = syncAsk ? findChannel(server, syncAsk.parentId) : null;
   const label = isCat ? ch.name : channelLabel({ ...ch, name: d.name });
   return (
     <PageFrame route={route} title={channelLabel(ch)} right={<DoneBtn label={s.done} onClick={done} disabled={busy} />}>
@@ -260,6 +299,11 @@ export function ChannelEditPage({ route }) {
           onPick: (id) => setD((x) => ({ ...x, parentId: id || null })),
         })} /> : null}
       </Group>
+      {ch.type === "voice" || ch.type === "stage" ? (
+        <Group>
+          <UserLimitRow value={d.userLimit} onChange={(n) => setD((x) => ({ ...x, userLimit: n }))} />
+        </Group>
+      ) : null}
       {textLike ? (
         <>
           <Sec>{s.secChat}</Sec>
@@ -289,6 +333,15 @@ export function ChannelEditPage({ route }) {
           <DeleteChannelAlert key="del" server={server} channel={ch} s={s} f={f} onCancel={() => setDel(false)} onDelete={(id) => deps.onDeleteChannel?.(id)}
             onDeleted={() => { setDel(false); if (hub.stack.length > 1) hub.pop(); else hub.close(); }} />
         ) : null}
+        {syncAsk ? (
+          <ActionSheet key="sync" title={t("chperm.moveSyncTitle")}
+            sub={t("chperm.moveSyncMsg", { channel: ch.name, category: syncCat?.name || t("chperm.category") })}
+            cancel={s.giveUp} onCancel={() => setSyncAsk(null)}
+            actions={[
+              { t: t("chperm.moveSyncUse", { category: syncCat?.name || t("chperm.category") }), onClick: () => { const p2 = { ...syncAsk, lockPermissions: true }; setSyncAsk(null); save(p2); } },
+              { t: t("chperm.moveSyncKeep"), onClick: () => { const p2 = { ...syncAsk, lockPermissions: false }; setSyncAsk(null); save(p2); } },
+            ]} />
+        ) : null}
       </AnimatePresence>
     </PageFrame>
   );
@@ -314,16 +367,19 @@ function targetsFor(entry, roles, members, pending) {
 }
 
 function TargetRows({ targets, sel, onPick, s, f }) {
+  const t = useT();
   return targets.map((x) => {
     const n = overrideChangedCount(x.ov);
-    const sub = x.everyone ? s.everyoneSub : n ? f("nChanged", { n }) : s.noOverride;
+    // A synced channel lists its category's rules: say where they come from (P5).
+    const from = x.ov?.inherited ? ` · ${t("chperm.fromCategory")}` : "";
+    const sub = (x.everyone ? s.everyoneSub : n ? f("nChanged", { n }) : s.noOverride) + from;
     const isSel = sel && sel.type === x.type && String(sel.id) === String(x.id);
     if (x.everyone) return <Row key="everyone" ico="users" c="gray" t="@everyone" sub={sub} chev sel={isSel} onClick={() => onPick(x)} />;
     if (x.type === "role") {
       const c = roleHex(x.role);
       return <Row key={`r${x.id}`} lead={<span className="svh-ico" style={{ background: `${c}22`, color: c }}><I n="shield" s={17} w={2.2} /></span>} t={x.name} sub={sub} chev sel={isSel} onClick={() => onPick(x)} />;
     }
-    return <Row key={`m${x.id}`} av={<Av user={x.member ? { ...x.member, id: x.member.userId } : null} name={x.name} s={30} />} t={x.name} sub={n ? f("nChanged", { n }) : s.noOverride} chev sel={isSel} onClick={() => onPick(x)} />;
+    return <Row key={`m${x.id}`} av={<Av user={x.member ? { ...x.member, id: x.member.userId } : null} name={x.name} s={30} />} t={x.name} sub={(n ? f("nChanged", { n }) : s.noOverride) + from} chev sel={isSel} onClick={() => onPick(x)} />;
   });
 }
 
@@ -332,6 +388,14 @@ function useAccessData(channelId) {
   const o = useOverrides(channelId);
   useEffect(() => { if (!hub.data.roles) hub.load("roles"); if (!hub.data.members) hub.load("members"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return o;
+}
+
+/** "Synced with category X": the rules shown are the category's (server audit P5). */
+function SyncedNote({ entry, server }) {
+  const t = useT();
+  if (!entry?.synced) return null;
+  const cat = findChannel(server, entry.parentId);
+  return <Foot style={{ margin: "0 16px 10px" }}>{t("chperm.syncedWith", { name: cat?.name || t("chperm.category") })}</Foot>;
 }
 
 /** iPhone: target list page. iPad: the split's left column (sel kept in the route). */
@@ -349,6 +413,7 @@ export function AccessPage({ route }) {
   return (
     <PageFrame route={route} title={channelLabel(ch)}>
       <Sec first>{f("accessTitle", { channel: channelLabel(ch) })}</Sec>
+      <SyncedNote entry={entry} server={server} />
       {entry ? <Group><TargetRows targets={targets} s={s} f={f} onPick={(x) => hub.push({ id: "perm", channelId: route.channelId, targetType: x.type, targetId: x.id })} /></Group> : <div style={{ display: "grid", placeItems: "center", height: 120 }}><span className="svh-spin" /></div>}
       <Row t={<><I n="plus" s={18} /> {s.addRoleOrMember}</>} blue style={{ marginTop: 12, padding: "0 6px" }} onClick={() => hub.push({ id: "addTarget", channelId: route.channelId })} />
     </PageFrame>
@@ -367,6 +432,7 @@ export function AccessSide({ route }) {
       <Nav style={{ height: 18 }} />
       <Scroll style={{ padding: "0 14px" }}>
         <Sec first>{f("accessTitle", { channel: channelLabel(ch) })}</Sec>
+        <SyncedNote entry={entry} server={server} />
         <Group><TargetRows targets={targets} sel={sel} s={s} f={f} onPick={(x) => { hapticSelection(); hub.updateRoute(route.key, { sel: { type: x.type, id: x.id } }); }} /></Group>
         <Row t={<><I n="plus" s={18} /> {s.addRoleOrMember}</>} blue style={{ marginTop: 12, padding: "0 6px" }} onClick={() => hub.push({ id: "addTarget", channelId: route.channelId, accessKey: route.key })} />
       </Scroll>

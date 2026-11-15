@@ -137,7 +137,7 @@ export default function PremiumBulk() {
             <p className="pa-batch">
               <span>{t("premiumAdmin.f.batch")}</span> <code className="pa-mono">{result.batch?.id || "–"}</code>
               {result.batch?.id ? (
-                <button type="button" className="pc-ibtn" aria-label={t("premiumAdmin.copy")} onClick={async () => { await copyText(result.batch.id); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>
+                <button type="button" className="pc-ibtn" aria-label={t("premiumAdmin.copy")} onClick={async () => { if (!(await copyText(result.batch.id))) return; setCopied(true); setTimeout(() => setCopied(false), 1500); }}>
                   {copied ? <Check size={14} /> : <Copy size={14} />}
                 </button>
               ) : null}

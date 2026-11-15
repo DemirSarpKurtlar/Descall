@@ -14,6 +14,7 @@ const descoin = require("../lib/descoin");
 const { purchaseItem } = require("../lib/shopPurchase");
 const vouchers = require("../lib/shopVouchers");
 const { edgePublicBase, publicCache } = require("../lib/edgeConfig");
+const { apiError } = require("../lib/apiError");
 
 const router = express.Router();
 
@@ -29,14 +30,16 @@ router.get("/catalog", requireAuth, async (req, res) => {
     const rawCategory = typeof req.query.category === "string" ? req.query.category : "";
     const category = shop.IMAGE_ASSET_CATEGORIES.has(rawCategory) ? rawCategory : null;
     const includeAssets = category != null && (req.query.assets === "1" || req.query.assets === "true");
-    const items = await shop.listActiveItems({
-      category: includeAssets ? category : null,
-      includeAssets,
-      assetBase: publicApiBase(req),
-    });
     // retiredCategories (2.11.2): installed iOS/Android builds hide these tabs even if
     // their bundled tab list still has them.
-    res.json({ items, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
+    if (includeAssets) {
+      const items = await shop.listActiveItems({ category, includeAssets, assetBase: publicApiBase(req) });
+      return res.json({ items, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
+    }
+    // Full storefront: items at their effective (sale) price, admin-ordered sections, updates.
+    res.set("Cache-Control", "no-store");
+    const front = await shop.getStorefront({ assetBase: publicApiBase(req) });
+    res.json({ ...front, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
   } catch (err) {
     console.error("[shop] catalog error:", err.message);
     res.status(500).json({ error: "Failed to load shop catalog." });
@@ -50,9 +53,10 @@ router.get("/catalog", requireAuth, async (req, res) => {
  */
 router.get("/catalog/public", async (req, res) => {
   try {
-    const items = await shop.listActiveItems({ assetBase: publicApiBase(req) });
-    publicCache(res, { maxAge: 60, sMaxAge: 300, swr: 600 });
-    res.json({ items, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
+    const front = await shop.getStorefront({ assetBase: publicApiBase(req) });
+    // Short edge cache: sale prices, stock and countdowns change while the shop is open.
+    publicCache(res, { maxAge: 20, sMaxAge: 60, swr: 120 });
+    res.json({ ...front, retiredCategories: [...shop.RETIRED_SHOP_CATEGORIES] });
   } catch (err) {
     console.error("[shop] public catalog error:", err.message);
     res.status(500).json({ error: "Failed to load shop catalog." });
@@ -170,6 +174,27 @@ router.post("/purchase", requireAuth, async (req, res) => {
       }
     }
 
+    // Sale price, limited stock and time windows (Mağaza remake), decided on fresh rows.
+    const merchRules = require("../lib/shopMerch");
+    const merchStore = require("../lib/shopMerchStore");
+    const [{ merch: merchRow }, campaigns] = await Promise.all([
+      merchStore.freshItemMerch(item.id),
+      merchStore.liveCampaigns(),
+    ]);
+    const priced = merchRow ? { ...item, ...merchRow, id: item.id } : item;
+    const av = merchRules.availability(priced, campaigns);
+    if (av.state === "scheduled" || av.state === "expired") {
+      return res.status(410).json(apiError("This item is not on sale right now.", null, { code: "not_available" }));
+    }
+    if (av.state === "soldout") {
+      return res.status(409).json(apiError("This item is sold out.", null, { code: "sold_out" }));
+    }
+    const pricing = merchRules.effectivePricing(priced, campaigns);
+    const expected = Number(req.body?.expectedPrice);
+    if (Number.isFinite(expected) && pricing.price > expected) {
+      return res.status(409).json(apiError("The price changed. Check the new price and try again.", null, { code: "price_changed", price: pricing.price }));
+    }
+
     if (req.body?.useVoucher === true) {
       try {
         const redeemed = await vouchers.redeemVoucher(req.user.id, item);
@@ -186,10 +211,17 @@ router.post("/purchase", requireAuth, async (req, res) => {
 
     let result;
     try {
-      result = await purchaseItem(req.user.id, item);
+      result = await purchaseItem(req.user.id, item, {
+        price: pricing.price,
+        limited: priced.stock_limit != null,
+        pricing,
+      });
     } catch (err) {
       if (err.message === "INSUFFICIENT_BALANCE") {
         return res.status(402).json({ error: "Not enough DesCoin for this item." });
+      }
+      if (err.code === "SOLD_OUT") {
+        return res.status(409).json(apiError("This item is sold out.", null, { code: "sold_out" }));
       }
       if (err.message === "WALLET_FROZEN" || err.code === "WALLET_FROZEN") {
         return res.status(403).json({ error: "This wallet is frozen.", code: "WALLET_FROZEN" });
@@ -204,7 +236,12 @@ router.post("/purchase", requireAuth, async (req, res) => {
       });
     }
 
-    res.json({ ok: true, balance: result.balance, item });
+    if (result.limited) {
+      // Everyone looking at the shop sees the new stock count.
+      shop.invalidateCatalogCache();
+      req.app.get("io")?.emit("shop:catalog:changed", { itemId: item.id, reason: "stock" });
+    }
+    res.json({ ok: true, balance: result.balance, item: { ...item, price_descoin: pricing.price }, paid: pricing.price });
   } catch (err) {
     console.error("[shop] purchase error:", err.message);
     res.status(500).json({ error: "Failed to complete purchase." });

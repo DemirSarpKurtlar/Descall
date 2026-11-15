@@ -23,6 +23,8 @@ const { checkNewPassword } = require("../lib/passwordPolicy");
 const { peek, recordFailure, rejectIfLimited, isReviewDemo } = require("../lib/rateLimit");
 const { noteDroppedSessions } = require("../lib/sessionGuard");
 const accessBans = require("../lib/accessBans");
+// Güvenlik Merkezi live threat feed (merged + sampled in lib/securityEvents.js).
+const securityEvents = require("../lib/securityEvents");
 const { createSession, listSessions, removeSession, removeOtherSessions, clearAllSessions, clientIp } = require("../lib/sessions");
 const { touchLastSeen } = require("../lib/presenceTouch");
 const shop = require("../lib/shop");
@@ -590,6 +592,7 @@ router.post("/register", async (req, res) => {
       const closed = platformPolicy.checkRegistration({ config: systemConfig });
       if (!closed.ok) {
         noteSignupFailure(res, "registration_closed");
+        securityEvents.note("signup_denied", { req, reason: "closed", detail: { method: "email" } });
         return res.status(403).json({ error: closed.message, code: closed.code });
       }
     }
@@ -597,7 +600,10 @@ router.post("/register", async (req, res) => {
     if (await accessGate(req, res, { action: "register" })) return;
     res.locals.signupFailDetail = null;
     const ip = clientIp(req);
-    if (guard(res, `register:ip:${ip}`, null, { max: 20 })) return;
+    if (guard(res, `register:ip:${ip}`, null, { max: 20 })) {
+      securityEvents.note("ip_blocked", { req, reason: "register", detail: { scope: "register" } });
+      return;
+    }
     recordFailure(`register:ip:${ip}`, { max: 20 });
     const { username, password, email: rawEmail, termsAccepted, invitedBy, attribution, birthDate, signupInvite } = req.body ?? {};
 
@@ -630,6 +636,14 @@ router.post("/register", async (req, res) => {
     }
     if (emailCode) {
       return rejectSignup(res, 400, emailCode, { error: "Enter a valid email address.", code: "EMAIL_INVALID" });
+    }
+    // Güvenlik Merkezi "Tek kullanımlık e-posta engeli": throwaway providers are refused.
+    if (email && systemConfig.disposableEmailBlock === true) {
+      const domain = email.split("@")[1] || "";
+      if (require("../lib/signupReport").isDisposableDomain(domain)) {
+        securityEvents.note("signup_denied", { req, reason: "disposable", detail: { email: `${email.slice(0, 1)}***@${domain}`.slice(0, 80) } });
+        return rejectSignup(res, 400, "email_disposable", { error: "This email provider isn't accepted. Use your regular email address.", code: "EMAIL_DISPOSABLE" });
+      }
     }
 
     const cleanUsername = username.trim();
@@ -772,11 +786,18 @@ router.post("/login", async (req, res) => {
     const cleanUsername = username.trim();
     const ip = clientIp(req);
     const accountKey = isReviewDemo(cleanUsername) ? null : `login:acct:${cleanUsername.toLowerCase()}`;
-    if (guard(res, `login:ip:${ip}`, accountKey, { max: 40 }, { max: 30 })) return;
+    if (guard(res, `login:ip:${ip}`, accountKey, { max: 40 }, { max: 30 })) {
+      const ipLimited = !peek(`login:ip:${ip}`, { max: 40 }).ok;
+      securityEvents.note(ipLimited ? "ip_blocked" : "account_locked", { req, reason: ipLimited ? "login" : "window", detail: ipLimited ? { scope: "login" } : { lookup: cleanUsername.slice(0, 64), window: "15m" } });
+      return;
+    }
     // Yönetici Paneli › Güvenlik: "Dakikada maksimum giriş denemesi" per account (3.1.3).
     const minuteKey = accountKey ? `${accountKey}:min` : null;
     const perMinute = { windowMs: 60_000, max: platformPolicy.loginAttemptsPerMinute(systemConfig) };
-    if (minuteKey && rejectIfLimited(res, [peek(minuteKey, perMinute)])) return;
+    if (minuteKey && rejectIfLimited(res, [peek(minuteKey, perMinute)])) {
+      securityEvents.note("account_locked", { req, reason: "minute", detail: { lookup: cleanUsername.slice(0, 64), perMinute: perMinute.max } });
+      return;
+    }
 
     const { data: user, error: lookupError } = await supabase
       .from("users")
@@ -803,6 +824,8 @@ router.post("/login", async (req, res) => {
       recordFailure(`login:ip:${ip}`, { max: 40 });
       if (accountKey) recordFailure(accountKey, { max: 30 });
       if (minuteKey) recordFailure(minuteKey, perMinute);
+      // The account name is stored only when the account exists (a typed password never is).
+      securityEvents.note("failed_login", { req, userId: user?.id || null, username: user ? user.username : null, accountKey: accountKey || null, detail: { method: "password" } });
       return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
     }
 
@@ -1073,7 +1096,10 @@ router.post("/google", async (req, res) => {
         `user${googleId.slice(-6)}`;
       {
         const closed = platformPolicy.checkRegistration({ config: systemConfig });
-        if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
+        if (!closed.ok) {
+          securityEvents.note("signup_denied", { req, reason: "closed", detail: { method: "google" } });
+          return res.status(403).json({ error: closed.message, code: closed.code });
+        }
       }
       const username = await allocateUniqueUsername(preferred);
 
@@ -1305,7 +1331,10 @@ router.post("/apple", async (req, res) => {
       }
       {
         const closed = platformPolicy.checkRegistration({ config: systemConfig });
-        if (!closed.ok) return res.status(403).json({ error: closed.message, code: closed.code });
+        if (!closed.ok) {
+          securityEvents.note("signup_denied", { req, reason: "closed", detail: { method: "apple" } });
+          return res.status(403).json({ error: closed.message, code: closed.code });
+        }
       }
       const insertPayload = {
         username,

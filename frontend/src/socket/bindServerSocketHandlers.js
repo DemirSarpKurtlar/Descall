@@ -14,6 +14,7 @@ import { hapticError, hapticWarning } from "../lib/fluid/haptics";
 import { resolveMessageDeleted, resolveMessageDeleteFailedForScope } from "../lib/messageDeleteFeedback";
 import { resolveMessageEdited, resolveMessageEditFailed } from "../lib/messageEditFeedback";
 import { mergeIncomingChatMessage, shouldAcceptLiveMessage } from "../lib/liveMessageMerge";
+import { invalidateChannelPerms, forgetChannelPerms, isTextLikeChannel } from "../lib/channelPermissions";
 
 const SERVER_EVENTS = [
   "server:channel:message:ack",
@@ -39,6 +40,7 @@ const SERVER_EVENTS = [
   "server:member:roles-changed",
   "server:deleted",
   "server:updated",
+  "server:member:timeout",
   "server:ownership:received",
 ];
 
@@ -239,6 +241,19 @@ export function bindServerSocketHandlers(socket, ctx) {
         setActiveServer((prev) =>
           prev && String(prev.id) === String(serverId) ? { ...prev, ...data.server } : prev
         );
+        // Channels that became visible (role grant, overwrite change) join their live
+        // room now, not only after a server switch / reconnect (server audit SK-8).
+        if (activeServerRef.current && String(activeServerRef.current.id) === String(serverId)) {
+          try {
+            socket.emit(
+              "server:channels:rejoin",
+              (data.server.channels || []).filter((c) => isTextLikeChannel(c) && c.id).map((c) => c.id)
+            );
+          } catch (err) {
+            console.warn("[servers] channel rejoin failed:", err?.message || err);
+          }
+        }
+        invalidateChannelPerms(socket, serverId);
         setMyServers((prev) =>
           prev.map((s) =>
             String(s.id) === String(serverId) ? { ...s, ...data.server } : s
@@ -508,6 +523,7 @@ export function bindServerSocketHandlers(socket, ctx) {
     const isMe = meId && String(userId) === String(meId);
 
     if (isMe) {
+      forgetChannelPerms(serverId);
       setMyServers((prev) => prev.filter((s) => String(s.id) !== String(serverId)));
       setActiveServer((prev) => {
         if (prev && String(prev.id) === String(serverId)) {
@@ -567,7 +583,7 @@ export function bindServerSocketHandlers(socket, ctx) {
     // Only arrives for members with VIEW_CHANNEL (server filters recipients).
     upsertServerChannel(serverId, channel);
     if (
-      channel.type === "text" &&
+      isTextLikeChannel(channel) &&
       activeViewRef.current === "servers" &&
       activeServerRef.current &&
       String(activeServerRef.current.id) === String(serverId)
@@ -579,6 +595,8 @@ export function bindServerSocketHandlers(socket, ctx) {
   const handleChannelUpdated = ({ serverId, channel } = {}) => {
     if (!serverId || !channel?.id) return;
     upsertServerChannel(serverId, channel);
+    // Type (announcement) or category sync may change what I can do there.
+    handleChannelUpdatedPerms({ serverId });
   };
 
   const handleChannelDeleted = ({ serverId, channelId } = {}) => {
@@ -625,6 +643,10 @@ export function bindServerSocketHandlers(socket, ctx) {
 
   const handleRoleCreated = ({ serverId, role } = {}) => {
     upsertServerRole(serverId, role);
+  };
+
+  const handleChannelUpdatedPerms = ({ serverId } = {}) => {
+    if (serverId) invalidateChannelPerms(socket, serverId);
   };
 
   const handleRoleUpdated = ({ serverId, role } = {}) => {
@@ -681,8 +703,27 @@ export function bindServerSocketHandlers(socket, ctx) {
     }
   };
 
+  // A timeout given or lifted (server audit M10): the target learns it live, not on the
+  // next send, and their own server copy shows it.
+  const handleMemberTimeout = ({ serverId, userId, until } = {}) => {
+    const meId = myIdRef.current || getUser()?.id;
+    if (!serverId || !meId || String(userId) !== String(meId)) return;
+    invalidateChannelPerms(socket, serverId); // composer / moderation controls follow the timeout
+    const patch = (s) => (s && String(s.id) === String(serverId) ? { ...s, timeoutUntil: until || null } : s);
+    setMyServers((prev) => prev.map(patch));
+    setActiveServer((prev) => patch(prev));
+    const server =
+      (activeServerRef.current && String(activeServerRef.current.id) === String(serverId) && activeServerRef.current) || null;
+    const name = server?.name || t("the server");
+    if (until) toast(t("You were timed out in {name}", { name }), "warning");
+    else toast(t("Your timeout in {name} was lifted", { name }), "info");
+  };
+
   const handleMemberUpdated = ({ serverId, member } = {}) => {
     if (!serverId || !member?.userId) return;
+    // My own timeout / roles changed: the channel bits change with it.
+    const meIdNow = myIdRef.current || getUser()?.id;
+    if (meIdNow && String(member.userId) === String(meIdNow)) invalidateChannelPerms(socket, serverId);
     try {
       window.dispatchEvent(
         new CustomEvent("descall:server-member-updated", {
@@ -714,6 +755,7 @@ export function bindServerSocketHandlers(socket, ctx) {
   // Server deleted by its owner: drop it locally (members used to keep a dead server).
   const handleServerDeleted = ({ serverId, serverName } = {}) => {
     if (!serverId) return;
+    forgetChannelPerms(serverId);
     let wasListed = false;
     setMyServers((prev) => {
       wasListed = prev.some((s) => String(s.id) === String(serverId));
@@ -803,6 +845,7 @@ export function bindServerSocketHandlers(socket, ctx) {
     "server:role:deleted": handleRoleDeleted,
     "server:member:joined": handleMemberJoined,
     "server:member:updated": handleMemberUpdated,
+    "server:member:timeout": handleMemberTimeout,
     "server:member:roles-changed": handleMemberRolesChanged,
     "server:deleted": handleServerDeleted,
     "server:updated": handleServerUpdated,

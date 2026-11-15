@@ -638,7 +638,8 @@ function registerSocketHandlers(io) {
       if (typeof ack === "function") ack(Date.now());
     });
 
-    socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags));
+    // Sistem page: rollout rules resolved for this account and platform (lib/featureRollout.js).
+    socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags, { userId: myId, platform: require("../lib/edgeRealtime").clientPlatform(socket) }));
     try {
       const { service: maintenance } = require("../runtime/maintenanceInstance");
       socket.emit("maintenance:state", { maintenance: maintenance.publicState(), serverTime: new Date().toISOString() });
@@ -680,6 +681,8 @@ function registerSocketHandlers(io) {
     touchLastSeen(myId).catch(() => {});
 
     setupAdminSocket(io, socket);
+    // Canlı popup: receipts from the recipient + missed popups shown on connect.
+    require("./popupReceipts").registerPopupReceipts(io, socket);
 
     // Load friends + full profile, then emit connected with displayName etc.
     // Never let a single failed sub-task block friend:list / connected —
@@ -749,7 +752,7 @@ function registerSocketHandlers(io) {
           .finally(() => {
             // 2.11.7: reconnects with an unchanged list get "same" (boot diet).
             require("../lib/bootDiet").emitBootFriendList(socket, getFriendList(myId), {
-              enabled: systemConfig.featureFlags?.bootDiet !== false,
+              enabled: require("../lib/systemSettings").flagEnabledFor(systemConfig.featureFlags, "bootDiet", { userId: myId, platform: require("../lib/edgeRealtime").clientPlatform(socket) }),
             });
             socket.emit("friend:requests", getPendingList(myId));
             listMessageRequests(supabase, myId)
@@ -1203,6 +1206,12 @@ function registerSocketHandlers(io) {
           });
         }
       }
+      // Moderasyon kelime filtresi (lib/contentFilter.js): block / flag / auto-timeout rules.
+      const dmFilterCtx = { convType: "dm", peerId: typeof toUserId === "string" ? toUserId : null };
+      const dmFiltered = require("../lib/contentFilter").gate({ io, userId: myId, text, ctx: dmFilterCtx });
+      if (dmFiltered.blocked) {
+        return socket.emit("dm:error", { ...require("../lib/contentFilter").blockedPayload(), tempId: tempId || null, toUserId });
+      }
       if (dmBlockPairs.has(convKey(myId, toUserId))) {
         appendErrorLog("dm:send", "Conversation blocked", { toUserId }, myId, me.username);
         return socket.emit("dm:error", { message: "Conversation blocked.", tempId: tempId || null, toUserId });
@@ -1220,6 +1229,11 @@ function registerSocketHandlers(io) {
         return socket.emit("dm:error", { message: "Rate limited.", tempId: tempId || null, toUserId });
       }
       rateLimitDm.set(myId, now);
+      {
+        // Güvenlik Merkezi: minimum account age before the first DMs (0 = off, admins exempt).
+        const young = await require("../lib/securityCenter").dmAccountAgeBlock({ config: systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", now });
+        if (young) return socket.emit("dm:error", { ...young, tempId: tempId || null, toUserId });
+      }
       {
         // Yönetici Paneli switches (3.1.3): freeze, DMs off, slow mode, per-minute cap.
         const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", kind: "dm", now });
@@ -1331,6 +1345,7 @@ function registerSocketHandlers(io) {
         });
       }
       const messageId = row.id;
+      require("../lib/contentFilter").after(dmFiltered.verdict, { io, userId: myId, text: storedText, messageId, ctx: dmFilterCtx });
       const timestamp = toUtcIso(row.created_at) || row.created_at;
       let pollSnapshot = null;
       if (pollDraft) {
@@ -2025,6 +2040,13 @@ function registerSocketHandlers(io) {
       if (!messageId || !conversationType || !conversationId || !emoji) {
         return refuse("rejected");
       }
+      // One emoji or a custom emoji token, nothing else (server audit MSG-9), and a
+      // per-socket budget shared with reaction:remove.
+      const { isValidReactionEmoji, MAX_DISTINCT_REACTIONS } = require("../lib/reactionEmoji");
+      if (!isValidReactionEmoji(emoji) || typeof messageId !== "string" || messageId.length > 128 || typeof conversationId !== "string") {
+        return refuse("rejected");
+      }
+      if (!require("./serverChannelHandlers").allowSocketEvent(socket, "reaction", 20)) return refuse("rate_limited");
       
       // Verify user is part of this conversation
       let otherId = null;
@@ -2087,8 +2109,8 @@ function registerSocketHandlers(io) {
           if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) {
             return refuse("rejected");
           }
-          // Timed-out members are refused inside assertTextChannelAccess(ADD_REACTIONS);
-          // removing your own reaction stays allowed.
+          // Timed-out members (server or site-wide) are refused inside
+          // assertTextChannelAccess(ADD_REACTIONS); removing your own reaction stays allowed.
           // A stored message (uuid id) must live in that channel; a foreign
           // messageId used to be accepted. Live-only app/game messages have
           // non-uuid ids, are never stored, and keep working as before.
@@ -2114,6 +2136,18 @@ function registerSocketHandlers(io) {
       }
 
       try {
+        // At most MAX_DISTINCT_REACTIONS different emojis on one message (Discord: 20).
+        const { data: existing, error: exErr } = await supabase
+          .from("reactions")
+          .select("emoji")
+          .eq("message_id", messageId)
+          .eq("conversation_type", conversationType)
+          .eq("conversation_id", conversationId)
+          .limit(5000);
+        if (exErr) throw exErr;
+        const distinct = new Set((existing || []).map((r) => r.emoji));
+        if (!distinct.has(emoji) && distinct.size >= MAX_DISTINCT_REACTIONS) return refuse("limit");
+
         const { data, error } = await supabase
           .from("reactions")
           .upsert({
@@ -2165,6 +2199,8 @@ function registerSocketHandlers(io) {
       const refuse = (error) => { reply({ ok: false, error }); };
       let { messageId, conversationType, conversationId, emoji } = payload || {};
       if (!messageId || !conversationType || !conversationId || !emoji) return refuse("rejected");
+      if (typeof emoji !== "string" || emoji.length > 256 || typeof messageId !== "string" || typeof conversationId !== "string") return refuse("rejected");
+      if (!require("./serverChannelHandlers").allowSocketEvent(socket, "reaction", 20)) return refuse("rate_limited");
 
       // Get otherId for DM
       let otherId = null;
@@ -2183,7 +2219,9 @@ function registerSocketHandlers(io) {
         try {
           const { assertTextChannelAccess } = require("./serverChannelHandlers");
           const { Permissions, hasPermission } = require("../lib/serverPermissions");
-          const { permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.ADD_REACTIONS);
+          // Removing your own reaction needs no ADD_REACTIONS and works while timed out
+          // (server audit MSG-15 / SK-11); you must still see and read the channel.
+          const { permissions } = await assertTextChannelAccess(myId, conversationId, Permissions.VIEW_CHANNEL);
           if (!hasPermission(permissions, Permissions.READ_MESSAGE_HISTORY)) return refuse("rejected");
         } catch {
           return refuse("rejected");

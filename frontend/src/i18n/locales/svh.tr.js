@@ -60,6 +60,7 @@ export const SVH_TR = {
   afkChannel: "AFK kanalı",
   afkTimeout: "AFK süresi",
   systemFoot: "Yeni üye karşılaması ve sistem mesajları bu kanala düşer. Boşta kalanlar AFK süresinden sonra AFK kanalına taşınır.",
+  defaultNotif: "Varsayılan bildirimler",
   secQuick: "Hızlı bilgiler",
   createdAt: "Oluşturulma",
   owner: "Sunucu sahibi",

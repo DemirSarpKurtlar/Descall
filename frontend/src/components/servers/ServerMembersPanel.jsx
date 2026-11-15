@@ -319,12 +319,8 @@ export default function ServerMembersPanel({
 
   const copyUsername = async (member) => {
     const text = member.username ? `@${member.username}` : member._name;
-    try {
-      await copyText(text);
-      toast(t("Copied"), "success");
-    } catch {
-      toast(t("Something went wrong."), "error");
-    }
+    if (await copyText(text)) toast(t("Copied"), "success");
+    else toast(t("Could not copy to clipboard"), "error");
     setMenu(null);
   };
 

@@ -16,9 +16,22 @@ import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { BAN_DE } from "./ban.de.js";
+import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
+import { DOSSIER_DE } from "./dossier.de.js";
+import { SHOP_DESK_DE } from "./shopDesk.de.js";
+import { SHOP_MERCH_DE } from "./shopMerch.de.js";
+import { MOD_DESK_DE, MOD_DESK_API_DE } from "./modDesk.de.js";
+import { GAMES_ADMIN_DE } from "./gamesAdmin.de.js";
+import { SYSX_DE } from "./sysx.de.js";
+import { AUDIT_LOG_DE } from "./auditLog.de.js";
+import { LIVE_POPUP_DE } from "./livePopup.de.js";
+import { ANNC_DE } from "./annc.de.js";
+import { CHPERM_DE } from "./chperm.de.js";
+import { SEC_CENTER_DE } from "./secCenter.de.js";
 import { AGENTX_DE } from "./agentx.de.js";
+import { AGENT_OPS_DE } from "./agentOps.de.js";
 import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
@@ -45,9 +58,22 @@ export const nested = {
   "act": ACT_DE,
   "dir": DIR_DE,
   "ban": BAN_DE,
+  "iosShare": IOS_SHARE_DE,
   "banAdmin": BAN_ADMIN_DE,
   "serverReview": SERVER_REVIEW_DE,
+  "dossier": DOSSIER_DE,
+  "shopDesk": SHOP_DESK_DE,
+  "shopMerch": SHOP_MERCH_DE,
+  "modDesk": MOD_DESK_DE,
+  "gamesAdmin": GAMES_ADMIN_DE,
+  "sysx": SYSX_DE,
+  "auditLog": AUDIT_LOG_DE,
+  "livePopup": LIVE_POPUP_DE,
+  "annc": ANNC_DE,
+  "chperm": CHPERM_DE,
+  "secCenter": SEC_CENTER_DE,
   "agentx": AGENTX_DE,
+  "agentOps": AGENT_OPS_DE,
   "invl": INVL_DE,
   "sgx": SIGNUP_GROWTH.de.nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
@@ -2973,7 +2999,9 @@ export const nested = {
       "reportNoViolation": "Wir haben deine Meldung geprüft und keinen Regelverstoß festgestellt. Danke.",
       "reportReviewedTitle": "Deine Meldung wurde geprüft",
       "serverOwnerBody": "Du bist jetzt Besitzer von {serverName}",
-      "serverOwnerTitle": "Server-Eigentümerschaft"
+      "serverOwnerTitle": "Server-Eigentümerschaft",
+      "timeoutBody": "Du kannst weiter lesen und zuhören, aber eine Zeit lang keine Nachrichten senden und im Sprachkanal nicht sprechen.",
+      "timeoutTitle": "Du wurdest stummgeschaltet"
     },
     "opt": {
       "amount": "betrag",
@@ -6108,6 +6136,7 @@ export const nested = {
     "sidebarInVoice": "{n} im Sprachchat",
     "slowmode": "Langsamer Modus",
     "systemFoot": "Begrüßungen neuer Mitglieder und Systemnachrichten landen in diesem Kanal. Inaktive Mitglieder werden nach dem AFK-Timeout in den AFK-Kanal verschoben.",
+    "defaultNotif": "Standardbenachrichtigungen",
     "systemMsgs": "Systemnachrichten",
     "tAnnSub": "Nur das Team postet, Mitglieder folgen",
     "tStageSub": "Sprecher und Zuhörer",
@@ -10734,6 +10763,8 @@ export const phrases = {
   "You received DesCoin!": "Du hast DesCoin erhalten!",
   "You received a gift!": "Du hast ein Geschenk erhalten!",
   "You were banned from {name}": "Du wurdest von {name} gebannt",
+  "You were timed out in {name}": "Du hast in {name} ein Timeout bekommen",
+  "Your timeout in {name} was lifted": "Dein Timeout in {name} wurde aufgehoben",
   "You were kicked from {name}": "Du wurdest von {name} gekickt",
   "You win": "Du gewinnst",
   "You win!": "Du gewinnst!",
@@ -11021,6 +11052,7 @@ export const phrases = {
   "Descall: voice chat, servers and screen sharing for friends": "Descall: Sprachchat, Server und Bildschirmübertragung für Freunde",
   ...DIR_API_DE,
   ...API_DE,
+  ...MOD_DESK_API_DE,
 };
 
 export default { nested, phrases };

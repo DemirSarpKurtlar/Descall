@@ -181,6 +181,30 @@ export async function startGlassDisplay() {
   }
 }
 
+/**
+ * Native iPad (html.glass-desktop, never glass-ui): only the accessibility
+ * part of the shell state, plus the status-bar ink for the light theme.
+ * glassDesktop.js turns Reduce Transparency into gd-lite and Increase
+ * Contrast into gd-contrast; low power / thermal / tier are not used there.
+ * Resolves false on an older shell without the plugin.
+ */
+export async function watchNativeAccessibility(listener) {
+  const pick = (next) => ({
+    reduceTransparency: next?.reduceTransparency === true,
+    darkerColors: next?.darkerColors === true,
+  });
+  try {
+    if (!plugin) plugin = registerPlugin("DescallDisplay");
+    syncStatusBar(true);
+    watchTheme();
+    listener(pick(await plugin.getState()));
+    await plugin.addListener("change", (next) => listener(pick(next)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function stopGlassDisplay() {
   try {
     listenerHandle?.remove?.();

@@ -68,8 +68,27 @@ import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
 import { primeVoiceActivity } from "../lib/voiceActivity";
+import { registerLiveKitVideoTrack, unregisterLiveKitVideoTrack } from "../lib/liveKitVideoBinding";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
+import {
+  isScreenCompanionIdentity,
+  parseLiveKitIdentity,
+  routeLiveKitTrack,
+  speakerIdsWithoutCompanions,
+} from "../lib/screenCompanion";
+import {
+  nativeBroadcastSupported,
+  onBroadcastState,
+  startNativeBroadcast,
+  stopNativeBroadcast,
+} from "../lib/iosScreenBroadcast";
+import {
+  INITIAL_SHARE_STATE,
+  nextShareState,
+  shareTransition,
+  tokenErrorKey,
+} from "../lib/iosScreenBroadcastModel";
 
 let liveKitApiPromise = null;
 function loadLiveKit() {
@@ -148,6 +167,9 @@ export function useServerVoice(socket) {
   const deafenedRef = useRef(false);
   const mutedByDeafenRef = useRef(false);
   const joinRef = useRef(null);
+  // The server sends the LiveKit token with the confirmed seat (server:voice:joined).
+  // The join flow waits for it here instead of asking before the seat exists.
+  const joinedTokenWaiterRef = useRef(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenStream, setScreenStream] = useState(null);
   const screenStreamRef = useRef(null);
@@ -169,6 +191,11 @@ export function useServerVoice(socket) {
   const [mediaMode, setMediaMode] = useState("mesh");
   const sfuModeRef = useRef(false);
   const liveKitRoomRef = useRef(null);
+  /** LiveKit URL the voice room connected to (the iOS screen companion uses the same edge). */
+  const liveKitUrlRef = useRef(null);
+  /** iOS whole-screen sharing (ReplayKit broadcast + native screen companion). */
+  const [nativeShare, setNativeShare] = useState(INITIAL_SHARE_STATE);
+  const nativeShareRef = useRef(INITIAL_SHARE_STATE);
   const participantsRef = useRef([]);
   const channelNameRef = useRef("");
   const liveKitConfigRef = useRef(null);
@@ -435,6 +462,87 @@ export function useServerVoice(socket) {
     return res.json();
   }, []);
 
+  /** iOS screen companion token (`<userId>:screen`, screen share only). */
+  const getLiveKitScreenToken = useCallback(async (channelId) => {
+    const token = getToken();
+    if (!token || !channelId) {
+      const err = new Error("Not signed in.");
+      err.code = "AUTH";
+      throw err;
+    }
+    const res = await fetch(
+      `${API_BASE_URL}/api/webrtc/livekit-screen-token?channelId=${encodeURIComponent(channelId)}`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body?.enabled || !body?.token) {
+      const err = new Error(body?.error || "Could not prepare screen sharing.");
+      err.code = body?.enabled === false ? "SFU_REQUIRED" : body?.code || `http-${res.status}`;
+      throw err;
+    }
+    return body;
+  }, []);
+
+  /**
+   * iOS broadcast share state. The share counts as published (isScreenSharing,
+   * server:voice:screen:start) only once the native room says "live", so a
+   * dismissed picker never shows a share that did not start.
+   */
+  const applyNativeShare = useCallback((event) => {
+    const prev = nativeShareRef.current;
+    const next = nextShareState(prev, event);
+    if (next === prev) return;
+    nativeShareRef.current = next;
+    setNativeShare(next);
+    const transition = shareTransition(prev, next);
+    const channelId = activeChannelIdRef.current;
+    const sock = socketRef.current;
+    if (transition === "started") {
+      if (!channelId) {
+        void stopNativeBroadcast("left-channel");
+        return;
+      }
+      setIsScreenSharing(true);
+      if (sock?.connected) sock.emit("server:voice:screen:start", { channelId });
+      audioManager.play("screenShareStart");
+    } else if (transition === "stopped") {
+      setIsScreenSharing(false);
+      if (channelId && sock?.connected) sock.emit("server:voice:screen:stop", { channelId });
+      audioManager.play("screenShareStop");
+    }
+    if (next.error && next.error !== prev.error) toastRef.current?.(tRuntime(next.error), "error");
+  }, []);
+
+  /** Mint the companion token and hand it to the native room (picker optional). */
+  const beginNativeShare = useCallback(
+    async ({ anchor = null, showPicker = true } = {}) => {
+      const channelId = activeChannelIdRef.current;
+      if (!channelId) return;
+      if (!sfuModeRef.current || !liveKitRoomRef.current) {
+        // The broadcast is published through LiveKit; a mesh fallback session cannot carry it.
+        applyNativeShare({ type: "fail", error: tokenErrorKey("SFU_REQUIRED") });
+        if (!showPicker) void stopNativeBroadcast("no-sfu");
+        return;
+      }
+      applyNativeShare({ type: "request" });
+      try {
+        const data = await getLiveKitScreenToken(channelId);
+        // Cancelled (or left the channel) while the token was minted.
+        if (activeChannelIdRef.current !== channelId || nativeShareRef.current.phase !== "preparing") {
+          if (nativeShareRef.current.phase === "preparing") applyNativeShare({ type: "reset" });
+          return;
+        }
+        const url = liveKitUrlRef.current || data.livekitUrl;
+        await startNativeBroadcast({ url, token: data.token, anchor, showPicker });
+      } catch (err) {
+        console.warn("[ServerVoice] iOS screen broadcast failed:", err?.code || "", err?.message || err);
+        applyNativeShare({ type: "fail", error: tokenErrorKey(err?.code) });
+        if (!showPicker) void stopNativeBroadcast("token-failed");
+      }
+    },
+    [applyNativeShare, getLiveKitScreenToken]
+  );
+
   const disconnectLiveKit = useCallback(() => {
     publishActiveSpeakers(null, []);
     const room = liveKitRoomRef.current;
@@ -481,7 +589,7 @@ export function useServerVoice(socket) {
       const room = new Room(liveKitRoomOptions());
       room.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
         const userId = participant?.identity;
-        if (!userId) return;
+        if (!userId || isScreenCompanionIdentity(userId)) return;
         const next = String(quality || "").toLowerCase();
         if (!next || next === "unknown") return;
         setLinkQualityByUser((prev) => (prev[userId] === next ? prev : { ...prev, [userId]: next }));
@@ -489,18 +597,39 @@ export function useServerVoice(socket) {
       // 3D world speaking rings (lib/activeSpeakers.js): no React state, no re-render.
       room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
         if (liveKitRoomRef.current && liveKitRoomRef.current !== room) return;
-        publishActiveSpeakers(channelId, (speakers || []).map((p) => p?.identity).filter(Boolean));
+        publishActiveSpeakers(channelId, speakerIdsWithoutCompanions((speakers || []).map((p) => p?.identity)));
       });
       room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+        const parsed = parseLiveKitIdentity(participant?.identity);
+        if (parsed.companion === "screen") {
+          // An iOS screen broadcast ended: the owner stays, only their share goes.
+          const ownerId = parsed.userId;
+          if (String(ownerId) === String(myIdRef.current)) return;
+          remoteScreenStreamsRef.current.delete(ownerId);
+          setParticipants((prev) =>
+            prev.map((p) => (String(p.id) === String(ownerId) ? { ...p, screenStream: null, isScreenSharing: false } : p))
+          );
+          return;
+        }
         cleanupPeer(participant.identity);
         setParticipants((prev) => prev.filter((p) => p.id !== participant.identity));
       });
       room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        const userId = participant.identity;
+        // `<userId>:screen` (iOS broadcast companion) is the owner's screen share.
+        const routed = routeLiveKitTrack({ identity: participant?.identity, myUserId: myIdRef.current });
+        if (routed.ignore) {
+          try {
+            publication?.setSubscribed?.(false);
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
+        const userId = routed.userId;
         const mediaTrack = track.mediaStreamTrack;
         if (!userId || !mediaTrack) return;
         const source = publication?.source || track?.source;
-        const role = classifyLiveKitTrack({
+        const role = routed.companion ? "screen" : classifyLiveKitTrack({
           kind: track.kind,
           source,
           trackName: publication?.trackName || track?.name || null,
@@ -508,6 +637,9 @@ export function useServerVoice(socket) {
           label: mediaTrack.label,
           announcement: screenAnnouncementsRef.current.get(String(userId)) || null,
         });
+        // adaptiveStream: the panel's <video> elements report size/visibility
+        // for this track (lib/liveKitVideoBinding.js), or the SFU pauses it.
+        if (track.kind === "video") registerLiveKitVideoTrack(mediaTrack, track);
         if (role === "screen") {
           const merged = nextScreenStream(remoteScreenStreamsRef.current.get(userId) || null, mediaTrack);
           remoteScreenStreamsRef.current.set(userId, merged);
@@ -525,11 +657,14 @@ export function useServerVoice(socket) {
         });
       });
       room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-        const userId = participant.identity;
+        const routed = routeLiveKitTrack({ identity: participant?.identity, myUserId: myIdRef.current });
+        if (routed.ignore) return;
+        const userId = routed.userId;
         if (!userId) return;
         const source = publication?.source || track?.source;
         const mediaTrack = track?.mediaStreamTrack;
-        const role = classifyLiveKitTrack({
+        if (track?.kind === "video") unregisterLiveKitVideoTrack(mediaTrack);
+        const role = routed.companion ? "screen" : classifyLiveKitTrack({
           kind: track.kind,
           source,
           trackName: publication?.trackName || track?.name || null,
@@ -578,6 +713,7 @@ export function useServerVoice(socket) {
       if (!probed) voiceTelemetryRef.current?.set("urlProbeSkipped", true);
       voiceTelemetryRef.current?.mark("urlProbeMs");
       await room.connect(livekitUrl, tokenData.token);
+      liveKitUrlRef.current = livekitUrl;
       voiceTelemetryRef.current?.mark("lkConnectMs");
       voiceTelemetryRef.current?.set("media", "sfu");
       liveKitRoomRef.current = room;
@@ -585,7 +721,8 @@ export function useServerVoice(socket) {
       sfuModeRef.current = true;
       setMediaMode("sfu");
       const audioTrack = stream?.getAudioTracks?.()[0] || null;
-      if (audioTrack && canPublishVoice()) {
+      // A server mute / AFK lock gives a token without publish rights: do not publish.
+      if (audioTrack && canPublishVoice() && tokenData.canPublish !== false) {
         await room.localParticipant.publishTrack(audioTrack, liveKitMicPublishOptions(Track.Source.Microphone));
         voiceTelemetryRef.current?.mark("published");
       }
@@ -593,6 +730,34 @@ export function useServerVoice(socket) {
     },
     [attachRemoteAudio, canPublishVoice, cleanupPeer, updateRemoteParticipant]
   );
+
+  /**
+   * The server enforces mutes in LiveKit (publish / subscribe rights). When a lock is
+   * lifted, put the microphone back and resubscribe to the room's tracks.
+   */
+  const restoreLiveKitRights = useCallback(async ({ publish = false, subscribe = false } = {}) => {
+    const room = liveKitRoomRef.current;
+    if (!room || !sfuModeRef.current) return;
+    try {
+      if (subscribe) {
+        for (const participant of room.remoteParticipants?.values?.() || []) {
+          for (const pub of participant.trackPublications?.values?.() || []) {
+            if (!pub.isSubscribed) pub.setSubscribed?.(true);
+          }
+        }
+      }
+      if (publish && canPublishVoice()) {
+        const track = localStreamRef.current?.getAudioTracks?.()[0] || null;
+        const { Track } = await loadLiveKit();
+        const published = room.localParticipant?.getTrackPublication?.(Track.Source.Microphone);
+        if (track && !published) {
+          await room.localParticipant.publishTrack(track, liveKitMicPublishOptions(Track.Source.Microphone));
+        }
+      }
+    } catch (err) {
+      console.warn("[ServerVoice] LiveKit rights restore failed:", err?.message || err);
+    }
+  }, [canPublishVoice]);
 
   const removeUserFromVoiceStates = useCallback((channelId, userId, serverId = null) => {
     if (!channelId || !userId) return;
@@ -648,6 +813,12 @@ export function useServerVoice(socket) {
     }
     setScreenStream(null);
     setIsScreenSharing(false);
+    if (nativeShareRef.current.phase !== "idle") {
+      // Leaving voice ends the iOS broadcast too (the server also removes the companion).
+      void stopNativeBroadcast("left-channel");
+      nativeShareRef.current = INITIAL_SHARE_STATE;
+      setNativeShare(INITIAL_SHARE_STATE);
+    }
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach((t) => t.stop());
       cameraStreamRef.current = null;
@@ -929,13 +1100,16 @@ export function useServerVoice(socket) {
       telemetry?.finish("ended");
       telemetry?.begin("server", "outgoing", "voice");
       telemetry?.mark("gumStart");
-      // 3.0.0 (C1): LiveKit token + SDK load run in parallel with the mic
-      // (stage channels keep the serial path: their role is set by the join).
-      const earlyToken =
-        channel.type !== "stage" && (liveKitConfigRef.current?.sfu || liveKitConfigRef.current?.preferSfu || !liveKitConfigRef.current)
-          ? getLiveKitToken(channel.id).then((data) => ({ data }), (error) => ({ error }))
-          : null;
-      if (earlyToken) loadLiveKit().catch(() => {});
+      // The LiveKit SDK loads in parallel with the mic. The token itself now comes with
+      // the confirmed seat (server:voice:joined); a token without a seat is refused.
+      if (liveKitConfigRef.current?.sfu || liveKitConfigRef.current?.preferSfu || !liveKitConfigRef.current) {
+        loadLiveKit().catch(() => {});
+      }
+      let resolveJoinedToken = null;
+      const joinedToken = new Promise((resolve) => {
+        resolveJoinedToken = resolve;
+      });
+      joinedTokenWaiterRef.current = { channelId: channel.id, resolve: (data) => resolveJoinedToken?.(data) };
       let joinStep = "mic";
       try {
         const nextChannelType = channel.type === "stage" ? "stage" : "voice";
@@ -992,9 +1166,14 @@ export function useServerVoice(socket) {
                 await new Promise((r) => setTimeout(r, 350));
                 if (!stillJoining()) return;
               }
-              const early = attempt === 0 && earlyToken ? await earlyToken : null;
-              if (early?.error) throw early.error;
-              const tokenData = early?.data || (await getLiveKitToken(channel.id).catch((tokenErr) => {
+              // First attempt: the token from server:voice:joined (servers before
+              // 2026-11-15 send none; then, and on retry, ask the token route).
+              const fromJoin =
+                attempt === 0
+                  ? await Promise.race([joinedToken, new Promise((r) => window.setTimeout(() => r(null), 6000))])
+                  : null;
+              if (!stillJoining() || activeChannelIdRef.current !== channel.id) return;
+              const tokenData = fromJoin?.token ? fromJoin : (await getLiveKitToken(channel.id).catch((tokenErr) => {
                 telemetry?.set("tokenError", tokenErr?.code || "network");
                 throw tokenErr;
               }));
@@ -1004,8 +1183,11 @@ export function useServerVoice(socket) {
                 lastSfuErr = new Error(tokenData?.error || "LiveKit token unavailable");
                 continue;
               }
-              canSpeakRef.current = Boolean(tokenData.canPublish);
-              setCanSpeak(Boolean(tokenData.canPublish));
+              // canSpeak = permission (SPEAK, stage speaker); a server mute is a
+              // separate lock, so lifting it later needs no new token.
+              const speakPerm = tokenData.canSpeak !== undefined ? tokenData.canSpeak : tokenData.canPublish;
+              canSpeakRef.current = Boolean(speakPerm);
+              setCanSpeak(Boolean(speakPerm));
               if (tokenData.canStream !== undefined) {
                 canStreamRef.current = Boolean(tokenData.canStream);
                 setCanStream(Boolean(tokenData.canStream));
@@ -1048,6 +1230,7 @@ export function useServerVoice(socket) {
         setError(msg);
         if (isVoiceMicError(err)) toast(tRuntime(msg), "error");
       } finally {
+        if (joinedTokenWaiterRef.current?.channelId === channel.id) joinedTokenWaiterRef.current = null;
         if (stillJoining()) setConnecting(false);
       }
     },
@@ -1237,6 +1420,14 @@ export function useServerVoice(socket) {
   );
 
   const stopScreenShare = useCallback(async (opts = {}) => {
+    if (nativeShareRef.current.phase !== "idle") {
+      // iOS broadcast: ask the extension to finish; "ended" from the native room
+      // clears the share (and sends server:voice:screen:stop) once it really stopped.
+      // Still minting the token: nothing native runs yet, just drop the request.
+      applyNativeShare({ type: nativeShareRef.current.phase === "preparing" ? "reset" : "stop" });
+      await stopNativeBroadcast("user-stopped");
+      return;
+    }
     if (!isScreenSharing && !screenStreamRef.current) return;
     if (sfuModeRef.current && liveKitRoomRef.current && screenStreamRef.current) {
       for (const track of screenStreamRef.current.getTracks()) {
@@ -1273,12 +1464,18 @@ export function useServerVoice(socket) {
       socket.emit("server:voice:screen:stop", { channelId });
     }
     if (!opts?.quiet) audioManager.play("screenShareStop");
-  }, [isScreenSharing, renegotiateWithPeer, socket]);
+  }, [applyNativeShare, isScreenSharing, renegotiateWithPeer, socket]);
 
-  const startScreenShare = useCallback(async () => {
+  const startScreenShare = useCallback(async (opts = {}) => {
     if (isScreenSharing || !activeChannelIdRef.current) return;
     if (!canPublishVideo()) {
       setError("callui.voice.needShareMedia");
+      return;
+    }
+    if (nativeBroadcastSupported()) {
+      // iPhone / iPad app: whole-screen ReplayKit broadcast (system picker, Descall preselected).
+      if (nativeShareRef.current.phase !== "idle") return;
+      await beginNativeShare({ anchor: opts?.anchor || null, showPicker: true });
       return;
     }
     try {
@@ -1365,11 +1562,39 @@ export function useServerVoice(socket) {
       console.error("[ServerVoice] screen share failed:", err);
       setError(err?.message || "Could not start screen share.");
     }
-  }, [canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, socket]);
+  }, [beginNativeShare, canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, socket]);
 
   useEffect(() => {
     stopScreenShareRef.current = stopScreenShare;
   }, [stopScreenShare]);
+
+  // Native broadcast events. "orphan" = a broadcast was started outside the app
+  // (Control Center > Screen Broadcast > Descall) with no companion session yet:
+  // attach it to the current voice channel, or end it when sharing is not possible.
+  const nativeOrphanRef = useRef(null);
+  nativeOrphanRef.current = () => {
+    if (nativeShareRef.current.phase !== "idle") return;
+    if (!activeChannelIdRef.current || !canPublishVideo()) {
+      void stopNativeBroadcast("no-session");
+      toastRef.current?.(
+        tRuntime(activeChannelIdRef.current ? "iosShare.errPermission" : "iosShare.errJoinFirst"),
+        "error"
+      );
+      return;
+    }
+    void beginNativeShare({ showPicker: false });
+  };
+  useEffect(
+    () =>
+      onBroadcastState((data) => {
+        if (data?.phase === "orphan") {
+          nativeOrphanRef.current?.();
+          return;
+        }
+        applyNativeShare({ type: "native", phase: data?.phase, reason: data?.reason || null, at: data?.at });
+      }),
+    [applyNativeShare]
+  );
 
   const stopCamera = useCallback(async () => {
     if (!isCameraOn && !cameraStreamRef.current) return;
@@ -1654,6 +1879,18 @@ export function useServerVoice(socket) {
     [socket]
   );
 
+  // Closing or reloading the page leaves voice at once; the server otherwise keeps the
+  // seat for a short reconnect grace while another tab or device stays online.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onPageHide = (event) => {
+      if (event?.persisted) return;
+      if (activeChannelIdRef.current) emitVoiceLeave();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [emitVoiceLeave]);
+
   // Re-subscribe after reconnect, rooms are cleared server-side on disconnect.
   useEffect(() => {
     if (!socket) return undefined;
@@ -1690,8 +1927,16 @@ export function useServerVoice(socket) {
       stageRole: role,
       requestedToSpeak: requested,
       serverMuted: forcedMute,
+      serverDeafened: forcedDeafen,
+      livekit,
     } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current) return;
+      const waiter = joinedTokenWaiterRef.current;
+      if (waiter && String(waiter.channelId) === String(channelId)) {
+        joinedTokenWaiterRef.current = null;
+        waiter.resolve(livekit?.token ? livekit : null);
+      }
+      if (forcedDeafen) applyRemoteDeafen(true);
       setActiveServerId(serverId || null);
       if (name) setChannelName(name);
       if (type) {
@@ -1891,13 +2136,18 @@ export function useServerVoice(socket) {
       }, 120);
     };
 
-    const onForceMute = ({ channelId, muted: isMuted } = {}) => {
+    const onForceMute = ({ channelId, muted: isMuted, canSpeak: speakPerm } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current) return;
       if (isMuted) {
         applyLocalMute(true, { forced: true });
       } else {
         setServerMuted(false);
         serverMutedRef.current = false;
+        if (speakPerm !== undefined) {
+          canSpeakRef.current = Boolean(speakPerm);
+          setCanSpeak(Boolean(speakPerm));
+        }
+        void restoreLiveKitRights({ publish: true });
       }
     };
 
@@ -1910,6 +2160,27 @@ export function useServerVoice(socket) {
         setServerDeafened(false);
         serverDeafenedRef.current = false;
         applyRemoteDeafen(false);
+        void restoreLiveKitRights({ subscribe: true, publish: !serverMutedRef.current });
+      }
+    };
+
+    // Permission change while in voice (role / channel edit): SPEAK / STREAM follow.
+    const onRights = ({ channelId, canSpeak: speakNow, canStream: streamNow, canRequestToSpeak: requestNow } = {}) => {
+      if (!channelId || channelId !== activeChannelIdRef.current) return;
+      if (streamNow !== undefined) {
+        canStreamRef.current = Boolean(streamNow);
+        setCanStream(Boolean(streamNow));
+        if (!streamNow) {
+          stopCameraRef.current?.();
+          stopScreenShareRef.current?.();
+        }
+      }
+      if (requestNow !== undefined) setCanRequestToSpeak(Boolean(requestNow));
+      if (speakNow !== undefined && !serverMutedRef.current) {
+        canSpeakRef.current = Boolean(speakNow);
+        setCanSpeak(Boolean(speakNow));
+        if (!speakNow) applyLocalMute(true);
+        else void restoreLiveKitRights({ publish: true });
       }
     };
 
@@ -1952,6 +2223,11 @@ export function useServerVoice(socket) {
       const isJoinContext =
         Boolean(channelId) &&
         (!activeChannelIdRef.current || String(channelId) === String(activeChannelIdRef.current));
+      const waiter = joinedTokenWaiterRef.current;
+      if (isJoinContext && waiter && String(waiter.channelId) === String(channelId)) {
+        joinedTokenWaiterRef.current = null;
+        waiter.resolve(null);
+      }
       if (code === "RULES_REQUIRED") {
         window.dispatchEvent(new CustomEvent("descall:server-rules-required"));
         if (isJoinContext) cleanupAll();
@@ -2093,7 +2369,7 @@ export function useServerVoice(socket) {
       );
     };
 
-    const onStageRole = ({ channelId, stageRole: role } = {}) => {
+    const onStageRole = ({ channelId, stageRole: role, serverMuted: stillMuted } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !role) return;
       stageRoleRef.current = role;
       setStageRole(role);
@@ -2101,8 +2377,9 @@ export function useServerVoice(socket) {
       const nextCanSpeak = role === "speaker";
       canSpeakRef.current = nextCanSpeak;
       setCanSpeak(nextCanSpeak);
-      setServerMuted(false);
-      serverMutedRef.current = false;
+      // A server mute stays in place across a promotion (servers from 2026-11-15 say so).
+      setServerMuted(Boolean(stillMuted));
+      serverMutedRef.current = Boolean(stillMuted);
       if (!nextCanSpeak) {
         applyLocalMute(true);
         stopCameraRef.current?.();
@@ -2140,6 +2417,7 @@ export function useServerVoice(socket) {
     socket.on("server:voice:camera:stopped", onCameraStopped);
     socket.on("server:voice:stage-state", onStageState);
     socket.on("server:voice:stage-role", onStageRole);
+    socket.on("server:voice:rights", onRights);
 
     return () => {
       socket.off("server:voice:joined", onJoined);
@@ -2163,6 +2441,7 @@ export function useServerVoice(socket) {
       socket.off("server:voice:camera:stopped", onCameraStopped);
       socket.off("server:voice:stage-state", onStageState);
       socket.off("server:voice:stage-role", onStageRole);
+      socket.off("server:voice:rights", onRights);
     };
   }, [
     applyLocalMute,
@@ -2174,6 +2453,7 @@ export function useServerVoice(socket) {
     getLiveKitToken,
     offerToPeer,
     removeUserFromVoiceStates,
+    restoreLiveKitRights,
     setupPc,
     socket,
   ]);
@@ -2238,6 +2518,8 @@ export function useServerVoice(socket) {
     remoteStreams,
     isScreenSharing,
     screenStream,
+    /** iOS broadcast: { phase: idle|preparing|picker|live|stopping, startedAt, error }. */
+    nativeScreenShare: nativeShare,
     isCameraOn,
     cameraStream,
     channelType,

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
 import { formatAppDateTime } from "../../lib/datetime";
+import { copyText } from "../../lib/copyText.js";
 import { AlertTriangle, Check, Copy, RefreshCw, Search, X, Users, EyeOff, RotateCcw } from "../ui/Icon.jsx";
 import OverlayPortal from "../ui/OverlayPortal.jsx";
 import "../../styles/admin-errors.css";
@@ -97,13 +98,9 @@ function Detail({ fp, t, locale, onClose, onChanged }) {
   const g = data?.group;
   const ev = data?.events?.[0];
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(`${ev?.message || ""}\n\n${ev?.stack || ""}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard blocked */
-    }
+    if (!(await copyText(`${ev?.message || ""}\n\n${ev?.stack || ""}`))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

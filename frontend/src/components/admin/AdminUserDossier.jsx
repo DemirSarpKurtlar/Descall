@@ -1,78 +1,122 @@
+/**
+ * Yönetici Paneli › Kullanıcı dosyası (remake, owner-approved Draft A, Nov 2026).
+ * One page for who the account is: hero (risk, Descall+, status chips, five
+ * stat tiles), grouped actions (Moderasyon / Hesap / Veri / Daha fazla), and
+ * tabs: Genel bakış, Zaman çizelgesi, Bağlantılı hesaplar, Topluluklar,
+ * Etkinlik, Cüzdan ve abonelik, Şikayet ve moderasyon, Notlar.
+ * Summary: GET /admin/people/:id/dossier; heavy tabs load on their own
+ * (/dossier/<section>). Every action is a dialog from dossier/UserActionDialogs.jsx
+ * (ban = BanDialog). Never shows message text or raw IP addresses.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertTriangle, Ban, Clock, Coins, Flag, Globe, History, Lock, LockOpen,
-  Download, LogOut, Monitor, RefreshCw, Shield, Smartphone, Timer, UserX,
-  Wallet, Eye,
+  AlertTriangle, Award, Ban, Coins, Crown, Download, Eye, Gamepad2, Gift, Globe, History, Lock, LogOut, Megaphone,
+  MessageCircle, MoreHorizontal, RefreshCw, ScrollText, Server, ShieldCheck, Timer, UserGear, UserX, X,
 } from "../ui/Icon.jsx";
 import UserLens from "./UserLens.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { saveJsonFile } from "../../lib/saveFile";
+import { getUser } from "../../lib/storage";
 import { Avatar } from "../ui/Avatar";
-import RippleButton from "../ui/RippleButton";
-import { useLocale } from "../../context/LocaleContext";
-import { formatAppDateTime } from "../../lib/datetime";
-import { formatNumber } from "../../i18n/format.js";
 import { SkeletonLine } from "../ui/Skeleton";
-import BanDialog from "./BanDialog.jsx";
+import { useLocale } from "../../context/LocaleContext";
+import { useAdminPerms } from "./dossier/adminPerms.js";
+import DossierMenu from "./dossier/DossierMenu.jsx";
+import { UserActionHost } from "./dossier/UserActionDialogs.jsx";
+import {
+  ActivityCard, ActivityTab, CommunitiesTab, IdentityCard, LinkedTab, ModerationTab, NotesCard, NotesTab, RiskCard,
+  SessionsCard, TimelineTab, WalletCard, WalletTab,
+} from "./dossier/DossierPanels.jsx";
+import { DOSSIER_TABS, actionAllowed, errorKey, moreMenuItems, riskTone } from "./dossier/dossierModel.js";
+import { compact, dayWhen, num, shortWhen, voiceText } from "./dossier/dossierFormat.js";
+import "../../styles/admin-dossier.css";
+
+const enc = encodeURIComponent;
 
 function sourceLabel(key, t) {
-  if (!key) return t("common.unknown");
+  if (!key) return null;
   const map = {
-    google_ads: t("admin.googleAds"),
-    google_organic: t("admin.googleOrganic"),
-    discord: t("admin.discord"),
-    reddit: t("admin.reddit"),
-    youtube: t("admin.youtube"),
-    instagram: t("admin.instagram"),
-    twitter: t("admin.twitter"),
-    referral: t("admin.referral"),
-    direct: t("admin.direct"),
-    other: t("admin.other"),
+    google_ads: "admin.googleAds",
+    google_organic: "admin.googleOrganic",
+    discord: "admin.discord",
+    reddit: "admin.reddit",
+    youtube: "admin.youtube",
+    instagram: "admin.instagram",
+    twitter: "admin.twitter",
+    referral: "admin.referral",
+    direct: "admin.direct",
+    other: "admin.other",
   };
-  return map[key] || key;
+  return map[key] ? t(map[key]) : key;
 }
 
-function authLabel(key, t) {
-  if (key === "google") return t("admin.googleAuth");
-  if (key === "email") return t("admin.emailAuth");
-  return t("admin.otherAuth");
+const EMPTY_SECTION = Object.freeze({ data: null, error: null, loading: false });
+
+/** One lazily loaded dossier tab; kept until the user or the refresh epoch changes. */
+function useLazySection(userId, section, enabled, epoch) {
+  const [state, setState] = useState(EMPTY_SECTION);
+  const owner = useRef(userId);
+  const loaded = useRef("");
+  const load = useCallback(async () => {
+    if (!userId) return;
+    const uid = userId;
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const data = await adminFetch(`/people/${enc(uid)}/dossier/${section}`);
+      if (owner.current === uid) setState({ data, error: null, loading: false });
+    } catch (error) {
+      if (owner.current === uid) setState({ data: null, error, loading: false });
+    }
+  }, [userId, section]);
+  useEffect(() => {
+    if (owner.current !== userId) {
+      owner.current = userId;
+      loaded.current = "";
+      setState(EMPTY_SECTION);
+    }
+    const key = `${userId}:${epoch}`;
+    if (!enabled || loaded.current === key) return;
+    loaded.current = key;
+    load();
+  }, [enabled, epoch, load, userId]);
+  return [state, load];
 }
 
-function when(value, locale, t) {
-  if (!value) return t("admin.notYet");
-  return formatAppDateTime(value, locale) || String(value);
-}
-
-function riskTone(level) {
-  if (level === "critical") return "critical";
-  if (level === "high") return "high";
-  if (level === "watch") return "watch";
-  return "low";
-}
-
-export default function AdminUserDossier({ userId, onRefreshInbox, highlightReportId = null, intent = null }) {
+export default function AdminUserDossier({ userId, onRefreshInbox, highlightReportId = null, intent = null, onOpenPerson }) {
   const { t, locale } = useLocale();
+  const perms = useAdminPerms();
+  const can = perms.can;
   const [dossier, setDossier] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [ok, setOk] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [tab, setTab] = useState("overview");
   const [action, setAction] = useState(null);
   const [lensOpen, setLensOpen] = useState(false);
-  // Ban opens the shared ban dialog (draft 5-admin); timeout stays inline below.
-  const [banOpen, setBanOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const walletBtnRef = useRef(null);
-  const [walletHint, setWalletHint] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [epoch, setEpoch] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const [notes, setNotes] = useState({ ready: null, list: [], error: "" });
+  const moreRef = useRef(null);
   const usedIntent = useRef(null);
+  const toastTimer = useRef(null);
+  const me = getUser()?.id || null;
+
+  const say = useCallback((text, tone = "ok") => {
+    setToast({ text, tone });
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const load = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     setError("");
     try {
-      const data = await adminFetch(`/people/${userId}/dossier`);
+      const data = await adminFetch(`/people/${enc(userId)}/dossier`);
       setDossier(data);
+      setNotes((n) => ({ ...n, ready: data?.notes?.ready ?? null, list: data?.notes?.ready === false ? [] : n.list.length && n.userId === userId ? n.list : data?.notes?.latest || [], userId }));
     } catch (err) {
       setError(err.message || t("admin.dossierLoadError"));
       setDossier(null);
@@ -81,73 +125,185 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
     }
   }, [userId, t]);
 
-  // Shortcut from "Şüpheli Davranışlar": open the matching tool pre-selected. Nothing runs by itself.
   useEffect(() => {
-    if (!intent || !dossier || usedIntent.current === intent.at) return undefined;
-    usedIntent.current = intent.at;
-    if (intent.intent === "timeout") setAction("timeout");
-    if (intent.intent === "ban") setBanOpen(true);
-    if (intent.intent === "freeze") {
-      setWalletHint(true);
-      walletBtnRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
-      walletBtnRef.current?.focus?.({ preventScroll: true });
-    }
-    return undefined;
-  }, [intent, dossier]);
+    setTab("overview");
+    setAction(null);
+    setNotes({ ready: null, list: [], error: "" });
+    load().catch(() => {});
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
+    setEpoch((e) => e + 1);
     load().catch(() => {});
   }, [load]);
 
-  const act = async (fn, success) => {
-    setBusy(true);
-    setError("");
-    setOk("");
+  // Shortcut from "Şüpheli Davranışlar": open the matching dialog. Nothing runs by itself.
+  useEffect(() => {
+    if (!intent || !dossier || usedIntent.current === intent.at) return;
+    usedIntent.current = intent.at;
+    if (intent.intent === "timeout") setAction("timeout");
+    if (intent.intent === "ban") setAction("ban");
+    if (intent.intent === "freeze") setAction("freeze");
+  }, [intent, dossier]);
+
+  const wantTimeline = tab === "timeline";
+  const [timeline, loadTimeline] = useLazySection(userId, "timeline", wantTimeline || Boolean(dossier), epoch);
+  const [linked, loadLinked] = useLazySection(userId, "linked", tab === "linked", epoch);
+  const [communities, loadCommunities] = useLazySection(userId, "communities", tab === "communities", epoch);
+  const [activity, loadActivity] = useLazySection(userId, "activity", tab === "activity" || tab === "overview", epoch);
+  const [wallet, loadWallet] = useLazySection(userId, "wallet", tab === "wallet", epoch);
+
+  // Full notes list (the summary carries the latest two).
+  useEffect(() => {
+    if (!userId || !(tab === "notes" || tab === "overview")) return undefined;
+    let alive = true;
+    adminFetch(`/people/${enc(userId)}/notes`)
+      .then((d) => alive && setNotes((n) => ({ ...n, ready: Boolean(d?.ready), list: Array.isArray(d?.notes) ? d.notes : [], userId })))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [userId, tab, epoch]);
+
+  const addNote = useCallback(
+    async (body) => {
+      try {
+        const d = await adminFetch(`/people/${enc(userId)}/notes`, { method: "POST", body: JSON.stringify({ body: body.trim() }) });
+        setNotes((n) => ({ ...n, ready: true, error: "", list: [d.note, ...n.list] }));
+        return true;
+      } catch (e) {
+        const k = errorKey(e);
+        setNotes((n) => ({ ...n, ready: e?.code === "NOTES_UNAVAILABLE" ? false : n.ready, error: k ? t(k) : e?.message || t("dossier.err_generic") }));
+        return false;
+      }
+    },
+    [userId, t]
+  );
+  const deleteNote = useCallback(
+    async (note) => {
+      try {
+        await adminFetch(`/people/${enc(userId)}/notes/${enc(note.id)}`, { method: "DELETE" });
+        setNotes((n) => ({ ...n, error: "", list: n.list.filter((x) => x.id !== note.id) }));
+      } catch (e) {
+        const k = errorKey(e);
+        setNotes((n) => ({ ...n, error: k ? t(k) : e?.message || t("dossier.err_generic") }));
+      }
+    },
+    [userId, t]
+  );
+
+  const dismissReport = useCallback(
+    async (report) => {
+      try {
+        await adminFetch(`/reports/${enc(report.id)}/dismiss`, { method: "POST", body: "{}" });
+        say(t("dossier.done_dismiss"));
+        load();
+        onRefreshInbox?.();
+      } catch (e) {
+        say(e?.message || t("dossier.err_generic"), "bad");
+      }
+    },
+    [load, onRefreshInbox, say, t]
+  );
+
+  const doExport = async () => {
+    if (exporting) return;
+    setExporting(true);
     try {
-      await fn();
-      setOk(success);
-      setAction(null);
-      setMessage("");
-      await load();
-      onRefreshInbox?.();
-    } catch (err) {
-      setError(err.message || t("admin.dossierActionFailed"));
+      // KVKK veri dışa aktarma (3.6.0): the same file the account owner gets.
+      const data = await adminFetch(`/people/${userId}/export`);
+      const day = new Date().toISOString().slice(0, 10);
+      await saveJsonFile(t("adminx.dossier.exportFile", { username: data?.account?.username || userId, day }), data);
+      say(t("admin.dataExported"));
+    } catch (e) {
+      say(e?.message || t("dossier.err_generic"), "bad");
     } finally {
-      setBusy(false);
+      setExporting(false);
     }
   };
 
   const identity = dossier?.identity || {};
-  const signup = dossier?.signup || {};
-  const risk = dossier?.risk || { score: 0, level: "low", flags: [] };
-  const wallet = dossier?.wallet || { balance: 0, frozen: false, ledger: [] };
-  const reports = dossier?.reports || { against: [], filed: [], openCount: 0 };
-  const moderation = dossier?.moderation || { history: [] };
+  const stats = dossier?.stats || {};
+  const risk = dossier?.risk || { score: 0, level: "low", reasons: [] };
+  const mod = dossier?.moderation || {};
+  const sub = dossier?.subscription || null;
+  const reports = dossier?.reports || { against: [], openCount: 0 };
+  const online = identity.presence ? identity.presence.status !== "offline" : null;
+  const user = useMemo(
+    () => (dossier ? { id: identity.id || userId, username: identity.username, displayName: identity.displayName, avatarUrl: identity.avatarUrl, isAdmin: identity.isAdmin, isOwner: identity.isOwner } : null),
+    [dossier, identity.id, identity.username, identity.displayName, identity.avatarUrl, identity.isAdmin, identity.isOwner, userId]
+  );
 
-  const flagLabels = useMemo(() => ({
-    repeat_reports: t("admin.riskRepeatReports"),
-    open_reports: t("admin.riskOpenReports"),
-    report_history: t("admin.riskReportHistory"),
-    banned: t("admin.riskBanned"),
-    timeout: t("admin.riskTimeout"),
-    suspicious_signup: t("admin.riskSuspicious"),
-    prior_sanctions: t("admin.riskSanctions"),
-  }), [t]);
+  const open = (id) => {
+    setMoreOpen(false);
+    if (id === "lens") return setLensOpen(true);
+    if (id === "export") return doExport();
+    if (id === "dmReview") return perms.navigate?.("dmReview", { query: identity.username || "" });
+    if (id === "serverReview") return perms.navigate?.("serverReview", { query: identity.username ? `@${identity.username}` : "" });
+    return setAction(id);
+  };
+  const allowed = (id) => actionAllowed(id, perms) && (id !== "dmReview" && id !== "serverReview" ? true : Boolean(perms.navigate));
+  const openPerson = (id) => (onOpenPerson ? onOpenPerson(id) : perms.navigate?.("people", { userId: id }));
+
+  const moreItems = useMemo(() => {
+    const meta = {
+      gift: { icon: Gift, sub: t("dossier.m_giftSub") },
+      premium: { icon: Crown, sub: sub?.active ? t("dossier.m_premiumSubActive") : t("dossier.m_premiumSub") },
+      credits: { icon: Gamepad2, sub: t("dossier.m_creditsSub") },
+      popup: { icon: Megaphone, sub: online ? t("dossier.m_popupSubOnline") : t("dossier.m_popupSubOffline") },
+      dmReview: { icon: MessageCircle, sub: t("dossier.m_dmReviewSub") },
+      serverReview: { icon: Server, sub: t("dossier.m_serverReviewSub") },
+      accessBan: { icon: Lock, sub: t("dossier.m_accessBanSub") },
+      audit: { icon: ScrollText, sub: t("dossier.m_auditSub") },
+      untimeout: { icon: Timer, sub: t("dossier.m_untimeoutSub") },
+      unban: { icon: ShieldCheck, sub: t("dossier.m_unbanSub") },
+      makeAdmin: { icon: UserGear, sub: identity.isAdmin ? t("dossier.m_removeAdminSub") : t("dossier.m_makeAdminSub"), danger: identity.isAdmin },
+    };
+    return moreMenuItems({ ...perms, identity, moderation: mod })
+      .filter((id) => id === "sep" || allowed(id))
+      .filter((id, i, arr) => id !== "sep" || (i > 0 && arr[i - 1] !== "sep" && i < arr.length - 1))
+      .map((id) =>
+        id === "sep"
+          ? "sep"
+          : {
+              id,
+              label: id === "makeAdmin" ? (identity.isAdmin ? t("dossier.removeAdmin") : t("dossier.makeAdmin")) : t(`dossier.m_${id}`),
+              ...meta[id],
+              onSelect: () => open(id),
+            }
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perms, identity, mod, sub, online, t]);
 
   if (!userId) return null;
 
+  const tabCount = {
+    timeline: timeline.data?.items?.length || null,
+    linked: stats.linked || null,
+    communities: stats.servers != null || stats.groups != null ? (stats.servers || 0) + (stats.groups || 0) || null : null,
+    moderation: reports.openCount || null,
+    notes: notes.list.length || dossier?.notes?.count || null,
+  };
+  const presence = identity.presence?.status || "offline";
+  const age = identity.accountAgeDays;
+
   return (
-    <div className="dossier">
+    <div className="dsr" data-testid="dsr">
       {loading && !dossier ? (
-        <div className="dossier-skeleton" aria-busy="true">
-          <SkeletonLine width="40%" height={22} />
-          <SkeletonLine width="70%" height={14} />
-          <div className="dossier-grid">
+        <div className="dsr-skel" aria-busy="true">
+          <div className="dsr-hero">
+            <SkeletonLine width={76} height={76} />
+            <div style={{ flex: 1 }}>
+              <SkeletonLine width="38%" height={22} />
+              <SkeletonLine width="62%" height={14} />
+            </div>
+          </div>
+          <div className="dsr-grid">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="dossier-card">
-                <SkeletonLine width="32%" height={10} />
-                <SkeletonLine width="78%" height={14} />
-                <SkeletonLine width="54%" height={14} />
+              <div key={i} className="dsr-card">
+                <SkeletonLine width="34%" height={12} />
+                <SkeletonLine width="80%" height={14} />
+                <SkeletonLine width="56%" height={14} />
               </div>
             ))}
           </div>
@@ -155,291 +311,230 @@ export default function AdminUserDossier({ userId, onRefreshInbox, highlightRepo
       ) : null}
 
       {error ? (
-        <div className="admin-error-banner">
-          <AlertTriangle size={16} /> {error}
+        <div className="dsr-warn is-bad" role="alert">
+          <AlertTriangle size={16} />
+          <span>{error}</span>
+          <button type="button" className="dsr-btn is-sm" onClick={() => load()}>
+            {t("dossier.retry")}
+          </button>
         </div>
       ) : null}
-      {ok ? <div className="dossier-ok">{ok}</div> : null}
 
       {dossier ? (
         <>
-          <header className="dossier-hero">
-            <div className="dossier-hero-id">
-              <Avatar
-                name={identity.displayName || identity.username || "?"}
-                size={56}
-                user={{ avatarUrl: identity.avatarUrl, username: identity.username, displayName: identity.displayName }}
-              />
-              <div>
-                <div className="dossier-name-row">
-                  <h2>{identity.displayName || identity.username}</h2>
-                  <span className={`dossier-risk dossier-risk-${riskTone(risk.level)}`}>
-                    {t(`admin.risk.${risk.level}`)} · {risk.score}
+          <header className="dsr-hero" data-testid="dsr-hero">
+            <div className="dsr-av">
+              <Avatar name={identity.displayName || identity.username || "?"} size={76} user={{ avatarUrl: identity.avatarUrl, username: identity.username, displayName: identity.displayName }} />
+              <span className={`dsr-dot is-${presence}`} title={t(`dossier.presence_${presence}`)} aria-label={t(`dossier.presence_${presence}`)} />
+            </div>
+            <div className="dsr-hid">
+              <div className="dsr-hname">
+                <h2>{identity.displayName || identity.username}</h2>
+                <span className={`dsr-chip c-${riskTone(risk.level)}`}>{t("dossier.riskChip", { level: t(`dossier.risk_${risk.level}`), score: risk.score })}</span>
+                {sub?.active ? <span className="dsr-chip c-blue">{t(`dossier.plan_${sub.plan || "plus"}`)}</span> : null}
+                {identity.emailVerified ? <span className="dsr-chip c-gray">{t("dossier.verifiedEmail")}</span> : null}
+                {mod.banned ? <span className="dsr-chip c-red">{t("dossier.banned")}</span> : null}
+                {mod.timeout ? <span className="dsr-chip c-gold">{t("dossier.timedOut")}</span> : null}
+                {dossier.wallet?.frozen ? <span className="dsr-chip c-violet">{t("dossier.walletFrozenChip")}</span> : null}
+                {identity.isAdmin ? <span className="dsr-chip c-blue">{t("admin.adminBadge")}</span> : null}
+                {identity.pendingDeletion ? <span className="dsr-chip c-red">{t("dossier.pendingDeletion")}</span> : null}
+              </div>
+              <div className="dsr-hmeta">
+                <span>@{identity.username}</span>
+                <span>
+                  <History size={14} />
+                  {age != null
+                    ? t("dossier.signupLine", { when: dayWhen(dossier.signup?.at || identity.createdAt, locale), days: num(age, locale) })
+                    : dayWhen(identity.createdAt, locale)}
+                </span>
+                <span>{online ? t("dossier.onlineNow") : t("dossier.lastSeen", { when: identity.lastSeen ? shortWhen(identity.lastSeen, locale) : t("dossier.never") })}</span>
+                {dossier.signup?.country || dossier.signup?.firstSource ? (
+                  <span>
+                    <Globe size={14} />
+                    {[dossier.signup?.country, sourceLabel(dossier.signup?.firstSource, t)].filter(Boolean).join(" · ")}
                   </span>
-                </div>
-                <p className="muted">
-                  @{identity.username}
-                  {identity.email ? ` · ${identity.email}` : ""}
-                  {identity.isAdmin ? ` · ${t("admin.adminBadge")}` : ""}
-                </p>
-                <p className="dossier-presence">
-                  <span className={`dossier-dot ${identity.presence?.status === "offline" ? "off" : "on"}`} />
-                  {identity.presence?.status === "offline"
-                    ? `${t("admin.lastSeen")}: ${when(identity.lastSeen, locale, t)}`
-                    : t("Online Now")}
-                </p>
+                ) : null}
               </div>
             </div>
-            <div className="dossier-hero-actions">
-              <RippleButton type="button" className="refresh-btn" onClick={() => load()} disabled={busy}>
-                <RefreshCw size={14} className={loading ? "spin" : ""} />
-                {t("common.refresh")}
-              </RippleButton>
-              <button type="button" className="dossier-act amber" disabled={busy} onClick={() => setAction("timeout")}>
-                <Timer size={14} /> {t("Timeout")}
+            <div className="dsr-stats">
+              <button type="button" className="dsr-st" onClick={() => setTab("moderation")}>
+                <b className="tnum">{num(stats.openReports, locale)}</b>
+                <span>{t("dossier.statReports")}</span>
               </button>
-              <button
-                type="button"
-                className="dossier-act red"
-                disabled={busy}
-                onClick={() => {
-                  setAction(null);
-                  setBanOpen(true);
-                }}
-              >
-                <Ban size={14} /> {t("Ban")}
+              <button type="button" className="dsr-st" onClick={() => (allowed("sessions") ? setAction("sessions") : null)}>
+                <b className="tnum">{num(stats.devices, locale)}</b>
+                <span>{t("dossier.statDevices")}</span>
               </button>
-              <button
-                type="button"
-                className="dossier-act slate"
-                disabled={busy}
-                onClick={() =>
-                  act(
-                    () => adminFetch(`/users/${userId}/kick`, { method: "POST", body: JSON.stringify({}) }),
-                    t("User kicked")
-                  )
-                }
-              >
-                <UserX size={14} /> {t("Kick")}
+              <button type="button" className="dsr-st" onClick={() => setTab("linked")}>
+                <b className="tnum">{num(stats.linked, locale)}</b>
+                <span>{t("dossier.statLinked")}</span>
               </button>
-              <button
-                type="button"
-                ref={walletBtnRef}
-                className={`dossier-act ${wallet.frozen ? "green" : "violet"}${walletHint ? " is-hinted" : ""}`}
-                disabled={busy}
-                onClick={() =>
-                  act(
-                    () =>
-                      adminFetch(`/people/${userId}/wallet-freeze`, {
-                        method: "POST",
-                        body: JSON.stringify({ frozen: !wallet.frozen }),
-                      }),
-                    wallet.frozen ? t("admin.walletUnfrozen") : t("admin.walletFrozen")
-                  )
-                }
-              >
-                {wallet.frozen ? <LockOpen size={14} /> : <Lock size={14} />}
-                {wallet.frozen ? t("admin.unfreezeWallet") : t("admin.freezeWallet")}
+              <button type="button" className="dsr-st" onClick={() => setTab("activity")}>
+                <b className="tnum">{voiceText(stats.voiceSeconds30d, t)}</b>
+                <span>{t("dossier.statVoice")}</span>
               </button>
-              <button
-                type="button"
-                className="dossier-act slate"
-                disabled={busy || identity.isAdmin}
-                onClick={() =>
-                  act(
-                    () => adminFetch(`/people/${userId}/revoke-sessions`, { method: "POST", body: JSON.stringify({}) }),
-                    t("admin.sessionsRevoked")
-                  )
-                }
-              >
-                <LogOut size={14} /> {t("admin.signOutSessions")}
-              </button>
-              <button
-                type="button"
-                className="dossier-act slate"
-                disabled={busy}
-                onClick={() =>
-                  act(async () => {
-                    // KVKK veri dışa aktarma (3.6.0): the same file the account owner gets.
-                    const data = await adminFetch(`/people/${userId}/export`);
-                    const day = new Date().toISOString().slice(0, 10);
-                    await saveJsonFile(t("adminx.dossier.exportFile", { username: data?.account?.username || userId, day }), data);
-                  }, t("admin.dataExported"))
-                }
-              >
-                <Download size={14} /> {t("admin.dataExport")}
-              </button>
-              <button type="button" className="dossier-act slate" onClick={() => setLensOpen(true)}>
-                <Eye size={14} /> {t("admin.lensOpen")}
+              <button type="button" className="dsr-st" onClick={() => setTab("wallet")}>
+                <b className="tnum">{compact(stats.descoin, locale)}</b>
+                <span>DesCoin</span>
               </button>
             </div>
           </header>
 
-          {risk.flags?.length ? (
-            <div className="dossier-flags">
-              {risk.flags.map((f) => (
-                <span key={f} className="dossier-flag">{flagLabels[f] || f}</span>
-              ))}
-            </div>
-          ) : null}
-
-          {action === "timeout" ? (
-            <div className="dossier-sanction">
-              <strong>{t("Timeout")}</strong>
-              <input
-                className="admin-input"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={t("Optional message the user will see")}
-              />
-              <div className="dossier-sanction-row">
-                <RippleButton
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    act(
-                      () =>
-                        adminFetch(`/users/${userId}/timeout`, {
-                          method: "POST",
-                          body: JSON.stringify({
-                            category: reports.against[0]?.reason || "other",
-                            message: message.trim() || undefined,
-                            presetId: "1h",
-                          }),
-                        }),
-                      t("User timed out")
-                    )
-                  }
-                >
-                  {t("Timeout")} · 1h
-                </RippleButton>
-                <button type="button" className="dossier-act slate" onClick={() => setAction(null)}>
-                  {t("common.cancel")}
-                </button>
+          <div className="dsr-acts" role="toolbar" aria-label={t("dossier.actions")}>
+            {allowed("timeout") || allowed("ban") || allowed("kick") ? (
+              <div className="dsr-grp">
+                <span className="dsr-gl">{t("dossier.g_moderation")}</span>
+                {allowed("timeout") ? (
+                  <button type="button" className="dsr-ab is-amber" onClick={() => open(mod.timeout ? "untimeout" : "timeout")}>
+                    <Timer size={16} />
+                    {mod.timeout ? t("dossier.untimeoutShort") : t("dossier.a_timeout")}
+                  </button>
+                ) : null}
+                {allowed("ban") ? (
+                  <button type="button" className="dsr-ab is-red" onClick={() => open(mod.banned ? "unban" : "ban")}>
+                    <Ban size={16} />
+                    {mod.banned ? t("dossier.unbanShort") : t("dossier.a_ban")}
+                  </button>
+                ) : null}
+                {allowed("kick") ? (
+                  <button type="button" className="dsr-ab" onClick={() => open("kick")}>
+                    <UserX size={16} />
+                    {t("dossier.a_kick")}
+                  </button>
+                ) : null}
               </div>
+            ) : null}
+            <div className="dsr-grp">
+              <span className="dsr-gl">{t("dossier.g_account")}</span>
+              {allowed("sessions") ? (
+                <button type="button" className="dsr-ab" onClick={() => open("sessions")}>
+                  <LogOut size={16} />
+                  {t("dossier.a_sessions")}
+                </button>
+              ) : null}
+              {allowed("wallet") || allowed("freeze") ? (
+                <button type="button" className="dsr-ab is-violet" onClick={() => open(allowed("wallet") ? "wallet" : "freeze")}>
+                  <Coins size={16} />
+                  {t("dossier.a_wallet")}
+                </button>
+              ) : null}
+              {allowed("badges") ? (
+                <button type="button" className="dsr-ab" onClick={() => open("badges")}>
+                  <Award size={16} />
+                  {t("dossier.a_badge")}
+                </button>
+              ) : null}
+            </div>
+            <div className="dsr-grp">
+              <span className="dsr-gl">{t("dossier.g_data")}</span>
+              <button type="button" className="dsr-ab is-blue" onClick={() => open("lens")}>
+                <Eye size={16} />
+                {t("dossier.a_lens")}
+              </button>
+              <button type="button" className="dsr-ab" onClick={() => open("export")} disabled={exporting}>
+                <Download size={16} />
+                {t("dossier.a_export")}
+              </button>
+            </div>
+            <div className="dsr-acts-end">
+              {moreItems.length ? (
+                <button
+                  type="button"
+                  ref={moreRef}
+                  className={`dsr-ab is-more${moreOpen ? " is-open" : ""}`}
+                  aria-haspopup="menu"
+                  aria-expanded={moreOpen}
+                  onClick={() => setMoreOpen((v) => !v)}
+                  data-testid="dsr-more"
+                >
+                  <MoreHorizontal size={16} />
+                  {t("dossier.more")}
+                </button>
+              ) : null}
+              <button type="button" className="dsr-ab is-icon" onClick={refresh} aria-label={t("common.refresh")} title={t("common.refresh")}>
+                <RefreshCw size={16} className={loading ? "spin" : ""} />
+              </button>
+            </div>
+          </div>
+          <DossierMenu open={moreOpen} anchorRef={moreRef} onClose={() => setMoreOpen(false)} items={moreItems} label={t("dossier.more")} testId="dsr-more-menu" />
+
+          <nav className="dsr-tabs" role="tablist" aria-label={t("dossier.title")}>
+            {DOSSIER_TABS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={`dsr-tab${tab === id ? " is-on" : ""}`}
+                onClick={() => setTab(id)}
+                data-testid={`dsr-tab-${id}`}
+              >
+                {t(`dossier.tab_${id}`)}
+                {tabCount[id] ? <em className={`tnum${id === "moderation" ? " is-red" : ""}`}>{num(tabCount[id], locale)}</em> : null}
+              </button>
+            ))}
+          </nav>
+
+          {tab === "overview" ? (
+            <div className="dsr-grid" data-testid="dsr-overview">
+              <RiskCard risk={risk} />
+              <SessionsCard sessions={dossier.sessions} onManage={allowed("sessions") ? () => open("sessions") : null} />
+              <NotesCard notes={notes} onAll={() => setTab("notes")} onAdd={addNote} />
+              <IdentityCard dossier={dossier} sourceLabel={(k) => sourceLabel(k, t)} />
+              <ActivityCard activity={activity} onMore={() => setTab("activity")} />
+              <WalletCard dossier={dossier} />
             </div>
           ) : null}
-
-          <div className="dossier-grid">
-            <section className="dossier-card">
-              <h3><Globe size={15} /> {t("admin.dossierIdentity")}</h3>
-              <dl>
-                <div><dt>{t("admin.signupDate")}</dt><dd>{when(signup.at || identity.createdAt, locale, t)}</dd></div>
-                <div><dt>{t("admin.authMethod")}</dt><dd>{authLabel(signup.authMethod, t)}</dd></div>
-                <div><dt>{t("admin.firstSource")}</dt><dd>{sourceLabel(signup.firstSource, t)}</dd></div>
-                <div><dt>{t("admin.campaign")}</dt><dd>{signup.campaign || t("common.unknown")}</dd></div>
-                <div><dt>{t("admin.device")}</dt><dd>{[signup.device, signup.os, signup.browser].filter(Boolean).join(" · ") || t("common.unknown")}</dd></div>
-                <div><dt>{t("admin.country")}</dt><dd>{signup.country || t("common.unknown")}</dd></div>
-              </dl>
-            </section>
-
-            <section className="dossier-card">
-              <h3><Monitor size={15} /> {t("admin.dossierSessions")}</h3>
-              <p className="muted">{t("admin.liveSockets", { count: dossier.sockets?.length || 0 })}</p>
-              {(dossier.sessions || []).length === 0 ? (
-                <p className="muted">{t("admin.noSessions")}</p>
-              ) : (
-                <ul className="dossier-list">
-                  {(dossier.sessions || []).map((s) => (
-                    <li key={s.id}>
-                      <Smartphone size={13} />
-                      <div>
-                        <strong>{s.device || t("common.unknown")}</strong>
-                        <span>{s.ip || "—"} · {when(s.lastActiveAt || s.createdAt, locale, t)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="dossier-card">
-              <h3><Wallet size={15} /> {t("admin.dossierWallet")}</h3>
-              <p className="dossier-balance">
-                <Coins size={16} /> {formatNumber(wallet.balance || 0, locale)}
-                {wallet.frozen ? <span className="dossier-frozen">{t("admin.frozen")}</span> : null}
-              </p>
-              {(wallet.ledger || []).length === 0 ? (
-                <p className="muted">{t("admin.noLedger")}</p>
-              ) : (
-                <ul className="dossier-list compact">
-                  {wallet.ledger.slice(0, 8).map((row) => (
-                    <li key={row.id}>
-                      <span className={row.amount >= 0 ? "pos" : "neg"}>
-                        {row.amount >= 0 ? "+" : ""}{row.amount}
-                      </span>
-                      <div>
-                        <strong>{row.reason}</strong>
-                        <span>{when(row.created_at, locale, t)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="dossier-card span-2">
-              <h3><Flag size={15} /> {t("admin.dossierReports")} ({reports.openCount || 0} {t("admin.open")})</h3>
-              {(reports.against || []).length === 0 ? (
-                <p className="muted">{t("admin.noReportsAgainst")}</p>
-              ) : (
-                <ul className="dossier-report-list">
-                  {reports.against.map((r) => (
-                    <li key={r.id} className={highlightReportId === r.id ? "hot" : ""}>
-                      <div>
-                        <strong>@{r.reporterUsername || "?"}</strong>
-                        <span className={`st ${r.status}`}>{r.status}</span>
-                        <span className="muted">{r.reasonLabel}</span>
-                      </div>
-                      {r.snippet ? <blockquote>“{r.snippet}”</blockquote> : null}
-                      <span className="muted">{when(r.createdAt, locale, t)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="dossier-card span-2">
-              <h3><History size={15} /> {t("admin.dossierModeration")}</h3>
-              {moderation.banned ? (
-                <p className="dossier-active-ban"><Shield size={14} /> {t("admin.currentlyBanned")}</p>
-              ) : null}
-              {moderation.timeout ? (
-                <p className="dossier-active-to"><Clock size={14} /> {t("admin.currentlyTimedOut")} · {when(moderation.timeout.until, locale, t)}</p>
-              ) : null}
-              {(moderation.history || []).length === 0 ? (
-                <p className="muted">{t("admin.noModHistory")}</p>
-              ) : (
-                <ul className="dossier-list">
-                  {moderation.history.map((h) => (
-                    <li key={h.id}>
-                      <div>
-                        <strong>{h.action_type}</strong>
-                        <span>{h.categoryLabel || h.category} · {h.actorUsername || "—"} · {when(h.created_at, locale, t)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </div>
+          {tab === "timeline" ? <TimelineTab section={timeline} onRetry={loadTimeline} /> : null}
+          {tab === "linked" ? <LinkedTab section={linked} onRetry={loadLinked} onOpenPerson={openPerson} onAction={open} canAccessBan={allowed("accessBan")} /> : null}
+          {tab === "communities" ? (
+            <CommunitiesTab
+              section={communities}
+              onRetry={loadCommunities}
+              canServerReview={allowed("serverReview")}
+              onOpenServer={(s) => perms.navigate?.("serverReview", { query: s.name || "", serverId: s.id })}
+            />
+          ) : null}
+          {tab === "activity" ? <ActivityTab section={activity} onRetry={loadActivity} /> : null}
+          {tab === "wallet" ? <WalletTab section={wallet} onRetry={loadWallet} onAction={open} can={can} /> : null}
+          {tab === "moderation" ? <ModerationTab dossier={dossier} highlightReportId={highlightReportId} onAction={open} onDismiss={dismissReport} can={can} /> : null}
+          {tab === "notes" ? <NotesTab notes={notes} me={me} onAdd={addNote} onDelete={deleteNote} /> : null}
         </>
       ) : null}
+
+      {toast ? (
+        <div className={`dsr-toast${toast.tone === "bad" ? " is-bad" : ""}`} role="status">
+          <span>{toast.text}</span>
+          <button type="button" onClick={() => setToast(null)} aria-label={t("dossier.close")}>
+            <X size={14} />
+          </button>
+        </div>
+      ) : null}
+
       {lensOpen ? <UserLens userId={userId} onClose={() => setLensOpen(false)} /> : null}
-      <BanDialog
-        open={banOpen && Boolean(dossier)}
-        target={dossier ? { ...identity, id: identity.id || userId } : null}
-        reportCount={reports.against.length}
-        deviceCount={Array.isArray(dossier?.sessions) ? dossier.sessions.length : undefined}
-        defaultCategory={reports.against[0]?.reason}
-        onClose={() => setBanOpen(false)}
-        onBanned={({ message: done }) => {
-          setError("");
-          setOk(done);
-          load().catch(() => {});
-          onRefreshInbox?.();
-        }}
-      />
+      {user ? (
+        <UserActionHost
+          action={action}
+          user={user}
+          can={can}
+          context={{
+            sessions: dossier.sessions,
+            subscription: sub,
+            online,
+            reportCount: reports.against?.length || 0,
+            deviceCount: stats.devices,
+            defaultCategory: reports.against?.[0]?.reason,
+          }}
+          onClose={() => setAction(null)}
+          onDone={(message, opts) => {
+            say(message);
+            if (!opts?.keepOpen) setAction(null);
+            load();
+            setEpoch((e) => e + 1);
+            onRefreshInbox?.();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

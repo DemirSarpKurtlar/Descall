@@ -279,8 +279,8 @@ export function MemberBody({ userId }) {
         {sheet === "more" ? (
           <ActionSheet key="more" title={name} onCancel={() => setSheet(null)} cancel={s.giveUp}
             actions={[
-              { t: s.copyId, onClick: async () => { setSheet(null); await copyText(String(m.userId)); toast(s.copied, "success"); } },
-              { t: s.copyName, onClick: async () => { setSheet(null); await copyText(m.username || name); toast(s.copied, "success"); } },
+              { t: s.copyId, onClick: async () => { setSheet(null); if (await copyText(String(m.userId))) toast(s.copied, "success"); } },
+              { t: s.copyName, onClick: async () => { setSheet(null); if (await copyText(m.username || name)) toast(s.copied, "success"); } },
             ]} />
         ) : null}
         {sheet === "kick" ? (

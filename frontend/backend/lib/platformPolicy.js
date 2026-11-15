@@ -15,12 +15,24 @@ const { apiText } = require("./apiError");
  *   groupCreationEnabled  false = no new groups (admins exempt)
  *   registrationEnabled   false = no new accounts (password, Google, Apple); existing log in
  *   maxLoginAttempts      failed password logins per account per minute
+ *   securityLocks         Güvenlik Merkezi emergency locks (registration / dm / readOnly), with expiry
  *
  * Pure decisions over the live config (state.systemConfig) plus an in-memory
  * per-user send history. `now` is injectable for tests.
  */
 
 const MINUTE_MS = 60_000;
+// Güvenlik Merkezi emergency locks (lib/securitySettings.js): an expired lock reads as off.
+const { lockActive } = require("./securitySettings");
+
+/** Güvenlik Merkezi live feed; never breaks a send. */
+function noteRateLimit(userId, kind, cfg, count) {
+  try {
+    require("./securityEvents").note("rate_limit", { userId: userId || null, reason: kind || "message", detail: { kind: kind || "message", limit: Math.floor(num(cfg.maxMessagesPerMinute)) || null, rejected: count } });
+  } catch {
+    /* feed optional */
+  }
+}
 const sendHistory = new Map(); // userId -> number[] (send times, newest last)
 
 const MESSAGES = {
@@ -31,6 +43,7 @@ const MESSAGES = {
   perMinute: "You're sending messages too fast. Wait a moment and try again.",
   groupsOff: "Creating new groups is turned off right now.",
   signupOff: "New sign-ups are turned off right now.",
+  readOnly: "Descall is read-only for a short while. Try again later.",
 };
 
 function num(v, fallback = 0) {
@@ -51,8 +64,8 @@ function block(code, message, retryAfterMs = 0) {
 function checkMessageSend({ config, userId, isAdmin = false, kind, now = Date.now() }) {
   const cfg = config || {};
   if (isAdmin) return { ok: true };
-  if (cfg.chatFrozen) return block("CHAT_FROZEN", MESSAGES.frozen);
-  if (kind === "dm" && cfg.dmEnabled === false) return block("DMS_DISABLED", MESSAGES.dmOff);
+  if (cfg.chatFrozen || lockActive(cfg, "readOnly", now)) return block("CHAT_FROZEN", MESSAGES.frozen);
+  if (kind === "dm" && (cfg.dmEnabled === false || lockActive(cfg, "dm", now))) return block("DMS_DISABLED", MESSAGES.dmOff);
 
   const key = String(userId || "");
   const history = (sendHistory.get(key) || []).filter((t) => now - t < MINUTE_MS);
@@ -62,11 +75,13 @@ function checkMessageSend({ config, userId, isAdmin = false, kind, now = Date.no
   if (gapMs > 0 && last !== null && now - last < gapMs) {
     const wait = gapMs - (now - last);
     const code = num(cfg.slowModeSeconds) * 1000 >= num(cfg.rateLimitGlobalMs) ? "SLOW_MODE" : "RATE_LIMITED";
+    if (code === "RATE_LIMITED") noteRateLimit(key, kind, cfg, 1);
     return block(code, code === "SLOW_MODE" ? MESSAGES.slow(Math.max(1, Math.ceil(wait / 1000))) : MESSAGES.perMinute, wait);
   }
 
   const perMinute = Math.floor(num(cfg.maxMessagesPerMinute));
   if (perMinute > 0 && history.length >= perMinute) {
+    noteRateLimit(key, kind, cfg, 1);
     return block("RATE_LIMITED", MESSAGES.perMinute, MINUTE_MS - (now - history[0]));
   }
 
@@ -75,14 +90,34 @@ function checkMessageSend({ config, userId, isAdmin = false, kind, now = Date.no
   return { ok: true };
 }
 
-function checkGroupCreate({ config, isAdmin = false }) {
-  if (isAdmin || (config || {}).groupCreationEnabled !== false) return { ok: true };
+/**
+ * Chat freeze / read-only lock only (no rate history): for edits, game posts and other
+ * writes that are not a new message but must stop while chat is frozen (server audit MSG-6).
+ */
+function checkChatFrozen({ config, isAdmin = false, now = Date.now() } = {}) {
+  const cfg = config || {};
+  if (isAdmin) return { ok: true };
+  if (cfg.chatFrozen || lockActive(cfg, "readOnly", now)) return block("CHAT_FROZEN", MESSAGES.frozen);
+  return { ok: true };
+}
+
+function checkGroupCreate({ config, isAdmin = false, now = Date.now() }) {
+  if (isAdmin) return { ok: true };
+  if (lockActive(config || {}, "readOnly", now)) return block("READ_ONLY", MESSAGES.readOnly);
+  if ((config || {}).groupCreationEnabled !== false) return { ok: true };
   return block("GROUPS_DISABLED", MESSAGES.groupsOff);
 }
 
+/** Güvenlik Merkezi read-only lock: no new servers either (admins exempt). */
+function checkServerCreate({ config, isAdmin = false, now = Date.now() }) {
+  if (isAdmin || !lockActive(config || {}, "readOnly", now)) return { ok: true };
+  return block("READ_ONLY", MESSAGES.readOnly);
+}
+
 /** New accounts only; logging in to an existing account is never blocked here. */
-function checkRegistration({ config }) {
-  if ((config || {}).registrationEnabled !== false) return { ok: true };
+function checkRegistration({ config, now = Date.now() }) {
+  const cfg = config || {};
+  if (cfg.registrationEnabled !== false && !lockActive(cfg, "registration", now)) return { ok: true };
   return block("REGISTRATION_CLOSED", MESSAGES.signupOff);
 }
 
@@ -105,7 +140,9 @@ function resetPlatformPolicyForTests() {
 module.exports = {
   MESSAGES,
   checkMessageSend,
+  checkChatFrozen,
   checkGroupCreate,
+  checkServerCreate,
   checkRegistration,
   loginAttemptsPerMinute,
   isPlatformAdmin,

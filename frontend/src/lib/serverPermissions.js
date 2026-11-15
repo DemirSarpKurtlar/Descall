@@ -95,9 +95,27 @@ export function canActOnServerMember(server, member, meId) {
   return serverHighestPosition(server) > targetPos;
 }
 
+/**
+ * A role can be handed out (or taken away) only when it carries no permission the actor
+ * lacks; owner and administrators pass. Same rule as the backend (audit R2).
+ */
+export function roleWithinMyPermissions(server, role) {
+  if (!role) return false;
+  if (serverIsOwner(server)) return true;
+  const flags = server?.myPermissions?.flags;
+  if (!flags || typeof flags !== "object") return false;
+  if (flags.ADMINISTRATOR) return true;
+  const bits = bitsFromPermissions(role.permissions);
+  for (const [key, bit] of Object.entries(PERM_BITS)) {
+    if ((bits & bit) === bit && !flags[key]) return false;
+  }
+  return true;
+}
+
 export function isAssignableServerRole(server, role) {
   if (!role || role.isEveryone) return false;
-  return serverHighestPosition(server) > (Number(role.position) || 0);
+  if (serverHighestPosition(server) <= (Number(role.position) || 0)) return false;
+  return roleWithinMyPermissions(server, role);
 }
 
 /** Role definitions the actor may edit (includes @everyone when below the actor). */

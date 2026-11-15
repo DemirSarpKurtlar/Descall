@@ -1520,11 +1520,9 @@ const UserPanel = forwardRef(function UserPanel({
 
   const copyUserId = async () => {
     if (!me?.id) return;
-    try {
-      await copyText(String(me.id));
-      setCopiedId(true);
-      setTimeout(() => setCopiedId(false), 1600);
-    } catch { /* ignore */ }
+    if (!(await copyText(String(me.id)))) return;
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 1600);
   };
 
   const openTab = (id) => {

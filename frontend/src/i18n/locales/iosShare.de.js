@@ -1,0 +1,21 @@
+/** iPhone / iPad whole-screen sharing ("iosShare.*", components/voice/IosBroadcastShareChip.jsx, hooks/useServerVoice.js). Same keys in every iosShare.<locale>.js. */
+export const IOS_SHARE_DE = {
+  "preparingTitle": "Bildschirmfreigabe wird vorbereitet…",
+  "pickerTitle": "Übertragung starten",
+  "pickerHint": "Descall ist ausgewählt. Tippe auf „Übertragung starten“, um deinen ganzen Bildschirm zu teilen.",
+  "liveTitle": "Du teilst deinen Bildschirm",
+  "liveHint": "Alle in diesem Kanal sehen deinen ganzen Bildschirm. Du kannst auch über die rote Statusanzeige oder das Kontrollzentrum beenden.",
+  "stoppingTitle": "Bildschirmfreigabe wird beendet…",
+  "stop": "Beenden",
+  "cancel": "Abbrechen",
+  "stopAria": "Bildschirmfreigabe beenden",
+  "cancelAria": "Bildschirmfreigabe abbrechen",
+  "errNotInChannel": "Tritt dem Sprachkanal bei, bevor du deinen Bildschirm teilst.",
+  "errPermission": "Du brauchst die Berechtigungen SPRECHEN und STREAMEN, um hier deinen Bildschirm zu teilen.",
+  "errRateLimited": "Zu viele Versuche. Versuche es in ein paar Minuten erneut.",
+  "errNeedsSfu": "Die Bildschirmfreigabe vom iPhone und iPad braucht den Sprachserver. Tritt dem Kanal erneut bei und versuche es noch einmal.",
+  "errUnavailable": "Bildschirmfreigabe ist in dieser App-Version nicht verfügbar. Aktualisiere Descall und versuche es erneut.",
+  "errConnection": "Die Bildschirmfreigabe hat die Verbindung verloren. Versuche es erneut.",
+  "errGeneric": "Bildschirmfreigabe konnte nicht gestartet werden. Versuche es erneut.",
+  "errJoinFirst": "Tritt zuerst einem Sprachkanal bei und starte dann die Bildschirmübertragung.",
+};

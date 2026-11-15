@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Check, Minus, Shield, UserPlus, X, Trash2 } from "../ui/Icon.jsx";
 import { useT } from "../../context/LocaleContext";
+import { overridesView } from "../../lib/channelOverridesView";
 import { resolveDisplayName } from "../../lib/userProfile";
 import {
   getChannelOverrides,
@@ -61,6 +62,10 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [inheritedFrom, setInheritedFrom] = useState(null); // category id when synced
+  const inheritedCategory = inheritedFrom
+    ? (server?.channels || []).find((c) => String(c.id) === String(inheritedFrom)) || null
+    : null;
 
   const load = async ({ silent = false } = {}) => {
     if (!server?.id || !channel?.id) return;
@@ -72,7 +77,14 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
         getServerRoles(server.id),
         getServerMembers(server.id),
       ]);
-      setOverrides(ov?.overrides || []);
+      // Synced child (no own rules): show the category's rules as inherited (server audit P5).
+      const view = await overridesView(ov, {
+        parentId: channel?.parentId || channel?.parent_id || null,
+        isCategory: channel?.type === "category",
+        fetchParent: (id) => getChannelOverrides(server.id, id),
+      });
+      setInheritedFrom(view.synced ? view.parentId || "" : null);
+      setOverrides(view.rows);
       setEditableKeys(ov?.editableKeys || Object.keys(PERM_LABELS));
       const loadedRoles = rolesRes?.roles?.length ? rolesRes.roles : server?.roles || [];
       setRoles(loadedRoles);
@@ -253,6 +265,11 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
         </header>
 
         {error ? <p className="server-modal-error">{error}</p> : null}
+        {!loading && inheritedFrom !== null ? (
+          <p className="server-modal-sub chperm-synced-note" role="status">
+            {t("chperm.syncedWith", { name: inheritedCategory?.name || t("chperm.category") })}
+          </p>
+        ) : null}
 
         {loading ? (
           <div className="server-channel-perms-layout" aria-busy="true">
@@ -334,6 +351,9 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
                   >
                     {item.kind === "role" ? <Shield size={14} /> : null}
                     <span>{item.label}</span>
+                    {inheritedFrom !== null && overrides.some((o) => o.inherited && `${o.targetType}:${o.targetId}` === item.key) ? (
+                      <span className="chperm-from-cat">{t("chperm.fromCategory")}</span>
+                    ) : null}
                   </button>
                 </li>
               ))}

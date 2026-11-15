@@ -81,12 +81,11 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
       if (invite?.url) {
         setLatestUrl(toPublicShareUrl(invite.url));
         setInvites((prev) => [invite, ...prev.filter((i) => i.code !== invite.code)]);
-        try {
-          await copyText(toPublicShareUrl(invite.url));
+        if (await copyText(toPublicShareUrl(invite.url))) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1600);
           toast(t("Invite copied"), "success");
-        } catch {
+        } else {
           toast(t("Invite created"), "success");
         }
       }
@@ -98,13 +97,12 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
   };
 
   const copy = async (text) => {
-    try {
-      await copyText(text);
+    if (await copyText(text)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
       toast(t("Copied"), "success");
-    } catch {
-      toast(t("Something went wrong."), "error");
+    } else {
+      toast(t("Could not copy to clipboard"), "error");
     }
   };
 

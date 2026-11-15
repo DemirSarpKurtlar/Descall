@@ -124,9 +124,11 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
       },
       onUpdateChannel: async (channelId, patch) => {
         if (isActive(sv)) return cb.onUpdateChannel?.(channelId, patch);
-        const { channel } = await updateChannel(sv.id, channelId, patch);
+        const res = await updateChannel(sv.id, channelId, patch);
+        const channel = res?.channel;
         if (channel) cb.onServerUpdated?.({ ...sv, channels: (sv.channels || []).map((c) => (same(c.id, channel.id) ? { ...c, ...channel } : c)) });
-        return channel;
+        // The whole answer: the move UI reads needsSyncChoice / permissionsSynced (P8).
+        return res;
       },
       onDeleteChannel: async (channelId) => {
         if (isActive(sv)) return cb.onDeleteChannel?.(channelId);
@@ -208,9 +210,9 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
     const leaving = c.mode === "leave-delete";
     return <DeleteServerSheet key="delete" mode={mode} server={sv} onCancel={cancel}
       onTransfer={sv.isOwner ? () => { b.setConfirm(null); openHub(sv, P({ id: "tr", leaveAfter: leaving })); } : undefined}
-      onConfirm={async (name) => {
-        if (leaving) await cb.onLeaveServer?.(sv.id, name);
-        else await cb.onDeleteServer?.(sv.id, name);
+      onConfirm={async (name, password) => {
+        if (leaving) await cb.onLeaveServer?.(sv.id, name, password);
+        else await cb.onDeleteServer?.(sv.id, name, password);
         b.setConfirm(null);
         setHub(null);
       }} />;

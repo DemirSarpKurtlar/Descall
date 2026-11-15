@@ -44,7 +44,7 @@ const {
   mapModerationActionToAudit,
   isRecentlySeen,
 } = require("../lib/adminOverview");
-const { loadSystemSettings, persistSystemConfig, applySystemConfigToState, publicFeatureFlags } = require("../lib/systemSettings");
+const { loadSystemSettings, persistSystemConfig, applySystemConfigToState } = require("../lib/systemSettings");
 const insights = require("../lib/adminInsightsStore");
 const fb = require("../lib/feedbackAdmin");
 const {
@@ -65,17 +65,25 @@ const BCRYPT_ROUNDS = 12;
 // Descall+ / Ultra: refused attempts on /premium are logged (before the chain answers 401/403).
 router.use("/premium", require("./adminPremium").logDenied);
 router.use(requireAuth, requireAdmin, adminRateLimit, requireAdmin2fa);
+// İşlem kaydı: each audit entry written during this request carries masked IP, user agent, request id, endpoint.
+router.use(require("../lib/auditRuntime").contextMiddleware);
 // Yönetici güvenliği (3.2.0): a fresh code for every change; see middleware/adminSecondFactor.js.
 router.post("/step-up", stepUpHandler);
 router.use(requireStepUp);
 // Yetkili yöneticiler (3.3.0): each admin only opens the sections the owner granted.
 router.use(adminPermissions.requireAdminSection);
 router.use(require("./adminStaff"));
+// İşlem kaydı (section audit, Draft B "Konsol"): merged list, summary, anomalies, undo, views, rules, export.
+router.use(require("./adminAuditConsole"));
 router.use(require("./adminAccess"));
 router.use(require("./adminAppeals"));
+// Moderasyon İşlem masası (section moderation): templates, escalation rules, sanctions, history, flagged queue, word filter.
+router.use(require("./adminModerationDesk"));
 router.use(require("./adminErrors"));
 // Sunucu inceleme (section serverReview): metadata lists, channel text only behind purpose + reason + audit.
 router.use(require("./adminServerReview"));
+// Oyunlar / Kredi (section casino): player workspace, ledger, hand history, limits, statistics.
+router.use(require("./adminCasino"));
 router.use(require("./adminGrowth"));
 // Kayıt İstatistikleri (3.0.0), admin-only like everything below.
 router.use("/signup-stats", require("./adminSignupStats"));
@@ -84,7 +92,17 @@ router.use(require("./adminAgent"));
 router.use(require("./adminOverview"));
 router.use(require("./adminMaintenance"));
 router.use(require("./adminPromo"));
+// Mağaza (remake): catalog desk, storefront, campaigns, gifts, reconciliation fixes.
+router.use(require("./adminShopDesk"));
 router.use(require("./adminSpecialBadges"));
+// Canlı popup (section livepopup): live tracking, schedule, recall, receipts, templates.
+router.use(require("./adminLivePopup"));
+// Güvenlik Merkezi (section security): score, live threat feed, emergency locks, settings history.
+router.use(require("./adminSecurity"));
+// Sistem (section system, Draft A "Kontrol merkezi"): health, flag rollout, kill switches, safe restart.
+router.use(require("./adminSystem"));
+// Duyurular (section announcements): board, list + inspector, composer, templates, languages, approvals.
+router.use(require("./adminAnnouncements"));
 // Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
 router.use("/premium", require("./adminPremium"));
 
@@ -727,6 +745,8 @@ router.post("/users/:id/ban", async (req, res) => {
       sessionsRevoked: result.sessionsRevoked,
       emailed: result.emailed,
       accessBan: result.accessBan ? result.accessBan.added : 0,
+      // İşlem kaydı "Yeniden yasakla": the new ban points at the entry it was opened from.
+      ...(typeof body.auditLink === "string" && /^[A-Za-z0-9:_-]{1,80}$/.test(body.auditLink) ? { linkedTo: body.auditLink } : {}),
     });
     notifyAdminRoom(getIo(req), { type: "ban", userId: id, ...result });
     res.json({ ok: true, ...result });
@@ -768,14 +788,35 @@ router.post("/users/:id/timeout", async (req, res) => {
     });
     const io = getIo(req);
     io.to(`user:${id}`).emit("system:timeout", result);
+    // Kullanıcı dosyası: "Kullanıcıya bildirim gönder" also leaves a bell notification
+    // (the admin's note as the body, else the standard line). Off = only the in-app lock.
+    const notify = body.notify === true;
+    if (notify) {
+      try {
+        const { pushNotification } = require("../socket/handlers");
+        pushNotification(io, id, {
+          type: "moderation_timeout",
+          titleKey: "bot.notify.timeoutTitle",
+          ...(result.message ? { body: result.message } : { bodyKey: "bot.notify.timeoutBody" }),
+          meta: { until: result.until, category: result.category },
+        });
+      } catch {
+        /* the notification is best effort; the timeout itself is applied */
+      }
+    }
     audit(req.user, "timeout", id, {
       category: result.category,
       reason: result.reason,
       message: result.message,
       until: result.until,
+      notified: notify,
     });
     notifyAdminRoom(io, { type: "timeout", userId: id, ...result });
-    res.json({ ok: true, ...result });
+    // Kademe kuralları: what the escalation rules say after this timeout (suggestion only for admins).
+    const escalation = await require("../lib/moderationDesk")
+      .afterSanction({ io, userId: id, category: result.category, actionType: "timeout", appliedSeconds: result.durationSeconds })
+      .catch(() => null);
+    res.json({ ok: true, ...result, escalation });
   } catch (e) {
     console.error("[timeout]", e);
     res.status(400).json({ error: e.message || "Timeout failed." });
@@ -1004,6 +1045,10 @@ router.post("/messages/:msgId/flag", (req, res) => {
     at: new Date().toISOString(),
     reason: req.body?.reason || "flag",
   });
+  // Moderasyon İçerik filtreleri: the flag also lands in the durable queue (flagged_messages).
+  require("../lib/contentFilter")
+    .insertFlag({ source: "admin", verdict: null, authorId: m.userId, content: m.text || m.content || "", messageId: m.id, ctx: { convType: "general" }, where: null, reason: req.body?.reason || "flag" })
+    .catch(() => {});
   audit(req.user, "message_flag", m.id, {});
   res.json({ ok: true });
 });
@@ -1195,10 +1240,14 @@ router.get("/system", async (_req, res) => {
       bannedRows = queryRows(fallback, "banned-ids-fallback");
     }
     const bannedUserIds = bannedRows.map((row) => row.id).filter(Boolean);
+    // Lists, not only counts (the old Content filters box always showed them empty).
+    const lists = await withTimeout(require("../lib/moderationDesk").systemLists(), 5000, { profanityWords: [...state.profanityWords], flaggedMessages: [], flaggedCount: state.flaggedMessages.length });
     res.json({
       config: state.systemConfig,
-      profanityCount: state.profanityWords.size,
-      flaggedCount: state.flaggedMessages.length,
+      profanityCount: lists.profanityWords.length,
+      profanityWords: lists.profanityWords,
+      flaggedCount: lists.flaggedCount,
+      flaggedMessages: lists.flaggedMessages,
       bannedUserIds,
       edge: require("../runtime/edgeRuntime").edgeStats(),
     });
@@ -1213,15 +1262,22 @@ router.get("/system", async (_req, res) => {
 });
 
 router.patch("/system", async (req, res) => {
-  Object.assign(state.systemConfig, req.body || {});
-  const saved = await persistSystemConfig(supabase, state.systemConfig);
-  applySystemConfigToState(state, saved.config);
-  audit(req.user, "system_config", "config", req.body || {});
+  // Known keys only (pickConfig); the audit entry and the settings history keep the old
+  // and new value of every changed key (lib/systemSettingsChange.js, revertible from
+  // Güvenlik Merkezi › Ayar geçmişi). Locks go through /security/locks only.
+  const body = { ...(req.body || {}) };
+  delete body.securityLocks;
   const io = getIo(req);
-  notifyAdminRoom(io, { type: "system_config" });
-  if (io) {
-    io.emit("features:updated", publicFeatureFlags(state.systemConfig.featureFlags));
-  }
+  await require("../lib/systemSettingsChange").applySettingsChange({
+    patch: body,
+    actor: req.user,
+    reason: typeof body.reason === "string" ? body.reason : null,
+    source: "system",
+    action: "system_config",
+    io,
+  });
+  // Each socket gets the flags resolved for its own account (rollout rules, Sistem page).
+  require("../lib/systemFlags").emitFeaturesToAll(io);
   require("../runtime/edgeRuntime").broadcastAdvice();
   res.json({ config: state.systemConfig, edge: require("../runtime/edgeRuntime").edgeStats() });
 });
@@ -1252,15 +1308,23 @@ router.post("/maintenance", async (req, res) => {
 router.post("/profanity", async (req, res) => {
   const w = String(req.body?.word || "").trim();
   if (!w) return res.status(400).json({ error: "word required." });
-  state.profanityWords.add(w);
-  await persistSystemConfig(supabase, { profanityWords: [...state.profanityWords] });
+  // Single source: the Moderasyon word filter (profanity_rules); the legacy list follows it.
+  try {
+    await require("../lib/contentFilter").addLegacyWord(w, req.user.id);
+  } catch (e) {
+    return res.status(e.status || 500).json({ error: e.message || "Could not add the word.", code: e.code });
+  }
   audit(req.user, "profanity_add", w, {});
   res.json({ ok: true, count: state.profanityWords.size });
 });
 
 router.delete("/profanity/:word", async (req, res) => {
-  state.profanityWords.delete(req.params.word);
-  await persistSystemConfig(supabase, { profanityWords: [...state.profanityWords] });
+  try {
+    await require("../lib/contentFilter").removeLegacyWord(req.params.word);
+  } catch (e) {
+    return res.status(e.status || 500).json({ error: e.message || "Could not remove the word.", code: e.code });
+  }
+  audit(req.user, "profanity_remove", req.params.word, {});
   res.json({ ok: true });
 });
 
@@ -1287,13 +1351,20 @@ router.post("/popup", (req, res) => {
   const built = popupBroadcast.buildPopupPayload(req.body || {}, { actor: req.user });
   if (!built.ok) return res.status(400).json({ error: built.error, errorKey: built.errorKey, errorVars: built.errorVars });
 
-  const audience = req.body?.audience === "visible" ? "visible" : "connected";
+  // Kullanıcı dosyası: one person only (targetUserId), when they are connected right now.
+  const targetUserId = req.body?.targetUserId ? String(req.body.targetUserId) : null;
+  const audience = targetUserId ? "user" : req.body?.audience === "visible" ? "visible" : "connected";
   const includeSelf = req.body?.includeSelf !== false;
-  const recipients = popupBroadcast.selectRecipients(roster.live, {
-    audience,
-    includeSelf,
-    actorId: req.user.id,
-  });
+  const recipients = targetUserId
+    ? (roster.live || []).filter((row) => String(row?.id) === targetUserId)
+    : popupBroadcast.selectRecipients(roster.live, {
+        audience,
+        includeSelf,
+        actorId: req.user.id,
+      });
+  if (targetUserId && !recipients.length && !req.body?.preview) {
+    return res.status(400).json(apiError("This person is not online right now.", null, { code: "USER_OFFLINE" }));
+  }
 
   if (req.body?.preview) {
     return res.json({
@@ -1328,7 +1399,8 @@ router.post("/popup", (req, res) => {
     skipped,
     audience,
   });
-  audit(req.user, "live_popup", audience, {
+  audit(req.user, "live_popup", targetUserId || audience, {
+    ...(targetUserId ? { single: true } : {}),
     id: built.popup.id,
     title: built.popup.title,
     severity: built.popup.severity,
@@ -1368,40 +1440,7 @@ router.get("/sockets", (_req, res) => {
   res.json({ sockets: list });
 });
 
-router.get("/audit", async (req, res) => {
-  try {
-    const limit = Math.min(500, parseInt(req.query.limit || "200", 10) || 200);
-    const memory = (state.auditLog || []).slice(0, limit);
-    // 3.1.3: durable admin_audit rows survive restarts; memory only fills a gap
-    // (table missing, or a write still in flight).
-    const durable = (await withTimeout(adminAuditStore.list({ limit }), 5000, null)) || [];
-    const dbRes = await withTimeout(
-      supabase
-        .from("moderation_actions")
-        .select("id, action_type, target_user_id, actor_user_id, created_at, category, reason, meta")
-        .order("created_at", { ascending: false })
-        .limit(limit),
-      5000,
-      { data: [], error: { message: "timeout" } }
-    );
-    const dbRows = queryRows(dbRes, "audit");
-    const actorIds = [...new Set(dbRows.map((row) => row.actor_user_id).filter(Boolean))];
-    let usersById = {};
-    if (actorIds.length) {
-      const usersRes = await withTimeout(
-        supabase.from("users").select("id, username").in("id", actorIds),
-        5000,
-        { data: [] }
-      );
-      for (const u of queryRows(usersRes, "audit-actors")) usersById[u.id] = u;
-    }
-    const dbEntries = dbRows.map((row) => mapModerationActionToAudit(row, usersById)).filter(Boolean);
-    res.json({ entries: mergeAuditEntries(durable.concat(memory), dbEntries, limit), durable: durable.length > 0 });
-  } catch (error) {
-    const limit = Math.min(500, parseInt(req.query.limit || "200", 10) || 200);
-    res.json({ entries: (state.auditLog || []).slice(0, limit) });
-  }
-});
+// GET /audit lives in routes/adminAuditConsole.js (merged, filtered, paged).
 
 // POST /errors - Receive frontend error logs
 router.post("/errors", (req, res) => {
@@ -1508,10 +1547,10 @@ router.post("/backup", (_req, res) => {
   res.json(snapshot);
 });
 
-router.post("/restart", (req, res) => {
-  audit(req.user, "server_restart", "process", {});
-  res.json({ ok: true, message: "Restarting." });
-  setTimeout(() => process.exit(0), 250);
+// Sistem page: the only restart is the safe one (drain, notify, backup, typed confirm,
+// fresh code): POST /system/restart in routes/adminSystem.js.
+router.post("/restart", (_req, res) => {
+  res.status(410).json(apiError("Use System > Safe restart.", null, { code: "USE_SAFE_RESTART" }));
 });
 
 router.get("/permissions", (_req, res) => {
@@ -2047,49 +2086,20 @@ router.post("/credits/update", async (req, res) => {
     }
 
     const delta = Math.floor(numericAmount);
-
-    // Get current credits
-    const { data: current, error: fetchError } = await supabase
-      .from("user_credits")
-      .select("credits, total_won, total_lost")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (fetchError) throw fetchError;
-
-    const currentCredits = current?.credits || 0;
-    const newCredits = operation === "add"
-      ? currentCredits + delta
-      : Math.max(0, currentCredits - delta);
-
-    // user_id is UNIQUE, not the primary key. Upsert must target that
-    // constraint or an existing wallet is inserted again and rejected.
-    const { data: updated, error: updateError } = await supabase
-      .from("user_credits")
-      .upsert({
-        user_id: userId,
-        credits: newCredits,
-        updated_at: new Date().toISOString()
-      }, { onConflict: "user_id" })
-      .select("user_id, credits")
-      .single();
-
-    if (updateError) throw updateError;
-
-    // Audit log
-    audit(req.user, "credits_update", userId, { 
-      operation, 
-      amount, 
-      previousBalance: currentCredits, 
-      newBalance: newCredits,
-      reason: reason || "Admin adjustment"
+    // Same path as Oyunlar / Kredi: credit lock, ledger row, audit, admin room.
+    const { adjustCredits } = require("./adminCasino");
+    const out = await adjustCredits(req, {
+      userId,
+      operation,
+      amount: delta,
+      reason: String(reason || "").trim().slice(0, 500) || "Admin adjustment",
     });
 
-    res.json({ 
-      success: true, 
-      userId, 
-      previousBalance: currentCredits, 
-      newBalance: updated?.credits ?? newCredits,
+    res.json({
+      success: true,
+      userId,
+      previousBalance: out.previousBalance,
+      newBalance: out.newBalance,
       operation,
       amount: delta
     });

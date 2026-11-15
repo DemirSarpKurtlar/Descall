@@ -1,5 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback, createContext, useContext, useSyncExternalStore, startTransition, lazy, Suspense, Fragment, memo } from "react";
 import { mediaTypeLabel } from "../../lib/listPreview.js";
+import { copyText as writeClipboardText } from "../../lib/copyText.js";
 import { localizedField, textI18n } from "../../i18n/serverText.js";
 import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaRefresh } from "../../lib/privateMediaUrls.js";
 import { createPortal } from "react-dom";
@@ -1647,15 +1648,13 @@ function MessageBubbleView({
   const copyText = useCallback(() => {
     const text = plainText(String(message.text || ""));
     if (!text) return;
-    try {
-      const done = navigator.clipboard?.writeText?.(text);
-      if (done?.catch) done.catch(() => {});
-    } catch {
-      /* clipboard unavailable */
-    }
+    // Started inside the tap (user gesture); never rejects (lib/copyText.js).
+    writeClipboardText(text).then((ok) => {
+      if (!ok) toast(t("Could not copy to clipboard"), "error", { duration: 2600 });
+    });
     setMenuOpen(false);
     setPickerOpen(false);
-  }, [message.text]);
+  }, [message.text, toast, t]);
 
   const replyLive = useRef({ triggerReply, resetSwipe, isOwn, editing });
   replyLive.current = { triggerReply, resetSwipe, isOwn, editing };
@@ -2101,12 +2100,17 @@ function MessageBubbleView({
               />
             ) : (mediaTypeNorm === "document" || mediaTypeNorm === "file") ? (
               <a
-                href={mediaUrl}
+                href={/^https?:\/\//i.test(String(mediaUrl || "")) ? mediaUrl : undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 download={message.originalName || true}
                 className="message-file-chip"
                 onClick={(e) => {
+                  // Only http(s) links open (server audit MSG-3: a stored javascript: URL ran on click).
+                  if (!/^https?:\/\//i.test(String(mediaUrl || ""))) {
+                    e.preventDefault();
+                    return;
+                  }
                   if (!needsPrivateMediaRefresh(mediaUrl)) return;
                   e.preventDefault();
                   const popup = window.open("about:blank", "_blank", "noopener");

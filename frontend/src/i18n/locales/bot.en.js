@@ -108,6 +108,8 @@ export const BOT_EN = {
     reportReviewedTitle: "Your report was reviewed",
     reportActioned: "We took action on the account you reported. Thank you.",
     reportNoViolation: "We reviewed your report and found nothing against the rules. Thank you.",
+    timeoutTitle: "You were muted",
+    timeoutBody: "You can still read and listen, but you can't send messages or talk in voice for a while.",
   },
   poll: {
     fallbackTitle: "📊 Poll: {question}",

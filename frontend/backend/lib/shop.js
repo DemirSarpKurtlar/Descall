@@ -137,9 +137,18 @@ async function getActiveCatalog() {
       .eq("active", true)
       .order("sort_order", { ascending: true });
     if (error) throw error;
-    const items = (data || [])
+    let items = (data || [])
       .filter((item) => !RETIRED_SHOP_CATEGORIES.has(item.category))
       .map(normalizeItem);
+    // Limited stock / sale / availability columns (Mağaza remake). Read separately so the
+    // catalog keeps working before 20261115_shop_desk.sql is applied.
+    try {
+      const merchStore = require("./shopMerchStore");
+      const { byId } = await merchStore.loadMerchColumns(null);
+      items = merchStore.withMerch(items, byId);
+    } catch (err) {
+      console.warn("[shop] merch columns unavailable:", err?.message || err);
+    }
     const assetsById = new Map();
     for (const item of items) {
       if (!IMAGE_ASSET_CATEGORIES.has(item.category)) continue;
@@ -192,7 +201,7 @@ function catalogImageUrl(item, url, kind, assetBase, decoded) {
  * per-category response ~280 KB, and when that one request failed on iOS
  * ("Load failed") every preview stayed an empty placeholder.
  */
-function toCatalogItem(item, { assetBase = "", decoded = null } = {}) {
+function toCatalogItem(item, { assetBase = "", decoded = null, merchInfo = null } = {}) {
   const normalized = normalizeItem(item);
   if (!normalized) return normalized;
   const isImage = IMAGE_ASSET_CATEGORIES.has(normalized.category);
@@ -221,6 +230,8 @@ function toCatalogItem(item, { assetBase = "", decoded = null } = {}) {
     country_code: normalized.country_code || null,
     country_region: normalized.country_region || null,
     country_kind: normalized.country_kind || null,
+    // Effective (sale) price in price_descoin, list price, stock and time limits.
+    ...(merchInfo || {}),
   };
 }
 
@@ -231,13 +242,62 @@ function toCatalogItem(item, { assetBase = "", decoded = null } = {}) {
  * `includeAssets` is accepted for older clients and no longer changes the
  * payload: image URLs are always present.
  */
-async function listActiveItems({ category = null, includeAssets = false, assetBase = "" } = {}) {
+async function listActiveItems({ category = null, includeAssets = false, assetBase = "", now = Date.now(), campaigns = null } = {}) {
   void includeAssets;
   if (category && RETIRED_SHOP_CATEGORIES.has(category)) return [];
+  const merch = require("./shopMerch");
   const { items, assetsById } = await getActiveCatalog();
-  return items
-    .filter((item) => !category || item.category === category)
-    .map((item) => toCatalogItem(item, { assetBase, decoded: assetsById.get(String(item.id)) || null }));
+  let live = campaigns;
+  if (!live) {
+    try {
+      live = (await require("./shopMerchStore").getContext()).campaigns;
+    } catch {
+      live = [];
+    }
+  }
+  const out = [];
+  for (const item of items) {
+    if (category && item.category !== category) continue;
+    // Hidden until its window opens, gone after it closes; sold out stays listed (disabled).
+    const av = merch.availability(item, live, now);
+    if (!merch.isListed(av)) continue;
+    out.push(
+      toCatalogItem(item, {
+        assetBase,
+        decoded: assetsById.get(String(item.id)) || null,
+        merchInfo: merch.merchFields(item, live, now),
+      })
+    );
+  }
+  return out;
+}
+
+/**
+ * Storefront for the user shop: listed items plus the admin-ordered sections and the recent
+ * shop updates. Same for everyone (cacheable).
+ */
+async function getStorefront({ assetBase = "", now = Date.now() } = {}) {
+  const merch = require("./shopMerch");
+  const store = require("./shopMerchStore");
+  let ctx = { campaigns: [], sections: [], updates: [] };
+  try {
+    ctx = await store.getContext();
+  } catch {
+    /* sections are optional */
+  }
+  const items = await listActiveItems({ assetBase, now, campaigns: ctx.campaigns });
+  let sections = [];
+  if (ctx.sections.length) {
+    const { items: raw } = await getActiveCatalog();
+    const listed = new Set(items.map((it) => String(it.id)));
+    const forSections = raw
+      .filter((it) => listed.has(String(it.id)))
+      .map((it) => ({ ...it, ...merch.merchFields(it, ctx.campaigns, now) }));
+    const sales = ctx.sections.some((s) => s.kind === "bestsellers") ? await store.salesByItem(7) : new Map();
+    sections = merch.resolveSections(ctx.sections, forSections, { now, salesByItem: sales, campaigns: ctx.campaigns });
+  }
+  const updates = (ctx.updates || []).map((u) => ({ id: u.id, body: u.body, itemIds: u.item_ids || [], at: u.created_at }));
+  return { items, sections, updates, serverTime: new Date(now).toISOString() };
 }
 
 /**
@@ -728,6 +788,7 @@ module.exports = {
   REMOVED_COSMETIC_CATEGORIES,
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
+  getStorefront,
   getCatalogAsset,
   invalidateCatalogCache,
   decodeDataImage,

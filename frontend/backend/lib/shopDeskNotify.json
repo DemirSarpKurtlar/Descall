@@ -1,0 +1,30 @@
+{
+  "tr": [
+    "DesCoin bakiyen düzeltildi",
+    "Bakiyen kayıtlarla eşitlendi. Yeni bakiye: {n} DesCoin."
+  ],
+  "en": [
+    "Your DesCoin balance was corrected",
+    "Your balance now matches your history. New balance: {n} DesCoin."
+  ],
+  "de": [
+    "Dein DesCoin-Guthaben wurde korrigiert",
+    "Dein Guthaben stimmt jetzt mit deinem Verlauf überein. Neues Guthaben: {n} DesCoin."
+  ],
+  "es": [
+    "Se corrigió tu saldo de DesCoin",
+    "Tu saldo ahora coincide con tu historial. Nuevo saldo: {n} DesCoin."
+  ],
+  "fr": [
+    "Ton solde DesCoin a été corrigé",
+    "Ton solde correspond maintenant à ton historique. Nouveau solde : {n} DesCoin."
+  ],
+  "pt-BR": [
+    "Seu saldo de DesCoin foi corrigido",
+    "Seu saldo agora bate com o seu histórico. Novo saldo: {n} DesCoin."
+  ],
+  "ru": [
+    "Баланс DesCoin исправлен",
+    "Баланс теперь совпадает с историей. Новый баланс: {n} DesCoin."
+  ]
+}

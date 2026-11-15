@@ -106,7 +106,7 @@ assert.ok(menuSections().includes("serverReview"));
 const people = ADMIN_NAV_GROUPS.find(([k]) => k === "people")[1];
 assert.equal(people.indexOf("serverReview"), people.indexOf("dmReview") + 1, "right after DM inceleme");
 assert.match(panel, /\{ id: "serverReview", label: "serverReview\.nav", icon: Server \}/);
-assert.match(panel, /tab === "serverReview" && \(\s*<AdminServerReview\s*canBan=\{can\("moderation"\)\}/);
+assert.match(panel, /tab === "serverReview" && \(\s*<AdminServerReview\b[\s\S]{0,400}?canBan=\{can\("moderation"\)\}/);
 
 // Client: POST view with purpose + reason, portal dialog, no preview / export, BanDialog, no emoji.
 assert.match(ui, /`\$\{pathOf\(target\.serverId\)\}\/channels\/\$\{encodeURIComponent\(target\.channel\.id\)\}\/view`, \{\s*method: "POST",\s*body: JSON\.stringify\(\{ purpose: gate\.purpose, reason: gate\.reason, \.\.\.cursor \}\)/);

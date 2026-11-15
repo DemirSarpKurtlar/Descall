@@ -114,6 +114,11 @@ const pm = require("./privateMedia");
   assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-x", "https://media.tenor.com/a.gif"), "https://media.tenor.com/a.gif");
   const avatar = "https://p.supabase.co/storage/v1/object/public/media/avatars/1.png";
   assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-x", avatar), avatar);
+  // Server audit MSG-3: only our storage and GIF providers, never javascript: / other hosts.
+  assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-x", "javascript:alert(1)"), null);
+  assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-x", "https://evil.example/x.exe"), null);
+  assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-x", "http://media.tenor.com/a.gif"), null, "plain http refused");
+  assert.strictEqual(await pm.normalizeIncomingMediaUrl(fake, "u-x", "https://media2.giphy.com/media/x/200.gif"), "https://media2.giphy.com/media/x/200.gif");
   console.log("privateMedia selftest OK");
 })().catch((err) => {
   console.error(err);

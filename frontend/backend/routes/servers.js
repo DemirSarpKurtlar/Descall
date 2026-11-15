@@ -26,7 +26,14 @@ const {
   getMemberHighestPosition,
   canBrowsePrivateChannels,
   clipRolePermissions,
+  sameId,
+  isTimeoutRestricted,
+  timeoutRestrictedError,
+  selectAllIn,
+  ALL_PERMISSIONS,
 } = require("../lib/serverPermissions");
+const memberState = require("../lib/serverMemberState");
+const { canonId } = memberState;
 const { notifyServerAccessChanged } = require("../lib/serverAccessRealtime");
 const { createSingleflight } = require("../lib/singleflight");
 const { parseSince } = require("../lib/messagePage");
@@ -52,6 +59,16 @@ const {
 const { starterChannelNames } = require("../lib/starterChannelNames");
 const { requestLang } = require("../lib/i18n");
 const router = express.Router();
+
+// Ids from the URL are compared in JS (owner, self, hierarchy) and in Postgres (uuid,
+// case-insensitive). An UPPERCASE owner id passed every JS check and still hit the
+// owner's row in the DB (audit M1). Every id param is canonical from here on.
+for (const name of ["id", "userId", "roleId", "channelId", "targetId"]) {
+  router.param(name, (req, _res, next, value) => {
+    req.params[name] = canonId(value);
+    next();
+  });
+}
 
 const MAX_OWNED_SERVERS = 10;
 const { acquireCapLock } = require("../lib/capLock");
@@ -176,19 +193,29 @@ async function filterChannelsForMember(serverId, userId, channels, preloaded = n
   let overrides;
   let roles;
   let assigned;
-  if (preloaded?.overrides && preloaded?.roles && preloaded?.assigned) {
+  // Preloaded rows without this server's @everyone role are incomplete (a batch read cut
+  // by the row cap): never skip the @everyone overwrite, read this server directly (P1).
+  const preloadedOk =
+    preloaded?.overrides && preloaded?.roles && preloaded?.assigned && preloaded.roles.some((r) => r.is_everyone);
+  if (preloadedOk) {
     const allowed = new Set(overrideIds.map(String));
     overrides = (preloaded.overrides || []).filter((row) => allowed.has(String(row.channel_id)));
     roles = preloaded.roles;
     assigned = preloaded.assigned;
   } else {
-    const [overridesRes, rolesRes, assignedRes] = await Promise.all([
+    // Paged reads: PostgREST stops at max_rows (1000) without an error, and a dropped
+    // deny row made a private channel visible (P1 / CA-4).
+    const [overrideRows, rolesRes, assignedRes] = await Promise.all([
       overrideIds.length
-        ? supabase
-            .from("server_channel_overrides")
-            .select("id, channel_id, target_type, target_id, allow_permissions, deny_permissions")
-            .in("channel_id", overrideIds)
-        : Promise.resolve({ data: [], error: null }),
+        ? selectAllIn(
+            supabase,
+            "server_channel_overrides",
+            "id, channel_id, target_type, target_id, allow_permissions, deny_permissions",
+            (q) => q.order("id", { ascending: true }),
+            "channel_id",
+            overrideIds
+          )
+        : Promise.resolve([]),
       supabase.from("server_roles").select("id, position, is_everyone").eq("server_id", serverId),
       supabase
         .from("server_member_roles")
@@ -196,10 +223,9 @@ async function filterChannelsForMember(serverId, userId, channels, preloaded = n
         .eq("server_id", serverId)
         .eq("user_id", userId),
     ]);
-    if (overridesRes.error) throw overridesRes.error;
     if (rolesRes.error) throw rolesRes.error;
     if (assignedRes.error) throw assignedRes.error;
-    overrides = overridesRes.data;
+    overrides = overrideRows;
     roles = rolesRes.data;
     assigned = assignedRes.data;
   }
@@ -327,10 +353,19 @@ function allowedServerImageHosts() {
   return hosts;
 }
 
+const SERVER_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const SERVER_IMAGE_PATH = "/storage/v1/object/public/media/images/";
+
 function cleanServerImageUrl(raw, field) {
   if (raw == null || raw === "") return null;
   const value = String(raw).trim();
   if (!value) return null;
+  // Quotes, brackets, backslashes, whitespace and control characters are never part of
+  // our upload URLs; they let a value break out of CSS url() and load a second image
+  // from another host (DF-3).
+  if (/["'()\\\s<>`]|[\u0000-\u001f\u007f]/.test(value)) {
+    throw templatedError("{field} must be an image uploaded to Descall.", { field }, { status: 400, code: "INVALID_IMAGE_URL" });
+  }
   let url;
   try {
     url = new URL(value);
@@ -347,11 +382,34 @@ function cleanServerImageUrl(raw, field) {
     !url.username &&
     !url.password &&
     hostOk &&
-    (!supabaseHost || url.pathname.startsWith("/storage/v1/object/public/"));
+    !url.search &&
+    !url.hash &&
+    // Supabase storage: only the public images/ folder (images only; videos, PDFs and
+    // archives live under files/, SC-9).
+    (!supabaseHost || url.pathname.startsWith(SERVER_IMAGE_PATH));
   if (!ok) {
     throw templatedError("{field} must be an image uploaded to Descall.", { field }, { status: 400, code: "INVALID_IMAGE_URL" });
   }
-  return value;
+  return url.href;
+}
+
+/** An uploaded server image must be a real image row of a sane size (SC-9). */
+async function assertServerImageUpload(href, field) {
+  if (!href) return;
+  try {
+    const { data } = await supabase
+      .from("media_uploads")
+      .select("media_type, file_size")
+      .eq("public_url", href)
+      .limit(1);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return; // legacy upload without a row: the images/ folder already means "image"
+    if ((row.media_type && row.media_type !== "image") || Number(row.file_size) > SERVER_IMAGE_MAX_BYTES) {
+      throw templatedError("{field} must be an image uploaded to Descall.", { field }, { status: 400, code: "INVALID_IMAGE_URL" });
+    }
+  } catch (err) {
+    if (err?.code === "INVALID_IMAGE_URL") throw err;
+  }
 }
 
 function normalizeVanitySlug(raw) {
@@ -458,6 +516,24 @@ function cleanName(raw) {
   return String(raw || "").trim().replace(/\s+/g, " ");
 }
 
+/**
+ * Voice / stage seat limit (0 = unlimited, 1-99). undefined = not given, null = invalid.
+ * Stored in server_channels.user_limit (migration 20261115_server_audit_voice.sql).
+ */
+function parseUserLimit(raw) {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === "") return 0;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || Math.floor(n) !== n || n < 0 || n > 99) return null;
+  return n;
+}
+
+/** PostgREST answer for a column that is not there yet (migration not applied). */
+function isMissingColumn(error, column) {
+  const msg = String(error?.message || "");
+  return (String(error?.code) === "PGRST204" || String(error?.code) === "42703") && (!column || msg.includes(column));
+}
+
 /** Discord-like channel names: text is slug-ish; voice/category keep spaces. */
 function cleanChannelName(raw, type) {
   let name = String(raw || "").trim();
@@ -492,7 +568,7 @@ async function requireServerOwner(serverId, userId) {
     err.status = 404;
     throw err;
   }
-  if (server.owner_id !== userId) {
+  if (!sameId(server.owner_id, userId)) {
     const err = new Error("Only the server owner can do this.");
     err.status = 403;
     err.code = "OWNER_REQUIRED";
@@ -507,7 +583,15 @@ async function requireServerOwner(serverId, userId) {
  */
 async function hasServerPermission(serverId, userId, flag) {
   const resolved = await resolveMemberPermissions(supabase, serverId, userId);
-  return Boolean(resolved.isMember && hasPermission(resolved.bits, flag));
+  if (!resolved.isMember) return false;
+  if (!timeoutAllows(flag) && isTimeoutRestricted(resolved)) return false;
+  return hasPermission(resolved.bits, flag);
+}
+
+/** A timed-out member keeps only read access (Discord parity; audit R4/M4/IM-2/SC-4). */
+function timeoutAllows(flag) {
+  const bit = typeof flag === "bigint" ? flag : Permissions[flag];
+  return bit === Permissions.VIEW_CHANNEL || bit === Permissions.READ_MESSAGE_HISTORY;
 }
 
 async function requireServerPermission(serverId, userId, flag) {
@@ -517,6 +601,7 @@ async function requireServerPermission(serverId, userId, flag) {
     err.status = 403;
     throw err;
   }
+  if (!timeoutAllows(flag) && isTimeoutRestricted(resolved)) throw timeoutRestrictedError(resolved);
   if (!hasPermission(resolved.bits, flag)) {
     const err = new Error("Missing permission.");
     err.status = 403;
@@ -539,6 +624,7 @@ async function requireServerPermission(serverId, userId, flag) {
     server,
     permissions: resolved.bits,
     isOwner: resolved.isOwner,
+    resolved,
   };
 }
 
@@ -624,6 +710,7 @@ function publicServer(row, extra = {}) {
     afkTimeoutSeconds: row.afk_timeout_seconds ?? 300,
     systemChannelId: row.system_channel_id || null,
     welcomeChannelId: row.welcome_channel_id || null,
+    defaultNotificationLevel: row.default_notification_level === "mentions" ? "mentions" : "all",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ...extra,
@@ -647,6 +734,7 @@ function publicChannel(row) {
     parentId: row.parent_id || null,
     slowmodeSeconds: row.slowmode_seconds ?? 0,
     nsfw: Boolean(row.nsfw),
+    ...(row.type === "voice" || row.type === "stage" ? { userLimit: Number(row.user_limit) || 0 } : {}),
     createdAt: row.created_at,
     ...(topicKey ? { i18n: { topic: { key: topicKey, source: row.topic } } } : {}),
   };
@@ -781,7 +869,7 @@ async function countOwnedServers(userId) {
 async function getMembership(serverId, userId) {
   const { data, error } = await supabase
     .from("server_members")
-    .select("server_id, user_id, nickname, list_position, joined_at, timeout_until, timeout_reason, timed_out_by, notification_level, rules_accepted_at")
+    .select("server_id, user_id, nickname, list_position, joined_at, timeout_until, timeout_reason, timed_out_by, notification_level, rules_accepted_at, temporary")
     .eq("server_id", serverId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -855,34 +943,82 @@ function emitToServer(req, serverId, event, payload) {
   }
 }
 
-/** Members (and the owner) of serverId who can VIEW_CHANNEL `channel`. */
+/**
+ * Members (and the owner) of serverId who can VIEW_CHANNEL `channel`.
+ * Every member is read (paged past the 1000-row cap) and the rows are loaded once for
+ * all of them. A category counts as visible when one of its channels is (it was
+ * checked alone, so category events only ever reached owner and admins, P6).
+ */
 async function channelViewerIds(serverId, channel) {
-  const { data: members, error } = await supabase
-    .from("server_members")
-    .select("user_id")
-    .eq("server_id", serverId);
-  if (error) throw error;
+  const memberIds = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error } = await supabase
+      .from("server_members")
+      .select("user_id")
+      .eq("server_id", serverId)
+      .order("user_id", { ascending: true })
+      .range(from, from + 999);
+    if (error) throw error;
+    memberIds.push(...(page || []).map((m) => m.user_id));
+    if (!page || page.length < 1000) break;
+  }
 
   const { data: serverRow } = await supabase
     .from("servers")
-    .select("owner_id")
+    .select("id, owner_id")
     .eq("id", serverId)
     .maybeSingle();
-
-  const userIds = new Set((members || []).map((m) => m.user_id));
+  const userIds = new Set(memberIds);
   if (serverRow?.owner_id) userIds.add(serverRow.owner_id);
 
+  let list = [channel];
+  if (String(channel?.type || "").toLowerCase() === "category") {
+    const { data: kids } = await supabase
+      .from("server_channels")
+      .select("*")
+      .eq("server_id", serverId)
+      .eq("parent_id", channel.id);
+    // An empty category is shown to whoever could see a channel in it: everyone who
+    // can view the category itself.
+    list = (kids || []).length ? [channel, ...kids] : [channel, { ...channel, id: `${channel.id}:probe`, type: "text", parent_id: channel.id }];
+  }
+  const ids = [...new Set(list.flatMap((c) => [c.id, c.parent_id || c.parentId].filter(Boolean)))];
+
+  const [{ data: roles }, overrides, assignedRows] = await Promise.all([
+    supabase.from("server_roles").select("id, permissions, position, is_everyone").eq("server_id", serverId),
+    selectAllIn(
+      supabase,
+      "server_channel_overrides",
+      "id, channel_id, target_type, target_id, allow_permissions, deny_permissions",
+      (q) => q.order("id", { ascending: true }),
+      "channel_id",
+      ids.filter((id) => !String(id).endsWith(":probe"))
+    ),
+    memberIds.length
+      ? selectAllIn(supabase, "server_member_roles", "user_id, role_id", (q) => q.eq("server_id", serverId), "user_id", memberIds)
+      : Promise.resolve([]),
+  ]);
+  const assignedBy = new Map();
+  for (const r of assignedRows || []) {
+    if (!assignedBy.has(String(r.user_id))) assignedBy.set(String(r.user_id), []);
+    assignedBy.get(String(r.user_id)).push({ role_id: r.role_id });
+  }
+
   const viewers = [];
-  await Promise.all(
-    [...userIds].map(async (uid) => {
-      try {
-        const visible = await filterChannelsForMember(serverId, uid, [channel]);
-        if (visible.length) viewers.push(uid);
-      } catch (err) {
-        console.warn("[SERVERS] channelViewerIds member skip:", uid, err?.message || err);
-      }
-    })
-  );
+  for (const uid of userIds) {
+    try {
+      const visible = await filterChannelsForMember(serverId, uid, list, {
+        server: serverRow ? { id: serverRow.id, owner_id: serverRow.owner_id } : null,
+        isMember: true,
+        roles: roles || [],
+        assigned: assignedBy.get(String(uid)) || [],
+        overrides: overrides || [],
+      });
+      if (visible.some((c) => String(c.id) === String(channel.id))) viewers.push(uid);
+    } catch (err) {
+      console.warn("[SERVERS] channelViewerIds member skip:", uid, err?.message || err);
+    }
+  }
   return viewers;
 }
 
@@ -906,7 +1042,20 @@ async function emitChannelToViewers(req, serverId, event, channel, extra = {}) {
   const payload = { serverId, channel: pub, ...extra };
 
   try {
-    emitToUsers(req, await channelViewerIds(serverId, channel), event, payload);
+    const viewers = await channelViewerIds(serverId, channel);
+    // Whoever sees the channel sees its category too: members who could not see the
+    // (empty or hidden-children) category before get it now, so the channel never
+    // arrives with an unknown parentId (P6).
+    if (channel.parent_id && event === "server:channel:created") {
+      const { data: parent } = await supabase
+        .from("server_channels")
+        .select("*")
+        .eq("id", channel.parent_id)
+        .eq("server_id", serverId)
+        .maybeSingle();
+      if (parent) emitToUsers(req, viewers, "server:channel:updated", { serverId, channel: publicChannel(parent) });
+    }
+    emitToUsers(req, viewers, event, payload);
   } catch (err) {
     console.warn("[SERVERS] emitChannelToViewers failed:", event, err?.message || err);
   }
@@ -940,6 +1089,89 @@ async function assertServerChannelRef(serverId, channelId, allowedTypes) {
     throw err;
   }
   return channel;
+}
+
+/**
+ * Channel bits of a member that has only @everyone (no roles, no member override): what
+ * "every member" can do in a channel.
+ */
+async function everyoneChannelBits(serverId, channelId) {
+  const { data: channel } = await supabase
+    .from("server_channels")
+    .select("id, parent_id")
+    .eq("id", channelId)
+    .eq("server_id", serverId)
+    .maybeSingle();
+  if (!channel) return 0n;
+  const ids = channel.parent_id ? [channel.parent_id, channel.id] : [channel.id];
+  const [{ data: roles }, { data: overrides }] = await Promise.all([
+    supabase.from("server_roles").select("id, permissions, position, is_everyone").eq("server_id", serverId),
+    supabase
+      .from("server_channel_overrides")
+      .select("id, channel_id, target_type, target_id, allow_permissions, deny_permissions")
+      .in("channel_id", ids),
+  ]);
+  const everyone = (roles || []).find((r) => r.is_everyone);
+  if (!everyone) return 0n;
+  const { computeChannelOverwriteBits, stripEveryonePrivilegeBits } = require("../lib/serverPermissions");
+  return computeChannelOverwriteBits({
+    baseBits: stripEveryonePrivilegeBits(fromPgBigint(everyone.permissions)),
+    roles,
+    assigned: [],
+    overrides: (overrides || []).filter((o) => o.target_type === "role"),
+    channelId: channel.id,
+    parentId: channel.parent_id || null,
+    userId: "\u0000everyone",
+  });
+}
+
+/**
+ * Server setting channels (AFK, rules, welcome, system) must be visible to the actor,
+ * and for the public ones to every member (SC-1 / SC-11).
+ */
+async function assertSettingChannelVisible(serverId, actorId, channelId, { everyone = false, connect = false } = {}) {
+  const need = (bits) =>
+    hasPermission(bits, Permissions.VIEW_CHANNEL) && (!connect || hasPermission(bits, Permissions.CONNECT));
+  const mine = await resolveChannelPermissions(supabase, serverId, actorId, channelId);
+  if (!mine.isMember || mine.channelMissing || !need(mine.bits)) {
+    const err = new Error("Channel not found on this server.");
+    err.status = 400;
+    throw err;
+  }
+  if (everyone && !need(await everyoneChannelBits(serverId, channelId))) {
+    const err = new Error("Pick a channel every member can see.");
+    err.status = 400;
+    err.code = connect ? "AFK_CHANNEL_NOT_PUBLIC" : "SETTING_CHANNEL_NOT_PUBLIC";
+    throw err;
+  }
+}
+
+const SETTING_REF_FIELDS = ["afkChannelId", "systemChannelId", "welcomeChannelId", "rulesChannelId"];
+
+/** Drop setting channel ids that @everyone cannot view from a broadcast payload (SC-8). */
+async function redactHiddenSettingRefs(serverId, pub) {
+  for (const field of SETTING_REF_FIELDS) {
+    const id = pub?.[field];
+    if (!id) continue;
+    let ok = false;
+    try {
+      ok = hasPermission(await everyoneChannelBits(serverId, id), Permissions.VIEW_CHANNEL);
+    } catch {
+      ok = false;
+    }
+    if (!ok) delete pub[field];
+  }
+  return pub;
+}
+
+/** Null the setting channel ids a member cannot see in their own copy (SC-8). */
+function redactRefsForViewer(pub, visibleChannels) {
+  if (!pub) return pub;
+  const visible = new Set((visibleChannels || []).map((c) => String(c.id)));
+  for (const field of SETTING_REF_FIELDS) {
+    if (pub[field] && !visible.has(String(pub[field]))) pub[field] = null;
+  }
+  return pub;
 }
 
 async function afterMemberJoined(req, serverRow, userId, serverId) {
@@ -998,26 +1230,32 @@ function notifyServerMemberRemoved(req, {
   targetUserId,
   action,
   reason,
-  actorId,
+  wasMember = true,
 }) {
   const io = req.app?.get?.("io");
   if (!io || !serverId || !targetUserId) return;
+  const kind = action === "ban" ? "ban" : "kick";
 
-  const payload = {
+  // The removed user hears the reason (never who did it). The other members only learn
+  // who left: the moderator id and the private note used to go to everyone (audit M5).
+  io.to(`user:${targetUserId}`).emit("server:member:removed", {
     serverId,
     serverName: serverName || null,
     userId: targetUserId,
-    action: action === "ban" ? "ban" : "kick",
+    action: kind,
     reason: reason || null,
-    actorId: actorId || null,
-  };
-
-  io.to(`user:${targetUserId}`).emit("server:member:removed", payload);
-  io.to(`server:${serverId}`).emit("server:member:removed", payload);
+  });
+  // Banning someone who was not a member changes nobody's member count.
+  if (wasMember) {
+    const room = io.to(`server:${serverId}`);
+    const target = typeof room.except === "function" ? room.except(`user:${targetUserId}`) : room;
+    target.emit("server:member:removed", { serverId, userId: targetUserId, action: kind });
+  }
 
   // Only this server's rooms and voice calls (other servers' were dropped too before).
-  void require("../lib/serverRooms").dropUserFromServer(io, serverId, targetUserId, action === "ban" ? "ban" : "kick");
-
+  void require("../lib/serverRooms").dropUserFromServer(io, serverId, targetUserId, kind);
+  // LiveKit seats and tokens (voice contract): a removed user must not reconnect (M2).
+  void memberState.callVoice("evictFromServerVoice", io, { serverId, userId: targetUserId, reason: kind });
 }
 
 /**
@@ -1052,30 +1290,47 @@ async function buildMyServerList(userId) {
       return { servers: [], ownedCount: 0, maxOwned: MAX_OWNED_SERVERS };
     }
 
-    const [serversRes, memberRowsRes, channelsRes] = await Promise.all([
+    // Batch reads are paged (selectAllIn): PostgREST cuts every select at 1000 rows
+    // without an error, which dropped channels, roles and override rows (P1 / CA-4).
+    const pagedOrNull = async (label, fn) => {
+      try {
+        return await fn();
+      } catch (e) {
+        console.warn(`[SERVERS] ${label} batch failed:`, e?.message || e);
+        return null;
+      }
+    };
+    const [serversRes, memberCounts, channelRows] = await Promise.all([
       supabase.from("servers").select("*").in("id", ids),
-      supabase.from("server_members").select("server_id").in("server_id", ids),
-      supabase
-        .from("server_channels")
-        .select("*")
-        .in("server_id", ids)
-        .order("position", { ascending: true }),
+      // Exact head counts, 8 at a time (one row per member was cut at 1000 rows).
+      (async () => {
+        const out = [];
+        let next = 0;
+        const worker = async () => {
+          while (next < ids.length) {
+            const id = ids[next++];
+            const { count } = await supabase
+              .from("server_members")
+              .select("user_id", { count: "exact", head: true })
+              .eq("server_id", id);
+            out.push([id, count || 0]);
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(8, ids.length) }, worker));
+        return out;
+      })(),
+      pagedOrNull("channel", () =>
+        selectAllIn(supabase, "server_channels", "*", (q) => q.order("id", { ascending: true }), "server_id", ids)
+      ),
     ]);
     if (serversRes.error) throw serversRes.error;
     const servers = serversRes.data || [];
-    if (memberRowsRes.error) {
-      console.warn("[SERVERS] member count batch failed:", memberRowsRes.error.message);
-    }
-    const channels = channelsRes.error ? [] : (channelsRes.data || []);
-    if (channelsRes.error) console.warn("[SERVERS] channel batch failed:", channelsRes.error.message);
+    const channels = [...(channelRows || [])].sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
 
     const byId = new Map(servers.map((s) => [s.id, s]));
-    const ownedCount = servers.filter((s) => s.owner_id === userId).length;
+    const ownedCount = servers.filter((s) => sameId(s.owner_id, userId)).length;
 
-    const counts = new Map();
-    for (const row of memberRowsRes.data || []) {
-      counts.set(row.server_id, (counts.get(row.server_id) || 0) + 1);
-    }
+    const counts = new Map(memberCounts);
 
     const rawChannelsByServer = new Map();
     for (const ch of channels) {
@@ -1084,26 +1339,39 @@ async function buildMyServerList(userId) {
     }
 
     const channelIds = channels.map((ch) => ch.id).filter(Boolean);
-    const [rolesRes, assignedRes, overridesRes] = await Promise.all([
-      supabase
-        .from("server_roles")
-        .select("id, server_id, permissions, is_everyone, position")
-        .in("server_id", ids),
-      supabase
-        .from("server_member_roles")
-        .select("server_id, role_id, user_id")
-        .eq("user_id", userId)
-        .in("server_id", ids),
+    const [roleRows, assignedRows, overrideRows] = await Promise.all([
+      selectAllIn(
+        supabase,
+        "server_roles",
+        "id, server_id, permissions, is_everyone, position",
+        (q) => q.order("id", { ascending: true }),
+        "server_id",
+        ids
+      ),
+      selectAllIn(
+        supabase,
+        "server_member_roles",
+        "server_id, role_id, user_id",
+        (q) => q.eq("user_id", userId).order("role_id", { ascending: true }),
+        "server_id",
+        ids
+      ),
       channelIds.length
-        ? supabase
-            .from("server_channel_overrides")
-            .select("id, channel_id, target_type, target_id, allow_permissions, deny_permissions")
-            .in("channel_id", channelIds)
-        : Promise.resolve({ data: [], error: null }),
+        ? pagedOrNull("override", () =>
+            selectAllIn(
+              supabase,
+              "server_channel_overrides",
+              "id, channel_id, target_type, target_id, allow_permissions, deny_permissions",
+              (q) => q.order("id", { ascending: true }),
+              "channel_id",
+              channelIds
+            )
+          )
+        : Promise.resolve([]),
     ]);
-    if (rolesRes.error) throw rolesRes.error;
-    if (assignedRes.error) throw assignedRes.error;
-    if (overridesRes.error) console.warn("[SERVERS] override batch failed:", overridesRes.error.message);
+    const rolesRes = { data: roleRows };
+    const assignedRes = { data: assignedRows };
+    const overridesRes = overrideRows ? { data: overrideRows, error: null } : { data: [], error: new Error("override batch failed") };
 
     const rolesByServer = new Map();
     for (const role of rolesRes.data || []) {
@@ -1150,7 +1418,7 @@ async function buildMyServerList(userId) {
         const row = byId.get(m.server_id);
         if (!row) return null;
         const level = String(m.notification_level || "all").toLowerCase();
-        return publicServer(row, {
+        const pub = publicServer(row, {
           nickname: m.nickname || null,
           listPosition: m.list_position ?? 0,
           joinedAt: m.joined_at,
@@ -1159,11 +1427,12 @@ async function buildMyServerList(userId) {
           timeoutUntil: m.timeout_until || null,
           timeoutReason: m.timeout_reason || null,
           folderId: m.folder_id || null,
-          isOwner: row.owner_id === userId,
+          isOwner: sameId(row.owner_id, userId),
           memberCount: counts.get(row.id) || 0,
           channels: metaByServer.get(row.id)?.channels || [],
           myPermissions: metaByServer.get(row.id)?.myPermissions || null,
         });
+        return redactRefsForViewer(pub, pub.channels);
       })
       .filter(Boolean);
 
@@ -1688,6 +1957,15 @@ router.post("/", requireAuth, async (req, res) => {
     if (name.length < NAME_MIN || name.length > NAME_MAX) {
       return res.status(400).json(apiError("Server name must be {min}–{max} characters.", { min: NAME_MIN, max: NAME_MAX }));
     }
+    {
+      // Güvenlik Merkezi read-only lock: no new servers (admins exempt).
+      const { checkServerCreate } = require("../lib/platformPolicy");
+      const verdict = checkServerCreate({ config: require("../runtime/sharedState").systemConfig, isAdmin: req.user.username === "admin" });
+      if (!verdict.ok) {
+        const { data: row } = await supabase.from("users").select("is_admin").eq("id", userId).maybeSingle();
+        if (!row?.is_admin) return res.status(403).json({ error: verdict.message, code: verdict.code });
+      }
+    }
 
     let templateMode = "default";
     let template = null;
@@ -1906,6 +2184,9 @@ router.post("/", requireAuth, async (req, res) => {
 
 // ---- join hardening (audit 2026-10-19: D1, #9, #17) ----
 const MAX_JOINED_SERVERS = 200;
+const MAX_INVITES_PER_SERVER = 1000;
+const MAX_INVITES_PER_MEMBER = 50;
+const INVITE_CREATE_LIMIT = { windowMs: 10 * 60 * 1000, max: 20 };
 const JOIN_LIMIT = { windowMs: 10 * 60 * 1000, max: 20 };
 const JOIN_IP_LIMIT = { windowMs: 10 * 60 * 1000, max: 60 };
 const INVITE_LOOKUP_LIMIT = { windowMs: 10 * 60 * 1000, max: 120 };
@@ -1959,16 +2240,25 @@ async function alreadyMemberPayload(serverId, userId, existing) {
  */
 async function insertJoinMembership(serverId, userId, { listPosition, temporary = false } = {}) {
   if (listPosition >= MAX_JOINED_SERVERS) return { capped: true };
+  // A timeout that was running when the member left comes back with them (M3 / IM-1).
+  const timeoutFields = await memberState.timeoutFieldsForJoin(serverId, userId);
+  // The server's default notification level ("*": the column may not exist yet, SC-10).
+  const { data: srvDefaults } = await supabase.from("servers").select("*").eq("id", serverId).maybeSingle();
   const { error } = await supabase.from("server_members").insert({
     server_id: serverId,
     user_id: userId,
     list_position: listPosition,
     temporary: Boolean(temporary),
+    ...(srvDefaults?.default_notification_level === "mentions" ? { notification_level: "mentions" } : {}),
+    ...timeoutFields,
   });
   if (error) {
     if (String(error.code) === "23505") return { alreadyMember: true };
     throw error;
   }
+  const undo = async () => {
+    await supabase.from("server_members").delete().eq("server_id", serverId).eq("user_id", userId);
+  };
   const { data: ban } = await supabase
     .from("server_bans")
     .select("user_id")
@@ -1976,13 +2266,52 @@ async function insertJoinMembership(serverId, userId, { listPosition, temporary 
     .eq("user_id", userId)
     .maybeSingle();
   if (ban) {
-    await supabase.from("server_members").delete().eq("server_id", serverId).eq("user_id", userId);
+    await undo();
+    await memberState.purgeMemberState(serverId, userId);
     return { banned: true };
+  }
+  // Count-then-insert caps get a post-insert recount (parallel joins, IM-15 / IM-9).
+  try {
+    const [{ count: joinedCount }, { count: memberCount }] = await Promise.all([
+      supabase.from("server_members").select("server_id", { count: "exact", head: true }).eq("user_id", userId),
+      supabase.from("server_members").select("user_id", { count: "exact", head: true }).eq("server_id", serverId),
+    ]);
+    if ((joinedCount || 0) > MAX_JOINED_SERVERS) {
+      await undo();
+      return { capped: true };
+    }
+    if ((memberCount || 0) > maxServerMembers()) {
+      await undo();
+      return { full: true };
+    }
+  } catch (err) {
+    console.warn("[SERVERS] join recount failed:", err?.message || err);
   }
   return { ok: true };
 }
 
+/** Members per server (IM-9). SERVER_MAX_MEMBERS overrides the default. */
+function maxServerMembers() {
+  const n = Math.floor(Number(process.env.SERVER_MAX_MEMBERS));
+  return Number.isFinite(n) && n > 0 ? n : 25000;
+}
+
+/** Platform staff paused joins ("close invites"): every join path stops (IM-4). */
+function joinsPaused(server) {
+  return Boolean(server?.invites_paused_at);
+}
+
+function joinsPausedRefusal(res) {
+  return res.status(403).json(apiError("Joining this server is paused right now.", null, { code: "JOINS_PAUSED" }));
+}
+
 function joinRefusal(res, result) {
+  if (result.full) {
+    return res.status(403).json({
+      ...apiError("This server is full ({max} members).", { max: maxServerMembers() }),
+      code: "SERVER_FULL",
+    });
+  }
   if (result.banned) return res.status(403).json({ error: "You are banned from this server.", code: "BANNED" });
   if (result.capped) {
     return res.status(400).json({
@@ -2010,16 +2339,21 @@ router.get("/discover", requireAuth, async (req, res) => {
     // members/active are ranked over a bounded candidate window (newest 200 public servers
     // matching q), then paged; "new" pages straight in the database.
     const windowed = sort !== "new";
+    // Servers hidden by Descall moderation stay out of the in-app list too (IM-10).
     let query = supabase
       .from("servers")
       .select(cols)
       .eq("is_public", true)
+      .is("directory_hidden_at", null)
       .order(sort === "active" ? "updated_at" : "created_at", { ascending: false });
     if (q) query = query.ilike("name", `%${q.replace(/[%_\\]/g, "")}%`);
     query = windowed ? query.limit(200) : query.range(offset, offset + limit);
 
-    const { data: fetched, error } = await query;
+    const { data: fetchedRaw, error } = await query;
     if (error) throw error;
+    // ...and so do servers whose owner account is banned or deleted (like the web directory).
+    const owners = await loadOwnerStates((fetchedRaw || []).map((r) => r.owner_id));
+    const fetched = (fetchedRaw || []).filter((r) => ownerStateOk(owners.get(String(r.owner_id))));
 
     // Exact member counts with head-only count queries (the old single select silently
     // stopped at PostgREST's 1000-row cap, so busy servers showed wrong counts).
@@ -2076,6 +2410,25 @@ router.get("/discover", requireAuth, async (req, res) => {
   }
 });
 
+
+/** users rows { id, is_banned, deleted_at } by id (columns degrade when a migration is missing). */
+async function loadOwnerStates(ownerIds) {
+  const ids = [...new Set((ownerIds || []).filter(Boolean).map(String))];
+  if (!ids.length) return new Map();
+  for (const cols of ["id, is_banned, deleted_at, deletion_requested_at", "id, is_banned, deleted_at", "id, is_banned", "id"]) {
+    const { data, error } = await supabase.from("users").select(cols).in("id", ids);
+    if (!error) return new Map((data || []).map((u) => [String(u.id), u]));
+  }
+  return new Map();
+}
+
+function ownerStateOk(owner) {
+  return Boolean(owner) && !owner.is_banned && !owner.deleted_at;
+}
+
+async function ownerAvailable(ownerId) {
+  return ownerStateOk((await loadOwnerStates([ownerId])).get(String(ownerId)));
+}
 
 /** 3.7.32: previews tell a banned viewer up front (used to show only after pressing Join). */
 async function isViewerBanned(serverId, userId) {
@@ -2288,12 +2641,14 @@ router.post("/invites/:code/join", requireAuth, async (req, res) => {
     const existing = await getMembership(invite.server_id, userId);
     if (existing) return res.json(withInviteChannel(await alreadyMemberPayload(invite.server_id, userId, existing), invite));
 
+    // "*": invites_paused_at only exists once its migration ran.
     const { data: inviteServer, error: inviteServerErr } = await supabase
       .from("servers")
-      .select("id, verification_level")
+      .select("*")
       .eq("id", invite.server_id)
       .maybeSingle();
     if (inviteServerErr) throw inviteServerErr;
+    if (joinsPaused(inviteServer)) return joinsPausedRefusal(res);
     try {
       await assertJoinVerification(inviteServer, userId);
     } catch (vErr) {
@@ -2476,6 +2831,7 @@ router.post("/vanity/:slug/join", requireAuth, async (req, res) => {
 
     const existing = await getMembership(server.id, userId);
     if (existing) return res.json(await alreadyMemberPayload(server.id, userId, existing));
+    if (joinsPaused(server)) return joinsPausedRefusal(res);
 
     try {
       await assertJoinVerification(server, userId);
@@ -2545,7 +2901,9 @@ router.post("/discover/:id/join", requireAuth, async (req, res) => {
       .eq("id", serverId)
       .maybeSingle();
     if (error) throw error;
-    if (!server || !server.is_public) {
+    // Hidden by Descall moderation (or its owner is banned / deleted): not joinable from
+    // the in-app list either (IM-10).
+    if (!server || !server.is_public || server.directory_hidden_at || !(await ownerAvailable(server.owner_id))) {
       return res.status(404).json({ error: "Public server not found." });
     }
 
@@ -2561,6 +2919,7 @@ router.post("/discover/:id/join", requireAuth, async (req, res) => {
 
     const existing = await getMembership(serverId, userId);
     if (existing) return res.json(await alreadyMemberPayload(serverId, userId, existing));
+    if (joinsPaused(server)) return joinsPausedRefusal(res);
 
     try {
       await assertJoinVerification(server, userId);
@@ -2634,8 +2993,8 @@ router.get("/:id", requireAuth, async (req, res) => {
 
     const level = String(membership.notification_level || "all").toLowerCase();
     return res.json({
-      server: publicServer(bundle.server, {
-        isOwner: bundle.server.owner_id === req.user.id,
+      server: redactRefsForViewer(publicServer(bundle.server, {
+        isOwner: sameId(bundle.server.owner_id, req.user.id),
         memberCount: bundle.memberCount,
         nickname: membership.nickname || null,
         listPosition: membership.list_position ?? 0,
@@ -2647,13 +3006,35 @@ router.get("/:id", requireAuth, async (req, res) => {
         channels: visibleChannels.map(publicChannel),
         roles: bundle.roles.map(publicRole),
         myPermissions,
-      }),
+      }), visibleChannels),
     });
   } catch (err) {
     console.error("[SERVERS] GET /:id error:", err);
     return res.status(500).json({ error: "Failed to load server." });
   }
 });
+
+/**
+ * Irreversible owner actions need the account password, like ownership transfer (M8 /
+ * IM-14: deleting a server only needed its public name). Accounts without a password
+ * (Google / Apple sign-in) pass. Same rate limit as transfer. Returns true when a
+ * response was already sent.
+ */
+const OWNER_CONFIRM_LIMIT = { windowMs: 15 * 60 * 1000, max: 5 };
+async function rejectOwnerPassword(req, res, actorId) {
+  const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
+  const limitKey = `server-transfer:user:${actorId}`;
+  if (rejectIfLimited(res, [peek(limitKey, OWNER_CONFIRM_LIMIT)])) return true;
+  const { data: me, error } = await supabase.from("users").select("id, password_hash").eq("id", actorId).maybeSingle();
+  if (error) throw error;
+  if (!me?.password_hash) return false;
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  const ok = password ? await require("bcryptjs").compare(password, me.password_hash) : false;
+  if (ok) return false;
+  if (rejectIfLimited(res, [recordFailure(limitKey, OWNER_CONFIRM_LIMIT)])) return true;
+  res.status(403).json(apiError("Password is incorrect.", null, { code: "PASSWORD_REQUIRED" }));
+  return true;
+}
 
 /**
  * DELETE /servers/:id
@@ -2671,7 +3052,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
       .maybeSingle();
     if (error) throw error;
     if (!server) return res.status(404).json({ error: "Server not found." });
-    if (server.owner_id !== req.user.id) {
+    if (!sameId(server.owner_id, req.user.id)) {
       return res.status(403).json({ error: "Only the owner can delete this server." });
     }
     if (!confirmName || confirmName.toLowerCase() !== String(server.name).toLowerCase()) {
@@ -2680,6 +3061,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
         code: "CONFIRM_NAME_REQUIRED",
       });
     }
+    if (await rejectOwnerPassword(req, res, req.user.id)) return;
 
     // The SERVER_DELETE row now lives in server_deletion_log (server_audit_logs rows
     // cascade with the server, so the old audit write vanished with it).
@@ -2772,7 +3154,7 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
     const actorId = req.user.id;
-    const targetId = String(req.body?.userId || "").trim();
+    const targetId = canonId(String(req.body?.userId || "").trim());
     const confirmName = cleanName(req.body?.confirmName);
     const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
     const limitKey = `server-transfer:user:${actorId}`;
@@ -2781,7 +3163,7 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
 
     const { server } = await requireServerOwner(serverId, actorId);
     if (!targetId) return res.status(400).json({ error: "Choose the new owner.", code: "TARGET_REQUIRED" });
-    if (String(targetId) === String(actorId)) {
+    if (sameId(targetId, actorId)) {
       return res.status(400).json({ error: "You already own this server.", code: "TARGET_IS_OWNER" });
     }
     if (!confirmName || confirmName.toLowerCase() !== String(server.name).toLowerCase()) {
@@ -2805,8 +3187,18 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
     }
 
     const target = await getMembership(serverId, targetId);
+    // getMembership now reads `temporary` (it was never selected, so a guest could be
+    // made owner and then dropped by the temporary-member cleanup, IM-3).
     if (!target || target.temporary) {
       return res.status(400).json({ error: "The new owner must be a member of this server.", code: "TARGET_NOT_MEMBER" });
+    }
+    // No ownership for an account that is banned from Descall or being deleted (M11).
+    {
+      const owners = await loadOwnerStates([targetId]);
+      const t = owners.get(String(targetId));
+      if (!ownerStateOk(t) || t?.deletion_requested_at) {
+        return res.status(400).json(apiError("This account cannot own a server right now.", null, { code: "TARGET_UNAVAILABLE" }));
+      }
     }
     const { data: targetBan } = await supabase
       .from("server_bans")
@@ -2835,6 +3227,17 @@ router.post("/:id/ownership/transfer", requireAuth, async (req, res) => {
     if (!updated) {
       return res.status(409).json({ error: "Ownership changed meanwhile. Reload and try again.", code: "OWNER_CHANGED" });
     }
+
+    // The new owner starts unrestricted: a running timeout would lock them out of their
+    // own server's chat for up to 28 days (M6).
+    if (target.timeout_until) {
+      await supabase
+        .from("server_members")
+        .update({ timeout_until: null, timeout_reason: null, timed_out_by: null })
+        .eq("server_id", serverId)
+        .eq("user_id", targetId);
+    }
+    await memberState.clearTimeoutRecord(serverId, targetId);
 
     await writeAudit({
       serverId,
@@ -2898,7 +3301,7 @@ router.post("/:id/leave", requireAuth, async (req, res) => {
     if (error) throw error;
     if (!server) return res.status(404).json({ error: "Server not found." });
 
-    if (server.owner_id === userId) {
+    if (sameId(server.owner_id, userId)) {
       if (!confirmName || confirmName.toLowerCase() !== String(server.name).toLowerCase()) {
         return res.status(400).json({
           error: "Owner leave deletes the server. Type the server name to confirm.",
@@ -2906,6 +3309,7 @@ router.post("/:id/leave", requireAuth, async (req, res) => {
           deletesServer: true,
         });
       }
+      if (await rejectOwnerPassword(req, res, userId)) return;
       await require("../lib/serverDeletion").deleteServerFully(req.app?.get?.("io"), server, {
         actorId: userId,
         via: "owner_leave",
@@ -2920,12 +3324,9 @@ router.post("/:id/leave", requireAuth, async (req, res) => {
       .eq("user_id", userId);
     if (delErr) throw delErr;
 
-    // Clean member role assignments
-    await supabase
-      .from("server_member_roles")
-      .delete()
-      .eq("server_id", serverId)
-      .eq("user_id", userId);
+    // Clean member role assignments and member channel overrides (DF-1/DF-2). A running
+    // timeout stays in server_member_timeouts and comes back on rejoin (M3).
+    await memberState.purgeMemberState(serverId, userId);
 
     await writeAudit({
       serverId,
@@ -2935,6 +3336,7 @@ router.post("/:id/leave", requireAuth, async (req, res) => {
       targetId: userId,
     });
     await evictLeavingMember(req, serverId, userId);
+    void memberState.callVoice("evictFromServerVoice", getIo(req), { serverId, userId, reason: "left" });
     // D2: the user's other tabs / devices drop the server too, and members see the count change.
     {
       const io = req.app?.get?.("io");
@@ -3081,19 +3483,31 @@ router.get("/:id/members", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "You are not a member of this server." });
     }
 
-    const { data: members, error } = await supabase
-      .from("server_members")
-      .select("user_id, nickname, joined_at, list_position, timeout_until, timeout_reason, timed_out_by")
-      .eq("server_id", serverId)
-      .order("joined_at", { ascending: true });
-    if (error) throw error;
+    // Every member, paged past PostgREST's 1000-row cap (the list was silently cut, IM-9).
+    const members = [];
+    for (let from = 0; from < maxServerMembers() + 1000; from += 1000) {
+      const { data: page, error } = await supabase
+        .from("server_members")
+        .select("user_id, nickname, joined_at, list_position, timeout_until, timeout_reason, timed_out_by")
+        .eq("server_id", serverId)
+        .order("joined_at", { ascending: true })
+        .range(from, from + 999);
+      if (error) throw error;
+      members.push(...(page || []));
+      if (!page || page.length < 1000) break;
+    }
 
-    const userIds = (members || []).map((m) => m.user_id);
-    const { data: users, error: uErr } = await supabase
-      .from("users")
-      .select("id, username, display_name, avatar_url, equipped_country_id")
-      .in("id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
-    if (uErr) throw uErr;
+    // Timeout notes and the moderator who wrote them are for moderators only (IM-5).
+    const viewer = await resolveMemberPermissions(supabase, serverId, req.user.id);
+    const seesModNotes =
+      viewer.isOwner ||
+      hasPermission(viewer.bits, Permissions.MODERATE_MEMBERS) ||
+      hasPermission(viewer.bits, Permissions.VIEW_AUDIT_LOG);
+
+    const userIds = members.map((m) => m.user_id);
+    const users = userIds.length
+      ? await selectAllIn(supabase, "users", "id, username, display_name, avatar_url, equipped_country_id", (q) => q, "id", userIds)
+      : [];
 
     // One flag per member (2.13.0): a single lookup for every equipped country.
     const countryIds = [...new Set((users || []).map((u) => u.equipped_country_id).filter(Boolean))];
@@ -3121,10 +3535,18 @@ router.get("/:id/members", requireAuth, async (req, res) => {
       .eq("id", serverId)
       .maybeSingle();
 
-    const { data: memberRoles } = await supabase
-      .from("server_member_roles")
-      .select("user_id, role_id")
-      .eq("server_id", serverId);
+    const memberRoles = [];
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error: mrErr } = await supabase
+        .from("server_member_roles")
+        .select("user_id, role_id")
+        .eq("server_id", serverId)
+        .order("user_id", { ascending: true })
+        .range(from, from + 999);
+      if (mrErr) throw mrErr;
+      memberRoles.push(...(page || []));
+      if (!page || page.length < 1000) break;
+    }
 
     const { data: roles } = await supabase
       .from("server_roles")
@@ -3139,7 +3561,7 @@ router.get("/:id/members", requireAuth, async (req, res) => {
     }
 
     const byId = new Map((users || []).map((u) => [u.id, u]));
-    const list = (members || []).map((m) => {
+    const list = members.map((m) => {
       const u = byId.get(m.user_id) || {};
       const roleIds = rolesByUser.get(m.user_id) || [];
       const highestPosition = roleIds.reduce(
@@ -3157,9 +3579,9 @@ router.get("/:id/members", requireAuth, async (req, res) => {
         nickname: m.nickname || null,
         joinedAt: m.joined_at,
         timeoutUntil: m.timeout_until || null,
-        timeoutReason: m.timeout_reason || null,
-        timedOutBy: m.timed_out_by || null,
-        isOwner: server?.owner_id === m.user_id,
+        timeoutReason: seesModNotes || sameId(m.user_id, req.user.id) ? m.timeout_reason || null : null,
+        timedOutBy: seesModNotes ? m.timed_out_by || null : null,
+        isOwner: sameId(server?.owner_id, m.user_id),
         highestPosition,
         roleIds,
       };
@@ -3171,6 +3593,102 @@ router.get("/:id/members", requireAuth, async (req, res) => {
     return res.status(500).json({ error: "Failed to load members." });
   }
 });
+
+// ---------------------------------------------------------------- role helpers
+
+const ROLE_POSITION_MAX = 10000;
+const ROLE_ROUTE_LIMIT = { windowMs: 60 * 1000, max: 60 };
+const PG_BIGINT_LIMIT = 1n << 63n;
+
+/** Role edits are cheap to send and expensive to apply (access re-check per channel, R5). */
+function rejectRoleRate(req, res) {
+  const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+  return rejectIfLimited(res, [recordFailure(`server-roles:user:${req.user.id}`, ROLE_ROUTE_LIMIT)]);
+}
+
+/**
+ * Role names: zero-width / control characters stripped, and nothing that reads as a
+ * mass mention (@everyone / @here, R6). Returns { name } or { error }.
+ */
+function validateRoleName(raw) {
+  const name = cleanName(
+    String(raw ?? "").replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
+  );
+  if (name.length < ROLE_NAME_MIN || name.length > ROLE_NAME_MAX) {
+    return { error: apiError("Role name must be {min}–{max} characters.", { min: ROLE_NAME_MIN, max: ROLE_NAME_MAX }) };
+  }
+  if (/^@?(everyone|here)$/i.test(name)) {
+    return { error: apiError("This role name is reserved.", null, { code: "ROLE_NAME_RESERVED" }) };
+  }
+  return { name };
+}
+
+function clampRolePosition(value) {
+  return Math.max(0, Math.min(ROLE_POSITION_MAX, Math.floor(Number(value) || 0)));
+}
+
+/** Raw bitfields must fit Postgres bigint and name known bits only (R9). null = invalid. */
+function sanitizeRoleBits(bits) {
+  if (bits == null) return null;
+  if (bits < 0n || bits >= PG_BIGINT_LIMIT) return null;
+  return bits & ALL_PERMISSIONS;
+}
+
+/**
+ * R2: a non-owner, non-ADMINISTRATOR member cannot hand out (or take away) a role that
+ * carries a permission they do not have themselves; ADMINISTRATOR through an alt
+ * account was the worst case.
+ */
+function roleExceedsActor(role, actorPerms) {
+  if (actorPerms.isOwner || hasPermission(actorPerms.permissions, Permissions.ADMINISTRATOR)) return false;
+  const roleBits = fromPgBigint(role.permissions) & EDITABLE_PERMISSION_MASK;
+  return (roleBits & ~fromPgBigint(actorPerms.permissions)) !== 0n;
+}
+
+function roleExceedsError(res) {
+  return res.status(403).json(apiError("This role has permissions you do not have.", null, { code: "ROLE_EXCEEDS_YOUR_PERMISSIONS" }));
+}
+
+/**
+ * Make room at `position`: every non-@everyone role of the server at or above it moves
+ * up one, so the new role never ties with (or jumps over) an existing one. Returns the
+ * roles that moved (for live events).
+ */
+async function shiftRolesUp(serverId, position) {
+  const { data: above, error } = await supabase
+    .from("server_roles")
+    .select("*")
+    .eq("server_id", serverId)
+    .eq("is_everyone", false)
+    .gte("position", position);
+  if (error) throw error;
+  const moved = [];
+  const list = [...(above || [])].sort((a, b) => (Number(b.position) || 0) - (Number(a.position) || 0));
+  for (const r of list) {
+    const next = Math.min(ROLE_POSITION_MAX, (Number(r.position) || 0) + 1);
+    const { data: upd, error: uErr } = await supabase
+      .from("server_roles")
+      .update({ position: next })
+      .eq("id", r.id)
+      .eq("server_id", serverId)
+      .select("*")
+      .maybeSingle();
+    if (uErr) throw uErr;
+    moved.push(upd || { ...r, position: next });
+  }
+  return moved;
+}
+
+/** IM-8 / Discord parity: getting a role makes a temporary member permanent. */
+async function makeMembershipPermanent(serverId, userId) {
+  const { error } = await supabase
+    .from("server_members")
+    .update({ temporary: false })
+    .eq("server_id", serverId)
+    .eq("user_id", userId)
+    .eq("temporary", true);
+  if (error) console.warn("[SERVERS] clear temporary failed:", error.message);
+}
 
 /**
  * GET /servers/:id/roles
@@ -3205,15 +3723,12 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
   let releaseCap = null;
   try {
     const serverId = req.params.id;
+    if (rejectRoleRate(req, res)) return;
     const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
 
-    const name = cleanName(req.body?.name);
-    if (name.length < ROLE_NAME_MIN || name.length > ROLE_NAME_MAX) {
-      return res.status(400).json(apiError("Role name must be {min}–{max} characters.", { min: ROLE_NAME_MIN, max: ROLE_NAME_MAX }));
-    }
-    if (name.toLowerCase() === "@everyone") {
-      return res.status(400).json({ error: "Cannot create another @everyone role." });
-    }
+    const checked = validateRoleName(req.body?.name);
+    if (checked.error) return res.status(400).json(checked.error);
+    const { name } = checked;
 
     releaseCap = await acquireCapLock(`roles:${serverId}`);
     const { count, error: countErr } = await supabase
@@ -3228,26 +3743,26 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
       });
     }
 
-    const { data: top } = await supabase
-      .from("server_roles")
-      .select("position")
-      .eq("server_id", serverId)
-      .order("position", { ascending: false })
-      .limit(1);
+    // Discord: a new role starts at the bottom, just above @everyone (R1). It used to go
+    // above every role, so a "Mod" created after "Admin" outranked it. An explicit
+    // position inserts there; the roles at or above it move up one (no ties).
     let position =
       typeof req.body?.position === "number" && Number.isFinite(req.body.position)
-        ? Math.max(0, Math.floor(req.body.position))
-        : (top?.[0]?.position ?? 0) + 1;
+        ? Math.max(1, clampRolePosition(req.body.position))
+        : 1;
     if (!actorPerms.isOwner) {
       const actorPos = await getMemberHighestPosition(supabase, serverId, req.user.id);
       if (actorPos <= 0) {
         return res.status(403).json({ error: "You need a higher role to create roles.", code: "HIERARCHY" });
       }
-      position = Math.min(position, actorPos - 1);
+      position = Math.max(1, Math.min(position, actorPos));
     }
 
     const color = clampColor(req.body?.color ?? 0x5865f2);
-    const perms = parsePermissionsInput(req.body?.permissions);
+    const perms = sanitizeRoleBits(parsePermissionsInput(req.body?.permissions));
+    if (req.body?.permissions != null && perms == null) {
+      return res.status(400).json(apiError("Invalid permissions."));
+    }
     const clipped = clipRolePermissions({
       desiredBits: perms != null ? perms : EVERYONE_DEFAULT,
       existingBits: 0n,
@@ -3256,6 +3771,8 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
       isEveryone: false,
     });
     const permissions = toPgBigint(clipped);
+
+    const shifted = await shiftRolesUp(serverId, position);
 
     const { data: role, error } = await supabase
       .from("server_roles")
@@ -3291,8 +3808,14 @@ router.post("/:id/roles", requireAuth, async (req, res) => {
 
     const pub = publicRole(role);
     emitToServer(req, serverId, "server:role:created", { role: pub });
-    notifyAccess(req, serverId);
-    return res.status(201).json({ role: pub });
+    for (const moved of shifted) emitToServer(req, serverId, "server:role:updated", { role: publicRole(moved) });
+    // A new role is assigned to nobody: no access re-check needed (R5).
+    const { data: allRoles } = await supabase
+      .from("server_roles")
+      .select("*")
+      .eq("server_id", serverId)
+      .order("position", { ascending: false });
+    return res.status(201).json({ role: pub, roles: (allRoles || []).map(publicRole) });
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] POST /:id/roles error:", err);
@@ -3309,6 +3832,7 @@ router.patch("/:id/roles/:roleId", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
     const roleId = req.params.roleId;
+    if (rejectRoleRate(req, res)) return;
     const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
 
     const { data: existing, error: findErr } = await supabase
@@ -3326,23 +3850,21 @@ router.patch("/:id/roles/:roleId", requireAuth, async (req, res) => {
       if (existing.is_everyone) {
         return res.status(400).json({ error: "@everyone cannot be renamed.", code: "EVERYONE_LOCKED" });
       }
-      const name = cleanName(req.body.name);
-      if (name.length < ROLE_NAME_MIN || name.length > ROLE_NAME_MAX) {
-        return res.status(400).json({ error: "Invalid role name." });
-      }
-      patch.name = name;
+      const checked = validateRoleName(req.body.name);
+      if (checked.error) return res.status(400).json(checked.error);
+      patch.name = checked.name;
     }
     if (req.body?.color !== undefined) patch.color = clampColor(req.body.color);
     if (typeof req.body?.position === "number" && Number.isFinite(req.body.position)) {
       if (existing.is_everyone) {
         return res.status(400).json({ error: "@everyone cannot be reordered.", code: "EVERYONE_LOCKED" });
       }
-      patch.position = Math.max(0, Math.floor(req.body.position));
+      patch.position = clampRolePosition(req.body.position);
     }
     if (req.body?.hoist !== undefined) patch.hoist = Boolean(req.body.hoist);
     if (req.body?.mentionable !== undefined) patch.mentionable = Boolean(req.body.mentionable);
     if (req.body?.permissions !== undefined) {
-      const perms = parsePermissionsInput(req.body.permissions, existing.permissions);
+      const perms = sanitizeRoleBits(parsePermissionsInput(req.body.permissions, existing.permissions));
       if (perms == null) return res.status(400).json({ error: "Invalid permissions." });
       patch.permissions = toPgBigint(
         clipRolePermissions({
@@ -3385,12 +3907,89 @@ router.patch("/:id/roles/:roleId", requireAuth, async (req, res) => {
 
     const pub = publicRole(role);
     emitToServer(req, serverId, "server:role:updated", { role: pub });
-    notifyAccess(req, serverId);
+    // Name / colour / hoist / mentionable change nobody's access: skip the re-check (R5).
+    if (patch.permissions !== undefined || patch.position !== undefined) notifyAccess(req, serverId);
     return res.json({ role: pub });
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH /:id/roles/:roleId error:", err);
     return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to update role.", code: err.code });
+  }
+});
+
+/**
+ * PUT /servers/:id/roles/positions  { roleIds: [top … bottom] }
+ * One atomic-as-possible reorder instead of N PATCHes (R10): one validation, one audit
+ * row, one access re-check. The owner renumbers freely. Anyone else only permutes the
+ * roles below their own highest role among the slots those roles already hold; roles at
+ * or above them stay exactly where they are.
+ */
+router.put("/:id/roles/positions", requireAuth, async (req, res) => {
+  try {
+    const serverId = req.params.id;
+    if (rejectRoleRate(req, res)) return;
+    const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
+    const raw = Array.isArray(req.body?.roleIds) ? req.body.roleIds.map((x) => canonId(String(x || ""))) : null;
+    if (!raw || !raw.length || new Set(raw).size !== raw.length) {
+      return res.status(400).json(apiError("Send the full role order.", null, { code: "INVALID_ROLE_ORDER" }));
+    }
+    const { data: roles, error } = await supabase.from("server_roles").select("*").eq("server_id", serverId);
+    if (error) throw error;
+    const custom = (roles || []).filter((r) => !r.is_everyone);
+    const byId = new Map(custom.map((r) => [String(r.id), r]));
+    if (raw.length !== custom.length || raw.some((id) => !byId.has(String(id)))) {
+      return res.status(400).json(apiError("Send the full role order.", null, { code: "INVALID_ROLE_ORDER" }));
+    }
+
+    const next = new Map();
+    if (actorPerms.isOwner) {
+      raw.forEach((id, index) => next.set(String(id), raw.length - index));
+    } else {
+      const actorPos = await getMemberHighestPosition(supabase, serverId, req.user.id);
+      const movable = raw.filter((id) => (Number(byId.get(String(id)).position) || 0) < actorPos);
+      const slots = movable
+        .map((id) => Number(byId.get(String(id)).position) || 0)
+        .sort((a, b) => b - a);
+      movable.forEach((id, i) => next.set(String(id), slots[i]));
+    }
+
+    const changed = [];
+    for (const [id, position] of next) {
+      const role = byId.get(id);
+      if ((Number(role.position) || 0) === position) continue;
+      const { data: upd, error: uErr } = await supabase
+        .from("server_roles")
+        .update({ position })
+        .eq("id", id)
+        .eq("server_id", serverId)
+        .select("*")
+        .maybeSingle();
+      if (uErr) throw uErr;
+      changed.push(upd || { ...role, position });
+    }
+
+    if (changed.length) {
+      await writeAudit({
+        serverId,
+        actorId: req.user.id,
+        action: "ROLE_REORDER",
+        targetType: "server",
+        targetId: serverId,
+        changes: { positions: Object.fromEntries(changed.map((r) => [r.id, r.position])) },
+      });
+      for (const r of changed) emitToServer(req, serverId, "server:role:updated", { role: publicRole(r) });
+      notifyAccess(req, serverId);
+    }
+    const { data: after } = await supabase
+      .from("server_roles")
+      .select("*")
+      .eq("server_id", serverId)
+      .order("position", { ascending: false });
+    return res.json({ roles: (after || []).map(publicRole), changed: changed.length });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("[SERVERS] PUT role positions error:", err);
+    return res.status(status).json({ ...errorFields(err), error: err.message || "Failed to reorder roles.", code: err.code });
   }
 });
 
@@ -3401,6 +4000,7 @@ router.delete("/:id/roles/:roleId", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
     const roleId = req.params.roleId;
+    if (rejectRoleRate(req, res)) return;
     await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
 
     const { data: existing, error: findErr } = await supabase
@@ -3422,6 +4022,22 @@ router.delete("/:id/roles/:roleId", requireAuth, async (req, res) => {
       .eq("id", roleId)
       .eq("server_id", serverId);
     if (error) throw error;
+    // Its channel overrides go too (no FK on target_id): they were left as orphans that
+    // kept a channel "unsynced" from its category (R7).
+    try {
+      const { data: chans } = await supabase.from("server_channels").select("id").eq("server_id", serverId);
+      const chanIds = (chans || []).map((c) => c.id);
+      for (let i = 0; i < chanIds.length; i += 100) {
+        await supabase
+          .from("server_channel_overrides")
+          .delete()
+          .eq("target_type", "role")
+          .eq("target_id", roleId)
+          .in("channel_id", chanIds.slice(i, i + 100));
+      }
+    } catch (err) {
+      console.warn("[SERVERS] role override cleanup failed:", err?.message || err);
+    }
 
     await writeAudit({
       serverId,
@@ -3450,10 +4066,9 @@ router.put("/:id/members/:userId/roles/:roleId", requireAuth, async (req, res) =
     const serverId = req.params.id;
     const userId = req.params.userId;
     const roleId = req.params.roleId;
-    await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
-    if (String(userId) === String(req.user.id)) {
-      return res.status(403).json({ error: "You cannot change your own roles.", code: "CANNOT_EDIT_SELF" });
-    }
+    if (rejectRoleRate(req, res)) return;
+    const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
+    const isSelf = sameId(userId, req.user.id);
 
     const targetMembership = await getMembership(serverId, userId);
     if (!targetMembership) {
@@ -3471,14 +4086,19 @@ router.put("/:id/members/:userId/roles/:roleId", requireAuth, async (req, res) =
     if (role.is_everyone) {
       return res.status(400).json({ error: "@everyone is automatic and cannot be assigned." });
     }
+    // Role below the actor's highest, and no permission the actor lacks (R2).
     await assertCanManageRole(supabase, serverId, req.user.id, role);
-    await assertHierarchy(supabase, serverId, req.user.id, userId);
+    if (roleExceedsActor(role, actorPerms)) return roleExceedsError(res);
+    // Self: allowed under the two rules above (owner wears a colour role, R8); others
+    // must be below the actor.
+    if (!isSelf) await assertHierarchy(supabase, serverId, req.user.id, userId);
 
     const { error } = await supabase.from("server_member_roles").upsert(
       { server_id: serverId, user_id: userId, role_id: roleId },
       { onConflict: "server_id,user_id,role_id" }
     );
     if (error) throw error;
+    if (targetMembership.temporary) await makeMembershipPermanent(serverId, userId);
 
     await writeAudit({
       serverId,
@@ -3511,14 +4131,13 @@ router.delete("/:id/members/:userId/roles/:roleId", requireAuth, async (req, res
     const serverId = req.params.id;
     const userId = req.params.userId;
     const roleId = req.params.roleId;
-    await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
-    if (String(userId) === String(req.user.id)) {
-      return res.status(403).json({ error: "You cannot change your own roles.", code: "CANNOT_EDIT_SELF" });
-    }
+    if (rejectRoleRate(req, res)) return;
+    const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
+    const isSelf = sameId(userId, req.user.id);
 
     const { data: role } = await supabase
       .from("server_roles")
-      .select("id, name, is_everyone, position")
+      .select("id, name, is_everyone, position, permissions")
       .eq("id", roleId)
       .eq("server_id", serverId)
       .maybeSingle();
@@ -3527,7 +4146,14 @@ router.delete("/:id/members/:userId/roles/:roleId", requireAuth, async (req, res
       return res.status(400).json({ error: "@everyone cannot be removed." });
     }
     await assertCanManageRole(supabase, serverId, req.user.id, role);
-    await assertHierarchy(supabase, serverId, req.user.id, userId);
+    // Symmetric with assign (R2): a role holding bits the actor lacks is not theirs to take.
+    if (roleExceedsActor(role, actorPerms)) return roleExceedsError(res);
+    if (isSelf) {
+      const own = await getMembership(serverId, userId);
+      if (!own) return res.status(404).json(apiError("Member not found in this server."));
+    } else {
+      await assertHierarchy(supabase, serverId, req.user.id, userId);
+    }
 
     const { error } = await supabase
       .from("server_member_roles")
@@ -3570,10 +4196,10 @@ router.delete("/:id/members/:userId", requireAuth, async (req, res) => {
     const targetUserId = req.params.userId;
     const { server } = await requireServerPermission(serverId, req.user.id, Permissions.KICK_MEMBERS);
 
-    if (targetUserId === req.user.id) {
+    if (sameId(targetUserId, req.user.id)) {
       return res.status(400).json({ error: "Use leave to remove yourself.", code: "USE_LEAVE" });
     }
-    if (server.owner_id === targetUserId) {
+    if (sameId(server.owner_id, targetUserId)) {
       return res.status(403).json({ error: "Cannot kick the server owner.", code: "CANNOT_KICK_OWNER" });
     }
 
@@ -3590,11 +4216,8 @@ router.delete("/:id/members/:userId", requireAuth, async (req, res) => {
       .eq("user_id", targetUserId);
     if (delErr) throw delErr;
 
-    await supabase
-      .from("server_member_roles")
-      .delete()
-      .eq("server_id", serverId)
-      .eq("user_id", targetUserId);
+    // Role rows and member channel overrides go too (they came back on rejoin, DF-1/DF-2).
+    await memberState.purgeMemberState(serverId, targetUserId);
 
     await writeAudit({
       serverId,
@@ -3611,7 +4234,6 @@ router.delete("/:id/members/:userId", requireAuth, async (req, res) => {
       targetUserId,
       action: "kick",
       reason: req.body?.reason ? String(req.body.reason).slice(0, 200) : null,
-      actorId: req.user.id,
     });
 
     return res.json({ message: "Member kicked.", userId: targetUserId, serverId });
@@ -3692,7 +4314,7 @@ router.post("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
     const targetUserId = req.params.userId;
     await requireServerPermission(serverId, req.user.id, Permissions.MODERATE_MEMBERS);
 
-    if (String(targetUserId) === String(req.user.id)) {
+    if (sameId(targetUserId, req.user.id)) {
       return res.status(400).json({ error: "You cannot timeout yourself.", code: "CANNOT_TIMEOUT_SELF" });
     }
     const targetMembership = await getMembership(serverId, targetUserId);
@@ -3701,6 +4323,8 @@ router.post("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
     }
 
     const reason = req.body?.reason ? String(req.body.reason).trim().slice(0, 512) : null;
+    // Audit row, live update, voice eviction and the persisted copy (survives leave +
+    // rejoin) are all done by applyServerTimeout.
     const timeout = await applyServerTimeout({
       serverId,
       actorId: req.user.id,
@@ -3708,23 +4332,8 @@ router.post("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
       until: req.body?.until,
       durationSeconds: req.body?.durationSeconds,
       reason,
+      io: getIo(req),
     });
-
-    await writeAudit({
-      serverId,
-      actorId: req.user.id,
-      action: "MEMBER_TIMEOUT",
-      targetType: "member",
-      targetId: targetUserId,
-      reason,
-      changes: { until: timeout.until },
-    });
-    try {
-      const { removeUserFromServerVoice } = require("../socket/serverVoiceHandlers");
-      removeUserFromServerVoice(req.app.get("io"), serverId, targetUserId, "timeout");
-    } catch (err) {
-      console.warn("[SERVERS] voice cleanup after timeout failed:", err?.message || err);
-    }
 
     return res.json({
       timeout: {
@@ -3748,9 +4357,12 @@ router.delete("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
     const targetUserId = req.params.userId;
-    await requireServerPermission(serverId, req.user.id, Permissions.MODERATE_MEMBERS);
+    const { isOwner } = await requireServerPermission(serverId, req.user.id, Permissions.MODERATE_MEMBERS);
 
-    if (String(targetUserId) === String(req.user.id)) {
+    const isSelf = sameId(targetUserId, req.user.id);
+    // Only the owner may lift their own timeout (one put on them before the server was
+    // theirs, M6); everyone else needs another moderator.
+    if (isSelf && !isOwner) {
       return res.status(400).json({ error: "You cannot remove your own timeout.", code: "CANNOT_TIMEOUT_SELF" });
     }
     const targetMembership = await getMembership(serverId, targetUserId);
@@ -3758,14 +4370,7 @@ router.delete("/:id/members/:userId/timeout", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Member not found in this server." });
     }
 
-    await clearServerTimeout({ serverId, actorId: req.user.id, targetUserId });
-    await writeAudit({
-      serverId,
-      actorId: req.user.id,
-      action: "MEMBER_TIMEOUT_CLEAR",
-      targetType: "member",
-      targetId: targetUserId,
-    });
+    await clearServerTimeout({ serverId, actorId: req.user.id, targetUserId, io: getIo(req), allowSelfOwner: isSelf && isOwner });
 
     return res.json({ message: "Timeout removed.", userId: targetUserId, serverId });
   } catch (err) {
@@ -3922,15 +4527,24 @@ router.put("/:id/bans/:userId", requireAuth, async (req, res) => {
     const { server } = await requireServerPermission(serverId, req.user.id, Permissions.BAN_MEMBERS);
     const reason = req.body?.reason ? String(req.body.reason).trim().slice(0, 200) : null;
 
-    if (targetUserId === req.user.id) {
+    if (sameId(targetUserId, req.user.id)) {
       return res.status(400).json({ error: "You cannot ban yourself.", code: "CANNOT_BAN_SELF" });
     }
-    if (server.owner_id === targetUserId) {
+    if (sameId(server.owner_id, targetUserId)) {
       return res.status(403).json({ error: "Cannot ban the server owner.", code: "CANNOT_BAN_OWNER" });
     }
     const targetMembership = await getMembership(serverId, targetUserId);
     if (targetMembership) {
       await assertHierarchy(supabase, serverId, req.user.id, targetUserId);
+    } else {
+      // A non-member ban needs a real account: an unknown or malformed id was a 500 (M9).
+      const { data: targetUser, error: tuErr } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", targetUserId)
+        .maybeSingle();
+      if (tuErr && String(tuErr.code) !== "22P02") throw tuErr;
+      if (!targetUser) return res.status(404).json(apiError("User not found.", null, { code: "USER_NOT_FOUND" }));
     }
 
     const { error: banErr } = await supabase.from("server_bans").upsert(
@@ -3946,11 +4560,7 @@ router.put("/:id/bans/:userId", requireAuth, async (req, res) => {
     if (banErr) throw banErr;
 
     await supabase.from("server_members").delete().eq("server_id", serverId).eq("user_id", targetUserId);
-    await supabase
-      .from("server_member_roles")
-      .delete()
-      .eq("server_id", serverId)
-      .eq("user_id", targetUserId);
+    await memberState.purgeMemberState(serverId, targetUserId);
 
     await writeAudit({
       serverId,
@@ -3967,7 +4577,7 @@ router.put("/:id/bans/:userId", requireAuth, async (req, res) => {
       targetUserId,
       action: "ban",
       reason,
-      actorId: req.user.id,
+      wasMember: Boolean(targetMembership),
     });
 
     return res.json({ message: "Member banned.", userId: targetUserId, serverId, reason });
@@ -4084,7 +4694,17 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
       });
     }
 
-    await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_CHANNELS);
+    const actorPerms = await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_CHANNELS);
+    // "Private" is part of the create (P3 / CA-3): the channel used to be created public,
+    // announced to every member, and locked by two later calls, the second of which a
+    // non-admin creator was never allowed to make (they locked themselves out).
+    const makePrivate = req.body?.private === true || req.body?.private === "true";
+    const actorUnrestricted = actorPerms.isOwner || hasPermission(actorPerms.permissions, Permissions.ADMINISTRATOR);
+    if (makePrivate && !actorUnrestricted && !hasPermission(actorPerms.permissions, Permissions.MANAGE_ROLES)) {
+      return res.status(403).json(
+        apiError("A private channel needs the Manage Roles permission.", null, { code: "MISSING_PERMISSION", permission: "MANAGE_ROLES" })
+      );
+    }
 
     const name = cleanChannelName(req.body?.name, type);
     if (name.length < CHANNEL_NAME_MIN) {
@@ -4128,21 +4748,29 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
         ? Math.max(0, Math.floor(req.body.position))
         : await nextChannelPosition(serverId);
     const nsfw = isTextLike ? Boolean(req.body?.nsfw) : false;
+    const isVoiceLike = type === "voice" || type === "stage";
+    const userLimit = isVoiceLike ? parseUserLimit(req.body?.userLimit) : undefined;
+    if (userLimit === null) {
+      return res.status(400).json({ ...apiError("User limit must be between {min} and {max}.", { min: 0, max: 99 }), code: "INVALID_USER_LIMIT" });
+    }
 
-    const { data: channel, error } = await supabase
-      .from("server_channels")
-      .insert({
-        server_id: serverId,
-        name,
-        type,
-        topic,
-        position,
-        parent_id: type === "category" ? null : parentId,
-        slowmode_seconds: slowmodeSeconds,
-        nsfw,
-      })
-      .select("*")
-      .single();
+    const row = {
+      server_id: serverId,
+      name,
+      type,
+      topic,
+      position,
+      parent_id: type === "category" ? null : parentId,
+      slowmode_seconds: slowmodeSeconds,
+      nsfw,
+      ...(userLimit ? { user_limit: userLimit } : {}),
+    };
+    let { data: channel, error } = await supabase.from("server_channels").insert(row).select("*").single();
+    if (error && row.user_limit !== undefined && isMissingColumn(error, "user_limit")) {
+      // Before the voice migration: create the channel without a limit.
+      delete row.user_limit;
+      ({ data: channel, error } = await supabase.from("server_channels").insert(row).select("*").single());
+    }
     if (error) throw error;
     if (await insertedOverCap("server_channels", "server_id", serverId, channel.id, MAX_CHANNELS_PER_SERVER)) {
       await supabase.from("server_channels").delete().eq("id", channel.id);
@@ -4152,13 +4780,25 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
       });
     }
 
+    if (makePrivate) {
+      // Written before anyone hears about the channel. If it fails the channel goes too,
+      // so a "private" channel can never end up public.
+      try {
+        await writePrivateChannelRules(serverId, channel, req.user.id, actorUnrestricted);
+      } catch (privErr) {
+        await supabase.from("server_channel_overrides").delete().eq("channel_id", channel.id);
+        await supabase.from("server_channels").delete().eq("id", channel.id).eq("server_id", serverId);
+        throw privErr;
+      }
+    }
+
     await writeAudit({
       serverId,
       actorId: req.user.id,
       action: "CHANNEL_CREATE",
       targetType: "channel",
       targetId: channel.id,
-      changes: { name, type, parentId: channel.parent_id },
+      changes: { name, type, parentId: channel.parent_id, private: makePrivate || undefined },
     });
 
     const pub = publicChannel(channel);
@@ -4172,6 +4812,61 @@ router.post("/:id/channels", requireAuth, async (req, res) => {
     releaseCap?.();
   }
 });
+
+/**
+ * Private channel rules for a brand-new channel: @everyone may not view (nor connect to
+ * a voice / stage channel), and a creator who is not owner / administrator keeps access
+ * through their own member rule. A new channel inside a category starts from the
+ * category's rules, so it never loses what the category already allowed.
+ */
+async function writePrivateChannelRules(serverId, channel, actorId, actorUnrestricted) {
+  const { data: everyone, error: eErr } = await supabase
+    .from("server_roles")
+    .select("id")
+    .eq("server_id", serverId)
+    .eq("is_everyone", true)
+    .maybeSingle();
+  if (eErr) throw eErr;
+  if (!everyone) throw new Error("Failed to create channel.");
+  const isVoice = channel.type === "voice" || channel.type === "stage";
+  const hide = Permissions.VIEW_CHANNEL | (isVoice ? Permissions.CONNECT : 0n);
+
+  // Start from the category's rules (the synced view the channel would have had).
+  const rows = new Map();
+  if (channel.parent_id) {
+    const { data: parentRows } = await supabase
+      .from("server_channel_overrides")
+      .select("target_type, target_id, allow_permissions, deny_permissions")
+      .eq("channel_id", channel.parent_id);
+    for (const r of parentRows || []) {
+      rows.set(`${r.target_type}:${r.target_id}`, {
+        target_type: r.target_type,
+        target_id: r.target_id,
+        allow: fromPgBigint(r.allow_permissions),
+        deny: fromPgBigint(r.deny_permissions),
+      });
+    }
+  }
+  const put = (type, id, allow, deny) => {
+    const key = `${type}:${id}`;
+    const cur = rows.get(key) || { target_type: type, target_id: id, allow: 0n, deny: 0n };
+    cur.allow = (cur.allow | allow) & ~deny;
+    cur.deny = (cur.deny | deny) & ~allow;
+    rows.set(key, cur);
+  };
+  put("role", everyone.id, 0n, hide);
+  if (!actorUnrestricted) put("member", actorId, hide, 0n);
+
+  const payload = [...rows.values()].map((r) => ({
+    channel_id: channel.id,
+    target_type: r.target_type,
+    target_id: r.target_id,
+    allow_permissions: toPgBigint(r.allow),
+    deny_permissions: toPgBigint(r.deny),
+  }));
+  const { error } = await supabase.from("server_channel_overrides").insert(payload);
+  if (error) throw error;
+}
 
 /**
  * PATCH /servers/:id/channels/:channelId
@@ -4205,13 +4900,18 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
       patch.topic = req.body.topic == null ? null : String(req.body.topic).trim().slice(0, 1024) || null;
     }
     let detachPlan = null;
+    let syncInfo = null;
     if (req.body?.parentId !== undefined) {
-      const parentId = req.body.parentId || null;
+      const parentId = req.body.parentId ? canonId(String(req.body.parentId)) : null;
       await assertValidParent(serverId, parentId, existing.type);
       patch.parent_id = existing.type === "category" ? null : parentId;
       if (patch.parent_id && String(patch.parent_id) !== String(existing.parent_id || "")) {
         await assertParentVisible(serverId, req.user.id, patch.parent_id);
         await assertInheritChangeAllowed(serverId, req.user.id, existing, patch.parent_id);
+        // A channel with rules of its own keeps them inside the new category. Say so, and
+        // sync on request (lockPermissions), like Discord (P8): it used to stay public
+        // inside a private category without a word.
+        syncInfo = await planCategorySync(serverId, req.user.id, existing, patch.parent_id, req.body?.lockPermissions === true);
       }
       // Moving out of (or to another) category keeps the old category's rules on the
       // channel as its own; moving into a category is the intended "inherit" step.
@@ -4236,20 +4936,46 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
       patch.slowmode_seconds = Math.max(0, Math.min(21600, parsed));
     }
 
+    if (req.body?.userLimit !== undefined && (existing.type === "voice" || existing.type === "stage")) {
+      const limit = parseUserLimit(req.body.userLimit);
+      if (limit === null) {
+        return res.status(400).json({ ...apiError("User limit must be between {min} and {max}.", { min: 0, max: 99 }), code: "INVALID_USER_LIMIT" });
+      }
+      patch.user_limit = limit;
+    }
+
     if (Object.keys(patch).length === 0) {
       return res.status(400).json({ error: "No valid fields to update." });
     }
 
     if (detachPlan) await applyDetachPlan(detachPlan);
     const prevParentId = existing.parent_id || null;
+    if (syncInfo?.sync) {
+      // Follow the new category: drop the channel's own rules.
+      const { error: syncErr } = await supabase.from("server_channel_overrides").delete().eq("channel_id", existing.id);
+      if (syncErr) throw syncErr;
+    }
 
-    const { data: channel, error } = await supabase
+    let { data: channel, error } = await supabase
       .from("server_channels")
       .update(patch)
       .eq("id", channelId)
       .eq("server_id", serverId)
       .select("*")
       .single();
+    if (error && patch.user_limit !== undefined && isMissingColumn(error, "user_limit")) {
+      if (Object.keys(patch).length === 1) {
+        return res.status(503).json(apiError("User limits are not available yet.", null, { code: "USER_LIMIT_UNAVAILABLE" }));
+      }
+      delete patch.user_limit;
+      ({ data: channel, error } = await supabase
+        .from("server_channels")
+        .update(patch)
+        .eq("id", channelId)
+        .eq("server_id", serverId)
+        .select("*")
+        .single());
+    }
     if (error) throw error;
     // Moving in/out of a category changes who can see the channel: resync clients and
     // evict live sockets that lost VIEW (they kept receiving messages before).
@@ -4268,7 +4994,11 @@ router.patch("/:id/channels/:channelId", requireAuth, async (req, res) => {
 
     const pub = publicChannel(channel);
     await emitChannelToViewers(req, serverId, "server:channel:updated", channel);
-    return res.json({ channel: pub });
+    if (syncInfo?.sync) notifyAccess(req, serverId, { channelId });
+    return res.json({
+      channel: pub,
+      ...(syncInfo ? { permissionsSynced: Boolean(syncInfo.sync), needsSyncChoice: Boolean(syncInfo.needsChoice) } : {}),
+    });
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[SERVERS] PATCH /:id/channels/:channelId error:", err);
@@ -4299,6 +5029,39 @@ async function assertChannelManageable(serverId, actorId, channelId) {
 }
 
 /**
+ * Moving a channel that has its own rules into a category whose rules differ: either
+ * sync now (lockPermissions, same check as inheriting) or tell the client a choice is
+ * open. Returns { sync, needsChoice } or null when nothing applies.
+ */
+async function planCategorySync(serverId, actorId, channel, newParentId, lockPermissions) {
+  const { data: rows, error } = await supabase
+    .from("server_channel_overrides")
+    .select("channel_id, target_type, target_id, allow_permissions, deny_permissions")
+    .in("channel_id", [channel.id, newParentId]);
+  if (error) throw error;
+  const own = (rows || []).filter((r) => String(r.channel_id) === String(channel.id));
+  const parentRows = (rows || []).filter((r) => String(r.channel_id) === String(newParentId));
+  if (!own.length) return null;
+  if (!lockPermissions) return { sync: false, needsChoice: parentRows.length > 0 };
+  // Dropping the channel's own rules is an override delete: same rules as DELETE.
+  const { actorBits, unrestricted } = await assertOverrideEditor(serverId, actorId, channel);
+  if (!unrestricted) {
+    for (const r of own) {
+      await assertOverrideEditor(serverId, actorId, channel, { type: r.target_type, id: r.target_id }, { allowGoneMember: true });
+      const bits = fromPgBigint(r.allow_permissions) | fromPgBigint(r.deny_permissions);
+      if (bits & ~fromPgBigint(actorBits)) {
+        const err = new Error("This override contains permissions you do not have.");
+        err.status = 403;
+        err.code = "OVERRIDE_PERMISSION";
+        throw err;
+      }
+    }
+  }
+  await assertCanAdoptCategoryRules(serverId, actorId, newParentId, parentRows);
+  return { sync: true, needsChoice: false };
+}
+
+/**
  * A synced channel that starts inheriting a category's rules (moved under it with no
  * own overrides, from no rules) changes who can do what in it. That is a permission
  * edit: it needs MANAGE_ROLES, and for non-owner/admin every inherited rule must be one
@@ -4321,11 +5084,19 @@ async function assertInheritChangeAllowed(serverId, actorId, channel, newParentI
     : [];
   if (oldParentRows.length) return; // detach copies them first; the new parent will not apply
   const newRows = (rows || []).filter((r) => String(r.channel_id) === String(newParentId));
+  await assertCanAdoptCategoryRules(serverId, actorId, newParentId, newRows);
+}
+
+/**
+ * The actor may make a channel follow these category rules: MANAGE_ROLES, and for a
+ * non-owner / non-admin every rule must be one they could have written themselves.
+ */
+async function assertCanAdoptCategoryRules(serverId, actorId, categoryId, newRows) {
   if (!newRows.length) return;
   const { data: category } = await supabase
     .from("server_channels")
     .select("id, server_id, type")
-    .eq("id", newParentId)
+    .eq("id", categoryId)
     .eq("server_id", serverId)
     .maybeSingle();
   if (!category) return;
@@ -4445,6 +5216,17 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
       .eq("server_id", serverId);
     if (error) throw error;
 
+    // Setting columns that pointed here are cleared (no FK on three of them): a dangling
+    // AFK id stopped the AFK scanner and welcome posts went to a dead channel (SC-5).
+    for (const column of ["afk_channel_id", "system_channel_id", "welcome_channel_id", "rules_channel_id"]) {
+      const { error: refErr } = await supabase
+        .from("servers")
+        .update({ [column]: null })
+        .eq("id", serverId)
+        .eq(column, channelId);
+      if (refErr) console.warn(`[SERVERS] ${column} cleanup failed:`, refErr.message);
+    }
+
     await writeAudit({
       serverId,
       actorId: req.user.id,
@@ -4499,7 +5281,7 @@ router.delete("/:id/channels/:channelId", requireAuth, async (req, res) => {
  *  - member target: not yourself (owner exempt) and below you in the hierarchy.
  * Returns { actorBits, unrestricted }.
  */
-async function assertOverrideEditor(serverId, actorId, channel, target = null) {
+async function assertOverrideEditor(serverId, actorId, channel, target = null, { allowGoneMember = false } = {}) {
   const chPerms = await resolveChannelPermissions(supabase, serverId, actorId, channel.id);
   if (!chPerms.isMember || !hasPermission(chPerms.bits, Permissions.VIEW_CHANNEL)) {
     const err = new Error("Missing permission.");
@@ -4528,6 +5310,9 @@ async function assertOverrideEditor(serverId, actorId, channel, target = null) {
     } else {
       const mem = await getMembership(serverId, target.id);
       if (!mem) {
+        // The owner / an administrator can always clear a rule left behind by someone
+        // who is gone (rows from before 2026-11-15 survived kicks and leaves, DF-1).
+        if (allowGoneMember && unrestricted) return { actorBits: chPerms.bits, unrestricted };
         const err = new Error("Member not found.");
         err.status = 404;
         throw err;
@@ -4547,6 +5332,28 @@ async function assertOverrideEditor(serverId, actorId, channel, target = null) {
 }
 
 /**
+ * Removing a channel's last own rule makes it follow its category again (Discord
+ * "synced"). That changes who can do what, like moving it into the category, so the
+ * same check applies, and the answer says so (SC-7 / P8). Returns true when the
+ * channel re-syncs.
+ */
+async function checkResyncOnLastRule(serverId, actorId, channel, targetType, targetId) {
+  if (!channel?.parent_id) return false;
+  const { data: rows, error } = await supabase
+    .from("server_channel_overrides")
+    .select("channel_id, target_type, target_id, allow_permissions, deny_permissions")
+    .in("channel_id", [channel.id, channel.parent_id]);
+  if (error) throw error;
+  const own = (rows || []).filter((r) => String(r.channel_id) === String(channel.id));
+  const othersLeft = own.some((r) => !(r.target_type === targetType && sameId(r.target_id, targetId)));
+  if (othersLeft || !own.length) return false;
+  const parentRows = (rows || []).filter((r) => String(r.channel_id) === String(channel.parent_id));
+  if (!parentRows.length) return false;
+  await assertCanAdoptCategoryRules(serverId, actorId, channel.parent_id, parentRows);
+  return true;
+}
+
+/**
  * GET /servers/:id/channels/:channelId/overrides
  */
 router.get("/:id/channels/:channelId/overrides", requireAuth, async (req, res) => {
@@ -4557,7 +5364,7 @@ router.get("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
 
     const { data: channel, error: cErr } = await supabase
       .from("server_channels")
-      .select("id, server_id, type, name")
+      .select("id, server_id, type, name, parent_id")
       .eq("id", channelId)
       .eq("server_id", serverId)
       .maybeSingle();
@@ -4582,11 +5389,36 @@ router.get("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
       denyBits: String(fromPgBigint(row.deny_permissions)),
     }));
 
+    // A channel with no rules of its own follows its category: say so, and send the
+    // category's rules read-only so the editor does not show "everything inherits" for
+    // a channel that is in fact private (P5).
+    let inherited = [];
+    const parentId = channel.parent_id || null;
+    if (!overrides.length && parentId) {
+      const { data: parentRows } = await supabase
+        .from("server_channel_overrides")
+        .select("*")
+        .eq("channel_id", parentId);
+      inherited = (parentRows || []).map((row) => ({
+        id: row.id,
+        channelId: row.channel_id,
+        targetType: row.target_type,
+        targetId: row.target_id,
+        allow: permissionsToFlags(fromPgBigint(row.allow_permissions)),
+        deny: permissionsToFlags(fromPgBigint(row.deny_permissions)),
+        allowBits: String(fromPgBigint(row.allow_permissions)),
+        denyBits: String(fromPgBigint(row.deny_permissions)),
+      }));
+    }
+
     return res.json({
       channelId,
       channelType: channel.type,
       editableKeys: CHANNEL_OVERRIDE_KEYS[channel.type] || CHANNEL_OVERRIDE_KEYS.text,
       overrides,
+      synced: Boolean(parentId) && !overrides.length,
+      parentId,
+      inherited,
     });
   } catch (err) {
     const status = err.status || 500;
@@ -4606,7 +5438,7 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
     await requireServerPermission(serverId, req.user.id, Permissions.MANAGE_ROLES);
 
     const targetType = req.body?.targetType === "member" ? "member" : "role";
-    const targetId = String(req.body?.targetId || "").trim();
+    const targetId = canonId(String(req.body?.targetId || "").trim());
     if (!targetId) return res.status(400).json({ error: "targetId is required." });
 
     const { data: channel, error: cErr } = await supabase
@@ -4664,6 +5496,7 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
     }
 
     if (allow === 0n && deny === 0n) {
+      const resynced = await checkResyncOnLastRule(serverId, req.user.id, channel, targetType, targetId);
       await supabase
         .from("server_channel_overrides")
         .delete()
@@ -4679,7 +5512,7 @@ router.put("/:id/channels/:channelId/overrides", requireAuth, async (req, res) =
         changes: { targetType, targetId },
       });
       notifyAccess(req, serverId, { channelId });
-      return res.json({ cleared: true, channelId, targetType, targetId });
+      return res.json({ cleared: true, channelId, targetType, targetId, resyncedWithCategory: resynced });
     }
 
     const { data: row, error } = await supabase
@@ -4749,17 +5582,20 @@ router.delete(
       // hidden channel of server B (the 2026-10-18 cross-server fix).
       const { data: channel, error: cErr } = await supabase
         .from("server_channels")
-        .select("id, server_id, type")
+        .select("id, server_id, type, parent_id")
         .eq("id", channelId)
         .eq("server_id", serverId)
         .maybeSingle();
       if (cErr) throw cErr;
       if (!channel) return res.status(404).json({ error: "Channel not found." });
 
-      const { actorBits, unrestricted } = await assertOverrideEditor(serverId, req.user.id, channel, {
-        type: targetType,
-        id: targetId,
-      });
+      const { actorBits, unrestricted } = await assertOverrideEditor(
+        serverId,
+        req.user.id,
+        channel,
+        { type: targetType, id: targetId },
+        { allowGoneMember: true }
+      );
       if (!unrestricted) {
         const { data: existingRow, error: exErr } = await supabase
           .from("server_channel_overrides")
@@ -4778,6 +5614,7 @@ router.delete(
         }
       }
 
+      const resynced = await checkResyncOnLastRule(serverId, req.user.id, channel, targetType, targetId);
       // server_channel_overrides has no server_id column: scope by the verified channel.
       const { error } = await supabase
         .from("server_channel_overrides")
@@ -4797,7 +5634,7 @@ router.delete(
       });
 
       notifyAccess(req, serverId, { channelId });
-      return res.json({ deleted: true });
+      return res.json({ deleted: true, resyncedWithCategory: resynced });
     } catch (err) {
       const status = err.status || 500;
       if (status >= 500) console.error("[SERVERS] DELETE overrides error:", err);
@@ -4854,12 +5691,14 @@ router.patch("/:id", requireAuth, async (req, res) => {
       }
       patch.name = name;
     }
+    const imageChecks = [];
     const imageField = (bodyKey, column) => {
       if (req.body?.[bodyKey] === undefined) return;
       const raw = req.body[bodyKey] ? String(req.body[bodyKey]).trim() : null;
       // An unchanged stored value is kept as is (forms resend it).
       if ((raw || null) === (server[column] || null)) return;
       patch[column] = cleanServerImageUrl(raw, bodyKey);
+      if (patch[column]) imageChecks.push(assertServerImageUpload(patch[column], bodyKey));
     };
     imageField("iconUrl", "icon_url");
     imageField("bannerUrl", "banner_url");
@@ -4878,9 +5717,11 @@ router.patch("/:id", requireAuth, async (req, res) => {
     }
     if (req.body?.rulesChannelId !== undefined) {
       const channelId = req.body.rulesChannelId || null;
-      if (channelId) {
-        // Must be a text channel of this server (was stored unchecked before 2026-10-18).
+      if (channelId && channelId !== server.rules_channel_id) {
+        // Must be a text channel of this server (was stored unchecked before 2026-10-18)
+        // that the actor and every member can read: new members read the rules there (SC-11).
         await assertServerChannelRef(serverId, channelId, ["text", "announcement"]);
+        await assertSettingChannelVisible(serverId, req.user.id, channelId, { everyone: true });
       }
       patch.rules_channel_id = channelId;
     }
@@ -4890,6 +5731,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
         : null;
     }
     imageField("splashUrl", "splash_url");
+    await Promise.all(imageChecks);
     if (req.body?.verificationLevel !== undefined) {
       const level = String(req.body.verificationLevel || "none").toLowerCase();
       if (!["none", "low", "medium", "high", "highest"].includes(level)) {
@@ -4923,8 +5765,12 @@ router.patch("/:id", requireAuth, async (req, res) => {
     }
     if (req.body?.afkChannelId !== undefined) {
       const channelId = req.body.afkChannelId || null;
-      if (channelId) {
+      if (channelId && channelId !== server.afk_channel_id) {
         await assertServerChannelRef(serverId, channelId, ["voice"]);
+        // AFK moves people into this channel: it must be one the actor and @everyone can
+        // see and join, never a private call (SC-1: a MANAGE_GUILD member pointed AFK at
+        // a staff channel and had themselves moved in to listen).
+        await assertSettingChannelVisible(serverId, req.user.id, channelId, { everyone: true, connect: true });
       }
       patch.afk_channel_id = channelId;
     }
@@ -4937,17 +5783,29 @@ router.patch("/:id", requireAuth, async (req, res) => {
     }
     if (req.body?.systemChannelId !== undefined) {
       const channelId = req.body.systemChannelId || null;
-      if (channelId) {
+      if (channelId && channelId !== server.system_channel_id) {
         await assertServerChannelRef(serverId, channelId, ["text", "announcement"]);
+        await assertSettingChannelVisible(serverId, req.user.id, channelId, { everyone: false });
       }
       patch.system_channel_id = channelId;
     }
     if (req.body?.welcomeChannelId !== undefined) {
       const channelId = req.body.welcomeChannelId || null;
-      if (channelId) {
+      if (channelId && channelId !== server.welcome_channel_id) {
         await assertServerChannelRef(serverId, channelId, ["text", "announcement"]);
+        // Welcome posts are for new members: they must be able to read it (SC-11).
+        await assertSettingChannelVisible(serverId, req.user.id, channelId, { everyone: true });
       }
       patch.welcome_channel_id = channelId;
+    }
+
+    // Notification level new members start with (SC-10; there was none).
+    if (req.body?.defaultNotificationLevel !== undefined) {
+      const level = String(req.body.defaultNotificationLevel || "all").toLowerCase();
+      if (!["all", "mentions"].includes(level)) {
+        return res.status(400).json(apiError("Invalid notification level.", null, { code: "INVALID_NOTIFICATION_LEVEL" }));
+      }
+      if (level !== (server.default_notification_level || "all")) patch.default_notification_level = level;
     }
 
     if (!Object.keys(patch).length) {
@@ -4955,18 +5813,28 @@ router.patch("/:id", requireAuth, async (req, res) => {
     }
 
     patch.updated_at = new Date().toISOString();
-    const { data: updated, error } = await supabase
+    let { data: updated, error } = await supabase
       .from("servers")
       .update(patch)
       .eq("id", serverId)
       .select("*")
       .single();
+    if (error && patch.default_notification_level !== undefined && isMissingColumn(error, "default_notification_level")) {
+      // Before its migration the setting is simply not stored.
+      delete patch.default_notification_level;
+      ({ data: updated, error } = await supabase.from("servers").update(patch).eq("id", serverId).select("*").single());
+    }
     if (error) {
       // Unique index on vanity_slug: two servers claiming the same slug at once.
       if (String(error.code) === "23505") {
         return res.status(409).json({ error: "That vanity URL is already taken.", code: "VANITY_TAKEN" });
       }
       throw error;
+    }
+
+    // A new AFK channel changes where idle people get moved: let voice re-check seats.
+    if (patch.afk_channel_id !== undefined && patch.afk_channel_id !== server.afk_channel_id) {
+      void memberState.callVoice("recheckVoiceAccess", getIo(req), { serverId });
     }
 
     await writeAudit({
@@ -4985,6 +5853,9 @@ router.patch("/:id", requireAuth, async (req, res) => {
       if (pub) {
         delete pub.isOwner;
         delete pub.myPermissions;
+        // Setting channels @everyone cannot see are left out of the broadcast (their ids
+        // leaked to every member, SC-8); members who can see them refetch.
+        await redactHiddenSettingRefs(serverId, pub);
       }
       emitToServer(req, serverId, "server:updated", { server: pub });
       // Owner hears about visibility / vanity / verification changes made by an admin.
@@ -5026,23 +5897,40 @@ router.patch("/:id", requireAuth, async (req, res) => {
 router.post("/:id/invites", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
-    await requireServerPermission(serverId, req.user.id, Permissions.CREATE_INSTANT_INVITE);
+    const { server: inviteServer } = await requireServerPermission(serverId, req.user.id, Permissions.CREATE_INSTANT_INVITE);
+    if (joinsPaused(inviteServer)) return joinsPausedRefusal(res);
 
-    const maxUses =
-      req.body?.maxUses == null || req.body.maxUses === "" || Number(req.body.maxUses) === 0
-        ? null
-        : Math.max(1, Math.min(100000, Math.floor(Number(req.body.maxUses))));
-    const maxAgeSeconds =
-      req.body?.maxAgeSeconds == null || Number(req.body.maxAgeSeconds) === 0
-        ? null
-        : Math.max(60, Math.min(60 * 60 * 24 * 30, Math.floor(Number(req.body.maxAgeSeconds))));
-    // Default 7 days when neither explicit 0 (forever) nor a value is given
+    // Rate limit and caps: invites were unlimited for every member (IM-12).
+    {
+      const { recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+      if (rejectIfLimited(res, [recordFailure(`server-invite-create:user:${req.user.id}`, INVITE_CREATE_LIMIT)])) return;
+      const [{ count: serverLive }, { count: mine }] = await Promise.all([
+        supabase.from("server_invites").select("code", { count: "exact", head: true }).eq("server_id", serverId),
+        supabase
+          .from("server_invites")
+          .select("code", { count: "exact", head: true })
+          .eq("server_id", serverId)
+          .eq("creator_id", req.user.id),
+      ]);
+      if ((serverLive || 0) >= MAX_INVITES_PER_SERVER || (mine || 0) >= MAX_INVITES_PER_MEMBER) {
+        return res.status(400).json({
+          ...apiError("Too many invites. Revoke some first (at most {max} per member).", { max: MAX_INVITES_PER_MEMBER }),
+          code: "MAX_INVITES",
+        });
+      }
+    }
+
+    // Invalid numbers are a 400, not a silently permanent unlimited invite (IM-11).
+    const numOrNull = (v) => (v == null || v === "" ? null : Number(v));
+    const usesIn = numOrNull(req.body?.maxUses);
+    const ageIn = req.body?.maxAgeSeconds === null ? 0 : numOrNull(req.body?.maxAgeSeconds);
+    if ((usesIn != null && (!Number.isFinite(usesIn) || usesIn < 0)) || (ageIn != null && (!Number.isFinite(ageIn) || ageIn < 0))) {
+      return res.status(400).json(apiError("Invalid invite settings.", null, { code: "INVALID_INVITE_SETTINGS" }));
+    }
+    const maxUses = usesIn == null || usesIn === 0 ? null : Math.max(1, Math.min(100000, Math.floor(usesIn)));
+    // Default 7 days when no value is given; an explicit 0 / null means "never expires".
     const age =
-      req.body?.maxAgeSeconds === 0 || req.body?.maxAgeSeconds === null
-        ? null
-        : maxAgeSeconds != null
-          ? maxAgeSeconds
-          : 60 * 60 * 24 * 7;
+      ageIn === 0 ? null : ageIn != null ? Math.max(60, Math.min(60 * 60 * 24 * 30, Math.floor(ageIn))) : 60 * 60 * 24 * 7;
 
     let code = generateInviteCode();
     for (let i = 0; i < 6; i++) {
@@ -5057,10 +5945,19 @@ router.post("/:id/invites", requireAuth, async (req, res) => {
 
     const expiresAt = age ? new Date(Date.now() + age * 1000).toISOString() : null;
 
-    // An invite may only point at a channel of this server (was unchecked before 2026-10-18).
-    const inviteChannelId = req.body?.channelId ? String(req.body.channelId) : null;
+    // An invite may only point at a channel of this server (was unchecked before 2026-10-18)
+    // that the creator can see, and the channel's own CREATE_INSTANT_INVITE rule counts
+    // (a channel deny was ignored, IM-7 / P4).
+    const inviteChannelId = req.body?.channelId ? canonId(String(req.body.channelId)) : null;
     if (inviteChannelId) {
       await assertServerChannelRef(serverId, inviteChannelId);
+      const ch = await resolveChannelPermissions(supabase, serverId, req.user.id, inviteChannelId);
+      if (!ch.isMember || ch.channelMissing || !hasPermission(ch.bits, Permissions.VIEW_CHANNEL)) {
+        return res.status(400).json(apiError("Channel not found on this server."));
+      }
+      if (!hasPermission(ch.bits, Permissions.CREATE_INSTANT_INVITE)) {
+        return res.status(403).json(apiError("Missing permission.", null, { code: "MISSING_PERMISSION", permission: "CREATE_INSTANT_INVITE" }));
+      }
     }
 
     const { data: invite, error } = await supabase
@@ -5103,8 +6000,9 @@ router.post("/:id/invites", requireAuth, async (req, res) => {
 router.get("/:id/invites", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
-    await requireServerPermission(serverId, req.user.id, Permissions.CREATE_INSTANT_INVITE);
-    // Everyone's invites need MANAGE_GUILD; with only CREATE_INSTANT_INVITE you see your own.
+    // MANAGE_GUILD sees every invite, anyone else their own: a lockdown that takes invite
+    // creation away from @everyone used to hide the list from managers too (IM-6).
+    await requireServerPermission(serverId, req.user.id, Permissions.VIEW_CHANNEL);
     const canManage = await hasServerPermission(serverId, req.user.id, Permissions.MANAGE_GUILD);
 
     let query = supabase.from("server_invites").select("*").eq("server_id", serverId);
@@ -5112,14 +6010,9 @@ router.get("/:id/invites", requireAuth, async (req, res) => {
     const { data: invites, error } = await query.order("created_at", { ascending: false });
     if (error) throw error;
 
-    const live = [];
-    for (const invite of invites || []) {
-      if (isInviteExpired(invite)) {
-        await supabase.from("server_invites").delete().eq("code", invite.code);
-        continue;
-      }
-      live.push(publicInvite(invite, req));
-    }
+    // Expired rows are left to lib/serverInviteCleanup (deleting them one by one here
+    // made the list request slow on servers with many invites).
+    const live = (invites || []).filter((invite) => !isInviteExpired(invite)).map((invite) => publicInvite(invite, req));
 
     return res.json({ invites: live });
   } catch (err) {
@@ -5136,7 +6029,9 @@ router.delete("/:id/invites/:code", requireAuth, async (req, res) => {
   try {
     const serverId = req.params.id;
     const code = String(req.params.code || "").trim();
-    await requireServerPermission(serverId, req.user.id, Permissions.CREATE_INSTANT_INVITE);
+    // The creator may always revoke their own invite (even after losing the invite
+    // permission), MANAGE_GUILD any invite (IM-6). Membership is checked here.
+    await requireServerPermission(serverId, req.user.id, Permissions.VIEW_CHANNEL);
 
     const { data: invite } = await supabase
       .from("server_invites")
@@ -5146,7 +6041,7 @@ router.delete("/:id/invites/:code", requireAuth, async (req, res) => {
       .maybeSingle();
     if (!invite) return res.status(404).json({ error: "Invite not found." });
     if (
-      String(invite.creator_id) !== String(req.user.id) &&
+      !sameId(invite.creator_id, req.user.id) &&
       !(await hasServerPermission(serverId, req.user.id, Permissions.MANAGE_GUILD))
     ) {
       // Same answer as a missing invite: no oracle for other members' codes.

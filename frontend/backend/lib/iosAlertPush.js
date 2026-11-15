@@ -410,6 +410,18 @@ function describeEvent(event = {}, lang = "tr") {
       data: { type: "admin-antibot-watch", count },
     };
   }
+  // Duyurular: the admin wrote the text in this person's language (lib/announcements/service.js).
+  if (type === "announcement") {
+    return {
+      ...base,
+      threadId: "announcements",
+      collapseId: event.announcementId ? `announcement-${event.announcementId}`.slice(0, 64) : "",
+      priority: 5,
+      title: clip(event.title, 80) || "Descall",
+      body: clip(event.text, 180),
+      data: { type: "announcement", announcementId: event.announcementId || null },
+    };
+  }
   return null;
 }
 

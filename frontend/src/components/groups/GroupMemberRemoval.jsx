@@ -199,12 +199,8 @@ export function useGroupMemberMenu({ group, me, friends = null, onOpenProfile, o
       onStartDm?.(member);
       onClose?.();
     } else if (key === "copy") {
-      try {
-        await copyText(member.username ? `@${member.username}` : name);
-        toast(t("Copied"), "success");
-      } catch {
-        toast(t("Something went wrong."), "error");
-      }
+      if (await copyText(member.username ? `@${member.username}` : name)) toast(t("Copied"), "success");
+      else toast(t("Could not copy to clipboard"), "error");
     } else if (key === "block") {
       try {
         const next = await confirmToggleBlock({ userId: String(member.id), username: member.username, t });

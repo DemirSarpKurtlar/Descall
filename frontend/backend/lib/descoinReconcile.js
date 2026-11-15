@@ -146,11 +146,26 @@ async function runManual(adminId, deps = null) {
   return runReconciliation({ trigger: "manual", triggeredBy: adminId, deps });
 }
 
+/** Admin schedule (Mağaza › Mutabakat), null before 20261115_shop_desk.sql: old 24 h rule. */
+async function loadSettings(supabase) {
+  try {
+    const { data, error } = await supabase.from("descoin_reconcile_settings").select("interval_hours, hour_of_day").eq("id", 1).maybeSingle();
+    if (error) return null;
+    return data || { interval_hours: 24, hour_of_day: 4 };
+  } catch {
+    return null;
+  }
+}
+
 async function tick(deps = null) {
   const { supabase, log } = deps || defaultDeps();
   try {
     const last = await lastRun(supabase);
-    if (isRunDue(last && last.started_at)) await runReconciliation({ trigger: "cron", deps });
+    const settings = await loadSettings(supabase);
+    const due = settings
+      ? require("./shopMerch").reconcileDue(last && last.started_at, settings)
+      : isRunDue(last && last.started_at);
+    if (due) await runReconciliation({ trigger: "cron", deps });
   } catch (err) {
     log.warn("[descoin-reconcile] scheduler check failed:", (err && err.message) || err);
   }

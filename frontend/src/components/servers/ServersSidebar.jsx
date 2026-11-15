@@ -19,12 +19,14 @@ import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/vo
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
 import { isChannelMuted, setChannelMutedAsync } from "../../lib/serverChannelMutes";
 import { serverHasPermission, serverPermissionsLoaded } from "../../lib/serverPermissions";
+import { useChannelPerms, channelHasPermission, channelPermsKnown } from "../../lib/channelPermissions";
 import {
   updateServerNotificationLevel,
   updateServer,
   createServerFolder,
   deleteServerFolder,
   setServerFolder,
+  getOwnershipTransferInfo,
 } from "../../api/servers";
 import { uploadFile } from "../../api/media";
 import { readFileAsDataUrl } from "../../lib/cropImage";
@@ -48,6 +50,9 @@ import PullToRefresh from "../ui/PullToRefresh";
 import HubHost from "./hub/HubHost";
 import { useHubMode } from "./hub/useHubMode";
 import { isServerMuted, subscribeServerMutes } from "./hub/serverMute";
+import { VOICE_LIST_COLLAPSED, visibleVoiceMembers } from "../../lib/voiceMemberList";
+import { getChannelOverrides as getChannelOverridesForMove } from "../../api/servers";
+import { moveNeedsSyncChoice } from "../../lib/channelOverridesView";
 
 // Public server directory inside the app (item 8), loaded when first opened.
 const DirectoryDiscoverModal = lazy(() => import("./DirectoryDiscoverModal"));
@@ -366,6 +371,12 @@ export default function ServersSidebar({
   const canMoveMembers = permissionsReady && serverHasPermission(activeServer, "MOVE_MEMBERS");
   const canMuteMembers = permissionsReady && serverHasPermission(activeServer, "MUTE_MEMBERS");
   const canDeafenMembers = permissionsReady && serverHasPermission(activeServer, "DEAFEN_MEMBERS");
+  // Voice member menu: the bits of the channel the member sits in (overwrites; audit DF-4).
+  const sidebarChanPerms = useChannelPerms(null, activeServer?.id);
+  const voiceMenuCan = (key, fallback) =>
+    voiceMenu?.channelId && channelPermsKnown(sidebarChanPerms, voiceMenu.channelId)
+      ? channelHasPermission(activeServer, voiceMenu.channelId, key, sidebarChanPerms)
+      : fallback;
   const [channelAccess, setChannelAccess] = useState(null); // channel
   const [voiceMenu, setVoiceMenu] = useState(null); // { user, channelId, x, y }
   const voiceStates = serverVoice?.voiceStatesByServer?.[activeServer?.id] || {};
@@ -384,7 +395,7 @@ export default function ServersSidebar({
       // A5: a muted server shows no badge (mockup 24 "Sessize al").
       if (isServerMuted(server.id)) continue;
       for (const ch of server.channels || []) {
-        if (ch.type !== "text") continue;
+        if (ch.type !== "text" && ch.type !== "announcement") continue;
         sum += Number(channelUnread[ch.id]) || 0;
       }
       if (sum > 0) map[server.id] = sum;
@@ -835,10 +846,11 @@ export default function ServersSidebar({
             mode={confirm.mode === "leave-delete" ? "leave" : "delete"}
             serverName={confirm.server.name}
             onCancel={() => setConfirm(null)}
-            onConfirm={async (confirmName) => {
+            serverId={confirm.server.id}
+            onConfirm={async (confirmName, password) => {
               const server = confirm.server;
               const mode = confirm.mode === "leave-delete" ? "leave" : "delete";
-              await runLeaveOrDelete(mode, server, confirmName);
+              await runLeaveOrDelete(mode, server, confirmName, password);
               setConfirm(null);
               if (transfer?.server?.id === server.id) setTransfer(null);
               setShowSettings(false);
@@ -889,9 +901,9 @@ export default function ServersSidebar({
     </>
   );
 
-  const runLeaveOrDelete = async (mode, server, confirmName) => {
-    if (mode === "delete") await onDeleteServer?.(server.id, confirmName);
-    else await onLeaveServer?.(server.id, confirmName);
+  const runLeaveOrDelete = async (mode, server, confirmName, password) => {
+    if (mode === "delete") await onDeleteServer?.(server.id, confirmName, password);
+    else await onLeaveServer?.(server.id, confirmName, password);
   };
 
   const hubCallbacks = {
@@ -1639,6 +1651,7 @@ export default function ServersSidebar({
               mode="edit"
               channel={channelModal.channel}
               categories={categories}
+              serverId={activeServer?.id || null}
               onClose={() => setChannelModal(null)}
               onSubmit={async (payload) => {
                 await onUpdateChannel?.(channelModal.channel.id, payload);
@@ -1719,9 +1732,9 @@ export default function ServersSidebar({
         {voiceMenu && (
           <VoiceMemberContextMenu
             menu={voiceMenu}
-            canMove={canMoveMembers}
-            canMute={canMuteMembers}
-            canDeafen={canDeafenMembers}
+            canMove={voiceMenuCan("MOVE_MEMBERS", canMoveMembers)}
+            canMute={voiceMenuCan("MUTE_MEMBERS", canMuteMembers)}
+            canDeafen={voiceMenuCan("DEAFEN_MEMBERS", canDeafenMembers)}
             voiceChannels={(activeServer?.channels || []).filter((c) => c.type === "voice" || c.type === "stage")}
             serverId={activeServer?.id}
             serverVoice={serverVoice}
@@ -1743,7 +1756,7 @@ export default function ServersSidebar({
             onCopyId={() => {
               const id = voiceMenu.user?.id;
               if (id == null) return;
-              copyText(String(id)).then(() => toast(t("Copied"), "success")).catch(() => {});
+              copyText(String(id)).then((ok) => (ok ? toast(t("Copied"), "success") : toast(t("Could not copy to clipboard"), "error")));
               setVoiceMenu(null);
             }}
             onClose={() => setVoiceMenu(null)}
@@ -2270,6 +2283,8 @@ function ChannelRow({
           ? Megaphone
           : Hash;
   const voiceMembers = isVoiceLike ? voiceState?.members || [] : [];
+  const [voiceListExpanded, setVoiceListExpanded] = useState(false);
+  const voiceList = visibleVoiceMembers(voiceMembers, { expanded: voiceListExpanded, pinId: myUserId });
   const canMute = channel.type === "text" || channel.type === "announcement";
   const canAccess = Boolean(canManageRoles);
   const showMenu = canManage || canAccess || canMute;
@@ -2492,7 +2507,7 @@ function ChannelRow({
       )}
       {isVoiceLike && voiceMembers.length > 0 && (
         <ul className="server-voice-user-list" aria-label={t("In this channel")}>
-          {voiceMembers.slice(0, 12).map((m) => {
+          {voiceList.shown.map((m) => {
             const stream = resolveMemberVoiceStream(m, {
               joinedHere,
               myUserId,
@@ -2517,6 +2532,23 @@ function ChannelRow({
               />
             );
           })}
+          {voiceList.hiddenCount > 0 || (voiceListExpanded && voiceMembers.length > VOICE_LIST_COLLAPSED) ? (
+            <li className="server-voice-user-more-row">
+              <button
+                type="button"
+                className="server-voice-user-more-toggle"
+                aria-expanded={voiceListExpanded}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVoiceListExpanded((open) => !open);
+                }}
+              >
+                {voiceListExpanded
+                  ? t("Show less")
+                  : `${t("More")} (+${voiceList.hiddenCount})`}
+              </button>
+            </li>
+          ) : null}
         </ul>
       )}
     </div>
@@ -2620,7 +2652,7 @@ function formatSlowmode(seconds, t) {
   return t("uah.slow.seconds", { n });
 }
 
-function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null, categories = [], onClose, onSubmit }) {
+function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null, categories = [], serverId = null, onClose, onSubmit }) {
   const t = useT();
   const isEdit = mode === "edit";
   const initialType = isEdit ? channel.type : defaultType;
@@ -2631,34 +2663,58 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
     isEdit ? Number(channel.slowmodeSeconds) || 0 : 0
   );
   const [nsfw, setNsfw] = useState(isEdit ? Boolean(channel.nsfw) : false);
+  // Voice / stage: at most this many people (0 = no limit, server audit V12).
+  const [userLimit, setUserLimit] = useState(isEdit ? String(Number(channel.userLimit) || 0) : "0");
   const [selectedParent, setSelectedParent] = useState(
     isEdit ? channel.parentId || "" : parentId || ""
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Moving a channel with its own rules into a category with rules: sync or keep (P8).
+  const [syncAsk, setSyncAsk] = useState(false);
 
   const typeLocked = isEdit;
   const showParent = type !== "category";
   const showTopic = type === "text" || type === "announcement";
+  const showUserLimit = type === "voice" || type === "stage";
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (e, lockPermissions) => {
+    e?.preventDefault?.();
     const trimmed = name.trim();
     if (!trimmed) {
       setError(t("Channel name is required."));
       return;
     }
+    const limitNum = Number(String(userLimit).trim() || "0");
+    if (showUserLimit && (!Number.isInteger(limitNum) || limitNum < 0 || limitNum > 99)) {
+      setError(t("chperm.userLimitInvalid"));
+      return;
+    }
     setBusy(true);
     setError("");
+    const nextParent = showParent && selectedParent ? selectedParent : null;
+    if (
+      isEdit &&
+      lockPermissions === undefined &&
+      serverId &&
+      nextParent &&
+      (await moveNeedsSyncChoice({ channel, newParentId: nextParent, getOverrides: (id) => getChannelOverridesForMove(serverId, id) }))
+    ) {
+      setSyncAsk(true);
+      setBusy(false);
+      return;
+    }
+    setSyncAsk(false);
     try {
       const payload = {
         name: trimmed,
         type,
-        parentId: showParent && selectedParent ? selectedParent : null,
+        parentId: nextParent,
       };
       if (showTopic) payload.topic = topic.trim() || null;
       if (showTopic) payload.slowmodeSeconds = Math.max(0, Math.min(21600, Math.floor(Number(slowmodeSeconds) || 0)));
       if (showTopic) payload.nsfw = Boolean(nsfw);
+      if (showUserLimit) payload.userLimit = limitNum;
       if (isEdit) {
         await onSubmit({
           name: payload.name,
@@ -2666,6 +2722,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
           parentId: showParent ? payload.parentId : undefined,
           slowmodeSeconds: showTopic ? payload.slowmodeSeconds : undefined,
           nsfw: showTopic ? payload.nsfw : undefined,
+          userLimit: showUserLimit ? payload.userLimit : undefined,
+          ...(lockPermissions !== undefined ? { lockPermissions } : {}),
         });
       } else {
         await onSubmit(payload);
@@ -2775,6 +2833,23 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
           </label>
         )}
 
+        {showUserLimit && (
+          <label className="server-field">
+            <span>{t("chperm.userLimit")}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={99}
+              step={1}
+              value={userLimit}
+              onChange={(e) => setUserLimit(e.target.value.replace(/[^0-9]/g, "").slice(0, 2))}
+              aria-describedby="chperm-user-limit-hint"
+            />
+            <small id="chperm-user-limit-hint" className="server-field-hint">{t("chperm.userLimitSub")}</small>
+          </label>
+        )}
+
         {showTopic && (
           <>
             <label className="server-field">
@@ -2822,11 +2897,32 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
         )}
 
         {error && <p className="server-modal-error">{error}</p>}
+        {syncAsk ? (
+          <div className="chperm-move-sync" role="group" aria-label={t("chperm.moveSyncTitle")}>
+            <strong>{t("chperm.moveSyncTitle")}</strong>
+            <p>
+              {t("chperm.moveSyncMsg", {
+                channel: channel?.name || "",
+                category: categories.find((c) => String(c.id) === String(selectedParent))?.name || t("chperm.category"),
+              })}
+            </p>
+            <div className="server-modal-actions">
+              <button type="button" className="server-ghost-btn" onClick={() => submit(null, false)} disabled={busy}>
+                {t("chperm.moveSyncKeep")}
+              </button>
+              <button type="button" className="server-primary-btn" onClick={() => submit(null, true)} disabled={busy}>
+                {t("chperm.moveSyncUse", {
+                  category: categories.find((c) => String(c.id) === String(selectedParent))?.name || t("chperm.category"),
+                })}
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="server-modal-actions">
           <button type="button" className="server-ghost-btn" onClick={onClose} disabled={busy}>
             {t("Cancel")}
           </button>
-          <button type="submit" className="server-primary-btn" disabled={busy || !name.trim()}>
+          <button type="submit" className="server-primary-btn" disabled={busy || !name.trim() || syncAsk}>
             {busy ? t("Please wait...") : isEdit ? t("Save") : t("Create")}
           </button>
         </div>
@@ -3259,12 +3355,24 @@ function ConfirmLeaveDialog({ serverName, onConfirm, onCancel }) {
   );
 }
 
-function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
+function ConfirmNameDialog({ mode, serverName, serverId, onConfirm, onCancel }) {
   const t = useT();
   const [value, setValue] = useState("");
+  const [password, setPassword] = useState("");
+  // Deleting a server asks for the account password, like an ownership transfer
+  // (accounts signed in with Google / Apple have none).
+  const [passwordRequired, setPasswordRequired] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const match = value.trim().toLowerCase() === String(serverName || "").toLowerCase();
+  useEffect(() => {
+    if (!serverId) return undefined;
+    let alive = true;
+    getOwnershipTransferInfo(serverId)
+      .then((r) => alive && setPasswordRequired(r?.passwordRequired !== false))
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [serverId]);
 
   const title = mode === "delete" ? t("Delete server") : t("Leave server");
   const message =
@@ -3280,8 +3388,9 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
     setBusy(true);
     setError("");
     try {
-      await onConfirm(value.trim());
+      await onConfirm(value.trim(), passwordRequired ? password : undefined);
     } catch (err) {
+      if (err?.code === "PASSWORD_REQUIRED") setPassword("");
       setError(err?.message || t("Something went wrong."));
       setBusy(false);
     }
@@ -3297,7 +3406,7 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
       danger
       busy={busy}
       error={error}
-      confirmDisabled={!match}
+      confirmDisabled={!match || (passwordRequired && !password)}
       onConfirm={confirm}
       onCancel={onCancel}
       className="g-alert-form"
@@ -3311,6 +3420,17 @@ function ConfirmNameDialog({ mode, serverName, onConfirm, onCancel }) {
           autoFocus
         />
       </label>
+      {passwordRequired ? (
+        <label className="g-alert-field">
+          <span>{t("o3.password")}</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+      ) : null}
     </GlassConfirm>
   );
 }

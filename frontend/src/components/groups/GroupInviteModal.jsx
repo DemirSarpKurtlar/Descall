@@ -53,14 +53,13 @@ export default function GroupInviteModal({ group, open, onClose }) {
 
   const copy = async () => {
     if (!url) return;
-    try {
-      await copyText(url);
-      hapticSuccess();
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
+    if (!(await copyText(url))) {
       setError(t("Could not copy to clipboard"));
+      return;
     }
+    hapticSuccess();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
   };
 
   const share = async () => {

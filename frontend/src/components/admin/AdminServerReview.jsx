@@ -29,6 +29,7 @@ import {
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
 import { confirmAction } from "../../lib/glassConfirm";
+import { copyText } from "../../lib/copyText.js";
 import { Avatar } from "../ui/Avatar";
 import OverlayPortal from "../ui/OverlayPortal.jsx";
 import { useLocale } from "../../context/LocaleContext";
@@ -760,6 +761,18 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
     }
   };
 
+  const reopenInvites = async () => {
+    if (!(await confirmAction({ message: t("serverReview.reopenInvitesConfirm"), confirmLabel: t("serverReview.actReopenInvites"), cancelLabel: t("serverReview.cancel"), danger: false }))) return;
+    try {
+      await adminFetch(`${pathOf(serverId)}/invites/resume`, { method: "POST", body: "{}" });
+      notify(t("serverReview.invitesReopened"));
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(errorText(err));
+    }
+  };
+
   const deleteInvite = async (invite) => {
     if (!(await confirmAction({ message: t("serverReview.deleteInviteConfirm", { code: invite.code }), confirmLabel: t("serverReview.actDeleteInvite"), cancelLabel: t("serverReview.cancel") }))) return;
     try {
@@ -832,7 +845,7 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
         <div className="asr-detail-title">
           <h2>{s.name}</h2>
           <div className="asr-meta">
-            <button type="button" className="asr-id" onClick={() => { navigator.clipboard?.writeText(s.id).then(() => notify(t("serverReview.copied"))).catch(() => {}); }} title={t("serverReview.copyId")} aria-label={t("serverReview.copyId")}>
+            <button type="button" className="asr-id" onClick={() => { copyText(s.id).then((ok) => notify(ok ? t("serverReview.copied") : t("Could not copy to clipboard"))); }} title={t("serverReview.copyId")} aria-label={t("serverReview.copyId")}>
               <Copy size={11} /> {s.id.slice(0, 8)}
             </button>
             <span><Clock size={11} /> {t("serverReview.createdOn", { date: formatAppDate(s.createdAt, locale) })}</span>
@@ -847,6 +860,7 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
       <PersonLine user={detail.owner} t={t} onOpenPerson={onOpenPerson} extra={<span className="asr-chip is-brand">{t("serverReview.ownerBadge")}</span>} />
 
       {error ? <p className="asr-err" role="alert">{error}</p> : null}
+      {detail.server?.invitesPausedAt ? <p className="asr-err" role="status">{t("serverReview.invitesPausedNote")}</p> : null}
 
       <div className="asr-actions">
         {d.available && (d.listed || d.hidden) ? (
@@ -856,7 +870,11 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
             <button type="button" className="asr-btn" onClick={() => setDialog("hide")}><EyeOff size={14} /> {t("serverReview.actHide")}</button>
           )
         ) : null}
-        <button type="button" className="asr-btn" onClick={revokeAll} disabled={!detail.invites.length}><Link2 size={14} /> {t("serverReview.actCloseInvites")}</button>
+        {detail.server?.invitesPausedAt ? (
+          <button type="button" className="asr-btn" onClick={reopenInvites}><Link2 size={14} /> {t("serverReview.actReopenInvites")}</button>
+        ) : (
+          <button type="button" className="asr-btn" onClick={revokeAll}><Link2 size={14} /> {t("serverReview.actCloseInvites")}</button>
+        )}
         {canBan && !detail.owner.isAdmin ? (
           <button type="button" className="asr-btn is-bad-ghost" onClick={() => setBanTarget(detail.owner)}><Ban size={14} /> {t("serverReview.actBanOwner")}</button>
         ) : null}
@@ -908,18 +926,19 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
 
 /* ---------- The section ---------- */
 
-export default function AdminServerReview({ canBan = false, onOpenPerson }) {
+export default function AdminServerReview({ canBan = false, onOpenPerson, initialQuery = "", initialServerId = "" }) {
   const { t, locale } = useLocale();
   const errorText = useErrorText(t);
-  const [query, setQuery] = useState("");
-  const [debounced, setDebounced] = useState("");
+  // The user file opens this page pre-filtered (owner "@username" or a server name / id).
+  const [query, setQuery] = useState(initialQuery || "");
+  const [debounced, setDebounced] = useState((initialQuery || "").trim());
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("risk");
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedId, setSelectedId] = useState(initialServerId || "");
   const [notice, setNotice] = useState("");
   const [asking, setAsking] = useState(null);
   const [askError, setAskError] = useState("");
