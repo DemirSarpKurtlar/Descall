@@ -14,6 +14,8 @@ const {
   resolveMemberPermissions,
   resolveChannelPermissions,
   assertHierarchy,
+  isTimeoutRestricted,
+  timeoutRestrictedError,
 } = require("../lib/serverPermissions");
 const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { emitToChannelViewers, canViewChannel } = require("../lib/channelViewers");
@@ -321,12 +323,34 @@ function findUserInChannel(channelId, userId) {
   return { channelId, call, entry };
 }
 
-async function assertVoiceMod(actorId, serverId, flag) {
+/**
+ * Voice moderation right. With channelIds the flag comes from that channel's bits
+ * (overwrite allows and denies count, Discord parity; server audit P4): a channel
+ * allow of MUTE_MEMBERS / DEAFEN_MEMBERS / MOVE_MEMBERS works without the server-wide
+ * bit, and a deny removes it. Without channels (target not in voice) the server bits
+ * decide. A timed-out moderator cannot moderate (M4).
+ */
+async function assertVoiceMod(actorId, serverId, flag, { channelIds = [] } = {}) {
   const resolved = await resolveMemberPermissions(supabase, serverId, actorId);
   if (!resolved.isMember) {
     const err = new Error("You are not a member of this server.");
     err.code = "NOT_MEMBER";
     throw err;
+  }
+  if (typeof isTimeoutRestricted === "function" && isTimeoutRestricted(resolved)) {
+    throw timeoutRestrictedError(resolved);
+  }
+  const ids = [...new Set((channelIds || []).filter(Boolean).map(normId))];
+  if (ids.length) {
+    for (const chId of ids) {
+      const r = await resolveChannelPermissions(supabase, serverId, actorId, chId);
+      if (r.channelMissing || !hasPermission(r.bits, flag)) {
+        const err = new Error("Missing permission.");
+        err.code = "MISSING_PERMISSION";
+        throw err;
+      }
+    }
+    return resolved;
   }
   if (!hasPermission(resolved.bits, flag)) {
     const err = new Error("Missing permission.");
@@ -732,7 +756,6 @@ function registerServerVoiceHandlers(io, socket) {
     channelId = channelId ? normId(channelId) : channelId;
     const targetId = normId(userId);
     try {
-      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS);
       if (sameUserId(targetId, myId)) {
         socket.emit("server:voice:error", { message: "Cannot disconnect yourself this way." });
         return;
@@ -743,6 +766,7 @@ function registerServerVoiceHandlers(io, socket) {
         socket.emit("server:voice:error", { message: "User is not in a voice channel." });
         return;
       }
+      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS, { channelIds: [found.channelId] });
       await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [found.channelId] });
       removeFromVoice(io, found.channelId, targetId);
       io.to(`user:${targetId}`).emit("server:voice:force-disconnected", {
@@ -774,7 +798,6 @@ function registerServerVoiceHandlers(io, socket) {
       const targetId = normId(userId);
       const destId = normId(toChannelId);
       try {
-        await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS);
         // Discord: movers can seat members into channels the member cannot see.
         const { channel: dest, resolved: destPerms, canView, canConnect } = await assertVoiceAccess(
           targetId,
@@ -793,6 +816,7 @@ function registerServerVoiceHandlers(io, socket) {
           socket.emit("server:voice:error", { message: "User is not in a voice channel." });
           return;
         }
+        await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS, { channelIds: [found.channelId, destId] });
         await assertVoiceTarget(myId, serverId, targetId, { flag: Permissions.MOVE_MEMBERS, channelIds: [found.channelId, destId], connectIds: [destId] });
         if (String(found.channelId) === destId) return;
 
@@ -897,10 +921,10 @@ function registerServerVoiceHandlers(io, socket) {
     const targetId = normId(userId);
     const flag = kind === "deafen" ? Permissions.DEAFEN_MEMBERS : Permissions.MUTE_MEMBERS;
     try {
-      await assertVoiceMod(myId, serverId, flag);
       const found =
         (channelId && findUserInChannel(channelId, targetId)) || findUserVoiceChannel(targetId);
       const inThisServer = found && normId(found.call.serverId) === serverId;
+      await assertVoiceMod(myId, serverId, flag, { channelIds: inThisServer ? [found.channelId] : [] });
       if (!inThisServer) {
         const target = await resolveMemberPermissions(supabase, serverId, targetId);
         if (!target.isMember) {
@@ -1140,8 +1164,8 @@ function registerServerVoiceHandlers(io, socket) {
     channelId = normId(channelId);
     const targetId = normId(userId);
     try {
-      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS);
-      await assertVoiceMod(myId, serverId, Permissions.MUTE_MEMBERS);
+      await assertVoiceMod(myId, serverId, Permissions.MOVE_MEMBERS, { channelIds: [channelId] });
+      await assertVoiceMod(myId, serverId, Permissions.MUTE_MEMBERS, { channelIds: [channelId] });
       const found = findUserInChannel(channelId, targetId);
       const member = found?.entry?.member;
       const { channel, resolved } = await assertStageChannel(targetId, channelId, {

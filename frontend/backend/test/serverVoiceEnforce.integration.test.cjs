@@ -19,7 +19,7 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 
 const future = new Date(Date.now() + 3600e3).toISOString();
 const db = createFakeSupabase({
-  users: ["alice", "bob", "carol", "dave", "erin", "tim", "ghost", "lost", "mod", "frank"].map((n) => ({
+  users: ["alice", "bob", "carol", "dave", "erin", "tim", "ghost", "lost", "mod", "frank", "host", "gina"].map((n) => ({
     id: `u-${n}`,
     username: n,
     active_sessions: [{ id: `s-${n}` }],
@@ -39,7 +39,7 @@ const db = createFakeSupabase({
     { id: "ch-small", server_id: "srv-1", type: "voice", name: "Duo", user_limit: 1 },
     { id: "ch-s2", server_id: "srv-2", type: "voice", name: "Other server" },
   ],
-  server_members: ["alice", "bob", "carol", "dave", "erin", "tim", "ghost", "lost", "mod", "frank"].map((n) => ({
+  server_members: ["alice", "bob", "carol", "dave", "erin", "tim", "ghost", "lost", "mod", "frank", "host", "gina"].map((n) => ({
     server_id: "srv-1",
     user_id: `u-${n}`,
     ...(n === "tim" ? { timeout_until: future, timeout_reason: "spam" } : {}),
@@ -64,6 +64,9 @@ const bits = {
   "u-ghost": { "*": VOICE },
   "u-lost": { "*": 0n },
   "u-frank": { "*": VOICE },
+  // Channel allow only (P4): may mute / move in ch-voice2, nowhere else.
+  "u-host": { "*": VOICE, "ch-voice2": VOICE | P.MUTE_MEMBERS | P.MOVE_MEMBERS },
+  "u-gina": { "*": VOICE },
 };
 const bitsFor = (uid, ch) => {
   const row = bits[uid];
@@ -410,6 +413,28 @@ async function check(name, fn) {
     await frank.fire("server:voice:stage:request", { channelId: "ch-stage" });
     const after = events.filter((e) => e[1] === "server:voice:stage-state" && e[2]?.userId === "u-frank").length;
     assert.equal(after - before, 1);
+  });
+
+  // ---- P4: channel-level allow / deny of the voice moderation bits
+  await check("P4 channel allow of MUTE/MOVE_MEMBERS works without the server bit; elsewhere refused", async () => {
+    const host = mkSocket("u-host");
+    const gina = mkSocket("u-gina");
+    await gina.fire("server:voice:join", { serverId: "srv-1", channelId: "ch-voice2" });
+    await host.fire("server:voice:server-mute", { serverId: "srv-1", channelId: "ch-voice2", userId: "u-gina", muted: true });
+    assert.equal(seat("ch-voice2", "u-gina")?.serverMuted, true, "channel allow honoured");
+    await host.fire("server:voice:server-mute", { serverId: "srv-1", channelId: "ch-voice2", userId: "u-gina", muted: false });
+    await host.fire("server:voice:move", { serverId: "srv-1", userId: "u-gina", fromChannelId: "ch-voice2", toChannelId: "ch-voice" });
+    assert.ok(seat("ch-voice2", "u-gina"), "move needs the bit on the destination too");
+    await gina.fire("server:voice:join", { serverId: "srv-1", channelId: "ch-voice" });
+    await host.fire("server:voice:server-mute", { serverId: "srv-1", channelId: "ch-voice", userId: "u-gina", muted: true });
+    assert.equal(seat("ch-voice", "u-gina")?.serverMuted, false, "no bit in this channel");
+    assert.equal(lastEvent("sock:u-host", "server:voice:error")?.code, "MISSING_PERMISSION");
+    // A channel deny removes the server-wide bit (alice has MUTE_MEMBERS server-wide).
+    bits["u-alice"]["ch-voice"] = VOICE | P.STREAM | P.MOVE_MEMBERS;
+    await alice.fire("server:voice:server-mute", { serverId: "srv-1", channelId: "ch-voice", userId: "u-gina", muted: true });
+    assert.equal(seat("ch-voice", "u-gina")?.serverMuted, false, "channel deny honoured");
+    delete bits["u-alice"]["ch-voice"];
+    await gina.fire("server:voice:leave", { channelId: "ch-voice" });
   });
 
   // ---- V12 user limit
