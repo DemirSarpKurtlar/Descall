@@ -1643,3 +1643,517 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
   filter: drop-shadow(0 0 3px rgba(212, 255, 58, 0.55)) drop-shadow(0 0 4px rgba(255, 58, 212, 0.45));
   animation: s2c2-uv 2.2s ease-in-out infinite;
 }
+
+/* ───────────────────────────── Bubbles: the 16 set pieces ───────────────────────────── */
+
+@keyframes s2c2-beam { 0%, 100% { opacity: 0.25; } 40% { opacity: 1; } 60% { opacity: 0.85; } }
+@keyframes s2c2-buoy { 0%, 100% { box-shadow: 0 0 0 2px rgba(53, 208, 224, 0.5), 0 0 6px 1px rgba(53, 208, 224, 0.6); } 50% { box-shadow: 0 0 0 3px rgba(53, 208, 224, 0.35), 0 0 14px 4px rgba(53, 208, 224, 0.75); } }
+@keyframes s2c2-petals { to { background-position: 0 -60px, 20px -90px; } }
+@keyframes s2c2-aurora { 0%, 100% { background-position: 0 0, 40px 4px; opacity: 0.8; } 50% { background-position: -80px 0, 100px 4px; opacity: 1; } }
+@keyframes s2c2-haze { 0%, 100% { background-position: 0 0, 100% 100%; } 50% { background-position: 30% 20%, 70% 80%; } }
+@keyframes s2c2-bolt { 0%, 86%, 100% { opacity: 0.35; } 87% { opacity: 1; } 88% { opacity: 0.4; } 90% { opacity: 1; } 93% { opacity: 0.35; } }
+@keyframes s2c2-flow { to { background-position: 0 0, 120px 0; } }
+@keyframes s2c2-rays { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* Gece Limanı: harbour night, the lighthouse beam passes, a buoy light breathes. */
+.cosmetic-chat-bubble.bubble-s2-set-gece-limani {
+  --s2-ink: #eef8ff;
+  --s2-ink-2: rgba(232, 246, 255, 0.72);
+  --s2-link: #7fe8f2;
+  --s2-edge: rgba(53, 208, 224, 0.55);
+  --s2-glow: rgba(53, 208, 224, 0.32);
+  --s2-quote: rgba(5, 14, 34, 0.42);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='10'><path d='M0 5c8-4 16-4 24 0s16 4 24 0 12-3 16-1' fill='none' stroke='%2335d0e0' stroke-opacity='.55' stroke-width='1.2'/><path d='M0 9c8-3 16-3 24 0s16 3 24 0 12-2 16-1' fill='none' stroke='%23e8f6ff' stroke-opacity='.22' stroke-width='.8'/></svg>") left bottom 1px / 64px 10px repeat-x,
+    linear-gradient(180deg, transparent 45%, rgba(232, 246, 255, 0.08) 62%, transparent 80%),
+    radial-gradient(90% 80% at 0% 0%, rgba(30, 75, 143, 0.75), transparent 70%),
+    linear-gradient(170deg, #12305f 0%, #0b1b3a 70%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-gece-limani::before {
+  content: "";
+  background: conic-gradient(from 100deg at 0 0, transparent 0deg, rgba(232, 246, 255, 0.0) 6deg, rgba(232, 246, 255, 0.22) 14deg, rgba(232, 246, 255, 0.06) 24deg, transparent 30deg);
+  animation: s2c2-beam 6s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-gece-limani::after {
+  content: "";
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffffff, #e8f6ff 50%, #9fe9f2);
+  animation: s2c2-buoy 3s ease-in-out infinite;
+}
+
+/* Bakır Kervan: dusk over the dunes, a brass-dashed edge and a hanging lantern. */
+.cosmetic-chat-bubble.bubble-s2-set-bakir-kervan {
+  --s2-ink: #fff3e0;
+  --s2-ink-2: rgba(255, 226, 176, 0.78);
+  --s2-link: #ffd08a;
+  --s2-edge: rgba(240, 164, 67, 0.6);
+  --s2-glow: rgba(240, 164, 67, 0.3);
+  --s2-quote: rgba(30, 10, 2, 0.38);
+  outline: 1px dashed rgba(255, 226, 176, 0.38);
+  outline-offset: 3px;
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='12' preserveAspectRatio='none'><path d='M0 12V8c14-6 30-6 44-1s26 4 40-2 26-4 36 1v6z' fill='%232a140a' fill-opacity='.7'/><path d='M0 12v-2c20-4 36-2 52 1s30 2 46-2 18-2 22 0v3z' fill='%23180a04' fill-opacity='.65'/></svg>") left bottom / 120px 10px repeat-x,
+    radial-gradient(circle at 82% 110%, rgba(255, 226, 176, 0.75) 0 6px, rgba(240, 164, 67, 0.35) 9px, transparent 26px),
+    linear-gradient(180deg, #4a2412 0%, #8a4420 60%, #b5622b 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-bakir-kervan::after {
+  content: "";
+  bottom: -8px;
+  right: 10px;
+  width: 11px;
+  height: 11px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  background: radial-gradient(circle at 50% 50%, #fff2c8 0 2px, #f0a443 3.5px, #b5622b);
+  box-shadow: 0 0 0 1px #6a3414, 0 0 10px rgba(240, 164, 67, 0.85);
+  animation: s2c2-candle 2.4s ease-in-out infinite;
+}
+
+/* Orkide Sisi: glasshouse violet, spores of light, an orchid with a lime leaf. */
+.cosmetic-chat-bubble.bubble-s2-set-orkide-sisi {
+  --s2-ink: #fff6fd;
+  --s2-ink-2: rgba(255, 236, 250, 0.74);
+  --s2-link: #d6ff8a;
+  --s2-edge: rgba(255, 111, 181, 0.55);
+  --s2-glow: rgba(255, 111, 181, 0.32);
+  --s2-quote: rgba(20, 6, 34, 0.4);
+  --s2-bg:
+    radial-gradient(80% 90% at 100% 0%, rgba(255, 111, 181, 0.45), transparent 65%),
+    radial-gradient(60% 80% at 0% 100%, rgba(200, 255, 106, 0.12), transparent 70%),
+    linear-gradient(140deg, #3a1766 0%, #5a26a0 50%, #2c1150 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-orkide-sisi::before {
+  content: "";
+  background:
+    radial-gradient(circle at 16% 28%, #f3ffd0 0 1px, rgba(200, 255, 106, 0.5) 2px, transparent 4px),
+    radial-gradient(circle at 58% 82%, #ffe0f0 0 1px, rgba(255, 111, 181, 0.5) 2px, transparent 4px),
+    radial-gradient(circle at 36% 60%, #f3ffd0 0 .8px, rgba(200, 255, 106, 0.45) 1.8px, transparent 3.5px),
+    radial-gradient(circle at 84% 64%, #ffe0f0 0 1px, rgba(255, 111, 181, 0.45) 2px, transparent 4px);
+  animation: s2c2-pulse 3.2s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-orkide-sisi::after {
+  content: "";
+  top: -11px;
+  right: -9px;
+  width: 26px;
+  height: 22px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 22'><path d='M2 20C4 12 10 9 16 12c-5 1-9 4-14 8z' fill='%23a8e04a'/><path d='M2 20C6 15 10 13 15 12' stroke='%23e6ffb0' stroke-width='.6' fill='none'/><g transform='translate(15 9)'><ellipse cx='0' cy='-5' rx='3' ry='5' fill='%23ff8fc6'/><ellipse cx='5' cy='-1' rx='5' ry='3' fill='%23ff6fb5' transform='rotate(-20 5 -1)'/><ellipse cx='-5' cy='-1' rx='5' ry='3' fill='%23ff6fb5' transform='rotate(20 -5 -1)'/><ellipse cx='2.6' cy='4' rx='2.6' ry='4' fill='%23e04a9a' transform='rotate(-30 2.6 4)'/><ellipse cx='-2.6' cy='4' rx='2.6' ry='4' fill='%23e04a9a' transform='rotate(30 -2.6 4)'/><circle cx='0' cy='0.6' r='2.2' fill='%23fff0f8'/><circle cx='0' cy='1' r='1' fill='%238b3fd1'/></g></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(255, 111, 181, 0.7));
+}
+
+/* Kor Bahçesi: an ember bed glowing below, fire petals lifting off it. */
+.cosmetic-chat-bubble.bubble-s2-set-kor-bahcesi {
+  --s2-ink: #fff4ea;
+  --s2-ink-2: rgba(255, 228, 200, 0.76);
+  --s2-link: #ffd27a;
+  --s2-edge: rgba(255, 106, 43, 0.55);
+  --s2-glow: rgba(255, 106, 43, 0.38);
+  --s2-quote: rgba(20, 2, 0, 0.42);
+  --s2-bg:
+    radial-gradient(70% 40% at 30% 112%, rgba(255, 210, 122, 0.8), rgba(255, 106, 43, 0.5) 40%, transparent 75%),
+    radial-gradient(60% 40% at 85% 115%, rgba(255, 106, 43, 0.7), transparent 75%),
+    linear-gradient(180deg, #1a0705 0%, #4a0f08 55%, #a3220f 100%);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-set-kor-bahcesi .message-text {
+  text-shadow: 0 1px 2px rgba(26, 7, 5, 0.75);
+}
+.cosmetic-chat-bubble.bubble-s2-set-kor-bahcesi::before {
+  content: "";
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><g fill='%23ff8a3a'><path d='M10 50c2-4 6-5 8-3-2 3-5 4-8 3z'/><path d='M44 20c1-3 4-4 6-2-1 2-4 3-6 2z' fill='%23ffd27a'/></g></svg>") 0 0 / 60px 60px,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><g fill='%23ffb04a'><path d='M30 70c2-4 6-5 8-3-2 3-5 4-8 3z'/><path d='M70 30c1-3 4-4 6-2-1 2-4 3-6 2z'/></g></svg>") 0 0 / 90px 90px;
+  -webkit-mask: linear-gradient(0deg, #000 20%, transparent 95%);
+  mask: linear-gradient(0deg, #000 20%, transparent 95%);
+  animation: s2c2-petals 7s linear infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-kor-bahcesi::after {
+  content: "";
+  top: -10px;
+  right: -6px;
+  width: 16px;
+  height: 20px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 20'><defs><linearGradient id='p' x1='0' y1='1' x2='0' y2='0'><stop offset='0' stop-color='%23a3220f'/><stop offset='.5' stop-color='%23ff6a2b'/><stop offset='1' stop-color='%23ffd27a'/></linearGradient></defs><path d='M8 1c5 5 7 10 3 15-2 2-4 3-6 2C1 15 2 8 8 1z' fill='url(%23p)'/><path d='M8 5c2 4 3 7 1 10' stroke='%23fff0c0' stroke-width='.8' fill='none' opacity='.8'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 5px rgba(255, 106, 43, 0.85));
+}
+
+/* Buzul Sessizliği: cut ice facets under snow light, frost on the rim, a crystal. */
+.cosmetic-chat-bubble.bubble-s2-set-buzul-sessizligi {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(230, 248, 255, 0.76);
+  --s2-link: #bff0ff;
+  --s2-edge: rgba(166, 231, 255, 0.7);
+  --s2-glow: rgba(166, 231, 255, 0.35);
+  --s2-quote: rgba(4, 18, 28, 0.4);
+  --s2-inset: inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 0 10px rgba(166, 231, 255, 0.35);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='60' viewBox='0 0 140 60' preserveAspectRatio='none'><g stroke='%23a6e7ff' stroke-opacity='.25' stroke-width='.8'><path d='M0 0l40 22L18 60z' fill='%23a6e7ff' fill-opacity='.12'/><path d='M40 22L82 0l-8 40z' fill='%23ffffff' fill-opacity='.07'/><path d='M74 40l66-30v50z' fill='%23a6e7ff' fill-opacity='.1'/><path d='M18 60l22-38 34 18-10 20z' fill='%233a8fb7' fill-opacity='.18'/><path d='M82 0h58v10L74 40z' fill='%23ffffff' fill-opacity='.05'/></g></svg>") 0 0 / 100% 100% no-repeat,
+    radial-gradient(80% 90% at 20% 0%, rgba(166, 231, 255, 0.4), transparent 70%),
+    linear-gradient(170deg, #1e5a7c 0%, #0f3248 60%, #071a24 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-buzul-sessizligi::before {
+  content: "";
+  background:
+    radial-gradient(circle at 22% 18%, #fff 0 1px, transparent 2.5px),
+    radial-gradient(circle at 70% 76%, #fff 0 1px, transparent 2.5px),
+    radial-gradient(circle at 90% 30%, #fff 0 .8px, transparent 2px);
+  animation: s2c2-twinkle 3s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-buzul-sessizligi::after {
+  content: "";
+  top: -9px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23ffffff' stroke-linecap='round'><g stroke-width='1.4'><path d='M10 1v18M2.2 5.5l15.6 9M2.2 14.5l15.6-9'/></g><g stroke-width='1'><path d='M10 4l-2-2M10 4l2-2M10 16l-2 2M10 16l2 2M4.8 7l-2.8.6M4.8 7l-.6-2.8M15.2 13l2.8-.6M15.2 13l.6 2.8M4.8 13l-2.8-.6M4.8 13l-.6 2.8M15.2 7l2.8.6M15.2 7l.6-2.8'/></g></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 3px rgba(166, 231, 255, 0.95));
+}
+
+/* Neon Çarşı: wet street at night, pink and cyan signs reflected, rain, a yellow arrow. */
+.cosmetic-chat-bubble.bubble-s2-set-neon-carsi {
+  --s2-ink: #ffffff;
+  --s2-ink-2: rgba(255, 255, 255, 0.74);
+  --s2-link: #fff04a;
+  --s2-edge: rgba(255, 46, 136, 0.7);
+  --s2-glow: rgba(46, 242, 255, 0.35);
+  --s2-quote: rgba(0, 0, 0, 0.42);
+  --s2-inset: inset 0 0 0 1px rgba(46, 242, 255, 0.5), inset 0 0 12px rgba(255, 46, 136, 0.35);
+  --s2-bg:
+    radial-gradient(50% 30% at 25% 100%, rgba(255, 46, 136, 0.5), transparent 70%),
+    radial-gradient(50% 30% at 80% 100%, rgba(46, 242, 255, 0.42), transparent 70%),
+    radial-gradient(60% 60% at 0% 0%, rgba(255, 46, 136, 0.3), transparent 70%),
+    radial-gradient(60% 60% at 100% 0%, rgba(46, 242, 255, 0.25), transparent 70%),
+    linear-gradient(180deg, #120a2a, #0a0618);
+}
+.cosmetic-chat-bubble.bubble-s2-set-neon-carsi::before {
+  content: "";
+  background:
+    repeating-linear-gradient(100deg, transparent 0 11px, rgba(220, 240, 255, 0.18) 11px 12px, transparent 12px 27px) 0 0 / 120px 96px,
+    linear-gradient(transparent, transparent);
+  animation: s2c2-rain 1.4s linear infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-neon-carsi::after {
+  content: "";
+  top: -8px;
+  right: 12px;
+  width: 22px;
+  height: 12px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 12' fill='none' stroke='%23fff04a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M2 6h16M13 1.5L18 6l-5 4.5'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 2px #fff04a) drop-shadow(0 0 5px rgba(255, 240, 74, 0.8));
+  animation: s2c2-flicker 6s linear infinite;
+}
+
+/* Altın Hasat: late sun over a wheat field, an ear of wheat on the corner. */
+.cosmetic-chat-bubble.bubble-s2-set-altin-hasat {
+  --s2-ink: #fffaf0;
+  --s2-ink-2: rgba(255, 243, 196, 0.76);
+  --s2-link: #ffe27a;
+  --s2-edge: rgba(242, 194, 48, 0.6);
+  --s2-glow: rgba(242, 194, 48, 0.32);
+  --s2-quote: rgba(20, 14, 2, 0.42);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='14'><g fill='none' stroke='%23f2c230' stroke-opacity='.38' stroke-width='1' stroke-linecap='round'><path d='M3 14c0-5 1-9 3-12M10 14c0-4 0-8-1-11M17 14c1-5 2-8 4-10M25 14c0-4-1-7-2-9'/></g><g fill='%23f2c230' fill-opacity='.42'><ellipse cx='6' cy='2.4' rx='1' ry='2'/><ellipse cx='9' cy='3' rx='1' ry='2'/><ellipse cx='21' cy='4' rx='1' ry='2'/><ellipse cx='23' cy='5' rx='1' ry='2'/></g></svg>") left bottom / 30px 14px repeat-x,
+    radial-gradient(60% 90% at 100% 0%, rgba(255, 243, 196, 0.5), rgba(242, 194, 48, 0.2) 40%, transparent 70%),
+    linear-gradient(180deg, #4a3608 0%, #2e220a 55%, #1b1405 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-altin-hasat::after {
+  content: "";
+  top: -12px;
+  right: -6px;
+  width: 14px;
+  height: 26px;
+  transform: rotate(22deg);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 26'><path d='M7 26V8' stroke='%23c99a1c' stroke-width='1.2'/><g fill='%23f2c230'><ellipse cx='4.6' cy='16' rx='2.2' ry='3.4' transform='rotate(-25 4.6 16)'/><ellipse cx='9.4' cy='16' rx='2.2' ry='3.4' transform='rotate(25 9.4 16)'/><ellipse cx='4.6' cy='11' rx='2.1' ry='3.2' transform='rotate(-25 4.6 11)'/><ellipse cx='9.4' cy='11' rx='2.1' ry='3.2' transform='rotate(25 9.4 11)'/><ellipse cx='7' cy='5' rx='2' ry='3.6'/></g><g fill='%23fff3c4' opacity='.7'><ellipse cx='4' cy='15' rx='.7' ry='1.6' transform='rotate(-25 4 15)'/><ellipse cx='4' cy='10' rx='.7' ry='1.5' transform='rotate(-25 4 10)'/><ellipse cx='6.6' cy='4' rx='.6' ry='1.6'/></g><path d='M7 1V-3M5 3l-2-4M9 3l2-4' stroke='%23f2c230' stroke-width='.5'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(242, 194, 48, 0.6));
+}
+
+/* Mor Sis: violet nebula haze drifting, a lilac crescent. */
+.cosmetic-chat-bubble.bubble-s2-set-mor-sis {
+  --s2-ink: #fbf8ff;
+  --s2-ink-2: rgba(230, 220, 255, 0.78);
+  --s2-link: #d6c4ff;
+  --s2-edge: rgba(167, 123, 255, 0.55);
+  --s2-glow: rgba(167, 123, 255, 0.35);
+  --s2-quote: rgba(10, 4, 24, 0.4);
+  --s2-bg:
+    linear-gradient(160deg, #2c1a5e 0%, #1a0f38 60%, #120a24 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-mor-sis::before {
+  content: "";
+  background:
+    radial-gradient(40% 70% at 30% 40%, rgba(167, 123, 255, 0.5), transparent 70%) 0 0 / 160% 160% no-repeat,
+    radial-gradient(40% 70% at 70% 60%, rgba(230, 220, 255, 0.28), transparent 70%) 0 0 / 160% 160% no-repeat;
+  filter: blur(3px);
+  animation: s2c2-haze 14s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-mor-sis::after {
+  content: "";
+  top: -8px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 70% 35%, transparent 0 5.6px, #e6dcff 6.2px);
+  -webkit-mask: radial-gradient(circle, #000 7.6px, transparent 8px);
+  mask: radial-gradient(circle, #000 7.6px, transparent 8px);
+  filter: drop-shadow(0 0 4px rgba(167, 123, 255, 0.95));
+}
+
+/* Gece Mercanı: night reef, coral branches glowing at both ends, drifting plankton. */
+.cosmetic-chat-bubble.bubble-s2-set-gece-mercani {
+  --s2-ink: #fff6fa;
+  --s2-ink-2: rgba(255, 220, 232, 0.76);
+  --s2-link: #ffb0c6;
+  --s2-edge: rgba(214, 51, 108, 0.6);
+  --s2-glow: rgba(214, 51, 108, 0.32);
+  --s2-quote: rgba(4, 2, 16, 0.42);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='28'><g fill='none' stroke='%23ff8fab' stroke-linecap='round' stroke-opacity='.55'><path d='M8 28V18l-5-6M8 18l5-7M8 22l6-3M13 11l2-5M13 11l4-1M3 12L1 7M3 12l-3 1' stroke-width='2'/></g><g fill='%23ffd0de' fill-opacity='.8'><circle cx='15' cy='6' r='1.2'/><circle cx='17' cy='10' r='1'/><circle cx='1' cy='7' r='1'/><circle cx='14' cy='19' r='1'/></g></svg>") left 2px bottom / 34px 28px no-repeat,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='26'><g fill='none' stroke='%237c5cff' stroke-linecap='round' stroke-opacity='.6'><path d='M20 26V16l4-6M20 16l-6-5M20 20l-7-2M14 11l-2-5M24 10l3-4M24 10l4 1' stroke-width='2'/></g><g fill='%23d6caff' fill-opacity='.8'><circle cx='12' cy='6' r='1.1'/><circle cx='27' cy='6' r='1'/><circle cx='28' cy='11' r='1'/></g></svg>") right 2px bottom / 30px 26px no-repeat,
+    radial-gradient(80% 70% at 50% 120%, rgba(214, 51, 108, 0.35), transparent 70%),
+    linear-gradient(180deg, #1a1440 0%, #0c0a1f 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-gece-mercani::before {
+  content: "";
+  background:
+    radial-gradient(circle at 30% 30%, #ffd0de 0 .8px, transparent 2px),
+    radial-gradient(circle at 62% 22%, #d6caff 0 .8px, transparent 2px),
+    radial-gradient(circle at 46% 70%, #ffd0de 0 .7px, transparent 2px),
+    radial-gradient(circle at 78% 52%, #d6caff 0 .8px, transparent 2px);
+  animation: s2c2-twinkle 3.8s ease-in-out infinite;
+}
+
+/* Kuzey Işığı: aurora curtains rippling across the top of a polar sky. */
+.cosmetic-chat-bubble.bubble-s2-set-kuzey-isigi {
+  --s2-ink: #f2fff9;
+  --s2-ink-2: rgba(210, 255, 236, 0.74);
+  --s2-link: #6effc7;
+  --s2-edge: rgba(110, 255, 199, 0.5);
+  --s2-glow: rgba(110, 255, 199, 0.3);
+  --s2-quote: rgba(2, 10, 16, 0.42);
+  --s2-bg:
+    radial-gradient(120% 60% at 50% 120%, rgba(143, 123, 255, 0.25), transparent 70%),
+    linear-gradient(180deg, #0a2a36 0%, #04121c 70%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-kuzey-isigi::before {
+  content: "";
+  --au: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='34'><defs><linearGradient id='a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%236effc7' stop-opacity='0'/><stop offset='.25' stop-color='%236effc7' stop-opacity='.75'/><stop offset='.7' stop-color='%2314a37f' stop-opacity='.35'/><stop offset='1' stop-color='%2314a37f' stop-opacity='0'/></linearGradient><linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%238f7bff' stop-opacity='0'/><stop offset='.3' stop-color='%238f7bff' stop-opacity='.6'/><stop offset='1' stop-color='%238f7bff' stop-opacity='0'/></linearGradient><filter id='f'><feGaussianBlur stdDeviation='1.2'/></filter></defs><g filter='url(%23f)'><path d='M0 6C20 2 30 12 50 8s34-8 54-2 36 6 56 0v18c-20 6-36 0-56 2S70 30 50 26 20 18 0 22z' fill='url(%23a)'/><path d='M0 2c26 6 44-4 70 0s40 8 60 2 22-2 30 0v10c-10-2-22 2-30 0s-40-6-60-2S26 16 0 10z' fill='url(%23b)'/></g><g stroke='%23d8fff0' stroke-opacity='.25' stroke-width='.6'><path d='M12 6v14M30 8v16M48 8v18M66 6v14M86 4v16M104 6v16M124 8v14M142 6v14'/></g></svg>");
+  background: var(--au) 0 0 / 160px 34px repeat-x, var(--au) 40px 4px / 220px 40px repeat-x;
+  -webkit-mask: linear-gradient(180deg, #000 0 40%, transparent 90%);
+  mask: linear-gradient(180deg, #000 0 40%, transparent 90%);
+  animation: s2c2-aurora 12s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-kuzey-isigi::after {
+  content: "";
+  top: -7px;
+  right: -6px;
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M7 0l1.2 5.8L14 7l-5.8 1.2L7 14l-1.2-5.8L0 7l5.8-1.2z' fill='%23d8fff0'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(110, 255, 199, 0.9));
+}
+
+/* Zümrüt Orman: deep forest, light shafts through the canopy, a single leaf. */
+.cosmetic-chat-bubble.bubble-s2-set-zumrut-orman {
+  --s2-ink: #f2fff6;
+  --s2-ink-2: rgba(216, 255, 230, 0.74);
+  --s2-link: #9df5bf;
+  --s2-edge: rgba(73, 209, 125, 0.5);
+  --s2-glow: rgba(73, 209, 125, 0.28);
+  --s2-quote: rgba(2, 10, 6, 0.42);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='16' preserveAspectRatio='none'><path d='M0 16l5-9 5 9zM8 16l6-12 6 12zM18 16l4-7 4 7zM24 16l6-13 6 13zM34 16l5-10 5 10z' fill='%23020a05' fill-opacity='.65'/></svg>") left bottom / 44px 12px repeat-x,
+    radial-gradient(90% 80% at 50% 0%, rgba(73, 209, 125, 0.3), transparent 70%),
+    linear-gradient(180deg, #11402a 0%, #0a2416 60%, #06140c 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-zumrut-orman::before {
+  content: "";
+  background:
+    linear-gradient(105deg, transparent 18%, rgba(216, 255, 230, 0.16) 22%, transparent 28%, transparent 46%, rgba(216, 255, 230, 0.12) 50%, transparent 55%, transparent 70%, rgba(216, 255, 230, 0.14) 74%, transparent 80%),
+    radial-gradient(circle at 74% 64%, #e8ffb0 0 1px, rgba(200, 255, 120, 0.4) 2px, transparent 4px),
+    radial-gradient(circle at 24% 72%, #e8ffb0 0 .8px, rgba(200, 255, 120, 0.35) 1.8px, transparent 3.5px);
+  animation: s2c2-rays 5s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-zumrut-orman::after {
+  content: "";
+  top: -9px;
+  right: -7px;
+  width: 20px;
+  height: 16px;
+  transform: rotate(-18deg);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'><defs><linearGradient id='l' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='%231f7a46'/><stop offset='1' stop-color='%2349d17d'/></linearGradient></defs><path d='M1 15C2 6 9 1 19 1c-1 9-8 14-18 14z' fill='url(%23l)'/><path d='M1 15C6 10 11 6 18 2M6 11l1-4M10 8l2-3M8 10l4 0' stroke='%23d8ffe6' stroke-width='.7' fill='none' opacity='.8'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 20, 8, 0.6));
+}
+
+/* Kum Saati: ivory and sand, fine grains, a small brass hourglass. */
+.cosmetic-chat-bubble.bubble-s2-set-kum-saati {
+  --s2-ink: #2b1f10;
+  --s2-ink-2: rgba(43, 31, 16, 0.62);
+  --s2-link: #7a4a12;
+  --s2-edge: rgba(156, 122, 74, 0.55);
+  --s2-glow: rgba(232, 207, 154, 0.3);
+  --s2-quote: rgba(156, 122, 74, 0.14);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><g fill='%239c7a4a'><circle cx='2' cy='3' r='.45' opacity='.4'/><circle cx='9' cy='1' r='.35' opacity='.35'/><circle cx='13' cy='8' r='.5' opacity='.35'/><circle cx='5' cy='11' r='.4' opacity='.4'/><circle cx='11' cy='14' r='.35' opacity='.3'/></g></svg>") 0 0 / 16px 16px,
+    linear-gradient(180deg, transparent 70%, rgba(232, 207, 154, 0.55)),
+    radial-gradient(120% 90% at 0% 0%, #fffdf6, transparent 60%),
+    linear-gradient(180deg, #fff8e8, #f1e2bf);
+}
+.cosmetic-chat-bubble.bubble-s2-set-kum-saati::after {
+  content: "";
+  top: -11px;
+  right: -5px;
+  width: 14px;
+  height: 22px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 22'><rect x='1' y='0' width='12' height='2' rx='1' fill='%239c7a4a'/><rect x='1' y='20' width='12' height='2' rx='1' fill='%239c7a4a'/><path d='M2.5 2h9c0 5-3.5 6.5-3.5 9s3.5 4 3.5 9h-9c0-5 3.5-6.5 3.5-9S2.5 7 2.5 2z' fill='%23fff8e8' fill-opacity='.85' stroke='%239c7a4a' stroke-width='.8'/><path d='M4.5 5h5c-.6 2-2.5 3-2.5 5-0-2-1.9-3-2.5-5zM3.8 19.4c.6-2.8 2.4-3.6 3.2-4.6.8 1 2.6 1.8 3.2 4.6z' fill='%23e8cf9a'/><path d='M7 10v5' stroke='%23e8cf9a' stroke-width='.6'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 1px 1.5px rgba(60, 40, 10, 0.4));
+}
+
+/* Fırtına Çekirdeği: storm cloud bank and a lightning stroke that flashes now and then. */
+.cosmetic-chat-bubble.bubble-s2-set-firtina-cekirdegi {
+  --s2-ink: #f5f9ff;
+  --s2-ink-2: rgba(220, 232, 255, 0.74);
+  --s2-link: #a9c6ff;
+  --s2-edge: rgba(122, 167, 255, 0.5);
+  --s2-glow: rgba(122, 167, 255, 0.3);
+  --s2-quote: rgba(4, 6, 12, 0.45);
+  --s2-bg:
+    radial-gradient(26px 13px at 10% 2px, #5b6a8c 40%, transparent 75%),
+    radial-gradient(36px 15px at 32% 0, #4a587a 40%, transparent 75%),
+    radial-gradient(30px 13px at 56% 3px, #5b6a8c 40%, transparent 75%),
+    radial-gradient(40px 15px at 82% 0, #4a587a 40%, transparent 75%),
+    radial-gradient(24px 11px at 100% 4px, #5b6a8c 40%, transparent 75%),
+    radial-gradient(120% 60% at 50% 0%, rgba(122, 167, 255, 0.18), transparent 70%),
+    linear-gradient(180deg, #2a3550 0%, #151b2a 60%, #0a0d14 100%);
+}
+.cosmetic-chat-bubble.bubble-s2-set-firtina-cekirdegi::before {
+  content: "";
+  background: radial-gradient(70% 100% at 88% 0%, rgba(160, 196, 255, 0.6), rgba(122, 167, 255, 0.15) 50%, transparent 75%);
+  animation: s2c2-bolt 7s linear infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-firtina-cekirdegi::after {
+  content: "";
+  top: -12px;
+  right: 8px;
+  width: 12px;
+  height: 22px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 30'><path d='M10 0L3 14h5L4 30l10-18H9l4-12z' fill='%23f5f9ff' stroke='%237aa7ff' stroke-width='.8' stroke-linejoin='round'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 3px #7aa7ff) drop-shadow(0 0 6px rgba(122, 167, 255, 0.7));
+  animation: s2c2-bolt 7s linear infinite;
+}
+
+/* Lav Akışı: molten flow moving under cooled crust plates. */
+.cosmetic-chat-bubble.bubble-s2-set-lav-akisi {
+  --s2-ink: #fff6ea;
+  --s2-ink-2: rgba(255, 220, 180, 0.78);
+  --s2-link: #ffd36a;
+  --s2-edge: rgba(255, 61, 0, 0.6);
+  --s2-glow: rgba(255, 61, 0, 0.4);
+  --s2-quote: rgba(10, 0, 0, 0.5);
+  --s2-bg: linear-gradient(180deg, #2a0606, #120404);
+}
+.message-bubble.cosmetic-chat-bubble.bubble-s2-set-lav-akisi .message-text {
+  text-shadow: 0 0 3px #120404, 0 1px 2px #120404;
+}
+.cosmetic-chat-bubble.bubble-s2-set-lav-akisi::before {
+  content: "";
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='48'><g fill='%23180505'><path d='M0 0h37l3 14-10 9-30-2z'/><path d='M41 0h40l-3 18-26 6-8-10z'/><path d='M85 0h35v24l-14 4-24-9z'/><path d='M0 25l31 1 11-9 9 10 1 21H0z'/><path d='M56 28l26-6 24 9-2 17H55z'/><path d='M109 31l11-3v20h-12z'/></g><g fill='none' stroke='%235a0e0e' stroke-width='.8' opacity='.8'><path d='M6 8l10 4M50 10l12-2M92 12l10 4M10 36l14-2M66 38l14 2'/></g></svg>") 0 0 / 120px 48px,
+    linear-gradient(90deg, #ff3d00, #ffb000 25%, #ff6a00 50%, #ffb000 75%, #ff3d00) 0 0 / 120px 100%;
+  animation: s2c2-flow 6s linear infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-lav-akisi::after {
+  content: "";
+  top: -6px;
+  right: 12px;
+  width: 9px;
+  height: 12px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 70%, #fff0b0 0 1.5px, #ffb000 3px, #ff3d00 5px, #5a0e0e);
+  box-shadow: 0 0 8px rgba(255, 61, 0, 0.9);
+}
+
+/* İnci Kıyısı: nacre sheen, sea foam along the shore, a pearl on the corner. */
+.cosmetic-chat-bubble.bubble-s2-set-inci-kiyisi {
+  --s2-ink: #1f2b33;
+  --s2-ink-2: rgba(31, 43, 51, 0.62);
+  --s2-link: #3a5f78;
+  --s2-edge: rgba(107, 138, 154, 0.5);
+  --s2-glow: rgba(255, 216, 228, 0.35);
+  --s2-quote: rgba(107, 138, 154, 0.14);
+  --s2-bg:
+    radial-gradient(5px 4px at 6% 100%, #fff 90%, transparent),
+    radial-gradient(7px 5px at 16% 102%, #fff 90%, transparent),
+    radial-gradient(4px 3px at 25% 98%, #fff 90%, transparent),
+    radial-gradient(8px 5px at 38% 103%, #fffaf7 90%, transparent),
+    radial-gradient(5px 4px at 52% 100%, #fff 90%, transparent),
+    radial-gradient(7px 5px at 66% 103%, #fff 90%, transparent),
+    radial-gradient(4px 3px at 76% 99%, #fff 90%, transparent),
+    radial-gradient(8px 5px at 90% 103%, #fffaf7 90%, transparent),
+    linear-gradient(120deg, rgba(255, 216, 228, 0.6), rgba(241, 233, 225, 0) 35%, rgba(190, 220, 240, 0.5) 60%, rgba(255, 216, 228, 0.35) 85%),
+    linear-gradient(180deg, #faf5ef, #e9e0d6);
+}
+.cosmetic-chat-bubble.bubble-s2-set-inci-kiyisi::before {
+  content: "";
+  background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.8) 50%, transparent 60%) 0 0 / 250% 100% no-repeat;
+  animation: s2c2-sweep 7.5s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-inci-kiyisi::after {
+  content: "";
+  top: -6px;
+  right: -6px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0 18%, #f6ece6 38%, #e6d2d8 62%, #b9c6d0 100%);
+  box-shadow: 0 1px 2px rgba(30, 40, 50, 0.4), inset -1px -1px 2px rgba(120, 140, 160, 0.4);
+}
+
+/* Yıldız Tozu: a diagonal band of galaxy dust, sparks waking along it, a gold sparkle. */
+.cosmetic-chat-bubble.bubble-s2-set-yildiz-tozu {
+  --s2-ink: #fbf9ff;
+  --s2-ink-2: rgba(230, 222, 255, 0.76);
+  --s2-link: #ffe9a8;
+  --s2-edge: rgba(198, 183, 255, 0.5);
+  --s2-glow: rgba(198, 183, 255, 0.3);
+  --s2-quote: rgba(4, 2, 12, 0.45);
+  --s2-bg:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='40'><g fill='%23c6b7ff'><circle cx='4' cy='30' r='.6'/><circle cx='20' cy='22' r='.5'/><circle cx='34' cy='16' r='.7'/><circle cx='50' cy='10' r='.5'/><circle cx='64' cy='4' r='.6'/></g><g fill='%23ffe9a8'><circle cx='12' cy='26' r='.5'/><circle cx='42' cy='13' r='.6'/><circle cx='58' cy='7' r='.4'/></g></svg>") 0 0 / 70px 40px,
+    linear-gradient(155deg, transparent 25%, rgba(43, 31, 110, 0.7) 40%, rgba(198, 183, 255, 0.22) 50%, rgba(43, 31, 110, 0.7) 60%, transparent 75%),
+    linear-gradient(180deg, #0c0824, #05030f);
+}
+.cosmetic-chat-bubble.bubble-s2-set-yildiz-tozu::before {
+  content: "";
+  background:
+    radial-gradient(circle at 30% 64%, #fff 0 1px, rgba(255, 233, 168, 0.6) 2px, transparent 4px),
+    radial-gradient(circle at 64% 34%, #fff 0 1px, rgba(198, 183, 255, 0.6) 2px, transparent 4px),
+    radial-gradient(circle at 86% 18%, #fff 0 .8px, rgba(255, 233, 168, 0.5) 1.8px, transparent 3.5px);
+  animation: s2c2-twinkle 2.6s ease-in-out infinite;
+}
+.cosmetic-chat-bubble.bubble-s2-set-yildiz-tozu::after {
+  content: "";
+  top: -9px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'><path d='M9 0l1.4 7.6L18 9l-7.6 1.4L9 18l-1.4-7.6L0 9l7.6-1.4z' fill='%23ffe9a8'/><circle cx='9' cy='9' r='1.6' fill='%23fff'/></svg>") center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(255, 233, 168, 0.85));
+}
+
+/* ───────────────────────────── Bubble motion policy ───────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmetic-chat-bubble[class*="bubble-s2-"],
+  .cosmetic-chat-bubble[class*="bubble-s2-"]::before,
+  .cosmetic-chat-bubble[class*="bubble-s2-"]::after {
+    animation: none !important;
+  }
+}
+html:is(.reduce-motion, .gd-lite) .cosmetic-chat-bubble[class*="bubble-s2-"],
+html:is(.reduce-motion, .gd-lite) .cosmetic-chat-bubble[class*="bubble-s2-"]::before,
+html:is(.reduce-motion, .gd-lite) .cosmetic-chat-bubble[class*="bubble-s2-"]::after {
+  animation: none !important;
+}
