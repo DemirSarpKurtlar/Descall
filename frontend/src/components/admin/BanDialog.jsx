@@ -18,7 +18,7 @@ import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
 import { Avatar } from "../ui/Avatar";
 import GlassCheckbox from "../ui/GlassCheckbox";
-import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Eye, X } from "../ui/Icon.jsx";
+import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Eye, Link, X } from "../ui/Icon.jsx";
 import BanPreview from "./BanPreview.jsx";
 import { categoryLabel, loadModerationMeta } from "./moderationMeta.js";
 import {
@@ -72,6 +72,8 @@ function initialForm(defaultCategory, defaultMessage, preset) {
  * @param {{code: string, version: number}} [props.bulk] bulk mode: the plan the group belongs to
  * @param {object} [props.initialForm] bulk mode: the group's current settings (banDialogModel form)
  * @param {(body: object, form: object) => Promise<void>|void} [props.onSaveBulk]
+ * @param {string} [props.contextNote] İşlem kaydı "Yeniden yasakla": where the dialog was opened from (info line)
+ * @param {object} [props.extraBody] fields merged into the POST body (e.g. { auditLink } for the audit entry)
  */
 export default function BanDialog({
   open,
@@ -88,6 +90,8 @@ export default function BanDialog({
   bulk,
   initialForm: presetForm,
   onSaveBulk,
+  contextNote,
+  extraBody,
 }) {
   const { t } = useLocale();
   const bulkMode = Array.isArray(targets) && targets.length > 0 && typeof onSaveBulk === "function";
@@ -239,7 +243,7 @@ export default function BanDialog({
       return;
     }
     try {
-      const body = buildBanPayload(form);
+      const body = extraBody ? { ...buildBanPayload(form), ...extraBody } : buildBanPayload(form);
       const path = endpoint || `/users/${encodeURIComponent(targetId)}/ban`;
       const result = await adminFetch(path, { method: "POST", body: JSON.stringify(body) });
       onBanned?.({ target, body, result, message: t("banAdmin.banned", { username: target?.username || "" }) });
@@ -551,7 +555,14 @@ export default function BanDialog({
 
           {formFields()}
 
-          <div className={`bad-warn${blocked ? " is-blocked" : ""}`} role={blocked ? "alert" : undefined}>
+          {contextNote && !blocked ? (
+            <div className="bad-warn is-link" role="note">
+              <Link size={18} />
+              <span>{contextNote}</span>
+            </div>
+          ) : null}
+
+          <div className={`bad-warn${blocked ? " is-blocked" : ""}${contextNote && !blocked ? " is-hidden" : ""}`} role={blocked ? "alert" : undefined}>
             <AlertTriangle size={18} />
             <span>{blocked ? t("banAdmin.protected") : t("banAdmin.infoNotAdmin")}</span>
           </div>

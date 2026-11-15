@@ -237,7 +237,8 @@ assert.match(routes, /router\.delete\("\/people\/:id\/notes\/:noteId"[\s\S]*?aud
 assert.match(routes, /router\.post\("\/people\/:id\/sessions\/:sessionId\/revoke"[\s\S]*?state\.revokedSessionIds\.add\(sessionId\)[\s\S]*?audit\(req\.user, "revoke_session"/);
 assert.match(admin, /const notify = body\.notify === true;/, "timeout notification is opt-in");
 assert.match(admin, /const targetUserId = req\.body\?\.targetUserId/, "popup can target one person");
-assert.match(admin, /if \(target\) modQuery = modQuery\.eq\("target_user_id", target\)/, "audit by account");
+// GET /audit?target= moved to routes/adminAuditConsole.js (İşlem kaydı console); the store filters by target.
+assert.match(readFileSync(new URL("../../../../backend/lib/auditConsoleStore.js", import.meta.url), "utf8"), /q = q\.in\("target_user_id", ids\)/, "audit by account");
 assert.ok(admin.indexOf("router.use(requireStepUp);") < admin.indexOf('router.use(require("./adminPeople"))'), "people routes behind step-up");
 const migration = readFileSync(new URL("../../../../../supabase/migrations/20261115_admin_user_notes.sql", import.meta.url), "utf8");
 assert.match(migration, /create table if not exists public\.admin_user_notes/i);
