@@ -7,6 +7,7 @@
  *   GET    /access-bans/hits                    → { hits }
  *   POST   /access-bans { mode: "address", ip, kind: "ip"|"network", duration, reason }
  *   POST   /access-bans { mode: "account", userId, duration, reason, includeNetwork }
+ *   POST   /access-bans { mode: "source", sourceRef, kind: "ip"|"network", duration, reason } (Güvenlik Merkezi)
  *   DELETE /access-bans/:id                     → revoke
  * Creating a ban also disconnects matching live sockets (admins excluded).
  */
@@ -129,13 +130,20 @@ router.post("/access-bans", async (req, res) => {
       if (!added.length && !skipped) {
         return res.status(409).json({ error: "This account has no recorded device or IP address.", code: "NOTHING_TO_BAN" });
       }
+    } else if (body.mode === "source") {
+      // Güvenlik Merkezi feed / "En çok deneme yapan kaynaklar": the event keeps only a
+      // keyed hash of the address, so the ban is made from that hash.
+      const source = await require("../lib/securityEvents").findSource(body.sourceRef);
+      if (!source) return res.status(404).json({ error: "This source is no longer in the security feed.", code: "SOURCE_NOT_FOUND" });
+      added = await accessBans.banSource({ source, kind: body.kind === "network" ? "network" : "ip", duration, reason, actor: req.user });
+      target = added[0]?.label || null;
     } else {
       added = await accessBans.banAddress({ ip: body.ip, kind: body.kind === "network" ? "network" : "ip", duration, reason, actor: req.user });
       target = added[0]?.label || null;
     }
     const kicked = await kickMatching(req.app?.get?.("io"));
     appendAudit(req.user.id, req.user.username, "access_ban", target, {
-      mode: body.mode === "account" ? "account" : "address",
+      mode: body.mode === "account" ? "account" : body.mode === "source" ? "source" : "address",
       count: added.length,
       kinds: [...new Set(added.map((b) => b.kind))],
       duration,

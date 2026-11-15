@@ -1,0 +1,43 @@
+/* Güvenlik Merkezi emergency lock info band (components/security/PlatformNoticeBanner.jsx). */
+.pn-band {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(640px, calc(100vw - 24px));
+  padding: 9px 8px 9px 14px;
+  border-radius: 14px;
+  font-family: var(--gd-font, var(--g-font, Inter, system-ui, sans-serif));
+  font-size: var(--fs-13);
+  font-weight: 600;
+  line-height: 1.4;
+  color: #ffd9a6;
+  background: rgba(38, 30, 20, 0.94);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(242, 169, 59, 0.45);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  animation: pn-in 0.28s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.pn-band svg { flex: none; }
+.pn-x {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.pn-x:hover { background: rgba(255, 255, 255, 0.08); }
+.pn-x:focus-visible,
+html.glass-desktop .pn-x:focus-visible { outline: 2px solid rgba(242, 169, 59, 0.85); outline-offset: 2px; }
+@keyframes pn-in { from { opacity: 0; transform: translate(-50%, -8px); } }
+@media (prefers-reduced-motion: reduce) { .pn-band { animation: none; } }
+html[data-theme="light"] .pn-band { color: #7a4a06; background: rgba(255, 247, 232, 0.96); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(214, 140, 30, 0.45); }

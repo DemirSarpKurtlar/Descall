@@ -16,10 +16,9 @@ assert.match(card, /role="alert"/, "the error card is announced");
 assert.match(ov, /error && !data \? \(\s*<AdminErrorCard/, "the error card replaces the skeleton KPIs");
 assert.match(ov, /!data \?/, "missing data renders a skeleton");
 
-const boot = panel.slice(
-  panel.indexOf("Overview owns its own banner"),
-  panel.indexOf('if (tab === "security" || tab === "system"'),
-);
+// Güvenlik Merkezi (Nov 2026) loads its own data, so the system-settings effect may start at "system".
+const bootStart = panel.indexOf("Overview owns its own banner");
+const boot = panel.slice(bootStart, panel.slice(bootStart).search(/if \(tab === "(security|system)"/) + bootStart);
 assert.ok(boot.includes("loadStats().catch"), "background stats still load");
 assert.equal(boot.includes("setErr"), false, "boot stats failure must not paint a second banner");
 

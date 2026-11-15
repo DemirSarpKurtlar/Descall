@@ -228,7 +228,25 @@ async function check({ ip, deviceId, action, userId = null, isAdmin = false, res
     if (admin) return null;
   }
   recordHit(ban, { action, ip, userId });
+  // Güvenlik Merkezi live feed (merged + sampled there).
+  try {
+    require("./securityEvents").note("access_ban", { ip, userId, reason: action, detail: { action, kind: ban.kind, label: ban.label || null } });
+  } catch {
+    /* feed optional */
+  }
   return { ban, publicBody: publicAccessBody(ban) };
+}
+
+/** Güvenlik Merkezi: whether bans can be stored and checked (table + hash key present). */
+function isAvailable() {
+  return !state.unavailable && Boolean(key());
+}
+
+/** Güvenlik Merkezi: IP / network bans active right now (in-memory copy). */
+function activeCount() {
+  let n = 0;
+  for (const row of state.byHash.values()) if (isActive(row) && (row.kind === "ip" || row.kind === "network")) n += 1;
+  return n;
 }
 
 /**
@@ -300,6 +318,33 @@ async function banAddress({ ip, kind, duration, reason, actor }) {
   await refresh({ force: true });
   if (state.byHash.has(`${kind}:${hash}`)) throw bad("This address is already banned.", "ALREADY_BANNED", 409);
   const label = kind === "ip" ? maskIp(addr) : `${maskIp(addr)} network (${ipSubnet(addr).includes(":") ? "/64" : "/24"})`;
+  return insertBans([
+    {
+      kind,
+      hash,
+      label,
+      reason: String(reason || "").trim().slice(0, 300) || null,
+      created_by: actor?.id || null,
+      created_by_username: actor?.username || null,
+      expires_at: expires,
+    },
+  ]);
+}
+
+/**
+ * Güvenlik Merkezi "IP engelle" / "Engelle": ban a source seen in the security feed by
+ * the keyed hash stored with the event (the address itself is never kept), as an
+ * address ("ip") or its network ("network"). `source` comes from lib/securityEvents.js.
+ */
+async function banSource({ source, kind, duration, reason, actor }) {
+  if (kind !== "ip" && kind !== "network") throw bad("Invalid ban type.");
+  const hash = kind === "ip" ? source?.ip_hash : source?.net_hash;
+  if (!source || !hash) throw bad("This source can't be banned.", "BAD_SOURCE");
+  const expires = expiryFor(duration);
+  if (expires === undefined) throw bad("Invalid duration.");
+  await refresh({ force: true });
+  if (state.byHash.has(`${kind}:${hash}`)) throw bad("This address is already banned.", "ALREADY_BANNED", 409);
+  const label = kind === "ip" ? source.ip_masked || "IP" : `${source.net_label || source.ip_masked || "IP"} network`;
   return insertBans([
     {
       kind,
@@ -413,6 +458,9 @@ module.exports = {
   refresh,
   banAddress,
   banAccountAccess,
+  banSource,
+  isAvailable,
+  activeCount,
   revokeBan,
   listBans,
   listHits,

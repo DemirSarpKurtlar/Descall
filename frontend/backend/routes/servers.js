@@ -1688,6 +1688,15 @@ router.post("/", requireAuth, async (req, res) => {
     if (name.length < NAME_MIN || name.length > NAME_MAX) {
       return res.status(400).json(apiError("Server name must be {min}–{max} characters.", { min: NAME_MIN, max: NAME_MAX }));
     }
+    {
+      // Güvenlik Merkezi read-only lock: no new servers (admins exempt).
+      const { checkServerCreate } = require("../lib/platformPolicy");
+      const verdict = checkServerCreate({ config: require("../runtime/sharedState").systemConfig, isAdmin: req.user.username === "admin" });
+      if (!verdict.ok) {
+        const { data: row } = await supabase.from("users").select("is_admin").eq("id", userId).maybeSingle();
+        if (!row?.is_admin) return res.status(403).json({ error: verdict.message, code: verdict.code });
+      }
+    }
 
     let templateMode = "default";
     let template = null;
