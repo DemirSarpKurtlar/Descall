@@ -1,166 +1,24 @@
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { Megaphone, X } from "../ui/Icon.jsx";
-import { getToken } from "../../lib/storage";
-import { API_BASE_URL } from "../../config/api";
-import { announcementIcon, loadAnnouncements } from "../../lib/announcements";
+import { useState } from "react";
+import { Megaphone } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
-import { formatDate } from "../../i18n/format";
-import { BlockListSkeleton } from "../ui/Skeleton";
-import useGlassUi from "../../hooks/useGlassUi";
-import EmptyState from "../ui/EmptyState";
-
-const emptyStyle = {
-  padding: "16px",
-  color: "var(--text-muted)",
-  fontSize: "14px",
-  textAlign: "center",
-};
-
-function glassAnnouncementWhen(iso, t, locale) {
-  const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return "";
-  const min = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (min < 60) return t("shell.ann.minutes", { count: Math.max(1, min) });
-  const hr = Math.round(min / 60);
-  if (hr < 24) return t("shell.ann.hours", { count: hr });
-  const day = Math.round(hr / 24);
-  if (day < 14) return t("shell.ann.days", { count: day });
-  return formatDate(iso, locale, { dateStyle: "short" });
-}
+import AnnouncementsSheet, { useAnnouncements } from "../announcements/AnnouncementsSheet.jsx";
 
 /**
- * Same announcements modal as Friends/DM sidebar Megaphone.
- * Activity toolbar had wired Megaphone to feedback by mistake.
+ * Megaphone button of the Activity toolbar / sidebar: the same announcements
+ * window as the chats sidebar (components/announcements), with the unread badge.
  */
 export default function AnnouncementsButton({ className = "icon-btn", iconSize = 18 }) {
-  const { t, locale } = useLocale();
-  const glass = useGlassUi();
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
-  const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!open) return undefined;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const rows = await loadAnnouncements(API_BASE_URL, getToken());
-        if (!cancelled) setAnnouncements(rows);
-      } catch (err) {
-        console.error("Failed to load announcements:", err);
-        if (!cancelled) {
-          setAnnouncements([]);
-          setError(t("Failed to load announcements"));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, t]);
-
-  const modal =
-    typeof document === "undefined"
-      ? null
-      : createPortal(
-          <AnimatePresence>
-            {open && (
-              <motion.div
-                className={`add-modal-backdrop${glass ? " g-scrim g-announce-scrim" : ""}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setOpen(false)}
-              >
-                <motion.div
-                  className={`add-modal${glass ? " g-announce" : ""}`}
-                  initial={glass ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
-                  animate={glass ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
-                  exit={glass ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
-                  transition={glass ? { duration: 0.18 } : { type: "spring", damping: 25, stiffness: 300 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="add-modal-header">
-                    <h3 className="ann-modal-title">
-                      <Megaphone size={18} strokeWidth={2} aria-hidden="true" />
-                      {t("Announcements")}
-                    </h3>
-                    <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label={t("Close")}>
-                      <X size={18} />
-                    </button>
-                  </div>
-                  <div className="announcements-modal-content">
-                    {loading ? (
-                      <BlockListSkeleton count={4} label={t("Loading announcements...")} />
-                    ) : error ? (
-                      <div
-                        className={glass ? "announcements-empty" : undefined}
-                        style={glass ? undefined : emptyStyle}
-                      >
-                        {error}
-                      </div>
-                    ) : announcements.length === 0 ? (
-                      <EmptyState
-                        className="is-compact ann-empty"
-                        illustration="none"
-                        icon={Megaphone}
-                        title={t("uah.ann.emptyTitle")}
-                        body={t("uah.ann.emptyBody")}
-                      />
-                    ) : (
-                      announcements.map((a) => {
-                        const AnnIcon = glass ? announcementIcon(a.emoji) : null;
-                        return (
-                        <div key={a.id} className="announcement-item">
-                          {glass ? (
-                            <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                              {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : <Megaphone size={18} strokeWidth={2} />}
-                            </span>
-                          ) : null}
-                          <div className="announcement-title">{a.title}</div>
-                          <div className="announcement-content">{a.content}</div>
-                          <div className="announcement-meta">
-                            {a.author && (
-                              <span className="announcement-author">
-                                {t("By {author}", { author: a.author })}
-                              </span>
-                            )}
-                            {a.createdAt && (
-                              <span className="announcement-date">
-                                {glass ? glassAnnouncementWhen(a.createdAt, t, locale) : formatDate(a.createdAt, locale, { dateStyle: "short" })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        );
-
+  const { unread } = useAnnouncements();
+  const label = unread ? t("annc.u.buttonUnread", { n: unread }) : t("Announcements");
   return (
     <>
-      <button
-        type="button"
-        className={className}
-        title={t("Announcements")} aria-label={t("Announcements")}
-        onClick={() => setOpen(true)}
-      >
+      <button type="button" className={`${className} ann-btn-host`.trim()} title={label} aria-label={label} onClick={() => setOpen(true)}>
         <Megaphone size={iconSize} />
+        {unread ? <span className="ann-badge" aria-hidden="true">{unread > 9 ? "9+" : unread}</span> : null}
       </button>
-      {modal}
+      <AnnouncementsSheet open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

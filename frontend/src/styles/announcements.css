@@ -1,0 +1,443 @@
+/* Duyurular for members (remake Nov 2026): the window (desktop / iPad), the
+   bottom sheet (iPhone), the announcement card (also every admin preview), the
+   live toast and the unread badge. Heavy glass, dark, #587af5 accent; the
+   window and the toast are opaque enough to read over anything.
+   Type sizes only from the --fs-* scale. */
+
+.ann-scrim,
+.ann-toasts,
+.ann-card,
+.ann-btn-host {
+  --ann-t1: rgba(255, 255, 255, 0.96);
+  --ann-t2: rgba(235, 238, 255, 0.8);
+  --ann-t3: rgba(235, 238, 255, 0.56);
+  --ann-hair: rgba(255, 255, 255, 0.08);
+  --ann-brand: #587af5;
+  --ann-glass: linear-gradient(180deg, var(--g-heavy-top, rgba(44, 46, 62, 0.9)), var(--g-heavy-bot, rgba(26, 27, 37, 0.94))), var(--g-heavy-base, #17181f);
+}
+
+.ann-glyph { flex: none; display: block; }
+
+/* ── badge on the megaphone buttons ── */
+.ann-btn-host { position: relative; }
+.ann-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #f23f43;
+  color: #fff;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--g-heavy-base, #17181f);
+  pointer-events: none;
+}
+
+/* ── scrim + window ── */
+.ann-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100050;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(10vh, 48px) 16px 24px;
+  background: rgba(6, 7, 12, 0.5);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
+  font-family: var(--g-font, var(--gd-font, Inter, system-ui, sans-serif));
+  -webkit-font-smoothing: antialiased;
+}
+.ann-scrim.is-sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+.ann-window {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(78vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--ann-glass);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy, 40px)) saturate(var(--g-saturate-heavy, 160%));
+  backdrop-filter: blur(var(--g-blur-heavy, 40px)) saturate(var(--g-saturate-heavy, 160%));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--ann-t1);
+  outline: none;
+}
+.ann-window.is-sheet {
+  width: 100%;
+  max-height: 88vh;
+  border-radius: 26px 26px 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 641px) and (max-width: 1100px) {
+  /* iPad: a little wider and taller, comfortable thumbs */
+  .ann-window { width: min(620px, 100%); max-height: 80vh; }
+}
+.ann-grabber {
+  width: 40px;
+  height: 5px;
+  margin: 8px auto 2px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  touch-action: none;
+  flex: none;
+}
+.ann-window-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 10px 18px;
+  flex: none;
+  touch-action: none;
+}
+.ann-window-ic {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(145deg, #6d8cff, #4a5fd6);
+  box-shadow: 0 6px 16px rgba(88, 122, 245, 0.35);
+}
+.ann-window-head h3 { margin: 0; font-size: var(--fs-17); font-weight: 700; letter-spacing: -0.015em; }
+.ann-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(88, 122, 245, 0.2);
+  color: #c3cfff;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ann-sp { flex: 1; }
+.ann-link {
+  border: 0;
+  background: none;
+  padding: 6px 4px;
+  color: #c3cfff;
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  cursor: pointer;
+}
+.ann-link:hover { text-decoration: underline; }
+.ann-x {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ann-t2);
+  cursor: pointer;
+  flex: none;
+}
+.ann-x:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.ann-x.is-sm { width: 26px; height: 26px; border-radius: 8px; }
+.ann-filter {
+  display: flex;
+  gap: 4px;
+  margin: 0 16px 8px;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  flex: none;
+}
+.ann-filter button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ann-t3);
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 650;
+  cursor: pointer;
+}
+.ann-filter button.is-on { background: rgba(255, 255, 255, 0.11); color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); }
+.ann-filter em { font-style: normal; padding: 0 6px; border-radius: 999px; background: rgba(242, 63, 67, 0.9); color: #fff; font-size: var(--fs-11); }
+.ann-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 4px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ann-sec {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 4px 0;
+  color: var(--ann-t3);
+  font-size: var(--fs-11);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ann-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 18px 30px;
+  text-align: center;
+  color: var(--ann-t3);
+}
+.ann-empty b { color: var(--ann-t1); font-size: var(--fs-15); }
+.ann-empty p { margin: 0; font-size: var(--fs-13); max-width: 320px; }
+.ann-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 650;
+  cursor: pointer;
+}
+.ann-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.ann-btn.is-sm { height: 28px; padding: 0 11px; font-size: var(--fs-12); border-radius: 9px; }
+.ann-skel { display: flex; flex-direction: column; gap: 10px; }
+.ann-skel-card { display: flex; gap: 12px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.04); }
+.ann-skel-card i { width: 38px; height: 38px; border-radius: 11px; background: rgba(255, 255, 255, 0.07); flex: none; }
+.ann-skel-card div { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.ann-skel-card b,
+.ann-skel-card u { display: block; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.07); }
+.ann-skel-card b { width: 60%; height: 12px; }
+.ann-skel-card u:last-child { width: 80%; }
+.ann-skel-card i,
+.ann-skel-card b,
+.ann-skel-card u { animation: ann-pulse 1.4s ease-in-out infinite; }
+@keyframes ann-pulse { 50% { opacity: 0.5; } }
+
+/* ── tile ── */
+.ann-tile {
+  --ann-c: #587af5;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--ann-c);
+  background: color-mix(in srgb, var(--ann-c) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ann-c) 30%, transparent);
+}
+.ann-tile.is-sm { width: 30px; height: 30px; border-radius: 9px; }
+.ann-tile.is-lg { width: 44px; height: 44px; border-radius: 13px; }
+
+/* ── card ── */
+.ann-card {
+  --ann-c: #587af5;
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  color: var(--ann-t1);
+  font-family: inherit;
+  text-align: left;
+  flex: none;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+.ann-card.is-important { box-shadow: inset 0 0 0 1px color-mix(in srgb, #f2a93b 34%, transparent); }
+.ann-card.is-urgent {
+  background: linear-gradient(180deg, rgba(242, 63, 67, 0.12), rgba(242, 63, 67, 0.04)), rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(242, 63, 67, 0.45), 0 0 0 0 rgba(242, 63, 67, 0);
+}
+.ann-card.is-urgent::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #f23f43;
+}
+.ann-card.is-focus { box-shadow: inset 0 0 0 2px rgba(88, 122, 245, 0.85); }
+.ann-cover { aspect-ratio: 3 / 1; overflow: hidden; background: rgba(255, 255, 255, 0.05); }
+.ann-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ann-card-body { padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+.ann-card-head { display: flex; gap: 12px; align-items: flex-start; }
+.ann-card-titles { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.ann-card-chips { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.ann-card-chips:empty { display: none; }
+.ann-card-title { margin: 0; font-size: var(--fs-15); font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.ann-card-text {
+  margin: 0;
+  color: var(--ann-t2);
+  font-size: var(--fs-13);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ann-card-text.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ann-more {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #c3cfff;
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 650;
+  cursor: pointer;
+}
+.ann-cta {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--ann-c) 30%, transparent);
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.ann-cta:hover { filter: brightness(1.08); }
+.ann-cta:active { transform: translateY(1px); }
+.ann-cta.is-sm { height: 28px; padding: 0 11px; font-size: var(--fs-12); border-radius: 9px; }
+.ann-card-meta { display: flex; gap: 10px; flex-wrap: wrap; color: var(--ann-t3); font-size: var(--fs-11); }
+.ann-fallback { padding: 0 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.07); }
+.ann-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ann-chip.is-pin { background: rgba(242, 169, 59, 0.16); color: #ffc773; }
+.ann-chip.is-important { background: rgba(242, 169, 59, 0.16); color: #ffc773; }
+.ann-chip.is-urgent { background: rgba(242, 63, 67, 0.2); color: #ff8e90; }
+.ann-new-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ann-brand); box-shadow: 0 0 0 3px rgba(88, 122, 245, 0.2); }
+.ann-card.is-compact .ann-card-body { padding: 10px 10px 9px; gap: 6px; }
+.ann-card.is-compact .ann-card-title { font-size: var(--fs-13); }
+.ann-card.is-compact .ann-card-text { font-size: var(--fs-12); line-height: 1.45; }
+.ann-card.is-compact .ann-cta { height: 30px; font-size: var(--fs-12); width: 100%; justify-content: center; }
+
+/* ── toast ── */
+.ann-toasts {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top, 0px) + 8px);
+  right: 16px;
+  z-index: 100040;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 24px));
+  pointer-events: none;
+  font-family: var(--g-font, var(--gd-font, Inter, system-ui, sans-serif));
+  -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 640px) {
+  .ann-toasts { left: 12px; right: 12px; width: auto; }
+}
+.ann-toast {
+  --ann-c: #587af5;
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 13px 12px 12px 13px;
+  border-radius: 18px;
+  background: var(--ann-glass);
+  -webkit-backdrop-filter: blur(var(--g-blur-heavy, 40px)) saturate(var(--g-saturate-heavy, 160%));
+  backdrop-filter: blur(var(--g-blur-heavy, 40px)) saturate(var(--g-saturate-heavy, 160%));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+  color: var(--ann-t1);
+  overflow: hidden;
+}
+.ann-toast::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--ann-c);
+}
+.ann-toast.is-urgent { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(242, 63, 67, 0.5); }
+.ann-toast-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.ann-toast-kicker { display: flex; align-items: center; gap: 6px; color: var(--ann-t3); font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.ann-toast-title { font-size: var(--fs-13); font-weight: 700; line-height: 1.3; }
+.ann-toast-text {
+  margin: 0;
+  color: var(--ann-t2);
+  font-size: var(--fs-12);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ann-toast-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+
+.ann-scrim :is(button, [tabindex]):focus-visible,
+.ann-toasts :is(button, [tabindex]):focus-visible,
+html.glass-desktop .ann-scrim :is(button, [tabindex]):focus-visible,
+html.glass-desktop .ann-toasts :is(button, [tabindex]):focus-visible {
+  outline: 2px solid rgba(88, 122, 245, 0.9);
+  outline-offset: 2px;
+}
+.ann-window:focus,
+.ann-window:focus-visible,
+html.glass-desktop .ann-window:focus-visible { outline: none !important; }
+.ann-count { white-space: nowrap; }
+.ann-link-ic { display: none !important; }
+@media (max-width: 640px) {
+  .ann-link.is-text { display: none; }
+  .ann-link-ic { display: grid !important; }
+  .ann-window-head h3 { white-space: nowrap; }
+}
+
+/* Light theme (classic UI) keeps the same dark glass window: announcements read the same everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  .ann-skel-card i,
+  .ann-skel-card b,
+  .ann-skel-card u { animation: none; }
+}
+
+.ann-card-text strong { color: var(--ann-t1); font-weight: 700; }
+.ann-card-text a { color: #c3cfff; text-decoration: underline; }
+.ann-ul { margin: 2px 0; padding-left: 18px; white-space: normal; }
+.ann-ul li { margin: 2px 0; }

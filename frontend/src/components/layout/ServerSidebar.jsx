@@ -2,7 +2,7 @@ import { memo, useState, useMemo, useEffect, useRef, useLayoutEffect } from "rea
 import { rowMenuMotion, rowMenuOrigin } from "../../lib/rowMenuMotion";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff, Megaphone as MegaphoneLine } from "../ui/Icon.jsx";
+import { Hash, Phone, MessageSquare, ChevronDown, Bell, UserPlus, X, User, Users, MoreHorizontal, LogOut, Edit3, Check, UserRoundPlus, Link2, Loader2, UsersRound, Pin, PinOff, BellOff, Mail, MailOpen, CircleSlash, Flag, ImagePlus, ImageOff } from "../ui/Icon.jsx";
 import EmptyState from "../ui/EmptyState";
 import GroupIcon from "../groups/GroupIcon";
 import { useGroupPhotoChanger } from "../groups/useGroupPhotoChanger";
@@ -17,7 +17,7 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
-import { announcementIcon, loadAnnouncements, loadUnreadAnnouncementCount, markAnnouncementRead } from "../../lib/announcements";
+import AnnouncementsSheet, { useAnnouncements } from "../announcements/AnnouncementsSheet.jsx";
 import { renameGroup as renameGroupApi, setGroupAvatar } from "../../api/groups";
 import { getFriendSuggestions, sendFriendRequest } from "../../api/friends";
 import { resolveDisplayName } from "../../lib/userProfile";
@@ -42,7 +42,7 @@ import ReportUserModal from "../social/ReportUserModal";
 import AdminBadge from "../social/AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import InviteCard from "../friends/InviteCard";
-import { BlockListSkeleton, ConversationListSkeleton } from "../ui/Skeleton";
+import { ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate } from "../../lib/datetime";
 import { formatDate, formatTime, upper } from "../../i18n/format";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
@@ -129,10 +129,8 @@ export default function ServerSidebar({
   const [addError, setAddError] = useState("");
   const [addSuccess, setAddSuccess] = useState("");
   const [showAnnouncements, setShowAnnouncements] = useState(false);
-  const [announcements, setAnnouncements] = useState([]);
-  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
-  const [announcementsError, setAnnouncementsError] = useState("");
-  const [announcementUnread, setAnnouncementUnread] = useState(0);
+  // Duyurular (remake Nov 2026): one store for the badge, the window and the live toast.
+  const { unread: announcementUnread } = useAnnouncements();
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -157,53 +155,6 @@ export default function ServerSidebar({
       socket.off("friend:request:sent", onFriendSent);
     };
   }, [socket, t]);
-
-  useEffect(() => {
-    if (!glassShell) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const count = await loadUnreadAnnouncementCount(API_BASE_URL, getToken());
-        if (!cancelled && count != null && count > 0) setAnnouncementUnread(count);
-      } catch {
-        /* no count in this response, leave the badge off */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [glassShell]);
-
-  useEffect(() => {
-    if (!showAnnouncements) return undefined;
-    let cancelled = false;
-    (async () => {
-      setAnnouncementsLoading(true);
-      setAnnouncementsError("");
-      try {
-        const rows = await loadAnnouncements(API_BASE_URL, getToken());
-        if (!cancelled) {
-          setAnnouncements(rows);
-          if (glassShell) {
-            setAnnouncementUnread(0);
-            const token = getToken();
-            for (const row of rows) markAnnouncementRead(API_BASE_URL, token, row.id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load announcements:", err);
-        if (!cancelled) {
-          setAnnouncements([]);
-          setAnnouncementsError(t("Failed to load announcements"));
-        }
-      } finally {
-        if (!cancelled) setAnnouncementsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [showAnnouncements, t, glassShell]);
 
   const fetchSuggestions = async () => {
     setSuggestionsLoading(true);
@@ -416,10 +367,12 @@ export default function ServerSidebar({
               </button>
               <button
                 className="icon-btn"
-                title={t("Announcements")} aria-label={t("Announcements")}
+                title={t("Announcements")} aria-label={announcementUnread ? t("annc.u.buttonUnread", { n: announcementUnread }) : t("Announcements")}
                 onClick={() => setShowAnnouncements(!showAnnouncements)}
+                style={{ position: "relative" }}
               >
                 <Megaphone size={18} />
+                {announcementUnread ? <span className="ann-badge" aria-hidden="true">{announcementUnread > 9 ? "9+" : announcementUnread}</span> : null}
               </button>
               <button
                 className="icon-btn"
@@ -605,73 +558,8 @@ export default function ServerSidebar({
           onCreateGroup={handleCreateGroup}
         />
 
-        {/* Announcements Modal, portal to body */}
-        {createPortal(
-        <AnimatePresence>
-          {showAnnouncements && (
-              <motion.div
-                className={`add-modal-backdrop${glassShell ? " g-scrim g-announce-scrim" : ""}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowAnnouncements(false)}
-              >
-                <motion.div
-                  className={`add-modal${glassShell ? " g-announce" : ""}`}
-                  initial={glassShell ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
-                  animate={glassShell ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
-                  exit={glassShell ? { opacity: 0 } : { scale: 0.9, opacity: 0, y: 20 }}
-                  transition={glassShell ? { duration: 0.18 } : { type: "spring", damping: 25, stiffness: 300 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="add-modal-header">
-                    <h3 className="ann-modal-title">
-                      <MegaphoneLine size={18} strokeWidth={2} aria-hidden="true" />
-                      {t("Announcements")}
-                    </h3>
-                  <button className="icon-btn" onClick={() => setShowAnnouncements(false)} aria-label={t("Close")}><X size={18} /></button>
-                </div>
-
-                <div className="announcements-modal-content">
-                  {announcementsLoading ? (
-                    <BlockListSkeleton count={4} label={t("Loading announcements...")} />
-                  ) : announcementsError ? (
-                    <div className={glassShell ? "announcements-empty" : undefined} style={glassShell ? undefined : { padding: "16px", color: "var(--text-muted)", fontSize: "14px", textAlign: "center" }}>{announcementsError}</div>
-                  ) : announcements.length === 0 ? (
-                    <EmptyState
-                      className="is-compact ann-empty"
-                      illustration="none"
-                      icon={MegaphoneLine}
-                      title={t("uah.ann.emptyTitle")}
-                      body={t("uah.ann.emptyBody")}
-                    />
-                  ) : (
-                    announcements.map((a) => {
-                      const AnnIcon = glassShell ? announcementIcon(a.emoji) : null;
-                      return (
-                      <div key={a.id} className="announcement-item">
-                        {glassShell ? (
-                          <span className="g-ann-mark" style={a.color ? { background: a.color } : undefined} aria-hidden="true">
-                            {AnnIcon ? <AnnIcon size={18} strokeWidth={2} /> : <MegaphoneLine size={18} strokeWidth={2} />}
-                          </span>
-                        ) : null}
-                        <div className="announcement-title">{a.title}</div>
-                        <div className="announcement-content">{a.content}</div>
-                        <div className="announcement-meta">
-                          {a.author && <span className="announcement-author">{t("By {author}", { author: a.author })}</span>}
-                          {a.createdAt && <span className="announcement-date">{glassShell ? glassAnnouncementWhen(a.createdAt, t, locale) : formatDate(a.createdAt, locale, { dateStyle: "short" })}</span>}
-                        </div>
-                      </div>
-                      );
-                    })
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-        )}
+        {/* Announcements Modal (Duyurular, components/announcements/AnnouncementsSheet.jsx): portals to document.body; glass window on desktop / iPad, sheet on iPhone */}
+        <AnnouncementsSheet open={showAnnouncements} onClose={() => setShowAnnouncements(false)} />
       </div>
     </aside>
   );
@@ -1845,18 +1733,6 @@ function GroupList({ groups, friends, activeGroup, expanded, onToggle, onGroupSe
 }
 
 const GROUP_SWIPE_WIDTH = 248;
-
-function glassAnnouncementWhen(iso, t, locale) {
-  const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return "";
-  const min = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (min < 60) return t("shell.ann.minutes", { count: Math.max(1, min) });
-  const hr = Math.round(min / 60);
-  if (hr < 24) return t("shell.ann.hours", { count: hr });
-  const day = Math.round(hr / 24);
-  if (day < 14) return t("shell.ann.days", { count: day });
-  return formatDate(iso, locale, { dateStyle: "short" });
-}
 
 function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
