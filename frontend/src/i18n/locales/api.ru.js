@@ -44,4 +44,14 @@ export const API_RU = {
   "This item is not on sale right now.": "Этот предмет сейчас не продаётся.",
   "This item is sold out.": "Этот предмет распродан.",
   "The price changed. Check the new price and try again.": "Цена изменилась. Проверь новую цену и попробуй ещё раз.",
+  // Sistem (admin): flag rollout, undo, safe restart.
+  "A restart is already running.": "Перезапуск уже идёт.",
+  "Already undone.": "Уже отменено.",
+  "Changed again since.": "С тех пор снова изменилось.",
+  "Enter a new verification code to restart.": "Введите новый код подтверждения, чтобы перезапустить.",
+  "Locks are lifted in Security Center.": "Блокировки снимаются в Центре безопасности.",
+  "Nothing to undo.": "Нечего отменять.",
+  "This change has no state for the flag.": "В этом изменении нет состояния флага.",
+  "Unknown flag.": "Неизвестный флаг.",
+  "Use System > Safe restart.": "Используйте Система > Безопасный перезапуск.",
 };

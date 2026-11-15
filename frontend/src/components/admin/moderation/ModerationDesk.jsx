@@ -173,10 +173,11 @@ function Kpi({ tone, icon: Icon, value, label, link, onLink, loading }) {
   );
 }
 
-export default function ModerationDesk({ onGoto, onOpenPerson, socket }) {
+export default function ModerationDesk({ onGoto, onOpenPerson, socket, initialTab = null }) {
   const { t } = useLocale();
   const perms = useAdminPerms();
-  const [tab, setTab] = useState("apply");
+  // Sistem › "Küfür filtresi Moderasyon'a taşındı" opens straight on İçerik filtreleri.
+  const [tab, setTab] = useState(initialTab || "apply");
   const [summary, setSummary] = useState(null);
   const [summaryErr, setSummaryErr] = useState("");
   const [meta, setMeta] = useState(null);

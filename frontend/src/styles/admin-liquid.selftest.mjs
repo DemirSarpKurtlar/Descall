@@ -27,8 +27,11 @@ assert.match(close, /height:\s*36px/);
 // 3.1: the panel chrome (close, menu) lives in AdminShell, not a top bar.
 assert.match(panel, /<AdminShell/);
 assert.doesNotMatch(panel, /RippleButton[\s\S]{0,80}admin-close/);
-assert.match(panel, /role="switch"/);
-assert.match(panel, /onClick=\{\(\) => onChange\(!checked\)\}/);
+// The system switches moved to the Sistem page (components/admin/system/SystemUi.jsx).
+const systemUi = readFileSync(join(here, "../components/admin/system/SystemUi.jsx"), "utf8");
+assert.match(systemUi, /role="switch"/);
+assert.match(systemUi, /onChange\(!checked\)/);
+assert.match(panel, /tab === "system" && \(\s*<AdminSystem/);
 // The old casino tab was the last user of .admin-split / .admin-pane; Oyunlar / Kredi is
 // now its own page (components/admin/games/AdminGames.jsx, styles/admin-games.css).
 assert.match(panel, /tab === "casino" && <AdminGames/);

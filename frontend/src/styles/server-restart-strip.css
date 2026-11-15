@@ -1,0 +1,26 @@
+/* Sistem › Güvenli yeniden başlat: the strip every user sees (components/system/ServerRestartStrip.jsx). */
+.srs {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100030;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: #2a2115;
+  color: #ffd2a1;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(242, 169, 59, 0.45);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  pointer-events: none;
+}
+.srs b { font-variant-numeric: tabular-nums; color: #ffc773; }
+.srs-spin { animation: srs-spin 1.1s linear infinite; }
+@keyframes srs-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .srs-spin { animation: none; } }
+html[data-theme="light"] .srs { background: #fff4e5; color: #8a4b00; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(242, 169, 59, 0.6); }
+html[data-theme="light"] .srs b { color: #a85a00; }

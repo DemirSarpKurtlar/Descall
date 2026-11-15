@@ -264,6 +264,11 @@ import {
   Wrench as PWrench,
   X as PX,
   XCircle as PXCircle,
+  // Sistem (admin remake): restart, edge, flags, links.
+  Power as PPower,
+  Cloud as PCloud,
+  ToggleLeft as PToggleLeft,
+  ArrowRight as PArrowRight,
 } from "@phosphor-icons/react/dist/ssr";
 
 function make(Glyph, name) {
@@ -286,6 +291,10 @@ function make(Glyph, name) {
 }
 
 export const X = make(PX, "X");
+export const Power = make(PPower, "Power");
+export const Cloud = make(PCloud, "Cloud");
+export const ToggleLeft = make(PToggleLeft, "ToggleLeft");
+export const ArrowRight = make(PArrowRight, "ArrowRight");
 export const Users = make(PUsers, "Users");
 export const Check = make(PCheck, "Check");
 export const Search = make(PMagnifyingGlass, "Search");
@@ -845,6 +854,10 @@ const BY_NAME = {
   Wind,
   Waveform,
   MaskHappy,
+  Power,
+  Cloud,
+  ToggleLeft,
+  ArrowRight,
 };
 
 /** <Icon name="Mic" weight="fill" size={20} /> */

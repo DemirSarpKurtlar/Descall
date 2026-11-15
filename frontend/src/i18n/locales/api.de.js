@@ -44,4 +44,14 @@ export const API_DE = {
   "This item is not on sale right now.": "Dieser Artikel ist gerade nicht im Verkauf.",
   "This item is sold out.": "Dieser Artikel ist ausverkauft.",
   "The price changed. Check the new price and try again.": "Der Preis hat sich geändert. Prüfe den neuen Preis und versuche es erneut.",
+  // Sistem (admin): flag rollout, undo, safe restart.
+  "A restart is already running.": "Ein Neustart läuft bereits.",
+  "Already undone.": "Bereits rückgängig gemacht.",
+  "Changed again since.": "Seitdem erneut geändert.",
+  "Enter a new verification code to restart.": "Gib einen neuen Bestätigungscode ein, um neu zu starten.",
+  "Locks are lifted in Security Center.": "Sperren werden im Sicherheitszentrum aufgehoben.",
+  "Nothing to undo.": "Nichts rückgängig zu machen.",
+  "This change has no state for the flag.": "Diese Änderung enthält keinen Zustand für das Flag.",
+  "Unknown flag.": "Unbekanntes Flag.",
+  "Use System > Safe restart.": "Nutze System > Sicherer Neustart.",
 };
