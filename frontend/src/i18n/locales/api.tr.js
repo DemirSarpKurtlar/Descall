@@ -857,4 +857,7 @@ export const API_TR = {
   "Alert rules are not available yet.": "Uyarı kuralları henüz kullanılamıyor.",
   "Could not save the rules.": "Kurallar kaydedilemedi.",
   "Export failed.": "Dışa aktarılamadı.",
+  "This voice channel is full.": "Bu ses kanalı dolu.",
+  "Join the voice channel first.": "Önce ses kanalına katıl.",
+  "Invalid webhook signature.": "Geçersiz webhook imzası.",
 };

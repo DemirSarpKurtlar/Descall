@@ -30,9 +30,20 @@ const ROOM_PREFIX = "server-voice-";
 const VOICE_TOKEN_TTL = "5m";
 const VOICE_TOKEN_TTL_SECONDS = 300;
 
+/**
+ * Canonical id: Postgres accepts uppercase, hyphen-less and {braced} spellings of the
+ * same uuid, and each used to name a different LiveKit room / in-memory call (V11).
+ * Non-uuid ids are only trimmed.
+ */
 function normalizeId(value) {
   if (value == null) return "";
-  return String(value).trim().toLowerCase();
+  const v = String(value).trim();
+  const hex = v.replace(/^\{|\}$/g, "").replace(/-/g, "");
+  if (/^[0-9a-f]{32}$/i.test(hex) && /^\{?[0-9a-f-]{32,36}\}?$/i.test(v)) {
+    const h = hex.toLowerCase();
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+  return v;
 }
 
 function sameId(a, b) {
@@ -114,6 +125,13 @@ function removeLiveKitIdentity(channelId, identity) {
   return liveKitCall(`removeParticipant ${room} ${identity}`, (svc) =>
     svc.removeParticipant(room, String(identity), revokeTokenTs != null ? { revokeTokenTs } : undefined)
   );
+}
+
+/** Close a channel's room for everyone (channel deleted): seated or not. */
+function deleteLiveKitRoom(channelId) {
+  if (!channelId) return Promise.resolve(false);
+  const room = liveKitRoomName(channelId);
+  return liveKitCall(`deleteRoom ${room}`, (svc) => svc.deleteRoom(room));
 }
 
 function updateLiveKitPermission(channelId, identity, permission) {
@@ -233,6 +251,12 @@ function canPublishSeat(seat) {
   return true;
 }
 
+/** SPEAK permission plus stage speaker role, ignoring locks (what the client calls canSpeak). */
+function canSpeakPermissionOf(seat) {
+  if (!seat?.canSpeakPermission) return false;
+  return seat.channelType !== "stage" || seat.stageRole === "speaker";
+}
+
 function canStreamSeat(seat) {
   return canPublishSeat(seat) && Boolean(seat.canStream);
 }
@@ -294,6 +318,9 @@ async function mintVoiceToken({ userId, channelId, seat }) {
     ttlSeconds: VOICE_TOKEN_TTL_SECONDS,
     canPublish: permission.canPublish,
     canSubscribe: permission.canSubscribe,
+    // Permission to speak (SPEAK + stage speaker) regardless of a server mute; the
+    // client keeps the mute lock separate so an unmute does not need a new token.
+    canSpeak: canSpeakPermissionOf(seat),
     canStream: canStreamSeat(seat),
     channelType: seat?.channelType || "voice",
     stageRole: seat?.channelType === "stage" ? seat?.stageRole || "audience" : "speaker",
@@ -350,39 +377,55 @@ function forceDisconnect(io, { serverId, channelId, userId, reason }) {
 const MEMBERSHIP_END_REASONS = new Set(["kick", "kicked", "ban", "banned", "leave", "left"]);
 
 /**
- * Remove a user from every voice seat of one server (events as for a normal leave)
- * and from every LiveKit room of that server, including rooms they joined with a
- * token but no seat and the `<userId>:screen` companion. Never throws.
+ * Remove (and revoke) a user's identity and `<userId>:screen` companion in every voice /
+ * stage room of one server, seated or not: a token minted without a seat, or a JWT kept
+ * after a kick, must not keep the connection (V2, M2, SK-3). Never throws.
  */
-async function evictFromServerVoice(io, { serverId, userId, reason = null } = {}) {
-  if (!serverId || userId == null) return { removed: 0 };
+async function evictLiveKitFromServerRooms(serverId, userId) {
+  if (!serverId || userId == null || !roomService()) return 0;
   const uid = normalizeId(userId);
-  let removed = 0;
-  try {
-    for (const s of seatsOfServer(serverId, { userId: uid })) {
-      forceDisconnect(io, { serverId: s.call.serverId, channelId: s.channelId, userId: s.userId, reason });
-      removed += 1;
-    }
-  } catch (err) {
-    console.warn("[voiceEnforce] evict seats failed:", err?.message || err);
-  }
-  if (MEMBERSHIP_END_REASONS.has(String(reason || "").toLowerCase())) forgetVoiceModState(serverId, uid);
-  if (!roomService()) return { removed };
   try {
     const { data: channels, error } = await supabase
       .from("server_channels")
       .select("id, type")
       .eq("server_id", serverId);
     if (error) throw error;
-    const companion = screenCompanionIdentity(uid);
-    await Promise.all(
+    const ids = new Set(
       (channels || [])
         .filter((c) => ["voice", "stage"].includes(String(c.type || "").toLowerCase()))
-        .flatMap((c) => [removeLiveKitIdentity(c.id, uid), companion ? removeLiveKitIdentity(c.id, companion) : null])
-        .filter(Boolean)
+        .map((c) => normalizeId(c.id))
     );
+    for (const [cid, call] of activeServerVoiceCalls.entries()) {
+      if (sameId(call?.serverId, serverId)) ids.add(normalizeId(cid));
+    }
+    const companion = screenCompanionIdentity(uid);
+    await Promise.all(
+      [...ids].flatMap((cid) => [removeLiveKitIdentity(cid, uid), companion ? removeLiveKitIdentity(cid, companion) : null]).filter(Boolean)
+    );
+    return ids.size;
   } catch (err) {
     console.warn("[voiceEnforce] evict LiveKit failed:", err?.message || err);
+    return 0;
+  }
+}
+
+/**
+ * Remove a user from every voice seat of one server (events as for a normal leave,
+ * plus server:voice:force-disconnected with the reason) and from every LiveKit room of
+ * that server, including rooms they joined with a token but no seat and the
+ * `<userId>:screen` companion. Kick / ban / leave also forget the stored server mute.
+ * Never throws.
+ */
+async function evictFromServerVoice(io, { serverId, userId, reason = null } = {}) {
+  if (!serverId || userId == null) return { removed: 0 };
+  const uid = normalizeId(userId);
+  const removed = seatsOfServer(serverId, { userId: uid }).length;
+  try {
+    await handlers().removeUserFromServerVoice(io, serverId, uid, reason);
+  } catch (err) {
+    console.warn("[voiceEnforce] evict failed:", err?.message || err);
+    if (MEMBERSHIP_END_REASONS.has(String(reason || "").toLowerCase())) forgetVoiceModState(serverId, uid);
+    await evictLiveKitFromServerRooms(serverId, uid);
   }
   return { removed };
 }
@@ -399,6 +442,15 @@ async function recheckVoiceAccess(io, { serverId, userId = null, channelId = nul
   let seats;
   try {
     seats = seatsOfServer(serverId, { userId, channelId });
+    // A category change reaches its voice channels: recheck the children too.
+    if (channelId && !activeServerVoiceCalls.has(normalizeId(channelId))) {
+      const { data: children } = await supabase
+        .from("server_channels")
+        .select("id")
+        .eq("server_id", serverId)
+        .eq("parent_id", channelId);
+      for (const child of children || []) seats.push(...seatsOfServer(serverId, { userId, channelId: child.id }));
+    }
   } catch {
     return result;
   }
@@ -441,6 +493,16 @@ async function recheckVoiceAccess(io, { serverId, userId = null, channelId = nul
         result.removed += 1;
         continue;
       }
+      // A member a mover placed in a channel they cannot see keeps signaling: the
+      // VIEW-based room eviction (serverAccessRealtime) drops their sockets from the
+      // voice room, so put them back for as long as the seat lasts (V7).
+      if (s.seat?.forceMovedIn) {
+        try {
+          io?.in?.(`user:${s.userId}`).socketsJoin(`server-voice:${s.channelId}`);
+        } catch {
+          /* older socket.io */
+        }
+      }
       if (await refreshSeatPermissions(io, { serverId, channelId: s.channelId, call: s.call, seat: s.seat, resolved })) {
         result.updated += 1;
       }
@@ -477,11 +539,12 @@ function announceSeatChange(io, { serverId, channelId, call, seat, before = {} }
   const uid = String(seat.id);
   const sid = serverId || call?.serverId;
   try {
+    const byUserId = before.byUserId || null;
     if (before.serverMuted !== seat.serverMuted) {
-      io.to(`user:${uid}`).emit("server:voice:force-mute", { serverId: sid, channelId, muted: Boolean(seat.serverMuted), byUserId: null });
+      io.to(`user:${uid}`).emit("server:voice:force-mute", { serverId: sid, channelId, muted: Boolean(seat.serverMuted), canSpeak: canSpeakPermissionOf(seat), byUserId });
     }
     if (before.serverDeafened !== seat.serverDeafened) {
-      io.to(`user:${uid}`).emit("server:voice:force-deafen", { serverId: sid, channelId, deafened: Boolean(seat.serverDeafened), byUserId: null });
+      io.to(`user:${uid}`).emit("server:voice:force-deafen", { serverId: sid, channelId, deafened: Boolean(seat.serverDeafened), byUserId });
     }
     if (before.stageRole !== undefined && before.stageRole !== seat.stageRole && seat.channelType === "stage") {
       io.to(`user:${uid}`).emit("server:voice:stage-role", { serverId: sid, channelId, stageRole: seat.stageRole, byUserId: null });
@@ -615,6 +678,9 @@ module.exports = {
   channelIdFromRoom,
   isLiveKitConfigured,
   removeLiveKitIdentity,
+  deleteLiveKitRoom,
+  evictLiveKitFromServerRooms,
+  canSpeakPermissionOf,
   updateLiveKitPermission,
   getVoiceModState,
   cachedModState,

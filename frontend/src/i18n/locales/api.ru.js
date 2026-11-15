@@ -122,4 +122,7 @@ export const API_RU = {
   "Write a title or a message.": "Напишите заголовок или сообщение.",
   "Write the short correction people will see.": "Напишите короткую поправку, которую увидят все.",
   "Write the title and the message first.": "Сначала напишите заголовок и сообщение.",
+  "This voice channel is full.": "Этот голосовой канал заполнен.",
+  "Join the voice channel first.": "Сначала подключитесь к голосовому каналу.",
+  "Invalid webhook signature.": "Недействительная подпись вебхука.",
 };

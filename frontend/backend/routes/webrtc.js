@@ -2,7 +2,7 @@
 
 const { apiError } = require("../lib/apiError");
 const express = require("express");
-const { AccessToken, TrackSource } = require("livekit-server-sdk");
+const { AccessToken, TrackSource, WebhookReceiver } = require("livekit-server-sdk");
 const { requireAuth } = require("../middleware/auth");
 const supabase = require("../db/supabase");
 const { activeServerVoiceCalls } = require("../runtime/sharedState");
@@ -22,6 +22,9 @@ const {
   screenCompanionIdentity,
   markCompanionIssued,
 } = require("../lib/screenCompanion");
+const ve = require("../lib/serverVoiceEnforce");
+const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutState");
+const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 
 const router = express.Router();
 
@@ -101,67 +104,71 @@ function isTurnConfigured() {
   return turnMode(process.env) !== "none";
 }
 
-function isSeatedInVoiceChannel(userId, channelId) {
-  const call = activeServerVoiceCalls.get(String(channelId));
-  if (!call?.participants || userId == null) return false;
-  const uid = String(userId);
-  if (call.participants.has(userId) || call.participants.has(uid)) return true;
-  for (const [key, member] of call.participants.entries()) {
-    if (String(key) === uid || String(member?.id) === uid) return true;
-  }
-  return false;
+function seatOf(userId, channelId) {
+  return ve.findSeat(channelId, userId)?.seat || null;
 }
 
+function isSeatedInVoiceChannel(userId, channelId) {
+  return Boolean(seatOf(userId, channelId));
+}
+
+/**
+ * Older clients ask for the token while their `server:voice:join` is still in flight
+ * (3.0.0 "early token"). Hold such a request briefly for the seat instead of failing.
+ */
+const SEAT_WAIT_MS = Number(process.env.VOICE_TOKEN_SEAT_WAIT_MS) || 4000;
+async function waitForSeat(userId, channelId, timeoutMs = SEAT_WAIT_MS) {
+  const deadline = Date.now() + timeoutMs;
+  let seat = seatOf(userId, channelId);
+  while (!seat && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 100));
+    seat = seatOf(userId, channelId);
+  }
+  return seat;
+}
+
+function httpError(message, code, status) {
+  const err = new Error(message);
+  err.code = code;
+  err.status = status;
+  return err;
+}
+
+/**
+ * Same checks as the socket join (V1, V6): membership, no active timeout, rules
+ * accepted, VIEW + CONNECT (a member a mover placed in a private channel is exempt
+ * while that seat lasts). Room and seat lookups use the canonical `channel.id` (V11).
+ */
 async function resolveVoiceChannelAccess(userId, channelId) {
   const { data: channel, error } = await supabase
     .from("server_channels")
     .select("id, server_id, type, name")
-    .eq("id", channelId)
+    .eq("id", ve.normalizeId(channelId))
     .maybeSingle();
   if (error) throw error;
   if (!channel || !["voice", "stage"].includes(channel.type)) {
-    const err = new Error("Voice channel not found.");
-    err.code = "NOT_VOICE_CHANNEL";
-    err.status = channel ? 400 : 404;
-    throw err;
+    throw httpError("Voice channel not found.", "NOT_VOICE_CHANNEL", channel ? 400 : 404);
   }
-  const resolved = await resolveChannelPermissions(supabase, channel.server_id, userId, channelId);
-  if (!resolved.isMember) {
-    const err = new Error("You are not a member of this server.");
-    err.code = "NOT_MEMBER";
-    err.status = 403;
-    throw err;
+  const resolved = await resolveChannelPermissions(supabase, channel.server_id, userId, channel.id);
+  if (!resolved.isMember) throw httpError("You are not a member of this server.", "NOT_MEMBER", 403);
+  if (!resolved.isOwner) {
+    const t = await getActiveServerTimeout(channel.server_id, userId);
+    if (t) throw timedOutError(t);
   }
-  // Discord parity: members force-moved into a private voice channel may mint
-  // LiveKit tokens while seated; after leave, VIEW+CONNECT are required again.
-  const seated = isSeatedInVoiceChannel(userId, channelId);
-  if (
-    !seated &&
-    (!hasPermission(resolved.bits, Permissions.VIEW_CHANNEL) ||
-      !hasPermission(resolved.bits, Permissions.CONNECT))
-  ) {
-    const err = new Error("Missing voice channel permission.");
-    err.code = "MISSING_PERMISSION";
-    err.status = 403;
-    throw err;
+  if (await needsRulesAcceptance(supabase, channel.server_id, userId, { isOwner: resolved.isOwner })) {
+    throw httpError("You must accept the server rules before joining voice.", "RULES_REQUIRED", 403);
   }
   return { channel, resolved };
 }
 
-function stageRoleFor(channelId, userId) {
-  const call = activeServerVoiceCalls.get(channelId);
-  if (!call?.participants) return "audience";
-  const uid = String(userId);
-  let participant = call.participants.get(userId) || call.participants.get(uid);
-  if (!participant) {
-    for (const [key, member] of call.participants.entries()) {
-      if (String(key) === uid || String(member?.id) === uid) {
-        participant = member;
-        break;
-      }
-    }
+function assertSeatAccess(seat, resolved) {
+  const forceMoved = Boolean(seat?.forceMovedIn);
+  if (
+    !forceMoved &&
+    (!hasPermission(resolved.bits, Permissions.VIEW_CHANNEL) || !hasPermission(resolved.bits, Permissions.CONNECT))
+  ) {
+    throw httpError("Missing voice channel permission.", "MISSING_PERMISSION", 403);
   }
-  return participant?.stageRole === "speaker" ? "speaker" : "audience";
 }
 
 /**
@@ -230,45 +237,43 @@ router.all("/livekit-token", (req, res, next) => {
   return next();
 });
 
+/**
+ * Voice token for a member who holds a seat in the channel (V2: no seat, no token; the
+ * seat is created by `server:voice:join`, whose `server:voice:joined` payload already
+ * carries a token for current clients). Grants follow the seat: canPublish only with
+ * SPEAK and no server mute / AFK lock (stage: speakers), camera and screen sources only
+ * with STREAM (V5), no subscribing while server-deafened, no data channel (V14).
+ * Short-lived: LiveKit refreshes connected participants itself (SK-3).
+ */
 router.all("/livekit-token", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
   const channelId = String(req.query?.channelId || req.body?.channelId || "").trim();
-  if (!channelId) return res.status(400).json({ enabled: true, error: "channelId is required." });
+  if (!channelId) return res.status(400).json(apiError("channelId is required.", null, { enabled: true, code: "CHANNEL_REQUIRED" }));
   try {
-    const userId = req.user.id;
+    const userId = ve.normalizeId(req.user.id);
     const { channel, resolved } = await resolveVoiceChannelAccess(userId, channelId);
-    const canSpeak = hasPermission(resolved.bits, Permissions.SPEAK);
-    const canPublish =
-      channel.type === "stage" ? stageRoleFor(channelId, userId) === "speaker" && canSpeak : canSpeak;
-    const room = `server-voice-${channelId}`;
-    const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
-      identity: userId,
-      ttl: "1h",
+    const seat = await waitForSeat(userId, channel.id);
+    if (!seat) {
+      return res.status(409).json(apiError("Join the voice channel first.", null, { enabled: true, code: "NOT_IN_CHANNEL" }));
+    }
+    assertSeatAccess(seat, resolved);
+    const found = ve.findSeat(channel.id, userId);
+    await ve.refreshSeatPermissions(req.app?.get?.("io") || null, {
+      serverId: channel.server_id,
+      channelId: channel.id,
+      call: found?.call,
+      seat,
+      resolved,
     });
-    token.addGrant({
-      room,
-      roomJoin: true,
-      canSubscribe: true,
-      canPublish,
-      canPublishData: true,
-    });
-    return res.json({
-      enabled: true,
-      livekitUrl: process.env.LIVEKIT_URL,
-      livekitUrls: liveKitEndpoints(),
-      room,
-      token: await token.toJwt(),
-      canPublish,
-      canSubscribe: true,
-      channelType: channel.type,
-      stageRole: channel.type === "stage" ? stageRoleFor(channelId, userId) : "speaker",
-      canRequestToSpeak: hasPermission(resolved.bits, Permissions.REQUEST_TO_SPEAK),
-      canStream: hasPermission(resolved.bits, Permissions.STREAM),
-    });
+    const data = await ve.mintVoiceToken({ userId, channelId: channel.id, seat });
+    if (!data) return res.json({ enabled: false });
+    return res.json(data);
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error("[webrtc] livekit-token error:", err);
     return res.status(status).json({
       enabled: true,
+      ...(err.i18n ? { errorKey: err.i18n.errorKey, errorVars: err.i18n.errorVars } : {}),
       error: err.message || "Failed to mint LiveKit token.",
       code: err.code || null,
     });
@@ -296,7 +301,7 @@ router.all("/livekit-screen-token", requireAuth, async (req, res) => {
   res.set("Cache-Control", "private, no-store");
   const channelId = String(req.query?.channelId || req.body?.channelId || "").trim();
   if (!channelId) return res.status(400).json(apiError("channelId is required.", null, { enabled: true, code: "CHANNEL_REQUIRED" }));
-  const userId = req.user.id;
+  const userId = ve.normalizeId(req.user.id);
   const limit = recordFailure(`lk-screen:user:${userId}`, {
     windowMs: SCREEN_TOKEN_WINDOW_MS,
     max: SCREEN_TOKEN_PER_USER,
@@ -309,16 +314,20 @@ router.all("/livekit-screen-token", requireAuth, async (req, res) => {
   if (!identity) return res.status(400).json(apiError("Invalid user.", null, { enabled: true, code: "INVALID_USER" }));
   try {
     const { channel, resolved } = await resolveVoiceChannelAccess(userId, channelId);
-    if (!isSeatedInVoiceChannel(userId, channelId)) {
+    const seat = seatOf(userId, channel.id);
+    if (!seat) {
       return res.status(409).json(apiError("User is not in a voice channel.", null, { enabled: true, code: "NOT_IN_CHANNEL", }));
     }
-    const canSpeak = hasPermission(resolved.bits, Permissions.SPEAK);
-    const canPublish =
-      channel.type === "stage" ? stageRoleFor(channelId, userId) === "speaker" && canSpeak : canSpeak;
-    if (!canPublish || !hasPermission(resolved.bits, Permissions.STREAM)) {
+    assertSeatAccess(seat, resolved);
+    // Current permissions, then the seat's locks (server mute / deafen, AFK, stage role).
+    seat.canSpeakPermission = hasPermission(resolved.bits, Permissions.SPEAK);
+    seat.canStream = hasPermission(resolved.bits, Permissions.STREAM);
+    if (!seat.channelType) seat.channelType = channel.type;
+    if (channel.type === "stage" && !seat.stageRole) seat.stageRole = "audience";
+    if (!ve.canStreamSeat(seat)) {
       return res.status(403).json(apiError("Missing STREAM permission.", null, { enabled: true, code: "MISSING_PERMISSION", }));
     }
-    const room = `server-voice-${channelId}`;
+    const room = ve.liveKitRoomName(channel.id);
     const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
       identity,
       ttl: SCREEN_COMPANION_TTL,
@@ -333,7 +342,7 @@ router.all("/livekit-screen-token", requireAuth, async (req, res) => {
       canUpdateOwnMetadata: false,
       canPublishSources: [TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO],
     });
-    markCompanionIssued(channelId, userId);
+    markCompanionIssued(channel.id, userId);
     return res.json({
       enabled: true,
       livekitUrl: process.env.LIVEKIT_URL,
@@ -353,6 +362,39 @@ router.all("/livekit-screen-token", requireAuth, async (req, res) => {
     });
   }
 });
+
+/**
+ * LiveKit webhook (configure `<api>/api/webrtc/livekit-webhook` in LiveKit). On
+ * participant_joined in a server voice room, an identity without a seat (or a screen
+ * companion whose owner may not stream) is removed and its token revoked at once
+ * (V2, M2, SK-3). Signed with the LiveKit API key; anything else is refused.
+ */
+router.post(
+  "/livekit-webhook",
+  express.raw({ type: ["application/webhook+json", "application/json"], limit: "256kb" }),
+  async (req, res) => {
+    if (!isLiveKitConfigured()) return res.status(404).json(apiError("Not found.", null, { code: "NOT_FOUND" }));
+    let event;
+    try {
+      const receiver = new WebhookReceiver(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+      const body = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : typeof req.body === "string" ? req.body : JSON.stringify(req.body || {});
+      event = await receiver.receive(body, req.get("Authorization") || req.get("Authorize"));
+    } catch {
+      return res.status(401).json(apiError("Invalid webhook signature.", null, { code: "UNAUTHORIZED" }));
+    }
+    try {
+      const roomName = event?.room?.name || "";
+      const channelId = ve.channelIdFromRoom(roomName);
+      const identity = event?.participant?.identity || "";
+      if (event?.event === "participant_joined" && channelId && identity && !ve.identityAllowedInRoom(channelId, identity)) {
+        await ve.removeLiveKitIdentity(channelId, identity);
+      }
+    } catch (err) {
+      console.warn("[webrtc] livekit webhook failed:", err?.message || err);
+    }
+    return res.json({ ok: true });
+  }
+);
 
 module.exports = router;
 module.exports._test = { stunOnly, optionalUserId };

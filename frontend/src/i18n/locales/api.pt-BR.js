@@ -122,4 +122,7 @@ export const API_PT_BR = {
   "Write a title or a message.": "Escreva um título ou uma mensagem.",
   "Write the short correction people will see.": "Escreva a correção curta que as pessoas vão ver.",
   "Write the title and the message first.": "Escreva primeiro o título e a mensagem.",
+  "This voice channel is full.": "Este canal de voz está cheio.",
+  "Join the voice channel first.": "Entre no canal de voz primeiro.",
+  "Invalid webhook signature.": "Assinatura de webhook inválida.",
 };
