@@ -68,9 +68,9 @@ export const MOD_DESK_ES = {
   pill: { "5m": "5 min", "15m": "15 min", "30m": "30 min", "1h": "1 hora", "6h": "6 horas", "12h": "12 horas", "24h": "24 horas", "3d": "3 días", "7d": "7 días", custom: "Personalizado" },
   var: { user: "usuario", duration: "duración", category: "categoría", until: "fin" },
   tplMsg: {
-    timeout: "Hola {usuario}, se te silenció durante {duración} por {categoría}.",
-    kick: "Hola {usuario}, se cerró tu sesión por {categoría}.",
-    ban: "Hola {usuario}, tu cuenta se suspendió por {categoría}.",
+    timeout: "Hola {user}, se te silenció durante {duration} por {category}.",
+    kick: "Hola {user}, se cerró tu sesión por {category}.",
+    ban: "Hola {user}, tu cuenta se suspendió por {category}.",
   },
   esc: {
     title30: { timeout: "Regla de escalado: {user} recibe su {n}.º silencio este mes.", kick: "Regla de escalado: {user} recibe su {n}.ª expulsión este mes." },

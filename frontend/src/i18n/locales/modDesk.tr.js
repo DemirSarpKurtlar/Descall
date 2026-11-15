@@ -63,9 +63,9 @@ export const MOD_DESK_TR = {
   pill: { "5m": "5 dk", "15m": "15 dk", "30m": "30 dk", "1h": "1 saat", "6h": "6 saat", "12h": "12 saat", "24h": "24 saat", "3d": "3 gün", "7d": "7 gün", custom: "Özel" },
   var: { user: "kullanıcı", duration: "süre", category: "kategori", until: "bitiş" },
   tplMsg: {
-    timeout: "Merhaba {kullanıcı}, {kategori} nedeniyle {süre} susturuldun.",
-    kick: "Merhaba {kullanıcı}, {kategori} nedeniyle oturumun kapatıldı.",
-    ban: "Merhaba {kullanıcı}, {kategori} nedeniyle hesabın askıya alındı.",
+    timeout: "Merhaba {user}, {category} nedeniyle {duration} susturuldun.",
+    kick: "Merhaba {user}, {category} nedeniyle oturumun kapatıldı.",
+    ban: "Merhaba {user}, {category} nedeniyle hesabın askıya alındı.",
   },
   esc: {
     title30: { timeout: "Kademe kuralı: {user} bu ay {n}. kez susturuluyor.", kick: "Kademe kuralı: {user} bu ay {n}. kez atılıyor." },

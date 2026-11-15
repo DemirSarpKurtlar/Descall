@@ -51,11 +51,21 @@ function clampInt(value, fallback, min, max) {
 }
 
 const FEATURE_FLAG_KEYS = Object.keys(DEFAULT_SYSTEM_CONFIG.featureFlags);
+// Sistem page: these flags may also be a rollout rule (lib/featureRollout.js); the
+// rest stay plain booleans (server-wide switches). A plain boolean always works.
+const ROLLOUT_FLAG_KEYS = Object.freeze(["iosGlass", "desktopGlass", "bootDiet"]);
+const CLIENT_FLAG_KEYS = Object.freeze(["iosGlass", "desktopGlass"]);
 
 function pickFeatureFlags(input) {
   const src = input && typeof input === "object" ? input : {};
   const out = {};
+  const rollout = require("./featureRollout");
   for (const key of FEATURE_FLAG_KEYS) {
+    if (ROLLOUT_FLAG_KEYS.includes(key) && rollout.isRule(src[key])) {
+      // A rule that means plain on / off is stored as that boolean (older readers understand it).
+      out[key] = rollout.compact(src[key]);
+      continue;
+    }
     if (key === "desktopGlass" || key === "edgeRealtime") {
       // Opt-in. Older rows without the key must not restyle desktop and web.
       out[key] = src[key] === true;
@@ -67,18 +77,38 @@ function pickFeatureFlags(input) {
   return out;
 }
 
-/** Public clients may see only these availability bits. */
-function publicFeatureFlags(input) {
+/**
+ * Public clients may see only these availability bits. `ctx` = { userId, platform } of
+ * the socket it goes to (none for the shared /api/features answer). A rollout rule is
+ * resolved for that user (old clients read the boolean) and also sent as `flagRules`
+ * without the staff ids, so new clients check it themselves (src/lib/featureRollout.js).
+ */
+function publicFeatureFlags(input, ctx = {}) {
   const flags = pickFeatureFlags(input);
-  return {
+  const rollout = require("./featureRollout");
+  const out = {
     // 2.13.0: the Valorant Play tab (LFG + Companion) is gone. Installed 2.12.x and
     // older apps show it unless these two legacy keys are explicitly false, so they
     // are always sent as false. They are not settable flags any more.
     valorantLfg: false,
     valorantCompanion: false,
-    iosGlass: flags.iosGlass,
-    desktopGlass: flags.desktopGlass,
+    iosGlass: rollout.evaluate(flags.iosGlass, { ...ctx, flagKey: "iosGlass" }),
+    desktopGlass: rollout.evaluate(flags.desktopGlass, { ...ctx, flagKey: "desktopGlass" }),
   };
+  const rules = {};
+  for (const key of CLIENT_FLAG_KEYS) {
+    const rule = rollout.publicRule(flags[key], ctx);
+    if (rule) rules[key] = rule;
+  }
+  if (Object.keys(rules).length) out.flagRules = rules;
+  return out;
+}
+
+/** Server-side check of a flag for one user (bootDiet and other rollout flags). */
+function flagEnabledFor(flags, key, ctx = {}) {
+  const value = (flags || {})[key];
+  if (value === undefined) return DEFAULT_SYSTEM_CONFIG.featureFlags[key] === true;
+  return require("./featureRollout").evaluate(value, { ...ctx, flagKey: key });
 }
 
 function pickProfanityWords(input) {
@@ -106,6 +136,8 @@ function pickConfig(input) {
   }
   if (input.featureFlags !== undefined) out.featureFlags = pickFeatureFlags(input.featureFlags);
   Object.assign(out, require("./edgeRealtime").pickEdgeRealtimeConfig(input));
+  // Güvenlik Merkezi: DM account age, disposable email block, emergency locks.
+  Object.assign(out, require("./securitySettings").pickSecurityConfig(input));
   if (input.themeForce !== undefined) {
     out.themeForce = input.themeForce == null || input.themeForce === "" ? null : String(input.themeForce).slice(0, 32);
   }
@@ -246,6 +278,8 @@ module.exports = {
   pickConfig,
   pickFeatureFlags,
   publicFeatureFlags,
+  flagEnabledFor,
+  ROLLOUT_FLAG_KEYS,
   mergeSystemConfig,
   applySystemConfigToState,
   loadSystemSettings,

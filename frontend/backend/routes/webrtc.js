@@ -1,5 +1,6 @@
 "use strict";
 
+const { apiError } = require("../lib/apiError");
 const express = require("express");
 const { AccessToken, TrackSource } = require("livekit-server-sdk");
 const { requireAuth } = require("../middleware/auth");
@@ -174,7 +175,7 @@ router.get("/ice-config", async (req, res) => {
   const ipCheck = recordFailure(`ice:ip:${req.ip || "unknown"}`, { windowMs: ICE_RATE_WINDOW_MS, max: ICE_RATE_PER_IP });
   if (!ipCheck.ok) {
     res.set("Retry-After", String(ipCheck.retryAfterSec));
-    return res.status(429).json({ error: "Too many requests.", iceServers: DEFAULT_STUN, authenticated: false });
+    return res.status(429).json(apiError("Too many requests.", null, { iceServers: DEFAULT_STUN, authenticated: false }));
   }
   const userId = await optionalUserId(req);
   if (!userId) {
@@ -190,7 +191,7 @@ router.get("/ice-config", async (req, res) => {
   const userCheck = recordFailure(`ice:user:${userId}`, { windowMs: ICE_RATE_WINDOW_MS, max: ICE_RATE_PER_USER });
   if (!userCheck.ok) {
     res.set("Retry-After", String(userCheck.retryAfterSec));
-    return res.status(429).json({ error: "Too many requests.", iceServers: DEFAULT_STUN, authenticated: true });
+    return res.status(429).json(apiError("Too many requests.", null, { iceServers: DEFAULT_STUN, authenticated: true }));
   }
   try {
     const built = await buildIceServersForUser(userId);
@@ -294,7 +295,7 @@ router.all("/livekit-screen-token", (req, res, next) => {
 router.all("/livekit-screen-token", requireAuth, async (req, res) => {
   res.set("Cache-Control", "private, no-store");
   const channelId = String(req.query?.channelId || req.body?.channelId || "").trim();
-  if (!channelId) return res.status(400).json({ enabled: true, error: "channelId is required.", code: "CHANNEL_REQUIRED" });
+  if (!channelId) return res.status(400).json(apiError("channelId is required.", null, { enabled: true, code: "CHANNEL_REQUIRED" }));
   const userId = req.user.id;
   const limit = recordFailure(`lk-screen:user:${userId}`, {
     windowMs: SCREEN_TOKEN_WINDOW_MS,
@@ -302,28 +303,20 @@ router.all("/livekit-screen-token", requireAuth, async (req, res) => {
   });
   if (!limit.ok) {
     res.set("Retry-After", String(limit.retryAfterSec));
-    return res.status(429).json({ enabled: true, error: "Too many requests.", code: "RATE_LIMITED" });
+    return res.status(429).json(apiError("Too many requests.", null, { enabled: true, code: "RATE_LIMITED" }));
   }
   const identity = screenCompanionIdentity(userId);
-  if (!identity) return res.status(400).json({ enabled: true, error: "Invalid user.", code: "INVALID_USER" });
+  if (!identity) return res.status(400).json(apiError("Invalid user.", null, { enabled: true, code: "INVALID_USER" }));
   try {
     const { channel, resolved } = await resolveVoiceChannelAccess(userId, channelId);
     if (!isSeatedInVoiceChannel(userId, channelId)) {
-      return res.status(409).json({
-        enabled: true,
-        error: "User is not in a voice channel.",
-        code: "NOT_IN_CHANNEL",
-      });
+      return res.status(409).json(apiError("User is not in a voice channel.", null, { enabled: true, code: "NOT_IN_CHANNEL", }));
     }
     const canSpeak = hasPermission(resolved.bits, Permissions.SPEAK);
     const canPublish =
       channel.type === "stage" ? stageRoleFor(channelId, userId) === "speaker" && canSpeak : canSpeak;
     if (!canPublish || !hasPermission(resolved.bits, Permissions.STREAM)) {
-      return res.status(403).json({
-        enabled: true,
-        error: "Missing STREAM permission.",
-        code: "MISSING_PERMISSION",
-      });
+      return res.status(403).json(apiError("Missing STREAM permission.", null, { enabled: true, code: "MISSING_PERMISSION", }));
     }
     const room = `server-voice-${channelId}`;
     const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {

@@ -23,15 +23,7 @@ const REASON_MIN = 5;
 const REASON_MAX = 300;
 
 /** The phrase to type, per app language (sysx.restart.confirmWord must match). */
-const CONFIRM_WORDS = Object.freeze({
-  tr: "YENİDEN BAŞLAT",
-  en: "RESTART",
-  de: "NEUSTART",
-  es: "REINICIAR",
-  fr: "REDÉMARRER",
-  "pt-BR": "REINICIAR",
-  ru: "ПЕРЕЗАПУСК",
-});
+const CONFIRM_WORDS = require("../i18n/systemRestart").confirmWords;
 
 let run = null;
 let middlewareInstalled = false;

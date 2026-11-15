@@ -83,6 +83,7 @@ const RULES = [
   [/^\/feedback(\/|$)/, "feedback"],
   [/^\/(audit)(\/|$)/, "audit"],
   [/^\/(errors|security-logs)(\/|$)/, "security"],
+  [/^\/security(\/|$)/, "security"],
   [/^\/(credits|descoin)(\/|$)/, "casino"],
   [/^\/shop\/gifts?(\/|$)/, "casino"],
   [/^\/shop(\/|$)/, "shop"],
@@ -166,6 +167,12 @@ async function requireAdminSection(req, res, next) {
     const row = await loadRow(req.user.id);
     req.adminSections = sectionsFor(req.user, row);
     if (req.adminSections.includes(section)) return next();
+    // İşlem kaydı "Reddedilen erişim": one access_denied entry per admin + section per 10 minutes.
+    try {
+      require("./auditRuntime").noteDenied(req.user, section, req);
+    } catch {
+      /* the refusal stands either way */
+    }
     return res.status(403).json({
       error: "You don't have access to this section. Ask the owner account for access.",
       code: "ADMIN_PERMISSION_DENIED",

@@ -20,7 +20,17 @@ import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { BAN_ADMIN_PT_BR } from "./banAdmin.pt-BR.js";
 import { SERVER_REVIEW_PT_BR } from "./serverReview.pt-BR.js";
 import { DOSSIER_PT_BR } from "./dossier.pt-BR.js";
+import { SHOP_DESK_PT_BR } from "./shopDesk.pt-BR.js";
+import { SHOP_MERCH_PT_BR } from "./shopMerch.pt-BR.js";
+import { MOD_DESK_PT_BR, MOD_DESK_API_PT_BR } from "./modDesk.pt-BR.js";
+import { GAMES_ADMIN_PT_BR } from "./gamesAdmin.pt-BR.js";
+import { SYSX_PT_BR } from "./sysx.pt-BR.js";
+import { AUDIT_LOG_PT_BR } from "./auditLog.pt-BR.js";
+import { LIVE_POPUP_PT_BR } from "./livePopup.pt-BR.js";
+import { ANNC_PT_BR } from "./annc.pt-BR.js";
+import { SEC_CENTER_PT_BR } from "./secCenter.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
+import { AGENT_OPS_PT_BR } from "./agentOps.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
@@ -51,7 +61,17 @@ export const nested = {
   "banAdmin": BAN_ADMIN_PT_BR,
   "serverReview": SERVER_REVIEW_PT_BR,
   "dossier": DOSSIER_PT_BR,
+  "shopDesk": SHOP_DESK_PT_BR,
+  "shopMerch": SHOP_MERCH_PT_BR,
+  "modDesk": MOD_DESK_PT_BR,
+  "gamesAdmin": GAMES_ADMIN_PT_BR,
+  "sysx": SYSX_PT_BR,
+  "auditLog": AUDIT_LOG_PT_BR,
+  "livePopup": LIVE_POPUP_PT_BR,
+  "annc": ANNC_PT_BR,
+  "secCenter": SEC_CENTER_PT_BR,
   "agentx": AGENTX_PT_BR,
+  "agentOps": AGENT_OPS_PT_BR,
   "invl": INVL_PT_BR,
   "sgx": SIGNUP_GROWTH["pt-BR"].nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
@@ -11027,6 +11047,7 @@ export const phrases = {
   "Descall: voice chat, servers and screen sharing for friends": "Descall: chat de voz, servidores e tela compartilhada para amigos",
   ...DIR_API_PT_BR,
   ...API_PT_BR,
+  ...MOD_DESK_API_PT_BR,
 };
 
 export default { nested, phrases };

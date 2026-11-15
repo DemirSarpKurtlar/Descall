@@ -68,9 +68,9 @@ export const MOD_DESK_DE = {
   pill: { "5m": "5 Min.", "15m": "15 Min.", "30m": "30 Min.", "1h": "1 Std.", "6h": "6 Std.", "12h": "12 Std.", "24h": "24 Std.", "3d": "3 Tage", "7d": "7 Tage", custom: "Eigene" },
   var: { user: "nutzer", duration: "dauer", category: "kategorie", until: "ende" },
   tplMsg: {
-    timeout: "Hallo {nutzer}, du wurdest wegen {kategorie} für {dauer} stummgeschaltet.",
-    kick: "Hallo {nutzer}, deine Sitzung wurde wegen {kategorie} beendet.",
-    ban: "Hallo {nutzer}, dein Konto wurde wegen {kategorie} gesperrt.",
+    timeout: "Hallo {user}, du wurdest wegen {category} für {duration} stummgeschaltet.",
+    kick: "Hallo {user}, deine Sitzung wurde wegen {category} beendet.",
+    ban: "Hallo {user}, dein Konto wurde wegen {category} gesperrt.",
   },
   esc: {
     title30: { timeout: "Eskalationsregel: {user} wird diesen Monat zum {n}. Mal stummgeschaltet.", kick: "Eskalationsregel: {user} wird diesen Monat zum {n}. Mal rausgeworfen." },

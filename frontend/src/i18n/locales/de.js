@@ -20,7 +20,17 @@ import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
 import { DOSSIER_DE } from "./dossier.de.js";
+import { SHOP_DESK_DE } from "./shopDesk.de.js";
+import { SHOP_MERCH_DE } from "./shopMerch.de.js";
+import { MOD_DESK_DE, MOD_DESK_API_DE } from "./modDesk.de.js";
+import { GAMES_ADMIN_DE } from "./gamesAdmin.de.js";
+import { SYSX_DE } from "./sysx.de.js";
+import { AUDIT_LOG_DE } from "./auditLog.de.js";
+import { LIVE_POPUP_DE } from "./livePopup.de.js";
+import { ANNC_DE } from "./annc.de.js";
+import { SEC_CENTER_DE } from "./secCenter.de.js";
 import { AGENTX_DE } from "./agentx.de.js";
+import { AGENT_OPS_DE } from "./agentOps.de.js";
 import { INVL_DE } from "./invl.de.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
@@ -51,7 +61,17 @@ export const nested = {
   "banAdmin": BAN_ADMIN_DE,
   "serverReview": SERVER_REVIEW_DE,
   "dossier": DOSSIER_DE,
+  "shopDesk": SHOP_DESK_DE,
+  "shopMerch": SHOP_MERCH_DE,
+  "modDesk": MOD_DESK_DE,
+  "gamesAdmin": GAMES_ADMIN_DE,
+  "sysx": SYSX_DE,
+  "auditLog": AUDIT_LOG_DE,
+  "livePopup": LIVE_POPUP_DE,
+  "annc": ANNC_DE,
+  "secCenter": SEC_CENTER_DE,
   "agentx": AGENTX_DE,
+  "agentOps": AGENT_OPS_DE,
   "invl": INVL_DE,
   "sgx": SIGNUP_GROWTH.de.nested,
   // premiumAudio:start (Descall+ hotkeys, audio, notifications)
@@ -11027,6 +11047,7 @@ export const phrases = {
   "Descall: voice chat, servers and screen sharing for friends": "Descall: Sprachchat, Server und Bildschirmübertragung für Freunde",
   ...DIR_API_DE,
   ...API_DE,
+  ...MOD_DESK_API_DE,
 };
 
 export default { nested, phrases };

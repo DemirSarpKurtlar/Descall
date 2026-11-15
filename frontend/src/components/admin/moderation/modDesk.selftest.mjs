@@ -196,12 +196,11 @@ t("locale key parity and placeholders", () => {
       const v = k.split(".").reduce((o, p) => o[p], cat);
       assert.equal(typeof v, "string", `${id}.${k} is a string`);
       assert.ok(v.trim(), `${id}.${k} is not empty`);
-      // Template messages use the language's own variable names; everything else keeps en's placeholders.
-      if (!k.startsWith("tplMsg.")) assert.deepEqual(placeholders(v), placeholders(flatEn[k]), `${id}.${k} placeholders`);
+      assert.deepEqual(placeholders(v), placeholders(flatEn[k]), `${id}.${k} placeholders`);
     }
-    // A template message only uses that language's variable names.
-    const names = Object.values(cat.var);
-    for (const msg of Object.values(cat.tplMsg)) for (const p of placeholders(msg)) assert.ok(names.includes(p), `${id} tplMsg uses ${p}`);
+    // Template messages keep the canonical {user} / {duration} / {category} tokens; the desk
+    // swaps them for the admin's own words (modDesk.var) when it fills the note box.
+    for (const msg of Object.values(cat.tplMsg)) for (const p of placeholders(msg)) assert.ok(["user", "duration", "category"].includes(p), `${id} tplMsg uses ${p}`);
   }
 });
 

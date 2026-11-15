@@ -1,4 +1,3 @@
-import AdminEdgeRealtime from "./AdminEdgeRealtime";
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
@@ -18,7 +17,6 @@ import {
   Coins, Wrench, Wallet, Plus, Minus, ShoppingBag, BellRing, FolderSearch, LayoutDashboard, Ticket, Award, Bot
 } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
-import { confirmAction } from "../../lib/glassConfirm";
 import { getToken } from "../../lib/storage";
 import { API_BASE_URL } from "../../config/api";
 import RippleButton from "../ui/RippleButton";
@@ -28,18 +26,20 @@ import { adminRawFetch } from "../../lib/adminStepUp";
 import AdminShell from "./AdminShell.jsx";
 import { AdminStepUpHost, Admin2faGate, useAdmin2faGate } from "./AdminStepUpHost.jsx";
 import { isTabletLayout } from "../../lib/appearancePrefs";
-import AdminShop from "./AdminShop";
+// Mağaza (remake, Draft A + B): catalog desk, storefront, campaigns, gifts, reconciliation.
+import AdminShopDesk from "./shopdesk/AdminShopDesk.jsx";
 import PromoCodesTab from "./PromoCodesTab";
 import SpecialBadgesAdminTab from "../badges/SpecialBadgesAdminTab.jsx";
-import AdminDescoinReconcile from "./AdminDescoinReconcile";
 import AdminModeration from "./AdminModeration";
 import AdminLivePopup from "./AdminLivePopup";
+import SecurityCenter from "./security/SecurityCenter.jsx";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminPeople from "./AdminPeople";
 import AdminUserDirectory from "./AdminUserDirectory";
 import AdminReports from "./AdminReports";
 import AdminOverview from "./AdminOverview";
 import MaintenanceTab from "./MaintenanceTab";
+import AdminSystem from "./system/AdminSystem.jsx";
 import SuspiciousTab from "./SuspiciousTab";
 import { ShieldWarning, UserGear, Bug, Trophy } from "../ui/Icon.jsx";
 import RetentionTab from "./growth/RetentionTab.jsx";
@@ -51,6 +51,9 @@ import ErrorIssuesTab from "./ErrorIssuesTab.jsx";
 import AdminTopUsers from "./AdminTopUsers.jsx";
 import AdminDmInbox from "./AdminDmInbox.jsx";
 import AdminServerReview from "./AdminServerReview.jsx";
+import AdminGames from "./games/AdminGames.jsx";
+// İşlem kaydı (owner pick Draft B "Konsol"): audit/AdminAudit.jsx
+import AdminAudit from "./audit/AdminAudit.jsx";
 import { Gauge, Crown, UsersThree, ScrollText, Landmark, SlidersHorizontal, Gift, Scale } from "../ui/Icon.jsx";
 import { sectionOfTab } from "./adminNav.js";
 import { AdminPermsContext } from "./dossier/adminPerms.js";
@@ -60,7 +63,8 @@ const AdminAgent = lazy(() => import("./AdminAgent.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
-import { announcementIconOrDefault } from "../../lib/announcements";
+// Duyurular (remake, Drafts C + A): board, list + inspector, composer, templates, languages.
+import AnnouncementsPage from "./announcements/AnnouncementsPage.jsx";
 import {
   parseAppDate,
   formatAppDateTime,
@@ -75,33 +79,6 @@ function presenceStatusLabel(status, t) {
   if (s === "invisible") return t("Invisible");
   if (s === "offline") return t("Offline");
   return t("Online Now");
-}
-
-function SystemSwitch({ icon: Icon, tone, label, status, checked, disabled, onChange }) {
-  return (
-    <div className={`admin-system-switch${checked ? " is-on" : " is-off"}`}>
-      <div className="admin-system-switch-copy">
-        <span className={`admin-system-switch-mark is-${tone}`} aria-hidden="true">
-          <Icon size={16} />
-        </span>
-        <div className="admin-system-switch-text">
-          <strong>{label}</strong>
-          <span>{status}</span>
-        </div>
-      </div>
-      <button
-        type="button"
-        className={`admin-system-toggle${checked ? " is-on" : ""}`}
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-      >
-        <span />
-      </button>
-    </div>
-  );
 }
 
 const TABS = [
@@ -203,7 +180,8 @@ function useAdminLayout() {
 
 export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUsername, standalone = false }) {
   const { t, locale } = useLocale();
-  const [tab, setTab] = useState("overview");
+  // "El bağlantısını kopyala" (Oyunlar / Kredi) links open the panel on that page: #games/<user>/<hand>.
+  const [tab, setTab] = useState(() => (typeof window !== "undefined" && /^#games\//.test(window.location.hash) ? "casino" : typeof window !== "undefined" && /^#audit\//.test(window.location.hash) ? "audit" : "overview"));
   const [perm] = useAdminPermissions(socket);
   const tabs = useMemo(() => visibleTabs(perm.sections), [perm.sections]);
   const can = useCallback((id) => Array.isArray(perm.sections) && perm.sections.includes(id), [perm.sections]);
@@ -218,6 +196,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const adminLayout = useAdminLayout();
   /** Every section switch goes through here (Kayıt İstatistikleri is a section since 3.1). */
   const selectTab = useCallback((id) => setTab(id), []);
+  // Sistem › "Küfür filtresi Moderasyon'a taşındı" opens Moderasyon on İçerik filtreleri.
+  const [moderationTab, setModerationTab] = useState(null);
+  useEffect(() => {
+    if (tab !== "moderation") setModerationTab(null);
+  }, [tab]);
   const [feedbackUnread, setFeedbackUnread] = useState(0);
   // Ban / timeout / wallet-freeze shortcuts from the suspicious tab open the existing dossier tools.
   const [dossierIntent, setDossierIntent] = useState(null);
@@ -258,7 +241,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [userActivity, setUserActivity] = useState([]);
   const [messages, setMessages] = useState([]);
   const [msgQ, setMsgQ] = useState("");
-  const [audit, setAudit] = useState([]);
   const [system, setSystem] = useState(null);
   const [snapshot, setSnapshot] = useState(null);
   
@@ -278,15 +260,8 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [autoRefreshErrors, setAutoRefreshErrors] = useState(true);
   const errorLogEndRef = useRef(null);
   
-  // Announcements States
-  const [announcements, setAnnouncements] = useState([]);
-  const [announcementDraft, setAnnouncementDraft] = useState({
-    title: "", content: "", priority: "normal", color: "#587AF5",
-    pinned: false, target: "all", emoji: "📢",
-  });
-  const [showComposePanel, setShowComposePanel] = useState(false);
-  const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
-  const [announcementError, setAnnouncementError] = useState("");
+  // Duyurular: live count for the menu badge (reported by AnnouncementsPage).
+  const [announcementsLive, setAnnouncementsLive] = useState(0);
 
   // Success/Error Messages
   const [successMessage, setSuccessMessage] = useState("");
@@ -328,17 +303,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [scheduledTasks, setScheduledTasks] = useState([]);
   const [cacheStats, setCacheStats] = useState(null);
   const [dbStats, setDbStats] = useState(null);
-  
-  // Casino/Credits States
-  const [userCredits, setUserCredits] = useState([]);
-  const [creditSearch, setCreditSearch] = useState("");
-  const [selectedCreditUser, setSelectedCreditUser] = useState(null);
-  const [creditAmount, setCreditAmount] = useState(1000);
-  const [creditReason, setCreditReason] = useState("");
-  const [creditOperation, setCreditOperation] = useState("add"); // 'add' or 'remove'
-  const [creditHistory, setCreditHistory] = useState([]);
-  const [creditStats, setCreditStats] = useState(null);
-  const [gameHistory, setGameHistory] = useState([]);
   
   // UI States
   const [err, setErr] = useState("");
@@ -437,29 +401,11 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     }
   }, []);
 
-  const loadAnnouncements = useCallback(async () => {
-    try {
-      const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const d = await res.json();
-      setAnnouncements(d.announcements || []);
-    } catch (e) {
-      console.error("[ADMIN] Failed to load announcements:", e);
-    }
-  }, []);
-
   const loadMessages = useCallback(async () => {
     const q = msgQ ? `?q=${encodeURIComponent(msgQ)}` : "";
     const d = await adminFetch(`/messages${q}`);
     setMessages(d.messages || []);
   }, [msgQ]);
-
-  const loadAudit = useCallback(async () => {
-    const d = await adminFetch("/audit?limit=300");
-    setAudit(d.entries || []);
-  }, []);
 
   const loadSystem = useCallback(async () => {
     const d = await adminFetch("/system");
@@ -645,47 +591,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     }
   }, []);
 
-  // Load casino/credits data
-  const loadCasinoData = useCallback(async () => {
-    try {
-      const [creditsRes, historyRes, statsRes] = await Promise.all([
-        adminFetch("/credits"),
-        adminFetch("/credits/history?limit=100"),
-        adminFetch("/credits/stats")
-      ]);
-      setUserCredits(creditsRes.users || []);
-      setCreditHistory(historyRes.history || []);
-      setCreditStats(statsRes);
-      setGameHistory(historyRes.games || []);
-    } catch (e) {
-      console.error("[ADMIN] Failed to load casino data:", e);
-      throw e;
-    }
-  }, []);
-
-  // Credit management functions
-  const updateUserCredits = async (userId, amount, operation, reason) => {
-    setErrorMessage("");
-    const numericAmount = parseInt(amount, 10);
-    if (isNaN(numericAmount) || numericAmount <= 0) return;
-    try {
-      const res = await adminFetch("/credits/update", {
-        method: "POST",
-        body: JSON.stringify({ userId, amount: numericAmount, operation, reason })
-      });
-      setSuccessMessage(
-        operation === "add"
-          ? t("Credits added to user successfully")
-          : t("Credits removed from user successfully")
-      );
-      await loadCasinoData();
-      return res;
-    } catch (e) {
-      console.error("[Admin] Credit update error:", e);
-      setErrorMessage(t("Failed to update credits: {message}", { message: e.message }));
-    }
-  };
-
   const canSystem = can("system");
   useEffect(() => {
     if (!canSystem) return;
@@ -729,14 +634,10 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   }, [loadStats, loadReportSummary, perm.sections, can]);
 
   useEffect(() => {
-    if (tab === "moderation") loadAllUsers().catch((e) => setErr(e.message));
-    if (tab === "security" || tab === "system" || tab === "maintenance") {
+    if (tab === "system" || tab === "maintenance") {
       loadSystem().catch((e) => setErr(e.message));
     }
-    if (tab === "audit") loadAudit().catch((e) => setErr(e.message));
-    if (tab === "announcements") loadAnnouncements().catch((e) => setErr(e.message));
-    if (tab === "casino") loadCasinoData().catch((e) => setErr(e.message));
-  }, [tab, loadAllUsers, loadAudit, loadSystem, loadAnnouncements, loadCasinoData]);
+  }, [tab, loadAllUsers, loadSystem]);
 
   const act = async (fn) => {
     try {
@@ -749,23 +650,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       setBusy(false);
     }
   };
-
-  const patchSystem = (body) =>
-    act(async () => {
-      await adminFetch("/system", {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-      await loadSystem();
-    });
-
-  const setFeatureFlag = (key, enabled) =>
-    patchSystem({
-      featureFlags: {
-        ...(system?.config?.featureFlags || {}),
-        [key]: enabled,
-      },
-    });
 
   const filteredUsers = useMemo(() => {
     const q = userQ.trim().toLowerCase();
@@ -786,7 +670,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     [users]
   );
 
-  const shellBadges = { reports: openReportCount, feedback: feedbackUnread };
+  const shellBadges = { reports: openReportCount, feedback: feedbackUnread, announcements: announcementsLive };
   const banner = (
     <>
       <AnimatePresence>
@@ -880,18 +764,22 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       <div className="admin-body">
         {tab === "shop" && (
           <section className="admin-section admin-section-full">
-            <AdminShop>
-              <AdminDescoinReconcile />
-            </AdminShop>
+            <AdminShopDesk />
           </section>
         )}
 
 
 
-        {tab === "livepopup" && <AdminLivePopup />}
+        {tab === "livepopup" && <AdminLivePopup socket={socket} viewerUsername={viewerUsername} />}
         {tab === "agent" && (
           <Suspense fallback={null}>
-            <AdminAgent />
+            <AdminAgent
+              onOpenUser={(id) => {
+                setDossierUserId(id);
+                setTab("people");
+              }}
+              onGoto={selectTab}
+            />
           </Suspense>
         )}
 
@@ -932,667 +820,24 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           </Suspense>
         )}
 
-        {tab === "announcements" && (
-          <section className="admin-section admin-section-full">
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-              <div>
-                <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                  <Megaphone size={22} style={{ color: "#587AF5" }} /> {t("Announcements")}
-                </h2>
-                <p className="muted" style={{ marginTop: 4 }}>{t("Broadcast messages to all users in real-time")}</p>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <RippleButton type="button" onClick={() => act(loadAnnouncements)} disabled={busy} style={{ minWidth: 90 }}>
-                  <RefreshCw size={14} /> {t("Refresh")}
-                </RippleButton>
-                <RippleButton
-                  type="button"
-                  className={showComposePanel ? "admin-btn-ghost" : "admin-btn-primary"}
-                  onClick={() => { setShowComposePanel((v) => !v); setAnnouncementError(""); }}
-                >
-                  {showComposePanel ? <><X size={14} /> {t("Cancel")}</> : <><Send size={14} /> {t("Compose")}</>}
-                </RippleButton>
-              </div>
-            </div>
+        {/* Duyurular (remake, owner-approved Drafts C + A): announcements/AnnouncementsPage.jsx */}
+        {tab === "announcements" && <AnnouncementsPage socket={socket} onLiveCount={setAnnouncementsLive} />}
 
-            {/* Compose Panel */}
-            <AnimatePresence>
-              {showComposePanel && (
-                <motion.div
-                  key="compose"
-                  initial={{ opacity: 0, y: -12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.2 }}
-                  style={{
-                    background: "var(--surface-2)",
-                    border: `1px solid ${announcementDraft.color}44`,
-                    borderRadius: 14,
-                    padding: 24,
-                    marginBottom: 28,
-                    boxShadow: `0 0 0 1px ${announcementDraft.color}22, 0 8px 32px rgba(0,0,0,0.3)`,
-                  }}
-                >
-                  <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 700, color: "var(--text-0)", display: "flex", alignItems: "center", gap: 8 }}>
-                    <Edit3 size={16} style={{ color: announcementDraft.color }} /> {t("New Announcement")}
-                  </h3>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                    {/* Emoji picker quick-select */}
-                    <div>
-                      <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Icon")}</label>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {["📢", "🚨", "✅", "⚠️", "🔔", "🎉", "🔧", "📌"].map((em, i) => (
-                          <button
-                            key={em}
-                            type="button"
-                            aria-pressed={announcementDraft.emoji === em}
-                            aria-label={`${t("Icon")} ${i + 1}`}
-                            onClick={() => setAnnouncementDraft((d) => ({ ...d, emoji: em }))}
-                            style={{
-                              width: 36, height: 36, borderRadius: 8, border: "none", cursor: "pointer", fontSize: 18,
-                              background: announcementDraft.emoji === em ? announcementDraft.color + "33" : "var(--surface-3)",
-                              outline: announcementDraft.emoji === em ? `2px solid ${announcementDraft.color}` : "none",
-                              transition: "all 0.15s",
-                            }}
-                          >{(() => { const Glyph = announcementIconOrDefault(em); return <Glyph size={18} aria-hidden="true" />; })()}</button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Priority + Color + Target */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Priority")}</label>
-                          <select
-                            className="admin-input"
-                            value={announcementDraft.priority}
-                            onChange={(e) => {
-                              const colors = { normal: "#587AF5", important: "#F0B232", urgent: "#DA373C" };
-                              setAnnouncementDraft((d) => ({ ...d, priority: e.target.value, color: colors[e.target.value] }));
-                            }}
-                            style={{ width: "100%" }}
-                          >
-                            <option value="normal">{t("🔵 Normal")}</option>
-                            <option value="important">{t("🟡 Important")}</option>
-                            <option value="urgent">{t("🔴 Urgent")}</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Color")}</label>
-                          <input
-                            type="color"
-                            value={announcementDraft.color}
-                            onChange={(e) => setAnnouncementDraft((d) => ({ ...d, color: e.target.value }))}
-                            style={{ width: 44, height: 38, border: "none", borderRadius: 8, cursor: "pointer", padding: 2, background: "transparent" }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Target Audience")}</label>
-                        <select
-                          className="admin-input"
-                          value={announcementDraft.target}
-                          onChange={(e) => setAnnouncementDraft((d) => ({ ...d, target: e.target.value }))}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="all">{t("👥 All Users")}</option>
-                          <option value="online">{t("🟢 Online Users")}</option>
-                          <option value="admins">{t("🛡️ Admins Only")}</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Title")}</label>
-                    <input
-                      className="admin-input"
-                      placeholder={t("Announcement title...")}
-                      value={announcementDraft.title}
-                      onChange={(e) => setAnnouncementDraft((d) => ({ ...d, title: e.target.value }))}
-                      maxLength={100}
-                      style={{ width: "100%", fontSize: 15, fontWeight: 600 }}
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("Message")}</label>
-                    <textarea
-                      className="admin-input"
-                      placeholder={t("Write your announcement content...")}
-                      value={announcementDraft.content}
-                      onChange={(e) => setAnnouncementDraft((d) => ({ ...d, content: e.target.value }))}
-                      rows={4}
-                      maxLength={1000}
-                      style={{ width: "100%", resize: "vertical", lineHeight: 1.6 }}
-                    />
-                    <div style={{ textAlign: "right", fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                      {announcementDraft.content.length}/1000
-                    </div>
-                  </div>
-
-                  {/* Pin toggle */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                    <button
-                      type="button"
-                      onClick={() => setAnnouncementDraft((d) => ({ ...d, pinned: !d.pinned }))}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 7, padding: "7px 14px",
-                        borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
-                        background: announcementDraft.pinned ? announcementDraft.color + "22" : "var(--surface-3)",
-                        color: announcementDraft.pinned ? announcementDraft.color : "var(--text-2)",
-                        outline: announcementDraft.pinned ? `1.5px solid ${announcementDraft.color}` : "none",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      <Flag size={13} /> {announcementDraft.pinned ? t("Pinned") : t("Pin to top")}
-                    </button>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("Pinned announcements appear at the top of the list")}</span>
-                  </div>
-
-                  {/* Live Preview */}
-                  {(announcementDraft.title || announcementDraft.content) && (
-                    <div style={{ marginBottom: 20 }}>
-                      <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>{t("Preview")}</label>
-                      <div style={{
-                        background: "var(--surface-1)", borderRadius: 12, padding: "14px 16px",
-                        borderLeft: `4px solid ${announcementDraft.color}`,
-                        border: `1px solid ${announcementDraft.color}33`,
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                          {(() => { const Glyph = announcementIconOrDefault(announcementDraft.emoji); return <Glyph size={18} aria-hidden="true" style={{ color: announcementDraft.color }} />; })()}
-                          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-0)" }}>{announcementDraft.title || t("Untitled")}</span>
-                          {announcementDraft.pinned && <Flag size={12} style={{ color: announcementDraft.color }} />}
-                          <span style={{
-                            marginLeft: "auto", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
-                            padding: "2px 8px", borderRadius: 4,
-                            background: announcementDraft.priority === "urgent" ? "#DA373C22" : announcementDraft.priority === "important" ? "#F0B23222" : "#587AF522",
-                            color: announcementDraft.priority === "urgent" ? "#DA373C" : announcementDraft.priority === "important" ? "#F0B232" : "#587AF5",
-                          }}>{announcementDraft.priority}</span>
-                        </div>
-                        <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{announcementDraft.content || t("No message yet.")}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {announcementError && (
-                    <div style={{ background: "#DA373C22", border: "1px solid #DA373C44", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#DA373C", display: "flex", alignItems: "center", gap: 8 }}>
-                      <AlertCircle size={14} /> {announcementError}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                    <RippleButton type="button" onClick={() => setShowComposePanel(false)}>{t("Cancel")}</RippleButton>
-                    <RippleButton
-                      type="button"
-                      className="admin-btn-primary"
-                      disabled={announcementSubmitting || !announcementDraft.title.trim() || !announcementDraft.content.trim()}
-                      onClick={async () => {
-                        setAnnouncementSubmitting(true);
-                        setAnnouncementError("");
-                        try {
-                          const token = getToken();
-                          const res = await adminRawFetch(`${API_BASE_URL}/api/admin/announcements`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                            body: JSON.stringify(announcementDraft),
-                          });
-                          if (!res.ok) {
-                            const body = await res.json().catch(() => ({}));
-                            throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
-                          }
-                          setAnnouncementDraft({ title: "", content: "", priority: "normal", color: "#587AF5", pinned: false, target: "all", emoji: "📢" });
-                          setShowComposePanel(false);
-                          await loadAnnouncements();
-                        } catch (e) {
-                          setAnnouncementError(e.message);
-                        } finally {
-                          setAnnouncementSubmitting(false);
-                        }
-                      }}
-                    >
-                      {announcementSubmitting ? t("Sending...") : <><Send size={14} /> {t("Publish")}</>}
-                    </RippleButton>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Announcements list */}
-            {announcements.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
-                <Megaphone size={44} style={{ opacity: 0.3, marginBottom: 14 }} />
-                <p style={{ margin: 0, fontSize: 15 }}>{t("No announcements yet")}</p>
-                <p style={{ margin: "6px 0 0", fontSize: 13 }}>{t("Compose one above to broadcast to your users.")}</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {[...announcements]
-                  .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (parseAppDate(b.created_at)?.getTime() || 0) - (parseAppDate(a.created_at)?.getTime() || 0))
-                  .map((a) => (
-                    <motion.div
-                      key={a.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      style={{
-                        background: "var(--surface-2)",
-                        borderRadius: 12,
-                        padding: "16px 18px",
-                        borderLeft: `4px solid ${a.color || "#587AF5"}`,
-                        border: `1px solid ${(a.color || "#587AF5")}22`,
-                        position: "relative",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                        {(() => { const Glyph = announcementIconOrDefault(a.emoji); return <Glyph size={22} aria-hidden="true" style={{ flexShrink: 0, marginTop: 2, color: a.color || "#587AF5" }} />; })()}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-0)" }}>{a.title}</span>
-                            {a.pinned && (
-                              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: a.color || "#587AF5", fontWeight: 600 }}>
-                                <Flag size={11} /> {t("Pinned")}
-                              </span>
-                            )}
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
-                              padding: "2px 8px", borderRadius: 4,
-                              background: a.priority === "urgent" ? "#DA373C22" : a.priority === "important" ? "#F0B23222" : "#587AF522",
-                              color: a.priority === "urgent" ? "#DA373C" : a.priority === "important" ? "#F0B232" : "#587AF5",
-                            }}>{a.priority}</span>
-                            {a.target && a.target !== "all" && (
-                              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", background: "var(--surface-3)", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                                {a.target}
-                              </span>
-                            )}
-                          </div>
-                          <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{a.content}</p>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "var(--text-muted)" }}>
-                            {a.author && <span>{t("By")} <strong style={{ color: "var(--text-3)" }}>{a.author}</strong></span>}
-                            <span>·</span>
-                            <span>{formatAppDateTime(a.created_at, locale)}</span>
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                          <button
-                            type="button"
-                            title={a.pinned ? t("Unpin") : t("Pin")} aria-label={a.pinned ? t("Unpin") : t("Pin")}
-                            onClick={async () => {
-                              try {
-                                const token = getToken();
-                                const res = await adminRawFetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
-                                  method: "PATCH",
-                                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                                  body: JSON.stringify({ pinned: !a.pinned }),
-                                });
-                                if (!res.ok) {
-                                  const body = await res.json().catch(() => ({}));
-                                  throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
-                                }
-                                setAnnouncementError("");
-                                await loadAnnouncements();
-                              } catch (e) {
-                                setAnnouncementError(e.message || t("Pin toggle failed"));
-                              }
-                            }}
-                            style={{
-                              background: a.pinned ? (a.color || "#587AF5") + "22" : "var(--surface-3)",
-                              border: "none", borderRadius: 7, width: 32, height: 32,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              cursor: "pointer", color: a.pinned ? (a.color || "#587AF5") : "var(--text-muted)",
-                              transition: "all 0.15s",
-                            }}
-                          >
-                            <Flag size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            title={t("Delete")} aria-label={t("Delete")}
-                            onClick={async () => {
-                              try {
-                                const token = getToken();
-                                const res = await adminRawFetch(`${API_BASE_URL}/api/admin/announcements/${a.id}`, {
-                                  method: "DELETE",
-                                  headers: { Authorization: `Bearer ${token}` },
-                                });
-                                if (!res.ok) {
-                                  const body = await res.json().catch(() => ({}));
-                                  throw new Error(body.error || t("adminx.panel.serverError", { status: res.status }));
-                                }
-                                setAnnouncementError("");
-                                await loadAnnouncements();
-                              } catch (e) {
-                                setAnnouncementError(e.message || t("Failed to delete announcement"));
-                              }
-                            }}
-                            style={{
-                              background: "var(--surface-3)", border: "none", borderRadius: 7, width: 32, height: 32,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              cursor: "pointer", color: "var(--text-muted)", transition: "all 0.15s",
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#DA373C22"; e.currentTarget.style.color = "#DA373C"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface-3)"; e.currentTarget.style.color = "var(--text-muted)"; }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {tab === "casino" && (
-          <section className="admin-section admin-section-full">
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-              <div>
-                <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                  <Coins size={22} style={{ color: "var(--brand, #587af5)" }} /> {t("Casino / Credits Management")}
-                </h2>
-                <p className="muted" style={{ marginTop: 4 }}>{t("Manage user credits and view Blackjack statistics")}</p>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <RippleButton type="button" onClick={() => act(loadCasinoData)} disabled={busy} style={{ minWidth: 90 }}>
-                  <RefreshCw size={14} /> {t("Refresh")}
-                </RippleButton>
-              </div>
-            </div>
-
-            {/* Stats Overview */}
-            {creditStats && (
-              <div className="admin-grid" style={{ marginBottom: 24 }}>
-                <div className="admin-card">
-                  <span>{t("Total Credits in System")}</span>
-                  <strong>{formatNumber(creditStats.totalCredits || 0, locale)}</strong>
-                </div>
-                <div className="admin-card">
-                  <span>{t("Total Players")}</span>
-                  <strong>{creditStats.totalPlayers || 0}</strong>
-                </div>
-                <div className="admin-card">
-                  <span>{t("Games Played")}</span>
-                  <strong>{creditStats.totalGames || 0}</strong>
-                </div>
-                <div className="admin-card">
-                  <span>{t("Avg Credits/User")}</span>
-                  <strong>{formatNumber(Math.round((creditStats.totalCredits || 0) / (creditStats.totalPlayers || 1)), locale)}</strong>
-                </div>
-              </div>
-            )}
-
-            {/* Credit Management Section */}
-            <div className="admin-split">
-              {/* Search and Manage Users */}
-              <div className="admin-pane">
-                <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <Search size={18} /> {t("Find User")}
-                </h3>
-                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                  <input
-                    className="admin-input"
-                    placeholder={t("Search by username...")}
-                    value={creditSearch}
-                    onChange={(e) => setCreditSearch(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                </div>
-                
-                {/* User List */}
-                <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-                  {userCredits
-                    .filter(u => !creditSearch || u.username?.toLowerCase().includes(creditSearch.toLowerCase()))
-                    .slice(0, 20)
-                    .map(user => (
-                      <motion.div
-                        key={user.user_id}
-                        onClick={() => setSelectedCreditUser(user)}
-                        className={`admin-credit-row${selectedCreditUser?.user_id === user.user_id ? " is-selected" : ""}`}
-                        whileHover={{ scale: 1.01 }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ 
-                            width: 36, height: 36, borderRadius: "50%", 
-                            background: "var(--brand, #587af5)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontWeight: 600, fontSize: 14, color: "white"
-                          }}>
-                            {user.username?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>{user.username || t("Unknown")}</div>
-                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("ID: {id}...", { id: user.user_id?.slice(0, 8) })}</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontSize: 16, color: "var(--brand, #587af5)" }}>
-                            <Wallet size={14} style={{ display: "inline", marginRight: 4 }} />
-                            {formatNumber(user.credits || 0, locale)}
-                          </div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                            {t("{count} games", { count: user.games_played || 0 })}
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  {userCredits.filter(u => !creditSearch || u.username?.toLowerCase().includes(creditSearch.toLowerCase())).length === 0 && (
-                    <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-                      <p>{t("No users found")}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Credit Operations */}
-              <div className="admin-pane">
-                <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <Coins size={18} /> {t("Manage Credits")}
-                </h3>
-                
-                {selectedCreditUser ? (
-                  <div>
-                    <div className="admin-credit-balance">
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{selectedCreditUser.username}</div>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("Current Balance")}</div>
-                      </div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: "var(--brand, #587af5)" }}>
-                        {formatNumber(selectedCreditUser.credits || 0, locale)}
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button
-                          type="button"
-                          className={`admin-op${creditOperation === "add" ? " is-add" : ""}`}
-                          onClick={() => setCreditOperation("add")}
-                        >
-                          <Plus size={14} style={{ display: "inline", marginRight: 6 }} />
-                          {t("Add Credits")}
-                        </button>
-                        <button
-                          type="button"
-                          className={`admin-op${creditOperation === "remove" ? " is-remove" : ""}`}
-                          onClick={() => setCreditOperation("remove")}
-                        >
-                          <Minus size={14} style={{ display: "inline", marginRight: 6 }} />
-                          {t("Remove Credits")}
-                        </button>
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>{t("Amount")}</label>
-                        <input
-                          type="number"
-                          className="admin-input"
-                          value={creditAmount}
-                          onChange={(e) => setCreditAmount(parseInt(e.target.value) || 0)}
-                          min="1"
-                          max="1000000"
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>{t("Reason (optional)")}</label>
-                        <input
-                          className="admin-input"
-                          value={creditReason}
-                          onChange={(e) => setCreditReason(e.target.value)}
-                          placeholder={t("e.g., Bonus, Correction, etc.")}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-
-                      <RippleButton
-                        type="button"
-                        className={creditOperation === "add" ? "admin-btn-primary" : "admin-btn-danger"}
-                        onClick={() => act(() => updateUserCredits(selectedCreditUser.user_id, creditAmount, creditOperation, creditReason))}
-                        disabled={busy || creditAmount <= 0}
-                        style={{ width: "100%", marginTop: 8 }}
-                      >
-                        {busy ? t("Processing...") : (
-                          <>{creditOperation === "add" ? <Plus size={16} /> : <Minus size={16} />} {t("{op} {amount} Credits", { op: creditOperation === "add" ? t("Add") : t("Remove"), amount: formatNumber(creditAmount, locale) })}</>
-                        )}
-                      </RippleButton>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>
-                    <Coins size={44} style={{ opacity: 0.3, marginBottom: 14 }} />
-                    <p>{t("Select a user from the list to manage their credits")}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Recent Game History */}
-            <div className="admin-pane">
-              <h3 style={{ margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                <History size={18} /> {t("Recent Game History")}
-              </h3>
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>{t("User")}</th>
-                      <th>{t("Bet")}</th>
-                      <th>{t("Result")}</th>
-                      <th>{t("Win Amount")}</th>
-                      <th>{t("Time")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gameHistory.slice(0, 20).map((game, idx) => (
-                      <tr key={idx}>
-                        <td>{game.username || game.user_id?.slice(0, 8)}</td>
-                        <td>{formatNumber(game.bet_amount || 0, locale)}</td>
-                        <td>
-                          <span style={{
-                            padding: "4px 10px",
-                            borderRadius: 4,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            background: game.result === 'win' || game.result === 'blackjack' ? '#22c55e22' : game.result === 'loss' ? '#ef444422' : '#6b728022',
-                            color: game.result === 'win' || game.result === 'blackjack' ? '#22c55e' : game.result === 'loss' ? '#ef4444' : '#9ca3af',
-                          }}>
-                            {game.result?.toUpperCase() || 'PUSH'}
-                          </span>
-                        </td>
-                        <td style={{ color: game.win_amount > 0 ? '#22c55e' : 'var(--text-1)' }}>
-                          {game.win_amount > 0 ? '+' : ''}{formatNumber(game.win_amount || 0, locale)}
-                        </td>
-                        <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                          {game.played_at ? formatAppDateTime(game.played_at, locale) : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                    {gameHistory.length === 0 && (
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-                          {t("No games played yet")}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Oyunlar / Kredi (owner pick Draft B "Oyuncu çalışma alanı"): games/AdminGames.jsx */}
+        {tab === "casino" && <AdminGames socket={socket} />}
 
         {tab === "moderation" && (
-          <>
-            <AdminModeration
-              users={users}
-              onRefreshUsers={() => {
-                loadAllUsers().catch(() => {});
-                loadSystem().catch(() => {});
-              }}
-            />
-            <section className="admin-section" style={{ marginTop: 16 }}>
-              <h2>{t("Content filters")}</h2>
-              <p className="muted">{t("Profanity filter and flagged messages")}</p>
-              <div className="admin-toolbar">
-                <RippleButton type="button" className="admin-btn-ghost" onClick={() => act(loadSystem)} disabled={busy}>
-                  <RefreshCw size={15} className={busy ? "spin" : ""} aria-hidden="true" />
-                  {t("Refresh")}
-                </RippleButton>
-              </div>
-              {system && (
-                <div className="admin-form">
-                  <h3>{t("Flagged Messages")}</h3>
-                  <div className="flagged-messages-list">
-                    {system.flaggedMessages?.length > 0 ? (
-                      system.flaggedMessages.map((msg) => (
-                        <div key={msg.id} className="flagged-message-item">
-                          <span>{msg.text}</span>
-                          <span className="badge">{msg.reason}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="muted">{t("No flagged messages")}</p>
-                    )}
-                  </div>
-                  <h3>{t("Profanity Filter")}</h3>
-                  <label>
-                    {t("Add word to filter")}
-                    <input className="admin-input" id="prof-moderation" placeholder={t("Enter word...")} />
-                    <RippleButton
-                      type="button"
-                      onClick={() => {
-                        const w = document.getElementById("prof-moderation")?.value?.trim();
-                        if (!w) return;
-                        act(async () => {
-                          await adminFetch("/profanity", { method: "POST", body: JSON.stringify({ word: w }) });
-                          await loadSystem();
-                        });
-                      }}
-                    >
-                      {t("Add")}
-                    </RippleButton>
-                  </label>
-                  <div className="profanity-list">
-                    {system.profanityWords?.length > 0 ? (
-                      system.profanityWords.map((word) => (
-                        <span key={word} className="profanity-tag">{word}</span>
-                      ))
-                    ) : (
-                      <p className="muted">{t("No filter words")}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </section>
-          </>
+          // Moderasyon İşlem masası (Draft A): the word filter and the flagged queue live inside it.
+          <AdminModeration
+            socket={socket}
+            initialTab={moderationTab}
+            onGoto={selectTab}
+            onOpenPerson={(id) => {
+              if (!id) return;
+              setDossierUserId(id);
+              setTab("people");
+            }}
+          />
         )}
 
         {tab === "overview" && (
@@ -1650,99 +895,19 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           />
         )}
 
+        {/* Güvenlik Merkezi (remake, Draft A "Komuta merkezi"): ./security/SecurityCenter.jsx */}
         {tab === "security" && (
-          <section className="admin-section">
-            <h2>{t("Security Center")}</h2>
-            <p className="muted">{t("Security settings and access control")}</p>
-            
-            <div className="security-grid">
-              <div className="security-card">
-                <h3>{t("Access Control")}</h3>
-                <label>
-                  <GlassCheckbox 
-                    checked={system?.config?.registrationEnabled !== false}
-                    onChange={(e) => act(async () => {
-                    await adminFetch("/system", {
-                    method: "PATCH",
-                    body: JSON.stringify({ registrationEnabled: e.target.checked }),
-                    });
-                    await loadSystem();
-                    })}
-                  />
-                  {t("Allow new user registrations")}
-                </label>
-                
-                <label>
-                  <GlassCheckbox 
-                    checked={system?.config?.dmEnabled !== false}
-                    onChange={(e) => act(async () => {
-                    await adminFetch("/system", {
-                    method: "PATCH",
-                    body: JSON.stringify({ dmEnabled: e.target.checked }),
-                    });
-                    await loadSystem();
-                    })}
-                  />
-                  {t("Enable direct messages")}
-                </label>
-                
-                <label>
-                  <GlassCheckbox 
-                    checked={system?.config?.groupCreationEnabled !== false}
-                    onChange={(e) => act(async () => {
-                    await adminFetch("/system", {
-                    method: "PATCH",
-                    body: JSON.stringify({ groupCreationEnabled: e.target.checked }),
-                    });
-                    await loadSystem();
-                    })}
-                  />
-                  {t("Allow group creation")}
-                </label>
-              </div>
-              
-              <div className="security-card">
-                <h3>{t("Rate Limits")}</h3>
-                <label>
-                  {t("Max login attempts per minute")}
-                  <input 
-                    type="number" 
-                    className="admin-input"
-                    defaultValue={system?.config?.maxLoginAttempts || 5}
-                    key={`login-${system?.config?.maxLoginAttempts || 5}`}
-                    onBlur={(e) => act(async () => {
-                      const next = Number(e.target.value);
-                      if (!Number.isFinite(next) || next <= 0) return;
-                      await adminFetch("/system", {
-                        method: "PATCH",
-                        body: JSON.stringify({ maxLoginAttempts: next }),
-                      });
-                      await loadSystem();
-                    })}
-                  />
-                </label>
-                
-                <label>
-                  {t("Max messages per minute")}
-                  <input 
-                    type="number" 
-                    className="admin-input"
-                    defaultValue={system?.config?.maxMessagesPerMinute || 60}
-                    key={`msg-${system?.config?.maxMessagesPerMinute || 60}`}
-                    onBlur={(e) => act(async () => {
-                      const next = Number(e.target.value);
-                      if (!Number.isFinite(next) || next <= 0) return;
-                      await adminFetch("/system", {
-                        method: "PATCH",
-                        body: JSON.stringify({ maxMessagesPerMinute: next }),
-                      });
-                      await loadSystem();
-                    })}
-                  />
-                </label>
-              </div>
-            </div>
-          </section>
+          <SecurityCenter
+            socket={socket}
+            onNavigate={(id) => {
+              if (can(id)) setTab(id);
+            }}
+            onOpenUser={(id) => {
+              setDossierIntent(null);
+              setDossierUserId(id);
+              setTab("people");
+            }}
+          />
         )}
 
         {tab === "maintenance" && <MaintenanceTab socket={socket} />}
@@ -1750,244 +915,19 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
         {tab === "promo" && <PromoCodesTab />}
         {tab === "specialBadges" && <SpecialBadgesAdminTab />}
 
+        {/* Sistem (owner pick Draft A "Kontrol merkezi"): system/AdminSystem.jsx */}
         {tab === "system" && (
-          <section className="admin-section admin-system">
-            <div className="admin-section-header">
-              <h2>{t("admin.system")}</h2>
-            </div>
-            {!system && <p className="muted">{t("common.loading")}</p>}
-            {system && (
-              <div className="admin-system-layout">
-                <article className="admin-system-card admin-system-card-features">
-                  <div className="admin-system-switches">
-                    <SystemSwitch
-                      icon={Smartphone}
-                      tone="glass"
-                      label={t("iOS Liquid Glass")}
-                      status={system.config?.featureFlags?.iosGlass !== false ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.iosGlass !== false}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("iosGlass", enabled)}
-                    />
-                    <SystemSwitch
-                      icon={Monitor}
-                      tone="glass"
-                      label={t("Desktop Liquid Glass")}
-                      status={system.config?.featureFlags?.desktopGlass === true ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.desktopGlass === true}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("desktopGlass", enabled)}
-                    />
-                    <SystemSwitch
-                      icon={Zap}
-                      tone="glass"
-                      label={t("Scoped presence")}
-                      status={system.config?.featureFlags?.presenceScoped !== false ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.presenceScoped !== false}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("presenceScoped", enabled)}
-                    />
-                    <SystemSwitch
-                      icon={Zap}
-                      tone="glass"
-                      label={t("Reconnect boot diet")}
-                      status={system.config?.featureFlags?.bootDiet !== false ? t("On") : t("Off")}
-                      checked={system.config?.featureFlags?.bootDiet !== false}
-                      disabled={busy}
-                      onChange={(enabled) => setFeatureFlag("bootDiet", enabled)}
-                    />
-                    <AdminEdgeRealtime system={system} busy={busy} patchSystem={patchSystem} t={t} />
-                  </div>
-                </article>
-
-                <div className="admin-system-grid">
-                  <article className="admin-system-card">
-                    <h3>{t("Config")}</h3>
-                    <label className="admin-system-field">
-                      <span>{t("Max message length")}</span>
-                      <input
-                        className="admin-input"
-                        type="number"
-                        defaultValue={system.config?.maxMessageLength}
-                        onBlur={(e) =>
-                          patchSystem({ maxMessageLength: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label className="admin-system-field">
-                      <span>{t("Rate limit (ms)")}</span>
-                      <input
-                        className="admin-input"
-                        type="number"
-                        defaultValue={system.config?.rateLimitGlobalMs}
-                        onBlur={(e) =>
-                          patchSystem({ rateLimitGlobalMs: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label className="admin-system-field">
-                      <span>{t("Slow mode (seconds)")}</span>
-                      <input
-                        className="admin-input"
-                        type="number"
-                        defaultValue={system.config?.slowModeSeconds}
-                        onBlur={(e) =>
-                          act(async () => {
-                            await adminFetch("/chat/slowmode", {
-                              method: "POST",
-                              body: JSON.stringify({ seconds: Number(e.target.value) }),
-                            });
-                            await loadSystem();
-                          })
-                        }
-                      />
-                    </label>
-                  </article>
-
-                  <article className="admin-system-card">
-                    <h3>{t("admin.maintenance")}</h3>
-                    <div className="admin-system-switches">
-                      <SystemSwitch
-                        icon={MessageSquare}
-                        tone="chat"
-                        label={t("Freeze Chat")}
-                        status={system.config?.chatFrozen ? t("On") : t("Off")}
-                        checked={Boolean(system.config?.chatFrozen)}
-                        disabled={busy}
-                        onChange={(frozen) =>
-                          act(async () => {
-                            await adminFetch("/chat/freeze", {
-                              method: "POST",
-                              body: JSON.stringify({ frozen }),
-                            });
-                            await loadSystem();
-                          })
-                        }
-                      />
-                      <SystemSwitch
-                        icon={Server}
-                        tone="maint"
-                        label={t("admin.maintenance")}
-                        status={system.config?.maintenanceMode ? t("On") : t("Off")}
-                        checked={Boolean(system.config?.maintenanceMode)}
-                        disabled={busy}
-                        onChange={(enabled) =>
-                          act(async () => {
-                            await adminFetch("/maintenance", {
-                              method: "POST",
-                              body: JSON.stringify({ enabled }),
-                            });
-                            await loadSystem();
-                          })
-                        }
-                      />
-                    </div>
-                  </article>
-
-                  <article className="admin-system-card">
-                    <h3>{t("Broadcast")}</h3>
-                    <label className="admin-system-field">
-                      <span>{t("Announcement text")}</span>
-                      <textarea
-                        className="admin-textarea"
-                        placeholder={t("Announcement text")}
-                        id="bc-text"
-                      />
-                    </label>
-                    <RippleButton
-                      type="button"
-                      onClick={() => {
-                        const el = document.getElementById("bc-text");
-                        const text = el?.value?.trim();
-                        if (!text) return;
-                        act(async () => {
-                          await adminFetch("/broadcast", { method: "POST", body: JSON.stringify({ text }) });
-                        });
-                      }}
-                    >
-                      {t("Send broadcast")}
-                    </RippleButton>
-                  </article>
-
-                  <article className="admin-system-card">
-                    <h3>{t("Profanity")}</h3>
-                    <label className="admin-system-field">
-                      <span>{t("Profanity word")}</span>
-                      <input className="admin-input" id="prof" />
-                    </label>
-                    <RippleButton
-                      type="button"
-                      onClick={() => {
-                        const w = document.getElementById("prof")?.value?.trim();
-                        if (!w) return;
-                        act(async () => {
-                          await adminFetch("/profanity", { method: "POST", body: JSON.stringify({ word: w }) });
-                          await loadSystem();
-                        });
-                      }}
-                    >
-                      {t("Add filter")}
-                    </RippleButton>
-                  </article>
-                </div>
-
-                <div className="admin-system-actions">
-                  <RippleButton
-                    type="button"
-                    onClick={() =>
-                      act(async () => {
-                        await adminFetch("/backup", { method: "POST", body: JSON.stringify({}) });
-                      })
-                    }
-                  >
-                    {t("Memory backup (JSON response in network tab)")}
-                  </RippleButton>
-                  <RippleButton
-                    type="button"
-                    className="danger"
-                    onClick={() =>
-                      act(async () => {
-                        if (!(await confirmAction({
-                          message: t("Restart Node process?"),
-                          confirmLabel: t("Restart Server"),
-                          cancelLabel: t("Cancel"),
-                        }))) return;
-                        await adminFetch("/restart", { method: "POST", body: JSON.stringify({}) });
-                      })
-                    }
-                  >
-                    {t("Restart server")}
-                  </RippleButton>
-                </div>
-              </div>
-            )}
-          </section>
+          <AdminSystem
+            socket={socket}
+            onGoto={(id, opts = {}) => {
+              if (id === "moderation" && opts.sub) setModerationTab(opts.sub);
+              selectTab(tabs.some((x) => x.id === id) ? id : "overview");
+            }}
+          />
         )}
 
-        {tab === "audit" && (
-          <section className="admin-section">
-            <table className="admin-table compact">
-              <thead>
-                <tr>
-                  <th>{t("Time")}</th>
-                  <th>{t("Actor")}</th>
-                  <th>{t("Action")}</th>
-                  <th>{t("Target")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {audit.map((e) => (
-                  <tr key={e.id}>
-                    <td>{e.at}</td>
-                    <td>{e.actorUsername}</td>
-                    <td>{e.action}</td>
-                    <td className="mono">{String(e.target)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
+        {/* İşlem kaydı (owner pick Draft B "Konsol"): audit/AdminAudit.jsx */}
+        {tab === "audit" && <AdminAudit socket={socket} onGoto={(id) => selectTab(tabs.some((x) => x.id === id) ? id : "overview")} />}
       </div>
       )}
       </Fragment>

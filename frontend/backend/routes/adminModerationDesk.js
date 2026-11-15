@@ -9,6 +9,7 @@
  * room. Bans are not here: BanDialog posts to /users/:id/ban.
  */
 
+const { apiError } = require("../lib/apiError");
 const express = require("express");
 const state = require("../runtime/sharedState");
 const moderation = require("../lib/moderation");
@@ -158,11 +159,11 @@ router.get("/moderation/escalation", async (req, res) => {
 router.post("/moderation/bulk", async (req, res) => {
   const body = req.body || {};
   const action = body.action === "kick" ? "kick" : body.action === "timeout" ? "timeout" : null;
-  if (!action) return res.status(400).json({ error: "Unknown action.", code: "ACTION_INVALID" });
+  if (!action) return res.status(400).json(apiError("Unknown action.", null, { code: "ACTION_INVALID" }));
   const items = (Array.isArray(body.items) ? body.items : []).filter((it) => desk.isUuid(it?.userId)).slice(0, 50);
-  if (!items.length) return res.status(400).json({ error: "Select at least one user.", code: "NO_USERS" });
+  if (!items.length) return res.status(400).json(apiError("Select at least one user.", null, { code: "NO_USERS" }));
   const { category, reason } = moderation.normalizeCategory(body.category, body.otherText);
-  if (category === "other" && !String(body.otherText || "").trim()) return res.status(400).json({ error: "Describe the reason for Other.", code: "OTHER_TEXT" });
+  if (category === "other" && !String(body.otherText || "").trim()) return res.status(400).json(apiError("Describe the reason for Other.", null, { code: "OTHER_TEXT" }));
   const socketIo = io(req);
   const results = [];
   let targets = {};

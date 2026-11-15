@@ -16,6 +16,7 @@
  * Every match is counted in public.profanity_rule_hits (7-day sparks, stats).
  */
 
+const { apiText } = require("./apiError");
 const supabase = require("../db/supabase");
 const state = require("../runtime/sharedState");
 const core = require("./contentFilterCore");
@@ -358,7 +359,7 @@ function after(verdict, { io, userId, text, messageId, ctx }) {
 
 /** Socket error payload for a blocked message (English phrase; the client translates it). */
 function blockedPayload() {
-  return { message: "This message was blocked by the content filter.", code: "CONTENT_BLOCKED" };
+  return apiText("message", "This message was blocked by the content filter.", null, { code: "CONTENT_BLOCKED" });
 }
 
 /* ---------------- admin CRUD ---------------- */

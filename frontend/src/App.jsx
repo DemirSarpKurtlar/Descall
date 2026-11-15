@@ -138,9 +138,13 @@ import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPa
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
+  remoteFlag,
   usePublicFeatures,
 } from "./lib/publicFeatures";
 import { applyRemoteGlassFlag } from "./lib/glassUi";
+// Güvenlik Merkezi emergency lock info band (GET /api/features + `platform:notice`).
+import { applyPlatformNotice } from "./lib/platformNotice";
+import PlatformNoticeBanner from "./components/security/PlatformNoticeBanner";
 import { applyRemoteGlassDesktopFlag, shouldPreviewDesktopAuth, syncGlassDesktop } from "./lib/glassDesktop";
 import { parseAppDate } from "./lib/datetime";
 import { preloadWhenIdle } from "./lib/preloadIdle";
@@ -180,10 +184,13 @@ const PremiumDesktopHost = lazy(() => import("./premium/desktop/PremiumDesktopHo
 applyPopoutMode();
 const premiumDesktopHost = typeof window !== "undefined" && Boolean(window.descallPremium) && !isPopoutWindow();
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
+const ServerRestartStrip = lazy(() => import("./components/system/ServerRestartStrip.jsx"));
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
+// Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
+const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
 const AdminBroadcastPopup = lazy(() => import("./components/admin/AdminBroadcastPopup"));
 const CallOverlay = lazy(() => import("./components/CallOverlay"));
 const NativeCallCard = lazy(() => import("./components/calls/NativeCallCard"));
@@ -193,6 +200,7 @@ import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
+import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
 function mergeById(existing, incoming) {
@@ -1525,8 +1533,10 @@ export default function App() {
         // S1: the server advertises the Cloudflare host once it is live.
         rememberEdgeApiBase(data.edgeApiBase);
         applyPublicFeatures(data);
-        applyRemoteGlassFlag(data.iosGlass);
-        applyRemoteGlassDesktopFlag(data.desktopGlass);
+        applyPlatformNotice(data.platformNotice || null);
+        // Sistem page rollout rules (flagRules) are checked here with this user and platform.
+        applyRemoteGlassFlag(remoteFlag(data, "iosGlass"));
+        applyRemoteGlassDesktopFlag(remoteFlag(data, "desktopGlass"));
       })
       .catch((err) => {
         if (!cancelled) applyRemoteGlassDesktopFlag(undefined);
@@ -2764,19 +2774,42 @@ export default function App() {
       playUiSound("notification");
     });
 
+    // Mağaza remake: sale / stock / storefront changes and gift take-backs reach an open shop live.
+    socket.on("shop:catalog:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop-catalog-changed", { detail: payload })); } catch { /* ignore */ }
+    });
+    socket.on("shop:inventory:changed", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
+    });
+
+    socket.on("platform:notice", (payload) => {
+      applyPlatformNotice(payload || null);
+    });
+
     socket.on("features:updated", (payload) => {
       applyPublicFeatures(payload);
-      applyRemoteGlassFlag(payload?.iosGlass);
-      applyRemoteGlassDesktopFlag(payload?.desktopGlass);
+      applyRemoteGlassFlag(remoteFlag(payload, "iosGlass"));
+      applyRemoteGlassDesktopFlag(remoteFlag(payload, "desktopGlass"));
     });
 
     socket.on("admin:popup", (payload = {}) => {
       if (!payload?.id || !payload?.body) return;
+      sendPopupReceipt(socket, payload, "delivered");
       setAdminPopupQueue((prev) => {
         if (prev.some((row) => row.id === payload.id)) return prev;
         return [...prev, payload].slice(-6);
       });
       playUiSound("notification");
+    });
+
+    // Canlı popup: an admin took it back (optional short correction) / closed on my other device.
+    socket.on("admin:popup:recall", (payload = {}) => {
+      setAdminPopupQueue((prev) =>
+        applyPopupRecall(prev, payload, (p) => ({ id: `${p.id}:note`, kind: "correction", title: "", body: p.note, severity: "info", icon: "chat", requireAck: false, track: false }))
+      );
+    });
+    socket.on("admin:popup:close", (payload = {}) => {
+      setAdminPopupQueue((prev) => applyPopupClose(prev, payload));
     });
 
     socket.on("descoin:balance", ({ balance } = {}) => {
@@ -5325,6 +5358,8 @@ export default function App() {
         />
         <Suspense fallback={null}>
           <MaintenanceGate socket={socketApi} isAdmin={Boolean(me?.is_admin || me?.username === "admin")} />
+          {/* Sistem › Güvenli yeniden başlat: countdown strip, then "reconnecting" until the socket is back. */}
+          <ServerRestartStrip socket={socketApi} />
         </Suspense>
         {isFullAdmin && adminOpen && (
           <Suspense fallback={null}>
@@ -5367,10 +5402,19 @@ export default function App() {
           />
         </Suspense>
 
+        {me?.id ? (
+          <Suspense fallback={null}>
+            <AnnouncementLive socket={socketApi} enabled={Boolean(me?.id)} navigate={navigate} />
+          </Suspense>
+        ) : null}
+
+        <PlatformNoticeBanner enabled={Boolean(me?.id)} />
+
         {adminPopupQueue[0] && (
           <Suspense fallback={null}>
             <AdminBroadcastPopup
               popup={adminPopupQueue[0]}
+              socket={socketApi}
               onDismiss={() => setAdminPopupQueue((prev) => prev.slice(1))}
             />
           </Suspense>

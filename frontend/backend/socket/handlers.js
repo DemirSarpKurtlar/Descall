@@ -638,7 +638,8 @@ function registerSocketHandlers(io) {
       if (typeof ack === "function") ack(Date.now());
     });
 
-    socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags));
+    // Sistem page: rollout rules resolved for this account and platform (lib/featureRollout.js).
+    socket.emit("features:updated", publicFeatureFlags(systemConfig.featureFlags, { userId: myId, platform: require("../lib/edgeRealtime").clientPlatform(socket) }));
     try {
       const { service: maintenance } = require("../runtime/maintenanceInstance");
       socket.emit("maintenance:state", { maintenance: maintenance.publicState(), serverTime: new Date().toISOString() });
@@ -680,6 +681,8 @@ function registerSocketHandlers(io) {
     touchLastSeen(myId).catch(() => {});
 
     setupAdminSocket(io, socket);
+    // Canlı popup: receipts from the recipient + missed popups shown on connect.
+    require("./popupReceipts").registerPopupReceipts(io, socket);
 
     // Load friends + full profile, then emit connected with displayName etc.
     // Never let a single failed sub-task block friend:list / connected —
@@ -749,7 +752,7 @@ function registerSocketHandlers(io) {
           .finally(() => {
             // 2.11.7: reconnects with an unchanged list get "same" (boot diet).
             require("../lib/bootDiet").emitBootFriendList(socket, getFriendList(myId), {
-              enabled: systemConfig.featureFlags?.bootDiet !== false,
+              enabled: require("../lib/systemSettings").flagEnabledFor(systemConfig.featureFlags, "bootDiet", { userId: myId, platform: require("../lib/edgeRealtime").clientPlatform(socket) }),
             });
             socket.emit("friend:requests", getPendingList(myId));
             listMessageRequests(supabase, myId)
@@ -1203,6 +1206,12 @@ function registerSocketHandlers(io) {
           });
         }
       }
+      // Moderasyon kelime filtresi (lib/contentFilter.js): block / flag / auto-timeout rules.
+      const dmFilterCtx = { convType: "dm", peerId: typeof toUserId === "string" ? toUserId : null };
+      const dmFiltered = require("../lib/contentFilter").gate({ io, userId: myId, text, ctx: dmFilterCtx });
+      if (dmFiltered.blocked) {
+        return socket.emit("dm:error", { ...require("../lib/contentFilter").blockedPayload(), tempId: tempId || null, toUserId });
+      }
       if (dmBlockPairs.has(convKey(myId, toUserId))) {
         appendErrorLog("dm:send", "Conversation blocked", { toUserId }, myId, me.username);
         return socket.emit("dm:error", { message: "Conversation blocked.", tempId: tempId || null, toUserId });
@@ -1220,6 +1229,11 @@ function registerSocketHandlers(io) {
         return socket.emit("dm:error", { message: "Rate limited.", tempId: tempId || null, toUserId });
       }
       rateLimitDm.set(myId, now);
+      {
+        // Güvenlik Merkezi: minimum account age before the first DMs (0 = off, admins exempt).
+        const young = await require("../lib/securityCenter").dmAccountAgeBlock({ config: systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", now });
+        if (young) return socket.emit("dm:error", { ...young, tempId: tempId || null, toUserId });
+      }
       {
         // Yönetici Paneli switches (3.1.3): freeze, DMs off, slow mode, per-minute cap.
         const verdict = checkMessageSend({ config: systemConfig, userId: myId, isAdmin: Boolean(me.is_admin) || me.username === "admin", kind: "dm", now });
@@ -1331,6 +1345,7 @@ function registerSocketHandlers(io) {
         });
       }
       const messageId = row.id;
+      require("../lib/contentFilter").after(dmFiltered.verdict, { io, userId: myId, text: storedText, messageId, ctx: dmFilterCtx });
       const timestamp = toUtcIso(row.created_at) || row.created_at;
       let pollSnapshot = null;
       if (pollDraft) {

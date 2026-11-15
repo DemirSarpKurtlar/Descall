@@ -68,9 +68,9 @@ export const MOD_DESK_FR = {
   pill: { "5m": "5 min", "15m": "15 min", "30m": "30 min", "1h": "1 heure", "6h": "6 heures", "12h": "12 heures", "24h": "24 heures", "3d": "3 jours", "7d": "7 jours", custom: "Personnalisé" },
   var: { user: "utilisateur", duration: "durée", category: "catégorie", until: "fin" },
   tplMsg: {
-    timeout: "Bonjour {utilisateur}, tu as été mis en sourdine pendant {durée} pour {catégorie}.",
-    kick: "Bonjour {utilisateur}, ta session a été fermée pour {catégorie}.",
-    ban: "Bonjour {utilisateur}, ton compte a été suspendu pour {catégorie}.",
+    timeout: "Bonjour {user}, tu as été mis en sourdine pendant {duration} pour {category}.",
+    kick: "Bonjour {user}, ta session a été fermée pour {category}.",
+    ban: "Bonjour {user}, ton compte a été suspendu pour {category}.",
   },
   esc: {
     title30: { timeout: "Règle d'escalade : {user} est mis en sourdine pour la {n}e fois ce mois-ci.", kick: "Règle d'escalade : {user} est expulsé pour la {n}e fois ce mois-ci." },

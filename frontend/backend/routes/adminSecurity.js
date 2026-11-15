@@ -20,6 +20,7 @@
  * banning an account uses the ban dialog's own endpoint.
  */
 
+const { apiError } = require("../lib/apiError");
 const express = require("express");
 const state = require("../runtime/sharedState");
 const sec = require("../lib/securitySettings");
@@ -69,7 +70,7 @@ router.get("/security/events", async (req, res) => {
 router.get("/security/events/:id", async (req, res) => {
   try {
     const row = await events.getEvent(req.params.id);
-    if (!row) return res.status(404).json({ error: "Event not found.", code: "NOT_FOUND" });
+    if (!row) return res.status(404).json(apiError("Event not found.", null, { code: "NOT_FOUND" }));
     const event = events.publicEvent(row);
     const [bySource, byUser] = await Promise.all([
       event.sourceRef ? events.listFeed({ sourceRef: event.sourceRef, limit: 25 }) : { events: [] },
@@ -99,9 +100,9 @@ router.get("/security/impact", async (req, res) => {
 
 router.patch("/security/settings", async (req, res) => {
   const v = sec.validateSettingsPatch(req.body || {});
-  if (v.error) return res.status(400).json({ error: "Invalid settings.", code: v.error === "empty" ? "EMPTY_PATCH" : "BAD_VALUE", key: v.key || null });
+  if (v.error) return res.status(400).json(apiError("Invalid settings.", null, { code: v.error === "empty" ? "EMPTY_PATCH" : "BAD_VALUE", key: v.key || null }));
   const reason = sec.cleanText(req.body?.reason);
-  if (sec.patchNeedsReason(v.patch) && reason.length < 3) return res.status(400).json({ error: "A reason is required.", code: "REASON_REQUIRED" });
+  if (sec.patchNeedsReason(v.patch) && reason.length < 3) return res.status(400).json(apiError("A reason is required.", null, { code: "REASON_REQUIRED" }));
   try {
     const io = getIo(req);
     const result = await applySettingsChange({
@@ -184,24 +185,24 @@ router.get("/security/history", async (req, res) => {
 
 router.post("/security/history/:id/revert", async (req, res) => {
   const reason = sec.cleanText(req.body?.reason);
-  if (reason.length < 3) return res.status(400).json({ error: "A reason is required.", code: "REASON_REQUIRED" });
+  if (reason.length < 3) return res.status(400).json(apiError("A reason is required.", null, { code: "REASON_REQUIRED" }));
   try {
     const entry = await history.get(req.params.id);
-    if (!entry) return res.status(404).json({ error: "Change not found.", code: "NOT_FOUND" });
-    if (entry.revertOf) return res.status(409).json({ error: "This change can't be reverted.", code: "NOT_REVERTIBLE" });
-    if (entry.revertedAt) return res.status(409).json({ error: "This change was already reverted.", code: "ALREADY_REVERTED" });
+    if (!entry) return res.status(404).json(apiError("Change not found.", null, { code: "NOT_FOUND" }));
+    if (entry.revertOf) return res.status(409).json(apiError("This change can't be reverted.", null, { code: "NOT_REVERTIBLE" }));
+    if (entry.revertedAt) return res.status(409).json(apiError("This change was already reverted.", null, { code: "ALREADY_REVERTED" }));
     const io = getIo(req);
     const lockKeys = entry.changes.filter((c) => String(c.key).startsWith("lock.") && c.from == null && c.to);
     let result;
     if (lockKeys.length) {
       const live = sec.activeLocks(state.systemConfig);
       const modes = lockKeys.map((c) => c.key.slice(5)).filter((m) => live[m] && Math.abs(Date.parse(live[m].startedAt) - Date.parse(entry.at)) < 60000);
-      if (!modes.length) return res.status(409).json({ error: "This lock already ended.", code: "LOCK_ENDED" });
+      if (!modes.length) return res.status(409).json(apiError("This lock already ended.", null, { code: "LOCK_ENDED" }));
       const out = await locks.liftLocks({ modes, reason, actor: req.user, io });
       result = { changes: out.entry?.changes || [], entry: out.entry };
     } else {
       const patch = sec.revertPatch(entry.changes);
-      if (!Object.keys(patch).length) return res.status(409).json({ error: "This change can't be reverted.", code: "NOT_REVERTIBLE" });
+      if (!Object.keys(patch).length) return res.status(409).json(apiError("This change can't be reverted.", null, { code: "NOT_REVERTIBLE" }));
       result = await applySettingsChange({
         patch,
         actor: req.user,

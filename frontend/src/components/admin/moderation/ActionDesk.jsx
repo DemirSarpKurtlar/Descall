@@ -338,7 +338,7 @@ export default function ActionDesk({ meta, selected, setSelected, prefill, summa
       setDurationId(pill);
       if (pill === CUSTOM) setCustomMinutes(String(Math.round((tpl.durationSeconds || 0) / 60)));
     }
-    setMessage(tpl.message ? toLocalTokens(tpl.message, varNames) : t(`modDesk.tplMsg.${tpl.action}`));
+    setMessage(tpl.message ? toLocalTokens(tpl.message, varNames) : t(`modDesk.tplMsg.${tpl.action}`, { user: `{${varNames.user}}`, duration: `{${varNames.duration}}`, category: `{${varNames.category}}` }));
   };
 
   const removeTemplate = async (tpl) => {

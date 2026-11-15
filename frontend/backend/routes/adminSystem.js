@@ -24,6 +24,7 @@
  *   GET   /system/restart                      safe restart dialog data;  POST /system/restart (fresh code + typed confirm)
  */
 
+const { apiError } = require("../lib/apiError");
 const express = require("express");
 const state = require("../runtime/sharedState");
 const supabase = require("../db/supabase");
@@ -286,7 +287,7 @@ router.get("/system/flags/history", async (_req, res) => {
 
 router.get("/system/flags/:key/history", async (req, res) => {
   const key = flagKey(req);
-  if (!key) return res.status(404).json({ error: "Unknown flag.", code: "UNKNOWN_FLAG" });
+  if (!key) return res.status(404).json(apiError("Unknown flag.", null, { code: "UNKNOWN_FLAG" }));
   try {
     const entries = await flags.flagHistory(key, { limit: 20 });
     const current = flags.ruleFromConfig(key, state.systemConfig);
@@ -349,7 +350,7 @@ function guardFor({ key, previous, actor, io }) {
 
 router.patch("/system/flags/:key", async (req, res) => {
   const key = flagKey(req);
-  if (!key) return res.status(404).json({ error: "Unknown flag.", code: "UNKNOWN_FLAG" });
+  if (!key) return res.status(404).json(apiError("Unknown flag.", null, { code: "UNKNOWN_FLAG" }));
   const v = flags.validateRule(key, req.body?.rule);
   if (v.error) return bad(res, v.error);
   const reason = model.cleanReason(req.body?.reason) || null;
@@ -368,7 +369,7 @@ router.patch("/system/flags/:key", async (req, res) => {
 
 router.post("/system/flags/:key/toggle", async (req, res) => {
   const key = flagKey(req);
-  if (!key) return res.status(404).json({ error: "Unknown flag.", code: "UNKNOWN_FLAG" });
+  if (!key) return res.status(404).json(apiError("Unknown flag.", null, { code: "UNKNOWN_FLAG" }));
   if (typeof req.body?.on !== "boolean") return bad(res, "BAD_VALUE");
   try {
     const io = getIo(req);
@@ -383,12 +384,12 @@ router.post("/system/flags/:key/toggle", async (req, res) => {
 
 router.post("/system/flags/:key/restore", async (req, res) => {
   const key = flagKey(req);
-  if (!key) return res.status(404).json({ error: "Unknown flag.", code: "UNKNOWN_FLAG" });
+  if (!key) return res.status(404).json(apiError("Unknown flag.", null, { code: "UNKNOWN_FLAG" }));
   try {
     const entry = await history.get(req.body?.historyId);
-    if (!entry) return res.status(404).json({ error: "Change not found.", code: "NOT_FOUND" });
+    if (!entry) return res.status(404).json(apiError("Change not found.", null, { code: "NOT_FOUND" }));
     const target = flags.stateFromEntry(key, entry);
-    if (!target) return res.status(409).json({ error: "This change has no state for the flag.", code: "NOT_RESTORABLE" });
+    if (!target) return res.status(409).json(apiError("This change has no state for the flag.", null, { code: "NOT_RESTORABLE" }));
     const cur = flags.ruleFromConfig(key, state.systemConfig);
     // A partial edge entry (no meta) only moves what it recorded.
     const rule = target.partial ? { ...cur, mode: target.mode, percent: target.percent, platforms: target.platforms.length ? target.platforms : cur.platforms } : target;
@@ -414,7 +415,7 @@ router.post("/system/flags/:key/restore", async (req, res) => {
 
 router.post("/system/flags/:key/try", async (req, res) => {
   const key = flagKey(req);
-  if (!key) return res.status(404).json({ error: "Unknown flag.", code: "UNKNOWN_FLAG" });
+  if (!key) return res.status(404).json(apiError("Unknown flag.", null, { code: "UNKNOWN_FLAG" }));
   const def = flags.catalogOf(key);
   if (def.kind !== "client") return bad(res, "TRY_CLIENT_ONLY");
   const v = flags.validateRule(key, req.body?.rule);
@@ -481,13 +482,13 @@ router.post("/system/limits/reset", async (req, res) => {
 router.post("/system/history/:id/undo", async (req, res) => {
   try {
     const entry = await history.get(req.params.id);
-    if (!entry) return res.status(404).json({ error: "Change not found.", code: "NOT_FOUND" });
-    if (entry.revertedAt) return res.status(409).json({ error: "Already undone.", code: "ALREADY_REVERTED" });
-    if (entry.changes.some((c) => String(c.key).startsWith("lock."))) return res.status(409).json({ error: "Locks are lifted in Security Center.", code: "NOT_REVERTIBLE" });
+    if (!entry) return res.status(404).json(apiError("Change not found.", null, { code: "NOT_FOUND" }));
+    if (entry.revertedAt) return res.status(409).json(apiError("Already undone.", null, { code: "ALREADY_REVERTED" }));
+    if (entry.changes.some((c) => String(c.key).startsWith("lock."))) return res.status(409).json(apiError("Locks are lifted in Security Center.", null, { code: "NOT_REVERTIBLE" }));
     const stale = sec.staleKeys(entry.changes, state.systemConfig);
-    if (stale.length && !req.body?.force) return res.status(409).json({ error: "Changed again since.", code: "STALE", keys: stale });
+    if (stale.length && !req.body?.force) return res.status(409).json(apiError("Changed again since.", null, { code: "STALE", keys: stale }));
     const patch = sec.revertPatch(entry.changes);
-    if (!Object.keys(patch).length) return res.status(409).json({ error: "Nothing to undo.", code: "NOT_REVERTIBLE" });
+    if (!Object.keys(patch).length) return res.status(409).json(apiError("Nothing to undo.", null, { code: "NOT_REVERTIBLE" }));
     const io = getIo(req);
     const result = await applySettingsChange({ patch, actor: req.user, reason: model.cleanReason(req.body?.reason) || null, source: "revert", action: "system_undo", title: entry.title, meta: { revertOf: entry.id }, revertOf: entry.id, io });
     await history.markReverted(entry.id, req.user);
@@ -586,7 +587,7 @@ router.post("/system/restart", async (req, res) => {
   const reason = restart.cleanText(req.body?.reason);
   if (reason.length < restart.REASON_MIN) return bad(res, "REASON_REQUIRED");
   if (!restart.confirmMatches(req.body?.confirm)) return bad(res, "CONFIRM_MISMATCH");
-  if (!freshStepUp(req)) return res.status(403).json({ error: "Enter a new verification code to restart.", code: "STEP_UP_REQUIRED" });
+  if (!freshStepUp(req)) return res.status(403).json(apiError("Enter a new verification code to restart.", null, { code: "STEP_UP_REQUIRED" }));
   try {
     const io = getIo(req);
     const actor = { id: req.user.id, username: req.user.username };
@@ -614,10 +615,7 @@ router.post("/system/restart", async (req, res) => {
   }
 });
 
-const TEAM_TEXT = {
-  tr: ["Sunucu yeniden başlatılıyor", "{who} sunucuyu güvenli şekilde yeniden başlatıyor: {reason}"],
-  en: ["Server restarting", "{who} is safely restarting the server: {reason}"],
-};
+const TEAM_TEXT = require("../i18n/systemRestart").teamNotice;
 
 async function notifyTeamOfRestart(io, actor, reason) {
   const res = await withTimeout(supabase.from("users").select("id, language").eq("is_admin", true).limit(200), 4000, { data: [] });
