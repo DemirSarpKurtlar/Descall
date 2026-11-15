@@ -115,8 +115,8 @@ const { shouldCreditMessage } = require("../lib/descoinMessageGuard");
 // connects and scores risk in the background. It never changes a credit.
 const descoinAntibot = require("../lib/descoinAntibot");
 const { socketIp } = require("../middleware/socketAuth");
-const descoinHeartbeatLastAt = new Map(); // `${userId}:${reason}` -> ms
-const DESCOIN_HEARTBEAT_MIN_INTERVAL_MS = 15_000;
+const { registerDescoinHeartbeat } = require("./descoinHeartbeat");
+const callCoinSessions = require("../lib/callCoinSessions");
 // DM calls have no DB-backed screen-share session (unlike group calls' own
 // `screenShareSessions`), so track it in-memory here purely to validate
 // DesCoin screenshare heartbeats server-side instead of trusting the client.
@@ -224,8 +224,12 @@ function activeDmPeersOf(userId) {
   return out;
 }
 
-async function finishDmCall(io, userA, userB, status) {
+async function finishDmCall(io, userA, userB, status, { originSocketId = null } = {}) {
   const record = await finalizeCall(userA, userB, status);
+  // End-of-call DesCoin summary for both sides (only sessions that earned; never throws).
+  // The side that hung up gets it on the device that hung up, the other on its devices.
+  void callCoinSessions.finish(io, userA, { context: "dm", peerId: userB }, { originSocketId });
+  void callCoinSessions.finish(io, userB, { context: "dm", peerId: userA });
   await notifyCallHistory(io, record);
   await publishDmCallSummary(io, record);
   return record;
@@ -796,6 +800,9 @@ function registerSocketHandlers(io) {
       require("../lib/specialBadgeNotify")
         .deliverPending(io, myId, { socket })
         .catch((err) => console.warn("[special-badges] failed to deliver pending:", err.message));
+
+      // End-of-call DesCoin summaries that finished while no socket was online.
+      callCoinSessions.flushPending(socket, myId);
 
       // Same deferred-delivery pattern for admin DesCoin grants that carried
       // a message (the recipient was offline when the admin sent it).
@@ -1748,6 +1755,10 @@ function registerSocketHandlers(io) {
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
       markAnswered({ callerId: toUserId, calleeId: myId, answer });
+      if (isActiveDmCall(myId, toUserId)) {
+        callCoinSessions.start(myId, { context: "dm", peerId: toUserId });
+        callCoinSessions.start(toUserId, { context: "dm", peerId: myId });
+      }
       // Crossed calls (both pressed call): this answer settles it. Our own
       // ring to the caller ends quietly on every device of theirs (their
       // iPhone got a VoIP ring for it) and is never logged as missed.
@@ -1801,7 +1812,7 @@ function registerSocketHandlers(io) {
       // not cancel): the callee's other devices must stop ringing too.
       getRingFanout(io).endRingByPair(myId, toUserId, "cancelled");
       try {
-        await finishDmCall(io, myId, toUserId, "completed");
+        await finishDmCall(io, myId, toUserId, "completed", { originSocketId: socket.id });
       } catch (err) {
         console.warn("[Call] finalize end failed:", err?.message || err);
       }
@@ -1951,61 +1962,8 @@ function registerSocketHandlers(io) {
       emitToUser(io, toUserId, "screen:share-stop", { fromUserId: myId });
     });
 
-    // DesCoin earning heartbeat — sent every ~15-20s by an active call's UI
-    // while the mic is genuinely producing speech (or a screen share is on).
-    // Every check here is against server-owned state; the client can only
-    // ever *ask* to be credited, never assert the amount or the fact.
-    socket.on("descoin:heartbeat", async ({ context, peerId, groupId, type, speaking, antibot } = {}) => {
-      try {
-        if (type !== "voice" && type !== "screenshare") return;
-
-        let valid = false;
-        if (context === "dm" && typeof peerId === "string") {
-          valid = isActiveDmCall(myId, peerId) && (type === "voice" || dmScreenSharingUsers.has(myId));
-        } else if (context === "group" && typeof groupId === "string") {
-          const activeCall = activeGroupCalls.get(groupId);
-          const inCall = Boolean(activeCall?.participants?.has(myId) && activeCall.participants.size >= 2);
-          valid = inCall && (type === "voice" || screenShareSessions.has(`${groupId}:${myId}`));
-        }
-        if (!valid) return;
-        if (type === "voice" && !speaking) return; // only pay for actual talking, not idle presence
-
-        const throttleKey = `${myId}:${type}`;
-        const lastAt = descoinHeartbeatLastAt.get(throttleKey) || 0;
-        if (Date.now() - lastAt < DESCOIN_HEARTBEAT_MIN_INTERVAL_MS) return;
-        descoinHeartbeatLastAt.set(throttleKey, Date.now());
-
-        // Anti-bot monitor (Faz 0): records activity (+ media shadow rules when
-        // a newer client sends hints). Does not change the amount below.
-        try {
-          descoinAntibot.observeHeartbeat({
-            userId: myId,
-            type,
-            ctxKey: context === "dm" ? `dm:${[myId, peerId].sort().join(":")}` : `group:${groupId}`,
-            others:
-              context === "dm"
-                ? [peerId]
-                : [...(activeGroupCalls.get(groupId)?.participants?.keys?.() || [])].filter((id) => id !== myId),
-            beat: antibot && typeof antibot === "object" && !Array.isArray(antibot) ? antibot : null,
-          });
-        } catch {
-          /* monitoring must never affect earning */
-        }
-
-        const reason = type === "voice" ? "voice_activity" : "screenshare_activity";
-        const amount = type === "voice" ? 1 : 2;
-        const result = await descoin.creditCapped(myId, amount, reason, {
-          context,
-          groupId: groupId || null,
-          peerId: peerId || null,
-        });
-        if (result.credited > 0) {
-          socket.emit("descoin:balance", { balance: result.balance, delta: result.credited, reason });
-        }
-      } catch (err) {
-        console.warn("[DesCoin] heartbeat error:", err?.message || err);
-      }
-    });
+    // DesCoin earning heartbeat (dm / group / server voice): socket/descoinHeartbeat.js.
+    registerDescoinHeartbeat(socket, { userId: myId, dmScreenSharingUsers });
 
     // Media state is presentation-only; it lets the remote tile immediately
     // show muted/camera-off status instead of inferring it from a frozen track.

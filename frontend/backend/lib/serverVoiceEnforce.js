@@ -251,6 +251,19 @@ function canPublishSeat(seat) {
   return true;
 }
 
+/**
+ * DesCoin in a server voice channel (owner approved, Nov 2026): the seat may earn for
+ * `type` right now. Voice: may publish (SPEAK, stage speaker, not server-muted /
+ * deafened / AFK-locked) and not self-muted. Screen share: may stream and is sharing.
+ * Timeouts are checked by the caller (DB). Others present is checked by the caller.
+ */
+function seatCanEarn(seat, type) {
+  if (!seat || !canPublishSeat(seat)) return false;
+  if (type === "voice") return !seat.muted;
+  if (type === "screenshare") return canStreamSeat(seat) && seat.isScreenSharing === true;
+  return false;
+}
+
 /** SPEAK permission plus stage speaker role, ignoring locks (what the client calls canSpeak). */
 function canSpeakPermissionOf(seat) {
   if (!seat?.canSpeakPermission) return false;
@@ -689,6 +702,7 @@ module.exports = {
   recomputeSeatLocks,
   canPublishSeat,
   canStreamSeat,
+  seatCanEarn,
   liveKitPermissionForSeat,
   pushSeatToLiveKit,
   refreshSeatPermissions,
