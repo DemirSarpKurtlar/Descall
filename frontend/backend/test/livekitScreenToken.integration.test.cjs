@@ -8,7 +8,7 @@ process.env.SUPABASE_URL = "https://placeholder.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "placeholder-key";
 process.env.LIVEKIT_URL = "wss://lk.example.com";
 process.env.LIVEKIT_API_KEY = "lk-test-key";
-process.env.LIVEKIT_API_SECRET = "lk-test-secret-that-is-long-enough-0123456789";
+process.env.LIVEKIT_API_SECRET = "x".repeat(48); // fake, test only
 
 const http = require("http");
 const assert = require("node:assert/strict");
