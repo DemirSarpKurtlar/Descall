@@ -189,6 +189,8 @@ const ServerRestartStrip = lazy(() => import("./components/system/ServerRestartS
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
+// End-of-call DesCoin summary + wallet history drawer (owner pick: draft C + B receipt).
+const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
 const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
@@ -5402,6 +5404,12 @@ export default function App() {
         )}
 
         <SpecialBadgeHost socket={socketApi} meId={me?.id || null} />
+
+        {me?.id ? (
+          <Suspense fallback={null}>
+            <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
+          </Suspense>
+        ) : null}
 
         <Suspense fallback={null}>
           <PromoHost

@@ -190,3 +190,68 @@ export function absoluteAssetUrl(url, apiBase = "") {
   if (u.startsWith("/")) return `${String(apiBase || "").replace(/\/+$/, "")}${u}`;
   return null;
 }
+
+/**
+ * Wallet history rows (GET /api/shop/ledger, newest first). Call earnings tagged with a
+ * call session (meta.callSession / meta.receipt) become one receipt row per call.
+ */
+export function groupWalletEntries(entries = []) {
+  const out = [];
+  const bySession = new Map();
+  for (const e of entries || []) {
+    if (!e || typeof e !== "object") continue;
+    const sid = e.meta && typeof e.meta === "object" ? e.meta.callSession : null;
+    const amount = Math.round(Number(e.amount) || 0);
+    if (sid && (e.reason === "voice_activity" || e.reason === "screenshare_activity")) {
+      let g = bySession.get(sid);
+      if (!g) {
+        g = {
+          kind: "call",
+          id: String(sid),
+          receipt: e.meta.receipt || null,
+          context: e.meta.context || null,
+          voice: 0,
+          screen: 0,
+          amount: 0,
+          at: e.created_at || null,
+          firstAt: e.created_at || null,
+          balanceAfter: e.balance_after ?? null,
+        };
+        bySession.set(sid, g);
+        out.push(g);
+      }
+      if (e.reason === "voice_activity") g.voice += amount;
+      else g.screen += amount;
+      g.amount += amount;
+      if (e.created_at) g.firstAt = e.created_at;
+      continue;
+    }
+    out.push({ kind: "row", id: String(e.id ?? out.length), reason: e.reason || "other", amount, at: e.created_at || null, balanceAfter: e.balance_after ?? null });
+  }
+  return out;
+}
+
+/* Shop deep link from the summary: the shop opens at an item (and its purchase window). */
+export const SHOP_FOCUS_EVENT = "descall:shop-focus";
+let pendingShopFocus = null;
+
+export function requestShopFocus({ itemId, buy = false } = {}) {
+  if (!itemId) return;
+  pendingShopFocus = { itemId: String(itemId), buy: Boolean(buy), at: Date.now() };
+  try {
+    window.dispatchEvent(new CustomEvent(SHOP_FOCUS_EVENT, { detail: pendingShopFocus }));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** The pending focus (within 30 s), taken once. */
+export function takeShopFocus(now = Date.now()) {
+  const p = pendingShopFocus;
+  pendingShopFocus = null;
+  return p && now - p.at < 30_000 ? p : null;
+}
+
+export function peekShopFocus() {
+  return pendingShopFocus;
+}
