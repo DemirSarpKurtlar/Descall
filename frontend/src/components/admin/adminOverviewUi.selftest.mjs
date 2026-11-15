@@ -18,7 +18,7 @@ assert.match(ov, /!data \?/, "missing data renders a skeleton");
 
 const boot = panel.slice(
   panel.indexOf("Overview owns its own banner"),
-  panel.indexOf('if (tab === "moderation")'),
+  panel.indexOf('if (tab === "security" || tab === "system"'),
 );
 assert.ok(boot.includes("loadStats().catch"), "background stats still load");
 assert.equal(boot.includes("setErr"), false, "boot stats failure must not paint a second banner");

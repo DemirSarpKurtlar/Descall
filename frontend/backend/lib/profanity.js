@@ -55,9 +55,12 @@ let cacheCompiled = null;
 
 function compiledForState(state) {
   const extra = state?.profanityWords ? Array.from(state.profanityWords) : [];
-  const key = extra.join("\u0000");
+  // Built-in words an admin removed in Moderasyon › Kelime filtresi (lib/contentFilter.js).
+  const off = state?.profanityDisabledDefaults instanceof Set ? state.profanityDisabledDefaults : null;
+  const key = `${extra.join("\u0000")}|${off ? [...off].join("\u0000") : ""}`;
   if (key !== cacheKey || !cacheCompiled) {
-    cacheCompiled = compileWordList([...DEFAULT_WORDS, ...extra]);
+    const defaults = off && off.size ? DEFAULT_WORDS.filter((w) => !off.has(String(w).toLowerCase())) : DEFAULT_WORDS;
+    cacheCompiled = compileWordList([...defaults, ...extra]);
     cacheKey = key;
   }
   return cacheCompiled;

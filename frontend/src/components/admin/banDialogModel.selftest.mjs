@@ -181,7 +181,7 @@ const rd = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
 // the shared action host (dossier/UserActionDialogs.jsx), which renders BanDialog.
 assert.match(rd("./AdminUserDossier.jsx"), /<UserActionHost\b/, "the user file opens its dialogs through UserActionHost");
 assert.match(rd("./AdminUserDirectory.jsx"), /<UserActionHost\b/, "the users list row menu uses the same dialogs");
-for (const file of ["./AdminModeration.jsx", "./dossier/UserActionDialogs.jsx", "./AdminReports.jsx"]) {
+for (const file of ["./moderation/ModerationDesk.jsx", "./dossier/UserActionDialogs.jsx", "./AdminReports.jsx"]) {
   const src = rd(file);
   assert.match(src, /import BanDialog from "\.\.?\/BanDialog\.jsx";/, `${file} uses BanDialog`);
   assert.match(src, /<BanDialog\b/, `${file} renders BanDialog`);

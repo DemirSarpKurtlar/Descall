@@ -1097,6 +1097,14 @@ function registerServerChannelHandlers(io, socket) {
           }
         }
 
+        // Moderasyon kelime filtresi (lib/contentFilter.js): block / flag / auto-timeout rules.
+        const filterCtx = { convType: "server", serverId: channel.server_id, channelId };
+        const filtered = require("../lib/contentFilter").gate({ io, userId: myId, text: content, ctx: filterCtx });
+        if (filtered.blocked) {
+          socket.emit("server:channel:message:error", { channelId, tempId: tempId || null, ...require("../lib/contentFilter").blockedPayload() });
+          return;
+        }
+
         if (mediaUrl) {
           const original = mediaUrl;
           mediaUrl = await normalizeIncomingMediaUrl(supabase, myId, mediaUrl);
@@ -1260,6 +1268,7 @@ function registerServerChannelHandlers(io, socket) {
           });
           return;
         }
+        require("../lib/contentFilter").after(filtered.verdict, { io, userId: myId, text: trimmedContent, messageId: row.id, ctx: filterCtx });
         let pollSnapshot = null;
         if (pollDraft) {
           try {
