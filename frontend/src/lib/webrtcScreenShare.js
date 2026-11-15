@@ -71,9 +71,12 @@ export function isMobileScreenCapture() {
 }
 
 /**
- * Native iOS app (Capacitor WKWebView): there is no getDisplayMedia and no
- * ReplayKit Broadcast Upload Extension, so the screen-share controls are not
- * shown at all on iPhone. Viewing others' shares still works.
+ * Native iOS app (Capacitor WKWebView): there is no getDisplayMedia, so the
+ * WebRTC capture path is unavailable. DM and group calls (browser mesh) hide
+ * their screen-share controls on iPhone / iPad. Server voice channels use the
+ * ReplayKit broadcast extension instead when the build ships it
+ * (lib/iosScreenBroadcast.js, docs/ios-screen-share.md). Viewing others'
+ * shares works everywhere.
  */
 export function screenShareUnavailableOnIos() {
   try {

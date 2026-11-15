@@ -1,0 +1,163 @@
+/* iPhone / iPad whole-screen broadcast status in the server voice dock
+   (components/voice/IosBroadcastShareChip.jsx). Own line above the dock buttons. */
+.ibs-chip {
+  flex: 1 0 100%;
+  order: -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 8px 8px 12px;
+  box-sizing: border-box;
+  border-radius: var(--r-md, 12px);
+  border: 1px solid rgba(88, 122, 245, 0.32);
+  background: rgba(20, 24, 40, 0.92);
+  color: var(--text-0, #fff);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.ibs-chip.is-live {
+  border-color: rgba(237, 66, 69, 0.45);
+}
+
+.ibs-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(88, 122, 245, 0.18);
+  color: #8fa6ff;
+}
+
+.ibs-chip.is-live .ibs-icon {
+  background: rgba(237, 66, 69, 0.18);
+  color: #ff8a8c;
+}
+
+.ibs-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ed4245;
+  box-shadow: 0 0 0 2px rgba(20, 24, 40, 0.92);
+  animation: ibs-pulse 1.6s ease-in-out infinite;
+}
+
+.ibs-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ibs-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-13, 13px);
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ibs-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #ff8a8c;
+}
+
+.ibs-hint {
+  font-size: var(--fs-12, 12px);
+  line-height: 1.3;
+  color: var(--text-2, rgba(255, 255, 255, 0.64));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ibs-action {
+  flex: 0 0 auto;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-13, 13px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ibs-action.is-stop {
+  border-color: transparent;
+  background: #ed4245;
+  color: #fff;
+}
+
+.ibs-action:focus-visible {
+  outline: 2px solid #587af5;
+  outline-offset: 2px;
+}
+
+.ibs-chip.is-preparing .ibs-icon,
+.ibs-chip.is-stopping .ibs-icon {
+  animation: ibs-breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes ibs-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.82); }
+}
+
+@keyframes ibs-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ibs-dot,
+  .ibs-chip.is-preparing .ibs-icon,
+  .ibs-chip.is-stopping .ibs-icon {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ibs-chip {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgb(20, 24, 40);
+  }
+}
+
+html.light .ibs-chip,
+html[data-theme="light"] .ibs-chip {
+  background: rgba(255, 255, 255, 0.94);
+  color: #12141c;
+  border-color: rgba(88, 122, 245, 0.3);
+}
+
+/* Share Screen button while the system picker is up / the native room connects. */
+.server-voice-dock-btn.is-pending {
+  color: #8fa6ff;
+  background: rgba(88, 122, 245, 0.14);
+}

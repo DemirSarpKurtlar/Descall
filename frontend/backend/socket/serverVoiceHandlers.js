@@ -19,6 +19,7 @@ const { needsRulesAcceptance } = require("../lib/serverRulesGate");
 const { emitToChannelViewers, canViewChannel } = require("../lib/channelViewers");
 const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutState");
 const { errorFields } = require("../lib/apiError");
+const { screenCompanionIdentity, takeCompanionIssued } = require("../lib/screenCompanion");
 
 function resolvePublicUser(socket) {
   const myId = socket.user?.id;
@@ -218,6 +219,8 @@ function removeFromVoice(io, channelId, userId) {
   if (!call) return null;
   const uid = String(userId);
   void kickLiveKitParticipant(channelId, uid);
+  // iOS screen broadcast companion (`<userId>:screen`) leaves with its owner.
+  if (takeCompanionIssued(channelId, uid)) void kickLiveKitParticipant(channelId, screenCompanionIdentity(uid));
   const entry = getParticipantEntry(call, uid);
   if (entry) call.participants.delete(entry.key);
   // Also drop string/uuid key variants if present

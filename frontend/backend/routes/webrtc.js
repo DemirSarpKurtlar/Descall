@@ -1,7 +1,7 @@
 "use strict";
 
 const express = require("express");
-const { AccessToken } = require("livekit-server-sdk");
+const { AccessToken, TrackSource } = require("livekit-server-sdk");
 const { requireAuth } = require("../middleware/auth");
 const supabase = require("../db/supabase");
 const { activeServerVoiceCalls } = require("../runtime/sharedState");
@@ -16,6 +16,11 @@ const { verifyToken } = require("../config/jwt");
 const { sessionAllowed } = require("../lib/sessionGuard");
 const { bannedUserIds } = require("../runtime/sharedState");
 const { recordFailure } = require("../lib/rateLimit");
+const {
+  SCREEN_COMPANION_TTL,
+  screenCompanionIdentity,
+  markCompanionIssued,
+} = require("../lib/screenCompanion");
 
 const router = express.Router();
 
@@ -264,6 +269,93 @@ router.all("/livekit-token", requireAuth, async (req, res) => {
     return res.status(status).json({
       enabled: true,
       error: err.message || "Failed to mint LiveKit token.",
+      code: err.code || null,
+    });
+  }
+});
+
+const SCREEN_TOKEN_WINDOW_MS = 10 * 60 * 1000;
+const SCREEN_TOKEN_PER_USER = 20;
+
+/**
+ * iOS whole-screen sharing (docs/ios-screen-share.md): a token for the user's
+ * screen companion (`<userId>:screen`) that the app's native LiveKit room uses
+ * to publish the ReplayKit broadcast. Same access check as the voice token,
+ * plus: the user must be seated in the channel and allowed to share video
+ * there (SPEAK + STREAM, stage speakers only). The companion may publish
+ * screen share only, cannot subscribe or send data, and the token is
+ * short-lived (it is only needed to connect).
+ */
+router.all("/livekit-screen-token", (req, res, next) => {
+  if (!isLiveKitConfigured()) return res.json({ enabled: false });
+  return next();
+});
+
+router.all("/livekit-screen-token", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
+  const channelId = String(req.query?.channelId || req.body?.channelId || "").trim();
+  if (!channelId) return res.status(400).json({ enabled: true, error: "channelId is required.", code: "CHANNEL_REQUIRED" });
+  const userId = req.user.id;
+  const limit = recordFailure(`lk-screen:user:${userId}`, {
+    windowMs: SCREEN_TOKEN_WINDOW_MS,
+    max: SCREEN_TOKEN_PER_USER,
+  });
+  if (!limit.ok) {
+    res.set("Retry-After", String(limit.retryAfterSec));
+    return res.status(429).json({ enabled: true, error: "Too many requests.", code: "RATE_LIMITED" });
+  }
+  const identity = screenCompanionIdentity(userId);
+  if (!identity) return res.status(400).json({ enabled: true, error: "Invalid user.", code: "INVALID_USER" });
+  try {
+    const { channel, resolved } = await resolveVoiceChannelAccess(userId, channelId);
+    if (!isSeatedInVoiceChannel(userId, channelId)) {
+      return res.status(409).json({
+        enabled: true,
+        error: "User is not in a voice channel.",
+        code: "NOT_IN_CHANNEL",
+      });
+    }
+    const canSpeak = hasPermission(resolved.bits, Permissions.SPEAK);
+    const canPublish =
+      channel.type === "stage" ? stageRoleFor(channelId, userId) === "speaker" && canSpeak : canSpeak;
+    if (!canPublish || !hasPermission(resolved.bits, Permissions.STREAM)) {
+      return res.status(403).json({
+        enabled: true,
+        error: "Missing STREAM permission.",
+        code: "MISSING_PERMISSION",
+      });
+    }
+    const room = `server-voice-${channelId}`;
+    const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+      identity,
+      ttl: SCREEN_COMPANION_TTL,
+      metadata: JSON.stringify({ companionOf: String(userId), kind: "screen" }),
+    });
+    token.addGrant({
+      room,
+      roomJoin: true,
+      canSubscribe: false,
+      canPublish: true,
+      canPublishData: false,
+      canUpdateOwnMetadata: false,
+      canPublishSources: [TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO],
+    });
+    markCompanionIssued(channelId, userId);
+    return res.json({
+      enabled: true,
+      livekitUrl: process.env.LIVEKIT_URL,
+      livekitUrls: liveKitEndpoints(),
+      room,
+      identity,
+      token: await token.toJwt(),
+      ttlSeconds: 600,
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("[webrtc] livekit-screen-token error:", err);
+    return res.status(status).json({
+      enabled: true,
+      error: err.message || "Failed to mint the screen share token.",
       code: err.code || null,
     });
   }

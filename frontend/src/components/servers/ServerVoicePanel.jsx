@@ -39,6 +39,9 @@ import ConversationStart, { VoiceSeats } from "../chat/ConversationStart";
 import { DockDeviceSlot } from "../call/DevicePicker";
 import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
+import { useScreenShareCapability } from "../../lib/iosScreenBroadcast";
+import { anchorFromRect } from "../../lib/iosScreenBroadcastModel";
+import IosBroadcastShareChip from "../voice/IosBroadcastShareChip";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
 import { World3DButton, World3DStage, useWorld3DAvailable } from "../../world3d/World3DLauncher.jsx";
@@ -929,17 +932,25 @@ export default function ServerVoicePanel({
     statusTone = "ok";
   }
 
+  // Native iOS app: whole-screen ReplayKit broadcast when this build ships the
+  // extension; builds without it keep the Share Screen button hidden.
+  const shareCapability = useScreenShareCapability();
+  const screenShareHidden = screenShareUnavailableOnIos() && shareCapability !== "broadcast";
+  const nativeSharePhase = serverVoice?.nativeScreenShare?.phase || "idle";
+
   const countLabel = isStage
     ? t("{count} in stage", { count })
     : t("{count} in voice", { count });
 
-  const onToggleScreen = async () => {
+  const onToggleScreen = async (event) => {
     if (!canVideo) return;
-    if (!serverVoice?.isScreenSharing && screenShareUnavailableOnIos()) return;
-    if (serverVoice?.isScreenSharing) {
+    if (!serverVoice?.isScreenSharing && screenShareHidden) return;
+    if (serverVoice?.isScreenSharing || nativeSharePhase !== "idle") {
       await serverVoice.stopScreenShare?.();
     } else {
-      await serverVoice.startScreenShare?.();
+      // iPhone / iPad: the system broadcast picker (on iPad a popover from this button).
+      const rect = event?.currentTarget?.getBoundingClientRect?.();
+      await serverVoice.startScreenShare?.({ anchor: anchorFromRect(rect) });
     }
   };
 
@@ -987,7 +998,7 @@ export default function ServerVoicePanel({
             toggleMute: () => serverVoice?.toggleMute?.(),
             toggleDeafen: () => serverVoice?.toggleDeafen?.(),
             isScreenSharing: Boolean(serverVoice?.isScreenSharing),
-            toggleScreen: screenShareUnavailableOnIos() ? null : onToggleScreen,
+            toggleScreen: screenShareHidden ? null : onToggleScreen,
             isCameraOn: Boolean(serverVoice?.isCameraOn),
             toggleCamera: onToggleCamera,
             canVideo,
@@ -1112,6 +1123,10 @@ export default function ServerVoicePanel({
       <footer className="server-voice-dock">
         {inThis ? (
           <>
+            <IosBroadcastShareChip
+              share={serverVoice?.nativeScreenShare}
+              onStop={() => serverVoice?.stopScreenShare?.()}
+            />
             <div className="server-voice-dock-group" role="group" aria-label={t("Voice channel")}>
               {/* Mic → input menu, deafen → output menu (chevron, long press, right click). */}
               <DockDeviceSlot
@@ -1195,13 +1210,13 @@ export default function ServerVoicePanel({
                   {serverVoice.isCameraOn ? <VideoOff size={18} /> : <Video size={18} />}
                 </button>
               </DockDeviceSlot>
-              {/* iPhone (native app): no screen sharing, so the button is not shown. */}
-              {!screenShareUnavailableOnIos() && (
+              {/* iPhone / iPad app: shown only when the broadcast extension ships (whole-screen share). */}
+              {!screenShareHidden && (
               <button
                 type="button"
-                className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}`}
+                className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}${nativeSharePhase === "preparing" || nativeSharePhase === "picker" ? " is-pending" : ""}`}
                 onClick={onToggleScreen}
-                disabled={!canVideo}
+                disabled={!canVideo || nativeSharePhase === "stopping"}
                 aria-pressed={Boolean(serverVoice.isScreenSharing)}
                 aria-label={serverVoice.isScreenSharing ? t("Stop Screen Share") : t("Share Screen")}
                 title={

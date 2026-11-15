@@ -1,0 +1,21 @@
+/** iPhone / iPad whole-screen sharing ("iosShare.*", components/voice/IosBroadcastShareChip.jsx, hooks/useServerVoice.js). Same keys in every iosShare.<locale>.js. */
+export const IOS_SHARE_ES = {
+  "preparingTitle": "Preparando la pantalla compartida…",
+  "pickerTitle": "Inicia la transmisión",
+  "pickerHint": "Descall está seleccionado. Toca Iniciar transmisión para compartir toda tu pantalla.",
+  "liveTitle": "Estás compartiendo tu pantalla",
+  "liveHint": "Todos en este canal ven toda tu pantalla. También puedes detenerla desde el indicador rojo de estado o el Centro de control.",
+  "stoppingTitle": "Deteniendo la pantalla compartida…",
+  "stop": "Detener",
+  "cancel": "Cancelar",
+  "stopAria": "Dejar de compartir tu pantalla",
+  "cancelAria": "Cancelar la pantalla compartida",
+  "errNotInChannel": "Únete al canal de voz antes de compartir tu pantalla.",
+  "errPermission": "Necesitas los permisos HABLAR y TRANSMITIR para compartir tu pantalla aquí.",
+  "errRateLimited": "Demasiados intentos. Vuelve a intentarlo en unos minutos.",
+  "errNeedsSfu": "Compartir pantalla desde iPhone y iPad requiere el servidor de voz. Vuelve a unirte al canal e inténtalo de nuevo.",
+  "errUnavailable": "Compartir pantalla no está disponible en esta versión de la app. Actualiza Descall e inténtalo de nuevo.",
+  "errConnection": "La pantalla compartida perdió la conexión. Inténtalo de nuevo.",
+  "errGeneric": "No se pudo empezar a compartir la pantalla. Inténtalo de nuevo.",
+  "errJoinFirst": "Primero únete a un canal de voz y luego inicia la transmisión de pantalla.",
+};

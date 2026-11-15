@@ -1,0 +1,21 @@
+/** iPhone / iPad whole-screen sharing ("iosShare.*", components/voice/IosBroadcastShareChip.jsx, hooks/useServerVoice.js). Same keys in every iosShare.<locale>.js. */
+export const IOS_SHARE_EN = {
+  "preparingTitle": "Preparing screen share…",
+  "pickerTitle": "Start the broadcast",
+  "pickerHint": "Descall is selected. Tap Start Broadcast to share your whole screen.",
+  "liveTitle": "Sharing your screen",
+  "liveHint": "Everyone in this channel sees your whole screen. You can also stop from the red status pill or Control Center.",
+  "stoppingTitle": "Stopping screen share…",
+  "stop": "Stop",
+  "cancel": "Cancel",
+  "stopAria": "Stop sharing your screen",
+  "cancelAria": "Cancel screen share",
+  "errNotInChannel": "Join the voice channel before sharing your screen.",
+  "errPermission": "You need SPEAK and STREAM permission to share your screen here.",
+  "errRateLimited": "Too many attempts. Try again in a few minutes.",
+  "errNeedsSfu": "Screen sharing from iPhone and iPad needs the voice server. Rejoin the channel and try again.",
+  "errUnavailable": "Screen sharing is not available in this version of the app. Update Descall and try again.",
+  "errConnection": "The screen share lost its connection. Try again.",
+  "errGeneric": "Could not start screen sharing. Try again.",
+  "errJoinFirst": "Join a voice channel first, then start the screen broadcast.",
+};

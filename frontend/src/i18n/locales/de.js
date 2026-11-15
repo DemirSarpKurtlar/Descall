@@ -16,6 +16,7 @@ import { MSG5_DE } from "./msg5.de.js";
 import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { BAN_DE } from "./ban.de.js";
+import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
 import { DOSSIER_DE } from "./dossier.de.js";
@@ -46,6 +47,7 @@ export const nested = {
   "act": ACT_DE,
   "dir": DIR_DE,
   "ban": BAN_DE,
+  "iosShare": IOS_SHARE_DE,
   "banAdmin": BAN_ADMIN_DE,
   "serverReview": SERVER_REVIEW_DE,
   "dossier": DOSSIER_DE,

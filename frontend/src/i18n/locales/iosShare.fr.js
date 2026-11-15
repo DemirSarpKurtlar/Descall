@@ -1,0 +1,21 @@
+/** iPhone / iPad whole-screen sharing ("iosShare.*", components/voice/IosBroadcastShareChip.jsx, hooks/useServerVoice.js). Same keys in every iosShare.<locale>.js. */
+export const IOS_SHARE_FR = {
+  "preparingTitle": "Préparation du partage d'écran…",
+  "pickerTitle": "Lance la diffusion",
+  "pickerHint": "Descall est sélectionné. Touche Commencer la diffusion pour partager tout ton écran.",
+  "liveTitle": "Tu partages ton écran",
+  "liveHint": "Tout le monde dans ce salon voit tout ton écran. Tu peux aussi arrêter depuis l'indicateur rouge ou le Centre de contrôle.",
+  "stoppingTitle": "Arrêt du partage d'écran…",
+  "stop": "Arrêter",
+  "cancel": "Annuler",
+  "stopAria": "Arrêter le partage de ton écran",
+  "cancelAria": "Annuler le partage d'écran",
+  "errNotInChannel": "Rejoins le salon vocal avant de partager ton écran.",
+  "errPermission": "Tu as besoin des permissions PARLER et DIFFUSER pour partager ton écran ici.",
+  "errRateLimited": "Trop de tentatives. Réessaie dans quelques minutes.",
+  "errNeedsSfu": "Le partage d'écran depuis l'iPhone et l'iPad nécessite le serveur vocal. Rejoins le salon et réessaie.",
+  "errUnavailable": "Le partage d'écran n'est pas disponible dans cette version de l'app. Mets Descall à jour et réessaie.",
+  "errConnection": "Le partage d'écran a perdu la connexion. Réessaie.",
+  "errGeneric": "Impossible de démarrer le partage d'écran. Réessaie.",
+  "errJoinFirst": "Rejoins d'abord un salon vocal, puis lance la diffusion de l'écran.",
+};
