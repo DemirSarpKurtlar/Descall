@@ -105,6 +105,7 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
                     type="button"
                     role="radio"
                     aria-checked={prefs.threshold === n}
+                    aria-label={`${fmt(n)} ${t("coinpop.unit")}`}
                     className={prefs.threshold === n ? "on" : ""}
                     disabled={!prefs.enabled}
                     onClick={() => update({ callCoinThreshold: n })}

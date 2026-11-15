@@ -77,7 +77,7 @@ export default function WalletHistoryDrawer({ open, receipt = null, sessionId = 
 
   return (
     <div className="ccw-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
-      <aside className="ccw-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <aside className="ccw-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={(el) => el && !el.contains(document.activeElement) && el.focus({ preventScroll: true })}>
         <header className="ccw-hd">
           <span className="ccw-hd-ic" aria-hidden="true">
             <CcsIcon name="list" size={18} />
@@ -86,7 +86,7 @@ export default function WalletHistoryDrawer({ open, receipt = null, sessionId = 
             <h2 id={titleId}>{t("coinpop.wallet.title")}</h2>
             <p>{t("coinpop.wallet.sub")}</p>
           </div>
-          <button type="button" className="ccs-x" onClick={onClose} aria-label={t("coinpop.close")} autoFocus>
+          <button type="button" className="ccs-x" onClick={onClose} aria-label={t("coinpop.close")}>
             <CcsIcon name="x" size={15} />
           </button>
         </header>

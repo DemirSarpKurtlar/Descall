@@ -269,8 +269,8 @@ export default function CallCoinSummary({
     if (preview) return undefined;
     const card = cardRef.current;
     const prev = typeof document !== "undefined" ? document.activeElement : null;
-    const first = card?.querySelector("[data-autofocus]") || card?.querySelector("button");
-    first?.focus?.({ preventScroll: true });
+    // The dialog itself takes focus (no ring on the close button); Tab moves into it.
+    card?.focus?.({ preventScroll: true });
     const onKey = (e) => {
       if (e.key === "Escape") {
         e.stopPropagation();
@@ -393,12 +393,13 @@ export default function CallCoinSummary({
       role={preview ? undefined : "dialog"}
       aria-modal={preview ? undefined : "true"}
       aria-labelledby={titleId}
+      tabIndex={preview ? undefined : -1}
       lang={locale}
       data-context={s.context}
     >
       {sheet ? <div className="ccs-grab" aria-hidden="true" /> : null}
       {!sheet ? (
-        <button type="button" className="ccs-x" onClick={close} aria-label={t("coinpop.close")} data-autofocus>
+        <button type="button" className="ccs-x" onClick={close} aria-label={t("coinpop.close")}>
           <CcsIcon name="x" size={15} />
         </button>
       ) : null}
@@ -429,6 +430,12 @@ export default function CallCoinSummary({
                   {t("coinpop.screenShared")}
                 </span>
               ) : null}
+              {peopleText ? (
+                <span className="ccs-chip">
+                  <CcsIcon name="users" size={12} />
+                  {peopleText}
+                </span>
+              ) : null}
               {timeRange ? <span className="ccs-range num">{timeRange}</span> : null}
             </div>
             <h2 className="ccs-amt">
@@ -447,12 +454,6 @@ export default function CallCoinSummary({
                       <span className="ccs-dot" aria-hidden="true">·</span>
                       <CcsIcon name="mic" size={14} />
                       <span className="num">{t("coinpop.talkMeta", { m: talkMin })}</span>
-                    </>
-                  ) : null}
-                  {peopleText ? (
-                    <>
-                      <span className="ccs-dot" aria-hidden="true">·</span>
-                      <span>{peopleText}</span>
                     </>
                   ) : null}
                 </>
@@ -618,6 +619,7 @@ export default function CallCoinSummary({
           </div>
         ) : null}
 
+        <div className="ccs-actions">
         <div className="ccs-row">
           {item ? (
             <>
@@ -658,6 +660,7 @@ export default function CallCoinSummary({
               {t("coinpop.foot.never")}
             </button>
           </span>
+        </div>
         </div>
       </div>
     </section>
