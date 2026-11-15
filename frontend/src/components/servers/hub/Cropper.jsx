@@ -5,6 +5,7 @@ import { Btn, Layer, Sq } from "./kit";
 import { useSvh } from "./useSvh";
 import { loadImage, getCroppedImageFile } from "../../../lib/cropImage";
 import { useReducedMotionPref } from "./useHubMode";
+import { cssUrl } from "../../../lib/cssUrl";
 
 function useViewport() {
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
@@ -102,7 +103,7 @@ export default function Cropper({ src, kind = "icon", onCancel, onConfirm, busy 
   const prev = (q) => {
     if (!crop || !img) return undefined;
     const r = q / fw; // preview px per frame px
-    return `url("${src}") ${-crop.x * t.k * r}px ${-crop.y * t.k * r}px / ${img.w * t.k * r}px ${img.h * t.k * r}px no-repeat`;
+    return `${cssUrl(src)} ${-crop.x * t.k * r}px ${-crop.y * t.k * r}px / ${img.w * t.k * r}px ${img.h * t.k * r}px no-repeat`;
   };
   const hole = icon
     ? `radial-gradient(circle at ${cx}px ${cy}px, transparent ${D / 2}px, rgba(0,0,0,.62) ${D / 2 + 1}px)`

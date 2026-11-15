@@ -94,6 +94,11 @@ async function cancelDeletionIfPending(userId) {
 }
 
 async function anonymizeUser(userId) {
+  // Servers the user owns go to their highest-ranked active member first (server audit
+  // M11: they stayed with an unreachable owner nobody could replace).
+  await require("./serverMemberState").handOverOwnedServers(userId).catch((err) => {
+    console.warn("[accountDeletion] server hand-over:", err?.message || err);
+  });
   // Leave memberships of servers/groups the user does not own.
   const { data: owned } = await supabase.from("servers").select("id").eq("owner_id", userId);
   const ownedIds = (owned || []).map((s) => s.id);

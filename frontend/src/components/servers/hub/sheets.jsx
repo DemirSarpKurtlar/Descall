@@ -12,7 +12,7 @@ import { formatNumber } from "../../../i18n/format.js";
 import { uploadFile } from "../../../api/media";
 import { readFileAsDataUrl } from "../../../lib/cropImage";
 import {
-  acceptServerRules, discoverPublicServers, joinPublicServer, joinServerByInvite, joinServerByVanity, previewServerInvite, previewServerVanity,
+  acceptServerRules, discoverPublicServers, getOwnershipTransferInfo, joinPublicServer, joinServerByInvite, joinServerByVanity, previewServerInvite, previewServerVanity,
 } from "../../../api/servers";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -180,7 +180,12 @@ export function JoinServerSheet({ mode, initialCode = "", onClose, onJoined }) {
       try {
         let res;
         if (parsed.kind === "vanity") res = await tryVanity();
-        else if (parsed.kind === "either") { try { res = await tryInvite(); } catch { res = await tryVanity(); } }
+        else if (parsed.kind === "either") {
+          // Fall back to a vanity URL only when no such invite exists. An expired invite
+          // (410) must not open another server that took the same text as its vanity URL
+          // (IM-16); the preview shows which kind matched.
+          try { res = await tryInvite(); } catch (e) { if (e?.code === "INVITE_INVALID" || e?.status === 404) res = await tryVanity(); else throw e; }
+        }
         else res = await tryInvite();
         if (my !== seq.current) return;
         setPreview(res?.server ? res : null);
@@ -394,16 +399,26 @@ export function DeleteServerSheet({ mode, server, onCancel, onConfirm, onTransfe
   const { s, f } = useSvh();
   const { toast } = useToast();
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  // The owner's account password, like an ownership transfer (none for Google / Apple accounts).
+  const [pwRequired, setPwRequired] = useState(false);
   const [busy, setBusy] = useState(false);
-  const ok = confirmNameMatches(name, server?.name);
+  useEffect(() => {
+    if (!server?.id || !server?.isOwner) return undefined;
+    let alive = true;
+    getOwnershipTransferInfo(server.id).then((r) => alive && setPwRequired(r?.passwordRequired !== false)).catch(() => {});
+    return () => { alive = false; };
+  }, [server?.id, server?.isOwner]);
+  const ok = confirmNameMatches(name, server?.name) && (!pwRequired || password.length > 0);
   const tablet = mode === "tablet";
   const submit = async () => {
     if (!ok || busy) return;
     setBusy(true);
     try {
-      await onConfirm?.(name.trim().replace(/\s+/g, " "));
+      await onConfirm?.(name.trim().replace(/\s+/g, " "), pwRequired ? password : undefined);
     } catch (err) {
-      toast(err?.message || s.failed, "error");
+      if (err?.code === "PASSWORD_REQUIRED") setPassword("");
+      toast(err?.code === "PASSWORD_REQUIRED" ? s.wrongPassword : err?.message || s.failed, "error");
       setBusy(false);
     }
   };
@@ -418,7 +433,13 @@ export function DeleteServerSheet({ mode, server, onCancel, onConfirm, onTransfe
         </div>
         <Sec>{s.delTypeName}</Sec>
         <Field value={name} onChange={setName} placeholder={server?.name} autoFocus onEnter={submit} label={s.delTypeName}
-          right={ok ? <span style={{ marginLeft: "auto", color: "var(--svh-ok)", display: "flex" }}><I n="check" s={18} w={2.6} /></span> : null} />
+          right={confirmNameMatches(name, server?.name) ? <span style={{ marginLeft: "auto", color: "var(--svh-ok)", display: "flex" }}><I n="check" s={18} w={2.6} /></span> : null} />
+        {pwRequired ? (
+          <>
+            <Sec>{s.password}</Sec>
+            <Field type="password" autoComplete="current-password" value={password} onChange={setPassword} placeholder={s.passwordPh} onEnter={submit} label={s.password} />
+          </>
+        ) : null}
         <Btn variant="red" style={{ marginTop: 22 }} onClick={submit} disabled={!ok || busy}>{busy ? <Spinner /> : s.delBtn}</Btn>
         {onTransfer ? (
           <div style={{ textAlign: "center", marginTop: 14 }}>

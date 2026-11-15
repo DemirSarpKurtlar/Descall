@@ -142,10 +142,21 @@ router.delete("/server-review/servers/:serverId/invites/:code", async (req, res)
 router.post("/server-review/servers/:serverId/invites/revoke-all", async (req, res) => {
   try {
     const result = await store.revokeAllInvites(req.params.serverId);
-    audit(req.user, "server_invites_revoke", req.params.serverId, { removed: result.removed });
+    audit(req.user, "server_invites_revoke", req.params.serverId, { removed: result.removed, paused: result.paused });
     res.json(result);
   } catch (e) {
     fail(res, e, "invite revoke", "Could not close the invites.");
+  }
+});
+
+// Lift the join pause that "Close invites" set (IM-4).
+router.post("/server-review/servers/:serverId/invites/resume", async (req, res) => {
+  try {
+    const result = await store.resumeInvites(req.params.serverId);
+    audit(req.user, "server_invites_resume", req.params.serverId, {});
+    res.json(result);
+  } catch (e) {
+    fail(res, e, "invite resume", "Could not reopen the invites.");
   }
 });
 

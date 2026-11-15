@@ -97,15 +97,19 @@ async function loadServers(userId, now) {
   const members = await rows(supabase.from("server_members").select("server_id, nickname, joined_at, timeout_until").eq("user_id", userId).limit(MAX_SERVERS));
   const ids = members.map((m) => m.server_id);
   if (!ids.length) return { list: [], truncated: false };
+  // Paged past PostgREST's 1000-row cap: a dropped @everyone deny row made private
+  // channels look visible here too (server audit P1).
+  const { selectAllIn } = require("./serverPermissions");
+  const byId = (q) => q.order("id", { ascending: true });
   const [servers, roles, assigned, channels] = await Promise.all([
     rows(supabase.from("servers").select("id, name, owner_id, icon_url").in("id", ids)),
-    rows(supabase.from("server_roles").select("id, server_id, name, color, position, permissions, is_everyone").in("server_id", ids)),
-    rows(supabase.from("server_member_roles").select("server_id, role_id").eq("user_id", userId).in("server_id", ids)),
-    rows(supabase.from("server_channels").select("id, server_id, name, type, parent_id, position").in("server_id", ids)),
+    selectAllIn(supabase, "server_roles", "id, server_id, name, color, position, permissions, is_everyone", byId, "server_id", ids),
+    selectAllIn(supabase, "server_member_roles", "server_id, role_id", (q) => q.eq("user_id", userId).order("role_id", { ascending: true }), "server_id", ids),
+    selectAllIn(supabase, "server_channels", "id, server_id, name, type, parent_id, position", byId, "server_id", ids),
   ]);
   const chIds = channels.map((c) => c.id);
   const overrides = chIds.length
-    ? await rows(supabase.from("server_channel_overrides").select("channel_id, target_type, target_id, allow_permissions, deny_permissions").in("channel_id", chIds))
+    ? await selectAllIn(supabase, "server_channel_overrides", "id, channel_id, target_type, target_id, allow_permissions, deny_permissions", byId, "channel_id", chIds)
     : [];
   const serverById = new Map(servers.map((s) => [String(s.id), s]));
   const list = members

@@ -59,20 +59,20 @@ export function getServer(serverId) {
 }
 
 /** Owner delete, confirmName must match server name. */
-export function deleteServer(serverId, confirmName) {
+export function deleteServer(serverId, confirmName, password) {
   return serversRequest(`/api/servers/${serverId}`, {
     method: "DELETE",
-    body: { confirmName },
+    body: { confirmName, password: password || undefined },
   });
 }
 
 /**
  * Leave server. If owner, deletes the server (confirmName required).
  */
-export function leaveServer(serverId, confirmName) {
+export function leaveServer(serverId, confirmName, password) {
   return serversRequest(`/api/servers/${serverId}/leave`, {
     method: "POST",
-    body: confirmName ? { confirmName } : {},
+    body: confirmName ? { confirmName, password: password || undefined } : {},
   });
 }
 
@@ -183,6 +183,14 @@ export function updateServerRole(serverId, roleId, patch = {}) {
   return serversRequest(`/api/servers/${serverId}/roles/${roleId}`, {
     method: "PATCH",
     body: patch,
+  });
+}
+
+/** One request for a drag reorder: roleIds top to bottom, @everyone left out. */
+export function reorderServerRoles(serverId, roleIds = []) {
+  return serversRequest(`/api/servers/${serverId}/roles/positions`, {
+    method: "PUT",
+    body: { roleIds },
   });
 }
 

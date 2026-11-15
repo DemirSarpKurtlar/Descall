@@ -61,6 +61,7 @@ export const SVH_EN = {
   afkChannel: "AFK channel",
   afkTimeout: "AFK timeout",
   systemFoot: "New member welcomes and system messages land in this channel. Idle members move to the AFK channel after the AFK timeout.",
+  defaultNotif: "Default notifications",
   secQuick: "Quick facts",
   createdAt: "Created",
   owner: "Server owner",

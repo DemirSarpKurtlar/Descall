@@ -69,6 +69,7 @@ const CATALOG = {
   server_directory_show: ["content", "low"],
   server_invite_delete: ["content", "medium"],
   server_invites_revoke: ["content", "medium"],
+  server_invites_resume: ["content", "medium"],
   server_delete: ["content", "critical"],
   flagged_context_view: ["content", "high"],
   broadcast: ["content", "high"],

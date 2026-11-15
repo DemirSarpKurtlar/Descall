@@ -53,7 +53,10 @@ export default function ServerMemberRoleAssign({
     return map;
   }, [allRoles]);
 
-  const canManageMember = (member) => canActOnServerMember(server, member, meId);
+  // Your own roles too (the owner can wear a colour role; others only roles below their
+  // own top role without extra permissions, enforced by isAssignableServerRole).
+  const canManageMember = (member) =>
+    canActOnServerMember(server, member, meId) || Boolean(meId && member && String(member.userId) === String(meId));
 
   const sortedMembers = useMemo(() => {
     const q = query.trim().toLowerCase();

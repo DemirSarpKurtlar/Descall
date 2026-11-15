@@ -14,6 +14,7 @@ import {
 import { isVanityServerInvite, vanitySlugFromInviteCode } from "../../lib/inviteLinks";
 import { ServerIcon } from "./ServerIcon";
 import { ServerListSkeleton } from "../ui/Skeleton";
+import { cssUrl } from "../../lib/cssUrl";
 
 /**
  * Join via invite code + browse public servers.
@@ -185,7 +186,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
                     <div
                       className="server-join-splash"
                       style={{
-                        backgroundImage: `url(${preview.server.splashUrl || preview.server.bannerUrl})`,
+                        backgroundImage: cssUrl(preview.server.splashUrl || preview.server.bannerUrl),
                       }}
                     />
                   )}

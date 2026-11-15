@@ -549,6 +549,7 @@ export const AUDIT_LOG_DE = {
     "server_directory_show": "Im Verzeichnis gezeigt",
     "server_invite_delete": "Einladung gelöscht",
     "server_invites_revoke": "Einladungen widerrufen",
+    "server_invites_resume": "Einladungen wieder geöffnet",
     "server_delete": "Server gelöscht",
     "flagged_context_view": "Kontext eingesehen",
     "broadcast": "Rundnachricht gesendet",

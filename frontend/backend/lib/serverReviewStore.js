@@ -334,7 +334,7 @@ function invalidateList() {
 
 /* ---------- Server detail (metadata) ---------- */
 
-async function loadServerRow(serverId, colsList = [DETAIL_COLS_FULL, DETAIL_COLS_BASE]) {
+async function loadServerRow(serverId, colsList = [`${DETAIL_COLS_FULL}, invites_paused_at`, DETAIL_COLS_FULL, DETAIL_COLS_BASE]) {
   if (!review.isUuid(serverId)) throw httpError(400, "Invalid server.", "SERVER_INVALID");
   const res = await selectWithFallback(colsList, (cols) => supabase.from("servers").select(cols).eq("id", serverId).maybeSingle());
   if (!res.data) throw httpError(404, "Server not found.", "SERVER_NOT_FOUND");
@@ -476,6 +476,8 @@ async function getServerDetail(serverId, nowMs = Date.now()) {
       communityEnabled: Boolean(s.community_enabled),
       createdAt: s.created_at || null,
       updatedAt: s.updated_at || null,
+      // Joins paused by "Close invites" (IM-4); null when open or before the migration.
+      invitesPausedAt: s.invites_paused_at || null,
     },
     owner: { ...userCard(people.get(String(s.owner_id)), s.owner_id), joinedAt: null },
     stats: {
@@ -682,6 +684,8 @@ async function setDirectoryHidden(serverId, hidden, note) {
     throw error;
   }
   if (!data) throw httpError(404, "Server not found.", "SERVER_NOT_FOUND");
+  // Hidden by moderation: the directory's permanent invite stops working too (IM-13).
+  if (hidden) await require("./serverMemberState").dropDirectoryInvite(serverId);
   invalidateList();
   return { ok: true, hidden };
 }
@@ -695,14 +699,40 @@ async function deleteInvite(serverId, code) {
   return { ok: true, code };
 }
 
-/** "Davetleri kapat": every invite of the server is removed (there is no pause flag). */
+/**
+ * "Davetleri kapat": every invite of the server is removed AND joins are paused
+ * (servers.invites_paused_at): vanity, public discover, the directory and new invites
+ * kept working before (IM-4). resumeInvites() lifts the pause.
+ */
 async function revokeAllInvites(serverId) {
   if (!review.isUuid(serverId)) throw httpError(400, "Invalid server.", "SERVER_INVALID");
   await loadServerRow(serverId, ["id"]);
+  await require("./serverMemberState").dropDirectoryInvite(serverId);
   const { data, error } = await supabase.from("server_invites").delete().eq("server_id", serverId).select("code");
   if (error) throw error;
+  let paused = true;
+  const { error: pauseErr } = await supabase
+    .from("servers")
+    .update({ invites_paused_at: new Date().toISOString() })
+    .eq("id", serverId);
+  if (pauseErr) {
+    paused = false;
+    if (!isMissingSchemaError(pauseErr)) throw pauseErr;
+  }
   invalidateList();
-  return { ok: true, removed: (data || []).length };
+  return { ok: true, removed: (data || []).length, paused };
+}
+
+async function resumeInvites(serverId) {
+  if (!review.isUuid(serverId)) throw httpError(400, "Invalid server.", "SERVER_INVALID");
+  await loadServerRow(serverId, ["id"]);
+  const { error } = await supabase.from("servers").update({ invites_paused_at: null }).eq("id", serverId);
+  if (error) {
+    if (isMissingSchemaError(error)) throw httpError(503, "This is not available yet.", "UNAVAILABLE");
+    throw error;
+  }
+  invalidateList();
+  return { ok: true, paused: false };
 }
 
 async function loadServerForDelete(serverId) {
@@ -719,6 +749,7 @@ module.exports = {
   setDirectoryHidden,
   deleteInvite,
   revokeAllInvites,
+  resumeInvites,
   loadServerForDelete,
   MSG_COLS,
 };

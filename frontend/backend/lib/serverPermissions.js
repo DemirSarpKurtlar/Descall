@@ -89,6 +89,43 @@ const EVERYONE_PRIVILEGE_BITS =
   Permissions.BAN_MEMBERS |
   Permissions.MODERATE_MEMBERS;
 
+/**
+ * Bits a channel overwrite may never grant or take: server-wide powers. The API only
+ * writes CHANNEL_OVERRIDE_KEYS, but a row carrying ADMINISTRATOR (DB write, import,
+ * a future copy path) used to grant every permission in that channel (audit P7).
+ */
+const NON_OVERWRITABLE_BITS =
+  Permissions.ADMINISTRATOR |
+  Permissions.MANAGE_GUILD |
+  Permissions.MANAGE_ROLES |
+  Permissions.KICK_MEMBERS |
+  Permissions.BAN_MEMBERS |
+  Permissions.MODERATE_MEMBERS |
+  Permissions.VIEW_AUDIT_LOG |
+  Permissions.MANAGE_NICKNAMES;
+
+/** What a timed-out non-admin member keeps (Discord: read only). */
+const TIMEOUT_KEEP_BITS = Permissions.VIEW_CHANNEL | Permissions.READ_MESSAGE_HISTORY;
+
+const UUID_LOOSE_RE = /^\{?[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}\}?$/i;
+/** Ids compared the way Postgres compares uuid columns (case, braces and hyphens ignored). */
+function idKey(value) {
+  if (value == null) return "";
+  const s = String(value).trim();
+  return UUID_LOOSE_RE.test(s) ? s.replace(/[{}-]/g, "").toLowerCase() : s;
+}
+function sameId(a, b) {
+  if (a == null || b == null) return false;
+  return idKey(a) === idKey(b);
+}
+
+function activeTimeoutUntil(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime()) || d <= new Date()) return null;
+  return d.toISOString();
+}
+
 function stripEveryonePrivilegeBits(bits) {
   const b = typeof bits === "bigint" ? bits : fromPgBigint(bits);
   return b & ~EVERYONE_PRIVILEGE_BITS;
@@ -163,22 +200,25 @@ async function resolveMemberPermissions(supabase, serverId, userId, preloaded = 
     return { bits: 0n, isOwner: false, isMember: false };
   }
 
-  if (server.owner_id === userId) {
-    return { bits: ALL_PERMISSIONS, isOwner: true, isMember: true };
+  if (sameId(server.owner_id, userId)) {
+    return { bits: ALL_PERMISSIONS, isOwner: true, isMember: true, timeoutUntil: null };
   }
 
   let isMember;
+  let timeoutUntil = null;
   if (preloaded && Object.prototype.hasOwnProperty.call(preloaded, "isMember")) {
     isMember = Boolean(preloaded.isMember);
+    timeoutUntil = activeTimeoutUntil(preloaded.timeoutUntil);
   } else {
     const { data: membership, error: mErr } = await supabase
       .from("server_members")
-      .select("user_id")
+      .select("user_id, timeout_until")
       .eq("server_id", serverId)
       .eq("user_id", userId)
       .maybeSingle();
     if (mErr) throw mErr;
     isMember = Boolean(membership);
+    timeoutUntil = activeTimeoutUntil(membership?.timeout_until);
   }
   if (!isMember) {
     return { bits: 0n, isOwner: false, isMember: false };
@@ -207,7 +247,25 @@ async function resolveMemberPermissions(supabase, serverId, userId, preloaded = 
     assigned = assignedRes.data;
   }
 
-  return { bits: computeMemberBaseBits(roles, assigned), isOwner: false, isMember: true };
+  return { bits: computeMemberBaseBits(roles, assigned), isOwner: false, isMember: true, timeoutUntil };
+}
+
+/**
+ * True when a timeout freezes this member's management powers: a running timeout on a
+ * non-owner, non-ADMINISTRATOR member (Discord: admins cannot be timed out).
+ */
+function isTimeoutRestricted(resolved) {
+  if (!resolved?.isMember || resolved.isOwner) return false;
+  if (!resolved.timeoutUntil || !activeTimeoutUntil(resolved.timeoutUntil)) return false;
+  return !hasPermission(resolved.bits, Permissions.ADMINISTRATOR);
+}
+
+function timeoutRestrictedError(resolved) {
+  const { templatedError } = require("./apiError");
+  const until = resolved?.timeoutUntil || new Date().toISOString();
+  const err = templatedError("You are timed out until {until}.", { until: new Date(until).toLocaleString("en-US") }, { status: 403, code: "TIMED_OUT" });
+  err.timeout = { until, reason: null };
+  return err;
 }
 
 /**
@@ -303,6 +361,15 @@ async function assertHierarchy(supabase, serverId, actorId, targetUserId) {
     err.code = "MEMBER_NOT_FOUND";
     throw err;
   }
+  // A frozen (timed-out) moderator cannot act on anyone (audit M4).
+  if (isTimeoutRestricted(actorResolved)) throw timeoutRestrictedError(actorResolved);
+  // Nobody moderates themselves through this path, whatever spelling of the id is used.
+  if (sameId(actorId, targetUserId)) {
+    const err = new Error("You cannot manage a member with an equal or higher role.");
+    err.status = 403;
+    err.code = "HIERARCHY";
+    throw err;
+  }
 
   if (
     !canModerateTarget(actorResolved, targetResolved, {
@@ -371,7 +438,7 @@ function applyOverwrites(baseBits, overwrites, { everyoneRoleId, memberRoleIds, 
   const list = Array.isArray(overwrites) ? overwrites : [];
 
   const applyPair = (deny, allow) => {
-    bits = (bits & ~deny) | allow;
+    bits = (bits & ~(deny & ~NON_OVERWRITABLE_BITS)) | (allow & ~NON_OVERWRITABLE_BITS);
   };
 
   if (everyoneRoleId) {
@@ -390,7 +457,7 @@ function applyOverwrites(baseBits, overwrites, { everyoneRoleId, memberRoleIds, 
   }
   applyPair(roleDeny, roleAllow);
 
-  const member = list.find((o) => o.target_type === "member" && String(o.target_id) === String(userId));
+  const member = list.find((o) => o.target_type === "member" && sameId(o.target_id, userId));
   if (member) applyPair(fromPgBigint(member.deny_permissions), fromPgBigint(member.allow_permissions));
   return bits;
 }
@@ -510,9 +577,10 @@ function computeChannelOverwriteBits({ baseBits, roles, assigned, overrides, cha
  */
 function computeChannelPermissionsFromRows({ server, channel, roles, assigned, overrides, userId, isMember }) {
   if (!server) return 0n;
-  if (server.owner_id !== userId && !isMember) return 0n;
+  const owner = sameId(server.owner_id, userId);
+  if (!owner && !isMember) return 0n;
   if (!channel) return 0n;
-  if (server.owner_id === userId) return ALL_PERMISSIONS;
+  if (owner) return ALL_PERMISSIONS;
   const baseBits = computeMemberBaseBits(roles, assigned);
   if (hasPermission(baseBits, Permissions.ADMINISTRATOR)) return ALL_PERMISSIONS;
   return computeChannelOverwriteBits({
@@ -617,6 +685,13 @@ module.exports = {
   ALL_PERMISSIONS,
   EVERYONE_DEFAULT,
   EVERYONE_PRIVILEGE_BITS,
+  NON_OVERWRITABLE_BITS,
+  TIMEOUT_KEEP_BITS,
+  sameId,
+  idKey,
+  activeTimeoutUntil,
+  isTimeoutRestricted,
+  timeoutRestrictedError,
   toPgBigint,
   fromPgBigint,
   hasPermission,
@@ -627,6 +702,7 @@ module.exports = {
   assertCanManageRole,
   resolveChannelPermissions,
   resolveChannelPermissionsBulk,
+  selectAllIn,
   computeMemberBaseBits,
   computeChannelOverwriteBits,
   computeChannelPermissionsFromRows,

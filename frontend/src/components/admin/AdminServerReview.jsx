@@ -761,6 +761,18 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
     }
   };
 
+  const reopenInvites = async () => {
+    if (!(await confirmAction({ message: t("serverReview.reopenInvitesConfirm"), confirmLabel: t("serverReview.actReopenInvites"), cancelLabel: t("serverReview.cancel"), danger: false }))) return;
+    try {
+      await adminFetch(`${pathOf(serverId)}/invites/resume`, { method: "POST", body: "{}" });
+      notify(t("serverReview.invitesReopened"));
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(errorText(err));
+    }
+  };
+
   const deleteInvite = async (invite) => {
     if (!(await confirmAction({ message: t("serverReview.deleteInviteConfirm", { code: invite.code }), confirmLabel: t("serverReview.actDeleteInvite"), cancelLabel: t("serverReview.cancel") }))) return;
     try {
@@ -848,6 +860,7 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
       <PersonLine user={detail.owner} t={t} onOpenPerson={onOpenPerson} extra={<span className="asr-chip is-brand">{t("serverReview.ownerBadge")}</span>} />
 
       {error ? <p className="asr-err" role="alert">{error}</p> : null}
+      {detail.server?.invitesPausedAt ? <p className="asr-err" role="status">{t("serverReview.invitesPausedNote")}</p> : null}
 
       <div className="asr-actions">
         {d.available && (d.listed || d.hidden) ? (
@@ -857,7 +870,11 @@ function ServerDetail({ serverId, onBack, onChanged, canBan, onOpenPerson, onOpe
             <button type="button" className="asr-btn" onClick={() => setDialog("hide")}><EyeOff size={14} /> {t("serverReview.actHide")}</button>
           )
         ) : null}
-        <button type="button" className="asr-btn" onClick={revokeAll} disabled={!detail.invites.length}><Link2 size={14} /> {t("serverReview.actCloseInvites")}</button>
+        {detail.server?.invitesPausedAt ? (
+          <button type="button" className="asr-btn" onClick={reopenInvites}><Link2 size={14} /> {t("serverReview.actReopenInvites")}</button>
+        ) : (
+          <button type="button" className="asr-btn" onClick={revokeAll}><Link2 size={14} /> {t("serverReview.actCloseInvites")}</button>
+        )}
         {canBan && !detail.owner.isAdmin ? (
           <button type="button" className="asr-btn is-bad-ghost" onClick={() => setBanTarget(detail.owner)}><Ban size={14} /> {t("serverReview.actBanOwner")}</button>
         ) : null}

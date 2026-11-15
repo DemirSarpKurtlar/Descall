@@ -16,6 +16,10 @@ async function getActiveServerTimeout(serverId, userId) {
   if (!data?.timeout_until) return null;
   const until = new Date(data.timeout_until);
   if (!Number.isFinite(until.getTime()) || until <= new Date()) return null;
+  // The owner is never held by a timeout (one left over from before an ownership
+  // transfer, or written through a non-canonical id before 2026-11-15, M1 / M6).
+  const { data: server } = await supabase.from("servers").select("owner_id").eq("id", serverId).maybeSingle();
+  if (server && String(server.owner_id).toLowerCase() === String(userId).toLowerCase()) return null;
   return { until: until.toISOString(), reason: data.timeout_reason || null };
 }
 

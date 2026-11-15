@@ -67,6 +67,7 @@ const ACT = {
   server_directory_show: ["eye", "violet"],
   server_invite_delete: ["link", "violet"],
   server_invites_revoke: ["link", "violet"],
+  server_invites_resume: ["link", "violet"],
   server_delete: ["trash", "red"],
   flagged_context_view: ["eye", "violet"],
   broadcast: ["megaphone", "violet"],

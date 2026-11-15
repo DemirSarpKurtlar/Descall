@@ -549,6 +549,7 @@ export const AUDIT_LOG_RU = {
     "server_directory_show": "Показал(а) в каталоге",
     "server_invite_delete": "Удалил(а) приглашение",
     "server_invites_revoke": "Отозвал(а) приглашения",
+    "server_invites_resume": "Снова открыл(а) приглашения",
     "server_delete": "Удалил(а) сервер",
     "flagged_context_view": "Просмотрел(а) контекст",
     "broadcast": "Сделал(а) рассылку",

@@ -13,6 +13,7 @@ import { useReducedMotionPref } from "./useHubMode";
 import { useSvh } from "./useSvh";
 import { t } from "../../../i18n/runtime.js";
 import "./svh.css";
+import { cssUrl } from "../../../lib/cssUrl";
 
 export function I({ n, s = 18, w = 2, style, className }) {
   return (
@@ -87,7 +88,7 @@ export function Av({ user, name, s = 36, dot, img, style }) {
   const n = name || user?.displayName || user?.username || "?";
   const L = (Array.from(String(n))[0] || "?").toLocaleUpperCase("tr");
   const url = img || (user ? resolveAvatarUrl(user) : null);
-  const st = { width: s, height: s, fontSize: s * 0.42, ...(url ? { backgroundImage: `url("${url}")` } : { background: avatarColor(avatarKey(user, n)), color: "#E8ECF8" }), ...style };
+  const st = { width: s, height: s, fontSize: s * 0.42, ...(url ? { backgroundImage: cssUrl(url) } : { background: avatarColor(avatarKey(user, n)), color: "#E8ECF8" }), ...style };
   return (
     <span className="svh-av" style={st} aria-hidden="true">
       {url ? null : L}

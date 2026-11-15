@@ -549,6 +549,7 @@ export const AUDIT_LOG_EN = {
     "server_directory_show": "Showed in directory",
     "server_invite_delete": "Deleted invite",
     "server_invites_revoke": "Revoked invites",
+    "server_invites_resume": "Reopened invites",
     "server_delete": "Deleted server",
     "flagged_context_view": "Viewed context",
     "broadcast": "Broadcast",

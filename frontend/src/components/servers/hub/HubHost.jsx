@@ -208,9 +208,9 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
     const leaving = c.mode === "leave-delete";
     return <DeleteServerSheet key="delete" mode={mode} server={sv} onCancel={cancel}
       onTransfer={sv.isOwner ? () => { b.setConfirm(null); openHub(sv, P({ id: "tr", leaveAfter: leaving })); } : undefined}
-      onConfirm={async (name) => {
-        if (leaving) await cb.onLeaveServer?.(sv.id, name);
-        else await cb.onDeleteServer?.(sv.id, name);
+      onConfirm={async (name, password) => {
+        if (leaving) await cb.onLeaveServer?.(sv.id, name, password);
+        else await cb.onDeleteServer?.(sv.id, name, password);
         b.setConfirm(null);
         setHub(null);
       }} />;

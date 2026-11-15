@@ -549,6 +549,7 @@ export const AUDIT_LOG_TR = {
     "server_directory_show": "Dizinde gösterdi",
     "server_invite_delete": "Daveti sildi",
     "server_invites_revoke": "Davetleri iptal etti",
+    "server_invites_resume": "Davetleri yeniden açtı",
     "server_delete": "Sunucuyu sildi",
     "flagged_context_view": "Bağlamı görüntüledi",
     "broadcast": "Duyuru yayınladı",
