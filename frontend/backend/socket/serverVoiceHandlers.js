@@ -1224,4 +1224,6 @@ module.exports = {
   endAllServerVoice,
   findUserVoiceChannel,
   startAfkIdleScanner,
+  // lib/serverVoiceEnforce.js (contract for the other server modules) uses these.
+  _internals: { removeFromVoice, emitChannelState, setParticipant, getParticipantEntry },
 };
