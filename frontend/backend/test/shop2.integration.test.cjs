@@ -210,6 +210,24 @@ async function run() {
       assert.equal(d.ownersCount, 1);
     });
 
+    await check("share my look: owned only, friends only, real DM send path with a look link", async () => {
+      const notOwned = await call("/shop2/share", { method: "POST", body: { setKey: "bakir-kervan", toUserIds: [U(2)] } });
+      assert.equal(notOwned.status, 403);
+      assert.equal(notOwned.body.code, "share_not_owned");
+      assert.equal((await call("/shop2/share", { method: "POST", body: { setKey: "gece-limani", toUserIds: [] } })).body.code, "share_no_recipients");
+      const r = await call("/shop2/share", { method: "POST", body: { setKey: "gece-limani", toUserIds: [U(2), U(3)], message: "Yeni görünümüm" } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.equal(r.body.sent, 1);
+      assert.deepEqual(r.body.results.find((x) => x.userId === U(3)), { userId: U(3), ok: false, code: "recipient_not_friend" });
+      const dm = rows("dm_messages").find((m) => m.from_user_id === U(1) && m.to_user_id === U(2));
+      assert.ok(dm, "DM row written");
+      const parsed = require("../lib/shop2/share").parseShareText(dm.content);
+      assert.deepEqual(parsed, { kind: "set", ref: "gece-limani", note: "Yeni görünümüm" });
+      const item = await call("/shop2/share", { method: "POST", body: { itemId: pieces[0].id, toUserIds: [U(4)] } });
+      assert.equal(item.body.sent, 1, JSON.stringify(item.body));
+      assert.ok(/\/shop\/look\/item\//.test(item.body.link));
+    });
+
     await check("night market: closed by default, open-now, flip, flips limit, keep limit, buy at discount", async () => {
       const closed = await call("/shop2/night-market/flip", { method: "POST", body: { cardIndex: 0 } });
       if (closed.status !== 200) assert.equal(closed.body.code, "night_closed");

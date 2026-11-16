@@ -311,7 +311,7 @@ function checklist(set, { limits, clashes = [], cat }) {
     { key: "above_singles", ok: ladder.farAboveSingles, vars: { setPrice, singleMax: ladder.singleMax } },
     { key: "schedule", ok: Boolean(set.startsAt) || set.status === "live", vars: { startsAt: set.startsAt, endsAt: set.endsAt } },
     { key: "clash", ok: !clashes.some((c) => c.refs.includes(`set:${set.key}`) && c.severity === "warn"), vars: { clashes: clashes.filter((c) => c.refs.includes(`set:${set.key}`)).map((c) => c.code) } },
-    { key: "phone_crop", ok: Boolean(bannerItem && (bannerItem.asset || bannerItem.preview)), vars: { hint: "banner focal art must stay right of centre (3:1 .. 3.6:1)" } },
+    { key: "phone_crop", ok: Boolean(bannerItem && (bannerItem.asset || bannerItem.preview)), vars: { rule: "banner_focal_right", ratioMin: 3, ratioMax: 3.6 } },
     { key: "translations", ok: names && itemNames },
     { key: "sellable", ok: retired.length === 0, vars: { retired } },
     { key: "catalog", ok: Boolean(cat) },

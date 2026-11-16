@@ -345,6 +345,26 @@ async function run() {
       assert.ok(emitted.some((e) => e.to === "all" && e.ev === "shop2:storefront" && e.p.reason === "daily"));
     });
 
+    await check("night market reminder: 10 minutes before, once, only users who asked", async () => {
+      const night = require("../lib/shop2/night");
+      const on = await call("/shop2/night-market/notify", { method: "POST", body: { on: true }, user: 5 });
+      assert.equal(on.status, 200, JSON.stringify(on.body));
+      assert.equal(on.body.minutesBefore, 10);
+      const startsAt = new Date(Date.now() + 8 * 60_000);
+      const n = await call("/admin/shop2/night-markets", { method: "POST", body: { startsAt: startsAt.toISOString(), durationHours: 2 } });
+      assert.equal(n.status, 200, JSON.stringify(n.body));
+      const early = await night.remindDue({ now: Date.now() - 5 * 60_000 });
+      assert.equal(early.reminded, 0);
+      const r = await night.remindDue({ now: Date.now() });
+      assert.equal(r.night, n.body.night.id);
+      assert.equal(r.reminded, 1);
+      const ev = emitted.find((e) => e.to === `user:${U(5)}` && e.ev === "shop2:night_reminder");
+      assert.ok(ev && ev.p.minutes >= 7 && ev.p.title);
+      const again = await night.remindDue({ now: Date.now() + 1000 });
+      assert.equal(again.reminded, 0, "once per night");
+      assert.equal(night.reminderText("tr", 10).body, "Gizli kartların 10 dakika sonra açılıyor.");
+    });
+
     await check("mounted router: the admin chain refuses non-admins", async () => {
       const express = require("express");
       const app = express();

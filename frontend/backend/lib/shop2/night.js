@@ -268,4 +268,77 @@ async function report(nightId) {
   };
 }
 
-module.exports = { fromRow, nights, current, eligible, view, flip, keep, buy, revealedCard, setNotify, report, deck };
+/* ---------------------------------------------------------------- reminder */
+
+const REMIND_MINUTES = 10;
+
+function reminderText(lang, minutes) {
+  const copy = require("../../i18n/shop2").nightReminder;
+  const [title, body] = copy[lang] || copy.en;
+  return { title, body: body.replace("{minutes}", String(minutes)) };
+}
+
+/**
+ * Scheduler: 10 minutes before a night opens, remind everyone who asked (shop2_user_state
+ * .notify_night) with an in-app notification, a socket event and a web push, in their app
+ * language. One reminder per night across instances (claimed with a shop2_settings row).
+ */
+async function remindDue({ now = Date.now(), io = null } = {}) {
+  await db.ready();
+  const { list } = await current(now);
+  const night = list.find((n) => !["skipped", "cancelled"].includes(n.status) && time.ms(n.startsAt) > now && time.ms(n.startsAt) - now <= REMIND_MINUTES * time.MIN_MS);
+  if (!night) return { night: null, reminded: 0 };
+  const claimKey = `night_reminder:${night.id}`;
+  if (await db.one(db.from("shop2_settings").select("key").eq("key", claimKey).maybeSingle()).catch(() => null)) return { night: night.id, reminded: 0, already: true };
+  // The primary key makes the insert the cross-instance claim.
+  const claim = await db.from("shop2_settings").insert({ key: claimKey, value: { at: time.iso(now) }, version: 1, updated_at: time.iso(now) }).select("key").single();
+  if (claim.error) return { night: night.id, reminded: 0, already: true };
+  const rows = await db.rows(db.from("shop2_user_state").select("user_id").eq("notify_night", true)).catch(() => []);
+  const ids = [...new Set(rows.map((r) => String(r.user_id)))];
+  if (!ids.length) return { night: night.id, reminded: 0 };
+  const minutes = Math.max(1, Math.round((time.ms(night.startsAt) - now) / time.MIN_MS));
+  const langs = new Map();
+  try {
+    const { data } = await db.real().from("users").select("id, language").in("id", ids);
+    for (const u of data || []) langs.set(String(u.id), u.language);
+  } catch {
+    /* English */
+  }
+  const { pickLang } = require("../i18n");
+  const byLang = new Map();
+  let handlers = null;
+  try {
+    handlers = require("../../socket/handlers");
+  } catch {
+    handlers = null;
+  }
+  let reminded = 0;
+  for (const id of ids) {
+    if (!(await eligible(id, night).catch(() => false))) continue;
+    const lang = pickLang([langs.get(id)], "en");
+    const t = reminderText(lang, minutes);
+    if (!byLang.has(lang)) byLang.set(lang, []);
+    byLang.get(lang).push(id);
+    require("./events").toUser(id, "shop2:night_reminder", { nightId: night.id, startsAt: night.startsAt, minutes, title: t.title, body: t.body });
+    try {
+      if (io && handlers?.pushNotification) handlers.pushNotification(io, id, { type: "shop2_night", title: t.title, body: t.body, meta: { nightId: night.id, startsAt: night.startsAt, deepLink: "/shop?tab=night" } });
+    } catch {
+      /* in-app list optional */
+    }
+    reminded += 1;
+  }
+  try {
+    const { sendWebPushToUsers } = require("../webPush");
+    await Promise.allSettled(
+      [...byLang].map(([lang, list]) => {
+        const t = reminderText(lang, minutes);
+        return sendWebPushToUsers(list, { type: "shop2-night", title: t.title, body: t.body, tag: `shop2-night-${night.id}`, deepLink: "/shop?tab=night" });
+      })
+    );
+  } catch (err) {
+    console.warn("[shop2] night reminder push failed:", err?.message || err);
+  }
+  return { night: night.id, reminded };
+}
+
+module.exports = { REMIND_MINUTES, remindDue, reminderText, fromRow, nights, current, eligible, view, flip, keep, buy, revealedCard, setNotify, report, deck };

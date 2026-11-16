@@ -6,6 +6,7 @@
  *  - deliver scheduled gifts whose time came (shop2:gift to the recipient)
  *  - run the scheduled change queue (rule version at 00:00, set publish, recall finalize)
  *  - 00:00 Istanbul: shop2:storefront { reason: "daily" } to everyone
+ *  - 10 minutes before a night market: reminder to users who asked (night.remindDue)
  *  - night market opened / closed: shop2:storefront { reason: "night_open" | "night_closed" }
  * server.js: require("./lib/shop2/scheduler").start({ getIo: () => app.get("io") })
  */
@@ -27,6 +28,7 @@ async function tick({ getIo = null, now = Date.now() } = {}) {
     if (getIo) events.bind(getIo());
     out.delivered = await require("./gifts").deliverDue({ now }).catch((e) => (console.warn("[shop2] gift delivery:", e?.message || e), 0));
     out.queue = await require("./adminOps").runDue({ now }).catch((e) => (console.warn("[shop2] queue:", e?.message || e), []));
+    out.reminder = await require("./night").remindDue({ now, io: getIo ? getIo() : events.getIo() }).catch((e) => (console.warn("[shop2] night reminder:", e?.message || e), null));
     const day = time.dayKey(now);
     if (lastDay && lastDay !== day) {
       events.toAll("shop2:storefront", { reason: "daily", day });

@@ -29,6 +29,7 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 |---|---|---|
 | `shop2:storefront` | `user:<id>` or everyone | `{ reason, day?, setKey?, nightId?, version?, at }`; reasons: `refresh`, `purchase`, `refund`, `gift`, `regenerated` (own), `daily` (00:00), `rules`, `night_open`, `night_closed`, `set_published`, `set_recalled`, `set_restored` (everyone). Refetch `GET /storefront`. |
 | `shop2:gift` | recipient / sender | `{ kind: "received", gift }` to the recipient on delivery; `{ kind: "opened" \| "equipped" \| "thanked", giftId }` to the sender; `{ kind: "recalled", giftId }` to the recipient. |
+| `shop2:night_reminder` | `user:<id>` | `{ nightId, startsAt, minutes, title, body, at }` 10 minutes before a night opens, only to users who turned the reminder on (title / body already in the user's language; an in-app notification `type: "shop2_night"` and a web push go out too). |
 | `shop2:admin:sale` | `admin` room | `{ sale: { id, kind, userId, setKey, itemIds, amount, listAmount, ownedDeducted, source, gift, at } }` (refund: `kind: "refund"`, negative amount); `{ flag: { kind: "gift_ring", giftId, users } }` on a ring. |
 
 ## User API (`/api/shop2`)
@@ -93,7 +94,9 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   409 `keep_limit`).
 - `POST /night-market/buy { cardIndex, expectedPrice? }` -> `{ ok, duplicate, purchaseId, paid, itemId,
   balance, refundableUntil }`.
-- `POST /night-market/notify { on }` (addition) -> `{ notify }`.
+- `POST /night-market/notify { on }` -> `{ notify, minutesBefore: 10 }`: the reminder is stored server
+  side (`shop2_user_state.notify_night`); the scheduler sends it 10 minutes before every night (once per
+  night, in-app notification + web push + `shop2:night_reminder`). `GET /night-market` returns `notify`.
 
 ### Gifts
 - `POST /gifts { toUserId, itemId | setKey | nightCardIndex, message?, sendAt?, anonymous?, hidden? }`
@@ -129,6 +132,15 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   · `DELETE /outfits/:id` (additions: apply, delete).
 - `GET /wishlist` -> `{ items: [{ item, addedAt, owned, available, inStorefrontToday }], sets: [{ setKey,
   addedAt }] }` · `POST /wishlist { itemId | setKey, remove?: true }` · `DELETE /wishlist/:itemId`.
+- `POST /share { itemId | setKey, toUserIds: [id] (1-10), message? }` ("Arkadaşlarına göster") ->
+  `{ ok, kind: "item"|"set", ref, link, results: [{ userId, ok, code?, messageId? }], sent }`. Only an
+  owned item or a fully owned set; friends only (others get `code: "recipient_not_friend"`). Sent through
+  the existing DM send path (lib/notifyActions.js `reply`: blocks, bans, timeouts, platform policy, DM
+  rate limit, unread, push, `dm:message`). The DM text is the note plus a look link on its own line:
+  `https://<app>/shop/look/set/<setKey>` or `https://<app>/shop/look/item/<itemId>`; render a look card
+  for messages matching `/\/shop\/look\/(set|item)\/([A-Za-z0-9._-]+)/` (server helper
+  `lib/shop2/share.js` `parseShareText`). Limit 10 shares per hour (429 `rate_limited`). Errors:
+  `share_no_recipients`, `share_too_many`, `share_not_owned`, `not_found`.
 - `GET /feed` (addition) -> `{ entries: [{ kind: "set_completed", at, user, setKey, setName, palette }] }`.
 
 ## Admin API (`/api/admin/shop2`)
@@ -239,8 +251,15 @@ Destructive actions require `reason` (>= 3 chars, 400 `reason_required`). Audite
 `gift_new_account`, `gift_new_account_set`, `gift_daily_cap`, `gift_recipient_cap`, `gift_receive_cap`,
 `gift_message_long`, `gift_bad_time`, `gift_too_far`, `recipient_not_found`, `recipient_unavailable`,
 `recipient_not_friend`, `recipient_no_gifts`, `gift_not_recallable`, `gift_opened`, `gift_not_ready`,
-`gift_not_opened`, `undo_expired`, `undo_unsupported`, `rate_limited`. English texts:
+`gift_not_opened`, `undo_expired`, `undo_unsupported`, `share_no_recipients`, `share_too_many`,
+`share_not_owned`, `rate_limited`. English texts:
 `lib/shop2/messages.js` (MESSAGES).
+
+## Server copy
+
+Set theme names (7 languages) and the night reminder text live in `backend/i18n/shop2.js`; set cards
+carry `name: { tr, en, de, es, fr, "pt-BR", ru }`. The admin checklist `phone_crop` item carries
+`vars: { rule: "banner_focal_right", ratioMin: 3, ratioMax: 3.6 }` (the UI words it).
 
 ## Catalog columns (seed)
 

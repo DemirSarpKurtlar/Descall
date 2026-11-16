@@ -32,6 +32,7 @@ const LIMITS = {
   buy: { windowMs: 60_000, max: 20 },
   gift: { windowMs: 10 * 60_000, max: 20 },
   flip: { windowMs: 60_000, max: 30 },
+  share: { windowMs: 60 * 60_000, max: 10 },
 };
 
 function base(req) {
@@ -223,13 +224,23 @@ router.post(
   }, { kind: "buy" })
 );
 
-router.post("/night-market/notify", handle((req) => night.setNotify(req.user.id, req.body?.on !== false), { kind: "write" }));
+// Reminder 10 minutes before a night market opens (stored server side, sent by the scheduler).
+router.post("/night-market/notify", handle(async (req) => ({ ...(await night.setNotify(req.user.id, req.body?.on !== false)), minutesBefore: night.REMIND_MINUTES }), { kind: "write" }));
 
 /* ---------------------------------------------------------------- gifts */
 
 router.get("/gifts", handle((req) => gifts.list(req.user.id, { base: base(req) })));
 
 router.get("/gifts/recipients", handle((req) => gifts.recipients(req.user.id, { itemId: typeof req.query.itemId === "string" ? req.query.itemId : null, setKey: typeof req.query.setKey === "string" ? req.query.setKey : null })));
+
+/** "Arkadaşlarına göster": DM my new look (owned item or complete set) to up to 10 friends. */
+router.post(
+  "/share",
+  handle(async (req) => {
+    const b = req.body || {};
+    return { ok: true, ...(await require("../lib/shop2/share").share(req.user.id, { itemId: b.itemId || null, setKey: b.setKey || null, toUserIds: b.toUserIds, message: b.message }, { io: io(req) })) };
+  }, { kind: "share" })
+);
 
 router.get("/feed", handle((req) => views.friendFeed(req.user.id)));
 

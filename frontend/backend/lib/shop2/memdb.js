@@ -9,6 +9,13 @@
 
 const crypto = require("crypto");
 
+/** PostgREST-shaped error (code + diagnostic text, never shown to users). */
+function pgErr(code, detail) {
+  return { code, message: detail };
+}
+const NO_ROWS = "no rows";
+const DUPLICATE = "duplicate key value violates unique constraint";
+
 const UNIQUE = {
   shop2_storefronts: ["user_id", "day"],
   shop2_wishlist: ["user_id", "item_id"],
@@ -85,7 +92,7 @@ class Q {
     const rows = this.rows;
     const out = (list) => {
       if (this.one) {
-        if (!list.length) return this.maybe ? { data: null, error: null } : { data: null, error: { code: "PGRST116", message: "no rows" } };
+        if (!list.length) return this.maybe ? { data: null, error: null } : { data: null, error: pgErr("PGRST116", NO_ROWS) };
         return { data: list[0], error: null };
       }
       return { data: list, error: null };
@@ -96,7 +103,7 @@ class Q {
       const done = [];
       for (const p of list) {
         const hit = keys ? rows.find((r) => keys.every((k) => String(r[k]) === String(p[k]))) : null;
-        if (hit && this.mode === "insert") return { data: null, error: { code: "23505", message: `duplicate key value violates unique constraint "${this.name}_key"` } };
+        if (hit && this.mode === "insert") return { data: null, error: pgErr("23505", `${DUPLICATE} "${this.name}_key"`) };
         if (hit) {
           if (this.uopts?.ignoreDuplicates) continue;
           Object.assign(hit, JSON.parse(JSON.stringify(p)));
