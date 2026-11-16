@@ -194,8 +194,8 @@ html.gd-lite:not(.electron-app) .vt2-skin > .vt2-fx {
 }
 .vt2-preview-avatar {
   position: relative;
-  width: 34%;
-  max-width: 96px;
+  width: 30%;
+  max-width: 84px;
   aspect-ratio: 1;
   border-radius: 50%;
   margin-top: -6%;
