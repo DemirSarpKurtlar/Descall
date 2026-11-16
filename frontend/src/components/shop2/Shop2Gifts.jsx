@@ -173,6 +173,8 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     }
   }, [target, variant, s2.data.storefront, s2.owned]);
   const friends = useMemo(() => list.map((f) => ({ ...f, owns: Boolean(f.owns || f.hasItem), wishes: Boolean(f.wishes || f.inWishlist) })), [list]);
+  // Birthdays are private: the chip shows only when the list carries any.
+  const hasBirthdays = friends.some((f) => f.birthdayInDays != null || f.birthdayAt);
   const shown = filterRecipients(friends, filter, query);
   const friend = friends.find((f) => sameId(f.id, to)) || null;
   const item = target?.item || null;
@@ -273,7 +275,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
         <label className="s2-searchbox"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("shop2.gifts.searchFriend")} aria-label={t("shop2.gifts.searchFriend")} /></label>
       ) : null}
       <div className="s2-chips-wrap">
-        {["all", "online", "birthday", "notOwned", "wishlist"].map((f) => (
+        {["all", "online", ...(hasBirthdays ? ["birthday"] : []), "notOwned", "wishlist"].map((f) => (
           <button key={f} type="button" className={`s2-chip is-btn${filter === f ? " is-on" : ""}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>
             {f === "wishlist" ? <Heart size={12} /> : null}
             {t(`shop2.gifts.filter.${f}`)}
@@ -465,12 +467,22 @@ function RecentSent() {
         <div key={g.id} className="s2-recent-row">
           <Letter f={g.to} tone={i + 2} />
           <b>{nameOf(g.to)}</b>
-          <span className="s2-muted">{g.item ? s2.itemName(g.item) : g.setName ? s2.itemName({ name: g.setName }) : ""}</span>
+          <span className="s2-muted">{giftLabel(s2, g)}</span>
           <StatusChip gift={g} />
         </div>
       ))}
     </div>
   );
+}
+
+/** What a sent gift was: the set name for a set gift (its items are only the missing pieces). */
+function giftLabel(s2, g) {
+  if (g.setKey && (g.kind === "set" || g.itemCount > 1)) {
+    const set = s2.data.setDetails[g.setKey] || s2.data.sets.find((x) => x.key === g.setKey) || s2.data.storefront?.featuredSets?.find((x) => x.key === g.setKey);
+    if (set) return s2.setName(set);
+  }
+  if (g.item) return s2.itemName(g.item);
+  return g.setName ? s2.itemName({ name: g.setName }) : "";
 }
 
 function StatusChip({ gift }) {
@@ -515,7 +527,7 @@ function Tracking() {
             const left = recallable ? windowLeft(g.sentAt, SHOP2_RECALL_MS, now, g.recallUntil) : 0;
             return (
               <tr key={g.id} className={`is-${g.status}`}>
-                <td>{g.item ? s2.itemName(g.item) : g.setName ? s2.itemName({ name: g.setName }) : ""}</td>
+                <td>{giftLabel(s2, g)}</td>
                 <td><span className="s2-who"><Letter f={g.to} tone={i + 1} />{nameOf(g.to)}</span></td>
                 <td><StatusChip gift={g} /></td>
                 <td className="s2-muted">{g.status === "scheduled" && g.sendAt ? new Date(g.sendAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ago(g.sentAt)}</td>

@@ -29,6 +29,7 @@ async function claimOnce(key, now) {
   try {
     const db = require("./db");
     await db.ready();
+    if (await db.one(db.from("shop2_settings").select("key").eq("key", key).maybeSingle()).catch(() => null)) return false;
     const { error } = await db.from("shop2_settings").insert({ key, value: { at: time.iso(now) }, version: 1, updated_at: time.iso(now) }).select("key").single();
     return !error;
   } catch {
