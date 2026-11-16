@@ -36,7 +36,9 @@ assert.match(T.otpauthUri("ABCD", "demir"), /^otpauth:\/\/totp\/Descall%3Ademir\
 const blob = T.encryptSecret(s);
 assert.ok(!blob.includes(s));
 assert.equal(T.decryptSecret(blob), s);
-const parts = blob.split(":"); parts[3] = parts[3].slice(0, -2) + (parts[3].endsWith("A") ? "BB" : "AA");
+// Tamper the FIRST base64 character: all 6 of its bits are data. (Changing the last ones could
+// hit only the ignored trailing bits, e.g. "...BA" -> "...BB", and decrypt would then succeed.)
+const parts = blob.split(":"); parts[3] = (parts[3][0] === "A" ? "B" : "A") + parts[3].slice(1);
 assert.throws(() => T.decryptSecret(parts.join(":")));
 assert.notEqual(T.encryptSecret(s), blob, "fresh IV each time");
 

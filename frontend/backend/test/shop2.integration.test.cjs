@@ -345,8 +345,13 @@ async function run() {
       const s = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(5), setKey: "bakir-kervan" }, user: 2 });
       assert.equal(s.status, 200, JSON.stringify(s.body));
       assert.equal(s.body.paid, 3230);
-      // 1 -> 2 (earlier), 2 -> 5 (now), 5 -> 1 closes the ring.
-      const ring = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(1), itemId: I(35) }, user: 5 });
+      // 1 -> 2 (earlier), 2 -> 5 (now), 5 -> 1 closes the ring. The gift must be a single item
+      // user 1 does not own yet: earlier checks buy a storefront slot and a night market card,
+      // and which items those are depends on the day's seed (a fixed id collided on some days).
+      const owned1 = new Set(rows("user_inventory").filter((r) => r.user_id === U(1)).map((r) => r.item_id));
+      const giftItem = rows("shop_items").find((r) => r.sku.startsWith("s2-single-") && r.active && !r.retired_at && !owned1.has(r.id) && r.id !== I(34) && r.id !== I(36));
+      assert.ok(giftItem, "a single item user 1 does not own");
+      const ring = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(1), itemId: giftItem.id }, user: 5 });
       assert.equal(ring.status, 200, JSON.stringify(ring.body));
       assert.equal(ring.body.flagged, true);
       assert.ok(rows("shop2_gift_flags").length >= 1);
