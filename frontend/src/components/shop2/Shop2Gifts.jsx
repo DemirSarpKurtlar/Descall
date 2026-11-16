@@ -223,6 +223,8 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const sender = s2.me?.displayName || s2.me?.username || "";
   const limits = s2.data.gifts.limits;
   const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !blocked && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
+  // Why "Gönder" is off for the chosen friend (server reason first, then the wallet).
+  const blockNote = !friend ? null : blocked || (limits?.paused === true ? serverMessage({ error: "Gifts are paused right now." }) : null) || (price > s2.balance ? t("shop2.kasa.shortBy", { n: formatNumber(price - s2.balance, locale) }) : null);
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
 
@@ -402,7 +404,11 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
         <small className="s2-num">{t("shop2.gifts.balance", { from: formatNumber(s2.balance, locale), to: formatNumber(s2.balance - price, locale) })}</small>
         {setDeduct > 0 ? <small className="is-green">{t("shop2.gifts.theirsDeducted", { n: formatNumber(setDeduct, locale) })}</small> : null}
       </div>
-      <p className="s2-gfoot-note"><Undo2 size={14} />{t("shop2.gifts.recallNote", { m: SHOP2_RECALL_MS / 60000 })}{limits?.dailyLeft != null ? ` · ${t("shop2.gifts.dailyLeft", { n: limits.dailyLeft })}` : ""}</p>
+      {blockNote ? (
+        <p className="s2-gfoot-note is-block" role="alert"><Info size={14} />{blockNote}</p>
+      ) : (
+        <p className="s2-gfoot-note"><Undo2 size={14} />{t("shop2.gifts.recallNote", { m: SHOP2_RECALL_MS / 60000 })}{limits?.dailyLeft != null ? ` · ${t("shop2.gifts.dailyLeft", { n: limits.dailyLeft })}` : ""}</p>
+      )}
       {onClose ? <button type="button" className="s2-btn" onClick={onClose}>{t("shop2.common.cancel")}</button> : null}
       <button type="button" className="s2-btn" onClick={saveDraft} disabled={!draftKey}>{t("shop2.gifts.saveDraft")}</button>
       <button type="button" className="s2-btn is-primary" disabled={!canSend} onClick={send}>

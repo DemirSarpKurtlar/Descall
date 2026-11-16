@@ -4667,6 +4667,9 @@ button.s2-strip:hover {
 .s2-gfoot-note svg {
   flex: none;
 }
+.s2-gfoot-note.is-block {
+  color: #ffb4a8;
+}
 .s2-recent {
   display: flex;
   flex-direction: column;

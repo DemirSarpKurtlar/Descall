@@ -7,7 +7,7 @@ import OverlayPortal from "../../ui/OverlayPortal.jsx";
 // DesCoin rules as the cards. This file only renders and sequences them.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from "framer-motion";
-import { Check, CircleDot, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus, Package, Palette, Phone, Smile, Sparkles, Sun, Type, UserPlus, X, Play } from "../../ui/Icon.jsx";
+import { Check, CircleDot, Ellipsis, Flame, Image as ImageIcon, Lock, MessageCircle, Mic, Minus, Package, Palette, Phone, Smile, Sparkles, Store, Sun, Type, UserPlus, X, Play, ChevronRight } from "../../ui/Icon.jsx";
 import { purchaseCopy } from "../../../lib/storePurchaseCopy";
 import { localizeShopItem } from "../../../lib/shopItemI18n";
 import {
@@ -72,6 +72,9 @@ export default function StorePurchaseModal({
   canInvite = true,
   currentThemeKey = "dark",
   onClose,
+  // "Tüm ürünler" is browse only: preview and try-on stay, Buy becomes where it is sold.
+  browseOnly = false,
+  onOpenSet = null,
   onBuy,
   onEquip,
   onOpenInventory,
@@ -298,7 +301,32 @@ export default function StorePurchaseModal({
   let foot = cat.foot;
   let actions = null;
 
-  if (state === "buy") {
+  const browse = browseOnly && (state === "buy" || state === "insufficient");
+  if (browse) {
+    body = (
+      <>
+        <div className="spm-ledger">
+          <div className="spm-lt"><small>{tx("shop2.directSale.price")}</small><b className="gold"><Coin />{listPrice}{fmt(view.price)}</b></div>
+          <div className="spm-lt"><small>{c.balance}</small><b>{fmt(view.balance)}</b></div>
+        </div>
+        <div className="spm-browse-note" data-direct-sale="false">
+          <Store size={16} />
+          <span><b>{tx("shop2.directSale.badge")}</b>{tx("shop2.directSale.hint")}</span>
+        </div>
+      </>
+    );
+    foot = tx("shop2.directSale.foot");
+    actions = (
+      <>
+        <button type="button" ref={onOpenSet ? undefined : primaryRef} className="spm-btn spm-btn-ghost spm-btn-cancel" onClick={close}>{c.close}</button>
+        {onOpenSet ? (
+          <button type="button" ref={primaryRef} className="spm-btn spm-btn-primary" onClick={onOpenSet} data-action="see-set">
+            {tx("shop2.directSale.seeSet")}<ChevronRight size={15} />
+          </button>
+        ) : null}
+      </>
+    );
+  } else if (state === "buy") {
     body = (
       <>
         <div className="spm-ledger">
@@ -430,7 +458,7 @@ export default function StorePurchaseModal({
     );
   }
 
-  const dismissText = state === "insufficient" || state === "owned-equipped" || state === "owned-stowed" ? c.close : c.cancel;
+  const dismissText = browse || state === "insufficient" || state === "owned-equipped" || state === "owned-stowed" ? c.close : c.cancel;
   const inner = (
     <>
       {isMobile ? <div className="spm-grab" onPointerDown={(e) => drag.start(e)} aria-hidden="true" /> : null}
