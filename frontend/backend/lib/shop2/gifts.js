@@ -31,7 +31,7 @@ function cleanMessage(v, max) {
   if (typeof v !== "string") return null;
   const s = v.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").trim();
   if (!s) return null;
-  return s.slice(0, Math.max(0, max) + 1);
+  return s.slice(0, Math.max(0, max));
 }
 
 /** Status at `now`: a scheduled gift whose time has come reads as delivered. */
