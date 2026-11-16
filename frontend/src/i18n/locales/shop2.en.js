@@ -196,7 +196,11 @@ export const SHOP2_EN = {
     "night_buy": "Night market · bought {name}",
     "equip": "Wore {name}",
     "outfit": "Saved look {name}",
-    "wishlist": "Added {name} to the wishlist"
+    "wishlist": "Added {name} to the wishlist",
+    "wishlist_remove": "Removed {name} from the wishlist",
+    "lock": "Locked {name} in the storefront",
+    "unlock": "Unlocked {name}",
+    "outfit_apply": "Wore a saved look"
   },
   "sets": {
     "switch": "Sets",
@@ -325,7 +329,8 @@ export const SHOP2_EN = {
     "addTitle": "Add the {title} title to my profile",
     "hold": "Hold to confirm · {n} D",
     "holdHint": "Hold for 0.8 s so a stray tap never buys anything",
-    "refundNote": "Return it within {m} minutes with one tap"
+    "refundNote": "Return it within {m} minutes with one tap",
+    "titleNote": "Completing the set unlocks the {title} title for your profile"
   },
   "celebrate": {
     "label": "Purchase complete",
@@ -347,6 +352,7 @@ export const SHOP2_EN = {
     "refund": "Return · {t}",
     "refunded": "Returned. Your DesCoin is back.",
     "prevSaved": "Your previous look was saved",
+    "restored": "Your previous look is back",
     "wornToast": "New look on. Your previous look is saved.",
     "undo": "Undo",
     "shared": "Shared in chat as a card",
@@ -375,6 +381,8 @@ export const SHOP2_EN = {
       "buy": "Card {n} bought"
     },
     "friendBonus": "{name} is in the market too: open together for +1 flip",
+    "coOpen": "A friend opened cards tonight too: +{n} flip",
+    "coOpenHint": "When a friend opens cards the same night, you both get +1 flip",
     "notifyOpen": "Tell me when it opens",
     "remind": "Remind me 10 min before closing",
     "hint": { "profile": "Profile", "frame": "Frame", "chat": "Chat", "voice": "Voice", "sound": "Sound", "badge": "Badge", "effect": "Effect" },
@@ -472,6 +480,7 @@ export const SHOP2_EN = {
     "colWhen": "When",
     "colAction": "Action",
     "recallN": "Recall · {t}",
+    "recall": "Recall",
     "cancelScheduled": "Cancel",
     "recalled": "Recalled. Your DesCoin is back.",
     "noneSent": "You haven't sent a gift yet.",

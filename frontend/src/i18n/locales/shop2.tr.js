@@ -196,7 +196,11 @@ export const SHOP2_TR = {
     "night_buy": "Gece pazarı · {name} alındı",
     "equip": "{name} kuşanıldı",
     "outfit": "{name} görünümü kaydedildi",
-    "wishlist": "{name} istek listesine eklendi"
+    "wishlist": "{name} istek listesine eklendi",
+    "wishlist_remove": "{name} istek listesinden çıkarıldı",
+    "lock": "{name} vitrinde kilitlendi",
+    "unlock": "{name} kilidi açıldı",
+    "outfit_apply": "Kayıtlı görünüm kuşanıldı"
   },
   "sets": {
     "switch": "Setler",
@@ -325,7 +329,8 @@ export const SHOP2_TR = {
     "addTitle": "{title} unvanını da profilime ekle",
     "hold": "Onaylamak için basılı tut · {n} D",
     "holdHint": "Yanlış dokunuşa karşı 0,8 sn basılı tutman gerekir",
-    "refundNote": "{m} dakika içinde tek dokunuşla iade edebilirsin"
+    "refundNote": "{m} dakika içinde tek dokunuşla iade edebilirsin",
+    "titleNote": "Seti tamamlayınca {title} unvanı profiline açılır"
   },
   "celebrate": {
     "label": "Satın alma tamam",
@@ -347,6 +352,7 @@ export const SHOP2_TR = {
     "refund": "İade et · {t}",
     "refunded": "İade edildi. DesCoin'in geri geldi.",
     "prevSaved": "Önceki görünümün kaydedildi",
+    "restored": "Önceki görünümüne döndün",
     "wornToast": "Yeni görünüm kuşanıldı. Önceki görünümün kayıtlı.",
     "undo": "Geri al",
     "shared": "Sohbete kart olarak düştü",
@@ -375,6 +381,8 @@ export const SHOP2_TR = {
       "buy": "Kart {n} alındı"
     },
     "friendBonus": "{name} de şu an pazarda: birlikte açarsanız +1 hak",
+    "coOpen": "Bir arkadaşın da bu gece kart açtı: +{n} hak",
+    "coOpenHint": "Aynı gece bir arkadaşın da kart açarsa ikinize de +1 hak",
     "notifyOpen": "Açılınca haber ver",
     "remind": "Kapanmadan 10 dk önce hatırlat",
     "hint": { "profile": "Profil", "frame": "Çerçeve", "chat": "Sohbet", "voice": "Ses", "sound": "Ses kutusu", "badge": "Rozet", "effect": "Efekt" },
@@ -472,6 +480,7 @@ export const SHOP2_TR = {
     "colWhen": "Ne zaman",
     "colAction": "İşlem",
     "recallN": "Geri çağır · {t}",
+    "recall": "Geri çağır",
     "cancelScheduled": "İptal et",
     "recalled": "Geri çağrıldı. DesCoin'in geri geldi.",
     "noneSent": "Henüz hediye göndermedin.",

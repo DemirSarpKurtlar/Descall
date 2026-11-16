@@ -173,8 +173,8 @@ export default function Shop2Night({ onClose }) {
         </div>
       )}
       <div className="s2-nprefs">
-        <label className="s2-toggle-row"><Bell size={15} /><span>{t("shop2.night.notifyOpen")}</span><Toggle checked={nm.notify ?? prefs.nightNotify !== false} onChange={(v) => setPref({ nightNotify: v })} label={t("shop2.night.notifyOpen")} /></label>
-        <label className="s2-toggle-row"><Clock size={15} /><span>{t("shop2.night.remind")}</span><Toggle checked={prefs.nightRemind !== false} onChange={(v) => setPref({ nightRemind: v })} label={t("shop2.night.remind")} /></label>
+        <label className="s2-toggle-row"><Bell size={15} /><span>{t("shop2.night.notifyOpen")}</span><Toggle checked={prefs.nightNotify ?? nm.notify ?? true} onChange={(v) => setPref({ nightNotify: v })} label={t("shop2.night.notifyOpen")} /></label>
+        <label className="s2-toggle-row"><Clock size={15} /><span>{t("shop2.night.remind")}</span><Toggle checked={prefs.nightRemind ?? true} onChange={(v) => setPref({ nightRemind: v })} label={t("shop2.night.remind")} /></label>
       </div>
     </section>
   );

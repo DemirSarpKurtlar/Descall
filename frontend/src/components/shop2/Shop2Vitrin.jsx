@@ -533,8 +533,8 @@ export default function Shop2Vitrin() {
   const doRefresh = async () => {
     setBusy(true);
     try {
-      const keep = slots.find((s) => s.locked)?.item.id;
-      await s2.actions.refresh(keep);
+      // The stored lock is kept by the server; the expected price guards a price change.
+      await s2.actions.refresh(undefined, plan.price);
       setFlipKey((k) => k + 1);
       setConfirm(false);
       s2.toast(t("shop2.refresh.done"), { tone: "ok" });
