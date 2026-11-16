@@ -98,3 +98,17 @@ html[data-theme="light"] .shop-item-browse-link {
   margin-top: 2px;
   color: #8fa6ff;
 }
+
+/* Country flags (CountryShop): a flag an admin took off direct sale. Shown on phones too. */
+.country-shop .cs-actions .cs-pill.is-browse,
+.country-shop.is-mobile .cs-actions .cs-pill.is-browse {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: var(--fs-11, 0.6875rem);
+  font-weight: 600;
+  white-space: nowrap;
+  color: #c9d4ff;
+  background: rgba(88, 122, 245, 0.14);
+  border: 1px solid rgba(88, 122, 245, 0.32);
+}

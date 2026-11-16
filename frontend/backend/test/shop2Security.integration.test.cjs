@@ -244,6 +244,24 @@ async function run() {
       assert.equal((await call(`/shop2/history/${act.id}/undo`, { method: "POST", user: 3, body: {} })).status, 404);
     });
 
+    await check("scheduler on two instances: the 00:00 reset is announced once", async () => {
+      const path = require.resolve("../lib/shop2/scheduler");
+      delete require.cache[path];
+      const a = require("../lib/shop2/scheduler");
+      delete require.cache[path];
+      const b = require("../lib/shop2/scheduler");
+      assert.notEqual(a, b);
+      const t0 = Date.now() + 5 * DAY;
+      await a.tick({ now: t0 });
+      await b.tick({ now: t0 });
+      const count = () => h.emitted.filter((e) => e.to === "all" && e.ev === "shop2:storefront" && e.p.reason === "daily").length;
+      const before = count();
+      const ra = await a.tick({ now: t0 + DAY });
+      const rb = await b.tick({ now: t0 + DAY });
+      assert.equal(count() - before, 1, "one announcement");
+      assert.equal(Number(ra.daily) + Number(rb.daily), 1);
+    });
+
     await check("price tampering: expectedPrice, negative and huge values never lower the price", async () => {
       const before = user(5).descoin_balance;
       const r = await call(`/shop2/items/${I(28)}/buy`, { method: "POST", user: 5, body: { expectedPrice: -5000 } });
