@@ -43,7 +43,7 @@ async function saveSnapshot(userId, look, { name = null, kind = "saved" } = {}) 
 async function save(userId, { name, look = null } = {}) {
   const n = typeof name === "string" ? name.trim() : "";
   if (!n) throw shopError("outfit_name_required", 400);
-  const snapshot = look && typeof look === "object" ? look : await people.equippedSnapshot(userId);
+  const snapshot = look && typeof look === "object" ? people.cleanLook(look) : await people.equippedSnapshot(userId);
   const row = await saveSnapshot(userId, snapshot, { name: n, kind: "saved" });
   const limits = await config.getLimits();
   await actions.log(userId, "outfit_save", { outfitId: row.id, name: row.name }, { undo: { type: "outfit_delete", outfitId: row.id }, undoMinutes: limits.purchases.actionUndoMinutes });

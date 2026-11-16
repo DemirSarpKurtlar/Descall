@@ -167,13 +167,30 @@ async function send(senderId, body, { now = Date.now(), base = "" } = {}) {
   const message = cleanMessage(body?.message, limits.gifts.maxMessage);
   const giftId = require("crypto").randomUUID();
 
-  // Pay now (one debit), grant on open.
+  // Pay now (one debit), grant on open. The idempotency key, the caps and the night card are
+  // checked again inside the sender's queue: parallel sends must not pass them together.
+  const night = require("./night");
   const res = await descoin.runSerialized(senderId, async () => {
+    if (idempotencyKey) {
+      const dup = await db.one(db.from("shop2_gifts").select("*").eq("from_user", senderId).eq("idempotency_key", idempotencyKey).maybeSingle()).catch(() => null);
+      if (dup) return { duplicate: true, row: dup };
+    }
+    const again = await allowed(senderId, toUserId, body, now);
+    if (!again.ok) throw shopError(again.code, again.code === "recipient_not_found" ? 404 : 403, again.vars);
+    let claimed = false;
+    if (r.kind === "night" && r.meta?.nightId) {
+      if (!(await night.claimCard(senderId, r.meta.nightId, r.meta.cardIndex, now))) throw shopError("card_bought", 409);
+      claimed = true;
+    }
+    const unclaim = async () => {
+      if (claimed) await night.releaseCard(senderId, r.meta.nightId, r.meta.cardIndex);
+    };
     let balance = null;
     if (r.price > 0) {
       try {
         balance = (await descoin.debit(senderId, r.price, "shop_purchase", { shop2: "gift", giftId, to: toUserId, itemIds: r.items.map((it) => it.id), setKey: r.setKey })).balance;
       } catch (err) {
+        await unclaim();
         if (err.message === "INSUFFICIENT_BALANCE") throw shopError("insufficient_balance", 402);
         if (err.code === "WALLET_FROZEN") throw shopError("wallet_frozen", 403);
         throw err;
@@ -203,14 +220,18 @@ async function send(senderId, body, { now = Date.now(), base = "" } = {}) {
       await db.one(db.from("shop2_gifts").insert(row).select("*").single());
     } catch (err) {
       if (r.price > 0) await descoin.credit(senderId, r.price, "shop_refund", { shop2: "gift", giftId, reason: "gift_insert_failed" }).catch(() => {});
+      await unclaim();
+      // Same idempotency key from another instance (unique index): the first gift stands.
+      if (idempotencyKey && String(err?.code) === "23505") {
+        const dup = await db.one(db.from("shop2_gifts").select("*").eq("from_user", senderId).eq("idempotency_key", idempotencyKey).maybeSingle()).catch(() => null);
+        if (dup) return { duplicate: true, row: dup };
+      }
       throw err;
     }
     return { row, balance };
   });
+  if (res.duplicate) return { duplicate: true, gift: res.row };
   const row = res.row;
-  if (r.kind === "night" && r.meta?.nightId) {
-    await db.rows(db.from("shop2_night_flips").update({ bought_at: new Date(now).toISOString() }).eq("night_id", String(r.meta.nightId)).eq("user_id", senderId).eq("card_index", Number(r.meta.cardIndex)).select("night_id")).catch(() => []);
-  }
   // Ring detection.
   let ring = null;
   if (limits.gifts.ringDetection) {

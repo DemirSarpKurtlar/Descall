@@ -592,10 +592,11 @@ async function finalizeRecall(key, { now = Date.now() } = {}) {
         const [claimed] = await db.rows(db.from("shop2_purchases").update({ status: "refunded", refunded_at: time.iso(now) }).eq("id", p.id).eq("status", "paid").select("*"));
         if (!claimed) return;
         for (const itemId of p.item_ids || []) {
-          const it = set.items.find((x) => String(x.id) === String(itemId));
-          if (it) await shop.equipItem(p.user_id, it.category, null).catch(() => {});
           await db.rows(db.real().from("user_inventory").delete().eq("user_id", p.user_id).eq("item_id", itemId).select("id")).catch(() => []);
         }
+        // Take off only the refunded pieces, never another item worn in the same slot.
+        await require("./purchases").unequipIds(p.user_id, p.item_ids || []).catch(() => {});
+        await db.rows(db.from("shop2_set_completions").delete().eq("user_id", p.user_id).eq("set_key", key).select("set_key")).catch(() => []);
         if (Number(p.amount) > 0) await descoin.credit(p.user_id, Number(p.amount), "shop_refund", { shop2: "set_recall", setKey: key, purchaseId: p.id });
         refunded += Number(p.amount) || 0;
       });
