@@ -4,7 +4,11 @@ export const ADMIN_SHOP2_EN = {
   "crumb": "Daily storefront, sets, night market, refresh and gift rules",
   "crumbTimeline": "Publishing calendar · storefront, sets, night market and events on one chart",
   "views": "View",
-  "view": { "pano": "Dashboard", "takvim": "Publishing calendar", "kayit": "Audit trail" },
+  "view": {
+    "pano": "Dashboard",
+    "takvim": "Publishing calendar",
+    "kayit": "Audit trail"
+  },
   "resetAt": "Storefront resets at 00:00 ·",
   "liveInShop": "in the shop now",
   "liveInShopHint": "People with the shop open in the last 2 minutes",
@@ -37,11 +41,26 @@ export const ADMIN_SHOP2_EN = {
     "gift": "gifts",
     "per7": "/ 7 days",
     "perDay": "/ day",
-    "card": "card"
+    "card": "card",
+    "chars": "characters"
   },
-  "dur": { "dh": "{d}d {h}h", "clock": "{c}" },
-  "ago": { "now": "Just now", "m": "{n} min ago", "h": "{n} h ago", "d": "{n} d ago" },
-  "rarity": { "common": "Common", "rare": "Rare", "epic": "Epic", "legendary": "Legendary", "mythic": "Mythic" },
+  "dur": {
+    "dh": "{d}d {h}h",
+    "clock": "{c}"
+  },
+  "ago": {
+    "now": "Just now",
+    "m": "{n} min ago",
+    "h": "{n} h ago",
+    "d": "{n} d ago"
+  },
+  "rarity": {
+    "common": "Common",
+    "rare": "Rare",
+    "epic": "Epic",
+    "legendary": "Legendary",
+    "mythic": "Mythic"
+  },
   "cat": {
     "avatar_frame": "Profile frame",
     "banner": "Profile banner",
@@ -97,7 +116,8 @@ export const ADMIN_SHOP2_EN = {
     "nightSub": "{n} cards · {a}–{b}% off",
     "gifts": "Gifts",
     "blocked": "{n} blocked",
-    "overLimit": "over limit"
+    "overLimit": "over limit",
+    "flags": "{n} ring alerts"
   },
   "sales": {
     "title": "Live sales",
@@ -115,7 +135,9 @@ export const ADMIN_SHOP2_EN = {
     "lastPaid": "{price} D · owned {n} pieces, paid {paid} D",
     "lastPrice": "{price} D",
     "none": "No sales yet today",
-    "thisHour": "{n} sales this hour"
+    "thisHour": "{n} sales this hour",
+    "total": "Total",
+    "someone": "Someone"
   },
   "sets": {
     "title": "Sets",
@@ -181,12 +203,30 @@ export const ADMIN_SHOP2_EN = {
       "featureSetPieces": "Feature set pieces"
     },
     "rule": {
-      "retired": { "t": "Drop legacy and off-sale items", "d": "Retired items never reach the storefront" },
-      "hideOwned": { "t": "Drop owned items", "d": "Items in the user's inventory are not shown" },
-      "noRepeat": { "t": "No repeats", "d": "Items shown in the last {n} days do not come back" },
-      "minEpic": { "t": "At least 1 Epic+", "d": "Slot 4 is always Epic or better" },
-      "lockSurvives": { "t": "Locked card stays", "d": "On refresh the 1 card the user locked stays in place" },
-      "featureSetPieces": { "t": "Feature set pieces", "d": "Pieces of sets on sale come up more often" }
+      "retired": {
+        "t": "Drop legacy and off-sale items",
+        "d": "Retired items never reach the storefront"
+      },
+      "hideOwned": {
+        "t": "Drop owned items",
+        "d": "Items in the user's inventory are not shown"
+      },
+      "noRepeat": {
+        "t": "No repeats",
+        "d": "Items shown in the last {n} days do not come back"
+      },
+      "minEpic": {
+        "t": "At least 1 Epic+",
+        "d": "Slot 4 is always Epic or better"
+      },
+      "lockSurvives": {
+        "t": "Locked card stays",
+        "d": "On refresh the 1 card the user locked stays in place"
+      },
+      "featureSetPieces": {
+        "t": "Feature set pieces",
+        "d": "Pieces of sets on sale come up more often"
+      }
     },
     "always": "Always",
     "poolNone": "No pool data yet",
@@ -210,23 +250,23 @@ export const ADMIN_SHOP2_EN = {
     "applyMidnight": "Apply tomorrow 00:00",
     "scheduled": "v{v} tonight at 00:00",
     "openRules": "Open rules",
-    "previewTomorrow": "Preview tomorrow"
+    "previewTomorrow": "Preview tomorrow",
+    "builtIn": "Built-in default rules"
   },
   "sim": {
     "title": "Simulation · tomorrow's storefront",
     "sub": "Draft v{v} on {n} sample users, nothing was saved",
     "running": "Building tomorrow's storefront for sample users…",
-    "repeat": "Repeat rate",
     "goal0": "target 0%",
-    "ownedLeak": "Owned shown",
-    "noLeak": "no leaks",
     "minEpic": "Storefronts with Epic+",
-    "minEpicSub": "target 100%",
     "neverShown": "Never shown",
     "neverShownSub": "items in the pool",
     "rarity": "Rarity: target and result",
     "slots": "Average price per slot",
-    "buyRate": "expected buys {pct}"
+    "empty": "Empty storefronts",
+    "epicForced": "floor forced in {pct}",
+    "avgValue": "Average storefront value",
+    "vsLive": "{d} vs live"
   },
   "apply": {
     "title": "Apply v{v} tomorrow at 00:00?",
@@ -255,34 +295,44 @@ export const ADMIN_SHOP2_EN = {
     "blocks": "{n} blocked",
     "newAccount": "New accounts",
     "newAccountSub": "Slot cap {cap} D for the first {days} days",
-    "people": "{n} people"
+    "people": "{n} people",
+    "nightOpenNow": "Open now",
+    "giftFrozen": "Gifts are frozen"
   },
   "recall": {
     "title": "Recall the {name} set",
     "sub": "The set leaves the shop at once. Choose below what happens for buyers.",
     "sold": "Sold",
-    "soldV": "{sets} sets · {pieces} pieces",
+    "soldV": "{sets} purchases · {pieces} buyers",
     "collected": "Collected",
-    "inCart": "In carts",
+    "inCart": "On wishlists",
     "people": "{n} people",
     "giftsOnWay": "On the way as gifts",
     "gifts": "{n} gifts",
     "forBuyers": "For buyers",
     "mode": {
-      "keep": { "t": "They keep it", "d": "Only sales stop" },
-      "refund": { "t": "DesCoin refund", "d": "{total} D is paid back" },
-      "swap": { "t": "Swap the faulty piece", "d": "The chosen piece is replaced with a new one" }
+      "keep": {
+        "t": "They keep it",
+        "d": "Only sales stop"
+      },
+      "refund": {
+        "t": "DesCoin refund",
+        "d": "{total} D is paid back"
+      },
+      "swap": {
+        "t": "Swap the faulty piece",
+        "d": "The chosen piece is replaced with a new one"
+      }
     },
     "swapPick": "Piece to replace",
     "reasonLabel": "Reason (written to the audit trail)",
     "reasonPh": "E.g. the banner art is cropped wrong on phones; it reopens with a fixed version.",
-    "notify": "Notify buyers",
-    "pauseGifts": "Hold gifts on the way",
-    "liveNotified": "{n} people get a notice",
+    "liveNotified": "{n} buyers get a notice",
     "liveRefund": "{total} D is refunded",
-    "livePaused": "{n} gifts are held",
+    "livePaused": "{n} pending gifts are recalled",
     "undoNote": "The recall can be undone in one click for {n} minutes. Stock and price are kept as they are.",
-    "go": "Confirm and recall"
+    "go": "Confirm and recall",
+    "swapTo": "Replacement item"
   },
   "tl": {
     "title": "Calendar",
@@ -293,7 +343,10 @@ export const ADMIN_SHOP2_EN = {
     "clash": {
       "sameDay": "{n} sets open the same day",
       "crowded": "{n} sets on sale at once",
-      "legendary": "too many Legendary items"
+      "legendary": "too many Legendary items",
+      "ruleNight": "rules change during a night market",
+      "nightLaunch": "set launch on a night market day",
+      "eventLaunch": "set launch during an event"
     },
     "span": "Span",
     "day": "Day",
@@ -323,7 +376,6 @@ export const ADMIN_SHOP2_EN = {
     "title": "Pending changes",
     "empty": "No pending changes",
     "cancel": "Cancel",
-    "cancelTitle": "Cancel the scheduled change?",
     "cancelGo": "Cancel it",
     "kind": {
       "rules": "Storefront rules",
@@ -331,35 +383,22 @@ export const ADMIN_SHOP2_EN = {
       "set": "Set launch",
       "refreshPrice": "Refresh price",
       "limits": "Limits",
-      "event": "Event"
-    }
+      "event": "Event",
+      "recall": "Recall becomes final"
+    },
+    "cancelNote": "The change will not apply; you can schedule it again.",
+    "cancelTitle": "Cancel the scheduled change?"
   },
   "audit": {
     "title": "Audit trail",
     "filter": "Audit filter",
-    "f": { "all": "All", "set": "Sets", "rules": "Algorithm", "night": "Night market", "limits": "Limits", "user": "User" },
-    "kind": {
-      "set_create": "Set created",
-      "set_update": "Set updated",
-      "set_publish": "Set published",
-      "set_unpublish": "Publish undone",
-      "set_recall": "Set recalled",
-      "set_recall_undo": "Recall undone",
-      "set_stock": "Stock changed",
-      "set_extend": "Extended",
-      "set_duplicate": "Set duplicated",
-      "set_ab_test": "A/B price test",
-      "rules_apply": "Rules scheduled for 00:00",
-      "rules_applied": "Rules went live",
-      "rules_revert": "Back to an earlier version",
-      "night_save": "Night market plan saved",
-      "night_open": "Night market opened by hand",
-      "night_close": "Night market closed",
-      "night_skip": "This week skipped",
-      "limits_save": "Limits changed",
-      "user_regenerate": "User storefront rebuilt",
-      "user_refresh_grant": "Free refresh granted",
-      "queue_cancel": "Scheduled change cancelled"
+    "f": {
+      "all": "All",
+      "set": "Sets",
+      "rules": "Algorithm",
+      "night": "Night market",
+      "limits": "Limits",
+      "user": "User"
     },
     "system": "System",
     "reason": "Reason: {r}",
@@ -369,20 +408,56 @@ export const ADMIN_SHOP2_EN = {
     "empty": "No entries",
     "more": "Older entries",
     "csv": "Download CSV",
-    "clearFilter": "Clear filter"
+    "clearFilter": "Clear filter",
+    "kind": {
+      "set_create": "Set created",
+      "set_update": "Set updated",
+      "set_shift": "Set moved",
+      "set_publish": "Set published",
+      "set_publish_undo": "Publish undone",
+      "set_recall": "Set recalled",
+      "set_recall_undo": "Recall undone",
+      "set_restore": "Earlier set version restored",
+      "set_delete": "Draft deleted",
+      "ab_create": "A/B price test started",
+      "ab_stop": "A/B price test ended",
+      "rules_create": "Rule draft created",
+      "rules_schedule": "Rules scheduled for 00:00",
+      "rules_activate": "Rule version made live",
+      "rules_cancel": "Scheduled rules cancelled",
+      "night_create": "Night market added",
+      "night_update": "Night market changed",
+      "night_delete": "Night market deleted",
+      "night_open_now": "Night market opened by hand",
+      "night_open_undo": "Manual opening undone",
+      "night_skip": "Night market skipped",
+      "limits_update": "Limits changed",
+      "limits_undo": "Limit change undone",
+      "gift_flag_resolve": "Gift ring alert closed",
+      "free_refresh": "Free refresh granted",
+      "storefront_regenerate": "User storefront rebuilt",
+      "queue_cancel": "Scheduled change cancelled",
+      "event_create": "Event added to the calendar",
+      "event_delete": "Event deleted"
+    }
   },
   "slots": {
     "title": "Slot conversion",
-    "afterRefresh": "Buys after a refresh",
-    "toSet": "Storefront to set"
+    "afterRefresh": "Refreshes today",
+    "toSet": "Storefront to set",
+    "window": "last 14 days"
   },
-  "top": { "title": "Best sellers", "d7": "7d", "d30": "30d" },
+  "top": {
+    "title": "Best sellers",
+    "d7": "7d",
+    "d30": "30d"
+  },
   "us": {
     "title": "User storefront",
     "sub": "The 4 items the user sees today and why",
     "pickPh": "Search by username",
     "pickHint": "Pick a user to see today's, tomorrow's and past storefronts with the reasons.",
-    "facts": "Account {days} days · balance {balance} D · owns {owned} items",
+    "facts": "Owns {owned} items · {wish} on the wishlist",
     "day": "Day",
     "today": "Today",
     "tomorrow": "Tomorrow",
@@ -392,15 +467,19 @@ export const ADMIN_SHOP2_EN = {
     "seed": "Seed {seed} · built with v{v} rules",
     "dossier": "User file",
     "why": {
-      "slot": "Slot {n}",
-      "weight": "{r} weight {pct}%",
-      "band": "price band {a}–{b}",
-      "cheapest": "cheapest band",
+      "band": "Slot {n} price band {a}–{b}",
       "lastSeen": "not seen for {n} days",
       "never": "never seen",
-      "matchesSet": "matches {name}",
-      "refresh": "Came with a refresh · {time}",
-      "locked": "locked by the user"
+      "locked": "locked by the user",
+      "bandRelaxed": "no item in {a}–{b}, band relaxed",
+      "epicFloor": "Epic floor: at least 1 Epic+ in the storefront",
+      "rarity": "{r} weight {w}",
+      "newItem": "new item boost",
+      "wishlist": "on the wishlist",
+      "setProgress": "completes the {set} set they started",
+      "setPiece": "piece of the {set} set",
+      "repeatRelaxed": "pool too small, repeat rule relaxed",
+      "chance": "{pct}% chance at pick"
     },
     "excluded": "Dropped for this user",
     "poolTo": "Pool {pool} → {cand} candidates",
@@ -409,10 +488,11 @@ export const ADMIN_SHOP2_EN = {
       "recent": "Shown in the last {d} days {n}",
       "region": "Off in region {n}",
       "cap": "New account cap {n}",
-      "noCap": "No new account cap"
+      "noCap": "No new account cap",
+      "relaxed": "Pool too small, a rule was relaxed"
     },
     "sets": "Sets for this user",
-    "ownedPieces": "owns {n} pieces",
+    "ownedPieces": "owns {n} / {total} pieces",
     "ownedNone": "owns none",
     "refresh": "Refresh",
     "refreshUsed": "Used · {time}",
@@ -423,9 +503,6 @@ export const ADMIN_SHOP2_EN = {
     "giftsSent": "sent {n} / {cap}",
     "giftsGot": "Received {n} / {cap}",
     "night": "Night market",
-    "nightOk": "Eligible",
-    "nightNo": "Not eligible",
-    "nightCards": "{n} cards ready at {time}",
     "last7": "Storefront of the last 7 days",
     "last7Sum": "{views} views · {buys} buys · {refresh} refreshes",
     "audit": "Audit trail",
@@ -436,7 +513,13 @@ export const ADMIN_SHOP2_EN = {
     "regenGo": "Rebuild",
     "grantTitle": "Free refresh for {user}",
     "grantSub": "The user can do one refresh for free today.",
-    "grantGo": "Grant refresh"
+    "grantGo": "Grant refresh",
+    "newAccount": "New account",
+    "setClosed": "set rate closed",
+    "nightOpen": "Open",
+    "nightNext": "Next night",
+    "nightNone": "No night planned",
+    "nightFlips": "{used} / {n} cards flipped · {bought} bought"
   },
   "nm": {
     "title": "Night market scheduler",
@@ -447,7 +530,7 @@ export const ADMIN_SHOP2_EN = {
     "modeRandom": "Random",
     "modeManual": "Manual",
     "ruleCal": "{n} nights a week · {days}",
-    "ruleRandom": "{n} nights a week, random days",
+    "ruleRandom": "Chosen nights open at a random hour",
     "ruleManual": "{n} nights picked by hand",
     "tz": "Time zone Istanbul",
     "weekdayHint": "Turn this day on or off every week",
@@ -461,12 +544,10 @@ export const ADMIN_SHOP2_EN = {
     "discountMax": "Highest discount",
     "discountHint": "High discounts are rare · average {mean}%",
     "cards": "Card count",
-    "perCard": "Buys per card",
-    "perCardBuy": "Per card",
-    "perNight": "Most per night",
+    "perCard": "Flips and buys",
+    "perNight": "Most buys per night",
     "who": "Who sees it",
     "accountDays": "Account age at least",
-    "activeDays": "Active in the last",
     "eligible": "Eligible: {n} people",
     "preview": "What the user sees",
     "sample": "{user} · {n} cards flipped",
@@ -476,11 +557,17 @@ export const ADMIN_SHOP2_EN = {
     "forecast": "Forecast",
     "fcJoin": "Turnout",
     "fcRevenue": "Revenue",
-    "fcPeak": "Peak",
     "past": "Past nights",
     "fullReport": "Full report",
     "lessReport": "Show less",
-    "col": { "night": "Night", "joined": "Joined", "flipped": "Cards flipped", "buy": "Buy rate", "revenue": "Revenue", "avg": "Avg. discount" },
+    "col": {
+      "night": "Night",
+      "joined": "Joined",
+      "flipped": "Cards flipped",
+      "buy": "Buy rate",
+      "revenue": "Revenue",
+      "avg": "Avg. discount"
+    },
     "openNow": "Open now…",
     "skip": "Skip this week",
     "save": "Save and schedule",
@@ -490,66 +577,112 @@ export const ADMIN_SHOP2_EN = {
     "openGo": "Open now",
     "skipTitle": "Skip this week's nights?",
     "skipSub": "This week's planned night markets do not open; next week the plan continues as is.",
-    "skipGo": "Skip this week"
+    "skipGo": "Skip this week",
+    "flips": "Flips",
+    "premiumOnly": "Descall+ only",
+    "eligibleNote": "Eligibility applies to hand-added nights when you save",
+    "skew": "Discount curve",
+    "fcBuys": "Buys",
+    "fcNoBasis": "No past nights yet",
+    "noPast": "No past nights yet"
   },
   "lim": {
-    "title": "Gift and refresh rules",
+    "title": "Gift, refresh and purchase rules",
     "sub": "Abuse limits · version {v} · {n} changes",
-    "tab": { "gift": "Gifts", "refresh": "Refresh", "newAccount": "New accounts", "blocked": "Blocked" },
+    "tab": {
+      "gift": "Gifts",
+      "refresh": "Refresh",
+      "purchases": "Purchases",
+      "flags": "Ring alerts"
+    },
     "was": "was {v}",
     "g": {
       "dailySend": "Sent per day",
       "dailyReceive": "Received per day",
       "samePerson": "To the same person",
-      "dailyAmount": "Amount per day",
-      "setGift": "Set gifts",
       "sendAge": "Account age to send",
-      "setAge": "Account age for sets",
-      "cooldown": "Wait between gifts",
-      "profanity": "Run messages through the profanity filter",
+      "setAge": "Account age for set gifts",
       "ring": "Ring detection",
-      "nightGift": "Night market items can be gifted"
+      "maxMessage": "Message length",
+      "schedule": "Schedule ahead",
+      "ringWindow": "Ring window",
+      "enabled": "Gifting is on"
     },
     "r": {
       "perDay": "Per day",
       "price": "Price",
-      "locked": "Lockable cards",
       "premiumFree": "Free with Descall+",
       "today": "Refreshes today",
-      "buyAfter": "Buys after refresh",
-      "revenue": "Refresh revenue"
+      "revenue": "Refresh revenue",
+      "streak": "Streak reward (days)"
     },
-    "n": { "days": "First days", "cap": "Slot cap", "setBuy": "Account age to buy sets" },
-    "noBlocked": "No blocked attempts today",
     "ringRisk": "High risk",
-    "why": {
-      "daily": "daily limit {n} / {n}",
-      "ring": "gift ring",
-      "newAccount": "account is {n} days old",
-      "samePerson": "same person limit",
-      "amount": "daily amount reached",
-      "cooldown": "waiting time",
-      "friendsOnly": "recipient takes DMs from friends only"
-    },
     "preview": "What a limited person sees",
     "msgGiftT": "Gift not sent",
     "msgGift": "You reached today's gift limit ({n} / {n}). It resets at 00:00.",
     "msgRefreshT": "No refreshes left",
     "msgRefresh": "You can refresh the storefront {n} times a day ({price} D). The new storefront arrives at 00:00.",
-    "msgNewT": "New account storefront",
-    "msgNew": "In the first {days} days of your account the storefront shows items up to {cap} D.",
-    "yesterday": "Had these rules applied yesterday, {n} gifts would have been blocked; about {pct} of them legitimate."
+    "frozen": "Frozen",
+    "freeze": "Freeze gifts",
+    "unfreeze": "Unfreeze",
+    "freezeTitle": "Freeze all gifting?",
+    "freezeSub": "No new gifts can be sent; gifts on the way wait. You can lift it any time.",
+    "unfreezeTitle": "Open gifts again?",
+    "unfreezeSub": "Users can send gifts within the limits again.",
+    "ifYesterday": "Had these rules applied yesterday",
+    "impactV": "{n} / {total} gifts would be blocked",
+    "impactDelta": "{d} vs now · {amount} D",
+    "giftsToday": "Gifts today",
+    "blockedToday": "Blocked today",
+    "p": {
+      "refund": "Refund window",
+      "partial": "Piece price lock",
+      "undo": "Action undo",
+      "discMin": "Set discount at least",
+      "discMax": "Set discount at most"
+    },
+    "noFlags": "No open ring alerts",
+    "flagRing": "Gift ring",
+    "flagPingPong": "Gifts going back and forth",
+    "flagAmount": "{amount} D · {n} gifts",
+    "flagFreeze": "Freeze wallets",
+    "flagDismiss": "False alarm",
+    "flagFreezeTitle": "Freeze the wallets in the ring?",
+    "flagFreezeSub": "DesCoin moves of these people stop until the review ends.",
+    "flagDismissTitle": "Close the alert as a false alarm?",
+    "flagDismissSub": "Gifts stay as they are; the decision goes to the audit trail.",
+    "why": {
+      "gift_daily_cap": "daily send limit ({n})",
+      "gift_recipient_cap": "same person limit ({n})",
+      "gift_receive_cap": "recipient's daily limit ({n})",
+      "gift_new_account": "account younger than {n} days",
+      "gift_new_account_set": "account younger than {n} days for sets",
+      "other": "other"
+    }
   },
-  "preview": { "device": "Device", "desktop": "Desktop", "phone": "Phone", "both": "Both" },
+  "preview": {
+    "device": "Device",
+    "desktop": "Desktop",
+    "phone": "Phone",
+    "both": "Both"
+  },
   "pv": {
     "title": "What the user sees",
     "sampleLabel": "Sample user",
-    "sample": { "none": "Owns no pieces", "few": "Owns 1–2 pieces", "many": "Owns 3+ pieces" },
+    "sample": {
+      "none": "Owns no pieces",
+      "few": "Owns 1–2 pieces",
+      "many": "Owns 3+ pieces"
+    },
     "realUsers": "Real users",
     "ownedN": "owns {n} pieces",
     "ownedNone": "no pieces",
     "chrome": "Shop · Sets",
-    "tab": { "today": "Today's storefront", "sets": "Sets", "night": "Night market" },
+    "tab": {
+      "today": "Today's storefront",
+      "sets": "Sets",
+      "night": "Night market"
+    },
     "newSet": "New set",
     "setPieces": "Set · {n} pieces",
     "limited": "Limited",
@@ -570,7 +703,14 @@ export const ADMIN_SHOP2_EN = {
     "remind": "Notify me when it opens",
     "askBack": "Ask for a return",
     "whoPays": "Who pays what",
-    "tier": { "none": "Owns no pieces", "few": "Owns 1–2 pieces", "many": "Owns 3+ pieces", "all": "Owns them all" },
+    "tier": {
+      "none": "Owns no pieces",
+      "few": "Owns 1–2 pieces",
+      "many": "Owns 3+ pieces",
+      "all": "Owns them all",
+      "half": "Owns 3–5 pieces",
+      "most": "Owns 6+ pieces"
+    },
     "hidden": "Hidden",
     "forecast": "Forecast",
     "forecastV": "Day one {lo}–{hi} sets · stock lasts {d} days",
@@ -579,7 +719,12 @@ export const ADMIN_SHOP2_EN = {
     "chatSample": "How does my new set look?",
     "lifecycle": "Lifecycle",
     "lifecycleHint": "click to switch the stage",
-    "stage": { "upcoming": "Coming soon", "live": "On sale", "last24": "Last 24 hours", "soldout": "Sold out" },
+    "stage": {
+      "upcoming": "Coming soon",
+      "live": "On sale",
+      "last24": "Last 24 hours",
+      "soldout": "Sold out"
+    },
     "note": {
       "upcoming": "opens {when}",
       "upcomingNone": "No opening time",
@@ -587,7 +732,8 @@ export const ADMIN_SHOP2_EN = {
       "liveOpen": "On sale with no end",
       "last24": "Red countdown, pulse",
       "soldout": "Grey, ask for a return"
-    }
+    },
+    "users": "{n} people"
   },
   "b": {
     "untitled": "Untitled set",
@@ -609,12 +755,17 @@ export const ADMIN_SHOP2_EN = {
     "suggest": "Suggest matches",
     "pieces": "Pieces · {n} / {total}",
     "piecesHint": "Drag from the rack or click a slot to pick from the catalog",
-    "group": { "profile": "Profile", "nameBadge": "Name and badge", "effectChat": "Effect and chat", "sound": "Sound" },
-    "ownedBy": "{pct}% own it",
+    "group": {
+      "profile": "Profile",
+      "nameBadge": "Name and badge",
+      "effectChat": "Effect and chat",
+      "sound": "Sound"
+    },
+    "ownedBy": "{n} own it",
     "dropHere": "drop here",
     "remove": "Remove piece",
     "wrongSlot": "This item does not fit the {slot} slot",
-    "ownerWarn": "{pct}% of users already own {name}. For them the set drops by {drop} D on average; it still stays far above single items.",
+    "ownerWarn": "{n} people already own {name}. For them the set drops by {drop} D on average; it still stays far above single items.",
     "price": "Price",
     "priceFacts": "Sum of pieces {sum} · dearest single item {max}",
     "setPrice": "set price",
@@ -640,9 +791,7 @@ export const ADMIN_SHOP2_EN = {
     "duration": "Length",
     "noEnd": "No end",
     "stock": "Stock",
-    "perPerson": "Per person",
-    "giftPerDay": "Gifts / day",
-    "stockNote": "{n} units · at most {per} per person",
+    "stockNote": "{n} units · {sold} sold",
     "clash": "The first 2 days clash with {names}.",
     "clashSuggest": "Opening on {day} is suggested.",
     "shiftTo": "Move to {day}",
@@ -656,7 +805,9 @@ export const ADMIN_SHOP2_EN = {
       "clash": "No clashing set in the first 2 days",
       "single": "Every piece also sold on its own",
       "locales": "Translations: {n} / {total} languages ready"
-    }
+    },
+    "partialHint": "In Market 2.0 every piece of a set is also sold on its own",
+    "giftableHint": "Gift rules live under Rules and limits"
   },
   "pub": {
     "title": "Publish {name} now?",
@@ -692,14 +843,18 @@ export const ADMIN_SHOP2_EN = {
     "refreshGranted": "{user} got a free refresh",
     "nightSaved": "Night market plan saved",
     "nightOpened": "Night market opened",
-    "weekSkipped": "This week's nights skipped",
+    "weekSkipped": "Skipped {n} nights this week",
     "limitsSaved": "{n} limits updated",
     "setSaved": "{name} saved",
     "published": "{name} is live",
     "scheduled": "{name} scheduled",
     "unpublished": "Publish undone",
-    "linkCopied": "Preview link copied (valid {h} hours)",
-    "duplicated": "Set duplicated"
+    "linkCopied": "Preview link copied (admins can open it)",
+    "duplicated": "Set duplicated",
+    "ringFlag": "Gift ring detected ({n} people)",
+    "giftsFrozen": "Gifts frozen",
+    "giftsUnfrozen": "Gifts are open again",
+    "flagResolved": "Alert closed"
   },
   "err": {
     "generic": "That did not work. Try again in a moment.",
@@ -711,6 +866,25 @@ export const ADMIN_SHOP2_EN = {
     "clash": "There is a clash on this date",
     "stale": "Another admin changed this meanwhile; the page was refreshed",
     "notReady": "The Market 2.0 server side is not ready yet",
-    "permission": "You have no access to this section"
+    "permission": "You have no access to this section",
+    "reason_required": "Write a reason",
+    "bad_set_key": "The set key must be 2–41 lowercase letters, digits or dashes",
+    "set_exists": "A set with this key already exists",
+    "bad_time": "Invalid time",
+    "bad_window": "Invalid time window",
+    "bad_option": "Invalid option",
+    "bad_replace": "Choose the piece to replace and its replacement",
+    "set_recalled": "This set is recalled",
+    "not_draft": "Only drafts can be deleted",
+    "ab_running": "This set already has a running price test",
+    "ab_same_price": "The two prices must differ",
+    "not_scheduled": "This version is not scheduled",
+    "night_open": "A night market is already open",
+    "night_started": "This night market has already started",
+    "title_required": "Write a title",
+    "undo_expired": "The undo window has closed",
+    "undo_unsupported": "This action cannot be undone",
+    "not_found": "Entry not found",
+    "rate_limited": "Too fast; wait a moment"
   }
 };

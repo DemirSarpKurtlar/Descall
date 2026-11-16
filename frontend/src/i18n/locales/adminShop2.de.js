@@ -4,7 +4,11 @@ export const ADMIN_SHOP2_DE = {
   "crumb": "Tägliches Schaufenster, Sets, Nachtmarkt, Regeln für Erneuern und Geschenke",
   "crumbTimeline": "Veröffentlichungskalender · Schaufenster, Sets, Nachtmarkt und Aktionen in einem Diagramm",
   "views": "Ansicht",
-  "view": { "pano": "Übersicht", "takvim": "Veröffentlichungskalender", "kayit": "Protokoll" },
+  "view": {
+    "pano": "Übersicht",
+    "takvim": "Veröffentlichungskalender",
+    "kayit": "Protokoll"
+  },
   "resetAt": "Schaufenster erneuert sich um 00:00 ·",
   "liveInShop": "gerade im Shop",
   "liveInShopHint": "Personen mit geöffnetem Shop in den letzten 2 Minuten",
@@ -37,11 +41,26 @@ export const ADMIN_SHOP2_DE = {
     "gift": "Geschenke",
     "per7": "/ 7 Tage",
     "perDay": "/ Tag",
-    "card": "Karte"
+    "card": "Karte",
+    "chars": "Zeichen"
   },
-  "dur": { "dh": "{d} T {h} Std.", "clock": "{c}" },
-  "ago": { "now": "Gerade eben", "m": "vor {n} Min.", "h": "vor {n} Std.", "d": "vor {n} T" },
-  "rarity": { "common": "Gewöhnlich", "rare": "Selten", "epic": "Episch", "legendary": "Legendär", "mythic": "Mythisch" },
+  "dur": {
+    "dh": "{d} T {h} Std.",
+    "clock": "{c}"
+  },
+  "ago": {
+    "now": "Gerade eben",
+    "m": "vor {n} Min.",
+    "h": "vor {n} Std.",
+    "d": "vor {n} T"
+  },
+  "rarity": {
+    "common": "Gewöhnlich",
+    "rare": "Selten",
+    "epic": "Episch",
+    "legendary": "Legendär",
+    "mythic": "Mythisch"
+  },
   "cat": {
     "avatar_frame": "Profilrahmen",
     "banner": "Profilbanner",
@@ -97,7 +116,8 @@ export const ADMIN_SHOP2_DE = {
     "nightSub": "{n} Karten · {a}–{b} % Rabatt",
     "gifts": "Geschenke",
     "blocked": "{n} blockiert",
-    "overLimit": "über dem Limit"
+    "overLimit": "über dem Limit",
+    "flags": "{n} Ring-Warnungen"
   },
   "sales": {
     "title": "Live-Verkäufe",
@@ -115,7 +135,9 @@ export const ADMIN_SHOP2_DE = {
     "lastPaid": "{price} D · {n} Teile besessen, {paid} D bezahlt",
     "lastPrice": "{price} D",
     "none": "Heute noch keine Verkäufe",
-    "thisHour": "{n} Verkäufe in dieser Stunde"
+    "thisHour": "{n} Verkäufe in dieser Stunde",
+    "total": "Gesamt",
+    "someone": "Jemand"
   },
   "sets": {
     "title": "Sets",
@@ -181,12 +203,30 @@ export const ADMIN_SHOP2_DE = {
       "featureSetPieces": "Set-Teile hervorheben"
     },
     "rule": {
-      "retired": { "t": "Alte und nicht verkaufte Artikel entfernen", "d": "Ausgemusterte Artikel kommen nie ins Schaufenster" },
-      "hideOwned": { "t": "Besessenes entfernen", "d": "Artikel im Inventar des Nutzers werden nicht gezeigt" },
-      "noRepeat": { "t": "Keine Wiederholung", "d": "In den letzten {n} Tagen Gezeigtes kommt nicht wieder" },
-      "minEpic": { "t": "Mindestens 1 Episch+", "d": "Platz 4 ist immer Episch oder besser" },
-      "lockSurvives": { "t": "Gesperrte Karte bleibt", "d": "Beim Erneuern bleibt die 1 gesperrte Karte an ihrem Platz" },
-      "featureSetPieces": { "t": "Set-Teile hervorheben", "d": "Teile von Sets im Verkauf erscheinen häufiger" }
+      "retired": {
+        "t": "Alte und nicht verkaufte Artikel entfernen",
+        "d": "Ausgemusterte Artikel kommen nie ins Schaufenster"
+      },
+      "hideOwned": {
+        "t": "Besessenes entfernen",
+        "d": "Artikel im Inventar des Nutzers werden nicht gezeigt"
+      },
+      "noRepeat": {
+        "t": "Keine Wiederholung",
+        "d": "In den letzten {n} Tagen Gezeigtes kommt nicht wieder"
+      },
+      "minEpic": {
+        "t": "Mindestens 1 Episch+",
+        "d": "Platz 4 ist immer Episch oder besser"
+      },
+      "lockSurvives": {
+        "t": "Gesperrte Karte bleibt",
+        "d": "Beim Erneuern bleibt die 1 gesperrte Karte an ihrem Platz"
+      },
+      "featureSetPieces": {
+        "t": "Set-Teile hervorheben",
+        "d": "Teile von Sets im Verkauf erscheinen häufiger"
+      }
     },
     "always": "Immer",
     "poolNone": "Noch keine Pool-Daten",
@@ -210,23 +250,23 @@ export const ADMIN_SHOP2_DE = {
     "applyMidnight": "Morgen 00:00 anwenden",
     "scheduled": "v{v} heute Nacht um 00:00",
     "openRules": "Regeln öffnen",
-    "previewTomorrow": "Morgen ansehen"
+    "previewTomorrow": "Morgen ansehen",
+    "builtIn": "Eingebaute Standardregeln"
   },
   "sim": {
     "title": "Simulation · Schaufenster von morgen",
     "sub": "Entwurf v{v} bei {n} Beispielnutzern, nichts wurde gespeichert",
     "running": "Schaufenster von morgen für Beispielnutzer wird erstellt…",
-    "repeat": "Wiederholungsrate",
     "goal0": "Ziel 0 %",
-    "ownedLeak": "Besessenes gezeigt",
-    "noLeak": "keine Lecks",
     "minEpic": "Schaufenster mit Episch+",
-    "minEpicSub": "Ziel 100 %",
     "neverShown": "Nie gezeigt",
     "neverShownSub": "Artikel im Pool",
     "rarity": "Seltenheit: Ziel und Ergebnis",
     "slots": "Durchschnittspreis pro Platz",
-    "buyRate": "erwartete Käufe {pct}"
+    "empty": "Leere Schaufenster",
+    "epicForced": "Untergrenze griff in {pct}",
+    "avgValue": "Durchschnittswert pro Schaufenster",
+    "vsLive": "{d} ggü. live"
   },
   "apply": {
     "title": "v{v} morgen um 00:00 anwenden?",
@@ -255,34 +295,44 @@ export const ADMIN_SHOP2_DE = {
     "blocks": "{n} blockiert",
     "newAccount": "Neue Konten",
     "newAccountSub": "Platz-Obergrenze {cap} D in den ersten {days} Tagen",
-    "people": "{n} Personen"
+    "people": "{n} Personen",
+    "nightOpenNow": "Jetzt offen",
+    "giftFrozen": "Geschenke sind eingefroren"
   },
   "recall": {
     "title": "Set {name} zurückrufen",
     "sub": "Das Set verschwindet sofort aus dem Shop. Unten wählst du, was für Käufer gilt.",
     "sold": "Verkauft",
-    "soldV": "{sets} Sets · {pieces} Teile",
+    "soldV": "{sets} Käufe · {pieces} Käufer",
     "collected": "Eingenommen",
-    "inCart": "Im Warenkorb",
+    "inCart": "Auf Wunschlisten",
     "people": "{n} Personen",
     "giftsOnWay": "Als Geschenk unterwegs",
     "gifts": "{n} Geschenke",
     "forBuyers": "Für Käufer",
     "mode": {
-      "keep": { "t": "Sie behalten es", "d": "Nur der Verkauf stoppt" },
-      "refund": { "t": "DesCoin-Erstattung", "d": "{total} D werden zurückgezahlt" },
-      "swap": { "t": "Fehlerhaftes Teil tauschen", "d": "Das gewählte Teil wird durch ein neues ersetzt" }
+      "keep": {
+        "t": "Sie behalten es",
+        "d": "Nur der Verkauf stoppt"
+      },
+      "refund": {
+        "t": "DesCoin-Erstattung",
+        "d": "{total} D werden zurückgezahlt"
+      },
+      "swap": {
+        "t": "Fehlerhaftes Teil tauschen",
+        "d": "Das gewählte Teil wird durch ein neues ersetzt"
+      }
     },
     "swapPick": "Zu tauschendes Teil",
     "reasonLabel": "Grund (wird ins Protokoll geschrieben)",
     "reasonPh": "Z. B. das Banner wird auf dem Telefon falsch beschnitten; es öffnet mit einer korrigierten Version neu.",
-    "notify": "Käufer benachrichtigen",
-    "pauseGifts": "Geschenke unterwegs anhalten",
-    "liveNotified": "{n} Personen werden benachrichtigt",
+    "liveNotified": "{n} Käufer werden benachrichtigt",
     "liveRefund": "{total} D werden erstattet",
-    "livePaused": "{n} Geschenke werden angehalten",
+    "livePaused": "{n} ausstehende Geschenke werden zurückgerufen",
     "undoNote": "Der Rückruf lässt sich {n} Minuten lang mit einem Klick rückgängig machen. Bestand und Preis bleiben unverändert.",
-    "go": "Bestätigen und zurückrufen"
+    "go": "Bestätigen und zurückrufen",
+    "swapTo": "Ersatzartikel"
   },
   "tl": {
     "title": "Kalender",
@@ -293,7 +343,10 @@ export const ADMIN_SHOP2_DE = {
     "clash": {
       "sameDay": "{n} Sets öffnen am selben Tag",
       "crowded": "{n} Sets gleichzeitig im Verkauf",
-      "legendary": "zu viele legendäre Artikel"
+      "legendary": "zu viele legendäre Artikel",
+      "ruleNight": "Regelwechsel während eines Nachtmarkts",
+      "nightLaunch": "Set-Start am Nachtmarkt-Tag",
+      "eventLaunch": "Set-Start während einer Aktion"
     },
     "span": "Zeitraum",
     "day": "Tag",
@@ -323,7 +376,6 @@ export const ADMIN_SHOP2_DE = {
     "title": "Ausstehende Änderungen",
     "empty": "Keine ausstehenden Änderungen",
     "cancel": "Abbrechen",
-    "cancelTitle": "Geplante Änderung abbrechen?",
     "cancelGo": "Abbrechen",
     "kind": {
       "rules": "Schaufenster-Regeln",
@@ -331,35 +383,22 @@ export const ADMIN_SHOP2_DE = {
       "set": "Set-Start",
       "refreshPrice": "Erneuerungspreis",
       "limits": "Limits",
-      "event": "Aktion"
-    }
+      "event": "Aktion",
+      "recall": "Rückruf wird endgültig"
+    },
+    "cancelNote": "Die Änderung wird nicht angewendet; du kannst sie neu planen.",
+    "cancelTitle": "Geplante Änderung abbrechen?"
   },
   "audit": {
     "title": "Protokoll",
     "filter": "Protokollfilter",
-    "f": { "all": "Alle", "set": "Sets", "rules": "Algorithmus", "night": "Nachtmarkt", "limits": "Limits", "user": "Nutzer" },
-    "kind": {
-      "set_create": "Set erstellt",
-      "set_update": "Set aktualisiert",
-      "set_publish": "Set veröffentlicht",
-      "set_unpublish": "Veröffentlichung zurückgenommen",
-      "set_recall": "Set zurückgerufen",
-      "set_recall_undo": "Rückruf zurückgenommen",
-      "set_stock": "Bestand geändert",
-      "set_extend": "Verlängert",
-      "set_duplicate": "Set dupliziert",
-      "set_ab_test": "A/B-Preistest",
-      "rules_apply": "Regeln für 00:00 geplant",
-      "rules_applied": "Regeln sind live",
-      "rules_revert": "Zu früherer Version zurück",
-      "night_save": "Nachtmarkt-Plan gespeichert",
-      "night_open": "Nachtmarkt von Hand geöffnet",
-      "night_close": "Nachtmarkt geschlossen",
-      "night_skip": "Diese Woche übersprungen",
-      "limits_save": "Limits geändert",
-      "user_regenerate": "Nutzer-Schaufenster neu erstellt",
-      "user_refresh_grant": "Kostenlose Erneuerung vergeben",
-      "queue_cancel": "Geplante Änderung abgebrochen"
+    "f": {
+      "all": "Alle",
+      "set": "Sets",
+      "rules": "Algorithmus",
+      "night": "Nachtmarkt",
+      "limits": "Limits",
+      "user": "Nutzer"
     },
     "system": "System",
     "reason": "Grund: {r}",
@@ -369,20 +408,56 @@ export const ADMIN_SHOP2_DE = {
     "empty": "Keine Einträge",
     "more": "Ältere Einträge",
     "csv": "CSV herunterladen",
-    "clearFilter": "Filter entfernen"
+    "clearFilter": "Filter entfernen",
+    "kind": {
+      "set_create": "Set erstellt",
+      "set_update": "Set aktualisiert",
+      "set_shift": "Set verschoben",
+      "set_publish": "Set veröffentlicht",
+      "set_publish_undo": "Veröffentlichung zurückgenommen",
+      "set_recall": "Set zurückgerufen",
+      "set_recall_undo": "Rückruf zurückgenommen",
+      "set_restore": "Frühere Set-Version wiederhergestellt",
+      "set_delete": "Entwurf gelöscht",
+      "ab_create": "A/B-Preistest gestartet",
+      "ab_stop": "A/B-Preistest beendet",
+      "rules_create": "Regelentwurf erstellt",
+      "rules_schedule": "Regeln für 00:00 geplant",
+      "rules_activate": "Regelversion live geschaltet",
+      "rules_cancel": "Geplante Regeln abgebrochen",
+      "night_create": "Nachtmarkt hinzugefügt",
+      "night_update": "Nachtmarkt geändert",
+      "night_delete": "Nachtmarkt gelöscht",
+      "night_open_now": "Nachtmarkt von Hand geöffnet",
+      "night_open_undo": "Manuelle Öffnung zurückgenommen",
+      "night_skip": "Nachtmarkt übersprungen",
+      "limits_update": "Limits geändert",
+      "limits_undo": "Limit-Änderung zurückgenommen",
+      "gift_flag_resolve": "Geschenkring-Warnung geschlossen",
+      "free_refresh": "Kostenlose Erneuerung vergeben",
+      "storefront_regenerate": "Nutzer-Schaufenster neu erstellt",
+      "queue_cancel": "Geplante Änderung abgebrochen",
+      "event_create": "Aktion im Kalender hinzugefügt",
+      "event_delete": "Aktion gelöscht"
+    }
   },
   "slots": {
     "title": "Konversion pro Platz",
-    "afterRefresh": "Käufe nach dem Erneuern",
-    "toSet": "Vom Schaufenster zum Set"
+    "afterRefresh": "Erneuerungen heute",
+    "toSet": "Vom Schaufenster zum Set",
+    "window": "letzte 14 Tage"
   },
-  "top": { "title": "Bestseller", "d7": "7 T", "d30": "30 T" },
+  "top": {
+    "title": "Bestseller",
+    "d7": "7 T",
+    "d30": "30 T"
+  },
   "us": {
     "title": "Nutzer-Schaufenster",
     "sub": "Die 4 Artikel, die der Nutzer heute sieht, und warum",
     "pickPh": "Nach Nutzername suchen",
     "pickHint": "Wähle einen Nutzer, um sein heutiges, morgiges und früheres Schaufenster mit Gründen zu sehen.",
-    "facts": "Konto {days} Tage · Guthaben {balance} D · besitzt {owned} Artikel",
+    "facts": "Besitzt {owned} Artikel · {wish} auf der Wunschliste",
     "day": "Tag",
     "today": "Heute",
     "tomorrow": "Morgen",
@@ -392,15 +467,19 @@ export const ADMIN_SHOP2_DE = {
     "seed": "Seed {seed} · mit v{v}-Regeln erstellt",
     "dossier": "Nutzerakte",
     "why": {
-      "slot": "Platz {n}",
-      "weight": "{r}-Gewicht {pct} %",
-      "band": "Preisband {a}–{b}",
-      "cheapest": "günstigstes Band",
+      "band": "Platz {n} Preisband {a}–{b}",
       "lastSeen": "seit {n} Tagen nicht gesehen",
       "never": "nie gesehen",
-      "matchesSet": "passt zu {name}",
-      "refresh": "Kam mit einer Erneuerung · {time}",
-      "locked": "vom Nutzer gesperrt"
+      "locked": "vom Nutzer gesperrt",
+      "bandRelaxed": "kein Artikel in {a}–{b}, Band gelockert",
+      "epicFloor": "Episch-Untergrenze: mindestens 1 Episch+ im Schaufenster",
+      "rarity": "{r}-Gewicht {w}",
+      "newItem": "Neuheiten-Bonus",
+      "wishlist": "auf der Wunschliste",
+      "setProgress": "vervollständigt das begonnene Set {set}",
+      "setPiece": "Teil des Sets {set}",
+      "repeatRelaxed": "Pool zu klein, Wiederholungsregel gelockert",
+      "chance": "{pct} % Auswahlchance"
     },
     "excluded": "Für diesen Nutzer entfernt",
     "poolTo": "Pool {pool} → {cand} Kandidaten",
@@ -409,10 +488,11 @@ export const ADMIN_SHOP2_DE = {
       "recent": "In den letzten {d} Tagen gezeigt {n}",
       "region": "In der Region aus {n}",
       "cap": "Obergrenze neue Konten {n}",
-      "noCap": "Keine Obergrenze für neue Konten"
+      "noCap": "Keine Obergrenze für neue Konten",
+      "relaxed": "Pool zu klein, eine Regel wurde gelockert"
     },
     "sets": "Sets für diesen Nutzer",
-    "ownedPieces": "besitzt {n} Teile",
+    "ownedPieces": "besitzt {n} / {total} Teile",
     "ownedNone": "besitzt keines",
     "refresh": "Erneuern",
     "refreshUsed": "Genutzt · {time}",
@@ -423,9 +503,6 @@ export const ADMIN_SHOP2_DE = {
     "giftsSent": "{n} / {cap} gesendet",
     "giftsGot": "Erhalten {n} / {cap}",
     "night": "Nachtmarkt",
-    "nightOk": "Berechtigt",
-    "nightNo": "Nicht berechtigt",
-    "nightCards": "{n} Karten bereit um {time}",
     "last7": "Schaufenster der letzten 7 Tage",
     "last7Sum": "{views} Aufrufe · {buys} Käufe · {refresh} Erneuerungen",
     "audit": "Protokoll",
@@ -436,7 +513,13 @@ export const ADMIN_SHOP2_DE = {
     "regenGo": "Neu erstellen",
     "grantTitle": "Kostenlose Erneuerung für {user}",
     "grantSub": "Der Nutzer kann heute einmal kostenlos erneuern.",
-    "grantGo": "Erneuerung geben"
+    "grantGo": "Erneuerung geben",
+    "newAccount": "Neues Konto",
+    "setClosed": "Set-Preis geschlossen",
+    "nightOpen": "Offen",
+    "nightNext": "Nächste Nacht",
+    "nightNone": "Keine Nacht geplant",
+    "nightFlips": "{used} / {n} Karten aufgedeckt · {bought} gekauft"
   },
   "nm": {
     "title": "Nachtmarkt-Planer",
@@ -447,7 +530,7 @@ export const ADMIN_SHOP2_DE = {
     "modeRandom": "Zufällig",
     "modeManual": "Manuell",
     "ruleCal": "{n} Nächte pro Woche · {days}",
-    "ruleRandom": "{n} Nächte pro Woche, zufällige Tage",
+    "ruleRandom": "Gewählte Nächte öffnen zu einer zufälligen Stunde",
     "ruleManual": "{n} von Hand gewählte Nächte",
     "tz": "Zeitzone Istanbul",
     "weekdayHint": "Diesen Tag jede Woche an- oder ausschalten",
@@ -461,12 +544,10 @@ export const ADMIN_SHOP2_DE = {
     "discountMax": "Höchster Rabatt",
     "discountHint": "Hohe Rabatte sind selten · Durchschnitt {mean} %",
     "cards": "Kartenanzahl",
-    "perCard": "Käufe pro Karte",
-    "perCardBuy": "Pro Karte",
-    "perNight": "Höchstens pro Nacht",
+    "perCard": "Aufdecken und Kaufen",
+    "perNight": "Höchstens Käufe pro Nacht",
     "who": "Wer es sieht",
     "accountDays": "Kontoalter mindestens",
-    "activeDays": "Aktiv in den letzten",
     "eligible": "Berechtigt: {n} Personen",
     "preview": "Was der Nutzer sieht",
     "sample": "{user} · {n} Karten aufgedeckt",
@@ -476,11 +557,17 @@ export const ADMIN_SHOP2_DE = {
     "forecast": "Prognose",
     "fcJoin": "Teilnahme",
     "fcRevenue": "Umsatz",
-    "fcPeak": "Spitze",
     "past": "Frühere Nächte",
     "fullReport": "Vollständiger Bericht",
     "lessReport": "Weniger zeigen",
-    "col": { "night": "Nacht", "joined": "Teilgenommen", "flipped": "Karten umgedreht", "buy": "Kaufrate", "revenue": "Umsatz", "avg": "Ø Rabatt" },
+    "col": {
+      "night": "Nacht",
+      "joined": "Teilgenommen",
+      "flipped": "Karten umgedreht",
+      "buy": "Kaufrate",
+      "revenue": "Umsatz",
+      "avg": "Ø Rabatt"
+    },
     "openNow": "Jetzt öffnen…",
     "skip": "Diese Woche überspringen",
     "save": "Speichern und planen",
@@ -490,66 +577,112 @@ export const ADMIN_SHOP2_DE = {
     "openGo": "Jetzt öffnen",
     "skipTitle": "Die Nächte dieser Woche überspringen?",
     "skipSub": "Die geplanten Nachtmärkte dieser Woche öffnen nicht; nächste Woche geht der Plan unverändert weiter.",
-    "skipGo": "Diese Woche überspringen"
+    "skipGo": "Diese Woche überspringen",
+    "flips": "Aufdeckungen",
+    "premiumOnly": "Nur Descall+",
+    "eligibleNote": "Die Berechtigung gilt beim Speichern für von Hand hinzugefügte Nächte",
+    "skew": "Rabattkurve",
+    "fcBuys": "Käufe",
+    "fcNoBasis": "Noch keine früheren Nächte",
+    "noPast": "Noch keine früheren Nächte"
   },
   "lim": {
-    "title": "Regeln für Geschenke und Erneuern",
+    "title": "Regeln für Geschenke, Erneuern und Käufe",
     "sub": "Missbrauchslimits · Version {v} · {n} Änderungen",
-    "tab": { "gift": "Geschenke", "refresh": "Erneuern", "newAccount": "Neue Konten", "blocked": "Blockiert" },
+    "tab": {
+      "gift": "Geschenke",
+      "refresh": "Erneuern",
+      "purchases": "Käufe",
+      "flags": "Ring-Warnungen"
+    },
     "was": "vorher {v}",
     "g": {
       "dailySend": "Senden pro Tag",
       "dailyReceive": "Empfangen pro Tag",
       "samePerson": "An dieselbe Person",
-      "dailyAmount": "Betrag pro Tag",
-      "setGift": "Set-Geschenke",
       "sendAge": "Kontoalter zum Senden",
-      "setAge": "Kontoalter für Sets",
-      "cooldown": "Wartezeit",
-      "profanity": "Nachrichten durch den Schimpfwortfilter",
+      "setAge": "Kontoalter für Set-Geschenke",
       "ring": "Ring-Erkennung",
-      "nightGift": "Nachtmarkt-Artikel verschenkbar"
+      "maxMessage": "Nachrichtenlänge",
+      "schedule": "Im Voraus planen",
+      "ringWindow": "Ring-Zeitfenster",
+      "enabled": "Schenken ist an"
     },
     "r": {
       "perDay": "Pro Tag",
       "price": "Preis",
-      "locked": "Sperrbare Karten",
       "premiumFree": "Kostenlos mit Descall+",
       "today": "Erneuerungen heute",
-      "buyAfter": "Käufe nach Erneuern",
-      "revenue": "Erneuerungsumsatz"
+      "revenue": "Erneuerungsumsatz",
+      "streak": "Serienbonus (Tage)"
     },
-    "n": { "days": "Erste Tage", "cap": "Platz-Obergrenze", "setBuy": "Kontoalter für Set-Kauf" },
-    "noBlocked": "Heute keine blockierten Versuche",
     "ringRisk": "Hohes Risiko",
-    "why": {
-      "daily": "Tageslimit {n} / {n}",
-      "ring": "Geschenkring",
-      "newAccount": "Konto ist {n} Tage alt",
-      "samePerson": "Limit pro Person",
-      "amount": "Tagesbetrag erreicht",
-      "cooldown": "Wartezeit",
-      "friendsOnly": "Empfänger nimmt DMs nur von Freunden an"
-    },
     "preview": "Was eine begrenzte Person sieht",
     "msgGiftT": "Geschenk nicht gesendet",
     "msgGift": "Du hast das heutige Geschenklimit erreicht ({n} / {n}). Es wird um 00:00 zurückgesetzt.",
     "msgRefreshT": "Keine Erneuerungen mehr",
     "msgRefresh": "Du kannst das Schaufenster {n}-mal am Tag erneuern ({price} D). Das neue Schaufenster kommt um 00:00.",
-    "msgNewT": "Schaufenster für neue Konten",
-    "msgNew": "In den ersten {days} Tagen deines Kontos zeigt das Schaufenster Artikel bis {cap} D.",
-    "yesterday": "Hätten diese Regeln gestern gegolten, wären {n} Geschenke blockiert worden; davon etwa {pct} legitim."
+    "frozen": "Eingefroren",
+    "freeze": "Geschenke einfrieren",
+    "unfreeze": "Freigeben",
+    "freezeTitle": "Alle Geschenke einfrieren?",
+    "freezeSub": "Neue Geschenke sind nicht möglich; unterwegs befindliche warten. Jederzeit aufhebbar.",
+    "unfreezeTitle": "Geschenke wieder öffnen?",
+    "unfreezeSub": "Nutzer können innerhalb der Limits wieder schenken.",
+    "ifYesterday": "Hätten diese Regeln gestern gegolten",
+    "impactV": "{n} / {total} Geschenke wären blockiert",
+    "impactDelta": "{d} ggü. jetzt · {amount} D",
+    "giftsToday": "Geschenke heute",
+    "blockedToday": "Heute blockiert",
+    "p": {
+      "refund": "Erstattungsfrist",
+      "partial": "Teilpreis-Sperre",
+      "undo": "Aktion rückgängig",
+      "discMin": "Set-Rabatt mindestens",
+      "discMax": "Set-Rabatt höchstens"
+    },
+    "noFlags": "Keine offenen Ring-Warnungen",
+    "flagRing": "Geschenkring",
+    "flagPingPong": "Hin und her gehende Geschenke",
+    "flagAmount": "{amount} D · {n} Geschenke",
+    "flagFreeze": "Wallets einfrieren",
+    "flagDismiss": "Fehlalarm",
+    "flagFreezeTitle": "Wallets im Ring einfrieren?",
+    "flagFreezeSub": "DesCoin-Bewegungen dieser Personen stoppen bis zum Ende der Prüfung.",
+    "flagDismissTitle": "Warnung als Fehlalarm schließen?",
+    "flagDismissSub": "Die Geschenke bleiben; die Entscheidung kommt ins Protokoll.",
+    "why": {
+      "gift_daily_cap": "Tageslimit Senden ({n})",
+      "gift_recipient_cap": "Limit pro Person ({n})",
+      "gift_receive_cap": "Tageslimit des Empfängers ({n})",
+      "gift_new_account": "Konto jünger als {n} Tage",
+      "gift_new_account_set": "Konto jünger als {n} Tage für Sets",
+      "other": "Sonstiges"
+    }
   },
-  "preview": { "device": "Gerät", "desktop": "Desktop", "phone": "Telefon", "both": "Beide" },
+  "preview": {
+    "device": "Gerät",
+    "desktop": "Desktop",
+    "phone": "Telefon",
+    "both": "Beide"
+  },
   "pv": {
     "title": "Was der Nutzer sieht",
     "sampleLabel": "Beispielnutzer",
-    "sample": { "none": "Besitzt keine Teile", "few": "Besitzt 1–2 Teile", "many": "Besitzt 3+ Teile" },
+    "sample": {
+      "none": "Besitzt keine Teile",
+      "few": "Besitzt 1–2 Teile",
+      "many": "Besitzt 3+ Teile"
+    },
     "realUsers": "Echte Nutzer",
     "ownedN": "besitzt {n} Teile",
     "ownedNone": "keine Teile",
     "chrome": "Shop · Sets",
-    "tab": { "today": "Heutiges Schaufenster", "sets": "Sets", "night": "Nachtmarkt" },
+    "tab": {
+      "today": "Heutiges Schaufenster",
+      "sets": "Sets",
+      "night": "Nachtmarkt"
+    },
     "newSet": "Neues Set",
     "setPieces": "Set · {n} Teile",
     "limited": "Limitiert",
@@ -570,7 +703,14 @@ export const ADMIN_SHOP2_DE = {
     "remind": "Beim Start benachrichtigen",
     "askBack": "Rückkehr wünschen",
     "whoPays": "Wer zahlt was",
-    "tier": { "none": "Besitzt keine Teile", "few": "Besitzt 1–2 Teile", "many": "Besitzt 3+ Teile", "all": "Besitzt alle" },
+    "tier": {
+      "none": "Besitzt keine Teile",
+      "few": "Besitzt 1–2 Teile",
+      "many": "Besitzt 3+ Teile",
+      "all": "Besitzt alle",
+      "half": "Besitzt 3–5 Teile",
+      "most": "Besitzt 6+ Teile"
+    },
     "hidden": "Ausgeblendet",
     "forecast": "Prognose",
     "forecastV": "Erster Tag {lo}–{hi} Sets · Bestand reicht {d} Tage",
@@ -579,7 +719,12 @@ export const ADMIN_SHOP2_DE = {
     "chatSample": "Wie sieht mein neues Set aus?",
     "lifecycle": "Lebenszyklus",
     "lifecycleHint": "klicken, um die Bühne umzuschalten",
-    "stage": { "upcoming": "Demnächst", "live": "Im Verkauf", "last24": "Letzte 24 Stunden", "soldout": "Ausverkauft" },
+    "stage": {
+      "upcoming": "Demnächst",
+      "live": "Im Verkauf",
+      "last24": "Letzte 24 Stunden",
+      "soldout": "Ausverkauft"
+    },
     "note": {
       "upcoming": "öffnet {when}",
       "upcomingNone": "Keine Startzeit",
@@ -587,7 +732,8 @@ export const ADMIN_SHOP2_DE = {
       "liveOpen": "Unbefristet im Verkauf",
       "last24": "Roter Countdown, Puls",
       "soldout": "Grau, Rückkehr wünschen"
-    }
+    },
+    "users": "{n} Personen"
   },
   "b": {
     "untitled": "Unbenanntes Set",
@@ -609,12 +755,17 @@ export const ADMIN_SHOP2_DE = {
     "suggest": "Passende vorschlagen",
     "pieces": "Teile · {n} / {total}",
     "piecesHint": "Aus dem Regal ziehen oder einen Platz anklicken und im Katalog wählen",
-    "group": { "profile": "Profil", "nameBadge": "Name und Abzeichen", "effectChat": "Effekt und Chat", "sound": "Ton" },
-    "ownedBy": "{pct} % besitzen es",
+    "group": {
+      "profile": "Profil",
+      "nameBadge": "Name und Abzeichen",
+      "effectChat": "Effekt und Chat",
+      "sound": "Ton"
+    },
+    "ownedBy": "{n} besitzen es",
     "dropHere": "hier ablegen",
     "remove": "Teil entfernen",
     "wrongSlot": "Dieser Artikel passt nicht in den Platz {slot}",
-    "ownerWarn": "{pct} % der Nutzer besitzen {name} bereits. Für sie sinkt das Set im Schnitt um {drop} D; es bleibt trotzdem weit über Einzelartikeln.",
+    "ownerWarn": "{n} Personen besitzen {name} bereits. Für sie sinkt das Set im Schnitt um {drop} D; es bleibt trotzdem weit über Einzelartikeln.",
     "price": "Preis",
     "priceFacts": "Summe der Teile {sum} · teuerster Einzelartikel {max}",
     "setPrice": "Setpreis",
@@ -640,9 +791,7 @@ export const ADMIN_SHOP2_DE = {
     "duration": "Dauer",
     "noEnd": "Ohne Ende",
     "stock": "Bestand",
-    "perPerson": "Pro Person",
-    "giftPerDay": "Geschenke / Tag",
-    "stockNote": "{n} Stück · höchstens {per} pro Person",
+    "stockNote": "{n} Stück · {sold} verkauft",
     "clash": "Die ersten 2 Tage überschneiden sich mit {names}.",
     "clashSuggest": "Start am {day} wird empfohlen.",
     "shiftTo": "Auf {day} verschieben",
@@ -656,7 +805,9 @@ export const ADMIN_SHOP2_DE = {
       "clash": "Kein überschneidendes Set in den ersten 2 Tagen",
       "single": "Alle Teile auch einzeln im Verkauf",
       "locales": "Übersetzungen: {n} / {total} Sprachen bereit"
-    }
+    },
+    "partialHint": "In Market 2.0 wird jedes Teil eines Sets auch einzeln verkauft",
+    "giftableHint": "Geschenkregeln stehen unter Regeln und Limits"
   },
   "pub": {
     "title": "{name} jetzt veröffentlichen?",
@@ -692,14 +843,18 @@ export const ADMIN_SHOP2_DE = {
     "refreshGranted": "{user} hat eine kostenlose Erneuerung erhalten",
     "nightSaved": "Nachtmarkt-Plan gespeichert",
     "nightOpened": "Nachtmarkt geöffnet",
-    "weekSkipped": "Nächte dieser Woche übersprungen",
+    "weekSkipped": "{n} Nächte dieser Woche übersprungen",
     "limitsSaved": "{n} Limits aktualisiert",
     "setSaved": "{name} gespeichert",
     "published": "{name} ist live",
     "scheduled": "{name} eingeplant",
     "unpublished": "Veröffentlichung zurückgenommen",
-    "linkCopied": "Vorschau-Link kopiert ({h} Stunden gültig)",
-    "duplicated": "Set dupliziert"
+    "linkCopied": "Vorschau-Link kopiert (Admins können ihn öffnen)",
+    "duplicated": "Set dupliziert",
+    "ringFlag": "Geschenkring erkannt ({n} Personen)",
+    "giftsFrozen": "Geschenke eingefroren",
+    "giftsUnfrozen": "Geschenke wieder offen",
+    "flagResolved": "Warnung geschlossen"
   },
   "err": {
     "generic": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
@@ -711,6 +866,25 @@ export const ADMIN_SHOP2_DE = {
     "clash": "An diesem Datum gibt es eine Überschneidung",
     "stale": "Ein anderer Admin hat das inzwischen geändert; die Seite wurde neu geladen",
     "notReady": "Die Serverseite von Market 2.0 ist noch nicht bereit",
-    "permission": "Du hast keinen Zugriff auf diesen Bereich"
+    "permission": "Du hast keinen Zugriff auf diesen Bereich",
+    "reason_required": "Gib einen Grund an",
+    "bad_set_key": "Der Set-Schlüssel braucht 2–41 Kleinbuchstaben, Ziffern oder Bindestriche",
+    "set_exists": "Ein Set mit diesem Schlüssel gibt es schon",
+    "bad_time": "Ungültige Zeit",
+    "bad_window": "Ungültiger Zeitraum",
+    "bad_option": "Ungültige Option",
+    "bad_replace": "Wähle das zu tauschende Teil und den Ersatz",
+    "set_recalled": "Dieses Set ist zurückgerufen",
+    "not_draft": "Nur Entwürfe können gelöscht werden",
+    "ab_running": "Für dieses Set läuft bereits ein Preistest",
+    "ab_same_price": "Die beiden Preise müssen sich unterscheiden",
+    "not_scheduled": "Diese Version ist nicht geplant",
+    "night_open": "Ein Nachtmarkt ist bereits offen",
+    "night_started": "Dieser Nachtmarkt hat schon begonnen",
+    "title_required": "Gib einen Titel an",
+    "undo_expired": "Die Rückgängig-Frist ist abgelaufen",
+    "undo_unsupported": "Diese Aktion lässt sich nicht rückgängig machen",
+    "not_found": "Eintrag nicht gefunden",
+    "rate_limited": "Zu schnell; kurz warten"
   }
 };

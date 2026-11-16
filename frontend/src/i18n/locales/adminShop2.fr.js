@@ -4,7 +4,11 @@ export const ADMIN_SHOP2_FR = {
   "crumb": "Vitrine du jour, sets, marché de nuit, règles de renouvellement et de cadeaux",
   "crumbTimeline": "Calendrier de publication · vitrine, sets, marché de nuit et événements sur un seul graphique",
   "views": "Vue",
-  "view": { "pano": "Tableau de bord", "takvim": "Calendrier de publication", "kayit": "Journal" },
+  "view": {
+    "pano": "Tableau de bord",
+    "takvim": "Calendrier de publication",
+    "kayit": "Journal"
+  },
   "resetAt": "La vitrine se renouvelle à 00:00 ·",
   "liveInShop": "dans la boutique",
   "liveInShopHint": "Personnes ayant la boutique ouverte ces 2 dernières minutes",
@@ -37,11 +41,26 @@ export const ADMIN_SHOP2_FR = {
     "gift": "cadeaux",
     "per7": "/ 7 jours",
     "perDay": "/ jour",
-    "card": "carte"
+    "card": "carte",
+    "chars": "caractères"
   },
-  "dur": { "dh": "{d} j {h} h", "clock": "{c}" },
-  "ago": { "now": "À l'instant", "m": "il y a {n} min", "h": "il y a {n} h", "d": "il y a {n} j" },
-  "rarity": { "common": "Commun", "rare": "Rare", "epic": "Épique", "legendary": "Légendaire", "mythic": "Mythique" },
+  "dur": {
+    "dh": "{d} j {h} h",
+    "clock": "{c}"
+  },
+  "ago": {
+    "now": "À l'instant",
+    "m": "il y a {n} min",
+    "h": "il y a {n} h",
+    "d": "il y a {n} j"
+  },
+  "rarity": {
+    "common": "Commun",
+    "rare": "Rare",
+    "epic": "Épique",
+    "legendary": "Légendaire",
+    "mythic": "Mythique"
+  },
   "cat": {
     "avatar_frame": "Cadre de profil",
     "banner": "Bannière de profil",
@@ -97,7 +116,8 @@ export const ADMIN_SHOP2_FR = {
     "nightSub": "{n} cartes · {a}–{b} % de remise",
     "gifts": "Cadeaux",
     "blocked": "{n} bloqués",
-    "overLimit": "au-delà de la limite"
+    "overLimit": "au-delà de la limite",
+    "flags": "{n} alertes d'anneau"
   },
   "sales": {
     "title": "Ventes en direct",
@@ -115,7 +135,9 @@ export const ADMIN_SHOP2_FR = {
     "lastPaid": "{price} D · avait {n} pièces, a payé {paid} D",
     "lastPrice": "{price} D",
     "none": "Aucune vente aujourd'hui",
-    "thisHour": "{n} ventes cette heure-ci"
+    "thisHour": "{n} ventes cette heure-ci",
+    "total": "Total",
+    "someone": "Quelqu'un"
   },
   "sets": {
     "title": "Sets",
@@ -181,12 +203,30 @@ export const ADMIN_SHOP2_FR = {
       "featureSetPieces": "Pièces de sets en avant"
     },
     "rule": {
-      "retired": { "t": "Retirer l'ancien et le hors vente", "d": "Les articles retirés n'arrivent jamais en vitrine" },
-      "hideOwned": { "t": "Retirer le possédé", "d": "Les articles de l'inventaire de l'utilisateur ne sont pas montrés" },
-      "noRepeat": { "t": "Pas de répétition", "d": "Ce qui a été montré ces {n} derniers jours ne revient pas" },
-      "minEpic": { "t": "Au moins 1 Épique+", "d": "L'emplacement 4 est toujours Épique ou mieux" },
-      "lockSurvives": { "t": "La carte verrouillée reste", "d": "Au renouvellement, la carte verrouillée par l'utilisateur reste en place" },
-      "featureSetPieces": { "t": "Pièces de sets en avant", "d": "Les pièces des sets en vente reviennent plus souvent" }
+      "retired": {
+        "t": "Retirer l'ancien et le hors vente",
+        "d": "Les articles retirés n'arrivent jamais en vitrine"
+      },
+      "hideOwned": {
+        "t": "Retirer le possédé",
+        "d": "Les articles de l'inventaire de l'utilisateur ne sont pas montrés"
+      },
+      "noRepeat": {
+        "t": "Pas de répétition",
+        "d": "Ce qui a été montré ces {n} derniers jours ne revient pas"
+      },
+      "minEpic": {
+        "t": "Au moins 1 Épique+",
+        "d": "L'emplacement 4 est toujours Épique ou mieux"
+      },
+      "lockSurvives": {
+        "t": "La carte verrouillée reste",
+        "d": "Au renouvellement, la carte verrouillée par l'utilisateur reste en place"
+      },
+      "featureSetPieces": {
+        "t": "Pièces de sets en avant",
+        "d": "Les pièces des sets en vente reviennent plus souvent"
+      }
     },
     "always": "Toujours",
     "poolNone": "Pas encore de données sur la réserve",
@@ -210,23 +250,23 @@ export const ADMIN_SHOP2_FR = {
     "applyMidnight": "Appliquer demain à 00:00",
     "scheduled": "v{v} cette nuit à 00:00",
     "openRules": "Ouvrir les règles",
-    "previewTomorrow": "Aperçu de demain"
+    "previewTomorrow": "Aperçu de demain",
+    "builtIn": "Règles par défaut intégrées"
   },
   "sim": {
     "title": "Simulation · vitrine de demain",
     "sub": "Brouillon v{v} sur {n} utilisateurs types, rien n'a été enregistré",
     "running": "Création de la vitrine de demain pour les utilisateurs types…",
-    "repeat": "Taux de répétition",
     "goal0": "objectif 0 %",
-    "ownedLeak": "Possédé montré",
-    "noLeak": "aucune fuite",
     "minEpic": "Vitrines avec Épique+",
-    "minEpicSub": "objectif 100 %",
     "neverShown": "Jamais montrés",
     "neverShownSub": "articles de la réserve",
     "rarity": "Rareté : objectif et résultat",
     "slots": "Prix moyen par emplacement",
-    "buyRate": "achats prévus {pct}"
+    "empty": "Vitrines vides",
+    "epicForced": "plancher appliqué dans {pct}",
+    "avgValue": "Valeur moyenne de la vitrine",
+    "vsLive": "{d} par rapport à l'actuel"
   },
   "apply": {
     "title": "Appliquer v{v} demain à 00:00 ?",
@@ -255,34 +295,44 @@ export const ADMIN_SHOP2_FR = {
     "blocks": "{n} blocages",
     "newAccount": "Nouveaux comptes",
     "newAccountSub": "Plafond par emplacement {cap} D les {days} premiers jours",
-    "people": "{n} personnes"
+    "people": "{n} personnes",
+    "nightOpenNow": "Ouvert maintenant",
+    "giftFrozen": "Les cadeaux sont gelés"
   },
   "recall": {
     "title": "Retirer le set {name}",
     "sub": "Le set quitte la boutique immédiatement. Choisis ci-dessous ce qui arrive aux acheteurs.",
     "sold": "Vendus",
-    "soldV": "{sets} sets · {pieces} pièces",
+    "soldV": "{sets} achats · {pieces} acheteurs",
     "collected": "Encaissé",
-    "inCart": "Dans les paniers",
+    "inCart": "Dans les listes d'envies",
     "people": "{n} personnes",
     "giftsOnWay": "En route en cadeau",
     "gifts": "{n} cadeaux",
     "forBuyers": "Pour les acheteurs",
     "mode": {
-      "keep": { "t": "Ils le gardent", "d": "Seules les ventes s'arrêtent" },
-      "refund": { "t": "Remboursement en DesCoin", "d": "{total} D sont remboursés" },
-      "swap": { "t": "Remplacer la pièce défectueuse", "d": "La pièce choisie est remplacée par une nouvelle" }
+      "keep": {
+        "t": "Ils le gardent",
+        "d": "Seules les ventes s'arrêtent"
+      },
+      "refund": {
+        "t": "Remboursement en DesCoin",
+        "d": "{total} D sont remboursés"
+      },
+      "swap": {
+        "t": "Remplacer la pièce défectueuse",
+        "d": "La pièce choisie est remplacée par une nouvelle"
+      }
     },
     "swapPick": "Pièce à remplacer",
     "reasonLabel": "Motif (écrit dans le journal)",
     "reasonPh": "Ex. la bannière est mal recadrée sur téléphone ; elle revient avec une version corrigée.",
-    "notify": "Prévenir les acheteurs",
-    "pauseGifts": "Retenir les cadeaux en route",
-    "liveNotified": "{n} personnes seront prévenues",
+    "liveNotified": "{n} acheteurs seront prévenus",
     "liveRefund": "{total} D seront remboursés",
-    "livePaused": "{n} cadeaux retenus",
+    "livePaused": "{n} cadeaux en attente sont rappelés",
     "undoNote": "Le retrait s'annule en un clic pendant {n} minutes. Stock et prix restent tels quels.",
-    "go": "Confirmer et retirer"
+    "go": "Confirmer et retirer",
+    "swapTo": "Article de remplacement"
   },
   "tl": {
     "title": "Calendrier",
@@ -293,7 +343,10 @@ export const ADMIN_SHOP2_FR = {
     "clash": {
       "sameDay": "{n} sets ouvrent le même jour",
       "crowded": "{n} sets en vente en même temps",
-      "legendary": "trop d'articles Légendaires"
+      "legendary": "trop d'articles Légendaires",
+      "ruleNight": "les règles changent pendant un marché de nuit",
+      "nightLaunch": "lancement de set un jour de marché de nuit",
+      "eventLaunch": "lancement de set pendant un événement"
     },
     "span": "Période",
     "day": "Jour",
@@ -323,7 +376,6 @@ export const ADMIN_SHOP2_FR = {
     "title": "Changements en attente",
     "empty": "Aucun changement en attente",
     "cancel": "Annuler",
-    "cancelTitle": "Annuler le changement planifié ?",
     "cancelGo": "L'annuler",
     "kind": {
       "rules": "Règles de la vitrine",
@@ -331,35 +383,22 @@ export const ADMIN_SHOP2_FR = {
       "set": "Lancement de set",
       "refreshPrice": "Prix du renouvellement",
       "limits": "Limites",
-      "event": "Événement"
-    }
+      "event": "Événement",
+      "recall": "Le retrait devient définitif"
+    },
+    "cancelNote": "Le changement ne s'appliquera pas ; tu peux le replanifier.",
+    "cancelTitle": "Annuler le changement planifié ?"
   },
   "audit": {
     "title": "Journal",
     "filter": "Filtre du journal",
-    "f": { "all": "Tout", "set": "Sets", "rules": "Algorithme", "night": "Marché de nuit", "limits": "Limites", "user": "Utilisateur" },
-    "kind": {
-      "set_create": "Set créé",
-      "set_update": "Set mis à jour",
-      "set_publish": "Set publié",
-      "set_unpublish": "Publication annulée",
-      "set_recall": "Set retiré",
-      "set_recall_undo": "Retrait annulé",
-      "set_stock": "Stock modifié",
-      "set_extend": "Prolongé",
-      "set_duplicate": "Set dupliqué",
-      "set_ab_test": "Test A/B de prix",
-      "rules_apply": "Règles planifiées pour 00:00",
-      "rules_applied": "Règles en ligne",
-      "rules_revert": "Retour à une version antérieure",
-      "night_save": "Plan du marché de nuit enregistré",
-      "night_open": "Marché de nuit ouvert à la main",
-      "night_close": "Marché de nuit fermé",
-      "night_skip": "Semaine sautée",
-      "limits_save": "Limites modifiées",
-      "user_regenerate": "Vitrine d'utilisateur régénérée",
-      "user_refresh_grant": "Renouvellement gratuit accordé",
-      "queue_cancel": "Changement planifié annulé"
+    "f": {
+      "all": "Tout",
+      "set": "Sets",
+      "rules": "Algorithme",
+      "night": "Marché de nuit",
+      "limits": "Limites",
+      "user": "Utilisateur"
     },
     "system": "Système",
     "reason": "Motif : {r}",
@@ -369,20 +408,56 @@ export const ADMIN_SHOP2_FR = {
     "empty": "Aucune entrée",
     "more": "Entrées plus anciennes",
     "csv": "Télécharger le CSV",
-    "clearFilter": "Retirer le filtre"
+    "clearFilter": "Retirer le filtre",
+    "kind": {
+      "set_create": "Set créé",
+      "set_update": "Set mis à jour",
+      "set_shift": "Set décalé",
+      "set_publish": "Set publié",
+      "set_publish_undo": "Publication annulée",
+      "set_recall": "Set retiré",
+      "set_recall_undo": "Retrait annulé",
+      "set_restore": "Version antérieure du set restaurée",
+      "set_delete": "Brouillon supprimé",
+      "ab_create": "Test A/B de prix lancé",
+      "ab_stop": "Test A/B de prix terminé",
+      "rules_create": "Brouillon de règles créé",
+      "rules_schedule": "Règles planifiées pour 00:00",
+      "rules_activate": "Version de règles mise en ligne",
+      "rules_cancel": "Règles planifiées annulées",
+      "night_create": "Marché de nuit ajouté",
+      "night_update": "Marché de nuit modifié",
+      "night_delete": "Marché de nuit supprimé",
+      "night_open_now": "Marché de nuit ouvert à la main",
+      "night_open_undo": "Ouverture manuelle annulée",
+      "night_skip": "Marché de nuit sauté",
+      "limits_update": "Limites modifiées",
+      "limits_undo": "Changement de limites annulé",
+      "gift_flag_resolve": "Alerte d'anneau de cadeaux fermée",
+      "free_refresh": "Renouvellement gratuit accordé",
+      "storefront_regenerate": "Vitrine d'utilisateur régénérée",
+      "queue_cancel": "Changement planifié annulé",
+      "event_create": "Événement ajouté au calendrier",
+      "event_delete": "Événement supprimé"
+    }
   },
   "slots": {
     "title": "Conversion par emplacement",
-    "afterRefresh": "Achats après renouvellement",
-    "toSet": "De la vitrine au set"
+    "afterRefresh": "Renouvellements aujourd'hui",
+    "toSet": "De la vitrine au set",
+    "window": "14 derniers jours"
   },
-  "top": { "title": "Meilleures ventes", "d7": "7 j", "d30": "30 j" },
+  "top": {
+    "title": "Meilleures ventes",
+    "d7": "7 j",
+    "d30": "30 j"
+  },
   "us": {
     "title": "Vitrine d'un utilisateur",
     "sub": "Les 4 articles que l'utilisateur voit aujourd'hui et pourquoi",
     "pickPh": "Chercher par nom d'utilisateur",
     "pickHint": "Choisis un utilisateur pour voir sa vitrine d'aujourd'hui, de demain et passée avec les raisons.",
-    "facts": "Compte {days} jours · solde {balance} D · possède {owned} articles",
+    "facts": "Possède {owned} articles · {wish} dans la liste d'envies",
     "day": "Jour",
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
@@ -392,15 +467,19 @@ export const ADMIN_SHOP2_FR = {
     "seed": "Graine {seed} · créée avec les règles v{v}",
     "dossier": "Fiche utilisateur",
     "why": {
-      "slot": "Emplacement {n}",
-      "weight": "poids {r} {pct} %",
-      "band": "tranche de prix {a}–{b}",
-      "cheapest": "tranche la moins chère",
+      "band": "Emplacement {n} tranche de prix {a}–{b}",
       "lastSeen": "pas vu depuis {n} jours",
       "never": "jamais vu",
-      "matchesSet": "s'accorde avec {name}",
-      "refresh": "Arrivé avec un renouvellement · {time}",
-      "locked": "verrouillé par l'utilisateur"
+      "locked": "verrouillé par l'utilisateur",
+      "bandRelaxed": "rien entre {a} et {b}, tranche assouplie",
+      "epicFloor": "Plancher Épique : au moins 1 Épique+ dans la vitrine",
+      "rarity": "poids {r} {w}",
+      "newItem": "bonus nouveauté",
+      "wishlist": "dans la liste d'envies",
+      "setProgress": "complète le set {set} commencé",
+      "setPiece": "pièce du set {set}",
+      "repeatRelaxed": "réserve trop petite, règle de répétition assouplie",
+      "chance": "{pct} % de chances"
     },
     "excluded": "Retiré pour cet utilisateur",
     "poolTo": "Réserve {pool} → {cand} candidats",
@@ -409,10 +488,11 @@ export const ADMIN_SHOP2_FR = {
       "recent": "Montrés ces {d} derniers jours {n}",
       "region": "Indisponibles dans la région {n}",
       "cap": "Plafond nouveau compte {n}",
-      "noCap": "Pas de plafond nouveau compte"
+      "noCap": "Pas de plafond nouveau compte",
+      "relaxed": "Réserve trop petite, une règle a été assouplie"
     },
     "sets": "Sets pour cet utilisateur",
-    "ownedPieces": "possède {n} pièces",
+    "ownedPieces": "possède {n} / {total} pièces",
     "ownedNone": "n'en possède aucune",
     "refresh": "Renouvellement",
     "refreshUsed": "Utilisé · {time}",
@@ -423,9 +503,6 @@ export const ADMIN_SHOP2_FR = {
     "giftsSent": "envoyés {n} / {cap}",
     "giftsGot": "Reçus {n} / {cap}",
     "night": "Marché de nuit",
-    "nightOk": "Éligible",
-    "nightNo": "Non éligible",
-    "nightCards": "{n} cartes prêtes à {time}",
     "last7": "Vitrine des 7 derniers jours",
     "last7Sum": "{views} vues · {buys} achats · {refresh} renouvellements",
     "audit": "Journal",
@@ -436,7 +513,13 @@ export const ADMIN_SHOP2_FR = {
     "regenGo": "Régénérer",
     "grantTitle": "Renouvellement gratuit pour {user}",
     "grantSub": "L'utilisateur peut renouveler une fois gratuitement aujourd'hui.",
-    "grantGo": "Offrir"
+    "grantGo": "Offrir",
+    "newAccount": "Nouveau compte",
+    "setClosed": "tarif de set fermé",
+    "nightOpen": "Ouvert",
+    "nightNext": "Prochaine nuit",
+    "nightNone": "Aucune nuit prévue",
+    "nightFlips": "{used} / {n} cartes retournées · {bought} achetées"
   },
   "nm": {
     "title": "Planificateur du marché de nuit",
@@ -447,7 +530,7 @@ export const ADMIN_SHOP2_FR = {
     "modeRandom": "Aléatoire",
     "modeManual": "Manuel",
     "ruleCal": "{n} nuits par semaine · {days}",
-    "ruleRandom": "{n} nuits par semaine, jours aléatoires",
+    "ruleRandom": "Les nuits choisies ouvrent à une heure aléatoire",
     "ruleManual": "{n} nuits choisies à la main",
     "tz": "Fuseau horaire Istanbul",
     "weekdayHint": "Activer ou désactiver ce jour chaque semaine",
@@ -461,12 +544,10 @@ export const ADMIN_SHOP2_FR = {
     "discountMax": "Remise la plus haute",
     "discountHint": "Les fortes remises sont rares · moyenne {mean} %",
     "cards": "Nombre de cartes",
-    "perCard": "Achats par carte",
-    "perCardBuy": "Par carte",
-    "perNight": "Au plus par nuit",
+    "perCard": "Retournements et achats",
+    "perNight": "Achats max par nuit",
     "who": "Qui le voit",
     "accountDays": "Ancienneté minimale",
-    "activeDays": "Actif ces derniers",
     "eligible": "Éligibles : {n} personnes",
     "preview": "Ce que voit l'utilisateur",
     "sample": "{user} · {n} cartes retournées",
@@ -476,11 +557,17 @@ export const ADMIN_SHOP2_FR = {
     "forecast": "Prévision",
     "fcJoin": "Participation",
     "fcRevenue": "Revenus",
-    "fcPeak": "Pic",
     "past": "Nuits précédentes",
     "fullReport": "Rapport complet",
     "lessReport": "Afficher moins",
-    "col": { "night": "Nuit", "joined": "Participants", "flipped": "Cartes retournées", "buy": "Taux d'achat", "revenue": "Revenus", "avg": "Remise moy." },
+    "col": {
+      "night": "Nuit",
+      "joined": "Participants",
+      "flipped": "Cartes retournées",
+      "buy": "Taux d'achat",
+      "revenue": "Revenus",
+      "avg": "Remise moy."
+    },
     "openNow": "Ouvrir maintenant…",
     "skip": "Sauter cette semaine",
     "save": "Enregistrer et planifier",
@@ -490,66 +577,112 @@ export const ADMIN_SHOP2_FR = {
     "openGo": "Ouvrir maintenant",
     "skipTitle": "Sauter les nuits de cette semaine ?",
     "skipSub": "Les marchés de nuit prévus cette semaine n'ouvrent pas ; la semaine prochaine le plan continue tel quel.",
-    "skipGo": "Sauter cette semaine"
+    "skipGo": "Sauter cette semaine",
+    "flips": "Retournements",
+    "premiumOnly": "Descall+ uniquement",
+    "eligibleNote": "L'éligibilité s'applique à l'enregistrement aux nuits ajoutées à la main",
+    "skew": "Courbe de remise",
+    "fcBuys": "Achats",
+    "fcNoBasis": "Pas encore de nuits passées",
+    "noPast": "Pas encore de nuits passées"
   },
   "lim": {
-    "title": "Règles de cadeaux et de renouvellement",
+    "title": "Règles de cadeaux, de renouvellement et d'achat",
     "sub": "Limites anti-abus · version {v} · {n} changements",
-    "tab": { "gift": "Cadeaux", "refresh": "Renouvellement", "newAccount": "Nouveaux comptes", "blocked": "Bloqués" },
+    "tab": {
+      "gift": "Cadeaux",
+      "refresh": "Renouvellement",
+      "purchases": "Achats",
+      "flags": "Alertes d'anneau"
+    },
     "was": "avant {v}",
     "g": {
       "dailySend": "Envois par jour",
       "dailyReceive": "Reçus par jour",
       "samePerson": "À la même personne",
-      "dailyAmount": "Montant par jour",
-      "setGift": "Cadeaux de sets",
       "sendAge": "Ancienneté pour envoyer",
-      "setAge": "Ancienneté pour les sets",
-      "cooldown": "Attente entre cadeaux",
-      "profanity": "Passer les messages au filtre d'injures",
+      "setAge": "Ancienneté pour offrir un set",
       "ring": "Détection d'anneaux",
-      "nightGift": "Les articles du marché de nuit peuvent être offerts"
+      "maxMessage": "Longueur du message",
+      "schedule": "Planifier à l'avance",
+      "ringWindow": "Fenêtre d'anneau",
+      "enabled": "Cadeaux activés"
     },
     "r": {
       "perDay": "Par jour",
       "price": "Prix",
-      "locked": "Cartes verrouillables",
       "premiumFree": "Gratuit avec Descall+",
       "today": "Renouvellements aujourd'hui",
-      "buyAfter": "Achats après renouvellement",
-      "revenue": "Revenus des renouvellements"
+      "revenue": "Revenus des renouvellements",
+      "streak": "Récompense de série (jours)"
     },
-    "n": { "days": "Premiers jours", "cap": "Plafond par emplacement", "setBuy": "Ancienneté pour acheter des sets" },
-    "noBlocked": "Aucune tentative bloquée aujourd'hui",
     "ringRisk": "Risque élevé",
-    "why": {
-      "daily": "limite quotidienne {n} / {n}",
-      "ring": "anneau de cadeaux",
-      "newAccount": "le compte a {n} jours",
-      "samePerson": "limite par personne",
-      "amount": "montant quotidien atteint",
-      "cooldown": "temps d'attente",
-      "friendsOnly": "le destinataire n'accepte les MP que de ses amis"
-    },
     "preview": "Ce que voit une personne limitée",
     "msgGiftT": "Cadeau non envoyé",
     "msgGift": "Tu as atteint la limite de cadeaux du jour ({n} / {n}). Elle se réinitialise à 00:00.",
     "msgRefreshT": "Plus de renouvellements",
     "msgRefresh": "Tu peux renouveler la vitrine {n} fois par jour ({price} D). La nouvelle vitrine arrive à 00:00.",
-    "msgNewT": "Vitrine des nouveaux comptes",
-    "msgNew": "Pendant les {days} premiers jours de ton compte, la vitrine montre des articles jusqu'à {cap} D.",
-    "yesterday": "Avec ces règles hier, {n} cadeaux auraient été bloqués ; environ {pct} d'entre eux légitimes."
+    "frozen": "Gelé",
+    "freeze": "Geler les cadeaux",
+    "unfreeze": "Dégeler",
+    "freezeTitle": "Geler tous les cadeaux ?",
+    "freezeSub": "Aucun nouveau cadeau ne peut être envoyé ; ceux en route attendent. Tu peux lever le gel à tout moment.",
+    "unfreezeTitle": "Rouvrir les cadeaux ?",
+    "unfreezeSub": "Les utilisateurs pourront de nouveau offrir dans les limites.",
+    "ifYesterday": "Si ces règles s'étaient appliquées hier",
+    "impactV": "{n} / {total} cadeaux auraient été bloqués",
+    "impactDelta": "{d} par rapport à maintenant · {amount} D",
+    "giftsToday": "Cadeaux aujourd'hui",
+    "blockedToday": "Bloqués aujourd'hui",
+    "p": {
+      "refund": "Délai de remboursement",
+      "partial": "Verrou du prix par pièce",
+      "undo": "Annulation d'action",
+      "discMin": "Remise de set minimale",
+      "discMax": "Remise de set maximale"
+    },
+    "noFlags": "Aucune alerte d'anneau ouverte",
+    "flagRing": "Anneau de cadeaux",
+    "flagPingPong": "Cadeaux en aller-retour",
+    "flagAmount": "{amount} D · {n} cadeaux",
+    "flagFreeze": "Geler les portefeuilles",
+    "flagDismiss": "Fausse alerte",
+    "flagFreezeTitle": "Geler les portefeuilles de l'anneau ?",
+    "flagFreezeSub": "Les mouvements de DesCoin de ces personnes s'arrêtent jusqu'à la fin de l'examen.",
+    "flagDismissTitle": "Fermer l'alerte comme fausse alerte ?",
+    "flagDismissSub": "Les cadeaux restent tels quels ; la décision va au journal.",
+    "why": {
+      "gift_daily_cap": "limite d'envoi quotidienne ({n})",
+      "gift_recipient_cap": "limite par personne ({n})",
+      "gift_receive_cap": "limite quotidienne du destinataire ({n})",
+      "gift_new_account": "compte de moins de {n} jours",
+      "gift_new_account_set": "compte de moins de {n} jours pour les sets",
+      "other": "autre"
+    }
   },
-  "preview": { "device": "Appareil", "desktop": "Ordinateur", "phone": "Téléphone", "both": "Les deux" },
+  "preview": {
+    "device": "Appareil",
+    "desktop": "Ordinateur",
+    "phone": "Téléphone",
+    "both": "Les deux"
+  },
   "pv": {
     "title": "Ce que voit l'utilisateur",
     "sampleLabel": "Utilisateur type",
-    "sample": { "none": "N'a aucune pièce", "few": "A 1–2 pièces", "many": "A 3+ pièces" },
+    "sample": {
+      "none": "N'a aucune pièce",
+      "few": "A 1–2 pièces",
+      "many": "A 3+ pièces"
+    },
     "realUsers": "Vrais utilisateurs",
     "ownedN": "a {n} pièces",
     "ownedNone": "aucune pièce",
     "chrome": "Boutique · Sets",
-    "tab": { "today": "Vitrine du jour", "sets": "Sets", "night": "Marché de nuit" },
+    "tab": {
+      "today": "Vitrine du jour",
+      "sets": "Sets",
+      "night": "Marché de nuit"
+    },
     "newSet": "Nouveau set",
     "setPieces": "Set · {n} pièces",
     "limited": "Limité",
@@ -570,7 +703,14 @@ export const ADMIN_SHOP2_FR = {
     "remind": "Me prévenir à l'ouverture",
     "askBack": "Demander son retour",
     "whoPays": "Qui paie quoi",
-    "tier": { "none": "N'a aucune pièce", "few": "A 1–2 pièces", "many": "A 3+ pièces", "all": "Les a toutes" },
+    "tier": {
+      "none": "N'a aucune pièce",
+      "few": "A 1–2 pièces",
+      "many": "A 3+ pièces",
+      "all": "Les a toutes",
+      "half": "A 3–5 pièces",
+      "most": "A 6+ pièces"
+    },
     "hidden": "Masqué",
     "forecast": "Prévision",
     "forecastV": "Premier jour {lo}–{hi} sets · stock épuisé en {d} jours",
@@ -579,7 +719,12 @@ export const ADMIN_SHOP2_FR = {
     "chatSample": "Comment me va mon nouveau set ?",
     "lifecycle": "Cycle de vie",
     "lifecycleHint": "clique pour changer la scène",
-    "stage": { "upcoming": "Bientôt", "live": "En vente", "last24": "Dernières 24 heures", "soldout": "Épuisé" },
+    "stage": {
+      "upcoming": "Bientôt",
+      "live": "En vente",
+      "last24": "Dernières 24 heures",
+      "soldout": "Épuisé"
+    },
     "note": {
       "upcoming": "ouvre {when}",
       "upcomingNone": "Pas d'heure d'ouverture",
@@ -587,7 +732,8 @@ export const ADMIN_SHOP2_FR = {
       "liveOpen": "En vente sans fin",
       "last24": "Compte à rebours rouge, pulsation",
       "soldout": "Gris, demander son retour"
-    }
+    },
+    "users": "{n} personnes"
   },
   "b": {
     "untitled": "Set sans nom",
@@ -609,12 +755,17 @@ export const ADMIN_SHOP2_FR = {
     "suggest": "Proposer les assortis",
     "pieces": "Pièces · {n} / {total}",
     "piecesHint": "Glisse depuis l'étagère ou clique un emplacement pour choisir dans le catalogue",
-    "group": { "profile": "Profil", "nameBadge": "Nom et badge", "effectChat": "Effet et discussion", "sound": "Son" },
-    "ownedBy": "{pct} % le possèdent",
+    "group": {
+      "profile": "Profil",
+      "nameBadge": "Nom et badge",
+      "effectChat": "Effet et discussion",
+      "sound": "Son"
+    },
+    "ownedBy": "{n} le possèdent",
     "dropHere": "déposer ici",
     "remove": "Retirer la pièce",
     "wrongSlot": "Cet article ne va pas dans l'emplacement {slot}",
-    "ownerWarn": "{pct} % des utilisateurs possèdent déjà {name}. Pour eux, le set baisse en moyenne de {drop} D ; il reste bien au-dessus des articles seuls.",
+    "ownerWarn": "{n} personnes possèdent déjà {name}. Pour elles, le set baisse en moyenne de {drop} D ; il reste bien au-dessus des articles seuls.",
     "price": "Prix",
     "priceFacts": "Somme des pièces {sum} · article seul le plus cher {max}",
     "setPrice": "prix du set",
@@ -640,9 +791,7 @@ export const ADMIN_SHOP2_FR = {
     "duration": "Durée",
     "noEnd": "Sans fin",
     "stock": "Stock",
-    "perPerson": "Par personne",
-    "giftPerDay": "Cadeaux / jour",
-    "stockNote": "{n} exemplaires · au plus {per} par personne",
+    "stockNote": "{n} exemplaires · {sold} vendus",
     "clash": "Les 2 premiers jours chevauchent {names}.",
     "clashSuggest": "Il est conseillé d'ouvrir le {day}.",
     "shiftTo": "Décaler au {day}",
@@ -656,7 +805,9 @@ export const ADMIN_SHOP2_FR = {
       "clash": "Aucun set en chevauchement les 2 premiers jours",
       "single": "Toutes les pièces aussi vendues à l'unité",
       "locales": "Traductions : {n} / {total} langues prêtes"
-    }
+    },
+    "partialHint": "Dans Market 2.0, chaque pièce d'un set est aussi vendue à l'unité",
+    "giftableHint": "Les règles de cadeaux sont dans Règles et limites"
   },
   "pub": {
     "title": "Publier {name} maintenant ?",
@@ -692,14 +843,18 @@ export const ADMIN_SHOP2_FR = {
     "refreshGranted": "{user} a reçu un renouvellement gratuit",
     "nightSaved": "Plan du marché de nuit enregistré",
     "nightOpened": "Marché de nuit ouvert",
-    "weekSkipped": "Nuits de cette semaine sautées",
+    "weekSkipped": "{n} nuits de cette semaine sautées",
     "limitsSaved": "{n} limites mises à jour",
     "setSaved": "{name} enregistré",
     "published": "{name} est en vente",
     "scheduled": "{name} planifié",
     "unpublished": "Publication annulée",
-    "linkCopied": "Lien d'aperçu copié (valable {h} heures)",
-    "duplicated": "Set dupliqué"
+    "linkCopied": "Lien d'aperçu copié (les administrateurs peuvent l'ouvrir)",
+    "duplicated": "Set dupliqué",
+    "ringFlag": "Anneau de cadeaux détecté ({n} personnes)",
+    "giftsFrozen": "Cadeaux gelés",
+    "giftsUnfrozen": "Les cadeaux sont de nouveau ouverts",
+    "flagResolved": "Alerte fermée"
   },
   "err": {
     "generic": "Ça n'a pas marché. Réessaie dans un instant.",
@@ -711,6 +866,25 @@ export const ADMIN_SHOP2_FR = {
     "clash": "Il y a un chevauchement à cette date",
     "stale": "Un autre administrateur l'a modifié entre-temps ; la page a été actualisée",
     "notReady": "La partie serveur de Market 2.0 n'est pas encore prête",
-    "permission": "Tu n'as pas accès à cette section"
+    "permission": "Tu n'as pas accès à cette section",
+    "reason_required": "Indique un motif",
+    "bad_set_key": "La clé du set doit faire 2–41 minuscules, chiffres ou tirets",
+    "set_exists": "Un set avec cette clé existe déjà",
+    "bad_time": "Heure invalide",
+    "bad_window": "Plage horaire invalide",
+    "bad_option": "Option invalide",
+    "bad_replace": "Choisis la pièce à remplacer et son remplaçant",
+    "set_recalled": "Ce set est retiré",
+    "not_draft": "Seuls les brouillons peuvent être supprimés",
+    "ab_running": "Ce set a déjà un test de prix en cours",
+    "ab_same_price": "Les deux prix doivent être différents",
+    "not_scheduled": "Cette version n'est pas planifiée",
+    "night_open": "Un marché de nuit est déjà ouvert",
+    "night_started": "Ce marché de nuit a déjà commencé",
+    "title_required": "Indique un titre",
+    "undo_expired": "Le délai d'annulation est dépassé",
+    "undo_unsupported": "Cette action ne peut pas être annulée",
+    "not_found": "Entrée introuvable",
+    "rate_limited": "Trop rapide ; attends un instant"
   }
 };

@@ -4,7 +4,11 @@ export const ADMIN_SHOP2_TR = {
   "crumb": "Günlük vitrin, setler, gece pazarı, yenileme ve hediye kuralları",
   "crumbTimeline": "Yayın takvimi · vitrin, setler, gece pazarı ve etkinlikler tek çizelgede",
   "views": "Görünüm",
-  "view": { "pano": "Pano", "takvim": "Yayın takvimi", "kayit": "İşlem kaydı" },
+  "view": {
+    "pano": "Pano",
+    "takvim": "Yayın takvimi",
+    "kayit": "İşlem kaydı"
+  },
   "resetAt": "Vitrin 00:00'da yenilenir ·",
   "liveInShop": "şu an mağazada",
   "liveInShopHint": "Son 2 dakikada mağaza ekranı açık olan kişi sayısı",
@@ -37,11 +41,26 @@ export const ADMIN_SHOP2_TR = {
     "gift": "hediye",
     "per7": "/ 7 gün",
     "perDay": "/ gün",
-    "card": "kart"
+    "card": "kart",
+    "chars": "karakter"
   },
-  "dur": { "dh": "{d}g {h}s", "clock": "{c}" },
-  "ago": { "now": "Az önce", "m": "{n} dk önce", "h": "{n} sa önce", "d": "{n} gün önce" },
-  "rarity": { "common": "Sıradan", "rare": "Nadir", "epic": "Epik", "legendary": "Efsanevi", "mythic": "Mitik" },
+  "dur": {
+    "dh": "{d}g {h}s",
+    "clock": "{c}"
+  },
+  "ago": {
+    "now": "Az önce",
+    "m": "{n} dk önce",
+    "h": "{n} sa önce",
+    "d": "{n} gün önce"
+  },
+  "rarity": {
+    "common": "Sıradan",
+    "rare": "Nadir",
+    "epic": "Epik",
+    "legendary": "Efsanevi",
+    "mythic": "Mitik"
+  },
   "cat": {
     "avatar_frame": "Profil çerçevesi",
     "banner": "Profil afişi",
@@ -97,7 +116,8 @@ export const ADMIN_SHOP2_TR = {
     "nightSub": "{n} kart · %{a}–%{b} indirim",
     "gifts": "Hediye",
     "blocked": "{n} engellendi",
-    "overLimit": "sınır aşımı"
+    "overLimit": "sınır aşımı",
+    "flags": "{n} halka uyarısı"
   },
   "sales": {
     "title": "Canlı satış",
@@ -115,7 +135,9 @@ export const ADMIN_SHOP2_TR = {
     "lastPaid": "{price} D · {n} parça sendeydi, {paid} D ödedi",
     "lastPrice": "{price} D",
     "none": "Bugün henüz satış yok",
-    "thisHour": "Bu saatte {n} satış"
+    "thisHour": "Bu saatte {n} satış",
+    "total": "Toplam",
+    "someone": "Biri"
   },
   "sets": {
     "title": "Setler",
@@ -181,12 +203,30 @@ export const ADMIN_SHOP2_TR = {
       "featureSetPieces": "Set parçası öne çıkar"
     },
     "rule": {
-      "retired": { "t": "Eski koleksiyon ve satış dışı ürünler çıkar", "d": "Emekli edilen ürünler vitrine hiç gelmez" },
-      "hideOwned": { "t": "Sahip olunanları çıkar", "d": "Kullanıcının envanterindeki ürün gösterilmez" },
-      "noRepeat": { "t": "Tekrar yok", "d": "Son {n} günde gösterilen ürün yeniden gelmez" },
-      "minEpic": { "t": "En az 1 Epik+", "d": "4. slot her zaman Epik veya üstü" },
-      "lockSurvives": { "t": "Kilitli kart kalır", "d": "Yenilemede kullanıcının kilitlediği 1 kart yerinde durur" },
-      "featureSetPieces": { "t": "Set parçalarını öne çıkar", "d": "Satıştaki setlerin parçaları vitrine daha sık gelir" }
+      "retired": {
+        "t": "Eski koleksiyon ve satış dışı ürünler çıkar",
+        "d": "Emekli edilen ürünler vitrine hiç gelmez"
+      },
+      "hideOwned": {
+        "t": "Sahip olunanları çıkar",
+        "d": "Kullanıcının envanterindeki ürün gösterilmez"
+      },
+      "noRepeat": {
+        "t": "Tekrar yok",
+        "d": "Son {n} günde gösterilen ürün yeniden gelmez"
+      },
+      "minEpic": {
+        "t": "En az 1 Epik+",
+        "d": "4. slot her zaman Epik veya üstü"
+      },
+      "lockSurvives": {
+        "t": "Kilitli kart kalır",
+        "d": "Yenilemede kullanıcının kilitlediği 1 kart yerinde durur"
+      },
+      "featureSetPieces": {
+        "t": "Set parçalarını öne çıkar",
+        "d": "Satıştaki setlerin parçaları vitrine daha sık gelir"
+      }
     },
     "always": "Her zaman",
     "poolNone": "Havuz bilgisi henüz gelmedi",
@@ -210,23 +250,23 @@ export const ADMIN_SHOP2_TR = {
     "applyMidnight": "Yarın 00:00'da uygula",
     "scheduled": "v{v} bu gece 00:00'da",
     "openRules": "Kuralları aç",
-    "previewTomorrow": "Yarını önizle"
+    "previewTomorrow": "Yarını önizle",
+    "builtIn": "Yerleşik varsayılan kurallar"
   },
   "sim": {
     "title": "Simülasyon · yarının vitrini",
     "sub": "{n} örnek kullanıcıda v{v} taslağı, hiçbir şey kaydedilmedi",
     "running": "Örnek kullanıcılar için yarının vitrini üretiliyor…",
-    "repeat": "Tekrar oranı",
     "goal0": "hedef %0",
-    "ownedLeak": "Sahip olunan",
-    "noLeak": "sızıntı yok",
     "minEpic": "Epik+ olan vitrin",
-    "minEpicSub": "hedef %100",
     "neverShown": "Hiç çıkmayan",
     "neverShownSub": "havuzdaki ürün",
     "rarity": "Nadirlik: hedef ve çıkan",
     "slots": "Slot başına ortalama fiyat",
-    "buyRate": "tahmini alım {pct}"
+    "empty": "Boş vitrin",
+    "epicForced": "{pct}'inde taban zorladı",
+    "avgValue": "Ortalama vitrin değeri",
+    "vsLive": "yayındakine göre {d}"
   },
   "apply": {
     "title": "v{v} yarın 00:00'da uygulansın mı?",
@@ -255,34 +295,44 @@ export const ADMIN_SHOP2_TR = {
     "blocks": "{n} engel",
     "newAccount": "Yeni hesap",
     "newAccountSub": "İlk {days} gün slot tavanı {cap} D",
-    "people": "{n} kişi"
+    "people": "{n} kişi",
+    "nightOpenNow": "Şu an açık",
+    "giftFrozen": "Hediyeler donduruldu"
   },
   "recall": {
     "title": "{name} setini geri çağır",
     "sub": "Set mağazadan hemen kalkar. Satın alanlar ne olacağını aşağıda seçersin.",
     "sold": "Satılan",
-    "soldV": "{sets} set · {pieces} parça",
+    "soldV": "{sets} satın alım · {pieces} alıcı",
     "collected": "Toplanan",
-    "inCart": "Sepette bekleyen",
+    "inCart": "İstek listesinde",
     "people": "{n} kişi",
     "giftsOnWay": "Hediye olarak yolda",
     "gifts": "{n} hediye",
     "forBuyers": "Satın alanlar için",
     "mode": {
-      "keep": { "t": "Ellerinde kalsın", "d": "Yalnızca satış durur" },
-      "refund": { "t": "DesCoin iadesi", "d": "{total} D geri yüklenir" },
-      "swap": { "t": "Sorunlu parçayı değiştir", "d": "Seçilen parçanın yerine yenisi verilir" }
+      "keep": {
+        "t": "Ellerinde kalsın",
+        "d": "Yalnızca satış durur"
+      },
+      "refund": {
+        "t": "DesCoin iadesi",
+        "d": "{total} D geri yüklenir"
+      },
+      "swap": {
+        "t": "Sorunlu parçayı değiştir",
+        "d": "Seçilen parçanın yerine yenisi verilir"
+      }
     },
     "swapPick": "Değiştirilecek parça",
     "reasonLabel": "Sebep (işlem kaydına yazılır)",
     "reasonPh": "Örn. afiş görseli telefonda yanlış kırpılıyor; düzeltilmiş sürümle yeniden açılacak.",
-    "notify": "Satın alanlara bildirim gönder",
-    "pauseGifts": "Hediye yolundakileri durdur",
-    "liveNotified": "{n} kişiye bildirim gider",
+    "liveNotified": "{n} alıcıya bildirim gider",
     "liveRefund": "{total} D iade edilir",
-    "livePaused": "{n} hediye bekletilir",
+    "livePaused": "{n} bekleyen hediye geri çağrılır",
     "undoNote": "Geri çağırma {n} dakika içinde tek tıkla geri alınabilir. Stok ve fiyat olduğu gibi saklanır.",
-    "go": "Onayla ve geri çağır"
+    "go": "Onayla ve geri çağır",
+    "swapTo": "Yerine verilecek ürün"
   },
   "tl": {
     "title": "Takvim",
@@ -293,7 +343,10 @@ export const ADMIN_SHOP2_TR = {
     "clash": {
       "sameDay": "{n} set aynı gün açılıyor",
       "crowded": "{n} set aynı anda satışta",
-      "legendary": "aşırı Efsanevi yoğunluğu"
+      "legendary": "aşırı Efsanevi yoğunluğu",
+      "ruleNight": "gece pazarı sırasında kural değişiyor",
+      "nightLaunch": "set açılışı gece pazarıyla aynı gün",
+      "eventLaunch": "set açılışı etkinlikle çakışıyor"
     },
     "span": "Süre",
     "day": "Gün",
@@ -323,7 +376,6 @@ export const ADMIN_SHOP2_TR = {
     "title": "Bekleyen değişiklikler",
     "empty": "Bekleyen değişiklik yok",
     "cancel": "İptal",
-    "cancelTitle": "Planlı değişiklik iptal edilsin mi?",
     "cancelGo": "İptal et",
     "kind": {
       "rules": "Vitrin kuralları",
@@ -331,35 +383,22 @@ export const ADMIN_SHOP2_TR = {
       "set": "Set açılışı",
       "refreshPrice": "Yenileme fiyatı",
       "limits": "Sınırlar",
-      "event": "Etkinlik"
-    }
+      "event": "Etkinlik",
+      "recall": "Geri çağırma kesinleşir"
+    },
+    "cancelNote": "Değişiklik uygulanmaz; istersen yeniden planlayabilirsin.",
+    "cancelTitle": "Planlı değişiklik iptal edilsin mi?"
   },
   "audit": {
     "title": "İşlem kaydı",
     "filter": "Kayıt filtresi",
-    "f": { "all": "Tümü", "set": "Setler", "rules": "Algoritma", "night": "Gece pazarı", "limits": "Sınırlar", "user": "Kullanıcı" },
-    "kind": {
-      "set_create": "Set oluşturuldu",
-      "set_update": "Set güncellendi",
-      "set_publish": "Set yayınlandı",
-      "set_unpublish": "Yayın geri alındı",
-      "set_recall": "Set geri çağrıldı",
-      "set_recall_undo": "Geri çağırma geri alındı",
-      "set_stock": "Stok değişti",
-      "set_extend": "Süre uzatıldı",
-      "set_duplicate": "Set çoğaltıldı",
-      "set_ab_test": "A/B fiyat testi",
-      "rules_apply": "Kurallar 00:00 için planlandı",
-      "rules_applied": "Kurallar yayına girdi",
-      "rules_revert": "Önceki sürüme dönüldü",
-      "night_save": "Gece pazarı planı kaydedildi",
-      "night_open": "Gece pazarı elle açıldı",
-      "night_close": "Gece pazarı kapatıldı",
-      "night_skip": "Bu hafta atlandı",
-      "limits_save": "Sınırlar değişti",
-      "user_regenerate": "Kullanıcı vitrini yeniden üretildi",
-      "user_refresh_grant": "Ücretsiz yenileme verildi",
-      "queue_cancel": "Planlı değişiklik iptal edildi"
+    "f": {
+      "all": "Tümü",
+      "set": "Setler",
+      "rules": "Algoritma",
+      "night": "Gece pazarı",
+      "limits": "Sınırlar",
+      "user": "Kullanıcı"
     },
     "system": "Sistem",
     "reason": "Sebep: {r}",
@@ -369,20 +408,56 @@ export const ADMIN_SHOP2_TR = {
     "empty": "Kayıt yok",
     "more": "Daha eski kayıtlar",
     "csv": "CSV indir",
-    "clearFilter": "Filtreyi kaldır"
+    "clearFilter": "Filtreyi kaldır",
+    "kind": {
+      "set_create": "Set oluşturuldu",
+      "set_update": "Set güncellendi",
+      "set_shift": "Set kaydırıldı",
+      "set_publish": "Set yayınlandı",
+      "set_publish_undo": "Yayın geri alındı",
+      "set_recall": "Set geri çağrıldı",
+      "set_recall_undo": "Geri çağırma geri alındı",
+      "set_restore": "Önceki set sürümüne dönüldü",
+      "set_delete": "Taslak silindi",
+      "ab_create": "A/B fiyat testi başladı",
+      "ab_stop": "A/B fiyat testi bitti",
+      "rules_create": "Kural taslağı oluşturuldu",
+      "rules_schedule": "Kurallar 00:00 için planlandı",
+      "rules_activate": "Kural sürümü yayına alındı",
+      "rules_cancel": "Planlı kural iptal edildi",
+      "night_create": "Gece pazarı eklendi",
+      "night_update": "Gece pazarı değişti",
+      "night_delete": "Gece pazarı silindi",
+      "night_open_now": "Gece pazarı elle açıldı",
+      "night_open_undo": "Elle açılış geri alındı",
+      "night_skip": "Gece pazarı atlandı",
+      "limits_update": "Sınırlar değişti",
+      "limits_undo": "Sınır değişikliği geri alındı",
+      "gift_flag_resolve": "Hediye halkası uyarısı kapatıldı",
+      "free_refresh": "Ücretsiz yenileme verildi",
+      "storefront_regenerate": "Kullanıcı vitrini yeniden üretildi",
+      "queue_cancel": "Planlı değişiklik iptal edildi",
+      "event_create": "Takvime etkinlik eklendi",
+      "event_delete": "Etkinlik silindi"
+    }
   },
   "slots": {
     "title": "Slot dönüşümü",
-    "afterRefresh": "Yenileme sonrası alım",
-    "toSet": "Vitrinden sete geçiş"
+    "afterRefresh": "Bugün yenileme",
+    "toSet": "Vitrinden sete geçiş",
+    "window": "son 14 gün"
   },
-  "top": { "title": "En çok satanlar", "d7": "7g", "d30": "30g" },
+  "top": {
+    "title": "En çok satanlar",
+    "d7": "7g",
+    "d30": "30g"
+  },
   "us": {
     "title": "Kullanıcı vitrini",
     "sub": "Kullanıcının bugün gördüğü 4 ürün ve nedenleri",
     "pickPh": "Kullanıcı adı ile ara",
     "pickHint": "Bir kullanıcı seç; bugünkü, yarınki ve geçmiş vitrinini nedenleriyle görürsün.",
-    "facts": "Hesap {days} gün · bakiye {balance} D · {owned} ürün sahibi",
+    "facts": "{owned} ürün sahibi · istek listesinde {wish}",
     "day": "Gün",
     "today": "Bugün",
     "tomorrow": "Yarın",
@@ -392,15 +467,19 @@ export const ADMIN_SHOP2_TR = {
     "seed": "Tohum {seed} · v{v} kurallarıyla üretildi",
     "dossier": "Kullanıcı dosyası",
     "why": {
-      "slot": "Slot {n}",
-      "weight": "{r} ağırlığı %{pct}",
-      "band": "fiyat bandı {a}–{b}",
-      "cheapest": "en ucuz bant",
+      "band": "Slot {n} fiyat bandı {a}–{b}",
       "lastSeen": "{n} gündür görmedi",
       "never": "hiç görmedi",
-      "matchesSet": "{name} ile uyumlu",
-      "refresh": "Yenileme ile geldi · {time}",
-      "locked": "kullanıcı kilitledi"
+      "locked": "kullanıcı kilitledi",
+      "bandRelaxed": "{a}–{b} bandında ürün yok, bant gevşetildi",
+      "epicFloor": "Epik tabanı: vitrinde en az 1 Epik+",
+      "rarity": "{r} ağırlığı {w}",
+      "newItem": "yeni ürün desteği",
+      "wishlist": "istek listesinde",
+      "setProgress": "başladığı {set} setini tamamlıyor",
+      "setPiece": "{set} setinin parçası",
+      "repeatRelaxed": "havuz dar, tekrar kuralı gevşetildi",
+      "chance": "seçilme şansı %{pct}"
     },
     "excluded": "Bu kullanıcı için çıkarılanlar",
     "poolTo": "Havuz {pool} → {cand} aday",
@@ -409,10 +488,11 @@ export const ADMIN_SHOP2_TR = {
       "recent": "Son {d} günde gösterilen {n}",
       "region": "Bölgede kapalı {n}",
       "cap": "Yeni hesap tavanı {n}",
-      "noCap": "Yeni hesap tavanı yok"
+      "noCap": "Yeni hesap tavanı yok",
+      "relaxed": "Havuz dar, kural gevşetildi"
     },
     "sets": "Setler bu kullanıcıya",
-    "ownedPieces": "{n} parça sende",
+    "ownedPieces": "{n} / {total} parça sende",
     "ownedNone": "hiçbiri sende değil",
     "refresh": "Yenileme",
     "refreshUsed": "Kullanıldı · {time}",
@@ -423,9 +503,6 @@ export const ADMIN_SHOP2_TR = {
     "giftsSent": "{n} / {cap} gönderdi",
     "giftsGot": "Aldığı {n} / {cap}",
     "night": "Gece pazarı",
-    "nightOk": "Uygun",
-    "nightNo": "Uygun değil",
-    "nightCards": "{n} kart {time}'de hazır",
     "last7": "Son 7 günün vitrini",
     "last7Sum": "{views} gösterim · {buys} alım · {refresh} yenileme",
     "audit": "İşlem kaydı",
@@ -436,7 +513,13 @@ export const ADMIN_SHOP2_TR = {
     "regenGo": "Yeniden üret",
     "grantTitle": "{user} için ücretsiz yenileme",
     "grantSub": "Kullanıcı bugün bir yenilemeyi ücretsiz yapabilir.",
-    "grantGo": "Yenileme ver"
+    "grantGo": "Yenileme ver",
+    "newAccount": "Yeni hesap",
+    "setClosed": "set fiyatı kapalı",
+    "nightOpen": "Açık",
+    "nightNext": "Sonraki gece",
+    "nightNone": "Planlı gece yok",
+    "nightFlips": "{used} / {n} kart çevrildi · {bought} alım"
   },
   "nm": {
     "title": "Gece pazarı zamanlayıcı",
@@ -447,7 +530,7 @@ export const ADMIN_SHOP2_TR = {
     "modeRandom": "Rastgele",
     "modeManual": "Elle",
     "ruleCal": "Haftada {n} gece · {days}",
-    "ruleRandom": "Haftada {n} gece, gün rastgele",
+    "ruleRandom": "Seçilen gecelerde açılış saati rastgele",
     "ruleManual": "Elle seçilen {n} gece",
     "tz": "Saat dilimi İstanbul",
     "weekdayHint": "Bu günü her hafta aç veya kapat",
@@ -461,12 +544,10 @@ export const ADMIN_SHOP2_TR = {
     "discountMax": "En çok indirim",
     "discountHint": "Yüksek indirim nadir çıkar · ortalama %{mean}",
     "cards": "Kart sayısı",
-    "perCard": "Kart başı alım",
-    "perCardBuy": "Kart başı",
-    "perNight": "Gece boyu en çok",
+    "perCard": "Çevirme ve alım",
+    "perNight": "Gece boyu en çok alım",
     "who": "Kimler görür",
     "accountDays": "Hesap yaşı en az",
-    "activeDays": "Son kaç günde aktif",
     "eligible": "Uygun: {n} kişi",
     "preview": "Kullanıcının göreceği",
     "sample": "{user} · {n} kart açıldı",
@@ -476,11 +557,17 @@ export const ADMIN_SHOP2_TR = {
     "forecast": "Tahmin",
     "fcJoin": "Katılım",
     "fcRevenue": "Gelir",
-    "fcPeak": "Yoğunluk tepe",
     "past": "Önceki geceler",
     "fullReport": "Tam rapor",
     "lessReport": "Kısa göster",
-    "col": { "night": "Gece", "joined": "Katılan", "flipped": "Çevrilen kart", "buy": "Alım oranı", "revenue": "Gelir", "avg": "Ort. indirim" },
+    "col": {
+      "night": "Gece",
+      "joined": "Katılan",
+      "flipped": "Çevrilen kart",
+      "buy": "Alım oranı",
+      "revenue": "Gelir",
+      "avg": "Ort. indirim"
+    },
     "openNow": "Şimdi aç…",
     "skip": "Bu haftayı atla",
     "save": "Kaydet ve zamanla",
@@ -490,66 +577,112 @@ export const ADMIN_SHOP2_TR = {
     "openGo": "Şimdi aç",
     "skipTitle": "Bu haftanın geceleri atlansın mı?",
     "skipSub": "Bu haftaki planlı gece pazarları açılmaz; gelecek hafta plan aynen devam eder.",
-    "skipGo": "Bu haftayı atla"
+    "skipGo": "Bu haftayı atla",
+    "flips": "Çevirme hakkı",
+    "premiumOnly": "Yalnızca Descall+",
+    "eligibleNote": "Uygunluk, kaydettiğinde elle eklenen gecelere uygulanır",
+    "skew": "İndirim eğrisi",
+    "fcBuys": "Alım",
+    "fcNoBasis": "Önceki gece verisi yok",
+    "noPast": "Henüz geçmiş gece yok"
   },
   "lim": {
-    "title": "Hediye ve yenileme kuralları",
+    "title": "Hediye, yenileme ve satın alma kuralları",
     "sub": "Kötüye kullanım sınırları · sürüm {v} · {n} değişiklik",
-    "tab": { "gift": "Hediye", "refresh": "Yenileme", "newAccount": "Yeni hesap", "blocked": "Engellenenler" },
+    "tab": {
+      "gift": "Hediye",
+      "refresh": "Yenileme",
+      "purchases": "Satın alma",
+      "flags": "Halka uyarıları"
+    },
     "was": "önce {v}",
     "g": {
       "dailySend": "Günlük gönderim",
       "dailyReceive": "Günlük alma",
       "samePerson": "Aynı kişiye",
-      "dailyAmount": "Günlük tutar",
-      "setGift": "Set hediyesi",
       "sendAge": "Gönderim için hesap",
-      "setAge": "Set için hesap",
-      "cooldown": "Bekleme süresi",
-      "profanity": "Mesaj küfür süzgecinden geçsin",
+      "setAge": "Set hediyesi için hesap",
       "ring": "Halka tespiti",
-      "nightGift": "Gece pazarı ürünü hediye edilebilir"
+      "maxMessage": "Mesaj uzunluğu",
+      "schedule": "İleri tarihli gönderim",
+      "ringWindow": "Halka penceresi",
+      "enabled": "Hediye gönderimi açık"
     },
     "r": {
       "perDay": "Günlük hak",
       "price": "Ücret",
-      "locked": "Kilitlenebilen kart",
       "premiumFree": "Descall+ için ücretsiz",
       "today": "Bugün yenileme",
-      "buyAfter": "Yenilemeden alım",
-      "revenue": "Yenileme geliri"
+      "revenue": "Yenileme geliri",
+      "streak": "Seri ödülü (gün)"
     },
-    "n": { "days": "İlk kaç gün", "cap": "Slot tavanı", "setBuy": "Set almak için hesap" },
-    "noBlocked": "Bugün engellenen deneme yok",
     "ringRisk": "Yüksek risk",
-    "why": {
-      "daily": "günlük sınır {n} / {n}",
-      "ring": "hediye halkası",
-      "newAccount": "hesap {n} günlük",
-      "samePerson": "aynı kişiye sınır",
-      "amount": "günlük tutar aşıldı",
-      "cooldown": "bekleme süresi",
-      "friendsOnly": "alıcı yalnızca arkadaşlardan DM alıyor"
-    },
     "preview": "Sınıra takılan kişinin göreceği",
     "msgGiftT": "Hediye gönderilemedi",
     "msgGift": "Bugünlük hediye sınırına ulaştın ({n} / {n}). Yarın 00:00'da yenilenir.",
     "msgRefreshT": "Yenileme hakkın bitti",
     "msgRefresh": "Vitrini günde {n} kez yenileyebilirsin ({price} D). Yeni vitrin 00:00'da gelir.",
-    "msgNewT": "Yeni hesap vitrini",
-    "msgNew": "Hesabının ilk {days} gününde vitrinde {cap} D'ye kadar ürünler görünür.",
-    "yesterday": "Bu kurallar dün olsaydı {n} hediye engellenirdi; tahminen {pct}'i meşru."
+    "frozen": "Donduruldu",
+    "freeze": "Hediyeleri dondur",
+    "unfreeze": "Dondurmayı kaldır",
+    "freezeTitle": "Tüm hediye gönderimi dondurulsun mu?",
+    "freezeSub": "Yeni hediye gönderilemez; yoldakiler bekler. İstediğinde kaldırabilirsin.",
+    "unfreezeTitle": "Hediyeler yeniden açılsın mı?",
+    "unfreezeSub": "Kullanıcılar sınırlar içinde yeniden hediye gönderebilir.",
+    "ifYesterday": "Bu kurallar dün olsaydı",
+    "impactV": "{n} / {total} hediye engellenirdi",
+    "impactDelta": "şimdikine göre {d} · {amount} D",
+    "giftsToday": "Bugün hediye",
+    "blockedToday": "Bugün engellenen",
+    "p": {
+      "refund": "İade süresi",
+      "partial": "Parça fiyat kilidi",
+      "undo": "İşlem geri alma",
+      "discMin": "Set indirimi en az",
+      "discMax": "Set indirimi en çok"
+    },
+    "noFlags": "Açık halka uyarısı yok",
+    "flagRing": "Hediye halkası",
+    "flagPingPong": "Karşılıklı gidip gelen hediyeler",
+    "flagAmount": "{amount} D · {n} hediye",
+    "flagFreeze": "Cüzdanları dondur",
+    "flagDismiss": "Yanlış alarm",
+    "flagFreezeTitle": "Halkadaki cüzdanlar dondurulsun mu?",
+    "flagFreezeSub": "Bu kişilerin DesCoin hareketleri inceleme bitene kadar durur.",
+    "flagDismissTitle": "Uyarı yanlış alarm olarak kapatılsın mı?",
+    "flagDismissSub": "Hediyeler olduğu gibi kalır; karar işlem kaydına yazılır.",
+    "why": {
+      "gift_daily_cap": "günlük gönderim sınırı ({n})",
+      "gift_recipient_cap": "aynı kişiye sınır ({n})",
+      "gift_receive_cap": "alıcının günlük sınırı ({n})",
+      "gift_new_account": "hesap {n} günden yeni",
+      "gift_new_account_set": "set için hesap {n} günden yeni",
+      "other": "diğer"
+    }
   },
-  "preview": { "device": "Cihaz", "desktop": "Masaüstü", "phone": "Telefon", "both": "İkisi" },
+  "preview": {
+    "device": "Cihaz",
+    "desktop": "Masaüstü",
+    "phone": "Telefon",
+    "both": "İkisi"
+  },
   "pv": {
     "title": "Kullanıcının göreceği",
     "sampleLabel": "Örnek kullanıcı",
-    "sample": { "none": "Hiç parçası yok", "few": "1–2 parça sende", "many": "3+ parça sende" },
+    "sample": {
+      "none": "Hiç parçası yok",
+      "few": "1–2 parça sende",
+      "many": "3+ parça sende"
+    },
     "realUsers": "Gerçek kullanıcılar",
     "ownedN": "{n} parça sende",
     "ownedNone": "parça yok",
     "chrome": "Mağaza · Setler",
-    "tab": { "today": "Bugünün vitrini", "sets": "Setler", "night": "Gece pazarı" },
+    "tab": {
+      "today": "Bugünün vitrini",
+      "sets": "Setler",
+      "night": "Gece pazarı"
+    },
     "newSet": "Yeni set",
     "setPieces": "Set · {n} parça",
     "limited": "Sınırlı",
@@ -570,7 +703,14 @@ export const ADMIN_SHOP2_TR = {
     "remind": "Açılınca haber ver",
     "askBack": "Yeniden gelsin iste",
     "whoPays": "Kime ne fiyat",
-    "tier": { "none": "Hiç parçası yok", "few": "1–2 parça sende", "many": "3+ parça sende", "all": "Hepsi sende" },
+    "tier": {
+      "none": "Hiç parçası yok",
+      "few": "1–2 parça sende",
+      "many": "3+ parça sende",
+      "all": "Hepsi sende",
+      "half": "3–5 parça sende",
+      "most": "6+ parça sende"
+    },
     "hidden": "Gizlenir",
     "forecast": "Tahmin",
     "forecastV": "İlk gün {lo}–{hi} set · stok {d} günde biter",
@@ -579,7 +719,12 @@ export const ADMIN_SHOP2_TR = {
     "chatSample": "Yeni setim nasıl duruyor?",
     "lifecycle": "Yaşam döngüsü",
     "lifecycleHint": "tıkla, sahne o duruma geçsin",
-    "stage": { "upcoming": "Yakında", "live": "Satışta", "last24": "Son 24 saat", "soldout": "Tükendi" },
+    "stage": {
+      "upcoming": "Yakında",
+      "live": "Satışta",
+      "last24": "Son 24 saat",
+      "soldout": "Tükendi"
+    },
     "note": {
       "upcoming": "{when}'de açılır",
       "upcomingNone": "Açılış zamanı yok",
@@ -587,7 +732,8 @@ export const ADMIN_SHOP2_TR = {
       "liveOpen": "Süresiz satışta",
       "last24": "Sayaç kırmızı, nabız",
       "soldout": "Gri, \"yeniden gelsin\" iste"
-    }
+    },
+    "users": "{n} kişi"
   },
   "b": {
     "untitled": "Adsız set",
@@ -609,12 +755,17 @@ export const ADMIN_SHOP2_TR = {
     "suggest": "Uyanları öner",
     "pieces": "Parçalar · {n} / {total}",
     "piecesHint": "Raftan sürükle ya da yuvaya tıkla, katalogdan seç",
-    "group": { "profile": "Profil", "nameBadge": "İsim ve rozet", "effectChat": "Efekt ve sohbet", "sound": "Ses" },
-    "ownedBy": "%{pct} sahip",
+    "group": {
+      "profile": "Profil",
+      "nameBadge": "İsim ve rozet",
+      "effectChat": "Efekt ve sohbet",
+      "sound": "Ses"
+    },
+    "ownedBy": "{n} kişide var",
     "dropHere": "buraya bırak",
     "remove": "Parçayı çıkar",
     "wrongSlot": "Bu ürün {slot} yuvasına uymuyor",
-    "ownerWarn": "{name} kullanıcıların %{pct}'inde zaten var. Bu kişiler için set ortalama {drop} D düşer; set yine tek ürünlerin çok üstünde kalır.",
+    "ownerWarn": "{name} {n} kişide zaten var. Bu kişiler için set ortalama {drop} D düşer; set yine tek ürünlerin çok üstünde kalır.",
     "price": "Fiyat",
     "priceFacts": "Parça toplamı {sum} · en pahalı tek ürün {max}",
     "setPrice": "set fiyatı",
@@ -640,9 +791,7 @@ export const ADMIN_SHOP2_TR = {
     "duration": "Süre",
     "noEnd": "Süresiz",
     "stock": "Stok",
-    "perPerson": "Kişi başı",
-    "giftPerDay": "Hediye / gün",
-    "stockNote": "{n} adet · kişi başı en çok {per}",
+    "stockNote": "{n} adet · {sold} satıldı",
     "clash": "İlk 2 gün {names} ile çakışır.",
     "clashSuggest": "Açılışı {day}'a almak önerilir.",
     "shiftTo": "{day}'a kaydır",
@@ -656,7 +805,9 @@ export const ADMIN_SHOP2_TR = {
       "clash": "İlk 2 günde çakışan set yok",
       "single": "Tüm parçalar tek tek satışta",
       "locales": "Çeviriler: {n} / {total} dil hazır"
-    }
+    },
+    "partialHint": "Market 2.0'da setin her parçası tek başına da satılır",
+    "giftableHint": "Hediye kuralları Kurallar ve sınırlar bölümünde"
   },
   "pub": {
     "title": "{name} şimdi yayınlansın mı?",
@@ -692,14 +843,18 @@ export const ADMIN_SHOP2_TR = {
     "refreshGranted": "{user} ücretsiz yenileme aldı",
     "nightSaved": "Gece pazarı planı kaydedildi",
     "nightOpened": "Gece pazarı açıldı",
-    "weekSkipped": "Bu haftanın geceleri atlandı",
+    "weekSkipped": "Bu haftadan {n} gece atlandı",
     "limitsSaved": "{n} sınır güncellendi",
     "setSaved": "{name} kaydedildi",
     "published": "{name} yayında",
     "scheduled": "{name} takvime alındı",
     "unpublished": "Yayın geri alındı",
-    "linkCopied": "Önizleme bağlantısı kopyalandı ({h} saat geçerli)",
-    "duplicated": "Set çoğaltıldı"
+    "linkCopied": "Önizleme bağlantısı kopyalandı (yöneticiler açabilir)",
+    "duplicated": "Set çoğaltıldı",
+    "ringFlag": "Hediye halkası tespit edildi ({n} kişi)",
+    "giftsFrozen": "Hediyeler donduruldu",
+    "giftsUnfrozen": "Hediyeler yeniden açık",
+    "flagResolved": "Uyarı kapatıldı"
   },
   "err": {
     "generic": "İşlem yapılamadı. Biraz sonra tekrar dene.",
@@ -711,6 +866,25 @@ export const ADMIN_SHOP2_TR = {
     "clash": "Bu tarihte çakışma var",
     "stale": "Bu arada başka bir yönetici değiştirdi; sayfa yenilendi",
     "notReady": "Market 2.0 sunucu tarafı henüz hazır değil",
-    "permission": "Bu bölüm için yetkin yok"
+    "permission": "Bu bölüm için yetkin yok",
+    "reason_required": "Sebep yaz",
+    "bad_set_key": "Set anahtarı 2–41 küçük harf, rakam veya tire olmalı",
+    "set_exists": "Bu anahtarla bir set zaten var",
+    "bad_time": "Geçersiz zaman",
+    "bad_window": "Geçersiz zaman aralığı",
+    "bad_option": "Geçersiz seçenek",
+    "bad_replace": "Değişecek parçayı ve yerine geleni seç",
+    "set_recalled": "Bu set geri çağrıldı",
+    "not_draft": "Yalnızca taslaklar silinebilir",
+    "ab_running": "Bu sette zaten süren bir fiyat testi var",
+    "ab_same_price": "İki fiyat farklı olmalı",
+    "not_scheduled": "Bu sürüm planlı değil",
+    "night_open": "Zaten açık bir gece pazarı var",
+    "night_started": "Bu gece pazarı başladı",
+    "title_required": "Başlık yaz",
+    "undo_expired": "Geri alma süresi doldu",
+    "undo_unsupported": "Bu işlem geri alınamaz",
+    "not_found": "Kayıt bulunamadı",
+    "rate_limited": "Çok hızlı; biraz bekle"
   }
 };
