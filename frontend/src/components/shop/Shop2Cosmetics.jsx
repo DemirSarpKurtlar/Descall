@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../../config/api";
 import { useLocale } from "../../context/LocaleContext";
 import { localizedShopItemName } from "../../lib/shopItemI18n.js";
+import { artUrl } from "../../lib/stillArt.js";
 
 /**
  * Market 2.0 avatar frames and profile badges (catalog group C1). Only "s2-" rows render:
@@ -38,7 +39,7 @@ export function Shop2FrameOverlay({ src, eager = false }) {
   return (
     <img
       className="ui-avatar-frame-overlay s2-frame"
-      src={src}
+      src={artUrl(src)}
       alt=""
       aria-hidden="true"
       draggable={false}

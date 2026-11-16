@@ -80,7 +80,7 @@ function idemKey(req) {
 router.get("/assets/:id", async (req, res) => {
   try {
     const kind = req.query.kind === "preview" ? "preview" : "asset";
-    const img = await catalog.assetOf(req.params.id, kind);
+    const img = require("../lib/svgStill").stillImage(await catalog.assetOf(req.params.id, kind), req.query.still === "1");
     if (!img) return res.status(404).type("text/plain").send("Not found");
     const versioned = typeof req.query.v === "string" && req.query.v === img.version;
     res.set({

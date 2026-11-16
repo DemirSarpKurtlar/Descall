@@ -44,6 +44,7 @@ import { useGroupActions } from "./ServerSidebar";
 import { groupAvatarUrl } from "../../lib/avatarFile";
 import PinnedMessagesPopover from "./PinnedMessagesPopover";
 import { HELLO_STICKER_TOKEN } from "../../lib/descallStickers";
+import { typingFlareKey } from "../../lib/typingFlare.js";
 
 function glassGroupInitials(name, locale) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -333,6 +334,20 @@ export default function ChatPanel({
     typingGroupUsers,
     typingChannelUsers,
   ]);
+
+  // The typing person's flare (not the viewer's own): lib/typingFlare.js.
+  const typingFlare = useMemo(() => {
+    let typers = [];
+    if (activeDmUser) typers = typingDmUser ? [typingDmUser] : [];
+    else if (activeGroup) {
+      const groupMap = typingGroupUsers?.[activeGroup.id];
+      typers = groupMap instanceof Map ? Array.from(groupMap.values()) : [];
+    } else if (activeView === "servers" && activeChannel?.id) {
+      const channelMap = typingChannelUsers?.[activeChannel.id];
+      typers = channelMap instanceof Map ? Array.from(channelMap.values()) : [];
+    }
+    return typingFlareKey({ typers, activeDmUser, friends });
+  }, [activeDmUser, activeGroup, activeView, activeChannel?.id, typingDmUser, typingGroupUsers, typingChannelUsers, friends]);
 
   const scrollToBottom = () => {
     if (messagesRef.current) {
@@ -961,7 +976,7 @@ export default function ChatPanel({
                 >
                   <TypingIndicator
                     names={typingNames}
-                    flareKey={me?.equippedTypingFlare?.effect_key || null}
+                    flareKey={typingFlare}
                   />
                 </motion.div>
               )}

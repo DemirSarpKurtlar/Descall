@@ -973,11 +973,9 @@ function MessageList({
                       ? me?.equippedChatBubble?.effect_key || avatarUser?.equippedChatBubble?.effect_key || null
                       : avatarUser?.equippedChatBubble?.effect_key || null
                   }
-                  reactionBurstKey={
-                    isOwn
-                      ? me?.equippedReactionBurst?.effect_key || avatarUser?.equippedReactionBurst?.effect_key || null
-                      : avatarUser?.equippedReactionBurst?.effect_key || null
-                  }
+                  /* The burst plays when MY reaction lands, on any message (not only my own,
+                     and never the author's burst): it is the reactor's cosmetic. */
+                  reactionBurstKey={me?.equippedReactionBurst?.effect_key || currentUser?.equippedReactionBurst?.effect_key || null}
                 />
                 {seen && seen.id === msg.id ? <SeenLine seen={seen} t={t} /> : null}
                 </Fragment>
@@ -2187,7 +2185,7 @@ function MessageBubbleView({
             onToggle={emitReact}
             currentUserId={currentUserId}
             socket={socket}
-            burstKey={isOwn ? reactionBurstKey : null}
+            burstKey={reactionBurstKey}
           />
         )}
 

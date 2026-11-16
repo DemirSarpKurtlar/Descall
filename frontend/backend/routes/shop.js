@@ -71,7 +71,7 @@ router.get("/catalog/public", async (req, res) => {
 router.get("/assets/:id", async (req, res) => {
   try {
     const kind = req.query.kind === "preview" ? "preview" : "asset";
-    const image = await shop.getCatalogAsset(req.params.id, kind);
+    const image = require("../lib/svgStill").stillImage(await shop.getCatalogAsset(req.params.id, kind), req.query.still === "1");
     if (!image) return res.status(404).type("text/plain").send("Not found");
     const versioned = typeof req.query.v === "string" && req.query.v === image.version;
     res.set({
