@@ -4,10 +4,9 @@
  */
 import { useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { Gift, Layers, Moon, Pencil, RefreshCw, RotateCcw, TrendingUp, Undo2, UserRound, Activity } from "../../ui/Icon.jsx";
 import AlgorithmPanel from "./AlgorithmPanel.jsx";
-import { Pill, PieceDots, Seg, SetMark, Spark, Skel, UserAv, useFmt, useItemName } from "./ui.jsx";
+import { Pill, PieceDots, Seg, SetMark, Spark, Skel, UserAv, useFmt, useItemName, fdt } from "./ui.jsx";
 import { STATUS_TONE, SET_SLOTS, areaPath, filterSets, lastIndex, lifecycle, linePath, mmss, niceMax, setCounts, trend, undoLeft } from "./shop2Model.js";
 
 export default function Dashboard({ dash, range, onRange, sets, rules, limits, night, now, flash, onOpenSet, onRecall, onUndoRecall, onRulesChanged, onNight, onLimits, notify, fail }) {
@@ -315,7 +314,7 @@ export function SetsTable({ sets, now, flash, onOpenSet, onRecall, onUndoRecall 
 }
 
 export function statusText(t, s, st, locale, now) {
-  if (st === "upcoming") return formatAppDateTime(s.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  if (st === "upcoming") return fdt(s.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   if (st === "last24") return t("adminShop2.status.last24");
   if (st === "soldout") return t("adminShop2.status.soldout");
   return t(`adminShop2.status.${st}`);
@@ -329,7 +328,7 @@ function RulesCard({ limits, night, rules, now, onNight, onLimits, onNewAccount 
   const S = limits?.stats || {};
   const sched = night?.schedule || {};
   const next = night?.open ? null : night?.next?.at || null;
-  const nextLabel = night?.open ? t("adminShop2.rules.nightOpenNow") : next ? formatAppDateTime(next, locale, { weekday: "long" }) : null;
+  const nextLabel = night?.open ? t("adminShop2.rules.nightOpenNow") : next ? fdt(next, locale, { weekday: "long" }) : null;
   const gift = limits?.gift || {};
   const refresh = limits?.refresh || {};
   const na = rules?.live?.newAccount || {};

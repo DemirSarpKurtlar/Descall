@@ -13,13 +13,12 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { stepUpHeaders } from "../../../lib/adminStepUp";
 import { AlertTriangle, ArrowLeft, Calendar, Check, Clock, Copy, Link2, MagicWand, Plus, RotateCcw, Ruler, Search, Send, TestTube, Undo2, X } from "./icons.js";
 import { normSet, shop2Api } from "./adminShop2Api.js";
 import PieceRack from "./PieceRack.jsx";
 import SetPreview from "./SetPreview.jsx";
-import { Coin, Dialog, Pill, RarityPill, Seg, SetMark, Skel, Switch, Thumb, useFmt, useItemName } from "./ui.jsx";
+import { Coin, Dialog, Pill, RarityPill, Seg, SetMark, Skel, Switch, Thumb, useFmt, useItemName, fdt } from "./ui.jsx";
 import {
   DISCOUNT_BAND,
   SET_SLOTS,
@@ -344,7 +343,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
           <h1>
             {set.name || t("adminShop2.b.untitled")}
             <Pill tone={STATUS_TONE[st] || "gray"}>{statusText(t, set, st, locale, now)}</Pill>
-            <small className="as2-saved">{dirty ? t("adminShop2.b.unsaved") : savedAt ? t("adminShop2.b.autosaved", { time: formatAppDateTime(savedAt, locale, { hour: "2-digit", minute: "2-digit" }) }) : t("adminShop2.b.notSaved")}</small>
+            <small className="as2-saved">{dirty ? t("adminShop2.b.unsaved") : savedAt ? t("adminShop2.b.autosaved", { time: fdt(savedAt, locale, { hour: "2-digit", minute: "2-digit" }) }) : t("adminShop2.b.notSaved")}</small>
           </h1>
         </div>
         <div className="as2-hdr-r">
@@ -835,12 +834,12 @@ function ScheduleBlock({ set, patch, durationDays, clash, keepClash, setKeepClas
           <AlertTriangle size={16} />
           <span>
             {t("adminShop2.b.clash", { names: clash.with.map((s) => s.name).join(t("adminShop2.and")) })}
-            {clash.suggest ? ` ${t("adminShop2.b.clashSuggest", { day: formatAppDateTime(new Date(istMidnight(clash.suggest) + 3600000).toISOString(), locale, { day: "numeric", month: "short" }) })}` : ""}
+            {clash.suggest ? ` ${t("adminShop2.b.clashSuggest", { day: fdt(new Date(istMidnight(clash.suggest) + 3600000).toISOString(), locale, { day: "numeric", month: "short" }) })}` : ""}
           </span>
           <span className="as2-warn-acts">
             {clash.suggest ? (
               <button type="button" className="as2-btn is-sm" onClick={() => setStart(moveToDay(set.startsAt, clash.suggest))} data-testid="as2-clash-shift">
-                {t("adminShop2.b.shiftTo", { day: formatAppDateTime(new Date(istMidnight(clash.suggest) + 3600000).toISOString(), locale, { day: "numeric", month: "short" }) })}
+                {t("adminShop2.b.shiftTo", { day: fdt(new Date(istMidnight(clash.suggest) + 3600000).toISOString(), locale, { day: "numeric", month: "short" }) })}
               </button>
             ) : null}
             <button type="button" className="as2-btn is-sm" onClick={() => setKeepClash(true)}>
@@ -867,7 +866,7 @@ function PublishDialog({ open, set, pr, check, busy, onClose, onGo }) {
       busy={busy}
       icon={Send}
       title={t(future ? "adminShop2.pub.titleAt" : "adminShop2.pub.title", { name: set?.name || "" })}
-      subtitle={future ? t("adminShop2.pub.subAt", { when: formatAppDateTime(set.startsAt, locale, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) }) : t("adminShop2.pub.sub")}
+      subtitle={future ? t("adminShop2.pub.subAt", { when: fdt(set.startsAt, locale, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) }) : t("adminShop2.pub.sub")}
       width={560}
       testId="as2-publish-dialog"
       footer={

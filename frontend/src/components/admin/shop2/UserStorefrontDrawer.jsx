@@ -7,10 +7,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { Check, ChevronRight, Eye, Gift, History, Lock, Moon, RefreshCw, Search, Shuffle2, Sparkles, UserRound } from "./icons.js";
 import { shop2Api } from "./adminShop2Api.js";
-import { Coin, Dialog, Drawer, Pill, RarityPill, ReasonField, Seg, SetMark, Skel, Thumb, UserAv, useFmt, useItemName } from "./ui.jsx";
+import { Coin, Dialog, Drawer, Pill, RarityPill, ReasonField, Seg, SetMark, Skel, Thumb, UserAv, useFmt, useItemName, fdt } from "./ui.jsx";
 import { clock, istDay, nextReset, reasonOk } from "./shop2Model.js";
 
 export default function UserStorefrontDrawer({ open, userId, onPick, onClose, now, notify, fail, onOpenUser, onAudit }) {
@@ -185,7 +184,7 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                   <RefreshCw size={14} />
                   {t("adminShop2.us.refresh")}
                 </small>
-                <b>{data.refresh?.used ? t("adminShop2.us.refreshUsed", { time: data.refresh.at ? formatAppDateTime(data.refresh.at, locale, { hour: "2-digit", minute: "2-digit" }) : "" }) : t("adminShop2.us.refreshFree")}</b>
+                <b>{data.refresh?.used ? t("adminShop2.us.refreshUsed", { time: data.refresh.at ? fdt(data.refresh.at, locale, { hour: "2-digit", minute: "2-digit" }) : "" }) : t("adminShop2.us.refreshFree")}</b>
                 <em>{data.refresh?.free ? t("adminShop2.us.refreshPremium") : t("adminShop2.us.refreshPrice", { price: f.n(data.refresh?.price ?? 150) })}</em>
               </div>
               <div>
@@ -206,7 +205,7 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                   {data.nightMarket?.open
                     ? t("adminShop2.us.nightFlips", { used: data.nightMarket.flipsUsed ?? 0, n: data.nightMarket.flips ?? 0, bought: data.nightMarket.bought ?? 0 })
                     : data.nightMarket?.next
-                    ? formatAppDateTime(data.nightMarket.next, locale, { weekday: "short", hour: "2-digit", minute: "2-digit" })
+                    ? fdt(data.nightMarket.next, locale, { weekday: "short", hour: "2-digit", minute: "2-digit" })
                     : ""}
                 </em>
               </div>
@@ -265,7 +264,7 @@ function History7({ history, totals }) {
       <div className="as2-us-7">
         {history.slice(-7).map((d) => (
           <div key={d.day} className="as2-us-7d">
-            <small>{formatAppDateTime(new Date(Date.parse(`${d.day}T09:00:00Z`)).toISOString(), locale, { weekday: "short" })}</small>
+            <small>{fdt(new Date(Date.parse(`${d.day}T09:00:00Z`)).toISOString(), locale, { weekday: "short" })}</small>
             <div className="as2-us-7g">
               {(d.items || []).slice(0, 4).map((x, i) => (
                 <span key={i} className={`as2-us-7i${x.bought ? " is-bought" : ""}`} title={x.item?.name ? String(typeof x.item.name === "object" ? x.item.name[locale] || x.item.name.tr : x.item.name) : ""}>

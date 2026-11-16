@@ -8,11 +8,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { AlertTriangle, Calendar, ChevronLeft, ChevronRight, Clock, Eye, FlaskConical, Gift, History, Layers, Moon, Package, Pencil, Percent, RefreshCw, RotateCcw, SlidersHorizontal, Star, Store, Timer, Wallet, Filter } from "./icons.js";
 import { shop2Api } from "./adminShop2Api.js";
 import { auditTitle } from "./AuditView.jsx";
-import { Dialog, Pill, Popover, ReasonField, Seg, SetMark, Skel, Switch, useFmt } from "./ui.jsx";
+import { Dialog, Pill, Popover, ReasonField, Seg, SetMark, Skel, Switch, useFmt, fdt } from "./ui.jsx";
 import {
   RARITIES,
   RARITY_COLOR,
@@ -63,7 +62,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
   const clashes = useMemo(() => (tl?.clashes?.length ? tl.clashes : findClashes(allSets, from, days)), [tl, allSets, from, days]);
   const queue = tl?.queue || [];
   const last = dayRange(from, days)[days - 1];
-  const rangeLabel = `${formatAppDateTime(new Date(istMidnight(from) + 3600000).toISOString(), locale, { day: "numeric" })}–${formatAppDateTime(new Date(istMidnight(last) + 3600000).toISOString(), locale, { day: "numeric", month: "long" })}`;
+  const rangeLabel = `${fdt(new Date(istMidnight(from) + 3600000).toISOString(), locale, { day: "numeric" })}–${fdt(new Date(istMidnight(last) + 3600000).toISOString(), locale, { day: "numeric", month: "long" })}`;
 
   const undo = async (e) => {
     try {
@@ -91,7 +90,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
           <div className="as2-legend as2-ml">
             <span className="as2-lg is-brand">
               <i />
-              {t("adminShop2.tl.now", { time: formatAppDateTime(new Date(now).toISOString(), locale, { hour: "2-digit", minute: "2-digit" }) })}
+              {t("adminShop2.tl.now", { time: fdt(new Date(now).toISOString(), locale, { hour: "2-digit", minute: "2-digit" }) })}
             </span>
             <span className="as2-lg is-amber">
               <i />
@@ -109,7 +108,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
           {clashes.length ? (
             <span className="as2-clash-chip" data-testid="as2-clash-chip" title={clashes.map((c) => clashText(t, c, locale, allSets)).join("\n")}>
               <AlertTriangle size={14} />
-              <b>{formatAppDateTime(new Date(istMidnight(clashes[0].day) + 3600000).toISOString(), locale, { day: "numeric", month: "short" })}</b>
+              <b>{fdt(new Date(istMidnight(clashes[0].day) + 3600000).toISOString(), locale, { day: "numeric", month: "short" })}</b>
               {t(`adminShop2.tl.clash.${clashes[0].kind}`, { n: clashes[0].keys.length })}
               {clashes.length > 1 ? <em>+{clashes.length - 1}</em> : null}
             </span>
@@ -168,7 +167,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
                     <Icon size={15} />
                     {q.title || t(`adminShop2.q.kind.${q.kind}`, q.vars || {})}
                   </b>
-                  <span className="as2-q-when">{formatAppDateTime(q.at, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                  <span className="as2-q-when">{fdt(q.at, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                   <span className="as2-q-left tnum">{t(w.key, w.vars)}</span>
                   <span className="as2-q-d">{q.detail || ""}</span>
                   {q.cancelable !== false ? (
@@ -198,7 +197,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
           ) : (
             audit.slice(0, 4).map((e) => (
               <div key={e.id} className="as2-ma" onMouseEnter={() => onHighlight(e.ref || null)} onMouseLeave={() => onHighlight(null)}>
-                <span className="tnum as2-muted">{formatAppDateTime(e.at, locale, { hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="tnum as2-muted">{fdt(e.at, locale, { hour: "2-digit", minute: "2-digit" })}</span>
                 <span className="as2-ma-t">
                   <b>{auditTitle(t, e)}</b>
                   <small>{e.actor || t("adminShop2.audit.system")}</small>
@@ -237,7 +236,7 @@ const Q_ICON = { rules: SlidersHorizontal, night: Moon, set: Layers, recall: Rot
 
 function clashText(t, c, locale, sets) {
   const names = c.keys.map((k) => sets.find((s) => s.key === k)?.name || k).join(", ");
-  return `${formatAppDateTime(new Date(istMidnight(c.day) + 3600000).toISOString(), locale, { day: "numeric", month: "short" })}: ${t(`adminShop2.tl.clash.${c.kind}`, { n: c.keys.length })} (${names})`;
+  return `${fdt(new Date(istMidnight(c.day) + 3600000).toISOString(), locale, { day: "numeric", month: "short" })}: ${t(`adminShop2.tl.clash.${c.kind}`, { n: c.keys.length })} (${names})`;
 }
 
 /* ------------------------------------------------------------------ chart */
@@ -282,7 +281,7 @@ function Chart({ tl, sets, from, days, now, clashes, highlight, onOpenSet, onRec
       const endsAt = new Date(istMidnight(from) + cur * 86400000).toISOString();
       try {
         await shop2Api.patchSet(b.set.key, { endsAt }, "timeline");
-        notify(t("adminShop2.toast.endMoved", { name: b.set.name, when: formatAppDateTime(endsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }));
+        notify(t("adminShop2.toast.endMoved", { name: b.set.name, when: fdt(endsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }));
         onChanged();
       } catch (err) {
         fail(err);
@@ -328,7 +327,7 @@ function Chart({ tl, sets, from, days, now, clashes, highlight, onOpenSet, onRec
         <div className="as2-tl-track">
           {list.map((d) => (
             <span key={d} className={`as2-tl-day${d === today ? " is-today" : ""}${clashDays.has(d) ? " is-clash" : ""}`}>
-              <small>{formatAppDateTime(new Date(istMidnight(d) + 3600000).toISOString(), locale, { weekday: "short" })}</small>
+              <small>{fdt(new Date(istMidnight(d) + 3600000).toISOString(), locale, { weekday: "short" })}</small>
               <b className="tnum">{Number(d.slice(8))}</b>
               {clashDays.has(d) ? <AlertTriangle size={12} className="as2-tl-warn" /> : null}
             </span>
@@ -392,7 +391,7 @@ function Chart({ tl, sets, from, days, now, clashes, highlight, onOpenSet, onRec
                   <SetMark set={s} size={16} />
                   <span className="as2-bar-t">
                     {s.name}
-                    {recalled ? "" : stock.total != null ? ` · ${f.n(stock.left ?? stock.total)} / ${f.n(stock.total)}` : planned ? ` · ${formatAppDateTime(s.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ` · ${t("adminShop2.sets.unlimited").toLocaleLowerCase(locale)}`}
+                    {recalled ? "" : stock.total != null ? ` · ${f.n(stock.left ?? stock.total)} / ${f.n(stock.total)}` : planned ? ` · ${fdt(s.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ` · ${t("adminShop2.sets.unlimited").toLocaleLowerCase(locale)}`}
                     {draft ? ` · ${t("adminShop2.status.draft").toLocaleLowerCase(locale)}` : ""}
                   </span>
                   {recalled ? (
@@ -429,7 +428,7 @@ function Chart({ tl, sets, from, days, now, clashes, highlight, onOpenSet, onRec
                   {n ? (
                     <button type="button" className={`as2-nchip${isNext ? " is-next" : ""}${n.skipped ? " is-skip" : ""}`} onClick={onNight}>
                       <Moon size={11} />
-                      {formatAppDateTime(n.at, locale, { hour: "2-digit", minute: "2-digit" })}
+                      {fdt(n.at, locale, { hour: "2-digit", minute: "2-digit" })}
                     </button>
                   ) : null}
                 </span>
@@ -708,7 +707,7 @@ function CancelQueued({ item, onClose, onDone, fail }) {
       icon={AlertTriangle}
       tone="amber"
       title={t("adminShop2.q.cancelTitle")}
-      subtitle={item ? `${item.title || t(`adminShop2.q.kind.${item.kind}`, item.vars || {})} · ${formatAppDateTime(item.at, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
+      subtitle={item ? `${item.title || t(`adminShop2.q.kind.${item.kind}`, item.vars || {})} · ${fdt(item.at, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
       width={520}
       footer={
         <>

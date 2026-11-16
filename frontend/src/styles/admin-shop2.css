@@ -84,7 +84,7 @@ html.glass-desktop :is(.as2, .as2-scrim, .as2-pop) :is(button, input, textarea, 
 .as2-search.is-wide { display: flex; width: 100%; }
 .as2-search.is-wide input { width: 100%; }
 .as2-search:focus-within { box-shadow: inset 0 0 0 1px rgba(var(--as2-brand), 0.6); }
-.as2-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.as2-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* ── buttons ── */
 .as2-btn {
@@ -268,7 +268,7 @@ button.as2-lg.is-off { opacity: 0.42; }
 .as2-bands { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .as2-band { padding: 7px 9px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--as2-hair); min-width: 0; }
 .as2-band small { display: block; font-size: var(--fs-11); color: var(--as2-t3); font-weight: 600; }
-.as2-band button { font-size: var(--fs-13); font-weight: 750; white-space: nowrap; border-radius: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: block; }
+.as2-band button { font-size: var(--fs-12); font-weight: 750; white-space: nowrap; border-radius: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: block; }
 .as2-band button:hover { color: #cdd7ff; }
 .as2-band.is-edit { box-shadow: inset 0 0 0 1px rgba(var(--as2-brand), 0.6); }
 .as2-band-in { display: flex; gap: 4px; }

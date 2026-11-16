@@ -5,10 +5,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { Clock, FlaskConical, History, Play, RotateCcw, SlidersHorizontal, UserRound } from "../../ui/Icon.jsx";
 import { shop2Api } from "./adminShop2Api.js";
-import { Dialog, Pill, Popover, ReasonField, Skel, Switch, Tabs, useFmt } from "./ui.jsx";
+import { Dialog, Pill, Popover, ReasonField, Skel, Switch, Tabs, useFmt, fdt } from "./ui.jsx";
 import { RARITIES, RARITY_COLOR, normalizeWeights, reasonOk, ruleChanges, setWeight, validBands, weightDiff } from "./shop2Model.js";
 
 const TOGGLES = ["hideOwned", "noRepeat", "minEpic", "lockSurvives", "featureSetPieces"];
@@ -109,7 +108,7 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, fo
               <span className="as2-ver-t">
                 <b>{v.builtIn ? t("adminShop2.algo.builtIn") : v.note || t("adminShop2.algo.noNote")}</b>
                 <small>
-                  {v.at ? formatAppDateTime(v.at, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                  {v.at ? fdt(v.at, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
                   {v.by ? ` · ${v.by}` : ""}
                 </small>
               </span>

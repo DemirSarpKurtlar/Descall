@@ -7,11 +7,25 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatNumber } from "../../../i18n/format.js";
+import { intlLocaleTag } from "../../../lib/datetime";
 import ShopItemThumb from "../../shop/ShopItemThumb.jsx";
 import { Award, Music, Volume2, X } from "../../ui/Icon.jsx";
 import { RARITY_COLOR, avatarTint, nameOf, sparkPath } from "./shop2Model.js";
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/* ------------------------------------------------------------------ dates */
+
+/** Istanbul date / time with exactly the given fields (formatAppDateTime adds every field). */
+export function fdt(value, locale, options = {}) {
+  const ms = typeof value === "number" ? value : Date.parse(value || "");
+  if (!Number.isFinite(ms)) return "";
+  try {
+    return new Intl.DateTimeFormat(intlLocaleTag(locale), { timeZone: "Europe/Istanbul", hour12: false, ...options }).format(new Date(ms));
+  } catch {
+    return "";
+  }
+}
 
 /* ------------------------------------------------------------------ hooks */
 

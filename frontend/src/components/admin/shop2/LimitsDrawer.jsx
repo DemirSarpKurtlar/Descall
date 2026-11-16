@@ -9,10 +9,9 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { AlertTriangle, Gift, Lock, Monitor, Save, Smartphone, Unlock } from "./icons.js";
 import { shop2Api } from "./adminShop2Api.js";
-import { Dialog, Drawer, Pill, ReasonField, Seg, Skel, Switch, Tabs, UserAv, useFmt } from "./ui.jsx";
+import { Dialog, Drawer, Pill, ReasonField, Seg, Skel, Switch, Tabs, UserAv, useFmt, fdt } from "./ui.jsx";
 import { NumBox } from "./AlgorithmPanel.jsx";
 import { changedPaths, reasonOk } from "./shop2Model.js";
 
@@ -230,7 +229,7 @@ export default function LimitsDrawer({ open, tab, onTab, onClose, data, onSaved,
                 <AlertTriangle size={16} />
                 <b>{t(fl.kind === "ping_pong" ? "adminShop2.lim.flagPingPong" : "adminShop2.lim.flagRing")}</b>
                 <Pill tone={fl.status === "open" ? "red" : "gray"}>{fl.status === "open" ? t("adminShop2.lim.ringRisk") : fl.resolution || fl.status}</Pill>
-                <span className="as2-muted as2-ml tnum">{formatAppDateTime(fl.createdAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="as2-muted as2-ml tnum">{fdt(fl.createdAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
               </div>
               <div className="as2-flag-users">
                 {(fl.users || []).slice(0, 8).map((u) => (

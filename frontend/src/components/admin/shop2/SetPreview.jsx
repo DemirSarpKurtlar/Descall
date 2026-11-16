@@ -7,12 +7,11 @@
  */
 import { useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { cssUrl } from "../../../lib/cssUrl";
 import { S2Avatar, S2ChatMessage, S2Name } from "../../shop2/Shop2Preview.jsx";
 import { JoinSoundPreview, VoiceTilePreview } from "../../voice/VoiceCosmetics.jsx";
 import { ChevronDown, Eye, Gift, Monitor, Smartphone, TrendingUp } from "./icons.js";
-import { Coin, Pill, Popover, Seg, Thumb, useFmt } from "./ui.jsx";
+import { Coin, Pill, Popover, Seg, Thumb, useFmt, fdt } from "./ui.jsx";
 import { SET_SLOTS, leftParts, priceForOwner, priceTiers, setPricing } from "./shop2Model.js";
 
 const EQUIP_FIELD = {
@@ -206,7 +205,7 @@ function MiniAv({ set }) {
 }
 
 function stageNote(t, st, set, now, locale) {
-  if (st === "upcoming") return set?.startsAt ? t("adminShop2.pv.note.upcoming", { when: formatAppDateTime(set.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }) : t("adminShop2.pv.note.upcomingNone");
+  if (st === "upcoming") return set?.startsAt ? t("adminShop2.pv.note.upcoming", { when: fdt(set.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }) : t("adminShop2.pv.note.upcomingNone");
   if (st === "live") {
     const l = leftParts(set?.endsAt, now);
     return l ? t("adminShop2.pv.note.live", { d: l.d, h: l.h }) : t("adminShop2.pv.note.liveOpen");
@@ -218,7 +217,7 @@ function stageNote(t, st, set, now, locale) {
 function countdown(t, set, stage, now, locale) {
   const stock = set?.stock || {};
   const stockTxt = stock.total != null ? t("adminShop2.pv.stockLeft", { left: stock.left ?? stock.total, total: stock.total }) : t("adminShop2.pv.stockOpen");
-  if (stage === "upcoming") return `${t("adminShop2.pv.opens", { when: set?.startsAt ? formatAppDateTime(set.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "–" })} · ${stockTxt}`;
+  if (stage === "upcoming") return `${t("adminShop2.pv.opens", { when: set?.startsAt ? fdt(set.startsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "–" })} · ${stockTxt}`;
   if (stage === "soldout") return t("adminShop2.pv.soldOut");
   if (stage === "last24") return `${t("adminShop2.pv.lastHours", { h: 23 })} · ${stockTxt}`;
   const l = leftParts(set?.endsAt, now);

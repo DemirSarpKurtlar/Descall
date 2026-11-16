@@ -6,10 +6,9 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { Download, History, Undo2, X } from "../../ui/Icon.jsx";
 import { shop2Api } from "./adminShop2Api.js";
-import { Pill, Seg, Skel, UserAv } from "./ui.jsx";
+import { Pill, Seg, Skel, UserAv, fdt } from "./ui.jsx";
 import { groupByDay, istDay, mmss, undoLeft } from "./shop2Model.js";
 
 const KINDS = ["all", "set", "rules", "night", "limits", "user"];
@@ -122,13 +121,13 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
         <div className="as2-au">
           {groups.map((g) => (
             <div key={g.day} className="as2-au-g">
-              <div className="as2-au-day">{g.day === today ? t("adminShop2.audit.today") : g.day === yesterday ? t("adminShop2.audit.yesterday") : formatAppDateTime(new Date(Date.parse(`${g.day}T09:00:00Z`)).toISOString(), locale, { weekday: "long", day: "numeric", month: "long" })}</div>
+              <div className="as2-au-day">{g.day === today ? t("adminShop2.audit.today") : g.day === yesterday ? t("adminShop2.audit.yesterday") : fdt(new Date(Date.parse(`${g.day}T09:00:00Z`)).toISOString(), locale, { weekday: "long", day: "numeric", month: "long" })}</div>
               {g.rows.map((e) => {
                 const left = undoLeft(e.undoUntil, now);
                 const k = kindOf(e.action);
                 return (
                   <div key={e.id} className={`as2-au-row${e.undone ? " is-undone" : ""}`}>
-                    <span className="tnum as2-muted">{formatAppDateTime(e.at, locale, { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span className="tnum as2-muted">{fdt(e.at, locale, { hour: "2-digit", minute: "2-digit" })}</span>
                     <span className="as2-au-who">
                       <UserAv name={e.actor || "sistem"} size={22} />
                       <b>{e.actor || t("adminShop2.audit.system")}</b>

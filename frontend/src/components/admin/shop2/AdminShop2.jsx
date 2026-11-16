@@ -18,7 +18,6 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { Calendar, Eye, Gift, History, LayoutDashboard, Layers, Moon, Plus, Search, ShoppingBag, Store, Wallet } from "../../ui/Icon.jsx";
 import { errKey, setApiLocale, shop2Api } from "./adminShop2Api.js";
 import Dashboard from "./Dashboard.jsx";
@@ -29,8 +28,9 @@ import UserStorefrontDrawer from "./UserStorefrontDrawer.jsx";
 import NightMarketDrawer from "./NightMarketDrawer.jsx";
 import LimitsDrawer from "./LimitsDrawer.jsx";
 import RecallDialog from "./RecallDialog.jsx";
-import { Coin, Popover, Seg, Spark, Toast, UserAv, useFmt, useNow, SetMark } from "./ui.jsx";
+import { Coin, Popover, Seg, Spark, Toast, UserAv, useFmt, useNow, SetMark, fdt } from "./ui.jsx";
 import { clock, istDay, nextReset, nameOf } from "./shop2Model.js";
+import "../../../styles/shop-merch.css";
 import "../../../styles/admin-shop2.css";
 
 const TOAST_MS = 4500;
@@ -227,7 +227,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
           <div className="as2-crumb">{view === "takvim" ? t("adminShop2.crumbTimeline") : t("adminShop2.crumb")}</div>
         </div>
         <div className="as2-hdr-r">
-          <span className="as2-reset" title={formatAppDateTime(new Date(resetAt).toISOString(), locale, { hour: "2-digit", minute: "2-digit" })}>
+          <span className="as2-reset" title={fdt(new Date(resetAt).toISOString(), locale, { hour: "2-digit", minute: "2-digit" })}>
             <i className="as2-dot is-live" />
             <span className="as2-reset-l">{t("adminShop2.resetAt")}</span>
             <b className="tnum">{clock(resetAt - now)}</b>
@@ -251,7 +251,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
         </div>
       </header>
 
-      <div className="as2-bar">
+      <div className="as2-toolbar">
         <Seg
           value={view}
           onChange={setView}
@@ -455,8 +455,8 @@ function Tiles({ dash, night, flash, now, onNight, onGifts }) {
             ? t("adminShop2.tile.nightOpen", { c: clock(Date.parse(nm.closesAt) - now) })
             : nm.opensAt
             ? istDay(Date.parse(nm.opensAt)) === istDay(now)
-              ? t("adminShop2.tile.nightAt", { time: formatAppDateTime(nm.opensAt, f.locale, { hour: "2-digit", minute: "2-digit" }) })
-              : t("adminShop2.tile.nightOn", { when: formatAppDateTime(nm.opensAt, f.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }) })
+              ? t("adminShop2.tile.nightAt", { time: fdt(nm.opensAt, f.locale, { hour: "2-digit", minute: "2-digit" }) })
+              : t("adminShop2.tile.nightOn", { when: `${fdt(nm.opensAt, f.locale, { weekday: "short" })} ${fdt(nm.opensAt, f.locale, { hour: "2-digit", minute: "2-digit" })}` })
             : t("adminShop2.tile.nightOff")}
         </b>
       </Tile>

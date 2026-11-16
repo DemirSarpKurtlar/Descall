@@ -7,10 +7,9 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
-import { formatAppDateTime } from "../../../lib/datetime";
 import { ChevronLeft, ChevronRight, Monitor, Moon, Pause, Save, Smartphone, Zap } from "./icons.js";
 import { shop2Api } from "./adminShop2Api.js";
-import { Coin, Dialog, Drawer, Pill, ReasonField, Seg, Skel, Switch, Thumb, useFmt } from "./ui.jsx";
+import { Coin, Dialog, Drawer, Pill, ReasonField, Seg, Skel, Switch, Thumb, useFmt, fdt } from "./ui.jsx";
 import { NumBox } from "./AlgorithmPanel.jsx";
 import { changedPaths, clock, discountBuckets, istDay, monthGrid, nextNight, nightHours, reasonOk, weekdayMon } from "./shop2Model.js";
 
@@ -66,7 +65,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
   const set = (patch) => setS((x) => ({ ...x, ...patch }));
   const grid = monthGrid(month[0], month[1]);
   const today = istDay(now);
-  const weekdayNames = useMemo(() => Array.from({ length: 7 }, (_, i) => formatAppDateTime(new Date(Date.UTC(2026, 10, 9 + i, 9)).toISOString(), locale, { weekday: "narrow" })), [locale]);
+  const weekdayNames = useMemo(() => Array.from({ length: 7 }, (_, i) => fdt(new Date(Date.UTC(2026, 10, 9 + i, 9)).toISOString(), locale, { weekday: "narrow" })), [locale]);
   const isNight = (d) => {
     if (!d) return false;
     if ((s.skipDates || []).includes(d)) return false;
@@ -120,7 +119,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
       tone="violet"
       title={t("adminShop2.nm.title")}
       subtitle={t("adminShop2.nm.sub")}
-      badge={next ? <Pill tone="amber">{t("adminShop2.nm.next", { when: formatAppDateTime(next, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) })}</Pill> : null}
+      badge={next ? <Pill tone="amber">{t("adminShop2.nm.next", { when: fdt(next, locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) })}</Pill> : null}
       width={700}
       testId="as2-night-drawer"
       footer={
@@ -162,7 +161,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
                 ? t("adminShop2.nm.ruleManual", { n: (s.dates || []).length })
                 : t(s.mode === "random" ? "adminShop2.nm.ruleRandom" : "adminShop2.nm.ruleCal", {
                     n: (s.weekdays || []).length,
-                    days: (s.weekdays || []).map((w) => formatAppDateTime(new Date(Date.UTC(2026, 10, 9 + w, 9)).toISOString(), locale, { weekday: "long" })).join(", "),
+                    days: (s.weekdays || []).map((w) => fdt(new Date(Date.UTC(2026, 10, 9 + w, 9)).toISOString(), locale, { weekday: "long" })).join(", "),
                   })}
             </span>
             <span className="as2-muted as2-ml">{t("adminShop2.nm.tz")}</span>
@@ -171,7 +170,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
           <div className="as2-nm-grid">
             <div className="as2-nm-box as2-cal">
               <div className="as2-cal-h">
-                <b>{formatAppDateTime(new Date(Date.UTC(month[0], month[1], 15)).toISOString(), locale, { month: "long", year: "numeric" })}</b>
+                <b>{fdt(new Date(Date.UTC(month[0], month[1], 15)).toISOString(), locale, { month: "long", year: "numeric" })}</b>
                 <span>
                   <button type="button" className="as2-ibtn" onClick={() => setMonth(([y, m]) => (m ? [y, m - 1] : [y - 1, 11]))} aria-label={t("adminShop2.tl.prev")}>
                     <ChevronLeft size={14} />
@@ -366,7 +365,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
                 ) : null}
                 {(data.past || []).slice(0, fullReport ? 20 : 3).map((p) => (
                   <tr key={p.id || p.day}>
-                    <td>{formatAppDateTime(new Date(Date.parse(`${p.day}T19:00:00Z`)).toISOString(), locale, { weekday: "short", day: "numeric", month: "short" })}</td>
+                    <td>{fdt(new Date(Date.parse(`${p.day}T19:00:00Z`)).toISOString(), locale, { weekday: "short", day: "numeric", month: "short" })}</td>
                     <td className="tnum">{f.n(p.participants)}</td>
                     <td className="tnum">{f.n(p.flips)}</td>
                     <td className="tnum">{f.p(p.buyPct, 0)}</td>
