@@ -130,7 +130,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
         }
         return;
       }
-      const p = { kind: sale.gift ? "gift" : ["set", "piece", "pieces"].includes(sale.kind) ? "set" : sale.kind === "refund" ? "refund" : "item", paid: Number(sale.amount) || 0, price: Number(sale.listAmount) || 0, setKey: sale.setKey || null, at: sale.at };
+      const p = { kind: sale.gift ? "gift" : ["set", "piece", "pieces"].includes(sale.kind) ? "set" : sale.kind === "refund" ? "refund" : "item", piece: !sale.gift && (sale.kind === "piece" || sale.kind === "pieces"), paid: Number(sale.amount) || 0, price: Number(sale.listAmount) || 0, setKey: sale.setKey || null, at: sale.at };
       setDash((d) => applySale(d, p));
       const keys = ["revenue", p.kind === "set" ? "setSales" : p.kind === "gift" ? "gifts" : "storefrontBuys"];
       if (p.setKey) keys.push(`set:${p.setKey}`);
@@ -384,8 +384,12 @@ export function applySale(d, p) {
   bump("revenue", paid);
   if (p.kind === "refund") return { ...d, tiles };
   if (p.kind === "set") {
-    bump("setSales");
-    tiles.setSales.pieces = Number(tiles.setSales.pieces || 0) + Number(p.pieces || 0);
+    // "Set satışı" counts whole sets; a piece bought on its own goes under "parça parça" (like the server tile).
+    if (p.piece) tiles.setSales = { ...(tiles.setSales || {}), value: Number(tiles.setSales?.value || 0), pieces: Number(tiles.setSales?.pieces || 0) + 1 };
+    else {
+      bump("setSales");
+      tiles.setSales.pieces = Number(tiles.setSales.pieces || 0) + Number(p.pieces || 0);
+    }
   } else if (p.kind === "gift") bump("gifts");
   else bump("storefrontBuys");
   const sales = d.sales ? { ...d.sales } : null;

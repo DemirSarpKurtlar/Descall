@@ -148,6 +148,8 @@ function publicItem(item, base = "", extra = {}) {
   const url = (u, v, kind) => {
     if (!u) return null;
     if (!/^data:/i.test(u)) return u;
+    // "data:," (effects, bubbles, themes, sounds draw from their recipe): no image to serve.
+    if (!/^data:image\//i.test(u)) return null;
     return `${b}/api/shop2/assets/${encodeURIComponent(item.id)}?${kind === "preview" ? "kind=preview&" : ""}v=${v}`;
   };
   return {

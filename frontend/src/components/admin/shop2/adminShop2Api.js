@@ -232,9 +232,10 @@ async function dashboardFor(range) {
   const lastSale = last
     ? {
         at: last.at,
-        kind: KIND_OF_SALE(last),
+        // The ticker says "bought the <set> set" only for a whole set; a piece reads as an item.
+        kind: KIND_OF_SALE(last) === "set" && last.kind !== "set" ? "item" : KIND_OF_SALE(last),
         username: last.user?.username || null,
-        setName: last.setKey ? setNames[last.setKey] || last.setKey : null,
+        setName: last.setKey && (last.kind === "set" || KIND_OF_SALE(last) === "gift") ? setNames[last.setKey] || last.setKey : null,
         item: last.items?.[0] ? normItem(last.items[0]) : null,
         price: num(last.listAmount) || num(last.amount),
         paid: num(last.amount),

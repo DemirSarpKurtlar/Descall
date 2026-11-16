@@ -55,6 +55,7 @@ async function run() {
     // finishes inside one tick, while a real database yields on every query.
     const gifts = require("../lib/shop2/gifts");
     const night = require("../lib/shop2/night");
+    const notOwnedBy5 = () => rows("shop_items").filter((r) => /^s2-single-\d+$/.test(r.sku) && !owns(5, r.id)).map((r) => r.id);
     const settle = (list) => Promise.allSettled(list).then((rs) => rs.map((r) => (r.status === "fulfilled" ? "ok" : r.reason?.code || r.reason?.message)));
 
     await check("night market: a revealed card is bought or gifted once, even in parallel", async () => {
@@ -85,7 +86,7 @@ async function run() {
       const lim = await call("/admin/shop2/limits", { method: "PUT", body: { reason: "Security test caps", limits: { gifts: { perDay: 3, perRecipientDay: 20, receivePerDay: 20 } } } });
       assert.equal(lim.status, 200, JSON.stringify(lim.body));
       const before = user(2).descoin_balance;
-      const out = await settle([20, 21, 22, 23, 24, 25].map((n) => gifts.send(U(2), { toUserId: U(5), itemId: I(n) })));
+      const out = await settle(notOwnedBy5().slice(0, 6).map((id) => gifts.send(U(2), { toUserId: U(5), itemId: id })));
       assert.equal(out.filter((x) => x === "ok").length, 3, out.join(","));
       assert.ok(out.filter((x) => x !== "ok").every((x) => x === "gift_daily_cap"), out.join(","));
       const paid = rows("shop2_gifts").filter((g) => g.from_user === U(2) && g.status !== "blocked").reduce((a, g) => a + g.amount, 0);
@@ -95,11 +96,12 @@ async function run() {
     await check("gifts: one idempotency key sent twice in parallel charges once", async () => {
       const before = user(1).descoin_balance;
       const key = "gift-idem-key-0001";
-      const out = await Promise.all([1, 2].map(() => gifts.send(U(1), { toUserId: U(5), itemId: I(30), idempotencyKey: key })));
+      const itemId = notOwnedBy5().pop();
+      const out = await Promise.all([1, 2].map(() => gifts.send(U(1), { toUserId: U(5), itemId, idempotencyKey: key })));
       assert.equal(rows("shop2_gifts").filter((g) => g.from_user === U(1) && g.idempotency_key === key).length, 1);
       assert.equal(out.filter((r) => r.duplicate).length, 1);
       assert.equal(user(1).descoin_balance, before - Number(out[0].gift.amount));
-      const http = await call("/shop2/gifts", { method: "POST", user: 1, body: { toUserId: U(5), itemId: I(30) }, headers: { "Idempotency-Key": key } });
+      const http = await call("/shop2/gifts", { method: "POST", user: 1, body: { toUserId: U(5), itemId }, headers: { "Idempotency-Key": key } });
       assert.equal(http.status, 200);
       assert.equal(http.body.duplicate, true);
     });
@@ -229,7 +231,8 @@ async function run() {
     });
 
     await check("user routes: another user's purchase, gift, outfit and action are not found", async () => {
-      const mine = await call(`/shop2/items/${I(27)}/buy`, { method: "POST", user: 5, body: {} });
+      const free = rows("shop_items").find((r) => /^s2-single-\d+$/.test(r.sku) && !owns(5, r.id) && r.id !== I(28));
+      const mine = await call(`/shop2/items/${free.id}/buy`, { method: "POST", user: 5, body: {} });
       assert.equal(mine.status, 200, JSON.stringify(mine.body));
       assert.equal((await call(`/shop2/purchases/${mine.body.purchaseId}/refund`, { method: "POST", user: 3, body: {} })).status, 404);
       const g = rows("shop2_gifts").find((x) => x.status === "delivered" && x.to_user !== U(3) && x.from_user !== U(3));
@@ -262,14 +265,23 @@ async function run() {
       assert.equal(Number(ra.daily) + Number(rb.daily), 1);
     });
 
+    await check("catalog payload: a recipe item (data:,) gets no image URL that would 404", async () => {
+      const catalog = require("../lib/shop2/catalog");
+      const it = catalog.toPoolItem({ id: "x1", sku: "s2-chat_bubble-x", category: "chat_bubble", asset_url: "data:,", price_descoin: 300 });
+      assert.equal(catalog.publicItem(it, "http://h").asset_url, null);
+      const img = catalog.toPoolItem({ id: "x2", sku: "s2-banner-x", category: "banner", asset_url: "data:image/svg+xml;utf8,<svg/>", price_descoin: 300 });
+      assert.match(catalog.publicItem(img, "http://h").asset_url, /^http:\/\/h\/api\/shop2\/assets\/x2\?v=/);
+    });
+
     await check("price tampering: expectedPrice, negative and huge values never lower the price", async () => {
       const before = user(5).descoin_balance;
-      const r = await call(`/shop2/items/${I(28)}/buy`, { method: "POST", user: 5, body: { expectedPrice: -5000 } });
+      const pick = rows("shop_items").find((r) => /^s2-single-\d+$/.test(r.sku) && !owns(5, r.id));
+      const r = await call(`/shop2/items/${pick.id}/buy`, { method: "POST", user: 5, body: { expectedPrice: -5000 } });
       assert.equal(r.status, 409);
       assert.equal(r.body.code, "price_changed");
-      const r2 = await call(`/shop2/items/${I(28)}/buy`, { method: "POST", user: 5, body: { expectedPrice: 1e12, quantity: -3, price: 1 } });
+      const r2 = await call(`/shop2/items/${pick.id}/buy`, { method: "POST", user: 5, body: { expectedPrice: 1e12, quantity: -3, price: 1 } });
       assert.equal(r2.status, 200, JSON.stringify(r2.body));
-      const listed = rows("shop_items").find((x) => x.id === I(28)).price_descoin;
+      const listed = rows("shop_items").find((x) => x.id === pick.id).price_descoin;
       assert.equal(r2.body.paid, listed);
       assert.equal(user(5).descoin_balance, before - listed);
     });
