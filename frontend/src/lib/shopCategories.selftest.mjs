@@ -100,8 +100,9 @@ assert.match(shopRoute, /retiredCategories:\s*\[\.\.\.shop\.RETIRED_SHOP_CATEGOR
   assert.deepEqual(vis3([{ category: "profile_badge" }, { category: "countries" }]).map((i) => i.category), ["countries"]);
   assert.equal(vt3([{ id: "profile_badge" }], { showEmpty: true }).length, 0, "a stale tab list still hides it");
   const lib = read("backend/lib/shop.js");
-  assert.match(lib, /badge: null, \/\/ shop profile badges removed/, "profiles never return an equipped shop badge");
-  assert.match(lib, /badgeId: null,/);
+  // Market 2.0: only "s2-" badges come back; every older shop badge stays hidden.
+  assert.match(lib, /badge: pickShop2\("equipped_badge_id"\)/, "profiles return only Market 2.0 badges");
+  assert.match(lib, /badgeId: revived\(u\.equipped_badge_id\)/);
   const cosmetics = read("src/components/ui/Cosmetics.jsx");
   assert.doesNotMatch(cosmetics, /export function BadgeIcon/, "no shop badge next to names");
 }
