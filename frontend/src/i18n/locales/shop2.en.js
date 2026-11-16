@@ -32,6 +32,7 @@ export const SHOP2_EN = {
     "night": "Night market",
     "enter": "Enter",
     "soon": "Soon",
+    "tonight": "Tonight",
     "nightOpen": "Open · {cards} hidden cards, {flips} flips",
     "nightClosed": "Opens tonight with hidden deals",
     "setProgress": "Set progress",

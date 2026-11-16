@@ -32,6 +32,7 @@ export const SHOP2_RU = {
     "night": "Ночной рынок",
     "enter": "Войти",
     "soon": "Скоро",
+    "tonight": "Сегодня ночью",
     "nightOpen": "Открыт · {cards} закрытых карт, {flips} открытий",
     "nightClosed": "Откроется ночью со скрытыми скидками",
     "setProgress": "Прогресс набора",

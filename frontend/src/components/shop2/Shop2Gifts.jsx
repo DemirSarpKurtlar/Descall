@@ -276,8 +276,8 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
                 <small>
                   {f.owns ? t("shop2.gifts.alreadyHas") : f.acceptsGifts === false ? t("shop2.gifts.closed") : f.wishes ? t("shop2.gifts.wishesIt") : f.status && f.status !== "offline" ? t("shop2.gifts.online") : t("shop2.gifts.offline")}
                 </small>
+                {f.birthdayInDays != null && f.birthdayInDays <= 7 ? <Chip tone="gold" icon={Calendar} className="s2-friend-bday">{f.birthdayInDays <= 1 ? t("shop2.gifts.bdayTomorrow") : t("shop2.gifts.bdayIn", { n: f.birthdayInDays })}</Chip> : null}
               </span>
-              {f.birthdayInDays != null && f.birthdayInDays <= 7 ? <Chip tone="gold" icon={Calendar}>{f.birthdayInDays <= 1 ? t("shop2.gifts.bdayTomorrow") : t("shop2.gifts.bdayIn", { n: f.birthdayInDays })}</Chip> : null}
               {owned != null ? <Chip tone="green">{owned}/{set.pieceCount}</Chip> : null}
               {f.wishes ? <Heart size={14} weight="fill" className="s2-heart" /> : null}
               <span className={`s2-radio-dot${on ? " is-on" : ""}`}>{on ? <Check size={12} weight="bold" /> : null}</span>

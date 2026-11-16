@@ -90,7 +90,6 @@ export default function Shop2Art({ item, size = "tile", me = null, sample }) {
   } else if (c === "chat_bubble" && size === "card") {
     inner = (
       <span className="s2-art-bubbles">
-        <span className="s2-art-ghost" />
         <span className={`message-bubble own cosmetic-chat-bubble bubble-${k}`}><span className="message-text">{t("shop2.art.sampleBubble")}</span></span>
       </span>
     );

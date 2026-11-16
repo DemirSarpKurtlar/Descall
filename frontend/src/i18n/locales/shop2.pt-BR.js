@@ -32,6 +32,7 @@ export const SHOP2_PT_BR = {
     "night": "Mercado noturno",
     "enter": "Entrar",
     "soon": "Em breve",
+    "tonight": "Hoje à noite",
     "nightOpen": "Aberto · {cards} cartas ocultas, {flips} viradas",
     "nightClosed": "Abre hoje à noite com ofertas ocultas",
     "setProgress": "Progresso do set",

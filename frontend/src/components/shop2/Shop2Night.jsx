@@ -67,6 +67,7 @@ export default function Shop2Night({ onClose }) {
   const now = useNow(true);
   const [activeIdx, setActiveIdx] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [notify, setNotify] = useState(null);
   const prefs = s2.data.prefs;
   const phone = s2.layout === "phone";
   if (!nm) return <div className="s2-skeleton" aria-busy="true"><i /><i /></div>;
@@ -74,7 +75,6 @@ export default function Shop2Night({ onClose }) {
   const opened = nm.cards.filter((c) => c.flipped);
   const active = nm.cards.find((c) => c.index === activeIdx) || opened[opened.length - 1] || null;
   const urgent = nm.closesAt && nm.closesAt - now < SHOP2_NIGHT_URGENT_MS;
-  const [notify, setNotify] = useState(null);
   const setPref = (patch) => s2.actions.setPref(patch);
   const toggleNotify = async (on) => {
     setNotify(on);
