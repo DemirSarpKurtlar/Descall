@@ -2726,13 +2726,13 @@ html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .t
     radial-gradient(130% 70% at 50% 0%, color-mix(in srgb, var(--pc-accent) 18%, transparent) 0%, transparent 70%),
     linear-gradient(var(--pc-angle, 180deg), var(--pc-a) 0%, var(--pc-c, var(--pc-a)) 52%, var(--pc-b) 100%) !important;
 }
-:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect)) {
+:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect, .s2-name-colour)) {
   background-image: var(--pc-name);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect)) > * {
+:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect, .s2-name-colour)) > * {
   -webkit-text-fill-color: currentColor;
 }
 
@@ -2762,7 +2762,7 @@ html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .t
 .pc-s2-set-neon-carsi { --pc-name: linear-gradient(100deg, #ff2e88, #ff8ac0 50%, #2ef2ff); --pc-art: radial-gradient(50% 30% at 0% 0%, rgba(255, 46, 136, 0.18), transparent 70%), radial-gradient(50% 30% at 100% 100%, rgba(46, 242, 255, 0.16), transparent 70%); }
 .pc-s2-set-altin-hasat { --pc-name: linear-gradient(100deg, #fff3c4, #f2c230); --pc-art: radial-gradient(60% 40% at 100% 0%, rgba(242, 194, 48, 0.2), transparent 70%); }
 .pc-s2-set-mor-sis { --pc-name: linear-gradient(100deg, #e6dcff, #a77bff); --pc-art: radial-gradient(50% 40% at 30% 30%, rgba(167, 123, 255, 0.16), transparent 70%), radial-gradient(40% 30% at 80% 70%, rgba(230, 220, 255, 0.08), transparent 70%); }
-.pc-s2-set-gece-mercani { --pc-name: linear-gradient(100deg, #ff8fab, #d6336c 50%, #9f86ff); --pc-art: radial-gradient(70% 40% at 50% 115%, rgba(214, 51, 108, 0.22), transparent 70%); }
+.pc-s2-set-gece-mercani { --pc-name: linear-gradient(100deg, #ff8fab, #ec5a88 50%, #9f86ff); --pc-art: radial-gradient(70% 40% at 50% 115%, rgba(214, 51, 108, 0.22), transparent 70%); }
 .pc-s2-set-kuzey-isigi { --pc-name: linear-gradient(100deg, #6effc7, #8f7bff); --pc-art: linear-gradient(180deg, rgba(110, 255, 199, 0.16), transparent 28%), repeating-linear-gradient(90deg, transparent 0 16px, rgba(143, 123, 255, 0.06) 20px, transparent 26px); }
 .pc-s2-set-zumrut-orman { --pc-name: linear-gradient(100deg, #d8ffe6, #49d17d); --pc-art: linear-gradient(105deg, transparent 20%, rgba(216, 255, 230, 0.05) 24%, transparent 30%, transparent 60%, rgba(216, 255, 230, 0.05) 64%, transparent 70%); }
 .pc-s2-set-kum-saati { --pc-name: linear-gradient(100deg, #fff8e8, #e8cf9a); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><g fill='%23e8cf9a'><circle cx='2' cy='3' r='.45' opacity='.25'/><circle cx='13' cy='8' r='.5' opacity='.2'/><circle cx='5' cy='11' r='.4' opacity='.25'/></g></svg>") 0 0 / 16px 16px; }
@@ -2770,3 +2770,43 @@ html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .t
 .pc-s2-set-lav-akisi { --pc-name: linear-gradient(100deg, #ffb000, #ff3d00); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='60' viewBox='0 0 200 60' preserveAspectRatio='none'><path d='M0 46l18-4 10 6 16-10 8 4M180 0l-6 12 8 8-10 10 6 8M120 60l6-10 14-2 6-8' stroke='%23ff3d00' stroke-opacity='.3' stroke-width='1.6' fill='none'/></svg>") 0 0 / 100% 100% no-repeat; }
 .pc-s2-set-inci-kiyisi { --pc-name: linear-gradient(100deg, #f1e9e1, #ffd8e4 50%, #c8dcea); --pc-art: linear-gradient(120deg, rgba(255, 216, 228, 0.1), transparent 35%, rgba(190, 220, 240, 0.08) 60%, transparent 85%); }
 .pc-s2-set-yildiz-tozu { --pc-name: linear-gradient(100deg, #c6b7ff, #ffe9a8); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='40'><g fill='%23c6b7ff' opacity='.45'><circle cx='4' cy='30' r='.6'/><circle cx='34' cy='16' r='.7'/><circle cx='64' cy='4' r='.6'/></g><g fill='%23ffe9a8' opacity='.5'><circle cx='12' cy='26' r='.5'/><circle cx='42' cy='13' r='.6'/></g></svg>") 0 0 / 70px 40px, linear-gradient(155deg, transparent 30%, rgba(198, 183, 255, 0.07) 50%, transparent 70%); }
+
+/* Set name colour everywhere a name renders (chat author, member and voice names, call tiles):
+   components/ui/Cosmetics.jsx NameEffectText wraps the name in .s2-name-colour.pc-<key> when the
+   person wears an s2-set-* card colour and no name effect. Bright inks on dark surfaces; light
+   surfaces get each set's deeper pair (--pc-name-l). Inside the card (always dark) the bright
+   ink stays. */
+.s2-name-colour {
+  display: inline-block;
+  background-image: var(--pc-name, linear-gradient(currentColor, currentColor));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  filter: drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.55));
+}
+html[data-theme="light"] .s2-name-colour {
+  background-image: var(--pc-name-l, var(--pc-name, linear-gradient(currentColor, currentColor)));
+  filter: none;
+}
+html[data-theme="light"] .has-pcolor .s2-name-colour {
+  background-image: var(--pc-name, linear-gradient(currentColor, currentColor));
+  filter: drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.55));
+}
+.pc-s2-set-gece-limani { --pc-name-l: linear-gradient(100deg, #1e4b8f, #0b6d7a); }
+.pc-s2-set-bakir-kervan { --pc-name-l: linear-gradient(100deg, #8a4a1a, #9c4c18); }
+.pc-s2-set-orkide-sisi { --pc-name-l: linear-gradient(100deg, #8b3fd1, #c42a78); }
+.pc-s2-set-kor-bahcesi { --pc-name-l: linear-gradient(100deg, #a3220f, #b0400f); }
+.pc-s2-set-buzul-sessizligi { --pc-name-l: linear-gradient(100deg, #155a7e, #246e94); }
+.pc-s2-set-neon-carsi { --pc-name-l: linear-gradient(100deg, #b8145e, #08707f); }
+.pc-s2-set-altin-hasat { --pc-name-l: linear-gradient(100deg, #7a5a0a, #7e5e08); }
+.pc-s2-set-mor-sis { --pc-name-l: linear-gradient(100deg, #4b2a9c, #6e42d6); }
+.pc-s2-set-gece-mercani { --pc-name-l: linear-gradient(100deg, #b0204e, #6a4ae0); }
+.pc-s2-set-kuzey-isigi { --pc-name-l: linear-gradient(100deg, #0c7a5e, #5040c4); }
+.pc-s2-set-zumrut-orman { --pc-name-l: linear-gradient(100deg, #1f7a46, #145c34); }
+.pc-s2-set-kum-saati { --pc-name-l: linear-gradient(100deg, #6e5024, #7a5c32); }
+.pc-s2-set-firtina-cekirdegi { --pc-name-l: linear-gradient(100deg, #2a4ab0, #3b4a6b); }
+.pc-s2-set-lav-akisi { --pc-name-l: linear-gradient(100deg, #b82e00, #a30e0e); }
+.pc-s2-set-inci-kiyisi { --pc-name-l: linear-gradient(100deg, #4e6a7a, #a04a6c); }
+.pc-s2-set-yildiz-tozu { --pc-name-l: linear-gradient(100deg, #4b3aa0, #7a5c0e); }

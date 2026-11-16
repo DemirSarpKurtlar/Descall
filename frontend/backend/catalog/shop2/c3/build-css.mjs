@@ -311,6 +311,7 @@ sections.push(coRules.join("\n"));
 
 /* ── Themes ──────────────────────────────────────────────────────── */
 const { THEME } = require("./theme.js");
+const { SCENES } = require("./theme-art.js");
 const { themeBlock } = await import(join(here, "..", "..", "..", "..", "scripts", "generate-glass-themes.mjs"));
 const hx = (h) => [0, 2, 4].map((i) => parseInt(String(h).replace("#", "").slice(i, i + 2), 16));
 const toHex = (c) => "#" + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("").toUpperCase();
@@ -358,11 +359,11 @@ themeRules.push(`/* Themes: [data-theme="s2-<key>"]. Tokens + both Liquid Glass 
   pointer-events: none;
 }
 .shop-theme-swatch[class*="theme-s2-"]::before {
-  left: 30%;
-  right: 7%;
-  top: 26%;
-  bottom: 12%;
-  border-radius: 10px;
+  left: 40%;
+  right: 6%;
+  top: 40%;
+  bottom: 10%;
+  border-radius: 9px;
   background:
     linear-gradient(90deg, transparent, rgba(255,255,255,0.22) 8%, rgba(255,255,255,0.22) 92%, transparent) 34% 58% / 34% 13% no-repeat,
     linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 6%, rgba(255,255,255,0.12) 94%, transparent) 40% 84% / 52% 10% no-repeat,
@@ -372,13 +373,15 @@ themeRules.push(`/* Themes: [data-theme="s2-<key>"]. Tokens + both Liquid Glass 
     linear-gradient(rgba(255,255,255,0.06), rgba(255,255,255,0.06)) 0 0 / 24% 100% no-repeat,
     linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04)),
     var(--s2t-glass);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 26px rgba(0,0,0,0.38);
 }
 .shop-theme-swatch[class*="theme-s2-"]::after {
-  right: 11%;
-  top: 36%;
-  width: 26%;
-  height: 11%;
+  right: 9%;
+  top: 48%;
+  width: 22%;
+  height: 9%;
   border-radius: 999px;
   background: linear-gradient(180deg, var(--s2t-p-hi), var(--s2t-p));
   box-shadow: 0 4px 12px var(--s2t-p-glow);
@@ -386,7 +389,12 @@ themeRules.push(`/* Themes: [data-theme="s2-<key>"]. Tokens + both Liquid Glass 
 for (const t of THEME) {
   const key = `s2-${t.slug}`;
   const p = themePalette(t);
-  const sceneCss = t.scene.join(",\n    ");
+  if (!SCENES[t.slug]) throw new Error(`no scene for theme ${t.slug}`);
+  const sceneCss = `${uri(SCENES[t.slug]())} center / cover no-repeat`;
+  // Own accent treatment: two-tone own bubble, tinted edge, selected-row glow.
+  let bub2 = mixH(p.primary2, "#000000", 0.1);
+  for (let i = 0; i < 20 && contrast(bub2, "#FFFFFF") < 4.5; i += 1) bub2 = mixH(bub2, "#000000", 0.06);
+  const angle = 120 + ((t.slug.length * 37) % 90);
   themeRules.push(`[data-theme="${key}"] {
   color-scheme: dark;
   --primary: ${p.primary};
@@ -435,6 +443,22 @@ html.glass-desktop[data-theme="${key}"] {
   --g-amb-a: 0.32; --g-amb-b: 0.22; --g-amb-c: 0.12; --g-amb-d: 0.18;
   --g-scene: var(--s2t-scene);
   --gd-aurora-base-1: ${p.s0};
+}
+html[data-theme="${key}"] {
+  --dbub-own: linear-gradient(${angle}deg, rgba(${rgbList(p.primary)}, 0.96), rgba(${rgbList(bub2)}, 0.96));
+  --dbub-own-solid: ${p.primary};
+  --dbub-edge: rgba(${rgbList(p.primary2)}, 0.34);
+  --dbub-lift: 0 4px 16px rgba(${rgbList(p.primary2)}, 0.26);
+  --dbub-in: linear-gradient(180deg, rgba(${rgbList(p.s3)}, 0.95), rgba(${rgbList(p.s2)}, 0.95));
+  --dbub-in-solid: ${p.s2};
+}
+html.glass-desktop[data-theme="${key}"],
+html.glass-ui[data-theme="${key}"] {
+  --gd-row-active: rgba(${rgbList(p.primary)}, 0.26);
+  --gd-row-hover: rgba(${rgbList(p.light)}, 0.07);
+  --g-tint-top: rgba(${rgbList(p.light)}, 0.15);
+  --g-rim-a: rgba(${rgbList(mixH(p.light, "#FFFFFF", 0.5))}, 0.9);
+  --g-rim-e: rgba(${rgbList(p.primary2)}, 0.5);
 }
 html:not(.glass-ui):not(.glass-desktop)[data-theme="${key}"] body {
   background: var(--s2t-scene), ${p.s0};

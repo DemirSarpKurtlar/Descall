@@ -19,6 +19,7 @@ const CHAT_COSMETIC_KEYS = [
   "equippedAvatarEffect",
   "equippedChatBubble",
   "equippedPresenceFlare",
+  "equippedProfileColor", // Market 2.0 set name colour (NameEffectText falls back to it in chat)
 ];
 
 const ALL_COSMETIC_KEYS = [

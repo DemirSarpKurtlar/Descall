@@ -10,11 +10,11 @@ import { useLocale } from "../../../context/LocaleContext";
 import { formatAppDateTime } from "../../../lib/datetime";
 import { ChevronLeft, ChevronRight, Monitor, Moon, Pause, Save, Smartphone, Zap } from "./icons.js";
 import { shop2Api } from "./adminShop2Api.js";
-import { Coin, Dialog, Drawer, Pill, ReasonField, Seg, Skel, Thumb, useFmt } from "./ui.jsx";
+import { Coin, Dialog, Drawer, Pill, ReasonField, Seg, Skel, Switch, Thumb, useFmt } from "./ui.jsx";
 import { NumBox } from "./AlgorithmPanel.jsx";
 import { changedPaths, clock, discountBuckets, istDay, monthGrid, nextNight, nightHours, reasonOk, weekdayMon } from "./shop2Model.js";
 
-const DEFAULT = { mode: "calendar", weekdays: [1, 4], dates: [], skipDates: [], openFrom: "22:00", openTo: "02:00", cards: 6, perCardBuy: 1, perNightCap: 3, discountMin: 25, discountMax: 60, eligibility: { minAccountDays: 7, activeDays: 3 } };
+const DEFAULT = { mode: "calendar", weekdays: [4, 5], dates: [], skipDates: [], openFrom: "22:00", openTo: "02:00", cards: 6, flips: 3, keepMax: 2, discountMin: 15, discountMax: 60, skew: 2.2, eligibility: { minAccountDays: 0, premiumOnly: false } };
 const hhmm = (h) => `${String(Math.floor(h) % 24).padStart(2, "0")}:${h % 1 ? "30" : "00"}`;
 const hours = (s) => {
   const [h, m] = String(s || "0:0").split(":").map(Number);
@@ -36,17 +36,31 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(null); // "open" | "skip"
   const [fullReport, setFullReport] = useState(false);
+  const [pv, setPv] = useState(null); // live preview deck + eligible count
 
   useEffect(() => {
     if (open) {
       setS(saved);
       setReason("");
-      setFlipped(Object.fromEntries((data?.preview?.cards || []).map((c, i) => [i, Boolean(c.flipped)])));
+      setFlipped({ 0: true, 1: true, 2: true });
+      setPv(null);
     }
   }, [open, saved, data]);
 
+  // The deck the sample user would get with these settings (server draws it, nothing saved).
+  useEffect(() => {
+    if (!open) return undefined;
+    const id = setTimeout(() => {
+      shop2Api
+        .nightPreview({ cards: s.cards, discountMin: s.discountMin, discountMax: s.discountMax, skew: s.skew, eligibility: { minAccountDays: s.eligibility.minAccountDays || undefined, premiumOnly: s.eligibility.premiumOnly || undefined } })
+        .then(setPv)
+        .catch(() => {});
+    }, 350);
+    return () => clearTimeout(id);
+  }, [open, s.cards, s.discountMin, s.discountMax, s.skew, s.eligibility.minAccountDays, s.eligibility.premiumOnly]);
+
   const changes = changedPaths(s, saved);
-  const next = nextNight(s, now);
+  const next = changes.length ? nextNight(s, now) : data?.open ? null : data?.next?.at || nextNight(s, now);
   const dist = discountBuckets(s.discountMin, s.discountMax);
   const distMax = Math.max(0.01, ...dist.buckets.map((b) => b.weight));
   const set = (patch) => setS((x) => ({ ...x, ...patch }));
@@ -82,7 +96,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
   const save = async () => {
     setBusy(true);
     try {
-      await shop2Api.saveNightMarket(s, reason.trim());
+      await shop2Api.saveNightMarket(s, saved, reason.trim(), data?.raw);
       notify(t("adminShop2.toast.nightSaved"));
       onSaved?.();
       onClose();
@@ -92,8 +106,9 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
       setBusy(false);
     }
   };
-  const cards = data?.preview?.cards || [];
-  const sample = data?.preview?.user;
+  const cards = pv?.cards || data?.preview?.cards || [];
+  const sample = null;
+  const serverDist = (pv?.distribution?.length ? pv.distribution : data?.distribution) || [];
   const closesIn = (data?.open?.closesAt ? Date.parse(data.open.closesAt) : null) ?? (next ? Date.parse(next) + span * 3600000 : null);
 
   return (
@@ -218,16 +233,24 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
                   <b className="tnum">{t("adminShop2.nm.discountV", { a: s.discountMin, b: s.discountMax })}</b>
                 </div>
                 <div className="as2-dist">
-                  {dist.buckets.map((b) => (
-                    <i key={b.from} className={b.inside ? "is-in" : ""} style={{ height: `${Math.max(8, (b.weight / distMax) * 100)}%` }} title={`%${b.from}`} />
-                  ))}
+                  {serverDist.length
+                    ? serverDist.map((b) => {
+                        const m = Math.max(0.01, ...serverDist.map((x) => Number(x.share) || 0));
+                        return <i key={b.pct} className="is-in" style={{ height: `${Math.max(6, ((Number(b.share) || 0) / m) * 100)}%` }} title={`%${b.pct} · ${b.share}%`} />;
+                      })
+                    : dist.buckets.map((b) => <i key={b.from} className={b.inside ? "is-in" : ""} style={{ height: `${Math.max(8, (b.weight / distMax) * 100)}%` }} title={`%${b.from}`} />)}
                 </div>
                 <div className="as2-dual">
                   <i className="as2-dual-fill" style={{ left: `${((s.discountMin - 10) / 60) * 100}%`, right: `${100 - ((s.discountMax - 10) / 60) * 100}%` }} />
                   <input type="range" className="as2-range" min="10" max="70" step="5" value={s.discountMin} onChange={(e) => set({ discountMin: Math.min(Number(e.target.value), s.discountMax - 5) })} aria-label={t("adminShop2.nm.discountMin")} />
                   <input type="range" className="as2-range" min="10" max="70" step="5" value={s.discountMax} onChange={(e) => set({ discountMax: Math.max(Number(e.target.value), s.discountMin + 5) })} aria-label={t("adminShop2.nm.discountMax")} />
                 </div>
-                <p className="as2-hint">{t("adminShop2.nm.discountHint", { mean: dist.mean })}</p>
+                <p className="as2-hint">{t("adminShop2.nm.discountHint", { mean: serverDist.length ? Math.round(serverDist.reduce((a, b) => a + b.pct * (Number(b.share) || 0), 0) / Math.max(1, serverDist.reduce((a, b) => a + (Number(b.share) || 0), 0))) : dist.mean })}</p>
+                <label className="as2-tg">
+                  <span className="as2-muted">{t("adminShop2.nm.skew")}</span>
+                  <input type="range" className="as2-range" min="0.5" max="6" step="0.1" value={s.skew} onChange={(e) => set({ skew: Number(e.target.value) })} style={{ "--rc": "#8b62f0", "--fill": `${((s.skew - 0.5) / 5.5) * 100}%` }} aria-label={t("adminShop2.nm.skew")} />
+                  <b className="tnum">{f.n(s.skew, { maximumFractionDigits: 1 })}</b>
+                </label>
               </div>
             </div>
           </div>
@@ -240,17 +263,21 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
             <div className="as2-nm-box">
               <span className="as2-cap">{t("adminShop2.nm.perCard")}</span>
               <div className="as2-num-grid is-2">
-                <NumBox label={t("adminShop2.nm.perCardBuy")} value={s.perCardBuy} onChange={(v) => set({ perCardBuy: v })} min={1} max={3} />
-                <NumBox label={t("adminShop2.nm.perNight")} value={s.perNightCap} onChange={(v) => set({ perNightCap: v })} min={1} max={8} />
+                <NumBox label={t("adminShop2.nm.flips")} value={s.flips} onChange={(v) => set({ flips: Math.min(v, s.cards) })} min={1} max={12} />
+                <NumBox label={t("adminShop2.nm.perNight")} value={s.keepMax} onChange={(v) => set({ keepMax: Math.min(v, s.flips) })} min={1} max={12} />
               </div>
             </div>
             <div className="as2-nm-box">
               <span className="as2-cap">{t("adminShop2.nm.who")}</span>
               <div className="as2-num-grid is-2">
-                <NumBox label={t("adminShop2.nm.accountDays")} value={s.eligibility.minAccountDays} unit={t("adminShop2.unit.days")} onChange={(v) => set({ eligibility: { ...s.eligibility, minAccountDays: v } })} max={365} />
-                <NumBox label={t("adminShop2.nm.activeDays")} value={s.eligibility.activeDays} unit={t("adminShop2.unit.days")} onChange={(v) => set({ eligibility: { ...s.eligibility, activeDays: v } })} max={30} />
+                <NumBox label={t("adminShop2.nm.accountDays")} value={s.eligibility.minAccountDays} unit={t("adminShop2.unit.days")} onChange={(v) => set({ eligibility: { ...s.eligibility, minAccountDays: v } })} max={3650} />
+                <label className="as2-numbox as2-nm-prem">
+                  <small>{t("adminShop2.nm.premiumOnly")}</small>
+                  <Switch checked={Boolean(s.eligibility.premiumOnly)} onChange={(v) => set({ eligibility: { ...s.eligibility, premiumOnly: v } })} label={t("adminShop2.nm.premiumOnly")} />
+                </label>
               </div>
-              <small className="as2-muted tnum">{t("adminShop2.nm.eligible", { n: f.n(data.eligibleCount ?? 0) })}</small>
+              <small className="as2-muted tnum">{t("adminShop2.nm.eligible", { n: f.n(pv?.eligibleUsers ?? data.eligibleCount ?? 0) })}</small>
+              {changedPaths(s.eligibility, saved.eligibility).length ? <small className="as2-hint is-amber">{t("adminShop2.nm.eligibleNote")}</small> : null}
             </div>
           </div>
 
@@ -282,7 +309,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
                       <span className="as2-nmc-front">
                         {c ? <Thumb item={c.item} size={46} /> : null}
                         <b className="as2-nmc-off tnum">−%{c?.discount ?? s.discountMin}</b>
-                        <Coin value={c ? Math.round((c.item?.price_descoin || 0) * (1 - (c.discount || 0) / 100)) : 0} size="sm" />
+                        <Coin value={c ? c.price || Math.round((c.item?.price_descoin || 0) * (1 - (c.discount || 0) / 100)) : 0} size="sm" />
                       </span>
                     </span>
                   </button>
@@ -300,14 +327,17 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
           <div className="as2-nm-fc">
             <Pill tone="violet">{t("adminShop2.nm.forecast")}</Pill>
             <span>
-              {t("adminShop2.nm.fcJoin")} <b className="tnum">{f.n(data.forecast?.participants ?? 0)}</b>
+              {t("adminShop2.nm.fcJoin")} <b className="tnum">{data.forecast?.participants == null ? "–" : f.n(data.forecast.participants)}</b>
             </span>
             <span>
-              {t("adminShop2.nm.fcRevenue")} <b className="tnum">{f.c(data.forecast?.revenue ?? 0)} D</b>
+              {t("adminShop2.nm.fcRevenue")} <b className="tnum">{data.forecast?.revenue == null ? "–" : `${f.c(data.forecast.revenue)} D`}</b>
             </span>
-            <span>
-              {t("adminShop2.nm.fcPeak")} <b className="tnum">{data.forecast?.peak || "22:00"}</b>
-            </span>
+            {data.forecast?.purchases != null ? (
+              <span>
+                {t("adminShop2.nm.fcBuys")} <b className="tnum">{f.n(data.forecast.purchases)}</b>
+              </span>
+            ) : null}
+            {!data.forecast?.basis ? <span className="as2-muted">{t("adminShop2.nm.fcNoBasis")}</span> : null}
           </div>
 
           <div className="as2-nm-box">
@@ -329,14 +359,19 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
                 </tr>
               </thead>
               <tbody>
+                {!(data.past || []).length ? (
+                  <tr>
+                    <td colSpan={6} className="as2-muted">{t("adminShop2.nm.noPast")}</td>
+                  </tr>
+                ) : null}
                 {(data.past || []).slice(0, fullReport ? 20 : 3).map((p) => (
-                  <tr key={p.day}>
+                  <tr key={p.id || p.day}>
                     <td>{formatAppDateTime(new Date(Date.parse(`${p.day}T19:00:00Z`)).toISOString(), locale, { weekday: "short", day: "numeric", month: "short" })}</td>
                     <td className="tnum">{f.n(p.participants)}</td>
-                    <td className="tnum">{f.p(p.flippedPct, 0)}</td>
+                    <td className="tnum">{f.n(p.flips)}</td>
                     <td className="tnum">{f.p(p.buyPct, 0)}</td>
                     <td className="tnum">{f.c(p.revenue)}</td>
-                    <td className="tnum">{f.p(p.avgDiscount, 0)}</td>
+                    <td className="tnum">{p.avgDiscount == null ? "–" : f.p(p.avgDiscount, 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -347,9 +382,10 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
       <NightConfirm
         kind={confirm}
         onClose={() => setConfirm(null)}
-        onDone={(kind) => {
+        upcoming={data?.upcoming}
+        onDone={(kind, res) => {
           setConfirm(null);
-          notify(t(kind === "open" ? "adminShop2.toast.nightOpened" : "adminShop2.toast.weekSkipped"), kind === "open" ? { undo: () => shop2Api.closeNightNow("undo").then(onSaved).catch(fail), ms: 5 * 60000 } : {});
+          notify(t(kind === "open" ? "adminShop2.toast.nightOpened" : "adminShop2.toast.weekSkipped", { n: res?.skipped ?? 0 }), kind === "open" && res?.id ? { undo: () => shop2Api.undoNightOpen(res.id).then(onSaved).catch(fail), ms: 5 * 60000 } : {});
           onSaved?.();
         }}
         fail={fail}
@@ -358,7 +394,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
   );
 }
 
-function NightConfirm({ kind, onClose, onDone, fail }) {
+function NightConfirm({ kind, upcoming, onClose, onDone, fail }) {
   const { t } = useLocale();
   const [reason, setReason] = useState("");
   const [minutes, setMinutes] = useState(60);
@@ -372,9 +408,8 @@ function NightConfirm({ kind, onClose, onDone, fail }) {
   const go = async () => {
     setBusy(true);
     try {
-      if (kind === "open") await shop2Api.openNightNow(reason.trim(), minutes);
-      else await shop2Api.skipWeek(reason.trim());
-      onDone(kind);
+      const res = kind === "open" ? await shop2Api.openNightNow(reason.trim(), minutes) : await shop2Api.skipWeek(reason.trim(), upcoming);
+      onDone(kind, res);
     } catch (e) {
       fail(e);
     } finally {
@@ -404,7 +439,7 @@ function NightConfirm({ kind, onClose, onDone, fail }) {
     >
       {kind === "open" ? (
         <div className="as2-num-grid">
-          <NumBox label={t("adminShop2.nm.openFor")} value={minutes} unit={t("adminShop2.unit.min")} onChange={setMinutes} min={15} max={360} step={15} />
+          <NumBox label={t("adminShop2.nm.openFor")} value={minutes} unit={t("adminShop2.unit.min")} onChange={setMinutes} min={60} max={720} step={60} />
         </div>
       ) : null}
       <ReasonField value={reason} onChange={setReason} autoFocus />

@@ -83,4 +83,26 @@ assert.deepEqual(profileColorStyle("s2-pc-cosmos"), { "--pc-a": "#141a3e", "--pc
 assert.match(profileColorSwatch({ equippedProfileColor: { effect_key: "s2-pc-cocoa" } }), /^linear-gradient\(180deg, #4a2a1a 0%, #2e1a10 55%, #160c06 100%\)$/);
 assert.equal(profileColorClass({ equippedProfileColor: { effect_key: "s2-nope" } }), "");
 
+// Set name colour in chat (coordinator decision): message authors carry equippedProfileColor,
+// NameEffectText falls back to the set colour when no name effect is worn, and both inks read
+// at AA (4.5:1) on the dark chat and the light chat.
+const userProfileSrc = readFileSync(join(here, "../../backend/lib/userProfile.js"), "utf8");
+const chatKeys = userProfileSrc.slice(userProfileSrc.indexOf("const CHAT_COSMETIC_KEYS"), userProfileSrc.indexOf("];", userProfileSrc.indexOf("const CHAT_COSMETIC_KEYS")));
+assert.match(chatKeys, /"equippedProfileColor"/, "chat senders carry the card colour");
+const cosmeticsSrc = readFileSync(join(here, "../components/ui/Cosmetics.jsx"), "utf8");
+const net = cosmeticsSrc.slice(cosmeticsSrc.indexOf("export function NameEffectText"), cosmeticsSrc.indexOf("\n}\n", cosmeticsSrc.indexOf("export function NameEffectText")));
+assert.ok(net.indexOf("equippedNameEffect") < net.indexOf("equippedProfileColor"), "a worn name effect wins");
+assert.match(net, /startsWith\("s2-set-"\) && shop2ProfileColor\(colourKey\)/, "only known Market 2.0 set colours");
+assert.match(net, /`s2-name-colour pc-\$\{colourKey\}`/);
+const cr = (x, y) => { const [p, q] = [lum(x), lum(y)].sort((m, n) => n - m); return (p + 0.05) / (q + 0.05); };
+for (const k of SET_KEYS) {
+  const rule = css.match(new RegExp(`\\.pc-s2-set-${k} \\{ --pc-name: linear-gradient\\(100deg, ([^)]*)\\);`));
+  assert.ok(rule, `${k}: dark name ink`);
+  for (const hex of rule[1].match(/#[0-9a-f]{6}/g)) assert.ok(cr(hex, "#1b1d26") >= 4.5, `${k} ${hex} on dark chat`);
+  const light = css.match(new RegExp(`\\.pc-s2-set-${k} \\{ --pc-name-l: linear-gradient\\(100deg, (#[0-9a-f]{6}), (#[0-9a-f]{6})\\)`));
+  assert.ok(light, `${k}: light name ink`);
+  for (const hex of light.slice(1)) assert.ok(cr(hex, "#eef1f8") >= 4.5, `${k} ${hex} on light chat`);
+}
+assert.match(css, /\.s2-name-colour \{[^}]*background-image: var\(--pc-name, linear-gradient\(currentColor, currentColor\)\)/, "never invisible without a palette var");
+
 console.log(`shop2-c2.selftest ok (${items.length} items)`);
