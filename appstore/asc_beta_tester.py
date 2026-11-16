@@ -123,19 +123,29 @@ if MODE == "restore-admin":
     # Owner request (16 Nov 2026): give TESTER_EMAIL the ADMIN role back. An existing user keeps
     # its other roles and gets ADMIN added; a user no longer on the team gets an ADMIN invitation.
     # The Account Holder role cannot be changed through the API and is never touched.
+    # `email` may also be a user id from list-users (UUID), so no address has to be sent.
     if not EMAIL:
-        print("::error::email is required"); sys.exit(2)
-    users, invites = find_user_and_invites()
+        print("::error::email or user id is required"); sys.exit(2)
+    import re
+    if re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", EMAIL.lower()):
+        users, invites = [call("GET", f"/v1/users/{EMAIL.lower()}")["data"]], []
+    else:
+        users, invites = find_user_and_invites()
     if users:
         u = users[0]; a = u["attributes"]
         roles = list(a.get("roles") or [])
-        if "ADMIN" in roles or "ACCOUNT_HOLDER" in roles:
-            print(f"RESULT already has {roles}; nothing to change")
+        if "ACCOUNT_HOLDER" in roles:
+            print(f"RESULT account holder {roles}; not touched")
             sys.exit(0)
-        new_roles = ["ADMIN"] + [r for r in roles if r != "ADMIN"]
+        new_roles = roles if "ADMIN" in roles else ["ADMIN"] + roles
+        if new_roles == roles and a.get("provisioningAllowed") and a.get("allAppsVisible"):
+            print(f"RESULT already {roles} with certificates access; nothing to change")
+            sys.exit(0)
+        # provisioningAllowed = "Access to Certificates, Identifiers & Profiles".
         j = call("PATCH", f"/v1/users/{u['id']}", json={"data": {"type": "users", "id": u["id"],
             "attributes": {"roles": new_roles, "allAppsVisible": True, "provisioningAllowed": True}}})
-        print(f"RESULT user {u['id']} roles now {j['data']['attributes'].get('roles')}")
+        b = j["data"]["attributes"]
+        print(f"RESULT user {u['id']} roles={b.get('roles')} allAppsVisible={b.get('allAppsVisible')} provisioning={b.get('provisioningAllowed')}")
         sys.exit(0)
     if invites:
         print("RESULT an invitation is already pending; accept it from the email Apple sent")
