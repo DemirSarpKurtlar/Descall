@@ -108,7 +108,8 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
   const cards = pv?.cards || data?.preview?.cards || [];
   const sample = null;
   const serverDist = (pv?.distribution?.length ? pv.distribution : data?.distribution) || [];
-  const closesIn = (data?.open?.closesAt ? Date.parse(data.open.closesAt) : null) ?? (next ? Date.parse(next) + span * 3600000 : null);
+  const isOpen = Boolean(data?.open?.closesAt && Date.parse(data.open.closesAt) > now);
+  const countTo = isOpen ? Date.parse(data.open.closesAt) : next ? Date.parse(next) : null;
 
   return (
     <Drawer
@@ -317,7 +318,7 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
             </div>
             <div className="as2-nm-pvf">
               <span>
-                {t("adminShop2.nm.closesIn")} <b className="tnum">{closesIn ? clock(closesIn - now) : "–"}</b>
+                {t(isOpen ? "adminShop2.nm.closesIn" : "adminShop2.nm.opensIn")} <b className="tnum">{countTo ? clock(countTo - now) : "–"}</b>
               </span>
               <span className="as2-muted">{t("adminShop2.nm.vanish")}</span>
             </div>

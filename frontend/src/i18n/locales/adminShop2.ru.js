@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_RU = {
     "colSet": "Набор",
     "colStock": "Запас",
     "colRevenue": "Выручка 7 д",
-    "colConv": "Конверсия",
+    "colConv": "Продажи 7 д",
     "colSpeed": "Темп продаж",
     "colAction": "Действие",
     "unlimited": "Без ограничений",
@@ -584,7 +584,8 @@ export const ADMIN_SHOP2_RU = {
     "skew": "Кривая скидок",
     "fcBuys": "Покупки",
     "fcNoBasis": "Прошлых ночей ещё нет",
-    "noPast": "Прошлых ночей ещё нет"
+    "noPast": "Прошлых ночей ещё нет",
+    "opensIn": "До открытия"
   },
   "lim": {
     "title": "Правила подарков, обновлений и покупок",

@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_EN = {
     "colSet": "Set",
     "colStock": "Stock",
     "colRevenue": "Revenue 7d",
-    "colConv": "Conversion",
+    "colConv": "Sales 7d",
     "colSpeed": "Sales speed",
     "colAction": "Action",
     "unlimited": "Unlimited",
@@ -584,7 +584,8 @@ export const ADMIN_SHOP2_EN = {
     "skew": "Discount curve",
     "fcBuys": "Buys",
     "fcNoBasis": "No past nights yet",
-    "noPast": "No past nights yet"
+    "noPast": "No past nights yet",
+    "opensIn": "Opens in"
   },
   "lim": {
     "title": "Gift, refresh and purchase rules",

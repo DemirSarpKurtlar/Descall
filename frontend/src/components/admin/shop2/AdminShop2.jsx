@@ -232,13 +232,6 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
             <span className="as2-reset-l">{t("adminShop2.resetAt")}</span>
             <b className="tnum">{clock(resetAt - now)}</b>
           </span>
-          {live != null ? (
-            <span className="as2-live" title={t("adminShop2.liveInShopHint")}>
-              <Store size={14} />
-              <b className="tnum">{f.n(live)}</b>
-              <span>{t("adminShop2.liveInShop")}</span>
-            </span>
-          ) : null}
           <GlobalSearch inputRef={searchRef} sets={sets || []} onUser={openUser} onSet={openSet} />
           <button type="button" className="as2-btn" onClick={() => openUser(null)} data-testid="as2-user-storefront">
             <Eye size={15} />
@@ -263,6 +256,13 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
             { id: "kayit", label: (<><History size={14} />{t("adminShop2.view.kayit")}</>) },
           ]}
         />
+        {live != null ? (
+            <span className="as2-live as2-ml" title={t("adminShop2.liveInShopHint")}>
+              <Store size={14} />
+              <b className="tnum">{f.n(live)}</b>
+              <span>{t("adminShop2.liveInShop")}</span>
+            </span>
+          ) : null}
         {loadErr ? (
           <p className="as2-err" role="alert">
             {t(loadErr)}

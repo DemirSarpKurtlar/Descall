@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_PT_BR = {
     "colSet": "Conjunto",
     "colStock": "Estoque",
     "colRevenue": "Receita 7 d",
-    "colConv": "Conversão",
+    "colConv": "Vendas 7 d",
     "colSpeed": "Ritmo de venda",
     "colAction": "Ação",
     "unlimited": "Ilimitado",
@@ -584,7 +584,8 @@ export const ADMIN_SHOP2_PT_BR = {
     "skew": "Curva de desconto",
     "fcBuys": "Compras",
     "fcNoBasis": "Ainda sem noites anteriores",
-    "noPast": "Ainda sem noites anteriores"
+    "noPast": "Ainda sem noites anteriores",
+    "opensIn": "Abre em"
   },
   "lim": {
     "title": "Regras de presentes, renovação e compras",

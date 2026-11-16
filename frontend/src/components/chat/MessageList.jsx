@@ -10,12 +10,15 @@ import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
 import { previewUrlOf } from "../../lib/linkPreview";
+import { isLookText } from "../../lib/shop2Look.js";
 import { stickerOf } from "../../lib/descallStickers";
 import { dmSeen, groupSeenBy, namesSummary } from "../../lib/readReceipts";
 import { useGroupReads, useReceiptsSetting } from "../../hooks/useReadReceipts";
 
 // Link preview cards load on first use (messaging phase 4).
 const LinkPreviewCard = lazy(() => import("./LinkPreviewCard.jsx"));
+// Market 2.0 "Arkadaşlarına göster": a look link renders the look card instead of a link preview.
+const Shop2LookCard = lazy(() => import("../shop2/LookCard.jsx"));
 import { Avatar } from "../ui/Avatar";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
@@ -2034,7 +2037,11 @@ function MessageBubbleView({
                 </span>
               ) : null}
               <InviteLinkEmbedList text={message.text} />
-              {previewUrl ? (
+              {isLookText(message.text) ? (
+                <Suspense fallback={null}>
+                  <Shop2LookCard text={message.text} />
+                </Suspense>
+              ) : previewUrl ? (
                 <Suspense fallback={null}>
                   <LinkPreviewCard url={previewUrl} />
                 </Suspense>

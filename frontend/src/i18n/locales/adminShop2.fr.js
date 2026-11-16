@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_FR = {
     "colSet": "Set",
     "colStock": "Stock",
     "colRevenue": "Revenus 7 j",
-    "colConv": "Conversion",
+    "colConv": "Ventes 7 j",
     "colSpeed": "Rythme de vente",
     "colAction": "Action",
     "unlimited": "Illimité",
@@ -584,7 +584,8 @@ export const ADMIN_SHOP2_FR = {
     "skew": "Courbe de remise",
     "fcBuys": "Achats",
     "fcNoBasis": "Pas encore de nuits passées",
-    "noPast": "Pas encore de nuits passées"
+    "noPast": "Pas encore de nuits passées",
+    "opensIn": "Ouvre dans"
   },
   "lim": {
     "title": "Règles de cadeaux, de renouvellement et d'achat",

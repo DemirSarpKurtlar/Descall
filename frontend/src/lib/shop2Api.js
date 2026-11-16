@@ -77,7 +77,10 @@ export const shop2Api = {
   outfits: () => get("/outfits"),
   saveOutfit: ({ name, look }) => post("/outfits", { name, ...(look ? { look } : {}) }),
   applyOutfit: (id) => post(`/outfits/${enc(id)}/apply`),
-  shareLook: ({ setKey, itemIds }) => post("/share", { setKey, itemIds }),
+  /** "Arkadaşlarına göster": DM the look link to 1-10 friends; per-recipient results. */
+  shareLook: ({ setKey, itemId, toUserIds, message }) =>
+    post("/share", { ...(setKey ? { setKey } : { itemId }), toUserIds, ...(message ? { message } : {}) }),
+  catalog: () => get("/catalog"),
 
   wishlist: () => get("/wishlist"),
   toggleWishlist: (itemId, on = true) => post("/wishlist", { itemId, ...(on ? {} : { remove: true }) }),

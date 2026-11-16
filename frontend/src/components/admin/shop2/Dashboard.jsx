@@ -274,7 +274,7 @@ export function SetsTable({ sets, now, flash, onOpenSet, onRecall, onUndoRecall 
                   )}
                 </span>
                 <span role="cell" className="is-r tnum">{s.revenue7d ? f.c(s.revenue7d) : "–"}</span>
-                <span role="cell" className="is-r tnum">{s.conversionPct != null ? f.p(s.conversionPct) : "–"}</span>
+                <span role="cell" className="is-r tnum">{s.conversionPct != null ? f.p(s.conversionPct) : s.sold7d ? f.n(s.sold7d) : "–"}</span>
                 <span role="cell">{s.velocity?.length > 1 ? <Spark values={s.velocity} tone={trend(s.velocity) === "down" ? "red" : "brand"} w={64} h={20} fill={false} /> : <span className="as2-muted">{t("adminShop2.sets.noSales")}</span>}</span>
                 <span role="cell" className="is-r as2-row-acts" onClick={(e) => e.stopPropagation()}>
                   {st === "recalled" ? (

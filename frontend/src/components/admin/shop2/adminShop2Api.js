@@ -33,6 +33,11 @@ let LOCALE = "tr";
 let catalogCache = null; // { at, items }
 let rulesCache = null; // last mapped rules (bands for slot conversion)
 let limitsCache = null; // last raw limits
+let setIndex = {}; // key → { name, palette, pieces } for names in the drawer, queue and reasons
+function indexSets(list) {
+  for (const x of list || []) if (x?.key) setIndex[x.key] = { name: x.name, palette: x.palette, pieces: x.pieces };
+}
+const setName = (key) => setIndex[key]?.name || key;
 
 /** The page tells the adapters which language to pick from `{ tr, en, … }` names. */
 export function setApiLocale(l) {
@@ -237,7 +242,9 @@ async function dashboardFor(range) {
       }
     : null;
 
-  const sets = arr(d?.sets).map((s) => normSet(s));
+  const items = await liveCatalog().catch(() => []);
+  const sets = arr(d?.sets).map((s) => normSet(s, piecesByCatalog(items, s.key)));
+  indexSets(sets);
   const top7 = [...sets].filter((s) => s.revenue7d > 0).sort((a, b) => b.revenue7d - a.revenue7d).slice(0, 5).map((s) => ({ key: s.key, name: s.name, palette: s.palette, revenue: s.revenue7d }));
 
   return {
@@ -389,7 +396,7 @@ async function timelineFor(from, days) {
 }
 
 function queueRow(q) {
-  return { id: q.id, kind: QUEUE_KIND[q.kind] || q.kind, at: q.runAt, ref: q.kind === "rule_apply" ? null : `set:${q.ref}`, vars: { ref: q.ref }, detail: q.kind === "rule_apply" ? `v${q.ref}` : String(q.ref || ""), cancelable: true };
+  return { id: q.id, kind: QUEUE_KIND[q.kind] || q.kind, at: q.runAt, ref: q.kind === "rule_apply" ? null : `set:${q.ref}`, vars: { ref: q.ref }, detail: q.kind === "rule_apply" ? `v${q.ref}` : setName(String(q.ref || "")), cancelable: true };
 }
 
 /* ------------------------------------------------------------------ user storefront */
@@ -416,9 +423,9 @@ function whyFrom(reasons) {
       case "wishlist":
         return { key: "adminShop2.us.why.wishlist" };
       case "set_progress":
-        return { key: "adminShop2.us.why.setProgress", vars: { set: r.setKey } };
+        return { key: "adminShop2.us.why.setProgress", vars: { set: setName(r.setKey) } };
       case "set_piece":
-        return { key: "adminShop2.us.why.setPiece", vars: { set: r.setKey } };
+        return { key: "adminShop2.us.why.setPiece", vars: { set: setName(r.setKey) } };
       case "repeat_relaxed":
         return { key: "adminShop2.us.why.repeatRelaxed" };
       case "chance":
@@ -448,7 +455,7 @@ async function userStorefrontFor(userId, day) {
     slots: arr(r?.slots).map((s) => ({ slot: s.slot, item: normItem(s.item), locked: Boolean(s.locked), owned: Boolean(s.owned), why: whyFrom(s.reasons) })),
     excluded: { owned: num(ex.owned), recent: num(ex.repeat), recentDays: rulesCache?.live?.toggles?.noRepeatDays ?? 7, region: num(ex.category_off) + num(ex.rarity_off), newAccountCap: num(ex.new_account), pool, candidates: pool != null ? Math.max(0, pool - exSum) : null },
     relaxed: arr(r?.relaxed),
-    sets: arr(r?.sets).map((s) => ({ key: s.key, name: pickName(s.name), setPrice: num(s.setPrice), yourPrice: s.yourPrice, ownedPieces: num(s.owned), total: num(s.total) })),
+    sets: arr(r?.sets).map((s) => ({ key: s.key, name: pickName(s.name), palette: setIndex[s.key]?.palette || [], pieces: setIndex[s.key]?.pieces || {}, setPrice: num(s.setPrice), yourPrice: s.yourPrice, ownedPieces: num(s.owned), total: num(s.total) })),
     refresh: { used: Boolean(r?.refresh?.used), at: r?.refresh?.usedAt || null, free: Boolean(r?.refresh?.free), price: num(r?.refresh?.price, 150) },
     gifts: { sent: num(r?.gifts?.sentToday), cap: r?.gifts?.limitPerDay ?? L.gifts?.perDay ?? null, received: num(r?.gifts?.receivedToday), receiveCap: L.gifts?.receivePerDay ?? null, blocked: num(r?.gifts?.blockedToday) },
     nightMarket: r?.nightMarket || null,
@@ -595,7 +602,9 @@ export const shop2Api = {
 
   sets: async () => {
     const [r, items] = await Promise.all([adminFetch(`${BASE}/sets`), liveCatalog().catch(() => [])]);
-    return arr(r?.sets).map((s) => normSet(s, piecesByCatalog(items, s.key))).filter(Boolean);
+    const out = arr(r?.sets).map((s) => normSet(s, piecesByCatalog(items, s.key))).filter(Boolean);
+    indexSets(out);
+    return out;
   },
   set: async (key) => {
     const r = await adminFetch(`${BASE}/sets/${enc(key)}`);

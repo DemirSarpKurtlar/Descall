@@ -503,7 +503,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
                       <button type="button" className="as2-slot-b" onClick={() => pickSlot(slot)}>
                         {p ? (
                           <>
-                            <Thumb item={p} size={40} />
+                            <Thumb item={p} size={36} />
                             <span className="as2-slot-t">
                               <b>{name(p)}</b>
                               <small>

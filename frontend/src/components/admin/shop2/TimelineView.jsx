@@ -37,13 +37,13 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
   const { t, locale } = useLocale();
   const [span, setSpan] = useState("w2");
   const days = SPANS[span];
-  const [from, setFrom] = useState(() => (span === "day" ? addDays(istDay(now), -1) : timelineStart(now, 14)));
+  const [from, setFrom] = useState(() => (span === "day" ? addDays(istDay(now), -1) : timelineStart(now)));
   const [tl, setTl] = useState(null);
   const [audit, setAudit] = useState(null);
   const [cancel, setCancel] = useState(null);
 
   useEffect(() => {
-    setFrom(span === "day" ? addDays(istDay(Date.now()), -1) : span === "month" ? addDays(timelineStart(Date.now(), 7), 0) : timelineStart(Date.now(), 14));
+    setFrom(span === "day" ? addDays(istDay(Date.now()), -1) : span === "month" ? addDays(timelineStart(Date.now()), -7) : timelineStart(Date.now()));
   }, [span]);
 
   const load = useCallback(() => {
@@ -135,7 +135,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
               <ChevronRight size={15} />
             </button>
           </span>
-          <button type="button" className="as2-link as2-ml" onClick={() => setFrom(span === "day" ? addDays(istDay(now), -1) : timelineStart(now, 14))}>
+          <button type="button" className="as2-link as2-ml" onClick={() => setFrom(span === "day" ? addDays(istDay(now), -1) : span === "month" ? addDays(timelineStart(now), -7) : timelineStart(now))}>
             {t("adminShop2.tl.today")}
           </button>
         </div>

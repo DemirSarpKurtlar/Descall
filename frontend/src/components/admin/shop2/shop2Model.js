@@ -438,11 +438,10 @@ export function dayRange(from, days = 14) {
   return Array.from({ length: days }, (_, i) => addDays(from, i));
 }
 
-/** Monday of the week before `now` (the two-week view starts there, like the draft 9–22 Kasım). */
-export function timelineStart(now, days = 14) {
+/** Monday of this week (the two-week view starts there, like the draft 9–22 Kasım around Paz 15). */
+export function timelineStart(now) {
   const today = istDay(now);
-  const back = weekdayMon(today) + (days >= 14 ? 7 : 0);
-  return addDays(today, -back);
+  return addDays(today, -weekdayMon(today));
 }
 
 /** Fractional day position of an ISO time inside a window (0 = start of the first day). */

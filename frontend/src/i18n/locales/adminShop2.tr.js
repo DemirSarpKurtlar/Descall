@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_TR = {
     "colSet": "Set",
     "colStock": "Stok",
     "colRevenue": "Gelir 7g",
-    "colConv": "Dönüşüm",
+    "colConv": "Satış 7G",
     "colSpeed": "Satış hızı",
     "colAction": "İşlem",
     "unlimited": "Sınırsız",
@@ -584,7 +584,8 @@ export const ADMIN_SHOP2_TR = {
     "skew": "İndirim eğrisi",
     "fcBuys": "Alım",
     "fcNoBasis": "Önceki gece verisi yok",
-    "noPast": "Henüz geçmiş gece yok"
+    "noPast": "Henüz geçmiş gece yok",
+    "opensIn": "Açılmaya"
   },
   "lim": {
     "title": "Hediye, yenileme ve satın alma kuralları",

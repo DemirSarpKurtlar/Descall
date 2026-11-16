@@ -19,7 +19,7 @@ assert.equal(M.clock(M.nextReset(NOW) - NOW), "07:42:18", "draft A1 header count
 assert.equal(M.addDays("2026-11-30", 1), "2026-12-01");
 assert.equal(M.weekdayMon("2026-11-15"), 6, "Sunday");
 assert.equal(M.weekdayMon("2026-11-17"), 1, "Tuesday");
-assert.equal(M.timelineStart(NOW, 14), "2026-11-02", "two weeks from the Monday a week back");
+assert.equal(M.timelineStart(NOW), "2026-11-09", "two weeks from this Monday (9–22 Kasım)");
 assert.deepEqual(M.waitLabel(2 * 86400000 + 5 * 3600000), { key: "adminShop2.dur.dh", vars: { d: 2, h: "05" } }, "2g 05s");
 assert.equal(M.waitLabel(7 * 3600000).vars.c, "07:00:00");
 assert.equal(M.undoLeft(new Date(NOW + 28 * 60000 + 14000).toISOString(), NOW), 28 * 60 + 14);

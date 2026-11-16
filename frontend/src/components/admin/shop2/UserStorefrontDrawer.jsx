@@ -243,6 +243,7 @@ function whyText(t, list, f) {
     .map((w) => {
       const vars = { ...(w.vars || {}) };
       if (vars.r) vars.r = t(`adminShop2.rarity.${vars.r}`);
+      if (vars.w != null) vars.w = f.n(vars.w, { maximumFractionDigits: 2 });
       if (vars.a != null) vars.a = f.n(vars.a);
       if (vars.b != null) vars.b = Number(vars.b) >= 100000 ? "∞" : f.n(vars.b);
       return t(w.key, vars);
