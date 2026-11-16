@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "../../config/api";
+import { useLocale } from "../../context/LocaleContext";
+import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 
 /**
  * Market 2.0 avatar frames and profile badges (catalog group C1). Only "s2-" rows render:
@@ -48,11 +50,13 @@ export function Shop2FrameOverlay({ src, eager = false }) {
 
 /** The shop profile badge someone wears, next to their name (beside country + special badge). */
 export function Shop2Badge({ user, compact = false, className = "" }) {
+  const { locale } = useLocale();
   const item = user?.equippedBadge;
   const src = shop2AssetSrc(item);
   if (!src) return null;
   const px = compact ? 16 : 18;
-  const label = item.name || "";
+  // Lean records carry `i18n.name` (7 languages); the English row name is the fallback.
+  const label = localizedShopItemName(item, locale) || "";
   return (
     <img
       className={`s2-badge${compact ? " s2-badge-compact" : ""}${className ? ` ${className}` : ""}`}

@@ -6710,8 +6710,12 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
   flex: none;
   scroll-snap-align: start;
 }
-.s2-hs-vp.is-dragging {
+.s2-hs-vp.is-dragging,
+.s2-hs-vp.is-gliding,
+.s2-hs-vp.is-wheeling {
   scroll-snap-type: none;
+}
+.s2-hs-vp.is-dragging {
   cursor: grabbing;
   user-select: none;
 }

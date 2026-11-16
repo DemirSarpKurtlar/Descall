@@ -194,8 +194,10 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const [blocked, setBlocked] = useState(null);
   const friendId = friend?.id ?? null;
   const quoteKey = target?.nightCardIndex != null ? `night:${target.nightCardIndex}` : target?.setKey ? `set:${target.setKey}` : item ? `item:${item.id}` : "";
+  const quoteId = `${friendId}|${quoteKey}`;
   useEffect(() => {
-    setQuote(null);
+    // A new delivery time keeps the friend's price; only the reason is checked again.
+    setQuote((q) => (q && q.quoteId === quoteId ? q : null));
     setBlocked(null);
     if (friendId == null || !quoteKey) return undefined;
     let off = false;
@@ -207,7 +209,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     const timer = setTimeout(() => {
       shop2Api.giftQuote(body).then((q) => {
         if (off) return;
-        if (q?.ok) setQuote(q);
+        if (q?.ok) setQuote({ ...q, quoteId });
         else if (q && q.ok === false) setBlocked(serverMessage(q) || t("shop2.errors.gift"));
       }).catch((err) => {
         // 409 recipient_owns / 410 not_available / 404: the server's reason, translated.
@@ -220,8 +222,9 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friendId, quoteKey, sendAtIso]);
-  const price = quote?.price != null ? Number(quote.price) : item ? Number(target.price ?? item.price_descoin) : set ? giftPrice({ set, friend }) : 0;
-  const setDeduct = quote?.ownedDeducted != null ? Number(quote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
+  const liveQuote = quote && quote.quoteId === quoteId ? quote : null;
+  const price = liveQuote?.price != null ? Number(liveQuote.price) : item ? Number(target.price ?? item.price_descoin) : set ? giftPrice({ set, friend }) : 0;
+  const setDeduct = liveQuote?.ownedDeducted != null ? Number(liveQuote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
   const sender = s2.me?.displayName || s2.me?.username || "";
   const limits = s2.data.gifts.limits;
   const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !blocked && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));

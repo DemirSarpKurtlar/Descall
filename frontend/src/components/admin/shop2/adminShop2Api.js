@@ -586,10 +586,11 @@ function auditRow(e) {
     actor: e.actorUsername || null,
     action,
     reason: meta.reason || meta.note || null,
-    target: e.target || null,
+    // "Tüm ürünlerde satış" stores on / off as its target: the title says it instead.
+    target: action === "direct_sale" ? null : e.target || null,
     setKey: action.startsWith("set_") || action.startsWith("ab_") ? e.target : null,
     targetUserId: action === "free_refresh" || action === "storefront_regenerate" ? e.target : null,
-    vars: { v: meta.version ?? e.target ?? "", n: Number(meta.count) || 0 },
+    vars: { v: meta.version ?? e.target ?? "", n: Number(meta.count) || 0, on: String(meta.allowed ?? e.target) === "true" ? "true" : "false" },
     undoable: Boolean(win),
     undoUntil: win ? new Date(Date.parse(e.at) + win * 60000).toISOString() : null,
     meta,

@@ -121,6 +121,13 @@ export const COINPOP_RU = {
       "promo": "Промокод",
       "premium_gift": "Подарок Descall+",
       "other": "Другое"
+    },
+    "shop2": {
+      "gift": "Подарок отправлен",
+      "refresh": "Витрина обновлена",
+      "giftRecall": "Подарок отозван",
+      "giftOverlap": "Возврат разницы за подарок",
+      "setRecall": "Набор снят, возврат"
     }
   },
   "settings": {

@@ -778,6 +778,8 @@ export function messageCount(text) {
 // Action log.
 
 const HISTORY_KIND = { gift_send: "gift_sent", gift_recall: "gift_recalled", outfit_save: "outfit", outfit_apply: "outfit_apply", wishlist_add: "wishlist", wishlist_remove: "wishlist_remove" };
+// The server logs what was paid as a positive number; these kinds spent DesCoin.
+const HISTORY_SPENT = new Set(["purchase", "gift_send", "refresh", "night_buy"]);
 
 export function normalizeHistory(raw) {
   return arr(raw?.entries || raw?.history || raw).map((e) => {
@@ -793,7 +795,7 @@ export function normalizeHistory(raw) {
       setKey: e.setKey || p.setKey || e.set_key || null,
       setName: e.setName ?? p.setName ?? null,
       to: e.to || p.to || p.recipient || null,
-      amount: num(e.amount ?? p.amount ?? p.paid ?? p.price, 0),
+      amount: HISTORY_SPENT.has(kind) ? -Math.abs(num(e.amount ?? p.amount ?? p.paid ?? p.price, 0)) : num(e.amount ?? p.amount ?? p.paid ?? p.price ?? p.refunded, 0),
       undoable: Boolean(e.undoable) && !e.undoneAt,
       undoUntil: ms(e.undoUntil || e.undo_until),
       undoneAt: ms(e.undoneAt),

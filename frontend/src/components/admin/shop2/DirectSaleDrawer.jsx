@@ -424,7 +424,7 @@ export default function DirectSaleDrawer({ open, onClose, socket, notify, fail, 
             return r ? (
               <li key={id}>
                 <Thumb item={r} size={24} />
-                <span>{nameOfRow(r)}</span>
+                <span className="as2-ds-cname">{nameOfRow(r)}</span>
                 <Coin value={r.price} size="sm" />
               </li>
             ) : null;
@@ -453,11 +453,13 @@ function UserCard({ row, device }) {
   const { t } = useLocale();
   const f = useFmt();
   const phone = device === "phone";
+  // Banners fill the card top like the shop card does.
+  const art = row.category === "banner" ? row.preview_url || row.asset_url || null : null;
   return (
     <div className={`as2-ds-device is-${device}`} data-testid="as2-ds-preview">
       <div className="as2-ds-ucard">
-        <div className="as2-ds-uthumb">
-          <Thumb item={row} size={phone ? 48 : 72} />
+        <div className={`as2-ds-uthumb${art ? " is-art" : ""}`}>
+          {art ? <img src={art} alt="" loading="lazy" draggable={false} /> : <Thumb item={row} size={phone ? 48 : 72} />}
         </div>
         <div className="as2-ds-ubody">
           <b className="as2-ds-uname">{row.label}</b>

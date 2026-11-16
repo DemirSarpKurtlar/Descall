@@ -356,7 +356,10 @@ export function useShop2({ onBalanceChange } = {}) {
     async undo(entryId) {
       const res = await shop2Api.undo(entryId);
       afterPurchase(res, { undo: entryId });
+      // Undo reverses any logged action: a wishlist add / remove, a saved look, a gift.
       loadGifts();
+      loadWishlist();
+      loadOutfits();
       return res;
     },
     async flip(cardIndex) {
@@ -465,7 +468,7 @@ export function useShop2({ onBalanceChange } = {}) {
     setPref(patch) {
       setPrefs(writeShop2Prefs(patch));
     },
-  }), [loadAll, loadSet, loadNight, loadGifts, loadStorefront, loadHistory, loadSets, loadWishlist, applyBalance, afterPurchase]);
+  }), [loadAll, loadSet, loadNight, loadGifts, loadStorefront, loadHistory, loadSets, loadWishlist, loadOutfits, applyBalance, afterPurchase]);
 
   return { state, storefront, sets, setDetails, night, gifts, history, wishlist, outfits, prefs, actions };
 }

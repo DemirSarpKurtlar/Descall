@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_PT_BR = {
       "queue_cancel": "Mudança agendada cancelada",
       "event_create": "Evento adicionado ao calendário",
       "event_delete": "Evento excluído",
-      "direct_sale": "Venda direta em Todos os itens alterada · {n, plural, one {# item} other {# itens}}"
+      "direct_sale": "{on, select, true {Colocado em venda direta em Todos os itens} other {Tirado da venda direta em Todos os itens}} · {n, plural, one {# item} other {# itens}}"
     }
   },
   "slots": {

@@ -682,7 +682,16 @@ export default function Shop2Sets({ setKey, onSetKey }) {
       </div>
     );
   }
-  if (!set) return <div className="s2-skeleton is-sets" aria-busy="true"><i /><i /><i /></div>;
+  if (!set) {
+    // Keep the switcher (same element, so its scroll position survives) while the picked
+    // set loads; only the page under it waits.
+    return (
+      <div className="s2-sets">
+        {s2.layout !== "phone" && list.length > 1 ? <SetSwitcher sets={list} active={key} onPick={onSetKey} /> : null}
+        <div className="s2-skeleton is-sets" aria-busy="true"><i /><i /><i /></div>
+      </div>
+    );
+  }
   const joinItem = set.pieces.find((p) => p.item.category === "join_sound")?.item || null;
   const saveLook = async (name) => {
     const items = { ...currentLook(s2.me) };

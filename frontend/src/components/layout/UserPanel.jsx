@@ -77,7 +77,7 @@ const BadgeSettingsTab = lazy(() => import("../badges/BadgeSettingsTab.jsx"));
 const PremiumSettingsTab = lazy(() => import("../../premium/PremiumSettingsTab.jsx"));
 import { getPremiumState, subscribePremium } from "../../premium/premiumStore.js";
 import { isNativeIOS } from "../../lib/platform.js";
-import { getShopCatalog, getShopInventory, equipShopItem } from "../../api/shop";
+import { getShopInventory, equipShopItem } from "../../api/shop";
 import { NameEffectText } from "../ui/Cosmetics";
 import {
   getNoiseSuppressionEngine,
@@ -813,9 +813,15 @@ const UserPanel = forwardRef(function UserPanel({
 
   const loadOwnedThemes = useCallback(async () => {
     try {
-      const [{ items }, { inventory }] = await Promise.all([getShopCatalog(), getShopInventory()]);
-      const ownedIds = new Set((inventory || []).map((i) => i.itemId));
-      setOwnedThemes((items || []).filter((i) => i.category === "theme" && ownedIds.has(i.id)));
+      // Owned rows, not the on-sale catalog: themes retired with Market 2.0 stay wearable for
+      // their owners, and s2- rows carry their 7-language names (inventory item.i18n).
+      const { inventory } = await getShopInventory();
+      const seen = new Set();
+      setOwnedThemes(
+        (inventory || [])
+          .map((row) => row?.item)
+          .filter((i) => i && i.category === "theme" && i.theme_key && !seen.has(i.id) && seen.add(i.id)),
+      );
     } catch {
       /* best-effort, Appearance tab still works with Dark/Light only */
     }

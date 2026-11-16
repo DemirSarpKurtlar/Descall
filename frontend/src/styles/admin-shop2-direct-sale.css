@@ -37,7 +37,7 @@
 .as2-ds-chips button.is-on span { color: #cfd9ff; }
 
 .as2-ds-table { display: flex; flex-direction: column; border-radius: 16px; background: rgba(255, 255, 255, 0.025); box-shadow: inset 0 0 0 1px var(--as2-hair); overflow: hidden; }
-.as2-ds-tr { display: grid; grid-template-columns: 28px minmax(0, 1fr) 118px 92px 84px 52px 64px; align-items: center; gap: 10px; padding: 7px 12px; min-height: 50px; box-shadow: inset 0 -1px 0 var(--as2-hair); cursor: pointer; transition: background-color 0.15s; }
+.as2-ds-tr { display: grid; grid-template-columns: 28px minmax(0, 1fr) 112px 92px 80px 48px 104px; align-items: center; gap: 10px; padding: 7px 12px; min-height: 50px; box-shadow: inset 0 -1px 0 var(--as2-hair); cursor: pointer; transition: background-color 0.15s; }
 .as2-ds-tr:last-child { box-shadow: none; }
 .as2-ds-tr:hover { background: rgba(255, 255, 255, 0.03); }
 .as2-ds-tr.is-focus { background: rgba(88, 122, 245, 0.1); box-shadow: inset 3px 0 0 #587af5, inset 0 -1px 0 var(--as2-hair); }
@@ -90,7 +90,8 @@
 
 .as2-ds-clist { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .as2-ds-clist li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-13); }
-.as2-ds-clist li > span:not(.as2-coin) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.as2-ds-clist .as2-ds-cname { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.as2-ds-clist .as2-th { flex: none; max-width: 56px; }
 
 @media (max-width: 1100px) {
   .as2-ds-grid { grid-template-columns: minmax(0, 1fr); }
@@ -104,3 +105,6 @@
 @media (prefers-reduced-motion: reduce) {
   .as2-ds-bar::after { transition: none; }
 }
+.as2-ds-uthumb.is-art { padding: 0; overflow: hidden; }
+.as2-ds-uthumb.is-art img { width: 100%; height: 100%; min-height: 104px; object-fit: cover; display: block; }
+.as2-ds-device.is-phone .as2-ds-uthumb.is-art img { min-height: 0; }

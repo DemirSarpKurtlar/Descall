@@ -121,6 +121,13 @@ export const COINPOP_TR = {
       "promo": "Promosyon kodu",
       "premium_gift": "Descall+ hediyesi",
       "other": "Diğer"
+    },
+    "shop2": {
+      "gift": "Hediye gönderildi",
+      "refresh": "Vitrin yenilendi",
+      "giftRecall": "Hediye geri çağrıldı",
+      "giftOverlap": "Hediye farkı iadesi",
+      "setRecall": "Set geri çekildi, iade"
     }
   },
   "settings": {

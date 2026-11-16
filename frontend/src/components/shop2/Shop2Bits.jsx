@@ -169,6 +169,47 @@ export function Seg({ options, value, onChange, className = "", size = "md", lab
 }
 
 /**
+ * Scrolls a strip to `left` with our own ease-out (snap off meanwhile). Native smooth
+ * scrolling is cancelled by scroll snap whenever the strip's layout changes mid-way (a tile
+ * re-rendering as data arrives), which left the arrows doing nothing. A wheel / drag /
+ * touch on the strip stops it.
+ */
+function glideTo(el, left) {
+  el.__s2Glide?.();
+  if (prefersLessMotion()) {
+    el.scrollLeft = left;
+    return;
+  }
+  const from = el.scrollLeft;
+  const dist = left - from;
+  if (Math.abs(dist) < 1) return;
+  const ms = Math.min(420, 220 + Math.abs(dist) * 0.15);
+  let raf = 0;
+  let t0 = 0;
+  const stop = () => {
+    cancelAnimationFrame(raf);
+    el.classList.remove("is-gliding");
+    el.removeEventListener("wheel", stop);
+    el.removeEventListener("pointerdown", stop);
+    el.removeEventListener("touchstart", stop);
+    el.__s2Glide = null;
+  };
+  const step = (now) => {
+    if (!t0) t0 = now;
+    const p = Math.min(1, (now - t0) / ms);
+    el.scrollLeft = from + dist * (1 - (1 - p) ** 3);
+    if (p < 1) raf = requestAnimationFrame(step);
+    else stop();
+  };
+  el.classList.add("is-gliding");
+  el.addEventListener("wheel", stop, { passive: true });
+  el.addEventListener("pointerdown", stop);
+  el.addEventListener("touchstart", stop, { passive: true });
+  el.__s2Glide = stop;
+  raf = requestAnimationFrame(step);
+}
+
+/**
  * Horizontal strip that scrolls (set switcher, tab rows, phone chips): native scroll with
  * snap, edge fades, the mouse wheel moving it sideways, drag to scroll with a mouse, and
  * prev / next arrows on desktop (hidden on touch screens by CSS). The selected child
@@ -194,6 +235,7 @@ export function HScroller({ as: Tag = "div", className = "", wrapClassName = "",
     ro?.observe(el);
     for (const c of el.children) ro?.observe(c);
     el.addEventListener("scroll", measure, { passive: true });
+    let wheelEnd = 0;
     // Wheel: vertical turns sideways while the strip can still move that way, then the
     // page takes over (no trap at either end).
     const onWheel = (e) => {
@@ -204,6 +246,11 @@ export function HScroller({ as: Tag = "div", className = "", wrapClassName = "",
       const next = Math.max(0, Math.min(max, el.scrollLeft + d));
       if (Math.abs(next - el.scrollLeft) < 0.5) return;
       e.preventDefault();
+      // Snap off while the wheel turns (every assignment would snap and jump), back on
+      // shortly after it stops so the strip settles on a tile.
+      el.classList.add("is-wheeling");
+      clearTimeout(wheelEnd);
+      wheelEnd = setTimeout(() => el.classList.remove("is-wheeling"), 180);
       el.scrollLeft = next;
     };
     // Mouse drag (touch and pen scroll natively).
@@ -234,6 +281,11 @@ export function HScroller({ as: Tag = "div", className = "", wrapClassName = "",
       const moved = drag.moved;
       drag = null;
       if (!moved) return;
+      // The click that ends a drag is swallowed; when the browser fires none (pointer
+      // captured), the flag must not eat the next real tap.
+      setTimeout(() => {
+        suppress = false;
+      }, 0);
       el.classList.remove("is-dragging");
       // Let snapping settle on the nearest item after the drag.
       const left = el.scrollLeft;
@@ -253,6 +305,8 @@ export function HScroller({ as: Tag = "div", className = "", wrapClassName = "",
     el.addEventListener("pointercancel", onUp);
     el.addEventListener("click", onClick, true);
     return () => {
+      clearTimeout(wheelEnd);
+      el.__s2Glide?.();
       ro?.disconnect();
       el.removeEventListener("scroll", measure);
       el.removeEventListener("wheel", onWheel);
@@ -272,13 +326,13 @@ export function HScroller({ as: Tag = "div", className = "", wrapClassName = "",
     const max = Math.max(0, el.scrollWidth - el.clientWidth);
     const start = on.getBoundingClientRect().left - el.getBoundingClientRect().left - el.clientLeft + el.scrollLeft;
     const next = revealOffset(el.scrollLeft, max, start, start + on.offsetWidth, el.clientWidth, 40);
-    if (Math.abs(next - el.scrollLeft) > 1) el.scrollTo({ left: next, behavior: prefersLessMotion() ? "auto" : "smooth" });
+    if (Math.abs(next - el.scrollLeft) > 1) glideTo(el, next);
   }, [activeKey]);
   const page = (dir) => {
     const el = vp.current;
     if (!el) return;
     const max = Math.max(0, el.scrollWidth - el.clientWidth);
-    el.scrollTo({ left: pageOffset(el.scrollLeft, max, el.clientWidth, dir), behavior: prefersLessMotion() ? "auto" : "smooth" });
+    glideTo(el, pageOffset(el.scrollLeft, max, el.clientWidth, dir));
   };
   return (
     <div className={`s2-hs${edges.left ? " is-fade-l" : ""}${edges.right ? " is-fade-r" : ""} ${wrapClassName}`.trim()}>

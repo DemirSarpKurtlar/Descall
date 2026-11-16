@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_EN = {
       "queue_cancel": "Scheduled change cancelled",
       "event_create": "Event added to the calendar",
       "event_delete": "Event deleted",
-      "direct_sale": "Direct sale in All items changed · {n, plural, one {# item} other {# items}}"
+      "direct_sale": "{on, select, true {Put on direct sale in All items} other {Taken off direct sale in All items}} · {n, plural, one {# item} other {# items}}"
     }
   },
   "slots": {

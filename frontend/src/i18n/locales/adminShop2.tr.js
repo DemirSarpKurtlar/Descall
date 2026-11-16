@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_TR = {
       "queue_cancel": "Planlı değişiklik iptal edildi",
       "event_create": "Takvime etkinlik eklendi",
       "event_delete": "Etkinlik silindi",
-      "direct_sale": "Tüm ürünlerde satış değişti · {n} ürün"
+      "direct_sale": "{on, select, true {Tüm ürünlerde satışa açıldı} other {Tüm ürünlerde satıştan kaldırıldı}} · {n} ürün"
     }
   },
   "slots": {

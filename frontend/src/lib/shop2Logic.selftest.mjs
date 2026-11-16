@@ -219,6 +219,16 @@ assert.equal(hist[0].item.id, "c");
 assert.equal(hist[1].kind, "gift_sent");
 assert.equal(hist[2].undoable, false, "already undone");
 assert.equal(undoLeft(hist[0], T0 + 60e3), 300);
+// Signed amounts: spent (server logs it positive) reads negative, a recall refund positive.
+const signed = normalizeHistory({ entries: [
+  { id: "a", kind: "purchase", at: new Date(T0).toISOString(), payload: { amount: 420 } },
+  { id: "b", kind: "refresh", at: new Date(T0 - 1).toISOString(), payload: { paid: 150 } },
+  { id: "c", kind: "gift_send", at: new Date(T0 - 2).toISOString(), payload: { amount: 460, to: "u-2" }, to: { id: "u-2", displayName: "Mert" } },
+  { id: "d", kind: "gift_recall", at: new Date(T0 - 3).toISOString(), payload: { refunded: 460 } },
+  { id: "e", kind: "refund", at: new Date(T0 - 4).toISOString(), payload: { amount: 420 } },
+] });
+assert.deepEqual(signed.map((x) => x.amount), [-420, -150, -460, 460, 420]);
+assert.equal(signed[2].to.displayName, "Mert", "decorated recipient wins over the payload id");
 
 // ---------- retired ----------
 assert.equal(isRetiredItem({ sku: "banner-aurora", category: "banner" }), true);

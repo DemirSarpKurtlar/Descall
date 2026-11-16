@@ -106,7 +106,11 @@ export default function WalletHistoryDrawer({ open, receipt = null, sessionId = 
                 const hit = r.kind === "call" && ((sessionId && r.id === sessionId) || (receipt && r.receipt === receipt));
                 const plus = r.amount >= 0;
                 const title =
-                  r.kind === "call" ? t("coinpop.wallet.call") : t(`coinpop.wallet.reason.${REASONS.has(r.reason) ? r.reason : "other"}`);
+                  r.kind === "call"
+                    ? t("coinpop.wallet.call")
+                    : r.shop2
+                      ? t(`coinpop.wallet.shop2.${r.shop2}`)
+                      : t(`coinpop.wallet.reason.${REASONS.has(r.reason) ? r.reason : "other"}`);
                 const sub =
                   r.kind === "call"
                     ? r.voice && r.screen
