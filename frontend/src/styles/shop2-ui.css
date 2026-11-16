@@ -5251,7 +5251,9 @@ button.s2-strip:hover {
 .s2-layer {
   position: fixed;
   inset: 0;
-  z-index: 10030;
+  /* Above the Settings window (.user-panel-backdrop 100000, .user-settings-shell 100001),
+     where the shop lives on desktop and web. */
+  z-index: 100030;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -5426,7 +5428,7 @@ button.s2-strip:hover {
   position: fixed;
   right: 24px;
   bottom: 24px;
-  z-index: 10040;
+  z-index: 100040;
   display: flex;
   flex-direction: column;
   gap: 8px;
