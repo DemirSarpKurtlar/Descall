@@ -39,34 +39,20 @@ sections.push(`@keyframes s2fx-spin { to { transform: rotate(1turn); } }
 
 /* ── Avatar effects ──────────────────────────────────────────────── */
 const { AVATAR } = require("./avatar.js");
-
-function layerDecls(l) {
-  const out = [];
-  if (l.bg) out.push(`background: ${l.bg};`);
-  if (l.mask && l.mask !== "none") {
-    const m = MASK[l.mask];
-    if (!m) throw new Error(`unknown mask ${l.mask}`);
-    out.push(`-webkit-mask: ${m};`, `mask: ${m};`);
-  }
-  if (l.op != null) out.push(`opacity: ${l.op};`);
-  if (l.anim) out.push(`animation: ${l.anim};`);
-  return out;
-}
+const { uri } = require("./svg.js");
 
 const fxSel = (slug) => `.cosmetic-avatar-effect.effect-s2-${slug}`;
 const avatarRules = [];
-const glossSoftCss = GLOSS_CSS.replace(/0\.85/, "0.6").replace(/0\.28\)/, "0.18)");
-const tubeLightCss = TUBE_CSS.replace(/0\.5\)/, "0.32)").replace(/0\.42\)/, "0.28)");
 avatarRules.push(`/* Avatar effects: the box comes from avatarEffectGeometry (inset -(gap + w)).
-   Base = solid band + soft outer glow; ::before / ::after = masked band layers.
-   Shared geometry lives in custom properties (inherited by the pseudos). */
-.cosmetic-avatar-effect[class*="effect-s2-"] {
-  --s2r: calc(50% - var(--fx-w) / 2);
-${Object.entries(MASK_CSS).map(([k, v]) => `  --s2m-${k}: ${v};`).join("\n")}
-  --s2-tube: ${TUBE_CSS};
-  --s2-tube-light: ${tubeLightCss};
-  --s2-gloss: ${GLOSS_CSS};
-  --s2-gloss-soft: ${glossSoftCss};
+   Each layer is an SVG drawn in that box (ring in the outer --fx-w band,
+   small orbiting objects in gap + band, never over the avatar). The SVG is
+   rasterised once per size; motion = rotate / opacity of the layer. */
+.cosmetic-avatar-effect[class*="effect-s2-"],
+.cosmetic-avatar-effect[class*="effect-s2-"]::before,
+.cosmetic-avatar-effect[class*="effect-s2-"]::after {
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 .cosmetic-avatar-effect[class*="effect-s2-"]::before,
 .cosmetic-avatar-effect[class*="effect-s2-"]::after {
@@ -80,12 +66,18 @@ ${Object.entries(MASK_CSS).map(([k, v]) => `  --s2m-${k}: ${v};`).join("\n")}
 }`);
 for (const fx of AVATAR) {
   const sel = fxSel(fx.slug);
+  const art = fx.art;
+  const [gc, ga] = art.glow;
   avatarRules.push(`${sel} {
-  box-shadow: inset 0 0 0 var(--fx-w) ${fx.base.solid}, 0 0 calc(var(--fx-w) * 1.6) ${fx.base.glow};
+  background-image: ${uri(art.base)};
+  box-shadow: 0 0 calc(var(--fx-w) * 1.4) ${rgbaOf(gc, ga)};
 }`);
-  for (const pseudo of ["before", "after"]) {
-    if (!fx[pseudo]) continue;
-    avatarRules.push(`${sel}::${pseudo} {\n  ${layerDecls(fx[pseudo]).join("\n  ")}\n}`);
+  for (const [k, pseudo] of [["spin", "before"], ["extra", "after"]]) {
+    const l = art[k];
+    if (!l) continue;
+    const d = [`background-image: ${uri(l.doc)};`];
+    if (l.anim) d.push(`animation: ${l.anim};`);
+    avatarRules.push(`${sel}::${pseudo} {\n  ${d.join("\n  ")}\n}`);
   }
 }
 sections.push(avatarRules.join("\n"));
