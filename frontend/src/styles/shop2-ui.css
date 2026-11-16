@@ -6888,3 +6888,28 @@ html:is(.gd-lite, .a11y-solid) .s2-layer {
   backdrop-filter: none;
   background: rgba(5, 6, 10, 0.78);
 }
+/* Light app theme: the market is a dark-glass surface (white ink everywhere), so on the light
+   Settings pane it sits on its own dark panel instead of painting white text on white. The
+   classic catalog ("Tüm ürünler") keeps the light look on a light inset inside it. */
+html[data-theme="light"] .s2-root {
+  color-scheme: dark;
+  padding: 16px;
+  border-radius: 22px;
+  background: radial-gradient(640px 280px at 15% 0%, rgba(88, 122, 245, 0.16), transparent 70%), #13141d;
+  box-shadow: 0 18px 50px rgba(20, 24, 40, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+html[data-theme="light"] .s2-root.is-phone {
+  padding: 12px;
+  border-radius: 20px;
+}
+html[data-theme="light"] .s2-root.is-phone .s2-pbar {
+  margin: 0 -12px -12px;
+  border-radius: 0 0 20px 20px;
+}
+html[data-theme="light"] .s2-root .s2-all {
+  color-scheme: light;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f5f6fa;
+  color: #1b1c24;
+}
