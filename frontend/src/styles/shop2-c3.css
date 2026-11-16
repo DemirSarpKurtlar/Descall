@@ -1835,6 +1835,264 @@ html.glass-ui .app-root.g-shell .dm-avatar .status-badge.cosmetic-presence-flare
   animation: none !important;
 }
 
+/* Call overlays. Glass call stages pin their own background with
+   !important (up to html.glass-ui[data-theme] .call-overlay-root.g-call), so
+   the overlay uses :root:root:root to win. Opaque base colour always.
+   ::before / ::after sit behind the call UI (z-index -1 in the call's
+   stacking context); motion runs a few passes, then rests. */
+@keyframes s2co-sweep { from { transform: rotate(-16deg); } to { transform: rotate(20deg); } }
+@keyframes s2co-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes s2co-drift { from { transform: translateX(-5%); } to { transform: translateX(5%); } }
+@keyframes s2co-breathe { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes s2co-glow { 0%, 100% { opacity: 0.6; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.02); } }
+@keyframes s2co-storm { 0%, 84%, 100% { opacity: 0; } 86% { opacity: 1; } 88% { opacity: 0.2; } 91% { opacity: 0.8; } 95% { opacity: 0; } }
+@keyframes s2co-grid { from { transform: perspective(420px) rotateX(64deg) translateY(0); } to { transform: perspective(420px) rotateX(64deg) translateY(36px); } }
+:root:root:root .cosmetic-call-overlay[class*="overlay-s2-"] {
+  isolation: isolate;
+}
+:root:root:root .cosmetic-call-overlay[class*="overlay-s2-"]::before,
+:root:root:root .cosmetic-call-overlay[class*="overlay-s2-"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-fener-kulesi {
+  background: radial-gradient(circle at 8% 62%, rgba(232,246,255,0.9) 0 0.35%, rgba(53,208,224,0.35) 1.2%, transparent 6%),
+    radial-gradient(circle at 82% 16%, #e8f6ff 0 2.1%, rgba(232,246,255,0.3) 2.5%, transparent 9%),
+    radial-gradient(circle at 6% 8%, rgba(232,246,255,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 14% 22%, rgba(232,246,255,0.85) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 22% 6%, rgba(232,246,255,0.85) 0 1.2px, transparent 2.1px), radial-gradient(circle at 31% 15%, rgba(232,246,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 40% 4%, rgba(232,246,255,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 47% 19%, rgba(232,246,255,0.85) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 55% 9%, rgba(232,246,255,0.85) 0 1.1px, transparent 2px), radial-gradient(circle at 63% 25%, rgba(232,246,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 69% 5%, rgba(232,246,255,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 77% 30%, rgba(232,246,255,0.85) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 88% 12%, rgba(232,246,255,0.85) 0 1.2px, transparent 2.1px), radial-gradient(circle at 94% 24%, rgba(232,246,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 12% 38%, rgba(232,246,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 36% 33%, rgba(232,246,255,0.85) 0 0.9px, transparent 1.8px), radial-gradient(circle at 58% 40%, rgba(232,246,255,0.85) 0 0.6px, transparent 1.5px), radial-gradient(circle at 84% 42%, rgba(232,246,255,0.85) 0 0.8px, transparent 1.7000000000000002px),
+    repeating-linear-gradient(180deg, rgba(53,208,224,0) 0 6px, rgba(53,208,224,0.07) 6px 7px) 0 64% / 100% 36% no-repeat,
+    radial-gradient(60% 16% at 34% 66%, rgba(53,208,224,0.16), transparent 70%),
+    linear-gradient(180deg, transparent 63%, rgba(30,75,143,0.45) 63.4%, rgba(11,27,58,0.95) 100%),
+    linear-gradient(180deg, #0b1b3a, #08142b 55%, #050c1a) #050c1a !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-fener-kulesi::before {
+  background: conic-gradient(from 52deg at 8% 62%, transparent 0deg, rgba(200,240,255,0.1) 5deg, rgba(232,246,255,0.24) 9deg, rgba(200,240,255,0.1) 13deg, transparent 20deg);
+  transform-origin: 8% 62%;
+  animation: s2co-sweep 14s ease-in-out 4 alternate both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-fener-kulesi::after {
+  background: linear-gradient(180deg, #0c1830, #060c18);
+  clip-path: polygon(6.4% 100%, 7.3% 63.5%, 8.7% 63.5%, 9.6% 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-col-gecesi {
+  background: radial-gradient(70% 30% at 22% 106%, #2a1408 0 59%, transparent 60.5%),
+    radial-gradient(70% 30% at 22% 106%, rgba(240,164,67,0.35) 0 60.5%, transparent 61.5%),
+    radial-gradient(85% 34% at 82% 112%, #3a1d0c 0 59%, transparent 60.5%),
+    radial-gradient(85% 34% at 82% 112%, rgba(255,207,138,0.3) 0 60.5%, transparent 61.5%),
+    radial-gradient(circle at 70% 24%, #ffe2b0 0 2.8%, rgba(240,164,67,0.4) 3.4%, rgba(240,164,67,0.08) 9%, transparent 16%),
+    linear-gradient(180deg, #170c1c 0%, #2a1416 40%, #5a2a12 72%, #3a1a0c 100%) #120a06 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-col-gecesi::before {
+  background: radial-gradient(circle at 6% 8%, rgba(255,236,200,0.9) 0 1px, transparent 1.9px), radial-gradient(circle at 14% 22%, rgba(255,236,200,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 22% 6%, rgba(255,236,200,0.9) 0 1.2px, transparent 2.1px), radial-gradient(circle at 31% 15%, rgba(255,236,200,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 40% 4%, rgba(255,236,200,0.9) 0 1px, transparent 1.9px), radial-gradient(circle at 47% 19%, rgba(255,236,200,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 55% 9%, rgba(255,236,200,0.9) 0 1.1px, transparent 2px), radial-gradient(circle at 63% 25%, rgba(255,236,200,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 69% 5%, rgba(255,236,200,0.9) 0 1px, transparent 1.9px), radial-gradient(circle at 77% 30%, rgba(255,236,200,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 88% 12%, rgba(255,236,200,0.9) 0 1.2px, transparent 2.1px), radial-gradient(circle at 94% 24%, rgba(255,236,200,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 12% 38%, rgba(255,236,200,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 36% 33%, rgba(255,236,200,0.9) 0 0.9px, transparent 1.8px), radial-gradient(circle at 58% 40%, rgba(255,236,200,0.9) 0 0.6px, transparent 1.5px), radial-gradient(circle at 84% 42%, rgba(255,236,200,0.9) 0 0.8px, transparent 1.7000000000000002px);
+  animation: s2co-twinkle 4s ease-in-out 6 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-col-gecesi::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kutup-gokyuzu {
+  background: linear-gradient(180deg, transparent 80%, #0e2a33 80.4%, #7d9fae 81%, #3f6070 85%, #142a34 100%),
+    radial-gradient(circle at 9% 14%, rgba(230,255,245,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 18% 30%, rgba(230,255,245,0.8) 0 1px, transparent 1.9px), radial-gradient(circle at 27% 10%, rgba(230,255,245,0.8) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 44% 26%, rgba(230,255,245,0.8) 0 1px, transparent 1.9px), radial-gradient(circle at 52% 3%, rgba(230,255,245,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 66% 16%, rgba(230,255,245,0.8) 0 0.9px, transparent 1.8px), radial-gradient(circle at 73% 36%, rgba(230,255,245,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 81% 6%, rgba(230,255,245,0.8) 0 1px, transparent 1.9px), radial-gradient(circle at 91% 34%, rgba(230,255,245,0.8) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 97% 8%, rgba(230,255,245,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 3% 28%, rgba(230,255,245,0.8) 0 0.9px, transparent 1.8px), radial-gradient(circle at 61% 32%, rgba(230,255,245,0.8) 0 0.7px, transparent 1.6px),
+    radial-gradient(80% 50% at 50% 80%, rgba(20,163,127,0.18), transparent 70%),
+    linear-gradient(180deg, #030b14, #04121c 50%, #06222a 78%) #04121c !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kutup-gokyuzu::before {
+  inset: 0 -12%;
+  background: linear-gradient(100deg, transparent 8%, rgba(110,255,199,0.42) 18%, rgba(110,255,199,0.05) 26%, transparent 32%), linear-gradient(82deg, transparent 36%, rgba(143,123,255,0.42) 48%, rgba(143,123,255,0.05) 56%, transparent 62%), linear-gradient(96deg, transparent 60%, rgba(20,163,127,0.45) 72%, rgba(110,255,199,0.08) 80%, transparent 86%), repeating-linear-gradient(90deg, rgba(230,255,245,0.05) 0 2px, transparent 2px 9px);
+  -webkit-mask: linear-gradient(180deg, transparent 2%, #000 14%, #000 42%, transparent 76%);
+  mask: linear-gradient(180deg, transparent 2%, #000 14%, #000 42%, transparent 76%);
+  animation: s2co-drift 18s ease-in-out 4 alternate both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kutup-gokyuzu::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-derin-deniz {
+  background: radial-gradient(circle at 12% 70%, rgba(150,230,255,0.55) 0 1px, transparent 1.9px), radial-gradient(circle at 24% 82%, rgba(150,230,255,0.55) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 38% 64%, rgba(150,230,255,0.55) 0 0.7px, transparent 1.6px), radial-gradient(circle at 52% 88%, rgba(150,230,255,0.55) 0 1px, transparent 1.9px), radial-gradient(circle at 66% 72%, rgba(150,230,255,0.55) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 78% 84%, rgba(150,230,255,0.55) 0 0.7px, transparent 1.6px), radial-gradient(circle at 90% 66%, rgba(150,230,255,0.55) 0 1px, transparent 1.9px), radial-gradient(circle at 30% 50%, rgba(150,230,255,0.55) 0 0.6px, transparent 1.5px), radial-gradient(circle at 72% 48%, rgba(150,230,255,0.55) 0 0.6px, transparent 1.5px),
+    radial-gradient(90% 40% at 50% -6%, rgba(95,212,255,0.35), transparent 70%),
+    linear-gradient(180deg, #0b4466 0%, #062a44 36%, #031828 70%, #020e18 100%) #021220 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-derin-deniz::before {
+  background: repeating-linear-gradient(104deg, rgba(143,228,255,0) 0 60px, rgba(143,228,255,0.08) 60px 96px, rgba(143,228,255,0) 96px 170px);
+  -webkit-mask: linear-gradient(180deg, #000, transparent 75%);
+  mask: linear-gradient(180deg, #000, transparent 75%);
+  animation: s2co-breathe 7s ease-in-out 6 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-derin-deniz::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-neon-sokak {
+  background: linear-gradient(90deg, rgba(255,46,136,0) 10%, rgba(255,46,136,0.16) 18%, rgba(255,46,136,0) 26%, rgba(46,242,255,0) 68%, rgba(46,242,255,0.14) 78%, rgba(46,242,255,0) 86%) 0 76% / 100% 24% no-repeat,
+    repeating-linear-gradient(180deg, rgba(255,255,255,0) 0 5px, rgba(255,255,255,0.04) 5px 6px) 0 76% / 100% 24% no-repeat,
+    linear-gradient(90deg, #07040f 0 8%, transparent 8% 30%, #07040f 30% 36%, transparent 36% 62%, #07040f 62% 70%, transparent 70% 92%, #07040f 92%) 0 0 / 100% 76% no-repeat,
+    radial-gradient(18% 10% at 18% 30%, rgba(255,46,136,0.55), transparent 70%),
+    radial-gradient(14% 8% at 80% 22%, rgba(46,242,255,0.5), transparent 70%),
+    radial-gradient(10% 6% at 50% 44%, rgba(255,240,74,0.35), transparent 70%),
+    linear-gradient(180deg, #120a2a, #0a0618 76%, #140a24 76.2%, #07040f) #0a0618 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-neon-sokak::before {
+  background: radial-gradient(10% 4% at 18% 30%, rgba(255,179,214,0.9), transparent 70%), radial-gradient(8% 3.5% at 80% 22%, rgba(184,251,255,0.85), transparent 70%), repeating-linear-gradient(76deg, rgba(190,220,255,0.07) 0 1px, transparent 1px 14px);
+  animation: s2fx-flicker 5s linear 6 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-neon-sokak::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-gozlemevi {
+  background: linear-gradient(125deg, transparent 30%, rgba(198,183,255,0.08) 44%, rgba(255,233,168,0.06) 50%, rgba(198,183,255,0.08) 56%, transparent 70%),
+    radial-gradient(70% 50% at 50% 100%, rgba(43,31,110,0.6), transparent 70%),
+    linear-gradient(180deg, #05030f, #0d0a24 70%, #160f3a) #05030f !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-gozlemevi::before {
+  inset: -60%;
+  background: radial-gradient(circle at 28% 29%, rgba(255,255,255,0.9) 0 1px, transparent 1.9px), radial-gradient(circle at 32% 36%, rgba(255,255,255,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 36% 28%, rgba(255,255,255,0.9) 0 1.2px, transparent 2.1px), radial-gradient(circle at 40.5% 32.5%, rgba(255,255,255,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 45% 27%, rgba(255,255,255,0.9) 0 1px, transparent 1.9px), radial-gradient(circle at 48.5% 34.5%, rgba(255,255,255,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 52.5% 29.5%, rgba(255,255,255,0.9) 0 1.1px, transparent 2px), radial-gradient(circle at 56.5% 37.5%, rgba(255,255,255,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 59.5% 27.5%, rgba(255,255,255,0.9) 0 1px, transparent 1.9px), radial-gradient(circle at 63.5% 40%, rgba(255,255,255,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 69% 31%, rgba(255,255,255,0.9) 0 1.2px, transparent 2.1px), radial-gradient(circle at 72% 37%, rgba(255,255,255,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 31% 44%, rgba(255,255,255,0.9) 0 0.7px, transparent 1.6px), radial-gradient(circle at 43% 41.5%, rgba(255,255,255,0.9) 0 0.9px, transparent 1.8px), radial-gradient(circle at 54% 45%, rgba(255,255,255,0.9) 0 0.6px, transparent 1.5px), radial-gradient(circle at 67% 46%, rgba(255,255,255,0.9) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 29.5% 57%, rgba(198,183,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 34% 65%, rgba(198,183,255,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 38.5% 55%, rgba(198,183,255,0.85) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 47% 63%, rgba(198,183,255,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 51% 51.5%, rgba(198,183,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 58% 58%, rgba(198,183,255,0.85) 0 0.9px, transparent 1.8px), radial-gradient(circle at 61.5% 68%, rgba(198,183,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 65.5% 53%, rgba(198,183,255,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 70.5% 67%, rgba(198,183,255,0.85) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 73.5% 54%, rgba(198,183,255,0.85) 0 0.7px, transparent 1.6px), radial-gradient(circle at 26.5% 64%, rgba(198,183,255,0.85) 0 0.9px, transparent 1.8px), radial-gradient(circle at 55.5% 66%, rgba(198,183,255,0.85) 0 0.7px, transparent 1.6px);
+  transform-origin: 50% 50%;
+  animation: s2fx-spin 180s linear 1 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-gozlemevi::after {
+  background: radial-gradient(34% 22% at 50% 102%, #0b0818 0 97%, transparent 100%), linear-gradient(90deg, transparent 49.2%, rgba(255,233,168,0.5) 49.6%, rgba(255,233,168,0.5) 50.4%, transparent 50.8%) 0 82% / 100% 18% no-repeat;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kor-ocagi {
+  background: radial-gradient(circle at 14% 72%, rgba(255,190,110,0.85) 0 1.2px, transparent 2.1px), radial-gradient(circle at 26% 60%, rgba(255,190,110,0.85) 0 0.9px, transparent 1.8px), radial-gradient(circle at 34% 80%, rgba(255,190,110,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 48% 66%, rgba(255,190,110,0.85) 0 1.3px, transparent 2.2px), radial-gradient(circle at 58% 76%, rgba(255,190,110,0.85) 0 0.9px, transparent 1.8px), radial-gradient(circle at 70% 58%, rgba(255,190,110,0.85) 0 1.1px, transparent 2px), radial-gradient(circle at 82% 74%, rgba(255,190,110,0.85) 0 1px, transparent 1.9px), radial-gradient(circle at 90% 62%, rgba(255,190,110,0.85) 0 0.8px, transparent 1.7000000000000002px),
+    radial-gradient(90% 46% at 50% 110%, rgba(255,106,31,0.5), rgba(163,34,15,0.25) 50%, transparent 75%),
+    linear-gradient(180deg, #120705, #1e0c06 60%, #2a1006) #140804 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kor-ocagi::before {
+  background: radial-gradient(70% 34% at 50% 104%, rgba(255,179,90,0.45), transparent 70%);
+  transform-origin: 50% 100%;
+  animation: s2co-glow 3.2s ease-in-out 10 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kor-ocagi::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-bulut-ustu {
+  background: radial-gradient(60% 18% at 50% 70%, rgba(255,210,168,0.6), transparent 70%),
+    linear-gradient(180deg, #141a3a 0%, #2c2a6a 34%, #6a4f9a 54%, #d8889a 66%, #ffc79a 71%, #7a6aa8 73%, #3a3a72 100%) #141a3a !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-bulut-ustu::before {
+  inset: 0 -15%;
+  background: radial-gradient(22% 7% at 12% 80%, rgba(242,230,255,0.55), transparent 70%), radial-gradient(26% 8% at 40% 86%, rgba(230,220,255,0.5), transparent 70%), radial-gradient(24% 7% at 70% 79%, rgba(255,230,240,0.5), transparent 70%), radial-gradient(30% 9% at 92% 88%, rgba(230,220,255,0.45), transparent 70%), radial-gradient(40% 10% at 30% 96%, rgba(214,204,255,0.45), transparent 70%), radial-gradient(40% 10% at 76% 98%, rgba(214,204,255,0.42), transparent 70%);
+  animation: s2co-drift 30s ease-in-out 2 alternate both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-bulut-ustu::after {
+  background: radial-gradient(130% 90% at 50% 40%, transparent 60%, rgba(10,8,30,0.4) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-orman-gecesi {
+  background: conic-gradient(from 160deg at 10% 52%, transparent 0deg, #03110a 0deg 40deg, transparent 40deg) 0 0 / 100% 100% no-repeat,
+    conic-gradient(from 158deg at 24% 60%, transparent 0deg, #051a0f 0deg 44deg, transparent 44deg),
+    conic-gradient(from 160deg at 76% 50%, transparent 0deg, #03110a 0deg 40deg, transparent 40deg),
+    conic-gradient(from 158deg at 92% 58%, transparent 0deg, #051a0f 0deg 44deg, transparent 44deg),
+    radial-gradient(70% 22% at 50% 74%, rgba(159,216,176,0.14), transparent 70%),
+    linear-gradient(180deg, #071a14, #0a2a1a 60%, #04100a) #04100a !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-orman-gecesi::before {
+  background: radial-gradient(circle at 16% 62%, rgba(220,255,150,0.95) 0 1.6px, transparent 2.5px), radial-gradient(circle at 30% 74%, rgba(220,255,150,0.95) 0 1.3px, transparent 2.2px), radial-gradient(circle at 44% 58%, rgba(220,255,150,0.95) 0 1.5px, transparent 2.4px), radial-gradient(circle at 57% 70%, rgba(220,255,150,0.95) 0 1.2px, transparent 2.1px), radial-gradient(circle at 68% 60%, rgba(220,255,150,0.95) 0 1.6px, transparent 2.5px), radial-gradient(circle at 83% 72%, rgba(220,255,150,0.95) 0 1.3px, transparent 2.2px), radial-gradient(circle at 38% 82%, rgba(220,255,150,0.95) 0 1.1px, transparent 2px), radial-gradient(circle at 74% 82%, rgba(220,255,150,0.95) 0 1.2px, transparent 2.1px);
+  animation: s2co-twinkle 2.2s ease-in-out 14 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-orman-gecesi::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kristal-magara {
+  background: conic-gradient(from 20deg at 0% 100%, transparent 0deg 8deg, rgba(139,63,209,0.3) 9deg 12deg, transparent 14deg 22deg, rgba(46,230,214,0.24) 22deg 24deg, transparent 26deg 34deg, rgba(176,124,255,0.26) 34deg 38deg, transparent 41deg),
+    conic-gradient(from 300deg at 100% 100%, transparent 0deg 6deg, rgba(46,230,214,0.26) 6deg 9deg, transparent 11deg 20deg, rgba(139,63,209,0.3) 20deg 25deg, transparent 28deg 36deg, rgba(226,198,255,0.22) 36deg 38deg, transparent 39deg),
+    conic-gradient(from 150deg at 50% 0%, transparent 0deg 20deg, rgba(106,43,184,0.24) 20deg 24deg, transparent 26deg 34deg, rgba(46,230,214,0.25) 34deg 38deg, transparent 38deg),
+    radial-gradient(60% 40% at 50% 60%, rgba(58,22,112,0.6), transparent 70%),
+    linear-gradient(180deg, #0c0618, #140a28 60%, #0a0414) #0c0618 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kristal-magara::before {
+  background: radial-gradient(circle at 8% 82%, rgba(240,230,255,0.95) 0 1.4px, transparent 2.3px), radial-gradient(circle at 16% 70%, rgba(240,230,255,0.95) 0 1px, transparent 1.9px), radial-gradient(circle at 90% 78%, rgba(240,230,255,0.95) 0 1.4px, transparent 2.3px), radial-gradient(circle at 84% 66%, rgba(240,230,255,0.95) 0 1px, transparent 1.9px), radial-gradient(circle at 48% 12%, rgba(240,230,255,0.95) 0 1.2px, transparent 2.1px), radial-gradient(circle at 56% 18%, rgba(240,230,255,0.95) 0 0.9px, transparent 1.8px);
+  animation: s2co-twinkle 3s ease-in-out 8 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kristal-magara::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-studyo {
+  background: radial-gradient(60% 16% at 50% 92%, rgba(255,255,255,0.06), transparent 70%),
+    linear-gradient(180deg, #16181f, #0e0f13 70%, #0a0b0e) #0e0f13 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-studyo::before {
+  background: conic-gradient(from 160deg at 24% -6%, transparent 0deg, rgba(255,242,220,0.13) 8deg, rgba(255,242,220,0.05) 20deg, transparent 28deg), conic-gradient(from 172deg at 76% -6%, transparent 0deg, rgba(255,242,220,0.05) 8deg, rgba(255,242,220,0.13) 20deg, transparent 28deg);
+  animation: s2co-breathe 6s ease-in-out 4 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-studyo::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-gun-batimi-iskelesi {
+  background: linear-gradient(180deg, transparent 62%, #1a0a24 62% 63%, transparent 63% 65.5%, #1a0a24 65.5% 66.5%, transparent 66.5% 68.5%, #1a0a24 68.5% 70%) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 70%, #ffd27a 0 8%, #ff8a4c 13%, #ff4f8b 17.5%, transparent 18%),
+    radial-gradient(70% 34% at 50% 70%, rgba(255,106,90,0.38), transparent 70%),
+    linear-gradient(180deg, #1a0a2e 0%, #3a1640 40%, #8a2a5a 62%, #2a0c2a 70.2%, #12061a 100%) #1a0a1e !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-gun-batimi-iskelesi::before {
+  background: repeating-linear-gradient(180deg, transparent 0 7px, rgba(255,179,122,0.22) 7px 8px) 0 71% / 100% 29% no-repeat, linear-gradient(90deg, transparent 38%, rgba(255,210,122,0.12) 46%, rgba(255,210,122,0.12) 54%, transparent 62%) 0 71% / 100% 29% no-repeat;
+  animation: s2co-breathe 4s ease-in-out 8 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-gun-batimi-iskelesi::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-firtina-cephesi {
+  background: repeating-linear-gradient(78deg, rgba(180,200,240,0.05) 0 1px, transparent 1px 16px),
+    radial-gradient(40% 16% at 20% 22%, rgba(90,108,148,0.75), transparent 70%),
+    radial-gradient(46% 18% at 70% 14%, rgba(70,85,124,0.85), transparent 70%),
+    radial-gradient(50% 20% at 50% 34%, rgba(50,62,94,0.85), transparent 70%),
+    radial-gradient(60% 18% at 40% 46%, rgba(30,40,64,0.9), transparent 70%),
+    radial-gradient(70% 30% at 50% 0%, rgba(122,167,255,0.12), transparent 70%),
+    linear-gradient(180deg, #0e1424, #080b12 70%, #06080e) #080b12 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-firtina-cephesi::before {
+  background: radial-gradient(40% 26% at 66% 18%, rgba(219,231,255,0.22), transparent 70%), radial-gradient(30% 20% at 26% 26%, rgba(184,204,255,0.14), transparent 70%);
+  opacity: 0.25;
+  animation: s2co-storm 9s linear 5 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-firtina-cephesi::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-cicek-bahcesi {
+  background: radial-gradient(70% 50% at 50% 100%, rgba(90,26,58,0.6), transparent 70%),
+    linear-gradient(180deg, #160a14, #1a0c16 60%, #24101c) #1a0c16 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-cicek-bahcesi::before {
+  inset: 0 -10%;
+  background: radial-gradient(circle at 12% 20%, rgba(255,154,192,0.22) 0 34px, rgba(255,154,192,0.08800000000000001) 36px, transparent 38px), radial-gradient(circle at 28% 58%, rgba(255,194,214,0.18) 0 22px, rgba(255,194,214,0.072) 24px, transparent 26px), radial-gradient(circle at 44% 16%, rgba(255,122,168,0.2) 0 18px, rgba(255,122,168,0.08000000000000002) 20px, transparent 22px), radial-gradient(circle at 62% 44%, rgba(255,179,204,0.16) 0 30px, rgba(255,179,204,0.064) 32px, transparent 34px), radial-gradient(circle at 78% 18%, rgba(255,143,176,0.2) 0 24px, rgba(255,143,176,0.08000000000000002) 26px, transparent 28px), radial-gradient(circle at 88% 64%, rgba(255,214,226,0.14) 0 36px, rgba(255,214,226,0.05600000000000001) 38px, transparent 40px), radial-gradient(circle at 20% 84%, rgba(255,143,176,0.16) 0 26px, rgba(255,143,176,0.064) 28px, transparent 30px), radial-gradient(circle at 56% 86%, rgba(255,179,204,0.18) 0 20px, rgba(255,179,204,0.072) 22px, transparent 24px);
+  animation: s2co-drift 26s ease-in-out 2 alternate both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-cicek-bahcesi::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kozmik-girdap {
+  background: radial-gradient(circle at 6% 8%, rgba(230,220,255,0.8) 0 1px, transparent 1.9px), radial-gradient(circle at 14% 22%, rgba(230,220,255,0.8) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 22% 6%, rgba(230,220,255,0.8) 0 1.2px, transparent 2.1px), radial-gradient(circle at 31% 15%, rgba(230,220,255,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 40% 4%, rgba(230,220,255,0.8) 0 1px, transparent 1.9px), radial-gradient(circle at 47% 19%, rgba(230,220,255,0.8) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 55% 9%, rgba(230,220,255,0.8) 0 1.1px, transparent 2px), radial-gradient(circle at 63% 25%, rgba(230,220,255,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 69% 5%, rgba(230,220,255,0.8) 0 1px, transparent 1.9px), radial-gradient(circle at 77% 30%, rgba(230,220,255,0.8) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 88% 12%, rgba(230,220,255,0.8) 0 1.2px, transparent 2.1px), radial-gradient(circle at 94% 24%, rgba(230,220,255,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 12% 38%, rgba(230,220,255,0.8) 0 0.7px, transparent 1.6px), radial-gradient(circle at 36% 33%, rgba(230,220,255,0.8) 0 0.9px, transparent 1.8px), radial-gradient(circle at 58% 40%, rgba(230,220,255,0.8) 0 0.6px, transparent 1.5px), radial-gradient(circle at 84% 42%, rgba(230,220,255,0.8) 0 0.8px, transparent 1.7000000000000002px),
+    radial-gradient(circle at 64% 40%, #fff6e0 0 1.2%, rgba(255,233,168,0.7) 3%, rgba(167,123,255,0.35) 12%, transparent 30%),
+    linear-gradient(180deg, #06041a, #0c0828 60%, #06041a) #06041a !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kozmik-girdap::before {
+  inset: -40% -20%;
+  background: conic-gradient(from 0deg at 64% 40%, rgba(167,123,255,0) 0deg, rgba(198,183,255,0.24) 30deg, rgba(167,123,255,0) 80deg, rgba(167,123,255,0) 180deg, rgba(255,179,230,0.36) 210deg, rgba(167,123,255,0) 260deg);
+  -webkit-mask: radial-gradient(42% 56% at 64% 40%, #000 10%, transparent 100%);
+  mask: radial-gradient(42% 56% at 64% 40%, #000 10%, transparent 100%);
+  transform-origin: 64% 40%;
+  animation: s2fx-spin 120s linear 1 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-kozmik-girdap::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-holo-oda {
+  background: linear-gradient(180deg, transparent 54%, rgba(255,124,229,0.5) 56%, rgba(124,243,255,0.35) 57.5%, transparent 61%),
+    radial-gradient(60% 20% at 50% 57%, rgba(200,124,255,0.35), transparent 70%),
+    radial-gradient(circle at 9% 16.8%, rgba(200,240,255,0.7) 0 0.7px, transparent 1.6px), radial-gradient(circle at 18% 36%, rgba(200,240,255,0.7) 0 1px, transparent 1.9px), radial-gradient(circle at 27% 12%, rgba(200,240,255,0.7) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 44% 31.2%, rgba(200,240,255,0.7) 0 1px, transparent 1.9px), radial-gradient(circle at 52% 3.5999999999999996%, rgba(200,240,255,0.7) 0 0.7px, transparent 1.6px), radial-gradient(circle at 66% 19.2%, rgba(200,240,255,0.7) 0 0.9px, transparent 1.8px), radial-gradient(circle at 73% 43.199999999999996%, rgba(200,240,255,0.7) 0 0.7px, transparent 1.6px), radial-gradient(circle at 81% 7.199999999999999%, rgba(200,240,255,0.7) 0 1px, transparent 1.9px), radial-gradient(circle at 91% 40.8%, rgba(200,240,255,0.7) 0 0.8px, transparent 1.7000000000000002px), radial-gradient(circle at 97% 9.6%, rgba(200,240,255,0.7) 0 0.7px, transparent 1.6px), radial-gradient(circle at 3% 33.6%, rgba(200,240,255,0.7) 0 0.9px, transparent 1.8px), radial-gradient(circle at 61% 38.4%, rgba(200,240,255,0.7) 0 0.7px, transparent 1.6px),
+    linear-gradient(180deg, #070a18, #0e0a28 56%, #05060f 57%, #04050c) #070a18 !important;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-holo-oda::before {
+  inset: 57% -60% -30% -60%;
+  background: repeating-linear-gradient(0deg, rgba(124,243,255,0.4) 0 1.5px, transparent 1.5px 36px), repeating-linear-gradient(90deg, rgba(255,124,229,0.35) 0 1.5px, transparent 1.5px 60px);
+  -webkit-mask: linear-gradient(180deg, transparent, #000 30%);
+  mask: linear-gradient(180deg, transparent, #000 30%);
+  transform-origin: 50% 0%;
+  transform: perspective(420px) rotateX(64deg);
+  animation: s2co-grid 1.6s linear 24 both;
+}
+:root:root:root .cosmetic-call-overlay.overlay-s2-holo-oda::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cosmetic-avatar-effect[class*="effect-s2-"],
   .cosmetic-avatar-effect[class*="effect-s2-"]::before,
@@ -1846,7 +2104,9 @@ html.glass-ui .app-root.g-shell .dm-avatar .status-badge.cosmetic-presence-flare
   .cosmetic-presence-flare[class*="flare-s2-"]::after,
   .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"],
   .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::before,
-  .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after {
+  .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after,
+  :root:root:root .cosmetic-call-overlay[class*="overlay-s2-"]::before,
+  :root:root:root .cosmetic-call-overlay[class*="overlay-s2-"]::after {
     animation: none !important;
   }
 }
@@ -1860,6 +2120,8 @@ html.gd-lite .cosmetic-presence-flare[class*="flare-s2-"]::before,
 html.gd-lite .cosmetic-presence-flare[class*="flare-s2-"]::after,
 html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"],
 html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::before,
-html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after {
+html.gd-lite .cosmetic-reaction-burst .reaction-chip[class*="burst-chip-s2-"]::after,
+:root:root:root.gd-lite .cosmetic-call-overlay[class*="overlay-s2-"]::before,
+:root:root:root.gd-lite .cosmetic-call-overlay[class*="overlay-s2-"]::after {
   animation: none !important;
 }

@@ -271,6 +271,52 @@ burstRules.push(`.shop-reaction-burst-preview.is-still .reaction-chip[class*="bu
 }`);
 sections.push(burstRules.join("\n"));
 
+/* ── Call overlays ───────────────────────────────────────────────── */
+const { OVERLAY } = require("./overlay.js");
+const coRules = [];
+const CO = ':root:root:root .cosmetic-call-overlay[class*="overlay-s2-"]';
+coRules.push(`/* Call overlays. Glass call stages pin their own background with
+   !important (up to html.glass-ui[data-theme] .call-overlay-root.g-call), so
+   the overlay uses :root:root:root to win. Opaque base colour always.
+   ::before / ::after sit behind the call UI (z-index -1 in the call's
+   stacking context); motion runs a few passes, then rests. */
+@keyframes s2co-sweep { from { transform: rotate(-16deg); } to { transform: rotate(20deg); } }
+@keyframes s2co-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes s2co-drift { from { transform: translateX(-5%); } to { transform: translateX(5%); } }
+@keyframes s2co-breathe { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes s2co-glow { 0%, 100% { opacity: 0.6; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.02); } }
+@keyframes s2co-storm { 0%, 84%, 100% { opacity: 0; } 86% { opacity: 1; } 88% { opacity: 0.2; } 91% { opacity: 0.8; } 95% { opacity: 0; } }
+@keyframes s2co-grid { from { transform: perspective(420px) rotateX(64deg) translateY(0); } to { transform: perspective(420px) rotateX(64deg) translateY(36px); } }
+${CO} {
+  isolation: isolate;
+}
+${CO}::before,
+${CO}::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}`);
+for (const o of OVERLAY) {
+  const sel = `:root:root:root .cosmetic-call-overlay.overlay-s2-${o.slug}`;
+  coRules.push(`${sel} {\n  background: ${o.scene.join(",\n    ")} ${o.base} !important;\n}`);
+  for (const [k, pseudo] of [["b", "before"], ["a", "after"]]) {
+    const l = o[k];
+    if (!l) continue;
+    const d = [];
+    if (l.inset) d.push(`inset: ${l.inset};`);
+    if (l.bg) d.push(`background: ${l.bg};`);
+    if (l.mask) d.push(`-webkit-mask: ${l.mask};`, `mask: ${l.mask};`);
+    if (l.origin) d.push(`transform-origin: ${l.origin};`);
+    if (l.css) d.push(l.css);
+    if (/s2co-storm/.test(l.anim || "")) d.push("opacity: 0.25;");
+    if (l.anim) d.push(`animation: ${l.anim};`);
+    coRules.push(`${sel}::${pseudo} {\n  ${d.join("\n  ")}\n}`);
+  }
+}
+sections.push(coRules.join("\n"));
+
 /* ── Still frames ─────────────────────────────────────────────────── */
 const STILL_TARGETS = [
   '.cosmetic-avatar-effect[class*="effect-s2-"]',
@@ -284,11 +330,13 @@ const STILL_TARGETS = [
   RB,
   `${RB}::before`,
   `${RB}::after`,
+  `${CO}::before`,
+  `${CO}::after`,
 ];
 
 function stillBlock(targets) {
   const list = targets.join(",\n  ");
-  const lite = targets.map((t) => `html.gd-lite ${t}`).join(",\n");
+  const lite = targets.map((t) => (t.startsWith(":root:root:root ") ? t.replace(":root:root:root ", ":root:root:root.gd-lite ") : `html.gd-lite ${t}`)).join(",\n");
   return `@media (prefers-reduced-motion: reduce) {
   ${list} {
     animation: none !important;
