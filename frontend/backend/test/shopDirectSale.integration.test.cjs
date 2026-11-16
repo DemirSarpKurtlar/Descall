@@ -144,9 +144,14 @@ async function run() {
     });
 
     await check("Market 2.0 purchase of the same non-allowed item is not affected", async () => {
-      const r = await call(`/shop2/items/${I(18)}/buy`, { method: "POST", body: {}, user: 2 });
+      // Market 2.0 sells singles from the user's storefront: a card there sells with direct_sale off.
+      const sf = await call("/shop2/storefront", { user: 2 });
+      assert.equal(sf.status, 200, JSON.stringify(sf.body));
+      const card = sf.body.slots.find((x) => !x.owned && rows("shop_items").find((r) => r.id === x.item.id)?.direct_sale !== true);
+      assert.ok(card, "a storefront card that is not open for direct sale");
+      const r = await call(`/shop2/items/${card.item.id}/buy`, { method: "POST", body: {}, user: 2 });
       assert.equal(r.status, 200, JSON.stringify(r.body));
-      assert.ok(owns(2, I(18)));
+      assert.ok(owns(2, card.item.id));
     });
 
     await check("admin: overview lists every item with its state and totals", async () => {

@@ -153,7 +153,12 @@ async function run() {
       const d0 = await night.deck(U(5), on);
       const faceDown = (v) => v.cards.filter((c) => !c.flipped).map((c) => `${c.index}:${c.hint}`).join(",");
       const before = faceDown((await call("/shop2/night-market", { user: 5 })).body);
-      // Buy every face-down card's item elsewhere (as a plain item) and a few more singles.
+      // Buy every face-down card's item elsewhere (as a plain item) and a few more singles. Singles
+      // off the storefront sell only with direct_sale (the admin list), so those rows get it.
+      for (const id of [...d0.cards.map((c) => c.itemId), ...Array.from({ length: 14 }, (_, k) => I(17 + k))]) {
+        const row = rows("shop_items").find((r) => r.id === id);
+        if (row) row.direct_sale = true;
+      }
       for (const c of d0.cards.filter((x) => x.index !== 0)) await call(`/shop2/items/${c.itemId}/buy`, { method: "POST", body: {}, user: 5 });
       for (let n = 17; n <= 30; n += 1) await call(`/shop2/items/${I(n)}/buy`, { method: "POST", body: {}, user: 5 });
       const v1 = (await call("/shop2/night-market", { user: 5 })).body;
