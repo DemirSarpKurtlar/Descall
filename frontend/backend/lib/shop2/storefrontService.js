@@ -154,12 +154,14 @@ async function refreshQuote(userId, row, limits) {
   const freeGrants = Number(st.free_refreshes) || 0;
   const plan = limits.refresh.premiumFree ? await people.premiumPlan(userId) : null;
   const perDay = limits.refresh.perDay;
-  const daily = used < perDay;
-  // The daily refresh is paid (free on Descall+); an admin / streak grant adds one more, free.
+  // The daily refresh (perDay) is paid, free on Descall+. Admin / streak grants are extra free
+  // refreshes and are used first; they never use up the daily one.
+  const dailyUsed = Number(row?.meta?.dailyUsed ?? used) || 0;
+  const daily = dailyUsed < perDay;
   const available = daily || freeGrants > 0;
   let free = null;
-  if (daily && plan) free = "premium";
-  else if (freeGrants > 0) free = st.streak_reward_day && st.streak_reward_day >= time.addDays(row?.day || time.dayKey(), -1) ? "streak" : "grant";
+  if (freeGrants > 0) free = st.streak_reward_day && st.streak_reward_day >= time.addDays(row?.day || time.dayKey(), -1) ? "streak" : "grant";
+  else if (daily && plan) free = "premium";
   const price = free ? 0 : limits.refresh.price;
   return { available, price, free, used, perDay, freeGrants, usedAt: row?.refreshed_at || null, streakDays: Number(st.streak_days) || 0, streakEvery: limits.refresh.streakDays };
 }
@@ -210,7 +212,7 @@ async function refresh(userId, { keepLockedItemId, idempotencyKey = null, expect
       lock_slot: lockId ? lockSlot : null,
       refreshed_at: new Date(now).toISOString(),
       refresh_paid: q.price,
-      meta: { ...(row.meta || {}), refreshKey: idempotencyKey || null, relaxed: sf.relaxed, epicFloor: sf.epicFloorApplied, previousSlots: row.slots },
+      meta: { ...(row.meta || {}), dailyUsed: (Number(row.meta?.dailyUsed ?? row.refresh_count) || 0) + (q.free === "grant" || q.free === "streak" ? 0 : 1), refreshKey: idempotencyKey || null, relaxed: sf.relaxed, epicFloor: sf.epicFloorApplied, previousSlots: row.slots },
       updated_at: new Date(now).toISOString(),
     };
     const [updated] = await db.rows(db.from("shop2_storefronts").update(patch).eq("user_id", userId).eq("day", row.day).select("*"));
