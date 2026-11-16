@@ -83,6 +83,10 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   pieces follow the set rules; the piece that was the last one missing completes its set (title).
   A single (no set) is sold only when it is in today's storefront or the admin opened it for direct
   sale (`shop_items.direct_sale`); otherwise 410 `not_in_storefront`.
+- `POST /equip { itemIds: [id] (1-30) }` (addition, "Hepsini kuşan") -> `{ ok, applied: { category:
+  itemId }, previousOutfitId, actionId }`: wears the owned items in one request (the previous look is
+  kept as a `previous` outfit, one profile broadcast); `POST /history/:actionId/undo` restores it.
+  Storefront cards of set pieces carry the price `POST /items/:id/buy` charges (the 7-day partial rate).
 - `GET /purchases` (addition) -> `{ purchases: [{ id, kind, setKey, itemIds, amount, listAmount,
   status, source, createdAt, refundableUntil }] }`.
 - `POST /purchases/:id/refund` -> `{ ok, purchaseId, refunded, balance }`. 10 minutes, nothing from it
