@@ -90,18 +90,22 @@ for (const i of items) {
 }
 
 // Avatar effect geometry (avatarEffectGeometry.js rules): band layers only.
-const noComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+const noComments = css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/url\("data:[^"]*"\)/g, "url(svg)");
 for (const [, sel, body] of noComments.matchAll(/([^{}]*\.cosmetic-avatar-effect[^{}]*)\{([^}]*)\}/g)) {
   for (const sh of body.matchAll(/box-shadow:\s*([^;]+)/g)) {
     for (const part of sh[1].split(/,(?![^(]*\))/)) assert.ok(!/^\s*0 0 0 \d/.test(part), `${sel}: outer spread ring`);
   }
   const mask = body.match(/(?:^|\s)mask:\s*([^;]+)/);
   if (mask) assert.ok(/var\(--s2m-\w+\)|var\(--fx-w\)/.test(mask[1]), `${sel}: mask must be a --fx-w band`);
+  if (/effect-s2-/.test(sel) && /background-image/.test(body)) assert.match(body, /url\(svg\)/, `${sel}: SVG art layer`);
   const inset = body.match(/(?:^|[;\s])inset:\s*([^;]+)/);
   if (inset) assert.equal(inset[1].trim(), "0", `${sel}: own inset breaks the shared radius`);
   assert.ok(!/translate/.test(body), `${sel}: no translate orbits`);
 }
-assert.match(css, /--s2m-band: radial-gradient\(farthest-side, transparent calc\(100% - var\(--fx-w\)/);
+// Art stays outside the avatar: SVG layers are drawn in the effect box (avatar edge r = 40.3 of 50).
+const { R_AV } = require("./svg.js");
+assert.ok(R_AV >= 40 && R_AV <= 40.5, "avatar edge in effect-box units");
+assert.match(css, /background-size: 100% 100%/);
 
 // Performance: motion is transform / opacity only, no layout or filter keyframes.
 for (const [, name, body] of css.matchAll(/@keyframes ([\w-]+) \{([\s\S]*?)\}\s*\}/g)) {

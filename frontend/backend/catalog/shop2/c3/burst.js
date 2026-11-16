@@ -12,6 +12,7 @@
  * Names / descriptions: tr|en|de|es|fr|pt-BR|ru.
  */
 const { rgba } = require("./fx");
+const { svg, uri, around: aroundSvg } = require("./svg");
 
 const ringG = (c, at = 84, w = 6) => `radial-gradient(closest-side, transparent ${at - w}%, ${c} ${at}%, transparent ${Math.min(100, at + w)}%)`;
 const around = (n, r, fn) => Array.from({ length: n }, (_, i) => {
@@ -53,8 +54,8 @@ const BURST = [
     name: "Kalp Dalgası|Heart Wave|Herzwelle|Ola de corazón|Vague de cœur|Onda de coração|Волна сердца",
     desc: "Yumuşak pembe halkalar tepkinden kalp atışı gibi yayılır.|Soft pink rings spread from your reaction like a heartbeat.|Weiche pinke Ringe breiten sich wie ein Herzschlag aus.|Anillos rosa suaves se expanden como un latido.|De doux anneaux roses s'étendent comme un battement.|Anéis rosa suaves se espalham como um batimento.|Мягкие розовые кольца расходятся, как стук сердца.",
     chip: { bg: "linear-gradient(180deg, rgba(255,120,160,0.34), rgba(255,77,115,0.22))", border: "#ffb3c8", glow: "#ff4d73", anim: "s2rb-chip-beat" },
-    b: { size: 58, bg: `radial-gradient(closest-side, ${rgba("#ff8fb0", 0.35)}, transparent 70%), ${ringG("#ffb3c8", 86, 5)}`, anim: "s2rb-ring 0.46s ease-out both" },
-    a: { size: 58, bg: ringG(rgba("#ff6f9a", 0.85), 86, 4), anim: "s2rb-ring 0.4s ease-out 0.12s both" },
+    b: { size: 58, bg: `radial-gradient(closest-side, ${rgba("#ff8fb0", 0.4)}, transparent 70%)`, anim: "s2rb-flash 0.42s ease-out both" },
+    a: { size: 76, bg: `${uri(svg(aroundSvg(6, 36, (i) => `<path d='M0 3C-4.6 -0.4 -2.2 -4.4 0 -1.8C2.2 -4.4 4.6 -0.4 0 3Z' transform='scale(${i % 2 ? 1.2 : 1.6})' fill='${i % 2 ? "#ffb3c8" : "#ff4d73"}'/>`), { vb: "-50 -50 100 100" }))} center / 100% 100% no-repeat`, anim: "s2rb-petal 0.5s cubic-bezier(.2,.8,.3,1) both" },
     glow: "#ff8fb0",
   },
   {

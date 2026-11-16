@@ -84,6 +84,7 @@ sections.push(avatarRules.join("\n"));
 
 /* ── Profile auras ───────────────────────────────────────────────── */
 const { AURA } = require("./aura.js");
+const { ORN } = require("./aura-art.js");
 const auraRules = [];
 auraRules.push(`/* Profile auras (profile card, hover card, shop previews). The glass card
    pins its own box-shadow with !important, so the aura does too (:root lifts
@@ -92,6 +93,9 @@ auraRules.push(`/* Profile auras (profile card, hover card, shop previews). The 
 @keyframes s2au-sheen { 0% { transform: translateX(-130%); } 42%, 100% { transform: translateX(320%); } }
 @keyframes s2au-drift { to { transform: translateX(-50%); } }
 @keyframes s2au-glow { 0%, 100% { opacity: 0.55; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1); } }
+.cosmetic-profile-aura[class*="aura-s2-"] {
+  --s2o: clamp(34px, 36%, 128px);
+}
 .cosmetic-profile-aura[class*="aura-s2-"]::before {
   content: "";
   position: absolute;
@@ -117,9 +121,31 @@ for (const a of AURA) {
   auraRules.push(`:root ${sel} {\n  box-shadow: ${[...a.bloom, ...a.inner].join(", ")} !important;\n}`);
   auraRules.push(`.shop-profile-stage .shop-live-profile${sel} {\n  box-shadow: ${a.inner.join(", ")} !important;\n}`);
   const r = [];
-  if (a.rim.shadow) r.push(`padding: 0;`, `-webkit-mask: none;`, `mask: none;`, `box-shadow: ${a.rim.shadow};`);
-  else r.push(`background: ${a.rim.bg};`);
-  if (a.rimW) r.push(`padding: ${a.rimW}px;`);
+  const orn = ORN[a.slug];
+  if (!orn) throw new Error(`no ornament for aura ${a.slug}`);
+  const corners = orn.at.split(" ");
+  const raw = orn.doc();
+  const nat = orn.native || "tl";
+  const flipFor = (c) => {
+    const fx = c[1] !== nat[1];
+    const fy = c[0] !== nat[0];
+    if (!fx && !fy) return "";
+    return `translate(${fx ? 100 : 0} ${fy ? 100 : 0}) scale(${fx ? -1 : 1} ${fy ? -1 : 1})`;
+  };
+  const pos = { tl: "left top", tr: "right top", bl: "left bottom", br: "right bottom" };
+  const ornLayers = corners.map((c) => {
+    const fl = flipFor(c);
+    const docC = fl ? raw.replace(/(<\/defs>|<svg[^>]*>)(?![\s\S]*<\/defs>)/, `$1<g transform='${fl}'>`).replace(/<\/svg>$/, "</g></svg>") : raw;
+    return `${uri(docC)} ${pos[c]} / var(--s2o) var(--s2o) no-repeat`;
+  });
+  const rimW = a.rim.shadow ? 4 : (a.rimW || 1.5);
+  const rimBg = a.rim.shadow ? "none" : a.rim.bg;
+  r.push(`background: ${ornLayers.join(", ")}, ${rimBg};`);
+  if (a.rim.shadow) r.push(`box-shadow: ${a.rim.shadow};`);
+  r.push(`padding: ${rimW}px;`);
+  r.push(`-webkit-mask: ${ornLayers.join(", ")}, linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);`);
+  r.push(`-webkit-mask-composite: ${ornLayers.map(() => "source-over").join(", ")}, xor, source-over;`);
+  r.push(`mask: ${ornLayers.map((l) => `${l} add`).join(", ")}, linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);`);
   if (a.rimAnim) r.push(`animation: ${a.rimAnim};`);
   auraRules.push(`${sel}::before {\n  ${r.join("\n  ")}\n}`);
   if (a.fx) {
