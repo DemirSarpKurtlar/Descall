@@ -16,8 +16,6 @@ import { Dialog, Drawer, Pill, ReasonField, Seg, Skel, Switch, Tabs, UserAv, use
 import { NumBox } from "./AlgorithmPanel.jsx";
 import { changedPaths, reasonOk } from "./shop2Model.js";
 
-const GROUPS = { gift: "gifts", refresh: "refresh", purchases: "purchases" };
-
 function pick(data) {
   return { gifts: { ...(data?.gift || {}) }, refresh: { ...(data?.refresh || {}) }, purchases: { ...(data?.purchases || {}) } };
 }
@@ -364,4 +362,3 @@ function ReasonDialog({ open, title, sub, go, danger, onClose, onConfirm, fail }
   );
 }
 
-export { GROUPS };

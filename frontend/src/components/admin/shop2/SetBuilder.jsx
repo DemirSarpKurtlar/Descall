@@ -60,10 +60,8 @@ function blankSet(now) {
     pieces: {},
     price: 0,
     stock: { total: 300, left: 300 },
-    perPerson: 1,
     partialSale: true,
     giftable: true,
-    giftPerDay: 1,
     startsAt: start,
     endsAt: new Date(Date.parse(start) + 7 * 86400000).toISOString(),
     translations: { ready: 0, total: 7 },
@@ -74,15 +72,14 @@ function blankSet(now) {
 
 export function bodyOf(s) {
   return {
+    key: s.key || null,
+    nameI18n: s.nameI18n || null,
+    abTestId: s.abTest?.id || null,
     name: s.name,
     palette: s.palette,
     pieces: Object.fromEntries(SET_SLOTS.filter((k) => s.pieces?.[k]).map((k) => [k, s.pieces[k].id])),
     price: s.price,
     stock: { total: s.stock?.total ?? null },
-    perPerson: s.perPerson,
-    partialSale: s.partialSale,
-    giftable: s.giftable,
-    giftPerDay: s.giftPerDay ?? 1,
     startsAt: s.startsAt,
     endsAt: s.endsAt,
     abTest: s.abTest,
@@ -145,15 +142,18 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setKey]);
 
+  const setKeyLoaded = set?.key || null;
   useEffect(() => {
+    const palettes = Object.fromEntries((sets || []).map((x) => [x.key, x.palette]));
     shop2Api
-      .catalog({ limit: 600 })
+      .catalog({ setKey: setKeyLoaded, palettes })
       .then((r) => {
         setItems(r.items);
         setTotal(r.total || r.items.length);
       })
       .catch(() => setItems([]));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setKeyLoaded]);
 
   const dirty = set && savedBody != null && JSON.stringify(bodyOf(set)) !== savedBody;
 
@@ -168,7 +168,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
         if (key) await shop2Api.saveSet(key, body);
         else {
           const r = await shop2Api.createSet(body);
-          key = r?.set?.key || r?.key;
+          key = r?.key;
           if (key) setSet((s) => ({ ...s, key }));
         }
         setSavedBody(JSON.stringify(body));
@@ -198,17 +198,29 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
 
   const pieces = useMemo(() => SET_SLOTS.map((k) => set?.pieces?.[k]).filter(Boolean), [set]);
   const pr = useMemo(() => setPricing(pieces, set?.price), [pieces, set]);
-  const suggestion = suggestedPrice(pr.sum);
+  const suggestion = suggestedPrice(pr.sum, set?.suggestPct ?? DISCOUNT_BAND.target);
   const others = useMemo(() => (sets || []).filter((s) => s.key !== set?.key), [sets, set]);
   const clash = useMemo(() => (set ? launchClash(set, others) : { with: [], suggest: null }), [set, others]);
   const check = useMemo(() => (set ? checklist(set, { clashes: keepClash ? [] : clash.with, phoneChecked: phoneSeen }) : null), [set, clash, keepClash, phoneSeen]);
-  const fc = useMemo(() => forecast({ stock: set?.stock?.total, discountPct: pr.discountPct, audience: set?.audience || 9000, baseConversion: set?.baseConversion || 1.6 }), [set, pr]);
+  const fc = useMemo(() => {
+    const sf = set?.serverForecast;
+    if (sf && Number(sf.setSalesPerDay) > 0) {
+      const mid = Number(sf.setSalesPerDay);
+      const out = Date.parse(sf.stockOutAt || "");
+      return { firstDayLo: Math.max(1, Math.floor(mid * 0.85)), firstDayHi: Math.max(1, Math.ceil(mid * 1.15)), soldOutDays: Number.isFinite(out) ? Math.max(1, Math.ceil((out - Date.now()) / 86400000)) : null };
+    }
+    return forecast({ stock: set?.stock?.total, discountPct: pr.discountPct });
+  }, [set, pr]);
+  // The most owned piece (owner counts from the server): who already has it pays less.
   const ownerWarn = useMemo(() => {
-    const ranked = pieces.map((p) => ({ p, share: Number(set?.ownerShares?.[p.id] ?? p.ownerSharePct ?? 0) })).sort((a, b) => b.share - a.share);
+    const ranked = pieces.map((p) => ({ p, n: Number(set?.ownerShares?.[p.id] ?? p.owners ?? 0) })).sort((a, b) => b.n - a.n);
     const top = ranked[0];
-    if (!top || top.share < 25) return null;
+    if (!top || top.n < 10) return null;
+    const rest = ranked.slice(1).map((x) => x.n);
+    const median = rest.length ? rest.sort((a, b) => a - b)[Math.floor(rest.length / 2)] : 0;
+    if (top.n < Math.max(10, median * 1.5)) return null;
     const drop = Math.round((pr.price * (top.p.price_descoin || 0)) / Math.max(1, pr.sum) / 10) * 10;
-    return { item: top.p, share: top.share, drop };
+    return { item: top.p, n: top.n, drop };
   }, [pieces, set, pr]);
   const st = set ? lifecycle(set, now) : "draft";
   const isLive = st === "live" || st === "last24";
@@ -247,10 +259,10 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
       const key = dirty || !set.key ? await save({ quiet: true }) : set.key;
       if (!key) throw new Error("save failed");
       const future = set.startsAt && Date.parse(set.startsAt) > Date.now();
-      await shop2Api.publishSet(key, { at: future ? set.startsAt : null });
+      const r = await shop2Api.publishSet(key, { at: future ? set.startsAt : null });
       setPublishOpen(false);
-      setSet((s) => ({ ...s, key, status: future ? "scheduled" : "live" }));
-      setUndoUntil(Date.now() + 10000);
+      setSet((s) => ({ ...s, key, status: future ? "scheduled" : "live", state: future ? "scheduled" : "live" }));
+      setUndoUntil(Date.parse(r?.undoUntil || "") || Date.now() + 10000);
       notify(t(future ? "adminShop2.toast.scheduled" : "adminShop2.toast.published", { name: set.name }));
       onSaved?.();
     } catch (e) {
@@ -263,7 +275,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
     try {
       await shop2Api.unpublishSet(set.key);
       setUndoUntil(null);
-      setSet((s) => ({ ...s, status: "draft" }));
+      setSet((s) => ({ ...s, status: "draft", state: "draft" }));
       notify(t("adminShop2.toast.unpublished"));
       onSaved?.();
     } catch (e) {
@@ -275,27 +287,26 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
     if (undoUntil && undoLeftS <= 0) setUndoUntil(null);
   }, [undoUntil, undoLeftS]);
 
+  // Shareable preview: a deep link other admins open on this set (Yönetici Paneli › Vitrin ve Setler).
   const copyLink = async () => {
     try {
       const key = set.key || (await save({ quiet: true }));
       if (!key) return;
-      const r = await shop2Api.previewLink(key);
-      const url = r?.url || "";
+      const url = `${window.location.origin}/admin/panel?tab=shop2&set=${encodeURIComponent(key)}`;
       try {
         await navigator.clipboard?.writeText(url);
       } catch {
         /* clipboard blocked */
       }
-      notify(t("adminShop2.toast.linkCopied", { h: r?.hours || 48 }));
+      notify(t("adminShop2.toast.linkCopied"));
     } catch (e) {
       fail(e);
     }
   };
   const duplicate = async () => {
     try {
-      const key = set.key || (await save({ quiet: true }));
-      const r = await shop2Api.duplicateSet(key);
-      const nk = r?.set?.key || r?.key;
+      const r = await shop2Api.duplicateSet(set);
+      const nk = r?.key;
       notify(t("adminShop2.toast.duplicated"));
       if (nk) onOpenSet(nk);
     } catch (e) {
@@ -468,7 +479,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
                 <span className="as2-cap is-sub">{t(`adminShop2.b.group.${g}`)}</span>
                 {slots.map((slot) => {
                   const p = set.pieces?.[slot];
-                  const share = p ? Number(set.ownerShares?.[p.id] ?? p.ownerSharePct ?? 0) : 0;
+                  const share = p ? Number(set.ownerShares?.[p.id] ?? p.owners ?? 0) : 0;
                   return (
                     <div
                       key={slot}
@@ -498,7 +509,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
                               <b>{name(p)}</b>
                               <small>
                                 {t(`adminShop2.cat.${slot}`)}
-                                {share ? ` · ${t("adminShop2.b.ownedBy", { pct: f.n(share) })}` : ""}
+                                {share ? ` · ${t("adminShop2.b.ownedBy", { n: f.n(share) })}` : ""}
                               </small>
                             </span>
                             <span className="as2-slot-p">
@@ -532,7 +543,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
           {ownerWarn ? (
             <p className="as2-warn" data-testid="as2-owner-warn">
               <AlertTriangle size={16} />
-              <span>{t("adminShop2.b.ownerWarn", { name: name(ownerWarn.item), pct: f.n(ownerWarn.share), drop: f.n(ownerWarn.drop) })}</span>
+              <span>{t("adminShop2.b.ownerWarn", { name: name(ownerWarn.item), n: f.n(ownerWarn.n), drop: f.n(ownerWarn.drop) })}</span>
             </p>
           ) : null}
 
@@ -759,14 +770,14 @@ function ScheduleBlock({ set, patch, durationDays, clash, keepClash, setKeepClas
     <div className="as2-sched-b" data-testid="as2-schedule">
       <div className="as2-b-sh">
         <span className="as2-cap">{t("adminShop2.b.schedule")}</span>
-        <label className="as2-tg is-inline">
-          <Switch checked={set.partialSale} onChange={(v) => patch({ partialSale: v })} label={t("adminShop2.b.partial")} />
+        <span className="as2-tg is-inline is-ro" title={t("adminShop2.b.partialHint")}>
+          <Switch checked disabled label={t("adminShop2.b.partial")} />
           <span>{t("adminShop2.b.partial")}</span>
-        </label>
-        <label className="as2-tg is-inline">
-          <Switch checked={set.giftable} onChange={(v) => patch({ giftable: v })} label={t("adminShop2.b.giftable")} />
+        </span>
+        <span className="as2-tg is-inline is-ro" title={t("adminShop2.b.giftableHint")}>
+          <Switch checked disabled label={t("adminShop2.b.giftable")} />
           <span>{t("adminShop2.b.giftable")}</span>
-        </label>
+        </span>
       </div>
       <div className="as2-sched-fields">
         <label className="as2-fbox">
@@ -799,14 +810,6 @@ function ScheduleBlock({ set, patch, durationDays, clash, keepClash, setKeepClas
             }}
             aria-label={t("adminShop2.b.stock")}
           />
-        </label>
-        <label className="as2-fbox">
-          <span className="as2-muted">{t("adminShop2.b.perPerson")}</span>
-          <input className="tnum" inputMode="numeric" value={set.perPerson} onChange={(e) => patch({ perPerson: Math.max(1, Number(e.target.value.replace(/\D/g, "") || 1)) })} aria-label={t("adminShop2.b.perPerson")} />
-        </label>
-        <label className="as2-fbox">
-          <span className="as2-muted">{t("adminShop2.b.giftPerDay")}</span>
-          <input className="tnum" inputMode="numeric" value={set.giftable ? set.giftPerDay ?? 1 : 0} disabled={!set.giftable} onChange={(e) => patch({ giftPerDay: Math.max(0, Number(e.target.value.replace(/\D/g, "") || 0)) })} aria-label={t("adminShop2.b.giftPerDay")} />
         </label>
       </div>
       <div className="as2-mstrip" style={{ "--days": days }}>
@@ -846,7 +849,7 @@ function ScheduleBlock({ set, patch, durationDays, clash, keepClash, setKeepClas
           </span>
         </div>
       ) : null}
-      {set.stock?.total != null ? <p className="as2-hint tnum">{t("adminShop2.b.stockNote", { n: f.n(set.stock.total), per: set.perPerson })}</p> : null}
+      {set.stock?.total != null ? <p className="as2-hint tnum">{t("adminShop2.b.stockNote", { n: f.n(set.stock.total), sold: f.n(set.stockSold || 0) })}</p> : null}
     </div>
   );
 }
