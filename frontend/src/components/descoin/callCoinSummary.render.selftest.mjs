@@ -211,7 +211,8 @@ for (const lang of ["de", "es", "fr", "pt-BR", "ru"]) {
 // ---- settings tab
 {
   const html = render.settings({ now: NOW, loadDaily: async () => ({}), loadLedger: async () => ({ entries: [] }) }, "tr");
-  has(html, "Cüzdan ve kazanç");
+  // The settings shell prints the page title (3c915831 dropped the duplicate h1).
+  assert.equal(/<h1[^>]*>Cüzdan ve kazanç<\/h1>/.test(html), false, "no duplicate page title");
   has(html, "Arama sonu DesCoin özeti");
   has(html, 'role="switch"');
   has(html, "En az şu kadar kazandıysam göster");

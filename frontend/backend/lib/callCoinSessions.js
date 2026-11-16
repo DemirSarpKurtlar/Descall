@@ -154,7 +154,29 @@ async function loadFeatured(userId, balance) {
   ]);
   // Without the inventory we could suggest something the user already owns: show none.
   if (owned == null) return null;
-  return summary.pickFeaturedItem(items, { ownedIds: owned, balance, now: Date.now() });
+  // 1. Market 2.0: one of today's storefront cards (the shop sells s2 items only there).
+  const fromStorefront = await safe(() => loadStorefrontFeatured(userId, { owned, balance, assetBase }), null);
+  if (fromStorefront) return fromStorefront;
+  // 2. "Tüm ürünler" is browse only: only rows an admin opened for direct sale can be bought.
+  const buyable = (items || []).filter((it) => it && it.direct_sale === true);
+  return summary.pickFeaturedItem(buyable, { ownedIds: owned, balance, now: Date.now() });
+}
+
+/** Today's storefront of the user (stored, else computed the same way without saving it). */
+async function loadStorefrontFeatured(userId, { owned, balance, assetBase = "" }) {
+  const sfs = require("./shop2/storefrontService");
+  const catalog = require("./shop2/catalog");
+  const sdb = require("./shop2/db");
+  const [p, cat, wishes] = await Promise.all([
+    sfs.preview(userId, "today"),
+    catalog.getCatalog(),
+    safe(async () => (await sdb.rows(sdb.from("shop2_wishlist").select("item_id").eq("user_id", userId))).map((r) => r.item_id), []),
+  ]);
+  // Before the s2 catalog exists the storefront draws from the classic rows: keep the
+  // classic pick (sale / limited / timed) then.
+  if (cat.legacyPool) return null;
+  const slots = (p?.storefront?.slots || []).map((s) => ({ slot: s.slot, item: cat.byId.get(String(s.itemId)) || null }));
+  return summary.pickStorefrontItem(slots, { ownedIds: owned, wishIds: wishes, balance, publicItem: (it) => catalog.publicItem(it, assetBase) });
 }
 
 /** Builds the payload with fresh balance, today's totals, streak and featured item. */
@@ -265,6 +287,7 @@ module.exports = {
   finish,
   flushPending,
   buildPayload,
+  loadFeatured,
   ledgerMeta,
   sweep,
   _sessions: sessions,

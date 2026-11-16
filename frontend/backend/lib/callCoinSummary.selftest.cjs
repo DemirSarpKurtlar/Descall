@@ -86,6 +86,24 @@ assert.equal(s.pickFeaturedItem(items, { ownedIds: ["owned-sale"], balance: 10, 
 const tie = [{ id: "b", price_descoin: 10, discount_pct: 10 }, { id: "a", price_descoin: 10, discount_pct: 10 }];
 assert.equal(s.pickFeaturedItem(tie, { now }).id, "a");
 
+// Market 2.0 storefront pick (s2 items are sold there, not in "Tüm ürünler").
+const sfSlots = [
+  { slot: 1, item: { id: "s1", sku: "s2-a", name: "A", price: 900, category: "banner" } },
+  { slot: 2, item: { id: "s2", sku: "s2-b", name: "B", price: 400, category: "theme", i18n: { name: { tr: "Bé", en: "B" } } } },
+  { slot: 3, item: { id: "s3", sku: "s2-c", name: "C", price: 300, category: "chat_bubble" } },
+  { slot: 4, item: { id: "s4", sku: "s2-d", name: "D", price: 0, category: "theme" } },
+];
+const sfPick = s.pickStorefrontItem(sfSlots, { ownedIds: [], balance: 500, publicItem: (it) => ({ asset_url: `/api/shop2/assets/${it.id}?v=1` }) });
+assert.equal(sfPick.id, "s2", "affordable first, then slot order");
+assert.equal(sfPick.kind, "storefront");
+assert.equal(sfPick.source, "shop2");
+assert.equal(sfPick.imageUrl, "/api/shop2/assets/s2?v=1");
+assert.deepEqual(sfPick.i18n, { name: { tr: "Bé", en: "B" } });
+assert.equal(s.pickStorefrontItem(sfSlots, { ownedIds: ["s2"], wishIds: ["s3"], balance: 500 }).id, "s3", "wishlisted next");
+assert.equal(s.pickStorefrontItem(sfSlots, { ownedIds: ["s2", "s3"], balance: 10 }).id, "s1", "none affordable: slot order");
+assert.equal(s.pickStorefrontItem(sfSlots, { ownedIds: ["s1", "s2", "s3"] }), null, "free / owned only: none");
+assert.equal(s.pickStorefrontItem([], {}), null);
+
 // Payload: display info only, balance before/after, today before/after, warning.
 const payload = s.buildSummaryPayload(sess, {
   endedAt: t0 + 2292_000,

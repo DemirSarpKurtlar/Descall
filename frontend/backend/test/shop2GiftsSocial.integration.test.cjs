@@ -62,6 +62,21 @@ const { U, I, boot, harness } = require("./shop2Fixture.cjs");
     assert.ok(wishItem.payload && wishItem.payload.itemId === I(31), "payload unchanged");
   });
 
+  await check("end-of-call featured item is one of today's storefront cards (never a browse-only s2 row)", async () => {
+    const sessions = require("../lib/callCoinSessions");
+    const sf = await call("/shop2/storefront");
+    const slotIds = sf.body.slots.filter((x) => !x.owned).map((x) => String(x.item.id));
+    const f = await sessions.loadFeatured(U(1), 30000);
+    assert.ok(f, "featured item");
+    assert.ok(slotIds.includes(String(f.id)), `${f.id} is a storefront card`);
+    assert.strictEqual(f.source, "shop2");
+    assert.ok(f.price > 0);
+    // Every card owned: no s2 item from "Tüm ürünler" (direct_sale false); none qualifies.
+    for (const id of slotIds) env.fake._tables.user_inventory.rows.push({ id: `own-${id}`, user_id: U(1), item_id: id, acquired_via: "purchase", acquired_at: new Date().toISOString() });
+    const none = await sessions.loadFeatured(U(1), 30000);
+    assert.ok(!none || !String(none.sku || "").startsWith("s2-"), JSON.stringify(none));
+  });
+
   env.close();
   finish();
 })();

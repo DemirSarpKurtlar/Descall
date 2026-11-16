@@ -218,6 +218,55 @@ function pickFeaturedItem(items = [], { ownedIds = [], balance = 0, now = Date.n
 }
 
 /**
+ * Featured item from the user's own Market 2.0 storefront today (what the shop sells them
+ * right now). `slots` are [{ slot, item }] with shop2 catalog items ({ id, sku, name,
+ * description, i18n, category, rarity, price, asset, preview, ... }); `publicItem` maps one
+ * to its client payload (image URLs). Not owned and paid only; affordable first, then a
+ * wishlisted one, then slot order. Null when none.
+ */
+function pickStorefrontItem(slots = [], { ownedIds = [], wishIds = [], balance = 0, publicItem = null } = {}) {
+  const owned = new Set((ownedIds || []).map(String));
+  const wished = new Set((wishIds || []).map(String));
+  const cands = [];
+  for (const s of slots || []) {
+    const item = s?.item;
+    if (!item || item.id == null || owned.has(String(item.id))) continue;
+    if (item.active === false || item.retired) continue;
+    const price = Math.max(0, Math.round(Number(item.price) || 0));
+    if (price <= 0) continue;
+    cands.push({ item, price, slot: Number(s.slot) || 99, affordable: Number(balance) >= price, wished: wished.has(String(item.id)) });
+  }
+  if (!cands.length) return null;
+  cands.sort((a, b) => Number(b.affordable) - Number(a.affordable) || Number(b.wished) - Number(a.wished) || a.slot - b.slot);
+  const best = cands[0];
+  const { item } = best;
+  const pub = typeof publicItem === "function" ? publicItem(item) || {} : {};
+  return {
+    id: String(item.id),
+    sku: item.sku || null,
+    name: item.name || "",
+    description: item.description || "",
+    i18n: item.i18n && typeof item.i18n === "object" ? item.i18n : null,
+    category: item.category || null,
+    rarity: item.rarity || null,
+    imageUrl: pub.preview_url || pub.asset_url || null,
+    themeKey: item.themeKey || null,
+    effectKey: item.effectKey || null,
+    badgeIcon: item.badgeIcon || null,
+    countryCode: null,
+    price: best.price,
+    listPrice: best.price,
+    discountPct: 0,
+    stockLeft: null,
+    endsAt: null,
+    kind: "storefront",
+    source: "shop2",
+    slot: best.slot,
+    affordable: best.affordable,
+  };
+}
+
+/**
  * `descoin:call-summary` payload. `display` is only what the user could already see
  * in the call (peer / group / server + channel name and avatar), `today` the day's
  * earnings after the call, `origin` "self" (the device that left) or "server".
@@ -289,5 +338,6 @@ module.exports = {
   nearCapWarning,
   offerEndsAt,
   pickFeaturedItem,
+  pickStorefrontItem,
   buildSummaryPayload,
 };

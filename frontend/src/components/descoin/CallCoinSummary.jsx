@@ -363,7 +363,7 @@ export default function CallCoinSummary({
   const warnBefore = warn ? Math.max(0, warn.earned - (warn.kind === "voice" ? s.earnedVoice || 0 : warn.kind === "screenshare" ? s.earnedScreenshare || 0 : earned)) : 0;
 
   const item = featured && !featured.soldOut ? featured : null;
-  const itemLabel = item ? localizeShopItem({ id: item.id, sku: item.sku, name: item.name, description: item.description, category: item.category, country_code: item.countryCode }, locale).name : "";
+  const itemLabel = item ? localizeShopItem({ id: item.id, sku: item.sku, name: item.name, description: item.description, i18n: item.i18n || null, category: item.category, country_code: item.countryCode }, locale).name : "";
   const countdown = item?.endsAt ? countdownParts(item.endsAt, now) : null;
   const countdownText = countdown ? (countdown.d > 0 ? t("coinpop.feat.days", { d: countdown.d, time: countdown.clock }) : countdown.clock) : null;
   const catText = item ? categoryLabel(t, item.category) : null;
