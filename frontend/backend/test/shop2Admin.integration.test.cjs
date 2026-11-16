@@ -329,6 +329,22 @@ async function run() {
       for (const x of ["shop2_set_create", "shop2_set_publish", "shop2_set_recall", "shop2_rules_create", "shop2_rules_activate", "shop2_limits_update", "shop2_night_open_now", "shop2_ab_create", "shop2_free_refresh"]) assert.ok(actions.has(x), `missing ${x}`);
     });
 
+    await check("scheduler: delivers a due scheduled gift, announces the 00:00 reset and night changes", async () => {
+      const scheduler = require("../lib/shop2/scheduler");
+      const sendAt = new Date(Date.now() + 60_000).toISOString();
+      const g = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(4), itemId: I(37), sendAt }, user: 2 });
+      assert.equal(g.status, 200, JSON.stringify(g.body));
+      assert.equal(g.body.status, "scheduled");
+      await scheduler.tick({ now: Date.now() });
+      const out = await scheduler.tick({ now: Date.now() + 120_000 });
+      assert.equal(out.delivered, 1);
+      assert.equal(rows("shop2_gifts").find((x) => x.id === g.body.giftId).status, "delivered");
+      assert.ok(emitted.some((e) => e.to === `user:${U(4)}` && e.ev === "shop2:gift" && e.p.kind === "received"));
+      const next = await scheduler.tick({ now: Date.now() + 86_400_000 });
+      assert.equal(next.daily, true);
+      assert.ok(emitted.some((e) => e.to === "all" && e.ev === "shop2:storefront" && e.p.reason === "daily"));
+    });
+
     await check("mounted router: the admin chain refuses non-admins", async () => {
       const express = require("express");
       const app = express();

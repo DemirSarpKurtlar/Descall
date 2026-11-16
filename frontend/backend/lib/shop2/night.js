@@ -101,12 +101,20 @@ async function coOpenBonus(nightId, userId, bonus) {
 
 async function deck(userId, night) {
   const [cat, owned] = await Promise.all([catalog.getCatalog(), people.ownedIds(userId)]);
-  // Deck is drawn against what the user owned before tonight's purchases: keep bought cards in place.
+  // A flipped card is fixed by its flip row (item, discount, price); the rest of the deck is drawn
+  // against what the user owned before tonight's cards, so buying elsewhere never reshuffles it.
   const flips = await flipsOf(night.id, userId);
-  const boughtIds = new Set(flips.filter((f) => f.bought_at).map((f) => String(f.item_id)));
-  const ownedBefore = new Set([...owned].filter((id) => !boughtIds.has(id)));
+  const flippedIds = new Set(flips.map((f) => String(f.item_id)));
+  const ownedBefore = new Set([...owned].filter((id) => !flippedIds.has(id)));
   const d = deckFor({ userId, night, pool: cat.items, owned: ownedBefore });
-  return { ...d, flips, owned, cat };
+  const byIndex = new Map(flips.map((f) => [Number(f.card_index), f]));
+  const cards = d.cards.map((c) => {
+    const f = byIndex.get(c.index);
+    if (!f) return c;
+    const it = cat.byId.get(String(f.item_id));
+    return { ...c, itemId: f.item_id, discountPct: Number(f.discount_pct), price: Number(f.price), listPrice: Number(f.list_price), hint: it?.category || c.hint, rarity: it?.rarity || c.rarity };
+  });
+  return { ...d, cards, flips, owned, cat };
 }
 
 /** The user's night market view. */
