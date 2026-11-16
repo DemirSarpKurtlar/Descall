@@ -369,7 +369,7 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
   --s2-edge: rgba(140, 90, 50, 0.35);
   --s2-quote: rgba(120, 70, 30, 0.1);
   --s2-bg:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'><g fill='none' stroke='%23b07a4c' stroke-width='3' stroke-linecap='round' opacity='.24'><path d='M30 54C30 40 30 22 30 8'/><path d='M30 44c-10-2-14-8-14-8M30 44c10-2 14-8 14-8M30 34c-8-1-11-6-11-6M30 34c8-1 11-6 11-6M30 25c-6-1-8-5-8-5M30 25c6-1 8-5 8-5M30 17c-4 0-5-3-5-3M30 17c4 0 5-3 5-3'/></g></svg>") right -4px center / auto 120% no-repeat,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'><g fill='none' stroke='%23b07a4c' stroke-width='3' stroke-linecap='round' opacity='.15'><path d='M30 54C30 40 30 22 30 8'/><path d='M30 44c-10-2-14-8-14-8M30 44c10-2 14-8 14-8M30 34c-8-1-11-6-11-6M30 34c8-1 11-6 11-6M30 25c-6-1-8-5-8-5M30 25c6-1 8-5 8-5M30 17c-4 0-5-3-5-3M30 17c4 0 5-3 5-3'/></g></svg>") right -4px center / auto 120% no-repeat,
     radial-gradient(70% 90% at 100% 50%, rgba(196, 140, 90, 0.35), transparent 70%),
     radial-gradient(120% 90% at 0% 0%, rgba(255, 252, 245, 0.9), transparent 55%),
     linear-gradient(180deg, #f6e8d3, #e8cfac);
@@ -920,7 +920,8 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
   --s2-glow: rgba(120, 90, 255, 0.3);
   --s2-quote: rgba(0, 0, 0, 0.4);
   --s2-bg:
-    radial-gradient(70% 60% at 50% 50%, rgba(18, 12, 26, 0.72), rgba(18, 12, 26, 0.3) 75%, transparent 100%),
+    linear-gradient(90deg, rgba(18, 12, 26, 0.2), rgba(18, 12, 26, 0.84) 16%, rgba(18, 12, 26, 0.84) 84%, rgba(18, 12, 26, 0.2)),
+    linear-gradient(180deg, rgba(18, 12, 26, 0.35), transparent 30%, transparent 70%, rgba(18, 12, 26, 0.35)),
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><g stroke='%231a1410' stroke-width='2.2' stroke-linejoin='round'><path d='M0 0h40l-12 26L0 18z' fill='%23b3123c'/><path d='M40 0h38L62 30 28 26z' fill='%231e4fc4'/><path d='M78 0h42v22L96 32 62 30z' fill='%23d6a01e'/><path d='M0 18l28 8-8 34H0z' fill='%23177a5a'/><path d='M28 26l34 4-6 30H20z' fill='%236a2fb0'/><path d='M62 30l34 2-10 28H56z' fill='%23b3123c'/><path d='M96 32l24-10v38H86z' fill='%231e4fc4'/></g></svg>") 0 0 / 120px 60px,
     #1a1410;
 }
