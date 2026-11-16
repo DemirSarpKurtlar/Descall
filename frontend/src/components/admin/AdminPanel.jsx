@@ -60,6 +60,7 @@ import { AdminPermsContext } from "./dossier/adminPerms.js";
 // Premium Yönetimi (Descall+ / Ultra): its own chunk, loaded when a premium page opens.
 const PremiumAdmin = lazy(() => import("./premium/PremiumAdmin.jsx"));
 const AdminAgent = lazy(() => import("./AdminAgent.jsx"));
+const AdminShop2 = lazy(() => import("./shop2/AdminShop2.jsx"));
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import GlassCheckbox from "../ui/GlassCheckbox";
@@ -98,6 +99,7 @@ const TABS = [
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
   { id: "shop", label: "admin.shop", icon: ShoppingBag },
+  { id: "shop2", label: "adminShop2.title", icon: Layers },
   { id: "promo", label: "admin.promoCodes", icon: Ticket },
   { id: "specialBadges", label: "badges.adminTab", icon: Award },
   { id: "announcements", label: "admin.announcements", icon: Megaphone },
@@ -770,6 +772,18 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
 
 
 
+        {tab === "shop2" && (
+          <Suspense fallback={null}>
+            <AdminShop2
+              socket={socket}
+              onOpenUser={(id) => {
+                setDossierUserId(id);
+                setTab("people");
+              }}
+              onGoto={selectTab}
+            />
+          </Suspense>
+        )}
         {tab === "livepopup" && <AdminLivePopup socket={socket} viewerUsername={viewerUsername} />}
         {tab === "agent" && (
           <Suspense fallback={null}>
