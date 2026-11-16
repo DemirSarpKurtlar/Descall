@@ -241,7 +241,7 @@ async function run(browser, base, boot0, r, problems) {
     await clickTab(page, 0);
     await waitFor(page, `${r.name} vitrin`, () => !!document.querySelector('.s2-card .s2-card-art'));
     await page.click('.s2-card .s2-card-art');
-    await waitFor(page, `${r.name} layer`, () => !!document.querySelector('.s2-layer .s2-hold'));
+    await waitFor(page, `${r.name} layer`, () => !!document.querySelector('.s2-layer .s2-layer-panel button'));
     await sleep(500);
     if (!phone) {
       let out = 0;
