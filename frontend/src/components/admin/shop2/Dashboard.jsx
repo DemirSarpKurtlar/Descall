@@ -11,12 +11,13 @@ import { Pill, PieceDots, Seg, SetMark, Spark, Skel, UserAv, useFmt, useItemName
 import { STATUS_TONE, SET_SLOTS, areaPath, filterSets, lastIndex, lifecycle, linePath, mmss, niceMax, setCounts, trend, undoLeft } from "./shop2Model.js";
 
 export default function Dashboard({ dash, range, onRange, sets, rules, limits, night, now, flash, onOpenSet, onRecall, onUndoRecall, onRulesChanged, onNight, onLimits, notify, fail }) {
+  const [algoFocus, setAlgoFocus] = useState(null);
   return (
     <div className="as2-grid-a">
       <LiveSales dash={dash} range={range} onRange={onRange} now={now} />
-      <AlgorithmPanel rules={rules} now={now} onChanged={onRulesChanged} notify={notify} fail={fail} />
+      <AlgorithmPanel rules={rules} now={now} onChanged={onRulesChanged} notify={notify} fail={fail} focus={algoFocus} />
       <SetsTable sets={sets} now={now} flash={flash} onOpenSet={onOpenSet} onRecall={onRecall} onUndoRecall={onUndoRecall} />
-      <RulesCard limits={limits} night={night} rules={rules} now={now} onNight={onNight} onLimits={onLimits} />
+      <RulesCard limits={limits} night={night} rules={rules} now={now} onNight={onNight} onLimits={onLimits} onNewAccount={() => setAlgoFocus({ tab: "newAccount", at: Date.now() })} />
     </div>
   );
 }
@@ -322,7 +323,7 @@ export function statusText(t, s, st, locale, now) {
 
 /* ------------------------------------------------------------------ rules and limits */
 
-function RulesCard({ limits, night, rules, now, onNight, onLimits }) {
+function RulesCard({ limits, night, rules, now, onNight, onLimits, onNewAccount }) {
   const { t, locale } = useLocale();
   const f = useFmt();
   const S = limits?.stats || {};
@@ -363,7 +364,7 @@ function RulesCard({ limits, night, rules, now, onNight, onLimits }) {
       title: t("adminShop2.rules.newAccount"),
       sub: t("adminShop2.rules.newAccountSub", { days: na.days ?? 3, cap: f.n(na.slotCap ?? 600) }),
       pill: null,
-      onClick: () => onLimits("purchases"),
+      onClick: onNewAccount,
     },
   ];
   return (

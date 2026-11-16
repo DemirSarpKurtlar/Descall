@@ -44,7 +44,8 @@ export const SHOP2_EN = {
     "noGift": "No packages waiting",
     "giftWhen": "Arrived {time} · not opened",
     "giftSub": "Gifts from friends land here",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "earned": "Earned today"
   },
   "vitrin": {
     "today": "Today's storefront",
@@ -492,7 +493,6 @@ export const SHOP2_EN = {
   "inv": {
     "title": "Inventory",
     "count": "{n, plural, one {# new item} other {# new items}}",
-    "legacy": "Old collection",
     "legacyBody": "Items no longer sold. They are still yours and still show on your profile.",
     "emptyTitle": "Your inventory is empty",
     "emptyBody": "Items you buy or get as gifts show up here.",

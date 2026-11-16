@@ -44,7 +44,8 @@ export const SHOP2_TR = {
     "noGift": "Bekleyen paket yok",
     "giftWhen": "{time} geldi · açılmadı",
     "giftSub": "Arkadaşlarının hediyeleri buraya düşer",
-    "wallet": "Cüzdan"
+    "wallet": "Cüzdan",
+    "earned": "Bugün kazandın"
   },
   "vitrin": {
     "today": "Bugünün vitrini",
@@ -492,7 +493,6 @@ export const SHOP2_TR = {
   "inv": {
     "title": "Envanter",
     "count": "{n} yeni ürün",
-    "legacy": "Eski koleksiyon",
     "legacyBody": "Artık satılmayan ürünler. Hâlâ senin ve profilinde görünmeye devam ediyor.",
     "emptyTitle": "Envanterin boş",
     "emptyBody": "Aldığın ya da hediye gelen ürünler burada görünür.",

@@ -6025,3 +6025,103 @@ button.s2-strip:hover {
     width: 100% !important;
   }
 }
+
+/* ---------- fixes after the visual pass ---------- */
+
+.s2-root:not(.is-phone) .s2-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "title wallet" "tabs search";
+  align-items: center;
+  gap: 10px 14px;
+}
+.s2-root:not(.is-phone) .s2-title {
+  grid-area: title;
+}
+.s2-root:not(.is-phone) .s2-wallet {
+  grid-area: wallet;
+  margin-left: 0;
+}
+.s2-root:not(.is-phone) .s2-tabs {
+  grid-area: tabs;
+  justify-self: start;
+  max-width: 100%;
+}
+.s2-root:not(.is-phone) .s2-search-btn {
+  grid-area: search;
+  width: 260px;
+}
+.s2-root.is-tablet .s2-search-btn {
+  display: flex;
+  width: 46px;
+  min-width: 0;
+  padding: 0;
+  justify-content: center;
+}
+.s2-root.is-tablet .s2-search-btn span,
+.s2-root.is-tablet .s2-search-btn kbd {
+  display: none;
+}
+.s2-root.is-tablet .s2-tabs {
+  order: 0;
+  flex-basis: auto;
+}
+.s2-popwrap.is-sheetonly > .s2-btn {
+  display: none;
+}
+.s2-art-bubbles .message-bubble {
+  white-space: nowrap;
+  max-width: none !important;
+}
+.s2-clock {
+  white-space: nowrap;
+  flex: none;
+}
+.s2-pchip b small {
+  font-size: var(--fs-12);
+  color: var(--s2-mute);
+  font-weight: 600;
+}
+.s2-cabin-body {
+  container-type: inline-size;
+}
+@container (max-width: 620px) {
+  .s2-cabin-desk {
+    flex-direction: column;
+    align-items: center;
+  }
+  .s2-cabin-card {
+    flex: none;
+    width: min(300px, 100%);
+  }
+  .s2-cabin-side {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .s2-cabin-side .s2-voice-row {
+    grid-template-columns: 1fr;
+  }
+  .s2-cabin-side .s2-stage-peers {
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 64px;
+  }
+  .s2-stage {
+    grid-template-columns: minmax(0, 1fr) 210px;
+  }
+  .s2-stage-channels {
+    display: none;
+  }
+}
+@container (max-width: 440px) {
+  .s2-cabin-side {
+    grid-template-columns: 1fr;
+  }
+  .s2-stage {
+    grid-template-columns: 1fr;
+  }
+}
+.s2-root.is-desktop .s2-sets-grid {
+  grid-template-columns: 270px minmax(0, 1fr) 300px;
+}
