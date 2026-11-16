@@ -9,7 +9,8 @@ import { useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatAppDateTime } from "../../../lib/datetime";
 import { cssUrl } from "../../../lib/cssUrl";
-import { S2Avatar, S2ChatMessage, S2JoinSound, S2Name, S2VoiceTile } from "../../shop2/Shop2Preview.jsx";
+import { S2Avatar, S2ChatMessage, S2Name } from "../../shop2/Shop2Preview.jsx";
+import { JoinSoundPreview, VoiceTilePreview } from "../../voice/VoiceCosmetics.jsx";
 import { ChevronDown, Eye, Gift, Monitor, Smartphone, TrendingUp } from "./icons.js";
 import { Coin, Pill, Popover, Seg, Thumb, useFmt } from "./ui.jsx";
 import { SET_SLOTS, leftParts, priceForOwner, priceTiers, setPricing } from "./shop2Model.js";
@@ -52,7 +53,15 @@ export default function SetPreview({ set, now, stage, onStage, sample, onSample,
   const owned = useMemo(() => sampleOwned(set, sample), [set, sample]);
   const pr = setPricing(pieces, set?.price);
   const mine = priceForOwner(pieces, set?.price, owned);
-  const tiers = priceTiers(pieces, set?.price, set?.ownerShares || {});
+  const tiers = useMemo(() => {
+    const payers = set?.payers || [];
+    if (!payers.length) return priceTiers(pieces, set?.price, {});
+    const known = payers.reduce((a, p) => a + (Number(p.users) || 0), 0);
+    return [
+      ...payers.map((p) => ({ key: p.key, price: p.pays ?? null, users: p.users, share: p.users != null && known ? Math.round((p.users / known) * 100) : null })),
+      { key: "all", price: null, hidden: true, share: null },
+    ];
+  }, [set, pieces]);
   const sampleLabel = sample?.username ? `@${sample.username}` : t(`adminShop2.pv.sample.${sample?.id || "none"}`);
 
   const show = (d) => {
@@ -134,7 +143,7 @@ export default function SetPreview({ set, now, stage, onStage, sample, onSample,
                     <small>{t(`adminShop2.pv.tier.${tr.key}`)}</small>
                     <b className="tnum">{tr.hidden ? t("adminShop2.pv.hidden") : tr.price == null ? "–" : `${f.n(tr.price)} D`}</b>
                   </span>
-                  {tr.share != null ? <em className="tnum">{f.p(tr.share, 0)}</em> : null}
+                  {tr.users != null ? <em className="tnum">{t("adminShop2.pv.users", { n: f.n(tr.users) })}</em> : tr.share != null ? <em className="tnum">{f.p(tr.share, 0)}</em> : null}
                 </div>
               ))}
               {forecast ? (
@@ -353,8 +362,8 @@ function WornStrip({ set, sampleName }) {
         ) : null}
         {hasVoice ? (
           <div className="as2-worn-voice">
-            {set?.pieces?.voice_tile ? <S2VoiceTile user={user} size="sm" /> : null}
-            {set?.pieces?.join_sound ? <S2JoinSound item={set.pieces.join_sound} compact /> : null}
+            {set?.pieces?.voice_tile ? <VoiceTilePreview item={set.pieces.voice_tile} name={user.displayName || user.username} initials={String(user.displayName || user.username || "E").slice(0, 2).toUpperCase()} wide /> : null}
+            {set?.pieces?.join_sound ? <JoinSoundPreview item={set.pieces.join_sound} compact /> : null}
           </div>
         ) : null}
       </div>
