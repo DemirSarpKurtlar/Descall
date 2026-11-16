@@ -2062,6 +2062,7 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
   background:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='48'><g fill='%23180505'><path d='M0 0h37l3 14-10 9-30-2z'/><path d='M41 0h40l-3 18-26 6-8-10z'/><path d='M85 0h35v24l-14 4-24-9z'/><path d='M0 25l31 1 11-9 9 10 1 21H0z'/><path d='M56 28l26-6 24 9-2 17H55z'/><path d='M109 31l11-3v20h-12z'/></g><g fill='none' stroke='%235a0e0e' stroke-width='.8' opacity='.8'><path d='M6 8l10 4M50 10l12-2M92 12l10 4M10 36l14-2M66 38l14 2'/></g></svg>") 0 0 / 120px 48px,
     linear-gradient(90deg, #ff3d00, #ffb000 25%, #ff6a00 50%, #ffb000 75%, #ff3d00) 0 0 / 120px 100%;
+  opacity: 0.62;
   animation: s2c2-flow 6s linear infinite;
 }
 .cosmetic-chat-bubble.bubble-s2-set-lav-akisi::after {
