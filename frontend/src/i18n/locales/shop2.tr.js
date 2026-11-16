@@ -296,7 +296,9 @@ export const SHOP2_TR = {
     "owners": "Sahipleri",
     "lastHour": "Son 1 saatte {n}",
     "ownersFriends": "{names} ve {n} kişi",
-    "otherSets": "Diğer setler"
+    "otherSets": "Diğer setler",
+    "shortBy": "{n} D eksik",
+    "shortHint": "Aramalarda, mesajlarda ya da günlük ödülle kazan"
   },
   "stage": {
     "mine": "Sahnem",

@@ -296,7 +296,9 @@ export const SHOP2_PT_BR = {
     "owners": "Donos",
     "lastHour": "Última hora {n}",
     "ownersFriends": "{names} e mais {n}",
-    "otherSets": "Outros sets"
+    "otherSets": "Outros sets",
+    "shortBy": "Faltam {n} D",
+    "shortHint": "Ganhe em chamadas, mensagens ou com a recompensa diária"
   },
   "stage": {
     "mine": "Meu palco",

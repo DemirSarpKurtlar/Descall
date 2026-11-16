@@ -6174,3 +6174,44 @@ button.s2-strip:hover {
   padding: 0 10px;
   font-size: var(--fs-12) !important;
 }
+/* Header like draft A: title, search and wallet on one row; tabs under them. */
+.s2-root:not(.is-phone) .s2-head {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "title search wallet" "tabs tabs tabs";
+}
+.s2-root:not(.is-phone) .s2-search-btn {
+  width: 260px;
+}
+.s2-root.is-tablet .s2-search-btn {
+  width: 42px;
+}
+.s2-short {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 14px;
+  background: rgba(242, 169, 59, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(242, 169, 59, 0.3);
+}
+.s2-short-t {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.s2-short-t b {
+  font: 750 var(--fs-15) "Inter Display", Inter, sans-serif;
+  color: #ffc773;
+}
+.s2-short-t small {
+  font-size: var(--fs-11);
+  color: var(--s2-dim);
+}
+.s2-short.is-compact {
+  flex: 1;
+  padding: 6px 6px 6px 12px;
+}
+.s2-short .s2-earn {
+  flex: none;
+}

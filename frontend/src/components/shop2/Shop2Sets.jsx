@@ -18,7 +18,7 @@ import {
   SHOP2_PARTIAL_DAYS,
 } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
-import { Chip, Layer, Num, Price, Seg, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
+import { Chip, Layer, Num, Price, Seg, ShortBy, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import Shop2Stage, { StagePicker, useStage } from "./Shop2Stage.jsx";
 import { setGradient } from "./Shop2Vitrin.jsx";
@@ -360,8 +360,10 @@ function Kasa({ set, pricing, hidden, onSaveLook }) {
         ) : null}
         {pricing.partialActive ? <p className="s2-note"><Clock size={14} />{t("shop2.kasa.partialLock", { d: partialDays || SHOP2_PARTIAL_DAYS })}</p> : null}
         <Seg value={forWhom} onChange={setForWhom} label={t("shop2.kasa.forWhom")} className="is-full" options={[{ id: "me", label: t("shop2.kasa.forMe"), icon: User }, { id: "friend", label: t("shop2.kasa.forFriend"), icon: Gift }]} />
-        {forWhom === "me" ? (
-          <button type="button" className="s2-btn is-primary is-wide is-lg" disabled={pricing.complete || after < 0} onClick={() => s2.openCheckout({ kind: "set", setKey: set.key, pieceIds: null, hidden: [...hidden] })}>
+        {forWhom === "me" && after < 0 && !pricing.complete ? (
+          <ShortBy n={-after} />
+        ) : forWhom === "me" ? (
+          <button type="button" className="s2-btn is-primary is-wide is-lg" disabled={pricing.complete} onClick={() => s2.openCheckout({ kind: "set", setKey: set.key, pieceIds: null, hidden: [...hidden] })}>
             <Cart size={17} />
             {pricing.complete ? t("shop2.kasa.complete") : t("shop2.kasa.buy", { n: formatNumber(pricing.yourPrice, locale) })}
           </button>

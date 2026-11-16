@@ -296,7 +296,9 @@ export const SHOP2_EN = {
     "owners": "Owners",
     "lastHour": "Last hour {n}",
     "ownersFriends": "{names} and {n} more",
-    "otherSets": "Other sets"
+    "otherSets": "Other sets",
+    "shortBy": "{n} D short",
+    "shortHint": "Earn it in calls, messages or the daily reward"
   },
   "stage": {
     "mine": "My stage",

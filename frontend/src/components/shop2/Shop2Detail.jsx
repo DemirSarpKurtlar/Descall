@@ -6,7 +6,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatNumber, formatRelativeTime } from "../../i18n/format.js";
 import { composeTryOnUser, paletteMatch, priceHistoryStats, setPricing, SHOP2_REFUND_MS } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
-import { Chip, CloseX, HoldButton, Num, Price, Seg, Sparkline } from "./Shop2Bits.jsx";
+import { Chip, CloseX, HoldButton, Num, Price, Seg, ShortBy, Sparkline } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import {
   DeviceFrame,
@@ -173,10 +173,12 @@ export function ItemDetail({ slot, onClose }) {
             <Shirt size={16} />
             {String(equippedId) === String(item.id) ? t("shop2.common.unequip") : t("shop2.common.equip")}
           </button>
-        ) : (
-          <HoldButton onConfirm={buy} disabled={!affordable} className="is-wide">
-            {affordable ? t("shop2.detail.buyHold", { n: formatNumber(price, locale) }) : t("shop2.common.notEnough")}
+        ) : affordable ? (
+          <HoldButton onConfirm={buy} className="is-wide">
+            {t("shop2.detail.buyHold", { n: formatNumber(price, locale) })}
           </HoldButton>
+        ) : (
+          <ShortBy n={price - s2.balance} compact />
         )}
         <button type="button" className="s2-ibtn" onClick={() => s2.openGift({ item, price })} aria-label={t("shop2.gifts.giftIt")} title={t("shop2.gifts.giftIt")}><Gift size={17} /></button>
         <button type="button" className={`s2-ibtn${wished ? " is-on" : ""}`} onClick={() => s2.actions.toggleWishlist(item, !wished)} aria-pressed={wished} aria-label={t("shop2.wishlist.toggle")} title={t("shop2.wishlist.toggle")}><Heart size={17} weight={wished ? "fill" : "regular"} /></button>

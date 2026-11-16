@@ -9,6 +9,7 @@ import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import { localizeShopItem } from "../../lib/shopItemI18n.js";
 import { localText, rarityOf } from "../../lib/shop2Logic.js";
 import ShopItemThumb from "../shop/ShopItemThumb.jsx";
+import "../../styles/shop-merch.css";
 import { assetSrc, JoinWave } from "./Shop2Preview.jsx";
 import { VoiceTileSkin } from "../voice/VoiceCosmetics.jsx";
 import { Mic } from "./shop2Icons.jsx";

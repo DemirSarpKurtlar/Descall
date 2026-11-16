@@ -17,7 +17,7 @@ import {
   windowLeft,
 } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
-import { Chip, CloseX, HoldButton, Layer, Num, Price, useNow, useReducedMotion } from "./Shop2Bits.jsx";
+import { Chip, CloseX, HoldButton, Layer, Num, Price, ShortBy, useNow, useReducedMotion } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import { restoreLook } from "./Shop2Sets.jsx";
 import { S2ChatMessage, S2ProfileCard, S2VoiceTile } from "./Shop2Preview.jsx";
@@ -109,9 +109,13 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
         <p className="s2-note is-gold"><Crown size={14} />{t("shop2.checkout.titleNote", { title: set.reward?.title ? s2.itemName({ name: set.reward.title }) : t("shop2.sets.rewardDefault", { name: s2.setName(set) }) })}</p>
       ) : null}
       {err ? <p className="s2-err" role="alert">{err}</p> : null}
-      <HoldButton onConfirm={pay} busy={busy} disabled={after < 0} className="is-wide is-set" hint={t("shop2.checkout.holdHint")}>
-        {after < 0 ? t("shop2.common.notEnough") : t("shop2.checkout.hold", { n: formatNumber(total, locale) })}
-      </HoldButton>
+      {after < 0 ? (
+        <ShortBy n={-after} />
+      ) : (
+        <HoldButton onConfirm={pay} busy={busy} className="is-wide is-set" hint={t("shop2.checkout.holdHint")}>
+          {t("shop2.checkout.hold", { n: formatNumber(total, locale) })}
+        </HoldButton>
+      )}
       <div className="s2-row">
         <button type="button" className="s2-btn is-flex" onClick={onClose}>{t("shop2.common.cancel")}</button>
       </div>

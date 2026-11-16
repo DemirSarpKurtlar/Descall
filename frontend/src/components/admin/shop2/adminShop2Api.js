@@ -143,7 +143,7 @@ export function normSet(r, extraPieces = null) {
 
 async function liveCatalog({ fresh = false } = {}) {
   if (!fresh && catalogCache && Date.now() - catalogCache.at < 60000) return catalogCache.items;
-  const r = await authedRequest(`/shop2/catalog`);
+  const r = await authedRequest(`/api/shop2/catalog`);
   const items = arr(r?.items).map(normItem).filter(Boolean);
   catalogCache = { at: Date.now(), items, legacyPool: Boolean(r?.legacyPool) };
   return items;

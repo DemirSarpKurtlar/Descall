@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import { countdownParts, idempotencyKey, SHOP2_HOLD_MS, sparkPath, stepPath } from "../../lib/shop2Logic.js";
-import { Hand, X } from "./shop2Icons.jsx";
+import { Hand, Plus, X } from "./shop2Icons.jsx";
+import { useS2 } from "./Shop2Context.js";
 
 /** Re-renders every `interval` ms while active. */
 export function useNow(active = true, interval = 1000) {
@@ -314,3 +315,22 @@ export function Ring({ fraction = 0, size = 18 }) {
     </svg>
   );
 }
+
+/** Not enough DesCoin: say how much is missing and offer the ways to earn it. */
+export function ShortBy({ n, compact = false }) {
+  const { t, locale } = useLocale();
+  const s2 = useS2();
+  return (
+    <div className={`s2-short${compact ? " is-compact" : ""}`} role="status">
+      <span className="s2-short-t">
+        <b className="s2-num">{t("shop2.kasa.shortBy", { n: formatNumber(n, locale) })}</b>
+        {!compact ? <small>{t("shop2.kasa.shortHint")}</small> : null}
+      </span>
+      <button type="button" className="s2-earn" onClick={() => s2.onEarn?.()}>
+        <Plus size={14} weight="bold" />
+        {t("shop2.wallet.earn")}
+      </button>
+    </div>
+  );
+}
+

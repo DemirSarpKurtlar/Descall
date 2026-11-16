@@ -296,7 +296,9 @@ export const SHOP2_RU = {
     "owners": "Владельцы",
     "lastHour": "За последний час {n}",
     "ownersFriends": "{names} и ещё {n}",
-    "otherSets": "Другие наборы"
+    "otherSets": "Другие наборы",
+    "shortBy": "Не хватает {n} D",
+    "shortHint": "Заработай в звонках, сообщениях или ежедневной наградой"
   },
   "stage": {
     "mine": "Моя сцена",
