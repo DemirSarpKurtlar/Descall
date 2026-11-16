@@ -604,6 +604,7 @@ export const nested = {
     "ovAudit": "Recent admin actions",
     "ovAuditHint": "From the audit log",
     "promoCodes": "Promo Codes",
+    "shop2": "Storefront and Sets",
     "signupStats": "Signup Stats",
     "announcements": "Announcements",
     "livePopup": "Live popup",

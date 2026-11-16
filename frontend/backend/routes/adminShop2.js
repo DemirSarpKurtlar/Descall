@@ -51,7 +51,7 @@ function base(req) {
 }
 
 function audit(req, action, target, meta) {
-  return state.appendAudit(req.user.id, req.user.username, `shop2_${action}`, target == null ? null : String(target), meta || {});
+  return state.appendAudit(req.user.id, req.user.username, action, target == null ? null : String(target), meta || {});
 }
 
 function handle(fn) {
@@ -117,7 +117,7 @@ routes.get("/sets/:key/suggestions", handle(async (req) => {
 
 routes.post("/sets", handle(async (req) => {
   const row = await admin.createSet(req.body || {}, actor(req));
-  audit(req, "set_create", row.set_key, { name: row.name?.en || row.name?.tr, discountPct: row.discount_pct, startsAt: row.starts_at, endsAt: row.ends_at, stockLimit: row.stock_limit });
+  audit(req, "shop2_set_create", row.set_key, { name: row.name?.en || row.name?.tr, discountPct: row.discount_pct, startsAt: row.starts_at, endsAt: row.ends_at, stockLimit: row.stock_limit });
   return { ok: true, set: row };
 }));
 
@@ -125,28 +125,28 @@ routes.patch("/sets/:key", handle(async (req) => {
   const key = String(req.params.key);
   const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : null;
   const row = await admin.updateSet(key, req.body || {}, { ...actor(req), reason });
-  audit(req, "set_update", key, { fields: Object.keys(req.body || {}).filter((k) => k !== "reason"), reason, version: row.version });
+  audit(req, "shop2_set_update", key, { fields: Object.keys(req.body || {}).filter((k) => k !== "reason"), reason, version: row.version });
   return { ok: true, set: row };
 }));
 
 routes.post("/sets/:key/shift", handle(async (req) => {
   const key = String(req.params.key);
   const row = await admin.shiftSet(key, req.body?.days, actor(req));
-  audit(req, "set_shift", key, { days: Number(req.body?.days) || 0 });
+  audit(req, "shop2_set_shift", key, { days: Number(req.body?.days) || 0 });
   return { ok: true, set: row };
 }));
 
 routes.post("/sets/:key/publish", handle(async (req) => {
   const key = String(req.params.key);
   const out = await admin.publish(key, { at: req.body?.at || null, ...actor(req) });
-  audit(req, "set_publish", key, { at: req.body?.at || "now", undoUntil: out.undoUntil });
+  audit(req, "shop2_set_publish", key, { at: req.body?.at || "now", undoUntil: out.undoUntil });
   return { ok: true, ...out };
 }));
 
 routes.post("/sets/:key/publish/undo", handle(async (req) => {
   const key = String(req.params.key);
   const out = await admin.undoPublish(key, actor(req));
-  audit(req, "set_publish_undo", key, {});
+  audit(req, "shop2_set_publish_undo", key, {});
   return { ok: true, ...out };
 }));
 
@@ -156,28 +156,28 @@ routes.post("/sets/:key/recall", handle(async (req) => {
   const key = String(req.params.key);
   const reason = reasonOf(req);
   const out = await admin.recall(key, { reason, option: req.body?.option || "keep", replace: req.body?.replace || null, ...actor(req) });
-  audit(req, "set_recall", key, { option: req.body?.option || "keep", reason, preview: out.preview, undoUntil: out.undoUntil });
+  audit(req, "shop2_set_recall", key, { option: req.body?.option || "keep", reason, preview: out.preview, undoUntil: out.undoUntil });
   return { ok: true, ...out };
 }));
 
 routes.post("/sets/:key/recall/undo", handle(async (req) => {
   const key = String(req.params.key);
   const out = await admin.undoRecall(key, actor(req));
-  audit(req, "set_recall_undo", key, {});
+  audit(req, "shop2_set_recall_undo", key, {});
   return { ok: true, ...out };
 }));
 
 routes.post("/sets/:key/restore", handle(async (req) => {
   const key = String(req.params.key);
   const row = await admin.restoreVersion(key, req.body?.version, actor(req));
-  audit(req, "set_restore", key, { version: Number(req.body?.version) });
+  audit(req, "shop2_set_restore", key, { version: Number(req.body?.version) });
   return { ok: true, set: row };
 }));
 
 routes.delete("/sets/:key", handle(async (req) => {
   const key = String(req.params.key);
   const out = await admin.deleteDraft(key);
-  audit(req, "set_delete", key, {});
+  audit(req, "shop2_set_delete", key, {});
   return out;
 }));
 
@@ -188,7 +188,7 @@ routes.get("/rules/:version", handle((req) => ops.getRuleVersion(req.params.vers
 
 routes.post("/rules", handle(async (req) => {
   const v = await ops.createRuleVersion(req.body || {}, actor(req));
-  audit(req, "rules_create", v.version, { basedOn: v.basedOn, note: v.note });
+  audit(req, "shop2_rules_create", v.version, { basedOn: v.basedOn, note: v.note });
   return { ok: true, version: v };
 }));
 
@@ -197,20 +197,20 @@ routes.post("/rules/simulate", handle((req) => ops.simulateRules(req.body || {})
 
 routes.post("/rules/:version/schedule", handle(async (req) => {
   const v = await ops.scheduleRuleVersion(req.params.version, { at: req.body?.at || null, ...actor(req) });
-  audit(req, "rules_schedule", req.params.version, { applyAt: v?.applyAt });
+  audit(req, "shop2_rules_schedule", req.params.version, { applyAt: v?.applyAt });
   return { ok: true, version: v };
 }));
 
 routes.post("/rules/:version/activate", handle(async (req) => {
   const reason = reasonOf(req);
   const v = await ops.activateRuleVersion(req.params.version);
-  audit(req, "rules_activate", req.params.version, { reason });
+  audit(req, "shop2_rules_activate", req.params.version, { reason });
   return { ok: true, version: v };
 }));
 
 routes.post("/rules/:version/cancel", handle(async (req) => {
   const v = await ops.cancelRuleSchedule(req.params.version);
-  audit(req, "rules_cancel", req.params.version, {});
+  audit(req, "shop2_rules_cancel", req.params.version, {});
   return { ok: true, version: v };
 }));
 
@@ -230,14 +230,14 @@ routes.get("/users/:id/storefront", handle(async (req, res) => {
 routes.post("/users/:id/storefront/free-refresh", handle(async (req) => {
   const reason = reasonOf(req);
   const st = await sfs.grantFreeRefresh(String(req.params.id), 1);
-  audit(req, "free_refresh", req.params.id, { reason, freeRefreshes: st.free_refreshes });
+  audit(req, "shop2_free_refresh", req.params.id, { reason, freeRefreshes: st.free_refreshes });
   return { ok: true, freeRefreshes: st.free_refreshes };
 }));
 
 routes.post("/users/:id/storefront/regenerate", handle(async (req) => {
   const reason = reasonOf(req);
   const row = await sfs.regenerate(String(req.params.id));
-  audit(req, "storefront_regenerate", req.params.id, { reason, seed: row.seed, regen: row.regen });
+  audit(req, "shop2_storefront_regenerate", req.params.id, { reason, seed: row.seed, regen: row.regen });
   return { ok: true, seed: row.seed, regen: row.regen };
 }));
 
@@ -249,38 +249,38 @@ routes.get("/night-markets/:id/report", handle((req) => require("../lib/shop2/ni
 
 routes.post("/night-markets", handle(async (req) => {
   const n = await ops.createNight(req.body || {}, actor(req));
-  audit(req, "night_create", n.id, { startsAt: n.startsAt, endsAt: n.endsAt, mode: n.mode });
+  audit(req, "shop2_night_create", n.id, { startsAt: n.startsAt, endsAt: n.endsAt, mode: n.mode });
   return { ok: true, night: n };
 }));
 
 routes.patch("/night-markets/:id", handle(async (req) => {
   const n = await ops.updateNight(String(req.params.id), req.body || {}, actor(req));
-  audit(req, "night_update", req.params.id, { fields: Object.keys(req.body || {}) });
+  audit(req, "shop2_night_update", req.params.id, { fields: Object.keys(req.body || {}) });
   return { ok: true, night: n };
 }));
 
 routes.post("/night-markets/open-now", handle(async (req) => {
   const out = await ops.openNow(req.body || {}, actor(req));
-  audit(req, "night_open_now", out.night.id, { reason: req.body?.reason, endsAt: out.night.endsAt, undoUntil: out.undoUntil });
+  audit(req, "shop2_night_open_now", out.night.id, { reason: req.body?.reason, endsAt: out.night.endsAt, undoUntil: out.undoUntil });
   return { ok: true, ...out };
 }));
 
 routes.post("/night-markets/:id/undo", handle(async (req) => {
   const n = await ops.undoOpen(String(req.params.id));
-  audit(req, "night_open_undo", req.params.id, {});
+  audit(req, "shop2_night_open_undo", req.params.id, {});
   return { ok: true, night: n };
 }));
 
 routes.post("/night-markets/:id/skip", handle(async (req) => {
   const reason = reasonOf(req);
   const n = await ops.setNightStatus(String(req.params.id), "skipped", actor(req));
-  audit(req, "night_skip", req.params.id, { reason });
+  audit(req, "shop2_night_skip", req.params.id, { reason });
   return { ok: true, night: n };
 }));
 
 routes.delete("/night-markets/:id", handle(async (req) => {
   const out = await ops.deleteNight(String(req.params.id));
-  audit(req, "night_delete", req.params.id, {});
+  audit(req, "shop2_night_delete", req.params.id, {});
   return out;
 }));
 
@@ -291,19 +291,19 @@ routes.post("/limits/impact", handle((req) => ops.limitsImpact(req.body || {})))
 
 routes.put("/limits", handle(async (req) => {
   const out = await ops.putLimits(req.body || {}, actor(req));
-  audit(req, "limits_update", "limits", { version: out.version, reason: req.body?.reason, changes: out.changes });
+  audit(req, "shop2_limits_update", "limits", { version: out.version, reason: req.body?.reason, changes: out.changes });
   return { ok: true, ...out };
 }));
 
 routes.post("/limits/undo", handle(async (req) => {
   const out = await ops.undoLimits(actor(req));
-  audit(req, "limits_undo", "limits", { version: out.version });
+  audit(req, "shop2_limits_undo", "limits", { version: out.version });
   return { ok: true, ...out };
 }));
 
 routes.post("/gifts/freeze", handle(async (req) => {
   const out = await ops.freezeGifts(req.body?.frozen !== false, { reason: req.body?.reason, ...actor(req) });
-  audit(req, req.body?.frozen !== false ? "gifts_freeze" : "gifts_unfreeze", "gifts", { reason: req.body?.reason, version: out.version });
+  audit(req, req.body?.frozen !== false ? "shop2_gifts_freeze" : "shop2_gifts_unfreeze", "gifts", { reason: req.body?.reason, version: out.version });
   return { ok: true, ...out };
 }));
 
@@ -311,7 +311,7 @@ routes.get("/gifts/flags", handle(() => ops.flagsView()));
 
 routes.post("/gifts/flags/:id/resolve", requireSection("casino"), handle(async (req) => {
   const out = await ops.resolveFlag(String(req.params.id), req.body?.action, { reason: req.body?.reason, ...actor(req) });
-  audit(req, "gift_flag_resolve", req.params.id, { action: req.body?.action, reason: req.body?.reason, users: out?.users || [] });
+  audit(req, "shop2_gift_flag_resolve", req.params.id, { action: req.body?.action, reason: req.body?.reason, users: out?.users || [] });
   return { ok: true, flag: out };
 }));
 
@@ -322,19 +322,19 @@ routes.get("/queue", handle(async () => ({ queue: await ops.listQueue() })));
 
 routes.post("/queue/:id/cancel", handle(async (req) => {
   const row = await ops.cancelQueueItem(String(req.params.id), actor(req));
-  audit(req, "queue_cancel", req.params.id, { kind: row.kind, ref: row.ref });
+  audit(req, "shop2_queue_cancel", req.params.id, { kind: row.kind, ref: row.ref });
   return { ok: true };
 }));
 
 routes.post("/timeline/events", handle(async (req) => {
   const ev = await ops.createEvent(req.body || {}, actor(req));
-  audit(req, "event_create", ev?.id, { title: ev?.title, startsAt: ev?.starts_at });
+  audit(req, "shop2_event_create", ev?.id, { title: ev?.title, startsAt: ev?.starts_at });
   return { ok: true, event: ev };
 }));
 
 routes.delete("/timeline/events/:id", handle(async (req) => {
   const out = await ops.deleteEvent(String(req.params.id));
-  audit(req, "event_delete", req.params.id, {});
+  audit(req, "shop2_event_delete", req.params.id, {});
   return out;
 }));
 
@@ -344,13 +344,13 @@ routes.get("/ab-tests", handle(() => admin.listAbTests()));
 
 routes.post("/ab-tests", handle(async (req) => {
   const t = await admin.createAbTest(req.body || {}, actor(req));
-  audit(req, "ab_create", t.id, { setKey: t.setKey, discountA: t.discountA, discountB: t.discountB, split: t.split });
+  audit(req, "shop2_ab_create", t.id, { setKey: t.setKey, discountA: t.discountA, discountB: t.discountB, split: t.split });
   return { ok: true, test: t };
 }));
 
 routes.post("/ab-tests/:id/stop", handle(async (req) => {
   const t = await admin.stopAbTest(String(req.params.id), { winner: req.body?.winner || null, ...actor(req) });
-  audit(req, "ab_stop", req.params.id, { winner: t.winner });
+  audit(req, "shop2_ab_stop", req.params.id, { winner: t.winner });
   return { ok: true, test: t };
 }));
 

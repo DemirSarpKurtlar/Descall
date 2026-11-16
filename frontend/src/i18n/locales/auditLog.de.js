@@ -489,6 +489,7 @@ export const AUDIT_LOG_DE = {
     "agent": "Agent-Aktion",
     "premium": "Descall+-Aktion",
     "shop": "Shop-Aktion",
+    "shop2": "Schaufenster- und Set-Aktion",
     "descoin": "DesCoin-Aktion",
     "credits": "Credit-Aktion",
     "casino": "Spielaktion",

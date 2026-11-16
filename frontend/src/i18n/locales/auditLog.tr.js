@@ -489,6 +489,7 @@ export const AUDIT_LOG_TR = {
     "agent": "Ajan işlemi",
     "premium": "Descall+ işlemi",
     "shop": "Mağaza işlemi",
+    "shop2": "Vitrin ve set işlemi",
     "descoin": "DesCoin işlemi",
     "credits": "Kredi işlemi",
     "casino": "Oyun işlemi",

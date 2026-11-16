@@ -2239,6 +2239,7 @@ export const nested = {
     "peopleTitle": "Досье пользователя",
     "permissionDenied": "У вас нет доступа к этому разделу. Обратитесь к владельцу аккаунта.",
     "promoCodes": "Промокоды",
+    "shop2": "Витрина и наборы",
     "read": "Прочитано",
     "reddit": "Reddit",
     "referral": "Реферал",

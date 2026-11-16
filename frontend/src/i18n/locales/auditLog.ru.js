@@ -489,6 +489,7 @@ export const AUDIT_LOG_RU = {
     "agent": "Действие агента",
     "premium": "Действие Descall+",
     "shop": "Действие магазина",
+    "shop2": "Действие с витриной и наборами",
     "descoin": "Действие DesCoin",
     "credits": "Действие с кредитами",
     "casino": "Игровое действие",

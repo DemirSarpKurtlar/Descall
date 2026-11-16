@@ -614,6 +614,7 @@ export const nested = {
     "ovAudit": "Son yönetici işlemleri",
     "ovAuditHint": "Denetim kaydından",
     "promoCodes": "Promosyon Kodları",
+    "shop2": "Vitrin ve Setler",
     "signupStats": "Kayıt İstatistikleri",
     "announcements": "Duyurular",
     "livePopup": "Canlı popup",

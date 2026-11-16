@@ -19,6 +19,7 @@ import {
 import { useS2 } from "./Shop2Context.js";
 import { Chip, CloseX, HoldButton, Layer, Num, Price, ShortBy, useNow, useReducedMotion } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
+import GlassCheckbox from "../ui/GlassCheckbox";
 import { restoreLook } from "./Shop2Sets.jsx";
 import { S2ChatMessage, S2ProfileCard, S2VoiceTile } from "./Shop2Preview.jsx";
 import { Bookmark, Check, ChevronRight, Crown, Share2, Shirt, SlidersHorizontal, Store, Undo2 } from "./shop2Icons.jsx";
@@ -103,7 +104,7 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
         <span>{t("shop2.checkout.balance")}</span><b className="s2-num"><span className="s2-dim"><Num value={s2.balance} /> {"→"} </span><Num value={after} /> {t("shop2.common.d")}</b>
       </div>
       {c.kind !== "cart" ? (
-        <label className="s2-check"><input type="checkbox" checked={equipNow} onChange={(e) => setEquipNow(e.target.checked)} /><span>{c.kind === "set" ? t("shop2.checkout.equipAll") : t("shop2.checkout.equipNow")}</span></label>
+        <label className="s2-check"><GlassCheckbox checked={equipNow} onChange={(e) => setEquipNow(e.target.checked)} /><span>{c.kind === "set" ? t("shop2.checkout.equipAll") : t("shop2.checkout.equipNow")}</span></label>
       ) : null}
       {completes ? (
         <p className="s2-note is-gold"><Crown size={14} />{t("shop2.checkout.titleNote", { title: set.reward?.title ? s2.itemName({ name: set.reward.title }) : t("shop2.sets.rewardDefault", { name: s2.setName(set) }) })}</p>
@@ -246,7 +247,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
           <div className="s2-pick">
             {newItems.map((it) => (
               <label key={it.id} className="s2-check is-row">
-                <input type="checkbox" checked={picked.has(String(it.id))} onChange={(e) => {
+                <GlassCheckbox checked={picked.has(String(it.id))} onChange={(e) => {
                   const next = new Set(picked);
                   if (e.target.checked) next.add(String(it.id));
                   else next.delete(String(it.id));

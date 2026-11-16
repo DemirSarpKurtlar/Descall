@@ -99,7 +99,7 @@ const TABS = [
   { id: "reports", label: "admin.reports", icon: Flag },
   { id: "feedback", label: "admin.feedback", icon: Bell },
   { id: "shop", label: "admin.shop", icon: ShoppingBag },
-  { id: "shop2", label: "adminShop2.title", icon: Layers },
+  { id: "shop2", label: "admin.shop2", icon: Layers },
   { id: "promo", label: "admin.promoCodes", icon: Ticket },
   { id: "specialBadges", label: "badges.adminTab", icon: Award },
   { id: "announcements", label: "admin.announcements", icon: Megaphone },

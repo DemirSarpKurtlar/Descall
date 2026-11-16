@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
 import { stepUpHeaders } from "../../../lib/adminStepUp";
+import { copyText } from "../../../lib/copyText.js";
 import { AlertTriangle, ArrowLeft, Calendar, Check, Clock, Copy, Link2, MagicWand, Plus, RotateCcw, Ruler, Search, Send, TestTube, Undo2, X } from "./icons.js";
 import { normSet, shop2Api } from "./adminShop2Api.js";
 import PieceRack from "./PieceRack.jsx";
@@ -292,12 +293,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
       const key = set.key || (await save({ quiet: true }));
       if (!key) return;
       const url = `${window.location.origin}/admin/panel?tab=shop2&set=${encodeURIComponent(key)}`;
-      try {
-        await navigator.clipboard?.writeText(url);
-      } catch {
-        /* clipboard blocked */
-      }
-      notify(t("adminShop2.toast.linkCopied"));
+      notify(t((await copyText(url)) ? "adminShop2.toast.linkCopied" : "Could not copy to clipboard"));
     } catch (e) {
       fail(e);
     }

@@ -2239,6 +2239,7 @@ export const nested = {
     "peopleTitle": "Dossier utilisateur",
     "permissionDenied": "Tu n'as pas accès à cette section. Demande au compte propriétaire.",
     "promoCodes": "Codes promo",
+    "shop2": "Vitrine et sets",
     "read": "Lu",
     "reddit": "Reddit",
     "referral": "Parrainage",
