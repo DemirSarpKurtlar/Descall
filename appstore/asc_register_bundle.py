@@ -52,7 +52,7 @@ else:
     print(f"App ID {IDENT} registered ({bundle['id']})")
 
 have = {c["attributes"].get("capabilityType")
-        for c in call("GET", f"/v1/bundleIds/{bundle['id']}/bundleIdCapabilities?limit=200").get("data", [])}
+        for c in call("GET", f"/v1/bundleIds/{bundle['id']}/bundleIdCapabilities").get("data", [])}
 for cap in CAPS:
     if cap in have:
         print(f"{cap}: already enabled")
@@ -67,7 +67,7 @@ for cap in CAPS:
 main = find_bundle("com.descall.app")
 if main:
     main_caps = {c["attributes"].get("capabilityType")
-                 for c in call("GET", f"/v1/bundleIds/{main['id']}/bundleIdCapabilities?limit=200").get("data", [])}
+                 for c in call("GET", f"/v1/bundleIds/{main['id']}/bundleIdCapabilities").get("data", [])}
     if "APP_GROUPS" not in main_caps:
         print("::warning::com.descall.app has no APP_GROUPS capability in the portal")
 sys.exit(0)
