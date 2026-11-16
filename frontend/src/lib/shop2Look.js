@@ -35,9 +35,12 @@ export function parseLookPath(pathname) {
 
 let pending = null;
 
-/** Ask the shop to open at a set or item (the shop reads it on mount or live). */
+/** Shop tabs a toast or link may open directly ({ kind: "tab", ref }). */
+export const SHOP2_FOCUS_TABS = Object.freeze(["vitrin", "sets", "night", "wishlist", "gifts", "inventory", "all"]);
+
+/** Ask the shop to open at a set, an item or a tab (the shop reads it on mount or live). */
 export function requestShop2Focus({ kind, ref } = {}) {
-  if (!ref || (kind !== "set" && kind !== "item")) return;
+  if (!ref || (kind !== "set" && kind !== "item" && !(kind === "tab" && SHOP2_FOCUS_TABS.includes(ref)))) return;
   pending = { kind, ref: String(ref), at: Date.now() };
   try {
     window.dispatchEvent(new CustomEvent(SHOP2_FOCUS_EVENT, { detail: pending }));

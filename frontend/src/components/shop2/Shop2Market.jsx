@@ -219,6 +219,10 @@ export default function Shop2Market({
     const apply = () => {
       const f = takeShop2Focus();
       if (!f) return;
+      if (f.kind === "tab") {
+        setTab(f.ref);
+        return;
+      }
       if (f.kind === "set") {
         setSetKey(f.ref);
         setTab("sets");
