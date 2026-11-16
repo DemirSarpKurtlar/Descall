@@ -56,15 +56,31 @@ function arc(r, a0, a1) {
   return `M${x0} ${y0}A${r} ${r} 0 ${large} 1 ${x1} ${y1}`;
 }
 /** n copies of `shape` (drawn pointing up at the origin) placed at radius r. */
-function around(n, r, shape, { start = 0, rot = 0, every = null } = {}) {
+let useId = 0;
+function around(n, r, shape, { start = 0, rot = 0 } = {}) {
   let out = "";
-  for (let i = 0; i < n; i += 1) {
-    const d = start + (360 / n) * i;
-    const s = typeof shape === "function" ? shape(i, d) : shape;
-    if (!s) continue;
-    out += `<g transform='rotate(${f(d)}) translate(0 ${-r}) rotate(${rot})'>${s}</g>`;
+  const shapes = [];
+  for (let i = 0; i < n; i += 1) shapes.push(typeof shape === "function" ? shape(i, start + (360 / n) * i) : shape);
+  // Repeated shapes are defined once and placed with <use> (keeps the data URI small).
+  const ids = new Map();
+  let defs = "";
+  for (const s of shapes) {
+    if (!s || ids.has(s)) continue;
+    if (shapes.filter((x) => x === s).length > 1) {
+      useId += 1;
+      const id = `u${useId.toString(36)}`;
+      ids.set(s, id);
+      defs += `<g id='${id}'>${s}</g>`;
+    }
   }
-  return out;
+  for (let i = 0; i < n; i += 1) {
+    const s = shapes[i];
+    if (!s) continue;
+    const d = start + (360 / n) * i;
+    const tr = `rotate(${f(d)}) translate(0 ${-r})${rot ? ` rotate(${rot})` : ""}`;
+    out += ids.has(s) ? `<use href='#${ids.get(s)}' transform='${tr}'/>` : `<g transform='${tr}'>${s}</g>`;
+  }
+  return (defs ? `<defs>${defs}</defs>` : "") + out;
 }
 /** Place one shape at angle deg, radius r (shape points outward). */
 const at = (deg, r, s, rot = 0) => `<g transform='rotate(${f(deg)}) translate(0 ${-r}) rotate(${rot})'>${s}</g>`;

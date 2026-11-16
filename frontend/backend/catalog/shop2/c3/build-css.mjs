@@ -373,8 +373,6 @@ themeRules.push(`/* Themes: [data-theme="s2-<key>"]. Tokens + both Liquid Glass 
     linear-gradient(rgba(255,255,255,0.06), rgba(255,255,255,0.06)) 0 0 / 24% 100% no-repeat,
     linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04)),
     var(--s2t-glass);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 26px rgba(0,0,0,0.38);
 }
 .shop-theme-swatch[class*="theme-s2-"]::after {
