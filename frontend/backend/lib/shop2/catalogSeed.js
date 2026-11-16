@@ -9,7 +9,8 @@
  *
  * Idempotent and cheap after the first run: a content hash of the catalog is stored in
  * shop2_settings (key "catalog_seed"); a boot with the same hash skips the upsert and only
- * keeps old rows (for example one inserted by an older boot ensure) off sale.
+ * keeps old rows (for example one inserted by an older boot ensure) off sale. An s2 row that
+ * already exists keeps its `active` / `retired_at` (an admin may have taken it off sale).
  */
 
 const crypto = require("crypto");
@@ -55,6 +56,19 @@ function hashRows(rows) {
   return crypto.createHash("sha256").update(JSON.stringify(rows)).digest("hex").slice(0, 32);
 }
 
+/** Skus of the s2- rows already in shop_items (paged, PostgREST returns at most 1000 rows). */
+async function existingSkus(supabase) {
+  const out = new Set();
+  const PAGE = 1000;
+  for (let from = 0; from < 50_000; from += PAGE) {
+    const { data, error } = await supabase.from("shop_items").select("sku").like("sku", "s2-%").order("sku", { ascending: true }).range(from, from + PAGE - 1);
+    if (error) throw error;
+    for (const r of data || []) if (r && r.sku) out.add(r.sku);
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
+}
+
 /**
  * @param {object} supabase service-role client
  * @param {{ log?: Function, rows?: object[] }} [opts]
@@ -70,11 +84,20 @@ async function seedShop2Catalog(supabase, { log = console.log, rows = null } = {
   const same = setting?.value?.hash === hash;
 
   let upserted = 0;
-  for (let i = 0; !same && i < all.length; i += BATCH) {
-    const chunk = all.slice(i, i + BATCH);
-    const { error } = await supabase.from("shop_items").upsert(chunk, { onConflict: "sku" });
-    if (error) throw error;
-    upserted += chunk.length;
+  if (!same) {
+    // Rows that already exist keep their sale state: an item an admin took off sale (active
+    // false or retired_at) must not come back on sale because the catalog files changed.
+    const existing = await existingSkus(supabase);
+    const fresh = all.filter((r) => !existing.has(r.sku));
+    const known = all.filter((r) => existing.has(r.sku)).map(({ active, retired_at, ...rest }) => (void active, void retired_at, rest));
+    for (const group of [fresh, known]) {
+      for (let i = 0; i < group.length; i += BATCH) {
+        const chunk = group.slice(i, i + BATCH);
+        const { error } = await supabase.from("shop_items").upsert(chunk, { onConflict: "sku" });
+        if (error) throw error;
+        upserted += chunk.length;
+      }
+    }
   }
 
   const { data: retiredRows, error: retireError } = await supabase
@@ -112,4 +135,4 @@ async function seedShop2Catalog(supabase, { log = console.log, rows = null } = {
   return { upserted, retired, hash };
 }
 
-module.exports = { seedShop2Catalog, catalogRows, itemRow, hashRows, SETTINGS_KEY };
+module.exports = { seedShop2Catalog, catalogRows, itemRow, hashRows, existingSkus, SETTINGS_KEY };

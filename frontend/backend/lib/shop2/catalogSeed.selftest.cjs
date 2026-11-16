@@ -3,9 +3,9 @@
 const assert = require("assert");
 const { seedShop2Catalog, catalogRows } = require("./catalogSeed");
 
-function fakeDb() {
+function fakeDb({ existing = [] } = {}) {
   const calls = [];
-  const state = { setting: null };
+  const state = { setting: null, existing };
   function q(table) {
     const ctx = { table, op: null, filters: [], payload: null };
     const api = {
@@ -14,10 +14,16 @@ function fakeDb() {
       neq(c, v) { ctx.filters.push(["neq", c, v]); return api; },
       not(c, o, v) { ctx.filters.push(["not", c, o, v]); return api; },
       is(c, v) { ctx.filters.push(["is", c, v]); return api; },
+      like(c, v) { ctx.filters.push(["like", c, v]); return api; },
+      order() { return api; },
+      range(a, b) { ctx.range = [a, b]; return api; },
       maybeSingle() { return Promise.resolve({ data: state.setting, error: null }); },
       upsert(p) { ctx.op = "upsert"; ctx.payload = p; calls.push(ctx); if (table === "shop2_settings") state.setting = { value: p.value }; return Promise.resolve({ error: null }); },
       update(p) { ctx.op = "update"; ctx.payload = p; calls.push(ctx); return api; },
-      then(res, rej) { return Promise.resolve({ data: ctx.op === "update" && ctx.payload.retired_at ? [{ id: 1 }, { id: 2 }] : [], error: null }).then(res, rej); },
+      then(res, rej) {
+        if (ctx.op === "select" && ctx.range) return Promise.resolve({ data: state.existing.slice(ctx.range[0], ctx.range[1] + 1).map((sku) => ({ sku })), error: null }).then(res, rej);
+        return Promise.resolve({ data: ctx.op === "update" && ctx.payload.retired_at ? [{ id: 1 }, { id: 2 }] : [], error: null }).then(res, rej);
+      },
     };
     return api;
   }
@@ -43,5 +49,15 @@ function fakeDb() {
   const second = await seedShop2Catalog(db, { log: () => {} });
   assert.strictEqual(second.skipped, true);
   assert.strictEqual(db.calls.filter((c) => c.op === "upsert" && c.table === "shop_items").length, before, "same hash: no upsert");
+  // Catalog files changed: an existing row keeps its sale state, a new row goes on sale.
+  const half = Math.floor(rows.length / 2);
+  const db2 = fakeDb({ existing: rows.slice(0, half).map((r) => r.sku) });
+  const third = await seedShop2Catalog(db2, { log: () => {}, rows: rows.map((r, i) => (i === 0 ? { ...r, name: `${r.name} v2` } : r)) });
+  assert.strictEqual(third.upserted, rows.length);
+  const ups = db2.calls.filter((c) => c.op === "upsert" && c.table === "shop_items").flatMap((c) => c.payload);
+  const kept = ups.filter((r) => rows.slice(0, half).some((x) => x.sku === r.sku));
+  assert.ok(kept.length && kept.every((r) => !("active" in r) && !("retired_at" in r)), "existing rows keep active / retired_at");
+  const added = ups.filter((r) => !rows.slice(0, half).some((x) => x.sku === r.sku));
+  assert.ok(added.length && added.every((r) => r.active === true && r.retired_at === null), "new rows go on sale");
   console.log("catalogSeed selftest ok");
 })().catch((e) => { console.error(e); process.exit(1); });
