@@ -29,6 +29,9 @@ import { AUDIT_LOG_FR } from "./auditLog.fr.js";
 import { LIVE_POPUP_FR } from "./livePopup.fr.js";
 import { ANNC_FR } from "./annc.fr.js";
 import { COINPOP_FR } from "./coinpop.fr.js";
+import { SHOP2_FR } from "./shop2.fr.js";
+import { ADMIN_SHOP2_FR } from "./adminShop2.fr.js";
+import { SHOP_VOICE_FR } from "./shopVoice.fr.js";
 import { CHPERM_FR } from "./chperm.fr.js";
 import { SEC_CENTER_FR } from "./secCenter.fr.js";
 import { AGENTX_FR } from "./agentx.fr.js";
@@ -72,6 +75,9 @@ export const nested = {
   "livePopup": LIVE_POPUP_FR,
   "annc": ANNC_FR,
   "coinpop": COINPOP_FR,
+  "shop2": SHOP2_FR,
+  "adminShop2": ADMIN_SHOP2_FR,
+  "shopVoice": SHOP_VOICE_FR,
   "chperm": CHPERM_FR,
   "secCenter": SEC_CENTER_FR,
   "agentx": AGENTX_FR,

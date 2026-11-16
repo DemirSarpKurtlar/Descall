@@ -1262,6 +1262,8 @@ export default function App() {
       equippedReactionBurst: normalized.equippedReactionBurst,
       equippedCallOverlay: normalized.equippedCallOverlay,
       equippedProfileColor: normalized.equippedProfileColor,
+      equippedVoiceTile: normalized.equippedVoiceTile,
+      equippedJoinSound: normalized.equippedJoinSound,
     };
 
     const patch = {
@@ -2786,6 +2788,13 @@ export default function App() {
     });
     socket.on("shop:inventory:changed", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
+    });
+    // Market 2.0: daily storefront reset / refresh and received gifts reach an open shop live.
+    socket.on("shop2:storefront", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop2-storefront", { detail: payload })); } catch { /* ignore */ }
+    });
+    socket.on("shop2:gift", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop2-gift", { detail: payload })); } catch { /* ignore */ }
     });
 
     socket.on("platform:notice", (payload) => {

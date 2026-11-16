@@ -255,7 +255,7 @@ router.post("/equip", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid item category." });
     }
     if (shop.isClosedCategory(category)) {
-      return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
+      return res.status(410).json(apiError("This item is no longer available.", null, { code: "cosmetic_removed" }));
     }
     if (itemId) {
       const owns = await shop.userOwnsItem(req.user.id, itemId);
@@ -268,7 +268,7 @@ router.post("/equip", requireAuth, async (req, res) => {
       }
       // Frames / badges: only Market 2.0 rows (s2-); older ones stay removed.
       if (shop.isRemovedCosmeticItem(item)) {
-        return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
+        return res.status(410).json(apiError("This item is no longer available.", null, { code: "cosmetic_removed" }));
       }
       if (category === "theme") {
         const { themeEquipAllowed } = require("../lib/glassThemeCatalog");
