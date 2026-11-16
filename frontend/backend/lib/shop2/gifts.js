@@ -360,10 +360,50 @@ async function deliverDue({ now = Date.now() } = {}) {
   return n;
 }
 
+/**
+ * Gift sheet recipient list: accepted friends with what they own of the item / set ("3/8"),
+ * whether it is on their wishlist (they come first), and whether they can receive it now.
+ */
+async function recipients(senderId, { itemId = null, setKey = null } = {}) {
+  const friendIds = (await people.friendIds(senderId)).slice(0, 300);
+  if (!friendIds.length) return { recipients: [] };
+  const cat = await catalog.getCatalog();
+  const set = setKey ? await catalog.getSet(setKey) : null;
+  const targetIds = set ? set.items.map((it) => String(it.id)) : itemId ? [String(itemId)] : [];
+  const [usersById, inv, wishes, states] = await Promise.all([
+    people.getUsers(friendIds),
+    targetIds.length ? db.rows(db.real().from("user_inventory").select("user_id, item_id").in("user_id", friendIds).in("item_id", targetIds)).catch(() => []) : [],
+    db.rows(db.from("shop2_wishlist").select("user_id, item_id").in("user_id", friendIds)).catch(() => []),
+    db.rows(db.from("shop2_user_state").select("user_id, gift_privacy").in("user_id", friendIds)).catch(() => []),
+  ]);
+  const noGifts = new Set(states.filter((x) => x.gift_privacy === "nobody").map((x) => x.user_id));
+  const wishKey = set ? `set:${set.key}` : itemId ? String(itemId) : null;
+  const out = [];
+  for (const id of friendIds) {
+    const u = usersById.get(String(id));
+    if (!u) continue;
+    const owned = inv.filter((r) => r.user_id === id).length;
+    const wished = wishKey ? wishes.some((w) => w.user_id === id && (w.item_id === wishKey || (set && targetIds.includes(String(w.item_id))))) : false;
+    const blocked = await people.blockedEitherWay(senderId, id);
+    out.push({
+      user: people.publicUser(u),
+      owned,
+      total: targetIds.length,
+      ownsAll: targetIds.length > 0 && owned >= targetIds.length,
+      wishlisted: wished,
+      canReceive: !blocked && !noGifts.has(id) && !(targetIds.length > 0 && owned >= targetIds.length),
+      wishlistCount: wishes.filter((w) => w.user_id === id).length,
+    });
+  }
+  out.sort((a, b) => Number(b.wishlisted) - Number(a.wishlisted) || Number(b.canReceive) - Number(a.canReceive) || String(a.user.username).localeCompare(String(b.user.username)));
+  void cat;
+  return { recipients: out };
+}
+
 async function setPrivacy(userId, value) {
   const v = value === "nobody" ? "nobody" : "friends";
   await people.patchState(userId, { gift_privacy: v });
   return { giftPrivacy: v };
 }
 
-module.exports = { liveStatus, publicGift, quote, send, list, recall, open, mark, deliverDue, setPrivacy, getGift, allowed };
+module.exports = { liveStatus, publicGift, quote, send, list, recall, open, mark, deliverDue, setPrivacy, getGift, allowed, recipients };

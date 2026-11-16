@@ -229,6 +229,10 @@ router.post("/night-market/notify", handle((req) => night.setNotify(req.user.id,
 
 router.get("/gifts", handle((req) => gifts.list(req.user.id, { base: base(req) })));
 
+router.get("/gifts/recipients", handle((req) => gifts.recipients(req.user.id, { itemId: typeof req.query.itemId === "string" ? req.query.itemId : null, setKey: typeof req.query.setKey === "string" ? req.query.setKey : null })));
+
+router.get("/feed", handle((req) => views.friendFeed(req.user.id)));
+
 router.post("/gifts/quote", handle((req) => gifts.quote(req.user.id, req.body || {}), { kind: "write" }));
 
 router.post(

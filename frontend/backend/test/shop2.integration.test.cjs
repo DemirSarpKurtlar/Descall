@@ -334,6 +334,20 @@ async function run() {
       assert.ok(rows("shop2_gift_flags").length >= 1);
     });
 
+    await check("gift sheet recipients (owned 1/8, wishlist first) and friend feed", async () => {
+      await call("/shop2/wishlist", { method: "POST", body: { setKey: "bakir-kervan" }, user: 4 });
+      const r = await call("/shop2/gifts/recipients?setKey=bakir-kervan");
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      const list = r.body.recipients;
+      assert.deepEqual(new Set(list.map((x) => x.user.username)), new Set(["friend", "newbie", "third"]));
+      assert.equal(list[0].user.username, "newbie", "wishlist match comes first");
+      const third = list.find((x) => x.user.username === "third");
+      assert.equal(third.owned, 1);
+      assert.equal(third.total, 8);
+      const feed = await call("/shop2/feed", { user: 2 });
+      assert.ok(feed.body.entries.some((e) => e.user.username === "buyer" && e.setKey === "gece-limani"));
+    });
+
     await check("history, wishlist and outfits with undo", async () => {
       const w = await call("/shop2/wishlist", { method: "POST", body: { itemId: I(40) } });
       assert.equal(w.status, 200, JSON.stringify(w.body));

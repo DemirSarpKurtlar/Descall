@@ -195,4 +195,20 @@ async function catalogView(userId, { base = "", category = null } = {}) {
   return { items, legacyPool: cat.legacyPool };
 }
 
-module.exports = { storefront, setsList, setDetail, catalogView, nightSummary, slotBadges };
+/** Friend feed: which friend completed which set (last 30 days). */
+async function friendFeed(userId, { now = Date.now() } = {}) {
+  const friends = (await people.friendIds(userId)).slice(0, 1000);
+  if (!friends.length) return { entries: [] };
+  const since = time.iso(now - 30 * time.DAY_MS);
+  const rows = await db.rows(db.from("shop2_set_completions").select("*").in("user_id", friends).gte("completed_at", since)).catch(() => []);
+  const [usersById, allSets] = await Promise.all([people.getUsers(rows.map((r) => r.user_id)), catalog.getSets()]);
+  const setByKey = new Map(allSets.map((s) => [s.key, s]));
+  return {
+    entries: rows
+      .sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))
+      .slice(0, 50)
+      .map((r) => ({ kind: "set_completed", at: r.completed_at, user: people.publicUser(usersById.get(String(r.user_id))), setKey: r.set_key, setName: setByKey.get(r.set_key)?.name || null, palette: setByKey.get(r.set_key)?.palette || [] })),
+  };
+}
+
+module.exports = { friendFeed, storefront, setsList, setDetail, catalogView, nightSummary, slotBadges };
