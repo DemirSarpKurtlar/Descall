@@ -11,6 +11,15 @@ import { installFlagFont } from "./lib/flagFont.js";
 import { installDragClickGuard } from "./lib/dragClickGuard.js";
 import { startErrorReporting } from "./lib/sentry";
 import { applyDocumentTheme } from "./lib/themeDocument";
+import { installWaapiCommitOnCancel } from "./lib/waapiCommitOnCancel.js";
+
+// framer-motion WAAPI hand-off: no one-frame flash when a menu, modal or
+// Settings finishes fading (lib/waapiCommitOnCancel.js). Before any render.
+try {
+  installWaapiCommitOnCancel();
+} catch {
+  /* animations still run, only the end-frame guard is missing */
+}
 
 // On-device viewport readout (?vpdebug=1 / ?vpdebug=0). Loaded only when asked.
 try {

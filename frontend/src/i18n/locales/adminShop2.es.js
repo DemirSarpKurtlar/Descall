@@ -399,7 +399,8 @@ export const ADMIN_SHOP2_ES = {
       "rules": "Algoritmo",
       "night": "Mercado nocturno",
       "limits": "Límites",
-      "user": "Usuario"
+      "user": "Usuario",
+      "sale": "Todos los artículos"
     },
     "system": "Sistema",
     "reason": "Motivo: {r}",
@@ -439,7 +440,8 @@ export const ADMIN_SHOP2_ES = {
       "storefront_regenerate": "Escaparate de usuario regenerado",
       "queue_cancel": "Cambio programado cancelado",
       "event_create": "Evento añadido al calendario",
-      "event_delete": "Evento eliminado"
+      "event_delete": "Evento eliminado",
+      "direct_sale": "Venta directa en Todos los artículos cambiada · {n, plural, one {# artículo} other {# artículos}}"
     }
   },
   "slots": {
@@ -887,6 +889,75 @@ export const ADMIN_SHOP2_ES = {
     "undo_expired": "El plazo para deshacer terminó",
     "undo_unsupported": "Esta acción no se puede deshacer",
     "not_found": "Registro no encontrado",
-    "rate_limited": "Demasiado rápido; espera un momento"
+    "rate_limited": "Demasiado rápido; espera un momento",
+    "no_items": "Elige al menos un artículo",
+    "direct_sale_unavailable": "La actualización de la base de datos para la venta directa aún no está aplicada"
+  },
+  "directSale": {
+    "open": "Venta directa en Todos los artículos",
+    "title": "Venta directa en Todos los artículos",
+    "subtitle": "La pestaña Todos los artículos es para mirar. Lo que actives aquí se puede comprar directamente allí; el resto se vende en el escaparate, en sets y en el mercado nocturno.",
+    "live": "En vivo",
+    "liveHint": "Los cambios llegan al instante a las tiendas abiertas.",
+    "notInstalled": "Falta la actualización de la base de datos (20261116_shop_direct_sale.sql). Hasta entonces los artículos de Market 2.0 no se venden directamente y las banderas sí; los interruptores funcionan después.",
+    "tile": {
+      "listed": "Artículos listados",
+      "listedSub": "{n} artículos de Market 2.0",
+      "allowed": "En venta directa",
+      "allowedSub": "{n} de Market 2.0",
+      "blocked": "Solo escaparate y sets",
+      "blockedSub": "Precio solo como referencia",
+      "sales": "Ventas directas (7 días)",
+      "salesSub": "{coins} DesCoin"
+    },
+    "search": "Buscar artículo, código o set",
+    "allCats": "Todos",
+    "rarityAll": "Cualquier rareza",
+    "state": {
+      "all": "Todos",
+      "on": "En venta",
+      "off": "Desactivado"
+    },
+    "col": {
+      "item": "Artículo",
+      "category": "Categoría",
+      "rarity": "Rareza",
+      "price": "Precio",
+      "sales": "7 días",
+      "sale": "Venta directa"
+    },
+    "selectShown": "Seleccionar los visibles",
+    "selected": "{n} seleccionados",
+    "bulkAllow": "Poner a la venta",
+    "bulkBlock": "Quitar de la venta",
+    "clear": "Borrar selección",
+    "footHint": "Selecciona artículos para un cambio en bloque. Un interruptor cambia un artículo.",
+    "audit": "Registro",
+    "confirmAllow": "¿Poner {n, plural, one {# artículo} other {# artículos}} en venta directa?",
+    "confirmBlock": "¿Quitar {n, plural, one {# artículo} other {# artículos}} de la venta directa?",
+    "confirmNote": "Las tiendas abiertas se actualizan al instante. Puedes deshacerlo desde el aviso.",
+    "more": "+{n} más",
+    "toast": {
+      "allowed": "{name} ya se vende en Todos los artículos",
+      "blocked": "{name} ahora solo se vende en el escaparate y en sets",
+      "bulkAllowed": "{n, plural, one {# artículo puesto} other {# artículos puestos}} en venta directa",
+      "bulkBlocked": "{n, plural, one {# artículo quitado} other {# artículos quitados}} de la venta directa",
+      "none": "No hay nada que cambiar"
+    },
+    "undoReason": "Deshecho desde el aviso",
+    "set": "Set: {key}",
+    "toggleLabel": "Venta directa de {name}",
+    "focusToggle": "Vender directamente en Todos los artículos",
+    "empty": "Ningún artículo coincide con este filtro.",
+    "preview": {
+      "title": "Lo que ve el usuario",
+      "desktop": "Escritorio",
+      "phone": "Teléfono",
+      "buy": "Comprar",
+      "pick": "Elige un artículo para previsualizar",
+      "pathsAllowed": "Se puede comprar directamente en Todos los artículos. El escaparate, los sets y el mercado nocturno lo siguen vendiendo.",
+      "pathsBlocked": "Solo se vende en el escaparate diario, en sets y en el mercado nocturno. Todos los artículos lo muestra para mirar y probar.",
+      "sales": "{n, plural, one {# venta directa} other {# ventas directas}} en 7 días · {coins} DesCoin"
+    }
   }
 };

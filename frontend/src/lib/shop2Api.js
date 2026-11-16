@@ -94,7 +94,8 @@ export const shop2Api = {
   undo: (id) => post(`/history/${enc(id)}/undo`),
 
   outfits: () => get("/outfits"),
-  saveOutfit: ({ name, look }) => post("/outfits", { name, ...(look ? { look } : {}) }),
+  /** kind "previous": the look kept automatically before "Hepsini kuşan" (not a named save). */
+  saveOutfit: ({ name, look, kind }) => post("/outfits", { name, ...(look ? { look } : {}), ...(kind ? { kind } : {}) }),
   applyOutfit: (id) => post(`/outfits/${enc(id)}/apply`),
   /** "Arkadaşlarına göster": DM the look link to 1-10 friends; per-recipient results. */
   shareLook: ({ setKey, itemId, toUserIds, message }) =>

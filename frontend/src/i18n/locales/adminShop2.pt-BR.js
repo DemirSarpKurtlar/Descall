@@ -399,7 +399,8 @@ export const ADMIN_SHOP2_PT_BR = {
       "rules": "Algoritmo",
       "night": "Mercado noturno",
       "limits": "Limites",
-      "user": "Usuário"
+      "user": "Usuário",
+      "sale": "Todos os itens"
     },
     "system": "Sistema",
     "reason": "Motivo: {r}",
@@ -439,7 +440,8 @@ export const ADMIN_SHOP2_PT_BR = {
       "storefront_regenerate": "Vitrine do usuário refeita",
       "queue_cancel": "Mudança agendada cancelada",
       "event_create": "Evento adicionado ao calendário",
-      "event_delete": "Evento excluído"
+      "event_delete": "Evento excluído",
+      "direct_sale": "Venda direta em Todos os itens alterada · {n, plural, one {# item} other {# itens}}"
     }
   },
   "slots": {
@@ -887,6 +889,75 @@ export const ADMIN_SHOP2_PT_BR = {
     "undo_expired": "O prazo para desfazer acabou",
     "undo_unsupported": "Esta ação não pode ser desfeita",
     "not_found": "Registro não encontrado",
-    "rate_limited": "Rápido demais; espere um pouco"
+    "rate_limited": "Rápido demais; espere um pouco",
+    "no_items": "Escolha pelo menos um item",
+    "direct_sale_unavailable": "A atualização do banco de dados para venda direta ainda não foi aplicada"
+  },
+  "directSale": {
+    "open": "Venda direta em Todos os itens",
+    "title": "Venda direta em Todos os itens",
+    "subtitle": "A aba Todos os itens é para olhar. O que você ativar aqui pode ser comprado direto nela; o resto é vendido na vitrine, em conjuntos e no mercado noturno.",
+    "live": "Ao vivo",
+    "liveHint": "As mudanças chegam na hora às lojas abertas.",
+    "notInstalled": "Aguardando a atualização do banco de dados (20261116_shop_direct_sale.sql). Até lá, itens do Market 2.0 não são vendidos direto e as bandeiras são; os interruptores funcionam depois da atualização.",
+    "tile": {
+      "listed": "Itens listados",
+      "listedSub": "{n} itens do Market 2.0",
+      "allowed": "Em venda direta",
+      "allowedSub": "{n} do Market 2.0",
+      "blocked": "Só vitrine e conjuntos",
+      "blockedSub": "Preço só como referência",
+      "sales": "Vendas diretas (7 dias)",
+      "salesSub": "{coins} DesCoin"
+    },
+    "search": "Buscar item, código ou conjunto",
+    "allCats": "Todos",
+    "rarityAll": "Qualquer raridade",
+    "state": {
+      "all": "Todos",
+      "on": "À venda",
+      "off": "Desligado"
+    },
+    "col": {
+      "item": "Item",
+      "category": "Categoria",
+      "rarity": "Raridade",
+      "price": "Preço",
+      "sales": "7 dias",
+      "sale": "Venda direta"
+    },
+    "selectShown": "Selecionar os visíveis",
+    "selected": "{n, plural, one {# selecionado} other {# selecionados}}",
+    "bulkAllow": "Colocar à venda",
+    "bulkBlock": "Tirar da venda",
+    "clear": "Limpar seleção",
+    "footHint": "Selecione itens para uma mudança em massa. Um interruptor muda um item.",
+    "audit": "Registro",
+    "confirmAllow": "Colocar {n, plural, one {# item} other {# itens}} em venda direta?",
+    "confirmBlock": "Tirar {n, plural, one {# item} other {# itens}} da venda direta?",
+    "confirmNote": "As lojas abertas atualizam na hora. Você pode desfazer pelo aviso.",
+    "more": "+{n} a mais",
+    "toast": {
+      "allowed": "{name} agora é vendido em Todos os itens",
+      "blocked": "{name} agora só é vendido na vitrine e em conjuntos",
+      "bulkAllowed": "{n, plural, one {# item colocado} other {# itens colocados}} em venda direta",
+      "bulkBlocked": "{n, plural, one {# item tirado} other {# itens tirados}} da venda direta",
+      "none": "Nada para mudar"
+    },
+    "undoReason": "Desfeito pelo aviso",
+    "set": "Conjunto: {key}",
+    "toggleLabel": "Venda direta de {name}",
+    "focusToggle": "Vender direto em Todos os itens",
+    "empty": "Nenhum item corresponde a este filtro.",
+    "preview": {
+      "title": "O que o usuário vê",
+      "desktop": "Computador",
+      "phone": "Celular",
+      "buy": "Comprar",
+      "pick": "Escolha um item para pré-visualizar",
+      "pathsAllowed": "Pode ser comprado direto em Todos os itens. A vitrine, os conjuntos e o mercado noturno continuam vendendo.",
+      "pathsBlocked": "Vendido só na vitrine diária, em conjuntos e no mercado noturno. Todos os itens mostra para olhar e experimentar.",
+      "sales": "{n, plural, one {# venda direta} other {# vendas diretas}} em 7 dias · {coins} DesCoin"
+    }
   }
 };

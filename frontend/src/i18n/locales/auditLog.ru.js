@@ -641,7 +641,8 @@ export const AUDIT_LOG_RU = {
     "agent_plan_pause": "Приостановил(а) план агента",
     "credit_transfers_off": "Отключил(а) переводы кредитов",
     "credit_transfers_on": "Включил(а) переводы кредитов",
-    "game_limits_set": "Установил(а) игровые лимиты"
+    "game_limits_set": "Установил(а) игровые лимиты",
+    "shop2_direct_sale": "Изменил(а) прямую продажу"
   },
   "s": {
     "_generic": "{actor}: {label}{has, select, yes { · {target}} other {}}",
@@ -712,7 +713,8 @@ export const AUDIT_LOG_RU = {
     "agent_tool": "Инструмент агента · {tool} для {actor}",
     "agent_plan_approve": "{actor} одобрил(а) план агента",
     "agent_plan_run": "{actor} запустил(а) план агента",
-    "agent_plan_undo": "{actor} отменил(а) план агента"
+    "agent_plan_undo": "{actor} отменил(а) план агента",
+    "shop2_direct_sale": "{actor} {on, select, true {включил(а) прямую продажу во «Всех товарах», товаров: {n}} other {снял(а) с прямой продажи во «Всех товарах», товаров: {n}}}"
   },
   "toast": {
     "noteAdded": "Заметка добавлена.",

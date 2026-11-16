@@ -121,7 +121,7 @@ assert.equal(two.selectedCount, 2);
 assert.equal(two.selectedTotal, 1620);
 const partial = setPricing({ ...set, partialPriceUntil: T0 + 86400000 }, { selectedIds: ["p0", "p1"], now: T0 });
 assert.equal(partial.partialActive, true);
-assert.equal(partial.selectedTotal, Math.round(1620 * (3470 / 4620)));
+assert.equal(partial.selectedTotal, Math.round((1620 * (3470 / 4620)) / 10) * 10, "partial price: list sum at the set rate, rounded to 10 like the server");
 assert.equal(setPricing(set, { selectedIds: pieces.filter((p) => !p.owned).map((p) => p.item.id) }).selectedTotal, pr.yourPrice, "choosing every missing piece is the set price");
 assert.deepEqual(setProgress(set), { owned: 2, total: 8, left: 6, pct: 0.25 });
 

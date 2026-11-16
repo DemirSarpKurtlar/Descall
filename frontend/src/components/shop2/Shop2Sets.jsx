@@ -18,7 +18,7 @@ import {
   SHOP2_PARTIAL_DAYS,
 } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
-import { Chip, Layer, Num, Price, Seg, ShortBy, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
+import { Chip, HScroller, Layer, Num, Price, Seg, ShortBy, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import Shop2Stage, { StagePicker, useStage } from "./Shop2Stage.jsx";
 import { setGradient } from "./Shop2Vitrin.jsx";
@@ -61,6 +61,8 @@ import {
 } from "./shop2Icons.jsx";
 
 const sameId = (a, b) => a != null && b != null && String(a) === String(b);
+/** What one piece costs right now: the set rate while the 7-day partial price is open. */
+const piecePrice = (piece) => (piece?.priceNow != null && piece.priceNow > 0 ? piece.priceNow : Number(piece?.item?.price_descoin) || 0);
 
 function SetSwitcher({ sets, active, onPick }) {
   const { t } = useLocale();
@@ -68,17 +70,20 @@ function SetSwitcher({ sets, active, onPick }) {
   const now = useNow(true, 60000);
   const ends = sets.map((x) => x.endsAt).filter(Boolean).sort()[0];
   const left = ends ? countdownParts(ends, now) : null;
+  // A real horizontal scroller (16+ sets never fit): wheel, drag, arrows, fades, snap.
   return (
-    <div className="s2-switch" role="tablist" aria-label={t("shop2.sets.switch")}>
-      {sets.map((x) => (
-        <button key={x.key} type="button" role="tab" aria-selected={x.key === active} className={x.key === active ? "is-on" : ""} onClick={() => onPick(x.key)} style={{ "--set-accent": x.palette?.[2] }}>
-          <span className="s2-switch-art" style={{ background: setGradient(x.palette) }} />
-          <span>
-            <b>{s2.setName(x)}</b>
-            <small className="s2-num">{formatNumber(x.yourPrice ?? x.setPrice)} {t("shop2.common.d")} · {t("shop2.sets.ownedN", { n: x.ownedCount })}</small>
-          </span>
-        </button>
-      ))}
+    <div className="s2-switch-row">
+      <HScroller className="s2-switch" wrapClassName="s2-switch-hs" role="tablist" aria-label={t("shop2.sets.switch")} activeKey={active}>
+        {sets.map((x) => (
+          <button key={x.key} type="button" role="tab" aria-selected={x.key === active} className={x.key === active ? "is-on" : ""} onClick={() => onPick(x.key)} style={{ "--set-accent": x.palette?.[2] }}>
+            <span className="s2-switch-art" style={{ background: setGradient(x.palette) }} />
+            <span>
+              <b>{s2.setName(x)}</b>
+              <small className="s2-num">{formatNumber(x.yourPrice ?? x.setPrice)} {t("shop2.common.d")} · {t("shop2.sets.ownedN", { n: x.ownedCount })}</small>
+            </span>
+          </button>
+        ))}
+      </HScroller>
       {left && !left.done ? <span className="s2-switch-note"><Clock size={14} />{t("shop2.sets.changeIn", { d: Math.floor(left.h / 24), h: left.h % 24 })}</span> : null}
     </div>
   );
@@ -130,6 +135,7 @@ function PieceRow({ piece, hidden, onEye, open, onOpen }) {
   const s2 = useS2();
   const item = piece.item;
   const wished = s2.data.wishlist.some((w) => sameId(w.id, item.id));
+  const price = piecePrice(piece);
   return (
     <div className={`s2-piece${open ? " is-open" : ""}${hidden ? " is-hidden" : ""}`}>
       <div className="s2-piece-main" role="button" tabIndex={0} onClick={(e) => !e.target.closest("button") && onOpen()} onKeyDown={(e) => e.key === "Enter" && onOpen()}>
@@ -138,7 +144,7 @@ function PieceRow({ piece, hidden, onEye, open, onOpen }) {
           <b>{s2.itemName(item)}</b>
           <small>{t(`shop2.cat.${item.category}`)}</small>
         </span>
-        {piece.owned ? <span className="s2-owned"><Check size={13} />{t("shop2.common.owned")}</span> : <Price value={item.price_descoin} size="sm" />}
+        {piece.owned ? <span className="s2-owned"><Check size={13} />{t("shop2.common.owned")}</span> : <Price value={price} old={item.price_descoin} size="sm" />}
         <button
           type="button"
           className={`s2-eye${hidden ? "" : " is-on"}`}
@@ -152,7 +158,7 @@ function PieceRow({ piece, hidden, onEye, open, onOpen }) {
       </div>
       {open && !piece.owned ? (
         <div className="s2-piece-actions">
-          <button type="button" className="s2-btn is-sm" onClick={() => s2.openCheckout({ kind: "item", item, price: item.price_descoin, setKey: item.set_key })}><Cart size={14} />{t("shop2.sets.buyOne", { n: formatNumber(item.price_descoin, locale) })}</button>
+          <button type="button" className="s2-btn is-sm" onClick={() => s2.openCheckout({ kind: "item", item, price, setKey: item.set_key })}><Cart size={14} />{t("shop2.sets.buyOne", { n: formatNumber(price, locale) })}</button>
           <button type="button" className="s2-btn is-sm" onClick={() => s2.openGift({ item, price: item.price_descoin })}><Gift size={14} />{t("shop2.gifts.giftShort")}</button>
           <button type="button" className={`s2-ibtn is-sm${wished ? " is-on" : ""}`} onClick={() => s2.actions.toggleWishlist(item, !wished)} aria-pressed={wished} aria-label={t("shop2.wishlist.toggle")}><Heart size={14} weight={wished ? "fill" : "regular"} /></button>
         </div>
@@ -517,7 +523,9 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
         <span className="s2-pset-title">
           <b>{s2.setName(set)}</b>
           <span className="s2-pdots">
-            {sets.map((x) => <button key={x.key} type="button" aria-label={s2.setName(x)} className={x.key === set.key ? "is-on" : ""} style={{ background: x.palette?.[2] }} onClick={() => onPick(x.key)} />)}
+            <HScroller className="s2-pdots-vp" wrapClassName="s2-pdots-hs" arrows={false} activeKey={set.key}>
+              {sets.map((x) => <button key={x.key} type="button" aria-label={s2.setName(x)} aria-current={x.key === set.key ? "true" : undefined} className={x.key === set.key ? "is-on" : ""} style={{ background: x.palette?.[2] }} onClick={() => onPick(x.key)} />)}
+            </HScroller>
             <small className="s2-num">{idx + 1} / {sets.length}</small>
           </span>
         </span>
@@ -604,7 +612,7 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
               <Shop2Art item={p.item} size="tile" me={s2.me} />
               <span className="s2-ppiece-t">
                 <b>{s2.itemName(p.item)}</b>
-                {p.owned ? <small className="is-green"><Check size={12} />{t("shop2.common.owned")}</small> : <Price value={p.item.price_descoin} size="sm" />}
+                {p.owned ? <small className="is-green"><Check size={12} />{t("shop2.common.owned")}</small> : <Price value={piecePrice(p)} old={p.item.price_descoin} size="sm" />}
               </span>
               <span className={`s2-tick${off ? "" : " is-on"}`}><Check size={12} weight="bold" /></span>
             </button>

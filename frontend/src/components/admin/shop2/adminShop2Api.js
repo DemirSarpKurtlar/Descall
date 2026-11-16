@@ -589,7 +589,7 @@ function auditRow(e) {
     target: e.target || null,
     setKey: action.startsWith("set_") || action.startsWith("ab_") ? e.target : null,
     targetUserId: action === "free_refresh" || action === "storefront_regenerate" ? e.target : null,
-    vars: { v: meta.version ?? e.target ?? "" },
+    vars: { v: meta.version ?? e.target ?? "", n: Number(meta.count) || 0 },
     undoable: Boolean(win),
     undoUntil: win ? new Date(Date.parse(e.at) + win * 60000).toISOString() : null,
     meta,
@@ -796,6 +796,7 @@ async function syncAbTest(key, body) {
 const CODES = [
   "reason_required", "bad_set_key", "set_exists", "bad_time", "bad_window", "bad_option", "bad_replace", "set_recalled", "not_draft",
   "ab_running", "ab_same_price", "not_scheduled", "night_open", "night_started", "title_required", "undo_expired", "undo_unsupported", "not_found", "rate_limited",
+  "no_items", "direct_sale_unavailable",
 ];
 const UPPER = { STEP_UP_REQUIRED: "stepUp", ADMIN_PERMISSION_DENIED: "permission", ADMIN_2FA_REQUIRED: "stepUp" };
 

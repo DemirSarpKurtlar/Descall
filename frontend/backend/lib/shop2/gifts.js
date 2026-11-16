@@ -349,7 +349,8 @@ async function open(userId, giftId, { equip = false, io = null, now = Date.now()
     equipped = await require("./purchases").equipBought(userId, granted, { io });
     await db.rows(db.from("shop2_gifts").update({ status: "equipped", equipped_at: new Date(now).toISOString() }).eq("id", giftId).select("id"));
   }
-  if (g.set_key) await require("./sets").recordCompletions(userId, await people.ownedIds(userId), [await catalog.getSet(g.set_key)].filter(Boolean));
+  // Title reward: a gifted set, or a gifted single piece that was the last one missing.
+  if (granted.length) await require("./purchases").completionsFor(userId, granted.map((id) => cat.byId.get(id)).filter(Boolean), [g.set_key]);
   events.toUser(g.from_user, "shop2:gift", { kind: equipped ? "equipped" : "opened", giftId });
   events.toUser(userId, "shop2:storefront", { reason: "gift" });
   return { giftId, granted, alreadyOwned: already, equipped, items: granted.map((id) => catalog.publicItem(cat.byId.get(id), base)).filter(Boolean) };

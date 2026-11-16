@@ -550,7 +550,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   useEffect(() => {
     const apply = () => {
       const pending = peekShopFocus();
-      if (!pending) return;
+      // Market 2.0 decides first (storefront card / set) and hands the rest over.
+      if (!pending || !pending.classic) return;
       const item = itemsRef.current.find((row) => String(row.id) === pending.itemId);
       if (!item) return; // catalog still loading: the next items update tries again
       takeShopFocus();

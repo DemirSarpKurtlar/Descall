@@ -7,7 +7,8 @@
  */
 
 .s2-root,
-.s2-layer {
+.s2-layer,
+.s2-toasts {
   --s2-ink: rgba(255, 255, 255, 0.95);
   --s2-dim: rgba(235, 238, 255, 0.68);
   --s2-mute: rgba(235, 238, 255, 0.5);
@@ -31,6 +32,9 @@
   --s2-p2: #587af5;
   --s2-p3: #c6b7ff;
   --s2-accent: var(--s2-brand);
+}
+.s2-root,
+.s2-layer {
   container: s2 / inline-size;
   position: relative;
   box-sizing: border-box;
@@ -2828,12 +2832,22 @@ button.s2-strip:hover {
   flex-direction: column;
   gap: 14px;
 }
+.s2-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.s2-switch-hs {
+  flex: 1;
+}
 .s2-switch {
   display: flex;
   align-items: center;
   gap: 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  /* room for the selected tile's glow inside the scroller's clip */
+  padding: 4px 2px 12px;
+  margin: -4px -2px -12px;
 }
 .s2-switch::-webkit-scrollbar {
   display: none;
@@ -4191,6 +4205,19 @@ button.s2-strip:hover {
   color: #fff;
   outline: none;
 }
+/* The global input rules add padding, a border and (glass) a focus-visible outline inside the
+   box; the box itself shows the focus instead. */
+.s2-searchbox input,
+.s2-searchbox input:focus,
+.s2-searchbox.s2-searchbox input:focus-visible {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+.s2-searchbox:focus-within {
+  box-shadow: inset 0 0 0 1px rgba(88, 122, 245, 0.75), 0 0 0 3px rgba(88, 122, 245, 0.18);
+}
 .s2-searchbox.is-lg {
   height: 48px;
   border-radius: 14px;
@@ -5275,6 +5302,7 @@ button.s2-strip:hover {
   max-width: 100%;
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: 24px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)), var(--s2-opaque, #191a26);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.09);
@@ -5436,9 +5464,14 @@ button.s2-strip:hover {
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
+  max-width: calc(100vw - 32px);
   pointer-events: none;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
 }
-.s2-root.is-phone .s2-toasts {
+.s2-toasts.is-phone {
   left: 16px;
   right: 16px;
   bottom: calc(96px + env(safe-area-inset-bottom, 0px));
@@ -5870,13 +5903,39 @@ button.s2-strip:hover {
     transform: rotate(360deg);
   }
 }
+/* Less motion: the system setting and Settings › Görünüm › Hareketi azalt (html.reduce-motion).
+   Covers the layer / toast boxes themselves, pseudo elements and staggered delays. */
 @media (prefers-reduced-motion: reduce) {
   .s2-root *,
-  .s2-layer * {
+  .s2-root::before,
+  .s2-layer,
+  .s2-layer *,
+  .s2-toasts * {
     animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
   }
+}
+html.reduce-motion .s2-root *,
+html.reduce-motion .s2-root::before,
+html.reduce-motion .s2-layer,
+html.reduce-motion .s2-layer *,
+html.reduce-motion .s2-toasts * {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+/* app-backgrounded.css pauses every animation while the app is idle or unfocused; a digit
+   that changed then stayed frozen at its first keyframe (opacity 0), so the countdowns lost
+   their seconds. The digits simply swap while idle. */
+html:is(.app-idle, .app-backgrounded) .s2-clock-d {
+  animation: none !important;
 }
 
 /* ---------- widths ---------- */
@@ -6624,4 +6683,137 @@ button.s2-strip:hover {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- horizontal strips (HScroller in Shop2Bits.jsx) ----------
+   Set switcher, tab rows and phone chips. Native scroll + snap; the wheel scrolls sideways,
+   a mouse can drag, arrows show on desktop pointers only, and the edges fade while there is
+   more to see. The strip never widens its parent (min-width: 0 all the way up). */
+.s2-hs {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+}
+.s2-hs-vp {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.s2-hs-vp::-webkit-scrollbar {
+  display: none;
+}
+.s2-hs-vp > * {
+  flex: none;
+  scroll-snap-align: start;
+}
+.s2-hs-vp.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+.s2-hs-vp.is-dragging > * {
+  pointer-events: none;
+}
+.s2-hs.is-fade-l > .s2-hs-vp {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--s2-hs-fade, 44px));
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--s2-hs-fade, 44px));
+}
+.s2-hs.is-fade-r > .s2-hs-vp {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--s2-hs-fade, 44px)), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - var(--s2-hs-fade, 44px)), transparent);
+}
+.s2-hs.is-fade-l.is-fade-r > .s2-hs-vp {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--s2-hs-fade, 44px), #000 calc(100% - var(--s2-hs-fade, 44px)), transparent);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--s2-hs-fade, 44px), #000 calc(100% - var(--s2-hs-fade, 44px)), transparent);
+}
+.s2-hs-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-top: -15px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #272839;
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.s2-hs-arrow:hover {
+  background: #33354a;
+}
+.s2-hs-arrow:active {
+  transform: scale(0.94);
+}
+.s2-hs-arrow.is-prev {
+  left: 0;
+}
+.s2-hs-arrow.is-next {
+  right: 0;
+}
+.s2-hs-arrow[hidden] {
+  display: none;
+}
+@media (hover: none), (pointer: coarse) {
+  .s2-hs-arrow {
+    display: none;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .s2-hs-vp {
+    scroll-padding-inline: 36px;
+  }
+}
+.s2-root:not(.is-phone) .s2-tabs-hs {
+  grid-area: tabs;
+  justify-self: start;
+  max-width: 100%;
+}
+.s2-ptabs-hs,
+.s2-pchips-hs {
+  --s2-hs-fade: 28px;
+}
+/* phone set pager: 16+ colour dots scroll, the "1 / 16" counter stays put */
+.s2-pdots {
+  min-width: 0;
+}
+.s2-pdots-hs {
+  --s2-hs-fade: 18px;
+  flex: 0 1 auto;
+}
+.s2-pdots-vp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* taller hit area for the 12 px dots, inside the scroller's clip */
+  padding: 8px 2px;
+  margin: -8px -2px;
+  scroll-snap-type: none;
+}
+.s2-pdots-vp > button {
+  position: relative;
+}
+.s2-pdots-vp > button::after {
+  content: "";
+  position: absolute;
+  inset: -8px -3px;
+}
+.s2-pdots small {
+  flex: none;
+  white-space: nowrap;
+}
+/* Low-performance glass / Reduce transparency: no blur behind the layers, denser scrim. */
+html:is(.gd-lite, .a11y-solid) .s2-layer {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgba(5, 6, 10, 0.78);
 }

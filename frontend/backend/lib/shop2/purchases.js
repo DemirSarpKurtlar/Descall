@@ -180,8 +180,24 @@ async function charge(userId, items, price, opts = {}) {
     }
     const sale = { id: purchaseId, kind: opts.kind, userId, setKey: row.set_key, itemIds: row.item_ids, amount: price, listAmount: row.list_amount, ownedDeducted: row.owned_deducted, source: row.source, gift: grantTo !== userId, at: row.created_at };
     events.toAdmins("shop2:admin:sale", { sale });
-    return { duplicate: false, purchase: row, balance, granted: granted.map((it) => it.id), lockUntil };
+    // A set completes however its last piece arrives (set buy, single piece, night card), so the
+    // completion title is recorded here for every set a granted item belongs to.
+    const completed = granted.length ? await completionsFor(grantTo, granted, [opts.setKey]) : [];
+    return { duplicate: false, purchase: row, balance, granted: granted.map((it) => it.id), lockUntil, completed };
   });
+}
+
+/** Completion rows (title reward) for the sets of `items` the user now owns fully. */
+async function completionsFor(userId, items, extraKeys = []) {
+  const keys = new Set([...items.map((it) => it?.setKey), ...extraKeys].filter(Boolean));
+  if (!keys.size) return [];
+  try {
+    const touched = (await catalog.getSets()).filter((s) => keys.has(s.key));
+    return await sets.recordCompletions(userId, await people.ownedIds(userId), touched);
+  } catch (err) {
+    console.error(`[shop2] completion record failed for ${userId}:`, err?.message || err);
+    return [];
+  }
 }
 
 /** Equip what was just bought; the previous look is saved as an automatic outfit (undoable). */
@@ -271,7 +287,7 @@ async function buyItem(userId, itemId, { expectedPrice = null, idempotencyKey = 
   let equipped = null;
   if (!res.duplicate && equip) equipped = await equipBought(userId, [item.id], { io });
   if (!res.duplicate) events.toUser(userId, "shop2:storefront", { reason: "purchase" });
-  return { ...res, item, price, equipped };
+  return { ...res, item, price, equipped, completed: res.completed || [] };
 }
 
 /**
@@ -318,8 +334,7 @@ async function buySet(userId, setKey, { pieceIds = null, all = false, holdToken 
   let completed = [];
   if (!res.duplicate && q.partialPriceUntil) await closeLockOpenerRefund(userId, ctx.locks.get(set.key));
   if (!res.duplicate) {
-    const ownedNow = await people.ownedIds(userId);
-    completed = await sets.recordCompletions(userId, ownedNow, [set]);
+    completed = res.completed || [];
     if (equip) equipped = await equipBought(userId, equip === "all" || equip === true ? pq.ids : (Array.isArray(equip) ? equip : []).map(String).filter((id) => pq.ids.includes(id)), { io });
     events.toUser(userId, "shop2:storefront", { reason: "purchase" });
   }
@@ -388,4 +403,4 @@ async function listPurchases(userId, { limit = 50 } = {}) {
   return db.rows(db.from("shop2_purchases").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(limit)).catch(() => []);
 }
 
-module.exports = { cleanKey, charge, buyItem, buySet, refund, equipBought, unequipIds, listPurchases, splitAmount, reserveSetStock, releaseSetStock };
+module.exports = { cleanKey, charge, completionsFor, buyItem, buySet, refund, equipBought, unequipIds, listPurchases, splitAmount, reserveSetStock, releaseSetStock };

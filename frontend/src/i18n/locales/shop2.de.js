@@ -18,7 +18,7 @@ export const SHOP2_DE = {
     "placeholder": "Artikel, Sets oder Farben suchen",
     "kbd": "Strg K",
     "none": "Noch keine Treffer.",
-    "kind": { "today": "Im heutigen Schaufenster", "set": "Set", "wish": "Auf deiner Wunschliste", "owned": "Gehört dir" }
+    "kind": { "today": "Im heutigen Schaufenster", "set": "Set", "wish": "Auf deiner Wunschliste", "owned": "Gehört dir", "catalog": "Im Shop" }
   },
   "tiles": {
     "nextStorefront": "Neues Schaufenster in",
@@ -46,7 +46,11 @@ export const SHOP2_DE = {
     "giftWhen": "Angekommen {time} · nicht geöffnet",
     "giftSub": "Geschenke von Freunden landen hier",
     "wallet": "Wallet",
-    "earned": "Heute verdient"
+    "earned": "Heute verdient",
+    "nightNext": "Öffnet {when}",
+    "nightNone": "Kein Nachtmarkt geplant",
+    "refreshPremium": "Heute gratis mit Descall+",
+    "refreshGrant": "Gratis-Erneuerungen: {n}"
   },
   "vitrin": {
     "today": "Heutiges Schaufenster",
@@ -78,7 +82,9 @@ export const SHOP2_DE = {
     "go": "Erneuern · {n} D",
     "goFree": "Gratis erneuern",
     "short": "{n} D",
-    "done": "Neue Artikel sind da. Deine gesperrte Karte ist geblieben."
+    "done": "Neue Artikel sind da. Deine gesperrte Karte ist geblieben.",
+    "leftAfter": "Danach noch {n}",
+    "doneFresh": "Neue Artikel sind da."
   },
   "detail": {
     "label": "Live-Vorschau",
@@ -183,6 +189,8 @@ export const SHOP2_DE = {
     "title": "Deine letzten Aktionen",
     "undo": "Rückgängig · {t}",
     "undone": "Rückgängig gemacht. Dein DesCoin ist zurück.",
+    "undoneShort": "Rückgängig gemacht.",
+    "share": "{name} Freunden gezeigt",
     "thanked": "Hat sich bedankt",
     "open": "Öffnen",
     "purchase": "{name} gekauft",
@@ -392,7 +400,7 @@ export const SHOP2_DE = {
     "hint": { "profile": "Profil", "frame": "Rahmen", "chat": "Chat", "voice": "Sprache", "sound": "Ton", "badge": "Abzeichen", "effect": "Effekt" },
     "flipCard": "Verdeckte Karte aufdecken: {hint}",
     "hintNote": "Der Hinweis auf der Rückseite nennt nur den Typ; den Rabatt siehst du beim Aufdecken.",
-    "tomorrow": "Heute keine Züge mehr. Morgen Nacht gibt es neue Karten.",
+    "tomorrow": "Heute keine Züge mehr. Neue Karten beim nächsten Nachtmarkt.",
     "noFlips": "Heute Nacht keine Züge mehr",
     "openedCard": "Aufgedeckte Karte",
     "onlyYou": "Nur für dich",
@@ -409,7 +417,15 @@ export const SHOP2_DE = {
     "closedBody": "Der Nachtmarkt öffnet heute Nacht wieder.",
     "openNow": "Der Nachtmarkt ist offen",
     "closingSoon": "Der Nachtmarkt schließt in 10 Minuten",
-    "stripSub": "{n} verdeckte Karten"
+    "stripSub": "{n} verdeckte Karten",
+    "closedSubAt": "Öffnet mit versteckten Angeboten nur für dich: {when}",
+    "closedBodyAt": "Nächster Nachtmarkt: {when}.",
+    "noneScheduled": "Gerade ist kein Nachtmarkt geplant.",
+    "notEligible": "Dieser Nachtmarkt ist für dein Konto nicht geöffnet.",
+    "notifyFailed": "Die Erinnerung wurde nicht gespeichert. Versuch es noch einmal.",
+    "whenToday": "heute um {time}",
+    "whenTomorrow": "morgen um {time}",
+    "whenDay": "am {day} um {time}"
   },
   "gifts": {
     "title": "Geschenke",
@@ -593,5 +609,12 @@ export const SHOP2_DE = {
       "dm_rate_limited": "Nachrichtenlimit erreicht",
       "other": "Senden fehlgeschlagen"
     }
+  },
+  "directSale": {
+    "badge": "Im Schaufenster und in Sets",
+    "seeSet": "Set ansehen",
+    "hint": "Dieser Artikel wird hier nicht direkt verkauft. Er erscheint in deinem täglichen Schaufenster, in Sets und auf dem Nachtmarkt.",
+    "price": "Referenzpreis",
+    "foot": "Du kannst ihn trotzdem ansehen und anprobieren."
   }
 };

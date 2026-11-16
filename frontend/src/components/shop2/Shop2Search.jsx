@@ -1,6 +1,10 @@
 // Market search (draft C "Ürün, set, renk veya arkadaş ara", Ctrl K): today's storefront,
-// sets (by name or colour), wishlist and inventory in one list.
-import { useMemo, useState } from "react";
+// sets (by name or colour), wishlist, inventory and the whole live s2 catalog in one list.
+// An item result opens where it is sold (requestShopFocus: storefront card, set, catalog).
+import { useEffect, useMemo, useState } from "react";
+import shop2Api from "../../lib/shop2Api.js";
+import { normalizeItem } from "../../lib/shop2Logic.js";
+import { requestShopFocus } from "../../lib/callCoinPrefs.js";
 import { useLocale } from "../../context/LocaleContext";
 import { useS2 } from "./Shop2Context.js";
 import { Layer, Price } from "./Shop2Bits.jsx";
@@ -14,6 +18,17 @@ export default function Shop2Search({ onClose }) {
   const { t } = useLocale();
   const s2 = useS2();
   const [q, setQ] = useState("");
+  const [catalog, setCatalog] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    shop2Api.catalog().then(
+      (res) => alive && setCatalog((res?.items || []).map((x) => normalizeItem(x)).filter(Boolean)),
+      () => alive && setCatalog([])
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
   const results = useMemo(() => {
     const n = norm(q).trim();
     const out = [];
@@ -30,11 +45,12 @@ export default function Shop2Search({ onClose }) {
     }
     for (const it of s2.data.wishlist) if (matchItem(it)) push({ key: `i${it.id}`, kind: "wish", item: it, price: it.price_descoin });
     if (n) for (const row of s2.inventory) if (row.item && matchItem(row.item)) push({ key: `i${row.item.id}`, kind: "owned", item: row.item });
+    if (n && catalog) for (const it of catalog) if (!s2.owned.has(it.id) && matchItem(it)) push({ key: `i${it.id}`, kind: "catalog", item: it, price: it.price_descoin });
     return out.slice(0, 14);
-  }, [q, s2, t]);
+  }, [q, s2, t, catalog]);
   const go = (r) => {
     if (r.kind === "set") s2.openSet(r.set.key);
-    else if (r.kind === "today") s2.setTab("vitrin");
+    else if (r.kind === "today" || r.kind === "catalog") requestShopFocus({ itemId: r.item.id });
     else if (r.kind === "wish") s2.setTab("wishlist");
     else s2.setTab("inventory");
     onClose();

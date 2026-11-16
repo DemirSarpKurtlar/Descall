@@ -255,3 +255,18 @@ export function takeShopFocus(now = Date.now()) {
 export function peekShopFocus() {
   return pendingShopFocus;
 }
+
+/**
+ * Market 2.0 (Shop2Market) places a focus first: today's storefront card (and its checkout for
+ * "Hemen al") or the item's set. Anything else is handed to the classic catalog ("Tüm ürünler",
+ * ShopPanel), which only acts on a handed-off focus.
+ */
+export function handOffShopFocus() {
+  if (!pendingShopFocus) return;
+  pendingShopFocus = { ...pendingShopFocus, classic: true, at: Date.now() };
+  try {
+    window.dispatchEvent(new CustomEvent(SHOP_FOCUS_EVENT, { detail: pendingShopFocus }));
+  } catch {
+    /* ignore */
+  }
+}

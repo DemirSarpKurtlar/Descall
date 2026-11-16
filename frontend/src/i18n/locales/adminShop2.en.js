@@ -399,7 +399,8 @@ export const ADMIN_SHOP2_EN = {
       "rules": "Algorithm",
       "night": "Night market",
       "limits": "Limits",
-      "user": "User"
+      "user": "User",
+      "sale": "All items"
     },
     "system": "System",
     "reason": "Reason: {r}",
@@ -439,7 +440,8 @@ export const ADMIN_SHOP2_EN = {
       "storefront_regenerate": "User storefront rebuilt",
       "queue_cancel": "Scheduled change cancelled",
       "event_create": "Event added to the calendar",
-      "event_delete": "Event deleted"
+      "event_delete": "Event deleted",
+      "direct_sale": "Direct sale in All items changed · {n, plural, one {# item} other {# items}}"
     }
   },
   "slots": {
@@ -887,6 +889,75 @@ export const ADMIN_SHOP2_EN = {
     "undo_expired": "The undo window has closed",
     "undo_unsupported": "This action cannot be undone",
     "not_found": "Entry not found",
-    "rate_limited": "Too fast; wait a moment"
+    "rate_limited": "Too fast; wait a moment",
+    "no_items": "Choose at least one item",
+    "direct_sale_unavailable": "The database update for direct sale is not applied yet"
+  },
+  "directSale": {
+    "open": "Direct sale in All items",
+    "title": "Direct sale in All items",
+    "subtitle": "The All items tab is for browsing. Items you turn on here can be bought straight from it; everything else sells in the storefront, sets and night market.",
+    "live": "Live",
+    "liveHint": "Changes reach open shops right away.",
+    "notInstalled": "Waiting for the database update (20261116_shop_direct_sale.sql). Until then Market 2.0 items are not sold directly and country flags are; the switches work after the update.",
+    "tile": {
+      "listed": "Listed items",
+      "listedSub": "{n} Market 2.0 items",
+      "allowed": "On direct sale",
+      "allowedSub": "{n} of them Market 2.0",
+      "blocked": "Storefront and sets only",
+      "blockedSub": "Price shown as a reference",
+      "sales": "Direct sales (7 days)",
+      "salesSub": "{coins} DesCoin"
+    },
+    "search": "Search item, code or set",
+    "allCats": "All",
+    "rarityAll": "Any rarity",
+    "state": {
+      "all": "All",
+      "on": "On sale",
+      "off": "Off"
+    },
+    "col": {
+      "item": "Item",
+      "category": "Category",
+      "rarity": "Rarity",
+      "price": "Price",
+      "sales": "7 days",
+      "sale": "Direct sale"
+    },
+    "selectShown": "Select the shown items",
+    "selected": "{n} selected",
+    "bulkAllow": "Put on sale",
+    "bulkBlock": "Take off sale",
+    "clear": "Clear selection",
+    "footHint": "Select items for a bulk change. One switch changes one item.",
+    "audit": "Audit trail",
+    "confirmAllow": "Put {n, plural, one {# item} other {# items}} on direct sale?",
+    "confirmBlock": "Take {n, plural, one {# item} other {# items}} off direct sale?",
+    "confirmNote": "Open shops update at once. You can undo it from the notice.",
+    "more": "+{n} more",
+    "toast": {
+      "allowed": "{name} is now sold in All items",
+      "blocked": "{name} now sells only in the storefront and sets",
+      "bulkAllowed": "{n, plural, one {# item} other {# items}} put on direct sale",
+      "bulkBlocked": "{n, plural, one {# item} other {# items}} taken off direct sale",
+      "none": "Nothing to change"
+    },
+    "undoReason": "Undone from the notice",
+    "set": "Set: {key}",
+    "toggleLabel": "Direct sale for {name}",
+    "focusToggle": "Sell directly in All items",
+    "empty": "No items match this filter.",
+    "preview": {
+      "title": "What the user sees",
+      "desktop": "Desktop",
+      "phone": "Phone",
+      "buy": "Buy",
+      "pick": "Pick an item to preview",
+      "pathsAllowed": "Can be bought straight from All items. The storefront, sets and night market keep selling it too.",
+      "pathsBlocked": "Sold only in the daily storefront, sets and night market. All items shows it for browsing and try-on.",
+      "sales": "{n, plural, one {# direct sale} other {# direct sales}} in the last 7 days · {coins} DesCoin"
+    }
   }
 };

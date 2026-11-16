@@ -7,7 +7,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import { nightSummary, priceHistoryStats, SHOP2_NIGHT_URGENT_MS, windowProgress } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
-import { Chip, CloseX, Price, RollingClock, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
+import { Chip, CloseX, Price, RollingClock, Sparkline, Toggle, useNow, useWhen } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import { Bell, Cart, Clock, Gift, History, Info, MessageCircle, Moon, Pin, Sparkles, Star, User, Users, Volume2, Waveform } from "./shop2Icons.jsx";
 
@@ -65,6 +65,7 @@ export default function Shop2Night({ onClose }) {
   const s2 = useS2();
   const nm = s2.data.night;
   const now = useNow(true);
+  const when = useWhen();
   const [activeIdx, setActiveIdx] = useState(null);
   const [busy, setBusy] = useState(false);
   const [notify, setNotify] = useState(null);
@@ -76,10 +77,16 @@ export default function Shop2Night({ onClose }) {
   const active = nm.cards.find((c) => c.index === activeIdx) || opened[opened.length - 1] || null;
   const urgent = nm.closesAt && nm.closesAt - now < SHOP2_NIGHT_URGENT_MS;
   const setPref = (patch) => s2.actions.setPref(patch);
+  // The reminder lives on the server: the switch only stays where the server confirmed it.
   const toggleNotify = async (on) => {
+    const before = notify ?? nm.notify ?? false;
     setNotify(on);
     const res = await s2.actions.nightNotify(on);
     if (res && typeof res.notify === "boolean") setNotify(res.notify);
+    else {
+      setNotify(before);
+      s2.toast(t("shop2.night.notifyFailed"), { tone: "error" });
+    }
   };
   const flip = async (card) => {
     if (card.flipped) {
@@ -116,24 +123,29 @@ export default function Shop2Night({ onClose }) {
   const hist = active ? priceHistoryStats(active.priceHistory, active.price) : null;
   const prevLow = active?.previousLowest ?? hist?.previousLowest;
   const cheaper = prevLow && active ? Math.round((1 - active.price / prevLow) * 100) : 0;
-  const opensAt = nm.opensAt ? new Date(nm.opensAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "21:00";
-  const closesAt = nm.closesAt ? new Date(nm.closesAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "03:00";
+  const clock = (v) => (v ? new Date(v).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "");
+  const opensAt = clock(nm.opensAt);
+  const closesAt = clock(nm.closesAt);
+  // Closed: the next night can be days away (default Friday and Saturday 22:00 Istanbul).
+  const nextAt = nm.open ? null : nm.nextOpensAt || nm.opensAt || null;
+  const nextWhen = nextAt ? when(nextAt, { now }) : "";
+  const ineligible = nm.open && nm.eligible === false;
 
   const head = (
     <div className={`s2-nhead${urgent ? " is-urgent" : ""}`}>
       <span className="s2-nhead-ic"><Moon size={22} weight="fill" /></span>
       <div className="s2-nhead-t">
         <h2>{nm.open ? t("shop2.night.openTitle") : t("shop2.night.closedTitle")}</h2>
-        <p>{nm.open ? t("shop2.night.openSub", { time: opensAt, n: nm.cards.length }) : t("shop2.night.closedSub", { time: opensAt })}</p>
+        <p>{nm.open ? (ineligible ? t("shop2.night.notEligible") : t("shop2.night.openSub", { time: opensAt, n: nm.cards.length })) : nextAt ? t("shop2.night.closedSubAt", { when: nextWhen }) : t("shop2.night.noneScheduled")}</p>
       </div>
       {nm.open ? (
         <div className="s2-nprog">
           <div className="s2-nprog-l"><span>{opensAt}</span><span>{t("shop2.night.closesIn")} <RollingClock target={nm.closesAt} urgentMs={SHOP2_NIGHT_URGENT_MS} /></span><span>{closesAt}</span></div>
           <span className="s2-bar is-night"><i style={{ width: `${Math.round(windowProgress(nm.opensAt, nm.closesAt, now) * 100)}%` }} /></span>
         </div>
-      ) : (
-        <div className="s2-nprog"><span className="s2-muted">{t("shop2.night.opensIn")}</span> <RollingClock target={nm.nextOpensAt || nm.opensAt} /></div>
-      )}
+      ) : nextAt ? (
+        <div className="s2-nprog"><span className="s2-muted">{t("shop2.night.opensIn")}</span> <RollingClock target={nextAt} /></div>
+      ) : null}
       <div className="s2-nstats">
         <div><span>{t("shop2.night.opened")}</span><b className="s2-num">{sum.opened}</b></div>
         <div><span>{t("shop2.night.keptN")}</span><b className="s2-num">{sum.kept}</b></div>
@@ -217,8 +229,8 @@ export default function Shop2Night({ onClose }) {
             <button type="button" className="s2-btn is-gold is-flex2" disabled={active.bought || s2.balance < active.price || !nm.open} onClick={() => s2.openCheckout({ kind: "night", card: active, item: active.item, price: active.price })}>
               {active.bought ? t("shop2.common.owned") : t("shop2.night.buy", { n: formatNumber(active.price, locale) })}
             </button>
-            <button type="button" className="s2-ibtn" onClick={() => s2.openGift({ item: active.item, price: active.price, nightCardIndex: active.index })} aria-label={t("shop2.gifts.giftIt")}><Gift size={17} /></button>
-            <button type="button" className="s2-ibtn" onClick={() => s2.addToCart(active.item, active.price)} aria-label={t("shop2.cart.add")}><Cart size={17} /></button>
+            <button type="button" className="s2-ibtn" disabled={active.bought || !nm.open} onClick={() => s2.openGift({ item: active.item, price: active.price, nightCardIndex: active.index })} aria-label={t("shop2.gifts.giftIt")}><Gift size={17} /></button>
+            <button type="button" className="s2-ibtn" disabled={active.bought || !nm.open} onClick={() => s2.addToCart(active.item, active.price, { nightCardIndex: active.index })} aria-label={t("shop2.cart.add")}><Cart size={17} /></button>
           </div>
           <button type="button" className={`s2-btn is-wide${active.kept ? " is-active" : ""}`} onClick={() => keep(active)} disabled={!nm.open}>
             <Pin size={15} weight={active.kept ? "fill" : "regular"} />
@@ -229,7 +241,7 @@ export default function Shop2Night({ onClose }) {
       ) : (
         <div className="s2-empty is-small">
           <Moon size={24} />
-          <p>{nm.open ? t("shop2.night.pickCard") : t("shop2.night.closedBody")}</p>
+          <p>{ineligible ? t("shop2.night.notEligible") : nm.open ? t("shop2.night.pickCard") : nextAt ? t("shop2.night.closedBodyAt", { when: nextWhen }) : t("shop2.night.noneScheduled")}</p>
         </div>
       )}
     </section>

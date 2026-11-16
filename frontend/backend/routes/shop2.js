@@ -177,7 +177,7 @@ router.post(
   handle(async (req) => {
     const b = req.body || {};
     const r = await purchases.buyItem(req.user.id, String(req.params.id), { expectedPrice: b.expectedPrice ?? null, idempotencyKey: idemKey(req), source: typeof b.source === "string" ? b.source.slice(0, 20) : null, equip: b.equip === true, io: io(req) });
-    return { ok: true, duplicate: r.duplicate, purchaseId: r.purchase?.id, paid: Number(r.purchase?.amount) || 0, itemId: r.item.id, balance: r.balance, refundableUntil: r.purchase?.refundable_until || null, partialPriceUntil: r.lockUntil || null, equipped: r.equipped || null };
+    return { ok: true, duplicate: r.duplicate, purchaseId: r.purchase?.id, paid: Number(r.purchase?.amount) || 0, itemId: r.item.id, balance: r.balance, refundableUntil: r.purchase?.refundable_until || null, partialPriceUntil: r.lockUntil || null, equipped: r.equipped || null, completed: r.completed || [] };
   }, { kind: "buy" })
 );
 
@@ -289,7 +289,7 @@ router.get(
   "/history",
   handle(async (req) => {
     const list = await actions.list(req.user.id, { limit: Number(req.query.limit) || 50, before: typeof req.query.before === "string" ? req.query.before : null });
-    return { entries: list.map((r) => actions.publicAction(r)) };
+    return { entries: await require("../lib/shop2/historyView").decorate(list.map((r) => actions.publicAction(r)), { base: base(req) }) };
   })
 );
 
@@ -298,7 +298,7 @@ router.post("/history/:id/undo", handle(async (req) => ({ ok: true, ...(await hi
 /* ---------------------------------------------------------------- outfits */
 
 router.get("/outfits", handle(async (req) => ({ outfits: (await outfits.list(req.user.id)).map(outfits.publicOutfit) })));
-router.post("/outfits", handle(async (req) => ({ ok: true, outfit: outfits.publicOutfit(await outfits.save(req.user.id, { name: req.body?.name, look: req.body?.look || null })) }), { kind: "write" }));
+router.post("/outfits", handle(async (req) => ({ ok: true, outfit: outfits.publicOutfit(await outfits.save(req.user.id, { name: req.body?.name, look: req.body?.look || null, kind: req.body?.kind === "previous" ? "previous" : "saved" })) }), { kind: "write" }));
 router.post("/outfits/:id/apply", handle(async (req) => ({ ok: true, ...(await outfits.apply(req.user.id, String(req.params.id), { io: io(req) })) }), { kind: "write" }));
 router.delete("/outfits/:id", handle(async (req) => outfits.remove(req.user.id, String(req.params.id)), { kind: "write" }));
 

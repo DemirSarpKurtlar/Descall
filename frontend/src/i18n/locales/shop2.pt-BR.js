@@ -18,7 +18,7 @@ export const SHOP2_PT_BR = {
     "placeholder": "Busque itens, sets ou cores",
     "kbd": "Ctrl K",
     "none": "Nada corresponde ainda.",
-    "kind": { "today": "Na vitrine de hoje", "set": "Set", "wish": "Na sua lista de desejos", "owned": "Você já tem" }
+    "kind": { "today": "Na vitrine de hoje", "set": "Set", "wish": "Na sua lista de desejos", "owned": "Você já tem", "catalog": "Na loja" }
   },
   "tiles": {
     "nextStorefront": "Nova vitrine em",
@@ -46,7 +46,11 @@ export const SHOP2_PT_BR = {
     "giftWhen": "Chegou {time} · não aberto",
     "giftSub": "Presentes dos amigos chegam aqui",
     "wallet": "Carteira",
-    "earned": "Ganho hoje"
+    "earned": "Ganho hoje",
+    "nightNext": "Abre {when}",
+    "nightNone": "Nenhum mercado noturno agendado",
+    "refreshPremium": "Grátis hoje com Descall+",
+    "refreshGrant": "Renovações grátis: {n}"
   },
   "vitrin": {
     "today": "Vitrine de hoje",
@@ -78,7 +82,9 @@ export const SHOP2_PT_BR = {
     "go": "Renovar · {n} D",
     "goFree": "Renovar de graça",
     "short": "{n} D",
-    "done": "Os itens novos chegaram. Seu cartão travado ficou."
+    "done": "Os itens novos chegaram. Seu cartão travado ficou.",
+    "leftAfter": "Mais {n} depois desta",
+    "doneFresh": "Os itens novos chegaram."
   },
   "detail": {
     "label": "Prévia ao vivo",
@@ -183,6 +189,8 @@ export const SHOP2_PT_BR = {
     "title": "Suas ações recentes",
     "undo": "Desfazer · {t}",
     "undone": "Desfeito. Seus DesCoin voltaram.",
+    "undoneShort": "Desfeito.",
+    "share": "{name} mostrado aos amigos",
     "thanked": "Agradeceu",
     "open": "Abrir",
     "purchase": "Comprou {name}",
@@ -392,7 +400,7 @@ export const SHOP2_PT_BR = {
     "hint": { "profile": "Perfil", "frame": "Moldura", "chat": "Chat", "voice": "Voz", "sound": "Som", "badge": "Insígnia", "effect": "Efeito" },
     "flipCard": "Virar uma carta oculta: {hint}",
     "hintNote": "A dica no verso só diz o tipo; o desconto aparece quando você vira.",
-    "tomorrow": "Sem viradas nesta noite. Cartas novas amanhã à noite.",
+    "tomorrow": "Sem viradas nesta noite. Cartas novas no próximo mercado noturno.",
     "noFlips": "Sem viradas nesta noite",
     "openedCard": "Carta virada",
     "onlyYou": "Só para você",
@@ -409,7 +417,15 @@ export const SHOP2_PT_BR = {
     "closedBody": "O mercado noturno abre de novo hoje à noite.",
     "openNow": "O mercado noturno está aberto",
     "closingSoon": "O mercado noturno fecha em 10 minutos",
-    "stripSub": "{n} cartas ocultas"
+    "stripSub": "{n} cartas ocultas",
+    "closedSubAt": "Abre com ofertas ocultas só para você: {when}",
+    "closedBodyAt": "Próximo mercado noturno: {when}.",
+    "noneScheduled": "Nenhum mercado noturno agendado no momento.",
+    "notEligible": "Este mercado noturno não está aberto para a sua conta.",
+    "notifyFailed": "Não foi possível salvar o lembrete. Tente de novo.",
+    "whenToday": "hoje às {time}",
+    "whenTomorrow": "amanhã às {time}",
+    "whenDay": "{day} às {time}"
   },
   "gifts": {
     "title": "Presentes",
@@ -593,5 +609,12 @@ export const SHOP2_PT_BR = {
       "dm_rate_limited": "Limite de mensagens atingido",
       "other": "Não foi possível enviar"
     }
+  },
+  "directSale": {
+    "badge": "Na vitrine e em conjuntos",
+    "seeSet": "Ver o conjunto",
+    "hint": "Este item não é vendido direto aqui. Ele aparece na sua vitrine diária, em conjuntos e no mercado noturno.",
+    "price": "Preço de referência",
+    "foot": "Você ainda pode pré-visualizar e experimentar."
   }
 };
