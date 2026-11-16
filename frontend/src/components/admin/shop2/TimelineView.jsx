@@ -11,6 +11,7 @@ import { useLocale } from "../../../context/LocaleContext";
 import { formatAppDateTime } from "../../../lib/datetime";
 import { AlertTriangle, Calendar, ChevronLeft, ChevronRight, Clock, Eye, FlaskConical, Gift, History, Layers, Moon, Package, Pencil, Percent, RefreshCw, RotateCcw, SlidersHorizontal, Star, Store, Timer, Wallet, Filter } from "../../ui/Icon.jsx";
 import { shop2Api } from "./adminShop2Api.js";
+import { auditTitle } from "./AuditView.jsx";
 import { Dialog, Pill, Popover, ReasonField, Seg, SetMark, Skel, Switch, useFmt } from "./ui.jsx";
 import {
   RARITIES,
@@ -27,6 +28,7 @@ import {
   reasonOk,
   setBars,
   timelineStart,
+  undoLeft,
   waitLabel,
 } from "./shop2Model.js";
 
@@ -198,10 +200,10 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
               <div key={e.id} className="as2-ma" onMouseEnter={() => onHighlight(e.ref || null)} onMouseLeave={() => onHighlight(null)}>
                 <span className="tnum as2-muted">{formatAppDateTime(e.at, locale, { hour: "2-digit", minute: "2-digit" })}</span>
                 <span className="as2-ma-t">
-                  <b>{e.summary || t(`adminShop2.audit.kind.${e.action}`, e.vars || {})}</b>
+                  <b>{auditTitle(t, e)}</b>
                   <small>{e.actor || t("adminShop2.audit.system")}</small>
                 </span>
-                {e.undoable && !e.undone ? (
+                {e.undoable && !e.undone && undoLeft(e.undoUntil, now) > 0 ? (
                   <button type="button" className="as2-link" onClick={() => undo(e)}>
                     {t("adminShop2.undo")}
                   </button>

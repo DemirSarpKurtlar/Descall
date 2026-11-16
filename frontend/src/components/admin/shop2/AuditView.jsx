@@ -25,10 +25,17 @@ export function kindOf(action) {
   return "set";
 }
 
+/** Localized title of an audit row (the raw action name when the locale has none). */
+export function auditTitle(t, e) {
+  const key = `adminShop2.audit.kind.${e.action}`;
+  const text = t(key, e.vars || {});
+  return text && text !== key ? text : e.action;
+}
+
 export function csvOf(rows) {
   const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const head = ["at", "actor", "action", "summary", "target", "reason", "undone"];
-  return [head.join(","), ...rows.map((r) => [r.at, r.actor, r.action, r.summary, r.target, r.reason, r.undone ? "1" : ""].map(esc).join(","))].join("\n");
+  return [head.join(","), ...rows.map((r) => [r.at, r.actor, r.action, r.summary ?? "", r.target, r.reason, r.undone ? "1" : ""].map(esc).join(","))].join("\n");
 }
 
 export default function AuditView({ now, filter, onFilter, notify, fail, onChanged, onOpenSet, onOpenUser }) {
@@ -128,7 +135,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
                     </span>
                     <Pill tone={KIND_TONE[k]}>{t(`adminShop2.audit.f.${k}`)}</Pill>
                     <span className="as2-au-t">
-                      <b>{t(`adminShop2.audit.kind.${e.action}`, e.vars || {}) === `adminShop2.audit.kind.${e.action}` ? e.action : t(`adminShop2.audit.kind.${e.action}`, e.vars || {})}</b>
+                      <b>{auditTitle(t, e)}</b>
                       {e.reason ? <small>{t("adminShop2.audit.reason", { r: e.reason })}</small> : null}
                       {e.before != null || e.after != null ? (
                         <small className="as2-au-diff">

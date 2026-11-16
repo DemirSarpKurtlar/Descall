@@ -88,9 +88,9 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                 <>
                   <b>
                     {u.displayName || u.username} <span className="as2-muted">@{u.username}</span>
-                    {u.premium ? <Pill tone="violet">{u.premium === true ? "Descall+" : u.premium}</Pill> : null}
+                    {data?.newAccount ? <Pill tone="amber">{t("adminShop2.us.newAccount")}</Pill> : null}
                   </b>
-                  <small>{t("adminShop2.us.facts", { days: f.n(u.accountAgeDays ?? 0), balance: f.n(u.balance ?? 0), owned: f.n(u.ownedCount ?? 0) })}</small>
+                  <small>{t("adminShop2.us.facts", { owned: f.n(data?.ownedCount ?? 0), wish: f.n(data?.wishlistCount ?? 0) })}</small>
                 </>
               ) : (
                 <Skel w="70%" h={30} />
@@ -138,8 +138,8 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                           <RarityPill rarity={s.item?.rarity} />
                           <Coin value={s.item?.price_descoin} />
                         </span>
-                        <small className="as2-us-why">{whyText(t, s, f, locale)}</small>
-                        {s.rule ? <small className="as2-us-rule">{typeof s.rule === "string" ? s.rule : t(s.rule.key, s.rule.vars)}</small> : null}
+                        <small className="as2-us-why">{whyText(t, s.why.slice(0, 3), f)}</small>
+                        {s.why.length > 3 ? <small className="as2-us-rule">{whyText(t, s.why.slice(3), f)}</small> : null}
                       </span>
                     </div>
                   ))}
@@ -150,12 +150,13 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
             <div className="as2-us-box">
               <div className="as2-us-bh">
                 <span className="as2-cap">{t("adminShop2.us.excluded")}</span>
-                <span className="as2-muted tnum">{t("adminShop2.us.poolTo", { pool: f.n(data.excluded?.pool ?? 0), cand: f.n(data.excluded?.candidates ?? 0) })}</span>
+                {data.excluded?.pool != null ? <span className="as2-muted tnum">{t("adminShop2.us.poolTo", { pool: f.n(data.excluded.pool), cand: f.n(data.excluded.candidates ?? 0) })}</span> : null}
               </div>
               <div className="as2-us-chips">
                 <Pill tone="gray">{t("adminShop2.us.ex.owned", { n: f.n(data.excluded?.owned ?? 0) })}</Pill>
                 <Pill tone="gray">{t("adminShop2.us.ex.recent", { n: f.n(data.excluded?.recent ?? 0), d: data.excluded?.recentDays ?? 7 })}</Pill>
                 {data.excluded?.region ? <Pill tone="gray">{t("adminShop2.us.ex.region", { n: f.n(data.excluded.region) })}</Pill> : null}
+                {data.relaxed?.length ? <Pill tone="amber">{t("adminShop2.us.ex.relaxed")}</Pill> : null}
                 {data.excluded?.newAccountCap ? <Pill tone="amber">{t("adminShop2.us.ex.cap", { n: f.n(data.excluded.newAccountCap) })}</Pill> : <Pill tone="green">{t("adminShop2.us.ex.noCap")}</Pill>}
               </div>
             </div>
@@ -168,11 +169,10 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                 <div key={s.key} className="as2-us-set">
                   <SetMark set={s} size={30} />
                   <b>{s.name}</b>
-                  <s className="tnum">{f.n(s.sum)}</s>
-                  <span className="tnum">{f.n(s.setPrice)}</span>
+                  <s className="tnum">{f.n(s.setPrice)}</s>
                   <ChevronRight size={14} className="as2-muted" />
-                  <Coin value={s.yourPrice} />
-                  <small className="as2-muted as2-ml">{s.ownedPieces ? t("adminShop2.us.ownedPieces", { n: s.ownedPieces }) : t("adminShop2.us.ownedNone")}</small>
+                  {s.yourPrice == null ? <span className="as2-muted">{t("adminShop2.us.setClosed")}</span> : <Coin value={s.yourPrice} />}
+                  <small className="as2-muted as2-ml">{s.ownedPieces ? t("adminShop2.us.ownedPieces", { n: s.ownedPieces, total: s.total || 8 }) : t("adminShop2.us.ownedNone")}</small>
                 </div>
               ))}
             </div>
@@ -193,19 +193,21 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                   <Gift size={14} />
                   {t("adminShop2.us.gifts")}
                 </small>
-                <b className="tnum">{t("adminShop2.us.giftsSent", { n: data.gifts?.sent ?? 0, cap: data.gifts?.cap ?? 3 })}</b>
-                <em className="tnum">{t("adminShop2.us.giftsGot", { n: data.gifts?.received ?? 0, cap: data.gifts?.receiveCap ?? 5 })}</em>
+                <b className="tnum">{t("adminShop2.us.giftsSent", { n: data.gifts?.sent ?? 0, cap: data.gifts?.cap ?? "–" })}</b>
+                <em className="tnum">{t("adminShop2.us.giftsGot", { n: data.gifts?.received ?? 0, cap: data.gifts?.receiveCap ?? "–" })}{data.gifts?.blocked ? ` · ${t("adminShop2.tile.blocked", { n: data.gifts.blocked })}` : ""}</em>
               </div>
               <div>
                 <small>
                   <Moon size={14} />
                   {t("adminShop2.us.night")}
                 </small>
-                <b>{data.nightMarket?.eligible ? t("adminShop2.us.nightOk") : t("adminShop2.us.nightNo")}</b>
+                <b>{data.nightMarket?.open ? t("adminShop2.us.nightOpen") : data.nightMarket?.next ? t("adminShop2.us.nightNext") : t("adminShop2.us.nightNone")}</b>
                 <em>
-                  {data.nightMarket?.eligible
-                    ? t("adminShop2.us.nightCards", { n: data.nightMarket?.cards ?? 6, time: data.nightMarket?.opensAt ? formatAppDateTime(data.nightMarket.opensAt, locale, { hour: "2-digit", minute: "2-digit" }) : "22:00" })
-                    : data.nightMarket?.reason || ""}
+                  {data.nightMarket?.open
+                    ? t("adminShop2.us.nightFlips", { used: data.nightMarket.flipsUsed ?? 0, n: data.nightMarket.flips ?? 0, bought: data.nightMarket.bought ?? 0 })
+                    : data.nightMarket?.next
+                    ? formatAppDateTime(data.nightMarket.next, locale, { weekday: "short", hour: "2-digit", minute: "2-digit" })
+                    : ""}
                 </em>
               </div>
             </div>
@@ -237,22 +239,16 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
   );
 }
 
-function whyText(t, s, f, locale) {
-  const w = s.why;
-  if (!w) return "";
-  if (typeof w === "string") return w;
-  if (Array.isArray(w)) return w.map((x) => (typeof x === "string" ? x : t(x.key, x.vars))).join(" · ");
-  if (w.key) return t(w.key, w.vars);
-  const parts = [];
-  if (w.slot) parts.push(t("adminShop2.us.why.slot", { n: w.slot }));
-  if (w.weight != null) parts.push(t("adminShop2.us.why.weight", { r: t(`adminShop2.rarity.${s.item?.rarity || "common"}`), pct: w.weight }));
-  if (w.band) parts.push(t("adminShop2.us.why.band", { a: f.n(w.band[0]), b: w.band[1] == null ? "∞" : f.n(w.band[1]) }));
-  if (w.cheapest) parts.push(t("adminShop2.us.why.cheapest"));
-  if (w.lastSeenDays != null) parts.push(w.lastSeenDays >= 0 ? t("adminShop2.us.why.lastSeen", { n: w.lastSeenDays }) : t("adminShop2.us.why.never"));
-  if (w.matchesSet) parts.push(t("adminShop2.us.why.matchesSet", { name: w.matchesSet }));
-  if (w.refreshAt) parts.push(t("adminShop2.us.why.refresh", { time: formatAppDateTime(w.refreshAt, locale, { hour: "2-digit", minute: "2-digit" }) }));
-  if (w.locked) parts.push(t("adminShop2.us.why.locked"));
-  return parts.join(" · ");
+function whyText(t, list, f) {
+  return (list || [])
+    .map((w) => {
+      const vars = { ...(w.vars || {}) };
+      if (vars.r) vars.r = t(`adminShop2.rarity.${vars.r}`);
+      if (vars.a != null) vars.a = f.n(vars.a);
+      if (vars.b != null) vars.b = Number(vars.b) >= 100000 ? "∞" : f.n(vars.b);
+      return t(w.key, vars);
+    })
+    .join(" · ");
 }
 
 function History7({ history, totals }) {
@@ -304,7 +300,7 @@ function UserPicker({ onPick }) {
     const id = setTimeout(() => {
       shop2Api
         .searchUsers(term)
-        .then((r) => setList(r?.users || r || []))
+        .then((r) => setList(r?.users || []))
         .catch(() => setList([]))
         .finally(() => setBusy(false));
     }, 220);
