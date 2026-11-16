@@ -452,6 +452,7 @@ export const SHOP2_TR = {
     "aPackage": "Bir paket",
     "appName": "Descall",
     "notif": "{name} sana bir hediye gönderdi",
+    "notifAnon": "Biri sana bir hediye gönderdi",
     "fromX": "{name} bir hediye yolladı",
     "fromShort": "Gönderen: {name}",
     "openPackage": "Paketi aç",

@@ -452,6 +452,7 @@ export const SHOP2_FR = {
     "aPackage": "Un paquet",
     "appName": "Descall",
     "notif": "{name} t'a envoyé un cadeau",
+    "notifAnon": "Quelqu'un t'a envoyé un cadeau",
     "fromX": "Un cadeau de {name}",
     "fromShort": "De {name}",
     "openPackage": "Ouvrir le paquet",
