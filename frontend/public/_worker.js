@@ -36,6 +36,7 @@ const SPA_PREFIXES = [
   "/calls",
   "/activity",
   "/settings",
+  "/shop/look",
   "/admin",
   "/invite",
   "/app",

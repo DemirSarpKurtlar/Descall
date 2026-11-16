@@ -53,7 +53,7 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, fo
   const live = rules?.live;
   const changes = useMemo(() => (draft && live ? ruleChanges(draft, live) : 0), [draft, live]);
   const diff = useMemo(() => (draft && live ? weightDiff(draft.weights, live.weights) : {}), [draft, live]);
-  const prev = (rules?.versions || []).filter((v) => v.version < (live?.version || 0) && v.status !== "draft" && v.status !== "cancelled").sort((a, b) => b.version - a.version)[0];
+  const prev = (rules?.versions || []).filter((v) => (live?.version || 0) > v.version && v.status !== "draft" && v.status !== "cancelled").sort((a, b) => b.version - a.version)[0];
   const scheduled = rules?.scheduled;
 
   const edit = (fn) => {

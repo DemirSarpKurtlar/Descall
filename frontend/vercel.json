@@ -396,6 +396,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/shop/look/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/admin",
       "destination": "/index.html"
     },

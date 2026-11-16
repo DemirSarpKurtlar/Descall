@@ -519,7 +519,7 @@ function GlobalSearch({ inputRef, sets, onUser, onSet }) {
         aria-label={t("adminShop2.searchPh")}
         data-testid="as2-search"
       />
-      <kbd>Ctrl K</kbd>
+      <kbd>{t("shop2.search.kbd")}</kbd>
       <Popover open={open && q.trim().length >= 2} onClose={() => setOpen(false)} anchorRef={wrap} align="start" width={320} label={t("adminShop2.searchPh")}>
         {!any ? <p className="as2-pop-empty">{t("adminShop2.searchEmpty")}</p> : null}
         {users.length ? <div className="as2-pop-cap">{t("adminShop2.searchUsers")}</div> : null}

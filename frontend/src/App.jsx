@@ -135,6 +135,7 @@ import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
+import { handleShopLookPath } from "./lib/shop2Look.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
@@ -509,6 +510,10 @@ function mergeReactionsIntoMessages(messages, reactionsByMessageId) {
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  // Market 2.0 look links (/shop/look/set/<key>, /shop/look/item/<id>) open the shop there.
+  useEffect(() => {
+    handleShopLookPath(location.pathname, navigate);
+  }, [location.pathname, navigate]);
   useEffect(() => {
     syncGlassDesktop();
   }, [location.pathname, location.search]);
