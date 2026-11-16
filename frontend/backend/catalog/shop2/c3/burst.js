@@ -85,8 +85,8 @@ const BURST = [
     glow: "#ff8a3d",
   },
   {
-    slug: "mor-girdap", rarity: "epic",
-    name: "Mor Girdap|Void Swirl|Leerenstrudel|Remolino del vacío|Tourbillon du néant|Redemoinho do vazio|Вихрь пустоты",
+    slug: "mor-burgac", rarity: "epic",
+    name: "Mor Burgaç|Void Swirl|Leerenstrudel|Remolino del vacío|Tourbillon du néant|Redemoinho do vazio|Вихрь пустоты",
     desc: "Mor bir girdap dönerek tepkinin içine çöker.|A violet swirl spins and collapses into your reaction.|Ein violetter Strudel dreht sich und stürzt in deine Reaktion.|Un remolino violeta gira y colapsa en tu reacción.|Un tourbillon violet tourne et s'effondre dans ta réaction.|Um redemoinho violeta gira e colapsa na reação.|Фиолетовый вихрь закручивается и схлопывается в реакцию.",
     chip: { bg: "linear-gradient(180deg, rgba(150,90,255,0.36), rgba(70,30,160,0.3))", border: "#c6a8ff", glow: "#8a4dff", anim: "s2rb-chip-pop" },
     a: { size: 66, bg: "repeating-conic-gradient(from 0deg, rgba(220,200,255,0.95) 0deg, rgba(140,90,255,0.55) 16deg, transparent 24deg, transparent 45deg)", mask: "radial-gradient(closest-side, transparent 20%, #000 34%, #000 70%, transparent 100%)", anim: "s2rb-implode 0.5s cubic-bezier(.5,0,.3,1) both" },

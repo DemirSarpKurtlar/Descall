@@ -60,6 +60,7 @@ import StorePurchaseModal from "../shop/purchase/StorePurchaseModal";
 import { openPromoRedeem } from "../../lib/promoBus";
 import ShopMerchTags, { ShopPriceTag } from "../shop/ShopMerchTags.jsx";
 import ShopStorefront from "../shop/ShopStorefront.jsx";
+import Shop2Market from "../shop2/Shop2Market.jsx";
 import { purchasable, stockOf } from "../../lib/shopMerchView.js";
 import { SHOP_FOCUS_EVENT, peekShopFocus, takeShopFocus } from "../../lib/callCoinPrefs.js";
 import "../../styles/promo.css";
@@ -871,6 +872,31 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   return (
     <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
+      {view === "store" ? (
+        // Market 2.0 (owner pick 15 Nov 2026): personal storefront, sets, night market, gifts,
+        // inventory with "Eski koleksiyon". The classic catalog is its "Tüm ürünler" tab; buy,
+        // equip and the purchase modal below are unchanged.
+        <ErrorBoundary scope="pane" resetKey="shop2">
+          <Shop2Market
+            me={me}
+            balance={balance}
+            onBalanceChange={onBalanceChange}
+            inventory={inventory}
+            ownedItemIds={ownedItemIds}
+            equippedIdFor={equippedIdFor}
+            onEquip={handleEquip}
+            busyItemId={busyItemId}
+            onEarn={goEarn}
+            earnSlot={lead}
+            allProducts={(
+              <div className="shop-catalog">
+                {categoryTabs}
+                <ErrorBoundary scope="pane" resetKey={`${view}:${activeCategory || ""}`}>{catalog}</ErrorBoundary>
+              </div>
+            )}
+          />
+        </ErrorBoundary>
+      ) : (
       <div className="shop-workspace">
         <div className="shop-main">
           {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
@@ -906,6 +932,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         </div>
         <ShopProfilePreview me={me} t={t} />
       </div>
+      )}
       <AnimatePresence>
         {purchaseItem ? (
           <StorePurchaseModal

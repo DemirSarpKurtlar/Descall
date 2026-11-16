@@ -10,6 +10,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import useShop2 from "../../hooks/useShop2.js";
+import { SHOP_FOCUS_EVENT, peekShopFocus } from "../../lib/callCoinPrefs.js";
 import { cartSummary, dayProgress, EQUIP_FIELD, markWishlist, paletteVars, SHOP2_NIGHT_URGENT_MS, setProgress } from "../../lib/shop2Logic.js";
 import { Shop2Ctx, useS2 } from "./Shop2Context.js";
 import { Coin, Layer, Num, RollingClock, useNow } from "./Shop2Bits.jsx";
@@ -168,7 +169,8 @@ export default function Shop2Market({
   const data = useShop2({ onBalanceChange });
   const itemName = useItemName();
   const itemLabels = useItemLabels();
-  const [tab, setTab] = useState(initialTab);
+  // A shop deep link (end-of-call summary) points at the classic catalog: open "Tüm ürünler".
+  const [tab, setTab] = useState(() => (peekShopFocus() ? "all" : initialTab));
   const [setKey, setSetKey] = useState(null);
   const [checkout, setCheckout] = useState(null);
   const [gift, setGift] = useState(null);
@@ -195,6 +197,17 @@ export default function Shop2Market({
     setCart((c) => (c.some((x) => String(x.item.id) === String(item.id)) ? c : [...c, { item, price: price ?? item.price_descoin }]));
   }, []);
   const removeFromCart = useCallback((item) => setCart((c) => c.filter((x) => String(x.item.id) !== String(item.id))), []);
+
+  useEffect(() => {
+    const on = () => peekShopFocus() && setTab("all");
+    window.addEventListener(SHOP_FOCUS_EVENT, on);
+    return () => window.removeEventListener(SHOP_FOCUS_EVENT, on);
+  }, []);
+
+  const earn = useCallback(() => {
+    setTab("all");
+    if (onEarn) setTimeout(() => onEarn(), 80);
+  }, [onEarn]);
 
   // Ctrl/Cmd+K opens the search (draft C).
   useEffect(() => {
@@ -235,8 +248,8 @@ export default function Shop2Market({
     clearCart: () => setCart([]),
     toast,
     setPalette,
-    onEarn,
-  }), [me, balance, data, layout, width, owned, inventory, equippedIdFor, onEquip, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, onEarn]);
+    onEarn: earn,
+  }), [me, balance, data, layout, width, owned, inventory, equippedIdFor, onEquip, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn]);
 
   const counts = {
     sets: data.sets.length || data.storefront?.featuredSets?.length || null,
@@ -284,7 +297,7 @@ export default function Shop2Market({
         <b className="s2-num">{formatNumber(balance, locale)}</b>
         {data.storefront?.earnedToday ? <span className="s2-wallet-today">{t("shop2.wallet.today", { n: formatNumber(data.storefront.earnedToday, locale) })}</span> : null}
         {!phone ? (
-          <button type="button" className="s2-earn" onClick={() => (onEarn ? onEarn() : onTab("all"))}>
+          <button type="button" className="s2-earn" onClick={earn}>
             <Plus size={14} weight="bold" />
             {t("shop2.wallet.earn")}
           </button>

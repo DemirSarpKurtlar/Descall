@@ -226,8 +226,8 @@ const AURA = [
     fx: { kind: "sheen", bg: "linear-gradient(100deg, transparent 0%, rgba(255,124,229,0) 28%, rgba(255,124,229,0.18) 40%, rgba(124,243,255,0.22) 48%, rgba(255,255,255,0.24) 50%, rgba(179,255,124,0.2) 54%, rgba(255,242,124,0.16) 60%, rgba(255,242,124,0) 72%, transparent)", anim: "s2au-sheen 5s cubic-bezier(.4,0,.2,1) infinite" },
   },
   {
-    slug: "siber-izgara", rarity: "rare",
-    name: "Siber Izgara|Cyber Grid|Cyberraster|Rejilla cibernética|Grille cyber|Grade cibernética|Кибер-сетка",
+    slug: "siber-kose", rarity: "rare",
+    name: "Siber Köşe|Cyber Corners|Cyberecken|Esquinas cibernéticas|Coins cyber|Cantos cibernéticos|Кибер-углы",
     desc: "Köşelerde ince bir camgöbeği ızgara ve keskin bir kenar.|A fine cyan grid in the corners and a crisp edge.|Ein feines Cyanraster in den Ecken und eine klare Kante.|Una fina rejilla cian en las esquinas y un borde nítido.|Une fine grille cyan aux coins et un bord net.|Uma grade ciano fina nos cantos e borda nítida.|Тонкая голубая сетка по углам и чёткая кромка.",
     bloom: bloom("#22e3ff", "#1a5aa8", 0.9), inner: inner.all("#22e3ff", 0.16),
     rim: rim.corners("#7ff6ff", 40),

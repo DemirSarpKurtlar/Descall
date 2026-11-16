@@ -317,6 +317,147 @@ for (const o of OVERLAY) {
 }
 sections.push(coRules.join("\n"));
 
+/* ── Themes ──────────────────────────────────────────────────────── */
+const { THEME } = require("./theme.js");
+const { themeBlock } = await import(join(here, "..", "..", "..", "..", "scripts", "generate-glass-themes.mjs"));
+const hx = (h) => [0, 2, 4].map((i) => parseInt(String(h).replace("#", "").slice(i, i + 2), 16));
+const toHex = (c) => "#" + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("").toUpperCase();
+const mixH = (a, b, t) => toHex(hx(a).map((v, i) => v + (hx(b)[i] - v) * t));
+const lum = (h) => {
+  const [r, g, b] = hx(h).map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+export const contrast = (a, b) => { const x = lum(a); const y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const rgbList = (h) => hx(h).join(", ");
+
+/** Derived palette for one theme (exported for the selftest). */
+export function themePalette(t) {
+  const light = mixH(t.tint, "#FFFFFF", 0.25);
+  let primary = toHex(hx(t.primary));
+  for (let i = 0; i < 20 && contrast(primary, "#FFFFFF") < 4.5; i += 1) primary = mixH(primary, "#000000", 0.05);
+  const s0 = toHex(hx(t.base));
+  const s1 = mixH(s0, light, 0.06);
+  const s2 = mixH(s0, light, 0.1);
+  const s3 = mixH(s0, light, 0.14);
+  const hover = mixH(s0, light, 0.19);
+  const active = mixH(s0, light, 0.25);
+  const text1 = mixH("#FFFFFF", t.tint, 0.07);
+  const text2 = mixH("#FFFFFF", t.tint, 0.2);
+  let text3 = mixH("#FFFFFF", t.tint, 0.34);
+  for (let i = 0; i < 20 && contrast(text3, s3) < 4.5; i += 1) text3 = mixH(text3, "#FFFFFF", 0.1);
+  let link = mixH(primary, "#FFFFFF", 0.45);
+  for (let i = 0; i < 20 && contrast(link, s2) < 4.5; i += 1) link = mixH(link, "#FFFFFF", 0.1);
+  return { primary, primary2: toHex(hx(t.second)), primary3: mixH(primary, "#000000", 0.3), s0, s1, s2, s3, hover, active, text1, text2, text3, link, light };
+}
+
+const themeRules = [];
+themeRules.push(`/* Themes: [data-theme="s2-<key>"]. Tokens + both Liquid Glass palettes are
+   derived from one palette (contrast checked: white on the accent >= 4.5,
+   muted text on --surface-3 >= 4.5, links on --surface-2 >= 4.5). The scene is
+   still: no animation on a surface that is on screen all day. */
+.shop-theme-swatch[class*="theme-s2-"] {
+  position: relative;
+  overflow: hidden;
+}
+.shop-theme-swatch[class*="theme-s2-"]::before,
+.shop-theme-swatch[class*="theme-s2-"]::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.shop-theme-swatch[class*="theme-s2-"]::before {
+  left: 30%;
+  right: 7%;
+  top: 26%;
+  bottom: 12%;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255,255,255,0.22) 8%, rgba(255,255,255,0.22) 92%, transparent) 34% 58% / 34% 13% no-repeat,
+    linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 6%, rgba(255,255,255,0.12) 94%, transparent) 40% 84% / 52% 10% no-repeat,
+    radial-gradient(circle at 12% 22%, rgba(255,255,255,0.32) 0 4%, transparent 4.5%),
+    radial-gradient(circle at 12% 44%, rgba(255,255,255,0.18) 0 4%, transparent 4.5%),
+    radial-gradient(circle at 12% 66%, rgba(255,255,255,0.18) 0 4%, transparent 4.5%),
+    linear-gradient(rgba(255,255,255,0.06), rgba(255,255,255,0.06)) 0 0 / 24% 100% no-repeat,
+    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04)),
+    var(--s2t-glass);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 26px rgba(0,0,0,0.38);
+}
+.shop-theme-swatch[class*="theme-s2-"]::after {
+  right: 11%;
+  top: 36%;
+  width: 26%;
+  height: 11%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--s2t-p-hi), var(--s2t-p));
+  box-shadow: 0 4px 12px var(--s2t-p-glow);
+}`);
+for (const t of THEME) {
+  const key = `s2-${t.slug}`;
+  const p = themePalette(t);
+  const sceneCss = t.scene.join(",\n    ");
+  themeRules.push(`[data-theme="${key}"] {
+  color-scheme: dark;
+  --primary: ${p.primary};
+  --primary-2: ${p.primary2};
+  --primary-3: ${p.primary3};
+  --primary-glow: rgba(${rgbList(p.primary)}, 0.36);
+  --primary-soft: rgba(${rgbList(p.primary)}, 0.16);
+  --surface-0: ${p.s0};
+  --surface-1: ${p.s1};
+  --surface-2: ${p.s2};
+  --surface-3: ${p.s3};
+  --surface-hover: ${p.hover};
+  --surface-active: ${p.active};
+  --text-0: #FFFFFF;
+  --text-1: ${p.text1};
+  --text-2: ${p.text2};
+  --text-3: ${p.text3};
+  --text-muted: ${p.text3};
+  --text-link: ${p.link};
+  --border-1: rgba(${rgbList(p.light)}, 0.06);
+  --border-2: rgba(${rgbList(p.light)}, 0.12);
+  --border-3: rgba(${rgbList(p.light)}, 0.18);
+  --border-4: rgba(${rgbList(p.light)}, 0.28);
+  --shadow-glow-primary: 0 0 22px rgba(${rgbList(p.primary)}, 0.32);
+  --bg: var(--surface-0);
+  --bg-soft: var(--surface-1);
+  --panel: var(--surface-1);
+  --panel-2: var(--surface-2);
+  --text: var(--text-1);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --border: var(--border-2);
+  --shadow: var(--shadow-lg);
+}`);
+  const g = { name: key, scheme: "dark", primary: p.primary, primary2: p.primary2, surface0: p.s0, surface1: p.s1, text1: p.text1, link: p.link };
+  // One block for both Liquid Glass shells (desktop / web and iPhone).
+  themeRules.push(themeBlock(g, ":is(html.glass-desktop, html.glass-ui)"));
+  themeRules.push(`[data-theme="${key}"],
+.shop-theme-swatch.theme-${key},
+.us-theme-swatch.theme-${key} {
+  --s2t-scene:
+    ${sceneCss};
+}
+html.glass-desktop[data-theme="${key}"] {
+  --g-blur: 28px; --g-saturate: 185%; --g-brightness: 1.05;
+  --g-amb-a: 0.32; --g-amb-b: 0.22; --g-amb-c: 0.12; --g-amb-d: 0.18;
+  --g-scene: var(--s2t-scene);
+  --gd-aurora-base-1: ${p.s0};
+}
+html:not(.glass-ui):not(.glass-desktop)[data-theme="${key}"] body {
+  background: var(--s2t-scene), ${p.s0};
+}
+.shop-theme-swatch.theme-${key},
+.us-theme-swatch.theme-${key} {
+  --s2t-p: ${p.primary};
+  --s2t-p-hi: ${mixH(p.primary, "#FFFFFF", 0.25)};
+  --s2t-p-glow: rgba(${rgbList(p.primary)}, 0.45);
+  --s2t-glass: rgba(${rgbList(p.s1)}, 0.5);
+  background: var(--s2t-scene), ${p.s0};
+}`);
+}
+sections.push(themeRules.join("\n"));
+
 /* ── Still frames ─────────────────────────────────────────────────── */
 const STILL_TARGETS = [
   '.cosmetic-avatar-effect[class*="effect-s2-"]',

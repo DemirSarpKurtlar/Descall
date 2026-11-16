@@ -80,7 +80,7 @@ const FLARE = [
     b: { inset: -62, bg: "conic-gradient(from 0deg, #6effc7, #14a37f 25%, #8f7bff 50%, #e6fff5 62%, #6effc7)", mask: "radial-gradient(closest-side, transparent 68%, #000 76%, #000 92%, transparent 100%)", anim: spin(4) },
   },
   {
-    slug: "kalp-atisi", rarity: "rare",
+    slug: "kalp-ritmi", rarity: "rare",
     name: "Kalp Atışı|Heartbeat|Herzschlag|Latido|Battement|Batimento|Сердцебиение",
     desc: "Pembe halka çift vuruşla dışa doğru atar.|A pink ring beats outward in a double pulse.|Ein pinker Ring schlägt im Doppelpuls nach außen.|Un aro rosa late hacia fuera en doble pulso.|Un anneau rose bat vers l'extérieur en double pulsation.|Um anel rosa bate para fora em pulso duplo.|Розовое кольцо бьётся наружу двойным пульсом.",
     ring: "linear-gradient(160deg, #ffc2cf, #ff3d64)", glow: "#ff3d64",

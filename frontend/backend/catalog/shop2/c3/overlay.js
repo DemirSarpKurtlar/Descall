@@ -228,7 +228,7 @@ const OVERLAY = [
       `radial-gradient(circle at 64% 40%, #fff6e0 0 1.2%, ${rgba("#ffe9a8", 0.7)} 3%, ${rgba("#a77bff", 0.35)} 12%, transparent 30%)`,
       "linear-gradient(180deg, #06041a, #0c0828 60%, #06041a)",
     ],
-    b: { inset: "-40% -20%", bg: `conic-gradient(from 0deg at 64% 40%, ${rgba("#a77bff", 0)} 0deg, ${rgba("#c6b7ff", 0.24)} 30deg, ${rgba("#a77bff", 0)} 80deg, ${rgba("#a77bff", 0)} 180deg, ${rgba("#ffb3e6", 0.36)} 210deg, ${rgba("#a77bff", 0)} 260deg)`, mask: "radial-gradient(42% 56% at 64% 40%, #000 10%, transparent 100%)", origin: "64% 40%", anim: "s2fx-spin 120s linear 1 both" },
+    b: { inset: "-40% -20%", bg: `conic-gradient(from 0deg at 64% 40%, ${rgba("#a77bff", 0)} 0deg, ${rgba("#c6b7ff", 0.42)} 30deg, ${rgba("#a77bff", 0)} 80deg, ${rgba("#a77bff", 0)} 180deg, ${rgba("#ffb3e6", 0.36)} 210deg, ${rgba("#a77bff", 0)} 260deg)`, mask: "radial-gradient(42% 56% at 64% 40%, #000 10%, transparent 100%)", origin: "64% 40%", anim: "s2fx-spin 120s linear 1 both" },
     a: { bg: VIGNETTE },
   },
   {
