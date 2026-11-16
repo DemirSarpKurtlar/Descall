@@ -365,7 +365,7 @@ function cloud(x, y, s, fill, op = 1) {
 }
 
 /** A band of overlapping circles (cloud bank / foam); returns circles string (fill set by parent g). */
-function cloudBand(seed, y, rmin, rmax, x0 = -20, x1 = BW + 20, jitter = 6) {
+function cloudBand(seed, y, rmin, rmax, x0 = -20, x1 = BW + 20, jitter = 6, base = true) {
   const r = rnd(seed);
   let s = "";
   for (let x = x0; x < x1; ) {
@@ -373,7 +373,7 @@ function cloudBand(seed, y, rmin, rmax, x0 = -20, x1 = BW + 20, jitter = 6) {
     s += `<circle cx='${fi(x)}' cy='${fi(y + (r() - 0.5) * jitter)}' r='${fi(rr)}'/>`;
     x += rr * (0.7 + r() * 0.5);
   }
-  return s + `<rect x='${x0}' y='${y}' width='${x1 - x0}' height='${BH - y + 10}'/>`;
+  return base ? s + `<rect x='${x0}' y='${y}' width='${x1 - x0}' height='${BH - y + 10}'/>` : s;
 }
 
 /** Scatter: n items from fn(r, i) -> string. */
