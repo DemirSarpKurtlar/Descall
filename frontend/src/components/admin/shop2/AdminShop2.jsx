@@ -149,6 +149,17 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
     };
   }, [socket, reloadSoon, loadDash, notify, t]);
 
+  // Shared preview link (/admin/panel?tab=shop2&set=<key>) opens that set in the builder.
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const key = sp.get("set");
+      if (key && (!sp.get("tab") || sp.get("tab") === "shop2")) setBuilder({ key });
+    } catch {
+      /* no URL */
+    }
+  }, []);
+
   // Ctrl K focuses the search.
   const searchRef = useRef(null);
   useEffect(() => {
