@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
-import shop2Api from "../../lib/shop2Api.js";
 import { nightSummary, priceHistoryStats, SHOP2_NIGHT_URGENT_MS, windowProgress } from "../../lib/shop2Logic.js";
 import { useS2 } from "./Shop2Context.js";
 import { Chip, CloseX, Price, RollingClock, Sparkline, Toggle, useNow } from "./Shop2Bits.jsx";
@@ -77,7 +76,7 @@ export default function Shop2Night({ onClose }) {
   const urgent = nm.closesAt && nm.closesAt - now < SHOP2_NIGHT_URGENT_MS;
   const setPref = (patch) => {
     s2.actions.setPref(patch);
-    shop2Api.nightPrefs(patch).catch(() => {});
+    if ("nightNotify" in patch) s2.actions.nightNotify(patch.nightNotify);
   };
   const flip = async (card) => {
     if (card.flipped) {
@@ -109,7 +108,7 @@ export default function Shop2Night({ onClose }) {
       s2.toast(t("shop2.night.keepLimit", { n: nm.keepLimit }), { tone: "info" });
       return;
     }
-    s2.actions.keepNight(card.index, !card.kept);
+    s2.actions.keepNight(card.index, !card.kept).catch((err) => s2.toast(err?.message || t("shop2.night.keepLimit", { n: nm.keepLimit }), { tone: "error" }));
   };
   const hist = active ? priceHistoryStats(active.priceHistory, active.price) : null;
   const prevLow = active?.previousLowest ?? hist?.previousLowest;
@@ -162,14 +161,19 @@ export default function Shop2Night({ onClose }) {
           </li>
         )) : <li className="s2-muted">{t("shop2.night.logEmpty")}</li>}
       </ul>
-      {nm.friendBonus ? (
+      {nm.friendBonus || nm.coOpenBonus ? (
         <div className="s2-friendbonus">
           <Users size={16} />
-          <span>{t("shop2.night.friendBonus", { name: nm.friendBonus.name || nm.friendBonus.displayName || "" })}</span>
+          <span>{nm.friendBonus?.name || nm.friendBonus?.displayName ? t("shop2.night.friendBonus", { name: nm.friendBonus.name || nm.friendBonus.displayName }) : t("shop2.night.coOpen", { n: nm.coOpenBonus || 1 })}</span>
         </div>
-      ) : null}
+      ) : (
+        <div className="s2-friendbonus is-hint">
+          <Users size={16} />
+          <span>{t("shop2.night.coOpenHint")}</span>
+        </div>
+      )}
       <div className="s2-nprefs">
-        <label className="s2-toggle-row"><Bell size={15} /><span>{t("shop2.night.notifyOpen")}</span><Toggle checked={prefs.nightNotify !== false} onChange={(v) => setPref({ nightNotify: v })} label={t("shop2.night.notifyOpen")} /></label>
+        <label className="s2-toggle-row"><Bell size={15} /><span>{t("shop2.night.notifyOpen")}</span><Toggle checked={nm.notify ?? prefs.nightNotify !== false} onChange={(v) => setPref({ nightNotify: v })} label={t("shop2.night.notifyOpen")} /></label>
         <label className="s2-toggle-row"><Clock size={15} /><span>{t("shop2.night.remind")}</span><Toggle checked={prefs.nightRemind !== false} onChange={(v) => setPref({ nightRemind: v })} label={t("shop2.night.remind")} /></label>
       </div>
     </section>

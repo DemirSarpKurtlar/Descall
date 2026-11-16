@@ -309,7 +309,7 @@ function Cabin({ set, user, me, stage, mode, setMode, joinItem }) {
         )}
       </div>
       <div className="s2-cabin-foot">
-        <S2JoinSound item={joinItem} title={joinItem ? s2.itemName(joinItem) : t("shop2.cat.join_sound")} />
+        <S2JoinSound item={joinItem} accent={set.palette?.length ? [set.palette[2], set.palette[3] || set.palette[2]] : null} />
         <span className="s2-palette">
           <span className="s2-muted">{t("shop2.sets.palette")}</span>
           {(set.palette || []).map((c) => <i key={c} style={{ background: c }} title={c} />)}
@@ -565,13 +565,13 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
                   {focus === "all" ? (
                     <div className="s2-pset-duo-r">
                       <S2VoiceTile user={user} size="sm" joined={{ who: t("shop2.sample.joinedShort"), sound: "" }} />
-                      <S2JoinSound item={joinItem} compact />
+                      <S2JoinSound item={joinItem} compact accent={set.palette?.length ? [set.palette[2], set.palette[3] || set.palette[2]] : null} />
                     </div>
                   ) : null}
                 </div>
               ) : null}
               {focus === "all" || focus === "chat" ? <S2ChatMessage user={user} text={t("shop2.sample.chat2")} time="21:41" highlight /> : null}
-              {focus === "voice" ? <><S2VoiceTile user={user} size="md" joined={{ who: t("shop2.sample.joinedShort"), sound: "" }} /><S2JoinSound item={joinItem} title={joinItem ? s2.itemName(joinItem) : ""} /></> : null}
+              {focus === "voice" ? <><S2VoiceTile user={user} size="md" joined={{ who: t("shop2.sample.joinedShort"), sound: "" }} /><S2JoinSound item={joinItem} accent={set.palette?.length ? [set.palette[2], set.palette[3] || set.palette[2]] : null} /></> : null}
             </div>
           )}
         </div>

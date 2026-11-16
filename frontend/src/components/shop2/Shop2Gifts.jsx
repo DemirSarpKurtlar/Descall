@@ -11,6 +11,7 @@ import shop2Api from "../../lib/shop2Api.js";
 import {
   canRecall,
   filterRecipients,
+  normalizeRecipient,
   giftPrice,
   messageCount,
   mmss,
@@ -54,7 +55,9 @@ function useRecipients(target) {
     let off = false;
     setLoading(true);
     const params = target?.setKey ? { setKey: target.setKey } : target?.item ? { itemId: target.item.id } : null;
-    const load = params ? shop2Api.giftRecipients(params).then((r) => r?.friends || r?.recipients || []) : Promise.reject(new Error("no target"));
+    const load = params
+      ? shop2Api.giftRecipients(params).then((r) => (r?.recipients || r?.friends || []).map(normalizeRecipient).filter(Boolean))
+      : Promise.reject(new Error("no target"));
     load
       .catch(() => shop2Api.friends().then((r) => r?.friends || []))
       .then((friends) => {
@@ -172,8 +175,20 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const shown = filterRecipients(friends, filter, query);
   const friend = friends.find((f) => sameId(f.id, to)) || null;
   const item = target?.item || null;
-  const price = item ? Number(target.price ?? item.price_descoin) : set ? giftPrice({ set, friend }) : 0;
-  const setDeduct = set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
+  const [quote, setQuote] = useState(null);
+  useEffect(() => {
+    setQuote(null);
+    if (!friend || !target?.setKey) return undefined;
+    let off = false;
+    shop2Api.giftQuote({ toUserId: friend.id, setKey: target.setKey }).then((q) => {
+      if (!off && q?.ok) setQuote(q);
+    }).catch(() => {});
+    return () => {
+      off = true;
+    };
+  }, [friend, target?.setKey]);
+  const price = item ? Number(target.price ?? item.price_descoin) : quote?.price != null ? Number(quote.price) : set ? giftPrice({ set, friend }) : 0;
+  const setDeduct = quote?.ownedDeducted != null ? Number(quote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
   const count = messageCount(message);
   const tooLong = count > SHOP2_MESSAGE_MAX;
   const bdayAt = friend?.birthdayAt ? new Date(friend.birthdayAt) : friend?.birthdayInDays != null ? (() => {
@@ -185,7 +200,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const sendAt = when === "birthday" && bdayAt ? bdayAt : when === "at" && at ? new Date(at) : null;
   const sender = s2.me?.displayName || s2.me?.username || "";
   const limits = s2.data.gifts.limits;
-  const canSend = friend && !friend.owns && !tooLong && !busy && price <= s2.balance && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
+  const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
 
@@ -244,7 +259,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
       <div className="s2-gto-list" role="radiogroup" aria-label={t("shop2.gifts.to")}>
         {loading ? <div className="s2-skeleton is-rows"><i /><i /><i /></div> : shown.length ? shown.map((f, i) => {
           const on = sameId(f.id, to);
-          const owned = set && Array.isArray(f.ownedPieceIds) ? f.ownedPieceIds.length : null;
+          const owned = set ? (f.ownedCount ?? (Array.isArray(f.ownedPieceIds) ? f.ownedPieceIds.length : null)) : null;
           return (
             <button
               key={f.id}
@@ -468,7 +483,8 @@ function Tracking() {
         </thead>
         <tbody>
           {sent.length ? sent.map((g, i) => {
-            const left = canRecall(g, now) ? windowLeft(g.sentAt, SHOP2_RECALL_MS, now, g.recallUntil) : 0;
+            const recallable = canRecall(g, now);
+            const left = recallable ? windowLeft(g.sentAt, SHOP2_RECALL_MS, now, g.recallUntil) : 0;
             return (
               <tr key={g.id} className={`is-${g.status}`}>
                 <td>{g.item ? s2.itemName(g.item) : g.setName ? s2.itemName({ name: g.setName }) : ""}</td>
@@ -476,10 +492,10 @@ function Tracking() {
                 <td><StatusChip gift={g} /></td>
                 <td className="s2-muted">{g.status === "scheduled" && g.sendAt ? new Date(g.sendAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ago(g.sentAt)}</td>
                 <td className="s2-track-act">
-                  {canRecall(g, now) ? (
+                  {recallable ? (
                     <button type="button" className="s2-btn is-sm" disabled={busy === g.id} onClick={() => recall(g)}>
-                      {g.status === "scheduled" ? <Undo2 size={14} /> : <Ring fraction={left / (SHOP2_RECALL_MS / 1000)} />}
-                      {g.status === "scheduled" ? t("shop2.gifts.cancelScheduled") : t("shop2.gifts.recallN", { t: mmss(left) })}
+                      {g.status !== "scheduled" && left > 0 ? <Ring fraction={left / (SHOP2_RECALL_MS / 1000)} /> : <Undo2 size={14} />}
+                      {g.status === "scheduled" ? t("shop2.gifts.cancelScheduled") : left > 0 ? t("shop2.gifts.recallN", { t: mmss(left) }) : t("shop2.gifts.recall")}
                     </button>
                   ) : g.status === "thanked" ? <span className="s2-ok">{t("shop2.gifts.status.thanked")}</span> : null}
                 </td>
