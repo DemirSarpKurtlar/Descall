@@ -8,7 +8,7 @@
 .ccs-scrim {
   position: fixed;
   inset: 0;
-  z-index: 10020;
+  z-index: 100020;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -921,7 +921,7 @@ html.user-solid .ccs-scrim {
   position: fixed;
   left: 50%;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  z-index: 10030;
+  z-index: 100030;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -957,7 +957,7 @@ html.glass-desktop .ccs-toast :focus-visible {
 .ccw-scrim {
   position: fixed;
   inset: 0;
-  z-index: 10025;
+  z-index: 100025;
   display: flex;
   justify-content: flex-end;
   background: rgba(6, 7, 12, 0.5);
