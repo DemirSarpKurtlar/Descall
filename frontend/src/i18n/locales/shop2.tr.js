@@ -270,6 +270,7 @@ export const SHOP2_TR = {
     "ownedDeductedShort": "{n} parça sende, düşüldü",
     "buyShort": "Seti al",
     "notOnSale": "Bu set şu an satışta değil. Parçaları vitrinine düşünce yine alabilirsin.",
+    "giftOff": "Bu set şu an satışta değil, hediye de edilemez.",
     "share": "Paylaş",
     "emptyTitle": "Bu hafta set yok",
     "emptyBody": "Yeni setler bir sonraki vitrin döngüsüyle gelir."

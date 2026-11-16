@@ -172,6 +172,7 @@ export default function Shop2Market({
   ownedItemIds,
   equippedIdFor,
   onEquip,
+  onLookChanged,
   busyItemId,
   allProducts = null,
   earnSlot = null,
@@ -367,6 +368,8 @@ export default function Shop2Market({
     // ShopPanel knows the classic slots; the set slots (frame, badge, voice tile, join sound) come from the user.
     equippedIdFor: (category) => equippedIdFor?.(category) ?? me?.[EQUIP_FIELD[category]]?.id ?? null,
     onEquip,
+    // Re-read the signed-in user after a server-side look change (batch equip, undo).
+    onLookChanged,
     busyItemId,
     itemName,
     itemLabels,
@@ -386,7 +389,7 @@ export default function Shop2Market({
     toast,
     setPalette,
     onEarn: earn,
-  }), [me, balance, data, wrappedActions, layout, width, owned, inventory, equippedIdFor, onEquip, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn, focusItemId]);
+  }), [me, balance, data, wrappedActions, layout, width, owned, inventory, equippedIdFor, onEquip, onLookChanged, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn, focusItemId]);
 
   const counts = {
     sets: data.sets.length || data.storefront?.featuredSets?.length || null,

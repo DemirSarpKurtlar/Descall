@@ -203,20 +203,21 @@ async function completionsFor(userId, items, extraKeys = []) {
 /** Equip what was just bought; the previous look is saved as an automatic outfit (undoable). */
 async function equipBought(userId, itemIds, { io = null } = {}) {
   const look = await people.equippedSnapshot(userId);
-  const cat = await catalog.getCatalog();
+  const [cat, owned] = await Promise.all([catalog.getCatalog(), people.ownedIds(userId)]);
   const next = {};
   for (const id of itemIds) {
     const it = cat.byId.get(String(id));
-    if (it && it.category in look) next[it.category] = it.id;
+    // Owned only: an item the user does not have must not take the slot of one they do.
+    if (it && it.category in look && owned.has(String(it.id))) next[it.category] = it.id;
   }
   if (!Object.keys(next).length) return null;
   const outfits = require("./outfits");
   const saved = await outfits.saveSnapshot(userId, look, { name: null, kind: "previous" });
   const applied = await people.applyLook(userId, next);
   const limits = await config.getLimits();
-  await actions.log(userId, "equip", { applied, outfitId: saved?.id || null }, { undo: { type: "restore_look", look }, undoMinutes: Math.max(limits.purchases.actionUndoMinutes, 10) });
+  const action = await actions.log(userId, "equip", { applied, outfitId: saved?.id || null }, { undo: { type: "restore_look", look }, undoMinutes: Math.max(limits.purchases.actionUndoMinutes, 10) });
   if (io) await people.broadcastProfile(io, userId);
-  return { applied, previousOutfitId: saved?.id || null };
+  return { applied, previousOutfitId: saved?.id || null, actionId: action?.id || null };
 }
 
 /**

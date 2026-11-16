@@ -915,6 +915,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             ownedItemIds={ownedItemIds}
             equippedIdFor={equippedIdFor}
             onEquip={handleEquip}
+            onLookChanged={onEquippedChange}
             busyItemId={busyItemId}
             onEarn={goEarn}
             earnSlot={lead}

@@ -9,7 +9,9 @@
  * - the automatic "previous look" kept before "Hepsini kuşan" is an unnamed `previous` outfit,
  *   so it never fills the 30 named looks;
  * - the server member list carries the Market 2.0 frame and badge a member wears;
- * - a single (no set) sells only from today's storefront or with direct_sale (410 not_in_storefront).
+ * - a single (no set) sells only from today's storefront or with direct_sale (410 not_in_storefront);
+ * - a storefront card of a set piece shows the price that is charged (partial rate);
+ * - POST /equip wears several owned items in one request and one undo restores the look.
  * Run: node frontend/backend/test/shop2SetsCheckout.integration.test.cjs
  */
 
@@ -74,6 +76,43 @@ async function run() {
       assert.equal(r.body.paid, quote);
       // Each piece row shows that rate too (priceNow), not its list price.
       for (const p of d.pieces.filter((x) => !x.owned)) assert.equal(p.priceNow, Math.round((p.price * (d.setPrice / d.sum)) / 10) * 10);
+    });
+
+    await check("storefront card of a set piece shows the price it is charged (7-day partial rate)", async () => {
+      // User 3: open the partial window on bakir-kervan, then put another piece of it on today's storefront.
+      const pieces = setPieces("bakir-kervan");
+      await call("/shop2/storefront", { user: 3 });
+      const sfRow = rows("shop2_storefronts").find((r) => r.user_id === U(3));
+      sfRow.slots[0] = { ...sfRow.slots[0], itemId: pieces[1].id };
+      const opener = await call(`/shop2/items/${pieces[2].id}/buy`, { method: "POST", user: 3, body: { idempotencyKey: "item-sf-lock-0001" } });
+      assert.equal(opener.status, 200, JSON.stringify(opener.body));
+      const card = (await call("/shop2/storefront", { user: 3 })).body.slots.find((x) => x.item.id === pieces[1].id);
+      const d = (await call("/shop2/sets/bakir-kervan", { user: 3 })).body;
+      const rate = d.pieces.find((p) => p.item.id === pieces[1].id).priceNow;
+      assert.ok(card.price < pieces[1].price_descoin, `partial price on the card (${card.price})`);
+      assert.equal(card.price, rate, "same price as the set page");
+      const r = await call(`/shop2/items/${pieces[1].id}/buy`, { method: "POST", user: 3, body: { expectedPrice: card.price, idempotencyKey: "item-sf-piece-001" } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.equal(r.body.paid, card.price, "charged what the card showed");
+    });
+
+    await check("batch equip: one request wears every owned piece, keeps the previous look, one undo restores it", async () => {
+      const pieces = setPieces("bakir-kervan");
+      const cols = ["equipped_avatar_frame_id", "equipped_banner_id", "equipped_badge_id", "equipped_chat_bubble_id", "equipped_profile_color_id", "equipped_avatar_effect_id", "equipped_voice_tile_id", "equipped_join_sound_id"];
+      const u1 = rows("users").find((u) => u.id === U(1));
+      for (const c of cols) u1[c] = null;
+      const stranger = setPieces("gece-limani").find((p) => !rows("user_inventory").some((i) => i.user_id === U(1) && i.item_id === p.id));
+      const r = await call("/shop2/equip", { method: "POST", body: { itemIds: [...pieces.map((p) => p.id), ...(stranger ? [stranger.id] : [])] } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      assert.equal(Object.keys(r.body.applied).length, 8, JSON.stringify({ applied: r.body.applied, owned: pieces.map((p) => [p.category, rows("user_inventory").some((i) => i.user_id === U(1) && i.item_id === p.id)]) }));
+      for (const c of cols) assert.ok(pieces.some((p) => p.id === u1[c]), `${c} worn`);
+      if (stranger) assert.ok(!Object.values(r.body.applied).includes(stranger.id), "an item not owned is never worn");
+      assert.ok(r.body.actionId && r.body.previousOutfitId);
+      assert.equal(rows("shop2_outfits").find((o) => o.id === r.body.previousOutfitId).kind, "previous");
+      const undo = await call(`/shop2/history/${r.body.actionId}/undo`, { method: "POST", body: {} });
+      assert.equal(undo.status, 200, JSON.stringify(undo.body));
+      for (const c of cols) assert.equal(u1[c] ?? null, null, `${c} back to the previous look`);
+      assert.equal((await call("/shop2/equip", { method: "POST", body: { itemIds: [] } })).status, 400);
     });
 
     await check("automatic previous look: unnamed, kind previous, newest 5, never counts as a named look", async () => {

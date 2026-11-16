@@ -62,6 +62,8 @@ export const shop2Api = {
       ...(equip ? { equip: true } : {}),
       idempotencyKey: holdToken || idempotencyKey("item"),
     }),
+  /** Wear owned items in one request (previous look kept, one undoable action). */
+  equip: (itemIds) => post("/equip", { itemIds }),
   purchases: () => get("/purchases"),
   refund: (purchaseId) => post(`/purchases/${enc(purchaseId)}/refund`),
 

@@ -270,6 +270,7 @@ export const SHOP2_EN = {
     "ownedDeductedShort": "{n, plural, one {# piece owned, deducted} other {# pieces owned, deducted}}",
     "buyShort": "Buy the set",
     "notOnSale": "This set is not on sale right now. Its pieces can still turn up in your storefront.",
+    "giftOff": "This set is not on sale right now, so it cannot be gifted either.",
     "share": "Share",
     "emptyTitle": "No sets this week",
     "emptyBody": "New sets arrive with the next storefront rotation."

@@ -181,6 +181,18 @@ router.post(
   }, { kind: "buy" })
 );
 
+/** "Hepsini kuşan": wear owned Market 2.0 items in one request (one profile broadcast, the
+ * previous look kept as an outfit, undoable through the action log). */
+router.post(
+  "/equip",
+  handle(async (req) => {
+    const ids = Array.isArray(req.body?.itemIds) ? [...new Set(req.body.itemIds.map(String))].slice(0, 30) : [];
+    if (!ids.length) return Promise.reject(Object.assign(new Error("item_required"), { code: "item_required", status: 400 }));
+    const r = await purchases.equipBought(req.user.id, ids, { io: io(req) });
+    return { ok: true, applied: r?.applied || {}, previousOutfitId: r?.previousOutfitId || null, actionId: r?.actionId || null };
+  }, { kind: "write" })
+);
+
 router.get(
   "/purchases",
   handle(async (req) => ({

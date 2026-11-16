@@ -3744,6 +3744,39 @@ button.s2-strip:hover {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   transition: opacity 200ms ease, box-shadow 200ms ease;
 }
+/* Phone pieces: the tile toggles the try-on; the cart buys that one piece. */
+.s2-ppiece-wrap {
+  position: relative;
+  min-width: 0;
+}
+.s2-ppiece-wrap > .s2-ppiece {
+  width: 100%;
+  height: 100%;
+}
+.s2-ppiece-wrap.has-buy > .s2-ppiece {
+  padding-right: 44px;
+}
+.s2-ppiece-buy {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(88, 122, 245, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(88, 122, 245, 0.45);
+  color: #d6deff;
+  cursor: pointer;
+}
+.s2-ppiece-buy:active {
+  transform: scale(0.94);
+}
+.s2-piece-off {
+  font-size: var(--fs-12);
+}
 .s2-ppiece.is-owned {
   background: rgba(52, 199, 123, 0.06);
   box-shadow: inset 0 0 0 1px rgba(52, 199, 123, 0.22);

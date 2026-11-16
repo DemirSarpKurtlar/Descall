@@ -451,6 +451,19 @@ export function useShop2({ onBalanceChange } = {}) {
       }
     },
     /** Wear a saved look on the server (it logs an undoable action); null when it can't. */
+    /** "Hepsini kuşan" in one request; null when the server has no batch equip yet. */
+    async equipItems(itemIds) {
+      try {
+        const res = await shop2Api.equip(itemIds);
+        inventoryChanged({ equip: itemIds });
+        loadHistory();
+        loadOutfits();
+        return res || {};
+      } catch (err) {
+        if (isMissingRoute(err)) return null;
+        throw err;
+      }
+    },
     async applyOutfit(outfit) {
       if (!outfit?.id || String(outfit.id).startsWith("local-")) return null;
       try {

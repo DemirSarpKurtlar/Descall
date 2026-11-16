@@ -42,6 +42,18 @@ async function nightSummary(userId, now) {
   }
 }
 
+/**
+ * What a storefront card costs if bought now: a set piece follows the set rules exactly like
+ * POST /items/:id/buy (the 7-day partial rate, or the set quote when it is the last missing
+ * piece), so the card shows the price that is charged; anything else is its list price.
+ */
+function slotPrice(item, set, ctx, userId, now) {
+  if (!set || ctx.owned.has(String(item.id))) return item.price;
+  const q = sets.quoteFor(set, { userId, owned: ctx.owned, lock: ctx.locks.get(set.key), tests: ctx.tests, limits: ctx.limits, now });
+  const pq = pricing.piecesQuote(q, set.items, [item.id]);
+  return pq.ids.length ? pq.price : item.price;
+}
+
 /** 3 featured sets: started-but-incomplete sets first, then a daily rotation of live sets. */
 function pickFeatured(list, quotes, userId, day, n = 3) {
   const live = list.filter((s) => sets.onSale(s));
@@ -80,9 +92,9 @@ async function storefront(userId, { base = "", now = Date.now() } = {}) {
     return {
       slot: s.slot,
       item: item ? catalog.publicItem(item, base) : null,
-      price: item ? item.price : null,
+      price: item ? slotPrice(item, set, ctx, userId, now) : null,
       owned: item ? owned.has(String(item.id)) : false,
-      available: Boolean(item && catalog.sellable(item)),
+      available: Boolean(item && catalog.sellable(item) && set?.status !== "recalled"),
       locked: lockId != null && lockId === String(s.itemId),
       wishlisted: wished.has(String(s.itemId)),
       badges: slotBadges(s.reasons),

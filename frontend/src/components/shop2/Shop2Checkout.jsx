@@ -171,24 +171,44 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
   const equip = async (list) => {
     setEquipping(true);
     const prev = currentLook(before);
-    const saved = await s2.actions.saveOutfit(t("shop2.kasa.previousLook"), prev, true);
-    setPrevSaved(saved);
-    for (const it of list) {
-      if (sameId(s2.equippedIdFor(it.category), it.id)) continue;
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        await s2.onEquip?.(it, false);
-      } catch {
-        /* keep going */
+    // One request: the server wears every piece, keeps the previous look as an outfit, logs one
+    // undoable action and broadcasts the profile once (was one equip + profile reload per piece).
+    let batch = null;
+    try {
+      batch = await s2.actions.equipItems(list.map((it) => it.id));
+    } catch {
+      batch = null;
+    }
+    if (batch) {
+      setPrevSaved(batch.previousOutfitId ? { id: batch.previousOutfitId } : true);
+      await s2.onLookChanged?.();
+    } else {
+      // Older server without POST /equip: the per-slot legacy equip.
+      setPrevSaved(await s2.actions.saveOutfit(t("shop2.kasa.previousLook"), prev, true));
+      for (const it of list) {
+        if (sameId(s2.equippedIdFor(it.category), it.id)) continue;
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await s2.onEquip?.(it, false);
+        } catch {
+          /* keep going */
+        }
       }
     }
     setEquipping(false);
     setWorn(true);
+    const undo = batch?.actionId
+      ? async () => {
+        await s2.actions.undo(batch.actionId);
+        await s2.onLookChanged?.();
+        s2.toast(t("shop2.celebrate.restored"), { tone: "ok" });
+      }
+      : () => restoreLook(s2, prev, list, t);
     s2.toast(t("shop2.celebrate.wornToast"), {
       tone: "ok",
       ms: 12000,
       // Undone: the pieces are off again, so "Hepsini kuşan" and the refund link come back.
-      action: { label: t("shop2.celebrate.undo"), run: () => restoreLook(s2, prev, list, t).then(() => setWorn(false)) },
+      action: { label: t("shop2.celebrate.undo"), run: () => Promise.resolve(undo()).then(() => setWorn(false), (err) => s2.toast(err?.message || t("shop2.errors.undo"), { tone: "error" })) },
     });
   };
   useEffect(() => {
