@@ -6216,3 +6216,39 @@ button.s2-strip:hover {
 .s2-short .s2-earn {
   flex: none;
 }
+.s2-art-bubbles .message-bubble,
+.s2-art-bubbles .message-text {
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+}
+.s2-art-bubbles .message-bubble {
+  width: max-content !important;
+  max-width: 100% !important;
+}
+.s2-vtile.is-sm .s2-letter.is-lg {
+  width: 36px;
+  height: 36px;
+  font-size: var(--fs-15);
+}
+.s2-vtile.is-sm {
+  min-height: 70px;
+}
+.s2-piece-text b {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.25;
+}
+.s2-colh > svg,
+.s2-eyebrow > svg {
+  flex: none;
+}
+.s2-strip .s2-eyebrow {
+  white-space: nowrap;
+}
+.s2-art-effect .s2-art-face {
+  position: absolute;
+  inset: 0;
+}

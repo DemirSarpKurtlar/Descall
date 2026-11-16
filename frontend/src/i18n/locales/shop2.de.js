@@ -514,7 +514,7 @@ export const SHOP2_DE = {
     "joinSoundLen": "Beitrittston · {s} s",
     "seconds": "{s} s"
   },
-  "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Bis heute Abend" },
+  "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Bis dann" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Wer ist heute Abend dabei?",

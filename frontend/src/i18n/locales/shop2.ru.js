@@ -514,7 +514,7 @@ export const SHOP2_RU = {
     "joinSoundLen": "Звук входа · {s} с",
     "seconds": "{s} с"
   },
-  "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "До вечера" },
+  "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "До встречи" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Кто сегодня вечером?",

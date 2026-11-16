@@ -514,7 +514,7 @@ export const SHOP2_TR = {
     "joinSoundLen": "Katılma sesi · {s} sn",
     "seconds": "{s} sn"
   },
-  "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Akşam görüşürüz" },
+  "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Görüşürüz" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Bu akşam kim var?",

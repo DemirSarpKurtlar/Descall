@@ -78,11 +78,13 @@ export default function Shop2Art({ item, size = "tile", me = null, sample }) {
         {size === "card" ? <i /> : null}
       </span>
     );
-  } else if (c === "avatar_effect" && size === "card") {
+  } else if (c === "avatar_effect") {
+    // The real effect renderer around a face; the ring needs room, so the face is ~half the tile.
+    const face = size === "card" ? 76 : size === "slot" ? 30 : size === "tile" ? 24 : 15;
     inner = (
-      <span className="s2-art-effect">
-        <span className="s2-art-face is-lg"><Letter me={me} /></span>
-        <span className={`cosmetic-avatar-effect effect-${k}`} style={avatarEffectStyle(76)} />
+      <span className="s2-art-effect" style={{ width: face, height: face }}>
+        <span className="s2-art-face" style={{ width: face, height: face }}><Letter me={me} /></span>
+        <span className={`cosmetic-avatar-effect effect-${k}`} style={avatarEffectStyle(face)} />
       </span>
     );
   } else if (c === "chat_bubble" && size === "card") {
