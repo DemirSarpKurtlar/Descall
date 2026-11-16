@@ -485,7 +485,7 @@ export const SHOP2_EN = {
     "total": "Total",
     "balance": "Balance {from} → {to}",
     "theirsDeducted": "{n} D deducted for pieces they own",
-    "recallNote": "You can recall it within {m} minutes if it's not opened",
+    "recallNote": "You can recall it until it's opened and get every DesCoin back",
     "dailyLeft": "{n, plural, one {# gift left today} other {# gifts left today}}",
     "saveDraft": "Save draft",
     "draftSaved": "Draft saved",

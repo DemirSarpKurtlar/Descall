@@ -485,7 +485,7 @@ export const SHOP2_TR = {
     "total": "Toplam",
     "balance": "Bakiyen {from} → {to}",
     "theirsDeducted": "Onda olanlar düşüldü: {n} D",
-    "recallNote": "Açılmadığı sürece {m} dakika içinde geri çağırabilirsin",
+    "recallNote": "Açılana kadar geri çağırabilirsin, DesCoin'in tamamı geri gelir",
     "dailyLeft": "Bugün {n} hediye hakkın kaldı",
     "saveDraft": "Taslağa kaydet",
     "draftSaved": "Taslak kaydedildi",

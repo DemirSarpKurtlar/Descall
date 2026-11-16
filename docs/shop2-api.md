@@ -79,7 +79,8 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 
 ### Purchases
 - `POST /items/:id/buy { expectedPrice?, source?, equip?: true }` -> `{ ok, duplicate, purchaseId,
-  paid, itemId, balance, refundableUntil, partialPriceUntil }`. Set pieces follow the set rules.
+  paid, itemId, balance, refundableUntil, partialPriceUntil, completed: [{ setKey, title }] }`. Set
+  pieces follow the set rules; the piece that was the last one missing completes its set (title).
 - `GET /purchases` (addition) -> `{ purchases: [{ id, kind, setKey, itemIds, amount, listAmount,
   status, source, createdAt, refundableUntil }] }`.
 - `POST /purchases/:id/refund` -> `{ ok, purchaseId, refunded, balance }`. 10 minutes, nothing from it
@@ -134,7 +135,8 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   -> previous look, lock -> previous lock, wishlist -> reverse, outfit save -> delete, gift -> recall).
   409 `undo_expired`.
 - `GET /outfits` -> `{ outfits: [{ id, name, kind: "saved"|"previous", look: { category: itemId },
-  createdAt }] }` · `POST /outfits { name, look? }` (current look when omitted) · `POST /outfits/:id/apply`
+  createdAt }] }` · `POST /outfits { name, look?, kind? }` (current look when omitted; `kind:
+  "previous"` = the automatic unnamed look kept before "Hepsini kuşan", newest 5) · `POST /outfits/:id/apply`
   · `DELETE /outfits/:id` (additions: apply, delete).
 - `GET /wishlist` -> `{ items: [{ item, addedAt, owned, available, inStorefrontToday }], sets: [{ setKey,
   addedAt }] }` · `POST /wishlist { itemId | setKey, remove?: true }` · `DELETE /wishlist/:itemId`.

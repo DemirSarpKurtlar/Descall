@@ -251,12 +251,16 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
         </div>
         <h2>{set && complete ? t("shop2.celebrate.yoursSet", { name }) : t("shop2.celebrate.yours", { name })}</h2>
         <div className="s2-cele-slots">
-          {slots.map((p, i) => (
-            <span key={p.item.id} className="s2-cele-slot" style={{ "--i": i }}>
-              <span className="s2-slot is-sm"><Shop2Art item={p.item} size="slot" me={s2.me} /><i className="s2-tickmark"><Check size={10} weight="bold" /></i></span>
+          {slots.map((p, i) => {
+            // A chosen-pieces buy shows the whole set: only what the user owns now gets a tick.
+            const have = !set || p.owned || newIds.has(String(p.item.id));
+            return (
+            <span key={p.item.id} className={`s2-cele-slot${have ? "" : " is-missing"}`} style={{ "--i": i }}>
+              <span className="s2-slot is-sm"><Shop2Art item={p.item} size="slot" me={s2.me} />{have ? <i className="s2-tickmark"><Check size={10} weight="bold" /></i> : null}</span>
               <small>{t(`shop2.catShort.${p.item.category}`)}</small>
             </span>
-          ))}
+            );
+          })}
         </div>
         <div className="s2-chips-wrap is-center">
           {titleUnlocked || (set && complete) ? <Chip tone="gold" icon={Crown}>{t("shop2.celebrate.titleUnlocked", { title: set?.reward?.title ? s2.itemName({ name: set.reward.title }) : completedTitle ? s2.itemName({ name: completedTitle }) : t("shop2.sets.rewardDefault", { name }) })}</Chip> : null}

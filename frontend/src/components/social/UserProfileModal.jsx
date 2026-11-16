@@ -593,7 +593,7 @@ function UserProfileModal({
             >
               <motion.div
                 key={userId || "profile"}
-                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy ${profileColorClass(fetched)}`.trim()}
+                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy ${profileColorClass(fetched)} ${fetched?.equippedProfileAura?.effect_key ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}` : ""}`.trim()}
                 style={profileColorStyle(fetched) || undefined}
                 data-testid="profile-sheet"
                 custom={dismissV.current}

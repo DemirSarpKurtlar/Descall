@@ -485,7 +485,7 @@ export const SHOP2_FR = {
     "total": "Total",
     "balance": "Solde {from} → {to}",
     "theirsDeducted": "{n} D déduits pour les pièces qu'il a",
-    "recallNote": "Tu peux le rappeler dans les {m} minutes s'il n'est pas ouvert",
+    "recallNote": "Tu peux le rappeler tant qu'il n'est pas ouvert et récupérer tous tes DesCoin",
     "dailyLeft": "{n, plural, one {encore # cadeau aujourd'hui} other {encore # cadeaux aujourd'hui}}",
     "saveDraft": "Enregistrer le brouillon",
     "draftSaved": "Brouillon enregistré",

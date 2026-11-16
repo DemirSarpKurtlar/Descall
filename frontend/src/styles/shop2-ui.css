@@ -4443,6 +4443,13 @@ button.s2-strip:hover {
   flex-direction: column;
   gap: 8px;
 }
+/* Desktop chat and phone previews side by side when the preview spans the row. */
+.s2-gprev-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 .s2-gphones {
   display: flex;
   gap: 10px;
@@ -4880,8 +4887,63 @@ button.s2-strip:hover {
 .s2-gifts.is-phone .s2-gtab-compose {
   grid-template-columns: 1fr;
 }
-.s2-gifts.is-phone .s2-track {
-  overflow-x: auto;
+/* Phone: each sent gift is a stacked row (item + status, recipient + time, recall full
+   width) so "Geri çağır" is never off-screen behind a sideways scroll. */
+.s2-gifts.is-phone .s2-track thead {
+  display: none;
+}
+.s2-gifts.is-phone .s2-track table,
+.s2-gifts.is-phone .s2-track tbody {
+  display: block;
+}
+.s2-gifts.is-phone .s2-track tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.s2-gifts.is-phone .s2-track tbody tr:first-child {
+  border-top: 0;
+}
+.s2-gifts.is-phone .s2-track td {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border-top: 0;
+}
+.s2-gifts.is-phone .s2-track td:nth-child(1) {
+  grid-area: 1 / 1;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s2-gifts.is-phone .s2-track td:nth-child(2) {
+  grid-area: 2 / 1;
+}
+.s2-gifts.is-phone .s2-track td:nth-child(3) {
+  grid-area: 1 / 2;
+  justify-self: end;
+}
+.s2-gifts.is-phone .s2-track td:nth-child(4) {
+  grid-area: 2 / 2;
+  justify-self: end;
+  font-size: var(--fs-12);
+}
+.s2-gifts.is-phone .s2-track td:nth-child(5) {
+  grid-column: 1 / -1;
+}
+.s2-gifts.is-phone .s2-track td:nth-child(5):empty {
+  display: none;
+}
+.s2-gifts.is-phone .s2-track td:nth-child(5) .s2-btn {
+  width: 100%;
+  justify-content: center;
+}
+.s2-gifts.is-phone .s2-track td[colspan] {
+  grid-column: 1 / -1;
 }
 .s2-gifts.is-phone .s2-gphones {
   flex-direction: column;
@@ -5156,6 +5218,11 @@ button.s2-strip:hover {
 }
 .s2-cele-slot .s2-slot {
   overflow: visible;
+}
+/* Chosen-pieces purchase: the set's pieces still missing stay dim, without a tick. */
+.s2-cele-slot.is-missing .s2-slot {
+  opacity: 0.38;
+  filter: grayscale(0.6);
 }
 .s2-tickmark {
   position: absolute;

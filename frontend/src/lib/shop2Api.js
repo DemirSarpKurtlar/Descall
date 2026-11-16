@@ -6,6 +6,7 @@ import { getFriendsList } from "../api/friends";
 import { getMyServers, getServer, getServerMembers, getChannelMessages } from "../api/servers";
 import { idempotencyKey } from "./shop2Logic.js";
 import { serverMessage } from "../i18n/serverText.js";
+import { t } from "../i18n/runtime.js";
 
 const BASE = "/api/shop2";
 
@@ -19,7 +20,7 @@ export function localizeShop2Error(err) {
     if (text) err.message = text;
   } else if (err instanceof TypeError) {
     // fetch() could not reach the server ("Failed to fetch").
-    err.message = serverMessage({ error: "No connection. Check your internet and try again." });
+    err.message = t("No connection. Check your internet and try again.");
   }
   return err;
 }

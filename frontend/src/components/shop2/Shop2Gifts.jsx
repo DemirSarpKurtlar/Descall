@@ -130,10 +130,14 @@ function GiftPreview({ to, sender, item, setName, message, wrap, hiddenItem, hid
   if (both) {
     return (
       <div className="s2-gprev-all">
-        <div className="s2-eyebrow is-plain">{t("shop2.gifts.desktopChat")}</div>
-        {desktop}
-        <div className="s2-eyebrow is-plain">{t("shop2.gifts.phoneAndOpen")}</div>
-        <div className="s2-gphones">{phone}{opened}</div>
+        <div className="s2-gprev-pane">
+          <div className="s2-eyebrow is-plain">{t("shop2.gifts.desktopChat")}</div>
+          {desktop}
+        </div>
+        <div className="s2-gprev-pane">
+          <div className="s2-eyebrow is-plain">{t("shop2.gifts.phoneAndOpen")}</div>
+          <div className="s2-gphones">{phone}{opened}</div>
+        </div>
       </div>
     );
   }
@@ -229,7 +233,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const limits = s2.data.gifts.limits;
   const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !blocked && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
   // Why "Gönder" is off for the chosen friend (server reason first, then the wallet).
-  const blockNote = !friend ? null : blocked || (limits?.paused === true ? serverMessage({ error: "Gifts are paused right now." }) : null) || (price > s2.balance ? t("shop2.kasa.shortBy", { n: formatNumber(price - s2.balance, locale) }) : null);
+  const blockNote = !friend ? null : blocked || (limits?.paused === true ? t("Gifts are paused right now.") : null) || (price > s2.balance ? t("shop2.kasa.shortBy", { n: formatNumber(price - s2.balance, locale) }) : null);
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
 
@@ -572,8 +576,8 @@ function Received() {
       await shop2Api.thankGift(g.id);
       s2.actions.loadGifts();
       s2.toast(t("shop2.gifts.thanked"), { tone: "ok" });
-    } catch {
-      s2.toast(t("shop2.errors.thank"), { tone: "error" });
+    } catch (err) {
+      s2.toast(err?.message || t("shop2.errors.thank"), { tone: "error" });
     }
   };
   return (

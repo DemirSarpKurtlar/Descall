@@ -349,7 +349,7 @@ export function setPricing(set, { selectedIds = null, now = Date.now() } = {}) {
     selectedTotal,
     selectedCount,
     selectedSingles,
-    selectedExtraVsSet: Math.max(0, selectedTotal - Math.round(selectedSingles * ratio)),
+    selectedExtraVsSet: Math.max(0, selectedTotal - Math.round((selectedSingles * ratio) / 10) * 10),
     partialActive,
     setRateClosed,
     complete: pieces.length > 0 && missing.length === 0,

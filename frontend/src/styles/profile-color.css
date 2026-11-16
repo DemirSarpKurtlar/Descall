@@ -42,6 +42,34 @@
   background: var(--pc-a);
 }
 
+/* Light theme: the profile sheet's light ink (handle, section titles, action labels, dividers,
+   the pale avatar ring) must not reach a coloured card, which is always dark. Same values as
+   the dark theme; specificity beats ProfileSheet.css :root[data-theme="light"] rules. */
+:root:root[data-theme="light"] .has-pcolor :is(.pfs-h, .pfs-foot, .pfs-row .val) {
+  color: rgba(235, 238, 255, 0.66);
+}
+:root:root[data-theme="light"] .has-pcolor .pfs-sec {
+  color: color-mix(in srgb, var(--pc-accent) 70%, #ffffff);
+}
+:root:root[data-theme="light"] .has-pcolor :is(.pfs-group, .pfs-act) {
+  background: rgba(255, 255, 255, 0.085);
+}
+:root:root[data-theme="light"] .has-pcolor :is(.pfs-act, .pfs-nav .l, .pfs-nav .r) {
+  color: color-mix(in srgb, var(--pc-accent) 45%, #ffffff);
+}
+:root:root[data-theme="light"] .has-pcolor .pfs-row + .pfs-row::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+:root:root[data-theme="light"] .has-pcolor .pfs-row .chev path {
+  stroke: #ffffff;
+}
+:root:root[data-theme="light"] .has-pcolor .pfs-av {
+  background-color: var(--pc-a);
+}
+:root:root[data-theme="light"] .has-pcolor .pfs-av-dot {
+  box-shadow: 0 0 0 4px var(--pc-a);
+}
+
 /* Shop card and purchase preview swatch. */
 .shop-profile-color-preview {
   position: relative;
