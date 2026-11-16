@@ -386,7 +386,7 @@ export const SHOP2_ES = {
     "friendBonus": "{name} también está en el mercado: voltead juntos para +1 volteo",
     "coOpen": "Un amigo también volteó cartas esta noche: +{n} volteo",
     "coOpenHint": "Si un amigo voltea cartas la misma noche, ambos ganáis +1 volteo",
-    "notifyOpen": "Avísame cuando abra",
+    "notifyOpen": "Avísame 10 min antes de que abra",
     "remind": "Recuérdamelo 10 min antes del cierre",
     "hint": { "profile": "Perfil", "frame": "Marco", "chat": "Chat", "voice": "Voz", "sound": "Sonido", "badge": "Insignia", "effect": "Efecto" },
     "flipCard": "Voltear una carta oculta: {hint}",
@@ -407,6 +407,7 @@ export const SHOP2_ES = {
     "pickCard": "Voltea una carta para ver tu oferta",
     "closedBody": "El mercado nocturno vuelve a abrir esta noche.",
     "openNow": "El mercado nocturno está abierto",
+    "closingSoon": "El mercado nocturno cierra en 10 minutos",
     "stripSub": "{n} cartas ocultas"
   },
   "gifts": {
@@ -564,5 +565,31 @@ export const SHOP2_ES = {
     "share": "Ahora no se puede compartir.",
     "open": "No se pudo abrir el paquete.",
     "thank": "No se pudo enviar el agradecimiento."
+  },
+  "look": {
+    "newSet": "Look nuevo · set",
+    "newItem": "Look nuevo",
+    "unknown": "Artículo de la tienda",
+    "setSub": "Set de {n} piezas",
+    "open": "Ver en la tienda"
+  },
+  "share": {
+    "title": "Enseñar a amigos",
+    "body": "Tu look nuevo llega a los amigos que elijas como tarjeta en el chat.",
+    "note": "Nota",
+    "notePh": "Añade una nota (opcional)",
+    "send": "Enviar",
+    "chosen": "{n} / {max} elegidos",
+    "sent": "Enviado a {n} de {total}",
+    "ok": "Enviado",
+    "code": {
+      "recipient_not_friend": "No es tu amigo",
+      "recipient_unavailable": "No puede recibir ahora",
+      "recipient_no_gifts": "Mensajes desactivados",
+      "rate_limited": "Demasiados envíos, espera un poco",
+      "blocked": "Bloqueado",
+      "dm_rate_limited": "Límite de mensajes alcanzado",
+      "other": "No se pudo enviar"
+    }
   }
 };

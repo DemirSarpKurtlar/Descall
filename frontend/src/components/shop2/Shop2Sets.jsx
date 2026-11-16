@@ -522,14 +522,9 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
           </span>
         </span>
         <button type="button" className={`s2-ibtn${wished ? " is-on" : ""}`} onClick={() => set.pieces.filter((p) => !p.owned).forEach((p) => s2.actions.toggleWishlist(p.item, !wished))} aria-label={t("shop2.wishlist.toggle")}><Heart size={18} weight={wished ? "fill" : "regular"} /></button>
-        <button type="button" className="s2-ibtn" onClick={async () => {
-          try {
-            await s2.actions.shareLook({ setKey: set.key });
-            s2.toast(t("shop2.celebrate.shared"), { tone: "ok" });
-          } catch {
-            s2.toast(t("shop2.errors.share"), { tone: "error" });
-          }
-        }} aria-label={t("shop2.sets.share")}><Share2 size={18} /></button>
+        {pricing.complete ? (
+          <button type="button" className="s2-ibtn" onClick={() => s2.openShare({ setKey: set.key })} aria-label={t("shop2.sets.share")}><Share2 size={18} /></button>
+        ) : null}
       </div>
       <div
         className="s2-pset-hero"

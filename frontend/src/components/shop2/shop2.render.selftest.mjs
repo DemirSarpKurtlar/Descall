@@ -28,9 +28,11 @@ import Shop2Gifts from ${J("components/shop2/Shop2Gifts.jsx")};
 import Shop2Inventory, { Shop2Wishlist } from ${J("components/shop2/Shop2Inventory.jsx")};
 import Shop2Checkout from ${J("components/shop2/Shop2Checkout.jsx")};
 import Shop2Market from ${J("components/shop2/Shop2Market.jsx")};
+import LookCardFromText from ${J("components/shop2/LookCard.jsx")};
+import Shop2Share from ${J("components/shop2/Shop2Share.jsx")};
 import * as L from ${J("lib/shop2Logic.js")};
 export { L };
-const C = { vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout };
+const C = { look: LookCardFromText, share: Shop2Share, vitrin: Shop2Vitrin, sets: Shop2Sets, night: Shop2Night, gifts: Shop2Gifts, inv: Shop2Inventory, wish: Shop2Wishlist, checkout: Shop2Checkout };
 export function render(name, ctx, props = {}) {
   return renderToString(h(LocaleProvider, { meLanguage: "tr" }, h(Shop2Ctx.Provider, { value: ctx }, h(C[name], props))));
 }
@@ -175,6 +177,15 @@ for (const layout of ["desktop", "phone"]) {
   has(co, "Fener Halkası");
   const done = m.render("checkout", c, { checkout: { kind: "set", setKey: "gece-limani", phase: "done", result: { purchaseId: "p1", paid: 2870, balance: 2250, refundableUntil: new Date(NOW + 600e3).toISOString() } }, onClose: noop });
   for (const x of ["s2-cele", "s2-parts", "s2-cele-slots", "is-glow"]) has(done, x, `${layout} celebration ${x}`);
+}
+{
+  const c = ctx("desktop");
+  const look = m.render("look", c, { text: "Bak\nhttps://descall.com/shop/look/set/gece-limani" });
+  has(look, "s2-look", "look card");
+  has(look, "s2-look-btn", "open in shop button");
+  assert.equal(m.render("look", c, { text: "https://descall.com/settings" }), "", "no card without a look link");
+  const sh = m.render("share", { ...c, openShare: noop }, { target: { setKey: "gece-limani" }, onClose: noop });
+  has(sh, "s2-share", "share sheet");
 }
 const shell = m.renderMarket({ me: { id: "me", username: "d" }, balance: 2940, inventory: [], ownedItemIds: new Set(), allProducts: null });
 has(shell, "s2-root", "market shell renders");

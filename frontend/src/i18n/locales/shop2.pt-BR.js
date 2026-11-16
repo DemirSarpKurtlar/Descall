@@ -386,7 +386,7 @@ export const SHOP2_PT_BR = {
     "friendBonus": "{name} também está no mercado: virem juntos para +1 virada",
     "coOpen": "Um amigo também virou cartas hoje: +{n} virada",
     "coOpenHint": "Se um amigo virar cartas na mesma noite, os dois ganham +1 virada",
-    "notifyOpen": "Me avise quando abrir",
+    "notifyOpen": "Me avise 10 min antes de abrir",
     "remind": "Me lembre 10 min antes de fechar",
     "hint": { "profile": "Perfil", "frame": "Moldura", "chat": "Chat", "voice": "Voz", "sound": "Som", "badge": "Insígnia", "effect": "Efeito" },
     "flipCard": "Virar uma carta oculta: {hint}",
@@ -407,6 +407,7 @@ export const SHOP2_PT_BR = {
     "pickCard": "Vire uma carta para ver sua oferta",
     "closedBody": "O mercado noturno abre de novo hoje à noite.",
     "openNow": "O mercado noturno está aberto",
+    "closingSoon": "O mercado noturno fecha em 10 minutos",
     "stripSub": "{n} cartas ocultas"
   },
   "gifts": {
@@ -564,5 +565,31 @@ export const SHOP2_PT_BR = {
     "share": "Não dá para compartilhar agora.",
     "open": "Não foi possível abrir o pacote.",
     "thank": "Não foi possível enviar o agradecimento."
+  },
+  "look": {
+    "newSet": "Visual novo · set",
+    "newItem": "Visual novo",
+    "unknown": "Item da loja",
+    "setSub": "Set de {n} peças",
+    "open": "Ver na loja"
+  },
+  "share": {
+    "title": "Mostrar aos amigos",
+    "body": "Seu visual novo vai como cartão no chat para os amigos escolhidos.",
+    "note": "Nota",
+    "notePh": "Adicione uma nota (opcional)",
+    "send": "Enviar",
+    "chosen": "{n} / {max} escolhidos",
+    "sent": "Enviado para {n} de {total}",
+    "ok": "Enviado",
+    "code": {
+      "recipient_not_friend": "Não é seu amigo",
+      "recipient_unavailable": "Não pode receber agora",
+      "recipient_no_gifts": "Mensagens desativadas",
+      "rate_limited": "Muitos envios, espere um pouco",
+      "blocked": "Bloqueado",
+      "dm_rate_limited": "Limite de mensagens atingido",
+      "other": "Não foi possível enviar"
+    }
   }
 };

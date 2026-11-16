@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
-import useShop2 from "../../hooks/useShop2.js";
+import useShop2, { SHOP2_EVENTS } from "../../hooks/useShop2.js";
 import { SHOP_FOCUS_EVENT, peekShopFocus } from "../../lib/callCoinPrefs.js";
 import { cartSummary, dayProgress, EQUIP_FIELD, markWishlist, paletteVars, SHOP2_NIGHT_URGENT_MS, setProgress } from "../../lib/shop2Logic.js";
 import { Shop2Ctx, useS2 } from "./Shop2Context.js";
@@ -22,6 +22,9 @@ import Shop2Gifts, { GiftComposer } from "./Shop2Gifts.jsx";
 import Shop2Checkout from "./Shop2Checkout.jsx";
 import Shop2Inventory, { Shop2Wishlist } from "./Shop2Inventory.jsx";
 import Shop2Search from "./Shop2Search.jsx";
+import Shop2Share from "./Shop2Share.jsx";
+import { SHOP2_FOCUS_EVENT, takeShop2Focus } from "../../lib/shop2Look.js";
+import { requestShopFocus } from "../../lib/callCoinPrefs.js";
 import {
   ChevronRight,
   Clock,
@@ -179,6 +182,8 @@ export default function Shop2Market({
   const [toasts, setToasts] = useState([]);
   const [palette, setPalette] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [share, setShare] = useState(null);
+  const [focusItemId, setFocusItemId] = useState(null);
   const owned = useMemo(() => ownedItemIds || new Set(inventory.map((r) => r.itemId)), [ownedItemIds, inventory]);
 
   const toast = useCallback((text, opts = {}) => {
@@ -204,6 +209,66 @@ export default function Shop2Market({
     window.addEventListener(SHOP_FOCUS_EVENT, on);
     return () => window.removeEventListener(SHOP_FOCUS_EVENT, on);
   }, []);
+
+  // A look link (chat card or /shop/look/... path) opens the shop at that set or item.
+  const pendingFocus = useRef(null);
+  useEffect(() => {
+    const apply = () => {
+      const f = takeShop2Focus();
+      if (!f) return;
+      if (f.kind === "set") {
+        setSetKey(f.ref);
+        setTab("sets");
+      } else pendingFocus.current = f.ref;
+      if (f.kind === "item") setTab("vitrin");
+    };
+    apply();
+    window.addEventListener(SHOP2_FOCUS_EVENT, apply);
+    return () => window.removeEventListener(SHOP2_FOCUS_EVENT, apply);
+  }, []);
+  useEffect(() => {
+    const ref = pendingFocus.current;
+    if (!ref || !data.storefront) return;
+    pendingFocus.current = null;
+    if (data.storefront.slots.some((s) => String(s.item.id) === String(ref))) setFocusItemId(ref);
+    else {
+      // Not in today's storefront: the classic catalog ("Tüm ürünler") scrolls to it.
+      setTab("all");
+      requestShopFocus({ itemId: ref });
+    }
+  }, [data.storefront]);
+
+  // Night market reminder from the server (10 minutes before it opens) and the in-app
+  // "10 minutes before closing" nudge while the shop is open.
+  const toastRef = useRef(null);
+  toastRef.current = toast;
+  useEffect(() => {
+    const on = (e) => {
+      const d = e?.detail || {};
+      if (d.title || d.body) toastRef.current?.([d.title, d.body].filter(Boolean).join(" · "), { tone: "info", ms: 9000, action: { label: t("shop2.tiles.enter"), run: () => setTab("night") } });
+      data.actions.loadNight();
+      data.actions.reload();
+    };
+    window.addEventListener(SHOP2_EVENTS.nightReminder, on);
+    return () => window.removeEventListener(SHOP2_EVENTS.nightReminder, on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const closeNudged = useRef(null);
+  const nmClose = data.storefront?.nightMarket?.open ? data.storefront.nightMarket.closesAt : null;
+  useEffect(() => {
+    if (!nmClose || data.prefs.nightRemind === false || closeNudged.current === nmClose) return undefined;
+    const fire = () => {
+      closeNudged.current = nmClose;
+      toastRef.current?.(t("shop2.night.closingSoon"), { tone: "info", ms: 9000, action: { label: t("shop2.tiles.enter"), run: () => setTab("night") } });
+    };
+    const wait = nmClose - 10 * 60e3 - Date.now();
+    if (wait <= 0) {
+      if (nmClose > Date.now()) fire();
+      return undefined;
+    }
+    const id = setTimeout(fire, Math.min(wait, 2 ** 31 - 1));
+    return () => clearTimeout(id);
+  }, [nmClose, data.prefs.nightRemind, t]);
 
   const earn = useCallback(() => {
     setTab("all");
@@ -242,6 +307,9 @@ export default function Shop2Market({
     setTab,
     openSet,
     openGift: (target) => setGift(target),
+    openShare: (target) => setShare(target),
+    focusItemId,
+    clearFocus: () => setFocusItemId(null),
     openCheckout: (c) => setCheckout(c),
     cart,
     addToCart,
@@ -250,7 +318,7 @@ export default function Shop2Market({
     toast,
     setPalette,
     onEarn: earn,
-  }), [me, balance, data, layout, width, owned, inventory, equippedIdFor, onEquip, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn]);
+  }), [me, balance, data, layout, width, owned, inventory, equippedIdFor, onEquip, busyItemId, itemName, itemLabels, setName, tab, openSet, cart, addToCart, removeFromCart, toast, earn, focusItemId]);
 
   const counts = {
     sets: data.sets.length || data.storefront?.featuredSets?.length || null,
@@ -377,6 +445,7 @@ export default function Shop2Market({
         ) : null}
         {checkout ? <Shop2Checkout checkout={checkout} onClose={() => setCheckout(null)} /> : null}
         {searchOpen ? <Shop2Search onClose={() => setSearchOpen(false)} /> : null}
+        {share ? <Shop2Share target={share} onClose={() => setShare(null)} /> : null}
         <Toasts toasts={toasts} onDismiss={(id) => setToasts((l) => l.filter((x) => x.id !== id))} />
       </div>
     </Shop2Ctx.Provider>

@@ -518,6 +518,17 @@ export default function Shop2Vitrin() {
     return slots.find((s) => sameId(s.item.id, selected)) || (phone ? null : slots[0]) || null;
   }, [slots, selected, selSet, phone]);
   const matches = slots.filter((s) => s.wishlisted).length;
+  const { focusItemId, clearFocus } = s2;
+  useEffect(() => {
+    if (focusItemId == null) return;
+    const slot = slots.find((x) => sameId(x.item.id, focusItemId));
+    clearFocus();
+    if (!slot) return;
+    setSelSet(null);
+    setSelected(slot.item.id);
+    if (phone) setSheet({ slot });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusItemId]);
   if (!sf) return null;
   const plan = refreshPlan(sf, { balance: s2.balance, cartIds: s2.cart.map((c) => c.item.id) });
   const changeView = (v) => {

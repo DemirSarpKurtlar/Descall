@@ -386,7 +386,7 @@ export const SHOP2_DE = {
     "friendBonus": "{name} ist auch auf dem Markt: gemeinsam aufdecken für +1 Zug",
     "coOpen": "Ein Freund hat heute Nacht auch Karten aufgedeckt: +{n} Zug",
     "coOpenHint": "Deckt ein Freund in derselben Nacht Karten auf, bekommt ihr beide +1 Zug",
-    "notifyOpen": "Benachrichtigen, wenn er öffnet",
+    "notifyOpen": "10 Min vor dem Öffnen Bescheid geben",
     "remind": "10 Min vor Schluss erinnern",
     "hint": { "profile": "Profil", "frame": "Rahmen", "chat": "Chat", "voice": "Sprache", "sound": "Ton", "badge": "Abzeichen", "effect": "Effekt" },
     "flipCard": "Verdeckte Karte aufdecken: {hint}",
@@ -407,6 +407,7 @@ export const SHOP2_DE = {
     "pickCard": "Deck eine Karte auf, um dein Angebot zu sehen",
     "closedBody": "Der Nachtmarkt öffnet heute Nacht wieder.",
     "openNow": "Der Nachtmarkt ist offen",
+    "closingSoon": "Der Nachtmarkt schließt in 10 Minuten",
     "stripSub": "{n} verdeckte Karten"
   },
   "gifts": {
@@ -564,5 +565,31 @@ export const SHOP2_DE = {
     "share": "Teilen geht gerade nicht.",
     "open": "Das Paket ließ sich nicht öffnen.",
     "thank": "Der Dank konnte nicht gesendet werden."
+  },
+  "look": {
+    "newSet": "Neuer Look · Set",
+    "newItem": "Neuer Look",
+    "unknown": "Shop-Artikel",
+    "setSub": "Set mit {n} Teilen",
+    "open": "Im Shop ansehen"
+  },
+  "share": {
+    "title": "Freunden zeigen",
+    "body": "Dein neuer Look geht als Karte im Chat an die gewählten Freunde.",
+    "note": "Notiz",
+    "notePh": "Notiz hinzufügen (optional)",
+    "send": "Senden",
+    "chosen": "{n} / {max} gewählt",
+    "sent": "An {n} von {total} gesendet",
+    "ok": "Gesendet",
+    "code": {
+      "recipient_not_friend": "Nicht dein Freund",
+      "recipient_unavailable": "Kann gerade nicht empfangen",
+      "recipient_no_gifts": "Nachrichten aus",
+      "rate_limited": "Zu oft geteilt, kurz warten",
+      "blocked": "Blockiert",
+      "dm_rate_limited": "Nachrichtenlimit erreicht",
+      "other": "Senden fehlgeschlagen"
+    }
   }
 };

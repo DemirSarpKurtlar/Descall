@@ -18,6 +18,7 @@ export const SHOP2_EVENTS = Object.freeze({
   storefront: "descall:shop2-storefront",
   gift: "descall:shop2-gift",
   inventory: "descall:shop-inventory-changed",
+  nightReminder: "descall:shop2-night-reminder",
 });
 
 const PREFS_KEY = "descall.shop2.prefs";
@@ -318,11 +319,14 @@ export function useShop2({ onBalanceChange } = {}) {
         throw err;
       }
     },
+    /** Server-side reminder 10 minutes before every night (in-app + push + socket). */
     async nightNotify(on) {
       try {
-        await shop2Api.nightNotify(on);
+        const res = await shop2Api.nightNotify(on);
+        setNight((n) => (n ? { ...n, notify: typeof res?.notify === "boolean" ? res.notify : on } : n));
+        return res;
       } catch {
-        /* the local preference still applies */
+        return null;
       }
     },
     async sendGift(payload) {

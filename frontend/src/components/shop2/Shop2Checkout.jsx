@@ -186,14 +186,8 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
       s2.toast(err?.message || t("shop2.errors.refund"), { tone: "error" });
     }
   };
-  const share = async () => {
-    try {
-      await s2.actions.shareLook({ setKey: set?.key, itemIds: newItems.map((i) => i.id) });
-      s2.toast(t("shop2.celebrate.shared"), { tone: "ok" });
-    } catch {
-      s2.toast(t("shop2.errors.share"), { tone: "error" });
-    }
-  };
+  // Only a fully owned set or an owned item can be shown (POST /share).
+  const share = () => s2.openShare(set && complete ? { setKey: set.key } : { itemId: newItems[0]?.id });
   const saveLook = async () => {
     const look = { ...currentLook(s2.me) };
     for (const it of newItems) look[it.category] = it.id;

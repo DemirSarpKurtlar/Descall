@@ -386,7 +386,7 @@ export const SHOP2_FR = {
     "friendBonus": "{name} est aussi au marché : retournez ensemble pour +1 retournement",
     "coOpen": "Un ami a aussi retourné des cartes ce soir : +{n} retournement",
     "coOpenHint": "Si un ami retourne des cartes la même nuit, vous gagnez chacun +1 retournement",
-    "notifyOpen": "Me prévenir à l'ouverture",
+    "notifyOpen": "Me prévenir 10 min avant l'ouverture",
     "remind": "Me rappeler 10 min avant la fermeture",
     "hint": { "profile": "Profil", "frame": "Cadre", "chat": "Chat", "voice": "Vocal", "sound": "Son", "badge": "Badge", "effect": "Effet" },
     "flipCard": "Retourner une carte cachée : {hint}",
@@ -407,6 +407,7 @@ export const SHOP2_FR = {
     "pickCard": "Retourne une carte pour voir ton offre",
     "closedBody": "Le marché de nuit rouvre ce soir.",
     "openNow": "Le marché de nuit est ouvert",
+    "closingSoon": "Le marché de nuit ferme dans 10 minutes",
     "stripSub": "{n} cartes cachées"
   },
   "gifts": {
@@ -564,5 +565,31 @@ export const SHOP2_FR = {
     "share": "Partage impossible pour le moment.",
     "open": "Impossible d'ouvrir le paquet.",
     "thank": "Impossible d'envoyer le remerciement."
+  },
+  "look": {
+    "newSet": "Nouveau look · set",
+    "newItem": "Nouveau look",
+    "unknown": "Article de la boutique",
+    "setSub": "Set de {n} pièces",
+    "open": "Voir dans la boutique"
+  },
+  "share": {
+    "title": "Montrer aux amis",
+    "body": "Ton nouveau look part en carte dans le chat aux amis choisis.",
+    "note": "Note",
+    "notePh": "Ajouter une note (facultatif)",
+    "send": "Envoyer",
+    "chosen": "{n} / {max} choisis",
+    "sent": "Envoyé à {n} sur {total}",
+    "ok": "Envoyé",
+    "code": {
+      "recipient_not_friend": "Pas ton ami",
+      "recipient_unavailable": "Ne peut pas recevoir pour l'instant",
+      "recipient_no_gifts": "Messages désactivés",
+      "rate_limited": "Trop de partages, patiente un peu",
+      "blocked": "Bloqué",
+      "dm_rate_limited": "Limite de messages atteinte",
+      "other": "Envoi impossible"
+    }
   }
 };

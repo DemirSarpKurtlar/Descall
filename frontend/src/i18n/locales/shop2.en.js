@@ -386,7 +386,7 @@ export const SHOP2_EN = {
     "friendBonus": "{name} is in the market too: open together for +1 flip",
     "coOpen": "A friend opened cards tonight too: +{n} flip",
     "coOpenHint": "When a friend opens cards the same night, you both get +1 flip",
-    "notifyOpen": "Tell me when it opens",
+    "notifyOpen": "Tell me 10 min before it opens",
     "remind": "Remind me 10 min before closing",
     "hint": { "profile": "Profile", "frame": "Frame", "chat": "Chat", "voice": "Voice", "sound": "Sound", "badge": "Badge", "effect": "Effect" },
     "flipCard": "Flip a hidden card: {hint}",
@@ -407,6 +407,7 @@ export const SHOP2_EN = {
     "pickCard": "Flip a card to see your deal",
     "closedBody": "The night market opens again tonight.",
     "openNow": "Night market is open",
+    "closingSoon": "The night market closes in 10 minutes",
     "stripSub": "{n} hidden cards"
   },
   "gifts": {
@@ -564,5 +565,31 @@ export const SHOP2_EN = {
     "share": "Couldn't share it right now.",
     "open": "Couldn't open the package.",
     "thank": "Couldn't send the thank-you."
+  },
+  "look": {
+    "newSet": "New look · set",
+    "newItem": "New look",
+    "unknown": "Shop item",
+    "setSub": "{n}-piece set",
+    "open": "See in the shop"
+  },
+  "share": {
+    "title": "Show friends",
+    "body": "Your new look goes to the friends you pick as a card in chat.",
+    "note": "Note",
+    "notePh": "Add a note (optional)",
+    "send": "Send",
+    "chosen": "{n} / {max} picked",
+    "sent": "Sent to {n} of {total}",
+    "ok": "Sent",
+    "code": {
+      "recipient_not_friend": "Not your friend",
+      "recipient_unavailable": "Can't receive right now",
+      "recipient_no_gifts": "Messages are off",
+      "rate_limited": "Too many shares, wait a bit",
+      "blocked": "Blocked",
+      "dm_rate_limited": "Message limit reached",
+      "other": "Couldn't send"
+    }
   }
 };

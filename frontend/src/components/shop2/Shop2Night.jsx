@@ -74,9 +74,12 @@ export default function Shop2Night({ onClose }) {
   const opened = nm.cards.filter((c) => c.flipped);
   const active = nm.cards.find((c) => c.index === activeIdx) || opened[opened.length - 1] || null;
   const urgent = nm.closesAt && nm.closesAt - now < SHOP2_NIGHT_URGENT_MS;
-  const setPref = (patch) => {
-    s2.actions.setPref(patch);
-    if ("nightNotify" in patch) s2.actions.nightNotify(patch.nightNotify);
+  const [notify, setNotify] = useState(null);
+  const setPref = (patch) => s2.actions.setPref(patch);
+  const toggleNotify = async (on) => {
+    setNotify(on);
+    const res = await s2.actions.nightNotify(on);
+    if (res && typeof res.notify === "boolean") setNotify(res.notify);
   };
   const flip = async (card) => {
     if (card.flipped) {
@@ -173,7 +176,7 @@ export default function Shop2Night({ onClose }) {
         </div>
       )}
       <div className="s2-nprefs">
-        <label className="s2-toggle-row"><Bell size={15} /><span>{t("shop2.night.notifyOpen")}</span><Toggle checked={prefs.nightNotify ?? nm.notify ?? true} onChange={(v) => setPref({ nightNotify: v })} label={t("shop2.night.notifyOpen")} /></label>
+        <label className="s2-toggle-row"><Bell size={15} /><span>{t("shop2.night.notifyOpen")}</span><Toggle checked={notify ?? nm.notify ?? false} onChange={toggleNotify} label={t("shop2.night.notifyOpen")} /></label>
         <label className="s2-toggle-row"><Clock size={15} /><span>{t("shop2.night.remind")}</span><Toggle checked={prefs.nightRemind ?? true} onChange={(v) => setPref({ nightRemind: v })} label={t("shop2.night.remind")} /></label>
       </div>
     </section>

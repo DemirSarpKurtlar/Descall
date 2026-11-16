@@ -386,7 +386,7 @@ export const SHOP2_TR = {
     "friendBonus": "{name} de şu an pazarda: birlikte açarsanız +1 hak",
     "coOpen": "Bir arkadaşın da bu gece kart açtı: +{n} hak",
     "coOpenHint": "Aynı gece bir arkadaşın da kart açarsa ikinize de +1 hak",
-    "notifyOpen": "Açılınca haber ver",
+    "notifyOpen": "Açılmadan 10 dk önce haber ver",
     "remind": "Kapanmadan 10 dk önce hatırlat",
     "hint": { "profile": "Profil", "frame": "Çerçeve", "chat": "Sohbet", "voice": "Ses", "sound": "Ses kutusu", "badge": "Rozet", "effect": "Efekt" },
     "flipCard": "Kapalı kartı aç: {hint}",
@@ -407,6 +407,7 @@ export const SHOP2_TR = {
     "pickCard": "İndirimini görmek için bir kart aç",
     "closedBody": "Gece pazarı bu gece yeniden açılır.",
     "openNow": "Gece pazarı açık",
+    "closingSoon": "Gece pazarı 10 dakika içinde kapanıyor",
     "stripSub": "{n} kapalı kart"
   },
   "gifts": {
@@ -564,5 +565,31 @@ export const SHOP2_TR = {
     "share": "Şu an paylaşılamadı.",
     "open": "Paket açılamadı.",
     "thank": "Teşekkür gönderilemedi."
+  },
+  "look": {
+    "newSet": "Yeni görünüm · set",
+    "newItem": "Yeni görünüm",
+    "unknown": "Mağaza ürünü",
+    "setSub": "{n} parçalık set",
+    "open": "Mağazada gör"
+  },
+  "share": {
+    "title": "Arkadaşlarına göster",
+    "body": "Yeni görünümün seçtiğin arkadaşlara sohbette kart olarak gider.",
+    "note": "Not",
+    "notePh": "Bir not ekle (isteğe bağlı)",
+    "send": "Gönder",
+    "chosen": "{n} / {max} seçili",
+    "sent": "{n} / {total} kişiye gönderildi",
+    "ok": "Gönderildi",
+    "code": {
+      "recipient_not_friend": "Arkadaşın değil",
+      "recipient_unavailable": "Şu an alamıyor",
+      "recipient_no_gifts": "Mesajları kapalı",
+      "rate_limited": "Çok sık paylaştın, biraz bekle",
+      "blocked": "Engel var",
+      "dm_rate_limited": "Mesaj sınırı doldu",
+      "other": "Gönderilemedi"
+    }
   }
 };

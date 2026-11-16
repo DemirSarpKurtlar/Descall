@@ -269,3 +269,25 @@ assert.equal(/font-size:\s*\d/.test(css), false, "no literal font-size");
 assert.equal(EMOJI.test(css), false, "no emoji in the styles");
 
 console.log(`shop2Logic.selftest ok (${enKeys.length} strings x ${LOCALES.length} languages, ${uiFiles.length} UI files)`);
+
+// ---------- look links (backend lib/shop2/share.js) ----------
+{
+  const L = await import(pathToFileURL(join(src, "lib/shop2Look.js")).href);
+  assert.deepEqual(L.parseLookText("Yeni görünüm\nhttps://descall.com/shop/look/set/gece-limani"), { kind: "set", ref: "gece-limani", note: "Yeni görünüm", link: "https://descall.com/shop/look/set/gece-limani" });
+  assert.equal(L.parseLookText("https://descall.com/shop/look/item/abc-123").ref, "abc-123");
+  assert.equal(L.parseLookText("https://descall.com/shop"), null);
+  assert.equal(L.isLookText("bak: https://x.app/shop/look/item/9"), true);
+  assert.equal(L.isLookText("https://x.app/shop/look/"), false);
+  assert.deepEqual(L.parseLookPath("/shop/look/set/kuzey-isigi"), { kind: "set", ref: "kuzey-isigi" });
+  assert.equal(L.parseLookPath("/shop/look/hat/x"), null);
+  let went = null;
+  assert.equal(L.handleShopLookPath("/shop/look/item/42", (p, o) => { went = [p, o]; }), true);
+  assert.deepEqual(went, ["/settings/shop", { replace: true }]);
+  assert.deepEqual({ kind: L.peekShop2Focus().kind, ref: L.peekShop2Focus().ref }, { kind: "item", ref: "42" });
+  assert.equal(L.takeShop2Focus().ref, "42");
+  assert.equal(L.takeShop2Focus(), null, "taken once");
+  assert.equal(L.handleShopLookPath("/settings/shop", () => {}), false);
+  const ml = readFileSync(join(src, "components/chat/MessageList.jsx"), "utf8");
+  assert.match(ml, /isLookText\(message\.text\)/, "chat renders look cards");
+  console.log("shop2Look ok");
+}
