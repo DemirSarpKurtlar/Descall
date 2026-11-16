@@ -260,7 +260,9 @@ async function run(browser, base, boot0, r, problems) {
     if (!phone) {
       // Buy (hold), then "Görünüm kaydet" in the celebration: the toast is above it.
       await page.click('.s2-card .s2-card-art');
-      const hold = await (await page.waitForSelector('.s2-layer .s2-hold')).boundingBox();
+      await page.waitForSelector('.s2-layer .s2-hold');
+      await sleep(800); // the drawer slides in
+      const hold = await (await page.$('.s2-layer .s2-hold')).boundingBox();
       await page.mouse.move(hold.x + hold.width / 2, hold.y + hold.height / 2);
       await page.mouse.down(); await sleep(1700); await page.mouse.up();
       await waitFor(page, 'celebration', () => [...document.querySelectorAll('.s2-layer button')].some((b) => /Görünüm kaydet/.test(b.textContent)));
