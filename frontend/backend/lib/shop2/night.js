@@ -100,12 +100,23 @@ async function coOpenBonus(nightId, userId, bonus) {
 }
 
 async function deck(userId, night) {
-  const [cat, owned] = await Promise.all([catalog.getCatalog(), people.ownedIds(userId)]);
+  const [cat, inv] = await Promise.all([catalog.getCatalog(), people.inventory(userId)]);
+  const owned = new Set(inv.map((r) => String(r.item_id)));
   // A flipped card is fixed by its flip row (item, discount, price); the rest of the deck is drawn
-  // against what the user owned before tonight's cards, so buying elsewhere never reshuffles it.
+  // against what the user owned when the night opened, so buying elsewhere tonight (storefront,
+  // a set, a flipped card) never reshuffles the face-down cards or their hints.
   const flips = await flipsOf(night.id, userId);
   const flippedIds = new Set(flips.map((f) => String(f.item_id)));
-  const ownedBefore = new Set([...owned].filter((id) => !flippedIds.has(id)));
+  const startMs = time.ms(night.startsAt);
+  const ownedBefore = new Set(
+    inv
+      .filter((r) => {
+        const at = time.ms(r.acquired_at);
+        return startMs == null || at == null || at < startMs;
+      })
+      .map((r) => String(r.item_id))
+      .filter((id) => !flippedIds.has(id))
+  );
   const d = deckFor({ userId, night, pool: cat.items, owned: ownedBefore });
   const byIndex = new Map(flips.map((f) => [Number(f.card_index), f]));
   const cards = d.cards.map((c) => {

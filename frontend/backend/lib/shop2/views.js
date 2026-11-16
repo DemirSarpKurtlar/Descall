@@ -23,13 +23,20 @@ function slotBadges(reasons) {
   return (reasons || []).map((r) => r.code).filter((c) => keep.has(c));
 }
 
+/** Days since the card was last in this user's storefront (null = first time), from the reasons. */
+function lastSeenDays(reasons) {
+  const r = (reasons || []).find((x) => x && x.code === "unseen");
+  return r && Number.isFinite(Number(r.days)) ? Number(r.days) : null;
+}
+
 async function nightSummary(userId, now) {
   try {
     const { open, next } = await night.current(now);
     if (!open) return { open: false, nextStartsAt: next?.startsAt || null, nextEndsAt: next?.endsAt || null };
     const limits = await config.getLimits();
     const flips = await db.rows(db.from("shop2_night_flips").select("card_index").eq("night_id", String(open.id)).eq("user_id", userId)).catch(() => []);
-    return { open: true, id: open.id, startsAt: open.startsAt, endsAt: open.endsAt, cards: open.cards, flipsLeft: Math.max(0, open.flips - flips.length), keepMax: limits.nightMarket.keepMax, nextStartsAt: next?.startsAt || null };
+    const eligible = await night.eligible(userId, open).catch(() => true);
+    return { open: true, eligible, id: open.id, startsAt: open.startsAt, endsAt: open.endsAt, cards: open.cards, flipsLeft: Math.max(0, open.flips - flips.length), flipsTotal: open.flips, keepMax: limits.nightMarket.keepMax, nextStartsAt: next?.startsAt || null };
   } catch {
     return { open: false, nextStartsAt: null };
   }
@@ -62,6 +69,10 @@ async function storefront(userId, { base = "", now = Date.now() } = {}) {
   const wished = new Set(wish.map((w) => String(w.item_id)));
   const refresh = await sfs.refreshQuote(userId, row, limits);
   const setByKey = new Map(ctx.sets.map((s) => [s.key, s]));
+  // A lock on a card the user has since bought (or that left the shop) does nothing at the
+  // refresh, so it is not reported as locked.
+  const lockItem = row.lock_item_id ? cat.byId.get(String(row.lock_item_id)) : null;
+  const lockId = lockItem && catalog.sellable(lockItem) && !owned.has(String(lockItem.id)) && (row.slots || []).some((s) => String(s.itemId) === String(lockItem.id)) ? String(lockItem.id) : null;
   const slots = (row.slots || []).map((s) => {
     const item = cat.byId.get(String(s.itemId));
     const set = item?.setKey ? setByKey.get(item.setKey) : null;
@@ -72,10 +83,11 @@ async function storefront(userId, { base = "", now = Date.now() } = {}) {
       price: item ? item.price : null,
       owned: item ? owned.has(String(item.id)) : false,
       available: Boolean(item && catalog.sellable(item)),
-      locked: String(row.lock_item_id || "") === String(s.itemId),
+      locked: lockId != null && lockId === String(s.itemId),
       wishlisted: wished.has(String(s.itemId)),
       badges: slotBadges(s.reasons),
       setProgress: prog,
+      lastSeenDays: lastSeenDays(s.reasons),
     };
   });
   const quotes = new Map(ctx.sets.map((s) => [s.key, sets.quoteFor(s, { userId, owned: ctx.owned, lock: ctx.locks.get(s.key), tests: ctx.tests, limits: ctx.limits, now })]));
@@ -91,8 +103,8 @@ async function storefront(userId, { base = "", now = Date.now() } = {}) {
     serverTime: time.iso(now),
     resetsAt: time.iso(time.nextMidnightMs(now)),
     slots,
-    lock: row.lock_item_id ? { itemId: row.lock_item_id, slot: row.lock_slot || null } : null,
-    refresh: { available: refresh.available, price: refresh.price, free: refresh.free, used: refresh.used, perDay: refresh.perDay, usedAt: refresh.usedAt, freeGrants: refresh.freeGrants },
+    lock: lockId ? { itemId: row.lock_item_id, slot: row.lock_slot || null } : null,
+    refresh: { available: refresh.available, price: refresh.price, free: refresh.free, used: refresh.used, dailyUsed: refresh.dailyUsed, left: refresh.left, perDay: refresh.perDay, usedAt: refresh.usedAt, freeGrants: refresh.freeGrants },
     streak: { days: refresh.streakDays, rewardEvery: refresh.streakEvery },
     nightMarket: nightInfo,
     featuredSets: featured,

@@ -38,11 +38,15 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 - `GET /storefront` ->
   `{ day, serverTime, resetsAt, slots: [{ slot 1-4, item, price, owned, available, locked, wishlisted,
   badges: ["wishlist"|"set_progress"|"new_item"|"epic_floor"|"locked"], setProgress: { setKey, owned,
-  total }|null }], lock: { itemId, slot }|null, refresh: { available, price, free: null|"premium"|
-  "grant"|"streak", used, perDay, usedAt, freeGrants }, streak: { days, rewardEvery }, nightMarket:
-  { open, id?, startsAt?, endsAt?, cards?, flipsLeft?, keepMax?, nextStartsAt }, featuredSets:
+  total }|null, lastSeenDays: n|null }], lock: { itemId, slot }|null, refresh: { available, price,
+  free: null|"premium"|"grant"|"streak", used, dailyUsed, left, perDay, usedAt, freeGrants }, streak:
+  { days, rewardEvery }, nightMarket: { open, eligible?, id?, startsAt?, endsAt?, cards?, flipsLeft?,
+  flipsTotal?, keepMax?, nextStartsAt }, featuredSets:
   [setCard], yesterday: [{ slot, item, owned, available, wishlisted }], wishlistHits: [itemId],
-  balance, viewers, legacyPool }`. A bought card stays in its slot with `owned: true`.
+  balance, viewers, legacyPool }`. A bought card stays in its slot with `owned: true`; a lock on a
+  card the user has since bought (or that left the shop) is not reported (`lock: null`) and the next
+  refresh drops it. `left` = the daily refresh still unused + granted refreshes. `lastSeenDays` = days
+  since the card was last in this user's storefront (null = first time).
 - `POST /storefront/refresh { keepLockedItemId?, expectedPrice? }` -> `{ ok, paid, free, duplicate,
   storefront }`. Omit `keepLockedItemId` to keep the stored lock, `null` to drop it. 409
   `refresh_used`, `lock_not_in_storefront`, 402 `insufficient_balance`. The refreshed cards never
@@ -87,7 +91,9 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   coOpenBonus }, keepMax, cards: [{ index, flipped: false, hint: category } | { index, flipped: true,
   hint, item, rarity, discountPct, listPrice, price, kept, bought, owned, flippedAt }], savings, log:
   [{ at, cardIndex, kind: "flip"|"buy"|"keep" }], notify, next }`. Decks are personal and
-  deterministic per night; +1 flip when a friend has flipped the same night.
+  deterministic per night and drawn against what the user owned when the night opened (buying
+  elsewhere that night never reshuffles the face-down cards; such a card shows `owned: true`); +1
+  flip when a friend has flipped the same night.
 - `POST /night-market/flip { cardIndex }` -> `{ ok, nightMarket }`; 409 `no_flips_left`,
   `card_flipped`, `night_closed`.
 - `POST /night-market/keep { cardIndex, keep?: false }` (addition) -> `{ ok, kept }` (max 2,
