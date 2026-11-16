@@ -44,6 +44,7 @@ export const API_RU = {
   "This item is not on sale right now.": "Этот предмет сейчас не продаётся.",
   "This item is sold out.": "Этот предмет распродан.",
   "The price changed. Check the new price and try again.": "Цена изменилась. Проверь новую цену и попробуй ещё раз.",
+  "This item is sold in the storefront and in sets, not directly.": "Этот предмет продаётся на витрине и в наборах, а не напрямую.",
   // Sistem (admin): flag rollout, undo, safe restart.
   "A restart is already running.": "Перезапуск уже идёт.",
   "Already undone.": "Уже отменено.",

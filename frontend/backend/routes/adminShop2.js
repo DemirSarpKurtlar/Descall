@@ -44,6 +44,8 @@ const ADMIN_MESSAGES = {
   night_open: "A night market is already open.",
   night_started: "This night market has already started.",
   title_required: "Write a title.",
+  no_items: "Choose at least one item.",
+  direct_sale_unavailable: "Direct sale needs the 20261116_shop_direct_sale.sql migration.",
 };
 
 function base(req) {
@@ -352,6 +354,40 @@ routes.post("/ab-tests/:id/stop", handle(async (req) => {
   const t = await admin.stopAbTest(String(req.params.id), { winner: req.body?.winner || null, ...actor(req) });
   audit(req, "shop2_ab_stop", req.params.id, { winner: t.winner });
   return { ok: true, test: t };
+}));
+
+/* ---------------------------------------------------------------- "Tüm ürünlerde satış" */
+
+// "Tüm ürünler" is browse only; these items may still be bought straight from it
+// (lib/shopDirectSale.js). Market 2.0 storefront, sets and night market are not affected.
+routes.get("/direct-sale", handle((req) => require("../lib/shopDirectSale").adminOverview({ assetBase: base(req) })));
+
+routes.put("/direct-sale", handle(async (req) => {
+  const directSale = require("../lib/shopDirectSale");
+  const ids = Array.isArray(req.body?.itemIds) ? [...new Set(req.body.itemIds.map(String).filter(Boolean))] : [];
+  if (!ids.length || ids.length > 2000) {
+    const err = new Error("no_items");
+    err.code = "no_items";
+    err.status = 400;
+    throw err;
+  }
+  const allowed = req.body?.allowed === true;
+  // One item: the switch in the list (reason optional). Several: bulk, a reason is required.
+  const reason = ids.length > 1 ? reasonOf(req) : typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) || null : null;
+  const { changedIds } = await directSale.setAllowed(ids, allowed);
+  audit(req, "shop2_direct_sale", String(allowed), { count: changedIds.length, requested: ids.length, allowed, itemIds: changedIds.slice(0, 100), bulk: ids.length > 1, reason, undo: req.body?.undo === true });
+  require("../lib/shop").invalidateCatalogCache();
+  const io = req.app.get("io");
+  if (io) {
+    // Open shops reload "Tüm ürünler"; other admins on this page refresh the panel.
+    io.emit("shop:catalog:changed", { reason: "direct_sale" });
+    try {
+      require("../socket/adminHandlers").notifyAdminRoom(io, { type: "shop2_direct_sale", count: changedIds.length, allowed });
+    } catch {
+      /* admin room optional */
+    }
+  }
+  return { ok: true, allowed, changedIds, count: changedIds.length };
 }));
 
 /* ---------------------------------------------------------------- audit */

@@ -231,7 +231,24 @@ router.post("/night-market/notify", handle(async (req) => ({ ...(await night.set
 
 router.get("/gifts", handle((req) => gifts.list(req.user.id, { base: base(req) })));
 
-router.get("/gifts/recipients", handle((req) => gifts.recipients(req.user.id, { itemId: typeof req.query.itemId === "string" ? req.query.itemId : null, setKey: typeof req.query.setKey === "string" ? req.query.setKey : null })));
+/** Friend presence for the gift sheet ("Çevrimiçi" filter): invisible reads as offline. */
+function presenceStatus(userId) {
+  try {
+    const { presence } = require("../runtime/sharedState");
+    const p = presence.get(String(userId)) || presence.get(userId);
+    if (!p) return "offline";
+    const s = String(p.status || "online").toLowerCase();
+    if (s === "invisible") return "offline";
+    return ["online", "idle", "dnd"].includes(s) ? s : "online";
+  } catch {
+    return "offline";
+  }
+}
+
+router.get("/gifts/recipients", handle(async (req) => {
+  const out = await gifts.recipients(req.user.id, { itemId: typeof req.query.itemId === "string" ? req.query.itemId : null, setKey: typeof req.query.setKey === "string" ? req.query.setKey : null });
+  return { ...out, recipients: (out.recipients || []).map((r) => (r.user ? { ...r, user: { ...r.user, status: presenceStatus(r.user.id) } } : r)) };
+}));
 
 /** "Arkadaşlarına göster": DM my new look (owned item or complete set) to up to 10 friends. */
 router.post(
@@ -244,7 +261,12 @@ router.post(
 
 router.get("/feed", handle((req) => views.friendFeed(req.user.id)));
 
-router.post("/gifts/quote", handle((req) => gifts.quote(req.user.id, req.body || {}), { kind: "write" }));
+/** A blocked quote carries the reason as an API message too ({ error, errorKey?, errorVars? }). */
+router.post("/gifts/quote", handle(async (req) => {
+  const q = await gifts.quote(req.user.id, req.body || {});
+  if (q && q.ok === false && MESSAGES[q.code]) return { ...q, ...apiError(MESSAGES[q.code], q.vars || undefined) };
+  return q;
+}, { kind: "write" }));
 
 router.post(
   "/gifts",

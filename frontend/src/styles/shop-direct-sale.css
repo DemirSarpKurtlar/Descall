@@ -1,0 +1,100 @@
+/*
+ * Market 2.0 "Tüm ürünler" is browse only (owner, 16 Nov 2026). A card that is not on direct
+ * sale keeps its price as a reference and shows where it is sold instead of Buy, plus
+ * "Seti gör" when the item belongs to a set (components/settings/ShopPanel.jsx).
+ */
+.shop-item-footer:has(.shop-item-browse) {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.shop-item-card:has(.shop-item-browse) .shop-item-price,
+.shop-item-card:has(.shop-item-browse) .shm-price {
+  opacity: 0.72;
+}
+
+.shop-item-browse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.shop-item-browse-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: var(--fs-11, 0.6875rem);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #c9d4ff;
+  background: rgba(88, 122, 245, 0.14);
+  border: 1px solid rgba(88, 122, 245, 0.32);
+}
+
+.shop-item-browse-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 2px;
+  border: 0;
+  background: none;
+  color: #8fa6ff;
+  font: inherit;
+  font-size: var(--fs-12, 0.75rem);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 6px;
+}
+
+.shop-item-browse-link:hover {
+  color: #b7c6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.shop-item-browse-link:focus-visible {
+  outline: 2px solid #587af5;
+  outline-offset: 2px;
+}
+
+html[data-theme="light"] .shop-item-browse-pill {
+  color: #3049b8;
+  background: rgba(88, 122, 245, 0.1);
+}
+
+html[data-theme="light"] .shop-item-browse-link {
+  color: #3d5ae0;
+}
+
+/* Purchase modal / sheet in browse-only mode. */
+.spm-browse-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(88, 122, 245, 0.12);
+  border: 1px solid rgba(88, 122, 245, 0.28);
+  font-size: var(--fs-13, 0.8125rem);
+  line-height: 1.45;
+}
+
+.spm-browse-note b {
+  display: block;
+  font-size: var(--fs-13, 0.8125rem);
+  margin-bottom: 2px;
+}
+
+.spm-browse-note .ui-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #8fa6ff;
+}

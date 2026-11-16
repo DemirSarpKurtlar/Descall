@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import shop2Api from "../../lib/shop2Api.js";
+import { serverMessage } from "../../i18n/serverText.js";
 import {
   canRecall,
   filterRecipients,
@@ -175,20 +176,6 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const shown = filterRecipients(friends, filter, query);
   const friend = friends.find((f) => sameId(f.id, to)) || null;
   const item = target?.item || null;
-  const [quote, setQuote] = useState(null);
-  useEffect(() => {
-    setQuote(null);
-    if (!friend || !target?.setKey) return undefined;
-    let off = false;
-    shop2Api.giftQuote({ toUserId: friend.id, setKey: target.setKey }).then((q) => {
-      if (!off && q?.ok) setQuote(q);
-    }).catch(() => {});
-    return () => {
-      off = true;
-    };
-  }, [friend, target?.setKey]);
-  const price = item ? Number(target.price ?? item.price_descoin) : quote?.price != null ? Number(quote.price) : set ? giftPrice({ set, friend }) : 0;
-  const setDeduct = quote?.ownedDeducted != null ? Number(quote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
   const count = messageCount(message);
   const tooLong = count > SHOP2_MESSAGE_MAX;
   const bdayAt = friend?.birthdayAt ? new Date(friend.birthdayAt) : friend?.birthdayInDays != null ? (() => {
@@ -198,9 +185,44 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     return d;
   })() : null;
   const sendAt = when === "birthday" && bdayAt ? bdayAt : when === "at" && at ? new Date(at) : null;
+  const sendAtIso = sendAt && Number.isFinite(sendAt.getTime()) ? sendAt.toISOString() : "";
+  // Server pre-check for this friend: price (their pieces deducted) or why it cannot be sent
+  // now (daily caps, new account, gifts closed, schedule too far), shown before "Gönder".
+  const [quote, setQuote] = useState(null);
+  const [blocked, setBlocked] = useState(null);
+  const friendId = friend?.id ?? null;
+  const quoteKey = target?.nightCardIndex != null ? `night:${target.nightCardIndex}` : target?.setKey ? `set:${target.setKey}` : item ? `item:${item.id}` : "";
+  useEffect(() => {
+    setQuote(null);
+    setBlocked(null);
+    if (friendId == null || !quoteKey) return undefined;
+    let off = false;
+    const body = {
+      toUserId: friendId,
+      ...(target?.nightCardIndex != null ? { nightCardIndex: target.nightCardIndex } : target?.setKey ? { setKey: target.setKey } : { itemId: item?.id }),
+      ...(sendAtIso ? { sendAt: sendAtIso } : {}),
+    };
+    const timer = setTimeout(() => {
+      shop2Api.giftQuote(body).then((q) => {
+        if (off) return;
+        if (q?.ok) setQuote(q);
+        else if (q && q.ok === false) setBlocked(serverMessage(q) || t("shop2.errors.gift"));
+      }).catch((err) => {
+        // 409 recipient_owns / 410 not_available / 404: the server's reason, translated.
+        if (!off && err?.status && err.status < 500 && err.status !== 429) setBlocked(err.message || t("shop2.errors.gift"));
+      });
+    }, 250);
+    return () => {
+      off = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendId, quoteKey, sendAtIso]);
+  const price = quote?.price != null ? Number(quote.price) : item ? Number(target.price ?? item.price_descoin) : set ? giftPrice({ set, friend }) : 0;
+  const setDeduct = quote?.ownedDeducted != null ? Number(quote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
   const sender = s2.me?.displayName || s2.me?.username || "";
   const limits = s2.data.gifts.limits;
-  const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
+  const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !blocked && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
 

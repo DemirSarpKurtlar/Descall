@@ -44,6 +44,7 @@ export const API_PT_BR = {
   "This item is not on sale right now.": "Este item não está à venda agora.",
   "This item is sold out.": "Este item esgotou.",
   "The price changed. Check the new price and try again.": "O preço mudou. Confira o novo preço e tente de novo.",
+  "This item is sold in the storefront and in sets, not directly.": "Este item é vendido na vitrine e em conjuntos, não diretamente.",
   // Sistem (admin): flag rollout, undo, safe restart.
   "A restart is already running.": "Já há um reinício em andamento.",
   "Already undone.": "Já foi desfeito.",

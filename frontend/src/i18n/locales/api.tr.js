@@ -791,6 +791,7 @@ export const API_TR = {
   "This item is not on sale right now.": "Bu ürün şu an satışta değil.",
   "This item is sold out.": "Bu ürün tükendi.",
   "The price changed. Check the new price and try again.": "Fiyat değişti. Yeni fiyatı kontrol edip tekrar dene.",
+  "This item is sold in the storefront and in sets, not directly.": "Bu ürün doğrudan değil, vitrinde ve setlerde satılıyor.",
   // Güvenlik Merkezi (emergency locks, settings history, source bans, DM account age, throwaway email block).
   "Descall is read-only for a short while. Try again later.": "Descall kısa bir süre salt okunur. Biraz sonra tekrar dene.",
   "New accounts can send direct messages {hours, plural, one {# hour} other {# hours}} after signing up.": "Yeni hesaplar kayıttan {hours} saat sonra doğrudan mesaj gönderebilir.",

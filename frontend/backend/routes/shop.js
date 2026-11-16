@@ -164,6 +164,12 @@ router.post("/purchase", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Item not found." });
     }
 
+    // "Tüm ürünler" is browse only (owner, Nov 2026): only items an admin allowed are sold here;
+    // the rest come through the Market 2.0 storefront, sets and night market (lib/shopDirectSale.js).
+    if (!(await require("../lib/shopDirectSale").freshAllowed(item))) {
+      return res.status(403).json(apiError("This item is sold in the storefront and in sets, not directly.", null, { code: "not_direct_sale" }));
+    }
+
     if (item.category === "theme") {
       const { themeEquipAllowed } = require("../lib/glassThemeCatalog");
       if (!themeEquipAllowed(item.theme_key, req.body?.themeEngine)) {

@@ -182,6 +182,15 @@ async function getActiveCatalog() {
     } catch (err) {
       console.warn("[shop] merch columns unavailable:", err?.message || err);
     }
+    // "Tüm ürünler" is browse only: direct_sale (20261116_shop_direct_sale.sql, read separately
+    // for the same reason) plus the 7-language text and set key of s2- items.
+    try {
+      const directSale = require("./shopDirectSale");
+      const [{ byId }, meta] = await Promise.all([directSale.loadColumn(null), directSale.shop2Meta()]);
+      items = directSale.withShop2Meta(directSale.withColumn(items, byId), meta);
+    } catch (err) {
+      console.warn("[shop] direct sale column unavailable:", err?.message || err);
+    }
     const assetsById = new Map();
     for (const item of items) {
       if (!IMAGE_ASSET_CATEGORIES.has(item.category)) continue;
@@ -295,6 +304,11 @@ function toCatalogItem(item, { assetBase = "", decoded = null, merchInfo = null 
     country_code: normalized.country_code || null,
     country_region: normalized.country_region || null,
     country_kind: normalized.country_kind || null,
+    // Browse only unless an admin allowed it (lib/shopDirectSale.js); s2- items carry their
+    // own text in 7 languages and the set they belong to.
+    direct_sale: require("./shopDirectSale").directSaleAllowed(normalized),
+    set_key: normalized.set_key || null,
+    i18n: normalized.i18n || null,
     // Effective (sale) price in price_descoin, list price, stock and time limits.
     ...(merchInfo || {}),
   };
