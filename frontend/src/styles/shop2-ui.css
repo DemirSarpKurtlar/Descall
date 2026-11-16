@@ -6,7 +6,8 @@
  * .is-desktop, set from a ResizeObserver), so it fits the settings card, iPad and iPhone.
  */
 
-.s2-root {
+.s2-root,
+.s2-layer {
   --s2-ink: rgba(255, 255, 255, 0.95);
   --s2-dim: rgba(235, 238, 255, 0.68);
   --s2-mute: rgba(235, 238, 255, 0.5);
