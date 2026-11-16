@@ -674,5 +674,135 @@ add("glitch-signal", "epic", 580, true,
     const body = `<rect width='600' height='200' fill='url(#bg)'/>` + `<g>${shape}<animateTransform attributeName='transform' type='translate' values='0 0;0 0;8 0;-6 0;0 0' keyTimes='0;.8;.85;.9;1' dur='2.4s' repeatCount='3'/></g>` + bands + scan;
     return bannerDoc(lg("bg", ["#0a0618", "#1a0a2a"], 0, 0, 1, 1), body, 0.45);
   }, ["animated"]);
+// ================================================================= legendary
+add("event-horizon", "legendary", 1450, true,
+  N("Olay Ufku", "Event Horizon", "Ereignishorizont", "Horizonte de sucesos", "Horizon des événements", "Horizonte de eventos", "Горизонт событий"),
+  N("Işığı büken bir kara delik ve etrafında parlayan toplanma diski.", "A black hole bending light, ringed by a blazing accretion disk.", "Ein Schwarzes Loch, das Licht krümmt, umgeben von einer gleißenden Akkretionsscheibe.", "Un agujero negro que curva la luz, rodeado de un disco de acreción ardiente.", "Un trou noir qui courbe la lumière, cerné d'un disque d'accrétion éclatant.", "Um buraco negro que curva a luz, cercado por um disco de acreção ardente.", "Чёрная дыра искривляет свет, её окружает пылающий аккреционный диск."),
+  () => {
+    const s = sky("s", [[0, "#04030c"], [1, "#0c0818"]]);
+    const cx = 420, cy = 100;
+    const body = s.b + stars(12, 160, [0, 0, 600, 200], ["#fff", "#ffe6c8", "#cfe0ff"], 1) + `<circle cx='${cx}' cy='${cy}' r='130' fill='url(#gl)'/>` +
+      `<ellipse cx='${cx}' cy='${cy}' rx='150' ry='26' fill='none' stroke='url(#dk)' stroke-width='16' filter='url(#b)' opacity='.8'/>` +
+      `<path d='M${cx - 62} ${cy}A62 62 0 0 1 ${cx + 62} ${cy}' fill='none' stroke='url(#lens)' stroke-width='12' filter='url(#b)'/><path d='M${cx - 58} ${cy}A58 58 0 0 1 ${cx + 58} ${cy}' fill='none' stroke='#fff3d8' stroke-width='3'/>` +
+      `<path d='M${cx - 58} ${cy}A58 58 0 0 0 ${cx + 58} ${cy}' fill='none' stroke='#ffb05a' stroke-width='4' stroke-opacity='.6' filter='url(#b)'/>` +
+      `<circle cx='${cx}' cy='${cy}' r='46' fill='#000'/><circle cx='${cx}' cy='${cy}' r='47' fill='none' stroke='#ffe0a0' stroke-width='1.6'/>` +
+      `<path d='M${cx - 150} ${cy}A150 26 0 0 0 ${cx + 150} ${cy}' fill='none' stroke='url(#dk)' stroke-width='9'/><path d='M${cx - 150} ${cy}A150 26 0 0 0 ${cx + 150} ${cy}' fill='none' stroke='#fff' stroke-width='1.6' stroke-opacity='.8' stroke-dasharray='30 12 6 12'><animate attributeName='stroke-dashoffset' from='0' to='-120' dur='4s' repeatCount='3'/></path>`;
+    return bannerDoc(s.d + rg("gl", [[0, "#ff9a3a", 0.35], [0.5, "#7a3aff", 0.12], [1, "#000", 0]]) + lgU("dk", ["#ff5a1a", "#ffd27a", "#ffffff", "#ffd27a", "#ff5a1a"], 270, 0, 570, 0) + lgU("lens", ["#ff8a3a", "#fff3d8", "#ff8a3a"], 358, 0, 482, 0) + blur("b", 5), body, 0.45);
+  }, ["animated"]);
+
+add("ringed-giant", "legendary", 1250, false,
+  N("Halkalı Dev", "Ringed Giant", "Beringter Riese", "Gigante anillado", "Géante annelée", "Gigante anelado", "Окольцованный гигант"),
+  N("Bir ayın ufkunun üstünde yükselen, halkaları gökyüzünü kesen dev gezegen.", "A giant planet rising over a moon's horizon, its rings slicing the sky.", "Ein riesiger Planet über dem Horizont eines Mondes, seine Ringe schneiden den Himmel.", "Un planeta gigante sobre el horizonte de una luna, con anillos que cortan el cielo.", "Une planète géante au-dessus de l'horizon d'une lune, ses anneaux fendant le ciel.", "Um planeta gigante sobre o horizonte de uma lua, com anéis cortando o céu.", "Огромная планета над горизонтом луны, её кольца рассекают небо."),
+  () => {
+    const s = sky("s", [[0, "#05050f"], [1, "#141030"]]);
+    const cx = 430, cy = 120, R = 110;
+    const bands = [-60, -36, -12, 10, 34, 58].map((y, i) => `<ellipse cx='${cx}' cy='${cy + y}' rx='${R}' ry='${8 + (i % 3) * 3}' fill='${["#e8c8a0", "#c8905a", "#f2dcc0", "#a86a3a", "#e0b080", "#8a5a3a"][i]}' opacity='.5'/>`).join("");
+    const ring = (front) => `<path d='M${cx - 230} ${cy + 30}A230 44 -12 0 ${front ? 0 : 1} ${cx + 230} ${cy - 30}' fill='none' stroke='url(#rg)' stroke-width='14' transform='rotate(-12 ${cx} ${cy})' opacity='.9'/><path d='M${cx - 200} ${cy + 26}A200 36 -12 0 ${front ? 0 : 1} ${cx + 200} ${cy - 26}' fill='none' stroke='#fff0d8' stroke-width='2' stroke-opacity='.6' transform='rotate(-12 ${cx} ${cy})'/>`;
+    const body = s.b + stars(4, 150, [0, 0, 600, 200], ["#fff", "#ffe9c8"], 1, 4) + ring(false) + `<g clip-path='url(#pc)'><circle cx='${cx}' cy='${cy}' r='${R}' fill='url(#pl)'/>${bands}<circle cx='${cx}' cy='${cy}' r='${R}' fill='url(#sh)'/></g><clipPath id='pc'><circle cx='${cx}' cy='${cy}' r='${R}'/></clipPath>` + ring(true) +
+      `<path d='M0 200V176Q150 160 300 170T600 162V200Z' fill='url(#gd)'/><path d='M0 176Q150 160 300 170T600 162' fill='none' stroke='#c8c0e0' stroke-opacity='.4'/>` + scatter(8, 8, (r) => `<ellipse cx='${f(r() * 600)}' cy='${f(180 + r() * 16)}' rx='${f(6 + r() * 14)}' ry='${f(2 + r() * 3)}' fill='#000' opacity='.25'/>`);
+    return bannerDoc(s.d + rg("pl", ["#ffe8c8", "#d8a070", "#8a4a2a"], 0.35, 0.35, 0.8) + rg("sh", [[0.4, "#000", 0], [1, "#000", 0.75]], 0.3, 0.3, 0.85) + lg("rg", [[0, "#c8a07a", 0.3], [0.5, "#fff0d8"], [1, "#c8a07a", 0.3]], 0, 0, 1, 0) + lg("gd", ["#5a5070", "#1a1428"]), body, 0.35);
+  });
+
+add("observatory", "legendary", 1100, true,
+  N("Gözlemevi", "Observatory", "Sternwarte", "Observatorio", "Observatoire", "Observatório", "Обсерватория"),
+  N("Samanyolu altında tepedeki gözlemevi; göğü kayan yıldızlar çizer.", "A hilltop observatory under the Milky Way while shooting stars streak by.", "Eine Sternwarte auf dem Hügel unter der Milchstraße, Sternschnuppen ziehen vorbei.", "Un observatorio en la colina bajo la Vía Láctea mientras pasan estrellas fugaces.", "Un observatoire sur la colline sous la Voie lactée, traversé d'étoiles filantes.", "Um observatório no alto da colina sob a Via Láctea, com estrelas cadentes.", "Обсерватория на холме под Млечным Путём, по небу чиркают падающие звёзды."),
+  () => {
+    const s = sky("s", [[0, "#04061a"], [0.7, "#141a44"], [1, "#2a2a5a"]]);
+    const mw = `<path d='M0 150Q200 40 600 20' stroke='url(#mw)' stroke-width='70' fill='none' filter='url(#b)' opacity='.55'/>` + stars(31, 120, [80, 0, 520, 140], ["#fff", "#ffe9c8"], 0.9);
+    const meteor = (x, y, b) => `<path d='M${x} ${y}l-60 24' stroke='url(#mt)' stroke-width='2' stroke-linecap='round' opacity='0'><animate attributeName='opacity' values='0;1;0;0' keyTimes='0;.1;.25;1' dur='3s' repeatCount='3' begin='${b}s'/><animateTransform attributeName='transform' type='translate' values='0 0;-40 16;-40 16' keyTimes='0;.25;1' dur='3s' repeatCount='3' begin='${b}s'/></path>`;
+    const obs = `<g transform='translate(450 140)'><rect x='-26' y='-10' width='52' height='30' fill='#c8ccd8'/><path d='M-30 -10A30 30 0 0 1 30 -10Z' fill='url(#dm)'/><path d='M-4 -38L4 -38L4 -10L-4 -10Z' fill='#2a2e44'/><path d='M0 -14L22 -44' stroke='#3a3e5a' stroke-width='6' stroke-linecap='round'/><rect x='-6' y='4' width='12' height='16' fill='#ffcf6a'/><rect x='-20' y='0' width='6' height='6' fill='#ffcf6a'/></g>`;
+    const body = s.b + mw + stars(32, 60, [0, 0, 600, 200], ["#fff"], 0.8) + meteor(300, 30, 0) + meteor(520, 20, 1.1) + meteor(400, 60, 2) + `<path d='M0 200V170Q200 150 330 160Q420 130 520 150Q570 156 600 150V200Z' fill='#0a0c1e'/>` + obs + `<path d='${pineRow(4, 182, 14, 26, 280, 600, 18)}' fill='#06081a'/>`;
+    return bannerDoc(s.d + lg("mw", [[0, "#8a7aff", 0], [0.5, "#e6dcff", 0.8], [1, "#ffd6a0", 0.2]], 0, 1, 1, 0) + blur("b", 12) + lg("mt", [[0, "#fff"], [1, "#fff", 0]], 0, 0, 1, 0) + lg("dm", ["#f2f4fa", "#8a90a8"], 0, 0, 1, 1), body, 0.35);
+  }, ["animated"]);
+
+add("sky-citadel", "legendary", 1350, true,
+  N("Gök Kalesi", "Sky Citadel", "Himmelszitadelle", "Ciudadela celeste", "Citadelle céleste", "Cidadela celeste", "Небесная цитадель"),
+  N("Gün batımında bulutların üstünde altın kuleli bir kale.", "A citadel of golden spires floating on the clouds at sunset.", "Eine Zitadelle mit goldenen Türmen, die bei Sonnenuntergang auf Wolken thront.", "Una ciudadela de agujas doradas sobre las nubes al atardecer.", "Une citadelle aux flèches dorées posée sur les nuages au coucher du soleil.", "Uma cidadela de torres douradas sobre as nuvens ao pôr do sol.", "Цитадель с золотыми шпилями парит над облаками на закате."),
+  () => {
+    const s = sky("s", [[0, "#2a2a6a"], [0.45, "#c86a8a"], [0.8, "#ffb06a"], [1, "#ffe0a0"]]);
+    const spire = (x, base, h, w) => `<rect x='${x - w / 2}' y='${base - h}' width='${w}' height='${h}' fill='url(#tw)'/><path d='M${x - w / 2 - 2} ${base - h}L${x} ${base - h - w * 2.2}L${x + w / 2 + 2} ${base - h}Z' fill='url(#rf)'/><rect x='${x - 1.5}' y='${base - h + 8}' width='3' height='6' rx='1.5' fill='#fff3c0'/><path d='M${x} ${base - h - w * 2.2}v-8' stroke='#ffe08a' stroke-width='1.2'/>`;
+    const citadel = `<g>${spire(410, 128, 46, 12)}${spire(440, 128, 70, 16)}${spire(470, 128, 56, 13)}${spire(500, 128, 38, 11)}${spire(380, 128, 30, 10)}<rect x='370' y='112' width='140' height='20' fill='url(#tw)'/><path d='M370 112h140' stroke='#ffe08a' stroke-width='1.4'/>${Array.from({ length: 9 }, (_, i) => `<rect x='${376 + i * 15}' y='118' width='4' height='7' rx='2' fill='#fff3c0'/>`).join("")}<path d='M370 132Q440 170 510 132Z' fill='url(#rk)'/><animateTransform attributeName='transform' type='translate' values='0 0;0 -4;0 0' dur='5s' repeatCount='3'/></g>`;
+    const body = s.b + `<circle cx='300' cy='120' r='120' fill='url(#g)'/><circle cx='300' cy='118' r='22' fill='#fff3d0'/>` + `<g fill='url(#c1)' opacity='.8'>${cloudBand(4, 120, 12, 22, -20, 620, 8, false)}</g>` + citadel + `<g fill='url(#c2)'>${cloudBand(6, 150, 16, 30)}</g><g fill='url(#c3)'>${cloudBand(9, 178, 18, 32)}</g>` + `<path d='M540 60l5 3l5 -3M556 52l4 2l4 -2M528 70l4 2l4 -2' stroke='#3a2a4a' stroke-width='1.2' fill='none'/>`;
+    return bannerDoc(s.d + glow("g", "#fff0c8", 0.8) + lg("tw", ["#fff6e0", "#e8c8a8", "#a8806a"], 0, 0, 1, 0) + lg("rf", ["#ffe08a", "#c8901f"], 0, 0, 1, 1) + lg("rk", ["#8a6a5a", "#3a2a3a"]) + lg("c1", ["#ffd6c8", "#e0a0b8"]) + lg("c2", ["#ffe8d8", "#f0b8c8"]) + lg("c3", ["#fff6ee", "#f8d0d8"]), body, 0.25);
+  }, ["animated"]);
+
+add("phoenix-rising", "legendary", 1500, true,
+  N("Yükselen Anka", "Phoenix Rising", "Aufsteigender Phönix", "Fénix ascendente", "Phénix renaissant", "Fênix renascida", "Восходящий феникс"),
+  N("Kanatlarını afiş boyunca açan alevden bir kuş ve yükselen közler.", "A bird of flame spreading its wings across the banner as embers rise.", "Ein Vogel aus Flammen breitet die Flügel über das Banner, Glut steigt auf.", "Un ave de fuego extiende sus alas por el banner mientras suben las brasas.", "Un oiseau de flammes déploie ses ailes sur la bannière, des braises s'élèvent.", "Uma ave de fogo abre as asas pelo banner enquanto brasas sobem.", "Огненная птица расправляет крылья на весь баннер, поднимаются искры."),
+  () => {
+    const s = sky("s", [[0, "#1a0404"], [0.6, "#5a0e0a"], [1, "#a8300a"]]);
+    const feather = (x, y, len, ang, w) => { const a = (ang * Math.PI) / 180; const tx = x + len * Math.cos(a), ty = y + len * Math.sin(a); return `<path d='${petal(f(len), w)}' transform='translate(${x} ${y}) rotate(${f(ang + 90)})' fill='url(#fe)'/>`; };
+    let wings = "";
+    for (let i = 0; i < 10; i++) { wings += feather(430, 100, 150 - i * 9, -165 + i * 8, 9 - i * 0.4) + feather(430, 100, 120 - i * 7, -15 - i * 8, 8 - i * 0.4); }
+    const bird = `<g><g filter='url(#b)' opacity='.7'>${wings}</g>${wings}<path d='M430 70C440 72 446 82 444 96C442 120 434 140 430 160C426 140 418 120 416 96C414 82 420 72 430 70Z' fill='url(#bd)'/><path d='M430 160L416 196M430 160L430 200M430 160L444 196' stroke='#ffb000' stroke-width='3' stroke-linecap='round'/><circle cx='430' cy='70' r='8' fill='url(#bd)'/><path d='M436 68L446 72L436 74Z' fill='#ffe08a'/><path d='M426 62Q420 44 410 40M430 62Q432 42 440 34' stroke='#ffd27a' stroke-width='2' fill='none'/><animateTransform attributeName='transform' type='translate' values='0 0;0 -5;0 0' dur='2.4s' repeatCount='3'/></g>`;
+    const embers = scatter(5, 24, (r) => { const x = 220 + r() * 380, y = 120 + r() * 80; return `<circle cx='${f(x)}' cy='${f(y)}' r='${f(1 + r() * 1.6)}' fill='#ffd27a'><animate attributeName='cy' values='${f(y)};${f(y - 60)}' dur='${f(2 + r() * 2)}s' repeatCount='3'/><animate attributeName='opacity' values='1;0' dur='${f(2 + r() * 2)}s' repeatCount='3'/></circle>`; });
+    return bannerDoc(s.d + lg("fe", ["#fff3b0", "#ffb52e", "#ff4a1a", "#a8100a"], 0, 1, 0, 0) + lg("bd", ["#fff6c0", "#ffb000", "#ff5a1a"]) + blur("b", 6), s.b + `<circle cx='430' cy='100' r='150' fill='url(#gw)'/>` + bird + embers, 0.4).replace("<defs>", `<defs>${rg("gw", [[0, "#ffb000", 0.45], [1, "#ff3d00", 0]])}`);
+  }, ["animated"]);
+
+add("sunken-temple", "legendary", 1200, true,
+  N("Batık Tapınak", "Sunken Temple", "Versunkener Tempel", "Templo sumergido", "Temple englouti", "Templo submerso", "Затонувший храм"),
+  N("Su altında yosun tutmuş sütunlar, kaya merdivenler ve dans eden ışık.", "Moss-covered columns and stone stairs under water, with dancing light.", "Bemooste Säulen und Steintreppen unter Wasser, darüber tanzendes Licht.", "Columnas cubiertas de musgo y escaleras de piedra bajo el agua con luz danzante.", "Des colonnes moussues et des marches de pierre sous l'eau, dans une lumière dansante.", "Colunas cobertas de musgo e escadas de pedra sob a água, com luz dançante.", "Поросшие мхом колонны и каменные ступени под водой в танцующем свете."),
+  () => {
+    const s = sky("s", [[0, "#3ac0c8"], [0.4, "#1a7a8a"], [1, "#04283a"]]);
+    const col = (x, h, broken) => `<rect x='${x - 9}' y='${180 - h}' width='18' height='${h}' fill='url(#cl)'/>${[0.25, 0.5, 0.75].map((k) => `<path d='M${x - 5} ${f(180 - h * k - 10)}v20M${x} ${f(180 - h * k - 10)}v20M${x + 5} ${f(180 - h * k - 10)}v20' stroke='#0a3a4a' stroke-opacity='.25'/>`).join("")}${broken ? `<path d='M${x - 9} ${180 - h}L${x - 3} ${176 - h}L${x + 2} ${182 - h}L${x + 9} ${174 - h}V${180 - h}Z' fill='#9ad0c8'/>` : `<rect x='${x - 13}' y='${176 - h}' width='26' height='6' fill='#a8d8d0'/>`}<path d='M${x - 9} ${200 - h * 0.6}q4 8 0 18' stroke='#3a9a5a' stroke-width='3' fill='none'/>`;
+    const caust = `<g opacity='.5'><path d='${Array.from({ length: 10 }, (_, i) => `M${i * 70 - 20} 10q20 10 40 0t40 0`).join("")}' stroke='#e6ffff' stroke-width='2' fill='none'/><animateTransform attributeName='transform' type='translate' values='0 0;30 6;0 0' dur='4s' repeatCount='3'/></g>`;
+    const rays = [0, 1, 2, 3].map((i) => `<path d='M${330 + i * 60} -5L${300 + i * 80} 210H${330 + i * 80}L${360 + i * 60} -5Z' fill='#e6ffff' opacity='.08'>${pulse("opacity", ".08;.03;.08", 3 + i, 3)}</path>`).join("");
+    const body = s.b + rays + caust + `<path d='M320 180V150H560V180Z' fill='#5a9a98'/><path d='M300 200V180H580V200Z' fill='#4a8a88'/><path d='M330 66L440 30L550 66Z' fill='url(#cl)'/><rect x='330' y='66' width='220' height='10' fill='#a8d8d0'/>` + col(350, 104, false) + col(400, 104, false) + col(480, 104, false) + col(530, 70, true) + col(260, 50, true) +
+      `<path d='M420 200q-4 -30 6 -50q-12 30 -2 50z' fill='#3a9a5a'/><path d='M580 200q-8 -40 4 -70q-2 40 6 70z' fill='#2a8a4a'/>` + scatter(3, 6, (r) => `<g transform='translate(${f(240 + r() * 300)} ${f(80 + r() * 60)}) scale(${f(0.6 + r() * 0.5)})'><path d='M-8 0C-4 -4 4 -4 8 0C4 4 -4 4 -8 0ZM8 0L13 -4V4Z' fill='#ffd36a'/></g>`) + scatter(7, 14, (r) => `<circle cx='${f(r() * 600)}' cy='${f(r() * 200)}' r='${f(1 + r() * 2)}' fill='none' stroke='#e6ffff' stroke-opacity='.5'/>`);
+    return bannerDoc(s.d + lg("cl", ["#d8f0e8", "#8ab8b0", "#4a7a78"], 0, 0, 1, 0), body, 0.4);
+  }, ["animated"]);
+
+add("aurora-fjord", "legendary", 1300, true,
+  N("Kutup Fiyordu", "Aurora Fjord", "Polarlichtfjord", "Fiordo de aurora", "Fjord sous l'aurore", "Fiorde da aurora", "Фьорд под сиянием"),
+  N("Sarp fiyord duvarları arasında suya yansıyan dalgalı kutup ışığı.", "A rippling aurora reflected in the water between steep fjord walls.", "Ein wogendes Polarlicht, das sich zwischen steilen Fjordwänden im Wasser spiegelt.", "Una aurora ondulante reflejada en el agua entre las paredes de un fiordo.", "Une aurore ondoyante qui se reflète dans l'eau entre de hautes parois de fjord.", "Uma aurora ondulante refletida na água entre as paredes íngremes de um fiorde.", "Колышущееся сияние отражается в воде между крутыми стенами фьорда."),
+  () => {
+    const s = sky("s", [[0, "#020814"], [1, "#0a2a3a"]]);
+    const curt = (seed, y0, len, id, x0, x1) => { const r = rnd(seed); let d = ""; for (let x = x0; x < x1; x += 7) d += `M${x} ${f(y0 + 12 * Math.sin(x / 60) + 6 * Math.sin(x / 19))}v${f(len * (0.6 + r() * 0.5))}`; return `<path d='${d}' stroke='url(#${id})' stroke-width='9'/>`; };
+    const sky2 = `<g id='au' filter='url(#b)' opacity='.85'>${curt(2, 10, 70, "a1", 180, 620)}${curt(3, 26, 50, "a2", 300, 600)}<animateTransform attributeName='transform' type='translate' values='0 0;-16 3;0 0' dur='8s' repeatCount='3'/></g>`;
+    const walls = `<path d='M240 130L280 40L330 30L360 130Z' fill='#0e1e2a'/><path d='M600 130L560 20L510 36L470 130Z' fill='#0a1822'/><path d='M280 40L300 60L320 34' fill='none' stroke='#cfe6f2' stroke-opacity='.4' stroke-width='2'/><path d='M560 20L540 50L520 36' fill='none' stroke='#cfe6f2' stroke-opacity='.4' stroke-width='2'/><path d='${ridge(4, 120, 14, 0.5, 132)}' fill='#132836'/>`;
+    const body = s.b + stars(9, 90, [0, 0, 600, 120], ["#fff"], 0.9) + sky2 + walls + `<rect y='130' width='600' height='70' fill='url(#wt)'/><use href='#au' transform='translate(0 262) scale(1 -1)' opacity='.35'/><g transform='translate(0 262) scale(1 -1)' opacity='.6'>${walls}</g>` + scatter(5, 22, (r) => `<path d='M${f(r() * 600)} ${f(136 + r() * 60)}h${f(10 + r() * 30)}' stroke='#9fffd8' stroke-opacity='${f(0.1 + r() * 0.2)}'/>`) + `<path d='M400 150l10 -4l10 4z' fill='#ffcf6a'/><path d='M410 146v-10' stroke='#2a2a3a'/>`;
+    return bannerDoc(s.d + lg("a1", [[0, "#c07bff", 0], [0.3, "#8f7bff", 0.6], [0.6, "#6effc7"], [1, "#2fe0a0", 0]]) + lg("a2", [[0, "#ff7bd0", 0], [0.4, "#6effc7", 0.8], [1, "#6effc7", 0]]) + blur("b", 3.5) + lg("wt", ["#0a2430", "#020a12"]), body, 0.35);
+  }, ["animated"]);
+
+add("neon-metropolis", "legendary", 1400, true,
+  N("Neon Metropol", "Neon Metropolis", "Neonmetropole", "Metrópolis de neón", "Métropole néon", "Metrópole neon", "Неоновый мегаполис"),
+  N("Yağmurda parlayan neon tabelalı gökdelenler ve süzülen ışıklar.", "Skyscrapers with neon signs glowing in the rain, and gliding lights.", "Wolkenkratzer mit Neonschildern, die im Regen leuchten, und gleitende Lichter.", "Rascacielos con letreros de neón que brillan bajo la lluvia y luces que se deslizan.", "Des gratte-ciel aux enseignes néon qui brillent sous la pluie, et des lumières qui filent.", "Arranha-céus com letreiros neon brilhando na chuva e luzes deslizando.", "Небоскрёбы с неоновыми вывесками сияют под дождём, скользят огни."),
+  () => {
+    const s = sky("s", [[0, "#0a0418"], [0.6, "#2a0a3a"], [1, "#5a1a4a"]]);
+    const far = skyline(21, 170, 50, 130, -10, 610, 16, 34, "#ff8ad8", 0.2);
+    const near = skyline(23, 200, 70, 170, 200, 610, 30, 54, "#ffd27a", 0.22);
+    const sign = (x, y, w, h, c) => `<rect x='${x}' y='${y}' width='${w}' height='${h}' rx='2' fill='none' stroke='${c}' stroke-width='3' filter='url(#b)'/><rect x='${x}' y='${y}' width='${w}' height='${h}' rx='2' fill='${c}' fill-opacity='.15' stroke='#fff' stroke-width='1'/>`;
+    const cars = [0, 1, 2].map((i) => `<g><rect x='-20' y='${50 + i * 26}' width='12' height='3' rx='1.5' fill='${i % 2 ? "#ff5a8a" : "#5af0ff"}'/><circle cx='-8' cy='${51.5 + i * 26}' r='5' fill='${i % 2 ? "#ff5a8a" : "#5af0ff"}' opacity='.3'/><animateTransform attributeName='transform' type='translate' values='${i % 2 ? "640 0;-40 0" : "-40 0;640 0"}' dur='${5 + i * 1.5}s' repeatCount='2'/></g>`).join("");
+    const body = s.b + `<circle cx='430' cy='90' r='180' fill='url(#cg)'/><path d='${far.body}' fill='#1e0e30'/><path d='${far.windows}' fill='#ff8ad8' opacity='.45'/>` + cars + `<path d='${near.body}' fill='#0e0618'/><path d='${near.windows}' fill='#ffd27a' opacity='.7'/>` +
+      sign(300, 70, 16, 54, "#ff2e88") + sign(400, 50, 60, 18, "#2ef2ff") + sign(520, 90, 46, 16, "#fff04a") + sign(470, 120, 14, 40, "#a77bff") + scatter(11, 80, (r) => `<path d='M${f(r() * 640)} ${f(r() * 200)}l-4 14' stroke='#d8c8ff' stroke-opacity='${f(0.12 + r() * 0.3)}'/>`) + `<rect y='186' width='600' height='14' fill='url(#wet)'/>`;
+    return bannerDoc(s.d + blur("b", 3) + glow("cg", "#ff3a8a", 0.25) + lg("wet", [[0, "#ff2e88", 0.25], [1, "#2ef2ff", 0.1]], 0, 0, 1, 0), body, 0.35);
+  }, ["animated"]);
+
+add("starfall-lake", "legendary", 1150, true,
+  N("Yıldız Yağmuru Gölü", "Starfall Lake", "Sternschnuppensee", "Lago de estrellas fugaces", "Lac des étoiles filantes", "Lago da chuva de estrelas", "Озеро звездопада"),
+  N("Dağlar arasındaki ayna gibi gölde yansıyan bir yıldız yağmuru.", "A meteor shower mirrored in a glassy lake between the mountains.", "Ein Sternschnuppenregen, der sich in einem spiegelglatten Bergsee spiegelt.", "Una lluvia de estrellas reflejada en un lago espejado entre montañas.", "Une pluie d'étoiles filantes reflétée dans un lac miroir entre les montagnes.", "Uma chuva de meteoros refletida em um lago espelhado entre montanhas.", "Звездопад отражается в зеркальном озере между гор."),
+  () => {
+    const s = sky("s", [[0, "#060a24"], [0.7, "#1e2a5a"], [1, "#4a3a7a"]]);
+    const met = scatter(4, 10, (r, i) => { const x = 240 + r() * 360, y = r() * 70, L = 30 + r() * 50; return `<path d='M${f(x)} ${f(y)}l${f(-L)} ${f(L * 0.45)}' stroke='url(#mt)' stroke-width='${f(1 + r() * 1.4)}' stroke-linecap='round'>${pulse("opacity", "1;.2;1", f(2 + r() * 2), 3, f(r() * 2))}</path>`; });
+    const top = `<g id='tp'>${stars(17, 120, [0, 0, 600, 120], ["#fff", "#e6dcff"], 1)}${met}<path d='${ridge(5, 112, 40, 0.55, 132, 48, [[380, 40, 80], [520, 30, 70]])}' fill='#141a3a'/><path d='${ridge(7, 124, 16, 0.5, 132)}' fill='#0c1028'/></g>`;
+    const body = s.b + top + `<rect y='130' width='600' height='70' fill='url(#lk)'/><use href='#tp' transform='translate(0 260) scale(1 -1)' opacity='.4'/>` + scatter(6, 16, (r) => `<path d='M${f(r() * 600)} ${f(136 + r() * 60)}h${f(10 + r() * 30)}' stroke='#c6b7ff' stroke-opacity='${f(0.1 + r() * 0.2)}'/>`);
+    return bannerDoc(s.d + lg("mt", [[0, "#fff"], [1, "#c6b7ff", 0]], 0, 0, 1, 0) + lg("lk", ["#1a1e44", "#06081a"]), body, 0.35);
+  }, ["animated"]);
+
+add("emerald-falls", "legendary", 1000, true,
+  N("Zümrüt Şelaleler", "Emerald Falls", "Smaragdfälle", "Cataratas esmeralda", "Chutes d'émeraude", "Cataratas esmeralda", "Изумрудные водопады"),
+  N("Yeşil uçurumlardan dökülen şelaleler, sis ve tropik yapraklar.", "Waterfalls pouring from green cliffs into mist among tropical leaves.", "Wasserfälle stürzen von grünen Klippen in den Nebel, umrahmt von Tropenblättern.", "Cascadas que caen de acantilados verdes entre bruma y hojas tropicales.", "Des cascades tombant de falaises vertes dans la brume, parmi des feuilles tropicales.", "Cachoeiras despencando de penhascos verdes na névoa, entre folhas tropicais.", "Водопады низвергаются с зелёных скал в туман среди тропической листвы."),
+  () => {
+    const s = sky("s", [[0, "#6ac8e8"], [0.6, "#c8f0e8"], [1, "#f0fff8"]]);
+    const fall = (x, y, w, h) => `<path d='M${x} ${y}h${w}l${f(w * 0.15)} ${h}h${f(-w * 1.3)}Z' fill='url(#fw)'/><path d='${Array.from({ length: Math.ceil(w / 4) }, (_, i) => `M${x + 2 + i * 4} ${y}l${f(i * 0.3 - w * 0.04)} ${h}`).join("")}' stroke='#fff' stroke-opacity='.55' stroke-dasharray='12 7'><animate attributeName='stroke-dashoffset' from='0' to='-38' dur='1.1s' repeatCount='3'/></path>`;
+    const cliffP = (x0, x1, top, seed) => { const r = rnd(seed); let d = `M${x0} 200V${top + 10}`; for (let x = x0; x <= x1; x += 10) d += `L${x} ${f(top + (r() - 0.5) * 8)}`; return d + `L${x1} 200Z`; };
+    const frond = (x, y, len, rot, flip) => { let d = `M0 0Q${f(len * 0.5)} ${f(-len * 0.15 * flip)} ${len} 0`; for (let i = 1; i < 12; i++) { const t = i / 12, px = len * t, py = -len * 0.15 * flip * 4 * t * (1 - t); const l = len * 0.32 * Math.sin(Math.PI * t); d += `M${f(px)} ${f(py)}l${f(l * 0.4)} ${f(-l)}M${f(px)} ${f(py)}l${f(l * 0.4)} ${f(l)}`; } return `<g transform='translate(${x} ${y}) rotate(${rot})'><path d='${d}' stroke='#1f7a3a' stroke-width='3.2' stroke-linecap='round' fill='none'/><path d='M0 0Q${f(len * 0.5)} ${f(-len * 0.15 * flip)} ${len} 0' stroke='#0e4a22' stroke-width='2' fill='none'/></g>`; };
+    const body = s.b + `<circle cx='480' cy='40' r='90' fill='url(#g)'/>` + `<path d='${ridge(3, 80, 24, 0.55, 200, 32, [[420, 30, 100]])}' fill='#8ad0b0' opacity='.7'/><path d='${ridge(5, 100, 20, 0.55, 200, 32)}' fill='#5ab08a' opacity='.7'/>` +
+      `<path d='${cliffP(320, 410, 52, 2)}' fill='url(#gc)'/><path d='${cliffP(450, 610, 30, 3)}' fill='url(#gc)'/><path d='${cliffP(400, 470, 96, 4)}' fill='url(#gc2)'/>` +
+      `<path d='M320 62h90M450 40h160M400 104h70' stroke='#7ae08a' stroke-width='6' stroke-linecap='round'/>` + fall(406, 60, 16, 140) + fall(468, 38, 22, 162) + fall(418, 102, 38, 98) +
+      `<g fill='#fff' opacity='.9'>${cloudBand(4, 184, 12, 24, 360, 560)}</g>` + ["#ff5a5a", "#ffb03a", "#ffe04a", "#5ad07a", "#4a9aff"].map((c, i) => `<path d='M370 176A100 100 0 0 1 570 176' fill='none' stroke='${c}' stroke-width='3' stroke-opacity='.32' transform='translate(0 ${i * 3})'/>`).join("") +
+      frond(600, 30, 90, 150, 1) + frond(600, 120, 80, 200, -1) + frond(290, 210, 80, -60, 1) + frond(320, 210, 70, -100, -1) + scatter(5, 10, (r) => `<circle cx='${f(380 + r() * 200)}' cy='${f(150 + r() * 40)}' r='${f(1 + r() * 2)}' fill='#fff' opacity='.7'/>`);
+    return bannerDoc(s.d + glow("g", "#fff", 0.7) + lg("fw", ["#ffffff", "#c8f4ff", "#7ad8f0"], 0, 0, 1, 0) + lg("gc", ["#3a9a5a", "#1e6a3a", "#0e3a22"], 0, 0, 1, 1) + lg("gc2", ["#2a8a4a", "#14502a"], 0, 0, 1, 1), body, 0.25);
+  }, ["animated"]);
 
 module.exports = { BANNERS };
