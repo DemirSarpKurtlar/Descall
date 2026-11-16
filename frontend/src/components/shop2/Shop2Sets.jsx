@@ -368,6 +368,12 @@ function Kasa({ set, pricing, hidden, onSaveLook }) {
         <Seg value={forWhom} onChange={setForWhom} label={t("shop2.kasa.forWhom")} className="is-full" options={[{ id: "me", label: t("shop2.kasa.forMe"), icon: User }, { id: "friend", label: t("shop2.kasa.forFriend"), icon: Gift }]} />
         {forWhom === "me" && after < 0 && !pricing.complete ? (
           <ShortBy n={-after} />
+        ) : forWhom === "me" && pricing.complete ? (
+          // Whole set owned: show it to friends (look card in DM) instead of a dead buy button.
+          <button type="button" className="s2-btn is-primary is-wide is-lg" onClick={() => s2.openShare({ setKey: set.key })}>
+            <Share2 size={17} />
+            {t("shop2.share.title")}
+          </button>
         ) : forWhom === "me" ? (
           <button type="button" className="s2-btn is-primary is-wide is-lg" disabled={pricing.complete} onClick={() => s2.openCheckout({ kind: "set", setKey: set.key, pieceIds: null, hidden: [...hidden] })}>
             <Cart size={17} />

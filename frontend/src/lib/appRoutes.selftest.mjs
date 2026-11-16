@@ -19,5 +19,9 @@ assert(parseAppRoute("/direct/Ada%20Test").username === "Ada Test", "parse DM us
 assert(parseAppRoute("/groups/group-123").groupId === "group-123", "parse group id");
 assert(parseAppRoute("/settings/voice").settingsTab === "voice", "parse settings tab");
 assert(parseAppRoute("/not-real").unknown, "unknown route fallback");
+// Pasted Market 2.0 look links open the shop, never the unknown-route fallback (/direct).
+assert(isAuthenticatedAppPath("/shop/look/set/gece-limani"), "look link is an app route");
+assert(!parseAppRoute("/shop/look/set/gece-limani").unknown, "look link is not unknown");
+assert(parseAppRoute("/shop/look/item/abc-1").settingsTab === "shop", "look link opens the shop");
 
 console.log("appRoutes.selftest.mjs: ok");

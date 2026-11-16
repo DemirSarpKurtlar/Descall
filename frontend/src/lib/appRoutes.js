@@ -33,6 +33,9 @@ export function parseAppRoute(pathname = "/") {
     };
   }
   if (section === "settings") return { view: "chat", settingsTab: target || "overview" };
+  // A pasted look link opens the shop (App.jsx handleShopLookPath focuses the set / item and
+  // replaces the path); read as the shop here too so the route sync never sends it to /direct.
+  if (section === "shop" && target === "look") return { view: "chat", settingsTab: "shop", look: true };
   // 3.0.1: landing target of the App Store in-app event (descall://whats-new,
   // https://descall.com/app/whats-new). App.jsx opens the 3.0 notes, then home.
   if (section === "app" && String(target || "").toLowerCase() === "whats-new") {

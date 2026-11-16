@@ -3506,7 +3506,7 @@ router.get("/:id/members", requireAuth, async (req, res) => {
 
     const userIds = members.map((m) => m.user_id);
     const users = userIds.length
-      ? await selectAllIn(supabase, "users", "id, username, display_name, avatar_url, equipped_country_id", (q) => q, "id", userIds)
+      ? await selectAllIn(supabase, "users", "id, username, display_name, avatar_url, equipped_country_id, equipped_avatar_frame_id, equipped_badge_id", (q) => q, "id", userIds)
       : [];
 
     // One flag per member (2.13.0): a single lookup for every equipped country.
@@ -3521,6 +3521,23 @@ router.get("/:id/members", requireAuth, async (req, res) => {
         if (flag.category === "countries") countryById.set(flag.id, flag);
       }
     }
+
+    // Market 2.0 avatar frame + profile badge every member wears (s2- rows only, lean records
+    // with a cacheable image path): one lookup over the distinct items.
+    const shop2Ids = [...new Set((users || []).flatMap((u) => [u.equipped_avatar_frame_id, u.equipped_badge_id]).filter(Boolean))];
+    const shop2ById = new Map();
+    if (shop2Ids.length) {
+      const shopLib = require("../lib/shop");
+      const { data: rows } = await supabase.from("shop_items").select("id, sku, category, rarity, name, asset_url").in("id", shop2Ids);
+      for (const row of rows || []) {
+        const lean = shopLib.leanShop2Cosmetic(row);
+        if (lean) shop2ById.set(row.id, lean);
+      }
+    }
+    const shop2Of = (id, category) => {
+      const it = id ? shop2ById.get(id) : null;
+      return it && it.category === category ? it : null;
+    };
 
     // Special badge worn next to the flag (one lookup; empty before its migration).
     const [specialByUser, premiumByUser] = await Promise.all([
@@ -3575,6 +3592,8 @@ router.get("/:id/members", requireAuth, async (req, res) => {
         avatarUrl: u.avatar_url || null,
         equippedCountry: countryById.get(u.equipped_country_id) || null,
         equippedSpecialBadge: specialByUser.get(m.user_id) || null,
+        equippedAvatarFrame: shop2Of(u.equipped_avatar_frame_id, "avatar_frame"),
+        equippedBadge: shop2Of(u.equipped_badge_id, "profile_badge"),
         premium_plan: premiumByUser.get(String(m.user_id)) ?? null,
         nickname: m.nickname || null,
         joinedAt: m.joined_at,

@@ -96,9 +96,15 @@ export function useShop2({ onBalanceChange } = {}) {
     alive.current = false;
   }, []);
 
+  // Kept in a ref: Settings passes a fresh inline callback on every render, and the balance it
+  // reports re-renders Settings (new `me`). With the callback in the loaders' deps that was a
+  // loop: every storefront answer reloaded all seven endpoints again (~9 times a second) and
+  // re-applied the app theme on <html>, which also cancelled smooth scrolling in the market.
+  const balanceCb = useRef(onBalanceChange);
+  balanceCb.current = onBalanceChange;
   const applyBalance = useCallback((res) => {
-    if (res && typeof res.balance === "number") onBalanceChange?.(res.balance);
-  }, [onBalanceChange]);
+    if (res && typeof res.balance === "number") balanceCb.current?.(res.balance);
+  }, []);
 
   const loadStorefront = useCallback(async () => {
     try {
@@ -108,14 +114,14 @@ export function useShop2({ onBalanceChange } = {}) {
       if (!sf.history7d.length) sf.history7d = rememberStorefrontDay(sf);
       setStorefront(sf);
       setState("ready");
-      if (typeof sf.balance === "number") onBalanceChange?.(sf.balance);
+      if (typeof sf.balance === "number") balanceCb.current?.(sf.balance);
       return sf;
     } catch (err) {
       if (!alive.current) return null;
       setState(isMissingRoute(err) ? "offline" : "error");
       return null;
     }
-  }, [onBalanceChange]);
+  }, []);
 
   const loadSets = useCallback(async () => {
     try {

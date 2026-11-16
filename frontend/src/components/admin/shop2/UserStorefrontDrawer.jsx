@@ -168,8 +168,13 @@ export default function UserStorefrontDrawer({ open, userId, onPick, onClose, no
                 <div key={s.key} className="as2-us-set">
                   <SetMark set={s} size={30} />
                   <b>{s.name}</b>
-                  <s className="tnum">{f.n(s.setPrice)}</s>
-                  <ChevronRight size={14} className="as2-muted" />
+                  {/* Struck set price only when owned pieces lower it (the same number twice read as a fake discount). */}
+                  {s.yourPrice != null && s.yourPrice < s.setPrice ? (
+                    <>
+                      <s className="tnum">{f.n(s.setPrice)}</s>
+                      <ChevronRight size={14} className="as2-muted" />
+                    </>
+                  ) : null}
                   {s.yourPrice == null ? <span className="as2-muted">{t("adminShop2.us.setClosed")}</span> : <Coin value={s.yourPrice} />}
                   <small className="as2-muted as2-ml">{s.ownedPieces ? t("adminShop2.us.ownedPieces", { n: s.ownedPieces, total: s.total || 8 }) : t("adminShop2.us.ownedNone")}</small>
                 </div>

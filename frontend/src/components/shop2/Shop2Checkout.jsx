@@ -187,7 +187,8 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
     s2.toast(t("shop2.celebrate.wornToast"), {
       tone: "ok",
       ms: 12000,
-      action: { label: t("shop2.celebrate.undo"), run: () => restoreLook(s2, prev, list, t) },
+      // Undone: the pieces are off again, so "Hepsini kuşan" and the refund link come back.
+      action: { label: t("shop2.celebrate.undo"), run: () => restoreLook(s2, prev, list, t).then(() => setWorn(false)) },
     });
   };
   useEffect(() => {
