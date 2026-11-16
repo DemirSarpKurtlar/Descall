@@ -144,7 +144,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
                     </span>
                     <span className="as2-au-tgt">
                       {e.setKey ? (
-                        <button type="button" className="as2-link" onClick={() => onOpenSet(e.setKey)}>
+                        <button type="button" className="as2-link" onClick={() => onOpenSet(e.setKey)} aria-label={t("adminShop2.sets.openSet", { name: e.target || e.setKey })}>
                           {e.target || e.setKey}
                         </button>
                       ) : e.targetUserId ? (

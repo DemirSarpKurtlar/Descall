@@ -140,6 +140,7 @@ export const ADMIN_SHOP2_TR = {
     "someone": "Biri"
   },
   "sets": {
+    "openSet": "{name} setini aç",
     "title": "Setler",
     "liveN": "{n} satışta",
     "scheduledN": "{n} planlı",

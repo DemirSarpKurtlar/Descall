@@ -669,7 +669,7 @@ function TopSellers({ dash, onOpenSet }) {
           {rows.slice(0, 5).map((r, i) => (
             <li key={r.key || i}>
               <span className="as2-top-n tnum">{i + 1}</span>
-              <button type="button" className="as2-top-b" onClick={() => r.key && onOpenSet(r.key)}>
+              <button type="button" className="as2-top-b" onClick={() => r.key && onOpenSet(r.key)} aria-label={t("adminShop2.sets.openSet", { name: typeof r.name === "object" ? r.name[locale] || r.name.tr : r.name })}>
                 <SetMark set={r} size={26} />
                 <span className="as2-top-name">{typeof r.name === "object" ? r.name[locale] || r.name.tr : r.name}</span>
                 <b className="tnum">{f.c(r.revenue)}</b>

@@ -1216,7 +1216,9 @@ function MessageBubbleView({
   const reply = forwarded ? null : rawReply;
   const forwardable = canForward(message);
   // Link preview (messaging phase 4): first http(s) link, fetched by our server.
-  const previewUrl = useMemo(() => (typeof message.text === "string" ? previewUrlOf(message.text) : null), [message.text]);
+  // A look link (Market 2.0) shows the look card instead, so it gets no link preview.
+  const lookShare = typeof message.text === "string" && isLookText(message.text);
+  const previewUrl = useMemo(() => (typeof message.text === "string" && !lookShare ? previewUrlOf(message.text) : null), [message.text, lookShare]);
   const forwardMessage = useCallback(() => openForwardSheet(message), [message]);
   const isPinned = Boolean(message.pinnedAt);
   const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
@@ -2037,11 +2039,12 @@ function MessageBubbleView({
                 </span>
               ) : null}
               <InviteLinkEmbedList text={message.text} />
-              {isLookText(message.text) ? (
+              {lookShare ? (
                 <Suspense fallback={null}>
                   <Shop2LookCard text={message.text} />
                 </Suspense>
-              ) : previewUrl ? (
+              ) : null}
+              {previewUrl ? (
                 <Suspense fallback={null}>
                   <LinkPreviewCard url={previewUrl} />
                 </Suspense>

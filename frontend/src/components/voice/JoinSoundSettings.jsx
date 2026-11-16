@@ -39,6 +39,7 @@ export default function JoinSoundSettings({ SettingRow, Toggle }) {
               type="button"
               className="us-btn ghost"
               disabled={!prefs.enabled || pct === 0}
+              aria-label={tv("test")}
               onClick={() => {
                 void previewJoinSound(SAMPLE);
               }}

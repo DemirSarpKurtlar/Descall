@@ -660,7 +660,7 @@ export default function Shop2Vitrin() {
         <small>{t("shop2.tiles.nextStorefront")}</small>
         <RollingClock target={sf.resetsAt} className="s2-sticky-clock" />
       </span>
-      <button type="button" className="s2-btn is-sm" onClick={() => setConfirm(true)} disabled={!plan.available}>
+      <button type="button" className="s2-btn is-sm" onClick={() => setConfirm(true)} disabled={!plan.available} aria-label={plan.price ? t("shop2.refresh.go", { n: formatNumber(plan.price, locale) }) : t("shop2.refresh.goFree")}>
         <RefreshCw size={15} />
         <Coin size="sm" />
         <span className="s2-num">{formatNumber(plan.price, locale)}</span>

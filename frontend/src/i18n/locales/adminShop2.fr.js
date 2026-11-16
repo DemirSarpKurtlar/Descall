@@ -140,6 +140,7 @@ export const ADMIN_SHOP2_FR = {
     "someone": "Quelqu'un"
   },
   "sets": {
+    "openSet": "Ouvrir le set {name}",
     "title": "Sets",
     "liveN": "{n} en vente",
     "scheduledN": "{n} planifiés",
