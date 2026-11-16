@@ -22,6 +22,7 @@ import {
 import { API_BASE_URL } from "../config/api";
 import { getToken, getUser } from "../lib/storage";
 import { emitRoomOnce } from "../lib/socketResubscribe";
+import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
@@ -67,6 +68,7 @@ import { IOS_NATIVE } from "../lib/iosCallKit";
 import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "../lib/callAudioDevices";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
+import { playJoinCue } from "../lib/joinSounds";
 import { primeVoiceActivity } from "../lib/voiceActivity";
 import { registerLiveKitVideoTrack, unregisterLiveKitVideoTrack } from "../lib/liveKitVideoBinding";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
@@ -209,6 +211,24 @@ export function useServerVoice(socket) {
   useEffect(() => {
     activeChannelIdRef.current = activeChannelId;
     if (activeChannelId) lastVoiceChannelIdRef.current = activeChannelId;
+  }, [activeChannelId]);
+
+  // DesCoin in server voice channels (owner approved, Nov 2026): same heartbeat as DM /
+  // group calls. The server pays only for a real seat held by this socket, with someone
+  // else seated, speaking (not muted / server-muted / timed out) or actually sharing.
+  useEffect(() => {
+    if (!activeChannelId) return undefined;
+    return startDesCoinHeartbeat({
+      getSocket: () => socketRef.current,
+      getLocalStream: () => (mutedRef.current ? null : localStreamRef.current),
+      isActive: () => Boolean(activeChannelIdRef.current),
+      isScreenSharing: () => Boolean(screenStreamRef.current),
+      getContext: () => ({
+        context: "server",
+        channelId: activeChannelIdRef.current || activeChannelId,
+        serverId: activeServerIdRef.current || null,
+      }),
+    });
   }, [activeChannelId]);
 
   // wifi ↔ cellular (and coming back online) while a voice channel is open.
@@ -1971,7 +1991,8 @@ export function useServerVoice(socket) {
     const onMemberJoined = ({ channelId, user } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !user?.id) return;
       if (user.id === myIdRef.current) return;
-      audioManager.play("userJoin");
+      // Their Market 2.0 join sound (once, throttled) or the standard join tone.
+      playJoinCue(user);
       // We are already in the room, offer to the new joiner
       offerToPeer(user, channelId);
     };

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { EquippedSpecialBadge } from "../badges/SpecialBadge.jsx";
+import { Shop2Badge, shop2AssetSrc } from "./Shop2Cosmetics.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { countryCode, countryName, flagEmoji, installFlagFont, isCountryItem } from "../../lib/countryFlags";
 
@@ -48,7 +49,10 @@ export function CountryBadge({ user, item: itemProp, compact = false, className 
   const { locale } = useLocale();
   const item = itemProp || user?.equippedCountry;
   const hasCountry = isCountryItem(item);
-  const extra = special && user ? <EquippedSpecialBadge user={user} compact={compact} /> : null;
+  // Market 2.0 shop badge (s2- only) sits with the special badge, after the country.
+  const shopBadge = special && shop2AssetSrc(user?.equippedBadge) ? <Shop2Badge user={user} compact={compact} /> : null;
+  const specialBadge = special && user ? <EquippedSpecialBadge user={user} compact={compact} /> : null;
+  const extra = shopBadge ? <>{shopBadge}{specialBadge}</> : specialBadge;
   if (!hasCountry) return extra;
   if (compact) {
     const flag = <CountryFlag item={item} size={14} className={`cosmetic-country-flag ${className}`.trim()} />;

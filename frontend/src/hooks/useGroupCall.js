@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import audioManager from "../lib/audioManager";
+import { playJoinCue } from "../lib/joinSounds";
 import notificationService from "../lib/notificationService";
 import { patchUserAvatar, pickEquippedCosmetics } from "../lib/userProfile";
 import { getUser } from "../lib/storage";
@@ -1734,7 +1735,8 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       } else if (ringbackRef.current?.isRinging()) {
         playAcceptOnce();
       } else {
-        audioManager.play("userJoin");
+        // Their Market 2.0 join sound (once, throttled) or the standard join tone.
+        playJoinCue({ ...(fromUser || {}), id: fromUserId });
       }
 
       // Update username if we already have this participant with 'Member' placeholder

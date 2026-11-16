@@ -170,6 +170,7 @@ const PREFIX = [
   ["agent_", "bot", "violet", "agent"],
   ["premium_", "star", "green", "premium"],
   ["shop_", "bag", "green", "shop"],
+  ["shop2_", "bag", "green", "shop2"],
   ["descoin_", "coin", "green", "descoin"],
   ["credit", "coin", "green", "credits"],
   ["casino_", "coin", "green", "casino"],

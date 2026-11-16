@@ -120,6 +120,8 @@ const EQUIPPED_KEYS = [
     "equippedReactionBurst",
     "equippedCallOverlay",
     "equippedProfileColor",
+    "equippedVoiceTile",
+    "equippedJoinSound",
 ];
 
 /**
@@ -255,6 +257,8 @@ export function pickEquippedCosmetics(user) {
     "equippedPresenceFlare",
     "equippedCallOverlay",
     "equippedProfileColor",
+    "equippedVoiceTile",
+    "equippedJoinSound",
   ]) {
     if (user[key]) out[key] = user[key];
   }

@@ -8,6 +8,8 @@
  * from `profileColorStyle`, and styles/profile-color.css paints with them.
  */
 
+import { shop2ProfileColor } from "./shop2ProfileColors.js";
+
 export const PROFILE_COLOR_CATEGORY = "profile_color";
 
 /** key → [top, bottom, accent, angle in deg]. */
@@ -31,26 +33,36 @@ export const PROFILE_COLORS = Object.freeze({
 
 export function profileColorKey(source) {
   const key = source && typeof source === "object" ? source.equippedProfileColor?.effect_key ?? source.effect_key : source;
-  return typeof key === "string" && Object.prototype.hasOwnProperty.call(PROFILE_COLORS, key) ? key : null;
+  if (typeof key !== "string") return null;
+  if (Object.prototype.hasOwnProperty.call(PROFILE_COLORS, key)) return key;
+  return shop2ProfileColor(key) ? key : null; // Market 2.0 colours (lib/shop2ProfileColors.js)
+}
+
+function paletteOf(key) {
+  return PROFILE_COLORS[key] || shop2ProfileColor(key);
 }
 
 /** CSS custom properties for a key / item / user, or null when none is equipped. */
 export function profileColorStyle(source) {
   const key = profileColorKey(source);
   if (!key) return null;
-  const [a, b, accent, angle] = PROFILE_COLORS[key];
-  return { "--pc-a": a, "--pc-b": b, "--pc-accent": accent, "--pc-angle": `${angle}deg` };
+  const [a, b, accent, angle, mid] = paletteOf(key);
+  const style = { "--pc-a": a, "--pc-b": b, "--pc-accent": accent, "--pc-angle": `${angle}deg` };
+  if (mid) style["--pc-c"] = mid;
+  return style;
 }
 
-/** "has-pcolor" when a colour is equipped, else "". */
+/** "has-pcolor" when a colour is equipped, else "". Market 2.0 colours add their art class. */
 export function profileColorClass(source) {
-  return profileColorKey(source) ? "has-pcolor" : "";
+  const key = profileColorKey(source);
+  if (!key) return "";
+  return PROFILE_COLORS[key] ? "has-pcolor" : `has-pcolor pcolor-s2 pc-${key}`;
 }
 
 /** CSS background for a swatch (shop card, purchase preview). */
 export function profileColorSwatch(source) {
   const key = profileColorKey(source);
   if (!key) return null;
-  const [a, b, , angle] = PROFILE_COLORS[key];
-  return `linear-gradient(${angle}deg, ${a} 0%, ${b} 100%)`;
+  const [a, b, , angle, mid] = paletteOf(key);
+  return mid ? `linear-gradient(${angle}deg, ${a} 0%, ${mid} 55%, ${b} 100%)` : `linear-gradient(${angle}deg, ${a} 0%, ${b} 100%)`;
 }

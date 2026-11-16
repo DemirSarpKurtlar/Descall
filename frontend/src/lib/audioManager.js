@@ -614,6 +614,30 @@ export function setAudioPlayHook(fn) {
   audioPlayHook = typeof fn === "function" ? fn : null;
 }
 
+/**
+ * Would `type` play right now (mutes, per-type switch, pop-out, Descall+ focus hook)?
+ * Market 2.0 join sounds play outside the manager and ask this first. Returns
+ * { ok, volume, sinkId } with the effective soft-cue volume and output.
+ */
+export function soundGate(type) {
+  if (!audioManager.canPlay(type)) return { ok: false, volume: 0, sinkId: "" };
+  let sinkId = null;
+  if (audioPlayHook) {
+    try {
+      const r = audioPlayHook(type);
+      if (r && r.block) return { ok: false, volume: 0, sinkId: "" };
+      sinkId = r && typeof r.sinkId === "string" ? r.sinkId : null;
+    } catch {
+      /* never block a sound on a hook error */
+    }
+  }
+  const base = audioManager.isBackgrounded
+    ? audioManager.settings.volume * audioManager.settings.backgroundVolume
+    : audioManager.settings.volume;
+  const volume = SOFT_CUE_TYPES.has(type) ? softCueVolume(base) : base;
+  return { ok: true, volume, sinkId: soundSinkId(type, sinkId) };
+}
+
 export default audioManager;
 
 // Convenience exports

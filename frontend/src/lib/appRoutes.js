@@ -7,7 +7,8 @@ const VIEW_PATHS = {
   activity: "/activity",
 };
 
-const APP_PREFIXES = ["/direct", "/groups", "/servers", "/friends", "/calls", "/activity", "/settings"];
+// "/shop/look/..." is a Market 2.0 look link; App.jsx turns it into the shop at that set or item.
+const APP_PREFIXES = ["/direct", "/groups", "/servers", "/friends", "/calls", "/activity", "/settings", "/shop/look"];
 
 export function isAuthenticatedAppPath(pathname = "/") {
   if (String(pathname || "").replace(/\/+$/, "").toLowerCase() === "/app/whats-new") return true;

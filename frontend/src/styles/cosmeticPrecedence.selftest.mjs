@@ -26,7 +26,10 @@ for (const file of ["glass-desktop/chat.css", "glass/chat.css", "default-bubble-
 
 // Frames.
 const avatar = read("../components/ui/Avatar.jsx");
-assert.doesNotMatch(avatar, /equippedAvatarFrame|ui-avatar-frame-overlay/, "Avatar never paints a frame");
+// Market 2.0: only "s2-" frames paint (old frames stay removed), through Shop2FrameOverlay.
+assert.match(avatar, /<Shop2FrameOverlay src=\{frameSrc\}/, "Avatar paints Market 2.0 frames");
+const s2c = read("../components/shop/Shop2Cosmetics.jsx");
+assert.match(s2c, /item\.sku\.startsWith\("s2-"\)/, "only s2 frames / badges render");
 const shopPanel = read("../components/settings/ShopPanel.jsx");
 // 2.11.2: the tab list lives in lib/shopCategories.js (shared by every platform).
 assert.match(shopPanel, /SHOP_CATEGORY_TABS/);
@@ -38,13 +41,14 @@ assert.deepEqual(tabs.slice(0, 2), ["banner", "avatar_effect"], "Avatar efektler
 const shopLib = read("../../backend/lib/shop.js");
 assert.match(shopLib, /REMOVED_COSMETIC_CATEGORIES = new Set\(\["avatar_frame", "profile_title", "profile_badge", "profile_background"\]\)/);
 assert.match(shopLib, /RETIRED_SHOP_CATEGORIES = new Set\(\["sound_pack", \.\.\.REMOVED_COSMETIC_CATEGORIES\]\)/, "frames leave the catalog and cannot be bought");
-assert.match(shopLib, /avatarFrame: null, \/\/ frames removed/, "profiles never return an equipped frame");
-assert.match(shopLib, /avatarFrameId: null,/);
+assert.match(shopLib, /avatarFrame: pickShop2\("equipped_avatar_frame_id"\)/, "profiles return only Market 2.0 frames");
+assert.match(shopLib, /return !\(SHOP2_REVIVED_CATEGORIES\.has\(item\.category\) && isShop2Sku\(item\.sku\)\)/, "old frames / badges stay removed");
 assert.doesNotMatch(shopLib, /update\(\{ equipped_avatar_frame_id/, "no data migration of stored frames");
 const shopRoute = read("../../backend/routes/shop.js");
-assert.match(shopRoute, /REMOVED_COSMETIC_CATEGORIES\.has\(category\)\) \{\s*return res\.status\(410\)/, "equip rejects frames");
+assert.match(shopRoute, /isClosedCategory\(category\)\) \{\s*return res\.status\(410\)/, "equip rejects closed categories");
+assert.match(shopRoute, /isRemovedCosmeticItem\(item\)\) \{\s*return res\.status\(410\)/, "equip rejects old frames / badges");
 const admin = read("../../backend/routes/admin.js");
-assert.match(admin, /REMOVED_COSMETIC_CATEGORIES\.has\(item\.category\)\) \{\s*return res\.status\(410\)/, "admin gift rejects frames");
+assert.match(admin, /isRemovedCosmeticItem\(item\)\) \{\s*return res\.status\(410\)/, "admin gift rejects old frames");
 
 // Call stage.
 const call = read("glass/call.css");

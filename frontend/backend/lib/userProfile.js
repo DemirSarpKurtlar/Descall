@@ -19,6 +19,7 @@ const CHAT_COSMETIC_KEYS = [
   "equippedAvatarEffect",
   "equippedChatBubble",
   "equippedPresenceFlare",
+  "equippedProfileColor", // Market 2.0 set name colour (NameEffectText falls back to it in chat)
 ];
 
 const ALL_COSMETIC_KEYS = [
@@ -40,8 +41,13 @@ const ALL_COSMETIC_KEYS = [
   "equippedReactionBurst",
   "equippedCallOverlay",
   "equippedProfileColor",
+  "equippedVoiceTile",
+  "equippedJoinSound",
   "_cosmeticsLoaded",
 ];
+
+/** Market 2.0 voice cosmetics: shown to everyone in voice channels and calls. */
+const VOICE_COSMETIC_KEYS = ["equippedVoiceTile", "equippedJoinSound"];
 
 function normalizeProfileRow(row) {
   if (!row) return null;
@@ -86,7 +92,19 @@ function cosmeticsFromEquipped(equipped) {
     equippedReactionBurst: equipped.reactionBurst || null,
     equippedCallOverlay: equipped.callOverlay || null,
     equippedProfileColor: equipped.profileColor || null,
+    equippedVoiceTile: equipped.voiceTile || null,
+    equippedJoinSound: equipped.joinSound || null,
   };
+}
+
+/** Voice tile + join sound for voice / call member payloads (compact records). */
+function pickVoiceCosmetics(profile) {
+  if (!profile) return {};
+  const out = {};
+  for (const key of VOICE_COSMETIC_KEYS) {
+    if (profile[key]) out[key] = profile[key];
+  }
+  return out;
 }
 
 function pickChatCosmetics(profile) {
@@ -149,6 +167,8 @@ function toPublicUser(profile) {
     equippedReactionBurst: profile.equippedReactionBurst || null,
     equippedCallOverlay: profile.equippedCallOverlay || null,
     equippedProfileColor: profile.equippedProfileColor || null,
+    equippedVoiceTile: profile.equippedVoiceTile || null,
+    equippedJoinSound: profile.equippedJoinSound || null,
     // Descall+ / Ultra badge from the batched cache; left out (undefined) while unknown.
     premium_plan: premiumBadges.cachedPlan(profile.id),
   };
@@ -372,6 +392,8 @@ function enrichFriendEntry(userId) {
     is_admin: admin,
     isAdmin: admin,
     ...pickChatCosmetics(cached),
+    // Voice tile + join sound: DM / group call tiles of friends wear them.
+    ...pickVoiceCosmetics(cached),
     premium_plan: premiumBadges.cachedPlan(userId),
   };
 }
@@ -391,6 +413,7 @@ module.exports = {
   cacheEquippedCosmetics,
   ensureCosmeticsCached,
   pickChatCosmetics,
+  pickVoiceCosmetics,
   cosmeticsFromEquipped,
   applyCosmeticsToProfile,
 };

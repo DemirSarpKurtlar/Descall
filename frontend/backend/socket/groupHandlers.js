@@ -10,7 +10,7 @@ const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
 const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
-const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
+const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, pickVoiceCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { sendGroupCallPush } = require("../lib/webPush");
 const { assertGroupMember, bothInGroupCall } = require("../lib/groupCallMembership");
 const descoin = require("../lib/descoin");
@@ -19,6 +19,7 @@ const descoinAntibot = require("../lib/descoinAntibot");
 const { toUtcIso } = require("../lib/datetime");
 const clock = require("../lib/callClock");
 const { markGroupParticipantJoined } = require("../lib/callSummary");
+const callCoinSessions = require("../lib/callCoinSessions");
 const {
   executeSlashCommand,
   emitAppMessage,
@@ -132,6 +133,7 @@ function resolveCallFromUser(socket) {
     is_admin: isAdmin,
     isAdmin,
     ...pickChatCosmetics(cached),
+    ...pickVoiceCosmetics(cached),
   };
 }
 
@@ -149,6 +151,7 @@ function resolveParticipantPublic(userId) {
     avatarUrl: avatar,
     isScreenSharing: false,
     ...pickChatCosmetics(cached),
+    ...pickVoiceCosmetics(cached),
   };
 }
 
@@ -651,6 +654,7 @@ function registerGroupHandlers(io, socket, state) {
       dbCallId: null,
       disconnectGraceByUser: new Map(),
     });
+    callCoinSessions.start(myId, { context: "group", groupId });
 
     const payload = {
       groupId,
@@ -749,6 +753,7 @@ function registerGroupHandlers(io, socket, state) {
     const activeCall = activeGroupCalls.get(groupId);
     if (activeCall) {
       markGroupParticipantJoined(activeCall, myId, clock.now());
+      callCoinSessions.start(myId, { context: "group", groupId });
       if (activeCall.dbCallId) {
         supabase.from("group_call_participants")
           .insert({ call_id: activeCall.dbCallId, user_id: myId })
@@ -804,6 +809,7 @@ function registerGroupHandlers(io, socket, state) {
     // Add participant to tracking (also starts the connected clock once a
     // second person is in the call).
     markGroupParticipantJoined(activeCall, myId, clock.now());
+    callCoinSessions.start(myId, { context: "group", groupId });
 
     if (activeCall.dbCallId) {
       supabase.from("group_call_participants")

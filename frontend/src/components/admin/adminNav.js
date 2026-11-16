@@ -14,7 +14,7 @@ export const ADMIN_NAV_GROUPS = [
     "premiumDashboard", "premiumUsers", "premiumBulk", "premiumHistory", "premiumAnalytics",
     "premiumFinance", "premiumCampaigns", "premiumAudit", "premiumPlans",
   ]],
-  ["content", ["shop", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
+  ["content", ["shop", "shop2", "promo", "specialBadges", "announcements", "livepopup", "casino"]],
   ["system", ["system", "security", "errors", "audit", "staff"]],
 ];
 
@@ -34,6 +34,8 @@ const GROUP_LABEL = {
 export const TAB_SECTION = Object.freeze({
   // İtirazlar (ban experience): read and decided by whoever holds "moderation".
   appeals: "moderation",
+  // Vitrin ve Setler (Market 2.0) follows the shop permission, like /admin/shop2 on the server.
+  shop2: "shop",
   premiumDashboard: "premium",
   premiumUsers: "premium",
   premiumBulk: "premium",

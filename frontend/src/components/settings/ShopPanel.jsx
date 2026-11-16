@@ -60,7 +60,9 @@ import StorePurchaseModal from "../shop/purchase/StorePurchaseModal";
 import { openPromoRedeem } from "../../lib/promoBus";
 import ShopMerchTags, { ShopPriceTag } from "../shop/ShopMerchTags.jsx";
 import ShopStorefront from "../shop/ShopStorefront.jsx";
+import Shop2Market from "../shop2/Shop2Market.jsx";
 import { purchasable, stockOf } from "../../lib/shopMerchView.js";
+import { SHOP_FOCUS_EVENT, peekShopFocus, takeShopFocus } from "../../lib/callCoinPrefs.js";
 import "../../styles/promo.css";
 import "../../styles/shop-merch.css";
 
@@ -528,6 +530,36 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
       btn?.focus({ preventScroll: true });
     }, 260);
   };
+  // End-of-call DesCoin summary: "Hemen al" opens this item's purchase window, "Mağazada
+  // harca" brings its card into view (lib/callCoinPrefs requestShopFocus).
+  useEffect(() => {
+    const apply = () => {
+      const pending = peekShopFocus();
+      if (!pending) return;
+      const item = itemsRef.current.find((row) => String(row.id) === pending.itemId);
+      if (!item) return; // catalog still loading: the next items update tries again
+      takeShopFocus();
+      setView("store");
+      setActiveCategory(item.category);
+      if (pending.buy && usesPurchaseModal(item.category)) {
+        setNotice("");
+        setPurchaseItemId(item.id);
+        return;
+      }
+      window.setTimeout(() => {
+        const card = document.querySelector(`.shop-item-card[data-item-id="${String(item.id).replace(/["\\]/g, "")}"]`);
+        if (!card) return;
+        const reduce = document.documentElement.classList.contains("reduce-motion")
+          || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        card.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+        card.classList.add("shop-earn-focus");
+        window.setTimeout(() => card.classList.remove("shop-earn-focus"), 2400);
+      }, 260);
+    };
+    apply();
+    window.addEventListener(SHOP_FOCUS_EVENT, apply);
+    return () => window.removeEventListener(SHOP_FOCUS_EVENT, apply);
+  }, [items]);
   const currentThemeKey = typeof document !== "undefined"
     ? document.documentElement.getAttribute("data-theme") || "dark"
     : "dark";
@@ -705,6 +737,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                   className={`shop-item-card${celebrateItemId === item.id ? " is-celebrating" : ""}${modal ? " is-openable" : ""}`}
                   data-category={category}
                   data-sku={item.sku || undefined}
+                  data-item-id={item.id}
                   key={item.id}
                   onClick={modal ? (e) => {
                     if (e.target.closest("button, a")) return;
@@ -839,6 +872,31 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
 
   return (
     <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
+      {view === "store" ? (
+        // Market 2.0 (owner pick 15 Nov 2026): personal storefront, sets, night market, gifts,
+        // inventory with "Eski koleksiyon". The classic catalog is its "Tüm ürünler" tab; buy,
+        // equip and the purchase modal below are unchanged.
+        <ErrorBoundary scope="pane" resetKey="shop2">
+          <Shop2Market
+            me={me}
+            balance={balance}
+            onBalanceChange={onBalanceChange}
+            inventory={inventory}
+            ownedItemIds={ownedItemIds}
+            equippedIdFor={equippedIdFor}
+            onEquip={handleEquip}
+            busyItemId={busyItemId}
+            onEarn={goEarn}
+            earnSlot={lead}
+            allProducts={(
+              <div className="shop-catalog">
+                {categoryTabs}
+                <ErrorBoundary scope="pane" resetKey={`${view}:${activeCategory || ""}`}>{catalog}</ErrorBoundary>
+              </div>
+            )}
+          />
+        </ErrorBoundary>
+      ) : (
       <div className="shop-workspace">
         <div className="shop-main">
           {chromeSlot ? createPortal(wallet, chromeSlot) : wallet}
@@ -874,6 +932,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         </div>
         <ShopProfilePreview me={me} t={t} />
       </div>
+      )}
       <AnimatePresence>
         {purchaseItem ? (
           <StorePurchaseModal

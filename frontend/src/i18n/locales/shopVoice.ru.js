@@ -1,0 +1,25 @@
+/** Market 2.0 voice cosmetics: voice tiles, join sounds, join sound settings, "Eski koleksiyon" ("shopVoice.*"). Same keys in every shopVoice.<locale>.js. */
+export const SHOP_VOICE_RU = {
+  "legacyCollection": "Старая коллекция",
+  "legacyHint": "Больше не продаётся. Предмет остаётся у вас, его можно носить дальше.",
+  "voiceTiles": "Голосовые плитки",
+  "joinSounds": "Звуки входа",
+  "voiceTile": "Голосовая плитка",
+  "joinSound": "Звук входа",
+  "play": "Слушать",
+  "stop": "Стоп",
+  "playing": "Играет",
+  "seconds": "{n} с",
+  "previewOf": "Послушать «{name}»",
+  "joined": "{name} заходит в канал",
+  "tilePreview": "Так это выглядит в голосовом канале",
+  "demoName": "Deniz",
+  "speaking": "Говорит",
+  "settingsTitle": "Звуки входа",
+  "toggle": "Проигрывать звуки входа",
+  "toggleDesc": "Когда кто-то заходит в голосовой канал, вы слышите его звук входа. Если выключено, звучит стандартный сигнал.",
+  "volume": "Громкость звуков входа",
+  "volumeDesc": "Звуки входа звучат не громче этого уровня и никогда не громче общей громкости.",
+  "test": "Проиграть пример",
+  "unavailable": "Это устройство не смогло подготовить звук."
+};

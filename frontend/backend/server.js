@@ -32,6 +32,8 @@ const errorRoutes = require("./routes/errors");
 const callsRoutes = require("./routes/calls");
 const webPushRoutes = require("./routes/webPush");
 const shopRoutes = require("./routes/shop");
+const shop2Routes = require("./routes/shop2");
+const adminShop2Routes = require("./routes/adminShop2");
 const promoRoutes = require("./routes/promo");
 const publicFeatureRoutes = require("./routes/publicFeatures");
 const analyticsRoutes = require("./routes/analytics");
@@ -507,6 +509,8 @@ app.use("/auth", authRoutes);
 // DesCoin anti-bot (Faz 0, monitor only). Before adminRoutes: moderators may read it.
 const adminAntibotRoutes = require("./routes/adminAntibot");
 app.use("/admin/antibot", adminAntibotRoutes);
+// Market 2.0 admin (own auth + 2FA); before adminRoutes so non-system admins are not blocked there.
+app.use("/admin/shop2", adminShop2Routes);
 app.use("/admin", adminRoutes);
 app.use("/media", mediaRoutes);
 app.use("/groups", groupRoutes);
@@ -519,6 +523,8 @@ app.use("/calls", callsRoutes);
 app.use("/api/auth", authRoutes);
 require("./lib/accountDeletion").startDeletionSweeper();
 app.use("/api/admin/antibot", adminAntibotRoutes);
+app.use("/api/admin/shop2", adminShop2Routes);
+app.use("/api/shop2", shop2Routes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/media", mediaRoutes);
@@ -561,6 +567,7 @@ app.use("/api/scheduled-messages", require("./routes/scheduledMessages"));
 if (process.env.NODE_ENV !== "test") require("./lib/scheduledMessages").scheduledMessages().start({ getIo: () => app.get("io") });
 // Admin agent: resumes approved plans after a restart, starts scheduled plans and runs scheduled tasks.
 if (process.env.NODE_ENV !== "test") require("./lib/adminAgent/scheduler").start({ getIo: () => app.get("io") });
+if (process.env.NODE_ENV !== "test") require("./lib/shop2/scheduler").start({ getIo: () => app.get("io") });
 // Messaging phase 5: "Mesaj önizlemesi" for server-sent pushes (users.push_preview).
 app.use("/api/push-preview", require("./routes/pushPreview"));
 // Re-engagement (item 4): switches + one-click unsubscribe; lifecycle emails on a schedule.

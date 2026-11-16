@@ -6,6 +6,7 @@ const { activeGroupCalls } = require("../runtime/sharedState");
 const { mapGroupCallRow } = require("../lib/dmCallLog");
 const clock = require("../lib/callClock");
 const { computeGroupCallSummary } = require("../lib/callSummary");
+const callCoinSessions = require("../lib/callCoinSessions");
 
 async function getGroupMemberIds(groupId) {
   const { data } = await supabase
@@ -119,6 +120,10 @@ async function endGroupCall(io, groupId, endedBy, activeCall) {
   // Snapshot participants before deleting active call
   const participantSnapshot = new Set(activeCall.allParticipants || []);
   activeGroupCalls.delete(groupId);
+  // End-of-call DesCoin summary for whoever was still in (server-driven: all their devices).
+  for (const uid of activeCall.participants || []) {
+    void callCoinSessions.finish(io, uid, { context: "group", groupId });
+  }
 
   if (dbCallId) {
     supabase
@@ -184,6 +189,8 @@ async function removeUserFromGroupCall(io, groupId, userId, socket) {
   activeCall.disconnectGraceByUser?.delete(userId);
 
   activeCall.participants.delete(userId);
+  // End-of-call DesCoin summary: on the device that left when it asked, else all devices.
+  void callCoinSessions.finish(io, userId, { context: "group", groupId }, { originSocketId: socket?.id || null });
 
   // Tell remaining peers this user left — do NOT broadcast "ended" while anyone remains.
   if (socket) {

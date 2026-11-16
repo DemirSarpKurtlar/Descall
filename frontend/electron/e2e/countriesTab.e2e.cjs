@@ -194,6 +194,8 @@ async function run(win) {
   // so the navigation below is a normal in-app navigation, like a user opening Mağaza.
   await sleep(6000);
   await js(win, `history.pushState({}, '', '/settings/shop'); dispatchEvent(new PopStateEvent('popstate')); true`);
+  // Market 2.0 (3.9.0): the classic catalog, with Ülkeler, is the shop's "Tüm ürünler" tab.
+  await waitFor(win, 'market tabs', clickTab('/^(Tüm ürünler|All items)/'));
   await waitFor(win, 'shop tabs', `(() => ({ ok: [...document.querySelectorAll('button')].some((b) => /^(Ülkeler|Countries)/.test((b.innerText || '').trim())) }))()`);
   const navsBefore = events.fullNavigations.length;
   const tab = await js(win, clickTab('/^(Ülkeler|Countries)/'));

@@ -45,6 +45,10 @@
 @import './styles/chat-bubbles-atelier.css';
 @import './styles/name-effects-sigil.css';
 @import './styles/cosmetics-premium.css';
+/* Market 2.0 catalog (s2- items): frames/banners/badges, chat, motion. Voice tiles load with VoiceCosmetics. */
+@import './styles/shop2-c1.css';
+@import './styles/shop2-c2.css';
+@import './styles/shop2-c3.css';
 @import './styles/visual-polish-pack.css';
 @import './styles/legal.css';
 @import './styles/descall-identity.css';

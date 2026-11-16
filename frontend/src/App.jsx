@@ -135,6 +135,7 @@ import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
+import { handleShopLookPath } from "./lib/shop2Look.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
@@ -189,6 +190,8 @@ const ServerRestartStrip = lazy(() => import("./components/system/ServerRestartS
 const MaintenanceGate = lazy(() => import("./components/maintenance/MaintenanceGate"));
 const ShopGiftPopup = lazy(() => import("./components/shop/ShopGiftPopup"));
 const DesCoinGiftPopup = lazy(() => import("./components/shop/DesCoinGiftPopup"));
+// End-of-call DesCoin summary + wallet history drawer (owner pick: draft C + B receipt).
+const CallCoinSummaryHost = lazy(() => import("./components/descoin/CallCoinSummaryHost.jsx"));
 const PromoHost = lazy(() => import("./components/promo/PromoHost"));
 // Duyurular (remake Nov 2026): live list, unread badges, toast for important ones, push deep link.
 const AnnouncementLive = lazy(() => import("./components/announcements/AnnouncementLive.jsx"));
@@ -507,6 +510,10 @@ function mergeReactionsIntoMessages(messages, reactionsByMessageId) {
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  // Market 2.0 look links (/shop/look/set/<key>, /shop/look/item/<id>) open the shop there.
+  useEffect(() => {
+    handleShopLookPath(location.pathname, navigate);
+  }, [location.pathname, navigate]);
   useEffect(() => {
     syncGlassDesktop();
   }, [location.pathname, location.search]);
@@ -1260,6 +1267,8 @@ export default function App() {
       equippedReactionBurst: normalized.equippedReactionBurst,
       equippedCallOverlay: normalized.equippedCallOverlay,
       equippedProfileColor: normalized.equippedProfileColor,
+      equippedVoiceTile: normalized.equippedVoiceTile,
+      equippedJoinSound: normalized.equippedJoinSound,
     };
 
     const patch = {
@@ -2784,6 +2793,17 @@ export default function App() {
     });
     socket.on("shop:inventory:changed", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop-inventory-changed", { detail: payload })); } catch { /* ignore */ }
+    });
+    // Market 2.0: daily storefront reset / refresh and received gifts reach an open shop live.
+    socket.on("shop2:storefront", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop2-storefront", { detail: payload })); } catch { /* ignore */ }
+    });
+    socket.on("shop2:gift", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop2-gift", { detail: payload })); } catch { /* ignore */ }
+    });
+    // Night market reminder (10 min before opening); the in-app notification itself comes from the server.
+    socket.on("shop2:night_reminder", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop2-night-reminder", { detail: payload })); } catch { /* ignore */ }
     });
 
     socket.on("platform:notice", (payload) => {
@@ -5402,6 +5422,12 @@ export default function App() {
         )}
 
         <SpecialBadgeHost socket={socketApi} meId={me?.id || null} />
+
+        {me?.id ? (
+          <Suspense fallback={null}>
+            <CallCoinSummaryHost socket={socketApi} meId={me.id} onNavigate={navigate} />
+          </Suspense>
+        ) : null}
 
         <Suspense fallback={null}>
           <PromoHost

@@ -24,6 +24,10 @@ import { SYSX_TR } from "./sysx.tr.js";
 import { AUDIT_LOG_TR } from "./auditLog.tr.js";
 import { LIVE_POPUP_TR } from "./livePopup.tr.js";
 import { ANNC_TR } from "./annc.tr.js";
+import { COINPOP_TR } from "./coinpop.tr.js";
+import { SHOP2_TR } from "./shop2.tr.js";
+import { ADMIN_SHOP2_TR } from "./adminShop2.tr.js";
+import { SHOP_VOICE_TR } from "./shopVoice.tr.js";
 import { CHPERM_TR } from "./chperm.tr.js";
 import { SEC_CENTER_TR } from "./secCenter.tr.js";
 import { AGENTX_TR } from "./agentx.tr.js";
@@ -99,6 +103,10 @@ export const nested = {
   auditLog: AUDIT_LOG_TR,
   livePopup: LIVE_POPUP_TR,
   annc: ANNC_TR,
+  coinpop: COINPOP_TR,
+  shop2: SHOP2_TR,
+  adminShop2: ADMIN_SHOP2_TR,
+  shopVoice: SHOP_VOICE_TR,
   chperm: CHPERM_TR,
   secCenter: SEC_CENTER_TR,
   agentx: AGENTX_TR,
@@ -606,6 +614,7 @@ export const nested = {
     "ovAudit": "Son yönetici işlemleri",
     "ovAuditHint": "Denetim kaydından",
     "promoCodes": "Promosyon Kodları",
+    "shop2": "Vitrin ve Setler",
     "signupStats": "Kayıt İstatistikleri",
     "announcements": "Duyurular",
     "livePopup": "Canlı popup",

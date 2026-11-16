@@ -165,6 +165,7 @@ const PREFIXES = [
   ["agent_", "agent", "medium"],
   ["premium_", "economy", "medium"],
   ["shop_", "economy", "low"],
+  ["shop2_", "economy", "low"],
   ["descoin_", "economy", "medium"],
   ["credit", "economy", "medium"],
   ["casino_", "economy", "low"],

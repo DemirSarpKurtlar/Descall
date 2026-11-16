@@ -1,0 +1,25 @@
+/** Market 2.0 voice cosmetics: voice tiles, join sounds, join sound settings, "Eski koleksiyon" ("shopVoice.*"). Same keys in every shopVoice.<locale>.js. */
+export const SHOP_VOICE_PT_BR = {
+  "legacyCollection": "Coleção antiga",
+  "legacyHint": "Não é mais vendido. Continua sendo seu e você pode continuar usando.",
+  "voiceTiles": "Blocos de voz",
+  "joinSounds": "Sons de entrada",
+  "voiceTile": "Bloco de voz",
+  "joinSound": "Som de entrada",
+  "play": "Ouvir",
+  "stop": "Parar",
+  "playing": "Tocando",
+  "seconds": "{n} s",
+  "previewOf": "Ouvir {name}",
+  "joined": "{name} entrou",
+  "tilePreview": "Assim aparece no canal de voz",
+  "demoName": "Deniz",
+  "speaking": "Falando",
+  "settingsTitle": "Sons de entrada",
+  "toggle": "Tocar sons de entrada",
+  "toggleDesc": "Quando alguém entra em um canal de voz, você ouve o som de entrada que a pessoa usa. Desligado, toca o som padrão.",
+  "volume": "Volume dos sons de entrada",
+  "volumeDesc": "Os sons de entrada tocam no máximo neste nível e nunca acima do seu volume geral.",
+  "test": "Tocar um exemplo",
+  "unavailable": "Este dispositivo não conseguiu preparar o som."
+};

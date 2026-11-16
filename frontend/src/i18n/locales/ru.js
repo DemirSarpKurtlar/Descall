@@ -28,6 +28,10 @@ import { SYSX_RU } from "./sysx.ru.js";
 import { AUDIT_LOG_RU } from "./auditLog.ru.js";
 import { LIVE_POPUP_RU } from "./livePopup.ru.js";
 import { ANNC_RU } from "./annc.ru.js";
+import { COINPOP_RU } from "./coinpop.ru.js";
+import { SHOP2_RU } from "./shop2.ru.js";
+import { ADMIN_SHOP2_RU } from "./adminShop2.ru.js";
+import { SHOP_VOICE_RU } from "./shopVoice.ru.js";
 import { CHPERM_RU } from "./chperm.ru.js";
 import { SEC_CENTER_RU } from "./secCenter.ru.js";
 import { AGENTX_RU } from "./agentx.ru.js";
@@ -70,6 +74,10 @@ export const nested = {
   "auditLog": AUDIT_LOG_RU,
   "livePopup": LIVE_POPUP_RU,
   "annc": ANNC_RU,
+  "coinpop": COINPOP_RU,
+  "shop2": SHOP2_RU,
+  "adminShop2": ADMIN_SHOP2_RU,
+  "shopVoice": SHOP_VOICE_RU,
   "chperm": CHPERM_RU,
   "secCenter": SEC_CENTER_RU,
   "agentx": AGENTX_RU,
@@ -2231,6 +2239,7 @@ export const nested = {
     "peopleTitle": "Досье пользователя",
     "permissionDenied": "У вас нет доступа к этому разделу. Обратитесь к владельцу аккаунта.",
     "promoCodes": "Промокоды",
+    "shop2": "Витрина и наборы",
     "read": "Прочитано",
     "reddit": "Reddit",
     "referral": "Реферал",

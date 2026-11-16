@@ -1,0 +1,25 @@
+/** Market 2.0 voice cosmetics: voice tiles, join sounds, join sound settings, "Eski koleksiyon" ("shopVoice.*"). Same keys in every shopVoice.<locale>.js. */
+export const SHOP_VOICE_EN = {
+  "legacyCollection": "Old collection",
+  "legacyHint": "No longer sold. It stays yours and you can keep wearing it.",
+  "voiceTiles": "Voice tiles",
+  "joinSounds": "Join sounds",
+  "voiceTile": "Voice tile",
+  "joinSound": "Join sound",
+  "play": "Listen",
+  "stop": "Stop",
+  "playing": "Playing",
+  "seconds": "{n} s",
+  "previewOf": "Listen to {name}",
+  "joined": "{name} joined",
+  "tilePreview": "How it looks in a voice channel",
+  "demoName": "Deniz",
+  "speaking": "Speaking",
+  "settingsTitle": "Join sounds",
+  "toggle": "Play join sounds",
+  "toggleDesc": "When someone joins a voice channel you hear the join sound they wear. When off, the standard join tone plays.",
+  "volume": "Join sound level",
+  "volumeDesc": "Join sounds play at most at this level and never above your overall volume.",
+  "test": "Play a sample",
+  "unavailable": "This device could not prepare the sound."
+};

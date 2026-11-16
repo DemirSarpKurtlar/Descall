@@ -7,7 +7,7 @@
 
 const supabase = require("../db/supabase");
 const { activeServerVoiceCalls } = require("../runtime/sharedState");
-const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics } = require("../lib/userProfile");
+const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, pickVoiceCosmetics } = require("../lib/userProfile");
 const {
   Permissions,
   hasPermission,
@@ -23,6 +23,7 @@ const { getActiveServerTimeout, timedOutError } = require("../lib/serverTimeoutS
 const { errorFields } = require("../lib/apiError");
 const { screenCompanionIdentity, takeCompanionIssued } = require("../lib/screenCompanion");
 const ve = require("../lib/serverVoiceEnforce");
+const callCoinSessions = require("../lib/callCoinSessions");
 
 /** Channel / user ids are lowercase UUIDs; spelling variants must not open parallel calls (V11). */
 const normId = (v) => ve.normalizeId(v);
@@ -56,6 +57,8 @@ function resolvePublicUser(socket) {
     requestedToSpeak: false,
     stageRole: "speaker",
     ...pickChatCosmetics(cached),
+    // Market 2.0: the voice tile everyone sees + the join sound others hear.
+    ...pickVoiceCosmetics(cached),
   };
 }
 
@@ -204,13 +207,19 @@ function kickLiveKitParticipant(channelId, userId) {
 /** `${channelId}|${userId}` -> socket id that holds the seat (V9; never sent to clients). */
 const seatOwners = new Map();
 const seatOwnerKey = (channelId, userId) => `${normId(channelId)}|${normId(userId)}`;
+/** Socket id holding the user's seat in the channel, or null (DesCoin heartbeat check). */
+function seatOwnerOf(channelId, userId) {
+  return seatOwners.get(seatOwnerKey(channelId, userId)) || null;
+}
 
-function removeFromVoice(io, channelId, userId) {
+function removeFromVoice(io, channelId, userId, { originSocketId = null } = {}) {
   channelId = normId(channelId);
   seatOwners.delete(seatOwnerKey(channelId, userId));
   const call = activeServerVoiceCalls.get(channelId);
   if (!call) return null;
   const uid = String(userId);
+  // End-of-call DesCoin summary for this seat (lib/callCoinSessions.js; never throws).
+  void callCoinSessions.finish(io, uid, { context: "server", channelId }, { originSocketId });
   void kickLiveKitParticipant(channelId, uid);
   // iOS screen broadcast companion (`<userId>:screen`) leaves with its owner.
   if (takeCompanionIssued(channelId, uid)) void kickLiveKitParticipant(channelId, screenCompanionIdentity(uid));
@@ -240,11 +249,11 @@ function removeFromVoice(io, channelId, userId) {
   return state;
 }
 
-function removeUserFromAllServerVoice(io, userId) {
+function removeUserFromAllServerVoice(io, userId, opts = {}) {
   const uid = String(userId);
   for (const [channelId, call] of activeServerVoiceCalls.entries()) {
     if (getParticipantEntry(call, uid)) {
-      removeFromVoice(io, channelId, uid);
+      removeFromVoice(io, channelId, uid, opts);
     }
   }
 }
@@ -639,6 +648,9 @@ function registerServerVoiceHandlers(io, socket) {
         : null;
       setParticipant(call, myUid, mePublic);
       if (socket.id) seatOwners.set(seatOwnerKey(channelId, myUid), socket.id);
+      callCoinSessions.start(myUid, { context: "server", channelId }, {
+        meta: { serverId: String(channel.server_id), channelName: channel.name || null },
+      });
 
       socket.join(`server:${channel.server_id}`);
       socket.join(`server-voice:${channelId}`);
@@ -705,12 +717,12 @@ function registerServerVoiceHandlers(io, socket) {
     bumpVoiceJoin();
     channelId = channelId ? normId(channelId) : channelId;
     if (channelId && findUserInChannel(channelId, myId)) {
-      removeFromVoice(io, channelId, myId);
+      removeFromVoice(io, channelId, myId, { originSocketId: socket.id });
       socket.leave(`server-voice:${channelId}`);
     } else {
       // Missing/stale channelId still has to drop occupancy (local hangup
       // often emits after the client already cleared its channel ref).
-      removeUserFromAllServerVoice(io, myId);
+      removeUserFromAllServerVoice(io, myId, { originSocketId: socket.id });
       if (channelId) {
         try {
           socket.leave(`server-voice:${channelId}`);
@@ -1494,6 +1506,8 @@ module.exports = {
   endServerVoiceChannel,
   endAllServerVoice,
   findUserVoiceChannel,
+  findUserInChannel,
+  seatOwnerOf,
   startAfkIdleScanner,
   runAfkScan,
   // lib/serverVoiceEnforce.js (contract for the other server modules) uses these.

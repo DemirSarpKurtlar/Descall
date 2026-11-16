@@ -418,6 +418,58 @@ async function getDailyStatus(userId) {
   };
 }
 
+/** Today's activity earnings (UTC day) per capped reason plus the global total. */
+async function getTodayEarnings(userId) {
+  const since = todayStartIso();
+  const [voice, screenshare, global] = await Promise.all([
+    sumCreditsSince(userId, since, "voice_activity"),
+    sumCreditsSince(userId, since, "screenshare_activity"),
+    sumCreditsSince(userId, since),
+  ]);
+  return { voice, screenshare, global };
+}
+
+const CALL_REASONS = ["voice_activity", "screenshare_activity"];
+const CALL_STREAK_MAX_DAYS = 60;
+
+/**
+ * Call streak for the end-of-call summary: how many UTC days in a row, ending
+ * today, have at least one voice / screen share earning. Days are checked in
+ * parallel batches of 7 (one tiny indexed query each), at most 60 days back.
+ */
+async function getCallStreakDays(userId, { now = Date.now() } = {}) {
+  const dayStart = new Date(now);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const startMs = dayStart.getTime();
+  const DAY = 86_400_000;
+  const hasEarning = async (i) => {
+    const from = new Date(startMs - i * DAY).toISOString();
+    const to = new Date(startMs - (i - 1) * DAY).toISOString();
+    const { data, error } = await supabase
+      .from("descoin_ledger")
+      .select("id")
+      .eq("user_id", userId)
+      .in("reason", CALL_REASONS)
+      .gt("amount", 0)
+      .gte("created_at", from)
+      .lt("created_at", to)
+      .limit(1);
+    if (error) throw error;
+    return Array.isArray(data) && data.length > 0;
+  };
+  let streak = 0;
+  for (let batch = 0; batch < CALL_STREAK_MAX_DAYS; batch += 7) {
+    const days = [];
+    for (let i = batch; i < Math.min(batch + 7, CALL_STREAK_MAX_DAYS); i += 1) days.push(i);
+    const hits = await Promise.all(days.map(hasEarning));
+    for (const hit of hits) {
+      if (!hit) return streak;
+      streak += 1;
+    }
+  }
+  return streak;
+}
+
 /**
  * Claim once-per-UTC-day DesCoin. Continues streak if yesterday was claimed.
  */
@@ -533,5 +585,7 @@ module.exports = {
   getUnnotifiedGrants,
   markGrantsNotified,
   getDailyStatus,
+  getTodayEarnings,
+  getCallStreakDays,
   claimDaily,
 };

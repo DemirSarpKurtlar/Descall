@@ -1,0 +1,40 @@
+/*
+ * Market 2.0 catalog group C1: renderer CSS for avatar frames and profile badges
+ * (components/shop/Shop2Cosmetics.jsx). Imported once by the coordinator.
+ * Frame art: 200 x 200 SVG drawn into `.ui-avatar-frame-overlay` (132% of the avatar,
+ * styles/avatar.css); the avatar disc is r 75.76 of 100, the band sits on r 75..86.
+ * Animations inside the SVGs are finite (SVG-as-image cannot be paused by app-idle CSS).
+ */
+
+.ui-avatar > .s2-frame {
+  /* Same box as the legacy overlay; never intercept clicks on the avatar. */
+  pointer-events: none;
+  -webkit-user-drag: none;
+  image-rendering: auto;
+}
+
+/* Badge next to a name (CountryBadge row: member list, message header, profile, hover card). */
+.s2-badge {
+  display: inline-block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-inline-start: 4px;
+  vertical-align: -4px;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.s2-badge-compact {
+  width: 16px;
+  height: 16px;
+  margin-inline-start: 3px;
+  vertical-align: -3px;
+}
+
+/* Flex rows (names with inline badges) keep the badge centred. */
+.cosmetic-country-badge + .s2-badge,
+.cosmetic-country-flag + .s2-badge {
+  align-self: center;
+}

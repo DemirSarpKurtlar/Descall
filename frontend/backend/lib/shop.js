@@ -30,6 +30,36 @@ const supabase = require("../db/supabase");
 const REMOVED_COSMETIC_CATEGORIES = new Set(["avatar_frame", "profile_title", "profile_badge", "profile_background"]);
 const RETIRED_SHOP_CATEGORIES = new Set(["sound_pack", ...REMOVED_COSMETIC_CATEGORIES]);
 
+/**
+ * Market 2.0 (owner, Nov 2026): avatar frames and profile badges come back ONLY for the new
+ * catalog (sku prefix "s2-", frontend/backend/catalog/shop2/c1-art.js). Every older frame or
+ * badge stays removed exactly as above (never sold, equipped, listed or returned). Titles and
+ * backgrounds stay removed for every sku.
+ */
+const SHOP2_SKU_PREFIX = "s2-";
+const SHOP2_REVIVED_CATEGORIES = new Set(["avatar_frame", "profile_badge"]);
+
+function isShop2Sku(sku) {
+  return typeof sku === "string" && sku.startsWith(SHOP2_SKU_PREFIX);
+}
+
+/** True when this row is a removed cosmetic (old frame / badge, any title / background). */
+function isRemovedCosmeticItem(item) {
+  if (!item || !REMOVED_COSMETIC_CATEGORIES.has(item.category)) return false;
+  return !(SHOP2_REVIVED_CATEGORIES.has(item.category) && isShop2Sku(item.sku));
+}
+
+/** True when this row is never sold or listed (sound packs + removed cosmetics). */
+function isRetiredShopItem(item) {
+  if (!item) return false;
+  return item.category === "sound_pack" || isRemovedCosmeticItem(item);
+}
+
+/** True when the whole category is closed (no sku can revive it). */
+function isClosedCategory(category) {
+  return RETIRED_SHOP_CATEGORIES.has(category) && !SHOP2_REVIVED_CATEGORIES.has(category);
+}
+
 const EQUIP_COLUMN_BY_CATEGORY = {
   banner: "equipped_banner_id",
   avatar_frame: "equipped_avatar_frame_id",
@@ -48,6 +78,9 @@ const EQUIP_COLUMN_BY_CATEGORY = {
   call_overlay: "equipped_call_overlay_id",
   countries: "equipped_country_id",
   profile_color: "equipped_profile_color_id",
+  // Market 2.0 (C4): columns arrive with 20261116_shop2_catalog_seed.sql (lib/voiceCosmetics.js).
+  voice_tile: "equipped_voice_tile_id",
+  join_sound: "equipped_join_sound_id",
 };
 
 /** One flag per user: buying or equipping a country replaces the previous one. */
@@ -72,7 +105,7 @@ function normalizeItem(item) {
 }
 
 /** Banner / frame / background cards are the only ones that paint an image URL. */
-const IMAGE_ASSET_CATEGORIES = new Set(["banner", "avatar_frame", "profile_background"]);
+const IMAGE_ASSET_CATEGORIES = new Set(["banner", "avatar_frame", "profile_background", "profile_badge"]);
 
 function isUsableAsset(url) {
   return typeof url === "string" && url.length > 0 && url !== "data:,";
@@ -138,7 +171,7 @@ async function getActiveCatalog() {
       .order("sort_order", { ascending: true });
     if (error) throw error;
     let items = (data || [])
-      .filter((item) => !RETIRED_SHOP_CATEGORIES.has(item.category))
+      .filter((item) => !isRetiredShopItem(item))
       .map(normalizeItem);
     // Limited stock / sale / availability columns (Mağaza remake). Read separately so the
     // catalog keeps working before 20261115_shop_desk.sql is applied.
@@ -173,8 +206,40 @@ async function getActiveCatalog() {
 async function getCatalogAsset(itemId, kind = "asset") {
   const { assetsById } = await getActiveCatalog();
   const entry = assetsById.get(String(itemId));
-  if (!entry) return null;
+  if (!entry) return kind === "asset" ? getOwnedShop2Asset(itemId) : null;
   return (kind === "preview" ? entry.preview : entry.asset) || null;
+}
+
+// Market 2.0 frames / badges stay visible on their owners after they leave the storefront
+// (inactive rows): serve those images too, never an old (pre-s2) row. Small bounded cache.
+const shop2AssetCache = new Map();
+async function getOwnedShop2Asset(itemId) {
+  const key = String(itemId || "");
+  if (!/^[0-9a-f-]{36}$/i.test(key)) return null;
+  if (shop2AssetCache.has(key)) return shop2AssetCache.get(key);
+  const { data, error } = await supabase.from("shop_items").select("id, sku, category, asset_url").eq("id", key).maybeSingle();
+  if (error) return null;
+  const image = data && isShop2Sku(data.sku) && SHOP2_REVIVED_CATEGORIES.has(data.category) ? decodeDataImage(normalizeAssetUrl(data.asset_url)) : null;
+  if (shop2AssetCache.size > 500) shop2AssetCache.clear();
+  shop2AssetCache.set(key, image);
+  return image;
+}
+
+/**
+ * Lean record for an equipped Market 2.0 frame / badge: these ride on every chat author and
+ * member row, so they carry a short cacheable image path instead of the inline SVG.
+ * The client prefixes the API origin (src/components/shop/Shop2Cosmetics.jsx).
+ */
+function leanShop2Cosmetic(item) {
+  if (!item || !isShop2Sku(item.sku)) return null;
+  const url = item.asset_url;
+  let assetUrl = null;
+  if (isUsableAsset(url)) {
+    assetUrl = /^data:/i.test(url)
+      ? `${ASSET_ROUTE_PATH}/${encodeURIComponent(item.id)}?v=${crypto.createHash("sha1").update(url).digest("hex").slice(0, 12)}`
+      : url;
+  }
+  return { id: item.id, sku: item.sku, category: item.category, rarity: item.rarity || null, name: item.name || null, asset_url: assetUrl };
 }
 
 /**
@@ -244,7 +309,7 @@ function toCatalogItem(item, { assetBase = "", decoded = null, merchInfo = null 
  */
 async function listActiveItems({ category = null, includeAssets = false, assetBase = "", now = Date.now(), campaigns = null } = {}) {
   void includeAssets;
-  if (category && RETIRED_SHOP_CATEGORIES.has(category)) return [];
+  if (category && isClosedCategory(category)) return [];
   const merch = require("./shopMerch");
   const { items, assetsById } = await getActiveCatalog();
   let live = campaigns;
@@ -518,7 +583,7 @@ async function getUserInventoryWithRetired(userId) {
 
   const retiredTitles = rows.filter((row) => itemById.get(row.item_id)?.category === "profile_title").length;
   const inventory = rows
-    .filter((row) => !REMOVED_COSMETIC_CATEGORIES.has(itemById.get(row.item_id)?.category))
+    .filter((row) => !isRemovedCosmeticItem(itemById.get(row.item_id)))
     .map((row) => ({
     id: row.id,
     itemId: row.item_id,
@@ -600,7 +665,7 @@ async function getUnnotifiedGifts(userId) {
   const gifterById = new Map((gifters || []).map((u) => [u.id, u]));
 
   return rows
-    .filter((row) => !REMOVED_COSMETIC_CATEGORIES.has(itemById.get(row.item_id)?.category))
+    .filter((row) => !isRemovedCosmeticItem(itemById.get(row.item_id)))
     .map((row) => ({
     inventoryId: row.id,
     item: itemById.get(row.item_id) || null,
@@ -621,12 +686,13 @@ async function markGiftsNotified(inventoryIds) {
 async function equipItem(userId, category, itemId) {
   const column = EQUIP_COLUMN_BY_CATEGORY[category];
   if (!column) throw new Error(`Invalid shop category: ${category}`);
-  const nextId = RETIRED_SHOP_CATEGORIES.has(category) ? null : itemId || null;
+  const nextId = isClosedCategory(category) ? null : itemId || null;
   const { error } = await supabase
     .from("users")
     .update({ [column]: nextId })
     .eq("id", userId);
   if (error) throw error;
+  if (category === "voice_tile" || category === "join_sound") require("./voiceCosmetics").resetAvailability();
 }
 
 const EQUIPPED_USER_COLUMNS =
@@ -654,6 +720,8 @@ const EMPTY_EQUIPPED = {
   country: null,
   profileColor: null,
   specialBadge: null,
+  voiceTile: null,
+  joinSound: null,
 };
 
 /** Resolves one user's equip slots (all cosmetic categories) into full item records. */
@@ -683,12 +751,14 @@ function equippedRecord(user, byId) {
     const id = user[field];
     return id ? byId.get(id) || null : null;
   };
+  // Frames / badges resolve only for Market 2.0 rows; an old stored id is ignored.
+  const pickShop2 = (field) => leanShop2Cosmetic(pick(field));
   return {
-    avatarFrame: null, // frames removed in 2.10.114; the stored id is ignored
+    avatarFrame: pickShop2("equipped_avatar_frame_id"), // old frames (2.10.114) stay ignored
     banner: pick("equipped_banner_id"),
     background: null, // profile backgrounds removed 2026-10-31; the stored id is ignored
     theme: pick("equipped_theme_id"),
-    badge: null, // shop profile badges removed 2026-10-26; the stored id is ignored
+    badge: pickShop2("equipped_badge_id"), // old badges (2026-10-26) stay ignored
     title: null, // titles retired in 2.13.0; the stored id is ignored
     nameEffect: pick("equipped_name_effect_id"),
     avatarEffect: pick("equipped_avatar_effect_id"),
@@ -738,10 +808,18 @@ async function getEquippedCosmeticsForUsers(userIds) {
   }
   // Special badge worn next to the country flag (tolerant: empty before its migration).
   const specialById = await require("./specialBadges").equippedForUsers(ids).catch(() => new Map());
+  // Voice tile + join sound (Market 2.0; tolerant: empty before the seed migration).
+  const voiceById = await require("./voiceCosmetics").loadVoiceEquipped(ids).catch(() => new Map());
   const seen = new Set();
   for (const user of users) {
     seen.add(user.id);
-    out.set(user.id, { ...equippedRecord(user, byId), specialBadge: specialById.get(user.id) || null });
+    const voice = voiceById.get(user.id);
+    out.set(user.id, {
+      ...equippedRecord(user, byId),
+      specialBadge: specialById.get(user.id) || null,
+      voiceTile: voice?.voiceTile || null,
+      joinSound: voice?.joinSound || null,
+    });
   }
   for (const id of ids) {
     if (!seen.has(id)) out.set(id, { ...EMPTY_EQUIPPED });
@@ -756,14 +834,22 @@ async function getEquippedForUsers(userIds) {
     .select(`id, ${EQUIPPED_USER_COLUMNS}`)
     .in("id", userIds);
   if (error) throw error;
+  // Frame / badge ids count only when they point at a Market 2.0 row.
+  const revivedIds = [...new Set((data || []).flatMap((u) => [u.equipped_avatar_frame_id, u.equipped_badge_id]).filter(Boolean))];
+  const shop2Ids = new Set();
+  if (revivedIds.length) {
+    const { data: rows } = await supabase.from("shop_items").select("id, sku").in("id", revivedIds);
+    for (const row of rows || []) if (isShop2Sku(row.sku)) shop2Ids.add(row.id);
+  }
+  const revived = (id) => (id && shop2Ids.has(id) ? id : null);
   const map = new Map();
   (data || []).forEach((u) => {
     map.set(u.id, {
-      avatarFrameId: null,
+      avatarFrameId: revived(u.equipped_avatar_frame_id),
       bannerId: u.equipped_banner_id,
       backgroundId: null,
       themeId: u.equipped_theme_id,
-      badgeId: null,
+      badgeId: revived(u.equipped_badge_id),
       titleId: null,
       nameEffectId: u.equipped_name_effect_id,
       avatarEffectId: u.equipped_avatar_effect_id,
@@ -786,6 +872,12 @@ module.exports = {
   COUNTRY_CATEGORY,
   RETIRED_SHOP_CATEGORIES,
   REMOVED_COSMETIC_CATEGORIES,
+  SHOP2_REVIVED_CATEGORIES,
+  isShop2Sku,
+  isRemovedCosmeticItem,
+  isRetiredShopItem,
+  isClosedCategory,
+  leanShop2Cosmetic,
   IMAGE_ASSET_CATEGORIES,
   listActiveItems,
   getStorefront,

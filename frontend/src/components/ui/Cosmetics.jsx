@@ -5,13 +5,20 @@
  * object already used for avatars, degrades to plain text/nothing when a
  * slot isn't equipped, so callers can use these unconditionally.
  */
+import { shop2ProfileColor } from "../../lib/shop2ProfileColors.js";
+
 export { CountryBadge } from "../shop/CountryFlag";
 
-/** Wraps a display name in its equipped name-effect gradient/glow, if any. */
+/** Wraps a display name in its equipped name-effect gradient/glow, if any. Without one, a
+ *  Market 2.0 set card colour (`s2-set-*`) colours the name instead (styles/shop2-c2.css). */
 export function NameEffectText({ user, children }) {
   const effectKey = user?.equippedNameEffect?.effect_key;
-  if (!effectKey) return children;
-  return <span className={`cosmetic-name-effect effect-${effectKey}`}>{children}</span>;
+  if (effectKey) return <span className={`cosmetic-name-effect effect-${effectKey}`}>{children}</span>;
+  const colourKey = user?.equippedProfileColor?.effect_key;
+  if (typeof colourKey === "string" && colourKey.startsWith("s2-set-") && shop2ProfileColor(colourKey)) {
+    return <span className={`s2-name-colour pc-${colourKey}`}>{children}</span>;
+  }
+  return children;
 }
 
 /** CSS class for the animated ring/aura behind an avatar, or "" if unequipped. */

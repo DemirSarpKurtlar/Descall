@@ -5,6 +5,7 @@ import { getStaticAvatarFrame, isAnimatedAvatarUrl } from "../../lib/gifAvatar";
 import { avatarEffectClass } from "./Cosmetics";
 import { avatarEffectStyle } from "../../lib/avatarEffectGeometry.js";
 import { avatarColor, avatarInitials, avatarKey } from "../../lib/avatarFallback.js";
+import { Shop2FrameOverlay, shop2FrameSrc } from "../shop/Shop2Cosmetics.jsx";
 
 function imgIsReady(img) {
   return Boolean(img && img.complete && img.naturalWidth > 0);
@@ -29,6 +30,7 @@ export function Avatar({
   isSpeaking = false,
   className = "",
   loading: loadingProp,
+  frame = true,
 }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -166,7 +168,8 @@ export function Avatar({
     size >= 56;
 
   const showImage = Boolean(displaySrc) && !failed;
-  // Avatar frames were removed in 2.10.114: an equipped frame is never painted.
+  // Frames from before 2.10.114 stay removed; only Market 2.0 ("s2-") frames are painted.
+  const frameSrc = frame ? shop2FrameSrc(user, size) : null;
   const effectClass = avatarEffectClass(user);
 
   const avatarClass = `ui-avatar ${isSpeaking ? "is-speaking" : ""} ${className}`.trim();
@@ -274,6 +277,7 @@ export function Avatar({
           />
         ) : null}
       </div>
+      <Shop2FrameOverlay src={frameSrc} eager={eager} />
     </Root>
   );
 }

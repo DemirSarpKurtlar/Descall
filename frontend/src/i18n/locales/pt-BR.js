@@ -28,6 +28,10 @@ import { SYSX_PT_BR } from "./sysx.pt-BR.js";
 import { AUDIT_LOG_PT_BR } from "./auditLog.pt-BR.js";
 import { LIVE_POPUP_PT_BR } from "./livePopup.pt-BR.js";
 import { ANNC_PT_BR } from "./annc.pt-BR.js";
+import { COINPOP_PT_BR } from "./coinpop.pt-BR.js";
+import { SHOP2_PT_BR } from "./shop2.pt-BR.js";
+import { ADMIN_SHOP2_PT_BR } from "./adminShop2.pt-BR.js";
+import { SHOP_VOICE_PT_BR } from "./shopVoice.pt-BR.js";
 import { CHPERM_PT_BR } from "./chperm.pt-BR.js";
 import { SEC_CENTER_PT_BR } from "./secCenter.pt-BR.js";
 import { AGENTX_PT_BR } from "./agentx.pt-BR.js";
@@ -70,6 +74,10 @@ export const nested = {
   "auditLog": AUDIT_LOG_PT_BR,
   "livePopup": LIVE_POPUP_PT_BR,
   "annc": ANNC_PT_BR,
+  "coinpop": COINPOP_PT_BR,
+  "shop2": SHOP2_PT_BR,
+  "adminShop2": ADMIN_SHOP2_PT_BR,
+  "shopVoice": SHOP_VOICE_PT_BR,
   "chperm": CHPERM_PT_BR,
   "secCenter": SEC_CENTER_PT_BR,
   "agentx": AGENTX_PT_BR,
@@ -2231,6 +2239,7 @@ export const nested = {
     "peopleTitle": "Ficha do usuário",
     "permissionDenied": "Você não tem acesso a esta seção. Peça à conta proprietária.",
     "promoCodes": "Códigos promocionais",
+    "shop2": "Vitrine e conjuntos",
     "read": "Lida",
     "reddit": "Reddit",
     "referral": "Indicação",

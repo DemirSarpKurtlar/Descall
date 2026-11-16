@@ -10,12 +10,15 @@ import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
 import { previewUrlOf } from "../../lib/linkPreview";
+import { isLookText } from "../../lib/shop2Look.js";
 import { stickerOf } from "../../lib/descallStickers";
 import { dmSeen, groupSeenBy, namesSummary } from "../../lib/readReceipts";
 import { useGroupReads, useReceiptsSetting } from "../../hooks/useReadReceipts";
 
 // Link preview cards load on first use (messaging phase 4).
 const LinkPreviewCard = lazy(() => import("./LinkPreviewCard.jsx"));
+// Market 2.0 "Arkadaşlarına göster": a look link renders the look card instead of a link preview.
+const Shop2LookCard = lazy(() => import("../shop2/LookCard.jsx"));
 import { Avatar } from "../ui/Avatar";
 import CallSummaryBubble from "./CallSummaryBubble";
 import { resolveCallSummary } from "../../lib/callSummary";
@@ -1213,7 +1216,9 @@ function MessageBubbleView({
   const reply = forwarded ? null : rawReply;
   const forwardable = canForward(message);
   // Link preview (messaging phase 4): first http(s) link, fetched by our server.
-  const previewUrl = useMemo(() => (typeof message.text === "string" ? previewUrlOf(message.text) : null), [message.text]);
+  // A look link (Market 2.0) shows the look card instead, so it gets no link preview.
+  const lookShare = typeof message.text === "string" && isLookText(message.text);
+  const previewUrl = useMemo(() => (typeof message.text === "string" && !lookShare ? previewUrlOf(message.text) : null), [message.text, lookShare]);
   const forwardMessage = useCallback(() => openForwardSheet(message), [message]);
   const isPinned = Boolean(message.pinnedAt);
   const hideCasino = casinoHiddenOnThisDevice() && isCasinoChatMessage(message);
@@ -2034,6 +2039,11 @@ function MessageBubbleView({
                 </span>
               ) : null}
               <InviteLinkEmbedList text={message.text} />
+              {lookShare ? (
+                <Suspense fallback={null}>
+                  <Shop2LookCard text={message.text} />
+                </Suspense>
+              ) : null}
               {previewUrl ? (
                 <Suspense fallback={null}>
                   <LinkPreviewCard url={previewUrl} />

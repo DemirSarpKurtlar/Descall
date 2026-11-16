@@ -68,6 +68,7 @@ export const S3_ICON_PATHS = Object.freeze({
 /* A few extra glyphs in the same stroke style (settings + admin rows). */
 export const S3_EXTRA_ICON_PATHS = Object.freeze({
  bag: '<path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
+ coin: '<circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h2.2c2.6 0 4.3 1.8 4.3 4.5s-1.7 4.5-4.3 4.5H9.5z"/>',
  award: '<circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-3 5 3-1.5-8"/>',
  ticket: '<path d="M3 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 1 0-4V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',
  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
