@@ -511,12 +511,15 @@ export default function Shop2Vitrin() {
   const [sheet, setSheet] = useState(null);
   const yRef = useRef(null);
   const phone = s2.layout === "phone";
+  // The live preview is a column only when the market is wide (container >= 1080 px);
+  // narrower (settings modal, iPad, phone) it opens from a card as a drawer or sheet.
+  const docked = s2.layout === "desktop";
   const slots = sf?.slots || [];
   const sets = sf?.featuredSets?.length ? sf.featuredSets : s2.data.sets;
   const cur = useMemo(() => {
     if (selSet) return null;
-    return slots.find((s) => sameId(s.item.id, selected)) || (phone ? null : slots[0]) || null;
-  }, [slots, selected, selSet, phone]);
+    return slots.find((s) => sameId(s.item.id, selected)) || (docked ? slots[0] : null) || null;
+  }, [slots, selected, selSet, docked]);
   const matches = slots.filter((s) => s.wishlisted).length;
   const { focusItemId, clearFocus } = s2;
   useEffect(() => {
@@ -526,7 +529,7 @@ export default function Shop2Vitrin() {
     if (!slot) return;
     setSelSet(null);
     setSelected(slot.item.id);
-    if (phone) setSheet({ slot });
+    if (!docked) setSheet({ slot });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusItemId]);
   if (!sf) return null;
@@ -538,8 +541,8 @@ export default function Shop2Vitrin() {
   const select = (slot, buyNow = false) => {
     setSelSet(null);
     setSelected(slot.item.id);
-    if (phone) setSheet({ slot });
-    else if (buyNow) s2.openCheckout({ kind: "item", item: slot.item, price: slot.price });
+    if (buyNow) s2.openCheckout({ kind: "item", item: slot.item, price: slot.price });
+    else if (!docked) setSheet({ slot });
   };
   const doRefresh = async () => {
     setBusy(true);
@@ -606,7 +609,7 @@ export default function Shop2Vitrin() {
   const grid = view === "cards" ? (
     <div className="s2-cards" key={`f-${flipKey}`} data-flipped={flipKey > 0 ? "1" : undefined}>
       {slots.map((s, k) => (
-        <Card key={s.item.id} slot={s} index={k} selected={!phone && cur && sameId(cur.item.id, s.item.id)} onSelect={select} flipKey={s.locked ? "keep" : "flip"} />
+        <Card key={s.item.id} slot={s} index={k} selected={Boolean(docked && cur && sameId(cur.item.id, s.item.id))} onSelect={select} flipKey={s.locked ? "keep" : "flip"} />
       ))}
     </div>
   ) : (
@@ -619,7 +622,7 @@ export default function Shop2Vitrin() {
         <Row
           key={s.item.id}
           slot={s}
-          selected={!phone && cur && sameId(cur.item.id, s.item.id)}
+          selected={Boolean(docked && cur && sameId(cur.item.id, s.item.id))}
           onSelect={select}
           expanded={phone && sameId(expanded, s.item.id)}
           onToggle={(x) => setExpanded((e) => (sameId(e, x.item.id) ? null : x.item.id))}
@@ -633,6 +636,7 @@ export default function Shop2Vitrin() {
         <SetRow key={x.key} set={x} selected={selSet === x.key} onSelect={(st) => {
           s2.actions.loadSet(st.key);
           if (phone) s2.openSet(st.key);
+          else if (!docked) setSheet({ setKey: st.key });
           else {
             setSelSet(st.key);
             setSelected(null);
@@ -683,7 +687,7 @@ export default function Shop2Vitrin() {
         {view === "list" || s2.layout !== "desktop" ? <SevenDays storefront={sf} /> : null}
         {s2.layout !== "desktop" ? <ActionLog /> : null}
       </div>
-      {!phone ? (
+      {docked ? (
         <aside className="s2-detail" aria-label={t("shop2.detail.label")}>
           <div className="s2-detail-scroll" key={selSet || cur?.item.id || "none"}>
             {selSet ? <SetQuickPanel setKey={selSet} onClose={() => setSelSet(null)} /> : cur ? <ItemDetail slot={cur} onClose={slots.length > 1 ? () => setSelected(slots.find((s) => !sameId(s.item.id, cur.item.id))?.item.id) : null} /> : null}
@@ -691,9 +695,15 @@ export default function Shop2Vitrin() {
           </div>
         </aside>
       ) : null}
-      {phone && sheet ? (
-        <Layer kind="sheet" onClose={() => setSheet(null)} label={s2.itemName(sheet.slot.item)} className="s2-sheet is-tall">
-          <ItemDetail slot={sheet.slot} onClose={() => setSheet(null)} />
+      {!docked && sheet ? (
+        <Layer
+          kind={phone ? "sheet" : "drawer"}
+          width={phone ? undefined : 400}
+          onClose={() => setSheet(null)}
+          label={sheet.slot ? s2.itemName(sheet.slot.item) : t("shop2.buy.title")}
+          className={phone ? "s2-sheet is-tall" : "s2-side"}
+        >
+          {sheet.slot ? <ItemDetail slot={sheet.slot} onClose={() => setSheet(null)} /> : <SetQuickPanel setKey={sheet.setKey} onClose={() => setSheet(null)} />}
         </Layer>
       ) : null}
     </div>

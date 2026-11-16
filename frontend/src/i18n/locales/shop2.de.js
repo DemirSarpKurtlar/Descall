@@ -32,6 +32,7 @@ export const SHOP2_DE = {
     "night": "Nachtmarkt",
     "enter": "Rein",
     "soon": "Bald",
+    "tonight": "Heute Nacht",
     "nightOpen": "Offen · {cards} verdeckte Karten, {flips} Aufdeckungen",
     "nightClosed": "Öffnet heute Nacht mit versteckten Angeboten",
     "setProgress": "Set-Fortschritt",

@@ -32,6 +32,7 @@ export const SHOP2_TR = {
     "night": "Gece pazarı",
     "enter": "Gir",
     "soon": "Yakında",
+    "tonight": "Bu gece",
     "nightOpen": "Açık · {cards} kapalı kart, {flips} açma hakkı",
     "nightClosed": "Bu gece gizli indirimlerle açılır",
     "setProgress": "Set ilerlemen",

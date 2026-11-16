@@ -55,16 +55,19 @@ const TABS = [
 
 function useLayout(ref) {
   const [w, setW] = useState(() => (typeof window !== "undefined" ? Math.min(window.innerWidth, 1200) : 1200));
+  const [embedded, setEmbedded] = useState(false);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)));
     ro.observe(el);
     setW(Math.round(el.getBoundingClientRect().width) || w);
+    // Inside the Settings window the pane already titles the page "Mağaza".
+    setEmbedded(Boolean(el.closest(".user-settings, .us-main, [data-shop-embedded]")));
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return { width: w, layout: w < 640 ? "phone" : w < 1080 ? "tablet" : "desktop" };
+  return { width: w, embedded, layout: w < 640 ? "phone" : w < 1080 ? "tablet" : "desktop" };
 }
 
 function Toasts({ toasts, onDismiss }) {
@@ -121,7 +124,7 @@ function SummaryTiles({ onTab }) {
       <button type="button" className={`s2-tile is-night${nm?.open ? " is-open" : ""}`} onClick={() => onTab("night")}>
         <div className="s2-tile-k"><Moon size={13} />{t("shop2.tiles.night")}</div>
         <div className="s2-tile-v">
-          {nm?.open ? <RollingClock target={nm.closesAt} urgentMs={SHOP2_NIGHT_URGENT_MS} className="s2-tile-mid" /> : <span className="s2-tile-mid s2-num">{nm?.opensAt ? new Date(nm.opensAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "--:--"}</span>}
+          {nm?.open ? <RollingClock target={nm.closesAt} urgentMs={SHOP2_NIGHT_URGENT_MS} className="s2-tile-mid" /> : nm?.nextOpensAt || nm?.opensAt ? <span className="s2-tile-mid s2-num">{new Date(nm.nextOpensAt || nm.opensAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span> : <span className="s2-tile-mid">{t("shop2.tiles.tonight")}</span>}
           <span className="s2-enter">{nm?.open ? t("shop2.tiles.enter") : t("shop2.tiles.soon")}<ChevronRight size={14} /></span>
         </div>
         <small>{nm?.open ? t("shop2.tiles.nightOpen", { cards: nm.cards, flips: nm.flipsLeft }) : t("shop2.tiles.nightClosed")}</small>
@@ -169,7 +172,7 @@ export default function Shop2Market({
 }) {
   const { t, locale } = useLocale();
   const rootRef = useRef(null);
-  const { layout, width } = useLayout(rootRef);
+  const { layout, width, embedded } = useLayout(rootRef);
   const data = useShop2({ onBalanceChange });
   const itemName = useItemName();
   const itemLabels = useItemLabels();
@@ -337,8 +340,8 @@ export default function Shop2Market({
   const header = (
     <header className="s2-head">
       <div className="s2-title">
-        <h1>{t("shop2.title")}</h1>
-        {!phone ? <p>{t("shop2.subtitle")}</p> : null}
+        {embedded ? null : <h1>{t("shop2.title")}</h1>}
+        {!phone || embedded ? <p>{t("shop2.subtitle")}</p> : null}
       </div>
       {!phone ? (
         <nav className="s2-tabs" role="tablist" aria-label={t("shop2.title")}>
@@ -402,7 +405,7 @@ export default function Shop2Market({
     <Shop2Ctx.Provider value={value}>
       <div
         ref={rootRef}
-        className={`s2-root is-${layout}${palette ? " has-palette" : ""}`}
+        className={`s2-root is-${layout}${embedded ? " is-embedded" : ""}${palette ? " has-palette" : ""}`}
         style={palette ? paletteVars(palette) : undefined}
         data-tab={tab}
       >
