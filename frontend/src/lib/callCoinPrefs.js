@@ -226,9 +226,24 @@ export function groupWalletEntries(entries = []) {
       if (e.created_at) g.firstAt = e.created_at;
       continue;
     }
-    out.push({ kind: "row", id: String(e.id ?? out.length), reason: e.reason || "other", amount, at: e.created_at || null, balanceAfter: e.balance_after ?? null });
+    out.push({ kind: "row", id: String(e.id ?? out.length), reason: e.reason || "other", amount, at: e.created_at || null, balanceAfter: e.balance_after ?? null, shop2: shop2Kind(e) });
   }
   return out;
+}
+
+/* Market 2.0 ledger rows (meta.shop2) that read better than "Mağaza alışverişi / iadesi". */
+const SHOP2_LEDGER_KINDS = {
+  "shop_purchase:gift": "gift",
+  "shop_purchase:refresh": "refresh",
+  "shop_refund:gift_recall": "giftRecall",
+  "shop_refund:gift_overlap": "giftOverlap",
+  "shop_refund:set_recall": "setRecall",
+};
+
+/** coinpop.wallet.shop2.<kind> for a Market 2.0 ledger row, else null. */
+export function shop2Kind(e) {
+  const tag = e?.meta && typeof e.meta === "object" ? e.meta.shop2 : null;
+  return (tag && SHOP2_LEDGER_KINDS[`${e.reason}:${tag}`]) || null;
 }
 
 /* Shop deep link from the summary: the shop opens at an item (and its purchase window). */
@@ -254,4 +269,19 @@ export function takeShopFocus(now = Date.now()) {
 
 export function peekShopFocus() {
   return pendingShopFocus;
+}
+
+/**
+ * Market 2.0 (Shop2Market) places a focus first: today's storefront card (and its checkout for
+ * "Hemen al") or the item's set. Anything else is handed to the classic catalog ("Tüm ürünler",
+ * ShopPanel), which only acts on a handed-off focus.
+ */
+export function handOffShopFocus() {
+  if (!pendingShopFocus) return;
+  pendingShopFocus = { ...pendingShopFocus, classic: true, at: Date.now() };
+  try {
+    window.dispatchEvent(new CustomEvent(SHOP_FOCUS_EVENT, { detail: pendingShopFocus }));
+  } catch {
+    /* ignore */
+  }
 }

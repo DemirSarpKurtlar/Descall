@@ -490,8 +490,8 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
   --s2-bg:
     radial-gradient(circle at 0 50%, rgba(18, 8, 24, 0.85) 0 5px, rgba(255, 255, 255, 0.3) 5.5px, transparent 6.5px),
     radial-gradient(circle at 100% 50%, rgba(18, 8, 24, 0.85) 0 5px, rgba(255, 255, 255, 0.3) 5.5px, transparent 6.5px),
-    radial-gradient(90% 120% at 100% 0%, rgba(255, 210, 120, 0.45), transparent 60%),
-    linear-gradient(110deg, #b0175c, #d7385e 50%, #e8743a);
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 210, 120, 0.3), transparent 60%),
+    linear-gradient(110deg, #9c1450, #c02e55 50%, #c0542a);
 }
 .cosmetic-chat-bubble.bubble-s2-ticket::before {
   content: "";
@@ -603,11 +603,11 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
     radial-gradient(circle at calc(100% - 7px) 7px, #f6c79a 0 1.5px, #6b2e10 2.4px, transparent 3px),
     radial-gradient(circle at 7px calc(100% - 7px), #f6c79a 0 1.5px, #6b2e10 2.4px, transparent 3px),
     radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), #f6c79a 0 1.5px, #6b2e10 2.4px, transparent 3px),
-    radial-gradient(38% 60% at 0% 100%, rgba(64, 176, 150, 0.75), rgba(64, 176, 150, 0.2) 60%, transparent 75%),
-    radial-gradient(26% 50% at 100% 0%, rgba(84, 196, 170, 0.6), transparent 70%),
-    radial-gradient(14% 30% at 78% 100%, rgba(64, 176, 150, 0.5), transparent 70%),
-    repeating-linear-gradient(0deg, rgba(255, 220, 190, 0.07) 0 1px, transparent 1px 3px),
-    linear-gradient(170deg, #c47a45 0%, #9c5228 50%, #7b3c1a 100%);
+    radial-gradient(38% 60% at 0% 100%, rgba(46, 140, 118, 0.7), rgba(46, 140, 118, 0.2) 60%, transparent 75%),
+    radial-gradient(26% 50% at 100% 0%, rgba(60, 160, 136, 0.55), transparent 70%),
+    radial-gradient(14% 30% at 78% 100%, rgba(46, 140, 118, 0.5), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255, 220, 190, 0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(170deg, #a9622f 0%, #87441e 50%, #6a3214 100%);
 }
 .message-bubble.cosmetic-chat-bubble.bubble-s2-copper-patina .message-text {
   text-shadow: 0 1px 1px rgba(50, 16, 2, 0.6);
@@ -1374,7 +1374,7 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
 @keyframes s2c2-swim { to { background-position: -200px 100%, 0 0; } }
 @keyframes s2c2-flame { to { background-position: 0 -40px, 14px -60px; } }
 @keyframes s2c2-fly { to { background-position: 210px 1px; } }
-@keyframes s2c2-plume { 0%, 100% { opacity: 0.8; filter: blur(1.5px); } 50% { opacity: 1; filter: blur(2.6px); } }
+@keyframes s2c2-plume { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
 @keyframes s2c2-uv { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } 70% { opacity: 0.9; } }
 @keyframes s2c2-corona { 0%, 100% { box-shadow: 0 0 0 1px #fff5d6, 0 0 6px 2px rgba(255, 230, 160, 0.7); } 50% { box-shadow: 0 0 0 1px #fffaf0, 0 0 10px 4px rgba(255, 236, 180, 0.95); } }
 @keyframes s2c2-spectrum { 0%, 100% { opacity: 0.75; background-position: 0 0, 0 0; } 50% { opacity: 1; background-position: 0 -3px, 0 0; } }
@@ -1883,9 +1883,9 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
 .cosmetic-chat-bubble.bubble-s2-set-mor-sis::before {
   content: "";
   background:
-    radial-gradient(40% 70% at 30% 40%, rgba(167, 123, 255, 0.5), transparent 70%) 0 0 / 160% 160% no-repeat,
-    radial-gradient(40% 70% at 70% 60%, rgba(230, 220, 255, 0.28), transparent 70%) 0 0 / 160% 160% no-repeat;
-  filter: blur(3px);
+    radial-gradient(40% 70% at 30% 40%, rgba(167, 123, 255, 0.46), rgba(167, 123, 255, 0.12) 45%, transparent 78%) 0 0 / 160% 160% no-repeat,
+    radial-gradient(40% 70% at 70% 60%, rgba(230, 220, 255, 0.26), rgba(230, 220, 255, 0.06) 45%, transparent 78%) 0 0 / 160% 160% no-repeat;
+  /* No blur filter: a blurred layer whose background moves is re-rasterised every frame. */
   animation: s2c2-haze 14s ease-in-out infinite;
 }
 .cosmetic-chat-bubble.bubble-s2-set-mor-sis::after {
@@ -1940,9 +1940,10 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
 .cosmetic-chat-bubble.bubble-s2-set-kuzey-isigi::before {
   content: "";
   --au: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='34'><defs><linearGradient id='a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%236effc7' stop-opacity='0'/><stop offset='.25' stop-color='%236effc7' stop-opacity='.75'/><stop offset='.7' stop-color='%2314a37f' stop-opacity='.35'/><stop offset='1' stop-color='%2314a37f' stop-opacity='0'/></linearGradient><linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%238f7bff' stop-opacity='0'/><stop offset='.3' stop-color='%238f7bff' stop-opacity='.6'/><stop offset='1' stop-color='%238f7bff' stop-opacity='0'/></linearGradient><filter id='f'><feGaussianBlur stdDeviation='1.2'/></filter></defs><g filter='url(%23f)'><path d='M0 6C20 2 30 12 50 8s34-8 54-2 36 6 56 0v18c-20 6-36 0-56 2S70 30 50 26 20 18 0 22z' fill='url(%23a)'/><path d='M0 2c26 6 44-4 70 0s40 8 60 2 22-2 30 0v10c-10-2-22 2-30 0s-40-6-60-2S26 16 0 10z' fill='url(%23b)'/></g><g stroke='%23d8fff0' stroke-opacity='.25' stroke-width='.6'><path d='M12 6v14M30 8v16M48 8v18M66 6v14M86 4v16M104 6v16M124 8v14M142 6v14'/></g></svg>");
-  background: var(--au) 0 0 / 160px 34px repeat-x, var(--au) 40px 4px / 220px 40px repeat-x;
-  -webkit-mask: linear-gradient(180deg, #000 0 40%, transparent 90%);
-  mask: linear-gradient(180deg, #000 0 40%, transparent 90%);
+  background: var(--au) 0 -12px / 160px 34px repeat-x, var(--au) 40px -10px / 220px 40px repeat-x;
+  /* The curtain hangs from the top edge only: the first text line sits on the dark sky. */
+  -webkit-mask: linear-gradient(180deg, #000 0 8px, transparent 22px);
+  mask: linear-gradient(180deg, #000 0 8px, transparent 22px);
   animation: s2c2-aurora 12s ease-in-out infinite;
 }
 .cosmetic-chat-bubble.bubble-s2-set-kuzey-isigi::after {
@@ -2181,7 +2182,7 @@ html:is(.reduce-motion, .gd-lite) .cosmetic-chat-bubble[class*="bubble-s2-"]::af
 }
 html[data-theme="light"] .cosmetic-name-effect[class*="effect-s2-"] {
   background-image: var(--ne-l, var(--ne));
-  filter: brightness(0.7) saturate(1.3) contrast(1.08) drop-shadow(0 0 0.6px rgba(20, 24, 40, 0.35)) !important;
+  filter: brightness(0.58) saturate(1.35) contrast(1.1) drop-shadow(0 0 0.6px rgba(20, 24, 40, 0.35)) !important;
 }
 /* Pale inks get their own deeper paint on light surfaces (the filter alone is not enough). */
 html[data-theme="light"] .cosmetic-name-effect:is(.effect-s2-neon-sign, .effect-s2-chroma-split, .effect-s2-electric-edge, .effect-s2-eclipse-ring, .effect-s2-platinum, .effect-s2-opal, .effect-s2-frost-bite, .effect-s2-slate-steel, .effect-s2-supernova, .effect-s2-thunder-king, .effect-s2-aquamarine, .effect-s2-candle-glow, .effect-s2-sea-glass, .effect-s2-rose-quartz, .effect-s2-blueprint-ink) {
@@ -2202,6 +2203,12 @@ html[data-theme="light"] .cosmetic-name-effect.effect-s2-candle-glow { --ne-l: l
 html[data-theme="light"] .cosmetic-name-effect.effect-s2-sea-glass { --ne-l: linear-gradient(100deg, #1a9a88, #2a7ab0); }
 html[data-theme="light"] .cosmetic-name-effect.effect-s2-rose-quartz { --ne-l: linear-gradient(100deg, #d0487a, #b03a8a); }
 html[data-theme="light"] .cosmetic-name-effect.effect-s2-blueprint-ink { --ne-l: linear-gradient(180deg, #2a6ad0, #1a4aa0); }
+/* Pastel paints that stayed near 2.3:1 on white even after the filter (bughunt Nov 2026). */
+html[data-theme="light"] .cosmetic-name-effect:is(.effect-s2-ocean-swell, .effect-s2-hologram) {
+  filter: drop-shadow(0 0 0.5px rgba(20, 24, 40, 0.3)) !important;
+}
+html[data-theme="light"] .cosmetic-name-effect.effect-s2-ocean-swell { --ne-l: linear-gradient(180deg, #2a7ab0 0 30%, #1a64a8 30% 55%, #0e4c96 55% 80%, #1a64a8 80%); }
+html[data-theme="light"] .cosmetic-name-effect.effect-s2-hologram { --ne-l: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0 1px, transparent 1px 3px), linear-gradient(100deg, #1a8aa0, #5a48d0 35%, #c03a9a 65%, #1a8aa0); }
 
 @keyframes s2ne-pan { to { background-position: 200% 0; } }
 @keyframes s2ne-pan-y { to { background-position: 0 -200%; } }

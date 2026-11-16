@@ -396,7 +396,9 @@ export function useItemName() {
 export function Toast({ toast, onUndo, onClose }) {
   const { t } = useLocale();
   if (!toast) return null;
-  return (
+  // On body, like the drawers: rendered inside the page it stayed under an open drawer's
+  // scrim, so "Geri al" after a change made in a drawer could not be seen or clicked.
+  const node = (
     <div className={`as2-toast is-${toast.tone || "ok"}`} role="status" aria-live="polite" key={toast.id}>
       <span>{toast.text}</span>
       {toast.undo ? (
@@ -410,6 +412,7 @@ export function Toast({ toast, onUndo, onClose }) {
       <i className="as2-toast-bar" style={{ animationDuration: `${toast.ms || 4500}ms` }} />
     </div>
   );
+  return typeof document === "undefined" ? node : createPortal(node, document.body);
 }
 
 /** Text field for a reason (every destructive action). */

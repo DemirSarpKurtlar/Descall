@@ -121,6 +121,13 @@ export const COINPOP_PT_BR = {
       "promo": "Código promocional",
       "premium_gift": "Presente Descall+",
       "other": "Outros"
+    },
+    "shop2": {
+      "gift": "Presente enviado",
+      "refresh": "Vitrine renovada",
+      "giftRecall": "Presente recuperado",
+      "giftOverlap": "Diferença do presente reembolsada",
+      "setRecall": "Conjunto retirado, reembolso"
     }
   },
   "settings": {

@@ -121,6 +121,13 @@ export const COINPOP_ES = {
       "promo": "Código promocional",
       "premium_gift": "Regalo de Descall+",
       "other": "Otros"
+    },
+    "shop2": {
+      "gift": "Regalo enviado",
+      "refresh": "Escaparate renovado",
+      "giftRecall": "Regalo recuperado",
+      "giftOverlap": "Diferencia del regalo reembolsada",
+      "setRecall": "Set retirado, reembolso"
     }
   },
   "settings": {

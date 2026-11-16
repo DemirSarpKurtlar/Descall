@@ -14,6 +14,7 @@ import AdminBadge from "./AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText } from "../ui/Cosmetics";
 import { ProfileBadgeRow } from "../badges/BadgeVault.jsx";
+import { artUrl } from "../../lib/stillArt.js";
 import { useT } from "../../context/LocaleContext";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
@@ -360,7 +361,8 @@ function UserProfileModal({
   const displayName =
     nickname || viewUser?.displayName || viewUser?.display_name || displayNameProp || displayUsername;
   const displayAvatar = viewUser?.avatarUrl ?? avatarUrl ?? null;
-  const equippedBannerUrl = fetched?.equippedBanner?.asset_url || fetched?.bannerUrl || fetched?.banner_url || null;
+  // Still art under reduced motion / lite material (lib/stillArt.js: SMIL cannot be paused by CSS).
+  const equippedBannerUrl = artUrl(fetched?.equippedBanner?.asset_url || fetched?.bannerUrl || fetched?.banner_url || null);
   const equippedBackgroundUrl = fetched?.equippedBackground?.asset_url || null;
   const bannerGradient = generateBannerGradient(username || displayUsername);
   const statusLabel = {
@@ -593,7 +595,7 @@ function UserProfileModal({
             >
               <motion.div
                 key={userId || "profile"}
-                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy ${profileColorClass(fetched)}`.trim()}
+                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy ${profileColorClass(fetched)} ${fetched?.equippedProfileAura?.effect_key ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}` : ""}`.trim()}
                 style={profileColorStyle(fetched) || undefined}
                 data-testid="profile-sheet"
                 custom={dismissV.current}

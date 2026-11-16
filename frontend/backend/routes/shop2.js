@@ -80,7 +80,7 @@ function idemKey(req) {
 router.get("/assets/:id", async (req, res) => {
   try {
     const kind = req.query.kind === "preview" ? "preview" : "asset";
-    const img = await catalog.assetOf(req.params.id, kind);
+    const img = require("../lib/svgStill").stillImage(await catalog.assetOf(req.params.id, kind), req.query.still === "1");
     if (!img) return res.status(404).type("text/plain").send("Not found");
     const versioned = typeof req.query.v === "string" && req.query.v === img.version;
     res.set({
@@ -177,8 +177,20 @@ router.post(
   handle(async (req) => {
     const b = req.body || {};
     const r = await purchases.buyItem(req.user.id, String(req.params.id), { expectedPrice: b.expectedPrice ?? null, idempotencyKey: idemKey(req), source: typeof b.source === "string" ? b.source.slice(0, 20) : null, equip: b.equip === true, io: io(req) });
-    return { ok: true, duplicate: r.duplicate, purchaseId: r.purchase?.id, paid: Number(r.purchase?.amount) || 0, itemId: r.item.id, balance: r.balance, refundableUntil: r.purchase?.refundable_until || null, partialPriceUntil: r.lockUntil || null, equipped: r.equipped || null };
+    return { ok: true, duplicate: r.duplicate, purchaseId: r.purchase?.id, paid: Number(r.purchase?.amount) || 0, itemId: r.item.id, balance: r.balance, refundableUntil: r.purchase?.refundable_until || null, partialPriceUntil: r.lockUntil || null, equipped: r.equipped || null, completed: r.completed || [] };
   }, { kind: "buy" })
+);
+
+/** "Hepsini kuşan": wear owned Market 2.0 items in one request (one profile broadcast, the
+ * previous look kept as an outfit, undoable through the action log). */
+router.post(
+  "/equip",
+  handle(async (req) => {
+    const ids = Array.isArray(req.body?.itemIds) ? [...new Set(req.body.itemIds.map(String))].slice(0, 30) : [];
+    if (!ids.length) return Promise.reject(Object.assign(new Error("item_required"), { code: "item_required", status: 400 }));
+    const r = await purchases.equipBought(req.user.id, ids, { io: io(req) });
+    return { ok: true, applied: r?.applied || {}, previousOutfitId: r?.previousOutfitId || null, actionId: r?.actionId || null };
+  }, { kind: "write" })
 );
 
 router.get(
@@ -231,7 +243,24 @@ router.post("/night-market/notify", handle(async (req) => ({ ...(await night.set
 
 router.get("/gifts", handle((req) => gifts.list(req.user.id, { base: base(req) })));
 
-router.get("/gifts/recipients", handle((req) => gifts.recipients(req.user.id, { itemId: typeof req.query.itemId === "string" ? req.query.itemId : null, setKey: typeof req.query.setKey === "string" ? req.query.setKey : null })));
+/** Friend presence for the gift sheet ("Çevrimiçi" filter): invisible reads as offline. */
+function presenceStatus(userId) {
+  try {
+    const { presence } = require("../runtime/sharedState");
+    const p = presence.get(String(userId)) || presence.get(userId);
+    if (!p) return "offline";
+    const s = String(p.status || "online").toLowerCase();
+    if (s === "invisible") return "offline";
+    return ["online", "idle", "dnd"].includes(s) ? s : "online";
+  } catch {
+    return "offline";
+  }
+}
+
+router.get("/gifts/recipients", handle(async (req) => {
+  const out = await gifts.recipients(req.user.id, { itemId: typeof req.query.itemId === "string" ? req.query.itemId : null, setKey: typeof req.query.setKey === "string" ? req.query.setKey : null });
+  return { ...out, recipients: (out.recipients || []).map((r) => (r.user ? { ...r, user: { ...r.user, status: presenceStatus(r.user.id) } } : r)) };
+}));
 
 /** "Arkadaşlarına göster": DM my new look (owned item or complete set) to up to 10 friends. */
 router.post(
@@ -244,7 +273,12 @@ router.post(
 
 router.get("/feed", handle((req) => views.friendFeed(req.user.id)));
 
-router.post("/gifts/quote", handle((req) => gifts.quote(req.user.id, req.body || {}), { kind: "write" }));
+/** A blocked quote carries the reason as an API message too ({ error, errorKey?, errorVars? }). */
+router.post("/gifts/quote", handle(async (req) => {
+  const q = await gifts.quote(req.user.id, req.body || {});
+  if (q && q.ok === false && MESSAGES[q.code]) return { ...q, ...apiError(MESSAGES[q.code], q.vars || undefined) };
+  return q;
+}, { kind: "write" }));
 
 router.post(
   "/gifts",
@@ -267,7 +301,7 @@ router.get(
   "/history",
   handle(async (req) => {
     const list = await actions.list(req.user.id, { limit: Number(req.query.limit) || 50, before: typeof req.query.before === "string" ? req.query.before : null });
-    return { entries: list.map((r) => actions.publicAction(r)) };
+    return { entries: await require("../lib/shop2/historyView").decorate(list.map((r) => actions.publicAction(r)), { base: base(req) }) };
   })
 );
 
@@ -276,7 +310,7 @@ router.post("/history/:id/undo", handle(async (req) => ({ ok: true, ...(await hi
 /* ---------------------------------------------------------------- outfits */
 
 router.get("/outfits", handle(async (req) => ({ outfits: (await outfits.list(req.user.id)).map(outfits.publicOutfit) })));
-router.post("/outfits", handle(async (req) => ({ ok: true, outfit: outfits.publicOutfit(await outfits.save(req.user.id, { name: req.body?.name, look: req.body?.look || null })) }), { kind: "write" }));
+router.post("/outfits", handle(async (req) => ({ ok: true, outfit: outfits.publicOutfit(await outfits.save(req.user.id, { name: req.body?.name, look: req.body?.look || null, kind: req.body?.kind === "previous" ? "previous" : "saved" })) }), { kind: "write" }));
 router.post("/outfits/:id/apply", handle(async (req) => ({ ok: true, ...(await outfits.apply(req.user.id, String(req.params.id), { io: io(req) })) }), { kind: "write" }));
 router.delete("/outfits/:id", handle(async (req) => outfits.remove(req.user.id, String(req.params.id)), { kind: "write" }));
 

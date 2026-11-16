@@ -31,6 +31,7 @@ import {
   requestShopFocus,
   takeShopFocus,
   peekShopFocus,
+  handOffShopFocus,
 } from "./callCoinPrefs.js";
 import { normalizeAppearance, readAppearance } from "./appearancePrefs.js";
 
@@ -144,12 +145,26 @@ assert.deepEqual(
   { kind: "call", id: "S1", receipt: "DC-7F3A", voice: 2, screen: 2, amount: 4, at: "2026-11-15T21:41:00Z", firstAt: "2026-11-15T21:05:00Z" }
 );
 assert.equal(rows[2].kind, "row", "older rows without a session stay single");
+// Market 2.0 rows (meta.shop2) get their own wallet label; plain shop rows keep the reason.
+const s2rows = groupWalletEntries([
+  { id: 3, amount: -420, reason: "shop_purchase", meta: { shop2: "gift", giftId: "g1" } },
+  { id: 2, amount: 420, reason: "shop_refund", meta: { shop2: "gift_recall", giftId: "g1" } },
+  { id: 1, amount: -150, reason: "shop_purchase", meta: { shop2: "refresh" } },
+  { id: 0, amount: -300, reason: "shop_purchase", meta: { shop2: "item" } },
+]);
+assert.deepEqual(s2rows.map((r) => r.shop2), ["gift", "giftRecall", "refresh", null]);
 
 // ---- shop focus deep link
 requestShopFocus({ itemId: "it-1", buy: true });
 assert.equal(peekShopFocus().itemId, "it-1");
 assert.deepEqual({ ...takeShopFocus(), at: 0 }, { itemId: "it-1", buy: true, at: 0 });
 assert.equal(takeShopFocus(), null, "taken once");
+// Market 2.0 decides first; only a handed-off focus reaches the classic catalog.
+requestShopFocus({ itemId: "it-2" });
+assert.equal(peekShopFocus().classic, undefined, "a new focus is Market 2.0's");
+handOffShopFocus();
+assert.equal(peekShopFocus().classic, true, "handed to the classic catalog");
+assert.equal(takeShopFocus().itemId, "it-2");
 
 // ---- locales: the 7 live languages, same keys, same placeholders, natural Turkish, no emoji
 const locales = ["tr", "en", "de", "es", "fr", "pt-BR", "ru"];

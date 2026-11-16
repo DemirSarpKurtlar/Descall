@@ -18,7 +18,7 @@ export const SHOP2_TR = {
     "placeholder": "Ürün, set veya renk ara",
     "kbd": "Ctrl K",
     "none": "Henüz eşleşen bir şey yok.",
-    "kind": { "today": "Bugünün vitrininde", "set": "Set", "wish": "İstek listende", "owned": "Sende var" }
+    "kind": { "today": "Bugünün vitrininde", "set": "Set", "wish": "İstek listende", "owned": "Sende var", "catalog": "Mağazada" }
   },
   "tiles": {
     "nextStorefront": "Yeni vitrine kalan",
@@ -46,7 +46,11 @@ export const SHOP2_TR = {
     "giftWhen": "{time} geldi · açılmadı",
     "giftSub": "Arkadaşlarının hediyeleri buraya düşer",
     "wallet": "Cüzdan",
-    "earned": "Bugün kazandın"
+    "earned": "Bugün kazandın",
+    "nightNext": "Açılış: {when}",
+    "nightNone": "Planlanmış gece pazarı yok",
+    "refreshPremium": "Bugün ücretsiz: Descall+",
+    "refreshGrant": "Ücretsiz yenileme hakkı: {n}"
   },
   "vitrin": {
     "today": "Bugünün vitrini",
@@ -78,7 +82,9 @@ export const SHOP2_TR = {
     "go": "Yenile · {n} D",
     "goFree": "Ücretsiz yenile",
     "short": "{n} D",
-    "done": "Yeni ürünler geldi. Kilitli kartın yerinde kaldı."
+    "done": "Yeni ürünler geldi. Kilitli kartın yerinde kaldı.",
+    "leftAfter": "Bundan sonra {n} hak daha",
+    "doneFresh": "Yeni ürünler geldi."
   },
   "detail": {
     "label": "Canlı önizleme",
@@ -183,6 +189,8 @@ export const SHOP2_TR = {
     "title": "Son işlemlerin",
     "undo": "Geri al · {t}",
     "undone": "Geri alındı. DesCoin'in iade edildi.",
+    "undoneShort": "Geri alındı.",
+    "share": "{name} arkadaşlarına gösterildi",
     "thanked": "Teşekkür etti",
     "open": "Aç",
     "purchase": "{name} satın alındı",
@@ -261,6 +269,8 @@ export const SHOP2_TR = {
     "focusVoice": "Ses",
     "ownedDeductedShort": "{n} parça sende, düşüldü",
     "buyShort": "Seti al",
+    "notOnSale": "Bu set şu an satışta değil. Parçaları vitrinine düşünce yine alabilirsin.",
+    "giftOff": "Bu set şu an satışta değil, hediye de edilemez.",
     "share": "Paylaş",
     "emptyTitle": "Bu hafta set yok",
     "emptyBody": "Yeni setler bir sonraki vitrin döngüsüyle gelir."
@@ -347,6 +357,7 @@ export const SHOP2_TR = {
     "pieces": "{n} / {total} parça",
     "refundChip": "İade {t}",
     "wearAll": "Hepsini kuşan",
+    "wearOne": "Kuşan",
     "wearing": "Kuşanılıyor",
     "worn": "Kuşanıldı",
     "wearPicked": "{n} parçayı kuşan",
@@ -392,7 +403,7 @@ export const SHOP2_TR = {
     "hint": { "profile": "Profil", "frame": "Çerçeve", "chat": "Sohbet", "voice": "Ses", "sound": "Ses kutusu", "badge": "Rozet", "effect": "Efekt" },
     "flipCard": "Kapalı kartı aç: {hint}",
     "hintNote": "Kartların sırtındaki ipucu yalnızca türü söyler; indirim oranı açınca görünür.",
-    "tomorrow": "Bu gece hakkın bitti. Yarın gece yeni kartlar.",
+    "tomorrow": "Bu gece hakkın bitti. Yeni kartlar bir sonraki gece pazarında.",
     "noFlips": "Bu gece açma hakkın kalmadı",
     "openedCard": "Açılan kart",
     "onlyYou": "Yalnızca sende",
@@ -409,7 +420,15 @@ export const SHOP2_TR = {
     "closedBody": "Gece pazarı bu gece yeniden açılır.",
     "openNow": "Gece pazarı açık",
     "closingSoon": "Gece pazarı 10 dakika içinde kapanıyor",
-    "stripSub": "{n} kapalı kart"
+    "stripSub": "{n} kapalı kart",
+    "closedSubAt": "Sana özel gizli indirimlerle açılış: {when}",
+    "closedBodyAt": "Bir sonraki gece pazarı: {when}.",
+    "noneScheduled": "Şu an planlanmış bir gece pazarı yok.",
+    "notEligible": "Bu gece pazarı hesabın için açık değil.",
+    "notifyFailed": "Hatırlatma kaydedilemedi. Tekrar dene.",
+    "whenToday": "bugün {time}",
+    "whenTomorrow": "yarın {time}",
+    "whenDay": "{day} {time}"
   },
   "gifts": {
     "title": "Hediyeler",
@@ -452,6 +471,7 @@ export const SHOP2_TR = {
     "aPackage": "Bir paket",
     "appName": "Descall",
     "notif": "{name} sana bir hediye gönderdi",
+    "notifAnon": "Biri sana bir hediye gönderdi",
     "fromX": "{name} bir hediye yolladı",
     "fromShort": "Gönderen: {name}",
     "openPackage": "Paketi aç",
@@ -468,7 +488,7 @@ export const SHOP2_TR = {
     "total": "Toplam",
     "balance": "Bakiyen {from} → {to}",
     "theirsDeducted": "Onda olanlar düşüldü: {n} D",
-    "recallNote": "Açılmadığı sürece {m} dakika içinde geri çağırabilirsin",
+    "recallNote": "Açılana kadar geri çağırabilirsin, DesCoin'in tamamı geri gelir",
     "dailyLeft": "Bugün {n} hediye hakkın kaldı",
     "saveDraft": "Taslağa kaydet",
     "draftSaved": "Taslak kaydedildi",
@@ -592,5 +612,12 @@ export const SHOP2_TR = {
       "dm_rate_limited": "Mesaj sınırı doldu",
       "other": "Gönderilemedi"
     }
+  },
+  "directSale": {
+    "badge": "Vitrinde ve setlerde çıkar",
+    "seeSet": "Seti gör",
+    "hint": "Bu ürün burada doğrudan satılmıyor. Günlük vitrininde, setlerde ve gece pazarında çıkar.",
+    "price": "Referans fiyat",
+    "foot": "Yine de önizleyip üzerinde deneyebilirsin."
   }
 };

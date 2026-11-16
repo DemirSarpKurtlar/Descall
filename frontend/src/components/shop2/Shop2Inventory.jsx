@@ -8,7 +8,7 @@ import { useS2 } from "./Shop2Context.js";
 import { Chip, Price } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
 import { applyOutfit } from "./Shop2Sets.jsx";
-import { Archive, Bell, Bookmark, Cart, Gift, Heart, Package, Shirt } from "./shop2Icons.jsx";
+import { Archive, Bell, Bookmark, Cart, Gift, Heart, Package, Share2, Shirt } from "./shop2Icons.jsx";
 
 const sameId = (a, b) => a != null && b != null && String(a) === String(b);
 const ORDER = [...SET_PIECE_ORDER, "name_effect", "profile_aura", "presence_flare", "typing_flare", "reaction_burst", "call_overlay", "theme", "countries"];
@@ -25,6 +25,10 @@ function Tile({ item, retired }) {
         <b>{s2.itemName(item)}</b>
         <small>{t(`shop2.cat.${item.category}`)}</small>
       </span>
+      {/* "Arkadaşlarına göster": a Market 2.0 item you own goes to friends as a look card. */}
+      {!retired && isShop2Item(item) ? (
+        <button type="button" className="s2-ibtn is-sm" onClick={() => s2.openShare({ itemId: item.id })} aria-label={t("shop2.share.title")} title={t("shop2.share.title")}><Share2 size={15} /></button>
+      ) : null}
       <button type="button" className={`s2-btn is-sm${on ? "" : " is-primary"}`} disabled={busy} onClick={() => s2.onEquip?.(item, on)}>
         {on ? t("shop2.common.unequip") : t("shop2.common.equip")}
       </button>

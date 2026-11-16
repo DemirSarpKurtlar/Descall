@@ -232,9 +232,10 @@ async function dashboardFor(range) {
   const lastSale = last
     ? {
         at: last.at,
-        kind: KIND_OF_SALE(last),
+        // The ticker says "bought the <set> set" only for a whole set; a piece reads as an item.
+        kind: KIND_OF_SALE(last) === "set" && last.kind !== "set" ? "item" : KIND_OF_SALE(last),
         username: last.user?.username || null,
-        setName: last.setKey ? setNames[last.setKey] || last.setKey : null,
+        setName: last.setKey && (last.kind === "set" || KIND_OF_SALE(last) === "gift") ? setNames[last.setKey] || last.setKey : null,
         item: last.items?.[0] ? normItem(last.items[0]) : null,
         price: num(last.listAmount) || num(last.amount),
         paid: num(last.amount),
@@ -585,10 +586,11 @@ function auditRow(e) {
     actor: e.actorUsername || null,
     action,
     reason: meta.reason || meta.note || null,
-    target: e.target || null,
+    // "Tüm ürünlerde satış" stores on / off as its target: the title says it instead.
+    target: action === "direct_sale" ? null : e.target || null,
     setKey: action.startsWith("set_") || action.startsWith("ab_") ? e.target : null,
     targetUserId: action === "free_refresh" || action === "storefront_regenerate" ? e.target : null,
-    vars: { v: meta.version ?? e.target ?? "" },
+    vars: { v: meta.version ?? e.target ?? "", n: Number(meta.count) || 0, on: String(meta.allowed ?? e.target) === "true" ? "true" : "false" },
     undoable: Boolean(win),
     undoUntil: win ? new Date(Date.parse(e.at) + win * 60000).toISOString() : null,
     meta,
@@ -795,6 +797,7 @@ async function syncAbTest(key, body) {
 const CODES = [
   "reason_required", "bad_set_key", "set_exists", "bad_time", "bad_window", "bad_option", "bad_replace", "set_recalled", "not_draft",
   "ab_running", "ab_same_price", "not_scheduled", "night_open", "night_started", "title_required", "undo_expired", "undo_unsupported", "not_found", "rate_limited",
+  "no_items", "direct_sale_unavailable",
 ];
 const UPPER = { STEP_UP_REQUIRED: "stepUp", ADMIN_PERMISSION_DENIED: "permission", ADMIN_2FA_REQUIRED: "stepUp" };
 

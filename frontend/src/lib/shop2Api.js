@@ -5,10 +5,30 @@ import { authedRequest } from "../api/authedHttp";
 import { getFriendsList } from "../api/friends";
 import { getMyServers, getServer, getServerMembers, getChannelMessages } from "../api/servers";
 import { idempotencyKey } from "./shop2Logic.js";
+import { serverMessage } from "../i18n/serverText.js";
+import { t } from "../i18n/runtime.js";
 
 const BASE = "/api/shop2";
-const get = (path) => authedRequest(`${BASE}${path}`);
-const post = (path, body = {}) => authedRequest(`${BASE}${path}`, { method: "POST", body });
+
+/**
+ * The server answers in English ({ error, errorKey?, errorVars? }, lib/apiError.js); every
+ * shop2 error reaches the UI (toasts use err.message) in the viewer's language.
+ */
+export function localizeShop2Error(err) {
+  if (err && typeof err === "object" && typeof err.message === "string" && err.status) {
+    const text = serverMessage({ error: err.message, errorKey: err.errorKey, errorVars: err.errorVars });
+    if (text) err.message = text;
+  } else if (err instanceof TypeError) {
+    // fetch() could not reach the server ("Failed to fetch").
+    err.message = t("No connection. Check your internet and try again.");
+  }
+  return err;
+}
+const call = (path, opts) => authedRequest(`${BASE}${path}`, opts).catch((err) => {
+  throw localizeShop2Error(err);
+});
+const get = (path) => call(path);
+const post = (path, body = {}) => call(path, { method: "POST", body });
 const enc = encodeURIComponent;
 
 /** True when the server does not have the route yet (migration / deploy not live). */
@@ -42,6 +62,8 @@ export const shop2Api = {
       ...(equip ? { equip: true } : {}),
       idempotencyKey: holdToken || idempotencyKey("item"),
     }),
+  /** Wear owned items in one request (previous look kept, one undoable action). */
+  equip: (itemIds) => post("/equip", { itemIds }),
   purchases: () => get("/purchases"),
   refund: (purchaseId) => post(`/purchases/${enc(purchaseId)}/refund`),
 
@@ -75,7 +97,8 @@ export const shop2Api = {
   undo: (id) => post(`/history/${enc(id)}/undo`),
 
   outfits: () => get("/outfits"),
-  saveOutfit: ({ name, look }) => post("/outfits", { name, ...(look ? { look } : {}) }),
+  /** kind "previous": the look kept automatically before "Hepsini kuşan" (not a named save). */
+  saveOutfit: ({ name, look, kind }) => post("/outfits", { name, ...(look ? { look } : {}), ...(kind ? { kind } : {}) }),
   applyOutfit: (id) => post(`/outfits/${enc(id)}/apply`),
   /** "Arkadaşlarına göster": DM the look link to 1-10 friends; per-recipient results. */
   shareLook: ({ setKey, itemId, toUserIds, message }) =>

@@ -1,14 +1,34 @@
 // Market 2.0 building blocks: DesCoin amount, live clock, rolling countdown, sparkline,
 // toggle, segmented control, drawer / bottom sheet / full-screen window, hold-to-confirm.
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
-import { countdownParts, idempotencyKey, SHOP2_HOLD_MS, sparkPath, stepPath } from "../../lib/shop2Logic.js";
-import { Hand, Plus, X } from "./shop2Icons.jsx";
+import { countdownParts, idempotencyKey, SHOP2_HOLD_MS, sparkPath, stepPath, whenOf } from "../../lib/shop2Logic.js";
+import { CHIP_SLOP_PX, overflowEdges, pageOffset, revealOffset, wheelScrollDelta } from "../../lib/shopChipScroll.js";
+import { ChevronLeft, ChevronRight, Hand, Plus, X } from "./shop2Icons.jsx";
 import { useS2 } from "./Shop2Context.js";
 
 /** Re-renders every `interval` ms while active. */
+/**
+ * Formatter for a future time ("today at 22:00", "Friday at 22:00"): when(target) is the long
+ * label, when(target, { short: true }) the compact one for tiles ("22:00", "Fri 22:00").
+ */
+export function useWhen() {
+  const { t, locale } = useLocale();
+  return useCallback((target, { short = false, now = Date.now() } = {}) => {
+    const w = whenOf(target, now);
+    if (!w) return "";
+    const d = new Date(w.at);
+    const time = d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    if (short) return w.kind === "today" ? time : `${d.toLocaleDateString(locale, { weekday: "short" })} ${time}`;
+    if (w.kind === "today") return t("shop2.night.whenToday", { time });
+    if (w.kind === "tomorrow") return t("shop2.night.whenTomorrow", { time });
+    const day = d.toLocaleDateString(locale, w.kind === "day" ? { weekday: "long" } : { weekday: "long", day: "numeric", month: "long" });
+    return t("shop2.night.whenDay", { day, time });
+  }, [t, locale]);
+}
+
 export function useNow(active = true, interval = 1000) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -19,15 +39,18 @@ export function useNow(active = true, interval = 1000) {
   return now;
 }
 
+/** System "reduce motion" or Settings › Görünüm › Hareketi azalt (html.reduce-motion). */
+export function prefersLessMotion() {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("reduce-motion");
+  } catch {
+    return false;
+  }
+}
+
 /** True when the user asked for less motion (or the "others' eyes" preview is on). */
 export function useReducedMotion() {
-  const [reduce, setReduce] = useState(() => {
-    try {
-      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch {
-      return false;
-    }
-  });
+  const [reduce, setReduce] = useState(prefersLessMotion);
   useEffect(() => {
     let mq;
     try {
@@ -35,9 +58,14 @@ export function useReducedMotion() {
     } catch {
       return undefined;
     }
-    const on = () => setReduce(mq.matches);
+    const on = () => setReduce(prefersLessMotion());
     mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
+    const mo = typeof MutationObserver !== "undefined" ? new MutationObserver(on) : null;
+    mo?.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => {
+      mq.removeEventListener?.("change", on);
+      mo?.disconnect();
+    };
   }, []);
   return reduce;
 }
@@ -140,15 +168,239 @@ export function Seg({ options, value, onChange, className = "", size = "md", lab
   );
 }
 
-function useEscape(onClose, active = true) {
+/**
+ * Scrolls a strip to `left` with our own ease-out (snap off meanwhile). Native smooth
+ * scrolling is cancelled by scroll snap whenever the strip's layout changes mid-way (a tile
+ * re-rendering as data arrives), which left the arrows doing nothing. A wheel / drag /
+ * touch on the strip stops it.
+ */
+function glideTo(el, left) {
+  el.__s2Glide?.();
+  if (prefersLessMotion()) {
+    el.scrollLeft = left;
+    return;
+  }
+  const from = el.scrollLeft;
+  const dist = left - from;
+  if (Math.abs(dist) < 1) return;
+  const ms = Math.min(420, 220 + Math.abs(dist) * 0.15);
+  let raf = 0;
+  let t0 = 0;
+  const stop = () => {
+    cancelAnimationFrame(raf);
+    el.classList.remove("is-gliding");
+    el.removeEventListener("wheel", stop);
+    el.removeEventListener("pointerdown", stop);
+    el.removeEventListener("touchstart", stop);
+    el.__s2Glide = null;
+  };
+  const step = (now) => {
+    if (!t0) t0 = now;
+    const p = Math.min(1, (now - t0) / ms);
+    el.scrollLeft = from + dist * (1 - (1 - p) ** 3);
+    if (p < 1) raf = requestAnimationFrame(step);
+    else stop();
+  };
+  el.classList.add("is-gliding");
+  el.addEventListener("wheel", stop, { passive: true });
+  el.addEventListener("pointerdown", stop);
+  el.addEventListener("touchstart", stop, { passive: true });
+  el.__s2Glide = stop;
+  raf = requestAnimationFrame(step);
+}
+
+/**
+ * Horizontal strip that scrolls (set switcher, tab rows, phone chips): native scroll with
+ * snap, edge fades, the mouse wheel moving it sideways, drag to scroll with a mouse, and
+ * prev / next arrows on desktop (hidden on touch screens by CSS). The selected child
+ * (`[aria-selected="true"]`, `.is-on` or `[aria-current]`) is kept in view without
+ * scrolling the page. `className` styles the scrolling row itself.
+ */
+export function HScroller({ as: Tag = "div", className = "", wrapClassName = "", children, activeKey, arrows = true, ...rest }) {
+  const { t } = useLocale();
+  const vp = useRef(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const measure = useCallback(() => {
+    const el = vp.current;
+    if (!el) return;
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    const next = overflowEdges(el.scrollLeft, max);
+    setEdges((prev) => (prev.left === next.left && prev.right === next.right ? prev : next));
+  }, []);
+  useLayoutEffect(() => {
+    const el = vp.current;
+    if (!el) return undefined;
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    for (const c of el.children) ro?.observe(c);
+    el.addEventListener("scroll", measure, { passive: true });
+    let wheelEnd = 0;
+    // Wheel: vertical turns sideways while the strip can still move that way, then the
+    // page takes over (no trap at either end).
+    const onWheel = (e) => {
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1 || e.ctrlKey) return;
+      const d = wheelScrollDelta({ deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode, shiftKey: e.shiftKey, viewportWidth: el.clientWidth, viewportHeight: el.clientHeight });
+      if (!d || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return; // trackpads already scroll sideways
+      const next = Math.max(0, Math.min(max, el.scrollLeft + d));
+      if (Math.abs(next - el.scrollLeft) < 0.5) return;
+      e.preventDefault();
+      // Snap off while the wheel turns (every assignment would snap and jump), back on
+      // shortly after it stops so the strip settles on a tile.
+      el.classList.add("is-wheeling");
+      clearTimeout(wheelEnd);
+      wheelEnd = setTimeout(() => el.classList.remove("is-wheeling"), 180);
+      el.scrollLeft = next;
+    };
+    // Mouse drag (touch and pen scroll natively).
+    let drag = null;
+    let suppress = false;
+    const onDown = (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0 || el.scrollWidth - el.clientWidth <= 1) return;
+      drag = { x: e.clientX, left: el.scrollLeft, id: e.pointerId, moved: false };
+    };
+    const onMove = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x;
+      if (!drag.moved) {
+        if (Math.abs(dx) < CHIP_SLOP_PX) return;
+        drag.moved = true;
+        suppress = true;
+        el.classList.add("is-dragging");
+        try {
+          el.setPointerCapture?.(e.pointerId);
+        } catch {
+          /* released */
+        }
+      }
+      el.scrollLeft = drag.left - dx;
+    };
+    const onUp = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const moved = drag.moved;
+      drag = null;
+      if (!moved) return;
+      // The click that ends a drag is swallowed; when the browser fires none (pointer
+      // captured), the flag must not eat the next real tap.
+      setTimeout(() => {
+        suppress = false;
+      }, 0);
+      el.classList.remove("is-dragging");
+      // Let snapping settle on the nearest item after the drag.
+      const left = el.scrollLeft;
+      el.scrollLeft = left + 1;
+      el.scrollLeft = left;
+    };
+    const onClick = (e) => {
+      if (!suppress) return;
+      suppress = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    el.addEventListener("click", onClick, true);
+    return () => {
+      clearTimeout(wheelEnd);
+      el.__s2Glide?.();
+      ro?.disconnect();
+      el.removeEventListener("scroll", measure);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+      el.removeEventListener("click", onClick, true);
+    };
+  }, [measure]);
+  // Keep the selected child in view (only this strip moves, never the page).
+  useEffect(() => {
+    const el = vp.current;
+    if (!el) return;
+    const on = el.querySelector(":scope > [aria-selected='true'], :scope > .is-on, :scope > [aria-current]");
+    if (!on) return;
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    const start = on.getBoundingClientRect().left - el.getBoundingClientRect().left - el.clientLeft + el.scrollLeft;
+    const next = revealOffset(el.scrollLeft, max, start, start + on.offsetWidth, el.clientWidth, 40);
+    if (Math.abs(next - el.scrollLeft) > 1) glideTo(el, next);
+  }, [activeKey]);
+  const page = (dir) => {
+    const el = vp.current;
+    if (!el) return;
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    glideTo(el, pageOffset(el.scrollLeft, max, el.clientWidth, dir));
+  };
+  return (
+    <div className={`s2-hs${edges.left ? " is-fade-l" : ""}${edges.right ? " is-fade-r" : ""} ${wrapClassName}`.trim()}>
+      <Tag ref={vp} className={`s2-hs-vp ${className}`.trim()} {...rest}>
+        {children}
+      </Tag>
+      {arrows ? (
+        <>
+          <button type="button" className="s2-hs-arrow is-prev" tabIndex={-1} aria-label={t("Previous")} hidden={!edges.left} onClick={() => page(-1)}>
+            <ChevronLeft size={16} weight="bold" />
+          </button>
+          <button type="button" className="s2-hs-arrow is-next" tabIndex={-1} aria-label={t("Next")} hidden={!edges.right} onClick={() => page(1)}>
+            <ChevronRight size={16} weight="bold" />
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+const FOCUSABLE = "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+/** Open layers, oldest first. Only the top one answers Escape and keeps Tab inside. */
+const layerStack = [];
+
+/**
+ * Escape closes the TOP layer only, and never the Settings window behind it (its Escape
+ * listener sits on window in the bubble phase; this one runs in the capture phase and stops
+ * the event). Tab / Shift+Tab cycle inside the top layer.
+ */
+function useLayerKeys(ref, onClose, active = true) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!active) return undefined;
+    const token = {};
+    layerStack.push(token);
     const on = (e) => {
-      if (e.key === "Escape") onClose?.();
+      if (layerStack[layerStack.length - 1] !== token) return;
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+        closeRef.current?.();
+        return;
+      }
+      if (e.key !== "Tab" || !ref.current) return;
+      const list = [...ref.current.querySelectorAll(FOCUSABLE)].filter((n) => n.getClientRects().length);
+      if (!list.length) {
+        e.preventDefault();
+        return;
+      }
+      const first = list[0];
+      const last = list[list.length - 1];
+      const inside = ref.current.contains(document.activeElement);
+      if (e.shiftKey && (!inside || document.activeElement === first)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", on);
-    return () => window.removeEventListener("keydown", on);
-  }, [onClose, active]);
+    window.addEventListener("keydown", on, true);
+    return () => {
+      window.removeEventListener("keydown", on, true);
+      const i = layerStack.indexOf(token);
+      if (i >= 0) layerStack.splice(i, 1);
+    };
+  }, [active, ref]);
 }
 
 /**
@@ -159,11 +411,11 @@ export function Layer({ kind = "dialog", open = true, onClose, label, className 
   const ref = useRef(null);
   const drag = useRef(null);
   const [dy, setDy] = useState(0);
-  useEscape(onClose, open);
+  useLayerKeys(ref, onClose, open);
   useEffect(() => {
     if (!open) return undefined;
     const prev = document.activeElement;
-    const first = ref.current?.querySelector("button, [href], input, textarea, [tabindex]:not([tabindex='-1'])");
+    const first = ref.current?.querySelector(FOCUSABLE);
     first?.focus?.({ preventScroll: true });
     return () => prev?.focus?.({ preventScroll: true });
   }, [open]);

@@ -38,11 +38,15 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 - `GET /storefront` ->
   `{ day, serverTime, resetsAt, slots: [{ slot 1-4, item, price, owned, available, locked, wishlisted,
   badges: ["wishlist"|"set_progress"|"new_item"|"epic_floor"|"locked"], setProgress: { setKey, owned,
-  total }|null }], lock: { itemId, slot }|null, refresh: { available, price, free: null|"premium"|
-  "grant"|"streak", used, perDay, usedAt, freeGrants }, streak: { days, rewardEvery }, nightMarket:
-  { open, id?, startsAt?, endsAt?, cards?, flipsLeft?, keepMax?, nextStartsAt }, featuredSets:
+  total }|null, lastSeenDays: n|null }], lock: { itemId, slot }|null, refresh: { available, price,
+  free: null|"premium"|"grant"|"streak", used, dailyUsed, left, perDay, usedAt, freeGrants }, streak:
+  { days, rewardEvery }, nightMarket: { open, eligible?, id?, startsAt?, endsAt?, cards?, flipsLeft?,
+  flipsTotal?, keepMax?, nextStartsAt }, featuredSets:
   [setCard], yesterday: [{ slot, item, owned, available, wishlisted }], wishlistHits: [itemId],
-  balance, viewers, legacyPool }`. A bought card stays in its slot with `owned: true`.
+  balance, viewers, legacyPool }`. A bought card stays in its slot with `owned: true`; a lock on a
+  card the user has since bought (or that left the shop) is not reported (`lock: null`) and the next
+  refresh drops it. `left` = the daily refresh still unused + granted refreshes. `lastSeenDays` = days
+  since the card was last in this user's storefront (null = first time).
 - `POST /storefront/refresh { keepLockedItemId?, expectedPrice? }` -> `{ ok, paid, free, duplicate,
   storefront }`. Omit `keepLockedItemId` to keep the stored lock, `null` to drop it. 409
   `refresh_used`, `lock_not_in_storefront`, 402 `insufficient_balance`. The refreshed cards never
@@ -75,7 +79,14 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 
 ### Purchases
 - `POST /items/:id/buy { expectedPrice?, source?, equip?: true }` -> `{ ok, duplicate, purchaseId,
-  paid, itemId, balance, refundableUntil, partialPriceUntil }`. Set pieces follow the set rules.
+  paid, itemId, balance, refundableUntil, partialPriceUntil, completed: [{ setKey, title }] }`. Set
+  pieces follow the set rules; the piece that was the last one missing completes its set (title).
+  A single (no set) is sold only when it is in today's storefront or the admin opened it for direct
+  sale (`shop_items.direct_sale`); otherwise 410 `not_in_storefront`.
+- `POST /equip { itemIds: [id] (1-30) }` (addition, "Hepsini kuşan") -> `{ ok, applied: { category:
+  itemId }, previousOutfitId, actionId }`: wears the owned items in one request (the previous look is
+  kept as a `previous` outfit, one profile broadcast); `POST /history/:actionId/undo` restores it.
+  Storefront cards of set pieces carry the price `POST /items/:id/buy` charges (the 7-day partial rate).
 - `GET /purchases` (addition) -> `{ purchases: [{ id, kind, setKey, itemIds, amount, listAmount,
   status, source, createdAt, refundableUntil }] }`.
 - `POST /purchases/:id/refund` -> `{ ok, purchaseId, refunded, balance }`. 10 minutes, nothing from it
@@ -87,7 +98,9 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   coOpenBonus }, keepMax, cards: [{ index, flipped: false, hint: category } | { index, flipped: true,
   hint, item, rarity, discountPct, listPrice, price, kept, bought, owned, flippedAt }], savings, log:
   [{ at, cardIndex, kind: "flip"|"buy"|"keep" }], notify, next }`. Decks are personal and
-  deterministic per night; +1 flip when a friend has flipped the same night.
+  deterministic per night and drawn against what the user owned when the night opened (buying
+  elsewhere that night never reshuffles the face-down cards; such a card shows `owned: true`); +1
+  flip when a friend has flipped the same night.
 - `POST /night-market/flip { cardIndex }` -> `{ ok, nightMarket }`; 409 `no_flips_left`,
   `card_flipped`, `night_closed`.
 - `POST /night-market/keep { cardIndex, keep?: false }` (addition) -> `{ ok, kept }` (max 2,
@@ -128,7 +141,8 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
   -> previous look, lock -> previous lock, wishlist -> reverse, outfit save -> delete, gift -> recall).
   409 `undo_expired`.
 - `GET /outfits` -> `{ outfits: [{ id, name, kind: "saved"|"previous", look: { category: itemId },
-  createdAt }] }` · `POST /outfits { name, look? }` (current look when omitted) · `POST /outfits/:id/apply`
+  createdAt }] }` · `POST /outfits { name, look?, kind? }` (current look when omitted; `kind:
+  "previous"` = the automatic unnamed look kept before "Hepsini kuşan", newest 5) · `POST /outfits/:id/apply`
   · `DELETE /outfits/:id` (additions: apply, delete).
 - `GET /wishlist` -> `{ items: [{ item, addedAt, owned, available, inStorefrontToday }], sets: [{ setKey,
   addedAt }] }` · `POST /wishlist { itemId | setKey, remove?: true }` · `DELETE /wishlist/:itemId`.
@@ -242,7 +256,7 @@ Destructive actions require `reason` (>= 3 chars, 400 `reason_required`). Audite
 
 ## Error codes (user)
 
-`not_found`, `not_available`, `sold_out`, `already_owned`, `price_changed`, `insufficient_balance`,
+`not_found`, `not_available`, `not_in_storefront`, `sold_out`, `already_owned`, `price_changed`, `insufficient_balance`,
 `wallet_frozen`, `refresh_used`, `lock_not_in_storefront`, `lock_disabled`, `hold_token_required`,
 `new_account_set`, `already_refunded`, `refund_gift`, `refund_window_closed`, `refund_equipped`,
 `refund_not_purchase`, `outfit_limit`, `outfit_name_required`, `item_required`, `wishlist_full`,

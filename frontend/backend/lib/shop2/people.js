@@ -74,14 +74,49 @@ async function equippedSnapshot(userId) {
   return {};
 }
 
-/** Equip `look` ({ category: itemId|null }). Only items the user owns; unknown slots ignored. */
+/** shop_items rows (id, sku, category) of `ids`, for the equip checks. */
+async function itemsById(ids) {
+  const list = [...new Set((ids || []).filter(Boolean).map(String))];
+  if (!list.length) return new Map();
+  const { data, error } = await db.real().from("shop_items").select("id, sku, category").in("id", list);
+  if (error) throw error;
+  return new Map((data || []).map((r) => [String(r.id), r]));
+}
+
+/**
+ * Keep only known equip slots with a short string id (or null): a stored outfit look comes
+ * from the client.
+ */
+function cleanLook(look) {
+  const cols = equipColumns();
+  const out = {};
+  if (!look || typeof look !== "object" || Array.isArray(look)) return out;
+  for (const [cat, itemId] of Object.entries(look)) {
+    if (!cols[cat]) continue;
+    if (itemId == null || itemId === "") out[cat] = null;
+    else if (typeof itemId === "string" && itemId.length <= 64) out[cat] = itemId;
+  }
+  return out;
+}
+
+/**
+ * Equip `look` ({ category: itemId|null }). Only items the user owns, only into their own slot
+ * (same rules as POST /api/shop/equip: no category mismatch, old removed frames / badges stay
+ * removed); unknown slots ignored.
+ */
 async function applyLook(userId, look, { owned = null } = {}) {
   const have = owned || (await ownedIds(userId));
   const cols = equipColumns();
+  const want = cleanLook(look);
+  const rows = await itemsById(Object.values(want));
   const applied = {};
-  for (const [cat, itemId] of Object.entries(look || {})) {
+  for (const [cat, itemId] of Object.entries(want)) {
     if (!cols[cat]) continue;
     if (itemId && !have.has(String(itemId))) continue;
+    if (itemId) {
+      const row = rows.get(String(itemId));
+      if (!row || row.category !== cat || shop.isRemovedCosmeticItem(row)) continue;
+    }
     try {
       await shop.equipItem(userId, cat, itemId || null);
       applied[cat] = itemId || null;
@@ -155,4 +190,4 @@ async function patchState(userId, patch) {
   return next;
 }
 
-module.exports = { getUser, getUsers, publicUser, inventory, ownedIds, equipColumns, equippedSnapshot, applyLook, broadcastProfile, isFriend, friendIds, blockedEitherWay, premiumPlan, getState, patchState };
+module.exports = { getUser, getUsers, publicUser, inventory, ownedIds, equipColumns, equippedSnapshot, cleanLook, applyLook, broadcastProfile, isFriend, friendIds, blockedEitherWay, premiumPlan, getState, patchState };

@@ -215,7 +215,7 @@ const breathe = (dur = 3, n = 3, lo = ".45") => pulse("opacity", `1;${lo};1`, du
   const K = "altin-hasat";
   const ear = (len, s = 1) => { let g = `<path d='M0 4V${-len}' stroke='#8a6a12' stroke-width='1.2'/>`; for (let i = 0; i < 6; i++) { const y = -len * 0.35 - i * len * 0.11; g += `<ellipse cx='-2' cy='${f(y)}' rx='1.7' ry='3.2' transform='rotate(-28 -2 ${f(y)})' fill='url(#wh)' stroke='#8a5a08' stroke-width='.4'/><ellipse cx='2' cy='${f(y - 1.2)}' rx='1.7' ry='3.2' transform='rotate(28 2 ${f(y - 1.2)})' fill='url(#wh)' stroke='#8a5a08' stroke-width='.4'/>`; } g += `<ellipse cx='0' cy='${f(-len - 1)}' rx='1.5' ry='3' fill='url(#wh)'/><path d='M0 ${-len - 3}V${-len - 9}M-2 ${-len - 2}L-4 ${-len - 8}M2 ${-len - 2}L4 ${-len - 8}' stroke='#f2c230' stroke-width='.5'/>`; return `<g transform='scale(${s})'>${g}</g>`; };
   piece(K, "avatar_frame", "legendary", 860,
-    N("Başak Çelengi", "Wheat Wreath", "Ährenkranz", "Corona de espigas", "Couronne d'épis", "Coroa de trigo", "Венок колосьев"),
+    N("Başak Çelengi", "Wheat Wreath", "Ährenkranz", "Corona de espigas", "Couronne d'épis", "Guirlanda de trigo", "Венок колосьев"),
     N("Akşam güneşinde parlayan altın başaklardan bir çelenk, rüzgârda hafifçe salınır.", "A wreath of golden wheat glowing in the late sun, swaying softly in the wind.", "Ein Kranz goldener Ähren im Abendlicht, der sanft im Wind schwingt.", "Una corona de espigas doradas a la luz de la tarde que se mece con el viento.", "Une couronne d'épis dorés dans le soleil du soir, qui ondule doucement au vent.", "Uma coroa de trigo dourado ao sol da tarde, balançando de leve com o vento.", "Венок золотых колосьев в вечернем солнце, мягко колышется на ветру."),
     () => {
       const defs = metalGrad("m", "gold") + lg("wh", ["#fff3c4", "#f2c230", "#8a6a12"], 0, 0, 1, 1) + rgU("sun", [[0.72, "#fff3c4", 0], [0.84, "#f2c230", 0.35], [1, "#f2c230", 0]], 100, 100, 100) + `<g id='ea'>${ear(13)}</g>`;
@@ -318,7 +318,7 @@ const breathe = (dur = 3, n = 3, lo = ".45") => pulse("opacity", `1;${lo};1`, du
       return bannerDoc(s.d + lg("a1", [[0, "#8f7bff", 0], [0.3, "#8f7bff", 0.6], [0.6, "#6effc7"], [1, "#14a37f", 0]]) + lg("a2", [[0, "#ff7bd0", 0], [0.4, "#6effc7", 0.8], [1, "#6effc7", 0]]) + blur("b", 3.5) + lg("rv", ["#7ac8d8", "#2a6a7a"], 0, 0, 1, 1), body, 0.3);
     });
   piece(K, "profile_badge", "epic", 320,
-    N("Kuzey Yıldızı", "Aurora Star", "Polarstern", "Estrella polar", "Étoile boréale", "Estrela boreal", "Звезда сияния"),
+    N("Kuzey Yıldızı", "Aurora Star", "Polarlichtstern", "Estrella de aurora", "Étoile boréale", "Estrela boreal", "Звезда сияния"),
     N("Kutup ışığı renklerinde parlayan bir yıldız.", "A star glowing in aurora colours.", "Ein Stern in den Farben des Polarlichts.", "Una estrella que brilla con los colores de la aurora.", "Une étoile aux couleurs de l'aurore.", "Uma estrela brilhando nas cores da aurora.", "Звезда в цветах полярного сияния."),
     () => badgeArt("star", ["#e6fff4", "#14a37f", "#04121c"], null, "#fff", { ring: "#8f7bff", glyphSvg: `<circle cx='12' cy='13' r='2.6' fill='#fff'/><circle cx='12' cy='13' r='4.4' fill='#6effc7' opacity='.35'/>` }));
 }
@@ -483,7 +483,7 @@ const breathe = (dur = 3, n = 3, lo = ".45") => pulse("opacity", `1;${lo};1`, du
 {
   const K = "yildiz-tozu";
   piece(K, "avatar_frame", "mythic", 1000,
-    N("Yıldız Tozu", "Stardust Ring", "Sternenstaubring", "Anillo de polvo estelar", "Anneau de poussière d'étoiles", "Anel de poeira estelar", "Кольцо звёздной пыли"),
+    N("Yıldız Tozu Halkası", "Stardust Ring", "Sternenstaubring", "Anillo de polvo estelar", "Anneau de poussière d'étoiles", "Anel de poeira estelar", "Кольцо звёздной пыли"),
     N("Galaksi tozundan bir halka; altın kıvılcımlar dolanır, yıldızlar parıldar.", "A ring of galaxy dust where golden sparks circle and stars glitter.", "Ein Ring aus Galaxienstaub, um den goldene Funken kreisen und Sterne glitzern.", "Un aro de polvo de galaxia donde giran chispas doradas y brillan estrellas.", "Un anneau de poussière de galaxie où tournent des étincelles d'or et scintillent des étoiles.", "Um aro de poeira de galáxia onde faíscas douradas giram e estrelas cintilam.", "Кольцо из галактической пыли, по нему кружат золотые искры и мерцают звёзды."),
     () => {
       const defs = rgU("dust", [[0.74, "#05030f", 0], [0.77, "#2b1f6e", 0.9], [0.84, "#6a4ad0", 0.8], [0.9, "#2b1f6e", 0.6], [0.96, "#05030f", 0]], 100, 100, 100) + blur("b", 1.4);
@@ -495,7 +495,7 @@ const breathe = (dur = 3, n = 3, lo = ".45") => pulse("opacity", `1;${lo};1`, du
       return frameDoc(defs, `<circle cx='100' cy='100' r='96' fill='url(#dust)'/>` + `<g>${dots}<animateTransform attributeName='transform' type='rotate' values='0 100 100;30 100 100' dur='24s' repeatCount='1' fill='freeze'/></g>` + circ(76, "#c6b7ff", 1, " stroke-opacity='.8'") + circ(90.5, "#ffe9a8", 0.7, " stroke-opacity='.5' stroke-dasharray='1 4'") + sparks + tw);
     });
   piece(K, "banner", "legendary", 800,
-    N("Yıldız Tozu", "Stardust Sky", "Sternenstaubhimmel", "Cielo de polvo estelar", "Ciel de poussière d'étoiles", "Céu de poeira estelar", "Небо звёздной пыли"),
+    N("Yıldız Tozu Göğü", "Stardust Sky", "Sternenstaubhimmel", "Cielo de polvo estelar", "Ciel de poussière d'étoiles", "Céu de poeira estelar", "Небо звёздной пыли"),
     N("Gökyüzünü çapraz kesen ışıltılı bir galaksi kuşağı ve altın yıldız kümeleri.", "A glittering galaxy band slicing across the sky, with clusters of golden stars.", "Ein glitzerndes Galaxienband quer über den Himmel, dazu goldene Sternhaufen.", "Una banda de galaxia brillante que cruza el cielo, con cúmulos de estrellas doradas.", "Une bande de galaxie scintillante qui traverse le ciel, avec des amas d'étoiles dorées.", "Uma faixa de galáxia cintilante cruzando o céu, com aglomerados de estrelas douradas.", "Сверкающая полоса галактики пересекает небо, рядом золотые звёздные скопления."),
     () => {
       const s = sky("s", [[0, "#05030f"], [1, "#140c38"]]);

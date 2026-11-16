@@ -40,10 +40,13 @@ async function saveSnapshot(userId, look, { name = null, kind = "saved" } = {}) 
 }
 
 /** Save the current look (or `look`) under `name`. */
-async function save(userId, { name, look = null } = {}) {
+async function save(userId, { name, look = null, kind = "saved" } = {}) {
+  const snapshot = look && typeof look === "object" ? people.cleanLook(look) : await people.equippedSnapshot(userId);
+  // "previous": the look kept automatically before "Hepsini kuşan" (newest 5, unnamed, not
+  // counted against the 30 saved looks and not logged as an undoable save).
+  if (kind === "previous") return saveSnapshot(userId, snapshot, { name: null, kind: "previous" });
   const n = typeof name === "string" ? name.trim() : "";
   if (!n) throw shopError("outfit_name_required", 400);
-  const snapshot = look && typeof look === "object" ? look : await people.equippedSnapshot(userId);
   const row = await saveSnapshot(userId, snapshot, { name: n, kind: "saved" });
   const limits = await config.getLimits();
   await actions.log(userId, "outfit_save", { outfitId: row.id, name: row.name }, { undo: { type: "outfit_delete", outfitId: row.id }, undoMinutes: limits.purchases.actionUndoMinutes });

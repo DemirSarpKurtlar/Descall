@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { avatarColor, avatarInitials } from "../../lib/avatarFallback.js";
 import { useLocale } from "../../context/LocaleContext";
+import { localizedShopItemName } from "../../lib/shopItemI18n.js";
 import { ACCENTS, APPEARANCE_EVENT, FONT_STEPS, readAppearance, resolveBaseTheme } from "../../lib/appearancePrefs";
 import { updateAppearance } from "../../lib/appearanceSync";
 import { S3Foot, S3Glyph, S3Group, S3Row, S3Sec } from "./SettingsV3";
@@ -189,7 +190,7 @@ export default function AppearancePane({
   onPickPremiumTheme,
   onOpenShop,
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const prefs = useAppearancePrefs();
   const [storeOpen, setStoreOpen] = useState(false);
   const premium = Boolean(equippedThemeKey);
@@ -203,7 +204,7 @@ export default function AppearancePane({
 
   const equipped = ownedThemes.find((x) => x.theme_key === equippedThemeKey);
   const storeValue = equipped
-    ? equipped.name
+    ? localizedShopItemName(equipped, locale)
     : ownedThemes.length
       ? t("shell.appearance.themesOwned", { count: ownedThemes.length })
       : null; // nothing owned yet: the chevron alone says "opens the shop"
@@ -228,7 +229,7 @@ export default function AppearancePane({
                 <S3Row
                   key={item.id}
                   lead={<span className={`s3-theme-dot us-theme-swatch theme-${item.theme_key}`} aria-hidden="true" />}
-                  title={item.name}
+                  title={localizedShopItemName(item, locale)}
                   check={item.theme_key === equippedThemeKey}
                   onClick={() => onPickPremiumTheme?.(item)}
                 />

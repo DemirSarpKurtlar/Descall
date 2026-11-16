@@ -5,7 +5,7 @@
  * earnings (wallet history). The setting is stored with Settings › Görünüm and synced
  * to the account (lib/appearanceSync.js updateCallCoinPrefs).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatNumber, formatTime, formatDate } from "../../i18n/format.js";
 import { S3Toggle } from "./SettingsV3.jsx";
@@ -22,6 +22,38 @@ import "../../styles/call-coin-summary.css";
 
 const HOURLY = { voice: 30, screen: 40 };
 
+/* The preview frames scale with the width of their column (the settings pane can be
+   as narrow as 260px), so the desktop card and the phone never spill out of the card. */
+const DESK_W = 560;
+const PHONE_W = 390;
+const FRAME_GAP = 10;
+const DESK_SHARE = 0.62;
+
+function useFrameScale() {
+  const ref = useRef(null);
+  const [w, setW] = useState(356);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const read = () => setW(Math.max(160, el.clientWidth || 0));
+    read();
+    if (typeof ResizeObserver !== "function") return undefined;
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const deskW = Math.floor((w - FRAME_GAP) * DESK_SHARE);
+  const phoneW = Math.floor(w - FRAME_GAP - deskW);
+  const style = {
+    "--ccset-desk-w": `${deskW}px`,
+    "--ccset-phone-w": `${phoneW}px`,
+    "--ccset-desk-s": (deskW / DESK_W).toFixed(4),
+    "--ccset-phone-s": (phoneW / PHONE_W).toFixed(4),
+    "--ccset-frame-h": `${Math.round(Math.min(320, Math.max(220, deskW * 1.4)))}px`,
+  };
+  return [ref, style];
+}
+
 function nextUtcMidnight(now = Date.now()) {
   const d = new Date(now);
   d.setUTCHours(24, 0, 0, 0);
@@ -36,6 +68,7 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
   const [recent, setRecent] = useState(null);
   const now = useMemo(() => frozenNow ?? Date.now(), [frozenNow]);
   const sample = useMemo(() => sampleCallCoinSummary(t, { now }), [t, now]);
+  const [framesRef, framesStyle] = useFrameScale();
   const fmt = (n) => formatNumber(Math.max(0, Math.round(Number(n) || 0)), locale);
 
   useEffect(() => {
@@ -79,8 +112,8 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
 
   return (
     <div className="ccset" lang={locale}>
+      {/* The settings shell already prints the page title (us-page-title / us-mobile-title). */}
       <header className="ccset-hd">
-        <h1>{t("coinpop.settings.title")}</h1>
         <p>{t("coinpop.settings.subtitle")}</p>
       </header>
       <div className="ccset-grid">
@@ -156,7 +189,7 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
               <span>{t("coinpop.settings.preview")}</span>
               <span className="ccset-lab-r"><CcsIcon name="eye" size={12} />{t("coinpop.settings.previewSub")}</span>
             </div>
-            <div className={`ccset-frames${prefs.enabled ? "" : " is-off"}`} aria-hidden="true" inert="">
+            <div ref={framesRef} style={framesStyle} className={`ccset-frames${prefs.enabled ? "" : " is-off"}`} aria-hidden="true" inert="">
               <div className="ccset-desk">
                 <div className="ccset-scale is-desk">
                   <CallCoinSummary summary={sample} preview variant="desktop" now={now} still />

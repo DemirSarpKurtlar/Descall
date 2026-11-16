@@ -182,6 +182,15 @@ async function getActiveCatalog() {
     } catch (err) {
       console.warn("[shop] merch columns unavailable:", err?.message || err);
     }
+    // "Tüm ürünler" is browse only: direct_sale (20261116_shop_direct_sale.sql, read separately
+    // for the same reason) plus the 7-language text and set key of s2- items.
+    try {
+      const directSale = require("./shopDirectSale");
+      const [{ byId }, meta] = await Promise.all([directSale.loadColumn(null), directSale.shop2Meta()]);
+      items = directSale.withShop2Meta(directSale.withColumn(items, byId), meta);
+    } catch (err) {
+      console.warn("[shop] direct sale column unavailable:", err?.message || err);
+    }
     const assetsById = new Map();
     for (const item of items) {
       if (!IMAGE_ASSET_CATEGORIES.has(item.category)) continue;
@@ -239,7 +248,9 @@ function leanShop2Cosmetic(item) {
       ? `${ASSET_ROUTE_PATH}/${encodeURIComponent(item.id)}?v=${crypto.createHash("sha1").update(url).digest("hex").slice(0, 12)}`
       : url;
   }
-  return { id: item.id, sku: item.sku, category: item.category, rarity: item.rarity || null, name: item.name || null, asset_url: assetUrl };
+  const lean = { id: item.id, sku: item.sku, category: item.category, rarity: item.rarity || null, name: item.name || null, asset_url: assetUrl };
+  if (item.i18n?.name && typeof item.i18n.name === "object") lean.i18n = { name: item.i18n.name };
+  return lean;
 }
 
 /**
@@ -295,6 +306,11 @@ function toCatalogItem(item, { assetBase = "", decoded = null, merchInfo = null 
     country_code: normalized.country_code || null,
     country_region: normalized.country_region || null,
     country_kind: normalized.country_kind || null,
+    // Browse only unless an admin allowed it (lib/shopDirectSale.js); s2- items carry their
+    // own text in 7 languages and the set they belong to.
+    direct_sale: require("./shopDirectSale").directSaleAllowed(normalized),
+    set_key: normalized.set_key || null,
+    i18n: normalized.i18n || null,
     // Effective (sale) price in price_descoin, list price, stock and time limits.
     ...(merchInfo || {}),
   };
@@ -579,7 +595,18 @@ async function getUserInventoryWithRetired(userId) {
     .select(ITEM_COLUMNS)
     .in("id", itemIds);
   if (itemsError) throw itemsError;
-  const itemById = new Map((items || []).map((i) => [i.id, normalizeItem(i)]));
+  let normalizedItems = (items || []).map(normalizeItem);
+  // Market 2.0 rows carry their name / description in 7 languages (shop_items.i18n), so the
+  // inventory, the owned-theme list and the equip toasts are not English in every language.
+  if (normalizedItems.some((i) => isShop2Sku(i.sku))) {
+    try {
+      const directSale = require("./shopDirectSale");
+      normalizedItems = directSale.withShop2Meta(normalizedItems, await directSale.shop2Meta());
+    } catch (err) {
+      console.warn("[shop] inventory item text unavailable:", err?.message || err);
+    }
+  }
+  const itemById = new Map(normalizedItems.map((i) => [i.id, i]));
 
   const retiredTitles = rows.filter((row) => itemById.get(row.item_id)?.category === "profile_title").length;
   const inventory = rows
@@ -805,6 +832,18 @@ async function getEquippedCosmeticsForUsers(userIds) {
       .select(ITEM_COLUMNS)
       .in("id", [...itemIds]);
     for (const item of shopRows || []) byId.set(item.id, normalizeItem(item));
+    // Market 2.0 badges show their name as a tooltip: give the lean record the 7-language name.
+    if ([...byId.values()].some((i) => i.category === "profile_badge" && isShop2Sku(i.sku))) {
+      try {
+        const meta = await require("./shopDirectSale").shop2Meta();
+        for (const [id, item] of byId) {
+          const m = item.category === "profile_badge" && isShop2Sku(item.sku) ? meta.get(String(id)) : null;
+          if (m?.i18n?.name) byId.set(id, { ...item, i18n: { name: m.i18n.name } });
+        }
+      } catch {
+        /* English row name stays the fallback */
+      }
+    }
   }
   // Special badge worn next to the country flag (tolerant: empty before its migration).
   const specialById = await require("./specialBadges").equippedForUsers(ids).catch(() => new Map());

@@ -8,6 +8,7 @@ import { cssUrl } from "../../lib/cssUrl";
 import AdminBadge from "./AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { NameEffectText, CountryBadge } from "../ui/Cosmetics";
+import { artUrl } from "../../lib/stillArt.js";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { API_BASE_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
@@ -210,7 +211,7 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
     >
       <div
         className="uhc3-banner"
-        style={{ background: model.bannerUrl ? `${cssUrl(model.bannerUrl)} center/cover no-repeat` : fallbackBanner(merged.username || display) }}
+        style={{ background: model.bannerUrl ? `${cssUrl(artUrl(model.bannerUrl))} center/cover no-repeat` : fallbackBanner(merged.username || display) }}
       />
       <div className="uhc3-top">
         <button type="button" className="uhc3-avatar" onClick={() => onOpenProfile?.(merged)} aria-label={t("profile.hoverOpenProfile")}>

@@ -18,7 +18,7 @@ export const SHOP2_EN = {
     "placeholder": "Search items, sets or colours",
     "kbd": "Ctrl K",
     "none": "Nothing matches that yet.",
-    "kind": { "today": "In today's storefront", "set": "Set", "wish": "In your wishlist", "owned": "You own it" }
+    "kind": { "today": "In today's storefront", "set": "Set", "wish": "In your wishlist", "owned": "You own it", "catalog": "In the shop" }
   },
   "tiles": {
     "nextStorefront": "New storefront in",
@@ -46,7 +46,11 @@ export const SHOP2_EN = {
     "giftWhen": "Arrived {time} · not opened",
     "giftSub": "Gifts from friends land here",
     "wallet": "Wallet",
-    "earned": "Earned today"
+    "earned": "Earned today",
+    "nightNext": "Opens {when}",
+    "nightNone": "No night market scheduled",
+    "refreshPremium": "Free today with Descall+",
+    "refreshGrant": "Free refreshes: {n}"
   },
   "vitrin": {
     "today": "Today's storefront",
@@ -78,7 +82,9 @@ export const SHOP2_EN = {
     "go": "Refresh · {n} D",
     "goFree": "Refresh for free",
     "short": "{n} D",
-    "done": "New items are in. Your locked card stayed."
+    "done": "New items are in. Your locked card stayed.",
+    "leftAfter": "{n} more after this",
+    "doneFresh": "New items are in."
   },
   "detail": {
     "label": "Live preview",
@@ -183,6 +189,8 @@ export const SHOP2_EN = {
     "title": "Your recent actions",
     "undo": "Undo · {t}",
     "undone": "Undone. Your DesCoin is back.",
+    "undoneShort": "Undone.",
+    "share": "{name} shown to friends",
     "thanked": "Thanked you",
     "open": "Open",
     "purchase": "Bought {name}",
@@ -261,6 +269,8 @@ export const SHOP2_EN = {
     "focusVoice": "Voice",
     "ownedDeductedShort": "{n, plural, one {# piece owned, deducted} other {# pieces owned, deducted}}",
     "buyShort": "Buy the set",
+    "notOnSale": "This set is not on sale right now. Its pieces can still turn up in your storefront.",
+    "giftOff": "This set is not on sale right now, so it cannot be gifted either.",
     "share": "Share",
     "emptyTitle": "No sets this week",
     "emptyBody": "New sets arrive with the next storefront rotation."
@@ -347,6 +357,7 @@ export const SHOP2_EN = {
     "pieces": "{n}/{total} pieces",
     "refundChip": "Return {t}",
     "wearAll": "Wear it all",
+    "wearOne": "Wear it",
     "wearing": "Putting it on",
     "worn": "Worn",
     "wearPicked": "{n, plural, one {Wear # piece} other {Wear # pieces}}",
@@ -392,7 +403,7 @@ export const SHOP2_EN = {
     "hint": { "profile": "Profile", "frame": "Frame", "chat": "Chat", "voice": "Voice", "sound": "Sound", "badge": "Badge", "effect": "Effect" },
     "flipCard": "Flip a hidden card: {hint}",
     "hintNote": "The hint on a card's back only tells the type; the discount shows when you flip it.",
-    "tomorrow": "No flips left tonight. New cards tomorrow night.",
+    "tomorrow": "No flips left tonight. New cards at the next night market.",
     "noFlips": "No flips left tonight",
     "openedCard": "Opened card",
     "onlyYou": "Only you",
@@ -409,7 +420,15 @@ export const SHOP2_EN = {
     "closedBody": "The night market opens again tonight.",
     "openNow": "Night market is open",
     "closingSoon": "The night market closes in 10 minutes",
-    "stripSub": "{n} hidden cards"
+    "stripSub": "{n} hidden cards",
+    "closedSubAt": "Opens with hidden deals just for you: {when}",
+    "closedBodyAt": "Next night market: {when}.",
+    "noneScheduled": "No night market is scheduled right now.",
+    "notEligible": "This night market isn't open to your account.",
+    "notifyFailed": "Couldn't save the reminder. Try again.",
+    "whenToday": "today at {time}",
+    "whenTomorrow": "tomorrow at {time}",
+    "whenDay": "{day} at {time}"
   },
   "gifts": {
     "title": "Gifts",
@@ -452,6 +471,7 @@ export const SHOP2_EN = {
     "aPackage": "A package",
     "appName": "Descall",
     "notif": "{name} sent you a gift",
+    "notifAnon": "Someone sent you a gift",
     "fromX": "A gift from {name}",
     "fromShort": "From {name}",
     "openPackage": "Open package",
@@ -468,7 +488,7 @@ export const SHOP2_EN = {
     "total": "Total",
     "balance": "Balance {from} → {to}",
     "theirsDeducted": "{n} D deducted for pieces they own",
-    "recallNote": "You can recall it within {m} minutes if it's not opened",
+    "recallNote": "You can recall it until it's opened and get every DesCoin back",
     "dailyLeft": "{n, plural, one {# gift left today} other {# gifts left today}}",
     "saveDraft": "Save draft",
     "draftSaved": "Draft saved",
@@ -592,5 +612,12 @@ export const SHOP2_EN = {
       "dm_rate_limited": "Message limit reached",
       "other": "Couldn't send"
     }
+  },
+  "directSale": {
+    "badge": "In the storefront and sets",
+    "seeSet": "See the set",
+    "hint": "This item is not sold directly here. It shows up in your daily storefront, in sets and at the night market.",
+    "price": "Reference price",
+    "foot": "You can still preview it and try it on."
   }
 };

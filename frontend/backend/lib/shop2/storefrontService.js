@@ -163,7 +163,8 @@ async function refreshQuote(userId, row, limits) {
   if (freeGrants > 0) free = st.streak_reward_day && st.streak_reward_day >= time.addDays(row?.day || time.dayKey(), -1) ? "streak" : "grant";
   else if (daily && plan) free = "premium";
   const price = free ? 0 : limits.refresh.price;
-  return { available, price, free, used, perDay, freeGrants, usedAt: row?.refreshed_at || null, streakDays: Number(st.streak_days) || 0, streakEvery: limits.refresh.streakDays };
+  const left = Math.max(0, perDay - dailyUsed) + freeGrants;
+  return { available, price, free, used, dailyUsed, left, perDay, freeGrants, usedAt: row?.refreshed_at || null, streakDays: Number(st.streak_days) || 0, streakEvery: limits.refresh.streakDays };
 }
 
 async function refresh(userId, { keepLockedItemId, idempotencyKey = null, expectedPrice = null, now = Date.now() } = {}) {
@@ -201,6 +202,8 @@ async function refresh(userId, { keepLockedItemId, idempotencyKey = null, expect
       await people.patchState(userId, { free_refreshes: Math.max(0, q.freeGrants - 1) });
     }
     const shown = [...new Set([...(row.shown || []), ...sf.slots.map((s) => s.itemId)].map(String))];
+    // The lock only survives when its card is still offered (an owned or retired card drops out).
+    if (lockId && !sf.slots.some((s) => s.locked && String(s.itemId) === String(lockId))) lockId = null;
     const patch = {
       rule_version: sf.ruleVersion,
       refresh_count: (Number(row.refresh_count) || 0) + 1,

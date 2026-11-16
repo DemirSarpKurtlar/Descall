@@ -399,7 +399,8 @@ export const ADMIN_SHOP2_TR = {
       "rules": "Algoritma",
       "night": "Gece pazarı",
       "limits": "Sınırlar",
-      "user": "Kullanıcı"
+      "user": "Kullanıcı",
+      "sale": "Tüm ürünler"
     },
     "system": "Sistem",
     "reason": "Sebep: {r}",
@@ -439,7 +440,8 @@ export const ADMIN_SHOP2_TR = {
       "storefront_regenerate": "Kullanıcı vitrini yeniden üretildi",
       "queue_cancel": "Planlı değişiklik iptal edildi",
       "event_create": "Takvime etkinlik eklendi",
-      "event_delete": "Etkinlik silindi"
+      "event_delete": "Etkinlik silindi",
+      "direct_sale": "{on, select, true {Tüm ürünlerde satışa açıldı} other {Tüm ürünlerde satıştan kaldırıldı}} · {n} ürün"
     }
   },
   "slots": {
@@ -887,6 +889,75 @@ export const ADMIN_SHOP2_TR = {
     "undo_expired": "Geri alma süresi doldu",
     "undo_unsupported": "Bu işlem geri alınamaz",
     "not_found": "Kayıt bulunamadı",
-    "rate_limited": "Çok hızlı; biraz bekle"
+    "rate_limited": "Çok hızlı; biraz bekle",
+    "no_items": "En az bir ürün seç",
+    "direct_sale_unavailable": "Doğrudan satış için veritabanı güncellemesi henüz uygulanmadı"
+  },
+  "directSale": {
+    "open": "Tüm ürünlerde satış",
+    "title": "Tüm ürünlerde satış",
+    "subtitle": "Tüm ürünler sekmesi göz atmak içindir. Burada açtığın ürünler oradan doğrudan satın alınabilir; gerisi vitrinde, setlerde ve gece pazarında satılır.",
+    "live": "Canlı",
+    "liveHint": "Değişiklikler açık mağazalara hemen gider.",
+    "notInstalled": "Veritabanı güncellemesi bekleniyor (20261116_shop_direct_sale.sql). O zamana kadar Mağaza 2.0 ürünleri doğrudan satılmaz, ülke bayrakları satılır; anahtarlar güncellemeden sonra çalışır.",
+    "tile": {
+      "listed": "Listelenen ürün",
+      "listedSub": "{n} Mağaza 2.0 ürünü",
+      "allowed": "Doğrudan satışta",
+      "allowedSub": "{n} tanesi Mağaza 2.0",
+      "blocked": "Yalnızca vitrin ve setlerde",
+      "blockedSub": "Fiyat referans olarak görünür",
+      "sales": "Doğrudan satış (7 gün)",
+      "salesSub": "{coins} DesCoin"
+    },
+    "search": "Ürün, kod veya set ara",
+    "allCats": "Tümü",
+    "rarityAll": "Her nadirlik",
+    "state": {
+      "all": "Tümü",
+      "on": "Satışta",
+      "off": "Kapalı"
+    },
+    "col": {
+      "item": "Ürün",
+      "category": "Kategori",
+      "rarity": "Nadirlik",
+      "price": "Fiyat",
+      "sales": "7 gün",
+      "sale": "Doğrudan satış"
+    },
+    "selectShown": "Görünenleri seç",
+    "selected": "{n} seçili",
+    "bulkAllow": "Satışa aç",
+    "bulkBlock": "Satıştan kaldır",
+    "clear": "Seçimi temizle",
+    "footHint": "Toplu değişiklik için ürün seç. Tek anahtar tek ürünü değiştirir.",
+    "audit": "İşlem kaydı",
+    "confirmAllow": "{n} ürün doğrudan satışa açılsın mı?",
+    "confirmBlock": "{n} ürün doğrudan satıştan kaldırılsın mı?",
+    "confirmNote": "Açık mağazalar hemen güncellenir. Bildirimden geri alabilirsin.",
+    "more": "+{n} ürün daha",
+    "toast": {
+      "allowed": "{name} artık Tüm ürünlerde satılıyor",
+      "blocked": "{name} artık yalnızca vitrinde ve setlerde",
+      "bulkAllowed": "{n} ürün doğrudan satışa açıldı",
+      "bulkBlocked": "{n} ürün doğrudan satıştan kaldırıldı",
+      "none": "Değişecek bir şey yok"
+    },
+    "undoReason": "Bildirimden geri alındı",
+    "set": "Set: {key}",
+    "toggleLabel": "{name} için doğrudan satış",
+    "focusToggle": "Tüm ürünlerde doğrudan sat",
+    "empty": "Bu filtreye uyan ürün yok.",
+    "preview": {
+      "title": "Kullanıcının göreceği",
+      "desktop": "Masaüstü",
+      "phone": "Telefon",
+      "buy": "Satın al",
+      "pick": "Önizlemek için bir ürün seç",
+      "pathsAllowed": "Tüm ürünlerden doğrudan alınabilir. Vitrin, setler ve gece pazarı da satmaya devam eder.",
+      "pathsBlocked": "Yalnızca günlük vitrinde, setlerde ve gece pazarında satılır. Tüm ürünlerde göz atmak ve denemek için görünür.",
+      "sales": "Son 7 günde {n} doğrudan satış · {coins} DesCoin"
+    }
   }
 };

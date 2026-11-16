@@ -31,6 +31,9 @@ async function authedRequestOnce(path, { method = "GET", body, signal } = {}, ex
     const err = new Error(data?.error || data?.message || `Request failed (${res.status})`);
     err.status = res.status;
     if (data?.code) err.code = data.code;
+    // Templated server errors (lib/apiError.js): callers translate them with serverMessage().
+    if (typeof data?.errorKey === "string") err.errorKey = data.errorKey;
+    if (data?.errorVars && typeof data.errorVars === "object") err.errorVars = data.errorVars;
     if (data?.action) err.action = data.action;
     if (data && typeof data.balance === "number") err.balance = data.balance;
     throw err;

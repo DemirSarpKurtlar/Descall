@@ -180,27 +180,60 @@ async function charge(userId, items, price, opts = {}) {
     }
     const sale = { id: purchaseId, kind: opts.kind, userId, setKey: row.set_key, itemIds: row.item_ids, amount: price, listAmount: row.list_amount, ownedDeducted: row.owned_deducted, source: row.source, gift: grantTo !== userId, at: row.created_at };
     events.toAdmins("shop2:admin:sale", { sale });
-    return { duplicate: false, purchase: row, balance, granted: granted.map((it) => it.id), lockUntil };
+    // A set completes however its last piece arrives (set buy, single piece, night card), so the
+    // completion title is recorded here for every set a granted item belongs to.
+    const completed = granted.length ? await completionsFor(grantTo, granted, [opts.setKey]) : [];
+    return { duplicate: false, purchase: row, balance, granted: granted.map((it) => it.id), lockUntil, completed };
   });
+}
+
+/** Completion rows (title reward) for the sets of `items` the user now owns fully. */
+async function completionsFor(userId, items, extraKeys = []) {
+  const keys = new Set([...items.map((it) => it?.setKey), ...extraKeys].filter(Boolean));
+  if (!keys.size) return [];
+  try {
+    const touched = (await catalog.getSets()).filter((s) => keys.has(s.key));
+    return await sets.recordCompletions(userId, await people.ownedIds(userId), touched);
+  } catch (err) {
+    console.error(`[shop2] completion record failed for ${userId}:`, err?.message || err);
+    return [];
+  }
 }
 
 /** Equip what was just bought; the previous look is saved as an automatic outfit (undoable). */
 async function equipBought(userId, itemIds, { io = null } = {}) {
   const look = await people.equippedSnapshot(userId);
-  const cat = await catalog.getCatalog();
+  const [cat, owned] = await Promise.all([catalog.getCatalog(), people.ownedIds(userId)]);
   const next = {};
   for (const id of itemIds) {
     const it = cat.byId.get(String(id));
-    if (it && it.category in look) next[it.category] = it.id;
+    // Owned only: an item the user does not have must not take the slot of one they do.
+    if (it && it.category in look && owned.has(String(it.id))) next[it.category] = it.id;
   }
   if (!Object.keys(next).length) return null;
   const outfits = require("./outfits");
   const saved = await outfits.saveSnapshot(userId, look, { name: null, kind: "previous" });
   const applied = await people.applyLook(userId, next);
   const limits = await config.getLimits();
-  await actions.log(userId, "equip", { applied, outfitId: saved?.id || null }, { undo: { type: "restore_look", look }, undoMinutes: Math.max(limits.purchases.actionUndoMinutes, 10) });
+  const action = await actions.log(userId, "equip", { applied, outfitId: saved?.id || null }, { undo: { type: "restore_look", look }, undoMinutes: Math.max(limits.purchases.actionUndoMinutes, 10) });
   if (io) await people.broadcastProfile(io, userId);
-  return { applied, previousOutfitId: saved?.id || null };
+  return { applied, previousOutfitId: saved?.id || null, actionId: action?.id || null };
+}
+
+/**
+ * A later purchase used the 7-day partial price that `lock` (opened by a single piece) gave:
+ * the opening piece can no longer be refunded, otherwise buy one piece, buy the rest at the set
+ * rate, refund the first = the set rate without the set.
+ */
+async function closeLockOpenerRefund(userId, lock, now = Date.now()) {
+  const pid = lock && lock.purchaseId;
+  if (!pid) return;
+  try {
+    await db.rows(db.from("shop2_purchases").update({ refundable_until: new Date(now).toISOString() }).eq("id", pid).eq("user_id", userId).eq("status", "paid").select("id"));
+    await actions.closeUndo(userId, { type: "refund", purchaseId: pid });
+  } catch (err) {
+    console.error(`[shop2] closing the refund of ${pid} failed:`, err?.message || err);
+  }
 }
 
 /* ---------------------------------------------------------------- public operations */
@@ -230,6 +263,7 @@ async function buyItem(userId, itemId, { expectedPrice = null, idempotencyKey = 
   let setKey = null;
   let opensLock = false;
   let lockDiscount = 0;
+  let usedLock = null;
   if (item.setKey) {
     const ctx = await sets.contextFor(userId);
     const set = ctx.sets.find((s) => s.key === item.setKey);
@@ -245,14 +279,22 @@ async function buyItem(userId, itemId, { expectedPrice = null, idempotencyKey = 
       setKey = set.key;
       opensLock = pq.opensLock && q.setRateOpen;
       lockDiscount = q.discountPct;
+      if (q.partialPriceUntil) usedLock = ctx.locks.get(set.key) || null;
     }
+  }
+  // Singles are sold only through the user's storefront of today (sets and the night market have
+  // their own paths), or when the admin opened the item for direct sale ("Tüm ürünler" is browse
+  // only, lib/shopDirectSale.js; read fresh so an admin change applies to the next buy).
+  if (kind === "item" && !(await todayStorefrontIds(userId)).has(String(item.id)) && !(await require("../shopDirectSale").freshAllowed(item))) {
+    throw shopError("not_in_storefront", 410);
   }
   if (expectedPrice != null && Number.isFinite(Number(expectedPrice)) && price > Number(expectedPrice)) throw shopError("price_changed", 409, { price });
   const res = await charge(userId, [item], price, { kind, source: source || (setKey ? "set" : "storefront"), setKey, idempotencyKey: cleanKey(idempotencyKey), opensLock, lockDiscount, listAmount: item.price });
+  if (!res.duplicate && usedLock) await closeLockOpenerRefund(userId, usedLock);
   let equipped = null;
   if (!res.duplicate && equip) equipped = await equipBought(userId, [item.id], { io });
   if (!res.duplicate) events.toUser(userId, "shop2:storefront", { reason: "purchase" });
-  return { ...res, item, price, equipped };
+  return { ...res, item, price, equipped, completed: res.completed || [] };
 }
 
 /**
@@ -297,13 +339,26 @@ async function buySet(userId, setKey, { pieceIds = null, all = false, holdToken 
   });
   let equipped = null;
   let completed = [];
+  if (!res.duplicate && q.partialPriceUntil) await closeLockOpenerRefund(userId, ctx.locks.get(set.key));
   if (!res.duplicate) {
-    const ownedNow = await people.ownedIds(userId);
-    completed = await sets.recordCompletions(userId, ownedNow, [set]);
+    completed = res.completed || [];
     if (equip) equipped = await equipBought(userId, equip === "all" || equip === true ? pq.ids : (Array.isArray(equip) ? equip : []).map(String).filter((id) => pq.ids.includes(id)), { io });
     events.toUser(userId, "shop2:storefront", { reason: "purchase" });
   }
   return { ...res, set, quote: q, priced: pq, equipped, completed };
+}
+
+/** Clear every equip slot of `userId` that holds one of `itemIds` (conditional per slot). */
+async function unequipIds(userId, itemIds) {
+  const ids = new Set((itemIds || []).map(String));
+  if (!ids.size) return;
+  const look = await people.equippedSnapshot(userId).catch(() => ({}));
+  const cols = people.equipColumns();
+  for (const [cat, v] of Object.entries(look)) {
+    if (!v || !ids.has(String(v)) || !cols[cat]) continue;
+    await db.rows(db.real().from("users").update({ [cols[cat]]: null }).eq("id", userId).eq(cols[cat], v).select("id")).catch(() => []);
+    if (cat === "voice_tile" || cat === "join_sound") require("../voiceCosmetics").resetAvailability();
+  }
 }
 
 /** Refund inside the window: the purchase is paid, nothing from it is equipped or gifted. */
@@ -323,11 +378,21 @@ async function refund(userId, purchaseId, { now = Date.now(), io = null } = {}) 
     const [claimed] = await db.rows(db.from("shop2_purchases").update({ status: "refunded", refunded_at: new Date(now).toISOString() }).eq("id", p.id).eq("status", "paid").select("*"));
     if (!claimed) throw shopError("already_refunded", 409);
     for (const r of inv) await db.rows(db.real().from("user_inventory").delete().eq("id", r.id).select("id"));
+    // An equip that landed after the check above must not leave a refunded item on.
+    await unequipIds(userId, ids);
     let balance = await descoin.getBalance(userId);
     if (Number(p.amount) > 0) balance = (await descoin.credit(userId, Number(p.amount), "shop_refund", { shop2: "refund", purchaseId: p.id, itemIds: ids, setKey: p.set_key || null })).balance;
     await db.rows(db.real().from("shop_purchases").update({ status: "refunded" }).eq("user_id", userId).in("item_id", ids).eq("status", "paid").select("id")).catch(() => []);
     if (p.stock_reserved && p.set_key) await releaseSetStock(p.set_key);
-    if (p.set_key) await sets.dropLock(userId, p.set_key, p.id);
+    if (p.set_key) {
+      await sets.dropLock(userId, p.set_key, p.id);
+      // The set is no longer complete: its completion title goes with the refund.
+      const set = await catalog.getSet(p.set_key).catch(() => null);
+      const ownedNow = await people.ownedIds(userId);
+      if (set && set.items.some((it) => !ownedNow.has(String(it.id)))) {
+        await db.rows(db.from("shop2_set_completions").delete().eq("user_id", userId).eq("set_key", p.set_key).select("set_key")).catch(() => []);
+      }
+    }
     if (p.kind === "night" && p.meta?.nightId != null) {
       await db.rows(db.from("shop2_night_flips").update({ bought_at: null }).eq("night_id", String(p.meta.nightId)).eq("user_id", userId).eq("card_index", Number(p.meta.cardIndex)).select("night_id")).catch(() => []);
     }
@@ -345,4 +410,4 @@ async function listPurchases(userId, { limit = 50 } = {}) {
   return db.rows(db.from("shop2_purchases").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(limit)).catch(() => []);
 }
 
-module.exports = { cleanKey, charge, buyItem, buySet, refund, equipBought, listPurchases, splitAmount, reserveSetStock, releaseSetStock };
+module.exports = { cleanKey, charge, completionsFor, buyItem, buySet, refund, equipBought, unequipIds, listPurchases, splitAmount, reserveSetStock, releaseSetStock };

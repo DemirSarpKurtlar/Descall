@@ -85,7 +85,8 @@ function toPoolItem(row, meta) {
     sortOrder: row.sort_order || 0,
     createdAt: row.created_at || null,
     active: row.active !== false,
-    retired: Boolean(row.retired_at) || NEVER_SOLD.has(row.category),
+    // Old frames / badges (non s2- sku) stay removed even in the legacy fallback pool.
+    retired: Boolean(row.retired_at) || NEVER_SOLD.has(row.category) || require("../shop").isRemovedCosmeticItem(row),
     legacy: !String(row.sku || "").startsWith("s2-"),
     asset,
     preview,
@@ -147,6 +148,8 @@ function publicItem(item, base = "", extra = {}) {
   const url = (u, v, kind) => {
     if (!u) return null;
     if (!/^data:/i.test(u)) return u;
+    // "data:," (effects, bubbles, themes, sounds draw from their recipe): no image to serve.
+    if (!/^data:image\//i.test(u)) return null;
     return `${b}/api/shop2/assets/${encodeURIComponent(item.id)}?${kind === "preview" ? "kind=preview&" : ""}v=${v}`;
   };
   return {
@@ -252,6 +255,8 @@ async function getSets() {
     let pieceItems;
     if (set.pieceIds) pieceItems = set.pieceIds.map((id) => catalog.byId.get(String(id))).filter(Boolean);
     else pieceItems = catalog.items.filter((it) => it.setKey === key && !it.legacy);
+    // A piece taken off sale (inactive / retired) is never sold or gifted through its set.
+    pieceItems = pieceItems.filter(sellable);
     const byCat = new Map();
     for (const it of pieceItems.sort((a, b) => a.sortOrder - b.sortOrder)) if (!byCat.has(it.category)) byCat.set(it.category, it);
     const extras = pieceItems.filter((it) => !SET_PIECE_CATEGORIES.includes(it.category));

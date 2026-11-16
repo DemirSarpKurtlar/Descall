@@ -641,7 +641,8 @@ export const AUDIT_LOG_DE = {
     "agent_plan_pause": "Agent-Plan pausiert",
     "credit_transfers_off": "Credit-Transfers ausgeschaltet",
     "credit_transfers_on": "Credit-Transfers eingeschaltet",
-    "game_limits_set": "Spiellimits gesetzt"
+    "game_limits_set": "Spiellimits gesetzt",
+    "shop2_direct_sale": "Direktverkauf geändert"
   },
   "s": {
     "_generic": "{actor}: {label}{has, select, yes { · {target}} other {}}",
@@ -712,7 +713,8 @@ export const AUDIT_LOG_DE = {
     "agent_tool": "Agent-Werkzeug · {tool} lief für {actor}",
     "agent_plan_approve": "{actor} hat einen Agent-Plan genehmigt",
     "agent_plan_run": "{actor} hat einen Agent-Plan ausgeführt",
-    "agent_plan_undo": "{actor} hat einen Agent-Plan rückgängig gemacht"
+    "agent_plan_undo": "{actor} hat einen Agent-Plan rückgängig gemacht",
+    "shop2_direct_sale": "{actor} {on, select, true {hat {n} Artikel in Alle Artikel in den Direktverkauf genommen} other {hat {n} Artikel in Alle Artikel aus dem Direktverkauf genommen}}"
   },
   "toast": {
     "noteAdded": "Notiz hinzugefügt.",

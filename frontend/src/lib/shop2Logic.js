@@ -122,8 +122,10 @@ export function normalizeItem(raw) {
 
 /** One storefront slot: item + the price you pay today. */
 export function normalizeSlot(raw, index = 0) {
+  // The server sends item: null when a stored card's item left the catalog: no card for it.
+  if (raw && typeof raw === "object" && "item" in raw && !raw.item) return null;
   const item = normalizeItem(raw?.item || raw);
-  if (!item) return null;
+  if (!item || item.id == null) return null;
   const base = num(pick(raw, "basePrice", "base_price", "listPrice"), item.price_descoin);
   const price = num(pick(raw, "price", "yourPrice", "your_price"), base);
   return {
@@ -142,8 +144,16 @@ export function normalizeSlot(raw, index = 0) {
   };
 }
 
-export function normalizeStorefront(raw) {
+export function normalizeStorefront(raw, clientNow = Date.now()) {
   const r = raw?.storefront || raw || {};
+  // Countdowns run on this device's clock: shift the server's absolute times by the clock
+  // difference (serverTime) so "00:00" and the night market open on time on a skewed device.
+  const serverNow = ms(r.serverTime);
+  const skew = serverNow != null && Math.abs(serverNow - clientNow) > 2000 ? serverNow - clientNow : 0;
+  const local = (v) => {
+    const t = ms(v);
+    return t == null ? null : t - skew;
+  };
   const slots = arr(pick(r, "slots", "items")).map((s, i) => normalizeSlot(s, i)).filter(Boolean);
   const lockedItemId = r.lock?.itemId ?? pick(r, "lockedItemId", "locked_item_id") ?? slots.find((s) => s.locked)?.item.id ?? null;
   for (const s of slots) s.locked = s.locked || (lockedItemId != null && String(s.item.id) === String(lockedItemId));
@@ -154,8 +164,9 @@ export function normalizeStorefront(raw) {
   const free = pick(refresh, "free", "freeFromStreak");
   return {
     day: pick(r, "day", "date") || null,
-    serverTime: ms(r.serverTime),
-    resetsAt: ms(pick(r, "resetsAt", "resets_at", "nextResetAt")),
+    serverTime: serverNow,
+    clockSkew: skew,
+    resetsAt: local(pick(r, "resetsAt", "resets_at", "nextResetAt")),
     slots,
     lockedItemId,
     refresh: {
@@ -167,13 +178,18 @@ export function normalizeStorefront(raw) {
       freeFromStreak: Boolean(free),
       freeKind: typeof free === "string" ? free : null,
       freeGrants: num(refresh.freeGrants, 0),
+      // Refreshes still possible today: the daily one + granted (admin / streak) ones.
+      left: refresh.left != null
+        ? num(refresh.left, 0)
+        : Math.max(0, num(pick(refresh, "perDay", "limit"), 1) - num(pick(refresh, "dailyUsed", "used", "usedToday"), 0)) + num(refresh.freeGrants, 0),
     },
     streak: { days: num(r.streak?.days ?? r.streakDays, 0), rewardEvery: num(r.streak?.rewardEvery, 7) },
     nightMarket: {
       open: Boolean(nm.open),
-      opensAt: ms(pick(nm, "startsAt", "opensAt", "opens_at")),
-      closesAt: ms(pick(nm, "endsAt", "closesAt", "closes_at")),
-      nextOpensAt: ms(pick(nm, "nextStartsAt", "next_starts_at")),
+      eligible: nm.eligible !== false,
+      opensAt: local(pick(nm, "startsAt", "opensAt", "opens_at")),
+      closesAt: local(pick(nm, "endsAt", "closesAt", "closes_at")),
+      nextOpensAt: local(pick(nm, "nextStartsAt", "next_starts_at")),
       cards: num(pick(nm, "cards", "cardCount"), 6),
       flipsLeft: num(pick(nm, "flipsLeft", "flips_left"), 0),
       flipsTotal: num(pick(nm, "flipsTotal", "flips_total"), 3),
@@ -315,7 +331,9 @@ export function setPricing(set, { selectedIds = null, now = Date.now() } = {}) {
     selectedCount = chosen.length;
     selectedSingles = chosen.reduce((s, p) => s + num(p.item.price_descoin), 0);
     const whole = chosen.length === missing.length;
-    selectedTotal = whole ? yourPrice : partialActive ? Math.round(chosen.reduce((s, p) => s + num(p.item.price_descoin) * ratio, 0)) : selectedSingles;
+    // Same rule as the server (pricing.piecesQuote): the partial price is the chosen list sum at
+    // the set rate, rounded to 10 D once (a plain round could ask less and fail with price_changed).
+    selectedTotal = whole ? yourPrice : partialActive ? Math.max(0, Math.round((selectedSingles * ratio) / 10) * 10) : selectedSingles;
   }
   return {
     sum,
@@ -331,7 +349,7 @@ export function setPricing(set, { selectedIds = null, now = Date.now() } = {}) {
     selectedTotal,
     selectedCount,
     selectedSingles,
-    selectedExtraVsSet: Math.max(0, selectedTotal - Math.round(selectedSingles * ratio)),
+    selectedExtraVsSet: Math.max(0, selectedTotal - Math.round((selectedSingles * ratio) / 10) * 10),
     partialActive,
     setRateClosed,
     complete: pieces.length > 0 && missing.length === 0,
@@ -400,6 +418,20 @@ export function countdownParts(target, now = Date.now(), urgentMs = SHOP2_URGENT
   return { h, m, s, total, done: total <= 0, urgent: total > 0 && total <= urgentMs, text: `${p2(h)}:${p2(m)}:${p2(s)}`, short: `${p2(h * 60 + m)}:${p2(s)}` };
 }
 
+/**
+ * Calendar distance of a future time from now on this device: "today" | "tomorrow" | "day"
+ * (within a week) | "date", for labels like "Friday at 22:00" (null when there is no time).
+ */
+export function whenOf(target, now = Date.now()) {
+  const t = ms(target);
+  if (t == null) return null;
+  const a = new Date(now);
+  const b = new Date(t);
+  const idx = (d) => Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  const diff = idx(b) - idx(a);
+  return { at: t, days: diff, kind: diff <= 0 ? "today" : diff === 1 ? "tomorrow" : diff < 7 ? "day" : "date" };
+}
+
 /** Fraction of the day elapsed until `resetsAt` (24 h window). */
 export function dayProgress(resetsAt, now = Date.now()) {
   const t = ms(resetsAt);
@@ -440,9 +472,13 @@ export function refreshPlan(storefront, { balance = 0, cartIds = [] } = {}) {
   const cartLosing = changing.filter((s) => cart.has(String(s.item.id)));
   const r = storefront?.refresh || {};
   const price = r.freeFromStreak ? 0 : num(r.price, 120);
+  const left = r.left != null ? num(r.left, 0) : r.available !== false ? 1 : 0;
   return {
     available: r.available !== false,
     price,
+    free: price === 0,
+    left,
+    leftAfter: Math.max(0, left - 1),
     changingCount: changing.length,
     kept: kept.map((s) => s.item),
     cartLosing: cartLosing.map((s) => s.item),
@@ -742,6 +778,8 @@ export function messageCount(text) {
 // Action log.
 
 const HISTORY_KIND = { gift_send: "gift_sent", gift_recall: "gift_recalled", outfit_save: "outfit", outfit_apply: "outfit_apply", wishlist_add: "wishlist", wishlist_remove: "wishlist_remove" };
+// The server logs what was paid as a positive number; these kinds spent DesCoin.
+const HISTORY_SPENT = new Set(["purchase", "gift_send", "refresh", "night_buy"]);
 
 export function normalizeHistory(raw) {
   return arr(raw?.entries || raw?.history || raw).map((e) => {
@@ -757,7 +795,7 @@ export function normalizeHistory(raw) {
       setKey: e.setKey || p.setKey || e.set_key || null,
       setName: e.setName ?? p.setName ?? null,
       to: e.to || p.to || p.recipient || null,
-      amount: num(e.amount ?? p.amount ?? p.paid ?? p.price, 0),
+      amount: HISTORY_SPENT.has(kind) ? -Math.abs(num(e.amount ?? p.amount ?? p.paid ?? p.price, 0)) : num(e.amount ?? p.amount ?? p.paid ?? p.price ?? p.refunded, 0),
       undoable: Boolean(e.undoable) && !e.undoneAt,
       undoUntil: ms(e.undoUntil || e.undo_until),
       undoneAt: ms(e.undoneAt),

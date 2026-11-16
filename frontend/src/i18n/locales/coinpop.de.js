@@ -121,6 +121,13 @@ export const COINPOP_DE = {
       "promo": "Promo-Code",
       "premium_gift": "Descall+-Geschenk",
       "other": "Sonstiges"
+    },
+    "shop2": {
+      "gift": "Geschenk gesendet",
+      "refresh": "Schaufenster erneuert",
+      "giftRecall": "Geschenk zurückgerufen",
+      "giftOverlap": "Geschenkdifferenz erstattet",
+      "setRecall": "Set zurückgezogen, Erstattung"
     }
   },
   "settings": {

@@ -2,7 +2,8 @@
 
 /**
  * Market 2.0 background tick (every 30 s, one per instance; every step is idempotent and
- * claims rows with a conditional update, so two instances cannot double-run anything):
+ * claims rows with a conditional update, so two instances cannot double-run anything; the
+ * 00:00 and night open / close announcements are claimed once in shop2_settings):
  *  - deliver scheduled gifts whose time came (shop2:gift to the recipient)
  *  - run the scheduled change queue (rule version at 00:00, set publish, recall finalize)
  *  - 00:00 Istanbul: shop2:storefront { reason: "daily" } to everyone
@@ -20,6 +21,22 @@ let lastDay = null;
 let lastNight = undefined;
 let running = false;
 
+/**
+ * One announcement per event across instances: the first instance to insert the shop2_settings
+ * row wins (unique key), the others stay quiet. Without the table every instance announces.
+ */
+async function claimOnce(key, now) {
+  try {
+    const db = require("./db");
+    await db.ready();
+    if (await db.one(db.from("shop2_settings").select("key").eq("key", key).maybeSingle()).catch(() => null)) return false;
+    const { error } = await db.from("shop2_settings").insert({ key, value: { at: time.iso(now) }, version: 1, updated_at: time.iso(now) }).select("key").single();
+    return !error;
+  } catch {
+    return true;
+  }
+}
+
 async function tick({ getIo = null, now = Date.now() } = {}) {
   if (running) return null;
   running = true;
@@ -30,7 +47,7 @@ async function tick({ getIo = null, now = Date.now() } = {}) {
     out.queue = await require("./adminOps").runDue({ now }).catch((e) => (console.warn("[shop2] queue:", e?.message || e), []));
     out.reminder = await require("./night").remindDue({ now, io: getIo ? getIo() : events.getIo() }).catch((e) => (console.warn("[shop2] night reminder:", e?.message || e), null));
     const day = time.dayKey(now);
-    if (lastDay && lastDay !== day) {
+    if (lastDay && lastDay !== day && (await claimOnce(`announce:daily:${day}`, now))) {
       events.toAll("shop2:storefront", { reason: "daily", day });
       out.daily = true;
     }
@@ -38,7 +55,7 @@ async function tick({ getIo = null, now = Date.now() } = {}) {
     try {
       const { open } = await require("./night").current(now);
       const id = open ? open.id : null;
-      if (lastNight !== undefined && id !== lastNight) {
+      if (lastNight !== undefined && id !== lastNight && (await claimOnce(`announce:night:${id || lastNight}:${id ? "open" : "closed"}`, now))) {
         events.toAll("shop2:storefront", { reason: id ? "night_open" : "night_closed", nightId: id || lastNight });
         out.night = id ? "open" : "closed";
       }

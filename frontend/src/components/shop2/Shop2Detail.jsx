@@ -73,7 +73,7 @@ export function ItemDetail({ slot, onClose }) {
   const name = s2.itemName(item);
   const lab = s2.itemLabels(item);
   const price = slot.price ?? item.price_descoin;
-  const owned = s2.owned.has(item.id);
+  const owned = Boolean(slot.owned) || s2.owned.has(item.id);
   const equippedId = s2.equippedIdFor(item.category);
   const equippedItem = equippedId != null ? s2.inventory.find((r) => String(r.itemId) === String(equippedId))?.item : null;
   const wished = s2.data.wishlist.some((w) => String(w.id) === String(item.id));

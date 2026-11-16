@@ -100,12 +100,23 @@ async function coOpenBonus(nightId, userId, bonus) {
 }
 
 async function deck(userId, night) {
-  const [cat, owned] = await Promise.all([catalog.getCatalog(), people.ownedIds(userId)]);
+  const [cat, inv] = await Promise.all([catalog.getCatalog(), people.inventory(userId)]);
+  const owned = new Set(inv.map((r) => String(r.item_id)));
   // A flipped card is fixed by its flip row (item, discount, price); the rest of the deck is drawn
-  // against what the user owned before tonight's cards, so buying elsewhere never reshuffles it.
+  // against what the user owned when the night opened, so buying elsewhere tonight (storefront,
+  // a set, a flipped card) never reshuffles the face-down cards or their hints.
   const flips = await flipsOf(night.id, userId);
   const flippedIds = new Set(flips.map((f) => String(f.item_id)));
-  const ownedBefore = new Set([...owned].filter((id) => !flippedIds.has(id)));
+  const startMs = time.ms(night.startsAt);
+  const ownedBefore = new Set(
+    inv
+      .filter((r) => {
+        const at = time.ms(r.acquired_at);
+        return startMs == null || at == null || at < startMs;
+      })
+      .map((r) => String(r.item_id))
+      .filter((id) => !flippedIds.has(id))
+  );
   const d = deckFor({ userId, night, pool: cat.items, owned: ownedBefore });
   const byIndex = new Map(flips.map((f) => [Number(f.card_index), f]));
   const cards = d.cards.map((c) => {
@@ -176,7 +187,15 @@ async function openNightOrThrow(userId, now) {
   return open;
 }
 
-async function flip(userId, cardIndex, { now = Date.now() } = {}) {
+/**
+ * Flip a card. Runs in the user's queue (parallel flips cannot all pass the allowance check) and
+ * recounts after the insert, so two instances cannot exceed it either (the extra row is removed).
+ */
+async function flip(userId, cardIndex, opts = {}) {
+  return require("../descoin").runSerialized(userId, () => flipNow(userId, cardIndex, opts));
+}
+
+async function flipNow(userId, cardIndex, { now = Date.now() } = {}) {
   const idx = Number(cardIndex);
   const limits = await config.getLimits();
   const open = await openNightOrThrow(userId, now);
@@ -191,6 +210,11 @@ async function flip(userId, cardIndex, { now = Date.now() } = {}) {
   if (error) {
     if (String(error.code) === "23505") throw shopError("card_flipped", 409);
     throw error;
+  }
+  const after = await flipsOf(open.id, userId);
+  if (after.length > open.flips + bonus) {
+    await db.rows(db.from("shop2_night_flips").delete().eq("night_id", String(open.id)).eq("user_id", userId).eq("card_index", idx).select("night_id")).catch(() => []);
+    throw shopError("no_flips_left", 409);
   }
   return { card: { ...card, flipped: true }, nightId: open.id };
 }
@@ -220,19 +244,42 @@ async function revealedCard(userId, cardIndex, { now = Date.now() } = {}) {
   return { night: open, card, item, flip: f };
 }
 
+/**
+ * Claim a revealed card for one purchase or gift (conditional update on bought_at, so a buy and
+ * a gift, or two gifts, sent together cannot both use the discount). True when this call won.
+ */
+async function claimCard(userId, nightId, cardIndex, now = Date.now()) {
+  await db.ready();
+  const won = await db.rows(db.from("shop2_night_flips").update({ bought_at: new Date(now).toISOString() }).eq("night_id", String(nightId)).eq("user_id", userId).eq("card_index", Number(cardIndex)).is("bought_at", null).select("night_id"));
+  return won.length > 0;
+}
+
+async function releaseCard(userId, nightId, cardIndex) {
+  await db.rows(db.from("shop2_night_flips").update({ bought_at: null }).eq("night_id", String(nightId)).eq("user_id", userId).eq("card_index", Number(cardIndex)).select("night_id")).catch(() => []);
+}
+
 async function buy(userId, cardIndex, { idempotencyKey = null, expectedPrice = null, now = Date.now() } = {}) {
   const purchases = require("./purchases");
+  const key = purchases.cleanKey(idempotencyKey);
+  if (key) {
+    const dup = await db.one(db.from("shop2_purchases").select("*").eq("user_id", userId).eq("idempotency_key", key).maybeSingle()).catch(() => null);
+    if (dup) return { duplicate: true, purchase: dup, balance: await require("../descoin").getBalance(userId), card: null, item: { id: (dup.item_ids || [])[0] } };
+  }
   const { night, card, item } = await revealedCard(userId, cardIndex, { now });
   if (expectedPrice != null && Number.isFinite(Number(expectedPrice)) && card.price > Number(expectedPrice)) throw shopError("price_changed", 409, { price: card.price });
-  const res = await purchases.charge(userId, [item], card.price, {
-    kind: "night",
-    source: "night_market",
-    idempotencyKey: purchases.cleanKey(idempotencyKey),
-    listAmount: card.listPrice,
-    meta: { nightId: night.id, cardIndex: card.index, discountPct: card.discountPct },
-  });
-  if (!res.duplicate) {
-    await db.rows(db.from("shop2_night_flips").update({ bought_at: new Date(now).toISOString() }).eq("night_id", String(night.id)).eq("user_id", userId).eq("card_index", card.index).select("night_id"));
+  if (!(await claimCard(userId, night.id, card.index, now))) throw shopError("card_bought", 409);
+  let res;
+  try {
+    res = await purchases.charge(userId, [item], card.price, {
+      kind: "night",
+      source: "night_market",
+      idempotencyKey: key,
+      listAmount: card.listPrice,
+      meta: { nightId: night.id, cardIndex: card.index, discountPct: card.discountPct },
+    });
+  } catch (err) {
+    await releaseCard(userId, night.id, card.index);
+    throw err;
   }
   return { ...res, card, item };
 }
@@ -341,4 +388,4 @@ async function remindDue({ now = Date.now(), io = null } = {}) {
   return { night: night.id, reminded };
 }
 
-module.exports = { REMIND_MINUTES, remindDue, reminderText, fromRow, nights, current, eligible, view, flip, keep, buy, revealedCard, setNotify, report, deck };
+module.exports = { REMIND_MINUTES, remindDue, reminderText, fromRow, nights, current, eligible, view, flip, keep, buy, claimCard, releaseCard, revealedCard, setNotify, report, deck };

@@ -216,6 +216,11 @@ export default function ServerMembersPanel({
           avatarUrl: m.avatarUrl,
           avatar_url: m.avatarUrl,
           premium_plan: m.premium_plan,
+          // Cosmetics the member wears (country flag, special badge, Market 2.0 frame + badge).
+          equippedCountry: m.equippedCountry || null,
+          equippedSpecialBadge: m.equippedSpecialBadge || null,
+          equippedAvatarFrame: m.equippedAvatarFrame || null,
+          equippedBadge: m.equippedBadge || null,
         };
         const status = getPresenceStatus(onlineUsers, m.userId);
         return {

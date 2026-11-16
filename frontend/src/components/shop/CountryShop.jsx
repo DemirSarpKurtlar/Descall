@@ -71,6 +71,10 @@ function CountryAction({ item, state, busy, affordable, hasVoucher, onBuy, onEqu
           {formatNumber(item.price_descoin || 0, locale)}
         </span>
       )}
+      {item.direct_sale === false ? (
+        // An admin took this flag off direct sale ("Tüm ürünler" is browse only).
+        <span className="cs-pill is-browse" data-direct-sale="false">{t("shop2.directSale.badge")}</span>
+      ) : (
       <button
         type="button"
         className="cs-btn is-primary"
@@ -80,6 +84,7 @@ function CountryAction({ item, state, busy, affordable, hasVoucher, onBuy, onEqu
       >
         {busy ? t("Buying…") : hasVoucher ? t("Get") : t("Buy")}
       </button>
+      )}
     </div>
   );
 }

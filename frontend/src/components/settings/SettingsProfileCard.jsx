@@ -3,6 +3,7 @@ import StatusBadge from "../ui/StatusBadge";
 import AdminBadge from "../social/AdminBadge";
 import PremiumBadge from "../../premium/PremiumBadge.jsx";
 import { ProfileBadgeRow } from "../badges/BadgeVault";
+import { artUrl } from "../../lib/stillArt.js";
 import { cssUrl } from "../../lib/cssUrl";
 import { profileCardModel, effectRoom } from "../../lib/settingsProfileCard";
 import { useT } from "../../context/LocaleContext";
@@ -24,7 +25,7 @@ export default function SettingsProfileCard({ me, avatarUrl, status, isAdmin, on
       <div
         className="spc-banner"
         aria-hidden="true"
-        style={{ background: model.bannerUrl ? `${cssUrl(model.bannerUrl)} center/cover no-repeat` : model.bannerFallback }}
+        style={{ background: model.bannerUrl ? `${cssUrl(artUrl(model.bannerUrl))} center/cover no-repeat` : model.bannerFallback }}
       />
       <div className="spc-body">
         <div className="spc-top">

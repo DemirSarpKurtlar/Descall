@@ -63,8 +63,10 @@ import ShopStorefront from "../shop/ShopStorefront.jsx";
 import Shop2Market from "../shop2/Shop2Market.jsx";
 import { purchasable, stockOf } from "../../lib/shopMerchView.js";
 import { SHOP_FOCUS_EVENT, peekShopFocus, takeShopFocus } from "../../lib/callCoinPrefs.js";
+import { requestShop2Focus } from "../../lib/shop2Look.js";
 import "../../styles/promo.css";
 import "../../styles/shop-merch.css";
+import "../../styles/shop-direct-sale.css";
 
 /** Short tab labels, same pattern as admin top nav. Source: lib/shopCategories.js. */
 const CATEGORY_ICONS = {
@@ -440,6 +442,13 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
         return false;
       }
       if (err.code === "no_voucher") setVouchers((prev) => ({ ...prev, [item.category]: 0 }));
+      if (err.code === "not_direct_sale") {
+        // An admin took it off direct sale while the shop was open: show the state, not a Buy.
+        hapticError();
+        setNotice(err.message || t("shop2.directSale.hint"));
+        await load({ silent: true, fresh: true });
+        return false;
+      }
       if (["sold_out", "not_available", "price_changed"].includes(err.code)) {
         hapticError();
         setNotice(t(`shopMerch.err.${err.code}`));
@@ -510,6 +519,12 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
     setPurchaseItemId(item.id);
   };
   const closePurchase = () => setPurchaseItemId(null);
+  // "Seti gör": the item is sold in a Market 2.0 set; open that set (Shop2Market listens).
+  const openSetInMarket = (setKey) => {
+    if (!setKey) return;
+    setPurchaseItemId(null);
+    requestShop2Focus({ kind: "set", ref: String(setKey) });
+  };
   // "Ways to earn" in the insufficient state: close, then bring the daily reward card or
   // the invite card into view and focus its button.
   const goEarn = (kind) => {
@@ -535,7 +550,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   useEffect(() => {
     const apply = () => {
       const pending = peekShopFocus();
-      if (!pending) return;
+      // Market 2.0 decides first (storefront card / set) and hands the rest over.
+      if (!pending || !pending.classic) return;
       const item = itemsRef.current.find((row) => String(row.id) === pending.itemId);
       if (!item) return; // catalog still loading: the next items update tries again
       takeShopFocus();
@@ -782,6 +798,20 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
                         >
                           {equipping ? t("Applying…") : isEquipped ? t("Unequip") : t("Apply")}
                         </RippleButton>
+                      ) : item.direct_sale === false ? (
+                        // "Tüm ürünler" is browse only: price stays as a reference, the item is
+                        // sold in the storefront, sets and night market (admin can allow it).
+                        <span className="shop-item-browse" data-direct-sale="false">
+                          <span className="shop-item-browse-pill">
+                            <Store size={12} /> {t("shop2.directSale.badge")}
+                          </span>
+                          {item.set_key ? (
+                            <button type="button" className="shop-item-browse-link" onClick={() => openSetInMarket(item.set_key)}>
+                              {t("shop2.directSale.seeSet")}
+                              <ChevronRight size={12} />
+                            </button>
+                          ) : null}
+                        </span>
                       ) : !purchasable(item) ? (
                         <RippleButton className="btn-secondary sm" disabled data-soldout="true">
                           {stockOf(item).soldOut ? t("shopMerch.soldOut") : t("shopMerch.ended")}
@@ -885,6 +915,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             ownedItemIds={ownedItemIds}
             equippedIdFor={equippedIdFor}
             onEquip={handleEquip}
+            onLookChanged={onEquippedChange}
             busyItemId={busyItemId}
             onEarn={goEarn}
             earnSlot={lead}
@@ -954,6 +985,8 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
             canInvite={Boolean(me?.username)}
             currentThemeKey={currentThemeKey}
             onClose={closePurchase}
+            browseOnly={purchaseItem.direct_sale === false}
+            onOpenSet={purchaseItem.set_key ? () => openSetInMarket(purchaseItem.set_key) : null}
             onBuy={handleBuy}
             onEquip={handleEquip}
             onOpenInventory={() => {

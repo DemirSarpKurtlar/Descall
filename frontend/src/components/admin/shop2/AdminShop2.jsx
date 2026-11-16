@@ -28,6 +28,7 @@ import UserStorefrontDrawer from "./UserStorefrontDrawer.jsx";
 import NightMarketDrawer from "./NightMarketDrawer.jsx";
 import LimitsDrawer from "./LimitsDrawer.jsx";
 import RecallDialog from "./RecallDialog.jsx";
+import DirectSaleDrawer from "./DirectSaleDrawer.jsx";
 import { Coin, Popover, Seg, Spark, Toast, UserAv, useFmt, useNow, SetMark, fdt } from "./ui.jsx";
 import { clock, istDay, nextReset, nameOf } from "./shop2Model.js";
 import "../../../styles/shop-merch.css";
@@ -57,6 +58,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
   const [recall, setRecall] = useState(null); // set
   const [auditFilter, setAuditFilter] = useState(null);
   const [highlight, setHighlight] = useState(null); // timeline bar flash
+  const [directSaleOpen, setDirectSaleOpen] = useState(false); // "Tüm ürünlerde satış"
   const toastTimer = useRef(null);
   const reloadTimer = useRef(null);
   const saleTimer = useRef(null);
@@ -130,7 +132,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
         }
         return;
       }
-      const p = { kind: sale.gift ? "gift" : ["set", "piece", "pieces"].includes(sale.kind) ? "set" : sale.kind === "refund" ? "refund" : "item", paid: Number(sale.amount) || 0, price: Number(sale.listAmount) || 0, setKey: sale.setKey || null, at: sale.at };
+      const p = { kind: sale.gift ? "gift" : ["set", "piece", "pieces"].includes(sale.kind) ? "set" : sale.kind === "refund" ? "refund" : "item", piece: !sale.gift && (sale.kind === "piece" || sale.kind === "pieces"), paid: Number(sale.amount) || 0, price: Number(sale.listAmount) || 0, setKey: sale.setKey || null, at: sale.at };
       setDash((d) => applySale(d, p));
       const keys = ["revenue", p.kind === "set" ? "setSales" : p.kind === "gift" ? "gifts" : "storefrontBuys"];
       if (p.setKey) keys.push(`set:${p.setKey}`);
@@ -244,6 +246,10 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
             <b className="tnum">{clock(resetAt - now)}</b>
           </span>
           <GlobalSearch inputRef={searchRef} sets={sets || []} onUser={openUser} onSet={openSet} />
+          <button type="button" className="as2-btn" onClick={() => setDirectSaleOpen(true)} data-testid="as2-direct-sale-open">
+            <ShoppingBag size={15} />
+            {t("adminShop2.directSale.open")}
+          </button>
           <button type="button" className="as2-btn" onClick={() => openUser(null)} data-testid="as2-user-storefront">
             <Eye size={15} />
             {t("adminShop2.userStorefront")}
@@ -368,6 +374,17 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
         notify={notify}
         fail={fail}
       />
+      <DirectSaleDrawer
+        open={directSaleOpen}
+        onClose={() => setDirectSaleOpen(false)}
+        socket={socket}
+        notify={notify}
+        fail={fail}
+        onAudit={() => {
+          setDirectSaleOpen(false);
+          setView("kayit");
+        }}
+      />
       <RecallDialog set={recall} onClose={() => setRecall(null)} onDone={afterRecall} fail={fail} />
       <Toast toast={toast} onUndo={() => { toast?.undo?.(); setToast(null); }} onClose={() => setToast(null)} />
       {typeof onGoto === "function" ? null : null}
@@ -384,8 +401,12 @@ export function applySale(d, p) {
   bump("revenue", paid);
   if (p.kind === "refund") return { ...d, tiles };
   if (p.kind === "set") {
-    bump("setSales");
-    tiles.setSales.pieces = Number(tiles.setSales.pieces || 0) + Number(p.pieces || 0);
+    // "Set satışı" counts whole sets; a piece bought on its own goes under "parça parça" (like the server tile).
+    if (p.piece) tiles.setSales = { ...(tiles.setSales || {}), value: Number(tiles.setSales?.value || 0), pieces: Number(tiles.setSales?.pieces || 0) + 1 };
+    else {
+      bump("setSales");
+      tiles.setSales.pieces = Number(tiles.setSales.pieces || 0) + Number(p.pieces || 0);
+    }
   } else if (p.kind === "gift") bump("gifts");
   else bump("storefrontBuys");
   const sales = d.sales ? { ...d.sales } : null;

@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import shop2Api from "../../lib/shop2Api.js";
+import { serverMessage } from "../../i18n/serverText.js";
 import {
   canRecall,
   filterRecipients,
@@ -129,10 +130,14 @@ function GiftPreview({ to, sender, item, setName, message, wrap, hiddenItem, hid
   if (both) {
     return (
       <div className="s2-gprev-all">
-        <div className="s2-eyebrow is-plain">{t("shop2.gifts.desktopChat")}</div>
-        {desktop}
-        <div className="s2-eyebrow is-plain">{t("shop2.gifts.phoneAndOpen")}</div>
-        <div className="s2-gphones">{phone}{opened}</div>
+        <div className="s2-gprev-pane">
+          <div className="s2-eyebrow is-plain">{t("shop2.gifts.desktopChat")}</div>
+          {desktop}
+        </div>
+        <div className="s2-gprev-pane">
+          <div className="s2-eyebrow is-plain">{t("shop2.gifts.phoneAndOpen")}</div>
+          <div className="s2-gphones">{phone}{opened}</div>
+        </div>
       </div>
     );
   }
@@ -172,23 +177,11 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     }
   }, [target, variant, s2.data.storefront, s2.owned]);
   const friends = useMemo(() => list.map((f) => ({ ...f, owns: Boolean(f.owns || f.hasItem), wishes: Boolean(f.wishes || f.inWishlist) })), [list]);
+  // Birthdays are private: the chip shows only when the list carries any.
+  const hasBirthdays = friends.some((f) => f.birthdayInDays != null || f.birthdayAt);
   const shown = filterRecipients(friends, filter, query);
   const friend = friends.find((f) => sameId(f.id, to)) || null;
   const item = target?.item || null;
-  const [quote, setQuote] = useState(null);
-  useEffect(() => {
-    setQuote(null);
-    if (!friend || !target?.setKey) return undefined;
-    let off = false;
-    shop2Api.giftQuote({ toUserId: friend.id, setKey: target.setKey }).then((q) => {
-      if (!off && q?.ok) setQuote(q);
-    }).catch(() => {});
-    return () => {
-      off = true;
-    };
-  }, [friend, target?.setKey]);
-  const price = item ? Number(target.price ?? item.price_descoin) : quote?.price != null ? Number(quote.price) : set ? giftPrice({ set, friend }) : 0;
-  const setDeduct = quote?.ownedDeducted != null ? Number(quote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
   const count = messageCount(message);
   const tooLong = count > SHOP2_MESSAGE_MAX;
   const bdayAt = friend?.birthdayAt ? new Date(friend.birthdayAt) : friend?.birthdayInDays != null ? (() => {
@@ -198,9 +191,49 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     return d;
   })() : null;
   const sendAt = when === "birthday" && bdayAt ? bdayAt : when === "at" && at ? new Date(at) : null;
+  const sendAtIso = sendAt && Number.isFinite(sendAt.getTime()) ? sendAt.toISOString() : "";
+  // Server pre-check for this friend: price (their pieces deducted) or why it cannot be sent
+  // now (daily caps, new account, gifts closed, schedule too far), shown before "Gönder".
+  const [quote, setQuote] = useState(null);
+  const [blocked, setBlocked] = useState(null);
+  const friendId = friend?.id ?? null;
+  const quoteKey = target?.nightCardIndex != null ? `night:${target.nightCardIndex}` : target?.setKey ? `set:${target.setKey}` : item ? `item:${item.id}` : "";
+  const quoteId = `${friendId}|${quoteKey}`;
+  useEffect(() => {
+    // A new delivery time keeps the friend's price; only the reason is checked again.
+    setQuote((q) => (q && q.quoteId === quoteId ? q : null));
+    setBlocked(null);
+    if (friendId == null || !quoteKey) return undefined;
+    let off = false;
+    const body = {
+      toUserId: friendId,
+      ...(target?.nightCardIndex != null ? { nightCardIndex: target.nightCardIndex } : target?.setKey ? { setKey: target.setKey } : { itemId: item?.id }),
+      ...(sendAtIso ? { sendAt: sendAtIso } : {}),
+    };
+    const timer = setTimeout(() => {
+      shop2Api.giftQuote(body).then((q) => {
+        if (off) return;
+        if (q?.ok) setQuote({ ...q, quoteId });
+        else if (q && q.ok === false) setBlocked(serverMessage(q) || t("shop2.errors.gift"));
+      }).catch((err) => {
+        // 409 recipient_owns / 410 not_available / 404: the server's reason, translated.
+        if (!off && err?.status && err.status < 500 && err.status !== 429) setBlocked(err.message || t("shop2.errors.gift"));
+      });
+    }, 250);
+    return () => {
+      off = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendId, quoteKey, sendAtIso]);
+  const liveQuote = quote && quote.quoteId === quoteId ? quote : null;
+  const price = liveQuote?.price != null ? Number(liveQuote.price) : item ? Number(target.price ?? item.price_descoin) : set ? giftPrice({ set, friend }) : 0;
+  const setDeduct = liveQuote?.ownedDeducted != null ? Number(liveQuote.ownedDeducted) : set && friend ? Math.max(0, setPricing({ ...set, pieces: set.pieces.map((p) => ({ ...p, owned: false })), yourPrice: null }).yourPrice - price) : 0;
   const sender = s2.me?.displayName || s2.me?.username || "";
   const limits = s2.data.gifts.limits;
-  const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
+  const canSend = friend && !friend.owns && friend.acceptsGifts !== false && !blocked && !tooLong && !busy && price <= s2.balance && limits?.paused !== true && (when !== "at" || (sendAt && sendAt.getTime() > Date.now()));
+  // Why "Gönder" is off for the chosen friend (server reason first, then the wallet).
+  const blockNote = !friend ? null : blocked || (limits?.paused === true ? t("Gifts are paused right now.") : null) || (price > s2.balance ? t("shop2.kasa.shortBy", { n: formatNumber(price - s2.balance, locale) }) : null);
   const setName = set ? s2.setName(set) : null;
   const itemSet = item?.set_key ? (s2.data.sets.find((x) => x.key === item.set_key) || s2.data.storefront?.featuredSets?.find((x) => x.key === item.set_key)) : null;
 
@@ -249,7 +282,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
         <label className="s2-searchbox"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("shop2.gifts.searchFriend")} aria-label={t("shop2.gifts.searchFriend")} /></label>
       ) : null}
       <div className="s2-chips-wrap">
-        {["all", "online", "birthday", "notOwned", "wishlist"].map((f) => (
+        {["all", "online", ...(hasBirthdays ? ["birthday"] : []), "notOwned", "wishlist"].map((f) => (
           <button key={f} type="button" className={`s2-chip is-btn${filter === f ? " is-on" : ""}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>
             {f === "wishlist" ? <Heart size={12} /> : null}
             {t(`shop2.gifts.filter.${f}`)}
@@ -380,7 +413,11 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
         <small className="s2-num">{t("shop2.gifts.balance", { from: formatNumber(s2.balance, locale), to: formatNumber(s2.balance - price, locale) })}</small>
         {setDeduct > 0 ? <small className="is-green">{t("shop2.gifts.theirsDeducted", { n: formatNumber(setDeduct, locale) })}</small> : null}
       </div>
-      <p className="s2-gfoot-note"><Undo2 size={14} />{t("shop2.gifts.recallNote", { m: SHOP2_RECALL_MS / 60000 })}{limits?.dailyLeft != null ? ` · ${t("shop2.gifts.dailyLeft", { n: limits.dailyLeft })}` : ""}</p>
+      {blockNote ? (
+        <p className="s2-gfoot-note is-block" role="alert"><Info size={14} />{blockNote}</p>
+      ) : (
+        <p className="s2-gfoot-note"><Undo2 size={14} />{t("shop2.gifts.recallNote", { m: SHOP2_RECALL_MS / 60000 })}{limits?.dailyLeft != null ? ` · ${t("shop2.gifts.dailyLeft", { n: limits.dailyLeft })}` : ""}</p>
+      )}
       {onClose ? <button type="button" className="s2-btn" onClick={onClose}>{t("shop2.common.cancel")}</button> : null}
       <button type="button" className="s2-btn" onClick={saveDraft} disabled={!draftKey}>{t("shop2.gifts.saveDraft")}</button>
       <button type="button" className="s2-btn is-primary" disabled={!canSend} onClick={send}>
@@ -437,12 +474,22 @@ function RecentSent() {
         <div key={g.id} className="s2-recent-row">
           <Letter f={g.to} tone={i + 2} />
           <b>{nameOf(g.to)}</b>
-          <span className="s2-muted">{g.item ? s2.itemName(g.item) : g.setName ? s2.itemName({ name: g.setName }) : ""}</span>
+          <span className="s2-muted">{giftLabel(s2, g)}</span>
           <StatusChip gift={g} />
         </div>
       ))}
     </div>
   );
+}
+
+/** What a sent gift was: the set name for a set gift (its items are only the missing pieces). */
+function giftLabel(s2, g) {
+  if (g.setKey && (g.kind === "set" || g.itemCount > 1)) {
+    const set = s2.data.setDetails[g.setKey] || s2.data.sets.find((x) => x.key === g.setKey) || s2.data.storefront?.featuredSets?.find((x) => x.key === g.setKey);
+    if (set) return s2.setName(set);
+  }
+  if (g.item) return s2.itemName(g.item);
+  return g.setName ? s2.itemName({ name: g.setName }) : "";
 }
 
 function StatusChip({ gift }) {
@@ -487,7 +534,7 @@ function Tracking() {
             const left = recallable ? windowLeft(g.sentAt, SHOP2_RECALL_MS, now, g.recallUntil) : 0;
             return (
               <tr key={g.id} className={`is-${g.status}`}>
-                <td>{g.item ? s2.itemName(g.item) : g.setName ? s2.itemName({ name: g.setName }) : ""}</td>
+                <td>{giftLabel(s2, g)}</td>
                 <td><span className="s2-who"><Letter f={g.to} tone={i + 1} />{nameOf(g.to)}</span></td>
                 <td><StatusChip gift={g} /></td>
                 <td className="s2-muted">{g.status === "scheduled" && g.sendAt ? new Date(g.sendAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ago(g.sentAt)}</td>
@@ -529,8 +576,8 @@ function Received() {
       await shop2Api.thankGift(g.id);
       s2.actions.loadGifts();
       s2.toast(t("shop2.gifts.thanked"), { tone: "ok" });
-    } catch {
-      s2.toast(t("shop2.errors.thank"), { tone: "error" });
+    } catch (err) {
+      s2.toast(err?.message || t("shop2.errors.thank"), { tone: "error" });
     }
   };
   return (

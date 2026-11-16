@@ -83,6 +83,8 @@ export function useShop2({ onBalanceChange } = {}) {
   const [state, setState] = useState("loading"); // loading | ready | offline | error
   const [sets, setSets] = useState([]);
   const [setDetails, setSetDetails] = useState({});
+  const setDetailsRef = useRef(setDetails);
+  setDetailsRef.current = setDetails;
   const [night, setNight] = useState(null);
   const [gifts, setGifts] = useState({ sent: [], received: [], limits: null });
   const [history, setHistory] = useState([]);
@@ -94,9 +96,15 @@ export function useShop2({ onBalanceChange } = {}) {
     alive.current = false;
   }, []);
 
+  // Kept in a ref: Settings passes a fresh inline callback on every render, and the balance it
+  // reports re-renders Settings (new `me`). With the callback in the loaders' deps that was a
+  // loop: every storefront answer reloaded all seven endpoints again (~9 times a second) and
+  // re-applied the app theme on <html>, which also cancelled smooth scrolling in the market.
+  const balanceCb = useRef(onBalanceChange);
+  balanceCb.current = onBalanceChange;
   const applyBalance = useCallback((res) => {
-    if (res && typeof res.balance === "number") onBalanceChange?.(res.balance);
-  }, [onBalanceChange]);
+    if (res && typeof res.balance === "number") balanceCb.current?.(res.balance);
+  }, []);
 
   const loadStorefront = useCallback(async () => {
     try {
@@ -106,14 +114,14 @@ export function useShop2({ onBalanceChange } = {}) {
       if (!sf.history7d.length) sf.history7d = rememberStorefrontDay(sf);
       setStorefront(sf);
       setState("ready");
-      if (typeof sf.balance === "number") onBalanceChange?.(sf.balance);
+      if (typeof sf.balance === "number") balanceCb.current?.(sf.balance);
       return sf;
     } catch (err) {
       if (!alive.current) return null;
       setState(isMissingRoute(err) ? "offline" : "error");
       return null;
     }
-  }, [onBalanceChange]);
+  }, []);
 
   const loadSets = useCallback(async () => {
     try {
@@ -135,6 +143,11 @@ export function useShop2({ onBalanceChange } = {}) {
       return null;
     }
   }, []);
+
+  /** Re-read every set page already opened (owned pieces, partial price, title after a buy). */
+  const reloadSetDetails = useCallback(() => {
+    for (const key of Object.keys(setDetailsRef.current)) loadSet(key);
+  }, [loadSet]);
 
   const loadNight = useCallback(async () => {
     try {
@@ -202,6 +215,52 @@ export function useShop2({ onBalanceChange } = {}) {
     loadAll();
   }, [loadAll]);
 
+  // Day rollover (00:00 Istanbul) and the night market opening / closing while the shop stays
+  // open: the socket event can come late or not at all (sleep, reconnect), so the client also
+  // reloads at the boundary itself (with a little jitter), and again when the tab comes back.
+  const edgeRetries = useRef(0);
+  const nightRef = useRef(null);
+  nightRef.current = night;
+  const edges = [
+    storefront?.resetsAt,
+    storefront?.nightMarket?.open ? storefront.nightMarket.closesAt : storefront?.nightMarket?.nextOpensAt,
+    night?.open ? night.closesAt : night?.nextOpensAt,
+  ].filter((x) => typeof x === "number");
+  const nextEdge = edges.length ? Math.min(...edges) : null;
+  useEffect(() => {
+    if (nextEdge == null) return undefined;
+    let wait = nextEdge - Date.now();
+    if (wait <= 0) {
+      // Still on the old side after a reload (clock drift): try a few more times, then stop.
+      if (edgeRetries.current >= 4) return undefined;
+      edgeRetries.current += 1;
+      wait = 5000;
+    } else {
+      edgeRetries.current = 0;
+      wait += 1200 + Math.floor(Math.random() * 2500);
+    }
+    const id = setTimeout(() => {
+      loadStorefront();
+      loadNight();
+    }, Math.min(wait, 2 ** 31 - 1));
+    return () => clearTimeout(id);
+  }, [nextEdge, loadStorefront, loadNight]);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      const sf = storefrontRef.current;
+      const nm = nightRef.current;
+      const now = Date.now();
+      const passed = (t) => typeof t === "number" && t <= now;
+      if (passed(sf?.resetsAt) || passed(sf?.nightMarket?.open ? sf.nightMarket.closesAt : sf?.nightMarket?.nextOpensAt) || passed(nm?.open ? nm.closesAt : nm?.nextOpensAt)) {
+        loadStorefront();
+        loadNight();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadStorefront, loadNight]);
+
   // Live: daily reset / refresh on another device, gift received, inventory changed.
   useEffect(() => {
     let t1 = null;
@@ -212,6 +271,7 @@ export function useShop2({ onBalanceChange } = {}) {
         loadStorefront();
         loadNight();
         loadSets();
+        reloadSetDetails();
       }, 250);
     };
     const onGift = () => {
@@ -237,14 +297,18 @@ export function useShop2({ onBalanceChange } = {}) {
       window.removeEventListener(SHOP2_EVENTS.gift, onGift);
       window.removeEventListener(SHOP2_EVENTS.inventory, onInv);
     };
-  }, [loadStorefront, loadNight, loadSets, loadGifts, loadHistory]);
+  }, [loadStorefront, loadNight, loadSets, loadGifts, loadHistory, reloadSetDetails]);
 
+  // Any buy, refund or undo can change a set (a single piece opens the 7-day partial price,
+  // the last piece completes it), so the set list and the opened set pages are re-read too.
   const afterPurchase = useCallback((res, detail) => {
     applyBalance(res);
     inventoryChanged(detail);
     loadStorefront();
     loadHistory();
-  }, [applyBalance, loadStorefront, loadHistory]);
+    loadSets();
+    reloadSetDetails();
+  }, [applyBalance, loadStorefront, loadHistory, loadSets, reloadSetDetails]);
 
   const actions = useMemo(() => ({
     reload: loadAll,
@@ -282,8 +346,6 @@ export function useShop2({ onBalanceChange } = {}) {
     async buySet(key, opts) {
       const res = await shop2Api.buySet(key, opts);
       afterPurchase(res, { setKey: key });
-      loadSet(key);
-      loadSets();
       return res;
     },
     async refund(purchaseId) {
@@ -294,7 +356,10 @@ export function useShop2({ onBalanceChange } = {}) {
     async undo(entryId) {
       const res = await shop2Api.undo(entryId);
       afterPurchase(res, { undo: entryId });
+      // Undo reverses any logged action: a wishlist add / remove, a saved look, a gift.
       loadGifts();
+      loadWishlist();
+      loadOutfits();
       return res;
     },
     async flip(cardIndex) {
@@ -352,23 +417,28 @@ export function useShop2({ onBalanceChange } = {}) {
     async toggleSetWishlist(setKey, on) {
       try {
         await shop2Api.toggleSetWishlist(setKey, on);
+        loadHistory();
       } catch {
         /* optional */
       }
     },
+    /** Optimistic; a refusal (wishlist_full, ...) rolls back and rejects with the reason. */
     async toggleWishlist(item, on) {
       setWishlist((list) => (on ? [...list.filter((x) => String(x.id) !== String(item.id)), item] : list.filter((x) => String(x.id) !== String(item.id))));
       try {
         await shop2Api.toggleWishlist(item.id, on);
+        loadHistory();
       } catch (err) {
-        if (!isMissingRoute(err)) loadWishlist();
+        if (isMissingRoute(err)) return;
+        loadWishlist();
+        throw err;
       }
     },
     async saveOutfit(name, items, auto = false) {
       const local = { id: `local-${Date.now()}`, name, items, auto, createdAt: new Date().toISOString() };
       setOutfits((list) => [local, ...list]);
       try {
-        const res = await shop2Api.saveOutfit({ name, look: items });
+        const res = await shop2Api.saveOutfit({ name, look: items, ...(auto ? { kind: "previous" } : {}) });
         const o = res?.outfit || (res?.id ? res : null);
         if (o) {
           const saved = { ...o, items: o.look || o.items || items, auto: o.kind === "previous" || auto };
@@ -381,6 +451,19 @@ export function useShop2({ onBalanceChange } = {}) {
       }
     },
     /** Wear a saved look on the server (it logs an undoable action); null when it can't. */
+    /** "Hepsini kuşan" in one request; null when the server has no batch equip yet. */
+    async equipItems(itemIds) {
+      try {
+        const res = await shop2Api.equip(itemIds);
+        inventoryChanged({ equip: itemIds });
+        loadHistory();
+        loadOutfits();
+        return res || {};
+      } catch (err) {
+        if (isMissingRoute(err)) return null;
+        throw err;
+      }
+    },
     async applyOutfit(outfit) {
       if (!outfit?.id || String(outfit.id).startsWith("local-")) return null;
       try {
@@ -398,7 +481,7 @@ export function useShop2({ onBalanceChange } = {}) {
     setPref(patch) {
       setPrefs(writeShop2Prefs(patch));
     },
-  }), [loadAll, loadSet, loadNight, loadGifts, loadStorefront, loadHistory, loadSets, loadWishlist, applyBalance, afterPurchase]);
+  }), [loadAll, loadSet, loadNight, loadGifts, loadStorefront, loadHistory, loadSets, loadWishlist, loadOutfits, applyBalance, afterPurchase]);
 
   return { state, storefront, sets, setDetails, night, gifts, history, wishlist, outfits, prefs, actions };
 }

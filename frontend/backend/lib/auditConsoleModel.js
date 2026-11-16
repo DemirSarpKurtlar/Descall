@@ -158,6 +158,7 @@ const CATALOG = {
   credit_transfers_off: ["economy", "medium"],
   credit_transfers_on: ["economy", "medium"],
   game_limits_set: ["economy", "medium"],
+  shop2_direct_sale: ["economy", "medium"],
 };
 
 // Prefix rules for codes built at runtime (premium_${kind}, antibot_${action}, error_${status}, ...).

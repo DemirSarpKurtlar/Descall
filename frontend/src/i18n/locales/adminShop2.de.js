@@ -399,7 +399,8 @@ export const ADMIN_SHOP2_DE = {
       "rules": "Algorithmus",
       "night": "Nachtmarkt",
       "limits": "Limits",
-      "user": "Nutzer"
+      "user": "Nutzer",
+      "sale": "Alle Artikel"
     },
     "system": "System",
     "reason": "Grund: {r}",
@@ -439,7 +440,8 @@ export const ADMIN_SHOP2_DE = {
       "storefront_regenerate": "Nutzer-Schaufenster neu erstellt",
       "queue_cancel": "Geplante Änderung abgebrochen",
       "event_create": "Aktion im Kalender hinzugefügt",
-      "event_delete": "Aktion gelöscht"
+      "event_delete": "Aktion gelöscht",
+      "direct_sale": "{on, select, true {In Alle Artikel in den Direktverkauf genommen} other {In Alle Artikel aus dem Direktverkauf genommen}} · {n} Artikel"
     }
   },
   "slots": {
@@ -887,6 +889,75 @@ export const ADMIN_SHOP2_DE = {
     "undo_expired": "Die Rückgängig-Frist ist abgelaufen",
     "undo_unsupported": "Diese Aktion lässt sich nicht rückgängig machen",
     "not_found": "Eintrag nicht gefunden",
-    "rate_limited": "Zu schnell; kurz warten"
+    "rate_limited": "Zu schnell; kurz warten",
+    "no_items": "Wähle mindestens einen Artikel",
+    "direct_sale_unavailable": "Das Datenbank-Update für den Direktverkauf ist noch nicht eingespielt"
+  },
+  "directSale": {
+    "open": "Direktverkauf in Alle Artikel",
+    "title": "Direktverkauf in Alle Artikel",
+    "subtitle": "Der Tab Alle Artikel ist zum Stöbern da. Was du hier einschaltest, kann dort direkt gekauft werden; alles andere gibt es im Schaufenster, in Sets und auf dem Nachtmarkt.",
+    "live": "Live",
+    "liveHint": "Änderungen erreichen offene Shops sofort.",
+    "notInstalled": "Das Datenbank-Update steht noch aus (20261116_shop_direct_sale.sql). Bis dahin werden Market-2.0-Artikel nicht direkt verkauft, Länderflaggen schon; die Schalter gehen nach dem Update.",
+    "tile": {
+      "listed": "Gelistete Artikel",
+      "listedSub": "{n} Market-2.0-Artikel",
+      "allowed": "Im Direktverkauf",
+      "allowedSub": "davon {n} aus Market 2.0",
+      "blocked": "Nur Schaufenster und Sets",
+      "blockedSub": "Preis nur als Referenz",
+      "sales": "Direktverkäufe (7 Tage)",
+      "salesSub": "{coins} DesCoin"
+    },
+    "search": "Artikel, Code oder Set suchen",
+    "allCats": "Alle",
+    "rarityAll": "Jede Seltenheit",
+    "state": {
+      "all": "Alle",
+      "on": "Im Verkauf",
+      "off": "Aus"
+    },
+    "col": {
+      "item": "Artikel",
+      "category": "Kategorie",
+      "rarity": "Seltenheit",
+      "price": "Preis",
+      "sales": "7 Tage",
+      "sale": "Direktverkauf"
+    },
+    "selectShown": "Angezeigte auswählen",
+    "selected": "{n} ausgewählt",
+    "bulkAllow": "In den Verkauf",
+    "bulkBlock": "Aus dem Verkauf",
+    "clear": "Auswahl leeren",
+    "footHint": "Wähle Artikel für eine Sammeländerung. Ein Schalter ändert einen Artikel.",
+    "audit": "Protokoll",
+    "confirmAllow": "In den Direktverkauf nehmen: {n} ausgewählt",
+    "confirmBlock": "Aus dem Direktverkauf nehmen: {n} ausgewählt",
+    "confirmNote": "Offene Shops aktualisieren sich sofort. Du kannst es über die Meldung rückgängig machen.",
+    "more": "+{n} weitere",
+    "toast": {
+      "allowed": "{name} wird jetzt in Alle Artikel verkauft",
+      "blocked": "{name} gibt es jetzt nur im Schaufenster und in Sets",
+      "bulkAllowed": "{n} Artikel in den Direktverkauf genommen",
+      "bulkBlocked": "{n} Artikel aus dem Direktverkauf genommen",
+      "none": "Nichts zu ändern"
+    },
+    "undoReason": "Über die Meldung rückgängig gemacht",
+    "set": "Set: {key}",
+    "toggleLabel": "Direktverkauf für {name}",
+    "focusToggle": "Direkt in Alle Artikel verkaufen",
+    "empty": "Keine Artikel passen zu diesem Filter.",
+    "preview": {
+      "title": "Was Nutzer sehen",
+      "desktop": "Desktop",
+      "phone": "Telefon",
+      "buy": "Kaufen",
+      "pick": "Wähle einen Artikel für die Vorschau",
+      "pathsAllowed": "Kann direkt in Alle Artikel gekauft werden. Schaufenster, Sets und Nachtmarkt verkaufen ihn weiterhin.",
+      "pathsBlocked": "Nur im täglichen Schaufenster, in Sets und auf dem Nachtmarkt erhältlich. Alle Artikel zeigt ihn zum Ansehen und Anprobieren.",
+      "sales": "Direktverkäufe in 7 Tagen: {n} · {coins} DesCoin"
+    }
   }
 };

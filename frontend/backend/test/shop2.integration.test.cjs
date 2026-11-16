@@ -106,10 +106,13 @@ async function run() {
     await check("purchase guards: retired, legacy, poor wallet, price changed", async () => {
       assert.equal((await call(`/shop2/items/${I(90)}/buy`, { method: "POST", body: {} })).status, 404);
       assert.equal((await call(`/shop2/items/${I(92)}/buy`, { method: "POST", body: {} })).status, 404);
-      const poor = await call(`/shop2/items/${I(20)}/buy`, { method: "POST", body: {}, user: 6 });
+      // Singles sell from today's storefront only (or with direct_sale): the guards run on such cards.
+      const poorCard = (await call("/shop2/storefront", { user: 6 })).body.slots.find((x) => !x.owned && !x.item.set_key);
+      const poor = await call(`/shop2/items/${poorCard.item.id}/buy`, { method: "POST", body: {}, user: 6 });
       assert.equal(poor.status, 402);
       assert.equal(poor.body.code, "insufficient_balance");
-      const pc = await call(`/shop2/items/${I(20)}/buy`, { method: "POST", body: { expectedPrice: 1 } });
+      const card = (await call("/shop2/storefront")).body.slots.find((x) => !x.owned);
+      const pc = await call(`/shop2/items/${card.item.id}/buy`, { method: "POST", body: { expectedPrice: 1 } });
       assert.equal(pc.status, 409);
       assert.equal(pc.body.code, "price_changed");
       assert.ok(pc.body.price > 1);

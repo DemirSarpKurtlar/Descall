@@ -641,7 +641,8 @@ export const AUDIT_LOG_TR = {
     "agent_plan_pause": "Ajan planını duraklattı",
     "credit_transfers_off": "Kredi transferini kapattı",
     "credit_transfers_on": "Kredi transferini açtı",
-    "game_limits_set": "Oyun sınırlarını ayarladı"
+    "game_limits_set": "Oyun sınırlarını ayarladı",
+    "shop2_direct_sale": "Doğrudan satışı değiştirdi"
   },
   "s": {
     "_generic": "{actor}: {label}{has, select, yes { · {target}} other {}}",
@@ -712,7 +713,8 @@ export const AUDIT_LOG_TR = {
     "agent_tool": "Ajan aracı · {actor} adına {tool} çalıştı",
     "agent_plan_approve": "{actor}, bir ajan planını onayladı",
     "agent_plan_run": "{actor}, bir ajan planını çalıştırdı",
-    "agent_plan_undo": "{actor}, bir ajan planını geri aldı"
+    "agent_plan_undo": "{actor}, bir ajan planını geri aldı",
+    "shop2_direct_sale": "{actor} {on, select, true {Tüm ürünlerde {n} ürünü doğrudan satışa açtı} other {Tüm ürünlerde {n} ürünü doğrudan satıştan kaldırdı}}"
   },
   "toast": {
     "noteAdded": "Not eklendi.",

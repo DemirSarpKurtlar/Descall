@@ -159,6 +159,7 @@ const ACT = {
   credit_transfers_off: ["coin", "amber"],
   credit_transfers_on: ["coin", "green"],
   game_limits_set: ["coin", "green"],
+  shop2_direct_sale: ["bag", "green"],
 };
 
 /** Every code with its own label (tests check each has a label in every language). */
@@ -212,6 +213,7 @@ export const SENTENCE = new Set([
   "system_config", "chat_freeze", "slowmode", "maintenance", "server_restart",
   "audit_export", "audit_review", "audit_suspend_request", "audit_rules_update",
   "agent_run", "agent_tool", "agent_plan_approve", "agent_plan_run", "agent_plan_undo",
+  "shop2_direct_sale",
 ]);
 
 /**

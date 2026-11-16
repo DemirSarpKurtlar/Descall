@@ -135,7 +135,7 @@ import { formatDate } from "./i18n/format.js";
 import { resolveInitialLocale } from "./i18n";
 import { liveCallRoute, callUrlTarget } from "./lib/callRouteSync";
 import { appPathForView, directPath, groupPath, serverPath, isAuthenticatedAppPath, parseAppRoute } from "./lib/appRoutes";
-import { handleShopLookPath } from "./lib/shop2Look.js";
+import { handleShopLookPath, requestShop2Focus } from "./lib/shop2Look.js";
 import { canCommitChannelPayload, canCommitServerDetail } from "./lib/channelSelection";
 import {
   applyPublicFeatures,
@@ -2800,6 +2800,20 @@ export default function App() {
     });
     socket.on("shop2:gift", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop2-gift", { detail: payload })); } catch { /* ignore */ }
+      // A friend's gift arrived: tell the user wherever they are; the toast opens Hediyeler.
+      if (payload?.kind === "received" && payload.gift) {
+        const from = payload.gift.from;
+        const name = from ? from.displayName || from.username || "" : "";
+        toast(name ? t("shop2.gifts.notif", { name }) : t("shop2.gifts.notifAnon"), "success", {
+          duration: 9000,
+          actionLabel: t("shop2.gifts.openPackage"),
+          onOpen: () => {
+            requestShop2Focus({ kind: "tab", ref: "gifts" });
+            navigate("/settings/shop");
+          },
+        });
+        playUiSound("notification");
+      }
     });
     // Night market reminder (10 min before opening); the in-app notification itself comes from the server.
     socket.on("shop2:night_reminder", (payload = {}) => {

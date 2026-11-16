@@ -71,7 +71,7 @@ router.get("/catalog/public", async (req, res) => {
 router.get("/assets/:id", async (req, res) => {
   try {
     const kind = req.query.kind === "preview" ? "preview" : "asset";
-    const image = await shop.getCatalogAsset(req.params.id, kind);
+    const image = require("../lib/svgStill").stillImage(await shop.getCatalogAsset(req.params.id, kind), req.query.still === "1");
     if (!image) return res.status(404).type("text/plain").send("Not found");
     const versioned = typeof req.query.v === "string" && req.query.v === image.version;
     res.set({
@@ -162,6 +162,12 @@ router.post("/purchase", requireAuth, async (req, res) => {
     const item = await shop.getItemById(itemId);
     if (!item || !item.active || shop.isRetiredShopItem(item)) {
       return res.status(404).json({ error: "Item not found." });
+    }
+
+    // "Tüm ürünler" is browse only (owner, Nov 2026): only items an admin allowed are sold here;
+    // the rest come through the Market 2.0 storefront, sets and night market (lib/shopDirectSale.js).
+    if (!(await require("../lib/shopDirectSale").freshAllowed(item))) {
+      return res.status(403).json(apiError("This item is sold in the storefront and in sets, not directly.", null, { code: "not_direct_sale" }));
     }
 
     if (item.category === "theme") {

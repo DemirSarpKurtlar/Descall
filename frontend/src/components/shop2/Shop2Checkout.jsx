@@ -36,6 +36,8 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
   const [err, setErr] = useState("");
   const after = s2.balance - total;
   const completes = set && pricing && (!c.pieceIds || c.pieceIds.length >= pricing.missingCount);
+  // Chosen pieces only: the ladder shows their single prices minus the set rate while the
+  // 7-day partial price is open (a "set price" line would not add up to what is charged).
   const pay = async (holdToken) => {
     setBusy(true);
     setErr("");
@@ -47,7 +49,10 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
         const results = [];
         for (const x of items) {
           // eslint-disable-next-line no-await-in-loop
-          results.push(await s2.actions.buyItem(x.item, { holdToken: `${holdToken}-${x.item.id}`, price: x.price, source: "cart" }));
+          // A night market card in the cart is bought at its revealed discount, not as an item.
+          results.push(x.nightCardIndex != null
+            ? await s2.actions.buyNight(x.nightCardIndex, { holdToken: `${holdToken}-n${x.nightCardIndex}`, price: x.price })
+            : await s2.actions.buyItem(x.item, { holdToken: `${holdToken}-${x.item.id}`, price: x.price, source: "cart" }));
         }
         res = results[results.length - 1];
         s2.clearCart();
@@ -92,7 +97,12 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
         })}
       </div>
       <div className="s2-ladder is-box">
-        {c.kind === "set" ? (
+        {c.kind === "set" && !completes ? (
+          <>
+            <span>{t("shop2.buy.sum")}</span><b className="s2-num"><Num value={pricing.selectedSingles} /> {t("shop2.common.d")}</b>
+            {total < pricing.selectedSingles ? <><span>{t("shop2.buy.setDiscount", { n: pricing.discountPct })}</span><b className="s2-num is-green">-<Num value={pricing.selectedSingles - total} /> {t("shop2.common.d")}</b></> : null}
+          </>
+        ) : c.kind === "set" ? (
           <>
             <span>{t("shop2.checkout.setPrice")}</span><b className="s2-num"><Num value={pricing.setPrice} /> {t("shop2.common.d")}</b>
             {pricing.ownedDeduction ? <><span>{t("shop2.checkout.ownedLine", { n: pricing.ownedCount })}</span><b className="s2-num is-green">-<Num value={pricing.ownedDeduction} /> {t("shop2.common.d")}</b></> : null}
@@ -131,8 +141,15 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
   const reduce = useReducedMotion();
   const now = useNow(true);
   const [paidAt] = useState(() => Date.now());
+  // The look before this purchase, frozen: once the new pieces are worn s2.me already shows
+  // them, and the before / after cards and the undo must still show and restore the old look.
+  const [before] = useState(() => s2.me);
+  const newIds = new Set(items.map((x) => String(x.item.id)));
+  // "Hepsini kuşan" on a set wears every piece of it the user owns now (pieces bought earlier
+  // too), the same look the after card shows; a single item wears just that item.
+  const wearItems = set ? set.pieces.filter((p) => p.owned || newIds.has(String(p.item.id))).map((p) => p.item) : items.map((x) => x.item);
   const [picking, setPicking] = useState(false);
-  const [picked, setPicked] = useState(() => new Set(items.map((x) => String(x.item.id))));
+  const [picked, setPicked] = useState(() => new Set(wearItems.map((it) => String(it.id))));
   const [equipping, setEquipping] = useState(false);
   const [worn, setWorn] = useState(false);
   const [prevSaved, setPrevSaved] = useState(null);
@@ -143,36 +160,59 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
   const refundLeft = windowLeft(paidAt, SHOP2_REFUND_MS, now, refundUntilOf(result));
   const newItems = items.map((x) => x.item);
   const tryOn = {};
-  for (const it of set ? set.pieces.map((p) => p.item) : newItems) tryOn[it.category] = it;
-  const afterUser = composeTryOnUser(s2.me, tryOn);
+  for (const it of wearItems) tryOn[it.category] = it;
+  const afterUser = composeTryOnUser(before, tryOn);
   const balanceAfter = typeof result?.balance === "number" ? result.balance : s2.balance;
   const titleUnlocked = Boolean(result?.titleUnlocked || result?.title || (Array.isArray(result?.completed) && result.completed.length));
   const complete = set ? (pricing?.missingCount || 0) <= items.length : false;
+  // A single piece that was the last one missing completes its set: the server names the title.
+  const completedTitle = Array.isArray(result?.completed) ? result.completed[0]?.title?.name || null : null;
 
   const equip = async (list) => {
     setEquipping(true);
-    const prev = currentLook(s2.me);
-    const saved = await s2.actions.saveOutfit(t("shop2.kasa.previousLook"), prev, true);
-    setPrevSaved(saved);
-    for (const it of list) {
-      if (sameId(s2.equippedIdFor(it.category), it.id)) continue;
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        await s2.onEquip?.(it, false);
-      } catch {
-        /* keep going */
+    const prev = currentLook(before);
+    // One request: the server wears every piece, keeps the previous look as an outfit, logs one
+    // undoable action and broadcasts the profile once (was one equip + profile reload per piece).
+    let batch = null;
+    try {
+      batch = await s2.actions.equipItems(list.map((it) => it.id));
+    } catch {
+      batch = null;
+    }
+    if (batch) {
+      setPrevSaved(batch.previousOutfitId ? { id: batch.previousOutfitId } : true);
+      await s2.onLookChanged?.();
+    } else {
+      // Older server without POST /equip: the per-slot legacy equip.
+      setPrevSaved(await s2.actions.saveOutfit(t("shop2.kasa.previousLook"), prev, true));
+      for (const it of list) {
+        if (sameId(s2.equippedIdFor(it.category), it.id)) continue;
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await s2.onEquip?.(it, false);
+        } catch {
+          /* keep going */
+        }
       }
     }
     setEquipping(false);
     setWorn(true);
+    const undo = batch?.actionId
+      ? async () => {
+        await s2.actions.undo(batch.actionId);
+        await s2.onLookChanged?.();
+        s2.toast(t("shop2.celebrate.restored"), { tone: "ok" });
+      }
+      : () => restoreLook(s2, prev, list, t);
     s2.toast(t("shop2.celebrate.wornToast"), {
       tone: "ok",
       ms: 12000,
-      action: { label: t("shop2.celebrate.undo"), run: () => restoreLook(s2, prev, list, t) },
+      // Undone: the pieces are off again, so "Hepsini kuşan" and the refund link come back.
+      action: { label: t("shop2.celebrate.undo"), run: () => Promise.resolve(undo()).then(() => setWorn(false), (err) => s2.toast(err?.message || t("shop2.errors.undo"), { tone: "error" })) },
     });
   };
   useEffect(() => {
-    if (autoEquip) equip(newItems);
+    if (autoEquip) equip(wearItems);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -191,7 +231,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
   const share = () => s2.openShare(set && complete ? { setKey: set.key } : { itemId: newItems[0]?.id });
   const saveLook = async () => {
     const look = { ...currentLook(s2.me) };
-    for (const it of newItems) look[it.category] = it.id;
+    for (const it of wearItems) look[it.category] = it.id;
     await s2.actions.saveOutfit(set ? s2.setName(set) : s2.itemName(newItems[0]), look);
     s2.toast(t("shop2.kasa.lookSaved", { name: set ? s2.setName(set) : s2.itemName(newItems[0]) }), { tone: "ok" });
   };
@@ -211,7 +251,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
         ) : null}
         <div className="s2-cele-ba">
           <div className="s2-cele-before" aria-hidden={worn}>
-            <S2ProfileCard user={s2.me} compact about={false} />
+            <S2ProfileCard user={before} compact about={false} />
           </div>
           <ChevronRight size={20} className="s2-cele-arrow" />
           <div className="s2-cele-after">
@@ -231,21 +271,25 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
         </div>
         <h2>{set && complete ? t("shop2.celebrate.yoursSet", { name }) : t("shop2.celebrate.yours", { name })}</h2>
         <div className="s2-cele-slots">
-          {slots.map((p, i) => (
-            <span key={p.item.id} className="s2-cele-slot" style={{ "--i": i }}>
-              <span className="s2-slot is-sm"><Shop2Art item={p.item} size="slot" me={s2.me} /><i className="s2-tickmark"><Check size={10} weight="bold" /></i></span>
+          {slots.map((p, i) => {
+            // A chosen-pieces buy shows the whole set: only what the user owns now gets a tick.
+            const have = !set || p.owned || newIds.has(String(p.item.id));
+            return (
+            <span key={p.item.id} className={`s2-cele-slot${have ? "" : " is-missing"}`} style={{ "--i": i }}>
+              <span className="s2-slot is-sm"><Shop2Art item={p.item} size="slot" me={s2.me} />{have ? <i className="s2-tickmark"><Check size={10} weight="bold" /></i> : null}</span>
               <small>{t(`shop2.catShort.${p.item.category}`)}</small>
             </span>
-          ))}
+            );
+          })}
         </div>
         <div className="s2-chips-wrap is-center">
-          {titleUnlocked || (set && complete) ? <Chip tone="gold" icon={Crown}>{t("shop2.celebrate.titleUnlocked", { title: set?.reward?.title ? s2.itemName({ name: set.reward.title }) : t("shop2.sets.rewardDefault", { name }) })}</Chip> : null}
+          {titleUnlocked || (set && complete) ? <Chip tone="gold" icon={Crown}>{t("shop2.celebrate.titleUnlocked", { title: set?.reward?.title ? s2.itemName({ name: set.reward.title }) : completedTitle ? s2.itemName({ name: completedTitle }) : t("shop2.sets.rewardDefault", { name }) })}</Chip> : null}
           {set ? <Chip tone="green" icon={Check}>{t("shop2.celebrate.pieces", { n: Math.min(set.pieceCount, (pricing?.ownedCount || 0) + items.length), total: set.pieceCount })}</Chip> : null}
           {purchaseId && refundLeft > 0 && !refunded && !worn ? <Chip icon={Undo2}>{t("shop2.celebrate.refundChip", { t: mmss(refundLeft) })}</Chip> : null}
         </div>
         {picking ? (
           <div className="s2-pick">
-            {newItems.map((it) => (
+            {wearItems.map((it) => (
               <label key={it.id} className="s2-check is-row">
                 <GlassCheckbox checked={picked.has(String(it.id))} onChange={(e) => {
                   const next = new Set(picked);
@@ -260,19 +304,19 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
             ))}
             <button type="button" className="s2-btn is-primary is-wide" disabled={!picked.size || equipping} onClick={() => {
               setPicking(false);
-              equip(newItems.filter((it) => picked.has(String(it.id))));
+              equip(wearItems.filter((it) => picked.has(String(it.id))));
             }}>
               <Shirt size={16} />{t("shop2.celebrate.wearPicked", { n: picked.size })}
             </button>
           </div>
         ) : (
           <>
-            <button type="button" className={`s2-btn is-primary is-wide is-lg is-glow${worn ? " is-done" : ""}`} disabled={equipping || worn} onClick={() => equip(newItems)}>
+            <button type="button" className={`s2-btn is-primary is-wide is-lg is-glow${worn ? " is-done" : ""}`} disabled={equipping || worn} onClick={() => equip(wearItems)}>
               <Shirt size={17} />
-              {worn ? t("shop2.celebrate.worn") : equipping ? t("shop2.celebrate.wearing") : t("shop2.celebrate.wearAll")}
+              {worn ? t("shop2.celebrate.worn") : equipping ? t("shop2.celebrate.wearing") : wearItems.length > 1 ? t("shop2.celebrate.wearAll") : t("shop2.celebrate.wearOne")}
             </button>
             <div className="s2-row">
-              {newItems.length > 1 ? <button type="button" className="s2-btn is-flex" onClick={() => setPicking(true)}><SlidersHorizontal size={15} />{t("shop2.celebrate.pick")}</button> : null}
+              {wearItems.length > 1 ? <button type="button" className="s2-btn is-flex" onClick={() => setPicking(true)}><SlidersHorizontal size={15} />{t("shop2.celebrate.pick")}</button> : null}
               <button type="button" className="s2-btn is-flex" onClick={share}><Share2 size={15} />{t("shop2.celebrate.show")}</button>
             </div>
             <div className="s2-row">

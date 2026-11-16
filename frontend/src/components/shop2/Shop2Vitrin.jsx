@@ -56,7 +56,7 @@ function RefreshConfirm({ plan, onCancel, onConfirm, onBuyCart, busy, asSheet })
         <span>{t("shop2.refresh.balance")}</span>
         <b className="s2-num">{formatNumber(s2.balance, locale)} {"→"} {formatNumber(plan.balanceAfter, locale)}</b>
         <span>{t("shop2.refresh.left")}</span>
-        <b>{t("shop2.refresh.noMoreToday")}</b>
+        <b>{plan.leftAfter > 0 ? t("shop2.refresh.leftAfter", { n: plan.leftAfter }) : t("shop2.refresh.noMoreToday")}</b>
       </div>
       {plan.cartLosing.length ? (
         <div className="s2-warn">
@@ -88,10 +88,11 @@ function Card({ slot, selected, onSelect, index, flipKey }) {
   const s2 = useS2();
   const item = slot.item;
   const lab = s2.itemLabels(item);
-  const owned = s2.owned.has(item.id);
+  const owned = slot.owned || s2.owned.has(item.id);
   const press = useRef(null);
   const onTouchStart = () => {
-    if (s2.layout !== "phone") return;
+    // An owned card is not offered at the refresh, so it cannot be locked.
+    if (s2.layout !== "phone" || owned) return;
     press.current = setTimeout(() => {
       press.current = "fired";
       try {
@@ -129,7 +130,7 @@ function Card({ slot, selected, onSelect, index, flipKey }) {
     >
       <div className="s2-card-art">
         <Shop2Art item={item} size="card" me={s2.me} sample={String(s2.me?.displayName || s2.me?.username || "").split(" ")[0]} />
-        <button
+        {owned ? null : <button
           type="button"
           className={`s2-lock${slot.locked ? " is-on" : ""}`}
           aria-pressed={slot.locked}
@@ -138,7 +139,7 @@ function Card({ slot, selected, onSelect, index, flipKey }) {
           onClick={() => s2.actions.lock(item.id)}
         >
           {slot.locked ? <Lock size={14} weight="fill" /> : <LockOpen size={14} />}
-        </button>
+        </button>}
         {slot.wishlisted ? <span className="s2-wishtag"><Heart size={12} weight="fill" />{t("shop2.card.inWishlist")}</span> : null}
         {slot.discountPct > 0 ? <span className="s2-disc s2-num">-%{slot.discountPct}</span> : null}
       </div>
@@ -164,7 +165,7 @@ function Row({ slot, selected, onSelect, expanded, onToggle }) {
   const item = slot.item;
   const lab = s2.itemLabels(item);
   const inCart = s2.cart.some((c) => sameId(c.item.id, item.id));
-  const owned = s2.owned.has(item.id);
+  const owned = slot.owned || s2.owned.has(item.id);
   const [swipe, setSwipe] = useState(0);
   const start = useRef(null);
   return (
@@ -445,6 +446,8 @@ function SevenDays({ storefront }) {
   );
 }
 
+const UNDO_REFUNDS = new Set(["purchase", "set_purchase", "gift_sent", "night_buy"]);
+
 export function ActionLog({ limit = 5, compact = false }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
@@ -472,7 +475,8 @@ export function ActionLog({ limit = 5, compact = false }) {
                 <button type="button" className={`s2-link is-undo${left < 60 ? " is-fading" : ""}`} onClick={async () => {
                   try {
                     await s2.actions.undo(e.id);
-                    s2.toast(t("shop2.log.undone"), { tone: "ok" });
+                    // Only a purchase / gift undo pays DesCoin back; wishlist, lock, look undo just reverse.
+                    s2.toast(t(UNDO_REFUNDS.has(e.kind) ? "shop2.log.undone" : "shop2.log.undoneShort"), { tone: "ok" });
                   } catch (err) {
                     s2.toast(err?.message || t("shop2.errors.undo"), { tone: "error" });
                   }
@@ -551,7 +555,7 @@ export default function Shop2Vitrin() {
       await s2.actions.refresh(undefined, plan.price);
       setFlipKey((k) => k + 1);
       setConfirm(false);
-      s2.toast(t("shop2.refresh.done"), { tone: "ok" });
+      s2.toast(t(plan.kept.length ? "shop2.refresh.done" : "shop2.refresh.doneFresh"), { tone: "ok" });
     } catch (err) {
       s2.toast(err?.message || t("shop2.errors.refresh"), { tone: "error" });
     } finally {
@@ -559,7 +563,8 @@ export default function Shop2Vitrin() {
     }
   };
   const nm = sf.nightMarket;
-  const dateLabel = new Date().toLocaleDateString(locale, { day: "numeric", month: "long" });
+  // The storefront's own Istanbul day (after 21:00 UTC the device date can be a day behind).
+  const dateLabel = (sf.day ? new Date(`${sf.day}T12:00:00Z`) : new Date()).toLocaleDateString(locale, { day: "numeric", month: "long", timeZone: sf.day ? "UTC" : undefined });
 
   const head = (
     <div className="s2-sech">
@@ -586,7 +591,7 @@ export default function Shop2Vitrin() {
         <span className={`s2-popwrap${phone ? " is-sheetonly" : ""}`}>
           <button type="button" className={`s2-btn is-sm is-primary${confirm ? " is-active" : ""}`} onClick={() => setConfirm((x) => !x)} disabled={!plan.available} aria-expanded={confirm}>
             <RefreshCw size={14} />
-            {phone ? t("shop2.refresh.short", { n: formatNumber(plan.price, locale) }) : t("shop2.vitrin.refresh")}
+            {phone ? (plan.free ? t("shop2.refresh.free") : t("shop2.refresh.short", { n: formatNumber(plan.price, locale) })) : t("shop2.vitrin.refresh")}
           </button>
           {confirm ? (
             <RefreshConfirm
@@ -646,7 +651,7 @@ export default function Shop2Vitrin() {
     </div>
   );
 
-  const nightStrip = phone && nm.open ? (
+  const nightStrip = phone && nm.open && nm.eligible !== false ? (
     <button type="button" className="s2-nightstrip" onClick={() => s2.setTab("night")}>
       <Moon size={20} />
       <span>
@@ -666,8 +671,7 @@ export default function Shop2Vitrin() {
       </span>
       <button type="button" className="s2-btn is-sm" onClick={() => setConfirm(true)} disabled={!plan.available} aria-label={plan.price ? t("shop2.refresh.go", { n: formatNumber(plan.price, locale) }) : t("shop2.refresh.goFree")}>
         <RefreshCw size={15} />
-        <Coin size="sm" />
-        <span className="s2-num">{formatNumber(plan.price, locale)}</span>
+        {plan.free ? <span>{t("shop2.refresh.free")}</span> : <><Coin size="sm" /><span className="s2-num">{formatNumber(plan.price, locale)}</span></>}
       </button>
     </div>
   ) : null;

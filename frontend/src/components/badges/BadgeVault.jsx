@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Plus, X, Check, ChevronDown, Lock, Gift } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
 import { CountryBadge, CountryFlag } from "../shop/CountryFlag";
+import { Shop2Badge, shop2AssetSrc } from "../shop/Shop2Cosmetics.jsx";
 import { SpecialBadgeIcon, TIER_ORDER, ART_BY_ID, tierPalette } from "./specialBadgeArt.jsx";
 import { SpecialBadgeChip, useBadgeCopy } from "./SpecialBadge.jsx";
 import {
@@ -57,10 +58,13 @@ export function ProfileBadgeRow({ user, me, size = "md", trailing = null, classN
   const count = data?.badges?.length || 0;
   const showPlus = self || count > 0;
   const hasCountry = Boolean(user?.equippedCountry);
-  if (!hasCountry && !eq && !showPlus && !trailing) return null;
+  // The Market 2.0 shop badge (s2-) sits after the country, as in chat and the hover card.
+  const hasShopBadge = Boolean(shop2AssetSrc(user?.equippedBadge));
+  if (!hasCountry && !hasShopBadge && !eq && !showPlus && !trailing) return null;
   return (
     <span className={`bp-row bp-row-${size}${className ? ` ${className}` : ""}`}>
       <CountryBadge user={user} special={false} />
+      {hasShopBadge ? <Shop2Badge user={user} className="bp-shop-badge" /> : null}
       {eq ? <SpecialBadgeChip id={eq.id} /> : null}
       {showPlus ? (
         <button

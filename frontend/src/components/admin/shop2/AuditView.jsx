@@ -11,8 +11,8 @@ import { shop2Api } from "./adminShop2Api.js";
 import { Pill, Seg, Skel, UserAv, fdt } from "./ui.jsx";
 import { groupByDay, istDay, mmss, undoLeft } from "./shop2Model.js";
 
-const KINDS = ["all", "set", "rules", "night", "limits", "user"];
-const KIND_TONE = { set: "blue", rules: "amber", night: "violet", limits: "gray", user: "green" };
+const KINDS = ["all", "set", "rules", "night", "limits", "user", "sale"];
+const KIND_TONE = { set: "blue", rules: "amber", night: "violet", limits: "gray", user: "green", sale: "green" };
 
 export function kindOf(action) {
   const a = String(action || "").replace(/^shop2_/, "");
@@ -21,6 +21,7 @@ export function kindOf(action) {
   if (a.startsWith("night_")) return "night";
   if (a.startsWith("limits_") || a.startsWith("gift")) return "limits";
   if (a === "free_refresh" || a.startsWith("storefront_")) return "user";
+  if (a === "direct_sale") return "sale";
   return "set";
 }
 
