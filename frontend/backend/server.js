@@ -927,6 +927,14 @@ async function runBoot() {
   } catch (e) {
     console.warn("[boot] glass theme catalog failed:", e.message);
   }
+  // Market 2.0 (3.9.0): new s2- catalog upsert + old catalog retired. After the old ensures above.
+  try {
+    const { seedShop2Catalog } = require("./lib/shop2/catalogSeed");
+    const res = await seedShop2Catalog(require("./db/supabase"));
+    if (!res.skipped || res.retired) require("./lib/shop").invalidateCatalogCache?.();
+  } catch (e) {
+    console.warn("[boot] shop2 catalog seed failed:", e.message);
+  }
 }
 
 if (isVercel) {
