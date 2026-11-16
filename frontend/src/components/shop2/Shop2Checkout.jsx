@@ -36,6 +36,8 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
   const [err, setErr] = useState("");
   const after = s2.balance - total;
   const completes = set && pricing && (!c.pieceIds || c.pieceIds.length >= pricing.missingCount);
+  // Chosen pieces only: the ladder shows their single prices minus the set rate while the
+  // 7-day partial price is open (a "set price" line would not add up to what is charged).
   const pay = async (holdToken) => {
     setBusy(true);
     setErr("");
@@ -96,11 +98,9 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
       </div>
       <div className="s2-ladder is-box">
         {c.kind === "set" && !completes ? (
-          // Chosen pieces only: their single prices, minus the set rate while the 7-day partial
-          // price is open (the set price line would not add up to what is charged).
           <>
             <span>{t("shop2.buy.sum")}</span><b className="s2-num"><Num value={pricing.selectedSingles} /> {t("shop2.common.d")}</b>
-            {pricing.selectedSingles > total ? <><span>{t("shop2.buy.setDiscount", { n: pricing.discountPct })}</span><b className="s2-num is-green">-<Num value={pricing.selectedSingles - total} /> {t("shop2.common.d")}</b></> : null}
+            {total < pricing.selectedSingles ? <><span>{t("shop2.buy.setDiscount", { n: pricing.discountPct })}</span><b className="s2-num is-green">-<Num value={pricing.selectedSingles - total} /> {t("shop2.common.d")}</b></> : null}
           </>
         ) : c.kind === "set" ? (
           <>
