@@ -339,7 +339,7 @@ export default function Shop2Market({
   // Ctrl/Cmd+K opens the search (draft C).
   useEffect(() => {
     const on = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" && rootRef.current?.offsetParent !== null) {
+      if ((e.ctrlKey || e.metaKey) && String(e.key || "").toLowerCase() === "k" && rootRef.current?.offsetParent !== null) {
         e.preventDefault();
         setSearchOpen(true);
       }

@@ -146,7 +146,7 @@ export default function Shop2Night({ onClose }) {
       ) : nextAt ? (
         <div className="s2-nprog"><span className="s2-muted">{t("shop2.night.opensIn")}</span> <RollingClock target={nextAt} /></div>
       ) : null}
-      <div className="s2-nstats">
+      {nm.open && !ineligible ? <div className="s2-nstats">
         <div><span>{t("shop2.night.opened")}</span><b className="s2-num">{sum.opened}</b></div>
         <div><span>{t("shop2.night.keptN")}</span><b className="s2-num">{sum.kept}</b></div>
         <div>
@@ -155,7 +155,7 @@ export default function Shop2Night({ onClose }) {
           <span className="s2-flipdots" aria-hidden="true">{Array.from({ length: sum.flipsTotal }, (_, i) => <i key={`${i}-${sum.flipsLeft}`} className={i < sum.flipsLeft ? "is-on" : "is-gone"} />)}</span>
         </div>
         <div><span>{t("shop2.night.savedTonight")}</span><b className="s2-num">{formatNumber(sum.saved, locale)} {t("shop2.common.d")}</b></div>
-      </div>
+      </div> : null}
       {onClose ? <CloseX onClick={onClose} label={t("shop2.common.close")} /> : null}
     </div>
   );
@@ -194,7 +194,8 @@ export default function Shop2Night({ onClose }) {
     </section>
   );
 
-  const deck = (
+  // Closed (or not open to this account): no face-down deck to show, only the header and panel.
+  const deck = !nm.cards.length ? null : (
     <section className={`s2-col s2-ndeck${nm.open ? "" : " is-closed"}`}>
       <div className={`s2-ngrid is-${nm.cards.length > 6 ? 8 : 6}`}>
         {nm.cards.map((c, i) => (
