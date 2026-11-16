@@ -627,7 +627,7 @@ function PriceBlock({ set, pr, suggestion, patch, spring, setSpring }) {
             <div className="as2-disc-track">
               <i className="as2-disc-band" style={{ left: `${(DISCOUNT_BAND.min / 50) * 100}%`, width: `${((DISCOUNT_BAND.max - DISCOUNT_BAND.min) / 50) * 100}%` }} />
               <input
-                type="range"
+                type="range" className="as2-range"
                 min="0"
                 max="50"
                 step="1"

@@ -224,8 +224,8 @@ export default function NightMarketDrawer({ open, onClose, data, now, onSaved, n
                 </div>
                 <div className="as2-dual">
                   <i className="as2-dual-fill" style={{ left: `${((s.discountMin - 10) / 60) * 100}%`, right: `${100 - ((s.discountMax - 10) / 60) * 100}%` }} />
-                  <input type="range" min="10" max="70" step="5" value={s.discountMin} onChange={(e) => set({ discountMin: Math.min(Number(e.target.value), s.discountMax - 5) })} aria-label={t("adminShop2.nm.discountMin")} />
-                  <input type="range" min="10" max="70" step="5" value={s.discountMax} onChange={(e) => set({ discountMax: Math.max(Number(e.target.value), s.discountMin + 5) })} aria-label={t("adminShop2.nm.discountMax")} />
+                  <input type="range" className="as2-range" min="10" max="70" step="5" value={s.discountMin} onChange={(e) => set({ discountMin: Math.min(Number(e.target.value), s.discountMax - 5) })} aria-label={t("adminShop2.nm.discountMin")} />
+                  <input type="range" className="as2-range" min="10" max="70" step="5" value={s.discountMax} onChange={(e) => set({ discountMax: Math.max(Number(e.target.value), s.discountMin + 5) })} aria-label={t("adminShop2.nm.discountMax")} />
                 </div>
                 <p className="as2-hint">{t("adminShop2.nm.discountHint", { mean: dist.mean })}</p>
               </div>

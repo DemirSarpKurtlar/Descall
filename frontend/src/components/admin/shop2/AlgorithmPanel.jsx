@@ -165,7 +165,7 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, co
                     {t(`adminShop2.rarity.${r}`)}
                   </span>
                   <input
-                    type="range"
+                    type="range" className="as2-range"
                     min="0"
                     max="80"
                     step="1"
