@@ -85,11 +85,15 @@ async function seedShop2Catalog(supabase, { log = console.log, rows = null } = {
 
   let upserted = 0;
   if (!same) {
-    // Rows that already exist keep their sale state: an item an admin took off sale (active
-    // false or retired_at) must not come back on sale because the catalog files changed.
+    // Rows that already exist keep their sale state and their price: an item an admin took
+    // off sale (active false or retired_at) must not come back on sale, and a price set in
+    // Yönetici Paneli must not be reset, because the catalog files changed (names, art, i18n
+    // still update). After the first seed the admin panel owns s2 prices.
     const existing = await existingSkus(supabase);
     const fresh = all.filter((r) => !existing.has(r.sku));
-    const known = all.filter((r) => existing.has(r.sku)).map(({ active, retired_at, ...rest }) => (void active, void retired_at, rest));
+    const known = all
+      .filter((r) => existing.has(r.sku))
+      .map(({ active, retired_at, price_descoin, ...rest }) => (void active, void retired_at, void price_descoin, rest));
     for (const group of [fresh, known]) {
       for (let i = 0; i < group.length; i += BATCH) {
         const chunk = group.slice(i, i + BATCH);

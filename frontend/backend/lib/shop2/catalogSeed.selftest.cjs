@@ -56,8 +56,8 @@ function fakeDb({ existing = [] } = {}) {
   assert.strictEqual(third.upserted, rows.length);
   const ups = db2.calls.filter((c) => c.op === "upsert" && c.table === "shop_items").flatMap((c) => c.payload);
   const kept = ups.filter((r) => rows.slice(0, half).some((x) => x.sku === r.sku));
-  assert.ok(kept.length && kept.every((r) => !("active" in r) && !("retired_at" in r)), "existing rows keep active / retired_at");
+  assert.ok(kept.length && kept.every((r) => !("active" in r) && !("retired_at" in r) && !("price_descoin" in r)), "existing rows keep active / retired_at / admin price");
   const added = ups.filter((r) => !rows.slice(0, half).some((x) => x.sku === r.sku));
-  assert.ok(added.length && added.every((r) => r.active === true && r.retired_at === null), "new rows go on sale");
+  assert.ok(added.length && added.every((r) => r.active === true && r.retired_at === null && Number.isFinite(r.price_descoin)), "new rows go on sale");
   console.log("catalogSeed selftest ok");
 })().catch((e) => { console.error(e); process.exit(1); });
