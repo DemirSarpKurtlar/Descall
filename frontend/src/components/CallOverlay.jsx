@@ -32,7 +32,7 @@ import { networkQualityTooltipKey, participantVolumePercent, readParticipantGain
 import RemoteScreenAudioSink from "./call/RemoteScreenAudioSink";
 import { nextShareSelection } from "../lib/screenShareTracks";
 import ShareFilmstrip, { ShareGridVideo } from "./voice/ShareFilmstrip";
-import { VoiceTileSkin, voiceTileHostClass } from "./voice/VoiceCosmetics.jsx";
+import { VoiceTileSkin, voiceTileHostClass, voiceTileHostStyle } from "./voice/VoiceCosmetics.jsx";
 import { useT } from "../context/LocaleContext";
 import { useToast } from "../context/ToastContext";
 import { DockDeviceSlot } from "./call/DevicePicker";
@@ -1446,6 +1446,7 @@ function ParticipantTile({
       className={`participant-tile${small ? " small" : ""}${shareRow ? " ss-tile" : ""}${voiceTileHostClass(user, { video: showVideo })}${isSpeaking && !reconnecting ? " is-speaking" : ""}${
         showVideo ? "" : " participant-tile--avatar-only"
       }${reconnecting ? " is-reconnecting" : ""}`}
+      style={voiceTileHostStyle(user, { video: showVideo })}
       onContextMenu={
         isLocal
           ? undefined

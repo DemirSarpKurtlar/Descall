@@ -391,3 +391,11 @@ html.gd-lite:not(.electron-app) .vt2-skin > .vt2-fx {
   flex: 1;
   min-width: 0;
 }
+.js2-joined-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.js2-joined-chip > svg {
+  flex: none;
+}

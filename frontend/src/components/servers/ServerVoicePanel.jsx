@@ -28,7 +28,7 @@ import useVoiceActivity from "../../hooks/useVoiceActivity";
 import VoiceActivityMeter from "../../premium/ui/VoiceActivityMeter.jsx";
 import { setPinnedVoiceUser } from "../../premium/audio/pinnedUser.js";
 import useHeldSpeaking from "../../hooks/useHeldSpeaking";
-import { VoiceJoinChip, VoiceTileSkin, voiceTileHostClass } from "../voice/VoiceCosmetics.jsx";
+import { VoiceJoinChip, VoiceTileSkin, voiceTileHostClass, voiceTileHostStyle } from "../voice/VoiceCosmetics.jsx";
 import { isNoiseSuppressionEnabled } from "../../lib/noiseSuppression";
 import { networkQualityTooltipKey, participantVolumePercent } from "../../lib/voiceProfile";
 import { nextShareSelection, visibleScreenStream } from "../../lib/screenShareTracks";
@@ -233,6 +233,7 @@ const VoiceTile = memo(function VoiceTile({
     <article
       ref={setTileEl}
       className={`server-voice-tile${showVideo ? " has-video" : ""}${voiceTileHostClass(tile.member, { video: showVideo })}${speaking ? " is-speaking" : ""}${tile.muted ? " is-muted" : ""}${compact ? " is-compact" : ""}${canExpandShare ? " is-share-target" : ""}${tile.sharing ? " is-screen-share" : ""}`}
+      style={voiceTileHostStyle(tile.member, { video: showVideo })}
       title={qualityKey ? t(qualityKey) : undefined}
       onContextMenu={openMenu}
       onClick={expandShare}

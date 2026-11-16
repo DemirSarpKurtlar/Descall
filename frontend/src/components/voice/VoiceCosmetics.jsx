@@ -25,6 +25,12 @@ export function voiceTileHostClass(user, { video = false } = {}) {
   return !video && voiceTileKeyOf(user) ? " vt2-on" : "";
 }
 
+/** Ring colours on the host tile too, so its outer speaking glow wears the theme. */
+export function voiceTileHostStyle(user, { video = false } = {}) {
+  const skin = video ? null : skinFor(user);
+  return skin ? { "--vt-ring": skin.style["--vt-ring"], "--vt-glow": skin.style["--vt-glow"] } : undefined;
+}
+
 export const VoiceTileSkin = memo(function VoiceTileSkin({ user = null, effectKey = null }) {
   const skin = skinFor(effectKey || user);
   if (!skin) return null;
@@ -34,6 +40,12 @@ export const VoiceTileSkin = memo(function VoiceTileSkin({ user = null, effectKe
     </div>
   );
 });
+
+/** First word, at most 16 characters: the chip must keep "katıldı" visible. */
+function shortName(name) {
+  const first = String(name || "").trim().split(/\s+/)[0] || "";
+  return first.length > 16 ? `${first.slice(0, 15)}…` : first;
+}
 
 /** Shows "<name> katıldı" on the joiner's tile while their join sound plays. */
 export function VoiceJoinChip({ userId, name }) {
@@ -57,7 +69,7 @@ export function VoiceJoinChip({ userId, name }) {
   return (
     <span key={shownAt} className="js2-joined-chip" role="status">
       <Volume2 size={12} />
-      <span>{tv("joined", { name: name || "" })}</span>
+      <span>{tv("joined", { name: shortName(name) })}</span>
     </span>
   );
 }
