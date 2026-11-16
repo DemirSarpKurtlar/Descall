@@ -128,7 +128,7 @@ function Card({ slot, selected, onSelect, index, flipKey }) {
       onTouchMove={() => press.current && press.current !== "fired" && clearTimeout(press.current)}
     >
       <div className="s2-card-art">
-        <Shop2Art item={item} size="card" me={s2.me} sample={s2.me?.displayName || s2.me?.username} />
+        <Shop2Art item={item} size="card" me={s2.me} sample={String(s2.me?.displayName || s2.me?.username || "").split(" ")[0]} />
         <button
           type="button"
           className={`s2-lock${slot.locked ? " is-on" : ""}`}
@@ -569,7 +569,7 @@ export default function Shop2Vitrin() {
             {t("shop2.vitrin.yesterday")}
           </button>
         ) : null}
-        <span className="s2-popwrap">
+        <span className={`s2-popwrap${phone ? " is-sheetonly" : ""}`}>
           <button type="button" className={`s2-btn is-sm is-primary${confirm ? " is-active" : ""}`} onClick={() => setConfirm((x) => !x)} disabled={!plan.available} aria-expanded={confirm}>
             <RefreshCw size={14} />
             {phone ? t("shop2.refresh.short", { n: formatNumber(plan.price, locale) }) : t("shop2.vitrin.refresh")}

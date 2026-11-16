@@ -33,6 +33,7 @@ import {
   Package,
   Plus,
   RefreshCw,
+  Search,
   Store,
   Undo2,
   X,
@@ -272,12 +273,6 @@ export default function Shop2Market({
         {!phone ? <p>{t("shop2.subtitle")}</p> : null}
       </div>
       {!phone ? (
-        <button type="button" className="s2-search-btn" onClick={() => setSearchOpen(true)}>
-          <span>{t("shop2.search.placeholder")}</span>
-          <kbd>{t("shop2.search.kbd")}</kbd>
-        </button>
-      ) : null}
-      {!phone ? (
         <nav className="s2-tabs" role="tablist" aria-label={t("shop2.title")}>
           {TABS.map((x) => {
             const Icon = x.icon;
@@ -291,6 +286,13 @@ export default function Shop2Market({
             );
           })}
         </nav>
+      ) : null}
+      {!phone ? (
+        <button type="button" className="s2-search-btn" onClick={() => setSearchOpen(true)}>
+          <Search size={15} />
+          <span>{t("shop2.search.placeholder")}</span>
+          <kbd>{t("shop2.search.kbd")}</kbd>
+        </button>
       ) : null}
       <div className="s2-wallet">
         <Coin size="lg" />
@@ -337,7 +339,7 @@ export default function Shop2Market({
         data-tab={tab}
       >
         {header}
-        {phone ? <PhoneChips onTab={onTab} /> : tab === "vitrin" ? <SummaryTiles onTab={onTab} /> : null}
+        {phone ? (tab !== "sets" ? <PhoneChips onTab={onTab} tab={tab} /> : null) : tab === "vitrin" ? <SummaryTiles onTab={onTab} /> : null}
         {phoneTabs}
         <div className="s2-body">{body}</div>
         {cart.length && (tab === "vitrin" || tab === "wishlist") ? (
@@ -381,21 +383,25 @@ export default function Shop2Market({
   );
 }
 
-function PhoneChips({ onTab }) {
+function PhoneChips({ onTab, tab }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
   const sf = s2.data.storefront;
   const nm = sf?.nightMarket;
   return (
     <div className="s2-pchips">
-      <div className="s2-pchip">
-        <small>{t("shop2.tiles.wallet")}</small>
-        <span className="s2-price is-md"><Coin /><b className="s2-num">{formatNumber(s2.balance, locale)}</b></span>
-      </div>
-      <div className="s2-pchip">
-        <small>{t("shop2.tiles.nextShort")}</small>
-        <RollingClock target={sf?.resetsAt} />
-      </div>
+      {sf?.earnedToday ? (
+        <div className="s2-pchip">
+          <small>{t("shop2.tiles.earned")}</small>
+          <b className="s2-num">{formatNumber(sf.earnedToday, locale)} <small>/ {formatNumber(sf.earnCap, locale)}</small></b>
+        </div>
+      ) : null}
+      {tab !== "vitrin" ? (
+        <div className="s2-pchip">
+          <small>{t("shop2.tiles.nextShort")}</small>
+          <RollingClock target={sf?.resetsAt} />
+        </div>
+      ) : null}
       {nm?.open ? (
         <button type="button" className="s2-pchip is-night" onClick={() => onTab("night")}>
           <small>{t("shop2.tiles.night")}</small>

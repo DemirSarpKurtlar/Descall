@@ -13,8 +13,6 @@ import { authedRequest } from "../../../api/authedHttp";
 import { API_BASE_URL } from "../../../config/api";
 import { RARITIES, SET_SLOTS, addDays, istDay, istMidnight, normalizeWeights, nextReset, round10, setPricing } from "./shop2Model.js";
 
-export { SET_SLOTS };
-
 const BASE = "/shop2";
 const enc = encodeURIComponent;
 const arr = (v) => (Array.isArray(v) ? v : []);

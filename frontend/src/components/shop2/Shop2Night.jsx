@@ -149,7 +149,7 @@ export default function Shop2Night({ onClose }) {
     <section className="s2-col s2-nlog">
       <div className="s2-eyebrow"><History size={13} />{t("shop2.night.log")}</div>
       <ul>
-        {nm.log.length ? nm.log.slice().reverse().map((e, i) => (
+        {nm.log.length ? nm.log.slice().sort((a, b) => (b.at || 0) - (a.at || 0)).map((e, i) => (
           <li key={i}>
             <time>{e.at ? new Date(e.at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : ""}</time>
             <span>

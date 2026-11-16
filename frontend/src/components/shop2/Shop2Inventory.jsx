@@ -2,7 +2,8 @@
 // user still owns, still wearable) and İstek listesi (wishlist with storefront matches).
 import { useMemo } from "react";
 import { useLocale } from "../../context/LocaleContext";
-import { isRetiredItem, isShop2Item, SET_PIECE_ORDER } from "../../lib/shop2Logic.js";
+import { isShop2Item, SET_PIECE_ORDER } from "../../lib/shop2Logic.js";
+import { isRetiredShopItem } from "../../lib/shopItemI18n.js";
 import { useS2 } from "./Shop2Context.js";
 import { Chip, Price } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
@@ -40,7 +41,8 @@ export default function Shop2Inventory() {
     for (const row of s2.inventory) {
       const item = row?.item;
       if (!item) continue;
-      if (isRetiredItem(item)) old.push(item);
+      // Retired = no longer sold (old catalog rows and recalled s2 rows); owners keep them.
+      if (isRetiredShopItem(item) || (!isShop2Item(item) && item.category !== "countries")) old.push(item);
       else {
         if (!cur.has(item.category)) cur.set(item.category, []);
         cur.get(item.category).push(item);
@@ -91,7 +93,7 @@ export default function Shop2Inventory() {
       ))}
       {retired.length ? (
         <section className="s2-inv-group is-retired">
-          <h3 className="s2-eyebrow"><Archive size={13} />{t("shop2.inv.legacy")} <span className="s2-count">{retired.length}</span></h3>
+          <h3 className="s2-eyebrow"><Archive size={13} />{t("shopVoice.legacyCollection")} <span className="s2-count">{retired.length}</span></h3>
           <p className="s2-muted">{t("shop2.inv.legacyBody")}</p>
           <div className="s2-inv-grid">{retired.map((it) => <Tile key={it.id} item={it} retired />)}</div>
         </section>

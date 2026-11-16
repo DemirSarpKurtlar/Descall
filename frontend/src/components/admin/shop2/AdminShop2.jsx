@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatAppDateTime } from "../../../lib/datetime";
 import { Calendar, Eye, Gift, History, LayoutDashboard, Layers, Moon, Plus, Search, ShoppingBag, Store, Wallet } from "../../ui/Icon.jsx";
-import { errKey, shop2Api } from "./adminShop2Api.js";
+import { errKey, setApiLocale, shop2Api } from "./adminShop2Api.js";
 import Dashboard from "./Dashboard.jsx";
 import TimelineView from "./TimelineView.jsx";
 import AuditView from "./AuditView.jsx";
@@ -37,6 +37,7 @@ const TOAST_MS = 4500;
 
 export default function AdminShop2({ socket, onGoto, onOpenUser }) {
   const { t, locale } = useLocale();
+  setApiLocale(locale);
   const f = useFmt();
   const now = useNow(1000);
   const [view, setView] = useState("pano");
@@ -58,6 +59,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
   const [highlight, setHighlight] = useState(null); // timeline bar flash
   const toastTimer = useRef(null);
   const reloadTimer = useRef(null);
+  const saleTimer = useRef(null);
 
   const notify = useCallback((text, { tone = "ok", undo = null, ms } = {}) => {
     const dur = ms || (undo ? 9000 : TOAST_MS);
@@ -119,11 +121,22 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
   // Live sales and other admins' changes.
   useEffect(() => {
     if (!socket) return undefined;
-    const onSale = (p) => {
+    const onSale = (payload) => {
+      const sale = payload?.sale;
+      if (!sale) {
+        if (payload?.flag) {
+          notify(t("adminShop2.toast.ringFlag", { n: (payload.flag.users || []).length }), { tone: "warn" });
+          reloadSoon();
+        }
+        return;
+      }
+      const p = { kind: sale.gift ? "gift" : ["set", "piece", "pieces"].includes(sale.kind) ? "set" : sale.kind === "refund" ? "refund" : "item", paid: Number(sale.amount) || 0, price: Number(sale.listAmount) || 0, setKey: sale.setKey || null, at: sale.at };
       setDash((d) => applySale(d, p));
-      const keys = ["revenue", p?.kind === "set" ? "setSales" : p?.kind === "gift" ? "gifts" : "storefrontBuys"];
-      if (p?.setKey) keys.push(`set:${p.setKey}`);
+      const keys = ["revenue", p.kind === "set" ? "setSales" : p.kind === "gift" ? "gifts" : "storefrontBuys"];
+      if (p.setKey) keys.push(`set:${p.setKey}`);
       setFlash((fl) => ({ ...fl, ...Object.fromEntries(keys.map((k) => [k, Date.now()])) }));
+      clearTimeout(saleTimer.current);
+      saleTimer.current = setTimeout(() => loadDash(), 1200);
     };
     const onUpdate = (p) => {
       if (String(p?.type || "").startsWith("shop2")) reloadSoon();
@@ -134,7 +147,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
       socket.off("shop2:admin:sale", onSale);
       socket.off("admin:update", onUpdate);
     };
-  }, [socket, reloadSoon]);
+  }, [socket, reloadSoon, loadDash, notify, t]);
 
   // Ctrl K focuses the search.
   const searchRef = useRef(null);
@@ -260,7 +273,7 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
         ) : null}
       </div>
 
-      <Tiles dash={dash} flash={flash} now={now} onNight={() => setNightOpen(true)} onGifts={() => setLimitsTab("gift")} />
+      <Tiles dash={dash} night={night} flash={flash} now={now} onNight={() => setNightOpen(true)} onGifts={() => setLimitsTab("gift")} />
 
       {view === "pano" ? (
         <Dashboard
@@ -320,7 +333,30 @@ export default function AdminShop2({ socket, onGoto, onOpenUser }) {
         }}
       />
       <NightMarketDrawer open={nightOpen} onClose={() => setNightOpen(false)} data={night} now={now} onSaved={() => { loadNight(); reloadSoon(); }} notify={notify} fail={fail} />
-      <LimitsDrawer open={Boolean(limitsTab)} tab={limitsTab || "gift"} onTab={setLimitsTab} onClose={() => setLimitsTab(null)} data={limits} onSaved={() => { loadLimits(); reloadSoon(); }} notify={notify} fail={fail} />
+      <LimitsDrawer
+        open={Boolean(limitsTab)}
+        tab={limitsTab || "gift"}
+        onTab={setLimitsTab}
+        onClose={() => setLimitsTab(null)}
+        data={limits}
+        onSaved={(n) => {
+          notify(t("adminShop2.toast.limitsSaved", { n }), {
+            undo: () =>
+              shop2Api
+                .undoLimits()
+                .then(() => {
+                  notify(t("adminShop2.toast.undone"));
+                  loadLimits();
+                })
+                .catch(fail),
+            ms: 15000,
+          });
+          loadLimits();
+          reloadSoon();
+        }}
+        notify={notify}
+        fail={fail}
+      />
       <RecallDialog set={recall} onClose={() => setRecall(null)} onDone={afterRecall} fail={fail} />
       <Toast toast={toast} onUndo={() => { toast?.undo?.(); setToast(null); }} onClose={() => setToast(null)} />
       {typeof onGoto === "function" ? null : null}
@@ -335,6 +371,7 @@ export function applySale(d, p) {
   const bump = (k, by = 1) => (tiles[k] = { ...(tiles[k] || {}), value: Number(tiles[k]?.value || 0) + by });
   const paid = Number(p.paid ?? p.price ?? 0);
   bump("revenue", paid);
+  if (p.kind === "refund") return { ...d, tiles };
   if (p.kind === "set") {
     bump("setSales");
     tiles.setSales.pieces = Number(tiles.setSales.pieces || 0) + Number(p.pieces || 0);
@@ -344,7 +381,7 @@ export function applySale(d, p) {
   if (sales && Array.isArray(sales.series)) {
     const key = p.kind === "set" ? "sets" : p.kind === "gift" ? "gifts" : "storefront";
     const s = sales.series.map((x) => ({ ...x, values: [...(x.values || [])] }));
-    const row = s.find((x) => x.key === key);
+    const row = s.find((x) => x.key === key) || s.find((x) => x.key === "total");
     if (row) {
       let i = row.values.length - 1;
       while (i > 0 && !Number.isFinite(row.values[i])) i -= 1;
@@ -353,7 +390,7 @@ export function applySale(d, p) {
     sales.series = s;
     sales.thisHour = Number(sales.thisHour || 0) + 1;
   }
-  return { ...d, tiles, sales, lastSale: { ...p, at: p.at || new Date().toISOString() } };
+  return { ...d, tiles, sales };
 }
 
 /* ------------------------------------------------------------------ tiles */
@@ -382,12 +419,13 @@ function Delta({ v }) {
   return <b className={up ? "as2-pos" : "as2-neg"}>{`${up ? "+" : "−"}${f.p(Math.abs(v), 0)}`}</b>;
 }
 
-function Tiles({ dash, flash, now, onNight, onGifts }) {
+function Tiles({ dash, night, flash, now, onNight, onGifts }) {
   const { t } = useLocale();
   const f = useFmt();
   const T = dash?.tiles || {};
-  const nm = T.nightMarket || {};
-  const nmOpen = nm.open || (nm.closesAt && Date.parse(nm.opensAt) <= now && Date.parse(nm.closesAt) > now);
+  const sched = night?.schedule || {};
+  const nm = { ...(T.nightMarket || {}), cards: T.nightMarket?.cards ?? sched.cards, discountMin: sched.discountMin, discountMax: sched.discountMax };
+  const nmOpen = Boolean(nm.open && nm.closesAt && Date.parse(nm.closesAt) > now);
   if (!dash) {
     return (
       <div className="as2-tiles" aria-busy="true">
@@ -422,7 +460,7 @@ function Tiles({ dash, flash, now, onNight, onGifts }) {
             : t("adminShop2.tile.nightOff")}
         </b>
       </Tile>
-      <Tile icon={Gift} tone="amber" label={t("adminShop2.tile.gifts")} onClick={onGifts} flashAt={flash.gifts} testId="as2-tile-gifts" sub={<><b className="as2-amber">{t("adminShop2.tile.blocked", { n: f.n(T.gifts?.blocked) })}</b> · {t("adminShop2.tile.overLimit")}</>}>
+      <Tile icon={Gift} tone="amber" label={t("adminShop2.tile.gifts")} onClick={onGifts} flashAt={flash.gifts} testId="as2-tile-gifts" sub={<><b className="as2-amber">{t("adminShop2.tile.blocked", { n: f.n(T.gifts?.blocked) })}</b> · {T.gifts?.flags ? t("adminShop2.tile.flags", { n: f.n(T.gifts.flags) }) : t("adminShop2.tile.overLimit")}</>}>
         <b className="tnum">{f.n(T.gifts?.value)}</b>
       </Tile>
     </div>
@@ -447,7 +485,7 @@ function GlobalSearch({ inputRef, sets, onUser, onSet }) {
     const id = setTimeout(() => {
       shop2Api
         .searchUsers(term.replace(/^@/, ""))
-        .then((r) => setUsers((r?.users || r || []).slice(0, 5)))
+        .then((r) => setUsers((r?.users || []).slice(0, 5)))
         .catch(() => setUsers([]));
     }, 220);
     return () => clearTimeout(id);

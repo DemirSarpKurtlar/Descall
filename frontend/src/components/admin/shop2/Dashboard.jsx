@@ -24,6 +24,7 @@ export default function Dashboard({ dash, range, onRange, sets, rules, limits, n
 /* ------------------------------------------------------------------ live sales */
 
 const SERIES = [
+  { key: "total", tone: "brand", fill: true },
   { key: "storefront", tone: "brand", fill: true },
   { key: "sets", tone: "amber", fill: true },
   { key: "gifts", tone: "violet", fill: false },
@@ -65,7 +66,7 @@ export function LiveSales({ dash, range, onRange, now }) {
           {t("adminShop2.live")}
         </span>
         <div className="as2-legend as2-ml">
-          {SERIES.map((s) => (
+          {SERIES.filter((s) => series.some((x) => x.key === s.key)).map((s) => (
             <button key={s.key} type="button" className={`as2-lg is-${s.tone}${hidden[s.key] ? " is-off" : ""}`} aria-pressed={!hidden[s.key]} onClick={() => setHidden((h) => ({ ...h, [s.key]: !h[s.key] }))}>
               <i />
               {t(`adminShop2.sales.${s.key}`)}
@@ -157,10 +158,10 @@ export function LiveSales({ dash, range, onRange, now }) {
         {last ? (
           <div className="as2-ticker-in" key={last.at}>
             <Pill tone="green">{agoLabel(t, last.at, now)}</Pill>
-            <UserAv name={last.username} size={18} />
+            <UserAv name={last.username || "?"} size={18} />
             <span className="as2-ticker-t">
               {t(last.kind === "set" ? "adminShop2.sales.lastSet" : last.kind === "gift" ? "adminShop2.sales.lastGift" : "adminShop2.sales.lastItem", {
-                user: `@${last.username || "?"}`,
+                user: last.username ? `@${last.username}` : t("adminShop2.sales.someone"),
                 name: last.setName || name(last.item) || "",
               })}
             </span>
@@ -324,21 +325,20 @@ export function statusText(t, s, st, locale, now) {
 function RulesCard({ limits, night, rules, now, onNight, onLimits }) {
   const { t, locale } = useLocale();
   const f = useFmt();
-  const L = limits?.limits || limits || {};
   const S = limits?.stats || {};
   const sched = night?.schedule || {};
-  const next = night?.next?.at || null;
-  const nextLabel = next ? formatAppDateTime(next, locale, { weekday: "long" }) : null;
-  const gift = L.gift || {};
-  const refresh = L.refresh || {};
-  const na = L.newAccount || rules?.live?.newAccount || {};
+  const next = night?.open ? null : night?.next?.at || null;
+  const nextLabel = night?.open ? t("adminShop2.rules.nightOpenNow") : next ? formatAppDateTime(next, locale, { weekday: "long" }) : null;
+  const gift = limits?.gift || {};
+  const refresh = limits?.refresh || {};
+  const na = rules?.live?.newAccount || {};
   const rows = [
     {
       key: "night",
       icon: Moon,
       title: t("adminShop2.rules.night"),
-      sub: t("adminShop2.rules.nightSub", { n: (sched.weekdays || []).length || 2, from: sched.openFrom || "22:00", to: sched.openTo || "02:00", cards: sched.cards || 6 }),
-      pill: nextLabel ? <Pill tone="violet">{t("adminShop2.rules.nightNext", { day: nextLabel })}</Pill> : null,
+      sub: t("adminShop2.rules.nightSub", { n: (sched.weekdays || []).length, from: sched.openFrom || "22:00", to: sched.openTo || "02:00", cards: sched.cards || 6 }),
+      pill: nextLabel ? <Pill tone="violet">{night?.open ? nextLabel : t("adminShop2.rules.nightNext", { day: nextLabel })}</Pill> : null,
       onClick: onNight,
     },
     {
@@ -353,17 +353,17 @@ function RulesCard({ limits, night, rules, now, onNight, onLimits }) {
       key: "gift",
       icon: Gift,
       title: t("adminShop2.rules.gift"),
-      sub: t("adminShop2.rules.giftSub", { send: gift.dailySend ?? 3, recv: gift.dailyReceive ?? 5, days: gift.minAccountDaysSend ?? 7 }),
-      pill: S.giftBlockedToday ? <Pill tone="amber">{t("adminShop2.rules.blocks", { n: f.n(S.giftBlockedToday) })}</Pill> : null,
-      onClick: () => onLimits("gift"),
+      sub: gift.frozen ? t("adminShop2.rules.giftFrozen") : t("adminShop2.rules.giftSub", { send: gift.perDay ?? 3, recv: gift.receivePerDay ?? 5, days: gift.minAccountDaysSend ?? 7 }),
+      pill: S.giftBlockedToday || S.openFlags ? <Pill tone={S.openFlags ? "red" : "amber"}>{S.openFlags ? t("adminShop2.tile.flags", { n: f.n(S.openFlags) }) : t("adminShop2.rules.blocks", { n: f.n(S.giftBlockedToday) })}</Pill> : null,
+      onClick: () => onLimits(S.openFlags ? "flags" : "gift"),
     },
     {
       key: "newAccount",
       icon: UserRound,
       title: t("adminShop2.rules.newAccount"),
-      sub: t("adminShop2.rules.newAccountSub", { days: na.days ?? 3, cap: f.n(na.slotCap ?? 1500) }),
-      pill: S.newAccounts != null ? <Pill tone="gray">{t("adminShop2.rules.people", { n: f.n(S.newAccounts) })}</Pill> : null,
-      onClick: () => onLimits("newAccount"),
+      sub: t("adminShop2.rules.newAccountSub", { days: na.days ?? 3, cap: f.n(na.slotCap ?? 600) }),
+      pill: null,
+      onClick: () => onLimits("purchases"),
     },
   ];
   return (

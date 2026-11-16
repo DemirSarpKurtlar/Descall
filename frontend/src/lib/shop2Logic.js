@@ -694,6 +694,8 @@ export function normalizeRecipient(raw) {
     total: raw.total != null ? num(raw.total) : null,
     acceptsGifts: raw.canReceive != null ? Boolean(raw.canReceive) : user.acceptsGifts,
     wishlistCount: num(raw.wishlistCount, 0),
+    birthdayInDays: raw.birthdayInDays ?? user.birthdayInDays ?? null,
+    birthdayAt: raw.birthdayAt ?? user.birthdayAt ?? null,
   };
 }
 

@@ -80,15 +80,15 @@ function Letter({ f, tone = 0 }) {
 
 /** What the friend gets: phone lock screen + opening, or the desktop chat row. */
 function GiftPreview({ to, sender, item, setName, message, wrap, hiddenItem, hideName, when, view, both }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const s2 = useS2();
   const from = hideName ? t("shop2.gifts.someone") : sender;
   const label = hiddenItem ? t("shop2.gifts.aPackage") : setName || (item ? s2.itemName(item) : "");
   const phone = (
     <div className="s2-gphone">
       <div className="s2-gphone-time">
-        <b className="s2-num">{when ? when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</b>
-        <small>{(when || new Date()).toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })}</small>
+        <b className="s2-num">{(when || new Date()).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</b>
+        <small>{(when || new Date()).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}</small>
       </div>
       <div className="s2-gnotif">
         <span className="s2-gnotif-ic"><Gift size={14} /></span>
