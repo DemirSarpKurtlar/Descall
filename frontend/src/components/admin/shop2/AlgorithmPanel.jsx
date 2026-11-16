@@ -6,7 +6,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatAppDateTime } from "../../../lib/datetime";
-import { stepUpHeaders } from "../../../lib/adminStepUp";
 import { Clock, FlaskConical, History, Play, RotateCcw, SlidersHorizontal, UserRound } from "../../ui/Icon.jsx";
 import { shop2Api } from "./adminShop2Api.js";
 import { Dialog, Pill, Popover, ReasonField, Skel, Switch, Tabs, useFmt } from "./ui.jsx";
@@ -22,13 +21,13 @@ function draftFrom(rules) {
   return {
     version: rules?.draft?.version || (live?.version || 0) + 1,
     weights: normalizeWeights(d.weights),
-    bands: (d.bands?.length === 4 ? d.bands : [[150, 600], [600, 1500], [1500, 3000], [3000, null]]).map((b) => [...b]),
+    bands: (d.bands?.length === 4 ? d.bands : [[150, 450], [300, 900], [450, 1200], [600, 1500]]).map((b) => [...b]),
     toggles: { ...DEFAULT_TOGGLES, ...(d.toggles || {}) },
-    newAccount: { days: 3, slotCap: 1500, ...(d.newAccount || {}) },
+    newAccount: { days: 3, slotCap: 600, ...(d.newAccount || {}) },
   };
 }
 
-export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, compact = false }) {
+export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, focus = null }) {
   const { t, locale } = useLocale();
   const f = useFmt();
   const [tab, setTab] = useState("weights");
@@ -39,27 +38,23 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, co
   const [revert, setRevert] = useState(null); // version
   const [apply, setApply] = useState(false);
   const verRef = useRef(null);
-  const saveTimer = useRef(null);
 
   useEffect(() => {
     if (!dirty) setDraft(draftFrom(rules));
   }, [rules, dirty]);
 
-  // Keep the server draft in step without prompting for a code mid-drag: only while a
-  // step-up token is already valid; otherwise it is sent with simulate / apply.
+  // Another card asked for a tab (Kurallar ve sınırlar › Yeni hesap).
+  const rootRef = useRef(null);
   useEffect(() => {
-    if (!dirty || !draft) return undefined;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      if (Object.keys(stepUpHeaders() || {}).length) shop2Api.saveDraft(draft).catch(() => {});
-    }, 1500);
-    return () => clearTimeout(saveTimer.current);
-  }, [draft, dirty]);
+    if (!focus?.tab) return;
+    setTab(focus.tab);
+    rootRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  }, [focus]);
 
   const live = rules?.live;
   const changes = useMemo(() => (draft && live ? ruleChanges(draft, live) : 0), [draft, live]);
   const diff = useMemo(() => (draft && live ? weightDiff(draft.weights, live.weights) : {}), [draft, live]);
-  const prev = (rules?.versions || []).filter((v) => v.version < (live?.version || 0)).sort((a, b) => b.version - a.version)[0];
+  const prev = (rules?.versions || []).filter((v) => v.version < (live?.version || 0) && v.status !== "draft" && v.status !== "cancelled").sort((a, b) => b.version - a.version)[0];
   const scheduled = rules?.scheduled;
 
   const edit = (fn) => {
@@ -94,7 +89,7 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, co
   if (!draft) return null;
 
   return (
-    <section className="as2-card as2-algo" data-testid="as2-algo">
+    <section className="as2-card as2-algo" data-testid="as2-algo" ref={rootRef}>
       <header className="as2-ch">
         <h2>
           <SlidersHorizontal size={17} />
@@ -112,7 +107,7 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, co
             <div key={v.version} className="as2-ver-row">
               <span className="as2-ver-n">v{v.version}</span>
               <span className="as2-ver-t">
-                <b>{v.note || t("adminShop2.algo.noNote")}</b>
+                <b>{v.builtIn ? t("adminShop2.algo.builtIn") : v.note || t("adminShop2.algo.noNote")}</b>
                 <small>
                   {v.at ? formatAppDateTime(v.at, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
                   {v.by ? ` · ${v.by}` : ""}
@@ -120,6 +115,10 @@ export default function AlgorithmPanel({ rules, now, onChanged, notify, fail, co
               </span>
               {v.version === live?.version ? (
                 <Pill tone="green">{t("adminShop2.algo.liveNow")}</Pill>
+              ) : v.status === "scheduled" ? (
+                <Pill tone="blue">{t("adminShop2.algo.tonight", { v: v.version })}</Pill>
+              ) : v.status === "draft" ? (
+                <Pill tone="amber">{t("adminShop2.status.draft")}</Pill>
               ) : (
                 <button
                   type="button"
@@ -471,10 +470,10 @@ function SimulateDialog({ sim, onClose, draft }) {
       ) : (
         <div className="as2-sim">
           <div className="as2-sim-kpis">
-            <Kpi label={t("adminShop2.sim.repeat")} value={f.p(r.repeatPct ?? 0)} good={(r.repeatPct ?? 0) === 0} sub={t("adminShop2.sim.goal0")} />
-            <Kpi label={t("adminShop2.sim.ownedLeak")} value={f.n(r.ownedLeak ?? 0)} good={(r.ownedLeak ?? 0) === 0} sub={t("adminShop2.sim.noLeak")} />
-            <Kpi label={t("adminShop2.sim.minEpic")} value={f.p(r.minEpicPct ?? 100, 0)} good={(r.minEpicPct ?? 100) >= 100} sub={t("adminShop2.sim.minEpicSub")} />
-            <Kpi label={t("adminShop2.sim.neverShown")} value={f.n(r.neverShown ?? 0)} sub={t("adminShop2.sim.neverShownSub")} />
+            <Kpi label={t("adminShop2.sim.empty")} value={f.n(r.empty ?? 0)} good={(r.empty ?? 0) === 0} sub={t("adminShop2.sim.goal0")} />
+            <Kpi label={t("adminShop2.sim.minEpic")} value={f.p(r.withEpicPct ?? 0)} good={(r.withEpicPct ?? 0) >= 99.5} sub={t("adminShop2.sim.epicForced", { pct: f.p(r.epicForcedPct ?? 0) })} />
+            <Kpi label={t("adminShop2.sim.avgValue")} value={`${f.n(r.avgValue ?? 0)} D`} sub={r.avgValueDelta != null ? t("adminShop2.sim.vsLive", { d: `${r.avgValueDelta >= 0 ? "+" : "−"}${f.n(Math.abs(r.avgValueDelta))}` }) : ""} />
+            <Kpi label={t("adminShop2.sim.neverShown")} value={f.n(r.neverShown ?? 0)} sub={r.neverShownDelta != null ? t("adminShop2.sim.vsLive", { d: `${r.neverShownDelta >= 0 ? "+" : "−"}${f.n(Math.abs(r.neverShownDelta))}` }) : t("adminShop2.sim.neverShownSub")} />
           </div>
           <div className="as2-cap">{t("adminShop2.sim.rarity")}</div>
           <div className="as2-sim-bars">
@@ -502,16 +501,17 @@ function SimulateDialog({ sim, onClose, draft }) {
               <span key={i}>
                 <small>{t("adminShop2.algo.slot", { n: i + 1 })}</small>
                 <b className="tnum">
-                  {f.n(s.avgPrice)} D
+                  {s.avgPrice == null ? "–" : `${f.n(s.avgPrice)} D`}
                 </b>
-                <em className="tnum">{t("adminShop2.sim.buyRate", { pct: f.p(s.buyPct ?? 0) })}</em>
               </span>
             ))}
           </div>
-          {r.notes?.length ? (
+          {r.changes?.length ? (
             <ul className="as2-sim-notes">
-              {r.notes.map((n, i) => (
-                <li key={i}>{typeof n === "string" ? n : t(n.key, n.vars)}</li>
+              {r.changes.slice(0, 8).map((c, i) => (
+                <li key={i} className="tnum">
+                  {c.path}: {String(c.from)} → {String(c.to)}
+                </li>
               ))}
             </ul>
           ) : null}
@@ -543,8 +543,7 @@ function ApplyDialog({ open, draft, live, changes, onClose, onDone, fail }) {
   const go = async () => {
     setBusy(true);
     try {
-      await shop2Api.saveDraft(draft);
-      await shop2Api.applyRules({ reason: reason.trim(), at: "midnight" });
+      await shop2Api.applyRules({ draft, reason: reason.trim(), basedOn: live?.version ?? null });
       onDone();
     } catch (e) {
       fail(e);

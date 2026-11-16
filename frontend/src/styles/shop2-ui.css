@@ -6125,3 +6125,25 @@ button.s2-strip:hover {
 .s2-root.is-desktop .s2-sets-grid {
   grid-template-columns: 270px minmax(0, 1fr) 300px;
 }
+
+.s2-msg-bubble {
+  max-width: 100% !important;
+  width: auto !important;
+}
+.s2-cele-side {
+  width: 250px;
+}
+.s2-hold-wrap.is-set .s2-hold {
+  background: color-mix(in srgb, var(--s2-accent) 30%, rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--s2-accent) 60%, transparent), 0 10px 26px color-mix(in srgb, var(--s2-accent) 22%, transparent);
+}
+.s2-root:not(.is-phone) .s2-wallet {
+  justify-self: end;
+}
+.s2-root:not(.is-phone) .s2-search-btn {
+  width: 210px;
+}
+.s2-tabs button {
+  padding: 0 10px;
+  gap: 6px;
+}

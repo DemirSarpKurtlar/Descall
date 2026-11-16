@@ -65,7 +65,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
 
   const undo = async (e) => {
     try {
-      await shop2Api.undoAudit(e.id);
+      await shop2Api.undoAudit(e);
       notify(t("adminShop2.toast.undone"));
       load();
       onChanged?.();
@@ -213,7 +213,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
       </aside>
 
       <AlgoSummary rules={rules} onRules={onRules} onPreview={onRules} />
-      <SlotConversion dash={dash} />
+      <SlotConversion dash={dash} tl={tl} />
       <TopSellers dash={dash} onOpenSet={onOpenSet} />
 
       <CancelQueued
@@ -231,7 +231,7 @@ export default function TimelineView({ dash, sets, rules, now, highlight, onHigh
   );
 }
 
-const Q_ICON = { rules: SlidersHorizontal, night: Moon, set: Layers, refreshPrice: RefreshCw, limits: Filter, event: Percent };
+const Q_ICON = { rules: SlidersHorizontal, night: Moon, set: Layers, recall: RotateCcw, refreshPrice: RefreshCw, limits: Filter, event: Percent };
 
 function clashText(t, c, locale, sets) {
   const names = c.keys.map((k) => sets.find((s) => s.key === k)?.name || k).join(", ");
@@ -279,7 +279,7 @@ function Chart({ tl, sets, from, days, now, clashes, highlight, onOpenSet, onRec
       if (Math.abs(cur - base) < 0.2) return;
       const endsAt = new Date(istMidnight(from) + cur * 86400000).toISOString();
       try {
-        await shop2Api.saveSet(b.set.key, { endsAt });
+        await shop2Api.patchSet(b.set.key, { endsAt }, "timeline");
         notify(t("adminShop2.toast.endMoved", { name: b.set.name, when: formatAppDateTime(endsAt, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }));
         onChanged();
       } catch (err) {
@@ -298,10 +298,10 @@ function Chart({ tl, sets, from, days, now, clashes, highlight, onOpenSet, onRec
     if (kind === "recall") return onRecall(s);
     try {
       if (kind === "stock") {
-        await shop2Api.addStock(s.key, 100);
+        await shop2Api.addStock(s, 100);
         notify(t("adminShop2.toast.stockAdded", { name: s.name, n: 100 }));
       } else if (kind === "extend") {
-        await shop2Api.extendSet(s.key, 24);
+        await shop2Api.extendSet(s, 24);
         notify(t("adminShop2.toast.extended", { name: s.name }));
       }
       onChanged();
@@ -586,11 +586,12 @@ function AlgoSummary({ rules, onRules, onPreview }) {
   );
 }
 
-function SlotConversion({ dash }) {
+function SlotConversion({ dash, tl }) {
   const { t } = useLocale();
   const f = useFmt();
-  const sc = dash?.slotConversion || [];
+  const sc = tl?.slotConversion || [];
   const max = Math.max(1, ...sc.map((s) => Number(s.pct || 0)));
+  const toSet = tl?.toSet || dash?.toSet || {};
   return (
     <section className="as2-card as2-slotconv" data-testid="as2-slotconv">
       <header className="as2-ch">
@@ -598,9 +599,9 @@ function SlotConversion({ dash }) {
           <Filter size={17} />
           {t("adminShop2.slots.title")}
         </h2>
-        <span className="as2-muted as2-ml">{t("adminShop2.sales.today").toLocaleLowerCase()}</span>
+        <span className="as2-muted as2-ml">{t("adminShop2.slots.window")}</span>
       </header>
-      {!dash ? (
+      {!tl ? (
         <Skel h={150} r={12} />
       ) : (
         <>
@@ -609,7 +610,7 @@ function SlotConversion({ dash }) {
               <div key={i} className="as2-sc">
                 <span>
                   <b>{t("adminShop2.algo.slot", { n: i + 1 })}</b>
-                  <small className="tnum">{s.band ? (s.band[1] == null ? t("adminShop2.algo.epicUp") : `${f.n(s.band[0])}–${f.n(s.band[1])}`) : ""}</small>
+                  <small className="tnum">{s.band ? (s.band[1] == null ? t("adminShop2.algo.bandFrom", { a: f.n(s.band[0]) }) : `${f.n(s.band[0])}–${f.n(s.band[1])}`) : ""}</small>
                   <em className="tnum">{f.p(s.pct ?? 0)}</em>
                 </span>
                 <i>
@@ -622,14 +623,14 @@ function SlotConversion({ dash }) {
             <span>
               <RefreshCw size={14} />
               {t("adminShop2.slots.afterRefresh")}
-              <b className="tnum">{f.p(dash.afterRefresh?.pct ?? 0)}</b>
-              <em className={`tnum ${Number(dash.afterRefresh?.delta || 0) >= 0 ? "as2-pos" : "as2-neg"}`}>{signed(f, dash.afterRefresh?.delta)}</em>
+              <b className="tnum">{f.n(dash?.refreshes?.today ?? 0)}</b>
+              <em className="tnum as2-muted">{f.c(dash?.refreshes?.revenue ?? 0)} D</em>
             </span>
             <span>
               <Layers size={14} />
               {t("adminShop2.slots.toSet")}
-              <b className="tnum">{f.p(dash.toSet?.pct ?? 0)}</b>
-              <em className={`tnum ${Number(dash.toSet?.delta || 0) >= 0 ? "as2-pos" : "as2-neg"}`}>{signed(f, dash.toSet?.delta)}</em>
+              <b className="tnum">{f.p(toSet.pct ?? 0)}</b>
+              <em className="tnum as2-muted" />
             </span>
           </div>
         </>
@@ -656,7 +657,7 @@ function TopSellers({ dash, onOpenSet }) {
           <Star size={17} />
           {t("adminShop2.top.title")}
         </h2>
-        <Seg size="sm" value={range} onChange={setRange} label={t("adminShop2.top.title")} options={[{ id: "7d", label: t("adminShop2.top.d7") }, { id: "30d", label: t("adminShop2.top.d30") }]} />
+        <Seg size="sm" value={range} onChange={setRange} label={t("adminShop2.top.title")} options={["7d", "30d"].filter((k) => dash?.topSellers?.[k]).map((k) => ({ id: k, label: t(k === "7d" ? "adminShop2.top.d7" : "adminShop2.top.d30") }))} />
       </header>
       {!dash ? (
         <Skel h={150} r={12} />
@@ -685,15 +686,11 @@ function TopSellers({ dash, onOpenSet }) {
 
 function CancelQueued({ item, onClose, onDone, fail }) {
   const { t, locale } = useLocale();
-  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (item) setReason("");
-  }, [item]);
   const go = async () => {
     setBusy(true);
     try {
-      await shop2Api.cancelQueued(item.id, reason.trim());
+      await shop2Api.cancelQueued(item.id);
       onDone();
     } catch (e) {
       fail(e);
@@ -716,13 +713,13 @@ function CancelQueued({ item, onClose, onDone, fail }) {
           <button type="button" className="as2-btn" onClick={onClose} disabled={busy}>
             {t("adminShop2.cancel")}
           </button>
-          <button type="button" className="as2-btn is-danger" onClick={go} disabled={busy || !reasonOk(reason)} data-testid="as2-queue-cancel-confirm">
+          <button type="button" className="as2-btn is-danger" onClick={go} disabled={busy} data-testid="as2-queue-cancel-confirm">
             {t("adminShop2.q.cancelGo")}
           </button>
         </>
       }
     >
-      <ReasonField value={reason} onChange={setReason} autoFocus />
+      <p className="as2-hint">{t("adminShop2.q.cancelNote")}</p>
     </Dialog>
   );
 }

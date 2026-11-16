@@ -253,7 +253,6 @@ function CabinScene({ set, user, me, device, compare, light, focus = "all" }) {
         <>
           <div className="s2-cabin-card">
             {card}
-            {compare ? <div className="s2-cabin-cap"><span>{t("shop2.sets.now")}</span><span className="s2-accent">{withSet}</span></div> : null}
           </div>
           <div className="s2-cabin-side">
             {chat}

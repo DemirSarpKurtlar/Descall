@@ -16,12 +16,12 @@ const KINDS = ["all", "set", "rules", "night", "limits", "user"];
 const KIND_TONE = { set: "blue", rules: "amber", night: "violet", limits: "gray", user: "green" };
 
 export function kindOf(action) {
-  const a = String(action || "");
-  if (a.startsWith("set") || a.includes("recall") || a.includes("stock")) return "set";
-  if (a.startsWith("rules") || a.includes("weight") || a.includes("version")) return "rules";
-  if (a.startsWith("night")) return "night";
-  if (a.startsWith("limit") || a.includes("gift") || a.includes("refresh_price")) return "limits";
-  if (a.startsWith("user") || a.includes("storefront")) return "user";
+  const a = String(action || "").replace(/^shop2_/, "");
+  if (a.startsWith("set_") || a.startsWith("ab_")) return "set";
+  if (a.startsWith("rules_") || a.startsWith("event_") || a === "queue_cancel") return "rules";
+  if (a.startsWith("night_")) return "night";
+  if (a.startsWith("limits_") || a.startsWith("gift")) return "limits";
+  if (a === "free_refresh" || a.startsWith("storefront_")) return "user";
   return "set";
 }
 
@@ -41,7 +41,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
   const load = useCallback(
     async (before = null) => {
       try {
-        const r = await shop2Api.audit({ before, limit: 60, kind: kind === "all" ? undefined : kind });
+        const r = await shop2Api.audit({ before, limit: 60 });
         const list = r?.entries || [];
         setRows((prev) => (before ? [...(prev || []), ...list] : list));
         setCursor(r?.nextCursor || null);
@@ -50,7 +50,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
         fail(e);
       }
     },
-    [kind, fail]
+    [fail]
   );
   useEffect(() => {
     setRows(null);
@@ -65,7 +65,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
   const undo = async (e) => {
     setBusyId(e.id);
     try {
-      await shop2Api.undoAudit(e.id);
+      await shop2Api.undoAudit(e);
       notify(t("adminShop2.toast.undone"));
       setRows((list) => (list || []).map((x) => (x.id === e.id ? { ...x, undone: true } : x)));
       onChanged?.();
@@ -128,7 +128,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
                     </span>
                     <Pill tone={KIND_TONE[k]}>{t(`adminShop2.audit.f.${k}`)}</Pill>
                     <span className="as2-au-t">
-                      <b>{e.summary || t(`adminShop2.audit.kind.${e.action}`, e.vars || {})}</b>
+                      <b>{t(`adminShop2.audit.kind.${e.action}`, e.vars || {}) === `adminShop2.audit.kind.${e.action}` ? e.action : t(`adminShop2.audit.kind.${e.action}`, e.vars || {})}</b>
                       {e.reason ? <small>{t("adminShop2.audit.reason", { r: e.reason })}</small> : null}
                       {e.before != null || e.after != null ? (
                         <small className="as2-au-diff">
@@ -152,7 +152,7 @@ export default function AuditView({ now, filter, onFilter, notify, fail, onChang
                     <span className="as2-au-act">
                       {e.undone ? (
                         <Pill tone="gray">{t("adminShop2.audit.undone")}</Pill>
-                      ) : e.undoable && (left > 0 || !e.undoUntil) ? (
+                      ) : e.undoable && left > 0 ? (
                         <button type="button" className="as2-btn is-sm" onClick={() => undo(e)} disabled={busyId === e.id}>
                           <Undo2 size={14} />
                           {t("adminShop2.undo")}

@@ -310,13 +310,17 @@ export default function Shop2Checkout({ checkout: c, onClose }) {
   const [phase, setPhase] = useState(c.phase === "done" ? "done" : "confirm");
   const [result, setResult] = useState(c.result || null);
   const [autoEquip, setAutoEquip] = useState(false);
+  // Frozen at payment: after the buy the set reloads with every piece owned (price 0).
+  const [paid, setPaid] = useState(null);
   if (c.kind === "set" && !set) return null;
+  const view = paid || { items, total, pricing };
   return (
     <Layer kind={s2.layout === "phone" ? "sheet" : "dialog"} onClose={onClose} label={phase === "done" ? t("shop2.celebrate.label") : t("shop2.checkout.label")} className={`s2-dialog ${phase === "done" ? "is-cele" : "is-co"}`}>
       {phase === "done" ? (
-        <Celebrate c={c} set={set} pricing={pricing} items={items} total={total} result={result} autoEquip={autoEquip} onClose={onClose} />
+        <Celebrate c={c} set={set} pricing={view.pricing} items={view.items} total={typeof result?.paid === "number" ? result.paid : view.total} result={result} autoEquip={autoEquip} onClose={onClose} />
       ) : (
         <Confirm c={c} set={set} pricing={pricing} items={items} total={total} onClose={onClose} onPaid={(res, { equipNow }) => {
+          setPaid({ items, total, pricing });
           setResult(res);
           setAutoEquip(equipNow);
           setPhase("done");

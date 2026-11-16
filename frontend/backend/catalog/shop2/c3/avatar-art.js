@@ -263,7 +263,7 @@ const ART = {
   "gul-yapraklari": () => ({
     glow: ["#ff6e96", 0.3],
     base: doc(`<circle r='${R_MID}' fill='none' stroke='#2f6a2f' stroke-width='1.8'/>${around(18, R_MID, (i) => (i % 3 === 0 ? shape.leaf(1.9, 4.4, "#4caa4c", "#1f4a1f") : `<path d='M-1 0L0 -2.4L1 0Z' fill='#2f6a2f'/>`), { rot: 60 })}`),
-    spin: { doc: doc(around(7, R_OBJ - 0.4, (i) => `<g transform='rotate(${i * 40})'>${shape.heart(3, "url(#p)")}</g>`), rg("p", [[0, "#ffe0ea"], [0.6, "#ff7aa0"], [1, "#c2335e"]], { fx: "40%", fy: "35%" })), anim: spin(14) },
+    spin: { doc: doc(around(7, R_OBJ - 0.4, (i) => `<g transform='rotate(${i * 40})'>${shape.heart(3.8, "url(#p)")}</g>`), rg("p", [[0, "#ffe0ea"], [0.6, "#ff7aa0"], [1, "#c2335e"]], { fx: "40%", fy: "35%" })), anim: spin(14) },
   }),
   "yaldiz-bant": () => ({
     glow: ["#ffd26e", 0.3],
@@ -272,8 +272,8 @@ const ART = {
   }),
   "gumus-hilal": () => ({
     glow: ["#dce6ff", 0.3],
-    base: doc(`${band("url(#m)").body}${GLOSS}${at(315, R_OBJ - 0.2, crescent("url(#c)"), -45)}`, metal("m", "#eef3ff", "#9aa4b8", "#5c6679") + glossDefs + lg("c", [[0, "#fffdf0"], [1, "#ffe9a8"]])),
-    extra: { doc: doc(`${at(345, R_OBJ, shape.star4(1.6, "#ffffff"))}${at(290, R_OBJ + 1, shape.star4(1.1, "#dce6ff"))}${at(30, R_OBJ - 1, shape.star4(1, "#ffffff"))}`), anim: "s2fx-twinkle 2.6s ease-in-out infinite" },
+    base: doc(`${band("url(#m)").body}${GLOSS}${at(40, R_OBJ - 0.6, `<g transform='scale(1.25)'>${crescent("url(#c)")}</g>`, -40)}`, metal("m", "#eef3ff", "#9aa4b8", "#5c6679") + glossDefs + lg("c", [[0, "#fffdf0"], [1, "#ffe9a8"]])),
+    extra: { doc: doc(`${at(10, R_OBJ, shape.star4(1.8, "#ffffff"))}${at(68, R_OBJ + 1, shape.star4(1.2, "#dce6ff"))}${at(330, R_OBJ - 1, shape.star4(1.1, "#ffffff"))}`), anim: "s2fx-twinkle 2.6s ease-in-out infinite" },
   }),
   "olay-ufku": () => ({
     glow: ["#ff8c28", 0.46],

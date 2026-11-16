@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
 import { RotateCcw, Undo2 } from "../../ui/Icon.jsx";
 import { shop2Api } from "./adminShop2Api.js";
-import { Dialog, ReasonField, SetMark, Skel, Switch, Thumb, useFmt, useItemName } from "./ui.jsx";
+import { Dialog, ReasonField, SetMark, Skel, Thumb, useFmt, useItemName } from "./ui.jsx";
 import { SET_SLOTS, UNDO_MINUTES, reasonOk } from "./shop2Model.js";
 
 const MODES = ["keep", "refund", "swap"];
@@ -20,18 +20,18 @@ export default function RecallDialog({ set, onClose, onDone, fail }) {
   const [impact, setImpact] = useState(null);
   const [mode, setMode] = useState("keep");
   const [reason, setReason] = useState("");
-  const [notifyBuyers, setNotifyBuyers] = useState(true);
-  const [pauseGifts, setPauseGifts] = useState(true);
   const [swap, setSwap] = useState(null);
+  const [swapTo, setSwapTo] = useState(null);
+  const [swapList, setSwapList] = useState([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!set) return;
     setMode("keep");
     setReason("");
-    setNotifyBuyers(true);
-    setPauseGifts(true);
     setSwap(null);
+    setSwapTo(null);
+    setSwapList([]);
     setImpact(null);
     shop2Api
       .recallImpact(set.key)
@@ -39,18 +39,32 @@ export default function RecallDialog({ set, onClose, onDone, fail }) {
       .catch(() => setImpact({}));
   }, [set]);
 
+  // Replacements: catalog items of the same category as the faulty piece.
+  useEffect(() => {
+    const from = (set ? SET_SLOTS.map((k) => set.pieces?.[k]) : []).find((p) => p && p.id === swap);
+    setSwapTo(null);
+    if (!from) {
+      setSwapList([]);
+      return;
+    }
+    shop2Api
+      .catalogByCategory(from.category)
+      .then((list) => setSwapList(list.filter((it) => it.id !== from.id).slice(0, 24)))
+      .catch(() => setSwapList([]));
+  }, [swap, set]);
+
   const pieces = useMemo(() => SET_SLOTS.map((s) => set?.pieces?.[s]).filter(Boolean), [set]);
   const I = impact || {};
   // Live numbers for the chosen option (A4 motion 2).
-  const notified = notifyBuyers ? Number(I.buyers ?? I.soldSets ?? 0) + (mode === "keep" ? 0 : Number(I.inCart ?? 0)) : 0;
+  const notified = Number(I.notify ?? I.buyers ?? 0);
   const refundTotal = mode === "refund" ? Number(I.revenue ?? 0) : 0;
-  const ok = reasonOk(reason) && (mode !== "swap" || swap);
+  const ok = reasonOk(reason) && (mode !== "swap" || (swap && swapTo));
   const setName = set ? (typeof set.name === "object" ? set.name[locale] || set.name.tr : set.name) : "";
 
   const go = async () => {
     setBusy(true);
     try {
-      await shop2Api.recallSet(set.key, { mode, reason: reason.trim(), notify: notifyBuyers, pauseGifts, swapItemId: swap });
+      await shop2Api.recallSet(set.key, { mode, reason: reason.trim(), swapFrom: swap, swapTo });
       onDone(set);
     } catch (e) {
       fail(e);
@@ -90,13 +104,13 @@ export default function RecallDialog({ set, onClose, onDone, fail }) {
           ) : (
             <>
               <dt>{t("adminShop2.recall.sold")}</dt>
-              <dd className="tnum">{t("adminShop2.recall.soldV", { sets: f.n(I.soldSets ?? set?.sold ?? 0), pieces: f.n(I.soldPieces ?? set?.soldPieces ?? 0) })}</dd>
+              <dd className="tnum">{t("adminShop2.recall.soldV", { sets: f.n(I.purchases ?? 0), pieces: f.n(I.buyers ?? 0) })}</dd>
               <dt>{t("adminShop2.recall.collected")}</dt>
               <dd className="tnum">{f.c(I.revenue ?? 0)} D</dd>
               <dt>{t("adminShop2.recall.inCart")}</dt>
-              <dd className="tnum">{t("adminShop2.recall.people", { n: f.n(I.inCart ?? 0) })}</dd>
+              <dd className="tnum">{t("adminShop2.recall.people", { n: f.n(I.inWishlists ?? 0) })}</dd>
               <dt>{t("adminShop2.recall.giftsOnWay")}</dt>
-              <dd className="tnum">{t("adminShop2.recall.gifts", { n: f.n(I.giftsPending ?? 0) })}</dd>
+              <dd className="tnum">{t("adminShop2.recall.gifts", { n: f.n(I.giftsPending ?? 0) })}{I.giftsPendingAmount ? ` · ${f.c(I.giftsPendingAmount)} D` : ""}</dd>
             </>
           )}
         </dl>
@@ -121,27 +135,31 @@ export default function RecallDialog({ set, onClose, onDone, fail }) {
               </button>
             ))}
           </div>
+          {swap ? (
+            <>
+              <small>{t("adminShop2.recall.swapTo")}</small>
+              <div className="as2-rc-swap-list">
+                {swapList.map((p) => (
+                  <button key={p.id} type="button" className={swapTo === p.id ? "is-on" : ""} onClick={() => setSwapTo(p.id)} aria-pressed={swapTo === p.id}>
+                    <Thumb item={p} size={26} />
+                    <span>{name(p)}</span>
+                  </button>
+                ))}
+                {!swapList.length ? <span className="as2-muted">{t("adminShop2.rack.empty")}</span> : null}
+              </div>
+            </>
+          ) : null}
         </div>
       ) : null}
       <ReasonField value={reason} onChange={setReason} label={t("adminShop2.recall.reasonLabel")} placeholder={t("adminShop2.recall.reasonPh")} autoFocus testId="as2-recall-reason" />
-      <div className="as2-rc-tg">
-        <label className="as2-tg">
-          <Switch checked={notifyBuyers} onChange={setNotifyBuyers} label={t("adminShop2.recall.notify")} />
-          <span>{t("adminShop2.recall.notify")}</span>
-        </label>
-        <label className="as2-tg">
-          <Switch checked={pauseGifts} onChange={setPauseGifts} label={t("adminShop2.recall.pauseGifts")} />
-          <span>{t("adminShop2.recall.pauseGifts")}</span>
-        </label>
-      </div>
       <div className="as2-rc-live tnum" aria-live="polite">
         <span>{t("adminShop2.recall.liveNotified", { n: f.n(notified) })}</span>
         {mode === "refund" ? <span>{t("adminShop2.recall.liveRefund", { total: f.n(refundTotal) })}</span> : null}
-        {pauseGifts ? <span>{t("adminShop2.recall.livePaused", { n: f.n(I.giftsPending ?? 0) })}</span> : null}
+        {I.giftsPending ? <span>{t("adminShop2.recall.livePaused", { n: f.n(I.giftsPending) })}</span> : null}
       </div>
       <p className="as2-info">
         <Undo2 size={15} />
-        <span>{t("adminShop2.recall.undoNote", { n: UNDO_MINUTES })}</span>
+        <span>{t("adminShop2.recall.undoNote", { n: I.undoMinutes || UNDO_MINUTES })}</span>
       </p>
     </Dialog>
   );
