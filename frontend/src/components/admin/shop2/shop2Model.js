@@ -355,7 +355,7 @@ export function paletteScore(colors, palette) {
 export function itemPaletteScore(item, palette, setKey) {
   const s = paletteScore(itemColors(item), palette);
   if (setKey && item?.set_key === setKey) return Math.max(90, s ?? 90);
-  return s;
+  return s ?? (Number.isFinite(item?.serverScore) ? Math.round(item.serverScore) : null);
 }
 
 /* ------------------------------------------------------------------ pre-publish checklist */
@@ -387,8 +387,9 @@ export function checklist(set, { clashes = [], phoneChecked = false, palette = n
 /** B2 "Yaşam döngüsü": upcoming | live | last24 | soldout | recalled | ended | draft. */
 export function lifecycle(set, now) {
   if (!set) return "draft";
-  if (set.status === "recalled") return "recalled";
-  if (set.status === "draft") return "draft";
+  if (set.status === "recalled" || set.state === "recalled") return "recalled";
+  if (set.status === "draft" || set.state === "draft") return "draft";
+  if (set.status === "archived" || set.state === "archived" || set.status === "ended") return "ended";
   const start = Date.parse(set.startsAt || "");
   const end = Date.parse(set.endsAt || "");
   if (Number.isFinite(start) && start > now) return "upcoming";

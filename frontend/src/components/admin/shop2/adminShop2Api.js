@@ -13,6 +13,8 @@ import { authedRequest } from "../../../api/authedHttp";
 import { API_BASE_URL } from "../../../config/api";
 import { RARITIES, SET_SLOTS, addDays, istDay, istMidnight, normalizeWeights, nextReset, round10, setPricing } from "./shop2Model.js";
 
+export { SET_SLOTS };
+
 const BASE = "/shop2";
 const enc = encodeURIComponent;
 const arr = (v) => (Array.isArray(v) ? v : []);
@@ -284,7 +286,7 @@ export function rulesFromServer(r) {
   const tg = r.toggles || {};
   return {
     weights: normalizeWeights(Object.fromEntries(RARITIES.map((k) => [k, num(w[k]) * 100]))),
-    bands: arr(r.bands).map((b) => [num(b.min), b.max == null ? null : num(b.max)]),
+    bands: arr(r.bands).map((b) => [num(b.min), b.max == null || num(b.max) >= 100000 ? null : num(b.max)]),
     toggles: {
       hideOwned: true,
       noRepeat: num(tg.noRepeatDays, 7) > 0,
@@ -687,7 +689,7 @@ export const shop2Api = {
   /** Draft → new rule version (note = reason) → scheduled for the next 00:00 Istanbul. */
   applyRules: async ({ draft, reason, basedOn }) => {
     const v = await adminFetch(`${BASE}/rules`, json("POST", { rules: rulesToServer(draft), note: reason, basedOn }));
-    const version = v?.version ?? v?.row?.version;
+    const version = typeof v?.version === "object" ? v.version.version : v?.version;
     await adminFetch(`${BASE}/rules/${enc(version)}/schedule`, json("POST", {}));
     return { version };
   },

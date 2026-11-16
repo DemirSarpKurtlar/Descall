@@ -49,7 +49,7 @@ const cloudPuff = (c, s = 1) => `<g transform='scale(${s})'><circle cx='-2.4' cy
 const tower = `<path d='M-1.9 4.6L-1.2 -2.4H1.2L1.9 4.6Z' fill='#e8f6ff'/><path d='M-1.65 2.2H1.65L1.5 0.6H-1.5Z' fill='#d6336c'/><path d='M-1.35 -1.2H1.35L1.25 -2.4H-1.25Z' fill='#d6336c'/><rect x='-1.4' y='-4.3' width='2.8' height='1.9' rx='0.4' fill='#0b1b3a' stroke='#e8f6ff' stroke-width='0.4'/><circle cy='-3.35' r='0.75' fill='#fff9c8'/><path d='M-1.7 -4.3L0 -5.6L1.7 -4.3Z' fill='#e8f6ff'/>`;
 const hourglass = (frame, sand) => `<path d='M-2.4 -4H2.4M-2.4 4H2.4' stroke='${frame}' stroke-width='0.9' stroke-linecap='round'/><path d='M-1.9 -3.6H1.9L0.25 0L1.9 3.6H-1.9L-0.25 0Z' fill='rgba(255,248,232,0.25)' stroke='${frame}' stroke-width='0.5'/><path d='M-1.1 -1.9H1.1L0.2 -0.2H-0.2Z M-1.6 3.4H1.6L0 1.6Z' fill='${sand}'/>`;
 const crown = (gold, gem) => `<path d='M-6 3L-6.6 -3.4L-3.3 -0.6L0 -5L3.3 -0.6L6.6 -3.4L6 3Z' fill='${gold}' stroke='#fff3c4' stroke-width='0.4' stroke-linejoin='round'/><circle cx='0' cy='-5' r='1' fill='${gem}'/><circle cx='-6.6' cy='-3.4' r='0.8' fill='${gem}'/><circle cx='6.6' cy='-3.4' r='0.8' fill='${gem}'/><circle cx='0' cy='0.8' r='1.2' fill='${gem}'/><path d='M-6 3H6' stroke='#fff3c4' stroke-width='0.5'/>`;
-const crescent = (c) => `<path d='M0 -5A5 5 0 1 0 0 5A3.8 3.8 0 1 1 0 -5Z' fill='${c}'/>`;
+const crescent = (c) => `<circle r='6.4' fill='#fff8dc' opacity='0.18'/><path d='M0 -5.4A5.4 5.4 0 1 0 0 5.4A4 4 0 1 1 0 -5.4Z' fill='${c}' stroke='#2a3040' stroke-width='0.7'/>`;
 const wisp = (c) => `<path d='M0 4C-2 2 2 0 0 -2C-1.5 -3.5 0.8 -5 0.2 -6.5' stroke='${c}' stroke-width='1.3' stroke-linecap='round' fill='none'/><path d='M0 4C-2 2 2 0 0 -2' stroke='#e6fffb' stroke-width='0.5' stroke-linecap='round' fill='none'/>`;
 const prism = (body) => `<path d='M0 -3.4L3 2.2H-3Z' fill='${body}' stroke='#ffffff' stroke-width='0.5' stroke-linejoin='round'/>${["#ff3b6b", "#ffb13b", "#f6ff5a", "#3bff9d", "#3bc8ff", "#8a5bff"].map((c, i) => `<path d='M0.6 -0.4L${f(5.4)} ${f(-3.6 + i * 1.1)}' stroke='${c}' stroke-width='0.55' stroke-linecap='round'/>`).join("")}`;
 const drop = (fill, hi) => `<path d='M0 -3.4C1.6 -1.2 2.4 0.2 2.4 1.3A2.4 2.4 0 0 1 -2.4 1.3C-2.4 0.2 -1.6 -1.2 0 -3.4Z' fill='${fill}'/><ellipse cx='-0.8' cy='0.6' rx='0.55' ry='0.9' fill='${hi}' opacity='0.85'/>`;
@@ -100,7 +100,7 @@ const ART = {
   /* ── Sets ────────────────────────────────────────────────────── */
   "gece-limani-fener": () => ({
     glow: ["#35d0e0", 0.35],
-    base: doc(`${band("url(#m)").body}${around(20, R_OUT - 1.3, `<path d='M-2 0.8Q-1 -1 0 -0.2Q0.8 0.5 1.6 -0.6' stroke='#a8f2ff' stroke-width='0.6' fill='none' stroke-linecap='round'/>`)}${GLOSS}${at(180, R_OBJ - 0.6, tower, 180)}`, metal("m", "#3a86c8", "#1e4b8f", "#0b1b3a") + glossDefs),
+    base: doc(`${band("url(#m)").body}${around(20, R_OUT - 1.3, `<path d='M-2 0.8Q-1 -1 0 -0.2Q0.8 0.5 1.6 -0.6' stroke='#a8f2ff' stroke-width='0.6' fill='none' stroke-linecap='round'/>`)}${GLOSS}${at(180, R_OBJ - 1.2, `<g transform='scale(1.45)'>${tower}</g>`, 180)}`, metal("m", "#3a86c8", "#1e4b8f", "#0b1b3a") + glossDefs),
     spin: { doc: (() => { const w = wedge(20, "#e8f6ff", { r1: R_GAP - 2, peak: 0.95 }); const w2 = wedge(14, "#35d0e0", { r1: R_GAP, peak: 0.35, id: "v" }); return doc(`${w.body}<g transform='rotate(180)'>${w2.body}</g>`, w.defs + w2.defs); })(), anim: spin(6) },
     extra: { doc: doc([30, 100, 210, 290].map((a, i) => `<path d='${arc(R_MID + (i % 2 ? 1.2 : -0.8), a, a + 34)}' stroke='#d8f4ff' stroke-opacity='0.4' stroke-width='2.4' stroke-linecap='round' fill='none'/>`).join("")), anim: "s2fx-breathe 5s ease-in-out infinite" },
   }),
@@ -172,7 +172,7 @@ const ART = {
   }),
   "firtina-simsek": () => ({
     glow: ["#7aa7ff", 0.42],
-    base: doc(`${band("url(#m)").body}${around(11, R_OUT - 2.4, (i) => cloudPuff(i % 2 ? "#5b6d94" : "#3b4a6b", 0.9))}`, metal("m", "#5b6d94", "#3b4a6b", "#1a2236")),
+    base: doc(`${band("url(#m)").body}${around(11, R_OUT - 2.2, (i) => cloudPuff(i % 2 ? "#8a9cc4" : "#6a7ca4", 1))}${around(11, R_OUT - 1.6, (i) => cloudPuff("#c8d4f0", 0.45), { start: 16 })}`, metal("m", "#6a7fae", "#3b4a6b", "#1a2236")),
     spin: { doc: doc(around(7, R_OUT - 1.2, (i) => cloudPuff(i % 2 ? "#7d8db4" : "#46557c", 0.65), { start: 25 })), anim: spin(60) },
     extra: { doc: doc(`${at(40, R_OBJ, shape.bolt(5, "#f5f9ff", 1.1))}${at(160, R_OBJ, shape.bolt(4.4, "#cfe0ff", 1))}${at(275, R_OBJ, shape.bolt(5.4, "#f5f9ff", 1.1))}`), anim: "s2fx-flash 2.8s linear infinite, s2fx-spin 8.4s steps(3) infinite" },
   }),
@@ -262,8 +262,8 @@ const ART = {
   }),
   "gul-yapraklari": () => ({
     glow: ["#ff6e96", 0.3],
-    base: doc(`<circle r='${R_MID}' fill='none' stroke='#2a5a2a' stroke-width='1.1'/>${around(18, R_MID, (i) => (i % 3 === 0 ? shape.leaf(1.3, 3.2, "#3a8a3a") : `<path d='M-0.7 0L0 -1.6L0.7 0Z' fill='#2a5a2a'/>`), { rot: 60 })}`),
-    spin: { doc: doc(around(7, R_OBJ - 0.4, (i) => `<g transform='rotate(${i * 40})'>${shape.heart(2.1, "url(#p)")}</g>`), rg("p", [[0, "#ffe0ea"], [0.6, "#ff7aa0"], [1, "#c2335e"]], { fx: "40%", fy: "35%" })), anim: spin(14) },
+    base: doc(`<circle r='${R_MID}' fill='none' stroke='#2f6a2f' stroke-width='1.8'/>${around(18, R_MID, (i) => (i % 3 === 0 ? shape.leaf(1.9, 4.4, "#4caa4c", "#1f4a1f") : `<path d='M-1 0L0 -2.4L1 0Z' fill='#2f6a2f'/>`), { rot: 60 })}`),
+    spin: { doc: doc(around(7, R_OBJ - 0.4, (i) => `<g transform='rotate(${i * 40})'>${shape.heart(3, "url(#p)")}</g>`), rg("p", [[0, "#ffe0ea"], [0.6, "#ff7aa0"], [1, "#c2335e"]], { fx: "40%", fy: "35%" })), anim: spin(14) },
   }),
   "yaldiz-bant": () => ({
     glow: ["#ffd26e", 0.3],
@@ -272,7 +272,7 @@ const ART = {
   }),
   "gumus-hilal": () => ({
     glow: ["#dce6ff", 0.3],
-    base: doc(`${band("url(#m)").body}${GLOSS}${at(315, R_OBJ - 0.2, crescent("url(#c)"), -45)}`, metal("m", "#eef3ff", "#9aa4b8", "#5c6679") + glossDefs + lg("c", [[0, "#ffffff"], [1, "#b8c4dc"]])),
+    base: doc(`${band("url(#m)").body}${GLOSS}${at(315, R_OBJ - 0.2, crescent("url(#c)"), -45)}`, metal("m", "#eef3ff", "#9aa4b8", "#5c6679") + glossDefs + lg("c", [[0, "#fffdf0"], [1, "#ffe9a8"]])),
     extra: { doc: doc(`${at(345, R_OBJ, shape.star4(1.6, "#ffffff"))}${at(290, R_OBJ + 1, shape.star4(1.1, "#dce6ff"))}${at(30, R_OBJ - 1, shape.star4(1, "#ffffff"))}`), anim: "s2fx-twinkle 2.6s ease-in-out infinite" },
   }),
   "olay-ufku": () => ({
@@ -314,7 +314,7 @@ const ART = {
   "firtina-ruzgari": () => ({
     glow: ["#c8e6ff", 0.24],
     base: doc(`<circle r='${R_MID}' fill='none' stroke='#9fc8e8' stroke-opacity='0.3' stroke-width='3'/>`),
-    spin: { doc: doc(around(5, R_MID, swirl("#f0f8ff"), { rot: 90 })), anim: spin(3) },
+    spin: { doc: doc(around(5, R_MID, `<g transform='scale(1.5)'>${swirl("#f0f8ff")}</g>`, { rot: 90 })), anim: spin(3) },
     extra: { doc: doc([20, 95, 170, 250, 320].map((a, i) => `<path d='${arc(i % 2 ? R_OUT - 1 : R_GAP + 1, a, a + 28)}' stroke='#e6f5ff' stroke-opacity='0.7' stroke-width='0.7' fill='none' stroke-linecap='round'/>`).join("")), anim: rev(1.6) },
   }),
   "kehribar-isiltisi": () => ({

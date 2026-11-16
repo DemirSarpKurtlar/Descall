@@ -218,9 +218,9 @@ const breathe = (dur = 3, n = 3, lo = ".45") => pulse("opacity", `1;${lo};1`, du
     N("Başak Çelengi", "Wheat Wreath", "Ährenkranz", "Corona de espigas", "Couronne d'épis", "Coroa de trigo", "Венок колосьев"),
     N("Akşam güneşinde parlayan altın başaklardan bir çelenk, rüzgârda hafifçe salınır.", "A wreath of golden wheat glowing in the late sun, swaying softly in the wind.", "Ein Kranz goldener Ähren im Abendlicht, der sanft im Wind schwingt.", "Una corona de espigas doradas a la luz de la tarde que se mece con el viento.", "Une couronne d'épis dorés dans le soleil du soir, qui ondule doucement au vent.", "Uma coroa de trigo dourado ao sol da tarde, balançando de leve com o vento.", "Венок золотых колосьев в вечернем солнце, мягко колышется на ветру."),
     () => {
-      const defs = metalGrad("m", "gold") + lg("wh", ["#fff3c4", "#f2c230", "#8a6a12"], 0, 0, 1, 1) + rgU("sun", [[0.72, "#fff3c4", 0], [0.84, "#f2c230", 0.35], [1, "#f2c230", 0]], 100, 100, 100);
+      const defs = metalGrad("m", "gold") + lg("wh", ["#fff3c4", "#f2c230", "#8a6a12"], 0, 0, 1, 1) + rgU("sun", [[0.72, "#fff3c4", 0], [0.84, "#f2c230", 0.35], [1, "#f2c230", 0]], 100, 100, 100) + `<g id='ea'>${ear(13)}</g>`;
       let w = "";
-      for (let i = 0; i < 9; i++) { const a = 200 + i * 16, s = 1 - i * 0.03; w += at(86, a, `<g transform='rotate(${58})'>${ear(13, s)}</g>`); w += at(86, 360 - a, `<g transform='rotate(${-58})'>${ear(13, s)}</g>`); }
+      for (let i = 0; i < 9; i++) { const a = 200 + i * 16, sc = f((1 - i * 0.03) * 100) / 100; w += at(86, a, `<use href='#ea' transform='rotate(58) scale(${sc})'/>`); w += at(86, 360 - a, `<use href='#ea' transform='rotate(-58) scale(${sc})'/>`); }
       return frameDoc(defs, `<circle cx='100' cy='100' r='99' fill='url(#sun)'/>` + `<g>${w}<animateTransform attributeName='transform' type='rotate' values='0 100 100;1.6 100 100;-1.6 100 100;0 100 100' dur='4s' repeatCount='3'/></g>` + band(80.5, 6.5, "url(#m)") + `<path d='M88 192Q100 182 112 192' fill='none' stroke='#8a6a12' stroke-width='3' stroke-linecap='round'/><circle cx='100' cy='188' r='4' fill='url(#m)' stroke='#5e4612' stroke-width='.6'/>`);
     });
   piece(K, "banner", "epic", 660,
