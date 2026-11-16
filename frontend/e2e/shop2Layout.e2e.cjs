@@ -91,6 +91,7 @@ function boot() {
     if (API_RE.test(url.pathname) && !String(req.headers.accept || '').startsWith('text/html')) {
       if (/\/auth\/me$/.test(url.pathname)) return res.json({ user: me });
       if (/\/friends(\/list)?$/.test(url.pathname)) return res.json({ friends });
+      if (/\/promo\//.test(url.pathname)) return res.json({ popup: null, codes: [], items: [], unseen: 0, count: 0 });
       const last = url.pathname.split('/').filter(Boolean).pop() || 'items';
       const out = { items: [], friends: [], requests: [], servers: [], groups: [], conversations: [], messages: [], notifications: [], prefs: {}, inventory: [] };
       out[last] = Array.isArray(out[last]) ? out[last] : [];
