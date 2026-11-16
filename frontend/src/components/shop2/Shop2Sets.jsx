@@ -441,13 +441,37 @@ export async function applyOutfit(s2, outfit, t) {
     if (sameId(s2.equippedIdFor(category), id)) continue;
     try {
       // eslint-disable-next-line no-await-in-loop
-      await s2.onEquip?.(item, false);
-      n += 1;
+      if (await s2.onEquip?.(item, false)) n += 1;
     } catch {
       /* keep going */
     }
   }
+  if (!n) {
+    // Not in the loaded inventory yet (just bought): let the server wear it.
+    const res = await s2.actions.applyOutfit(outfit);
+    if (res) n = Object.keys(outfit.items || {}).length;
+  }
   s2.toast(t("shop2.kasa.lookApplied", { n }), { tone: "ok" });
+}
+
+/** Undo "Hepsini kuşan": put back the previous item of each slot, or take the new one off. */
+export async function restoreLook(s2, prevLook, newItems, t) {
+  const byId = new Map(s2.inventory.map((r) => [String(r.itemId), r.item]));
+  for (const it of newItems) {
+    const prevId = prevLook?.[it.category];
+    try {
+      if (prevId != null && byId.get(String(prevId))) {
+        // eslint-disable-next-line no-await-in-loop
+        await s2.onEquip?.(byId.get(String(prevId)), false);
+      } else if (sameId(s2.equippedIdFor(it.category), it.id) || prevId == null) {
+        // eslint-disable-next-line no-await-in-loop
+        await s2.onEquip?.(it, true);
+      }
+    } catch {
+      /* keep going */
+    }
+  }
+  s2.toast(t("shop2.celebrate.restored"), { tone: "ok" });
 }
 
 function SaveLookDialog({ onSave, onClose, phone }) {

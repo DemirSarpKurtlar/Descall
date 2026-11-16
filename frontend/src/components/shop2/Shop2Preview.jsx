@@ -2,16 +2,24 @@
 // tile and join sound, drawn with the app's cosmetic renderers (Avatar + avatar effect,
 // NameEffectText, profile colour / aura classes, chat bubble skins, voice tile skins). The
 // `user` passed in is the signed-in user with try-on items equipped (composeTryOnUser).
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useLocale } from "../../context/LocaleContext";
 import { Avatar } from "../ui/Avatar";
 import { CountryBadge, NameEffectText, profileAuraClass, presenceFlareClass } from "../ui/Cosmetics";
+import { JoinSoundPreview, VoiceTileSkin, voiceTileHostClass } from "../voice/VoiceCosmetics.jsx";
+import { API_BASE_URL } from "../../config/api";
+import { absoluteAssetUrl } from "../../lib/callCoinPrefs.js";
 import { cssUrl } from "../../lib/cssUrl";
 import { profileColorClass, profileColorStyle } from "../../lib/profileColors";
 import { localText } from "../../lib/shop2Logic.js";
-import { Mic, Pause, Play, Volume2 } from "./shop2Icons.jsx";
+import { Mic, Volume2 } from "./shop2Icons.jsx";
 
-const imgOf = (item) => item?.preview_url || item?.asset_url || null;
+/** Item art URL: s2 art is served as /api/shop2/assets/:id (relative to the API host). */
+export function assetSrc(item, prefer = "preview") {
+  const raw = prefer === "asset" ? item?.asset_url || item?.preview_url : item?.preview_url || item?.asset_url;
+  return absoluteAssetUrl(raw, API_BASE_URL) || null;
+}
+const imgOf = (item) => assetSrc(item);
 const keyOf = (item) => item?.effect_key || "";
 
 export function displayNameOf(user, fallback = "") {
@@ -48,12 +56,12 @@ export function S2Badge({ item, size = 16 }) {
   );
 }
 
-/** Name in the worn name colour + name effect, with the badge. */
+/** Name in the worn name colour (set pieces: .pcolor-name gradient) + name effect + badge. */
 export function S2Name({ user, children, badge = true }) {
-  const style = user?.equippedProfileColor ? { "--s2-name-color": user.equippedProfileColor.name_color || user.equippedProfileColor.color || undefined } : undefined;
+  const pc = profileColorClass(user);
   return (
-    <span className={`s2-name${user?.equippedProfileColor ? ` has-color pcolor-name-${keyOf(user.equippedProfileColor)}` : ""}`} style={style}>
-      <NameEffectText user={user}>{children}</NameEffectText>
+    <span className={`s2-name${pc ? ` ${pc}` : ""}`} style={pc ? profileColorStyle(user) || undefined : undefined}>
+      <span className="pcolor-name"><NameEffectText user={user}>{children}</NameEffectText></span>
       {badge ? <S2Badge item={user?.equippedBadge} /> : null}
     </span>
   );
@@ -128,25 +136,19 @@ export function S2OtherMessage({ name, letter, text, time, tone = 0 }) {
   );
 }
 
-/** Server voice / call tile with the worn voice tile theme. */
+/** Server voice / call tile with the worn voice tile theme (agent C4's skin renderer). */
 export function S2VoiceTile({ user, speaking = true, joined = null, size = "lg", label }) {
   const { t } = useLocale();
-  const tile = user?.equippedVoiceTile;
-  const k = keyOf(tile);
-  const art = imgOf(tile);
+  const host = voiceTileHostClass(user);
   return (
-    <div
-      className={`s2-vtile is-${size}${speaking ? " is-speaking" : ""}${tile ? ` cosmetic-voice-tile vtile-${k}` : ""}`}
-      data-voice-tile={k || undefined}
-      style={art ? { "--vtile-art": cssUrl(art) } : undefined}
-    >
-      {art ? <span className="s2-vtile-art" aria-hidden="true" /> : null}
+    <div className={`s2-vtile is-${size}${speaking ? " is-speaking" : ""}${host}`} data-voice-tile={user?.equippedVoiceTile?.effect_key || undefined}>
+      <VoiceTileSkin user={user} />
       {joined ? (
         <span className="s2-vtile-joined">
           <Volume2 size={12} />
           <b>{joined.who}</b>
           <JoinWave />
-          <span>{joined.sound}</span>
+          {joined.sound ? <span>{joined.sound}</span> : null}
         </span>
       ) : null}
       <S2Avatar user={user} size={size === "lg" ? 76 : size === "md" ? 56 : 40} className="s2-vtile-av" />
@@ -195,108 +197,12 @@ export function JoinWave({ playing = false, bars = 9 }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Join sound playback. The sound is a WebAudio recipe stored with the item (agent C4:
-// item.recipe / item.sound). Volume is capped; nothing plays when the user muted join
-// sounds. A missing recipe falls back to a short chime from the palette of the item.
-
-let audioCtx = null;
-function ctx() {
-  if (typeof window === "undefined") return null;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return null;
-  if (!audioCtx) audioCtx = new AC();
-  return audioCtx;
-}
-
-function recipeOf(item) {
-  const raw = item?.recipe || item?.sound || item?.join_sound || null;
-  if (!raw) return null;
-  if (typeof raw === "string") {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-  return raw;
-}
-
-function hashKey(s) {
-  let h = 2166136261;
-  for (const c of String(s || "")) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
-  return h >>> 0;
-}
-
-/** Plays the join sound; returns its length in ms. */
-export function playJoinSound(item, { volume = 0.22 } = {}) {
-  if (typeof window !== "undefined" && typeof window.__descallPlayJoinSound === "function") {
-    try {
-      return window.__descallPlayJoinSound(item, { volume, preview: true }) || 1400;
-    } catch {
-      /* fall back below */
-    }
-  }
-  const ac = ctx();
-  if (!ac) return 0;
-  if (ac.state === "suspended") ac.resume().catch(() => {});
-  const r = recipeOf(item);
-  const master = ac.createGain();
-  master.gain.value = Math.min(0.3, Math.max(0, volume));
-  master.connect(ac.destination);
-  const t0 = ac.currentTime + 0.02;
-  const notes = Array.isArray(r?.notes) && r.notes.length
-    ? r.notes
-    : (() => {
-        const h = hashKey(item?.effect_key || item?.sku || "join");
-        const base = 392 + (h % 7) * 37;
-        return [[base, 0, 0.5], [base * 1.25, 0.12, 0.55], [base * 1.5, 0.24, 0.8]];
-      })();
-  let end = 0;
-  for (const n of notes) {
-    const [freq, start = 0, dur = 0.4, gain = 0.8] = Array.isArray(n) ? n : [n.f ?? n.freq, n.t ?? n.start, n.d ?? n.dur, n.g ?? n.gain];
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = r?.wave || "sine";
-    o.frequency.value = Number(freq) || 440;
-    g.gain.setValueAtTime(0.0001, t0 + start);
-    g.gain.exponentialRampToValueAtTime(Math.max(0.001, Math.min(1, gain)), t0 + start + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
-    o.connect(g).connect(master);
-    o.start(t0 + start);
-    o.stop(t0 + start + dur + 0.05);
-    end = Math.max(end, start + dur);
-  }
-  return Math.round(end * 1000) + 120;
-}
-
-/** Play / pause row for a join sound: button, bouncing bars, length. */
-export function S2JoinSound({ item, compact = false, title }) {
-  const { t, locale } = useLocale();
-  const [playing, setPlaying] = useState(false);
-  const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []);
-  const play = useCallback(() => {
-    if (!item) return;
-    const len = playJoinSound(item);
-    setPlaying(true);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setPlaying(false), len || 1400);
-  }, [item]);
-  const secs = Number(item?.duration_ms || item?.durationMs || 1400) / 1000;
+/** Join sound row: play, live waveform, length (agent C4's player and recipe renderer). */
+export function S2JoinSound({ item, compact = false, accent = null }) {
+  if (!item) return null;
   return (
-    <div className={`s2-sound${compact ? " is-compact" : ""}${playing ? " is-playing" : ""}`}>
-      <button type="button" className="s2-sound-play" onClick={play} aria-label={t("shop2.preview.listen")} disabled={!item}>
-        {playing ? <Pause size={16} weight="fill" /> : <Play size={16} weight="fill" />}
-      </button>
-      {!compact && title ? (
-        <span className="s2-sound-text">
-          <b>{title}</b>
-          <small>{t("shop2.preview.joinSoundLen", { s: secs.toLocaleString(locale, { maximumFractionDigits: 1 }) })}</small>
-        </span>
-      ) : null}
-      <JoinWave playing={playing} bars={compact ? 9 : 22} />
-      {compact ? <small className="s2-sound-len">{t("shop2.preview.seconds", { s: secs.toLocaleString(locale, { maximumFractionDigits: 1 }) })}</small> : null}
+    <div className={`s2-sound${compact ? " is-compact" : ""}`}>
+      <JoinSoundPreview item={item} compact={compact} accent={accent} />
     </div>
   );
 }

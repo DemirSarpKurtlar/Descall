@@ -86,7 +86,7 @@ async function allItemsWithMerch(campaigns, now = Date.now()) {
       return {
         ...it,
         asset_url: shop.IMAGE_ASSET_CATEGORIES.has(it.category) ? it.asset_url : null,
-        retired: shop.RETIRED_SHOP_CATEGORIES.has(it.category),
+        retired: shop.isRetiredShopItem(it),
         pricing,
         availability: av,
       };
@@ -340,7 +340,7 @@ router.get("/shop/items/:id/detail", async (req, res) => {
     res.json({
       item: {
         ...full,
-        retired: shop.RETIRED_SHOP_CATEGORIES.has(full.category),
+        retired: shop.isRetiredShopItem(full),
         pricing: merch.effectivePricing(full, campaigns, now),
         availability: merch.availability(full, campaigns, now),
       },
@@ -506,7 +506,7 @@ router.post("/shop/desk/bulk", async (req, res) => {
     const reason = cleanReason(body.reason);
     if (["price", "sale"].includes(action) && reason.length < 3) throw bad("reason_required");
     const items = await rows(supabase.from("shop_items").select("id, sku, name, category, price_descoin, active").in("id", ids));
-    const editable = items.filter((it) => !shop.RETIRED_SHOP_CATEGORIES.has(it.category));
+    const editable = items.filter((it) => !shop.isRetiredShopItem(it));
     const nowIso = new Date().toISOString();
     const changes = [];
     if (action === "activate" || action === "deactivate") {
@@ -867,7 +867,7 @@ router.post("/shop/gifts", async (req, res) => {
     if (!UUID.test(String(itemId || "")) || !userIds.length) throw bad("bad_request");
     const item = await shop.getItemById(itemId);
     if (!item) throw bad("not_found", 404);
-    if (shop.REMOVED_COSMETIC_CATEGORIES.has(item.category)) throw bad("cosmetic_removed", 410);
+    if (shop.isRemovedCosmeticItem(item)) throw bad("cosmetic_removed", 410);
     const note = typeof message === "string" && message.trim() ? message.trim().slice(0, 280) : null;
     const users = await rows(supabase.from("users").select("id, username").in("id", userIds));
     const io = getIo(req);

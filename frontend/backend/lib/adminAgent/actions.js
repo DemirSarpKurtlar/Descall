@@ -328,7 +328,7 @@ const HANDLERS = {
     const p = item.params || {};
     const shopItem = await d.shop.getItemById(p.itemId);
     if (!shopItem) return skipped("item_not_found");
-    if (d.shop.REMOVED_COSMETIC_CATEGORIES.has(shopItem.category)) return skipped("item_removed");
+    if (d.shop.isRemovedCosmeticItem(shopItem)) return skipped("item_removed");
     const row = await d.shop.grantItem(id, p.itemId, { acquiredVia: "gift", giftedBy: ctx.actor.id, giftMessage: p.message || null });
     d.audit(ctx.actor, "shop_gift", id, agentMeta(ctx, item, { itemId: p.itemId, sku: shopItem.sku, message: p.message || null }));
     const online = Boolean(ctx.io?.sockets?.adapter?.rooms?.get(`user:${id}`)?.size);

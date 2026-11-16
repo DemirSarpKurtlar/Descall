@@ -21,6 +21,31 @@ export const SHOP2_EVENTS = Object.freeze({
 });
 
 const PREFS_KEY = "descall.shop2.prefs";
+const WEEK_KEY = "descall.shop2.week";
+
+/**
+ * The server keeps no storefront history for users, so the client remembers the last 7
+ * Istanbul days it saw (item summaries + bought) for draft C's "Son 7 günün vitrini".
+ */
+export function rememberStorefrontDay(sf, ownedIds = null) {
+  if (!sf?.day || !sf.slots?.length) return [];
+  let week = [];
+  try {
+    week = JSON.parse(localStorage.getItem(WEEK_KEY) || "[]");
+    if (!Array.isArray(week)) week = [];
+  } catch {
+    week = [];
+  }
+  const slim = (it) => ({ id: it.id, sku: it.sku, category: it.category, rarity: it.rarity, effect_key: it.effect_key, theme_key: it.theme_key, asset_url: it.asset_url && String(it.asset_url).length < 300 ? it.asset_url : null, name: it.name });
+  const today = { day: sf.day, items: sf.slots.map((x) => ({ item: slim(x.item), bought: Boolean(x.owned || ownedIds?.has?.(x.item.id)) })) };
+  week = [...week.filter((d) => d && d.day && d.day !== sf.day), today].sort((a, b) => String(a.day).localeCompare(String(b.day))).slice(-7);
+  try {
+    localStorage.setItem(WEEK_KEY, JSON.stringify(week));
+  } catch {
+    /* quota */
+  }
+  return week.filter((d) => d.day !== sf.day);
+}
 
 export function readShop2Prefs() {
   try {
@@ -52,6 +77,8 @@ function inventoryChanged(detail) {
 
 export function useShop2({ onBalanceChange } = {}) {
   const [storefront, setStorefront] = useState(null);
+  const storefrontRef = useRef(null);
+  storefrontRef.current = storefront;
   const [state, setState] = useState("loading"); // loading | ready | offline | error
   const [sets, setSets] = useState([]);
   const [setDetails, setSetDetails] = useState({});
@@ -75,15 +102,17 @@ export function useShop2({ onBalanceChange } = {}) {
       const res = await shop2Api.storefront();
       if (!alive.current) return null;
       const sf = normalizeStorefront(res);
+      if (!sf.history7d.length) sf.history7d = rememberStorefrontDay(sf);
       setStorefront(sf);
       setState("ready");
+      if (typeof sf.balance === "number") onBalanceChange?.(sf.balance);
       return sf;
     } catch (err) {
       if (!alive.current) return null;
       setState(isMissingRoute(err) ? "offline" : "error");
       return null;
     }
-  }, []);
+  }, [onBalanceChange]);
 
   const loadSets = useCallback(async () => {
     try {
@@ -119,10 +148,11 @@ export function useShop2({ onBalanceChange } = {}) {
     try {
       const res = await shop2Api.gifts();
       if (!alive.current) return;
+      const limits = res?.limits || null;
       setGifts({
         sent: (res?.sent || []).map(normalizeGift).filter(Boolean),
         received: (res?.received || []).map(normalizeGift).filter(Boolean),
-        limits: res?.limits || null,
+        limits: limits ? { ...limits, dailyLeft: limits.left ?? limits.dailyLeft ?? null } : null,
       });
     } catch {
       /* stays empty */
@@ -150,7 +180,8 @@ export function useShop2({ onBalanceChange } = {}) {
   const loadOutfits = useCallback(async () => {
     try {
       const res = await shop2Api.outfits();
-      if (alive.current) setOutfits(Array.isArray(res?.outfits) ? res.outfits : Array.isArray(res) ? res : []);
+      const list = Array.isArray(res?.outfits) ? res.outfits : Array.isArray(res) ? res : [];
+      if (alive.current) setOutfits(list.map((o) => ({ ...o, items: o.look || o.items || {}, auto: o.kind === "previous" || Boolean(o.auto) })));
     } catch {
       /* stays empty */
     }
@@ -219,8 +250,8 @@ export function useShop2({ onBalanceChange } = {}) {
     loadSet,
     loadNight,
     loadGifts,
-    async refresh(keepLockedItemId) {
-      const res = await shop2Api.refreshStorefront(keepLockedItemId);
+    async refresh(keepLockedItemId, expectedPrice) {
+      const res = await shop2Api.refreshStorefront(keepLockedItemId, expectedPrice);
       applyBalance(res);
       if (res?.storefront || res?.slots) setStorefront(normalizeStorefront(res));
       else await loadStorefront();
@@ -228,13 +259,15 @@ export function useShop2({ onBalanceChange } = {}) {
       return res;
     },
     async lock(itemId) {
+      const before = storefrontRef.current;
+      const wasLocked = before?.lockedItemId != null && String(before.lockedItemId) === String(itemId);
       setStorefront((sf) => (sf ? {
         ...sf,
         lockedItemId: sf.lockedItemId != null && String(sf.lockedItemId) === String(itemId) ? null : itemId,
         slots: sf.slots.map((s) => ({ ...s, locked: String(s.item.id) === String(itemId) ? !s.locked : false })),
       } : sf));
       try {
-        const res = await shop2Api.lockSlot(itemId);
+        const res = await shop2Api.lockSlot(wasLocked ? null : itemId);
         if (res?.storefront || res?.slots) setStorefront(normalizeStorefront(res));
       } catch (err) {
         if (!isMissingRoute(err)) loadStorefront();
@@ -281,7 +314,15 @@ export function useShop2({ onBalanceChange } = {}) {
       try {
         await shop2Api.keepNight(cardIndex, keep);
       } catch (err) {
-        if (!isMissingRoute(err)) loadNight();
+        loadNight();
+        throw err;
+      }
+    },
+    async nightNotify(on) {
+      try {
+        await shop2Api.nightNotify(on);
+      } catch {
+        /* the local preference still applies */
       }
     },
     async sendGift(payload) {
@@ -298,11 +339,18 @@ export function useShop2({ onBalanceChange } = {}) {
       loadHistory();
       return res;
     },
-    async openGift(id) {
-      const res = await shop2Api.openGift(id);
+    async openGift(id, opts) {
+      const res = await shop2Api.openGift(id, opts);
       inventoryChanged({ gift: id });
       loadGifts();
       return res;
+    },
+    async toggleSetWishlist(setKey, on) {
+      try {
+        await shop2Api.toggleSetWishlist(setKey, on);
+      } catch {
+        /* optional */
+      }
     },
     async toggleWishlist(item, on) {
       setWishlist((list) => (on ? [...list.filter((x) => String(x.id) !== String(item.id)), item] : list.filter((x) => String(x.id) !== String(item.id))));
@@ -316,11 +364,28 @@ export function useShop2({ onBalanceChange } = {}) {
       const local = { id: `local-${Date.now()}`, name, items, auto, createdAt: new Date().toISOString() };
       setOutfits((list) => [local, ...list]);
       try {
-        const res = await shop2Api.saveOutfit({ name, items, auto });
-        if (res?.outfit) setOutfits((list) => list.map((o) => (o.id === local.id ? res.outfit : o)));
-        return res?.outfit || local;
+        const res = await shop2Api.saveOutfit({ name, look: items });
+        const o = res?.outfit || (res?.id ? res : null);
+        if (o) {
+          const saved = { ...o, items: o.look || o.items || items, auto: o.kind === "previous" || auto };
+          setOutfits((list) => list.map((x) => (x.id === local.id ? saved : x)));
+          return saved;
+        }
+        return local;
       } catch {
         return local;
+      }
+    },
+    /** Wear a saved look on the server (it logs an undoable action); null when it can't. */
+    async applyOutfit(outfit) {
+      if (!outfit?.id || String(outfit.id).startsWith("local-")) return null;
+      try {
+        const res = await shop2Api.applyOutfit(outfit.id);
+        inventoryChanged({ outfit: outfit.id });
+        loadHistory();
+        return res || {};
+      } catch {
+        return null;
       }
     },
     async shareLook(payload) {

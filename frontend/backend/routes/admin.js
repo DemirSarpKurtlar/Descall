@@ -2388,7 +2388,7 @@ router.post("/shop/gift", async (req, res) => {
 
     const item = await shop.getItemById(itemId);
     if (!item) return res.status(404).json({ error: "Item not found." });
-    if (shop.REMOVED_COSMETIC_CATEGORIES.has(item.category)) {
+    if (shop.isRemovedCosmeticItem(item)) {
       return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
     }
 

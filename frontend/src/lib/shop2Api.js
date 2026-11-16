@@ -16,57 +16,72 @@ export const isMissingRoute = (err) => err?.status === 404 || err?.status === 50
 
 export const shop2Api = {
   storefront: () => get("/storefront"),
-  refreshStorefront: (keepLockedItemId) => post("/storefront/refresh", { ...(keepLockedItemId != null ? { keepLockedItemId } : {}), idempotencyKey: idempotencyKey("refresh") }),
-  lockSlot: (itemId) => post("/storefront/lock", { itemId }),
+  /** keepLockedItemId: undefined keeps the stored lock, null drops it. */
+  refreshStorefront: (keepLockedItemId, expectedPrice) =>
+    post("/storefront/refresh", {
+      ...(keepLockedItemId !== undefined ? { keepLockedItemId } : {}),
+      ...(Number.isFinite(expectedPrice) ? { expectedPrice } : {}),
+      idempotencyKey: idempotencyKey("refresh"),
+    }),
+  lockSlot: (itemId) => post("/storefront/lock", { itemId: itemId ?? null }),
 
   sets: () => get("/sets"),
   set: (key) => get(`/sets/${enc(key)}`),
-  buySet: (key, { pieceIds = null, holdToken, equip = false, title = true } = {}) =>
+  /** equip: "all" wears every piece (server saves the previous look as an outfit). */
+  buySet: (key, { pieceIds = null, holdToken, expectedPrice, equip = null } = {}) =>
     post(`/sets/${enc(key)}/buy`, {
       ...(pieceIds ? { pieceIds } : { all: true }),
       holdToken,
-      equip,
-      title,
-      idempotencyKey: idempotencyKey("set"),
+      ...(Number.isFinite(expectedPrice) ? { expectedPrice } : {}),
+      ...(equip ? { equip } : {}),
     }),
   buyItem: (itemId, { holdToken, price, equip = false, source = "storefront" } = {}) =>
-    post(`/items/${enc(itemId)}/buy`, { holdToken, expectedPrice: price, equip, source, idempotencyKey: idempotencyKey("item") }),
+    post(`/items/${enc(itemId)}/buy`, {
+      ...(Number.isFinite(price) ? { expectedPrice: price } : {}),
+      source,
+      ...(equip ? { equip: true } : {}),
+      idempotencyKey: holdToken || idempotencyKey("item"),
+    }),
+  purchases: () => get("/purchases"),
   refund: (purchaseId) => post(`/purchases/${enc(purchaseId)}/refund`),
 
   nightMarket: () => get("/night-market"),
   flip: (cardIndex) => post("/night-market/flip", { cardIndex }),
-  buyNight: (cardIndex, { holdToken } = {}) => post("/night-market/buy", { cardIndex, holdToken, idempotencyKey: idempotencyKey("night") }),
+  buyNight: (cardIndex, { holdToken, price } = {}) =>
+    post("/night-market/buy", { cardIndex, ...(Number.isFinite(price) ? { expectedPrice: price } : {}), idempotencyKey: holdToken || idempotencyKey("night") }),
   keepNight: (cardIndex, keep = true) => post("/night-market/keep", { cardIndex, keep }),
-  nightPrefs: (prefs) => post("/night-market/prefs", prefs),
+  nightNotify: (on) => post("/night-market/notify", { on: Boolean(on) }),
 
   gifts: () => get("/gifts"),
   giftRecipients: ({ itemId, setKey } = {}) => get(`/gifts/recipients?${itemId != null ? `itemId=${enc(itemId)}` : `setKey=${enc(setKey || "")}`}`),
+  giftQuote: (body) => post("/gifts/quote", body),
   sendGift: ({ toUserId, itemId, setKey, message, sendAt, hideName, hiddenItem, wrap, thankCard, nightCardIndex }) =>
     post("/gifts", {
       toUserId,
-      ...(setKey ? { setKey } : { itemId }),
-      ...(nightCardIndex != null ? { nightCardIndex } : {}),
-      message,
+      ...(nightCardIndex != null ? { nightCardIndex } : setKey ? { setKey } : { itemId }),
+      ...(message ? { message } : {}),
       ...(sendAt ? { sendAt } : {}),
-      hideName: Boolean(hideName),
-      hiddenItem: Boolean(hiddenItem),
+      anonymous: Boolean(hideName),
+      hidden: Boolean(hiddenItem),
       wrap,
       thankCard: Boolean(thankCard),
       idempotencyKey: idempotencyKey("gift"),
     }),
   recallGift: (id) => post(`/gifts/${enc(id)}/recall`),
-  openGift: (id) => post(`/gifts/${enc(id)}/open`),
+  openGift: (id, { equip = false } = {}) => post(`/gifts/${enc(id)}/open`, equip ? { equip: true } : {}),
   thankGift: (id) => post(`/gifts/${enc(id)}/thank`),
 
-  history: () => get("/history"),
+  history: () => get("/history?limit=30"),
   undo: (id) => post(`/history/${enc(id)}/undo`),
 
   outfits: () => get("/outfits"),
-  saveOutfit: ({ name, items, auto = false }) => post("/outfits", { name, items, auto }),
+  saveOutfit: ({ name, look }) => post("/outfits", { name, ...(look ? { look } : {}) }),
+  applyOutfit: (id) => post(`/outfits/${enc(id)}/apply`),
   shareLook: ({ setKey, itemIds }) => post("/share", { setKey, itemIds }),
 
   wishlist: () => get("/wishlist"),
-  toggleWishlist: (itemId, on = true) => post("/wishlist", { itemId, remove: !on }),
+  toggleWishlist: (itemId, on = true) => post("/wishlist", { itemId, ...(on ? {} : { remove: true }) }),
+  toggleSetWishlist: (setKey, on = true) => post("/wishlist", { setKey, ...(on ? {} : { remove: true }) }),
 
   // Shared app data the market reuses (friends for gifts, servers for the "Sahne" try-on).
   friends: () => getFriendsList(),

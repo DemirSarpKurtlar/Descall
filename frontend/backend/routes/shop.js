@@ -160,7 +160,7 @@ router.post("/purchase", requireAuth, async (req, res) => {
     if (!itemId) return res.status(400).json({ error: "itemId is required." });
 
     const item = await shop.getItemById(itemId);
-    if (!item || !item.active || shop.RETIRED_SHOP_CATEGORIES.has(item.category)) {
+    if (!item || !item.active || shop.isRetiredShopItem(item)) {
       return res.status(404).json({ error: "Item not found." });
     }
 
@@ -254,7 +254,7 @@ router.post("/equip", requireAuth, async (req, res) => {
     if (!shop.EQUIP_COLUMN_BY_CATEGORY[category]) {
       return res.status(400).json({ error: "Invalid item category." });
     }
-    if (shop.REMOVED_COSMETIC_CATEGORIES.has(category)) {
+    if (shop.isClosedCategory(category)) {
       return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
     }
     if (itemId) {
@@ -265,6 +265,10 @@ router.post("/equip", requireAuth, async (req, res) => {
       const item = await shop.getItemById(itemId);
       if (!item || item.category !== category) {
         return res.status(400).json({ error: "This item does not belong to that category.", code: "category_mismatch" });
+      }
+      // Frames / badges: only Market 2.0 rows (s2-); older ones stay removed.
+      if (shop.isRemovedCosmeticItem(item)) {
+        return res.status(410).json({ error: "This item is no longer available.", code: "cosmetic_removed" });
       }
       if (category === "theme") {
         const { themeEquipAllowed } = require("../lib/glassThemeCatalog");

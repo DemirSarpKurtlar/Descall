@@ -19,19 +19,18 @@ import {
 import { useS2 } from "./Shop2Context.js";
 import { Chip, CloseX, HoldButton, Layer, Num, Price, useNow, useReducedMotion } from "./Shop2Bits.jsx";
 import Shop2Art from "./Shop2Art.jsx";
-import { applyOutfit } from "./Shop2Sets.jsx";
+import { restoreLook } from "./Shop2Sets.jsx";
 import { S2ChatMessage, S2ProfileCard, S2VoiceTile } from "./Shop2Preview.jsx";
 import { Bookmark, Check, ChevronRight, Crown, Share2, Shirt, SlidersHorizontal, Store, Undo2 } from "./shop2Icons.jsx";
 
 const sameId = (a, b) => a != null && b != null && String(a) === String(b);
 const purchaseIdOf = (res) => res?.purchase?.id ?? res?.purchaseId ?? res?.purchase_id ?? null;
-const refundUntilOf = (res) => res?.purchase?.refundUntil ?? res?.refundUntil ?? null;
+const refundUntilOf = (res) => res?.refundableUntil ?? res?.purchase?.refundUntil ?? res?.refundUntil ?? null;
 
 function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
   const [equipNow, setEquipNow] = useState(c.kind !== "cart");
-  const [title, setTitle] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const after = s2.balance - total;
@@ -41,8 +40,8 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
     setErr("");
     try {
       let res;
-      if (c.kind === "set") res = await s2.actions.buySet(c.setKey, { pieceIds: c.pieceIds, holdToken, equip: false, title: completes && title });
-      else if (c.kind === "night") res = await s2.actions.buyNight(c.card.index, { holdToken });
+      if (c.kind === "set") res = await s2.actions.buySet(c.setKey, { pieceIds: c.pieceIds, holdToken, expectedPrice: total });
+      else if (c.kind === "night") res = await s2.actions.buyNight(c.card.index, { holdToken, price: total });
       else if (c.kind === "cart") {
         const results = [];
         for (const x of items) {
@@ -107,7 +106,7 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
         <label className="s2-check"><input type="checkbox" checked={equipNow} onChange={(e) => setEquipNow(e.target.checked)} /><span>{c.kind === "set" ? t("shop2.checkout.equipAll") : t("shop2.checkout.equipNow")}</span></label>
       ) : null}
       {completes ? (
-        <label className="s2-check"><input type="checkbox" checked={title} onChange={(e) => setTitle(e.target.checked)} /><span>{t("shop2.checkout.addTitle", { title: set.reward?.title ? s2.itemName({ name: set.reward.title }) : t("shop2.sets.rewardDefault", { name: s2.setName(set) }) })}</span></label>
+        <p className="s2-note is-gold"><Crown size={14} />{t("shop2.checkout.titleNote", { title: set.reward?.title ? s2.itemName({ name: set.reward.title }) : t("shop2.sets.rewardDefault", { name: s2.setName(set) }) })}</p>
       ) : null}
       {err ? <p className="s2-err" role="alert">{err}</p> : null}
       <HoldButton onConfirm={pay} busy={busy} disabled={after < 0} className="is-wide is-set" hint={t("shop2.checkout.holdHint")}>
@@ -142,7 +141,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
   for (const it of set ? set.pieces.map((p) => p.item) : newItems) tryOn[it.category] = it;
   const afterUser = composeTryOnUser(s2.me, tryOn);
   const balanceAfter = typeof result?.balance === "number" ? result.balance : s2.balance;
-  const titleUnlocked = Boolean(result?.titleUnlocked || result?.title);
+  const titleUnlocked = Boolean(result?.titleUnlocked || result?.title || (Array.isArray(result?.completed) && result.completed.length));
   const complete = set ? (pricing?.missingCount || 0) <= items.length : false;
 
   const equip = async (list) => {
@@ -164,7 +163,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
     s2.toast(t("shop2.celebrate.wornToast"), {
       tone: "ok",
       ms: 12000,
-      action: { label: t("shop2.celebrate.undo"), run: () => applyOutfit(s2, saved, t) },
+      action: { label: t("shop2.celebrate.undo"), run: () => restoreLook(s2, prev, list, t) },
     });
   };
   useEffect(() => {
