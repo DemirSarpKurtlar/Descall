@@ -13,10 +13,14 @@ export default function Dashboard({ dash, range, onRange, sets, rules, limits, n
   const [algoFocus, setAlgoFocus] = useState(null);
   return (
     <div className="as2-grid-a">
-      <LiveSales dash={dash} range={range} onRange={onRange} now={now} />
-      <AlgorithmPanel rules={rules} now={now} onChanged={onRulesChanged} notify={notify} fail={fail} focus={algoFocus} />
-      <SetsTable sets={sets} now={now} flash={flash} onOpenSet={onOpenSet} onRecall={onRecall} onUndoRecall={onUndoRecall} />
-      <RulesCard limits={limits} night={night} rules={rules} now={now} onNight={onNight} onLimits={onLimits} onNewAccount={() => setAlgoFocus({ tab: "newAccount", at: Date.now() })} />
+      <div className="as2-col">
+        <LiveSales dash={dash} range={range} onRange={onRange} now={now} />
+        <SetsTable sets={sets} now={now} flash={flash} onOpenSet={onOpenSet} onRecall={onRecall} onUndoRecall={onUndoRecall} />
+      </div>
+      <div className="as2-col">
+        <AlgorithmPanel rules={rules} now={now} onChanged={onRulesChanged} notify={notify} fail={fail} focus={algoFocus} />
+        <RulesCard limits={limits} night={night} rules={rules} now={now} onNight={onNight} onLimits={onLimits} onNewAccount={() => setAlgoFocus({ tab: "newAccount", at: Date.now() })} />
+      </div>
     </div>
   );
 }
@@ -252,7 +256,7 @@ export function SetsTable({ sets, now, flash, onOpenSet, onRecall, onUndoRecall 
                 data-testid={`as2-set-row-${s.key}`}
               >
                 <span role="cell" className="as2-set-cell">
-                  <SetMark set={s} size={42} />
+                  <SetMark set={s} size={38} />
                   <span className="as2-set-txt">
                     <span className="as2-set-name">
                       <b>{typeof s.name === "object" ? s.name[locale] || s.name.tr : s.name}</b>
@@ -289,9 +293,6 @@ export function SetsTable({ sets, now, flash, onOpenSet, onRecall, onUndoRecall 
                     )
                   ) : st === "live" || st === "last24" ? (
                     <>
-                      <button type="button" className="as2-ibtn" onClick={() => onOpenSet(s.key)} aria-label={t("adminShop2.sets.edit")} title={t("adminShop2.sets.edit")}>
-                        <Pencil size={14} />
-                      </button>
                       <button type="button" className="as2-btn is-sm is-danger-soft" onClick={() => onRecall(s)} data-testid={`as2-recall-${s.key}`}>
                         <RotateCcw size={14} />
                         {t("adminShop2.sets.recall")}

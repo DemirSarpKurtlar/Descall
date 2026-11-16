@@ -275,7 +275,7 @@ function Hero({ set, now, stage, sampleName, compact = false }) {
         {set?.stock?.total != null ? <Pill tone="amber">{stage === "upcoming" ? t("adminShop2.pv.units", { n: set.stock.total }) : t("adminShop2.pv.limited")}</Pill> : null}
       </div>
       <span className="as2-hero-av">
-        <S2Avatar user={user} size={compact ? 46 : 72} />
+        <S2Avatar user={user} size={compact ? 36 : 72} />
       </span>
       <div className="as2-hero-t">
         <b className="as2-hero-name">
@@ -332,7 +332,7 @@ function PhoneCard({ set, now, stage, mine, pr }) {
         <div className="as2-scard-pieces is-mini">
           {SET_SLOTS.map((s) => (
             <span key={s} className={`as2-scard-pc${set?.pieces?.[s] ? "" : " is-empty"}`}>
-              {set?.pieces?.[s] ? <Thumb item={set.pieces[s]} size={18} /> : null}
+              {set?.pieces?.[s] ? <Thumb item={set.pieces[s]} size={16} /> : null}
             </span>
           ))}
         </div>

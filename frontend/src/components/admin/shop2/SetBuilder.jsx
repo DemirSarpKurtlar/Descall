@@ -482,7 +482,7 @@ export default function SetBuilder({ setKey, sets, now, onBack, onOpenSet, onSav
                   return (
                     <div
                       key={slot}
-                      className={`as2-slot${p ? "" : " is-empty"}${targetSlot === slot ? " is-target" : ""}${dropSlot === slot ? " is-drop" : ""}${ownerWarn?.item?.id === p?.id ? " is-warn" : ""}`}
+                      className={`as2-slot${p ? "" : " is-empty"}${targetSlot === slot ? " is-target" : ""}${dropSlot === slot ? " is-drop" : ""}${ownerWarn && p && ownerWarn.item.id === p.id ? " is-warn" : ""}`}
                       onDragOver={(e) => {
                         if (e.dataTransfer.types.includes("text/x-as2-item")) {
                           e.preventDefault();

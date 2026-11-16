@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_PT_BR = {
     "colSet": "Conjunto",
     "colStock": "Estoque",
     "colRevenue": "Receita 7 d",
-    "colConv": "Vendas 7 d",
+    "colConv": "Vendas",
     "colSpeed": "Ritmo de venda",
     "colAction": "Ação",
     "unlimited": "Ilimitado",

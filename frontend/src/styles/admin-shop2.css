@@ -195,6 +195,7 @@ button.as2-tile:hover { background: rgba(255, 255, 255, 0.06) !important; }
 .as2-ch h2 .ui-icon { color: var(--as2-t2); }
 
 .as2-grid-a { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+.as2-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .as2-grid-b { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(270px, 0.95fr); grid-template-areas: "tl tl tl q" "al sc top q"; gap: 12px; align-items: stretch; }
 .as2-grid-b > .as2-tl { grid-area: tl; }
 .as2-grid-b > .as2-queue { grid-area: q; }
@@ -247,7 +248,6 @@ button.as2-lg.is-off { opacity: 0.42; }
 .as2-uav { border-radius: 50%; display: inline-grid; place-items: center; font-style: normal; font-size: var(--fs-11); font-weight: 800; color: #fff; flex: none; object-fit: cover; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); }
 
 /* ── algorithm (A1) ── */
-.as2-algo { grid-row: span 2; }
 .as2-algo-body { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
 .as2-wstrip { display: flex; height: 8px; border-radius: 99px; overflow: hidden; gap: 2px; margin: 4px 0 6px; }
 .as2-wstrip i { display: block; flex-basis: 0; transition: flex-grow 0.25s ease; }
@@ -317,8 +317,8 @@ button.as2-lg.is-off { opacity: 0.42; }
 
 /* ── sets table (A1) ── */
 .as2-tbl { display: flex; flex-direction: column; }
-.as2-tr { display: grid; grid-template-columns: minmax(200px, 1fr) 96px 64px 58px 70px 164px; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 14px; font-size: var(--fs-13); min-height: 60px; position: relative; }
-.as2-tr.is-head { min-height: 0; padding: 0 10px 6px; font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(235, 238, 255, 0.38); }
+.as2-tr { display: grid; grid-template-columns: minmax(170px, 1fr) 80px 56px 44px 58px 112px; align-items: center; gap: 8px; padding: 9px 8px; border-radius: 14px; font-size: var(--fs-13); min-height: 60px; position: relative; }
+.as2-tr.is-head { min-height: 0; padding: 0 8px 6px; white-space: nowrap; letter-spacing: 0.04em; font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(235, 238, 255, 0.38); }
 .as2-tr + .as2-tr:not(.is-head) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045); }
 .as2-tr.is-click { cursor: pointer; transition: background-color 0.15s; }
 .as2-tr.is-click:hover { background: rgba(255, 255, 255, 0.04); }
@@ -829,7 +829,7 @@ button.as2-lg.is-off { opacity: 0.42; }
 .as2-ruler-lbl .is-single { color: #9db0ff; }
 .as2-sched-b .as2-tg.is-inline { margin-left: 4px; }
 .as2-sched-b .as2-b-sh .as2-cap { margin-right: auto; }
-.as2-sched-fields { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.as2-sched-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .as2-fbox { display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--as2-hair); font-size: var(--fs-13); min-width: 0; color: var(--as2-t2); }
 .as2-fbox:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--as2-brand), 0.65); }
 .as2-fbox input, .as2-fbox select { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: var(--fs-13); font-weight: 700; color: #fff; color-scheme: dark; }
@@ -883,7 +883,8 @@ button.as2-lg.is-off { opacity: 0.42; }
 .as2-scard { border-radius: 14px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)); box-shadow: inset 0 0 0 1px var(--as2-hair); padding: 8px; display: flex; flex-direction: column; gap: 8px; transition: filter 0.3s; }
 .as2-scard.is-soldout { filter: grayscale(0.9) brightness(0.8); }
 .as2-hero { position: relative; height: 132px; border-radius: 11px; overflow: hidden; background-size: cover; background-position: center; background-color: var(--p0); background-image: radial-gradient(70% 90% at 80% 30%, color-mix(in srgb, var(--p2) 60%, transparent), transparent 60%), radial-gradient(60% 60% at 15% 90%, color-mix(in srgb, var(--p1) 70%, transparent), transparent 70%), linear-gradient(160deg, var(--p1), var(--p0)); }
-.as2-hero.is-compact { height: 104px; }
+.as2-hero.is-compact { height: 116px; }
+.as2-hero.is-compact .as2-hero-t { right: 6px; }
 .as2-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 35%, rgba(6, 8, 18, 0.75)); pointer-events: none; }
 .as2-hero-chips { position: absolute; top: 8px; left: 8px; display: flex; gap: 5px; z-index: 1; }
 .as2-hero-av { position: absolute; right: 12px; top: 12px; z-index: 1; }
@@ -897,8 +898,8 @@ button.as2-lg.is-off { opacity: 0.42; }
 .as2-scard-pieces { display: flex; gap: 5px; flex-wrap: wrap; }
 .as2-scard-pc { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.04); }
 .as2-scard-pc.is-empty { outline: 1px dashed rgba(255, 255, 255, 0.18); outline-offset: -1px; }
-.as2-scard-pieces.is-mini { gap: 3px; }
-.as2-scard-pieces.is-mini .as2-scard-pc { width: 17px; height: 17px; border-radius: 5px; }
+.as2-scard-pieces.is-mini { gap: 2px; flex-wrap: nowrap; }
+.as2-scard-pieces.is-mini .as2-scard-pc { width: 16px; height: 16px; border-radius: 5px; flex: none; }
 .as2-pv-price { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .as2-pv-price > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .as2-pv-price small { font-size: var(--fs-11); }
@@ -944,7 +945,6 @@ button.as2-lg.is-off { opacity: 0.42; }
 }
 @media (max-width: 1180px) {
   .as2-grid-a { grid-template-columns: minmax(0, 1fr); }
-  .as2-algo { grid-row: auto; }
   .as2-search input { width: 130px; }
 }
 @media (max-width: 760px) {
@@ -984,3 +984,8 @@ html.a11y-solid .as2-scrim, html.gd-lite .as2-scrim { -webkit-backdrop-filter: n
 .as2-flag-ft { display: flex; align-items: center; gap: 10px; font-size: var(--fs-12); color: var(--as2-t3); }
 .as2-nm-prem { justify-content: space-between; }
 .as2-nm-prem .as2-sw { margin-top: 4px; }
+.as2-dlg-body > .as2-cap { margin-top: 6px; }
+.as2-tr > span[role="cell"] > .as2-muted { white-space: nowrap; font-size: var(--fs-12); }
+.as2-tr.is-head > span { overflow: hidden; text-overflow: clip; }
+.as2-set-cell { gap: 10px; }
+.as2-set-name .as2-pill { flex: none; }

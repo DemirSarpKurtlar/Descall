@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_DE = {
     "colSet": "Set",
     "colStock": "Bestand",
     "colRevenue": "Umsatz 7 T",
-    "colConv": "Verkäufe 7 T",
+    "colConv": "Verk.",
     "colSpeed": "Verkaufstempo",
     "colAction": "Aktion",
     "unlimited": "Unbegrenzt",

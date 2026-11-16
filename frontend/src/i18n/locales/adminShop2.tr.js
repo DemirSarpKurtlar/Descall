@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_TR = {
     "colSet": "Set",
     "colStock": "Stok",
     "colRevenue": "Gelir 7g",
-    "colConv": "Satış 7G",
+    "colConv": "Satış",
     "colSpeed": "Satış hızı",
     "colAction": "İşlem",
     "unlimited": "Sınırsız",

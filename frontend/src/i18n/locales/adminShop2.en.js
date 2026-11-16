@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_EN = {
     "colSet": "Set",
     "colStock": "Stock",
     "colRevenue": "Revenue 7d",
-    "colConv": "Sales 7d",
+    "colConv": "Sold",
     "colSpeed": "Sales speed",
     "colAction": "Action",
     "unlimited": "Unlimited",

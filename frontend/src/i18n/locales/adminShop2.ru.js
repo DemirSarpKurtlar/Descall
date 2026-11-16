@@ -151,7 +151,7 @@ export const ADMIN_SHOP2_RU = {
     "colSet": "Набор",
     "colStock": "Запас",
     "colRevenue": "Выручка 7 д",
-    "colConv": "Продажи 7 д",
+    "colConv": "Продано",
     "colSpeed": "Темп продаж",
     "colAction": "Действие",
     "unlimited": "Без ограничений",
