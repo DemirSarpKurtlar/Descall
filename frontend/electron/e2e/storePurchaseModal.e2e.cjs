@@ -268,6 +268,13 @@ async function run(win) {
   expect(lang === 'tr', `UI language is ${lang}, expected tr`);
   await sleep(5000);
   await js(win, `history.pushState({}, '', '/settings/shop'); dispatchEvent(new PopStateEvent('popstate')); true`);
+  // Market 2.0 (3.9.0): the classic catalog is the shop's "Tüm ürünler" tab.
+  await waitFor(win, 'market tabs', `(() => {
+    const b = [...document.querySelectorAll('button,[role=tab]')].find((x) => /^(Tüm ürünler|All items)/.test((x.innerText || '').trim()));
+    if (!b) return { ok: false };
+    b.click();
+    return { ok: true };
+  })()`, 30000);
   await waitFor(win, 'shop cards', `(() => ({ ok: [...document.querySelectorAll('.shop-item-card')].some((c) => c.getBoundingClientRect().width > 0) }))()`, 30000);
   await sleep(600);
 
