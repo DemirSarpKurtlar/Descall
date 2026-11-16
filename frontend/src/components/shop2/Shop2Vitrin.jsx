@@ -169,10 +169,10 @@ function Row({ slot, selected, onSelect, expanded, onToggle }) {
   const start = useRef(null);
   return (
     <div className={`s2-rowwrap${swipe < -40 ? " is-swiped" : ""}`}>
-      <div className="s2-swipe-actions" aria-hidden={swipe > -40}>
+      {swipe < 0 ? <div className="s2-swipe-actions" aria-hidden={swipe > -40}>
         <button type="button" onClick={() => { setSwipe(0); s2.openGift({ item, price: slot.price }); }}><Gift size={16} />{t("shop2.gifts.giftIt")}</button>
         <button type="button" onClick={() => { setSwipe(0); s2.actions.toggleWishlist(item, !slot.wishlisted); }}><Heart size={16} />{t("shop2.wishlist.short")}</button>
-      </div>
+      </div> : null}
       <div
         className={`s2-row-item${selected ? " is-selected" : ""}`}
         style={swipe ? { transform: `translateX(${swipe}px)` } : undefined}

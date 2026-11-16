@@ -107,12 +107,12 @@ export function StagePicker({ stage }) {
 }
 
 export default function Shop2Stage({ user, stage, compact = false, joinName }) {
-  const { t } = useLocale();
-  const [cardOpen, setCardOpen] = useState(!compact);
+  const { t, locale } = useLocale();
+  const [cardOpen, setCardOpen] = useState(false);
   const myName = displayNameOf(user, t("shop2.preview.you"));
   const peers = stage.members.length ? stage.members.map(nameOfMember).filter(Boolean) : [t("shop2.sample.p2"), t("shop2.sample.p3"), t("shop2.sample.p4")];
   const lines = stage.messages.length
-    ? stage.messages.map((m) => ({ name: authorOf(m) || t("shop2.sample.p2"), text: textOf(m), time: m.createdAt || m.created_at ? new Date(m.createdAt || m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "" }))
+    ? stage.messages.map((m) => ({ name: authorOf(m) || t("shop2.sample.p2"), text: textOf(m), time: m.createdAt || m.created_at ? new Date(m.createdAt || m.created_at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "" }))
     : [
         { name: t("shop2.sample.p4"), text: t("shop2.sample.stage1"), time: "21:31" },
         { name: t("shop2.sample.p3"), text: t("shop2.sample.stage2"), time: "21:34" },
@@ -167,7 +167,9 @@ export default function Shop2Stage({ user, stage, compact = false, joinName }) {
         ))}
       </nav>
       <div className="s2-stage-tiles">
-        <S2VoiceTile user={user} size="lg" joined={joined} />
+        <button type="button" className="s2-stage-mytile" onClick={() => setCardOpen((x) => !x)} aria-expanded={cardOpen} aria-label={t("shop2.stage.cardRow")}>
+          <S2VoiceTile user={user} size="lg" joined={joined} />
+        </button>
         {peers.slice(0, 3).map((p, i) => <S2PeerTile key={p + i} name={p} tone={i + 1} />)}
         {cardOpen ? (
           <div className="s2-stage-card">
