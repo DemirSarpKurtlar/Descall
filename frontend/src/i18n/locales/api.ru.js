@@ -214,6 +214,8 @@ export const API_RU = {
   "A night market is already open.": "Ночной рынок уже открыт.",
   "This night market has already started.": "Этот ночной рынок уже начался.",
   "Write a title.": "Напиши заголовок.",
+  "Choose at least one item.": "Выбери хотя бы один товар.",
+  "Direct sale needs the 20261116_shop_direct_sale.sql migration.": "Для прямой продажи нужно обновление 20261116_shop_direct_sale.sql.",
   "You already used today's refresh.": "Ты уже использовал сегодняшнее обновление.",
   "You can only lock a card from today's storefront.": "Заблокировать можно только карточку из сегодняшней витрины.",
   "You cannot join tonight's night market.": "Ты не можешь попасть на сегодняшний ночной рынок.",

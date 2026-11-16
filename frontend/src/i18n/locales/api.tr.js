@@ -948,6 +948,8 @@ export const API_TR = {
   "A night market is already open.": "Bir gece pazarı zaten açık.",
   "This night market has already started.": "Bu gece pazarı zaten başladı.",
   "Write a title.": "Bir başlık yaz.",
+  "Choose at least one item.": "En az bir ürün seç.",
+  "Direct sale needs the 20261116_shop_direct_sale.sql migration.": "Doğrudan satış için 20261116_shop_direct_sale.sql güncellemesi gerekiyor.",
   "You already used today's refresh.": "Bugünkü yenilemeni zaten kullandın.",
   "You can only lock a card from today's storefront.": "Yalnızca bugünkü vitrinden bir kartı kilitleyebilirsin.",
   "You cannot join tonight's night market.": "Bu geceki gece pazarına katılamazsın.",

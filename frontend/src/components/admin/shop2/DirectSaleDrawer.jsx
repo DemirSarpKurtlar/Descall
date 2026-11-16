@@ -16,6 +16,7 @@ import { adminFetch } from "../../../api/adminHttp";
 import { SHOP_CATEGORY_TABS } from "../../../lib/shopCategories.js";
 import { AlertTriangle, ChevronRight, Coins, History, Monitor, Search, ShoppingBag, Smartphone, Store, X } from "./icons.js";
 import { errKey } from "./adminShop2Api.js";
+import GlassCheckbox from "../../ui/GlassCheckbox.jsx";
 import { Coin, Dialog, Drawer, Pill, RarityPill, ReasonField, Seg, Skel, Switch, Thumb, useFmt } from "./ui.jsx";
 import { reasonOk } from "./shop2Model.js";
 import { DS_RARITIES, dsApply, dsFilter, dsRows, dsStats, dsWouldChange } from "./directSaleModel.js";
@@ -292,7 +293,7 @@ export default function DirectSaleDrawer({ open, onClose, socket, notify, fail, 
             <div className="as2-ds-table" role="table" aria-label={t("adminShop2.directSale.title")}>
               <div className="as2-ds-tr is-head" role="row">
                 <span role="columnheader">
-                  <input type="checkbox" checked={allShown} onChange={toggleShown} aria-label={t("adminShop2.directSale.selectShown")} disabled={!list.length} />
+                  <GlassCheckbox checked={allShown} onChange={toggleShown} aria-label={t("adminShop2.directSale.selectShown")} disabled={!list.length} />
                 </span>
                 <span role="columnheader">{t("adminShop2.directSale.col.item")}</span>
                 <span role="columnheader" className="is-hide-s">{t("adminShop2.directSale.col.category")}</span>
@@ -324,7 +325,7 @@ export default function DirectSaleDrawer({ open, onClose, socket, notify, fail, 
                     data-testid={`as2-ds-row-${r.sku || id}`}
                   >
                     <span role="cell">
-                      <input type="checkbox" checked={selected.has(id)} onChange={() => toggleSel(id)} aria-label={nameOfRow(r)} />
+                      <GlassCheckbox checked={selected.has(id)} onChange={() => toggleSel(id)} aria-label={nameOfRow(r)} />
                     </span>
                     <span role="cell" className="as2-ds-item">
                       <Thumb item={r} size={34} />

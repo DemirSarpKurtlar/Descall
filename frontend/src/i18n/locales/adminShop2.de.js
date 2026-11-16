@@ -933,8 +933,8 @@ export const ADMIN_SHOP2_DE = {
     "clear": "Auswahl leeren",
     "footHint": "Wähle Artikel für eine Sammeländerung. Ein Schalter ändert einen Artikel.",
     "audit": "Protokoll",
-    "confirmAllow": "{n, plural, one {# Artikel} other {# Artikel}} in den Direktverkauf nehmen?",
-    "confirmBlock": "{n, plural, one {# Artikel} other {# Artikel}} aus dem Direktverkauf nehmen?",
+    "confirmAllow": "In den Direktverkauf nehmen: {n} ausgewählt",
+    "confirmBlock": "Aus dem Direktverkauf nehmen: {n} ausgewählt",
     "confirmNote": "Offene Shops aktualisieren sich sofort. Du kannst es über die Meldung rückgängig machen.",
     "more": "+{n} weitere",
     "toast": {
@@ -957,7 +957,7 @@ export const ADMIN_SHOP2_DE = {
       "pick": "Wähle einen Artikel für die Vorschau",
       "pathsAllowed": "Kann direkt in Alle Artikel gekauft werden. Schaufenster, Sets und Nachtmarkt verkaufen ihn weiterhin.",
       "pathsBlocked": "Nur im täglichen Schaufenster, in Sets und auf dem Nachtmarkt erhältlich. Alle Artikel zeigt ihn zum Ansehen und Anprobieren.",
-      "sales": "{n, plural, one {# Direktverkauf} other {# Direktverkäufe}} in 7 Tagen · {coins} DesCoin"
+      "sales": "Direktverkäufe in 7 Tagen: {n} · {coins} DesCoin"
     }
   }
 };

@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_ES = {
       "queue_cancel": "Cambio programado cancelado",
       "event_create": "Evento añadido al calendario",
       "event_delete": "Evento eliminado",
-      "direct_sale": "{on, select, true {Puesto en venta directa en Todos los artículos} other {Quitado de la venta directa en Todos los artículos}} · {n, plural, one {# artículo} other {# artículos}}"
+      "direct_sale": "{on, select, true {Puesto en venta directa en Todos los artículos} other {Quitado de la venta directa en Todos los artículos}} · artículos: {n}"
     }
   },
   "slots": {
@@ -933,15 +933,15 @@ export const ADMIN_SHOP2_ES = {
     "clear": "Borrar selección",
     "footHint": "Selecciona artículos para un cambio en bloque. Un interruptor cambia un artículo.",
     "audit": "Registro",
-    "confirmAllow": "¿Poner {n, plural, one {# artículo} other {# artículos}} en venta directa?",
-    "confirmBlock": "¿Quitar {n, plural, one {# artículo} other {# artículos}} de la venta directa?",
+    "confirmAllow": "¿Poner en venta directa? Seleccionados: {n}",
+    "confirmBlock": "¿Quitar de la venta directa? Seleccionados: {n}",
     "confirmNote": "Las tiendas abiertas se actualizan al instante. Puedes deshacerlo desde el aviso.",
     "more": "+{n} más",
     "toast": {
       "allowed": "{name} ya se vende en Todos los artículos",
       "blocked": "{name} ahora solo se vende en el escaparate y en sets",
-      "bulkAllowed": "{n, plural, one {# artículo puesto} other {# artículos puestos}} en venta directa",
-      "bulkBlocked": "{n, plural, one {# artículo quitado} other {# artículos quitados}} de la venta directa",
+      "bulkAllowed": "En venta directa: {n}",
+      "bulkBlocked": "Quitados de la venta directa: {n}",
       "none": "No hay nada que cambiar"
     },
     "undoReason": "Deshecho desde el aviso",
@@ -957,7 +957,7 @@ export const ADMIN_SHOP2_ES = {
       "pick": "Elige un artículo para previsualizar",
       "pathsAllowed": "Se puede comprar directamente en Todos los artículos. El escaparate, los sets y el mercado nocturno lo siguen vendiendo.",
       "pathsBlocked": "Solo se vende en el escaparate diario, en sets y en el mercado nocturno. Todos los artículos lo muestra para mirar y probar.",
-      "sales": "{n, plural, one {# venta directa} other {# ventas directas}} en 7 días · {coins} DesCoin"
+      "sales": "Ventas directas en 7 días: {n} · {coins} DesCoin"
     }
   }
 };

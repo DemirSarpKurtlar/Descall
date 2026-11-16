@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_EN = {
       "queue_cancel": "Scheduled change cancelled",
       "event_create": "Event added to the calendar",
       "event_delete": "Event deleted",
-      "direct_sale": "{on, select, true {Put on direct sale in All items} other {Taken off direct sale in All items}} · {n, plural, one {# item} other {# items}}"
+      "direct_sale": "{on, select, true {Put on direct sale in All items} other {Taken off direct sale in All items}} · items: {n}"
     }
   },
   "slots": {
@@ -933,15 +933,15 @@ export const ADMIN_SHOP2_EN = {
     "clear": "Clear selection",
     "footHint": "Select items for a bulk change. One switch changes one item.",
     "audit": "Audit trail",
-    "confirmAllow": "Put {n, plural, one {# item} other {# items}} on direct sale?",
-    "confirmBlock": "Take {n, plural, one {# item} other {# items}} off direct sale?",
+    "confirmAllow": "Put on direct sale: {n} selected",
+    "confirmBlock": "Take off direct sale: {n} selected",
     "confirmNote": "Open shops update at once. You can undo it from the notice.",
     "more": "+{n} more",
     "toast": {
       "allowed": "{name} is now sold in All items",
       "blocked": "{name} now sells only in the storefront and sets",
-      "bulkAllowed": "{n, plural, one {# item} other {# items}} put on direct sale",
-      "bulkBlocked": "{n, plural, one {# item} other {# items}} taken off direct sale",
+      "bulkAllowed": "Put on direct sale: {n}",
+      "bulkBlocked": "Taken off direct sale: {n}",
       "none": "Nothing to change"
     },
     "undoReason": "Undone from the notice",
@@ -957,7 +957,7 @@ export const ADMIN_SHOP2_EN = {
       "pick": "Pick an item to preview",
       "pathsAllowed": "Can be bought straight from All items. The storefront, sets and night market keep selling it too.",
       "pathsBlocked": "Sold only in the daily storefront, sets and night market. All items shows it for browsing and try-on.",
-      "sales": "{n, plural, one {# direct sale} other {# direct sales}} in the last 7 days · {coins} DesCoin"
+      "sales": "Direct sales in the last 7 days: {n} · {coins} DesCoin"
     }
   }
 };

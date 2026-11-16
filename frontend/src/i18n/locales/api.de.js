@@ -214,6 +214,8 @@ export const API_DE = {
   "A night market is already open.": "Ein Nachtmarkt ist bereits geöffnet.",
   "This night market has already started.": "Dieser Nachtmarkt hat bereits begonnen.",
   "Write a title.": "Schreib einen Titel.",
+  "Choose at least one item.": "Wähle mindestens einen Artikel.",
+  "Direct sale needs the 20261116_shop_direct_sale.sql migration.": "Der Direktverkauf braucht das Update 20261116_shop_direct_sale.sql.",
   "You already used today's refresh.": "Du hast die heutige Aktualisierung bereits genutzt.",
   "You can only lock a card from today's storefront.": "Du kannst nur eine Karte aus dem heutigen Shop sperren.",
   "You cannot join tonight's night market.": "Du kannst nicht am heutigen Nachtmarkt teilnehmen.",

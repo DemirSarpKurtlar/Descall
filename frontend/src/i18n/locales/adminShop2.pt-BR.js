@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_PT_BR = {
       "queue_cancel": "Mudança agendada cancelada",
       "event_create": "Evento adicionado ao calendário",
       "event_delete": "Evento excluído",
-      "direct_sale": "{on, select, true {Colocado em venda direta em Todos os itens} other {Tirado da venda direta em Todos os itens}} · {n, plural, one {# item} other {# itens}}"
+      "direct_sale": "{on, select, true {Colocado em venda direta em Todos os itens} other {Tirado da venda direta em Todos os itens}} · itens: {n}"
     }
   },
   "slots": {
@@ -927,21 +927,21 @@ export const ADMIN_SHOP2_PT_BR = {
       "sale": "Venda direta"
     },
     "selectShown": "Selecionar os visíveis",
-    "selected": "{n, plural, one {# selecionado} other {# selecionados}}",
+    "selected": "Selecionados: {n}",
     "bulkAllow": "Colocar à venda",
     "bulkBlock": "Tirar da venda",
     "clear": "Limpar seleção",
     "footHint": "Selecione itens para uma mudança em massa. Um interruptor muda um item.",
     "audit": "Registro",
-    "confirmAllow": "Colocar {n, plural, one {# item} other {# itens}} em venda direta?",
-    "confirmBlock": "Tirar {n, plural, one {# item} other {# itens}} da venda direta?",
+    "confirmAllow": "Colocar em venda direta? Selecionados: {n}",
+    "confirmBlock": "Tirar da venda direta? Selecionados: {n}",
     "confirmNote": "As lojas abertas atualizam na hora. Você pode desfazer pelo aviso.",
     "more": "+{n} a mais",
     "toast": {
       "allowed": "{name} agora é vendido em Todos os itens",
       "blocked": "{name} agora só é vendido na vitrine e em conjuntos",
-      "bulkAllowed": "{n, plural, one {# item colocado} other {# itens colocados}} em venda direta",
-      "bulkBlocked": "{n, plural, one {# item tirado} other {# itens tirados}} da venda direta",
+      "bulkAllowed": "Colocados em venda direta: {n}",
+      "bulkBlocked": "Tirados da venda direta: {n}",
       "none": "Nada para mudar"
     },
     "undoReason": "Desfeito pelo aviso",
@@ -957,7 +957,7 @@ export const ADMIN_SHOP2_PT_BR = {
       "pick": "Escolha um item para pré-visualizar",
       "pathsAllowed": "Pode ser comprado direto em Todos os itens. A vitrine, os conjuntos e o mercado noturno continuam vendendo.",
       "pathsBlocked": "Vendido só na vitrine diária, em conjuntos e no mercado noturno. Todos os itens mostra para olhar e experimentar.",
-      "sales": "{n, plural, one {# venda direta} other {# vendas diretas}} em 7 dias · {coins} DesCoin"
+      "sales": "Vendas diretas em 7 dias: {n} · {coins} DesCoin"
     }
   }
 };

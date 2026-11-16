@@ -441,7 +441,7 @@ export const ADMIN_SHOP2_FR = {
       "queue_cancel": "Changement planifié annulé",
       "event_create": "Événement ajouté au calendrier",
       "event_delete": "Événement supprimé",
-      "direct_sale": "{on, select, true {Mis en vente directe dans Tous les articles} other {Retiré de la vente directe dans Tous les articles}} · {n, plural, one {# article} other {# articles}}"
+      "direct_sale": "{on, select, true {Mis en vente directe dans Tous les articles} other {Retiré de la vente directe dans Tous les articles}} · articles : {n}"
     }
   },
   "slots": {
@@ -927,21 +927,21 @@ export const ADMIN_SHOP2_FR = {
       "sale": "Vente directe"
     },
     "selectShown": "Sélectionner les visibles",
-    "selected": "{n, plural, one {# sélectionné} other {# sélectionnés}}",
+    "selected": "Sélection : {n}",
     "bulkAllow": "Mettre en vente",
     "bulkBlock": "Retirer de la vente",
     "clear": "Vider la sélection",
     "footHint": "Sélectionne des articles pour un changement groupé. Un interrupteur change un article.",
     "audit": "Journal",
-    "confirmAllow": "Mettre {n, plural, one {# article} other {# articles}} en vente directe ?",
-    "confirmBlock": "Retirer {n, plural, one {# article} other {# articles}} de la vente directe ?",
+    "confirmAllow": "Mettre en vente directe ? Sélection : {n}",
+    "confirmBlock": "Retirer de la vente directe ? Sélection : {n}",
     "confirmNote": "Les boutiques ouvertes se mettent à jour tout de suite. Tu peux annuler depuis la notification.",
     "more": "+{n} de plus",
     "toast": {
       "allowed": "{name} est maintenant vendu dans Tous les articles",
       "blocked": "{name} se vend maintenant seulement en vitrine et dans les sets",
-      "bulkAllowed": "{n, plural, one {# article mis} other {# articles mis}} en vente directe",
-      "bulkBlocked": "{n, plural, one {# article retiré} other {# articles retirés}} de la vente directe",
+      "bulkAllowed": "Mis en vente directe : {n}",
+      "bulkBlocked": "Retirés de la vente directe : {n}",
       "none": "Rien à changer"
     },
     "undoReason": "Annulé depuis la notification",
@@ -957,7 +957,7 @@ export const ADMIN_SHOP2_FR = {
       "pick": "Choisis un article à prévisualiser",
       "pathsAllowed": "Peut être acheté directement dans Tous les articles. La vitrine, les sets et le marché de nuit continuent de le vendre.",
       "pathsBlocked": "Vendu seulement dans la vitrine du jour, les sets et le marché de nuit. Tous les articles l'affiche pour le parcourir et l'essayer.",
-      "sales": "{n, plural, one {# vente directe} other {# ventes directes}} en 7 jours · {coins} DesCoin"
+      "sales": "Ventes directes sur 7 jours : {n} · {coins} DesCoin"
     }
   }
 };

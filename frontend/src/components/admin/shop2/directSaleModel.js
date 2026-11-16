@@ -3,6 +3,7 @@
 // straight from it. Data: GET/PUT /api/admin/shop2/direct-sale (lib/shopDirectSale.js).
 import { SHOP_CATEGORY_TABS } from "../../../lib/shopCategories.js";
 import { localizeShopItem } from "../../../lib/shopItemI18n.js";
+import { countryName } from "../../../lib/countryFlags.js";
 
 export const DS_CATEGORIES = SHOP_CATEGORY_TABS.map((c) => c.id);
 export const DS_RARITIES = ["common", "rare", "epic", "legendary", "mythic"];
@@ -14,9 +15,11 @@ export function dsRows(items, locale = "tr") {
     .filter((it) => it && DS_CATEGORIES.includes(it.category))
     .map((it) => {
       const L = localizeShopItem(it, locale);
+      // Flags are named by Intl in the user's language, like the shop does.
+      const flag = it.category === "countries" ? countryName(it, locale) : null;
       return {
         ...it,
-        label: L.name || it.sku || String(it.id),
+        label: flag || L.name || it.sku || String(it.id),
         desc: L.description || "",
         s2: String(it.sku || "").startsWith("s2-"),
         direct_sale: it.direct_sale === true,

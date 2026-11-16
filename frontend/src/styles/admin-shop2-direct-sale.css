@@ -44,7 +44,7 @@
 .as2-ds-tr.is-head { min-height: 36px; cursor: default; font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(235, 238, 255, 0.45); background: rgba(255, 255, 255, 0.03); }
 .as2-ds-tr.is-head:hover { background: rgba(255, 255, 255, 0.03); }
 .as2-ds-tr > .as2-skel { grid-column: 1 / -1; }
-.as2-ds-tr input[type="checkbox"] { width: 16px; height: 16px; accent-color: #587af5; cursor: pointer; }
+.as2-ds-tr .dc-check { vertical-align: middle; }
 .as2-ds-tr .is-num { text-align: right; justify-self: end; }
 .as2-ds-tr .is-end { justify-self: end; }
 .as2-ds-tr [role="cell"] { min-width: 0; font-size: var(--fs-12); }
