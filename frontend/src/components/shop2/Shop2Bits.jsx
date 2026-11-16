@@ -52,7 +52,7 @@ export function Price({ value, old = null, size = "md", className = "", sign = "
     <span className={`s2-price is-${size} ${className}`.trim()}>
       <Coin size={size} />
       <b className="s2-num">{sign}{formatNumber(Math.round(Number(value) || 0), locale)}</b>
-      {old != null && Number(old) > Number(value) ? <s className="s2-num s2-old">{formatNumber(Math.round(Number(old)), locale)}</s> : null}
+      {old != null && Number(value) < Number(old) ? <s className="s2-num s2-old">{formatNumber(Math.round(Number(old)), locale)}</s> : null}
     </span>
   );
 }
