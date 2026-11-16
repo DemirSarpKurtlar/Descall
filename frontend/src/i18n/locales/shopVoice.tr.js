@@ -1,0 +1,25 @@
+/** Market 2.0 voice cosmetics: voice tiles, join sounds, join sound settings, "Eski koleksiyon" ("shopVoice.*"). Same keys in every shopVoice.<locale>.js. */
+export const SHOP_VOICE_TR = {
+  "legacyCollection": "Eski koleksiyon",
+  "legacyHint": "Artık satılmıyor. Sende kalır, takmaya devam edebilirsin.",
+  "voiceTiles": "Ses kutucukları",
+  "joinSounds": "Katılma sesleri",
+  "voiceTile": "Ses kutucuğu",
+  "joinSound": "Katılma sesi",
+  "play": "Dinle",
+  "stop": "Durdur",
+  "playing": "Çalıyor",
+  "seconds": "{n} sn",
+  "previewOf": "{name} sesini dinle",
+  "joined": "{name} katıldı",
+  "tilePreview": "Ses kanalında böyle görünür",
+  "demoName": "Deniz",
+  "speaking": "Konuşuyor",
+  "settingsTitle": "Katılma sesleri",
+  "toggle": "Katılma seslerini çal",
+  "toggleDesc": "Biri ses kanalına girdiğinde taktığı katılma sesini duyarsın. Kapalıyken standart giriş sesi çalar.",
+  "volume": "Katılma sesi düzeyi",
+  "volumeDesc": "Katılma sesleri en fazla bu düzeyde çalar ve genel ses düzeyini hiç aşmaz.",
+  "test": "Örnek çal",
+  "unavailable": "Bu cihaz sesi hazırlayamadı."
+};

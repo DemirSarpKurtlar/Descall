@@ -48,6 +48,7 @@ import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
 import DataExportCard from "../settings/DataExportCard.jsx";
+import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import LegalContentModal from "../legal/LegalContentModal";
@@ -2681,6 +2682,8 @@ const UserPanel = forwardRef(function UserPanel({
                 </p>
               </div>
             </section>
+
+            <JoinSoundSettings SettingRow={SettingRow} Toggle={Toggle} />
 
             <section className="us-section">
               <h4 className="us-section-label">{t("Microphone test")}</h4>

@@ -68,6 +68,7 @@ import { IOS_NATIVE } from "../lib/iosCallKit";
 import { liveMicDeviceId, readAudioPrefs, setOutputSink, writeAudioPref } from "../lib/callAudioDevices";
 import { t as tRuntime } from "../i18n/runtime";
 import audioManager from "../lib/audioManager";
+import { playJoinCue } from "../lib/joinSounds";
 import { primeVoiceActivity } from "../lib/voiceActivity";
 import { registerLiveKitVideoTrack, unregisterLiveKitVideoTrack } from "../lib/liveKitVideoBinding";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
@@ -1990,7 +1991,8 @@ export function useServerVoice(socket) {
     const onMemberJoined = ({ channelId, user } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !user?.id) return;
       if (user.id === myIdRef.current) return;
-      audioManager.play("userJoin");
+      // Their Market 2.0 join sound (once, throttled) or the standard join tone.
+      playJoinCue(user);
       // We are already in the room, offer to the new joiner
       offerToPeer(user, channelId);
     };

@@ -7,7 +7,7 @@
 
 const supabase = require("../db/supabase");
 const { activeServerVoiceCalls } = require("../runtime/sharedState");
-const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics } = require("../lib/userProfile");
+const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, pickVoiceCosmetics } = require("../lib/userProfile");
 const {
   Permissions,
   hasPermission,
@@ -57,6 +57,8 @@ function resolvePublicUser(socket) {
     requestedToSpeak: false,
     stageRole: "speaker",
     ...pickChatCosmetics(cached),
+    // Market 2.0: the voice tile everyone sees + the join sound others hear.
+    ...pickVoiceCosmetics(cached),
   };
 }
 

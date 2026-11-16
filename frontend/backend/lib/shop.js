@@ -48,6 +48,9 @@ const EQUIP_COLUMN_BY_CATEGORY = {
   call_overlay: "equipped_call_overlay_id",
   countries: "equipped_country_id",
   profile_color: "equipped_profile_color_id",
+  // Market 2.0 (C4): columns arrive with 20261116_shop2_catalog_seed.sql (lib/voiceCosmetics.js).
+  voice_tile: "equipped_voice_tile_id",
+  join_sound: "equipped_join_sound_id",
 };
 
 /** One flag per user: buying or equipping a country replaces the previous one. */
@@ -627,6 +630,7 @@ async function equipItem(userId, category, itemId) {
     .update({ [column]: nextId })
     .eq("id", userId);
   if (error) throw error;
+  if (category === "voice_tile" || category === "join_sound") require("./voiceCosmetics").resetAvailability();
 }
 
 const EQUIPPED_USER_COLUMNS =
@@ -654,6 +658,8 @@ const EMPTY_EQUIPPED = {
   country: null,
   profileColor: null,
   specialBadge: null,
+  voiceTile: null,
+  joinSound: null,
 };
 
 /** Resolves one user's equip slots (all cosmetic categories) into full item records. */
@@ -738,10 +744,18 @@ async function getEquippedCosmeticsForUsers(userIds) {
   }
   // Special badge worn next to the country flag (tolerant: empty before its migration).
   const specialById = await require("./specialBadges").equippedForUsers(ids).catch(() => new Map());
+  // Voice tile + join sound (Market 2.0; tolerant: empty before the seed migration).
+  const voiceById = await require("./voiceCosmetics").loadVoiceEquipped(ids).catch(() => new Map());
   const seen = new Set();
   for (const user of users) {
     seen.add(user.id);
-    out.set(user.id, { ...equippedRecord(user, byId), specialBadge: specialById.get(user.id) || null });
+    const voice = voiceById.get(user.id);
+    out.set(user.id, {
+      ...equippedRecord(user, byId),
+      specialBadge: specialById.get(user.id) || null,
+      voiceTile: voice?.voiceTile || null,
+      joinSound: voice?.joinSound || null,
+    });
   }
   for (const id of ids) {
     if (!seen.has(id)) out.set(id, { ...EMPTY_EQUIPPED });

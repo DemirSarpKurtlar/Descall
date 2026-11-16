@@ -320,6 +320,8 @@ function authUserPayload(user, extra = {}) {
     equippedReactionBurst: extra.equippedReactionBurst || null,
     equippedCallOverlay: extra.equippedCallOverlay || null,
     equippedProfileColor: extra.equippedProfileColor || null,
+    equippedVoiceTile: extra.equippedVoiceTile || null,
+    equippedJoinSound: extra.equippedJoinSound || null,
   };
 }
 
@@ -345,6 +347,8 @@ async function resolveEquippedExtra(userId) {
     equippedReactionBurst: equipped.reactionBurst || null,
     equippedCallOverlay: equipped.callOverlay || null,
     equippedProfileColor: equipped.profileColor || null,
+    equippedVoiceTile: equipped.voiceTile || null,
+    equippedJoinSound: equipped.joinSound || null,
   };
 }
 
@@ -1482,6 +1486,8 @@ router.get("/me", requireAuth, async (req, res) => {
         equippedReactionBurst: equipped.reactionBurst || null,
         equippedCallOverlay: equipped.callOverlay || null,
         equippedProfileColor: equipped.profileColor || null,
+        equippedVoiceTile: equipped.voiceTile || null,
+        equippedJoinSound: equipped.joinSound || null,
         descoinBalance: Number(user.descoin_balance) || 0,
       },
     });
@@ -1531,6 +1537,8 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
         equippedReactionBurst: equipped.reactionBurst || null,
         equippedCallOverlay: equipped.callOverlay || null,
         equippedProfileColor: equipped.profileColor || null,
+        equippedVoiceTile: equipped.voiceTile || null,
+        equippedJoinSound: equipped.joinSound || null,
       },
     });
   } catch (err) {

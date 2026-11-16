@@ -1,0 +1,25 @@
+/** Market 2.0 voice cosmetics: voice tiles, join sounds, join sound settings, "Eski koleksiyon" ("shopVoice.*"). Same keys in every shopVoice.<locale>.js. */
+export const SHOP_VOICE_DE = {
+  "legacyCollection": "Alte Kollektion",
+  "legacyHint": "Wird nicht mehr verkauft. Es bleibt deins und du kannst es weiter tragen.",
+  "voiceTiles": "Sprachkacheln",
+  "joinSounds": "Beitrittsklänge",
+  "voiceTile": "Sprachkachel",
+  "joinSound": "Beitrittsklang",
+  "play": "Anhören",
+  "stop": "Stopp",
+  "playing": "Läuft",
+  "seconds": "{n} s",
+  "previewOf": "{name} anhören",
+  "joined": "{name} ist beigetreten",
+  "tilePreview": "So sieht es im Sprachkanal aus",
+  "demoName": "Deniz",
+  "speaking": "Spricht",
+  "settingsTitle": "Beitrittsklänge",
+  "toggle": "Beitrittsklänge abspielen",
+  "toggleDesc": "Wenn jemand einem Sprachkanal beitritt, hörst du den Beitrittsklang, den diese Person trägt. Ausgeschaltet ertönt der Standardton.",
+  "volume": "Lautstärke der Beitrittsklänge",
+  "volumeDesc": "Beitrittsklänge spielen höchstens so laut und nie lauter als deine Gesamtlautstärke.",
+  "test": "Beispiel abspielen",
+  "unavailable": "Dieses Gerät konnte den Klang nicht vorbereiten."
+};

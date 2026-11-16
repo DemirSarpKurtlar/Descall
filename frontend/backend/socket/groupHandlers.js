@@ -10,7 +10,7 @@ const { checkMessageSend, isPlatformAdmin } = require("../lib/platformPolicy");
 const supabase = require("../db/supabase");
 const { normalizePollInput, pollFallbackText, buildPollSnapshot } = require("../lib/pollCore");
 const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
-const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
+const { getCachedPublicUser, getAvatarUrl, pickChatCosmetics, pickVoiceCosmetics, ensureCosmeticsCached } = require("../lib/userProfile");
 const { sendGroupCallPush } = require("../lib/webPush");
 const { assertGroupMember, bothInGroupCall } = require("../lib/groupCallMembership");
 const descoin = require("../lib/descoin");
@@ -133,6 +133,7 @@ function resolveCallFromUser(socket) {
     is_admin: isAdmin,
     isAdmin,
     ...pickChatCosmetics(cached),
+    ...pickVoiceCosmetics(cached),
   };
 }
 
@@ -150,6 +151,7 @@ function resolveParticipantPublic(userId) {
     avatarUrl: avatar,
     isScreenSharing: false,
     ...pickChatCosmetics(cached),
+    ...pickVoiceCosmetics(cached),
   };
 }
 
