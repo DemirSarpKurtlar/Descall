@@ -2710,3 +2710,61 @@ html[data-theme="light"] .typing-indicator-shell[class*="typing-shell-s2-"] > sp
 html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .typing-dot,
 html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .typing-dot::before,
 html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .typing-dot::after { animation: none !important; }
+
+/* ───────────────────────────── Card colours (profile_color) ─────────────────────────────
+   lib/profileColors.js gives Market 2.0 colours `has-pcolor pcolor-s2 pc-<key>` and a
+   mid stop (--pc-c). Each key adds a quiet texture (--pc-art) under the card's text;
+   the 16 set pieces also colour the display name on the card (--pc-name) unless the
+   person wears a name effect, which always wins. Specificity is one :root above
+   styles/profile-color.css so this layer paints on top of it. */
+
+:root:root:root:root:root:root:root .has-pcolor.pcolor-s2:is(.pfs-heavy, .user-hover-card, .user-profile-card, .pcolor-surface) {
+  background:
+    var(--pc-art, linear-gradient(transparent, transparent)),
+    radial-gradient(130% 70% at 50% 0%, color-mix(in srgb, var(--pc-accent) 18%, transparent) 0%, transparent 70%),
+    linear-gradient(var(--pc-angle, 180deg), var(--pc-a) 0%, var(--pc-c, var(--pc-a)) 52%, var(--pc-b) 100%) !important;
+}
+:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect)) {
+  background-image: var(--pc-name);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect)) > * {
+  -webkit-text-fill-color: currentColor;
+}
+
+/* Singles */
+.pc-s2-pc-midnight-velvet { --pc-art: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 5px), radial-gradient(90% 60% at 20% 30%, rgba(224, 140, 255, 0.14), transparent 70%); }
+.pc-s2-pc-deep-lagoon { --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='80'><path d='M0 20c10-6 18 4 28-2s12-14 24-10 18 10 28 4 20-8 40 0M4 0c2 10-6 16 0 26s16 8 20 18M60 0c4 12-4 18 2 28s14 10 12 32M0 54c14-6 22 6 34-2s16-8 26-2 14 6 20 2 26-6 40 0' fill='none' stroke='%235fe0e6' stroke-opacity='.05' stroke-width='2'/></svg>") 0 0 / 120px 80px; }
+.pc-s2-pc-ember-dusk { --pc-art: radial-gradient(90% 50% at 50% 115%, rgba(255, 138, 74, 0.28), transparent 70%); }
+.pc-s2-pc-forest-floor { --pc-art: radial-gradient(14% 10% at 20% 30%, rgba(200, 255, 160, 0.08), transparent), radial-gradient(18% 12% at 70% 55%, rgba(200, 255, 160, 0.07), transparent), radial-gradient(12% 9% at 40% 80%, rgba(200, 255, 160, 0.07), transparent); }
+.pc-s2-pc-graphite-silk { --pc-art: linear-gradient(125deg, transparent 30%, rgba(255, 255, 255, 0.06) 42%, transparent 50%, transparent 62%, rgba(255, 255, 255, 0.04) 70%, transparent 78%); }
+.pc-s2-pc-royal-indigo { --pc-art: radial-gradient(55% 35% at 0% 100%, rgba(255, 211, 106, 0.16), transparent 70%), radial-gradient(35% 25% at 100% 0%, rgba(255, 211, 106, 0.1), transparent 70%); }
+.pc-s2-pc-oxblood { --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><circle cx='1.5' cy='1.5' r='.7' fill='%23000' opacity='.2'/><circle cx='4.5' cy='4.2' r='.6' fill='%23fff' opacity='.04'/></svg>") 0 0 / 6px 6px; }
+.pc-s2-pc-storm-slate { --pc-art: radial-gradient(40% 18% at 20% 8%, rgba(160, 184, 230, 0.16), transparent), radial-gradient(50% 20% at 70% 4%, rgba(160, 184, 230, 0.14), transparent); }
+.pc-s2-pc-aubergine-gold { --pc-art: radial-gradient(60% 40% at 100% 0%, rgba(242, 196, 64, 0.18), transparent 70%); }
+.pc-s2-pc-polar-night { --pc-art: linear-gradient(180deg, rgba(110, 255, 199, 0.16), transparent 30%), repeating-linear-gradient(90deg, transparent 0 18px, rgba(110, 255, 199, 0.05) 22px, transparent 28px); }
+.pc-s2-pc-cocoa { --pc-art: radial-gradient(70% 40% at 0% 100%, rgba(230, 168, 106, 0.16), transparent 70%); }
+.pc-s2-pc-sapphire-deep { --pc-art: linear-gradient(135deg, rgba(127, 184, 255, 0.12) 0 18%, transparent 18% 70%, rgba(127, 184, 255, 0.08) 70% 82%, transparent 82%); }
+.pc-s2-pc-pine-teal { --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='24' preserveAspectRatio='none'><path d='M0 24l7-12 7 12zM10 24l9-18 9 18zM24 24l6-10 6 10zM32 24l9-20 9 20zM46 24l7-13 7 13z' fill='%23000' fill-opacity='.22'/></svg>") left bottom / 60px 24px repeat-x; }
+.pc-s2-pc-rosewood { --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='36'><g fill='none' stroke-linecap='round'><path d='M0 6c30-6 50 8 80 2s50-8 80-2' stroke='%23000' stroke-opacity='.14' stroke-width='1.6'/><path d='M0 22c40-8 60 10 96 2s44-6 64 0' stroke='%23ff9ac0' stroke-opacity='.05' stroke-width='2'/></g></svg>") 0 0 / 160px 36px; }
+.pc-s2-pc-cosmos { --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='60'><g fill='%23fff'><circle cx='8' cy='10' r='.7' opacity='.5'/><circle cx='40' cy='26' r='.5' opacity='.4'/><circle cx='70' cy='8' r='.8' opacity='.55'/><circle cx='22' cy='48' r='.6' opacity='.4'/><circle cx='80' cy='44' r='.5' opacity='.35'/><circle cx='56' cy='54' r='.7' opacity='.45'/></g></svg>") 0 0 / 90px 60px; }
+
+/* Set pieces: name colour + card */
+.pc-s2-set-gece-limani { --pc-name: linear-gradient(100deg, #e8f6ff, #35d0e0); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='10'><path d='M0 5c8-4 16-4 24 0s16 4 24 0 12-3 16-1' fill='none' stroke='%2335d0e0' stroke-opacity='.22' stroke-width='1.2'/></svg>") left bottom 8px / 64px 10px repeat-x, conic-gradient(from 100deg at 0 0, transparent 0deg, rgba(232, 246, 255, 0.07) 14deg, transparent 30deg); }
+.pc-s2-set-bakir-kervan { --pc-name: linear-gradient(100deg, #ffe2b0, #f0a443); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='16' preserveAspectRatio='none'><path d='M0 16V10c14-6 30-6 44-1s26 4 40-2 26-4 36 1v8z' fill='%23000' fill-opacity='.25'/></svg>") left bottom / 120px 16px repeat-x, radial-gradient(40% 30% at 85% 100%, rgba(240, 164, 67, 0.2), transparent 70%); }
+.pc-s2-set-orkide-sisi { --pc-name: linear-gradient(100deg, #ff9fd0, #ff6fb5 50%, #c8ff6a); --pc-art: radial-gradient(60% 40% at 100% 0%, rgba(255, 111, 181, 0.2), transparent 70%), radial-gradient(40% 30% at 0% 100%, rgba(200, 255, 106, 0.08), transparent 70%); }
+.pc-s2-set-kor-bahcesi { --pc-name: linear-gradient(100deg, #ffd27a, #ff6a2b); --pc-art: radial-gradient(80% 40% at 40% 112%, rgba(255, 106, 43, 0.3), transparent 70%); }
+.pc-s2-set-buzul-sessizligi { --pc-name: linear-gradient(100deg, #ffffff, #a6e7ff); --pc-art: linear-gradient(135deg, rgba(166, 231, 255, 0.1) 0 22%, transparent 22% 58%, rgba(255, 255, 255, 0.05) 58% 70%, transparent 70%); }
+.pc-s2-set-neon-carsi { --pc-name: linear-gradient(100deg, #ff2e88, #ff8ac0 50%, #2ef2ff); --pc-art: radial-gradient(50% 30% at 0% 0%, rgba(255, 46, 136, 0.18), transparent 70%), radial-gradient(50% 30% at 100% 100%, rgba(46, 242, 255, 0.16), transparent 70%); }
+.pc-s2-set-altin-hasat { --pc-name: linear-gradient(100deg, #fff3c4, #f2c230); --pc-art: radial-gradient(60% 40% at 100% 0%, rgba(242, 194, 48, 0.2), transparent 70%); }
+.pc-s2-set-mor-sis { --pc-name: linear-gradient(100deg, #e6dcff, #a77bff); --pc-art: radial-gradient(50% 40% at 30% 30%, rgba(167, 123, 255, 0.16), transparent 70%), radial-gradient(40% 30% at 80% 70%, rgba(230, 220, 255, 0.08), transparent 70%); }
+.pc-s2-set-gece-mercani { --pc-name: linear-gradient(100deg, #ff8fab, #d6336c 50%, #9f86ff); --pc-art: radial-gradient(70% 40% at 50% 115%, rgba(214, 51, 108, 0.22), transparent 70%); }
+.pc-s2-set-kuzey-isigi { --pc-name: linear-gradient(100deg, #6effc7, #8f7bff); --pc-art: linear-gradient(180deg, rgba(110, 255, 199, 0.16), transparent 28%), repeating-linear-gradient(90deg, transparent 0 16px, rgba(143, 123, 255, 0.06) 20px, transparent 26px); }
+.pc-s2-set-zumrut-orman { --pc-name: linear-gradient(100deg, #d8ffe6, #49d17d); --pc-art: linear-gradient(105deg, transparent 20%, rgba(216, 255, 230, 0.05) 24%, transparent 30%, transparent 60%, rgba(216, 255, 230, 0.05) 64%, transparent 70%); }
+.pc-s2-set-kum-saati { --pc-name: linear-gradient(100deg, #fff8e8, #e8cf9a); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><g fill='%23e8cf9a'><circle cx='2' cy='3' r='.45' opacity='.25'/><circle cx='13' cy='8' r='.5' opacity='.2'/><circle cx='5' cy='11' r='.4' opacity='.25'/></g></svg>") 0 0 / 16px 16px; }
+.pc-s2-set-firtina-cekirdegi { --pc-name: linear-gradient(100deg, #f5f9ff, #7aa7ff); --pc-art: radial-gradient(40% 16% at 20% 6%, rgba(122, 167, 255, 0.16), transparent), radial-gradient(50% 18% at 75% 3%, rgba(122, 167, 255, 0.14), transparent); }
+.pc-s2-set-lav-akisi { --pc-name: linear-gradient(100deg, #ffb000, #ff3d00); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='60' viewBox='0 0 200 60' preserveAspectRatio='none'><path d='M0 46l18-4 10 6 16-10 8 4M180 0l-6 12 8 8-10 10 6 8M120 60l6-10 14-2 6-8' stroke='%23ff3d00' stroke-opacity='.3' stroke-width='1.6' fill='none'/></svg>") 0 0 / 100% 100% no-repeat; }
+.pc-s2-set-inci-kiyisi { --pc-name: linear-gradient(100deg, #f1e9e1, #ffd8e4 50%, #c8dcea); --pc-art: linear-gradient(120deg, rgba(255, 216, 228, 0.1), transparent 35%, rgba(190, 220, 240, 0.08) 60%, transparent 85%); }
+.pc-s2-set-yildiz-tozu { --pc-name: linear-gradient(100deg, #c6b7ff, #ffe9a8); --pc-art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='40'><g fill='%23c6b7ff' opacity='.45'><circle cx='4' cy='30' r='.6'/><circle cx='34' cy='16' r='.7'/><circle cx='64' cy='4' r='.6'/></g><g fill='%23ffe9a8' opacity='.5'><circle cx='12' cy='26' r='.5'/><circle cx='42' cy='13' r='.6'/></g></svg>") 0 0 / 70px 40px, linear-gradient(155deg, transparent 30%, rgba(198, 183, 255, 0.07) 50%, transparent 70%); }
