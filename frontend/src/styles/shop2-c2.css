@@ -775,15 +775,13 @@ html[data-theme="light"] .cosmetic-chat-bubble[class*="bubble-s2-"] {
   --s2-quote: rgba(255, 255, 255, 0.55);
   --s2-inset: inset 0 0 0 1px #111;
   --s2-lift: 3px 3px 0 #111;
-  --s2-bg:
-    radial-gradient(circle, rgba(230, 0, 120, 0.55) 0 1.6px, transparent 2px) 0 0 / 7px 7px,
-    linear-gradient(180deg, #ffe14d, #ffd23a);
+  --s2-bg: linear-gradient(180deg, #ffe45a, #ffd23a);
 }
 .cosmetic-chat-bubble.bubble-s2-halftone::before {
   content: "";
-  background: linear-gradient(180deg, #ffe14d 0%, rgba(255, 225, 77, 0.92) 40%, rgba(255, 225, 77, 0) 100%);
-  -webkit-mask: linear-gradient(110deg, #000 0 55%, transparent 85%);
-  mask: linear-gradient(110deg, #000 0 55%, transparent 85%);
+  background: radial-gradient(circle, rgba(230, 0, 120, 0.6) 0 1.7px, transparent 2.1px) 0 0 / 7px 7px;
+  -webkit-mask: radial-gradient(70px 46px at 100% 100%, #000 20%, transparent 100%), radial-gradient(40px 26px at 0 0, rgba(0, 0, 0, 0.7) 10%, transparent 100%);
+  mask: radial-gradient(70px 46px at 100% 100%, #000 20%, transparent 100%), radial-gradient(40px 26px at 0 0, rgba(0, 0, 0, 0.7) 10%, transparent 100%);
 }
 
 /* Pixel: square-cornered 8-bit panel with a bevel and a pixel heart. */
@@ -2157,3 +2155,281 @@ html:is(.reduce-motion, .gd-lite) .cosmetic-chat-bubble[class*="bubble-s2-"]::be
 html:is(.reduce-motion, .gd-lite) .cosmetic-chat-bubble[class*="bubble-s2-"]::after {
   animation: none !important;
 }
+
+/* ───────────────────────────── Name effects ─────────────────────────────
+   --ne       the paint (gradient layers clipped to the glyphs)
+   --ne-size  background-size (default 100% 100%)
+   --ne-glow  filter on dark surfaces (drop-shadows only; never text-shadow,
+              which would show through the transparent glyphs)
+   Light surfaces darken the paint so pale stops keep contrast on white. */
+
+.cosmetic-name-effect[class*="effect-s2-"] {
+  --ne-glow: drop-shadow(0 0 0 transparent);
+  display: inline-block;
+  background-image: var(--ne);
+  background-size: var(--ne-size, 100% 100%);
+  background-repeat: repeat;
+  background-position: 0 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: var(--ne-glow);
+  font-weight: 700;
+}
+html[data-theme="light"] .cosmetic-name-effect[class*="effect-s2-"] {
+  filter: brightness(0.7) saturate(1.3) contrast(1.08) drop-shadow(0 0 0.6px rgba(20, 24, 40, 0.35));
+}
+
+@keyframes s2ne-pan { to { background-position: 200% 0; } }
+@keyframes s2ne-pan-y { to { background-position: 0 -200%; } }
+@keyframes s2ne-sweep { 0% { background-position: 160% 0, 0 0; } 55%, 100% { background-position: -60% 0, 0 0; } }
+@keyframes s2ne-flicker { 0%, 100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.55; } 94% { opacity: 1; } 96% { opacity: 0.7; } 97% { opacity: 1; } }
+@keyframes s2ne-candle { 0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 170, 60, 0.55)); } 40% { filter: drop-shadow(0 0 6px rgba(255, 190, 80, 0.85)); } 70% { filter: drop-shadow(0 0 2px rgba(255, 160, 50, 0.45)); } }
+@keyframes s2ne-electric { 0%, 100% { filter: drop-shadow(0 0 2px rgba(120, 190, 255, 0.7)); } 48% { filter: drop-shadow(0 0 2px rgba(120, 190, 255, 0.7)); } 50% { filter: drop-shadow(0 0 6px rgba(200, 230, 255, 1)); } 53% { filter: drop-shadow(0 0 3px rgba(120, 190, 255, 0.8)); } }
+@keyframes s2ne-twinkle { 0% { background-position: 0 0, 0 0; } 100% { background-position: 60px 20px, 0 0; } }
+@keyframes s2ne-nova { 0%, 100% { background-size: 120% 300%, 100% 100%; } 50% { background-size: 220% 500%, 100% 100%; } }
+@keyframes s2ne-corona { 0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 230, 160, 0.9)) drop-shadow(0 0 6px rgba(255, 200, 100, 0.45)); } 50% { filter: drop-shadow(0 0 3px rgba(255, 240, 190, 1)) drop-shadow(0 0 10px rgba(255, 210, 120, 0.7)); } }
+@keyframes s2ne-bolt { 0%, 88%, 100% { background-position: 0 0, 0 0; filter: drop-shadow(0 0 2px rgba(122, 167, 255, 0.6)); } 89% { background-position: 0 0, -100% 0; filter: drop-shadow(0 0 6px rgba(230, 240, 255, 1)); } 91% { filter: drop-shadow(0 0 2px rgba(122, 167, 255, 0.6)); } 92% { filter: drop-shadow(0 0 5px rgba(230, 240, 255, 0.9)); } }
+
+/* Common: clean two- and three-stop inks. */
+.cosmetic-name-effect.effect-s2-peach-fizz { --ne: linear-gradient(100deg, #ffc9a8 0%, #ff8f7a 50%, #ff7aa8 100%); }
+.cosmetic-name-effect.effect-s2-mint-leaf { --ne: linear-gradient(100deg, #b6ffd8 0%, #5ee6b0 55%, #2cc7a4 100%); }
+.cosmetic-name-effect.effect-s2-sky-ribbon { --ne: linear-gradient(100deg, #a8e2ff 0%, #79b8ff 50%, #9c9cff 100%); }
+.cosmetic-name-effect.effect-s2-lilac-dream { --ne: linear-gradient(100deg, #e7c8ff 0%, #c08cff 50%, #f08cd8 100%); }
+.cosmetic-name-effect.effect-s2-citrus { --ne: linear-gradient(100deg, #fff27a 0%, #ffc93a 45%, #ff8a2a 100%); }
+.cosmetic-name-effect.effect-s2-sea-glass {
+  --ne: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0 38%, transparent 42%), linear-gradient(100deg, #9ff5e6, #4fd1c5 55%, #6fb6e8);
+}
+.cosmetic-name-effect.effect-s2-rose-quartz {
+  --ne: linear-gradient(115deg, transparent 0 46%, rgba(255, 255, 255, 0.85) 48% 52%, transparent 54%), linear-gradient(100deg, #ffd6e4, #ff9ec4 60%, #f7b2d9);
+}
+.cosmetic-name-effect.effect-s2-honey { --ne: linear-gradient(180deg, #ffe08a 0%, #ffbe3d 55%, #e8901a 100%); --ne-glow: drop-shadow(0 0 1px rgba(255, 180, 60, 0.4)); }
+.cosmetic-name-effect.effect-s2-cobalt { --ne: linear-gradient(100deg, #6fa2ff 0%, #4f7dff 45%, #3fd6ff 100%); }
+.cosmetic-name-effect.effect-s2-fern { --ne: linear-gradient(100deg, #d6ff7a 0%, #8ce06a 50%, #46c47a 100%); }
+.cosmetic-name-effect.effect-s2-coral-reef { --ne: linear-gradient(100deg, #ff8a7a 0%, #ff6f61 40%, #ffb35c 100%); }
+.cosmetic-name-effect.effect-s2-slate-steel {
+  --ne: linear-gradient(180deg, #f2f6fb 0%, #c3cfdd 48%, #8798ae 52%, #d6dfe9 100%);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(10, 14, 22, 0.8));
+}
+
+/* Rare: metals, stones and printed looks. */
+.cosmetic-name-effect.effect-s2-brushed-gold {
+  --ne: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px), linear-gradient(180deg, #fff2b0 0%, #f2c440 40%, #b8860b 55%, #f6d36a 75%, #c99a2a 100%);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(60, 40, 0, 0.9)) drop-shadow(0 0 3px rgba(242, 196, 64, 0.35));
+}
+.cosmetic-name-effect.effect-s2-platinum {
+  --ne: linear-gradient(180deg, #ffffff 0%, #e6ebf2 40%, #a9b4c4 52%, #f4f7fb 70%, #c7d0dc 100%);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(20, 26, 40, 0.9)) drop-shadow(0 0 3px rgba(220, 230, 255, 0.3));
+}
+.cosmetic-name-effect.effect-s2-rose-copper {
+  --ne: linear-gradient(180deg, #ffd7c4 0%, #f2a07a 45%, #b8603a 56%, #f7b896 100%);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(60, 20, 6, 0.9));
+}
+.cosmetic-name-effect.effect-s2-bronze-patina {
+  --ne: radial-gradient(40% 80% at 80% 30%, #5fd6b8 0 40%, transparent 70%), radial-gradient(30% 70% at 20% 80%, #4cc4a6 0 40%, transparent 70%), linear-gradient(180deg, #f0c08a, #c27a3a 55%, #e0a060);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(40, 20, 6, 0.9));
+}
+.cosmetic-name-effect.effect-s2-titanium-heat {
+  --ne: linear-gradient(100deg, #7fa8ff 0%, #9a7bff 25%, #d68cff 45%, #ffcf7a 70%, #7fe0ff 100%);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(10, 10, 30, 0.85));
+}
+.cosmetic-name-effect.effect-s2-opal {
+  --ne:
+    radial-gradient(circle at 18% 30%, #ffc6e6 0 12%, transparent 22%),
+    radial-gradient(circle at 46% 70%, #b8fff0 0 12%, transparent 24%),
+    radial-gradient(circle at 74% 34%, #c8c0ff 0 12%, transparent 24%),
+    radial-gradient(circle at 92% 76%, #fff1b8 0 10%, transparent 22%),
+    linear-gradient(100deg, #f4f7ff, #e2ecff);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(30, 30, 60, 0.85)) drop-shadow(0 0 3px rgba(200, 220, 255, 0.35));
+}
+.cosmetic-name-effect.effect-s2-tourmaline { --ne: linear-gradient(100deg, #ff6f9a 0%, #ff9ab8 40%, #f4ffe0 52%, #7ee08a 64%, #35b86a 100%); }
+.cosmetic-name-effect.effect-s2-aquamarine {
+  --ne: linear-gradient(125deg, #e0fbff 0 20%, #7fe3f2 20% 45%, #b8f3ff 45% 55%, #4fc9e0 55% 80%, #a6ecf7 80%);
+  --ne-glow: drop-shadow(0 0 2px rgba(127, 227, 242, 0.45));
+}
+.cosmetic-name-effect.effect-s2-garnet {
+  --ne: linear-gradient(125deg, #ff6b7f 0 22%, #ff3355 22% 46%, #ffb3be 46% 54%, #e8243f 54% 78%, #ff7a8c 78%);
+  --ne-glow: drop-shadow(0 0 2px rgba(255, 60, 90, 0.45));
+}
+.cosmetic-name-effect.effect-s2-citrine {
+  --ne: linear-gradient(125deg, #fff3b0 0 22%, #ffc83a 22% 46%, #fffbe0 46% 54%, #f2a81a 54% 78%, #ffd86a 78%);
+  --ne-glow: drop-shadow(0 0 2px rgba(255, 200, 60, 0.4));
+}
+.cosmetic-name-effect.effect-s2-tanzanite {
+  --ne: linear-gradient(125deg, #b6a8ff 0 22%, #7a6bff 22% 46%, #e2dcff 46% 54%, #5d5ce8 54% 78%, #9f8cff 78%);
+  --ne-glow: drop-shadow(0 0 2px rgba(122, 107, 255, 0.5));
+}
+.cosmetic-name-effect.effect-s2-retro-chrome {
+  --ne: linear-gradient(180deg, #f4fbff 0%, #8fd2ff 46%, #ffffff 52%, #ff8ac2 53%, #ffb36b 100%);
+  --ne-glow: drop-shadow(0 1px 0 rgba(60, 20, 90, 0.9));
+}
+.cosmetic-name-effect.effect-s2-comic-pop {
+  --ne: radial-gradient(circle, rgba(255, 60, 140, 0.55) 0 0.08em, transparent 0.1em), linear-gradient(180deg, #fff27a, #ffd23a);
+  --ne-size: 0.26em 0.26em, 100% 100%;
+  -webkit-text-stroke: 0.45px #1a1a1a;
+  --ne-glow: drop-shadow(1.4px 1.4px 0 #ff3c8c);
+}
+.cosmetic-name-effect.effect-s2-candy-cane {
+  --ne: repeating-linear-gradient(120deg, #ff4f6a 0 0.32em, #fff4f6 0.32em 0.52em, #ff7a8a 0.52em 0.84em, #fff4f6 0.84em 1.04em);
+  --ne-glow: drop-shadow(0 0 0.6px rgba(90, 0, 20, 0.85));
+}
+.cosmetic-name-effect.effect-s2-pixel-bands {
+  --ne: linear-gradient(180deg, #7ff6ff 0 25%, #6c9bff 25% 50%, #b57aff 50% 75%, #ff7ad0 75%);
+  --ne-glow: drop-shadow(1px 1px 0 #10124a);
+}
+.cosmetic-name-effect.effect-s2-blueprint-ink {
+  --ne: linear-gradient(rgba(255, 255, 255, 0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.4) 1px, transparent 1px), linear-gradient(180deg, #bfe4ff, #7fbfff);
+  --ne-size: 100% 0.25em, 0.25em 100%, 100% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(80, 160, 255, 0.4));
+}
+
+/* Epic: light and slow motion. */
+.cosmetic-name-effect.effect-s2-lighthouse-sweep {
+  --ne: linear-gradient(100deg, transparent 0 38%, #ffffff 46% 54%, transparent 62%), linear-gradient(100deg, #7fd8e6, #4fb6d8);
+  background-size: 250% 100%, 100% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(80, 210, 230, 0.4));
+  animation: s2ne-sweep 5s ease-in-out infinite;
+}
+.cosmetic-name-effect.effect-s2-candle-glow {
+  --ne: radial-gradient(60% 120% at 50% 100%, #fff4c8, transparent 70%), linear-gradient(180deg, #ffe08a, #ffad3a 60%, #f07a1a);
+  animation: s2ne-candle 2.6s ease-in-out infinite;
+}
+.cosmetic-name-effect.effect-s2-neon-sign {
+  --ne: linear-gradient(180deg, #fff0fa, #ffd0ee);
+  --ne-glow: drop-shadow(0 0 1.5px #ff4fbf) drop-shadow(0 0 5px rgba(255, 79, 191, 0.75));
+  animation: s2ne-flicker 7s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-electric-edge {
+  --ne: linear-gradient(100deg, #e6f2ff, #9cc8ff 50%, #e6f2ff);
+  animation: s2ne-electric 3.4s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-starlight {
+  --ne: radial-gradient(circle, #ffffff 0 0.06em, transparent 0.09em), radial-gradient(circle, #fff6c8 0 0.05em, transparent 0.08em), linear-gradient(100deg, #9f98ff, #7a74e8 50%, #b09cff);
+  background-size: 0.5em 0.42em, 0.7em 0.55em, 100% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(170, 160, 255, 0.5));
+  animation: s2ne-twinkle 9s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-aurora-drift {
+  --ne: linear-gradient(100deg, #6effc7, #2ed3c0 25%, #8f7bff 50%, #6effc7 75%, #2ed3c0 100%);
+  --ne-size: 200% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(110, 255, 199, 0.35));
+  animation: s2ne-pan 10s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-chroma-split {
+  --ne: linear-gradient(180deg, #ffffff, #e6ecff);
+  --ne-glow: drop-shadow(-1px 0 0 rgba(255, 40, 90, 0.85)) drop-shadow(1px 0 0 rgba(40, 230, 255, 0.85));
+}
+.cosmetic-name-effect.effect-s2-hologram {
+  --ne: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0 1px, transparent 1px 3px), linear-gradient(100deg, #7ff6ff, #b9a8ff 35%, #ff9ee8 65%, #7ff6ff);
+  background-size: 100% 100%, 200% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(127, 246, 255, 0.45));
+  animation: s2ne-pan 6s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-sun-flare {
+  --ne: radial-gradient(18% 70% at 50% 40%, #ffffff, transparent 100%), linear-gradient(100deg, #ffd25a, #ffb02e 50%, #ff8a2a);
+  background-size: 300% 100%, 100% 100%;
+  --ne-glow: drop-shadow(0 0 3px rgba(255, 190, 60, 0.45));
+  animation: s2ne-sweep 6s ease-in-out infinite;
+}
+.cosmetic-name-effect.effect-s2-ocean-swell {
+  --ne: linear-gradient(180deg, #c8f4ff 0 30%, #6fd0ff 30% 55%, #3a9cff 55% 80%, #6fd0ff 80%);
+  --ne-size: 100% 200%;
+  animation: s2ne-pan-y 7s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-rising-flame {
+  --ne: linear-gradient(0deg, #ff3d1a 0%, #ff7a1a 25%, #ffd25a 50%, #ff7a1a 75%, #ff3d1a 100%);
+  --ne-size: 100% 200%;
+  --ne-glow: drop-shadow(0 0 3px rgba(255, 110, 30, 0.55));
+  animation: s2ne-pan-y 3s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-frost-bite {
+  --ne: linear-gradient(115deg, transparent 0 30%, rgba(80, 150, 200, 0.7) 31%, transparent 32% 66%, rgba(80, 150, 200, 0.7) 67%, transparent 68%), linear-gradient(180deg, #ffffff, #c8ecff 60%, #8fd4ff);
+  --ne-glow: drop-shadow(0 0 2px rgba(160, 220, 255, 0.6));
+}
+.cosmetic-name-effect.effect-s2-vapor-sunset {
+  --ne: linear-gradient(180deg, #ffe07a 0 22%, #ffb06a 22% 40%, #ff7aa0 40% 58%, #d65ad8 58% 76%, #8a5aff 76%);
+  --ne-glow: drop-shadow(0 0 2px rgba(255, 110, 170, 0.45));
+}
+.cosmetic-name-effect.effect-s2-watercolor {
+  --ne: radial-gradient(40% 90% at 20% 40%, #ff9ec4, transparent 70%), radial-gradient(40% 90% at 55% 60%, #8fd8ff, transparent 70%), radial-gradient(40% 90% at 85% 40%, #ffd88a, transparent 70%), linear-gradient(100deg, #f6d6ff, #d6f0ff);
+  background-size: 200% 100%, 200% 100%, 200% 100%, 100% 100%;
+  animation: s2ne-pan 14s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-lava-lamp {
+  --ne: radial-gradient(30% 80% at 30% 60%, #ffd23a, transparent 70%), radial-gradient(30% 80% at 75% 40%, #ff4fa0, transparent 70%), linear-gradient(100deg, #ff7a3a, #ff3d7a);
+  background-size: 200% 200%, 200% 200%, 100% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(255, 90, 90, 0.45));
+  animation: s2ne-pan 9s ease-in-out infinite alternate;
+}
+.cosmetic-name-effect.effect-s2-labradorite {
+  --ne: linear-gradient(105deg, transparent 20%, #6fd8ff 35%, #ffd27a 50%, #6f9bff 62%, transparent 78%), linear-gradient(100deg, #9fb0c8, #6fa8c8 30%, #b8c4d4 55%, #8fb8a8 80%, #a8b4c8);
+  background-size: 250% 100%, 100% 100%;
+  --ne-glow: drop-shadow(0 0 0.6px rgba(10, 14, 22, 0.85));
+  animation: s2ne-sweep 7s ease-in-out infinite;
+}
+
+/* Legendary. */
+.cosmetic-name-effect.effect-s2-phoenix-rise {
+  --ne: linear-gradient(0deg, #c8160c 0%, #ff5a1a 20%, #ffb02e 40%, #fff0b0 50%, #ffb02e 60%, #ff5a1a 80%, #c8160c 100%);
+  --ne-size: 100% 200%;
+  --ne-glow: drop-shadow(0 0 2px rgba(255, 120, 30, 0.75)) drop-shadow(0 -2px 4px rgba(255, 80, 20, 0.45));
+  animation: s2ne-pan-y 2.6s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-galaxy-core {
+  --ne: radial-gradient(circle, #ffffff 0 0.035em, transparent 0.06em), radial-gradient(60% 90% at 30% 50%, #ff7ad0, transparent 70%), radial-gradient(60% 90% at 75% 50%, #7a8cff, transparent 70%), linear-gradient(100deg, #b47aff, #6f5cff);
+  background-size: 0.45em 0.4em, 200% 100%, 200% 100%, 100% 100%;
+  --ne-glow: drop-shadow(0 0 3px rgba(160, 110, 255, 0.6));
+  animation: s2ne-pan 12s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-supernova {
+  --ne: radial-gradient(closest-side at 50% 50%, #ffffff 0%, #fff3b0 25%, #ff9ad5 55%, #8a7bff 85%), linear-gradient(100deg, #8a7bff, #8a7bff);
+  background-position: 50% 50%, 0 0;
+  background-repeat: no-repeat;
+  --ne-glow: drop-shadow(0 0 3px rgba(255, 220, 255, 0.7));
+  animation: s2ne-nova 4s ease-in-out infinite;
+}
+.cosmetic-name-effect.effect-s2-eclipse-ring {
+  --ne: linear-gradient(180deg, #fffaf0, #ffe6a6);
+  animation: s2ne-corona 3.4s ease-in-out infinite;
+}
+.cosmetic-name-effect.effect-s2-prism-light {
+  --ne: linear-gradient(100deg, #ff5a7a, #ffb02e 16%, #fff04a 32%, #5ae68a 48%, #3ab6ff 64%, #9a6bff 80%, #ff5a7a);
+  --ne-size: 200% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(255, 255, 255, 0.45));
+  animation: s2ne-pan 8s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-northern-crown {
+  --ne: radial-gradient(circle, #ffffff 0 0.035em, transparent 0.06em), linear-gradient(100deg, #6effc7, #8f7bff 33%, #4fe0d0 66%, #6effc7);
+  background-size: 0.55em 0.45em, 200% 100%;
+  --ne-glow: drop-shadow(0 0 3px rgba(110, 255, 199, 0.5));
+  animation: s2ne-pan 9s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-molten-gold {
+  --ne: linear-gradient(100deg, #b8860b, #ffe08a 20%, #fff8d8 26%, #f2c440 34%, #b8860b 50%, #ffe08a 70%, #fff8d8 76%, #f2c440 84%, #b8860b);
+  --ne-size: 200% 100%;
+  --ne-glow: drop-shadow(0 0 0.6px rgba(60, 40, 0, 0.9)) drop-shadow(0 0 4px rgba(255, 200, 70, 0.5));
+  animation: s2ne-pan 5s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-thunder-king {
+  --ne: linear-gradient(180deg, #dfe9ff, #8fb2ff 60%, #5a7cff), linear-gradient(100deg, transparent 45%, #ffffff 50%, transparent 55%);
+  background-size: 100% 100%, 200% 100%;
+  animation: s2ne-bolt 6s linear infinite;
+}
+.cosmetic-name-effect.effect-s2-dragon-gleam {
+  --ne: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.9) 50%, transparent 65%), radial-gradient(circle at 50% 0, transparent 0 0.1em, rgba(10, 40, 50, 0.45) 0.11em 0.13em, transparent 0.14em), linear-gradient(100deg, #4fe0c8, #6f8cff 50%, #c87aff);
+  background-size: 250% 100%, 0.3em 0.2em, 100% 100%;
+  --ne-glow: drop-shadow(0 0 2px rgba(80, 220, 200, 0.5));
+  animation: s2ne-sweep 5.5s ease-in-out infinite;
+}
+.cosmetic-name-effect.effect-s2-celestial-ink {
+  --ne: radial-gradient(circle, #fff3b0 0 0.035em, transparent 0.06em), linear-gradient(180deg, #a8b8ff, #7a8cff 55%, #c9a8ff);
+  background-size: 0.4em 0.36em, 100% 100%;
+  --ne-glow: drop-shadow(0 0 0.6px rgba(255, 220, 140, 0.9)) drop-shadow(0 0 3px rgba(255, 210, 120, 0.4));
+  animation: s2ne-twinkle 10s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmetic-name-effect[class*="effect-s2-"] { animation: none !important; }
+}
+html:is(.reduce-motion, .gd-lite) .cosmetic-name-effect[class*="effect-s2-"] { animation: none !important; }
