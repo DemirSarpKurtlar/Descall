@@ -2796,6 +2796,10 @@ export default function App() {
     socket.on("shop2:gift", (payload = {}) => {
       try { window.dispatchEvent(new CustomEvent("descall:shop2-gift", { detail: payload })); } catch { /* ignore */ }
     });
+    // Night market reminder (10 min before opening); the in-app notification itself comes from the server.
+    socket.on("shop2:night_reminder", (payload = {}) => {
+      try { window.dispatchEvent(new CustomEvent("descall:shop2-night-reminder", { detail: payload })); } catch { /* ignore */ }
+    });
 
     socket.on("platform:notice", (payload) => {
       applyPlatformNotice(payload || null);
