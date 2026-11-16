@@ -109,6 +109,14 @@ def mask(addr):
     local, dom = addr.split("@", 1)
     return f"{local[:4]}***@{dom}"
 
+if MODE == "readd-internal":
+    # Owner request: put an App Store Connect user (given by user id, so no address has to be
+    # passed in) back on the internal TestFlight group, then continue as inspect-fix.
+    uid = EMAIL.lower()
+    EMAIL = call("GET", f"/v1/users/{uid}")["data"]["attributes"]["username"]
+    print(f"Resolved user {uid} -> {mask(EMAIL)}")
+    MODE = "inspect-fix"
+
 if MODE == "list-users":
     # Read-only: every App Store Connect user and pending invitation with roles (emails masked).
     for u in all_pages("/v1/users?limit=200"):
@@ -221,7 +229,7 @@ if MODE in ("inspect", "inspect-fix"):
     if MODE == "inspect-fix":
         if not tid:
             j = call("POST", "/v1/betaTesters", json={"data": {"type": "betaTesters",
-                "attributes": {"email": EMAIL, "firstName": "cnrbsk11", "lastName": "Tester"},
+                "attributes": {"email": EMAIL, "firstName": os.environ.get("FIRST_NAME") or "Descall", "lastName": os.environ.get("LAST_NAME") or "Tester"},
                 "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": GID}]}}}})
             print(f"FIX created tester {j['data']['id']} in group")
         elif not in_group:
@@ -260,7 +268,7 @@ if MODE == "add-internal":
                 print("Added existing tester to group")
         else:
             j = call("POST", "/v1/betaTesters", json={"data": {"type": "betaTesters",
-                "attributes": {"email": EMAIL, "firstName": "cnrbsk11", "lastName": "Tester"},
+                "attributes": {"email": EMAIL, "firstName": os.environ.get("FIRST_NAME") or "Descall", "lastName": os.environ.get("LAST_NAME") or "Tester"},
                 "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": GID}]}}}})
             tid = j["data"]["id"]
             print(f"Created tester {tid} in '{gname}'")
