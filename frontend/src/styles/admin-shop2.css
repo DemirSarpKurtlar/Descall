@@ -829,7 +829,7 @@ button.as2-lg.is-off { opacity: 0.42; }
 .as2-ruler-lbl .is-single { color: #9db0ff; }
 .as2-sched-b .as2-tg.is-inline { margin-left: 4px; }
 .as2-sched-b .as2-b-sh .as2-cap { margin-right: auto; }
-.as2-sched-fields { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) repeat(3, minmax(0, 0.75fr)); gap: 8px; }
+.as2-sched-fields { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .as2-fbox { display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--as2-hair); font-size: var(--fs-13); min-width: 0; color: var(--as2-t2); }
 .as2-fbox:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--as2-brand), 0.65); }
 .as2-fbox input, .as2-fbox select { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: var(--fs-13); font-weight: 700; color: #fff; color-scheme: dark; }
@@ -971,3 +971,16 @@ html.a11y-solid .as2-scrim, html.gd-lite .as2-scrim { -webkit-backdrop-filter: n
 @media (prefers-reduced-transparency: reduce) {
   .as2-scrim { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(6, 7, 12, 0.86); }
 }
+
+/* ── limits: impact, flags ── */
+.as2-lim-impact { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: rgba(var(--as2-amber), 0.07); box-shadow: inset 0 0 0 1px rgba(var(--as2-amber), 0.28); font-size: var(--fs-13); }
+.as2-lim-impact em { font-style: normal; font-size: var(--fs-12); }
+.as2-flag { padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.035); box-shadow: inset 0 0 0 1px var(--as2-hair); display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.as2-flag.is-open { background: rgba(var(--as2-red), 0.07); box-shadow: inset 0 0 0 1px rgba(var(--as2-red), 0.35); }
+.as2-flag-h { display: flex; align-items: center; gap: 8px; font-size: var(--fs-13); }
+.as2-flag-h .ui-icon { color: #ff8a8d; }
+.as2-flag-users { display: flex; gap: 6px; flex-wrap: wrap; }
+.as2-chip.is-ghost { background: rgba(255, 255, 255, 0.06); color: var(--as2-t2); padding: 0 9px 0 4px; }
+.as2-flag-ft { display: flex; align-items: center; gap: 10px; font-size: var(--fs-12); color: var(--as2-t3); }
+.as2-nm-prem { justify-content: space-between; }
+.as2-nm-prem .as2-sw { margin-top: 4px; }

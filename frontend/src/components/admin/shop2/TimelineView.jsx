@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../../../context/LocaleContext";
 import { formatAppDateTime } from "../../../lib/datetime";
-import { AlertTriangle, Calendar, ChevronLeft, ChevronRight, Clock, Eye, FlaskConical, Gift, History, Layers, Moon, Package, Pencil, Percent, RefreshCw, RotateCcw, SlidersHorizontal, Star, Store, Timer, Wallet, Filter } from "../../ui/Icon.jsx";
+import { AlertTriangle, Calendar, ChevronLeft, ChevronRight, Clock, Eye, FlaskConical, Gift, History, Layers, Moon, Package, Pencil, Percent, RefreshCw, RotateCcw, SlidersHorizontal, Star, Store, Timer, Wallet, Filter } from "./icons.js";
 import { shop2Api } from "./adminShop2Api.js";
 import { auditTitle } from "./AuditView.jsx";
 import { Dialog, Pill, Popover, ReasonField, Seg, SetMark, Skel, Switch, useFmt } from "./ui.jsx";
