@@ -98,13 +98,19 @@ html.a11y-solid .spc-avatar .status-badge { border-color: var(--spc-fill); }
 .spc-badges .bp-row > * { flex: none; }
 .spc-badges .cosmetic-country-badge { min-width: 0; flex: 0 1 auto; }
 .spc-badges .cosmetic-country-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@container (max-width: 210px) {
+/* The Market 2.0 shop badge made the row one chip longer (owner report: it spilled out of
+   the card on the right), so the steps start wider. */
+@container (max-width: 280px) {
   .spc-badges .cosmetic-country-name { display: none; }
   .spc-badges .cosmetic-country-badge { flex: none; }
 }
-/* Very narrow (small windows): the special badge shows only its icon too. */
-@container (max-width: 170px) {
+/* Narrow: the special badge shows only its icon too. */
+@container (max-width: 230px) {
   .spc-badges .sb-chip > span:last-child:not(:first-child) { display: none; }
+}
+/* Very narrow: the "all badges" button goes; the badges stay one tap away on the avatar. */
+@container (max-width: 140px) {
+  .spc-badges .bp-plus { display: none; }
 }
 .spc-badges .bp-row:empty { display: none; }
 .spc-id {

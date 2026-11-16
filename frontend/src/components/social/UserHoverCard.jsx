@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { fetchProfileShared } from "../../lib/profileCache.js";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
@@ -68,12 +69,16 @@ function fallbackBanner(seed) {
 
 const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` });
 
-async function fetchPublicProfile(id) {
+async function requestPublicProfile(id) {
   const res = await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(id)}`, { headers: authHeaders() });
   if (!res.ok) return null;
   const data = await res.json().catch(() => null);
   return acceptProfilePayload(id, data?.user);
 }
+
+// Through the shared profile cache, so a profile window opened after a hover shows the real
+// look at once (lib/profileCache.js).
+const fetchPublicProfile = (id) => fetchProfileShared(id, requestPublicProfile);
 
 async function fetchMutual(username) {
   const res = await fetch(`${API_BASE_URL}/friends/mutual/${encodeURIComponent(username)}`, { headers: authHeaders() });

@@ -494,3 +494,12 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 .rps-btn:active:not(:disabled) { transform: scale(0.97); }
 .rps-head .handle { font-size: 13px; opacity: 0.6; margin-top: -2px; }
 @media (prefers-reduced-motion: reduce) { .rps-btn:active:not(:disabled) { transform: none; } }
+
+/* Profile not loaded yet (first open, lib/profileCache.js): keep the shell, hide the
+   content until the real profile arrives. Never paint the default look first. The close
+   button stays usable. */
+.user-profile-card.is-look-pending > *:not(.user-profile-close),
+.pfs-sheet.is-look-pending .pfs-scroll,
+.pfs-form.is-look-pending .pfs-scroll {
+  visibility: hidden;
+}

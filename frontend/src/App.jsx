@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { invalidateProfile } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
@@ -1597,6 +1598,7 @@ export default function App() {
       (async () => {
         try {
           const { user } = await getMe(token);
+          if (user?.id != null) invalidateProfile(user.id);
           commitSessionUser(user);
         } catch {
           // Ignore error
@@ -1606,6 +1608,7 @@ export default function App() {
     
     socketApi.on("user:updated", handleUserUpdated);
     const handleProfileUpdated = ({ user }) => {
+      if (user?.id != null) invalidateProfile(user.id);
       if (user) applyProfileUpdate(user);
     };
     socketApi.on("user:profile:updated", handleProfileUpdated);
@@ -2007,6 +2010,7 @@ export default function App() {
       socket.emit("friend:list");
     });
     socket.on("user:profile:updated", ({ user }) => {
+      if (user?.id != null) invalidateProfile(user.id);
       if (user) applyProfileUpdate(user);
     });
     socket.on("friend:error", ({ message } = {}) => {
