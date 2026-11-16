@@ -871,7 +871,7 @@ export default function ShopPanel({ equipped, onEquippedChange, balance = 0, me 
   ) : null;
 
   return (
-    <motion.div className="shop-panel" initial={false} animate={{ opacity: 1, y: 0 }}>
+    <motion.div className={`shop-panel${view === "store" ? " is-shop2" : ""}`} initial={false} animate={{ opacity: 1, y: 0 }}>
       {view === "store" ? (
         // Market 2.0 (owner pick 15 Nov 2026): personal storefront, sets, night market, gifts,
         // inventory with "Eski koleksiyon". The classic catalog is its "Tüm ürünler" tab; buy,
