@@ -2,6 +2,7 @@
 """TestFlight helpers for App Store Connect.
 
 Modes (MODE): external (add a tester), add-internal, invite-user, inspect, inspect-fix,
+list-users (read-only, emails masked), restore-admin (give TESTER_EMAIL the ADMIN role back),
 assign-internal (put BUILD_NUMBER on the internal group, default "Descall Ekip").
 
 Never submits anything for App Store review or beta app review. Never prints secrets.
@@ -100,6 +101,52 @@ def find_user_and_invites():
         a = i["attributes"]
         print(f"Invitation exists: id={i['id']} roles={a.get('roles')} expires={a.get('expirationDate')} allAppsVisible={a.get('allAppsVisible')}")
     return users, invites
+
+def mask(addr):
+    addr = str(addr or "")
+    if "@" not in addr:
+        return addr[:3] + "***"
+    local, dom = addr.split("@", 1)
+    return f"{local[:4]}***@{dom}"
+
+if MODE == "list-users":
+    # Read-only: every App Store Connect user and pending invitation with roles (emails masked).
+    for u in all_pages("/v1/users?limit=200"):
+        a = u["attributes"]
+        print(f"User id={u['id']} {mask(a.get('username'))} roles={a.get('roles')} allAppsVisible={a.get('allAppsVisible')} provisioning={a.get('provisioningAllowed')}")
+    for i in all_pages("/v1/userInvitations?limit=200"):
+        a = i["attributes"]
+        print(f"Invitation id={i['id']} {mask(a.get('email'))} roles={a.get('roles')} expires={a.get('expirationDate')}")
+    sys.exit(0)
+
+if MODE == "restore-admin":
+    # Owner request (16 Nov 2026): give TESTER_EMAIL the ADMIN role back. An existing user keeps
+    # its other roles and gets ADMIN added; a user no longer on the team gets an ADMIN invitation.
+    # The Account Holder role cannot be changed through the API and is never touched.
+    if not EMAIL:
+        print("::error::email is required"); sys.exit(2)
+    users, invites = find_user_and_invites()
+    if users:
+        u = users[0]; a = u["attributes"]
+        roles = list(a.get("roles") or [])
+        if "ADMIN" in roles or "ACCOUNT_HOLDER" in roles:
+            print(f"RESULT already has {roles}; nothing to change")
+            sys.exit(0)
+        new_roles = ["ADMIN"] + [r for r in roles if r != "ADMIN"]
+        j = call("PATCH", f"/v1/users/{u['id']}", json={"data": {"type": "users", "id": u["id"],
+            "attributes": {"roles": new_roles, "allAppsVisible": True, "provisioningAllowed": True}}})
+        print(f"RESULT user {u['id']} roles now {j['data']['attributes'].get('roles')}")
+        sys.exit(0)
+    if invites:
+        print("RESULT an invitation is already pending; accept it from the email Apple sent")
+        sys.exit(0)
+    j = call("POST", "/v1/userInvitations", json={"data": {"type": "userInvitations", "attributes": {
+        "email": EMAIL, "firstName": os.environ.get("FIRST_NAME") or "Demir",
+        "lastName": os.environ.get("LAST_NAME") or "Kurtlar", "roles": ["ADMIN"],
+        "allAppsVisible": True, "provisioningAllowed": True}}})
+    a = j["data"]["attributes"]
+    print(f"RESULT ADMIN invitation {j['data']['id']} roles={a.get('roles')} expires={a.get('expirationDate')}")
+    sys.exit(0)
 
 if MODE == "invite-user":
     users, invites = find_user_and_invites()
