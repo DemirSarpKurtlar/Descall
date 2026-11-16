@@ -214,7 +214,14 @@ async function todayStorefrontIds(userId) {
  * Buy one item. A set piece goes through the set rules (partial price / opens the 7-day
  * window); otherwise the list price. Allowed: any sellable s2 item.
  */
+async function duplicateOf(userId, key) {
+  const dup = await findByKey(userId, key);
+  return dup ? { duplicate: true, purchase: dup, balance: await descoin.getBalance(userId) } : null;
+}
+
 async function buyItem(userId, itemId, { expectedPrice = null, idempotencyKey = null, source = null, equip = false, io = null } = {}) {
+  const early = await duplicateOf(userId, cleanKey(idempotencyKey));
+  if (early) return { ...early, item: { id: itemId }, price: Number(early.purchase.amount) || 0 };
   const cat = await catalog.getCatalog();
   const item = cat.byId.get(String(itemId));
   if (!item || !catalog.sellable(item)) throw shopError("not_found", 404);
@@ -256,6 +263,8 @@ async function buyItem(userId, itemId, { expectedPrice = null, idempotencyKey = 
 async function buySet(userId, setKey, { pieceIds = null, all = false, holdToken = null, expectedPrice = null, equip = null, io = null } = {}) {
   const key = cleanKey(holdToken);
   if (!key) throw shopError("hold_token_required", 400);
+  const early = await duplicateOf(userId, key);
+  if (early) return { ...early, completed: [] };
   const limits = await config.getLimits();
   const user = await people.getUser(userId);
   const ageDays = user?.created_at ? (Date.now() - time.ms(user.created_at)) / time.DAY_MS : Infinity;
