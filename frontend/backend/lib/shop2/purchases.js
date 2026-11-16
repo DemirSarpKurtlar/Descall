@@ -281,6 +281,12 @@ async function buyItem(userId, itemId, { expectedPrice = null, idempotencyKey = 
       if (q.partialPriceUntil) usedLock = ctx.locks.get(set.key) || null;
     }
   }
+  // Singles are sold only through the user's storefront of today (sets and the night market have
+  // their own paths), or when the admin opened the item for direct sale ("Tüm ürünler" is browse
+  // only, lib/shopDirectSale.js; read fresh so an admin change applies to the next buy).
+  if (kind === "item" && !(await todayStorefrontIds(userId)).has(String(item.id)) && !(await require("../shopDirectSale").freshAllowed(item))) {
+    throw shopError("not_in_storefront", 410);
+  }
   if (expectedPrice != null && Number.isFinite(Number(expectedPrice)) && price > Number(expectedPrice)) throw shopError("price_changed", 409, { price });
   const res = await charge(userId, [item], price, { kind, source: source || (setKey ? "set" : "storefront"), setKey, idempotencyKey: cleanKey(idempotencyKey), opensLock, lockDiscount, listAmount: item.price });
   if (!res.duplicate && usedLock) await closeLockOpenerRefund(userId, usedLock);

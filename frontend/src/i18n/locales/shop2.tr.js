@@ -269,6 +269,7 @@ export const SHOP2_TR = {
     "focusVoice": "Ses",
     "ownedDeductedShort": "{n} parça sende, düşüldü",
     "buyShort": "Seti al",
+    "notOnSale": "Bu set şu an satışta değil. Parçaları vitrinine düşünce yine alabilirsin.",
     "share": "Paylaş",
     "emptyTitle": "Bu hafta set yok",
     "emptyBody": "Yeni setler bir sonraki vitrin döngüsüyle gelir."
@@ -355,6 +356,7 @@ export const SHOP2_TR = {
     "pieces": "{n} / {total} parça",
     "refundChip": "İade {t}",
     "wearAll": "Hepsini kuşan",
+    "wearOne": "Kuşan",
     "wearing": "Kuşanılıyor",
     "worn": "Kuşanıldı",
     "wearPicked": "{n} parçayı kuşan",

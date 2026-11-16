@@ -37,6 +37,7 @@ async function run() {
 
     await check("purchase, refund and set purchase use the real wallet and inventory", async () => {
       const before = balance(1);
+      rows("shop_items").find((x) => x.id === I(30)).direct_sale = true; // a single off the storefront sells only with direct_sale
       const b = await call(`/shop2/items/${I(30)}/buy`, { method: "POST", body: {} });
       assert.equal(b.status, 200, JSON.stringify(b.body));
       assert.ok(rows("user_inventory").some((x) => x.user_id === U(1) && x.item_id === I(30)));

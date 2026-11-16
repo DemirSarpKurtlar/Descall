@@ -148,6 +148,7 @@ async function run() {
 
     await check("refund: an item equipped meanwhile is taken off when the refund removes it", async () => {
       const it = I(26); // single 9 (name_effect)
+      rows("shop_items").find((x) => x.id === it).direct_sale = true; // singles off the storefront need direct_sale
       const r = await call(`/shop2/items/${it}/buy`, { method: "POST", user: 3, body: {} });
       assert.equal(r.status, 200, JSON.stringify(r.body));
       // The refund passed its equipped check, then an equip landed before the delete.
@@ -232,6 +233,7 @@ async function run() {
 
     await check("user routes: another user's purchase, gift, outfit and action are not found", async () => {
       const free = rows("shop_items").find((r) => /^s2-single-\d+$/.test(r.sku) && !owns(5, r.id) && r.id !== I(28));
+      free.direct_sale = true;
       const mine = await call(`/shop2/items/${free.id}/buy`, { method: "POST", user: 5, body: {} });
       assert.equal(mine.status, 200, JSON.stringify(mine.body));
       assert.equal((await call(`/shop2/purchases/${mine.body.purchaseId}/refund`, { method: "POST", user: 3, body: {} })).status, 404);
@@ -276,6 +278,7 @@ async function run() {
     await check("price tampering: expectedPrice, negative and huge values never lower the price", async () => {
       const before = user(5).descoin_balance;
       const pick = rows("shop_items").find((r) => /^s2-single-\d+$/.test(r.sku) && !owns(5, r.id));
+      pick.direct_sale = true;
       const r = await call(`/shop2/items/${pick.id}/buy`, { method: "POST", user: 5, body: { expectedPrice: -5000 } });
       assert.equal(r.status, 409);
       assert.equal(r.body.code, "price_changed");

@@ -886,6 +886,7 @@ export const API_TR = {
   "Invalid invite settings.": "Geçersiz davet ayarları.",
   "Could not reopen the invites.": "Davetler yeniden açılamadı.",
   "This is not on sale right now.": "Bu şu an satışta değil.",
+  "This item is not in your storefront today. It is sold in the daily storefront, in sets and at the night market.": "Bu ürün bugün vitrininde yok. Ürünler günlük vitrinde, setlerde ve gece pazarında satılır.",
   "This set is sold out.": "Bu set tükendi.",
   "You already own this.": "Buna zaten sahipsin.",
   "Not enough DesCoin.": "Yeterli DesCoin'in yok.",

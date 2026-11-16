@@ -293,7 +293,7 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
           <>
             <button type="button" className={`s2-btn is-primary is-wide is-lg is-glow${worn ? " is-done" : ""}`} disabled={equipping || worn} onClick={() => equip(wearItems)}>
               <Shirt size={17} />
-              {worn ? t("shop2.celebrate.worn") : equipping ? t("shop2.celebrate.wearing") : t("shop2.celebrate.wearAll")}
+              {worn ? t("shop2.celebrate.worn") : equipping ? t("shop2.celebrate.wearing") : wearItems.length > 1 ? t("shop2.celebrate.wearAll") : t("shop2.celebrate.wearOne")}
             </button>
             <div className="s2-row">
               {wearItems.length > 1 ? <button type="button" className="s2-btn is-flex" onClick={() => setPicking(true)}><SlidersHorizontal size={15} />{t("shop2.celebrate.pick")}</button> : null}

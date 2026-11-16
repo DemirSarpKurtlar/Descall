@@ -269,6 +269,7 @@ export const SHOP2_EN = {
     "focusVoice": "Voice",
     "ownedDeductedShort": "{n, plural, one {# piece owned, deducted} other {# pieces owned, deducted}}",
     "buyShort": "Buy the set",
+    "notOnSale": "This set is not on sale right now. Its pieces can still turn up in your storefront.",
     "share": "Share",
     "emptyTitle": "No sets this week",
     "emptyBody": "New sets arrive with the next storefront rotation."
@@ -355,6 +356,7 @@ export const SHOP2_EN = {
     "pieces": "{n}/{total} pieces",
     "refundChip": "Return {t}",
     "wearAll": "Wear it all",
+    "wearOne": "Wear it",
     "wearing": "Putting it on",
     "worn": "Worn",
     "wearPicked": "{n, plural, one {Wear # piece} other {Wear # pieces}}",

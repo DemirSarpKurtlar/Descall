@@ -81,6 +81,8 @@ migration is applied every endpoint still works: the `shop2_*` state lives in pr
 - `POST /items/:id/buy { expectedPrice?, source?, equip?: true }` -> `{ ok, duplicate, purchaseId,
   paid, itemId, balance, refundableUntil, partialPriceUntil, completed: [{ setKey, title }] }`. Set
   pieces follow the set rules; the piece that was the last one missing completes its set (title).
+  A single (no set) is sold only when it is in today's storefront or the admin opened it for direct
+  sale (`shop_items.direct_sale`); otherwise 410 `not_in_storefront`.
 - `GET /purchases` (addition) -> `{ purchases: [{ id, kind, setKey, itemIds, amount, listAmount,
   status, source, createdAt, refundableUntil }] }`.
 - `POST /purchases/:id/refund` -> `{ ok, purchaseId, refunded, balance }`. 10 minutes, nothing from it
@@ -250,7 +252,7 @@ Destructive actions require `reason` (>= 3 chars, 400 `reason_required`). Audite
 
 ## Error codes (user)
 
-`not_found`, `not_available`, `sold_out`, `already_owned`, `price_changed`, `insufficient_balance`,
+`not_found`, `not_available`, `not_in_storefront`, `sold_out`, `already_owned`, `price_changed`, `insufficient_balance`,
 `wallet_frozen`, `refresh_used`, `lock_not_in_storefront`, `lock_disabled`, `hold_token_required`,
 `new_account_set`, `already_refunded`, `refund_gift`, `refund_window_closed`, `refund_equipped`,
 `refund_not_purchase`, `outfit_limit`, `outfit_name_required`, `item_required`, `wishlist_full`,

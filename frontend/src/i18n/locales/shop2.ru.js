@@ -269,6 +269,7 @@ export const SHOP2_RU = {
     "focusVoice": "Голос",
     "ownedDeductedShort": "Есть частей: {n}, вычтено",
     "buyShort": "Купить набор",
+    "notOnSale": "Этот набор сейчас не продаётся. Его предметы всё ещё могут появиться на твоей витрине.",
     "share": "Поделиться",
     "emptyTitle": "На этой неделе наборов нет",
     "emptyBody": "Новые наборы придут со следующей сменой витрины."
@@ -355,6 +356,7 @@ export const SHOP2_RU = {
     "pieces": "{n}/{total} частей",
     "refundChip": "Возврат {t}",
     "wearAll": "Надеть всё",
+    "wearOne": "Надеть",
     "wearing": "Надеваем",
     "worn": "Надето",
     "wearPicked": "Надеть выбранное ({n})",

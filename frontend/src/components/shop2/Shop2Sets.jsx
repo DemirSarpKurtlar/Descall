@@ -130,7 +130,7 @@ function Hero({ set, pricing }) {
   );
 }
 
-function PieceRow({ piece, hidden, onEye, open, onOpen }) {
+function PieceRow({ piece, hidden, onEye, open, onOpen, closed = false }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
   const item = piece.item;
@@ -158,7 +158,8 @@ function PieceRow({ piece, hidden, onEye, open, onOpen }) {
       </div>
       {open && !piece.owned ? (
         <div className="s2-piece-actions">
-          <button type="button" className="s2-btn is-sm" onClick={() => s2.openCheckout({ kind: "item", item, price, setKey: item.set_key })}><Cart size={14} />{t("shop2.sets.buyOne", { n: formatNumber(price, locale) })}</button>
+          {/* Set off sale (and this piece not in today's storefront): the server would refuse it. */}
+          {closed ? null : <button type="button" className="s2-btn is-sm" onClick={() => s2.openCheckout({ kind: "item", item, price, setKey: item.set_key })}><Cart size={14} />{t("shop2.sets.buyOne", { n: formatNumber(price, locale) })}</button>}
           <button type="button" className="s2-btn is-sm" onClick={() => s2.openGift({ item, price: item.price_descoin })}><Gift size={14} />{t("shop2.gifts.giftShort")}</button>
           <button type="button" className={`s2-ibtn is-sm${wished ? " is-on" : ""}`} onClick={() => s2.actions.toggleWishlist(item, !wished)} aria-pressed={wished} aria-label={t("shop2.wishlist.toggle")}><Heart size={14} weight={wished ? "fill" : "regular"} /></button>
         </div>
@@ -172,6 +173,8 @@ function Pieces({ set, hidden, setHidden, onCurrentLook }) {
   const [filter, setFilter] = useState("all");
   const [open, setOpen] = useState(null);
   const missing = set.pieces.filter((p) => !p.owned).length;
+  const s2 = useS2();
+  const inToday = (id) => (s2.data.storefront?.slots || []).some((x) => sameId(x.item.id, id));
   const toggle = (id) => {
     const next = new Set(hidden);
     if (next.has(id)) next.delete(id);
@@ -198,7 +201,7 @@ function Pieces({ set, hidden, setHidden, onCurrentLook }) {
                 <small>{owned ? t("shop2.sets.groupOwned", { n: owned }) : t("shop2.sets.groupN", { n: list.length })}</small>
               </div>
               {list.map((p) => (
-                <PieceRow key={p.item.id} piece={p} hidden={hidden.has(String(p.item.id))} onEye={() => toggle(String(p.item.id))} open={sameId(open, p.item.id)} onOpen={() => setOpen((o) => (sameId(o, p.item.id) ? null : p.item.id))} />
+                <PieceRow key={p.item.id} piece={p} closed={set.setRateClosed && !inToday(p.item.id)} hidden={hidden.has(String(p.item.id))} onEye={() => toggle(String(p.item.id))} open={sameId(open, p.item.id)} onOpen={() => setOpen((o) => (sameId(o, p.item.id) ? null : p.item.id))} />
               ))}
             </div>
           );
@@ -374,6 +377,9 @@ function Kasa({ set, pricing, hidden, onSaveLook }) {
             <Share2 size={17} />
             {t("shop2.share.title")}
           </button>
+        ) : forWhom === "me" && pricing.setRateClosed ? (
+          // Scheduled, sold out or ended: no buy button that the server would refuse.
+          <p className="s2-note"><Clock size={14} />{t("shop2.sets.notOnSale")}</p>
         ) : forWhom === "me" ? (
           <button type="button" className="s2-btn is-primary is-wide is-lg" disabled={pricing.complete} onClick={() => s2.openCheckout({ kind: "set", setKey: set.key, pieceIds: null, hidden: [...hidden] })}>
             <Cart size={17} />
@@ -637,7 +643,7 @@ function PhoneSet({ set, sets, pricing, user, me, hidden, setHidden, stage, mode
           <Price value={pricing.yourPrice} size="xl" />
         </span>
         <button type="button" className="s2-ibtn is-lg" onClick={() => s2.openGift({ setKey: set.key })} aria-label={t("shop2.gifts.giftIt")}><Gift size={19} /></button>
-        <button type="button" className="s2-btn is-primary is-lg" disabled={pricing.complete} onClick={() => s2.openCheckout({ kind: "set", setKey: set.key, pieceIds: null })}><Cart size={17} />{t("shop2.sets.buyShort")}</button>
+        <button type="button" className="s2-btn is-primary is-lg" disabled={pricing.complete || pricing.setRateClosed} title={pricing.setRateClosed ? t("shop2.sets.notOnSale") : undefined} onClick={() => s2.openCheckout({ kind: "set", setKey: set.key, pieceIds: null })}><Cart size={17} />{t("shop2.sets.buyShort")}</button>
       </div>
     </div>
   );

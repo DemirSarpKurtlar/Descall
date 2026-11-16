@@ -269,6 +269,7 @@ export const SHOP2_DE = {
     "focusVoice": "Sprache",
     "ownedDeductedShort": "{n, plural, one {# Teil vorhanden, abgezogen} other {# Teile vorhanden, abgezogen}}",
     "buyShort": "Set kaufen",
+    "notOnSale": "Dieses Set ist gerade nicht im Verkauf. Seine Teile können trotzdem in deinem Schaufenster auftauchen.",
     "share": "Teilen",
     "emptyTitle": "Diese Woche keine Sets",
     "emptyBody": "Neue Sets kommen mit dem nächsten Schaufensterwechsel."
@@ -355,6 +356,7 @@ export const SHOP2_DE = {
     "pieces": "{n}/{total} Teile",
     "refundChip": "Rückgabe {t}",
     "wearAll": "Alles anlegen",
+    "wearOne": "Anlegen",
     "wearing": "Wird angelegt",
     "worn": "Angelegt",
     "wearPicked": "{n, plural, one {# Teil anlegen} other {# Teile anlegen}}",

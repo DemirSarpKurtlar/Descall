@@ -152,6 +152,7 @@ export const API_RU = {
   "User not found.": "Пользователь не найден.",
   "Could not reopen the invites.": "Не удалось снова открыть приглашения.",
   "This is not on sale right now.": "Сейчас это не продаётся.",
+  "This item is not in your storefront today. It is sold in the daily storefront, in sets and at the night market.": "Этого товара сегодня нет на твоей витрине. Товары продаются на ежедневной витрине, в наборах и на ночном рынке.",
   "This set is sold out.": "Этот набор распродан.",
   "You already own this.": "Это у тебя уже есть.",
   "Not enough DesCoin.": "Недостаточно DesCoin.",

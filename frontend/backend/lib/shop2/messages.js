@@ -11,6 +11,7 @@ const { apiError } = require("../apiError");
 const MESSAGES = {
   not_found: "Not found.",
   not_available: "This is not on sale right now.",
+  not_in_storefront: "This item is not in your storefront today. It is sold in the daily storefront, in sets and at the night market.",
   sold_out: "This set is sold out.",
   already_owned: "You already own this.",
   price_changed: "The price changed. Check the new price and try again.",

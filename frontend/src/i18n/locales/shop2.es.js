@@ -269,6 +269,7 @@ export const SHOP2_ES = {
     "focusVoice": "Voz",
     "ownedDeductedShort": "{n, plural, one {tienes # pieza, descontada} other {tienes # piezas, descontadas}}",
     "buyShort": "Comprar el set",
+    "notOnSale": "Este set no está a la venta ahora. Sus piezas aún pueden aparecer en tu escaparate.",
     "share": "Compartir",
     "emptyTitle": "No hay sets esta semana",
     "emptyBody": "Los sets nuevos llegan con el próximo cambio de escaparate."
@@ -355,6 +356,7 @@ export const SHOP2_ES = {
     "pieces": "{n}/{total} piezas",
     "refundChip": "Devolver {t}",
     "wearAll": "Ponérmelo todo",
+    "wearOne": "Ponértelo",
     "wearing": "Poniéndolo",
     "worn": "Puesto",
     "wearPicked": "{n, plural, one {Ponerme # pieza} other {Ponerme # piezas}}",

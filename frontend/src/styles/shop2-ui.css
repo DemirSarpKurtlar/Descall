@@ -6913,3 +6913,6 @@ html[data-theme="light"] .s2-root .s2-all {
   background: #f5f6fa;
   color: #1b1c24;
 }
+html[data-theme="light"] :is(.s2-root, .s2-layer) :is(h1, h2, h3, h4) {
+  color: inherit;
+}

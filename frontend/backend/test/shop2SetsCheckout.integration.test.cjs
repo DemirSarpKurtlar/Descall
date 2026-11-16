@@ -8,7 +8,8 @@
  *   10 once, which is what the client quotes (an expectedPrice of that value is accepted);
  * - the automatic "previous look" kept before "Hepsini kuşan" is an unnamed `previous` outfit,
  *   so it never fills the 30 named looks;
- * - the server member list carries the Market 2.0 frame and badge a member wears.
+ * - the server member list carries the Market 2.0 frame and badge a member wears;
+ * - a single (no set) sells only from today's storefront or with direct_sale (410 not_in_storefront).
  * Run: node frontend/backend/test/shop2SetsCheckout.integration.test.cjs
  */
 
@@ -38,6 +39,24 @@ async function run() {
       assert.equal(detail.body.titleUnlocked, true);
       const list = await call("/shop2/sets");
       assert.equal(list.body.sets.find((s) => s.key === "bakir-kervan").completedTitle, true);
+    });
+
+    await check("singles sell only from today's storefront or with direct_sale: else 410 not_in_storefront", async () => {
+      const sf = (await call("/shop2/storefront", { user: 5 })).body;
+      const today = new Set(sf.slots.map((x) => x.item.id));
+      const off = rows("shop_items").find((r) => /^s2-single-\d+$/.test(r.sku) && !today.has(r.id) && !rows("user_inventory").some((i) => i.user_id === U(5) && i.item_id === r.id));
+      const before = rows("users").find((u) => u.id === U(5)).descoin_balance;
+      const no = await call(`/shop2/items/${off.id}/buy`, { method: "POST", user: 5, body: { idempotencyKey: "item-off-sf-0001" } });
+      assert.equal(no.status, 410, JSON.stringify(no.body));
+      assert.equal(no.body.code, "not_in_storefront");
+      assert.match(no.body.error, /not in your storefront today/);
+      assert.equal(rows("users").find((u) => u.id === U(5)).descoin_balance, before, "nothing charged");
+      const card = sf.slots.find((x) => !x.owned && !x.item.set_key);
+      const yes = await call(`/shop2/items/${card.item.id}/buy`, { method: "POST", user: 5, body: { idempotencyKey: "item-in-sf-00001" } });
+      assert.equal(yes.status, 200, JSON.stringify(yes.body));
+      off.direct_sale = true; // the admin opened it for direct sale
+      const direct = await call(`/shop2/items/${off.id}/buy`, { method: "POST", user: 5, body: { idempotencyKey: "item-direct-0001" } });
+      assert.equal(direct.status, 200, JSON.stringify(direct.body));
     });
 
     await check("partial window: chosen pieces cost round10(list x set rate), the client quote passes", async () => {

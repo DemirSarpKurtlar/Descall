@@ -152,6 +152,7 @@ export const API_ES = {
   "User not found.": "Usuario no encontrado.",
   "Could not reopen the invites.": "No se pudieron reabrir las invitaciones.",
   "This is not on sale right now.": "Esto no está a la venta ahora mismo.",
+  "This item is not in your storefront today. It is sold in the daily storefront, in sets and at the night market.": "Este artículo no está hoy en tu escaparate. Se vende en el escaparate diario, en los sets y en el mercado nocturno.",
   "This set is sold out.": "Este set está agotado.",
   "You already own this.": "Ya tienes esto.",
   "Not enough DesCoin.": "No tienes suficientes DesCoin.",
