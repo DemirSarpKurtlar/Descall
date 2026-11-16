@@ -10,7 +10,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useLocale } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
 import useShop2 from "../../hooks/useShop2.js";
-import { cartSummary, dayProgress, markWishlist, paletteVars, SHOP2_NIGHT_URGENT_MS, setProgress } from "../../lib/shop2Logic.js";
+import { cartSummary, dayProgress, EQUIP_FIELD, markWishlist, paletteVars, SHOP2_NIGHT_URGENT_MS, setProgress } from "../../lib/shop2Logic.js";
 import { Shop2Ctx, useS2 } from "./Shop2Context.js";
 import { Coin, Layer, Num, RollingClock, useNow } from "./Shop2Bits.jsx";
 import { useItemLabels, useItemName } from "./Shop2Art.jsx";
@@ -217,7 +217,8 @@ export default function Shop2Market({
     width,
     owned,
     inventory,
-    equippedIdFor: equippedIdFor || (() => null),
+    // ShopPanel knows the classic slots; the set slots (frame, badge, voice tile, join sound) come from the user.
+    equippedIdFor: (category) => equippedIdFor?.(category) ?? me?.[EQUIP_FIELD[category]]?.id ?? null,
     onEquip,
     busyItemId,
     itemName,

@@ -39,6 +39,7 @@ export const Split = make(PSplit, "Split");
 export const PriceTag = make(PTag, "PriceTag");
 
 export {
+  Archive,
   Bell,
   Bookmark,
   Calendar,
