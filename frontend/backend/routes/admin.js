@@ -56,6 +56,7 @@ const { adminRateLimit } = require("../middleware/adminRateLimit");
 const { requireAdmin2fa, requireStepUp, stepUpHandler } = require("../middleware/adminSecondFactor");
 const adminPermissions = require("../lib/adminPermissions");
 const { apiError, apiText } = require("../lib/apiError");
+const { selectPaged } = require("../lib/selectPaged");
 const router = express.Router();
 
 // Descall+ / Ultra: refused attempts on /premium are logged (before the chain answers 401/403).
@@ -223,13 +224,10 @@ const SOURCE_NEW_COLS = "signup_source_group, signup_source_sub, signup_source_d
 
 /** Group -> sub-source breakdown; tolerates the new columns not being migrated. */
 async function loadSourceBreakdown() {
-  let res = await withTimeout(
-    supabase.from("users").select(`${SOURCE_LEGACY_COLS}, ${SOURCE_NEW_COLS}`),
-    8000,
-    { data: null, error: { message: "timeout" } }
-  );
+  const all = (cols) => selectPaged(() => supabase.from("users").select(cols, { count: "exact" }).order("id", { ascending: true }));
+  let res = await withTimeout(all(`${SOURCE_LEGACY_COLS}, ${SOURCE_NEW_COLS}`), 15000, { data: null, error: { message: "timeout" } });
   if (res?.error && isMissingColumnError(res.error)) {
-    res = await withTimeout(supabase.from("users").select(SOURCE_LEGACY_COLS), 8000, { data: null, error: { message: "timeout" } });
+    res = await withTimeout(all(SOURCE_LEGACY_COLS), 15000, { data: null, error: { message: "timeout" } });
   }
   if (res?.error || !Array.isArray(res?.data)) return null;
   return aggregateSourceBreakdown(res.data);
@@ -271,19 +269,34 @@ router.get("/analytics", async (_req, res) => {
       "id, created_at, signup_at, last_seen, auth_method, first_touch_source, first_touch_medium, first_touch_campaign, first_touch_term, first_touch_gclid, signup_device, signup_country, first_app_opened_at, first_action_at, first_message_at";
     const breakdownPromise = loadSourceBreakdown().catch(() => null);
     const [usersRes, visitsRes, startedRes] = await Promise.all([
+      // Paged past the 1000-row cap (polish admin-b-04): 30 days of visitor rows are ~14k.
       withTimeout(
-        supabase.from("users").select(usersSelect),
-        8000,
+        selectPaged(() => supabase.from("users").select(usersSelect, { count: "exact" }).order("id", { ascending: true })),
+        15000,
         { data: [], error: { message: "timeout" } }
       ),
       withTimeout(
-        supabase.from("analytics_visitor_days").select("visitor_key, day, first_touch_source, has_gclid, country, device").gte("day", since),
-        8000,
+        selectPaged(() =>
+          supabase
+            .from("analytics_visitor_days")
+            .select("visitor_key, day, first_touch_source, has_gclid, country, device", { count: "exact" })
+            .gte("day", since)
+            .order("day", { ascending: true })
+            .order("visitor_key", { ascending: true })
+        ),
+        15000,
         { data: [], error: { message: "timeout" } }
       ),
       withTimeout(
-        supabase.from("analytics_events").select("id, visitor_key, occurred_at").eq("event", "signup_started").gte("occurred_at", since),
-        8000,
+        selectPaged(() =>
+          supabase
+            .from("analytics_events")
+            .select("id, visitor_key, occurred_at", { count: "exact" })
+            .eq("event", "signup_started")
+            .gte("occurred_at", since)
+            .order("id", { ascending: true })
+        ),
+        15000,
         { data: [], error: { message: "timeout" } }
       ),
     ]);

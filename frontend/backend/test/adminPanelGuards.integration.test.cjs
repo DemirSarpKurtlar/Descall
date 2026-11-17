@@ -125,6 +125,10 @@ const row = (id) => fake._tables.users.rows.find((u) => u.id === id);
     r = await call(base, "POST", "/api/admin/descoin/grant", { token: legacy, body: { userId: KAAN, amount: -2000000, reason: "Hata duzeltme" } });
     assert(r.status === 400 && r.body.code === "AMOUNT_TOO_LARGE", `cap applies to takes too: ${r.status}`);
 
+    // ---- analytics reads every row (paged) ----
+    r = await call(base, "GET", "/api/admin/analytics", { token: owner });
+    assert(r.status === 200 && r.body.totalSignups === 3, `analytics: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+
     console.log("adminPanelGuards: ok");
   } finally {
     server.close();
