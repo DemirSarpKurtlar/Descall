@@ -6,7 +6,8 @@
     "downloading": "Téléchargement de la mise à jour…",
     "upToDate": "À jour",
     "checkFailed": "Impossible de rechercher les mises à jour",
-    "loading": "Chargement"
+    "loading": "Chargement",
+    "openNow": "Ouvrir maintenant, télécharger en arrière-plan"
   },
   "notice": {
     "background": "Descall continue de tourner en arrière-plan. Tu peux le rouvrir depuis la zone de notification."

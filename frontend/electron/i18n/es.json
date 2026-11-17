@@ -6,7 +6,8 @@
     "downloading": "Descargando actualización…",
     "upToDate": "Todo al día",
     "checkFailed": "No se pudieron buscar actualizaciones",
-    "loading": "Cargando"
+    "loading": "Cargando",
+    "openNow": "Abrir ahora y descargar en segundo plano"
   },
   "notice": {
     "background": "Descall sigue funcionando en segundo plano. Puedes volver a abrirlo desde la bandeja del sistema."

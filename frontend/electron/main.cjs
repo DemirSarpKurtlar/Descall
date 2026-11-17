@@ -466,6 +466,7 @@ const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes while running
 const UPDATE_INSTALL_POLL_MS = 5 * 1000;         // re-evaluate grace / idle / background
 const PRELAUNCH_CHECK_TIMEOUT_MS = 25 * 1000;
 const PRELAUNCH_DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+const PRELAUNCH_OPEN_NOW_AFTER_MS = 12 * 1000;
 
 
 /** Quietly prune older Descall-Setup-*.exe from the user's Downloads (Electron-only). */
@@ -1056,6 +1057,13 @@ function createSplashWindow() {
   };
   splashWindow = new BrowserWindow(splashOptions);
   try { splashWindow.setBackgroundColor('#00000000'); } catch (_) { /* ignore */ }
+  // "Open now" during a long update download (splash.html sets #open-now): the app opens and
+  // the download finishes in the background as a staged quiet update.
+  splashWindow.webContents.on('did-navigate-in-page', (_e, url) => {
+    if (!/#open-now$/.test(String(url || ''))) return;
+    log.info('[updater] prelaunch: user opened the app during the download');
+    resolvePrelaunch({ type: 'skip' });
+  });
   try { splashWindow.setHasShadow(false); } catch (_) { /* ignore */ }
 
   const splashPath = path.join(__dirname, 'splash.html');
@@ -1205,6 +1213,16 @@ async function runPrelaunchUpdateGate() {
   if (outcome?.type === 'update-available' || outcome?.type === 'downloading') {
     // Stay on splash until download finishes — never open main mid-update.
     let downloadTimer = null;
+    // A long download must not hold the screen: the splash leaves always-on-top at once and
+    // offers "open now" after a short wait (polish pass; it used to sit on top for up to 10 min).
+    try { if (splashWindow && !splashWindow.isDestroyed()) splashWindow.setAlwaysOnTop(false); } catch (_) { /* ignore */ }
+    const openNowTimer = setTimeout(() => {
+      try {
+        splashWindow?.webContents?.executeJavaScript(
+          `window.__splashOpenNow && window.__splashOpenNow(${JSON.stringify(et('splash.openNow'))});`, true,
+        ).catch(() => {});
+      } catch (_) { /* splash gone */ }
+    }, PRELAUNCH_OPEN_NOW_AFTER_MS);
     const downloadOutcome = await new Promise((resolve) => {
       prelaunchResolvers = { resolve };
       downloadTimer = setTimeout(() => {
@@ -1212,6 +1230,7 @@ async function runPrelaunchUpdateGate() {
         resolve({ type: 'download-timeout' });
       }, PRELAUNCH_DOWNLOAD_TIMEOUT_MS);
     });
+    clearTimeout(openNowTimer);
     if (downloadTimer) clearTimeout(downloadTimer);
     prelaunchResolvers = null;
 

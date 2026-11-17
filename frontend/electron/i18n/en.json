@@ -6,7 +6,8 @@
     "downloading": "Downloading update…",
     "upToDate": "Up to date",
     "checkFailed": "Couldn't check for updates",
-    "loading": "Loading"
+    "loading": "Loading",
+    "openNow": "Open now, download in the background"
   },
   "notice": {
     "background": "Descall keeps running in the background. You can reopen it from the system tray."

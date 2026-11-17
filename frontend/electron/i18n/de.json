@@ -6,7 +6,8 @@
     "downloading": "Update wird heruntergeladen…",
     "upToDate": "Auf dem neuesten Stand",
     "checkFailed": "Updates konnten nicht geprüft werden",
-    "loading": "Wird geladen"
+    "loading": "Wird geladen",
+    "openNow": "Jetzt öffnen, im Hintergrund laden"
   },
   "notice": {
     "background": "Descall läuft im Hintergrund weiter. Du kannst es über den Infobereich der Taskleiste wieder öffnen."

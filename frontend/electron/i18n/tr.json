@@ -6,7 +6,8 @@
     "downloading": "Güncelleme indiriliyor…",
     "upToDate": "Güncel",
     "checkFailed": "Güncellemeler denetlenemedi",
-    "loading": "Yükleniyor"
+    "loading": "Yükleniyor",
+    "openNow": "Şimdi aç, arka planda indir"
   },
   "notice": {
     "background": "Descall arka planda çalışmaya devam ediyor. Simge durumundan geri açabilirsin."

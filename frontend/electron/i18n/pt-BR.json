@@ -6,7 +6,8 @@
     "downloading": "Baixando a atualização…",
     "upToDate": "Tudo atualizado",
     "checkFailed": "Não foi possível procurar atualizações",
-    "loading": "Carregando"
+    "loading": "Carregando",
+    "openNow": "Abrir agora e baixar em segundo plano"
   },
   "notice": {
     "background": "O Descall continua funcionando em segundo plano. Você pode reabri-lo pela bandeja do sistema."
