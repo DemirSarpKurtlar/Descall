@@ -161,6 +161,34 @@ async function run() {
     r = await req(base, "POST", "/api/auth/2fa/disable", { token: erin.token, body: { password: "password123" } });
     assert(r.status === 409 && r.body.code === "totp_on" && erinRow.two_factor_enabled === true, "TOTP stays consistent: " + JSON.stringify(r.body));
 
+    // auth-10: an address left unverified for over a day does not block a new account;
+    // one typed minutes ago (someone mid sign-up) still does.
+    const old = new Date(Date.now() - 3 * 86400000).toISOString();
+    fakeSupabase._tables.users.rows.push(
+      { id: "aaaaaaaa-0000-4000-8000-000000000001", username: "squat", email: "victim@example.com", email_confirmed_at: null, confirmation_sent_at: old, created_at: old },
+      { id: "aaaaaaaa-0000-4000-8000-000000000002", username: "midway", email: "fresh@example.com", email_confirmed_at: null, confirmation_sent_at: new Date().toISOString(), created_at: new Date().toISOString() }
+    );
+    r = await req(base, "POST", "/api/auth/register", {
+      body: { username: "victim", password: "password123", termsAccepted: true, birthDate: "2000-01-15", email: "victim@example.com" },
+    });
+    assert(r.status === 201, "stale unverified holder does not block sign-up: " + JSON.stringify(r.body));
+    assert(fakeSupabase._tables.users.rows.find((u) => u.username === "squat").email === null, "stale holder lost the address");
+    r = await req(base, "POST", "/api/auth/register", {
+      body: { username: "second", password: "password123", termsAccepted: true, birthDate: "2000-01-15", email: "fresh@example.com" },
+    });
+    assert(r.status === 409, "a fresh unverified holder keeps the address");
+
+    // auth-09: verify never says "verified" when the address was taken meanwhile.
+    const fay = await register(base, "fay", "fay@example.com");
+    r = await req(base, "POST", "/api/auth/email/set", { token: fay.token, body: { email: "shared@example.com", password: "password123" } });
+    assert(r.status === 200, "fay starts a change");
+    const setCode = lastCode("shared@example.com");
+    fakeSupabase._tables.users.rows.push({ id: "aaaaaaaa-0000-4000-8000-000000000003", username: "quick", email: "shared@example.com", email_confirmed_at: new Date().toISOString() });
+    r = await req(base, "POST", "/api/auth/email/verify", { token: fay.token, body: { code: setCode } });
+    assert(r.status === 409, "taken address is not reported as verified: " + JSON.stringify(r.body));
+    const fayRow = fakeSupabase._tables.users.rows.find((u) => u.username === "fay");
+    assert(fayRow.email === "fay@example.com" && fayRow.pending_email === "shared@example.com", "old address kept, change still pending");
+
     console.log("authPolish.integration.test.cjs: ok");
   } finally {
     server.close();

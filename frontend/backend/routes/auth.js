@@ -299,6 +299,44 @@ function maskEmail(email) {
   return `${visible}${"•".repeat(Math.max(1, name.length - visible.length))}@${domain}`;
 }
 
+/**
+ * users_email_uidx is unique on lower(email) for every row, verified or not, so an
+ * address typed into an account that never verified it blocked everyone else
+ * (sign-up answered "Email is already in use.", an email change "verified" without
+ * saving). A holder that has not verified within a day loses the address to an
+ * account that wants it; a fresh one (someone mid sign-up) keeps it.
+ */
+const STALE_UNVERIFIED_EMAIL_MS = 24 * 60 * 60 * 1000;
+async function emailHolders(email, exceptUserId) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email_confirmed_at, confirmation_sent_at, created_at")
+    .ilike("email", escapeLike(email))
+    .limit(10);
+  if (error) return { confirmed: false, fresh: false, staleIds: [] };
+  const now = Date.now();
+  const rows = (data || []).filter((r) => r.id !== exceptUserId);
+  const isFresh = (r) => {
+    const at = Date.parse(r.confirmation_sent_at || r.created_at || "");
+    return Number.isFinite(at) && now - at < STALE_UNVERIFIED_EMAIL_MS;
+  };
+  return {
+    confirmed: rows.some((r) => r.email_confirmed_at),
+    fresh: rows.some((r) => !r.email_confirmed_at && isFresh(r)),
+    staleIds: rows.filter((r) => !r.email_confirmed_at && !isFresh(r)).map((r) => r.id),
+  };
+}
+async function releaseUnverifiedEmail(ids) {
+  for (const id of ids || []) {
+    await supabase
+      .from("users")
+      .update({ email: null, confirmation_token: null, confirmation_sent_at: null })
+      .eq("id", id)
+      .is("email_confirmed_at", null)
+      .then(() => {}, () => {});
+  }
+}
+
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -691,15 +729,11 @@ router.post("/register", async (req, res) => {
     }
 
     if (email) {
-      const { data: emailTaken } = await supabase
-        .from("users")
-        .select("id")
-        .ilike("email", email)
-        .not("email_confirmed_at", "is", null)
-        .maybeSingle();
-      if (emailTaken) {
+      const holders = await emailHolders(email, null);
+      if (holders.confirmed || holders.fresh) {
         return rejectSignup(res, 409, "email_taken", { error: "Email is already in use." });
       }
+      await releaseUnverifiedEmail(holders.staleIds);
     }
 
     const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -1651,14 +1685,8 @@ router.post("/email/set", requireAuth, async (req, res) => {
       }
     }
 
-    const { data: taken } = await supabase
-      .from("users")
-      .select("id")
-      .ilike("email", escapeLike(email))
-      .not("email_confirmed_at", "is", null)
-      .neq("id", req.user.id)
-      .maybeSingle();
-    if (taken) return res.status(409).json({ error: "This email is already in use." });
+    const holders = await emailHolders(email, req.user.id);
+    if (holders.confirmed || holders.fresh) return res.status(409).json({ error: "This email is already in use." });
 
     const pendingUpdate = await supabase.from("users").update({ pending_email: email }).eq("id", req.user.id);
     if (pendingUpdate.error) {
@@ -1787,13 +1815,27 @@ router.post("/email/verify", requireAuth, async (req, res) => {
       confirmation_sent_at: null,
     };
     if (user?.pending_email) {
+      // Someone may have taken the address since /email/set: keep it pending then.
+      const holders = await emailHolders(user.pending_email, req.user.id);
+      if (holders.confirmed || holders.fresh) {
+        return res.status(409).json({ error: "This email is already in use.", code: "email_taken" });
+      }
+      await releaseUnverifiedEmail(holders.staleIds);
       update.email = user.pending_email;
       update.pending_email = null;
     }
-    const saved = await supabase.from("users").update(update).eq("id", req.user.id);
+    let saved = await supabase.from("users").update(update).eq("id", req.user.id);
     if (saved.error && isMissingColumnError(saved.error) && update.pending_email === null) {
       delete update.pending_email;
-      await supabase.from("users").update(update).eq("id", req.user.id);
+      saved = await supabase.from("users").update(update).eq("id", req.user.id);
+    }
+    if (saved.error) {
+      // Never answer "verified" when nothing was saved (users_email_uidx race).
+      if (saved.error.code === "23505" || /duplicate|unique/i.test(String(saved.error.message || ""))) {
+        return res.status(409).json({ error: "This email is already in use.", code: "email_taken" });
+      }
+      console.error("[AUTH] email/verify save failed:", saved.error.message || saved.error);
+      return res.status(500).json({ error: "Internal server error." });
     }
 
     return res.json({ message: "Email verified.", emailVerified: true, twoFactorEnabled: Boolean(user?.two_factor_enabled) });
