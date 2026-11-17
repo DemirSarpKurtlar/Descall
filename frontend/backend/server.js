@@ -446,17 +446,6 @@ const MERGED_PAGE_REDIRECTS = {
 app.get(Object.keys(MERGED_PAGE_REDIRECTS), (req, res) => res.redirect(301, MERGED_PAGE_REDIRECTS[req.path.replace(/\/+$/, "")] || "/"));
 app.use(sitemapRouter);
 
-// Test endpoint - no auth required
-app.post("/api/test", (req, res) => {
-  console.log("[TEST] POST /api/test received");
-  res.json({
-    success: true,
-    message: "Test endpoint works",
-    received: req.body,
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Frontend build info, needed early — see the SPA-vs-API disambiguation
 // middleware immediately below, which must run *before* /groups, /friends,
 // /calls, and /servers are mounted (some of those routers have a real GET "/" handler
@@ -765,7 +754,6 @@ console.log("  - /api/user/profile");
 console.log("  - /api/user/notifications");
 console.log("  - /api/user/privacy");
 console.log("  - /api/user/regional");
-console.log("  - /api/test (no auth)");
 console.log("  - /api/status");
 console.log("  - /health");
 console.log("  - /robots.txt");
