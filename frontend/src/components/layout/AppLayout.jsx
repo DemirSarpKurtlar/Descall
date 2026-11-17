@@ -293,7 +293,10 @@ export default function AppLayout({
   useEffect(() => {
     if (!userPanelOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") closeUserPanel();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      // Settings owns its Escape (UserPanel: overlays above it first, unsaved edits ask).
+      if (document.querySelector(".user-settings")) return;
+      closeUserPanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

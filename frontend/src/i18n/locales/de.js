@@ -17,6 +17,7 @@ import { ACT_DE } from "./act.de.js";
 import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
+import { USET_DE } from "./uset.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
 import { DOSSIER_DE } from "./dossier.de.js";
@@ -64,6 +65,7 @@ export const nested = {
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
   "banAdmin": BAN_ADMIN_DE,
+  "uset": USET_DE,
   "serverReview": SERVER_REVIEW_DE,
   "dossier": DOSSIER_DE,
   "shopDesk": SHOP_DESK_DE,

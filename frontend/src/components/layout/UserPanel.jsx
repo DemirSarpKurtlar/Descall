@@ -43,6 +43,7 @@ import {
 import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
 import { confirmAction } from "../../lib/glassConfirm";
+import { profileDraftDirty, nestedOverlayOpen } from "../../lib/settingsClose";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
@@ -51,6 +52,7 @@ import DataExportCard from "../settings/DataExportCard.jsx";
 import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
+import { serverMessage } from "../../i18n/serverText.js";
 import LegalContentModal from "../legal/LegalContentModal";
 import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
 import {
@@ -664,20 +666,20 @@ const UserPanel = forwardRef(function UserPanel({
         setPwSupportEmail(data.supportEmail || "support@descall.com");
         setPwNoEmail(true);
         setPwNotice(
-          data.message ||
+          serverMessage(data, "message") ||
             t("This account has no email on file. Contact support@descall.com to recover access.")
         );
         return;
       }
       setPwHint(data?.emailHint || "");
       setPwStage("code");
-      setPwNotice(data?.message || t("We sent a 6-digit code to your email."));
+      setPwNotice(serverMessage(data, "message") || t("We sent a 6-digit code to your email."));
     } catch (err) {
       const body = err?.body || {};
       if (body.status === "no_email") {
         setPwSupportEmail(body.supportEmail || "support@descall.com");
         setPwNoEmail(true);
-        setPwNotice(body.message || err.message);
+        setPwNotice(serverMessage(body, "message") || err.message);
         return;
       }
       setPwNotice(err.message || t("Could not send reset code."));
@@ -2824,9 +2826,49 @@ const UserPanel = forwardRef(function UserPanel({
       main.style.removeProperty("--g-shop-header-h");
     };
   }, [glassShell, isMobile, activeTab, mobileDetail]);
+  // Every close (Escape, ✕, a click on the dim, the swipe back) goes through one request:
+  // unsaved profile edits ask first instead of vanishing (lib/settingsClose.js).
+  // Only edits made in the Profil tab during this visit count (a draft that lags a status
+  // changed elsewhere must not make every close ask).
+  const profileVisitedRef = useRef(false);
+  if (activeTab === "profile") profileVisitedRef.current = true;
+  const profileDirtyNow = profileVisitedRef.current && profileDraftDirty({ displayName, bio, customStatus }, me);
+  const closeAskingRef = useRef(false);
+  const requestClose = useCallback(async () => {
+    if (closeAskingRef.current) return;
+    if (profileDirtyNow) {
+      closeAskingRef.current = true;
+      try {
+        const discard = await confirmAction({
+          title: t("uset.unsaved.title"),
+          message: t("uset.unsaved.body"),
+          confirmLabel: t("uset.unsaved.discard"),
+          cancelLabel: t("uset.unsaved.keep"),
+          danger: true,
+        });
+        if (!discard) return;
+      } finally {
+        closeAskingRef.current = false;
+      }
+    }
+    onClose?.();
+  }, [profileDirtyNow, onClose, t]);
+  // Settings owns its Escape. A dialog or overlay above it (username change, a confirm, the
+  // crop, the media picker, the badge vault) takes the key first and Settings stays open.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
+      if (nestedOverlayOpen(panelRef.current)) return;
+      e.preventDefault();
+      requestClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [requestClose]);
   useEdgeSwipeBack({
-    enabled: isMobile && !mobileDetail,
-    onBack: onClose,
+    // With unsaved edits the swipe is off: the ✕ asks before closing instead.
+    enabled: isMobile && !mobileDetail && !profileDirtyNow,
+    onBack: requestClose,
     surfaceRef: panelRef,
     getUnderlay: settingsUnderlay,
     // Same dim as the sheet backdrop so the hand-over is seamless.
@@ -2838,7 +2880,7 @@ const UserPanel = forwardRef(function UserPanel({
 
   const handleShellClick = (e) => {
     // Close only when the click lands outside the dialog panel
-    if (panelRef.current && !panelRef.current.contains(e.target)) onClose?.();
+    if (panelRef.current && !panelRef.current.contains(e.target)) requestClose();
   };
 
   const desktopFade = reduceMotion
@@ -2990,7 +3032,7 @@ const UserPanel = forwardRef(function UserPanel({
               <p>{t("Manage your Descall account")}</p>
             </div>
             {isMobile && (
-              <button type="button" className={`us-icon-btn${glassShell ? " g-settings-close" : ""}`} onClick={onClose} aria-label={t("Close")}>
+              <button type="button" className={`us-icon-btn${glassShell ? " g-settings-close" : ""}`} onClick={requestClose} aria-label={t("Close")}>
                 <X size={20} />
               </button>
             )}
@@ -3109,7 +3151,7 @@ const UserPanel = forwardRef(function UserPanel({
               {savingProfile ? t("Saving…") : profileSaved ? t("Saved") : t("Save")}
             </button>
           ) : (
-            <button type="button" className={`us-icon-btn${glassShell && isMobile ? " g-settings-close" : ""}`} onClick={onClose} aria-label={t("Close settings")}>
+            <button type="button" className={`us-icon-btn${glassShell && isMobile ? " g-settings-close" : ""}`} onClick={requestClose} aria-label={t("Close settings")}>
               <X size={20} />
             </button>
           )}

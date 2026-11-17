@@ -17,6 +17,7 @@ import { ACT_PT_BR } from "./act.pt-BR.js";
 import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
+import { USET_PT_BR } from "./uset.pt-BR.js";
 import { BAN_ADMIN_PT_BR } from "./banAdmin.pt-BR.js";
 import { SERVER_REVIEW_PT_BR } from "./serverReview.pt-BR.js";
 import { DOSSIER_PT_BR } from "./dossier.pt-BR.js";
@@ -64,6 +65,7 @@ export const nested = {
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
   "banAdmin": BAN_ADMIN_PT_BR,
+  "uset": USET_PT_BR,
   "serverReview": SERVER_REVIEW_PT_BR,
   "dossier": DOSSIER_PT_BR,
   "shopDesk": SHOP_DESK_PT_BR,

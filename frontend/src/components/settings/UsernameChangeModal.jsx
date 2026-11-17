@@ -43,11 +43,15 @@ export default function UsernameChangeModal({ currentUsername, onClose, onChange
   }, []);
 
   useEffect(() => {
+    // Capture + stop: Escape closes this dialog only, never the Settings window under it.
     const onKey = (e) => {
-      if (e.key === "Escape" && !busy) onClose?.();
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!busy) onClose?.();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [busy, onClose]);
 
   // Debounced availability check against the server.

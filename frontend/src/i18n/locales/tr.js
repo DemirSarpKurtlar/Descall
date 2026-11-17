@@ -13,6 +13,7 @@ import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
+import { USET_TR } from "./uset.tr.js";
 import { BAN_ADMIN_TR } from "./banAdmin.tr.js";
 import { SERVER_REVIEW_TR } from "./serverReview.tr.js";
 import { DOSSIER_TR } from "./dossier.tr.js";
@@ -93,6 +94,7 @@ export const nested = {
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
   banAdmin: BAN_ADMIN_TR,
+  uset: USET_TR,
   serverReview: SERVER_REVIEW_TR,
   dossier: DOSSIER_TR,
   shopDesk: SHOP_DESK_TR,

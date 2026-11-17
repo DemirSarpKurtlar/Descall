@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
@@ -43,6 +43,18 @@ export default function ImageCropModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const reduceMotion = useReducedMotion();
+
+  // Escape cancels the crop only (capture + stop), never the window it was opened from.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!busy) onCancel?.();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [busy, onCancel]);
 
   const onCropComplete = useCallback((_area, pixels) => {
     setCroppedAreaPixels(pixels);
