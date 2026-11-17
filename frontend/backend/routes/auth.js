@@ -93,6 +93,17 @@ async function hasSecondFactor(user) {
   return Boolean(twoFactor.methodFor(user, row));
 }
 
+/**
+ * A banned account with two-factor sign-in proves the second factor before it gets
+ * the ban answer (its ban ticket can export and delete the account). Password, Google
+ * and Apple sign-in all use this; /2fa/verify-login answers the ban.
+ */
+async function banDeferredTo2fa(user) {
+  if (!user?.is_banned) return false;
+  if (user.ban_expires_at && new Date(user.ban_expires_at).getTime() <= Date.now()) return false;
+  return hasSecondFactor(user);
+}
+
 async function secondFactorGate(res, user) {
   let row = null;
   try {
@@ -1084,8 +1095,10 @@ router.post("/google", async (req, res) => {
       console.error("[AUTH] Google lookup error:", byGoogleError);
       return res.status(500).json({ error: "Database error." });
     }
-    // Ban and access gates run before any email is linked or a 2FA code is sent.
-    if (user && (await rejectIfBanned(res, user))) return;
+    // Ban and access gates run before any email is linked or a 2FA code is sent
+    // (a banned account with two-factor gets the ban answer after its code).
+    let deferBan = user ? await banDeferredTo2fa(user) : false;
+    if (user && !deferBan && (await rejectIfBanned(res, user))) return;
     if (user && (await accessGate(req, res, { action: "oauth", user }))) return;
 
     // Link an existing account with the same email only when Descall itself has verified that
@@ -1109,9 +1122,16 @@ router.post("/google", async (req, res) => {
         if (byEmail.google_id && byEmail.google_id !== googleId) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
-        if (await rejectIfBanned(res, byEmail)) return;
+        const deferLinkBan = await banDeferredTo2fa(byEmail);
+        if (!deferLinkBan && (await rejectIfBanned(res, byEmail))) return;
         if (await accessGate(req, res, { action: "oauth", user: byEmail })) return;
-
+        if (deferLinkBan) {
+          // Banned with two-factor: the code comes first and nothing is linked.
+          deferBan = true;
+          user = byEmail;
+        }
+      }
+      if (byEmail && byEmail.email_confirmed_at && !deferBan) {
         const linkUpdate = {
           google_id: googleId,
           email,
@@ -1138,7 +1158,7 @@ router.post("/google", async (req, res) => {
     if (user && (await rejectIfChildAccount(req, res, user))) return;
     // A new account from a banned device / network is never created.
     if (!user && (await accessGate(req, res, { action: "register" }))) return;
-    if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+    if (user && !deferBan) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let newBirthDate = null;
     if (!user) {
@@ -1235,6 +1255,7 @@ router.post("/google", async (req, res) => {
 
     // Existing accounts with two-factor finish with a code (3.2.0); new ones have none yet.
     if (!isNewUser && (await secondFactorGate(res, user))) return;
+    if (deferBan && (await rejectIfBanned(res, user))) return;
 
     if (await accessGate(req, res, { action: "oauth", user })) return;
     const { session } = await createSession(user.id, {
@@ -1307,8 +1328,10 @@ router.post("/apple", async (req, res) => {
       console.error("[AUTH] Apple lookup error:", lookupError);
       return res.status(500).json({ error: "Database error." });
     }
-    // Ban and access gates run before any email is linked or a 2FA code is sent.
-    if (user && (await rejectIfBanned(res, user))) return;
+    // Ban and access gates run before any email is linked or a 2FA code is sent
+    // (a banned account with two-factor gets the ban answer after its code).
+    let deferBan = user ? await banDeferredTo2fa(user) : false;
+    if (user && !deferBan && (await rejectIfBanned(res, user))) return;
     if (user && (await accessGate(req, res, { action: "oauth", user }))) return;
 
     // Link an existing account with the same email only when Descall itself has verified that
@@ -1321,8 +1344,16 @@ router.post("/apple", async (req, res) => {
         if (byEmail.apple_sub && byEmail.apple_sub !== apple.sub) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
-        if (await rejectIfBanned(res, byEmail)) return;
+        const deferLinkBan = await banDeferredTo2fa(byEmail);
+        if (!deferLinkBan && (await rejectIfBanned(res, byEmail))) return;
         if (await accessGate(req, res, { action: "oauth", user: byEmail })) return;
+        if (deferLinkBan) {
+          // Banned with two-factor: the code comes first and nothing is linked.
+          deferBan = true;
+          user = byEmail;
+        }
+      }
+      if (byEmail && byEmail.email_confirmed_at && !deferBan) {
         const provider = String(byEmail.auth_provider || "local");
         const { data: linked, error: linkError } = await supabase
           .from("users")
@@ -1344,7 +1375,7 @@ router.post("/apple", async (req, res) => {
     if (user && (await rejectIfChildAccount(req, res, user))) return;
     // A new account from a banned device / network is never created.
     if (!user && (await accessGate(req, res, { action: "register" }))) return;
-    if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+    if (user && !deferBan) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let isNewUser = false;
     let attributionColumns = null;
@@ -1461,6 +1492,7 @@ router.post("/apple", async (req, res) => {
     }
 
     if (!isNewUser && (await secondFactorGate(res, user))) return;
+    if (deferBan && (await rejectIfBanned(res, user))) return;
 
     if (await accessGate(req, res, { action: "oauth", user })) return;
     const { session } = await createSession(user.id, {

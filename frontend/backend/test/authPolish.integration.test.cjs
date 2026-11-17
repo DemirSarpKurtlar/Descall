@@ -189,6 +189,23 @@ async function run() {
     const fayRow = fakeSupabase._tables.users.rows.find((u) => u.username === "fay");
     assert(fayRow.email === "fay@example.com" && fayRow.pending_email === "shared@example.com", "old address kept, change still pending");
 
+    // auth-14: Sign in with Apple on a banned account with two-factor asks for the
+    // code first; the ban ticket (export / delete) only comes after it.
+    const appleAuth = require("../lib/appleAuth");
+    const realVerify = appleAuth.verifyIdentityToken;
+    appleAuth.verifyIdentityToken = async () => ({ sub: "apple-sub-banny", email: null, emailVerified: false, isPrivateEmail: true });
+    try {
+      await register(base, "banny", "banny@example.com");
+      const bannyRow = fakeSupabase._tables.users.rows.find((u) => u.username === "banny");
+      Object.assign(bannyRow, { apple_sub: "apple-sub-banny", two_factor_enabled: true, is_banned: true, ban_category: "spam", ban_reason: "Spam", banned_at: new Date().toISOString(), ban_expires_at: null });
+      r = await req(base, "POST", "/api/auth/apple", { body: { identityToken: "token" } });
+      assert(r.status === 200 && r.body.requires2fa && !r.body.banTicket, "banned 2FA account gets the code step first: " + JSON.stringify(r.body).slice(0, 200));
+      r = await req(base, "POST", "/api/auth/2fa/verify-login", { body: { pendingToken: r.body.pendingToken, code: lastCode("banny@example.com") } });
+      assert(r.status === 403 && r.body.code === "ACCOUNT_BANNED" && r.body.banTicket, "ban answer after the code: " + JSON.stringify(r.body).slice(0, 200));
+    } finally {
+      appleAuth.verifyIdentityToken = realVerify;
+    }
+
     console.log("authPolish.integration.test.cjs: ok");
   } finally {
     server.close();
