@@ -448,8 +448,13 @@ function makeSocketLimiter(socket) {
   };
 }
 
-/** A disconnected socket's seat stays this long for a reconnect, then goes (V9). */
-const SEAT_RECONNECT_GRACE_MS = Number(process.env.VOICE_SEAT_GRACE_MS) || 20_000;
+/**
+ * A disconnected socket's seat stays this long for a reconnect, then goes (V9). It has
+ * to cover socket.io's dead-link detection (pingInterval + pingTimeout = 22 s) plus a
+ * couple of reconnect backoff steps, or a short radio stall drops the seat (and the
+ * peers' audio) although the media path never broke (voice-drops-01).
+ */
+const SEAT_RECONNECT_GRACE_MS = Number(process.env.VOICE_SEAT_GRACE_MS) || 45_000;
 const STAGE_REQUEST_COOLDOWN_MS = 5_000;
 
 function registerServerVoiceHandlers(io, socket) {
@@ -681,6 +686,9 @@ function registerServerVoiceHandlers(io, socket) {
         serverMuted: Boolean(mePublic.serverMuted),
         serverDeafened: Boolean(mePublic.serverDeafened),
         afkChannel: Boolean(mePublic.afkLocked),
+        // Same seat taken again (socket reconnect, media retry): clients keep their
+        // roster / media and skip the join sounds.
+        rejoin: Boolean(alreadySeated && keepSeat),
         ...(livekit ? { livekit } : {}),
       });
 
@@ -688,6 +696,7 @@ function registerServerVoiceHandlers(io, socket) {
         serverId: channel.server_id,
         channelId,
         user: mePublic,
+        rejoin: Boolean(alreadySeated && keepSeat),
       });
 
       emitChannelState(io, channel.server_id, channelId);
