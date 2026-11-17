@@ -5,6 +5,7 @@ import { X } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import { COPYRIGHT_CONTENT, PRIVACY_CONTENT, TERMS_CONTENT } from "../../legal/legalContent";
 import LegalDocument from "./LegalDocument";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const CONTENT_BY_TYPE = {
   terms: TERMS_CONTENT,
@@ -20,6 +21,8 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
   const { locale, t } = useLocale();
   const reduce = useReducedMotion();
   const scrollRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus(open, dialogRef);
   const data = CONTENT_BY_TYPE[type]?.[locale] || CONTENT_BY_TYPE[type]?.en;
 
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function LegalContentModal({ open, onClose, type = "terms" }) {
           }}
         >
           <motion.div
+            ref={dialogRef}
             className="legal-modal-card"
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

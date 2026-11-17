@@ -15,6 +15,7 @@ import { trAccusative } from "../../lib/trSuffix";
 import { useGlassShell } from "../layout/glass/GlassShell";
 import "./ProfileSheet.css";
 import { MICheck } from "./ProfileSheetIcons.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
 
 // Mockup #30: eight reasons, "Spam veya dolandırıcılık" covers spam + scam.
 export const REPORT_SHEET_REASONS = [
@@ -50,6 +51,7 @@ export default function ReportUserModal({
   const glassShell = useGlassShell();
   const layout = glassShell ? "sheet" : "form";
   const cardRef = useRef(null);
+  const alertRef = useRef(null);
   usePressFeedbackScope(cardRef, { enabled: open });
   const [reason, setReason] = useState("harassment");
   const [note, setNote] = useState("");
@@ -58,6 +60,9 @@ export default function ReportUserModal({
   // "form" → (sent) → "done"; the block alert sits on top of "done".
   const [step, setStep] = useState("form");
   const [alertOpen, setAlertOpen] = useState(false);
+  // Tab stays in the sheet (and in the block offer while it is up); focus returns on close.
+  useModalFocus(open, cardRef);
+  useModalFocus(open && alertOpen, alertRef);
   const [blockBusy, setBlockBusy] = useState(false);
   const [blockError, setBlockError] = useState("");
 
@@ -281,6 +286,7 @@ export default function ReportUserModal({
                 onClick={(e) => e.stopPropagation()}
               >
                 <motion.div
+                  ref={alertRef}
                   className="rps-alert"
                   role="alertdialog"
                   aria-modal="true"

@@ -6,6 +6,7 @@ import { useT } from "../../context/LocaleContext";
 import { getToken, setToken } from "../../lib/storage";
 import { checkUsernameAvailable, changeUsername } from "../../api/auth";
 import "./UsernameChangeModal.css";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const USERNAME_RE = /^[a-zA-Z0-9_.-]+$/;
 
@@ -24,6 +25,8 @@ export function normalizeUsernameInput(raw) {
 
 export default function UsernameChangeModal({ currentUsername, onClose, onChanged }) {
   const t = useT();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const [value, setValue] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -118,6 +121,7 @@ export default function UsernameChangeModal({ currentUsername, onClose, onChange
       onClick={() => !busy && onClose?.()}
     >
       <motion.form
+        ref={dialogRef}
         className="un-modal"
         initial={{ scale: 0.96, opacity: 0, y: 8 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}

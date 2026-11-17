@@ -46,6 +46,7 @@ import { formatDate } from "../../i18n/format";
 import "./ProfileSheet.css";
 import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL, MIBell } from "./ProfileSheetIcons.jsx";
 import { openNotifyOptions } from "../../lib/notifyPrefs";
+import useModalFocus from "../../hooks/useModalFocus";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -123,6 +124,10 @@ function UserProfileModal({
   // A2 §4.6: Engelle / Şikayet et live in a "⋯" menu at the top AND as red
   // buttons at the bottom of the profile.
   const moreRef = useRef(null);
+  // The scrim (stable while the keyed card swaps between profiles) holds focus: Tab stays in
+  // the profile, the app behind is inert, focus returns to the opener (WCAG 2.4.3).
+  const trapRef = useRef(null);
+  useModalFocus(open, trapRef);
   const [moreOpen, setMoreOpen] = useState(false);
   const [blockError, setBlockError] = useState("");
   const blockedByMe = useIsBlocked(userId);
@@ -600,6 +605,7 @@ function UserProfileModal({
         <AnimatePresence custom={dismissV.current}>
           {open && (
             <motion.div
+              ref={trapRef}
               className={`pfs-scrim${layout === "form" ? " is-form" : ""}`}
               data-testid="profile-scrim"
               initial={{ opacity: 0 }}
@@ -663,6 +669,7 @@ function UserProfileModal({
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={trapRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

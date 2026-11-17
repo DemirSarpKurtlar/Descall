@@ -89,6 +89,17 @@ export default function NewCreateModal({
   const [photo, setPhoto] = useState(null); // { file, url }
   const [cropSrc, setCropSrc] = useState("");
   const [photoError, setPhotoError] = useState("");
+  // Escape closes the sheet (the photo cropper on top handles its own Escape first).
+  useEffect(() => {
+    if (!open || cropSrc) return undefined;
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      e.preventDefault();
+      onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, cropSrc, onClose]);
   // UI audit #90: "‹" only when there is a previous step (the sheet was opened
   // on the start screen); opened straight on "Grup oluştur" it only closes.
   const [openedOn, setOpenedOn] = useState(null);
