@@ -205,6 +205,7 @@ import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
+import { applyPeerRead } from "./lib/readReceipts";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
@@ -672,6 +673,32 @@ export default function App() {
   const socketRef = useRef(null);
   const serverSocketUnbindRef = useRef(null);
   const activeDmRef = useRef(null);
+  // Polish messaging-03: a DM that got messages while the window was hidden is
+  // marked read ("Görüldü") only once the window is visible again.
+  const pendingDmReadRef = useRef(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const flush = () => {
+      if (document.visibilityState !== "visible") return;
+      const peerId = pendingDmReadRef.current;
+      if (!peerId) return;
+      pendingDmReadRef.current = null;
+      if (activeDmRef.current?.id !== peerId) return;
+      setDmUnread((prev) => {
+        if (!prev[peerId]) return prev;
+        const n = { ...prev };
+        delete n[peerId];
+        return n;
+      });
+      socketRef.current?.emit("dm:mark_read", { withUserId: peerId });
+    };
+    document.addEventListener("visibilitychange", flush);
+    window.addEventListener("focus", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", flush);
+      window.removeEventListener("focus", flush);
+    };
+  }, []);
   const activeGroupRef = useRef(null);
   const activeChannelRef = useRef(null);
   const activeServerRef = useRef(null);
@@ -1848,6 +1875,8 @@ export default function App() {
     socket.on("typing:update", (payload = {}) => {
       const { context, fromUser, typing, groupId, channelId } = payload;
       if (!fromUser?.id || fromUser.id === myIdRef.current) return;
+      // Never show someone I blocked typing (polish messaging-14).
+      if (typing && isBlockedByMe(fromUser.id)) return;
       if (context === "dm") {
         const peer = activeDmRef.current;
         if (!peer || peer.id !== fromUser.id) {
@@ -2150,6 +2179,16 @@ export default function App() {
     socket.on("dm:message:edited", ({ messageId, newText, editedAt, withUserId } = {}) => {
       if (!messageId) return;
       const stamp = editedAt || new Date().toISOString();
+      {
+        // The chat list shows the newest text (polish messaging-11).
+        const all = dmByUserIdRef.current || {};
+        const peer = withUserId && all[withUserId] ? withUserId : Object.keys(all).find((k) => all[k]?.some?.((m) => m.id === messageId));
+        const list = peer ? all[peer] : null;
+        if (list?.length && list[list.length - 1]?.id === messageId) {
+          const preview = previewMediaBody({ ...list[list.length - 1], text: newText }, t);
+          setDmPreviews((prev) => ({ ...prev, [peer]: preview }));
+        }
+      }
       setDmByUserId((prev) => {
         const patch = (list) => list.map((m) => (
           m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
@@ -2171,6 +2210,14 @@ export default function App() {
 
     socket.on("dm:message:deleted", ({ messageId, withUserId } = {}) => {
       if (!messageId || !withUserId) return;
+      {
+        // A deleted newest message must leave the chat list too (polish messaging-11).
+        const list = dmByUserIdRef.current?.[withUserId];
+        if (list?.length && list[list.length - 1]?.id === messageId) {
+          const last = list.length > 1 ? list[list.length - 2] : null;
+          setDmPreviews((prev) => ({ ...prev, [withUserId]: last ? previewMediaBody(last, t) : "" }));
+        }
+      }
       setDmByUserId((prev) => {
         const cur = prev[withUserId];
         if (!cur?.length) return prev;
@@ -2231,6 +2278,22 @@ export default function App() {
               avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
+        } else if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+          // Open chat but the window is minimised / in the tray / a background tab:
+          // count it as unread and keep "Görüldü" back until the window is seen again.
+          pendingDmReadRef.current = convWith;
+          setDmUnread((prev) => ({ ...prev, [convWith]: (prev[convWith] || 0) + 1 }));
+          setUnreadMarker((prev) => (prev?.key === `dm:${convWith}` ? { ...prev, count: (prev.count || 0) + 1 } : { key: `dm:${convWith}`, count: 1 }));
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
+            notificationService.newMessage({
+              from: normalizedMsg.from?.username || t("Someone"),
+              text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
+              preview: message.text?.substring(0, 100),
+              conversationId: convWith,
+              fromId: normalizedMsg.from?.id || convWith,
+              avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
+            });
+          }
         } else {
           setDmUnread((prev) => {
             if (!prev[convWith]) return prev;
@@ -2239,7 +2302,7 @@ export default function App() {
             return n;
           });
           socket.emit("dm:mark_read", { withUserId: convWith });
-          // Open chat but window hidden / in tray / unfocused: still notify.
+          // Open chat, visible but unfocused: still notify.
           // notificationService drops it while the window is focused.
           if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             notificationService.newMessage({
@@ -2482,6 +2545,14 @@ export default function App() {
     socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt, editedBy } = {}) => {
       if (!messageId || !groupId || !editedBy) return;
       const stamp = editedAt || new Date().toISOString();
+      {
+        const list = groupMessagesRef.current?.[groupId];
+        const lastMsg = list?.length ? list[list.length - 1] : null;
+        if (lastMsg?.id === messageId && lastMsg.from?.id === editedBy) {
+          const preview = formatGroupPreviewFromMsg({ ...lastMsg, text: newText }, t, myIdRef.current);
+          if (preview) setGroupPreviews((prev) => ({ ...prev, [groupId]: preview }));
+        }
+      }
       setGroupMessagesById((prev) => {
         // Only this group, and only the message's own sender may rewrite it.
         const cur = prev[groupId];
@@ -2498,6 +2569,13 @@ export default function App() {
 
     socket.on("group:message:deleted", ({ messageId, groupId } = {}) => {
       if (!messageId || !groupId) return;
+      {
+        const list = groupMessagesRef.current?.[groupId];
+        if (list?.length && list[list.length - 1]?.id === messageId) {
+          const last = list.length > 1 ? list[list.length - 2] : null;
+          setGroupPreviews((prev) => ({ ...prev, [groupId]: (last && formatGroupPreviewFromMsg(last, t, myIdRef.current)) || "" }));
+        }
+      }
       setGroupMessagesById((prev) => {
         const cur = prev[groupId];
         if (!cur?.length) return prev;
@@ -2522,6 +2600,8 @@ export default function App() {
         messageId,
       } = payload;
       if (payload.fromId && isBlockedByMe(payload.fromId)) return;
+      // A group I am not in (polish messaging-19; the server now filters this too).
+      if (groupId && myGroupsRef.current.length && !myGroupsRef.current.some((g) => g.id === groupId)) return;
       if (channelId && isChannelMuted(channelId)) return;
       if (serverId && getServerNotificationLevel(serverId) === "muted") return;
       if (
@@ -2879,6 +2959,8 @@ export default function App() {
 
     socket.on("dm:unread:sync", ({ peerId, count } = {}) => {
       if (!peerId) return;
+      // The server zeroes an open chat; while the window is hidden it stays unread here.
+      if (count === 0 && pendingDmReadRef.current === peerId) return;
       setDmUnread((prev) => { const n = { ...prev }; if (count === 0) delete n[peerId]; else n[peerId] = count; return n; });
     });
 
@@ -2887,8 +2969,8 @@ export default function App() {
       setDmByUserId((prev) => {
         const cur = prev[peerId];
         if (!cur) return prev;
-        const selfId = myIdRef.current;
-        return { ...prev, [peerId]: cur.map((m) => m.from?.id === selfId && m.to?.id === peerId ? { ...m, readAt: m.readAt || at } : m) };
+        const next = applyPeerRead(cur, myIdRef.current, at);
+        return next === cur ? prev : { ...prev, [peerId]: next };
       });
     });
 
@@ -4616,7 +4698,8 @@ export default function App() {
       const cachedActivity = lastCached?.timestamp || lastCached?.created_at || null;
       return {
         ...f,
-        lastMessage: dmPreviews[f.id] || f.lastMessage || cachedPreview || null,
+        // "" = the newest message was deleted and none is left (polish messaging-11).
+        lastMessage: dmPreviews[f.id] === "" ? null : (dmPreviews[f.id] || f.lastMessage || cachedPreview || null),
         lastActivity: dmLastActivity[f.id] || f.lastActivity || cachedActivity || null,
         unreadCount: dmUnread[f.id] || 0,
       };
@@ -4633,7 +4716,7 @@ export default function App() {
       const cachedActivity = lastCached?.timestamp || lastCached?.created_at || null;
       return {
         ...g,
-        lastMessage: groupPreviews[g.id] || g.lastMessage || cachedPreview || null,
+        lastMessage: groupPreviews[g.id] === "" ? null : (groupPreviews[g.id] || g.lastMessage || cachedPreview || null),
         lastActivity:
           groupLastActivity[g.id] || g.lastActivity || cachedActivity || g.updated_at || g.created_at || null,
         unreadCount: groupUnread[g.id] || 0,

@@ -181,7 +181,10 @@ function startServer() {
       const peer = p.toUserId === MERT.id ? MERT : AYSE;
       const m = { ...dm(ME, peer, p.text || '', 0), tempId: p.tempId, convWith: peer.id, replyTo: p.forwarded ? { forwarded: true } : p.replyTo || null };
       (peer === MERT ? state.mert : state.ayse).push(m);
-      socket.emit('dm:message', m);
+      // Like the real server's live echo before 17 Nov: no `to` on the row, so
+      // "Görüldü" must not depend on it (polish messaging-02).
+      const { to: _to, ...live } = m;
+      socket.emit('dm:message', live);
     });
     socket.on('group:message', (p = {}) => {
       const row = { id: `p4-g-${Date.now()}`, group_id: GROUP_ID, sender_id: ME.id, sender: sender(ME), content: p.content || '', created_at: new Date().toISOString(), reply_to: p.forwarded ? { forwarded: true } : p.replyTo || null };

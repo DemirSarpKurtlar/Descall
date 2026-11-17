@@ -54,6 +54,25 @@ export function lastOwnMessage(messages, myId) {
 }
 
 /** { id, at } for the DM "Görüldü" line, or null. Only my newest message carries it. */
+/**
+ * dm:peer_read: the peer read the chat at `at`, so my sent rows up to then are read.
+ * Live rows carry no `to` (polish messaging-02), so only the sender is checked;
+ * rows still sending / failed and rows newer than `at` (+2 s) stay unread.
+ */
+export function applyPeerRead(list, myId, at) {
+  if (!Array.isArray(list) || !myId) return list;
+  const limit = at ? Date.parse(at) + 2000 : NaN;
+  let changed = false;
+  const next = list.map((m) => {
+    if (!m || m.from?.id !== myId || m.readAt || m.sending || m.failed) return m;
+    if (String(m.id || "").startsWith("temp-")) return m;
+    if (Number.isFinite(limit) && m.timestamp && Date.parse(m.timestamp) > limit) return m;
+    changed = true;
+    return { ...m, readAt: at || new Date().toISOString() };
+  });
+  return changed ? next : list;
+}
+
 export function dmSeen(messages, myId) {
   const own = lastOwnMessage(messages, myId);
   if (!own?.readAt) return null;
