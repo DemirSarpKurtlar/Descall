@@ -2592,6 +2592,13 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   white-space: nowrap;
   max-width: 140px;
 }
+/* Friends search with no match (polish world-social-18). */
+.friends-search-empty {
+  margin: 10px 12px;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  text-align: center;
+}
 .sidebar-empty-friends {
   display: flex;
   flex-direction: column;

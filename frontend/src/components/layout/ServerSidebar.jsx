@@ -53,6 +53,7 @@ import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import useGlassUi from "../../hooks/useGlassUi";
 import { requestChatPrefetch } from "../../lib/chatPrefetch";
 import { isContextMenuKey, menuArrowKeys, useKeyboardMenuFocus } from "../../lib/menuKeys";
+import { friendMatcher, foldIncludes } from "../../lib/friendFilter";
 
 
 
@@ -276,18 +277,14 @@ export default function ServerSidebar({
   const filteredDms = useMemo(() => {
     if (!Array.isArray(dms)) return [];
     if (!searchQuery) return dms;
-    return dms.filter(dm => 
-      (dm.displayName || dm.username || "").toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return dms.filter((dm) => foldIncludes(dm.displayName || dm.username || "", searchQuery));
   }, [dms, searchQuery]);
 
 
   const filteredGroups = useMemo(() => {
     if (!Array.isArray(groups)) return [];
     if (!searchQuery) return groups;
-    return groups.filter(group =>
-      group.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return groups.filter((group) => foldIncludes(group.name || "", searchQuery));
   }, [groups, searchQuery]);
 
   const toggleSection = (section) => {
@@ -1077,7 +1074,7 @@ function SwipeableDmRow({
           </button>
           <button type="button" className="group-swipe-btn mute" onClick={() => onAction?.("mute")}>
             {dm.muted ? <Bell size={15} /> : <BellOff size={15} />}
-            <span>{dm.muted ? t("Unmute") : t("Mute")}</span>
+            <span>{dm.muted ? t("Unmute chat") : t("Mute chat")}</span>
           </button>
           <button type="button" className="group-swipe-btn unread" onClick={() => onAction?.("unread")}>
             {unread > 0 ? <MailOpen size={15} /> : <Mail size={15} />}
@@ -1239,7 +1236,7 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
         onMouseLeave={(e) => e.currentTarget.style.background = "none"}
       >
         {dm.muted ? <Bell size={14} style={{ color: "var(--text-muted)" }} /> : <BellOff size={14} style={{ color: "var(--text-muted)" }} />}
-        {dm.muted ? t("Unmute") : t("Mute")}
+        {dm.muted ? t("Unmute chat") : t("Mute chat")}
       </button>
       <button
         type="button"
@@ -1934,25 +1931,18 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
   const onlineFriends = safeFriends.filter((f) => isVisiblyOnline(safeOnlineUsers, f.id));
   const offlineFriends = safeFriends.filter((f) => !isVisiblyOnline(safeOnlineUsers, f.id));
 
+  // The "Ara" field filters every layout, Turkish-aware (polish world-social-18).
+  const searching = Boolean(String(searchQuery || "").trim());
+  const matches = friendMatcher(searchQuery);
+  const pendingShown = pendingRequests.filter(matches);
+  const messageShown = pendingMessages.filter(matches);
+  const onlineShown = onlineFriends.filter(matches);
+  const offlineShown = offlineFriends.filter(matches);
+  const noResults = searching
+    && (safeFriends.length + pendingRequests.length + pendingMessages.length) > 0
+    && onlineShown.length + offlineShown.length + pendingShown.length + messageShown.length === 0;
+
   if (glassShell) {
-    const q = String(searchQuery || "").trim().toLowerCase();
-    const matches = (friend) => {
-      if (!q) return true;
-      const name = resolveDisplayName(friend).toLowerCase();
-      const handle = String(friend.username || "").toLowerCase();
-      const custom = String(friend.customStatus || friend.custom_status || "").toLowerCase();
-      return name.includes(q) || handle.includes(q) || custom.includes(q);
-    };
-    const pendingShown = pendingRequests.filter(matches);
-    const messageShown = pendingMessages.filter((req) => {
-      if (!q) return true;
-      const name = resolveDisplayName(req).toLowerCase();
-      const handle = String(req.username || "").toLowerCase();
-      const preview = String(req.preview || "").toLowerCase();
-      return name.includes(q) || handle.includes(q) || preview.includes(q);
-    });
-    const onlineShown = onlineFriends.filter(matches);
-    const offlineShown = offlineFriends.filter(matches);
     const friendSub = (friend) => {
       const custom = friend.customStatus || friend.custom_status;
       if (custom) return custom;
@@ -2118,12 +2108,12 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 <InviteCard username={me.username} compact />
               </div>
             )}
-            {pendingRequests.length > 0 && (
+            {pendingShown.length > 0 && (
               <div className="friend-category">
                 <span className="category-label" style={{ color: "var(--warning)" }}>
-                  {t("Pending, {count}", { count: pendingRequests.length })}
+                  {t("Pending, {count}", { count: pendingShown.length })}
                 </span>
-                {pendingRequests.map((req) => (
+                {pendingShown.map((req) => (
                   <div
                     key={req.id}
                     style={{
@@ -2182,12 +2172,12 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 ))}
               </div>
             )}
-            {pendingMessages.length > 0 && (
+            {messageShown.length > 0 && (
               <div className="friend-category">
                 <span className="category-label" style={{ color: "var(--warning)" }}>
-                  {t("Message requests, {count}", { count: pendingMessages.length })}
+                  {t("Message requests, {count}", { count: messageShown.length })}
                 </span>
-                {pendingMessages.map((req) => (
+                {messageShown.map((req) => (
                   <div
                     key={req.id}
                     style={{
@@ -2250,10 +2240,10 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
               </div>
             )}
 
-            {onlineFriends.length > 0 && (
+            {onlineShown.length > 0 && (
               <div className="friend-category">
-                <span className="category-label">{t("Online, {count}", { count: onlineFriends.length })}</span>
-                {onlineFriends.map((friend) => (
+                <span className="category-label">{t("Online, {count}", { count: onlineShown.length })}</span>
+                {onlineShown.map((friend) => (
                   <motion.button
                     key={friend.id}
                     className="friend-item"
@@ -2288,10 +2278,10 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
               </div>
             )}
 
-            {offlineFriends.length > 0 && (
+            {offlineShown.length > 0 && (
               <div className="friend-category">
-                <span className="category-label">{t("Offline, {count}", { count: offlineFriends.length })}</span>
-                {offlineFriends.map((friend) => (
+                <span className="category-label">{t("Offline, {count}", { count: offlineShown.length })}</span>
+                {offlineShown.map((friend) => (
                   <motion.button
                     key={friend.id}
                     className="friend-item offline"
@@ -2333,6 +2323,8 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 body={t("Share your invite link, friends join free and connect with you instantly.")}
                 primary={{ label: t("Add friend"), action: onQuickAdd }}
               />
+            ) : noResults ? (
+              <p className="friends-search-empty">{t("No results")}</p>
             ) : null}
       </SidebarSectionContent>
     </div>
