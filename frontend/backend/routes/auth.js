@@ -1513,7 +1513,7 @@ router.get("/me", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] /me error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -1563,7 +1563,7 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] /users/:userId error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 

@@ -141,7 +141,7 @@ router.post("/request", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend request sent" });
   } catch (err) {
     console.error("Friend request error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -152,7 +152,7 @@ router.post("/accept", requireAuth, async (req, res) => {
     const userId = req.user.id;
 
     if (!fromUserId) {
-      return res.status(400).json({ error: "fromUserId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     // Check if request exists first
@@ -226,7 +226,7 @@ router.post("/accept", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend request accepted" });
   } catch (err) {
     console.error("[Friends] Accept error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -237,7 +237,7 @@ router.post("/decline", requireAuth, async (req, res) => {
     const userId = req.user.id;
 
     if (!fromUserId) {
-      return res.status(400).json({ error: "fromUserId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     // Delete friend request
@@ -262,7 +262,7 @@ router.post("/decline", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend request declined" });
   } catch (err) {
     console.error("Decline friend error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -275,7 +275,7 @@ router.post("/remove", requireAuth, async (req, res) => {
     // friendId goes into a PostgREST or() filter on a DELETE: only a plain id (no PostgREST
     // syntax) may reach it (security scan 17 Nov 2026, P0: a crafted value matched every row).
     if (!friendId || typeof friendId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(friendId)) {
-      return res.status(400).json({ error: "friendId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     // Delete friendship
@@ -301,7 +301,7 @@ router.post("/remove", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend removed" });
   } catch (err) {
     console.error("Remove friend error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -362,7 +362,7 @@ router.get("/list", requireAuth, async (req, res) => {
     res.json({ friends: friendSince.newestFirst(formattedFriends, "friendsSince") });
   } catch (err) {
     console.error("Get friends error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -410,7 +410,7 @@ router.get("/requests", requireAuth, async (req, res) => {
     res.json({ requests: friendSince.newestFirst(formattedRequests, "requestedAt") });
   } catch (err) {
     console.error("Get friend requests error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -501,7 +501,7 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
     res.json({ mutualFriends, count: mutualFriends.length, mutualServers });
   } catch (err) {
     console.error("Mutual friends error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -631,7 +631,7 @@ router.get("/suggestions", requireAuth, async (req, res) => {
     res.json({ suggestions });
   } catch (err) {
     console.error("[Friends] suggestions error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -644,7 +644,7 @@ router.post("/block", requireAuth, async (req, res) => {
   try {
     const { userId: targetId } = req.body ?? {};
     if (typeof targetId !== "string" || !targetId) {
-      return res.status(400).json({ error: "userId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
     if (targetId === req.user.id) {
       return res.status(400).json({ error: "You cannot block yourself" });
@@ -663,7 +663,7 @@ router.post("/block", requireAuth, async (req, res) => {
     res.json({ success: true, blockedUsers: result.blockedUsers });
   } catch (err) {
     console.error("Block user error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -671,14 +671,14 @@ router.post("/unblock", requireAuth, async (req, res) => {
   try {
     const { userId: targetId } = req.body ?? {};
     if (typeof targetId !== "string" || !targetId) {
-      return res.status(400).json({ error: "userId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
     const result = await unblockUser(req.user.id, targetId);
     if (!result.ok) return res.status(400).json({ error: result.error });
     res.json({ success: true, blockedUsers: result.blockedUsers });
   } catch (err) {
     console.error("Unblock user error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -701,7 +701,7 @@ router.get("/blocked", requireAuth, async (req, res) => {
     res.json({ blocked });
   } catch (err) {
     console.error("List blocked users error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 

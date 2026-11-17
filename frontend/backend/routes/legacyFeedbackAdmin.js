@@ -20,7 +20,7 @@ router.use(requireAuth, requireAdmin, requireAdmin2fa, requireStepUp, requireSec
 
 function fail(res, tag, err) {
   console.error(`[FEEDBACK] ${tag} failed:`, err?.message || err);
-  return res.status(500).json({ success: false, error: "Internal server error" });
+  return res.status(500).json({ success: false, error: "Internal server error." });
 }
 
 router.get("/list", async (_req, res) => {

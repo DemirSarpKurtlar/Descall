@@ -728,7 +728,7 @@ router.post("/:groupId/invite", requireAuth, async (req, res) => {
     const invitedIdentity = invitedUserId || invitedUsername || username;
 
     if (!invitedIdentity) {
-      return res.status(400).json({ error: "invitedUserId or username required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     let resolvedInvitedUserId = invitedIdentity;
@@ -860,7 +860,7 @@ router.post("/:groupId/members", requireAuth, async (req, res) => {
     const { groupId } = req.params;
     const targetUserId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
 
-    if (!targetUserId || !isSafeId(targetUserId)) return res.status(400).json({ error: "userId required" });
+    if (!targetUserId || !isSafeId(targetUserId)) return res.status(400).json({ error: "Invalid request." });
     if (targetUserId === requesterId) return res.status(400).json({ error: "You are already a member" });
 
     // Requester must be a member
