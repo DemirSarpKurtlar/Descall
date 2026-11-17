@@ -739,6 +739,18 @@ html.glass-desktop .ccs-card :focus-visible {
   padding: 4px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(28, 29, 41, 0), #1c1d29 16px);
 }
+/* Desktop on a short window (1280x800): the card scrolls, so the buttons and the footer
+   ("Ozet ayarlari", "Bir daha gosterme") stay in view instead of sitting below the fold. */
+@media (max-height: 860px) {
+  .ccs-card.is-desk:not(.is-preview) .ccs-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 0 -24px;
+    padding: 12px 24px 2px;
+    background: linear-gradient(180deg, rgba(28, 29, 41, 0), #1c1d29 14px);
+  }
+}
 .ccs-card.is-sheet .ccs-perf {
   margin-left: -16px;
   margin-right: -16px;
