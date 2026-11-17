@@ -30,6 +30,7 @@ import { serverHasPermission, serverPermissionsLoaded, isAssignableServerRole, c
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import ReportUserModal from "../social/ReportUserModal";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
+import { userTextLang } from "../../lib/userTextLang";
 
 function colorToHex(color) {
   const n = Math.max(0, Math.min(0xffffff, Number(color) || 0));
@@ -291,6 +292,7 @@ export default function ServerMembersPanel({
         sections.push({
           key: role.id,
           label: role.name,
+          userLabel: true,
           members: membersInRole,
           roleColor: colorToHex(role.color),
         });
@@ -581,6 +583,7 @@ export default function ServerMembersPanel({
               <section key={section.key} className="members-section">
                 <h5
                   className="members-section-label"
+                  lang={section.userLabel ? userTextLang(section.label) : undefined}
                   style={section.roleColor ? { color: section.roleColor } : undefined}
                 >
                   {section.label}

@@ -11,6 +11,7 @@ import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { userTextLang } from "../../lib/userTextLang";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
 import ImageCropModal from "../ui/LazyImageCropModal";
@@ -1384,7 +1385,7 @@ export default function ServersSidebar({
                         }
                       >
                         {closed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                        <span>{node.name}</span>
+                        <span lang={userTextLang(node.name)}>{node.name}</span>
                       </button>
                       {canManageChannels || canManageRoles ? (
                         <div className="server-channel-cat-actions">
@@ -1939,7 +1940,7 @@ export default function ServersSidebar({
                       >
                         {closed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
                         <Folder size={14} />
-                        <span>{folder.name}</span>
+                        <span lang={userTextLang(folder.name)}>{folder.name}</span>
                         <span className="server-folder-count">{folder.servers.length}</span>
                       </button>
                       <button
@@ -2619,7 +2620,7 @@ function CursorContextMenu({ x, y, title = "", onClose, children }) {
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {title ? <div className="server-voice-member-menu-title">{title}</div> : null}
+      {title ? <div className="server-voice-member-menu-title" lang={userTextLang(title)}>{title}</div> : null}
       {children}
     </div>,
     document.body

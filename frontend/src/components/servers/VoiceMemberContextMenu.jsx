@@ -18,6 +18,7 @@ import {
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { userTextLang } from "../../lib/userTextLang";
 import { placeContextMenu } from "../../lib/contextMenuPlacement";
 import { armVoiceModFeedback, VOICE_MOD_ERROR_EVENT } from "../../lib/voiceModFeedback";
 import GlassVolumeSlider from "../ui/GlassVolumeSlider";
@@ -137,7 +138,7 @@ export default function VoiceMemberContextMenu({
 
   const mainPage = (
     <>
-      <div className="server-voice-member-menu-title">{name}</div>
+      <div className="server-voice-member-menu-title" lang={userTextLang(name)}>{name}</div>
       {typeof voiceVolumeHandler === "function" && (
         <div className="server-voice-menu-slider">
           <span>{t("Volume")}</span>
