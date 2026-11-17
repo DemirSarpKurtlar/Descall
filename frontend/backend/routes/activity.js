@@ -31,6 +31,10 @@ router.get('/history', requireAuth, async (req, res) => {
 // ─── GET friend's activity history (privacy-gated) ───────────────────────────
 router.get('/friend/:userId/history', requireAuth, async (req, res) => {
   const { userId } = req.params;
+  // userId is used inside a PostgREST or() filter below: plain ids only (no PostgREST syntax).
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(userId))) {
+    return res.sendStatus(400);
+  }
 
   const { data: settings } = await supabase
     .from('user_activity_settings')
@@ -66,6 +70,10 @@ router.get('/friend/:userId/history', requireAuth, async (req, res) => {
 // ─── GET friend's current presence (privacy-gated) ───────────────────────────
 router.get('/friend/:userId/presence', requireAuth, async (req, res) => {
   const { userId } = req.params;
+  // userId is used inside a PostgREST or() filter below: plain ids only (no PostgREST syntax).
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(userId))) {
+    return res.sendStatus(400);
+  }
 
   const { data: settings } = await supabase
     .from('user_activity_settings')

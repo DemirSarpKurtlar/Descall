@@ -261,7 +261,9 @@ router.post("/remove", requireAuth, async (req, res) => {
     const { friendId } = req.body;
     const userId = req.user.id;
 
-    if (!friendId) {
+    // friendId goes into a PostgREST or() filter on a DELETE: only a plain id (no PostgREST
+    // syntax) may reach it (security scan 17 Nov 2026, P0: a crafted value matched every row).
+    if (!friendId || typeof friendId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(friendId)) {
       return res.status(400).json({ error: "friendId is required" });
     }
 

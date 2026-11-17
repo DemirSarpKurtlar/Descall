@@ -586,7 +586,12 @@ async function createPendingFriendshipInDB(requesterId, targetId) {
 }
 
 // Remove friendship from the 'friends' table (both directions)
+const FRIEND_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
 async function removeFriendshipFromDB(userId, friendId) {
+  // Both ids go into a PostgREST or() filter: anything with PostgREST syntax could widen the DELETE to
+  // every row (security scan 17 Nov 2026, P0). Never run it with anything else.
+  if (!FRIEND_ID_RE.test(String(userId)) || !FRIEND_ID_RE.test(String(friendId))) return false;
   try {
     const { error } = await supabase
       .from("friendships")
@@ -1106,7 +1111,7 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("friend:remove", async ({ friendId } = {}) => {
-      if (typeof friendId !== "string") return;
+      if (typeof friendId !== "string" || !FRIEND_ID_RE.test(friendId)) return;
       const a = friends.get(myId);
       const b = friends.get(friendId);
       if (a) a.delete(friendId);
@@ -2072,7 +2077,7 @@ function registerSocketHandlers(io) {
           // A stored message (uuid id) must live in that channel; a foreign
           // messageId used to be accepted. Live-only app/game messages have
           // non-uuid ids, are never stored, and keep working as before.
-          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(messageId))) {
+          if (/^[A-Za-z0-9_-]{1,64}$/.test(String(messageId))) {
             const { data: msg } = await supabase
               .from("server_messages")
               .select("id")

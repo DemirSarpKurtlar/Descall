@@ -11,6 +11,14 @@ require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 // Sentry must load before express/routes so it can instrument them (no-op without SENTRY_DSN).
 const { setupSentryExpressErrorHandler } = require("./instrument");
 
+// A throw inside an async socket or timer handler must never take the whole server (and every
+// voice seat and call with it) down: Node 22 exits on an unhandled rejection by default.
+// Log it and keep serving (security scan 17 Nov 2026: group:message with non-string content).
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason && reason.stack ? reason.stack : reason);
+  try { require("@sentry/node").captureException(reason); } catch { /* Sentry optional */ }
+});
+
 const express = require("express");
 const http = require("http");
 const { normalizeLocale: normalizeUiLocale } = require("./lib/locales");
