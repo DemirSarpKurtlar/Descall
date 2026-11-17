@@ -1787,10 +1787,31 @@ function registerSocketHandlers(io) {
       }
     });
 
+    // Call signalling (answer / ICE / media state / screen share) is relayed only to someone
+    // this user has a tracked call with, or to a friend (a call that outlived a server
+    // restart has no tracked state); never to strangers or blocked pairs, and with bounded
+    // payloads (security scan 17 Nov 2026: any user id was accepted).
+    const MAX_SIGNAL_JSON = 64 * 1024;
+    const MAX_ICE_JSON = 8 * 1024;
+    const signalSize = (value) => {
+      try {
+        return JSON.stringify(value).length;
+      } catch {
+        return Infinity;
+      }
+    };
+    const mayCallSignal = (toUserId) => {
+      if (typeof toUserId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(toUserId) || toUserId === myId) return false;
+      if (dmBlockPairs.has(convKey(myId, toUserId))) return false;
+      if (getPendingCall(myId, toUserId) || getPendingCall(toUserId, myId) || isActiveDmCall(myId, toUserId)) return true;
+      return Boolean(friends.get(myId)?.has(toUserId));
+    };
+
     socket.on("call:answer", ({ toUserId, answer } = {}, ack) => {
       // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
       if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string" || !answer) return;
+      if (!mayCallSignal(toUserId) || signalSize(answer) > MAX_SIGNAL_JSON) return;
       const ringing = getPendingCall(toUserId, myId);
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
@@ -1835,6 +1856,7 @@ function registerSocketHandlers(io) {
 
     socket.on("call:ice-candidate", ({ toUserId, candidate } = {}) => {
       if (typeof toUserId !== "string" || !candidate) return;
+      if (!mayCallSignal(toUserId) || signalSize(candidate) > MAX_ICE_JSON) return;
       bufferCallerIce({ callerId: myId, calleeId: toUserId, candidate });
       bufferCalleeIce({ fromId: myId, toId: toUserId, candidate });
       emitToUser(io, toUserId, "call:ice-candidate", {
@@ -1986,8 +2008,9 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("screen:share-start", ({ toUserId, screen } = {}) => {
-      if (typeof toUserId !== "string") return;
-      dmScreenSharingUsers.add(myId);
+      if (typeof toUserId !== "string" || !mayCallSignal(toUserId)) return;
+      // Screen-share DesCoin is earned only while the DM call is really connected.
+      if (isActiveDmCall(myId, toUserId)) dmScreenSharingUsers.add(myId);
       const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
       const announced = sanitizeScreenAnnouncement(screen);
       emitToUser(io, toUserId, "screen:share-start", {
@@ -1997,8 +2020,8 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("screen:share-stop", ({ toUserId } = {}) => {
-      if (typeof toUserId !== "string") return;
       dmScreenSharingUsers.delete(myId);
+      if (typeof toUserId !== "string" || !mayCallSignal(toUserId)) return;
       emitToUser(io, toUserId, "screen:share-stop", { fromUserId: myId });
     });
 
@@ -2010,7 +2033,7 @@ function registerSocketHandlers(io) {
     // `deafened` and `requestState` (ask the peer to re-send its state, e.g.
     // after this client connected or its socket reconnected) are optional.
     socket.on("call:media-state", ({ toUserId, muted, cameraOn, deafened, requestState, sending } = {}) => {
-      if (typeof toUserId !== "string") return;
+      if (typeof toUserId !== "string" || !mayCallSignal(toUserId)) return;
       emitToUser(io, toUserId, "call:media-state", {
         fromUserId: myId,
         muted: Boolean(muted),
