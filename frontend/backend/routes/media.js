@@ -9,7 +9,7 @@ const privateMedia = require("../lib/privateMedia");
 const { recordFailure } = require("../lib/rateLimit");
 const voiceTranscode = require("../lib/voiceTranscode");
 const { safeExtension, uploadConcurrencyGate } = require("../lib/uploadGuard");
-const { templatedError } = require("../lib/apiError");
+const { apiError, templatedError } = require("../lib/apiError");
 const { applyGifCrop } = require("../lib/gifCrop");
 const QRCode = require("qrcode");
 
@@ -60,7 +60,7 @@ const upload = multer({
       file.mimetype = base;
       return cb(null, true);
     }
-    cb(templatedError("File type {type} is not allowed.", { type: file.mimetype }));
+    cb(templatedError("File type {type} is not allowed.", { type: file.mimetype }, { status: 415, code: "FILE_TYPE_NOT_ALLOWED" }));
   },
 });
 
@@ -346,6 +346,23 @@ router.post("/banner-image", uploadGate, upload.single("banner"), async (req, re
     console.error("[MEDIA] Banner image upload error:", err);
     res.status(500).json({ error: "upload_failed" });
   }
+});
+
+// Upload errors answer with a status and a code the client translates (polish
+// messaging-12): a too large file or a refused type used to fall through to the
+// global handler as 500 "Internal server error.".
+router.use((err, _req, res, next) => {
+  if (!err) return next();
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json(apiError("File is too large (max {max} MB).", { max: Math.round(MAX_FILE_SIZE / (1024 * 1024)) }, { code: "FILE_TOO_LARGE" }));
+  }
+  if (err.code === "FILE_TYPE_NOT_ALLOWED") {
+    return res.status(415).json({ error: err.message, code: "FILE_TYPE_NOT_ALLOWED", ...(err.i18n || {}) });
+  }
+  if (err.name === "MulterError") {
+    return res.status(400).json({ error: "Upload failed.", code: err.code || "UPLOAD_FAILED" });
+  }
+  return next(err);
 });
 
 module.exports = router;

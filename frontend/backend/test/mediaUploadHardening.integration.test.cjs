@@ -57,6 +57,14 @@ const keys = () => [...(fake.storage._buckets.media?.keys() || [])];
 
     res = await fetch(`${base}/api/media/upload`, { method: "POST", body: new FormData() });
     assert.equal(res.status, 401, "anonymous upload refused");
+
+    // Polish messaging-12: a refused type is a 415 with a code, not the global 500.
+    fd = new FormData();
+    fd.append("purpose", "message");
+    fd.append("file", new Blob([Buffer.from("MZ")], { type: "application/x-msdownload" }), "setup.exe");
+    res = await send(fd);
+    assert.equal(res.status, 415, "a refused file type answers 415");
+    assert.equal((await res.json()).code, "FILE_TYPE_NOT_ALLOWED");
     console.log("mediaUploadHardening: all checks passed");
   } finally {
     server.close();

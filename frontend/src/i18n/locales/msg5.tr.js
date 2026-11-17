@@ -37,4 +37,28 @@ export const MSG5_TR = {
     imageFailed: "Görsel yüklenemedi",
     videoFailed: "Video yüklenemedi",
   },
+  upload: {
+    uploading: "{name} yükleniyor",
+    cancel: "Yüklemeyi iptal et",
+    tooLarge: "Dosya çok büyük. Sınır {max} MB.",
+    typeNotAllowed: "Bu dosya türü gönderilemez.",
+    failed: "Dosya yüklenemedi. Bağlantını kontrol edip tekrar dene.",
+    dismiss: "Kapat",
+    dropTitle: "Eklemek için bırak",
+    dropHint: "Bir fotoğraf, video ya da dosya, en fazla {max} MB",
+  },
+  failed: {
+    label: "Gönderilemedi",
+    retry: "Tekrar gönder",
+    discard: "Sil",
+    menu: "Bu mesaj gönderilemedi.",
+  },
+  request: {
+    pendingLabel: "Mesaj isteği",
+    pendingInfo: "Mesaj isteği olarak gönderildi. {name} kabul edince sohbet açılır.",
+  },
+  group: {
+    networkError: "Bağlantı kurulamadı. Tekrar dene.",
+    notFriends: "Yalnızca arkadaşlarını ekleyebilirsin.",
+  },
 };

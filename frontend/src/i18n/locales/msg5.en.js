@@ -37,4 +37,28 @@ export const MSG5_EN = {
     imageFailed: "Image couldn't load",
     videoFailed: "Video couldn't load",
   },
+  upload: {
+    uploading: "Uploading {name}",
+    cancel: "Cancel upload",
+    tooLarge: "The file is too large. The limit is {max} MB.",
+    typeNotAllowed: "This file type can't be sent.",
+    failed: "The file couldn't be uploaded. Check your connection and try again.",
+    dismiss: "Dismiss",
+    dropTitle: "Drop to attach",
+    dropHint: "One photo, video or file, up to {max} MB",
+  },
+  failed: {
+    label: "Not sent",
+    retry: "Send again",
+    discard: "Delete",
+    menu: "This message wasn't sent.",
+  },
+  request: {
+    pendingLabel: "Message request",
+    pendingInfo: "Sent as a message request. The chat opens when {name} accepts.",
+  },
+  group: {
+    networkError: "Couldn't connect. Try again.",
+    notFriends: "You can only add your friends.",
+  },
 };

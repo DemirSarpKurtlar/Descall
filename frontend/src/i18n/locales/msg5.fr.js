@@ -37,4 +37,28 @@ export const MSG5_FR = {
     imageFailed: "Impossible de charger l'image",
     videoFailed: "Impossible de charger la vidéo",
   },
+  upload: {
+    uploading: "Envoi de {name}",
+    cancel: "Annuler l'envoi",
+    tooLarge: "Le fichier est trop volumineux. La limite est de {max} Mo.",
+    typeNotAllowed: "Ce type de fichier ne peut pas être envoyé.",
+    failed: "Le fichier n'a pas pu être envoyé. Vérifie ta connexion et réessaie.",
+    dismiss: "Fermer",
+    dropTitle: "Dépose pour joindre",
+    dropHint: "Une photo, une vidéo ou un fichier, jusqu'à {max} Mo",
+  },
+  failed: {
+    label: "Non envoyé",
+    retry: "Renvoyer",
+    discard: "Supprimer",
+    menu: "Ce message n'a pas été envoyé.",
+  },
+  request: {
+    pendingLabel: "Demande de message",
+    pendingInfo: "Envoyé comme demande de message. La discussion s'ouvre quand {name} accepte.",
+  },
+  group: {
+    networkError: "Connexion impossible. Réessaie.",
+    notFriends: "Tu ne peux ajouter que tes amis.",
+  },
 };

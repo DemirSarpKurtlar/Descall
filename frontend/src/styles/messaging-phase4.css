@@ -260,3 +260,115 @@ html.glass-ui .app-root.g-shell .msg-seen { margin-left: 46px; }
 :is(html.glass-desktop, html.glass-ui .app-root.g-shell) .message-bubble.own:not(.cosmetic-chat-bubble) .message-forwarded {
   color: rgba(255, 255, 255, 0.82);
 }
+
+/* Polish messaging-21: an upload is a chip above the field (the field stays),
+   with a thin brand progress line and a cancel X; errors are a dismissable chip. */
+.composer-upload-chip {
+  position: relative;
+  overflow: hidden;
+}
+.composer-upload-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  pointer-events: none;
+}
+.composer-upload-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transform-origin: left center;
+  transition: transform 0.2s linear;
+}
+.composer-upload-error .composer-attach-file {
+  background: color-mix(in srgb, var(--danger, #f23f43) 16%, transparent);
+  color: var(--danger, #f23f43);
+}
+.composer-upload-error .composer-attach-meta strong {
+  white-space: normal;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-upload-bar > span { transition: none; }
+}
+
+/* Polish messaging-13: dropping files anywhere on the open chat attaches them. */
+.chat-drop-overlay {
+  position: fixed;
+  z-index: 900;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border-radius: var(--gd-r-panel, 18px);
+  background: color-mix(in srgb, var(--primary) 14%, rgba(10, 12, 20, 0.62));
+  outline: 2px dashed color-mix(in srgb, var(--primary) 70%, transparent);
+  outline-offset: -10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.chat-drop-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 20px 28px;
+  border-radius: 16px;
+  background: rgba(20, 24, 36, 0.92);
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  color: var(--text-0, #fff);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+.chat-drop-card svg { color: var(--primary); }
+.chat-drop-card strong { font-size: var(--fs-17); }
+.chat-drop-card span { font-size: var(--fs-13); color: var(--text-muted); }
+html.a11y-solid .chat-drop-overlay,
+html.gd-lite .chat-drop-overlay {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(10, 12, 20, 0.9);
+}
+
+/* Polish messaging-20: a message the server refused never looks sent. */
+.message-bubble.is-failed .message-text,
+.message-bubble.is-failed .chat-media,
+.message-bubble.is-failed .message-reply-quote {
+  opacity: 0.62;
+}
+.message-failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 4px 6px 4px 8px;
+  border-radius: 12px;
+  background: rgba(10, 12, 20, 0.62);
+  border: 1px solid rgba(255, 107, 110, 0.45);
+  font-size: var(--fs-12);
+  color: #fff;
+}
+.message-failed > svg { color: #ff6b6e; }
+.message-failed-label { font-weight: 600; }
+.message-failed-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-0, #fff);
+  font: inherit;
+  font-size: var(--fs-12);
+  cursor: pointer;
+}
+.message-failed-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.message-failed-btn.is-danger { color: #ff8c8e; }
+.message-failed-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

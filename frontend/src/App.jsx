@@ -206,6 +206,7 @@ import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
 import { applyPeerRead } from "./lib/readReceipts";
+import { FAILED_ACTION_EVENT, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
@@ -665,6 +666,39 @@ export default function App() {
     };
     window.addEventListener("descall:app-message-dismiss", onDismiss);
     return () => window.removeEventListener("descall:app-message-dismiss", onDismiss);
+  }, []);
+  // Polish messaging-20: "Tekrar gönder" / "Sil" on a message the server refused.
+  useEffect(() => {
+    const onFailed = (event) => {
+      const { action, message, conversationType, conversationId } = event?.detail || {};
+      if (!message?.id || !conversationId || (conversationType !== "dm" && conversationType !== "group")) return;
+      const setList = conversationType === "dm" ? setDmByUserId : setGroupMessagesById;
+      if (action === "discard") {
+        setList((prev) => {
+          const cur = prev[conversationId];
+          if (!cur?.some((m) => m.id === message.id)) return prev;
+          return { ...prev, [conversationId]: cur.filter((m) => m.id !== message.id) };
+        });
+        return;
+      }
+      if (action !== "retry") return;
+      const tempId = newFailedTempId();
+      const emit = retryEmit(message, { conversationType, conversationId, tempId });
+      if (!emit) return;
+      setList((prev) => {
+        const cur = prev[conversationId];
+        if (!cur?.some((m) => m.id === message.id)) return prev;
+        return {
+          ...prev,
+          [conversationId]: cur.map((m) => (m.id === message.id
+            ? { ...m, id: tempId, failed: false, sending: true, timestamp: new Date().toISOString() }
+            : m)),
+        };
+      });
+      socketRef.current?.emit(emit[0], emit[1]);
+    };
+    window.addEventListener(FAILED_ACTION_EVENT, onFailed);
+    return () => window.removeEventListener(FAILED_ACTION_EVENT, onFailed);
   }, []);
   const [ownedServerCount, setOwnedServerCount] = useState(0);
   const [maxOwnedServers, setMaxOwnedServers] = useState(10);

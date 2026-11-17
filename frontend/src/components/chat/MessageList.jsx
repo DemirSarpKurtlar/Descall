@@ -6,6 +6,7 @@ import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaR
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown, ChevronUp } from "../ui/Icon.jsx";
+import { isRetryable, requestFailedAction } from "../../lib/failedMessage";
 import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
@@ -1907,7 +1908,7 @@ function MessageBubbleView({
         onContextMenu={onBubbleContextMenu}
         data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
-        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${isOwn && message.failed ? "is-failed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
@@ -2189,7 +2190,33 @@ function MessageBubbleView({
           />
         )}
 
-        {!isCompact && isOwn && (
+        {isOwn && message.failed ? (
+          // Refused by the server (polish messaging-20): never looks "sent".
+          <div className="message-failed" data-testid="msg-failed" role="status">
+            <AlertCircle size={14} aria-hidden="true" />
+            <span className="message-failed-label">{t("msg5.failed.label")}</span>
+            {isRetryable(message, conversationType) ? (
+              <button
+                type="button"
+                className="message-failed-btn"
+                data-testid="msg-failed-retry"
+                onClick={(e) => { e.stopPropagation(); requestFailedAction("retry", message, { conversationType, conversationId }); }}
+              >
+                <RefreshCw size={12} aria-hidden="true" />
+                {t("msg5.failed.retry")}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="message-failed-btn is-danger"
+              data-testid="msg-failed-discard"
+              onClick={(e) => { e.stopPropagation(); requestFailedAction("discard", message, { conversationType, conversationId }); }}
+            >
+              <Trash2 size={12} aria-hidden="true" />
+              {t("msg5.failed.discard")}
+            </button>
+          </div>
+        ) : !isCompact && isOwn && (
           <div className="message-footer">
             <span
               className="message-status"
