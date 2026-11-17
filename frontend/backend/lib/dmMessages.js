@@ -128,7 +128,20 @@ function mapDmRow(row, usersById) {
   };
 }
 
+// Ids that reach a PostgREST or() filter must be plain ids: a value carrying PostgREST
+// syntax (")", ",", "or(") could widen the filter to every row (security scan 17 Nov 2026).
+const SAFE_FILTER_ID = /^[A-Za-z0-9_-]{1,64}$/;
+function isSafeFilterId(value) {
+  return typeof value === "string" && SAFE_FILTER_ID.test(value);
+}
+
 function dmPairFilter(myId, peerId) {
+  if (!isSafeFilterId(String(myId)) || !isSafeFilterId(String(peerId))) {
+    const err = new Error("Invalid conversation id.");
+    err.status = 400;
+    err.code = "BAD_ID";
+    throw err;
+  }
   return `and(from_user_id.eq.${myId},to_user_id.eq.${peerId}),and(from_user_id.eq.${peerId},to_user_id.eq.${myId})`;
 }
 
@@ -243,6 +256,8 @@ async function listAcceptedFriendIds(userId) {
 async function isAcceptedFriend(userId, otherUserId) {
   if (typeof userId !== "string" || typeof otherUserId !== "string") return false;
   if (!userId || !otherUserId || userId === otherUserId) return false;
+  // The ids go into a PostgREST or() below; a crafted id could match any friendship row.
+  if (!isSafeFilterId(userId) || !isSafeFilterId(otherUserId)) return false;
   const cached = friends.get(userId);
   // A socket can receive dm:history before its asynchronous boot-time friend
   // load completes. Hydrate from the durable source instead of treating the
@@ -415,6 +430,7 @@ async function attachReactions(messages, conversationType, conversationId) {
 
 module.exports = {
   convKey,
+  isSafeFilterId,
   formatDmPreview,
   getLastDmMessage,
   cacheDmMessages,
