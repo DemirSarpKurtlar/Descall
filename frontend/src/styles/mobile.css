@@ -1033,3 +1033,14 @@ html {
     gap: 8px;
   }
 }
+
+/* ─── Touch layouts wider than the phone queries (iPad, Split View) ───
+   useMobileKeyboard publishes the visible height (--vv-height, already
+   max(visual gap, native inset) from DescallBridgeViewController) on every
+   touch layout, but the phone-only rules above are the only ones that read
+   it, so on iPad the composer stayed under the keyboard. While the keyboard
+   is up the shell takes the visible height at every width. */
+html.kb-open .app-root.is-mobile {
+  height: var(--vv-height, 100dvh);
+  max-height: var(--vv-height, 100dvh);
+}
