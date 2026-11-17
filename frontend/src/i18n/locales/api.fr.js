@@ -55,7 +55,7 @@ export const API_FR = {
   "This change has no state for the flag.": "Ce changement ne contient pas l'état du flag.",
   "Unknown flag.": "Flag inconnu.",
   "Use System > Safe restart.": "Utilisez Système > Redémarrage sûr.",
-  "Could not check your verification code status. Try again.": "Impossible de vérifier l’état de ton code de vérification. Réessaie.",
+  "Could not check your verification code status. Try again.": "Impossible de vérifier l’état de votre code de vérification. Réessayez.",
   "Write a reason (at least 3 characters).": "Indiquez une raison (au moins 3 caractères).",
   "One change can move at most {max} DesCoin.": "Une modification peut déplacer au plus {max} DesCoin.",
   "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.": "Une annonce urgente approuvée pour tous ne peut pas être modifiée tant qu’elle est en ligne. Terminez-la, modifiez-la puis renvoyez-la pour approbation.",
