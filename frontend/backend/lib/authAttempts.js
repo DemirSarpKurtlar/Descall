@@ -119,6 +119,30 @@ async function clearCodeAttempts(userId, purpose) {
   if (error) useMemory = true;
 }
 
+/**
+ * Minutes until a locked code (MAX_ATTEMPTS wrong guesses in the rolling hour) can be
+ * tried again, or 0 when it is not locked. Callers must not email a new code while
+ * this is above 0: the new code would be refused too.
+ */
+async function codeLockMinutes(userId, purpose, now = Date.now()) {
+  const { MAX_ATTEMPTS } = require("./authCodes");
+  const attempts = await getCodeAttempts(userId, purpose, now);
+  if (attempts < MAX_ATTEMPTS) return 0;
+  let start = null;
+  if (useMemory) {
+    start = memory.get(keyOf(userId, purpose))?.windowStart ?? null;
+  } else {
+    try {
+      const row = await readRow(userId, purpose);
+      start = useMemory ? memory.get(keyOf(userId, purpose))?.windowStart ?? null : row ? new Date(row.window_start).getTime() : null;
+    } catch {
+      start = null;
+    }
+  }
+  const left = Number.isFinite(start) ? WINDOW_MS - (now - start) : WINDOW_MS;
+  return Math.max(1, Math.ceil(left / 60000));
+}
+
 function resetAttemptMemory() {
   memory.clear();
   useMemory = false;
@@ -129,5 +153,6 @@ module.exports = {
   getCodeAttempts,
   bumpCodeAttempts,
   clearCodeAttempts,
+  codeLockMinutes,
   resetAttemptMemory,
 };

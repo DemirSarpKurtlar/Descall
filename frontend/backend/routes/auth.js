@@ -18,7 +18,25 @@ const inviteAttribution = require("../lib/inviteAttribution");
 const { sanitizeVisitorKey } = require("../lib/userAnalytics");
 const { recordSignupAnalytics, flagSuspiciousSignup, recordAppOpened, recordAnalyticsEvent } = require("../lib/userAnalyticsStore");
 const { hashCode, verifyStoredCode, isCodeFresh } = require("../lib/authCodes");
-const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts } = require("../lib/authAttempts");
+const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts, codeLockMinutes } = require("../lib/authAttempts");
+
+/**
+ * Five wrong codes lock that code purpose for the rest of the rolling hour (also for
+ * a newly emailed code), so the answer says how long to wait instead of "request a
+ * new code" / "log in again", which only sent codes that were refused as well.
+ */
+const CODE_LOCKED = "Too many incorrect attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.";
+async function codeLockedBody(userId, purpose) {
+  const minutes = await codeLockMinutes(userId, purpose).catch(() => 60);
+  return apiError(CODE_LOCKED, { minutes: Math.max(1, minutes || 60) }, { code: "code_locked" });
+}
+/** Sends the 429 and returns true while `purpose` is locked for this account. */
+async function rejectIfCodeLocked(res, userId, purpose) {
+  const minutes = await codeLockMinutes(userId, purpose).catch(() => 0);
+  if (!minutes) return false;
+  res.status(429).json(apiError(CODE_LOCKED, { minutes }, { code: "code_locked" }));
+  return true;
+}
 const { checkNewPassword } = require("../lib/passwordPolicy");
 const { peek, recordFailure, rejectIfLimited, isReviewDemo } = require("../lib/rateLimit");
 const { noteDroppedSessions } = require("../lib/sessionGuard");
@@ -84,6 +102,7 @@ async function secondFactorGate(res, user) {
   }
   const method = twoFactor.methodFor(user, row);
   if (!method) return false;
+  if (method === "email" && (await rejectIfCodeLocked(res, user.id, "2fa_login"))) return true;
   const pendingToken = signPending2faToken({ id: user.id, username: user.username });
   if (method === "totp") {
     res.status(200).json({
@@ -933,11 +952,12 @@ router.post("/2fa/verify-login", async (req, res) => {
           code: verdict.reason,
         });
       }
+      if (verdict.reason === "too_many_attempts") {
+        return res.status(429).json(await codeLockedBody(user.id, "2fa_login"));
+      }
       const message =
         verdict.reason === "expired"
           ? "Code expired. Please log in again to request a new one."
-          : verdict.reason === "too_many_attempts"
-          ? "Too many incorrect attempts. Please log in again."
           : "Incorrect code.";
       return res.status(401).json({ error: message });
     }
@@ -1563,6 +1583,7 @@ router.post("/email/reauth", requireAuth, async (req, res) => {
     if (!user?.email || !user.email_confirmed_at) {
       return res.status(400).json({ error: "There is no verified email. Verify your current address first." });
     }
+    if (await rejectIfCodeLocked(res, req.user.id, "email_reauth")) return;
     const result = await issueAndSendCode({
       userId: req.user.id,
       email: user.email,
@@ -1619,7 +1640,10 @@ router.post("/email/set", requireAuth, async (req, res) => {
         storedHash: user.reauthentication_token,
         sentAtIso: user.reauthentication_sent_at,
       });
-      if (!verdict.ok) return res.status(401).json({ error: "Incorrect code." });
+      if (!verdict.ok) {
+        if (verdict.reason === "too_many_attempts") return res.status(429).json(await codeLockedBody(user.id, "email_reauth"));
+        return res.status(401).json({ error: "Incorrect code." });
+      }
     }
 
     const { data: taken } = await supabase
@@ -1694,6 +1718,7 @@ router.post("/email/resend", requireAuth, async (req, res) => {
     if (user.email_confirmed_at && !user.pending_email) {
       return res.status(400).json({ error: "Email is already verified." });
     }
+    if (await rejectIfCodeLocked(res, req.user.id, "email_verify")) return;
 
     const result = await issueAndSendCode({
       userId: req.user.id,
@@ -1739,11 +1764,12 @@ router.post("/email/verify", requireAuth, async (req, res) => {
       sentAtIso: user?.confirmation_sent_at,
     });
     if (!verdict.ok) {
+      if (verdict.reason === "too_many_attempts") {
+        return res.status(429).json(await codeLockedBody(req.user.id, "email_verify"));
+      }
       const message =
         verdict.reason === "expired"
           ? "Code expired. Request a new one."
-          : verdict.reason === "too_many_attempts"
-          ? "Too many incorrect attempts. Request a new code."
           : verdict.reason === "no_pending_code"
           ? "No verification pending. Add your email first."
           : "Incorrect code.";
@@ -2216,16 +2242,22 @@ async function findUserForPasswordReset(usernameOrEmail) {
       .maybeSingle();
     return data || null;
   }
-  const cleanUsername = raw.toLowerCase();
+  // Usernames keep their case ("Ahmet"); sign-in matches them case-insensitively, so
+  // the reset lookup does too (an exact match on the lowercased input missed every
+  // username with a capital letter, and the generic answer hid it).
   const { data } = await supabase
     .from("users")
     .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider")
-    .eq("username", cleanUsername)
-    .maybeSingle();
-  return data || null;
+    .ilike("username", escapeLike(raw))
+    .limit(1);
+  return (Array.isArray(data) ? data[0] : data) || null;
 }
 
 async function sendPasswordResetCode(user) {
+  // Locked after five wrong codes: a new code would be refused too, so none is sent.
+  if (user?.id && (await codeLockMinutes(user.id, "password_reset").catch(() => 0))) {
+    return { status: "locked", body: await codeLockedBody(user.id, "password_reset") };
+  }
   if (!user?.email) {
     return {
       status: "no_email",
@@ -2307,10 +2339,13 @@ async function applyPasswordReset({ user, code, newPassword }) {
   });
 
   if (!verdict.ok) {
+    if (verdict.reason === "too_many_attempts") {
+      const body = await codeLockedBody(user.id, "password_reset");
+      return { ok: false, status: 429, error: body.error, code: verdict.reason, body };
+    }
     const map = {
       no_pending_code: "No active reset code. Request a new one.",
       expired: "This code expired. Request a new one.",
-      too_many_attempts: "Too many incorrect attempts. Request a new code.",
       invalid_code: "Incorrect code.",
     };
     return { ok: false, status: 400, error: map[verdict.reason] || "Incorrect code.", code: verdict.reason };
@@ -2423,6 +2458,7 @@ router.post("/password/request", requireAuth, async (req, res) => {
     }
 
     const outcome = await sendPasswordResetCode(user);
+    if (outcome.status === "locked") return res.status(429).json(outcome.body);
     if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
       return res.status(503).json(outcome);
     }
@@ -2468,6 +2504,7 @@ router.post("/password/confirm", requireAuth, async (req, res) => {
     if (!result.ok) {
       recordFailure(`pwconfirm:ip:${ip}`, { max: 20 });
       recordFailure(`pwconfirm:acct:${req.user.id}`, { max: 20 });
+      if (result.body) return res.status(result.status).json(result.body);
       return res.status(result.status).json({ error: result.error, code: result.code || null });
     }
     await dropSessions(req, user.id, req.user.sid);

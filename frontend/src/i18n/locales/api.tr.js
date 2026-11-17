@@ -956,4 +956,8 @@ export const API_TR = {
   "You can only lock a card from today's storefront.": "Yalnızca bugünkü vitrinden bir kartı kilitleyebilirsin.",
   "You cannot join tonight's night market.": "Bu geceki gece pazarına katılamazsın.",
   "Too many friend requests. Try again later.": "Çok fazla arkadaşlık isteği gönderdin. Biraz sonra yeniden dene.",
+  "Too many incorrect attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.": "Çok fazla hatalı deneme. {minutes} dakika sonra tekrar dene.",
+  "Invalid members": "Geçersiz üye listesi.",
+  "Send messages through the app.": "Mesajları uygulamadan gönder.",
+  "You are timed out and cannot send messages.": "Zaman aşımındasın, şu an mesaj gönderemezsin.",
 };
