@@ -2162,6 +2162,8 @@ export const nested = {
     "otherAuth": "Otros",
     "ovActiveHint": "Primero las personas en línea",
     "ovAllUsers": "Todos los usuarios",
+    "reportAlert": "Una persona acaba de llegar a {n} denuncias abiertas.",
+    "reportAlertOpen": "Abrir el expediente",
     "ovAudit": "Acciones recientes de admins",
     "ovAuditHint": "Del registro de auditoría",
     "ovAvg7": "prom. {n}",
