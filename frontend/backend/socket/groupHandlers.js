@@ -164,8 +164,8 @@ function extractMentionedUsernames(text) {
 }
 
 function emitMentionToUser(io, userId, payload) {
-  const p = presence.get(userId);
-  if (p?.socketId) io.to(p.socketId).emit("mention:received", payload);
+  // Every device of the user (the `user:<id>` room), not only the presence socket.
+  io.to(`user:${userId}`).emit("mention:received", payload);
 }
 
 function registerGroupHandlers(io, socket, state) {
@@ -266,6 +266,29 @@ function registerGroupHandlers(io, socket, state) {
 
   // Group message — persist to DB then broadcast
   socket.on("group:message", async ({ groupId, tempId, content, mediaUrl, mediaType, duration, replyTo, forwarded, poll: pollInput } = {}) => {
+    // Types first (polish messaging-22): a number / object used to throw on .trim()
+    // inside this async listener. Length = Sistem › maxMessageLength (messaging-06).
+    {
+      const { checkText, maxMessageLength, optionalString } = require("../lib/messageText");
+      if (typeof groupId !== "string" || !groupId || groupId.length > 64) return;
+      const tid = optionalString(tempId, 128);
+      tempId = tid || null;
+      const textCheck = checkText(content, { max: maxMessageLength(systemConfig) });
+      const media = optionalString(mediaUrl);
+      const kind = optionalString(mediaType, 32);
+      if (!textCheck.ok || media === false || kind === false || tid === false) {
+        socket.emit("group:message:error", {
+          groupId,
+          tempId,
+          message: textCheck.ok ? "Invalid message." : textCheck.message,
+          code: textCheck.ok ? "BAD_TEXT" : textCheck.code,
+        });
+        return;
+      }
+      content = textCheck.text;
+      mediaUrl = media;
+      mediaType = kind;
+    }
     // Poll from the creation sheet: validated here, stored as a poll_v2 row + polls tables.
     let pollDraft = null;
     if (pollInput) {
@@ -523,9 +546,19 @@ function registerGroupHandlers(io, socket, state) {
           .from("users")
           .select("id, username")
           .in("username", mentionedUsernames);
+        // Only members of this group are pinged (polish messaging-19: any username
+        // on the platform used to get the group name and the text), never across a block.
+        const { data: memberRows } = await supabase
+          .from("group_members")
+          .select("user_id")
+          .eq("group_id", groupId);
+        const memberSet = new Set((memberRows || []).map((r) => String(r.user_id)));
+        const { isBlockedEitherWay } = require("../lib/blocking");
 
         for (const mentioned of (mentionedUsers || [])) {
           if (mentioned.id === myId) continue;
+          if (!memberSet.has(String(mentioned.id))) continue;
+          if (await isBlockedEitherWay(myId, mentioned.id).catch(() => false)) continue;
           mentionedUserIds.add(mentioned.id);
           emitMentionToUser(io, mentioned.id, {
             groupId,
