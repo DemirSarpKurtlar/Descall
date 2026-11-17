@@ -442,13 +442,21 @@ export default function ChatPanel({
     return "";
   };
 
+  // iPad and wide phones show the list beside this pane: no "open the menu" there
+  // (polish world-social-06).
+  const menuHidden = isMobile && !activitySplitView;
   const emptyCopy = (() => {
     if (activeView === "friends") {
+      const hasFriends = Array.isArray(friends) && friends.length > 0;
       return {
-        title: t("Find your friends"),
-        body: isMobile
-          ? t("Open the menu to see friends and who is online")
-          : t("Add a friend to start chatting and calling"),
+        title: hasFriends ? t("Pick a friend") : t("Find your friends"),
+        body: menuHidden
+          ? (hasFriends
+            ? t("Open the menu to pick a friend or start a new conversation")
+            : t("Open the menu to see friends and who is online"))
+          : (hasFriends
+            ? t("Pick a friend on the left to chat or call")
+            : t("Add a friend to start chatting and calling")),
         primary: { label: t("Add friend"), action: () => onAddClick?.("friend"), icon: UserPlus },
         secondary: { label: t("Browse chats"), action: () => onViewChange?.("chat"), icon: MessageSquare },
         icon: Users,
@@ -458,7 +466,7 @@ export default function ChatPanel({
     if (activeView === "groups") {
       return {
         title: t("No group selected"),
-        body: isMobile
+        body: menuHidden
           ? t("Open the menu to browse your groups")
           : t("Create a group or pick one from the sidebar"),
         primary: { label: t("Create group"), action: () => onAddClick?.("group"), icon: Plus },

@@ -3152,6 +3152,8 @@ export const phrases = {
   "Add a friend to start chatting, messages, voice, and screen share in one place.": "Sohbet etmek için bir arkadaş ekle, mesajlar, ses ve ekran paylaşımı tek yerde.",
   "Create a group for friends, chat, call, and share your screen together.": "Arkadaşların için bir grup oluştur, sohbet et, ara ve ekranını paylaş.",
   "is now online": "şimdi çevrimiçi",
+  "Pick a friend": "Bir arkadaş seç",
+  "Pick a friend on the left to chat or call": "Sohbet etmek veya aramak için soldan bir arkadaş seç",
   "accepted your friend request": "arkadaşlık isteğini kabul etti",
   "Purchased, equip it anytime": "Satın alındı, istediğin zaman kuşan",
   "No friends to add": "Eklenecek arkadaş yok",

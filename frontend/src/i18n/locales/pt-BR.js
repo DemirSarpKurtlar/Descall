@@ -10914,6 +10914,8 @@ export const phrases = {
   "identity": "Identidade",
   "in": "em",
   "is now online": "agora está online",
+  "Pick a friend": "Escolha um amigo",
+  "Pick a friend on the left to chat or call": "Escolha um amigo à esquerda para conversar ou ligar",
   "accepted your friend request": "aceitou seu pedido de amizade",
   "is typing…": "está digitando…",
   "just now": "agora mesmo",
