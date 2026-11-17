@@ -15,3 +15,12 @@ html.app-idle *::after {
 html.app-idle :is(.spin, .animate-spin, [class*="spinner"], [class*="loader"], [class*="skeleton"], [class*="shimmer"], [role="progressbar"], [role="progressbar"] *, [aria-busy="true"], [aria-busy="true"] *) {
   animation-play-state: running !important;
 }
+
+/* server-voice-26: Market 2.0 voice tile skins are decorative loops. In a voice call the
+   window never goes app-idle, so pause them once the window loses focus (Descall behind
+   a game). Speaking rings and spinners are not touched. */
+html.app-blurred :is(.vt2-skin, .vt2-skin *),
+html.app-blurred :is(.vt2-skin, .vt2-skin *)::before,
+html.app-blurred :is(.vt2-skin, .vt2-skin *)::after {
+  animation-play-state: paused !important;
+}
