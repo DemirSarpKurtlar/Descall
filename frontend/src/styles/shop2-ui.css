@@ -1351,8 +1351,12 @@ button.s2-tile:hover:not(:disabled) {
   height: 100%;
   border-radius: 0;
 }
+/* The avatar follows the tile HEIGHT, like a real voice tile: a width-based size made it
+   fill the whole wide card preview (owner report, "Yorunge"). */
 .s2-art-vtile .s2-art-face {
-  width: 46%;
+  width: auto;
+  height: 44%;
+  max-height: 72px;
   position: relative;
   z-index: 2;
 }

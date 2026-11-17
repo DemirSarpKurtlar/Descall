@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { fetchProfileShared, peekProfile } from "../../lib/profileCache.js";
 import { createPortal } from "react-dom";
 import OverlayPortal from "../ui/OverlayPortal";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
@@ -75,6 +76,15 @@ function ProfileGlassSkeleton({ label }) {
       <span className="profile-glass-skeleton" style={{ width: "54%", height: 14 }} />
     </div>
   );
+}
+
+async function loadPublicProfile(id) {
+  const res = await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null);
+  return acceptProfilePayload(id, data?.user);
 }
 
 function UserProfileModal({
@@ -185,34 +195,36 @@ function UserProfileModal({
 
   useEffect(() => {
     if (!open || !userId) return undefined;
-    const ctrl = new AbortController();
     const requestedId = userId;
     let active = true;
-    setSettledFor((current) => (sameUserId(current, requestedId) ? current : null));
+    // A profile seen before (hover card, earlier open) shows at once; it is still refreshed
+    // below. Without one the window keeps its content hidden until the profile arrives
+    // (is-look-pending), so it never paints the default look first (lib/profileCache.js).
+    // Your own look can change from this device (shop, settings) without a socket event, so
+    // your own profile is always loaded fresh.
+    const cached = sameUserId(me?.id, requestedId) ? null : peekProfile(requestedId);
+    if (cached) {
+      setProfile(cached);
+      setSettledFor(requestedId);
+    } else {
+      setSettledFor((current) => (sameUserId(current, requestedId) ? current : null));
+    }
 
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth/users/${requestedId}`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-          signal: ctrl.signal,
-        });
-        if (!res.ok) throw new Error("Not found");
-        const data = await res.json();
+    fetchProfileShared(requestedId, loadPublicProfile)
+      .then((accepted) => {
         if (!active) return;
-        const accepted = acceptProfilePayload(requestedId, data.user);
-        if (!accepted) return;
-        setProfile(accepted);
-      } catch (err) {
-        if (err?.name === "AbortError" || !active) return;
-        setProfile(null);
-      } finally {
+        if (accepted) setProfile(accepted);
+        else if (!cached) setProfile(null);
+      })
+      .catch(() => {
+        if (active && !cached) setProfile(null);
+      })
+      .finally(() => {
         if (active) setSettledFor(requestedId);
-      }
-    })();
+      });
 
     return () => {
       active = false;
-      ctrl.abort();
     };
   }, [open, userId]);
 
@@ -351,6 +363,9 @@ function UserProfileModal({
   const viewUser = visibleProfile(profile, userId, seed);
   const badgeUser = fetched ? { ...fetched, id: fetched.id || userId } : { id: userId };
   const pending = Boolean(open && userId && !sameUserId(settledFor, userId));
+  // First open of a profile not seen before: hide the content until it arrives instead of
+  // painting the default banner / colours / missing badges first.
+  const lookPending = pending && !fetched;
   const mutualFriends = ownedList(mutualState.forId, userId, mutualState.list);
   const memberSince = memberSinceIso(userId, [fetched, seed, known]);
   const customStatus = fetched?.customStatus || fetched?.custom_status || (sameUserId(known?.id, userId) ? (known?.customStatus || known?.custom_status) : "") || "";
@@ -595,7 +610,7 @@ function UserProfileModal({
             >
               <motion.div
                 key={userId || "profile"}
-                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"} pfs-heavy ${profileColorClass(fetched)} ${fetched?.equippedProfileAura?.effect_key ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}` : ""}`.trim()}
+                className={`${layout === "sheet" ? "pfs-sheet" : "pfs-form"}${lookPending ? " is-look-pending" : ""} pfs-heavy ${profileColorClass(fetched)} ${fetched?.equippedProfileAura?.effect_key ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}` : ""}`.trim()}
                 style={profileColorStyle(fetched) || undefined}
                 data-testid="profile-sheet"
                 custom={dismissV.current}
@@ -676,6 +691,7 @@ function UserProfileModal({
             className={[
               "user-profile-card",
               glassDesktop ? "is-gd" : "",
+              lookPending ? "is-look-pending" : "",
               equippedBackgroundUrl ? "has-custom-bg" : "",
               fetched?.equippedProfileAura?.effect_key
                 ? `cosmetic-profile-aura aura-${fetched.equippedProfileAura.effect_key}`
@@ -721,7 +737,7 @@ function UserProfileModal({
             <ParallaxBanner
               height={glassDesktop ? 150 : 80}
               imageUrl={equippedBannerUrl ? cssUrl(equippedBannerUrl) : null}
-              fallbackStyle={{ background: bannerGradient }}
+              fallbackStyle={{ background: lookPending ? "rgba(255,255,255,0.04)" : bannerGradient }}
               strength={12}
             />
 

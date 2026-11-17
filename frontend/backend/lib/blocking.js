@@ -58,7 +58,10 @@ async function blockUser(userId, targetId) {
   }
   pendingRequests.get(userId)?.delete(targetId);
   pendingRequests.get(targetId)?.delete(userId);
-  try {
+  // Both ids go into a PostgREST or() filter on a DELETE: plain ids only (no PostgREST syntax) (security scan
+  // 17 Nov 2026, P0: a crafted id matched every friendship row).
+  const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+  if (SAFE_ID.test(String(userId)) && SAFE_ID.test(String(targetId))) try {
     await supabase
       .from("friendships")
       .delete()
