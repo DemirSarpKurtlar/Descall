@@ -31,8 +31,8 @@ const fake = createFakeSupabase({
     { id: "u-shy", username: "shy", language: "tr", push_preview: false, active_sessions: [{ id: "s-shy" }] },
   ],
   web_push_subscriptions: [
-    { user_id: "u-open", endpoint: "https://push.invalid/open", p256dh: "k", auth: "a" },
-    { user_id: "u-shy", endpoint: "https://push.invalid/shy", p256dh: "k", auth: "a" },
+    { user_id: "u-open", endpoint: "https://fcm.googleapis.com/fcm/send/open", p256dh: "k", auth: "a" },
+    { user_id: "u-shy", endpoint: "https://fcm.googleapis.com/fcm/send/shy", p256dh: "k", auth: "a" },
   ],
 });
 const supabasePath = require.resolve("../db/supabase");

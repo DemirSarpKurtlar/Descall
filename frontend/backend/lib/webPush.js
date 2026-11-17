@@ -6,6 +6,7 @@ const { sendFcmToUsers } = require("./fcm");
 const { sendIosAlertToUsers } = require("./iosAlertPush");
 const { bt, pickLang } = require("./i18n");
 const pushPreview = require("./pushPreview");
+const { isAllowedPushEndpoint } = require("./pushEndpoint");
 
 let configured = false;
 
@@ -37,6 +38,11 @@ async function sendWebPushToUsers(userIds, payload) {
 
   const body = JSON.stringify(payload);
   await Promise.allSettled((subscriptions || []).map(async (subscription) => {
+    // Rows saved before the endpoint allow-list: never send to them, drop them instead.
+    if (!isAllowedPushEndpoint(subscription.endpoint)) {
+      await supabase.from("web_push_subscriptions").delete().eq("endpoint", subscription.endpoint);
+      return;
+    }
     try {
       await webpush.sendNotification(
         {
