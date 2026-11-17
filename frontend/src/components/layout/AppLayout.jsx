@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from "react";
+import { conversationKey, shouldCloseDrawerForConversation } from "../../lib/mobileDrawer.js";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X } from "../ui/Icon.jsx";
 import NavigationRail from "./NavigationRail";
@@ -270,6 +271,16 @@ export default function AppLayout({
       setMobileDrawerOpen(true);
     }
   }, [isMobile, activeDmUser, activeGroup, activeChannel, activeView]);
+
+  // A chat opened from outside the list (push tap, deep link, reload on
+  // /direct/<user>, invite landing) must not stay hidden under the list.
+  const conversationOpenKey = conversationKey({ dm: activeDmUser, group: activeGroup, channel: activeChannel });
+  const lastConversationKeyRef = useRef("");
+  useEffect(() => {
+    const prev = lastConversationKeyRef.current;
+    lastConversationKeyRef.current = conversationOpenKey;
+    if (isMobile && shouldCloseDrawerForConversation(prev, conversationOpenKey)) setMobileDrawerOpen(false);
+  }, [isMobile, conversationOpenKey]);
 
   useEffect(() => {
     if (!isMobile || !mobileDrawerOpen) return;
