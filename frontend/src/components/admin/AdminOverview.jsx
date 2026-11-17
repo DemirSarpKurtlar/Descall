@@ -20,6 +20,7 @@ import {
   signupTrend,
 } from "./adminOverviewModel.js";
 import "../../styles/admin-overview.css";
+import { uptimeLabel } from "./system/systemModel.js";
 
 /**
  * Yönetici Paneli › Genel Bakış (3.1, onaylı taslak 30 Eki 2026): the six KPI
@@ -280,7 +281,10 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
     {
       id: "uptime",
       label: t("admin.overviewUptime"),
-      value: system.uptime?.label || "\u2014",
+      // Localized like Sistem ("6 g 14 sa"), not the server's English "6d 14h" (polish admin-b-14).
+      value: Number.isFinite(Number(system.uptime?.seconds)) && system.uptime?.durable !== false
+        ? (() => { const u = uptimeLabel(system.uptime.seconds); return t(u.key, u.vars); })()
+        : system.uptime?.label || "\u2014",
       sub: system.rssMb ? t("admin.ovUptimeSub", { mb: system.rssMb }) : "",
     },
   ];

@@ -40,6 +40,7 @@ const {
   mergeAuditEntries,
   mapModerationActionToAudit,
   isRecentlySeen,
+  istanbulDayKey,
 } = require("../lib/adminOverview");
 const { loadSystemSettings, persistSystemConfig, applySystemConfigToState } = require("../lib/systemSettings");
 const insights = require("../lib/adminInsightsStore");
@@ -295,6 +296,10 @@ router.get("/analytics", async (_req, res) => {
     const attr = aggregateAttributionStats(users);
     const now = new Date();
     const windows = signupWindowCounts(users, now);
+    // "Bugunku kayitlar" is the Istanbul day, like Genel Bakis (polish admin-b-08); the
+    // daily table stays on UTC days to line up with analytics_visitor_days.
+    const todayKey = istanbulDayKey(now);
+    windows.signupsToday = users.filter((u) => istanbulDayKey(u.signup_at || u.created_at || 0) === todayKey).length;
     const active = activeUserCounts(users, now);
     const sources = headlineSourceCounts(attr.bySource);
     const adsVisits = visits.filter((v) => v.has_gclid || v.first_touch_source === "google_ads").length;
