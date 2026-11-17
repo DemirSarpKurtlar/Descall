@@ -827,6 +827,7 @@ function registerSocketHandlers(io) {
       const allowed = ["online", "idle", "dnd", "invisible"];
       const s = allowed.includes(status) ? status : "online";
       const p = presence.get(myId);
+      const prevStatus = p?.status || "online";
       if (p) {
         p.status = s;
         presence.set(myId, p);
@@ -835,6 +836,8 @@ function registerSocketHandlers(io) {
       socket.emit("status:current", { status: s });
       broadcastUsers(io, myId);
       io.to(socket.id).emit("friend:list", getFriendList(myId));
+      // Invisible hides the live game / app too (polish world-social-04).
+      void require("./activityHandlers").onPresenceStatusChange(io, myId, me.username, prevStatus, s);
     });
 
     socket.on("friend:list", async () => {

@@ -1,7 +1,7 @@
 'use strict';
 
 const supabase = require('../db/supabase');
-const { friends: friendsMap } = require('../runtime/sharedState');
+const { friends: friendsMap, presence: presenceMap } = require('../runtime/sharedState');
 const { normalizeActivityType } = require('../lib/activityKind');
 
 const VALID_PRIVACY = new Set(['friends', 'only-me', 'hidden']);
@@ -36,6 +36,15 @@ async function getFriendIds(userId) {
   }
 
   return new Set();
+}
+
+/**
+ * Görünmez (invisible) users look offline, so their game / app must not reach
+ * friends either (polish world-social-04): the row is still stored, only the
+ * live broadcast is held back until they leave invisible.
+ */
+function isInvisible(userId) {
+  return String(presenceMap.get(userId)?.status || '') === 'invisible';
 }
 
 /**
@@ -100,6 +109,7 @@ function registerActivityHandlers(io, socket) {
 
     const privacy = settings?.privacy ?? 'friends';
     if (privacy === 'hidden' || privacy === 'only-me') return;
+    if (isInvisible(myId)) return;
 
     const friendIds = await getFriendIds(myId);
     console.log(`[activity:update] ${me.username} friendIds=${friendIds.size} privacy=${privacy}`);
@@ -161,6 +171,7 @@ function registerActivityHandlers(io, socket) {
       console.log(`[activity:manual] ${me.username} privacy=${privacy}, skipping broadcast`);
       return;
     }
+    if (isInvisible(myId)) return;
 
     const friendIds = await getFriendIds(myId);
     console.log(`[activity:manual] broadcasting to ${friendIds.size} friend socket(s)`);
@@ -206,4 +217,40 @@ function registerActivityHandlers(io, socket) {
   });
 }
 
-module.exports = { registerActivityHandlers };
+/**
+ * Status change hook (socket status:set): going invisible clears the live activity
+ * on friends' screens; coming back re-sends the stored one (privacy permitting).
+ */
+async function onPresenceStatusChange(io, userId, username, prevStatus, nextStatus) {
+  const wasInvisible = prevStatus === 'invisible';
+  const isNowInvisible = nextStatus === 'invisible';
+  if (wasInvisible === isNowInvisible) return;
+  try {
+    const friendIds = await getFriendIds(userId);
+    if (isNowInvisible) {
+      broadcastPresenceClear(io, userId, friendIds);
+      return;
+    }
+    const [{ data: settings }, { data: row }] = await Promise.all([
+      supabase.from('user_activity_settings').select('privacy').eq('user_id', userId).maybeSingle(),
+      supabase
+        .from('user_presence')
+        .select('app_name,app_type,display_name,started_at,is_manual')
+        .eq('user_id', userId)
+        .maybeSingle(),
+    ]);
+    const privacy = settings?.privacy ?? 'friends';
+    if (!row || privacy === 'hidden' || privacy === 'only-me') return;
+    broadcastPresenceToFriends(io, userId, username, {
+      appName: row.app_name,
+      appType: row.app_type,
+      displayName: row.display_name,
+      startedAt: row.started_at,
+      isManual: Boolean(row.is_manual),
+    }, friendIds, privacy);
+  } catch (err) {
+    console.error('[activity:status] update error:', err?.message || err);
+  }
+}
+
+module.exports = { registerActivityHandlers, onPresenceStatusChange, isInvisible };
