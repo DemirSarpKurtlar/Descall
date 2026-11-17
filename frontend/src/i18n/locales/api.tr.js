@@ -820,6 +820,7 @@ export const API_TR = {
   "This change has no state for the flag.": "Bu değişiklikte bayrağın durumu yok.",
   "Unknown flag.": "Bilinmeyen bayrak.",
   "Use System > Safe restart.": "Sistem > Güvenli yeniden başlat'ı kullan.",
+  "Accounts are not created or deleted from the admin panel.": "Hesaplar yönetici panelinden açılmaz veya silinmez.",
   // Duyurular (remake Nov 2026)
   "Automatic translation is not set up on the server.": "Otomatik çeviri sunucuda kurulu değil.",
   "The translation was declined.": "Çeviri reddedildi.",
@@ -954,4 +955,5 @@ export const API_TR = {
   "You already used today's refresh.": "Bugünkü yenilemeni zaten kullandın.",
   "You can only lock a card from today's storefront.": "Yalnızca bugünkü vitrinden bir kartı kilitleyebilirsin.",
   "You cannot join tonight's night market.": "Bu geceki gece pazarına katılamazsın.",
+  "Too many friend requests. Try again later.": "Çok fazla arkadaşlık isteği gönderdin. Biraz sonra yeniden dene.",
 };

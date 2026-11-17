@@ -55,6 +55,7 @@ export const API_RU = {
   "This change has no state for the flag.": "В этом изменении нет состояния флага.",
   "Unknown flag.": "Неизвестный флаг.",
   "Use System > Safe restart.": "Используйте Система > Безопасный перезапуск.",
+  "Accounts are not created or deleted from the admin panel.": "Аккаунты не создаются и не удаляются из панели администратора.",
   // İşlem kaydı (admin audit console)
   "Could not load the audit summary.": "Не удалось загрузить сводку журнала.",
   "Entry not found.": "Запись не найдена.",
@@ -220,4 +221,5 @@ export const API_RU = {
   "You already used today's refresh.": "Ты уже использовал сегодняшнее обновление.",
   "You can only lock a card from today's storefront.": "Заблокировать можно только карточку из сегодняшней витрины.",
   "You cannot join tonight's night market.": "Ты не можешь попасть на сегодняшний ночной рынок.",
+  "Too many friend requests. Try again later.": "Слишком много запросов в друзья. Попробуйте позже.",
 };

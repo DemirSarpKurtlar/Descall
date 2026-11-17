@@ -1,12 +1,9 @@
 "use strict";
 
 const express = require("express");
-const bcrypt = require("bcryptjs");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin, requireSuperAdmin, userIsSuperAdmin } = require("../middleware/requireAdmin");
-const { isReservedUsername } = require("../lib/usernamePolicy");
-const { checkNewPassword } = require("../lib/passwordPolicy");
 const state = require("../runtime/sharedState");
 const {
   kickUser,
@@ -60,7 +57,6 @@ const { requireAdmin2fa, requireStepUp, stepUpHandler } = require("../middleware
 const adminPermissions = require("../lib/adminPermissions");
 const { apiError, apiText } = require("../lib/apiError");
 const router = express.Router();
-const BCRYPT_ROUNDS = 12;
 
 // Descall+ / Ultra: refused attempts on /premium are logged (before the chain answers 401/403).
 router.use("/premium", require("./adminPremium").logDenied);
@@ -571,39 +567,14 @@ router.get("/users/:id", async (req, res) => {
   }
 });
 
-router.post("/users", async (req, res) => {
-  try {
-    const { username, password } = req.body || {};
-    if (typeof username !== "string" || typeof password !== "string") {
-      return res.status(400).json({ error: "username and password required." });
-    }
-    const clean = username.trim();
-    if (
-      clean.length < 2 ||
-      clean.length > 24 ||
-      !/^[a-zA-Z0-9_.-]+$/.test(clean) ||
-      isReservedUsername(clean)
-    ) {
-      return res.status(400).json({ error: "Invalid username." });
-    }
-    const passwordCheck = await checkNewPassword(password);
-    if (passwordCheck.error) {
-      return res.status(400).json({ error: passwordCheck.error, code: passwordCheck.code });
-    }
-    const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const { data, error } = await supabase
-      .from("users")
-      .insert({ username: clean, password_hash: hash })
-      .select("id, username")
-      .single();
-    if (error) return res.status(400).json({ error: "Could not create user." });
-    audit(req.user, "user_create", data.id, { username: data.username });
-    notifyAdminRoom(getIo(req), { type: "user_created", id: data.id });
-    res.status(201).json({ user: data });
-  } catch (e) {
-    res.status(500).json({ error: "Create failed." });
-  }
-});
+/**
+ * Accounts are never created or hard-deleted from the admin panel (polish admin-b-01):
+ * these routes sat behind the read-only "Kullanicilar" (directory) section, so any
+ * legacy admin could delete the owner. Nothing in the panel used them.
+ */
+const ACCOUNT_ROUTES_GONE = () =>
+  apiError("Accounts are not created or deleted from the admin panel.", null, { code: "ACCOUNT_ROUTE_REMOVED" });
+router.post("/users", (_req, res) => res.status(410).json(ACCOUNT_ROUTES_GONE()));
 
 router.patch("/users/:id", async (req, res) => {
   try {
@@ -673,21 +644,7 @@ router.put("/remove-admin/:userId", requireSuperAdmin, async (req, res) => {
   }
 });
 
-router.delete("/users/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (id === req.user.id) return res.status(400).json({ error: "Cannot delete yourself." });
-    const { error } = await supabase.from("users").delete().eq("id", id);
-    if (error) return res.status(500).json({ error: error.message });
-    cleanupUserMemory(id);
-    state.bannedUserIds.delete(id);
-    audit(req.user, "user_delete", id, {});
-    notifyAdminRoom(getIo(req), { type: "user_deleted", id });
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: "Delete failed." });
-  }
-});
+router.delete("/users/:id", (_req, res) => res.status(410).json(ACCOUNT_ROUTES_GONE()));
 
 router.get("/moderation/meta", (_req, res) => {
   res.json({

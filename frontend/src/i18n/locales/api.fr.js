@@ -55,6 +55,7 @@ export const API_FR = {
   "This change has no state for the flag.": "Ce changement ne contient pas l'état du flag.",
   "Unknown flag.": "Flag inconnu.",
   "Use System > Safe restart.": "Utilisez Système > Redémarrage sûr.",
+  "Accounts are not created or deleted from the admin panel.": "Les comptes ne sont ni créés ni supprimés depuis le panneau d’administration.",
   // İşlem kaydı (admin audit console)
   "Could not load the audit summary.": "Impossible de charger le résumé du journal.",
   "Entry not found.": "Entrée introuvable.",
@@ -220,4 +221,5 @@ export const API_FR = {
   "You already used today's refresh.": "Tu as déjà utilisé l'actualisation du jour.",
   "You can only lock a card from today's storefront.": "Tu ne peux verrouiller qu'une carte de la boutique du jour.",
   "You cannot join tonight's night market.": "Tu ne peux pas rejoindre le marché nocturne de ce soir.",
+  "Too many friend requests. Try again later.": "Trop de demandes d'ami. Réessaie plus tard.",
 };

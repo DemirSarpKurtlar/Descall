@@ -1,0 +1,96 @@
+"use strict";
+
+/**
+ * Admin panel guards (polish admin-b): routes on the real /api/admin chain over the
+ * fake db.
+ *  - Accounts are never created or hard-deleted from the panel (410), even by a
+ *    legacy admin holding the "directory" section; the owner row survives.
+ */
+
+process.env.NODE_ENV = "test";
+process.env.JWT_SECRET = "test-secret-do-not-use-in-prod";
+process.env.JWT_EXPIRES_IN = "7d";
+process.env.SUPABASE_URL = "https://placeholder.supabase.co";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "placeholder-key";
+
+const http = require("http");
+const { createFakeSupabase } = require("./fakeSupabase.cjs");
+
+const OWNER = "00000000-0000-4000-8000-000000000001";
+const LEGACY = "00000000-0000-4000-8000-000000000002";
+const KAAN = "00000000-0000-4000-8000-000000000003";
+
+function user(id, username, extra = {}) {
+  return { id, username, is_admin: false, active_sessions: [{ id: `s-${username}` }], ...extra };
+}
+
+const fake = createFakeSupabase({
+  users: [
+    user(OWNER, "admin", { is_admin: true, is_super_admin: true }),
+    // admin_permissions NULL = every legacy section, "directory" included.
+    user(LEGACY, "legacyadmin", { is_admin: true, admin_permissions: null }),
+    user(KAAN, "kaan"),
+  ],
+  admin_audit: [],
+});
+const supabasePath = require.resolve("../db/supabase");
+require.cache[supabasePath] = { id: supabasePath, filename: supabasePath, loaded: true, exports: fake };
+
+const express = require("express");
+const { signToken } = require("../config/jwt");
+const adminRouter = require("../routes/admin");
+
+function assert(cond, msg) {
+  if (!cond) throw new Error("FAIL: " + msg);
+}
+
+async function startServer() {
+  const app = express();
+  app.use(express.json());
+  app.set("io", { to: () => ({ emit() {} }), emit() {}, sockets: { sockets: new Map(), adapter: { rooms: new Map() } } });
+  app.use("/api/admin", adminRouter);
+  const server = http.createServer(app);
+  await new Promise((r) => server.listen(0, r));
+  return { server, base: `http://127.0.0.1:${server.address().port}` };
+}
+
+async function call(base, method, path, { body, token } = {}) {
+  const res = await fetch(base + path, {
+    method,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let json = {};
+  try {
+    json = await res.json();
+  } catch {
+    json = {};
+  }
+  return { status: res.status, body: json };
+}
+
+const session = (id, username) => signToken({ id, username, sid: `s-${username}` });
+const row = (id) => fake._tables.users.rows.find((u) => u.id === id);
+
+(async () => {
+  const { server, base } = await startServer();
+  const legacy = session(LEGACY, "legacyadmin");
+  const owner = session(OWNER, "admin");
+  try {
+    let r = await call(base, "DELETE", `/api/admin/users/${OWNER}`, { token: legacy });
+    assert(r.status === 410 && r.body.code === "ACCOUNT_ROUTE_REMOVED", `legacy delete of the owner is refused: ${r.status} ${JSON.stringify(r.body)}`);
+    assert(row(OWNER), "owner row still exists");
+    r = await call(base, "DELETE", `/api/admin/users/${KAAN}`, { token: owner });
+    assert(r.status === 410, `even the owner cannot hard-delete from the panel: ${r.status}`);
+    assert(row(KAAN), "member row still exists");
+    r = await call(base, "POST", "/api/admin/users", { token: legacy, body: { username: "sock1", password: "Zx9!long-pass-phrase" } });
+    assert(r.status === 410, `account creation is gone: ${r.status}`);
+    assert(!fake._tables.users.rows.some((u) => u.username === "sock1"), "no account was created");
+    console.log("adminPanelGuards: ok");
+  } finally {
+    server.close();
+  }
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
