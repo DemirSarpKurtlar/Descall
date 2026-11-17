@@ -36,7 +36,7 @@ export const API_TR = {
   "Already friends": "Zaten arkadaşsınız",
   "Already friends.": "Zaten arkadaşsınız.",
   "Analytics columns are not ready.": "Analiz sütunları henüz hazır değil.",
-  "Analytics timed out. Please try again.": "Analitik zaman aşımına uğradı. Yeniden deneyin.",
+  "Analytics timed out. Please try again.": "Analitik zaman aşımına uğradı. Yeniden dene.",
   "Anti-bot tables are not migrated yet.": "Anti-bot tabloları henüz oluşturulmadı.",
   "Appearance sync is not ready yet.": "Görünüm eşitlemesi henüz hazır değil.",
   "Apple identity token is required.": "Apple kimlik anahtarı gerekli.",
