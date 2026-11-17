@@ -27,6 +27,7 @@ import {
   splitDuration,
 } from "../../lib/callCoinPrefs.js";
 import { CcsIcon, CoinArt, MiniCoin } from "./callCoinIcons.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
 
 /* ------------------------------------------------------------------ hooks */
 
@@ -242,6 +243,8 @@ export default function CallCoinSummary({
   const still = forcedStill ?? (preview || prefersReducedMotion());
   const titleId = useId();
   const cardRef = useRef(null);
+  // The live popup (not the settings preview) keeps Tab inside and returns focus on close.
+  useModalFocus(!preview, cardRef, { initialFocus: cardRef });
   const [closing, setClosing] = useState(false);
   const [featured, setFeatured] = useState(summary?.featuredItem || null);
   useEffect(() => setFeatured(summary?.featuredItem || null), [summary]);
