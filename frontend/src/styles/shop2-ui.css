@@ -6382,6 +6382,29 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
 .s2-vtile.is-sm {
   min-height: 70px;
 }
+/* Small voice tile (set page, celebration): the "Katıldı" chip and the name pill used to
+   overlap the avatar. Compact chip (icon, who, wave), 20px name pill, 30px avatar between. */
+.s2-vtile.is-sm.has-joined {
+  min-height: 96px;
+}
+.s2-vtile.is-sm .s2-vtile-joined {
+  top: 6px;
+  left: 6px;
+  right: auto;
+  max-width: calc(100% - 12px);
+  height: 22px;
+  gap: 4px;
+  padding: 0 8px;
+}
+.s2-vtile.is-sm .s2-vtile-joined > span:last-child {
+  display: none;
+}
+.s2-vtile.is-sm .s2-vtile-name {
+  left: 6px;
+  bottom: 6px;
+  height: 20px;
+  padding: 0 6px;
+}
 .s2-piece-text b {
   white-space: normal;
   display: -webkit-box;

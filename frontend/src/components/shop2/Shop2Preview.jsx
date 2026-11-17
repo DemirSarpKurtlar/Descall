@@ -141,7 +141,7 @@ export function S2VoiceTile({ user, speaking = true, joined = null, size = "lg",
   const { t } = useLocale();
   const host = voiceTileHostClass(user);
   return (
-    <div className={`s2-vtile is-${size}${speaking ? " is-speaking" : ""}${host}`} data-voice-tile={user?.equippedVoiceTile?.effect_key || undefined}>
+    <div className={`s2-vtile is-${size}${speaking ? " is-speaking" : ""}${joined ? " has-joined" : ""}${host}`} data-voice-tile={user?.equippedVoiceTile?.effect_key || undefined}>
       <VoiceTileSkin user={user} />
       {joined ? (
         <span className="s2-vtile-joined">
@@ -151,7 +151,9 @@ export function S2VoiceTile({ user, speaking = true, joined = null, size = "lg",
           {joined.sound ? <span>{joined.sound}</span> : null}
         </span>
       ) : null}
-      <S2Avatar user={user} size={size === "lg" ? 76 : size === "md" ? 56 : 40} className="s2-vtile-av" />
+      {/* "sm" tiles are ~96px tall: the joined chip and the name pill sit above and below a 30px
+          avatar instead of covering a 40px one (owner report, set page voice tile). */}
+      <S2Avatar user={user} size={size === "lg" ? 76 : size === "md" ? 56 : 30} className="s2-vtile-av" />
       <span className="s2-vtile-name">
         <Mic size={12} />
         {label || displayNameOf(user, t("shop2.preview.you"))}
