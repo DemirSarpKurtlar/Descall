@@ -1399,13 +1399,20 @@ function createMainWindow() {
     try { mainWindow.setSkipTaskbar(true); } catch (_) {}
     mainWindow.hide();
     setStartInBackground(true, 'hidden');
-    showNotificationWindow({
-      title: 'Descall',
-      body: et('notice.background'),
-      type: 'default',
-      appIcon: true,
-      duration: 5000,
-    });
+    // "Keeps running in the background" only the first time (polish pass: it showed on every close).
+    const noticeFile = path.join(app.getPath('userData'), 'background-notice-shown');
+    let noticeShown = false;
+    try { noticeShown = fs.existsSync(noticeFile); } catch (_) { noticeShown = false; }
+    if (!noticeShown) {
+      try { fs.writeFileSync(noticeFile, new Date().toISOString(), 'utf8'); } catch (_) { /* show again next time */ }
+      showNotificationWindow({
+        title: 'Descall',
+        body: et('notice.background'),
+        type: 'default',
+        appIcon: true,
+        duration: 5000,
+      });
+    }
   });
 
   // IPC handlers for window controls
