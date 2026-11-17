@@ -16,6 +16,7 @@ import { resolveDisplayName } from "../../lib/userProfile";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import { formatDate } from "../../i18n/format.js";
 import { getLocale } from "../../i18n/runtime.js";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 const ACTION_LABELS = {
   SERVER_CREATE: "Server created",
@@ -63,6 +64,7 @@ export default function ServerModerationModal({
   const [busyId, setBusyId] = useState(null);
   const [auditActionFilter, setAuditActionFilter] = useState("all");
   const [auditSearch, setAuditSearch] = useState("");
+  useEscapeClose(onClose);
 
   const loadBans = async () => {
     if (!server?.id || !canBan) return;

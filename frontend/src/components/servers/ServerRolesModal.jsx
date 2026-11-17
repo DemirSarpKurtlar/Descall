@@ -20,6 +20,7 @@ import ServerMemberRoleAssign from "./ServerMemberRoleAssign";
 import { BlockListSkeleton, DetailPaneSkeleton } from "../ui/Skeleton";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import EmptyState from "../ui/EmptyState";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 const PRESET_COLORS = [
   0x5865f2, 0x57f287, 0xfee75c, 0xed4245, 0xeb459e, 0xf47b67, 0x3ba55d, 0x3498db, 0x9b59b6, 0x95a5a6,
@@ -93,6 +94,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
   const [dragRoleId, setDragRoleId] = useState(null);
   const [dragOverRoleId, setDragOverRoleId] = useState(null);
   const [loading, setLoading] = useState(true);
+  useEscapeClose(onClose, { enabled: !busy });
 
   const { customRoles, everyoneRole } = useMemo(() => {
     const sorted = [...roles].sort((a, b) => (b.position || 0) - (a.position || 0));

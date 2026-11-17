@@ -31,6 +31,7 @@ import { ConversationListSkeleton } from "../ui/Skeleton";
 import ReportUserModal from "../social/ReportUserModal";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
 import { userTextLang } from "../../lib/userTextLang";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 function colorToHex(color) {
   const n = Math.max(0, Math.min(0xffffff, Number(color) || 0));
@@ -73,6 +74,7 @@ export default function ServerMembersPanel({
   const [nickTarget, setNickTarget] = useState(null);
   const [nickDraft, setNickDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  useEscapeClose(() => setNickTarget(null), { enabled: Boolean(nickTarget) && !busy });
   const menuRef = useRef(null);
 
   const permissionsReady = serverPermissionsLoaded(server) || Boolean(server?.isOwner);

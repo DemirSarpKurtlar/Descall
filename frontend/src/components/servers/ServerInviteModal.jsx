@@ -16,6 +16,7 @@ import {
 } from "../../api/servers";
 import { BlockListSkeleton } from "../ui/Skeleton";
 import { S3Toggle } from "../settings/SettingsV3";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 const AGE_OPTIONS = [
   { value: 60 * 60, labelKey: "1 hour" },
@@ -39,6 +40,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
   const [latestUrl, setLatestUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [isPublic, setIsPublic] = useState(Boolean(server?.isPublic));
+  useEscapeClose(onClose);
 
   const canInvite = Boolean(
     server?.isOwner ||

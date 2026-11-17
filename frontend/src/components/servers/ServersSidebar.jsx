@@ -12,6 +12,7 @@ import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
 import { userTextLang } from "../../lib/userTextLang";
+import useEscapeClose from "../../hooks/useEscapeClose";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
 import ImageCropModal from "../ui/LazyImageCropModal";
@@ -2745,6 +2746,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
       ? t("Create category")
       : t("Create channel");
 
+  useEscapeClose(onClose, { enabled: !busy });
+
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -2985,6 +2988,7 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
   const [iconUploading, setIconUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  useEscapeClose(onClose, { enabled: !busy && !iconUploading && !iconCropSrc });
   const iconFileRef = useRef(null);
 
   const selected = getTemplateCard(templateId);
