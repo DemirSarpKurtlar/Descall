@@ -178,7 +178,7 @@ function userThread(row) {
       type: "message",
       fromTeam: r.isAdmin !== false,
       text,
-      attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => typeof a === "string").slice(0, 5) : [],
+      attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => isOwnMediaUrl(a)).slice(0, 5) : [],
       created_at: r.created_at || null,
     });
   }
@@ -214,7 +214,7 @@ function shapeForUser(row, { withThread = true } = {}) {
       frequency: FREQUENCIES.includes(row.details.frequency) ? row.details.frequency : null,
       likes: Array.isArray(row.details.likes) ? row.details.likes.filter((x) => LIKES.includes(x)) : [],
     } : { area: null, frequency: null, likes: [] },
-    attachments: Array.isArray(row.attachments) ? row.attachments.filter((a) => typeof a === "string") : [],
+    attachments: Array.isArray(row.attachments) ? row.attachments.filter((a) => isOwnMediaUrl(a)) : [],
     device: row.platform === "hidden" ? null : deviceLabel(row.platform, row.app_version),
     created_at: row.created_at,
     updated_at: row.updated_at,

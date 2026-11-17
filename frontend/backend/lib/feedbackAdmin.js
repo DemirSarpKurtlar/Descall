@@ -13,6 +13,12 @@ const CATEGORIES = ["bug", "feature", "improvement", "security", "general", "oth
 
 const { ref, put } = require("./botText");
 
+// Attachments are shown as links and images in the admin feedback view: only Descall
+// uploads, never a stored javascript: / third-party URL (security scan 17 Nov 2026).
+function ownMedia(url) {
+  return require("./userFeedback").isOwnMediaUrl(url);
+}
+
 // Turkish labels of OLD timeline lines ("demir durumu Çözüldü yaptı"); new lines are English
 // with an i18n ref (bot.feedback.*). lib/userFeedback.js still reads the old ones.
 const STATUS_TR = { new: "Yeni", in_progress: "İşlemde", resolved: "Çözüldü", closed: "Kapalı" };
@@ -86,7 +92,7 @@ function shapeReply(r) {
     text: clip(r.text || "", 4000),
     ...(systemI18n(r) ? { i18n: systemI18n(r) } : {}),
     adminUsername: r.adminUsername ? clip(r.adminUsername, 40) : null,
-    attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => typeof a === "string").slice(0, 5) : [],
+    attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => ownMedia(a)).slice(0, 5) : [],
     created_at: r.created_at || null,
   };
 }
@@ -114,7 +120,7 @@ function shapeFeedback(f, users = new Map(), counts = new Map()) {
     viewed: Boolean(f.viewed),
     subject: f.subject ? clip(f.subject, 200) : null,
     message: f.message || "",
-    attachments: Array.isArray(f.attachments) ? f.attachments.filter((a) => typeof a === "string") : [],
+    attachments: Array.isArray(f.attachments) ? f.attachments.filter((a) => ownMedia(a)) : [],
     created_at: f.created_at,
     updated_at: f.updated_at,
     replies: (Array.isArray(f.admin_replies) ? f.admin_replies : []).map(shapeReply).filter(Boolean),

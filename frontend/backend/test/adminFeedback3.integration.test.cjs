@@ -23,7 +23,7 @@ const fake = createFakeSupabase({
     { id: "u-user", username: "ayse", is_admin: false, display_name: "Ayşe", created_at: "2026-03-03T10:00:00.000Z", active_sessions: [{ id: "s-u" }] },
   ],
   user_feedback: [
-    { id: "f1", user_id: "u-user", username: "ayse", category: "bug", priority: "medium", status: "new", viewed: false, subject: "Mikrofon", message: "Mikrofon kırmızı kalıyor", attachments: ["https://x/a.png"], platform: IPHONE, app_version: "2.13.13", admin_replies: [], created_at: "2026-10-26T18:35:00.000Z" },
+    { id: "f1", user_id: "u-user", username: "ayse", category: "bug", priority: "medium", status: "new", viewed: false, subject: "Mikrofon", message: "Mikrofon kırmızı kalıyor", attachments: ["https://placeholder.supabase.co/storage/v1/object/public/media/images/a.png", "javascript:alert(1)"], platform: IPHONE, app_version: "2.13.13", admin_replies: [], created_at: "2026-10-26T18:35:00.000Z" },
     { id: "f2", user_id: "u-user", username: "ayse", category: "feature", priority: "low", status: "resolved", viewed: true, message: "Renk", attachments: [], platform: "unknown", app_version: "unknown", admin_replies: [], created_at: "2026-10-25T18:35:00.000Z" },
   ],
 });
