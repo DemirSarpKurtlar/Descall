@@ -16,6 +16,7 @@ const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
 const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
 const { bindWindowKeys, devToolsAllowed } = require('./windowKeys.cjs');
+const { WINDOW_STATE_FILE, parseWindowState, pickRestoreBounds, serializeWindowState } = require('./windowState.cjs');
 const {
   AUTOSTART_ARGS,
   AUTOSTART_MARKER_FILE,
@@ -996,6 +997,12 @@ function showMainWindow() {
   try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
   try { if (mainWindow.isMinimized()) mainWindow.restore(); } catch (_) { /* ignore */ }
   try { mainWindow.show(); } catch (_) { /* ignore */ }
+  // Maximized when it was last closed (windowState.cjs): applied on the first real show,
+  // so a hidden login boot does not pop the window up.
+  if (pendingRestoreMaximize) {
+    pendingRestoreMaximize = false;
+    try { if (!mainWindow.isMaximized()) mainWindow.maximize(); } catch (_) { /* ignore */ }
+  }
   // Windows refuses focus() from a background process; a short always-on-top
   // pulse + moveTop is what actually raises the window from the tray.
   try { mainWindow.setAlwaysOnTop(true); } catch (_) { /* ignore */ }
@@ -1281,7 +1288,36 @@ function containRestoredWindow(win) {
   containingRestoredWindow = false;
 }
 
+// Window size, position and maximized state across launches (windowState.cjs).
+let pendingRestoreMaximize = false;
+let saveWindowStateTimer = null;
+function windowStateFile() {
+  return path.join(app.getPath('userData'), WINDOW_STATE_FILE);
+}
+function saveWindowStateNow() {
+  if (saveWindowStateTimer) { clearTimeout(saveWindowStateTimer); saveWindowStateTimer = null; }
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const text = serializeWindowState({ normalBounds: mainWindow.getNormalBounds(), maximized: mainWindow.isMaximized() || pendingRestoreMaximize });
+    if (text) fs.writeFileSync(windowStateFile(), text, 'utf8');
+  } catch (err) {
+    log.warn('[window] state save failed:', err?.message || err);
+  }
+}
+function saveWindowStateSoon() {
+  if (saveWindowStateTimer) clearTimeout(saveWindowStateTimer);
+  saveWindowStateTimer = setTimeout(saveWindowStateNow, 600);
+}
+
 function initialWindowBounds() {
+  try {
+    const saved = parseWindowState(fs.readFileSync(windowStateFile(), 'utf8'));
+    const restored = pickRestoreBounds(saved, screen.getAllDisplays(), { minWidth: 1200, minHeight: 700 });
+    if (restored) {
+      pendingRestoreMaximize = Boolean(restored.maximized);
+      return restored;
+    }
+  } catch (_) { /* first launch or unreadable: default size */ }
   let area = null;
   try { area = screen.getPrimaryDisplay()?.workArea || null; } catch (_) { area = null; }
   return fitBoundsToWorkArea(
@@ -1394,6 +1430,10 @@ function createMainWindow() {
   const publishBox = () => publishContentBox(mainWindow);
   mainWindow.on('resize', publishBox);
   mainWindow.on('move', publishBox);
+  mainWindow.on('resize', saveWindowStateSoon);
+  mainWindow.on('move', saveWindowStateSoon);
+  mainWindow.on('maximize', saveWindowStateSoon);
+  mainWindow.on('unmaximize', saveWindowStateSoon);
   mainWindow.on('restore', () => {
     containRestoredWindow(mainWindow);
     publishBox();
@@ -2040,6 +2080,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  saveWindowStateNow();
   premium.flush();
   destroyOverlayWindow();
   if (!updateReady || installStarted || !app.isPackaged) return;
