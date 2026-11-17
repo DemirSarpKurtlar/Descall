@@ -18,6 +18,8 @@ const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
 const { bindWindowKeys, devToolsAllowed } = require('./windowKeys.cjs');
 const {
   AUTOSTART_ARGS,
+  AUTOSTART_MARKER_FILE,
+  autostartLaunchAction,
   decideColdStart,
   isFreshRelaunchMarker,
   loginItemSettings,
@@ -945,10 +947,21 @@ function syncLoginItem(openAtLogin) {
   }
 }
 
+function autostartMarkerPath() {
+  return path.join(app.getPath('userData'), AUTOSTART_MARKER_FILE);
+}
+
+/** The user (or the first run) has decided: later launches never turn auto-start back on. */
+function markAutostartDecided() {
+  try { fs.writeFileSync(autostartMarkerPath(), new Date().toISOString(), 'utf8'); } catch (err) {
+    log.warn('[boot] autostart marker write failed:', err?.message || err);
+  }
+}
+
 /**
- * First packaged run turns auto-start on. An older Run key that is already
- * enabled but lacks --hidden/--autostart is rewritten so boot stays hidden
- * and a shortcut launch does not.
+ * First packaged run turns auto-start on (once, launchVisibility.autostartLaunchAction).
+ * An enabled Windows Run key that lacks --hidden/--autostart is rewritten so login boots
+ * stay hidden. An entry the user turned off stays off: before, every launch re-enabled it.
  */
 function ensureAutostartLoginItem() {
   if (!isPackaged) return;
@@ -958,10 +971,14 @@ function ensureAutostartLoginItem() {
   } catch (_) {
     return;
   }
-  const enabled = process.platform === 'win32'
-    ? Boolean(settings.executableWillLaunchAtLogin || settings.openAtLogin)
-    : Boolean(settings.openAtLogin);
-  if (!enabled || !settings.openAtLogin) syncLoginItem(true);
+  let markerExists = false;
+  try { markerExists = fs.existsSync(autostartMarkerPath()); } catch (_) { markerExists = false; }
+  const action = autostartLaunchAction({ markerExists, settings, platform: process.platform });
+  if (action === 'enable' || action === 'rewrite-args') {
+    log.info(`[boot] login item: ${action}`);
+    syncLoginItem(true);
+  }
+  if (!markerExists) markAutostartDecided();
 }
 
 
@@ -1903,6 +1920,7 @@ function createTray() {
       checked: readOpenAtLogin(),
       click: (item) => {
         syncLoginItem(item.checked);
+        markAutostartDecided();
         tray.setContextMenu(buildMenu());
       },
     },

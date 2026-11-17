@@ -80,6 +80,23 @@ function loginItemSettings(openAtLogin) {
   };
 }
 
+/** userData file written once auto-start has been set up (or the user chose in the tray). */
+const AUTOSTART_MARKER_FILE = "autostart-initialized";
+
+/**
+ * What a launch does with the login item:
+ *   'enable'       first packaged run (no marker yet): turn auto-start on;
+ *   'rewrite-args' an enabled Windows Run key without --autostart/--hidden: rewrite it so
+ *                  login boots stay hidden (keeps it on, never turns it on);
+ *   'none'         anything else, above all an entry the user turned off (tray checkbox,
+ *                  Task Manager, System Settings) stays off.
+ */
+function autostartLaunchAction({ markerExists = false, settings = {}, platform = process.platform } = {}) {
+  if (!markerExists) return "enable";
+  if (platform === "win32" && settings.executableWillLaunchAtLogin && !settings.openAtLogin) return "rewrite-args";
+  return "none";
+}
+
 /** A second process (shortcut while the tray instance is alive) must raise the window. */
 function secondInstanceAction() {
   return "show";
@@ -94,4 +111,6 @@ module.exports = {
   decideColdStart,
   loginItemSettings,
   secondInstanceAction,
+  AUTOSTART_MARKER_FILE,
+  autostartLaunchAction,
 };
