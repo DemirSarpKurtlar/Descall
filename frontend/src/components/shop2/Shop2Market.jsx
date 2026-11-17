@@ -135,7 +135,7 @@ function SummaryTiles({ onTab }) {
           {nm?.open ? <RollingClock target={nm.closesAt} urgentMs={SHOP2_NIGHT_URGENT_MS} className="s2-tile-mid" /> : nightNext ? <span className="s2-tile-mid s2-num">{when(nightNext, { short: true, now })}</span> : <span className="s2-tile-mid">{"–"}</span>}
           <span className="s2-enter">{nm?.open ? t("shop2.tiles.enter") : t("shop2.tiles.soon")}<ChevronRight size={14} /></span>
         </div>
-        <small>{nm?.open ? (nm.eligible === false ? t("shop2.night.notEligible") : t("shop2.tiles.nightOpen", { cards: nm.cards, flips: nm.flipsLeft })) : nightNext ? t("shop2.tiles.nightNext", { when: when(nightNext, { now }) }) : t("shop2.tiles.nightNone")}</small>
+        <small>{nm?.open ? (nm.eligible === false ? t("shop2.night.notEligible") : t("shop2.tiles.nightOpen", { cards: nm.cards, flips: nm.flipsLeft })) : nightNext ? <>{t("shop2.night.opensIn")} <RollingClock target={nightNext} /></> : t("shop2.tiles.nightNone")}</small>
       </button>
       <button type="button" className="s2-tile" onClick={() => featured && s2.openSet(featured.key)} disabled={!featured}>
         <div className="s2-tile-k"><Layers size={13} />{t("shop2.tiles.setProgress")}</div>

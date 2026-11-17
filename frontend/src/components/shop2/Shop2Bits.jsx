@@ -100,7 +100,8 @@ export function RollingClock({ target, urgentMs, className = "", short = false }
   return (
     <span className={`s2-clock s2-num${parts.urgent ? " is-urgent" : ""} ${className}`.trim()} role="timer" aria-live="off">
       {Array.from(text).map((ch, i) => (
-        <span key={`${i}-${ch}`} className={ch === ":" ? "s2-clock-sep" : "s2-clock-d"}>{ch}</span>
+        // A space ("2g 19s") would collapse inside the inline-flex clock: keep it as a no-break space.
+        <span key={`${i}-${ch}`} className={ch === ":" || ch === " " ? "s2-clock-sep" : "s2-clock-d"}>{ch === " " ? "\u00a0" : ch}</span>
       ))}
     </span>
   );
