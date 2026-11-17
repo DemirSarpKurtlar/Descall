@@ -130,9 +130,7 @@ async function loadLegacyOverview() {
   return composeOverviewFromLegacy({ pulse, stats, inbox, system, audit, feedback, sanctions });
 }
 
-const CAN_ALL = () => true;
-
-export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, refreshKey = 0 }) {
+export default function AdminOverview({ onOpenPerson, onGoto }) {
   const { t, locale } = useLocale();
   const cached = useMemo(() => readOverviewCache(), []);
   const [data, setData] = useState(cached?.data || null);
@@ -147,8 +145,7 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
     try {
       const [overview, pulse] = await Promise.all([
         adminFetch("/overview").catch((err) => err),
-        // Kullanicilar section only: a 403 here is an "access denied" audit entry (polish admin-b-06).
-        can("directory") ? adminFetch("/member-pulse?limit=20").catch(() => null) : null,
+        adminFetch("/member-pulse?limit=20").catch(() => null),
       ]);
       const overviewOk = Boolean(overview?.live);
       const overviewErr = overviewOk ? null : overview;
@@ -179,20 +176,13 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
     } finally {
       setLoading(false);
     }
-  }, [t, can]);
+  }, [t]);
 
   useEffect(() => {
     load().catch(() => {});
     const id = setInterval(() => load().catch(() => {}), 20000);
     return () => clearInterval(id);
   }, [load]);
-
-  // Live presence (AdminPanel throttles it to one tick per 10 s).
-  const firstTick = useRef(refreshKey);
-  useEffect(() => {
-    if (refreshKey === firstTick.current) return;
-    load().catch(() => {});
-  }, [refreshKey, load]);
 
   const health = data?.health || { level: "ok", alerts: [] };
   const healthLevel = ["ok", "watch", "high", "critical"].includes(health.level) ? health.level : "watch";
@@ -216,7 +206,7 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
   const fmt1 = (v) => (v == null ? "" : formatNumber(v, locale, { maximumFractionDigits: 1 }));
 
   const openPerson = (id) => {
-    if (!id || !can("people")) return;
+    if (!id) return;
     onOpenPerson?.(id);
     onGoto?.("people");
   };
@@ -297,7 +287,7 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
           const source = kind === "joined" ? sourceLabel(user.source, t) : "";
           return (
             <li key={user.id}>
-              <button type="button" className="aov-row" onClick={() => openPerson(user.id)} disabled={!can("people")}>
+              <button type="button" className="aov-row" onClick={() => openPerson(user.id)}>
                 <Avatar name={personName(user)} size={30} user={{ avatarUrl: user.avatarUrl, username: user.username }} animate="none" />
                 <span className="aov-row-main">
                   <b>
@@ -374,13 +364,11 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
       <div className="aov-kpis">
         {data
           ? kpis.map((k) => {
-              // A card links only to a section this admin can open (polish admin-b-06).
-              const go = k.go && can(k.go) ? k.go : null;
-              const Tag = go ? "button" : "div";
+              const Tag = k.go ? "button" : "div";
               return (
                 <Tag
                   key={k.id}
-                  {...(go ? { type: "button", onClick: () => onGoto?.(go) } : {})}
+                  {...(k.go ? { type: "button", onClick: () => onGoto?.(k.go) } : {})}
                   className={`aov-kpi aov-glass${k.hue ? " is-hue" : ""}`}
                   data-kpi={k.id}
                 >
@@ -421,11 +409,9 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
               </div>
             </header>
             {roster(visibleActive, "active")}
-            {can("directory") ? (
-              <button type="button" className="aov-more" onClick={() => onGoto?.("directory")}>
-                {t("admin.ovAllUsers")}<ChevronRight size={13} aria-hidden="true" />
-              </button>
-            ) : null}
+            <button type="button" className="aov-more" onClick={() => onGoto?.("directory")}>
+              {t("admin.ovAllUsers")}<ChevronRight size={13} aria-hidden="true" />
+            </button>
           </section>
 
           <section className="aov-panel aov-glass aov-joined">
@@ -437,11 +423,9 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
               <span className="aov-chip tnum">{t("admin.ovToday", { n: product.signupsToday || 0 })}</span>
             </header>
             {roster(newlyJoined, "joined")}
-            {can("signupStats") ? (
-              <button type="button" className="aov-more" onClick={() => onGoto?.("signupStats")}>
-                {t("admin.signupStats")}<ChevronRight size={13} aria-hidden="true" />
-              </button>
-            ) : null}
+            <button type="button" className="aov-more" onClick={() => onGoto?.("signupStats")}>
+              {t("admin.signupStats")}<ChevronRight size={13} aria-hidden="true" />
+            </button>
           </section>
 
           <div className="aov-rail">
@@ -463,14 +447,14 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
                         <b>{say(item.title)}</b>
                         <em>{todoSub(item)}</em>
                       </span>
-                      {item.tab && can(item.tab) ? (
+                      {item.tab ? (
                         <span className="aov-todo-go">{t("admin.ovTodoOpen")}<ChevronRight size={13} aria-hidden="true" /></span>
                       ) : null}
                     </>
                   );
                   return (
                     <li key={item.id} className={`is-${item.level}`}>
-                      {item.tab && can(item.tab) ? (
+                      {item.tab ? (
                         <button type="button" className="aov-todo-row" onClick={() => onGoto?.(item.tab)}>{body}</button>
                       ) : (
                         <div className="aov-todo-row">{body}</div>
@@ -507,11 +491,9 @@ export default function AdminOverview({ onOpenPerson, onGoto, can = CAN_ALL, ref
               ) : (
                 <p className="aov-empty">{t("admin.overviewNoAudit")}</p>
               )}
-              {can("audit") ? (
-                <button type="button" className="aov-more" onClick={() => onGoto?.("audit")}>
-                  {t("admin.overviewOpenAudit")}<ChevronRight size={13} aria-hidden="true" />
-                </button>
-              ) : null}
+              <button type="button" className="aov-more" onClick={() => onGoto?.("audit")}>
+                {t("admin.overviewOpenAudit")}<ChevronRight size={13} aria-hidden="true" />
+              </button>
             </section>
           </div>
         </div>

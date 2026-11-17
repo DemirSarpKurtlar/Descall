@@ -202,6 +202,12 @@ function cleanCreateInput(body = {}) {
 
 async function adminCreate(adminId, body) {
   const input = cleanCreateInput(body);
+  if (input.rewardType === "shop_item") {
+    // Only an item that is on sale (the database function only checks that the row exists,
+    // so an API call could otherwise attach a retired item).
+    const { data: item, error } = await supabase.from("shop_items").select("id, active").eq("id", input.rewardRef).maybeSingle();
+    if (!error && (!item || item.active === false)) throw new PromoError("reward_item", statusFor("reward_item"));
+  }
   if (input.rewardType === "special_badge") {
     const badges = require("./specialBadges");
     if ((await badges.promoGrantable(input.rewardRef)) === false) throw new PromoError("reward_badge", statusFor("reward_badge"));

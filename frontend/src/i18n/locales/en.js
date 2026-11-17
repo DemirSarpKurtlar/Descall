@@ -586,8 +586,6 @@ export const nested = {
     "ovJoinedHint": "Click a name to open the file",
     "ovToday": "Today {n}",
     "ovAllUsers": "All users",
-    "reportAlert": "A person just reached {n} open reports.",
-    "reportAlertOpen": "Open the file",
     "ovTodo": "To do",
     "ovTodoHint": "What needs you right now",
     "ovTodoOpen": "Open",

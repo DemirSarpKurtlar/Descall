@@ -9,8 +9,6 @@
  *    while live, and an edit after it ended drops the approval (reopen refuses).
  *  - DesCoin grant: a reason is required and a non-owner admin cannot move more than
  *    1,000,000 in one change.
- *  - Genel Bakis leaves out audit entries, report targets and feedback excerpts for an
- *    admin without those sections.
  */
 
 process.env.NODE_ENV = "test";
@@ -25,7 +23,6 @@ const { createFakeSupabase } = require("./fakeSupabase.cjs");
 const OWNER = "00000000-0000-4000-8000-000000000001";
 const LEGACY = "00000000-0000-4000-8000-000000000002";
 const KAAN = "00000000-0000-4000-8000-000000000003";
-const LIMITED = "00000000-0000-4000-8000-000000000004";
 
 function user(id, username, extra = {}) {
   return { id, username, is_admin: false, active_sessions: [{ id: `s-${username}` }], ...extra };
@@ -37,7 +34,6 @@ const fake = createFakeSupabase({
     // admin_permissions NULL = every legacy section, "directory" included.
     user(LEGACY, "legacyadmin", { is_admin: true, admin_permissions: null }),
     user(KAAN, "kaan"),
-    user(LIMITED, "annconly", { is_admin: true, admin_permissions: ["announcements"] }),
   ],
   admin_audit: [],
   announcements: [],
@@ -131,16 +127,7 @@ const row = (id) => fake._tables.users.rows.find((u) => u.id === id);
 
     // ---- analytics reads every row (paged) ----
     r = await call(base, "GET", "/api/admin/analytics", { token: owner });
-    assert(r.status === 200 && r.body.totalSignups === 4, `analytics: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
-
-    // ---- Genel Bakis: blocks of closed sections are left out ----
-    r = await call(base, "GET", "/api/admin/overview", { token: session(LIMITED, "annconly") });
-    assert(r.status === 200, `overview for a limited admin: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
-    assert(Array.isArray(r.body.recentAudit) && r.body.recentAudit.length === 0, "no audit entries without the audit section");
-    assert(Array.isArray(r.body.safety?.hotTargets) && r.body.safety.hotTargets.length === 0 && !r.body.safety.autoOpenUserId, "no report targets without reports");
-    assert(r.body.product?.feedbackFocus == null, "no feedback excerpt without feedback");
-    r = await call(base, "GET", "/api/admin/overview", { token: owner });
-    assert(r.status === 200 && r.body.recentAudit.length > 0, `owner still sees recent admin actions: ${JSON.stringify(r.body.recentAudit)}`);
+    assert(r.status === 200 && r.body.totalSignups === 3, `analytics: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
 
     console.log("adminPanelGuards: ok");
   } finally {

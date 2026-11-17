@@ -596,8 +596,6 @@ export const nested = {
     "ovJoinedHint": "İsme tıklayınca dosya açılır",
     "ovToday": "Bugün {n}",
     "ovAllUsers": "Tüm kullanıcılar",
-    "reportAlert": "Bir kişi {n} açık şikayete ulaştı.",
-    "reportAlertOpen": "Dosyayı aç",
     "ovTodo": "Yapılacaklar",
     "ovTodoHint": "Şu an ilgilenmen gerekenler",
     "ovTodoOpen": "Aç",

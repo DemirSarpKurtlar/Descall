@@ -1158,43 +1158,6 @@
   border: 1px solid rgba(255, 69, 58, 0.22);
 }
 
-/* A person reached the report threshold (polish admin-b-19): an offer, never a forced jump. */
-.admin-report-alert {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding: 8px 8px 8px 14px;
-  border-radius: var(--r-md);
-  background: rgba(255, 159, 10, 0.12);
-  border: 1px solid rgba(255, 159, 10, 0.3);
-  color: #ffb340;
-  font-size: var(--fs-13);
-}
-.admin-report-alert > span { flex: 1; min-width: 0; color: var(--text-primary, #eef0ff); }
-.admin-report-alert-go {
-  border: 0;
-  border-radius: 999px;
-  padding: 6px 12px;
-  background: #587af5;
-  color: #fff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.admin-report-alert-x {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-.admin-report-alert-x:hover { background: rgba(255, 255, 255, 0.08); }
-
 .admin-stale-note {
   margin: 0 0 10px;
   font-size: 12px;

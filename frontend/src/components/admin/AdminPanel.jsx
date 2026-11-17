@@ -195,9 +195,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
   const [admin2faRequired, setAdmin2faRequired] = useAdmin2faGate();
   const [panelEpoch, setPanelEpoch] = useState(0);
   const [dossierUserId, setDossierUserId] = useState(null);
-  const [reportAlert, setReportAlert] = useState(null);
-  const [presenceTick, setPresenceTick] = useState(0);
-  const lastPresenceRefresh = useRef(0);
   const adminLayout = useAdminLayout();
   /** Every section switch goes through here (Kayıt İstatistikleri is a section since 3.1). */
   const selectTab = useCallback((id) => setTab(id), []);
@@ -609,19 +606,16 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
     const onSync = (p) => setSnapshot(p);
     const onUp = (p) => {
       setSnapshot((s) => (s ? { ...s, lastEvent: p } : s));
-      // Presence changes on every connect / disconnect: at most one Genel Bakis refresh per
-      // 10 s, and only while it is open (polish admin-b-19; was two reads per event).
       if (p?.type === "presence") {
-        const now = Date.now();
-        if (now - lastPresenceRefresh.current >= 10000) {
-          lastPresenceRefresh.current = now;
-          setPresenceTick((n) => n + 1);
-        }
+        loadStats().catch(() => {});
+        loadMemberPulse().catch(() => {});
       }
-      if (p?.type === "user_report" && can("reports")) {
+      if (p?.type === "user_report") {
         loadReportSummary().catch(() => {});
-        // Never yank the admin out of what they are doing: offer the dossier instead.
-        if (p.autoOpen && p.targetId) setReportAlert({ targetId: p.targetId, openCount: Number(p.openCount) || 0 });
+        if (p.autoOpen && p.targetId) {
+          setDossierUserId(p.targetId);
+          setTab("reports");
+        }
       }
     };
     socket.on("admin:sync", onSync);
@@ -631,7 +625,7 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
       socket.off("admin:sync", onSync);
       socket.off("admin:update", onUp);
     };
-  }, [socket, loadReportSummary, can]);
+  }, [socket, loadStats, loadMemberPulse, loadReportSummary]);
 
   useEffect(() => {
     // Overview owns its own banner. A failed background stats read must not
@@ -705,26 +699,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           </motion.div>
         )}
       </AnimatePresence>
-      {reportAlert ? (
-        <div className="admin-report-alert" role="status" data-testid="admin-report-alert">
-          <AlertTriangle size={16} aria-hidden="true" />
-          <span>{t("admin.reportAlert", { n: reportAlert.openCount })}</span>
-          <button
-            type="button"
-            className="admin-report-alert-go"
-            onClick={() => {
-              setDossierUserId(reportAlert.targetId);
-              setTab("reports");
-              setReportAlert(null);
-            }}
-          >
-            {t("admin.reportAlertOpen")}
-          </button>
-          <button type="button" className="admin-report-alert-x" aria-label={t("Close")} onClick={() => setReportAlert(null)}>
-            <X size={14} aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
       {err && (
         <motion.div className="admin-error" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <AlertTriangle size={16} />
@@ -884,8 +858,6 @@ export default function AdminPanel({ socket, onClose, onAdminChanged, viewerUser
           <AdminOverview
             onOpenPerson={setDossierUserId}
             onGoto={selectTab}
-            can={can}
-            refreshKey={presenceTick}
           />
         )}
 

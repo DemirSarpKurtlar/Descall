@@ -820,7 +820,6 @@ export const API_TR = {
   "This change has no state for the flag.": "Bu değişiklikte bayrağın durumu yok.",
   "Unknown flag.": "Bilinmeyen bayrak.",
   "Use System > Safe restart.": "Sistem > Güvenli yeniden başlat'ı kullan.",
-  "Failed to load overview.": "Genel bakış yüklenemedi.",
   "Could not check your verification code status. Try again.": "Doğrulama kodu durumun kontrol edilemedi. Tekrar dene.",
   "Write a reason (at least 3 characters).": "Bir sebep yaz (en az 3 karakter).",
   "One change can move at most {max} DesCoin.": "Tek işlemde en fazla {max} DesCoin değiştirilebilir.",
