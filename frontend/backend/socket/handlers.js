@@ -70,7 +70,7 @@ const { registerGroupHandlers, removeUserFromAllGroupCalls } = require("./groupH
 const { registerServerChannelHandlers } = require("./serverChannelHandlers");
 const { registerPollHandlers } = require("./pollHandlers");
 const { startPollSweeper } = require("../lib/polls");
-const { registerServerVoiceHandlers, removeUserFromAllServerVoice, startAfkIdleScanner } = require("./serverVoiceHandlers");
+const { registerServerVoiceHandlers, startAfkIdleScanner } = require("./serverVoiceHandlers");
 const { scheduleTemporaryMemberCleanup } = require("../lib/serverMemberJoin");
 const { scheduleParticipantDisconnectGrace } = require("./groupCallLifecycle");
 const { toUtcIso } = require("../lib/datetime");
@@ -895,6 +895,12 @@ function registerSocketHandlers(io) {
           return socket.emit("friend:error", { message: "Request already pending." });
         }
 
+        // Request -> remove -> request loops pushed the target every round (world-social-05).
+        const limit = require("../lib/friendRequestLimits").takeFriendRequest(myId, target.id);
+        if (!limit.ok) {
+          return socket.emit("friend:error", { message: limit.error, code: "rate_limited", retryAfterSec: limit.retryAfterSec });
+        }
+
         const created = await createPendingFriendshipInDB(myId, target.id);
         if (!created.ok) {
           if (created.reason === "already_friends") {
@@ -922,13 +928,16 @@ function registerSocketHandlers(io) {
           meta: { fromUserId: myId },
         });
         try {
-          const { sendFriendRequestPush } = require("../lib/webPush");
-          void sendFriendRequestPush(target.id, {
-            fromId: myId,
-            from: me.username,
-          });
-          // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
-          require("../lib/reengage").fire("onFriendRequest", { toUserId: target.id, fromId: myId, fromName: me.username });
+          // Only the first request of a pair in 24 h reaches the target's devices.
+          if (require("../lib/friendRequestLimits").shouldPushFriendRequest(myId, target.id)) {
+            const { sendFriendRequestPush } = require("../lib/webPush");
+            void sendFriendRequestPush(target.id, {
+              fromId: myId,
+              from: me.username,
+            });
+            // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
+            require("../lib/reengage").fire("onFriendRequest", { toUserId: target.id, fromId: myId, fromName: me.username });
+          }
         } catch (pushErr) {
           console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
         }
@@ -1150,6 +1159,8 @@ function registerSocketHandlers(io) {
       const { context = "dm", toUserId, groupId, channelId } = payload;
       const fromUser = { id: myId, username: me.username };
       if (context === "dm" && typeof toUserId === "string") {
+        // Friends only and never across a block (polish messaging-14).
+        if (!friends.get(myId)?.has(toUserId) || dmBlockPairs.has(convKey(myId, toUserId))) return;
         emitToUser(io, toUserId, "typing:update", { context: "dm", fromUser, typing: true });
       } else if (context === "group" && typeof groupId === "string") {
         // Only sockets in the group room (removed / left members are taken out).
@@ -1187,6 +1198,7 @@ function registerSocketHandlers(io) {
       const { context = "dm", toUserId, groupId, channelId } = payload;
       const fromUser = { id: myId, username: me.username };
       if (context === "dm" && typeof toUserId === "string") {
+        if (!friends.get(myId)?.has(toUserId)) return;
         emitToUser(io, toUserId, "typing:update", { context: "dm", fromUser, typing: false });
       } else if (context === "group" && typeof groupId === "string") {
         socket.to(`group:${groupId}`).emit("typing:update", { context: "group", groupId, fromUser, typing: false });
@@ -1200,6 +1212,24 @@ function registerSocketHandlers(io) {
 
     socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, forwarded, poll: pollInput } = {}) => {
       let pollDraft = null;
+      {
+        // Types + Sistem › maxMessageLength (polish messaging-06): DMs had no cap at all.
+        const { checkText, maxMessageLength, optionalString } = require("../lib/messageText");
+        const tid = optionalString(tempId, 128);
+        tempId = tid || null;
+        const textCheck = checkText(text, { max: maxMessageLength(systemConfig) });
+        const media = optionalString(mediaUrl);
+        if (!textCheck.ok || media === false || tid === false || optionalString(mediaType, 32) === false) {
+          return socket.emit("dm:error", {
+            message: textCheck.ok ? "Invalid message." : textCheck.message,
+            code: textCheck.ok ? "BAD_TEXT" : textCheck.code,
+            tempId,
+            toUserId: typeof toUserId === "string" ? toUserId : null,
+          });
+        }
+        text = textCheck.text;
+        mediaUrl = media;
+      }
       if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") mediaType = null;
       if (bannedUserIds.has(myId)) {
         appendErrorLog("dm:send", "User is banned", { toUserId }, myId, me.username);
@@ -1414,6 +1444,8 @@ function registerSocketHandlers(io) {
       const messagePayload = {
         id: messageId,
         from: sender,
+        // The peer, so "Görüldü" can match live rows too (polish messaging-02).
+        to: { id: toUserId },
         text: isVoice ? "" : storedText,
         mediaUrl,
         mediaType: isVoice ? "voice" : mediaType,
@@ -2246,29 +2278,56 @@ function registerSocketHandlers(io) {
 
     // Message Edit - DM
     socket.on("dm:message:edit", async ({ messageId, newText, toUserId } = {}) => {
-      const fail = (message) => socket.emit("dm:error", {
+      const fail = (message, extra = {}) => socket.emit("dm:error", {
         message: message || "Failed to edit message.",
         toUserId,
         messageId,
         code: "EDIT_FAILED",
+        ...extra,
       });
-      if (!messageId || !newText || !toUserId) return fail("Failed to edit message.");
+      if (typeof messageId !== "string" || !messageId || typeof toUserId !== "string" || !toUserId) {
+        return fail("Failed to edit message.");
+      }
+      // Same rules as sending (polish messaging-04): string, trimmed, Sistem cap,
+      // not while timed out, and the Moderasyon word filter.
+      const { checkText, maxMessageLength } = require("../lib/messageText");
+      const textCheck = checkText(newText, { max: maxMessageLength(systemConfig), optional: false });
+      if (!textCheck.ok) return fail(textCheck.message, { code: textCheck.code });
+      newText = textCheck.text.trim();
+      if (!newText) return fail("Message cannot be empty.");
+      {
+        const { getActiveTimeout } = require("../lib/moderation");
+        const to = getActiveTimeout(myId);
+        if (to) return fail(to.message || "You are timed out and cannot send messages.", { code: "TIMED_OUT", timeout: to });
+      }
+      const contentFilter = require("../lib/contentFilter");
+      const filterCtx = { convType: "dm", peerId: toUserId };
+      const filtered = contentFilter.gate({ io, userId: myId, text: newText, ctx: filterCtx });
+      if (filtered.blocked) return fail(null, { ...contentFilter.blockedPayload() });
 
       // Verify friendship
       if (!friends.get(myId)?.has(toUserId)) return fail("Failed to edit message.");
-      {
-        const { data: kind } = await supabase.from("dm_messages").select("media_type").eq("id", messageId).eq("from_user_id", myId).maybeSingle();
-        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("This message can't be edited as text.");
-      }
+      // The stored row is the source of truth for the edit history (polish messaging-05):
+      // the in-memory copy is gone after a restart and only holds the newest 500.
+      const { data: current } = await supabase
+        .from("dm_messages")
+        .select("media_type, content, edit_history")
+        .eq("id", messageId)
+        .eq("from_user_id", myId)
+        .eq("to_user_id", toUserId)
+        .maybeSingle();
+      if (!current) return fail("Failed to edit message.");
+      if (["poll_v2", "poll_end", "app_card"].includes(current.media_type)) return fail("This message can't be edited as text.");
 
       const key = convKey(myId, toUserId);
       const arr = dmHistory.get(key) || [];
       const msg = arr.find((message) => message.id === messageId && message.from?.id === myId);
       const editedAt = new Date().toISOString();
+      const storedHistory = Array.isArray(current.edit_history) ? current.edit_history : [];
       const nextEditHistory = [
-        ...(msg?.editHistory || []),
-        ...(msg ? [{ text: msg.text, editedAt }] : []),
-      ];
+        ...storedHistory,
+        { text: typeof current.content === "string" ? current.content : String(current.content ?? ""), editedAt },
+      ].slice(-50);
       const { data, error } = await supabase
         .from("dm_messages")
         .update({
@@ -2285,6 +2344,7 @@ function registerSocketHandlers(io) {
         console.error("[DM] Edit failed:", error?.message || "Message not found");
         return fail("Failed to edit message.");
       }
+      contentFilter.after(filtered.verdict, { io, userId: myId, text: newText, messageId, ctx: filterCtx });
       if (msg) {
         msg.editHistory = nextEditHistory;
         msg.text = newText;
@@ -2424,6 +2484,18 @@ function registerSocketHandlers(io) {
       if (!trimmed) return fail("Message cannot be empty.");
       if (trimmed.length > (Number(systemConfig.maxMessageLength) || 2000)) return fail("Message is too long.");
 
+      {
+        // Same gate as sending (polish messaging-04): timeout + Moderasyon word filter.
+        const { getActiveTimeout } = require("../lib/moderation");
+        const to = getActiveTimeout(myId);
+        if (to) return fail(to.message || "You are timed out and cannot send messages.");
+      }
+      const groupEditFilterCtx = { convType: "group", groupId };
+      const groupEditFiltered = require("../lib/contentFilter").gate({ io, userId: myId, text: trimmed, ctx: groupEditFilterCtx });
+      if (groupEditFiltered.blocked) {
+        return socket.emit("group:message:error", { groupId, messageId, ...require("../lib/contentFilter").blockedPayload() });
+      }
+
       // Check membership
       if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to edit message.");
       {
@@ -2455,6 +2527,7 @@ function registerSocketHandlers(io) {
         }
         // Not my message (or not in this group): nothing changed, nothing to broadcast.
         if (!updated) return fail("You can only edit your own messages.");
+        require("../lib/contentFilter").after(groupEditFiltered.verdict, { io, userId: myId, text: trimmed, messageId, ctx: groupEditFilterCtx });
         
         // Broadcast edit to group room
         const editData = {
@@ -2605,7 +2678,10 @@ function registerSocketHandlers(io) {
         for (const peerId of activeDmPeersOf(myId)) {
           emitToUser(io, peerId, "call:peer-presence", { peerId: myId, online: false });
         }
-        removeUserFromAllServerVoice(io, myId);
+        // Server voice: no immediate removal. The seat belongs to the socket that
+        // joined it and serverVoiceHandlers' disconnect grace (SEAT_RECONNECT_GRACE_MS)
+        // drops it only if no reconnect re-took it. Removing here cut the audio of
+        // everyone in the channel on every short blip (voice-drops-01).
         dmScreenSharingUsers.delete(myId);
         scheduleTemporaryMemberCleanup(io, myId);
       }

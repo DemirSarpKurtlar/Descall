@@ -4,6 +4,7 @@ const { requireAuth } = require("../middleware/auth");
 const { pendingRequests, usernameById } = require("../runtime/sharedState");
 const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
 const friendSince = require("../lib/friendSince");
+const { takeFriendRequest, shouldPushFriendRequest } = require("../lib/friendRequestLimits");
 
 const router = express.Router();
 
@@ -90,6 +91,13 @@ router.post("/request", requireAuth, async (req, res) => {
         .or(`and(user_id.eq.${userId},friend_id.eq.${targetUser.id}),and(user_id.eq.${targetUser.id},friend_id.eq.${userId})`);
     }
 
+    // Request -> remove -> request loops pushed the target every round (world-social-05).
+    const limit = takeFriendRequest(userId, targetUser.id);
+    if (!limit.ok) {
+      res.set("Retry-After", String(limit.retryAfterSec || 60));
+      return res.status(429).json({ error: limit.error, code: "rate_limited", retryAfterSec: limit.retryAfterSec });
+    }
+
     // Create friend request
     const { error: insertError } = await supabase
       .from("friendships")
@@ -119,10 +127,13 @@ router.post("/request", requireAuth, async (req, res) => {
       await emitFriendState(io, targetUser.id);
     }
     try {
-      const { sendFriendRequestPush } = require("../lib/webPush");
-      void sendFriendRequestPush(targetUser.id, { fromId: userId, from: senderUsername });
-      // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
-      require("../lib/reengage").fire("onFriendRequest", { toUserId: targetUser.id, fromId: userId, fromName: senderUsername });
+      // Only the first request of a pair in 24 h reaches the target's devices.
+      if (shouldPushFriendRequest(userId, targetUser.id)) {
+        const { sendFriendRequestPush } = require("../lib/webPush");
+        void sendFriendRequestPush(targetUser.id, { fromId: userId, from: senderUsername });
+        // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
+        require("../lib/reengage").fire("onFriendRequest", { toUserId: targetUser.id, fromId: userId, fromName: senderUsername });
+      }
     } catch (pushErr) {
       console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
     }
