@@ -1360,11 +1360,25 @@ html.gd-lite .rail-tooltip {
 .friend-name {
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 4px;
   min-width: 0;
+  max-width: 100%;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-1);
+}
+
+/* A long name ends in an ellipsis instead of being cut at the panel edge
+   (polish world-social-07); badges after it keep their size. */
+.friend-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friend-name > :not(.friend-name-text) {
+  flex: 0 0 auto;
 }
 
 /* ─── Main Panel (Chat Area) ─── */

@@ -2123,9 +2123,11 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     }}
                   >
                     <div className="friend-avatar" style={{ flexShrink: 0 }}>
-                      <Avatar name={req.username} size={32} user={req} />
+                      <Avatar name={resolveDisplayName(req)} size={32} user={req} />
                     </div>
-                    <span className="friend-name" style={{ flex: 1, fontSize: 13 }}>{req.username}</span>
+                    <span className="friend-name" style={{ flex: 1, fontSize: 13 }} title={req.username ? `@${req.username}` : undefined}>
+                      <span className="friend-name-text">{resolveDisplayName(req)}</span>
+                    </span>
                     <button
                       type="button"
                       title={t("Accept")}
@@ -2187,10 +2189,12 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     }}
                   >
                     <div className="friend-avatar" style={{ flexShrink: 0 }}>
-                      <Avatar name={req.username} size={32} user={req} />
+                      <Avatar name={resolveDisplayName(req)} size={32} user={req} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <span className="friend-name" style={{ fontSize: 13 }}>{req.username}</span>
+                      <span className="friend-name" style={{ fontSize: 13 }} title={req.username ? `@${req.username}` : undefined}>
+                        <span className="friend-name-text">{resolveDisplayName(req)}</span>
+                      </span>
                       {req.preview ? (
                         <span style={{ display: "block", fontSize: 11, opacity: 0.72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {req.preview}
@@ -2263,7 +2267,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     </div>
                     <div className="friend-meta">
                       <span className="friend-name">
-                        {resolveDisplayName(friend)}
+                        <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
                         <PremiumBadge user={friend} variant="inline" />
                       </span>
@@ -2299,7 +2303,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     </div>
                     <div className="friend-meta">
                       <span className="friend-name">
-                        {resolveDisplayName(friend)}
+                        <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
                         <PremiumBadge user={friend} variant="inline" />
                       </span>
