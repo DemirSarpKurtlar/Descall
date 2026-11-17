@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../../../hooks/useModalFocus";
 import { Mic, Paperclip, Phone, X } from "../../ui/Icon.jsx";
 import { Avatar } from "../../ui/Avatar";
 import OverlayPortal from "../../ui/OverlayPortal.jsx";
@@ -27,6 +28,8 @@ function highlight(text, q) {
 export default function MessageContextSheet({ conversationKey, hit, query, onClose }) {
   const { t, locale } = useLocale();
   const [state, setState] = useState({ loading: true, messages: [], error: "" });
+  const sheetRef = useRef(null);
+  useModalFocus(true, sheetRef);
 
   useEffect(() => {
     let live = true;
@@ -47,7 +50,7 @@ export default function MessageContextSheet({ conversationKey, hit, query, onClo
   return (
     <OverlayPortal>
       <div className="msr-scrim" onClick={onClose} role="presentation">
-        <section className="msr-sheet" role="dialog" aria-modal="true" aria-label={t("search.context")} onClick={(e) => e.stopPropagation()}>
+        <section ref={sheetRef} className="msr-sheet" role="dialog" aria-modal="true" aria-label={t("search.context")} onClick={(e) => e.stopPropagation()}>
           <header>
             <h3>{t("search.context")}</h3>
             <time dateTime={hit.createdAt}>{formatAppDateTime(hit.createdAt, locale)}</time>

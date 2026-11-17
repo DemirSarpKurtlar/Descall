@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocale } from "../../context/LocaleContext";
@@ -6,6 +6,7 @@ import { formatList, formatTime } from "../../i18n/format.js";
 import { Av, I } from "../servers/hub/kit";
 import { useReducedMotionPref } from "../servers/hub/useHubMode";
 import { framerSpring, SPRINGS, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
+import useModalFocus from "../../hooks/useModalFocus";
 import "./CallTapCard.css";
 
 /**
@@ -64,6 +65,8 @@ function JoinCard({ card, S, onJoin, onClose, reduced }) {
   const video = card.callType === "video";
   const [mic, setMic] = useState(card.micOn !== false);
   const [cam, setCam] = useState(video);
+  const cardRef = useRef(null);
+  useModalFocus(true, cardRef);
   useTick(Boolean(card.startTime));
   const people = (card.participants || []).filter(Boolean);
   const shown = people.slice(0, 3);
@@ -73,7 +76,7 @@ function JoinCard({ card, S, onJoin, onClose, reduced }) {
   return (
     <div className="ctc-root" role="presentation">
       <motion.div className="ctc-dim" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.24 }} />
-      <motion.div className="ctc-card" role="dialog" aria-modal="true" aria-label={card.groupName || S.group}
+      <motion.div ref={cardRef} className="ctc-card" role="dialog" aria-modal="true" aria-label={card.groupName || S.group}
         initial={reduced ? { opacity: 0 } : { y: "110%" }} animate={reduced ? { opacity: 1 } : { y: 0 }} exit={reduced ? { opacity: 0 } : { y: "110%" }} transition={sheetT}
         drag={reduced ? false : "y"} dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0.05, bottom: 0.6 }}
         onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 600) onClose?.(); }}>
@@ -117,8 +120,10 @@ function EndedScreen({ card, S, onCallBack, onMessage, onClose, reduced }) {
   const when = card.endedAt || card.startedAt || card.at || Date.now();
   const kindLabel = isGroup ? (video ? S.groupVideo : S.groupVoice) : video ? S.videoCall : S.voiceCall;
   const T = reduced ? REDUCED_MOTION_FADE : framerSpring(SPRINGS.materialize || SPRINGS.default);
+  const endRef = useRef(null);
+  useModalFocus(true, endRef);
   return (
-    <motion.div className="ctc-end" role="dialog" aria-modal="true" aria-label={S.ended}
+    <motion.div ref={endRef} className="ctc-end" role="dialog" aria-modal="true" aria-label={S.ended}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0.2 : 0.28 }}>
       <motion.div className="ctc-end-in" initial={reduced ? false : { scale: 0.96, y: 8 }} animate={{ scale: 1, y: 0 }} transition={T}>
         <Av user={user} s={120} style={{ boxShadow: "0 0 0 1px rgba(255,255,255,.15)" }} />

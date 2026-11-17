@@ -8,6 +8,7 @@ import {
 } from "../ui/Icon.jsx";
 import { DescallMark } from "../social/AdminBadge.jsx";
 import { useT } from "../../context/LocaleContext";
+import useModalFocus from "../../hooks/useModalFocus";
 import { markFeedbackSubmitted } from "../../lib/feedbackNudge";
 import { resolveRuntimeVersion } from "../../lib/appVersion";
 import {
@@ -100,6 +101,8 @@ export default function QuickFeedbackModal({
   const [replyError, setReplyError] = useState("");
   const fileRef = useRef(null);
   const threadEndRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus(Boolean(isOpen), dialogRef);
 
   // Reset on every open; jump to a thread when asked (notification / toast tap).
   useEffect(() => {
@@ -577,6 +580,7 @@ export default function QuickFeedbackModal({
           }}
         >
           <motion.div
+            ref={dialogRef}
             className="feedback-modal fbk"
             role="dialog"
             aria-modal="true"
