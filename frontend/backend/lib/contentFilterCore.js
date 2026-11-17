@@ -22,6 +22,8 @@ const DEFAULT_ACTION_BY_SEVERITY = Object.freeze({ low: "mask", medium: "mask_fl
 const DEFAULT_TIMEOUT_SECONDS = 3600;
 const MAX_PATTERN = 160;
 const MAX_TEXT = 4000;
+// Hard cap on how much of one text is scanned (messages are capped well below this).
+const MAX_SCAN = 64000;
 const MAX_MATCHES_PER_RULE = 25;
 
 const TOKEN_RE = /[\p{L}\p{N}]+/gu;
@@ -168,8 +170,23 @@ function matchOf(rule, start, end, text) {
  * span keep the strongest rule.
  */
 function matchText(text, compiled) {
-  const src = typeof text === "string" ? text.slice(0, MAX_TEXT) : "";
-  if (!src || !compiled) return [];
+  const full = typeof text === "string" ? text.slice(0, MAX_SCAN) : "";
+  if (!full || !compiled) return [];
+  // Longer texts are read in MAX_TEXT windows that overlap by MAX_PATTERN, so a banned word
+  // after the first 4000 characters is still seen (security scan 17 Nov 2026) while each
+  // regex still runs on at most MAX_TEXT characters.
+  const out = [];
+  const step = MAX_TEXT - MAX_PATTERN;
+  for (let base = 0; base < full.length; base += step) {
+    for (const m of matchWindow(full.slice(base, base + MAX_TEXT), compiled)) {
+      out.push({ ...m, start: m.start + base, end: m.end + base });
+    }
+    if (base + MAX_TEXT >= full.length) break;
+  }
+  return dedupeMatches(out);
+}
+
+function matchWindow(src, compiled) {
   const out = [];
   TOKEN_RE.lastIndex = 0;
   for (const m of src.matchAll(TOKEN_RE)) {
@@ -195,8 +212,12 @@ function matchText(text, compiled) {
       }
     }
   }
+  return out;
+}
+
+function dedupeMatches(out) {
   out.sort((a, b) => a.start - b.start || b.end - a.end || actionRank(b.action) - actionRank(a.action));
-  // Same span twice (a word rule and a prefix rule): keep the strongest.
+  // Same span twice (a word rule and a prefix rule, or two overlapping windows): keep the strongest.
   const seen = new Map();
   const result = [];
   for (const m of out) {

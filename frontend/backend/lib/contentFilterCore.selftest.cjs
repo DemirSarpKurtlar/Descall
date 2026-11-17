@@ -90,9 +90,17 @@ t("built-in list languages", () => {
   assert.deepStrictEqual(core.wordToRule("Aptal*"), { pattern: "aptal", kind: "prefix" });
 });
 
-t("long text is capped and never throws", () => {
+t("long text is read in windows, capped and never throws", () => {
+  // A banned word after the first 4000 characters is still found (security scan 17 Nov 2026).
   const long = "a".repeat(20000) + " salak";
-  assert.strictEqual(core.matchText(long, compiled).length, 0);
+  const found = core.matchText(long, compiled);
+  assert.strictEqual(found.length, 1);
+  assert.strictEqual(long.slice(found[0].start, found[0].end), "salak");
+  // A word right on a window edge is found once.
+  const edge = "b ".repeat(1948) + "salak " + "c".repeat(5000);
+  assert.strictEqual(core.matchText(edge, compiled).length, 1);
+  // Beyond the scan cap nothing is read, and nothing throws.
+  assert.strictEqual(core.matchText("a".repeat(70000) + " salak", compiled).length, 0);
   assert.deepStrictEqual(core.matchText(null, compiled), []);
 });
 
