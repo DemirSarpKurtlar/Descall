@@ -69,6 +69,7 @@ import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
   getNoiseSuppressionOutputTrack,
+  MIC_FALLBACK_EVENT,
   getNoiseSuppressionRawTrack,
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
@@ -398,6 +399,19 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
   // Voice diagnostic snapshot for call feedback (lib/voiceDiagnostics.js),
   // every 4 s in a group call, over every mesh link. Kept after hang-up, so a
   // "my voice cuts" report filed right after leaving still says why.
+  // Mic failsafe (noiseSuppression.js) swapped every sender to the raw mic:
+  // keep the mute button in step with the new track. The toast itself comes
+  // from useCall's listener, which tells the user for every call type.
+  useEffect(() => {
+    if (!isInCall) return undefined;
+    const onFallback = () => {
+      const track = localStreamRef.current?.getAudioTracks?.()[0];
+      if (track) setIsMuted(!track.enabled);
+    };
+    window.addEventListener(MIC_FALLBACK_EVENT, onFallback);
+    return () => window.removeEventListener(MIC_FALLBACK_EVENT, onFallback);
+  }, [isInCall]);
+
   useVoiceDiagSnapshot({
     active: isInCall,
     kind: "group",
