@@ -1,5 +1,5 @@
 const { setPendingDisplaySource, takePendingDisplaySource, buildDisplayMediaGrant } = require('./displayMediaGrant.cjs');
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
@@ -15,6 +15,7 @@ const {
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
 const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
+const { bindWindowKeys, devToolsAllowed } = require('./windowKeys.cjs');
 const {
   AUTOSTART_ARGS,
   decideColdStart,
@@ -838,6 +839,25 @@ let signupStatsWindow = null;
 let adminPanelWindow = null;
 const isPackaged = app.isPackaged;
 
+/** DevTools: dev runs, or a packaged build with userData/devtools-enabled (windowKeys.cjs). */
+let devToolsAllowedCache = null;
+function canOpenDevTools() {
+  if (devToolsAllowedCache === null) {
+    let userDataDir = '';
+    try { userDataDir = app.getPath('userData'); } catch (_) { userDataDir = ''; }
+    devToolsAllowedCache = devToolsAllowed({ isPackaged: app.isPackaged, userDataDir, existsSync: fs.existsSync });
+  }
+  return devToolsAllowedCache;
+}
+// Packaged builds without the opt-in: any DevTools that open anyway (a stray shortcut, a
+// premium window) close at once, in every window of the app.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('devtools-opened', () => {
+    if (canOpenDevTools()) return;
+    try { contents.closeDevTools(); } catch (_) { /* gone */ }
+  });
+});
+
 let mainWindow = null;
 let splashWindow = null;
 let tray = null;
@@ -1300,6 +1320,7 @@ function createMainWindow() {
   });
 
   mainWindow.setMenu(null);
+  bindWindowKeys(mainWindow, { onMaximize: toggleMaximize, allowDevTools: canOpenDevTools() });
   require('./viewportSync.cjs').attachViewportSync(mainWindow, { log: (m) => { try { log.warn(m); } catch (_) {} } });
   Menu.setApplicationMenu(null);
   bindVoiceBusyLifecycle(mainWindow);
@@ -1444,7 +1465,7 @@ function createMainWindow() {
       menu.append(new MenuItem({ role: 'copy' }));
     }
 
-    // Debug entries only in dev builds; F12 / Ctrl+Shift+I stay bound always.
+    // Debug entries only in dev builds; F12 / Ctrl+Shift+I follow windowKeys.cjs.
     if (!app.isPackaged) {
       if (menu.items.length) menu.append(new MenuItem({ type: 'separator' }));
       menu.append(new MenuItem({
@@ -1814,6 +1835,7 @@ function createMainWindow() {
     else adminPanelWindow = win;
     const ownRoute = isStats ? isSignupStatsUrl : isAdminPanelUrl;
     win.setMenu(null);
+    bindWindowKeys(win, { onMaximize: toggleMaximize, allowDevTools: canOpenDevTools() });
     win.on('closed', () => {
       if (signupStatsWindow === win) signupStatsWindow = null;
       if (adminPanelWindow === win) adminPanelWindow = null;
@@ -1974,12 +1996,8 @@ app.whenReady().then(async () => {
     log,
   });
 
-  globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
-  globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
-  globalShortcut.register('F11', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    toggleMaximize(mainWindow);
-  });
+  // F11 / F12 / Ctrl+Shift+I are bound per window (windowKeys.cjs, before-input-event), never
+  // with globalShortcut: that took the keys away from every other app on the machine.
 
   app.on('activate', () => {
     if (mainWindow) {
