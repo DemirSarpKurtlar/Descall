@@ -118,6 +118,36 @@ async function run() {
     assert(login.status === 429 && login.body.code === "code_locked", "login while locked answers the wait: " + JSON.stringify(login.body));
     assert(mailsTo("bob@example.com").length === mailsBefore, "no refused code is emailed while locked");
 
+    // auth-13: a Google-only account turns email 2FA off only with the emailed code.
+    const gina = await register(base, "gina", "gina@example.com");
+    const ginaRow = fakeSupabase._tables.users.rows.find((u) => u.username === "gina");
+    ginaRow.password_hash = null;
+    ginaRow.auth_provider = "google";
+    await req(base, "POST", "/api/auth/2fa/enable", { token: gina.token });
+    r = await req(base, "POST", "/api/auth/2fa/disable", { token: gina.token, body: {} });
+    assert(r.status === 428 && r.body.code === "reauth_required", "session alone cannot turn 2FA off: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/api/auth/2fa/disable", { token: gina.token, body: { code: "123456" } });
+    assert(r.status === 401, "wrong reauth code refused");
+    r = await req(base, "POST", "/api/auth/email/reauth", { token: gina.token });
+    assert(r.status === 200, "reauth code sent: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/api/auth/2fa/disable", { token: gina.token, body: { code: lastCode("gina@example.com") } });
+    assert(r.status === 200 && ginaRow.two_factor_enabled === false, "reauth code turns 2FA off: " + JSON.stringify(r.body));
+
+    // auth-13: wrong passwords on account delete are rate limited.
+    const dave = await register(base, "dave", "dave@example.com");
+    let last = null;
+    for (let i = 0; i < 12; i += 1) {
+      last = await req(base, "POST", "/api/auth/account/delete", { token: dave.token, body: { password: "nope-" + i } });
+    }
+    assert(last.status === 429, "delete password guesses are limited: " + last.status);
+
+    // auth-18: the legacy switch refuses while the authenticator app is on.
+    const erin = await register(base, "erin", "erin@example.com");
+    const erinRow = fakeSupabase._tables.users.rows.find((u) => u.username === "erin");
+    Object.assign(erinRow, { totp_enabled_at: new Date().toISOString(), totp_secret_enc: "x", totp_pending_enc: null, totp_pending_at: null, totp_last_counter: null, totp_recovery_hashes: [], two_factor_enabled: true });
+    r = await req(base, "POST", "/api/auth/2fa/disable", { token: erin.token, body: { password: "password123" } });
+    assert(r.status === 409 && r.body.code === "totp_on" && erinRow.two_factor_enabled === true, "TOTP stays consistent: " + JSON.stringify(r.body));
+
     console.log("authPolish.integration.test.cjs: ok");
   } finally {
     server.close();

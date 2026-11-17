@@ -1,3 +1,4 @@
+import { AUTHX_PT_BR } from "./authx.pt-BR.js";
 import { API_PT_BR } from "./api.pt-BR.js";
 import { PREMIUM_STORY_PT_BR } from "./premiumStory.pt-BR.js";
 import { UAH_PT_BR } from "./uah.pt-BR.js";
@@ -42,6 +43,7 @@ import { AGENT_OPS_PT_BR } from "./agentOps.pt-BR.js";
 import { INVL_PT_BR } from "./invl.pt-BR.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
+  authx: AUTHX_PT_BR,
   "premiumStory": PREMIUM_STORY_PT_BR,
   "amp": AMP_PT_BR,
   "msg4": MSG4_PT_BR,

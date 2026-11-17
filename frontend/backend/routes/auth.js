@@ -1821,16 +1821,48 @@ router.post("/2fa/enable", requireAuth, async (req, res) => {
 router.post("/2fa/disable", requireAuth, async (req, res) => {
   try {
     const { password } = req.body ?? {};
+    const acctKey = `2fadisable:acct:${req.user.id}`;
+    const LIMIT = { max: 10 };
+    if (guard(res, null, acctKey, LIMIT)) return;
     const { data: user } = await supabase
       .from("users")
-      .select("password_hash")
+      .select("id, password_hash, email, email_confirmed_at, reauthentication_token, reauthentication_sent_at")
       .eq("id", req.user.id)
       .maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found." });
 
-    if (user?.password_hash) {
+    // The authenticator app is turned off with its own code (POST /2fa/totp/disable);
+    // flipping only two_factor_enabled here left it on while /me said "off".
+    const totpRow = await twoFactor.loadTotp(user.id).catch(() => null);
+    if (totpRow?.totp_enabled_at) {
+      return res.status(409).json({ error: "Turn off the authenticator app first.", code: "totp_on" });
+    }
+
+    if (user.password_hash) {
       if (typeof password !== "string" || !(await bcrypt.compare(password, user.password_hash))) {
+        recordFailure(acctKey, LIMIT);
         return res.status(401).json({ error: "Incorrect password." });
       }
+    } else if (user.email && user.email_confirmed_at) {
+      // Google / Apple account: a session alone must not turn the second factor off.
+      // The code comes from POST /email/reauth (sent to the verified address).
+      const code = String(req.body?.code || "").trim();
+      if (!code) {
+        return res.status(428).json({ error: "Enter the code we sent to your email.", code: "reauth_required" });
+      }
+      const verdict = await judgeCode({
+        userId: user.id,
+        purpose: "email_reauth",
+        code,
+        storedHash: user.reauthentication_token,
+        sentAtIso: user.reauthentication_sent_at,
+      });
+      if (!verdict.ok) {
+        recordFailure(acctKey, LIMIT);
+        if (verdict.reason === "too_many_attempts") return res.status(429).json(await codeLockedBody(user.id, "email_reauth"));
+        return res.status(401).json({ error: "Incorrect code." });
+      }
+      await supabase.from("users").update({ reauthentication_token: null, reauthentication_sent_at: null }).eq("id", user.id);
     }
 
     await supabase.from("users").update({ two_factor_enabled: false }).eq("id", req.user.id);
@@ -2121,8 +2153,14 @@ router.post("/account/delete", requireAuth, async (req, res) => {
       if (typeof password !== "string" || !password) {
         return res.status(400).json({ error: "Enter your password to delete your account.", code: "password_required" });
       }
+      // A stolen session must not be able to guess the password here without limit.
+      const acctKey = `acctdelete:acct:${user.id}`;
+      if (guard(res, null, acctKey, { max: 10 })) return;
       const ok = await bcrypt.compare(password, user.password_hash);
-      if (!ok) return res.status(401).json({ error: "Wrong password.", code: "wrong_password" });
+      if (!ok) {
+        recordFailure(acctKey, { max: 10 });
+        return res.status(401).json({ error: "Wrong password.", code: "wrong_password" });
+      }
     } else if (String(confirmUsername || "").trim().toLowerCase() !== String(user.username).toLowerCase()) {
       return res.status(400).json({ error: "Type your username to confirm.", code: "confirm_username" });
     }

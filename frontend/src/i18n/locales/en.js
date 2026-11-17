@@ -1,4 +1,5 @@
 /** Auto-generated + curated en locale */
+import { AUTHX_EN } from "./authx.en.js";
 import { UAH_EN } from "./uah.en.js";
 import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
@@ -57,6 +58,7 @@ import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  authx: AUTHX_EN,
   uah: UAH_EN,
   premiumGaming: PREMIUM_GAMING_EN,
   premium: PREMIUM_EN,

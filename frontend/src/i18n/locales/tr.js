@@ -1,4 +1,5 @@
 /** Auto-generated + curated tr locale */
+import { AUTHX_TR } from "./authx.tr.js";
 import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
@@ -67,6 +68,7 @@ import { MID_APP_I18N } from "./midApp.i18n.js";
 import { CONV_START_I18N } from "./convStart.i18n.js";
 import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 export const nested = {
+  authx: AUTHX_TR,
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
