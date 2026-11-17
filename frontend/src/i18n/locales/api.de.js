@@ -55,6 +55,8 @@ export const API_DE = {
   "This change has no state for the flag.": "Diese Änderung enthält keinen Zustand für das Flag.",
   "Unknown flag.": "Unbekanntes Flag.",
   "Use System > Safe restart.": "Nutze System > Sicherer Neustart.",
+  "Write a reason (at least 3 characters).": "Gib einen Grund an (mindestens 3 Zeichen).",
+  "One change can move at most {max} DesCoin.": "Eine Änderung kann höchstens {max} DesCoin bewegen.",
   "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.": "Eine freigegebene dringende Ankündigung an alle kann nicht geändert werden, solange sie live ist. Beende sie, bearbeite sie und sende sie erneut zur Freigabe.",
   "An urgent announcement to everyone needs a second admin. Publish it to send it for approval.": "Eine dringende Ankündigung an alle braucht einen zweiten Admin. Veröffentliche sie, um sie zur Freigabe zu senden.",
   "Accounts are not created or deleted from the admin panel.": "Konten werden nicht im Admin-Panel erstellt oder gelöscht.",

@@ -226,7 +226,8 @@ export function walletPreview(balance, mode, amount) {
 export function canSubmitWallet({ mode, amount, reason, balance }) {
   if (mode === "freeze") return true;
   const a = parseAmount(amount);
-  if (!a || !String(reason || "").trim()) return false;
+  // The server needs a reason of 3+ characters on every DesCoin change (polish admin-b-03).
+  if (!a || String(reason || "").trim().length < 3) return false;
   return walletPreview(balance, mode, a) != null;
 }
 

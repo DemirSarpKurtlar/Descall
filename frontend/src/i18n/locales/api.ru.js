@@ -55,6 +55,8 @@ export const API_RU = {
   "This change has no state for the flag.": "В этом изменении нет состояния флага.",
   "Unknown flag.": "Неизвестный флаг.",
   "Use System > Safe restart.": "Используйте Система > Безопасный перезапуск.",
+  "Write a reason (at least 3 characters).": "Укажите причину (не менее 3 символов).",
+  "One change can move at most {max} DesCoin.": "За одно изменение можно перевести не более {max} DesCoin.",
   "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.": "Одобренное срочное объявление для всех нельзя менять, пока оно опубликовано. Завершите его, измените и снова отправьте на одобрение.",
   "An urgent announcement to everyone needs a second admin. Publish it to send it for approval.": "Срочному объявлению для всех нужен второй администратор. Опубликуйте его, чтобы отправить на одобрение.",
   "Accounts are not created or deleted from the admin panel.": "Аккаунты не создаются и не удаляются из панели администратора.",

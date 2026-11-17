@@ -2287,12 +2287,24 @@ router.post("/descoin/reconciliation/run", async (req, res) => {
 // just like gifting an item: the recipient gets a real-time celebratory
 // popup naming the admin and showing their note (delivered on next connect
 // if they're offline right now), not just a silent balance bump.
+const DESCOIN_GRANT_ADMIN_MAX = 1_000_000;
+const DESCOIN_GRANT_OWNER_MAX = 10_000_000_000;
 router.post("/descoin/grant", async (req, res) => {
   try {
-    const { userId, amount, reason, message } = req.body || {};
+    const { userId, amount, message } = req.body || {};
     const parsedAmount = Math.round(Number(amount));
     if (!userId || !Number.isFinite(parsedAmount) || parsedAmount === 0) {
       return res.status(400).json({ error: "userId and a non-zero amount are required." });
+    }
+    // Real currency (polish admin-b-03): every change carries the admin's reason, and only
+    // the owner can move more than DESCOIN_GRANT_ADMIN_MAX in one step.
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : "";
+    if (reason.length < 3) {
+      return res.status(400).json(apiError("Write a reason (at least 3 characters).", null, { code: "REASON_REQUIRED" }));
+    }
+    const limit = (await userIsSuperAdmin(req)) ? DESCOIN_GRANT_OWNER_MAX : DESCOIN_GRANT_ADMIN_MAX;
+    if (Math.abs(parsedAmount) > limit) {
+      return res.status(400).json(apiError("One change can move at most {max} DesCoin.", { max: limit }, { code: "AMOUNT_TOO_LARGE", max: limit }));
     }
     const cleanMessage = typeof message === "string" && message.trim() ? message.trim() : null;
 

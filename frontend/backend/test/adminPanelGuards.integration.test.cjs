@@ -7,6 +7,8 @@
  *    legacy admin holding the "directory" section; the owner row survives.
  *  - Two-person rule: an approved urgent announcement to everyone cannot be rewritten
  *    while live, and an edit after it ended drops the approval (reopen refuses).
+ *  - DesCoin grant: a reason is required and a non-owner admin cannot move more than
+ *    1,000,000 in one change.
  */
 
 process.env.NODE_ENV = "test";
@@ -114,6 +116,14 @@ const row = (id) => fake._tables.users.rows.find((u) => u.id === id);
     assert(r.status === 409 && r.body.code === "NEEDS_APPROVAL", `reopen without approval refused: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
     r = await call(base, "POST", `/api/admin/announcements/${id}/publish`, { token: owner, body: {} });
     assert(r.status === 200 && r.body.result === "pending", `publish goes back to approval: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+
+    // ---- DesCoin grant: reason + per-change cap for non-owner admins ----
+    r = await call(base, "POST", "/api/admin/descoin/grant", { token: legacy, body: { userId: KAAN, amount: 500 } });
+    assert(r.status === 400 && r.body.code === "REASON_REQUIRED", `grant without reason refused: ${r.status} ${JSON.stringify(r.body)}`);
+    r = await call(base, "POST", "/api/admin/descoin/grant", { token: legacy, body: { userId: KAAN, amount: 2000000, reason: "Etkinlik odulu" } });
+    assert(r.status === 400 && r.body.code === "AMOUNT_TOO_LARGE" && r.body.max === 1000000, `legacy admin cap: ${r.status} ${JSON.stringify(r.body)}`);
+    r = await call(base, "POST", "/api/admin/descoin/grant", { token: legacy, body: { userId: KAAN, amount: -2000000, reason: "Hata duzeltme" } });
+    assert(r.status === 400 && r.body.code === "AMOUNT_TOO_LARGE", `cap applies to takes too: ${r.status}`);
 
     console.log("adminPanelGuards: ok");
   } finally {
