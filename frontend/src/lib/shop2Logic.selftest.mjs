@@ -141,6 +141,11 @@ assert.equal(cd.text, "02:17:42");
 assert.equal(cd.urgent, false);
 assert.equal(countdownParts(T0 + 9 * 60e3, T0).urgent, true, "last 10 minutes are urgent");
 assert.equal(countdownParts(T0 - 1, T0).done, true);
+// Night market opening days away: days + remaining hours for "2g 21s" (was "69:39:08").
+const far = countdownParts(T0 + 69 * 3600e3 + 39 * 60e3 + 8e3, T0);
+assert.equal(far.days, 2);
+assert.equal(far.hoursLeft, 21);
+assert.equal(cd.days, 0);
 assert.equal(windowLeft(T0, SHOP2_REFUND_MS, T0 + 60e3), 540);
 assert.equal(windowLeft(T0, SHOP2_RECALL_MS, T0 + 10 * 60e3), 0);
 assert.equal(mmss(132), "02:12");

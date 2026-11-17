@@ -174,7 +174,7 @@ export default function Shop2Night({ onClose }) {
               </small>
             </span>
           </li>
-        )) : <li className="s2-muted">{t("shop2.night.logEmpty")}</li>}
+        )) : <li className="s2-muted">{t(nm.open ? "shop2.night.logEmpty" : "shop2.night.logClosed")}</li>}
       </ul>
       {nm.friendBonus || nm.coOpenBonus ? (
         <div className="s2-friendbonus">

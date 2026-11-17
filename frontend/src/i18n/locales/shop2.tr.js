@@ -387,6 +387,7 @@ export const SHOP2_TR = {
     "savedTonight": "Bu gece kazancın",
     "log": "Açılış kaydı",
     "logEmpty": "Başlamak için bir kart aç",
+    "logClosed": "Pazar açılınca kart açabilirsin",
     "logKind": {
       "flip": "Kart {n} açıldı",
       "flip_used": "Hak kullanıldı",
@@ -537,6 +538,7 @@ export const SHOP2_TR = {
     "seconds": "{s} sn"
   },
   "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Görüşürüz" },
+  "clock": { "dh": "{d}g {h}s" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Bu akşam kim var?",

@@ -408,14 +408,15 @@ export function stepPath(values, w = 100, h = 30) {
 /** Countdown parts for a target time; urgent under `urgentMs`. */
 export function countdownParts(target, now = Date.now(), urgentMs = SHOP2_URGENT_MS) {
   const t = ms(target);
-  if (t == null) return { h: 0, m: 0, s: 0, total: 0, done: true, urgent: false, text: "00:00:00" };
+  if (t == null) return { h: 0, m: 0, s: 0, days: 0, hoursLeft: 0, total: 0, done: true, urgent: false, text: "00:00:00" };
   const total = Math.max(0, t - now);
   const sec = Math.floor(total / 1000);
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
   const p2 = (n) => String(n).padStart(2, "0");
-  return { h, m, s, total, done: total <= 0, urgent: total > 0 && total <= urgentMs, text: `${p2(h)}:${p2(m)}:${p2(s)}`, short: `${p2(h * 60 + m)}:${p2(s)}` };
+  // days / hoursLeft: a countdown a day or more away reads "2g 21s" (RollingClock), not "69:39:08".
+  return { h, m, s, days: Math.floor(h / 24), hoursLeft: h % 24, total, done: total <= 0, urgent: total > 0 && total <= urgentMs, text: `${p2(h)}:${p2(m)}:${p2(s)}`, short: `${p2(h * 60 + m)}:${p2(s)}` };
 }
 
 /**

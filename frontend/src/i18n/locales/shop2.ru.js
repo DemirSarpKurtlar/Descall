@@ -387,6 +387,7 @@ export const SHOP2_RU = {
     "savedTonight": "Сэкономлено за ночь",
     "log": "Журнал открытий",
     "logEmpty": "Открой карту, чтобы начать",
+    "logClosed": "Карты можно открыть, когда рынок откроется",
     "logKind": {
       "flip": "Открыта карта {n}",
       "flip_used": "Открытие использовано",
@@ -537,6 +538,7 @@ export const SHOP2_RU = {
     "seconds": "{s} с"
   },
   "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "До встречи" },
+  "clock": { "dh": "{d} д {h} ч" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Кто сегодня вечером?",
