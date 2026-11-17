@@ -539,6 +539,8 @@ app.use("/api/media", mediaRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/reactions", reactionRoutes);
 app.use("/api/friends", friendsRoutes);
+// One call for every friend's live activity (was one request per friend).
+app.use("/api/activity", require("./routes/activityPresenceBatch"));
 app.use("/api/activity", activityRoutes);
 app.use("/api/servers", serverRoutes);
 // Public server directory (item 8): read-only cards, no auth; owner settings signed in.
