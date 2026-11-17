@@ -100,6 +100,19 @@ async function run() {
     });
     assert(r.status === 200, "reset by lowercased username works: " + JSON.stringify(r.body));
 
+    // auth-08: reset mails follow the request language, not the stale users.language
+    // column (default "en", never written by the app).
+    const ahmetRow = fakeSupabase._tables.users.rows.find((u) => u.username === "Ahmet");
+    ahmetRow.language = "en";
+    ahmetRow.password_reset_sent_at = null;
+    await req(base, "POST", "/api/auth/password/forgot", { body: { usernameOrEmail: "ahmet@example.com" }, headers: { "Accept-Language": "tr" } });
+    let mail = mailsTo("ahmet@example.com").slice(-1)[0];
+    assert(/sıfırlama/.test(mail.subject), "Turkish app gets a Turkish reset mail: " + mail.subject);
+    ahmetRow.password_reset_sent_at = null;
+    await req(base, "POST", "/api/auth/password/forgot", { body: { usernameOrEmail: "Ahmet" }, headers: { "Accept-Language": "en" } });
+    mail = mailsTo("ahmet@example.com").slice(-1)[0];
+    assert(/reset/i.test(mail.subject) && !/sıfırlama/.test(mail.subject), "English app gets an English reset mail: " + mail.subject);
+
     // auth-02: five wrong 2FA codes lock the purpose; a new login sends no new code
     // and the answer says how long to wait.
     const bob = await register(base, "bob", "bob@example.com");

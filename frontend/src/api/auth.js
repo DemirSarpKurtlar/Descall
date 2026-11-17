@@ -3,6 +3,20 @@ import { httpRequest } from "./http";
 import { peekAttribution } from "../lib/attribution";
 import { pendingSignupInvite } from "../lib/serverInviteRoute";
 import { withSignupContext } from "../lib/signupContext";
+import { getLocale } from "../i18n/runtime.js";
+
+/**
+ * The app's UI language for the server's emails (sign-in codes, reset codes,
+ * security notices): the browser's own Accept-Language can differ from it.
+ */
+function langHeaders() {
+  try {
+    const loc = String(getLocale() || "").trim();
+    return /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(loc) ? { "Accept-Language": loc } : {};
+  } catch {
+    return {};
+  }
+}
 
 function withAttribution(payload = {}) {
   if (payload?.attribution) return payload;
@@ -29,6 +43,7 @@ function withSignupInvite(payload = {}) {
 export function register(payload) {
   return httpRequest(API_ROUTES.register, {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify(withSignupContext(withSignupInvite(withAttribution(payload || {})))),
   });
 }
@@ -36,6 +51,7 @@ export function register(payload) {
 export function login(payload) {
   return httpRequest(API_ROUTES.login, {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify(payload),
   });
 }
@@ -43,6 +59,7 @@ export function login(payload) {
 export function verify2faLogin(pendingToken, code) {
   return httpRequest("/auth/2fa/verify-login", {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify({ pendingToken, code }),
   });
 }
@@ -64,6 +81,7 @@ export function loginWithGoogle(credential, extra = {}) {
   if (extra?.attribution) payload.attribution = extra.attribution;
   return httpRequest(API_ROUTES.google, {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify(withSignupContext(payload)),
   });
 }
@@ -85,6 +103,7 @@ export function loginWithApple(apple, extra = {}) {
   if (extra?.username) payload.username = extra.username;
   return httpRequest(API_ROUTES.apple, {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify(withSignupContext(payload)),
   });
 }
@@ -107,6 +126,7 @@ export function getMe(token, { signal } = {}) {
 export function requestPasswordReset(usernameOrEmail) {
   return httpRequest("/auth/password/forgot", {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify({ usernameOrEmail }),
   });
 }
@@ -115,6 +135,7 @@ export function requestPasswordReset(usernameOrEmail) {
 export function confirmPasswordReset({ usernameOrEmail, code, newPassword }) {
   return httpRequest("/auth/password/reset", {
     method: "POST",
+    headers: langHeaders(),
     body: JSON.stringify({ usernameOrEmail, code, newPassword }),
   });
 }

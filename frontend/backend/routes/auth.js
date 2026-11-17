@@ -119,7 +119,7 @@ async function secondFactorGate(res, user) {
     email: user.email,
     username: user.username,
     purpose: "2fa_login",
-    lang: langFrom(res.req?.headers?.["accept-language"], user.language),
+    lang: langFrom(res.req?.headers?.["accept-language"]),
     column: "reauthentication_token",
     sentAtColumn: "reauthentication_sent_at",
   }).catch(() => ({ sent: false, error: "send_failed" }));
@@ -239,9 +239,14 @@ async function judgeCode({ userId, purpose, code, storedHash, sentAtIso }) {
 }
 
 /** Security notice to the account's email, in its language (Turkish when none matches). */
-async function notifyAccountChange(user, kind) {
+/**
+ * users.language defaults to "en" and the app never writes it, so security mails use
+ * the request's Accept-Language (the app sends its UI language on the public auth
+ * calls), Turkish when nothing matches.
+ */
+async function notifyAccountChange(user, kind, req) {
   if (!user?.email || !user.email_confirmed_at) return;
-  const lang = langFrom("", user.language);
+  const lang = langFrom(req?.headers?.["accept-language"]);
   const text = bt(lang, kind === "password" ? "security.passwordChangedBody" : "security.emailChangeBody");
   const subject = bt(lang, kind === "password" ? "security.passwordChangedSubject" : "security.emailChangeSubject");
   await sendEmail({
@@ -1665,7 +1670,7 @@ router.post("/email/set", requireAuth, async (req, res) => {
     }
 
     if (user.email && user.email_confirmed_at && user.email !== email) {
-      await notifyAccountChange(user, "email").catch((err) => {
+      await notifyAccountChange(user, "email", req).catch((err) => {
         console.warn("[AUTH] email change notice failed:", err?.message || err);
       });
     }
@@ -2048,7 +2053,7 @@ router.post("/username", requireAuth, async (req, res) => {
     const token = signToken({ id: userId, username: nextUsername, sid: req.user.sid || null });
 
     if (user.email && user.email_confirmed_at) {
-      const lang = langFrom("", user.language);
+      const lang = langFrom(req.headers["accept-language"]);
       sendEmail({
         to: user.email,
         subject: bt(lang, "security.usernameChangedSubject"),
@@ -2291,7 +2296,7 @@ async function findUserForPasswordReset(usernameOrEmail) {
   return (Array.isArray(data) ? data[0] : data) || null;
 }
 
-async function sendPasswordResetCode(user) {
+async function sendPasswordResetCode(user, req) {
   // Locked after five wrong codes: a new code would be refused too, so none is sent.
   if (user?.id && (await codeLockMinutes(user.id, "password_reset").catch(() => 0))) {
     return { status: "locked", body: await codeLockedBody(user.id, "password_reset") };
@@ -2322,7 +2327,7 @@ async function sendPasswordResetCode(user) {
       email: user.email,
       username: user.username,
       purpose: "password_reset",
-      lang: langFrom("", user.language),
+      lang: langFrom(req?.headers?.["accept-language"]),
       column: "password_reset_token",
       sentAtColumn: "password_reset_sent_at",
       footer:
@@ -2425,7 +2430,7 @@ router.post("/password/forgot", async (req, res) => {
 
     const user = await findUserForPasswordReset(usernameOrEmail);
     if (user?.email && user.email_confirmed_at) {
-      const outcome = await sendPasswordResetCode(user);
+      const outcome = await sendPasswordResetCode(user, req);
       if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
         console.error("[AUTH] password/forgot send failed");
       }
@@ -2465,7 +2470,7 @@ router.post("/password/reset", async (req, res) => {
       return res.status(400).json({ error: GENERIC_RESET_FAIL });
     }
     await dropSessions(req, user.id, null);
-    await notifyAccountChange(user, "password").catch(() => {});
+    await notifyAccountChange(user, "password", req).catch(() => {});
     return res.json({ message: "Password updated. You can sign in with your new password." });
   } catch (err) {
     console.error("[AUTH] password/reset error:", err);
@@ -2495,7 +2500,7 @@ router.post("/password/request", requireAuth, async (req, res) => {
       });
     }
 
-    const outcome = await sendPasswordResetCode(user);
+    const outcome = await sendPasswordResetCode(user, req);
     if (outcome.status === "locked") return res.status(429).json(outcome.body);
     if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
       return res.status(503).json(outcome);
@@ -2546,7 +2551,7 @@ router.post("/password/confirm", requireAuth, async (req, res) => {
       return res.status(result.status).json({ error: result.error, code: result.code || null });
     }
     await dropSessions(req, user.id, req.user.sid);
-    await notifyAccountChange(user, "password").catch(() => {});
+    await notifyAccountChange(user, "password", req).catch(() => {});
     return res.json({ message: "Password updated successfully." });
   } catch (err) {
     console.error("[AUTH] password/confirm error:", err);
