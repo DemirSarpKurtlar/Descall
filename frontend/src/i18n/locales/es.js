@@ -1,4 +1,3 @@
-import { AUTHX_ES } from "./authx.es.js";
 import { API_ES } from "./api.es.js";
 import { PREMIUM_STORY_ES } from "./premiumStory.es.js";
 import { UAH_ES } from "./uah.es.js";
@@ -43,7 +42,6 @@ import { AGENT_OPS_ES } from "./agentOps.es.js";
 import { INVL_ES } from "./invl.es.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
-  authx: AUTHX_ES,
   "premiumStory": PREMIUM_STORY_ES,
   "amp": AMP_ES,
   "msg4": MSG4_ES,

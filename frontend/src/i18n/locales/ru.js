@@ -1,4 +1,3 @@
-import { AUTHX_RU } from "./authx.ru.js";
 import { API_RU } from "./api.ru.js";
 import { PREMIUM_STORY_RU } from "./premiumStory.ru.js";
 import { UAH_RU } from "./uah.ru.js";
@@ -43,7 +42,6 @@ import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
-  authx: AUTHX_RU,
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
   "msg4": MSG4_RU,

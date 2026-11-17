@@ -205,7 +205,6 @@ import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
-import { applyPeerRead } from "./lib/readReceipts";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
@@ -673,32 +672,6 @@ export default function App() {
   const socketRef = useRef(null);
   const serverSocketUnbindRef = useRef(null);
   const activeDmRef = useRef(null);
-  // Polish messaging-03: a DM that got messages while the window was hidden is
-  // marked read ("Görüldü") only once the window is visible again.
-  const pendingDmReadRef = useRef(null);
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    const flush = () => {
-      if (document.visibilityState !== "visible") return;
-      const peerId = pendingDmReadRef.current;
-      if (!peerId) return;
-      pendingDmReadRef.current = null;
-      if (activeDmRef.current?.id !== peerId) return;
-      setDmUnread((prev) => {
-        if (!prev[peerId]) return prev;
-        const n = { ...prev };
-        delete n[peerId];
-        return n;
-      });
-      socketRef.current?.emit("dm:mark_read", { withUserId: peerId });
-    };
-    document.addEventListener("visibilitychange", flush);
-    window.addEventListener("focus", flush);
-    return () => {
-      document.removeEventListener("visibilitychange", flush);
-      window.removeEventListener("focus", flush);
-    };
-  }, []);
   const activeGroupRef = useRef(null);
   const activeChannelRef = useRef(null);
   const activeServerRef = useRef(null);
@@ -2258,22 +2231,6 @@ export default function App() {
               avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
-        } else if (typeof document !== "undefined" && document.visibilityState === "hidden") {
-          // Open chat but the window is minimised / in the tray / a background tab:
-          // count it as unread and keep "Görüldü" back until the window is seen again.
-          pendingDmReadRef.current = convWith;
-          setDmUnread((prev) => ({ ...prev, [convWith]: (prev[convWith] || 0) + 1 }));
-          setUnreadMarker((prev) => (prev?.key === `dm:${convWith}` ? { ...prev, count: (prev.count || 0) + 1 } : { key: `dm:${convWith}`, count: 1 }));
-          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
-            notificationService.newMessage({
-              from: normalizedMsg.from?.username || t("Someone"),
-              text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
-              preview: message.text?.substring(0, 100),
-              conversationId: convWith,
-              fromId: normalizedMsg.from?.id || convWith,
-              avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
-            });
-          }
         } else {
           setDmUnread((prev) => {
             if (!prev[convWith]) return prev;
@@ -2282,7 +2239,7 @@ export default function App() {
             return n;
           });
           socket.emit("dm:mark_read", { withUserId: convWith });
-          // Open chat, visible but unfocused: still notify.
+          // Open chat but window hidden / in tray / unfocused: still notify.
           // notificationService drops it while the window is focused.
           if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             notificationService.newMessage({
@@ -2922,8 +2879,6 @@ export default function App() {
 
     socket.on("dm:unread:sync", ({ peerId, count } = {}) => {
       if (!peerId) return;
-      // The server zeroes an open chat; while the window is hidden it stays unread here.
-      if (count === 0 && pendingDmReadRef.current === peerId) return;
       setDmUnread((prev) => { const n = { ...prev }; if (count === 0) delete n[peerId]; else n[peerId] = count; return n; });
     });
 
@@ -2932,8 +2887,8 @@ export default function App() {
       setDmByUserId((prev) => {
         const cur = prev[peerId];
         if (!cur) return prev;
-        const next = applyPeerRead(cur, myIdRef.current, at);
-        return next === cur ? prev : { ...prev, [peerId]: next };
+        const selfId = myIdRef.current;
+        return { ...prev, [peerId]: cur.map((m) => m.from?.id === selfId && m.to?.id === peerId ? { ...m, readAt: m.readAt || at } : m) };
       });
     });
 
