@@ -614,25 +614,31 @@ app.use("/api/feedback", require("./routes/legacyFeedbackAdmin"));
 // Update profile - PUT /api/user/profile
 app.put("/api/user/profile", requireAuth, async (req, res) => {
   try {
-    const { displayName, bio, customStatus, accentColor, fontSize, uiDensity, bubbleStyle, avatarUrl, bannerUrl } = req.body;
-    
-    const updateData = {};
-    if (displayName !== undefined) {
-      const trimmed = typeof displayName === "string" ? displayName.trim() : "";
-      updateData.display_name = trimmed || null;
+    // Types, lengths and image hosts are checked (lib/profileInput.js, security scan 17 Nov 2026).
+    const { data: current, error: currentError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", req.user.id)
+      .maybeSingle();
+    if (currentError) return sendServerError(req, res, currentError);
+    const { buildProfilePatch } = require("./lib/profileInput");
+    const built = buildProfilePatch(req.body, current || {}, {
+      isAdmin: Boolean(current?.is_admin) || current?.username === "admin",
+      filterCheck: (text) => {
+        try {
+          return require("./lib/contentFilter").check(text);
+        } catch {
+          return null;
+        }
+      },
+    });
+    if (!built.ok) return res.status(built.status).json({ success: false, ...built.body });
+    const updateData = built.patch;
+    if (!Object.keys(updateData).length) {
+      const { data: same } = await supabase.from("users").select().eq("id", req.user.id).single();
+      return res.json({ success: true, user: toPublicUser(cacheUserProfile(same || { id: req.user.id })) });
     }
-    if (bio !== undefined) updateData.bio = bio;
-    if (customStatus !== undefined) updateData.custom_status = customStatus;
-    if (accentColor !== undefined) updateData.accent_color = accentColor;
-    if (fontSize !== undefined) updateData.font_size = fontSize;
-    if (uiDensity !== undefined) updateData.ui_density = uiDensity;
-    if (bubbleStyle !== undefined) updateData.bubble_style = bubbleStyle;
-    if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
-    if (bannerUrl !== undefined) updateData.banner_url = bannerUrl;
-    if (avatarUrl !== undefined || displayName !== undefined || bio !== undefined || customStatus !== undefined) {
-      updateData.updated_at = new Date().toISOString();
-    }
-    
+
     const { data, error } = await supabase
       .from("users")
       .update(updateData)
@@ -655,14 +661,11 @@ app.put("/api/user/profile", requireAuth, async (req, res) => {
 // Update notification settings - PUT /api/user/notifications
 app.put("/api/user/notifications", requireAuth, async (req, res) => {
   try {
-    const { soundEnabled, soundVolume, desktopNotifications, callNotifications, mentionNotifications } = req.body;
-    
-    const updateData = {};
-    if (soundEnabled !== undefined) updateData.sound_enabled = soundEnabled;
-    if (soundVolume !== undefined) updateData.sound_volume = soundVolume;
-    if (desktopNotifications !== undefined) updateData.desktop_notifications = desktopNotifications;
-    if (callNotifications !== undefined) updateData.call_notifications = callNotifications;
-    if (mentionNotifications !== undefined) updateData.mention_notifications = mentionNotifications;
+    const { buildSettingsPatch, NOTIFICATION_SETTINGS } = require("./lib/profileInput");
+    const built = buildSettingsPatch(req.body, NOTIFICATION_SETTINGS);
+    if (!built.ok) return res.status(built.status).json({ success: false, ...built.body });
+    const updateData = built.patch;
+    if (!Object.keys(updateData).length) return res.json({ success: true });
     
     const { data, error } = await supabase
       .from("users")
@@ -683,15 +686,11 @@ app.put("/api/user/notifications", requireAuth, async (req, res) => {
 // Update privacy settings - PUT /api/user/privacy
 app.put("/api/user/privacy", requireAuth, async (req, res) => {
   try {
-    const { onlineStatusVisible, lastSeenVisible, typingIndicatorVisible, profileVisibleTo, allowFriendRequests, allowGroupInvites } = req.body;
-    
-    const updateData = {};
-    if (onlineStatusVisible !== undefined) updateData.online_status_visible = onlineStatusVisible;
-    if (lastSeenVisible !== undefined) updateData.last_seen_visible = lastSeenVisible;
-    if (typingIndicatorVisible !== undefined) updateData.typing_indicator_visible = typingIndicatorVisible;
-    if (profileVisibleTo !== undefined) updateData.profile_visible_to = profileVisibleTo;
-    if (allowFriendRequests !== undefined) updateData.allow_friend_requests = allowFriendRequests;
-    if (allowGroupInvites !== undefined) updateData.allow_group_invites = allowGroupInvites;
+    const { buildSettingsPatch, PRIVACY_SETTINGS } = require("./lib/profileInput");
+    const built = buildSettingsPatch(req.body, PRIVACY_SETTINGS);
+    if (!built.ok) return res.status(built.status).json({ success: false, ...built.body });
+    const updateData = built.patch;
+    if (!Object.keys(updateData).length) return res.json({ success: true });
     
     const { data, error } = await supabase
       .from("users")
@@ -720,7 +719,11 @@ app.put("/api/user/regional", requireAuth, async (req, res) => {
       const normalized = normalizeUiLocale(language);
       if (normalized) updateData.language = normalized;
     }
-    if (timezone !== undefined) updateData.timezone = timezone;
+    if (timezone !== undefined) {
+      const tz = require("./lib/profileInput").timezoneField("timezone", timezone);
+      if (!tz.ok) return res.status(tz.status).json({ success: false, ...tz.body });
+      updateData.timezone = tz.value;
+    }
     if (!Object.keys(updateData).length) return res.json({ success: true });
     
     const { data, error } = await supabase

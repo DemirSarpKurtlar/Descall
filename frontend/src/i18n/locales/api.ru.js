@@ -240,4 +240,8 @@ export const API_RU = {
   "That display name is not allowed.": "Это отображаемое имя использовать нельзя.",
   "Invalid profile value.": "Недопустимое значение профиля.",
   "{field} must be an image uploaded to Descall.": "{field} должно быть изображением, загруженным в Descall.",
+  "Could not load the activity history.": "Не удалось загрузить историю активности.",
+  "Could not load the activity.": "Не удалось загрузить активность.",
+  "Could not load the activity settings.": "Не удалось загрузить настройки активности.",
+  "Could not save the activity settings.": "Не удалось сохранить настройки активности.",
 };

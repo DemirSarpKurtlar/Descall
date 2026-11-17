@@ -972,4 +972,8 @@ export const API_TR = {
   "Status must be {max} characters or fewer.": "Durum en fazla {max} karakter olabilir.",
   "That display name is not allowed.": "Bu görünen ad kullanılamaz.",
   "Invalid profile value.": "Geçersiz profil değeri.",
+  "Could not load the activity history.": "Etkinlik geçmişi yüklenemedi.",
+  "Could not load the activity.": "Etkinlik yüklenemedi.",
+  "Could not load the activity settings.": "Etkinlik ayarları yüklenemedi.",
+  "Could not save the activity settings.": "Etkinlik ayarları kaydedilemedi.",
 };

@@ -240,4 +240,8 @@ export const API_DE = {
   "That display name is not allowed.": "Dieser Anzeigename ist nicht erlaubt.",
   "Invalid profile value.": "Ungültiger Profilwert.",
   "{field} must be an image uploaded to Descall.": "{field} muss ein auf Descall hochgeladenes Bild sein.",
+  "Could not load the activity history.": "Der Aktivitätsverlauf konnte nicht geladen werden.",
+  "Could not load the activity.": "Die Aktivität konnte nicht geladen werden.",
+  "Could not load the activity settings.": "Die Aktivitätseinstellungen konnten nicht geladen werden.",
+  "Could not save the activity settings.": "Die Aktivitätseinstellungen konnten nicht gespeichert werden.",
 };
