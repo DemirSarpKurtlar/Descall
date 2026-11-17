@@ -72,13 +72,15 @@ function detachFromGroupLive(io, groupId, userId) {
     console.warn("[Groups] socketsLeave failed:", err?.message || err);
   }
 }
-const INVITE_CODE_LENGTH = 8;
+// Codes come from crypto.randomInt (Math.random can be predicted from earlier codes) and
+// are 10 characters long (security scan 17 Nov 2026). Older 8-character codes keep working.
+const INVITE_CODE_LENGTH = 10;
 
 function generateInviteCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   let code = "";
   for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(require("crypto").randomInt(chars.length));
   }
   return code;
 }
@@ -117,6 +119,14 @@ router.get("/invite-links/:code", async (req, res) => {
   try {
     const code = String(req.params.code || "").trim();
     if (!code) return res.status(400).json({ error: "Missing invite code" });
+    // Public lookup: unknown codes are counted per IP so codes cannot be guessed in bulk.
+    const { peek, recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+    const missKey = `group-invite-miss:${req.ip || "unknown"}`;
+    if (rejectIfLimited(res, [peek(missKey, { windowMs: 10 * 60 * 1000, max: 60 })])) return;
+    if (!/^[A-Za-z0-9]{4,32}$/.test(code)) {
+      recordFailure(missKey, { windowMs: 10 * 60 * 1000, max: 60 });
+      return res.status(404).json({ error: "Invite invalid or expired" });
+    }
 
     const { data: invite, error } = await supabase
       .from("group_invite_links")
@@ -125,6 +135,7 @@ router.get("/invite-links/:code", async (req, res) => {
       .maybeSingle();
 
     if (error || !invite) {
+      recordFailure(missKey, { windowMs: 10 * 60 * 1000, max: 60 });
       return res.status(404).json({ error: "Invite invalid or expired" });
     }
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
