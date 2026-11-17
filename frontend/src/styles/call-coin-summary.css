@@ -663,8 +663,12 @@ html.glass-desktop .ccs-card :focus-visible {
   color: var(--ccs-faint);
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Two lines before an ellipsis: the German receipt line ("Beleg DC-7F3A · im
+     Wallet-Verlauf gespeichert") was cut after "Beleg DC-7F3A". */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
 }
 .ccs-link:hover {
   color: #c6d2ff;
