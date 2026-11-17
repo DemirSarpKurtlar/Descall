@@ -228,6 +228,8 @@ export const API_RU = {
   "You can only lock a card from today's storefront.": "Заблокировать можно только карточку из сегодняшней витрины.",
   "You cannot join tonight's night market.": "Ты не можешь попасть на сегодняшний ночной рынок.",
   "Too many friend requests. Try again later.": "Слишком много запросов в друзья. Попробуйте позже.",
+  "Your block list is full.": "Список заблокированных заполнен.",
+  "Could not update your block list.": "Не удалось обновить список заблокированных.",
   "Too many incorrect attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.": "Слишком много неверных попыток. Попробуйте снова через {minutes, plural, one {# минуту} few {# минуты} many {# минут} other {# минуты}}.",
   "Invalid members": "Неверный список участников.",
   "Send messages through the app.": "Отправляйте сообщения через приложение.",

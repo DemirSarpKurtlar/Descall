@@ -650,7 +650,7 @@ router.post("/block", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "You cannot block yourself" });
     }
     const result = await blockUser(req.user.id, targetId);
-    if (!result.ok) return res.status(400).json({ error: result.error });
+    if (!result.ok) return res.status(result.status || 400).json({ error: result.error });
 
     const io = req.app.get("io");
     if (io) {
@@ -674,7 +674,7 @@ router.post("/unblock", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid request." });
     }
     const result = await unblockUser(req.user.id, targetId);
-    if (!result.ok) return res.status(400).json({ error: result.error });
+    if (!result.ok) return res.status(result.status || 400).json({ error: result.error });
     res.json({ success: true, blockedUsers: result.blockedUsers });
   } catch (err) {
     console.error("Unblock user error:", err);

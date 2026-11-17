@@ -228,6 +228,8 @@ export const API_ES = {
   "You can only lock a card from today's storefront.": "Solo puedes bloquear una carta de la tienda de hoy.",
   "You cannot join tonight's night market.": "No puedes unirte al mercado nocturno de esta noche.",
   "Too many friend requests. Try again later.": "Demasiadas solicitudes de amistad. Inténtalo más tarde.",
+  "Your block list is full.": "Tu lista de bloqueados está llena.",
+  "Could not update your block list.": "No se pudo actualizar tu lista de bloqueados.",
   "Too many incorrect attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.": "Demasiados intentos incorrectos. Inténtalo de nuevo en {minutes, plural, one {# minuto} other {# minutos}}.",
   "Invalid members": "Lista de miembros no válida.",
   "Send messages through the app.": "Envía los mensajes desde la app.",
