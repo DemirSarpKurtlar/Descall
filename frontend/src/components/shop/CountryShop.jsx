@@ -23,6 +23,7 @@ import { CountryBadge, CountryFlag } from "./CountryFlag";
 import { condenseLetters, railCapacity } from "../../lib/letterRail";
 import { formatNumber } from "../../i18n/format.js";
 import { purchasable, saleOf } from "../../lib/shopMerchView.js";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const REGION_LABEL = Object.fromEntries(COUNTRY_REGIONS.map((r) => [r.id, r.labelKey]));
 
@@ -113,6 +114,8 @@ function PurchaseDialog({ item, me, balance, hasVoucher, currentItem, onCancel, 
   const [drag, setDrag] = useState(0);
   const dragStart = useRef(null);
   const confirmRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const price = Number(item.price_descoin) || 0;
   const after = hasVoucher ? balance : balance - price;
   const code = countryCode(item);
@@ -152,6 +155,7 @@ function PurchaseDialog({ item, me, balance, hasVoucher, currentItem, onCancel, 
   return createPortal(
     <div className={`cs-dialog-root${isMobile ? " is-sheet" : ""}`} role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
       <div
+        ref={dialogRef}
         className="cs-dialog"
         role="dialog"
         aria-modal="true"
