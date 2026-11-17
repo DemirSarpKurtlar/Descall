@@ -4563,8 +4563,12 @@ button.member-row.server-member-row {
 .server-voice-member-menu {
   position: fixed;
   z-index: 10061;
-  min-width: 200px;
-  max-width: 260px;
+  min-width: 220px;
+  max-width: 270px;
+  /* Placement sets an inline max-height (lib/contextMenuPlacement.js); this is the fallback. */
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 6px;
   border-radius: var(--r-sm);
   background: var(--surface-1, var(--surface-2));
@@ -4575,6 +4579,122 @@ button.member-row.server-member-row {
   gap: 2px;
 }
 
+/* Owner rule: menus are opaque (the shared frost base is 86 % alpha). */
+:root:root:root:root:root .server-voice-member-menu {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    var(--frost-solid, rgb(28, 28, 34)) !important;
+}
+
+.server-voice-member-menu .server-voice-menu-grow {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.server-voice-member-menu .server-dropdown-item.has-sub > svg:last-child {
+  opacity: 0.6;
+}
+
+.server-voice-menu-back {
+  font-size: var(--fs-12);
+  color: var(--text-muted);
+}
+
+.server-voice-menu-who {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+}
+
+.server-voice-move-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 4px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, #587af5 14%, transparent);
+  color: var(--text-1);
+  font-size: var(--fs-12);
+  font-weight: 650;
+}
+
+.server-voice-move-current small {
+  font-size: var(--fs-11);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.server-voice-move-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.server-voice-move-empty {
+  padding: 10px;
+  font-size: var(--fs-12);
+  color: var(--text-muted);
+}
+
+.server-voice-menu-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.server-voice-menu-confirm p {
+  margin: 0;
+  font-size: var(--fs-13);
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--text-0, #f2f3f5);
+}
+
+.server-voice-menu-confirm-row {
+  display: flex;
+  gap: 8px;
+}
+
+.server-voice-menu-confirm-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.server-voice-menu-confirm-btn.danger {
+  border-color: transparent;
+  background: #e5484d;
+  color: #fff;
+}
+
+.server-voice-menu-confirm-btn:focus-visible {
+  outline: 2px solid #587af5;
+  outline-offset: 2px;
+}
+
 .server-voice-member-menu-title {
   padding: 6px 10px 8px;
   font-size: var(--fs-12);
@@ -4583,7 +4703,7 @@ button.member-row.server-member-row {
 }
 
 .server-dropdown-item.nested {
-  padding-left: 22px;
+  padding-left: 14px;
   font-size: var(--fs-12);
 }
 
