@@ -55,6 +55,8 @@ export const API_PT_BR = {
   "This change has no state for the flag.": "Esta mudança não guarda o estado da flag.",
   "Unknown flag.": "Flag desconhecida.",
   "Use System > Safe restart.": "Use Sistema > Reinício seguro.",
+  "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.": "Um anúncio urgente aprovado para todos não pode ser alterado enquanto está no ar. Encerre, edite e envie para aprovação de novo.",
+  "An urgent announcement to everyone needs a second admin. Publish it to send it for approval.": "Um anúncio urgente para todos precisa de um segundo administrador. Publique para enviar para aprovação.",
   "Accounts are not created or deleted from the admin panel.": "Contas não são criadas nem excluídas pelo painel de administração.",
   // İşlem kaydı (admin audit console)
   "Could not load the audit summary.": "Não foi possível carregar o resumo do registro.",

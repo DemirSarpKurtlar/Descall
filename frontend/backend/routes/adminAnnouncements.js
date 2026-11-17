@@ -430,6 +430,9 @@ router.post("/announcements", async (req, res) => {
 });
 
 const TEXT_FIELDS = ["title", "content", "cta_label"];
+// Fields a second admin approves on an urgent announcement to everyone.
+const APPROVAL_FIELDS = ["title", "content", "priority", "audience", "translations", "cta_url", "cta_label"];
+const NO_APPROVAL = Object.freeze({ approved_by: null, approved_by_name: null, approved_at: null });
 const WATCHED = ["title", "content", "icon", "color", "priority", "cta_label", "cta_url", "cover_url", "audience", "starts_at", "ends_at", "pinned", "push", "live_notify", "source_lang", "translations"];
 
 function changedFields(prev, next) {
@@ -457,12 +460,16 @@ router.put("/announcements/:id", async (req, res) => {
     if (status === "live" && approvalNow && !approvalBefore && !prev.approved_by) {
       throw err("NEEDS_APPROVAL", "An urgent announcement to everyone needs a second admin. Save it as a new draft and send it for approval.", 409);
     }
-    // A change to an approved (or waiting) urgent-to-everyone announcement needs a fresh approval.
-    if ((status === "scheduled" || status === "pending") && approvalNow && changed.some((k) => ["title", "content", "priority", "audience", "translations", "cta_url"].includes(k))) {
-      patch.status = "pending";
-      patch.approved_by = null;
-      patch.approved_by_name = null;
-      patch.approved_at = null;
+    // Two-person rule (polish admin-b-02): what users see of an urgent-to-everyone
+    // announcement is exactly what the second admin approved. A live one cannot be
+    // rewritten in place; any other state loses its approval and needs a fresh one.
+    const approvalChange = approvalNow && changed.some((k) => APPROVAL_FIELDS.includes(k));
+    if (approvalChange && status === "live") {
+      throw err("NEEDS_REAPPROVAL", "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.", 409);
+    }
+    if (approvalChange) {
+      Object.assign(patch, NO_APPROVAL);
+      if (status === "scheduled") patch.status = "pending";
     }
     if (changed.includes("pinned")) patch.pin_order = patch.pinned ? prev.pin_order || (await nextPinOrder()) : null;
     const actor = actorOf(req);
@@ -622,6 +629,9 @@ router.post("/announcements/:id/reopen", async (req, res) => {
     const row = await loadRow(req.params.id);
     if (model.statusOf(row) !== "ended") throw err("BAD_STATE", "Only ended announcements can come back.", 409);
     if (row.ends_at && Date.parse(row.ends_at) <= Date.now()) throw err("EXPIRED", "Extend the end time first.", 409);
+    if (model.needsApproval(row.priority, row.audience) && !row.approved_by) {
+      throw err("NEEDS_APPROVAL", "An urgent announcement to everyone needs a second admin. Publish it to send it for approval.", 409);
+    }
     const actor = actorOf(req);
     const out = await store.update(row.id, { status: "live", is_active: true, ended_at: null, ended_reason: null, updated_at: new Date().toISOString(), updated_by: actor.id, updated_by_name: actor.username });
     service.invalidate();
@@ -785,6 +795,16 @@ router.post("/announcements/:id/restore", async (req, res) => {
     delete snap.status;
     delete snap.version;
     delete snap.pinned;
+    // Approval belongs to the reviewed content, never to an old snapshot (polish admin-b-02).
+    for (const k of ["approved_by", "approved_by_name", "approved_at", "requested_by"]) delete snap[k];
+    const restoredStatus = model.statusOf(row);
+    if (model.needsApproval(snap.priority ?? row.priority, snap.audience ?? row.audience) && changedFields(row, snap).some((k) => APPROVAL_FIELDS.includes(k))) {
+      if (restoredStatus === "live") {
+        throw err("NEEDS_REAPPROVAL", "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.", 409);
+      }
+      Object.assign(snap, NO_APPROVAL);
+      if (restoredStatus === "scheduled") snap.status = "pending";
+    }
     const actor = actorOf(req);
     await store.addVersion(row, { change: "restored", actor });
     const out = await store.update(row.id, { ...snap, version: (Number(row.version) || 1) + 1, updated_at: new Date().toISOString(), updated_by: actor.id, updated_by_name: actor.username });

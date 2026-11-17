@@ -440,6 +440,7 @@ export const ANNC_ES = {
     "schema": "Esta función espera una actualización de la base de datos.",
     "secondAdmin": "Otro administrador debe aprobar este anuncio.",
     "needsApproval": "Un anuncio urgente para todos necesita un segundo administrador. Guárdalo como nuevo borrador y envíalo a aprobación.",
+    "needsReapproval": "Este anuncio urgente para todos se aprobó tal como está. Finalízalo, edítalo y envíalo de nuevo a aprobación.",
     "note": "Escribe una nota breve.",
     "reason": "Elige un motivo.",
     "title": "El título es obligatorio.",

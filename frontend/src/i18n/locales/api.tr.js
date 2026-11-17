@@ -820,6 +820,8 @@ export const API_TR = {
   "This change has no state for the flag.": "Bu değişiklikte bayrağın durumu yok.",
   "Unknown flag.": "Bilinmeyen bayrak.",
   "Use System > Safe restart.": "Sistem > Güvenli yeniden başlat'ı kullan.",
+  "An approved urgent announcement to everyone cannot be changed while it is live. End it, edit it and send it for approval again.": "Onaylı, acil ve herkese giden bir duyuru yayındayken değiştirilemez. Önce bitir, sonra düzenleyip yeniden onaya gönder.",
+  "An urgent announcement to everyone needs a second admin. Publish it to send it for approval.": "Acil ve herkese giden bir duyuru ikinci bir yöneticinin onayını ister. Onaya göndermek için yayınla.",
   "Accounts are not created or deleted from the admin panel.": "Hesaplar yönetici panelinden açılmaz veya silinmez.",
   // Duyurular (remake Nov 2026)
   "Automatic translation is not set up on the server.": "Otomatik çeviri sunucuda kurulu değil.",

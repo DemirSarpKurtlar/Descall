@@ -501,6 +501,7 @@ export function errorKey(err) {
     ANNOUNCEMENTS_SCHEMA_MISSING: "schema",
     SECOND_ADMIN_REQUIRED: "secondAdmin",
     NEEDS_APPROVAL: "needsApproval",
+    NEEDS_REAPPROVAL: "needsReapproval",
     NOTE_REQUIRED: "note",
     REASON_REQUIRED: "reason",
     TITLE_REQUIRED: "title",

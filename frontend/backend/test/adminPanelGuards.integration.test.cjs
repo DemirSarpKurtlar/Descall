@@ -5,6 +5,8 @@
  * fake db.
  *  - Accounts are never created or hard-deleted from the panel (410), even by a
  *    legacy admin holding the "directory" section; the owner row survives.
+ *  - Two-person rule: an approved urgent announcement to everyone cannot be rewritten
+ *    while live, and an edit after it ended drops the approval (reopen refuses).
  */
 
 process.env.NODE_ENV = "test";
@@ -32,6 +34,10 @@ const fake = createFakeSupabase({
     user(KAAN, "kaan"),
   ],
   admin_audit: [],
+  announcements: [],
+  announcement_versions: [],
+  announcement_reads: [],
+  announcement_templates: [],
 });
 const supabasePath = require.resolve("../db/supabase");
 require.cache[supabasePath] = { id: supabasePath, filename: supabasePath, loaded: true, exports: fake };
@@ -86,6 +92,29 @@ const row = (id) => fake._tables.users.rows.find((u) => u.id === id);
     r = await call(base, "POST", "/api/admin/users", { token: legacy, body: { username: "sock1", password: "Zx9!long-pass-phrase" } });
     assert(r.status === 410, `account creation is gone: ${r.status}`);
     assert(!fake._tables.users.rows.some((u) => u.username === "sock1"), "no account was created");
+
+    // ---- announcements: approval stays bound to the approved content ----
+    r = await call(base, "POST", "/api/admin/announcements", { token: owner, body: { title: "Acil bakim", content: "Sunucular 10 dk kapali", priority: "urgent", audience: { type: "everyone" } } });
+    assert(r.status < 300 && r.body.item?.id, `create urgent: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    const id = r.body.item.id;
+    if (r.body.item.status !== "pending") {
+      r = await call(base, "POST", `/api/admin/announcements/${id}/publish`, { token: owner, body: {} });
+    }
+    r = await call(base, "POST", `/api/admin/announcements/${id}/approve`, { token: legacy, body: {} });
+    assert(r.status === 200 && r.body.item?.status === "live", `second admin approves: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    r = await call(base, "PUT", `/api/admin/announcements/${id}`, { token: owner, body: { title: "Hesabiniz kapatilacak", content: "Hemen bu linke tiklayin" } });
+    assert(r.status === 409 && r.body.code === "NEEDS_REAPPROVAL", `live rewrite refused: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    r = await call(base, "POST", `/api/admin/announcements/${id}/end`, { token: owner, body: { reason: "outdated" } });
+    assert(r.status === 200, `end: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    r = await call(base, "PUT", `/api/admin/announcements/${id}`, { token: owner, body: { title: "Hesabiniz kapatilacak", content: "Hemen bu linke tiklayin" } });
+    assert(r.status === 200, `edit after end: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    const stored = fake._tables.announcements.rows.find((a) => a.id === id);
+    assert(stored && !stored.approved_by, "edit after end drops the approval");
+    r = await call(base, "POST", `/api/admin/announcements/${id}/reopen`, { token: owner, body: {} });
+    assert(r.status === 409 && r.body.code === "NEEDS_APPROVAL", `reopen without approval refused: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+    r = await call(base, "POST", `/api/admin/announcements/${id}/publish`, { token: owner, body: {} });
+    assert(r.status === 200 && r.body.result === "pending", `publish goes back to approval: ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
+
     console.log("adminPanelGuards: ok");
   } finally {
     server.close();

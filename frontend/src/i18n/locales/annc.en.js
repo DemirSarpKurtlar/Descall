@@ -440,6 +440,7 @@ export const ANNC_EN = {
     "schema": "This feature is waiting for a database update.",
     "secondAdmin": "Another admin has to approve this announcement.",
     "needsApproval": "An urgent announcement to everyone needs a second admin. Save it as a new draft and send it for approval.",
+    "needsReapproval": "This urgent announcement to everyone was approved as it is. End it, edit it and send it for approval again.",
     "note": "Write a short note.",
     "reason": "Pick a reason.",
     "title": "A title is required.",
