@@ -3986,17 +3986,17 @@ button.header-avatar {
   background: rgba(255,255,255,0.1);
 }
 
-/* ─── Electron Screen Picker ─── */
+/* ─── Electron Screen Picker (polish pass) ───
+   Built by showElectronScreenPicker (lib/webrtcScreenShare.js). The overlay is in the
+   shared scrim list (overlay.css), the card in the heavy frost list (frost.css): the
+   look of every other glass-desktop modal. Tiles are buttons (keyboard), tabs split
+   screens from windows. */
 .electron-screen-picker-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  z-index: var(--z-system, 2147482000);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: picker-fade-in 0.2s ease;
+  animation: picker-fade-in 0.18s ease;
 }
 
 @keyframes picker-fade-in {
@@ -4005,111 +4005,167 @@ button.header-avatar {
 }
 
 .electron-screen-picker-modal {
-  background: var(--surface-0, #1a1a1f);
-  border: 1px solid var(--border-1, rgba(255,255,255,0.08));
-  border-radius: var(--r-lg);
-  width: 720px;
-  max-width: 90vw;
-  max-height: 85vh;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  width: min(780px, 92vw);
+  max-height: 84vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-  animation: picker-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: picker-scale-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes picker-scale-in {
-  from { opacity: 0; transform: scale(0.92) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
 
 .electron-screen-picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--border-1, rgba(255,255,255,0.06));
+  gap: 12px;
+  padding: 16px 18px 10px 22px;
 }
 
 .electron-screen-picker-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-17);
+  font-weight: 650;
   color: var(--text-0, #f0f0f5);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.01em;
 }
 
-.electron-screen-picker-close {
+.electron-screen-picker-actions { display: flex; gap: 6px; }
+
+.electron-screen-picker-icon-btn {
   width: 32px;
   height: 32px;
-  border: none;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text-muted, #8a8a93);
-  font-size: 22px;
-  line-height: 1;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-1, #d1d1d6);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   transition: background 0.15s, color 0.15s;
 }
+.electron-screen-picker-icon-btn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text-0, #f0f0f5); }
+.electron-screen-picker-icon-btn:disabled { opacity: 0.5; cursor: progress; }
 
-.electron-screen-picker-close:hover {
-  background: var(--surface-2, rgba(255,255,255,0.06));
-  color: var(--text-0, #f0f0f5);
+.electron-screen-picker-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  margin: 0 22px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.electron-screen-picker-tab {
+  border: 0;
+  border-radius: 9px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted, #9aa0aa);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.electron-screen-picker-tab[aria-selected="true"] {
+  color: #fff;
+  background: rgba(88, 122, 245, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.electron-screen-picker-tip {
+  margin: 10px 22px 0;
+  font-size: var(--fs-12);
+  line-height: 1.4;
+  color: var(--text-muted, #9aa0aa);
 }
 
 .electron-screen-picker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 12px;
-  padding: 20px 24px 24px;
+  padding: 14px 22px 22px;
   overflow-y: auto;
 }
 
 .electron-screen-picker-item {
-  background: var(--surface-1, rgba(255,255,255,0.04));
-  border: 2px solid transparent;
-  border-radius: var(--r-md);
-  padding: 10px;
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 8px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
+  min-width: 0;
   transition: transform 0.15s, border-color 0.15s, background 0.15s;
   user-select: none;
 }
-
-.electron-screen-picker-item:hover {
-  background: var(--surface-2, rgba(255,255,255,0.07));
-  border-color: var(--primary, #587af5);
-  transform: translateY(-2px);
+.electron-screen-picker-item:hover,
+.electron-screen-picker-item:focus-visible {
+  background: rgba(88, 122, 245, 0.12);
+  border-color: #587af5;
+  outline: none;
 }
+.electron-screen-picker-item:hover { transform: translateY(-2px); }
+.electron-screen-picker-item:active { transform: scale(0.98); }
 
-.electron-screen-picker-item:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.electron-screen-picker-item img {
+.electron-screen-picker-item > img {
   width: 100%;
   aspect-ratio: 16 / 10;
-  object-fit: cover;
-  border-radius: var(--r-sm);
-  background: #000;
+  object-fit: contain;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.45);
   pointer-events: none;
 }
 
-.electron-screen-picker-item span {
+.electron-screen-picker-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
   font-size: var(--fs-12);
-  font-weight: 500;
+  font-weight: 550;
   color: var(--text-1, #d1d1d6);
-  text-align: center;
-  max-width: 100%;
+}
+.electron-screen-picker-label > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.electron-screen-picker-appicon { width: 16px; height: 16px; flex: none; border-radius: 4px; }
+
+.electron-screen-picker-empty {
+  grid-column: 1 / -1;
+  margin: 28px 0;
+  text-align: center;
+  font-size: var(--fs-13);
+  color: var(--text-muted, #9aa0aa);
+}
+
+:root[data-theme="light"] .electron-screen-picker-header h3 { color: #15161c; }
+:root[data-theme="light"] .electron-screen-picker-item { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.08); }
+:root[data-theme="light"] .electron-screen-picker-label { color: #2a2c35; }
+:root[data-theme="light"] .electron-screen-picker-tabs,
+:root[data-theme="light"] .electron-screen-picker-icon-btn { background: rgba(0, 0, 0, 0.06); color: #2a2c35; }
+
+@media (prefers-reduced-motion: reduce) {
+  .electron-screen-picker-overlay,
+  .electron-screen-picker-modal { animation: none; }
+  .electron-screen-picker-item { transition: none; }
+  .electron-screen-picker-item:hover { transform: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

@@ -55,6 +55,7 @@ export const API_FR = {
   "This change has no state for the flag.": "Ce changement ne contient pas l'état du flag.",
   "Unknown flag.": "Flag inconnu.",
   "Use System > Safe restart.": "Utilisez Système > Redémarrage sûr.",
+  "Failed to load overview.": "Impossible de charger la vue d’ensemble.",
   "Could not check your verification code status. Try again.": "Impossible de vérifier l’état de votre code de vérification. Réessayez.",
   "Write a reason (at least 3 characters).": "Indiquez une raison (au moins 3 caractères).",
   "One change can move at most {max} DesCoin.": "Une modification peut déplacer au plus {max} DesCoin.",

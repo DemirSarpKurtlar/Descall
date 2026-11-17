@@ -3309,7 +3309,11 @@ export const nested = {
     },
     "screenPicker": {
       "tip": "Wähle den Bildschirm, das Fenster oder den Browser-Tab, den du teilen möchtest.",
-      "title": "Bildschirm teilen"
+      "title": "Bildschirm teilen",
+      "screens": "Bildschirme",
+      "windows": "Fenster",
+      "refresh": "Liste aktualisieren",
+      "empty": "Hier gibt es nichts zum Teilen."
     },
     "seo": {
       "appDesc": "Descall-App",
@@ -3956,12 +3960,6 @@ export const nested = {
     "itemOwnedBody": "Du hattest {name} schon, also haben wir dir den Wert in DesCoin gutgeschrieben. Dein neues Guthaben beträgt {balance} DC.",
     "itemOwnedTitle": "+{n} DesCoin",
     "itemPick": "Artikel auswählen",
-    "itemSearch": "Artikel suchen",
-    "itemAll": "Alle",
-    "itemNone": "Keine Ergebnisse",
-    "itemLoading": "Artikel werden geladen…",
-    "itemSetPiece": "Set-Teil",
-    "itemCount": "{n} Artikel",
     "itemTitle": "{name} gehört dir",
     "justFilled": "Dieser Code wurde gerade aufgebraucht.",
     "kpiActive": "Aktive Codes",

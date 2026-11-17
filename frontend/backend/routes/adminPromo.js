@@ -35,43 +35,16 @@ router.get("/promo-codes/generate", (_req, res) => {
   res.json({ code: promo.generateCode() });
 });
 
-// Item picker for "Mağaza eşyası": every item on sale (active; that is the Market 2.0 s2-
-// catalog plus country flags since the old catalog was retired), with what the picker shows
-// (localized names, category, rarity, set, art).
-// Paged past PostgREST's 1000-row cap; no silent 500 limit (the shop has ~900 rows).
-const SHOP_ITEM_FIELDS = "id, sku, name, i18n, description, category, rarity, set_key, price_descoin, asset_url, preview_url, badge_icon, sort_order";
-const SHOP_ITEM_FIELDS_MIN = "id, sku, name, category, price_descoin";
-const SHOP_ITEM_PAGE = 1000;
-const SHOP_ITEM_MAX = 5000;
-
-async function loadPromoShopItems(fields) {
-  const out = [];
-  for (let from = 0; from < SHOP_ITEM_MAX; from += SHOP_ITEM_PAGE) {
-    const { data, error } = await supabase
-      .from("shop_items")
-      .select(fields)
-      .eq("active", true)
-      .order("id", { ascending: true })
-      .range(from, from + SHOP_ITEM_PAGE - 1);
-    if (error) return { error };
-    out.push(...(data || []));
-    if (!data || data.length < SHOP_ITEM_PAGE) break;
-  }
-  return { rows: out };
-}
-
 router.get("/promo-codes/shop-items", async (_req, res) => {
   try {
-    let got = await loadPromoShopItems(SHOP_ITEM_FIELDS);
-    // An older database without the Market 2.0 columns: the plain list still works.
-    if (got.error) got = await loadPromoShopItems(SHOP_ITEM_FIELDS_MIN);
-    if (got.error) throw Object.assign(new Error("shop_items"), { status: 500 });
-    const items = got.rows.sort((a, b) =>
-      String(a.category).localeCompare(String(b.category))
-      || (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
-      || String(a.name || "").localeCompare(String(b.name || "")));
-    res.set("Cache-Control", "no-store");
-    res.json({ items });
+    const { data, error } = await supabase
+      .from("shop_items")
+      .select("id, name, category, price_descoin")
+      .eq("active", true)
+      .order("name", { ascending: true })
+      .limit(500);
+    if (error) throw Object.assign(new Error("shop_items"), { status: 500 });
+    res.json({ items: data || [] });
   } catch (err) {
     send(res, err);
   }

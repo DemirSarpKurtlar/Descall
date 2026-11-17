@@ -264,40 +264,20 @@ router.get("/attribution", async (_req, res) => {
 
 router.get("/analytics", async (_req, res) => {
   try {
+    // Every row of an ordered select, one timeout for all pages.
+    const pagedRead = (build) => withTimeout(selectPaged(build), 15000, { data: [], error: { message: "timeout" } });
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const usersSelect =
       "id, created_at, signup_at, last_seen, auth_method, first_touch_source, first_touch_medium, first_touch_campaign, first_touch_term, first_touch_gclid, signup_device, signup_country, first_app_opened_at, first_action_at, first_message_at";
     const breakdownPromise = loadSourceBreakdown().catch(() => null);
     const [usersRes, visitsRes, startedRes] = await Promise.all([
       // Paged past the 1000-row cap (polish admin-b-04): 30 days of visitor rows are ~14k.
-      withTimeout(
-        selectPaged(() => supabase.from("users").select(usersSelect, { count: "exact" }).order("id", { ascending: true })),
-        15000,
-        { data: [], error: { message: "timeout" } }
+      pagedRead(() => supabase.from("users").select(usersSelect, { count: "exact" }).order("id")),
+      pagedRead(() =>
+        supabase.from("analytics_visitor_days").select("visitor_key, day, first_touch_source, has_gclid, country, device", { count: "exact" }).gte("day", since).order("day").order("visitor_key")
       ),
-      withTimeout(
-        selectPaged(() =>
-          supabase
-            .from("analytics_visitor_days")
-            .select("visitor_key, day, first_touch_source, has_gclid, country, device", { count: "exact" })
-            .gte("day", since)
-            .order("day", { ascending: true })
-            .order("visitor_key", { ascending: true })
-        ),
-        15000,
-        { data: [], error: { message: "timeout" } }
-      ),
-      withTimeout(
-        selectPaged(() =>
-          supabase
-            .from("analytics_events")
-            .select("id, visitor_key, occurred_at", { count: "exact" })
-            .eq("event", "signup_started")
-            .gte("occurred_at", since)
-            .order("id", { ascending: true })
-        ),
-        15000,
-        { data: [], error: { message: "timeout" } }
+      pagedRead(() =>
+        supabase.from("analytics_events").select("id, visitor_key, occurred_at", { count: "exact" }).eq("event", "signup_started").gte("occurred_at", since).order("id")
       ),
     ]);
     if (usersRes?.error?.message === "timeout") {

@@ -71,6 +71,10 @@ export const CORE_EN = {
     title: "Share your screen",
     tip: "Choose the screen, window, or browser tab you want to share.",
     screen: "Screen",
+    screens: "Screens",
+    windows: "Windows",
+    refresh: "Refresh list",
+    empty: "Nothing of this kind to share.",
   },
   server: {
     slowmode: "Slowmode is on. Try again in {wait}s.",

@@ -14,7 +14,6 @@ import { toTrtInputs, fromTrtInputs, dottedDate } from "../../lib/maintenance";
 import { describePromoBadge, getPromoBadges, onPromoBadgesChange } from "../../lib/promoBadges";
 import { PromoGiftPopup, BadgeGlyph } from "../promo/PromoUi.jsx";
 import PromoPeoplePicker from "./PromoPeoplePicker.jsx";
-import PromoItemPicker, { promoItemName } from "./PromoItemPicker.jsx";
 import "../../styles/maintenance.css";
 import "../../styles/promo.css";
 
@@ -82,7 +81,7 @@ function useBadgeRegistry() {
   return reg;
 }
 
-function PromoForm({ overview, onCreated, t, locale }) {
+function PromoForm({ overview, onCreated, t }) {
   const [f, setF] = useState(freshForm);
   const [items, setItems] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -105,7 +104,7 @@ function PromoForm({ overview, onCreated, t, locale }) {
   const code = f.mode === "random" ? f.code : normalizeCode(f.code);
   const item = items?.find((i) => String(i.id) === String(f.itemId));
   const reward = f.rewardType === "descoin" ? { type: "descoin", amount: Number(f.amount) || 0 }
-    : f.rewardType === "shop_item" ? { type: "shop_item", itemId: f.itemId, name: item ? promoItemName(item, locale) : undefined }
+    : f.rewardType === "shop_item" ? { type: "shop_item", itemId: f.itemId, name: item?.name }
       : { type: "special_badge", badgeId: f.badgeId };
   const expiresAt = f.expDate ? fromTrtInputs(f.expDate, f.expTime || "23:59") : null;
   const aud = overview?.audience || {};
@@ -193,7 +192,13 @@ function PromoForm({ overview, onCreated, t, locale }) {
       {f.rewardType === "shop_item" && (
         <div className="mt-f">
           <span>{t("promo.item")}</span>
-          <PromoItemPicker items={items} value={f.itemId} onChange={(itemId) => set({ itemId })} t={t} locale={locale} />
+          <div className="mt-in sel">
+            <ShoppingBag size={14} className="mt-i" /><span>{item?.name || t("promo.itemPick")}</span><ChevronDown size={14} className="mt-i" style={{ marginLeft: "auto" }} />
+            <select aria-label={t("promo.item")} value={f.itemId} onChange={(e) => set({ itemId: e.target.value })}>
+              <option value="">{t("promo.itemPick")}</option>
+              {(items || []).map((i) => <option key={i.id} value={i.id}>{i.name} · {fmtNum(i.price_descoin)} DC</option>)}
+            </select>
+          </div>
         </div>
       )}
       {f.rewardType === "special_badge" && (
@@ -371,7 +376,7 @@ export default function PromoCodesTab() {
         ))}
       </div>
       <div className="mt-grid">
-        <div className="mt-col"><PromoForm overview={ov} t={t} locale={locale} onCreated={async (id) => { await load(); if (id) setSelId(id); }} /></div>
+        <div className="mt-col"><PromoForm overview={ov} t={t} onCreated={async (id) => { await load(); if (id) setSelId(id); }} /></div>
         <div className="mt-col">
           <div className="mt-card">
             <h3><Gift size={16} /> {t("promo.codes")}<span className="sub tnum">{t("promo.codesCount", { n: fmtNum(codes.length) })}</span></h3>

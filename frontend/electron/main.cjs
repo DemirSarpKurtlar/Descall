@@ -2536,18 +2536,24 @@ trustedHandle('get-screen-sources', async () => {
       thumbnailSize: { width: 320, height: 240 },
       fetchWindowIcons: true,
     });
-    return sources.map(s => ({
-      id: s.id,
-      name: s.name,
-      thumbnailDataURL: s.thumbnail.toDataURL(),
-    }));
+    return sources.map(s => {
+      let appIconDataURL = null;
+      try { appIconDataURL = s.appIcon && !s.appIcon.isEmpty() ? s.appIcon.resize({ width: 32, height: 32 }).toDataURL() : null; } catch (_) { appIconDataURL = null; }
+      return {
+        id: s.id,
+        name: s.name,
+        thumbnailDataURL: s.thumbnail.toDataURL(),
+        // Window tiles show the app's icon in the picker (fetchWindowIcons above).
+        appIconDataURL,
+      };
+    });
   } catch (err) {
     log.error('get-screen-sources error:', err);
     return [];
   }
 });
 
-ipcMain.handle('screen-share:select-source', (_e, sourceId) => {
+trustedHandle('screen-share:select-source', (_e, sourceId) => {
   if (typeof sourceId !== 'string' || !/^(screen|window):[\w:.-]+$/.test(sourceId)) return false;
   setPendingDisplaySource(sourceId);
   return true;

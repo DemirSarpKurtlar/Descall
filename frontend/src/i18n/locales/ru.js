@@ -3309,7 +3309,11 @@ export const nested = {
     },
     "screenPicker": {
       "tip": "Выберите экран, окно или вкладку браузера, которые хотите показать.",
-      "title": "Демонстрация экрана"
+      "title": "Демонстрация экрана",
+      "screens": "Экраны",
+      "windows": "Окна",
+      "refresh": "Обновить список",
+      "empty": "Здесь нечего показать."
     },
     "seo": {
       "appDesc": "Приложение Descall",
@@ -3956,12 +3960,6 @@ export const nested = {
     "itemOwnedBody": "У вас уже был {name}, поэтому мы начислили его стоимость в DesCoin. Ваш новый баланс: {balance} DC.",
     "itemOwnedTitle": "+{n} DesCoin",
     "itemPick": "Выберите товар",
-    "itemSearch": "Поиск предметов",
-    "itemAll": "Все",
-    "itemNone": "Ничего не найдено",
-    "itemLoading": "Загружаем предметы…",
-    "itemSetPiece": "Часть набора",
-    "itemCount": "Предметов: {n}",
     "itemTitle": "{name} теперь ваш",
     "justFilled": "Использования этого кода только что закончились.",
     "kpiActive": "Активные коды",

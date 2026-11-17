@@ -51,6 +51,7 @@ function feedbackFocusRow(res) {
 }
 
 const adminAuditStore = require("../lib/adminAuditStore");
+const { apiError } = require("../lib/apiError");
 const router = express.Router();
 
 function getIo(req) {
@@ -93,6 +94,14 @@ function enrichDbRow(u, liveIds, onlineById) {
     isOnline,
     status,
   };
+}
+
+/** Drop per-person / per-entry details of sections the viewer cannot open. */
+function withoutClosedSections(body, canSee) {
+  if (!canSee("reports")) body.safety = { ...body.safety, hotTargets: [], autoOpenUserId: null };
+  if (!canSee("feedback")) body.product = { ...body.product, feedbackFocus: null };
+  if (!canSee("audit")) body.recentAudit = [];
+  return body;
 }
 
 router.get("/overview", async (req, res) => {
@@ -220,7 +229,10 @@ router.get("/overview", async (req, res) => {
       rssMb: mem,
     });
 
-    res.json({
+    // Genel Bakis is open to every admin: blocks from sections this admin cannot open
+    // are left out (polish admin-b-06). Counts stay; names, excerpts and actions do not.
+    const canSee = (section) => !Array.isArray(req.adminSections) || req.adminSections.includes(section);
+    res.json(withoutClosedSections({
       generatedAt: new Date().toISOString(),
       health,
       live: {
@@ -282,10 +294,10 @@ router.get("/overview", async (req, res) => {
         action: e.action,
         target: e.target,
       })),
-    });
+    }, canSee));
   } catch (err) {
     console.error("[overview]", err);
-    res.status(500).json({ error: err.message || "Failed to load overview." });
+    res.status(500).json(apiError("Failed to load overview."));
   }
 });
 
