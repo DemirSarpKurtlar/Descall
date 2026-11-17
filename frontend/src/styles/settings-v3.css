@@ -145,6 +145,13 @@ html.glass-desktop .user-settings.is-desktop.s3-shell.s3-tablet {
   max-width: 1100px !important;
   height: min(760px, var(--us-fit-h)) !important;
 }
+/* iPad portrait (a tall, narrow screen): the 760px card left ~600px of empty screen and the
+   Market showed half a row of cards; the shell grows with the window there. */
+@media (orientation: portrait) and (min-height: 1000px) {
+  html.glass-desktop .user-settings.is-desktop.s3-shell.s3-tablet {
+    height: min(1180px, var(--us-fit-h)) !important;
+  }
+}
 html.glass-desktop:not(.gd-lite) .user-settings.is-desktop.s3-shell {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)), rgba(24, 25, 36, 0.88) !important;
   -webkit-backdrop-filter: blur(40px) saturate(200%);
