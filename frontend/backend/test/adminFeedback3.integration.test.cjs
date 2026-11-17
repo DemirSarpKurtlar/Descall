@@ -99,7 +99,8 @@ async function run() {
     assert(row("f1").admin_replies.some((x) => x.type === "system" && x.status === "resolved"), "system line carries the status");
     emitted.length = 0;
     r = await call(base, "POST", "/api/admin/feedback/f1/reply", { token: admin, body: { text: "İç not", internal: true } });
-    assert(r.status === 200 && r.body.reply.type === "note" && emitted.length === 0, "internal note: no user event");
+    // Only the admin room hears about it (İşlem kaydı live ping), never the sender.
+    assert(r.status === 200 && r.body.reply.type === "note" && emitted.every((e) => e.room === "admin" && e.event === "admin:audit"), "internal note: no user event");
     r = await call(base, "POST", "/api/admin/feedback/f1/reply", { token: admin, body: { text: "Düzeltiyoruz" } });
     assert(r.status === 200 && r.body.reply.type === "reply", "user reply");
     const replyEvents = emitted.filter((e) => e.event === "feedback:reply");
@@ -109,8 +110,20 @@ async function run() {
 
     r = await call(base, "POST", "/api/admin/feedback/f1/view", { token: admin });
     assert(r.status === 200 && row("f1").viewed === true, "viewed");
+    // Delete removes the sender's thread: it needs a reason and lands in İşlem kaydı.
     r = await call(base, "DELETE", "/api/admin/feedback/f2", { token: admin });
+    assert(r.status === 400 && r.body.code === "REASON_REQUIRED" && row("f2"), "delete without a reason is refused");
+    r = await call(base, "DELETE", "/api/admin/feedback/nope", { token: admin, body: { reason: "Spam kayıt" } });
+    assert(r.status === 404, "missing feedback 404");
+    r = await call(base, "DELETE", "/api/admin/feedback/f2", { token: admin, body: { reason: "Spam kayıt" } });
     assert(r.status === 200 && !row("f2"), "admin deletes");
+    const audits = state.auditLog.filter((e) => String(e.action).startsWith("feedback_"));
+    const hasAudit = (action, test) => audits.some((e) => e.action === action && test(e.meta || {}));
+    assert(hasAudit("feedback_status", (m) => m.feedbackId === "f1" && m.from === "new" && m.to === "resolved"), "status change audited");
+    assert(hasAudit("feedback_note", (m) => m.feedbackId === "f1" && m.length === 6), "internal note audited (length only)");
+    assert(hasAudit("feedback_reply", (m) => m.feedbackId === "f1"), "reply audited");
+    assert(hasAudit("feedback_delete", (m) => m.feedbackId === "f2" && m.reason === "Spam kayıt"), "delete audited with the reason");
+    assert(!JSON.stringify(audits).includes("Düzeltiyoruz"), "audit never stores the reply text");
     console.log("adminFeedback3.integration.test ok");
   } finally {
     server.close();

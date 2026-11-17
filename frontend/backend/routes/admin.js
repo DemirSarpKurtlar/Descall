@@ -1752,13 +1752,19 @@ router.patch("/feedback/:id", async (req, res) => {
     if (getError) throw getError;
     if (!cur) return res.status(404).json({ error: "Feedback not found." });
     const lines = fb.systemLines(cur, patch, req.user.username);
-    const before = { status: cur.status, userId: cur.user_id, id: cur.id };
+    const before = { status: cur.status, priority: cur.priority, userId: cur.user_id, id: cur.id };
     const update = { ...patch, updated_at: new Date().toISOString() };
     if (lines.length) update.admin_replies = [...(Array.isArray(cur.admin_replies) ? cur.admin_replies : []), ...lines];
     const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
     if (error) throw error;
     if (patch.status && patch.status !== before.status && before.userId) {
       require("../lib/feedbackNotify").notifyFeedbackStatus(getIo(req), before.userId, { feedbackId: before.id, status: patch.status });
+    }
+    // İşlem kaydı: one entry per change (status first), never the feedback text.
+    for (const field of ["status", "priority"]) {
+      if (patch[field] && patch[field] !== before[field]) {
+        audit(req.user, `feedback_${field}`, before.userId || null, { feedbackId: before.id, from: before[field] || null, to: patch[field] });
+      }
     }
     res.json({ feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
@@ -1804,6 +1810,7 @@ router.post("/feedback/:id/reply", async (req, res) => {
       // 3.7.14: live event + in-app notification + iOS push (lib/feedbackNotify.js).
       require("../lib/feedbackNotify").notifyFeedbackReply(getIo(req), cur.user_id, { feedbackId: cur.id, text, subject: cur.subject });
     }
+    audit(req.user, internal ? "feedback_note" : "feedback_reply", cur.user_id || null, { feedbackId: cur.id, length: text.length });
     res.json({ reply: fb.shapeReply(reply), feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
     console.error("[Admin] Failed to send reply:", error?.message || error);
@@ -1811,10 +1818,23 @@ router.post("/feedback/:id/reply", async (req, res) => {
   }
 });
 
+// Deleting removes the sender's whole thread, so it takes a reason and lands in İşlem kaydı.
 router.delete("/feedback/:id", async (req, res) => {
   try {
+    const reason = String(req.body?.reason ?? req.query?.reason ?? "").trim().slice(0, 300);
+    if (reason.length < 3) {
+      return res.status(400).json(apiError("Write a reason (at least 3 characters).", null, { code: "REASON_REQUIRED" }));
+    }
+    const { data: cur, error: getError } = await supabase
+      .from("user_feedback").select("id, user_id, category, status, admin_replies").eq("id", req.params.id).maybeSingle();
+    if (getError) throw getError;
+    if (!cur) return res.status(404).json({ error: "Feedback not found." });
     const { error } = await supabase.from("user_feedback").delete().eq("id", req.params.id);
     if (error) throw error;
+    audit(req.user, "feedback_delete", cur.user_id || null, {
+      feedbackId: cur.id, category: cur.category || null, status: cur.status || null,
+      replies: Array.isArray(cur.admin_replies) ? cur.admin_replies.length : 0, reason,
+    });
     res.json({ success: true });
   } catch (error) {
     console.error("[Admin] Failed to delete feedback:", error?.message || error);
