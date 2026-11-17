@@ -357,6 +357,10 @@ async function emitFriendState(io, userId, { requests = true } = {}) {
 
 async function buildSyncState(userId) {
   const dmMap = ensureDmUnreadMap(userId);
+  // After a restart the in-memory counts are empty: fill them from dm_messages once.
+  await require("../lib/dmUnread")
+    .hydrateDmUnread({ db: supabase, userId, unreadMap: dmMap, friendIds: friends.get(userId) || null })
+    .catch(() => {});
   const dmUnreadByPeer = {};
   for (const [k, v] of dmMap) {
     dmUnreadByPeer[k] = v;
