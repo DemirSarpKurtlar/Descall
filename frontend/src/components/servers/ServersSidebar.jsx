@@ -1616,7 +1616,7 @@ export default function ServersSidebar({
             {channelListReady && channelTree.length === 0 && !ghostVoiceChannel && (
               <p className="server-empty-hint">{t("No channels yet.")}</p>
             )}
-            {channelListReady ? (
+            {channelListReady && !activeChannel && !serverVoice?.activeChannelId ? (
               <p className="server-step-hint">
                 <span className="server-step-hint-ic" aria-hidden="true"><Info size={14} weight="bold" /></span>
                 <span>{t("Open a text channel to chat, or join a voice channel to hang out.")}</span>

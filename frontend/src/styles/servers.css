@@ -441,6 +441,34 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   padding: 8px 0 20px;
 }
 
+/* The channel list owns whatever height the panel has left, on every shell
+   and window height: the column flexes instead of claiming 100% (Electron
+   forces .sidebar-inner to height:100% !important in titlebar.css), and the
+   scroll box keeps room under the last row for the panel's rounded corner. */
+.servers-sidebar > .sidebar-inner {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+body.electron-app .servers-sidebar > .sidebar-inner {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  flex: 1 1 0 !important;
+}
+
+.servers-sidebar .server-channels-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  padding-bottom: 28px;
+  scroll-padding-bottom: 28px;
+}
+
+html.glass-desktop .servers-sidebar .server-channels-scroll {
+  padding-bottom: calc(20px + var(--gd-r-panel, 20px) / 2);
+  scroll-padding-bottom: calc(20px + var(--gd-r-panel, 20px) / 2);
+}
+
 .server-channel-cat {
   margin-top: 8px;
 }
@@ -676,12 +704,31 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 .server-channel-cat-actions {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.12s ease;
 }
 
-.server-channel-cat:hover .server-channel-cat-actions {
+.server-channel-cat:hover .server-channel-cat-actions,
+.server-channel-cat:focus-within .server-channel-cat-actions {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* Touch screens have no hover: the actions are always drawn (never an
+   invisible but tappable "Delete category"). This block must stay after the
+   hidden default above, it used to come first and lost the cascade. */
+@media (hover: none) {
+  .server-channel-cat-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* A long category name must not squeeze the collapse chevron to 0px. */
+.server-channel-cat-btn > svg {
+  flex: 0 0 auto;
 }
 
 .server-type-toggle {
@@ -1026,10 +1073,22 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
   justify-content: space-between;
 }
 
-.server-hidden-file {
-  position: absolute;
+/* Hidden pickers never take layout space. Under glass-desktop the panel rule
+   `.sidebar-secondary > * { position: relative }` (0,2,1) used to turn the
+   sidebar's icon picker into a 22px flex row under the channel list, which
+   with Electron's `.sidebar-inner { height: 100% !important }` pushed the
+   list past the panel's rounded bottom (owner report: last channel cut). */
+input.server-hidden-file,
+html.glass-desktop .sidebar-secondary > input.server-hidden-file {
+  position: absolute !important;
+  inset: auto auto 0 0;
   width: 1px;
   height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
   opacity: 0;
   pointer-events: none;
 }
@@ -1744,6 +1803,36 @@ html.glass-desktop[data-theme="light"] .server-step-hint {
 .server-role-color.active {
   border-color: #fff;
   box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Custom colour picker: a swatch beside the presets, not a full-width bar. */
+.server-field .server-role-colors input[type="color"] {
+  flex: 0 0 auto;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  border: 1.5px dashed color-mix(in srgb, var(--text-muted, #9aa0b4) 70%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.server-field .server-role-colors input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.server-field .server-role-colors input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.server-field .server-role-colors input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
 }
 
 .server-check {
