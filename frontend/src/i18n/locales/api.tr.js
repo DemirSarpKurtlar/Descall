@@ -979,4 +979,7 @@ export const API_TR = {
   "Could not load the activity.": "Etkinlik yüklenemedi.",
   "Could not load the activity settings.": "Etkinlik ayarları yüklenemedi.",
   "Could not save the activity settings.": "Etkinlik ayarları kaydedilemedi.",
+  "Failed to fetch invite links": "Davet bağlantıları alınamadı",
+  "Invalid conversation id.": "Geçersiz sohbet kimliği.",
+  "This sign-in uses the authenticator app.": "Bu giriş doğrulama uygulamasıyla yapılıyor.",
 };

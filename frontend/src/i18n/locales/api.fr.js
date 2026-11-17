@@ -247,4 +247,9 @@ export const API_FR = {
   "Could not load the activity.": "Impossible de charger l'activité.",
   "Could not load the activity settings.": "Impossible de charger les paramètres d'activité.",
   "Could not save the activity settings.": "Impossible d'enregistrer les paramètres d'activité.",
+  "Failed to fetch invite links": "Impossible de charger les liens d'invitation",
+  "Invalid conversation id.": "Identifiant de conversation non valide.",
+  "This sign-in uses the authenticator app.": "Cette connexion utilise l'application d'authentification.",
+  "Could not send your sign-in code. Please try again shortly.": "Impossible d'envoyer ton code de connexion. Réessaie dans un instant.",
+  "A code was just sent. Wait a minute before requesting another.": "Un code vient d'être envoyé. Attends une minute avant d'en demander un autre.",
 };

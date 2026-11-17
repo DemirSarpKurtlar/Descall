@@ -247,4 +247,9 @@ export const API_PT_BR = {
   "Could not load the activity.": "Não foi possível carregar a atividade.",
   "Could not load the activity settings.": "Não foi possível carregar as configurações de atividade.",
   "Could not save the activity settings.": "Não foi possível salvar as configurações de atividade.",
+  "Failed to fetch invite links": "Não foi possível carregar os links de convite",
+  "Invalid conversation id.": "ID de conversa inválido.",
+  "This sign-in uses the authenticator app.": "Este login usa o app autenticador.",
+  "Could not send your sign-in code. Please try again shortly.": "Não foi possível enviar seu código de login. Tente novamente em instantes.",
+  "A code was just sent. Wait a minute before requesting another.": "Um código acabou de ser enviado. Espere um minuto antes de pedir outro.",
 };

@@ -247,4 +247,9 @@ export const API_RU = {
   "Could not load the activity.": "Не удалось загрузить активность.",
   "Could not load the activity settings.": "Не удалось загрузить настройки активности.",
   "Could not save the activity settings.": "Не удалось сохранить настройки активности.",
+  "Failed to fetch invite links": "Не удалось загрузить ссылки-приглашения",
+  "Invalid conversation id.": "Недопустимый идентификатор беседы.",
+  "This sign-in uses the authenticator app.": "Для этого входа используется приложение-аутентификатор.",
+  "Could not send your sign-in code. Please try again shortly.": "Не удалось отправить код входа. Попробуйте чуть позже.",
+  "A code was just sent. Wait a minute before requesting another.": "Код только что отправлен. Подождите минуту, прежде чем запросить новый.",
 };

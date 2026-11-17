@@ -247,4 +247,9 @@ export const API_DE = {
   "Could not load the activity.": "Die Aktivität konnte nicht geladen werden.",
   "Could not load the activity settings.": "Die Aktivitätseinstellungen konnten nicht geladen werden.",
   "Could not save the activity settings.": "Die Aktivitätseinstellungen konnten nicht gespeichert werden.",
+  "Failed to fetch invite links": "Einladungslinks konnten nicht geladen werden",
+  "Invalid conversation id.": "Ungültige Unterhaltungs-ID.",
+  "This sign-in uses the authenticator app.": "Diese Anmeldung nutzt die Authenticator-App.",
+  "Could not send your sign-in code. Please try again shortly.": "Dein Anmeldecode konnte nicht gesendet werden. Versuche es gleich noch einmal.",
+  "A code was just sent. Wait a minute before requesting another.": "Gerade wurde ein Code gesendet. Warte eine Minute, bevor du einen neuen anforderst.",
 };

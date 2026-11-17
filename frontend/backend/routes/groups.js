@@ -283,6 +283,15 @@ router.get("/my", requireAuth, async (req, res) => {
         console.warn("[Groups API] removed groups failed:", err?.message || err);
       }
     }
+    // Unread since my last read (polish messaging-10): the client only counted live messages.
+    try {
+      const unread = await require("../lib/readReceipts").groupUnreadCounts(userId, groups.map((g) => g.id));
+      for (const g of groups) {
+        if (Object.prototype.hasOwnProperty.call(unread, g.id)) g.unreadCount = unread[g.id];
+      }
+    } catch (err) {
+      console.warn("[Groups API] unread counts failed:", err?.message || err);
+    }
     const all = [...groups, ...removedGroups];
     console.log(`[Groups API] Found groups: ${all.length} in ${Date.now() - started}ms`);
     res.json({ groups: all });
@@ -461,7 +470,11 @@ router.get("/:groupId/invite-links", requireAuth, async (req, res) => {
       .select("code, group_id, creator_id, max_uses, uses, expires_at, created_at")
       .eq("group_id", groupId)
       .order("created_at", { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      // Raw database text never goes to the client (security scan 17 Nov 2026).
+      console.error("[Groups] invite links:", error.message);
+      return res.status(500).json({ error: "Failed to fetch invite links" });
+    }
     return res.json({
       invites: (invites || []).map((i) => ({ ...i, url: publicInviteUrl(req, i.code) })),
     });
@@ -715,7 +728,7 @@ router.get("/:groupId/members", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[Groups] Members error:", err);
     console.error("[Groups] Stack:", err.stack);
-    res.status(500).json({ error: "Failed to fetch members", details: err.message });
+    res.status(500).json({ error: "Failed to fetch members" });
   }
 });
 
