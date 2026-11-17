@@ -445,6 +445,9 @@ let updateRetryTimer = null;
 let installTimer = null;
 let installWaitTimer = null;
 let updateCheckInFlight = false;
+/** A download the renderer is showing progress for (update:error then carries phase 'download'). */
+let updateDownloadActive = false;
+let lastUpdateCheckError = null;
 let powerHooksBound = false;
 /** Renderer-reported voice session. Overlay visibility is OR'd in at read time. */
 let voiceBusyFromRenderer = false;
@@ -768,6 +771,7 @@ function checkForAppUpdates(reason = 'manual') {
   log.info(`[updater] checking for updates (${reason})… current=${app.getVersion()} feed=${UPDATE_FEED_URL}`);
   return autoUpdater.checkForUpdates()
     .then((result) => {
+      lastUpdateCheckError = null;
       if (updateRetryTimer) {
         clearTimeout(updateRetryTimer);
         updateRetryTimer = null;
@@ -777,6 +781,7 @@ function checkForAppUpdates(reason = 'manual') {
       return result;
     })
     .catch((err) => {
+      lastUpdateCheckError = String(err?.message || err || 'check failed').slice(0, 200);
       log.error(`[updater] check failed (${reason}):`, err?.message || err);
       if (!updateRetryTimer && !prelaunchActive) {
         updateRetryTimer = setTimeout(() => {
@@ -2126,6 +2131,7 @@ autoUpdater.on('update-available', (info) => {
     });
     resolvePrelaunch({ type: 'update-available', version: info.version });
   } else {
+    updateDownloadActive = true;
     mainWindow?.webContents?.send('update:downloading', { version: info.version });
   }
 });
@@ -2154,7 +2160,11 @@ autoUpdater.on('error', (err) => {
     });
     resolvePrelaunch({ type: 'error', error: err });
   } else {
-    mainWindow?.webContents?.send('update:error', { message: err?.message || String(err) });
+    // 'download' = a visible download failed (the card offers retry); 'check' = a quiet
+    // background check failed, which the renderer does not surface.
+    const phase = updateDownloadActive ? 'download' : 'check';
+    updateDownloadActive = false;
+    mainWindow?.webContents?.send('update:error', { message: String(err?.message || err || '').slice(0, 200), phase });
   }
 });
 
@@ -2176,6 +2186,7 @@ autoUpdater.on('download-progress', ({ percent, bytesPerSecond, transferred, tot
 
 autoUpdater.on('update-downloaded', (info) => {
   log.info('[updater] Update downloaded:', info.version);
+  updateDownloadActive = false;
   updateReady = true;
   updateVersion = info.version;
   downloadedInstallerPath = info?.downloadedFile || autoUpdater.downloadedUpdateHelper?.file || null;
@@ -2407,7 +2418,10 @@ trustedHandle('check-for-updates', async () => {
   if (!isPackaged) return { success: true, skipped: true };
   try {
     const result = await checkForAppUpdates('ipc');
-    return { success: true, updateInfo: result?.updateInfo || null, updateReady, updateVersion };
+    const latest = result?.updateInfo?.version || null;
+    const available = Boolean(result && (typeof result.isUpdateAvailable === 'boolean' ? result.isUpdateAvailable : (latest && latest !== app.getVersion())));
+    if (!result && lastUpdateCheckError && !updateReady) return { success: false, error: lastUpdateCheckError, updateReady, updateVersion };
+    return { success: true, updateInfo: result?.updateInfo || null, available, updateReady, updateVersion };
   } catch (err) {
     log.error('[updater] Manual check failed:', err?.message);
     return { success: false, error: err?.message };

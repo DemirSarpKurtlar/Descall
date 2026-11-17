@@ -6572,6 +6572,10 @@ export const nested = {
     "subInstalling": "Descall se rouvre dans quelques secondes",
     "titleDownloading": "Téléchargement de Descall {version}",
     "titleInstalling": "Installation de Descall {version}"
+    "titleError": "Impossible de télécharger la mise à jour",
+    "subError": "Vérifie ta connexion et réessaie",
+    "retry": "Réessayer",
+    "downloadPage": "Page de téléchargement",
   },
   "world3d": {
     "activity": {
