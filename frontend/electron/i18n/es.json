@@ -45,7 +45,8 @@
     "message": "Mensaje",
     "close": "Cerrar",
     "accept": "Aceptar",
-    "decline": "Rechazar"
+    "decline": "Rechazar",
+    "locked": "Nueva notificación. Desbloquea Descall para verla."
   },
   "overlay": {
     "connected": "Conectado",

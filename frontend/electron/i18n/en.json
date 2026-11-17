@@ -45,7 +45,8 @@
     "message": "Message",
     "close": "Close",
     "accept": "Accept",
-    "decline": "Decline"
+    "decline": "Decline",
+    "locked": "New notification. Unlock Descall to see it."
   },
   "overlay": {
     "connected": "Connected",

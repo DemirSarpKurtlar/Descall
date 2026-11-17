@@ -45,7 +45,8 @@
     "message": "Mesaj",
     "close": "Kapat",
     "accept": "Kabul et",
-    "decline": "Reddet"
+    "decline": "Reddet",
+    "locked": "Yeni bildirim. Görmek için Descall kilidini aç."
   },
   "overlay": {
     "connected": "Bağlı",
