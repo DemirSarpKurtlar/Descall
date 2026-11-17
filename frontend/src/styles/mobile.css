@@ -1044,3 +1044,55 @@ html.kb-open .app-root.is-mobile {
   height: var(--vv-height, 100dvh);
   max-height: var(--vv-height, 100dvh);
 }
+
+/* Touch targets: small icon buttons keep their look but get a 44pt-class hit
+   area on touch screens (same pattern as .server-channel-mini-btn, 3.7.32).
+   Horizontal growth stays small where buttons sit in a row. */
+@media (hover: none) and (pointer: coarse) {
+  .status-picker-emoji-btn,
+  .calls-icon-btn,
+  .server-back-btn,
+  .g-server-menu-btn,
+  .sidebar-actions .icon-btn {
+    position: relative;
+  }
+  .status-picker-emoji-btn::after,
+  .calls-icon-btn::after,
+  .server-back-btn::after,
+  .g-server-menu-btn::after,
+  .sidebar-actions .icon-btn::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+  }
+  .status-picker-emoji-btn::after { inset: -10px -6px; }
+  .sidebar-actions .icon-btn::after { inset: -8px -2px; }
+}
+
+/* iPad portrait (< 900px wide) opens Settings as the phone screen
+   (UserPanel readIpadSettingsSheet); under glass-desktop it was a flat
+   #1e1f22 sheet next to a frosted app. Same material as the s3 sheet. */
+html.glass-desktop:not(.gd-lite) .user-settings.is-mobile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)), rgba(24, 25, 36, 0.88) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+}
+html.glass-desktop[data-theme="light"]:not(.gd-lite) .user-settings.is-mobile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4)), rgba(238, 240, 246, 0.9) !important;
+}
+html.glass-desktop:not(.gd-lite) .user-settings.is-mobile > .us-sidebar,
+html.glass-desktop:not(.gd-lite) .user-settings.is-mobile .us-main-scroll,
+html.glass-desktop:not(.gd-lite) .user-settings.is-mobile .us-sidebar-foot {
+  background: transparent !important;
+}
+html.glass-desktop:not(.gd-lite) .user-settings.is-mobile .us-sidebar-foot {
+  border-top: 0.5px solid color-mix(in srgb, var(--g-t1, #fff) 10%, transparent);
+}
+/* The section pane keeps a light tint of its own: during the edge swipe back
+   the menu slides in underneath it and must not show through. */
+html.glass-desktop:not(.gd-lite) .user-settings.is-mobile > .us-main {
+  background: rgba(24, 25, 36, 0.55) !important;
+}
+html.glass-desktop[data-theme="light"]:not(.gd-lite) .user-settings.is-mobile > .us-main {
+  background: rgba(238, 240, 246, 0.55) !important;
+}
