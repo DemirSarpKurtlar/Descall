@@ -5,6 +5,7 @@ const { pendingRequests, usernameById } = require("../runtime/sharedState");
 const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
 const friendSince = require("../lib/friendSince");
 const { takeFriendRequest, shouldPushFriendRequest } = require("../lib/friendRequestLimits");
+const { escapeLike } = require("../lib/usernamePolicy");
 
 const router = express.Router();
 
@@ -54,7 +55,8 @@ router.post("/request", requireAuth, async (req, res) => {
     const { data: targetUser, error: lookupError } = await supabase
       .from("users")
       .select("id, username")
-      .ilike("username", trimmedUsername)
+      // Exact name, case-insensitive: _ and % are not wildcards (polish world-social-13).
+      .ilike("username", escapeLike(trimmedUsername))
       .maybeSingle();
 
     if (lookupError || !targetUser) {
@@ -73,13 +75,17 @@ router.post("/request", requireAuth, async (req, res) => {
     // Check if already friends or request already pending
     const { data: existingRows } = await supabase
       .from("friendships")
-      .select("id, status")
+      .select("id, status, user_id")
       .or(`and(user_id.eq.${userId},friend_id.eq.${targetUser.id}),and(user_id.eq.${targetUser.id},friend_id.eq.${userId})`);
 
     if (existingRows && existingRows.length > 0) {
       const statuses = existingRows.map((r) => r.status);
       if (statuses.includes("accepted")) {
         return res.status(400).json({ error: "Already friends" });
+      }
+      // They already asked me: adding them accepts it (polish world-social-19).
+      if (existingRows.some((r) => r.status === "pending" && String(r.user_id) === String(targetUser.id))) {
+        return acceptRequest(req, res, targetUser.id);
       }
       if (statuses.includes("pending")) {
         return res.status(400).json({ error: "Friend request already pending" });
@@ -146,9 +152,11 @@ router.post("/request", requireAuth, async (req, res) => {
 });
 
 // Accept friend request
-router.post("/accept", requireAuth, async (req, res) => {
+router.post("/accept", requireAuth, (req, res) => acceptRequest(req, res, req.body?.fromUserId));
+
+// Shared with /request: adding someone who already asked you accepts their request.
+async function acceptRequest(req, res, fromUserId) {
   try {
-    const { fromUserId } = req.body;
     const userId = req.user.id;
 
     if (!fromUserId) {
@@ -223,12 +231,12 @@ router.post("/accept", requireAuth, async (req, res) => {
     }
 
     console.log("[Friends] Request accepted:", { fromUserId, userId });
-    res.json({ success: true, message: "Friend request accepted" });
+    res.json({ success: true, accepted: true, message: "Friend request accepted" });
   } catch (err) {
     console.error("[Friends] Accept error:", err);
     res.status(500).json({ error: "Internal server error." });
   }
-});
+}
 
 // Decline friend request
 router.post("/decline", requireAuth, async (req, res) => {
@@ -446,7 +454,7 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
     const { data: targetUser, error: lookupError } = await supabase
       .from("users")
       .select("id")
-      .ilike("username", username)
+      .ilike("username", escapeLike(username))
       .maybeSingle();
 
     if (lookupError || !targetUser) {

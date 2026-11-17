@@ -391,7 +391,8 @@ async function findUserByUsername(username) {
   const { data, error } = await supabase
     .from("users")
     .select("id, username")
-    .ilike("username", clean)
+    // Exact name, case-insensitive: _ and % are not wildcards (polish world-social-13).
+    .ilike("username", require("../lib/usernamePolicy").escapeLike(clean))
     .maybeSingle();
   if (error || !data) return null;
   return data;
@@ -892,6 +893,13 @@ function registerSocketHandlers(io) {
           refreshPresenceFor(myId, target.id);
           return socket.emit("friend:error", { message: "Already friends." });
         }
+        // They already asked me: adding them accepts it (polish world-social-19).
+        if (
+          existingRows?.some((r) => r.status === "pending" && String(r.user_id) === String(target.id))
+          || pendingRequests.get(myId)?.has(target.id)
+        ) {
+          return acceptFrom(target.id);
+        }
         if (existingRows?.some((r) => r.status === "pending")) {
           return socket.emit("friend:error", { message: "Request already pending." });
         }
@@ -961,6 +969,11 @@ function registerSocketHandlers(io) {
         socket.emit("friend:error", { message: "Invalid user ID" });
         return;
       }
+      await acceptFrom(fromUserId);
+    });
+
+    // Shared with friend:request: adding someone who already asked you accepts it.
+    async function acceptFrom(fromUserId) {
 
       // Verify pending request exists in DB (handles REST-sent requests not in memory)
       const { data: pendingRow, error: checkError } = await supabase
@@ -1030,7 +1043,7 @@ function registerSocketHandlers(io) {
       emitSyncState(io, fromUserId);
       
       console.log("[Friends] Request accepted:", { fromUserId, by: myId });
-    });
+    }
 
     socket.on("friend:decline", async (payload = {}) => {
       const fromUserId = String(payload?.fromUserId || payload?.userId || "").trim();

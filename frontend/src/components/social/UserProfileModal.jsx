@@ -314,7 +314,8 @@ function UserProfileModal({
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed to send request");
-      setFriendOverride({ userId: forId, state: "sent" });
+      // Their request to me was pending: the server accepted it (polish world-social-19).
+      setFriendOverride({ userId: forId, state: body?.accepted ? "friend" : "sent" });
       onFriendSent?.();
     } catch (err) {
       noteFriendError(forId, err.message);
