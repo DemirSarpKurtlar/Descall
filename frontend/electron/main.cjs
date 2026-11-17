@@ -66,7 +66,7 @@ const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs
 const { encryptText, readEncryptedFile, looksLikeJwt } = require('./tokenCrypto.cjs');
 const { readClipboardImagePng } = require('./clipboardImage.cjs');
 const { isPermissionAllowed, permissionUrl, writeClipboardText } = require('./clipboardText.cjs');
-const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
+const { resolveDownloadPath, uniqueDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
@@ -2628,13 +2628,15 @@ trustedOn('download-file', async (event, payload) => {
   try {
     const { url, filename } = payload || {};
     if (!isDownloadableUrl(url)) throw new Error('download-file: only http(s) URLs');
-    const { filePath, name } = resolveDownloadPath(app.getPath('downloads'), filename);
+    const { filePath: wanted, name } = resolveDownloadPath(app.getPath('downloads'), filename);
 
-    const { default: fetch } = await import('node-fetch');
-    const response = await fetch(url);
-    const buffer = await response.buffer();
-
-    fs.writeFileSync(filePath, buffer);
+    // Electron's own fetch (node-fetch was never a dependency, so this always threw), and a
+    // failed response is never written to disk; an existing file gets a " (1)" sibling.
+    const response = await net.fetch(url);
+    if (!response.ok) throw new Error(`download-file: HTTP ${response.status}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const filePath = uniqueDownloadPath(wanted, (p) => fs.existsSync(p));
+    await fs.promises.writeFile(filePath, buffer);
 
     const setupVer = versionFromSetupFilename(name);
     if (setupVer || isDescallSetupDownloadUrl(url)) {

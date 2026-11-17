@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const require = createRequire(import.meta.url);
-const { sanitizeDownloadFilename: clean, resolveDownloadPath, isDownloadableUrl, MAX_NAME_LENGTH } = require("./safeDownload.cjs");
+const { sanitizeDownloadFilename: clean, resolveDownloadPath, uniqueDownloadPath, isDownloadableUrl, MAX_NAME_LENGTH } = require("./safeDownload.cjs");
 
 // Ordinary names are untouched.
 assert.equal(clean("Descall-Setup-3.7.26.exe"), "Descall-Setup-3.7.26.exe");
@@ -82,5 +82,15 @@ assert.match(handler, /isDownloadableUrl\(url\)/);
 assert.match(handler, /resolveDownloadPath\(app\.getPath\('downloads'\), filename\)/);
 assert.doesNotMatch(handler, /path\.join\(downloadsPath, filename\)/);
 assert.match(handler, /versionFromSetupFilename\(name\)/, "setup pruning reads the sanitized name");
+
+// Polish pass: Electron's own fetch, failed responses never written, no silent overwrite.
+assert.doesNotMatch(handler, /import\('node-fetch'\)/, "node-fetch is not a dependency");
+assert.match(handler, /net\.fetch\(url\)/);
+assert.match(handler, /if \(!response\.ok\)/);
+const taken = new Set(["/d/a.zip", "/d/a (1).zip"]);
+assert.equal(uniqueDownloadPath("/d/a.zip", (p) => taken.has(p)), "/d/a (2).zip");
+assert.equal(uniqueDownloadPath("/d/b.zip", (p) => taken.has(p)), "/d/b.zip");
+const preload = readFileSync(new URL("./preload.cjs", import.meta.url), "utf8");
+assert.match(preload, /removeAllListeners: \(channel\) => \{\s*if \(channel === 'update-available'/, "removeAllListeners is limited to the legacy update channels");
 
 console.log("safeDownload.selftest: ok");

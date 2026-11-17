@@ -57,6 +57,22 @@ function resolveDownloadPath(dir, name) {
   return { filePath, name: safe };
 }
 
+/**
+ * "name.ext" → "name (1).ext", "name (2).ext", … while `exists(path)` says the file is taken,
+ * so a download never silently overwrites a file the user already has.
+ */
+function uniqueDownloadPath(filePath, exists) {
+  if (typeof exists !== 'function' || !exists(filePath)) return filePath;
+  const dir = path.dirname(filePath);
+  const ext = path.extname(filePath);
+  const base = path.basename(filePath, ext);
+  for (let i = 1; i < 1000; i += 1) {
+    const candidate = path.join(dir, `${base} (${i})${ext}`);
+    if (!exists(candidate)) return candidate;
+  }
+  return path.join(dir, `${base} (${Date.now()})${ext}`);
+}
+
 /** Only http(s) URLs are fetched for download-file. */
 function isDownloadableUrl(url) {
   try {
@@ -71,5 +87,6 @@ module.exports = {
   MAX_NAME_LENGTH,
   sanitizeDownloadFilename,
   resolveDownloadPath,
+  uniqueDownloadPath,
   isDownloadableUrl,
 };
