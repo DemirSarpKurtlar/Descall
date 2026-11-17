@@ -18,6 +18,7 @@ import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
 import { USET_FR } from "./uset.fr.js";
+import { SVOICE_FR } from "./svoice.fr.js";
 import { BAN_ADMIN_FR } from "./banAdmin.fr.js";
 import { SERVER_REVIEW_FR } from "./serverReview.fr.js";
 import { DOSSIER_FR } from "./dossier.fr.js";
@@ -64,8 +65,9 @@ export const nested = {
   "dir": DIR_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
-  "banAdmin": BAN_ADMIN_FR,
   "uset": USET_FR,
+  "svoice": SVOICE_FR,
+  "banAdmin": BAN_ADMIN_FR,
   "serverReview": SERVER_REVIEW_FR,
   "dossier": DOSSIER_FR,
   "shopDesk": SHOP_DESK_FR,
@@ -3882,7 +3884,11 @@ export const nested = {
     "badge": "Badge",
     "badgeBody": "Porte-le sur ton profil à côté de ton badge de pays.",
     "badgeName": "Badge {name}",
-    "badgeSoon": "Choisis dans le catalogue de badges spéciaux dès sa sortie.",
+    "badgeSoon": "Chargement du catalogue de badges…",
+    "badgeSlots": "{left} places restantes sur {max}",
+    "badgeSlotsWarn": "Ce badge n’a plus que {left} places ; la limite d’utilisations ne peut pas être plus haute.",
+    "badgeSlotsFix": "Limiter à {left}",
+    "badgeOnce": "Les codes de badge sont toujours à usage unique par compte",
     "badgeTitle": "Le badge {name} est à toi",
     "cancel": "Annuler",
     "close": "Fermer",
@@ -3923,6 +3929,7 @@ export const nested = {
     "err_max_below_used": "La limite ne peut pas être inférieure au nombre d'utilisations actuel.",
     "err_reward_amount": "Le montant de DesCoin doit être compris entre 1 et 100 000.",
     "err_reward_badge": "Choisis un badge.",
+    "err_reward_badge_slots": "La limite d’utilisations dépasse les places restantes de ce badge.",
     "err_reward_item": "Choisis un article de la boutique.",
     "err_targets": "Choisis au moins une personne pour la fenêtre pop-up.",
     "expires": "Expiration",

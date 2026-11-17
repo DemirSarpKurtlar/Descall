@@ -162,7 +162,7 @@ async function markPopup(userId, codeId, snooze) {
 }
 
 const ADMIN_ERRORS = new Set([
-  "code_format", "reward_type", "reward_amount", "reward_item", "reward_badge", "badges_unavailable",
+  "code_format", "reward_type", "reward_amount", "reward_item", "reward_badge", "reward_badge_slots", "badges_unavailable",
   "audience", "targets", "expires_past", "code_taken", "invalid_input", "not_found", "max_below_used",
 ]);
 
@@ -202,8 +202,16 @@ function cleanCreateInput(body = {}) {
 
 async function adminCreate(adminId, body) {
   const input = cleanCreateInput(body);
-  if (input.rewardType === "special_badge" && (await require("./specialBadges").promoGrantable(input.rewardRef)) === false) {
-    throw new PromoError("reward_badge", statusFor("reward_badge"));
+  if (input.rewardType === "special_badge") {
+    const badges = require("./specialBadges");
+    if ((await badges.promoGrantable(input.rewardRef)) === false) throw new PromoError("reward_badge", statusFor("reward_badge"));
+    // A badge can't be held twice, so a badge code is always once per account; a limited badge
+    // (İlk 100, #001) can't promise more uses than it has free places.
+    input.oncePerUser = true;
+    const left = await badges.promoSlotsLeft(input.rewardRef);
+    if (left != null && (input.maxUses == null || input.maxUses > left)) {
+      throw new PromoError("reward_badge_slots", statusFor("reward_badge_slots"));
+    }
   }
   const res = await rpc("promo_admin_create", { p_admin_id: adminId, p: input });
   if (!res?.ok) adminFail(res);

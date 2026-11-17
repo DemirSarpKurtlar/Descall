@@ -18,6 +18,7 @@ import { DIR_DE, DIR_API_DE } from "./dir.de.js";
 import { BAN_DE } from "./ban.de.js";
 import { IOS_SHARE_DE } from "./iosShare.de.js";
 import { USET_DE } from "./uset.de.js";
+import { SVOICE_DE } from "./svoice.de.js";
 import { BAN_ADMIN_DE } from "./banAdmin.de.js";
 import { SERVER_REVIEW_DE } from "./serverReview.de.js";
 import { DOSSIER_DE } from "./dossier.de.js";
@@ -64,8 +65,9 @@ export const nested = {
   "dir": DIR_DE,
   "ban": BAN_DE,
   "iosShare": IOS_SHARE_DE,
-  "banAdmin": BAN_ADMIN_DE,
   "uset": USET_DE,
+  "svoice": SVOICE_DE,
+  "banAdmin": BAN_ADMIN_DE,
   "serverReview": SERVER_REVIEW_DE,
   "dossier": DOSSIER_DE,
   "shopDesk": SHOP_DESK_DE,
@@ -3882,7 +3884,11 @@ export const nested = {
     "badge": "Abzeichen",
     "badgeBody": "Trag es auf deinem Profil neben deinem Länderabzeichen.",
     "badgeName": "Abzeichen {name}",
-    "badgeSoon": "Wähle aus dem Katalog für Sonderabzeichen, sobald er verfügbar ist.",
+    "badgeSoon": "Abzeichenkatalog wird geladen…",
+    "badgeSlots": "{left} von {max} Plätzen frei",
+    "badgeSlotsWarn": "Dieses Abzeichen hat noch {left} freie Plätze; das Nutzungslimit darf nicht höher sein.",
+    "badgeSlotsFix": "Limit auf {left} setzen",
+    "badgeOnce": "Abzeichen-Codes gelten immer einmal pro Konto",
     "badgeTitle": "Das Abzeichen {name} gehört dir",
     "cancel": "Abbrechen",
     "close": "Schließen",
@@ -3923,6 +3929,7 @@ export const nested = {
     "err_max_below_used": "Das Limit darf nicht unter den bisherigen Einlösungen liegen.",
     "err_reward_amount": "Der DesCoin-Betrag muss zwischen 1 und 100.000 liegen.",
     "err_reward_badge": "Wähle ein Abzeichen.",
+    "err_reward_badge_slots": "Das Nutzungslimit ist höher als die freien Plätze dieses Abzeichens.",
     "err_reward_item": "Wähle einen Shop-Artikel.",
     "err_targets": "Wähle mindestens eine Person für das Pop-up.",
     "expires": "Läuft ab",

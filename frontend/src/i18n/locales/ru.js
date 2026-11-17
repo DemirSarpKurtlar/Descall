@@ -18,6 +18,7 @@ import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
 import { USET_RU } from "./uset.ru.js";
+import { SVOICE_RU } from "./svoice.ru.js";
 import { BAN_ADMIN_RU } from "./banAdmin.ru.js";
 import { SERVER_REVIEW_RU } from "./serverReview.ru.js";
 import { DOSSIER_RU } from "./dossier.ru.js";
@@ -64,8 +65,9 @@ export const nested = {
   "dir": DIR_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
-  "banAdmin": BAN_ADMIN_RU,
   "uset": USET_RU,
+  "svoice": SVOICE_RU,
+  "banAdmin": BAN_ADMIN_RU,
   "serverReview": SERVER_REVIEW_RU,
   "dossier": DOSSIER_RU,
   "shopDesk": SHOP_DESK_RU,
@@ -3882,7 +3884,11 @@ export const nested = {
     "badge": "Значок",
     "badgeBody": "Носите его в профиле рядом со значком страны.",
     "badgeName": "Значок «{name}»",
-    "badgeSoon": "Выберите из каталога особых значков, когда он появится.",
+    "badgeSoon": "Загружаем каталог значков…",
+    "badgeSlots": "Осталось {left} из {max} мест",
+    "badgeSlotsWarn": "У этого значка осталось {left} мест; лимит использований не может быть больше.",
+    "badgeSlotsFix": "Поставить лимит {left}",
+    "badgeOnce": "Коды со значком всегда одноразовые для аккаунта",
     "badgeTitle": "Значок «{name}» теперь ваш",
     "cancel": "Отмена",
     "close": "Закрыть",
@@ -3923,6 +3929,7 @@ export const nested = {
     "err_max_below_used": "Лимит не может быть меньше числа уже совершённых использований.",
     "err_reward_amount": "Сумма DesCoin должна быть от 1 до 100 000.",
     "err_reward_badge": "Выберите значок.",
+    "err_reward_badge_slots": "Лимит использований больше, чем свободных мест у значка.",
     "err_reward_item": "Выберите товар из магазина.",
     "err_targets": "Выберите хотя бы одного человека для всплывающего окна.",
     "expires": "Истекает",

@@ -18,6 +18,7 @@ import { DIR_ES, DIR_API_ES } from "./dir.es.js";
 import { BAN_ES } from "./ban.es.js";
 import { IOS_SHARE_ES } from "./iosShare.es.js";
 import { USET_ES } from "./uset.es.js";
+import { SVOICE_ES } from "./svoice.es.js";
 import { BAN_ADMIN_ES } from "./banAdmin.es.js";
 import { SERVER_REVIEW_ES } from "./serverReview.es.js";
 import { DOSSIER_ES } from "./dossier.es.js";
@@ -64,8 +65,9 @@ export const nested = {
   "dir": DIR_ES,
   "ban": BAN_ES,
   "iosShare": IOS_SHARE_ES,
-  "banAdmin": BAN_ADMIN_ES,
   "uset": USET_ES,
+  "svoice": SVOICE_ES,
+  "banAdmin": BAN_ADMIN_ES,
   "serverReview": SERVER_REVIEW_ES,
   "dossier": DOSSIER_ES,
   "shopDesk": SHOP_DESK_ES,
@@ -3882,7 +3884,11 @@ export const nested = {
     "badge": "Insignia",
     "badgeBody": "Llévala en tu perfil junto a tu insignia de país.",
     "badgeName": "Insignia {name}",
-    "badgeSoon": "Elige del catálogo de insignias especiales cuando esté disponible.",
+    "badgeSoon": "Cargando el catálogo de insignias…",
+    "badgeSlots": "Quedan {left} de {max} plazas",
+    "badgeSlotsWarn": "A esta insignia le quedan {left} plazas; el límite de usos no puede ser mayor.",
+    "badgeSlotsFix": "Poner límite en {left}",
+    "badgeOnce": "Los códigos de insignia son siempre de un uso por cuenta",
     "badgeTitle": "La insignia {name} es tuya",
     "cancel": "Cancelar",
     "close": "Cerrar",
@@ -3923,6 +3929,7 @@ export const nested = {
     "err_max_below_used": "El límite no puede ser menor que los usos hasta ahora.",
     "err_reward_amount": "La cantidad de DesCoin debe estar entre 1 y 100.000.",
     "err_reward_badge": "Elige una insignia.",
+    "err_reward_badge_slots": "El límite de usos supera las plazas libres de esta insignia.",
     "err_reward_item": "Elige un artículo de la tienda.",
     "err_targets": "Elige al menos una persona para la ventana emergente.",
     "expires": "Vence",

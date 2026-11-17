@@ -281,3 +281,5 @@ html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .g-shop-chrome .g-
 /* Narrow phones: the selected category chip already names the category, so the count steps aside for Kod kullan. */
 @media (max-width:430px){html.glass-ui .user-settings.is-mobile.g-settings.g-shop-open .g-shop-chrome .g-shop-count{display:none}}
 @media (max-width:420px){.pc-seg-reward button svg{display:none}.pc-seg-reward button{white-space:nowrap;padding-left:6px!important;padding-right:6px!important}}
+/* Badge codes are always once per account: the switch shows on and locked. */
+.pc-form .mt-tg:disabled{opacity:.55;cursor:default}

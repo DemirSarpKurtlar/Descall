@@ -18,6 +18,7 @@ import { DIR_PT_BR, DIR_API_PT_BR } from "./dir.pt-BR.js";
 import { BAN_PT_BR } from "./ban.pt-BR.js";
 import { IOS_SHARE_PT_BR } from "./iosShare.pt-BR.js";
 import { USET_PT_BR } from "./uset.pt-BR.js";
+import { SVOICE_PT_BR } from "./svoice.pt-BR.js";
 import { BAN_ADMIN_PT_BR } from "./banAdmin.pt-BR.js";
 import { SERVER_REVIEW_PT_BR } from "./serverReview.pt-BR.js";
 import { DOSSIER_PT_BR } from "./dossier.pt-BR.js";
@@ -64,8 +65,9 @@ export const nested = {
   "dir": DIR_PT_BR,
   "ban": BAN_PT_BR,
   "iosShare": IOS_SHARE_PT_BR,
-  "banAdmin": BAN_ADMIN_PT_BR,
   "uset": USET_PT_BR,
+  "svoice": SVOICE_PT_BR,
+  "banAdmin": BAN_ADMIN_PT_BR,
   "serverReview": SERVER_REVIEW_PT_BR,
   "dossier": DOSSIER_PT_BR,
   "shopDesk": SHOP_DESK_PT_BR,
@@ -3882,7 +3884,11 @@ export const nested = {
     "badge": "Insígnia",
     "badgeBody": "Use-a no seu perfil ao lado da sua insígnia de país.",
     "badgeName": "Insígnia {name}",
-    "badgeSoon": "Escolha no catálogo de insígnias especiais quando ele for lançado.",
+    "badgeSoon": "Carregando o catálogo de insígnias…",
+    "badgeSlots": "Restam {left} de {max} vagas",
+    "badgeSlotsWarn": "Esta insígnia tem {left} vagas restantes; o limite de usos não pode ser maior.",
+    "badgeSlotsFix": "Definir limite em {left}",
+    "badgeOnce": "Códigos de insígnia valem sempre uma vez por conta",
     "badgeTitle": "A insígnia {name} é sua",
     "cancel": "Cancelar",
     "close": "Fechar",
@@ -3923,6 +3929,7 @@ export const nested = {
     "err_max_below_used": "O limite não pode ser menor que os usos até agora.",
     "err_reward_amount": "A quantidade de DesCoin deve estar entre 1 e 100.000.",
     "err_reward_badge": "Escolha uma insígnia.",
+    "err_reward_badge_slots": "O limite de usos é maior que as vagas restantes desta insígnia.",
     "err_reward_item": "Escolha um item da loja.",
     "err_targets": "Escolha pelo menos uma pessoa para o pop-up.",
     "expires": "Expira",
