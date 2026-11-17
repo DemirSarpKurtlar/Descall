@@ -1,6 +1,7 @@
 import { publishActiveSpeakers } from "../lib/activeSpeakers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
+import { useVoiceDiagSnapshot } from "./useVoiceDiagSnapshot";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
@@ -129,6 +130,13 @@ export function useServerVoice(socket) {
 
   const localStreamRef = useRef(null);
   const pcMapRef = useRef(new Map()); // userId -> { pc, pendingIce }
+  // calls-02: voice diagnostic snapshot for feedback (useVoiceDiagSnapshot.js).
+  useVoiceDiagSnapshot({
+    active: Boolean(activeChannelId),
+    kind: "server",
+    muted,
+    getPeers: () => Array.from(pcMapRef.current.values()).map((peerData) => peerData?.pc).filter(Boolean),
+  });
   const remoteAudioRefs = useRef(new Map());
   const remoteStreamMapRef = useRef(new Map()); // userId -> MediaStream
   const remoteScreenStreamsRef = useRef(new Map());

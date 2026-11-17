@@ -65,3 +65,34 @@ console.log("voiceDiagnostics.selftest ok");
   const b = be.sanitizeVoiceDiag({ contextSampleRate: 44100, captureSampleRate: 48000, nsUnderruns: 3, nsEngineReason: "firefox" });
   assert.deepEqual(b, { contextSampleRate: 44100, captureSampleRate: 48000, nsUnderruns: 3, nsEngineReason: "firefox" }, "backend whitelist matches");
 }
+
+// Polish (calls-02): group calls and server voice snapshot every mesh link,
+// with what the far ends report about OUR audio (uplink loss, round trip).
+{
+  const { captureVoiceDiagnostics: cap, getLastVoiceDiagnostics: last, worstPeer } = await import("./voiceDiagnostics.js");
+  const link = (state, sent, lost, frac, rtt) => ({
+    connectionState: state,
+    iceConnectionState: state,
+    getStats: async () => new Map(Object.entries({
+      O: { id: "O", type: "outbound-rtp", kind: "audio", bytesSent: sent * 100, packetsSent: sent },
+      RI: { id: "RI", type: "remote-inbound-rtp", kind: "audio", packetsLost: lost, fractionLost: frac, roundTripTime: rtt },
+    })),
+  });
+  const a = link("connected", 1000, 3, 0.01, 0.04);
+  const b = link("disconnected", 500, 40, 0.18, 0.21);
+  assert.equal(worstPeer([a, b]), b);
+  const s = await cap({ pcs: [a, b], ns: { enabled: true, engine: "gtcrn" }, kind: "group" });
+  assert.equal(s.kind, "group");
+  assert.equal(s.peerCount, 2);
+  assert.equal(s.connectionState, "disconnected");
+  assert.equal(s.packetsSent, 1500);
+  assert.equal(s.outPacketsLost, 43);
+  assert.equal(s.outFractionLost, 0.18);
+  assert.equal(s.rttMs, 210);
+  assert.equal(last().kind, "group", "the last snapshot survives hang-up for the feedback form");
+  // No links (alone in the room): still a snapshot with the mic pipeline state.
+  const alone = await cap({ pcs: [], ns: { enabled: true, engine: "rnnoise" }, kind: "server" });
+  assert.equal(alone.peerCount, 0);
+  assert.equal(alone.nsEngine, "rnnoise");
+}
+console.log("voiceDiagnostics.selftest group ok");

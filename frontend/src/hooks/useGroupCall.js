@@ -35,6 +35,7 @@ import {
   isPolitePeer,
 } from "../lib/webrtcNegotiation";
 import { preloadIceServers } from "../lib/iceConfig";
+import { useVoiceDiagSnapshot } from "./useVoiceDiagSnapshot";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
 import {
@@ -67,6 +68,7 @@ import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
   acquireVoiceMicStream,
   disposeNoiseSuppressionSession,
+  getNoiseSuppressionOutputTrack,
   getNoiseSuppressionRawTrack,
   preloadNoiseSuppression,
   setNoiseSuppressedTrackEnabled,
@@ -392,6 +394,17 @@ export function useGroupCall(socket, currentUserId = null, callOccupancyRef = nu
       clearInterval(id);
     };
   }, [isInCall]);
+
+  // Voice diagnostic snapshot for call feedback (lib/voiceDiagnostics.js),
+  // every 4 s in a group call, over every mesh link. Kept after hang-up, so a
+  // "my voice cuts" report filed right after leaving still says why.
+  useVoiceDiagSnapshot({
+    active: isInCall,
+    kind: "group",
+    muted: isMuted,
+    getPeers: () => Array.from(pcMapRef.current.values()).map((peerData) => peerData?.pc).filter(Boolean),
+    getLocalTrack: () => getNoiseSuppressionOutputTrack() || localStreamRef.current?.getAudioTracks?.()[0] || null,
+  });
 
   useEffect(() => {
     activeGroupIdRef.current = activeGroupId;

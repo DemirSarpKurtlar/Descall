@@ -15,6 +15,7 @@ import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
 import { LX_EN } from "./lx.en.js";
 import { USET_EN } from "./uset.en.js";
+import { SVOICE_EN } from "./svoice.en.js";
 import { BAN_ADMIN_EN } from "./banAdmin.en.js";
 import { SERVER_REVIEW_EN } from "./serverReview.en.js";
 import { DOSSIER_EN } from "./dossier.en.js";
@@ -87,6 +88,7 @@ export const nested = {
   lx: LX_EN,
   banAdmin: BAN_ADMIN_EN,
   uset: USET_EN,
+  svoice: SVOICE_EN,
   serverReview: SERVER_REVIEW_EN,
   dossier: DOSSIER_EN,
   shopDesk: SHOP_DESK_EN,

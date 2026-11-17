@@ -10,7 +10,7 @@
  */
 
 const STATE_RE = /^[a-z-]{1,24}$/;
-const NUM_KEYS = ["rawRms", "processedRms", "contextSampleRate", "captureSampleRate", "nsUnderruns", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
+const NUM_KEYS = ["rawRms", "processedRms", "contextSampleRate", "captureSampleRate", "nsUnderruns", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus", "peerCount", "outPacketsLost", "outFractionLost", "rttMs"];
 const STR_KEYS = ["audioContextState", "nsEngine", "nsEngineReason", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
 const BOOL_KEYS = ["nsEnabled", "trackEnabled", "trackMuted", "uiMuted", "turnPresent", "iceConfigFetchOk"];
 
@@ -54,6 +54,12 @@ export function summarizeStats(report) {
       if (s.audioLevel != null) out.audioLevelIn = Number(s.audioLevel);
     } else if (s.type === "media-source" && s.kind === "audio" && s.audioLevel != null) {
       out.audioLevelOut = Number(s.audioLevel);
+    } else if (s.type === "remote-inbound-rtp" && (s.kind === "audio" || s.mediaType === "audio")) {
+      // What the far end reports about OUR audio: uplink loss and round trip,
+      // so "my voice cuts" can be told apart from a capture problem.
+      if (s.packetsLost != null) out.outPacketsLost = (out.outPacketsLost || 0) + Math.max(0, Number(s.packetsLost) || 0);
+      if (s.fractionLost != null) out.outFractionLost = Math.max(out.outFractionLost || 0, Number(s.fractionLost) || 0);
+      if (s.roundTripTime != null) out.rttMs = Math.max(out.rttMs || 0, Math.round((Number(s.roundTripTime) || 0) * 1000));
     }
   }
   let pair = null;
@@ -72,11 +78,42 @@ export function summarizeStats(report) {
   return out;
 }
 
+const STATE_RANK = { failed: 5, disconnected: 4, closed: 3, new: 2, checking: 2, connecting: 2, connected: 1, completed: 1 };
+
+/** The peer connection in the worst state (mesh calls: the link most likely to be the problem). */
+export function worstPeer(pcs = []) {
+  let worst = null;
+  for (const pc of pcs) {
+    if (!pc) continue;
+    if (!worst || (STATE_RANK[pc.connectionState] || 0) > (STATE_RANK[worst.connectionState] || 0)) worst = pc;
+  }
+  return worst;
+}
+
+/** Merge per-peer summaries: counters add up, levels / loss / rtt take the max, relay wins. */
+export function mergeSummaries(list = []) {
+  const out = {};
+  const SUM = ["bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "outPacketsLost"];
+  const MAX = ["audioLevelIn", "audioLevelOut", "outFractionLost", "rttMs"];
+  for (const s of list) {
+    if (!s) continue;
+    for (const k of SUM) if (s[k] != null) out[k] = (out[k] || 0) + s[k];
+    for (const k of MAX) if (s[k] != null) out[k] = Math.max(out[k] ?? -Infinity, s[k]);
+    for (const k of ["localCandidateType", "remoteCandidateType", "candidateProtocol"]) if (s[k] && !out[k]) out[k] = s[k];
+    if (s.candidateType && (out.candidateType !== "relay")) out.candidateType = s.candidateType;
+  }
+  return out;
+}
+
 /**
  * Collect a snapshot now. `deps` are injected so this file has no import
  * cycle: { pc, localTrack, uiMuted, ns: getNoiseSuppressionDiagnostics(), ice: getIceConfigStatus(), kind }.
+ * Mesh calls (group, server voice) pass `pcs` (every peer connection) instead
+ * of `pc`: the states come from the worst link, the counters from all links.
  */
-export async function captureVoiceDiagnostics({ pc, localTrack, uiMuted, ns = {}, ice = {}, kind = "dm" } = {}) {
+export async function captureVoiceDiagnostics({ pc, pcs, localTrack, uiMuted, ns = {}, ice = {}, kind = "dm" } = {}) {
+  const peers = Array.isArray(pcs) ? pcs.filter(Boolean) : pc ? [pc] : [];
+  const statePc = Array.isArray(pcs) ? worstPeer(peers) : pc;
   const snap = {
     kind,
     nsEnabled: Boolean(ns.enabled),
@@ -93,20 +130,23 @@ export async function captureVoiceDiagnostics({ pc, localTrack, uiMuted, ns = {}
     trackMuted: localTrack ? Boolean(localTrack.muted) : undefined,
     trackReadyState: localTrack?.readyState || "none",
     uiMuted: typeof uiMuted === "boolean" ? uiMuted : undefined,
-    iceConnectionState: pc?.iceConnectionState || "none",
-    connectionState: pc?.connectionState || "none",
+    iceConnectionState: statePc?.iceConnectionState || "none",
+    connectionState: statePc?.connectionState || "none",
+    peerCount: Array.isArray(pcs) ? peers.length : undefined,
     turnPresent: Boolean(ice.turnPresent),
     iceConfigFetchOk: Boolean(ice.fetchOk),
     iceFetchAttempts: ice.fetchAttempts ?? undefined,
     iceFetchStatus: ice.fetchStatus ?? undefined,
   };
-  try {
-    if (pc && typeof pc.getStats === "function" && pc.connectionState !== "closed") {
-      Object.assign(snap, summarizeStats(await pc.getStats()));
+  const summaries = await Promise.all(peers.map(async (p) => {
+    try {
+      if (p && typeof p.getStats === "function" && p.connectionState !== "closed") return summarizeStats(await p.getStats());
+    } catch {
+      /* stats are best effort */
     }
-  } catch {
-    /* stats are best effort */
-  }
+    return null;
+  }));
+  Object.assign(snap, peers.length === 1 ? summaries[0] || {} : mergeSummaries(summaries));
   lastSnapshot = sanitizeVoiceDiagnostics(snap);
   lastAt = Date.now();
   return lastSnapshot;
