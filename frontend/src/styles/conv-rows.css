@@ -149,6 +149,17 @@ html.glass-desktop .conv-group-wrap.is-swipeable.is-active-row:hover {
   box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--g-t1) 10%, transparent);
 }
 
+/* Touch iPad (glass-desktop + swipe rows): the swipe front is painted opaque
+   (app-layout.css .group-swipe-track .group-row-front, --surface-1 !important),
+   which drew a Discord-grey slab on the frosted list. The actions sit beside
+   the front (left: 100%), not behind it, so the front can stay clear and let
+   the wrapper's glass hover / active show. */
+html.glass-desktop .conv-group-wrap.is-swipeable .group-swipe-track .group-row-front,
+html.glass-desktop .conv-group-wrap.is-swipeable .group-swipe-track .group-row-front.active,
+html.glass-desktop .conv-group-wrap.is-swipeable .group-swipe-track .group-row-front:hover {
+  background: transparent !important;
+}
+
 .conv-group-wrap.is-desktop > .conv-more-btn {
   position: absolute !important;
   top: 0;
