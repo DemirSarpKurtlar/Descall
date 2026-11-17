@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { usePressFeedbackScope } from "../../../hooks/usePressFeedback";
+import useModalFocus from "../../../hooks/useModalFocus";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../../lib/fluid/springs";
 import { resolveAvatarUrl } from "../../../lib/userProfile";
 import { SX_PATHS } from "./icons";
@@ -229,6 +230,9 @@ export const Spinner = () => {
 export function Layer({ children, onClose, z, label, className }) {
   const ref = useRef(null);
   usePressFeedbackScope(ref, { enabled: true });
+  // Every hub layer is modal: Tab stays in the top layer, the app behind is inert,
+  // focus returns to the opener when it closes.
+  useModalFocus(true, ref);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
