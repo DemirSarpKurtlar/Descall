@@ -88,7 +88,7 @@ export function actionLabelParts(action, params = {}, categoryText = (id) => id)
     const d = durationKey(p);
     if (d) parts.push(d);
   }
-  if (action === "descoin_grant" && p.amount) parts.push({ text: `${Math.abs(Number(p.amount)).toLocaleString("tr-TR")} DC` });
+  if (action === "descoin_grant" && p.amount) parts.push({ text: `${formatNumber(Math.abs(Number(p.amount)), getLocale())} DC` });
   if ((action === "badge_grant" || action === "badge_revoke") && p.badgeId) parts.push({ text: p.badgeId });
   if ((action === "announcement" || action === "live_popup") && p.title) parts.push({ text: p.title });
   return parts;
