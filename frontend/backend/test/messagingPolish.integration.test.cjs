@@ -10,6 +10,7 @@
  *   messaging-14  DM typing only reaches friends.
  *   messaging-08  group create: friends only, no blocks, no orphan group on bad input.
  *   messaging-07  the REST group send route is gone (410).
+ *   messaging-10  GET /groups/my reports unread group messages since my last read.
  * Run: node frontend/backend/test/messagingPolish.integration.test.cjs
  */
 
@@ -195,6 +196,20 @@ async function restPart() {
   };
   const groupCount = () => rows("groups").length;
   try {
+    // messaging-10: /groups/my reports unread since my last read (others' messages only).
+    fake._tables.group_read_state.rows.push({ group_id: G, user_id: ALICE, last_read_at: "2026-11-10T10:00:00.000Z" });
+    fake._tables.group_messages.rows.push(
+      { id: id(40), group_id: G, sender_id: BOB, content: "önce", created_at: "2026-11-10T09:00:00.000Z" },
+      { id: id(41), group_id: G, sender_id: BOB, content: "sonra 1", created_at: "2026-11-10T11:00:00.000Z" },
+      { id: id(42), group_id: G, sender_id: CAROL, content: "sonra 2", created_at: "2026-11-10T12:00:00.000Z" },
+    );
+    let my = await call("GET", "/my");
+    assert.equal(my.status, 200);
+    const mine = (my.body.groups || []).find((g) => g.id === G);
+    assert.ok(mine, "the group is listed");
+    // The mention test above stored one of my own messages (never unread for me).
+    assert.equal(mine.unreadCount, 2, "two messages from others after my last read");
+
     const before = groupCount();
     let r = await call("POST", "/create", { name: "Yabancılar", memberIds: [STRANGER] });
     assert.equal(r.status, 403);

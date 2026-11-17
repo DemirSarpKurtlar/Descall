@@ -138,10 +138,43 @@ async function receiptsEnabledMany(userIds, { now = Date.now() } = {}) {
   return out;
 }
 
+/**
+ * Unread group messages per group for `userId` (polish messaging-10): messages from
+ * others after my group_read_state.last_read_at, capped at 99. Groups without a read
+ * row are left out (unknown, never a fake 99+); {} before the migration.
+ */
+async function groupUnreadCounts(userId, groupIds, { cap = 99 } = {}) {
+  const ids = [...new Set((groupIds || []).filter(Boolean).map(String))];
+  if (tableMissing || !userId || !ids.length) return {};
+  const { data: states, error } = await db()
+    .from("group_read_state")
+    .select("group_id, last_read_at")
+    .eq("user_id", userId)
+    .in("group_id", ids);
+  if (error) {
+    if (isMissingTable(error, "group_read_state")) tableMissing = true;
+    return {};
+  }
+  const out = {};
+  await Promise.all((states || []).map(async (row) => {
+    if (!row?.group_id || !row.last_read_at) return;
+    const { data: msgs, error: msgErr } = await db()
+      .from("group_messages")
+      .select("id")
+      .eq("group_id", row.group_id)
+      .neq("sender_id", userId)
+      .gt("created_at", row.last_read_at)
+      .limit(cap);
+    if (msgErr) return;
+    out[row.group_id] = Math.min(cap, (msgs || []).length);
+  }));
+  return out;
+}
+
 function __resetReadReceipts() {
   cache.clear();
   columnMissing = false;
   tableMissing = false;
 }
 
-module.exports = { receiptsEnabled, bothShare, setReceiptsEnabled, maskDmReads, markGroupRead, groupReads, isMissingTable, __resetReadReceipts };
+module.exports = { groupUnreadCounts, receiptsEnabled, bothShare, setReceiptsEnabled, maskDmReads, markGroupRead, groupReads, isMissingTable, __resetReadReceipts };

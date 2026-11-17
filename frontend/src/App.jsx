@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { invalidateProfile } from "./lib/profileCache.js";
+import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
@@ -541,6 +541,15 @@ export default function App() {
   const [bootError, setBootError] = useState(false);
   const [bootAttempt, setBootAttempt] = useState(0);
   const [me, setMe] = useState(() => normalizeUser(getUser()));
+  // Sign-out or another account: profiles cached for the last session (profile window and hover
+  // card, lib/profileCache.js) are dropped instead of painting instantly for the new one.
+  const sessionUserId = me?.id ?? null;
+  const lastSessionUserRef = useRef(sessionUserId);
+  useEffect(() => {
+    if (lastSessionUserRef.current === sessionUserId) return;
+    lastSessionUserRef.current = sessionUserId;
+    clearProfileCache();
+  }, [sessionUserId]);
   const [inviteCode, setInviteCode] = useState(() => parseInviteCodeFromLocation());
   const [inviteAuthOpen, setInviteAuthOpen] = useState(false);
   const [serverVanitySlug, setServerVanitySlug] = useState(() => parseServerVanityFromLocation());
@@ -3421,6 +3430,20 @@ export default function App() {
       const raw = await getMyGroups();
       const groups = normalizeGroups(raw);
       setMyGroups(groups);
+      // Server unread counts (polish messaging-10): messages that came while I was away.
+      setGroupUnread((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const g of groups) {
+          if (!g?.id || typeof g.unreadCount !== "number") continue;
+          const n = activeGroupRef.current?.id === g.id ? 0 : g.unreadCount;
+          if ((next[g.id] || 0) === n) continue;
+          changed = true;
+          if (n > 0) next[g.id] = n;
+          else delete next[g.id];
+        }
+        return changed ? next : prev;
+      });
       setGroupPreviews((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -5673,9 +5696,10 @@ export default function App() {
             const nextPath = open ? "/settings" : appPathForView(activeView);
             if (location.pathname !== nextPath) navigate(nextPath);
           }}
-          onSettingsTabChange={(tab) => {
+          onSettingsTabChange={(tab, opts) => {
             const nextPath = tab && tab !== "overview" ? `/settings/${encodeURIComponent(tab)}` : "/settings";
-            if (location.pathname !== nextPath) navigate(nextPath);
+            // replace: an unknown /settings/<tab> is corrected in place (no extra history step).
+            if (location.pathname !== nextPath) navigate(nextPath, opts?.replace ? { replace: true } : undefined);
           }}
           groups={sortedGroups}
           dms={sortedDms}
