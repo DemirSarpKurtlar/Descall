@@ -87,6 +87,7 @@ export function createSilenceWatchdog({
   tryResume = () => {},
   onFallback = () => {},
   readClock = null,
+  readUnderrunEvents = null,
   onUnderrun = () => {},
   onOverload = () => {},
   now = () => Date.now(),
@@ -109,6 +110,7 @@ export function createSilenceWatchdog({
   let underruns = 0;
   let recentUnderruns = [];
   let clockRef = null; // { wall, audio }
+  let lastUnderrunEvents = null;
   let runningSince = null;
   let last = { raw: 0, out: 0, state: "running", floor: 0, underruns: 0 };
 
@@ -123,6 +125,38 @@ export function createSilenceWatchdog({
     }
   }
 
+  function noteUnderruns(t, count) {
+    for (let i = 0; i < count; i += 1) {
+      underruns += 1;
+      recentUnderruns.push(t);
+    }
+    try { onUnderrun(underruns); } catch { /* ignore */ }
+    recentUnderruns = recentUnderruns.filter((x) => t - x <= OVERLOAD_WINDOW_MS);
+    if (recentUnderruns.length >= OVERLOAD_UNDERRUNS) {
+      recentUnderruns = [];
+      try { onOverload(underruns); } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Polish 3.9.x (calls-07): Chromium keeps AudioContext.currentTime in step
+   * with the wall clock even when the graph glitches, so the clock check alone
+   * never fired under heavy load. AudioContext.playbackStats.underrunEvents
+   * (Chromium) counts the real output glitches; new ones count as underruns.
+   */
+  function checkUnderrunEvents(t) {
+    if (!readUnderrunEvents) return;
+    const n = Number(readUnderrunEvents());
+    if (!Number.isFinite(n)) return;
+    if (runningSince == null || t - runningSince < WARMUP_MS || lastUnderrunEvents == null || n < lastUnderrunEvents) {
+      lastUnderrunEvents = n;
+      return;
+    }
+    const added = n - lastUnderrunEvents;
+    lastUnderrunEvents = n;
+    if (added > 0) noteUnderruns(t, added);
+  }
+
   function checkClock(t) {
     if (!readClock) return;
     const audio = Number(readClock());
@@ -135,16 +169,9 @@ export function createSilenceWatchdog({
     }
     const lag = (t - clockRef.wall) / 1000 - (audio - clockRef.audio);
     if (lag > UNDERRUN_LAG_S) {
-      underruns += 1;
-      recentUnderruns.push(t);
-      try { onUnderrun(underruns); } catch { /* ignore */ }
       // Re-anchor: count each stall once.
       clockRef = { wall: t, audio };
-      recentUnderruns = recentUnderruns.filter((x) => t - x <= OVERLOAD_WINDOW_MS);
-      if (recentUnderruns.length >= OVERLOAD_UNDERRUNS) {
-        recentUnderruns = [];
-        try { onOverload(underruns); } catch { /* ignore */ }
-      }
+      noteUnderruns(t, 1);
     } else if (lag < 0) {
       // Clock ahead (a chunk landed early): re-anchor, never count it.
       clockRef = { wall: t, audio };
@@ -165,6 +192,7 @@ export function createSilenceWatchdog({
     if (state !== "running") {
       clockRef = null;
       runningSince = null;
+      lastUnderrunEvents = null;
       if (suspendedSince == null) {
         suspendedSince = t;
         tryResume();
@@ -173,7 +201,9 @@ export function createSilenceWatchdog({
       return last;
     }
     suspendedSince = null;
+    if (runningSince == null) runningSince = t;
     checkClock(t);
+    checkUnderrunEvents(t);
     if (!isEnabled()) {
       silentMs = 0;
       return last;

@@ -491,6 +491,8 @@ function armFailsafe(session) {
     tryResume: () => { void resumeContext(ctx, 800); },
     onFallback: (reason) => { void fallbackToRawMic(reason); },
     readClock: () => ctx.currentTime,
+    // Chromium: real output glitches (the clock check misses them there).
+    readUnderrunEvents: ctx.playbackStats ? () => ctx.playbackStats.underrunEvents : null,
     onUnderrun: (count) => { session.underruns = count; },
     onOverload: () => { void downgradeEngine(session); },
   });
