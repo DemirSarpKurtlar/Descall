@@ -1547,3 +1547,80 @@ html.glass-desktop .ccset :focus-visible {
   font-variant-numeric: tabular-nums;
 }
 .ccw-drawer:focus { outline: none; }
+
+/* Settings > Cüzdan ve kazanç in the light theme (polish scan: the tab painted the dark
+   fallbacks, white text on the white panel). --text-primary is not set inside the Settings
+   panel, so every colour here is explicit. The live preview frames stay dark: they show the
+   call summary card exactly as it appears over a call. */
+html[data-theme="light"] .ccset {
+  color: rgba(16, 18, 28, 0.94);
+}
+html[data-theme="light"] .ccset-hd p,
+html[data-theme="light"] .ccset-muted,
+html[data-theme="light"] .ccset-c small,
+html[data-theme="light"] .ccset-foot,
+html[data-theme="light"] .ccset-lab,
+html[data-theme="light"] .ccset-err,
+html[data-theme="light"] .ccset-empty,
+html[data-theme="light"] .ccset-hist-t small {
+  color: rgba(30, 34, 52, 0.68);
+}
+html[data-theme="light"] .ccset-card {
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(16, 18, 28, 0.08), 0 1px 2px rgba(16, 18, 28, 0.04);
+}
+html[data-theme="light"] .ccset-pvw {
+  background: rgba(16, 18, 28, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(16, 18, 28, 0.08);
+}
+html[data-theme="light"] .ccset-opt,
+html[data-theme="light"] .ccset-hist {
+  box-shadow: inset 0 -1px 0 rgba(16, 18, 28, 0.08);
+}
+html[data-theme="light"] .ccset-opt:last-child,
+html[data-theme="light"] .ccset-hist:last-child {
+  box-shadow: none;
+}
+html[data-theme="light"] .ccset-seg {
+  background: rgba(16, 18, 28, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(16, 18, 28, 0.08);
+}
+html[data-theme="light"] .ccset-seg button {
+  color: rgba(30, 34, 52, 0.72);
+}
+html[data-theme="light"] .ccset-seg button.on {
+  color: #fff;
+}
+html[data-theme="light"] .ccset .ccs-chip {
+  color: rgba(30, 34, 52, 0.82);
+  background: rgba(16, 18, 28, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(16, 18, 28, 0.08);
+}
+html[data-theme="light"] .ccset-track {
+  background: rgba(16, 18, 28, 0.08);
+}
+html[data-theme="light"] .ccset-lab-r,
+html[data-theme="light"] .ccset .ccs-link {
+  color: #3d5bd9;
+}
+html[data-theme="light"] .ccset-play {
+  color: rgba(16, 18, 28, 0.9);
+  background: rgba(16, 18, 28, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(16, 18, 28, 0.1);
+}
+html[data-theme="light"] .ccset-play:hover {
+  background: rgba(16, 18, 28, 0.09);
+}
+html[data-theme="light"] .ccset-hist-ic {
+  color: #1f9d5c;
+}
+html[data-theme="light"] .ccset-hist-ic.is-dim {
+  background: rgba(16, 18, 28, 0.06);
+  color: rgba(30, 34, 52, 0.6);
+}
+html[data-theme="light"] .ccset-hist em {
+  color: #b7791f;
+}
+html[data-theme="light"] .ccset-hist em.is-dim {
+  color: rgba(30, 34, 52, 0.45);
+}

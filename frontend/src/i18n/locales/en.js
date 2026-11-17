@@ -13,6 +13,7 @@ import { ACT_EN } from "./act.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
+import { LX_EN } from "./lx.en.js";
 import { USET_EN } from "./uset.en.js";
 import { BAN_ADMIN_EN } from "./banAdmin.en.js";
 import { SERVER_REVIEW_EN } from "./serverReview.en.js";
@@ -83,6 +84,7 @@ export const nested = {
   dir: DIR_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
+  lx: LX_EN,
   banAdmin: BAN_ADMIN_EN,
   uset: USET_EN,
   serverReview: SERVER_REVIEW_EN,

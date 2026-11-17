@@ -17,6 +17,7 @@ import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
+import { LX_FR } from "./lx.fr.js";
 import { USET_FR } from "./uset.fr.js";
 import { SVOICE_FR } from "./svoice.fr.js";
 import { BAN_ADMIN_FR } from "./banAdmin.fr.js";
@@ -65,6 +66,7 @@ export const nested = {
   "dir": DIR_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
+  "lx": LX_FR,
   "uset": USET_FR,
   "svoice": SVOICE_FR,
   "banAdmin": BAN_ADMIN_FR,
