@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import useModalFocus from "../../hooks/useModalFocus";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   AtSign, UsersThree, ChevronRight, ChevronLeft, Link2, Copy, Check, UserPlus, RefreshCw,
@@ -79,6 +80,9 @@ export default function NewCreateModal({
   const t = useT();
   const reduce = useReducedMotion();
   const userInputRef = useRef(null);
+  const dialogRef = useRef(null);
+  // Tab stays in the sheet, the app behind is inert, focus returns to the opener (WCAG 2.4.3).
+  useModalFocus(open, dialogRef);
   const fileRef = useRef(null);
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
@@ -407,6 +411,7 @@ export default function NewCreateModal({
             onClick={onClose}
           >
             <motion.div
+              ref={dialogRef}
               className={`nc-sheet${glassShell ? " is-phone" : ""}`}
               role="dialog"
               aria-modal="true"

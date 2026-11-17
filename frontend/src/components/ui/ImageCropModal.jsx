@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { motion, useReducedMotion } from "framer-motion";
+import useModalFocus from "../../hooks/useModalFocus";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
 import { X, ZoomIn, ZoomOut, Check } from "./Icon.jsx";
 import { useT } from "../../context/LocaleContext";
@@ -43,6 +44,8 @@ export default function ImageCropModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const reduceMotion = useReducedMotion();
+  const dialogRef = useRef(null);
+  useModalFocus(Boolean(imageSrc), dialogRef);
 
   // Escape cancels the crop only (capture + stop), never the window it was opened from.
   useEffect(() => {
@@ -90,6 +93,7 @@ export default function ImageCropModal({
       onClick={onCancel}
     >
       <motion.div
+        ref={dialogRef}
         className="img-crop-modal"
         initial={reduceMotion ? { opacity: 0 } : { scale: 0.92, opacity: 0, y: 12 }}
         animate={reduceMotion ? { opacity: 1, transition: REDUCED_MOTION_FADE } : { scale: 1, opacity: 1, y: 0, transition: framerSpring(SPRINGS.materialize) }}

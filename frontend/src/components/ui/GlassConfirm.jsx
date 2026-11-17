@@ -5,6 +5,7 @@ import { hapticWarning } from "../../lib/fluid/haptics";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { registerGlassConfirm } from "../../lib/glassConfirm";
 import usePressFeedback from "../../hooks/usePressFeedback";
+import useModalFocus from "../../hooks/useModalFocus";
 
 /**
  * Liquid Glass confirm. Frosted scrim, glass card, glass buttons.
@@ -52,6 +53,9 @@ export default function GlassConfirm({
     if (isPresent) onCancel?.();
   };
   const [draft, setDraft] = useState(input?.defaultValue ?? "");
+  const cardRef = useRef(null);
+  // Focus starts on the first button (Cancel when side by side), Tab stays in the alert.
+  useModalFocus(true, cardRef);
   useEffect(() => {
     if (danger) hapticWarning();
   }, [danger]);
@@ -108,6 +112,7 @@ export default function GlassConfirm({
       }}
     >
       <motion.div
+        ref={cardRef}
         className={`g-alert g-glass g-heavy${className ? ` ${className}` : ""}`}
         role="alertdialog"
         aria-modal="true"
