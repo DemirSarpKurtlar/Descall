@@ -14,7 +14,6 @@
 
 import {
   GtcrnWorkletNode,
-  NoiseGateWorkletNode,
   RnnoiseWorkletNode,
   SpeexWorkletNode,
   loadGtcrn,
@@ -28,7 +27,9 @@ import rnnoiseSimdWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise_simd.w
 import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url";
 import speexWasmPath from "@sapphi-red/web-noise-suppressor/speex.wasm?url";
 import speexWorkletPath from "@sapphi-red/web-noise-suppressor/speexWorklet.js?url";
-import noiseGateWorkletPath from "@sapphi-red/web-noise-suppressor/noiseGateWorklet.js?url";
+// calls-03: our soft gate (expander) instead of the library's hard on/off gate.
+import softGateWorkletPath from "./softGateWorklet.js?url";
+import { SOFT_GATE_PROCESSOR } from "./softGateWorklet.js";
 import { primeVoiceActivity } from "./voiceActivity";
 import { onAudioSettings, premiumMicChain } from "../premium/audio/premiumAudioRuntime.js";
 import { registerSinkContext } from "./callAudioDevices.js";
@@ -156,7 +157,7 @@ async function ensureAssets(ctx) {
       ctx.audioWorklet.addModule(gtcrnWorkletPath),
       ctx.audioWorklet.addModule(rnnoiseWorkletPath),
       ctx.audioWorklet.addModule(speexWorkletPath),
-      ctx.audioWorklet.addModule(noiseGateWorkletPath),
+      ctx.audioWorklet.addModule(softGateWorkletPath),
     ]);
   }
   const [wasm] = await Promise.all([ensureWasm(), workletPromise]);
@@ -262,6 +263,26 @@ const SUPPRESSORS = {
   speex: (ctx, a) => a.speexWasm && new SpeexWorkletNode(ctx, { wasmBinary: a.speexWasm, maxChannels: 1 }),
 };
 
+/**
+ * Soft gate (softGateWorklet.js): thresholds + hold decide, the gain glides
+ * between 1 and a -30 dB floor (5 ms attack, 120 ms release). Never the old
+ * hard cut to digital zero. Null when the worklet module did not load.
+ */
+function createGateNode(ctx, params = {}) {
+  try {
+    return new AudioWorkletNode(ctx, SOFT_GATE_PROCESSOR, {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      channelCount: 1,
+      channelCountMode: "explicit",
+      processorOptions: { ...gateSettings("on"), ...(params || {}) },
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** First engine of `engines` that loads; none → plain DSP chain. */
 function createSuppressor(ctx, assets, engines) {
   for (const engine of engines) {
@@ -342,16 +363,8 @@ async function wrapInto(rawStream) {
   const { suppressor, engine } = suppress ? createSuppressor(ctx, assets, order.engines) : { suppressor: null, engine: "dsp" };
   const engineReason = suppress ? order.reason : "off";
 
-  let gate = null;
-  try {
-    gate = new NoiseGateWorkletNode(ctx, {
-      // Descall+ noise_gate: the user's threshold instead of the built-in one.
-      ...(premium.gate || gateSettings(prefs.noiseMode)),
-      maxChannels: 1,
-    });
-  } catch {
-    gate = null;
-  }
+  // Descall+ noise_gate: the user's threshold instead of the built-in one.
+  const gate = createGateNode(ctx, premium.gate || gateSettings(prefs.noiseMode));
 
   // mic → (Descall+ gain) → highpass → neural/speex → mild gate → compressor → destination
   if (inputGain) {
@@ -790,7 +803,7 @@ export function preloadNoiseSuppression() {
   if (!isNoiseSuppressionEnabled()) return;
   ensureWasm().catch(() => {});
   if (typeof fetch === "function") {
-    for (const url of [gtcrnWorkletPath, rnnoiseWorkletPath, speexWorkletPath, noiseGateWorkletPath]) {
+    for (const url of [gtcrnWorkletPath, rnnoiseWorkletPath, speexWorkletPath, softGateWorkletPath]) {
       fetch(url).catch(() => {});
     }
   }
@@ -865,12 +878,8 @@ function retuneGate(params) {
   if (!beforeGate) return;
   const key = JSON.stringify(params || null);
   if (key === session.gateKey) return;
-  let next;
-  try {
-    next = new NoiseGateWorkletNode(session.ctx, { ...(params || gateSettings(readVoiceProfile().noiseMode)), maxChannels: 1 });
-  } catch {
-    return;
-  }
+  const next = createGateNode(session.ctx, params || gateSettings(readVoiceProfile().noiseMode));
+  if (!next) return;
   const old = session.gateNode;
   try {
     beforeGate.connect(next);

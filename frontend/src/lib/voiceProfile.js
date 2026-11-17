@@ -180,9 +180,15 @@ export function captureConstraints(prefs = readVoiceProfile(), deviceId, { pipel
 // level) closed for whole sentences, the other side heard nothing. The
 // thresholds are lower now and the mic failsafe (micFailsafe.js) switches to
 // the raw mic if the processed output still stays silent while you talk.
+// Polish 3.9.x (calls-03): it is a soft gate now (softGateWorklet.js). Closed
+// means a floor (-30 / -40 dB), never digital zero; the gain glides with a
+// 5 ms attack and a 120 / 150 ms release, and the hold is longer so pauses
+// between words never close it.
 export function gateSettings(mode) {
-  if (mode === "strong") return { openThreshold: -50, closeThreshold: -60, holdMs: 160 };
-  return { openThreshold: -60, closeThreshold: -70, holdMs: 140 };
+  if (mode === "strong") {
+    return { openThreshold: -50, closeThreshold: -60, holdMs: 300, attackMs: 5, releaseMs: 150, floorDb: -40 };
+  }
+  return { openThreshold: -60, closeThreshold: -70, holdMs: 250, attackMs: 5, releaseMs: 120, floorDb: -30 };
 }
 
 export function agcCompressorSettings() {
