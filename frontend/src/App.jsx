@@ -2013,9 +2013,9 @@ export default function App() {
       if (user?.id != null) invalidateProfile(user.id);
       if (user) applyProfileUpdate(user);
     });
-    socket.on("friend:error", ({ message } = {}) => {
+    socket.on("friend:error", (payload = {}) => {
       hapticError();
-      setFriendNotice(message || t("Friend action failed."));
+      setFriendNotice(serverMessage(payload, "message") || t("Friend action failed."));
       setTimeout(() => setFriendNotice(""), 4000);
       // Restore pending list / friends after a failed accept/decline
       socket.emit("friend:list");

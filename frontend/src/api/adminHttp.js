@@ -1,10 +1,12 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { serverErrorText } from "./httpError";
 import { isTransientHttpStatus, isTransportError, transientFailureError, withReadRetry } from "./transportRetry";
 import { runWithStepUp } from "../lib/adminStepUp";
 
 function makeHttpError(status, body) {
-  const err = new Error(body?.error || body?.message || `HTTP ${status}`);
+  const err = new Error(serverErrorText(body) || `HTTP ${status}`);
+  err.serverText = body?.error || body?.message || "";
   err.status = status;
   if (body?.code) err.code = body.code;
   return err;

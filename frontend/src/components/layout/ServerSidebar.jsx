@@ -45,6 +45,8 @@ import InviteCard from "../friends/InviteCard";
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate } from "../../lib/datetime";
 import { formatDate, formatTime, upper } from "../../i18n/format";
+import { serverMessage } from "../../i18n/serverText.js";
+import { serverErrorText } from "../../api/httpError";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
@@ -139,8 +141,8 @@ export default function ServerSidebar({
 
   useEffect(() => {
     if (!socket) return;
-    const onFriendError = ({ message }) => {
-      setAddError(message || t("Friend action failed."));
+    const onFriendError = (payload = {}) => {
+      setAddError(serverMessage(payload, "message") || t("Friend action failed."));
       setTimeout(() => setAddError(""), 4000);
     };
     const onFriendSent = ({ to } = {}) => {
@@ -232,7 +234,7 @@ export default function ServerSidebar({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.details || t("Failed to create group (status {status})", { status: res.status }));
+      if (!res.ok) throw new Error(serverErrorText(data) || t("Failed to create group (status {status})", { status: res.status }));
       setAddSuccess(t('Group "{name}" created', { name: groupName.trim() }));
       setGroupName("");
       setSelectedGroupMembers([]);

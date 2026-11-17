@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "../config/api";
+import { t } from "../i18n/runtime.js";
+import { serverErrorText } from "./httpError";
 import { getToken } from "../lib/storage";
 
 export async function uploadFile(file) {
@@ -13,7 +15,7 @@ export async function uploadFile(file) {
   });
 
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error || "Upload failed");
+  if (!response.ok) throw new Error(serverErrorText(body) || t("Upload failed"));
   return body;
 }
 
@@ -29,7 +31,7 @@ export async function uploadAvatar(file) {
   });
 
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error || "Avatar upload failed");
+  if (!response.ok) throw new Error(serverErrorText(body) || t("Upload failed"));
   return body;
 }
 
@@ -54,7 +56,7 @@ export async function uploadAvatarWithCrop(file, crop = null) {
     body: formData,
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "Avatar upload failed");
+  if (!response.ok) throw new Error(serverErrorText(body) || t("Upload failed"));
   return body;
 }
 
@@ -70,7 +72,7 @@ export async function uploadBannerImage(file, crop = null) {
     body: formData,
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "Banner upload failed");
+  if (!response.ok) throw new Error(serverErrorText(body) || t("Upload failed"));
   return body;
 }
 
