@@ -3035,6 +3035,7 @@ button.member-row.server-member-row {
 }
 
 .server-voice-status.is-ok { color: var(--g-ok, #30D158); }
+html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
 .server-voice-status.is-wait { color: #f0b429; }
 .server-voice-status.is-bad { color: var(--danger-text, #ed4245); }
 

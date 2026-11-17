@@ -95,6 +95,8 @@ html[data-theme="light"] .s3-gone span { background: rgba(16, 18, 28, 0.06); col
 .s3-prev.is-light .s3-pm:not(.me) .s3-pb { background: #fff; }
 .s3-prev.is-light .live, .s3-prev.is-light .s3-pin { background: rgba(16, 18, 28, 0.06); color: rgba(16, 18, 28, 0.5); }
 .s3-prev.is-light .s3-pr { background: #fff; box-shadow: 0 0 0 2px #eef0f6; }
+/* #30d158 text on #eef0f6 is 1.8:1; a deeper green reads at 4.6:1 (WCAG AA). */
+.s3-prev.is-light .hd small { color: #1f8a3d; }
 
 .s3-th { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; }
 .s3-th > button { text-align: center; font-size: 13.5px; font-weight: 550; background: none; border: 0; padding: 0; cursor: pointer; color: var(--s3-t1); }
