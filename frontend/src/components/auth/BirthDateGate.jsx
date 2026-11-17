@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { ShieldCheck, LogOut } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/localeContextInstance";
 import { formatDate as formatLocaleDate } from "../../i18n/format.js";
@@ -28,6 +29,9 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
   const [step, setStep] = useState("ask"); // ask | confirm
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Tab stays in the gate; the app behind is inert until the date is saved.
+  const gateRef = useRef(null);
+  useModalFocus(Boolean(me?.id), gateRef);
 
   useEffect(() => {
     setKnown(me?.birthDate);
@@ -58,7 +62,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
   if (known && ageGroupOf(known) === "child") {
     return (
       <OverlayPortal>
-      <div className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+      <div ref={gateRef} className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
         <div className="age-gate-card">
           <div className="age-gate-icon age-gate-icon--warn"><ShieldCheck size={26} /></div>
           <h2 id="age-gate-title">{t("Descall is for ages 13 and up")}</h2>
@@ -109,7 +113,7 @@ export default function BirthDateGate({ me, onBirthDateSaved, onLogout }) {
 
   return (
     <OverlayPortal>
-    <div className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+    <div ref={gateRef} className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
       <div className="age-gate-card">
         <div className="age-gate-icon"><ShieldCheck size={26} /></div>
         {step === "ask" ? (

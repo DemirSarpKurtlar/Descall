@@ -15,6 +15,7 @@ import {
   sortOwned, useSpecialBadgeStore, userBadgesState,
 } from "../../lib/specialBadges";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import useModalFocus from "../../hooks/useModalFocus";
 import { hapticSelection, hapticSuccess } from "../../lib/fluid/haptics";
 import { openPromoRedeem } from "../../lib/promoBus";
 import { showBadgeToast } from "./BadgeToast.jsx";
@@ -250,6 +251,8 @@ export function BadgeVault({ user, me, self, variant = "desk", onClose }) {
   const who = nameOfUser(user);
   const close = useCallback(() => onClose?.(), [onClose]);
   const dialogRef = useRef(null);
+  // Tab stays in the vault (the dialog itself takes focus first, below).
+  useModalFocus(true, dialogRef, { initialFocus: dialogRef });
 
   // Stack: the profile card behind steps back while the vault is open.
   useEffect(() => {

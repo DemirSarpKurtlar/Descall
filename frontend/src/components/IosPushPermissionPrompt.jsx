@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../hooks/useModalFocus";
 import { Bell } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
 import { getNativePushPermission, isNativeIosPush } from "../lib/nativePush";
@@ -25,6 +26,8 @@ export default function IosPushPermissionPrompt({ enabled, onAllow }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const dialogRef = useRef(null);
+  useModalFocus(open, dialogRef);
 
   useEffect(() => {
     if (!enabled || !isNativeIosPush() || snoozed()) return undefined;
@@ -61,7 +64,7 @@ export default function IosPushPermissionPrompt({ enabled, onAllow }) {
   };
 
   return (
-    <div className="ios-push-prompt" role="dialog" aria-modal="true" aria-labelledby="ios-push-prompt-title">
+    <div ref={dialogRef} className="ios-push-prompt" role="dialog" aria-modal="true" aria-labelledby="ios-push-prompt-title">
       <div className="ios-push-prompt__card">
         <div className="ios-push-prompt__icon" aria-hidden="true">
           <Bell size={26} />
