@@ -1331,7 +1331,7 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
-  socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened } = {}) => {
+  socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened, ptt } = {}) => {
     if (!channelId) return;
     if (!allow("media", 20, 5000)) return;
     channelId = normId(channelId);
@@ -1366,6 +1366,11 @@ function registerServerVoiceHandlers(io, socket) {
       // A camera flag without STREAM is ignored (it bypassed camera:start's check).
       if (cameraOn !== undefined) me.cameraOn = Boolean(cameraOn) && participantCanStream(me);
       if (deafened !== undefined) me.deafened = Boolean(deafened);
+      // Push-to-talk (client sends ptt: true with its press / release): the key is often
+      // up when the 16 s DesCoin beat lands, so the last open-mic moment still counts
+      // (serverVoiceEnforce.seatCanEarn). A plain self-mute never does.
+      if (ptt !== undefined) me.ptt = Boolean(ptt);
+      if (!me.muted || !wasMuted) me.lastUnmutedAt = Date.now();
       if (me.muted && !wasMuted) {
         me.afkIdleSince = Date.now();
       } else if (!me.muted) {
@@ -1480,6 +1485,10 @@ async function moveParticipantToChannel(io, serverId, userId, fromChannelId, toC
   }
 
   emitChannelState(io, dest.server_id, destId);
+  // Same arrival event as a moderator move, so rosters in the AFK channel add the member.
+  const seated = destCall.participants.get(String(targetId)) || snapshot;
+  io.to(`server-voice:${destId}`).emit("server:voice:member-joined", { serverId: dest.server_id, channelId: destId, user: seated });
+  void emitToChannelViewers(io, dest.server_id, destId, "server:voice:member-joined", { serverId: dest.server_id, channelId: destId, user: seated });
   io.to(moveTarget).emit("server:voice:force-moved", {
     serverId: dest.server_id,
     fromChannelId: found.channelId,

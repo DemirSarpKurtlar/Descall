@@ -257,9 +257,17 @@ function canPublishSeat(seat) {
  * deafened / AFK-locked) and not self-muted. Screen share: may stream and is sharing.
  * Timeouts are checked by the caller (DB). Others present is checked by the caller.
  */
-function seatCanEarn(seat, type) {
+/** A beat right after a push-to-talk release (seat.ptt) still belongs to the open-mic window. */
+const VOICE_EARN_WINDOW_MS = 20_000;
+
+function seatCanEarn(seat, type, now = Date.now()) {
   if (!seat || !canPublishSeat(seat)) return false;
-  if (type === "voice") return !seat.muted;
+  if (type === "voice") {
+    // Self-deafened hears nobody (server-voice-11); the client also mutes, belt and braces.
+    if (seat.deafened) return false;
+    if (!seat.muted) return true;
+    return Boolean(seat.ptt) && Number.isFinite(seat.lastUnmutedAt) && now - seat.lastUnmutedAt < VOICE_EARN_WINDOW_MS;
+  }
   if (type === "screenshare") return canStreamSeat(seat) && seat.isScreenSharing === true;
   return false;
 }

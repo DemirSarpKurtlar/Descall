@@ -35,7 +35,7 @@ perms.assertHierarchy = async () => {};
 
 const { activeServerVoiceCalls } = require(B + "/runtime/sharedState");
 const callCoinSessions = require(B + "/lib/callCoinSessions");
-const { registerServerVoiceHandlers, seatOwnerOf } = require(B + "/socket/serverVoiceHandlers");
+const { registerServerVoiceHandlers, seatOwnerOf, runAfkScan } = require(B + "/socket/serverVoiceHandlers");
 
 const log = [];
 const liveSockets = new Map();
@@ -101,6 +101,21 @@ const seats = () =>
   await bob.h["server:voice:join"]({ serverId: "srv-1", channelId: "ch-b" });
   bob.h["server:voice:leave"]({});
   assert.deepEqual(seats(), ["ch-a:u-alice"]);
+
+  // AFK move: same arrival event as a moderator move, sent to the seat's socket, session kept.
+  await bob.h["server:voice:join"]({ serverId: "srv-1", channelId: "ch-a" });
+  db._tables.servers.rows[0].afk_channel_id = "ch-b";
+  db._tables.servers.rows[0].afk_timeout_seconds = 60;
+  const seat = activeServerVoiceCalls.get("ch-a").participants.get("u-bob");
+  seat.muted = true;
+  seat.afkIdleSince = Date.now() - 10 * 60_000;
+  log.length = 0;
+  const res = await runAfkScan(io);
+  assert.equal(res.moved, 1);
+  assert.deepEqual(seats(), ["ch-a:u-alice", "ch-b:u-bob"]);
+  assert.ok(log.some((l) => l.to === "server-voice:ch-b" && l.e === "server:voice:member-joined"), "AFK arrival announced");
+  assert.equal(log.find((l) => l.e === "server:voice:force-moved")?.to, "sockB");
+  assert.ok(callCoinSessions.get("u-bob", { context: "server", channelId: "ch-b" }));
 
   console.log("serverVoiceSeatOwner test ok");
   process.exit(0);
