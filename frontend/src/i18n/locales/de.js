@@ -969,7 +969,17 @@ export const nested = {
       "busy": "Wird geprüft…",
       "ok": "Code eingelöst. Deine Mitgliedschaft ist aktualisiert.",
       "fail": "Dieser Code konnte nicht eingelöst werden.",
-      "unavailable": "Gutscheincodes sind noch nicht verfügbar."
+      "unavailable": "Gutscheincodes sind noch nicht verfügbar.",
+      "errors": {
+        "invalid": "Dieser Code ist ungültig. Prüfe die Schreibweise.",
+        "expired": "Dieser Code ist abgelaufen.",
+        "used": "Du hast diesen Code bereits verwendet.",
+        "limit": "Dieser Code ist bereits ausgeschöpft.",
+        "already_active": "Du hast bereits eine aktive Mitgliedschaft, daher kann dieser Code jetzt nicht verwendet werden.",
+        "not_redeemable": "Dieser Code kann mit deinem Konto nicht verwendet werden.",
+        "unavailable": "Diese Aktion ist gerade nicht verfügbar.",
+        "rate_limited": "Zu viele Versuche. Versuche es in ein paar Minuten erneut."
+      }
     },
     "features": {
       "title": "Funktionen",

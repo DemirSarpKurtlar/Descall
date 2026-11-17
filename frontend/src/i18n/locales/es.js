@@ -969,7 +969,17 @@ export const nested = {
       "busy": "Comprobando…",
       "ok": "Código aplicado. Tu membresía está actualizada.",
       "fail": "No se pudo usar este código.",
-      "unavailable": "Los códigos de cupón aún no están disponibles."
+      "unavailable": "Los códigos de cupón aún no están disponibles.",
+      "errors": {
+        "invalid": "Este código no es válido. Revisa cómo lo escribiste.",
+        "expired": "Este código ha caducado.",
+        "used": "Ya usaste este código.",
+        "limit": "Este código ya no tiene usos disponibles.",
+        "already_active": "Ya tienes una membresía activa, así que no puedes usar este código ahora.",
+        "not_redeemable": "Este código no se puede usar en tu cuenta.",
+        "unavailable": "Esta campaña no está disponible ahora mismo.",
+        "rate_limited": "Demasiados intentos. Vuelve a intentarlo en unos minutos."
+      }
     },
     "features": {
       "title": "Funciones",

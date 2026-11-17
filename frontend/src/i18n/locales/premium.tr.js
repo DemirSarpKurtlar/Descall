@@ -100,7 +100,17 @@ export const PREMIUM_TR = {
     "busy": "Kontrol ediliyor…",
     "ok": "Kod uygulandı. Üyeliğin güncellendi.",
     "fail": "Bu kod kullanılamadı.",
-    "unavailable": "Kupon kodları henüz kullanılamıyor."
+    "unavailable": "Kupon kodları henüz kullanılamıyor.",
+    "errors": {
+      "invalid": "Bu kod geçerli değil. Yazımını kontrol et.",
+      "expired": "Bu kodun süresi dolmuş.",
+      "used": "Bu kodu zaten kullandın.",
+      "limit": "Bu kodun kullanım hakkı doldu.",
+      "already_active": "Zaten etkin bir üyeliğin var, bu kod şimdi kullanılamaz.",
+      "not_redeemable": "Bu kod hesabında kullanılamıyor.",
+      "unavailable": "Bu kampanya şu an kullanılamıyor.",
+      "rate_limited": "Çok fazla deneme yaptın. Birkaç dakika sonra tekrar dene."
+    }
   },
   "features": {
     "title": "Özellikler",

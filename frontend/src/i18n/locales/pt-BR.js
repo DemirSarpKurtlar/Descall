@@ -969,7 +969,17 @@ export const nested = {
       "busy": "Verificando…",
       "ok": "Código aplicado. Sua assinatura foi atualizada.",
       "fail": "Não foi possível usar este código.",
-      "unavailable": "Os códigos de cupom ainda não estão disponíveis."
+      "unavailable": "Os códigos de cupom ainda não estão disponíveis.",
+      "errors": {
+        "invalid": "Este código não é válido. Confira a digitação.",
+        "expired": "Este código expirou.",
+        "used": "Você já usou este código.",
+        "limit": "Este código não tem mais usos disponíveis.",
+        "already_active": "Você já tem uma assinatura ativa, então este código não pode ser usado agora.",
+        "not_redeemable": "Este código não pode ser usado na sua conta.",
+        "unavailable": "Esta campanha não está disponível no momento.",
+        "rate_limited": "Muitas tentativas. Tente de novo em alguns minutos."
+      }
     },
     "features": {
       "title": "Recursos",

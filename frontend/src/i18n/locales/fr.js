@@ -969,7 +969,17 @@ export const nested = {
       "busy": "Vérification…",
       "ok": "Code appliqué. Ton abonnement est à jour.",
       "fail": "Ce code n'a pas pu être utilisé.",
-      "unavailable": "Les codes promo ne sont pas encore disponibles."
+      "unavailable": "Les codes promo ne sont pas encore disponibles.",
+      "errors": {
+        "invalid": "Ce code n'est pas valide. Vérifie l'orthographe.",
+        "expired": "Ce code a expiré.",
+        "used": "Tu as déjà utilisé ce code.",
+        "limit": "Ce code n'a plus d'utilisations disponibles.",
+        "already_active": "Tu as déjà un abonnement actif, ce code ne peut donc pas être utilisé maintenant.",
+        "not_redeemable": "Ce code ne peut pas être utilisé sur ton compte.",
+        "unavailable": "Cette campagne n'est pas disponible pour le moment.",
+        "rate_limited": "Trop de tentatives. Réessaie dans quelques minutes."
+      }
     },
     "features": {
       "title": "Fonctionnalités",
