@@ -453,7 +453,7 @@ export default function Shop2Market({
         </HScroller>
       ) : null}
       {!phone ? (
-        <button type="button" className="s2-search-btn" onClick={() => setSearchOpen(true)}>
+        <button type="button" className="s2-search-btn" aria-label={t("shop2.search.placeholder")} onClick={() => setSearchOpen(true)}>
           <Search size={15} />
           <span>{t("shop2.search.placeholder")}</span>
           <kbd>{t("shop2.search.kbd")}</kbd>
