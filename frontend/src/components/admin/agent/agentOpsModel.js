@@ -2,6 +2,8 @@
  * Yönetici Paneli > Ajan, operasyon modu (Taslak B · Plan paneli): pure helpers for the
  * plan panel. No React, no fetch. Tested by agentOps.selftest.mjs.
  */
+import { formatNumber } from "../../../i18n/format.js";
+import { getLocale } from "../../../i18n/runtime.js";
 
 export const MODES = Object.freeze(["read", "dry", "apply"]);
 export const MODE_KEY = "descall:agentMode";
