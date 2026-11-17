@@ -540,6 +540,7 @@ export const AUDIT_LOG_TR = {
     "reactions_clear": "Tepkileri temizledi",
     "dm_view": "DM görüntüledi",
     "dm_block": "DM engelledi",
+    "dm_unblock": "DM engelini kaldırdı",
     "dm_conv_delete": "DM sildi",
     "dm_msg_delete": "DM mesajı sildi",
     "group_view": "Grup görüntüledi",

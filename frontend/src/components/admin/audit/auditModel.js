@@ -57,6 +57,7 @@ const ACT = {
   reactions_clear: ["trash", "gray"],
   dm_view: ["eye", "violet"],
   dm_block: ["ban", "violet"],
+  dm_unblock: ["ban", "violet"],
   dm_conv_delete: ["trash", "violet"],
   dm_msg_delete: ["trash", "violet"],
   group_view: ["eye", "violet"],

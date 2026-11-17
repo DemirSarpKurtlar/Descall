@@ -540,6 +540,7 @@ export const AUDIT_LOG_RU = {
     "reactions_clear": "Убрал(а) реакции",
     "dm_view": "Просмотрел(а) ЛС",
     "dm_block": "Заблокировал(а) ЛС",
+    "dm_unblock": "Снял(а) блокировку ЛС",
     "dm_conv_delete": "Удалил(а) ЛС",
     "dm_msg_delete": "Удалил(а) сообщение ЛС",
     "group_view": "Просмотрел(а) группу",

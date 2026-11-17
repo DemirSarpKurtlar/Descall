@@ -540,6 +540,7 @@ export const AUDIT_LOG_FR = {
     "reactions_clear": "A retiré les réactions",
     "dm_view": "A consulté un MP",
     "dm_block": "A bloqué un MP",
+    "dm_unblock": "A levé un blocage de MP",
     "dm_conv_delete": "A supprimé un MP",
     "dm_msg_delete": "A supprimé un message privé",
     "group_view": "A consulté un groupe",

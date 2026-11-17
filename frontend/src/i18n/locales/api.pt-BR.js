@@ -55,6 +55,7 @@ export const API_PT_BR = {
   "This change has no state for the flag.": "Esta mudança não guarda o estado da flag.",
   "Unknown flag.": "Flag desconhecida.",
   "Use System > Safe restart.": "Use Sistema > Reinício seguro.",
+  "This tool moved to System.": "Esta ferramenta foi movida para Sistema.",
   "Failed to load overview.": "Não foi possível carregar a visão geral.",
   "Could not check your verification code status. Try again.": "Não foi possível verificar o status do seu código de verificação. Tente de novo.",
   "Write a reason (at least 3 characters).": "Escreva um motivo (pelo menos 3 caracteres).",

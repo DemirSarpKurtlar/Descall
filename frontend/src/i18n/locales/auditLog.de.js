@@ -540,6 +540,7 @@ export const AUDIT_LOG_DE = {
     "reactions_clear": "Reaktionen entfernt",
     "dm_view": "DM eingesehen",
     "dm_block": "DM blockiert",
+    "dm_unblock": "DM-Blockierung aufgehoben",
     "dm_conv_delete": "DM gelöscht",
     "dm_msg_delete": "DM-Nachricht gelöscht",
     "group_view": "Gruppe eingesehen",

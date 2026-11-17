@@ -7,7 +7,6 @@ const { requireAdmin, requireSuperAdmin, userIsSuperAdmin } = require("../middle
 const state = require("../runtime/sharedState");
 const {
   kickUser,
-  disconnectAll,
   notifyAdminRoom,
   buildSnapshot,
 } = require("../socket/adminHandlers");
@@ -1155,6 +1154,7 @@ router.post("/dm/unblock", (req, res) => {
   const { userIdA, userIdB } = req.body || {};
   const key = [userIdA, userIdB].sort().join("::");
   state.dmBlockPairs.delete(key);
+  audit(req.user, "dm_unblock", key, {});
   res.json({ ok: true });
 });
 
@@ -1372,10 +1372,9 @@ router.post("/popup", (req, res) => {
   });
 });
 
-router.post("/sockets/kick-all", (req, res) => {
-  disconnectAll(getIo(req), req.user.id, req.user.username);
-  res.json({ ok: true });
-});
+// Disconnecting everyone had no reason, confirm or screen (polish admin-b-15): use
+// Sistem > Guvenli yeniden baslat.
+router.post("/sockets/kick-all", (_req, res) => res.status(410).json(apiError("This tool moved to System.", null, { code: "LEGACY_TOOL_REMOVED" })));
 
 router.post("/sockets/kick/:userId", (req, res) => {
   kickUser(getIo(req), {
@@ -1485,22 +1484,13 @@ router.get("/errors", (req, res) => {
   }
 });
 
-router.post("/cleanup", (_req, res) => {
-  const before = state.auditLog.length;
-  state.auditLog.length = Math.min(state.auditLog.length, 1000);
-  res.json({ trimmed: before - state.auditLog.length });
-});
+// Legacy Sistem endpoints with no screen (polish admin-b-15): they changed state with no
+// reason or audit (cache/clear silently lifted admin DM blocks, cleanup trimmed the audit
+// log). Sistem has the safe restart, history and backup now.
+const LEGACY_GONE = (_req, res) => res.status(410).json(apiError("This tool moved to System.", null, { code: "LEGACY_TOOL_REMOVED" }));
+router.post("/cleanup", LEGACY_GONE);
 
-router.post("/backup", (_req, res) => {
-  const snapshot = {
-    at: new Date().toISOString(),
-    generalMessages: state.generalMessages,
-    dmKeys: [...state.dmHistory.keys()],
-    systemConfig: state.systemConfig,
-    auditSample: state.auditLog.slice(0, 50),
-  };
-  res.json(snapshot);
-});
+router.post("/backup", LEGACY_GONE);
 
 // Sistem page: the only restart is the safe one (drain, notify, backup, typed confirm,
 // fresh code): POST /system/restart in routes/adminSystem.js.
@@ -1845,40 +1835,10 @@ router.delete("/feedback/:id", async (req, res) => {
 // ========== ADDITIONAL ADMIN ROUTES ==========
 
 // Clear cache
-router.post("/cache/clear", (req, res) => {
-  try {
-    // Clear various caches
-    state.dmBlockPairs?.clear?.();
-    state.rateLimitDm?.clear?.();
-    state.userOnlineAccumMs?.clear?.();
-    state.userSessionStartMs?.clear?.();
-    
-    res.json({ success: true, message: "Cache cleared successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to clear cache." });
-  }
-});
+router.post("/cache/clear", LEGACY_GONE);
 
 // Archive old logs
-router.post("/logs/archive", (req, res) => {
-  try {
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const oldLogs = (state.errorLogs || []).filter(l => new Date(l.timestamp).getTime() < thirtyDaysAgo);
-    
-    if (oldLogs.length > 0) {
-      state.archivedErrorLogs = [...(state.archivedErrorLogs || []), ...oldLogs];
-      state.errorLogs = (state.errorLogs || []).filter(l => new Date(l.timestamp).getTime() >= thirtyDaysAgo);
-    }
-    
-    res.json({ 
-      success: true, 
-      archived: oldLogs.length,
-      ...apiText("message", "{count, plural, one {# log archived} other {# logs archived}} successfully", { count: oldLogs.length }),
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to archive logs." });
-  }
-});
+router.post("/logs/archive", LEGACY_GONE);
 
 // Bulk delete error logs
 router.post("/errors/bulk-delete", (req, res) => {

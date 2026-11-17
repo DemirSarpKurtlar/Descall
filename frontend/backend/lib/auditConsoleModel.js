@@ -59,6 +59,7 @@ const CATALOG = {
   reactions_clear: ["content", "low"],
   dm_view: ["content", "high"],
   dm_block: ["content", "medium"],
+  dm_unblock: ["content", "medium"],
   dm_conv_delete: ["content", "high"],
   dm_msg_delete: ["content", "medium"],
   group_view: ["content", "high"],
