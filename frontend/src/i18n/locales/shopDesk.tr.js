@@ -278,7 +278,7 @@ export const SHOP_DESK_TR = {
   pickDates: "Tarih seç",
   starts: "Başlangıç",
   ends: "Bitiş",
-  saleHint: "{start} başlar, {end} biter; fiyat kendiliğinden {price}'e döner. Mağazada üstü çizili fiyat ve geri sayım gösterilir.",
+  saleHint: "{start} başlar, {end} biter; fiyat kendiliğinden {price} olur. Mağazada üstü çizili fiyat ve geri sayım gösterilir.",
   saleHintOff: "İndirimi açınca mağazada üstü çizili normal fiyat, indirim rozeti ve geri sayım görünür.",
   stockTimeShelf: "Stok, süre ve vitrin",
   limitedStock: "Sınırlı stok",

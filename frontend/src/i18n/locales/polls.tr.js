@@ -77,7 +77,7 @@ export const POLLS_TR = {
     emojiChange: "Emoji: {emoji}, değiştir",
     emojiAdd: "Emoji ekle",
     option: "Seçenek {n}",
-    optionRemove: "Seçenek {n}'i kaldır",
+    optionRemove: "{n}. seçeneği kaldır",
     emojiPick: "Emoji seç",
     emojiSearch: "Emoji ara",
     emojiRemove: "Emojiyi kaldır",

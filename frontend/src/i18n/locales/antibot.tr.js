@@ -140,7 +140,7 @@ export const ANTIBOT_TR = {
   heldNone: "Tutulan yok",
   heldLine: "Tutulan {n} DC",
   rule: {
-    risk_above: "Risk {n}'i geçerse",
+    risk_above: "Risk {n} değerini geçerse",
     held_above: "Tutulan {n} DC'yi geçerse",
     new_link: "Yeni bağlı hesap",
     cluster_join: "Kümeye yeni hesap katılırsa",
@@ -159,7 +159,7 @@ export const ANTIBOT_TR = {
     new_link: "{user} yeni hesapla bağlandı: {names}",
     cluster_join: "{user} kümesine {names} katıldı",
     new_signal: "{user} yeni sinyal: {names} · risk {score}",
-    risk_alert: "{user} risk {score}'e çıktı",
+    risk_alert: "{user} için risk {score} oldu",
     trusted: "{user} güvenilir işaretlendi · {by}",
   },
   auditTitle: "Denetim günlüğü",

@@ -3512,7 +3512,7 @@ export const phrases = {
   "(edited)": "(düzenlendi)",
   "Load more messages": "Daha fazla mesaj yükle",
   "Message #{name}": "#{name} kanalına mesaj yaz",
-  "Message #{name}…": "#{name}'e mesaj yaz…",
+  "Message #{name}…": "#{name} kanalına mesaj yaz…",
   "channel": "kanal",
   "{names} typing…": "{names} yazıyor…",
   "{count} reaction": "{count} tepki",

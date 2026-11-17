@@ -196,7 +196,7 @@ export const GAMES_ADMIN_TR = {
     "playerTotal": "Oyuncu {n}",
     "bust": "Oyuncu {n} · battı",
     "dealer": "Krupiye",
-    "dealerStood": "{n}'de durdu",
+    "dealerStood": "{n} değerinde durdu",
     "dealerBust": "{n} · battı",
     "dealerBlackjack": "Blackjack",
     "dealerShown": "Kapalı kart {n}",

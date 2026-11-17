@@ -22,4 +22,15 @@ for (const l of ["ru", "fr", "es"]) {
 }
 assert.equal(translate("en", "Mute chat"), "Mute");
 
+// i18n-a11y-05: no fixed Turkish case suffix glued to a placeholder ("#duyurular'e", "Seçenek 2'i").
+assert.equal(translate("tr", "Message #{name}…", { name: "duyurular" }), "#duyurular kanalına mesaj yaz…");
+assert.equal(translate("tr", "polls.create.optionRemove", { n: 2 }), "2. seçeneği kaldır");
+{
+  const files = ["tr.js", "polls.tr.js", "antibot.tr.js", "gamesAdmin.tr.js", "shopDesk.tr.js"];
+  for (const f of files) {
+    const src = read(`./locales/${f}`);
+    assert.ok(!/\{(name|n|score|price)\}'(e|a|i|ı|u|ü|de|da)\b/.test(src), `${f}: no fixed suffix after a placeholder`);
+  }
+}
+
 console.log("polishWording.selftest: ok");
