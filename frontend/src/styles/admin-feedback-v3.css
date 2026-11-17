@@ -53,7 +53,7 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-row .c{flex:1;min-width:0}
 .fb3 .fb3-row .l1{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
 .fb3 .fb3-row .l1 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fb3 .fb3-row .l1 .ago{margin-left:auto;font-size:12px;font-weight:500;color:rgba(235,238,255,.45);white-space:nowrap}
+.fb3 .fb3-row .l1 .fb3-ago{margin-left:auto;font-size:12px;font-weight:500;color:rgba(235,238,255,.45);white-space:nowrap}
 .fb3 .fb3-row .ud{width:8px;height:8px;border-radius:50%;background:#587AF6;flex:none}
 .fb3 .fb3-row .pv{font-size:13px;color:rgba(235,238,255,.66);line-height:1.35;margin:3px 0 7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .fb3 .fb3-row .bd{display:flex;gap:5px;align-items:center;flex-wrap:wrap}

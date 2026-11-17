@@ -292,7 +292,7 @@ function Row({ f, sel, now, onOpen }) {
         <div className="l1">
           {isUnread(f) ? <span className="ud" aria-label={t("adminx.fb.unread")} /> : null}
           <span className="nm">{f.user.username}</span>
-          <span className="ago">{relTime(f.created_at, locale, now)}</span>
+          <span className="fb3-ago">{relTime(f.created_at, locale, now)}</span>
         </div>
         <div className="pv">{f.message}</div>
         <div className="bd">
