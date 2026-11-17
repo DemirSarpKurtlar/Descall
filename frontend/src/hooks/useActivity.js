@@ -5,6 +5,7 @@ import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
 import { getToken } from '../lib/storage';
 import { API_BASE_URL } from '../config/api';
 import { fetchFriendPresence, createPresenceHydrator } from '../lib/friendPresenceBatch';
+import { mergePresenceSnapshot, prunePresence } from '../lib/presenceMerge';
 import {
   closeActivityScan,
   groupActivitySessions,
@@ -240,12 +241,14 @@ export function useActivity({ socket, me, friends = [] }) {
   // boot and on every reconnect). Coalesced: boot fires it from both the friends list
   // and the socket connect, and a reconnect within 15 s of a hydrate is skipped.
   const hydratorRef = useRef(null);
+  const presenceClearedAtRef = useRef({});
   if (!hydratorRef.current) {
     hydratorRef.current = createPresenceHydrator(async () => {
       const currentFriends = friendsRef.current;
       if (!currentFriends.length) return false;
       const token = getToken();
       if (!token) return false;
+      const since = Date.now();
 
       const byId = await fetchFriendPresence(currentFriends.map((f) => f.id), { base: API_BASE_URL, token });
 
@@ -264,8 +267,13 @@ export function useActivity({ socket, me, friends = [] }) {
         };
       }
 
-      // Merge: live socket updates (prev) win over REST snapshot
-      setFriendPresence(prev => ({ ...snapshot, ...prev }));
+      // The snapshot is the truth; only live updates / clears newer than this
+      // request win, and ids that are no longer friends go (polish world-social-08).
+      setFriendPresence(prev => mergePresenceSnapshot(prev, snapshot, {
+        friendIds: currentFriends.map((f) => f.id),
+        since,
+        clearedAt: presenceClearedAtRef.current,
+      }));
       return true;
     });
   }
@@ -275,6 +283,11 @@ export function useActivity({ socket, me, friends = [] }) {
     if (friends.length) hydratePresence();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friends.length]);  // trigger when friends list first populates after mount
+
+  // A removed or blocked friend's activity leaves with them (polish world-social-08).
+  useEffect(() => {
+    setFriendPresence((prev) => prunePresence(prev, friends.map((f) => f.id)));
+  }, [friends]);
 
   // ─── Focused-time tracking ──────────────────────────────────────────────────
   useEffect(() => {
@@ -487,11 +500,12 @@ export function useActivity({ socket, me, friends = [] }) {
 
     const onFriendUpdate = (data) => {
       if (!data?.userId) return;
-      setFriendPresence(prev => ({ ...prev, [data.userId]: data }));
+      setFriendPresence(prev => ({ ...prev, [data.userId]: { ...data, receivedAt: Date.now() } }));
     };
 
     const onFriendClear = ({ userId } = {}) => {
       if (!userId) return;
+      presenceClearedAtRef.current[userId] = Date.now();
       setFriendPresence(prev => {
         const next = { ...prev };
         delete next[userId];
