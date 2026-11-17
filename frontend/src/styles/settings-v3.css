@@ -69,7 +69,9 @@ button.s3-row:focus-visible { outline: 2px solid var(--s3-link); outline-offset:
 .s3-av-letter { display: inline-grid; place-items: center; color: #fff; font-weight: 600; line-height: 1; }
 
 /* ── Settings › Görünüm ── */
-.s3-two { display: grid; grid-template-columns: 1fr 330px; gap: 22px; align-items: start; }
+/* minmax(0, …): the columns may shrink below their content, so the preview is never pushed out
+   of the panel and clipped (polish scan: cut off under ~1190 px and on iPad). */
+.s3-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 330px); gap: 22px; align-items: start; }
 .s3-sticky { position: sticky; top: 0; }
 .s3-cap { font-size: 12.5px; color: var(--s3-t2); margin: 8px 4px 0; line-height: 1.4; }
 .s3-gone { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
@@ -204,10 +206,21 @@ html.glass-ui .user-settings.s3-tab-v3 .us-main-header.s3-nav {
 html[data-theme="light"] .s3-back { color: #3D5BD9; }
 .us-main-header .s3-back.us-text-back { position: relative; z-index: 1; min-height: 44px; flex: none; white-space: nowrap; }
 .s3-back:active { opacity: 0.6; }
+/* Görünüm uses the same page padding as every other tab, and its title sits in the same
+   (wider, two-column) column as its content: the title used to float 48 px right of the
+   sections and 20 px higher than on the other pages. The scroll area is the size container
+   that decides two columns or one (the panel width, not the window, is what matters). */
 html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll {
-  padding: 0 22px 24px !important;
+  padding: 20px 32px 40px !important;
+  container-type: inline-size;
 }
-html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .s3 { width: auto; margin: 0; }
+html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .s3,
+html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .us-page-title {
+  width: min(980px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .s3 .s3-sec.first { margin-top: 0; }
 
 /* ── iPhone: Görünüm is a heavy sheet at top 54 over the app (mockup 35) ── */
 html.glass-ui .user-settings-shell.s3-phone-shell { background: rgba(6, 7, 12, 0.46) !important; }
@@ -278,10 +291,16 @@ html.reduce-motion *::after {
 
 @media (max-width: 1100px) {
   html.glass-desktop .user-settings.is-desktop.s3-shell .us-sidebar.s3-side { width: 280px !important; }
-  .s3-two { grid-template-columns: 1fr 300px; }
+  .s3-two { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
 }
 @media (max-width: 900px) {
-  .s3-two { grid-template-columns: 1fr; }
+  .s3-two { grid-template-columns: minmax(0, 1fr); }
+  .s3-sticky { position: static; order: -1; }
+}
+/* After the viewport steps on purpose: on glass desktop the Görünüm scroll area is a size
+   container and its width (not the window's) decides two columns or one. */
+@container (max-width: 760px) {
+  .s3-two { grid-template-columns: minmax(0, 1fr); }
   .s3-sticky { position: static; order: -1; }
 }
 
