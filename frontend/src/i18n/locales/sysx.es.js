@@ -77,7 +77,7 @@ export const SYSX_ES = {
     "reach": "Despliegue"
   },
   "flag": {
-    "iosGlass": { "name": "iOS Liquid Glass", "desc": "app de iPhone", "long": "interfaz de cristal de la app de iPhone" },
+    "iosGlass": { "name": "iOS Liquid Glass", "desc": "app de iPhone y Android", "long": "interfaz de cristal de la app de iPhone y Android" },
     "desktopGlass": { "name": "Liquid Glass de escritorio", "desc": "escritorio y web", "long": "interfaz de escritorio y web" },
     "presenceScoped": { "name": "Lista de conectados acotada", "desc": "interruptor de emergencia", "long": "el estado en línea solo llega a amigos y servidores compartidos" },
     "bootDiet": { "name": "Inicio ligero al reconectar", "desc": "interruptor de emergencia", "long": "al reconectar no se reenvía una lista de amigos sin cambios" },

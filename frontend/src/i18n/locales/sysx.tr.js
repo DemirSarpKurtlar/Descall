@@ -77,7 +77,7 @@ export const SYSX_TR = {
     "reach": "Yayılım"
   },
   "flag": {
-    "iosGlass": { "name": "iOS Liquid Glass", "desc": "iPhone uygulaması", "long": "iPhone uygulamasının cam arayüzü" },
+    "iosGlass": { "name": "iOS Liquid Glass", "desc": "iPhone ve Android uygulaması", "long": "iPhone ve Android uygulamasının cam arayüzü" },
     "desktopGlass": { "name": "Masaüstü Liquid Glass", "desc": "masaüstü ve web", "long": "masaüstü ve web arayüzü" },
     "presenceScoped": { "name": "Kapsamlı çevrimiçi listesi", "desc": "acil anahtar", "long": "çevrimiçi durumu yalnızca arkadaşlara ve ortak sunuculara gider" },
     "bootDiet": { "name": "Yeniden bağlanmada hafif açılış", "desc": "acil anahtar", "long": "yeniden bağlanırken değişmeyen arkadaş listesi tekrar gönderilmez" },

@@ -77,7 +77,7 @@ export const SYSX_FR = {
     "reach": "Déploiement"
   },
   "flag": {
-    "iosGlass": { "name": "iOS Liquid Glass", "desc": "app iPhone", "long": "interface en verre de l'app iPhone" },
+    "iosGlass": { "name": "iOS Liquid Glass", "desc": "app iPhone et Android", "long": "interface en verre de l'app iPhone et Android" },
     "desktopGlass": { "name": "Liquid Glass bureau", "desc": "bureau et web", "long": "interface bureau et web" },
     "presenceScoped": { "name": "Liste en ligne restreinte", "desc": "interrupteur d'urgence", "long": "le statut en ligne ne va qu'aux amis et aux serveurs communs" },
     "bootDiet": { "name": "Démarrage léger à la reconnexion", "desc": "interrupteur d'urgence", "long": "une liste d'amis inchangée n'est pas renvoyée à la reconnexion" },

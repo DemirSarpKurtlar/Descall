@@ -77,7 +77,7 @@ export const SYSX_EN = {
     "reach": "Rollout"
   },
   "flag": {
-    "iosGlass": { "name": "iOS Liquid Glass", "desc": "iPhone app", "long": "glass interface of the iPhone app" },
+    "iosGlass": { "name": "iOS Liquid Glass", "desc": "iPhone and Android app", "long": "glass interface of the iPhone and Android app" },
     "desktopGlass": { "name": "Desktop Liquid Glass", "desc": "desktop and web", "long": "desktop and web interface" },
     "presenceScoped": { "name": "Scoped online list", "desc": "kill switch", "long": "online status goes only to friends and shared servers" },
     "bootDiet": { "name": "Light start on reconnect", "desc": "kill switch", "long": "an unchanged friend list is not sent again on reconnect" },

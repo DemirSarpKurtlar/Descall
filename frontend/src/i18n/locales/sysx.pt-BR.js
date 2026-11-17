@@ -77,7 +77,7 @@ export const SYSX_PT_BR = {
     "reach": "Liberação"
   },
   "flag": {
-    "iosGlass": { "name": "iOS Liquid Glass", "desc": "app do iPhone", "long": "interface de vidro do app do iPhone" },
+    "iosGlass": { "name": "iOS Liquid Glass", "desc": "app do iPhone e Android", "long": "interface de vidro do app do iPhone e Android" },
     "desktopGlass": { "name": "Liquid Glass no desktop", "desc": "desktop e web", "long": "interface de desktop e web" },
     "presenceScoped": { "name": "Lista online restrita", "desc": "chave de emergência", "long": "o status online só vai para amigos e servidores em comum" },
     "bootDiet": { "name": "Início leve ao reconectar", "desc": "chave de emergência", "long": "uma lista de amigos sem mudanças não é reenviada ao reconectar" },
