@@ -1231,6 +1231,9 @@ html.gd-lite .rail-tooltip {
 .group-swipe-btn.mute { background: #4e5058; }
 .group-swipe-btn.unread { background: var(--g-ok, #30D158); }
 .group-swipe-btn.close { background: var(--g-red, #FF453A); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+/* Long labels (ru "Непрочитанные", de "Stummschalten") wrap to centred lines inside
+   their own action instead of spilling into the next one. */
+.group-swipe-btn > span { max-width: 100%; text-align: center; line-height: 1.15; overflow-wrap: anywhere; hyphens: auto; }
 
 .conv-row-flags {
   display: inline-flex;
