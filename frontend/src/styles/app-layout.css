@@ -4317,8 +4317,12 @@ button.header-avatar {
 }
 
 .activity-presence-idle {
+  max-width: 100%;
+  overflow: hidden;
   font-size: var(--fs-11);
   color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .activity-empty-state {

@@ -13,6 +13,7 @@ import { Avatar } from "../ui/Avatar";
 import StatusBadge from "../ui/StatusBadge";
 import { getPresenceStatus, isVisiblyOnline, STATUS_META } from "../../lib/presence";
 import { openFeedbackModal } from "../../lib/feedbackNudge";
+import { friendMatcher } from "../../lib/friendFilter";
 import AnnouncementsButton from "../social/AnnouncementsModal";
 import { useT } from "../../context/LocaleContext";
 import ActivityHistoryRow, { localizeActivityLabel } from "./ActivityHistoryRow";
@@ -66,7 +67,10 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
             {localizeActivityLabel(presence.displayName, t)}
           </span>
         ) : (
-          <span className="activity-presence-idle">{t((STATUS_META[isOnline ? status : "offline"] || STATUS_META.online).label)}</span>
+          <span className="activity-presence-idle">
+            {/* Same line as the Friends list: custom status first (polish world-social-14). */}
+            {friend.customStatus || friend.custom_status || t((STATUS_META[isOnline ? status : "offline"] || STATUS_META.online).label)}
+          </span>
         )}
       </div>
     </motion.button>
@@ -75,12 +79,12 @@ export function PresenceCard({ friend, presence, onlineUsers, onSelect }) {
 
 export function useOnlinePresenceLists(friends, friendPresence, onlineUsers, searchQuery = "") {
   return useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    // Turkish-aware, display name + @username + custom status (polish world-social-18).
+    const matches = friendMatcher(searchQuery);
     const activeList = [];
     const idleList = [];
     for (const friend of friends || []) {
-      const name = (friend.username || friend.displayName || "").toLowerCase();
-      if (q && !name.includes(q)) continue;
+      if (!matches(friend)) continue;
       const presence = friendPresence?.[friend.id];
       const isOnline = isVisiblyOnline(onlineUsers, friend.id);
       if (!isOnline) continue;
