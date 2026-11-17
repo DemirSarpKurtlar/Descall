@@ -22,6 +22,7 @@ import { resolveAvatarUrl } from "../lib/avatar";
 import { resolveDisplayName } from "../lib/userProfile";
 import ScreenShareQualityPanel from "./voice/ScreenShareQualityPanel";
 import { screenShareUnavailableOnIos } from "../lib/webrtcScreenShare";
+import { setPhoneLandscapeAllowed } from "../lib/glassDisplay.js";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
 import useHeldSpeaking from "../hooks/useHeldSpeaking";
@@ -120,6 +121,13 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   useEffect(() => {
     if (!groupCall?.isInCall) setWorldOpen(false);
   }, [groupCall?.isInCall]);
+  // iPhone app is portrait-only; a call on screen may turn sideways (glassDisplay.js).
+  const callOnScreen = !minimized && Boolean((call?.mode && call.mode !== "idle") || groupCall?.isInCall);
+  useEffect(() => {
+    if (!callOnScreen) return undefined;
+    setPhoneLandscapeAllowed(true);
+    return () => setPhoneLandscapeAllowed(false);
+  }, [callOnScreen]);
   const narrowViewport = useIsNarrowViewport(720);
   const glass = useGlassUi();
   const glassDesktop = useGlassDesktop();

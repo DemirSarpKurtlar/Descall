@@ -24,6 +24,7 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setStatusBarStyle", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAppInfo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setLandscapeAllowed", returnType: CAPPluginReturnPromise),
     ]
 
     private var observers: [NSObjectProtocol] = []
@@ -97,6 +98,30 @@ public class DescallDisplayPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// Installed app version for the admin panel (2.10.109):
+    /// `setLandscapeAllowed({ allowed })`: iPhone only (iPad always rotates). While a
+    /// call is on screen the phone may turn sideways; otherwise it goes back to
+    /// portrait. AppDelegate.application(_:supportedInterfaceOrientationsFor:) reads it.
+    @objc func setLandscapeAllowed(_ call: CAPPluginCall) {
+        let allowed = call.getBool("allowed") ?? false
+        DispatchQueue.main.async {
+            AppDelegate.allowPhoneLandscape = allowed
+            guard UIDevice.current.userInterfaceIdiom == .phone else {
+                call.resolve(["allowed": true])
+                return
+            }
+            let vc = self.bridge?.viewController
+            if #available(iOS 16.0, *) {
+                vc?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                if !allowed, let scene = vc?.view.window?.windowScene {
+                    scene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { _ in }
+                }
+            } else {
+                UIViewController.attemptRotationToDeviceOrientation()
+            }
+            call.resolve(["allowed": allowed])
+        }
+    }
+
     /// { version: CFBundleShortVersionString, build: CFBundleVersion }.
     @objc func getAppInfo(_ call: CAPPluginCall) {
         let info = Bundle.main.infoDictionary ?? [:]

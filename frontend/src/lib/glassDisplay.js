@@ -205,6 +205,22 @@ export async function watchNativeAccessibility(listener) {
   }
 }
 
+/**
+ * iPhone app: portrait only, except while a call is on screen (a call or a
+ * shared screen may turn sideways). AppDelegate reads the flag; iPad always
+ * rotates. No-op on the web, Android, iPad and older shells without the method.
+ */
+export function setPhoneLandscapeAllowed(allowed) {
+  try {
+    const cap = typeof window !== "undefined" ? window.Capacitor : null;
+    if (!cap?.isNativePlatform?.() || cap.getPlatform?.() !== "ios") return;
+    if (!plugin) plugin = registerPlugin("DescallDisplay");
+    plugin.setLandscapeAllowed?.({ allowed: Boolean(allowed) })?.catch?.(() => {});
+  } catch {
+    /* older shell */
+  }
+}
+
 export function stopGlassDisplay() {
   try {
     listenerHandle?.remove?.();
