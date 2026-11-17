@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createZoomPhysics, wheelPixels, clampZoom, previewScale, MIN_ZOOM, MAX_ZOOM } from "./smoothZoom.js";
+import { createZoomPhysics, wheelPixels, clampZoom, previewScale, MIN_ZOOM, MAX_ZOOM, maxZoomForWindow } from "./smoothZoom.js";
 
 const run = (p, seconds) => { let z = p.zoom; for (let t = 0; t < seconds; t += 1 / 60) z = p.step(1 / 60); return z; };
 
@@ -52,4 +52,20 @@ assert.equal(previewScale(9, 1), MAX_ZOOM);
 assert.equal(wheelPixels({ deltaY: 3, deltaMode: 1 }), 48);
 assert.equal(clampZoom("x"), 1);
 assert.equal(clampZoom(9), MAX_ZOOM);
+// Polish pass: the zoom ceiling keeps the page at least 960 x 600 CSS px.
+assert.equal(maxZoomForWindow({ dipWidth: 1280, dipHeight: 800 }), 1.33);
+assert.equal(maxZoomForWindow({ dipWidth: 3840, dipHeight: 2160 }), MAX_ZOOM);
+assert.equal(maxZoomForWindow({ dipWidth: 800, dipHeight: 500 }), 1, "never below 100 %");
+assert.equal(maxZoomForWindow({}), MAX_ZOOM);
+{
+  const p = createZoomPhysics(1.2);
+  p.setMax(1.33);
+  for (let i = 0; i < 20; i++) p.push(-400);
+  assert.ok(run(p, 3) <= 1.3301, "wheel stops at the window ceiling");
+  p.nudge(1);
+  assert.ok(run(p, 1) <= 1.3301, "Ctrl+= stops at the ceiling");
+  assert.equal(p.setMax(1.1), true, "a smaller window lowers the ceiling");
+  assert.ok(Math.abs(run(p, 1) - 1.1) < 0.002, "an over-large zoom eases back down");
+}
+
 console.log("smoothZoom.selftest ok");
