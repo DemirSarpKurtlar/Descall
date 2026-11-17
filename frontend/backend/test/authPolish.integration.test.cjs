@@ -206,6 +206,15 @@ async function run() {
       appleAuth.verifyIdentityToken = realVerify;
     }
 
+    // auth-16: revoking an id that is not one of your sessions is a 404, not a global revoke.
+    const { revokedSessionIds } = require("../runtime/sharedState");
+    const gil = await register(base, "gil", "gil@example.com");
+    const gilLogin2 = await req(base, "POST", "/api/auth/login", { body: { username: "gil", password: "password123" } });
+    r = await req(base, "POST", "/api/auth/sessions/not-a-real-session/revoke", { token: gil.token });
+    assert(r.status === 404 && !revokedSessionIds.has("not-a-real-session"), "unknown session id is refused: " + JSON.stringify(r.body).slice(0, 120));
+    r = await req(base, "POST", `/api/auth/sessions/${gilLogin2.body.sessionId}/revoke`, { token: gil.token });
+    assert(r.status === 200 && revokedSessionIds.has(gilLogin2.body.sessionId), "own other session ends");
+
     console.log("authPolish.integration.test.cjs: ok");
   } finally {
     server.close();

@@ -811,6 +811,8 @@ const UserPanel = forwardRef(function UserPanel({
       await revokeSession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
+      // Already gone (ended elsewhere): drop the stale row instead of a dead end.
+      if (err?.status === 404) setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       setSessionNotice(err.message || t("Failed to end session."));
     }
   };

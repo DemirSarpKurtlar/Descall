@@ -2280,6 +2280,15 @@ router.post("/sessions/:sessionId/revoke", requireAuth, async (req, res) => {
     if (sessionId === req.user.sid) {
       return res.status(400).json({ error: "Use logout to end your current session." });
     }
+    const acctKey = `sessrevoke:acct:${req.user.id}`;
+    if (guard(res, null, acctKey, { max: 60 })) return;
+    recordFailure(acctKey, { max: 60 });
+    // Only this account's own sessions: an unknown id used to land in the global
+    // revoked set (unbounded, and able to end a foreign session whose id leaked).
+    const current = await listSessions(req.user.id);
+    if (!current.some((s) => s && s.id === sessionId)) {
+      return res.status(404).json({ error: "Session not found.", sessions: current.map(({ deviceHash: _d, ...s }) => ({ ...s, current: s.id === req.user.sid })) });
+    }
     const sessions = await removeSession(req.user.id, sessionId);
     revokedSessionIds.add(sessionId);
     disconnectSocketsForSession(req, req.user.id, sessionId);
