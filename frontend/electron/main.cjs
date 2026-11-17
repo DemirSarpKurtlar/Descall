@@ -834,7 +834,10 @@ function resolvePrelaunch(outcome) {
 }
 
 // Paths
-const isDev = process.env.NODE_ENV === 'development';
+// A packaged build is never a dev run, whatever NODE_ENV says: with NODE_ENV=development set
+// globally (common on developer PCs) the installed app loaded localhost:5173 and trusted it
+// with the session token (polish pass).
+const isDev = !app.isPackaged && process.env.NODE_ENV === 'development';
 /** Yönetici › Kayıt İstatistikleri window (electron/adminStatsWindow.cjs). */
 let signupStatsWindow = null;
 /** Yönetici Paneli window (3.1): the whole admin panel, main window stays usable. */

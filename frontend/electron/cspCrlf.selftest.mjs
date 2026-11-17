@@ -86,4 +86,12 @@ assert.match(smoke.evaluateBootSmoke({ sample: { ...ok, splashes: 1 }, appMounte
 assert.equal(smoke.isInlineCspViolation("Executing inline script violates the following Content Security Policy directive"), true);
 assert.equal(smoke.isInlineCspViolation("Loading the image 'x' violates the following Content Security Policy directive"), false);
 
+// Polish pass: the dev server is in connect-src only for a dev run; site-level hardening applies.
+const prodCsp = buildElectronCsp("<script>1</script>");
+assert.equal(prodCsp.includes("localhost:5173"), false, "packaged policy never allows the dev server");
+assert.equal(buildElectronCsp(null, { dev: true }).includes("http://localhost:5173"), true, "dev policy reaches Vite");
+for (const d of ["object-src 'none'", "base-uri 'self'", "worker-src 'self' blob:"]) assert.ok(prodCsp.includes(d), `missing ${d}`);
+const mainSrc = readFileSync(new URL("./main.cjs", import.meta.url), "utf8");
+assert.match(mainSrc, /const isDev = !app\.isPackaged && process\.env\.NODE_ENV === 'development';/, "a packaged build is never a dev run");
+
 console.log("cspCrlf selftest ok");
