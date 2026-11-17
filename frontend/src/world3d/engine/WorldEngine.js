@@ -45,6 +45,7 @@ import { PRESETS, createGovernor, lowerPreset } from "./quality.js";
 import { createClock, createSnapshotBuffer } from "../net/snapshotBuffer.js";
 import { STATE, STATES, EMOTE, EMOTES, encodeSnapshot, SNAP_INTERVAL_MS } from "../net/protocol.js";
 import { looksForRoom } from "./look.js";
+import { worldKeyOf } from "./keyMap.js";
 
 const AVATAR_RADIUS = 0.24;
 const SIT_RANGE = 1.9;
@@ -362,7 +363,7 @@ export class WorldEngine {
   setupInput() {
     const onKeyDown = (e) => {
       if (isTyping() || this.disposed) return;
-      const k = e.key.toLowerCase();
+      const k = worldKeyOf(e);
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"].includes(k)) {
         this.keys.add(k);
         this.moveTarget = null;
@@ -378,7 +379,8 @@ export class WorldEngine {
       }
     };
     const onKeyUp = (e) => {
-      this.keys.delete(e.key.toLowerCase());
+      this.keys.delete(worldKeyOf(e));
+      this.keys.delete(String(e.key || "").toLowerCase());
       if (e.key === "Shift") this.keys.delete("shift");
     };
     const onBlur = () => this.keys.clear();
