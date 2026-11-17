@@ -31,4 +31,8 @@ assert.ok(list.includes('requestFailedAction("retry"'), "retry is offered");
 const app = readFileSync(join(here, "../App.jsx"), "utf8");
 assert.ok(app.includes("FAILED_ACTION_EVENT") && app.includes("retryEmit("), "App resends a failed message");
 
+// Polish messaging-15: a message request keeps the bubble, marked as a request.
+assert.ok(app.includes("requestPending: true"), "dm:request:sent keeps the row");
+assert.ok(list.includes('data-testid="msg-request-pending"'), "the row says it is a message request");
+
 console.log("failedMessage selftest OK");

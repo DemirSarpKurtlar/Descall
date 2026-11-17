@@ -2128,16 +2128,17 @@ export default function App() {
     });
     socket.on("dm:request:sent", ({ toUserId, tempId } = {}) => {
       if (tempId && toUserId) {
+        // Keep what I wrote in the chat, marked as a message request (polish
+        // messaging-15): it used to vanish. Local only; the request carries a preview.
+        const peer = activeDmRef.current?.id === toUserId ? activeDmRef.current : null;
+        const requestName = peer?.displayName || peer?.display_name || peer?.username || "";
         setDmByUserId((prev) => {
           const cur = prev[toUserId] ?? [];
           if (!cur.some((row) => row.id === tempId)) return prev;
-          return { ...prev, [toUserId]: cur.filter((row) => row.id !== tempId) };
-        });
-        setDmPreviews((prev) => {
-          if (!prev[toUserId]) return prev;
-          const next = { ...prev };
-          delete next[toUserId];
-          return next;
+          return {
+            ...prev,
+            [toUserId]: cur.map((row) => (row.id === tempId ? { ...row, sending: false, requestPending: true, requestName } : row)),
+          };
         });
       }
       toast(t("Message request sent"), "info");

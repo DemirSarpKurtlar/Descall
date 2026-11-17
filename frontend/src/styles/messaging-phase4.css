@@ -372,3 +372,24 @@ html.gd-lite .chat-drop-overlay {
 .message-failed-btn:hover { background: rgba(255, 255, 255, 0.16); }
 .message-failed-btn.is-danger { color: #ff8c8e; }
 .message-failed-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Polish messaging-15: what I wrote to someone who is not my friend stays in the
+   chat, marked as a message request. */
+.message-request-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(10, 12, 20, 0.55);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: var(--fs-12);
+}
+.message-request-label {
+  font-weight: 600;
+  color: #fff;
+}

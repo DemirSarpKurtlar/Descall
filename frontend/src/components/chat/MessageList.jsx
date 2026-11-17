@@ -2190,7 +2190,12 @@ function MessageBubbleView({
           />
         )}
 
-        {isOwn && message.failed ? (
+        {isOwn && message.requestPending ? (
+          <div className="message-request-note" data-testid="msg-request-pending" role="status">
+            <span className="message-request-label">{t("msg5.request.pendingLabel")}</span>
+            <span>{t("msg5.request.pendingInfo", { name: message.requestName || t("Someone") })}</span>
+          </div>
+        ) : isOwn && message.failed ? (
           // Refused by the server (polish messaging-20): never looks "sent".
           <div className="message-failed" data-testid="msg-failed" role="status">
             <AlertCircle size={14} aria-hidden="true" />
