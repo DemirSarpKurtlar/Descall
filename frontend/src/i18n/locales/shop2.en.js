@@ -18,6 +18,7 @@ export const SHOP2_EN = {
     "placeholder": "Search items, sets or colours",
     "kbd": "Ctrl K",
     "none": "Nothing matches that yet.",
+    "loading": "Searching the whole shop…",
     "kind": { "today": "In today's storefront", "set": "Set", "wish": "In your wishlist", "owned": "You own it", "catalog": "In the shop" }
   },
   "tiles": {

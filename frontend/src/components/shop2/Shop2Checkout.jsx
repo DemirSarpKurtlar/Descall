@@ -135,6 +135,46 @@ function Confirm({ c, set, pricing, items, total, onPaid, onClose }) {
   );
 }
 
+const CELE_CHAT = new Set(["chat_bubble"]);
+const CELE_VOICE = new Set(["voice_tile", "join_sound"]);
+const CELE_ART = new Set(["typing_flare", "reaction_burst", "call_overlay", "theme"]);
+
+function celeSurfaceOf(item) {
+  const c = item?.category;
+  if (CELE_CHAT.has(c)) return "chat";
+  if (CELE_VOICE.has(c)) return "voice";
+  if (CELE_ART.has(c)) return "art";
+  return "profile";
+}
+
+/** Before / after face of the celebration: the surface where the bought item shows. */
+function CeleSurface({ kind, user, item, after = false }) {
+  const { t } = useLocale();
+  if (kind === "chat") {
+    return (
+      <div className="s2-cele-surface">
+        <S2ChatMessage user={user} text={t("shop2.celebrate.chatLine")} />
+      </div>
+    );
+  }
+  if (kind === "voice") {
+    return (
+      <div className="s2-cele-surface is-voice">
+        <S2VoiceTile user={user} size="sm" joined={after && item?.category === "join_sound" ? { who: t("shop2.sample.joinedShort"), sound: "" } : null} />
+      </div>
+    );
+  }
+  if (kind === "art") {
+    // The item's own renderer after, the plain sample before.
+    return (
+      <div className="s2-cele-surface is-art">
+        {after ? <Shop2Art item={item} size="card" me={user} sample={user?.displayName} /> : <S2ChatMessage user={user} text={t("shop2.celebrate.chatLine")} />}
+      </div>
+    );
+  }
+  return <S2ProfileCard user={user} compact about={false} />;
+}
+
 function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }) {
   const { t, locale } = useLocale();
   const s2 = useS2();
@@ -162,6 +202,10 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
   const tryOn = {};
   for (const it of wearItems) tryOn[it.category] = it;
   const afterUser = composeTryOnUser(before, tryOn);
+  // A single item the profile card does not draw (chat bubble, voice tile, typing flare...)
+  // shows its own surface, else before and after were two identical profile cards.
+  const single = !set && newItems.length === 1 ? newItems[0] : null;
+  const surface = celeSurfaceOf(single);
   const balanceAfter = typeof result?.balance === "number" ? result.balance : s2.balance;
   const titleUnlocked = Boolean(result?.titleUnlocked || result?.title || (Array.isArray(result?.completed) && result.completed.length));
   const complete = set ? (pricing?.missingCount || 0) <= items.length : false;
@@ -249,13 +293,13 @@ function Celebrate({ c, set, pricing, items, total, result, autoEquip, onClose }
             ))}
           </span>
         ) : null}
-        <div className="s2-cele-ba">
+        <div className={`s2-cele-ba${surface !== "profile" ? " is-surface" : ""}`}>
           <div className="s2-cele-before" aria-hidden={worn}>
-            <S2ProfileCard user={before} compact about={false} />
+            <CeleSurface kind={surface} user={before} item={single} />
           </div>
           <ChevronRight size={20} className="s2-cele-arrow" />
           <div className="s2-cele-after">
-            <S2ProfileCard user={afterUser} compact about={false} />
+            <CeleSurface kind={surface} user={afterUser} item={single} after />
           </div>
           {set && s2.layout !== "phone" ? (
             <div className="s2-cele-side">

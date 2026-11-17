@@ -18,6 +18,7 @@ export const SHOP2_FR = {
     "placeholder": "Chercher articles, sets ou couleurs",
     "kbd": "Ctrl K",
     "none": "Rien ne correspond pour l'instant.",
+    "loading": "Recherche dans toute la boutique…",
     "kind": { "today": "Dans la vitrine du jour", "set": "Set", "wish": "Dans ta liste d'envies", "owned": "Tu l'as déjà", "catalog": "Dans la boutique" }
   },
   "tiles": {

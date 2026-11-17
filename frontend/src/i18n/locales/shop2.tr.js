@@ -18,6 +18,7 @@ export const SHOP2_TR = {
     "placeholder": "Ürün, set veya renk ara",
     "kbd": "Ctrl K",
     "none": "Henüz eşleşen bir şey yok.",
+    "loading": "Tüm mağazada aranıyor…",
     "kind": { "today": "Bugünün vitrininde", "set": "Set", "wish": "İstek listende", "owned": "Sende var", "catalog": "Mağazada" }
   },
   "tiles": {
