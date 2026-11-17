@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls, useReducedMotion } from "framer-motion";
 import { X, Link2, UserRoundPlus, Edit3, ImagePlus, LogOut, Crown, ShieldCheck } from "../ui/Icon.jsx";
@@ -26,6 +27,9 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
   const dragControls = useDragControls();
   const dismissV = useRef(0);
   const closeRef = useRef(null);
+  // On the scrim, which stays while the keyed sheet swaps groups.
+  const trapRef = useRef(null);
+  useModalFocus(Boolean(open && group), trapRef);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -67,6 +71,7 @@ export default function GroupInfoSheet({ open, group, onClose, onAction, onlineU
     <AnimatePresence custom={dismissV.current}>
       {open && group ? (
         <motion.div
+          ref={trapRef}
           className="group-info-scrim"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
