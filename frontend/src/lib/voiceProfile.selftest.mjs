@@ -23,6 +23,8 @@ assert.equal(audioBitrateForQuality("good", { music: true }), 96_000);
 const voiceOnly = opusOptionsForSenders([{ track: { kind: "audio", contentHint: "speech" } }]);
 assert.equal(voiceOnly.dtx, true);
 assert.equal(voiceOnly.stereo, false);
+// calls-05: voice goes out as RED (each frame twice), so the Opus cap is 32 kb/s.
+assert.equal(voiceOnly.maxAverageBitrate, 32_000);
 const withShare = opusOptionsForSenders([
   { track: { kind: "audio", contentHint: "speech" } },
   { track: { kind: "audio", contentHint: "", __descallRole: "screen-audio" } },

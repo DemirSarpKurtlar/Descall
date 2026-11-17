@@ -410,6 +410,15 @@ export function tuneOpusSdp(sdp, options = {}) {
   return out.join(nl);
 }
 
+/**
+ * Voice Opus cap on the wire (calls-05). Voice links prefer RED
+ * (preferVoiceCodecs), which carries every frame twice: at the old 48 kb/s cap
+ * one voice stream measured ~72 kb/s, ~145 kb/s upstream in a 3-person mesh,
+ * itself a source of loss on weak uplinks. Speech Opus at 32 kb/s is close to
+ * transparent; with RED that is ~50 kb/s per stream.
+ */
+export const VOICE_RED_OPUS_BITRATE = 32_000;
+
 export function opusOptionsForSenders(senders) {
   const music = (senders || []).some((sender) => {
     const track = sender?.track;
@@ -420,7 +429,7 @@ export function opusOptionsForSenders(senders) {
     return track.__descallRole === "screen-audio";
   });
   return {
-    maxAverageBitrate: audioBitrateForQuality(music ? "excellent" : "good", { music }),
+    maxAverageBitrate: music ? audioBitrateForQuality("excellent", { music }) : VOICE_RED_OPUS_BITRATE,
     stereo: music,
     dtx: !music,
     fec: true,
