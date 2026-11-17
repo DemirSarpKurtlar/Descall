@@ -115,12 +115,25 @@ function streamHasLiveAudio(stream) {
   );
 }
 
+/** Touch screens (iPhone, iPad, touch laptops in tablet mode) say "tap", not "click". */
+function isCoarsePointer() {
+  try {
+    return typeof window !== "undefined" && Boolean(window.matchMedia?.("(pointer: coarse)")?.matches);
+  } catch {
+    return false;
+  }
+}
+
 /** Must run inside the click. Fullscreen requests outside the gesture are rejected. */
 function presentScreenFullscreen(root, onFallback) {
   const video =
     root?.querySelector?.(".server-voice-screen-video") ||
     root?.querySelector?.(".server-voice-tile-video");
-  const isiOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  // iPadOS reports a Macintosh user agent; touch points tell it apart from a Mac.
+  const isiOS =
+    typeof navigator !== "undefined" &&
+    (/iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+      (/Macintosh/.test(navigator.userAgent || "") && (navigator.maxTouchPoints || 0) > 1));
   if (isiOS && typeof video?.webkitEnterFullscreen === "function") {
     try {
       video.webkitEnterFullscreen();
@@ -278,12 +291,20 @@ const VoiceTile = memo(function VoiceTile({
             </span>
           ) : null}
           {qualityKey && qualityKey !== "Connection is good" ? (
-            <span className="server-voice-flag" title={t(qualityKey)} aria-label={t(qualityKey)}>
+            <span
+              className={`server-voice-flag is-net ${qualityKey === "Connection is medium. Voice bitrate is reduced." ? "is-fair" : "is-weak"}`}
+              title={t(qualityKey)}
+              aria-label={t(qualityKey)}
+            >
               {qualityKey === "Connection is medium. Voice bitrate is reduced." ? t("Fair") : t("Weak")}
             </span>
           ) : null}
           {tile.muted ? (
-            <span className="server-voice-flag is-muted" title={t("Muted")} aria-label={t("Muted")}>
+            <span
+              className={`server-voice-flag is-muted${tile.member?.serverMuted ? " is-server" : ""}`}
+              title={tile.member?.serverMuted ? t("svoice.serverMuted") : t("Muted")}
+              aria-label={tile.member?.serverMuted ? t("svoice.serverMuted") : t("Muted")}
+            >
               <MicOff size={13} aria-hidden />
             </span>
           ) : null}
@@ -397,6 +418,7 @@ function ServerScreenShareStage({
   expandSharerId = null,
 }) {
   const t = useT();
+  const expandHint = isCoarsePointer() ? t("svoice.tapToExpand") : t("Click to expand");
   const [activeId, setActiveId] = useState(null);
   const [pinnedId, setPinnedId] = useState(null);
   // Descall+ Ultra per-user volume hotkeys act on the pinned participant.
@@ -650,7 +672,7 @@ function ServerScreenShareStage({
         <button
           type="button"
           className="server-voice-screen-hit"
-          aria-label={t("Click to expand")}
+          aria-label={expandHint}
           onClick={openExpanded}
         />
 
@@ -677,24 +699,27 @@ function ServerScreenShareStage({
           </div>
         )}
 
-        <div className="server-voice-screen-hint">{t("Click to expand")}</div>
+        <div className="server-voice-screen-hint">{expandHint}</div>
       </div>
 
-      <ShareFilmstrip
-        sharers={sharers.map((sharer) => ({ ...sharer, label: labelFor(sharer) }))}
-        activeId={active?.id}
-        pinnedId={pinnedId}
-        layout={shareLayout}
-        onSelect={(id) => {
-          setActiveId(id);
-          if (shareLayout === "grid") setShareLayout("stage");
-        }}
-        onTogglePin={(id) => {
-          setPinnedId((current) => (String(current) === String(id) ? null : id));
-          setActiveId(id);
-        }}
-        onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
-      />
+      {/* One share: the stage already shows it, a filmstrip would only repeat it. */}
+      {sharers.length > 1 ? (
+        <ShareFilmstrip
+          sharers={sharers.map((sharer) => ({ ...sharer, label: labelFor(sharer) }))}
+          activeId={active?.id}
+          pinnedId={pinnedId}
+          layout={shareLayout}
+          onSelect={(id) => {
+            setActiveId(id);
+            if (shareLayout === "grid") setShareLayout("stage");
+          }}
+          onTogglePin={(id) => {
+            setPinnedId((current) => (String(current) === String(id) ? null : id));
+            setActiveId(id);
+          }}
+          onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
+        />
+      ) : null}
     </div>
     {fullscreen}
     </>
@@ -1051,14 +1076,17 @@ export default function ServerVoicePanel({
               {statusLabel}
             </span>
           ) : null}
+          {inThis && server?.afkChannelId && String(server.afkChannelId) === String(channel?.id) ? (
+            <span className="server-voice-afk-pill" role="note">
+              <MicOff size={13} aria-hidden />
+              {t("svoice.afkChannel")}
+            </span>
+          ) : null}
           {count > 0 ? (
             <span className="server-voice-count-pill">
               <Users size={13} aria-hidden />
               {countLabel}
             </span>
-          ) : null}
-          {serverVoice?.mediaMode === "sfu" ? (
-            <span className="server-media-mode">{t("SFU voice enabled")}</span>
           ) : null}
         </div>
       </header>

@@ -3051,6 +3051,18 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
   font-weight: 650;
 }
 
+.server-voice-afk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 196, 0, 0.14);
+  color: #ffd27a;
+  font-size: var(--fs-12);
+  font-weight: 650;
+}
+
 .server-voice-room-error {
   margin: 8px 16px 0;
   flex-shrink: 0;
@@ -3377,6 +3389,28 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
 .server-voice-flag.is-deaf { color: #ff8a82; }
 .server-voice-flag.is-share,
 .server-voice-flag.is-cam { color: #8ec7ff; }
+
+/* Connection quality: a small pill, never body-size text next to the 13 px name. */
+.server-voice-flag.is-net {
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--r-pill, 999px);
+  font-size: var(--fs-11);
+  font-weight: 650;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.server-voice-flag.is-net.is-fair { color: #ffd27a; background: rgba(255, 196, 0, 0.16); }
+.server-voice-flag.is-net.is-weak { color: #ff8a82; background: rgba(255, 69, 58, 0.18); }
+
+/* Server mute (moderator, AFK lock or no SPEAK): filled red chip, not the plain self-mute icon. */
+.server-voice-flag.is-muted.is-server {
+  padding: 1px 3px;
+  border-radius: 6px;
+  background: #e5484d;
+  color: #fff;
+}
 
 .server-voice-tile-more {
   width: 22px;
@@ -5320,3 +5354,8 @@ html.glass-ui .server-members-panel .server-member-row-more {
   flex: none;
   color: rgba(235, 238, 255, 0.4);
 }
+
+/* Light theme: darker ink for the amber / red voice chips. */
+html[data-theme="light"] .server-voice-afk-pill,
+html[data-theme="light"] .server-voice-flag.is-net.is-fair { color: #8a5a00; }
+html[data-theme="light"] .server-voice-flag.is-net.is-weak { color: #b42318; }
