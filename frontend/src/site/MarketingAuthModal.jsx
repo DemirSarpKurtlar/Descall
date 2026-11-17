@@ -7,6 +7,7 @@ import { Funnel } from "./analytics";
 import BirthDateInput from "../components/auth/BirthDateInput";
 import { DEVICE_SIGNUP_BLOCK_MESSAGE, isEligibleBirthDate, noteUnder13BirthDate, under13SignupBlocked } from "../lib/age";
 import { isSocialSignupRequired } from "../api/auth";
+import { serverMessage } from "../i18n/serverText.js";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
 import GlassCheckbox from "../components/ui/GlassCheckbox";
@@ -227,7 +228,7 @@ function AuthModal({
     try {
       await onVerify2fa?.(twoFa.pendingToken, code.trim());
     } catch (err) {
-      setTwoFaError(err?.message ? t(err.message) : t("Incorrect code."));
+      setTwoFaError(serverMessage(err?.body, "error", t) || (err?.message ? t(err.message) : t("Incorrect code.")));
     } finally {
       setVerifying(false);
     }

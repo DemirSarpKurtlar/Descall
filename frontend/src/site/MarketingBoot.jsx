@@ -10,6 +10,8 @@ import {
 import { setToken, setUser } from "../lib/storage";
 import { markHeardAboutPending } from "../lib/heardAbout";
 import { banStateFromError } from "../lib/banState.js";
+import { serverMessage } from "../i18n/serverText.js";
+import { useT } from "../context/localeContextInstance";
 
 // Ban notice (docs/design/ban-experience), loaded only when a sign-in is refused for a ban.
 const BanScreen = lazy(() => import("../components/ban/BanScreenStandalone.jsx"));
@@ -30,6 +32,7 @@ export function verify2faArgs(payloadOrToken, codeArg) {
  * until the visitor actually signs in.
  */
 export default function MarketingBoot() {
+  const t = useT();
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [banState, setBanState] = useState(null);
@@ -40,9 +43,14 @@ export default function MarketingBoot() {
       setAuthError("");
       setBanState(ban);
     } else {
-      setAuthError(err?.message || fallback);
+      // The runtime translator is not bound in this shell, so err.message is the
+      // server's English: translate the body (errorKey + vars) with the site catalog.
+      const body = err?.body;
+      setAuthError(
+        serverMessage(body, "error", t) || serverMessage(body, "message", t) || (err?.message ? t(err.message) : t(fallback))
+      );
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     // Mark React as alive (cookie banner / consent padding) but keep #seo-static
@@ -78,7 +86,7 @@ export default function MarketingBoot() {
         setAuthLoading(false);
       }
     },
-    [enterApp]
+    [enterApp, fail]
   );
 
   const onRegister = useCallback(
@@ -123,7 +131,7 @@ export default function MarketingBoot() {
         setAuthLoading(false);
       }
     },
-    [enterApp]
+    [enterApp, fail]
   );
 
   const onGoogleLogin = useCallback(
@@ -157,7 +165,7 @@ export default function MarketingBoot() {
         setAuthLoading(false);
       }
     },
-    [enterApp]
+    [enterApp, fail]
   );
 
   const onVerify2fa = useCallback(
@@ -181,7 +189,7 @@ export default function MarketingBoot() {
         setAuthLoading(false);
       }
     },
-    [enterApp]
+    [enterApp, fail]
   );
 
   return (

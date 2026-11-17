@@ -65,16 +65,20 @@ export function localizedField(obj, prop, locale = getLocale()) {
   return obj[prop];
 }
 
-/** API / socket message (`error` by default) in the viewer's language. */
-export function serverMessage(body, field = "error") {
-  if (!body || typeof body !== "object") return typeof body === "string" ? t(body) : "";
+/**
+ * API / socket message (`error` by default) in the viewer's language. `translate`
+ * defaults to the runtime translator; a component in the marketing shell (where the
+ * runtime one is not bound) passes its useT() function instead.
+ */
+export function serverMessage(body, field = "error", translate = t) {
+  if (!body || typeof body !== "object") return typeof body === "string" ? translate(body) : "";
   const key = body[`${field}Key`];
   if (typeof key === "string" && key) {
     const vars = resolveVars(body[`${field}Vars`], getLocale());
-    return t(key, vars);
+    return translate(key, vars);
   }
   const raw = body[field];
-  return typeof raw === "string" && raw ? t(raw) : "";
+  return typeof raw === "string" && raw ? translate(raw) : "";
 }
 
 /** Message `i18n` from the server, with the content ref exposed as `text` (the client field). */
