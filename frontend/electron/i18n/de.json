@@ -34,7 +34,8 @@
     "open": "Descall öffnen",
     "startWithWindows": "Mit Windows starten",
     "updateAndQuit": "Aktualisieren und beenden (v{version})",
-    "quit": "Beenden"
+    "quit": "Beenden",
+    "startAtLogin": "Bei Anmeldung starten"
   },
   "notif": {
     "calling": "ruft an...",

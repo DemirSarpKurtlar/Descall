@@ -34,7 +34,8 @@
     "open": "Открыть Descall",
     "startWithWindows": "Запускать вместе с Windows",
     "updateAndQuit": "Обновить и выйти (v{version})",
-    "quit": "Выйти"
+    "quit": "Выйти",
+    "startAtLogin": "Запускать при входе"
   },
   "notif": {
     "calling": "звонит...",

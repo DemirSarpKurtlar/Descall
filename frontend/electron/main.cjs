@@ -2050,7 +2050,8 @@ function createTray() {
     { type: 'separator' },
     ...premium.trayMenuItems(),
     {
-      label: et('tray.startWithWindows'),
+      // "Windows ile Başlat" only on Windows; macOS and Linux say "open at login".
+      label: et(process.platform === 'win32' ? 'tray.startWithWindows' : 'tray.startAtLogin'),
       type: 'checkbox',
       checked: readOpenAtLogin(),
       click: (item) => {

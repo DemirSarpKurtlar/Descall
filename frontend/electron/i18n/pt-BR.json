@@ -34,7 +34,8 @@
     "open": "Abrir o Descall",
     "startWithWindows": "Iniciar com o Windows",
     "updateAndQuit": "Atualizar e sair (v{version})",
-    "quit": "Sair"
+    "quit": "Sair",
+    "startAtLogin": "Abrir ao iniciar sessão"
   },
   "notif": {
     "calling": "está ligando...",

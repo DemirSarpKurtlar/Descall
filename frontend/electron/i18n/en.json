@@ -34,7 +34,8 @@
     "open": "Open Descall",
     "startWithWindows": "Start with Windows",
     "updateAndQuit": "Update and quit (v{version})",
-    "quit": "Quit"
+    "quit": "Quit",
+    "startAtLogin": "Open at login"
   },
   "notif": {
     "calling": "is calling...",

@@ -34,7 +34,8 @@
     "open": "Ouvrir Descall",
     "startWithWindows": "Lancer avec Windows",
     "updateAndQuit": "Mettre à jour et quitter (v{version})",
-    "quit": "Quitter"
+    "quit": "Quitter",
+    "startAtLogin": "Ouvrir à la connexion"
   },
   "notif": {
     "calling": "t'appelle...",

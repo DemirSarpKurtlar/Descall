@@ -34,7 +34,8 @@
     "open": "Descall'i Aç",
     "startWithWindows": "Windows ile Başlat",
     "updateAndQuit": "Güncelle ve Çık (v{version})",
-    "quit": "Çıkış"
+    "quit": "Çıkış",
+    "startAtLogin": "Oturum açılınca başlat"
   },
   "notif": {
     "calling": "arıyor...",
