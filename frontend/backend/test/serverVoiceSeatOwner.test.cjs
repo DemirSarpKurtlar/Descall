@@ -35,7 +35,7 @@ perms.assertHierarchy = async () => {};
 
 const { activeServerVoiceCalls } = require(B + "/runtime/sharedState");
 const callCoinSessions = require(B + "/lib/callCoinSessions");
-const { registerServerVoiceHandlers, seatOwnerOf, runAfkScan } = require(B + "/socket/serverVoiceHandlers");
+const { registerServerVoiceHandlers, seatOwnerOf, runAfkScan, refreshSeatProfile } = require(B + "/socket/serverVoiceHandlers");
 
 const log = [];
 const liveSockets = new Map();
@@ -116,6 +116,18 @@ const seats = () =>
   assert.ok(log.some((l) => l.to === "server-voice:ch-b" && l.e === "server:voice:member-joined"), "AFK arrival announced");
   assert.equal(log.find((l) => l.e === "server:voice:force-moved")?.to, "sockB");
   assert.ok(callCoinSessions.get("u-bob", { context: "server", channelId: "ch-b" }));
+
+  // 18: equipping a voice tile mid-call reaches the seat and the channel (no rejoin).
+  log.length = 0;
+  const changed = refreshSeatProfile(io, "u-bob", { id: "u-bob", username: "bob", display_name: "Bob", avatar_url: "/b.png", equippedVoiceTile: { effect_key: "vt-neon-carsi" } });
+  assert.equal(changed, 1);
+  const bobSeat = activeServerVoiceCalls.get("ch-b").participants.get("u-bob");
+  assert.equal(bobSeat.equippedVoiceTile.effect_key, "vt-neon-carsi");
+  assert.equal(bobSeat.displayName, "Bob");
+  assert.equal(bobSeat.afkLocked, true, "seat state is kept");
+  assert.ok(log.some((l) => l.e === "server:voice:channel-state" && l.p.members.some((m) => m.equippedVoiceTile?.effect_key === "vt-neon-carsi")));
+  refreshSeatProfile(io, "u-bob", { id: "u-bob", username: "bob", display_name: "Bob" });
+  assert.equal(activeServerVoiceCalls.get("ch-b").participants.get("u-bob").equippedVoiceTile, null, "unequip clears it");
 
   console.log("serverVoiceSeatOwner test ok");
   process.exit(0);

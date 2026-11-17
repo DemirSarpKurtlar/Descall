@@ -51,6 +51,7 @@ import { subscribeActiveSpeakers } from "../../lib/activeSpeakers";
 import { SOCKET_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { bindLiveKitVideo } from "../../lib/liveKitVideoBinding";
+import { mergeVoiceRoster } from "../../lib/voiceRoster";
 import { VOICE_GRID_FIT_FROM, avatarSizeFor, fitVoiceGrid, gridBand, sameVoiceGridFit } from "../../lib/voiceGridLayout";
 
 /**
@@ -745,11 +746,14 @@ export default function ServerVoicePanel({
   const isStageSpeaker = !isStage || serverVoice?.stageRole === "speaker";
   const state =
     serverVoice?.voiceStatesByServer?.[server?.id]?.[channel?.id] || null;
-  const remoteMembers = inThis
-    ? serverVoice.participants || []
-    : state?.members || [];
+  // Live participants carry media; the server's seat list carries the real profile
+  // (name, avatar, voice tile skin), also for seats with no media yet (lib/voiceRoster.js).
+  const remoteMembers = useMemo(
+    () => (inThis ? mergeVoiceRoster(serverVoice.participants || [], state?.members, { selfId: me?.id }) : state?.members || []),
+    [inThis, serverVoice?.participants, state?.members, me?.id]
+  );
   const count = inThis
-    ? (serverVoice.participants?.length || 0) + 1
+    ? remoteMembers.length + 1
     : state?.memberCount || 0;
 
   // This channel's bits (overwrites) once known, else the server-wide flags (server audit P2).

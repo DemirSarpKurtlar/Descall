@@ -294,6 +294,54 @@ function removeUserFromAllServerVoice(io, userId, opts = {}) {
   }
 }
 
+/** Seat fields that mirror the user's public profile (name, avatar, cosmetics). */
+const SEAT_PROFILE_KEYS = [
+  "equippedVoiceTile",
+  "equippedJoinSound",
+  "equippedAvatarFrame",
+  "equippedBadge",
+  "equippedTitle",
+  "equippedCountry",
+  "equippedSpecialBadge",
+  "equippedNameEffect",
+  "equippedAvatarEffect",
+  "equippedChatBubble",
+  "equippedPresenceFlare",
+  "equippedProfileColor",
+];
+
+/**
+ * A profile change (equip / unequip a voice tile or join sound, new avatar or name) reaches
+ * the user's voice seats: they were copied once at join, so everyone kept seeing the old
+ * tile until a rejoin (server-voice-18). Called from broadcastUserProfileUpdate.
+ */
+function refreshSeatProfile(io, userId, profile) {
+  if (!io || userId == null || !profile) return 0;
+  const { toPublicUser } = require("../lib/userProfile");
+  const pub = toPublicUser(profile) || {};
+  const uid = normId(userId);
+  let n = 0;
+  for (const [channelId, call] of [...activeServerVoiceCalls.entries()]) {
+    const entry = getParticipantEntry(call, uid);
+    if (!entry?.member) continue;
+    const next = { ...entry.member };
+    for (const key of SEAT_PROFILE_KEYS) next[key] = pub[key] ?? profile[key] ?? null;
+    const displayName = pub.displayName || pub.display_name || profile.display_name || null;
+    if (displayName) {
+      next.displayName = displayName;
+      next.display_name = displayName;
+    }
+    if (pub.username || profile.username) next.username = pub.username || profile.username;
+    const avatar = pub.avatarUrl || pub.avatar_url || profile.avatar_url || null;
+    next.avatarUrl = avatar;
+    next.avatar_url = avatar;
+    setParticipant(call, uid, next);
+    emitChannelState(io, call.serverId, channelId);
+    n += 1;
+  }
+  return n;
+}
+
 /**
  * Drop a user from every voice channel of one server and tell their clients (kick, ban,
  * leave, timeout). Also removes (and revokes) their LiveKit identity and screen companion
@@ -1599,6 +1647,7 @@ module.exports = {
   findUserVoiceChannel,
   findUserInChannel,
   seatOwnerOf,
+  refreshSeatProfile,
   startAfkIdleScanner,
   runAfkScan,
   // lib/serverVoiceEnforce.js (contract for the other server modules) uses these.
