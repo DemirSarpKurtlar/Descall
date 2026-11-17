@@ -24,7 +24,11 @@
     "openFailed": "Не удалось открыть Descall",
     "openFailedDetail": "Приложение не загрузилось вовремя. Проверьте подключение и попробуйте ещё раз.",
     "indexMissingTitle": "Ошибка загрузки",
-    "indexMissing": "Файл index.html не найден в файлах приложения."
+    "indexMissing": "Файл index.html не найден в файлах приложения.",
+    "unresponsive": "Descall не отвечает",
+    "unresponsiveDetail": "Приложение какое-то время не отвечает. Можно подождать ещё или перезагрузить его.",
+    "wait": "Подождать",
+    "reload": "Перезагрузить"
   },
   "tray": {
     "open": "Открыть Descall",

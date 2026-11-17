@@ -24,7 +24,11 @@
     "openFailed": "Descall açılamadı",
     "openFailedDetail": "Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene.",
     "indexMissingTitle": "Yükleme hatası",
-    "indexMissing": "index.html uygulama dosyalarında bulunamadı."
+    "indexMissing": "index.html uygulama dosyalarında bulunamadı.",
+    "unresponsive": "Descall yanıt vermiyor",
+    "unresponsiveDetail": "Uygulama bir süredir yanıt vermiyor. Biraz bekleyebilir ya da yeniden yükleyebilirsin.",
+    "wait": "Bekle",
+    "reload": "Yeniden yükle"
   },
   "tray": {
     "open": "Descall'i Aç",

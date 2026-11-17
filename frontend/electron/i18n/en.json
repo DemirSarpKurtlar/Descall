@@ -24,7 +24,11 @@
     "openFailed": "Descall couldn't open",
     "openFailedDetail": "The app didn't load in time. Check your connection and try again.",
     "indexMissingTitle": "Loading Error",
-    "indexMissing": "index.html was not found in the app resources."
+    "indexMissing": "index.html was not found in the app resources.",
+    "unresponsive": "Descall is not responding",
+    "unresponsiveDetail": "The app has not responded for a while. You can wait a little longer or reload it.",
+    "wait": "Wait",
+    "reload": "Reload"
   },
   "tray": {
     "open": "Open Descall",

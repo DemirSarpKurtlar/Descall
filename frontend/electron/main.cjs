@@ -80,6 +80,26 @@ const premiumHooks = require('./premium/hostHooks.cjs');
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+
+// Main-process errors (mainErrors.cjs): logged, never Electron's raw error dialog, and
+// forwarded to the main window, whose Sentry client reports them (scrubbed of paths).
+const { summarizeError, createErrorRelay } = require('./mainErrors.cjs');
+const mainErrorRelay = createErrorRelay();
+function reportMainError(err, kind) {
+  const summary = summarizeError(err, kind);
+  try { log.error(`[main] ${kind}: ${summary.name}: ${summary.message}\n${summary.stack}`); } catch (_) { /* ignore */ }
+  mainErrorRelay.push(summary);
+}
+process.on('uncaughtException', (err) => reportMainError(err, 'uncaughtException'));
+process.on('unhandledRejection', (reason) => reportMainError(reason, 'unhandledRejection'));
+app.on('child-process-gone', (_event, details = {}) => {
+  // GPU / utility / network service crashes: Chromium restarts most of them on its own.
+  if (details.reason === 'clean-exit') return;
+  log.warn(`[main] child process gone: ${details.type || '?'} ${details.reason || '?'} exit=${details.exitCode ?? '?'} ${details.serviceName || details.name || ''}`);
+  if (details.reason === 'crashed' || details.reason === 'oom' || details.reason === 'launch-failed') {
+    mainErrorRelay.push({ kind: 'child-process-gone', name: String(details.type || 'process'), message: `${details.reason} (exit ${details.exitCode ?? '?'})`, stack: '' });
+  }
+});
 // Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
 // toast activator CLSID, both also written on the NSIS Start Menu shortcut.
 applyToastIdentity(app, { log });
@@ -1456,6 +1476,47 @@ function createMainWindow() {
 
   ipcMain.on('window:close', (event) => {
     controlledWindow(event)?.close();
+  });
+
+  // Main-process error summaries go to this window's error reporting once it has loaded.
+  mainWindow.webContents.once('did-finish-load', () => {
+    mainErrorRelay.attach((summary) => {
+      if (!mainWindow || mainWindow.isDestroyed()) return false;
+      try { mainWindow.webContents.send('app:main-error', summary); return true; } catch (_) { return false; }
+    });
+  });
+  // A hung renderer: logged, and after 10 s the user may wait or reload (never a silent freeze).
+  let unresponsiveTimer = null;
+  let unresponsiveAsked = false;
+  mainWindow.webContents.on('unresponsive', () => {
+    log.warn('[main] renderer unresponsive');
+    if (unresponsiveTimer || unresponsiveAsked) return;
+    unresponsiveTimer = setTimeout(() => {
+      unresponsiveTimer = null;
+      if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return;
+      unresponsiveAsked = true;
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'Descall',
+        message: et('dialog.unresponsive'),
+        detail: et('dialog.unresponsiveDetail'),
+        buttons: [et('dialog.wait'), et('dialog.reload')],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      }).then(({ response }) => {
+        unresponsiveAsked = false;
+        if (response === 1 && mainWindow && !mainWindow.isDestroyed()) {
+          log.warn('[main] user reloaded the unresponsive renderer');
+          mainWindow.webContents.forcefullyCrashRenderer();
+          mainWindow.webContents.reload();
+        }
+      }).catch(() => { unresponsiveAsked = false; });
+    }, 10 * 1000);
+  });
+  mainWindow.webContents.on('responsive', () => {
+    if (unresponsiveTimer) { clearTimeout(unresponsiveTimer); unresponsiveTimer = null; }
+    log.info('[main] renderer responsive again');
   });
 
   const publishBox = () => publishContentBox(mainWindow);

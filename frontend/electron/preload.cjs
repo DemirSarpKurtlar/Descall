@@ -59,6 +59,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Is electron
   isElectron: true,
 
+  // Main-process errors (electron/mainErrors.cjs), scrubbed of paths: src/lib/sentry.js reports them.
+  onMainError: (callback) => {
+    const handler = (_, summary) => callback(summary || {});
+    ipcRenderer.on('app:main-error', handler);
+    return () => ipcRenderer.off('app:main-error', handler);
+  },
+
   // Boot watchdog / "Tekrar dene" (2.11.5): clear SW + caches, reload ignoring cache.
   retryBoot: () => ipcRenderer.send('app:boot-retry'),
   // Boot milestones for main.log and the main-process paint watchdog (2.11.9).

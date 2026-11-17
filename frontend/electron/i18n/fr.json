@@ -24,7 +24,11 @@
     "openFailed": "Impossible d'ouvrir Descall",
     "openFailedDetail": "L'app ne s'est pas chargée à temps. Vérifie ta connexion et réessaie.",
     "indexMissingTitle": "Erreur de chargement",
-    "indexMissing": "index.html est introuvable dans les fichiers de l'app."
+    "indexMissing": "index.html est introuvable dans les fichiers de l'app.",
+    "unresponsive": "Descall ne répond pas",
+    "unresponsiveDetail": "L'application ne répond plus depuis un moment. Tu peux attendre encore ou la recharger.",
+    "wait": "Attendre",
+    "reload": "Recharger"
   },
   "tray": {
     "open": "Ouvrir Descall",

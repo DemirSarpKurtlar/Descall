@@ -150,6 +150,12 @@ export function startErrorReporting() {
   if (!isErrorReportingEnabled()) return;
   window.addEventListener("error", onEarlyError);
   window.addEventListener("unhandledrejection", onEarlyRejection);
+  // Desktop: errors from the Electron main process (electron/mainErrors.cjs, already scrubbed).
+  try {
+    window.electronAPI?.onMainError?.((summary) => reportMainProcessError(summary));
+  } catch {
+    /* older preload */
+  }
   const schedule = () => {
     const idle = window.requestIdleCallback;
     if (typeof idle === "function") idle(() => loadSdk(), { timeout: 3000 });
@@ -157,6 +163,22 @@ export function startErrorReporting() {
   };
   if (document.readyState === "complete") schedule();
   else window.addEventListener("load", schedule, { once: true });
+}
+
+/** An Electron main-process error summary { kind, name, message, stack } (no paths, no PII). */
+export function reportMainProcessError(summary = {}) {
+  if (!isErrorReportingEnabled() || !summary || !summary.message) return;
+  void loadSdk().then((Sentry) => {
+    try {
+      Sentry?.captureMessage(`[main] ${String(summary.name || "Error")}: ${String(summary.message).slice(0, 300)}`, {
+        level: "error",
+        tags: { area: "electron-main", kind: String(summary.kind || "error").slice(0, 40) },
+        contexts: { mainProcess: { stack: String(summary.stack || "").slice(0, 2000) } },
+      });
+    } catch {
+      /* ignore */
+    }
+  });
 }
 
 /** Report an error caught by a React error boundary (UI is unaffected). */

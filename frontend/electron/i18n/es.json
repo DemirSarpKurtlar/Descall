@@ -24,7 +24,11 @@
     "openFailed": "No se pudo abrir Descall",
     "openFailedDetail": "La app no cargó a tiempo. Revisa tu conexión y vuelve a intentarlo.",
     "indexMissingTitle": "Error de carga",
-    "indexMissing": "No se encontró index.html en los archivos de la app."
+    "indexMissing": "No se encontró index.html en los archivos de la app.",
+    "unresponsive": "Descall no responde",
+    "unresponsiveDetail": "La aplicación lleva un rato sin responder. Puedes esperar un poco más o recargarla.",
+    "wait": "Esperar",
+    "reload": "Recargar"
   },
   "tray": {
     "open": "Abrir Descall",

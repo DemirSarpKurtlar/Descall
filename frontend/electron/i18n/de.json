@@ -24,7 +24,11 @@
     "openFailed": "Descall konnte nicht geöffnet werden",
     "openFailedDetail": "Die App wurde nicht rechtzeitig geladen. Prüfe deine Verbindung und versuche es erneut.",
     "indexMissingTitle": "Ladefehler",
-    "indexMissing": "index.html wurde in den App-Dateien nicht gefunden."
+    "indexMissing": "index.html wurde in den App-Dateien nicht gefunden.",
+    "unresponsive": "Descall reagiert nicht",
+    "unresponsiveDetail": "Die App reagiert seit einer Weile nicht. Du kannst noch warten oder sie neu laden.",
+    "wait": "Warten",
+    "reload": "Neu laden"
   },
   "tray": {
     "open": "Descall öffnen",
