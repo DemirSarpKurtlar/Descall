@@ -16,7 +16,7 @@ export const SHOP_EN = {
       chat_bubble: { eyebrow: "CHAT BUBBLE", label: "IN CHAT", noun: "bubble", acc: "The bubble", meta: "Bubble · {motion}", metaSeries: "Bubble · Atelier series · {motion}",
         foot: "The bubble only shows on your messages; everyone sees the same bubble." },
       presence_flare: { eyebrow: "PRESENCE FLARE", label: "YOUR STATUS", noun: "presence flare", acc: "The presence flare", meta: "Presence flare · Online indicator",
-        foot: "The halo does not change your status colour; online, idle and do not disturb stay distinct." },
+        foot: "The halo does not change your status color; online, idle and do not disturb stay distinct." },
       profile_aura: { eyebrow: "PROFILE AURA", label: "ON YOUR PROFILE", noun: "aura", acc: "The aura", meta: "Aura · Around your profile card",
         foot: "Anyone who opens your profile card sees the aura. One aura is worn at a time." },
       typing_flare: { eyebrow: "TYPING FLARE", label: "IN CHAT", noun: "typing flare", acc: "The typing flare", meta: "Typing flare · {motion}",

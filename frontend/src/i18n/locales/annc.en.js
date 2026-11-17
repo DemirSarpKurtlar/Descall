@@ -196,7 +196,7 @@ export const ANNC_EN = {
     "approve": "Approve and publish",
     "review": "Review and approve"
   },
-  "saveTpl": { "title": "Save as template", "sub": "The text, icon, colour, button and every translation go into the template.", "save": "Save template" },
+  "saveTpl": { "title": "Save as template", "sub": "The text, icon, color, button and every translation go into the template.", "save": "Save template" },
   "steps": { "content": "Content", "langs": "Languages", "audience": "Audience", "schedule": "Schedule and approval" },
   "composer": {
     "newTitle": "New announcement",
@@ -232,7 +232,7 @@ export const ANNC_EN = {
     "icon": "Icon",
     "moreIcons": "All icons",
     "fewerIcons": "Fewer icons",
-    "color": "Colour",
+    "color": "Color",
     "priority": "Priority",
     "ctaLabel": "Button text",
     "ctaLabelPh": "e.g. Status page",
@@ -358,7 +358,7 @@ export const ANNC_EN = {
     "tipTitle": "Tip",
     "tip": "Add a live announcement here with \"Save as template\" in its menu.",
     "title": "Start from a template",
-    "subtitle": "Text, icon, colour and translations come ready",
+    "subtitle": "Text, icon, color and translations come ready",
     "search": "Search templates",
     "uses": "{n, plural, one {# use} other {# uses}}",
     "meta": "{cat} · {vars, plural, one {# variable} other {# variables}} · {langs} languages",

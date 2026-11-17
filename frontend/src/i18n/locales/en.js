@@ -324,7 +324,7 @@ export const nested = {
     "voiceHint": "Devices & mic test",
     "soundHint": "Message & call audio",
     "languageHint": "Choose the app language",
-    "licenses": "Licences",
+    "licenses": "Licenses",
     "licensesHint": "Fonts, flags and icons",
     "licensesDesc": "Open source work Descall uses, with credits.",
     "personalization": "Personalization",

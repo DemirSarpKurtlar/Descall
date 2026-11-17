@@ -353,7 +353,7 @@ export const PREMIUM_EN = {
     },
     "advanced_window_mgmt": {
       "name": "Advanced window management",
-      "desc": "Snapping, monitor awareness and saved window behaviour."
+      "desc": "Snapping, monitor awareness and saved window behavior."
     },
     "voice_hud": {
       "name": "Voice HUD",

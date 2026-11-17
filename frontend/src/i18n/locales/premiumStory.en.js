@@ -61,7 +61,7 @@ export const PREMIUM_STORY_EN = {
     "taskbar": "Taskbar",
     "savedLayouts": "Saved layouts",
     "newLayout": "New layout",
-    "windowBehavior": "Window behaviour",
+    "windowBehavior": "Window behavior",
     "closing": "Closing",
     "pttTiming": "Timing",
     "allow": "Still let through",
