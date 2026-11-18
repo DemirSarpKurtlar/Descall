@@ -290,4 +290,4 @@ const AURA = [
   },
 ];
 
-module.exports = { AURA };
+module.exports = { AURA, DEPTH, bloom, inner, rim, fx, spots, stars, bands };
