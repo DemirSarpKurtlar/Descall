@@ -17,6 +17,8 @@ on:
     paths:
       - "desktop/crates/descall-capture/**"
       - "desktop/tools/**"
+      - "desktop/app/shim/native-screen-share.js"
+      - ".github/workflows/capture-bench.yml"
 
 permissions:
   contents: read

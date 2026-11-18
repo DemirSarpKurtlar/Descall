@@ -36,7 +36,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
       - name: cargo test (platform-independent crates)
         run: cargo test
-      - name: electronAPI shim parity
+      - name: electronAPI shim parity (+ native screen-share commands registered)
         run: node app/shim/electron-api-shim.test.mjs
       - name: cargo check --workspace (x86_64-pc-windows-gnu)
         run: |
@@ -74,6 +74,10 @@ jobs:
       - name: cargo test on Windows (DPAPI, owner-only files, shell rules)
         working-directory: desktop
         run: cargo test
+
+      - name: cargo test for the app (migrator contract; needs frontend/dist from the web build)
+        working-directory: desktop
+        run: cargo test -p descall-desktop
 
       - name: Tauri build (Descall.exe + NSIS setup, per-user)
         working-directory: desktop/app/src-tauri
