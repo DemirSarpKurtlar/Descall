@@ -256,4 +256,5 @@ export const API_FR = {
   "A code was just sent. Wait a minute before requesting another.": "Un code vient d'être envoyé. Attends une minute avant d'en demander un autre.",
   "Account closed. It will be permanently deleted after the grace period.": "Compte fermé. Il sera supprimé définitivement à la fin du délai de grâce.",
   "Could not cancel the request.": "Impossible d'annuler la demande.",
+  "File is too large (max {max} MB).": "Le fichier est trop volumineux (max {max} Mo).",
 };

@@ -986,4 +986,5 @@ export const API_TR = {
   "This sign-in uses the authenticator app.": "Bu giriş doğrulama uygulamasıyla yapılıyor.",
   "Account closed. It will be permanently deleted after the grace period.": "Hesap kapatıldı. Bekleme süresinin sonunda kalıcı olarak silinecek.",
   "Could not cancel the request.": "İstek geri çekilemedi.",
+  "File is too large (max {max} MB).": "Dosya çok büyük (en fazla {max} MB).",
 };
