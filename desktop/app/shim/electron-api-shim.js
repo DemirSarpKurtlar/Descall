@@ -125,14 +125,8 @@
     onOverlayAction: (cb) => on("descall:overlay:action", cb),
   };
 
-  const isPremiumChannel = (c) => typeof c === "string" && /^premium:[a-z0-9:_-]{1,64}$/i.test(c);
-  const premium = {
-    invoke: (channel, ...args) => (isPremiumChannel(channel) ? invoke("premium_invoke", { channel, args }) : Promise.reject(new Error("premium channel expected"))),
-    on: (channel, fn) => (isPremiumChannel(channel) && typeof fn === "function" ? on(channel, (p) => fn(...(Array.isArray(p) ? p : [p]))) : () => {}),
-  };
-
   Object.defineProperty(window, "electronAPI", { value: Object.freeze(api), writable: false, configurable: false });
-  Object.defineProperty(window, "descallPremium", { value: Object.freeze(premium), writable: false, configurable: false });
+  // window.descallPremium comes from premium-shim.js (injected by the premium plugin).
 
   // External links: the Rust on_navigation guard refuses non-app URLs; open them in the
   // default browser instead (Electron setWindowOpenHandler + shell.openExternal).

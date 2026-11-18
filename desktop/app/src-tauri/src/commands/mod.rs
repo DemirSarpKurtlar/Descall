@@ -3,7 +3,6 @@
 pub mod app;
 pub mod notify;
 pub mod overlay;
-pub mod premium;
 pub mod screen;
 pub mod system;
 pub mod updates;

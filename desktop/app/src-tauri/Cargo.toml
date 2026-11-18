@@ -26,9 +26,38 @@ serde_json.workspace = true
 log.workspace = true
 descall-capture = { path = "../../crates/descall-capture" }
 descall-migrate = { path = "../../crates/descall-migrate" }
+# Descall+ (src/premium): gate check, PIN records, account ids. reqwest is already in the tree
+# through tauri-plugin-updater (same version, its TLS backend).
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
+base64 = "0.22"
+getrandom = "0.3"
+scrypt = { version = "0.11", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 # Same major as wry's own webview2-com, so the COM types from PlatformWebview line up.
 webview2-com = "0.39"
-windows = { workspace = true, features = ["Win32_Foundation", "Win32_System_Threading"] }
+windows = { workspace = true, features = [
+  "Win32_Foundation",
+  "Win32_System_Threading",
+  # Descall+ (src/premium): Raw Input PTT, idle time, opacity, taskbar buttons, DPAPI,
+  # session lock, save dialog, process metrics, reply toasts.
+  "Win32_UI_Input",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Shell",
+  "Win32_UI_Shell_Common",
+  "Win32_UI_Controls",
+  "Win32_Graphics_Gdi",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Com",
+  "Win32_System_RemoteDesktop",
+  "Win32_System_SystemInformation",
+  "Win32_System_ProcessStatus",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_Security_Cryptography",
+  "Data_Xml_Dom",
+  "Foundation",
+  "Foundation_Collections",
+  "UI_Notifications",
+] }
 windows-core.workspace = true

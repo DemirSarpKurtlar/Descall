@@ -3,12 +3,13 @@
 //! The page (frontend/dist, unchanged) keeps calling `window.electronAPI.*`; the shim in
 //! app/shim/electron-api-shim.js maps every method to a command below (see the mapping
 //! table in Rust-gecis-teknik-plan.md section 4). `window.descallPremium.invoke('premium:*')`
-//! goes to commands::premium::premium_invoke.
+//! goes to premium::premium_invoke (src/premium, the Descall+ desktop features).
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod boot;
 mod commands;
+mod premium;
 #[cfg(windows)]
 mod screenshare;
 mod secure_store;
@@ -43,6 +44,7 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(premium::init())
         .manage(commands::AppState::default())
         .manage(commands::screen::ShareState::default())
         .setup(move |app| {
@@ -63,6 +65,10 @@ fn main() {
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
                 .on_navigation(|url| boot::is_app_url(url))
+                .on_new_window({
+                    let app = app.handle().clone();
+                    move |url, features| premium::on_new_window(&app, &url, features).unwrap_or(tauri::webview::NewWindowResponse::Allow)
+                })
                 .build()?;
             if let (Some(x), Some(y)) = (state.x, state.y) {
                 let _ = w.set_position(tauri::LogicalPosition::new(x, y));
@@ -110,7 +116,7 @@ fn main() {
             commands::overlay::overlay_show,
             commands::overlay::overlay_hide,
             commands::overlay::overlay_update,
-            commands::premium::premium_invoke,
+            premium::premium_invoke, premium::premium_blob_put, premium::premium_blob_take, premium::premium_hud_action,
         ])
         .run(tauri::generate_context!())
         .expect("Descall failed to start");
