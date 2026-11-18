@@ -33,16 +33,25 @@ pub struct Collector {
     pub ended: Option<(String, Instant)>,
 }
 
+/// Plays the page. It also owns the "shared buffer": capture callbacks hold an Arc of the
+/// sink, so the memory they write and read can never be freed under them.
 pub struct BenchSink {
-    base: usize,
-    len: usize,
+    mem: Box<[std::cell::UnsafeCell<u8>]>,
     last_audio: AtomicU64,
     pub c: Mutex<Collector>,
 }
 
+// The ring is written through a raw pointer by the capture threads (the production
+// contract: one writer per region, seqlock readers), exactly like the WebView2 buffer.
+unsafe impl Sync for BenchSink {}
+
 impl BenchSink {
+    fn base(&self) -> *mut u8 {
+        self.mem.as_ptr() as *mut u8
+    }
+
     fn mem(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts(self.base as *const u8, self.len) }
+        unsafe { std::slice::from_raw_parts(self.base() as *const u8, self.mem.len()) }
     }
 
     pub fn reset(&self) {
@@ -113,21 +122,21 @@ impl HostSink for BenchSink {
 }
 
 pub struct Harness {
-    // Field order matters: the host (and its share) drops before the memory it writes.
     pub host: ShareHost,
     pub sink: Arc<BenchSink>,
     pub info: StartInfo,
-    _mem: Vec<u8>,
 }
 
 impl Harness {
     pub fn start(req: &StartRequest, keep_last: bool) -> Result<Harness, String> {
         let host = ShareHost::new();
-        let plan = host.plan(req).map_err(|e| e.to_string())?;
-        let mut mem = vec![0u8; plan.layout.total];
-        let sink = Arc::new(BenchSink { base: mem.as_mut_ptr() as usize, len: mem.len(), last_audio: AtomicU64::new(0), c: Mutex::new(Collector { keep_last, ..Default::default() }) });
-        let info = unsafe { host.start(plan, mem.as_mut_ptr(), mem.len(), sink.clone()) }.map_err(|e| e.to_string())?;
-        Ok(Harness { host, sink, info, _mem: mem })
+        let plan = host.plan(req).map_err(|e| format!("plan: {e}"))?;
+        let mem: Box<[std::cell::UnsafeCell<u8>]> = (0..plan.layout.total).map(|_| std::cell::UnsafeCell::new(0u8)).collect();
+        let sink = Arc::new(BenchSink { mem, last_audio: AtomicU64::new(0), c: Mutex::new(Collector { keep_last, ..Default::default() }) });
+        let (base, len) = (sink.base(), sink.mem.len());
+        // Safety: the sink (and with it the memory) lives as long as any capture callback.
+        let info = unsafe { host.start(plan, base, len, sink.clone()) }.map_err(|e| format!("start: {e}"))?;
+        Ok(Harness { host, sink, info })
     }
 
     pub fn stats(&self) -> StatsSnapshot {

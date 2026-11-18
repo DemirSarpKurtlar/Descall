@@ -68,6 +68,12 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRES
                 let _ = ValidateRect(Some(hwnd), None);
                 LRESULT(0)
             }
+            WM_CLOSE => {
+                // Leave the render loop first; the loop releases the swap chain and only then
+                // destroys the window (a swap chain must not outlive its HWND).
+                PostQuitMessage(0);
+                LRESULT(0)
+            }
             WM_DESTROY => {
                 PostQuitMessage(0);
                 LRESULT(0)
@@ -222,7 +228,9 @@ impl Presenter {
         let thread = std::thread::Builder::new()
             .name("bench-presenter".into())
             .spawn(move || {
-                let (style, ex) = if opts.popup { (WS_POPUP | WS_VISIBLE, WS_EX_NOACTIVATE) } else { (WS_OVERLAPPEDWINDOW | WS_VISIBLE, WINDOW_EX_STYLE(0)) };
+                // No WS_EX_NOACTIVATE: Windows.Graphics.Capture only captures windows a user
+                // could pick, and a never-activating popup is not one of them.
+                let (style, ex) = if opts.popup { (WS_POPUP | WS_VISIBLE, WINDOW_EX_STYLE(0)) } else { (WS_OVERLAPPEDWINDOW | WS_VISIBLE, WINDOW_EX_STYLE(0)) };
                 let ex = if opts.topmost { ex | WS_EX_TOPMOST } else { ex };
                 let mut rc = RECT { left: 0, top: 0, right: opts.width, bottom: opts.height };
                 unsafe {
@@ -275,6 +283,10 @@ impl Presenter {
                         }
                         _ => std::thread::sleep(std::time::Duration::from_millis(10)),
                     }
+                }
+                drop(gfx);
+                unsafe {
+                    let _ = DestroyWindow(hw);
                 }
                 a2.store(false, Ordering::Release);
             })
