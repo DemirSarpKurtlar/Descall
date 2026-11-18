@@ -252,6 +252,13 @@ function ensureListeners() {
     dispatchNotificationAction({ ...data, action });
   });
 
+  if (!IS_IOS) {
+    // Channel names in Android's notification settings follow the app language.
+    window.addEventListener("descall:locale", () => {
+      ensureAndroidPushChannels().catch(() => {});
+    });
+  }
+
   if (IS_IOS) {
     // Push text follows the app language: re-upload when it changes.
     window.addEventListener("descall:locale", () => {
