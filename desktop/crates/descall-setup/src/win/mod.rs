@@ -206,6 +206,7 @@ struct Engine {
     attempts: u32,
     need: u64,
     launch_at: Option<Instant>,
+    autostart_shown: bool,
 }
 
 const BACKOFF: [u64; 5] = [8, 15, 30, 60, 120];
@@ -240,6 +241,7 @@ impl Engine {
             attempts: 0,
             need: 92 * 1024 * 1024,
             launch_at: None,
+            autostart_shown: true,
         }
     }
 
@@ -340,9 +342,11 @@ impl Engine {
         log::info(&format!("{} build {} webview2 {:?}", os.name, os.build, wv));
         let existing = shell::installed().map(|(_, v)| v).or_else(|| shell::electron_install().map(|(_, v)| v));
         let desk_exists = shell::desktop_lnk().is_some_and(|p| p.exists());
-        if !self.opts.autostart.unwrap_or(true) || shell::autostart_get().is_some() {
-            self.opts.autostart = None;
-        }
+        // First install: on by default (as Electron did). Existing install: show what is there now.
+        self.autostart_shown = match self.opts.autostart {
+            Some(b) => b || shell::autostart_get().is_some(),
+            None => shell::autostart_get().is_some(),
+        };
         let base = json!({
             "lang": self.lang,
             "version": env!("CARGO_PKG_VERSION"),
@@ -350,7 +354,7 @@ impl Engine {
             "logPath": self.log_path.display().to_string(),
             "dir": self.dir.display().to_string(),
             "sys": { "os": os.name, "osOk": os.build == 0 || os.build >= MIN_WINDOWS_BUILD, "wvOk": true, "diskOk": true },
-            "opts": { "autostart": self.opts.autostart.unwrap_or(true), "desktop": self.opts.desktop, "autoUpdate": true },
+            "opts": { "autostart": self.autostart_shown, "desktop": self.opts.desktop, "autoUpdate": true },
             "existing": existing.map(|v| json!({ "version": v, "desktopShortcut": desk_exists })),
         });
         self.patch(base);
@@ -421,9 +425,9 @@ impl Engine {
                 }
                 if let Some(o) = v.get("opts") {
                     let b = |k: &str, d: bool| o.get(k).and_then(Value::as_bool).unwrap_or(d);
-                    let auto = b("autostart", true);
-                    // Untouched default on an existing install: keep the user's current choice.
-                    self.opts.autostart = if self.opts.autostart.is_none() && auto { None } else { Some(auto) };
+                    let auto = b("autostart", self.autostart_shown);
+                    // Untouched on an existing install: leave the Run value (and Task Manager's choice) alone.
+                    self.opts.autostart = if auto == self.autostart_shown && self.opts.autostart.is_none() { None } else { Some(auto) };
                     self.opts.desktop = b("desktop", true);
                     self.opts.auto_update = b("autoUpdate", true);
                 }

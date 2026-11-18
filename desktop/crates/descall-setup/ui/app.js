@@ -509,7 +509,7 @@
     }
     let win = root.querySelector(".win.b");
     if (!win) {
-      const shell = `<div class="win b"><aside class="art">${ART_BASE}</aside><div class="panel"></div></div>`;
+      const shell = `<div class="win b"><aside class="art" data-drag>${ART_BASE}</aside><div class="panel"></div></div>`;
       root.innerHTML = STAGE ? `<section class="shot"><div class="frame">${shell}</div></section>` : `<div class="frame"><div class="desk"></div>${shell}</div>`;
       win = root.querySelector(".win.b");
     }
