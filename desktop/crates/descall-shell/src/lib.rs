@@ -18,6 +18,7 @@
 //! | `clipboard`       | clipboardText.cjs, clipboardImage.cjs   | clipboardText.selftest.mjs            |
 
 pub mod clipboard;
+pub mod csp;
 pub mod deferral;
 pub mod download;
 pub mod i18n;
