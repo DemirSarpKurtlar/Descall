@@ -168,6 +168,16 @@ function readPremiumFiles(userData, fsImpl = fs) {
   return out;
 }
 
+function appLockRecordOrNull(text) {
+  if (typeof text !== 'string' || text.length > 16 * 1024 || !/^\s*\{/.test(text)) return null;
+  try {
+    const v = JSON.parse(text);
+    return v && typeof v === 'object' && !Array.isArray(v) ? text : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /** The secret part, built in memory only. */
 async function buildHandoff(deps, plan, installId) {
   const ud = deps.app.getPath('userData');
@@ -211,7 +221,9 @@ async function buildHandoff(deps, plan, installId) {
     autostart: { enabled: Boolean(deps.readOpenAtLogin?.()), disabledByUser: false, decided: true },
     locale: deps.getLocale?.() || null,
     premiumFiles: readPremiumFiles(ud, deps.fs),
-    appLockRecord: await readSecret(path.join(ud, 'premium', 'app-lock.bin')),
+    // Descall+ app lock: the salted PIN record (never the PIN), re-sealed with DPAPI by the
+    // new app, which verifies Electron's record format. Only a JSON object is carried.
+    appLockRecord: appLockRecordOrNull(await readSecret(path.join(ud, 'premium', 'app-lock.bin'), { json: true })),
     flags: {},
   };
 }
@@ -499,6 +511,7 @@ module.exports = {
   isAllowedDownloadUrl,
   parsePlan,
   tokenSubject,
+  appLockRecordOrNull,
   downloadVerified,
   dumpLocalStorage,
   readPremiumFiles,

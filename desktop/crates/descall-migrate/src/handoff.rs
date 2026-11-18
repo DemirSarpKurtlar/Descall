@@ -165,6 +165,11 @@ impl Handoff {
                 return Err(bad("premium file too large"));
             }
         }
+        if let Some(r) = &self.app_lock_record {
+            if !is_app_lock_record(&r.0) {
+                return Err(bad("app lock record is not a JSON object"));
+            }
+        }
         if let Some(l) = &self.locale {
             if l.len() > 16 || !l.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_') {
                 return Err(bad("bad locale"));
@@ -189,6 +194,12 @@ pub fn looks_like_jwt(s: &str) -> bool {
     let parts: Vec<&str> = s.split('.').collect();
     let ok = |p: &str, min: usize| p.len() >= min && p.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
     parts.len() == 3 && ok(parts[0], 8) && ok(parts[1], 8) && ok(parts[2], 0)
+}
+
+/// Descall+ app lock (premium/app-lock.bin): a JSON object with the salted PIN hash.
+/// The new app re-seals it with DPAPI and verifies Electron's record format itself.
+pub fn is_app_lock_record(s: &str) -> bool {
+    s.len() <= 16 * 1024 && matches!(serde_json::from_str::<serde_json::Value>(s), Ok(serde_json::Value::Object(_)))
 }
 
 /// Electron multi_account ids: `^[a-f0-9]{12}$` (premium/features/multi_account.cjs).
@@ -250,6 +261,21 @@ mod tests {
         let mut h = sample();
         h.local_storage.insert("descall_token".into(), JWT.into());
         assert!(h.validate(1_000_000).is_err());
+    }
+
+    #[test]
+    fn carries_the_descall_plus_app_lock_record() {
+        let record = r#"{"v":1,"algo":"scrypt","salt":"c2FsdA==","hash":"aGFzaA==","len":6}"#;
+        let mut h = sample();
+        h.app_lock_record = Some(Secret(record.into()));
+        h.validate(1_000_000).unwrap();
+        let back: Handoff = serde_json::from_str(&serde_json::to_string(&h).unwrap()).unwrap();
+        assert_eq!(back.app_lock_record, Some(Secret(record.into())), "survives the seal / import round trip");
+        for bad in ["1234", "[1]", "{broken", ""] {
+            h.app_lock_record = Some(Secret(bad.into()));
+            assert!(h.validate(1_000_000).is_err(), "{bad}");
+        }
+        assert!(!format!("{:?}", Some(Secret(record.into()))).contains("scrypt"), "never printed");
     }
 
     #[test]

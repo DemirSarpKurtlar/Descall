@@ -17,5 +17,7 @@ fn the_bridge_envelope_parses_and_validates() {
     assert!(env.handoff.window_state.as_ref().unwrap().maximized);
     assert!(env.handoff.autostart.enabled);
     assert_eq!(env.handoff.premium_files.len(), 2);
+    let lock = env.handoff.app_lock_record.as_ref().expect("Descall+ app-lock record carried");
+    assert!(descall_migrate::handoff::is_app_lock_record(&lock.0));
     assert!(env.handoff.extra.is_empty(), "no field fell through to `extra`: {:?}", env.handoff.extra.keys().collect::<Vec<_>>());
 }

@@ -30,6 +30,8 @@ const MIGRATOR = Buffer.from("MZ-fake-migrator");
 const SETUP = Buffer.from("MZ-fake-tauri-setup");
 const sha = (b) => crypto.createHash("sha256").update(b).digest("hex");
 const NOW = 1_800_000_000_000;
+// Descall+ app lock PIN record (premium/features/app_lock.cjs): salted scrypt hash, no PIN.
+const APP_LOCK = JSON.stringify({ v: 1, algo: "scrypt", salt: "c2FsdHNhbHQ=", hash: "aGFzaGhhc2g=", len: 6 });
 
 function planBody(over = {}) {
   return JSON.stringify({
@@ -75,6 +77,7 @@ function world(over = {}) {
   fs.writeFileSync(path.join(userData, "auth-token.bin"), "enc:" + TOKEN);
   fs.writeFileSync(path.join(userData, "premium", "accounts", "0123456789ab", "auth-token.bin"), "enc:" + TOKEN);
   fs.writeFileSync(path.join(userData, "premium-settings.json"), '{"features":{}}');
+  fs.writeFileSync(path.join(userData, "premium", "app-lock.bin"), "enc:" + APP_LOCK);
   fs.writeFileSync(path.join(userData, "premium", "accounts.json"), '{"accounts":[]}');
   fs.writeFileSync(path.join(userData, ".updaterId"), "3f2c9a1e-1111-4222-8333");
   const calls = { spawned: [], piped: [], reports: [], quit: 0, fetched: [] };
@@ -199,6 +202,7 @@ test("a full attempt pipes the secrets over stdin, then starts the migrator and 
   assert.equal(env.handoff.localStorage.theme, "dark");
   assert.ok(!("descall_token" in env.handoff.localStorage) && !("token" in env.handoff.localStorage), "token never in the localStorage export");
   assert.equal(env.handoff.locale, "tr");
+  assert.equal(env.handoff.appLockRecord, APP_LOCK, "Descall+ app-lock record carried over (decrypted in memory, sealed by the migrator)");
   assert.ok(env.handoff.premiumFiles["premium-settings.json"] && env.handoff.premiumFiles["premium.accounts.json"]);
   assert.deepEqual(env.handoff.windowState, { x: 10, y: 20, width: 1280, height: 800, maximized: true, unit: "dip" });
   assert.equal(env.job.launchHidden, true, "tray user: new app starts hidden");
@@ -263,6 +267,15 @@ test("unsigned, badly signed, unpinned or not-for-us plans do nothing", async ()
   assert.equal(await bridge.tryMigrate(mac.deps), "skip");
   const signedOut = world({ deps: { readToken: async () => null } });
   assert.equal(await bridge.tryMigrate(signedOut.deps), "signed-out");
+});
+
+test("app-lock record: only a JSON object travels; none when there is no lock", async () => {
+  assert.equal(bridge.appLockRecordOrNull(APP_LOCK), APP_LOCK);
+  for (const bad of [null, "", "1234", "[1,2]", "{broken", "x".repeat(20000)]) assert.equal(bridge.appLockRecordOrNull(bad), null, String(bad).slice(0, 10));
+  const w = world();
+  fs.unlinkSync(path.join(w.userData, "premium", "app-lock.bin"));
+  assert.equal(await bridge.tryMigrate(w.deps), "started");
+  assert.equal(JSON.parse(w.calls.piped[0]).handoff.appLockRecord, null);
 });
 
 test("retry policy", () => {

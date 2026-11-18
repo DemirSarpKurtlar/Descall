@@ -1944,7 +1944,11 @@ function startMigrationBridge() {
       spawn: require('child_process').spawn,
       log,
       looksLikeJwt,
-      readEncryptedFile: (file, opts = {}) => readEncryptedFile(safeStorage, fs, file, opts.jwt ? { legacyPlain: looksLikeJwt } : {}),
+      readEncryptedFile: (file, opts = {}) => {
+        // Same legacy plain-text acceptance as the owners of these files (token, app lock).
+        const legacyPlain = opts.jwt ? looksLikeJwt : opts.json ? require('./tokenCrypto.cjs').looksLikeJsonObject : null;
+        return readEncryptedFile(safeStorage, fs, file, legacyPlain ? { legacyPlain } : {});
+      },
       readToken: async () => {
         const file = path.join(app.getPath('userData'), 'auth-token.bin');
         try {

@@ -34,7 +34,7 @@
     "autostart": { "enabled": true, "disabledByUser": false, "decided": true },
     "locale": "tr",
     "premiumFiles": { "premium-settings.json": "{\"features\":{}}", "premium.accounts.json": "{\"accounts\":[]}" },
-    "appLockRecord": null,
+    "appLockRecord": "{\"v\":1,\"algo\":\"scrypt\",\"salt\":\"c2FsdHNhbHQ=\",\"hash\":\"aGFzaGhhc2g=\",\"len\":6}",
     "flags": {}
   }
 }
