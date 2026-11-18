@@ -71,6 +71,15 @@
   function pctLoc(p) { return M.lang === "tr" ? pctStr(p) + "'" + trLocative(p) : pctStr(p); }
   /** Rounded percent that only shows 100 once the work is really complete. */
   function shownPct(p) { return p >= 100 ? 100 : Math.min(99, Math.round(p || 0)); }
+  /** One number for compact surfaces (toast, migration): download 70 %, verify 5 %, install 25 %. */
+  function overallPct() {
+    const d = M.dl;
+    let p = 0;
+    if (d.phase === "download") p = d.total ? (d.got / d.total) * 70 : 0;
+    else if (d.phase === "verify") p = 70 + (d.verify || 0) * 5;
+    else if (d.phase === "install") p = 75 + (d.files.total ? d.files.done / d.files.total : 0) * 25;
+    return shownPct(p);
+  }
   function secs(v) { return num(v, v < 10 && v % 1 ? 1 : 0) + " " + raw("sec"); }
   function etaHtml(s) {
     if (s == null || !isFinite(s)) return "–";
@@ -409,7 +418,7 @@
       return `<div class="xi glass-tile ${x.st}"><span class="k">${ic(icon)}</span><div><b>${typeof title === "function" ? title(x) : title}</b><span>${typeof sub === "function" ? sub(x) : sub}</span></div><div class="rt">${rt}</div></div>`;
     };
     const fin = !!g.finished;
-    const from = g.installPct != null && !fin ? t("mg_installing", { pct: pctStr(g.installPct) }) : t("mg_from", { from: g.from || "", to: g.to || M.version });
+    const from = g.installing && !fin ? t("mg_installing", { pct: pctStr(g.installPct != null ? g.installPct : overallPct()) }) : t("mg_from", { from: g.from || "", to: g.to || M.version });
     const lower = M.ui.details ? `<div class="log well tall mg-log" data-log="live"></div>`
       : `<div class="note">${ic("undo")}<span>${rich("mg_note_html", [], { d: num(g.days || 14, 0) })}</span></div>`;
     return {
@@ -441,8 +450,8 @@
     let top, body, acts;
     if (u.phase === "installing" || u.phase === "done") {
       const done = u.phase === "done";
-      top = `<span class="t1">${t(done ? "u_done" : "u_installing", { v: u.v })}</span><span class="chip ${done ? "ok" : "acc"}" style="margin-left:auto">${done ? ic("check") : '<span class="spinner" style="width:11px;height:11px;border-width:1.5px"></span>'}${esc(pctStr(done ? 100 : u.pct || 0))}</span>`;
-      body = `<div class="sub">${t(done ? "u_done_d" : "u_installing_d")}</div><div class="bar${done ? " done" : ""}"><i style="width:${done ? 100 : Math.round(u.pct || 0)}%"></i></div>`;
+      top = `<span class="t1">${t(done ? "u_done" : "u_installing", { v: u.v })}</span><span class="chip ${done ? "ok" : "acc"}" style="margin-left:auto">${done ? ic("check") : '<span class="spinner" style="width:11px;height:11px;border-width:1.5px"></span>'}<span data-b="uppct">${esc(pctStr(done ? 100 : u.pct != null ? u.pct : overallPct()))}</span></span>`;
+      body = `<div class="sub">${t(done ? "u_done_d" : "u_installing_d")}</div><div class="bar${done ? " done" : ""}" data-b="upbar"><i style="width:${done ? 100 : Math.round(u.pct != null ? u.pct : overallPct())}%"></i></div>`;
       acts = "";
     } else if (u.phase === "error") {
       top = `<span class="t1">${t("u_error")}</span><span class="chip err" style="margin-left:auto">${ic("x")}${esc(u.code || "")}</span>`;
@@ -528,6 +537,11 @@
       };
     }
     if (M.screen === "progress") return bindProgress();
+    if (M.screen === "update" && M.upd && M.upd.phase === "installing" && M.upd.pct == null) {
+      const p = overallPct();
+      return { uppct: { text: pctStr(p) }, upbar: { w: p } };
+    }
+    if (M.screen === "migration" && M.mig && M.mig.installing && !M.mig.finished && M.mig.installPct == null) return { mgfrom: { text: raw("mg_installing").replace("{pct}", pctStr(overallPct())) } };
     if (M.screen === "error" && M.err && M.err.retryIn != null) return { cd: { text: num(M.err.retryIn, 0) + " " + raw("sec") } };
     return {};
   }
@@ -644,7 +658,12 @@
       case "url": send("url", { url: arg }); return;
       case "openlog": send("openlog"); return;
       case "launch": send("launch", arg ? { open: arg } : {}); return;
-      default: send(name); return; /* minimize, close, resume, restart, retry, closeapp, keepold, later, update-now */
+      case "close":
+        // Closing mid-download asks first (parts are kept); mid-install it waits for the swap to finish.
+        if (M.screen === "progress" && M.dl.phase !== "install") { M.ui.confirm = true; break; }
+        if (M.screen === "progress" || (M.screen === "migration" && !(M.mig && M.mig.finished))) return;
+        send("close"); return;
+      default: send(name); return; /* minimize, resume, restart, retry, closeapp, keepold, later, update-now */
     }
     render();
   }
@@ -686,7 +705,13 @@
       render();
     },
     log(entries) {
-      for (const e of [].concat(entries)) { e.id = logSeq++; if (!e.t) e.t = hhmmss(new Date()); M.log.push(e); }
+      for (const e of [].concat(entries)) {
+        e.id = logSeq++;
+        if (!e.t) e.t = hhmmss(new Date());
+        const last = M.log[M.log.length - 1];
+        if (e.rep && last && last.k === e.k) M.log[M.log.length - 1] = e;
+        else M.log.push(e);
+      }
       if (M.log.length > 400) M.log.splice(0, M.log.length - 400);
       render();
     },

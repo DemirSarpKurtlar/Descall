@@ -2,7 +2,9 @@
 //! Paths are sanitised (no `..`, no absolute paths, no drive letters); anything odd aborts.
 
 use std::fs::{self, File};
-use std::io::{self, Read, Seek, Write};
+#[cfg(test)]
+use std::io::Seek;
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -12,6 +14,7 @@ pub struct Unpacked {
     pub bytes: u64,
 }
 
+#[cfg(test)]
 pub fn file_count<R: Read + Seek>(reader: R) -> io::Result<u32> {
     let z = zip::ZipArchive::new(reader).map_err(io::Error::other)?;
     Ok((0..z.len()).filter(|i| z.name_for_index(*i).is_some_and(|n| n.is_ok_and(|n| !n.ends_with('/')))).count() as u32)

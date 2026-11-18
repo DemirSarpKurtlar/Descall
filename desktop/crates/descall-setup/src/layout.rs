@@ -1,10 +1,10 @@
 //! Folder layout and shell identity (technical plan 3.2-3.4). Per-user only, no admin rights:
 //!
-//! - App:            `%LOCALAPPDATA%\Programs\Descall\Descall.exe` (same path electron-builder used
-//!                   for per-user installs, so pins, firewall rules, GPU preference and per-app audio
-//!                   devices keep working after the migration; the migrator passes the old folder).
-//! - Uninstaller:    `<app>\uninstall.exe` (a copy of this exe), registered under
-//!                   `HKCU\...\Uninstall\Descall` for Apps & features.
+//! - App: `%LOCALAPPDATA%\Programs\Descall\Descall.exe` (same path electron-builder used for
+//!   per-user installs, so pins, firewall rules, GPU preference and per-app audio devices keep
+//!   working after the migration; the migrator passes the old folder).
+//! - Uninstaller: `<app>\uninstall.exe` (shipped in the payload, else a copy of this exe),
+//!   registered under `HKCU\...\Uninstall\Descall` for Apps & features.
 //! - Setup data:     `%LOCALAPPDATA%\Descall-Setup\{cache\<version>, logs}`.
 //! - App data:       `%APPDATA%\com.descall.app\` (Tauri); `setup.json` carries the choices made here.
 //! - Electron data:  `%APPDATA%\Descall\` (only caches are cleared; the rest stays for rollback).

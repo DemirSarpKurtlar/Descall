@@ -18,9 +18,9 @@ BEGIN
       VALUE "CompanyName", "Descall"
       VALUE "FileDescription", "Descall Setup"
       VALUE "FileVersion", "4.0.0.0"
-      VALUE "InternalName", "Descall-Setup"
+      VALUE "InternalName", "DescallSetup"
       VALUE "LegalCopyright", "Copyright (c) 2026 Demir Sarp Kurtlar"
-      VALUE "OriginalFilename", "Descall-Setup.exe"
+      VALUE "OriginalFilename", "DescallSetup.exe"
       VALUE "ProductName", "Descall"
       VALUE "ProductVersion", "4.0.0.0"
     END
