@@ -1,0 +1,133 @@
+/* Descall Setup: everything on top of the verbatim draft B styles (draft.css).
+   Fonts are embedded so Windows renders exactly what the draft shows. */
+@font-face { font-family: "Inter"; font-weight: 400; font-display: block; src: url("fonts/inter-400.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 500; font-display: block; src: url("fonts/inter-500.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 600; font-display: block; src: url("fonts/inter-600.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 700; font-display: block; src: url("fonts/inter-700.woff2") format("woff2"); }
+@font-face { font-family: "Inter Display"; font-weight: 700; font-display: block; src: url("fonts/inter-display-700.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; font-display: block; src: url("fonts/mono-400.woff2") format("woff2"); }
+
+html { user-select: none; -webkit-user-select: none; }
+.field .path, .log, .sum .v.mono { user-select: text; -webkit-user-select: text; }
+[hidden] { display: none !important; }
+
+/* ---------- window chrome ---------- */
+/* Exe mode: the WebView is the window. The desktop backdrop the draft blurs is painted inside the
+   window (offset as in the draft), so the glass reads the same without any OS composition. */
+html.exe, html.exe body { background: transparent; padding: 0; min-height: 0; display: block; overflow: hidden; }
+html.exe .frame { position: fixed; left: 0; top: 0; border-radius: 14px; overflow: hidden; }
+html.exe .frame > .win { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16); }
+.desk { position: absolute; left: -44px; top: -44px; width: 988px; height: 648px; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(55% 65% at 12% 18%, rgba(88, 122, 245, 0.62), transparent 62%),
+    radial-gradient(45% 55% at 92% 82%, rgba(146, 86, 230, 0.50), transparent 62%),
+    radial-gradient(40% 45% at 78% 8%, rgba(28, 168, 190, 0.26), transparent 62%),
+    radial-gradient(35% 40% at 30% 100%, rgba(30, 120, 170, 0.30), transparent 62%),
+    linear-gradient(160deg, #0f1430, #0a0c1a 58%, #150d27); }
+.desk::after { content: ""; position: absolute; inset: 0; opacity: 0.06;
+  background-image: radial-gradient(rgba(255,255,255,.9) 0.5px, transparent 0.6px); background-size: 3px 3px; }
+.frame { position: relative; isolation: auto; }
+.frame > .win { position: relative; z-index: 1; }
+.frame.toast-frame .desk { left: -364px; top: -194px; width: 760px; height: 360px; }
+html:not(.exe) .frame > .desk { display: none; }
+
+.titlebar { -webkit-app-region: drag; cursor: default; }
+.titlebar button, .titlebar .lang-wrap { -webkit-app-region: no-drag; }
+.tb-btn { transition: background-color .15s, color .15s; }
+.tb-btn:hover { color: var(--ink); }
+.tb-btn:focus-visible, .btn:focus-visible, .select:focus-visible, .opt:focus-visible, .link:focus-visible,
+.arrows span:focus-visible, .first > div:focus-visible, .mi:focus-visible, .switch:focus-visible {
+  outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+
+/* ---------- controls ---------- */
+.btn { transition: filter .15s, background-color .15s, transform .12s var(--ease), opacity .15s; }
+.btn:hover:not([disabled]) { filter: brightness(1.1); }
+.btn:active:not([disabled]) { transform: translateY(1px); }
+.btn-secondary:hover:not([disabled]) { background: rgba(255,255,255,.11); }
+.btn[disabled] { cursor: default; opacity: .55; }
+.btn-primary[disabled] { filter: saturate(.4); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+.select { cursor: pointer; transition: background-color .15s; }
+.select:hover, .lang-wrap.open .select { background: rgba(255,255,255,.11); }
+.lang-wrap .menu { display: none; }
+.lang-wrap.open .menu { display: block; }
+.menu .mi { cursor: pointer; }
+.menu .mi:hover:not(.sel) { background: rgba(255,255,255,.06); color: var(--ink); }
+.opt[role="switch"] { cursor: pointer; transition: box-shadow .15s, background .15s; }
+.opt[role="switch"]:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 0 0 1px var(--line-2); }
+.switch { transition: background .25s var(--ease), box-shadow .25s var(--ease); }
+a.link { cursor: pointer; }
+.field .btn { flex: none; }
+.chip.warn .ic, .chip.err .ic { width: 12px; height: 12px; }
+.opt .oi.warn { background: var(--warn-soft); color: var(--warn); box-shadow: inset 0 0 0 1px rgba(245,181,74,.25); }
+.disk .bar.low > i { background: linear-gradient(90deg, #b9832e, #f5b54a); box-shadow: 0 0 10px rgba(245,181,74,.45); }
+.disk .bar > i::after { display: none; }
+.lbl .quiet.copy { cursor: pointer; }
+.lbl .quiet.copy:hover { color: var(--ink-2); }
+.lbl .quiet.copy.ok { color: var(--ok); }
+
+/* ---------- progress ---------- */
+.bar > i { transition: width .35s var(--ease); }
+.big .what .ic { width: 14px; height: 14px; color: var(--warn); }
+.vs .r.ok { color: var(--ok); }
+.vs.err .k { background: var(--err-soft); color: var(--err); box-shadow: inset 0 0 0 1px rgba(255,100,115,.3); }
+.log { overflow: hidden; }
+.log .ln > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.log.tall { flex: 1; }
+
+/* opaque confirmation (cancel), anchored to the footer */
+.confirm { position: absolute; right: 24px; bottom: 66px; z-index: 40; width: 300px; padding: 14px; border-radius: 12px; background: var(--menu);
+  box-shadow: 0 20px 50px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.1), inset 0 1px 0 rgba(255,255,255,.08);
+  animation: pop .18s var(--ease); }
+.confirm b { display: block; font-size: var(--fs-13); font-weight: 650; }
+.confirm p { margin: 6px 0 12px; font-size: var(--fs-12); line-height: 1.5; color: var(--ink-2); }
+.confirm .row { display: flex; justify-content: flex-end; gap: 8px; }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+
+/* ---------- carousel ---------- */
+.card-news .arrows span { cursor: pointer; transition: background-color .15s, color .15s; }
+.card-news .arrows span:hover { background: rgba(255,255,255,.1); color: var(--ink); }
+.card-news .dots i { cursor: pointer; transition: width .3s var(--ease), background-color .3s; }
+.card-news .slide { animation: slidein .35s var(--ease); }
+@keyframes slidein { from { opacity: 0; transform: translateX(8px); } }
+.gpic .col b.word { font-size: var(--fs-17); }
+
+/* ---------- migration ---------- */
+.xi { transition: box-shadow .25s, opacity .25s; }
+.xi.wait { opacity: .62; }
+.xi.run { box-shadow: inset 0 0 0 1px rgba(134,160,255,.3), inset 0 1px 0 rgba(255,255,255,.07); }
+.xi.run .k { color: var(--accent-hi); }
+.xi .rt .chip { white-space: nowrap; }
+.mg-log { margin-top: 12px; }
+
+/* ---------- done ---------- */
+.first > div { cursor: pointer; transition: box-shadow .15s, transform .15s var(--ease); }
+.first > div:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.09), inset 0 0 0 1px rgba(134,160,255,.3); }
+.check-burst.play .disc { animation: burst-in .55s var(--ease) both; }
+.check-burst.play .disc path { animation: draw .5s .25s var(--ease) both; }
+.check-burst.play .ring { animation: ring-in .8s .15s var(--ease) both; }
+.check-burst.play .ring.r2 { animation-delay: .25s; }
+.check-burst.play .spark { animation: spark .9s .2s var(--ease) both; }
+@keyframes burst-in { from { transform: scale(.4); opacity: 0; } }
+@keyframes draw { from { stroke-dashoffset: 24; } }
+@keyframes ring-in { from { transform: scale(.9); opacity: 0; } }
+@keyframes spark { from { opacity: 0; } }
+
+/* ---------- error ---------- */
+.ebanner.err { background: linear-gradient(180deg, rgba(255,100,115,.12), rgba(255,100,115,.06)); box-shadow: inset 0 0 0 1px rgba(255,100,115,.26); }
+.ebanner.err .k { background: rgba(255,100,115,.18); color: var(--err); }
+.diag b.bad { color: var(--err); }
+.diag b .ok { color: var(--ok); }
+.ftr .legal .link .ic { vertical-align: -3px; }
+
+/* ---------- update toast ---------- */
+.toast-b .bar { margin-top: 12px; }
+.toast-b .sub { margin-top: 6px; font-size: var(--fs-12); color: var(--ink-2); }
+html.exe .toast-frame { border-radius: 16px; }
+
+/* ---------- reduced motion (Windows "Animation effects" off, or forced by the host) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+html.rm *, html.rm *::before, html.rm *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .spinner { border-color: rgba(134,160,255,.25); border-top-color: var(--accent-hi); border-right-color: var(--accent-hi); } }
+html.rm .spinner { border-right-color: var(--accent-hi); }
