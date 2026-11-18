@@ -1,9 +1,10 @@
 "use strict";
 
 /**
- * Market 2.0 catalog group C3 (motion): profile_aura (30), avatar_effect
- * (24 single + 16 set "profile effects"), presence_flare (30),
- * reaction_burst (16), call_overlay (16), theme (38) = 170 items.
+ * Market 2.0 catalog group C3 (motion): profile_aura (30 single + 16 set
+ * auras), avatar_effect (24 single + 16 set "profile effects"),
+ * presence_flare (30), reaction_burst (16), call_overlay (16), theme (38)
+ * = 186 items.
  *
  * Render specs live in ./c3/*.js; ./c3/build-css.mjs turns them into
  * src/styles/shop2-c3.css (new "s2-" effect / theme keys only, the old
@@ -19,6 +20,7 @@
 
 const { AVATAR } = require("./c3/avatar");
 const { AURA } = require("./c3/aura");
+const { SET_AURA } = require("./c3/aura-set");
 const { FLARE } = require("./c3/flare");
 const { BURST } = require("./c3/burst");
 const { OVERLAY } = require("./c3/overlay");
@@ -40,7 +42,7 @@ const BANDS = {
   epic: [550, 900],
   legendary: [900, 1500],
 };
-const SET_BANDS = { legendary: [760, 880], mythic: [880, 960] };
+const SET_BANDS = { epic: [600, 740], legendary: [760, 880], mythic: [880, 960] };
 /** Where a category sits inside a band (0 = bottom, 1 = top). */
 const CATEGORY_BIAS = {
   presence_flare: 0.22,
@@ -51,7 +53,8 @@ const CATEGORY_BIAS = {
   theme: 0.58,
 };
 
-function priceFor(category, rarity, index, isSet) {
+function priceFor(category, rarity, index, isSet, fixed = null) {
+  if (fixed != null) return fixed;
   const band = isSet ? SET_BANDS[rarity] : BANDS[rarity];
   if (!band) throw new Error(`no price band for ${rarity}${isSet ? " set piece" : ""}`);
   const jitter = (((index * 7919) % 13) / 12 - 0.5) * 0.36;
@@ -60,7 +63,7 @@ function priceFor(category, rarity, index, isSet) {
 }
 
 const GROUPS = [
-  { category: "profile_aura", list: AURA, base: 100, tags: ["aura", "animated"] },
+  { category: "profile_aura", list: [...AURA, ...SET_AURA], base: 100, tags: ["aura", "animated"] },
   { category: "avatar_effect", list: AVATAR, base: 200, tags: ["avatar", "animated"] },
   { category: "presence_flare", list: FLARE, base: 300, tags: ["presence", "animated"] },
   { category: "reaction_burst", list: BURST, base: 400, tags: ["reaction", "one-shot"] },
@@ -74,12 +77,13 @@ for (const g of GROUPS) {
     const key = `s2-${spec.slug}`;
     const isTheme = g.category === "theme";
     const tags = [...g.tags, `rarity:${spec.rarity}`];
-    if (spec.set) tags.push(`set:${spec.set}`, "profile-effect");
+    if (spec.set) tags.push(`set:${spec.set}`, g.category === "profile_aura" ? "set-aura" : "profile-effect");
     items.push({
       sku: `s2-${g.category}-${spec.slug}`,
       category: g.category,
       rarity: spec.rarity,
-      price_descoin: priceFor(g.category, spec.rarity, i, Boolean(spec.set)),
+      // Set auras carry their own price (set piece rule in c3/aura-set.js).
+      price_descoin: priceFor(g.category, spec.rarity, i, Boolean(spec.set), spec.price ?? null),
       set_key: spec.set || null,
       effect_key: isTheme ? null : key,
       asset_url: null,

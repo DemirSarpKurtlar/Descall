@@ -1,7 +1,7 @@
 "use strict";
 // Market 2.0 C1: the frame, banner and badge pieces of the 16 shared set themes
 // (lib/shop2/themes.js). Each piece uses its set palette [deep, mid, bright, light] and the
-// set's mood, so the 8 pieces of a set (with C2/C3/C4) read as one outfit.
+// set's mood, so the 9 pieces of a set (with C2/C3/C4, the aura from C3) read as one outfit.
 const L = require("./c1-lib");
 const { f, rnd, lg, rg, lgU, rgU, blur, metalGrad, pol, arc, annulus, circ, band, around, at, cabDefs, gemDefs, sparkle, star5, poly, leaf, petal, blade, spin, pulse,
   ridge, hills, waveLine, stars, twinkles, pine, pineRow, skyline, cloud, cloudBand, scatter, frameDoc, bannerDoc, badgeDoc } = L;

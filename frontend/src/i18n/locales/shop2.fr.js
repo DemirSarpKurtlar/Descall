@@ -135,7 +135,7 @@ export const SHOP2_FR = {
     "featured": "Set à la une · {i}/{n}",
     "left": "encore {d} j {h} h",
     "next": "Ensuite : {name}",
-    "desc": "Huit pièces, une palette : cadre, bannière, couleur du nom, badge, effet, bulle, tuile vocale et son d'arrivée.",
+    "desc": "Neuf pièces, une palette : cadre, bannière, aura, couleur du nom, badge, effet, bulle, tuile vocale et son d'arrivée.",
     "yourPrice": "Ton prix",
     "inspect": "Voir le set",
     "tryOn": "L'essayer sur moi"

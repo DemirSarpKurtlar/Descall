@@ -87,7 +87,8 @@ export const ADMIN_SHOP2_ES = {
     "avatar_effect": "Efecto",
     "chat_bubble": "Burbuja",
     "voice_tile": "Voz",
-    "join_sound": "Entrada"
+    "join_sound": "Entrada",
+    "profile_aura": "Aura"
   },
   "status": {
     "draft": "Borrador",

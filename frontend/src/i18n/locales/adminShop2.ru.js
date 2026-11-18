@@ -87,7 +87,8 @@ export const ADMIN_SHOP2_RU = {
     "avatar_effect": "Эффект",
     "chat_bubble": "Облако",
     "voice_tile": "Голос",
-    "join_sound": "Вход"
+    "join_sound": "Вход",
+    "profile_aura": "Аура"
   },
   "status": {
     "draft": "Черновик",

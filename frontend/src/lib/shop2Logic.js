@@ -12,10 +12,11 @@ export const SHOP2_HOLD_MS = 800;
 export const SHOP2_URGENT_MS = 10 * 60 * 1000;
 export const SHOP2_NIGHT_URGENT_MS = 5 * 60 * 1000;
 
-/** The 8 pieces of every set, in display order (frame + banner, name colour + badge, ...). */
+/** The 9 pieces of every set, in display order (frame + banner + aura, name colour + badge, ...). */
 export const SET_PIECE_ORDER = Object.freeze([
   "avatar_frame",
   "banner",
+  "profile_aura",
   "profile_color",
   "profile_badge",
   "avatar_effect",
@@ -26,7 +27,7 @@ export const SET_PIECE_ORDER = Object.freeze([
 
 /** Piece groups shown in the set's "Parçalar" column. */
 export const SET_PIECE_GROUPS = Object.freeze([
-  { id: "profile", categories: ["avatar_frame", "banner"] },
+  { id: "profile", categories: ["avatar_frame", "banner", "profile_aura"] },
   { id: "identity", categories: ["profile_color", "profile_badge"] },
   { id: "effect", categories: ["avatar_effect", "chat_bubble"] },
   { id: "sound", categories: ["voice_tile", "join_sound"] },

@@ -1829,10 +1829,11 @@ button.s2-tile:hover:not(:disabled) {
   z-index: -1;
   background: linear-gradient(90deg, rgba(10, 10, 20, 0.15), rgba(10, 10, 20, 0.62) 40%, rgba(10, 10, 20, 0.72));
 }
+/* 9 set pieces: a 3 x 3 square on desktop (5 + 4 on phones, one row when the banner stacks). */
 .s2-banner-slots {
   display: grid;
-  grid-template-columns: repeat(4, 62px);
-  grid-auto-rows: 62px;
+  grid-template-columns: repeat(3, 58px);
+  grid-auto-rows: 58px;
   gap: 8px;
   align-content: center;
   flex: none;
@@ -6179,7 +6180,7 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
   padding: 14px;
 }
 .s2-root.is-phone .s2-banner-slots {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-auto-rows: auto;
 }
 .s2-root.is-phone .s2-banner-slots .s2-slot {
@@ -6708,7 +6709,7 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
     flex-direction: column;
   }
   .s2-banner-slots {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(9, minmax(0, 1fr));
     grid-auto-rows: auto;
   }
   .s2-banner-slots .s2-slot {
@@ -6779,7 +6780,7 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
     grid-column: 1 / -1;
   }
   .s2-banner-slots {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 .s2-layer-panel.s2-side {

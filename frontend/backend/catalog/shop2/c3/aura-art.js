@@ -48,4 +48,4 @@ const ORN = {
   "sonsuz-prizma": { at: "tl", doc: () => d(`<path d='M30 8L50 44H10Z' fill='rgba(255,255,255,0.18)' stroke='#ffffff' stroke-width='1.6' stroke-linejoin='round'/>${["#ff3b6b", "#ffb13b", "#f6ff5a", "#3bff9d", "#3bc8ff", "#8a5bff"].map((c, i) => `<path d='M38 28L96 ${f(16 + i * 7)}' stroke='${c}' stroke-width='2.2'/>`).join("")}<path d='M0 34L30 28' stroke='#ffffff' stroke-width='2'/>`) },
 };
 
-module.exports = { ORN };
+module.exports = { ORN, d, star4, dot, leaf, arcLine };

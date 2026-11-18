@@ -135,7 +135,7 @@ export const SHOP2_DE = {
     "featured": "Ausgewähltes Set · {i}/{n}",
     "left": "noch {d} T {h} Std",
     "next": "Als Nächstes: {name}",
-    "desc": "Acht Teile, eine Palette: Rahmen, Banner, Namensfarbe, Abzeichen, Effekt, Blase, Sprachkachel und Beitrittston.",
+    "desc": "Neun Teile, eine Palette: Rahmen, Banner, Aura, Namensfarbe, Abzeichen, Effekt, Blase, Sprachkachel und Beitrittston.",
     "yourPrice": "Dein Preis",
     "inspect": "Set ansehen",
     "tryOn": "An mir anprobieren"
