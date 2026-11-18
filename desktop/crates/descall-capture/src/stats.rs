@@ -68,10 +68,10 @@ impl ShareStats {
     }
 }
 
-/// Is an NV12 Y plane (tight, `w` x `h`) essentially black? Samples a 16x9 grid only, so it
-/// costs nothing per frame. Limited range: black is 16.
-pub fn looks_black(y_plane: &[u8], w: usize, h: usize) -> bool {
-    if w == 0 || h == 0 || y_plane.len() < w * h {
+/// Is an NV12 Y plane (`w` x `h`, rows of `stride` bytes) essentially black? Samples a 16x9
+/// grid only, so it costs nothing per frame. Limited range: black is 16.
+pub fn looks_black(y_plane: &[u8], w: usize, h: usize, stride: usize) -> bool {
+    if w == 0 || h == 0 || stride < w || y_plane.len() < stride * (h - 1) + w {
         return false;
     }
     let mut max = 0u8;
@@ -79,7 +79,7 @@ pub fn looks_black(y_plane: &[u8], w: usize, h: usize) -> bool {
         let row = (h * (2 * gy + 1)) / 18;
         for gx in 0..16 {
             let col = (w * (2 * gx + 1)) / 32;
-            max = max.max(y_plane[row * w + col]);
+            max = max.max(y_plane[row * stride + col]);
         }
     }
     max <= 20
@@ -163,11 +163,11 @@ mod tests {
     #[test]
     fn black_detection() {
         let mut y = vec![16u8; 64 * 36];
-        assert!(looks_black(&y, 64, 36));
+        assert!(looks_black(&y, 64, 36, 64));
         // Grid point (gx 8, gy 4): row 36*9/18 = 18, col 64*17/32 = 34.
         y[18 * 64 + 34] = 200;
-        assert!(!looks_black(&y, 64, 36));
-        assert!(!looks_black(&[0; 3], 64, 36));
-        assert!(!looks_black(&vec![128u8; 64 * 36], 64, 36));
+        assert!(!looks_black(&y, 64, 36, 64));
+        assert!(!looks_black(&[0; 3], 64, 36, 64));
+        assert!(!looks_black(&vec![128u8; 64 * 36], 64, 36, 64));
     }
 }

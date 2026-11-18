@@ -1,42 +1,59 @@
-//! One screen share = one WGC session + (optional) one loopback capture, both writing
-//! into the same shared ring. `notify(kind, seq)` wakes the page (a tiny web message).
+//! One screen share = one WGC session + (optional) one process-loopback capture, both
+//! writing into the same shared ring. A [`Sink`] is told about every frame / audio packet
+//! (to wake the page) and about the source going away.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
-use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R16G16B16A16_FLOAT};
-
-use crate::convert::Nv12Converter;
+use crate::bridge::UpdateRequest;
+use crate::convert::{Converter, OutFormat};
 use crate::d3d::D3d;
 use crate::hdr::{monitor_hdr, ToneMapper};
 use crate::loopback::{self, LoopbackCapture};
-use crate::presets::{fit, Quality};
-use crate::ring::RingWriter;
+use crate::presets::{clamp_request, fit, Quality};
+use crate::ring::{FrameTimes, RingWriter, FLAG_AUDIO, FLAG_CURSOR, FLAG_HDR};
+use crate::stats::{looks_black, ShareStats, StatsSnapshot};
+use crate::tonemap::ToneParams;
 use crate::wgc::{self, Options, Target, WgcSession};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Kind {
-    Video,
-    Audio,
+pub trait Sink: Send + Sync + 'static {
+    /// Video frame `seq` is in the ring. Called on the capture thread right after the write.
+    fn video(&self, seq: u64);
+    /// Audio packet `seq` is in the ring (every 10 ms).
+    fn audio(&self, seq: u64);
+    /// The window closed or the monitor went away. Must not stop the share synchronously.
+    fn source_closed(&self);
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct ShareRequest {
     pub target: Target,
     pub quality: Quality,
     pub cursor: bool,
     pub system_audio: bool,
-    /// User's "SDR content brightness" in nits (DISPLAYCONFIG_SDR_WHITE_LEVEL), default 200.
-    pub sdr_white_nits: f32,
 }
 
 pub struct Share {
     video: Option<WgcSession>,
     audio: Option<LoopbackCapture>,
+    ring: Arc<Mutex<RingWriter>>,
+    quality: Arc<Mutex<Quality>>,
+    cursor: AtomicBool,
+    stats: Arc<ShareStats>,
     pub hdr: bool,
     pub audio_error: Option<String>,
+    pub adapter: crate::d3d::AdapterInfo,
+    pub target: Target,
 }
 
 impl Share {
+    /// Detach the ring first (no write may land in a closed shared buffer), then stop the
+    /// capture threads. Never call while holding the ring lock.
     pub fn stop(mut self) {
+        if let Ok(mut r) = self.ring.lock() {
+            r.detach();
+        }
         if let Some(v) = self.video.take() {
             v.stop();
         }
@@ -44,67 +61,171 @@ impl Share {
             a.stop();
         }
     }
+
     pub fn source_closed(&self) -> bool {
         self.video.as_ref().map(|v| v.is_closed()).unwrap_or(true)
     }
+
+    pub fn has_audio(&self) -> bool {
+        self.audio.is_some()
+    }
+
+    pub fn stats(&self) -> StatsSnapshot {
+        self.stats.snapshot()
+    }
+
+    pub fn stats_handle(&self) -> Arc<ShareStats> {
+        self.stats.clone()
+    }
+
+    pub fn quality(&self) -> Quality {
+        self.quality.lock().map(|q| *q).unwrap_or(crate::presets::preset("high"))
+    }
+
+    /// Mid-share change: fps (pacing), size (within the ring's box) and cursor.
+    pub fn update(&self, u: &UpdateRequest) -> bool {
+        let mut changed = false;
+        if u.width.is_some() || u.height.is_some() || u.fps.is_some() {
+            if let Ok(mut q) = self.quality.lock() {
+                let next = clamp_request(u.width.or(Some(q.width)), u.height.or(Some(q.height)), u.fps.or(Some(q.fps)), q.hint);
+                if next != *q {
+                    *q = next;
+                    if let Some(v) = &self.video {
+                        v.set_max_fps(next.fps);
+                    }
+                    changed = true;
+                }
+            }
+        }
+        if let Some(c) = u.cursor {
+            if let Some(v) = &self.video {
+                if v.set_cursor(c) {
+                    self.cursor.store(c, Ordering::Release);
+                    changed = true;
+                }
+            }
+            if let Ok(r) = self.ring.lock() {
+                r.set_flags(self.flags());
+            }
+        }
+        changed
+    }
+
+    fn flags(&self) -> u32 {
+        (if self.audio.is_some() { FLAG_AUDIO } else { 0 }) | (if self.hdr { FLAG_HDR } else { 0 }) | (if self.cursor.load(Ordering::Acquire) { FLAG_CURSOR } else { 0 })
+    }
 }
 
-pub fn start<N>(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, notify: N) -> crate::Result<Share>
-where
-    N: Fn(Kind, u64) + Send + Sync + Clone + 'static,
-{
-    let hdr = match req.target {
-        Target::Monitor(h) => monitor_hdr(h),
-        Target::Window(_) => Default::default(), // window capture is composed SDR by DWM
-    };
-    let d3d = Arc::new(D3d::new()?);
-    let q = req.quality;
-    let sdr_white = req.sdr_white_nits;
-    let peak = if hdr.max_nits > 0.0 { hdr.max_nits } else { 1000.0 };
+struct Gpu {
+    conv: Option<Converter>,
+    tone: Option<ToneMapper>,
+    tone_params: ToneParams,
+    tone_checked: Instant,
+}
 
-    // Lazily (re)built per input size: WGC tells us the size with the first frame and on resize.
-    struct Gpu {
-        conv: Option<Nv12Converter>,
-        tone: Option<ToneMapper>,
-    }
-    let gpu = Mutex::new(Gpu { conv: None, tone: None });
-    let ring_v = ring.clone();
-    let notify_v = notify.clone();
-    let d3d_cb = d3d.clone();
-    let video = wgc::start(&d3d, req.target, Options { cursor: req.cursor, hdr: hdr.hdr, max_fps: q.fps }, move |frame| {
-        let mut g = gpu.lock().unwrap();
-        let (ow, oh) = fit(frame.width, frame.height, &q);
-        let rebuild = g.conv.as_ref().map(|c| c.in_w != frame.width || c.in_h != frame.height).unwrap_or(true);
-        if rebuild {
-            let in_fmt = DXGI_FORMAT_B8G8R8A8_UNORM; // tone-mapped HDR is BGRA8 too
-            g.conv = Nv12Converter::new(&d3d_cb, frame.width, frame.height, ow, oh, q.fps, in_fmt).ok();
-            g.tone = if hdr.hdr { ToneMapper::new(&d3d_cb, frame.width, frame.height, sdr_white, peak).ok() } else { None };
-            let _ = DXGI_FORMAT_R16G16B16A16_FLOAT;
+/// Start a share. `ring`'s box must be at least the request's quality box.
+pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink>) -> crate::Result<Share> {
+    let d3d = Arc::new(D3d::new()?);
+    let adapter = d3d.adapter.clone();
+    // Monitor: HDR if that monitor is. Window: FP16 whenever any monitor is HDR, with the
+    // curve following the monitor the window is on (passthrough on SDR monitors).
+    let (hdr_capture, initial_params) = match req.target {
+        Target::Monitor(h) => {
+            let i = monitor_hdr(h);
+            (i.hdr, i.tone_params())
         }
-        let input = match (&g.tone, hdr.hdr) {
+        Target::Window(hwnd) => (crate::hdr::any_monitor_hdr(), monitor_hdr(crate::sources::monitor_of_window(hwnd)).tone_params()),
+    };
+    let stats = Arc::new(ShareStats::default());
+    let quality = Arc::new(Mutex::new(req.quality));
+    let (box_w, box_h) = ring.lock().map(|r| (r.layout().max_w, r.layout().max_h)).unwrap_or((req.quality.width, req.quality.height));
+
+    let gpu = Mutex::new(Gpu { conv: None, tone: None, tone_params: initial_params, tone_checked: Instant::now() });
+    let ring_v = ring.clone();
+    let sink_v = sink.clone();
+    let stats_v = stats.clone();
+    let quality_v = quality.clone();
+    let d3d_cb = d3d.clone();
+    let target = req.target;
+    let on_frame = move |frame: wgc::Frame<'_>| {
+        let Ok(mut g) = gpu.lock() else { return };
+        let g = &mut *g;
+        let q = quality_v.lock().map(|q| *q).unwrap_or(req.quality);
+        let qb = Quality { width: q.width.min(box_w), height: q.height.min(box_h), ..q };
+        let (ow, oh) = fit(frame.width, frame.height, &qb);
+        let rebuild = g.conv.as_ref().map(|c| c.in_w != frame.width || c.in_h != frame.height || c.out_w != ow || c.out_h != oh).unwrap_or(true);
+        if rebuild {
+            g.conv = Converter::new(&d3d_cb, frame.width, frame.height, ow, oh, q.fps, OutFormat::Nv12).ok();
+            g.tone = if frame.hdr { ToneMapper::new(&d3d_cb, frame.width, frame.height, g.tone_params).ok() } else { None };
+        }
+        // A followed window may move between HDR and SDR monitors: re-check once a second.
+        if let (Target::Window(hwnd), true) = (target, frame.hdr) {
+            if g.tone_checked.elapsed() > Duration::from_secs(1) {
+                g.tone_checked = Instant::now();
+                g.tone_params = monitor_hdr(crate::sources::monitor_of_window(hwnd)).tone_params();
+                let p = g.tone_params;
+                if let Some(t) = g.tone.as_mut() {
+                    t.set_params(&d3d_cb, p);
+                }
+            }
+        }
+        let input = match (&g.tone, frame.hdr) {
             (Some(t), true) => {
                 t.run(&d3d_cb, frame.texture);
                 t.out.clone()
             }
+            (None, true) => {
+                ShareStats::add(&stats_v.frames_failed, 1);
+                return;
+            }
             _ => frame.texture.clone(),
         };
-        if let Some(conv) = &g.conv {
-            let _ = conv.convert_and_read(&d3d_cb, &input, |bytes, pitch| {
-                let seq = ring_v.lock().unwrap().write_nv12(conv.out_w, conv.out_h, bytes, pitch, frame.timestamp_us);
-                if seq != 0 {
-                    notify_v(Kind::Video, seq);
-                }
-            });
+        let Some(conv) = g.conv.as_mut() else {
+            ShareStats::add(&stats_v.frames_failed, 1);
+            return;
+        };
+        let (cw, ch) = (conv.out_w, conv.out_h);
+        let mut seq = None;
+        let r = conv.convert_and_read(&d3d_cb, &input, |bytes, pitch| {
+            let black = looks_black(bytes, cw as usize, ch as usize, pitch);
+            if black {
+                ShareStats::add(&stats_v.black_streak, 1);
+            } else {
+                stats_v.black_streak.store(0, Ordering::Relaxed);
+            }
+            let written = crate::clock::now_100ns();
+            if let Ok(mut ring) = ring_v.lock() {
+                let t = FrameTimes { timestamp_us: (frame.time_100ns / 10) as u64, arrival_us: (frame.arrival_100ns / 10) as u64, written_us: (written / 10) as u64 };
+                seq = ring.write_nv12(cw, ch, bytes, pitch, t).ok();
+            }
+            stats_v.record_convert(((written - frame.arrival_100ns) / 10).max(0) as u64);
+        });
+        match (r, seq) {
+            (Ok(()), Some(s)) => {
+                ShareStats::add(&stats_v.frames_written, 1);
+                sink_v.video(s);
+            }
+            _ => ShareStats::add(&stats_v.frames_failed, 1),
         }
-    })?;
+    };
+    let sink_c = sink.clone();
+    let video = wgc::start(&d3d, req.target, Options { cursor: req.cursor, hdr: hdr_capture, max_fps: req.quality.fps, buffers: 2 }, Some(stats.clone()), on_frame, move || sink_c.source_closed())?;
 
     let (audio, audio_error) = if req.system_audio {
         let ring_a = ring.clone();
-        let notify_a = notify.clone();
-        match loopback::start_excluding_self(move |samples, frames, ts, silent| {
-            let seq = ring_a.lock().unwrap().write_audio(samples, frames, ts, silent);
-            if seq != 0 {
-                notify_a(Kind::Audio, seq);
+        let sink_a = sink.clone();
+        let stats_a = stats.clone();
+        match loopback::start_excluding_self(move |samples, frames, ts, flags| {
+            let seq = ring_a.lock().ok().and_then(|mut r| r.write_audio(samples, frames, ts, flags).ok());
+            ShareStats::add(&stats_a.audio_packets, 1);
+            if flags & crate::ring::AUDIO_SILENT != 0 {
+                ShareStats::add(&stats_a.audio_silent_packets, 1);
+            }
+            if flags & crate::ring::AUDIO_DISCONTINUITY != 0 {
+                ShareStats::add(&stats_a.audio_discontinuities, 1);
+            }
+            if let Some(s) = seq {
+                sink_a.audio(s);
             }
         }) {
             Ok(a) => (Some(a), None),
@@ -115,5 +236,9 @@ where
         (None, None)
     };
 
-    Ok(Share { video: Some(video), audio, hdr: hdr.hdr, audio_error })
+    let share = Share { video: Some(video), audio, ring, quality, cursor: AtomicBool::new(req.cursor), stats, hdr: hdr_capture, audio_error, adapter, target: req.target };
+    if let Ok(r) = share.ring.lock() {
+        r.set_flags(share.flags());
+    }
+    Ok(share)
 }

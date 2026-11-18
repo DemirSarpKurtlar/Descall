@@ -46,19 +46,6 @@ pub fn for_build(build: u32) -> Caps {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn version_gates() {
-        let c = super::for_build(19045);
-        assert!(c.wgc && c.cursor_toggle && c.process_loopback && c.native && !c.borderless);
-        assert!(super::for_build(22631).borderless);
-        let old = super::for_build(18363);
-        assert!(old.wgc && !old.process_loopback && !old.native && !old.cursor_toggle);
-        assert!(!super::for_build(17763).wgc);
-    }
-}
-
 /// Real OS build (RtlGetVersion is not subject to the manifest version lie).
 #[cfg(windows)]
 pub fn current_build() -> u32 {
@@ -79,4 +66,17 @@ pub fn current() -> Caps {
     c.min_update_interval = c.wgc && crate::wgc::session_property_present("MinUpdateInterval");
     c.native = c.native && c.wgc;
     c
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn version_gates() {
+        let c = super::for_build(19045);
+        assert!(c.wgc && c.cursor_toggle && c.process_loopback && c.native && !c.borderless);
+        assert!(super::for_build(22631).borderless);
+        let old = super::for_build(18363);
+        assert!(old.wgc && !old.process_loopback && !old.native && !old.cursor_toggle);
+        assert!(!super::for_build(17763).wgc);
+    }
 }

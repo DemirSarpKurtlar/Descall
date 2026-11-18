@@ -140,6 +140,23 @@ const fn align(v: usize, a: usize) -> usize {
     (v + a - 1) & !(a - 1)
 }
 
+/// Timestamps of one video frame, all in microseconds on the QPC clock.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FrameTimes {
+    /// Composition time (WGC SystemRelativeTime): the VideoFrame timestamp.
+    pub timestamp_us: u64,
+    /// When the frame reached our callback.
+    pub arrival_us: u64,
+    /// When it was written to the ring.
+    pub written_us: u64,
+}
+
+impl FrameTimes {
+    pub fn at(timestamp_us: u64) -> Self {
+        FrameTimes { timestamp_us, arrival_us: timestamp_us, written_us: timestamp_us }
+    }
+}
+
 /// Why a write was refused (never a panic in production: a bad frame is just skipped).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError {
@@ -247,7 +264,7 @@ impl RingWriter {
     /// Copy one NV12 frame into the next slot. `src` holds `h` Y rows of `src_row_pitch`
     /// bytes followed by `h / 2` UV rows at `src_row_pitch * h` (a mapped NV12 texture).
     /// Rows are repacked tightly. Returns the sequence number to announce to the page.
-    pub fn write_nv12(&mut self, w: u32, h: u32, src: &[u8], src_row_pitch: usize, timestamp_us: u64, arrival_us: u64, written_us: u64) -> Result<u64, WriteError> {
+    pub fn write_nv12(&mut self, w: u32, h: u32, src: &[u8], src_row_pitch: usize, t: FrameTimes) -> Result<u64, WriteError> {
         if !self.is_attached() {
             return Err(WriteError::Detached);
         }
@@ -281,15 +298,15 @@ impl RingWriter {
                 }
             }
         }
-        self.put_u64(slot + off::V_TS, timestamp_us);
+        self.put_u64(slot + off::V_TS, t.timestamp_us);
         self.put_u32(slot + off::V_W, w);
         self.put_u32(slot + off::V_H, h);
         self.put_u32(slot + off::V_Y_STRIDE, w);
         self.put_u32(slot + off::V_UV_OFFSET, y_len as u32);
         self.put_u32(slot + off::V_LEN, need as u32);
         self.put_u32(slot + off::V_FLAGS, 0);
-        self.put_u64(slot + off::V_ARRIVAL, arrival_us);
-        self.put_u64(slot + off::V_WRITTEN, written_us);
+        self.put_u64(slot + off::V_ARRIVAL, t.arrival_us);
+        self.put_u64(slot + off::V_WRITTEN, t.written_us);
         fence(Ordering::Release);
         self.put_u64(slot + off::V_SEQ_END, seq);
         self.put_u32(off::WIDTH, w);
@@ -482,9 +499,8 @@ mod tests {
                 src[32 + r * 8 + c] = 100 + (r * 4 + c) as u8;
             }
         }
-        let seq = w.write_nv12(4, 4, &src, 8, 1234, 1200, 1240).unwrap();
+        let seq = w.write_nv12(4, 4, &src, 8, FrameTimes { timestamp_us: 1234, arrival_us: 1200, written_us: 1240 }).unwrap();
         assert_eq!(seq, 1);
-        drop(w);
         let r = RingReader::new(&mem).expect("valid header");
         assert_eq!(r.state(), STATE_LIVE);
         assert_eq!(r.latest_video(), 1);
@@ -501,8 +517,7 @@ mod tests {
         let (mut mem, layout) = ring(4, 2);
         let mut w = unsafe { RingWriter::new(mem.as_mut_ptr(), mem.len(), layout, 48_000, 2) };
         let src: Vec<u8> = (0..12).collect();
-        w.write_nv12(4, 2, &src, 4, 0, 0, 0).unwrap();
-        drop(w);
+        w.write_nv12(4, 2, &src, 4, FrameTimes::at(0)).unwrap();
         assert_eq!(RingReader::new(&mem).unwrap().read_video(1).unwrap().nv12, src);
     }
 
@@ -511,9 +526,8 @@ mod tests {
         let (mut mem, layout) = ring(2, 2);
         let mut w = unsafe { RingWriter::new(mem.as_mut_ptr(), mem.len(), layout, 48_000, 2) };
         for i in 0..10u8 {
-            w.write_nv12(2, 2, &[i; 6], 2, i as u64, 0, 0).unwrap();
+            w.write_nv12(2, 2, &[i; 6], 2, FrameTimes::at(i as u64)).unwrap();
         }
-        drop(w);
         let r = RingReader::new(&mem).unwrap();
         assert_eq!(r.latest_video(), 10);
         for s in 8..=10 {
@@ -526,8 +540,7 @@ mod tests {
     fn torn_slot_is_rejected() {
         let (mut mem, layout) = ring(2, 2);
         let mut w = unsafe { RingWriter::new(mem.as_mut_ptr(), mem.len(), layout, 48_000, 2) };
-        w.write_nv12(2, 2, &[7; 6], 2, 0, 0, 0).unwrap();
-        drop(w);
+        w.write_nv12(2, 2, &[7; 6], 2, FrameTimes::at(0)).unwrap();
         // Simulate a writer that started seq 4 in the same slot (1 % 3 == 4 % 3).
         let slot = layout.video_slot(1);
         mem[slot..slot + 8].copy_from_slice(&4u64.to_le_bytes());
@@ -538,12 +551,12 @@ mod tests {
     fn oversized_and_bad_frames_are_refused_without_panic() {
         let (mut mem, layout) = ring(4, 4);
         let mut w = unsafe { RingWriter::new(mem.as_mut_ptr(), mem.len(), layout, 48_000, 2) };
-        assert_eq!(w.write_nv12(8, 8, &[0; 96], 8, 0, 0, 0), Err(WriteError::TooLarge));
-        assert_eq!(w.write_nv12(3, 4, &[0; 18], 3, 0, 0, 0), Err(WriteError::BadSource));
-        assert_eq!(w.write_nv12(4, 4, &[0; 10], 4, 0, 0, 0), Err(WriteError::BadSource));
+        assert_eq!(w.write_nv12(8, 8, &[0; 96], 8, FrameTimes::at(0)), Err(WriteError::TooLarge));
+        assert_eq!(w.write_nv12(3, 4, &[0; 18], 3, FrameTimes::at(0)), Err(WriteError::BadSource));
+        assert_eq!(w.write_nv12(4, 4, &[0; 10], 4, FrameTimes::at(0)), Err(WriteError::BadSource));
         assert_eq!(w.write_audio(&[0.0; 4000], 2000, 0, 0), Err(WriteError::TooLarge));
         w.detach();
-        assert_eq!(w.write_nv12(4, 4, &[0; 24], 4, 0, 0, 0), Err(WriteError::Detached));
+        assert_eq!(w.write_nv12(4, 4, &[0; 24], 4, FrameTimes::at(0)), Err(WriteError::Detached));
         assert_eq!(w.write_audio(&[0.0; 4], 2, 0, 0), Err(WriteError::Detached));
         let r = RingReader::new(&mem).unwrap();
         assert_eq!(r.state(), STATE_ENDED);
@@ -587,7 +600,6 @@ mod tests {
         let (mut mem, layout) = ring(1920, 1080);
         let w = unsafe { RingWriter::new(mem.as_mut_ptr(), mem.len(), layout, 48_000, 2) };
         w.set_flags(FLAG_AUDIO | FLAG_CURSOR);
-        drop(w);
         let r = RingReader::new(&mem).unwrap();
         assert_eq!(r.u32(off::MAX_WIDTH), 1920);
         assert_eq!(r.u32(off::SAMPLE_RATE), 48_000);

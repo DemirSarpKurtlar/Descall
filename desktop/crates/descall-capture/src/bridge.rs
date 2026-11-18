@@ -168,6 +168,8 @@ pub struct StartInfo {
     pub cursor: bool,
     pub audio: bool,
     pub audio_error: Option<String>,
+    /// echo_guard found WebView2 audio outside our process tree (advisory, logged).
+    pub echo_risk: bool,
     pub lane: Lane,
 }
 
@@ -227,7 +229,7 @@ mod tests {
         assert_eq!(v["thumbnailDataURL"], "data:x");
         assert!(v.get("appIconDataURL").is_some());
         assert!(v.get("processId").is_some());
-        let info = StartInfo { id: 3, bytes: 10, width: 1, height: 1, fps: 60, display_surface: "monitor", hdr: false, cursor: true, audio: false, audio_error: Some("x".into()), lane: Lane::L2 };
+        let info = StartInfo { id: 3, bytes: 10, width: 1, height: 1, fps: 60, display_surface: "monitor", hdr: false, cursor: true, audio: false, audio_error: Some("x".into()), echo_risk: false, lane: Lane::L2 };
         let v = serde_json::to_value(&info).unwrap();
         assert_eq!(v["displaySurface"], "monitor");
         assert_eq!(v["audioError"], "x");

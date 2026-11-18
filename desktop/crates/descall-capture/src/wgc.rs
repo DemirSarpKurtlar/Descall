@@ -201,18 +201,15 @@ where
             ShareStats::add(&s.frames_arrived, 1);
         }
         let (cw, ch) = (content.Width.max(1), content.Height.max(1));
-        // Grown past the pool (window enlarged, resolution change): recreate and drop this
-        // frame. A smaller content is used as is (top-left rectangle), and the pool shrinks
-        // too so the surfaces do not stay oversized.
+        // Window resized or display mode changed: recreate the pool at the content size and
+        // drop this frame (the next one arrives at the new size).
         if cw != st.pool_size.Width || ch != st.pool_size.Height {
             st.pool_size = SizeInt32 { Width: cw, Height: ch };
-            let grew = cw > st.pool_size.Width || ch > st.pool_size.Height;
             let _ = frame.Close();
             pool.Recreate(&device.resolve()?, format, buffers, st.pool_size)?;
             if let Some(s) = &stats {
                 ShareStats::add(&s.resizes, 1);
             }
-            let _ = grew;
             return Ok(());
         }
         let min = interval_cb.load(Ordering::Acquire);
