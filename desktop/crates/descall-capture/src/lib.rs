@@ -28,6 +28,7 @@ pub mod audio;
 pub mod bridge;
 pub mod caps;
 pub mod encode;
+pub mod ending;
 pub mod presets;
 pub mod proctree;
 pub mod ring;

@@ -3,7 +3,9 @@
 //! - Window capture follows the window by design: the item is the HWND's DWM redirection
 //!   surface, so moving it, covering it or dragging it to another monitor keeps the
 //!   picture. A resize changes ContentSize; the frame pool is recreated at the new size.
-//! - GraphicsCaptureItem.Closed (window closed, monitor unplugged) calls `on_closed`; the
+//! - The source going away (window closed, monitor unplugged) calls `on_closed` once,
+//!   from GraphicsCaptureItem.Closed or from a 100 ms watchdog (IsWindow / the monitor
+//!   still listed), whichever comes first: WGC does not always raise Closed (ending.rs). The
 //!   host ends the share like Chromium does when the captured surface goes away.
 //! - Cursor on/off: IsCursorCaptureEnabled (Windows 10 2004+), switchable mid-share.
 //! - No yellow border: IsBorderRequired = false (Windows 11, after a one-time
@@ -13,7 +15,7 @@
 //! - HDR: the pool is created in R16G16B16A16Float (scRGB) and hdr.rs tone-maps.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
-use std::sync::atomic::{AtomicBool, AtomicI64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use windows::core::{factory, IInspectable, HSTRING};
@@ -28,6 +30,7 @@ use windows::Win32::Graphics::Gdi::HMONITOR;
 use windows::Win32::System::WinRT::Graphics::Capture::IGraphicsCaptureItemInterop;
 
 use crate::d3d::{texture_of, D3d};
+use crate::ending::EndLatch;
 use crate::stats::ShareStats;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,10 +73,10 @@ pub struct Frame<'a> {
 pub struct WgcSession {
     session: GraphicsCaptureSession,
     pool: Direct3D11CaptureFramePool,
-    closed: Arc<AtomicBool>,
+    latch: Arc<EndLatch>,
+    watchdog: Option<std::thread::JoinHandle<()>>,
     interval_100ns: Arc<AtomicI64>,
     /// Set before Close: callbacks that start after it return at once.
-    stopping: Arc<AtomicBool>,
     /// Callbacks currently running (FrameArrived and Closed).
     inflight: Arc<AtomicUsize>,
     stopped: bool,
@@ -102,7 +105,7 @@ impl Drop for InFlight {
 
 impl WgcSession {
     pub fn is_closed(&self) -> bool {
-        self.closed.load(Ordering::Acquire)
+        self.latch.fired()
     }
 
     pub fn set_cursor(&self, on: bool) -> bool {
@@ -128,7 +131,10 @@ impl WgcSession {
             return;
         }
         self.stopped = true;
-        self.stopping.store(true, Ordering::Release);
+        self.latch.stop();
+        if let Some(w) = self.watchdog.take() {
+            let _ = w.join();
+        }
         let _ = self.pool.RemoveFrameArrived(self.frame_token);
         let _ = self._item.RemoveClosed(self.closed_token);
         let _ = self.session.Close();
@@ -143,6 +149,17 @@ impl WgcSession {
 impl Drop for WgcSession {
     fn drop(&mut self) {
         self.shutdown();
+    }
+}
+
+/// Does the captured window / monitor still exist?
+pub fn source_alive(target: Target) -> bool {
+    match target {
+        Target::Window(h) => crate::sources::window_alive(h),
+        Target::Monitor(h) => {
+            let mut mi = windows::Win32::Graphics::Gdi::MONITORINFO { cbSize: std::mem::size_of::<windows::Win32::Graphics::Gdi::MONITORINFO>() as u32, ..Default::default() };
+            unsafe { windows::Win32::Graphics::Gdi::GetMonitorInfoW(HMONITOR(h as *mut _), &mut mi) }.as_bool()
+        }
     }
 }
 
@@ -217,17 +234,17 @@ where
         let _ = session.SetMinUpdateInterval(TimeSpan { Duration: interval.load(Ordering::Relaxed) });
     }
 
-    let closed = Arc::new(AtomicBool::new(false));
-    let stopping = Arc::new(AtomicBool::new(false));
+    let latch = Arc::new(EndLatch::new());
+    let on_closed = Arc::new(on_closed);
     let inflight = Arc::new(AtomicUsize::new(0));
     let closed_token;
     {
-        let (closed, stopping, inflight) = (closed.clone(), stopping.clone(), inflight.clone());
+        let (latch, inflight, on_closed) = (latch.clone(), inflight.clone(), on_closed.clone());
         closed_token = item.Closed(&TypedEventHandler::<GraphicsCaptureItem, IInspectable>::new(move |_, _| {
             let _guard = InFlight::enter(&inflight);
             // A panic must never unwind into the OS (that aborts the process).
             let _ = catch_unwind(AssertUnwindSafe(|| {
-                if !closed.swap(true, Ordering::AcqRel) && !stopping.load(Ordering::Acquire) {
+                if latch.fire() {
                     on_closed();
                 }
             }));
@@ -245,7 +262,7 @@ where
     let state = Mutex::new(State { pool_size: size, last_ts: i64::MIN, on_frame });
     let interval_cb = interval.clone();
     let hdr = opts.hdr;
-    let (stopping_cb, inflight_cb) = (stopping.clone(), inflight.clone());
+    let (latch_cb, inflight_cb) = (latch.clone(), inflight.clone());
     let on_arrived = move |sender: Option<&Direct3D11CaptureFramePool>| -> windows::core::Result<()> {
         let arrival = crate::clock::now_100ns();
         let Some(pool) = sender else { return Ok(()) };
@@ -286,7 +303,7 @@ where
     };
     let frame_token = pool.FrameArrived(&TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new(move |sender, _| {
         let _guard = InFlight::enter(&inflight_cb);
-        if stopping_cb.load(Ordering::Acquire) {
+        if latch_cb.stopping() {
             return Ok(());
         }
         match catch_unwind(AssertUnwindSafe(|| on_arrived(sender.as_ref()))) {
@@ -298,7 +315,14 @@ where
         }
     }))?;
 
-    let s = WgcSession { session, pool, closed, interval_100ns: interval, stopping, inflight, stopped: false, closed_token, frame_token, _item: item };
+    let mut s = WgcSession { session, pool, latch: latch.clone(), watchdog: None, interval_100ns: interval, inflight, stopped: false, closed_token, frame_token, _item: item };
     s.session.StartCapture()?;
+    // Watchdog: the shared window destroyed / the monitor gone, even if Closed never comes.
+    let wd = std::thread::Builder::new().name("descall-capture-watchdog".into()).spawn(move || {
+        crate::ending::watch(&latch, crate::ending::WATCH_INTERVAL, || source_alive(target), || {
+            let _ = catch_unwind(AssertUnwindSafe(|| on_closed()));
+        }, std::thread::sleep);
+    });
+    s.watchdog = wd.ok();
     Ok(s)
 }
