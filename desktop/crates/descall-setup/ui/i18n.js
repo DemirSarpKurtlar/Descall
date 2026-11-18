@@ -91,6 +91,7 @@
     t_int1: "Paket silindi, yeniden indirilecek", t_int2: "Sorun sürerse ağ bağlantını ya da proxy'yi kontrol et", t_int3: "Çevrimdışı kurulum paketini de kullanabilirsin",
     t_inst1: "Antivirüs Descall klasörünü engelliyor olabilir", t_inst2: "Bilgisayarı yeniden başlatıp tekrar dene", t_inst3: "Kurulum günlüğünü destek ekibine gönder",
     t_sys1: "Windows Update ile sistemini güncelle", t_sys2: "Bu arada eski Descall güvenlik güncellemesi almaya devam eder", t_sys3: "Güncellemeden sonra kurulumu yeniden aç",
+    log_short: "Günlük",
     support: "Destek", restart_dl: "Baştan indir", resume_dl: "Kaldığı yerden devam et", retry: "Yeniden dene", close_app: "Descall'ı kapat ve sürdür", change_loc: "Konumu değiştir", keep_old: "Eski sürümle devam et",
 
     mg_tag: "Aynı Descall, yepyeni çekirdek.", mg_cmp: "Eski sürüm ve yeni sürüm", mg_setup: "Kurulum", mg_launch: "Açılış", mg_memory: "Bellek",
@@ -192,6 +193,7 @@
     t_int1: "The package was deleted and will download again", t_int2: "If it keeps happening, check your network or proxy", t_int3: "You can also use the offline installer",
     t_inst1: "Antivirus software may be blocking the Descall folder", t_inst2: "Restart your PC and try again", t_inst3: "Send the setup log to our support team",
     t_sys1: "Update your system with Windows Update", t_sys2: "Meanwhile the current Descall keeps getting security updates", t_sys3: "Open Setup again after updating",
+    log_short: "Log",
     support: "Support", restart_dl: "Download again", resume_dl: "Resume download", retry: "Try again", close_app: "Close Descall and continue", change_loc: "Change location", keep_old: "Keep the current version",
 
     mg_tag: "Same Descall, brand-new core.", mg_cmp: "Old version and new version", mg_setup: "Install", mg_launch: "Launch", mg_memory: "Memory",
@@ -223,13 +225,13 @@
 
     tag1: "Deine Stimme, deine Server, deine Leute.", tag2: "Jetzt zehnmal leichter.",
     m_setup: "Download", m_launch: "Start", m_memory: "Speicher",
-    w_h1: "Bereit zur Installation", w_p: "Wähle, wo und wie installiert wird. Alles lässt sich später in den Einstellungen ändern.",
+    w_h1: "Bereit zur Installation", w_p: "Wähle Ort und Optionen. Alles lässt sich später in den Einstellungen ändern.",
     w_h1_up: "Bereit zum Update", w_p_up: "Descall {from} gefunden. Einstellungen, Sitzung und Verknüpfungen bleiben erhalten.",
     location: "Installationsort", no_admin: "Keine Adminrechte nötig", browse: "Durchsuchen",
     need: "{size} benötigt", free: "{drive} {size} frei", startup: "Start",
-    o_auto: "Mit Windows starten", o_auto_d: "Wartet nach der Anmeldung leise im Tray",
-    o_desk: "Desktopverknüpfung", o_desk_d: "Legt ein Descall-Symbol auf den Desktop", o_desk_kept: "Deine Verknüpfung bleibt erhalten",
-    o_upd: "Automatisch aktualisieren", o_upd_d: "Im Hintergrund, ganz leise",
+    o_auto: "Mit Windows starten", o_auto_d: "Wartet leise im Tray",
+    o_desk: "Desktopsymbol", o_desk_d: "Legt Descall auf den Desktop", o_desk_kept: "Deine Verknüpfung bleibt erhalten",
+    o_upd: "Auto-Update", o_upd_d: "Im Hintergrund, leise",
     sys_ok: "System bereit", sys_bad: "System nicht unterstützt",
     sys_os_bad: "Windows 10 2004 oder neuer nötig", sys_wv_bad: "WebView2 wird mitinstalliert", sys_disk_bad: "Zu wenig Speicherplatz",
     legal_html: "Mit Installieren akzeptierst du die [[Lizenzvereinbarung]] und die [[Datenschutzerklärung]].",
@@ -266,12 +268,12 @@
     l_mig_settings: "Einstellungen übertragen · {n} Einträge", l_mig_session: "Sitzung in sicheren Speicher übertragen", l_mig_shell: "Verknüpfungen und Audio · {n} Einträge",
     l_mig_clean: "Cache geleert · {size}", l_launch: "Descall gestartet",
 
-    d_h1: "Alles bereit", d_p: "Descall {v} ist installiert und geprüft. Es hat {secs} Sekunden gedauert.",
-    r_loc: "Ort", r_auto: "Mit Windows starten", r_desk: "Desktopverknüpfung", r_sig: "Signatur und Integrität",
+    d_h1: "Alles bereit", d_p: "Descall {v} ist installiert und geprüft, in {secs} Sekunden.",
+    r_loc: "Ort", r_auto: "Mit Windows starten", r_desk: "Desktopsymbol", r_sig: "Signatur und Integrität",
     on: "An", off: "Aus", added: "Angelegt", kept: "Behalten", not_added: "Nicht angelegt", sig_v: "{n} Dateien · SHA-256 stimmt",
     first: "Erste Schritte", first_q: "Wartet in Descall auf dich",
-    f1: "Freunde finden", f1_d: "Aus Kontakten oder per Name", f2: "Einem Server beitreten", f2_d: "Einladung oder Entdecken", f3: "Mikrofon testen", f3_d: "Rauschunterdrückung an",
-    notes: "Versionshinweise", setup_log: "Setup-Protokoll", close: "Schließen", open: "Descall öffnen",
+    f1: "Freunde finden", f1_d: "Aus Kontakten oder per Name", f2: "Server beitreten", f2_d: "Einladung oder Entdecken", f3: "Mikrofon testen", f3_d: "Rauschunterdrückung an",
+    notes: "Versionshinweise", setup_log: "Protokoll", close: "Schließen", open: "Descall öffnen",
     in_release: "In dieser Version",
     b1: "Dreimal schneller gestartet", b1_d: "Auf dem Desktop klicken, in 0,8 s bereit", b2: "Halb so viel Speicher", b2_d: "Bleibt beim Spielen leicht im Hintergrund", b3: "Flüssigere Bildschirmfreigabe", b3_d: "Mit Systemton, ohne Echo",
 
@@ -293,6 +295,7 @@
     t_int1: "Das Paket wurde gelöscht und wird neu geladen", t_int2: "Passiert es wieder, prüfe Netzwerk oder Proxy", t_int3: "Du kannst auch den Offline-Installer nutzen",
     t_inst1: "Ein Virenscanner blockiert eventuell den Descall-Ordner", t_inst2: "Starte den PC neu und versuche es erneut", t_inst3: "Schick das Setup-Protokoll an den Support",
     t_sys1: "Aktualisiere dein System per Windows Update", t_sys2: "Bis dahin erhält dein Descall weiter Sicherheitsupdates", t_sys3: "Öffne das Setup nach dem Update erneut",
+    log_short: "Protokoll",
     support: "Support", restart_dl: "Neu laden", resume_dl: "Download fortsetzen", retry: "Erneut versuchen", close_app: "Descall schließen und weiter", change_loc: "Ort ändern", keep_old: "Aktuelle Version behalten",
 
     mg_tag: "Dasselbe Descall, ganz neuer Kern.", mg_cmp: "Alte und neue Version", mg_setup: "Größe", mg_launch: "Start", mg_memory: "Speicher",
@@ -394,6 +397,7 @@
     t_int1: "El paquete se borró y se descargará de nuevo", t_int2: "Si se repite, revisa la red o el proxy", t_int3: "También puedes usar el instalador sin conexión",
     t_inst1: "Un antivirus puede estar bloqueando la carpeta de Descall", t_inst2: "Reinicia el equipo y vuelve a probar", t_inst3: "Envía el registro al equipo de soporte",
     t_sys1: "Actualiza el sistema con Windows Update", t_sys2: "Mientras tanto Descall sigue recibiendo parches de seguridad", t_sys3: "Vuelve a abrir el instalador después",
+    log_short: "Registro",
     support: "Soporte", restart_dl: "Descargar de nuevo", resume_dl: "Seguir descargando", retry: "Reintentar", close_app: "Cerrar Descall y seguir", change_loc: "Cambiar ubicación", keep_old: "Seguir con la versión actual",
 
     mg_tag: "El mismo Descall, un núcleo nuevo.", mg_cmp: "Versión anterior y nueva", mg_setup: "Tamaño", mg_launch: "Inicio", mg_memory: "Memoria",
@@ -495,6 +499,7 @@
     t_int1: "Le paquet a été supprimé et sera retéléchargé", t_int2: "Si cela se répète, vérifie le réseau ou le proxy", t_int3: "Tu peux aussi utiliser l'installateur hors ligne",
     t_inst1: "Un antivirus bloque peut-être le dossier de Descall", t_inst2: "Redémarre le PC et réessaie", t_inst3: "Envoie le journal d'installation au support",
     t_sys1: "Mets ton système à jour avec Windows Update", t_sys2: "En attendant, Descall reçoit toujours les correctifs", t_sys3: "Relance l'installation après la mise à jour",
+    log_short: "Journal",
     support: "Assistance", restart_dl: "Retélécharger", resume_dl: "Reprendre", retry: "Réessayer", close_app: "Fermer Descall et continuer", change_loc: "Changer d'emplacement", keep_old: "Garder la version actuelle",
 
     mg_tag: "Le même Descall, un tout nouveau moteur.", mg_cmp: "Ancienne et nouvelle version", mg_setup: "Taille", mg_launch: "Lancement", mg_memory: "Mémoire",
@@ -596,6 +601,7 @@
     t_int1: "O pacote foi apagado e será baixado de novo", t_int2: "Se repetir, confira a rede ou o proxy", t_int3: "Você também pode usar o instalador offline",
     t_inst1: "Um antivírus pode estar bloqueando a pasta do Descall", t_inst2: "Reinicie o PC e tente de novo", t_inst3: "Envie o registro para o suporte",
     t_sys1: "Atualize o sistema pelo Windows Update", t_sys2: "Enquanto isso o Descall atual recebe correções de segurança", t_sys3: "Abra o instalador de novo depois",
+    log_short: "Registro",
     support: "Suporte", restart_dl: "Baixar de novo", resume_dl: "Continuar download", retry: "Tentar de novo", close_app: "Fechar o Descall e seguir", change_loc: "Trocar local", keep_old: "Ficar na versão atual",
 
     mg_tag: "O mesmo Descall, um núcleo novinho.", mg_cmp: "Versão antiga e versão nova", mg_setup: "Tamanho", mg_launch: "Abertura", mg_memory: "Memória",
@@ -697,6 +703,7 @@
     t_int1: "Пакет удалён и будет загружен заново", t_int2: "Если повторится, проверь сеть или прокси", t_int3: "Можно также взять офлайн-установщик",
     t_inst1: "Возможно, антивирус блокирует папку Descall", t_inst2: "Перезагрузи компьютер и попробуй снова", t_inst3: "Отправь журнал установки в поддержку",
     t_sys1: "Обнови систему через Центр обновления Windows", t_sys2: "Пока что текущий Descall получает исправления безопасности", t_sys3: "После обновления снова открой установщик",
+    log_short: "Журнал",
     support: "Поддержка", restart_dl: "Скачать заново", resume_dl: "Продолжить загрузку", retry: "Повторить", close_app: "Закрыть Descall и продолжить", change_loc: "Сменить папку", keep_old: "Остаться на текущей версии",
 
     mg_tag: "Тот же Descall, совсем новое ядро.", mg_cmp: "Старая и новая версия", mg_setup: "Размер", mg_launch: "Запуск", mg_memory: "Память",

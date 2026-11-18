@@ -278,7 +278,7 @@
         <div class="lbl" style="margin:12px 0 0"><span style="display:flex;align-items:center;gap:7px"><span class="dot live" style="color:var(--ok)"></span>${t("live_log")}</span><span class="quiet copy" role="button" tabindex="0" data-act="copy" data-b="copy">${t("copy")}</span></div>
         <div class="log well" style="margin-top:8px" data-log="live"></div>
       </div>
-      <div class="ftr" style="padding-top:12px;padding-bottom:14px">
+      <div class="ftr" style="padding-top:12px;padding-bottom:3px">
         <div class="legal">${ic("lock", "", "width:13px;height:13px")} ${t(d.embedded ? "embedded" : "signed", { pub: M.publisher })}</div>
         ${busy ? `<button class="btn btn-ghost" data-act="pause" data-b="pausebtn"></button>` : ""}<button class="btn btn-secondary" data-act="cancel"${d.phase === "install" ? " disabled" : ""}>${t("cancel")}</button>
       </div>${confirm}`,
@@ -398,7 +398,7 @@
         <div class="tips">${k.tips.map((x, i) => `<div><span class="n">${i + 1}</span>${t(x)}${tipLink(x)}</div>`).join("")}</div>
       </div>
       <div class="ftr">
-        <div class="legal"><a class="link" data-act="url" data-arg="${esc(link("support"))}">${ic("buoy", "", "width:14px;height:14px")} ${t("support")}</a> · <a class="link" data-act="openlog" title="${esc(M.logPath)}">${t("setup_log")}</a></div>
+        <div class="legal"><a class="link" data-act="url" data-arg="${esc(link("support"))}">${ic("buoy", "", "width:14px;height:14px")} ${t("support")}</a> · <a class="link" data-act="openlog" title="${esc(M.logPath)}">${t("log_short")}</a></div>
         ${k.btns.map(btn).join("\n        ")}
       </div>`,
     };
