@@ -1,5 +1,5 @@
 /*
- * window.electronAPI and window.descallPremium on Tauri 2, injected with
+ * window.electronAPI on Tauri 2 (window.descallPremium: premium-shim.js), injected with
  * initialization_script before any page script. Same names, shapes and return values as
  * frontend/electron/preload.cjs (main window) and adminPreload.cjs (admin windows, mode
  * "admin"), so frontend/src runs unchanged. electron-api-shim.test.mjs checks both key sets
@@ -200,14 +200,9 @@
   };
   for (const [k, v] of Object.entries(extras)) Object.defineProperty(api, k, { value: v, enumerable: false });
 
-  const isPremiumChannel = (c) => typeof c === "string" && /^premium:[a-z0-9:_-]{1,64}$/i.test(c);
-  const premium = {
-    invoke: (channel, ...args) => (isPremiumChannel(channel) ? invoke("premium_invoke", { channel, args }) : Promise.reject(new Error("premium channel expected"))),
-    on: (channel, fn) => (isPremiumChannel(channel) && typeof fn === "function" ? on(channel, (p) => fn(...(Array.isArray(p) ? p : [p]))) : noop),
-  };
-
   Object.defineProperty(window, "electronAPI", { value: Object.freeze(api), writable: false, configurable: false });
-  if (!ADMIN) Object.defineProperty(window, "descallPremium", { value: Object.freeze(premium), writable: false, configurable: false });
+  // window.descallPremium comes from premium-shim.js (the premium plugin's init script, which
+  // runs before this one and skips admin windows).
 
   // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
   // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).

@@ -19,6 +19,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..", "..");
 const electronDir = join(repo, "frontend", "electron");
 const shimSrc = readFileSync(join(here, "electron-api-shim.js"), "utf8");
+const premiumShimSrc = readFileSync(join(here, "premium-shim.js"), "utf8");
 const mainRs = readFileSync(join(here, "..", "src-tauri", "src", "main.rs"), "utf8");
 
 // ---- Electron preloads with a fake electron module --------------------------------------------
@@ -54,6 +55,7 @@ function loadShim({ boot = {}, responses = {} } = {}) {
   const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; };
   const window = {
     __DESCALL_BOOT__: boot,
+    __TAURI_INTERNALS__: { metadata: { currentWebview: { label: boot.mode === "admin" ? "admin" : "main" } } },
     __TAURI__: {
       core: { invoke: (cmd, args) => { invokes.push([cmd, args]); return Promise.resolve(responses[cmd] ?? null); } },
       event: {
@@ -71,14 +73,18 @@ function loadShim({ boot = {}, responses = {} } = {}) {
     document: { addEventListener: () => {} },
     localStorage: store(),
     sessionStorage: store(),
-    location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost" },
+    location: { href: "https://tauri.localhost/", origin: "https://tauri.localhost", hostname: "tauri.localhost" },
+    navigator: {},
     URL,
     console,
     Promise,
     Uint8Array,
     ArrayBuffer,
   };
-  vm.runInNewContext(shimSrc, ctx, { filename: "electron-api-shim.js" });
+  // Same order as Tauri: plugin init scripts (premium-shim.js) run before the window's own.
+  vm.createContext(ctx);
+  vm.runInContext(premiumShimSrc, ctx, { filename: "premium-shim.js" });
+  vm.runInContext(shimSrc, ctx, { filename: "electron-api-shim.js" });
   const emit = (event, payload) => (listeners.get(event) || []).forEach((h) => h({ payload }));
   return { api: window.electronAPI, premium: window.descallPremium, window, invokes, listeners, unlistened, emit, ctx };
 }
@@ -193,7 +199,7 @@ for (const [path, args, cmd, expected] of CASES) {
   assert.equal(await e.api.readClipboardImage(), null);
 }
 {
-  // descallPremium: same channel allow-list as preload.cjs.
+  // descallPremium (premium-shim.js): same channel allow-list as preload.cjs.
   const s = loadShim();
   await s.premium.invoke("premium:hotkeys:list", 1, 2);
   deq(s.invokes[0], ["premium_invoke", { channel: "premium:hotkeys:list", args: [1, 2] }]);
@@ -301,6 +307,14 @@ const fromNative = new Set([...nativeSrc.matchAll(/invoke\("(\w+)"/g)].map((m) =
 assert.ok(fromNative.has("screen_share_start") && fromNative.has("screen_thumbnails"), "native lane commands found");
 for (const cmd of fromNative) assert.ok(registered.has(cmd), `${cmd} (native screen share) is registered in main.rs`);
 assert.match(mainRs, /include_str!\("\.\.\/\.\.\/shim\/native-screen-share\.js"\)/, "main.rs injects the native lane");
+// Descall+ page bridges (premium plugin, HUD and launcher windows).
+for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shim.js"]) {
+  const src = readFileSync(join(here, f), "utf8");
+  const cmds = new Set([...src.matchAll(/invoke\("(\w+)"/g)].map((m) => m[1]));
+  assert.ok(cmds.size > 0, `${f}: commands found`);
+  for (const cmd of cmds) assert.ok(registered.has(cmd), `${cmd} (${f}) is registered in main.rs`);
+}
+assert.match(mainRs, /\.plugin\(premium::init\(\)\)/, "the Descall+ plugin is registered");
 assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with the main shim");
 
 console.log("electron-api-shim.test: ok");
