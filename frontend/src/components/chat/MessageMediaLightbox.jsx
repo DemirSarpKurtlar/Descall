@@ -10,6 +10,7 @@ import { computeMediaBox, mediaBoxStyle, rememberMediaDims, rememberedMediaDims 
 import {
   DOUBLE_TAP_SCALE, MAX_SCALE, clampPan, rubberBand, shouldDismiss, swipeStep, zoomAt,
 } from "../../lib/mediaViewerMath";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const FIT = { scale: 1, x: 0, y: 0 };
 
@@ -32,6 +33,8 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
   const t = useT();
   const { locale } = useLocale();
   const reduce = useReducedMotion();
+  const dialogRef = useRef(null);
+  useModalFocus(Boolean(open), dialogRef);
   const list = useMemo(() => (items && items.length ? items : [{ id: "single", raw: src, name: alt, sender, avatar, at }]), [items, src, alt, sender, avatar, at]);
   const [index, setIndex] = useState(0);
   useEffect(() => {
@@ -216,6 +219,7 @@ export default function MessageMediaLightbox({ open, src, alt = "", onClose, ite
     <AnimatePresence>
       {open && (item?.raw || src) ? (
         <motion.div
+          ref={dialogRef}
           className="message-media-lightbox mv-root"
           role="dialog"
           aria-modal="true"

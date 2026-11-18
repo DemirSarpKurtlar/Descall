@@ -18,6 +18,22 @@ export const MAX_ZOOM = 2;
 const LOG_MIN = Math.log(MIN_ZOOM);
 const LOG_MAX = Math.log(MAX_ZOOM);
 const STORE_KEY = "descall:zoom";
+/**
+ * Polish pass: the page must stay at least this large in CSS px at any zoom. At 200 % in a
+ * 1280×800 window the page was 640×400 and fell into the phone layout under the desktop
+ * title bar (GLASS_DESKTOP_MIN_WIDTH is 960).
+ */
+export const MIN_CSS_WIDTH = 960;
+export const MIN_CSS_HEIGHT = 600;
+
+/** Largest zoom that keeps the page at least MIN_CSS_WIDTH × MIN_CSS_HEIGHT (never below 100 %). */
+export function maxZoomForWindow({ dipWidth, dipHeight } = {}) {
+  const w = Number(dipWidth);
+  const h = Number(dipHeight);
+  if (!(w > 0) || !(h > 0)) return MAX_ZOOM;
+  const fit = Math.min(w / MIN_CSS_WIDTH, h / MIN_CSS_HEIGHT);
+  return Math.max(1, Math.min(MAX_ZOOM, Math.floor(fit * 100) / 100));
+}
 
 // One mouse notch (deltaY 100) glides ~10 %: travel = impulse / FRICTION.
 // FRICTION 9: the glide settles in ~0.6 s (it was ~1.2 s and felt too slippery).
@@ -38,21 +54,30 @@ export function wheelPixels(e) {
 export function createZoomPhysics(startZoom = 1) {
   let z = Math.log(clampZoom(startZoom));
   let v = 0;
+  let zMax = LOG_MAX; // window-dependent ceiling (setMax)
   let target = null; // eased target (keyboard / reset), log units
   return {
     get zoom() { return Math.exp(z); },
     get moving() { return target !== null || Math.abs(v) > STOP_SPEED; },
+    get max() { return Math.exp(zMax); },
+    /** Window-dependent ceiling; a zoom above it eases back down. Returns true when it did. */
+    setMax(zoom) {
+      zMax = Math.log(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Number(zoom) || MAX_ZOOM)));
+      if (target !== null && target > zMax) target = zMax;
+      if (z > zMax + 0.0005) { v = 0; target = zMax; return true; }
+      return false;
+    },
     push(pixels) {
       target = null;
       v = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, v - pixels * IMPULSE_PER_PX));
     },
     easeTo(zoom) {
       v = 0;
-      target = Math.log(clampZoom(zoom));
+      target = Math.min(zMax, Math.log(clampZoom(zoom)));
     },
     nudge(direction) {
       const base = target ?? z;
-      target = Math.max(LOG_MIN, Math.min(LOG_MAX, base + Math.sign(direction) * KEY_STEP));
+      target = Math.max(LOG_MIN, Math.min(zMax, base + Math.sign(direction) * KEY_STEP));
       v = 0;
     },
     /** Advance dt seconds. Returns the zoom. */
@@ -70,7 +95,7 @@ export function createZoomPhysics(startZoom = 1) {
       z += (v * (1 - decay)) / FRICTION;
       v *= decay;
       if (z <= LOG_MIN) { z = LOG_MIN; v = 0; }
-      if (z >= LOG_MAX) { z = LOG_MAX; v = 0; }
+      if (z >= zMax) { z = zMax; v = 0; }
       if (Math.abs(v) <= STOP_SPEED) v = 0;
       return Math.exp(z);
     },
@@ -103,7 +128,17 @@ let installed = false;
 export function installSmoothZoom(bridge = typeof window !== "undefined" ? window.electronAPI?.zoom : null) {
   if (installed || !bridge || typeof bridge.set !== "function") return () => {};
   installed = true;
-  const physics = createZoomPhysics(readStored());
+  // Window size in DIP = CSS px × the zoom actually applied (the GPU preview never changes it).
+  const windowMax = (zoomNow) => maxZoomForWindow({
+    dipWidth: (typeof window !== "undefined" ? window.innerWidth : 0) * zoomNow,
+    dipHeight: (typeof window !== "undefined" ? window.innerHeight : 0) * zoomNow,
+  });
+  let current = 1;
+  try { current = typeof bridge.get === "function" ? Number(bridge.get()) || 1 : 1; } catch { current = 1; }
+  const startMax = windowMax(current);
+  // A stored zoom above this window's ceiling starts at the ceiling.
+  const physics = createZoomPhysics(Math.min(readStored(), startMax));
+  physics.setMax(startMax);
   let applied = physics.zoom;
   bridge.set(applied);
   const body = typeof document !== "undefined" ? document.body : null;
@@ -180,11 +215,20 @@ export function installSmoothZoom(bridge = typeof window !== "undefined" ? windo
     else if (e.key === "=" || e.key === "+") { e.preventDefault(); physics.nudge(1); kick(); }
     else if (e.key === "-") { e.preventDefault(); physics.nudge(-1); kick(); }
   };
+  // A smaller window lowers the ceiling: an over-large zoom eases back to it.
+  let resizeTimer = 0;
+  const onResize = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (physics.setMax(windowMax(applied))) kick(); }, 150);
+  };
   window.addEventListener("wheel", onWheel, { passive: false, capture: true });
   window.addEventListener("keydown", onKey, true);
+  window.addEventListener("resize", onResize);
   return () => {
     window.removeEventListener("wheel", onWheel, { capture: true });
     window.removeEventListener("keydown", onKey, true);
+    window.removeEventListener("resize", onResize);
+    clearTimeout(resizeTimer);
     if (raf) cancelAnimationFrame(raf);
     commit(physics.zoom);
     installed = false;

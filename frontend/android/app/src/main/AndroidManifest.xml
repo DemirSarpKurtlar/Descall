@@ -10,6 +10,13 @@
         android:usesCleartextTraffic="false"
         android:theme="@style/AppTheme">
 
+        <!-- FCM messages without a known channel land here, not in "Miscellaneous".
+             The channels themselves are created in src/lib/nativePush.js
+             (ensureAndroidPushChannels: descall_default, incoming_calls). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="descall_default" />
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"

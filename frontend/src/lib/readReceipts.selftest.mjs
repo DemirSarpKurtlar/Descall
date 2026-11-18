@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const mem = new Map();
 globalThis.localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
-const { lastOwnMessage, dmSeen, groupSeenBy, namesSummary, readReceiptsSetting, storeReceiptsSetting, subscribeReceiptsSetting } = await import("./readReceipts.js");
+const { applyPeerRead, lastOwnMessage, dmSeen, groupSeenBy, namesSummary, readReceiptsSetting, storeReceiptsSetting, subscribeReceiptsSetting } = await import("./readReceipts.js");
 
 const ME = "me";
 const m = (id, from, minute, extra = {}) => ({ id, from: { id: from }, timestamp: `2026-11-06T10:${String(minute).padStart(2, "0")}:00.000Z`, ...extra });
@@ -53,5 +53,29 @@ assert.ok(panel.includes('authedRequest("/api/read-receipts", { method: "PUT", b
 assert.ok(/setOn\(!next\);\s*storeReceiptsSetting\(!next\);/.test(panel), "a failed save rolls the switch back");
 const css = readFileSync(join(here, "../styles/messaging-phase4.css"), "utf8");
 assert.ok(/\.msg-seen \{[^}]*font-size: var\(--fs-11\)/.test(css));
+
+// Polish messaging-02: live rows have no `to`; the peer's read still marks them.
+{
+  const me = "me", at = "2026-11-17T10:00:00.000Z";
+  const rows = [
+    { id: "a", from: { id: me }, timestamp: "2026-11-17T09:59:00.000Z" },
+    { id: "b", from: { id: "peer" }, timestamp: "2026-11-17T09:59:30.000Z" },
+    { id: "temp-1", from: { id: me }, sending: true },
+    { id: "c", from: { id: me }, failed: true, timestamp: "2026-11-17T09:59:40.000Z" },
+    { id: "d", from: { id: me }, timestamp: "2026-11-17T10:05:00.000Z" },
+  ];
+  const out = applyPeerRead(rows, me, at);
+  assert.equal(out.find((m) => m.id === "a").readAt, at, "a live row without `to` is read");
+  assert.equal(out.find((m) => m.id === "b").readAt, undefined, "the peer's own rows are untouched");
+  assert.equal(out.find((m) => m.id === "temp-1").readAt, undefined);
+  assert.equal(out.find((m) => m.id === "c").readAt, undefined, "a failed row is never read");
+  assert.equal(out.find((m) => m.id === "d").readAt, undefined, "a row sent after the read stays unread");
+  assert.equal(dmSeen(applyPeerRead(rows.slice(0, 2), me, at), me).id, "a", "Görüldü shows under my newest read row");
+  assert.equal(dmSeen(out, me), null, "my newest row is unread, so no Görüldü yet");
+  assert.equal(applyPeerRead(out, me, at), out, "no change returns the same list");
+  const app = readFileSync(join(here, "../App.jsx"), "utf8");
+  assert.ok(app.includes("applyPeerRead(cur, myIdRef.current, at)"), "App wires dm:peer_read through applyPeerRead");
+  assert.ok(app.includes('document.visibilityState === "hidden"') && app.includes("pendingDmReadRef.current = convWith"), "a hidden window does not mark the open DM read (messaging-03)");
+}
 
 console.log("readReceipts selftest OK");

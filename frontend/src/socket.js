@@ -6,6 +6,8 @@ import { shouldPullDmHistory } from "./lib/dmHistoryFetch";
 import { Capacitor } from "@capacitor/core";
 import { isNativeIOS } from "./lib/platform";
 import { installSocketResumeWatchdog } from "./lib/socketResume";
+import { installServerDisconnectRevive } from "./lib/serverDisconnectRevive";
+import { getToken } from "./lib/storage";
 
 function isNativeApp() {
   try {
@@ -148,7 +150,17 @@ export function createSocket(token, options = {}) {
   };
   // Foreground watchdog: reconnect at once (no backoff) when the app comes
   // back with a dead / zombie socket. Dispose via socket.resumeWatchdog.
-  socket.resumeWatchdog = installSocketResumeWatchdog(socket);
+  const watchdog = installSocketResumeWatchdog(socket);
+  // The server closing the socket on purpose (restart drain, kick) turns
+  // auto-reconnect off; bring it back after a jittered delay while signed in.
+  const revive = installServerDisconnectRevive(socket, { canRevive: () => Boolean(getToken()) });
+  socket.resumeWatchdog = {
+    ensureFresh: (...a) => watchdog.ensureFresh(...a),
+    dispose() {
+      revive.dispose();
+      watchdog.dispose();
+    },
+  };
   // App loads servers/groups inside the `connected` handler. Don't wait for the
   // live socket, fire that handler as soon as listeners are registered.
   setTimeout(() => {

@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "../config/api";
+import { t } from "../i18n/runtime.js";
+import { serverErrorText } from "./httpError";
 import { getToken } from "../lib/storage";
 import { authedRequest } from "./authedHttp";
 
@@ -22,6 +24,6 @@ export async function uploadFeedbackShot(file) {
     body: form,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data?.url) throw new Error(data?.error || "upload failed");
+  if (!res.ok || !data?.url) throw new Error(serverErrorText(data) || t("Upload failed"));
   return data.url;
 }

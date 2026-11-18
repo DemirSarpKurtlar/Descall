@@ -12,6 +12,7 @@
 const express = require("express");
 const supabase = require("../db/supabase");
 const g = require("../lib/growthInsights");
+const { selectPaged } = require("../lib/selectPaged");
 
 const router = express.Router();
 const TZ = "Europe/Istanbul";
@@ -38,6 +39,7 @@ async function allUsers() {
     const { data, error } = await supabase
       .from("users")
       .select("id, username, created_at, signup_at, is_admin, descoin_balance, descoin_frozen")
+      .order("id", { ascending: true })
       .range(from, from + 999);
     if (error) throw error;
     out.push(...(data || []));
@@ -47,10 +49,15 @@ async function allUsers() {
 }
 const isAdminRow = (u) => Boolean(u.is_admin) || u.username === "admin";
 
+// Each page re-runs the function: a stable order keeps pages from repeating or
+// skipping rows (polish admin-b-13).
+const RPC_ORDER = { admin_activity_days: ["user_id", "day"], admin_descoin_flow: ["day", "reason"] };
 async function rpcAll(fn, args) {
   const out = [];
   for (let from = 0; from < 200000; from += 1000) {
-    const { data, error } = await supabase.rpc(fn, args).range(from, from + 999);
+    let q = supabase.rpc(fn, args);
+    for (const col of RPC_ORDER[fn] || []) q = q.order(col, { ascending: true });
+    const { data, error } = await q.range(from, from + 999);
     if (error) throw error;
     out.push(...(data || []));
     if (!data || data.length < 1000) break;
@@ -74,13 +81,15 @@ router.get("/growth/retention", async (req, res) => {
     const [activity, users, funnelRows] = await Promise.all([
       rpcAll("admin_activity_days", { p_since: since, p_tz: TZ }),
       allUsers(),
-      supabase
-        .from("analytics_events")
-        .select("event, user_id")
-        .in("event", ["signup_started", "signup_completed", "first_session", "first_message"])
-        .gte("occurred_at", new Date(Date.now() - days * 86400000).toISOString())
-        .limit(20000)
-        .then((r) => (r.error ? [] : r.data || [])),
+      // .limit(20000) does not lift the 1000-row cap: read in pages (polish admin-b-04).
+      selectPaged(() =>
+        supabase
+          .from("analytics_events")
+          .select("event, user_id", { count: "exact" })
+          .in("event", ["signup_started", "signup_completed", "first_session", "first_message"])
+          .gte("occurred_at", new Date(Date.now() - days * 86400000).toISOString())
+          .order("id", { ascending: true })
+      ).then((r) => (r.error ? [] : r.data || [])),
     ]);
     const report = g.retentionReport({
       activity,
@@ -116,19 +125,21 @@ router.get("/growth/economy", async (req, res) => {
     const [flow, users, purchases, items, grants] = await Promise.all([
       rpcAll("admin_descoin_flow", { p_since: since, p_tz: TZ }),
       allUsers(),
-      supabase
-        .from("shop_purchases")
-        .select("item_id, amount_descoin, status, created_at")
-        .gte("created_at", new Date(Date.now() - (days + 1) * 86400000).toISOString())
-        .limit(20000)
-        .then((r) => (r.error ? [] : r.data || [])),
-      supabase.from("shop_items").select("id, name, category").limit(5000).then((r) => (r.error ? [] : r.data || [])),
-      supabase
-        .from("descoin_ledger")
-        .select("user_id, amount")
-        .in("reason", ["admin_grant", "admin_revoke"])
-        .limit(50000)
-        .then((r) => (r.error ? [] : r.data || [])),
+      selectPaged(() =>
+        supabase
+          .from("shop_purchases")
+          .select("item_id, amount_descoin, status, created_at", { count: "exact" })
+          .gte("created_at", new Date(Date.now() - (days + 1) * 86400000).toISOString())
+          .order("id", { ascending: true })
+      ).then((r) => (r.error ? [] : r.data || [])),
+      selectPaged(() => supabase.from("shop_items").select("id, name, category", { count: "exact" }).order("id", { ascending: true })).then((r) => (r.error ? [] : r.data || [])),
+      selectPaged(() =>
+        supabase
+          .from("descoin_ledger")
+          .select("user_id, amount", { count: "exact" })
+          .in("reason", ["admin_grant", "admin_revoke"])
+          .order("id", { ascending: true })
+      ).then((r) => (r.error ? [] : r.data || [])),
     ]);
     const granted = new Map();
     for (const row of grants) granted.set(String(row.user_id), (granted.get(String(row.user_id)) || 0) + (Number(row.amount) || 0));

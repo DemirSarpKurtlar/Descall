@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { usePressFeedbackScope } from "../../../hooks/usePressFeedback";
+import useModalFocus from "../../../hooks/useModalFocus";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../../lib/fluid/springs";
 import { resolveAvatarUrl } from "../../../lib/userProfile";
 import { SX_PATHS } from "./icons";
@@ -14,6 +15,7 @@ import { useSvh } from "./useSvh";
 import { t } from "../../../i18n/runtime.js";
 import "./svh.css";
 import { cssUrl } from "../../../lib/cssUrl";
+import { userTextLang } from "../../../lib/userTextLang";
 
 export function I({ n, s = 18, w = 2, style, className }) {
   return (
@@ -73,7 +75,9 @@ export function Row({ ico, c = "gray", av, lead, t, sub, val, tail, tg, check, c
 }
 
 export const Group = ({ children, style, className }) => <div className={cx("svh-group", className)} style={style}>{children}</div>;
-export const Sec = ({ children, first, style }) => <div className={cx("svh-sec", first && "first")} style={style}>{children}</div>;
+export const Sec = ({ children, first, style, lang }) => <div className={cx("svh-sec", first && "first")} style={style} lang={lang}>{children}</div>;
+/** A user-provided name inside an uppercase header: neutral casing unless the name is Turkish. */
+export const UserName = ({ children }) => <span lang={userTextLang(children)}>{children}</span>;
 export const Foot = ({ children, style }) => <div className="svh-foot" style={style}>{children}</div>;
 export const Large = ({ children, style }) => <div className="svh-large" style={style}>{children}</div>;
 
@@ -226,6 +230,9 @@ export const Spinner = () => {
 export function Layer({ children, onClose, z, label, className }) {
   const ref = useRef(null);
   usePressFeedbackScope(ref, { enabled: true });
+  // Every hub layer is modal: Tab stays in the top layer, the app behind is inert,
+  // focus returns to the opener when it closes.
+  useModalFocus(true, ref);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {

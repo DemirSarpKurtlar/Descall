@@ -48,8 +48,11 @@ assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: tr
 assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, remoteFlag: false }), false, "remote desktopGlass=false kills iPad");
 assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, override: "0" }), false, "local kill on iPad");
 assert.equal(shouldEnableGlassDesktop({ isNativeIos: true, isNativeIosTablet: true, buildFlag: false }), false, "build kill on iPad");
-assert.equal(shouldEnableGlassDesktop({ isNativeAndroid: true, isNativeIosTablet: true }), false, "Android tablet stays classic");
-assert.equal(shouldEnableGlassDesktop({ ...web, isNativeAndroid: true, remoteFlag: true }), false, "Android never");
+assert.equal(shouldEnableGlassDesktop({ isNativeAndroid: true, isNativeIosTablet: true }), false, "Android phone app is glass-ui, not glass-desktop");
+assert.equal(shouldEnableGlassDesktop({ ...web, isNativeAndroid: true, remoteFlag: true }), false, "Android phone never gets glass-desktop");
+assert.equal(shouldEnableGlassDesktop({ isNativeAndroid: true, isNativeAndroidTablet: true, viewportOk: false }), true, "Android tablet app gets the wide glass layout like the iPad app");
+assert.equal(shouldEnableGlassDesktop({ isNativeAndroid: true, isNativeAndroidTablet: true, remoteFlag: false }), false, "remote kill on Android tablet");
+assert.equal(shouldEnableGlassDesktop({ isNativeAndroid: true, isNativeAndroidTablet: true, override: "0" }), false, "local kill on Android tablet");
 assert.equal(shouldEnableGlassDesktop({ ...web, remoteFlag: false }), false, "explicit remote off");
 assert.equal(shouldEnableGlassDesktop({ ...web, override: "1", surfaceOk: false }), false, "marketing pages stay off");
 assert.equal(isGlassDesktopSurface("/"), false, "home is marketing");
@@ -219,8 +222,10 @@ const slowPc = fakeWindow({ cores: 4, ua: CHROME_UA });
 assert.equal(initGlassDesktop(slowPc), true);
 assert.ok(slowPc._classes.has(GLASS_DESKTOP_LITE_CLASS), "a real 4-core Chrome PC keeps the CPU fallback");
 
-const android = fakeWindow({ platform: "android", store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
-assert.equal(initGlassDesktop(android), false);
+const android = fakeWindow({ platform: "android", width: 412, height: 915, store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
+assert.equal(initGlassDesktop(android), false, "Android phone app stays off glass-desktop (it is glass-ui)");
+const androidTab = fakeWindow({ platform: "android", width: 1280, height: 800, store: { [GLASS_DESKTOP_REMOTE_KEY]: "1" } });
+assert.equal(initGlassDesktop(androidTab), true, "Android tablet app gets glass-desktop");
 
 const cachedOff = fakeWindow({ store: { [GLASS_DESKTOP_REMOTE_KEY]: "0" } });
 assert.equal(initGlassDesktop(cachedOff), false, "cached remote off still kills the default");

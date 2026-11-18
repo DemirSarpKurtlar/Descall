@@ -9,7 +9,9 @@ export const verifyEmailCode = (code) => authedRequest("/api/auth/email/verify",
 
 // Two-factor authentication
 export const enable2fa = () => authedRequest("/api/auth/2fa/enable", { method: "POST" });
-export const disable2fa = (password) => authedRequest("/api/auth/2fa/disable", { method: "POST", body: { password } });
+/** Password accounts send the password; Google / Apple accounts send the code from requestEmailReauth(). */
+export const disable2fa = (password, code) =>
+  authedRequest("/api/auth/2fa/disable", { method: "POST", body: { ...(password ? { password } : {}), ...(code ? { code } : {}) } });
 
 // Authenticator app (3.2.0)
 export const getTwoFactorStatus = () => authedRequest("/api/auth/2fa/status");

@@ -100,7 +100,17 @@ export const PREMIUM_EN = {
     "busy": "Checking…",
     "ok": "Code applied. Your membership is up to date.",
     "fail": "This code could not be used.",
-    "unavailable": "Coupon codes are not available yet."
+    "unavailable": "Coupon codes are not available yet.",
+    "errors": {
+      "invalid": "This code isn't valid. Check the spelling.",
+      "expired": "This code has expired.",
+      "used": "You've already used this code.",
+      "limit": "This code has no uses left.",
+      "already_active": "You already have an active membership, so this code can't be used now.",
+      "not_redeemable": "This code can't be used on your account.",
+      "unavailable": "This campaign isn't available right now.",
+      "rate_limited": "Too many tries. Try again in a few minutes."
+    }
   },
   "features": {
     "title": "Features",
@@ -343,7 +353,7 @@ export const PREMIUM_EN = {
     },
     "advanced_window_mgmt": {
       "name": "Advanced window management",
-      "desc": "Snapping, monitor awareness and saved window behaviour."
+      "desc": "Snapping, monitor awareness and saved window behavior."
     },
     "voice_hud": {
       "name": "Voice HUD",

@@ -384,4 +384,6 @@ export const MARKETING_TR = {
   "Password must be at least 8 characters.": "Şifre en az 8 karakter olmalı.",
   "This password has appeared in data breaches. Choose a different password.": "Bu şifre veri ihlallerinde görünmüş. Başka bir şifre seç.",
   "Email is already in use.": "Bu e-posta zaten kullanılıyor.",
+  "Show password": "Şifreyi göster",
+  "Hide password": "Şifreyi gizle",
 };

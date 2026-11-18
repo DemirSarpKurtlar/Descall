@@ -2,6 +2,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GROUP_HUES } from "./signupSourceLabels.js";
 import { useLocale } from "../../context/LocaleContext";
+import { formatNumber } from "../../i18n/format.js";
+import { getLocale } from "../../i18n/runtime.js";
 
 function Bar({ pct, hue, muted }) {
   return (
@@ -18,7 +20,8 @@ function Bar({ pct, hue, muted }) {
 }
 
 function fmt(pct) {
-  return `${Number(pct || 0).toLocaleString("tr-TR", { maximumFractionDigits: 1 })}%`;
+  // In the admin's UI language ("%12,5" in Turkish, "12.5%" in English).
+  return formatNumber(Number(pct || 0) / 100, getLocale(), { style: "percent", maximumFractionDigits: 1 });
 }
 
 function makeDict(t) {

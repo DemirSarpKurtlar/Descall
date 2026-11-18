@@ -10,7 +10,7 @@ import GlassConfirm from "../ui/GlassConfirm";
  * The account closes immediately; it is permanently deleted after 14 days
  * unless the user signs in again.
  */
-export default function DeleteAccountSection({ onDeleted }) {
+export default function DeleteAccountSection({ onDeleted, username = "", hasPassword = null }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [secret, setSecret] = useState("");
@@ -23,7 +23,12 @@ export default function DeleteAccountSection({ onDeleted }) {
     setBusy(true);
     setError("");
     try {
-      await deleteAccount({ password: secret, confirmUsername: secret });
+      // Password accounts send the password; Google / Apple accounts type their username.
+      await deleteAccount(
+        hasPassword === false
+          ? { confirmUsername: secret.trim().replace(/^@/, "") }
+          : { password: secret, confirmUsername: secret }
+      );
       onDeleted?.();
     } catch (err) {
       hapticError();
@@ -62,11 +67,18 @@ export default function DeleteAccountSection({ onDeleted }) {
             }}
           >
             <label htmlFor="delete-account-confirm">
-              {t("Enter your password to confirm (Google or Apple accounts: type your username)")}
+              {hasPassword === true
+                ? t("authx.del.passwordLabel")
+                : hasPassword === false && username
+                  ? t("authx.del.usernameLabel", { username })
+                  : t("Enter your password to confirm (Google or Apple accounts: type your username)")}
               <input
                 id="delete-account-confirm"
-                type="password"
-                autoComplete="current-password"
+                type={hasPassword === false ? "text" : "password"}
+                autoComplete={hasPassword === false ? "off" : "current-password"}
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder={hasPassword === false && username ? `@${username}` : undefined}
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
                 disabled={busy}

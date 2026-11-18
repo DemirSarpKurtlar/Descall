@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { motion, useReducedMotion } from "framer-motion";
 import { Search, Users, X } from "../ui/Icon.jsx";
 import { Avatar } from "../ui/Avatar";
@@ -18,6 +19,8 @@ export default function VotersSheet({ poll, currentUserId, onClose }) {
   const [tab, setTab] = useState(() => poll?.options?.[0]?.id || null);
   const [q, setQ] = useState("");
   const closeRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
 
   useEffect(() => {
     let alive = true;
@@ -53,6 +56,7 @@ export default function VotersSheet({ poll, currentUserId, onClose }) {
       <motion.div className="dsx-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <div className="dsx-sheetwrap">
         <motion.div
+          ref={dialogRef}
           className="dsx-heavy dsx-voters"
           role="dialog"
           aria-modal="true"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import "../styles/call-people.css";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -22,6 +22,7 @@ import { resolveAvatarUrl } from "../lib/avatar";
 import { resolveDisplayName } from "../lib/userProfile";
 import ScreenShareQualityPanel from "./voice/ScreenShareQualityPanel";
 import { screenShareUnavailableOnIos } from "../lib/webrtcScreenShare";
+import { setPhoneLandscapeAllowed } from "../lib/glassDisplay.js";
 import IncomingCallCard from "./voice/IncomingCallCard";
 import { useIsNarrowViewport } from "../lib/useIsNarrowViewport";
 import useHeldSpeaking from "../hooks/useHeldSpeaking";
@@ -120,6 +121,13 @@ export default function CallOverlay({ call, groupCall, me, groupName = "", onRet
   useEffect(() => {
     if (!groupCall?.isInCall) setWorldOpen(false);
   }, [groupCall?.isInCall]);
+  // iPhone app is portrait-only; a call on screen may turn sideways (glassDisplay.js).
+  const callOnScreen = !minimized && Boolean((call?.mode && call.mode !== "idle") || groupCall?.isInCall);
+  useEffect(() => {
+    if (!callOnScreen) return undefined;
+    setPhoneLandscapeAllowed(true);
+    return () => setPhoneLandscapeAllowed(false);
+  }, [callOnScreen]);
   const narrowViewport = useIsNarrowViewport(720);
   const glass = useGlassUi();
   const glassDesktop = useGlassDesktop();
@@ -1267,7 +1275,16 @@ function glassQaNetStats(stats) {
 function CallQualityHud({ quality = "unknown", stats = null }) {
   const t = useT();
   const [showDetails, setShowDetails] = useState(false);
+  // calls-08: the card opens toward the side with room. On iPhone the HUD sits
+  // at the right end of the top pill and a left-anchored card ran off screen.
+  const [alignRight, setAlignRight] = useState(false);
   const detailsRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!showDetails || !detailsRef.current || typeof window === "undefined") return;
+    const rect = detailsRef.current.getBoundingClientRect();
+    const cardWidth = 200;
+    setAlignRight(rect.left + cardWidth > window.innerWidth - 12);
+  }, [showDetails]);
   const q = String(quality || "unknown");
   // Refine the coarse ICE-state bucket with real measured stats once the
   // connection has settled, so "good" can still surface as excellent/fair/poor.
@@ -1325,7 +1342,9 @@ function CallQualityHud({ quality = "unknown", stats = null }) {
         <div
           className="call-quality-details"
           style={{
-            position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 30,
+            position: "absolute", top: "calc(100% + 8px)", zIndex: 30,
+            ...(alignRight ? { right: 0 } : { left: 0 }),
+            maxWidth: "calc(100vw - 24px)",
             background: "rgba(22, 24, 36, 0.95)", border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 16, padding: "10px 12px", minWidth: 180,
             boxShadow: "0 16px 40px rgba(0,0,0,0.45)", fontSize: 12, color: "#dcddde",

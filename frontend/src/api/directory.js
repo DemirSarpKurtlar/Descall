@@ -4,6 +4,7 @@
  */
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { httpError } from "./httpError";
 
 async function directoryRequest(path, { method = "GET", body, auth = false, signal } = {}) {
   const token = auth ? getToken() : null;
@@ -18,8 +19,7 @@ async function directoryRequest(path, { method = "GET", body, auth = false, sign
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data?.error || `Request failed (${res.status})`);
-    err.status = res.status;
+    const err = httpError(data, res.status);
     err.code = data?.code || null;
     err.body = data;
     throw err;

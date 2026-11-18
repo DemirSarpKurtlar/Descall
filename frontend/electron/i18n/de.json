@@ -6,7 +6,8 @@
     "downloading": "Update wird heruntergeladen…",
     "upToDate": "Auf dem neuesten Stand",
     "checkFailed": "Updates konnten nicht geprüft werden",
-    "loading": "Wird geladen"
+    "loading": "Wird geladen",
+    "openNow": "Jetzt öffnen, im Hintergrund laden"
   },
   "notice": {
     "background": "Descall läuft im Hintergrund weiter. Du kannst es über den Infobereich der Taskleiste wieder öffnen."
@@ -23,13 +24,18 @@
     "openFailed": "Descall konnte nicht geöffnet werden",
     "openFailedDetail": "Die App wurde nicht rechtzeitig geladen. Prüfe deine Verbindung und versuche es erneut.",
     "indexMissingTitle": "Ladefehler",
-    "indexMissing": "index.html wurde in den App-Dateien nicht gefunden."
+    "indexMissing": "index.html wurde in den App-Dateien nicht gefunden.",
+    "unresponsive": "Descall reagiert nicht",
+    "unresponsiveDetail": "Die App reagiert seit einer Weile nicht. Du kannst noch warten oder sie neu laden.",
+    "wait": "Warten",
+    "reload": "Neu laden"
   },
   "tray": {
     "open": "Descall öffnen",
     "startWithWindows": "Mit Windows starten",
     "updateAndQuit": "Aktualisieren und beenden (v{version})",
-    "quit": "Beenden"
+    "quit": "Beenden",
+    "startAtLogin": "Bei Anmeldung starten"
   },
   "notif": {
     "calling": "ruft an...",
@@ -45,7 +51,8 @@
     "message": "Nachricht",
     "close": "Schließen",
     "accept": "Annehmen",
-    "decline": "Ablehnen"
+    "decline": "Ablehnen",
+    "locked": "Neue Benachrichtigung. Entsperre Descall, um sie zu sehen."
   },
   "overlay": {
     "connected": "Verbunden",

@@ -80,6 +80,7 @@ export const ADMINX_EN = {
     emptyNone: "No feedback yet.",
     pickOne: "Select a feedback item.",
     deleteTitle: "Delete this feedback?",
+    deleteReason: "Reason (goes to the action log)",
     cancel: "Cancel",
     delReport: "report",
     delAttachments: "{count, plural, one {attachment} other {attachments}}",

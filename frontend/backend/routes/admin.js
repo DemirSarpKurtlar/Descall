@@ -1,16 +1,12 @@
 "use strict";
 
 const express = require("express");
-const bcrypt = require("bcryptjs");
 const supabase = require("../db/supabase");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin, requireSuperAdmin, userIsSuperAdmin } = require("../middleware/requireAdmin");
-const { isReservedUsername } = require("../lib/usernamePolicy");
-const { checkNewPassword } = require("../lib/passwordPolicy");
 const state = require("../runtime/sharedState");
 const {
   kickUser,
-  disconnectAll,
   notifyAdminRoom,
   buildSnapshot,
 } = require("../socket/adminHandlers");
@@ -43,6 +39,7 @@ const {
   mergeAuditEntries,
   mapModerationActionToAudit,
   isRecentlySeen,
+  istanbulDayKey,
 } = require("../lib/adminOverview");
 const { loadSystemSettings, persistSystemConfig, applySystemConfigToState } = require("../lib/systemSettings");
 const insights = require("../lib/adminInsightsStore");
@@ -59,8 +56,8 @@ const { adminRateLimit } = require("../middleware/adminRateLimit");
 const { requireAdmin2fa, requireStepUp, stepUpHandler } = require("../middleware/adminSecondFactor");
 const adminPermissions = require("../lib/adminPermissions");
 const { apiError, apiText } = require("../lib/apiError");
+const { selectPaged } = require("../lib/selectPaged");
 const router = express.Router();
-const BCRYPT_ROUNDS = 12;
 
 // Descall+ / Ultra: refused attempts on /premium are logged (before the chain answers 401/403).
 router.use("/premium", require("./adminPremium").logDenied);
@@ -227,13 +224,10 @@ const SOURCE_NEW_COLS = "signup_source_group, signup_source_sub, signup_source_d
 
 /** Group -> sub-source breakdown; tolerates the new columns not being migrated. */
 async function loadSourceBreakdown() {
-  let res = await withTimeout(
-    supabase.from("users").select(`${SOURCE_LEGACY_COLS}, ${SOURCE_NEW_COLS}`),
-    8000,
-    { data: null, error: { message: "timeout" } }
-  );
+  const all = (cols) => selectPaged(() => supabase.from("users").select(cols, { count: "exact" }).order("id", { ascending: true }));
+  let res = await withTimeout(all(`${SOURCE_LEGACY_COLS}, ${SOURCE_NEW_COLS}`), 15000, { data: null, error: { message: "timeout" } });
   if (res?.error && isMissingColumnError(res.error)) {
-    res = await withTimeout(supabase.from("users").select(SOURCE_LEGACY_COLS), 8000, { data: null, error: { message: "timeout" } });
+    res = await withTimeout(all(SOURCE_LEGACY_COLS), 15000, { data: null, error: { message: "timeout" } });
   }
   if (res?.error || !Array.isArray(res?.data)) return null;
   return aggregateSourceBreakdown(res.data);
@@ -270,25 +264,20 @@ router.get("/attribution", async (_req, res) => {
 
 router.get("/analytics", async (_req, res) => {
   try {
+    // Every row of an ordered select, one timeout for all pages.
+    const pagedRead = (build) => withTimeout(selectPaged(build), 15000, { data: [], error: { message: "timeout" } });
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const usersSelect =
       "id, created_at, signup_at, last_seen, auth_method, first_touch_source, first_touch_medium, first_touch_campaign, first_touch_term, first_touch_gclid, signup_device, signup_country, first_app_opened_at, first_action_at, first_message_at";
     const breakdownPromise = loadSourceBreakdown().catch(() => null);
     const [usersRes, visitsRes, startedRes] = await Promise.all([
-      withTimeout(
-        supabase.from("users").select(usersSelect),
-        8000,
-        { data: [], error: { message: "timeout" } }
+      // Paged past the 1000-row cap (polish admin-b-04): 30 days of visitor rows are ~14k.
+      pagedRead(() => supabase.from("users").select(usersSelect, { count: "exact" }).order("id")),
+      pagedRead(() =>
+        supabase.from("analytics_visitor_days").select("visitor_key, day, first_touch_source, has_gclid, country, device", { count: "exact" }).gte("day", since).order("day").order("visitor_key")
       ),
-      withTimeout(
-        supabase.from("analytics_visitor_days").select("visitor_key, day, first_touch_source, has_gclid, country, device").gte("day", since),
-        8000,
-        { data: [], error: { message: "timeout" } }
-      ),
-      withTimeout(
-        supabase.from("analytics_events").select("id, visitor_key, occurred_at").eq("event", "signup_started").gte("occurred_at", since),
-        8000,
-        { data: [], error: { message: "timeout" } }
+      pagedRead(() =>
+        supabase.from("analytics_events").select("id, visitor_key, occurred_at", { count: "exact" }).eq("event", "signup_started").gte("occurred_at", since).order("id")
       ),
     ]);
     if (usersRes?.error?.message === "timeout") {
@@ -306,6 +295,10 @@ router.get("/analytics", async (_req, res) => {
     const attr = aggregateAttributionStats(users);
     const now = new Date();
     const windows = signupWindowCounts(users, now);
+    // "Bugunku kayitlar" is the Istanbul day, like Genel Bakis (polish admin-b-08); the
+    // daily table stays on UTC days to line up with analytics_visitor_days.
+    const todayKey = istanbulDayKey(now);
+    windows.signupsToday = users.filter((u) => istanbulDayKey(u.signup_at || u.created_at || 0) === todayKey).length;
     const active = activeUserCounts(users, now);
     const sources = headlineSourceCounts(attr.bySource);
     const adsVisits = visits.filter((v) => v.has_gclid || v.first_touch_source === "google_ads").length;
@@ -571,39 +564,14 @@ router.get("/users/:id", async (req, res) => {
   }
 });
 
-router.post("/users", async (req, res) => {
-  try {
-    const { username, password } = req.body || {};
-    if (typeof username !== "string" || typeof password !== "string") {
-      return res.status(400).json({ error: "username and password required." });
-    }
-    const clean = username.trim();
-    if (
-      clean.length < 2 ||
-      clean.length > 24 ||
-      !/^[a-zA-Z0-9_.-]+$/.test(clean) ||
-      isReservedUsername(clean)
-    ) {
-      return res.status(400).json({ error: "Invalid username." });
-    }
-    const passwordCheck = await checkNewPassword(password);
-    if (passwordCheck.error) {
-      return res.status(400).json({ error: passwordCheck.error, code: passwordCheck.code });
-    }
-    const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const { data, error } = await supabase
-      .from("users")
-      .insert({ username: clean, password_hash: hash })
-      .select("id, username")
-      .single();
-    if (error) return res.status(400).json({ error: "Could not create user." });
-    audit(req.user, "user_create", data.id, { username: data.username });
-    notifyAdminRoom(getIo(req), { type: "user_created", id: data.id });
-    res.status(201).json({ user: data });
-  } catch (e) {
-    res.status(500).json({ error: "Create failed." });
-  }
-});
+/**
+ * Accounts are never created or hard-deleted from the admin panel (polish admin-b-01):
+ * these routes sat behind the read-only "Kullanicilar" (directory) section, so any
+ * legacy admin could delete the owner. Nothing in the panel used them.
+ */
+const ACCOUNT_ROUTES_GONE = () =>
+  apiError("Accounts are not created or deleted from the admin panel.", null, { code: "ACCOUNT_ROUTE_REMOVED" });
+router.post("/users", (_req, res) => res.status(410).json(ACCOUNT_ROUTES_GONE()));
 
 router.patch("/users/:id", async (req, res) => {
   try {
@@ -673,21 +641,7 @@ router.put("/remove-admin/:userId", requireSuperAdmin, async (req, res) => {
   }
 });
 
-router.delete("/users/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (id === req.user.id) return res.status(400).json({ error: "Cannot delete yourself." });
-    const { error } = await supabase.from("users").delete().eq("id", id);
-    if (error) return res.status(500).json({ error: error.message });
-    cleanupUserMemory(id);
-    state.bannedUserIds.delete(id);
-    audit(req.user, "user_delete", id, {});
-    notifyAdminRoom(getIo(req), { type: "user_deleted", id });
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: "Delete failed." });
-  }
-});
+router.delete("/users/:id", (_req, res) => res.status(410).json(ACCOUNT_ROUTES_GONE()));
 
 router.get("/moderation/meta", (_req, res) => {
   res.json({
@@ -1200,6 +1154,7 @@ router.post("/dm/unblock", (req, res) => {
   const { userIdA, userIdB } = req.body || {};
   const key = [userIdA, userIdB].sort().join("::");
   state.dmBlockPairs.delete(key);
+  audit(req.user, "dm_unblock", key, {});
   res.json({ ok: true });
 });
 
@@ -1328,23 +1283,19 @@ router.delete("/profanity/:word", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/broadcast", (req, res) => {
-  const text = String(req.body?.text || "").trim();
-  if (!text) return res.status(400).json({ error: "text required." });
-  getIo(req).emit("server:announcement", {
-    text,
-    at: new Date().toISOString(),
-    from: "admin",
-  });
-  audit(req.user, "broadcast", "all", { len: text.length });
-  res.json({ ok: true });
-});
+// Instant notice to everyone lives in Sistem > Yayin (/system/broadcast) now (polish admin-b-11).
+router.post("/broadcast", (_req, res) => res.status(410).json(apiError("This tool moved to System.", null, { code: "LEGACY_TOOL_REMOVED" })));
 
 router.get("/popup/recent", (_req, res) => {
   res.json({ entries: popupBroadcast.listRecent(20) });
 });
 
 router.post("/popup", (req, res) => {
+  // One person only (Kullanici dosyasi). A popup to everyone goes through Canli popup, which
+  // has the daily limit, receipts and recall (polish admin-b-11).
+  if (!req.body?.targetUserId) {
+    return res.status(410).json(apiError("Send popups to everyone from Live popup.", null, { code: "USE_LIVE_POPUP" }));
+  }
   const io = getIo(req);
   pruneDeadPresence(state.presence, io);
   const roster = summarizePresence(state.presence, { io });
@@ -1417,10 +1368,9 @@ router.post("/popup", (req, res) => {
   });
 });
 
-router.post("/sockets/kick-all", (req, res) => {
-  disconnectAll(getIo(req), req.user.id, req.user.username);
-  res.json({ ok: true });
-});
+// Disconnecting everyone had no reason, confirm or screen (polish admin-b-15): use
+// Sistem > Guvenli yeniden baslat.
+router.post("/sockets/kick-all", (_req, res) => res.status(410).json(apiError("This tool moved to System.", null, { code: "LEGACY_TOOL_REMOVED" })));
 
 router.post("/sockets/kick/:userId", (req, res) => {
   kickUser(getIo(req), {
@@ -1530,22 +1480,13 @@ router.get("/errors", (req, res) => {
   }
 });
 
-router.post("/cleanup", (_req, res) => {
-  const before = state.auditLog.length;
-  state.auditLog.length = Math.min(state.auditLog.length, 1000);
-  res.json({ trimmed: before - state.auditLog.length });
-});
+// Legacy Sistem endpoints with no screen (polish admin-b-15): they changed state with no
+// reason or audit (cache/clear silently lifted admin DM blocks, cleanup trimmed the audit
+// log). Sistem has the safe restart, history and backup now.
+const LEGACY_GONE = (_req, res) => res.status(410).json(apiError("This tool moved to System.", null, { code: "LEGACY_TOOL_REMOVED" }));
+router.post("/cleanup", LEGACY_GONE);
 
-router.post("/backup", (_req, res) => {
-  const snapshot = {
-    at: new Date().toISOString(),
-    generalMessages: state.generalMessages,
-    dmKeys: [...state.dmHistory.keys()],
-    systemConfig: state.systemConfig,
-    auditSample: state.auditLog.slice(0, 50),
-  };
-  res.json(snapshot);
-});
+router.post("/backup", LEGACY_GONE);
 
 // Sistem page: the only restart is the safe one (drain, notify, backup, typed confirm,
 // fresh code): POST /system/restart in routes/adminSystem.js.
@@ -1797,13 +1738,19 @@ router.patch("/feedback/:id", async (req, res) => {
     if (getError) throw getError;
     if (!cur) return res.status(404).json({ error: "Feedback not found." });
     const lines = fb.systemLines(cur, patch, req.user.username);
-    const before = { status: cur.status, userId: cur.user_id, id: cur.id };
+    const before = { status: cur.status, priority: cur.priority, userId: cur.user_id, id: cur.id };
     const update = { ...patch, updated_at: new Date().toISOString() };
     if (lines.length) update.admin_replies = [...(Array.isArray(cur.admin_replies) ? cur.admin_replies : []), ...lines];
     const { error } = await supabase.from("user_feedback").update(update).eq("id", req.params.id);
     if (error) throw error;
     if (patch.status && patch.status !== before.status && before.userId) {
       require("../lib/feedbackNotify").notifyFeedbackStatus(getIo(req), before.userId, { feedbackId: before.id, status: patch.status });
+    }
+    // İşlem kaydı: one entry per change (status first), never the feedback text.
+    for (const field of ["status", "priority"]) {
+      if (patch[field] && patch[field] !== before[field]) {
+        audit(req.user, `feedback_${field}`, before.userId || null, { feedbackId: before.id, from: before[field] || null, to: patch[field] });
+      }
     }
     res.json({ feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
@@ -1849,6 +1796,7 @@ router.post("/feedback/:id/reply", async (req, res) => {
       // 3.7.14: live event + in-app notification + iOS push (lib/feedbackNotify.js).
       require("../lib/feedbackNotify").notifyFeedbackReply(getIo(req), cur.user_id, { feedbackId: cur.id, text, subject: cur.subject });
     }
+    audit(req.user, internal ? "feedback_note" : "feedback_reply", cur.user_id || null, { feedbackId: cur.id, length: text.length });
     res.json({ reply: fb.shapeReply(reply), feedback: await reloadFeedback(req.params.id) });
   } catch (error) {
     console.error("[Admin] Failed to send reply:", error?.message || error);
@@ -1856,10 +1804,23 @@ router.post("/feedback/:id/reply", async (req, res) => {
   }
 });
 
+// Deleting removes the sender's whole thread, so it takes a reason and lands in İşlem kaydı.
 router.delete("/feedback/:id", async (req, res) => {
   try {
+    const reason = String(req.body?.reason ?? req.query?.reason ?? "").trim().slice(0, 300);
+    if (reason.length < 3) {
+      return res.status(400).json(apiError("Write a reason (at least 3 characters).", null, { code: "REASON_REQUIRED" }));
+    }
+    const { data: cur, error: getError } = await supabase
+      .from("user_feedback").select("id, user_id, category, status, admin_replies").eq("id", req.params.id).maybeSingle();
+    if (getError) throw getError;
+    if (!cur) return res.status(404).json({ error: "Feedback not found." });
     const { error } = await supabase.from("user_feedback").delete().eq("id", req.params.id);
     if (error) throw error;
+    audit(req.user, "feedback_delete", cur.user_id || null, {
+      feedbackId: cur.id, category: cur.category || null, status: cur.status || null,
+      replies: Array.isArray(cur.admin_replies) ? cur.admin_replies.length : 0, reason,
+    });
     res.json({ success: true });
   } catch (error) {
     console.error("[Admin] Failed to delete feedback:", error?.message || error);
@@ -1870,40 +1831,10 @@ router.delete("/feedback/:id", async (req, res) => {
 // ========== ADDITIONAL ADMIN ROUTES ==========
 
 // Clear cache
-router.post("/cache/clear", (req, res) => {
-  try {
-    // Clear various caches
-    state.dmBlockPairs?.clear?.();
-    state.rateLimitDm?.clear?.();
-    state.userOnlineAccumMs?.clear?.();
-    state.userSessionStartMs?.clear?.();
-    
-    res.json({ success: true, message: "Cache cleared successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to clear cache." });
-  }
-});
+router.post("/cache/clear", LEGACY_GONE);
 
 // Archive old logs
-router.post("/logs/archive", (req, res) => {
-  try {
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const oldLogs = (state.errorLogs || []).filter(l => new Date(l.timestamp).getTime() < thirtyDaysAgo);
-    
-    if (oldLogs.length > 0) {
-      state.archivedErrorLogs = [...(state.archivedErrorLogs || []), ...oldLogs];
-      state.errorLogs = (state.errorLogs || []).filter(l => new Date(l.timestamp).getTime() >= thirtyDaysAgo);
-    }
-    
-    res.json({ 
-      success: true, 
-      archived: oldLogs.length,
-      ...apiText("message", "{count, plural, one {# log archived} other {# logs archived}} successfully", { count: oldLogs.length }),
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to archive logs." });
-  }
-});
+router.post("/logs/archive", LEGACY_GONE);
 
 // Bulk delete error logs
 router.post("/errors/bulk-delete", (req, res) => {
@@ -2330,12 +2261,24 @@ router.post("/descoin/reconciliation/run", async (req, res) => {
 // just like gifting an item: the recipient gets a real-time celebratory
 // popup naming the admin and showing their note (delivered on next connect
 // if they're offline right now), not just a silent balance bump.
+const DESCOIN_GRANT_ADMIN_MAX = 1_000_000;
+const DESCOIN_GRANT_OWNER_MAX = 10_000_000_000;
 router.post("/descoin/grant", async (req, res) => {
   try {
-    const { userId, amount, reason, message } = req.body || {};
+    const { userId, amount, message } = req.body || {};
     const parsedAmount = Math.round(Number(amount));
     if (!userId || !Number.isFinite(parsedAmount) || parsedAmount === 0) {
       return res.status(400).json({ error: "userId and a non-zero amount are required." });
+    }
+    // Real currency (polish admin-b-03): every change carries the admin's reason, and only
+    // the owner can move more than DESCOIN_GRANT_ADMIN_MAX in one step.
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 300) : "";
+    if (reason.length < 3) {
+      return res.status(400).json(apiError("Write a reason (at least 3 characters).", null, { code: "REASON_REQUIRED" }));
+    }
+    const limit = (await userIsSuperAdmin(req)) ? DESCOIN_GRANT_OWNER_MAX : DESCOIN_GRANT_ADMIN_MAX;
+    if (Math.abs(parsedAmount) > limit) {
+      return res.status(400).json(apiError("One change can move at most {max} DesCoin.", { max: limit }, { code: "AMOUNT_TOO_LARGE", max: limit }));
     }
     const cleanMessage = typeof message === "string" && message.trim() ? message.trim() : null;
 

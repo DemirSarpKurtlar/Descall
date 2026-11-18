@@ -13,6 +13,7 @@ import { serverHasPermission } from "../../lib/serverPermissions";
 import ImageCropModal from "../ui/LazyImageCropModal";
 import { ServerDangerZone } from "./OwnershipTransfer";
 import { ServerIcon } from "./ServerIcon";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 /**
  * Unified server settings: name, description, icon, banner.
@@ -32,6 +33,7 @@ export default function ServerSettingsModal({ server, onClose, onServerUpdated, 
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState("");
   const [cropKindState, setCropKind] = useState(null); // 'icon' | 'banner'
+  useEscapeClose(onClose, { enabled: !busy && !uploading && !cropSrc && !stacked });
   const iconRef = useRef(null);
   const bannerRef = useRef(null);
 

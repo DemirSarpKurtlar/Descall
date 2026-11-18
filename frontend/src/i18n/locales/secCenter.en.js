@@ -155,6 +155,12 @@ export const SEC_CENTER_EN = {
     "title": "Emergency lock modes",
     "liftAll": "Lift all",
     "permanent": "Permanent access settings",
+    "fromSystem": "On from System",
+    "sysChatFrozen": "Chat is frozen",
+    "chatFrozenSub": "Nobody can send messages",
+    "regOff": "Sign-ups are off",
+    "regOffSub": "No new accounts can be created",
+    "openSystem": "Open System",
     "liftsIn": "Lifts in {time}",
     "untilLifted": "Until lifted",
     "detailAria": "Details of the {name} lock"

@@ -9,6 +9,8 @@
  */
 
 const filters = new Map(); // owner -> fn(payload) => payload | null
+// Run after every ordinary filter (app_lock: redact whatever quick reply or a profile added).
+const finalFilters = new Map();
 let quickReplyShow = null;
 
 function register(owner, fn) {
@@ -16,9 +18,14 @@ function register(owner, fn) {
   return () => { if (filters.get(owner) === fn) filters.delete(owner); };
 }
 
+function registerFinal(owner, fn) {
+  if (typeof fn === 'function') finalFilters.set(owner, fn);
+  return () => { if (finalFilters.get(owner) === fn) finalFilters.delete(owner); };
+}
+
 function run(payload) {
   let current = payload;
-  for (const fn of filters.values()) {
+  for (const fn of [...filters.values(), ...finalFilters.values()]) {
     try {
       const next = fn(current);
       if (next === null) return null;
@@ -38,4 +45,4 @@ function showQuickReply(opts) {
   try { return Boolean(quickReplyShow(opts)); } catch (_) { return false; }
 }
 
-module.exports = { register, run, setQuickReplyHandler, showQuickReply, _filters: filters };
+module.exports = { register, registerFinal, run, setQuickReplyHandler, showQuickReply, _filters: filters, _finalFilters: finalFilters };

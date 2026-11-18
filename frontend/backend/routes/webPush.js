@@ -5,16 +5,18 @@ const express = require("express");
 const { requireAuth } = require("../middleware/auth");
 const supabase = require("../db/supabase");
 const fcm = require("../lib/fcm");
+const { isAllowedPushEndpoint } = require("../lib/pushEndpoint");
 
 const router = express.Router();
 
 function validSubscription(subscription) {
   return Boolean(
     subscription &&
-    typeof subscription.endpoint === "string" &&
-    subscription.endpoint.startsWith("https://") &&
+    isAllowedPushEndpoint(subscription.endpoint) &&
     typeof subscription.keys?.p256dh === "string" &&
-    typeof subscription.keys?.auth === "string"
+    subscription.keys.p256dh.length <= 256 &&
+    typeof subscription.keys?.auth === "string" &&
+    subscription.keys.auth.length <= 64
   );
 }
 

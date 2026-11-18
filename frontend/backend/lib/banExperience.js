@@ -122,12 +122,15 @@ async function appealStateFor(userId, bannedAt) {
 }
 
 /** CONTRACT section 1 body (with a fresh 30 min banTicket). */
-async function accountBanBody({ userId, username, detail }) {
+async function accountBanBody({ userId, username, detail, emailOnFile }) {
+  const appeal = await appealStateFor(userId, detail?.bannedAt || null);
   return {
     ...apiError("Account is banned.", null, { code: "ACCOUNT_BANNED" }),
     ban: publicBan(detail, username || state.usernameById.get(String(userId)) || null),
     banTicket: signBanTicket({ id: userId }),
-    appeal: await appealStateFor(userId, detail?.bannedAt || null),
+    // emailOnFile false: no verified address, so the appeal result is not emailed
+    // (the ban screen says it shows up there instead). Unknown = left out.
+    appeal: typeof emailOnFile === "boolean" ? { ...appeal, emailOnFile } : appeal,
   };
 }
 

@@ -19,6 +19,9 @@ paths = [
 ]
 # Fake LiveKit secret that a test file held in commit e8467900 (replaced since);
 # allowlisted by exact value because gitleaks scans the whole branch history.
+# The web-push README example subscription (p256dh/auth, public test vector) used by
+# backend/test/webPushEndpoint.integration.test.cjs (commit b1957669).
 regexes = [
   '''lk-test-secret-that-is-long-enough-0123456789''',
+  '''tBHItJI5svbpez7KI4CCXg''',
 ]

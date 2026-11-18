@@ -14,6 +14,7 @@ import { toTrtInputs, fromTrtInputs, dottedDate } from "../../lib/maintenance";
 import { describePromoBadge, getPromoBadges, onPromoBadgesChange } from "../../lib/promoBadges";
 import { PromoGiftPopup, BadgeGlyph } from "../promo/PromoUi.jsx";
 import PromoPeoplePicker from "./PromoPeoplePicker.jsx";
+import PromoItemPicker, { promoItemName } from "./PromoItemPicker.jsx";
 import "../../styles/maintenance.css";
 import "../../styles/promo.css";
 
@@ -45,8 +46,8 @@ function PickerPart({ type, value, onChange, label, text }) {
   );
 }
 
-function Toggle({ on, onChange, label }) {
-  return <button type="button" role="switch" aria-checked={on} aria-label={label} className={`mt-tg${on ? " on" : ""}`} onClick={() => onChange(!on)} />;
+function Toggle({ on, onChange, label, disabled = false }) {
+  return <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} className={`mt-tg${on ? " on" : ""}`} onClick={() => onChange(!on)} />;
 }
 
 function Seg({ label, value, options, onChange, className = "" }) {
@@ -81,7 +82,7 @@ function useBadgeRegistry() {
   return reg;
 }
 
-function PromoForm({ overview, onCreated, t }) {
+function PromoForm({ overview, onCreated, t, locale }) {
   const [f, setF] = useState(freshForm);
   const [items, setItems] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -104,7 +105,7 @@ function PromoForm({ overview, onCreated, t }) {
   const code = f.mode === "random" ? f.code : normalizeCode(f.code);
   const item = items?.find((i) => String(i.id) === String(f.itemId));
   const reward = f.rewardType === "descoin" ? { type: "descoin", amount: Number(f.amount) || 0 }
-    : f.rewardType === "shop_item" ? { type: "shop_item", itemId: f.itemId, name: item?.name }
+    : f.rewardType === "shop_item" ? { type: "shop_item", itemId: f.itemId, name: item ? promoItemName(item, locale) : undefined }
       : { type: "special_badge", badgeId: f.badgeId };
   const expiresAt = f.expDate ? fromTrtInputs(f.expDate, f.expTime || "23:59") : null;
   const aud = overview?.audience || {};
@@ -112,6 +113,11 @@ function PromoForm({ overview, onCreated, t }) {
     : f.audience === "active_7d" ? t("promo.reachActive", { n: fmtNum(aud.active7d) })
       : f.audience === "selected" ? t("promo.reachSelected", { n: f.targets.length }) : "";
   const BadgePicker = reg?.Picker;
+  const isBadge = f.rewardType === "special_badge";
+  // The reward needs its pick before the code can be made (the server would refuse it anyway).
+  const missingRef = f.rewardType === "shop_item" ? !f.itemId : isBadge ? !f.badgeId : false;
+  const missingText = f.rewardType === "shop_item" ? t("promo.err_reward_item") : t("promo.err_reward_badge");
+  const oncePerUser = isBadge ? true : f.oncePerUser;
 
   const create = async () => {
     if (busy) return;
@@ -123,7 +129,7 @@ function PromoForm({ overview, onCreated, t }) {
         rewardAmount: f.rewardType === "descoin" ? Number(f.amount) : undefined,
         rewardRef: f.rewardType === "shop_item" ? f.itemId : f.rewardType === "special_badge" ? f.badgeId : undefined,
         message: f.message, maxUses: f.maxUses === "" ? null : Number(f.maxUses), minAccountAgeDays: f.age,
-        oncePerUser: f.oncePerUser, active: f.active, expiresAt,
+        oncePerUser, active: f.active, expiresAt,
         popupAudience: f.audience, targetUserIds: f.targets.map((u) => u.id),
       });
       setF((p) => ({ ...freshForm(), rewardType: p.rewardType, amount: p.amount, audience: p.audience }));
@@ -187,18 +193,16 @@ function PromoForm({ overview, onCreated, t }) {
       {f.rewardType === "shop_item" && (
         <div className="mt-f">
           <span>{t("promo.item")}</span>
-          <div className="mt-in sel">
-            <ShoppingBag size={14} className="mt-i" /><span>{item?.name || t("promo.itemPick")}</span><ChevronDown size={14} className="mt-i" style={{ marginLeft: "auto" }} />
-            <select aria-label={t("promo.item")} value={f.itemId} onChange={(e) => set({ itemId: e.target.value })}>
-              <option value="">{t("promo.itemPick")}</option>
-              {(items || []).map((i) => <option key={i.id} value={i.id}>{i.name} · {fmtNum(i.price_descoin)} DC</option>)}
-            </select>
-          </div>
+          <PromoItemPicker items={items} value={f.itemId} onChange={(itemId) => set({ itemId })} t={t} locale={locale} />
         </div>
       )}
       {f.rewardType === "special_badge" && (
-        BadgePicker ? <BadgePicker value={f.badgeId} onChange={(badgeId) => set({ badgeId })} />
-          : <div className="mt-f"><span>{t("promo.badge")}</span><span className="pc-hint">{t("promo.badgeSoon")}</span></div>
+        <div className="mt-f"><span>{t("promo.badge")}</span>
+          {BadgePicker ? (
+            <BadgePicker value={f.badgeId} onChange={(badgeId) => set({ badgeId })}
+              maxUses={f.maxUses === "" ? null : Number(f.maxUses)} onMaxUses={(n) => set({ maxUses: String(n) })} />
+          ) : <span className="pc-hint" role="status">{t("promo.badgeSoon")}</span>}
+        </div>
       )}
       <label className="mt-f">
         <span>{t("promo.message")} <em className="pc-opt">{t("promo.optional")}</em></span>
@@ -230,18 +234,19 @@ function PromoForm({ overview, onCreated, t }) {
       {f.audience === "selected" ? <PromoPeoplePicker value={f.targets} onChange={(targets) => set({ targets })} t={t} /> : null}
       <div className="mt-row first">
         <Shield size={16} color="#6cb6ff" className="mt-i" />
-        <div className="mt-row-copy"><b>{t("promo.oncePerUser")}</b><div className="mt-muted">{t("promo.oncePerUserHint")}</div></div>
-        <Toggle on={f.oncePerUser} label={t("promo.oncePerUser")} onChange={(oncePerUser) => set({ oncePerUser })} />
+        <div className="mt-row-copy"><b>{t("promo.oncePerUser")}</b><div className="mt-muted">{isBadge ? t("promo.badgeOnce") : t("promo.oncePerUserHint")}</div></div>
+        <Toggle on={oncePerUser} disabled={isBadge} label={t("promo.oncePerUser")} onChange={(v) => set({ oncePerUser: v })} />
       </div>
       <div className="mt-row">
         <Megaphone size={16} color="#ffb340" className="mt-i" />
         <div className="mt-row-copy"><b>{t("promo.active")}</b><div className="mt-muted">{t("promo.activeHint")}{reach && f.active ? ` · ${reach}` : f.audience === "none" ? ` · ${t("promo.audienceNone")}` : ""}</div></div>
         <Toggle on={f.active} label={t("promo.active")} onChange={(active) => set({ active })} />
       </div>
-      {note ? <p className={`pc-hint ${note.ok ? "is-ok" : "is-err"}`} role={note.ok ? "status" : "alert"}>{note.text}</p> : null}
+      {note ? <p className={`pc-hint ${note.ok ? "is-ok" : "is-err"}`} role={note.ok ? "status" : "alert"}>{note.text}</p>
+        : missingRef ? <p className="pc-hint">{missingText}</p> : null}
       <div className="mt-form-foot">
         <button type="button" className="mt-btn" style={{ height: 36 }} onClick={() => setPreview(true)}><Eye size={15} /> {t("promo.preview")}</button>
-        <button type="button" className="mt-btn primary" style={{ height: 36 }} disabled={busy || code.length !== 16} onClick={create}><Plus size={15} /> {busy ? t("promo.creating") : t("promo.create")}</button>
+        <button type="button" className="mt-btn primary" style={{ height: 36 }} disabled={busy || code.length !== 16 || missingRef} onClick={create}><Plus size={15} /> {busy ? t("promo.creating") : t("promo.create")}</button>
       </div>
       {preview ? (
         <PromoGiftPopup
@@ -300,7 +305,18 @@ function UsesCard({ code, query, t, onToggle }) {
 
 /** Admin → Promosyon Kodları. Every call goes through /admin (requireAuth + requireAdmin on the server). */
 export default function PromoCodesTab() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  // The special-badge picker, glyphs and names plug in through lib/promoBadges. The main window
+  // registers them in SpecialBadgeHost; the separate admin window (/admin/panel, Electron) never
+  // mounts that host, so the tab registers them itself.
+  useBadgeRegistry();
+  useEffect(() => {
+    let live = true;
+    import("../badges/promoBridge.jsx")
+      .then((m) => { if (live) m.registerSpecialPromoBadges(locale); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [locale]);
   const [ov, setOv] = useState(null);
   const [failed, setFailed] = useState(false);
   const [selId, setSelId] = useState(null);
@@ -355,7 +371,7 @@ export default function PromoCodesTab() {
         ))}
       </div>
       <div className="mt-grid">
-        <div className="mt-col"><PromoForm overview={ov} t={t} onCreated={async (id) => { await load(); if (id) setSelId(id); }} /></div>
+        <div className="mt-col"><PromoForm overview={ov} t={t} locale={locale} onCreated={async (id) => { await load(); if (id) setSelId(id); }} /></div>
         <div className="mt-col">
           <div className="mt-card">
             <h3><Gift size={16} /> {t("promo.codes")}<span className="sub tnum">{t("promo.codesCount", { n: fmtNum(codes.length) })}</span></h3>

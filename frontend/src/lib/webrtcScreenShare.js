@@ -215,170 +215,222 @@ export async function getDisplayMediaStream(opts = {}) {
   throw lastErr || screenShareUnsupportedError();
 }
 
+/** Split desktopCapturer sources into screens and windows (ids are "screen:…" / "window:…"). */
+export function groupScreenSources(sources = []) {
+  const screens = [];
+  const windows = [];
+  for (const s of Array.isArray(sources) ? sources : []) {
+    if (!s || typeof s.id !== "string") continue;
+    (s.id.startsWith("screen:") ? screens : windows).push(s);
+  }
+  return { screens, windows };
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+function pickerIcon(paths) {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "16");
+  svg.setAttribute("height", "16");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  for (const d of paths) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+  }
+  return svg;
+}
+
 /**
- * Electron source picker (inline overlay, no CSS dependency).
+ * Electron source picker (polish pass). Styled by `.electron-screen-picker-*` in
+ * styles/app-layout.css: the shared scrim (overlay.css list) and a heavy frost card
+ * (frost.css list), Ekranlar / Pencereler tabs with counts, tiles that are real buttons
+ * (Tab / arrow keys / Enter), app icons on window tiles, a refresh button, Escape to
+ * cancel, focus kept inside and given back on close.
+ * @param {Array} sources from electronAPI.getScreenSources()
+ * @param {{ refresh?: () => Promise<Array> }} [opts]
  * @returns {Promise<string|null>} source id or null if cancelled
  */
-export function showElectronScreenPicker(sources = []) {
+export function showElectronScreenPicker(sources = [], { refresh } = {}) {
   return new Promise((resolve) => {
     let resolved = false;
+    let groups = groupScreenSources(sources);
+    let tab = groups.screens.length || !groups.windows.length ? "screens" : "windows";
+    const opener = typeof document !== "undefined" ? document.activeElement : null;
+
+    const overlay = document.createElement("div");
+    overlay.className = "electron-screen-picker-overlay";
+    const modal = document.createElement("div");
+    modal.className = "electron-screen-picker-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "esp-title");
+
     const done = (id) => {
       if (resolved) return;
       resolved = true;
-      if (document.body.contains(overlay)) document.body.removeChild(overlay);
+      document.removeEventListener("keydown", onKey, true);
+      overlay.remove();
+      try { opener?.focus?.(); } catch { /* opener gone */ }
       resolve(id);
     };
 
-    const STYLE_ID = "__esp_anim__";
-    if (!document.getElementById(STYLE_ID)) {
-      const style = document.createElement("style");
-      style.id = STYLE_ID;
-      style.textContent = `
-        @keyframes _esp_overlay { from { opacity:0 } to { opacity:1 } }
-        @keyframes _esp_modal { from { opacity:0; transform:scale(0.9) translateY(16px) } to { opacity:1; transform:scale(1) translateY(0) } }
-      `;
-      document.head.appendChild(style);
-    }
-
-    const overlay = document.createElement("div");
-    Object.assign(overlay.style, {
-      position: "fixed",
-      inset: "0",
-      zIndex: "2147483647",
-      background: "rgba(6,7,12,0.66)",
-      backdropFilter: "blur(28px) saturate(140%)",
-      WebkitBackdropFilter: "blur(28px) saturate(140%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "system-ui, -apple-system, sans-serif",
-      animation: "_esp_overlay 0.2s ease",
-    });
-
-    const modal = document.createElement("div");
-    Object.assign(modal.style, {
-      background: "#1a1a1f",
-      border: "1px solid rgba(255,255,255,0.1)",
-      borderRadius: "16px",
-      width: "720px",
-      maxWidth: "90vw",
-      maxHeight: "82vh",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-      boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
-      animation: "_esp_modal 0.28s cubic-bezier(0.16, 1, 0.3, 1)",
-    });
-
     const header = document.createElement("div");
-    Object.assign(header.style, {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "18px 24px",
-      borderBottom: "1px solid rgba(255,255,255,0.07)",
-      flexShrink: "0",
-    });
-
+    header.className = "electron-screen-picker-header";
     const title = document.createElement("h3");
+    title.id = "esp-title";
     title.textContent = t("core.screenPicker.title");
-    Object.assign(title.style, {
-      margin: "0",
-      fontSize: "16px",
-      fontWeight: "600",
-      color: "#f0f0f5",
-    });
-
+    const actions = document.createElement("div");
+    actions.className = "electron-screen-picker-actions";
+    if (typeof refresh === "function") {
+      const refreshBtn = document.createElement("button");
+      refreshBtn.type = "button";
+      refreshBtn.className = "electron-screen-picker-icon-btn";
+      refreshBtn.setAttribute("aria-label", t("core.screenPicker.refresh"));
+      refreshBtn.title = t("core.screenPicker.refresh");
+      refreshBtn.appendChild(pickerIcon(["M21 12a9 9 0 1 1-2.64-6.36", "M21 3v6h-6"]));
+      refreshBtn.addEventListener("click", async () => {
+        refreshBtn.disabled = true;
+        try {
+          const next = await refresh();
+          if (Array.isArray(next)) { groups = groupScreenSources(next); render(); }
+        } catch { /* keep the old list */ }
+        refreshBtn.disabled = false;
+      });
+      actions.appendChild(refreshBtn);
+    }
     const closeBtn = document.createElement("button");
-    closeBtn.textContent = "×";
+    closeBtn.type = "button";
+    closeBtn.className = "electron-screen-picker-icon-btn";
     closeBtn.setAttribute("aria-label", t("Close"));
-    Object.assign(closeBtn.style, {
-      width: "32px",
-      height: "32px",
-      border: "none",
-      borderRadius: "8px",
-      background: "transparent",
-      color: "#8a8a93",
-      fontSize: "24px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      lineHeight: "1",
-    });
+    closeBtn.appendChild(pickerIcon(["M18 6 6 18", "M6 6l12 12"]));
     closeBtn.addEventListener("click", () => done(null));
+    actions.appendChild(closeBtn);
+    header.append(title, actions);
 
-    header.appendChild(title);
-    header.appendChild(closeBtn);
+    const tabs = document.createElement("div");
+    tabs.className = "electron-screen-picker-tabs";
+    tabs.setAttribute("role", "tablist");
+    const tabBtn = (key, label) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "electron-screen-picker-tab";
+      b.setAttribute("role", "tab");
+      b.dataset.tab = key;
+      b.addEventListener("click", () => { tab = key; render(); });
+      b._label = label;
+      return b;
+    };
+    const screensTab = tabBtn("screens", t("core.screenPicker.screens"));
+    const windowsTab = tabBtn("windows", t("core.screenPicker.windows"));
+    tabs.append(screensTab, windowsTab);
 
-    const tip = document.createElement("div");
+    const tip = document.createElement("p");
+    tip.className = "electron-screen-picker-tip";
     tip.textContent = t("core.screenPicker.tip");
-    Object.assign(tip.style, {
-      padding: "10px 24px",
-      fontSize: "12px",
-      color: "#949ba4",
-      borderBottom: "1px solid rgba(255,255,255,0.07)",
-      lineHeight: "1.4",
-    });
 
     const grid = document.createElement("div");
-    Object.assign(grid.style, {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-      gap: "12px",
-      padding: "20px 24px 24px",
-      overflowY: "auto",
-    });
+    grid.className = "electron-screen-picker-grid";
+    grid.setAttribute("role", "tabpanel");
 
-    (sources || []).forEach((source) => {
-      const item = document.createElement("div");
-      Object.assign(item.style, {
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        background: "rgba(255,255,255,0.04)",
-        border: "1.5px solid rgba(255,255,255,0.07)",
-        borderRadius: "12px",
-        padding: "10px",
-        cursor: "pointer",
-        transition: "all 0.15s",
-      });
+    function tile(source, index) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "electron-screen-picker-item";
+      const name = source.name || `${t("core.screenPicker.screen")} ${index + 1}`;
+      item.setAttribute("aria-label", name);
       const thumb = document.createElement("img");
       thumb.src = source.thumbnailDataURL || "";
-      thumb.alt = source.name || "Screen";
+      thumb.alt = "";
       thumb.draggable = false;
-      Object.assign(thumb.style, {
-        width: "100%",
-        aspectRatio: "16/9",
-        objectFit: "cover",
-        borderRadius: "8px",
-        background: "#111",
-      });
       const label = document.createElement("span");
-      label.textContent = source.name || t("core.screenPicker.screen");
-      Object.assign(label.style, {
-        fontSize: "12px",
-        fontWeight: "500",
-        color: "#c0c0c8",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        textAlign: "center",
-      });
-      item.appendChild(thumb);
-      item.appendChild(label);
+      label.className = "electron-screen-picker-label";
+      if (source.appIconDataURL) {
+        const icon = document.createElement("img");
+        icon.className = "electron-screen-picker-appicon";
+        icon.src = source.appIconDataURL;
+        icon.alt = "";
+        label.appendChild(icon);
+      }
+      const text = document.createElement("span");
+      text.textContent = name;
+      label.appendChild(text);
+      item.append(thumb, label);
       item.addEventListener("click", () => done(source.id));
-      grid.appendChild(item);
-    });
+      return item;
+    }
 
-    modal.appendChild(header);
-    modal.appendChild(tip);
-    modal.appendChild(grid);
+    function render() {
+      for (const [btn, key, list] of [[screensTab, "screens", groups.screens], [windowsTab, "windows", groups.windows]]) {
+        btn.textContent = `${btn._label} · ${list.length}`;
+        btn.setAttribute("aria-selected", tab === key ? "true" : "false");
+        btn.tabIndex = tab === key ? 0 : -1;
+      }
+      grid.replaceChildren();
+      const list = tab === "screens" ? groups.screens : groups.windows;
+      if (!list.length) {
+        const empty = document.createElement("p");
+        empty.className = "electron-screen-picker-empty";
+        empty.textContent = t("core.screenPicker.empty");
+        grid.appendChild(empty);
+        return;
+      }
+      list.forEach((s, i) => grid.appendChild(tile(s, i)));
+    }
+
+    function focusables() {
+      return [...modal.querySelectorAll("button:not([disabled])")].filter((b) => b.tabIndex !== -1);
+    }
+    function moveInGrid(current, key) {
+      const items = [...grid.querySelectorAll(".electron-screen-picker-item")];
+      const i = items.indexOf(current);
+      if (i < 0) return false;
+      const top = items[0].offsetTop;
+      const cols = Math.max(1, items.filter((el) => el.offsetTop === top).length);
+      const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[key];
+      const next = items[Math.max(0, Math.min(items.length - 1, i + step))];
+      next?.focus();
+      return true;
+    }
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(null); return; }
+      if (e.key === "Tab") {
+        const list = focusables();
+        if (!list.length) return;
+        const first = list[0];
+        const last = list[list.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        else if (!modal.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+        return;
+      }
+      if (/^Arrow/.test(e.key)) {
+        const el = document.activeElement;
+        if (el?.classList?.contains("electron-screen-picker-tab") && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+          e.preventDefault();
+          tab = tab === "screens" ? "windows" : "screens";
+          render();
+          (tab === "screens" ? screensTab : windowsTab).focus();
+        } else if (moveInGrid(el, e.key)) {
+          e.preventDefault();
+        }
+      }
+    }
+
+    modal.append(header, tabs, tip, grid);
     overlay.appendChild(modal);
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) done(null);
     });
+    render();
     document.body.appendChild(overlay);
+    document.addEventListener("keydown", onKey, true);
+    (grid.querySelector(".electron-screen-picker-item") || closeBtn).focus();
   });
 }
 
@@ -399,7 +451,9 @@ async function captureScreenShareStreamRaw(opts = {}) {
     try {
       const sources = await window.electronAPI.getScreenSources();
       if (Array.isArray(sources) && sources.length > 0) {
-        const sourceId = await pickSource(sources);
+        const sourceId = await pickSource(sources, {
+          refresh: () => window.electronAPI.getScreenSources(),
+        });
         if (!sourceId) {
           const err = new Error("Screen share cancelled");
           err.name = "AbortError";

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { Gift, Copy, Check, Coins, Clock, AlertCircle, Timer, X, Lock, ShoppingBag, Award, Ticket } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
+import useModalFocus from "../../hooks/useModalFocus";
 import { hapticError, hapticSuccess } from "../../lib/fluid/haptics";
 import usePressFeedback from "../../hooks/usePressFeedback";
 import { useLocale } from "../../context/LocaleContext";
@@ -41,6 +42,8 @@ export function BadgeGlyph({ badgeId, size = 18 }) {
 /** Frosted scrim + heavy glass card, same materialize motion as GlassConfirm. */
 export function PromoScrim({ children, className = "", label, onEscape }) {
   const reduce = useReducedMotion();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   useEffect(() => {
     if (!onEscape) return undefined;
     const onKey = (e) => {
@@ -55,6 +58,7 @@ export function PromoScrim({ children, className = "", label, onEscape }) {
   return createPortal(
     <motion.div className="g-alert-scrim pc-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
       <motion.div
+        ref={dialogRef}
         className={`g-alert g-glass g-heavy ${className}`}
         role="dialog"
         aria-modal="true"

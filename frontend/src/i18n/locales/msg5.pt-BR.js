@@ -37,4 +37,28 @@ export const MSG5_PT_BR = {
     imageFailed: "Não foi possível carregar a imagem",
     videoFailed: "Não foi possível carregar o vídeo",
   },
+  upload: {
+    uploading: "Enviando {name}",
+    cancel: "Cancelar envio",
+    tooLarge: "O arquivo é grande demais. O limite é {max} MB.",
+    typeNotAllowed: "Esse tipo de arquivo não pode ser enviado.",
+    failed: "Não foi possível enviar o arquivo. Verifique sua conexão e tente de novo.",
+    dismiss: "Fechar",
+    dropTitle: "Solte para anexar",
+    dropHint: "Uma foto, vídeo ou arquivo, até {max} MB",
+  },
+  failed: {
+    label: "Não enviada",
+    retry: "Enviar de novo",
+    discard: "Excluir",
+    menu: "Esta mensagem não foi enviada.",
+  },
+  request: {
+    pendingLabel: "Pedido de mensagem",
+    pendingInfo: "Enviado como pedido de mensagem. O chat abre quando {name} aceitar.",
+  },
+  group: {
+    networkError: "Não foi possível conectar. Tente de novo.",
+    notFriends: "Você só pode adicionar seus amigos.",
+  },
 };

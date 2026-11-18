@@ -164,7 +164,9 @@ button.aov-kpi:focus-visible { outline: 2px solid rgba(var(--adm-brand), 0.8); o
   text-align: left;
   cursor: pointer;
 }
-.aov-row:hover { background: rgba(255, 255, 255, 0.035); }
+.aov-row:hover:not(:disabled) { background: rgba(255, 255, 255, 0.035); }
+/* No Kisiler access: the row reads as information, not a link (polish admin-b-06). */
+.aov-row:disabled { cursor: default; color: inherit; opacity: 1; }
 .aov-row:focus-visible { outline: 2px solid rgba(var(--adm-brand), 0.8); outline-offset: -2px; }
 .aov-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .aov-row-main b { font-size: 13.5px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

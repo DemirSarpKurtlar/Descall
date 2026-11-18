@@ -30,6 +30,8 @@ import { useEdgeSwipeBack } from "../../hooks/useEdgeSwipeBack";
 import useModalFocus from "../../hooks/useModalFocus";
 import {
   setEmail as apiSetEmail,
+  requestEmailReauth,
+  getTwoFactorStatus,
   resendEmailCode,
   verifyEmailCode,
   enable2fa,
@@ -43,15 +45,18 @@ import {
 import { getBlockedUsers } from "../../api/friends";
 import { setUserBlocked } from "../../lib/blockedUsers";
 import { confirmAction } from "../../lib/glassConfirm";
+import { profileDraftDirty, nestedOverlayOpen } from "../../lib/settingsClose";
 import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
+import { nativeShellPlatform } from "../../lib/glassDesktop";
 import DataExportCard from "../settings/DataExportCard.jsx";
 import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
-import LegalContentModal from "../legal/LegalContentModal";
+import { serverMessage } from "../../i18n/serverText.js";
+import LegalContentModal from "../legal/LazyLegalContentModal";
 import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
 import {
   getNativePushPermission,
@@ -64,7 +69,8 @@ import { getLocaleMeta, PSEUDO_LOCALE } from "../../i18n/registry.js";
 import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.js";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
-import { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
+import PremiumBadge, { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
+import { ProfileBadgeRow } from "../badges/BadgeVault";
 import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
@@ -138,7 +144,7 @@ export function applyAppearanceSettings({ premiumTheme } = {}) {
   return applyStoredAppearance({ premium: premiumTheme ? readStoredSettings().premiumThemeKey || null : null });
 }
 
-function Toggle({ value, onChange, label }) {
+function Toggle({ value, onChange, label, disabled = false }) {
   return (
     <button
       className={`us-toggle ${value ? "active" : ""}`}
@@ -147,6 +153,9 @@ function Toggle({ value, onChange, label }) {
       role="switch"
       aria-checked={value}
       aria-label={label}
+      disabled={disabled}
+      aria-busy={disabled || undefined}
+      style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
     >
       <span className="us-toggle-knob" />
     </button>
@@ -494,6 +503,10 @@ const UserPanel = forwardRef(function UserPanel({
       setActiveTab(initialTab);
       // Deep links like /settings/shop or /settings/promo open the page itself on phones, not the menu.
       if (isMobile && initialTab !== "overview") setMobileDetail(true);
+    } else if (initialTab) {
+      // An unknown /settings/<tab> shows Hesabım; the address follows instead of keeping the
+      // bad path.
+      onTabChange?.("overview", { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTab]);
@@ -540,6 +553,13 @@ const UserPanel = forwardRef(function UserPanel({
   const [emailNotice, setEmailNotice] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailPassword, setEmailPassword] = useState("");
+  // Changing a verified address (auth polish): the form opens on demand; accounts
+  // without a password confirm with a code sent to the current address instead.
+  const [emailEditing, setEmailEditing] = useState(false);
+  const [emailReauthCode, setEmailReauthCode] = useState("");
+  const [emailReauthHint, setEmailReauthHint] = useState("");
+  const [hasPassword, setHasPassword] = useState(null); // null = unknown yet
+  const [twoFaNotice, setTwoFaNotice] = useState("");
   const [twoFactorOn, setTwoFactorOn] = useState(Boolean(me?.twoFactorEnabled));
   const [disable2faPassword, setDisable2faPassword] = useState("");
   const [show2faPasswordPrompt, setShow2faPasswordPrompt] = useState(false);
@@ -594,6 +614,9 @@ const UserPanel = forwardRef(function UserPanel({
     if (activeTab === "security") {
       loadSessions();
       loadBlocked();
+      getTwoFactorStatus()
+        .then((s) => setHasPassword(typeof s?.hasPassword === "boolean" ? s.hasPassword : null))
+        .catch(() => {});
     }
   }, [activeTab, loadSessions, loadBlocked]);
 
@@ -614,14 +637,46 @@ const UserPanel = forwardRef(function UserPanel({
     setEmailBusy(true);
     setEmailNotice("");
     try {
-      await apiSetEmail(emailDraft.trim(), emailPassword ? { password: emailPassword } : {});
+      const extra = emailStage === "reauth"
+        ? { reauthCode: emailReauthCode.trim() }
+        : emailPassword ? { password: emailPassword } : {};
+      await apiSetEmail(emailDraft.trim(), extra);
       setEmailStage("code");
+      setEmailReauthCode("");
+      setEmailPassword("");
       setEmailNotice(t("Verification code sent. Check your inbox."));
     } catch (err) {
-      setEmailNotice(err.message || t("Failed to send verification code."));
+      if (err?.code === "reauth_required") {
+        // Google / Apple account with a verified address: prove it with a code first.
+        try {
+          const res = await requestEmailReauth();
+          setEmailReauthHint(res?.emailHint || "");
+          setEmailStage("reauth");
+          setEmailNotice(t("Enter the code we sent to {email}", { email: res?.emailHint || me?.email || t("your email") }));
+        } catch (reErr) {
+          setEmailNotice(reErr.message || t("Failed to send verification code."));
+        }
+      } else {
+        setEmailNotice(err.message || t("Failed to send verification code."));
+      }
     } finally {
       setEmailBusy(false);
     }
+  };
+
+  /** Back to typing the address (wrong address, or cancel a change). */
+  const handleEditEmailAddress = () => {
+    setEmailStage("idle");
+    setEmailCode("");
+    setEmailReauthCode("");
+    setEmailNotice("");
+  };
+
+  const handleCancelEmailChange = () => {
+    handleEditEmailAddress();
+    setEmailEditing(false);
+    setEmailDraft(me?.email || "");
+    setEmailPassword("");
   };
 
   const handleResendEmailCode = async () => {
@@ -644,6 +699,7 @@ const UserPanel = forwardRef(function UserPanel({
       await verifyEmailCode(emailCode.trim());
       setEmailVerified(true);
       setEmailStage("idle");
+      setEmailEditing(false);
       setEmailCode("");
       setEmailNotice(t("Email verified!"));
       await refreshMeFromServer();
@@ -664,20 +720,20 @@ const UserPanel = forwardRef(function UserPanel({
         setPwSupportEmail(data.supportEmail || "support@descall.com");
         setPwNoEmail(true);
         setPwNotice(
-          data.message ||
+          serverMessage(data, "message") ||
             t("This account has no email on file. Contact support@descall.com to recover access.")
         );
         return;
       }
       setPwHint(data?.emailHint || "");
       setPwStage("code");
-      setPwNotice(data?.message || t("We sent a 6-digit code to your email."));
+      setPwNotice(serverMessage(data, "message") || t("We sent a 6-digit code to your email."));
     } catch (err) {
       const body = err?.body || {};
       if (body.status === "no_email") {
         setPwSupportEmail(body.supportEmail || "support@descall.com");
         setPwNoEmail(true);
-        setPwNotice(body.message || err.message);
+        setPwNotice(serverMessage(body, "message") || err.message);
         return;
       }
       setPwNotice(err.message || t("Could not send reset code."));
@@ -713,6 +769,7 @@ const UserPanel = forwardRef(function UserPanel({
   };
 
   const handleToggle2fa = async (checked) => {
+    setTwoFaNotice("");
     if (checked) {
       setTwoFaBusy(true);
       try {
@@ -720,25 +777,39 @@ const UserPanel = forwardRef(function UserPanel({
         setTwoFactorOn(true);
         await refreshMeFromServer();
       } catch (err) {
-        setEmailNotice(err.message || t("Failed to enable two-factor authentication."));
+        setTwoFaNotice(err.message || t("Failed to enable two-factor authentication."));
       } finally {
         setTwoFaBusy(false);
       }
-    } else {
-      setShow2faPasswordPrompt(true);
+      return;
+    }
+    setShow2faPasswordPrompt(true);
+    if (hasPassword === false) {
+      // No password on this account: confirm with a code sent to the verified address.
+      setTwoFaBusy(true);
+      try {
+        const res = await requestEmailReauth();
+        setTwoFaNotice(t("authx.tfa.disableCodeLead", { email: res?.emailHint || me?.email || t("your email") }));
+      } catch (err) {
+        setTwoFaNotice(err.message || t("Failed to send verification code."));
+      } finally {
+        setTwoFaBusy(false);
+      }
     }
   };
 
   const confirmDisable2fa = async () => {
     setTwoFaBusy(true);
+    setTwoFaNotice("");
     try {
-      await disable2fa(disable2faPassword);
+      if (hasPassword === false) await disable2fa(null, disable2faPassword.trim());
+      else await disable2fa(disable2faPassword);
       setTwoFactorOn(false);
       setShow2faPasswordPrompt(false);
       setDisable2faPassword("");
       await refreshMeFromServer();
     } catch (err) {
-      setSessionNotice(err.message || t("Incorrect password."));
+      setTwoFaNotice(err.message || (hasPassword === false ? t("Incorrect code.") : t("Incorrect password.")));
     } finally {
       setTwoFaBusy(false);
     }
@@ -749,6 +820,8 @@ const UserPanel = forwardRef(function UserPanel({
       await revokeSession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
+      // Already gone (ended elsewhere): drop the stale row instead of a dead end.
+      if (err?.status === 404) setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       setSessionNotice(err.message || t("Failed to end session."));
     }
   };
@@ -931,18 +1004,26 @@ const UserPanel = forwardRef(function UserPanel({
   const [friendVoiceNotify, setFriendVoiceNotify] = useState(true);
   const [emailNotify, setEmailNotify] = useState(true);
   const [reengageError, setReengageError] = useState("");
+  // The two switches stay disabled until the account's real values arrive (they used to show
+  // ON first and flip, or stay ON when the request failed).
+  const [reengageLoad, setReengageLoad] = useState("loading");
+  const [reengageNonce, setReengageNonce] = useState(0);
   useEffect(() => {
     if (activeTab !== "notifications") return undefined;
     let alive = true;
+    setReengageLoad("loading");
     authedRequest("/api/reengage/prefs")
       .then((r) => {
-        if (!alive || !r?.ready) return;
-        if (typeof r.friendVoice === "boolean") setFriendVoiceNotify(r.friendVoice);
-        if (typeof r.email === "boolean") setEmailNotify(r.email);
+        if (!alive) return;
+        if (r?.ready) {
+          if (typeof r.friendVoice === "boolean") setFriendVoiceNotify(r.friendVoice);
+          if (typeof r.email === "boolean") setEmailNotify(r.email);
+        }
+        setReengageLoad("ready");
       })
-      .catch(() => {});
+      .catch(() => { if (alive) setReengageLoad("failed"); });
     return () => { alive = false; };
-  }, [activeTab]);
+  }, [activeTab, reengageNonce]);
   const changeReengagePref = async (key, next) => {
     const set = key === "friendVoice" ? setFriendVoiceNotify : setEmailNotify;
     set(next);
@@ -1000,6 +1081,9 @@ const UserPanel = forwardRef(function UserPanel({
   const micRafRef = useRef(null);
   const micCtxRef = useRef(null);
   const electronApp = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  // The desktop app and the iOS / Android apps are not "this browser" (copy in Bildirimler and
+  // Ses ve Görüntü).
+  const appShell = electronApp || Boolean(nativeShellPlatform());
 
   const patchVoice = useCallback((patch) => {
     if (patch.noiseMode) setNoiseMode(patch.noiseMode);
@@ -1688,7 +1772,7 @@ const UserPanel = forwardRef(function UserPanel({
                   title={t("Change avatar")}
                 >
                   <Avatar
-                    name={me?.username || "User"}
+                    name={(displayName || "").trim() || me?.displayName || me?.display_name || me?.username || "User"}
                     size={88}
                     user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
                     animate="always"
@@ -1714,10 +1798,15 @@ const UserPanel = forwardRef(function UserPanel({
                 <div className="us-pe-meta">
                   <h3>
                     <NameEffectText user={me}>{(displayName || "").trim() || me?.username || "User"}</NameEffectText>
+                    <PremiumBadge user={me} variant="inline" />
                   </h3>
                   <span className="us-username-value">
                     <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
                     {renderUsernameAction()}
+                  </span>
+                  {/* What others see next to the name: country, shop badge, special badge. */}
+                  <span className="us-pe-badges" style={{ display: "flex", marginTop: 6 }}>
+                    <ProfileBadgeRow user={me} me={me} size={glassShell && isMobile ? "ios" : "md"} />
                   </span>
                   {customStatus.trim() && <span className="us-status-pill">{customStatus}</span>}
                 </div>
@@ -1979,40 +2068,79 @@ const UserPanel = forwardRef(function UserPanel({
                   }
                 >
                   {emailVerified && me?.email && (
-                    <span className="us-verified-pill">
-                      <CheckCircle2 size={13} /> {t("Verified")}
-                    </span>
+                    <div className="us-email-actions">
+                      <span className="us-verified-pill">
+                        <CheckCircle2 size={13} /> {t("Verified")}
+                      </span>
+                      {!emailEditing && (
+                        <button
+                          type="button"
+                          className="us-btn ghost sm"
+                          onClick={() => {
+                            setEmailEditing(true);
+                            setEmailDraft("");
+                            setEmailStage("idle");
+                            setEmailNotice("");
+                          }}
+                        >
+                          {t("authx.email.change")}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </SettingRow>
 
-                {!(emailVerified && me?.email) && (
+                {(!(emailVerified && me?.email) || emailEditing) && (
                   <div className="us-email-verify-flow">
                     <input
                       type="email"
                       className="us-inline-input"
-                      placeholder={t("you@example.com")}
+                      placeholder={emailEditing ? t("authx.email.newPlaceholder") : t("you@example.com")}
                       value={emailDraft}
                       onChange={(e) => setEmailDraft(e.target.value)}
-                      disabled={emailStage === "code"}
+                      disabled={emailStage !== "idle"}
+                      autoComplete="email"
                     />
-                    <input
-                      type="password"
-                      className="us-inline-input"
-                      placeholder={t("Current password")}
-                      value={emailPassword}
-                      onChange={(e) => setEmailPassword(e.target.value)}
-                      autoComplete="current-password"
-                      disabled={emailStage === "code"}
-                    />
-                    {emailStage !== "code" ? (
+                    {emailStage === "idle" && hasPassword !== false && (
+                      <input
+                        type="password"
+                        className="us-inline-input"
+                        placeholder={t("Current password")}
+                        value={emailPassword}
+                        onChange={(e) => setEmailPassword(e.target.value)}
+                        autoComplete="current-password"
+                      />
+                    )}
+                    {emailStage === "idle" ? (
                       <button
                         type="button"
                         className="us-btn primary"
                         onClick={handleSendEmailCode}
-                        disabled={emailBusy || !emailDraft.trim()}
+                        disabled={emailBusy || !emailDraft.trim() || (hasPassword === true && !emailPassword)}
                       >
                         {emailBusy ? t("Sending…") : t("Send code")}
                       </button>
+                    ) : emailStage === "reauth" ? (
+                      <>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          className="us-inline-input us-code-input"
+                          placeholder="123456"
+                          aria-label={t("authx.email.reauthLabel", { email: emailReauthHint || me?.email || "" })}
+                          value={emailReauthCode}
+                          onChange={(e) => setEmailReauthCode(e.target.value.replace(/\D/g, ""))}
+                        />
+                        <button
+                          type="button"
+                          className="us-btn primary"
+                          onClick={handleSendEmailCode}
+                          disabled={emailBusy || emailReauthCode.length !== 6}
+                        >
+                          {emailBusy ? t("Sending…") : t("Continue")}
+                        </button>
+                      </>
                     ) : (
                       <>
                         <input
@@ -2036,6 +2164,16 @@ const UserPanel = forwardRef(function UserPanel({
                           {t("Resend code")}
                         </button>
                       </>
+                    )}
+                    {emailStage !== "idle" && (
+                      <button type="button" className="us-link-btn" onClick={handleEditEmailAddress} disabled={emailBusy}>
+                        {t("authx.email.changeAddress")}
+                      </button>
+                    )}
+                    {emailEditing && (
+                      <button type="button" className="us-link-btn" onClick={handleCancelEmailChange} disabled={emailBusy}>
+                        {t("Cancel")}
+                      </button>
                     )}
                   </div>
                 )}
@@ -2184,27 +2322,43 @@ const UserPanel = forwardRef(function UserPanel({
                           exit={{ opacity: 0, height: 0 }}
                           style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}
                         >
-                          <p className="us-inline-notice">{t("Enter your password to turn off two-factor authentication.")}</p>
+                          {hasPassword !== false && (
+                            <p className="us-inline-notice">{t("Enter your password to turn off two-factor authentication.")}</p>
+                          )}
                           <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              type="password"
-                              className="us-inline-input"
-                              placeholder={t("Password")}
-                              value={disable2faPassword}
-                              onChange={(e) => setDisable2faPassword(e.target.value)}
-                            />
+                            {hasPassword === false ? (
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={6}
+                                className="us-inline-input us-code-input"
+                                placeholder="123456"
+                                aria-label={t("Verification code")}
+                                value={disable2faPassword}
+                                onChange={(e) => setDisable2faPassword(e.target.value.replace(/\D/g, ""))}
+                              />
+                            ) : (
+                              <input
+                                type="password"
+                                className="us-inline-input"
+                                placeholder={t("Password")}
+                                autoComplete="current-password"
+                                value={disable2faPassword}
+                                onChange={(e) => setDisable2faPassword(e.target.value)}
+                              />
+                            )}
                             <button
                               type="button"
                               className="us-btn primary"
                               onClick={confirmDisable2fa}
-                              disabled={twoFaBusy || !disable2faPassword}
+                              disabled={twoFaBusy || !disable2faPassword || (hasPassword === false && disable2faPassword.length !== 6)}
                             >
                               {t("Confirm")}
                             </button>
                             <button
                               type="button"
                               className="us-link-btn"
-                              onClick={() => { setShow2faPasswordPrompt(false); setDisable2faPassword(""); }}
+                              onClick={() => { setShow2faPasswordPrompt(false); setDisable2faPassword(""); setTwoFaNotice(""); }}
                             >
                               {t("Cancel")}
                             </button>
@@ -2212,6 +2366,7 @@ const UserPanel = forwardRef(function UserPanel({
                         </motion.div>
                       )}
                     </AnimatePresence>
+                    {twoFaNotice && <p className="us-inline-notice" role="alert">{twoFaNotice}</p>}
                     </>
                   )}
                 />
@@ -2279,7 +2434,7 @@ const UserPanel = forwardRef(function UserPanel({
               </div>
             </section>
 
-            <DeleteAccountSection onDeleted={() => onLogout?.()} />
+            <DeleteAccountSection username={me?.username} hasPassword={hasPassword} onDeleted={() => onLogout?.()} />
           </div>
         );
 
@@ -2413,7 +2568,7 @@ const UserPanel = forwardRef(function UserPanel({
       case "notifications":
         return (
           <div className="us-tab g-notif">
-            <p className="us-lead">{t("Control desktop and browser alerts.")}</p>
+            <p className="us-lead">{appShell ? t("uset.lead.notificationsApp") : t("Control desktop and browser alerts.")}</p>
             <section className="us-section">
               <div className="us-card stack">
                 <SettingRow
@@ -2486,6 +2641,7 @@ const UserPanel = forwardRef(function UserPanel({
                     value={friendVoiceNotify}
                     onChange={(next) => changeReengagePref("friendVoice", next)}
                     label={t("msg5.reengage.friendVoice")}
+                    disabled={reengageLoad !== "ready"}
                   />
                 </SettingRow>
                 <SettingRow
@@ -2497,9 +2653,18 @@ const UserPanel = forwardRef(function UserPanel({
                     value={emailNotify}
                     onChange={(next) => changeReengagePref("email", next)}
                     label={t("msg5.reengage.email")}
+                    disabled={reengageLoad !== "ready"}
                   />
                 </SettingRow>
               </div>
+              {reengageLoad === "failed" ? (
+                <p className="us-row-desc" role="alert" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span>{t("uset.notify.loadFailed")}</span>
+                  <button type="button" className="us-btn" onClick={() => setReengageNonce((n) => n + 1)}>
+                    {t("uset.profile.retry")}
+                  </button>
+                </p>
+              ) : null}
               <p className="us-row-desc g-activity-footnote">{t("msg4.notify.perChatHint")}</p>
             </section>
 
@@ -2576,7 +2741,7 @@ const UserPanel = forwardRef(function UserPanel({
       case "voice":
         return (
           <div className="us-tab">
-            <p className="us-lead">{t("Pick the devices used for calls on this browser.")}</p>
+            <p className="us-lead">{appShell ? t("uset.lead.voiceApp") : t("Pick the devices used for calls on this browser.")}</p>
             <section className="us-section">
               <div className="us-card us-form">
                 <label className="us-field">
@@ -2824,9 +2989,49 @@ const UserPanel = forwardRef(function UserPanel({
       main.style.removeProperty("--g-shop-header-h");
     };
   }, [glassShell, isMobile, activeTab, mobileDetail]);
+  // Every close (Escape, ✕, a click on the dim, the swipe back) goes through one request:
+  // unsaved profile edits ask first instead of vanishing (lib/settingsClose.js).
+  // Only edits made in the Profil tab during this visit count (a draft that lags a status
+  // changed elsewhere must not make every close ask).
+  const profileVisitedRef = useRef(false);
+  if (activeTab === "profile") profileVisitedRef.current = true;
+  const profileDirtyNow = profileVisitedRef.current && profileDraftDirty({ displayName, bio, customStatus }, me);
+  const closeAskingRef = useRef(false);
+  const requestClose = useCallback(async () => {
+    if (closeAskingRef.current) return;
+    if (profileDirtyNow) {
+      closeAskingRef.current = true;
+      try {
+        const discard = await confirmAction({
+          title: t("uset.unsaved.title"),
+          message: t("uset.unsaved.body"),
+          confirmLabel: t("uset.unsaved.discard"),
+          cancelLabel: t("uset.unsaved.keep"),
+          danger: true,
+        });
+        if (!discard) return;
+      } finally {
+        closeAskingRef.current = false;
+      }
+    }
+    onClose?.();
+  }, [profileDirtyNow, onClose, t]);
+  // Settings owns its Escape. A dialog or overlay above it (username change, a confirm, the
+  // crop, the media picker, the badge vault) takes the key first and Settings stays open.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
+      if (nestedOverlayOpen(panelRef.current)) return;
+      e.preventDefault();
+      requestClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [requestClose]);
   useEdgeSwipeBack({
-    enabled: isMobile && !mobileDetail,
-    onBack: onClose,
+    // With unsaved edits the swipe is off: the ✕ asks before closing instead.
+    enabled: isMobile && !mobileDetail && !profileDirtyNow,
+    onBack: requestClose,
     surfaceRef: panelRef,
     getUnderlay: settingsUnderlay,
     // Same dim as the sheet backdrop so the hand-over is seamless.
@@ -2838,7 +3043,7 @@ const UserPanel = forwardRef(function UserPanel({
 
   const handleShellClick = (e) => {
     // Close only when the click lands outside the dialog panel
-    if (panelRef.current && !panelRef.current.contains(e.target)) onClose?.();
+    if (panelRef.current && !panelRef.current.contains(e.target)) requestClose();
   };
 
   const desktopFade = reduceMotion
@@ -2990,7 +3195,7 @@ const UserPanel = forwardRef(function UserPanel({
               <p>{t("Manage your Descall account")}</p>
             </div>
             {isMobile && (
-              <button type="button" className={`us-icon-btn${glassShell ? " g-settings-close" : ""}`} onClick={onClose} aria-label={t("Close")}>
+              <button type="button" className={`us-icon-btn${glassShell ? " g-settings-close" : ""}`} onClick={requestClose} aria-label={t("Close")}>
                 <X size={20} />
               </button>
             )}
@@ -3109,7 +3314,7 @@ const UserPanel = forwardRef(function UserPanel({
               {savingProfile ? t("Saving…") : profileSaved ? t("Saved") : t("Save")}
             </button>
           ) : (
-            <button type="button" className={`us-icon-btn${glassShell && isMobile ? " g-settings-close" : ""}`} onClick={onClose} aria-label={t("Close settings")}>
+            <button type="button" className={`us-icon-btn${glassShell && isMobile ? " g-settings-close" : ""}`} onClick={requestClose} aria-label={t("Close settings")}>
               <X size={20} />
             </button>
           )}

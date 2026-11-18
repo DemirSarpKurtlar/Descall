@@ -64,7 +64,7 @@ export const MOD_DESK_RU = {
     },
     vars: "Переменные",
   },
-  act: { timeout: "Замьютить", ban: "Забанить", kick: "Выгнать", banHint: "BanDialog" },
+  act: { timeout: "Замьютить", ban: "Забанить", kick: "Выгнать", banHint: "Окно бана" },
   pill: { "5m": "5 мин", "15m": "15 мин", "30m": "30 мин", "1h": "1 час", "6h": "6 часов", "12h": "12 часов", "24h": "24 часа", "3d": "3 дня", "7d": "7 дней", custom: "Своё" },
   var: { user: "пользователь", duration: "срок", category: "категория", until: "окончание" },
   tplMsg: {
@@ -150,7 +150,7 @@ export const MOD_DESK_RU = {
     extendCustom: "Свой срок…",
     extendCustomSub: "Минуты, часы или дни",
     toBan: "Сделать баном",
-    toBanSub: "Откроется BanDialog",
+    toBanSub: "Откроется окно бана",
     editNote: "Изменить сообщение",
     editNoteSub: "Заметка, которую видит пользователь",
     openFile: "Открыть досье",

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { httpError } from "./httpError";
 import { isTransientHttpStatus, transientFailureError, withReadRetry } from "./transportRetry";
 import { isAdminApiPath, runWithStepUp } from "../lib/adminStepUp";
 
@@ -28,8 +29,7 @@ async function authedRequestOnce(path, { method = "GET", body, signal } = {}, ex
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (isTransientHttpStatus(res.status)) throw transientFailureError(res.status);
-    const err = new Error(data?.error || data?.message || `Request failed (${res.status})`);
-    err.status = res.status;
+    const err = httpError(data, res.status);
     if (data?.code) err.code = data.code;
     // Templated server errors (lib/apiError.js): callers translate them with serverMessage().
     if (typeof data?.errorKey === "string") err.errorKey = data.errorKey;

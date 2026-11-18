@@ -1,3 +1,4 @@
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useEffect, useState } from "react";
 import { X } from "../ui/Icon.jsx";
 import { adminFetch } from "../../api/adminHttp";
@@ -24,6 +25,7 @@ function sourceLabel(key, t) {
 }
 
 export default function AdminUserAnalytics({ userId, onClose }) {
+  const modalTrapRef = useModalFocusRef();
   const { t, locale } = useLocale();
   const [payload, setPayload] = useState(null);
   const [error, setError] = useState("");
@@ -59,7 +61,7 @@ export default function AdminUserAnalytics({ userId, onClose }) {
 
   return (
     <OverlayPortal>
-    <div className="admin-user-analytics-overlay" role="dialog" aria-modal="true">
+    <div ref={modalTrapRef} className="admin-user-analytics-overlay" role="dialog" aria-modal="true">
       <div className="admin-user-analytics">
         <header>
           <div>

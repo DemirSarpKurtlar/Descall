@@ -40,7 +40,7 @@ export const ACT_EN = {
   },
   "chart": {
     "title": "Last 7 days",
-    "legend": "Colours show games",
+    "legend": "Colors show games",
     "today": "Today",
     "aria": "{day}: {duration}"
   },

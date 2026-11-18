@@ -23,7 +23,7 @@ import {
 } from "../ui/Icon.jsx";
 import GoogleSignInButton from '../auth/GoogleSignInButton';
 import { isGoogleSignInOffered } from '../../lib/googleSignInOffer';
-import LegalContentModal from '../legal/LegalContentModal';
+import LegalContentModal from '../legal/LazyLegalContentModal';
 import { fetchLatestDesktopRelease } from '../../lib/githubRelease';
 import { formatReleaseLabel } from '../../lib/releaseVersion';
 import { DESKTOP_RELEASE_FALLBACK } from '../../lib/desktopRelease';

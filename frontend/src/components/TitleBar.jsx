@@ -44,8 +44,9 @@ export default function TitleBar() {
         .catch(() => {});
     };
 
+    let offMaximized = null;
     if (window.electronAPI?.onMaximizedChange) {
-      window.electronAPI.onMaximizedChange((maximized) => {
+      offMaximized = window.electronAPI.onMaximizedChange((maximized) => {
         setIsMaximized(Boolean(maximized));
         // Maximize can land under the taskbar before a resize event.
         requestAnimationFrame(syncViewport);
@@ -71,6 +72,7 @@ export default function TitleBar() {
       window.visualViewport?.removeEventListener("resize", syncViewport);
       document.removeEventListener("fullscreenchange", onFs);
       offContentBox?.();
+      if (typeof offMaximized === "function") offMaximized();
     };
   }, [isElectron]);
 

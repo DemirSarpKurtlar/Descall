@@ -440,6 +440,7 @@ export const ANNC_PT_BR = {
     "schema": "Este recurso aguarda uma atualização do banco de dados.",
     "secondAdmin": "Outro administrador precisa aprovar este anúncio.",
     "needsApproval": "Um anúncio urgente para todos precisa de um segundo administrador. Salve como novo rascunho e envie para aprovação.",
+    "needsReapproval": "Este anúncio urgente para todos foi aprovado assim. Encerre, edite e envie para aprovação de novo.",
     "note": "Escreva uma observação curta.",
     "reason": "Escolha um motivo.",
     "title": "O título é obrigatório.",

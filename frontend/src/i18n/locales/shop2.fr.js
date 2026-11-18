@@ -18,6 +18,7 @@ export const SHOP2_FR = {
     "placeholder": "Chercher articles, sets ou couleurs",
     "kbd": "Ctrl K",
     "none": "Rien ne correspond pour l'instant.",
+    "loading": "Recherche dans toute la boutique…",
     "kind": { "today": "Dans la vitrine du jour", "set": "Set", "wish": "Dans ta liste d'envies", "owned": "Tu l'as déjà", "catalog": "Dans la boutique" }
   },
   "tiles": {
@@ -387,6 +388,7 @@ export const SHOP2_FR = {
     "savedTonight": "Économisé ce soir",
     "log": "Journal des retournements",
     "logEmpty": "Retourne une carte pour commencer",
+    "logClosed": "Tu pourras retourner des cartes à l'ouverture du marché",
     "logKind": {
       "flip": "Carte {n} retournée",
       "flip_used": "Retournement utilisé",
@@ -537,6 +539,7 @@ export const SHOP2_FR = {
     "seconds": "{s} s"
   },
   "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "À plus" },
+  "clock": { "dh": "{d} j {h} h" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Qui est là ce soir ?",

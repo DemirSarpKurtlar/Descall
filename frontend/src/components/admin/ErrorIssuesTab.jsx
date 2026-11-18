@@ -5,6 +5,7 @@
  * resolved, ignored; a resolved issue that comes back is marked "Tekrar etti").
  * Server: routes/adminErrors.js.
  */
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
@@ -58,6 +59,7 @@ function PlatformChips({ platforms, t }) {
 }
 
 function Detail({ fp, t, locale, onClose, onChanged }) {
+  const modalTrapRef = useModalFocusRef();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const [note, setNote] = useState("");
@@ -106,7 +108,7 @@ function Detail({ fp, t, locale, onClose, onChanged }) {
   return (
     <OverlayPortal>
       <div className="aer-scrim" onClick={onClose} role="presentation">
-        <aside className="aer-drawer" role="dialog" aria-modal="true" aria-label={t("admin.errDetail")} onClick={(e) => e.stopPropagation()}>
+        <aside ref={modalTrapRef} className="aer-drawer" role="dialog" aria-modal="true" aria-label={t("admin.errDetail")} onClick={(e) => e.stopPropagation()}>
           <header className="aer-dhead">
             <span className={`aer-dot is-${g?.status || "open"}`} aria-hidden="true" />
             <h2>{g?.title || t("Loading...")}</h2>

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef, Suspense, lazy } from "react";
+import { conversationKey, shouldCloseDrawerForConversation } from "../../lib/mobileDrawer.js";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Bell, X } from "../ui/Icon.jsx";
 import NavigationRail from "./NavigationRail";
@@ -27,7 +28,7 @@ import { useTabBarDrag } from "../../hooks/useTabBarDrag";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
-import LegalContentModal from "../legal/LegalContentModal";
+import LegalContentModal from "../legal/LazyLegalContentModal";
 import { HoverCardContext } from "../social/HoverCardContext";
 import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
 import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib/bottomTabBar";
@@ -97,6 +98,8 @@ export default function AppLayout({
   messageRequests,
   onAcceptFriend,
   onDeclineFriend,
+  outgoingRequests,
+  onCancelFriendRequest,
   onAcceptMessageRequest,
   onDeclineMessageRequest,
   notifPermission,
@@ -271,6 +274,16 @@ export default function AppLayout({
     }
   }, [isMobile, activeDmUser, activeGroup, activeChannel, activeView]);
 
+  // A chat opened from outside the list (push tap, deep link, reload on
+  // /direct/<user>, invite landing) must not stay hidden under the list.
+  const conversationOpenKey = conversationKey({ dm: activeDmUser, group: activeGroup, channel: activeChannel });
+  const lastConversationKeyRef = useRef("");
+  useEffect(() => {
+    const prev = lastConversationKeyRef.current;
+    lastConversationKeyRef.current = conversationOpenKey;
+    if (isMobile && shouldCloseDrawerForConversation(prev, conversationOpenKey)) setMobileDrawerOpen(false);
+  }, [isMobile, conversationOpenKey]);
+
   useEffect(() => {
     if (!isMobile || !mobileDrawerOpen) return;
     // Phone web Liquid Glass: the document is the scroll container so Safari's
@@ -293,7 +306,10 @@ export default function AppLayout({
   useEffect(() => {
     if (!userPanelOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") closeUserPanel();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      // Settings owns its Escape (UserPanel: overlays above it first, unsaved edits ask).
+      if (document.querySelector(".user-settings")) return;
+      closeUserPanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -380,6 +396,14 @@ export default function AppLayout({
   const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
   const inServersChannel = activeView === "servers" && !!activeServer && !!activeChannel;
   const inConversation = !!(activeDmUser || activeGroup || inServersChannel);
+  // body.app-in-conversation mirrors .app-root.in-conversation for glass/shell.css. It used
+  // to be body:has(.app-root.in-conversation): a :has() on <body> made every hover and scroll
+  // in the app restyle thousands of elements (performance-01).
+  const bodyInConversation = isMobile && inConversation;
+  useEffect(() => {
+    document.body.classList.toggle("app-in-conversation", bodyInConversation);
+    return () => document.body.classList.remove("app-in-conversation");
+  }, [bodyInConversation]);
   const skipToConversation = (e) => {
     e.preventDefault();
     const panel = document.querySelector(".main-panel");
@@ -725,6 +749,8 @@ export default function AppLayout({
             messageRequests={messageRequests}
             onAcceptFriend={onAcceptFriend}
             onDeclineFriend={onDeclineFriend}
+            outgoingRequests={outgoingRequests}
+            onCancelFriendRequest={onCancelFriendRequest}
             onAcceptMessageRequest={onAcceptMessageRequest}
             onDeclineMessageRequest={onDeclineMessageRequest}
             onMobileClose={isMobile ? closeMobileDrawer : undefined}

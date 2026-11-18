@@ -62,8 +62,11 @@ export async function applyAdaptiveAudioEncoding(sender, quality, lastAppliedRef
     }
     const enc = params.encodings[0];
     enc.maxBitrate = profile.maxBitrate;
-    if (quality === "poor") enc.priority = "low";
-    else enc.priority = "high";
+    // Voice keeps the top bitrate and network priority on every link. It used
+    // to drop to "low" exactly when the link was poor, so camera and screen
+    // video won the bandwidth and the voice was the part that broke up.
+    enc.priority = "high";
+    enc.networkPriority = "high";
     await sender.setParameters(params);
     if (lastAppliedRef) lastAppliedRef.current = key;
   } catch (err) {

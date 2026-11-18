@@ -9,4 +9,3 @@ export {
   captureMessage,
   breadcrumbsIntegration,
 } from "@sentry/react";
-export { isNativeIOS } from "./platform";

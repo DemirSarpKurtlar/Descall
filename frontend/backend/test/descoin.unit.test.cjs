@@ -138,6 +138,18 @@ async function run() {
   const afterRefund = await descoin.creditCapped("u-dana", 1, "message_activity", {});
   assert(afterRefund.credited === 1, "shop_refund does not consume the daily earning cap: " + JSON.stringify(afterRefund));
 
+  // Admin grants, referral rewards and the daily claim are rewards, not earning: they never
+  // use up the 400 activity cap (an admin grant of 500 used to stop every call from earning).
+  fakeSupabase._tables.users.rows.push({ id: "u-erin", username: "erin", descoin_balance: 0, descoin_frozen: false });
+  await descoin.credit("u-erin", descoin.GLOBAL_DAILY_CAP + 100, "admin_grant", {});
+  await descoin.credit("u-erin", 100, "referral_invite", {});
+  await descoin.credit("u-erin", 50, "referral_welcome", {});
+  await descoin.credit("u-erin", 40, "daily_claim", {});
+  const afterGrants = await descoin.creditCapped("u-erin", 5, "voice_activity", {});
+  assert(afterGrants.credited === 5, "grants / referrals / daily claim leave the earning cap alone: " + JSON.stringify(afterGrants));
+  const today = await descoin.getTodayEarnings("u-erin");
+  assert(today.global === 5, "today's global earning counts activity only, got " + JSON.stringify(today));
+
   console.log("descoin.unit.test.cjs: ok");
 }
 

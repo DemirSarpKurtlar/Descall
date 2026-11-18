@@ -1,3 +1,4 @@
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useEffect, useState } from "react";
 import {
   AlertTriangle, Bell, CheckCircle, ChevronDown, ChevronRight, Crown, Eye, EyeOff, Hash,
@@ -99,6 +100,7 @@ function ServerRow({ s, t, locale }) {
 }
 
 export default function UserLens({ userId, onClose }) {
+  const modalTrapRef = useModalFocusRef();
   const { t, locale } = useLocale();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
@@ -125,7 +127,7 @@ export default function UserLens({ userId, onClose }) {
   return (
     <OverlayPortal>
       <div className="ulx-scrim" onClick={onClose} role="presentation">
-        <aside className="ulx-drawer" role="dialog" aria-modal="true" aria-label={t("admin.lensTitle")} onClick={(e) => e.stopPropagation()}>
+        <aside ref={modalTrapRef} className="ulx-drawer" role="dialog" aria-modal="true" aria-label={t("admin.lensTitle")} onClick={(e) => e.stopPropagation()}>
           <header className="ulx-head">
             {u ? <Avatar user={{ ...u, avatar_url: u.avatarUrl }} name={u.username} size={40} /> : <span className="ulx-ph" />}
             <div>

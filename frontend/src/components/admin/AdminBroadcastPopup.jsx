@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, Shield } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { useT } from "../../context/LocaleContext";
+import useModalFocus from "../../hooks/useModalFocus";
 import OverlayPortal from "../ui/OverlayPortal";
 import { livePopupIcon } from "../../lib/livePopupIcons";
 import { sendPopupReceipt } from "../../lib/livePopupClient";
@@ -36,6 +37,8 @@ function openCta(url) {
 
 export function AdminBroadcastPopupCard({ popup, onDismiss, onAck, onCta, preview = false, compact = false }) {
   const t = useT();
+  const cardRef = useRef(null);
+  useModalFocus(Boolean(popup) && !preview, cardRef);
   if (!popup) return null;
   const tone = SEVERITY_TONE[popup.severity] || SEVERITY_TONE.info;
   const title = popup.title || (popup.kind === "correction" ? t("livePopup.member.correction") : t("Message from Descall"));
@@ -52,6 +55,7 @@ export function AdminBroadcastPopupCard({ popup, onDismiss, onAck, onCta, previe
 
   return (
     <motion.div
+      ref={cardRef}
       className={`admin-broadcast-card admin-broadcast-card--${popup.severity || "info"}${compact ? " is-compact" : ""}`}
       style={{ "--ab-accent": tone.color }}
       role={preview ? "group" : "dialog"}

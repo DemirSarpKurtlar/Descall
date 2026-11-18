@@ -32,6 +32,14 @@ const config: CapacitorConfig = {
     scheme: "Descall",
   },
   plugins: {
+    // Android (Capacitor 8 core): the app is dark edge to edge, so the status /
+    // navigation bar icons start light (DARK = light content). The in-app light
+    // theme flips them at runtime (src/lib/androidSystemBars.js). viewport-fit
+    // is cover in index.html; the hint avoids a first-frame inset jump.
+    SystemBars: {
+      style: "DARK",
+      initialViewportFitValueHint: "cover",
+    },
     PushNotifications: {
       // Foreground: banner without the system sound; the open app already
       // plays its own message sound. The chat on screen gets no push at all

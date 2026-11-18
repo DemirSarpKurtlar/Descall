@@ -1,3 +1,4 @@
+import { AUTHX_FR } from "./authx.fr.js";
 import { API_FR } from "./api.fr.js";
 import { PREMIUM_STORY_FR } from "./premiumStory.fr.js";
 import { UAH_FR } from "./uah.fr.js";
@@ -17,6 +18,9 @@ import { ACT_FR } from "./act.fr.js";
 import { DIR_FR, DIR_API_FR } from "./dir.fr.js";
 import { BAN_FR } from "./ban.fr.js";
 import { IOS_SHARE_FR } from "./iosShare.fr.js";
+import { LX_FR } from "./lx.fr.js";
+import { USET_FR } from "./uset.fr.js";
+import { SVOICE_FR } from "./svoice.fr.js";
 import { BAN_ADMIN_FR } from "./banAdmin.fr.js";
 import { SERVER_REVIEW_FR } from "./serverReview.fr.js";
 import { DOSSIER_FR } from "./dossier.fr.js";
@@ -39,6 +43,7 @@ import { AGENT_OPS_FR } from "./agentOps.fr.js";
 import { INVL_FR } from "./invl.fr.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
+  authx: AUTHX_FR,
   "premiumStory": PREMIUM_STORY_FR,
   "amp": AMP_FR,
   "msg4": MSG4_FR,
@@ -63,6 +68,9 @@ export const nested = {
   "dir": DIR_FR,
   "ban": BAN_FR,
   "iosShare": IOS_SHARE_FR,
+  "lx": LX_FR,
+  "uset": USET_FR,
+  "svoice": SVOICE_FR,
   "banAdmin": BAN_ADMIN_FR,
   "serverReview": SERVER_REVIEW_FR,
   "dossier": DOSSIER_FR,
@@ -969,7 +977,17 @@ export const nested = {
       "busy": "Vérification…",
       "ok": "Code appliqué. Ton abonnement est à jour.",
       "fail": "Ce code n'a pas pu être utilisé.",
-      "unavailable": "Les codes promo ne sont pas encore disponibles."
+      "unavailable": "Les codes promo ne sont pas encore disponibles.",
+      "errors": {
+        "invalid": "Ce code n'est pas valide. Vérifie l'orthographe.",
+        "expired": "Ce code a expiré.",
+        "used": "Tu as déjà utilisé ce code.",
+        "limit": "Ce code n'a plus d'utilisations disponibles.",
+        "already_active": "Tu as déjà un abonnement actif, ce code ne peut donc pas être utilisé maintenant.",
+        "not_redeemable": "Ce code ne peut pas être utilisé sur ton compte.",
+        "unavailable": "Cette campagne n'est pas disponible pour le moment.",
+        "rate_limited": "Trop de tentatives. Réessaie dans quelques minutes."
+      }
     },
     "features": {
       "title": "Fonctionnalités",
@@ -2144,6 +2162,8 @@ export const nested = {
     "otherAuth": "Autre",
     "ovActiveHint": "Personnes en ligne d'abord",
     "ovAllUsers": "Tous les utilisateurs",
+    "reportAlert": "Une personne vient d’atteindre {n} signalements ouverts.",
+    "reportAlertOpen": "Ouvrir le dossier",
     "ovAudit": "Actions admin récentes",
     "ovAuditHint": "Depuis le journal d'audit",
     "ovAvg7": "moy. {n}",
@@ -2350,6 +2370,7 @@ export const nested = {
     "windowAll": "Depuis le début",
     "windowForbidden": "Cette fenêtre est réservée aux admins.",
     "windowSignIn": "Connecte-toi d'abord dans la fenêtre principale de Descall, puis rouvre le panneau d'administration.",
+    "windowOffline": "Impossible de joindre Descall. Vérifiez votre connexion puis réessayez.",
     "windowTitle": "Admin",
     "youtube": "YouTube"
   },
@@ -2513,6 +2534,7 @@ export const nested = {
       "delReport": "signalement",
       "deleteError": "Impossible de supprimer, réessaie",
       "deleteTitle": "Supprimer ce retour ?",
+      "deleteReason": "Motif (inscrit au journal des actions)",
       "deleted": "Retour supprimé",
       "emptyFiltered": "Aucun retour dans ce filtre.",
       "emptyNone": "Aucun retour pour l'instant.",
@@ -3289,7 +3311,11 @@ export const nested = {
     },
     "screenPicker": {
       "tip": "Choisis l'écran, la fenêtre ou l'onglet du navigateur que tu veux partager.",
-      "title": "Partage ton écran"
+      "title": "Partage ton écran",
+      "screens": "Écrans",
+      "windows": "Fenêtres",
+      "refresh": "Actualiser la liste",
+      "empty": "Rien de ce type à partager."
     },
     "seo": {
       "appDesc": "Appli Descall",
@@ -3870,7 +3896,11 @@ export const nested = {
     "badge": "Badge",
     "badgeBody": "Porte-le sur ton profil à côté de ton badge de pays.",
     "badgeName": "Badge {name}",
-    "badgeSoon": "Choisis dans le catalogue de badges spéciaux dès sa sortie.",
+    "badgeSoon": "Chargement du catalogue de badges…",
+    "badgeSlots": "{left} places restantes sur {max}",
+    "badgeSlotsWarn": "Ce badge n’a plus que {left} places ; la limite d’utilisations ne peut pas être plus haute.",
+    "badgeSlotsFix": "Limiter à {left}",
+    "badgeOnce": "Les codes de badge sont toujours à usage unique par compte",
     "badgeTitle": "Le badge {name} est à toi",
     "cancel": "Annuler",
     "close": "Fermer",
@@ -3911,6 +3941,7 @@ export const nested = {
     "err_max_below_used": "La limite ne peut pas être inférieure au nombre d'utilisations actuel.",
     "err_reward_amount": "Le montant de DesCoin doit être compris entre 1 et 100 000.",
     "err_reward_badge": "Choisis un badge.",
+    "err_reward_badge_slots": "La limite d’utilisations dépasse les places restantes de ce badge.",
     "err_reward_item": "Choisis un article de la boutique.",
     "err_targets": "Choisis au moins une personne pour la fenêtre pop-up.",
     "expires": "Expiration",
@@ -3931,6 +3962,12 @@ export const nested = {
     "itemOwnedBody": "Tu avais déjà {name}, nous avons donc ajouté sa valeur en DesCoin. Ton nouveau solde est de {balance} DC.",
     "itemOwnedTitle": "+{n} DesCoin",
     "itemPick": "Choisis un article",
+    "itemSearch": "Rechercher un article",
+    "itemAll": "Tous",
+    "itemNone": "Aucun résultat",
+    "itemLoading": "Chargement des articles…",
+    "itemSetPiece": "Pièce de set",
+    "itemCount": "{n} articles",
     "itemTitle": "{name} est à toi",
     "justFilled": "Ce code vient d'atteindre sa limite d'utilisation.",
     "kpiActive": "Codes actifs",
@@ -6549,6 +6586,10 @@ export const nested = {
     "subDownloading": "En arrière-plan · {percent} %",
     "subDownloadingStart": "En arrière-plan",
     "subInstalling": "Descall se rouvre dans quelques secondes",
+    "titleError": "Impossible de télécharger la mise à jour",
+    "subError": "Vérifie ta connexion et réessaie",
+    "retry": "Réessayer",
+    "downloadPage": "Page de téléchargement",
     "titleDownloading": "Téléchargement de Descall {version}",
     "titleInstalling": "Installation de Descall {version}"
   },
@@ -10887,6 +10928,11 @@ export const phrases = {
   "identity": "Identité",
   "in": "dans",
   "is now online": "est maintenant en ligne",
+  "Sent, {count}": "Envoyées, {count}",
+  "Cancel request": "Annuler la demande",
+  "Pick a friend": "Choisis un ami",
+  "Pick a friend on the left to chat or call": "Choisis un ami à gauche pour discuter ou appeler",
+  "accepted your friend request": "a accepté ta demande d'ami",
   "is typing…": "est en train d'écrire…",
   "just now": "à l'instant",
   "leaderboard": "classement",

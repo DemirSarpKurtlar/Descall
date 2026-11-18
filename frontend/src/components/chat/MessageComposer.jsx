@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore, useId } from "react";
+import { createPortal } from "react-dom";
 import { pastedImageFile } from "../../lib/clipboardImage";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Send, Check, Mic, Smile,
   Plus, ImagePlus, Paperclip, Image, FileText, X, StopCircle, Loader2, Reply,
-  Pencil, Timer, CircleHelp, Clock,
+  Pencil, Timer, CircleHelp, Clock, AlertCircle,
 } from "../ui/Icon.jsx";
 import { SLASH_ICONS } from "../polls/slashIconsMap";
 import PollCreateSheet from "../polls/PollCreateSheet";
@@ -36,6 +37,7 @@ import { setActivityFlag } from "../../lib/updateTiming";
 import { EMOJI_CATEGORIES } from "../../lib/emojiCatalog";
 import { DESCALL_EMOJI, DESCALL_STICKERS } from "../../lib/descallStickers";
 import { draftKeyFor, readDraft, writeDraft, setDraftOwner } from "../../lib/messageDrafts";
+import { CHAT_UPLOAD_MAX_MB, checkChatFile, uploadChatFile, uploadErrorKey } from "../../lib/chatUpload";
 import { decodeRoleMentions, encodeRoleMentions, registerRoles, roleSuggestions } from "../../lib/roleMentions";
 import {
   getScheduledSnapshot, openScheduleSheet, pendingFor, scheduleTarget, subscribeScheduled, SCHEDULE_SENT_EVENT,
@@ -137,7 +139,14 @@ export default function MessageComposer({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [pendingAttach, setPendingAttach] = useState(null);
+  // Upload in flight (polish messaging-21): { name, progress 0..1 }, cancelled through the controller.
+  const [uploadInfo, setUploadInfo] = useState(null);
+  const uploadAbortRef = useRef(null);
+  const uploadErrorTimerRef = useRef(0);
+  const discardRecordingRef = useRef(false);
   const [dragOver, setDragOver] = useState(false);
+  // Whole-chat drop zone (polish messaging-13): the open chat's rect while files are dragged over it.
+  const [panelDrop, setPanelDrop] = useState(null);
   // Smart update timing (2.11.0): unsent text, a recording or an upload holds any restart/reload.
   const activityKeyRef = useRef(`composer:${Math.random().toString(36).slice(2, 9)}`);
   const composerBusy = Boolean(message.trim()) || uploading || isRecording || Boolean(pendingAttach);
@@ -204,6 +213,31 @@ export default function MessageComposer({
     if (!key || editIdRef.current) return;
     writeDraft(key, messageRef.current);
   }, []);
+  const pendingAttachRef = useRef(null);
+  pendingAttachRef.current = pendingAttach;
+  const resetStagedForChatSwitch = () => {
+    const staged = pendingAttachRef.current;
+    if (staged?.previewUrl) URL.revokeObjectURL(staged.previewUrl);
+    setPendingAttach(null);
+    try { uploadAbortRef.current?.abort(); } catch { /* ignore */ }
+    uploadAbortRef.current = null;
+    setUploading(false);
+    setUploadInfo(null);
+    clearTimeout(uploadErrorTimerRef.current);
+    setUploadError("");
+    // A voice note being recorded is dropped, never sent to the chat we left.
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      discardRecordingRef.current = true;
+      try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      setIsRecording(false);
+    }
+  };
+  const showUploadError = (text) => {
+    clearTimeout(uploadErrorTimerRef.current);
+    setUploadError(text);
+    uploadErrorTimerRef.current = window.setTimeout(() => setUploadError(""), 6000);
+  };
   useLayoutEffect(() => {
     if (me?.id) setDraftOwner(me.id);
     const prev = draftKeyRef.current;
@@ -214,6 +248,9 @@ export default function MessageComposer({
       writeDraft(prev, editIdRef.current ? editStashRef.current ?? "" : messageRef.current);
       // The edit (if any) belongs to the chat we leave: do not restore its stash here.
       editStashRef.current = null;
+      // A staged or uploading file belongs to the chat we leave (polish messaging-01):
+      // it used to stay and went to the next chat on Enter.
+      resetStagedForChatSwitch();
     }
     draftKeyRef.current = draftKey;
     setMessage(readDraft(draftKey));
@@ -867,7 +904,8 @@ export default function MessageComposer({
       onSaveEdit?.({ ...editingMessage, newText: next });
       return;
     }
-    if (disabled || slowmodeBlocked || sendingRef.current) return;
+    // A file still uploading becomes this message's attachment; wait for it.
+    if (disabled || slowmodeBlocked || sendingRef.current || uploading) return;
     sendingRef.current = true;
     window.setTimeout(() => {
       sendingRef.current = false;
@@ -1036,25 +1074,34 @@ export default function MessageComposer({
     if (!file) return;
     // Refused before the upload: the server would reject the message and leave an orphan file.
     if (!canAttachHere) {
-      setUploadError(t("chperm.noAttachments"));
-      setTimeout(() => setUploadError(""), 4000);
+      showUploadError(t("chperm.noAttachments"));
       return;
     }
+    const pre = checkChatFile(file);
+    if (pre) {
+      showUploadError(t(uploadErrorKey(pre), { max: CHAT_UPLOAD_MAX_MB }));
+      return;
+    }
+    try { uploadAbortRef.current?.abort(); } catch { /* ignore */ }
+    const ctrl = new AbortController();
+    uploadAbortRef.current = ctrl;
+    const key = draftKeyRef.current;
     refocusAfterUploadRef.current = true;
     setUploading(true);
+    setUploadInfo({ name: file.name || t("Attachment"), progress: 0 });
+    clearTimeout(uploadErrorTimerRef.current);
     setUploadError("");
-    const formData = new FormData();
-    formData.append("purpose", "message");
-    formData.append("file", file);
     try {
-      const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/api/media/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      const data = await uploadChatFile(file, {
+        base: API_BASE_URL,
+        token: getToken(),
+        signal: ctrl.signal,
+        onProgress: (progress) => {
+          if (uploadAbortRef.current === ctrl) setUploadInfo((cur) => (cur ? { ...cur, progress } : cur));
+        },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      // Finished after a chat switch or a cancel: never stage it into another chat.
+      if (ctrl.signal.aborted || draftKeyRef.current !== key) return;
       const previewUrl =
         data.mediaType === "image" || file.type.startsWith("image/")
           ? URL.createObjectURL(file)
@@ -1069,12 +1116,23 @@ export default function MessageComposer({
         previewUrl,
       });
     } catch (err) {
-      console.error("Upload failed:", err);
-      setUploadError(err.message);
-      setTimeout(() => setUploadError(""), 4000);
+      if (err?.code === "ABORTED" || ctrl.signal.aborted || draftKeyRef.current !== key) return;
+      console.warn("Upload failed:", err?.code || err);
+      showUploadError(t(uploadErrorKey(err?.code), { max: CHAT_UPLOAD_MAX_MB }));
     } finally {
-      setUploading(false);
+      if (uploadAbortRef.current === ctrl) {
+        uploadAbortRef.current = null;
+        setUploading(false);
+        setUploadInfo(null);
+      }
     }
+  };
+
+  const cancelUpload = () => {
+    try { uploadAbortRef.current?.abort(); } catch { /* ignore */ }
+    uploadAbortRef.current = null;
+    setUploading(false);
+    setUploadInfo(null);
   };
 
   // Ctrl+V / Cmd+V: clipboard images (screenshots, copied images, copied image
@@ -1103,6 +1161,50 @@ export default function MessageComposer({
 
   const stageFileRef = useRef(stageFile);
   stageFileRef.current = stageFile;
+  const dropDisabledRef = useRef(false);
+  dropDisabledRef.current = Boolean(disabled) || !canAttachHere;
+  // Files dropped anywhere on the open chat are attached; dropped anywhere else they
+  // never navigate the page away (web: Chrome used to open the file in the tab).
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    let hideTimer = 0;
+    const hasFiles = (e) => Array.from(e.dataTransfer?.types || []).includes("Files");
+    const panelOf = (e) => (e.target?.closest ? e.target.closest(".main-panel") : null);
+    const onOver = (e) => {
+      if (!hasFiles(e) || e.defaultPrevented) return;
+      e.preventDefault();
+      const panel = panelOf(e);
+      if (panel && !dropDisabledRef.current) {
+        e.dataTransfer.dropEffect = "copy";
+        const r = panel.getBoundingClientRect();
+        setPanelDrop((cur) => (cur && cur.left === r.left && cur.top === r.top && cur.width === r.width && cur.height === r.height
+          ? cur
+          : { left: r.left, top: r.top, width: r.width, height: r.height }));
+      } else {
+        e.dataTransfer.dropEffect = "none";
+        setPanelDrop(null);
+      }
+      clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(() => setPanelDrop(null), 160);
+    };
+    const onDrop = (e) => {
+      if (!hasFiles(e)) return;
+      clearTimeout(hideTimer);
+      setPanelDrop(null);
+      if (e.defaultPrevented) return; // the composer bar or another drop zone took it
+      e.preventDefault();
+      if (!panelOf(e) || dropDisabledRef.current) return;
+      const file = e.dataTransfer?.files?.[0];
+      if (file) stageFileRef.current(file);
+    };
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      clearTimeout(hideTimer);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, []);
   useEffect(() => {
     const onDocPaste = (e) => {
       const input = inputRef.current;
@@ -1180,6 +1282,7 @@ export default function MessageComposer({
   };
 
   const startRecording = useCallback(async () => {
+    discardRecordingRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -1205,26 +1308,34 @@ export default function MessageComposer({
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
+        if (discardRecordingRef.current) {
+          // Stopped by a chat switch: the note belongs to the chat we left.
+          discardRecordingRef.current = false;
+          return;
+        }
         const blob = new Blob(audioChunksRef.current, { type: actualMime });
         if (!blob.size) {
-          setUploadError(t("Empty recording, try again."));
-          setTimeout(() => setUploadError(""), 4000);
+          showUploadError(t("Empty recording, try again."));
           return;
         }
         const durationSec = Math.max(1, recordingTimeRef.current || 1);
+        const key = draftKeyRef.current;
+        const ctrl = new AbortController();
+        uploadAbortRef.current = ctrl;
         setUploading(true);
+        setUploadInfo({ name: t("Voice Message"), progress: 0 });
         try {
-          const formData = new FormData();
-          formData.append("purpose", "message");
           const ext = extensionForMime(actualMime);
-          formData.append("file", blob, `voice-${Date.now()}.${ext}`);
-          const res = await fetch(`${API_BASE_URL}/api/media/upload`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${getToken()}` },
-            body: formData,
+          const data = await uploadChatFile(blob, {
+            base: API_BASE_URL,
+            token: getToken(),
+            signal: ctrl.signal,
+            filename: `voice-${Date.now()}.${ext}`,
+            onProgress: (progress) => {
+              if (uploadAbortRef.current === ctrl) setUploadInfo((cur) => (cur ? { ...cur, progress } : cur));
+            },
           });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Voice upload failed");
+          if (ctrl.signal.aborted || draftKeyRef.current !== key) return;
           onSend?.(withReply({
             type: "media",
             mediaUrl: data.url,
@@ -1238,10 +1349,14 @@ export default function MessageComposer({
           }));
           onClearReply?.();
         } catch (err) {
-          setUploadError(err.message);
-          setTimeout(() => setUploadError(""), 4000);
+          if (err?.code === "ABORTED" || ctrl.signal.aborted) return;
+          showUploadError(t(uploadErrorKey(err?.code), { max: CHAT_UPLOAD_MAX_MB }));
         } finally {
-          setUploading(false);
+          if (uploadAbortRef.current === ctrl) {
+            uploadAbortRef.current = null;
+            setUploading(false);
+            setUploadInfo(null);
+          }
         }
       };
       recorder.onerror = () => {
@@ -1249,8 +1364,7 @@ export default function MessageComposer({
         stream.getTracks().forEach((t) => t.stop());
         if (timerRef.current) clearInterval(timerRef.current);
         setIsRecording(false);
-        setUploadError(t("Recording failed."));
-        setTimeout(() => setUploadError(""), 4000);
+        showUploadError(t("Recording failed."));
       };
       // timeslice helps finalize duration metadata on some browsers
       recorder.start(250);
@@ -1277,8 +1391,7 @@ export default function MessageComposer({
       }, 1000);
     } catch (err) {
       console.error("Recording failed:", err);
-      setUploadError(t("Microphone access denied."));
-      setTimeout(() => setUploadError(""), 4000);
+      showUploadError(t("Microphone access denied."));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSend, replyTo, onClearReply]);
@@ -1331,7 +1444,7 @@ export default function MessageComposer({
   const canSaveEdit = editing && Boolean(message.trim()) && message.trim() !== editOriginal;
   const canSend = editing
     ? canSaveEdit
-    : Boolean(message.trim() || pendingAttach) && !slowmodeBlocked;
+    : Boolean(message.trim() || pendingAttach) && !slowmodeBlocked && !uploading;
 
   return (
     <div
@@ -1340,6 +1453,21 @@ export default function MessageComposer({
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
     >
+      {panelDrop && typeof document !== "undefined" && createPortal(
+        <div
+          className="chat-drop-overlay"
+          data-testid="chat-drop-overlay"
+          style={{ left: panelDrop.left, top: panelDrop.top, width: panelDrop.width, height: panelDrop.height }}
+          aria-hidden="true"
+        >
+          <div className="chat-drop-card">
+            <ImagePlus size={28} />
+            <strong>{t("msg5.upload.dropTitle")}</strong>
+            <span>{t("msg5.upload.dropHint", { max: CHAT_UPLOAD_MAX_MB })}</span>
+          </div>
+        </div>,
+        document.body,
+      )}
       <GiphyPicker
         isOpen={showGiphy}
         onClose={() => setShowGiphy(false)}
@@ -1452,6 +1580,69 @@ export default function MessageComposer({
                 inputRef.current?.focus({ preventScroll: true });
               }}
               aria-label={t("Cancel edit")}
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {uploadInfo && (
+          <motion.div
+            key="upload"
+            className="composer-attach-preview composer-upload-chip"
+            data-testid="composer-upload"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+          >
+            <div className="composer-attach-file">
+              <Loader2 size={18} className="spin" style={{ animation: "spin 1s linear infinite" }} />
+            </div>
+            <div className="composer-attach-meta">
+              <strong>{t("msg5.upload.uploading", { name: uploadInfo.name })}</strong>
+              <span className="tnum">{formatNumber(Math.round((uploadInfo.progress || 0) * 100))}%</span>
+            </div>
+            <span className="composer-upload-bar" aria-hidden="true">
+              <span style={{ transform: `scaleX(${Math.max(0.02, uploadInfo.progress || 0)})` }} />
+            </span>
+            <button
+              type="button"
+              className="composer-reply-clear"
+              onClick={cancelUpload}
+              aria-label={t("msg5.upload.cancel")}
+              title={t("msg5.upload.cancel")}
+              onPointerDown={keepComposerFocus}
+              onMouseDown={keepComposerFocus}
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+        {uploadError && !uploadInfo && (
+          <motion.div
+            key="upload-error"
+            className="composer-attach-preview composer-upload-error"
+            role="alert"
+            data-testid="composer-upload-error"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+          >
+            <div className="composer-attach-file">
+              <AlertCircle size={18} />
+            </div>
+            <div className="composer-attach-meta">
+              <strong>{uploadError}</strong>
+            </div>
+            <button
+              type="button"
+              className="composer-reply-clear"
+              onClick={() => { clearTimeout(uploadErrorTimerRef.current); setUploadError(""); }}
+              aria-label={t("msg5.upload.dismiss")}
+              onPointerDown={keepComposerFocus}
+              onMouseDown={keepComposerFocus}
             >
               <X size={14} />
             </button>
@@ -1726,12 +1917,7 @@ export default function MessageComposer({
       </div>
 
       <div className="composer-input-wrapper">
-        {uploading ? (
-          <div className="recording-bar">
-            <Loader2 size={16} className="spin" style={{ animation: "spin 1s linear infinite" }} />
-            <span className="recording-label">{t("Uploading file…")}</span>
-          </div>
-        ) : isRecording ? (
+        {isRecording ? (
           <div className="recording-bar recording-wave">
             <div className="recording-pulse" />
             <div className="composer-waveform" aria-hidden="true">
@@ -1740,11 +1926,6 @@ export default function MessageComposer({
               ))}
             </div>
             <span className="recording-label">{formatTime(recordingTime)}</span>
-          </div>
-        ) : uploadError ? (
-          <div className="recording-bar" style={{ color: "var(--danger)" }}>
-            <X size={14} />
-            <span className="recording-label">{uploadError}</span>
           </div>
         ) : (
           <textarea
@@ -1797,8 +1978,7 @@ export default function MessageComposer({
             className={`composer-action-btn${canVoiceHere ? "" : " is-disabled"}`}
             onClick={() => {
               if (!canVoiceHere) {
-                setUploadError(t("chperm.noVoiceMessages"));
-                setTimeout(() => setUploadError(""), 4000);
+                showUploadError(t("chperm.noVoiceMessages"));
                 return;
               }
               startRecording();

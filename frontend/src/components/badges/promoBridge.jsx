@@ -35,7 +35,46 @@ export function promoLockReason(row) {
   return null;
 }
 
-function BadgePicker({ value, onChange }) {
+/** Free places on a limited badge (null when unlimited). */
+export function badgeSlotsLeft(row) {
+  if (!row || row.maxHolders == null) return null;
+  return Math.max(0, Number(row.maxHolders) - Number(row.holders || 0));
+}
+
+/**
+ * The chosen badge as the user will get it: big glyph, name, tier, what it is for, holders and,
+ * for a limited badge, the places left. Warns when "Kullanım limiti" promises more badges than
+ * the badge can still give (the server refuses that with reward_badge_slots).
+ */
+function BadgePreview({ row, maxUses, onMaxUses }) {
+  const { t, name, desc, tierLabel, num } = useBadgeCopy();
+  const left = badgeSlotsLeft(row);
+  const over = left != null && (maxUses == null || Number(maxUses) > left);
+  return (
+    <div className={`sb-preview t-${row.tier}`}>
+      <SpecialBadgeIcon id={row.id} size={44} />
+      <div className="sb-preview-copy">
+        <div className="sb-preview-top">
+          <b>{name(row.id)}</b>
+          <span className={`sb-tier-pill t-${row.tier}`}>{tierLabel(row.tier)}</span>
+        </div>
+        <span className="sb-preview-desc">{desc(row.id)}</span>
+        <span className="sb-preview-meta tnum">
+          {t("badges.holdersShort", { n: num(row.holders) })}
+          {left != null ? ` · ${t("promo.badgeSlots", { left: num(left), max: num(row.maxHolders) })}` : ""}
+        </span>
+        {over ? (
+          <span className="sb-preview-warn" role="alert">
+            {t("promo.badgeSlotsWarn", { left: num(left) })}
+            {onMaxUses && left > 0 ? <button type="button" className="mt-btn sm" onClick={() => onMaxUses(left)}>{t("promo.badgeSlotsFix", { left: num(left) })}</button> : null}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function BadgePicker({ value, onChange, maxUses, onMaxUses }) {
   const { t, locale, name, desc, tierLabel, num } = useBadgeCopy();
   const rows = useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f); }, () => adminRows, () => null);
   const [open, setOpen] = useState(false);
@@ -58,6 +97,7 @@ function BadgePicker({ value, onChange }) {
   const cur = (rows || []).find((r) => r.id === value);
   const lockText = (why) => (why === "adminOnly" ? t("badges.pickerAdminOnly") : why === "taken" ? t("badges.tekilTaken") : t("badges.err_badge_inactive"));
   return (
+    <>
     <div className="sb-field" ref={box}>
       <button type="button" className={`mt-in sb-trigger${open ? " is-open" : ""}`} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         {cur ? (
@@ -98,6 +138,8 @@ function BadgePicker({ value, onChange }) {
         </div>
       ) : null}
     </div>
+    {cur ? <BadgePreview row={cur} maxUses={maxUses} onMaxUses={onMaxUses} /> : null}
+    </>
   );
 }
 

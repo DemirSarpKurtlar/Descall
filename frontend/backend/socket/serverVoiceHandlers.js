@@ -207,19 +207,66 @@ function kickLiveKitParticipant(channelId, userId) {
 /** `${channelId}|${userId}` -> socket id that holds the seat (V9; never sent to clients). */
 const seatOwners = new Map();
 const seatOwnerKey = (channelId, userId) => `${normId(channelId)}|${normId(userId)}`;
+/** seat key -> when its holder socket disconnected (grace running; telemetry only). */
+const seatLostAt = new Map();
 /** Socket id holding the user's seat in the channel, or null (DesCoin heartbeat check). */
 function seatOwnerOf(channelId, userId) {
   return seatOwners.get(seatOwnerKey(channelId, userId)) || null;
 }
 
-function removeFromVoice(io, channelId, userId, { originSocketId = null } = {}) {
+/** The socket may act on the user's seat: it holds it, or no holder is recorded. */
+function socketHoldsSeat(channelId, userId, socketId) {
+  const owner = seatOwnerOf(channelId, userId);
+  return !owner || !socketId || owner === socketId;
+}
+
+function socketIsLive(io, socketId) {
+  if (!socketId) return false;
+  const map = io?.sockets?.sockets;
+  if (!map?.get) return true; // test doubles without a socket map
+  return Boolean(map.get(socketId));
+}
+
+/**
+ * Where seat events for one user go (force-moved, room joins): the socket that holds the
+ * seat when it is connected, else every socket of the user. Idle devices of the same user
+ * used to get force-moved too and joined voice on their own (server-voice-03).
+ */
+function seatTarget(io, owner, userId) {
+  return owner && socketIsLive(io, owner) ? owner : `user:${userId}`;
+}
+
+/** Another device of the same user took the seat: tell the device that held it. */
+function notifySeatTakenOver(io, oldSocketId, { serverId, channelId }) {
+  if (!oldSocketId || !socketIsLive(io, oldSocketId)) return;
+  try {
+    io.to(oldSocketId).emit("server:voice:force-disconnected", { serverId, channelId, reason: "other_device" });
+    io.in?.(oldSocketId)?.socketsLeave?.(`server-voice:${channelId}`);
+  } catch {
+    /* older socket.io */
+  }
+}
+
+/**
+ * Where to relay mesh signaling for a seated user: the socket that holds the seat, so
+ * another open device of the same account never answers the offer (voice-drops-06).
+ * Falls back to the user room while that socket is gone (reconnect grace).
+ */
+function seatSignalTarget(io, channelId, userId) {
+  const sid = seatOwners.get(seatOwnerKey(channelId, userId));
+  if (sid && io?.sockets?.sockets?.get?.(sid)) return sid;
+  return `user:${String(userId)}`;
+}
+
+function removeFromVoice(io, channelId, userId, { originSocketId = null, keepCoinSession = false } = {}) {
   channelId = normId(channelId);
   seatOwners.delete(seatOwnerKey(channelId, userId));
   const call = activeServerVoiceCalls.get(channelId);
   if (!call) return null;
   const uid = String(userId);
   // End-of-call DesCoin summary for this seat (lib/callCoinSessions.js; never throws).
-  void callCoinSessions.finish(io, uid, { context: "server", channelId }, { originSocketId });
+  // A move keeps the session (callCoinSessions.move): it is not the end of the call.
+  if (!keepCoinSession) void callCoinSessions.finish(io, uid, { context: "server", channelId }, { originSocketId });
   void kickLiveKitParticipant(channelId, uid);
   // iOS screen broadcast companion (`<userId>:screen`) leaves with its owner.
   if (takeCompanionIssued(channelId, uid)) void kickLiveKitParticipant(channelId, screenCompanionIdentity(uid));
@@ -256,6 +303,54 @@ function removeUserFromAllServerVoice(io, userId, opts = {}) {
       removeFromVoice(io, channelId, uid, opts);
     }
   }
+}
+
+/** Seat fields that mirror the user's public profile (name, avatar, cosmetics). */
+const SEAT_PROFILE_KEYS = [
+  "equippedVoiceTile",
+  "equippedJoinSound",
+  "equippedAvatarFrame",
+  "equippedBadge",
+  "equippedTitle",
+  "equippedCountry",
+  "equippedSpecialBadge",
+  "equippedNameEffect",
+  "equippedAvatarEffect",
+  "equippedChatBubble",
+  "equippedPresenceFlare",
+  "equippedProfileColor",
+];
+
+/**
+ * A profile change (equip / unequip a voice tile or join sound, new avatar or name) reaches
+ * the user's voice seats: they were copied once at join, so everyone kept seeing the old
+ * tile until a rejoin (server-voice-18). Called from broadcastUserProfileUpdate.
+ */
+function refreshSeatProfile(io, userId, profile) {
+  if (!io || userId == null || !profile) return 0;
+  const { toPublicUser } = require("../lib/userProfile");
+  const pub = toPublicUser(profile) || {};
+  const uid = normId(userId);
+  let n = 0;
+  for (const [channelId, call] of [...activeServerVoiceCalls.entries()]) {
+    const entry = getParticipantEntry(call, uid);
+    if (!entry?.member) continue;
+    const next = { ...entry.member };
+    for (const key of SEAT_PROFILE_KEYS) next[key] = pub[key] ?? profile[key] ?? null;
+    const displayName = pub.displayName || pub.display_name || profile.display_name || null;
+    if (displayName) {
+      next.displayName = displayName;
+      next.display_name = displayName;
+    }
+    if (pub.username || profile.username) next.username = pub.username || profile.username;
+    const avatar = pub.avatarUrl || pub.avatar_url || profile.avatar_url || null;
+    next.avatarUrl = avatar;
+    next.avatar_url = avatar;
+    setParticipant(call, uid, next);
+    emitChannelState(io, call.serverId, channelId);
+    n += 1;
+  }
+  return n;
 }
 
 /**
@@ -448,8 +543,13 @@ function makeSocketLimiter(socket) {
   };
 }
 
-/** A disconnected socket's seat stays this long for a reconnect, then goes (V9). */
-const SEAT_RECONNECT_GRACE_MS = Number(process.env.VOICE_SEAT_GRACE_MS) || 20_000;
+/**
+ * A disconnected socket's seat stays this long for a reconnect, then goes (V9). It has
+ * to cover socket.io's dead-link detection (pingInterval + pingTimeout = 22 s) plus a
+ * couple of reconnect backoff steps, or a short radio stall drops the seat (and the
+ * peers' audio) although the media path never broke (voice-drops-01).
+ */
+const SEAT_RECONNECT_GRACE_MS = Number(process.env.VOICE_SEAT_GRACE_MS) || 45_000;
 const STAGE_REQUEST_COOLDOWN_MS = 5_000;
 
 function registerServerVoiceHandlers(io, socket) {
@@ -553,6 +653,7 @@ function registerServerVoiceHandlers(io, socket) {
       if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
       if (serverId && normId(serverId) !== normId(channel.server_id)) {
         socket.emit("server:voice:error", {
+          phase: "join",
           channelId,
           message: "Server mismatch.",
           code: "SERVER_MISMATCH",
@@ -567,6 +668,7 @@ function registerServerVoiceHandlers(io, socket) {
       ) {
         if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
         socket.emit("server:voice:error", {
+          phase: "join",
           channelId,
           message: "You must accept the server rules before joining voice.",
           code: "RULES_REQUIRED",
@@ -584,6 +686,7 @@ function registerServerVoiceHandlers(io, socket) {
           if (limit && count >= limit) {
             if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
             socket.emit("server:voice:error", {
+              phase: "join",
               channelId,
               message: "This voice channel is full.",
               code: "CHANNEL_FULL",
@@ -600,10 +703,12 @@ function registerServerVoiceHandlers(io, socket) {
       if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
 
       const myUid = String(myId);
-      for (const [otherId, call] of activeServerVoiceCalls.entries()) {
+      for (const [otherId, call] of [...activeServerVoiceCalls.entries()]) {
         if (otherId !== channelId && getParticipantEntry(call, myUid)) {
+          const heldBy = seatOwnerOf(otherId, myUid);
           removeFromVoice(io, otherId, myUid);
           socket.leave(`server-voice:${otherId}`);
+          if (heldBy && heldBy !== socket.id) notifySeatTakenOver(io, heldBy, { serverId: call.serverId, channelId: otherId });
         }
       }
 
@@ -647,7 +752,19 @@ function registerServerVoiceHandlers(io, socket) {
         ? (keepSeat && previous.afkIdleSince) || Date.now()
         : null;
       setParticipant(call, myUid, mePublic);
+      // Same seat taken from another device of this user: that device leaves voice (S-03).
+      const heldBySameSeat = seatOwnerOf(channelId, myUid);
+      if (heldBySameSeat && socket.id && heldBySameSeat !== socket.id) {
+        notifySeatTakenOver(io, heldBySameSeat, { serverId: channel.server_id, channelId });
+      }
       if (socket.id) seatOwners.set(seatOwnerKey(channelId, myUid), socket.id);
+      {
+        const lostAt = seatLostAt.get(seatOwnerKey(channelId, myUid));
+        if (lostAt) {
+          seatLostAt.delete(seatOwnerKey(channelId, myUid));
+          if (alreadySeated) console.log(`[VoiceSeat] seat kept, holder back after ms=${Date.now() - lostAt}`);
+        }
+      }
       callCoinSessions.start(myUid, { context: "server", channelId }, {
         meta: { serverId: String(channel.server_id), channelName: channel.name || null },
       });
@@ -681,6 +798,9 @@ function registerServerVoiceHandlers(io, socket) {
         serverMuted: Boolean(mePublic.serverMuted),
         serverDeafened: Boolean(mePublic.serverDeafened),
         afkChannel: Boolean(mePublic.afkLocked),
+        // Same seat taken again (socket reconnect, media retry): clients keep their
+        // roster / media and skip the join sounds.
+        rejoin: Boolean(alreadySeated && keepSeat),
         ...(livekit ? { livekit } : {}),
       });
 
@@ -688,6 +808,7 @@ function registerServerVoiceHandlers(io, socket) {
         serverId: channel.server_id,
         channelId,
         user: mePublic,
+        rejoin: Boolean(alreadySeated && keepSeat),
       });
 
       emitChannelState(io, channel.server_id, channelId);
@@ -705,6 +826,7 @@ function registerServerVoiceHandlers(io, socket) {
       if ((socket.data.voiceJoinEpoch || 0) !== epoch) return;
       console.error("[ServerVoice] join error:", err.message || err);
       socket.emit("server:voice:error", {
+        phase: "join",
         channelId,
         ...errorFields(err, "message"),
         message: err.message || "Failed to join voice channel.",
@@ -716,19 +838,24 @@ function registerServerVoiceHandlers(io, socket) {
   socket.on("server:voice:leave", ({ channelId } = {}) => {
     bumpVoiceJoin();
     channelId = channelId ? normId(channelId) : channelId;
-    if (channelId && findUserInChannel(channelId, myId)) {
-      removeFromVoice(io, channelId, myId, { originSocketId: socket.id });
-      socket.leave(`server-voice:${channelId}`);
+    if (channelId) {
+      // Only that channel, and only a seat this socket holds. A stale leave (the client's
+      // old channel after a move, or a device whose seat went to another device) used to
+      // fall through to "every seat" and dropped the live one (server-voice-02 / 03).
+      if (findUserInChannel(channelId, myId) && socketHoldsSeat(channelId, myId, socket.id)) {
+        removeFromVoice(io, channelId, myId, { originSocketId: socket.id });
+      }
+      try {
+        socket.leave(`server-voice:${channelId}`);
+      } catch (err) {
+        console.warn("[ServerVoice] leave room failed:", err?.message || err);
+      }
     } else {
-      // Missing/stale channelId still has to drop occupancy (local hangup
-      // often emits after the client already cleared its channel ref).
-      removeUserFromAllServerVoice(io, myId, { originSocketId: socket.id });
-      if (channelId) {
-        try {
-          socket.leave(`server-voice:${channelId}`);
-        } catch (err) {
-          console.warn("[ServerVoice] leave room failed:", err?.message || err);
-        }
+      // No channel id (the client already cleared it): drop the seats this socket holds.
+      for (const [cid, call] of [...activeServerVoiceCalls.entries()]) {
+        if (!getParticipantEntry(call, myId) || !socketHoldsSeat(cid, myId, socket.id)) continue;
+        removeFromVoice(io, cid, myId, { originSocketId: socket.id });
+        socket.leave(`server-voice:${cid}`);
       }
     }
     socket.emit("server:voice:left", { channelId: channelId || null });
@@ -737,7 +864,7 @@ function registerServerVoiceHandlers(io, socket) {
   // V9: a seat belongs to the socket that joined it. When that socket goes away while
   // another socket of the user stays connected (phone app open), the seat used to stay
   // forever. Give a reconnect a short grace (the client re-emits join on connect).
-  socket.on("disconnect", () => {
+  socket.on("disconnect", (why) => {
     const sid = socket.id;
     if (!sid) return;
     const owned = [];
@@ -745,11 +872,17 @@ function registerServerVoiceHandlers(io, socket) {
       if (getParticipantEntry(call, myId) && seatOwners.get(seatOwnerKey(channelId, myId)) === sid) owned.push(channelId);
     }
     if (!owned.length) return;
+    // Drop statistics without ids (voice-drops-05): why seat holders lose their socket,
+    // how many come back within the grace and how fast.
+    console.log(`[VoiceSeat] holder socket lost reason=${String(why || "unknown").replace(/[^a-z ]/gi, "").slice(0, 40)} seats=${owned.length}`);
+    for (const channelId of owned) seatLostAt.set(seatOwnerKey(channelId, myId), Date.now());
     const timer = setTimeout(() => {
       for (const channelId of owned) {
         const call = activeServerVoiceCalls.get(channelId);
         const entry = getParticipantEntry(call, myId);
         if (!entry || seatOwners.get(seatOwnerKey(channelId, myId)) !== sid) continue;
+        seatLostAt.delete(seatOwnerKey(channelId, myId));
+        console.log(`[VoiceSeat] seat dropped after grace graceMs=${SEAT_RECONNECT_GRACE_MS}`);
         removeFromVoice(io, channelId, myId);
         io.to(`user:${myId}`).emit("server:voice:force-disconnected", {
           serverId: call?.serverId,
@@ -837,8 +970,12 @@ function registerServerVoiceHandlers(io, socket) {
           id: targetId,
         };
         const owner = seatOwners.get(seatOwnerKey(found.channelId, targetId));
-        removeFromVoice(io, found.channelId, targetId);
+        removeFromVoice(io, found.channelId, targetId, { keepCoinSession: true });
         if (owner) seatOwners.set(seatOwnerKey(destId, targetId), owner);
+        callCoinSessions.move(targetId, { context: "server", channelId: found.channelId }, { context: "server", channelId: destId }, {
+          meta: { serverId: String(serverId), channelName: dest.name || null },
+        });
+        const moveTarget = seatTarget(io, owner, targetId);
 
         let destCall = activeServerVoiceCalls.get(destId);
         if (!destCall) {
@@ -876,8 +1013,8 @@ function registerServerVoiceHandlers(io, socket) {
         // Put every socket for the user into the destination voice room immediately
         // so signaling works even before the client finishes media rejoin.
         try {
-          io.in(`user:${targetId}`).socketsJoin(`server-voice:${destId}`);
-          io.in(`user:${targetId}`).socketsJoin(`server:${serverId}`);
+          io.in(moveTarget).socketsJoin(`server-voice:${destId}`);
+          io.in(moveTarget).socketsJoin(`server:${serverId}`);
         } catch {
           /* ignore older socket.io */
         }
@@ -895,7 +1032,7 @@ function registerServerVoiceHandlers(io, socket) {
           user: seated,
         });
 
-        io.to(`user:${targetId}`).emit("server:voice:force-moved", {
+        io.to(moveTarget).emit("server:voice:force-moved", {
           serverId,
           fromChannelId: found.channelId,
           toChannelId: destId,
@@ -988,7 +1125,7 @@ function registerServerVoiceHandlers(io, socket) {
     if (!getParticipantEntry(call, toUserId)) return;
     const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
     const announced = sanitizeScreenAnnouncement(screen);
-    io.to(`user:${String(toUserId)}`).emit("server:voice:offer", {
+    io.to(seatSignalTarget(io, channelId, toUserId)).emit("server:voice:offer", {
       channelId,
       fromUserId: String(myId),
       fromUser: self.member || resolvePublicUser(socket),
@@ -1003,7 +1140,7 @@ function registerServerVoiceHandlers(io, socket) {
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
     if (!getParticipantEntry(call, toUserId)) return;
-    io.to(`user:${String(toUserId)}`).emit("server:voice:answer", {
+    io.to(seatSignalTarget(io, channelId, toUserId)).emit("server:voice:answer", {
       channelId,
       fromUserId: String(myId),
       answer,
@@ -1016,7 +1153,7 @@ function registerServerVoiceHandlers(io, socket) {
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
     if (!getParticipantEntry(call, toUserId)) return;
-    io.to(`user:${String(toUserId)}`).emit("server:voice:ice", {
+    io.to(seatSignalTarget(io, channelId, toUserId)).emit("server:voice:ice", {
       channelId,
       fromUserId: String(myId),
       candidate,
@@ -1253,7 +1390,7 @@ function registerServerVoiceHandlers(io, socket) {
     }
   });
 
-  socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened } = {}) => {
+  socket.on("server:voice:media-state", ({ channelId, muted, cameraOn, deafened, ptt } = {}) => {
     if (!channelId) return;
     if (!allow("media", 20, 5000)) return;
     channelId = normId(channelId);
@@ -1288,6 +1425,11 @@ function registerServerVoiceHandlers(io, socket) {
       // A camera flag without STREAM is ignored (it bypassed camera:start's check).
       if (cameraOn !== undefined) me.cameraOn = Boolean(cameraOn) && participantCanStream(me);
       if (deafened !== undefined) me.deafened = Boolean(deafened);
+      // Push-to-talk (client sends ptt: true with its press / release): the key is often
+      // up when the 16 s DesCoin beat lands, so the last open-mic moment still counts
+      // (serverVoiceEnforce.seatCanEarn). A plain self-mute never does.
+      if (ptt !== undefined) me.ptt = Boolean(ptt);
+      if (!me.muted || !wasMuted) me.lastUnmutedAt = Date.now();
       if (me.muted && !wasMuted) {
         me.afkIdleSince = Date.now();
       } else if (!me.muted) {
@@ -1357,8 +1499,12 @@ async function moveParticipantToChannel(io, serverId, userId, fromChannelId, toC
 
   const snapshot = { ...(found.entry?.member || { id: targetId }), id: targetId };
   const owner = seatOwners.get(seatOwnerKey(found.channelId, targetId));
-  removeFromVoice(io, found.channelId, targetId);
+  removeFromVoice(io, found.channelId, targetId, { keepCoinSession: true });
   if (owner) seatOwners.set(seatOwnerKey(destId, targetId), owner);
+  callCoinSessions.move(targetId, { context: "server", channelId: found.channelId }, { context: "server", channelId: destId }, {
+    meta: { serverId: String(dest.server_id), channelName: dest.name || null },
+  });
+  const moveTarget = seatTarget(io, owner, targetId);
 
   let destCall = activeServerVoiceCalls.get(destId);
   if (!destCall) {
@@ -1391,14 +1537,18 @@ async function moveParticipantToChannel(io, serverId, userId, fromChannelId, toC
   setParticipant(destCall, targetId, snapshot);
 
   try {
-    io.in(`user:${targetId}`).socketsJoin(`server-voice:${destId}`);
-    io.in(`user:${targetId}`).socketsJoin(`server:${dest.server_id}`);
+    io.in(moveTarget).socketsJoin(`server-voice:${destId}`);
+    io.in(moveTarget).socketsJoin(`server:${dest.server_id}`);
   } catch {
     /* ignore */
   }
 
   emitChannelState(io, dest.server_id, destId);
-  io.to(`user:${targetId}`).emit("server:voice:force-moved", {
+  // Same arrival event as a moderator move, so rosters in the AFK channel add the member.
+  const seated = destCall.participants.get(String(targetId)) || snapshot;
+  io.to(`server-voice:${destId}`).emit("server:voice:member-joined", { serverId: dest.server_id, channelId: destId, user: seated });
+  void emitToChannelViewers(io, dest.server_id, destId, "server:voice:member-joined", { serverId: dest.server_id, channelId: destId, user: seated });
+  io.to(moveTarget).emit("server:voice:force-moved", {
     serverId: dest.server_id,
     fromChannelId: found.channelId,
     toChannelId: destId,
@@ -1508,6 +1658,7 @@ module.exports = {
   findUserVoiceChannel,
   findUserInChannel,
   seatOwnerOf,
+  refreshSeatProfile,
   startAfkIdleScanner,
   runAfkScan,
   // lib/serverVoiceEnforce.js (contract for the other server modules) uses these.

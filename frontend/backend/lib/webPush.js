@@ -6,6 +6,7 @@ const { sendFcmToUsers } = require("./fcm");
 const { sendIosAlertToUsers } = require("./iosAlertPush");
 const { bt, pickLang } = require("./i18n");
 const pushPreview = require("./pushPreview");
+const { isAllowedPushEndpoint } = require("./pushEndpoint");
 
 let configured = false;
 
@@ -37,6 +38,11 @@ async function sendWebPushToUsers(userIds, payload) {
 
   const body = JSON.stringify(payload);
   await Promise.allSettled((subscriptions || []).map(async (subscription) => {
+    // Rows saved before the endpoint allow-list: never send to them, drop them instead.
+    if (!isAllowedPushEndpoint(subscription.endpoint)) {
+      await supabase.from("web_push_subscriptions").delete().eq("endpoint", subscription.endpoint);
+      return;
+    }
     try {
       await webpush.sendNotification(
         {
@@ -111,8 +117,29 @@ async function groupByLanguage(userIds) {
   return groups;
 }
 
+/**
+ * Rahatsız etme (presence_status "dnd") silences Web Push and Android pushes like it
+ * already silences iOS alerts (lib/iosAlertPush.js): everything except calls, so a
+ * ring and its "ring ended" still arrive (polish world-social-11). A failed lookup
+ * keeps everyone (same as before).
+ */
+async function withoutDndRecipients(userIds, payload = {}) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  if (!ids.length || String(payload?.type || "").includes("call")) return ids;
+  try {
+    const { data, error } = await supabase.from("users").select("id, presence_status").in("id", ids);
+    if (error || !Array.isArray(data)) return ids;
+    const dnd = new Set(data.filter((r) => String(r.presence_status || "") === "dnd").map((r) => r.id));
+    return dnd.size ? ids.filter((id) => !dnd.has(id)) : ids;
+  } catch {
+    return ids;
+  }
+}
+
 /** Web Push only, localized per recipient. */
 async function sendLocalizedWebPush(userIds, payload = {}) {
+  userIds = await withoutDndRecipients(userIds, payload);
+  if (!userIds.length) return;
   if (!payload.i18n) return sendWebPushToUsers(userIds, payload);
   const groups = await groupByLanguage(userIds);
   await Promise.allSettled([...groups].map(([lang, ids]) => sendWebPushToUsers(ids, renderPayload(payload, lang))));
@@ -120,7 +147,9 @@ async function sendLocalizedWebPush(userIds, payload = {}) {
 
 /** Web Push + FCM (Android) get `payload`; iOS alert tokens get `iosEvent` (localized there). */
 async function deliverPush(userIds, payload = {}, iosEvent = null) {
-  const groups = payload.i18n ? await groupByLanguage(userIds) : new Map([[null, userIds]]);
+  // iOS applies DND itself (iosAlertPush); Web Push and FCM get the filtered list.
+  const webIds = await withoutDndRecipients(userIds, payload);
+  const groups = !webIds.length ? new Map() : payload.i18n ? await groupByLanguage(webIds) : new Map([[null, webIds]]);
   await Promise.allSettled([
     ...[...groups].flatMap(([lang, ids]) => {
       const p = lang ? renderPayload(payload, lang) : payload;
@@ -459,6 +488,7 @@ async function sendFriendVoicePush(userIds, payload = {}) {
 }
 
 module.exports = {
+  withoutDndRecipients,
   withPreviewSplit,
   sendCallRingEndedPush,
   sendWebPushToUsers,

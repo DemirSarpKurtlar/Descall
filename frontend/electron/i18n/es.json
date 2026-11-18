@@ -6,7 +6,8 @@
     "downloading": "Descargando actualización…",
     "upToDate": "Todo al día",
     "checkFailed": "No se pudieron buscar actualizaciones",
-    "loading": "Cargando"
+    "loading": "Cargando",
+    "openNow": "Abrir ahora y descargar en segundo plano"
   },
   "notice": {
     "background": "Descall sigue funcionando en segundo plano. Puedes volver a abrirlo desde la bandeja del sistema."
@@ -23,13 +24,18 @@
     "openFailed": "No se pudo abrir Descall",
     "openFailedDetail": "La app no cargó a tiempo. Revisa tu conexión y vuelve a intentarlo.",
     "indexMissingTitle": "Error de carga",
-    "indexMissing": "No se encontró index.html en los archivos de la app."
+    "indexMissing": "No se encontró index.html en los archivos de la app.",
+    "unresponsive": "Descall no responde",
+    "unresponsiveDetail": "La aplicación lleva un rato sin responder. Puedes esperar un poco más o recargarla.",
+    "wait": "Esperar",
+    "reload": "Recargar"
   },
   "tray": {
     "open": "Abrir Descall",
     "startWithWindows": "Iniciar con Windows",
     "updateAndQuit": "Actualizar y salir (v{version})",
-    "quit": "Salir"
+    "quit": "Salir",
+    "startAtLogin": "Abrir al iniciar sesión"
   },
   "notif": {
     "calling": "te está llamando...",
@@ -45,7 +51,8 @@
     "message": "Mensaje",
     "close": "Cerrar",
     "accept": "Aceptar",
-    "decline": "Rechazar"
+    "decline": "Rechazar",
+    "locked": "Nueva notificación. Desbloquea Descall para verla."
   },
   "overlay": {
     "connected": "Conectado",

@@ -153,6 +153,7 @@ export function shouldEnableGlassDesktop({
   isNativeIos = false,
   isNativeIosTablet = false,
   isNativeAndroid = false,
+  isNativeAndroidTablet = false,
   isElectron = false,
   viewportOk = true,
   surfaceOk = true,
@@ -160,7 +161,14 @@ export function shouldEnableGlassDesktop({
   remoteFlag = null,
   override = null,
 } = {}) {
-  if (isNativeAndroid) return false;
+  // Android app: phones get html.glass-ui (glassUi.js); tablets (short side
+  // >= 600 dp) get the wide Liquid Glass layout, the same rule as the iPad app.
+  if (isNativeAndroid) {
+    if (!isNativeAndroidTablet) return false;
+    if (override === "0" || buildFlag === false) return false;
+    if (override === "1") return true;
+    return remoteFlag !== false;
+  }
   // Native iPad (short screen side >= 600 pt) gets the wide Liquid Glass layout,
   // the same one iPad Safari gets. Previously every native iOS shell was
   // excluded here, and glassUi's phone-only gate excluded the iPad too, so the
@@ -298,6 +306,7 @@ function snapshotInputs(w, remoteOverride, prev) {
     isNativeIos: platform === "ios",
     isNativeIosTablet: platform === "ios" && screenShort >= NATIVE_TABLET_MIN_SHORT_SIDE,
     isNativeAndroid: platform === "android",
+    isNativeAndroidTablet: platform === "android" && screenShort >= NATIVE_TABLET_MIN_SHORT_SIDE,
     isElectron,
     viewportOk: isElectron || webGlassMode({ width, height: Number(w?.innerHeight) || 0 }) === "desktop",
     surfaceOk: isGlassDesktopSurface(w?.location?.pathname),

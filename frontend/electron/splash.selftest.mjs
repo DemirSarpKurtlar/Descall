@@ -101,4 +101,11 @@ for (const k of ["oneshot", "loop"]) {
 }
 assert.doesNotMatch(splash, /\.apng|lottie/i);
 
+// Polish pass: a long update download never pins the splash on top, and offers "open now".
+assert.match(splash, /window\.__splashOpenNow = /);
+assert.match(splash, /location\.hash = "open-now"/);
+assert.match(main, /did-navigate-in-page[\s\S]{0,200}#open-now/);
+assert.match(main, /splashWindow\.setAlwaysOnTop\(false\)/);
+assert.ok(trSplash.openNow, "tr splash.openNow");
+
 console.log("splash.selftest ok");

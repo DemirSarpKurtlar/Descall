@@ -44,13 +44,13 @@
   align-items: center;
 }
 
-.mkt .seo-landing .seo-hero:has(.seo-product-preview) {
+.mkt .seo-landing .seo-hero.has-preview {
   display: grid;
   align-items: center;
 }
 
 .mkt .mkt-download-hero,
-.mkt .seo-landing .seo-hero:has(.seo-product-preview) {
+.mkt .seo-landing .seo-hero.has-preview {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   gap: 48px;
 }
@@ -846,7 +846,7 @@ body.has-mkt .login-modal :focus-visible {
   .mkt .mkt-hero-split,
   .mkt .mkt-download-hero,
   .mkt .seo-landing .seo-hero,
-  .mkt .seo-landing .seo-hero:has(.seo-product-preview),
+  .mkt .seo-landing .seo-hero.has-preview,
   .mkt .mkt-faq-layout,
   .mkt .legal-doc-layout,
   body.has-mkt .legal-doc-layout {
@@ -2039,14 +2039,14 @@ body.has-mkt .login-modal .forgot-password-flow .input-wrapper:focus-within {
 
 /* Landing hero with a preview: title, lead and buttons stack in the left column,
    the preview takes the right column (the buttons used to drop ~250 px below). */
-.mkt .seo-landing .seo-hero:has(.seo-product-preview) {
+.mkt .seo-landing .seo-hero.has-preview {
   row-gap: 0;
   align-content: center;
 }
-.mkt .seo-landing .seo-hero:has(.seo-product-preview) > :not(.seo-product-preview) {
+.mkt .seo-landing .seo-hero.has-preview > :not(.seo-product-preview) {
   grid-column: 1;
 }
-.mkt .seo-landing .seo-hero:has(.seo-product-preview) > .seo-product-preview {
+.mkt .seo-landing .seo-hero.has-preview > .seo-product-preview {
   grid-column: 2;
   grid-row: 1 / span 3;
 }

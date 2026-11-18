@@ -43,7 +43,7 @@
     "backend/routes/adminPeople.js": 11,
     "backend/routes/adminSignupStats.js": 2,
     "backend/routes/adminStaff.js": 8,
-    "backend/routes/auth.js": 139,
+    "backend/routes/auth.js": 154,
     "backend/routes/calls.js": 1,
     "backend/routes/dataExport.js": 4,
     "backend/routes/dmPrefs.js": 8,

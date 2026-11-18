@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import GlassConfirm from "../ui/GlassConfirm";
@@ -11,6 +12,8 @@ import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { useT } from "../../context/LocaleContext";
 import { useToast } from "../../context/ToastContext";
 import { resolveDisplayName } from "../../lib/userProfile";
+import { userTextLang } from "../../lib/userTextLang";
+import useEscapeClose from "../../hooks/useEscapeClose";
 import VoiceMemberContextMenu from "./VoiceMemberContextMenu";
 import { Avatar } from "../ui/Avatar";
 import ImageCropModal from "../ui/LazyImageCropModal";
@@ -1384,7 +1387,7 @@ export default function ServersSidebar({
                         }
                       >
                         {closed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                        <span>{node.name}</span>
+                        <span lang={userTextLang(node.name)}>{node.name}</span>
                       </button>
                       {canManageChannels || canManageRoles ? (
                         <div className="server-channel-cat-actions">
@@ -1616,7 +1619,7 @@ export default function ServersSidebar({
             {channelListReady && channelTree.length === 0 && !ghostVoiceChannel && (
               <p className="server-empty-hint">{t("No channels yet.")}</p>
             )}
-            {channelListReady ? (
+            {channelListReady && !activeChannel && !serverVoice?.activeChannelId ? (
               <p className="server-step-hint">
                 <span className="server-step-hint-ic" aria-hidden="true"><Info size={14} weight="bold" /></span>
                 <span>{t("Open a text channel to chat, or join a voice channel to hang out.")}</span>
@@ -1939,7 +1942,7 @@ export default function ServersSidebar({
                       >
                         {closed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
                         <Folder size={14} />
-                        <span>{folder.name}</span>
+                        <span lang={userTextLang(folder.name)}>{folder.name}</span>
                         <span className="server-folder-count">{folder.servers.length}</span>
                       </button>
                       <button
@@ -2619,7 +2622,7 @@ function CursorContextMenu({ x, y, title = "", onClose, children }) {
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {title ? <div className="server-voice-member-menu-title">{title}</div> : null}
+      {title ? <div className="server-voice-member-menu-title" lang={userTextLang(title)}>{title}</div> : null}
       {children}
     </div>,
     document.body
@@ -2743,6 +2746,8 @@ function ChannelFormModal({ mode, channel, defaultType = "text", parentId = null
     : type === "category"
       ? t("Create category")
       : t("Create channel");
+
+  useEscapeClose(onClose, { enabled: !busy });
 
   if (typeof document === "undefined") return null;
 
@@ -2974,6 +2979,8 @@ function TemplateIcon({ name, size = 22 }) {
 
 function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
   const t = useT();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   /** path: choose → templates → details */
   const [step, setStep] = useState("choose");
   const [templateId, setTemplateId] = useState(null);
@@ -2984,6 +2991,7 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
   const [iconUploading, setIconUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  useEscapeClose(onClose, { enabled: !busy && !iconUploading && !iconCropSrc });
   const iconFileRef = useRef(null);
 
   const selected = getTemplateCard(templateId);
@@ -3085,6 +3093,7 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
       onClick={onClose}
     >
       <motion.div
+        ref={dialogRef}
         className={`server-modal server-create-wizard${step === "templates" ? " is-wide" : ""}`}
         initial={{ scale: 0.94, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

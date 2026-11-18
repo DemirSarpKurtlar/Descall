@@ -75,7 +75,7 @@ html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root.in-conversation) {
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body.app-in-conversation {
   padding-bottom: 0;
 }
 
@@ -1031,6 +1031,19 @@ html.glass-ui .g-status-menu .status-picker-btn.ghost {
   html.glass-ui .g-tab-label {
     overflow: visible;
     text-overflow: unset;
+  }
+}
+
+/* 320-340px Android phones (Galaxy S9-class): six ~48px tabs. Tighter still
+   so "Sunucular" / "Arkadaşlar" keep a gap instead of touching. */
+@media (max-width: 340px) {
+  html.glass-ui .g-tab {
+    letter-spacing: -0.05em;
+  }
+
+  /* Visual shrink only (the type scale allows no new literal sizes). */
+  html.glass-ui .g-tab-label {
+    transform: scale(0.94);
   }
 }
 

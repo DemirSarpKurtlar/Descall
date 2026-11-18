@@ -4,6 +4,8 @@ const { requireAuth } = require("../middleware/auth");
 const { pendingRequests, usernameById } = require("../runtime/sharedState");
 const { blockUser, unblockUser, getBlockedList, isBlockedEitherWay } = require("../lib/blocking");
 const friendSince = require("../lib/friendSince");
+const { takeFriendRequest, shouldPushFriendRequest } = require("../lib/friendRequestLimits");
+const { escapeLike } = require("../lib/usernamePolicy");
 
 const router = express.Router();
 
@@ -53,7 +55,8 @@ router.post("/request", requireAuth, async (req, res) => {
     const { data: targetUser, error: lookupError } = await supabase
       .from("users")
       .select("id, username")
-      .ilike("username", trimmedUsername)
+      // Exact name, case-insensitive: _ and % are not wildcards (polish world-social-13).
+      .ilike("username", escapeLike(trimmedUsername))
       .maybeSingle();
 
     if (lookupError || !targetUser) {
@@ -72,13 +75,17 @@ router.post("/request", requireAuth, async (req, res) => {
     // Check if already friends or request already pending
     const { data: existingRows } = await supabase
       .from("friendships")
-      .select("id, status")
+      .select("id, status, user_id")
       .or(`and(user_id.eq.${userId},friend_id.eq.${targetUser.id}),and(user_id.eq.${targetUser.id},friend_id.eq.${userId})`);
 
     if (existingRows && existingRows.length > 0) {
       const statuses = existingRows.map((r) => r.status);
       if (statuses.includes("accepted")) {
         return res.status(400).json({ error: "Already friends" });
+      }
+      // They already asked me: adding them accepts it (polish world-social-19).
+      if (existingRows.some((r) => r.status === "pending" && String(r.user_id) === String(targetUser.id))) {
+        return acceptRequest(req, res, targetUser.id);
       }
       if (statuses.includes("pending")) {
         return res.status(400).json({ error: "Friend request already pending" });
@@ -88,6 +95,13 @@ router.post("/request", requireAuth, async (req, res) => {
         .from("friendships")
         .delete()
         .or(`and(user_id.eq.${userId},friend_id.eq.${targetUser.id}),and(user_id.eq.${targetUser.id},friend_id.eq.${userId})`);
+    }
+
+    // Request -> remove -> request loops pushed the target every round (world-social-05).
+    const limit = takeFriendRequest(userId, targetUser.id);
+    if (!limit.ok) {
+      res.set("Retry-After", String(limit.retryAfterSec || 60));
+      return res.status(429).json({ error: limit.error, code: "rate_limited", retryAfterSec: limit.retryAfterSec });
     }
 
     // Create friend request
@@ -117,12 +131,17 @@ router.post("/request", requireAuth, async (req, res) => {
       });
       // Full pending list too, a device that missed the event still converges.
       await emitFriendState(io, targetUser.id);
+      // The sender's "Gönderilen" list (polish world-social-10).
+      await emitFriendState(io, userId, { requests: false });
     }
     try {
-      const { sendFriendRequestPush } = require("../lib/webPush");
-      void sendFriendRequestPush(targetUser.id, { fromId: userId, from: senderUsername });
-      // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
-      require("../lib/reengage").fire("onFriendRequest", { toUserId: targetUser.id, fromId: userId, fromName: senderUsername });
+      // Only the first request of a pair in 24 h reaches the target's devices.
+      if (shouldPushFriendRequest(userId, targetUser.id)) {
+        const { sendFriendRequestPush } = require("../lib/webPush");
+        void sendFriendRequestPush(targetUser.id, { fromId: userId, from: senderUsername });
+        // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
+        require("../lib/reengage").fire("onFriendRequest", { toUserId: targetUser.id, fromId: userId, fromName: senderUsername });
+      }
     } catch (pushErr) {
       console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
     }
@@ -130,18 +149,20 @@ router.post("/request", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend request sent" });
   } catch (err) {
     console.error("Friend request error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
 // Accept friend request
-router.post("/accept", requireAuth, async (req, res) => {
+router.post("/accept", requireAuth, (req, res) => acceptRequest(req, res, req.body?.fromUserId));
+
+// Shared with /request: adding someone who already asked you accepts their request.
+async function acceptRequest(req, res, fromUserId) {
   try {
-    const { fromUserId } = req.body;
     const userId = req.user.id;
 
     if (!fromUserId) {
-      return res.status(400).json({ error: "fromUserId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     // Check if request exists first
@@ -212,12 +233,12 @@ router.post("/accept", requireAuth, async (req, res) => {
     }
 
     console.log("[Friends] Request accepted:", { fromUserId, userId });
-    res.json({ success: true, message: "Friend request accepted" });
+    res.json({ success: true, accepted: true, message: "Friend request accepted" });
   } catch (err) {
     console.error("[Friends] Accept error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
-});
+}
 
 // Decline friend request
 router.post("/decline", requireAuth, async (req, res) => {
@@ -226,7 +247,7 @@ router.post("/decline", requireAuth, async (req, res) => {
     const userId = req.user.id;
 
     if (!fromUserId) {
-      return res.status(400).json({ error: "fromUserId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     // Delete friend request
@@ -251,7 +272,7 @@ router.post("/decline", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend request declined" });
   } catch (err) {
     console.error("Decline friend error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -264,7 +285,7 @@ router.post("/remove", requireAuth, async (req, res) => {
     // friendId goes into a PostgREST or() filter on a DELETE: only a plain id (no PostgREST
     // syntax) may reach it (security scan 17 Nov 2026, P0: a crafted value matched every row).
     if (!friendId || typeof friendId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(friendId)) {
-      return res.status(400).json({ error: "friendId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     // Delete friendship
@@ -290,7 +311,7 @@ router.post("/remove", requireAuth, async (req, res) => {
     res.json({ success: true, message: "Friend removed" });
   } catch (err) {
     console.error("Remove friend error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -351,7 +372,7 @@ router.get("/list", requireAuth, async (req, res) => {
     res.json({ friends: friendSince.newestFirst(formattedFriends, "friendsSince") });
   } catch (err) {
     console.error("Get friends error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -399,7 +420,7 @@ router.get("/requests", requireAuth, async (req, res) => {
     res.json({ requests: friendSince.newestFirst(formattedRequests, "requestedAt") });
   } catch (err) {
     console.error("Get friend requests error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -435,7 +456,7 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
     const { data: targetUser, error: lookupError } = await supabase
       .from("users")
       .select("id")
-      .ilike("username", username)
+      .ilike("username", escapeLike(username))
       .maybeSingle();
 
     if (lookupError || !targetUser) {
@@ -490,7 +511,7 @@ router.get("/mutual/:username", requireAuth, async (req, res) => {
     res.json({ mutualFriends, count: mutualFriends.length, mutualServers });
   } catch (err) {
     console.error("Mutual friends error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -620,7 +641,7 @@ router.get("/suggestions", requireAuth, async (req, res) => {
     res.json({ suggestions });
   } catch (err) {
     console.error("[Friends] suggestions error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -633,13 +654,13 @@ router.post("/block", requireAuth, async (req, res) => {
   try {
     const { userId: targetId } = req.body ?? {};
     if (typeof targetId !== "string" || !targetId) {
-      return res.status(400).json({ error: "userId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
     if (targetId === req.user.id) {
       return res.status(400).json({ error: "You cannot block yourself" });
     }
     const result = await blockUser(req.user.id, targetId);
-    if (!result.ok) return res.status(400).json({ error: result.error });
+    if (!result.ok) return res.status(result.status || 400).json({ error: result.error });
 
     const io = req.app.get("io");
     if (io) {
@@ -652,7 +673,7 @@ router.post("/block", requireAuth, async (req, res) => {
     res.json({ success: true, blockedUsers: result.blockedUsers });
   } catch (err) {
     console.error("Block user error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -660,14 +681,14 @@ router.post("/unblock", requireAuth, async (req, res) => {
   try {
     const { userId: targetId } = req.body ?? {};
     if (typeof targetId !== "string" || !targetId) {
-      return res.status(400).json({ error: "userId is required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
     const result = await unblockUser(req.user.id, targetId);
-    if (!result.ok) return res.status(400).json({ error: result.error });
+    if (!result.ok) return res.status(result.status || 400).json({ error: result.error });
     res.json({ success: true, blockedUsers: result.blockedUsers });
   } catch (err) {
     console.error("Unblock user error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -690,7 +711,7 @@ router.get("/blocked", requireAuth, async (req, res) => {
     res.json({ blocked });
   } catch (err) {
     console.error("List blocked users error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 

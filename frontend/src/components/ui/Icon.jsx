@@ -277,9 +277,11 @@ function make(Glyph, name) {
       size = 24, color = "currentColor", weight = "regular", className,
       strokeWidth: _sw, absoluteStrokeWidth: _asw, ...rest
     } = props;
+    // The build keeps only these three weights (scripts/phosphor-weights-lib.mjs).
+    const glyphWeight = weight === "bold" || weight === "fill" ? weight : "regular";
     const labelled = rest["aria-label"] || rest["aria-labelledby"] || rest.title;
     return createElement(Glyph, {
-      ref, size, color, weight,
+      ref, size, color, weight: glyphWeight,
       className: className ? `ui-icon ${className}` : "ui-icon",
       "aria-hidden": labelled ? undefined : true,
       focusable: "false",

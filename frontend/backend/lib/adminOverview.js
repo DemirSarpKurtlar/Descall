@@ -254,6 +254,19 @@ function headCountQuery(client, table) {
   return client.from(table).select("id", { count: "exact", head: true });
 }
 
+/**
+ * The message tables only grow, and an exact count(*) is a full scan per overview load
+ * (pg_stat_statements: 9k calls, up to 1.3 s). PostgREST "estimated" stays exact below
+ * its max-rows and uses the planner estimate above, which is plenty for a dashboard.
+ */
+function estimatedCountQuery(client, table) {
+  return client.from(table).select("id", { count: "estimated", head: true });
+}
+
+/** Durable counts change slowly; every admin tab polling the overview shares one fetch. */
+const DURABLE_COUNTS_TTL_MS = 60_000;
+const durableCountsCache = new WeakMap(); // client -> { at, promise }
+
 async function timedCount(promise, timeoutMs, label) {
   const res = await withTimeout(promise, timeoutMs, { count: 0, error: { message: "timeout" } });
   return countFromResult(res, label);
@@ -265,6 +278,20 @@ async function timedCount(promise, timeoutMs, label) {
  */
 async function fetchDurableAdminCounts(client, opts) {
   const options = opts || {};
+  const ttl = options.cacheMs ?? DURABLE_COUNTS_TTL_MS;
+  if (ttl > 0 && client && typeof client === "object") {
+    const hit = durableCountsCache.get(client);
+    const t = Date.now();
+    if (hit && t - hit.at < ttl) return hit.promise;
+    const promise = loadDurableAdminCounts(client, options);
+    durableCountsCache.set(client, { at: t, promise });
+    promise.catch(() => durableCountsCache.delete(client));
+    return promise;
+  }
+  return loadDurableAdminCounts(client, options);
+}
+
+async function loadDurableAdminCounts(client, options) {
   const now = options.now || new Date();
   const timeoutMs = options.timeoutMs || 5000;
   const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
@@ -297,12 +324,12 @@ async function fetchDurableAdminCounts(client, opts) {
   ] = await Promise.all([
     timedCount(headCountQuery(client, "users"), ms, "users"),
     timedCount(headCountQuery(client, "groups"), ms, "groups"),
-    timedCount(headCountQuery(client, "dm_messages"), ms, "dm_messages"),
-    timedCount(headCountQuery(client, "group_messages"), ms, "group_messages"),
-    timedCount(headCountQuery(client, "server_messages"), ms, "server_messages"),
+    timedCount(estimatedCountQuery(client, "dm_messages"), ms, "dm_messages"),
+    timedCount(estimatedCountQuery(client, "group_messages"), ms, "group_messages"),
+    timedCount(estimatedCountQuery(client, "server_messages"), ms, "server_messages"),
     withTimeout(banActive(), ms, { count: 0, error: { message: "timeout" } }),
     withTimeout(timeoutActive(), ms, { count: 0, error: { message: "timeout" } }),
-    timedCount(headCountQuery(client, "moderation_actions"), ms, "moderation_actions"),
+    timedCount(estimatedCountQuery(client, "moderation_actions"), ms, "moderation_actions"),
   ]);
 
   let bans = countFromResult(bansRes, "bans");

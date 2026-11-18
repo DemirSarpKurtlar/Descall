@@ -223,7 +223,10 @@ async function getUserCredits(userId) {
 async function applyCreditDelta(userId, delta, meta = {}) {
   try {
     const current = await getUserCredits(userId);
-    const next = Math.max(0, (current.credits || 0) + delta);
+    const next = (current.credits || 0) + delta;
+    // A debit larger than the balance is refused, never clamped to 0: a clamp hid
+    // overdraws and let a second stake ride on credits that were already taken.
+    if (next < 0) return null;
     const patch = {
       user_id: userId,
       credits: next,
@@ -585,7 +588,25 @@ async function handleGameCommand(io, socket, userId, username, roomArg, fullComm
   });
 }
 
-async function handleBlackjackStart(io, socket, userId, username, groupId, betArg) {
+/**
+ * Blackjack start / moves and the daily claim read the balance, then write it. They run
+ * under the same per-user lock as slot, coin flip and /pay (security scan 17 Nov 2026:
+ * two parallel /bj stakes in two rooms took one stake for two hands, and an unlocked
+ * write could overwrite a concurrent transfer).
+ */
+function handleBlackjackStart(io, socket, userId, username, groupId, betArg) {
+  return withCreditLock(userId, () => handleBlackjackStartUnlocked(io, socket, userId, username, groupId, betArg));
+}
+
+function handleBlackjackAction(io, socket, userId, username, groupId, action) {
+  return withCreditLock(userId, () => handleBlackjackActionUnlocked(io, socket, userId, username, groupId, action));
+}
+
+function handleDailyClaim(io, socket, userId, username, groupId) {
+  return withCreditLock(userId, () => handleDailyClaimUnlocked(io, socket, userId, username, groupId));
+}
+
+async function handleBlackjackStartUnlocked(io, socket, userId, username, groupId, betArg) {
   const bet = parseInt(betArg, 10);
 
   if (!Number.isFinite(bet) || bet < MIN_BET || bet > MAX_BET) {
@@ -712,7 +733,7 @@ async function handleBlackjackStart(io, socket, userId, username, groupId, betAr
   emitGameUpdate(io, socket, groupId, msg);
 }
 
-async function handleBlackjackAction(io, socket, userId, username, groupId, action) {
+async function handleBlackjackActionUnlocked(io, socket, userId, username, groupId, action) {
   const instance = GameManager.get(userId, groupId);
   if (!instance) {
     // Soft notice only — do not wipe a finished board with a fresh lobby
@@ -867,7 +888,7 @@ function buildResultText(username, state) {
   });
 }
 
-async function handleDailyClaim(io, socket, userId, username, groupId) {
+async function handleDailyClaimUnlocked(io, socket, userId, username, groupId) {
   try {
     const credits = await getUserCredits(userId);
     const last = credits.last_daily_claim ? new Date(credits.last_daily_claim) : null;

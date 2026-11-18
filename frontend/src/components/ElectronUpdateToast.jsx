@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../context/LocaleContext";
 import Modal from "./ui/Modal";
-import { Download, RefreshCw, CheckCircle } from "./ui/Icon";
+import { Download, RefreshCw, CheckCircle, AlertTriangle, X } from "./ui/Icon";
 import "../styles/update-toast.css";
 import { getVoiceBusy, subscribeVoiceBusy } from "../lib/voiceBusy";
 import { getActivityBusy, subscribeActivityBusy, updateChipKey } from "../lib/updateTiming";
@@ -14,9 +14,11 @@ import { getActivityBusy, subscribeActivityBusy, updateChipKey } from "../lib/up
  * "ready" is a small chip bottom right with "Şimdi yükle".
  * Does not steal focus (render-only; Electron showsInactive for OS notifs).
  */
+const UPDATE_DOWNLOAD_PAGE = "https://github.com/DemirSarpKurtlar/Descall/releases/latest";
+
 export default function ElectronUpdateToast() {
   const t = useT();
-  const [state, setState] = useState(null); // null | downloading | installing | ready
+  const [state, setState] = useState(null); // null | downloading | installing | ready | error
   const [version, setVersion] = useState(null);
   const [percent, setPercent] = useState(null);
   const [deferred, setDeferred] = useState(false);
@@ -89,9 +91,12 @@ export default function ElectronUpdateToast() {
     }
     if (api.onUpdateError) {
       unsubs.push(
-        api.onUpdateError(() => {
-          setState(null);
+        api.onUpdateError(({ phase } = {}) => {
+          // A visible download that failed gets a card with retry and the download page;
+          // a quiet background check that failed stays quiet (polish pass: the card used
+          // to vanish without a word and flash back every five minutes).
           setPercent(null);
+          setState((prev) => (phase === "download" || prev === "downloading" ? "error" : prev === "ready" ? prev : null));
         }),
       );
     }
@@ -152,6 +157,24 @@ export default function ElectronUpdateToast() {
     }
   };
 
+  const retryUpdate = async () => {
+    setState("downloading");
+    setPercent(0);
+    try {
+      const res = await window.electronAPI?.checkForUpdates?.();
+      if (!res?.success) setState("error");
+      else if (res?.updateReady) setState("ready");
+      // Nothing newer (or the download already reported): drop the card unless an event moved it on.
+      else if (!res?.available) setState((prev) => (prev === "downloading" ? null : prev));
+    } catch {
+      setState("error");
+    }
+  };
+  const openDownloadPage = () => {
+    // setWindowOpenHandler hands https links to the OS browser.
+    window.open(UPDATE_DOWNLOAD_PAGE, "_blank", "noopener");
+  };
+
   const barWidth =
     state === "installing" || state === "ready"
       ? 100
@@ -160,26 +183,31 @@ export default function ElectronUpdateToast() {
         : 0;
   const v = { version: version || "" };
   const title =
-    state === "installing"
+    state === "error"
+      ? t("updateToast.titleError")
+      : state === "installing"
       ? t("updateToast.titleInstalling", v)
       : state === "ready"
         ? label
         : t("updateToast.titleDownloading", v);
   const sub =
-    state === "installing"
+    state === "error"
+      ? t("updateToast.subError")
+      : state === "installing"
       ? t("updateToast.subInstalling")
       : state === "downloading"
         ? percent != null && percent > 0
           ? t("updateToast.subDownloading", { percent: Math.round(percent) })
           : t("updateToast.subDownloadingStart")
         : null;
-  const StateIcon = state === "ready" ? CheckCircle : state === "installing" ? RefreshCw : Download;
+  const StateIcon = state === "error" ? AlertTriangle : state === "ready" ? CheckCircle : state === "installing" ? RefreshCw : Download;
+  const isChip = state === "ready" || state === "error";
 
   return (
     <>
       {state ? (
         <div
-          className={`electron-update-toast is-${state}${state === "ready" ? " is-chip" : ""}`}
+          className={`electron-update-toast is-${state}${isChip ? " is-chip" : ""}`}
           role="status"
           aria-live="polite"
           aria-atomic="true"
@@ -197,7 +225,20 @@ export default function ElectronUpdateToast() {
                 {t("updateToast.installNow")}
               </button>
             ) : null}
-            {state !== "ready" ? (
+            {state === "error" ? (
+              <>
+                <button type="button" className="eut-btn" onClick={retryUpdate}>
+                  {t("updateToast.retry")}
+                </button>
+                <button type="button" className="eut-btn is-ghost" onClick={openDownloadPage}>
+                  {t("updateToast.downloadPage")}
+                </button>
+                <button type="button" className="eut-x" onClick={() => setState(null)} aria-label={t("Close")}>
+                  <X size={14} weight="bold" />
+                </button>
+              </>
+            ) : null}
+            {!isChip ? (
               <span
                 className="eut-bar"
                 role="progressbar"

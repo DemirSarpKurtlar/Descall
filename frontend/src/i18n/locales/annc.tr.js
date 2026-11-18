@@ -440,6 +440,7 @@ export const ANNC_TR = {
     "schema": "Bu özellik için veritabanı güncellemesi bekleniyor.",
     "secondAdmin": "Bu duyuruyu başka bir yöneticinin onaylaması gerekiyor.",
     "needsApproval": "Acil ve herkese giden bir duyuru ikinci yönetici onayı ister. Yeni taslak olarak kaydedip onaya gönder.",
+    "needsReapproval": "Bu acil ve herkese giden duyuru bu haliyle onaylandı. Önce bitir, sonra düzenleyip yeniden onaya gönder.",
     "note": "Kısa bir açıklama yaz.",
     "reason": "Bir sebep seç.",
     "title": "Başlık gerekli.",

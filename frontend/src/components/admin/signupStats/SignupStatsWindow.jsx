@@ -9,6 +9,7 @@
  * Data: GET /api/admin/signup-stats (admin only on the server; moderators get 403).
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import useModalFocus from "../../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { adminFetch } from "../../../api/adminHttp";
 import { API_BASE_URL } from "../../../config/api";
@@ -639,6 +640,9 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
   const { t } = useLocale();
   const { query, setQuery, data, error, loading, reload } = useSignupStats();
   const winRef = useRef(null);
+  // As a dialog over the admin panel (not its own window, not embedded in a tab) Tab stays inside.
+  const trapRef = useRef(null);
+  useModalFocus(!standalone && !embedded, trapRef);
   const W = useWidth(winRef);
   const [pos, setPos] = useState(null);
   const [max, setMax] = useState(false);
@@ -778,7 +782,7 @@ export default function SignupStatsWindow({ layout = "desktop", onClose, standal
   }
 
   const tree = (
-    <div className={`st3 st3-${chrome}`} role={standalone ? "main" : "dialog"} aria-modal={standalone ? undefined : "true"} aria-label={t("adminx.sst.title")}>
+    <div ref={trapRef} className={`st3 st3-${chrome}`} role={standalone ? "main" : "dialog"} aria-modal={standalone ? undefined : "true"} aria-label={t("adminx.sst.title")}>
       {standalone ? null : <div className="st3-dim" onClick={chrome === "desktop" ? undefined : close} />}
       <div ref={winRef} className={`st-win${max ? " max" : ""}`} style={style}>
         {chrome === "desktop" || electron ? (

@@ -17,6 +17,7 @@ const {
   isFreshRelaunchMarker,
   loginItemSettings,
   secondInstanceAction,
+  autostartLaunchAction,
 } = require("./launchVisibility.cjs");
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -106,6 +107,15 @@ assert(
 const disabled = loginItemSettings(false);
 assert(disabled.openAtLogin === false && disabled.args.length === 0, "disabling auto-start clears the args");
 assert(secondInstanceAction() === "show", "a second launch must show the existing window");
+
+// Polish pass: auto-start is turned on once; a user who turned it off keeps it off.
+assert(autostartLaunchAction({ markerExists: false, settings: {}, platform: "win32" }) === "enable", "first run enables auto-start");
+assert(autostartLaunchAction({ markerExists: true, settings: { openAtLogin: false, executableWillLaunchAtLogin: false }, platform: "win32" }) === "none", "a disabled entry is never re-enabled");
+assert(autostartLaunchAction({ markerExists: true, settings: { openAtLogin: true, executableWillLaunchAtLogin: false }, platform: "win32" }) === "none", "an entry disabled in Task Manager stays off");
+assert(autostartLaunchAction({ markerExists: true, settings: { openAtLogin: false, executableWillLaunchAtLogin: true }, platform: "win32" }) === "rewrite-args", "an old Run key without the hidden args is rewritten");
+assert(autostartLaunchAction({ markerExists: true, settings: { openAtLogin: false }, platform: "darwin" }) === "none", "macOS: off stays off");
+assert(!/if \(!enabled \|\| !settings\.openAtLogin\) syncLoginItem\(true\)/.test(main), "main no longer forces auto-start on every launch");
+assert(main.includes("markAutostartDecided();"), "the tray toggle records the user's choice");
 
 // main.cjs wires the decision into boot, the login item, and second-instance.
 assert(main.includes("require('./launchVisibility.cjs')"), "main must load the launch decision");

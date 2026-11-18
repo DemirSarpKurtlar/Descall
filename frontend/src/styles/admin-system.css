@@ -56,7 +56,8 @@ html.glass-desktop :is(.asx, .asx-scrim) :is(button, input, textarea, select, a,
 /* ── header ── */
 .asx-hdr { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 2px; }
 .asx-hdr > div:first-child { flex: 1 1 240px; min-width: 0; }
-.asx-crumb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The subtitle wraps instead of being cut by the header chips (polish admin-b-10). */
+.asx-crumb { overflow-wrap: anywhere; }
 .asx-rt { flex: 0 1 auto; justify-content: flex-end; }
 .asx-hdr h1 { margin: 0; font-size: var(--fs-20); font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
 .asx-crumb { font-size: var(--fs-12); color: rgba(235, 238, 255, 0.5); margin-top: 2px; }
@@ -331,7 +332,9 @@ input.asx-inp::placeholder, .asx-ta::placeholder { color: rgba(235, 238, 255, 0.
 }
 
 /* ── narrow panels ── */
-@container asx (max-width: 960px) {
+/* Six tiles in one row cut their labels ("Olay don...") and the 3-column body cut flag
+   names below ~1240px of panel (1440 windows): 3x2 tiles and a full-width flags card. */
+@container asx (max-width: 1240px) {
   .asx-hts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .asx-g3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .asx-g3 > .asx-flags, .asx-g3 > .asx-limits { grid-column: 1 / -1; }

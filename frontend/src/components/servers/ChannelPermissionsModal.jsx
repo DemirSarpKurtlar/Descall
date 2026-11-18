@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Check, Minus, Shield, UserPlus, X, Trash2 } from "../ui/Icon.jsx";
@@ -52,6 +53,8 @@ function stateFromOverride(override, key) {
  */
 export default function ChannelPermissionsModal({ server, channel, onClose }) {
   const t = useT();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const [roles, setRoles] = useState([]);
   const [members, setMembers] = useState([]);
   const [editableKeys, setEditableKeys] = useState([]);
@@ -242,6 +245,7 @@ export default function ChannelPermissionsModal({ server, channel, onClose }) {
       onClick={onClose}
     >
       <motion.div
+        ref={dialogRef}
         className="server-modal server-channel-perms-modal"
         role="dialog"
         aria-modal="true"

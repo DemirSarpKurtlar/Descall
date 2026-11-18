@@ -77,7 +77,7 @@ export const SYSX_DE = {
     "reach": "Rollout"
   },
   "flag": {
-    "iosGlass": { "name": "iOS Liquid Glass", "desc": "iPhone-App", "long": "Glasoberfläche der iPhone-App" },
+    "iosGlass": { "name": "iOS Liquid Glass", "desc": "iPhone- und Android-App", "long": "Glasoberfläche der iPhone- und Android-App" },
     "desktopGlass": { "name": "Desktop Liquid Glass", "desc": "Desktop und Web", "long": "Oberfläche für Desktop und Web" },
     "presenceScoped": { "name": "Eingeschränkte Online-Liste", "desc": "Notschalter", "long": "der Online-Status geht nur an Freunde und gemeinsame Server" },
     "bootDiet": { "name": "Leichter Start beim Wiederverbinden", "desc": "Notschalter", "long": "eine unveränderte Freundesliste wird beim Wiederverbinden nicht erneut gesendet" },

@@ -1,5 +1,6 @@
 "use strict";
 
+const { apiText } = require("../lib/apiError");
 const { forwardedReplyMeta } = require("../lib/forwardedMessage");
 const { resolveDmReplyMeta } = require("../lib/replyMeta");
 const { bothShare: bothShareReceipts } = require("../lib/readReceipts");
@@ -70,7 +71,7 @@ const { registerGroupHandlers, removeUserFromAllGroupCalls } = require("./groupH
 const { registerServerChannelHandlers } = require("./serverChannelHandlers");
 const { registerPollHandlers } = require("./pollHandlers");
 const { startPollSweeper } = require("../lib/polls");
-const { registerServerVoiceHandlers, removeUserFromAllServerVoice, startAfkIdleScanner } = require("./serverVoiceHandlers");
+const { registerServerVoiceHandlers, startAfkIdleScanner } = require("./serverVoiceHandlers");
 const { scheduleTemporaryMemberCleanup } = require("../lib/serverMemberJoin");
 const { scheduleParticipantDisconnectGrace } = require("./groupCallLifecycle");
 const { toUtcIso } = require("../lib/datetime");
@@ -353,10 +354,15 @@ async function emitFriendState(io, userId, { requests = true } = {}) {
   await ensureCosmeticsCached([...(friends.get(userId) || [])]).catch(() => {});
   io.to(`user:${userId}`).emit("friend:list", getFriendList(userId));
   if (requests) io.to(`user:${userId}`).emit("friend:requests", getPendingList(userId));
+  io.to(`user:${userId}`).emit("friend:outgoing", await listOutgoingRequests(userId));
 }
 
 async function buildSyncState(userId) {
   const dmMap = ensureDmUnreadMap(userId);
+  // After a restart the in-memory counts are empty: fill them from dm_messages once.
+  await require("../lib/dmUnread")
+    .hydrateDmUnread({ db: supabase, userId, unreadMap: dmMap, friendIds: friends.get(userId) || null })
+    .catch(() => {});
   const dmUnreadByPeer = {};
   for (const [k, v] of dmMap) {
     dmUnreadByPeer[k] = v;
@@ -381,13 +387,56 @@ function emitSyncState(io, userId, socket = null) {
     .catch((error) => console.warn("[DM] Sync state build failed:", error?.message || error));
 }
 
+/**
+ * Requests I sent that are still waiting (polish world-social-10): the list behind
+ * "Gönderilen" with its "Geri çek" button. Newest first.
+ */
+async function listOutgoingRequests(userId) {
+  if (!userId) return [];
+  try {
+    const { data: rows, error } = await supabase
+      .from("friendships")
+      .select("friend_id, created_at")
+      .eq("user_id", userId)
+      .eq("status", "pending");
+    if (error || !Array.isArray(rows) || rows.length === 0) return [];
+    const ids = rows.map((r) => r.friend_id).filter(Boolean);
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, username, display_name, avatar_url")
+      .in("id", ids);
+    const byId = new Map((users || []).map((u) => [u.id, u]));
+    return rows
+      .map((r) => {
+        const u = byId.get(r.friend_id);
+        if (!u) return null;
+        return {
+          id: u.id,
+          username: u.username,
+          displayName: u.display_name || null,
+          avatarUrl: u.avatar_url || null,
+          requestedAt: r.created_at || null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => String(b.requestedAt || "").localeCompare(String(a.requestedAt || "")));
+  } catch {
+    return [];
+  }
+}
+
+async function emitOutgoingRequests(io, userId) {
+  emitToUser(io, userId, "friend:outgoing", await listOutgoingRequests(userId));
+}
+
 async function findUserByUsername(username) {
   const clean = String(username || "").trim();
   if (!clean) return null;
   const { data, error } = await supabase
     .from("users")
     .select("id, username")
-    .ilike("username", clean)
+    // Exact name, case-insensitive: _ and % are not wildcards (polish world-social-13).
+    .ilike("username", require("../lib/usernamePolicy").escapeLike(clean))
     .maybeSingle();
   if (error || !data) return null;
   return data;
@@ -827,6 +876,7 @@ function registerSocketHandlers(io) {
       const allowed = ["online", "idle", "dnd", "invisible"];
       const s = allowed.includes(status) ? status : "online";
       const p = presence.get(myId);
+      const prevStatus = p?.status || "online";
       if (p) {
         p.status = s;
         presence.set(myId, p);
@@ -835,6 +885,8 @@ function registerSocketHandlers(io) {
       socket.emit("status:current", { status: s });
       broadcastUsers(io, myId);
       io.to(socket.id).emit("friend:list", getFriendList(myId));
+      // Invisible hides the live game / app too (polish world-social-04).
+      void require("./activityHandlers").onPresenceStatusChange(io, myId, me.username, prevStatus, s);
     });
 
     socket.on("friend:list", async () => {
@@ -848,6 +900,7 @@ function registerSocketHandlers(io) {
       ]);
       socket.emit("friend:list", getFriendList(myId));
       socket.emit("friend:requests", getPendingList(myId));
+      socket.emit("friend:outgoing", await listOutgoingRequests(myId));
       socket.emit("dm:requests", await listMessageRequests(supabase, myId));
     });
 
@@ -885,6 +938,13 @@ function registerSocketHandlers(io) {
           refreshPresenceFor(myId, target.id);
           return socket.emit("friend:error", { message: "Already friends." });
         }
+        // They already asked me: adding them accepts it (polish world-social-19).
+        if (
+          existingRows?.some((r) => r.status === "pending" && String(r.user_id) === String(target.id))
+          || pendingRequests.get(myId)?.has(target.id)
+        ) {
+          return acceptFrom(target.id);
+        }
         if (existingRows?.some((r) => r.status === "pending")) {
           return socket.emit("friend:error", { message: "Request already pending." });
         }
@@ -893,6 +953,12 @@ function registerSocketHandlers(io) {
         if (theirPending.has(myId)) {
           appendErrorLog("friend:request", "Request already pending", { targetId: target.id }, myId, me.username);
           return socket.emit("friend:error", { message: "Request already pending." });
+        }
+
+        // Request -> remove -> request loops pushed the target every round (world-social-05).
+        const limit = require("../lib/friendRequestLimits").takeFriendRequest(myId, target.id);
+        if (!limit.ok) {
+          return socket.emit("friend:error", { message: limit.error, code: "rate_limited", retryAfterSec: limit.retryAfterSec });
         }
 
         const created = await createPendingFriendshipInDB(myId, target.id);
@@ -922,17 +988,21 @@ function registerSocketHandlers(io) {
           meta: { fromUserId: myId },
         });
         try {
-          const { sendFriendRequestPush } = require("../lib/webPush");
-          void sendFriendRequestPush(target.id, {
-            fromId: myId,
-            from: me.username,
-          });
-          // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
-          require("../lib/reengage").fire("onFriendRequest", { toUserId: target.id, fromId: myId, fromName: me.username });
+          // Only the first request of a pair in 24 h reaches the target's devices.
+          if (require("../lib/friendRequestLimits").shouldPushFriendRequest(myId, target.id)) {
+            const { sendFriendRequestPush } = require("../lib/webPush");
+            void sendFriendRequestPush(target.id, {
+              fromId: myId,
+              from: me.username,
+            });
+            // Re-engagement: email fallback when they are away (lib/reengage.js, off by default).
+            require("../lib/reengage").fire("onFriendRequest", { toUserId: target.id, fromId: myId, fromName: me.username });
+          }
         } catch (pushErr) {
           console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
         }
         socket.emit("friend:request:sent", { to: target.username });
+        void emitOutgoingRequests(io, myId);
       } catch (e) {
         console.error("[Friends] request error:", e);
         socket.emit("friend:error", { message: "Could not send request." });
@@ -945,6 +1015,11 @@ function registerSocketHandlers(io) {
         socket.emit("friend:error", { message: "Invalid user ID" });
         return;
       }
+      await acceptFrom(fromUserId);
+    });
+
+    // Shared with friend:request: adding someone who already asked you accepts it.
+    async function acceptFrom(fromUserId) {
 
       // Verify pending request exists in DB (handles REST-sent requests not in memory)
       const { data: pendingRow, error: checkError } = await supabase
@@ -1013,7 +1088,35 @@ function registerSocketHandlers(io) {
       emitToUser(io, fromUserId, "friend:requests", getPendingList(fromUserId));
       emitSyncState(io, fromUserId);
       
+      void emitOutgoingRequests(io, fromUserId);
       console.log("[Friends] Request accepted:", { fromUserId, by: myId });
+    }
+
+    // Take back a request I sent (polish world-social-10).
+    socket.on("friend:cancel", async (payload = {}) => {
+      const toUserId = String(payload?.toUserId || payload?.userId || "").trim();
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(toUserId)) {
+        socket.emit("friend:error", apiText("message", "Invalid user ID"));
+        return;
+      }
+      const { error } = await supabase
+        .from("friendships")
+        .delete()
+        .eq("user_id", myId)
+        .eq("friend_id", toUserId)
+        .eq("status", "pending");
+      if (error) {
+        socket.emit("friend:error", apiText("message", "Could not cancel the request."));
+        await emitOutgoingRequests(io, myId);
+        return;
+      }
+      const theirPending = pendingRequests.get(toUserId);
+      if (theirPending?.has(myId)) {
+        theirPending.delete(myId);
+        if (theirPending.size === 0) pendingRequests.delete(toUserId);
+      }
+      emitToUser(io, toUserId, "friend:requests", getPendingList(toUserId));
+      await emitOutgoingRequests(io, myId);
     });
 
     socket.on("friend:decline", async (payload = {}) => {
@@ -1047,6 +1150,7 @@ function registerSocketHandlers(io) {
         
         // Update friend list for the sender to remove pending status
         io.to(`user:${fromUserId}`).emit("friend:list", getFriendList(fromUserId));
+        void emitOutgoingRequests(io, fromUserId);
         
         emitToUser(io, myId, "friend:requests", getPendingList(myId));
         emitToUser(io, myId, "friend:list", getFriendList(myId));
@@ -1150,6 +1254,8 @@ function registerSocketHandlers(io) {
       const { context = "dm", toUserId, groupId, channelId } = payload;
       const fromUser = { id: myId, username: me.username };
       if (context === "dm" && typeof toUserId === "string") {
+        // Friends only and never across a block (polish messaging-14).
+        if (!friends.get(myId)?.has(toUserId) || dmBlockPairs.has(convKey(myId, toUserId))) return;
         emitToUser(io, toUserId, "typing:update", { context: "dm", fromUser, typing: true });
       } else if (context === "group" && typeof groupId === "string") {
         // Only sockets in the group room (removed / left members are taken out).
@@ -1187,6 +1293,7 @@ function registerSocketHandlers(io) {
       const { context = "dm", toUserId, groupId, channelId } = payload;
       const fromUser = { id: myId, username: me.username };
       if (context === "dm" && typeof toUserId === "string") {
+        if (!friends.get(myId)?.has(toUserId)) return;
         emitToUser(io, toUserId, "typing:update", { context: "dm", fromUser, typing: false });
       } else if (context === "group" && typeof groupId === "string") {
         socket.to(`group:${groupId}`).emit("typing:update", { context: "group", groupId, fromUser, typing: false });
@@ -1200,6 +1307,24 @@ function registerSocketHandlers(io) {
 
     socket.on("dm:send", async ({ toUserId, tempId, text, mediaUrl, mediaType, mimeType, size, originalName, duration, replyTo, forwarded, poll: pollInput } = {}) => {
       let pollDraft = null;
+      {
+        // Types + Sistem › maxMessageLength (polish messaging-06): DMs had no cap at all.
+        const { checkText, maxMessageLength, optionalString } = require("../lib/messageText");
+        const tid = optionalString(tempId, 128);
+        tempId = tid || null;
+        const textCheck = checkText(text, { max: maxMessageLength(systemConfig) });
+        const media = optionalString(mediaUrl);
+        if (!textCheck.ok || media === false || tid === false || optionalString(mediaType, 32) === false) {
+          return socket.emit("dm:error", {
+            message: textCheck.ok ? "Invalid message." : textCheck.message,
+            code: textCheck.ok ? "BAD_TEXT" : textCheck.code,
+            tempId,
+            toUserId: typeof toUserId === "string" ? toUserId : null,
+          });
+        }
+        text = textCheck.text;
+        mediaUrl = media;
+      }
       if (mediaType === "poll_v2" || mediaType === "poll_end" || mediaType === "app_card") mediaType = null;
       if (bannedUserIds.has(myId)) {
         appendErrorLog("dm:send", "User is banned", { toUserId }, myId, me.username);
@@ -1414,6 +1539,8 @@ function registerSocketHandlers(io) {
       const messagePayload = {
         id: messageId,
         from: sender,
+        // The peer, so "Görüldü" can match live rows too (polish messaging-02).
+        to: { id: toUserId },
         text: isVoice ? "" : storedText,
         mediaUrl,
         mediaType: isVoice ? "voice" : mediaType,
@@ -1752,10 +1879,31 @@ function registerSocketHandlers(io) {
       }
     });
 
+    // Call signalling (answer / ICE / media state / screen share) is relayed only to someone
+    // this user has a tracked call with, or to a friend (a call that outlived a server
+    // restart has no tracked state); never to strangers or blocked pairs, and with bounded
+    // payloads (security scan 17 Nov 2026: any user id was accepted).
+    const MAX_SIGNAL_JSON = 64 * 1024;
+    const MAX_ICE_JSON = 8 * 1024;
+    const signalSize = (value) => {
+      try {
+        return JSON.stringify(value).length;
+      } catch {
+        return Infinity;
+      }
+    };
+    const mayCallSignal = (toUserId) => {
+      if (typeof toUserId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(toUserId) || toUserId === myId) return false;
+      if (dmBlockPairs.has(convKey(myId, toUserId))) return false;
+      if (getPendingCall(myId, toUserId) || getPendingCall(toUserId, myId) || isActiveDmCall(myId, toUserId)) return true;
+      return Boolean(friends.get(myId)?.has(toUserId));
+    };
+
     socket.on("call:answer", ({ toUserId, answer } = {}, ack) => {
       // 3.0.0 (C3): delivery ack; the client re-sends after 3 s without it.
       if (typeof ack === "function") ack({ ok: true });
       if (typeof toUserId !== "string" || !answer) return;
+      if (!mayCallSignal(toUserId) || signalSize(answer) > MAX_SIGNAL_JSON) return;
       const ringing = getPendingCall(toUserId, myId);
       const wasRinging = ringing?.status === "ringing" && ringing.calleeId === myId;
       // Callee answers → caller is toUserId
@@ -1800,6 +1948,7 @@ function registerSocketHandlers(io) {
 
     socket.on("call:ice-candidate", ({ toUserId, candidate } = {}) => {
       if (typeof toUserId !== "string" || !candidate) return;
+      if (!mayCallSignal(toUserId) || signalSize(candidate) > MAX_ICE_JSON) return;
       bufferCallerIce({ callerId: myId, calleeId: toUserId, candidate });
       bufferCalleeIce({ fromId: myId, toId: toUserId, candidate });
       emitToUser(io, toUserId, "call:ice-candidate", {
@@ -1951,8 +2100,9 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("screen:share-start", ({ toUserId, screen } = {}) => {
-      if (typeof toUserId !== "string") return;
-      dmScreenSharingUsers.add(myId);
+      if (typeof toUserId !== "string" || !mayCallSignal(toUserId)) return;
+      // Screen-share DesCoin is earned only while the DM call is really connected.
+      if (isActiveDmCall(myId, toUserId)) dmScreenSharingUsers.add(myId);
       const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
       const announced = sanitizeScreenAnnouncement(screen);
       emitToUser(io, toUserId, "screen:share-start", {
@@ -1962,8 +2112,8 @@ function registerSocketHandlers(io) {
     });
 
     socket.on("screen:share-stop", ({ toUserId } = {}) => {
-      if (typeof toUserId !== "string") return;
       dmScreenSharingUsers.delete(myId);
+      if (typeof toUserId !== "string" || !mayCallSignal(toUserId)) return;
       emitToUser(io, toUserId, "screen:share-stop", { fromUserId: myId });
     });
 
@@ -1975,7 +2125,7 @@ function registerSocketHandlers(io) {
     // `deafened` and `requestState` (ask the peer to re-send its state, e.g.
     // after this client connected or its socket reconnected) are optional.
     socket.on("call:media-state", ({ toUserId, muted, cameraOn, deafened, requestState, sending } = {}) => {
-      if (typeof toUserId !== "string") return;
+      if (typeof toUserId !== "string" || !mayCallSignal(toUserId)) return;
       emitToUser(io, toUserId, "call:media-state", {
         fromUserId: myId,
         muted: Boolean(muted),
@@ -1994,6 +2144,7 @@ function registerSocketHandlers(io) {
     // group/server/voice rooms in their own handlers).
 
     // Emoji Reactions
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     socket.on("reaction:add", async (payload = {}, ack) => {
       // Optional ack (Master Update A2): the client rolls its optimistic chip
       // back on ok:false or a 5 s timeout. Old clients pass no callback.
@@ -2039,6 +2190,17 @@ function registerSocketHandlers(io) {
         if (dmBlockPairs.has(dmKey) || await isBlockedEitherWay(myId, otherId)) {
           return refuse("blocked");
         }
+        // A stored message (uuid id) must be in this DM (polish messaging-18), like the
+        // server-channel check below. Live-only app/game rows have other ids.
+        if (UUID_RE.test(String(messageId))) {
+          const { data: own } = await supabase
+            .from("dm_messages")
+            .select("from_user_id, to_user_id")
+            .eq("id", messageId)
+            .maybeSingle();
+          const pair = own ? [String(own.from_user_id), String(own.to_user_id)].sort().join("::") : null;
+          if (pair !== [String(myId), String(otherId)].sort().join("::")) return refuse("rejected");
+        }
         conversationId = dmKey;
       } else if (conversationType === "group") {
         // Check group membership - room has 'group:' prefix
@@ -2060,6 +2222,15 @@ function registerSocketHandlers(io) {
           } catch {
             return refuse("rejected");
           }
+        }
+        if (UUID_RE.test(String(messageId))) {
+          const { data: inGroup } = await supabase
+            .from("group_messages")
+            .select("id")
+            .eq("id", messageId)
+            .eq("group_id", conversationId)
+            .maybeSingle();
+          if (!inGroup) return refuse("rejected");
         }
       } else if (conversationType === "server") {
         // conversationId is the text channel id
@@ -2246,29 +2417,56 @@ function registerSocketHandlers(io) {
 
     // Message Edit - DM
     socket.on("dm:message:edit", async ({ messageId, newText, toUserId } = {}) => {
-      const fail = (message) => socket.emit("dm:error", {
+      const fail = (message, extra = {}) => socket.emit("dm:error", {
         message: message || "Failed to edit message.",
         toUserId,
         messageId,
         code: "EDIT_FAILED",
+        ...extra,
       });
-      if (!messageId || !newText || !toUserId) return fail("Failed to edit message.");
+      if (typeof messageId !== "string" || !messageId || typeof toUserId !== "string" || !toUserId) {
+        return fail("Failed to edit message.");
+      }
+      // Same rules as sending (polish messaging-04): string, trimmed, Sistem cap,
+      // not while timed out, and the Moderasyon word filter.
+      const { checkText, maxMessageLength } = require("../lib/messageText");
+      const textCheck = checkText(newText, { max: maxMessageLength(systemConfig), optional: false });
+      if (!textCheck.ok) return fail(textCheck.message, { code: textCheck.code });
+      newText = textCheck.text.trim();
+      if (!newText) return fail("Message cannot be empty.");
+      {
+        const { getActiveTimeout } = require("../lib/moderation");
+        const to = getActiveTimeout(myId);
+        if (to) return fail(to.message || "You are timed out and cannot send messages.", { code: "TIMED_OUT", timeout: to });
+      }
+      const contentFilter = require("../lib/contentFilter");
+      const filterCtx = { convType: "dm", peerId: toUserId };
+      const filtered = contentFilter.gate({ io, userId: myId, text: newText, ctx: filterCtx });
+      if (filtered.blocked) return fail(null, { ...contentFilter.blockedPayload() });
 
       // Verify friendship
       if (!friends.get(myId)?.has(toUserId)) return fail("Failed to edit message.");
-      {
-        const { data: kind } = await supabase.from("dm_messages").select("media_type").eq("id", messageId).eq("from_user_id", myId).maybeSingle();
-        if (["poll_v2", "poll_end", "app_card"].includes(kind?.media_type)) return fail("This message can't be edited as text.");
-      }
+      // The stored row is the source of truth for the edit history (polish messaging-05):
+      // the in-memory copy is gone after a restart and only holds the newest 500.
+      const { data: current } = await supabase
+        .from("dm_messages")
+        .select("media_type, content, edit_history")
+        .eq("id", messageId)
+        .eq("from_user_id", myId)
+        .eq("to_user_id", toUserId)
+        .maybeSingle();
+      if (!current) return fail("Failed to edit message.");
+      if (["poll_v2", "poll_end", "app_card"].includes(current.media_type)) return fail("This message can't be edited as text.");
 
       const key = convKey(myId, toUserId);
       const arr = dmHistory.get(key) || [];
       const msg = arr.find((message) => message.id === messageId && message.from?.id === myId);
       const editedAt = new Date().toISOString();
+      const storedHistory = Array.isArray(current.edit_history) ? current.edit_history : [];
       const nextEditHistory = [
-        ...(msg?.editHistory || []),
-        ...(msg ? [{ text: msg.text, editedAt }] : []),
-      ];
+        ...storedHistory,
+        { text: typeof current.content === "string" ? current.content : String(current.content ?? ""), editedAt },
+      ].slice(-50);
       const { data, error } = await supabase
         .from("dm_messages")
         .update({
@@ -2285,6 +2483,7 @@ function registerSocketHandlers(io) {
         console.error("[DM] Edit failed:", error?.message || "Message not found");
         return fail("Failed to edit message.");
       }
+      contentFilter.after(filtered.verdict, { io, userId: myId, text: newText, messageId, ctx: filterCtx });
       if (msg) {
         msg.editHistory = nextEditHistory;
         msg.text = newText;
@@ -2424,6 +2623,18 @@ function registerSocketHandlers(io) {
       if (!trimmed) return fail("Message cannot be empty.");
       if (trimmed.length > (Number(systemConfig.maxMessageLength) || 2000)) return fail("Message is too long.");
 
+      {
+        // Same gate as sending (polish messaging-04): timeout + Moderasyon word filter.
+        const { getActiveTimeout } = require("../lib/moderation");
+        const to = getActiveTimeout(myId);
+        if (to) return fail(to.message || "You are timed out and cannot send messages.");
+      }
+      const groupEditFilterCtx = { convType: "group", groupId };
+      const groupEditFiltered = require("../lib/contentFilter").gate({ io, userId: myId, text: trimmed, ctx: groupEditFilterCtx });
+      if (groupEditFiltered.blocked) {
+        return socket.emit("group:message:error", { groupId, messageId, ...require("../lib/contentFilter").blockedPayload() });
+      }
+
       // Check membership
       if (!socket.rooms.has(`group:${groupId}`)) return fail("Failed to edit message.");
       {
@@ -2455,6 +2666,7 @@ function registerSocketHandlers(io) {
         }
         // Not my message (or not in this group): nothing changed, nothing to broadcast.
         if (!updated) return fail("You can only edit your own messages.");
+        require("../lib/contentFilter").after(groupEditFiltered.verdict, { io, userId: myId, text: trimmed, messageId, ctx: groupEditFilterCtx });
         
         // Broadcast edit to group room
         const editData = {
@@ -2526,6 +2738,8 @@ function registerSocketHandlers(io) {
         });
       } catch (err) {
         console.error("[group:message:pin] Error:", err.message || err);
+        // Tell the member it failed (polish messaging-18); DMs already did.
+        socket.emit("group:message:error", { groupId, messageId, ...apiText("message", "Failed to pin message.") });
       }
     });
 
@@ -2546,6 +2760,7 @@ function registerSocketHandlers(io) {
         io.to(`group:${groupId}`).emit("group:message:unpinned", { messageId, groupId });
       } catch (err) {
         console.error("[group:message:unpin] Error:", err.message || err);
+        socket.emit("group:message:error", { groupId, messageId, ...apiText("message", "Failed to unpin message.") });
       }
     });
 
@@ -2605,7 +2820,10 @@ function registerSocketHandlers(io) {
         for (const peerId of activeDmPeersOf(myId)) {
           emitToUser(io, peerId, "call:peer-presence", { peerId: myId, online: false });
         }
-        removeUserFromAllServerVoice(io, myId);
+        // Server voice: no immediate removal. The seat belongs to the socket that
+        // joined it and serverVoiceHandlers' disconnect grace (SEAT_RECONNECT_GRACE_MS)
+        // drops it only if no reconnect re-took it. Removing here cut the audio of
+        // everyone in the channel on every short blip (voice-drops-01).
         dmScreenSharingUsers.delete(myId);
         scheduleTemporaryMemberCleanup(io, myId);
       }

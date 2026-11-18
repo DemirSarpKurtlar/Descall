@@ -8,6 +8,7 @@ import { VoiceMemberMenu, ServerLongPressMenu, FolderLongPressMenu } from "./men
 import { DeleteChannelAlert } from "./pagesChannels";
 import { onlineCountOf } from "./pagesHub";
 import { getServerMembers } from "../../../api/servers";
+import { armVoiceModFeedback } from "../../../lib/voiceModFeedback";
 import { AlertBox } from "./kit";
 import { useSvh } from "./useSvh";
 import { applyServerMute } from "./pagesGeneral";
@@ -228,7 +229,8 @@ export default function HubHost({ mode, b, servers, activeServer, serverFolders,
     const sid = activeServer?.id;
     const voice = (activeServer?.channels || []).filter((x) => x.type === "voice" || x.type === "stage");
     const volume = participantVolumePercent(serverVoice?.participantVolumes?.[String(uid)], uid);
-    const safe = (fn, ok) => async () => { try { await fn(); if (ok) toast(ok, "success"); } catch (err) { toast(err?.message || s.failed, "error"); } };
+    // Voice moderation answers over the socket: the refusal arrives after the menu closed.
+    const safe = (fn, ok) => async () => { armVoiceModFeedback(toast); try { await fn(); if (ok) toast(ok, "success"); } catch (err) { toast(err?.message || s.failed, "error"); } };
     return (
       <VoiceMemberMenu key="vm" mode={mode} menu={vm} presence={onlineOf(uid) || "online"} channels={voice}
         canMute={!vm.isSelf && b.canMuteMembers} canDeafen={!vm.isSelf && b.canDeafenMembers} canMove={b.canMoveMembers}

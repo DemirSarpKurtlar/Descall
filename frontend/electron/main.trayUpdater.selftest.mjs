@@ -30,6 +30,7 @@ assert(closeHandler.includes("mainWindow.hide()"), "close must hide the window t
 assert(closeHandler.includes("setStartInBackground(true, 'hidden')"), "close must remember the tray state for the next launch");
 assert(!/app\.quit\(\)/.test(closeHandler), "close must never quit the app");
 assert(closeHandler.includes("mainWindow.minimize()"), "with no tray icon, close must fall back to minimize so the window stays reachable");
+assert(closeHandler.includes("background-notice-shown") && closeHandler.includes("if (!noticeShown)"), "the background notice shows once, not on every close");
 assert(main.includes("app.on('window-all-closed'"), "window-all-closed must be handled (stay in tray)");
 
 // ── one restore path used by every entry point ──────────────────────────────

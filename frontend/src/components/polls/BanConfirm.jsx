@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { motion, useReducedMotion } from "framer-motion";
 import { Ban } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
@@ -13,6 +14,8 @@ export default function BanConfirm({ targetName, reason: initialReason = "", onC
   const reduce = useReducedMotion();
   const [reason, setReason] = useState(initialReason);
   const confirmRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   useEffect(() => {
     hapticWarning();
     confirmRef.current?.focus();
@@ -30,6 +33,7 @@ export default function BanConfirm({ targetName, reason: initialReason = "", onC
       <motion.div className="dsx-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onCancel} />
       <div className="dsx-sheetwrap" style={{ pointerEvents: "none" }}>
         <motion.div
+          ref={dialogRef}
           role="alertdialog"
           aria-modal="true"
           aria-label={t("polls.ban.title", { name: targetName })}

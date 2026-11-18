@@ -78,6 +78,7 @@ export const ADMINX_TR = {
     emptyNone: "Henüz geri bildirim yok.",
     pickOne: "Bir geri bildirim seç.",
     deleteTitle: "Geri bildirim silinsin mi?",
+    deleteReason: "Sebep (işlem kaydına yazılır)",
     cancel: "Vazgeç",
     delReport: "bildirimi",
     delAttachments: "{count, plural, one {eki} other {ekleri}}",

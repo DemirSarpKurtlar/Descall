@@ -18,6 +18,7 @@ export const SHOP2_PT_BR = {
     "placeholder": "Busque itens, sets ou cores",
     "kbd": "Ctrl K",
     "none": "Nada corresponde ainda.",
+    "loading": "Buscando na loja inteira…",
     "kind": { "today": "Na vitrine de hoje", "set": "Set", "wish": "Na sua lista de desejos", "owned": "Você já tem", "catalog": "Na loja" }
   },
   "tiles": {
@@ -387,6 +388,7 @@ export const SHOP2_PT_BR = {
     "savedTonight": "Economia desta noite",
     "log": "Registro de viradas",
     "logEmpty": "Vire uma carta para começar",
+    "logClosed": "Você pode virar cartas quando o mercado abrir",
     "logKind": {
       "flip": "Carta {n} virada",
       "flip_used": "Virada usada",
@@ -537,6 +539,7 @@ export const SHOP2_PT_BR = {
     "seconds": "{s} s"
   },
   "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Até já" },
+  "clock": { "dh": "{d} d {h} h" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Quem topa hoje à noite?",

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const FOCUSABLE =
   'a[href], area[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
@@ -53,7 +53,7 @@ const stack = [];
 // Some openers drop their own focus on click (the rail buttons blur to hide their tooltip),
 // so the opener is often the element that just lost focus, not document.activeElement.
 let lastBlur = { el: null, at: 0 };
-if (typeof document !== "undefined") {
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
   document.addEventListener("focusout", (e) => { lastBlur = { el: e.target, at: Date.now() }; }, true);
 }
 function openerNow() {
@@ -135,4 +135,17 @@ export default function useModalFocus(open, ref, { initialFocus = null, delay = 
       back?.focus({ preventScroll: true });
     };
   }, [open, enabled, ref]);
+}
+
+/**
+ * Callback-ref form for dialogs rendered conditionally inside a bigger component:
+ * `<div ref={useModalFocusRef()} role="dialog" aria-modal="true">` turns the trap on while
+ * that element is mounted and off (focus back to the opener) when it unmounts.
+ */
+export function useModalFocusRef(opts) {
+  const [el, setEl] = useState(null);
+  const ref = useRef(null);
+  ref.current = el;
+  useModalFocus(Boolean(el), ref, opts);
+  return setEl;
 }

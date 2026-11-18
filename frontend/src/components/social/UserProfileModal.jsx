@@ -46,6 +46,7 @@ import { formatDate } from "../../i18n/format";
 import "./ProfileSheet.css";
 import { MIX, MIMore, MIShare, MICopy, MIPen, MIFlag, MIBan, MIMsg, MIPhone, MICam, MIUserPlus, MICheck, MIChevL, MIBell } from "./ProfileSheetIcons.jsx";
 import { openNotifyOptions } from "../../lib/notifyPrefs";
+import useModalFocus from "../../hooks/useModalFocus";
 
 function formatMemberSince(iso, t, locale) {
   if (!iso) return t("Unknown");
@@ -78,13 +79,39 @@ function ProfileGlassSkeleton({ label }) {
   );
 }
 
+/** A stalled request (captive network, a dead mobile link) never leaves the window blank. */
+const PROFILE_LOAD_TIMEOUT_MS = 8000;
+
 async function loadPublicProfile(id) {
-  const res = await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(id)}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  if (!res.ok) return null;
-  const data = await res.json().catch(() => null);
-  return acceptProfilePayload(id, data?.user);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PROFILE_LOAD_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(id)}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return acceptProfilePayload(id, data?.user);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Neutral placeholder while a profile not seen before loads: a shape, never a default look. */
+function ProfileLookSkeleton({ label }) {
+  return (
+    <div className="pfs-look-skel" aria-busy="true" aria-label={label} role="status">
+      <span className="pls-banner" />
+      <span className="pls-av" />
+      <span className="pls-bar" style={{ width: "42%", height: 18 }} />
+      <span className="pls-bar" style={{ width: "28%", height: 12 }} />
+      <span className="pls-row">
+        <i /><i /><i /><i />
+      </span>
+      <span className="pls-bar" style={{ width: "88%", height: 46, borderRadius: 14 }} />
+    </div>
+  );
 }
 
 function UserProfileModal({
@@ -111,6 +138,9 @@ function UserProfileModal({
   const { locale } = useLocale();
   const [profile, setProfile] = useState(null);
   const [settledFor, setSettledFor] = useState(null);
+  // The load for this user failed or timed out: the seed look shows with a retry.
+  const [loadFailedFor, setLoadFailedFor] = useState(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [friendOverride, setFriendOverride] = useState(null);
   const [friendLoading, setFriendLoading] = useState(false);
   const [friendError, setFriendError] = useState({ userId: null, message: "" });
@@ -123,6 +153,10 @@ function UserProfileModal({
   // A2 §4.6: Engelle / Şikayet et live in a "⋯" menu at the top AND as red
   // buttons at the bottom of the profile.
   const moreRef = useRef(null);
+  // The scrim (stable while the keyed card swaps between profiles) holds focus: Tab stays in
+  // the profile, the app behind is inert, focus returns to the opener (WCAG 2.4.3).
+  const trapRef = useRef(null);
+  useModalFocus(open, trapRef);
   const [moreOpen, setMoreOpen] = useState(false);
   const [blockError, setBlockError] = useState("");
   const blockedByMe = useIsBlocked(userId);
@@ -202,7 +236,11 @@ function UserProfileModal({
     // (is-look-pending), so it never paints the default look first (lib/profileCache.js).
     // Your own look can change from this device (shop, settings) without a socket event, so
     // your own profile is always loaded fresh.
-    const cached = sameUserId(me?.id, requestedId) ? null : peekProfile(requestedId);
+    // Your own profile: the session user is the instant look (it is always current on this
+    // device); the fresh copy replaces it a moment later.
+    const self = sameUserId(me?.id, requestedId);
+    const cached = self ? acceptProfilePayload(requestedId, me) : peekProfile(requestedId);
+    setLoadFailedFor(null);
     if (cached) {
       setProfile(cached);
       setSettledFor(requestedId);
@@ -210,14 +248,20 @@ function UserProfileModal({
       setSettledFor((current) => (sameUserId(current, requestedId) ? current : null));
     }
 
-    fetchProfileShared(requestedId, loadPublicProfile)
+    (self ? loadPublicProfile(requestedId) : fetchProfileShared(requestedId, loadPublicProfile))
       .then((accepted) => {
         if (!active) return;
         if (accepted) setProfile(accepted);
-        else if (!cached) setProfile(null);
+        else if (!cached) {
+          setProfile(null);
+          setLoadFailedFor(requestedId);
+        }
       })
       .catch(() => {
-        if (active && !cached) setProfile(null);
+        if (active && !cached) {
+          setProfile(null);
+          setLoadFailedFor(requestedId);
+        }
       })
       .finally(() => {
         if (active) setSettledFor(requestedId);
@@ -226,7 +270,7 @@ function UserProfileModal({
     return () => {
       active = false;
     };
-  }, [open, userId]);
+  }, [open, userId, reloadNonce]);
 
   useEffect(() => {
     if (!open || !userId || !username || isSelf) return undefined;
@@ -309,7 +353,8 @@ function UserProfileModal({
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed to send request");
-      setFriendOverride({ userId: forId, state: "sent" });
+      // Their request to me was pending: the server accepted it (polish world-social-19).
+      setFriendOverride({ userId: forId, state: body?.accepted ? "friend" : "sent" });
       onFriendSent?.();
     } catch (err) {
       noteFriendError(forId, err.message);
@@ -366,6 +411,14 @@ function UserProfileModal({
   // First open of a profile not seen before: hide the content until it arrives instead of
   // painting the default banner / colours / missing badges first.
   const lookPending = pending && !fetched;
+  const loadFailed = Boolean(open && userId && !fetched && !pending && sameUserId(loadFailedFor, userId));
+  const loadNotice = loadFailed ? (
+    <div className="pfs-load-err" role="alert" data-testid="profile-load-error">
+      <span>{t("uset.profile.loadFailed")}</span>
+      <button type="button" onClick={() => setReloadNonce((n) => n + 1)}>{t("uset.profile.retry")}</button>
+    </div>
+  ) : null;
+  const lookSkeleton = lookPending ? <ProfileLookSkeleton label={t("Loading…")} /> : null;
   const mutualFriends = ownedList(mutualState.forId, userId, mutualState.list);
   const memberSince = memberSinceIso(userId, [fetched, seed, known]);
   const customStatus = fetched?.customStatus || fetched?.custom_status || (sameUserId(known?.id, userId) ? (known?.customStatus || known?.custom_status) : "") || "";
@@ -600,6 +653,7 @@ function UserProfileModal({
         <AnimatePresence custom={dismissV.current}>
           {open && (
             <motion.div
+              ref={trapRef}
               className={`pfs-scrim${layout === "form" ? " is-form" : ""}`}
               data-testid="profile-scrim"
               initial={{ opacity: 0 }}
@@ -624,6 +678,8 @@ function UserProfileModal({
                 aria-label={displayName}
               >
                 {listPage || body}
+                {lookSkeleton}
+                {loadNotice}
               </motion.div>
             </motion.div>
           )}
@@ -663,6 +719,7 @@ function UserProfileModal({
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={trapRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -718,6 +775,8 @@ function UserProfileModal({
             <button type="button" className="user-profile-close" onClick={onClose} aria-label={t("Close")}>
               <X size={14} />
             </button>
+            {lookSkeleton}
+            {loadNotice}
             {!isSelf && (
               <button
                 ref={moreRef}

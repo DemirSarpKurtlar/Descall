@@ -9,6 +9,7 @@ import { useLocale, useT } from "../../context/LocaleContext";
 import { formatNumber, formatDate, formatTime } from "../../i18n/format.js";
 import { groupWalletEntries } from "../../lib/callCoinPrefs.js";
 import { CcsIcon } from "./callCoinIcons.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const REASONS = new Set([
   "voice_activity",
@@ -32,6 +33,9 @@ export default function WalletHistoryDrawer({ open, receipt = null, sessionId = 
   const titleId = useId();
   const [state, setState] = useState({ status: given ? "ready" : "loading", rows: given ? groupWalletEntries(given) : [] });
   const listRef = useRef(null);
+  const drawerRef = useRef(null);
+  // Focus lands on the drawer itself, Tab stays inside, focus returns to the opener.
+  useModalFocus(open, drawerRef, { initialFocus: drawerRef });
 
   const fetchRows = useCallback(async () => {
     if (given) return;
@@ -77,7 +81,7 @@ export default function WalletHistoryDrawer({ open, receipt = null, sessionId = 
 
   return (
     <div className="ccw-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
-      <aside className="ccw-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={(el) => el && !el.contains(document.activeElement) && el.focus({ preventScroll: true })}>
+      <aside className="ccw-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={drawerRef}>
         <header className="ccw-hd">
           <span className="ccw-hd-ic" aria-hidden="true">
             <CcsIcon name="list" size={18} />

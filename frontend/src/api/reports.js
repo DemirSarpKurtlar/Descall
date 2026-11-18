@@ -1,5 +1,7 @@
 import { getToken } from "../lib/storage";
 import { API_BASE_URL } from "../config/api";
+import { t } from "../i18n/runtime.js";
+import { serverErrorText } from "./httpError";
 
 export const REPORT_REASONS = [
   { id: "harassment", labelKey: "report.harassment" },
@@ -25,7 +27,7 @@ export async function submitUserReport(payload) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body.error || "Failed to submit report.");
+    const err = new Error(serverErrorText(body) || t("Failed to submit report."));
     err.code = body.code;
     throw err;
   }

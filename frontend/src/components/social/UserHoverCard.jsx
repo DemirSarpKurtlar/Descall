@@ -17,7 +17,7 @@ import { acceptProfilePayload } from "../../lib/profileModalState";
 import { trDative } from "../../lib/trSuffix";
 import { formatDate } from "../../i18n/format";
 import {
-  cachedHoverProfile,
+  instantHoverProfile,
   cachedMutual,
   currentActivity,
   hoverCardModel,
@@ -97,6 +97,8 @@ function ActivityIcon({ kind }) {
   return <Monitor size={20} weight="bold" />;
 }
 
+const LOOK_WAIT_MS = 700;
+
 export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerLeave, onClose, onOpenProfile }) {
   const t = useT();
   const { locale } = useLocale();
@@ -104,7 +106,10 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
   const ref = useRef(null);
   const inputRef = useRef(null);
   const userId = user?.id;
-  const [full, setFull] = useState(() => (userId ? cachedHoverProfile(userId) : null));
+  const [full, setFull] = useState(() => instantHoverProfile(userId));
+  // The card waits (invisible) for the real profile instead of painting the base look and
+  // swapping a moment later; after LOOK_WAIT_MS it shows what it has (slow network).
+  const [lookReady, setLookReady] = useState(() => Boolean(instantHoverProfile(userId)));
   const [mutual, setMutual] = useState(() => (user?.username ? cachedMutual(user.username) : null));
   const [draft, setDraft] = useState("");
   const [sent, setSent] = useState(false);
@@ -113,14 +118,20 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
   useEffect(() => {
     if (!userId) return undefined;
     let live = true;
-    setFull(cachedHoverProfile(userId));
+    const instant = instantHoverProfile(userId);
+    setFull(instant);
+    setLookReady(Boolean(instant));
     setDraft("");
     setSent(false);
+    const wait = instant ? null : setTimeout(() => { if (live) setLookReady(true); }, LOOK_WAIT_MS);
     loadHoverProfile(userId, fetchPublicProfile).then((data) => {
-      if (live && data) setFull(data);
+      if (!live) return;
+      if (data) setFull(data);
+      setLookReady(true);
     });
     return () => {
       live = false;
+      if (wait) clearTimeout(wait);
     };
   }, [userId]);
 
@@ -206,11 +217,12 @@ export default function UserHoverCard({ user, anchor, onPointerEnter, onPointerL
         width: CARD_WIDTH,
         maxWidth: `calc(100vw - ${PAD * 2}px)`,
         maxHeight: `calc(100vh - ${PAD * 2}px)`,
+        pointerEvents: lookReady ? undefined : "none",
       }}
       onPointerEnter={onPointerEnter}
       onPointerLeave={leave}
       initial={{ opacity: 0, scale: 0.96, y: 4 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+      animate={lookReady ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.96, y: 4 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
     >

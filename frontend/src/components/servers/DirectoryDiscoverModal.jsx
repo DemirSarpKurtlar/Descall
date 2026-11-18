@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -89,6 +90,8 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer
   const t = useT();
   const { locale } = useLocale();
   const { toast } = useToast();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const [category, setCategory] = useState(null);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("members");
@@ -180,6 +183,7 @@ export default function DirectoryDiscoverModal({ onClose, onJoined, onListServer
   return createPortal(
     <motion.div className="server-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
       <motion.div
+        ref={dialogRef}
         className="server-modal dir-modal dir-glass"
         role="dialog"
         aria-modal="true"

@@ -27,6 +27,7 @@ import {
 import { FEATURES, FEATURE_KEYS, PLAN_COIN, tierAllows, featuresForPlan } from "./features.js";
 import { PREMIUM_CATEGORIES, daysUntil } from "./categories.js";
 import { usePremium, redeemPremiumCode } from "./usePremium.js";
+import { redeemErrorKey } from "./redeemError.js";
 import { isDesktopApp, getFeatureSettings, onFeatureSettings } from "./featureSettings.js";
 import PremiumBadge from "./PremiumBadge.jsx";
 import StoryCategory, { StoryResults } from "./story/StoryCategory.jsx";
@@ -169,8 +170,8 @@ function RedeemCard() {
       setCode("");
       setMsg({ ok: true, text: t("premium.redeem.ok") });
     } catch (err) {
-      const status = Number(err?.status) || 0;
-      setMsg({ ok: false, text: status === 404 || status === 405 ? t("premium.redeem.unavailable") : err?.message || t("premium.redeem.fail") });
+      // A wrong / expired / used code says so in the UI language (never the raw server code).
+      setMsg({ ok: false, text: t(redeemErrorKey(err)) });
     } finally {
       setBusy(false);
     }

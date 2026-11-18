@@ -1,11 +1,11 @@
-/* Yönetici Paneli > Ajan, operasyon modu (Taslak B · Plan paneli). Scoped under .ago and the
+/* Yönetici Paneli > Ajan, operasyon modu (Taslak B · Plan paneli). Scoped under .ago-page and the
    .ago-* portals (popovers, dialogs, toasts). Heavy dark glass like the .adm shell, #587af5
    accent, opaque menus and dialogs. Type sizes only from the --fs-* scale. */
 
 .adm-main[data-tab="agent"] { display: flex; flex-direction: column; }
 .adm-main[data-tab="agent"] > .admin-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-.ago,
+.ago-page,
 .ago-root-vars,
 .ago-scrim,
 .ago-toasts {
@@ -27,7 +27,7 @@
   color: var(--ago-t1);
 }
 
-.ago {
+.ago-page {
   flex: 1;
   min-height: 640px;
   display: flex;
@@ -36,10 +36,10 @@
   font-size: var(--fs-13);
 }
 
-:where(.ago, .ago-root-vars, .ago-scrim, .ago-toasts) button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
-:where(.ago, .ago-root-vars, .ago-scrim, .ago-toasts) button:disabled { cursor: default; opacity: 0.5; }
-:where(.ago, .ago-root-vars, .ago-scrim, .ago-toasts) :is(button, input, select, textarea, a):focus-visible,
-html.glass-desktop :where(.ago, .ago-root-vars, .ago-scrim, .ago-toasts) :is(button, input, select, textarea, a):focus-visible {
+:where(.ago-page, .ago-root-vars, .ago-scrim, .ago-toasts) button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+:where(.ago-page, .ago-root-vars, .ago-scrim, .ago-toasts) button:disabled { cursor: default; opacity: 0.5; }
+:where(.ago-page, .ago-root-vars, .ago-scrim, .ago-toasts) :is(button, input, select, textarea, a):focus-visible,
+html.glass-desktop :where(.ago-page, .ago-root-vars, .ago-scrim, .ago-toasts) :is(button, input, select, textarea, a):focus-visible {
   outline: 2px solid rgba(var(--ago-brand), 0.85);
   outline-offset: 2px;
 }
@@ -50,7 +50,7 @@ html.glass-desktop .ago-dlg:focus-visible { outline: none; }
 .ago-col { display: flex; flex-direction: column; min-width: 0; }
 .ago-sp { flex: 1; }
 .ago-ellip { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ago .tnum, .ago-scrim .tnum { font-variant-numeric: tabular-nums; }
+.ago-page .tnum, .ago-scrim .tnum { font-variant-numeric: tabular-nums; }
 .ago-sub { font-size: var(--fs-12); color: var(--ago-t3); }
 .ago-muted { color: var(--ago-t3); }
 .ago-h2 { margin: 0; font-size: var(--fs-15); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; color: var(--ago-t1); }

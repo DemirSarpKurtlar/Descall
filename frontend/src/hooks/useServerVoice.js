@@ -1,6 +1,7 @@
 import { publishActiveSpeakers } from "../lib/activeSpeakers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preloadIceServers } from "../lib/iceConfig";
+import { useVoiceDiagSnapshot } from "./useVoiceDiagSnapshot";
 import { subscribeNetworkChange } from "../lib/networkChange";
 import { createPeerConnection, attachLocalTracks, safeClosePeer, commitLocalDescription } from "../lib/webrtcPeerFactory";
 import { applyPlaybackGain, releasePlaybackGain } from "../lib/voiceGain";
@@ -24,7 +25,6 @@ import { getToken, getUser } from "../lib/storage";
 import { emitRoomOnce } from "../lib/socketResubscribe";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
-  GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
   showElectronScreenPicker,
   optimizeScreenShareTrack,
@@ -73,6 +73,20 @@ import { primeVoiceActivity } from "../lib/voiceActivity";
 import { registerLiveKitVideoTrack, unregisterLiveKitVideoTrack } from "../lib/liveKitVideoBinding";
 import { createCallTelemetrySender } from "../lib/callTelemetry";
 import { createGroupCallTelemetry } from "../lib/groupCallTelemetry";
+import {
+  mergeRejoinRoster,
+  isNewRemoteSession,
+  isPoliteSide,
+  peerLinkDecision,
+  dropResultFor,
+  dropReasonToken,
+  liveKitDropAction,
+  liveKitRetryBudget,
+  dropMessageKey,
+  moveMessageKey,
+  unmuteDeniedKey,
+} from "../lib/serverVoiceRecovery";
+import { cleanServerScreenQuality, readServerScreenQuality, writeServerScreenQuality } from "../lib/serverScreenQuality";
 import {
   isScreenCompanionIdentity,
   parseLiveKitIdentity,
@@ -129,6 +143,13 @@ export function useServerVoice(socket) {
 
   const localStreamRef = useRef(null);
   const pcMapRef = useRef(new Map()); // userId -> { pc, pendingIce }
+  // calls-02: voice diagnostic snapshot for feedback (useVoiceDiagSnapshot.js).
+  useVoiceDiagSnapshot({
+    active: Boolean(activeChannelId),
+    kind: "server",
+    muted,
+    getPeers: () => Array.from(pcMapRef.current.values()).map((peerData) => peerData?.pc).filter(Boolean),
+  });
   const remoteAudioRefs = useRef(new Map());
   const remoteStreamMapRef = useRef(new Map()); // userId -> MediaStream
   const remoteScreenStreamsRef = useRef(new Map());
@@ -176,6 +197,7 @@ export function useServerVoice(socket) {
   const [screenStream, setScreenStream] = useState(null);
   const screenStreamRef = useRef(null);
   const stopScreenShareRef = useRef(null);
+  const startScreenShareRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
   const cameraStreamRef = useRef(null);
@@ -193,6 +215,20 @@ export function useServerVoice(socket) {
   const [mediaMode, setMediaMode] = useState("mesh");
   const sfuModeRef = useRef(false);
   const liveKitRoomRef = useRef(null);
+  /** Mirrors liveKitLink for socket handlers (they are bound once per socket). */
+  const liveKitLinkRef = useRef("idle");
+  /** Mesh link recovery and LiveKit re-connect, filled in further down (voice-drops-03 / -06). */
+  const recoverPeerRef = useRef(null);
+  const handlePeerLinkRef = useRef(null);
+  const reconnectLiveKitRef = useRef(null);
+  const onLiveKitDroppedRef = useRef(null);
+  /** Seat facts the unmute refusal toast names (AFK channel, moderator mute). */
+  const afkChannelRef = useRef(false);
+  const modMutedRef = useRef(false);
+  const toggleDeafenRef = useRef(null);
+  const liveKitRecoverRef = useRef({ attempts: [], timer: null });
+  /** Per-session link counters for the drop telemetry (voice-drops-05). */
+  const linkStatsRef = useRef({ sockDrops: 0, pcFailed: 0, iceRestarts: 0, rebuilds: 0, startedAt: 0 });
   /** LiveKit URL the voice room connected to (the iOS screen companion uses the same edge). */
   const liveKitUrlRef = useRef(null);
   /** iOS whole-screen sharing (ReplayKit broadcast + native screen companion). */
@@ -201,12 +237,23 @@ export function useServerVoice(socket) {
   const participantsRef = useRef([]);
   const channelNameRef = useRef("");
   const liveKitConfigRef = useRef(null);
-  const screenQuality = GROUP_SCREEN_DEFAULT_QUALITY;
+  // Screen share quality from the owner-picked quality window (server-voice-21),
+  // remembered per device. Mesh caps still apply in resolveScreenCaptureSize.
+  const [screenQuality, setScreenQualityState] = useState(readServerScreenQuality);
+  const setScreenQuality = useCallback((next) => {
+    const clean = cleanServerScreenQuality(next);
+    setScreenQualityState(clean);
+    writeServerScreenQuality(clean);
+  }, []);
 
   useEffect(() => {
     preloadIceServers().catch(() => {});
     preloadNoiseSuppression();
   }, []);
+
+  useEffect(() => {
+    liveKitLinkRef.current = liveKitLink;
+  }, [liveKitLink]);
 
   useEffect(() => {
     activeChannelIdRef.current = activeChannelId;
@@ -244,15 +291,9 @@ export function useServerVoice(socket) {
         }
         return;
       }
-      for (const peerData of pcMapRef.current.values()) {
-        const pc = peerData?.pc;
-        if (!pc || pc.connectionState === "closed") continue;
-        try {
-          pc.restartIce();
-        } catch {
-          /* ignore */
-        }
-      }
+      // Mesh: restartIce() alone only flags the next offer; the recovery sends
+      // the restart offer (voice-drops-03).
+      for (const userId of [...pcMapRef.current.keys()]) recoverPeerRef.current?.(userId, "network");
     });
   }, [activeChannelId]);
 
@@ -581,6 +622,10 @@ export function useServerVoice(socket) {
 
   const cleanupPeer = useCallback((userId) => {
     const peer = pcMapRef.current.get(userId);
+    if (peer?.recoveryTimer) {
+      clearTimeout(peer.recoveryTimer);
+      peer.recoveryTimer = null;
+    }
     safeClosePeer(peer?.pc);
     pcMapRef.current.delete(userId);
     if (remoteStreamMapRef.current.has(userId)) {
@@ -722,9 +767,11 @@ export function useServerVoice(socket) {
         if (liveKitRoomRef.current !== room) return;
         setLiveKitLink("connected");
       });
-      room.on(RoomEvent.Disconnected, () => {
+      room.on(RoomEvent.Disconnected, (reason) => {
         if (liveKitRoomRef.current !== room) return;
         setLiveKitLink("disconnected");
+        liveKitLinkRef.current = "disconnected";
+        onLiveKitDroppedRef.current?.(channelId, reason);
       });
       const livekitUrls = tokenData.livekitUrls?.length ? tokenData.livekitUrls : [tokenData.livekitUrl];
       let probed = false;
@@ -779,6 +826,67 @@ export function useServerVoice(socket) {
     }
   }, [canPublishVoice]);
 
+  /**
+   * LiveKit room lost while we still hold the seat (server-voice-06). The server's
+   * `server:voice:joined` for a re-join carries a fresh token; connect with it.
+   */
+  const reconnectLiveKit = useCallback(
+    async (channelId, tokenData) => {
+      if (!tokenData?.token || !channelId || activeChannelIdRef.current !== channelId) return;
+      if (reconnectLiveKitRef.busy) return;
+      reconnectLiveKitRef.busy = true;
+      try {
+        disconnectLiveKit();
+        setLiveKitLink("connecting");
+        const stream = localStreamRef.current || new MediaStream();
+        await connectLiveKitRoom(channelId, tokenData, stream);
+        voiceTelemetryRef.current?.countReconnect();
+      } catch (err) {
+        console.warn("[ServerVoice] LiveKit reconnect failed:", err?.message || err);
+        setLiveKitLink("disconnected");
+      } finally {
+        reconnectLiveKitRef.busy = false;
+      }
+    },
+    [connectLiveKitRoom, disconnectLiveKit]
+  );
+
+  const onLiveKitDropped = useCallback((channelId, reason) => {
+    if (!channelId || activeChannelIdRef.current !== channelId) return;
+    const action = liveKitDropAction(reason);
+    if (action === "none") return;
+    if (action === "other-device") {
+      // The same account joined voice elsewhere: this device leaves quietly.
+      cleanupAllRef.current?.({ emitLeave: false, result: "dropped", reason: "other_device" });
+      setError("callui.voice.disconnected");
+      return;
+    }
+    const budget = liveKitRetryBudget(liveKitRecoverRef.current.attempts);
+    if (!budget.allowed) {
+      // Gave up: say so instead of sitting in a silent "connected" seat.
+      cleanupAllRef.current?.({ result: "dropped", reason: "livekit_lost" });
+      setError("callui.voice.disconnected");
+      return;
+    }
+    liveKitRecoverRef.current.attempts = [...budget.kept, Date.now()];
+    const rejoin = () => {
+      liveKitRecoverRef.current.timer = null;
+      const sock = socketRef.current;
+      const serverId = activeServerIdRef.current;
+      if (activeChannelIdRef.current !== channelId || !sock?.connected || !serverId) return;
+      // Re-take the seat: the answer (server:voice:joined, no join waiter) brings the token.
+      sock.emit("server:voice:join", { serverId, channelId });
+    };
+    if (liveKitRecoverRef.current.timer) clearTimeout(liveKitRecoverRef.current.timer);
+    // Removed / room gone: a moderator force-disconnect may be on its way; let it win.
+    liveKitRecoverRef.current.timer = setTimeout(rejoin, action === "rejoin-later" ? 1500 : 300);
+  }, []);
+
+  useEffect(() => {
+    reconnectLiveKitRef.current = reconnectLiveKit;
+    onLiveKitDroppedRef.current = onLiveKitDropped;
+  }, [reconnectLiveKit, onLiveKitDropped]);
+
   const removeUserFromVoiceStates = useCallback((channelId, userId, serverId = null) => {
     if (!channelId || !userId) return;
     const uid = String(userId);
@@ -819,9 +927,30 @@ export function useServerVoice(socket) {
     }
   }, []);
 
-  const cleanupAll = useCallback(() => {
-    voiceTelemetryRef.current?.finish("ended");
-    emitVoiceLeave();
+  /**
+   * Leave locally. `emitLeave: false` when the server already dropped the seat
+   * (force-disconnect, refused join): a leave for a seat we no longer hold made the
+   * server drop seats of the user's other device. `result` / `reason` feed the drop
+   * telemetry (voice-drops-05); event objects passed by UI handlers are ignored.
+   */
+  const cleanupAll = useCallback((opts) => {
+    const options = opts && typeof opts === "object" && !("nativeEvent" in opts) && !("target" in opts) ? opts : {};
+    const { emitLeave = true, result = "ended", reason = null } = options;
+    const telemetry = voiceTelemetryRef.current;
+    const stats = linkStatsRef.current;
+    if (telemetry) {
+      telemetry.set("sockDrops", stats.sockDrops);
+      telemetry.set("pcFailed", stats.pcFailed);
+      telemetry.set("iceRestarts", stats.iceRestarts);
+      telemetry.set("rebuilds", stats.rebuilds);
+      if (stats.startedAt) telemetry.set("sessionS", Math.round((Date.now() - stats.startedAt) / 1000));
+      if (reason) telemetry.set("dropReason", dropReasonToken(reason));
+      telemetry.finish(result);
+    }
+    linkStatsRef.current = { sockDrops: 0, pcFailed: 0, iceRestarts: 0, rebuilds: 0, startedAt: 0 };
+    if (liveKitRecoverRef.current.timer) clearTimeout(liveKitRecoverRef.current.timer);
+    liveKitRecoverRef.current = { attempts: [], timer: null };
+    if (emitLeave) emitVoiceLeave();
     const leavingChannelId = activeChannelIdRef.current || lastVoiceChannelIdRef.current;
     const leavingServerId = activeServerIdRef.current;
     const meId = myIdRef.current;
@@ -995,14 +1124,16 @@ export function useServerVoice(socket) {
           });
         }
       };
+      // A failed link is healed (ICE restart, then a rebuild), never dropped from
+      // the roster: the server's seat list decides who is in the channel
+      // (voice-drops-03; this used to delete the peer for good on "failed").
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "failed" || pc.connectionState === "closed") {
-          cleanupPeer(userId);
-          setParticipants((prev) => prev.filter((p) => p.id !== userId));
-        }
+        const current = pcMapRef.current.get(userId);
+        if (!current || current.pc !== pc) return;
+        handlePeerLinkRef.current?.(userId, pc.connectionState);
       };
     },
-    [attachRemoteAudio, canPublishVideo, canPublishVoice, cleanupPeer, socket]
+    [attachRemoteAudio, canPublishVideo, canPublishVoice, socket]
   );
 
   const renegotiateWithPeer = useCallback(
@@ -1077,6 +1208,173 @@ export function useServerVoice(socket) {
     [cleanupPeer, setupPc, socket]
   );
 
+  /* ---------------------------------------------- mesh link recovery (voice-drops-03) */
+
+  const setPeerTrouble = useCallback((userId, trouble) => {
+    setParticipants((prev) => {
+      let changed = false;
+      const next = prev.map((p) => {
+        if (String(p.id) !== String(userId) || Boolean(p.linkTrouble) === trouble) return p;
+        changed = true;
+        return { ...p, linkTrouble: trouble };
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
+  /** ICE restart: flag it and send the restart offer (mesh has no negotiationneeded handler). */
+  const restartPeerIce = useCallback(
+    async (userId) => {
+      const peer = pcMapRef.current.get(userId);
+      const pc = peer?.pc;
+      if (!pc || sfuModeRef.current || pc.signalingState === "closed") return;
+      const sock = socketRef.current;
+      if (!sock?.connected) {
+        // Held while the socket is down; the rejoin on connect runs it.
+        peer.restartPending = true;
+        return;
+      }
+      peer.restartPending = false;
+      linkStatsRef.current.iceRestarts += 1;
+      try {
+        // An offer lost while the socket was down would block the restart forever.
+        if (pc.signalingState === "have-local-offer") await pc.setLocalDescription({ type: "rollback" });
+      } catch {
+        /* older engines: renegotiateWithPeer waits for stable */
+      }
+      try {
+        pc.restartIce();
+      } catch {
+        /* createOffer({ iceRestart }) below still asks for new credentials */
+      }
+      await renegotiateWithPeer(userId, peer);
+    },
+    [renegotiateWithPeer]
+  );
+
+  /** Close a link that did not heal and build a new one (the impolite side offers). */
+  const rebuildPeer = useCallback(
+    (userId) => {
+      const channelId = activeChannelIdRef.current;
+      const peer = pcMapRef.current.get(userId);
+      if (!channelId || !peer) return;
+      if (!isPoliteSide(myIdRef.current, userId)) {
+        linkStatsRef.current.rebuilds += 1;
+        const user = participantsRef.current.find((p) => String(p.id) === String(userId)) || { id: userId };
+        cleanupPeer(userId);
+        void offerToPeer({ ...user, id: userId }, channelId);
+      } else {
+        // Polite side waits for the fresh offer (onOffer replaces the old link).
+        peer.troubleSince = Date.now();
+        peer.restartAttempt = 0;
+      }
+    },
+    [cleanupPeer, offerToPeer]
+  );
+
+  const runPeerRecovery = useCallback(
+    async (userId) => {
+      const peer = pcMapRef.current.get(userId);
+      if (!peer) return;
+      peer.recoveryTimer = null;
+      const state = peer.pc?.connectionState;
+      if (state === "connected" || state === "closed" || !activeChannelIdRef.current) return;
+      // No longer seated with us (left, moved): stop healing a link nobody needs.
+      if (!participantsRef.current.some((p) => String(p.id) === String(userId))) {
+        cleanupPeer(userId);
+        return;
+      }
+      const polite = isPoliteSide(myIdRef.current, userId);
+      const decision = peerLinkDecision({
+        state: "failed",
+        troubleSinceMs: peer.troubleSince,
+        nowMs: Date.now(),
+        attempt: peer.restartAttempt || 0,
+        polite,
+      });
+      if (decision.action === "rebuild") {
+        rebuildPeer(userId);
+        const again = pcMapRef.current.get(userId);
+        if (again && again === peer && !peer.recoveryTimer) {
+          peer.recoveryTimer = setTimeout(() => void runPeerRecoveryRef.current?.(userId), decision.delayMs || 15000);
+        }
+        return;
+      }
+      await restartPeerIce(userId);
+      peer.restartAttempt = (peer.restartAttempt || 0) + 1;
+      if (pcMapRef.current.get(userId) !== peer || peer.recoveryTimer) return;
+      const next = peerLinkDecision({ state: "failed", attempt: peer.restartAttempt, polite });
+      peer.recoveryTimer = setTimeout(() => void runPeerRecoveryRef.current?.(userId), next.delayMs || 15000);
+    },
+    [cleanupPeer, rebuildPeer, restartPeerIce]
+  );
+  const runPeerRecoveryRef = useRef(runPeerRecovery);
+  runPeerRecoveryRef.current = runPeerRecovery;
+
+  const handlePeerLink = useCallback(
+    (userId, state) => {
+      const peer = pcMapRef.current.get(userId);
+      if (!peer) return;
+      if (state === "connected") {
+        if (peer.recoveryTimer) clearTimeout(peer.recoveryTimer);
+        peer.recoveryTimer = null;
+        peer.troubleSince = null;
+        peer.restartAttempt = 0;
+        peer.restartPending = false;
+        setPeerTrouble(userId, false);
+        return;
+      }
+      if (state !== "disconnected" && state !== "failed") return;
+      if (state === "failed") linkStatsRef.current.pcFailed += 1;
+      if (peer.troubleSince == null) {
+        peer.troubleSince = Date.now();
+        setPeerTrouble(userId, true);
+      }
+      if (peer.recoveryTimer) return;
+      const decision = peerLinkDecision({
+        state,
+        troubleSinceMs: peer.troubleSince,
+        nowMs: Date.now(),
+        attempt: peer.restartAttempt || 0,
+        polite: isPoliteSide(myIdRef.current, userId),
+      });
+      if (decision.action === "restart") {
+        peer.recoveryTimer = setTimeout(() => void runPeerRecoveryRef.current?.(userId), decision.delayMs);
+      } else if (decision.action === "rebuild") {
+        rebuildPeer(userId);
+      }
+    },
+    [rebuildPeer, setPeerTrouble]
+  );
+
+  /**
+   * Heal one peer link now: "network" (Wi-Fi <-> cellular, back online) restarts
+   * at once; "rejoin" (socket came back) restarts links that broke or whose
+   * restart was held while the socket was down.
+   */
+  const recoverPeer = useCallback(
+    (userId, reason) => {
+      if (userId == null || sfuModeRef.current) return;
+      const peer = pcMapRef.current.get(userId);
+      if (!peer?.pc || peer.pc.connectionState === "closed") return;
+      const state = peer.pc.connectionState;
+      if (reason !== "network") {
+        if (state === "connected" && !peer.restartPending) return;
+        if ((state === "new" || state === "connecting") && !peer.restartPending) return;
+      }
+      if (peer.troubleSince == null) peer.troubleSince = Date.now();
+      if (peer.recoveryTimer) clearTimeout(peer.recoveryTimer);
+      peer.recoveryTimer = null;
+      void runPeerRecoveryRef.current?.(userId);
+    },
+    []
+  );
+
+  useEffect(() => {
+    handlePeerLinkRef.current = handlePeerLink;
+    recoverPeerRef.current = recoverPeer;
+  }, [handlePeerLink, recoverPeer]);
+
   const leave = useCallback(() => {
     const wasIn = Boolean(activeChannelIdRef.current);
     voiceJoinEpochRef.current += 1;
@@ -1119,6 +1417,7 @@ export function useServerVoice(socket) {
       const telemetry = voiceTelemetryRef.current;
       telemetry?.finish("ended");
       telemetry?.begin("server", "outgoing", "voice");
+      linkStatsRef.current = { sockDrops: 0, pcFailed: 0, iceRestarts: 0, rebuilds: 0, startedAt: Date.now() };
       telemetry?.mark("gumStart");
       // The LiveKit SDK loads in parallel with the mic. The token itself now comes with
       // the confirmed seat (server:voice:joined); a token without a seat is refused.
@@ -1257,7 +1556,7 @@ export function useServerVoice(socket) {
     [acquireJoinMic, cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, micConstraints, socket, toast]
   );
 
-  const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
+  const setMicEnabled = useCallback((enabled, { persist = false, sound = true, ptt = false } = {}) => {
     if ((deafenedRef.current || serverMutedRef.current) && enabled) return;
     const track = localStreamRef.current?.getAudioTracks()?.[0];
     if (!track || track.enabled === enabled) return;
@@ -1277,6 +1576,8 @@ export function useServerVoice(socket) {
         muted: nextMuted,
         deafened: deafenedRef.current,
         cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
+        // Push-to-talk: a DesCoin beat right after the release still counts (2d75c4d3).
+        ptt: Boolean(ptt),
       });
     }
   }, []);
@@ -1284,13 +1585,29 @@ export function useServerVoice(socket) {
   setMicEnabledRef.current = setMicEnabled;
 
   const toggleMute = useCallback(async () => {
-    if (serverMutedRef.current) return;
+    if (serverMutedRef.current) {
+      // Say why the mic stays off (server-voice-11): AFK channel, no SPEAK, or a moderator.
+      const key = unmuteDeniedKey({
+        afkChannel: afkChannelRef.current,
+        canSpeak: canSpeakRef.current,
+        modMuted: modMutedRef.current,
+      });
+      toastRef.current?.(tRuntime(key), "info");
+      return;
+    }
     if (!canPublishVoice()) {
-      setError(
-        channelTypeRef.current === "stage"
-          ? "callui.voice.needInvite"
-          : "callui.voice.noSpeakPerm"
+      // A toast, not the room status: the red header status is for the connection.
+      toastRef.current?.(
+        tRuntime(channelTypeRef.current === "stage" ? "callui.voice.needInvite" : "callui.voice.noSpeakPerm"),
+        "info"
       );
+      return;
+    }
+    // Discord parity: unmuting while deafened undeafens too (it was a silent no-op).
+    if (deafenedRef.current) {
+      toggleDeafenRef.current?.();
+      const live = localStreamRef.current?.getAudioTracks()?.[0];
+      if (live && !live.enabled && !serverMutedRef.current) setMicEnabled(true, { persist: true });
       return;
     }
     let track = localStreamRef.current?.getAudioTracks()?.[0];
@@ -1323,7 +1640,7 @@ export function useServerVoice(socket) {
   useEffect(() => {
     const onPtt = (event) => {
       if (!activeChannelIdRef.current || !canPublishVoice()) return;
-      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false });
+      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false, ptt: true });
     };
     window.addEventListener("descall:ptt", onPtt);
     return () => window.removeEventListener("descall:ptt", onPtt);
@@ -1364,6 +1681,7 @@ export function useServerVoice(socket) {
       });
     }
   }, [applyVoiceElement, socket]);
+  toggleDeafenRef.current = toggleDeafen;
 
   const applyLocalMute = useCallback((nextMuted, { forced = false } = {}) => {
     const track = localStreamRef.current?.getAudioTracks()?.[0];
@@ -1498,11 +1816,18 @@ export function useServerVoice(socket) {
       await beginNativeShare({ anchor: opts?.anchor || null, showPicker: true });
       return;
     }
+    const quality = opts?.quality ? cleanServerScreenQuality(opts.quality) : screenQuality;
+    if (opts?.quality) setScreenQuality(quality);
+    let announced = false;
+    let stream = null;
     try {
-      const { width, height, fps: frameRate } = resolveScreenCaptureSize(screenQuality);
       const peerCount = Math.max(1, pcMapRef.current.size);
-      const maxBitrate = screenBitrateForPeerCount(peerCount, screenQuality.resolution || "720p");
-      const stream = await captureScreenShareStream({
+      // SFU: one upload whatever the room size; mesh: one encode per peer, so the mesh cap.
+      const { width, height, fps: frameRate } = resolveScreenCaptureSize(quality, {
+        peerCount: sfuModeRef.current ? 1 : peerCount + 1,
+      });
+      const maxBitrate = screenBitrateForPeerCount(sfuModeRef.current ? 1 : peerCount, quality.resolution || "720p");
+      stream = await captureScreenShareStream({
         width,
         height,
         fps: frameRate,
@@ -1515,7 +1840,7 @@ export function useServerVoice(socket) {
         width,
         height,
         fps: frameRate,
-        contentHint: screenQuality.contentHint || "motion",
+        contentHint: quality.contentHint || "motion",
       });
       if (screenTrack.readyState !== "live") {
         stream.getTracks().forEach((t) => t.stop());
@@ -1526,12 +1851,14 @@ export function useServerVoice(socket) {
       setScreenStream(stream);
 
       const channelId = activeChannelIdRef.current;
-      if (socket?.connected && channelId) {
+      const announce = () => {
+        if (announced || !socket?.connected || !channelId) return;
+        announced = true;
         socket.emit("server:voice:screen:start", {
           channelId,
           screen: sanitizeScreenAnnouncement({ streamId: stream.id }),
         });
-      }
+      };
 
       if (sfuModeRef.current && liveKitRoomRef.current) {
         const videoOptions = liveKitScreenVideoPublishOptions();
@@ -1548,6 +1875,9 @@ export function useServerVoice(socket) {
             name: audioOptions.name,
           });
         }
+        // Announce only once the share is really published (server-voice-23): a failed
+        // publish no longer leaves the seat "sharing" (and earning) with nothing sent.
+        announce();
         screenTrack.onended = () => {
           stopScreenShareRef.current?.();
         };
@@ -1555,6 +1885,9 @@ export function useServerVoice(socket) {
         audioManager.play("screenShareStart");
         return;
       }
+
+      // Mesh: peers classify the incoming track by this announcement, so it goes first.
+      announce();
 
       for (const [userId, peerData] of pcMapRef.current.entries()) {
         try {
@@ -1578,15 +1911,47 @@ export function useServerVoice(socket) {
       setIsScreenSharing(true);
       audioManager.play("screenShareStart");
     } catch (err) {
+      // Never leave a half-started share: stop the capture, unpublish, tell the room.
+      if (stream) {
+        const room = liveKitRoomRef.current;
+        for (const track of stream.getTracks()) {
+          try {
+            if (sfuModeRef.current && room) room.localParticipant.unpublishTrack(track);
+          } catch {
+            /* not published */
+          }
+          track.stop();
+        }
+        if (screenStreamRef.current === stream) {
+          screenStreamRef.current = null;
+          setScreenStream(null);
+        }
+        if (announced && socket?.connected && activeChannelIdRef.current) {
+          socket.emit("server:voice:screen:stop", { channelId: activeChannelIdRef.current });
+        }
+      }
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
       console.error("[ServerVoice] screen share failed:", err);
-      setError(err?.message || "Could not start screen share.");
+      toastRef.current?.(tRuntime("Could not start screen share."), "error");
     }
-  }, [beginNativeShare, canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, socket]);
+  }, [beginNativeShare, canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, setScreenQuality, socket]);
+
+  /** Quality changed while sharing: restart the capture with the new settings. */
+  const restartScreenShareWithQuality = useCallback(
+    async (quality) => {
+      const clean = cleanServerScreenQuality(quality);
+      setScreenQuality(clean);
+      if (!screenStreamRef.current) return;
+      await stopScreenShareRef.current?.({ quiet: true });
+      await startScreenShareRef.current?.({ quality: clean });
+    },
+    [setScreenQuality]
+  );
 
   useEffect(() => {
     stopScreenShareRef.current = stopScreenShare;
-  }, [stopScreenShare]);
+    startScreenShareRef.current = startScreenShare;
+  }, [stopScreenShare, startScreenShare]);
 
   // Native broadcast events. "orphan" = a broadcast was started outside the app
   // (Control Center > Screen Broadcast > Descall) with no companion session yet:
@@ -1916,9 +2281,12 @@ export function useServerVoice(socket) {
     if (!socket) return undefined;
     const onConnect = () => {
       const serverId = subscribedServerIdRef.current;
-      if (!serverId) return;
-      emitRoomOnce(socket, "server:voice:subscribe", { serverId });
-      emitRoomOnce(socket, "server:subscribe", { serverId });
+      if (serverId) {
+        emitRoomOnce(socket, "server:voice:subscribe", { serverId });
+        emitRoomOnce(socket, "server:subscribe", { serverId });
+      }
+      // Re-take the voice seat even when no server view is subscribed (voice joined
+      // and the user moved on to DMs): otherwise the seat ran out after the grace.
       const channelId = activeChannelIdRef.current;
       const liveServerId = activeServerIdRef.current;
       if (channelId && liveServerId) {
@@ -1927,8 +2295,15 @@ export function useServerVoice(socket) {
         emitRoomOnce(socket, "server:voice:check", { channelId });
       }
     };
+    const onDisconnect = () => {
+      if (activeChannelIdRef.current) linkStatsRef.current.sockDrops += 1;
+    };
     socket.on("connect", onConnect);
-    return () => socket.off("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+    };
   }, [socket]);
 
   useEffect(() => {
@@ -1948,14 +2323,22 @@ export function useServerVoice(socket) {
       requestedToSpeak: requested,
       serverMuted: forcedMute,
       serverDeafened: forcedDeafen,
+      afkChannel,
       livekit,
+      rejoin,
     } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current) return;
       const waiter = joinedTokenWaiterRef.current;
-      if (waiter && String(waiter.channelId) === String(channelId)) {
+      const initialJoin = Boolean(waiter && String(waiter.channelId) === String(channelId));
+      if (initialJoin) {
         joinedTokenWaiterRef.current = null;
         waiter.resolve(livekit?.token ? livekit : null);
       }
+      // A socket reconnect re-emits the join for the seat we already hold (onConnect).
+      // Keep the roster and its media, no join sound (voice-drops-01, server-voice-05).
+      const isRejoin = !initialJoin && (Boolean(rejoin) || Boolean(activeChannelIdRef.current));
+      afkChannelRef.current = Boolean(afkChannel);
+      modMutedRef.current = Boolean(forcedMute) && !afkChannel;
       if (forcedDeafen) applyRemoteDeafen(true);
       setActiveServerId(serverId || null);
       if (name) setChannelName(name);
@@ -1977,8 +2360,35 @@ export function useServerVoice(socket) {
       }
       if (canRequest !== undefined) setCanRequestToSpeak(Boolean(canRequest));
       setRequestedToSpeak(Boolean(requested));
-      setParticipants(Array.isArray(others) ? others.map((u) => ({ ...u, hasAudio: true })) : []);
-      audioManager.play("channelJoin");
+      if (isRejoin) {
+        const list = Array.isArray(others) ? others : [];
+        const keep = new Set(list.map((u) => String(u?.id)));
+        if (rejoin) {
+          // The server kept our seat, so its list is complete: someone missing left
+          // while we were offline.
+          setParticipants((prev) => mergeRejoinRoster(prev, list));
+          for (const peerId of [...pcMapRef.current.keys()]) {
+            if (!keep.has(String(peerId))) cleanupPeer(peerId);
+          }
+        } else {
+          // Server restarted (deploy): the others re-join in a moment; keep everyone
+          // we still have a link to.
+          setParticipants((prev) => {
+            const merged = mergeRejoinRoster(prev, list);
+            const extra = prev.filter((p) => !keep.has(String(p.id)) && pcMapRef.current.has(p.id));
+            return [...merged, ...extra];
+          });
+        }
+        // Links that broke during the outage heal with an ICE restart.
+        for (const u of list) recoverPeerRef.current?.(u?.id, "rejoin");
+        // SFU: the room dropped while the socket was away: connect with the new token.
+        if (livekit?.token && (!liveKitRoomRef.current || liveKitLinkRef.current === "disconnected")) {
+          reconnectLiveKitRef.current?.(channelId, livekit);
+        }
+      } else {
+        setParticipants(Array.isArray(others) ? others.map((u) => ({ ...u, hasAudio: true })) : []);
+        audioManager.play("channelJoin");
+      }
       if (forcedMute || canSpeakNow === false) {
         applyLocalMute(true, { forced: Boolean(forcedMute) });
         const ch = activeChannelIdRef.current;
@@ -1988,11 +2398,33 @@ export function useServerVoice(socket) {
       }
     };
 
-    const onMemberJoined = ({ channelId, user } = {}) => {
+    const onMemberJoined = ({ channelId, user, rejoin } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current || !user?.id) return;
-      if (user.id === myIdRef.current) return;
-      // Their Market 2.0 join sound (once, throttled) or the standard join tone.
-      playJoinCue(user);
+      if (String(user.id) === String(myIdRef.current)) return;
+      const existing = pcMapRef.current.get(user.id);
+      const linkUp = existing?.pc?.connectionState === "connected";
+      // Roster entry with the real name / avatar in every mode (SFU added a
+      // "Member" placeholder only when a track arrived, server-voice-04).
+      setParticipants((prev) => {
+        if (prev.find((p) => String(p.id) === String(user.id))) {
+          return prev.map((p) => (String(p.id) === String(user.id) ? { ...p, ...user, id: p.id } : p));
+        }
+        return [...prev, { ...user, hasAudio: true }];
+      });
+      // A reconnect of someone already here (rejoin, or a server restart while our
+      // link to them never broke) is not a join: no sound, keep the link.
+      if (!rejoin && !linkUp) playJoinCue(user);
+      if (sfuModeRef.current) return;
+      if (existing) {
+        if (linkUp) return;
+        if (rejoin) {
+          recoverPeerRef.current?.(user.id, "rejoin");
+          return;
+        }
+        // A new seat with a dead link: build a fresh connection (a stale one
+        // made the new offer wait for the old transport to time out).
+        cleanupPeer(user.id);
+      }
       // We are already in the room, offer to the new joiner
       offerToPeer(user, channelId);
     };
@@ -2018,6 +2450,23 @@ export function useServerVoice(socket) {
 
       const incomingScreen = sanitizeScreenAnnouncement(screen);
       let peer = pcMapRef.current.get(fromUserId);
+      // An offer from a brand-new remote connection (they rebuilt it, or re-took a
+      // seat after the grace): reusing our dead connection kept everyone silent
+      // until its old transport timed out, ~6.5 s (voice-drops-04).
+      if (peer && isNewRemoteSession(peer.pc?.remoteDescription?.sdp, offer?.sdp)) {
+        cleanupPeer(fromUserId);
+        peer = null;
+      }
+      // Glare (both sides restarted at once): the polite side rolls back its own
+      // offer, the impolite side keeps its offer and ignores this one.
+      if (peer && peer.pc.signalingState === "have-local-offer") {
+        if (!isPoliteSide(myIdRef.current, fromUserId)) return;
+        try {
+          await peer.pc.setLocalDescription({ type: "rollback" });
+        } catch {
+          /* engines without rollback: setRemoteDescription below rolls back implicitly */
+        }
+      }
       if (!peer) {
         const pc = createPeerConnection({});
         peer = { pc, pendingIce: [] };
@@ -2121,18 +2570,24 @@ export function useServerVoice(socket) {
       }
     };
 
-    const onForceDisconnected = ({ serverId, channelId } = {}) => {
+    const onForceDisconnected = ({ serverId, channelId, reason, byUserId } = {}) => {
       const ch = channelId || activeChannelIdRef.current;
       const meId = myIdRef.current;
       if (ch && meId) removeUserFromVoiceStates(ch, meId, serverId || activeServerIdRef.current);
       if (ch && ch === activeChannelIdRef.current) {
         audioManager.play("disconnect");
-        cleanupAll();
+        // The server already removed the seat: no leave (it would hit the user's
+        // other device), and the session counts as dropped, not ended.
+        cleanupAll({ emitLeave: false, result: dropResultFor(reason), reason: reason || (byUserId ? "moderator" : "disconnected") });
+        // Say why (server-voice-25): "other device", timeout, kick, deleted channel...
+        const key = dropMessageKey(reason, { byUserId });
+        setError(key);
+        toastRef.current?.(tRuntime(key), reason === "other_device" ? "info" : "error");
       } else if (ch) {
-        // Already cleaned locally but still clear any leftover roster
+        // This device was not in that channel (the event goes to every device of
+        // the user): only clear a leftover roster entry, no red status here.
         setParticipants((prev) => prev.filter((p) => String(p.id) !== String(meId)));
       }
-      setError("callui.voice.disconnected");
     };
 
     const onForceMoved = ({
@@ -2140,13 +2595,19 @@ export function useServerVoice(socket) {
       channelName: name,
       channelType: type,
       serverId,
+      reason,
+      byUserId,
     } = {}) => {
       if (!toChannelId || !serverId) return;
       const activeId = activeChannelIdRef.current;
-      // Event is only emitted to the moved user. Always rejoin destination unless
-      // this client is already connected there (avoids sticky early-return bugs).
-      if (activeId && String(activeId) === String(toChannelId)) return;
-      cleanupAll();
+      // Only the device that is in voice follows a move; an idle device of the same
+      // user must not grab the mic and race for the seat (server-voice-03).
+      if (!activeId) return;
+      if (String(activeId) === String(toChannelId)) return;
+      // The server already moved the seat: tear down locally, no leave for the old channel.
+      cleanupAll({ emitLeave: false, result: "moved", reason: reason === "afk" ? "afk" : "moved" });
+      const moveKey = moveMessageKey(reason, { byUserId });
+      if (moveKey) toastRef.current?.(tRuntime(moveKey, { channel: name || "Voice" }), "info");
       // Rejoin destination after brief cleanup so tracks/LiveKit fully release.
       window.setTimeout(() => {
         joinRef.current?.(serverId, {
@@ -2159,6 +2620,7 @@ export function useServerVoice(socket) {
 
     const onForceMute = ({ channelId, muted: isMuted, canSpeak: speakPerm } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current) return;
+      modMutedRef.current = Boolean(isMuted);
       if (isMuted) {
         applyLocalMute(true, { forced: true });
       } else {
@@ -2237,15 +2699,38 @@ export function useServerVoice(socket) {
       setVoiceStatesByServer((prev) => ({ ...prev, [serverId]: map }));
     };
 
-    const onError = ({ message, code, channelId } = {}) => {
-      if (message) setError(message);
+    const onError = ({ message, code, channelId, phase } = {}) => {
+      // A refused join (channel full, timed out, no access, channel gone): the server
+      // has no seat for us, so leave locally instead of staying "in voice" alone with
+      // the mic open on the mesh fallback (server-voice-20). Also covers a refused
+      // re-join after a reconnect.
+      if (
+        phase === "join" &&
+        channelId &&
+        activeChannelIdRef.current &&
+        String(channelId) === String(activeChannelIdRef.current)
+      ) {
+        const waiter = joinedTokenWaiterRef.current;
+        if (waiter && String(waiter.channelId) === String(channelId)) {
+          joinedTokenWaiterRef.current = null;
+          waiter.resolve(null);
+        }
+        voiceJoinEpochRef.current += 1;
+        if (code === "RULES_REQUIRED") window.dispatchEvent(new CustomEvent("descall:server-rules-required"));
+        cleanupAll({ emitLeave: false, result: "refused", reason: code ? String(code).toLowerCase() : "refused" });
+        const text = message || "Could not join voice channel.";
+        setError(text);
+        if (code !== "RULES_REQUIRED") toastRef.current?.(tRuntime(text), "error");
+        return;
+      }
       // Moderation failures (move/disconnect/mute) are emitted without a channelId
       // and must not kick the moderator out of their own voice session.
       const isJoinContext =
         Boolean(channelId) &&
         (!activeChannelIdRef.current || String(channelId) === String(activeChannelIdRef.current));
       const waiter = joinedTokenWaiterRef.current;
-      if (isJoinContext && waiter && String(waiter.channelId) === String(channelId)) {
+      const joinPending = Boolean(isJoinContext && waiter && String(waiter.channelId) === String(channelId));
+      if (joinPending) {
         joinedTokenWaiterRef.current = null;
         waiter.resolve(null);
       }
@@ -2254,26 +2739,30 @@ export function useServerVoice(socket) {
         if (isJoinContext) cleanupAll();
         return;
       }
-      if (!isJoinContext && message) {
-        window.dispatchEvent(
-          new CustomEvent("descall:server-voice-mod-error", {
-            detail: { message, code: code || null },
-          })
-        );
-      }
-      // Join-time permission failures happen after optimistic local join, always
-      // roll back so the UI doesn't look "in voice" while the server rejected us.
-      if (isJoinContext && (code === "MISSING_PERMISSION" || code === "NOT_MEMBER")) {
-        cleanupAll();
+      if (!isJoinContext) {
+        // Not about our connection: never the room's red status (server-voice-09).
+        if (message) {
+          window.dispatchEvent(
+            new CustomEvent("descall:server-voice-mod-error", {
+              detail: { message, code: code || null },
+            })
+          );
+        }
         return;
       }
-      if (
-        isJoinContext &&
-        activeChannelIdRef.current &&
-        /failed to join|microphone|could not join/i.test(message || "")
-      ) {
-        cleanupAll();
+      // Join refusals arrive tagged (phase "join", handled above). While our own join
+      // is still pending, an untagged refusal rolls back too. A refused screen share or
+      // camera (also MISSING_PERMISSION) used to take the user out of voice.
+      if (joinPending) {
+        if (message) setError(message);
+        if (code === "MISSING_PERMISSION" || code === "NOT_MEMBER" || /failed to join|microphone|could not join/i.test(message || "")) {
+          cleanupAll();
+        }
+        return;
       }
+      // An action in the channel was refused (screen share, camera, stage): a toast,
+      // the connection status stays as it is.
+      if (message) toastRef.current?.(tRuntime(message), "error");
     };
 
     const onLeft = ({ channelId } = {}) => {
@@ -2560,6 +3049,9 @@ export function useServerVoice(socket) {
     stopCamera,
     startScreenShare,
     stopScreenShare,
+    screenQuality,
+    setScreenQuality,
+    restartScreenShareWithQuality,
     audioInputDevices,
     audioOutputDevices,
     videoInputDevices,

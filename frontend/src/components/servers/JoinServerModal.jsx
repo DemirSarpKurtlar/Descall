@@ -15,6 +15,7 @@ import { isVanityServerInvite, vanitySlugFromInviteCode } from "../../lib/invite
 import { ServerIcon } from "./ServerIcon";
 import { ServerListSkeleton } from "../ui/Skeleton";
 import { cssUrl } from "../../lib/cssUrl";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 /**
  * Join via invite code + browse public servers.
@@ -29,6 +30,7 @@ export default function JoinServerModal({ onClose, onJoined }) {
   const [publicServers, setPublicServers] = useState([]);
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [discoverQ, setDiscoverQ] = useState("");
+  useEscapeClose(onClose, { enabled: !busy });
 
   const normalizeCode = (raw) => {
     const s = String(raw || "").trim();

@@ -11,11 +11,16 @@ const { wrapFeature } = require('../compat.cjs');
  * It is a UI lock, not encryption at rest.
  */
 
-const { safeStorage, powerMonitor } = require('electron');
+const { safeStorage, powerMonitor, BrowserWindow, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { hashPin, verifyPin, validPin, lockoutMs } = require('../pinHash.cjs');
 const { encryptionAvailable, encryptText, readEncryptedFile, looksLikeJsonObject } = require('../../tokenCrypto.cjs');
+const notifyHooks = require('../notifyHooks.cjs');
+const { isAppUrl } = require('../../appTrust.cjs');
+const { redactLockedNotification } = require('../appLockRedact.cjs');
+let et = (k) => k;
+try { ({ et } = require('../../mainI18n.cjs')); } catch (_) { /* selftests without electron */ }
 
 let ctx = null;
 let locked = false;
@@ -25,6 +30,10 @@ let idleTimer = null;
 let config = { enabled: false, idleMinutes: 10, onMinimize: true, onSystemLock: true };
 let minimizeHook = null;
 let hookedWin = null;
+let offNotifyFilter = null;
+/** App windows (pop-outs, extra accounts, Yönetici Paneli) hidden while locked. */
+const hiddenForLock = new Set();
+let onWindowCreated = null;
 
 function pinFile() {
   return path.join(ctx.storeDir(), 'app-lock.bin');
@@ -58,11 +67,46 @@ async function writeRecord(rec) {
   record = rec;
 }
 
+/** Every Descall app window except the main one (it shows the lock screen itself). */
+function otherAppWindows() {
+  const main = ctx?.getMainWindow();
+  try {
+    return BrowserWindow.getAllWindows().filter((w) => {
+      if (!w || w.isDestroyed() || w === main) return false;
+      try { return isAppUrl(w.webContents.getURL(), { isDev: Boolean(ctx?.base?.isDev) }); } catch (_) { return false; }
+    });
+  } catch (_) {
+    return [];
+  }
+}
+
+/** The lock covers every window: other app windows are hidden until the PIN is entered. */
+function hideOtherWindows() {
+  for (const w of otherAppWindows()) {
+    try {
+      if (w.isVisible()) { w.hide(); hiddenForLock.add(w); }
+    } catch (_) { /* window gone */ }
+  }
+}
+
+function restoreOtherWindows() {
+  for (const w of hiddenForLock) {
+    try { if (!w.isDestroyed()) w.showInactive(); } catch (_) { /* window gone */ }
+  }
+  hiddenForLock.clear();
+}
+
 function lock(reason) {
   if (!config.enabled || !readRecord()) return { ok: false, error: 'no_pin' };
   locked = true;
   ctx?.sendToRenderer('premium:app_lock:locked', { locked: true, reason: String(reason || 'manual') });
+  hideOtherWindows();
   return { ok: true, locked: true };
+}
+
+/** Locked: toasts carry no sender, preview or quick reply (appLockRedact.cjs). */
+function notificationFilter(payload) {
+  return locked ? redactLockedNotification(payload, { lockedText: et('notif.locked') }) : payload;
 }
 
 /** Digits in the PIN, so the lock screen can draw exactly that many dots. PINs saved before
@@ -123,7 +167,21 @@ module.exports = wrapFeature({
       if (!ctx) return;
       config = { ...config, enabled: Boolean(saved.enabled) && Boolean(readRecord()) };
       armTimers();
+      // A restart must not open the app unlocked (before, quitting and starting again skipped the PIN).
+      if (config.enabled) lock('launch');
     });
+    offNotifyFilter = notifyHooks.registerFinal('app_lock', notificationFilter);
+    // Windows opened while locked (session restore, a pop-out) are hidden as soon as they load.
+    onWindowCreated = (_e, win) => {
+      try {
+        win.webContents.once('did-finish-load', () => {
+          if (!locked || win.isDestroyed() || win === ctx?.getMainWindow()) return;
+          if (!isAppUrl(win.webContents.getURL(), { isDev: Boolean(ctx?.base?.isDev) })) return;
+          try { win.hide(); hiddenForLock.add(win); } catch (_) { /* gone */ }
+        });
+      } catch (_) { /* ignore */ }
+    };
+    try { app.on('browser-window-created', onWindowCreated); } catch (_) { /* ignore */ }
     ctx.handle('premium:app_lock:status', async () => { await loaded; return status(); });
     ctx.handle('premium:app_lock:set-pin', async (_e, pin, currentPin) => {
       await loaded;
@@ -142,6 +200,7 @@ module.exports = wrapFeature({
       config = { ...config, enabled: false };
       ctx.store('app_lock').write(config);
       locked = false;
+      restoreOtherWindows();
       armTimers();
       return { ok: true };
     });
@@ -164,7 +223,7 @@ module.exports = wrapFeature({
       const now = Date.now();
       if (now < blockedUntil) return { ok: false, error: 'blocked', retryInMs: blockedUntil - now };
       const rec = readRecord();
-      if (!rec) { locked = false; return { ok: true, locked: false }; }
+      if (!rec) { locked = false; restoreOtherWindows(); return { ok: true, locked: false }; }
       if (!verifyPin(pin, rec)) {
         failures += 1;
         blockedUntil = now + lockoutMs(failures);
@@ -175,6 +234,7 @@ module.exports = wrapFeature({
       locked = false;
       if (!pinLength()) { try { await writeRecord({ ...rec, len: String(pin).length }); } catch (_) { /* ignore */ } }
       ctx.sendToRenderer('premium:app_lock:locked', { locked: false });
+      restoreOtherWindows();
       return { ok: true, locked: false };
     });
     try { powerMonitor.on('lock-screen', onSystemLock); } catch (_) { /* ignore */ }
@@ -186,9 +246,14 @@ module.exports = wrapFeature({
     if (hookedWin && minimizeHook) { try { hookedWin.removeListener('minimize', minimizeHook); } catch (_) { /* ignore */ } }
     hookedWin = null;
     try { powerMonitor.removeListener('lock-screen', onSystemLock); } catch (_) { /* ignore */ }
+    try { offNotifyFilter?.(); } catch (_) { /* ignore */ }
+    offNotifyFilter = null;
+    try { if (onWindowCreated) app.removeListener('browser-window-created', onWindowCreated); } catch (_) { /* ignore */ }
+    onWindowCreated = null;
     // Membership gone: the lock is released (a premium feature must not lock people out).
     if (locked) ctx?.sendToRenderer('premium:app_lock:locked', { locked: false });
     locked = false;
+    restoreOtherWindows();
     ctx = null;
   },
 });

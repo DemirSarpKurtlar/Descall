@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { httpError } from "./httpError";
 
 async function serversRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
@@ -13,8 +14,7 @@ async function serversRequest(path, { method = "GET", body } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data?.error || data?.message || `Request failed (${res.status})`);
-    err.status = res.status;
+    const err = httpError(data, res.status);
     err.code = data?.code || null;
     err.body = data;
     throw err;

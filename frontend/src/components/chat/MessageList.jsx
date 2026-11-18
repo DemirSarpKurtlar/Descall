@@ -6,6 +6,7 @@ import { usePrivateMediaUrl, refreshMediaUrl, needsRefresh as needsPrivateMediaR
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import { FileText, Download, Smile, Plus, Reply, X, Pin, PinOff, Pencil, Trash2, Flag, Copy, MoreHorizontal, ChevronDown, ChevronUp } from "../ui/Icon.jsx";
+import { isRetryable, requestFailedAction } from "../../lib/failedMessage";
 import { headerSpaceOf, separatorAbove, jumpTarget, pillTopIn, JUMP_UNREAD_EVENT } from "../../lib/unreadJump";
 import { canForward, isForwardedMeta, openForwardSheet } from "../../lib/forwardMessage";
 import ForwardGlyph from "./ForwardGlyph.jsx";
@@ -1399,7 +1400,10 @@ function MessageBubbleView({
   }, []);
 
   const beginMenuPress = useCallback((event, { pressed = false, fromMedia = false } = {}) => {
-    if (!glass || editing) return;
+    if (editing) return;
+    // Classic UI (glass off) on a touch phone also opens the menu on long-press;
+    // a mouse keeps the hover bar.
+    if (!glass && !(event.pointerType === "touch" || event.pointerType === "pen")) return;
     if (event.button != null && event.button !== 0) return;
     const el = event.currentTarget;
     if (!el) return;
@@ -1907,7 +1911,7 @@ function MessageBubbleView({
         onContextMenu={onBubbleContextMenu}
         data-message-id={message?.id || undefined}
         data-editing={isEditTarget ? "1" : undefined}
-        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
+        className={`message-bubble is-left ${isOwn ? "own" : ""} ${isCompact ? "compact" : ""} ${menuOpen ? "menu-open" : ""} ${isEditTarget ? "is-editing" : ""} ${mediaOnly ? "has-media-only" : ""} ${sticker ? "has-sticker" : ""} ${isVisualMedia ? "has-media" : ""} ${hasSlashEmbed ? "has-slash-embed" : ""} ${hasCard ? "has-card" : ""} ${isPollEnd ? "has-poll-end" : ""} ${reactions.length > 0 ? "has-reactions" : ""} ${isOwn && message.failed ? "is-failed" : ""} ${chatBubbleKey ? `cosmetic-chat-bubble bubble-${chatBubbleKey}` : ""}`}
         onMouseEnter={glass ? undefined : openMenu}
         onMouseLeave={glass ? undefined : scheduleClose}
         onPointerDown={(e) => {
@@ -1948,7 +1952,7 @@ function MessageBubbleView({
             title={t("Replying to")}
           >
             <span className="message-reply-author">
-              {reply.from?.username || reply.username || t("Message")}
+              <ReplyAuthorName reply={reply} fallback={t("Message")} />
             </span>
             <span className="message-reply-text">
               {reply.text
@@ -2189,7 +2193,38 @@ function MessageBubbleView({
           />
         )}
 
-        {!isCompact && isOwn && (
+        {isOwn && message.requestPending ? (
+          <div className="message-request-note" data-testid="msg-request-pending" role="status">
+            <span className="message-request-label">{t("msg5.request.pendingLabel")}</span>
+            <span>{t("msg5.request.pendingInfo", { name: message.requestName || t("Someone") })}</span>
+          </div>
+        ) : isOwn && message.failed ? (
+          // Refused by the server (polish messaging-20): never looks "sent".
+          <div className="message-failed" data-testid="msg-failed" role="status">
+            <AlertCircle size={14} aria-hidden="true" />
+            <span className="message-failed-label">{t("msg5.failed.label")}</span>
+            {isRetryable(message, conversationType) ? (
+              <button
+                type="button"
+                className="message-failed-btn"
+                data-testid="msg-failed-retry"
+                onClick={(e) => { e.stopPropagation(); requestFailedAction("retry", message, { conversationType, conversationId }); }}
+              >
+                <RefreshCw size={12} aria-hidden="true" />
+                {t("msg5.failed.retry")}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="message-failed-btn is-danger"
+              data-testid="msg-failed-discard"
+              onClick={(e) => { e.stopPropagation(); requestFailedAction("discard", message, { conversationType, conversationId }); }}
+            >
+              <Trash2 size={12} aria-hidden="true" />
+              {t("msg5.failed.discard")}
+            </button>
+          </div>
+        ) : !isCompact && isOwn && (
           <div className="message-footer">
             <span
               className="message-status"
@@ -2546,6 +2581,16 @@ function countBubbleRender() {
   if (typeof window === "undefined") return;
   const rc = window.__descallBubbleRenders;
   if (rc) rc.n += 1;
+}
+
+/**
+ * Reply quote author, named like the row header (polish messaging-16). Reads the sender
+ * lookup here, not in the bubble: that context changes on presence and profile updates,
+ * and reading it in the bubble would re-render every bubble on each of them.
+ */
+function ReplyAuthorName({ reply, fallback }) {
+  const senderLookup = useContext(SenderLookupContext);
+  return (reply.from && resolveDisplayName(senderLookup?.(reply.from) || reply.from)) || reply.from?.username || reply.username || fallback;
 }
 
 /**

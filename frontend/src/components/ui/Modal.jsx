@@ -1,11 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useT } from "../../context/LocaleContext";
 import CloseButton from "./CloseButton.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
 
 export default function Modal({ open, onClose, title, children, wide, className = "" }) {
   const t = useT();
+  const cardRef = useRef(null);
+  // Tab stays in the dialog, the page behind is inert, focus returns to the opener (WCAG 2.4.3).
+  useModalFocus(open, cardRef);
   useEffect(() => {
     if (!open) return;
     const h = (e) => e.key === "Escape" && onClose?.();
@@ -29,6 +33,7 @@ export default function Modal({ open, onClose, title, children, wide, className 
           onClick={() => onClose?.()}
         >
           <motion.div
+            ref={cardRef}
             className={cardClass}
             role="dialog"
             aria-modal="true"

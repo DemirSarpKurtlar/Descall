@@ -45,12 +45,15 @@ import InviteCard from "../friends/InviteCard";
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import { parseAppDate } from "../../lib/datetime";
 import { formatDate, formatTime, upper } from "../../i18n/format";
+import { serverMessage } from "../../i18n/serverText.js";
+import { serverErrorText } from "../../api/httpError";
 import { GlassListHeader, useGlassShell } from "./glass/GlassShell";
 import { framerSpring, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import useGlassUi from "../../hooks/useGlassUi";
 import { requestChatPrefetch } from "../../lib/chatPrefetch";
 import { isContextMenuKey, menuArrowKeys, useKeyboardMenuFocus } from "../../lib/menuKeys";
+import { friendMatcher, foldIncludes } from "../../lib/friendFilter";
 
 
 
@@ -83,6 +86,8 @@ export default function ServerSidebar({
   messageRequests,
   onAcceptFriend,
   onDeclineFriend,
+  outgoingRequests,
+  onCancelFriendRequest,
   onAcceptMessageRequest,
   onDeclineMessageRequest,
   onMobileClose,
@@ -139,8 +144,8 @@ export default function ServerSidebar({
 
   useEffect(() => {
     if (!socket) return;
-    const onFriendError = ({ message }) => {
-      setAddError(message || t("Friend action failed."));
+    const onFriendError = (payload = {}) => {
+      setAddError(serverMessage(payload, "message") || t("Friend action failed."));
       setTimeout(() => setAddError(""), 4000);
     };
     const onFriendSent = ({ to } = {}) => {
@@ -231,8 +236,12 @@ export default function ServerSidebar({
           memberIds: selectedGroupMembers.map(m => m.id)
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.details || t("Failed to create group (status {status})", { status: res.status }));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const shown = new Error(serverErrorText(data) || t("Failed to create group (status {status})", { status: res.status }));
+        shown.userFacing = true;
+        throw shown;
+      }
       setAddSuccess(t('Group "{name}" created', { name: groupName.trim() }));
       setGroupName("");
       setSelectedGroupMembers([]);
@@ -253,7 +262,8 @@ export default function ServerSidebar({
       }
       onRefreshGroups?.();
     } catch (err) {
-      setAddError(err.message || t("Network error. Is backend deployed?"));
+      // A network failure ("Failed to fetch") is never shown raw (polish messaging-17).
+      setAddError(err?.userFacing && err.message ? err.message : t("msg5.group.networkError"));
     } finally {
       setAddLoading(false);
     }
@@ -274,18 +284,14 @@ export default function ServerSidebar({
   const filteredDms = useMemo(() => {
     if (!Array.isArray(dms)) return [];
     if (!searchQuery) return dms;
-    return dms.filter(dm => 
-      (dm.displayName || dm.username || "").toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return dms.filter((dm) => foldIncludes(dm.displayName || dm.username || "", searchQuery));
   }, [dms, searchQuery]);
 
 
   const filteredGroups = useMemo(() => {
     if (!Array.isArray(groups)) return [];
     if (!searchQuery) return groups;
-    return groups.filter(group =>
-      group.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return groups.filter((group) => foldIncludes(group.name || "", searchQuery));
   }, [groups, searchQuery]);
 
   const toggleSection = (section) => {
@@ -462,6 +468,8 @@ export default function ServerSidebar({
               messageRequests={messageRequests}
               onAcceptFriend={onAcceptFriend}
               onDeclineFriend={onDeclineFriend}
+              outgoingRequests={outgoingRequests}
+              onCancelFriendRequest={onCancelFriendRequest}
               onAcceptMessageRequest={onAcceptMessageRequest}
               onDeclineMessageRequest={onDeclineMessageRequest}
               isMobile={isMobile}
@@ -515,6 +523,8 @@ export default function ServerSidebar({
               messageRequests={messageRequests}
               onAcceptFriend={onAcceptFriend}
               onDeclineFriend={onDeclineFriend}
+              outgoingRequests={outgoingRequests}
+              onCancelFriendRequest={onCancelFriendRequest}
               onAcceptMessageRequest={onAcceptMessageRequest}
               onDeclineMessageRequest={onDeclineMessageRequest}
               isMobile={isMobile}
@@ -1075,7 +1085,7 @@ function SwipeableDmRow({
           </button>
           <button type="button" className="group-swipe-btn mute" onClick={() => onAction?.("mute")}>
             {dm.muted ? <Bell size={15} /> : <BellOff size={15} />}
-            <span>{dm.muted ? t("Unmute") : t("Mute")}</span>
+            <span>{dm.muted ? t("Unmute chat") : t("Mute chat")}</span>
           </button>
           <button type="button" className="group-swipe-btn unread" onClick={() => onAction?.("unread")}>
             {unread > 0 ? <MailOpen size={15} /> : <Mail size={15} />}
@@ -1237,7 +1247,7 @@ function DmContextMenu({ dm, unread, onClose, onAction, anchorRef, anchorPoint =
         onMouseLeave={(e) => e.currentTarget.style.background = "none"}
       >
         {dm.muted ? <Bell size={14} style={{ color: "var(--text-muted)" }} /> : <BellOff size={14} style={{ color: "var(--text-muted)" }} />}
-        {dm.muted ? t("Unmute") : t("Mute")}
+        {dm.muted ? t("Unmute chat") : t("Mute chat")}
       </button>
       <button
         type="button"
@@ -1921,36 +1931,31 @@ function GroupRowFront({
   );
 }
 
-function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, messageRequests, onAcceptFriend, onDeclineFriend, onAcceptMessageRequest, onDeclineMessageRequest, isMobile, onQuickAdd, me, onShareInvite, loading = false, showInvite = true }) {
+function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect, onStartCall, searchQuery = "", friendRequests, outgoingRequests, onCancelFriendRequest, messageRequests, onAcceptFriend, onDeclineFriend, onAcceptMessageRequest, onDeclineMessageRequest, isMobile, onQuickAdd, me, onShareInvite, loading = false, showInvite = true }) {
   const t = useT();
   const glassShell = useGlassShell();
   const safeFriends = Array.isArray(friends) ? friends : [];
   const safeOnlineUsers = Array.isArray(onlineUsers) ? onlineUsers : [];
   const pendingRequests = Array.isArray(friendRequests) ? friendRequests : [];
   const pendingMessages = Array.isArray(messageRequests) ? messageRequests : [];
+  const sentRequests = Array.isArray(outgoingRequests) ? outgoingRequests : [];
 
   const onlineFriends = safeFriends.filter((f) => isVisiblyOnline(safeOnlineUsers, f.id));
   const offlineFriends = safeFriends.filter((f) => !isVisiblyOnline(safeOnlineUsers, f.id));
 
+  // The "Ara" field filters every layout, Turkish-aware (polish world-social-18).
+  const searching = Boolean(String(searchQuery || "").trim());
+  const matches = friendMatcher(searchQuery);
+  const pendingShown = pendingRequests.filter(matches);
+  const messageShown = pendingMessages.filter(matches);
+  const sentShown = sentRequests.filter(matches);
+  const onlineShown = onlineFriends.filter(matches);
+  const offlineShown = offlineFriends.filter(matches);
+  const noResults = searching
+    && (safeFriends.length + pendingRequests.length + pendingMessages.length + sentRequests.length) > 0
+    && onlineShown.length + offlineShown.length + pendingShown.length + messageShown.length + sentShown.length === 0;
+
   if (glassShell) {
-    const q = String(searchQuery || "").trim().toLowerCase();
-    const matches = (friend) => {
-      if (!q) return true;
-      const name = resolveDisplayName(friend).toLowerCase();
-      const handle = String(friend.username || "").toLowerCase();
-      const custom = String(friend.customStatus || friend.custom_status || "").toLowerCase();
-      return name.includes(q) || handle.includes(q) || custom.includes(q);
-    };
-    const pendingShown = pendingRequests.filter(matches);
-    const messageShown = pendingMessages.filter((req) => {
-      if (!q) return true;
-      const name = resolveDisplayName(req).toLowerCase();
-      const handle = String(req.username || "").toLowerCase();
-      const preview = String(req.preview || "").toLowerCase();
-      return name.includes(q) || handle.includes(q) || preview.includes(q);
-    });
-    const onlineShown = onlineFriends.filter(matches);
-    const offlineShown = offlineFriends.filter(matches);
     const friendSub = (friend) => {
       const custom = friend.customStatus || friend.custom_status;
       if (custom) return custom;
@@ -1999,6 +2004,26 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     <Check size={18} />
                   </button>
                   <button type="button" className="g-ib no" title={t("Decline")} aria-label={t("Decline message request")} onClick={() => onDeclineMessageRequest?.(req.id)}>
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {sentShown.length > 0 && (
+            <div className="friend-category">
+              {/* Requests I sent, with "Geri çek" (polish world-social-10). */}
+              <div className="g-sect"><span>{t("Sent, {count}", { count: sentShown.length })}</span></div>
+              {sentShown.map((req) => (
+                <div key={req.id} className="g-friend-row">
+                  <div className="friend-avatar">
+                    <Avatar name={resolveDisplayName(req)} size={52} user={req} />
+                  </div>
+                  <div className="g-friend-meta">
+                    <span className="friend-name"><span className="friend-name-text">{resolveDisplayName(req)}</span></span>
+                    <span className="g-friend-sub is-dim">@{req.username}</span>
+                  </div>
+                  <button type="button" className="g-ib no" title={t("Cancel request")} aria-label={t("Cancel request")} onClick={() => onCancelFriendRequest?.(req.id)}>
                     <X size={18} />
                   </button>
                 </div>
@@ -2069,7 +2094,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 </button>
               </div>
             </div>
-          ) : onlineShown.length === 0 && offlineShown.length === 0 && pendingShown.length === 0 && messageShown.length === 0 ? (
+          ) : onlineShown.length === 0 && offlineShown.length === 0 && pendingShown.length === 0 && messageShown.length === 0 && sentShown.length === 0 ? (
             <p className="g-friends-empty">{t("No results")}</p>
           ) : null}
         </div>
@@ -2116,12 +2141,12 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 <InviteCard username={me.username} compact />
               </div>
             )}
-            {pendingRequests.length > 0 && (
+            {pendingShown.length > 0 && (
               <div className="friend-category">
                 <span className="category-label" style={{ color: "var(--warning)" }}>
-                  {t("Pending, {count}", { count: pendingRequests.length })}
+                  {t("Pending, {count}", { count: pendingShown.length })}
                 </span>
-                {pendingRequests.map((req) => (
+                {pendingShown.map((req) => (
                   <div
                     key={req.id}
                     style={{
@@ -2131,9 +2156,11 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     }}
                   >
                     <div className="friend-avatar" style={{ flexShrink: 0 }}>
-                      <Avatar name={req.username} size={32} user={req} />
+                      <Avatar name={resolveDisplayName(req)} size={32} user={req} />
                     </div>
-                    <span className="friend-name" style={{ flex: 1, fontSize: 13 }}>{req.username}</span>
+                    <span className="friend-name" style={{ flex: 1, fontSize: 13 }} title={req.username ? `@${req.username}` : undefined}>
+                      <span className="friend-name-text">{resolveDisplayName(req)}</span>
+                    </span>
                     <button
                       type="button"
                       title={t("Accept")}
@@ -2180,12 +2207,12 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 ))}
               </div>
             )}
-            {pendingMessages.length > 0 && (
+            {messageShown.length > 0 && (
               <div className="friend-category">
                 <span className="category-label" style={{ color: "var(--warning)" }}>
-                  {t("Message requests, {count}", { count: pendingMessages.length })}
+                  {t("Message requests, {count}", { count: messageShown.length })}
                 </span>
-                {pendingMessages.map((req) => (
+                {messageShown.map((req) => (
                   <div
                     key={req.id}
                     style={{
@@ -2195,10 +2222,12 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     }}
                   >
                     <div className="friend-avatar" style={{ flexShrink: 0 }}>
-                      <Avatar name={req.username} size={32} user={req} />
+                      <Avatar name={resolveDisplayName(req)} size={32} user={req} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <span className="friend-name" style={{ fontSize: 13 }}>{req.username}</span>
+                      <span className="friend-name" style={{ fontSize: 13 }} title={req.username ? `@${req.username}` : undefined}>
+                        <span className="friend-name-text">{resolveDisplayName(req)}</span>
+                      </span>
                       {req.preview ? (
                         <span style={{ display: "block", fontSize: 11, opacity: 0.72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {req.preview}
@@ -2248,10 +2277,43 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
               </div>
             )}
 
-            {onlineFriends.length > 0 && (
+            {sentShown.length > 0 && (
+              <div className="friend-category friend-sent">
+                {/* Requests I sent, with "Geri çek" (polish world-social-10). */}
+                <span className="category-label">{t("Sent, {count}", { count: sentShown.length })}</span>
+                {sentShown.map((req) => (
+                  <div key={req.id} className="friend-sent-row">
+                    <div className="friend-avatar" style={{ flexShrink: 0 }}>
+                      <Avatar name={resolveDisplayName(req)} size={32} user={req} />
+                    </div>
+                    <div className="friend-meta">
+                      <span className="friend-name" title={req.username ? `@${req.username}` : undefined}>
+                        <span className="friend-name-text">{resolveDisplayName(req)}</span>
+                      </span>
+                      <span className="friend-custom-status">{t("Request sent.")}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="friend-sent-cancel"
+                      title={t("Cancel request")}
+                      aria-label={t("Cancel request")}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onCancelFriendRequest?.(req.id);
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {onlineShown.length > 0 && (
               <div className="friend-category">
-                <span className="category-label">{t("Online, {count}", { count: onlineFriends.length })}</span>
-                {onlineFriends.map((friend) => (
+                <span className="category-label">{t("Online, {count}", { count: onlineShown.length })}</span>
+                {onlineShown.map((friend) => (
                   <motion.button
                     key={friend.id}
                     className="friend-item"
@@ -2271,7 +2333,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     </div>
                     <div className="friend-meta">
                       <span className="friend-name">
-                        {resolveDisplayName(friend)}
+                        <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
                         <PremiumBadge user={friend} variant="inline" />
                       </span>
@@ -2286,10 +2348,10 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
               </div>
             )}
 
-            {offlineFriends.length > 0 && (
+            {offlineShown.length > 0 && (
               <div className="friend-category">
-                <span className="category-label">{t("Offline, {count}", { count: offlineFriends.length })}</span>
-                {offlineFriends.map((friend) => (
+                <span className="category-label">{t("Offline, {count}", { count: offlineShown.length })}</span>
+                {offlineShown.map((friend) => (
                   <motion.button
                     key={friend.id}
                     className="friend-item offline"
@@ -2307,7 +2369,7 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                     </div>
                     <div className="friend-meta">
                       <span className="friend-name">
-                        {resolveDisplayName(friend)}
+                        <span className="friend-name-text">{resolveDisplayName(friend)}</span>
                         <AdminBadge user={friend} variant="inline" />
                         <PremiumBadge user={friend} variant="inline" />
                       </span>
@@ -2331,6 +2393,8 @@ function FriendsList({ friends, onlineUsers, expanded, onToggle, onFriendSelect,
                 body={t("Share your invite link, friends join free and connect with you instantly.")}
                 primary={{ label: t("Add friend"), action: onQuickAdd }}
               />
+            ) : noResults ? (
+              <p className="friends-search-empty">{t("No results")}</p>
             ) : null}
       </SidebarSectionContent>
     </div>

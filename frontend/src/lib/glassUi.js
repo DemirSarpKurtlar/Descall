@@ -1,8 +1,9 @@
 /**
  * Liquid Glass UI gate.
  *
- * Native: Capacitor iOS on a phone (short side < 600). iPad, Android and
- * Electron never get `html.glass-ui`.
+ * Native: the Capacitor iOS and Android apps on a phone (short side < 600).
+ * iPad / Android tablets use the wide layout (glassDesktop.js); Electron never
+ * gets `html.glass-ui`.
  *
  * Mobile web: a phone-like browser under the desktop glass width (960px)
  * gets the same class, so iPhone Safari matches the iOS app. It follows the
@@ -11,10 +12,15 @@
  * `VITE_GLASS_UI`). Low-power / reduced-transparency uses `glass-lite` and
  * `a11y-solid`, the same idea as desktop `gd-lite`.
  *
- * Native switches:
+ * Native switches (iPhone and Android phone apps share them; a rollout rule
+ * on iosGlass can still target one platform):
  *   1. build flag  VITE_GLASS_UI=0
  *   2. remote flag publicFeatures.iosGlass
  *   3. local override localStorage "descall:glass" = "0" | "1"
+ *
+ * The Android app has no native display plugin: it takes the same
+ * glass-lite / a11y-solid fallback as phone web, plus a frame-rate sample
+ * (mid-range Android reports 8 cores, so cores alone never trips lite).
  *
  * Dependency-free of @capacitor/core (window.Capacitor, like lib/entryShell.js).
  */
@@ -23,7 +29,11 @@ import {
   GLASS_DESKTOP_LITE_KEY,
   GLASS_DESKTOP_OVERRIDE_KEY,
   GLASS_DESKTOP_REMOTE_KEY,
+  GLASS_FRAME_GRACE_MS,
+  GLASS_FRAME_SAMPLES,
+  isGlassFrameRateLow,
   nativeShellPlatform,
+  shouldCountGlassFrame,
   shouldUseGlassDesktopLite,
   webGlassMode,
 } from "./glassDesktop.js";
@@ -96,9 +106,9 @@ export function shouldEnableGlass({
   webRemoteFlag = null,
   webOverride = null,
 } = {}) {
-  if (isElectron || isNativeAndroid) return false;
+  if (isElectron) return false;
 
-  if (isNativeIos) {
+  if (isNativeIos || isNativeAndroid) {
     if (!(shortSide > 0 && shortSide < PHONE_MAX_SHORT_SIDE)) return false;
     if (override === "0") return false;
     if (override === "1") return true;
@@ -170,10 +180,26 @@ function isNativeShell(w) {
   return platform === "ios" || platform === "android" || isNativeIosShell(w);
 }
 
-/** Cheap material on phone browsers. Native iOS still uses the display plugin. */
+/** Native iOS has DescallDisplayPlugin (glassDisplay.js); everyone else uses the fallback below. */
+function hasNativeDisplay(w) {
+  return nativeShellPlatform(w) === "ios" || isNativeIosShell(w);
+}
+
+/** Chrome rounds navigator.deviceMemory down (0.25 … 8 GB). 2 GB or less is a low-end phone. */
+export const GLASS_LOW_MEMORY_GB = 2;
+
+export function isLowMemoryDevice(deviceMemory) {
+  const gb = Number(deviceMemory);
+  return Number.isFinite(gb) && gb > 0 && gb <= GLASS_LOW_MEMORY_GB;
+}
+
+let phoneFpsLow = false;
+let sampling = false;
+
+/** Cheap material on phone browsers and the Android app. Native iOS uses the display plugin. */
 function applyWebGlassFallback(w) {
   const doc = w?.document?.documentElement;
-  if (!doc?.classList || isNativeShell(w)) return;
+  if (!doc?.classList || hasNativeDisplay(w)) return;
   const reducedTransparency = matchMedia(w, "(prefers-reduced-transparency: reduce)");
   const forcedColors = matchMedia(w, "(forced-colors: active)");
   const contrastMore = matchMedia(w, "(prefers-contrast: more)");
@@ -183,6 +209,7 @@ function applyWebGlassFallback(w) {
     contrastMore,
     cores: Number(w?.navigator?.hardwareConcurrency) || 8,
     manual: readStorage(w, GLASS_DESKTOP_LITE_KEY),
+    fpsLow: phoneFpsLow || isLowMemoryDevice(w?.navigator?.deviceMemory),
   });
   doc.classList.toggle("glass-lite", lite);
   doc.classList.toggle("a11y-solid", reducedTransparency || forcedColors || readStorage(w, "descall:reduce-transparency") === "1");
@@ -191,8 +218,60 @@ function applyWebGlassFallback(w) {
 
 function clearWebGlassFallback(w) {
   const doc = w?.document?.documentElement;
-  if (!doc?.classList?.remove || isNativeShell(w)) return;
+  if (!doc?.classList?.remove || hasNativeDisplay(w)) return;
   doc.classList.remove("glass-lite", "a11y-solid", "a11y-contrast");
+}
+
+function pageHidden(w) {
+  const doc = w?.document;
+  if (!doc) return false;
+  if (doc.hidden) return true;
+  return typeof doc.visibilityState === "string" && doc.visibilityState !== "visible";
+}
+
+/**
+ * One visible-frame sample per launch (same median rule as desktop glass).
+ * A slow phone drops to glass-lite for the rest of the session.
+ */
+function sampleFrameRate(w) {
+  if (sampling || phoneFpsLow || hasNativeDisplay(w)) return;
+  const raf = w?.requestAnimationFrame;
+  if (typeof raf !== "function") return;
+  sampling = true;
+  const deltas = [];
+  let last = 0;
+  let visibleSince = 0;
+  const step = (now) => {
+    if (!enabled) {
+      sampling = false;
+      return;
+    }
+    if (pageHidden(w)) {
+      last = 0;
+      visibleSince = 0;
+      raf.call(w, step);
+      return;
+    }
+    if (!visibleSince) visibleSince = now;
+    if (now - visibleSince < GLASS_FRAME_GRACE_MS) {
+      last = now;
+      raf.call(w, step);
+      return;
+    }
+    const deltaMs = last ? now - last : 0;
+    last = now;
+    if (shouldCountGlassFrame({ hidden: false, deltaMs })) deltas.push(deltaMs);
+    if (deltas.length < GLASS_FRAME_SAMPLES) {
+      raf.call(w, step);
+      return;
+    }
+    sampling = false;
+    if (isGlassFrameRateLow(deltas)) {
+      phoneFpsLow = true;
+      applyWebGlassFallback(w);
+    }
+  };
+  raf.call(w, step);
 }
 
 /** Status bar / theme-color follows the aurora on phone web. Native launch color stays. */
@@ -206,7 +285,10 @@ export function syncGlassThemeColor(w, enabled) {
 function setEnabled(next, w) {
   const doc = w?.document?.documentElement;
   if (doc) doc.classList.toggle(GLASS_CLASS, next);
-  if (next && !isNativeIosShell(w)) applyWebGlassFallback(w);
+  if (next && !isNativeIosShell(w)) {
+    applyWebGlassFallback(w);
+    sampleFrameRate(w);
+  }
   if (!next) clearWebGlassFallback(w);
   syncGlassThemeColor(w, Boolean(next));
   if (next === enabled) return;
@@ -277,7 +359,7 @@ export function syncGlassUi(win) {
 /**
  * Remote kill switch (publicFeatures.iosGlass). The value is cached so the next
  * cold start already respects it before the network answers. Mobile web follows
- * desktopGlass instead; this flag only affects the native iPhone app.
+ * desktopGlass instead; this flag affects the native iPhone and Android apps.
  */
 export function applyRemoteGlassFlag(value, win) {
   const w = currentWindow(win);

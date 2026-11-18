@@ -6,7 +6,8 @@
     "downloading": "Downloading update…",
     "upToDate": "Up to date",
     "checkFailed": "Couldn't check for updates",
-    "loading": "Loading"
+    "loading": "Loading",
+    "openNow": "Open now, download in the background"
   },
   "notice": {
     "background": "Descall keeps running in the background. You can reopen it from the system tray."
@@ -23,13 +24,18 @@
     "openFailed": "Descall couldn't open",
     "openFailedDetail": "The app didn't load in time. Check your connection and try again.",
     "indexMissingTitle": "Loading Error",
-    "indexMissing": "index.html was not found in the app resources."
+    "indexMissing": "index.html was not found in the app resources.",
+    "unresponsive": "Descall is not responding",
+    "unresponsiveDetail": "The app has not responded for a while. You can wait a little longer or reload it.",
+    "wait": "Wait",
+    "reload": "Reload"
   },
   "tray": {
     "open": "Open Descall",
     "startWithWindows": "Start with Windows",
     "updateAndQuit": "Update and quit (v{version})",
-    "quit": "Quit"
+    "quit": "Quit",
+    "startAtLogin": "Open at login"
   },
   "notif": {
     "calling": "is calling...",
@@ -45,7 +51,8 @@
     "message": "Message",
     "close": "Close",
     "accept": "Accept",
-    "decline": "Decline"
+    "decline": "Decline",
+    "locked": "New notification. Unlock Descall to see it."
   },
   "overlay": {
     "connected": "Connected",

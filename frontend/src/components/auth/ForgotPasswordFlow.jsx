@@ -3,6 +3,7 @@ import { Lock, Mail, ShieldCheck, ArrowLeft, KeyRound } from "../ui/Icon.jsx";
 import { requestPasswordReset, confirmPasswordReset } from "../../api/auth";
 import { useT } from "../../context/LocaleContext";
 import PasswordStrength from "./PasswordStrength";
+import { serverMessage } from "../../i18n/serverText.js";
 
 const SUPPORT_EMAIL = "support@descall.com";
 
@@ -38,17 +39,19 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
         return;
       }
       if (data?.status === "not_found") {
-        setError(data.error || t("No account found with that username."));
+        setError(serverMessage(data, "error", t) || t("No account found with that username."));
         return;
       }
+      // Server texts are English; translate them here (also in the marketing shell,
+      // where the runtime translator is not bound).
       if (data?.status === "cooldown") {
         setHint(data?.emailHint || "");
-        setInfo(data?.message || t("A code was just sent. Wait a minute before requesting another."));
+        setInfo(serverMessage(data, "message", t) || t("A code was just sent. Wait a minute before requesting another."));
         setStep("code");
         return;
       }
       setHint(data?.emailHint || "");
-      setInfo(data?.message || t("We sent a 6-digit code to your email."));
+      setInfo(serverMessage(data, "message", t) || t("We sent a 6-digit code to your email."));
       setStep("code");
     } catch (err) {
       const body = err?.body || {};
@@ -57,7 +60,7 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
         setStep("no_email");
         return;
       }
-      setError(err?.message || body.error || t("Could not send reset code."));
+      setError(serverMessage(body, "error", t) || (err?.message ? t(err.message) : t("Could not send reset code.")));
     } finally {
       setBusy(false);
     }
@@ -84,7 +87,7 @@ export default function ForgotPasswordFlow({ onBack, className = "", variant = "
       });
       setStep("done");
     } catch (err) {
-      setError(err?.message || t("Could not reset password."));
+      setError(serverMessage(err?.body, "error", t) || (err?.message ? t(err.message) : t("Could not reset password.")));
     } finally {
       setBusy(false);
     }

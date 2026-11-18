@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { Check, Crown, Search, Trash2, X } from "../ui/Icon.jsx";
@@ -125,6 +126,8 @@ export function OwnershipTransferModal({ server, leaveAfter = false, onClose, on
   const t = useT();
   const { toast } = useToast();
   const reduce = useReducedMotion();
+  const formRef = useRef(null);
+  useModalFocus(true, formRef);
   const [members, setMembers] = useState(null);
   const [roles, setRoles] = useState(Array.isArray(server?.roles) ? server.roles : []);
   const [loadError, setLoadError] = useState("");
@@ -241,6 +244,7 @@ export function OwnershipTransferModal({ server, leaveAfter = false, onClose, on
       transition={reduce ? REDUCED_MOTION_FADE : { duration: 0.2, ease: "easeOut" }}
     >
       <motion.form
+        ref={formRef}
         className="o3-transfer"
         role="dialog"
         aria-modal="true"
@@ -425,6 +429,8 @@ export function OwnerLeaveSheet({ server, onTransferFirst, onDeleteAndLeave, onC
   const reduce = useReducedMotion();
   const narrow = useNarrow();
   useEscape(onCancel, true);
+  const sheetRef = useRef(null);
+  useModalFocus(true, sheetRef);
   useEffect(() => {
     hapticWarning();
   }, []);
@@ -465,6 +471,7 @@ export function OwnerLeaveSheet({ server, onTransferFirst, onDeleteAndLeave, onC
       onClick={onCancel}
     >
       <motion.div
+        ref={sheetRef}
         className={`o3-leave-sheet${narrow ? " is-sheet" : ""}`}
         role="dialog"
         aria-modal="true"

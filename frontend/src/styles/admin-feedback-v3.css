@@ -39,7 +39,8 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-seg>button i{font-style:normal;font-size:11px;font-weight:650;color:rgba(235,238,255,.5)}
 .fb3 .fb3-seg>button.on{background:rgba(255,255,255,.2);color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.2),inset 0 .5px 0 rgba(255,255,255,.2)}
 .fb3 .fb3-seg>button.on i{color:#fff}
-.fb3 .fb3-chips{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden}
+.fb3 .fb3-chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);padding-right:18px}
+.fb3 .fb3-chips::-webkit-scrollbar{display:none}
 .fb3 .fb3-chip{height:28px;border-radius:var(--r-md);padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1);white-space:nowrap;flex:none}
 .fb3 .fb3-chip{box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1)}
 .fb3 .fb3-chip.on{background:rgba(88,122,246,.22);box-shadow:inset 0 0 0 1px rgba(120,150,255,.5)}
@@ -53,7 +54,7 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-row .c{flex:1;min-width:0}
 .fb3 .fb3-row .l1{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
 .fb3 .fb3-row .l1 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fb3 .fb3-row .l1 .ago{margin-left:auto;font-size:12px;font-weight:500;color:rgba(235,238,255,.45);white-space:nowrap}
+.fb3 .fb3-row .l1 .fb3-ago{margin-left:auto;font-size:12px;font-weight:500;color:rgba(235,238,255,.45);white-space:nowrap}
 .fb3 .fb3-row .ud{width:8px;height:8px;border-radius:50%;background:#587AF6;flex:none}
 .fb3 .fb3-row .pv{font-size:13px;color:rgba(235,238,255,.66);line-height:1.35;margin:3px 0 7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .fb3 .fb3-row .bd{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
@@ -62,7 +63,7 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-row .meta{margin-left:auto;display:flex;gap:8px;font-size:11.5px;color:rgba(235,238,255,.45)}
 .fb3 .fb3-row .meta span{display:flex;align-items:center;gap:3px}
 .fb3 .fb3-empty{padding:40px 20px;text-align:center;font-size:14px;color:rgba(235,238,255,.5)}
-.fb3 .fb3-det{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;position:relative}
+.fb3 .fb3-det{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;position:relative;container-type:inline-size;container-name:fb3det}
 .fb3 .fb3-dh{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:.5px solid rgba(255,255,255,.07)}
 .fb3 .fb3-dh .ti{font-size:15px;font-weight:650;margin-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fb3 .qa{height:34px;border-radius:var(--r-lg);padding:0 13px;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;background:rgba(255,255,255,.09);white-space:nowrap;flex:none}
@@ -83,7 +84,7 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-ctl{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
 .fb3 .fb3-ctl .lb{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:rgba(235,238,255,.42);margin:0 0 6px 2px}
 .fb3 .fb3-pills{display:flex;gap:5px}
-.fb3 .fb3-pills>button{flex:1;height:32px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.06);color:rgba(235,238,255,.7);white-space:nowrap}
+.fb3 .fb3-pills>button{flex:1 1 auto;min-width:0;padding:0 6px;height:32px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.06);color:rgba(235,238,255,.7);white-space:nowrap}
 .fb3 .fb3-pills>button em{width:7px;height:7px;border-radius:50%}
 .fb3 .fb3-th{display:flex;flex-direction:column;gap:10px}
 .fb3 .fb3-msg{display:flex;gap:9px;align-items:flex-end}
@@ -128,6 +129,10 @@ html.reduce-transparency .fb3 .fb3-heavy{-webkit-backdrop-filter:none;backdrop-f
 .fb3 .fb3-alert .bt>button{height:46px;display:grid;place-items:center;font-size:17px;color:#8FA6FF;text-align:center}
 .fb3 .fb3-alert .bt>button+button{border-left:.5px solid rgba(255,255,255,.14)}
 .fb3 .fb3-alert .bt .red{color:#FF453A;font-weight:600}
+.fb3 .fb3-alert .bt .red:disabled{opacity:.4;cursor:default}
+.fb3 .fb3-alert .fb3-reason{display:block;width:100%;margin-top:12px;height:34px;border-radius:var(--r-md);border:0!important;outline:0;background:rgba(255,255,255,.08)!important;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14)!important;padding:0 10px;font:inherit;font-size:var(--fs-13);color:#fff;text-align:left}
+.fb3 .fb3-alert .fb3-reason:focus{box-shadow:0 0 0 2px rgba(88,122,246,.7)!important}
+.fb3 .fb3-alert .fb3-reason::placeholder{color:rgba(235,238,255,.45)}
 .fb3 .fb3-lightbox{position:absolute;inset:0;z-index:8;background:rgba(6,7,12,.86);display:grid;place-items:center;padding:30px}
 .fb3 .fb3-lightbox img{max-width:100%;max-height:100%;border-radius:var(--r-md)}
 /* iPhone */
@@ -154,3 +159,8 @@ html.reduce-motion .fb3 *{transition:none!important;animation:none!important}
 .fb3.is-embedded .fb3-body{border-radius:0}
 .fb3.fb3-phone.is-embedded .fb3-fp{position:relative;inset:auto;flex:1;min-height:0;padding-top:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;overflow-y:auto}
 .fb3.fb3-phone.is-embedded .fb3-fp .fb3-nv{padding-top:4px}
+
+/* Narrow detail column (desktop ~1200 px, iPad): status and priority stack, pills fit. */
+@container fb3det (max-width: 640px) {
+  .fb3 .fb3-ctl{grid-template-columns:1fr}
+}

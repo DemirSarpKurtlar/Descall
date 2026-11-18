@@ -1,3 +1,4 @@
+import { AUTHX_RU } from "./authx.ru.js";
 import { API_RU } from "./api.ru.js";
 import { PREMIUM_STORY_RU } from "./premiumStory.ru.js";
 import { UAH_RU } from "./uah.ru.js";
@@ -17,6 +18,9 @@ import { ACT_RU } from "./act.ru.js";
 import { DIR_RU, DIR_API_RU } from "./dir.ru.js";
 import { BAN_RU } from "./ban.ru.js";
 import { IOS_SHARE_RU } from "./iosShare.ru.js";
+import { LX_RU } from "./lx.ru.js";
+import { USET_RU } from "./uset.ru.js";
+import { SVOICE_RU } from "./svoice.ru.js";
 import { BAN_ADMIN_RU } from "./banAdmin.ru.js";
 import { SERVER_REVIEW_RU } from "./serverReview.ru.js";
 import { DOSSIER_RU } from "./dossier.ru.js";
@@ -39,6 +43,7 @@ import { AGENT_OPS_RU } from "./agentOps.ru.js";
 import { INVL_RU } from "./invl.ru.js";
 import { SIGNUP_GROWTH } from "./signupGrowth.i18n.js";
 export const nested = {
+  authx: AUTHX_RU,
   "premiumStory": PREMIUM_STORY_RU,
   "amp": AMP_RU,
   "msg4": MSG4_RU,
@@ -63,6 +68,9 @@ export const nested = {
   "dir": DIR_RU,
   "ban": BAN_RU,
   "iosShare": IOS_SHARE_RU,
+  "lx": LX_RU,
+  "uset": USET_RU,
+  "svoice": SVOICE_RU,
   "banAdmin": BAN_ADMIN_RU,
   "serverReview": SERVER_REVIEW_RU,
   "dossier": DOSSIER_RU,
@@ -969,7 +977,17 @@ export const nested = {
       "busy": "Проверяем…",
       "ok": "Код применён. Подписка обновлена.",
       "fail": "Этот код не удалось использовать.",
-      "unavailable": "Купоны пока недоступны."
+      "unavailable": "Купоны пока недоступны.",
+      "errors": {
+        "invalid": "Этот код недействителен. Проверьте написание.",
+        "expired": "Срок действия этого кода истёк.",
+        "used": "Вы уже использовали этот код.",
+        "limit": "Лимит использований этого кода исчерпан.",
+        "already_active": "У вас уже есть активная подписка, поэтому этот код сейчас нельзя использовать.",
+        "not_redeemable": "Этот код нельзя использовать в вашем аккаунте.",
+        "unavailable": "Эта акция сейчас недоступна.",
+        "rate_limited": "Слишком много попыток. Попробуйте через несколько минут."
+      }
     },
     "features": {
       "title": "Функции",
@@ -2144,6 +2162,8 @@ export const nested = {
     "otherAuth": "Другое",
     "ovActiveHint": "Сначала те, кто в сети",
     "ovAllUsers": "Все пользователи",
+    "reportAlert": "У человека уже {n} открытых жалоб.",
+    "reportAlertOpen": "Открыть досье",
     "ovAudit": "Последние действия админов",
     "ovAuditHint": "Из журнала аудита",
     "ovAvg7": "в среднем {n}",
@@ -2350,6 +2370,7 @@ export const nested = {
     "windowAll": "Всё время",
     "windowForbidden": "Это окно только для админов.",
     "windowSignIn": "Сначала войдите в главном окне Descall, затем снова откройте панель администратора.",
+    "windowOffline": "Не удалось связаться с Descall. Проверьте подключение и попробуйте ещё раз.",
     "windowTitle": "Админ",
     "youtube": "YouTube"
   },
@@ -2513,6 +2534,7 @@ export const nested = {
       "delReport": "жалоба",
       "deleteError": "Не удалось удалить, попробуйте ещё раз",
       "deleteTitle": "Удалить этот отзыв?",
+      "deleteReason": "Причина (попадёт в журнал действий)",
       "deleted": "Отзыв удалён",
       "emptyFiltered": "Нет отзывов по этому фильтру.",
       "emptyNone": "Отзывов пока нет.",
@@ -3289,7 +3311,11 @@ export const nested = {
     },
     "screenPicker": {
       "tip": "Выберите экран, окно или вкладку браузера, которые хотите показать.",
-      "title": "Демонстрация экрана"
+      "title": "Демонстрация экрана",
+      "screens": "Экраны",
+      "windows": "Окна",
+      "refresh": "Обновить список",
+      "empty": "Здесь нечего показать."
     },
     "seo": {
       "appDesc": "Приложение Descall",
@@ -3870,7 +3896,11 @@ export const nested = {
     "badge": "Значок",
     "badgeBody": "Носите его в профиле рядом со значком страны.",
     "badgeName": "Значок «{name}»",
-    "badgeSoon": "Выберите из каталога особых значков, когда он появится.",
+    "badgeSoon": "Загружаем каталог значков…",
+    "badgeSlots": "Осталось {left} из {max} мест",
+    "badgeSlotsWarn": "У этого значка осталось {left} мест; лимит использований не может быть больше.",
+    "badgeSlotsFix": "Поставить лимит {left}",
+    "badgeOnce": "Коды со значком всегда одноразовые для аккаунта",
     "badgeTitle": "Значок «{name}» теперь ваш",
     "cancel": "Отмена",
     "close": "Закрыть",
@@ -3911,6 +3941,7 @@ export const nested = {
     "err_max_below_used": "Лимит не может быть меньше числа уже совершённых использований.",
     "err_reward_amount": "Сумма DesCoin должна быть от 1 до 100 000.",
     "err_reward_badge": "Выберите значок.",
+    "err_reward_badge_slots": "Лимит использований больше, чем свободных мест у значка.",
     "err_reward_item": "Выберите товар из магазина.",
     "err_targets": "Выберите хотя бы одного человека для всплывающего окна.",
     "expires": "Истекает",
@@ -3931,6 +3962,12 @@ export const nested = {
     "itemOwnedBody": "У вас уже был {name}, поэтому мы начислили его стоимость в DesCoin. Ваш новый баланс: {balance} DC.",
     "itemOwnedTitle": "+{n} DesCoin",
     "itemPick": "Выберите товар",
+    "itemSearch": "Поиск предметов",
+    "itemAll": "Все",
+    "itemNone": "Ничего не найдено",
+    "itemLoading": "Загружаем предметы…",
+    "itemSetPiece": "Часть набора",
+    "itemCount": "Предметов: {n}",
     "itemTitle": "{name} теперь ваш",
     "justFilled": "Использования этого кода только что закончились.",
     "kpiActive": "Активные коды",
@@ -6549,6 +6586,10 @@ export const nested = {
     "subDownloading": "В фоне · {percent}%",
     "subDownloadingStart": "В фоне",
     "subInstalling": "Descall откроется через несколько секунд",
+    "titleError": "Не удалось загрузить обновление",
+    "subError": "Проверь подключение и попробуй снова",
+    "retry": "Повторить",
+    "downloadPage": "Страница загрузки",
     "titleDownloading": "Загрузка Descall {version}",
     "titleInstalling": "Установка Descall {version}"
   },
@@ -7814,7 +7855,7 @@ export const phrases = {
   "Edit category": "Изменить категорию",
   "Edit channel": "Изменить канал",
   "Edit message": "Редактировать сообщение",
-  "Edit profile": "Редактировать профиль",
+  "Edit profile": "Изменить профиль",
   "Edited": "Изменено",
   "Effect Presets": "Наборы эффектов",
   "Effect active": "Эффект активен",
@@ -10887,6 +10928,11 @@ export const phrases = {
   "identity": "Личность",
   "in": "в",
   "is now online": "теперь в сети",
+  "Sent, {count}": "Отправленные, {count}",
+  "Cancel request": "Отменить запрос",
+  "Pick a friend": "Выберите друга",
+  "Pick a friend on the left to chat or call": "Выберите друга слева, чтобы написать или позвонить",
+  "accepted your friend request": "принял(а) вашу заявку в друзья",
   "is typing…": "печатает…",
   "just now": "только что",
   "leaderboard": "таблица лидеров",

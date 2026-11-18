@@ -6,6 +6,7 @@
  * Server side is admin-only (routes/admin.js → requireAdmin).
  * Text: adminx.fb catalog keys (i18n/locales/adminx.<id>.js).
  */
+import { useModalFocusRef } from "../../../hooks/useModalFocus";
 import { localizedField } from "../../../i18n/serverText.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
@@ -92,6 +93,17 @@ function Pills({ map, cur, onPick, label }) {
 }
 
 function Menu({ items, style, onClose }) {
+  // Escape closes the open menu first (capture, so the panel's own Escape handler doesn't fire).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      onClose();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onClose]);
   return (
     <>
       <div className="fb3-scrim" onClick={onClose} />
@@ -292,7 +304,7 @@ function Row({ f, sel, now, onOpen }) {
         <div className="l1">
           {isUnread(f) ? <span className="ud" aria-label={t("adminx.fb.unread")} /> : null}
           <span className="nm">{f.user.username}</span>
-          <span className="ago">{relTime(f.created_at, locale, now)}</span>
+          <span className="fb3-ago">{relTime(f.created_at, locale, now)}</span>
         </div>
         <div className="pv">{f.message}</div>
         <div className="bd">
@@ -314,6 +326,8 @@ function isMacLike() {
 }
 
 export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav = [], onGoto, onClose, onOpenProfile, onUnread, embedded = false }) {
+  const modalTrapRef2 = useModalFocusRef();
+  const modalTrapRef = useModalFocusRef();
   const { t, locale } = useLocale();
   const phone = layout === "phone";
   const ipad = layout === "ipad";
@@ -330,6 +344,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
   const [pushed, setPushed] = useState(false);
   const [menu, setMenu] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [delReason, setDelReason] = useState("");
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
   const [zoom, setZoom] = useState(null);
@@ -387,7 +402,10 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
         e.preventDefault();
         searchRef.current?.focus();
         searchRef.current?.select();
-      } else if (e.key === "Escape" && !embedded && !confirmDel && !menu && !zoom) {
+      } else if (e.key === "Escape" && (confirmDel || zoom)) {
+        setConfirmDel(false);
+        setZoom(null);
+      } else if (e.key === "Escape" && !embedded && !menu) {
         onClose?.();
       }
     };
@@ -435,12 +453,19 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
     }
   };
 
+  const askDelete = () => {
+    setMenu(null);
+    setDelReason("");
+    setConfirmDel(true);
+  };
+
   const remove = async () => {
     const f = sel;
+    const reason = delReason.trim();
+    if (!f || reason.length < 3) return;
     setConfirmDel(false);
-    if (!f) return;
     try {
-      await adminFetch(`/feedback/${encodeURIComponent(f.id)}`, { method: "DELETE" });
+      await adminFetch(`/feedback/${encodeURIComponent(f.id)}`, { method: "DELETE", body: JSON.stringify({ reason }) });
       setItems((prev) => prev.filter((x) => x.id !== f.id));
       setSelId(null);
       setPushed(false);
@@ -513,7 +538,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
       phone={phone}
       busy={busy}
       onPatch={patch}
-      onDelete={() => setConfirmDel(true)}
+      onDelete={askDelete}
       onReply={reply}
       onCopyId={copyId}
       onProfile={() => onOpenProfile?.(sel.user.id)}
@@ -526,11 +551,16 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
       {confirmDel && sel ? (
         <div className="fb3-alertwrap">
           <div className="fb3-dim" onClick={() => setConfirmDel(false)} />
-          <div className="fb3-alert fb3-heavy" role="alertdialog" aria-modal="true" aria-labelledby="fb3-del-t">
-            <div className="bd"><h4 id="fb3-del-t">{t("adminx.fb.deleteTitle")}</h4><p>{deleteMessage(sel, t, locale)}</p></div>
+          <div ref={modalTrapRef} className="fb3-alert fb3-heavy" role="alertdialog" aria-modal="true" aria-labelledby="fb3-del-t">
+            <div className="bd">
+              <h4 id="fb3-del-t">{t("adminx.fb.deleteTitle")}</h4><p>{deleteMessage(sel, t, locale)}</p>
+              <input className="fb3-reason" autoFocus value={delReason} maxLength={300} aria-label={t("adminx.fb.deleteReason")}
+                placeholder={t("adminx.fb.deleteReason")} onChange={(e) => setDelReason(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && delReason.trim().length >= 3) { e.preventDefault(); remove(); } }} />
+            </div>
             <div className="bt">
-              <button type="button" autoFocus onClick={() => setConfirmDel(false)}>{t("adminx.fb.cancel")}</button>
-              <button type="button" className="red" onClick={remove}>{t("adminx.fb.delete")}</button>
+              <button type="button" onClick={() => setConfirmDel(false)}>{t("adminx.fb.cancel")}</button>
+              <button type="button" className="red" disabled={delReason.trim().length < 3} onClick={remove}>{t("adminx.fb.delete")}</button>
             </div>
           </div>
         </div>
@@ -552,7 +582,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
               <span />
               <span className="r" style={{ gap: 16 }}>
                 <button type="button" aria-label={t("adminx.fb.status.resolved")} style={{ color: "#7CF0A0" }} onClick={() => patch({ status: "resolved" })}><I name="check" size={20} stroke={2.6} /></button>
-                <button type="button" aria-label={t("adminx.fb.delete")} style={{ color: "#FF7A70" }} onClick={() => setConfirmDel(true)}><I name="trash" size={20} stroke={2.1} /></button>
+                <button type="button" aria-label={t("adminx.fb.delete")} style={{ color: "#FF7A70" }} onClick={askDelete}><I name="trash" size={20} stroke={2.1} /></button>
               </span>
             </div>
             <div className="fb3-det" style={{ flex: 1 }}>{detail}</div>
@@ -603,7 +633,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
   return (
     <div className="fb3" data-fb3={layout}>
       <div className="fb3-dim" onClick={onClose} />
-      <div className="fb3-win fb3-heavy" role="dialog" aria-modal="true" aria-label={t("adminx.fb.windowAria")} style={{ "--w": ipad ? "1150px" : "1360px", "--h": ipad ? "790px" : "840px" }}>
+      <div ref={modalTrapRef2} className="fb3-win fb3-heavy" role="dialog" aria-modal="true" aria-label={t("adminx.fb.windowAria")} style={{ "--w": ipad ? "1150px" : "1360px", "--h": ipad ? "790px" : "840px" }}>
         <div className="fb3-hd">
           <button type="button" className="home" onClick={() => onGoto?.("overview")} title={t("adminx.fb.sections")}>
             <img src={logoIcon} alt="" />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import useModalFocus from "../../hooks/useModalFocus";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   AtSign, UsersThree, ChevronRight, ChevronLeft, Link2, Copy, Check, UserPlus, RefreshCw,
@@ -79,12 +80,26 @@ export default function NewCreateModal({
   const t = useT();
   const reduce = useReducedMotion();
   const userInputRef = useRef(null);
+  const dialogRef = useRef(null);
+  // Tab stays in the sheet, the app behind is inert, focus returns to the opener (WCAG 2.4.3).
+  useModalFocus(open, dialogRef);
   const fileRef = useRef(null);
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
   const [photo, setPhoto] = useState(null); // { file, url }
   const [cropSrc, setCropSrc] = useState("");
   const [photoError, setPhotoError] = useState("");
+  // Escape closes the sheet (the photo cropper on top handles its own Escape first).
+  useEffect(() => {
+    if (!open || cropSrc) return undefined;
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      e.preventDefault();
+      onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, cropSrc, onClose]);
   // UI audit #90: "‹" only when there is a previous step (the sheet was opened
   // on the start screen); opened straight on "Grup oluştur" it only closes.
   const [openedOn, setOpenedOn] = useState(null);
@@ -407,6 +422,7 @@ export default function NewCreateModal({
             onClick={onClose}
           >
             <motion.div
+              ref={dialogRef}
               className={`nc-sheet${glassShell ? " is-phone" : ""}`}
               role="dialog"
               aria-modal="true"

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { localizeDeep } from "../../i18n/serverText.js";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -212,6 +213,8 @@ function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
   const { t } = useLocale();
   const reduce = useReducedMotion();
   const [zoom, setZoom] = useState(1);
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -220,6 +223,7 @@ function FullscreenAvatar({ url, user, meta, onClose, onDownload }) {
   return (
     <Portal>
       <motion.div
+        ref={dialogRef}
         className="dsx-fullscreen"
         role="dialog"
         aria-modal="true"

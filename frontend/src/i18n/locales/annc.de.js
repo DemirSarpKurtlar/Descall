@@ -440,6 +440,7 @@ export const ANNC_DE = {
     "schema": "Diese Funktion wartet auf ein Datenbank-Update.",
     "secondAdmin": "Ein anderer Admin muss diese Ankündigung freigeben.",
     "needsApproval": "Eine dringende Ankündigung an alle braucht einen zweiten Admin. Speichere sie als neuen Entwurf und sende sie zur Freigabe.",
+    "needsReapproval": "Diese dringende Ankündigung an alle wurde so freigegeben. Beende sie, bearbeite sie und sende sie erneut zur Freigabe.",
     "note": "Schreib eine kurze Notiz.",
     "reason": "Wähle einen Grund.",
     "title": "Ein Titel ist nötig.",

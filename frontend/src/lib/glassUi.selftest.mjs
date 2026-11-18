@@ -10,6 +10,7 @@ import {
   GLASS_REMOTE_KEY,
   GLASS_OVERRIDE_KEY,
   GLASS_THEME_COLOR,
+  isLowMemoryDevice,
 } from "./glassUi.js";
 import { deviceTier, liteReasons, isJanky, statusBarStyleFor } from "./glassDisplay.js";
 
@@ -24,7 +25,20 @@ assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 844, viewpor
 assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 800, viewportShortSide: 800 }), false, "desktop window under 960 but not phone-like stays off");
 assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 1024, viewportShortSide: 768 }), false, "desktop width is not glass-ui");
 assert.equal(shouldEnableGlass({ isNativeIos: false, isElectron: true, viewportWidth: 390, viewportShortSide: 390 }), false, "Electron stays on glass-desktop");
-assert.equal(shouldEnableGlass({ isNativeIos: false, isNativeAndroid: true, viewportWidth: 390, viewportShortSide: 390 }), false, "Android app never");
+assert.equal(shouldEnableGlass({ isNativeIos: false, isNativeAndroid: true, viewportWidth: 390, viewportShortSide: 390 }), false, "Android app without a screen size stays off");
+// Android app phones share the iPhone gate (owner pick, Nov 2026 polish, option A).
+const androidPhone = { isNativeAndroid: true, shortSide: 412 };
+assert.equal(shouldEnableGlass(androidPhone), true, "Android phone app -> glass");
+assert.equal(shouldEnableGlass({ ...androidPhone, shortSide: 320 }), true, "small Android phone -> glass");
+assert.equal(shouldEnableGlass({ ...androidPhone, shortSide: 800 }), false, "Android tablet -> wide layout, not glass-ui");
+assert.equal(shouldEnableGlass({ ...androidPhone, remoteFlag: false }), false, "iosGlass remote kill also covers Android");
+assert.equal(shouldEnableGlass({ ...androidPhone, override: "0" }), false, "descall:glass=0 on Android");
+assert.equal(shouldEnableGlass({ ...androidPhone, buildFlag: false }), false, "VITE_GLASS_UI=0 on Android");
+assert.equal(shouldEnableGlass({ ...androidPhone, webRemoteFlag: false }), true, "desktopGlass does not gate the Android app");
+assert.equal(isLowMemoryDevice(2), true, "2 GB is low-end");
+assert.equal(isLowMemoryDevice(1), true);
+assert.equal(isLowMemoryDevice(4), false, "4 GB keeps full glass unless frames are slow");
+assert.equal(isLowMemoryDevice(undefined), false, "Safari / Firefox have no deviceMemory");
 assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, webRemoteFlag: false }), false, "desktopGlass remote kills phone web");
 assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, webOverride: "0" }), false, "descall:glass-desktop=0 kills phone web");
 assert.equal(shouldEnableGlass({ isNativeIos: false, viewportWidth: 390, viewportShortSide: 390, override: "0" }), false, "descall:glass=0 kills phone web");
@@ -93,9 +107,14 @@ assert.equal(applyRemoteGlassFlag(true, next), true);
 assert.equal(isGlassUiEnabled(), true);
 const qa = fakeWindow({ store: { [GLASS_OVERRIDE_KEY]: "0" } });
 assert.equal(initGlassUi(qa), false, "local override off");
-const androidWin = fakeWindow({ platform: "android" });
-assert.equal(initGlassUi(androidWin), false);
-assert.ok(!androidWin._classes.has(GLASS_CLASS), "Android never gets the class");
+const androidWin = fakeWindow({ platform: "android", w: 412, h: 915 });
+assert.equal(initGlassUi(androidWin), true, "Android phone app boots glass-ui");
+assert.ok(androidWin._classes.has(GLASS_CLASS), "Android phone gets the class");
+const androidTablet = fakeWindow({ platform: "android", w: 800, h: 1280 });
+assert.equal(initGlassUi(androidTablet), false);
+assert.ok(!androidTablet._classes.has(GLASS_CLASS), "Android tablet stays off glass-ui");
+const androidKill = fakeWindow({ platform: "android", w: 412, h: 915, store: { [GLASS_REMOTE_KEY]: "0" } });
+assert.equal(initGlassUi(androidKill), false, "cached remote kill respected on the Android app");
 const phoneWeb = fakeWindow({ platform: "web", native: false, w: 390, h: 844 });
 assert.equal(initGlassUi(phoneWeb), true, "phone web boots glass-ui");
 assert.ok(phoneWeb._classes.has(GLASS_CLASS));

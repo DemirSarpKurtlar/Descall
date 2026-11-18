@@ -253,6 +253,9 @@
 }
 /* Sections built before 3.1 keep their own card look inside the new main area. */
 .adm-main > .admin-section { margin: 0; }
+/* The section panel fills the main column, so a short or error state never leaves a dark
+   slab that stops halfway down the window (polish pass). */
+.adm-main > .admin-body { min-height: 100%; box-sizing: border-box; }
 .adm-main[data-tab="feedback"],
 .adm-main[data-tab="signupStats"] { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 

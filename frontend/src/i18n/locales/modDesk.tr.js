@@ -59,7 +59,7 @@ export const MOD_DESK_TR = {
     },
     vars: "Değişkenler",
   },
-  act: { timeout: "Sustur", ban: "Yasakla", kick: "At", banHint: "BanDialog" },
+  act: { timeout: "Sustur", ban: "Yasakla", kick: "At", banHint: "Yasak penceresi" },
   pill: { "5m": "5 dk", "15m": "15 dk", "30m": "30 dk", "1h": "1 saat", "6h": "6 saat", "12h": "12 saat", "24h": "24 saat", "3d": "3 gün", "7d": "7 gün", custom: "Özel" },
   var: { user: "kullanıcı", duration: "süre", category: "kategori", until: "bitiş" },
   tplMsg: {
@@ -138,7 +138,7 @@ export const MOD_DESK_TR = {
     extendCustom: "Özel süre…",
     extendCustomSub: "Dakika, saat veya gün",
     toBan: "Yasağa çevir",
-    toBanSub: "BanDialog açılır",
+    toBanSub: "Yasak penceresi açılır",
     editNote: "Mesajı düzenle",
     editNoteSub: "Kullanıcının gördüğü not",
     openFile: "Kullanıcı dosyasını aç",

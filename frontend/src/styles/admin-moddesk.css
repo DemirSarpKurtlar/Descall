@@ -31,6 +31,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* The desk sits beside the 250 px admin sidebar, so the KPI row follows the desk's own width. */
+  container: mdk / inline-size;
   color: var(--mdk-t1);
   font-size: var(--fs-13);
 }
@@ -527,6 +529,12 @@ button.mdk-sev:hover { filter: brightness(1.15); }
 .mdk-tog:focus-visible { outline: 2px solid rgba(88, 122, 245, 0.85); outline-offset: 2px; }
 
 /* ── Responsive ── */
+@container mdk (max-width: 1040px) {
+  .mdk-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container mdk (max-width: 640px) {
+  .mdk-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 1360px) {
   .mdk-cols.is-apply { grid-template-columns: 300px minmax(0, 1fr); }
   .mdk-side { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }

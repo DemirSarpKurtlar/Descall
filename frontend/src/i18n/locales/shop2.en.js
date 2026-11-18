@@ -18,6 +18,7 @@ export const SHOP2_EN = {
     "placeholder": "Search items, sets or colours",
     "kbd": "Ctrl K",
     "none": "Nothing matches that yet.",
+    "loading": "Searching the whole shop…",
     "kind": { "today": "In today's storefront", "set": "Set", "wish": "In your wishlist", "owned": "You own it", "catalog": "In the shop" }
   },
   "tiles": {
@@ -387,6 +388,7 @@ export const SHOP2_EN = {
     "savedTonight": "Saved tonight",
     "log": "Opening log",
     "logEmpty": "Flip a card to start",
+    "logClosed": "Cards open when the market opens",
     "logKind": {
       "flip": "Card {n} opened",
       "flip_used": "Flip used",
@@ -537,6 +539,7 @@ export const SHOP2_EN = {
     "seconds": "{s} s"
   },
   "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "See you!" },
+  "clock": { "dh": "{d}d {h}h" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Who's around tonight?",

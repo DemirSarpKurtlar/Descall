@@ -3,6 +3,7 @@ import Cropper from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import OverlayPortal from "../ui/OverlayPortal.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
 import { SPRINGS, framerSpring, REDUCED_MOTION_FADE } from "../../lib/fluid/springs";
 import { hapticImpactLight, hapticSuccess } from "../../lib/fluid/haptics";
 import { useT } from "../../context/LocaleContext";
@@ -108,6 +109,8 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
   const [recent, setRecent] = useState(() => readRecent(initialTarget));
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const urlsRef = useRef([]);
   const cfg = pickerTarget(target);
 
@@ -476,6 +479,7 @@ export default function ProfileMediaPicker({ initialTarget = "avatar", isMobile 
     <OverlayPortal>
       <motion.div className={`amp-scrim${isMobile ? " is-mobile" : ""}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={close}>
         <motion.div
+          ref={dialogRef}
           className={`amp-sheet${isMobile ? " is-mobile" : ""} is-step-${step}`}
           role="dialog"
           aria-modal="true"

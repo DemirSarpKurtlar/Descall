@@ -6,7 +6,8 @@
     "downloading": "Güncelleme indiriliyor…",
     "upToDate": "Güncel",
     "checkFailed": "Güncellemeler denetlenemedi",
-    "loading": "Yükleniyor"
+    "loading": "Yükleniyor",
+    "openNow": "Şimdi aç, arka planda indir"
   },
   "notice": {
     "background": "Descall arka planda çalışmaya devam ediyor. Simge durumundan geri açabilirsin."
@@ -23,13 +24,18 @@
     "openFailed": "Descall açılamadı",
     "openFailedDetail": "Uygulama zamanında yüklenemedi. Bağlantını kontrol edip tekrar dene.",
     "indexMissingTitle": "Yükleme hatası",
-    "indexMissing": "index.html uygulama dosyalarında bulunamadı."
+    "indexMissing": "index.html uygulama dosyalarında bulunamadı.",
+    "unresponsive": "Descall yanıt vermiyor",
+    "unresponsiveDetail": "Uygulama bir süredir yanıt vermiyor. Biraz bekleyebilir ya da yeniden yükleyebilirsin.",
+    "wait": "Bekle",
+    "reload": "Yeniden yükle"
   },
   "tray": {
     "open": "Descall'i Aç",
     "startWithWindows": "Windows ile Başlat",
     "updateAndQuit": "Güncelle ve Çık (v{version})",
-    "quit": "Çıkış"
+    "quit": "Çıkış",
+    "startAtLogin": "Oturum açılınca başlat"
   },
   "notif": {
     "calling": "arıyor...",
@@ -45,7 +51,8 @@
     "message": "Mesaj",
     "close": "Kapat",
     "accept": "Kabul et",
-    "decline": "Reddet"
+    "decline": "Reddet",
+    "locked": "Yeni bildirim. Görmek için Descall kilidini aç."
   },
   "overlay": {
     "connected": "Bağlı",

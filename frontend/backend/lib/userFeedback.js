@@ -77,7 +77,7 @@ function parseUserAgent(ua) {
   return { browser, os };
 }
 
-const VD_NUM = ["rawRms", "processedRms", "contextSampleRate", "captureSampleRate", "nsUnderruns", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus"];
+const VD_NUM = ["rawRms", "processedRms", "contextSampleRate", "captureSampleRate", "nsUnderruns", "bytesSent", "bytesReceived", "packetsSent", "packetsReceived", "audioLevelOut", "audioLevelIn", "ageMs", "iceFetchAttempts", "iceFetchStatus", "peerCount", "outPacketsLost", "outFractionLost", "rttMs"];
 const VD_STR = ["audioContextState", "nsEngine", "nsEngineReason", "nsFallback", "trackReadyState", "iceConnectionState", "connectionState", "candidateType", "localCandidateType", "remoteCandidateType", "candidateProtocol", "kind"];
 const VD_BOOL = ["nsEnabled", "trackEnabled", "trackMuted", "uiMuted", "turnPresent", "iceConfigFetchOk"];
 
@@ -178,7 +178,7 @@ function userThread(row) {
       type: "message",
       fromTeam: r.isAdmin !== false,
       text,
-      attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => typeof a === "string").slice(0, 5) : [],
+      attachments: Array.isArray(r.attachments) ? r.attachments.filter((a) => isOwnMediaUrl(a)).slice(0, 5) : [],
       created_at: r.created_at || null,
     });
   }
@@ -214,7 +214,7 @@ function shapeForUser(row, { withThread = true } = {}) {
       frequency: FREQUENCIES.includes(row.details.frequency) ? row.details.frequency : null,
       likes: Array.isArray(row.details.likes) ? row.details.likes.filter((x) => LIKES.includes(x)) : [],
     } : { area: null, frequency: null, likes: [] },
-    attachments: Array.isArray(row.attachments) ? row.attachments.filter((a) => typeof a === "string") : [],
+    attachments: Array.isArray(row.attachments) ? row.attachments.filter((a) => isOwnMediaUrl(a)) : [],
     device: row.platform === "hidden" ? null : deviceLabel(row.platform, row.app_version),
     created_at: row.created_at,
     updated_at: row.updated_at,

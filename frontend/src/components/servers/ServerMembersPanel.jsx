@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import { copyText } from "../../lib/copyText";
 import { runOptimistic, removeMemberOptimistic, patchMemberOptimistic } from "../../lib/optimisticMembers";
@@ -30,6 +30,10 @@ import { serverHasPermission, serverPermissionsLoaded, isAssignableServerRole, c
 import { ConversationListSkeleton } from "../ui/Skeleton";
 import ReportUserModal from "../social/ReportUserModal";
 import { confirmToggleBlock, useBlockedUserIds } from "../../lib/blockedUsers";
+import { userTextLang } from "../../lib/userTextLang";
+import useEscapeClose from "../../hooks/useEscapeClose";
+import { getLocale } from "../../i18n/runtime.js";
+import { formatNumber } from "../../i18n/format.js";
 
 function colorToHex(color) {
   const n = Math.max(0, Math.min(0xffffff, Number(color) || 0));
@@ -72,6 +76,7 @@ export default function ServerMembersPanel({
   const [nickTarget, setNickTarget] = useState(null);
   const [nickDraft, setNickDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  useEscapeClose(() => setNickTarget(null), { enabled: Boolean(nickTarget) && !busy });
   const menuRef = useRef(null);
 
   const permissionsReady = serverPermissionsLoaded(server) || Boolean(server?.isOwner);
@@ -179,6 +184,22 @@ export default function ServerMembersPanel({
   useEffect(() => {
     if (Array.isArray(server?.roles)) setRoles(server.roles);
   }, [server?.roles]);
+
+  // The menu is placed with a guessed height; once it is drawn (and whenever the role or
+  // timeout list expands) measure it and keep it inside the window, scrolling inside when
+  // it is taller than the window. It used to run off the bottom with "Sustur" open.
+  useLayoutEffect(() => {
+    const el = menuRef.current;
+    if (!menu || !el || typeof window === "undefined") return;
+    const pad = 8;
+    const vh = window.innerHeight;
+    el.style.maxHeight = `${Math.max(120, vh - pad * 2)}px`;
+    const h = Math.min(el.scrollHeight, vh - pad * 2);
+    el.style.top = `${Math.max(pad, Math.min(menu.y, vh - h - pad))}px`;
+    if (roleSubmenu || timeoutSubmenu) {
+      el.querySelector(".server-member-role-submenu")?.scrollIntoView?.({ block: "nearest" });
+    }
+  }, [menu, roleSubmenu, timeoutSubmenu]);
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -291,6 +312,7 @@ export default function ServerMembersPanel({
         sections.push({
           key: role.id,
           label: role.name,
+          userLabel: true,
           members: membersInRole,
           roleColor: colorToHex(role.color),
         });
@@ -581,6 +603,7 @@ export default function ServerMembersPanel({
               <section key={section.key} className="members-section">
                 <h5
                   className="members-section-label"
+                  lang={section.userLabel ? userTextLang(section.label) : undefined}
                   style={section.roleColor ? { color: section.roleColor } : undefined}
                 >
                   {section.label}
@@ -730,12 +753,12 @@ export default function ServerMembersPanel({
               {timeoutSubmenu && (
                 <div className="server-member-role-submenu">
                   {[
-                    [60, "60s"],
-                    [300, "5m"],
-                    [3600, "1h"],
-                    [86400, "1d"],
-                    [604800, "1w"],
-                  ].map(([seconds, label]) => (
+                    [60, 60, "second"],
+                    [300, 5, "minute"],
+                    [3600, 1, "hour"],
+                    [86400, 1, "day"],
+                    [604800, 1, "week"],
+                  ].map(([seconds, value, unit]) => ({ seconds, label: formatNumber(value, getLocale(), { style: "unit", unit, unitDisplay: "short" }) })).map(({ seconds, label }) => (
                     <button
                       key={seconds}
                       type="button"

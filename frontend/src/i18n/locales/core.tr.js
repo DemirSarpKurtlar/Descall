@@ -68,6 +68,10 @@ export const CORE_TR = {
     title: "Ekranını paylaş",
     tip: "Paylaşmak istediğin ekranı, pencereyi veya tarayıcı sekmesini seç.",
     screen: "Ekran",
+    screens: "Ekranlar",
+    windows: "Pencereler",
+    refresh: "Listeyi yenile",
+    empty: "Bu türde paylaşılabilir bir şey yok.",
   },
   server: {
     slowmode: "Yavaş mod açık. {wait} sn sonra tekrar dene.",

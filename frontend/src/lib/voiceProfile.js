@@ -180,9 +180,15 @@ export function captureConstraints(prefs = readVoiceProfile(), deviceId, { pipel
 // level) closed for whole sentences, the other side heard nothing. The
 // thresholds are lower now and the mic failsafe (micFailsafe.js) switches to
 // the raw mic if the processed output still stays silent while you talk.
+// Polish 3.9.x (calls-03): it is a soft gate now (softGateWorklet.js). Closed
+// means a floor (-30 / -40 dB), never digital zero; the gain glides with a
+// 5 ms attack and a 120 / 150 ms release, and the hold is longer so pauses
+// between words never close it.
 export function gateSettings(mode) {
-  if (mode === "strong") return { openThreshold: -50, closeThreshold: -60, holdMs: 160 };
-  return { openThreshold: -60, closeThreshold: -70, holdMs: 140 };
+  if (mode === "strong") {
+    return { openThreshold: -50, closeThreshold: -60, holdMs: 300, attackMs: 5, releaseMs: 150, floorDb: -40 };
+  }
+  return { openThreshold: -60, closeThreshold: -70, holdMs: 250, attackMs: 5, releaseMs: 120, floorDb: -30 };
 }
 
 export function agcCompressorSettings() {
@@ -404,6 +410,15 @@ export function tuneOpusSdp(sdp, options = {}) {
   return out.join(nl);
 }
 
+/**
+ * Voice Opus cap on the wire (calls-05). Voice links prefer RED
+ * (preferVoiceCodecs), which carries every frame twice: at the old 48 kb/s cap
+ * one voice stream measured ~72 kb/s, ~145 kb/s upstream in a 3-person mesh,
+ * itself a source of loss on weak uplinks. Speech Opus at 32 kb/s is close to
+ * transparent; with RED that is ~50 kb/s per stream.
+ */
+export const VOICE_RED_OPUS_BITRATE = 32_000;
+
 export function opusOptionsForSenders(senders) {
   const music = (senders || []).some((sender) => {
     const track = sender?.track;
@@ -414,7 +429,7 @@ export function opusOptionsForSenders(senders) {
     return track.__descallRole === "screen-audio";
   });
   return {
-    maxAverageBitrate: audioBitrateForQuality(music ? "excellent" : "good", { music }),
+    maxAverageBitrate: music ? audioBitrateForQuality("excellent", { music }) : VOICE_RED_OPUS_BITRATE,
     stereo: music,
     dtx: !music,
     fec: true,

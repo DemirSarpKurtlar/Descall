@@ -56,8 +56,18 @@ if (isCapacitorNativeShell()) {
   import("./lib/androidBack")
     .then((mod) => mod.installAndroidBack())
     .catch(() => {});
+  // Android: status / navigation bar icons follow the in-app theme (no-op on iOS).
+  import("./lib/androidSystemBars.js")
+    .then((mod) => mod.installAndroidSystemBars())
+    .catch(() => {});
   import("./lib/fluid/haptics.js")
     .then((mod) => mod.installIosHapticHints())
+    .catch(() => {});
+} else if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent || "")) {
+  // Android Chrome: the back gesture closes an open menu / sheet before it
+  // leaves the screen under it (one history entry per open layer).
+  import("./lib/androidBack")
+    .then((mod) => mod.installWebBackDismiss())
     .catch(() => {});
 }
 

@@ -1,4 +1,5 @@
 /** Auto-generated + curated en locale */
+import { AUTHX_EN } from "./authx.en.js";
 import { UAH_EN } from "./uah.en.js";
 import { PREMIUM_GAMING_EN } from "./premiumGaming.en.js";
 import { PREMIUM_EN } from "./premium.en.js";
@@ -13,6 +14,9 @@ import { ACT_EN } from "./act.en.js";
 import { DIR_EN } from "./dir.en.js";
 import { BAN_EN } from "./ban.en.js";
 import { IOS_SHARE_EN } from "./iosShare.en.js";
+import { LX_EN } from "./lx.en.js";
+import { USET_EN } from "./uset.en.js";
+import { SVOICE_EN } from "./svoice.en.js";
 import { BAN_ADMIN_EN } from "./banAdmin.en.js";
 import { SERVER_REVIEW_EN } from "./serverReview.en.js";
 import { DOSSIER_EN } from "./dossier.en.js";
@@ -54,6 +58,7 @@ import { CHATX_EN } from "./chatx.en.js";
 import { COUNTS_EN } from "./counts.en.js";
 import { BOT_EN } from "./bot.en.js";
 export const nested = {
+  authx: AUTHX_EN,
   uah: UAH_EN,
   premiumGaming: PREMIUM_GAMING_EN,
   premium: PREMIUM_EN,
@@ -82,6 +87,9 @@ export const nested = {
   dir: DIR_EN,
   ban: BAN_EN,
   iosShare: IOS_SHARE_EN,
+  lx: LX_EN,
+  uset: USET_EN,
+  svoice: SVOICE_EN,
   banAdmin: BAN_ADMIN_EN,
   serverReview: SERVER_REVIEW_EN,
   dossier: DOSSIER_EN,
@@ -251,6 +259,10 @@ export const nested = {
     "subDownloading": "In the background · {percent}%",
     "subDownloadingStart": "In the background",
     "subInstalling": "Descall reopens in a few seconds",
+    "titleError": "Update could not be downloaded",
+    "subError": "Check your connection and try again",
+    "retry": "Try again",
+    "downloadPage": "Download page",
     "kicker": "Desktop update",
     "downloading": "Downloading Descall {version} in the background…",
     "installing": "Installing Descall {version}…",
@@ -314,7 +326,7 @@ export const nested = {
     "voiceHint": "Devices & mic test",
     "soundHint": "Message & call audio",
     "languageHint": "Choose the app language",
-    "licenses": "Licences",
+    "licenses": "Licenses",
     "licensesHint": "Fonts, flags and icons",
     "licensesDesc": "Open source work Descall uses, with credits.",
     "personalization": "Personalization",
@@ -561,6 +573,7 @@ export const nested = {
     "windowTitle": "Admin",
     "windowForbidden": "This window is only for admins.",
     "windowSignIn": "Sign in in the main Descall window first, then open the Admin Panel again.",
+    "windowOffline": "Could not reach Descall. Check your connection and try again.",
     "ovTitle": "Overview",
     "ovLive": "Live · {when} · Istanbul time · refreshes every 20 s",
     "ovVisibleInvisible": "{v} visible · {i} invisible",
@@ -574,6 +587,8 @@ export const nested = {
     "ovJoinedHint": "Click a name to open the file",
     "ovToday": "Today {n}",
     "ovAllUsers": "All users",
+    "reportAlert": "A person just reached {n} open reports.",
+    "reportAlertOpen": "Open the file",
     "ovTodo": "To do",
     "ovTodoHint": "What needs you right now",
     "ovTodoOpen": "Open",
@@ -2691,6 +2706,11 @@ export const phrases = {
   "No groups yet": "No groups yet",
   "No conversations yet": "No conversations yet",
   "is now online": "is now online",
+  "Sent, {count}": "Sent, {count}",
+  "Cancel request": "Cancel request",
+  "Pick a friend": "Pick a friend",
+  "Pick a friend on the left to chat or call": "Pick a friend on the left to chat or call",
+  "accepted your friend request": "accepted your friend request",
   "Purchased, equip it anytime": "Purchased, equip it anytime",
   "Add a friend to start chatting, messages, voice, and screen share in one place.": "Add a friend to start chatting, messages, voice, and screen share in one place.",
   "Create a group for friends, chat, call, and share your screen together.": "Create a group for friends, chat, call, and share your screen together.",

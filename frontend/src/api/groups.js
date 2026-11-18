@@ -1,5 +1,7 @@
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "../lib/storage";
+import { t } from "../i18n/runtime.js";
+import { httpError, serverErrorText } from "./httpError";
 
 const BASE = `${API_BASE_URL}/groups`;
 
@@ -106,7 +108,7 @@ export async function addMemberToGroup(groupId, userId) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw Object.assign(new Error(body.error || "Failed to add member"), {
+    throw Object.assign(new Error(serverErrorText(body) || t("Failed to add member")), {
       status: res.status,
       code: body.code || null,
       retryAfterMs: body.retryAfterMs ?? null,
@@ -130,7 +132,7 @@ export async function renameGroup(groupId, newName) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const code = body.code || (res.status === 403 ? "NOT_MEMBER" : res.status === 404 ? "NOT_FOUND" : "SERVER");
-    throw Object.assign(new Error(body.error || "Failed to rename group"), { code, status: res.status });
+    throw Object.assign(new Error(serverErrorText(body) || t("Failed to rename group")), { code, status: res.status });
   }
   return body;
 }
@@ -142,7 +144,7 @@ export async function createGroupInviteLink(groupId, { maxUses = null, expiresIn
     body: JSON.stringify({ maxUses, expiresInHours }),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || "Failed to create invite link");
+  if (!res.ok) throw new Error(serverErrorText(body) || t("Something went wrong."));
   return body;
 }
 
@@ -151,7 +153,7 @@ export async function previewGroupInvite(code) {
     headers: getHeaders(),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || "Invalid invite");
+  if (!res.ok) throw new Error(serverErrorText(body) || t("Something went wrong."));
   return body;
 }
 
@@ -161,7 +163,7 @@ export async function joinGroupByInvite(code) {
     headers: getHeaders(),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || "Failed to join group");
+  if (!res.ok) throw new Error(serverErrorText(body) || t("Failed to join group"));
   return body;
 }
 
@@ -174,7 +176,7 @@ export async function setGroupAvatar(groupId, avatarUrl) {
     body: remove ? undefined : JSON.stringify({ avatarUrl }),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || "Failed to update group photo");
+  if (!res.ok) throw new Error(serverErrorText(body) || t("Something went wrong."));
   return body;
 }
 
@@ -182,8 +184,7 @@ async function groupRequest(path, init) {
   const res = await fetch(`${BASE}${path}`, { ...init, headers: getHeaders() });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body?.error || `HTTP ${res.status}`);
-    err.status = res.status;
+    const err = httpError(body, res.status);
     err.code = body?.code || null;
     err.retryAfterMs = body?.retryAfterMs || null;
     throw err;

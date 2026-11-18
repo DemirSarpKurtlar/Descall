@@ -1,5 +1,5 @@
 const { setPendingDisplaySource, takePendingDisplaySource, buildDisplayMediaGrant } = require('./displayMediaGrant.cjs');
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, globalShortcut, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, protocol, Menu, MenuItem, desktopCapturer, Tray, powerMonitor, session, screen, safeStorage, net, systemPreferences, nativeTheme, clipboard } = require('electron');
 const { pathToFileURL } = require('url');
 const { measureWindowOcclusion, fitBoundsToWorkArea } = require('./windowOcclusion.cjs');
 const { showNotificationWindow, closeShownNotification, updateShownNotification } = require('./notificationWindow.cjs');
@@ -15,8 +15,12 @@ const {
 const log = require('electron-log');
 const { launchUpdateAfterExit } = require('./updateRecover.cjs');
 const { buildElectronCsp, inlineScriptHashes } = require('./cspPolicy.cjs');
+const { bindWindowKeys, devToolsAllowed } = require('./windowKeys.cjs');
+const { WINDOW_STATE_FILE, parseWindowState, pickRestoreBounds, serializeWindowState } = require('./windowState.cjs');
 const {
   AUTOSTART_ARGS,
+  AUTOSTART_MARKER_FILE,
+  autostartLaunchAction,
   decideColdStart,
   isFreshRelaunchMarker,
   loginItemSettings,
@@ -62,7 +66,7 @@ const { resolveDistFile, resolveLegacyAppFile } = require('./appProtocolPath.cjs
 const { encryptText, readEncryptedFile, looksLikeJwt } = require('./tokenCrypto.cjs');
 const { readClipboardImagePng } = require('./clipboardImage.cjs');
 const { isPermissionAllowed, permissionUrl, writeClipboardText } = require('./clipboardText.cjs');
-const { resolveDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
+const { resolveDownloadPath, uniqueDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
 const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
@@ -76,6 +80,26 @@ const premiumHooks = require('./premium/hostHooks.cjs');
 // Logging
 log.transports.file.level = 'info';
 log.info('App starting...');
+
+// Main-process errors (mainErrors.cjs): logged, never Electron's raw error dialog, and
+// forwarded to the main window, whose Sentry client reports them (scrubbed of paths).
+const { summarizeError, createErrorRelay } = require('./mainErrors.cjs');
+const mainErrorRelay = createErrorRelay();
+function reportMainError(err, kind) {
+  const summary = summarizeError(err, kind);
+  try { log.error(`[main] ${kind}: ${summary.name}: ${summary.message}\n${summary.stack}`); } catch (_) { /* ignore */ }
+  mainErrorRelay.push(summary);
+}
+process.on('uncaughtException', (err) => reportMainError(err, 'uncaughtException'));
+process.on('unhandledRejection', (reason) => reportMainError(reason, 'unhandledRejection'));
+app.on('child-process-gone', (_event, details = {}) => {
+  // GPU / utility / network service crashes: Chromium restarts most of them on its own.
+  if (details.reason === 'clean-exit') return;
+  log.warn(`[main] child process gone: ${details.type || '?'} ${details.reason || '?'} exit=${details.exitCode ?? '?'} ${details.serviceName || details.name || ''}`);
+  if (details.reason === 'crashed' || details.reason === 'oom' || details.reason === 'launch-failed') {
+    mainErrorRelay.push({ kind: 'child-process-gone', name: String(details.type || 'process'), message: `${details.reason} (exit ${details.exitCode ?? '?'})`, stack: '' });
+  }
+});
 // Windows toast identity for Descall+ quick reply: AUMID = build.appId and a fixed
 // toast activator CLSID, both also written on the NSIS Start Menu shortcut.
 applyToastIdentity(app, { log });
@@ -441,6 +465,9 @@ let updateRetryTimer = null;
 let installTimer = null;
 let installWaitTimer = null;
 let updateCheckInFlight = false;
+/** A download the renderer is showing progress for (update:error then carries phase 'download'). */
+let updateDownloadActive = false;
+let lastUpdateCheckError = null;
 let powerHooksBound = false;
 /** Renderer-reported voice session. Overlay visibility is OR'd in at read time. */
 let voiceBusyFromRenderer = false;
@@ -459,6 +486,7 @@ const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes while running
 const UPDATE_INSTALL_POLL_MS = 5 * 1000;         // re-evaluate grace / idle / background
 const PRELAUNCH_CHECK_TIMEOUT_MS = 25 * 1000;
 const PRELAUNCH_DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+const PRELAUNCH_OPEN_NOW_AFTER_MS = 12 * 1000;
 
 
 /** Quietly prune older Descall-Setup-*.exe from the user's Downloads (Electron-only). */
@@ -764,6 +792,7 @@ function checkForAppUpdates(reason = 'manual') {
   log.info(`[updater] checking for updates (${reason})… current=${app.getVersion()} feed=${UPDATE_FEED_URL}`);
   return autoUpdater.checkForUpdates()
     .then((result) => {
+      lastUpdateCheckError = null;
       if (updateRetryTimer) {
         clearTimeout(updateRetryTimer);
         updateRetryTimer = null;
@@ -773,6 +802,7 @@ function checkForAppUpdates(reason = 'manual') {
       return result;
     })
     .catch((err) => {
+      lastUpdateCheckError = String(err?.message || err || 'check failed').slice(0, 200);
       log.error(`[updater] check failed (${reason}):`, err?.message || err);
       if (!updateRetryTimer && !prelaunchActive) {
         updateRetryTimer = setTimeout(() => {
@@ -831,12 +861,34 @@ function resolvePrelaunch(outcome) {
 }
 
 // Paths
-const isDev = process.env.NODE_ENV === 'development';
+// A packaged build is never a dev run, whatever NODE_ENV says: with NODE_ENV=development set
+// globally (common on developer PCs) the installed app loaded localhost:5173 and trusted it
+// with the session token (polish pass).
+const isDev = !app.isPackaged && process.env.NODE_ENV === 'development';
 /** Yönetici › Kayıt İstatistikleri window (electron/adminStatsWindow.cjs). */
 let signupStatsWindow = null;
 /** Yönetici Paneli window (3.1): the whole admin panel, main window stays usable. */
 let adminPanelWindow = null;
 const isPackaged = app.isPackaged;
+
+/** DevTools: dev runs, or a packaged build with userData/devtools-enabled (windowKeys.cjs). */
+let devToolsAllowedCache = null;
+function canOpenDevTools() {
+  if (devToolsAllowedCache === null) {
+    let userDataDir = '';
+    try { userDataDir = app.getPath('userData'); } catch (_) { userDataDir = ''; }
+    devToolsAllowedCache = devToolsAllowed({ isPackaged: app.isPackaged, userDataDir, existsSync: fs.existsSync });
+  }
+  return devToolsAllowedCache;
+}
+// Packaged builds without the opt-in: any DevTools that open anyway (a stray shortcut, a
+// premium window) close at once, in every window of the app.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('devtools-opened', () => {
+    if (canOpenDevTools()) return;
+    try { contents.closeDevTools(); } catch (_) { /* gone */ }
+  });
+});
 
 let mainWindow = null;
 let splashWindow = null;
@@ -925,10 +977,21 @@ function syncLoginItem(openAtLogin) {
   }
 }
 
+function autostartMarkerPath() {
+  return path.join(app.getPath('userData'), AUTOSTART_MARKER_FILE);
+}
+
+/** The user (or the first run) has decided: later launches never turn auto-start back on. */
+function markAutostartDecided() {
+  try { fs.writeFileSync(autostartMarkerPath(), new Date().toISOString(), 'utf8'); } catch (err) {
+    log.warn('[boot] autostart marker write failed:', err?.message || err);
+  }
+}
+
 /**
- * First packaged run turns auto-start on. An older Run key that is already
- * enabled but lacks --hidden/--autostart is rewritten so boot stays hidden
- * and a shortcut launch does not.
+ * First packaged run turns auto-start on (once, launchVisibility.autostartLaunchAction).
+ * An enabled Windows Run key that lacks --hidden/--autostart is rewritten so login boots
+ * stay hidden. An entry the user turned off stays off: before, every launch re-enabled it.
  */
 function ensureAutostartLoginItem() {
   if (!isPackaged) return;
@@ -938,10 +1001,14 @@ function ensureAutostartLoginItem() {
   } catch (_) {
     return;
   }
-  const enabled = process.platform === 'win32'
-    ? Boolean(settings.executableWillLaunchAtLogin || settings.openAtLogin)
-    : Boolean(settings.openAtLogin);
-  if (!enabled || !settings.openAtLogin) syncLoginItem(true);
+  let markerExists = false;
+  try { markerExists = fs.existsSync(autostartMarkerPath()); } catch (_) { markerExists = false; }
+  const action = autostartLaunchAction({ markerExists, settings, platform: process.platform });
+  if (action === 'enable' || action === 'rewrite-args') {
+    log.info(`[boot] login item: ${action}`);
+    syncLoginItem(true);
+  }
+  if (!markerExists) markAutostartDecided();
 }
 
 
@@ -956,6 +1023,12 @@ function showMainWindow() {
   try { mainWindow.setSkipTaskbar(false); } catch (_) { /* ignore */ }
   try { if (mainWindow.isMinimized()) mainWindow.restore(); } catch (_) { /* ignore */ }
   try { mainWindow.show(); } catch (_) { /* ignore */ }
+  // Maximized when it was last closed (windowState.cjs): applied on the first real show,
+  // so a hidden login boot does not pop the window up.
+  if (pendingRestoreMaximize) {
+    pendingRestoreMaximize = false;
+    try { if (!mainWindow.isMaximized()) mainWindow.maximize(); } catch (_) { /* ignore */ }
+  }
   // Windows refuses focus() from a background process; a short always-on-top
   // pulse + moveTop is what actually raises the window from the tray.
   try { mainWindow.setAlwaysOnTop(true); } catch (_) { /* ignore */ }
@@ -1004,6 +1077,13 @@ function createSplashWindow() {
   };
   splashWindow = new BrowserWindow(splashOptions);
   try { splashWindow.setBackgroundColor('#00000000'); } catch (_) { /* ignore */ }
+  // "Open now" during a long update download (splash.html sets #open-now): the app opens and
+  // the download finishes in the background as a staged quiet update.
+  splashWindow.webContents.on('did-navigate-in-page', (_e, url) => {
+    if (!/#open-now$/.test(String(url || ''))) return;
+    log.info('[updater] prelaunch: user opened the app during the download');
+    resolvePrelaunch({ type: 'skip' });
+  });
   try { splashWindow.setHasShadow(false); } catch (_) { /* ignore */ }
 
   const splashPath = path.join(__dirname, 'splash.html');
@@ -1153,6 +1233,16 @@ async function runPrelaunchUpdateGate() {
   if (outcome?.type === 'update-available' || outcome?.type === 'downloading') {
     // Stay on splash until download finishes — never open main mid-update.
     let downloadTimer = null;
+    // A long download must not hold the screen: the splash leaves always-on-top at once and
+    // offers "open now" after a short wait (polish pass; it used to sit on top for up to 10 min).
+    try { if (splashWindow && !splashWindow.isDestroyed()) splashWindow.setAlwaysOnTop(false); } catch (_) { /* ignore */ }
+    const openNowTimer = setTimeout(() => {
+      try {
+        splashWindow?.webContents?.executeJavaScript(
+          `window.__splashOpenNow && window.__splashOpenNow(${JSON.stringify(et('splash.openNow'))});`, true,
+        ).catch(() => {});
+      } catch (_) { /* splash gone */ }
+    }, PRELAUNCH_OPEN_NOW_AFTER_MS);
     const downloadOutcome = await new Promise((resolve) => {
       prelaunchResolvers = { resolve };
       downloadTimer = setTimeout(() => {
@@ -1160,6 +1250,7 @@ async function runPrelaunchUpdateGate() {
         resolve({ type: 'download-timeout' });
       }, PRELAUNCH_DOWNLOAD_TIMEOUT_MS);
     });
+    clearTimeout(openNowTimer);
     if (downloadTimer) clearTimeout(downloadTimer);
     prelaunchResolvers = null;
 
@@ -1241,7 +1332,36 @@ function containRestoredWindow(win) {
   containingRestoredWindow = false;
 }
 
+// Window size, position and maximized state across launches (windowState.cjs).
+let pendingRestoreMaximize = false;
+let saveWindowStateTimer = null;
+function windowStateFile() {
+  return path.join(app.getPath('userData'), WINDOW_STATE_FILE);
+}
+function saveWindowStateNow() {
+  if (saveWindowStateTimer) { clearTimeout(saveWindowStateTimer); saveWindowStateTimer = null; }
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const text = serializeWindowState({ normalBounds: mainWindow.getNormalBounds(), maximized: mainWindow.isMaximized() || pendingRestoreMaximize });
+    if (text) fs.writeFileSync(windowStateFile(), text, 'utf8');
+  } catch (err) {
+    log.warn('[window] state save failed:', err?.message || err);
+  }
+}
+function saveWindowStateSoon() {
+  if (saveWindowStateTimer) clearTimeout(saveWindowStateTimer);
+  saveWindowStateTimer = setTimeout(saveWindowStateNow, 600);
+}
+
 function initialWindowBounds() {
+  try {
+    const saved = parseWindowState(fs.readFileSync(windowStateFile(), 'utf8'));
+    const restored = pickRestoreBounds(saved, screen.getAllDisplays(), { minWidth: 1200, minHeight: 700 });
+    if (restored) {
+      pendingRestoreMaximize = Boolean(restored.maximized);
+      return restored;
+    }
+  } catch (_) { /* first launch or unreadable: default size */ }
   let area = null;
   try { area = screen.getPrimaryDisplay()?.workArea || null; } catch (_) { area = null; }
   return fitBoundsToWorkArea(
@@ -1300,6 +1420,7 @@ function createMainWindow() {
   });
 
   mainWindow.setMenu(null);
+  bindWindowKeys(mainWindow, { onMaximize: toggleMaximize, allowDevTools: canOpenDevTools() });
   require('./viewportSync.cjs').attachViewportSync(mainWindow, { log: (m) => { try { log.warn(m); } catch (_) {} } });
   Menu.setApplicationMenu(null);
   bindVoiceBusyLifecycle(mainWindow);
@@ -1322,13 +1443,20 @@ function createMainWindow() {
     try { mainWindow.setSkipTaskbar(true); } catch (_) {}
     mainWindow.hide();
     setStartInBackground(true, 'hidden');
-    showNotificationWindow({
-      title: 'Descall',
-      body: et('notice.background'),
-      type: 'default',
-      appIcon: true,
-      duration: 5000,
-    });
+    // "Keeps running in the background" only the first time (polish pass: it showed on every close).
+    const noticeFile = path.join(app.getPath('userData'), 'background-notice-shown');
+    let noticeShown = false;
+    try { noticeShown = fs.existsSync(noticeFile); } catch (_) { noticeShown = false; }
+    if (!noticeShown) {
+      try { fs.writeFileSync(noticeFile, new Date().toISOString(), 'utf8'); } catch (_) { /* show again next time */ }
+      showNotificationWindow({
+        title: 'Descall',
+        body: et('notice.background'),
+        type: 'default',
+        appIcon: true,
+        duration: 5000,
+      });
+    }
   });
 
   // IPC handlers for window controls
@@ -1350,9 +1478,54 @@ function createMainWindow() {
     controlledWindow(event)?.close();
   });
 
+  // Main-process error summaries go to this window's error reporting once it has loaded.
+  mainWindow.webContents.once('did-finish-load', () => {
+    mainErrorRelay.attach((summary) => {
+      if (!mainWindow || mainWindow.isDestroyed()) return false;
+      try { mainWindow.webContents.send('app:main-error', summary); return true; } catch (_) { return false; }
+    });
+  });
+  // A hung renderer: logged, and after 10 s the user may wait or reload (never a silent freeze).
+  let unresponsiveTimer = null;
+  let unresponsiveAsked = false;
+  mainWindow.webContents.on('unresponsive', () => {
+    log.warn('[main] renderer unresponsive');
+    if (unresponsiveTimer || unresponsiveAsked) return;
+    unresponsiveTimer = setTimeout(() => {
+      unresponsiveTimer = null;
+      if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return;
+      unresponsiveAsked = true;
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'Descall',
+        message: et('dialog.unresponsive'),
+        detail: et('dialog.unresponsiveDetail'),
+        buttons: [et('dialog.wait'), et('dialog.reload')],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      }).then(({ response }) => {
+        unresponsiveAsked = false;
+        if (response === 1 && mainWindow && !mainWindow.isDestroyed()) {
+          log.warn('[main] user reloaded the unresponsive renderer');
+          mainWindow.webContents.forcefullyCrashRenderer();
+          mainWindow.webContents.reload();
+        }
+      }).catch(() => { unresponsiveAsked = false; });
+    }, 10 * 1000);
+  });
+  mainWindow.webContents.on('responsive', () => {
+    if (unresponsiveTimer) { clearTimeout(unresponsiveTimer); unresponsiveTimer = null; }
+    log.info('[main] renderer responsive again');
+  });
+
   const publishBox = () => publishContentBox(mainWindow);
   mainWindow.on('resize', publishBox);
   mainWindow.on('move', publishBox);
+  mainWindow.on('resize', saveWindowStateSoon);
+  mainWindow.on('move', saveWindowStateSoon);
+  mainWindow.on('maximize', saveWindowStateSoon);
+  mainWindow.on('unmaximize', saveWindowStateSoon);
   mainWindow.on('restore', () => {
     containRestoredWindow(mainWindow);
     publishBox();
@@ -1444,7 +1617,7 @@ function createMainWindow() {
       menu.append(new MenuItem({ role: 'copy' }));
     }
 
-    // Debug entries only in dev builds; F12 / Ctrl+Shift+I stay bound always.
+    // Debug entries only in dev builds; F12 / Ctrl+Shift+I follow windowKeys.cjs.
     if (!app.isPackaged) {
       if (menu.items.length) menu.append(new MenuItem({ type: 'separator' }));
       menu.append(new MenuItem({
@@ -1814,6 +1987,7 @@ function createMainWindow() {
     else adminPanelWindow = win;
     const ownRoute = isStats ? isSignupStatsUrl : isAdminPanelUrl;
     win.setMenu(null);
+    bindWindowKeys(win, { onMaximize: toggleMaximize, allowDevTools: canOpenDevTools() });
     win.on('closed', () => {
       if (signupStatsWindow === win) signupStatsWindow = null;
       if (adminPanelWindow === win) adminPanelWindow = null;
@@ -1876,11 +2050,13 @@ function createTray() {
     { type: 'separator' },
     ...premium.trayMenuItems(),
     {
-      label: et('tray.startWithWindows'),
+      // "Windows ile Başlat" only on Windows; macOS and Linux say "open at login".
+      label: et(process.platform === 'win32' ? 'tray.startWithWindows' : 'tray.startAtLogin'),
       type: 'checkbox',
       checked: readOpenAtLogin(),
       click: (item) => {
         syncLoginItem(item.checked);
+        markAutostartDecided();
         tray.setContextMenu(buildMenu());
       },
     },
@@ -1974,12 +2150,8 @@ app.whenReady().then(async () => {
     log,
   });
 
-  globalShortcut.register('F12', () => mainWindow?.webContents.toggleDevTools());
-  globalShortcut.register('CommandOrControl+Shift+I', () => mainWindow?.webContents.toggleDevTools());
-  globalShortcut.register('F11', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    toggleMaximize(mainWindow);
-  });
+  // F11 / F12 / Ctrl+Shift+I are bound per window (windowKeys.cjs, before-input-event), never
+  // with globalShortcut: that took the keys away from every other app on the machine.
 
   app.on('activate', () => {
     if (mainWindow) {
@@ -2001,6 +2173,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  saveWindowStateNow();
   premium.flush();
   destroyOverlayWindow();
   if (!updateReady || installStarted || !app.isPackaged) return;
@@ -2039,6 +2212,7 @@ autoUpdater.on('update-available', (info) => {
     });
     resolvePrelaunch({ type: 'update-available', version: info.version });
   } else {
+    updateDownloadActive = true;
     mainWindow?.webContents?.send('update:downloading', { version: info.version });
   }
 });
@@ -2067,7 +2241,11 @@ autoUpdater.on('error', (err) => {
     });
     resolvePrelaunch({ type: 'error', error: err });
   } else {
-    mainWindow?.webContents?.send('update:error', { message: err?.message || String(err) });
+    // 'download' = a visible download failed (the card offers retry); 'check' = a quiet
+    // background check failed, which the renderer does not surface.
+    const phase = updateDownloadActive ? 'download' : 'check';
+    updateDownloadActive = false;
+    mainWindow?.webContents?.send('update:error', { message: String(err?.message || err || '').slice(0, 200), phase });
   }
 });
 
@@ -2089,6 +2267,7 @@ autoUpdater.on('download-progress', ({ percent, bytesPerSecond, transferred, tot
 
 autoUpdater.on('update-downloaded', (info) => {
   log.info('[updater] Update downloaded:', info.version);
+  updateDownloadActive = false;
   updateReady = true;
   updateVersion = info.version;
   downloadedInstallerPath = info?.downloadedFile || autoUpdater.downloadedUpdateHelper?.file || null;
@@ -2320,7 +2499,10 @@ trustedHandle('check-for-updates', async () => {
   if (!isPackaged) return { success: true, skipped: true };
   try {
     const result = await checkForAppUpdates('ipc');
-    return { success: true, updateInfo: result?.updateInfo || null, updateReady, updateVersion };
+    const latest = result?.updateInfo?.version || null;
+    const available = Boolean(result && (typeof result.isUpdateAvailable === 'boolean' ? result.isUpdateAvailable : (latest && latest !== app.getVersion())));
+    if (!result && lastUpdateCheckError && !updateReady) return { success: false, error: lastUpdateCheckError, updateReady, updateVersion };
+    return { success: true, updateInfo: result?.updateInfo || null, available, updateReady, updateVersion };
   } catch (err) {
     log.error('[updater] Manual check failed:', err?.message);
     return { success: false, error: err?.message };
@@ -2416,18 +2598,24 @@ trustedHandle('get-screen-sources', async () => {
       thumbnailSize: { width: 320, height: 240 },
       fetchWindowIcons: true,
     });
-    return sources.map(s => ({
-      id: s.id,
-      name: s.name,
-      thumbnailDataURL: s.thumbnail.toDataURL(),
-    }));
+    return sources.map(s => {
+      let appIconDataURL = null;
+      try { appIconDataURL = s.appIcon && !s.appIcon.isEmpty() ? s.appIcon.resize({ width: 32, height: 32 }).toDataURL() : null; } catch (_) { appIconDataURL = null; }
+      return {
+        id: s.id,
+        name: s.name,
+        thumbnailDataURL: s.thumbnail.toDataURL(),
+        // Window tiles show the app's icon in the picker (fetchWindowIcons above).
+        appIconDataURL,
+      };
+    });
   } catch (err) {
     log.error('get-screen-sources error:', err);
     return [];
   }
 });
 
-ipcMain.handle('screen-share:select-source', (_e, sourceId) => {
+trustedHandle('screen-share:select-source', (_e, sourceId) => {
   if (typeof sourceId !== 'string' || !/^(screen|window):[\w:.-]+$/.test(sourceId)) return false;
   setPendingDisplaySource(sourceId);
   return true;
@@ -2440,13 +2628,15 @@ trustedOn('download-file', async (event, payload) => {
   try {
     const { url, filename } = payload || {};
     if (!isDownloadableUrl(url)) throw new Error('download-file: only http(s) URLs');
-    const { filePath, name } = resolveDownloadPath(app.getPath('downloads'), filename);
+    const { filePath: wanted, name } = resolveDownloadPath(app.getPath('downloads'), filename);
 
-    const { default: fetch } = await import('node-fetch');
-    const response = await fetch(url);
-    const buffer = await response.buffer();
-
-    fs.writeFileSync(filePath, buffer);
+    // Electron's own fetch (node-fetch was never a dependency, so this always threw), and a
+    // failed response is never written to disk; an existing file gets a " (1)" sibling.
+    const response = await net.fetch(url);
+    if (!response.ok) throw new Error(`download-file: HTTP ${response.status}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const filePath = uniqueDownloadPath(wanted, (p) => fs.existsSync(p));
+    await fs.promises.writeFile(filePath, buffer);
 
     const setupVer = versionFromSetupFilename(name);
     if (setupVer || isDescallSetupDownloadUrl(url)) {

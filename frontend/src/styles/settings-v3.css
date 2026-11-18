@@ -69,7 +69,9 @@ button.s3-row:focus-visible { outline: 2px solid var(--s3-link); outline-offset:
 .s3-av-letter { display: inline-grid; place-items: center; color: #fff; font-weight: 600; line-height: 1; }
 
 /* ── Settings › Görünüm ── */
-.s3-two { display: grid; grid-template-columns: 1fr 330px; gap: 22px; align-items: start; }
+/* minmax(0, …): the columns may shrink below their content, so the preview is never pushed out
+   of the panel and clipped (polish scan: cut off under ~1190 px and on iPad). */
+.s3-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 330px); gap: 22px; align-items: start; }
 .s3-sticky { position: sticky; top: 0; }
 .s3-cap { font-size: 12.5px; color: var(--s3-t2); margin: 8px 4px 0; line-height: 1.4; }
 .s3-gone { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
@@ -95,6 +97,8 @@ html[data-theme="light"] .s3-gone span { background: rgba(16, 18, 28, 0.06); col
 .s3-prev.is-light .s3-pm:not(.me) .s3-pb { background: #fff; }
 .s3-prev.is-light .live, .s3-prev.is-light .s3-pin { background: rgba(16, 18, 28, 0.06); color: rgba(16, 18, 28, 0.5); }
 .s3-prev.is-light .s3-pr { background: #fff; box-shadow: 0 0 0 2px #eef0f6; }
+/* #30d158 text on #eef0f6 is 1.8:1; a deeper green reads at 4.6:1 (WCAG AA). */
+.s3-prev.is-light .hd small { color: #1f8a3d; }
 
 .s3-th { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; }
 .s3-th > button { text-align: center; font-size: 13.5px; font-weight: 550; background: none; border: 0; padding: 0; cursor: pointer; color: var(--s3-t1); }
@@ -142,6 +146,13 @@ html.glass-desktop .user-settings.is-desktop.s3-shell.s3-tablet {
   width: min(1100px, calc(100vw - 40px)) !important;
   max-width: 1100px !important;
   height: min(760px, var(--us-fit-h)) !important;
+}
+/* iPad portrait (a tall, narrow screen): the 760px card left ~600px of empty screen and the
+   Market showed half a row of cards; the shell grows with the window there. */
+@media (orientation: portrait) and (min-height: 1000px) {
+  html.glass-desktop .user-settings.is-desktop.s3-shell.s3-tablet {
+    height: min(1180px, var(--us-fit-h)) !important;
+  }
 }
 html.glass-desktop:not(.gd-lite) .user-settings.is-desktop.s3-shell {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)), rgba(24, 25, 36, 0.88) !important;
@@ -195,10 +206,21 @@ html.glass-ui .user-settings.s3-tab-v3 .us-main-header.s3-nav {
 html[data-theme="light"] .s3-back { color: #3D5BD9; }
 .us-main-header .s3-back.us-text-back { position: relative; z-index: 1; min-height: 44px; flex: none; white-space: nowrap; }
 .s3-back:active { opacity: 0.6; }
+/* Görünüm uses the same page padding as every other tab, and its title sits in the same
+   (wider, two-column) column as its content: the title used to float 48 px right of the
+   sections and 20 px higher than on the other pages. The scroll area is the size container
+   that decides two columns or one (the panel width, not the window, is what matters). */
 html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll {
-  padding: 0 22px 24px !important;
+  padding: 20px 32px 40px !important;
+  container-type: inline-size;
 }
-html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .s3 { width: auto; margin: 0; }
+html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .s3,
+html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .us-page-title {
+  width: min(980px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+html.glass-desktop .user-settings.is-desktop.s3-tab-v3 .us-main-scroll > .s3 .s3-sec.first { margin-top: 0; }
 
 /* ── iPhone: Görünüm is a heavy sheet at top 54 over the app (mockup 35) ── */
 html.glass-ui .user-settings-shell.s3-phone-shell { background: rgba(6, 7, 12, 0.46) !important; }
@@ -269,10 +291,19 @@ html.reduce-motion *::after {
 
 @media (max-width: 1100px) {
   html.glass-desktop .user-settings.is-desktop.s3-shell .us-sidebar.s3-side { width: 280px !important; }
-  .s3-two { grid-template-columns: 1fr 300px; }
+  .s3-two { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
+  /* 280px sidebar: long section names (ru "Конфиденциальность", 173px at 16px in a
+     161px slot) take a step down so they fit instead of ending in an ellipsis. */
+  .s3-side .s3-row .lab b { font-size: var(--fs-15); letter-spacing: -0.01em; }
 }
 @media (max-width: 900px) {
-  .s3-two { grid-template-columns: 1fr; }
+  .s3-two { grid-template-columns: minmax(0, 1fr); }
+  .s3-sticky { position: static; order: -1; }
+}
+/* After the viewport steps on purpose: on glass desktop the Görünüm scroll area is a size
+   container and its width (not the window's) decides two columns or one. */
+@container (max-width: 760px) {
+  .s3-two { grid-template-columns: minmax(0, 1fr); }
   .s3-sticky { position: static; order: -1; }
 }
 

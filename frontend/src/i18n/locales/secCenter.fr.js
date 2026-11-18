@@ -155,6 +155,12 @@ export const SEC_CENTER_FR = {
     "title": "Modes de verrou d'urgence",
     "liftAll": "Tout lever",
     "permanent": "Réglages d'accès permanents",
+    "fromSystem": "Actif depuis Système",
+    "sysChatFrozen": "Le chat est gelé",
+    "chatFrozenSub": "Personne ne peut envoyer de messages",
+    "regOff": "Les inscriptions sont désactivées",
+    "regOffSub": "Aucun nouveau compte ne peut être créé",
+    "openSystem": "Ouvrir Système",
     "liftsIn": "Levé dans {time}",
     "untilLifted": "Jusqu'à levée manuelle",
     "detailAria": "Détails du verrou {name}"

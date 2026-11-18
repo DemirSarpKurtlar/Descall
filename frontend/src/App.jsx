@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { invalidateProfile } from "./lib/profileCache.js";
+import { invalidateProfile, clearProfileCache } from "./lib/profileCache.js";
 import { textI18n, localizeDeep, serverMessage } from "./i18n/serverText.js";
 import { dismissBootSplashFromApp, reportBootPhase } from "./lib/bootSplashDirect.js";
 import { mergeRestFriends } from "./lib/friendListMerge";
@@ -205,6 +205,8 @@ import { openAdminPanelWindow } from "./components/admin/adminNav.js";
 import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
+import { applyPeerRead } from "./lib/readReceipts";
+import { FAILED_ACTION_EVENT, dmPeerId, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
@@ -539,6 +541,15 @@ export default function App() {
   const [bootError, setBootError] = useState(false);
   const [bootAttempt, setBootAttempt] = useState(0);
   const [me, setMe] = useState(() => normalizeUser(getUser()));
+  // Sign-out or another account: profiles cached for the last session (profile window and hover
+  // card, lib/profileCache.js) are dropped instead of painting instantly for the new one.
+  const sessionUserId = me?.id ?? null;
+  const lastSessionUserRef = useRef(sessionUserId);
+  useEffect(() => {
+    if (lastSessionUserRef.current === sessionUserId) return;
+    lastSessionUserRef.current = sessionUserId;
+    clearProfileCache();
+  }, [sessionUserId]);
   const [inviteCode, setInviteCode] = useState(() => parseInviteCodeFromLocation());
   const [inviteAuthOpen, setInviteAuthOpen] = useState(false);
   const [serverVanitySlug, setServerVanitySlug] = useState(() => parseServerVanityFromLocation());
@@ -571,6 +582,8 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  // Requests I sent that are still waiting (polish world-social-10).
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [messageRequests, setMessageRequests] = useState([]);
   const [dmByUserId, setDmByUserId] = useState({});
   const dmByUserIdRef = useRef({});
@@ -665,6 +678,43 @@ export default function App() {
     window.addEventListener("descall:app-message-dismiss", onDismiss);
     return () => window.removeEventListener("descall:app-message-dismiss", onDismiss);
   }, []);
+  // Polish messaging-20: "Tekrar gönder" / "Sil" on a message the server refused.
+  useEffect(() => {
+    const onFailed = (event) => {
+      const { action, message, conversationType } = event?.detail || {};
+      // A DM arrives as its pair key ("a::b"): the list and the socket use the peer id.
+      const conversationId = conversationType === "dm"
+        ? dmPeerId(event?.detail?.conversationId, myIdRef.current)
+        : event?.detail?.conversationId;
+      if (!message?.id || !conversationId || (conversationType !== "dm" && conversationType !== "group")) return;
+      const setList = conversationType === "dm" ? setDmByUserId : setGroupMessagesById;
+      if (action === "discard") {
+        setList((prev) => {
+          const cur = prev[conversationId];
+          if (!cur?.some((m) => m.id === message.id)) return prev;
+          return { ...prev, [conversationId]: cur.filter((m) => m.id !== message.id) };
+        });
+        return;
+      }
+      if (action !== "retry") return;
+      const tempId = newFailedTempId();
+      const emit = retryEmit(message, { conversationType, conversationId, tempId });
+      if (!emit) return;
+      setList((prev) => {
+        const cur = prev[conversationId];
+        if (!cur?.some((m) => m.id === message.id)) return prev;
+        return {
+          ...prev,
+          [conversationId]: cur.map((m) => (m.id === message.id
+            ? { ...m, id: tempId, failed: false, sending: true, timestamp: new Date().toISOString() }
+            : m)),
+        };
+      });
+      socketRef.current?.emit(emit[0], emit[1]);
+    };
+    window.addEventListener(FAILED_ACTION_EVENT, onFailed);
+    return () => window.removeEventListener(FAILED_ACTION_EVENT, onFailed);
+  }, []);
   const [ownedServerCount, setOwnedServerCount] = useState(0);
   const [maxOwnedServers, setMaxOwnedServers] = useState(10);
   // Electron update toast lives in <ElectronUpdateToast /> (charcoal, no focus steal).
@@ -672,6 +722,32 @@ export default function App() {
   const socketRef = useRef(null);
   const serverSocketUnbindRef = useRef(null);
   const activeDmRef = useRef(null);
+  // Polish messaging-03: a DM that got messages while the window was hidden is
+  // marked read ("Görüldü") only once the window is visible again.
+  const pendingDmReadRef = useRef(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const flush = () => {
+      if (document.visibilityState !== "visible") return;
+      const peerId = pendingDmReadRef.current;
+      if (!peerId) return;
+      pendingDmReadRef.current = null;
+      if (activeDmRef.current?.id !== peerId) return;
+      setDmUnread((prev) => {
+        if (!prev[peerId]) return prev;
+        const n = { ...prev };
+        delete n[peerId];
+        return n;
+      });
+      socketRef.current?.emit("dm:mark_read", { withUserId: peerId });
+    };
+    document.addEventListener("visibilitychange", flush);
+    window.addEventListener("focus", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", flush);
+      window.removeEventListener("focus", flush);
+    };
+  }, []);
   const activeGroupRef = useRef(null);
   const activeChannelRef = useRef(null);
   const activeServerRef = useRef(null);
@@ -1484,7 +1560,7 @@ export default function App() {
     initAudioManager().catch(() => {});
     notificationService.init().catch(() => {});
     setNotifPermission(notificationService.getPermissionState());
-    // Android asks right away; iOS only checks here and asks after sign-in
+    // Both native apps only check here and ask after sign-in
     // (IosPushPermissionPrompt), never on the login screen.
     initNativePush()
       .then((permission) => {
@@ -1651,10 +1727,18 @@ export default function App() {
     try {
       // Any HTTP response means the URL resolves, Render may return 503 during cold start.
       // Only a network-level failure (fetch throws) means the URL is wrong.
-      await fetch(`${API_BASE_URL}/health`, { method: "GET" });
+      // Bounded: a hanging network must not keep the sign-in spinner forever.
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+      try {
+        await fetch(`${API_BASE_URL}/health`, { method: "GET", ...(ctrl ? { signal: ctrl.signal } : {}) });
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
       return true;
     } catch {
-      throw new Error(t("core.app.backendUnreachable", { url: API_BASE_URL }));
+      // User copy only: no backend URL or build setting names on the sign-in screen.
+      throw new Error(t("authx.login.unreachable"));
     }
   };
 
@@ -1848,6 +1932,8 @@ export default function App() {
     socket.on("typing:update", (payload = {}) => {
       const { context, fromUser, typing, groupId, channelId } = payload;
       if (!fromUser?.id || fromUser.id === myIdRef.current) return;
+      // Never show someone I blocked typing (polish messaging-14).
+      if (typing && isBlockedByMe(fromUser.id)) return;
       if (context === "dm") {
         const peer = activeDmRef.current;
         if (!peer || peer.id !== fromUser.id) {
@@ -1995,6 +2081,7 @@ export default function App() {
       });
     });
     socket.on("friend:requests", (list) => setFriendRequests((list ?? []).map((u) => normalizeUser(u))));
+    socket.on("friend:outgoing", (list) => setOutgoingRequests((Array.isArray(list) ? list : []).map((u) => normalizeUser(u)).filter(Boolean)));
     socket.on("friend:request:incoming", ({ from }) => {
       if (!from) return;
       const normalized = stampArrival(normalizeUser(from), "requestedAt");
@@ -2002,8 +2089,20 @@ export default function App() {
       // Notification for incoming friend request
       notificationService.friendRequest({ from: from.username, fromId: from.id });
     });
-    socket.on("friend:accepted", () => {
+    socket.on("friend:accepted", ({ by } = {}) => {
       socket.emit("friend:list");
+      // The requester's side carries the acceptor's name (socket/handlers.js friend:accept);
+      // this was silent before (polish world-social-02).
+      if (!by?.id || !by?.username || String(by.id) === String(myIdRef.current)) return;
+      const accepted = normalizeUser(by);
+      const name = resolveDisplayName(accepted);
+      toast(name, "presence", {
+        user: accepted,
+        name,
+        subtitle: t("accepted your friend request"),
+        dismissLabel: t("Close"),
+        onOpen: () => navigate(directPath(accepted)),
+      });
     });
     // A block (either direction) removes the friendship server-side: re-pull lists.
     socket.on("friend:blocked", () => {
@@ -2013,9 +2112,9 @@ export default function App() {
       if (user?.id != null) invalidateProfile(user.id);
       if (user) applyProfileUpdate(user);
     });
-    socket.on("friend:error", ({ message } = {}) => {
+    socket.on("friend:error", (payload = {}) => {
       hapticError();
-      setFriendNotice(message || t("Friend action failed."));
+      setFriendNotice(serverMessage(payload, "message") || t("Friend action failed."));
       setTimeout(() => setFriendNotice(""), 4000);
       // Restore pending list / friends after a failed accept/decline
       socket.emit("friend:list");
@@ -2044,16 +2143,17 @@ export default function App() {
     });
     socket.on("dm:request:sent", ({ toUserId, tempId } = {}) => {
       if (tempId && toUserId) {
+        // Keep what I wrote in the chat, marked as a message request (polish
+        // messaging-15): it used to vanish. Local only; the request carries a preview.
+        const peer = activeDmRef.current?.id === toUserId ? activeDmRef.current : null;
+        const requestName = peer?.displayName || peer?.display_name || peer?.username || "";
         setDmByUserId((prev) => {
           const cur = prev[toUserId] ?? [];
           if (!cur.some((row) => row.id === tempId)) return prev;
-          return { ...prev, [toUserId]: cur.filter((row) => row.id !== tempId) };
-        });
-        setDmPreviews((prev) => {
-          if (!prev[toUserId]) return prev;
-          const next = { ...prev };
-          delete next[toUserId];
-          return next;
+          return {
+            ...prev,
+            [toUserId]: cur.map((row) => (row.id === tempId ? { ...row, sending: false, requestPending: true, requestName } : row)),
+          };
         });
       }
       toast(t("Message request sent"), "info");
@@ -2138,6 +2238,16 @@ export default function App() {
     socket.on("dm:message:edited", ({ messageId, newText, editedAt, withUserId } = {}) => {
       if (!messageId) return;
       const stamp = editedAt || new Date().toISOString();
+      {
+        // The chat list shows the newest text (polish messaging-11).
+        const all = dmByUserIdRef.current || {};
+        const peer = withUserId && all[withUserId] ? withUserId : Object.keys(all).find((k) => all[k]?.some?.((m) => m.id === messageId));
+        const list = peer ? all[peer] : null;
+        if (list?.length && list[list.length - 1]?.id === messageId) {
+          const preview = previewMediaBody({ ...list[list.length - 1], text: newText }, t);
+          setDmPreviews((prev) => ({ ...prev, [peer]: preview }));
+        }
+      }
       setDmByUserId((prev) => {
         const patch = (list) => list.map((m) => (
           m.id === messageId ? { ...m, text: newText, editedAt: stamp } : m
@@ -2159,6 +2269,14 @@ export default function App() {
 
     socket.on("dm:message:deleted", ({ messageId, withUserId } = {}) => {
       if (!messageId || !withUserId) return;
+      {
+        // A deleted newest message must leave the chat list too (polish messaging-11).
+        const list = dmByUserIdRef.current?.[withUserId];
+        if (list?.length && list[list.length - 1]?.id === messageId) {
+          const last = list.length > 1 ? list[list.length - 2] : null;
+          setDmPreviews((prev) => ({ ...prev, [withUserId]: last ? previewMediaBody(last, t) : "" }));
+        }
+      }
       setDmByUserId((prev) => {
         const cur = prev[withUserId];
         if (!cur?.length) return prev;
@@ -2219,6 +2337,22 @@ export default function App() {
               avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
             });
           }
+        } else if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+          // Open chat but the window is minimised / in the tray / a background tab:
+          // count it as unread and keep "Görüldü" back until the window is seen again.
+          pendingDmReadRef.current = convWith;
+          setDmUnread((prev) => ({ ...prev, [convWith]: (prev[convWith] || 0) + 1 }));
+          setUnreadMarker((prev) => (prev?.key === `dm:${convWith}` ? { ...prev, count: (prev.count || 0) + 1 } : { key: `dm:${convWith}`, count: 1 }));
+          if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
+            notificationService.newMessage({
+              from: normalizedMsg.from?.username || t("Someone"),
+              text: normalizedMsg.text || (normalizedMsg.mediaType === "voice" ? t("🎤 Voice message") : ""),
+              preview: message.text?.substring(0, 100),
+              conversationId: convWith,
+              fromId: normalizedMsg.from?.id || convWith,
+              avatarUrl: normalizedMsg.from?.avatarUrl || normalizedMsg.from?.avatar_url || null,
+            });
+          }
         } else {
           setDmUnread((prev) => {
             if (!prev[convWith]) return prev;
@@ -2227,7 +2361,7 @@ export default function App() {
             return n;
           });
           socket.emit("dm:mark_read", { withUserId: convWith });
-          // Open chat but window hidden / in tray / unfocused: still notify.
+          // Open chat, visible but unfocused: still notify.
           // notificationService drops it while the window is focused.
           if (normalizedMsg.type !== "call_summary" && !pref?.muted) {
             notificationService.newMessage({
@@ -2470,6 +2604,14 @@ export default function App() {
     socket.on("group:message:edited", ({ groupId, messageId, newText, editedAt, editedBy } = {}) => {
       if (!messageId || !groupId || !editedBy) return;
       const stamp = editedAt || new Date().toISOString();
+      {
+        const list = groupMessagesRef.current?.[groupId];
+        const lastMsg = list?.length ? list[list.length - 1] : null;
+        if (lastMsg?.id === messageId && lastMsg.from?.id === editedBy) {
+          const preview = formatGroupPreviewFromMsg({ ...lastMsg, text: newText }, t, myIdRef.current);
+          if (preview) setGroupPreviews((prev) => ({ ...prev, [groupId]: preview }));
+        }
+      }
       setGroupMessagesById((prev) => {
         // Only this group, and only the message's own sender may rewrite it.
         const cur = prev[groupId];
@@ -2486,6 +2628,13 @@ export default function App() {
 
     socket.on("group:message:deleted", ({ messageId, groupId } = {}) => {
       if (!messageId || !groupId) return;
+      {
+        const list = groupMessagesRef.current?.[groupId];
+        if (list?.length && list[list.length - 1]?.id === messageId) {
+          const last = list.length > 1 ? list[list.length - 2] : null;
+          setGroupPreviews((prev) => ({ ...prev, [groupId]: (last && formatGroupPreviewFromMsg(last, t, myIdRef.current)) || "" }));
+        }
+      }
       setGroupMessagesById((prev) => {
         const cur = prev[groupId];
         if (!cur?.length) return prev;
@@ -2510,6 +2659,8 @@ export default function App() {
         messageId,
       } = payload;
       if (payload.fromId && isBlockedByMe(payload.fromId)) return;
+      // A group I am not in (polish messaging-19; the server now filters this too).
+      if (groupId && myGroupsRef.current.length && !myGroupsRef.current.some((g) => g.id === groupId)) return;
       if (channelId && isChannelMuted(channelId)) return;
       if (serverId && getServerNotificationLevel(serverId) === "muted") return;
       if (
@@ -2867,6 +3018,8 @@ export default function App() {
 
     socket.on("dm:unread:sync", ({ peerId, count } = {}) => {
       if (!peerId) return;
+      // The server zeroes an open chat; while the window is hidden it stays unread here.
+      if (count === 0 && pendingDmReadRef.current === peerId) return;
       setDmUnread((prev) => { const n = { ...prev }; if (count === 0) delete n[peerId]; else n[peerId] = count; return n; });
     });
 
@@ -2875,8 +3028,8 @@ export default function App() {
       setDmByUserId((prev) => {
         const cur = prev[peerId];
         if (!cur) return prev;
-        const selfId = myIdRef.current;
-        return { ...prev, [peerId]: cur.map((m) => m.from?.id === selfId && m.to?.id === peerId ? { ...m, readAt: m.readAt || at } : m) };
+        const next = applyPeerRead(cur, myIdRef.current, at);
+        return next === cur ? prev : { ...prev, [peerId]: next };
       });
     });
 
@@ -3164,7 +3317,9 @@ export default function App() {
       }
       await handleLogin({ username: payload.username, password: payload.password });
     } catch (error) {
-      setAuthError(error.message);
+      // An access ban on the sign-up answers ACCESS_BANNED: the ban screen (with its
+      // appeal form) instead of a one-line error, like sign-in.
+      showAuthFailure(error);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -3225,7 +3380,7 @@ export default function App() {
     setMe(null);
     setSessionChecked(true);
     setActiveTimeout(null);
-    setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]); setMessageRequests([]);
+    setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]); setOutgoingRequests([]); setMessageRequests([]);
     forgetBootHashes();
     friendsFromSocketRef.current = false;
     setFriendsLoaded(false);
@@ -3293,6 +3448,20 @@ export default function App() {
       const raw = await getMyGroups();
       const groups = normalizeGroups(raw);
       setMyGroups(groups);
+      // Server unread counts (polish messaging-10): messages that came while I was away.
+      setGroupUnread((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const g of groups) {
+          if (!g?.id || typeof g.unreadCount !== "number") continue;
+          const n = activeGroupRef.current?.id === g.id ? 0 : g.unreadCount;
+          if ((next[g.id] || 0) === n) continue;
+          changed = true;
+          if (n > 0) next[g.id] = n;
+          else delete next[g.id];
+        }
+        return changed ? next : prev;
+      });
       setGroupPreviews((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -4480,6 +4649,24 @@ export default function App() {
     socketRef.current?.emit("dm:request:decline", { fromUserId: id });
   };
 
+  // Take back a request I sent; the server answers with the new friend:outgoing list.
+  const handleCancelFriendRequest = (toUserId) => {
+    const id = String(toUserId || "").trim();
+    if (!id) return;
+    setOutgoingRequests((prev) => prev.filter((r) => String(r.id) !== id));
+    const socket = socketRef.current;
+    if (socket?.connected) {
+      socket.emit("friend:cancel", { toUserId: id });
+      return;
+    }
+    const token = getToken();
+    fetch(`${API_BASE_URL}/friends/remove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ friendId: id }),
+    }).catch(() => {});
+  };
+
   const handleDeclineFriend = (fromUserId) => {
     const id = String(fromUserId || "").trim();
     if (!id) return;
@@ -4604,7 +4791,8 @@ export default function App() {
       const cachedActivity = lastCached?.timestamp || lastCached?.created_at || null;
       return {
         ...f,
-        lastMessage: dmPreviews[f.id] || f.lastMessage || cachedPreview || null,
+        // "" = the newest message was deleted and none is left (polish messaging-11).
+        lastMessage: dmPreviews[f.id] === "" ? null : (dmPreviews[f.id] || f.lastMessage || cachedPreview || null),
         lastActivity: dmLastActivity[f.id] || f.lastActivity || cachedActivity || null,
         unreadCount: dmUnread[f.id] || 0,
       };
@@ -4621,7 +4809,7 @@ export default function App() {
       const cachedActivity = lastCached?.timestamp || lastCached?.created_at || null;
       return {
         ...g,
-        lastMessage: groupPreviews[g.id] || g.lastMessage || cachedPreview || null,
+        lastMessage: groupPreviews[g.id] === "" ? null : (groupPreviews[g.id] || g.lastMessage || cachedPreview || null),
         lastActivity:
           groupLastActivity[g.id] || g.lastActivity || cachedActivity || g.updated_at || g.created_at || null,
         unreadCount: groupUnread[g.id] || 0,
@@ -5544,9 +5732,10 @@ export default function App() {
             const nextPath = open ? "/settings" : appPathForView(activeView);
             if (location.pathname !== nextPath) navigate(nextPath);
           }}
-          onSettingsTabChange={(tab) => {
+          onSettingsTabChange={(tab, opts) => {
             const nextPath = tab && tab !== "overview" ? `/settings/${encodeURIComponent(tab)}` : "/settings";
-            if (location.pathname !== nextPath) navigate(nextPath);
+            // replace: an unknown /settings/<tab> is corrected in place (no extra history step).
+            if (location.pathname !== nextPath) navigate(nextPath, opts?.replace ? { replace: true } : undefined);
           }}
           groups={sortedGroups}
           dms={sortedDms}
@@ -5691,6 +5880,8 @@ export default function App() {
           messageRequests={orderedMessageRequests}
           onAcceptFriend={handleAcceptFriend}
           onDeclineFriend={handleDeclineFriend}
+          outgoingRequests={outgoingRequests}
+          onCancelFriendRequest={handleCancelFriendRequest}
           onAcceptMessageRequest={handleAcceptMessageRequest}
           onDeclineMessageRequest={handleDeclineMessageRequest}
           replyTo={replyTo}
@@ -6159,7 +6350,7 @@ export default function App() {
             activeServer={activeView === "servers" ? activeServer : null}
           />
         ) : null}
-        {IOS_NATIVE && me?.id ? (
+        {(IOS_NATIVE || isNativePushPlatform()) && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
           </Suspense>

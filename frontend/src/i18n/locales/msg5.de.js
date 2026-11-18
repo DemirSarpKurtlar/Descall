@@ -37,4 +37,28 @@ export const MSG5_DE = {
     imageFailed: "Bild konnte nicht geladen werden",
     videoFailed: "Video konnte nicht geladen werden",
   },
+  upload: {
+    uploading: "{name} wird hochgeladen",
+    cancel: "Upload abbrechen",
+    tooLarge: "Die Datei ist zu groß. Das Limit liegt bei {max} MB.",
+    typeNotAllowed: "Dieser Dateityp kann nicht gesendet werden.",
+    failed: "Die Datei konnte nicht hochgeladen werden. Prüfe deine Verbindung und versuche es erneut.",
+    dismiss: "Schließen",
+    dropTitle: "Zum Anhängen ablegen",
+    dropHint: "Ein Foto, Video oder eine Datei, bis {max} MB",
+  },
+  failed: {
+    label: "Nicht gesendet",
+    retry: "Erneut senden",
+    discard: "Löschen",
+    menu: "Diese Nachricht wurde nicht gesendet.",
+  },
+  request: {
+    pendingLabel: "Nachrichtenanfrage",
+    pendingInfo: "Als Nachrichtenanfrage gesendet. Der Chat öffnet sich, wenn {name} annimmt.",
+  },
+  group: {
+    networkError: "Keine Verbindung. Versuche es erneut.",
+    notFriends: "Du kannst nur deine Freunde hinzufügen.",
+  },
 };

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { Ban, Download, LogOut, Mail, MessageCircle, Trash2, WifiOff } from "../ui/Icon.jsx";
 import { useLocale, useT } from "../../context/LocaleContext";
@@ -31,6 +32,8 @@ export default function BanScreen({ state, onClose, preview = false, now: fixedN
   const { locale } = useLocale();
   const [now, setNow] = useState(() => fixedNow || Date.now());
   const [view, setView] = useState("main");
+  const cardRef = useRef(null);
+  useModalFocus(!preview, cardRef);
   const [appeal, setAppeal] = useState(state?.appeal || { status: "none", canAppeal: true });
   const [text, setText] = useState("");
   const [email, setEmail] = useState("");
@@ -315,14 +318,14 @@ export default function BanScreen({ state, onClose, preview = false, now: fixedN
             {access.code ? ` ${t("ban.accessCode", { code: access.code })}` : ""}
           </p>
         ) : !expiresAt && !state.live && canAppeal ? (
-          <p className="ban-fine">{t("ban.appealFine")}</p>
+          <p className="ban-fine">{appeal.emailOnFile === false ? t("authx.ban.appealFineNoEmail") : t("ban.appealFine")}</p>
         ) : null}
       </>
     );
   }
 
   const card = (
-    <div className={`ban-card${isAccess ? " is-access" : ""}${preview ? " is-preview" : ""}`} role={preview ? undefined : "alertdialog"} aria-modal={preview ? undefined : "true"} aria-labelledby={preview ? undefined : "ban-title"}>
+    <div ref={cardRef} className={`ban-card${isAccess ? " is-access" : ""}${preview ? " is-preview" : ""}`} role={preview ? undefined : "alertdialog"} aria-modal={preview ? undefined : "true"} aria-labelledby={preview ? undefined : "ban-title"}>
       <span className={`ban-seal${isAccess ? " is-access" : ""}`} aria-hidden="true">
         <Seal size={30} />
       </span>

@@ -144,7 +144,7 @@ const detail = aasa.applinks.details[0];
 assert.deepEqual(detail.appIDs, ["Q9R78TPNXS.com.descall.app"]);
 assert.ok(detail.components.length > 0);
 for (const c of detail.components) {
-  const sample = c["/"].replace("*", "x");
+  const sample = c["/"].replace("*", "abc123"); // long enough for every pattern (vanity slugs need 3+)
   const out = p(`https://descall.com${sample}`);
   assert.ok(out, `AASA path ${c["/"]} must resolve in the app`);
 }

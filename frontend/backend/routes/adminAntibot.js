@@ -47,7 +47,7 @@ async function requireViewer(req, res, next) {
     req.antibotRole = "admin";
     return next();
   } catch {
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
 

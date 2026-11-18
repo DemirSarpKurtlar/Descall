@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { Wrench, RefreshCw, Bell, BellRing, Megaphone, X, CheckCircle } from "../ui/Icon.jsx";
+import useModalFocus from "../../hooks/useModalFocus";
 import {
   countdownParts,
   formatTrtTime,
@@ -108,9 +110,11 @@ export function MaintenanceEndedToast({ t, onClose }) {
 /** Details sheet from the banner: same card as the full screen, countdown to the start. */
 export function MaintenanceDetails({ m, now, t, locale, onClose }) {
   const cd = countdownParts(m.startsAt, now);
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   return (
     <div className="mt-modal-scrim" onClick={onClose}>
-      <div className="mt-mc mt-glass" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div ref={dialogRef} className="mt-mc mt-glass" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <img className="lg" src={appIconSrc()} alt="" width={76} height={76} />
         <div style={{ marginTop: 16 }}>
           <span className={`mt-pill${m.kind === "emergency" ? " urg" : ""}`}><Wrench size={13} />{m.kind === "emergency" ? t("maint.emergency") : t("maint.planned")}</span>

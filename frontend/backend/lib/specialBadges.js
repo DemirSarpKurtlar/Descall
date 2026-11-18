@@ -179,6 +179,19 @@ async function promoGrantable(badgeId) {
   return true;
 }
 
+/**
+ * Free places left on a limited badge (maxHolders minus current holders), or null when the
+ * badge has no limit or the catalog is not installed. The promo form caps "Kullanım limiti"
+ * with it so a code never promises more badges than the badge can still give.
+ */
+async function promoSlotsLeft(badgeId) {
+  if (!isBadgeId(badgeId)) return null;
+  const rows = await catalog();
+  const row = rows.find((b) => b.id === badgeId);
+  if (!row || row.maxHolders == null) return null;
+  return Math.max(0, Number(row.maxHolders) - Number(row.holders || 0));
+}
+
 // ---- deferred popups (granted / taken back while offline)
 async function pendingFor(userId) {
   const res = await softRpc("special_badge_pending", { p_user_id: userId }, null);
@@ -215,6 +228,7 @@ module.exports = {
   auditLog,
   overview,
   promoGrantable,
+  promoSlotsLeft,
   pendingFor,
   markNotified,
   releaseUser,

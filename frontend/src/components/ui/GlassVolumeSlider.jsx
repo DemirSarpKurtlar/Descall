@@ -232,7 +232,7 @@ export default function GlassVolumeSlider({
       <button
         type="button"
         className="g-vol-icon"
-        aria-label={tier === "mute" ? t("Unmute") : t("Mute")}
+        aria-label={tier === "mute" ? t("lx.unmuteAudio") : t("lx.muteAudio")}
         disabled={disabled}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={toggleMute}

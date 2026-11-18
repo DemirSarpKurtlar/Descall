@@ -21,6 +21,7 @@ import {
   startSoundPackLoop,
   unlockSoundPackAudio,
 } from "./soundPackSynth.js";
+import { startRingLoop, webRingSupported } from "./ringLoop.js";
 
 // Detect Electron environment
 const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
@@ -135,6 +136,8 @@ class AudioManager {
     this.preloadComplete = false;
     this.soundPackKey = null;
     this.synthLoops = new Map();
+    // Call rings played as gapless Web Audio loops (ringLoop.js), by type.
+    this.webLoops = new Map();
 
     // Bind methods
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
@@ -149,7 +152,7 @@ class AudioManager {
   rerouteCallLoops(sinkId) {
     this.activeLoops.forEach((type) => {
       if (!CALL_OUTPUT_TYPES.has(type)) return;
-      const el = this.synthLoops.get(type)?.element || this.sounds[type];
+      const el = this.synthLoops.get(type)?.element || this.webLoops.get(type) || this.sounds[type];
       routeToSink(el, sinkId);
     });
   }
@@ -334,6 +337,7 @@ class AudioManager {
     this.synthLoops.forEach((stop, type) => {
       if (stop?.element) stop.element.volume = this.effectiveVolume(undefined, type);
     });
+    this.webLoops.forEach((loop, type) => loop.setVolume(this.effectiveVolume(undefined, type)));
   }
 
   /**
@@ -404,6 +408,30 @@ class AudioManager {
       const synthOk = this.playSynth(type, { loop, volume, sinkId: outputId });
       if (synthOk) return true;
       // fall through to MP3 defaults if synth fails
+    }
+
+    // Call rings: one full ring cycle per file, looped gaplessly through Web
+    // Audio. The element loop below stalls ~0.1 s at every wrap in Chromium.
+    // Falls back to the element when Web Audio cannot start.
+    if (loop && RING_TYPES.has(type) && !options.elementOnly && webRingSupported()) {
+      if (this.activeLoops.has(type)) return true;
+      const url = this.sounds[type]?.src || DEFAULT_SOUNDS[type];
+      this.activeLoops.add(type);
+      const ring = startRingLoop({
+        url,
+        volume: this.effectiveVolume(volume, type),
+        sinkId: outputId,
+        onFail: () => {
+          if (this.webLoops.get(type) !== ring) return;
+          this.webLoops.delete(type);
+          // Stopped meanwhile (answered at once): nothing to fall back to.
+          if (!this.activeLoops.has(type)) return;
+          this.activeLoops.delete(type);
+          this.play(type, { ...options, volume, elementOnly: true });
+        },
+      });
+      this.webLoops.set(type, ring);
+      return true;
     }
 
     // Check if already playing (for looping sounds)
@@ -479,6 +507,16 @@ class AudioManager {
    * @param {string} type - Sound type to stop
    */
   stop(type) {
+    const webLoop = this.webLoops.get(type);
+    if (webLoop) {
+      this.webLoops.delete(type);
+      this.activeLoops.delete(type);
+      try {
+        webLoop.stop();
+      } catch {
+        /* ignore */
+      }
+    }
     const synthStop = this.synthLoops.get(type);
     if (synthStop) {
       try {

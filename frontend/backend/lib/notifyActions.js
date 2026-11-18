@@ -317,6 +317,12 @@ function createNotifyActions(deps = {}) {
     // Message requests go through the app (first contact shows a preview card).
     if (!(await isAcceptedFriend(myId, peerId))) throw new NotifyActionError(409, "not_friends");
 
+    // Word filter, as in dm:send (block / flag / auto-timeout). Quick replies, the Apple Watch
+    // and scheduled DMs skipped it before (security scan 17 Nov 2026).
+    const filterCtx = { convType: "dm", peerId };
+    const filtered = require("./contentFilter").gate({ io, userId: myId, text, ctx: filterCtx });
+    if (filtered.blocked) throw new NotifyActionError(422, "content_blocked", "This message was blocked by the content filter.");
+
     const file = await sendableMedia(myId, media);
     await profile().ensureCosmeticsCached([myId]).catch(() => {});
     const sender = messageSender(myId, me.username, me.avatar_url);
@@ -341,6 +347,9 @@ function createNotifyActions(deps = {}) {
       throw new NotifyActionError(502, "not_sent");
     }
     const messageId = row.id;
+    try {
+      require("./contentFilter").after(filtered.verdict, { io, userId: myId, text, messageId, ctx: filterCtx });
+    } catch { /* flagging is best effort, as in dm:send */ }
     const { toUtcIso } = require("./datetime");
     const timestamp = toUtcIso(row.created_at) || row.created_at;
     void Promise.resolve().then(() => require("./userAnalyticsStore").recordFirstMessage(myId)).catch(() => {});

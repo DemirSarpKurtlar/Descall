@@ -66,6 +66,9 @@ assert.equal(audioLastApplied.current, null);
 await applyAdaptiveAudioEncoding(audioSender, "poor", audioLastApplied);
 assert.equal(audioSender._state.encodings[0].maxBitrate, audioPoor.maxBitrate);
 assert.equal(audioLastApplied.current, "poor:voice");
+// calls-04: voice stays high priority on a poor link (video yields, not voice).
+assert.equal(audioSender._state.encodings[0].priority, "high");
+assert.equal(audioSender._state.encodings[0].networkPriority, "high");
 assert.equal(getAdaptiveAudioEncodingParams("good", { music: true }).maxBitrate, 96_000);
 assert.equal(getAdaptiveAudioEncodingParams("excellent").maxBitrate, 64_000);
 

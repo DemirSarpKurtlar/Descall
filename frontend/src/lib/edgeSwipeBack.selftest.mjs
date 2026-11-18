@@ -314,7 +314,8 @@ const bridge = read("../../ios/App/App/DescallBridgeViewController.swift");
 assert.ok(/\{!glassShell && showMobileTabBar && \(\s*<nav/.test(layout), "tab bar and swipe-back share one nav-visibility flag");
 assert.ok(/showMobileTabBar \? \(\s*<>/.test(layout), "glass tab bar shows on every root tab");
 assert.ok(/onBack: handleMobileBack/.test(layout), "conversation swipe runs the ‹ back handler");
-assert.ok(/onBack: backToMenu/.test(panel) && /onBack: onClose/.test(panel), "settings swipe uses its ‹ / ✕ handlers");
+// requestClose = the ✕ handler (asks before dropping unsaved edits, then onClose).
+assert.ok(/onBack: backToMenu/.test(panel) && /onBack: (onClose|requestClose)\b/.test(panel), "settings swipe uses its ‹ / ✕ handlers");
 assert.ok(!/history\.back\(\)/.test(hook), "swipe-back never calls history.back() itself");
 assert.ok(/allowsBackForwardNavigationGestures = false/.test(bridge), "WKWebView history swipe stays off on iOS");
 assert.ok(/getPlatform\(\) === "android"/.test(hook), "Android app keeps the system back gesture only");

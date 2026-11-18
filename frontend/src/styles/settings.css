@@ -1410,6 +1410,16 @@ button.us-row.g-privacy-link:hover {
   cursor: not-allowed;
 }
 
+/* Verified pill + "Change email" (auth polish): one row, wraps on a narrow card. */
+.us-email-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .us-verified-pill {
   display: inline-flex;
   align-items: center;

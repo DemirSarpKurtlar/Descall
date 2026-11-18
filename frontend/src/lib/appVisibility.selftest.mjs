@@ -55,6 +55,10 @@ assert.equal(typeof mod.installAppVisibility({}), "function", "web / iOS: no-op"
   busy = true;
   fire("blur");
   assert.equal(cls.has("app-idle"), false, "never idle during a call");
+  assert.equal(cls.has("app-blurred"), true, "blurred even during a call (voice tile skins pause)");
+  fire("focus");
+  assert.equal(cls.has("app-blurred"), false, "focus clears blurred");
+  fire("blur");
   busy = false;
   fire("blur");
   busyCb(true);
@@ -67,6 +71,7 @@ assert.equal(typeof mod.installAppVisibility({}), "function", "web / iOS: no-op"
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 const pauseCss = read("../styles/app-backgrounded.css");
+assert.match(pauseCss, /html\.app-blurred :is\(\.vt2-skin, \.vt2-skin \*\)[\s\S]*?animation-play-state: paused !important;/, "voice tile skins pause when the window is blurred");
 assert.match(pauseCss, /html\.app-idle \*,[\s\S]*?animation-play-state: paused !important;/);
 assert.match(pauseCss, /html\.app-idle :is\(\.spin,[\s\S]*?animation-play-state: running !important;/, "spinners keep running");
 assert.match(read("../main.jsx"), /m\.installIdlePause\(\)/);

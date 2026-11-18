@@ -63,6 +63,11 @@
   outline: none;
 }
 .pfs-form.is-medium { --h: 420px; }
+/* iPad portrait (a tall screen): the 760 px form left ~300 px of empty dim above and below
+   while the profile scrolled inside it. */
+@media (orientation: portrait) and (min-height: 1000px) {
+  .pfs-form:not(.is-medium) { --h: 940px; }
+}
 .pfs-scroll {
   flex: 1;
   min-height: 0;
@@ -498,8 +503,109 @@ button.pfs-row:active, button.pfs-row:focus-visible { background: rgba(255, 255,
 /* Profile not loaded yet (first open, lib/profileCache.js): keep the shell, hide the
    content until the real profile arrives. Never paint the default look first. The close
    button stays usable. */
-.user-profile-card.is-look-pending > *:not(.user-profile-close),
+.user-profile-card.is-look-pending > *:not(.user-profile-close):not(.pfs-look-skel),
 .pfs-sheet.is-look-pending .pfs-scroll,
 .pfs-form.is-look-pending .pfs-scroll {
   visibility: hidden;
+}
+
+/* While it loads, a neutral shape (banner, avatar, name, action row, about card) instead of
+   an empty card. Shapes only, in glass tones: it is never mistaken for a default look. */
+.pfs-look-skel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 22px 22px;
+  pointer-events: none;
+  overflow: hidden;
+}
+.pfs-look-skel > span,
+.pfs-look-skel .pls-row i {
+  display: block;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.03) 100%),
+    rgba(255, 255, 255, 0.05);
+  background-size: 200% 100%, auto;
+  animation: pls-shimmer 1.4s linear infinite;
+}
+.pfs-look-skel .pls-banner {
+  align-self: stretch;
+  height: 120px;
+  margin: 0 -22px;
+  border-radius: 0;
+}
+.pfs-look-skel .pls-av {
+  width: 92px;
+  height: 92px;
+  margin-top: -58px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px rgba(20, 21, 30, 0.9);
+}
+.pfs-look-skel .pls-row {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  background: none;
+  animation: none;
+}
+.pfs-look-skel .pls-row i { height: 56px; border-radius: 14px; }
+html[data-theme="light"] .pfs-look-skel > span,
+html[data-theme="light"] .pfs-look-skel .pls-row i {
+  background:
+    linear-gradient(90deg, rgba(16, 18, 28, 0.04) 0%, rgba(16, 18, 28, 0.09) 50%, rgba(16, 18, 28, 0.04) 100%),
+    rgba(16, 18, 28, 0.05);
+  background-size: 200% 100%, auto;
+}
+html[data-theme="light"] .pfs-look-skel .pls-row { background: none; }
+html[data-theme="light"] .pfs-look-skel .pls-av { box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.9); }
+@keyframes pls-shimmer {
+  from { background-position: 100% 0, 0 0; }
+  to { background-position: -100% 0, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pfs-look-skel > span,
+  .pfs-look-skel .pls-row i { animation: none; }
+}
+html.reduce-motion .pfs-look-skel > span,
+html.reduce-motion .pfs-look-skel .pls-row i { animation: none; }
+
+/* The profile did not load (error or 8 s timeout): the seed look shows with a retry. */
+.pfs-load-err {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
+  border-radius: 14px;
+  font-size: var(--fs-13);
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(28, 29, 40, 0.96);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.pfs-load-err span { flex: 1; min-width: 0; }
+.pfs-load-err button {
+  flex: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font: inherit;
+  font-weight: 650;
+  color: #fff;
+  background: #587af5;
+  cursor: pointer;
+}
+html[data-theme="light"] .pfs-load-err {
+  color: rgba(16, 18, 28, 0.92);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 24px rgba(16, 18, 28, 0.14), inset 0 0 0 1px rgba(16, 18, 28, 0.08);
 }

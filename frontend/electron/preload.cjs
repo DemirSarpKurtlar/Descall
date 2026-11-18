@@ -39,7 +39,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
   closeWindow: () => ipcRenderer.send('window:close'),
-  onMaximizedChange: (callback) => ipcRenderer.on('window:maximized', (_, isMaximized) => callback(isMaximized)),
+  onMaximizedChange: (callback) => {
+    const handler = (_, isMaximized) => callback(isMaximized);
+    ipcRenderer.on('window:maximized', handler);
+    return () => ipcRenderer.off('window:maximized', handler);
+  },
   // 3.7.15: minimized / hidden to tray → the page pauses its animations.
   onAppVisibility: (callback) => {
     const handler = (_, payload) => callback(payload || {});
@@ -58,6 +62,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Is electron
   isElectron: true,
+
+  // Main-process errors (electron/mainErrors.cjs), scrubbed of paths: src/lib/sentry.js reports them.
+  onMainError: (callback) => {
+    const handler = (_, summary) => callback(summary || {});
+    ipcRenderer.on('app:main-error', handler);
+    return () => ipcRenderer.off('app:main-error', handler);
+  },
 
   // Boot watchdog / "Tekrar dene" (2.11.5): clear SW + caches, reload ignoring cache.
   retryBoot: () => ipcRenderer.send('app:boot-retry'),
@@ -78,11 +89,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Listen for events from main
   onUpdateAvailable: (callback) => {
-    ipcRenderer.on('update-available', callback);
+    const handler = (_, data) => callback(data);
+    ipcRenderer.on('update-available', handler);
+    return () => ipcRenderer.off('update-available', handler);
   },
 
   onUpdateDownloaded: (callback) => {
-    ipcRenderer.on('update-downloaded', callback);
+    const handler = (_, data) => callback(data);
+    ipcRenderer.on('update-downloaded', handler);
+    return () => ipcRenderer.off('update-downloaded', handler);
   },
 
   // Silent auto-update progress events
@@ -113,8 +128,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   // Remove listeners
+  // Only the two legacy update channels (useElectron.js); page code cannot detach the
+  // notification, call or overlay listeners.
   removeAllListeners: (channel) => {
-    ipcRenderer.removeAllListeners(channel);
+    if (channel === 'update-available' || channel === 'update-downloaded') ipcRenderer.removeAllListeners(channel);
   },
   
   // Notifications

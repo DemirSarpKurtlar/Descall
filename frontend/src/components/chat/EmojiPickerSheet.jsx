@@ -5,6 +5,7 @@ import { Clock, Search, X } from "../ui/Icon.jsx";
 import { EMOJI_CATEGORIES, loadRecentEmojis, pushRecentEmoji, searchEmojis } from "../../lib/emojiCatalog";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
 import { hapticImpactLight } from "../../lib/fluid/haptics";
+import useModalFocus from "../../hooks/useModalFocus";
 import "./EmojiPickerSheet.css";
 
 /** Dismiss when dragged past this share of the sheet, or flicked faster than this. */
@@ -30,6 +31,7 @@ export default function EmojiPickerSheet({ onPick, onClose, t = (s) => s, title 
   const [active, setActive] = useState(recent.length ? "recent" : EMOJI_CATEGORIES[0].id);
   const sheetRef = useRef(null);
   const bodyRef = useRef(null);
+  useModalFocus(true, sheetRef);
   const closing = useRef(false);
   const drag = useDragControls();
   const y = useMotionValue(reduce ? 0 : 900);

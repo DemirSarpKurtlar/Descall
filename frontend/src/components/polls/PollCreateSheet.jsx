@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { motion, Reorder, useDragControls, useReducedMotion } from "framer-motion";
 import { BarChart3, Clock, EyeOff, GripVertical, ListChecks, Plus, Search, Send, Smile, X } from "../ui/Icon.jsx";
 import { framerSpring, REDUCED_MOTION_FADE, SPRINGS } from "../../lib/fluid/springs";
@@ -173,6 +174,8 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
   const [error, setError] = useState("");
   const qRef = useRef(null);
   const optRefs = useRef({});
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const formRef = useRef(null);
   const editing = Boolean(initial);
 
@@ -346,6 +349,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
       <Portal>
         <motion.div className="dsx-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
         <motion.div
+          ref={dialogRef}
           className="dsx-heavy dsx-create is-compact"
           role="dialog"
           aria-modal="true"
@@ -380,6 +384,7 @@ export default function PollCreateSheet({ onClose, onSubmit, targetLabel = "", c
       <motion.div className="dsx-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <div className="dsx-sheetwrap">
         <motion.div
+          ref={dialogRef}
           className="dsx-heavy dsx-create"
           role="dialog"
           aria-modal="true"

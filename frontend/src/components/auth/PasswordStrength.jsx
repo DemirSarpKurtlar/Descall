@@ -22,9 +22,10 @@ export default function PasswordStrength({ password }) {
   return (
     <p className="auth-field-hint" role="status">
       {t(tone)}
-      {info.tooShort ? `, ${t("Password must be at least 8 characters.")}` : ""}
-      {" · "}
-      {t("Use at least 8 characters. A mix of letters and numbers is safer.")}
+      {/* One length hint at a time: "at least 8 characters" was said twice when short. */}
+      {info.tooShort
+        ? `, ${t("Password must be at least 8 characters.")}`
+        : ` · ${t("Use at least 8 characters. A mix of letters and numbers is safer.")}`}
     </p>
   );
 }

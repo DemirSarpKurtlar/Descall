@@ -255,6 +255,21 @@ export default function ChatPanel({
       else if (conversationKey.kind === "group") socket.emit("group:pinned:list", { groupId: conversationKey.groupId });
       else if (conversationKey.kind === "server") socket.emit("server:channel:pinned:list", { channelId: conversationKey.channelId });
     };
+    // A deleted or edited pinned message updates the pin list at once (polish messaging-23).
+    const onGone = ({ messageId } = {}) => {
+      if (!messageId) return;
+      setPinnedMessages((list) => (list.some((m) => m.id === messageId) ? list.filter((m) => m.id !== messageId) : list));
+    };
+    const onEdited = ({ messageId, newText } = {}) => {
+      if (!messageId || typeof newText !== "string") return;
+      setPinnedMessages((list) => (list.some((m) => m.id === messageId)
+        ? list.map((m) => (m.id === messageId ? { ...m, text: newText, content: newText } : m))
+        : list));
+    };
+    const GONE = ["dm:message:deleted", "group:message:deleted", "server:channel:message:deleted"];
+    const EDITED = ["dm:message:edited", "group:message:edited", "server:channel:message:edited"];
+    GONE.forEach((ev) => socket.on(ev, onGone));
+    EDITED.forEach((ev) => socket.on(ev, onEdited));
     socket.on("dm:pinned:list", onDmPinned);
     socket.on("group:pinned:list", onGroupPinned);
     socket.on("server:channel:pinned:list", onServerPinned);
@@ -265,6 +280,8 @@ export default function ChatPanel({
     socket.on("server:channel:message:pinned", refresh);
     socket.on("server:channel:message:unpinned", refresh);
     return () => {
+      GONE.forEach((ev) => socket.off(ev, onGone));
+      EDITED.forEach((ev) => socket.off(ev, onEdited));
       socket.off("dm:pinned:list", onDmPinned);
       socket.off("group:pinned:list", onGroupPinned);
       socket.off("server:channel:pinned:list", onServerPinned);
@@ -442,13 +459,21 @@ export default function ChatPanel({
     return "";
   };
 
+  // iPad and wide phones show the list beside this pane: no "open the menu" there
+  // (polish world-social-06).
+  const menuHidden = isMobile && !activitySplitView;
   const emptyCopy = (() => {
     if (activeView === "friends") {
+      const hasFriends = Array.isArray(friends) && friends.length > 0;
       return {
-        title: t("Find your friends"),
-        body: isMobile
-          ? t("Open the menu to see friends and who is online")
-          : t("Add a friend to start chatting and calling"),
+        title: hasFriends ? t("Pick a friend") : t("Find your friends"),
+        body: menuHidden
+          ? (hasFriends
+            ? t("Open the menu to pick a friend or start a new conversation")
+            : t("Open the menu to see friends and who is online"))
+          : (hasFriends
+            ? t("Pick a friend on the left to chat or call")
+            : t("Add a friend to start chatting and calling")),
         primary: { label: t("Add friend"), action: () => onAddClick?.("friend"), icon: UserPlus },
         secondary: { label: t("Browse chats"), action: () => onViewChange?.("chat"), icon: MessageSquare },
         icon: Users,
@@ -458,7 +483,7 @@ export default function ChatPanel({
     if (activeView === "groups") {
       return {
         title: t("No group selected"),
-        body: isMobile
+        body: menuHidden
           ? t("Open the menu to browse your groups")
           : t("Create a group or pick one from the sidebar"),
         primary: { label: t("Create group"), action: () => onAddClick?.("group"), icon: Plus },

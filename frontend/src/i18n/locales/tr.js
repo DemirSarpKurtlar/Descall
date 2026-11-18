@@ -1,4 +1,5 @@
 /** Auto-generated + curated tr locale */
+import { AUTHX_TR } from "./authx.tr.js";
 import { UAH_TR } from "./uah.tr.js";
 import { PREMIUM_GAMING_TR } from "./premiumGaming.tr.js";
 import { PREMIUM_TR } from "./premium.tr.js";
@@ -13,6 +14,9 @@ import { ACT_TR } from "./act.tr.js";
 import { DIR_TR } from "./dir.tr.js";
 import { BAN_TR } from "./ban.tr.js";
 import { IOS_SHARE_TR } from "./iosShare.tr.js";
+import { LX_TR } from "./lx.tr.js";
+import { USET_TR } from "./uset.tr.js";
+import { SVOICE_TR } from "./svoice.tr.js";
 import { BAN_ADMIN_TR } from "./banAdmin.tr.js";
 import { SERVER_REVIEW_TR } from "./serverReview.tr.js";
 import { DOSSIER_TR } from "./dossier.tr.js";
@@ -64,6 +68,7 @@ import { MID_APP_I18N } from "./midApp.i18n.js";
 import { CONV_START_I18N } from "./convStart.i18n.js";
 import { SERVER_TEMPLATE_TOPICS_I18N } from "./serverTemplateTopics.i18n.js";
 export const nested = {
+  authx: AUTHX_TR,
   uah: UAH_TR,
   premiumGaming: PREMIUM_GAMING_TR,
   premium: PREMIUM_TR,
@@ -92,6 +97,9 @@ export const nested = {
   dir: DIR_TR,
   ban: BAN_TR,
   iosShare: IOS_SHARE_TR,
+  lx: LX_TR,
+  uset: USET_TR,
+  svoice: SVOICE_TR,
   banAdmin: BAN_ADMIN_TR,
   serverReview: SERVER_REVIEW_TR,
   dossier: DOSSIER_TR,
@@ -261,6 +269,10 @@ export const nested = {
     "subDownloading": "Arka planda · %{percent}",
     "subDownloadingStart": "Arka planda",
     "subInstalling": "Birkaç saniye içinde yeniden açılır",
+    "titleError": "Güncelleme indirilemedi",
+    "subError": "Bağlantını kontrol edip tekrar dene",
+    "retry": "Tekrar dene",
+    "downloadPage": "İndirme sayfası",
     "kicker": "Masaüstü güncelleme",
     "downloading": "Descall {version} arka planda indiriliyor…",
     "installing": "Descall {version} kuruluyor…",
@@ -364,7 +376,7 @@ export const nested = {
     "accept": "Kabul Et",
     "decline": "Reddet",
     "mute": "Sessiz",
-    "unmute": "Sesi Aç",
+    "unmute": "Sesi aç",
     "cameraOn": "Kamerayı Aç",
     "cameraOff": "Kamerayı Kapat",
     "shareScreen": "Ekranı Paylaş",
@@ -571,6 +583,7 @@ export const nested = {
     "windowTitle": "Yönetici",
     "windowForbidden": "Bu pencere yalnızca yöneticiler içindir.",
     "windowSignIn": "Önce ana Descall penceresinde oturum aç, sonra Yönetici Panelini yeniden aç.",
+    "windowOffline": "Descall’a ulaşılamadı. Bağlantını kontrol edip tekrar dene.",
     "ovTitle": "Genel Bakış",
     "ovLive": "Canlı durum · {when} · İstanbul saati · 20 sn'de bir yenilenir",
     "ovVisibleInvisible": "{v} görünür · {i} görünmez",
@@ -584,6 +597,8 @@ export const nested = {
     "ovJoinedHint": "İsme tıklayınca dosya açılır",
     "ovToday": "Bugün {n}",
     "ovAllUsers": "Tüm kullanıcılar",
+    "reportAlert": "Bir kişi {n} açık şikayete ulaştı.",
+    "reportAlertOpen": "Dosyayı aç",
     "ovTodo": "Yapılacaklar",
     "ovTodoHint": "Şu an ilgilenmen gerekenler",
     "ovTodoOpen": "Aç",
@@ -1391,7 +1406,7 @@ export const phrases = {
   "Show Online Status": "Çevrimiçi Durumu Göster",
   "Message Notifications": "Mesaj Bildirimleri",
   "Call Notifications": "Arama Bildirimleri",
-  "Join a Server": "Sunucuya Katıl",
+  "Join a Server": "Sunucuya katıl",
   "Add a Server": "Sunucu Ekle",
   "Delete Server": "Sunucuyu Sil",
   "Leave Server": "Sunucudan Ayrıl",
@@ -2201,7 +2216,7 @@ export const phrases = {
   "Join": "Katıl",
   "Block": "Engelle",
   "Mute": "Sessiz",
-  "Unmute": "Sesi Aç",
+  "Unmute": "Sesi aç",
   "Return to call": "Aramaya dön",
   "Report": "Bildir",
   "Pin": "Sabitle",
@@ -2209,7 +2224,7 @@ export const phrases = {
   "Unpin chat": "Kaldır",
   "Unread": "Okunmadı",
   "Mark unread": "Okunmadı işaretle",
-  "Mark read": "Okundu",
+  "Mark read": "Okundu yap",
   "Close chat": "Sohbeti kapat",
   "Close this chat?": "Bu sohbeti kapatmak istiyor musun?",
   "This chat leaves your list. Messages stay, it comes back if they write you.":
@@ -2309,7 +2324,7 @@ export const phrases = {
   "Your server is where you and your friends hang out. Make yours and start talking.": "Sunucun, sen ve arkadaşlarının takıldığı yer. Kendininkini oluştur ve konuşmaya başla.",
   "Choose a ready-made advanced template, or start from scratch and build everything yourself.": "Hazır gelişmiş bir şablon seç veya sıfırdan kurup her şeyi kendin oluştur.",
   "Use a template": "Şablon kullan",
-  "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.": "Roller, yazı & ses kanalları, konular, yavaş mod ve izin override’ları, tamamen hazır.",
+  "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.": "Roller, yazı & ses kanalları, konular, yavaş mod ve kanala özel izinler, tamamen hazır.",
   "Start from scratch": "Sıfırdan başla",
   "Empty server with only @everyone. Add channels and roles yourself.": "Yalnızca @everyone olan boş sunucu. Kanalları ve rolleri sen ekle.",
   "Pick a template": "Şablon seç",
@@ -3140,6 +3155,11 @@ export const phrases = {
   "Add a friend to start chatting, messages, voice, and screen share in one place.": "Sohbet etmek için bir arkadaş ekle, mesajlar, ses ve ekran paylaşımı tek yerde.",
   "Create a group for friends, chat, call, and share your screen together.": "Arkadaşların için bir grup oluştur, sohbet et, ara ve ekranını paylaş.",
   "is now online": "şimdi çevrimiçi",
+  "Sent, {count}": "Gönderilen, {count}",
+  "Cancel request": "İsteği geri çek",
+  "Pick a friend": "Bir arkadaş seç",
+  "Pick a friend on the left to chat or call": "Sohbet etmek veya aramak için soldan bir arkadaş seç",
+  "accepted your friend request": "arkadaşlık isteğini kabul etti",
   "Purchased, equip it anytime": "Satın alındı, istediğin zaman kuşan",
   "No friends to add": "Eklenecek arkadaş yok",
   "No friends to add. Add friends first.": "Eklenecek arkadaş yok. Önce arkadaş ekle.",
@@ -3483,7 +3503,7 @@ export const phrases = {
   "Invite code is required": "Davet kodu gerekli",
   "Failed to join server": "Sunucuya katılınamadı",
   "Joining...": "Katılıyor…",
-  "Join Server": "Sunucuya Katıl",
+  "Join Server": "Sunucuya katıl",
   "Invite not found": "Davet bulunamadı",
   "Could not join group": "Gruba katılınamadı",
   "You're already a member of this group": "Bu grubun zaten üyesisin",
@@ -3501,7 +3521,7 @@ export const phrases = {
   "(edited)": "(düzenlendi)",
   "Load more messages": "Daha fazla mesaj yükle",
   "Message #{name}": "#{name} kanalına mesaj yaz",
-  "Message #{name}…": "#{name}'e mesaj yaz…",
+  "Message #{name}…": "#{name} kanalına mesaj yaz…",
   "channel": "kanal",
   "{names} typing…": "{names} yazıyor…",
   "{count} reaction": "{count} tepki",
@@ -4293,13 +4313,13 @@ export const phrases = {
   "Text, voice, and stage channels with categories, Discord-style structure, lighter feel":
     "Kategorilerle yazı, ses ve stage kanalları, Discord tarzı yapı, daha hafif his",
   "Role hierarchy, staff rooms, and per-channel overrides ready for real communities":
-    "Gerçek topluluklar için rol hiyerarşisi, staff odaları ve kanal override’ları",
+    "Gerçek topluluklar için rol hiyerarşisi, staff odaları ve kanala özel izinler",
   "Instant DMs and server chat with typing indicators": "Yazıyor göstergeli anlık DM ve sunucu sohbeti",
   "Crystal-clear group and server calls": "Berrak grup ve sunucu aramaları",
   "Share your screen in calls with quality presets": "Aramalarda kalite önayarlarıyla ekran paylaş",
   "Discord-style servers, ready to run": "Discord tarzı sunucular, kullanıma hazır",
   "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared.":
-    "Sıfırdan sunucu kur veya gelişmiş şablon seç. Roller, yazı & ses kanalları ve izin override’ları tamamen hazır gelir.",
+    "Sıfırdan sunucu kur veya gelişmiş şablon seç. Roller, yazı & ses kanalları ve kanala özel izinler tamamen hazır gelir.",
   "Channels that match the job": "İşe uygun kanallar",
   "Roles that actually work": "Gerçekten işe yarayan roller",
   "Admin, Moderator, Helper, VIP and more, with kick, ban, timeout, and audit logs.":
@@ -4329,7 +4349,7 @@ export const phrases = {
   "Friend list, online status, and invites, jump from DMs into a server voice channel in one flow.":
     "Arkadaş listesi, çevrimiçi durum ve davetler, DM’den sunucu ses kanalına tek akışta.",
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.":
-    "Yavaş mod, konular, izin override’ları ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
+    "Yavaş mod, konular, kanala özel izinler ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
   "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.":
     "DesCoin ile temalar, avatar efektleri ve baloncuklar. Temel sohbet, sunucu ve aramalar sonsuza kadar ücretsiz.",
   "Descall UI, servers, chat, and voice in one app": "Descall arayüzü, sunucular, sohbet ve ses tek uygulamada",
@@ -4400,7 +4420,7 @@ export const phrases = {
   "Servers ready in minutes": "Dakikalar içinde hazır sunucular",
   "Roles, channels & moderation": "Roller, kanallar ve moderasyon",
   "Discord-style roles and channel overrides, plus kick, ban, timeout, audit logs, and invites. Run a private hangout or a public-ready community without bot hell for the basics.":
-    "Discord tarzı roller ve kanal override’ları; kick, ban, timeout, denetim kayıtları ve davetler. Temel ihtiyaçlar için bot cehennemi olmadan özel takılma veya topluluk.",
+    "Discord tarzı roller ve kanala özel izinler; kick, ban, timeout, denetim kayıtları ve davetler. Temel ihtiyaçlar için bot cehennemi olmadan özel takılma veya topluluk.",
   "Built for friends & squads": "Arkadaşlar ve ekipler için",
   "Calls without the bloat": "Şişkinlik olmadan aramalar",
   "WebRTC voice/video with TURN support, incoming call UX, PiP, and screen-share quality controls. A lighter Discord alternative when you want clean calls inside servers or DMs.":

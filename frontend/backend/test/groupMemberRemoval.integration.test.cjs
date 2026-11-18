@@ -173,7 +173,9 @@ async function run() {
     assert.equal(r.status, 200);
     assert.ok(!r.body.messages.some((m) => m.id === "m-new"), "incremental fetch stops too");
     r = await call("can", "POST", "/g1/messages", { content: "selam" });
-    assert.equal(r.status, 403, "cannot post");
+    // The REST send route is retired for everyone (polish messaging-07, sending is socket-only).
+    assert.equal(r.status, 410, "cannot post");
+    assert.ok(!(fake._tables.group_messages?.rows || []).some((m) => m.content === "selam"), "nothing stored");
     r = await call("outsider", "GET", "/g1/messages");
     assert.equal(r.status, 403, "strangers still 403");
 

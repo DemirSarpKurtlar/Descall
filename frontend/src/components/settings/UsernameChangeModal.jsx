@@ -6,6 +6,7 @@ import { useT } from "../../context/LocaleContext";
 import { getToken, setToken } from "../../lib/storage";
 import { checkUsernameAvailable, changeUsername } from "../../api/auth";
 import "./UsernameChangeModal.css";
+import useModalFocus from "../../hooks/useModalFocus";
 
 const USERNAME_RE = /^[a-zA-Z0-9_.-]+$/;
 
@@ -24,6 +25,8 @@ export function normalizeUsernameInput(raw) {
 
 export default function UsernameChangeModal({ currentUsername, onClose, onChanged }) {
   const t = useT();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   const [value, setValue] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,11 +46,15 @@ export default function UsernameChangeModal({ currentUsername, onClose, onChange
   }, []);
 
   useEffect(() => {
+    // Capture + stop: Escape closes this dialog only, never the Settings window under it.
     const onKey = (e) => {
-      if (e.key === "Escape" && !busy) onClose?.();
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!busy) onClose?.();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [busy, onClose]);
 
   // Debounced availability check against the server.
@@ -114,6 +121,7 @@ export default function UsernameChangeModal({ currentUsername, onClose, onChange
       onClick={() => !busy && onClose?.()}
     >
       <motion.form
+        ref={dialogRef}
         className="un-modal"
         initial={{ scale: 0.96, opacity: 0, y: 8 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}

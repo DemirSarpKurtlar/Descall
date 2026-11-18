@@ -44,6 +44,7 @@ import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 import { useScreenShareCapability } from "../../lib/iosScreenBroadcast";
 import { anchorFromRect } from "../../lib/iosScreenBroadcastModel";
 import IosBroadcastShareChip from "../voice/IosBroadcastShareChip";
+import ScreenShareQualityPanel from "../voice/ScreenShareQualityPanel";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
 import { World3DButton, World3DStage, useWorld3DAvailable } from "../../world3d/World3DLauncher.jsx";
@@ -51,6 +52,7 @@ import { subscribeActiveSpeakers } from "../../lib/activeSpeakers";
 import { SOCKET_URL } from "../../config/api";
 import { getToken } from "../../lib/storage";
 import { bindLiveKitVideo } from "../../lib/liveKitVideoBinding";
+import { mergeVoiceRoster } from "../../lib/voiceRoster";
 import { VOICE_GRID_FIT_FROM, avatarSizeFor, fitVoiceGrid, gridBand, sameVoiceGridFit } from "../../lib/voiceGridLayout";
 
 /**
@@ -115,12 +117,25 @@ function streamHasLiveAudio(stream) {
   );
 }
 
+/** Touch screens (iPhone, iPad, touch laptops in tablet mode) say "tap", not "click". */
+function isCoarsePointer() {
+  try {
+    return typeof window !== "undefined" && Boolean(window.matchMedia?.("(pointer: coarse)")?.matches);
+  } catch {
+    return false;
+  }
+}
+
 /** Must run inside the click. Fullscreen requests outside the gesture are rejected. */
 function presentScreenFullscreen(root, onFallback) {
   const video =
     root?.querySelector?.(".server-voice-screen-video") ||
     root?.querySelector?.(".server-voice-tile-video");
-  const isiOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  // iPadOS reports a Macintosh user agent; touch points tell it apart from a Mac.
+  const isiOS =
+    typeof navigator !== "undefined" &&
+    (/iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+      (/Macintosh/.test(navigator.userAgent || "") && (navigator.maxTouchPoints || 0) > 1));
   if (isiOS && typeof video?.webkitEnterFullscreen === "function") {
     try {
       video.webkitEnterFullscreen();
@@ -278,12 +293,20 @@ const VoiceTile = memo(function VoiceTile({
             </span>
           ) : null}
           {qualityKey && qualityKey !== "Connection is good" ? (
-            <span className="server-voice-flag" title={t(qualityKey)} aria-label={t(qualityKey)}>
+            <span
+              className={`server-voice-flag is-net ${qualityKey === "Connection is medium. Voice bitrate is reduced." ? "is-fair" : "is-weak"}`}
+              title={t(qualityKey)}
+              aria-label={t(qualityKey)}
+            >
               {qualityKey === "Connection is medium. Voice bitrate is reduced." ? t("Fair") : t("Weak")}
             </span>
           ) : null}
           {tile.muted ? (
-            <span className="server-voice-flag is-muted" title={t("Muted")} aria-label={t("Muted")}>
+            <span
+              className={`server-voice-flag is-muted${tile.member?.serverMuted ? " is-server" : ""}`}
+              title={tile.member?.serverMuted ? t("svoice.serverMuted") : t("Muted")}
+              aria-label={tile.member?.serverMuted ? t("svoice.serverMuted") : t("Muted")}
+            >
               <MicOff size={13} aria-hidden />
             </span>
           ) : null}
@@ -397,6 +420,7 @@ function ServerScreenShareStage({
   expandSharerId = null,
 }) {
   const t = useT();
+  const expandHint = isCoarsePointer() ? t("svoice.tapToExpand") : t("Click to expand");
   const [activeId, setActiveId] = useState(null);
   const [pinnedId, setPinnedId] = useState(null);
   // Descall+ Ultra per-user volume hotkeys act on the pinned participant.
@@ -650,7 +674,7 @@ function ServerScreenShareStage({
         <button
           type="button"
           className="server-voice-screen-hit"
-          aria-label={t("Click to expand")}
+          aria-label={expandHint}
           onClick={openExpanded}
         />
 
@@ -677,24 +701,27 @@ function ServerScreenShareStage({
           </div>
         )}
 
-        <div className="server-voice-screen-hint">{t("Click to expand")}</div>
+        <div className="server-voice-screen-hint">{expandHint}</div>
       </div>
 
-      <ShareFilmstrip
-        sharers={sharers.map((sharer) => ({ ...sharer, label: labelFor(sharer) }))}
-        activeId={active?.id}
-        pinnedId={pinnedId}
-        layout={shareLayout}
-        onSelect={(id) => {
-          setActiveId(id);
-          if (shareLayout === "grid") setShareLayout("stage");
-        }}
-        onTogglePin={(id) => {
-          setPinnedId((current) => (String(current) === String(id) ? null : id));
-          setActiveId(id);
-        }}
-        onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
-      />
+      {/* One share: the stage already shows it, a filmstrip would only repeat it. */}
+      {sharers.length > 1 ? (
+        <ShareFilmstrip
+          sharers={sharers.map((sharer) => ({ ...sharer, label: labelFor(sharer) }))}
+          activeId={active?.id}
+          pinnedId={pinnedId}
+          layout={shareLayout}
+          onSelect={(id) => {
+            setActiveId(id);
+            if (shareLayout === "grid") setShareLayout("stage");
+          }}
+          onTogglePin={(id) => {
+            setPinnedId((current) => (String(current) === String(id) ? null : id));
+            setActiveId(id);
+          }}
+          onToggleLayout={() => setShareLayout((current) => (current === "grid" ? "stage" : "grid"))}
+        />
+      ) : null}
     </div>
     {fullscreen}
     </>
@@ -720,11 +747,14 @@ export default function ServerVoicePanel({
   const isStageSpeaker = !isStage || serverVoice?.stageRole === "speaker";
   const state =
     serverVoice?.voiceStatesByServer?.[server?.id]?.[channel?.id] || null;
-  const remoteMembers = inThis
-    ? serverVoice.participants || []
-    : state?.members || [];
+  // Live participants carry media; the server's seat list carries the real profile
+  // (name, avatar, voice tile skin), also for seats with no media yet (lib/voiceRoster.js).
+  const remoteMembers = useMemo(
+    () => (inThis ? mergeVoiceRoster(serverVoice.participants || [], state?.members, { selfId: me?.id }) : state?.members || []),
+    [inThis, serverVoice?.participants, state?.members, me?.id]
+  );
   const count = inThis
-    ? (serverVoice.participants?.length || 0) + 1
+    ? remoteMembers.length + 1
     : state?.memberCount || 0;
 
   // This channel's bits (overwrites) once known, else the server-wide flags (server audit P2).
@@ -947,6 +977,11 @@ export default function ServerVoicePanel({
   const shareCapability = useScreenShareCapability();
   const screenShareHidden = screenShareUnavailableOnIos() && shareCapability !== "broadcast";
   const nativeSharePhase = serverVoice?.nativeScreenShare?.phase || "idle";
+  // Desktop / web: the shared quality window picks what to share before capture
+  // (server-voice-21). The iOS app keeps the ReplayKit system picker.
+  const [shareQualityOpen, setShareQualityOpen] = useState(false);
+  const shareQualityAnchorRef = useRef(null);
+  const qualityWindowAvailable = shareCapability !== "broadcast" && typeof serverVoice?.setScreenQuality === "function";
 
   const countLabel = isStage
     ? t("{count} in stage", { count })
@@ -956,7 +991,10 @@ export default function ServerVoicePanel({
     if (!canVideo) return;
     if (!serverVoice?.isScreenSharing && screenShareHidden) return;
     if (serverVoice?.isScreenSharing || nativeSharePhase !== "idle") {
+      setShareQualityOpen(false);
       await serverVoice.stopScreenShare?.();
+    } else if (qualityWindowAvailable) {
+      setShareQualityOpen((v) => !v);
     } else {
       // iPhone / iPad: the system broadcast picker (on iPad a popover from this button).
       const rect = event?.currentTarget?.getBoundingClientRect?.();
@@ -1051,14 +1089,17 @@ export default function ServerVoicePanel({
               {statusLabel}
             </span>
           ) : null}
+          {inThis && server?.afkChannelId && String(server.afkChannelId) === String(channel?.id) ? (
+            <span className="server-voice-afk-pill" role="note">
+              <MicOff size={13} aria-hidden />
+              {t("svoice.afkChannel")}
+            </span>
+          ) : null}
           {count > 0 ? (
             <span className="server-voice-count-pill">
               <Users size={13} aria-hidden />
               {countLabel}
             </span>
-          ) : null}
-          {serverVoice?.mediaMode === "sfu" ? (
-            <span className="server-media-mode">{t("SFU voice enabled")}</span>
           ) : null}
         </div>
       </header>
@@ -1222,9 +1263,11 @@ export default function ServerVoicePanel({
               </DockDeviceSlot>
               {/* iPhone / iPad app: shown only when the broadcast extension ships (whole-screen share). */}
               {!screenShareHidden && (
+              <span ref={shareQualityAnchorRef} className="server-voice-share-anchor">
               <button
                 type="button"
                 className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}${nativeSharePhase === "preparing" || nativeSharePhase === "picker" ? " is-pending" : ""}`}
+                aria-expanded={qualityWindowAvailable && !serverVoice.isScreenSharing ? shareQualityOpen : undefined}
                 onClick={onToggleScreen}
                 disabled={!canVideo || nativeSharePhase === "stopping"}
                 aria-pressed={Boolean(serverVoice.isScreenSharing)}
@@ -1239,6 +1282,24 @@ export default function ServerVoicePanel({
               >
                 {serverVoice.isScreenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
               </button>
+              {qualityWindowAvailable ? (
+                <ScreenShareQualityPanel
+                  open={shareQualityOpen && !serverVoice.isScreenSharing}
+                  onClose={() => setShareQualityOpen(false)}
+                  anchorRef={shareQualityAnchorRef}
+                  isGroupCall={serverVoice?.mediaMode !== "sfu"}
+                  participantCount={(serverVoice?.participants?.length ?? 0) + 1}
+                  screenQuality={serverVoice.screenQuality}
+                  setScreenQuality={serverVoice.setScreenQuality}
+                  isScreenSharing={Boolean(serverVoice.isScreenSharing)}
+                  onStartWithQuality={async (quality) => {
+                    setShareQualityOpen(false);
+                    await serverVoice.startScreenShare?.({ quality });
+                  }}
+                  onRestartWithQuality={serverVoice.restartScreenShareWithQuality}
+                />
+              ) : null}
+              </span>
               )}
             </div>
             <button

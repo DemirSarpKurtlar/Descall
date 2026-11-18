@@ -524,5 +524,5 @@ export const SVH_TR = {
   // ServersSidebar
   sidebarInVoice: "{n} sesli",
   badgeNsfw: "NSFW",
-  badgeAnn: "ANN",
+  badgeAnn: "DUYURU",
 };

@@ -9,6 +9,7 @@
  */
 
 import { profileColorClass, profileColorStyle } from "./profileColors.js";
+import { onProfileDropped, peekProfile } from "./profileCache.js";
 import { t as runtimeT, getLocale } from "../i18n/runtime.js";
 import { upper } from "../i18n/format.js";
 
@@ -37,6 +38,27 @@ export function cachedHoverProfile(userId, now = Date.now()) {
   const hit = cache.get(String(userId));
   return hit && now - hit.at < TTL_MS ? hit.data : null;
 }
+
+/**
+ * What the card can paint at once: its own fresh entry, else the profile the profile window
+ * already loaded (lib/profileCache.js). The card then refreshes as usual.
+ */
+export function instantHoverProfile(userId, now = Date.now()) {
+  if (userId == null || userId === "") return null;
+  return cachedHoverProfile(userId, now) || peekProfile(userId) || null;
+}
+
+// A profile update (user:profile:updated, own user:updated, logout) drops the shared cache;
+// the hover card's entry goes with it, so a changed look never lingers for the 60 s TTL.
+onProfileDropped((id) => {
+  if (id == null) {
+    cache.clear();
+    inflight.clear();
+    return;
+  }
+  cache.delete(String(id));
+  inflight.delete(String(id));
+});
 
 function remember(id, data, now) {
   cache.set(id, { at: now, data });

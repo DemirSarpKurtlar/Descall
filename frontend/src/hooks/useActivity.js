@@ -4,6 +4,8 @@ import { TYPE_PRIORITY } from '../lib/activityTypePriority';
 import { premiumProcessEntries } from '../premium/gaming/extraGames.js';
 import { getToken } from '../lib/storage';
 import { API_BASE_URL } from '../config/api';
+import { fetchFriendPresence, createPresenceHydrator } from '../lib/friendPresenceBatch';
+import { mergePresenceSnapshot, prunePresence } from '../lib/presenceMerge';
 import {
   closeActivityScan,
   groupActivitySessions,
@@ -235,44 +237,57 @@ export function useActivity({ socket, me, friends = [] }) {
   // ─── Hydrate friend presence from REST ───────────────────────────────────
   // Called on mount (once friends are available) AND on every socket connect
   // so that a page refresh on the viewer side always shows current presence.
-  const hydratePresence = useCallback(async () => {
-    const currentFriends = friendsRef.current;
-    if (!currentFriends.length) return;
-    const token = getToken();
-    if (!token) return;
+  // One POST for every friend (lib/friendPresenceBatch.js; was one GET per friend at
+  // boot and on every reconnect). Coalesced: boot fires it from both the friends list
+  // and the socket connect, and a reconnect within 15 s of a hydrate is skipped.
+  const hydratorRef = useRef(null);
+  const presenceClearedAtRef = useRef({});
+  if (!hydratorRef.current) {
+    hydratorRef.current = createPresenceHydrator(async () => {
+      const currentFriends = friendsRef.current;
+      if (!currentFriends.length) return false;
+      const token = getToken();
+      if (!token) return false;
+      const since = Date.now();
 
-    const results = await Promise.allSettled(
-      currentFriends.map(f =>
-        fetch(`${API_BASE_URL}/api/activity/friend/${f.id}/presence`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then(r => r.ok ? r.json() : null)
-      )
-    );
+      const byId = await fetchFriendPresence(currentFriends.map((f) => f.id), { base: API_BASE_URL, token });
 
-    const snapshot = {};
-    results.forEach((result, i) => {
-      if (result.status !== 'fulfilled' || !result.value?.presence) return;
-      const p = result.value.presence;
-      if (!p.display_name) return;  // null presence = no activity
-      snapshot[currentFriends[i].id] = {
-        userId:      currentFriends[i].id,
-        username:    currentFriends[i].username,
-        appName:     p.app_name,
-        appType:     p.app_type,
-        displayName: p.display_name,
-        startedAt:   p.started_at,
-        isManual:    p.is_manual,
-      };
+      const snapshot = {};
+      for (const f of currentFriends) {
+        const p = byId[f.id];
+        if (!p?.display_name) continue;  // null presence = no activity
+        snapshot[f.id] = {
+          userId:      f.id,
+          username:    f.username,
+          appName:     p.app_name,
+          appType:     p.app_type,
+          displayName: p.display_name,
+          startedAt:   p.started_at,
+          isManual:    p.is_manual,
+        };
+      }
+
+      // The snapshot is the truth; only live updates / clears newer than this
+      // request win, and ids that are no longer friends go (polish world-social-08).
+      setFriendPresence(prev => mergePresenceSnapshot(prev, snapshot, {
+        friendIds: currentFriends.map((f) => f.id),
+        since,
+        clearedAt: presenceClearedAtRef.current,
+      }));
+      return true;
     });
-
-    // Merge: live socket updates (prev) win over REST snapshot
-    setFriendPresence(prev => ({ ...snapshot, ...prev }));
-  }, []);  // stable, uses friendsRef
+  }
+  const hydratePresence = useCallback(() => hydratorRef.current(), []);  // stable, uses friendsRef
 
   useEffect(() => {
     if (friends.length) hydratePresence();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friends.length]);  // trigger when friends list first populates after mount
+
+  // A removed or blocked friend's activity leaves with them (polish world-social-08).
+  useEffect(() => {
+    setFriendPresence((prev) => prunePresence(prev, friends.map((f) => f.id)));
+  }, [friends]);
 
   // ─── Focused-time tracking ──────────────────────────────────────────────────
   useEffect(() => {
@@ -485,11 +500,12 @@ export function useActivity({ socket, me, friends = [] }) {
 
     const onFriendUpdate = (data) => {
       if (!data?.userId) return;
-      setFriendPresence(prev => ({ ...prev, [data.userId]: data }));
+      setFriendPresence(prev => ({ ...prev, [data.userId]: { ...data, receivedAt: Date.now() } }));
     };
 
     const onFriendClear = ({ userId } = {}) => {
       if (!userId) return;
+      presenceClearedAtRef.current[userId] = Date.now();
       setFriendPresence(prev => {
         const next = { ...prev };
         delete next[userId];

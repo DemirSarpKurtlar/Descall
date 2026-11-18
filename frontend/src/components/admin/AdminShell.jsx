@@ -8,6 +8,7 @@
  *    (pencere düğmeleri yalnızca Electron'da işe yarar); panel kenar menüsünden başlar.
  * Menü verisi adminNav.js'ten gelir (tek kaynak, testli).
  */
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { List, Search, X } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
@@ -102,6 +103,12 @@ function Me({ viewer, owner, t }) {
 
 function TitleBar({ t }) {
   const api = typeof window !== "undefined" ? window.electronAPI : null;
+  // Restore glyph and label while maximized, like the main window's TitleBar (polish pass).
+  const [maximized, setMaximized] = useState(false);
+  useEffect(() => {
+    const off = api?.onMaximizedChange?.((v) => setMaximized(Boolean(v)));
+    return () => { if (typeof off === "function") off(); };
+  }, [api]);
   return (
     <div className="adm-titlebar" onDoubleClick={() => api?.maximizeWindow?.()}>
       <img src={logoIcon} alt="" />
@@ -111,8 +118,12 @@ function TitleBar({ t }) {
       <button type="button" className="adm-wc" aria-label={t("Minimize")} onClick={() => api?.minimizeWindow?.()}>
         <svg width="12" height="12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" strokeWidth="1.3" /></svg>
       </button>
-      <button type="button" className="adm-wc" aria-label={t("Maximize")} onClick={() => api?.maximizeWindow?.()}>
-        <svg width="12" height="12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
+      <button type="button" className="adm-wc" aria-label={maximized ? t("Restore") : t("Maximize")} title={maximized ? t("Restore") : t("Maximize")} onClick={() => api?.maximizeWindow?.()}>
+        {maximized ? (
+          <svg width="12" height="12" aria-hidden="true"><rect x="1.5" y="3.5" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M3.5 3.5V2.7c0-.66.54-1.2 1.2-1.2h4.6c.66 0 1.2.54 1.2 1.2v4.6c0 .66-.54 1.2-1.2 1.2h-.8" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
+        ) : (
+          <svg width="12" height="12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
+        )}
       </button>
       <button type="button" className="adm-wc is-x" aria-label={t("Close")} onClick={() => (api?.closeWindow ? api.closeWindow() : window.close())}>
         <svg width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2 2 10" stroke="currentColor" strokeWidth="1.3" /></svg>
@@ -134,6 +145,7 @@ export default function AdminShell({
   banner = null,
   children,
 }) {
+  const modalTrapRef = useModalFocusRef();
   const { t } = useLocale();
   const phone = layout === "phone";
   const [query, setQuery] = useState("");
@@ -196,7 +208,7 @@ export default function AdminShell({
           <AdminSectionBoundary scope="pane" resetKey={current}>{children}</AdminSectionBoundary>
         </main>
         {drawer ? (
-          <div className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
+          <div ref={modalTrapRef} className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
             <aside className="adm-side is-drawer">
               <SideHead t={t} onClose={() => setDrawer(false)} closeLabel={t("admin.closeMenu")} />
               <SearchBox value={query} onChange={setQuery} inputRef={searchRef} t={t} hint={false} />

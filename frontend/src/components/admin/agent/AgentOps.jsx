@@ -481,7 +481,7 @@ export default function AgentOps({ onOpenUser, onGoto }) {
   const v = planView?.plan;
 
   return (
-    <section className="ago" aria-label={t("agentOps.title")}>
+    <section className="ago-page" aria-label={t("agentOps.title")}>
       <header className="ago-top">
         <AgentMark />
         <div className="ago-col ago-top-t">

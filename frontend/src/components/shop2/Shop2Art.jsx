@@ -74,7 +74,7 @@ export default function Shop2Art({ item, size = "tile", me = null, sample }) {
     // The card colour itself (.pcolor-surface) with the set name colour on a sample name.
     inner = (
       <span className={`s2-art-pcolor pcolor-surface ${profileColorClass(item)}`.trim()} style={profileColorStyle(item) || undefined}>
-        <b className="pcolor-name">{size === "card" ? sample || t("shop2.art.sampleName") : t("shop2.art.sampleAa")}</b>
+        <b className="pcolor-name pcolor-name-bare">{size === "card" ? sample || t("shop2.art.sampleName") : t("shop2.art.sampleAa")}</b>
         {size === "card" ? <i /> : null}
       </span>
     );

@@ -159,3 +159,31 @@ for (const k of ["contextSampleRate", "captureSampleRate", "underruns", "engineR
 assert.match(src, /return \/\\bFirefox\\\/\\d\+\/\.test/, "Firefox detection by UA");
 
 console.log("micFailsafe.selftest ok");
+
+// Polish (calls-07): Chromium's playbackStats.underrunEvents feed the overload
+// detector (the render clock stays in step there, so the clock check misses it).
+{
+  let t = 0;
+  let events = 0;
+  let overloads = 0;
+  const counts = [];
+  const wd = createSilenceWatchdog({
+    now: () => t, setTimer: () => 1, clearTimer: () => {},
+    readRaw: () => 0.02, readOut: () => 0.02,
+    readUnderrunEvents: () => events,
+    onUnderrun: (n) => counts.push(n),
+    onOverload: () => { overloads += 1; },
+  });
+  // Warm-up glitches (device start) are ignored.
+  for (let i = 0; i < Math.ceil(WARMUP_MS / TICK_MS); i += 1) { t += TICK_MS; events += 1; wd.step(); }
+  assert.equal(wd.underruns, 0);
+  // Then 1 glitch per second: 4 within 10 s → overload once.
+  for (let i = 0; i < 20; i += 1) { t += TICK_MS; if (i % 4 === 0) events += 1; wd.step(); }
+  assert.ok(wd.underruns >= OVERLOAD_UNDERRUNS);
+  assert.equal(overloads, 1);
+  // A counter reset (new context) is not a burst.
+  const before = wd.underruns;
+  events = 0; t += TICK_MS; wd.step();
+  assert.equal(wd.underruns, before);
+}
+console.log("micFailsafe.selftest underrun events ok");

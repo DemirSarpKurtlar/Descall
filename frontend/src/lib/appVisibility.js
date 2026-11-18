@@ -21,6 +21,12 @@ import { getVoiceBusy, subscribeVoiceBusy } from "./voiceBusy";
 
 export const BACKGROUNDED_CLASS = "app-backgrounded";
 export const IDLE_CLASS = "app-idle";
+/**
+ * `app-blurred`: the window lost focus, set even during a call (unlike app-idle). Only
+ * decorative loops listen to it (voice tile skins, styles/app-backgrounded.css): sitting
+ * in voice behind a game must not redraw the window at 60 fps (server-voice-26).
+ */
+export const BLURRED_CLASS = "app-blurred";
 export const IDLE_MS = 15_000;
 const INPUT_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 
@@ -69,8 +75,11 @@ export function installIdlePause(win = typeof window !== "undefined" ? window : 
     lastInput = now;
     arm();
   };
-  const onBlur = () => { if (timer) clearT(timer); timer = 0; setIdle(true); };
-  const onFocus = () => { setIdle(false); arm(); };
+  const setBlurred = (on) => {
+    if (root.classList.contains(BLURRED_CLASS) !== Boolean(on)) root.classList.toggle(BLURRED_CLASS, Boolean(on));
+  };
+  const onBlur = () => { if (timer) clearT(timer); timer = 0; setBlurred(true); setIdle(true); };
+  const onFocus = () => { setBlurred(false); setIdle(false); arm(); };
 
   for (const ev of INPUT_EVENTS) win.addEventListener(ev, onInput, { passive: true, capture: true });
   win.addEventListener("blur", onBlur);
@@ -84,5 +93,6 @@ export function installIdlePause(win = typeof window !== "undefined" ? window : 
     if (typeof offBusy === "function") offBusy();
     if (timer) clearT(timer);
     root.classList.remove(IDLE_CLASS);
+    root.classList.remove(BLURRED_CLASS);
   };
 }

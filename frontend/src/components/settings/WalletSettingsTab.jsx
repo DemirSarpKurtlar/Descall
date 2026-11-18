@@ -5,7 +5,7 @@
  * earnings (wallet history). The setting is stored with Settings › Görünüm and synced
  * to the account (lib/appearanceSync.js updateCallCoinPrefs).
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatNumber, formatTime, formatDate } from "../../i18n/format.js";
 import { S3Toggle } from "./SettingsV3.jsx";
@@ -77,24 +77,33 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
     return () => window.removeEventListener(CALL_COIN_PREFS_EVENT, on);
   }, []);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const api = loadDaily && loadLedger ? null : await import("../../api/shop.js");
-        const [d, l] = await Promise.allSettled([(loadDaily || api.getDesCoinDaily)(), (loadLedger || api.getDesCoinLedger)(200)]);
-        if (!alive) return;
-        if (d.status === "fulfilled") setDaily(d.value?.daily || d.value || null);
-        if (l.status === "fulfilled") setRecent(groupWalletEntries(l.value?.entries || []).filter((r) => r.kind === "call").slice(0, 4));
-        else setRecent([]);
-      } catch {
-        if (alive) setRecent([]);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
+  // Loading shows skeleton bars / rows, a failed load says so with "Tekrar dene" (the limits card
+  // used to stay an empty box and a failed ledger read claimed "no call earnings yet").
+  const [loadState, setLoadState] = useState({ daily: "loading", recent: "loading" });
+  const aliveRef = useRef(true);
+  const load = useCallback(async () => {
+    setLoadState({ daily: "loading", recent: "loading" });
+    let api = null;
+    try {
+      api = loadDaily && loadLedger ? null : await import("../../api/shop.js");
+    } catch {
+      if (aliveRef.current) setLoadState({ daily: "error", recent: "error" });
+      return;
+    }
+    const [d, l] = await Promise.allSettled([(loadDaily || api.getDesCoinDaily)(), (loadLedger || api.getDesCoinLedger)(200)]);
+    if (!aliveRef.current) return;
+    if (d.status === "fulfilled") setDaily(d.value?.daily || d.value || null);
+    if (l.status === "fulfilled") setRecent(groupWalletEntries(l.value?.entries || []).filter((r) => r.kind === "call").slice(0, 4));
+    setLoadState({ daily: d.status === "fulfilled" ? "ready" : "error", recent: l.status === "fulfilled" ? "ready" : "error" });
   }, [loadDaily, loadLedger]);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    load();
+    return () => {
+      aliveRef.current = false;
+    };
+  }, [load]);
 
   const update = async (patch) => {
     const { updateCallCoinPrefs } = await import("../../lib/appearanceSync.js");
@@ -167,6 +176,17 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
               {t("coinpop.settings.limits")}
               <span className="ccset-muted">{t("coinpop.settings.limitsReset", { time: formatTime(nextUtcMidnight(now), locale) })}</span>
             </h3>
+            {loadState.daily === "loading" && !bars.length ? (
+              <div className="ccset-skel" aria-busy="true" aria-label={t("coinpop.wallet.loading")}>
+                <i /><i /><i />
+              </div>
+            ) : null}
+            {loadState.daily === "error" && !bars.length ? (
+              <div className="ccset-err" role="status">
+                <span>{t("coinpop.wallet.error")}</span>
+                <button type="button" className="ccs-link" onClick={load}>{t("coinpop.wallet.retry")}</button>
+              </div>
+            ) : null}
             {bars.map((b) => {
               const pct = b.cap ? Math.min(100, ((b.earned || 0) / b.cap) * 100) : 0;
               return (
@@ -215,7 +235,16 @@ export default function WalletSettingsTab({ loadDaily, loadLedger, now: frozenNo
                 {t("coinpop.settings.all")}
               </button>
             </div>
-            {recent == null ? null : recent.length === 0 ? (
+            {loadState.recent === "loading" && recent == null ? (
+              <div className="ccset-skel is-rows" aria-busy="true" aria-label={t("coinpop.wallet.loading")}>
+                <i /><i />
+              </div>
+            ) : loadState.recent === "error" && recent == null ? (
+              <div className="ccset-err" role="status">
+                <span>{t("coinpop.wallet.error")}</span>
+                <button type="button" className="ccs-link" onClick={load}>{t("coinpop.wallet.retry")}</button>
+              </div>
+            ) : recent == null ? null : recent.length === 0 ? (
               <p className="ccset-muted ccset-empty">{t("coinpop.settings.recentEmpty")}</p>
             ) : (
               recent.map((r) => {

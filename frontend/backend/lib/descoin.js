@@ -134,10 +134,24 @@ async function assertWalletWritable(userId, reason) {
   }
 }
 
-/** Positive ledger rows that are not activity earnings (a purchase refund). */
-// Promo-code DesCoin (reason "promo") is a reward, not earning: it never uses up the daily cap.
-// Descall+ / Ultra monthly gifts (reason "premium_gift", written in SQL) are not earning either.
-const EXCLUDED_FROM_EARNING_CAP = new Set(["shop_refund", "promo", "premium_gift"]);
+/**
+ * The daily 400 cap (and "Bugünkü kazanç" in the wallet / end-of-call summary) counts ONLY
+ * activity earnings: talking, screen sharing and messages. Everything else that adds coins
+ * (purchase refunds, promo codes, Descall+ gifts, admin grants, referral rewards, the daily
+ * claim and its streak bonus) is a reward, not earning, and never uses up the room: an admin
+ * grant of 500 used to stop every call from earning for the rest of the day.
+ */
+const ACTIVITY_REASONS = Object.freeze(["voice_activity", "screenshare_activity", "message_activity"]);
+const EXCLUDED_FROM_EARNING_CAP = new Set([
+  "shop_refund",
+  "promo",
+  "premium_gift",
+  "admin_grant",
+  "referral_invite",
+  "referral_welcome",
+  "daily_claim",
+  "streak_bonus",
+]);
 
 async function sumCreditsSince(userId, sinceIso, reason = null) {
   let query = supabase
@@ -146,7 +160,8 @@ async function sumCreditsSince(userId, sinceIso, reason = null) {
     .eq("user_id", userId)
     .gt("amount", 0)
     .gte("created_at", sinceIso);
-  if (reason) query = query.eq("reason", reason);
+  // The global total reads only the activity reasons (see ACTIVITY_REASONS).
+  query = reason ? query.eq("reason", reason) : query.in("reason", ACTIVITY_REASONS);
   const { data, error } = await query;
   if (error) throw error;
   return (data || []).reduce((sum, row) => {

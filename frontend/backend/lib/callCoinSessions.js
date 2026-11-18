@@ -91,6 +91,32 @@ function take(userId, ctx) {
   return s;
 }
 
+/**
+ * Carry a session to another context (server voice: moved by a moderator or the AFK move).
+ * A move is not the end of the call, so no summary pops; earnings keep adding up.
+ */
+function move(userId, fromCtx, toCtx, { meta = null } = {}) {
+  const toKey = summary.contextKey(toCtx);
+  if (!userId || !toKey) return null;
+  const s = take(userId, fromCtx);
+  if (!s) return start(userId, toCtx, { meta });
+  const k = id(toKey, userId);
+  const existing = sessions.get(k);
+  if (existing) {
+    if (meta && typeof meta === "object") existing.meta = { ...existing.meta, ...meta };
+    return existing;
+  }
+  const parsed = summary.parseContextKey ? summary.parseContextKey(toKey) : null;
+  s.key = toKey;
+  if (parsed) {
+    s.context = parsed.context;
+    s.targetId = parsed.targetId;
+  }
+  if (meta && typeof meta === "object") s.meta = { ...(s.meta || {}), ...meta };
+  sessions.set(k, s);
+  return s;
+}
+
 async function safe(fn, fallback) {
   try {
     return await fn();
@@ -280,6 +306,7 @@ function _reset() {
 
 module.exports = {
   start,
+  move,
   get,
   ensure,
   recordBeat,

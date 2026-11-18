@@ -18,7 +18,25 @@ const inviteAttribution = require("../lib/inviteAttribution");
 const { sanitizeVisitorKey } = require("../lib/userAnalytics");
 const { recordSignupAnalytics, flagSuspiciousSignup, recordAppOpened, recordAnalyticsEvent } = require("../lib/userAnalyticsStore");
 const { hashCode, verifyStoredCode, isCodeFresh } = require("../lib/authCodes");
-const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts } = require("../lib/authAttempts");
+const { getCodeAttempts, bumpCodeAttempts, clearCodeAttempts, codeLockMinutes } = require("../lib/authAttempts");
+
+/**
+ * Five wrong codes lock that code purpose for the rest of the rolling hour (also for
+ * a newly emailed code), so the answer says how long to wait instead of "request a
+ * new code" / "log in again", which only sent codes that were refused as well.
+ */
+const CODE_LOCKED = "Too many incorrect attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.";
+async function codeLockedBody(userId, purpose) {
+  const minutes = await codeLockMinutes(userId, purpose).catch(() => 60);
+  return apiError(CODE_LOCKED, { minutes: Math.max(1, minutes || 60) }, { code: "code_locked" });
+}
+/** Sends the 429 and returns true while `purpose` is locked for this account. */
+async function rejectIfCodeLocked(res, userId, purpose) {
+  const minutes = await codeLockMinutes(userId, purpose).catch(() => 0);
+  if (!minutes) return false;
+  res.status(429).json(apiError(CODE_LOCKED, { minutes }, { code: "code_locked" }));
+  return true;
+}
 const { checkNewPassword } = require("../lib/passwordPolicy");
 const { peek, recordFailure, rejectIfLimited, isReviewDemo } = require("../lib/rateLimit");
 const { noteDroppedSessions } = require("../lib/sessionGuard");
@@ -75,6 +93,17 @@ async function hasSecondFactor(user) {
   return Boolean(twoFactor.methodFor(user, row));
 }
 
+/**
+ * A banned account with two-factor sign-in proves the second factor before it gets
+ * the ban answer (its ban ticket can export and delete the account). Password, Google
+ * and Apple sign-in all use this; /2fa/verify-login answers the ban.
+ */
+async function banDeferredTo2fa(user) {
+  if (!user?.is_banned) return false;
+  if (user.ban_expires_at && new Date(user.ban_expires_at).getTime() <= Date.now()) return false;
+  return hasSecondFactor(user);
+}
+
 async function secondFactorGate(res, user) {
   let row = null;
   try {
@@ -84,6 +113,7 @@ async function secondFactorGate(res, user) {
   }
   const method = twoFactor.methodFor(user, row);
   if (!method) return false;
+  if (method === "email" && (await rejectIfCodeLocked(res, user.id, "2fa_login"))) return true;
   const pendingToken = signPending2faToken({ id: user.id, username: user.username });
   if (method === "totp") {
     res.status(200).json({
@@ -100,7 +130,7 @@ async function secondFactorGate(res, user) {
     email: user.email,
     username: user.username,
     purpose: "2fa_login",
-    lang: langFrom(res.req?.headers?.["accept-language"], user.language),
+    lang: langFrom(res.req?.headers?.["accept-language"]),
     column: "reauthentication_token",
     sentAtColumn: "reauthentication_sent_at",
   }).catch(() => ({ sent: false, error: "send_failed" }));
@@ -195,6 +225,7 @@ async function rejectIfBanned(res, user) {
     await banExperience.accountBanBody({
       userId: user.id,
       username: user.username,
+      emailOnFile: Boolean(user.email && user.email_confirmed_at),
       detail: banExperience.detailFromUserRow(user),
     })
   );
@@ -220,9 +251,14 @@ async function judgeCode({ userId, purpose, code, storedHash, sentAtIso }) {
 }
 
 /** Security notice to the account's email, in its language (Turkish when none matches). */
-async function notifyAccountChange(user, kind) {
+/**
+ * users.language defaults to "en" and the app never writes it, so security mails use
+ * the request's Accept-Language (the app sends its UI language on the public auth
+ * calls), Turkish when nothing matches.
+ */
+async function notifyAccountChange(user, kind, req) {
   if (!user?.email || !user.email_confirmed_at) return;
-  const lang = langFrom("", user.language);
+  const lang = langFrom(req?.headers?.["accept-language"]);
   const text = bt(lang, kind === "password" ? "security.passwordChangedBody" : "security.emailChangeBody");
   const subject = bt(lang, kind === "password" ? "security.passwordChangedSubject" : "security.emailChangeSubject");
   await sendEmail({
@@ -273,6 +309,44 @@ function maskEmail(email) {
   if (!domain) return email || "";
   const visible = name.slice(0, Math.min(2, name.length));
   return `${visible}${"•".repeat(Math.max(1, name.length - visible.length))}@${domain}`;
+}
+
+/**
+ * users_email_uidx is unique on lower(email) for every row, verified or not, so an
+ * address typed into an account that never verified it blocked everyone else
+ * (sign-up answered "Email is already in use.", an email change "verified" without
+ * saving). A holder that has not verified within a day loses the address to an
+ * account that wants it; a fresh one (someone mid sign-up) keeps it.
+ */
+const STALE_UNVERIFIED_EMAIL_MS = 24 * 60 * 60 * 1000;
+async function emailHolders(email, exceptUserId) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email_confirmed_at, confirmation_sent_at, created_at")
+    .ilike("email", escapeLike(email))
+    .limit(10);
+  if (error) return { confirmed: false, fresh: false, staleIds: [] };
+  const now = Date.now();
+  const rows = (data || []).filter((r) => r.id !== exceptUserId);
+  const isFresh = (r) => {
+    const at = Date.parse(r.confirmation_sent_at || r.created_at || "");
+    return Number.isFinite(at) && now - at < STALE_UNVERIFIED_EMAIL_MS;
+  };
+  return {
+    confirmed: rows.some((r) => r.email_confirmed_at),
+    fresh: rows.some((r) => !r.email_confirmed_at && isFresh(r)),
+    staleIds: rows.filter((r) => !r.email_confirmed_at && !isFresh(r)).map((r) => r.id),
+  };
+}
+async function releaseUnverifiedEmail(ids) {
+  for (const id of ids || []) {
+    await supabase
+      .from("users")
+      .update({ email: null, confirmation_token: null, confirmation_sent_at: null })
+      .eq("id", id)
+      .is("email_confirmed_at", null)
+      .then(() => {}, () => {});
+  }
 }
 
 const router = express.Router();
@@ -667,15 +741,11 @@ router.post("/register", async (req, res) => {
     }
 
     if (email) {
-      const { data: emailTaken } = await supabase
-        .from("users")
-        .select("id")
-        .ilike("email", email)
-        .not("email_confirmed_at", "is", null)
-        .maybeSingle();
-      if (emailTaken) {
+      const holders = await emailHolders(email, null);
+      if (holders.confirmed || holders.fresh) {
         return rejectSignup(res, 409, "email_taken", { error: "Email is already in use." });
       }
+      await releaseUnverifiedEmail(holders.staleIds);
     }
 
     const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -933,11 +1003,12 @@ router.post("/2fa/verify-login", async (req, res) => {
           code: verdict.reason,
         });
       }
+      if (verdict.reason === "too_many_attempts") {
+        return res.status(429).json(await codeLockedBody(user.id, "2fa_login"));
+      }
       const message =
         verdict.reason === "expired"
           ? "Code expired. Please log in again to request a new one."
-          : verdict.reason === "too_many_attempts"
-          ? "Too many incorrect attempts. Please log in again."
           : "Incorrect code.";
       return res.status(401).json({ error: message });
     }
@@ -968,6 +1039,55 @@ router.post("/2fa/verify-login", async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] 2FA verify error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+/**
+ * POST /2fa/resend { pendingToken } -> { ok, emailHint }
+ * A new e-mail sign-in code without starting over (expired or lost mail). One per
+ * minute; nothing is sent while five wrong codes keep the purpose locked.
+ */
+router.post("/2fa/resend", async (req, res) => {
+  try {
+    const ip = clientIp(req);
+    if (guard(res, `2faresend:ip:${ip}`, null, { max: 20 })) return;
+    recordFailure(`2faresend:ip:${ip}`, { max: 20 });
+    let decoded;
+    try {
+      decoded = verifyToken(String(req.body?.pendingToken || ""));
+    } catch {
+      return res.status(401).json({ error: "Sign-in session expired. Please log in again." });
+    }
+    if (!decoded?.pending2fa || !decoded.sub) return res.status(401).json({ error: "Invalid sign-in session." });
+    const { data: user } = await supabase
+      .from("users")
+      .select("id, username, email, email_confirmed_at, two_factor_enabled, reauthentication_sent_at")
+      .eq("id", decoded.sub)
+      .maybeSingle();
+    if (!user) return res.status(401).json({ error: "Invalid sign-in session." });
+    const totpRow = await twoFactor.loadTotp(user.id).catch(() => null);
+    if (twoFactor.methodFor(user, totpRow) !== "email") {
+      return res.status(400).json({ error: "This sign-in uses the authenticator app.", code: "not_email" });
+    }
+    const sentAt = Date.parse(user.reauthentication_sent_at || "");
+    if (Number.isFinite(sentAt) && Date.now() - sentAt < 60 * 1000) {
+      return res.status(429).json({ error: "A code was just sent. Wait a minute before requesting another.", code: "cooldown" });
+    }
+    if (await rejectIfCodeLocked(res, user.id, "2fa_login")) return;
+    const result = await issueAndSendCode({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      purpose: "2fa_login",
+      lang: langFrom(req.headers["accept-language"]),
+      column: "reauthentication_token",
+      sentAtColumn: "reauthentication_sent_at",
+    }).catch(() => ({ sent: false }));
+    if (!result.sent) return res.status(503).json({ error: "Could not send your sign-in code. Please try again shortly." });
+    return res.json({ ok: true, emailHint: maskEmail(user.email) });
+  } catch (err) {
+    console.error("[AUTH] 2fa/resend error:", err?.message || err);
     return res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -1025,8 +1145,10 @@ router.post("/google", async (req, res) => {
       console.error("[AUTH] Google lookup error:", byGoogleError);
       return res.status(500).json({ error: "Database error." });
     }
-    // Ban and access gates run before any email is linked or a 2FA code is sent.
-    if (user && (await rejectIfBanned(res, user))) return;
+    // Ban and access gates run before any email is linked or a 2FA code is sent
+    // (a banned account with two-factor gets the ban answer after its code).
+    let deferBan = user ? await banDeferredTo2fa(user) : false;
+    if (user && !deferBan && (await rejectIfBanned(res, user))) return;
     if (user && (await accessGate(req, res, { action: "oauth", user }))) return;
 
     // Link an existing account with the same email only when Descall itself has verified that
@@ -1050,9 +1172,16 @@ router.post("/google", async (req, res) => {
         if (byEmail.google_id && byEmail.google_id !== googleId) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
-        if (await rejectIfBanned(res, byEmail)) return;
+        const deferLinkBan = await banDeferredTo2fa(byEmail);
+        if (!deferLinkBan && (await rejectIfBanned(res, byEmail))) return;
         if (await accessGate(req, res, { action: "oauth", user: byEmail })) return;
-
+        if (deferLinkBan) {
+          // Banned with two-factor: the code comes first and nothing is linked.
+          deferBan = true;
+          user = byEmail;
+        }
+      }
+      if (byEmail && byEmail.email_confirmed_at && !deferBan) {
         const linkUpdate = {
           google_id: googleId,
           email,
@@ -1079,7 +1208,7 @@ router.post("/google", async (req, res) => {
     if (user && (await rejectIfChildAccount(req, res, user))) return;
     // A new account from a banned device / network is never created.
     if (!user && (await accessGate(req, res, { action: "register" }))) return;
-    if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+    if (user && !deferBan) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let newBirthDate = null;
     if (!user) {
@@ -1176,6 +1305,7 @@ router.post("/google", async (req, res) => {
 
     // Existing accounts with two-factor finish with a code (3.2.0); new ones have none yet.
     if (!isNewUser && (await secondFactorGate(res, user))) return;
+    if (deferBan && (await rejectIfBanned(res, user))) return;
 
     if (await accessGate(req, res, { action: "oauth", user })) return;
     const { session } = await createSession(user.id, {
@@ -1248,8 +1378,10 @@ router.post("/apple", async (req, res) => {
       console.error("[AUTH] Apple lookup error:", lookupError);
       return res.status(500).json({ error: "Database error." });
     }
-    // Ban and access gates run before any email is linked or a 2FA code is sent.
-    if (user && (await rejectIfBanned(res, user))) return;
+    // Ban and access gates run before any email is linked or a 2FA code is sent
+    // (a banned account with two-factor gets the ban answer after its code).
+    let deferBan = user ? await banDeferredTo2fa(user) : false;
+    if (user && !deferBan && (await rejectIfBanned(res, user))) return;
     if (user && (await accessGate(req, res, { action: "oauth", user }))) return;
 
     // Link an existing account with the same email only when Descall itself has verified that
@@ -1262,8 +1394,16 @@ router.post("/apple", async (req, res) => {
         if (byEmail.apple_sub && byEmail.apple_sub !== apple.sub) {
           return res.status(409).json({ error: "Email is already linked to another account." });
         }
-        if (await rejectIfBanned(res, byEmail)) return;
+        const deferLinkBan = await banDeferredTo2fa(byEmail);
+        if (!deferLinkBan && (await rejectIfBanned(res, byEmail))) return;
         if (await accessGate(req, res, { action: "oauth", user: byEmail })) return;
+        if (deferLinkBan) {
+          // Banned with two-factor: the code comes first and nothing is linked.
+          deferBan = true;
+          user = byEmail;
+        }
+      }
+      if (byEmail && byEmail.email_confirmed_at && !deferBan) {
         const provider = String(byEmail.auth_provider || "local");
         const { data: linked, error: linkError } = await supabase
           .from("users")
@@ -1285,7 +1425,7 @@ router.post("/apple", async (req, res) => {
     if (user && (await rejectIfChildAccount(req, res, user))) return;
     // A new account from a banned device / network is never created.
     if (!user && (await accessGate(req, res, { action: "register" }))) return;
-    if (user) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
+    if (user && !deferBan) await accountDeletion.cancelDeletionIfPending(user.id).catch(() => false);
 
     let isNewUser = false;
     let attributionColumns = null;
@@ -1402,6 +1542,7 @@ router.post("/apple", async (req, res) => {
     }
 
     if (!isNewUser && (await secondFactorGate(res, user))) return;
+    if (deferBan && (await rejectIfBanned(res, user))) return;
 
     if (await accessGate(req, res, { action: "oauth", user })) return;
     const { session } = await createSession(user.id, {
@@ -1493,7 +1634,7 @@ router.get("/me", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] /me error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -1543,7 +1684,7 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] /users/:userId error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -1563,6 +1704,7 @@ router.post("/email/reauth", requireAuth, async (req, res) => {
     if (!user?.email || !user.email_confirmed_at) {
       return res.status(400).json({ error: "There is no verified email. Verify your current address first." });
     }
+    if (await rejectIfCodeLocked(res, req.user.id, "email_reauth")) return;
     const result = await issueAndSendCode({
       userId: req.user.id,
       email: user.email,
@@ -1619,17 +1761,14 @@ router.post("/email/set", requireAuth, async (req, res) => {
         storedHash: user.reauthentication_token,
         sentAtIso: user.reauthentication_sent_at,
       });
-      if (!verdict.ok) return res.status(401).json({ error: "Incorrect code." });
+      if (!verdict.ok) {
+        if (verdict.reason === "too_many_attempts") return res.status(429).json(await codeLockedBody(user.id, "email_reauth"));
+        return res.status(401).json({ error: "Incorrect code." });
+      }
     }
 
-    const { data: taken } = await supabase
-      .from("users")
-      .select("id")
-      .ilike("email", escapeLike(email))
-      .not("email_confirmed_at", "is", null)
-      .neq("id", req.user.id)
-      .maybeSingle();
-    if (taken) return res.status(409).json({ error: "This email is already in use." });
+    const holders = await emailHolders(email, req.user.id);
+    if (holders.confirmed || holders.fresh) return res.status(409).json({ error: "This email is already in use." });
 
     const pendingUpdate = await supabase.from("users").update({ pending_email: email }).eq("id", req.user.id);
     if (pendingUpdate.error) {
@@ -1641,7 +1780,7 @@ router.post("/email/set", requireAuth, async (req, res) => {
     }
 
     if (user.email && user.email_confirmed_at && user.email !== email) {
-      await notifyAccountChange(user, "email").catch((err) => {
+      await notifyAccountChange(user, "email", req).catch((err) => {
         console.warn("[AUTH] email change notice failed:", err?.message || err);
       });
     }
@@ -1694,6 +1833,7 @@ router.post("/email/resend", requireAuth, async (req, res) => {
     if (user.email_confirmed_at && !user.pending_email) {
       return res.status(400).json({ error: "Email is already verified." });
     }
+    if (await rejectIfCodeLocked(res, req.user.id, "email_verify")) return;
 
     const result = await issueAndSendCode({
       userId: req.user.id,
@@ -1739,11 +1879,12 @@ router.post("/email/verify", requireAuth, async (req, res) => {
       sentAtIso: user?.confirmation_sent_at,
     });
     if (!verdict.ok) {
+      if (verdict.reason === "too_many_attempts") {
+        return res.status(429).json(await codeLockedBody(req.user.id, "email_verify"));
+      }
       const message =
         verdict.reason === "expired"
           ? "Code expired. Request a new one."
-          : verdict.reason === "too_many_attempts"
-          ? "Too many incorrect attempts. Request a new code."
           : verdict.reason === "no_pending_code"
           ? "No verification pending. Add your email first."
           : "Incorrect code.";
@@ -1756,13 +1897,27 @@ router.post("/email/verify", requireAuth, async (req, res) => {
       confirmation_sent_at: null,
     };
     if (user?.pending_email) {
+      // Someone may have taken the address since /email/set: keep it pending then.
+      const holders = await emailHolders(user.pending_email, req.user.id);
+      if (holders.confirmed || holders.fresh) {
+        return res.status(409).json({ error: "This email is already in use.", code: "email_taken" });
+      }
+      await releaseUnverifiedEmail(holders.staleIds);
       update.email = user.pending_email;
       update.pending_email = null;
     }
-    const saved = await supabase.from("users").update(update).eq("id", req.user.id);
+    let saved = await supabase.from("users").update(update).eq("id", req.user.id);
     if (saved.error && isMissingColumnError(saved.error) && update.pending_email === null) {
       delete update.pending_email;
-      await supabase.from("users").update(update).eq("id", req.user.id);
+      saved = await supabase.from("users").update(update).eq("id", req.user.id);
+    }
+    if (saved.error) {
+      // Never answer "verified" when nothing was saved (users_email_uidx race).
+      if (saved.error.code === "23505" || /duplicate|unique/i.test(String(saved.error.message || ""))) {
+        return res.status(409).json({ error: "This email is already in use.", code: "email_taken" });
+      }
+      console.error("[AUTH] email/verify save failed:", saved.error.message || saved.error);
+      return res.status(500).json({ error: "Internal server error." });
     }
 
     return res.json({ message: "Email verified.", emailVerified: true, twoFactorEnabled: Boolean(user?.two_factor_enabled) });
@@ -1795,16 +1950,48 @@ router.post("/2fa/enable", requireAuth, async (req, res) => {
 router.post("/2fa/disable", requireAuth, async (req, res) => {
   try {
     const { password } = req.body ?? {};
+    const acctKey = `2fadisable:acct:${req.user.id}`;
+    const LIMIT = { max: 10 };
+    if (guard(res, null, acctKey, LIMIT)) return;
     const { data: user } = await supabase
       .from("users")
-      .select("password_hash")
+      .select("id, password_hash, email, email_confirmed_at, reauthentication_token, reauthentication_sent_at")
       .eq("id", req.user.id)
       .maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found." });
 
-    if (user?.password_hash) {
+    // The authenticator app is turned off with its own code (POST /2fa/totp/disable);
+    // flipping only two_factor_enabled here left it on while /me said "off".
+    const totpRow = await twoFactor.loadTotp(user.id).catch(() => null);
+    if (totpRow?.totp_enabled_at) {
+      return res.status(409).json({ error: "Turn off the authenticator app first.", code: "totp_on" });
+    }
+
+    if (user.password_hash) {
       if (typeof password !== "string" || !(await bcrypt.compare(password, user.password_hash))) {
+        recordFailure(acctKey, LIMIT);
         return res.status(401).json({ error: "Incorrect password." });
       }
+    } else if (user.email && user.email_confirmed_at) {
+      // Google / Apple account: a session alone must not turn the second factor off.
+      // The code comes from POST /email/reauth (sent to the verified address).
+      const code = String(req.body?.code || "").trim();
+      if (!code) {
+        return res.status(428).json({ error: "Enter the code we sent to your email.", code: "reauth_required" });
+      }
+      const verdict = await judgeCode({
+        userId: user.id,
+        purpose: "email_reauth",
+        code,
+        storedHash: user.reauthentication_token,
+        sentAtIso: user.reauthentication_sent_at,
+      });
+      if (!verdict.ok) {
+        recordFailure(acctKey, LIMIT);
+        if (verdict.reason === "too_many_attempts") return res.status(429).json(await codeLockedBody(user.id, "email_reauth"));
+        return res.status(401).json({ error: "Incorrect code." });
+      }
+      await supabase.from("users").update({ reauthentication_token: null, reauthentication_sent_at: null }).eq("id", user.id);
     }
 
     await supabase.from("users").update({ two_factor_enabled: false }).eq("id", req.user.id);
@@ -1990,7 +2177,7 @@ router.post("/username", requireAuth, async (req, res) => {
     const token = signToken({ id: userId, username: nextUsername, sid: req.user.sid || null });
 
     if (user.email && user.email_confirmed_at) {
-      const lang = langFrom("", user.language);
+      const lang = langFrom(req.headers["accept-language"]);
       sendEmail({
         to: user.email,
         subject: bt(lang, "security.usernameChangedSubject"),
@@ -2095,8 +2282,14 @@ router.post("/account/delete", requireAuth, async (req, res) => {
       if (typeof password !== "string" || !password) {
         return res.status(400).json({ error: "Enter your password to delete your account.", code: "password_required" });
       }
+      // A stolen session must not be able to guess the password here without limit.
+      const acctKey = `acctdelete:acct:${user.id}`;
+      if (guard(res, null, acctKey, { max: 10 })) return;
       const ok = await bcrypt.compare(password, user.password_hash);
-      if (!ok) return res.status(401).json({ error: "Wrong password.", code: "wrong_password" });
+      if (!ok) {
+        recordFailure(acctKey, { max: 10 });
+        return res.status(401).json({ error: "Wrong password.", code: "wrong_password" });
+      }
     } else if (String(confirmUsername || "").trim().toLowerCase() !== String(user.username).toLowerCase()) {
       return res.status(400).json({ error: "Type your username to confirm.", code: "confirm_username" });
     }
@@ -2136,6 +2329,15 @@ router.post("/sessions/:sessionId/revoke", requireAuth, async (req, res) => {
     const { sessionId } = req.params;
     if (sessionId === req.user.sid) {
       return res.status(400).json({ error: "Use logout to end your current session." });
+    }
+    const acctKey = `sessrevoke:acct:${req.user.id}`;
+    if (guard(res, null, acctKey, { max: 60 })) return;
+    recordFailure(acctKey, { max: 60 });
+    // Only this account's own sessions: an unknown id used to land in the global
+    // revoked set (unbounded, and able to end a foreign session whose id leaked).
+    const current = await listSessions(req.user.id);
+    if (!current.some((s) => s && s.id === sessionId)) {
+      return res.status(404).json({ error: "Session not found.", sessions: current.map(({ deviceHash: _d, ...s }) => ({ ...s, current: s.id === req.user.sid })) });
     }
     const sessions = await removeSession(req.user.id, sessionId);
     revokedSessionIds.add(sessionId);
@@ -2216,16 +2418,22 @@ async function findUserForPasswordReset(usernameOrEmail) {
       .maybeSingle();
     return data || null;
   }
-  const cleanUsername = raw.toLowerCase();
+  // Usernames keep their case ("Ahmet"); sign-in matches them case-insensitively, so
+  // the reset lookup does too (an exact match on the lowercased input missed every
+  // username with a capital letter, and the generic answer hid it).
   const { data } = await supabase
     .from("users")
     .select("id, username, email, email_confirmed_at, password_hash, password_reset_token, password_reset_sent_at, auth_provider")
-    .eq("username", cleanUsername)
-    .maybeSingle();
-  return data || null;
+    .ilike("username", escapeLike(raw))
+    .limit(1);
+  return (Array.isArray(data) ? data[0] : data) || null;
 }
 
-async function sendPasswordResetCode(user) {
+async function sendPasswordResetCode(user, req) {
+  // Locked after five wrong codes: a new code would be refused too, so none is sent.
+  if (user?.id && (await codeLockMinutes(user.id, "password_reset").catch(() => 0))) {
+    return { status: "locked", body: await codeLockedBody(user.id, "password_reset") };
+  }
   if (!user?.email) {
     return {
       status: "no_email",
@@ -2252,7 +2460,7 @@ async function sendPasswordResetCode(user) {
       email: user.email,
       username: user.username,
       purpose: "password_reset",
-      lang: langFrom("", user.language),
+      lang: langFrom(req?.headers?.["accept-language"]),
       column: "password_reset_token",
       sentAtColumn: "password_reset_sent_at",
       footer:
@@ -2307,10 +2515,13 @@ async function applyPasswordReset({ user, code, newPassword }) {
   });
 
   if (!verdict.ok) {
+    if (verdict.reason === "too_many_attempts") {
+      const body = await codeLockedBody(user.id, "password_reset");
+      return { ok: false, status: 429, error: body.error, code: verdict.reason, body };
+    }
     const map = {
       no_pending_code: "No active reset code. Request a new one.",
       expired: "This code expired. Request a new one.",
-      too_many_attempts: "Too many incorrect attempts. Request a new code.",
       invalid_code: "Incorrect code.",
     };
     return { ok: false, status: 400, error: map[verdict.reason] || "Incorrect code.", code: verdict.reason };
@@ -2352,7 +2563,7 @@ router.post("/password/forgot", async (req, res) => {
 
     const user = await findUserForPasswordReset(usernameOrEmail);
     if (user?.email && user.email_confirmed_at) {
-      const outcome = await sendPasswordResetCode(user);
+      const outcome = await sendPasswordResetCode(user, req);
       if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
         console.error("[AUTH] password/forgot send failed");
       }
@@ -2392,7 +2603,7 @@ router.post("/password/reset", async (req, res) => {
       return res.status(400).json({ error: GENERIC_RESET_FAIL });
     }
     await dropSessions(req, user.id, null);
-    await notifyAccountChange(user, "password").catch(() => {});
+    await notifyAccountChange(user, "password", req).catch(() => {});
     return res.json({ message: "Password updated. You can sign in with your new password." });
   } catch (err) {
     console.error("[AUTH] password/reset error:", err);
@@ -2422,7 +2633,8 @@ router.post("/password/request", requireAuth, async (req, res) => {
       });
     }
 
-    const outcome = await sendPasswordResetCode(user);
+    const outcome = await sendPasswordResetCode(user, req);
+    if (outcome.status === "locked") return res.status(429).json(outcome.body);
     if (outcome.status === "send_failed" || outcome.status === "misconfigured") {
       return res.status(503).json(outcome);
     }
@@ -2468,10 +2680,11 @@ router.post("/password/confirm", requireAuth, async (req, res) => {
     if (!result.ok) {
       recordFailure(`pwconfirm:ip:${ip}`, { max: 20 });
       recordFailure(`pwconfirm:acct:${req.user.id}`, { max: 20 });
+      if (result.body) return res.status(result.status).json(result.body);
       return res.status(result.status).json({ error: result.error, code: result.code || null });
     }
     await dropSessions(req, user.id, req.user.sid);
-    await notifyAccountChange(user, "password").catch(() => {});
+    await notifyAccountChange(user, "password", req).catch(() => {});
     return res.json({ message: "Password updated successfully." });
   } catch (err) {
     console.error("[AUTH] password/confirm error:", err);

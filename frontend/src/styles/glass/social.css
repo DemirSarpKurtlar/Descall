@@ -713,7 +713,8 @@ html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-avatar-shell {
 }
 
 html.glass-ui .app-root.g-shell .g-server-pane .server-voice-user-more,
-html.glass-ui .app-root.g-shell .g-server-pane .server-channel-row-actions {
+html.glass-ui .app-root.g-shell .g-server-pane .server-channel-row-actions,
+html.glass-ui .app-root.g-shell .g-server-pane .server-channel-cat-actions {
   display: none;
 }
 

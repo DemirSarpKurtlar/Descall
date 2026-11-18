@@ -17,6 +17,7 @@
 const { verifyToken, signStepUpToken } = require("../config/jwt");
 const twoFactor = require("../lib/twoFactorService");
 const { recordFailure, peek, rejectIfLimited } = require("../lib/rateLimit");
+const { apiError } = require("../lib/apiError");
 
 const STEP_UP_HEADER = "x-admin-step-up";
 const STEP_UP_LIMIT = { windowMs: 15 * 60 * 1000, max: 10 };
@@ -47,7 +48,9 @@ async function totpEnabled(userId) {
     }
     return Boolean(row.totp_enabled_at && row.totp_secret_enc);
   } catch {
-    return null;
+    // A failed lookup is not "migration missing": never wave writes through on a DB error
+    // (polish admin-b-05).
+    return "error";
   }
 }
 
@@ -60,6 +63,7 @@ async function requireAdmin2fa(req, res, next) {
     });
   }
   req.adminTotpKnown = on === true;
+  req.adminTotpCheckFailed = on === "error";
   return next();
 }
 
@@ -78,6 +82,9 @@ function requireStepUp(req, res, next) {
   const method = String(req.method || "GET").toUpperCase();
   if (["GET", "HEAD", "OPTIONS"].includes(method)) return next();
   if (STEP_UP_EXEMPT.some((re) => re.test(req.path || ""))) return next();
+  if (req.adminTotpCheckFailed) {
+    return res.status(503).json(apiError("Could not check your verification code status. Try again.", null, { code: "ADMIN_2FA_CHECK_FAILED" }));
+  }
   if (!req.adminTotpKnown) return next(); // migration not applied yet
   if (stepUpValid(req)) return next();
   return res.status(403).json({ error: "This action needs a verification code.", code: "STEP_UP_REQUIRED" });

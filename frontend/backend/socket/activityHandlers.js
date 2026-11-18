@@ -1,7 +1,7 @@
 'use strict';
 
 const supabase = require('../db/supabase');
-const { friends: friendsMap } = require('../runtime/sharedState');
+const { friends: friendsMap, presence: presenceMap } = require('../runtime/sharedState');
 const { normalizeActivityType } = require('../lib/activityKind');
 
 const VALID_PRIVACY = new Set(['friends', 'only-me', 'hidden']);
@@ -39,30 +39,34 @@ async function getFriendIds(userId) {
 }
 
 /**
+ * Görünmez (invisible) users look offline, so their game / app must not reach
+ * friends either (polish world-social-04): the row is still stored, only the
+ * live broadcast is held back until they leave invisible.
+ */
+function isInvisible(userId) {
+  return String(presenceMap.get(userId)?.status || '') === 'invisible';
+}
+
+/**
  * Broadcast presence update to all online friends who are allowed to see it.
  */
+// Friends' user rooms (every device joins `user:<id>`), not a walk over every socket
+// on the server for each update (polish world-social-09).
+function friendRooms(friendIds) {
+  return [...(friendIds || [])].filter(Boolean).map((id) => `user:${id}`);
+}
+
 function broadcastPresenceToFriends(io, userId, username, presencePayload, friendIds, privacy) {
   if (privacy === 'hidden' || privacy === 'only-me') return;
-
-  const sockets = io.sockets.sockets;
-  let sent = 0;
-  for (const [, sock] of sockets) {
-    if (!sock.user) continue;
-    const friendId = sock.user.id;
-    if (!friendIds.has(friendId)) continue;
-    sock.emit('activity:friend:update', { userId, username, ...presencePayload });
-    sent++;
-  }
-  console.log(`[activity:broadcast] ${username} -> sent to ${sent}/${friendIds.size} friend socket(s)`);
+  const rooms = friendRooms(friendIds);
+  if (!rooms.length) return;
+  io.to(rooms).emit('activity:friend:update', { userId, username, ...presencePayload });
 }
 
 function broadcastPresenceClear(io, userId, friendIds) {
-  const sockets = io.sockets.sockets;
-  for (const [, sock] of sockets) {
-    if (!sock.user) continue;
-    if (!friendIds.has(sock.user.id)) continue;
-    sock.emit('activity:friend:clear', { userId });
-  }
+  const rooms = friendRooms(friendIds);
+  if (!rooms.length) return;
+  io.to(rooms).emit('activity:friend:clear', { userId });
 }
 
 function registerActivityHandlers(io, socket) {
@@ -100,6 +104,7 @@ function registerActivityHandlers(io, socket) {
 
     const privacy = settings?.privacy ?? 'friends';
     if (privacy === 'hidden' || privacy === 'only-me') return;
+    if (isInvisible(myId)) return;
 
     const friendIds = await getFriendIds(myId);
     console.log(`[activity:update] ${me.username} friendIds=${friendIds.size} privacy=${privacy}`);
@@ -161,6 +166,7 @@ function registerActivityHandlers(io, socket) {
       console.log(`[activity:manual] ${me.username} privacy=${privacy}, skipping broadcast`);
       return;
     }
+    if (isInvisible(myId)) return;
 
     const friendIds = await getFriendIds(myId);
     console.log(`[activity:manual] broadcasting to ${friendIds.size} friend socket(s)`);
@@ -206,4 +212,40 @@ function registerActivityHandlers(io, socket) {
   });
 }
 
-module.exports = { registerActivityHandlers };
+/**
+ * Status change hook (socket status:set): going invisible clears the live activity
+ * on friends' screens; coming back re-sends the stored one (privacy permitting).
+ */
+async function onPresenceStatusChange(io, userId, username, prevStatus, nextStatus) {
+  const wasInvisible = prevStatus === 'invisible';
+  const isNowInvisible = nextStatus === 'invisible';
+  if (wasInvisible === isNowInvisible) return;
+  try {
+    const friendIds = await getFriendIds(userId);
+    if (isNowInvisible) {
+      broadcastPresenceClear(io, userId, friendIds);
+      return;
+    }
+    const [{ data: settings }, { data: row }] = await Promise.all([
+      supabase.from('user_activity_settings').select('privacy').eq('user_id', userId).maybeSingle(),
+      supabase
+        .from('user_presence')
+        .select('app_name,app_type,display_name,started_at,is_manual')
+        .eq('user_id', userId)
+        .maybeSingle(),
+    ]);
+    const privacy = settings?.privacy ?? 'friends';
+    if (!row || privacy === 'hidden' || privacy === 'only-me') return;
+    broadcastPresenceToFriends(io, userId, username, {
+      appName: row.app_name,
+      appType: row.app_type,
+      displayName: row.display_name,
+      startedAt: row.started_at,
+      isManual: Boolean(row.is_manual),
+    }, friendIds, privacy);
+  } catch (err) {
+    console.error('[activity:status] update error:', err?.message || err);
+  }
+}
+
+module.exports = { registerActivityHandlers, onPresenceStatusChange, isInvisible };

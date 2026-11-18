@@ -3,13 +3,14 @@ import { notificationTapAction } from "./callTap.js";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { API_BASE_URL } from "../config/api";
 import { getToken } from "./storage";
-import { getLocale } from "../i18n/runtime";
+import { getLocale, t } from "../i18n/runtime";
 import { clearNotifyActionToken, refreshNotifyActionToken } from "./notifyActionToken.js";
 
 /**
  * Native push (Capacitor @capacitor/push-notifications).
  *
- * - Android: FCM token, permission asked at startup. Builds without Firebase
+ * - Android: FCM token. Permission is asked after login from the same
+ *   explaining prompt as iOS (not at startup). Builds without Firebase
  *   (no google-services.json) skip register() instead of crashing.
  * - iOS: raw APNs device token, platform "ios" (backend lib/iosAlertPush.js).
  *   Permission is never asked at startup; the app asks after login
@@ -50,8 +51,40 @@ async function pushServiceReady() {
   return androidFirebaseReady;
 }
 
+/**
+ * Android notification channels the backend targets (backend/lib/fcm.js
+ * android.notification.channelId). A channel that does not exist on the
+ * phone drops FCM into its "Miscellaneous" fallback at default importance:
+ * no heads-up banner, and calls do not ring like calls. Creating an existing
+ * channel again only renames it, so this runs on every start (and follows a
+ * language change). Importance 4 = HIGH (heads-up), 5 = MAX.
+ */
+export const ANDROID_PUSH_CHANNELS = [
+  { id: "descall_default", nameKey: "Message notifications", importance: 4, visibility: 0, vibration: true, lights: true, lightColor: "#587AF5" },
+  { id: "incoming_calls", nameKey: "Calls", importance: 5, visibility: 1, vibration: true, lights: true, lightColor: "#587AF5" },
+];
+
+let androidChannelsLocale = "";
+
+export async function ensureAndroidPushChannels() {
+  if (!IS_NATIVE || IS_IOS) return false;
+  const locale = getLocale() || "";
+  if (androidChannelsLocale === locale) return true;
+  try {
+    for (const { nameKey, ...channel } of ANDROID_PUSH_CHANNELS) {
+      await PushNotifications.createChannel({ ...channel, name: t(nameKey) || nameKey });
+    }
+    androidChannelsLocale = locale;
+    return true;
+  } catch (err) {
+    console.warn("[NativePush] channel setup failed:", err?.message || err);
+    return false;
+  }
+}
+
 async function registerForPush() {
   if (!(await pushServiceReady())) return false;
+  await ensureAndroidPushChannels();
   await PushNotifications.register();
   return true;
 }
@@ -220,6 +253,13 @@ function ensureListeners() {
     dispatchNotificationAction({ ...data, action });
   });
 
+  if (!IS_IOS) {
+    // Channel names in Android's notification settings follow the app language.
+    window.addEventListener("descall:locale", () => {
+      ensureAndroidPushChannels().catch(() => {});
+    });
+  }
+
   if (IS_IOS) {
     // Push text follows the app language: re-upload when it changes.
     window.addEventListener("descall:locale", () => {
@@ -264,18 +304,24 @@ export async function requestNativePushPermission() {
 }
 
 /**
- * App startup. Android keeps asking right away; iOS only attaches listeners
- * (so a tap that launched the app is not lost) and registers when the user
- * already allowed notifications. Returns the permission state.
+ * App startup. Never shows the OS dialog: both apps only attach listeners (so
+ * a tap that launched the app is not lost) and register when the user already
+ * allowed notifications. The ask comes after sign-in from the explaining
+ * prompt (IosPushPermissionPrompt, iPhone and Android) or notification
+ * settings; on Android 13+ two cold "Don't allow" taps block the dialog for good.
+ * Android 12 and older report "granted" and register right away.
  */
 export async function initNativePush() {
   if (!pushAllowedHere()) return null;
-  if (!IS_IOS) return requestNativePushPermission();
   ensureListeners();
   const permission = await getNativePushPermission();
   if (permission === "granted" && getToken()) {
-    PushNotifications.register().catch(() => {});
-    refreshNotifyActionToken(getToken()).catch(() => {});
+    if (IS_IOS) {
+      PushNotifications.register().catch(() => {});
+      refreshNotifyActionToken(getToken()).catch(() => {});
+    } else {
+      registerForPush().catch(() => {});
+    }
   }
   return permission;
 }

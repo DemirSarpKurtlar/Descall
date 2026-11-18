@@ -18,6 +18,7 @@ export const SHOP2_DE = {
     "placeholder": "Artikel, Sets oder Farben suchen",
     "kbd": "Strg K",
     "none": "Noch keine Treffer.",
+    "loading": "Der ganze Shop wird durchsucht…",
     "kind": { "today": "Im heutigen Schaufenster", "set": "Set", "wish": "Auf deiner Wunschliste", "owned": "Gehört dir", "catalog": "Im Shop" }
   },
   "tiles": {
@@ -387,6 +388,7 @@ export const SHOP2_DE = {
     "savedTonight": "Heute Nacht gespart",
     "log": "Aufdeck-Protokoll",
     "logEmpty": "Deck eine Karte auf, um zu starten",
+    "logClosed": "Karten kannst du aufdecken, sobald der Markt öffnet",
     "logKind": {
       "flip": "Karte {n} aufgedeckt",
       "flip_used": "Zug verbraucht",
@@ -537,6 +539,7 @@ export const SHOP2_DE = {
     "seconds": "{s} s"
   },
   "art": { "sampleName": "Deniz", "sampleAa": "Aa", "sampleBubble": "Bis dann" },
+  "clock": { "dh": "{d} T {h} Std" },
   "sample": {
     "p1": "Elif", "p2": "Mert", "p3": "Selin", "p4": "Kaan",
     "chat1": "Wer ist heute Abend dabei?",

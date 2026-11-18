@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Ban,
   Check,
+  ChevronRight,
   Download,
   Eye,
   Globe,
@@ -178,7 +179,8 @@ export function ThreatCard({ t, locale, stats, now, live, onSpike, loading }) {
         <div className="sc-kpi">
           <span title={t("secCenter.kpi.locked")}><i style={{ background: "#f2a93b" }} />{t("secCenter.kpi.locked")}</span>
           <b className="tnum">{fmtNum(k.lockedAccounts.value, locale)}</b>
-          <small className={`sc-${locked.tone}`}>{locked.text}</small>
+          {/* Same wording as the other tiles when nothing changed (polish admin-b-12). */}
+          <small className={`sc-${locked.tone}`}>{locked.tone === "muted" ? t("secCenter.kpi.flat") : locked.text}</small>
         </div>
         <div className="sc-kpi">
           <span><i style={{ background: "#587af5" }} />{t("secCenter.kpi.blocked")}</span>
@@ -246,7 +248,7 @@ export function ThreatCard({ t, locale, stats, now, live, onSpike, loading }) {
 
 const LOCK_DESC = { registration: "secCenter.lockMode.registration.desc", dm: "secCenter.lockMode.dm.desc", readOnly: "secCenter.lockMode.readOnly.desc" };
 
-export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftAll, onToggleSetting, busyKey, loading }) {
+export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftAll, onToggleSetting, onOpenSystem, busyKey, loading }) {
   if (loading || !settings) return <section className="sc-card sc-locks is-loading" aria-busy="true"><div className="sc-skel" style={{ height: 300 }} /></section>;
   const locks = settings.locks || {};
   const anyLock = LOCK_MODES.some((m) => locks[m]);
@@ -284,6 +286,33 @@ export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftA
           </div>
         );
       })}
+      {/* Sistem's kill switches cut the same paths: show them here so "Normal" is never
+          the whole story while chat is frozen or sign-ups are off (polish admin-b-18). */}
+      {settings.chatFrozen || settings.registrationEnabled === false ? (
+        <>
+          <div className="sc-lab">{t("secCenter.locks.fromSystem")}</div>
+          {[
+            settings.chatFrozen ? { key: "chat", name: "sysChatFrozen", sub: "chatFrozenSub", Icon: MessageCircle } : null,
+            settings.registrationEnabled === false ? { key: "reg", name: "regOff", sub: "regOffSub", Icon: Users } : null,
+          ].filter(Boolean).map((row) => (
+            <div key={row.key} className="sc-lm is-act" data-testid={`sc-sys-${row.key}`}>
+              <span className="sc-ic is-amber" aria-hidden="true"><row.Icon size={16} /></span>
+              {onOpenSystem ? (
+                <button type="button" className="sc-lm-txt" onClick={onOpenSystem} title={t("secCenter.locks.openSystem")} aria-label={`${t(`secCenter.locks.${row.name}`)} · ${t("secCenter.locks.openSystem")}`}>
+                  <b>{t(`secCenter.locks.${row.name}`)}</b>
+                  <small>{t(`secCenter.locks.${row.sub}`)}</small>
+                </button>
+              ) : (
+                <div className="sc-lm-txt is-static">
+                  <b>{t(`secCenter.locks.${row.name}`)}</b>
+                  <small>{t(`secCenter.locks.${row.sub}`)}</small>
+                </div>
+              )}
+              {onOpenSystem ? <ChevronRight size={14} aria-hidden="true" className="sc-lm-go" /> : null}
+            </div>
+          ))}
+        </>
+      ) : null}
       <div className="sc-lab">{t("secCenter.locks.permanent")}</div>
       <div className="sc-lm" data-testid="sc-perm-groups">
         <span className="sc-ic is-gray" aria-hidden="true"><Users size={16} /></span>

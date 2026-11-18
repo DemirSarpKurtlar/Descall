@@ -21,7 +21,8 @@ const read = (p) => readFileSync(join(here, p), "utf8");
 assert.ok(read("./voiceProfile.js").includes('{ id: "mod+shift+m"') && read("./voiceProfile.js").includes('{ id: "alt+shift+m"'));
 assert.ok(/k === "d" \|\| code === "KeyD"\) return "deafen"/.test(read("./userVoicePanel.js")));
 assert.ok(/e\.shiftKey && !e\.altKey && String\(e\.key\)\.toLowerCase\(\) === "g"/.test(read("../premium/gaming/PremiumGamingHost.jsx")));
-assert.ok(read("../../electron/main.cjs").includes("globalShortcut.register('CommandOrControl+Shift+I'"));
+// Ctrl+Shift+I (DevTools) is bound per window since the desktop polish pass (electron/windowKeys.cjs).
+assert.ok(/mod && input\.shift && \(code === 'KeyI'/.test(read("../../electron/windowKeys.cjs")) && read("../../electron/main.cjs").includes("bindWindowKeys(mainWindow"));
 // Every existing keydown handler in the chat surface was looked at: the composer only
 // takes Ctrl+1..5 while the slash menu is open.
 assert.ok(/if \(\(e\.metaKey \|\| e\.ctrlKey\) && \/\^\[1-5\]\$\/\.test\(e\.key\)\)/.test(read("../components/chat/MessageComposer.jsx")));

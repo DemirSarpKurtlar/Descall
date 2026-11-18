@@ -1,7 +1,7 @@
 // Market search (draft C "Ürün, set, renk veya arkadaş ara", Ctrl K): today's storefront,
 // sets (by name or colour), wishlist, inventory and the whole live s2 catalog in one list.
 // An item result opens where it is sold (requestShopFocus: storefront card, set, catalog).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import shop2Api from "../../lib/shop2Api.js";
 import { normalizeItem } from "../../lib/shop2Logic.js";
 import { requestShopFocus } from "../../lib/callCoinPrefs.js";
@@ -48,6 +48,26 @@ export default function Shop2Search({ onClose }) {
     if (n && catalog) for (const it of catalog) if (!s2.owned.has(it.id) && matchItem(it)) push({ key: `i${it.id}`, kind: "catalog", item: it, price: it.price_descoin });
     return out.slice(0, 14);
   }, [q, s2, t, catalog]);
+  // Keyboard: arrows move the active result, Enter opens it (combobox pattern on the input).
+  const [active, setActive] = useState(0);
+  const listId = useId();
+  const listRef = useRef(null);
+  useEffect(() => setActive(0), [q]);
+  useEffect(() => {
+    listRef.current?.querySelector(`[data-idx="${active}"]`)?.scrollIntoView?.({ block: "nearest" });
+  }, [active]);
+  const onKey = (e) => {
+    if (!results.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      setActive((i) => (i + step + results.length) % results.length);
+    } else if (e.key === "Enter" && results[active]) {
+      e.preventDefault();
+      go(results[active]);
+    }
+  };
+  const searching = Boolean(norm(q).trim()) && catalog == null;
   const go = (r) => {
     if (r.kind === "set") s2.openSet(r.set.key);
     else if (r.kind === "today" || r.kind === "catalog") requestShopFocus({ itemId: r.item.id });
@@ -59,12 +79,23 @@ export default function Shop2Search({ onClose }) {
     <Layer kind={s2.layout === "phone" ? "sheet" : "dialog"} onClose={onClose} label={t("shop2.search.label")} className="s2-dialog is-search">
       <label className="s2-searchbox is-lg">
         <Search size={17} />
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("shop2.search.placeholder")} aria-label={t("shop2.search.label")} />
+        <input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={onKey}
+          placeholder={t("shop2.search.placeholder")}
+          aria-label={t("shop2.search.label")}
+          role="combobox"
+          aria-expanded="true"
+          aria-controls={listId}
+          aria-activedescendant={results.length ? `${listId}-${active}` : undefined}
+        />
       </label>
-      <ul className="s2-results" role="listbox" aria-label={t("shop2.search.label")}>
-        {results.length ? results.map((r) => (
+      <ul className="s2-results" role="listbox" id={listId} ref={listRef} aria-label={t("shop2.search.label")} aria-busy={searching || undefined}>
+        {results.length ? results.map((r, i) => (
           <li key={r.key}>
-            <button type="button" role="option" aria-selected="false" onClick={() => go(r)}>
+            <button type="button" role="option" id={`${listId}-${i}`} data-idx={i} aria-selected={i === active} className={i === active ? "is-active" : undefined} tabIndex={-1} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
               {r.kind === "set" ? <span className="s2-set-thumb" style={{ background: setGradient(r.set.palette) }} /> : <Shop2Art item={r.item} size="chip" me={s2.me} />}
               <span className="s2-results-t">
                 <b>{r.kind === "set" ? s2.setName(r.set) : s2.itemName(r.item)}</b>
@@ -73,7 +104,8 @@ export default function Shop2Search({ onClose }) {
               {r.price != null ? <Price value={r.price} size="sm" /> : r.kind === "set" ? <Price value={r.set.yourPrice ?? r.set.setPrice} size="sm" /> : null}
             </button>
           </li>
-        )) : <li className="s2-muted s2-results-empty">{t("shop2.search.none")}</li>}
+        )) : <li className="s2-muted s2-results-empty">{t(searching ? "shop2.search.loading" : "shop2.search.none")}</li>}
+        {results.length && searching ? <li className="s2-muted s2-results-empty">{t("shop2.search.loading")}</li> : null}
       </ul>
     </Layer>
   );

@@ -92,6 +92,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    /// iPhone runs portrait-only (the phone glass shell has no landscape layout)
+    /// except while a call is on screen: DescallDisplay.setLandscapeAllowed lets
+    /// a call or a shared screen turn sideways. iPad keeps every orientation
+    /// (and Split View, which needs all four).
+    static var allowPhoneLandscape = false
+
+    func application(_ application: UIApplication,
+                     supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        if UIDevice.current.userInterfaceIdiom == .pad { return .all }
+        return Self.allowPhoneLandscape ? .allButUpsideDown : .portrait
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {

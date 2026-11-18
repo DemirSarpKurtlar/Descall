@@ -3,7 +3,6 @@ const express = require("express");
 const { validateGroupAvatarUrl, canEditGroupAvatar } = require("../lib/groupAvatar");
 const { normalizeGroupName, canRenameGroup } = require("../lib/groupRename");
 const supabase = require("../db/supabase");
-const { normalizeIncomingMediaUrl } = require("../lib/privateMedia");
 const { requireAuth } = require("../middleware/auth");
 const { socketToUser, systemConfig } = require("../runtime/sharedState");
 const { checkGroupCreate } = require("../lib/platformPolicy");
@@ -73,13 +72,15 @@ function detachFromGroupLive(io, groupId, userId) {
     console.warn("[Groups] socketsLeave failed:", err?.message || err);
   }
 }
-const INVITE_CODE_LENGTH = 8;
+// Codes come from crypto.randomInt (Math.random can be predicted from earlier codes) and
+// are 10 characters long (security scan 17 Nov 2026). Older 8-character codes keep working.
+const INVITE_CODE_LENGTH = 10;
 
 function generateInviteCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   let code = "";
   for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(require("crypto").randomInt(chars.length));
   }
   return code;
 }
@@ -118,6 +119,14 @@ router.get("/invite-links/:code", async (req, res) => {
   try {
     const code = String(req.params.code || "").trim();
     if (!code) return res.status(400).json({ error: "Missing invite code" });
+    // Public lookup: unknown codes are counted per IP so codes cannot be guessed in bulk.
+    const { peek, recordFailure, rejectIfLimited } = require("../lib/rateLimit");
+    const missKey = `group-invite-miss:${req.ip || "unknown"}`;
+    if (rejectIfLimited(res, [peek(missKey, { windowMs: 10 * 60 * 1000, max: 60 })])) return;
+    if (!/^[A-Za-z0-9]{4,32}$/.test(code)) {
+      recordFailure(missKey, { windowMs: 10 * 60 * 1000, max: 60 });
+      return res.status(404).json(apiError("Invite invalid or expired"));
+    }
 
     const { data: invite, error } = await supabase
       .from("group_invite_links")
@@ -126,6 +135,7 @@ router.get("/invite-links/:code", async (req, res) => {
       .maybeSingle();
 
     if (error || !invite) {
+      recordFailure(missKey, { windowMs: 10 * 60 * 1000, max: 60 });
       return res.status(404).json({ error: "Invite invalid or expired" });
     }
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
@@ -284,6 +294,15 @@ router.get("/my", requireAuth, async (req, res) => {
         console.warn("[Groups API] removed groups failed:", err?.message || err);
       }
     }
+    // Unread since my last read (polish messaging-10): the client only counted live messages.
+    try {
+      const unread = await require("../lib/readReceipts").groupUnreadCounts(userId, groups.map((g) => g.id));
+      for (const g of groups) {
+        if (Object.prototype.hasOwnProperty.call(unread, g.id)) g.unreadCount = unread[g.id];
+      }
+    } catch (err) {
+      console.warn("[Groups API] unread counts failed:", err?.message || err);
+    }
     const all = [...groups, ...removedGroups];
     console.log(`[Groups API] Found groups: ${all.length} in ${Date.now() - started}ms`);
     res.json({ groups: all });
@@ -306,15 +325,33 @@ router.post("/create", requireAuth, async (req, res) => {
         if (!row?.is_admin) return res.status(403).json({ error: verdict.message, code: verdict.code });
       }
     }
-    const { name, memberIds = [] } = req.body;
+    const { name } = req.body || {};
+    const rawMembers = req.body?.memberIds ?? [];
     
-    if (!name || name.trim().length < 2 || name.length > 50) {
+    if (typeof name !== "string" || name.trim().length < 2 || name.length > 50) {
       return res.status(400).json({ error: "Group name must be 2-50 characters" });
     }
+    // Members (polish messaging-08): unique ids, never self, accepted friends only and
+    // no block either way, all checked BEFORE the group row exists (no orphan groups).
+    if (!Array.isArray(rawMembers) || rawMembers.some((id) => typeof id !== "string" || !isSafeId(id))) {
+      return res.status(400).json(apiError("Invalid members", null, { code: "INVALID_MEMBERS" }));
+    }
+    const memberIds = [...new Set(rawMembers)].filter((id) => id !== userId);
     
     const totalMembers = memberIds.length + 1; // + creator
     if (totalMembers > MAX_GROUP_SIZE) {
       return res.status(400).json(apiError("Maximum {max} members allowed", { max: MAX_GROUP_SIZE }));
+    }
+    {
+      const { isBlockedEitherWay } = require("../lib/blocking");
+      for (const memberId of memberIds) {
+        if (!(await areAcceptedFriends(userId, memberId))) {
+          return res.status(403).json(apiError("You can only add your friends", null, { code: "NOT_FRIENDS" }));
+        }
+        if (await isBlockedEitherWay(userId, memberId)) {
+          return res.status(403).json(apiError("You can't add this user.", null, { code: "BLOCKED" }));
+        }
+      }
     }
     
     // Create group
@@ -327,14 +364,18 @@ router.post("/create", requireAuth, async (req, res) => {
     if (createError) throw createError;
     
     // Add creator as member
-    const allMembers = [userId, ...memberIds.filter(id => id !== userId)].slice(0, MAX_GROUP_SIZE);
+    const allMembers = [userId, ...memberIds].slice(0, MAX_GROUP_SIZE);
     const memberRows = allMembers.map(user_id => ({ group_id: group.id, user_id }));
     
     const { error: memberError } = await supabase
       .from("group_members")
       .insert(memberRows);
     
-    if (memberError) throw memberError;
+    if (memberError) {
+      // Never leave an empty group behind that nobody (not even the creator) is in.
+      await supabase.from("groups").delete().eq("id", group.id);
+      throw memberError;
+    }
     
     // Socket bildirimi - diger uyelere grup olustugunu bildir
     const io = req.app.get("io");
@@ -362,7 +403,7 @@ router.post("/create", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[Groups] Create error:", err);
     console.error("[Groups] Stack:", err.stack);
-    res.status(500).json({ error: "Failed to create group", details: err.message });
+    res.status(500).json({ error: "Failed to create group" });
   }
 });
 
@@ -440,7 +481,11 @@ router.get("/:groupId/invite-links", requireAuth, async (req, res) => {
       .select("code, group_id, creator_id, max_uses, uses, expires_at, created_at")
       .eq("group_id", groupId)
       .order("created_at", { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      // Raw database text never goes to the client (security scan 17 Nov 2026).
+      console.error("[Groups] invite links:", error.message);
+      return res.status(500).json(apiError("Failed to fetch invite links"));
+    }
     return res.json({
       invites: (invites || []).map((i) => ({ ...i, url: publicInviteUrl(req, i.code) })),
     });
@@ -634,75 +679,11 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
 });
 
 // Send message to group
-router.post("/:groupId/messages", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { groupId } = req.params;
-    const { content, mediaType } = req.body;
-    let { mediaUrl } = req.body;
-    
-    if (!content?.trim() && !mediaUrl) {
-      return res.status(400).json({ error: "Message content or media required" });
-    }
-    
-    // Check membership
-    const { data: member } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .eq("group_id", groupId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    
-    if (!member) return res.status(403).json({ error: "Not a member" });
-    if (mediaUrl) {
-      const original = mediaUrl;
-      mediaUrl = await normalizeIncomingMediaUrl(supabase, userId, mediaUrl);
-      if (!mediaUrl && original && !content?.trim()) return res.status(400).json({ error: "Attachment unavailable." });
-    }
-    
-    const { data: message, error } = await supabase
-      .from("group_messages")
-      .insert({
-        group_id: groupId,
-        sender_id: userId,
-        content: content?.trim() || null,
-        media_url: mediaUrl || null,
-        media_type: mediaType || null,
-      })
-      .select(`*, sender:sender_id (id, username, avatar_url)`)
-      .single();
-    
-    if (error) throw error;
-
-    try {
-      const { ensureCosmeticsCached, getCachedPublicUser, cacheUserProfile } = require("../lib/userProfile");
-      if (message.sender) {
-        cacheUserProfile({ ...message.sender, avatar_url: message.sender.avatar_url });
-      }
-      await ensureCosmeticsCached([userId]);
-      const pub = getCachedPublicUser(userId);
-      if (pub) {
-        message.sender = { ...(message.sender || {}), ...pub, id: userId };
-        message.from = message.sender;
-      }
-    } catch {
-      /* ignore cosmetics enrich */
-    }
-    
-    // Broadcast to other group members via socket
-    const io = req.app.get("io");
-    if (io && message) {
-      io.to(`group:${groupId}`).emit("group:message", {
-        groupId,
-        message,
-      });
-    }
-    
-    res.json({ message });
-  } catch (err) {
-    console.error("[Groups] Send error:", err);
-    res.status(500).json({ error: "Failed to send message" });
-  }
+// Sending is socket-only (group:message: filter, timeouts, platform switches, slow mode,
+// length cap, safe media types). This old REST twin skipped all of that and was unused
+// by the app (polish messaging-07), so it is gone.
+router.post("/:groupId/messages", requireAuth, (_req, res) => {
+  res.status(410).json(apiError("Send messages through the app.", null, { code: "GONE" }));
 });
 
 // Get group members
@@ -758,7 +739,7 @@ router.get("/:groupId/members", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[Groups] Members error:", err);
     console.error("[Groups] Stack:", err.stack);
-    res.status(500).json({ error: "Failed to fetch members", details: err.message });
+    res.status(500).json({ error: "Failed to fetch members" });
   }
 });
 
@@ -771,7 +752,7 @@ router.post("/:groupId/invite", requireAuth, async (req, res) => {
     const invitedIdentity = invitedUserId || invitedUsername || username;
 
     if (!invitedIdentity) {
-      return res.status(400).json({ error: "invitedUserId or username required" });
+      return res.status(400).json({ error: "Invalid request." });
     }
 
     let resolvedInvitedUserId = invitedIdentity;
@@ -903,7 +884,7 @@ router.post("/:groupId/members", requireAuth, async (req, res) => {
     const { groupId } = req.params;
     const targetUserId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
 
-    if (!targetUserId || !isSafeId(targetUserId)) return res.status(400).json({ error: "userId required" });
+    if (!targetUserId || !isSafeId(targetUserId)) return res.status(400).json({ error: "Invalid request." });
     if (targetUserId === requesterId) return res.status(400).json({ error: "You are already a member" });
 
     // Requester must be a member

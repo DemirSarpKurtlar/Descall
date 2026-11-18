@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { updateServer } from "../../api/servers";
 import { serverHasPermission } from "../../lib/serverPermissions";
 import ServerDirectorySettings from "./ServerDirectorySettings";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 const VERIFICATION_LEVELS = [
   { value: "none", label: "None" },
@@ -47,6 +48,7 @@ export default function ServerCommunityModal({ server, onClose, onServerUpdated 
   const [verificationLevel, setVerificationLevel] = useState(server?.verificationLevel || "none");
   const [isPublic, setIsPublic] = useState(Boolean(server?.isPublic));
   const [vanitySlug, setVanitySlug] = useState(server?.vanitySlug || "");
+  useEscapeClose(onClose, { enabled: !busy });
 
   const vanityPreviewUrl = vanitySlug
     ? `https://descall.com/s/${String(vanitySlug).toLowerCase()}`

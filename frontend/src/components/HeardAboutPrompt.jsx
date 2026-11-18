@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "../context/LocaleContext";
+import useModalFocus from "../hooks/useModalFocus";
 import { sendHeardAbout } from "../api/auth";
 import { getToken } from "../lib/storage";
 import { HEARD_ABOUT_OPTIONS, clearHeardAboutPending, isHeardAboutPending } from "../lib/heardAbout";
@@ -34,6 +35,7 @@ export default function HeardAboutPrompt({ userId }) {
   const [done, setDone] = useState(false);
   const sentRef = useRef(false);
   const cardRef = useRef(null);
+  useModalFocus(open, cardRef, { initialFocus: cardRef });
 
   useEffect(() => {
     if (!userId || !isHeardAboutPending(userId)) return undefined;

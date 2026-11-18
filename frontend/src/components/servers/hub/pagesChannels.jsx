@@ -1,7 +1,7 @@
 /* Kanallar list, 06 Kanal oluştur, 07 Kategori oluştur, 08 Kanal ayarları, 09 silme uyarısı, 10 Kanal erişimi. */
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { ActionSheet, AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri } from "./kit";
+import { ActionSheet, AlertBox, Av, Field, Foot, Group, I, Nav, Row, Scroll, Sec, Tri, UserName } from "./kit";
 import { DoneBtn, PageFrame, useHub, useRouteDraft, useRun } from "./hubCore";
 import { usePerms } from "./pagesHub";
 import { useToast } from "../../../context/ToastContext";
@@ -14,6 +14,13 @@ import {
   CHANNEL_PERM_ORDER, SLOWMODE_OPTIONS, channelIcon, channelLabel, draftToOverride, isTextLike, memberName,
   normalizeChannelName, orderKeys, overrideChangedCount, roleHex, slowmodeLabel, triState,
 } from "./hubData";
+
+/** "{channel} · Erişim": the channel name keeps neutral casing, the localized words keep the UI language. */
+function accessTitleParts(f, channel) {
+  const MARK = "\u0001";
+  const [pre = "", post = ""] = String(f("accessTitle", { channel: MARK })).split(MARK);
+  return <>{pre}<UserName>{channel}</UserName>{post}</>;
+}
 
 const TYPES = [
   { id: "text", ico: "hash", c: "brand", t: "tText", sub: "tTextSub" },
@@ -79,7 +86,7 @@ export function ChannelsPage({ route }) {
         const kids = all.filter((c) => String(c.parentId) === String(cat.id)).sort(byPos);
         return (
           <div key={cat.id}>
-            <Sec>{cat.name}</Sec>
+            <Sec><UserName>{cat.name}</UserName></Sec>
             <Group>
               <Row ico="folder" c="gray" t={cat.name} sub={s.category} chev onClick={() => hub.push({ id: "chEdit", channelId: cat.id })} />
               {kids.map(row)}
@@ -412,7 +419,7 @@ export function AccessPage({ route }) {
   }
   return (
     <PageFrame route={route} title={channelLabel(ch)}>
-      <Sec first>{f("accessTitle", { channel: channelLabel(ch) })}</Sec>
+      <Sec first>{accessTitleParts(f, channelLabel(ch))}</Sec>
       <SyncedNote entry={entry} server={server} />
       {entry ? <Group><TargetRows targets={targets} s={s} f={f} onPick={(x) => hub.push({ id: "perm", channelId: route.channelId, targetType: x.type, targetId: x.id })} /></Group> : <div style={{ display: "grid", placeItems: "center", height: 120 }}><span className="svh-spin" /></div>}
       <Row t={<><I n="plus" s={18} /> {s.addRoleOrMember}</>} blue style={{ marginTop: 12, padding: "0 6px" }} onClick={() => hub.push({ id: "addTarget", channelId: route.channelId })} />
@@ -431,7 +438,7 @@ export function AccessSide({ route }) {
     <>
       <Nav style={{ height: 18 }} />
       <Scroll style={{ padding: "0 14px" }}>
-        <Sec first>{f("accessTitle", { channel: channelLabel(ch) })}</Sec>
+        <Sec first>{accessTitleParts(f, channelLabel(ch))}</Sec>
         <SyncedNote entry={entry} server={server} />
         <Group><TargetRows targets={targets} sel={sel} s={s} f={f} onPick={(x) => { hapticSelection(); hub.updateRoute(route.key, { sel: { type: x.type, id: x.id } }); }} /></Group>
         <Row t={<><I n="plus" s={18} /> {s.addRoleOrMember}</>} blue style={{ marginTop: 12, padding: "0 6px" }} onClick={() => hub.push({ id: "addTarget", channelId: route.channelId, accessKey: route.key })} />
@@ -489,7 +496,7 @@ function PermPanel({ route, channel, target, entry, reload }) {
   const name = target.everyone ? "@everyone" : target.name;
   return (
     <PageFrame route={route} title={name} right={<DoneBtn label={s.save} onClick={save} disabled={!entry || busy} />}>
-      <Sec first>{`${name} · ${chLabel.replace(/^# /, "#")}`}</Sec>
+      <Sec first><UserName>{`${name} · ${chLabel.replace(/^# /, "#")}`}</UserName></Sec>
       <Foot style={{ margin: "-2px 16px 10px" }}>
         <span style={{ display: "inline-flex", transform: "scale(.8)", verticalAlign: "middle", pointerEvents: "none" }} aria-hidden="true"><Tri value="allow" onChange={() => {}} /></span> {s.triLegend}
       </Foot>

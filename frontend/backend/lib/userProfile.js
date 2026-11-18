@@ -362,6 +362,14 @@ async function broadcastUserProfileUpdate(io, userId) {
 
   // Roster rows of this user refresh through the scoped presence fan-out.
   require("../runtime/presenceFanoutInstance").markPresenceDirty(userId);
+
+  // Server voice seats copy the profile at join: refresh them (new voice tile, join sound,
+  // avatar or name shows to the channel without a rejoin).
+  try {
+    require("../socket/serverVoiceHandlers").refreshSeatProfile(io, userId, profile);
+  } catch (err) {
+    console.warn("[profile] voice seat refresh failed:", err?.message || err);
+  }
 }
 
 function publicPresenceStatus(status) {

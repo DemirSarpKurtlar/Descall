@@ -7,6 +7,7 @@ import { acceptServerRules } from "../../api/servers";
 import GlassCheckbox from "../ui/GlassCheckbox";
 import { rulesList } from "./hub/hubData";
 import { cssUrl } from "../../lib/cssUrl";
+import useEscapeClose from "../../hooks/useEscapeClose";
 
 /**
  * Community onboarding rules accept screen.
@@ -16,6 +17,7 @@ export default function ServerRulesModal({ server, onClose, onAccepted }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [checked, setChecked] = useState(false);
+  useEscapeClose(onClose, { enabled: !busy });
 
   const accept = async () => {
     if (!server?.id || !checked) return;

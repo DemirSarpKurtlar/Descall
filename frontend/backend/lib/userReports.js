@@ -47,6 +47,58 @@ function sanitizeNote(value) {
   return clampText(value, MAX_NOTE);
 }
 
+/**
+ * The quoted message of a report, as stored in the database. The client used to send the
+ * text and it was stored as is, so the moderation desk showed invented text as a message
+ * the target wrote (security scan 17 Nov 2026). Now the quote is kept only when contextId
+ * is a real message written by the target that the reporter can see, and the stored text
+ * is the message's own content. Anything else keeps no quote (null).
+ */
+async function verifiedSnippet({ reporterId, targetId, contextType, contextId, snippet }) {
+  if (!sanitizeSnippet(snippet)) return null;
+  if (!["dm", "group", "server"].includes(contextType)) return null;
+  if (!contextId || !/^[A-Za-z0-9_-]{1,80}$/.test(String(contextId))) return null;
+  const same = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
+  try {
+    if (contextType === "dm") {
+      const { data: row } = await supabase
+        .from("dm_messages")
+        .select("from_user_id, to_user_id, content")
+        .eq("id", contextId)
+        .maybeSingle();
+      if (!row || !same(row.from_user_id, targetId) || !same(row.to_user_id, reporterId)) return null;
+      return sanitizeSnippet(row.content) || null;
+    }
+    if (contextType === "group") {
+      const { data: row } = await supabase
+        .from("group_messages")
+        .select("group_id, sender_id, content")
+        .eq("id", contextId)
+        .maybeSingle();
+      if (!row || !same(row.sender_id, targetId)) return null;
+      const { data: member } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("group_id", row.group_id)
+        .eq("user_id", reporterId)
+        .maybeSingle();
+      return member ? sanitizeSnippet(row.content) || null : null;
+    }
+    const { data: row } = await supabase
+      .from("server_messages")
+      .select("channel_id, sender_id, content")
+      .eq("id", contextId)
+      .maybeSingle();
+    if (!row || !same(row.sender_id, targetId)) return null;
+    const { assertTextChannelAccess } = require("../socket/serverChannelHandlers");
+    const { Permissions } = require("./serverPermissions");
+    await assertTextChannelAccess(reporterId, row.channel_id, Permissions.VIEW_CHANNEL);
+    return sanitizeSnippet(row.content) || null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeReason(value) {
   const id = String(value || "other").trim();
   return REASON_IDS.has(id) ? id : "other";
@@ -321,7 +373,7 @@ async function createReport({
     note: sanitizeNote(note) || null,
     context_type: ctx,
     context_id: cid,
-    snippet: sanitizeSnippet(snippet) || null,
+    snippet: await verifiedSnippet({ reporterId, targetId, contextType: ctx, contextId: cid, snippet }),
     occurred_at: occurredIso,
     status: "open",
   };

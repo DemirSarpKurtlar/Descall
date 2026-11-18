@@ -78,7 +78,7 @@ export function VoiceMemberMenu({ mode, menu, presence, channels, canMute, canDe
       canMove && current?.type === "stage" ? { t: user?.stageRole === "speaker" ? s.vAudience : s.vSpeak, i: "mega", onClick: () => { onStage?.(); onClose(); } } : null,
       canMove && others.length ? { t: s.vMove, i: "move", sub: others.map((c) => c.name).join(" · "), onClick: () => setMoving(true) } : null,
       canMove ? "-" : null,
-      canMove ? { t: s.vDisconnect, i: "unplug", red: true, onClick: () => { onDisconnect?.(); onClose(); } } : null,
+      canMove && !isSelf ? { t: s.vDisconnect, i: "unplug", red: true, onClick: () => { onDisconnect?.(); onClose(); } } : null,
     ].filter(Boolean).filter((it, i, arr) => it !== "-" || (i > 0 && i < arr.length - 1 && arr[i - 1] !== "-"));
 
   const head = (

@@ -930,6 +930,43 @@ a.mkt-feature-link {
   font-weight: 400;
 }
 
+/* Show / hide password in the web sign-in modal (same control as the app AuthView). */
+.login-modal .mkt-pass-wrap {
+  position: relative;
+}
+.login-modal .mkt-pass-wrap input {
+  padding-right: 46px;
+}
+.login-modal .mkt-pass-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  box-shadow: none;
+  cursor: pointer;
+}
+.login-modal .mkt-pass-toggle:hover,
+.login-modal .mkt-pass-toggle[aria-pressed="true"] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.login-modal .mkt-pass-toggle:focus-visible {
+  outline: 2px solid #587af5;
+  outline-offset: 1px;
+}
+
 .login-modal form input::placeholder {
   color: rgba(255, 255, 255, 0.52);
   font-family: var(--mkt-font-body);
@@ -2232,3 +2269,18 @@ a.mkt-feature-link {
 .seo-extra-more > summary::-webkit-details-marker { display: none; }
 .seo-extra-more > summary::after { content: " +"; opacity: 0.6; }
 .seo-extra-more[open] > summary::after { content: " −"; }
+
+/* iPhone Safari zooms the page when a focused field is under 16px. The app's
+   guard (styles/mobile.css) is not loaded on the public site, so the login /
+   sign-up fields (15px) zoomed in on every tap. Same guard for public pages. */
+@media (hover: none) and (pointer: coarse) {
+  body.has-mkt input,
+  body.has-mkt select,
+  body.has-mkt textarea,
+  .login-modal form input,
+  .login-modal input,
+  .login-modal select,
+  .login-modal textarea {
+    font-size: 1rem !important; /* 16px at the 16px root: iOS needs >= 16px */
+  }
+}
