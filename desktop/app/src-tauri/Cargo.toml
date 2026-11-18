@@ -28,6 +28,7 @@ log.workspace = true
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "stream", "system-proxy"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 futures-util = "0.3"
+tokio = { version = "1", features = ["time"] }
 base64 = "0.22"
 descall-shell = { path = "../../crates/descall-shell" }
 descall-capture = { path = "../../crates/descall-capture" }

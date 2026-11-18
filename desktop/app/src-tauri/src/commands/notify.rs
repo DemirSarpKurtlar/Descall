@@ -375,7 +375,8 @@ pub fn notif_action<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, act
         "click" | "close" | "accept" | "decline" => dismiss(&app, id, &action),
         "pause" => {
             let n = app.state::<Notifications>();
-            if let Some(c) = n.list.lock().unwrap().iter_mut().find(|c| c.id == id) {
+            let mut list = n.list.lock().unwrap();
+            if let Some(c) = list.iter_mut().find(|c| c.id == id) {
                 c.paused = true;
                 c.timer_gen += 1;
             }
@@ -383,7 +384,8 @@ pub fn notif_action<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, act
         "resume" => {
             {
                 let n = app.state::<Notifications>();
-                if let Some(c) = n.list.lock().unwrap().iter_mut().find(|c| c.id == id) {
+                let mut list = n.list.lock().unwrap();
+                if let Some(c) = list.iter_mut().find(|c| c.id == id) {
                     c.paused = false;
                     if let Some(ms) = remaining.filter(|m| m.is_finite()) {
                         c.remaining_ms = ms.max(0.0) as u64;

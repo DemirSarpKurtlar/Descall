@@ -1,23 +1,64 @@
 /*
- * window.electronAPI on Tauri 2 (injected with initialization_script, before any page script).
- * Same names and shapes as frontend/electron/preload.cjs, so frontend/src stays unchanged.
- * Sync methods of the old preload (ipcRenderer.sendSync) are answered from
- * window.__DESCALL_BOOT__ (built by src-tauri/src/boot.rs per page load) plus an in-memory cache.
+ * window.electronAPI and window.descallPremium on Tauri 2, injected with
+ * initialization_script before any page script. Same names, shapes and return values as
+ * frontend/electron/preload.cjs (main window) and adminPreload.cjs (admin windows, mode
+ * "admin"), so frontend/src runs unchanged. electron-api-shim.test.mjs checks both key sets
+ * against the Electron preloads and every mapping below.
+ *
+ * Sync members of the old preload (ipcRenderer.sendSync) are answered from
+ * window.__DESCALL_BOOT__ (built per page load by src-tauri/src/boot.rs) plus local caches.
+ *
+ *  electronAPI member                Electron channel                   Tauri
+ *  getVersion                        invoke app-version                 boot value / app_version
+ *  setLocale                         send app:locale                    app_set_locale
+ *  readClipboardImage                invoke clipboard:read-image        clipboard_read_image (raw PNG)
+ *  writeClipboardText                invoke clipboard:write-text        clipboard_write_text
+ *  zoom.get / zoom.set               webFrame                           cache / window_set_zoom
+ *  checkForUpdates                   invoke check-for-updates           updates_check
+ *  restartApp / confirmRestartApp    invoke restart-app(-confirmed)     updates_restart {confirmed}
+ *  getUpdateStatus                   invoke get-update-status           updates_status
+ *  setVoiceBusy / setActivityBusy    send voice:/activity:set-busy      voice_set_busy / activity_set_busy
+ *  minimize/maximize/closeWindow     send window:*                      window_minimize / _toggle_maximize / _close
+ *  getContentBox                     invoke window:content-box          window_content_box
+ *  retryBoot / bootState             send app:boot-retry / -state       app_boot_retry / app_boot_state
+ *  getPrefersReducedTransparency     sendSync                           boot value + change events
+ *  downloadFile                      send download-file                 download_file
+ *  showNotification / close          send notification:show / close     notification_show / notification_close
+ *  getScreenSources / selectDisplay  invoke get-screen-sources / select native-screen-share.js (screen_sources)
+ *  isWindowFocused / focusWindow     invoke                             window_is_focused / window_focus
+ *  scanProcesses                     invoke scan-processes              processes_scan
+ *  overlayShow / Hide / Update       send descall:overlay:*             overlay_show / overlay_hide / overlay_update
+ *  secureToken.get / set / clear     sendSync secure-token:*            boot snapshot + cache / token_set / token_clear
+ *  on* listeners                     ipcRenderer.on(channel)            event.listen(same channel name)
  */
 (() => {
   "use strict";
   if (window.top !== window) return; // main frame only (iframes never get the bridge)
   const T = window.__TAURI__;
   const BOOT = window.__DESCALL_BOOT__ || {};
-  if (!T || !T.core) return;
+  if (!T || !T.core || !T.event) return;
+  const ADMIN = BOOT.mode === "admin";
   const invoke = (cmd, args) => T.core.invoke(cmd, args);
   const fire = (cmd, args) => { invoke(cmd, args).catch(() => {}); };
-  /** ipcRenderer.on(channel) -> unsubscribe function, same as the preload's `on*` helpers. */
+  const noop = () => {};
+
+  /** ipcRenderer.on(channel) -> unsubscribe function, like the preload's on* helpers. */
   const on = (event, cb, map = (p) => p) => {
-    let un = null; let dead = false;
-    T.event.listen(event, (e) => { try { cb(map(e.payload)); } catch (err) { console.error(err); } })
-      .then((u) => { if (dead) u(); else un = u; });
-    return () => { dead = true; if (un) un(); };
+    if (typeof cb !== "function") return noop;
+    let un = null;
+    let dead = false;
+    T.event.listen(event, (e) => {
+      try { cb(map(e.payload)); } catch (err) { console.error(err); }
+    }).then((u) => { if (dead) u(); else un = u; }).catch(noop);
+    return () => { dead = true; if (un) { un(); un = null; } };
+  };
+  /** Legacy listeners that got (event, info) and are removed with removeAllListeners. */
+  const legacy = new Map();
+  const onLegacy = (event, cb) => {
+    if (typeof cb !== "function") return;
+    const off = on(event, (p) => cb({ sender: null }, p));
+    if (!legacy.has(event)) legacy.set(event, []);
+    legacy.get(event).push(off);
   };
 
   // One-time Electron import of localStorage (descall://app -> https://tauri.localhost).
@@ -29,26 +70,38 @@
     }
   } catch (_) { /* storage disabled */ }
 
-  // secureToken: sync get from the boot snapshot; a set/clear during this run wins and is
-  // mirrored to sessionStorage so a reload (boot retry) sees it before the next app start.
+  // secureToken: get() is synchronous for the page. The boot snapshot answers it; a set or
+  // clear during this run wins and is mirrored to sessionStorage, so a reload (boot retry)
+  // sees it before the next app start writes a new snapshot.
   const TOKEN_OVERRIDE = "__descall_token_override";
   let tokenCache = (() => {
-    try { const o = sessionStorage.getItem(TOKEN_OVERRIDE); if (o !== null) return o || null; } catch (_) {}
+    try { const o = sessionStorage.getItem(TOKEN_OVERRIDE); if (o !== null) return o || null; } catch (_) { /* ignore */ }
     return BOOT.token || null;
   })();
-  const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) {} };
+  const remember = (v) => { tokenCache = v || null; try { sessionStorage.setItem(TOKEN_OVERRIDE, v || ""); } catch (_) { /* ignore */ } };
 
   let zoomFactor = 1;
   let reducedTransparency = Boolean(BOOT.reducedTransparency);
+  on("native-theme:reduced-transparency-changed", (v) => { reducedTransparency = Boolean(v); });
+
+  const nativeShare = () => window.__descallNativeShare || null;
+  const toElectronSource = (s) => ({
+    id: s.id,
+    name: s.name,
+    thumbnailDataURL: s.thumbnailDataURL || s.thumbnailDataUrl || "",
+    appIconDataURL: s.appIconDataURL || s.appIconDataUrl || null,
+  });
 
   const api = {
-    getVersion: () => Promise.resolve(BOOT.version || invoke("app_version")),
+    getVersion: () => (BOOT.version ? Promise.resolve(BOOT.version) : invoke("app_version")),
     setLocale: (locale) => fire("app_set_locale", { locale: String(locale || "").slice(0, 16) }),
-    readClipboardImage: async () => {
-      const buf = await invoke("clipboard_read_image");
-      const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf || []);
-      return bytes.length ? bytes : null;
-    },
+    readClipboardImage: ADMIN
+      ? () => Promise.resolve(null)
+      : async () => {
+        const buf = await invoke("clipboard_read_image");
+        const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf || []);
+        return bytes.length ? bytes : null;
+      },
     writeClipboardText: (text) => (typeof text === "string" ? invoke("clipboard_write_text", { text }) : Promise.resolve({ ok: false })),
     zoom: {
       get: () => zoomFactor,
@@ -58,11 +111,11 @@
       },
     },
 
-    checkForUpdates: () => invoke("updates_check"),
-    // restart-app: in a call the shell answers with update:confirm-restart instead (the page
-    // asks the user); restart-app-confirmed is the only mid-call install (updateDeferral.cjs).
-    restartApp: () => invoke("updates_restart", { confirmed: false }),
-    confirmRestartApp: () => invoke("updates_restart", { confirmed: true }),
+    checkForUpdates: ADMIN ? () => Promise.resolve({ success: true, skipped: true }) : () => invoke("updates_check"),
+    // restart-app: in a call the shell answers needsConfirm and sends update:confirm-restart;
+    // restart-app-confirmed is the only mid-call install (updateDeferral rules).
+    restartApp: ADMIN ? () => Promise.resolve({ installing: false }) : () => invoke("updates_restart", { confirmed: false }),
+    confirmRestartApp: ADMIN ? () => Promise.resolve({ installing: false }) : () => invoke("updates_restart", { confirmed: true }),
     getUpdateStatus: () => invoke("updates_status"),
     setVoiceBusy: (busy) => fire("voice_set_busy", { busy: Boolean(busy) }),
     setActivityBusy: (busy) => fire("activity_set_busy", { busy: Boolean(busy) }),
@@ -77,29 +130,31 @@
     onContentBox: (cb) => on("window:content-box", cb),
 
     platform: BOOT.platform || "win32",
-    isElectron: true, // the page's desktop branches key on this; isTauri tells them apart
-    isTauri: true,
+    isElectron: true, // the page's desktop branches key on this
 
-    onMainError: (cb) => on("app:main-error", cb, (p) => p || {}),
     retryBoot: () => fire("app_boot_retry"),
     bootState: (phase, ms) => fire("app_boot_state", { phase: String(phase || ""), ms: Number(ms) || 0 }),
 
     getPrefersReducedTransparency: () => reducedTransparency,
-    onReducedTransparencyChange: (cb) => on("native-theme:reduced-transparency-changed", (v) => { reducedTransparency = Boolean(v); cb(reducedTransparency); }),
+    onReducedTransparencyChange: (cb) => on("native-theme:reduced-transparency-changed", cb, Boolean),
 
-    downloadFile: (url, filename) => fire("download_file", { url, filename }),
+    downloadFile: ADMIN ? noop : (url, filename) => fire("download_file", { url: String(url || ""), filename: String(filename || "") }),
 
-    onUpdateAvailable: (cb) => on("update-available", cb),
-    onUpdateDownloaded: (cb) => on("update-downloaded", cb),
+    onUpdateAvailable: (cb) => onLegacy("update-available", cb),
+    onUpdateDownloaded: (cb) => onLegacy("update-downloaded", cb),
     onUpdateDownloading: (cb) => on("update:downloading", cb),
     onUpdateInstalling: (cb) => on("update:installing", cb),
     onUpdateProgress: (cb) => on("update:progress", cb),
     onUpdateReady: (cb) => on("update:ready", cb),
     onUpdateError: (cb) => on("update:error", cb),
-    removeAllListeners: () => { /* legacy update channels only; listeners above return their own unsubscribe */ },
+    removeAllListeners: (channel) => {
+      const offs = legacy.get(String(channel)) || [];
+      legacy.delete(String(channel));
+      offs.forEach((off) => off());
+    },
 
     requestNotificationPermission: () => Promise.resolve(true),
-    showNotification: (title, options) => fire("notification_show", { payload: { title, options } }),
+    showNotification: (title, options) => fire("notification_show", { payload: { title: String(title ?? ""), options: options || {} } }),
     closeNotification: (payload) => fire("notification_close", { payload: payload || {} }),
     onNotificationClick: (cb) => on("notification:click", cb),
     onNotificationClicked: (cb) => on("notification:click", cb),
@@ -107,16 +162,28 @@
     onCallDecline: (cb) => on("notification:call-decline", cb),
 
     // Screen share: the native lane (native-screen-share.js) owns these two.
-    getScreenSources: () => window.__descallNativeShare.getSources(),
-    selectDisplaySource: (sourceId) => window.__descallNativeShare.select(sourceId),
+    getScreenSources: ADMIN
+      ? () => Promise.resolve([])
+      : async () => {
+        const ns = nativeShare();
+        const list = ns ? await ns.getSources() : await invoke("screen_sources").catch(() => []);
+        return (Array.isArray(list) ? list : []).map(toElectronSource);
+      },
+    selectDisplaySource: ADMIN
+      ? () => Promise.resolve(false)
+      : (sourceId) => {
+        const ns = nativeShare();
+        if (!ns || typeof sourceId !== "string" || !/^(screen|window):[\w:.-]+$/.test(sourceId)) return Promise.resolve(false);
+        return ns.select(sourceId);
+      },
 
     isWindowFocused: () => invoke("window_is_focused"),
     focusWindow: () => invoke("window_focus"),
-    scanProcesses: () => invoke("processes_scan"),
+    scanProcesses: ADMIN ? () => Promise.resolve([]) : () => invoke("processes_scan"),
 
-    overlayShow: (payload) => fire("overlay_show", { payload: payload || {} }),
-    overlayHide: () => fire("overlay_hide"),
-    overlayUpdate: (payload) => fire("overlay_update", { payload: payload || {} }),
+    overlayShow: ADMIN ? noop : (payload) => fire("overlay_show", { payload: payload || {} }),
+    overlayHide: ADMIN ? noop : () => fire("overlay_hide"),
+    overlayUpdate: ADMIN ? noop : (payload) => fire("overlay_update", { payload: payload || {} }),
     secureToken: {
       get: () => tokenCache,
       set: (token) => { const v = String(token || ""); remember(v); fire(v ? "token_set" : "token_clear", v ? { token: v } : undefined); return true; },
@@ -125,24 +192,33 @@
     onOverlayAction: (cb) => on("descall:overlay:action", cb),
   };
 
+  // Shell-only extras the Electron preload did not have (the page probes them optionally).
+  const extras = {
+    isTauri: true,
+    onMainError: (cb) => on("app:main-error", cb, (p) => p || {}),
+  };
+  for (const [k, v] of Object.entries(extras)) Object.defineProperty(api, k, { value: v, enumerable: false });
+
   const isPremiumChannel = (c) => typeof c === "string" && /^premium:[a-z0-9:_-]{1,64}$/i.test(c);
   const premium = {
     invoke: (channel, ...args) => (isPremiumChannel(channel) ? invoke("premium_invoke", { channel, args }) : Promise.reject(new Error("premium channel expected"))),
-    on: (channel, fn) => (isPremiumChannel(channel) && typeof fn === "function" ? on(channel, (p) => fn(...(Array.isArray(p) ? p : [p]))) : () => {}),
+    on: (channel, fn) => (isPremiumChannel(channel) && typeof fn === "function" ? on(channel, (p) => fn(...(Array.isArray(p) ? p : [p]))) : noop),
   };
 
   Object.defineProperty(window, "electronAPI", { value: Object.freeze(api), writable: false, configurable: false });
-  Object.defineProperty(window, "descallPremium", { value: Object.freeze(premium), writable: false, configurable: false });
+  if (!ADMIN) Object.defineProperty(window, "descallPremium", { value: Object.freeze(premium), writable: false, configurable: false });
 
-  // External links: the Rust on_navigation guard refuses non-app URLs; open them in the
-  // default browser instead (Electron setWindowOpenHandler + shell.openExternal).
+  // External links: the Rust navigation guard refuses non-app URLs; open http(s) and mailto
+  // in the default browser instead (Electron setWindowOpenHandler + shell.openExternal).
   document.addEventListener("click", (e) => {
     const a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-    if (!a) return;
-    const url = new URL(a.href, location.href);
-    if (url.host !== location.host && /^https?:$/.test(url.protocol)) {
+    if (!a || e.defaultPrevented) return;
+    let url;
+    try { url = new URL(a.href, location.href); } catch (_) { return; }
+    const external = url.origin !== location.origin && (/^https?:$/.test(url.protocol) || url.protocol === "mailto:");
+    if (external) {
       e.preventDefault();
-      T.core.invoke("plugin:opener|open_url", { url: url.href }).catch(() => window.open(url.href, "_blank"));
+      invoke("plugin:opener|open_url", { url: url.href }).catch(noop);
     }
   }, true);
 })();

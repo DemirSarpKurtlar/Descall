@@ -119,12 +119,23 @@ struct Boot<'a> {
     token: Option<String>,
     reduced_transparency: bool,
     locale: String,
+    mode: &'static str,
     import_local_storage: Option<&'a BTreeMap<String, String>>,
 }
 
 /// window.__DESCALL_BOOT__: the values the Electron preload answered synchronously.
 pub fn boot_script<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>) -> String {
+    boot_script_with(app, imported, "main")
+}
+
+/// Boot values for a secondary window (`mode` "admin" selects adminPreload behaviour).
+pub fn boot_script_for<R: Runtime>(app: &AppHandle<R>, mode: &'static str) -> String {
+    boot_script_with(app, None, mode)
+}
+
+fn boot_script_with<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>, mode: &'static str) -> String {
     let boot = Boot {
+        mode,
         version: app.package_info().version.to_string(),
         platform: "win32",
         token: crate::secure_store::get(app, crate::secure_store::TOKEN),
@@ -268,7 +279,8 @@ pub fn bind_window_events<R: Runtime>(w: &WebviewWindow<R>) {
             WindowEvent::Resized(_) => {
                 let maximized = win.is_maximized().unwrap_or(false);
                 let changed = {
-                    let mut last = crate::state::shell(app).last_maximized.lock().unwrap();
+                    let sh = crate::state::shell(app);
+                    let mut last = sh.last_maximized.lock().unwrap();
                     let changed = *last != Some(maximized);
                     *last = Some(maximized);
                     changed
@@ -301,7 +313,8 @@ pub fn arm_paint_watchdog<R: Runtime>(w: &WebviewWindow<R>) {
     use descall_shell::watchdog::{paint_watchdog_step, PaintStep};
     let app = w.app_handle().clone();
     let gen = {
-        let mut b = crate::state::shell(&app).boot.lock().unwrap();
+        let sh = crate::state::shell(&app);
+        let mut b = sh.boot.lock().unwrap();
         b.generation += 1;
         b.started_ms = crate::state::now_ms();
         b.painted = false;
@@ -313,7 +326,8 @@ pub fn arm_paint_watchdog<R: Runtime>(w: &WebviewWindow<R>) {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             let (step, elapsed, painted) = {
-                let b = crate::state::shell(&app).boot.lock().unwrap();
+                let sh = crate::state::shell(&app);
+                let b = sh.boot.lock().unwrap();
                 if b.generation != gen {
                     return;
                 }

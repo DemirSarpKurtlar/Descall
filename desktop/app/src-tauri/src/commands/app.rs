@@ -45,7 +45,8 @@ pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
     let Some(report) = watchdog::normalize_boot_report(&phase, ms) else { return };
     log::info!("[boot] page {} ({} ms)", report.phase, report.ms.map(|m| m.to_string()).unwrap_or_else(|| "?".into()));
     {
-        let mut b = shell(&app).boot.lock().unwrap();
+        let sh = shell(&app);
+        let mut b = sh.boot.lock().unwrap();
         if watchdog::ends_paint_watch(report.phase) {
             b.painted = true;
         }

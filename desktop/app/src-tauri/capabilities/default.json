@@ -1,8 +1,21 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Main window and Descall windows: only the app origin may invoke the shell.",
-  "windows": ["main", "admin", "signup-stats", "popout-*", "pip", "sidebar", "widget-*", "launcher", "notif-*", "overlay", "hud-*", "acct-*"],
+  "description": "App windows and Descall shell pages (capsules, overlay): only these may invoke the shell.",
+  "windows": [
+    "main",
+    "admin",
+    "signup-stats",
+    "popout-*",
+    "pip",
+    "sidebar",
+    "widget-*",
+    "launcher",
+    "notif-*",
+    "overlay",
+    "hud-*",
+    "acct-*"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-minimize",
@@ -16,6 +29,7 @@
     "global-shortcut:allow-unregister",
     "updater:default",
     "deep-link:default",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    "opener:default"
   ]
 }

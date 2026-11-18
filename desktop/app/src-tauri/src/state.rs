@@ -110,7 +110,8 @@ pub fn set_ui_locale<R: Runtime>(app: &AppHandle<R>, value: &str) -> bool {
     if let Some(d) = data_dir(app) {
         let _ = std::fs::write(d.join("ui-locale.json"), i18n::saved_locale_json(&id));
     }
-    let mut cur = shell(app).locale.lock().unwrap();
+    let sh = shell(app);
+    let mut cur = sh.locale.lock().unwrap();
     if *cur == id {
         return false;
     }

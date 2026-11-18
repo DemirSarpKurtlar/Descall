@@ -920,9 +920,14 @@ dependencies = [
 name = "descall-desktop"
 version = "4.0.0"
 dependencies = [
+ "base64 0.22.1",
  "descall-capture",
  "descall-migrate",
+ "descall-shell",
+ "futures-util",
  "log",
+ "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "tauri",
@@ -934,9 +939,11 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "tokio",
  "webview2-com",
  "windows",
  "windows-core",
+ "windows-registry",
 ]
 
 [[package]]
