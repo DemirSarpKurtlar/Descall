@@ -92,12 +92,9 @@ jobs:
         run: |
           cargo build --release --target x86_64-pc-windows-msvc -p descall-migrator
           if ($LASTEXITCODE -ne 0) { throw "migrator build failed" }
-          if (Test-Path crates/descall-setup/Cargo.toml) {
-            cargo build --release --target x86_64-pc-windows-msvc -p descall-setup
-            if ($LASTEXITCODE -ne 0) { throw "setup build failed" }
-          } else {
-            Write-Host "descall-setup not in this tree yet; skipping the bootstrapper"
-          }
+          # DescallSetup.exe ([[bin]] DescallSetup in crates/descall-setup).
+          cargo build --release --target x86_64-pc-windows-msvc -p descall-setup
+          if ($LASTEXITCODE -ne 0) { throw "setup build failed" }
 
       - name: Collect artifacts
         shell: pwsh
@@ -107,7 +104,7 @@ jobs:
           Copy-Item "$rel/Descall.exe" $out
           Get-ChildItem -Recurse -Filter "*-setup.exe" "$rel/bundle/nsis" | Copy-Item -Destination $out
           Copy-Item "$rel/DescallMigrator.exe" $out
-          Get-ChildItem $rel -Filter "DescallSetup*.exe" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
+          Copy-Item "$rel/DescallSetup.exe" $out
           Get-ChildItem $out | ForEach-Object {
             $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
             "{0}  {1}  {2:N1} MB" -f $h, $_.Name, ($_.Length / 1MB)
