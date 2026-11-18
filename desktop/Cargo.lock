@@ -996,6 +996,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "descall-setup"
+version = "4.0.0"
+dependencies = [
+ "embed-resource",
+ "flate2",
+ "minisign-verify",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tao",
+ "webview2-com",
+ "windows",
+ "windows-core",
+ "windows-registry",
+ "wry",
+ "zip",
+]
+
+[[package]]
 name = "descall-shell"
 version = "0.1.0"
 dependencies = [
@@ -6401,6 +6420,7 @@ checksum = "08687262e7c0f1284b259686f322805a8adaa8ef4d7210e76448950b3f083bf7"
 dependencies = [
  "constant_time_eq",
  "crc32fast",
+ "flate2",
  "getrandom 0.4.3",
  "indexmap 2.14.2",
  "libc",

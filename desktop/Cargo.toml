@@ -11,12 +11,13 @@ members = [
   "crates/descall-capture",
   "crates/descall-migrate",
   "crates/descall-migrator",
+  "crates/descall-setup",
   "crates/descall-shell",
   "tools/descall-capture-bench",
   "premium-logic",
   "app/src-tauri",
 ]
-default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-shell", "tools/descall-capture-bench", "premium-logic"]
+default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-setup", "crates/descall-shell", "tools/descall-capture-bench", "premium-logic"]
 
 [workspace.package]
 edition = "2021"
@@ -39,6 +40,9 @@ codegen-units = 1
 panic = "abort"
 strip = "symbols"
 
-# The migrator is a small one-shot tool: optimise it for size.
+# The migrator and the setup bootstrapper are small one-shot tools: optimise them for size.
 [profile.release.package.descall-migrator]
+opt-level = "s"
+
+[profile.release.package.descall-setup]
 opt-level = "s"
