@@ -15,6 +15,8 @@
 //! Optional hooks for the shell (tray, notifications, portal windows, token, locale) are the
 //! `pub fn`s at the end of this file.
 
+// Shared with desktop/premium-logic (Linux tests); some helpers are only used there.
+#[allow(dead_code)]
 pub mod logic;
 
 mod features;
@@ -22,7 +24,10 @@ mod hotkeys;
 mod overlay;
 mod platform;
 mod raw_input;
+// Reached through the shell hooks below (notifications, tray) once the shell wires them.
+#[allow(dead_code)]
 mod toast;
+#[allow(dead_code)]
 pub mod tray;
 mod wins;
 
@@ -100,7 +105,6 @@ pub(crate) enum From {
 }
 
 pub(crate) struct Caller {
-    pub label: String,
     /// Window kind: "main" or the kind of a tracked Descall+ window.
     pub kind: String,
 }
@@ -114,7 +118,7 @@ pub(crate) enum Bus {
     App,
     Settings(String),
     WindowOpened { label: String, kind: String },
-    WindowClosed { label: String, kind: String },
+    WindowClosed { label: String },
     ModulesChanged,
     BeforeQuit,
     SidebarReveal(Option<(i32, i32)>),
@@ -137,10 +141,12 @@ pub(crate) trait Feature: Send + Sync {
     fn stop(&self, _h: &Host) {}
     fn call(&self, h: &Host, channel: &str, args: &[Value], caller: &Caller) -> Result<Value, String>;
     fn on_bus(&self, _h: &Host, _ev: &Bus) {}
+    #[allow(dead_code)]
     fn tray(&self, _h: &Host) -> Vec<TrayItem> {
         Vec::new()
     }
     /// A click on one of this feature's tray ids ("premium|<rest>"); true when handled.
+    #[allow(dead_code)]
     fn on_tray(&self, _h: &Host, _rest: &str) -> bool {
         false
     }
@@ -151,7 +157,6 @@ pub(crate) trait Feature: Send + Sync {
 #[derive(Clone, Debug)]
 pub(crate) struct AuxEntry {
     pub kind: String,
-    pub key: String,
     pub meta: Value,
 }
 
@@ -246,6 +251,20 @@ impl Host {
         self.after(ms, Bus::Tick { key, tag, gen });
     }
 
+    /// Repeating tick on one thread until the returned flag is set (polling features).
+    pub fn every(&self, key: &'static str, tag: &'static str, ms: u64) -> Arc<std::sync::atomic::AtomicBool> {
+        let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let flag = stop.clone();
+        let tx = lock(&self.bus_tx).clone();
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_millis(ms));
+            if flag.load(Ordering::Relaxed) || tx.send(Bus::Tick { key, tag, gen: 0 }).is_err() {
+                break;
+            }
+        });
+        stop
+    }
+
     pub fn next_id(&self) -> u64 {
         self.next_id.fetch_add(1, Ordering::Relaxed)
     }
@@ -258,10 +277,6 @@ impl Host {
             return false;
         }
         self.app.emit_to("main", channel, payload).is_ok()
-    }
-
-    pub fn send_to(&self, label: &str, channel: &str, payload: Value) -> bool {
-        self.app.emit_to(label, channel, payload).is_ok()
     }
 
     // -- settings --
@@ -538,19 +553,24 @@ impl Host {
 
     fn caller_for(&self, label: &str) -> Option<Caller> {
         if label == "main" {
-            return Some(Caller { label: label.into(), kind: "main".into() });
+            return Some(Caller { kind: "main".into() });
         }
         let kind = lock(&self.windows).get(label).map(|e| e.kind.clone())?;
         // Account windows run another account: never the owner's entitlements.
         if kind == "account" {
             return None;
         }
-        Some(Caller { label: label.into(), kind })
+        Some(Caller { kind })
     }
 
     fn dispatch(self: &Arc<Self>, label: &str, channel: &str, args: Vec<Value>) -> Result<Value, String> {
         if !rules::valid_channel(channel) {
             return Err("premium channel expected".into());
+        }
+        // An account window's own session token (multi_account); nothing else from there.
+        if channel == "premium:multi_account:token" {
+            let token = args.first().and_then(Value::as_str);
+            return Ok(json!({ "ok": features::multi_account::store_token(self, label, token) }));
         }
         let Some(caller) = self.caller_for(label) else { return Ok(fail("forbidden")) };
         if let Some(r) = self.core(channel, &args, &caller) {
@@ -748,6 +768,14 @@ pub fn init() -> TauriPlugin<Wry> {
             log::info!("[premium] host ready: {} desktop modules", h.features.len());
             Ok(())
         })
+        .on_page_load(|webview, payload| {
+            // The main renderer draws the portal windows: a reload orphans them.
+            if webview.label() == "main" && payload.event() == tauri::webview::PageLoadEvent::Started {
+                if let Some(h) = host().cloned() {
+                    std::thread::spawn(move || wins::close_portals(&h));
+                }
+            }
+        })
         .on_event(|_app, event| {
             let Some(h) = host() else { return };
             match event {
@@ -763,9 +791,8 @@ pub fn init() -> TauriPlugin<Wry> {
                     WindowEvent::Focused(f) => h.bus(Bus::Focus(label.clone(), *f)),
                     WindowEvent::ScaleFactorChanged { .. } => h.bus(Bus::Displays),
                     WindowEvent::Destroyed => {
-                        let kind = lock(&h.windows).get(label).map(|e| e.kind.clone());
-                        if let Some(kind) = kind {
-                            h.bus(Bus::WindowClosed { label: label.clone(), kind });
+                        if lock(&h.windows).contains_key(label) {
+                            h.bus(Bus::WindowClosed { label: label.clone() });
                         }
                     }
                     _ => {}
@@ -782,6 +809,7 @@ pub fn init() -> TauriPlugin<Wry> {
 }
 
 // ---- hooks for the shell (all optional) ---------------------------------------------------------
+// The prototype shell has no tray or notification capsules yet, hence the allow(dead_code).
 
 /// Main window `on_new_window`: Descall+ portal windows (call, sidebar) open here when their
 /// feature runs. `None`: not ours, the shell decides. The page opens them with
@@ -793,6 +821,7 @@ pub fn on_new_window(app: &AppHandle, url: &tauri::Url, features: tauri::webview
 }
 
 /// Notification hooks (notifyHooks.cjs): `None` = drop it; the payload may gain `quickReply`.
+#[allow(dead_code)]
 pub fn notify_filter(payload: Value) -> Option<Value> {
     match host() {
         Some(h) => features::quick_reply::filter(h, payload),
@@ -801,12 +830,14 @@ pub fn notify_filter(payload: Value) -> Option<Value> {
 }
 
 /// Native reply toast for a DM marked by [`notify_filter`]; false = show the capsule instead.
+#[allow(dead_code)]
 pub fn show_quick_reply(title: &str, body: &str, conv: &str, click_data: Value) -> bool {
     host().is_some_and(|h| features::quick_reply::show(h, title, body, conv, click_data))
 }
 
 /// Read the session token from the shell's secure store (auth-token); the renderer's own
 /// claim is the fallback, as in Electron.
+#[allow(dead_code)]
 pub fn set_token_reader(f: impl Fn(&AppHandle) -> Option<String> + Send + Sync + 'static) {
     if let Some(h) = host() {
         lock(&h.hooks).token_reader = Some(Box::new(f));
@@ -814,6 +845,7 @@ pub fn set_token_reader(f: impl Fn(&AppHandle) -> Option<String> + Send + Sync +
 }
 
 /// Called by the shell after the UI language changed (app_set_locale).
+#[allow(dead_code)]
 pub fn set_locale(locale: &str) {
     if let (Some(h), Some(l)) = (host(), logic::i18n::match_locale(locale)) {
         *lock(&h.locale) = Some(l.to_string());
@@ -822,6 +854,7 @@ pub fn set_locale(locale: &str) {
 }
 
 /// The shell rebuilds its tray menu (calling [`tray::append`]) when Descall+ items change.
+#[allow(dead_code)]
 pub fn set_tray_rebuilder(f: impl Fn(&AppHandle) + Send + Sync + 'static) {
     if let Some(h) = host() {
         lock(&h.hooks).tray_rebuild = Some(Box::new(f));
@@ -830,6 +863,7 @@ pub fn set_tray_rebuilder(f: impl Fn(&AppHandle) + Send + Sync + 'static) {
 
 /// Boot script (window.__DESCALL_BOOT__ ...) for a Descall+ app window the premium module
 /// opens (pop-outs "popout-*", accounts "acct-*"). Without it a minimal boot object is used.
+#[allow(dead_code)]
 pub fn set_boot_script_provider(f: impl Fn(&AppHandle, &str) -> Option<String> + Send + Sync + 'static) {
     if let Some(h) = host() {
         lock(&h.hooks).boot_script = Some(Box::new(f));
@@ -837,12 +871,14 @@ pub fn set_boot_script_provider(f: impl Fn(&AppHandle, &str) -> Option<String> +
 }
 
 /// Descall+ window (portal, pop-out, launcher, HUD): the shell's notifications skip these.
+#[allow(dead_code)]
 pub fn is_aux_window(label: &str) -> bool {
     host().is_some_and(|h| lock(&h.windows).contains_key(label)) || overlay::is_overlay(label)
 }
 
 /// token_set / token_clear from an account window: stored for that account, not the owner.
 /// Returns false when `label` is not an account window (the shell handles it).
+#[allow(dead_code)]
 pub fn account_token(label: &str, token: Option<&str>) -> bool {
     host().is_some_and(|h| features::multi_account::store_token(h, label, token))
 }

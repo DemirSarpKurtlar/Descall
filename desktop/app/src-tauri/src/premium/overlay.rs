@@ -1,0 +1,190 @@
+//! Small always-on-top windows for the HUDs, widgets and the quick drop zone (port of
+//! electron/premium/overlayKit.cjs). Transparent, frameless, not in the taskbar; the HUDs are
+//! click-through. Nothing is injected into other processes, which is why they show over
+//! borderless / windowed games but not over exclusive fullscreen ones (anti-cheat safe).
+//!
+//! Pages come from the `descallhud` URI scheme (hud/hud.html, the Electron markup) and talk
+//! through `window.descallHud` (shim/premium-hud-shim.js): state in, whitelisted actions out.
+
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
+
+use serde_json::Value;
+use tauri::http::{Request, Response};
+use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+
+use super::logic::geom::{self, Rect};
+use super::{lock, wins, Host};
+
+pub const SCHEME: &str = "descallhud";
+const HTML: &str = include_str!("hud/hud.html");
+const HUD_SHIM: &str = include_str!("../../../shim/premium-hud-shim.js");
+const KINDS: &[&str] = &["voice", "gaming", "widget", "quickdrop"];
+pub const ACTIONS: &[&str] = &["ready", "drop", "open", "close", "moved", "pick", "size"];
+
+#[derive(Clone, Debug)]
+pub struct Overlay {
+    pub id: String,
+    /// Feature that owns it (actions are routed there).
+    pub owner: &'static str,
+    pub last: Option<Value>,
+    pub widget_kind: Option<String>,
+}
+
+fn reg() -> &'static Mutex<HashMap<String, Overlay>> {
+    static R: OnceLock<Mutex<HashMap<String, Overlay>>> = OnceLock::new();
+    R.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Window label of an overlay id ("hud:voice_hud" -> "hud-voice_hud", "widget:x" -> "widget-x").
+pub fn label_for(id: &str) -> String {
+    if let Some(rest) = id.strip_prefix("widget:") {
+        format!("widget-{rest}")
+    } else {
+        format!("hud-{}", id.trim_start_matches("hud:"))
+    }
+}
+
+pub fn is_overlay(label: &str) -> bool {
+    lock(reg()).contains_key(label)
+}
+
+pub fn serve(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
+    let kind = request.uri().path().trim_matches('/');
+    let kind = if KINDS.contains(&kind) { kind } else { "widget" };
+    Response::builder()
+        .header("Content-Type", "text/html; charset=utf-8")
+        .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https: data:; connect-src ipc: http://ipc.localhost")
+        .body(HTML.replace("__KIND__", kind).into_bytes())
+        .unwrap_or_default()
+}
+
+pub struct OpenOpts<'a> {
+    pub id: &'a str,
+    pub kind: &'a str,
+    pub owner: &'static str,
+    pub bounds: Rect,
+    pub click_through: bool,
+    pub opacity: f64,
+    pub focusable: bool,
+    pub state: Option<Value>,
+    pub widget_kind: Option<String>,
+}
+
+/// Open (or move / restyle the existing) overlay window.
+pub fn open(h: &Host, o: OpenOpts<'_>) {
+    let label = label_for(o.id);
+    let bounds = wins::display_for(h, o.bounds).map(|d| geom::clamp_to_area(o.bounds, d.1)).unwrap_or(o.bounds);
+    {
+        let mut r = lock(reg());
+        let e = r.entry(label.clone()).or_insert_with(|| Overlay { id: o.id.into(), owner: o.owner, last: None, widget_kind: None });
+        if o.state.is_some() {
+            e.last = o.state.clone();
+        }
+        if o.widget_kind.is_some() {
+            e.widget_kind = o.widget_kind.clone();
+        }
+    }
+    let w = match h.app.get_webview_window(&label) {
+        Some(w) => w,
+        None => {
+            let Ok(url) = format!("http://{SCHEME}.localhost/{}", o.kind).parse() else { return };
+            let built = WebviewWindowBuilder::new(&h.app, &label, WebviewUrl::CustomProtocol(url))
+                .title("Descall")
+                .transparent(true)
+                .decorations(false)
+                .shadow(false)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .resizable(false)
+                .maximizable(false)
+                .minimizable(false)
+                .focused(false)
+                .focusable(o.focusable)
+                .visible(false)
+                .visible_on_all_workspaces(true)
+                .initialization_script(HUD_SHIM)
+                .on_navigation(|u| u.host_str() == Some("descallhud.localhost"))
+                .build();
+            match built {
+                Ok(w) => w,
+                Err(e) => {
+                    log::warn!("[premium] overlay {label} failed: {e}");
+                    lock(reg()).remove(&label);
+                    return;
+                }
+            }
+        }
+    };
+    wins::set_bounds(&w, bounds);
+    let _ = w.set_ignore_cursor_events(o.click_through);
+    wins::set_opacity(&w, o.opacity.clamp(0.2, 1.0));
+    let _ = w.show();
+}
+
+pub fn send(h: &Host, id: &str, state: Value) -> bool {
+    let label = label_for(id);
+    {
+        let mut r = lock(reg());
+        let Some(e) = r.get_mut(&label) else { return false };
+        e.last = Some(state.clone());
+    }
+    h.app.emit_to(label.as_str(), "descall:hud:state", state).is_ok()
+}
+
+pub fn close(h: &Host, id: &str) {
+    let label = label_for(id);
+    lock(reg()).remove(&label);
+    if let Some(w) = h.app.get_webview_window(&label) {
+        let _ = w.destroy();
+    }
+}
+
+pub fn close_where(h: &Host, pred: impl Fn(&Overlay) -> bool) {
+    let ids: Vec<String> = lock(reg()).values().filter(|o| pred(o)).map(|o| o.id.clone()).collect();
+    for id in ids {
+        close(h, &id);
+    }
+}
+
+pub fn list(h: &Host) -> Vec<Overlay> {
+    lock(reg()).iter().filter(|(l, _)| h.app.get_webview_window(l).is_some()).map(|(_, o)| o.clone()).collect()
+}
+
+pub fn get(h: &Host, id: &str) -> Option<Overlay> {
+    let label = label_for(id);
+    h.app.get_webview_window(&label)?;
+    lock(reg()).get(&label).cloned()
+}
+
+pub fn window_bounds(h: &Host, id: &str) -> Option<Rect> {
+    h.app.get_webview_window(&label_for(id)).and_then(|w| wins::bounds(&w))
+}
+
+pub fn set_window_bounds(h: &Host, id: &str, b: Rect) {
+    if let Some(w) = h.app.get_webview_window(&label_for(id)) {
+        wins::set_bounds(&w, b);
+    }
+}
+
+/// `descallHud.action(type, payload)` from an overlay page.
+pub fn on_action(h: &Host, label: &str, kind: &str, payload: Value) {
+    if !ACTIONS.contains(&kind) {
+        return;
+    }
+    let Some(o) = lock(reg()).get(label).cloned() else { return };
+    if kind == "ready" {
+        if let Some(last) = o.last.clone() {
+            let _ = h.app.emit_to(label, "descall:hud:state", last);
+        }
+        return;
+    }
+    super::features::on_overlay(h, o.owner, &o.id, kind, &payload);
+}
+
+/// A drag ended: tell the owner (widgets report the new position to the renderer).
+pub fn on_moved(h: &Host, label: &str) {
+    let Some(o) = lock(reg()).get(label).cloned() else { return };
+    let Some(b) = h.app.get_webview_window(label).and_then(|w| wins::bounds(&w)) else { return };
+    super::features::on_overlay(h, o.owner, &o.id, "moved", &b.to_json());
+}
