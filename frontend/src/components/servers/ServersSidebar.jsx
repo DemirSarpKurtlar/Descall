@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { hapticImpactMedium } from "../../lib/fluid/haptics";
 import { confirmAction, promptAction } from "../../lib/glassConfirm";
 import GlassConfirm from "../ui/GlassConfirm";
@@ -2978,6 +2979,8 @@ function TemplateIcon({ name, size = 22 }) {
 
 function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
   const t = useT();
+  const dialogRef = useRef(null);
+  useModalFocus(true, dialogRef);
   /** path: choose → templates → details */
   const [step, setStep] = useState("choose");
   const [templateId, setTemplateId] = useState(null);
@@ -3090,6 +3093,7 @@ function CreateServerModal({ onClose, onCreate, canCreate, maxOwned }) {
       onClick={onClose}
     >
       <motion.div
+        ref={dialogRef}
         className={`server-modal server-create-wizard${step === "templates" ? " is-wide" : ""}`}
         initial={{ scale: 0.94, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
