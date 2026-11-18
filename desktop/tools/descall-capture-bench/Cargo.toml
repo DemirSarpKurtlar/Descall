@@ -1,0 +1,40 @@
+[package]
+name = "descall-capture-bench"
+description = "DescallCaptureBench: the P0 acceptance tests of the native screen share (echo, 1080p60/1440p60 latency, CPU and drops, window follow, HDR histogram). Prints a pass/fail table and writes a JSON report."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "descall-capture-bench"
+path = "src/main.rs"
+
+[dependencies]
+descall-capture.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-core.workspace = true
+windows = { workspace = true, features = [
+  "Graphics_Capture",
+  "Win32_Foundation",
+  "Win32_Graphics_Direct3D",
+  "Win32_Graphics_Direct3D11",
+  "Win32_Graphics_Dxgi",
+  "Win32_Graphics_Dxgi_Common",
+  "Win32_Graphics_Gdi",
+  "Win32_Media_Audio",
+  "Win32_Media_Multimedia",
+  "Win32_Security",
+  "Win32_System_Com",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Performance",
+  "Win32_System_RemoteDesktop",
+  "Win32_System_StationsAndDesktops",
+  "Win32_System_SystemInformation",
+  "Win32_System_Threading",
+  "Win32_UI_HiDpi",
+  "Win32_UI_WindowsAndMessaging",
+] }
