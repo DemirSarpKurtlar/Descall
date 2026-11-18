@@ -197,6 +197,12 @@ function start({ io, actor, reason, skipCountdown = false, backupBytes = null, i
       // 5. exit
       mine.phase = "exit";
       setStep("exit", "active");
+      // Batched last_seen touches (lib/presenceTouch.js) go out before the process ends.
+      try {
+        await require("./presenceTouch").flushLastSeen();
+      } catch {
+        /* still exit */
+      }
       if (onBeforeExit) {
         try {
           await onBeforeExit({ run: publicRun() });
