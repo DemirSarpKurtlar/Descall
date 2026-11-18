@@ -156,6 +156,7 @@ export const SEC_CENTER_RU = {
     "liftAll": "Снять все",
     "permanent": "Постоянные настройки доступа",
     "fromSystem": "Включено в Системе",
+    "sysChatFrozen": "Чат заморожен",
     "chatFrozenSub": "Никто не может отправлять сообщения",
     "regOff": "Регистрация выключена",
     "regOffSub": "Новые аккаунты создать нельзя",

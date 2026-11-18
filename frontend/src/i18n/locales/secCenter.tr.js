@@ -156,6 +156,7 @@ export const SEC_CENTER_TR = {
     "liftAll": "Tümünü aç",
     "permanent": "Kalıcı erişim ayarları",
     "fromSystem": "Sistem’den açık",
+    "sysChatFrozen": "Sohbet donduruldu",
     "chatFrozenSub": "Kimse mesaj gönderemiyor",
     "regOff": "Yeni kayıtlar kapalı",
     "regOffSub": "Yeni hesap açılamıyor",

@@ -156,6 +156,7 @@ export const SEC_CENTER_FR = {
     "liftAll": "Tout lever",
     "permanent": "Réglages d'accès permanents",
     "fromSystem": "Actif depuis Système",
+    "sysChatFrozen": "Le chat est gelé",
     "chatFrozenSub": "Personne ne peut envoyer de messages",
     "regOff": "Les inscriptions sont désactivées",
     "regOffSub": "Aucun nouveau compte ne peut être créé",
