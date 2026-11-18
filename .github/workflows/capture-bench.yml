@@ -1,0 +1,103 @@
+# Native screen share (desktop/crates/descall-capture) and its P0 bench.
+# - checks: Linux unit tests, the page-shim tests, and a warning-free clippy build for
+#   x86_64-pc-windows-gnu (the target the owner's toolchain cross-compiles to).
+# - bench: builds DescallCaptureBench on windows-latest, runs the Windows unit tests and
+#   every bench test a hosted runner can run. Hosted runners usually have no interactive
+#   desktop and no audio device: those tests report "skipped (...)" instead of failing.
+#   The exe and the JSON report are uploaded so the owner can run the same exe at home.
+name: Capture bench
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Length of each 60 fps run in seconds
+        default: "6"
+  pull_request:
+    paths:
+      - "desktop/crates/descall-capture/**"
+      - "desktop/tools/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capture-bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Unit tests + windows-gnu clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain (stable + windows-gnu target)
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+          rustup target add x86_64-pc-windows-gnu
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+      - name: Portable unit tests (Linux)
+        run: cargo test -p descall-capture -p descall-capture-bench
+      - name: Clippy, no warnings (x86_64-pc-windows-gnu)
+        run: cargo clippy -p descall-capture -p descall-capture-bench --all-targets --target x86_64-pc-windows-gnu -- -D warnings
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Page shim tests
+        run: node --test tools/native-share-shim-test/shim.test.mjs
+
+  bench:
+    name: DescallCaptureBench (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+      - name: Windows unit tests
+        run: cargo test -p descall-capture -p descall-capture-bench
+      - name: Build the bench
+        run: cargo build --release -p descall-capture-bench
+      - name: Run the bench
+        id: run
+        env:
+          BENCH_SECONDS: ${{ github.event.inputs.seconds || '6' }}
+        run: |
+          New-Item -ItemType Directory -Force -Path bench-out | Out-Null
+          Copy-Item target/release/descall-capture-bench.exe bench-out/
+          ./target/release/descall-capture-bench.exe --ci --seconds $env:BENCH_SECONDS --out bench-out/descall-capture-report.json 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
+          $code = $LASTEXITCODE
+          "exit_code=$code" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "## DescallCaptureBench" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content bench-out/bench-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          exit 0
+      - name: Upload the exe and the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: descall-capture-bench
+          path: desktop/bench-out/
+          retention-days: 30
+      - name: Fail on a FAIL row
+        if: steps.run.outputs.exit_code != '0'
+        run: |
+          Write-Host "The bench reported FAIL (exit code ${{ steps.run.outputs.exit_code }}). See the job summary and the report artifact."
+          exit 1
