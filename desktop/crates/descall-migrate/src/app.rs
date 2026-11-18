@@ -149,6 +149,115 @@ pub fn auth_check(status: u16) -> AuthCheck {
     }
 }
 
+// ---- outcome reports (POST /api/desktop/migration/report) -----------------------------------
+//
+// The migrator has no network code; the app that runs next reports. After a rollback or a
+// skip that is the Electron bridge (it reports `rollback_ok` with the app's health code as
+// `app_<code>`); after a successful move it is the new app, which reports `done` once the
+// migrator committed, and later the outcome of the 14-day cleanup.
+
+/// `done` report for a committed move that was not reported yet (`state.json` bytes).
+pub fn pending_done_report(state_json: &[u8], app_version: &str) -> Option<serde_json::Value> {
+    let state = crate::state::MigrationState::from_bytes(state_json).ok()?;
+    if state.reported || state.step != crate::plan::Step::Done {
+        return None;
+    }
+    let mut v = serde_json::to_value(crate::report::outcome(&state)).ok()?;
+    v["appVersion"] = app_version.into();
+    v["electronVersion"] = state.job.electron_version.clone().into();
+    Some(v)
+}
+
+/// `state.json` with `reported: true` (after the server took the report).
+pub fn mark_reported(state_json: &[u8]) -> Option<Vec<u8>> {
+    let mut state = crate::state::MigrationState::from_bytes(state_json).ok()?;
+    state.reported = true;
+    state.to_bytes().ok()
+}
+
+/// `cleanup_done` / `cleanup_failed` report, or None when there is nothing to tell.
+pub fn cleanup_report(state_json: &[u8], done: bool, code: Option<&str>, app_version: &str) -> Option<serde_json::Value> {
+    let state = crate::state::MigrationState::from_bytes(state_json).ok()?;
+    Some(serde_json::json!({
+        "installId": state.job.install_id,
+        "migrationId": state.job.id,
+        "event": if done { "cleanup_done" } else { "cleanup_failed" },
+        "code": if done { None } else { code.map(|c| c.to_ascii_lowercase().chars().take(80).collect::<String>()) },
+        "strategy": state.layout.as_ref().map(|l| l.strategy.as_str()),
+        "perMachine": state.layout.as_ref().map(|l| l.per_machine).unwrap_or(false),
+        "appVersion": app_version,
+    }))
+}
+
+// ---- machine-wide cleanup: asking for elevation ---------------------------------------------
+
+/// The machine-wide old install needs `DescallMigrator.exe --cleanup-machine` elevated: a UAC
+/// prompt. Asked at most [`MAX_ELEVATION_ASKS`] times, a week apart, and never again once it
+/// succeeded; a declined prompt simply waits for the next window.
+pub const MAX_ELEVATION_ASKS: u32 = 3;
+pub const ELEVATION_ASK_EVERY_SECS: u64 = 7 * 24 * 3600;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ElevationAsks {
+    #[serde(default)]
+    pub asks: u32,
+    #[serde(default)]
+    pub last_ask_unix: u64,
+    #[serde(default)]
+    pub declined: u32,
+    #[serde(default)]
+    pub done: bool,
+}
+
+impl ElevationAsks {
+    pub fn path(work_dir: &std::path::Path) -> std::path::PathBuf {
+        work_dir.join("cleanup-elevation.json")
+    }
+
+    pub fn parse(bytes: Option<&[u8]>) -> ElevationAsks {
+        bytes.and_then(|b| serde_json::from_slice(b).ok()).unwrap_or_default()
+    }
+
+    pub fn may_ask(&self, now_unix: u64) -> bool {
+        !self.done && self.asks < MAX_ELEVATION_ASKS && (self.asks == 0 || now_unix >= self.last_ask_unix + ELEVATION_ASK_EVERY_SECS)
+    }
+
+    pub fn note(&mut self, now_unix: u64, outcome: &ElevatedRun) {
+        self.asks += 1;
+        self.last_ask_unix = now_unix;
+        match outcome {
+            ElevatedRun::Declined => self.declined += 1,
+            ElevatedRun::Exit(0) => self.done = true,
+            ElevatedRun::Exit(_) | ElevatedRun::Failed => {}
+        }
+    }
+}
+
+/// What came of one `--cleanup-machine` prompt.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ElevatedRun {
+    /// The user said no to the UAC prompt.
+    Declined,
+    /// The migrator ran elevated and exited with this code (descall-migrator main.rs).
+    Exit(i32),
+    /// It could not be started (or did not finish in time).
+    Failed,
+}
+
+impl ElevatedRun {
+    /// (done, failure code) for [`cleanup_report`].
+    pub fn report(&self) -> (bool, Option<&'static str>) {
+        match self {
+            ElevatedRun::Exit(0) => (true, None),
+            ElevatedRun::Declined => (false, Some("elevation_declined")),
+            ElevatedRun::Exit(4) => (false, Some("other_users_on_electron")),
+            ElevatedRun::Exit(_) => (false, Some("machine_cleanup_failed")),
+            ElevatedRun::Failed => (false, Some("elevation_failed")),
+        }
+    }
+}
+
 /// Failure codes the app writes into health.json (the migrator reports them as `app_<code>`).
 pub mod codes {
     /// Started with `--migrated` but no handoff file was there.
@@ -228,6 +337,54 @@ mod tests {
         for bad in ["accounts.json", "premium.app-lock.bin", "premium.", "premium...json", "premium.a/b.json", "other.json"] {
             assert_eq!(premium_file_target(bad), None, "{bad}");
         }
+    }
+
+    fn state_json(step: crate::plan::Step, reported: bool) -> Vec<u8> {
+        let mut s = crate::state::MigrationState::new(crate::job::tests::sample(), 1);
+        s.step = step;
+        s.reported = reported;
+        s.to_bytes().unwrap()
+    }
+
+    #[test]
+    fn done_is_reported_once_by_the_new_app() {
+        use crate::plan::Step;
+        let done = state_json(Step::Done, false);
+        let r = pending_done_report(&done, "4.0.0").expect("done, not reported yet");
+        assert_eq!(r["event"], "done");
+        assert_eq!(r["appVersion"], "4.0.0");
+        assert!(r["installId"].as_str().is_some_and(|s| !s.is_empty()) && r["migrationId"].as_str().is_some());
+        let marked = mark_reported(&done).unwrap();
+        assert_eq!(pending_done_report(&marked, "4.0.0"), None, "only once");
+        // Rollbacks, skips and running moves are the Electron bridge's to report.
+        for step in [Step::Skipped, Step::NeedsHelp, Step::AwaitHealth] {
+            assert_eq!(pending_done_report(&state_json(step, false), "4.0.0"), None, "{step:?}");
+        }
+        assert_eq!(pending_done_report(b"{not json", "4.0.0"), None);
+        let c = cleanup_report(&done, false, Some("Legacy_os_32"), "4.0.0").unwrap();
+        assert_eq!((c["event"].as_str(), c["code"].as_str()), (Some("cleanup_failed"), Some("legacy_os_32")));
+        assert!(cleanup_report(&done, true, Some("x"), "4.0.0").unwrap()["code"].is_null());
+    }
+
+    #[test]
+    fn elevation_is_asked_rarely() {
+        const DAY: u64 = 24 * 3600;
+        let mut a = ElevationAsks::parse(None);
+        assert!(a.may_ask(1000), "first time");
+        a.note(1000, &ElevatedRun::Declined);
+        assert!(!a.may_ask(1000 + 6 * DAY), "a week apart");
+        assert!(a.may_ask(1000 + 7 * DAY));
+        a.note(1000 + 7 * DAY, &ElevatedRun::Exit(4));
+        a.note(1000 + 14 * DAY, &ElevatedRun::Failed);
+        assert!(!a.may_ask(1000 + 100 * DAY), "three asks at most");
+        assert_eq!(a.declined, 1);
+        let mut ok = ElevationAsks::default();
+        ok.note(5, &ElevatedRun::Exit(0));
+        assert!(ok.done && !ok.may_ask(u64::MAX / 2));
+        let b = serde_json::to_vec(&ok).unwrap();
+        assert_eq!(ElevationAsks::parse(Some(&b)), ok);
+        assert_eq!(ElevatedRun::Declined.report(), (false, Some("elevation_declined")));
+        assert_eq!(ElevatedRun::Exit(0).report(), (true, None));
     }
 
     #[test]

@@ -188,7 +188,7 @@ fn main() {
                 }
             }
 
-            migration::cleanup_on_start();
+            migration::cleanup_on_start(&handle);
             boot::watch_reduced_transparency(&handle);
             commands::updates::schedule_background_checks(&handle);
             Ok(())

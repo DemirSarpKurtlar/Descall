@@ -39,3 +39,25 @@ fn health_file_is_in_the_app_data_folder() {
     let p = health::health_path(appdata);
     assert!(paths::same_path(&p, Path::new(r"C:\Users\x\AppData\Roaming\com.descall.app\migration\health.json")), "{}", p.display());
 }
+
+/// The reports the new app sends pass the server's whitelist (backend/lib/desktopMigration.js
+/// cleanReport: EVENTS and CODE_RE).
+#[test]
+fn reports_use_the_servers_event_names_and_codes() {
+    use descall_migrate::app::{codes, ElevatedRun};
+    let backend = include_str!("../../../../frontend/backend/lib/desktopMigration.js");
+    let events = &backend[backend.find("const EVENTS").expect("EVENTS")..];
+    let events = &events[..events.find("]);").unwrap()];
+    for e in ["\"done\"", "\"cleanup_done\"", "\"cleanup_failed\"", "\"rollback_ok\""] {
+        assert!(events.contains(e), "{e} is a server event");
+    }
+    assert!(backend.contains(r"const CODE_RE = /^[a-z0-9_,.-]{1,80}$/;"), "code pattern changed: update this test");
+    let code_ok = |c: &str| !c.is_empty() && c.len() <= 80 && c.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b"_,.-".contains(&b));
+    let mut all: Vec<String> = [codes::HANDOFF_MISSING, codes::HANDOFF_INVALID, codes::AUTH_REJECTED, codes::START_FAILED].iter().map(|c| format!("app_{c}")).collect();
+    for r in [ElevatedRun::Declined, ElevatedRun::Failed, ElevatedRun::Exit(4), ElevatedRun::Exit(6)] {
+        all.push(r.report().1.unwrap().to_string());
+    }
+    for c in all {
+        assert!(code_ok(&c), "{c}");
+    }
+}
