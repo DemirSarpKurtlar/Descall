@@ -170,6 +170,10 @@ where
             let ch = CHANNELS as usize;
             let mut pk = Packetizer::new(CHANNELS, SAMPLE_RATE);
             let t0 = std::time::Instant::now();
+            // Audio timestamps on the same QPC clock as the video frames (sample clock
+            // from here), so receivers see one time base for the share's two tracks.
+            let base_us = crate::clock::now_us();
+            let mut on_packet = move |s: &[f32], f: u32, ts: u64, fl: u32| on_packet(s, f, base_us + ts, fl);
             while !stop_t.load(Ordering::Acquire) {
                 let woke = unsafe { WaitForSingleObject(ev, 20) } == WAIT_OBJECT_0;
                 if woke {
