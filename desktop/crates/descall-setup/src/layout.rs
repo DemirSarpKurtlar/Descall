@@ -49,6 +49,42 @@ pub const ELECTRON_CACHE_DIRS: &[&str] = &[
     "Service Worker\\ScriptCache",
 ];
 
+/// Shell properties stamped on every Descall shortcut (Start Menu above all): the AppUserModelID
+/// groups windows and toasts under the app, the ToastActivatorCLSID lets Windows start Descall
+/// from a toast (Descall+ quick reply) even when it is not running.
+pub const SHORTCUT_AUMID: &str = APP_ID;
+pub const SHORTCUT_TOAST_ACTIVATOR: &str = TOAST_CLSID;
+
+/// One registry string value under HKCU (`name` empty = the key's default value).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegValue {
+    pub key: String,
+    pub name: &'static str,
+    pub value: String,
+}
+
+pub fn toast_clsid_key() -> String {
+    format!(r"Software\Classes\CLSID\{TOAST_CLSID}")
+}
+
+/// `"<INSTDIR>\Descall.exe"` with Windows separators whatever the host OS.
+pub fn quoted_exe(dir: &str) -> String {
+    format!("\"{}\\{}\"", dir.trim_end_matches(['\\', '/']), EXE)
+}
+
+/// COM local server for toast activation (written on install, the whole key removed on uninstall).
+pub fn toast_registry(dir: &str) -> Vec<RegValue> {
+    vec![
+        RegValue { key: toast_clsid_key(), name: "", value: PRODUCT.to_string() },
+        RegValue { key: format!(r"{}\LocalServer32", toast_clsid_key()), name: "", value: quoted_exe(dir) },
+    ]
+}
+
+/// HKCU keys and values the uninstaller deletes: (key, Some(value name)) or (key, None) for a whole key.
+pub fn uninstall_registry() -> Vec<(String, Option<&'static str>)> {
+    vec![(UNINSTALL_KEY.to_string(), None), (toast_clsid_key(), None), (RUN_KEY.to_string(), Some(APP_ID))]
+}
+
 #[derive(Debug, Clone)]
 pub struct Layout {
     pub local: PathBuf,
@@ -112,6 +148,26 @@ mod tests {
     fn browse_adds_subfolder_once() {
         assert_eq!(normalize_choice(Path::new("/d/Games")), PathBuf::from("/d/Games/Descall"));
         assert_eq!(normalize_choice(Path::new("/d/Games/descall")), PathBuf::from("/d/Games/descall"));
+    }
+
+    #[test]
+    fn toast_activation_registry_plan() {
+        let v = toast_registry(r"C:\Users\Ada\AppData\Local\Programs\Descall\");
+        assert_eq!(v[0], RegValue { key: r"Software\Classes\CLSID\{BCF5A315-F914-4A7E-95BD-313CBE4B661B}".into(), name: "", value: "Descall".into() });
+        assert_eq!(v[1].key, r"Software\Classes\CLSID\{BCF5A315-F914-4A7E-95BD-313CBE4B661B}\LocalServer32");
+        assert_eq!(v[1].name, "");
+        assert_eq!(v[1].value, r#""C:\Users\Ada\AppData\Local\Programs\Descall\Descall.exe""#);
+        assert_eq!(SHORTCUT_AUMID, "com.descall.app");
+        assert_eq!(SHORTCUT_TOAST_ACTIVATOR, "{BCF5A315-F914-4A7E-95BD-313CBE4B661B}");
+        assert_eq!(LNK, "Descall.lnk");
+    }
+
+    #[test]
+    fn uninstall_removes_clsid_key_and_run_value() {
+        let u = uninstall_registry();
+        assert!(u.contains(&(toast_clsid_key(), None)));
+        assert!(u.contains(&(UNINSTALL_KEY.to_string(), None)));
+        assert!(u.contains(&(RUN_KEY.to_string(), Some("com.descall.app"))));
     }
 
     #[test]

@@ -417,7 +417,7 @@ pub fn install_files(ctx: &Ctx, rel: &Release, zip: &Path, dir: &Path, opts: &In
             None => false,
         },
     };
-    let _ = shell::toast_activator_set(&exe);
+    let _ = shell::toast_activator_set(dir);
     shell::notify_shell();
     log::event("l_shell", json!({}), "");
     let size_kb = (unpacked.bytes / 1024).min(u32::MAX as u64) as u32;

@@ -1,13 +1,13 @@
 //! Shell integration: shortcuts (kept and retargeted, never duplicated), Apps & features entry,
 //! autostart value, toast activator, and small helpers (open URL, clipboard, folder picker).
 
-use crate::layout::{self, APP_ID, AUTOSTART_ARGS, EXE, LNK, RUN_KEY, TOAST_CLSID, UNINSTALLER, UNINSTALL_KEY};
+use crate::layout::{self, APP_ID, AUTOSTART_ARGS, EXE, LNK, RUN_KEY, SHORTCUT_AUMID, SHORTCUT_TOAST_ACTIVATOR, UNINSTALLER, UNINSTALL_KEY};
 use std::ffi::c_void;
 use std::path::{Path, PathBuf};
-use windows::core::{Interface, HSTRING, PCWSTR};
+use windows::core::{Interface, GUID, HSTRING, PCWSTR};
 use windows::Win32::Foundation::{HANDLE, HGLOBAL, HWND};
-use windows::Win32::Storage::EnhancedStorage::PKEY_AppUserModel_ID;
-use windows::Win32::System::Com::StructuredStorage::PROPVARIANT;
+use windows::Win32::Storage::EnhancedStorage::{PKEY_AppUserModel_ID, PKEY_AppUserModel_ToastActivatorCLSID};
+use windows::Win32::System::Com::StructuredStorage::{InitPropVariantFromCLSID, PROPVARIANT};
 use windows::Win32::System::Com::{CoCreateInstance, IPersistFile, CLSCTX_INPROC_SERVER, STGM_READ};
 use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData};
 use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
@@ -57,8 +57,11 @@ fn write_link(lnk: &Path, exe: &Path) -> windows::core::Result<()> {
         link.SetIconLocation(&HSTRING::from(exe.as_os_str()), 0)?;
         link.SetDescription(&HSTRING::from("Descall"))?;
         let store: IPropertyStore = link.cast()?;
-        let v = PROPVARIANT::from(APP_ID);
+        let v = PROPVARIANT::from(SHORTCUT_AUMID);
         store.SetValue(&PKEY_AppUserModel_ID, &v)?;
+        let clsid = GUID::try_from(SHORTCUT_TOAST_ACTIVATOR.trim_matches(['{', '}'])).map_err(|_| windows::core::Error::from_hresult(windows::Win32::Foundation::E_INVALIDARG))?;
+        let v = InitPropVariantFromCLSID(&clsid)?;
+        store.SetValue(&PKEY_AppUserModel_ToastActivatorCLSID, &v)?;
         store.Commit()?;
         if let Some(parent) = lnk.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -86,7 +89,11 @@ fn is_descall_exe(p: &Path) -> bool {
 pub fn ensure_link(lnk: &Path, exe: &Path, create: bool) -> LinkOutcome {
     if lnk.exists() {
         match link_target(lnk) {
-            Some(t) if same_path(&t, exe) => return LinkOutcome::Kept,
+            Some(t) if same_path(&t, exe) => {
+                // Same target: keep the file, but make sure the AUMID / toast activator are stamped.
+                let _ = write_link(lnk, exe);
+                return LinkOutcome::Kept;
+            }
             Some(t) if is_descall_exe(&t) => {
                 return if write_link(lnk, exe).is_ok() { LinkOutcome::Retargeted } else { LinkOutcome::Kept };
             }
@@ -137,9 +144,12 @@ pub fn autostart_set(exe: &Path, on: bool) -> windows::core::Result<()> {
     }
 }
 
-pub fn toast_activator_set(exe: &Path) -> windows::core::Result<()> {
-    let k = windows_registry::CURRENT_USER.create(format!(r"Software\Classes\CLSID\{TOAST_CLSID}\LocalServer32"))?;
-    k.set_string("", format!("\"{}\" --toast-activated", exe.display()))
+/// `HKCU\Software\Classes\CLSID\{toast}` = "Descall", `LocalServer32` = "<dir>\Descall.exe" (layout::toast_registry).
+pub fn toast_activator_set(dir: &Path) -> windows::core::Result<()> {
+    for v in layout::toast_registry(&dir.to_string_lossy()) {
+        windows_registry::CURRENT_USER.create(&v.key)?.set_string(v.name, &v.value)?;
+    }
+    Ok(())
 }
 
 pub struct UninstallEntry<'a> {
@@ -191,10 +201,17 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 
 pub fn unregister_all() {
     let cu = &windows_registry::CURRENT_USER;
-    let _ = cu.remove_tree(UNINSTALL_KEY);
-    let _ = cu.remove_tree(format!(r"Software\Classes\CLSID\{TOAST_CLSID}"));
-    if let Ok(k) = cu.open(RUN_KEY) {
-        let _ = k.remove_value(APP_ID);
+    for (key, value) in layout::uninstall_registry() {
+        match value {
+            None => {
+                let _ = cu.remove_tree(&key);
+            }
+            Some(name) => {
+                if let Ok(k) = cu.open(&key) {
+                    let _ = k.remove_value(name);
+                }
+            }
+        }
     }
 }
 
