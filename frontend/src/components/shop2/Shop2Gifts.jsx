@@ -1,6 +1,6 @@
 // Gifts (draft C "Hediyeler" tab + draft A right drawer): pick a friend (who owns it is
-// greyed out, who wishes it comes first, birthday soon), message with quick lines, deliver
-// now / on the birthday / at a time, hidden package, anonymous, wrap colour, thank-you card,
+// greyed out, who wishes it comes first), message with quick lines, deliver now or at a
+// time, hidden package, anonymous, wrap colour, thank-you card,
 // a live preview of what the friend gets (phone notification, opening, desktop chat), the
 // total with owned pieces deducted for sets, drafts, and send tracking with a 5-minute
 // recall ring. The tab also lists received gifts to open.
@@ -14,6 +14,7 @@ import {
   filterRecipients,
   normalizeRecipient,
   giftPrice,
+  giftWhen,
   messageCount,
   mmss,
   SHOP2_MESSAGE_MAX,
@@ -154,7 +155,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState(draft.message || "");
-  const [when, setWhen] = useState(draft.when || "now");
+  const [when, setWhen] = useState(giftWhen(draft.when));
   const [at, setAt] = useState(draft.at || "");
   const [hiddenItem, setHiddenItem] = useState(draft.hiddenItem ?? true);
   const [hideName, setHideName] = useState(Boolean(draft.hideName));
@@ -177,20 +178,12 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
     }
   }, [target, variant, s2.data.storefront, s2.owned]);
   const friends = useMemo(() => list.map((f) => ({ ...f, owns: Boolean(f.owns || f.hasItem), wishes: Boolean(f.wishes || f.inWishlist) })), [list]);
-  // Birthdays are private: the chip shows only when the list carries any.
-  const hasBirthdays = friends.some((f) => f.birthdayInDays != null || f.birthdayAt);
   const shown = filterRecipients(friends, filter, query);
   const friend = friends.find((f) => sameId(f.id, to)) || null;
   const item = target?.item || null;
   const count = messageCount(message);
   const tooLong = count > SHOP2_MESSAGE_MAX;
-  const bdayAt = friend?.birthdayAt ? new Date(friend.birthdayAt) : friend?.birthdayInDays != null ? (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + friend.birthdayInDays);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  })() : null;
-  const sendAt = when === "birthday" && bdayAt ? bdayAt : when === "at" && at ? new Date(at) : null;
+  const sendAt = when === "at" && at ? new Date(at) : null;
   const sendAtIso = sendAt && Number.isFinite(sendAt.getTime()) ? sendAt.toISOString() : "";
   // Server pre-check for this friend: price (their pieces deducted) or why it cannot be sent
   // now (daily caps, new account, gifts closed, schedule too far), shown before "Gönder".
@@ -282,7 +275,7 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
         <label className="s2-searchbox"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("shop2.gifts.searchFriend")} aria-label={t("shop2.gifts.searchFriend")} /></label>
       ) : null}
       <div className="s2-chips-wrap">
-        {["all", "online", ...(hasBirthdays ? ["birthday"] : []), "notOwned", "wishlist"].map((f) => (
+        {["all", "online", "notOwned", "wishlist"].map((f) => (
           <button key={f} type="button" className={`s2-chip is-btn${filter === f ? " is-on" : ""}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>
             {f === "wishlist" ? <Heart size={12} /> : null}
             {t(`shop2.gifts.filter.${f}`)}
@@ -309,7 +302,6 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
                 <small>
                   {f.owns ? t("shop2.gifts.alreadyHas") : f.acceptsGifts === false ? t("shop2.gifts.closed") : f.wishes ? t("shop2.gifts.wishesIt") : f.status && f.status !== "offline" ? t("shop2.gifts.online") : t("shop2.gifts.offline")}
                 </small>
-                {f.birthdayInDays != null && f.birthdayInDays <= 7 ? <Chip tone="gold" icon={Calendar} className="s2-friend-bday">{f.birthdayInDays <= 1 ? t("shop2.gifts.bdayTomorrow") : t("shop2.gifts.bdayIn", { n: f.birthdayInDays })}</Chip> : null}
               </span>
               {owned != null ? <Chip tone="green">{owned}/{set.pieceCount}</Chip> : null}
               {f.wishes ? <Heart size={14} weight="fill" className="s2-heart" /> : null}
@@ -351,7 +343,6 @@ export function GiftComposer({ target: initial, variant = "tab", onDone, onClose
           label={t("shop2.gifts.delivery")}
           options={[
             { id: "now", label: t("shop2.gifts.now") },
-            ...(bdayAt ? [{ id: "birthday", icon: Calendar, label: t("shop2.gifts.onBirthday", { date: bdayAt.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }) }] : []),
             { id: "at", icon: Calendar, label: t("shop2.gifts.pickTime") },
           ]}
         />

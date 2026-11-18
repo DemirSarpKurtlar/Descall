@@ -194,6 +194,7 @@ export const API_PT_BR = {
   "This person cannot receive more gifts today.": "Esta pessoa não pode receber mais presentes hoje.",
   "The message can be up to {max} characters.": "A mensagem pode ter até {max} caracteres.",
   "Choose a valid delivery time.": "Escolha um horário de entrega válido.",
+  "Birthday delivery is no longer available. Send the gift now or pick a time.": "A entrega no aniversário não está mais disponível. Envie o presente agora ou escolha um horário.",
   "Gifts can be scheduled up to {days, plural, one {# day} other {# days}} ahead.": "Presentes podem ser agendados com até {days, plural, one {# dia} other {# dias}} de antecedência.",
   "You cannot send a gift to this person.": "Você não pode enviar um presente para esta pessoa.",
   "You can only send gifts to friends.": "Você só pode enviar presentes para amigos.",

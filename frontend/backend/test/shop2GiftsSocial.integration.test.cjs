@@ -4,7 +4,8 @@
  * Market 2.0 gifts and social side (bug hunt, 16 Nov 2026):
  *  - the gift sheet's recipients carry presence (the "Çevrimiçi" filter was always empty);
  *  - a blocked gift quote carries the reason as an API message (shown before "Gönder");
- *  - the action log ("Son işlemlerin") gets names: item, set, recipient (payloads hold ids).
+ *  - the action log ("Son işlemlerin") gets names: item, set, recipient (payloads hold ids);
+ *  - "deliver on their birthday" was removed: the server refuses it, already scheduled ones still arrive.
  */
 
 const assert = require("assert");
@@ -14,6 +15,7 @@ const { U, I, boot, harness } = require("./shop2Fixture.cjs");
   const { check, finish } = harness("shop2GiftsSocial.integration");
   const env = await boot();
   const { call } = env;
+  const balance = (u) => env.rows("users").find((r) => r.id === U(u)).descoin_balance;
   const { presence } = require("../runtime/sharedState");
   presence.set(U(2), { username: "friend", status: "idle", socketId: "s-2" });
   presence.set(U(4), { username: "newbie", status: "invisible", socketId: "s-4" });
@@ -40,6 +42,47 @@ const { U, I, boot, harness } = require("./shop2Fixture.cjs");
     const ok = await call("/shop2/gifts/quote", { method: "POST", body: { toUserId: U(2), itemId: I(30) } });
     assert.strictEqual(ok.body.ok, true);
     assert.strictEqual(ok.body.error, undefined);
+  });
+
+  await check("birthday delivery is refused with a translated reason; nothing is charged", async () => {
+    const gifts = env.rows("shop2_gifts").length;
+    const before = balance(1);
+    const q = await call("/shop2/gifts/quote", { method: "POST", body: { toUserId: U(5), itemId: I(30), delivery: "birthday" } });
+    assert.strictEqual(q.status, 200);
+    assert.strictEqual(q.body.ok, false);
+    assert.strictEqual(q.body.code, "gift_birthday_removed");
+    assert.strictEqual(q.body.error, "Birthday delivery is no longer available. Send the gift now or pick a time.");
+    const sendAt = new Date(Date.now() + 2 * 86_400_000).toISOString();
+    const s = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(5), itemId: I(30), when: "birthday", sendAt, idempotencyKey: "bday-refused-1" } });
+    assert.strictEqual(s.status, 400, JSON.stringify(s.body));
+    assert.strictEqual(s.body.code, "gift_birthday_removed");
+    assert.strictEqual(s.body.error, q.body.error);
+    assert.strictEqual(balance(1), before, "no debit");
+    assert.strictEqual(env.rows("shop2_gifts").length, gifts, "no gift row, not even a blocked one");
+    // "now" and "at" stay valid modes; an unknown mode reads as a bad time.
+    const at = await call("/shop2/gifts/quote", { method: "POST", body: { toUserId: U(5), itemId: I(30), delivery: "at", sendAt } });
+    assert.strictEqual(at.body.ok, true, JSON.stringify(at.body));
+    const odd = await call("/shop2/gifts/quote", { method: "POST", body: { toUserId: U(5), itemId: I(30), delivery: "someday" } });
+    assert.strictEqual(odd.body.code, "gift_bad_time");
+  });
+
+  await check("a gift already scheduled for a birthday is still delivered and can be opened", async () => {
+    // Birthday gifts were stored as plain scheduled rows (send_at = the birthday), so one
+    // made before the removal looks exactly like this.
+    const before = balance(1);
+    const sendAt = new Date(Date.now() + 3_600_000).toISOString();
+    const s = await call("/shop2/gifts", { method: "POST", body: { toUserId: U(5), itemId: I(30), sendAt, idempotencyKey: "bday-legacy-1" } });
+    assert.strictEqual(s.status, 200, JSON.stringify(s.body));
+    assert.strictEqual(s.body.status, "scheduled");
+    assert.strictEqual(balance(1), before - s.body.paid, "paid once, at send time");
+    const delivered = await require("../lib/shop2/gifts").deliverDue({ now: Date.now() + 2 * 3_600_000 });
+    assert.strictEqual(delivered, 1);
+    const row = env.rows("shop2_gifts").find((g) => g.id === s.body.giftId);
+    assert.strictEqual(row.status, "delivered");
+    const o = await call(`/shop2/gifts/${s.body.giftId}/open`, { method: "POST", user: 5, body: {} });
+    assert.strictEqual(o.status, 200, JSON.stringify(o.body));
+    assert.ok(env.rows("user_inventory").some((r) => r.user_id === U(5) && r.item_id === I(30)), "the friend got the item");
+    assert.strictEqual(balance(1), before - s.body.paid, "no second debit, no refund");
   });
 
   await check("action log entries are named (item, set, recipient)", async () => {

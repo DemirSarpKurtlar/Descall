@@ -168,6 +168,12 @@ for (const layout of ["desktop", "phone"]) {
   for (const x of ["s2-ncard", "is-flipped", "Ay Tozu", "s2-nlog"]) has(n, x, `${layout} night ${x}`);
   const g = m.render("gifts", c);
   for (const x of ["s2-gto", "s2-gform", "s2-gprev", "s2-track", "Mert"]) has(g, x, `${layout} gifts ${x}`);
+  // "Deliver on their birthday" was removed: delivery is "now" or "at a time", nothing else.
+  const deliverySeg = g.match(/role="tablist" aria-label="shop2.gifts.delivery">(.*?)<\/div>/s)?.[1] || "";
+  assert.equal((deliverySeg.match(/role="tab"/g) || []).length, 2, `${layout} gifts: two delivery choices`);
+  has(deliverySeg, "shop2.gifts.now", `${layout} gifts: now`);
+  has(deliverySeg, "shop2.gifts.pickTime", `${layout} gifts: at a time`);
+  for (const x of ["shop2.gifts.onBirthday", "shop2.gifts.filter.birthday", "shop2.gifts.bday", "s2-friend-bday"]) assert.ok(!g.includes(x), `${layout} gifts: no birthday ${x}`);
   const inv = m.render("inv", c);
   has(inv, "Aurora", "retired item listed");
   has(inv, "is-retired", "Eski koleksiyon section");

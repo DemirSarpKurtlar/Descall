@@ -731,8 +731,6 @@ export function normalizeRecipient(raw) {
     total: raw.total != null ? num(raw.total) : null,
     acceptsGifts: raw.canReceive != null ? Boolean(raw.canReceive) : user.acceptsGifts,
     wishlistCount: num(raw.wishlistCount, 0),
-    birthdayInDays: raw.birthdayInDays ?? user.birthdayInDays ?? null,
-    birthdayAt: raw.birthdayAt ?? user.birthdayAt ?? null,
   };
 }
 
@@ -746,7 +744,7 @@ export function canRecall(gift, now = Date.now()) {
   return until != null && until > now;
 }
 
-/** Recipient filter chips: all, online, birthday soon, does not own it, wishes it. */
+/** Recipient filter chips: all, online, does not own it, wishes it. */
 export function filterRecipients(friends, filter, query = "") {
   const q = String(query || "").trim().toLocaleLowerCase();
   return arr(friends).filter((f) => {
@@ -755,11 +753,22 @@ export function filterRecipients(friends, filter, query = "") {
       if (!hay.includes(q)) return false;
     }
     if (filter === "online") return f.status && f.status !== "offline";
-    if (filter === "birthday") return f.birthdaySoon || f.birthdayInDays != null && f.birthdayInDays <= 7;
     if (filter === "notOwned") return !f.owns;
     if (filter === "wishlist") return Boolean(f.wishes);
     return true;
   }).sort((a, b) => Number(Boolean(b.wishes)) - Number(Boolean(a.wishes)) || Number(Boolean(a.owns)) - Number(Boolean(b.owns)));
+}
+
+/** Gift delivery choices: now, or at a chosen time. */
+export const SHOP2_GIFT_WHEN = ["now", "at"];
+
+/**
+ * Delivery choice restored from a saved draft. A draft from before "on their birthday" was
+ * removed opens on "at a time" with no time picked, so it is never sent at once by surprise.
+ */
+export function giftWhen(saved) {
+  if (saved == null || saved === "") return "now";
+  return SHOP2_GIFT_WHEN.includes(saved) ? saved : "at";
 }
 
 /** Gift price: a set for a friend deducts the pieces they already own. */
