@@ -154,7 +154,8 @@
       <div class="foot"><span>${v}</span><span>${t("new_core")}</span></div>`,
       };
     }
-    if (screen === "progress") return { cls: "art", html: brandSmall() + newsCard() };
+    // The draft lets this column run 11 px past the window; same card position, nothing clipped.
+    if (screen === "progress") return { cls: "art art-progress", html: brandSmall() + newsCard() };
     if (screen === "migration") {
       const c = (M.mig && M.mig.cmp) || { setup: [184, 18], launch: [2.6, 0.8], memory: [410, 190] };
       const row = (label, pair, fmt) => `<div class="row"><span>${t(label)}</span><div class="pair"><i class="o" style="width:100%"></i><i class="n" style="width:${Math.max(4, Math.round((pair[1] / pair[0]) * 100))}%"></i></div><b>${esc(fmt(pair[0], true))} → ${esc(fmt(pair[1]))}</b></div>`;

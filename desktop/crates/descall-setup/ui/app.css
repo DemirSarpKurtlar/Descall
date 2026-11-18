@@ -55,7 +55,7 @@ html.exe, html.exe body, html.exe .frame, .win, .win.b > .panel, .win.b > .art, 
 .btn[disabled] { cursor: default; opacity: .55; }
 .btn-primary[disabled] { filter: saturate(.4); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
 .select { cursor: pointer; transition: background-color .15s; }
-.select:hover, .lang-wrap.open .select { background: rgba(255,255,255,.11); }
+.select:hover { background: rgba(255,255,255,.11); }
 .lang-wrap .menu { display: none; }
 .lang-wrap.open .menu { display: block; }
 .menu .mi { cursor: pointer; }
@@ -98,6 +98,8 @@ a.link { cursor: pointer; }
 .card-news .slide { animation: slidein .35s var(--ease); }
 @keyframes slidein { from { opacity: 0; transform: translateX(8px); } }
 .gpic .col b.word { font-size: var(--fs-17); }
+
+.art.art-progress { padding-bottom: 11px; }
 
 /* ---------- migration ---------- */
 .xi { transition: box-shadow .25s, opacity .25s; }
