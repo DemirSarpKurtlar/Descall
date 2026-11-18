@@ -254,4 +254,5 @@ export const API_RU = {
   "Could not send your sign-in code. Please try again shortly.": "Не удалось отправить код входа. Попробуйте чуть позже.",
   "A code was just sent. Wait a minute before requesting another.": "Код только что отправлен. Подождите минуту, прежде чем запросить новый.",
   "Account closed. It will be permanently deleted after the grace period.": "Аккаунт закрыт. Он будет окончательно удалён по окончании льготного периода.",
+  "Could not cancel the request.": "Не удалось отменить запрос.",
 };

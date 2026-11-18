@@ -254,4 +254,5 @@ export const API_PT_BR = {
   "Could not send your sign-in code. Please try again shortly.": "Não foi possível enviar seu código de login. Tente novamente em instantes.",
   "A code was just sent. Wait a minute before requesting another.": "Um código acabou de ser enviado. Espere um minuto antes de pedir outro.",
   "Account closed. It will be permanently deleted after the grace period.": "Conta encerrada. Ela será excluída permanentemente após o período de carência.",
+  "Could not cancel the request.": "Não foi possível cancelar o pedido.",
 };

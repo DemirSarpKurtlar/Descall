@@ -984,4 +984,5 @@ export const API_TR = {
   "Invalid conversation id.": "Geçersiz sohbet kimliği.",
   "This sign-in uses the authenticator app.": "Bu giriş doğrulama uygulamasıyla yapılıyor.",
   "Account closed. It will be permanently deleted after the grace period.": "Hesap kapatıldı. Bekleme süresinin sonunda kalıcı olarak silinecek.",
+  "Could not cancel the request.": "İstek geri çekilemedi.",
 };
