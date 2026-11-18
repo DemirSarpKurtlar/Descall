@@ -3,6 +3,7 @@
 //! these same files) as well as inside the app.
 
 pub mod badge;
+pub mod fmp4;
 pub mod gate;
 pub mod geom;
 pub mod hotkey_logic;
