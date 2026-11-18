@@ -493,7 +493,7 @@ pub(crate) mod tests {
         trun_body.extend_from_slice(&(if sync { 0x0200_0000u32 } else { 0x0101_0000u32 }).to_be_bytes());
         let trun = full(b"trun", 0, 0x4, &trun_body);
         let moof = bx(b"moof", &[mfhd, bx(b"traf", &[tfhd, tfdt, trun].concat())].concat());
-        [moof, bx(b"mdat", &vec![7u8; 100])].concat()
+        [moof, bx(b"mdat", &[7u8; 100])].concat()
     }
 
     fn feed(ring: &mut ClipRing, bytes: &[u8]) {

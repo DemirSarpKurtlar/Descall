@@ -13,9 +13,10 @@ members = [
   "crates/descall-migrator",
   "crates/descall-shell",
   "tools/descall-capture-bench",
+  "premium-logic",
   "app/src-tauri",
 ]
-default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-shell", "tools/descall-capture-bench"]
+default-members = ["crates/descall-capture", "crates/descall-migrate", "crates/descall-migrator", "crates/descall-shell", "tools/descall-capture-bench", "premium-logic"]
 
 [workspace.package]
 edition = "2021"
