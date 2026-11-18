@@ -13,6 +13,7 @@ import {
   countdownParts,
   currentLook,
   filterRecipients,
+  giftWhen,
   isRetiredItem,
   markWishlist,
   messageCount,
@@ -207,6 +208,17 @@ assert.deepEqual(filterRecipients(rec, "all").map((f) => f.id), [3, 1, 2], "wish
 assert.deepEqual(filterRecipients(rec, "notOwned").map((f) => f.id), [3, 1]);
 assert.deepEqual(filterRecipients(rec, "online").map((f) => f.id), [1]);
 assert.deepEqual(filterRecipients(rec, "all", "kaa").map((f) => f.id), [3]);
+// "Deliver on their birthday" was removed: no birthday fields, no birthday filter, and a
+// saved draft that still says "birthday" opens on "at a time" with no time picked.
+const bdayRec = normalizeRecipient({ user: { id: 4, displayName: "Deniz" }, birthdayAt: "2026-12-01T00:00:00Z", birthdayInDays: 2 });
+assert.equal(bdayRec.birthdayAt, undefined, "the normaliser no longer lifts birthdayAt");
+assert.equal(bdayRec.birthdayInDays, undefined, "the normaliser no longer lifts birthdayInDays");
+assert.deepEqual(filterRecipients(rec, "birthday").map((f) => f.id), filterRecipients(rec, "all").map((f) => f.id), "no birthday filter");
+assert.equal(giftWhen(undefined), "now");
+assert.equal(giftWhen(""), "now");
+assert.equal(giftWhen("now"), "now");
+assert.equal(giftWhen("at"), "at");
+assert.equal(giftWhen("birthday"), "at", "old birthday drafts are never sent at once");
 assert.equal(messageCount("İyi ki doğdun"), 13);
 
 // ---------- action log (GET /history) ----------
