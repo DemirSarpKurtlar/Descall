@@ -1,0 +1,131 @@
+//! Cold-start visibility. Port of electron/launchVisibility.cjs.
+//!
+//! A manual launch (Start menu, desktop shortcut, taskbar) always shows the window. Hidden
+//! boot is only for the Windows login auto-start, registered with `--autostart --hidden`
+//! under the Run value `com.descall.app` (the same value name Electron used, so the Task
+//! Manager on/off state carries over). A quiet updater relaunch is a one-shot marker.
+
+pub const AUTOSTART_ARGS: [&str; 2] = ["--autostart", "--hidden"];
+pub const UPDATER_RELAUNCH_MAX_AGE_MS: i64 = 15 * 60 * 1000;
+/// HKCU\Software\Microsoft\Windows\CurrentVersion\Run value name = the AppUserModelID.
+pub const RUN_VALUE: &str = "com.descall.app";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartAction {
+    Show,
+    Hide,
+    Minimize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartReason {
+    Manual,
+    Autostart,
+    UpdaterRelaunch,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ColdStart {
+    pub action: StartAction,
+    pub show_splash: bool,
+    pub reason: StartReason,
+}
+
+/// Saved "start in background" mode of the previous run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BackgroundMode {
+    Hidden,
+    Minimized,
+}
+
+pub fn has_arg<S: AsRef<str>>(argv: &[S], flag: &str) -> bool {
+    argv.iter().map(|a| a.as_ref()).filter(|a| !a.is_empty()).any(|raw| {
+        if raw == flag {
+            return true;
+        }
+        let parts: Vec<&str> = raw.split_whitespace().collect();
+        parts.len() > 1 && parts.contains(&flag)
+    })
+}
+
+pub fn is_autostart_launch<S: AsRef<str>>(argv: &[S]) -> bool {
+    AUTOSTART_ARGS.iter().any(|f| has_arg(argv, f))
+}
+
+pub fn is_fresh_relaunch_marker(mtime_ms: Option<i64>, now_ms: i64) -> bool {
+    match mtime_ms {
+        Some(m) => {
+            let age = now_ms - m;
+            (-5000..=UPDATER_RELAUNCH_MAX_AGE_MS).contains(&age)
+        }
+        None => false,
+    }
+}
+
+pub fn decide_cold_start<S: AsRef<str>>(argv: &[S], background: Option<BackgroundMode>, updater_relaunch: bool) -> ColdStart {
+    if is_autostart_launch(argv) {
+        return ColdStart { action: StartAction::Hide, show_splash: false, reason: StartReason::Autostart };
+    }
+    // --updated alone is not enough: a manual launch that installs from the splash is
+    // relaunched with that flag, and a stale tray file must not hide it.
+    if updater_relaunch {
+        if let Some(mode) = background {
+            let action = if mode == BackgroundMode::Minimized { StartAction::Minimize } else { StartAction::Hide };
+            return ColdStart { action, show_splash: false, reason: StartReason::UpdaterRelaunch };
+        }
+    }
+    ColdStart { action: StartAction::Show, show_splash: true, reason: StartReason::Manual }
+}
+
+/// Run value data for an enabled auto-start: the quoted exe plus the hidden args.
+pub fn run_command(exe: &str) -> String {
+    format!("\"{exe}\" {}", AUTOSTART_ARGS.join(" "))
+}
+
+#[cfg(test)]
+mod tests {
+    //! launchVisibility.selftest.mjs.
+    use super::*;
+    const EXE: &str = r"C:\Program Files\Descall\Descall.exe";
+
+    #[test]
+    fn manual_launch_ignores_stale_flags() {
+        assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Hidden), false).action, StartAction::Show);
+        assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Minimized), false).reason, StartReason::Manual);
+        assert_eq!(decide_cold_start(&[EXE, "--updated"], Some(BackgroundMode::Hidden), false).action, StartAction::Show);
+    }
+
+    #[test]
+    fn login_autostart_is_the_only_hidden_boot() {
+        for flag in AUTOSTART_ARGS {
+            let d = decide_cold_start(&[EXE, flag], None, false);
+            assert_eq!((d.action, d.show_splash, d.reason), (StartAction::Hide, false, StartReason::Autostart));
+        }
+        assert_eq!(decide_cold_start(&[EXE, "--hidden-room"], None, false).action, StartAction::Show);
+        let joined = format!("{EXE} --autostart --hidden");
+        assert_eq!(decide_cold_start(&[joined.as_str()], None, false).action, StartAction::Hide);
+    }
+
+    #[test]
+    fn quiet_updater_relaunch() {
+        assert_eq!(decide_cold_start(&[EXE, "--updated"], Some(BackgroundMode::Hidden), true).action, StartAction::Hide);
+        assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Hidden), false).action, StartAction::Show);
+        assert_eq!(decide_cold_start(&[EXE], Some(BackgroundMode::Minimized), true).action, StartAction::Minimize);
+        assert_eq!(decide_cold_start(&[EXE, "--updated"], None, true).action, StartAction::Show);
+    }
+
+    #[test]
+    fn relaunch_marker_freshness() {
+        let now = 1_700_000_000_000;
+        assert!(is_fresh_relaunch_marker(Some(now), now));
+        assert!(!is_fresh_relaunch_marker(Some(now - UPDATER_RELAUNCH_MAX_AGE_MS - 1), now));
+        assert!(!is_fresh_relaunch_marker(None, now));
+    }
+
+    #[test]
+    fn run_value_carries_the_hidden_args() {
+        let cmd = run_command(EXE);
+        assert!(cmd.starts_with('"') && cmd.contains("--autostart") && cmd.contains("--hidden"));
+        assert!(is_autostart_launch(&[cmd.as_str()]));
+    }
+}
