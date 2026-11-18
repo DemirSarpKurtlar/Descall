@@ -25,7 +25,6 @@ import { getToken, getUser } from "../lib/storage";
 import { emitRoomOnce } from "../lib/socketResubscribe";
 import { startDesCoinHeartbeat } from "../lib/descoinHeartbeat";
 import {
-  GROUP_SCREEN_DEFAULT_QUALITY,
   captureScreenShareStream,
   showElectronScreenPicker,
   optimizeScreenShareTrack,
@@ -87,6 +86,7 @@ import {
   moveMessageKey,
   unmuteDeniedKey,
 } from "../lib/serverVoiceRecovery";
+import { cleanServerScreenQuality, readServerScreenQuality, writeServerScreenQuality } from "../lib/serverScreenQuality";
 import {
   isScreenCompanionIdentity,
   parseLiveKitIdentity,
