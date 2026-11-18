@@ -77,6 +77,22 @@ const FREEZE = "*,*::before,*::after{animation-delay:0s!important;animation-play
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const el = await page.$(exe ? ".frame" : sel);
     await el.screenshot({ path: file, animations: "allow", omitBackground: exe });
+    // Layout guard: nothing may overflow its box in any language.
+    const over = await page.evaluate(() => {
+      const bad = [];
+      const chk = (sel, axis) => document.querySelectorAll(sel).forEach((e) => {
+        const o = axis === "y" ? e.scrollHeight - e.clientHeight : e.scrollWidth - e.clientWidth;
+        if (o > 1) bad.push(`${sel} ${axis}+${o}`);
+      });
+      chk(".content", "y"); chk(".ftr", "x"); chk(".stepper", "x"); chk(".panel", "y"); chk(".art", "y");
+      chk(".btn", "x"); chk(".opt .tx", "x"); chk(".toast-b .bd", "x"); chk(".kv4 > div", "x"); chk(".xi", "x");
+      document.querySelectorAll(".ftr, .head, .tips, .xfer, .first, .sum").forEach((e) => {
+        const r = e.getBoundingClientRect(), w = document.querySelector(".win").getBoundingClientRect();
+        if (r.bottom > w.bottom + 1) bad.push(`${e.className} below window +${Math.round(r.bottom - w.bottom)}`);
+      });
+      return bad;
+    });
+    if (over.length) console.log("OVERFLOW", path.basename(path.dirname(file)), path.basename(file), over.join(", "));
   }
   const ours = (screen, variant, extra, lang, more = "") => `file://${UI}?demo=${screen}&variant=${variant}&lang=${lang}${extra ? "&" + extra : ""}${more}`;
 

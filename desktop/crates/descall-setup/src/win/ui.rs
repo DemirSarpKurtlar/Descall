@@ -142,10 +142,8 @@ pub fn run(kind: Kind, title: &str, data_dir: PathBuf, reduced_motion: bool, cmd
     let mut ctx = WebContext::new(Some(data_dir));
     let ipc_tx = cmds.clone();
     let ipc_ui = ui.clone();
-    let init = format!(
-        "document.documentElement.classList.add('exe'{});",
-        if reduced_motion { ",'rm'" } else { "" }
-    );
+    // Runs before the document exists: only set a flag, app.js applies it.
+    let init = format!("window.__setupRM = {reduced_motion};");
     let webview = WebViewBuilder::new_with_web_context(&mut ctx)
         .with_https_scheme(true)
         .with_transparent(true)

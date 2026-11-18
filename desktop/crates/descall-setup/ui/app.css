@@ -39,6 +39,14 @@ html:not(.exe) .frame > .desk { display: none; }
 .arrows span:focus-visible, .first > div:focus-visible, .mi:focus-visible, .switch:focus-visible {
   outline: 2px solid var(--accent-hi); outline-offset: 2px; }
 
+/* The window never grows: rows are pinned to the window height and long content is clipped
+   inside its own column (tools/render.cjs reports any overflow per language). */
+.win.b { grid-template-rows: minmax(0, 1fr); }
+.win.b > .panel, .win.b > .art { min-height: 0; overflow: hidden; }
+.content { overflow: hidden; }
+/* `clip`, not `hidden`: focus and keyboard must never scroll the window's own boxes. */
+html.exe, html.exe body, html.exe .frame, .win, .win.b > .panel, .win.b > .art, .content { overflow: clip; }
+
 /* ---------- controls ---------- */
 .btn { transition: filter .15s, background-color .15s, transform .12s var(--ease), opacity .15s; }
 .btn:hover:not([disabled]) { filter: brightness(1.1); }

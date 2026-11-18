@@ -576,7 +576,7 @@ impl Engine {
         let pct = if total > 0 { got as f64 * 100.0 / total as f64 } else { 0.0 };
         let net = sys::net_state();
         let mut err = json!({
-            "kind": kind, "code": e.code(), "pct": pct.floor(), "partsReady": ready, "kept": got, "left": total.saturating_sub(got),
+            "kind": kind, "code": e.code(), "pct": pct.round().min(99.0), "partsReady": ready, "kept": got, "left": total.saturating_sub(got),
             "diag": { "net": net.connected, "proxy": net.vpn || http::proxy_configured(), "sig": !matches!(e, JobError::Integrity { sig_ok: false, .. }) },
             "retryIn": Value::Null,
         });

@@ -482,6 +482,7 @@
   const root = document.getElementById("root");
   const STAGE = !HOST && params.get("exe") !== "1";
   document.documentElement.classList.toggle("exe", !STAGE);
+  if (window.__setupRM) document.documentElement.classList.add("rm");
 
   function structKey() {
     const e = M.err || {};
