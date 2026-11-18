@@ -87,7 +87,7 @@ mod tests {
         assert!(!should_reload_after_crash(true, 0, false));
         assert!(!should_reload_after_crash(false, 0, true));
         assert_eq!(BOOT_RETRY_STORAGES, ["serviceworkers", "cachestorage"], "a boot retry never wipes the session");
-        assert!(READY_FALLBACK_MS <= 20_000);
+        const { assert!(READY_FALLBACK_MS <= 20_000) };
     }
 
     #[test]
@@ -99,8 +99,8 @@ mod tests {
         assert_eq!(paint_watchdog_step(false, PAINT_RELOAD_MS, MAX_PAINT_RELOADS, false), PaintStep::Nudge, "one automatic clean reload");
         assert_eq!(paint_watchdog_step(false, PAINT_ASK_MS, 1, false), PaintStep::Ask);
         assert_eq!(paint_watchdog_step(false, PAINT_ASK_MS, 1, true), PaintStep::Nudge);
-        assert!(PAINT_NUDGE_MS < PAINT_RELOAD_MS && PAINT_RELOAD_MS < PAINT_ASK_MS);
-        assert!(PAINT_RELOAD_MS > 14_000, "the page's own 14 s watchdog goes first");
+        const { assert!(PAINT_NUDGE_MS < PAINT_RELOAD_MS && PAINT_RELOAD_MS < PAINT_ASK_MS) };
+        const { assert!(PAINT_RELOAD_MS > 14_000, "the page's own 14 s watchdog goes first") };
     }
 
     #[test]

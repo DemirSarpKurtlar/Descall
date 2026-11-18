@@ -83,13 +83,13 @@ pub fn os_languages() -> Vec<String> {
 /// Windows time zone key name ("Turkey Standard Time"); i18n accepts it like Europe/Istanbul.
 pub fn time_zone() -> String {
     #[cfg(windows)]
-    unsafe {
+    {
         use windows::Win32::System::Time::{GetDynamicTimeZoneInformation, DYNAMIC_TIME_ZONE_INFORMATION};
         let mut tz = DYNAMIC_TIME_ZONE_INFORMATION::default();
-        GetDynamicTimeZoneInformation(&mut tz);
+        unsafe { GetDynamicTimeZoneInformation(&mut tz) };
         let key = &tz.TimeZoneKeyName;
         let end = key.iter().position(|c| *c == 0).unwrap_or(key.len());
-        return String::from_utf16_lossy(&key[..end]);
+        String::from_utf16_lossy(&key[..end])
     }
     #[cfg(not(windows))]
     String::new()

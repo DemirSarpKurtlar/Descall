@@ -8,6 +8,7 @@
 //! - the update never overlapped a call and the window was in the background for
 //!   BACKGROUND_SETTLE_MS (12 s);
 //! - prelaunch (no page yet, so no call can exist).
+//!
 //! An explicit "restart now" after the user confirmed is the only mid-call install.
 
 use serde::Serialize;
