@@ -77,6 +77,9 @@ pub struct WgcSession {
     /// Callbacks currently running (FrameArrived and Closed).
     inflight: Arc<AtomicUsize>,
     stopped: bool,
+    /// Event registrations, removed before Close so no delegate stays registered.
+    closed_token: i64,
+    frame_token: i64,
     _item: GraphicsCaptureItem,
 }
 
@@ -126,6 +129,8 @@ impl WgcSession {
         }
         self.stopped = true;
         self.stopping.store(true, Ordering::Release);
+        let _ = self.pool.RemoveFrameArrived(self.frame_token);
+        let _ = self._item.RemoveClosed(self.closed_token);
         let _ = self.session.Close();
         let _ = self.pool.Close();
         let t0 = std::time::Instant::now();
@@ -215,9 +220,10 @@ where
     let closed = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));
     let inflight = Arc::new(AtomicUsize::new(0));
+    let closed_token;
     {
         let (closed, stopping, inflight) = (closed.clone(), stopping.clone(), inflight.clone());
-        item.Closed(&TypedEventHandler::<GraphicsCaptureItem, IInspectable>::new(move |_, _| {
+        closed_token = item.Closed(&TypedEventHandler::<GraphicsCaptureItem, IInspectable>::new(move |_, _| {
             let _guard = InFlight::enter(&inflight);
             // A panic must never unwind into the OS (that aborts the process).
             let _ = catch_unwind(AssertUnwindSafe(|| {
@@ -278,7 +284,7 @@ where
         let _ = frame.Close();
         Ok(())
     };
-    pool.FrameArrived(&TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new(move |sender, _| {
+    let frame_token = pool.FrameArrived(&TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new(move |sender, _| {
         let _guard = InFlight::enter(&inflight_cb);
         if stopping_cb.load(Ordering::Acquire) {
             return Ok(());
@@ -292,7 +298,7 @@ where
         }
     }))?;
 
-    let s = WgcSession { session, pool, closed, interval_100ns: interval, stopping, inflight, stopped: false, _item: item };
+    let s = WgcSession { session, pool, closed, interval_100ns: interval, stopping, inflight, stopped: false, closed_token, frame_token, _item: item };
     s.session.StartCapture()?;
     Ok(s)
 }
