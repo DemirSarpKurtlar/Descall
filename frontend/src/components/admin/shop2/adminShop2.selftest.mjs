@@ -45,7 +45,7 @@ assert.match(M.arcPath(50, 50, 38, 0, 0.5), /^M[\d.]+ [\d.]+ A38 38 0 0 1/);
 
 /* ---- set pricing (A2 numbers) ---- */
 const P = (id, price, category, rarity = "epic") => ({ id, price_descoin: price, category, rarity });
-const kor = [P(1, 2400, "avatar_frame"), P(2, 2200, "banner"), P(3, 1400, "profile_color", "rare"), P(4, 3100, "profile_badge", "legendary"), P(5, 4200, "avatar_effect", "legendary"), P(6, 1500, "chat_bubble", "rare"), P(7, 2100, "voice_tile"), P(8, 1500, "join_sound", "rare")];
+const kor = [P(1, 1800, "avatar_frame"), P(2, 2200, "banner"), P(9, 600, "profile_aura", "epic"), P(3, 1400, "profile_color", "rare"), P(4, 3100, "profile_badge", "legendary"), P(5, 4200, "avatar_effect", "legendary"), P(6, 1500, "chat_bubble", "rare"), P(7, 2100, "voice_tile"), P(8, 1500, "join_sound", "rare")];
 const pr = M.setPricing(kor, 13800);
 assert.equal(pr.sum, 18400, "Parça toplamı 18.400");
 assert.equal(pr.maxSingle, 4200, "en pahalı tek ürün 4.200");

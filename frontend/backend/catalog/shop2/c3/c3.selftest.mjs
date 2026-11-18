@@ -21,19 +21,34 @@ execFileSync(process.execPath, [join(here, "build-css.mjs"), "--check"], { stdio
 
 // Counts per category (SHOP2-PLAN.md, group C3).
 const count = (c, pred = () => true) => items.filter((i) => i.category === c && pred(i)).length;
-assert.equal(count("profile_aura"), 30);
+assert.equal(count("profile_aura", (i) => !i.set_key), 30);
+assert.equal(count("profile_aura", (i) => i.set_key), 16);
 assert.equal(count("avatar_effect", (i) => !i.set_key), 24);
 assert.equal(count("avatar_effect", (i) => i.set_key), 16);
 assert.equal(count("presence_flare"), 30);
 assert.equal(count("reaction_burst"), 16);
 assert.equal(count("call_overlay"), 16);
 assert.equal(count("theme"), 38);
-assert.equal(items.length, 170);
+assert.equal(items.length, 186);
 
-// One profile effect per set, every set covered.
+// One profile effect and one profile aura per set, every set covered.
 const setPieces = items.filter((i) => i.set_key);
-assert.deepEqual([...new Set(setPieces.map((i) => i.set_key))].sort(), [...SET_KEYS].sort());
-assert.ok(setPieces.every((i) => i.category === "avatar_effect" && i.tags.includes(`set:${i.set_key}`)));
+for (const cat of ["avatar_effect", "profile_aura"]) {
+  const list = setPieces.filter((i) => i.category === cat);
+  assert.deepEqual(list.map((i) => i.set_key).sort(), [...SET_KEYS].sort(), `one ${cat} per set`);
+}
+assert.ok(setPieces.every((i) => ["avatar_effect", "profile_aura"].includes(i.category) && i.tags.includes(`set:${i.set_key}`)));
+// Every aura has its corner art; the art stays small (one data URI per corner, reused by the masks).
+const { ORN } = require("./aura-art.js");
+const { SET_ORN } = require("./aura-set-art.js");
+for (const i of items.filter((x) => x.category === "profile_aura")) {
+  const orn = { ...ORN, ...SET_ORN }[i.effect_key.slice(3)];
+  assert.ok(orn, `${i.sku}: no corner art`);
+  assert.ok(orn.doc().length < 4000, `${i.sku}: corner art ${orn.doc().length} bytes`);
+}
+for (const [, body] of css.matchAll(/aura-s2-[\w-]+::before \{([^}]*)\}/g)) {
+  assert.ok((body.match(/url\("data:/g) || []).length <= 2, "aura corner image declared once per corner");
+}
 
 // Keys: unique, s2- prefixed, sku shape.
 const uniq = (arr, what) => assert.equal(new Set(arr).size, arr.length, `duplicate ${what}`);

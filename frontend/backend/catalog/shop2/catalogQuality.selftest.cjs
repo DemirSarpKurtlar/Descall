@@ -3,7 +3,8 @@
 // Market 2.0 catalog product checks (bughunt Nov 2026), on top of seed.selftest.cjs:
 //  - no two pieces of one set and no two items of one category share a name (any language);
 //  - single items follow the plan price bands, mythic only inside sets;
-//  - every set has the 8 piece categories;
+//  - every set has the 9 piece categories, the profile aura included (owner, Nov 2026: "add a
+//    matching aura to every set"), and the set aura price follows the set piece rule;
 //  - every effect_key / theme_key has its renderer (CSS rule, palette, voice tile design) and
 //    every join sound recipe is valid;
 //  - SVG art is encoded so a browser reads all of it (no raw "#", valid percent escapes).
@@ -39,11 +40,28 @@ for (const it of items) {
 }
 
 // 3. Sets.
-const PIECES = ["avatar_frame", "banner", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound"].sort();
+const PIECES = ["avatar_frame", "banner", "profile_aura", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound"].sort();
 const sets = new Map();
 for (const it of items) if (it.set_key) sets.set(it.set_key, [...(sets.get(it.set_key) || []), it.category]);
 assert.equal(sets.size, 16);
 for (const [key, cats] of sets) assert.deepEqual([...cats].sort(), PIECES, `set ${key}`);
+// 3b. Every set wears a profile aura of its own: exactly one, sold through the set, priced on the
+// set ladder (epic = voice tile + 20, legendary = voice tile + 140, so chat bubble < aura < effect).
+const SET_THEMES = require("./c3/sets.js").SETS;
+assert.equal(SET_THEMES.length, sets.size, "every set theme has pieces");
+for (const { key } of SET_THEMES) {
+  const pieces = items.filter((it) => it.set_key === key);
+  const auras = pieces.filter((it) => it.category === "profile_aura");
+  assert.equal(auras.length, 1, `set ${key} has no profile aura`);
+  const [aura] = auras;
+  const of = (c) => pieces.find((it) => it.category === c);
+  const top = pieces.some((it) => it.rarity === "mythic");
+  assert.equal(aura.rarity, top ? "legendary" : "epic", `${aura.sku}: rarity follows the set`);
+  assert.equal(aura.price_descoin, of("voice_tile").price_descoin + (top ? 140 : 20), `${aura.sku}: set piece price rule`);
+  assert.ok(aura.price_descoin > of("chat_bubble").price_descoin && aura.price_descoin < of("avatar_effect").price_descoin, `${aura.sku}: between bubble and effect`);
+  assert.ok(aura.tags.includes(`set:${key}`) && aura.tags.includes("set-aura"), `${aura.sku}: set tags`);
+  assert.ok(new RegExp(`^s2-${key.split("-")[0]}`).test(aura.effect_key), `${aura.sku}: effect key names its set`);
+}
 
 // 5. SVG encoding.
 for (const it of items) {
