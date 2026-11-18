@@ -1096,7 +1096,7 @@ function registerSocketHandlers(io) {
     socket.on("friend:cancel", async (payload = {}) => {
       const toUserId = String(payload?.toUserId || payload?.userId || "").trim();
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(toUserId)) {
-        socket.emit("friend:error", { message: "Invalid user ID" });
+        socket.emit("friend:error", apiText("message", "Invalid user ID"));
         return;
       }
       const { error } = await supabase
@@ -1106,7 +1106,7 @@ function registerSocketHandlers(io) {
         .eq("friend_id", toUserId)
         .eq("status", "pending");
       if (error) {
-        socket.emit("friend:error", { message: "Could not cancel the request." });
+        socket.emit("friend:error", apiText("message", "Could not cancel the request."));
         await emitOutgoingRequests(io, myId);
         return;
       }

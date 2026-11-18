@@ -2,6 +2,7 @@
 
 const supabase = require("../db/supabase");
 const { friends, pendingRequests } = require("../runtime/sharedState");
+const { apiError } = require("./apiError");
 
 /** userId -> Set of blocked user ids, hydrated from users.blocked_users on demand. */
 const blockedSetCache = new Map();
@@ -57,16 +58,16 @@ async function blockUser(userId, targetId) {
     return { ok: false, error: "Invalid target." };
   }
   const { data: target } = await supabase.from("users").select("id").eq("id", targetId).maybeSingle();
-  if (!target) return { ok: false, error: "User not found.", status: 404 };
+  if (!target) return { ok: false, ...apiError("User not found."), status: 404 };
   const current = await loadBlockedSet(userId);
   if (!current.has(targetId) && current.size >= MAX_BLOCKED) {
-    return { ok: false, error: "Your block list is full." };
+    return { ok: false, ...apiError("Your block list is full.") };
   }
   const set = new Set(current);
   set.add(targetId);
   const next = [...set];
   if (!(await saveBlockedList(userId, next))) {
-    return { ok: false, error: "Could not update your block list.", status: 500 };
+    return { ok: false, ...apiError("Could not update your block list."), status: 500 };
   }
   blockedSetCache.set(userId, set);
 
@@ -103,7 +104,7 @@ async function unblockUser(userId, targetId) {
   set.delete(targetId);
   const next = [...set];
   if (!(await saveBlockedList(userId, next))) {
-    return { ok: false, error: "Could not update your block list.", status: 500 };
+    return { ok: false, ...apiError("Could not update your block list."), status: 500 };
   }
   blockedSetCache.set(userId, set);
   return { ok: true, blockedUsers: next };
