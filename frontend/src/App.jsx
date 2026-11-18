@@ -206,7 +206,7 @@ import { setDraftOwner } from "./lib/messageDrafts";
 import ChatSheetsHost from "./components/chat/ChatSheetsHost";
 import { allowNotify } from "./lib/notifyPrefs";
 import { applyPeerRead } from "./lib/readReceipts";
-import { FAILED_ACTION_EVENT, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
+import { FAILED_ACTION_EVENT, dmPeerId, newTempId as newFailedTempId, retryEmit } from "./lib/failedMessage";
 import { applyPopupClose, applyPopupRecall, sendPopupReceipt } from "./lib/livePopupClient";
 const GroupCallIncomingModal = lazy(() => import("./components/GroupCallIncomingModal"));
 
@@ -679,7 +679,11 @@ export default function App() {
   // Polish messaging-20: "Tekrar gönder" / "Sil" on a message the server refused.
   useEffect(() => {
     const onFailed = (event) => {
-      const { action, message, conversationType, conversationId } = event?.detail || {};
+      const { action, message, conversationType } = event?.detail || {};
+      // A DM arrives as its pair key ("a::b"): the list and the socket use the peer id.
+      const conversationId = conversationType === "dm"
+        ? dmPeerId(event?.detail?.conversationId, myIdRef.current)
+        : event?.detail?.conversationId;
       if (!message?.id || !conversationId || (conversationType !== "dm" && conversationType !== "group")) return;
       const setList = conversationType === "dm" ? setDmByUserId : setGroupMessagesById;
       if (action === "discard") {

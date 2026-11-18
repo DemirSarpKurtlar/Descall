@@ -19,6 +19,14 @@ export function isRetryable(message, conversationType) {
   return Boolean(text || message.mediaUrl || message.poll);
 }
 
+/** MessageList names a DM by its pair key ("a::b"); the socket and the state want the peer id. */
+export function dmPeerId(conversationId, myId) {
+  const key = String(conversationId || "");
+  if (!key.includes("::")) return key || null;
+  const parts = key.split("::").filter(Boolean);
+  return parts.find((p) => p !== String(myId || "")) || null;
+}
+
 export function newTempId() {
   return `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
