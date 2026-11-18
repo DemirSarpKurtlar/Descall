@@ -1,0 +1,117 @@
+# Descall desktop on Rust / Tauri 2 (desktop/). Builds the app, its NSIS setup, the
+# migrator and the custom setup bootstrapper on windows-latest and uploads them UNSIGNED
+# (no signing identity yet; nothing here publishes a release or touches the Electron feed).
+# The Electron release pipeline (release.yml) is not affected.
+name: Desktop (Tauri) build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["desktop/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tauri-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Host-independent crates and the shim parity test on Linux, plus a cross check of the
+  # Windows code (mingw) so a broken windows-rs call fails before the Windows job.
+  linux:
+    name: Rust tests + Windows cross check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults: { run: { working-directory: desktop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-gnu }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop }
+      - name: mingw-w64 for the gnu target
+        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: cargo test (platform-independent crates)
+        run: cargo test
+      - name: electronAPI shim parity
+        run: node app/shim/electron-api-shim.test.mjs
+      - name: cargo check --workspace (x86_64-pc-windows-gnu)
+        run: |
+          # tauri::generate_context! embeds frontend/dist; a placeholder is enough to type-check.
+          if [ ! -f ../frontend/dist/index.html ]; then mkdir -p ../frontend/dist && echo '<!doctype html><title>Descall</title>' > ../frontend/dist/index.html; fi
+          cargo check --workspace --target x86_64-pc-windows-gnu
+
+  windows:
+    name: Build app, setup and migrator (windows-latest, unsigned)
+    needs: linux
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-msvc }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop }
+
+      - name: Web build (same gate and flags as the Electron release)
+        working-directory: frontend
+        shell: pwsh
+        env:
+          ELECTRON_BUILD: "1"
+        run: |
+          $crlf = (git ls-files --eol index.html) -match 'w/crlf'
+          if ($crlf) { throw "frontend/index.html was checked out with CRLF (check .gitattributes)" }
+          npm ci
+          if ($LASTEXITCODE -ne 0) { throw "npm ci failed with $LASTEXITCODE" }
+          npm run build:prod
+          if ($LASTEXITCODE -ne 0) { throw "build:prod failed with $LASTEXITCODE" }
+
+      - name: cargo test on Windows (DPAPI, owner-only files, shell rules)
+        working-directory: desktop
+        run: cargo test
+
+      - name: Tauri build (Descall.exe + NSIS setup, per-user)
+        working-directory: desktop/app/src-tauri
+        shell: pwsh
+        run: |
+          npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis
+          if ($LASTEXITCODE -ne 0) { throw "tauri build failed with $LASTEXITCODE" }
+
+      - name: Migrator and setup bootstrapper
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          cargo build --release --target x86_64-pc-windows-msvc -p descall-migrator
+          if ($LASTEXITCODE -ne 0) { throw "migrator build failed" }
+          if (Test-Path crates/descall-setup/Cargo.toml) {
+            cargo build --release --target x86_64-pc-windows-msvc -p descall-setup
+            if ($LASTEXITCODE -ne 0) { throw "setup build failed" }
+          } else {
+            Write-Host "descall-setup not in this tree yet; skipping the bootstrapper"
+          }
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          $rel = "desktop/target/x86_64-pc-windows-msvc/release"
+          $out = New-Item -ItemType Directory -Force -Path artifacts
+          Copy-Item "$rel/Descall.exe" $out
+          Get-ChildItem -Recurse -Filter "*-setup.exe" "$rel/bundle/nsis" | Copy-Item -Destination $out
+          Copy-Item "$rel/DescallMigrator.exe" $out
+          Get-ChildItem $rel -Filter "DescallSetup*.exe" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
+          Get-ChildItem $out | ForEach-Object {
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "{0}  {1}  {2:N1} MB" -f $h, $_.Name, ($_.Length / 1MB)
+          } | Tee-Object -FilePath "$out/SHA256SUMS.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: descall-desktop-unsigned-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
