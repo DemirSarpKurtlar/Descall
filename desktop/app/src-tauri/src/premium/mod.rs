@@ -790,11 +790,7 @@ pub fn init() -> TauriPlugin<Wry> {
                     }
                     WindowEvent::Focused(f) => h.bus(Bus::Focus(label.clone(), *f)),
                     WindowEvent::ScaleFactorChanged { .. } => h.bus(Bus::Displays),
-                    WindowEvent::Destroyed => {
-                        if lock(&h.windows).contains_key(label) {
-                            h.bus(Bus::WindowClosed { label: label.clone() });
-                        }
-                    }
+                    WindowEvent::Destroyed if lock(&h.windows).contains_key(label) => h.bus(Bus::WindowClosed { label: label.clone() }),
                     _ => {}
                 },
                 RunEvent::ExitRequested { .. } => {

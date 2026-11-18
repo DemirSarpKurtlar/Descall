@@ -2,6 +2,7 @@
 //!  - snap (default on): Descall windows snap to work-area edges when dropped within 18 px;
 //!  - keepVisible (default on): after a monitor change, windows left off-screen come back;
 //!  - mainMonitor (default on): the main window opens on the monitor it was last on.
+//!
 //! Event driven (WM_DISPLAYCHANGE from the watcher window, window moves): no polling.
 
 use std::collections::HashMap;

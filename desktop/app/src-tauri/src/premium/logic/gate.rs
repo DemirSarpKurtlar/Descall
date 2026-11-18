@@ -3,6 +3,7 @@
 //! Two sources, and a feature is on only when BOTH say so:
 //!   1. the renderer's list (`premium:entitlements`), see [`Gate::set_entitlements`];
 //!   2. the shell's own read of GET /api/premium/me (see [`Gate::verify_ok`] / [`Gate::verify_err`]).
+//!
 //! A tampered renderer can only narrow the set, never widen it. Until the shell has verified
 //! once, nothing is on. Pure: the clock is passed in, the caller does the HTTP and the timers.
 
