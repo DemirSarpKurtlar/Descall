@@ -117,6 +117,19 @@ pub fn should_import(marker: Option<&[u8]>, migration_id: Option<&str>) -> bool 
     }
 }
 
+/// Where a handoff `premiumFiles` entry goes, relative to the app's data folder. The bridge
+/// (migrationBridge.cjs readPremiumFiles) names `userData/premium-settings.json` as is and
+/// `userData/premium/<n>.json` as `premium.<n>.json`; the Descall+ module reads the same
+/// layout under `%APPDATA%\com.descall.app`. Anything else is not ours to write (secrets
+/// travel in their own sealed fields), so it is dropped.
+pub fn premium_file_target(name: &str) -> Option<std::path::PathBuf> {
+    if name == "premium-settings.json" {
+        return Some(name.into());
+    }
+    let inner = name.strip_prefix("premium.")?;
+    (inner.ends_with(".json") && crate::handoff::is_safe_file_name(inner)).then(|| std::path::Path::new("premium").join(inner))
+}
+
 /// Outcome of the app's own `GET /api/auth/me` with the imported session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthCheck {
@@ -205,6 +218,16 @@ mod tests {
         assert!(should_import(Some(&m), Some("mig-other-9")));
         assert!(should_import(Some(b"1"), Some(ID)), "a manual install migrated over later");
         assert_eq!(ImportMarker::parse(&m).session_key.as_deref(), Some("auth-token"));
+    }
+
+    #[test]
+    fn premium_files_land_where_descall_plus_reads_them() {
+        use std::path::PathBuf;
+        assert_eq!(premium_file_target("premium-settings.json"), Some(PathBuf::from("premium-settings.json")));
+        assert_eq!(premium_file_target("premium.accounts.json"), Some(PathBuf::from("premium").join("accounts.json")));
+        for bad in ["accounts.json", "premium.app-lock.bin", "premium.", "premium...json", "premium.a/b.json", "other.json"] {
+            assert_eq!(premium_file_target(bad), None, "{bad}");
+        }
     }
 
     #[test]
