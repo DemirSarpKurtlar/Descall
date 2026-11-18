@@ -2370,6 +2370,7 @@ export const nested = {
     "windowAll": "Todo el tiempo",
     "windowForbidden": "Esta ventana es solo para admins.",
     "windowSignIn": "Primero inicia sesión en la ventana principal de Descall y luego vuelve a abrir el Panel de administración.",
+    "windowOffline": "No se pudo conectar con Descall. Revisa tu conexión e inténtalo de nuevo.",
     "windowTitle": "Admin",
     "youtube": "YouTube"
   },

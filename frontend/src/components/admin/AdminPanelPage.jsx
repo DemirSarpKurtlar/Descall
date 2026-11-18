@@ -21,6 +21,7 @@ function closeWindow() {
 export default function AdminPanelPage() {
   const { t } = useLocale();
   const [me, setMe] = useState(undefined);
+  const [bootTry, setBootTry] = useState(0);
   const [socket, setSocket] = useState(null);
 
   const pageTitle = t("adminx.panel.windowTitle");
@@ -42,11 +43,17 @@ export default function AdminPanelPage() {
     const ctrl = new AbortController();
     getMe(token, { signal: ctrl.signal })
       .then((res) => setMe(res?.user || res || null))
-      .catch(() => setMe(null));
+      .catch((err) => {
+        if (ctrl.signal.aborted) return;
+        // A network blip is not "signed out": offer a retry (polish admin-b-12).
+        const status = Number(err?.status) || 0;
+        if (status === 401 || status === 403) setMe(null);
+        else setMe("error");
+      });
     return () => ctrl.abort();
-  }, []);
+  }, [bootTry]);
 
-  const isFullAdmin = Boolean(me?.is_admin || me?.username === "admin");
+  const isFullAdmin = me !== "error" && Boolean(me?.is_admin || me?.username === "admin");
 
   // Live admin updates (admin:sync / feedback:new). The panel also works without it.
   useEffect(() => {
@@ -65,6 +72,15 @@ export default function AdminPanelPage() {
     };
   }, [isFullAdmin]);
 
+  if (me === "error") {
+    return (
+      <div className="adm adm-desktop is-standalone adm-state" role="alert">
+        <p>{t("admin.windowOffline")}</p>
+        <button type="button" className="adm-state-btn" onClick={() => { setMe(undefined); setBootTry((n) => n + 1); }}>{t("Try again")}</button>
+        <button type="button" className="adm-state-btn" onClick={closeWindow}>{t("Close")}</button>
+      </div>
+    );
+  }
   if (me === undefined) {
     return <div className="adm adm-desktop is-standalone adm-state" role="status">{t("Loading...")}</div>;
   }

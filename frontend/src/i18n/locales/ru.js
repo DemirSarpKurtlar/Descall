@@ -2370,6 +2370,7 @@ export const nested = {
     "windowAll": "Всё время",
     "windowForbidden": "Это окно только для админов.",
     "windowSignIn": "Сначала войдите в главном окне Descall, затем снова откройте панель администратора.",
+    "windowOffline": "Не удалось связаться с Descall. Проверьте подключение и попробуйте ещё раз.",
     "windowTitle": "Админ",
     "youtube": "YouTube"
   },

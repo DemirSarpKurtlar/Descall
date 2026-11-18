@@ -573,6 +573,7 @@ export const nested = {
     "windowTitle": "Admin",
     "windowForbidden": "This window is only for admins.",
     "windowSignIn": "Sign in in the main Descall window first, then open the Admin Panel again.",
+    "windowOffline": "Could not reach Descall. Check your connection and try again.",
     "ovTitle": "Overview",
     "ovLive": "Live · {when} · Istanbul time · refreshes every 20 s",
     "ovVisibleInvisible": "{v} visible · {i} invisible",

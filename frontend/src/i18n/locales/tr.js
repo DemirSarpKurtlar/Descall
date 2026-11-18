@@ -583,6 +583,7 @@ export const nested = {
     "windowTitle": "Yönetici",
     "windowForbidden": "Bu pencere yalnızca yöneticiler içindir.",
     "windowSignIn": "Önce ana Descall penceresinde oturum aç, sonra Yönetici Panelini yeniden aç.",
+    "windowOffline": "Descall’a ulaşılamadı. Bağlantını kontrol edip tekrar dene.",
     "ovTitle": "Genel Bakış",
     "ovLive": "Canlı durum · {when} · İstanbul saati · 20 sn'de bir yenilenir",
     "ovVisibleInvisible": "{v} görünür · {i} görünmez",
