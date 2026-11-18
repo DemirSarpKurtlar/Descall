@@ -646,6 +646,15 @@ html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-rig
   }
 }
 
+/* 320-340px Android phones (Galaxy S9-class): five header actions left the
+   peer name ~26px ("A…"). Block (destructive) leaves the bar there; it stays
+   one tap away in the profile sheet (header avatar), with its confirm. */
+@media (max-width: 340px) {
+  html.glass-ui .app-root.g-shell.in-conversation .panel-header.g-conv .header-right .header-block-btn {
+    display: none !important;
+  }
+}
+
 html.glass-ui .app-root.g-shell.in-conversation .icon-btn-badge {
   min-width: 16px;
   height: 16px;
