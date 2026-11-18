@@ -1,6 +1,6 @@
 // node src/styles/hasSelectorGuard.selftest.mjs
-// performance-01: body:has(.app-root...) and the marketing .seo-hero:has() (whose CSS
-// also ships in the app) made every hover and scroll restyle ~3000 elements each
+// performance-01: body:has(.app-root...), the marketing .seo-hero:has() (whose CSS
+// also ships in the app) and the Market 2.0 set-colour name :not(:has(.cosmetic-name-effect)) made every hover and scroll restyle ~3000 elements each
 // (Chromium re-checks the whole document on any class change). Use a class set from JS.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -17,9 +17,9 @@ const files = [];
   }
 })(root);
 
-// Measured with a devtools trace (elements restyled per hover): these two cost ~3000
+// Measured with a devtools trace (elements restyled per hover): these cost ~3000
 // elements each on every hover; the other :has() rules in the app measured near zero.
-const BANNED = [/\bbody:has\(\s*\.app-root/, /\.seo-hero:has\(/];
+const BANNED = [/\bbody:has\(\s*\.app-root/, /\.seo-hero:has\(/, /:not\(:has\(\.cosmetic-name-effect/];
 const hits = [];
 for (const f of files) {
   const css = readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
