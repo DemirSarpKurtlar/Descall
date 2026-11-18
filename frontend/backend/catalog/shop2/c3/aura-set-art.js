@@ -106,15 +106,16 @@ const flameLeaf = (x, y, a, s) => `<path d='M0 0C-${f(s * 0.5)} -${f(s * 0.3)} -
 
 const SET_ORN = {
   "gece-limani-isiklar": {
-    native: "tr",
-    at: "tr",
+    native: "bl",
+    at: "bl",
     doc: () =>
       d(
-        `<path d='M74 22L0 0V44Z' fill='url(#bm)'/><circle cx='74' cy='22' r='18' fill='url(#gl)'/>` +
-          `<path d='M68.6 66L71.4 28H76.6L79.4 66Z' fill='#0b1b3a' stroke='#35d0e0' stroke-width='1.2'/><path d='M70.6 40H77.4M70 53H78' stroke='#e8f6ff' stroke-width='3.2'/>` +
-          `<rect x='70' y='18' width='8' height='9' rx='1.4' fill='#0b1b3a' stroke='#35d0e0' stroke-width='1.2'/><path d='M69 18L74 12L79 18Z' fill='#1e4b8f' stroke='#35d0e0' stroke-width='1'/><circle cx='74' cy='22.4' r='3' fill='#ffffff'/>` +
-          `<path d='M34 74Q42 69 50 74T66 74T82 74T98 74' stroke='#35d0e0' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M46 82Q54 77 62 82T78 82T94 82' stroke='#e8f6ff' stroke-width='1.4' fill='none' stroke-linecap='round' opacity='.6'/>`,
-        lg("bm", [[0, "#e8f6ff", 0], [1, "#e8f6ff", 0.5]], [0, 0, 1, 0]) + rg("gl", [[0, "#bff6ff", 0.9], [1, "#35d0e0", 0]]),
+        `<circle cx='36' cy='50' r='22' fill='url(#gl)'/><path d='M36 50L100 30V62Z' fill='url(#bm)'/>` +
+          `<path d='M27 84L31 62H41L45 84Z' fill='#1e4b8f' stroke='#35d0e0' stroke-width='1.2' stroke-linejoin='round'/><path d='M29.4 72H42.6' stroke='#e8f6ff' stroke-width='3.4'/>` +
+          `<path d='M32 62V55H40V62M32 55L36 51L40 55' stroke='#35d0e0' stroke-width='1.2' fill='#0b1b3a' stroke-linejoin='round'/><circle cx='36' cy='58' r='2.6' fill='#ffffff'/>` +
+          `<ellipse cx='36' cy='85' rx='13' ry='3' fill='#0b1b3a' stroke='#35d0e0' stroke-width='1'/>` +
+          `<path d='M-4 88Q4 83 12 88T28 88T44 88T60 88T76 88' stroke='#35d0e0' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M-2 96Q6 91 14 96T30 96T46 96T62 96' stroke='#e8f6ff' stroke-width='1.4' fill='none' stroke-linecap='round' opacity='.6'/>`,
+        lg("bm", [[0, "#e8f6ff", 0.45], [1, "#e8f6ff", 0]], [0, 0, 1, 0]) + rg("gl", [[0, "#bff6ff", 0.85], [1, "#35d0e0", 0]]),
       ),
   },
   "bakir-kervan-ufuk": {
@@ -293,5 +294,19 @@ const SET_ORN = {
       ),
   },
 };
+
+/**
+ * Ornaments that grow from a lower corner sit over the card text (the rim layer is above the
+ * content), so they are drawn smaller, hugging their corner: scale k about the native corner.
+ */
+const HUG = { "gece-limani-isiklar": 0.78, "kor-bahcesi-sarmasik": 0.8, "altin-hasat-ruzgar": 0.74, "zumrut-orman-egrelti": 0.8, "firtina-simsek-agi": 0.86, "lav-akisi-volkan-nefesi": 0.62 };
+for (const [slug, k] of Object.entries(HUG)) {
+  const o = SET_ORN[slug];
+  const nat = o.native || "tl";
+  const tx = nat[1] === "r" ? 100 * (1 - k) : 0;
+  const ty = nat[0] === "b" ? 100 * (1 - k) : 0;
+  const draw = o.doc;
+  o.doc = () => draw().replace(/(<\/defs>|<svg[^>]*>)(?![\s\S]*<\/defs>)/, `$1<g transform='translate(${f(tx)} ${f(ty)}) scale(${k})'>`).replace(/<\/svg>$/, "</g></svg>");
+}
 
 module.exports = { SET_ORN };
