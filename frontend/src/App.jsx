@@ -3995,6 +3995,11 @@ export default function App() {
     }
 
     if (requestedRoute.view === "servers") {
+      // The invite landing owns /servers/join/:code (it joins, then navigates to the
+      // server). This effect can still run with that path after the join navigated away
+      // (the new location is committed in a transition), so it must not touch the
+      // selection or redirect here.
+      if (requestedRoute.serverInvite != null) return;
       setActiveDmUser(null);
       setActiveGroup(null);
       if (!requestedRoute.serverId) {

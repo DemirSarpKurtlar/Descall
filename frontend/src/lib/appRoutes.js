@@ -26,6 +26,14 @@ export function parseAppRoute(pathname = "/") {
     return { view: "groups", groupId: target || null, joinCall: extra === "call" };
   }
   if (section === "servers") {
+    // /servers/join/:code is an invite landing (serverInviteRoute.js), not server "join".
+    // Read as a server id, the route guard sent it to /servers as soon as the list
+    // loaded, and on a slow device that landed after the join's own navigation to the
+    // new server (React Router commits the new location in a transition), so the user
+    // was bounced off the server they had just joined.
+    if (String(target || "").toLowerCase() === "join") {
+      return { view: "servers", serverId: null, channelId: null, serverInvite: extra || "" };
+    }
     return {
       view: "servers",
       serverId: target || null,
