@@ -53,7 +53,7 @@ const stack = [];
 // Some openers drop their own focus on click (the rail buttons blur to hide their tooltip),
 // so the opener is often the element that just lost focus, not document.activeElement.
 let lastBlur = { el: null, at: 0 };
-if (typeof document !== "undefined") {
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
   document.addEventListener("focusout", (e) => { lastBlur = { el: e.target, at: Date.now() }; }, true);
 }
 function openerNow() {
