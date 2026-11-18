@@ -7854,7 +7854,7 @@ export const phrases = {
   "Edit category": "Изменить категорию",
   "Edit channel": "Изменить канал",
   "Edit message": "Редактировать сообщение",
-  "Edit profile": "Редактировать профиль",
+  "Edit profile": "Изменить профиль",
   "Edited": "Изменено",
   "Effect Presets": "Наборы эффектов",
   "Effect active": "Эффект активен",
