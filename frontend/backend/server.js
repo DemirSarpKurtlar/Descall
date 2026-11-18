@@ -546,6 +546,8 @@ app.use("/api/directory", require("./routes/directory"));
 app.use("/api/webrtc", webrtcRoutes);
 app.use("/api/errors", errorRoutes);
 app.use("/api/app", appReleaseRoutes);
+// Electron -> Tauri migration: signed plan + readiness/outcome reports (OFF by default).
+app.use("/api/desktop/migration", require("./routes/desktopMigration"));
 app.use("/api/calls", callsRoutes);
 app.use("/api/web-push", webPushRoutes);
 app.use("/api/dm", dmPrefsRoutes);

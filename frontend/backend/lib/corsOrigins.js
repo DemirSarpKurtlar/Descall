@@ -6,7 +6,9 @@
  * ALLOW_ALL_ORIGINS bypass: a dashboard flag must not echo arbitrary origins.
  * A missing Origin (curl, same-origin navigation, non-browser clients) is
  * allowed. The string "null" (sandboxed iframes) is not.
- * Electron packaged pages use descall://app. The iPhone app is
+ * Electron packaged pages use descall://app. The Tauri 2 desktop app (Windows,
+ * WebView2 with useHttpsScheme: true) uses https://tauri.localhost; that origin is fixed
+ * for good (changing it would lose the app's localStorage). The iPhone app is
  * descall://localhost (ios.scheme Descall, server.hostname localhost).
  * capacitor://localhost and ionic://localhost are the older native shells.
  * Localhost http(s) is for dev and the Android https://localhost shell.
@@ -20,6 +22,7 @@ const ALLOWED_ORIGINS = new Set([
   "http://127.0.0.1:5173",
   "http://127.0.0.1:3000",
   "descall://app",
+  "https://tauri.localhost",
 ]);
 
 function isLocalDevOrigin(origin) {

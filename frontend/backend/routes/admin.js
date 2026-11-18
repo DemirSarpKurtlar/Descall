@@ -101,6 +101,8 @@ router.use(require("./adminLivePopup"));
 router.use(require("./adminSecurity"));
 // Sistem (section system, Draft A "Kontrol merkezi"): health, flag rollout, kill switches, safe restart.
 router.use(require("./adminSystem"));
+// Masaüstü geçişi (Electron -> Tauri rollout console); section "system" (unlisted path).
+router.use(require("./adminDesktopMigration"));
 // Duyurular (section announcements): board, list + inspector, composer, templates, languages, approvals.
 router.use(require("./adminAnnouncements"));
 // Descall+ / Descall Ultra (docs/premium/CONTRACT.md), section "premium".
