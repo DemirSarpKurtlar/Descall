@@ -354,6 +354,7 @@ async function emitFriendState(io, userId, { requests = true } = {}) {
   await ensureCosmeticsCached([...(friends.get(userId) || [])]).catch(() => {});
   io.to(`user:${userId}`).emit("friend:list", getFriendList(userId));
   if (requests) io.to(`user:${userId}`).emit("friend:requests", getPendingList(userId));
+  io.to(`user:${userId}`).emit("friend:outgoing", await listOutgoingRequests(userId));
 }
 
 async function buildSyncState(userId) {
@@ -384,6 +385,48 @@ function emitSyncState(io, userId, socket = null) {
       else emitToUser(io, userId, "sync:state", state);
     })
     .catch((error) => console.warn("[DM] Sync state build failed:", error?.message || error));
+}
+
+/**
+ * Requests I sent that are still waiting (polish world-social-10): the list behind
+ * "Gönderilen" with its "Geri çek" button. Newest first.
+ */
+async function listOutgoingRequests(userId) {
+  if (!userId) return [];
+  try {
+    const { data: rows, error } = await supabase
+      .from("friendships")
+      .select("friend_id, created_at")
+      .eq("user_id", userId)
+      .eq("status", "pending");
+    if (error || !Array.isArray(rows) || rows.length === 0) return [];
+    const ids = rows.map((r) => r.friend_id).filter(Boolean);
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, username, display_name, avatar_url")
+      .in("id", ids);
+    const byId = new Map((users || []).map((u) => [u.id, u]));
+    return rows
+      .map((r) => {
+        const u = byId.get(r.friend_id);
+        if (!u) return null;
+        return {
+          id: u.id,
+          username: u.username,
+          displayName: u.display_name || null,
+          avatarUrl: u.avatar_url || null,
+          requestedAt: r.created_at || null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => String(b.requestedAt || "").localeCompare(String(a.requestedAt || "")));
+  } catch {
+    return [];
+  }
+}
+
+async function emitOutgoingRequests(io, userId) {
+  emitToUser(io, userId, "friend:outgoing", await listOutgoingRequests(userId));
 }
 
 async function findUserByUsername(username) {
@@ -857,6 +900,7 @@ function registerSocketHandlers(io) {
       ]);
       socket.emit("friend:list", getFriendList(myId));
       socket.emit("friend:requests", getPendingList(myId));
+      socket.emit("friend:outgoing", await listOutgoingRequests(myId));
       socket.emit("dm:requests", await listMessageRequests(supabase, myId));
     });
 
@@ -958,6 +1002,7 @@ function registerSocketHandlers(io) {
           console.warn("[Friends] request push skipped:", pushErr?.message || pushErr);
         }
         socket.emit("friend:request:sent", { to: target.username });
+        void emitOutgoingRequests(io, myId);
       } catch (e) {
         console.error("[Friends] request error:", e);
         socket.emit("friend:error", { message: "Could not send request." });
@@ -1043,8 +1088,36 @@ function registerSocketHandlers(io) {
       emitToUser(io, fromUserId, "friend:requests", getPendingList(fromUserId));
       emitSyncState(io, fromUserId);
       
+      void emitOutgoingRequests(io, fromUserId);
       console.log("[Friends] Request accepted:", { fromUserId, by: myId });
     }
+
+    // Take back a request I sent (polish world-social-10).
+    socket.on("friend:cancel", async (payload = {}) => {
+      const toUserId = String(payload?.toUserId || payload?.userId || "").trim();
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(toUserId)) {
+        socket.emit("friend:error", { message: "Invalid user ID" });
+        return;
+      }
+      const { error } = await supabase
+        .from("friendships")
+        .delete()
+        .eq("user_id", myId)
+        .eq("friend_id", toUserId)
+        .eq("status", "pending");
+      if (error) {
+        socket.emit("friend:error", { message: "Could not cancel the request." });
+        await emitOutgoingRequests(io, myId);
+        return;
+      }
+      const theirPending = pendingRequests.get(toUserId);
+      if (theirPending?.has(myId)) {
+        theirPending.delete(myId);
+        if (theirPending.size === 0) pendingRequests.delete(toUserId);
+      }
+      emitToUser(io, toUserId, "friend:requests", getPendingList(toUserId));
+      await emitOutgoingRequests(io, myId);
+    });
 
     socket.on("friend:decline", async (payload = {}) => {
       const fromUserId = String(payload?.fromUserId || payload?.userId || "").trim();
@@ -1077,6 +1150,7 @@ function registerSocketHandlers(io) {
         
         // Update friend list for the sender to remove pending status
         io.to(`user:${fromUserId}`).emit("friend:list", getFriendList(fromUserId));
+        void emitOutgoingRequests(io, fromUserId);
         
         emitToUser(io, myId, "friend:requests", getPendingList(myId));
         emitToUser(io, myId, "friend:list", getFriendList(myId));

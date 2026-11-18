@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Ban,
   Check,
+  ChevronRight,
   Download,
   Eye,
   Globe,
@@ -290,18 +291,23 @@ export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftA
         <>
           <div className="sc-lab">{t("secCenter.locks.fromSystem")}</div>
           {[
-            settings.chatFrozen ? { key: "chat", name: "chatFrozen", sub: "chatFrozenSub", Icon: MessageCircle } : null,
+            settings.chatFrozen ? { key: "chat", name: "sysChatFrozen", sub: "chatFrozenSub", Icon: MessageCircle } : null,
             settings.registrationEnabled === false ? { key: "reg", name: "regOff", sub: "regOffSub", Icon: Users } : null,
           ].filter(Boolean).map((row) => (
             <div key={row.key} className="sc-lm is-act" data-testid={`sc-sys-${row.key}`}>
               <span className="sc-ic is-amber" aria-hidden="true"><row.Icon size={16} /></span>
-              <div className="sc-lm-txt is-static">
-                <b>{t(`secCenter.locks.${row.name}`)}</b>
-                <small>{t(`secCenter.locks.${row.sub}`)}</small>
-              </div>
               {onOpenSystem ? (
-                <button type="button" className="sc-x" onClick={onOpenSystem}>{t("secCenter.locks.openSystem")}</button>
-              ) : null}
+                <button type="button" className="sc-lm-txt" onClick={onOpenSystem} title={t("secCenter.locks.openSystem")} aria-label={`${t(`secCenter.locks.${row.name}`)} · ${t("secCenter.locks.openSystem")}`}>
+                  <b>{t(`secCenter.locks.${row.name}`)}</b>
+                  <small>{t(`secCenter.locks.${row.sub}`)}</small>
+                </button>
+              ) : (
+                <div className="sc-lm-txt is-static">
+                  <b>{t(`secCenter.locks.${row.name}`)}</b>
+                  <small>{t(`secCenter.locks.${row.sub}`)}</small>
+                </div>
+              )}
+              {onOpenSystem ? <ChevronRight size={14} aria-hidden="true" className="sc-lm-go" /> : null}
             </div>
           ))}
         </>

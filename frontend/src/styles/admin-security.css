@@ -171,6 +171,7 @@ button.sc-spike:hover { text-decoration: underline; }
 .sc-lm-txt small { display: block; font-size: var(--fs-11); color: var(--sc-t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-lm.is-act .sc-lm-txt small { color: #ffc773; }
 button.sc-lm-txt:hover b { text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.3); }
+.sc-lm-go { flex: none; color: #ffc773; opacity: 0.8; }
 .sc-lab { font-weight: 700; font-size: var(--fs-11); letter-spacing: 0.07em; text-transform: uppercase; color: rgba(235, 238, 255, 0.45); margin-bottom: 6px; }
 .sc-locks .sc-lab { margin: 12px 0 6px; }
 .sc-lab-ic { display: flex; align-items: center; gap: 6px; }

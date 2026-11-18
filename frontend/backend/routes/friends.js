@@ -131,6 +131,8 @@ router.post("/request", requireAuth, async (req, res) => {
       });
       // Full pending list too, a device that missed the event still converges.
       await emitFriendState(io, targetUser.id);
+      // The sender's "Gönderilen" list (polish world-social-10).
+      await emitFriendState(io, userId, { requests: false });
     }
     try {
       // Only the first request of a pair in 24 h reaches the target's devices.
