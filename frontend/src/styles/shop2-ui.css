@@ -6716,9 +6716,6 @@ html:is(.app-idle, .app-backgrounded) .s2-clock-d {
 .s2-friend-t {
   align-items: flex-start;
 }
-.s2-friend-bday {
-  margin-top: 3px;
-}
 .s2-art.is-card {
   max-height: 176px;
 }
