@@ -157,7 +157,8 @@ export default function VoiceMemberContextMenu({
       {typeof voiceMuteHandler === "function" && (
         <button type="button" role="menuitem" className="server-dropdown-item" onClick={voiceMuteHandler}>
           {voiceLevel <= 0 ? <Mic size={14} /> : <MicOff size={14} />}
-          {voiceLevel <= 0 ? t("Unmute") : t("Mute")}
+          {/* Local mute of this person's audio, not your microphone (ru / fr / es "Mute" means the mic). */}
+          {voiceLevel <= 0 ? t("lx.unmuteAudio") : t("lx.muteAudio")}
         </button>
       )}
       {showScreenSlider && typeof onScreenVolume === "function" && (

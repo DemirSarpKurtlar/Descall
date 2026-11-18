@@ -13,6 +13,7 @@ const sidebar = read("../components/layout/ServerSidebar.jsx");
 assert.ok(!/dm\.muted \? t\("Unmute"\) : t\("Mute"\)/.test(sidebar), "chat mute uses the chat keys");
 assert.equal((sidebar.match(/dm\.muted \? t\("Unmute chat"\) : t\("Mute chat"\)/g) || []).length, 2, "swipe action and menu");
 assert.ok(read("../components/ui/GlassVolumeSlider.jsx").includes('t("lx.muteAudio")'));
+assert.ok(read("../components/servers/VoiceMemberContextMenu.jsx").includes('t("lx.muteAudio")'), "member menu mutes audio, not the mic");
 for (const l of ["ru", "fr", "es"]) {
   for (const k of ["Mute chat", "Unmute chat", "lx.muteAudio", "lx.unmuteAudio"]) {
     const v = translate(l, k);
