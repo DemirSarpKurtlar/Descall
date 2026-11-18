@@ -103,6 +103,8 @@ struct Gfx {
     device: ID3D11Device,
     ctx: ID3D11DeviceContext,
     swap: IDXGISwapChain1,
+    /// Kept alive as long as the swap chain: DXGI tracks its windows through the factory.
+    _factory: IDXGIFactory2,
     w: u32,
     h: u32,
     bar_tex: Option<ID3D11Texture2D>,
@@ -164,8 +166,9 @@ impl Gfx {
             Stereo: false.into(),
         };
         let swap = unsafe { factory.CreateSwapChainForHwnd(&device, hwnd, &desc, None, None)? };
-        let _ = unsafe { factory.MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER) };
-        let mut g = Gfx { device, ctx, swap, w: 0, h: 0, bar_tex: None, pattern_tex: None };
+        // No MakeWindowAssociation: it makes DXGI watch the window's messages through the
+        // factory, and the moved/resized follow window must not depend on that.
+        let mut g = Gfx { device, ctx, swap, _factory: factory, w: 0, h: 0, bar_tex: None, pattern_tex: None };
         g.sync_size(hwnd, content)?;
         Ok(g)
     }
