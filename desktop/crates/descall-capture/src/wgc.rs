@@ -12,7 +12,8 @@
 //!   callback (frames closer than 90 % of the period are dropped), switchable mid-share.
 //! - HDR: the pool is created in R16G16B16A16Float (scRGB) and hdr.rs tone-maps.
 
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use windows::core::{factory, IInspectable, HSTRING};
@@ -71,7 +72,29 @@ pub struct WgcSession {
     pool: Direct3D11CaptureFramePool,
     closed: Arc<AtomicBool>,
     interval_100ns: Arc<AtomicI64>,
+    /// Set before Close: callbacks that start after it return at once.
+    stopping: Arc<AtomicBool>,
+    /// Callbacks currently running (FrameArrived and Closed).
+    inflight: Arc<AtomicUsize>,
+    stopped: bool,
     _item: GraphicsCaptureItem,
+}
+
+/// Counts a running callback; the session teardown waits for the count to reach zero so
+/// nothing the callbacks capture (ring memory, converter, sink) is used after stop().
+struct InFlight(Arc<AtomicUsize>);
+
+impl InFlight {
+    fn enter(c: &Arc<AtomicUsize>) -> InFlight {
+        c.fetch_add(1, Ordering::AcqRel);
+        InFlight(c.clone())
+    }
+}
+
+impl Drop for InFlight {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
 }
 
 impl WgcSession {
@@ -91,9 +114,30 @@ impl WgcSession {
         }
     }
 
-    pub fn stop(self) {
+    /// Close the session and the pool, then wait (up to 2 s) until no callback is running.
+    /// Must not be called from inside `on_frame` (it would wait for itself).
+    pub fn stop(mut self) {
+        self.shutdown();
+    }
+
+    fn shutdown(&mut self) {
+        if self.stopped {
+            return;
+        }
+        self.stopped = true;
+        self.stopping.store(true, Ordering::Release);
         let _ = self.session.Close();
         let _ = self.pool.Close();
+        let t0 = std::time::Instant::now();
+        while self.inflight.load(Ordering::Acquire) > 0 && t0.elapsed() < std::time::Duration::from_secs(2) {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+    }
+}
+
+impl Drop for WgcSession {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -169,12 +213,18 @@ where
     }
 
     let closed = Arc::new(AtomicBool::new(false));
+    let stopping = Arc::new(AtomicBool::new(false));
+    let inflight = Arc::new(AtomicUsize::new(0));
     {
-        let closed = closed.clone();
+        let (closed, stopping, inflight) = (closed.clone(), stopping.clone(), inflight.clone());
         item.Closed(&TypedEventHandler::<GraphicsCaptureItem, IInspectable>::new(move |_, _| {
-            if !closed.swap(true, Ordering::AcqRel) {
-                on_closed();
-            }
+            let _guard = InFlight::enter(&inflight);
+            // A panic must never unwind into the OS (that aborts the process).
+            let _ = catch_unwind(AssertUnwindSafe(|| {
+                if !closed.swap(true, Ordering::AcqRel) && !stopping.load(Ordering::Acquire) {
+                    on_closed();
+                }
+            }));
             Ok(())
         }))?;
     }
@@ -189,9 +239,10 @@ where
     let state = Mutex::new(State { pool_size: size, last_ts: i64::MIN, on_frame });
     let interval_cb = interval.clone();
     let hdr = opts.hdr;
-    pool.FrameArrived(&TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new(move |sender, _| {
+    let (stopping_cb, inflight_cb) = (stopping.clone(), inflight.clone());
+    let on_arrived = move |sender: Option<&Direct3D11CaptureFramePool>| -> windows::core::Result<()> {
         let arrival = crate::clock::now_100ns();
-        let Some(pool) = sender.as_ref() else { return Ok(()) };
+        let Some(pool) = sender else { return Ok(()) };
         let Ok(mut st) = state.lock() else { return Ok(()) };
         let st = &mut *st;
         let Ok(frame) = pool.TryGetNextFrame() else { return Ok(()) };
@@ -226,8 +277,22 @@ where
         }
         let _ = frame.Close();
         Ok(())
+    };
+    pool.FrameArrived(&TypedEventHandler::<Direct3D11CaptureFramePool, IInspectable>::new(move |sender, _| {
+        let _guard = InFlight::enter(&inflight_cb);
+        if stopping_cb.load(Ordering::Acquire) {
+            return Ok(());
+        }
+        match catch_unwind(AssertUnwindSafe(|| on_arrived(sender.as_ref()))) {
+            Ok(r) => r,
+            Err(_) => {
+                log::error!("capture frame callback panicked; frame dropped");
+                Ok(())
+            }
+        }
     }))?;
 
-    session.StartCapture()?;
-    Ok(WgcSession { session, pool, closed, interval_100ns: interval, _item: item })
+    let s = WgcSession { session, pool, closed, interval_100ns: interval, stopping, inflight, stopped: false, _item: item };
+    s.session.StartCapture()?;
+    Ok(s)
 }
