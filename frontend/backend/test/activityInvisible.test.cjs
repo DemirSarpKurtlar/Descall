@@ -27,7 +27,17 @@ const got = [];
 const friendSock = { id: "sf", user: { id: F }, emit: (ev, p) => got.push([ev, p]), on() {} };
 const handlers = {};
 const mySock = { id: "sx", user: { id: X, username: "x" }, emit() {}, on: (ev, fn) => { handlers[ev] = fn; } };
-const io = { sockets: { sockets: new Map([["sf", friendSock], ["sx", mySock]]) } };
+// Broadcasts go to friends' user rooms: io.to(["user:<id>", ...]).emit(...).
+const roomMembers = { [`user:${F}`]: [friendSock], [`user:${X}`]: [mySock] };
+const io = {
+  sockets: { sockets: new Map([["sf", friendSock], ["sx", mySock]]) },
+  to: (rooms) => ({
+    emit: (ev, p) => {
+      const seen = new Set();
+      for (const r of [].concat(rooms)) for (const s of roomMembers[r] || []) if (!seen.has(s)) { seen.add(s); s.emit(ev, p); }
+    },
+  }),
+};
 const tick = () => new Promise((r) => setTimeout(r, 30));
 
 (async () => {

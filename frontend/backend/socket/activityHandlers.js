@@ -50,28 +50,23 @@ function isInvisible(userId) {
 /**
  * Broadcast presence update to all online friends who are allowed to see it.
  */
+// Friends' user rooms (every device joins `user:<id>`), not a walk over every socket
+// on the server for each update (polish world-social-09).
+function friendRooms(friendIds) {
+  return [...(friendIds || [])].filter(Boolean).map((id) => `user:${id}`);
+}
+
 function broadcastPresenceToFriends(io, userId, username, presencePayload, friendIds, privacy) {
   if (privacy === 'hidden' || privacy === 'only-me') return;
-
-  const sockets = io.sockets.sockets;
-  let sent = 0;
-  for (const [, sock] of sockets) {
-    if (!sock.user) continue;
-    const friendId = sock.user.id;
-    if (!friendIds.has(friendId)) continue;
-    sock.emit('activity:friend:update', { userId, username, ...presencePayload });
-    sent++;
-  }
-  console.log(`[activity:broadcast] ${username} -> sent to ${sent}/${friendIds.size} friend socket(s)`);
+  const rooms = friendRooms(friendIds);
+  if (!rooms.length) return;
+  io.to(rooms).emit('activity:friend:update', { userId, username, ...presencePayload });
 }
 
 function broadcastPresenceClear(io, userId, friendIds) {
-  const sockets = io.sockets.sockets;
-  for (const [, sock] of sockets) {
-    if (!sock.user) continue;
-    if (!friendIds.has(sock.user.id)) continue;
-    sock.emit('activity:friend:clear', { userId });
-  }
+  const rooms = friendRooms(friendIds);
+  if (!rooms.length) return;
+  io.to(rooms).emit('activity:friend:clear', { userId });
 }
 
 function registerActivityHandlers(io, socket) {
