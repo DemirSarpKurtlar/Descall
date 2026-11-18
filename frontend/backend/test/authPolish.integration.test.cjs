@@ -215,6 +215,21 @@ async function run() {
     r = await req(base, "POST", `/api/auth/sessions/${gilLogin2.body.sessionId}/revoke`, { token: gil.token });
     assert(r.status === 200 && revokedSessionIds.has(gilLogin2.body.sessionId), "own other session ends");
 
+    // auth-22: a new e-mail sign-in code without starting over, once a minute.
+    const hal = await register(base, "hal", "hal@example.com");
+    await req(base, "POST", "/api/auth/2fa/enable", { token: hal.token });
+    login = await req(base, "POST", "/api/auth/login", { body: { username: "hal", password: "password123" } });
+    r = await req(base, "POST", "/api/auth/2fa/resend", { body: { pendingToken: login.body.pendingToken } });
+    assert(r.status === 429 && r.body.code === "cooldown", "resend waits a minute after the first code: " + JSON.stringify(r.body));
+    fakeSupabase._tables.users.rows.find((u) => u.username === "hal").reauthentication_sent_at = new Date(Date.now() - 120000).toISOString();
+    const halMails = mailsTo("hal@example.com").length;
+    r = await req(base, "POST", "/api/auth/2fa/resend", { body: { pendingToken: login.body.pendingToken } });
+    assert(r.status === 200 && mailsTo("hal@example.com").length === halMails + 1, "resend sends a new code: " + JSON.stringify(r.body));
+    r = await req(base, "POST", "/api/auth/2fa/verify-login", { body: { pendingToken: login.body.pendingToken, code: lastCode("hal@example.com") } });
+    assert(r.status === 200 && r.body.token, "the resent code signs in");
+    r = await req(base, "POST", "/api/auth/2fa/resend", { body: { pendingToken: hal.token } });
+    assert(r.status === 401, "a session token is not a pending sign-in");
+
     console.log("authPolish.integration.test.cjs: ok");
   } finally {
     server.close();
