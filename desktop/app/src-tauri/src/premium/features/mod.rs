@@ -56,7 +56,7 @@ pub(crate) fn all() -> Vec<Arc<dyn Feature>> {
         Arc::new(gaming_hud::feature()),
         Arc::new(global_mute::F),
         Arc::new(global_ptt::F::default()),
-        Arc::new(instant_clip::F),
+        Arc::new(instant_clip::F::default()),
         Arc::new(media_keys::F::default()),
         Arc::new(multi_account::F::default()),
         Arc::new(multi_window::F),

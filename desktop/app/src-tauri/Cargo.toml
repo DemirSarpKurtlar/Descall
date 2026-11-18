@@ -60,5 +60,8 @@ windows = { workspace = true, features = [
   "Foundation_Collections",
   "UI_Notifications",
   "Win32_UI_Notifications",
+  "Win32_Media_MediaFoundation",
+  "Win32_System_Variant",
+  "Win32_Graphics_Dxgi_Common",
 ] }
 windows-core.workspace = true

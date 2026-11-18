@@ -317,6 +317,12 @@ pub fn reply_target(data: &Value) -> Option<String> {
     None
 }
 
+/// instant_clip H.264 bitrate for the clip height (the renderer recorder's bitrateFor table).
+pub fn clip_bitrate(height: u32, fps: u32) -> u32 {
+    let base: u32 = if height >= 1080 { 10_000_000 } else if height >= 720 { 4_000_000 } else { 2_000_000 };
+    if fps > 30 { base / 10 * 16 } else { base }
+}
+
 /// Toast activation arguments: the toast id and the conversation, so a reply that starts
 /// Descall (cold start, COM activator) still knows where it goes.
 pub fn toast_args(id: &str, conv: &str) -> String {
@@ -468,6 +474,9 @@ mod tests {
         assert_eq!(reply_target(&json!({"type": "mention", "dmConversationId": "c9"})).as_deref(), Some("dm:c9"));
         assert_eq!(reply_target(&json!({"type": "mention"})), None);
         assert_eq!(reply_target(&json!({"type": "call", "fromId": "u1"})), None);
+        assert_eq!(clip_bitrate(720, 30), 4_000_000);
+        assert_eq!(clip_bitrate(1080, 60), 16_000_000);
+        assert_eq!(clip_bitrate(480, 30), 2_000_000);
         let a = toast_args("descall-qr-1-2", "dm:u1");
         assert_eq!(parse_toast_args(&a), Some(("descall-qr-1-2".into(), "dm:u1".into())));
         assert_eq!(parse_toast_args(&format!("{a}|reply")), Some(("descall-qr-1-2".into(), "dm:u1".into())));

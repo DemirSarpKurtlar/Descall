@@ -326,9 +326,8 @@ impl ClipRing {
 
     fn prune(&mut self) {
         let end = self.end_ms();
-        loop {
-            // Never drop the last sync point.
-            let Some(next_sync) = self.frags.iter().skip(1).position(|f| f.sync).map(|i| i + 1) else { break };
+        // Never drop the last sync point.
+        while let Some(next_sync) = self.frags.iter().skip(1).position(|f| f.sync).map(|i| i + 1) {
             let too_old = end - self.frags[next_sync].start_ms > self.window_ms;
             let too_big = self.bytes > self.max_bytes;
             let lead_junk = !self.frags[0].sync;
@@ -393,7 +392,7 @@ impl Snapshot {
         }
         let base = self.base_ms();
         let (from, to) = (base + from_ms.max(0.0), base + to_ms.max(from_ms));
-        let start = (first..self.frags.len()).filter(|&i| self.frags[i].sync && self.frags[i].start_ms <= from + 0.5).last().unwrap_or(first);
+        let start = (first..self.frags.len()).rev().find(|&i| self.frags[i].sync && self.frags[i].start_ms <= from + 0.5).unwrap_or(first);
         let cut_ms = self.frags[start].start_ms;
         let mut out = self.init.clone();
         let mut seq = 1u32;

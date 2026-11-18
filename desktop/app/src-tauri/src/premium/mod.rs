@@ -19,6 +19,7 @@
 #[allow(dead_code)]
 pub mod logic;
 
+mod clip;
 mod features;
 mod hotkeys;
 mod overlay;
