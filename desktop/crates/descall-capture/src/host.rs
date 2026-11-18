@@ -33,7 +33,8 @@ pub trait HostSink: Send + Sync + 'static {
     /// Wake the page: `kind` is 'v' (video) or 'a' (audio).
     fn wake(&self, id: u32, kind: char, seq: u64);
     /// The share ended (`stopped`, `replaced`, `source-closed`, `failed`). The ring is
-    /// already detached when this runs, so the shell may close the shared buffer.
+    /// already detached when this runs (no further writes or wakes), so the shell may close
+    /// the shared buffer; the capture threads finish stopping right after.
     fn ended(&self, id: u32, reason: &str);
 }
 
@@ -101,8 +102,12 @@ fn stop_slot(slot: &Slot, only_id: Option<u32>, reason: &str) -> bool {
     };
     match taken {
         Some(a) => {
-            a.share.stop();
+            // Tell the page right away (the ring is detached, so the shell may close the
+            // buffer), then wind the capture down; closing WGC and joining the loopback
+            // thread can take a moment and must not delay "source-closed".
+            a.share.detach_ring();
             a.sink.ended(a.id, reason);
+            a.share.stop();
             true
         }
         None => false,

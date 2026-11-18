@@ -51,14 +51,20 @@ impl Share {
     /// Detach the ring first (no write may land in a closed shared buffer), then stop the
     /// capture threads. Never call while holding the ring lock.
     pub fn stop(mut self) {
-        if let Ok(mut r) = self.ring.lock() {
-            r.detach();
-        }
+        self.detach_ring();
         if let Some(v) = self.video.take() {
             v.stop();
         }
         if let Some(a) = self.audio.take() {
             a.stop();
+        }
+    }
+
+    /// Stop writing to the shared buffer (waits for a write in progress). After this the
+    /// shell may close the buffer, even while the capture threads are still winding down.
+    pub fn detach_ring(&self) {
+        if let Ok(mut r) = self.ring.lock() {
+            r.detach();
         }
     }
 
