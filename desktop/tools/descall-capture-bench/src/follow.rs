@@ -10,7 +10,7 @@ use serde_json::json;
 use crate::env::Env;
 use crate::harness::{sleep_ms, wait_until, Harness};
 use crate::presenter::{Content, Opts, Presenter};
-use crate::report::{Status, TestResult};
+use crate::report::TestResult;
 
 /// "Frames keep coming": at least this many in a one-second window (the share runs at
 /// 30 fps, the test window presents every vsync).
@@ -41,17 +41,17 @@ pub fn run(env: &Env) -> Vec<TestResult> {
     let (x0, y0) = (mon.left + 80, mon.top + 80);
     let p = match Presenter::spawn(Opts { x: x0, y: y0, width: 960, height: 540, popup: false, topmost: false, title: "DescallCaptureBench follow".into(), content: Content::Video }) {
         Ok(p) => p,
-        Err(e) => return vec![TestResult::new(IDS[0].0, IDS[0].1, Status::Fail).note(format!("test window: {e}"))],
+        Err(e) => return vec![TestResult::cannot_run(IDS[0].0, IDS[0].1, env.software_gpu(), format!("test window: {e}"))],
     };
     sleep_ms(500);
     let req = StartRequest { source_id: format!("window:{}:0", p.hwnd()), preset: Some("high".into()), cursor: Some(true), ..Default::default() };
     let h = match Harness::start(&req, false) {
         Ok(h) => h,
-        Err(e) => return vec![TestResult::new(IDS[0].0, IDS[0].1, Status::Fail).note(format!("share failed to start: {e}"))],
+        Err(e) => return vec![TestResult::cannot_run(IDS[0].0, IDS[0].1, env.software_gpu(), format!("share failed to start: {e}"))],
     };
     let mut out = Vec::new();
     if !wait_until(Duration::from_secs(3), || h.sink.frames() > 5) {
-        out.push(TestResult::new(IDS[0].0, IDS[0].1, Status::Fail).note("no frames from the window"));
+        out.push(TestResult::cannot_run(IDS[0].0, IDS[0].1, env.software_gpu(), "no frames from the window"));
         return out;
     }
     let dims0 = h.sink.dims();
@@ -105,7 +105,7 @@ pub fn run(env: &Env) -> Vec<TestResult> {
             out.push(TestResult::judged(IDS[3].0, IDS[3].1, n >= MIN_FRAMES_PER_SEC).measured(format!("{n} frames/s")).limit(format!(">= {MIN_FRAMES_PER_SEC}")));
             c.close();
         }
-        Err(e) => out.push(TestResult::new(IDS[3].0, IDS[3].1, Status::Fail).note(format!("cover window: {e}"))),
+        Err(e) => out.push(TestResult::cannot_run(IDS[3].0, IDS[3].1, env.software_gpu(), format!("cover window: {e}"))),
     }
 
     // 5. Cursor toggle.

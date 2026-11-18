@@ -37,7 +37,7 @@ pub fn run(env: &Env, preset_id: &str, label: &str, seconds: u64) -> Vec<TestRes
     let opts = Opts { x: mon.left + 40, y: mon.top + 40, width: q.width as i32, height: q.height as i32, popup: true, topmost: true, title: format!("DescallCaptureBench {label}"), content: Content::Video };
     let p = match Presenter::spawn(opts) {
         Ok(p) => p,
-        Err(e) => return vec![TestResult::new(&id("run"), &name("capture run"), Status::Fail).note(format!("test window: {e}"))],
+        Err(e) => return vec![TestResult::cannot_run(&id("run"), &name("capture run"), env.software_gpu(), format!("test window: {e}"))],
     };
     sleep_ms(1000);
 
@@ -49,7 +49,7 @@ pub fn run(env: &Env, preset_id: &str, label: &str, seconds: u64) -> Vec<TestRes
     let req = StartRequest { source_id: format!("window:{}:0", p.hwnd()), preset: Some(preset_id.into()), cursor: Some(false), audio: Some(false), ..Default::default() };
     let h = match Harness::start(&req, false) {
         Ok(h) => h,
-        Err(e) => return vec![TestResult::new(&id("run"), &name("capture run"), Status::Fail).note(format!("share failed to start: {e}"))],
+        Err(e) => return vec![TestResult::cannot_run(&id("run"), &name("capture run"), env.software_gpu(), format!("share failed to start: {e}"))],
     };
     sleep_ms(1000);
     h.sink.reset();
@@ -104,7 +104,7 @@ pub fn run(env: &Env, preset_id: &str, label: &str, seconds: u64) -> Vec<TestRes
         TestResult::new(&id("e2e"), &name("glass-to-ring p95 (info)"), Status::Info).measured(format!("{:.1} ms", e2e.p95)).limit("-"),
     ];
     if frames == 0 {
-        out[0] = TestResult::new(&id("latency"), &name("added latency p95"), Status::Fail).note("no frames captured").details(details);
+        out = vec![TestResult::cannot_run(&id("run"), &name("capture run"), soft, "no frames captured").details(details)];
     }
     out
 }

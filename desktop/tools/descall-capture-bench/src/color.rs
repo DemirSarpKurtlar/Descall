@@ -72,7 +72,7 @@ fn band_lumas(f: &VideoFrameCopy) -> Vec<u8> {
 fn pattern_test(id: &str, name: &str, mon: &Source, tol: u8, soft_gpu: bool) -> TestResult {
     let p = match Presenter::spawn(Opts { x: mon.left + 60, y: mon.top + 60, width: 960, height: 540, popup: true, topmost: true, title: "DescallCaptureBench colour".into(), content: Content::Pattern }) {
         Ok(p) => p,
-        Err(e) => return TestResult::new(id, name, Status::Fail).note(format!("test window: {e}")),
+        Err(e) => return TestResult::cannot_run(id, name, soft_gpu, format!("test window: {e}")),
     };
     sleep_ms(500);
     let req = StartRequest { source_id: format!("window:{}:0", p.hwnd()), preset: Some("high".into()), cursor: Some(false), ..Default::default() };
@@ -80,7 +80,7 @@ fn pattern_test(id: &str, name: &str, mon: &Source, tol: u8, soft_gpu: bool) -> 
     drop(p);
     let (f, hdr_capture) = match r {
         Ok(v) => v,
-        Err(e) => return TestResult::new(id, name, Status::Fail).note(e),
+        Err(e) => return TestResult::cannot_run(id, name, soft_gpu, e),
     };
     let got = band_lumas(&f);
     let want: Vec<u8> = BANDS.iter().map(|&v| expected(v, mon)).collect();
@@ -96,7 +96,7 @@ fn pattern_test(id: &str, name: &str, mon: &Source, tol: u8, soft_gpu: bool) -> 
 }
 
 /// 16-bin luma histogram of one full-monitor frame.
-fn histogram_test(mon: &Source) -> TestResult {
+fn histogram_test(mon: &Source, soft_gpu: bool) -> TestResult {
     let id = format!("hdr.histogram.{}", mon.id.format().replace(':', "_"));
     let name = format!("HDR histogram {} (info)", mon.name);
     let req = StartRequest { source_id: mon.id.format(), preset: Some("high".into()), cursor: Some(false), ..Default::default() };
@@ -119,7 +119,7 @@ fn histogram_test(mon: &Source) -> TestResult {
                 .limit("-")
                 .details(json!({ "bins16": bins, "meanY": mean, "clippedPct": 100.0 * clipped as f64 / n, "crushedPct": 100.0 * crushed as f64 / n, "size": [f.width, f.height] }))
         }
-        Err(e) => TestResult::new(&id, &name, Status::Fail).note(e),
+        Err(e) => TestResult::cannot_run(&id, &name, soft_gpu, e),
     }
 }
 
@@ -138,7 +138,7 @@ pub fn run(env: &Env) -> Vec<TestResult> {
     }
     for m in hdr {
         out.push(pattern_test(&format!("hdr.sdr_content.{}", m.id.format().replace(':', "_")), &format!("HDR {}: SDR content not washed out", m.name), m, TOL_HDR, env.software_gpu()));
-        out.push(histogram_test(m));
+        out.push(histogram_test(m, env.software_gpu()));
     }
     out
 }

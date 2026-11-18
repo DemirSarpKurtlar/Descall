@@ -39,6 +39,7 @@ pub const TONE_AMP: f32 = 0.5;
 pub const ECHO_LIMIT_DBFS: f64 = -60.0;
 pub const CONTROL_MIN_DBFS: f64 = -30.0;
 pub const OTHER_MIN_DBFS: f64 = -40.0;
+pub const NO_AUDIO: &str = "skipped (no audio device)";
 
 /// Play a sine on the default output device until `stop` or `dur` (shared-mode WASAPI).
 pub fn play_tone(freq: f32, amp: f32, dur: Duration, stop: Arc<AtomicBool>) -> Result<(), String> {
@@ -174,7 +175,7 @@ pub fn run(env: &Env) -> Vec<TestResult> {
     const OTHER: (&str, &str) = ("echo.other_app", "Other app audio is captured");
     const CONTROL: (&str, &str) = ("echo.control", "Echo control: tones reached mixer");
     if !env.audio_device {
-        let r = "skipped (no audio output device)";
+        let r = NO_AUDIO;
         return [OWN, CHILD, OTHER, CONTROL].iter().map(|(i, n)| TestResult::skip(i, n, r)).collect();
     }
     if !env.caps.process_loopback {
@@ -250,12 +251,16 @@ pub fn run(env: &Env) -> Vec<TestResult> {
 }
 
 /// INFO row: the runtime echo guard (audio sessions vs our process tree).
-pub fn guard() -> TestResult {
+pub fn guard(env: &Env) -> TestResult {
+    if !env.audio_device {
+        return TestResult::skip("echo.guard", "Echo guard audit (info)", NO_AUDIO);
+    }
     match descall_capture::echo_guard::audit() {
         Ok(a) => TestResult::new("echo.guard", "Echo guard audit (info)", if a.safe() { Status::Info } else { Status::Fail })
             .measured(format!("{} sessions, tree {}", a.sessions.len(), a.tree_size))
             .limit("no escaped WebView2")
             .details(serde_json::to_value(&a).unwrap_or_default()),
+        Err(descall_capture::CaptureError::NoAudioDevice) => TestResult::skip("echo.guard", "Echo guard audit (info)", NO_AUDIO),
         Err(e) => TestResult::skip("echo.guard", "Echo guard audit (info)", &format!("skipped ({e})")),
     }
 }

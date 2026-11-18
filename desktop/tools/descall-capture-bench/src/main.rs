@@ -113,6 +113,7 @@ fn run(_args: Args, _argv: Vec<String>) -> i32 {
 fn run(args: Args, argv: Vec<String>) -> i32 {
     use report::{Status, TestResult};
 
+    report::install_panic_hook();
     if let Some(t) = &args.play_tone {
         return echo::child_main(t);
     }
@@ -143,30 +144,44 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
     }
     println!("Do not touch the mouse or keyboard while the test windows are on screen.\n");
 
+    let path = args.out.clone().unwrap_or_else(default_report_path);
+    let machine = env.json();
     let mut results: Vec<TestResult> = Vec::new();
-    let step = |name: &str| println!("- {name}...");
+    // One group at a time: print its rows at once and rewrite the JSON report after it, so a
+    // crash in a later group still leaves every earlier result on screen and on disk.
+    let group = |label: &str, id: &str, run: &dyn Fn() -> Vec<TestResult>, results: &mut Vec<TestResult>| {
+        println!("- {label}...");
+        report::set_current(id);
+        let rows = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(run)) {
+            Ok(rows) => rows,
+            // Only reachable in an unwinding build (CI); the release exe aborts after the hook.
+            Err(p) => vec![TestResult::new(&format!("{id}.panic"), &format!("{label}: bench panicked"), Status::Fail).note(report::panic_text(&*p))],
+        };
+        for r in &rows {
+            println!("    {:<4} {}  {}{}", r.status.label(), r.name, r.measured, if r.note.is_empty() { String::new() } else { format!("  ({})", r.note) });
+        }
+        results.extend(rows);
+        write_report(&path, &machine, results, &argv, false);
+    };
     if args.wants("echo") {
-        step("Echo test (3 tones, 4 s)");
-        results.extend(echo::run(&env));
-        results.push(echo::guard());
+        group("Echo test (3 tones, 4 s)", "echo", &|| {
+            let mut v = echo::run(&env);
+            v.push(echo::guard(&env));
+            v
+        }, &mut results);
     }
     if args.wants("picker") {
-        step("Picker sources and live thumbnails");
-        results.push(picker(&env));
+        group("Picker sources and live thumbnails", "picker", &|| vec![picker(&env)], &mut results);
     }
     if args.wants("video") {
-        step(&format!("1080p60 run ({} s)", args.seconds));
-        results.extend(video::run(&env, "hfr1080", "1080p60", args.seconds));
-        step(&format!("1440p60 run ({} s)", args.seconds));
-        results.extend(video::run(&env, "hfr1440", "1440p60", args.seconds));
+        group(&format!("1080p60 run ({} s)", args.seconds), "video.1080p60", &|| video::run(&env, "hfr1080", "1080p60", args.seconds), &mut results);
+        group(&format!("1440p60 run ({} s)", args.seconds), "video.1440p60", &|| video::run(&env, "hfr1440", "1440p60", args.seconds), &mut results);
     }
     if args.wants("follow") {
-        step("Window follow");
-        results.extend(follow::run(&env));
+        group("Window follow", "follow", &|| follow::run(&env), &mut results);
     }
     if args.wants("color") {
-        step("Colour and HDR");
-        results.extend(color::run(&env));
+        group("Colour and HDR", "color", &|| color::run(&env), &mut results);
     }
     if results.is_empty() {
         results.push(TestResult::new("none", "No test selected", Status::Skip));
@@ -174,12 +189,7 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
 
     println!();
     print!("{}", report::table(&results));
-    let doc = report::document(env.json(), &results, &argv);
-    let path = args.out.clone().unwrap_or_else(default_report_path);
-    match std::fs::write(&path, serde_json::to_string_pretty(&doc).unwrap_or_default()) {
-        Ok(()) => println!("JSON report: {path}"),
-        Err(e) => eprintln!("could not write {path}: {e}"),
-    }
+    write_report(&path, &machine, &results, &argv, true);
     let code = report::exit_code(&results);
     if !args.ci {
         println!("\nPress Enter to close.");
@@ -187,6 +197,16 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
         let _ = std::io::stdin().read_line(&mut s);
     }
     code
+}
+
+#[cfg(windows)]
+fn write_report(path: &str, machine: &serde_json::Value, results: &[report::TestResult], argv: &[String], last: bool) {
+    let doc = report::document(machine.clone(), results, argv);
+    match std::fs::write(path, serde_json::to_string_pretty(&doc).unwrap_or_default()) {
+        Ok(()) if last => println!("JSON report: {path}"),
+        Ok(()) => {}
+        Err(e) => eprintln!("could not write {path}: {e}"),
+    }
 }
 
 #[cfg(windows)]

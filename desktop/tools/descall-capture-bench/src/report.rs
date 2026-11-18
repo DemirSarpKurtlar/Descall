@@ -65,6 +65,17 @@ impl TestResult {
         self
     }
 
+    /// The case could not run. On a software GPU (hosted CI, RDP, no driver) that is an
+    /// environment limit: SKIP with the reason. On real hardware it is a FAIL.
+    pub fn cannot_run(id: &str, name: &str, software_gpu: bool, why: impl Into<String>) -> Self {
+        let why = why.into();
+        if software_gpu {
+            Self::skip(id, name, &format!("skipped (software GPU: {why})"))
+        } else {
+            Self::new(id, name, Status::Fail).note(why)
+        }
+    }
+
     /// PASS when `ok`, FAIL otherwise.
     pub fn judged(id: &str, name: &str, ok: bool) -> Self {
         Self::new(id, name, if ok { Status::Pass } else { Status::Fail })
@@ -148,6 +159,39 @@ pub fn iso8601(secs: u64) -> String {
     format!("{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}Z", rem / 3600, (rem / 60) % 60, rem % 60)
 }
 
+static CURRENT: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+/// Which test group is running (shown by the panic hook).
+pub fn set_current(id: &str) {
+    if let Ok(mut c) = CURRENT.lock() {
+        *c = id.to_string();
+    }
+}
+
+/// Text of a panic payload.
+pub fn panic_text(p: &(dyn std::any::Any + Send)) -> String {
+    p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "non-string panic payload".into())
+}
+
+/// Print every panic (message, location, thread, running group, backtrace) to stderr AND
+/// stdout and flush both: the release exe aborts right after the hook, and CI captures
+/// stdout more reliably than stderr.
+pub fn install_panic_hook() {
+    use std::io::Write;
+    std::panic::set_hook(Box::new(|info| {
+        let msg = info.payload().downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| info.payload().downcast_ref::<String>().cloned()).unwrap_or_else(|| "non-string panic payload".into());
+        let loc = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_else(|| "unknown location".into());
+        let thread = std::thread::current().name().unwrap_or("unnamed").to_string();
+        let group = CURRENT.try_lock().map(|c| c.clone()).unwrap_or_default();
+        let bt = std::backtrace::Backtrace::force_capture();
+        let text = format!("\nPANIC in test group '{group}' on thread '{thread}': {msg}\n  at {loc}\nbacktrace:\n{bt}\n");
+        let _ = std::io::stderr().write_all(text.as_bytes());
+        let _ = std::io::stderr().flush();
+        let _ = std::io::stdout().write_all(text.as_bytes());
+        let _ = std::io::stdout().flush();
+    }));
+}
+
 pub fn now_iso() -> String {
     iso8601(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0))
 }
@@ -193,6 +237,26 @@ mod tests {
         let widths: Vec<usize> = t.lines().filter(|l| l.starts_with('|') || l.starts_with('+')).map(|l| l.chars().count()).collect();
         assert!(widths.windows(2).all(|w| w[0] == w[1]), "ragged table");
         assert!(table(&[TestResult::judged("x", &"y".repeat(80), false)]).contains("..."));
+    }
+
+    #[test]
+    fn cannot_run_skips_only_on_software_gpu() {
+        let r = TestResult::cannot_run("a", "A", true, "no frames");
+        assert_eq!((r.status, r.note.as_str()), (Status::Skip, "skipped (software GPU: no frames)"));
+        let r = TestResult::cannot_run("a", "A", false, "no frames");
+        assert_eq!((r.status, r.note.as_str()), (Status::Fail, "no frames"));
+    }
+
+    #[test]
+    fn panic_payload_text() {
+        let p: Box<dyn std::any::Any + Send> = Box::new("boom");
+        assert_eq!(panic_text(&*p), "boom");
+        let p: Box<dyn std::any::Any + Send> = Box::new(String::from("bang"));
+        assert_eq!(panic_text(&*p), "bang");
+        let p: Box<dyn std::any::Any + Send> = Box::new(5u8);
+        assert_eq!(panic_text(&*p), "non-string panic payload");
+        set_current("follow");
+        assert_eq!(CURRENT.lock().unwrap().as_str(), "follow");
     }
 
     #[test]
