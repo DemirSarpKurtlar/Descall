@@ -116,6 +116,9 @@ export default defineConfig({
                 if (id.includes("@phosphor-icons")) return "vendor-phosphor";
                 if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
               }
+              // The SDK facade rides in the lazy Sentry chunk. On its own it is so small that
+              // Rollup merged it into the entry, which then imported vendor-sentry statically.
+              if (/[\\/]src[\\/]lib[\\/]sentrySdk\.js$/.test(id)) return "vendor-sentry";
               // Do not force all /src/site into one chunk — route lazy() splits pages.
               return undefined;
             },
