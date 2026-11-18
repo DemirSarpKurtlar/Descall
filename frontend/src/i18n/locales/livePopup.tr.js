@@ -167,6 +167,7 @@ export const LIVE_POPUP_TR = {
   "reach": "{n} kişi · Bağlı kişilerin %{share}’i",
   "reachOffline": "{n} kişi · {online} bağlı, {offline} girişte görecek",
   "reachZero": "Bu kurallara uyan kimse yok",
+  "reachNobodyOnline": "Şu an bağlı kimse yok",
   "reachLoading": "Hesaplanıyor…",
   "composer": {
     "title": "Yeni popup",

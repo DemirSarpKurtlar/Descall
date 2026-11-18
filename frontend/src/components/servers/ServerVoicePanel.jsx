@@ -44,6 +44,7 @@ import { screenShareUnavailableOnIos } from "../../lib/webrtcScreenShare";
 import { useScreenShareCapability } from "../../lib/iosScreenBroadcast";
 import { anchorFromRect } from "../../lib/iosScreenBroadcastModel";
 import IosBroadcastShareChip from "../voice/IosBroadcastShareChip";
+import ScreenShareQualityPanel from "../voice/ScreenShareQualityPanel";
 import { useVideoPresence } from "../../hooks/useVideoPresence";
 import { shouldMirrorLocal, streamCameraTrack } from "../../lib/cameraFacing";
 import { World3DButton, World3DStage, useWorld3DAvailable } from "../../world3d/World3DLauncher.jsx";
@@ -976,6 +977,11 @@ export default function ServerVoicePanel({
   const shareCapability = useScreenShareCapability();
   const screenShareHidden = screenShareUnavailableOnIos() && shareCapability !== "broadcast";
   const nativeSharePhase = serverVoice?.nativeScreenShare?.phase || "idle";
+  // Desktop / web: the shared quality window picks what to share before capture
+  // (server-voice-21). The iOS app keeps the ReplayKit system picker.
+  const [shareQualityOpen, setShareQualityOpen] = useState(false);
+  const shareQualityAnchorRef = useRef(null);
+  const qualityWindowAvailable = shareCapability !== "broadcast" && typeof serverVoice?.setScreenQuality === "function";
 
   const countLabel = isStage
     ? t("{count} in stage", { count })
@@ -985,7 +991,10 @@ export default function ServerVoicePanel({
     if (!canVideo) return;
     if (!serverVoice?.isScreenSharing && screenShareHidden) return;
     if (serverVoice?.isScreenSharing || nativeSharePhase !== "idle") {
+      setShareQualityOpen(false);
       await serverVoice.stopScreenShare?.();
+    } else if (qualityWindowAvailable) {
+      setShareQualityOpen((v) => !v);
     } else {
       // iPhone / iPad: the system broadcast picker (on iPad a popover from this button).
       const rect = event?.currentTarget?.getBoundingClientRect?.();
@@ -1254,9 +1263,11 @@ export default function ServerVoicePanel({
               </DockDeviceSlot>
               {/* iPhone / iPad app: shown only when the broadcast extension ships (whole-screen share). */}
               {!screenShareHidden && (
+              <span ref={shareQualityAnchorRef} className="server-voice-share-anchor">
               <button
                 type="button"
                 className={`server-voice-dock-btn${serverVoice.isScreenSharing ? " is-live" : ""}${nativeSharePhase === "preparing" || nativeSharePhase === "picker" ? " is-pending" : ""}`}
+                aria-expanded={qualityWindowAvailable && !serverVoice.isScreenSharing ? shareQualityOpen : undefined}
                 onClick={onToggleScreen}
                 disabled={!canVideo || nativeSharePhase === "stopping"}
                 aria-pressed={Boolean(serverVoice.isScreenSharing)}
@@ -1271,6 +1282,24 @@ export default function ServerVoicePanel({
               >
                 {serverVoice.isScreenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
               </button>
+              {qualityWindowAvailable ? (
+                <ScreenShareQualityPanel
+                  open={shareQualityOpen && !serverVoice.isScreenSharing}
+                  onClose={() => setShareQualityOpen(false)}
+                  anchorRef={shareQualityAnchorRef}
+                  isGroupCall={serverVoice?.mediaMode !== "sfu"}
+                  participantCount={(serverVoice?.participants?.length ?? 0) + 1}
+                  screenQuality={serverVoice.screenQuality}
+                  setScreenQuality={serverVoice.setScreenQuality}
+                  isScreenSharing={Boolean(serverVoice.isScreenSharing)}
+                  onStartWithQuality={async (quality) => {
+                    setShareQualityOpen(false);
+                    await serverVoice.startScreenShare?.({ quality });
+                  }}
+                  onRestartWithQuality={serverVoice.restartScreenShareWithQuality}
+                />
+              ) : null}
+              </span>
               )}
             </div>
             <button

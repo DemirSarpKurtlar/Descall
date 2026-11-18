@@ -179,7 +179,8 @@ export function ThreatCard({ t, locale, stats, now, live, onSpike, loading }) {
         <div className="sc-kpi">
           <span title={t("secCenter.kpi.locked")}><i style={{ background: "#f2a93b" }} />{t("secCenter.kpi.locked")}</span>
           <b className="tnum">{fmtNum(k.lockedAccounts.value, locale)}</b>
-          <small className={`sc-${locked.tone}`}>{locked.text}</small>
+          {/* Same wording as the other tiles when nothing changed (polish admin-b-12). */}
+          <small className={`sc-${locked.tone}`}>{locked.tone === "muted" ? t("secCenter.kpi.flat") : locked.text}</small>
         </div>
         <div className="sc-kpi">
           <span><i style={{ background: "#587af5" }} />{t("secCenter.kpi.blocked")}</span>

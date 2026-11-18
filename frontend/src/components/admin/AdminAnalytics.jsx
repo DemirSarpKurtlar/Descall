@@ -163,7 +163,7 @@ export default function AdminAnalytics() {
             {["google", "email", "other"].map((key) => (
               <li key={key}>
                 <span>{authLabel(key, t)}</span>
-                <strong>{auth[key] || 0}</strong>
+                <strong>{key === "other" ? (auth.other || 0) + (auth.unknown || 0) : auth[key] || 0}</strong>
               </li>
             ))}
           </ul>

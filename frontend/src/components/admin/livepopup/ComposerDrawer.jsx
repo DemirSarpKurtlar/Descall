@@ -537,7 +537,7 @@ export default function ComposerDrawer({ open, initial, editId, viewerUsername, 
   const reachText = reachBusy && !reach
     ? t("livePopup.reachLoading")
     : !count
-      ? t("livePopup.reachZero")
+      ? t(draft.rules.length ? "livePopup.reachZero" : "livePopup.reachNobodyOnline")
       : reach?.offline
         ? t("livePopup.reachOffline", { n: n(count), online: n(reach.online), offline: n(reach.offline) })
         : t("livePopup.reach", { n: n(count), share: reach?.share ?? 0 });

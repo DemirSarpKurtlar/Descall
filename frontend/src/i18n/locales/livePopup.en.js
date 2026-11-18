@@ -167,6 +167,7 @@ export const LIVE_POPUP_EN = {
   "reach": "{n} people · {share}% of those connected",
   "reachOffline": "{n} people · {online} connected, {offline} will see it at login",
   "reachZero": "Nobody matches these rules",
+  "reachNobodyOnline": "Nobody is connected right now",
   "reachLoading": "Counting…",
   "composer": {
     "title": "New popup",

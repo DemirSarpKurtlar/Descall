@@ -3446,6 +3446,12 @@ html[data-theme="light"] .server-voice-status.is-ok { color: #1f8a3d; }
   overflow-y: auto;
 }
 
+/* Share button + its quality window (ScreenShareQualityPanel opens above it). */
+.server-voice-share-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
 .server-voice-dock {
   flex-shrink: 0;
   display: flex;

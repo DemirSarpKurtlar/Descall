@@ -167,6 +167,7 @@ export const LIVE_POPUP_RU = {
   "reach": "{n} чел. · {share}% подключённых",
   "reachOffline": "{n} чел. · {online} в сети, {offline} увидят при входе",
   "reachZero": "Под эти правила никто не подходит",
+  "reachNobodyOnline": "Сейчас никто не подключён",
   "reachLoading": "Считаем…",
   "composer": {
     "title": "Новое окно",
