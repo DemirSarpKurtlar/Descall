@@ -2323,7 +2323,7 @@ export const phrases = {
   "Your server is where you and your friends hang out. Make yours and start talking.": "Sunucun, sen ve arkadaşlarının takıldığı yer. Kendininkini oluştur ve konuşmaya başla.",
   "Choose a ready-made advanced template, or start from scratch and build everything yourself.": "Hazır gelişmiş bir şablon seç veya sıfırdan kurup her şeyi kendin oluştur.",
   "Use a template": "Şablon kullan",
-  "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.": "Roller, yazı & ses kanalları, konular, yavaş mod ve izin override’ları, tamamen hazır.",
+  "Roles, text & voice channels, topics, slowmode, and permission overrides, fully prepared.": "Roller, yazı & ses kanalları, konular, yavaş mod ve kanala özel izinler, tamamen hazır.",
   "Start from scratch": "Sıfırdan başla",
   "Empty server with only @everyone. Add channels and roles yourself.": "Yalnızca @everyone olan boş sunucu. Kanalları ve rolleri sen ekle.",
   "Pick a template": "Şablon seç",
@@ -4310,13 +4310,13 @@ export const phrases = {
   "Text, voice, and stage channels with categories, Discord-style structure, lighter feel":
     "Kategorilerle yazı, ses ve stage kanalları, Discord tarzı yapı, daha hafif his",
   "Role hierarchy, staff rooms, and per-channel overrides ready for real communities":
-    "Gerçek topluluklar için rol hiyerarşisi, staff odaları ve kanal override’ları",
+    "Gerçek topluluklar için rol hiyerarşisi, staff odaları ve kanala özel izinler",
   "Instant DMs and server chat with typing indicators": "Yazıyor göstergeli anlık DM ve sunucu sohbeti",
   "Crystal-clear group and server calls": "Berrak grup ve sunucu aramaları",
   "Share your screen in calls with quality presets": "Aramalarda kalite önayarlarıyla ekran paylaş",
   "Discord-style servers, ready to run": "Discord tarzı sunucular, kullanıma hazır",
   "Create a server from scratch or pick an advanced template. Roles, text & voice channels, and permission overrides come fully prepared.":
-    "Sıfırdan sunucu kur veya gelişmiş şablon seç. Roller, yazı & ses kanalları ve izin override’ları tamamen hazır gelir.",
+    "Sıfırdan sunucu kur veya gelişmiş şablon seç. Roller, yazı & ses kanalları ve kanala özel izinler tamamen hazır gelir.",
   "Channels that match the job": "İşe uygun kanallar",
   "Roles that actually work": "Gerçekten işe yarayan roller",
   "Admin, Moderator, Helper, VIP and more, with kick, ban, timeout, and audit logs.":
@@ -4346,7 +4346,7 @@ export const phrases = {
   "Friend list, online status, and invites, jump from DMs into a server voice channel in one flow.":
     "Arkadaş listesi, çevrimiçi durum ve davetler, DM’den sunucu ses kanalına tek akışta.",
   "Slowmode, topics, permission overrides, and staff-only channels, the day-to-day tools communities actually use.":
-    "Yavaş mod, konular, izin override’ları ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
+    "Yavaş mod, konular, kanala özel izinler ve staff kanalları, toplulukların gerçekten kullandığı araçlar.",
   "Themes, frames, and effects via DesCoin. Core chat, servers, and calls stay free forever.":
     "DesCoin ile temalar, avatar efektleri ve baloncuklar. Temel sohbet, sunucu ve aramalar sonsuza kadar ücretsiz.",
   "Descall UI, servers, chat, and voice in one app": "Descall arayüzü, sunucular, sohbet ve ses tek uygulamada",
@@ -4417,7 +4417,7 @@ export const phrases = {
   "Servers ready in minutes": "Dakikalar içinde hazır sunucular",
   "Roles, channels & moderation": "Roller, kanallar ve moderasyon",
   "Discord-style roles and channel overrides, plus kick, ban, timeout, audit logs, and invites. Run a private hangout or a public-ready community without bot hell for the basics.":
-    "Discord tarzı roller ve kanal override’ları; kick, ban, timeout, denetim kayıtları ve davetler. Temel ihtiyaçlar için bot cehennemi olmadan özel takılma veya topluluk.",
+    "Discord tarzı roller ve kanala özel izinler; kick, ban, timeout, denetim kayıtları ve davetler. Temel ihtiyaçlar için bot cehennemi olmadan özel takılma veya topluluk.",
   "Built for friends & squads": "Arkadaşlar ve ekipler için",
   "Calls without the bloat": "Şişkinlik olmadan aramalar",
   "WebRTC voice/video with TURN support, incoming call UX, PiP, and screen-share quality controls. A lighter Discord alternative when you want clean calls inside servers or DMs.":
