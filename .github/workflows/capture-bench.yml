@@ -74,21 +74,77 @@ jobs:
           workspaces: desktop
       - name: Windows unit tests
         run: cargo test -p descall-capture -p descall-capture-bench
+      # Diagnostic release build: same optimisation as the owner's exe, but panics unwind
+      # (each test group catches its own panic and reports it as a FAIL row) and the exe
+      # keeps line tables, so backtraces and crash dumps show file:line.
       - name: Build the bench
+        env:
+          CARGO_PROFILE_RELEASE_PANIC: unwind
+          CARGO_PROFILE_RELEASE_STRIP: none
+          CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
         run: cargo build --release -p descall-capture-bench
+      - name: Collect crash dumps (WER LocalDumps)
+        run: |
+          $dumps = Join-Path $PWD 'bench-out\dumps'
+          New-Item -ItemType Directory -Force -Path $dumps | Out-Null
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\descall-capture-bench.exe'
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpFolder -PropertyType ExpandString -Value $dumps -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpType -PropertyType DWord -Value 1 -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpCount -PropertyType DWord -Value 5 -Force | Out-Null
       - name: Run the bench
         id: run
         env:
           BENCH_SECONDS: ${{ github.event.inputs.seconds || '6' }}
+          RUST_BACKTRACE: "1"
         run: |
           New-Item -ItemType Directory -Force -Path bench-out | Out-Null
           Copy-Item target/release/descall-capture-bench.exe bench-out/
+          Copy-Item target/release/*.pdb bench-out/ -ErrorAction SilentlyContinue
           ./target/release/descall-capture-bench.exe --ci --seconds $env:BENCH_SECONDS --out bench-out/descall-capture-report.json 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
           $code = $LASTEXITCODE
           "exit_code=$code" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "## DescallCaptureBench" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "## DescallCaptureBench (exit code $code)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           Get-Content bench-out/bench-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          exit 0
+      # A crash (any exit code other than 0 = all good, 1 = a FAIL row) ends the whole run.
+      # Rerun every group on its own with backtraces so the log names the failing case.
+      - name: Rerun each group after a crash
+        if: steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '1'
+        env:
+          RUST_BACKTRACE: "1"
+        run: |
+          "## Per-group rerun after a crash" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          foreach ($g in 'echo','picker','video','follow','color') {
+            Write-Host "===== --only $g ====="
+            ./target/release/descall-capture-bench.exe --ci --only $g --seconds 3 --out "bench-out/report-$g.json" 2>&1 | Tee-Object -FilePath "bench-out/rerun-$g.txt"
+            $c = $LASTEXITCODE
+            "- $g : exit code $c" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            if ($c -ne 0 -and $c -ne 1) {
+              '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              Get-Content "bench-out/rerun-$g.txt" -Tail 60 | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            }
+          }
+          exit 0
+      # Native fail-fasts (0xC0000409 without a Rust panic) leave a WER dump: print its stack.
+      - name: Analyse crash dumps
+        if: always()
+        run: |
+          $dumps = @(Get-ChildItem bench-out/dumps -Filter *.dmp -ErrorAction SilentlyContinue)
+          if ($dumps.Count -eq 0) { Write-Host "No crash dump."; exit 0 }
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { Write-Host "cdb.exe not found; the dumps are in the artifact."; exit 0 }
+          $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+          foreach ($d in $dumps) {
+            Write-Host "===== $($d.Name) ====="
+            & $cdb.FullName -z $d.FullName -y $sym -lines -c ".ecxr; kn 60; !analyze -v; q" 2>&1 | Tee-Object -FilePath "bench-out/dumps/$($d.BaseName).txt"
+          }
+          "## Crash dump stack" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content "bench-out/dumps/$($dumps[0].BaseName).txt" | Select-String -Pattern 'descall|FAILURE_BUCKET|EXCEPTION_CODE|STACK_TEXT|ExceptionCode' | Select-Object -First 80 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           exit 0
       - name: Upload the exe and the report
@@ -101,5 +157,5 @@ jobs:
       - name: Fail on a FAIL row
         if: steps.run.outputs.exit_code != '0'
         run: |
-          Write-Host "The bench reported FAIL (exit code ${{ steps.run.outputs.exit_code }}). See the job summary and the report artifact."
+          Write-Host "The bench reported FAIL or crashed (exit code ${{ steps.run.outputs.exit_code }}). See the job summary and the artifact (report, reruns, dumps)."
           exit 1
