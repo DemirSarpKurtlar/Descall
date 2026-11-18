@@ -155,6 +155,11 @@ export const SEC_CENTER_TR = {
     "title": "Acil kilit modları",
     "liftAll": "Tümünü aç",
     "permanent": "Kalıcı erişim ayarları",
+    "fromSystem": "Sistem’den açık",
+    "chatFrozenSub": "Kimse mesaj gönderemiyor",
+    "regOff": "Yeni kayıtlar kapalı",
+    "regOffSub": "Yeni hesap açılamıyor",
+    "openSystem": "Sistem’i aç",
     "liftsIn": "{time} sonra kalkar",
     "untilLifted": "Elle kaldırılana kadar",
     "detailAria": "{name} kilidinin ayrıntıları"

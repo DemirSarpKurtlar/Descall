@@ -149,6 +149,7 @@ html.glass-ui .feedback-modal.fbk {
 .fbk-ta::placeholder { color: var(--fbk-ink-3); }
 .fbk-ta:focus { box-shadow: inset 0 0 0 1.5px rgba(var(--fbk-brand-rgb), 0.75); }
 .fbk-count { position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: var(--fbk-ink-3); pointer-events: none; font-variant-numeric: tabular-nums; }
+.fbk-count.is-short { color: var(--warning, #f5b14c); font-weight: 600; }
 
 /* Chips */
 .fbk-chips { display: flex; flex-wrap: wrap; gap: 6px; }

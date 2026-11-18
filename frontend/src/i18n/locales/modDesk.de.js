@@ -64,7 +64,7 @@ export const MOD_DESK_DE = {
     },
     vars: "Variablen",
   },
-  act: { timeout: "Stummschalten", ban: "Sperren", kick: "Rauswerfen", banHint: "BanDialog" },
+  act: { timeout: "Stummschalten", ban: "Sperren", kick: "Rauswerfen", banHint: "Sperrfenster" },
   pill: { "5m": "5 Min.", "15m": "15 Min.", "30m": "30 Min.", "1h": "1 Std.", "6h": "6 Std.", "12h": "12 Std.", "24h": "24 Std.", "3d": "3 Tage", "7d": "7 Tage", custom: "Eigene" },
   var: { user: "nutzer", duration: "dauer", category: "kategorie", until: "ende" },
   tplMsg: {
@@ -146,7 +146,7 @@ export const MOD_DESK_DE = {
     extendCustom: "Eigene Dauer…",
     extendCustomSub: "Minuten, Stunden oder Tage",
     toBan: "In Sperre umwandeln",
-    toBanSub: "Öffnet BanDialog",
+    toBanSub: "Öffnet das Sperrfenster",
     editNote: "Nachricht bearbeiten",
     editNoteSub: "Hinweis, den der Nutzer sieht",
     openFile: "Nutzerakte öffnen",

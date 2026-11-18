@@ -246,7 +246,7 @@ export function ThreatCard({ t, locale, stats, now, live, onSpike, loading }) {
 
 const LOCK_DESC = { registration: "secCenter.lockMode.registration.desc", dm: "secCenter.lockMode.dm.desc", readOnly: "secCenter.lockMode.readOnly.desc" };
 
-export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftAll, onToggleSetting, busyKey, loading }) {
+export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftAll, onToggleSetting, onOpenSystem, busyKey, loading }) {
   if (loading || !settings) return <section className="sc-card sc-locks is-loading" aria-busy="true"><div className="sc-skel" style={{ height: 300 }} /></section>;
   const locks = settings.locks || {};
   const anyLock = LOCK_MODES.some((m) => locks[m]);
@@ -284,6 +284,28 @@ export function LockCard({ t, settings, now, onToggleLock, onLockDetail, onLiftA
           </div>
         );
       })}
+      {/* Sistem's kill switches cut the same paths: show them here so "Normal" is never
+          the whole story while chat is frozen or sign-ups are off (polish admin-b-18). */}
+      {settings.chatFrozen || settings.registrationEnabled === false ? (
+        <>
+          <div className="sc-lab">{t("secCenter.locks.fromSystem")}</div>
+          {[
+            settings.chatFrozen ? { key: "chat", name: "chatFrozen", sub: "chatFrozenSub", Icon: MessageCircle } : null,
+            settings.registrationEnabled === false ? { key: "reg", name: "regOff", sub: "regOffSub", Icon: Users } : null,
+          ].filter(Boolean).map((row) => (
+            <div key={row.key} className="sc-lm is-act" data-testid={`sc-sys-${row.key}`}>
+              <span className="sc-ic is-amber" aria-hidden="true"><row.Icon size={16} /></span>
+              <div className="sc-lm-txt is-static">
+                <b>{t(`secCenter.locks.${row.name}`)}</b>
+                <small>{t(`secCenter.locks.${row.sub}`)}</small>
+              </div>
+              {onOpenSystem ? (
+                <button type="button" className="sc-x" onClick={onOpenSystem}>{t("secCenter.locks.openSystem")}</button>
+              ) : null}
+            </div>
+          ))}
+        </>
+      ) : null}
       <div className="sc-lab">{t("secCenter.locks.permanent")}</div>
       <div className="sc-lm" data-testid="sc-perm-groups">
         <span className="sc-ic is-gray" aria-hidden="true"><Users size={16} /></span>

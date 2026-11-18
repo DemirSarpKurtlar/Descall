@@ -2533,6 +2533,7 @@ export const nested = {
       "delReport": "Meldung",
       "deleteError": "Löschen fehlgeschlagen, versuch es erneut",
       "deleteTitle": "Dieses Feedback löschen?",
+      "deleteReason": "Grund (kommt ins Aktionsprotokoll)",
       "deleted": "Feedback gelöscht",
       "emptyFiltered": "Kein Feedback in diesem Filter.",
       "emptyNone": "Noch kein Feedback.",
@@ -6584,12 +6585,12 @@ export const nested = {
     "subDownloading": "Im Hintergrund · {percent} %",
     "subDownloadingStart": "Im Hintergrund",
     "subInstalling": "Descall startet in wenigen Sekunden neu",
-    "titleDownloading": "Descall {version} wird heruntergeladen",
-    "titleInstalling": "Descall {version} wird installiert"
     "titleError": "Update konnte nicht geladen werden",
     "subError": "Prüfe deine Verbindung und versuche es erneut",
     "retry": "Erneut versuchen",
     "downloadPage": "Download-Seite",
+    "titleDownloading": "Descall {version} wird heruntergeladen",
+    "titleInstalling": "Descall {version} wird installiert"
   },
   "world3d": {
     "activity": {

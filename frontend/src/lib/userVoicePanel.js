@@ -52,7 +52,12 @@ export function deriveVoiceSession({ call, groupCall, serverVoice, groups, serve
     const server = findById(servers, sv.activeServerId);
     return {
       kind: "server",
-      phase: sv.connecting ? "connecting" : "connected",
+      // A media link that is (re)connecting is not "connected" (server-voice-06): the
+      // panel shows the amber connecting state instead of a green ping.
+      phase:
+        sv.connecting || ["connecting", "reconnecting", "disconnected"].includes(sv.liveKitLink)
+          ? "connecting"
+          : "connected",
       title: nameOf(server),
       subtitle: String(sv.channelName || "").trim(),
       muted: Boolean(sv.muted),

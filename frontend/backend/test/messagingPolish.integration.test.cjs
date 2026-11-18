@@ -8,6 +8,7 @@
  *   messaging-05  a DM edit keeps the stored edit history even with an empty cache.
  *   messaging-04  a DM / group edit runs the same length and type rules as sending.
  *   messaging-14  DM typing only reaches friends.
+ *   messaging-18  a reaction must name a message of that DM / group.
  *   messaging-08  group create: friends only, no blocks, no orphan group on bad input.
  *   messaging-07  the REST group send route is gone (410).
  *   messaging-10  GET /groups/my reports unread group messages since my last read.
@@ -49,6 +50,7 @@ const fake = createFakeSupabase({
   ],
   group_messages: [],
   dm_messages: [
+    { id: id(31), from_user_id: CAROL, to_user_id: STRANGER, content: "başkasının", created_at: "2026-11-01T08:00:00.000Z" },
     {
       id: DM_OLD, from_user_id: ALICE, to_user_id: BOB, content: "ikinci hali", created_at: "2026-11-01T09:00:00.000Z",
       edited_at: "2026-11-01T09:05:00.000Z", edit_history: [{ text: "ilk hali", editedAt: "2026-11-01T09:05:00.000Z" }],
@@ -136,7 +138,7 @@ async function socketPart() {
   await call("dm:send", { toUserId: BOB, tempId: "d-long", text: "a".repeat(max + 1) });
   assert.equal(lastOut("dm:error")?.data?.code, "TOO_LONG");
   assert.equal(lastOut("dm:error")?.data?.tempId, "d-long");
-  assert.equal(rows("dm_messages").length, 1, "the long DM is not stored");
+  assert.equal(rows("dm_messages").length, 2, "the long DM is not stored");
   shared.rateLimitDm.clear();
   await call("dm:send", { toUserId: BOB, tempId: "d-obj", text: { x: 1 } });
   assert.equal(lastOut("dm:error")?.data?.code, "BAD_TEXT");
@@ -164,6 +166,15 @@ async function socketPart() {
   await call("dm:message:edit", { messageId: DM_OLD, toUserId: BOB, newText: { a: 1 } });
   assert.equal(lastOut("dm:error")?.data?.code, "BAD_TEXT");
   assert.equal(rows("dm_messages").find((m) => m.id === DM_OLD).content, "üçüncü hali");
+
+  // messaging-18: a reaction must name a message of that DM / group.
+  const react = (payload) => new Promise((resolve) => alice.handlers.get("reaction:add")(payload, resolve));
+  let ack = await react({ messageId: id(31), conversationType: "dm", conversationId: BOB, emoji: "👍" });
+  assert.equal(ack?.ok, false, "a message from someone else's DM is refused");
+  ack = await react({ messageId: DM_OLD, conversationType: "dm", conversationId: BOB, emoji: "👍" });
+  assert.equal(ack?.ok, true, "a message of this DM is fine");
+  ack = await react({ messageId: id(31), conversationType: "group", conversationId: G, emoji: "👍" });
+  assert.equal(ack?.ok, false, "a message outside the group is refused");
 
   // messaging-14: DM typing only to friends.
   for (const u of [BOB, STRANGER]) sio.sockets.adapter.rooms.set(`user:${u}`, new Set([`sock-${u}`]));

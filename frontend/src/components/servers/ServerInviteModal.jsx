@@ -240,7 +240,7 @@ export default function ServerInviteModal({ server, onClose, onServerUpdated }) 
                         {inv.maxUses != null ? ` / ${inv.maxUses}` : ""} {t("counts.uses", { n: inv.maxUses ?? inv.uses ?? 0 })}
                         {inv.expiresAt
                           ? ` · ${t("expires {date}", { date: formatDate(inv.expiresAt, getLocale()) })}`
-                          : ` · ${t("Never")}`}
+                          : ` · ${t("Never expires")}`}
                       </span>
                     </div>
                     <div className="server-invite-item-actions">

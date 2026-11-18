@@ -2533,6 +2533,7 @@ export const nested = {
       "delReport": "signalement",
       "deleteError": "Impossible de supprimer, réessaie",
       "deleteTitle": "Supprimer ce retour ?",
+      "deleteReason": "Motif (inscrit au journal des actions)",
       "deleted": "Retour supprimé",
       "emptyFiltered": "Aucun retour dans ce filtre.",
       "emptyNone": "Aucun retour pour l'instant.",
@@ -6584,12 +6585,12 @@ export const nested = {
     "subDownloading": "En arrière-plan · {percent} %",
     "subDownloadingStart": "En arrière-plan",
     "subInstalling": "Descall se rouvre dans quelques secondes",
-    "titleDownloading": "Téléchargement de Descall {version}",
-    "titleInstalling": "Installation de Descall {version}"
     "titleError": "Impossible de télécharger la mise à jour",
     "subError": "Vérifie ta connexion et réessaie",
     "retry": "Réessayer",
     "downloadPage": "Page de téléchargement",
+    "titleDownloading": "Téléchargement de Descall {version}",
+    "titleInstalling": "Installation de Descall {version}"
   },
   "world3d": {
     "activity": {

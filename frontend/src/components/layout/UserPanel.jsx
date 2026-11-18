@@ -50,12 +50,13 @@ import { setSoundEnabled, getAudioSettings } from "../../lib/audioManager";
 import { useMobile } from "../../hooks/useMobile";
 import { useGlassShell } from "./glass/GlassShell";
 import { useGlassDesktop } from "../../hooks/useGlassDesktop";
+import { nativeShellPlatform } from "../../lib/glassDesktop";
 import DataExportCard from "../settings/DataExportCard.jsx";
 import JoinSoundSettings from "../voice/JoinSoundSettings.jsx";
 import TwoFactorCard from "../settings/TwoFactorCard.jsx";
 import { useLocale } from "../../context/LocaleContext";
 import { serverMessage } from "../../i18n/serverText.js";
-import LegalContentModal from "../legal/LegalContentModal";
+import LegalContentModal from "../legal/LazyLegalContentModal";
 import { analyticsBlockedByAge, getCookieConsent, isAnalyticsAllowed, setCookieConsent } from "../../site/analyticsGate";
 import {
   getNativePushPermission,
@@ -68,7 +69,8 @@ import { getLocaleMeta, PSEUDO_LOCALE } from "../../i18n/registry.js";
 import { displayName, formatDate, formatNumber, upper } from "../../i18n/format.js";
 import DeleteAccountSection from "../settings/DeleteAccountSection";
 import PasswordStrength from "../auth/PasswordStrength";
-import { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
+import PremiumBadge, { PremiumGlyph } from "../../premium/PremiumBadge.jsx";
+import { ProfileBadgeRow } from "../badges/BadgeVault";
 import SettingsProfileCard from "../settings/SettingsProfileCard";
 import { isUserAdmin } from "../../lib/userProfile";
 import ErrorBoundary from "../ErrorBoundary";
@@ -142,7 +144,7 @@ export function applyAppearanceSettings({ premiumTheme } = {}) {
   return applyStoredAppearance({ premium: premiumTheme ? readStoredSettings().premiumThemeKey || null : null });
 }
 
-function Toggle({ value, onChange, label }) {
+function Toggle({ value, onChange, label, disabled = false }) {
   return (
     <button
       className={`us-toggle ${value ? "active" : ""}`}
@@ -151,6 +153,9 @@ function Toggle({ value, onChange, label }) {
       role="switch"
       aria-checked={value}
       aria-label={label}
+      disabled={disabled}
+      aria-busy={disabled || undefined}
+      style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
     >
       <span className="us-toggle-knob" />
     </button>
@@ -498,6 +503,10 @@ const UserPanel = forwardRef(function UserPanel({
       setActiveTab(initialTab);
       // Deep links like /settings/shop or /settings/promo open the page itself on phones, not the menu.
       if (isMobile && initialTab !== "overview") setMobileDetail(true);
+    } else if (initialTab) {
+      // An unknown /settings/<tab> shows Hesabım; the address follows instead of keeping the
+      // bad path.
+      onTabChange?.("overview", { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTab]);
@@ -995,18 +1004,26 @@ const UserPanel = forwardRef(function UserPanel({
   const [friendVoiceNotify, setFriendVoiceNotify] = useState(true);
   const [emailNotify, setEmailNotify] = useState(true);
   const [reengageError, setReengageError] = useState("");
+  // The two switches stay disabled until the account's real values arrive (they used to show
+  // ON first and flip, or stay ON when the request failed).
+  const [reengageLoad, setReengageLoad] = useState("loading");
+  const [reengageNonce, setReengageNonce] = useState(0);
   useEffect(() => {
     if (activeTab !== "notifications") return undefined;
     let alive = true;
+    setReengageLoad("loading");
     authedRequest("/api/reengage/prefs")
       .then((r) => {
-        if (!alive || !r?.ready) return;
-        if (typeof r.friendVoice === "boolean") setFriendVoiceNotify(r.friendVoice);
-        if (typeof r.email === "boolean") setEmailNotify(r.email);
+        if (!alive) return;
+        if (r?.ready) {
+          if (typeof r.friendVoice === "boolean") setFriendVoiceNotify(r.friendVoice);
+          if (typeof r.email === "boolean") setEmailNotify(r.email);
+        }
+        setReengageLoad("ready");
       })
-      .catch(() => {});
+      .catch(() => { if (alive) setReengageLoad("failed"); });
     return () => { alive = false; };
-  }, [activeTab]);
+  }, [activeTab, reengageNonce]);
   const changeReengagePref = async (key, next) => {
     const set = key === "friendVoice" ? setFriendVoiceNotify : setEmailNotify;
     set(next);
@@ -1064,6 +1081,9 @@ const UserPanel = forwardRef(function UserPanel({
   const micRafRef = useRef(null);
   const micCtxRef = useRef(null);
   const electronApp = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
+  // The desktop app and the iOS / Android apps are not "this browser" (copy in Bildirimler and
+  // Ses ve Görüntü).
+  const appShell = electronApp || Boolean(nativeShellPlatform());
 
   const patchVoice = useCallback((patch) => {
     if (patch.noiseMode) setNoiseMode(patch.noiseMode);
@@ -1752,7 +1772,7 @@ const UserPanel = forwardRef(function UserPanel({
                   title={t("Change avatar")}
                 >
                   <Avatar
-                    name={me?.username || "User"}
+                    name={(displayName || "").trim() || me?.displayName || me?.display_name || me?.username || "User"}
                     size={88}
                     user={{ ...me, avatarUrl: avatarUrl || me?.avatarUrl }}
                     animate="always"
@@ -1778,10 +1798,15 @@ const UserPanel = forwardRef(function UserPanel({
                 <div className="us-pe-meta">
                   <h3>
                     <NameEffectText user={me}>{(displayName || "").trim() || me?.username || "User"}</NameEffectText>
+                    <PremiumBadge user={me} variant="inline" />
                   </h3>
                   <span className="us-username-value">
                     <span className="us-muted">@{me?.username?.toLowerCase() || "user"}</span>
                     {renderUsernameAction()}
+                  </span>
+                  {/* What others see next to the name: country, shop badge, special badge. */}
+                  <span className="us-pe-badges" style={{ display: "flex", marginTop: 6 }}>
+                    <ProfileBadgeRow user={me} me={me} size={glassShell && isMobile ? "ios" : "md"} />
                   </span>
                   {customStatus.trim() && <span className="us-status-pill">{customStatus}</span>}
                 </div>
@@ -2543,7 +2568,7 @@ const UserPanel = forwardRef(function UserPanel({
       case "notifications":
         return (
           <div className="us-tab g-notif">
-            <p className="us-lead">{t("Control desktop and browser alerts.")}</p>
+            <p className="us-lead">{appShell ? t("uset.lead.notificationsApp") : t("Control desktop and browser alerts.")}</p>
             <section className="us-section">
               <div className="us-card stack">
                 <SettingRow
@@ -2616,6 +2641,7 @@ const UserPanel = forwardRef(function UserPanel({
                     value={friendVoiceNotify}
                     onChange={(next) => changeReengagePref("friendVoice", next)}
                     label={t("msg5.reengage.friendVoice")}
+                    disabled={reengageLoad !== "ready"}
                   />
                 </SettingRow>
                 <SettingRow
@@ -2627,9 +2653,18 @@ const UserPanel = forwardRef(function UserPanel({
                     value={emailNotify}
                     onChange={(next) => changeReengagePref("email", next)}
                     label={t("msg5.reengage.email")}
+                    disabled={reengageLoad !== "ready"}
                   />
                 </SettingRow>
               </div>
+              {reengageLoad === "failed" ? (
+                <p className="us-row-desc" role="alert" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span>{t("uset.notify.loadFailed")}</span>
+                  <button type="button" className="us-btn" onClick={() => setReengageNonce((n) => n + 1)}>
+                    {t("uset.profile.retry")}
+                  </button>
+                </p>
+              ) : null}
               <p className="us-row-desc g-activity-footnote">{t("msg4.notify.perChatHint")}</p>
             </section>
 
@@ -2706,7 +2741,7 @@ const UserPanel = forwardRef(function UserPanel({
       case "voice":
         return (
           <div className="us-tab">
-            <p className="us-lead">{t("Pick the devices used for calls on this browser.")}</p>
+            <p className="us-lead">{appShell ? t("uset.lead.voiceApp") : t("Pick the devices used for calls on this browser.")}</p>
             <section className="us-section">
               <div className="us-card us-form">
                 <label className="us-field">

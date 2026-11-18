@@ -155,6 +155,11 @@ export const SEC_CENTER_PT_BR = {
     "title": "Modos de trava de emergência",
     "liftAll": "Remover todas",
     "permanent": "Configurações de acesso permanentes",
+    "fromSystem": "Ativo pelo Sistema",
+    "chatFrozenSub": "Ninguém pode enviar mensagens",
+    "regOff": "Cadastros desativados",
+    "regOffSub": "Nenhuma conta nova pode ser criada",
+    "openSystem": "Abrir Sistema",
     "liftsIn": "Sai em {time}",
     "untilLifted": "Até ser removida",
     "detailAria": "Detalhes da trava {name}"

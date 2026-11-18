@@ -108,8 +108,9 @@ html.a11y-solid .spc-avatar .status-badge { border-color: var(--spc-fill); }
 @container (max-width: 230px) {
   .spc-badges .sb-chip > span:last-child:not(:first-child) { display: none; }
 }
-/* Very narrow: the "all badges" button goes; the badges stay one tap away on the avatar. */
-@container (max-width: 140px) {
+/* Very narrow: the "all badges" button goes (the Rozetler page stays in the list below). At
+   140 px it also went on the iPad sheet (139 px), where country + shop badge + "+" still fit. */
+@container (max-width: 120px) {
   .spc-badges .bp-plus { display: none; }
 }
 .spc-badges .bp-row:empty { display: none; }

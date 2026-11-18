@@ -1144,6 +1144,8 @@ function MessageBubbleView({
   const t = useT();
   const { toast } = useToast();
   const glass = useGlassUi();
+  // Reply quotes name the author like the row header does (polish messaging-16).
+  const senderLookup = useContext(SenderLookupContext);
   // History that is already there when a chat opens is drawn in place: 50
   // bubble enter animations ran on the main thread while the page slid in.
   // Messages that arrive later (or were just sent) still animate in.
@@ -1949,7 +1951,7 @@ function MessageBubbleView({
             title={t("Replying to")}
           >
             <span className="message-reply-author">
-              {reply.from?.username || reply.username || t("Message")}
+              {(reply.from && resolveDisplayName(senderLookup?.(reply.from) || reply.from)) || reply.from?.username || reply.username || t("Message")}
             </span>
             <span className="message-reply-text">
               {reply.text

@@ -384,6 +384,7 @@ export default function SecurityCenter({ socket = null, onNavigate, onOpenUser }
           onLockDetail={(mode, el) => openPop("lockDetail", el, { mode })}
           onLiftAll={(el) => openPop("lift", el, { modes: Object.keys(activeLocks) })}
           onToggleSetting={onToggleSetting}
+          onOpenSystem={onNavigate && perms.can("system") ? () => onNavigate("system") : undefined}
         />
         <div className="sc-feed-wrap">
           {sourceFilter ? (

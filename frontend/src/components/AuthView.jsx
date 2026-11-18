@@ -6,9 +6,10 @@ import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import { isNativeIOS } from "../lib/platform";
 import AppleSignInButton from "./auth/AppleSignInButton";
 import ForgotPasswordFlow from "./auth/ForgotPasswordFlow";
+import TwoFaResendButton from "./auth/TwoFaResendButton";
 import { useT } from "../context/LocaleContext";
 import DescallBrand from "./brand/DescallBrand";
-import LegalContentModal from "./legal/LegalContentModal";
+import LegalContentModal from "./legal/LazyLegalContentModal";
 import BirthDateInput from "./auth/BirthDateInput";
 import TermsConsent from "./auth/TermsConsent";
 import SocialSignupStep from "./auth/SocialSignupStep";
@@ -29,8 +30,14 @@ import { useMaterialize } from "../hooks/useMaterialize";
 import { createValueAnimator } from "../lib/fluid/animator";
 import { SPRINGS } from "../lib/fluid/springs";
 
-export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error }) {
+export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLogin, onVerify2fa, loading, error: errorProp }) {
   const t = useT();
+  // The parent's error stays set after "Back to login" / a tab switch; hide it there
+  // until the next attempt sets a new one.
+  const [errorDismissed, setErrorDismissed] = useState(false);
+  useEffect(() => setErrorDismissed(false), [errorProp]);
+  const error = errorDismissed ? "" : errorProp;
+  const [twoFaInfo, setTwoFaInfo] = useState("");
   const [mode, setMode] = useState(() =>
     typeof window !== "undefined"
       ? initialAuthMode(window.location?.pathname, window.location?.search)
@@ -90,6 +97,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     setTwoFa({ pendingToken: result.pendingToken, emailHint: result.emailHint, method: result.method || "email", recoveryAvailable: Boolean(result.recoveryAvailable) });
     setCode("");
     setTwoFaError("");
+    setTwoFaInfo("");
     setUseRecovery(false);
     return true;
   };
@@ -126,8 +134,12 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
     event.preventDefault();
     if (!username.trim() || !password) return;
     if (mode === "login") {
-      const result = await onLogin({ username: username.trim(), password });
-      openTwoFa(result);
+      try {
+        const result = await onLogin({ username: username.trim(), password });
+        openTwoFa(result);
+      } catch {
+        /* the error prop shows the message (no unhandled rejection per wrong password) */
+      }
       return;
     }
     if (!termsAccepted || !isEligibleBirthDate(birthDate)) return;
@@ -266,6 +278,18 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
             {verifying ? <span>{t("Please wait...")}</span> : <span>{t("Verify")}</span>}
           </button>
 
+          {!totpMode ? (
+            <>
+              {twoFaInfo ? <p className="auth-field-hint" role="status">{twoFaInfo}</p> : null}
+              <TwoFaResendButton
+                pendingToken={twoFa.pendingToken}
+                className="auth-tab auth-back-btn"
+                onSent={(msg) => { setTwoFaError(""); setTwoFaInfo(msg); }}
+                onError={(msg) => { setTwoFaInfo(""); setTwoFaError(msg); }}
+              />
+            </>
+          ) : null}
+
           {totpMode ? (
             <button
               type="button"
@@ -284,6 +308,8 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
               setTwoFa(null);
               setCode("");
               setTwoFaError("");
+              setTwoFaInfo("");
+              setErrorDismissed(true);
             }}
           >
             <ArrowLeft size={16} />
@@ -317,7 +343,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         <SegLens index={mode === "register" ? 1 : 0} />
         <button
           className={`auth-tab ${mode === "login" ? "active" : ""}`}
-          onClick={() => setMode("login")}
+          onClick={() => { setMode("login"); setErrorDismissed(true); }}
           type="button"
           role="tab"
           aria-selected={mode === "login"}
@@ -326,7 +352,7 @@ export default function AuthView({ onLogin, onRegister, onGoogleLogin, onAppleLo
         </button>
         <button
           className={`auth-tab ${mode === "register" ? "active" : ""}`}
-          onClick={() => setMode("register")}
+          onClick={() => { setMode("register"); setErrorDismissed(true); }}
           type="button"
           role="tab"
           aria-selected={mode === "register"}

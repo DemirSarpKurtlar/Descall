@@ -46,15 +46,31 @@ export function storeProfile(id, user) {
   remember(keyOf(id), user);
 }
 
+// Other caches of the same profile (the hover card's, lib/hoverProfile.js) follow every drop:
+// a changed look must never stay on screen there either.
+const dropListeners = new Set();
+/** fn(id) on invalidateProfile, fn(null) on clearProfileCache. Returns an unsubscribe. */
+export function onProfileDropped(fn) {
+  dropListeners.add(fn);
+  return () => dropListeners.delete(fn);
+}
+function notifyDrop(id) {
+  for (const fn of dropListeners) {
+    try { fn(id); } catch { /* a listener never breaks the cache */ }
+  }
+}
+
 export function invalidateProfile(id) {
   const key = keyOf(id);
   cache.delete(key);
   inflight.delete(key);
+  notifyDrop(key);
 }
 
 export function clearProfileCache() {
   cache.clear();
   inflight.clear();
+  notifyDrop(null);
 }
 
 /**

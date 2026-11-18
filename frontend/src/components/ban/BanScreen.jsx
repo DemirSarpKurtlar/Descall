@@ -318,7 +318,7 @@ export default function BanScreen({ state, onClose, preview = false, now: fixedN
             {access.code ? ` ${t("ban.accessCode", { code: access.code })}` : ""}
           </p>
         ) : !expiresAt && !state.live && canAppeal ? (
-          <p className="ban-fine">{t("ban.appealFine")}</p>
+          <p className="ban-fine">{appeal.emailOnFile === false ? t("authx.ban.appealFineNoEmail") : t("ban.appealFine")}</p>
         ) : null}
       </>
     );

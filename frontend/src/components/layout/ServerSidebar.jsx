@@ -234,8 +234,12 @@ export default function ServerSidebar({
           memberIds: selectedGroupMembers.map(m => m.id)
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(serverErrorText(data) || t("Failed to create group (status {status})", { status: res.status }));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const shown = new Error(serverErrorText(data) || t("Failed to create group (status {status})", { status: res.status }));
+        shown.userFacing = true;
+        throw shown;
+      }
       setAddSuccess(t('Group "{name}" created', { name: groupName.trim() }));
       setGroupName("");
       setSelectedGroupMembers([]);
@@ -256,7 +260,8 @@ export default function ServerSidebar({
       }
       onRefreshGroups?.();
     } catch (err) {
-      setAddError(err.message || t("Network error. Is backend deployed?"));
+      // A network failure ("Failed to fetch") is never shown raw (polish messaging-17).
+      setAddError(err?.userFacing && err.message ? err.message : t("msg5.group.networkError"));
     } finally {
       setAddLoading(false);
     }

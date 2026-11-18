@@ -113,7 +113,7 @@ router.get("/ban/status", requireBanTicket, async (req, res) => {
   return res.json({
     ban: detail ? banExperience.publicBan(detail, user.username) : null,
     appeal: detail
-      ? await banExperience.appealStateFor(user.id, detail.bannedAt)
+      ? { ...(await banExperience.appealStateFor(user.id, detail.bannedAt)), emailOnFile: Boolean(user.email && user.email_confirmed_at) }
       : { status: "none", submittedAt: null, canAppeal: false },
   });
 });
@@ -182,7 +182,9 @@ router.post("/ban/delete", requireBanTicket, async (req, res) => {
     const result = await accountDeletion.closeAccountNow(user);
     for (const sid of result.sessionIds || []) revokedSessionIds.add(sid);
     return res.json(
-      apiText("message", "Account closed. It will be permanently deleted after the grace period unless you sign in again.", null, {
+      // Signing in to a banned account only reaches the ban screen, so it does not
+      // cancel this deletion: no "unless you sign in again" here.
+      apiText("message", "Account closed. It will be permanently deleted after the grace period.", null, {
         graceDays: accountDeletion.GRACE_DAYS,
         purgeAfter: result.purgeAfter,
       })

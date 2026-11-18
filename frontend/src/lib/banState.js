@@ -31,7 +31,13 @@ function normalizeBan(ban = {}) {
 function normalizeAppeal(appeal) {
   if (!appeal || typeof appeal !== "object") return { status: "none", submittedAt: null, canAppeal: true };
   const status = ["none", "pending", "rejected", "accepted"].includes(appeal.status) ? appeal.status : "none";
-  return { status, submittedAt: str(appeal.submittedAt), canAppeal: appeal.canAppeal !== false };
+  return {
+    status,
+    submittedAt: str(appeal.submittedAt),
+    canAppeal: appeal.canAppeal !== false,
+    // false only when the server says there is no verified email for the result.
+    emailOnFile: appeal.emailOnFile !== false,
+  };
 }
 
 function normalizeAccess(access = {}, expiresAt = null) {

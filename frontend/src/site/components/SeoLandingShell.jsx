@@ -41,7 +41,9 @@ export default function SeoLandingShell({
     <article className={`seo-landing seo-tone-${tone}`}>
       {jsonLd?.length > 0 && <JsonLd data={jsonLd} />}
 
-      <header className="seo-hero">
+      {/* has-preview, not :has(.seo-product-preview): that :has() sat in the app CSS too
+          and made every hover in the app restyle ~3000 elements. heroExtra is the preview. */}
+      <header className={heroExtra ? "seo-hero has-preview" : "seo-hero"}>
         {breadcrumbs.length > 0 && (
           <nav className="seo-breadcrumbs" aria-label="Breadcrumb">
             <ol>

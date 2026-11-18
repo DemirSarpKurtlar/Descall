@@ -28,7 +28,7 @@ import { useTabBarDrag } from "../../hooks/useTabBarDrag";
 import { useT } from "../../context/LocaleContext";
 import { filterMainNavItems } from "../../lib/publicFeatures";
 import CookieConsentBanner from "../../site/CookieConsentBanner";
-import LegalContentModal from "../legal/LegalContentModal";
+import LegalContentModal from "../legal/LazyLegalContentModal";
 import { HoverCardContext } from "../social/HoverCardContext";
 import { useNativeGlassTabBar } from "../../lib/nativeGlassTabBar";
 import { PHONE_LAYOUT_QUERY, bottomTabBarFits, screenShortSide } from "../../lib/bottomTabBar";
@@ -394,6 +394,14 @@ export default function AppLayout({
   const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
   const inServersChannel = activeView === "servers" && !!activeServer && !!activeChannel;
   const inConversation = !!(activeDmUser || activeGroup || inServersChannel);
+  // body.app-in-conversation mirrors .app-root.in-conversation for glass/shell.css. It used
+  // to be body:has(.app-root.in-conversation): a :has() on <body> made every hover and scroll
+  // in the app restyle thousands of elements (performance-01).
+  const bodyInConversation = isMobile && inConversation;
+  useEffect(() => {
+    document.body.classList.toggle("app-in-conversation", bodyInConversation);
+    return () => document.body.classList.remove("app-in-conversation");
+  }, [bodyInConversation]);
   const skipToConversation = (e) => {
     e.preventDefault();
     const panel = document.querySelector(".main-panel");

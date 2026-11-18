@@ -930,6 +930,43 @@ a.mkt-feature-link {
   font-weight: 400;
 }
 
+/* Show / hide password in the web sign-in modal (same control as the app AuthView). */
+.login-modal .mkt-pass-wrap {
+  position: relative;
+}
+.login-modal .mkt-pass-wrap input {
+  padding-right: 46px;
+}
+.login-modal .mkt-pass-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  box-shadow: none;
+  cursor: pointer;
+}
+.login-modal .mkt-pass-toggle:hover,
+.login-modal .mkt-pass-toggle[aria-pressed="true"] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.login-modal .mkt-pass-toggle:focus-visible {
+  outline: 2px solid #587af5;
+  outline-offset: 1px;
+}
+
 .login-modal form input::placeholder {
   color: rgba(255, 255, 255, 0.52);
   font-family: var(--mkt-font-body);

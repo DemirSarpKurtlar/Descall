@@ -2533,6 +2533,7 @@ export const nested = {
       "delReport": "жалоба",
       "deleteError": "Не удалось удалить, попробуйте ещё раз",
       "deleteTitle": "Удалить этот отзыв?",
+      "deleteReason": "Причина (попадёт в журнал действий)",
       "deleted": "Отзыв удалён",
       "emptyFiltered": "Нет отзывов по этому фильтру.",
       "emptyNone": "Отзывов пока нет.",
@@ -6584,12 +6585,12 @@ export const nested = {
     "subDownloading": "В фоне · {percent}%",
     "subDownloadingStart": "В фоне",
     "subInstalling": "Descall откроется через несколько секунд",
-    "titleDownloading": "Загрузка Descall {version}",
-    "titleInstalling": "Установка Descall {version}"
     "titleError": "Не удалось загрузить обновление",
     "subError": "Проверь подключение и попробуй снова",
     "retry": "Повторить",
     "downloadPage": "Страница загрузки",
+    "titleDownloading": "Загрузка Descall {version}",
+    "titleInstalling": "Установка Descall {version}"
   },
   "world3d": {
     "activity": {

@@ -1721,10 +1721,18 @@ export default function App() {
     try {
       // Any HTTP response means the URL resolves, Render may return 503 during cold start.
       // Only a network-level failure (fetch throws) means the URL is wrong.
-      await fetch(`${API_BASE_URL}/health`, { method: "GET" });
+      // Bounded: a hanging network must not keep the sign-in spinner forever.
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+      try {
+        await fetch(`${API_BASE_URL}/health`, { method: "GET", ...(ctrl ? { signal: ctrl.signal } : {}) });
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
       return true;
     } catch {
-      throw new Error(t("core.app.backendUnreachable", { url: API_BASE_URL }));
+      // User copy only: no backend URL or build setting names on the sign-in screen.
+      throw new Error(t("authx.login.unreachable"));
     }
   };
 
@@ -3302,7 +3310,9 @@ export default function App() {
       }
       await handleLogin({ username: payload.username, password: payload.password });
     } catch (error) {
-      setAuthError(error.message);
+      // An access ban on the sign-up answers ACCESS_BANNED: the ban screen (with its
+      // appeal form) instead of a one-line error, like sign-in.
+      showAuthFailure(error);
       throw error;
     } finally {
       setAuthLoading(false);

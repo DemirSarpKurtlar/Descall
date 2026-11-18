@@ -57,6 +57,17 @@ const PERM_LABELS = {
   ADMINISTRATOR: "Administrator",
 };
 
+// Labels with no flat-locale key reuse the server hub's translated permission names
+// (they showed in English in every language).
+const PERM_LABEL_KEYS = {
+  USE_APPLICATION_COMMANDS: "svh.p_USE_APPLICATION_COMMANDS",
+  CHANGE_NICKNAME: "svh.p_CHANGE_NICKNAME",
+};
+
+function permLabel(t, key) {
+  return PERM_LABEL_KEYS[key] ? t(PERM_LABEL_KEYS[key]) : t(PERM_LABELS[key] || key);
+}
+
 const EVERYONE_LOCKED_KEYS = new Set([
   "ADMINISTRATOR",
   "MANAGE_ROLES",
@@ -554,7 +565,7 @@ export default function ServerRolesModal({ server, onClose, onRolesChanged }) {
                                 });
                               }}
                             />
-                            <span className="server-perm-text">{t(PERM_LABELS[key] || key)}</span>
+                            <span className="server-perm-text">{permLabel(t, key)}</span>
                           </label>
                         </li>
                       ))}

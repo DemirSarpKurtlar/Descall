@@ -64,7 +64,7 @@ export const MOD_DESK_PT_BR = {
     },
     vars: "Variáveis",
   },
-  act: { timeout: "Silenciar", ban: "Banir", kick: "Expulsar", banHint: "BanDialog" },
+  act: { timeout: "Silenciar", ban: "Banir", kick: "Expulsar", banHint: "Janela de banimento" },
   pill: { "5m": "5 min", "15m": "15 min", "30m": "30 min", "1h": "1 hora", "6h": "6 horas", "12h": "12 horas", "24h": "24 horas", "3d": "3 dias", "7d": "7 dias", custom: "Personalizado" },
   var: { user: "usuário", duration: "duração", category: "categoria", until: "fim" },
   tplMsg: {
@@ -146,7 +146,7 @@ export const MOD_DESK_PT_BR = {
     extendCustom: "Duração personalizada…",
     extendCustomSub: "Minutos, horas ou dias",
     toBan: "Transformar em banimento",
-    toBanSub: "Abre o BanDialog",
+    toBanSub: "Abre a janela de banimento",
     editNote: "Editar mensagem",
     editNoteSub: "A nota que o usuário vê",
     openFile: "Abrir ficha do usuário",

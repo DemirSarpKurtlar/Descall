@@ -64,7 +64,7 @@ export const MOD_DESK_EN = {
     },
     vars: "Variables",
   },
-  act: { timeout: "Time out", ban: "Ban", kick: "Kick", banHint: "BanDialog" },
+  act: { timeout: "Time out", ban: "Ban", kick: "Kick", banHint: "Ban window" },
   pill: { "5m": "5 min", "15m": "15 min", "30m": "30 min", "1h": "1 hour", "6h": "6 hours", "12h": "12 hours", "24h": "24 hours", "3d": "3 days", "7d": "7 days", custom: "Custom" },
   var: { user: "user", duration: "duration", category: "category", until: "until" },
   tplMsg: {
@@ -146,7 +146,7 @@ export const MOD_DESK_EN = {
     extendCustom: "Custom length…",
     extendCustomSub: "Minutes, hours or days",
     toBan: "Make it a ban",
-    toBanSub: "Opens BanDialog",
+    toBanSub: "Opens the ban window",
     editNote: "Edit message",
     editNoteSub: "The note the user sees",
     openFile: "Open user file",

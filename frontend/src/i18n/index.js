@@ -72,6 +72,27 @@ for (const l of ALL_LOCALES) catalogs[l.id] = EMPTY;
 
 const loading = new Map();
 const loaded = new Set();
+const catalogListeners = new Set();
+
+/** Called with the locale id each time a catalog finishes loading (LocaleContext re-renders). */
+export function onCatalogLoaded(fn) {
+  catalogListeners.add(fn);
+  return () => catalogListeners.delete(fn);
+}
+
+// In the browser only the active catalog is awaited; the English fallback loads when the
+// main thread is idle. Live locales are 100 % translated (i18n-check), and phrase keys are
+// English already, so the fallback is a safety net, not boot-critical (566 KB raw).
+// Node (selftests, tooling) keeps loading everything up front.
+const LEAN_BOOT = typeof window !== "undefined" && typeof document !== "undefined";
+let fallbackScheduled = false;
+function loadFallbackWhenIdle() {
+  if (fallbackScheduled || loaded.has(FALLBACK_LOCALE)) return;
+  fallbackScheduled = true;
+  const go = () => loadOne(FALLBACK_LOCALE);
+  if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(go, { timeout: 6000 });
+  else setTimeout(go, 3000);
+}
 
 function loadOne(id) {
   if (loaded.has(id)) return Promise.resolve();
@@ -83,6 +104,13 @@ function loadOne(id) {
       const cat = mod.default || mod;
       catalogs[id] = { nested: cat.nested || {}, phrases: cat.phrases || {} };
       loaded.add(id);
+      for (const fn of catalogListeners) {
+        try {
+          fn(id);
+        } catch {
+          /* ignore */
+        }
+      }
     })
     .catch((err) => {
       console.warn(`[i18n] catalog ${id} failed to load`, err);
@@ -95,20 +123,24 @@ function loadOne(id) {
 /** Load the catalogs a locale needs (itself plus the English fallback). */
 export function ensureLocaleLoaded(locale) {
   const id = locale === PSEUDO_LOCALE ? FALLBACK_LOCALE : locale;
+  const lean = LEAN_BOOT && id && id !== FALLBACK_LOCALE && LOADERS[id];
+  if (lean) loadFallbackWhenIdle();
   return Promise.all([
     loadFormatter(),
     locale === PSEUDO_LOCALE ? loadPseudo() : null,
-    loadOne(FALLBACK_LOCALE),
+    lean ? null : loadOne(FALLBACK_LOCALE),
     id ? loadOne(id) : null,
   ]).then(() => undefined);
 }
 
 /**
- * App boot: English, Turkish (kept for existing callers) and the starting locale.
+ * App boot: the starting locale (English follows when idle, see ensureLocaleLoaded).
+ * Node callers (selftests) also get Turkish, as before. In the browser nothing reads the
+ * Turkish catalog unless Turkish is the locale, so a German user no longer downloads it.
  * Marketing entry must NOT call this, use slim phrases instead.
  */
 export function loadI18nCatalogs(locale = resolveInitialLocale()) {
-  return Promise.all([loadOne("tr"), ensureLocaleLoaded(locale)]).then(() => undefined);
+  return Promise.all([LEAN_BOOT ? null : loadOne("tr"), ensureLocaleLoaded(locale)]).then(() => undefined);
 }
 
 

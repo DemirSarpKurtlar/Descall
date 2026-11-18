@@ -983,4 +983,5 @@ export const API_TR = {
   "Failed to fetch invite links": "Davet bağlantıları alınamadı",
   "Invalid conversation id.": "Geçersiz sohbet kimliği.",
   "This sign-in uses the authenticator app.": "Bu giriş doğrulama uygulamasıyla yapılıyor.",
+  "Account closed. It will be permanently deleted after the grace period.": "Hesap kapatıldı. Bekleme süresinin sonunda kalıcı olarak silinecek.",
 };

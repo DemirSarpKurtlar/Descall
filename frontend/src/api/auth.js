@@ -180,3 +180,12 @@ export function sendHeardAbout(token, answer) {
 export function checkSignupUsername(username) {
   return httpRequest(`/auth/username/check?username=${encodeURIComponent(username)}`, { method: "GET" });
 }
+
+/** New e-mail sign-in code for a pending two-factor sign-in (one per minute). */
+export function resend2faCode(pendingToken) {
+  return httpRequest("/auth/2fa/resend", {
+    method: "POST",
+    headers: langHeaders(),
+    body: JSON.stringify({ pendingToken }),
+  });
+}

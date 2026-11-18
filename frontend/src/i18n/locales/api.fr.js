@@ -253,4 +253,5 @@ export const API_FR = {
   "This sign-in uses the authenticator app.": "Cette connexion utilise l'application d'authentification.",
   "Could not send your sign-in code. Please try again shortly.": "Impossible d'envoyer ton code de connexion. Réessaie dans un instant.",
   "A code was just sent. Wait a minute before requesting another.": "Un code vient d'être envoyé. Attends une minute avant d'en demander un autre.",
+  "Account closed. It will be permanently deleted after the grace period.": "Compte fermé. Il sera supprimé définitivement à la fin du délai de grâce.",
 };

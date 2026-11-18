@@ -7,6 +7,7 @@ import {
   normalizeLocale,
   loadI18nCatalogs,
   ensureLocaleLoaded,
+  onCatalogLoaded,
 } from "../i18n/index.js";
 import { setRuntimeLocale } from "../i18n/runtime.js";
 import { FALLBACK_LOCALE } from "../i18n/registry.js";
@@ -30,6 +31,9 @@ export function LocaleProvider({ children, meLanguage = null }) {
       cancelled = true;
     };
   }, []);
+
+  // The English fallback arrives after boot (i18n/index.js): re-render once it is in.
+  useEffect(() => onCatalogLoaded(() => setCatalogVersion((v) => v + 1)), []);
 
   useEffect(() => {
     let cancelled = false;

@@ -16,7 +16,8 @@ export const AUTHX_FR = {
   },
   "login": {
     "resendIn": "Renvoyer dans {seconds} s",
-    "codeResent": "Un nouveau code arrive."
+    "codeResent": "Un nouveau code arrive.",
+    "unreachable": "Impossible de joindre Descall. Vérifie ta connexion internet et réessaie."
   },
   "ban": {
     "appealFineNoEmail": "Un administrateur examine les appels sous 3 jours ouvrés. Le résultat s'affiche sur cet écran à ta connexion."

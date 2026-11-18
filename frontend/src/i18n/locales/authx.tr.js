@@ -16,7 +16,8 @@ export const AUTHX_TR = {
   },
   "login": {
     "resendIn": "{seconds} sn sonra tekrar gönder",
-    "codeResent": "Yeni bir kod yolda."
+    "codeResent": "Yeni bir kod yolda.",
+    "unreachable": "Descall'a ulaşılamıyor. İnternet bağlantını kontrol edip tekrar dene."
   },
   "ban": {
     "appealFineNoEmail": "İtirazlar 3 iş günü içinde bir yönetici tarafından incelenir. Sonucu giriş yaptığında bu ekranda görürsün."

@@ -75,7 +75,7 @@ html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body:has(.app-root.in-conversation) {
+html.glass-ui:not(.native-app):not(.mobile-keyboard-lock) body.app-in-conversation {
   padding-bottom: 0;
 }
 

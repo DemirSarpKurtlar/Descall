@@ -16,7 +16,8 @@ export const AUTHX_EN = {
   },
   "login": {
     "resendIn": "Resend in {seconds}s",
-    "codeResent": "A new code is on the way."
+    "codeResent": "A new code is on the way.",
+    "unreachable": "Can't reach Descall. Check your internet connection and try again."
   },
   "ban": {
     "appealFineNoEmail": "An admin reviews appeals within 3 business days. The result appears on this screen when you sign in."

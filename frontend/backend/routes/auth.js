@@ -225,6 +225,7 @@ async function rejectIfBanned(res, user) {
     await banExperience.accountBanBody({
       userId: user.id,
       username: user.username,
+      emailOnFile: Boolean(user.email && user.email_confirmed_at),
       detail: banExperience.detailFromUserRow(user),
     })
   );
@@ -1038,6 +1039,55 @@ router.post("/2fa/verify-login", async (req, res) => {
     });
   } catch (err) {
     console.error("[AUTH] 2FA verify error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+/**
+ * POST /2fa/resend { pendingToken } -> { ok, emailHint }
+ * A new e-mail sign-in code without starting over (expired or lost mail). One per
+ * minute; nothing is sent while five wrong codes keep the purpose locked.
+ */
+router.post("/2fa/resend", async (req, res) => {
+  try {
+    const ip = clientIp(req);
+    if (guard(res, `2faresend:ip:${ip}`, null, { max: 20 })) return;
+    recordFailure(`2faresend:ip:${ip}`, { max: 20 });
+    let decoded;
+    try {
+      decoded = verifyToken(String(req.body?.pendingToken || ""));
+    } catch {
+      return res.status(401).json({ error: "Sign-in session expired. Please log in again." });
+    }
+    if (!decoded?.pending2fa || !decoded.sub) return res.status(401).json({ error: "Invalid sign-in session." });
+    const { data: user } = await supabase
+      .from("users")
+      .select("id, username, email, email_confirmed_at, two_factor_enabled, reauthentication_sent_at")
+      .eq("id", decoded.sub)
+      .maybeSingle();
+    if (!user) return res.status(401).json({ error: "Invalid sign-in session." });
+    const totpRow = await twoFactor.loadTotp(user.id).catch(() => null);
+    if (twoFactor.methodFor(user, totpRow) !== "email") {
+      return res.status(400).json({ error: "This sign-in uses the authenticator app.", code: "not_email" });
+    }
+    const sentAt = Date.parse(user.reauthentication_sent_at || "");
+    if (Number.isFinite(sentAt) && Date.now() - sentAt < 60 * 1000) {
+      return res.status(429).json({ error: "A code was just sent. Wait a minute before requesting another.", code: "cooldown" });
+    }
+    if (await rejectIfCodeLocked(res, user.id, "2fa_login")) return;
+    const result = await issueAndSendCode({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      purpose: "2fa_login",
+      lang: langFrom(req.headers["accept-language"]),
+      column: "reauthentication_token",
+      sentAtColumn: "reauthentication_sent_at",
+    }).catch(() => ({ sent: false }));
+    if (!result.sent) return res.status(503).json({ error: "Could not send your sign-in code. Please try again shortly." });
+    return res.json({ ok: true, emailHint: maskEmail(user.email) });
+  } catch (err) {
+    console.error("[AUTH] 2fa/resend error:", err?.message || err);
     return res.status(500).json({ error: "Internal server error." });
   }
 });

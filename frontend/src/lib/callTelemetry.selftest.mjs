@@ -189,4 +189,24 @@ assert(!/userId/.test(mem.get("descall:call-telemetry-queue") || ""), "queue hol
   assert.equal(vs.reconnects, 1);
 }
 
+// voice-drops-05: a dropped server voice session keeps its link counters and reason.
+{
+  const v = createGroupCallTelemetry({ now: () => 0 });
+  v.begin("server", "outgoing", "voice");
+  v.set("sockDrops", 2);
+  v.set("pcFailed", 1);
+  v.set("iceRestarts", 3);
+  v.set("rebuilds", 0);
+  v.set("sessionS", 754);
+  v.set("dropReason", "disconnected");
+  const clean = sanitizeCallTelemetry(v.finish("dropped"));
+  assert.equal(clean.result, "dropped");
+  assert.equal(clean.sockDrops, 2);
+  assert.equal(clean.pcFailed, 1);
+  assert.equal(clean.iceRestarts, 3);
+  assert.equal(clean.rebuilds, 0);
+  assert.equal(clean.sessionS, 754);
+  assert.equal(clean.dropReason, "disconnected");
+}
+
 console.log("callTelemetry selftest ok");

@@ -12,9 +12,11 @@ const NUMBER_FIELDS = Object.freeze([
   "firstAudio", "firstOutAudio", "noInboundAudio", "ended", "callKitReady",
   "peers", "peersAudio", "firstAudioMs", "silentPeers",
   "tokenMs", "lkConnectMs", "lkFirstAudioMs", "published", "urlProbeMs",
+  // Server voice link health (voice-drops-05): counts per session, length in seconds.
+  "sockDrops", "pcFailed", "iceRestarts", "rebuilds", "sessionS",
 ]);
 const STRING_FIELDS = Object.freeze([
-  "kind", "direction", "callType", "result", "platform", "pair", "path", "push", "entry", "media", "tokenError",
+  "kind", "direction", "callType", "result", "platform", "pair", "path", "push", "entry", "media", "tokenError", "dropReason",
 ]);
 const BOOL_FIELDS = Object.freeze(["turn", "queued", "urlProbeSkipped"]);
 const TOKEN_RE = /^[a-z][a-z_-]{0,31}$/;

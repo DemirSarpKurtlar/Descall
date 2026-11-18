@@ -10,6 +10,7 @@ import { isSocialSignupRequired } from "../api/auth";
 import { serverMessage } from "../i18n/serverText.js";
 import { isGoogleSignInOffered } from "../lib/googleSignInOffer";
 import SocialSignupStep from "../components/auth/SocialSignupStep";
+import TwoFaResendButton from "../components/auth/TwoFaResendButton";
 import GlassCheckbox from "../components/ui/GlassCheckbox";
 import useSignupFieldChecks from "../components/auth/useSignupFieldChecks";
 import SignupFieldMessage from "../components/auth/SignupFieldMessage";
@@ -34,6 +35,16 @@ function IconBack() {
   );
 }
 
+function IconEye({ off = false }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+      {off ? <path d="M4 4l16 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /> : null}
+    </svg>
+  );
+}
+
 function AuthModal({
   open,
   onClose,
@@ -42,7 +53,7 @@ function AuthModal({
   onGoogleLogin,
   onVerify2fa,
   authLoading,
-  authError,
+  authError: authErrorProp,
   initialMode = "login",
   authSource = "modal",
   inviteRef = "",
@@ -60,6 +71,13 @@ function AuthModal({
   const signupBlocked = isRegistering && (!termsAccepted || !isEligibleBirthDate(birthDate) || under13SignupBlocked());
   const [legalModal, setLegalModal] = useState(null);
 
+  // The shell's error stays set after "Back to login" / a mode switch: hide it there
+  // until the next attempt sets a new one.
+  const [errorDismissed, setErrorDismissed] = useState(false);
+  useEffect(() => setErrorDismissed(false), [authErrorProp]);
+  const authError = errorDismissed ? "" : authErrorProp;
+  const [twoFaInfo, setTwoFaInfo] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [twoFa, setTwoFa] = useState(null);
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
@@ -316,7 +334,17 @@ function AuthModal({
                   <button type="button" className="auth-switch" onClick={() => { setUseRecovery((v) => !v); setCode(""); setTwoFaError(""); }}>
                     {useRecovery ? t("Use the app code") : t("Use a recovery code")}
                   </button>
-                ) : null}
+                ) : (
+                  <>
+                    {twoFaInfo ? <p className="auth-field-hint" role="status">{twoFaInfo}</p> : null}
+                    <TwoFaResendButton
+                      pendingToken={twoFa.pendingToken}
+                      className="auth-switch"
+                      onSent={(msg) => { setTwoFaError(""); setTwoFaInfo(msg); }}
+                      onError={(msg) => { setTwoFaInfo(""); setTwoFaError(msg); }}
+                    />
+                  </>
+                )}
                 <button
                   type="button"
                   className="auth-switch"
@@ -324,6 +352,8 @@ function AuthModal({
                     setTwoFa(null);
                     setCode("");
                     setTwoFaError("");
+                    setTwoFaInfo("");
+                    setErrorDismissed(true);
                   }}
                 >
                   <IconBack />
@@ -436,9 +466,10 @@ function AuthModal({
                   {isRegistering ? (
                     <SignupFieldMessage id="mkt-auth-username-msg" kind="username" className="mkt-auth-field-hint" field={checks.fields.username} onPick={setUsername} />
                   ) : null}
+                  <div className="mkt-pass-wrap">
                   <input
                     id="mkt-auth-password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => checks.blur("password")}
@@ -449,6 +480,17 @@ function AuthModal({
                     aria-invalid={authError || deviceBlock || fieldInvalid("password") ? "true" : undefined}
                     aria-describedby={fieldInvalid("password") ? "mkt-auth-password-msg" : authError || deviceBlock ? "mkt-auth-error" : undefined}
                   />
+                  <button
+                    type="button"
+                    className="mkt-pass-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? t("Hide password") : t("Show password")}
+                    aria-pressed={showPassword}
+                    title={showPassword ? t("Hide password") : t("Show password")}
+                  >
+                    <IconEye off={showPassword} />
+                  </button>
+                  </div>
                   {isRegistering ? (
                     <SignupFieldMessage id="mkt-auth-password-msg" kind="password" className="mkt-auth-field-hint" field={checks.fields.password} />
                   ) : null}
@@ -524,7 +566,7 @@ function AuthModal({
                 <button
                   type="button"
                   className="auth-switch"
-                  onClick={() => setIsRegistering((v) => !v)}
+                  onClick={() => { setIsRegistering((v) => !v); setErrorDismissed(true); }}
                 >
                   {isRegistering ? t("Already have an account? Sign in") : t("Need an account? Register")}
                 </button>

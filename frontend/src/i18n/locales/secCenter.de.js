@@ -155,6 +155,11 @@ export const SEC_CENTER_DE = {
     "title": "Notsperren",
     "liftAll": "Alle aufheben",
     "permanent": "Dauerhafte Zugangseinstellungen",
+    "fromSystem": "Aus System aktiv",
+    "chatFrozenSub": "Niemand kann Nachrichten senden",
+    "regOff": "Registrierungen sind aus",
+    "regOffSub": "Es können keine neuen Konten erstellt werden",
+    "openSystem": "System öffnen",
     "liftsIn": "Endet in {time}",
     "untilLifted": "Bis zum Aufheben",
     "detailAria": "Details der Sperre {name}"

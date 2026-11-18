@@ -16,7 +16,8 @@ export const AUTHX_PT_BR = {
   },
   "login": {
     "resendIn": "Reenviar em {seconds} s",
-    "codeResent": "Um novo código está a caminho."
+    "codeResent": "Um novo código está a caminho.",
+    "unreachable": "Não foi possível conectar ao Descall. Verifique sua conexão com a internet e tente novamente."
   },
   "ban": {
     "appealFineNoEmail": "Um administrador analisa os recursos em até 3 dias úteis. O resultado aparece nesta tela quando você entrar."

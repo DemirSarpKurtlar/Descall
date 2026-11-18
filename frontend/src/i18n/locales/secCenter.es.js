@@ -155,6 +155,11 @@ export const SEC_CENTER_ES = {
     "title": "Modos de bloqueo de emergencia",
     "liftAll": "Quitar todos",
     "permanent": "Ajustes de acceso permanentes",
+    "fromSystem": "Activo desde Sistema",
+    "chatFrozenSub": "Nadie puede enviar mensajes",
+    "regOff": "Los registros están desactivados",
+    "regOffSub": "No se pueden crear cuentas nuevas",
+    "openSystem": "Abrir Sistema",
     "liftsIn": "Se quita en {time}",
     "untilLifted": "Hasta que se quite",
     "detailAria": "Detalles del bloqueo {name}"

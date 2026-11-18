@@ -13,7 +13,7 @@ import { markFeedbackSubmitted } from "../../lib/feedbackNudge";
 import { resolveRuntimeVersion } from "../../lib/appVersion";
 import {
   AREAS, AREA_LABEL, FREQUENCIES, FREQ_LABEL, KINDS, LIKES, LIKE_LABEL, MAX_SHOTS, MAX_SHOT_BYTES,
-  MAX_TEXT, STATUS_LABEL, buildSubmitBody, canSubmit, emptyForm, relTime, totalUnread,
+  MAX_TEXT, MIN_TEXT, STATUS_LABEL, buildSubmitBody, canSubmit, emptyForm, relTime, totalUnread,
 } from "../../lib/feedbackForm";
 import { captureVoiceDiagnostics, getLastVoiceDiagnostics } from "../../lib/voiceDiagnostics";
 import { getIceConfigStatus, getLivePeerConnections } from "../../lib/iceConfig";
@@ -304,7 +304,12 @@ export default function QuickFeedbackModal({
             onChange={(e) => { set({ text: e.target.value }); if (error) setError(""); }}
             aria-invalid={error ? "true" : undefined}
           />
-          <span className="fbk-count">{form.text.length}/{MAX_TEXT}</span>
+          {/* Gönder stays dimmed under MIN_TEXT: say why (polish world-social-17). */}
+          {form.text.trim().length > 0 && form.text.trim().length < MIN_TEXT ? (
+            <span className="fbk-count is-short" aria-live="polite">{t("fbk.tooShort")}</span>
+          ) : (
+            <span className="fbk-count">{form.text.length}/{MAX_TEXT}</span>
+          )}
         </div>
 
         {form.kind === "praise" ? (

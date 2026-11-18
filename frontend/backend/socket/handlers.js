@@ -2069,6 +2069,7 @@ function registerSocketHandlers(io) {
     // group/server/voice rooms in their own handlers).
 
     // Emoji Reactions
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     socket.on("reaction:add", async (payload = {}, ack) => {
       // Optional ack (Master Update A2): the client rolls its optimistic chip
       // back on ok:false or a 5 s timeout. Old clients pass no callback.
@@ -2114,6 +2115,17 @@ function registerSocketHandlers(io) {
         if (dmBlockPairs.has(dmKey) || await isBlockedEitherWay(myId, otherId)) {
           return refuse("blocked");
         }
+        // A stored message (uuid id) must be in this DM (polish messaging-18), like the
+        // server-channel check below. Live-only app/game rows have other ids.
+        if (UUID_RE.test(String(messageId))) {
+          const { data: own } = await supabase
+            .from("dm_messages")
+            .select("from_user_id, to_user_id")
+            .eq("id", messageId)
+            .maybeSingle();
+          const pair = own ? [String(own.from_user_id), String(own.to_user_id)].sort().join("::") : null;
+          if (pair !== [String(myId), String(otherId)].sort().join("::")) return refuse("rejected");
+        }
         conversationId = dmKey;
       } else if (conversationType === "group") {
         // Check group membership - room has 'group:' prefix
@@ -2135,6 +2147,15 @@ function registerSocketHandlers(io) {
           } catch {
             return refuse("rejected");
           }
+        }
+        if (UUID_RE.test(String(messageId))) {
+          const { data: inGroup } = await supabase
+            .from("group_messages")
+            .select("id")
+            .eq("id", messageId)
+            .eq("group_id", conversationId)
+            .maybeSingle();
+          if (!inGroup) return refuse("rejected");
         }
       } else if (conversationType === "server") {
         // conversationId is the text channel id
@@ -2642,6 +2663,8 @@ function registerSocketHandlers(io) {
         });
       } catch (err) {
         console.error("[group:message:pin] Error:", err.message || err);
+        // Tell the member it failed (polish messaging-18); DMs already did.
+        socket.emit("group:message:error", { groupId, messageId, message: "Failed to pin message." });
       }
     });
 
@@ -2662,6 +2685,7 @@ function registerSocketHandlers(io) {
         io.to(`group:${groupId}`).emit("group:message:unpinned", { messageId, groupId });
       } catch (err) {
         console.error("[group:message:unpin] Error:", err.message || err);
+        socket.emit("group:message:error", { groupId, messageId, message: "Failed to unpin message." });
       }
     });
 

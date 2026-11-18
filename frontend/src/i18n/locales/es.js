@@ -2533,6 +2533,7 @@ export const nested = {
       "delReport": "denuncia",
       "deleteError": "No se pudo eliminar, inténtalo de nuevo",
       "deleteTitle": "¿Eliminar este comentario?",
+      "deleteReason": "Motivo (queda en el registro de acciones)",
       "deleted": "Comentario eliminado",
       "emptyFiltered": "No hay comentarios con este filtro.",
       "emptyNone": "Aún no hay comentarios.",
@@ -6584,12 +6585,12 @@ export const nested = {
     "subDownloading": "En segundo plano · {percent}%",
     "subDownloadingStart": "En segundo plano",
     "subInstalling": "Descall se volverá a abrir en unos segundos",
-    "titleDownloading": "Descargando Descall {version}",
-    "titleInstalling": "Instalando Descall {version}"
     "titleError": "No se pudo descargar la actualización",
     "subError": "Comprueba tu conexión e inténtalo de nuevo",
     "retry": "Reintentar",
     "downloadPage": "Página de descarga",
+    "titleDownloading": "Descargando Descall {version}",
+    "titleInstalling": "Instalando Descall {version}"
   },
   "world3d": {
     "activity": {

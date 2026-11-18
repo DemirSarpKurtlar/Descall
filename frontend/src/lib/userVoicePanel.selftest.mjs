@@ -114,4 +114,14 @@ for (const [k, v] of [["uvp.noVoice", "Ses bağlantısı yok"], ["uvp.connected"
 // ServerVoicePanel: `sharing` must be declared before the effect that reads it.
 const svp = read("../components/servers/ServerVoicePanel.jsx");
 assert.ok(svp.indexOf("const sharing = screenSharers.length > 0;") < svp.indexOf("}, [sharing]);"), "no TDZ on voice join");
+// server-voice-06: a lost / reconnecting LiveKit link is not shown as connected; mesh ("idle") is.
+for (const link of ["reconnecting", "disconnected"]) {
+  assert.equal(
+    deriveVoiceSession({ serverVoice: { isInVoice: true, liveKitLink: link, channelName: "a" } }).phase,
+    "connecting",
+    `liveKitLink ${link}`
+  );
+}
+assert.equal(deriveVoiceSession({ serverVoice: { isInVoice: true, liveKitLink: "idle" } }).phase, "connected");
+assert.equal(deriveVoiceSession({ serverVoice: { isInVoice: true, liveKitLink: "connected" } }).phase, "connected");
 console.log("userVoicePanel selftest ok");

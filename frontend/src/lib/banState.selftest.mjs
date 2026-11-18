@@ -87,7 +87,7 @@ assert.ok(!isEmail("a@b"));
 
 // Wiring: every refusal path opens the ban screen instead of a one-line error.
 const app = readFileSync(new URL("../App.jsx", import.meta.url), "utf8");
-assert.equal((app.match(/showAuthFailure\(error\);/g) || []).length, 3, "password, 2FA and social login");
+assert.equal((app.match(/showAuthFailure\(error\);/g) || []).length, 4, "password, 2FA, social login and sign-up (access ban)");
 assert.match(app, /const ban = banStateFromKick\(payload\);/, "live ban over the socket");
 assert.match(app, /result\.status === "auth"\) \{\s*const ban = banStateFromError\(result\.error\);/, "ban found on session restore");
 assert.match(app, /if \(isBanSocketMessage\(msg\)\) \{/, "socket refused for a ban");
@@ -111,5 +111,9 @@ for (const loc of LOCALES) {
   const main = readFileSync(new URL(`../i18n/locales/${loc}.js`, import.meta.url), "utf8");
   assert.match(main, new RegExp(`from "\\./ban\\.${loc.replace("-", "\\-")}\\.js"`), `${loc}.js registers the ban namespace`);
 }
+
+// The appeal note promises an email only when there is a verified address.
+assert.equal(banStateFromError({ code: "ACCOUNT_BANNED", body: { appeal: { status: "none", emailOnFile: false } } }).appeal.emailOnFile, false);
+assert.equal(banStateFromError({ code: "ACCOUNT_BANNED", body: { appeal: { status: "none" } } }).appeal.emailOnFile, true);
 
 console.log("banState.selftest.mjs: ok");

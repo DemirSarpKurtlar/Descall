@@ -20,10 +20,12 @@ export const CALL_TELEMETRY_NUMBER_FIELDS = Object.freeze([
   "peers", "peersAudio", "firstAudioMs", "silentPeers",
   // Server voice (LiveKit)
   "tokenMs", "lkConnectMs", "lkFirstAudioMs", "published", "urlProbeMs",
+  // Server voice link health (voice-drops-05): counts per session, length in seconds.
+  "sockDrops", "pcFailed", "iceRestarts", "rebuilds", "sessionS",
 ]);
 
 export const CALL_TELEMETRY_STRING_FIELDS = Object.freeze([
-  "kind", "direction", "callType", "result", "platform", "pair", "path", "push", "entry", "media", "tokenError",
+  "kind", "direction", "callType", "result", "platform", "pair", "path", "push", "entry", "media", "tokenError", "dropReason",
 ]);
 
 export const CALL_TELEMETRY_BOOL_FIELDS = Object.freeze(["turn", "queued", "urlProbeSkipped"]);

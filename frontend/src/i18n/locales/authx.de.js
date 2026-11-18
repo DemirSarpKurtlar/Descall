@@ -16,7 +16,8 @@ export const AUTHX_DE = {
   },
   "login": {
     "resendIn": "Erneut senden in {seconds} s",
-    "codeResent": "Ein neuer Code ist unterwegs."
+    "codeResent": "Ein neuer Code ist unterwegs.",
+    "unreachable": "Descall ist nicht erreichbar. Prüfe deine Internetverbindung und versuche es erneut."
   },
   "ban": {
     "appealFineNoEmail": "Ein Admin prüft Einsprüche innerhalb von 3 Werktagen. Das Ergebnis siehst du auf diesem Bildschirm, wenn du dich anmeldest."
