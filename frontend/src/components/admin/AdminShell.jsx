@@ -8,6 +8,7 @@
  *    (pencere düğmeleri yalnızca Electron'da işe yarar); panel kenar menüsünden başlar.
  * Menü verisi adminNav.js'ten gelir (tek kaynak, testli).
  */
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { List, Search, X } from "../ui/Icon.jsx";
 import { useLocale } from "../../context/LocaleContext";
@@ -144,6 +145,7 @@ export default function AdminShell({
   banner = null,
   children,
 }) {
+  const modalTrapRef = useModalFocusRef();
   const { t } = useLocale();
   const phone = layout === "phone";
   const [query, setQuery] = useState("");
@@ -206,7 +208,7 @@ export default function AdminShell({
           <AdminSectionBoundary scope="pane" resetKey={current}>{children}</AdminSectionBoundary>
         </main>
         {drawer ? (
-          <div className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
+          <div ref={modalTrapRef} className="adm-drawer" role="dialog" aria-modal="true" aria-label={t("admin.sections")}>
             <aside className="adm-side is-drawer">
               <SideHead t={t} onClose={() => setDrawer(false)} closeLabel={t("admin.closeMenu")} />
               <SearchBox value={query} onChange={setQuery} inputRef={searchRef} t={t} hint={false} />

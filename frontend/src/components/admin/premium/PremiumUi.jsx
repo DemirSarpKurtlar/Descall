@@ -3,6 +3,7 @@
  * cards (agr-*, admin-growth.css) and the maintenance form controls (mt-*,
  * maintenance.css); premium-admin.css only adds what those do not have.
  */
+import { useModalFocusRef } from "../../../hooks/useModalFocus";
 import { useEffect } from "react";
 import { AlertTriangle, Calendar, RefreshCw, X } from "../../ui/Icon.jsx";
 import OverlayPortal from "../../ui/OverlayPortal.jsx";
@@ -232,6 +233,7 @@ export function DurationField({ value, onChange, t, allowUnlimited = true, allow
 }
 
 export function Modal({ onClose, children, wide = false, label }) {
+  const modalTrapRef = useModalFocusRef();
   useEffect(() => {
     const on = (e) => {
       if (e.key === "Escape") {
@@ -245,7 +247,7 @@ export function Modal({ onClose, children, wide = false, label }) {
   return (
     <OverlayPortal>
       <div className="mt-modal-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-        <div className={`mt-modal mt-glass pa-modal${wide ? " is-wide" : ""}`} role="dialog" aria-modal="true" aria-label={label}>
+        <div ref={modalTrapRef} className={`mt-modal mt-glass pa-modal${wide ? " is-wide" : ""}`} role="dialog" aria-modal="true" aria-label={label}>
           <button type="button" className="pa-modal-x" onClick={onClose} aria-label={label}><X size={16} /></button>
           {children}
         </div>

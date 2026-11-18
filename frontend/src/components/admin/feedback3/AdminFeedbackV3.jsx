@@ -6,6 +6,7 @@
  * Server side is admin-only (routes/admin.js → requireAdmin).
  * Text: adminx.fb catalog keys (i18n/locales/adminx.<id>.js).
  */
+import { useModalFocusRef } from "../../../hooks/useModalFocus";
 import { localizedField } from "../../../i18n/serverText.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "../../../api/adminHttp";
@@ -325,6 +326,8 @@ function isMacLike() {
 }
 
 export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav = [], onGoto, onClose, onOpenProfile, onUnread, embedded = false }) {
+  const modalTrapRef2 = useModalFocusRef();
+  const modalTrapRef = useModalFocusRef();
   const { t, locale } = useLocale();
   const phone = layout === "phone";
   const ipad = layout === "ipad";
@@ -548,7 +551,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
       {confirmDel && sel ? (
         <div className="fb3-alertwrap">
           <div className="fb3-dim" onClick={() => setConfirmDel(false)} />
-          <div className="fb3-alert fb3-heavy" role="alertdialog" aria-modal="true" aria-labelledby="fb3-del-t">
+          <div ref={modalTrapRef} className="fb3-alert fb3-heavy" role="alertdialog" aria-modal="true" aria-labelledby="fb3-del-t">
             <div className="bd">
               <h4 id="fb3-del-t">{t("adminx.fb.deleteTitle")}</h4><p>{deleteMessage(sel, t, locale)}</p>
               <input className="fb3-reason" autoFocus value={delReason} maxLength={300} aria-label={t("adminx.fb.deleteReason")}
@@ -630,7 +633,7 @@ export default function AdminFeedbackV3({ socket, layout = "desktop", extraNav =
   return (
     <div className="fb3" data-fb3={layout}>
       <div className="fb3-dim" onClick={onClose} />
-      <div className="fb3-win fb3-heavy" role="dialog" aria-modal="true" aria-label={t("adminx.fb.windowAria")} style={{ "--w": ipad ? "1150px" : "1360px", "--h": ipad ? "790px" : "840px" }}>
+      <div ref={modalTrapRef2} className="fb3-win fb3-heavy" role="dialog" aria-modal="true" aria-label={t("adminx.fb.windowAria")} style={{ "--w": ipad ? "1150px" : "1360px", "--h": ipad ? "790px" : "840px" }}>
         <div className="fb3-hd">
           <button type="button" className="home" onClick={() => onGoto?.("overview")} title={t("adminx.fb.sections")}>
             <img src={logoIcon} alt="" />

@@ -1,3 +1,4 @@
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, RefreshCw, Search, Trash2, MessageCircle, Lock, Mic, Paperclip } from "../ui/Icon.jsx";
@@ -26,6 +27,7 @@ export function canSubmitView(purpose, reason) {
 }
 
 function ViewReasonDialog({ conversation, onCancel, onSubmit, busy, error, t }) {
+  const modalTrapRef = useModalFocusRef();
   const [purpose, setPurpose] = useState("report");
   const [reason, setReason] = useState("");
   const [left, right] = conversation?.users || [];
@@ -38,7 +40,7 @@ function ViewReasonDialog({ conversation, onCancel, onSubmit, busy, error, t }) 
   return (
     <OverlayPortal>
       <div className="adm-dmv-scrim" onClick={onCancel} role="presentation">
-        <form
+        <form ref={modalTrapRef}
           className="adm-dmv-card"
           role="dialog"
           aria-modal="true"

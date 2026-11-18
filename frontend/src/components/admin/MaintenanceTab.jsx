@@ -1,3 +1,4 @@
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -86,6 +87,7 @@ function Toggle({ on, onChange, label }) {
 }
 
 function Modal({ children, onClose }) {
+  const modalTrapRef = useModalFocusRef();
   useEffect(() => {
     const k = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -93,7 +95,7 @@ function Modal({ children, onClose }) {
   }, [onClose]);
   return createPortal(
     <div className="mt-modal-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="mt-modal mt-glass" role="dialog" aria-modal="true">{children}</div>
+      <div ref={modalTrapRef} className="mt-modal mt-glass" role="dialog" aria-modal="true">{children}</div>
     </div>,
     document.body
   );

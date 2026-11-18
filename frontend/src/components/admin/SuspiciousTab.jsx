@@ -1,3 +1,4 @@
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -290,6 +291,7 @@ function timelineText(e, t) {
 }
 
 function Drawer({ id, row, role, flags, mobile, onClose, onChanged, onOpenTool, toast, t, locale }) {
+  const modalTrapRef = useModalFocusRef();
   const [base, setBase] = useState(null);
   const [extra, setExtra] = useState(null);
   const [err, setErr] = useState("");
@@ -407,7 +409,7 @@ function Drawer({ id, row, role, flags, mobile, onClose, onChanged, onOpenTool, 
   const emailLine = user.emailVerified ? t("sx.emailVerified") : t("sx.emailUnverified");
   const age = ageText(user.createdAt, t);
   const body = (
-    <aside className={`sx-drawer${mobile ? " is-sheet" : ""}`} role="dialog" aria-modal="true" aria-label={t("sx.detailOf", { name: handle })}>
+    <aside ref={modalTrapRef} className={`sx-drawer${mobile ? " is-sheet" : ""}`} role="dialog" aria-modal="true" aria-label={t("sx.detailOf", { name: handle })}>
       <div className="sx-d-head">
         {mobile && (
           <button type="button" ref={closeRef} className="pc-ibtn sx-close sx-back" aria-label={t("sx.back")} onClick={onClose}><ChevronLeft size={18} /></button>

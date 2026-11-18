@@ -1,3 +1,4 @@
+import { useModalFocusRef } from "../../hooks/useModalFocus";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -93,6 +94,7 @@ function Escape({ onClose }) {
 /* ---------- Dialogs ---------- */
 
 function ViewReasonDialog({ target, busy, error, onCancel, onSubmit, t }) {
+  const modalTrapRef = useModalFocusRef();
   const [purpose, setPurpose] = useState("report");
   const [reason, setReason] = useState("");
   const ok = canSubmitView(purpose, reason);
@@ -100,7 +102,7 @@ function ViewReasonDialog({ target, busy, error, onCancel, onSubmit, t }) {
     <OverlayPortal>
       <div className="asr-scrim is-center" onClick={onCancel} role="presentation">
         <Escape onClose={onCancel} />
-        <form
+        <form ref={modalTrapRef}
           className="asr-dialog"
           role="dialog"
           aria-modal="true"
@@ -148,12 +150,13 @@ function ViewReasonDialog({ target, busy, error, onCancel, onSubmit, t }) {
 }
 
 function HideDialog({ server, busy, error, onCancel, onSubmit, t }) {
+  const modalTrapRef = useModalFocusRef();
   const [note, setNote] = useState("");
   return (
     <OverlayPortal>
       <div className="asr-scrim is-center" onClick={onCancel} role="presentation">
         <Escape onClose={onCancel} />
-        <form
+        <form ref={modalTrapRef}
           className="asr-dialog"
           role="dialog"
           aria-modal="true"
@@ -182,6 +185,7 @@ function HideDialog({ server, busy, error, onCancel, onSubmit, t }) {
 }
 
 function DeleteServerDialog({ server, busy, error, onCancel, onSubmit, t }) {
+  const modalTrapRef = useModalFocusRef();
   const [typed, setTyped] = useState("");
   const [reason, setReason] = useState("");
   const ok = canConfirmDelete(server.name, typed, reason);
@@ -189,7 +193,7 @@ function DeleteServerDialog({ server, busy, error, onCancel, onSubmit, t }) {
     <OverlayPortal>
       <div className="asr-scrim is-center" onClick={onCancel} role="presentation">
         <Escape onClose={onCancel} />
-        <form
+        <form ref={modalTrapRef}
           className="asr-dialog is-danger"
           role="dialog"
           aria-modal="true"
@@ -290,6 +294,7 @@ function ReviewMessage({ m, onDelete, t, locale }) {
 }
 
 function ChannelViewer({ view, onClose, onPage, onDeleteMessage, t, locale }) {
+  const modalTrapRef = useModalFocusRef();
   const listRef = useRef(null);
   const lastDirection = useRef("latest");
   useEffect(() => {
@@ -305,7 +310,7 @@ function ChannelViewer({ view, onClose, onPage, onDeleteMessage, t, locale }) {
     <OverlayPortal>
       <div className="asr-scrim" onClick={onClose} role="presentation">
         <Escape onClose={onClose} />
-        <aside className="asr-drawer" role="dialog" aria-modal="true" aria-labelledby="asr-viewer-title" onClick={(e) => e.stopPropagation()}>
+        <aside ref={modalTrapRef} className="asr-drawer" role="dialog" aria-modal="true" aria-labelledby="asr-viewer-title" onClick={(e) => e.stopPropagation()}>
           <header className="asr-drawer-head">
             <span className="asr-drawer-ic"><Hash size={18} /></span>
             <div>
