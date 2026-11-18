@@ -911,7 +911,19 @@ version = "0.1.0"
 dependencies = [
  "log",
  "serde",
+ "serde_json",
  "thiserror 2.0.21",
+ "windows",
+ "windows-core",
+]
+
+[[package]]
+name = "descall-capture-bench"
+version = "0.1.0"
+dependencies = [
+ "descall-capture",
+ "serde",
+ "serde_json",
  "windows",
  "windows-core",
 ]
@@ -954,6 +966,8 @@ dependencies = [
  "base64 0.22.1",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
  "thiserror 2.0.21",
  "windows",
  "zeroize",
@@ -964,8 +978,8 @@ name = "descall-migrator"
 version = "0.1.0"
 dependencies = [
  "descall-migrate",
- "serde",
  "serde_json",
+ "zeroize",
 ]
 
 [[package]]
