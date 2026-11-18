@@ -16,6 +16,8 @@
 //! | `watchdog`        | bootWatchdog.cjs                        | bootWatchdog.selftest.mjs             |
 //! | `processes`       | processScanner.cjs BLOCKLIST            | (new)                                 |
 //! | `clipboard`       | clipboardText.cjs, clipboardImage.cjs   | clipboardText.selftest.mjs            |
+//! | `csp` (tests only)  | cspPolicy.cjs vs tauri.conf.json        | CSP source lists                      |
+//! | `pages`             | notificationCard/overlayHtml runtime    | node check of the bundled modules     |
 
 pub mod clipboard;
 pub mod csp;
