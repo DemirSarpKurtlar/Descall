@@ -23,6 +23,7 @@
 //! Everything that decides something is platform independent and unit tested; the
 //! Windows calls live in [`win`] behind the [`sys::Sys`] trait.
 
+pub mod app;
 pub mod cleanup;
 pub mod handoff;
 pub mod health;

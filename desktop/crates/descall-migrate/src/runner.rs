@@ -333,10 +333,7 @@ impl<'a, S: Sys> Runner<'a, S> {
     fn launch_new(&mut self) -> StepResult {
         let l = self.layout()?;
         let _ = self.sys.remove_file(&self.env.health_file());
-        let mut args = vec!["--migrated".to_string(), "--migration-id".to_string(), self.state.job.id.clone()];
-        if self.state.job.launch_hidden {
-            args.push("--hidden".into());
-        }
+        let args = crate::app::launch_args(&self.state.job.id, self.state.job.launch_hidden);
         self.state.launched_at_unix = Some(self.sys.now_unix());
         // Journal the launch time first: a resume must judge health against it.
         self.persist();

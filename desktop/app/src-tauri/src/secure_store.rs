@@ -21,7 +21,7 @@ fn path<R: Runtime>(app: &AppHandle<R>, name: &str) -> Option<PathBuf> {
 pub fn get<R: Runtime>(app: &AppHandle<R>, name: &str) -> Option<String> {
     let sealed = std::fs::read(path(app, name)?).ok()?;
     let entropy = format!("{ENTROPY_PREFIX}{name}");
-    let plain = descall_migrate::dpapi::unprotect(&sealed, Some(entropy.as_bytes())).ok()?;
+    let plain = descall_migrate::win::dpapi::unprotect(&sealed, Some(entropy.as_bytes())).ok()?;
     String::from_utf8(plain).ok()
 }
 
@@ -32,7 +32,7 @@ pub fn set<R: Runtime>(app: &AppHandle<R>, name: &str, value: &str) -> bool {
         return std::fs::remove_file(p).is_ok();
     }
     let entropy = format!("{ENTROPY_PREFIX}{name}");
-    match descall_migrate::dpapi::protect(value.as_bytes(), Some(entropy.as_bytes())) {
+    match descall_migrate::win::dpapi::protect(value.as_bytes(), Some(entropy.as_bytes())) {
         Ok(sealed) => std::fs::write(p, sealed).is_ok(),
         Err(_) => false,
     }

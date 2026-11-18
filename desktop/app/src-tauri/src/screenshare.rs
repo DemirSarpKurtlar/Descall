@@ -5,13 +5,15 @@
 //!   page gets a `sharedbufferreceived` event on window.chrome.webview, getBuffer() -> ArrayBuffer.
 //!   (WebView2 SDK 1.0.1661+ / runtime 109+; the runtime is evergreen.)
 //! - Per frame: ICoreWebView2::PostWebMessageAsString("descall-share:<id>:v:<seq>") on the UI
-//!   thread (WebView2 objects are STA). ~60 video + 50 audio wake-ups per second.
+//!   thread (WebView2 objects are STA). ~60 video + 50 audio wake-ups per second. Message
+//!   formats: descall_capture::bridge::{wake_message, end_message, shared_buffer_meta}.
 //! Docs: learn.microsoft.com/microsoft-edge/webview2/reference/win32/icorewebview2sharedbuffer
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use tauri::{AppHandle, WebviewWindow};
+use descall_capture::bridge;
+use tauri::{AppHandle, Runtime, WebviewWindow};
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     ICoreWebView2, ICoreWebView2Environment12, ICoreWebView2SharedBuffer, ICoreWebView2_17, COREWEBVIEW2_SHARED_BUFFER_ACCESS_READ_ONLY,
 };
@@ -24,7 +26,7 @@ thread_local! {
 
 /// Create a shared buffer of `size` bytes, post it to the page with `meta` as additional
 /// data, and return the host-side base address (as usize so it can cross threads).
-pub async fn create_and_post(window: &WebviewWindow, id: u32, size: usize, meta: String) -> Result<usize, String> {
+pub async fn create_and_post<R: Runtime>(window: &WebviewWindow<R>, id: u32, size: usize, meta: String) -> Result<usize, String> {
     let (tx, rx) = std::sync::mpsc::channel::<Result<usize, String>>();
     window
         .with_webview(move |pw| {
@@ -50,11 +52,11 @@ pub async fn create_and_post(window: &WebviewWindow, id: u32, size: usize, meta:
 }
 
 /// Wake the page: called from capture threads, hops to the UI thread.
-pub fn wake(app: &AppHandle, id: u32, kind: char, seq: u64) {
+pub fn wake<R: Runtime>(app: &AppHandle<R>, id: u32, kind: char, seq: u64) {
     let _ = app.run_on_main_thread(move || {
         UI.with(|m| {
             if let Some((_, core)) = m.borrow().get(&id) {
-                let msg = HSTRING::from(format!("descall-share:{id}:{kind}:{seq}"));
+                let msg = HSTRING::from(bridge::wake_message(id, kind, seq));
                 unsafe {
                     let _ = core.PostWebMessageAsString(&msg);
                 }
@@ -64,12 +66,13 @@ pub fn wake(app: &AppHandle, id: u32, kind: char, seq: u64) {
 }
 
 /// Tell the page the share ended, then close the buffer (the ring is detached before this).
-pub fn close(app: &AppHandle, id: u32, reason: &'static str) {
+pub fn close<R: Runtime>(app: &AppHandle<R>, id: u32, reason: &str) {
+    let msg = bridge::end_message(id, reason);
     let _ = app.run_on_main_thread(move || {
         UI.with(|m| {
             if let Some((buf, core)) = m.borrow_mut().remove(&id) {
                 unsafe {
-                    let _ = core.PostWebMessageAsString(&HSTRING::from(format!("descall-share:{id}:end:{reason}")));
+                    let _ = core.PostWebMessageAsString(&HSTRING::from(msg));
                     let _ = buf.Close();
                 }
             }

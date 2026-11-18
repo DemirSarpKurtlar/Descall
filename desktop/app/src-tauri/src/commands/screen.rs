@@ -1,216 +1,190 @@
-//! getScreenSources / selectDisplaySource replacement and the native share lifecycle.
-//! The page-side half is app/shim/native-screen-share.js.
+//! Native screen share commands: thin wrappers over `descall_capture::host::ShareHost`
+//! (wiring contract at the top of desktop/crates/descall-capture/src/host.rs, JSON shapes in
+//! its bridge.rs). The page-side half is app/shim/native-screen-share.js; the main shim maps
+//! electronAPI.getScreenSources / selectDisplaySource onto it.
+//!
+//! Every command is async: Tauri runs sync commands on the main (UI) thread, and source
+//! enumeration, thumbnails and starting a capture block for tens of milliseconds. The
+//! blocking work runs on a worker thread with COM initialised (MTA); only the WebView2 calls
+//! (shared buffer, wake-up messages) hop to the UI thread (crate::screenshare).
 
-use std::sync::{Arc, Mutex};
+use serde_json::Value;
+use tauri::{AppHandle, Runtime};
 
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, State, WebviewWindow};
+#[cfg(windows)]
+use descall_capture::bridge::{StartRequest, UpdateRequest};
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SourceDto {
-    pub id: String,
-    pub name: String,
-    pub kind: String,
-    pub width: i32,
-    pub height: i32,
-    /// P0: live thumbnails = low-rate WGC sessions per visible tile, scaled by the video
-    /// processor and JPEG-encoded with WIC (~15 KB per tile), refreshed every second while
-    /// the picker is open. The spike returns null and the picker shows the name + size.
-    pub thumbnail_data_url: Option<String>,
-    pub app_icon_data_url: Option<String>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StartReq {
-    pub source_id: String,
-    pub width: Option<u32>,
-    pub height: Option<u32>,
-    pub fps: Option<u32>,
-    pub cursor: Option<bool>,
-    pub audio: Option<bool>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StartInfo {
-    pub id: u32,
-    pub bytes: usize,
-    pub hdr: bool,
-    pub audio: bool,
-    pub audio_error: Option<String>,
-}
-
+/// Managed state: the one share host of the app (one share at a time, like Chromium).
 #[derive(Default)]
 pub struct ShareState {
     #[cfg(windows)]
-    active: Mutex<Option<Active>>,
-    next_id: std::sync::atomic::AtomicU32,
+    host: descall_capture::host::ShareHost,
 }
 
+#[cfg(not(windows))]
+type StartRequest = Value;
+#[cfg(not(windows))]
+type UpdateRequest = Value;
+
+#[cfg(not(windows))]
+const NOT_SUPPORTED: &str = "native screen share is Windows-only";
+
+/// Run `f` with the share host on a blocking worker thread that has COM.
 #[cfg(windows)]
-struct Active {
-    id: u32,
-    share: descall_capture::pipeline::Share,
-    ring: Arc<Mutex<descall_capture::ring::RingWriter>>,
-}
-
-#[tauri::command]
-pub fn screen_sources() -> Vec<SourceDto> {
-    #[cfg(windows)]
-    {
-        descall_capture::sources::list_all()
-            .into_iter()
-            .map(|s| SourceDto {
-                id: s.id,
-                name: s.name,
-                kind: s.kind.into(),
-                width: s.width,
-                height: s.height,
-                thumbnail_data_url: None,
-                app_icon_data_url: None,
-            })
-            .collect()
-    }
-    #[cfg(not(windows))]
-    {
-        Vec::new()
-    }
-}
-
-#[tauri::command]
-pub fn screen_share_caps() -> serde_json::Value {
-    #[cfg(windows)]
-    {
-        serde_json::to_value(descall_capture::caps::current()).unwrap_or_default()
-    }
-    #[cfg(not(windows))]
-    {
-        serde_json::Value::Null
-    }
-}
-
-#[tauri::command]
-pub async fn screen_share_start(app: AppHandle, window: WebviewWindow, state: State<'_, ShareState>, req: StartReq) -> Result<StartInfo, String> {
-    #[cfg(windows)]
-    {
-        use descall_capture::presets::{ContentHint, Quality};
-        use descall_capture::ring::{Layout, RingWriter};
-        stop_active(&app, &state, "replaced");
-        let target = resolve_target(&req.source_id)?;
-        let quality = Quality {
-            width: req.width.unwrap_or(1920).clamp(320, 3840),
-            height: req.height.unwrap_or(1080).clamp(240, 2160),
-            fps: req.fps.unwrap_or(30).clamp(5, 60),
-            hint: ContentHint::Motion,
-        };
-        let id = state.next_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-        let layout = Layout::new(quality.width, quality.height);
-        let meta = serde_json::json!({ "descallShare": id, "bytes": layout.total }).to_string();
-        let base = crate::screenshare::create_and_post(&window, id, layout.total, meta).await?;
-        let ring = unsafe { RingWriter::new(base as *mut u8, layout.total, layout, descall_capture::loopback::SAMPLE_RATE, 2) };
-        let ring = Arc::new(Mutex::new(ring));
-
-        let app_n = app.clone();
-        let notify = move |kind: descall_capture::pipeline::Kind, seq: u64| {
-            use descall_capture::pipeline::Kind;
-            match kind {
-                Kind::Video => crate::screenshare::wake(&app_n, id, 'v', seq),
-                // Every other 10 ms packet: the page drains all unread audio slots per wake.
-                Kind::Audio if seq % 2 == 0 => crate::screenshare::wake(&app_n, id, 'a', seq),
-                Kind::Audio => {}
-            }
-        };
-        let request = descall_capture::pipeline::ShareRequest {
-            target,
-            quality,
-            cursor: req.cursor.unwrap_or(true),
-            system_audio: req.audio.unwrap_or(true),
-            sdr_white_nits: 200.0,
-        };
-        let share = descall_capture::pipeline::start(request, ring.clone(), notify).map_err(|e| {
-            crate::screenshare::close(&app, id, "failed");
-            e.to_string()
-        })?;
-        let info = StartInfo { id, bytes: layout.total, hdr: share.hdr, audio: share.audio_error.is_none() && req.audio.unwrap_or(true), audio_error: share.audio_error.clone() };
-        *state.active.lock().unwrap() = Some(Active { id, share, ring });
-        watch_source(app.clone(), id);
-        Ok(info)
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = (app, window, state, req);
-        Err("native screen share is Windows-only".into())
-    }
-}
-
-#[tauri::command]
-pub fn screen_share_stop(app: AppHandle, state: State<'_, ShareState>) {
-    stop_active(&app, &state, "stopped");
-}
-
-/// Mid-share quality change (track.applyConstraints from the page): P0 restarts the WGC
-/// session with the new pacing and resizes the converter; the ring keeps its size (the
-/// layout is allocated for the preset box).
-#[tauri::command]
-pub fn screen_share_update(fps: Option<u32>) -> bool {
-    let _ = fps;
-    false
-}
-
-/// The shared window was closed or the monitor unplugged (GraphicsCaptureItem.Closed):
-/// end the share like Chromium does when the captured surface goes away.
-#[cfg(windows)]
-fn watch_source(app: AppHandle, id: u32) {
+async fn with_host<R: Runtime, T: Send + 'static>(app: &AppHandle<R>, f: impl FnOnce(&descall_capture::host::ShareHost) -> T + Send + 'static) -> Result<T, String> {
     use tauri::Manager;
-    tauri::async_runtime::spawn(async move {
-        loop {
-            tokio_sleep_ms(500).await;
-            let state = app.state::<ShareState>();
-            let closed = match state.active.lock().unwrap().as_ref() {
-                Some(a) if a.id == id => a.share.source_closed(),
-                _ => return,
-            };
-            if closed {
-                stop_active(&app, &state, "source-closed");
-                return;
-            }
-        }
-    });
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        descall_capture::imaging::ensure_com();
+        f(&app.state::<ShareState>().host)
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// The shell side of the share events: wake-ups and the end message go to the page through
+/// WebView2 (PostWebMessageAsString on the UI thread); `ended` also closes the shared buffer.
+#[cfg(windows)]
+struct TauriSink<R: Runtime> {
+    app: AppHandle<R>,
 }
 
 #[cfg(windows)]
-async fn tokio_sleep_ms(ms: u64) {
-    let _ = tauri::async_runtime::spawn_blocking(move || std::thread::sleep(std::time::Duration::from_millis(ms))).await;
+impl<R: Runtime> descall_capture::host::HostSink for TauriSink<R> {
+    fn wake(&self, id: u32, kind: char, seq: u64) {
+        crate::screenshare::wake(&self.app, id, kind, seq);
+    }
+
+    fn ended(&self, id: u32, reason: &str) {
+        crate::screenshare::close(&self.app, id, reason);
+    }
 }
 
-fn stop_active(app: &AppHandle, state: &ShareState, reason: &'static str) {
+/// get-screen-sources: `SourceInfo[]` (Electron id shape, thumbnails and app icons).
+#[tauri::command]
+pub async fn screen_sources<R: Runtime>(app: AppHandle<R>, thumbnails: Option<bool>) -> Result<Value, String> {
     #[cfg(windows)]
     {
-        if let Some(a) = state.active.lock().unwrap().take() {
-            a.ring.lock().unwrap().detach();
-            a.share.stop();
-            crate::screenshare::close(app, a.id, reason);
-        }
+        let with_thumbs = thumbnails.unwrap_or(false);
+        let list = with_host(&app, move |h| h.thumbs.sources(with_thumbs)).await?;
+        serde_json::to_value(list).map_err(|e| e.to_string())
     }
     #[cfg(not(windows))]
     {
-        let _ = (app, state, reason);
+        let _ = (app, thumbnails);
+        Ok(Value::Array(Vec::new()))
     }
 }
 
-#[cfg(windows)]
-fn resolve_target(id: &str) -> Result<descall_capture::wgc::Target, String> {
-    use descall_capture::wgc::Target;
-    let mut parts = id.split(':');
-    match (parts.next(), parts.next()) {
-        (Some("screen"), Some(n)) => {
-            let n: usize = n.parse().map_err(|_| "bad screen id")?;
-            let mons = descall_capture::sources::list_monitors();
-            mons.get(n).map(|m| Target::Monitor(m.handle)).ok_or_else(|| format!("screen {n} not found"))
-        }
-        (Some("window"), Some(h)) => Ok(Target::Window(h.parse::<isize>().map_err(|_| "bad window id")?)),
-        _ => Err("source id must be screen:<n>:0 or window:<hwnd>:0".into()),
+/// Live picker tiles: fresh thumbnails (cached for 800 ms per source) and `alive: false`
+/// for sources that went away.
+#[tauri::command]
+pub async fn screen_thumbnails<R: Runtime>(app: AppHandle<R>, ids: Vec<String>) -> Result<Value, String> {
+    #[cfg(windows)]
+    {
+        let list = with_host(&app, move |h| h.thumbs.get(&ids, std::time::Duration::from_millis(800))).await?;
+        serde_json::to_value(list).map_err(|e| e.to_string())
     }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, ids);
+        Ok(Value::Array(Vec::new()))
+    }
+}
+
+/// What this machine supports (WGC, cursor toggle, borderless, process loopback).
+#[tauri::command]
+pub async fn screen_share_caps() -> Value {
+    #[cfg(windows)]
+    {
+        tauri::async_runtime::spawn_blocking(|| serde_json::to_value(descall_capture::caps::current()).unwrap_or_default()).await.unwrap_or_default()
+    }
+    #[cfg(not(windows))]
+    {
+        Value::Null
+    }
+}
+
+/// Start (or replace) the share: plan, post the shared buffer to the page, then start the
+/// capture into it. Returns `StartInfo`.
+#[tauri::command]
+pub async fn screen_share_start<R: Runtime>(app: AppHandle<R>, window: tauri::WebviewWindow<R>, req: StartRequest) -> Result<Value, String> {
+    #[cfg(windows)]
+    {
+        if window.label() != crate::state::MAIN {
+            return Err("screen share runs in the main window only".into());
+        }
+        let plan = with_host(&app, move |h| h.plan(&req)).await?.map_err(|e| e.to_string())?;
+        let (id, len) = (plan.id, plan.layout.total);
+        let meta = descall_capture::bridge::shared_buffer_meta(id, len);
+        let base = crate::screenshare::create_and_post(&window, id, len, meta).await?;
+        let sink = std::sync::Arc::new(TauriSink { app: app.clone() });
+        // SAFETY: the buffer stays mapped until TauriSink::ended closes it, and ShareHost
+        // calls `ended` only after the ring is detached (or the start failed).
+        let info = with_host(&app, move |h| unsafe { h.start(plan, base as *mut u8, len, sink) }).await?.map_err(|e| e.to_string())?;
+        serde_json::to_value(info).map_err(|e| e.to_string())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, window, req);
+        Err(NOT_SUPPORTED.into())
+    }
+}
+
+/// Mid-share change (track.applyConstraints, the cursor toggle in the share bar).
+#[tauri::command]
+pub async fn screen_share_update<R: Runtime>(app: AppHandle<R>, req: UpdateRequest) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        with_host(&app, move |h| h.update(&req)).await
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, req);
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+pub async fn screen_share_stop<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    stop(&app, "stopped").await
+}
+
+/// Live counters for the share bar and telemetry (`null` when no share runs).
+#[tauri::command]
+pub async fn screen_share_stats<R: Runtime>(app: AppHandle<R>) -> Result<Value, String> {
+    #[cfg(windows)]
+    {
+        let s = with_host(&app, |h| h.stats()).await?;
+        serde_json::to_value(s).map_err(|e| e.to_string())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Ok(Value::Null)
+    }
+}
+
+async fn stop<R: Runtime>(app: &AppHandle<R>, reason: &'static str) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        with_host(app, move |h| {
+            h.stop(reason);
+        })
+        .await
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, reason);
+        Ok(())
+    }
+}
+
+/// The main page started loading a new document: its MediaStream is gone, so end the
+/// capture too (Chromium ends getDisplayMedia on navigation).
+pub fn stop_on_navigation<R: Runtime>(app: &AppHandle<R>) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let _ = stop(&app, "navigated").await;
+    });
 }
