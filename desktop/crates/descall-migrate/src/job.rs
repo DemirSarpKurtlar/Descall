@@ -106,7 +106,12 @@ impl MigrationJob {
 
     /// Folder that holds the running Electron (`dirname(app.getPath('exe'))`).
     pub fn electron_dir(&self) -> PathBuf {
-        self.electron_exe.parent().map(Path::to_path_buf).unwrap_or_default()
+        // Split on both separators so a Windows path behaves the same on every host.
+        let s = self.electron_exe.to_string_lossy();
+        match s.rfind(['\\', '/']) {
+            Some(i) => PathBuf::from(&s[..i]),
+            None => PathBuf::new(),
+        }
     }
 }
 

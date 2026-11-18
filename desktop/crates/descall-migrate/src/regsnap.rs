@@ -23,7 +23,7 @@ pub fn toast_server_key() -> String {
     format!(r"Software\Classes\CLSID\{TOAST_CLSID}\LocalServer32")
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Hive {
     Hkcu,

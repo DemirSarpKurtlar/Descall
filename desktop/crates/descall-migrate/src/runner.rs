@@ -28,6 +28,8 @@ pub const SETUP_TIMEOUT_MS: u64 = 10 * 60_000;
 pub const START_GRACE_MS: u64 = 60_000;
 /// How long the new process may be gone before we call it a crash.
 pub const GONE_GRACE_MS: u64 = 10_000;
+/// After a skip, how long to wait for a quitting Electron before relaunching it.
+pub const ELECTRON_REQUIT_WAIT_MS: u64 = 20_000;
 const POLL_MS: u64 = 500;
 
 type StepResult = Result<(), String>;
@@ -556,6 +558,12 @@ impl<'a, S: Sys> Runner<'a, S> {
         let electron = self.state.layout.as_ref().map(|l| l.old_exe()).unwrap_or_else(|| self.state.job.electron_exe.clone());
         match self.state.step {
             Step::Skipped => {
+                // Electron was told to quit when it started us: give it time to finish
+                // quitting, then start it again. One that never quit is left alone.
+                let deadline = self.sys.now_ms() + ELECTRON_REQUIT_WAIT_MS;
+                while !self.sys.pids_of(&electron).is_empty() && self.sys.now_ms() < deadline {
+                    self.sys.sleep_ms(POLL_MS);
+                }
                 if self.sys.exists(&electron) && self.sys.pids_of(&electron).is_empty() {
                     let flag = if rolled_back { "--migration-failed" } else { "--migration-skipped" };
                     let args = self.electron_args(flag);
