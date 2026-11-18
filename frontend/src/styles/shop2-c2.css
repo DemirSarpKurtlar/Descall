@@ -2733,13 +2733,17 @@ html:is(.reduce-motion, .gd-lite) .cosmetic-typing-flare[class*="typing-s2-"] .t
     radial-gradient(130% 70% at 50% 0%, color-mix(in srgb, var(--pc-accent) 18%, transparent) 0%, transparent 70%),
     linear-gradient(var(--pc-angle, 180deg), var(--pc-a) 0%, var(--pc-c, var(--pc-a)) 52%, var(--pc-b) 100%) !important;
 }
-:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect, .s2-name-colour)) {
+/* Only a bare sample name (Shop2Art) takes the set colour here. Every app name element
+   wraps NameEffectText, which already paints the set colour (.s2-name-colour) or the name
+   effect. This used to be :not(:has(.cosmetic-name-effect, .s2-name-colour)), which made
+   every hover and scroll in the app restyle ~3000 elements (performance-01). */
+:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] .pcolor-name-bare {
   background-image: var(--pc-name);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] :is(.pfs-name, .user-profile-name-row, .uhc3-name, .pcolor-name):not(:has(.cosmetic-name-effect, .s2-name-colour)) > * {
+:root:root .has-pcolor.pcolor-s2[class*="pc-s2-set-"] .pcolor-name-bare > * {
   -webkit-text-fill-color: currentColor;
 }
 
