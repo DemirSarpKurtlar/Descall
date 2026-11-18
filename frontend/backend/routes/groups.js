@@ -334,7 +334,7 @@ router.post("/create", requireAuth, async (req, res) => {
     // Members (polish messaging-08): unique ids, never self, accepted friends only and
     // no block either way, all checked BEFORE the group row exists (no orphan groups).
     if (!Array.isArray(rawMembers) || rawMembers.some((id) => typeof id !== "string" || !isSafeId(id))) {
-      return res.status(400).json({ error: "Invalid members", code: "INVALID_MEMBERS" });
+      return res.status(400).json(apiError("Invalid members", null, { code: "INVALID_MEMBERS" }));
     }
     const memberIds = [...new Set(rawMembers)].filter((id) => id !== userId);
     
@@ -346,10 +346,10 @@ router.post("/create", requireAuth, async (req, res) => {
       const { isBlockedEitherWay } = require("../lib/blocking");
       for (const memberId of memberIds) {
         if (!(await areAcceptedFriends(userId, memberId))) {
-          return res.status(403).json({ error: "You can only add your friends", code: "NOT_FRIENDS" });
+          return res.status(403).json(apiError("You can only add your friends", null, { code: "NOT_FRIENDS" }));
         }
         if (await isBlockedEitherWay(userId, memberId)) {
-          return res.status(403).json({ error: "You can't add this user.", code: "BLOCKED" });
+          return res.status(403).json(apiError("You can't add this user.", null, { code: "BLOCKED" }));
         }
       }
     }
@@ -683,7 +683,7 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
 // length cap, safe media types). This old REST twin skipped all of that and was unused
 // by the app (polish messaging-07), so it is gone.
 router.post("/:groupId/messages", requireAuth, (_req, res) => {
-  res.status(410).json({ error: "Send messages through the app.", code: "GONE" });
+  res.status(410).json(apiError("Send messages through the app.", null, { code: "GONE" }));
 });
 
 // Get group members
