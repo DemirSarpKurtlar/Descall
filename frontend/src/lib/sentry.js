@@ -107,9 +107,11 @@ function onEarlyRejection(e) {
 function loadSdk() {
   if (loading) return loading;
   // sentryScrub rides with the lazy SDK so it stays out of the first-paint entry.
-  loading = Promise.all([import("./sentrySdk"), import("./sentryScrub")])
-    .then(([Sentry, { scrubEvent, scrubBreadcrumb }]) => {
-      const { isNativeIOS } = Sentry;
+  // ./platform loads on its own: re-exporting isNativeIOS through sentrySdk made Rollup put
+  // platform.js in the Sentry chunk, so every module that needed it pulled @sentry/react
+  // (87 KB) into the app boot path (performance-13).
+  loading = Promise.all([import("./sentrySdk"), import("./sentryScrub"), import("./platform")])
+    .then(([Sentry, { scrubEvent, scrubBreadcrumb }, { isNativeIOS }]) => {
       Sentry.init({
         dsn: SENTRY_DSN,
         release: APP_VERSION ? `descall@${APP_VERSION}` : undefined,
