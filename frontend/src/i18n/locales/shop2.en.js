@@ -134,7 +134,7 @@ export const SHOP2_EN = {
     "featured": "Featured set · {i}/{n}",
     "left": "{d} d {h} h left",
     "next": "Next: {name}",
-    "desc": "Eight pieces, one palette: frame, banner, name colour, badge, effect, bubble, voice tile and join sound.",
+    "desc": "Nine pieces, one palette: frame, banner, aura, name colour, badge, effect, bubble, voice tile and join sound.",
     "yourPrice": "Your price",
     "inspect": "See the set",
     "tryOn": "Try it on me"

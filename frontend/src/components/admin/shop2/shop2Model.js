@@ -7,10 +7,10 @@
 export const RARITIES = Object.freeze(["common", "rare", "epic", "legendary", "mythic"]);
 export const RARITY_COLOR = Object.freeze({ common: "#c9ced9", rare: "#6f8dff", epic: "#b57bff", legendary: "#f2b84b", mythic: "#ff6b7d" });
 
-/** The 8 pieces of a set, grouped like the builder (A2): profile, name + badge, effect + chat, sound. */
-export const SET_SLOTS = Object.freeze(["avatar_frame", "banner", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound"]);
+/** The 9 pieces of a set, grouped like the builder (A2): profile (+ aura), name + badge, effect + chat, sound. */
+export const SET_SLOTS = Object.freeze(["avatar_frame", "banner", "profile_aura", "profile_color", "profile_badge", "avatar_effect", "chat_bubble", "voice_tile", "join_sound"]);
 export const SLOT_GROUPS = Object.freeze([
-  ["profile", ["avatar_frame", "banner"]],
+  ["profile", ["avatar_frame", "banner", "profile_aura"]],
   ["nameBadge", ["profile_color", "profile_badge"]],
   ["effectChat", ["avatar_effect", "chat_bubble"]],
   ["sound", ["voice_tile", "join_sound"]],
@@ -361,7 +361,7 @@ export function itemPaletteScore(item, palette, setKey) {
 /* ------------------------------------------------------------------ pre-publish checklist */
 
 /**
- * A2 "Yayın öncesi denetim": eight pieces in one palette, discount in band, phone crop
+ * A2 "Yayın öncesi denetim": nine pieces in one palette, discount in band, phone crop
  * checked, no clash in the first two days, pieces also sold one by one, 7/7 locales.
  */
 export function checklist(set, { clashes = [], phoneChecked = false, palette = null } = {}) {

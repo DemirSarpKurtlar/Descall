@@ -134,7 +134,7 @@ export const SHOP2_TR = {
     "featured": "Öne çıkan set · {i}/{n}",
     "left": "{d} gün {h} sa kaldı",
     "next": "Sıradaki: {name}",
-    "desc": "8 parça, tek palet: çerçeve, afiş, ad rengi, rozet, efekt, balon, ses kutusu, katılma sesi.",
+    "desc": "9 parça, tek palet: çerçeve, afiş, aura, ad rengi, rozet, efekt, balon, ses kutusu, katılma sesi.",
     "yourPrice": "Sana kalan fiyat",
     "inspect": "Seti incele",
     "tryOn": "Üzerimde dene"

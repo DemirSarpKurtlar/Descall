@@ -1,7 +1,8 @@
 "use strict";
 
 /**
- * Set pricing (pure). A set costs the sum of its 8 pieces minus 20-30 %, rounded to 10 D.
+ * Set pricing (pure). A set costs the sum of its pieces (9: the 8 originals + the profile aura)
+ * minus 20-30 %, rounded to 10 D. Nothing here depends on the piece count.
  * Owned pieces are deducted at the same set ratio (you pay the set rate for what you are
  * missing). Buying a piece on its own opens a 7-day partial-price window: while it lasts the
  * remaining pieces cost the set rate, one by one or together, even after the set leaves the

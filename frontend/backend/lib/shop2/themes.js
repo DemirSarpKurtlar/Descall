@@ -2,13 +2,15 @@
 
 /**
  * The 16 Market 2.0 set themes (shared with the catalog agents: every set has exactly one piece
- * in each of the 8 SET_PIECE_CATEGORIES, matched by `set_key`). These are the defaults a set
+ * in each of the 9 SET_PIECE_CATEGORIES, matched by `set_key`; the profile aura joined the
+ * original 8 in Nov 2026). These are the defaults a set
  * starts from; admins can rename, reschedule, re-price or restock a set in shop2_sets.
  */
 
 const SET_PIECE_CATEGORIES = [
   "avatar_frame",
   "banner",
+  "profile_aura",
   "profile_color",
   "profile_badge",
   "avatar_effect",
@@ -19,7 +21,7 @@ const SET_PIECE_CATEGORIES = [
 
 /** Piece groups shown together in the set page ("frame + banner", ...). */
 const PIECE_GROUPS = [
-  ["look", ["avatar_frame", "banner"]],
+  ["look", ["avatar_frame", "banner", "profile_aura"]],
   ["name", ["profile_color", "profile_badge"]],
   ["motion", ["avatar_effect", "chat_bubble"]],
   ["voice", ["voice_tile", "join_sound"]],

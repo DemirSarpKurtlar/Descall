@@ -134,7 +134,7 @@ export const SHOP2_PT_BR = {
     "featured": "Set em destaque · {i}/{n}",
     "left": "faltam {d} d {h} h",
     "next": "Próximo: {name}",
-    "desc": "Oito peças, uma paleta: moldura, banner, cor do nome, insígnia, efeito, balão, bloco de voz e som de entrada.",
+    "desc": "Nove peças, uma paleta: moldura, banner, aura, cor do nome, insígnia, efeito, balão, bloco de voz e som de entrada.",
     "yourPrice": "Seu preço",
     "inspect": "Ver o set",
     "tryOn": "Provar em mim"

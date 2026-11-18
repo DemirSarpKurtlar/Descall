@@ -1,7 +1,7 @@
 /**
  * Set oluşturucu (Draft A frame A2 + Draft B frame B2):
  *   left     Setler list (A2) or the piece rack (B2: palette score, drag into a slot)
- *   middle   name (32), theme palette + "Uyanları öner", 8 pieces in 4 groups (owner share
+ *   middle   name (32), theme palette + "Uyanları öner", 9 pieces in 4 groups (owner share
  *            on every piece, ownership warning), price: sum / dearest single item, set
  *            price + suggestion, discount slider with the 20–30 band (springs back),
  *            price ladder, vertical ruler, A/B price test; schedule and stock (piece sale,
