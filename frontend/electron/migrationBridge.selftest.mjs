@@ -210,6 +210,11 @@ test("a full attempt pipes the secrets over stdin, then starts the migrator and 
   for (const f of fs.readdirSync(path.join(w.local, "Descall-Migration"))) {
     assert.ok(!fs.readFileSync(path.join(w.local, "Descall-Migration", f), "utf8").includes(TOKEN), f);
   }
+  // Same shape as the fixture the Rust crate parses (tests/bridge_contract.rs).
+  const fixture = JSON.parse(fs.readFileSync(path.join(dir, "..", "..", "desktop", "crates", "descall-migrate", "tests", "fixtures", "bridge-envelope.json"), "utf8"));
+  const shape = (v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === "localStorage" || k === "premiumFiles" ? "map" : shape(v[k])])) : Array.isArray(v) ? v.slice(0, 1).map(shape) : typeof v);
+  const loose = (s) => JSON.stringify(s).replace(/"(object|string|number|boolean)"/g, '"x"');
+  assert.equal(loose(shape(env)), loose(shape(fixture)), "bridge envelope keys match the Rust fixture");
   const run = w.calls.spawned.find((c) => c.args[0] === "--run");
   assert.ok(run && run.opts.detached, "--run is detached");
   assert.equal(w.calls.quit, 1);
