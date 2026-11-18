@@ -16,6 +16,7 @@ const allow = [
   "http://localhost:4173",
   "https://localhost:5173",
   "descall://app",
+  "https://tauri.localhost",
   "descall://localhost",
   "Descall://localhost",
   "capacitor://localhost",
@@ -31,6 +32,10 @@ const deny = [
   "https://notdescall.com",
   "http://descall.com",
   "*",
+  "http://tauri.localhost",
+  "https://tauri.localhost.evil.example",
+  "https://evil.tauri.localhost",
+  "tauri://localhost",
 ];
 
 for (const origin of allow) {

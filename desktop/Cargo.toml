@@ -37,3 +37,7 @@ lto = "thin"
 codegen-units = 1
 panic = "abort"
 strip = "symbols"
+
+# The migrator is a small one-shot tool: optimise it for size.
+[profile.release.package.descall-migrator]
+opt-level = "s"

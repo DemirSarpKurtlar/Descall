@@ -1,0 +1,40 @@
+{
+  "job": {
+    "id": "mig-0123456789abcdef01234567",
+    "installId": "3f2c9a1e-1111-4222-8333",
+    "createdAtUnix": 1800000000,
+    "setup": {
+      "path": "C:\\Users\\Demir\\AppData\\Local\\Descall-Migration\\Descall-Setup-4.0.0.exe",
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+      "size": 19,
+      "version": "4.0.0",
+      "args": ["/S", "/D={dir}"]
+    },
+    "electronExe": "C:\\Users\\Demir\\AppData\\Local\\Programs\\Descall\\Descall.exe",
+    "electronVersion": "3.10.0",
+    "launchHidden": true,
+    "perMachineHint": false,
+    "healthTimeoutSecs": 180,
+    "minWinBuild": 19041
+  },
+  "handoff": {
+    "version": 1,
+    "createdAtUnix": 1800000000,
+    "electronVersion": "3.10.0",
+    "installId": "3f2c9a1e-1111-4222-8333",
+    "migrationId": "mig-0123456789abcdef01234567",
+    "installDir": "C:\\Users\\Demir\\AppData\\Local\\Programs\\Descall",
+    "perMachine": false,
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMCJ9.c2lnbmF0dXJl",
+    "accounts": [
+      { "id": "0123456789ab", "label": "", "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMCJ9.c2lnbmF0dXJl", "localStorage": { "theme": "dark" } }
+    ],
+    "localStorage": { "theme": "dark" },
+    "windowState": { "x": 10, "y": 20, "width": 1280, "height": 800, "maximized": true, "unit": "dip" },
+    "autostart": { "enabled": true, "disabledByUser": false, "decided": true },
+    "locale": "tr",
+    "premiumFiles": { "premium-settings.json": "{\"features\":{}}", "premium.accounts.json": "{\"accounts\":[]}" },
+    "appLockRecord": "{\"v\":1,\"algo\":\"scrypt\",\"salt\":\"c2FsdHNhbHQ=\",\"hash\":\"aGFzaGhhc2g=\",\"len\":6}",
+    "flags": {}
+  }
+}

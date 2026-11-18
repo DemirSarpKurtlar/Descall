@@ -2098,6 +2098,59 @@ function createTray() {
 }
 
 // App events
+/**
+ * Electron -> Tauri migration bridge. OFF in shipped builds: migrationBridgeConfig.cjs
+ * MIGRATION_BRIDGE_ENABLED is false, so the bridge module is never even loaded.
+ */
+function startMigrationBridge() {
+  const bridgeConfig = require('./migrationBridgeConfig.cjs');
+  if (!bridgeConfig.MIGRATION_BRIDGE_ENABLED || process.platform !== 'win32') return;
+  try {
+    require('./migrationBridge.cjs').start({
+      app,
+      fs,
+      config: bridgeConfig,
+      env: process.env,
+      argv: process.argv,
+      platform: process.platform,
+      arch: process.arch,
+      osRelease: require('os').release(),
+      now: () => Date.now(),
+      fetch: (url, opts) => net.fetch(url, opts),
+      spawn: require('child_process').spawn,
+      log,
+      looksLikeJwt,
+      readEncryptedFile: (file, opts = {}) => {
+        // Same legacy plain-text acceptance as the owners of these files (token, app lock).
+        const legacyPlain = opts.jwt ? looksLikeJwt : opts.json ? require('./tokenCrypto.cjs').looksLikeJsonObject : null;
+        return readEncryptedFile(safeStorage, fs, file, legacyPlain ? { legacyPlain } : {});
+      },
+      readToken: async () => {
+        const file = path.join(app.getPath('userData'), 'auth-token.bin');
+        try {
+          const t = fs.existsSync(file) ? await readEncryptedFile(safeStorage, fs, file, { legacyPlain: looksLikeJwt }) : null;
+          return t && looksLikeJwt(t) ? t : null;
+        } catch (_) {
+          return null;
+        }
+      },
+      getMainWindow: () => mainWindow,
+      readOpenAtLogin,
+      getLocale,
+      // Same quiet moment as an automatic update install (no call, no typing, idle/background).
+      isQuietMoment: () => decideUpdateInstall({ ...deferral, updateReady: true, explicitConfirm: false, prelaunch: false, now: Date.now() }).action === 'install',
+      quitForMigration: () => {
+        isQuitting = true;
+        installStarted = true; // a downloaded Electron update must not start on this quit
+        autoUpdater.autoInstallOnAppQuit = false;
+        app.quit();
+      },
+    });
+  } catch (err) {
+    log.warn('[migration] bridge failed to start:', err?.message || err);
+  }
+}
+
 app.whenReady().then(async () => {
   // A second process that lost the single-instance lock must not create a
   // splash, check for updates or touch userData (2.11.9: the updater relaunch
@@ -2126,6 +2179,7 @@ app.whenReady().then(async () => {
 
   registerDescallProtocol();
   if (!smokeBoot) ensureAutostartLoginItem();
+  if (!smokeBoot) startMigrationBridge();
 
   try {
     bindSessionSetupDownloadCleanup({ session: session.defaultSession, app, log });
