@@ -1,0 +1,38 @@
+{
+ "product": "Descall",
+ "version": "4.0.0",
+ "arch": "x64",
+ "minWindowsBuild": 19041,
+ "payload": {
+  "file": "Descall-4.0.0-x64.zip",
+  "sha256": "7ff59c806d3d4d0e91b3b670de894838f5c4922129d89effb6bf704a4cf679da",
+  "size": 5011,
+  "installedSize": 4777,
+  "files": 4,
+  "partSize": 1024,
+  "parts": [
+   "ca188d98613e1c15a1c30a4cc1ca805242e7b7aa5676d12faf833ef862667f51",
+   "19ffbc824daac72ec8d9d6099a19524f839406c81190fefe6fb913ef472526c1",
+   "972634c00b25a32b16ac392dfed0b14d14930770b543f6777f2cd4c65e0519f6",
+   "df046968e28b4a444e20b15e03a650c2dfa98af96835748212aa1daa29fb749f",
+   "179f3e2cdc67487b1beebb2dade22203e2c127692b0c45598a37a0cf3e1ef65c"
+  ]
+ },
+ "mirrors": [
+  {
+   "base": "https://cdn-ist.descall.com/desktop/4.0.0/",
+   "label": {
+    "en": "Istanbul",
+    "tr": "İstanbul"
+   }
+  },
+  {
+   "base": "https://cdn-fra.descall.com/desktop/4.0.0/",
+   "label": {
+    "en": "Frankfurt"
+   }
+  }
+ ],
+ "notes": [],
+ "legacyBackupDays": 14
+}

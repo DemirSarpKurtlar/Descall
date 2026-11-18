@@ -131,3 +131,5 @@ html.exe .toast-frame { border-radius: 16px; }
 html.rm *, html.rm *::before, html.rm *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .spinner { border-color: rgba(134,160,255,.25); border-top-color: var(--accent-hi); border-right-color: var(--accent-hi); } }
 html.rm .spinner { border-right-color: var(--accent-hi); }
+.disk .dir-bad { color: var(--warn); }
+.xi .rt .chip.warn { white-space: nowrap; }

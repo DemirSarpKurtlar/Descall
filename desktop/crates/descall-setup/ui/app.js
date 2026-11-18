@@ -69,6 +69,8 @@
       .map((x) => (x.type === "percentSign" ? `<small>${esc(x.value)}</small>` : x.type === "literal" ? "" : esc(x.value))).join("");
   }
   function pctLoc(p) { return M.lang === "tr" ? pctStr(p) + "'" + trLocative(p) : pctStr(p); }
+  /** Rounded percent that only shows 100 once the work is really complete. */
+  function shownPct(p) { return p >= 100 ? 100 : Math.min(99, Math.round(p || 0)); }
   function secs(v) { return num(v, v < 10 && v % 1 ? 1 : 0) + " " + raw("sec"); }
   function etaHtml(s) {
     if (s == null || !isFinite(s)) return "–";
@@ -206,7 +208,7 @@
     const sub = ok ? esc(`${s.os} · WebView2`) : !s.osOk ? t("sys_os_bad") : !s.diskOk ? t("sys_disk_bad") : t("sys_wv_bad");
     return `<div class="opt glass-tile" style="align-items:center"><span class="oi${ok ? "" : " warn"}"${ok ? ' style="background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 1px rgba(63,212,154,.25)"' : ""}>${ic("cpu")}</span><div class="tx"><b>${t(ok ? "sys_ok" : "sys_bad")}</b><span>${sub}</span></div><span class="chip ${ok ? "ok" : "warn"}">${ic(ok ? "check" : "alert")}${passed}/${checks.length}</span></div>`;
   }
-  const canInstall = () => M.sys.osOk && M.sys.diskOk;
+  const canInstall = () => M.sys.osOk && M.sys.diskOk && !M.dirError;
 
   function panelWelcome() {
     const up = !!(M.existing && M.existing.version);
@@ -283,7 +285,7 @@
     else if (d.phase === "download") what = d.paused ? `${ic("pause")}${t("p_paused", { i: partNo, n: num(d.parts, 0) })}` : `<span class="spinner"></span>${t("p_dl", { i: partNo, n: num(d.parts, 0) })}`;
     else if (d.phase === "verify") { pct = (d.verify || 0) * 100; what = `<span class="spinner"></span>${t("p_verify")}`; }
     else { pct = d.files.total ? (d.files.done / d.files.total) * 100 : 0; what = `<span class="spinner"></span>${t("p_install", { i: num(d.files.done, 0), n: num(d.files.total, 0) })}`; }
-    const rp = Math.floor(pct);
+    const rp = shownPct(pct);
     const order = { connect: 0, download: 0, verify: 1, install: 2 }[d.phase];
     const spin = '<span class="spinner" style="width:12px;height:12px"></span>';
     const row = (n, icon, pctTxt) => {
@@ -305,7 +307,7 @@
       kv4: { html: srv ? `${esc(srv.label)} <small>${num(srv.ms, 0)} ${t("ms")}</small>` : "–" },
       pausebtn: { html: d.paused ? `${ic("play")}${t("resume")}` : `${ic("pause")}${t("pause")}` },
       copy: { text: M.ui.copied ? raw("copied") : raw("copy"), cls: { ok: !!M.ui.copied } },
-    }, row(1, "download", pctStr(Math.floor(dlPct))), row(2, "shield", pctStr(Math.floor((d.verify || 0) * 100))), row(3, "package", pctStr(rp)));
+    }, row(1, "download", pctStr(shownPct(dlPct))), row(2, "shield", pctStr(shownPct((d.verify || 0) * 100))), row(3, "package", pctStr(rp)));
   }
 
   function panelDone() {
@@ -400,6 +402,7 @@
       const x = r[id] || { st: "wait" };
       let rt;
       if (x.st === "ok") rt = `<span class="chip ok">${ic("check")}${okText(x)}</span>`;
+      else if (x.st === "warn") rt = `<span class="chip warn">${ic("alert")}${t("x_ses_warn")}</span>`;
       else if (x.st === "run" && x.total) rt = `<span class="quiet tnum" style="font-size:var(--fs-11)">${esc(mbv(x.done, 0))} / ${esc(size(x.total, 0))}</span><div class="bar"><i style="width:${Math.round((x.done / x.total) * 100)}%"></i></div>`;
       else if (x.st === "run") rt = `<span class="spinner"></span>`;
       else rt = `<span class="chip">${t("waiting")}</span>`;
@@ -416,7 +419,7 @@
         <div class="head"><h1 class="h1">${t(fin ? "mg_h1_done" : "mg_h1")}</h1><p>${t("mg_p")}</p></div>
         <div class="xfer">
           ${row("set", "sliders", t("x_set"), (x) => t("x_set_d", { n: num(x.n || 0, 0) }), () => t("x_set_ok"))}
-          ${row("ses", "key", t("x_ses"), t("x_ses_d"), () => t("x_ses_ok"))}
+          ${row("ses", "key", t("x_ses"), (x) => t(x.st === "warn" ? "x_ses_relogin" : "x_ses_d"), () => t("x_ses_ok"))}
           ${row("sh", "keyboard", t("x_sh"), t("x_sh_d"), (x) => t("x_sh_ok", { n: num(x.n || 0, 0) }))}
           ${row("cl", "trash", (x) => t(x.st === "ok" ? "x_cl_done" : "x_cl"), t("x_cl_d"), () => t("x_cl_ok"))}
         </div>
@@ -475,7 +478,7 @@
     const e = M.err || {};
     return [M.screen, M.lang, M.ui.menu, M.ui.hover, M.ui.confirm, M.ui.details, e.kind, e.code, M.dl.phase, M.dl.embedded, !!(M.mig && M.mig.finished),
       M.screen === "migration" ? JSON.stringify(M.mig && M.mig.rows) + (M.mig && M.mig.installPct) : "", M.screen === "update" ? JSON.stringify(M.upd) : "",
-      M.screen === "welcome" ? JSON.stringify([M.opts, M.sys, M.existing]) : "", M.screen === "done" ? JSON.stringify(M.done) : "",
+      M.screen === "welcome" ? JSON.stringify([M.opts, M.sys, M.existing, !!M.dirError]) : "", M.screen === "done" ? JSON.stringify(M.done) : "",
       M.screen === "error" ? JSON.stringify([M.err, M.dl.got, M.dl.parts]) : ""].join("|");
   }
 
@@ -519,7 +522,7 @@
       const lowDisk = M.free && M.need && M.free < M.need * 3;
       return {
         path: { text: shortPath(M.dir), title: M.dir },
-        need: { text: raw("need").replace("{size}", size(M.need, 0)) },
+        need: { text: M.dirError ? raw("dir_bad") : raw("need").replace("{size}", size(M.need, 0)), cls: { "dir-bad": !!M.dirError } },
         free: { text: raw("free").replace("{drive}", M.drive).replace("{size}", gbv(M.free)) },
         diskbar: { w: M.free ? Math.min(100, Math.max(4, (M.need / M.free) * 100)) : 4, cls: { low: !!lowDisk } },
       };
@@ -552,7 +555,8 @@
     for (const k of Object.keys(a)) {
       const v = a[k];
       if (k === "host") args[k] = `<span class="ac">${esc(v)}</span>`;
-      else if (k === "size" || k === "got") args[k] = esc(size(v));
+      else if (k === "size") args[k] = esc(size(v));
+      else if (k === "got") args[k] = esc(a.size != null ? mbv(v) : size(v));
       else if (k === "secs") args[k] = esc(secs(v));
       else if (k === "i" && a.n != null) args[k] = esc(String(v).padStart(String(a.n).length, "0"));
       else args[k] = esc(typeof v === "number" ? num(v, 0) : v);
@@ -708,10 +712,10 @@
         dir: "C:\\Users\\demir\\AppData\\Local\\Programs\\Descall", need: 92 * MB, free: 214 * GB, drive: "C:",
         sys: { os: "Windows 11", osOk: true, wvOk: true, diskOk: true }, dl,
         logPath: "C:\\Users\\demir\\AppData\\Local\\Descall-Setup\\logs\\setup.log",
-        ui: { menu: params.get("menu") === "1", hover: params.get("hover"), slide: screen === "progress" ? 1 : 0, confirm: variant === "confirm", details: variant === "details" },
+        ui: { menu: params.get("menu") === "1", hover: params.get("hover"), slide: screen === "progress" ? 1 : 0, confirm: variant === "confirm", details: variant === "details", played: !!params.get("freeze") },
       };
       const L1 = [
-        ["16:42:07", "l_connected", { host: "cdn-ist.descall.com" }],
+        ["16:42:07", "l_connected", { host: "cdn-ist.descall.com", tls: "TLS 1.3" }],
         ["16:42:08", "l_manifest", { v: "4.0.0", n: 14, size: 18.4 * MB }],
         ["16:42:10", "l_part_ok", { i: 7, n: 14, size: 1.3 * MB, secs: 0.4 }],
         ["16:42:11", "l_part_ok", { i: 8, n: 14, size: 1.3 * MB, secs: 0.4 }],
@@ -768,6 +772,7 @@
         window.__setup.patch({ upd, screen: "update" });
       }
       if (params.get("rm") === "1") window.__setup.patch({ rm: true });
+      merge(M.ui, { menu: base.ui.menu, confirm: base.ui.confirm });
       renderNow();
       document.body.setAttribute("data-ready", "1");
     },
