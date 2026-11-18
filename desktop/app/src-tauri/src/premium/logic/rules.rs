@@ -317,6 +317,21 @@ pub fn reply_target(data: &Value) -> Option<String> {
     None
 }
 
+/// Toast activation arguments: the toast id and the conversation, so a reply that starts
+/// Descall (cold start, COM activator) still knows where it goes.
+pub fn toast_args(id: &str, conv: &str) -> String {
+    format!("descall-qr|{id}|{conv}")
+}
+
+pub fn parse_toast_args(args: &str) -> Option<(String, String)> {
+    let rest = args.strip_prefix("descall-qr|")?;
+    let (id, conv) = rest.split_once('|')?;
+    let conv = conv.strip_suffix("|reply").unwrap_or(conv);
+    let ok_id = !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
+    let ok_conv = conv.starts_with("dm:") && conv.len() > 3 && conv.chars().count() <= 70 && !conv.contains('|');
+    (ok_id && ok_conv).then(|| (id.to_string(), conv.to_string()))
+}
+
 pub fn drop_targets(next: &Value) -> Vec<Value> {
     next.get("targets")
         .and_then(Value::as_array)
@@ -453,6 +468,12 @@ mod tests {
         assert_eq!(reply_target(&json!({"type": "mention", "dmConversationId": "c9"})).as_deref(), Some("dm:c9"));
         assert_eq!(reply_target(&json!({"type": "mention"})), None);
         assert_eq!(reply_target(&json!({"type": "call", "fromId": "u1"})), None);
+        let a = toast_args("descall-qr-1-2", "dm:u1");
+        assert_eq!(parse_toast_args(&a), Some(("descall-qr-1-2".into(), "dm:u1".into())));
+        assert_eq!(parse_toast_args(&format!("{a}|reply")), Some(("descall-qr-1-2".into(), "dm:u1".into())));
+        assert_eq!(parse_toast_args("descall-qr|x|group:1"), None, "only DMs are replyable");
+        assert_eq!(parse_toast_args("other|x|dm:1"), None);
+        assert_eq!(parse_toast_args("descall-qr|a b|dm:1"), None);
         assert_eq!(safe_file_name("my clip (1).webm"), "my_clip_1_.webm");
         assert_eq!(safe_file_name(""), "clip.webm");
         assert_eq!(drop_targets(&json!({"targets": [{"id": "dm:1", "label": "Ada"}, {"label": "x"}]})).len(), 1);

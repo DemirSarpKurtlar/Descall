@@ -3,17 +3,19 @@
 //! Descall's own capsules. The typed text goes to the renderer (premium:quick-reply
 //! { conv, text }), which posts it through POST /api/messages/quick-reply.
 //! The shell's notification code calls premium::notify_filter / premium::show_quick_reply.
+//! A reply typed after Descall was closed arrives through the COM toast activator at startup;
+//! it waits here until the main window and this feature are up, then goes out like any other.
 #![allow(dead_code)] // reached through those shell hooks
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-use crate::premium::logic::rules::{cut, reply_target};
+use crate::premium::logic::rules::{cut, parse_toast_args, reply_target, toast_args};
 use crate::premium::toast::{self, Handle, TOAST_CLSID};
-use crate::premium::{lock, ok, Caller, Feature, From, Host};
+use crate::premium::{host, lock, ok, Bus, Caller, Feature, From, Host};
 
 const KEEP: Duration = Duration::from_secs(10 * 60);
 const MAX_LIVE: usize = 20;
@@ -21,7 +23,13 @@ const MAX_LIVE: usize = 20;
 struct Live {
     handle: Handle,
     at: Instant,
+    click: Value,
 }
+
+/// Replies waiting for the renderer (cold start), and the toast ids already answered (the
+/// in-process event and the COM activator can both report the same reply).
+static PENDING: Mutex<Vec<(String, String, Instant)>> = Mutex::new(Vec::new());
+static REPLIED: std::sync::LazyLock<Mutex<HashSet<String>>> = std::sync::LazyLock::new(|| Mutex::new(HashSet::new()));
 
 #[derive(Default)]
 pub struct F;
@@ -65,29 +73,10 @@ pub(crate) fn show(h: &Host, title: &str, body: &str, conv: &str, click_data: Va
         }
     }
     let id = format!("descall-qr-{:x}-{:x}", crate::premium::now_ms(), h.next_id());
-    let conv = cut(conv, 70);
-    let replied = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let on = {
-        let conv = conv.clone();
-        Box::new(move |text: Option<String>| {
-            let Some(h) = crate::premium::host() else { return };
-            match text {
-                Some(t) => {
-                    let body = cut(t.trim(), 2000);
-                    if !body.is_empty() && !replied.swap(true, std::sync::atomic::Ordering::Relaxed) {
-                        h.send("premium:quick-reply", json!({ "conv": conv, "text": body }));
-                    }
-                }
-                None => {
-                    h.show_main();
-                    let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click_data.clone());
-                }
-            }
-        })
-    };
-    match toast::show(&id, &cut(title, 120), &cut(body, 300), &h.et("quickReply.placeholder", &[]), on) {
+    let args = toast_args(&id, &cut(conv, 70));
+    match toast::show(&args, &cut(title, 120), &cut(body, 300), &h.et("quickReply.placeholder", &[]), on_activation) {
         Ok(handle) => {
-            lock(&LIVE).insert(id, Live { handle, at: Instant::now() });
+            lock(&LIVE).insert(id, Live { handle, at: Instant::now(), click: click_data });
             true
         }
         Err(e) => {
@@ -97,12 +86,63 @@ pub(crate) fn show(h: &Host, title: &str, body: &str, conv: &str, click_data: Va
     }
 }
 
+/// Every toast activation (in-process event or COM activator, warm or cold start).
+pub(crate) fn on_activation(args: String, reply: Option<String>) {
+    let Some((id, conv)) = parse_toast_args(&args) else { return };
+    let text = reply.map(|t| cut(t.trim(), 2000)).filter(|t| !t.is_empty());
+    match text {
+        Some(text) => {
+            {
+                let mut done = lock(&REPLIED);
+                if done.len() > 500 {
+                    done.clear();
+                }
+                if !done.insert(id) {
+                    return;
+                }
+            }
+            lock(&PENDING).push((conv, text, Instant::now()));
+            flush();
+        }
+        None => {
+            let Some(h) = host() else { return };
+            h.show_main();
+            let click = lock(&LIVE).get(&id).map(|l| l.click.clone()).unwrap_or_else(|| {
+                let peer = conv.trim_start_matches("dm:");
+                json!({ "data": { "type": "dm", "conversationId": peer, "fromId": peer } })
+            });
+            let _ = tauri::Emitter::emit_to(&h.app, "main", "notification:click", click);
+        }
+    }
+}
+
+/// Send waiting replies once the renderer is up and the feature runs (10 min at most).
+fn flush() {
+    let Some(h) = host() else { return };
+    lock(&PENDING).retain(|(_, _, at)| at.elapsed() < KEEP);
+    let ready = lock(&h.app_state).get("ready").and_then(Value::as_bool) == Some(true);
+    if !ready || !h.is_running("quick_reply") {
+        return;
+    }
+    for (conv, text, _) in std::mem::take(&mut *lock(&PENDING)) {
+        h.send("premium:quick-reply", json!({ "conv": conv, "text": text }));
+    }
+}
+
 impl Feature for F {
     fn key(&self) -> &'static str {
         "quick_reply"
     }
     fn channels(&self) -> &'static [(&'static str, From)] {
         &[("premium:quick_reply:status", From::Main)]
+    }
+    fn start(&self, _h: &Host) {
+        flush();
+    }
+    fn on_bus(&self, _h: &Host, ev: &Bus) {
+        if matches!(ev, Bus::App) {
+            flush();
+        }
     }
     fn stop(&self, _h: &Host) {
         for (_, l) in lock(&LIVE).drain() {

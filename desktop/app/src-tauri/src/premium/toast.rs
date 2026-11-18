@@ -1,12 +1,29 @@
 //! Native Windows toast with an inline reply box (quick_reply). tauri-plugin-notification has no
-//! reply input, so this uses WinRT ToastNotification directly with the app's AppUserModelID
-//! (com.descall.app, the Start Menu shortcut written by the installer carries it and the toast
-//! activator CLSID). The reply text arrives on the toast's Activated event.
+//! reply input, so this uses WinRT ToastNotification directly with the app's AppUserModelID.
+//!
+//! Two activation paths, both ending in the same handler (`OnActivate(arguments, reply)`):
+//!  - while Descall runs, the toast's own Activated event;
+//!  - the COM toast activator (INotificationActivationCallback, CLSID below). Windows uses it
+//!    when the toast is answered after Descall was closed: it starts
+//!    `"<install dir>\Descall.exe" -Embedding`, Descall registers the class object at startup
+//!    ([`register_activator`]) and Windows delivers the reply to it. The arguments carry the
+//!    conversation, so the reply is not lost on a cold start.
+//!
+//! Installer (per user, same values as frontend/electron/installer.nsh):
+//!  - Start Menu shortcut `Descall.lnk` with System.AppUserModel.ID = `com.descall.app` and
+//!    System.AppUserModel.ToastActivatorCLSID = `{BCF5A315-F914-4A7E-95BD-313CBE4B661B}`;
+//!  - `HKCU\Software\Classes\CLSID\{BCF5A315-F914-4A7E-95BD-313CBE4B661B}` (default) = `Descall`;
+//!  - `HKCU\Software\Classes\CLSID\{BCF5A315-F914-4A7E-95BD-313CBE4B661B}\LocalServer32`
+//!    (default) = `"<install dir>\Descall.exe"`;
+//!  - uninstall deletes `HKCU\Software\Classes\CLSID\{BCF5A315-F914-4A7E-95BD-313CBE4B661B}`.
 
 pub const APP_USER_MODEL_ID: &str = "com.descall.app";
 pub const TOAST_CLSID: &str = "{BCF5A315-F914-4A7E-95BD-313CBE4B661B}";
+#[cfg(windows)]
+const TOAST_CLSID_U128: u128 = 0xBCF5A315_F914_4A7E_95BD_313CBE4B661B;
 
-pub type OnReply = Box<dyn Fn(Option<String>) + Send + Sync>;
+/// (toast arguments, typed reply or None for a plain click).
+pub type OnActivate = fn(String, Option<String>);
 
 /// Windows only delivers toasts of an unpackaged app that has a Start Menu shortcut with its
 /// AppUserModelID (an installed build; not a portable or dev run).
@@ -27,38 +44,40 @@ fn esc(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&apos;")
 }
 
-pub fn toast_xml(id: &str, title: &str, body: &str, placeholder: &str, send_label: &str) -> String {
+/// `args` comes from rules::toast_args (id + conversation).
+pub fn toast_xml(args: &str, title: &str, body: &str, placeholder: &str) -> String {
     format!(
-        r#"<toast launch="descall-qr:{id}" activationType="foreground"><visual><binding template="ToastGeneric"><text>{}</text><text>{}</text></binding></visual><actions><input id="reply" type="text" placeHolderContent="{}"/><action content="{}" arguments="descall-qr:{id}:reply" activationType="foreground" hint-inputId="reply"/></actions></toast>"#,
+        r#"<toast launch="{a}" activationType="foreground"><visual><binding template="ToastGeneric"><text>{}</text><text>{}</text></binding></visual><actions><input id="reply" type="text" placeHolderContent="{}"/><action content="&#x27A4;" arguments="{a}|reply" activationType="foreground" hint-inputId="reply"/></actions></toast>"#,
         esc(title),
         esc(body),
         esc(placeholder),
-        esc(send_label)
+        a = esc(args)
     )
 }
 
-/// Show the toast. `on_activate(Some(text))` for a reply, `(None)` for a plain click.
+/// Show the toast; its Activated event calls `on_activate`.
 #[cfg(windows)]
-pub fn show(id: &str, title: &str, body: &str, placeholder: &str, on_activate: OnReply) -> Result<Handle, String> {
+pub fn show(args: &str, title: &str, body: &str, placeholder: &str, on_activate: OnActivate) -> Result<Handle, String> {
     use windows::core::{Interface, HSTRING};
     use windows::Data::Xml::Dom::XmlDocument;
     use windows::Foundation::{IPropertyValue, TypedEventHandler};
     use windows::UI::Notifications::{ToastActivatedEventArgs, ToastNotification, ToastNotificationManager};
 
     let xml = XmlDocument::new().map_err(|e| e.to_string())?;
-    xml.LoadXml(&HSTRING::from(toast_xml(id, title, body, placeholder, "\u{27A4}"))).map_err(|e| e.to_string())?;
+    xml.LoadXml(&HSTRING::from(toast_xml(args, title, body, placeholder))).map_err(|e| e.to_string())?;
     let toast = ToastNotification::CreateToastNotification(&xml).map_err(|e| e.to_string())?;
     toast
-        .Activated(&TypedEventHandler::<ToastNotification, windows::core::IInspectable>::new(move |_, args| {
-            let text = args
-                .as_ref()
-                .and_then(|a| a.cast::<ToastActivatedEventArgs>().ok())
-                .and_then(|a| a.UserInput().ok())
+        .Activated(&TypedEventHandler::<ToastNotification, windows::core::IInspectable>::new(move |_, a| {
+            let Some(a) = a.as_ref().and_then(|a| a.cast::<ToastActivatedEventArgs>().ok()) else { return Ok(()) };
+            let args = a.Arguments().map(|s| s.to_string()).unwrap_or_default();
+            let text = a
+                .UserInput()
+                .ok()
                 .and_then(|set| set.Lookup(&HSTRING::from("reply")).ok())
                 .and_then(|v| v.cast::<IPropertyValue>().ok())
                 .and_then(|p| p.GetString().ok())
                 .map(|s| s.to_string());
-            on_activate(text);
+            on_activate(args, text);
             Ok(())
         }))
         .map_err(|e| e.to_string())?;
@@ -68,7 +87,7 @@ pub fn show(id: &str, title: &str, body: &str, placeholder: &str, on_activate: O
 }
 
 #[cfg(not(windows))]
-pub fn show(_id: &str, _title: &str, _body: &str, _placeholder: &str, _on_activate: OnReply) -> Result<Handle, String> {
+pub fn show(_args: &str, _title: &str, _body: &str, _placeholder: &str, _on_activate: OnActivate) -> Result<Handle, String> {
     Err("platform".into())
 }
 
@@ -88,3 +107,73 @@ impl Handle {
         }
     }
 }
+
+/// Register the COM toast activator for this process (call once at startup, before Windows
+/// times out waiting for the class after a cold start). Lives on its own MTA thread.
+#[cfg(windows)]
+pub fn register_activator(on_activate: OnActivate) {
+    use windows::core::{implement, IUnknown, Interface, Ref, BOOL, GUID, PCWSTR};
+    use windows::Win32::Foundation::{CLASS_E_NOAGGREGATION, E_POINTER};
+    use windows::Win32::System::Com::{CoInitializeEx, CoRegisterClassObject, IClassFactory, IClassFactory_Impl, CLSCTX_LOCAL_SERVER, COINIT_MULTITHREADED, REGCLS_MULTIPLEUSE};
+    use windows::Win32::UI::Notifications::{INotificationActivationCallback, INotificationActivationCallback_Impl, NOTIFICATION_USER_INPUT_DATA};
+
+    #[implement(INotificationActivationCallback)]
+    struct Activator(OnActivate);
+
+    impl INotificationActivationCallback_Impl for Activator_Impl {
+        fn Activate(&self, _aumid: &PCWSTR, invokedargs: &PCWSTR, data: *const NOTIFICATION_USER_INPUT_DATA, count: u32) -> windows::core::Result<()> {
+            let args = if invokedargs.is_null() { String::new() } else { unsafe { invokedargs.to_string() }.unwrap_or_default() };
+            let mut reply = None;
+            if !data.is_null() {
+                for item in unsafe { std::slice::from_raw_parts(data, count as usize) } {
+                    let key = unsafe { item.Key.to_string() }.unwrap_or_default();
+                    if key == "reply" {
+                        reply = unsafe { item.Value.to_string() }.ok();
+                    }
+                }
+            }
+            let f = self.0;
+            std::thread::spawn(move || f(args, reply));
+            Ok(())
+        }
+    }
+
+    #[implement(IClassFactory)]
+    struct Factory(OnActivate);
+
+    impl IClassFactory_Impl for Factory_Impl {
+        fn CreateInstance(&self, outer: Ref<IUnknown>, riid: *const GUID, ppv: *mut *mut core::ffi::c_void) -> windows::core::Result<()> {
+            if outer.is_some() {
+                return Err(CLASS_E_NOAGGREGATION.into());
+            }
+            if ppv.is_null() || riid.is_null() {
+                return Err(E_POINTER.into());
+            }
+            let unk: IUnknown = Activator(self.0).into();
+            unsafe { unk.query(riid, ppv).ok() }
+        }
+        fn LockServer(&self, _lock: BOOL) -> windows::core::Result<()> {
+            Ok(())
+        }
+    }
+
+    let _ = std::thread::Builder::new().name("premium-toast-activator".into()).spawn(move || unsafe {
+        if CoInitializeEx(None, COINIT_MULTITHREADED).is_err() {
+            return;
+        }
+        let factory: IClassFactory = Factory(on_activate).into();
+        let clsid = GUID::from_u128(TOAST_CLSID_U128);
+        match CoRegisterClassObject(&clsid, &factory, CLSCTX_LOCAL_SERVER, REGCLS_MULTIPLEUSE) {
+            Ok(_cookie) => {
+                // The MTA (and the registration) stays for the life of the process.
+                loop {
+                    std::thread::park();
+                }
+            }
+            Err(e) => log::warn!("[premium] toast activator not registered: {e}"),
+        }
+    });
+}
+
+#[cfg(not(windows))]
+pub fn register_activator(_on_activate: OnActivate) {}

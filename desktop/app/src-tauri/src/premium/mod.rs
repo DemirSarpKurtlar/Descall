@@ -760,6 +760,8 @@ pub fn init() -> TauriPlugin<Wry> {
                     worker.run_bus(ev);
                 }
             })?;
+            // Toast replies typed while Descall was closed (cold start through COM).
+            toast::register_activator(features::quick_reply::on_activation);
             platform::start_watcher(Box::new(|ev| {
                 if let Some(h) = host() {
                     h.bus(ev);

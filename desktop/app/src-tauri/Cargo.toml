@@ -59,5 +59,6 @@ windows = { workspace = true, features = [
   "Foundation",
   "Foundation_Collections",
   "UI_Notifications",
+  "Win32_UI_Notifications",
 ] }
 windows-core.workspace = true
