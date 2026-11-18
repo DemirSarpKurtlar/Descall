@@ -22,7 +22,12 @@ const CODECS = [
   { id: "vp8", codec: "vp8", mime: "video/webm", ext: "webm", extra: {} },
 ];
 
+/** Native recorder of the Descall desktop app (hardware H.264 + game audio, never the call),
+ *  when the shell offers one; the WebCodecs recorder below is the fallback. */
+const nativeClip = () => (typeof window !== "undefined" && window.__descallNativeClip?.supported ? window.__descallNativeClip : null);
+
 export function clipSupported() {
+  if (nativeClip()) return true;
   return typeof window !== "undefined" && typeof window.VideoEncoder === "function" && typeof window.MediaStreamTrackProcessor === "function";
 }
 
@@ -41,7 +46,7 @@ async function pickCodec(width, height, fps) {
   return null;
 }
 
-export class ClipRecorder {
+class BrowserClipRecorder {
   constructor({ sourceId, windowSec = DEFAULTS.windowSec, height = DEFAULTS.height, fps = DEFAULTS.fps, onError } = {}) {
     this.sourceId = sourceId;
     this.windowSec = windowSec;
@@ -174,8 +179,18 @@ export class ClipRecorder {
   }
 }
 
+/** The native recorder when the desktop shell has one, else the WebCodecs recorder. */
+export class ClipRecorder {
+  constructor(opts = {}) {
+    const native = nativeClip();
+    // eslint-disable-next-line no-constructor-return
+    return native ? new native.ClipRecorder({ ...opts, fallback: BrowserClipRecorder }) : new BrowserClipRecorder(opts);
+  }
+}
+
 /** Mux [from, to] (ms from the snapshot start) into a playable file. No re-encode. */
 export async function muxClip(snap, from, to) {
+  if (snap?.codec?.native && nativeClip()) return nativeClip().muxClip(snap, from, to);
   if (!snap?.chunks?.length || !snap.decoderConfig) throw new Error("empty");
   const mb = await import("mediabunny");
   const { start, end } = selectRange(snap.chunks, from, to);

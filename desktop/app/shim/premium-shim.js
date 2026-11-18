@@ -103,7 +103,105 @@
     return origOpen.call(window, url, target, features);
   };
 
-  // instant_clip: desktop-source getUserMedia (Electron chromeMediaSource) -> native lane.
+  // instant_clip native recorder (premium/clip.rs): hardware H.264 + game audio (never the
+  // call) in a native fragmented-MP4 ring. Same interface as the page's WebCodecs ClipRecorder
+  // and muxClip (frontend/src/premium/gaming/instantClip.js), which pick it when present and
+  // keep their own recorder as the fallback.
+  class NativeClipRecorder {
+    constructor(opts = {}) {
+      this.opts = opts;
+      this.fps = Number(opts.fps) || 30;
+      this.windowSec = Number(opts.windowSec) === 60 ? 60 : 30;
+      this.height = Number(opts.height) || 720;
+      this.fallback = null;
+      this.cached = { running: false, native: true, lengthMs: 0 };
+      this.timer = 0;
+    }
+
+    async start() {
+      const r = await premiumInvoke("premium:instant_clip:native-start", {
+        sourceId: String(this.opts.sourceId || ""), windowSec: this.windowSec, height: this.height, fps: this.fps, audio: true,
+      }).catch(() => null);
+      if (r && r.ok) {
+        this.cached = r.info || this.cached;
+        this.timer = setInterval(() => this.poll(), 1000);
+        return this.info();
+      }
+      const Fallback = this.opts.fallback;
+      if (typeof Fallback !== "function") throw new Error((r && r.error) || "start");
+      console.warn("[instant clip] native recorder unavailable, using WebCodecs:", r && r.error);
+      this.fallback = new Fallback(this.opts);
+      return this.fallback.start();
+    }
+
+    poll() {
+      premiumInvoke("premium:instant_clip:native-info").then((r) => {
+        const info = r && r.info;
+        if (!info) return;
+        this.cached = info;
+        if (!info.running && this.timer) {
+          clearInterval(this.timer);
+          this.timer = 0;
+          if (this.opts.onError) this.opts.onError(new Error(info.error || "stopped"));
+        }
+      }).catch(() => {});
+    }
+
+    info() {
+      if (this.fallback) return this.fallback.info();
+      const i = this.cached || {};
+      return {
+        running: Boolean(i.running), codec: "avc", hardware: Boolean(i.hardware), width: i.width || 0, height: i.height || 0,
+        fps: this.fps, windowSec: this.windowSec, bufferedSec: i.bufferedSec || 0, bytes: i.bytes || 0, maxBytes: i.maxBytes || 0,
+        frames: i.frames || 0, dropped: i.dropped || 0, native: true, audio: Boolean(i.audio),
+      };
+    }
+
+    /** Synchronous like the WebCodecs recorder: the timeline comes from the last poll and is
+     *  replaced in place by the frozen native snapshot a moment later. */
+    snapshot() {
+      if (this.fallback) return this.fallback.snapshot();
+      const lengthMs = Math.round((this.cached.bufferedSec || 0) * 1000);
+      const chunks = [];
+      for (let t = 0; t < lengthMs; t += 1000) chunks.push({ key: true, ts: t * 1000, dur: Math.min(1000, lengthMs - t) * 1000, bytes: 0 });
+      const snap = {
+        chunks, decoderConfig: { native: true }, fps: this.fps, bytes: this.cached.bytes || 0, lengthMs, at: Date.now(),
+        codec: { id: "avc", mime: "video/mp4", ext: "mp4", native: true },
+      };
+      snap.ready = premiumInvoke("premium:instant_clip:native-snapshot").then((r) => {
+        if (!r || !r.ok) throw new Error((r && r.error) || "empty");
+        snap.chunks.splice(0, snap.chunks.length, ...r.chunks);
+        snap.lengthMs = r.lengthMs;
+        snap.bytes = r.bytes;
+        return r.id;
+      });
+      snap.ready.catch(() => {});
+      return snap;
+    }
+
+    stop() {
+      if (this.timer) clearInterval(this.timer);
+      this.timer = 0;
+      if (this.fallback) { this.fallback.stop(); return; }
+      premiumInvoke("premium:instant_clip:native-stop").catch(() => {});
+    }
+  }
+
+  async function nativeMuxClip(snap, from, to) {
+    const id = await snap.ready;
+    const r = await premiumInvoke("premium:instant_clip:native-export", id, Number(from) || 0, Number(to) || 0);
+    if (!r || !r.ok) throw new Error((r && r.error) || "export");
+    const bytes = await unpack(r.data);
+    return new Blob([bytes], { type: r.mime || "video/mp4" });
+  }
+
+  if (window.descallPremium && !window.__descallNativeClip) {
+    Object.defineProperty(window, "__descallNativeClip", {
+      value: Object.freeze({ supported: true, ClipRecorder: NativeClipRecorder, muxClip: nativeMuxClip }),
+    });
+  }
+
+  // instant_clip fallback: desktop-source getUserMedia (Electron chromeMediaSource) -> native lane.
   const md = navigator.mediaDevices;
   if (md && typeof md.getUserMedia === "function") {
     const origGum = md.getUserMedia.bind(md);
