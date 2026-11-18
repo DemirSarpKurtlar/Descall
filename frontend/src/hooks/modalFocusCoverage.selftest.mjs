@@ -8,7 +8,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SRC = join(fileURLToPath(new URL(".", import.meta.url)), "..");
-const TRAP = /useModalFocus\(|key\s*[!=]==\s*["']Tab["']|\buseTrap\(|\buseFocusTrap\(|\buseLayerKeys\(/;
+const TRAP = /useModalFocus(?:Ref)?\(|key\s*[!=]==\s*["']Tab["']|\buseTrap\(|\buseFocusTrap\(|\buseLayerKeys\(/;
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {

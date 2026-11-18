@@ -13,6 +13,7 @@
  * `targets` the dialog is exactly the single-target dialog.
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import useModalFocus from "../../hooks/useModalFocus";
 import { createPortal } from "react-dom";
 import { adminFetch } from "../../api/adminHttp";
 import { useLocale } from "../../context/LocaleContext";
@@ -99,6 +100,7 @@ export default function BanDialog({
   const [listOpen, setListOpen] = useState(false);
   const titleId = useId();
   const dialogRef = useRef(null);
+  useModalFocus(Boolean(open), dialogRef);
   const [meta, setMeta] = useState(metaProp || null);
   const [facts, setFacts] = useState({});
   const [form, setForm] = useState(() => initialForm(defaultCategory, defaultMessage));

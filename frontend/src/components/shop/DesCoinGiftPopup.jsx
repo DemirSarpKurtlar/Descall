@@ -4,6 +4,7 @@ import { Coins, X } from "../ui/Icon.jsx";
 import RippleButton from "../ui/RippleButton";
 import { useLocale, useT } from "../../context/LocaleContext";
 import { formatNumber } from "../../i18n/format.js";
+import useModalFocus from "../../hooks/useModalFocus";
 import OverlayPortal from "../ui/OverlayPortal";
 import { openWalletHistory } from "../descoin/CallCoinSummaryHost.jsx";
 
@@ -18,6 +19,8 @@ export default function DesCoinGiftPopup({ gift, onDismiss }) {
   const { locale } = useLocale();
   const titleId = useId();
   const primaryRef = useRef(null);
+  // Tab stays in the popup; the primary button still takes focus first (below).
+  useModalFocus(Boolean(gift), primaryRef, { delay: 80 });
   // A real dialog: focus moves in, Escape closes it.
   useEffect(() => {
     if (!gift) return undefined;
