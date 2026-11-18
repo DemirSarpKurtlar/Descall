@@ -24,6 +24,7 @@ pub mod i18n;
 pub mod launch;
 pub mod notif;
 pub mod occlusion;
+pub mod pages;
 pub mod processes;
 pub mod trust;
 pub mod watchdog;

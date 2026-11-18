@@ -1,4 +1,5 @@
-//! Tauri commands behind the `window.electronAPI` shim. One module per preload.cjs group.
+//! Tauri commands behind the `window.electronAPI` shim (desktop/app/shim/electron-api-shim.js).
+//! One module per preload.cjs group; see the mapping table in the shim header.
 
 pub mod app;
 pub mod notify;
@@ -8,13 +9,3 @@ pub mod screen;
 pub mod system;
 pub mod updates;
 pub mod window;
-
-use std::sync::atomic::AtomicBool;
-
-#[derive(Default)]
-pub struct AppState {
-    /// voice:set-busy (call, ring, server voice, screen share): updates wait (updateDeferral.cjs).
-    pub voice_busy: AtomicBool,
-    /// activity:set-busy (typing, upload, recording).
-    pub user_busy: AtomicBool,
-}
