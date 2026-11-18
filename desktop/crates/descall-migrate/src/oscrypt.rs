@@ -26,27 +26,19 @@ pub fn wrapped_key_from_local_state(local_state_json: &str) -> Result<Vec<u8>> {
         .pointer("/os_crypt/encrypted_key")
         .and_then(|x| x.as_str())
         .ok_or_else(|| MigrateError::OsCrypt("Local State has no os_crypt.encrypted_key".into()))?;
-    let raw = base64::engine::general_purpose::STANDARD
-        .decode(b64)
-        .map_err(|e| MigrateError::OsCrypt(format!("base64: {e}")))?;
-    raw.strip_prefix(DPAPI_PREFIX)
-        .map(|r| r.to_vec())
-        .ok_or_else(|| MigrateError::OsCrypt("encrypted_key is not DPAPI-wrapped".into()))
+    let raw = base64::engine::general_purpose::STANDARD.decode(b64).map_err(|e| MigrateError::OsCrypt(format!("base64: {e}")))?;
+    raw.strip_prefix(DPAPI_PREFIX).map(|r| r.to_vec()).ok_or_else(|| MigrateError::OsCrypt("encrypted_key is not DPAPI-wrapped".into()))
 }
 
 /// Decrypt one safeStorage blob with the unwrapped 32-byte key.
 pub fn decrypt_v10(key: &[u8], blob: &[u8]) -> Result<String> {
-    let body = blob
-        .strip_prefix(V10)
-        .ok_or_else(|| MigrateError::OsCrypt("not a v10 blob (plain text or another scheme)".into()))?;
+    let body = blob.strip_prefix(V10).ok_or_else(|| MigrateError::OsCrypt("not a v10 blob (plain text or another scheme)".into()))?;
     if key.len() != 32 || body.len() < 12 + 16 {
         return Err(MigrateError::OsCrypt("bad key or truncated blob".into()));
     }
     let (nonce, ct) = body.split_at(12);
     let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| MigrateError::OsCrypt(e.to_string()))?;
-    let plain = cipher
-        .decrypt(Nonce::from_slice(nonce), ct)
-        .map_err(|_| MigrateError::OsCrypt("AES-GCM authentication failed".into()))?;
+    let plain = cipher.decrypt(Nonce::from_slice(nonce), ct).map_err(|_| MigrateError::OsCrypt("AES-GCM authentication failed".into()))?;
     String::from_utf8(plain).map_err(|_| MigrateError::OsCrypt("not UTF-8".into()))
 }
 

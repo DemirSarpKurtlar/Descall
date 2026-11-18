@@ -280,7 +280,9 @@ impl<'a, S: Sys> Runner<'a, S> {
 
         // Resume hook: if the machine reboots or we are killed, Windows runs us at logon.
         let cmd = format!("\"{}\" --resume", self.env.self_exe.display());
-        if let Err(e) = self.sys.reg_write(&RegValue { hive: Hive::Hkcu, key: regsnap::RUN_ONCE.into(), name: regsnap::RESUME_VALUE.into(), data: RegData::Sz(cmd) }) {
+        if let Err(e) =
+            self.sys.reg_write(&RegValue { hive: Hive::Hkcu, key: regsnap::RUN_ONCE.into(), name: regsnap::RESUME_VALUE.into(), data: RegData::Sz(cmd) })
+        {
             self.sys.log(&format!("resume hook not set: {}", io_code("runonce", &e)));
         }
         Ok(())
@@ -480,7 +482,9 @@ impl<'a, S: Sys> Runner<'a, S> {
         }
         if l.strategy == Strategy::SideBySide {
             for (lnk, target) in self.sys.find_shortcuts() {
-                if target.as_deref().map(|t| paths::same_path(t, &l.new_exe())).unwrap_or(false) && !self.state.shortcuts.iter().any(|s| paths::same_path(&s.path, &lnk)) {
+                if target.as_deref().map(|t| paths::same_path(t, &l.new_exe())).unwrap_or(false)
+                    && !self.state.shortcuts.iter().any(|s| paths::same_path(&s.path, &lnk))
+                {
                     let _ = self.sys.remove_file(&lnk);
                 }
             }

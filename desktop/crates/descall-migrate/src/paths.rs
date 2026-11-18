@@ -75,7 +75,10 @@ mod tests {
 
     #[test]
     fn compares_like_windows() {
-        assert!(same_path(Path::new(r"C:\Users\Demir\AppData\Local\Programs\descall\Descall.exe"), Path::new("c:/users/demir/appdata/local/programs/Descall/descall.exe")));
+        assert!(same_path(
+            Path::new(r"C:\Users\Demir\AppData\Local\Programs\descall\Descall.exe"),
+            Path::new("c:/users/demir/appdata/local/programs/Descall/descall.exe")
+        ));
         assert!(same_path(Path::new(r"D:\Apps\Descall\"), Path::new(r"d:\apps\descall")));
         assert!(!same_path(Path::new(r"D:\Apps\Descall"), Path::new(r"D:\Apps\Descall.legacy")));
         assert!(is_within(Path::new(r"D:\Apps\Descall\resources\app.asar"), Path::new(r"d:\apps\descall")));

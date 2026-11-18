@@ -13,3 +13,4 @@ path = "src/main.rs"
 [dependencies]
 descall-migrate = { path = "../descall-migrate" }
 serde_json.workspace = true
+zeroize = "1"

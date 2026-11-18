@@ -177,8 +177,18 @@ mod tests {
         let new = PathBuf::from(r"C:\L\Programs\Descall\Descall.exe");
         let snap = RegSnapshot {
             values: vec![
-                RegValue { hive: Hive::Hkcu, key: RUN.into(), name: RUN_VALUE.into(), data: RegData::Sz(format!("\"{}\" --autostart --hidden", old.display())) },
-                RegValue { hive: Hive::Hkcu, key: STARTUP_APPROVED_RUN.into(), name: RUN_VALUE.into(), data: RegData::Binary(vec![3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]) },
+                RegValue {
+                    hive: Hive::Hkcu,
+                    key: RUN.into(),
+                    name: RUN_VALUE.into(),
+                    data: RegData::Sz(format!("\"{}\" --autostart --hidden", old.display())),
+                },
+                RegValue {
+                    hive: Hive::Hkcu,
+                    key: STARTUP_APPROVED_RUN.into(),
+                    name: RUN_VALUE.into(),
+                    data: RegData::Binary(vec![3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                },
                 RegValue { hive: Hive::Hkcu, key: GPU_PREFS.into(), name: old.to_string_lossy().into(), data: RegData::Sz("GpuPreference=2;".into()) },
                 RegValue { hive: Hive::Hkcu, key: toast_server_key(), name: String::new(), data: RegData::Absent },
             ],

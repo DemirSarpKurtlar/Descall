@@ -151,7 +151,8 @@ pub(crate) mod tests {
     fn accepts_a_good_job_and_rejects_bad_fields() {
         sample().validate().unwrap();
         assert_eq!(sample().electron_dir().to_string_lossy().replace('\\', "/").rsplit('/').next(), Some("Descall"));
-        let cases: Vec<Box<dyn Fn(&mut MigrationJob)>> = vec![
+        type Mutation = Box<dyn Fn(&mut MigrationJob)>;
+        let cases: Vec<Mutation> = vec![
             Box::new(|j| j.id = "short".into()),
             Box::new(|j| j.id = "has space in it".into()),
             Box::new(|j| j.setup.sha256 = "A".repeat(64)),

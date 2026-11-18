@@ -115,7 +115,7 @@ pub fn needs_rollback_on_crash(step: Step) -> bool {
 /// a test vector pins both implementations.
 pub fn bucket(id: &str, salt: &str) -> u32 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in salt.bytes().chain([b':']).chain(id.trim().to_ascii_lowercase().bytes()) {
+    for b in salt.bytes().chain(*b":").chain(id.trim().to_ascii_lowercase().bytes()) {
         h ^= b as u64;
         h = h.wrapping_mul(0x0000_0100_0000_01b3);
     }

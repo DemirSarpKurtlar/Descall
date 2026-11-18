@@ -46,7 +46,9 @@ pub enum Verdict {
     /// No file yet, or a file from another attempt.
     Pending,
     /// The new process is up; `pid` lets the migrator notice a crash early.
-    Started { pid: u32 },
+    Started {
+        pid: u32,
+    },
     Ready,
     Failed(String),
 }
@@ -92,7 +94,16 @@ mod tests {
     use super::*;
 
     fn rep(stage: &str) -> HealthReport {
-        HealthReport { migration_id: "mig-1234-x".into(), stage: stage.into(), pid: 42, first_paint: true, auth_ok: true, handoff_imported: true, at_unix: 1000, ..Default::default() }
+        HealthReport {
+            migration_id: "mig-1234-x".into(),
+            stage: stage.into(),
+            pid: 42,
+            first_paint: true,
+            auth_ok: true,
+            handoff_imported: true,
+            at_unix: 1000,
+            ..Default::default()
+        }
     }
     fn b(r: &HealthReport) -> Vec<u8> {
         serde_json::to_vec(r).unwrap()

@@ -9,7 +9,8 @@
 //!   - a custom folder that holds anything that is not Electron's own files (an
 //!     electron-builder install straight into `D:\Apps` would otherwise move other apps);
 //!   - a protected location (drive root, the profile folder, Program Files itself).
-//!   The old files stay until the cleanup ([`crate::cleanup`]).
+//!
+//! In both cases the old files stay until the cleanup ([`crate::cleanup`]).
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -222,10 +223,7 @@ mod tests {
         assert_eq!(v, DirVerdict::NotElectron);
         assert_eq!(choose(&Facts { per_machine: false, verdict: v, side_by_side_free: true }), Choice::Skip("electron_install_not_found"));
         // Protected but a real Electron install: still served side by side.
-        assert_eq!(
-            choose(&Facts { per_machine: false, verdict: DirVerdict::Protected, side_by_side_free: true }),
-            Choice::Go(Strategy::SideBySide)
-        );
+        assert_eq!(choose(&Facts { per_machine: false, verdict: DirVerdict::Protected, side_by_side_free: true }), Choice::Go(Strategy::SideBySide));
     }
 
     #[test]

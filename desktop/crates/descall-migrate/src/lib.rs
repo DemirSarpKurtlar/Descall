@@ -65,10 +65,7 @@ pub type Result<T> = std::result::Result<T, MigrateError>;
 
 /// Seconds since the Unix epoch (0 if the clock is before 1970).
 pub fn unix_now() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 /// Lower-case hex SHA-256 of `bytes`.
@@ -129,10 +126,7 @@ pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()>
 mod tests {
     #[test]
     fn sha256_matches_known_vector() {
-        assert_eq!(
-            super::sha256_hex(b"abc"),
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-        );
+        assert_eq!(super::sha256_hex(b"abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("f.bin");
         std::fs::write(&p, b"abc").unwrap();

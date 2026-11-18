@@ -127,7 +127,8 @@ impl FakeSys {
         let hive = if per_machine { Hive::Hklm } else { Hive::Hkcu };
         let key = format!(r"{}\{{2a1b-guid}}", regsnap::UNINSTALL);
         self.set_reg(hive, &key, "DisplayName", RegData::Sz("Descall 3.10.0".into()));
-        *self.install.borrow_mut() = Some(ElectronInstall { key_path: key, per_machine, install_location: dir.to_path_buf(), display_version: "3.10.0".into() });
+        *self.install.borrow_mut() =
+            Some(ElectronInstall { key_path: key, per_machine, install_location: dir.to_path_buf(), display_version: "3.10.0".into() });
         self.set_reg(Hive::Hkcu, regsnap::RUN, regsnap::RUN_VALUE, RegData::Sz(format!("\"{}\" --autostart --hidden", exe.display())));
         self.set_reg(Hive::Hkcu, regsnap::STARTUP_APPROVED_RUN, regsnap::RUN_VALUE, RegData::Binary(vec![3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
         let lnk = self.path("Desktop/Descall.lnk");
@@ -596,11 +597,9 @@ fn locked_folder_retries_then_skips() {
 
 #[test]
 fn app_that_never_gets_ready_fails_or_dies_rolls_back() {
-    for (behavior, code) in [
-        (AppBehavior::StartsButNeverReady, "health_timeout"),
-        (AppBehavior::ReportsFailure, "app_webview2_missing"),
-        (AppBehavior::DiesAtOnce, "app_exited"),
-    ] {
+    for (behavior, code) in
+        [(AppBehavior::StartsButNeverReady, "health_timeout"), (AppBehavior::ReportsFailure, "app_webview2_missing"), (AppBehavior::DiesAtOnce, "app_exited")]
+    {
         let s = FakeSys::new();
         let (dir, job) = per_user(&s);
         s.app.set(behavior);
@@ -661,7 +660,16 @@ fn kill_9_while_waiting_for_health_commits_if_the_app_got_ready() {
     let (dir, job) = per_user(&s);
     Runner::<FakeSys>::record_job(&s, &s.env, job).unwrap();
     let mut r = Runner::load(&s, &s.env).unwrap();
-    for step in [Step::Ready, Step::Preflight, Step::WaitElectronExit, Step::SnapshotRegistry, Step::BackupInstallDir, Step::InstallNew, Step::PatchShell, Step::LaunchNew] {
+    for step in [
+        Step::Ready,
+        Step::Preflight,
+        Step::WaitElectronExit,
+        Step::SnapshotRegistry,
+        Step::BackupInstallDir,
+        Step::InstallNew,
+        Step::PatchShell,
+        Step::LaunchNew,
+    ] {
         r.state.step = step;
         assert!(r.exec(step).is_ok(), "{step:?}");
     }

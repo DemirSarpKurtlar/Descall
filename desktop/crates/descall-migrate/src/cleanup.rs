@@ -13,6 +13,7 @@
 //! - side by side, machine wide: needs elevation; the new app runs
 //!   `DescallMigrator.exe --cleanup-machine` once with a UAC prompt, and only when no other
 //!   Windows user still runs the old install ([`machine_cleanup_allowed`]).
+//!
 //! Electron's userData keeps the session until then (rollback window); afterwards only its
 //! caches are removed, never the user's files.
 
@@ -71,7 +72,8 @@ pub fn electron_entries(entries: &[Entry]) -> Vec<Entry> {
 }
 
 /// Electron userData sub-folders that are caches only (never tokens or settings).
-pub const USER_DATA_CACHES: &[&str] = &["Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache", "Service Worker", "blob_storage", "Crashpad", "logs"];
+pub const USER_DATA_CACHES: &[&str] =
+    &["Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache", "Service Worker", "blob_storage", "Crashpad", "logs"];
 
 /// One Windows profile as seen by the elevated machine cleanup.
 #[derive(Debug, Clone, PartialEq, Eq)]
