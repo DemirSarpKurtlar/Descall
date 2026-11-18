@@ -9,6 +9,7 @@
 mod admin;
 mod boot;
 mod commands;
+mod migration;
 mod platform;
 #[cfg(windows)]
 mod screenshare;
@@ -47,6 +48,8 @@ fn install_panic_hook() {
         if let Some(app) = APP.get() {
             state::to_main(app, "app:main-error", serde_json::json!({ "message": info.to_string() }));
         }
+        // A migrated first start that dies tells the migrator now (it rolls back at once).
+        migration::fail(descall_migrate::app::codes::START_FAILED);
         default(info);
     }));
 }
@@ -54,6 +57,8 @@ fn install_panic_hook() {
 fn main() {
     install_panic_hook();
     let argv: Vec<String> = std::env::args().collect();
+    // Started by DescallMigrator (--migrated --migration-id <id>): health "started".
+    migration::begin(&argv);
 
     let app = tauri::Builder::default()
         // Second launch (shortcut, taskbar) raises the existing window: Electron second-instance.
@@ -130,6 +135,7 @@ fn main() {
                     PageLoadEvent::Started => {
                         // A reload drops any live call; the update deferral treats it as "call ended".
                         commands::updates::reset_voice(&load_app);
+                        commands::screen::stop_on_navigation(&load_app);
                         boot::arm_paint_watchdog(&w);
                     }
                     PageLoadEvent::Finished => {
@@ -170,6 +176,7 @@ fn main() {
                 }
             }
 
+            migration::cleanup_on_start();
             boot::watch_reduced_transparency(&handle);
             commands::updates::schedule_background_checks(&handle);
             Ok(())
@@ -200,10 +207,12 @@ fn main() {
             commands::overlay::overlay_update,
             commands::overlay::overlay_action,
             commands::screen::screen_sources,
+            commands::screen::screen_thumbnails,
             commands::screen::screen_share_start,
             commands::screen::screen_share_stop,
             commands::screen::screen_share_update,
             commands::screen::screen_share_caps,
+            commands::screen::screen_share_stats,
             commands::system::token_set,
             commands::system::token_clear,
             commands::system::clipboard_read_image,

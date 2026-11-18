@@ -9,7 +9,8 @@ use serde::Serialize;
 use serde_json::json;
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow, WindowEvent};
 
-use descall_migrate::handoff::{Handoff, ENTROPY};
+use descall_migrate::app::ImportMarker;
+use descall_migrate::handoff::Handoff;
 
 pub struct Imported {
     pub local_storage: BTreeMap<String, String>,
@@ -31,54 +32,75 @@ fn migration_dir(app: &AppHandle) -> Option<PathBuf> {
     Some(d)
 }
 
-/// Where DescallMigrator.exe leaves the sealed handoff (owner-only ACL, CREATE_NEW).
-pub fn handoff_path(app: &AppHandle) -> Option<PathBuf> {
-    Some(app.path().local_data_dir().ok()?.join("Descall-Migration").join("handoff.bin"))
+/// DescallMigrator's work folder (`%LOCALAPPDATA%\Descall-Migration`): the sealed handoff
+/// (owner-only ACL, CREATE_NEW) waits there as `handoff.bin`.
+#[cfg(windows)]
+fn migration_work_dir(app: &AppHandle) -> Option<PathBuf> {
+    Some(app.path().local_data_dir().ok()?.join(descall_migrate::paths::WORK_DIR_NAME))
 }
 
 /// Electron userData (%APPDATA%\Descall): the fallback source when there is no handoff.
+#[cfg(windows)]
 fn electron_user_data(app: &AppHandle) -> Option<PathBuf> {
-    Some(app.path().data_dir().ok()?.join("Descall"))
+    Some(app.path().data_dir().ok()?.join(descall_migrate::paths::ELECTRON_USER_DATA))
 }
 
+/// Secret-store key of the session the migration health check signs in with.
+#[cfg(windows)]
+fn session_key(h: &Handoff) -> Option<String> {
+    if h.token.is_some() {
+        Some(crate::secure_store::TOKEN.to_string())
+    } else {
+        h.accounts.first().map(|a| format!("account-{}", a.id))
+    }
+}
+
+/// One-time import of the Electron session and settings (once per install, and once per
+/// migration: see descall_migrate::app::should_import). The handoff is unsealed, validated
+/// and shredded by descall_migrate::import::take; its secrets go straight into the DPAPI
+/// secret store and never touch the disk in clear.
 pub fn import_from_electron_once(app: &AppHandle) -> Option<Imported> {
     let marker = migration_dir(app)?.join("imported");
-    if marker.exists() {
+    let migration_id = crate::migration::migration_id();
+    let previous = std::fs::read(&marker).ok();
+    if !descall_migrate::app::should_import(previous.as_deref(), migration_id) {
+        if migration_id.is_some() {
+            // A relaunch within the same migration: the handoff was taken on the first start.
+            let m = descall_migrate::app::ImportMarker::parse(previous.as_deref().unwrap_or_default());
+            crate::migration::note_import(crate::migration::Import::Imported { session_key: m.session_key });
+        }
         return None;
     }
+    let now = descall_migrate::unix_now();
+    let mut record = ImportMarker { migration_id: migration_id.unwrap_or_default().to_string(), at_unix: now, ..Default::default() };
     let mut result = None;
     #[cfg(windows)]
     {
-        if let Some(p) = handoff_path(app) {
-            if let Ok(sealed) = std::fs::read(&p) {
-                if let Ok(plain) = descall_migrate::dpapi::unprotect(&sealed, Some(ENTROPY)) {
-                    if let Ok(h) = serde_json::from_slice::<Handoff>(&plain) {
-                        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-                        if h.validate(now).is_ok() {
-                            apply_handoff(app, &h);
-                            result = Some(Imported { local_storage: h.local_storage.clone() });
-                        }
-                    }
-                }
-                descall_migrate::secure_file::shred(&p);
+        use crate::migration::{note_import, Import};
+        match migration_work_dir(app).map(|dir| descall_migrate::import::take(&dir, now, migration_id)) {
+            Some(Ok(Some(h))) => {
+                apply_handoff(app, &h);
+                record.has_session = h.has_session();
+                record.session_key = session_key(&h);
+                note_import(Import::Imported { session_key: record.session_key.clone() });
+                result = Some(Imported { local_storage: h.local_storage.clone() });
+            }
+            Some(Ok(None)) | None => note_import(Import::Missing),
+            Some(Err(e)) => {
+                log::warn!("[migration] handoff refused: {e}");
+                note_import(Import::Invalid);
             }
         }
         if result.is_none() {
             // Fallback: decrypt Electron's safeStorage file directly (oscrypt.rs). Settings in
             // localStorage are not recovered on this path (they default; the server profile
             // still has the account settings).
-            if let Some(ud) = electron_user_data(app) {
-                if let Ok(blob) = std::fs::read(ud.join("auth-token.bin")) {
-                    if let Ok(token) = descall_migrate::oscrypt::decrypt_electron_file(&ud, &blob) {
-                        if descall_migrate::handoff::looks_like_jwt(&token) {
-                            crate::secure_store::set(app, crate::secure_store::TOKEN, &token);
-                        }
-                    }
-                }
+            if let Some(token) = electron_user_data(app).and_then(|ud| descall_migrate::import::electron_token_fallback(&ud)) {
+                crate::secure_store::set(app, crate::secure_store::TOKEN, &token.0);
             }
         }
     }
-    let _ = std::fs::write(marker, b"1");
+    let _ = std::fs::write(marker, serde_json::to_vec(&record).unwrap_or_else(|_| b"1".to_vec()));
     result
 }
 
@@ -231,14 +253,6 @@ pub fn cold_start<R: Runtime>(app: &AppHandle<R>, argv: &[String]) -> descall_sh
         let _ = std::fs::remove_file(&p); // one-shot
     }
     decide_cold_start(argv, mode, fresh)
-}
-
-/// The new app is up: tells DescallMigrator (AwaitHealth) the migration can commit.
-pub fn write_health<R: Runtime>(app: &AppHandle<R>, ms: Option<u64>) {
-    let Some(dir) = crate::state::data_dir(app).map(|d| d.join("migration")) else { return };
-    if std::fs::create_dir_all(&dir).is_ok() {
-        let _ = std::fs::write(dir.join("health.json"), json!({ "phase": "app-mounted", "ms": ms, "version": app.package_info().version.to_string(), "at": crate::state::now_ms() }).to_string());
-    }
 }
 
 /// Same rule as electron/appTrust.cjs: only the app origin navigates in-app; everything

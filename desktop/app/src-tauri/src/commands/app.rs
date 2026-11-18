@@ -35,8 +35,8 @@ pub fn app_boot_retry<R: Runtime>(window: WebviewWindow<R>) {
     crate::webview::clear_and_reload(&window, "page-retry");
 }
 
-/// app:boot-state milestones (index.html / React). Feeds the paint watchdog; app-mounted is
-/// also the "new app is up" signal the migrator waits for (migration/health.json).
+/// app:boot-state milestones (index.html / React). Feeds the paint watchdog; app-mounted also
+/// finishes the migrator's health handshake on a migrated start (crate::migration).
 #[tauri::command]
 pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, phase: String, ms: f64) {
     if window.label() != state::MAIN {
@@ -55,7 +55,7 @@ pub fn app_boot_state<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, p
         }
     }
     if report.phase == "app-mounted" {
-        crate::boot::write_health(&app, report.ms);
+        crate::migration::on_app_mounted(&app);
     }
     if report.phase == "inline-missing" {
         log::error!("[boot] index.html inline boot scripts did not run (CSP hash mismatch?)");

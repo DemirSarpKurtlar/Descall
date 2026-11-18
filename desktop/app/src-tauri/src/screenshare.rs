@@ -7,6 +7,7 @@
 //! - Per frame: ICoreWebView2::PostWebMessageAsString("descall-share:<id>:v:<seq>") on the UI
 //!   thread (WebView2 objects are STA). ~60 video + 50 audio wake-ups per second. Message
 //!   formats: descall_capture::bridge::{wake_message, end_message, shared_buffer_meta}.
+//!
 //! Docs: learn.microsoft.com/microsoft-edge/webview2/reference/win32/icorewebview2sharedbuffer
 
 use std::cell::RefCell;
