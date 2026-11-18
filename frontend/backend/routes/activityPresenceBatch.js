@@ -17,6 +17,7 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const supabase = require('../db/supabase');
+const { apiError } = require('../lib/apiError');
 
 const router = express.Router();
 
@@ -96,7 +97,7 @@ router.post('/presence/batch', requireAuth, async (req, res) => {
     return res.json({ presence });
   } catch (err) {
     console.error('[activity] presence batch failed:', err?.message || err);
-    return res.status(500).json({ error: 'Could not load the activity.' });
+    return res.status(500).json(apiError('Could not load the activity.'));
   }
 });
 

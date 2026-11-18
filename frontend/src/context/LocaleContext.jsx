@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   persistLocale,
   resolveInitialLocale,
@@ -7,7 +7,6 @@ import {
   normalizeLocale,
   loadI18nCatalogs,
   ensureLocaleLoaded,
-  onCatalogLoaded,
 } from "../i18n/index.js";
 import { setRuntimeLocale } from "../i18n/runtime.js";
 import { FALLBACK_LOCALE } from "../i18n/registry.js";
@@ -31,9 +30,6 @@ export function LocaleProvider({ children, meLanguage = null }) {
       cancelled = true;
     };
   }, []);
-
-  // The English fallback arrives after boot (i18n/index.js): re-render once it is in.
-  useEffect(() => onCatalogLoaded(() => setCatalogVersion((v) => v + 1)), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,9 +68,16 @@ export function LocaleProvider({ children, meLanguage = null }) {
     shareUiLocaleWithNative(locale);
   }, [locale]);
 
+  // Switch only once the new catalog is in: switching first rendered every string through
+  // the English fallback until it loaded (a flash of English for de / es / fr / pt-BR / ru,
+  // and for an account language that differs from the browser's).
+  const pendingLocaleRef = useRef(null);
   const setLocale = useCallback((next) => {
     const normalized = normalizeLocale(next) || FALLBACK_LOCALE;
-    setLocaleState(normalized);
+    pendingLocaleRef.current = normalized;
+    ensureLocaleLoaded(normalized).finally(() => {
+      if (pendingLocaleRef.current === normalized) setLocaleState(normalized);
+    });
     persistLocale(normalized);
 
     try {
