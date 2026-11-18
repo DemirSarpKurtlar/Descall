@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import useModalFocus from "../hooks/useModalFocus";
 import { Bell } from "./ui/Icon.jsx";
 import { useT } from "../context/LocaleContext";
-import { getNativePushPermission, isNativeIosPush } from "../lib/nativePush";
+import { getNativePushPermission, isNativePushPlatform } from "../lib/nativePush";
 import "./IosPushPermissionPrompt.css";
 
 const SNOOZE_KEY = "descall:ios-push-prompt-snoozed-until";
@@ -18,8 +18,8 @@ function snoozed() {
 }
 
 /**
- * Native iOS only: after sign-in, explain notifications once and then show the
- * iOS permission dialog. "Not now" asks again in 3 days; the notification
+ * Native iOS and Android apps: after sign-in, explain notifications once and
+ * then show the system permission dialog. "Not now" asks again in 3 days; the notification
  * settings tab can always ask.
  */
 export default function IosPushPermissionPrompt({ enabled, onAllow }) {
@@ -30,7 +30,7 @@ export default function IosPushPermissionPrompt({ enabled, onAllow }) {
   useModalFocus(open, dialogRef);
 
   useEffect(() => {
-    if (!enabled || !isNativeIosPush() || snoozed()) return undefined;
+    if (!enabled || !isNativePushPlatform() || snoozed()) return undefined;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       const permission = await getNativePushPermission();

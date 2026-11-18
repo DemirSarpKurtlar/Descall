@@ -16,4 +16,9 @@ assert.match(app, /await ensureAndroidPushChannels\(\);\s*\n\s*await PushNotific
 assert.match(manifest, /default_notification_channel_id"\s*\n\s*android:value="descall_default"/, "FCM default channel is ours");
 // Heads-up needs IMPORTANCE_HIGH (4) or more for both.
 for (const m of app.matchAll(/\{ id: "[a-z_]+", nameKey: "[^"]+", importance: (\d)/g)) assert.ok(Number(m[1]) >= 4);
+// Android 13+: never the OS dialog at cold start (two denials block it for good).
+const init = app.slice(app.indexOf("export async function initNativePush"), app.indexOf("/** Re-upload last/known token"));
+assert.ok(init.length > 0 && !/requestNativePushPermission|requestPermissions/.test(init), "startup only checks; the explaining prompt asks");
+const prompt = read("../components/IosPushPermissionPrompt.jsx");
+assert.match(prompt, /isNativePushPlatform\(\)/, "the explaining prompt runs on Android too");
 console.log("nativePushChannels.selftest ok");

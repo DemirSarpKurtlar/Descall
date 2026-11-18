@@ -9,7 +9,8 @@ import { clearNotifyActionToken, refreshNotifyActionToken } from "./notifyAction
 /**
  * Native push (Capacitor @capacitor/push-notifications).
  *
- * - Android: FCM token, permission asked at startup. Builds without Firebase
+ * - Android: FCM token. Permission is asked after login from the same
+ *   explaining prompt as iOS (not at startup). Builds without Firebase
  *   (no google-services.json) skip register() instead of crashing.
  * - iOS: raw APNs device token, platform "ios" (backend lib/iosAlertPush.js).
  *   Permission is never asked at startup; the app asks after login
@@ -303,18 +304,24 @@ export async function requestNativePushPermission() {
 }
 
 /**
- * App startup. Android keeps asking right away; iOS only attaches listeners
- * (so a tap that launched the app is not lost) and registers when the user
- * already allowed notifications. Returns the permission state.
+ * App startup. Never shows the OS dialog: both apps only attach listeners (so
+ * a tap that launched the app is not lost) and register when the user already
+ * allowed notifications. The ask comes after sign-in from the explaining
+ * prompt (IosPushPermissionPrompt, iPhone and Android) or notification
+ * settings; on Android 13+ two cold "Don't allow" taps block the dialog for good.
+ * Android 12 and older report "granted" and register right away.
  */
 export async function initNativePush() {
   if (!pushAllowedHere()) return null;
-  if (!IS_IOS) return requestNativePushPermission();
   ensureListeners();
   const permission = await getNativePushPermission();
   if (permission === "granted" && getToken()) {
-    PushNotifications.register().catch(() => {});
-    refreshNotifyActionToken(getToken()).catch(() => {});
+    if (IS_IOS) {
+      PushNotifications.register().catch(() => {});
+      refreshNotifyActionToken(getToken()).catch(() => {});
+    } else {
+      registerForPush().catch(() => {});
+    }
   }
   return permission;
 }

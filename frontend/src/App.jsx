@@ -1554,7 +1554,7 @@ export default function App() {
     initAudioManager().catch(() => {});
     notificationService.init().catch(() => {});
     setNotifPermission(notificationService.getPermissionState());
-    // Android asks right away; iOS only checks here and asks after sign-in
+    // Both native apps only check here and ask after sign-in
     // (IosPushPermissionPrompt), never on the login screen.
     initNativePush()
       .then((permission) => {
@@ -6323,7 +6323,7 @@ export default function App() {
             activeServer={activeView === "servers" ? activeServer : null}
           />
         ) : null}
-        {IOS_NATIVE && me?.id ? (
+        {(IOS_NATIVE || isNativePushPlatform()) && me?.id ? (
           <Suspense fallback={null}>
             <IosPushPermissionPrompt enabled onAllow={handleRequestNotifPermission} />
           </Suspense>
