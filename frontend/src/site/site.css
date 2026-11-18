@@ -2281,6 +2281,6 @@ a.mkt-feature-link {
   .login-modal input,
   .login-modal select,
   .login-modal textarea {
-    font-size: 16px !important;
+    font-size: 1rem !important; /* 16px at the 16px root: iOS needs >= 16px */
   }
 }

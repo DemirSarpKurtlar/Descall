@@ -1,5 +1,6 @@
 "use strict";
 
+const { apiText } = require("../lib/apiError");
 const { forwardedReplyMeta } = require("../lib/forwardedMessage");
 const { resolveDmReplyMeta } = require("../lib/replyMeta");
 const { bothShare: bothShareReceipts } = require("../lib/readReceipts");
@@ -2664,7 +2665,7 @@ function registerSocketHandlers(io) {
       } catch (err) {
         console.error("[group:message:pin] Error:", err.message || err);
         // Tell the member it failed (polish messaging-18); DMs already did.
-        socket.emit("group:message:error", { groupId, messageId, message: "Failed to pin message." });
+        socket.emit("group:message:error", { groupId, messageId, ...apiText("message", "Failed to pin message.") });
       }
     });
 
@@ -2685,7 +2686,7 @@ function registerSocketHandlers(io) {
         io.to(`group:${groupId}`).emit("group:message:unpinned", { messageId, groupId });
       } catch (err) {
         console.error("[group:message:unpin] Error:", err.message || err);
-        socket.emit("group:message:error", { groupId, messageId, message: "Failed to unpin message." });
+        socket.emit("group:message:error", { groupId, messageId, ...apiText("message", "Failed to unpin message.") });
       }
     });
 

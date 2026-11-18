@@ -360,7 +360,7 @@ router.use((err, _req, res, next) => {
     return res.status(415).json({ error: err.message, code: "FILE_TYPE_NOT_ALLOWED", ...(err.i18n || {}) });
   }
   if (err.name === "MulterError") {
-    return res.status(400).json({ error: "Upload failed.", code: err.code || "UPLOAD_FAILED" });
+    return res.status(400).json(apiError("Upload failed.", null, { code: err.code || "UPLOAD_FAILED" }));
   }
   return next(err);
 });

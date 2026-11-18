@@ -11,6 +11,8 @@
  *    `optional` lets null / undefined through as "".
  */
 
+const { apiText } = require("./apiError");
+
 const DEFAULT_MAX = 2000;
 
 function maxMessageLength(config) {
@@ -20,10 +22,10 @@ function maxMessageLength(config) {
 
 function checkText(value, { max = DEFAULT_MAX, optional = true } = {}) {
   if (value === null || value === undefined) {
-    return optional ? { ok: true, text: "" } : { ok: false, code: "BAD_TEXT", message: "Message cannot be empty." };
+    return optional ? { ok: true, text: "" } : { ok: false, code: "BAD_TEXT", ...apiText("message", "Message cannot be empty.") };
   }
-  if (typeof value !== "string") return { ok: false, code: "BAD_TEXT", message: "Invalid message." };
-  if (value.trim().length > max) return { ok: false, code: "TOO_LONG", message: "Message is too long." };
+  if (typeof value !== "string") return { ok: false, code: "BAD_TEXT", ...apiText("message", "Invalid message.") };
+  if (value.trim().length > max) return { ok: false, code: "TOO_LONG", ...apiText("message", "Message is too long.") };
   return { ok: true, text: value };
 }
 
