@@ -1,5 +1,5 @@
 //! Win32 pieces of the Descall+ features (stubs elsewhere): system idle time, cursor position,
-//! window opacity, taskbar thumbnail buttons, DPAPI, a hidden watcher window for display and
+//! window opacity, taskbar thumbnail buttons, a hidden watcher window for display and
 //! session-lock changes, the save dialog and process metrics. No hooks into other processes.
 
 use super::Bus;
@@ -25,12 +25,6 @@ mod other {
     }
     pub fn set_opacity(_hwnd: isize, _alpha: f64) {}
     pub fn start_watcher(_emit: Emit) {}
-    pub fn protect(data: &[u8]) -> Option<Vec<u8>> {
-        Some(data.to_vec())
-    }
-    pub fn unprotect(data: &[u8]) -> Option<Vec<u8>> {
-        Some(data.to_vec())
-    }
     pub fn save_dialog(_owner: isize, _name: &str, _dir: Option<PathBuf>, _ext: &str) -> Option<PathBuf> {
         None
     }
@@ -52,9 +46,8 @@ mod win {
     use std::sync::{Mutex, OnceLock};
 
     use windows::core::{w, HSTRING, PCWSTR};
-    use windows::Win32::Foundation::{CloseHandle, LocalFree, FILETIME, HLOCAL, HWND, LPARAM, LRESULT, POINT, WPARAM};
+    use windows::Win32::Foundation::{CloseHandle, FILETIME, HWND, LPARAM, LRESULT, POINT, WPARAM};
     use windows::Win32::Graphics::Gdi::{CreateBitmap, DeleteObject, HBITMAP};
-    use windows::Win32::Security::Cryptography::{CryptProtectData, CryptUnprotectData, CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB};
     use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED};
     use windows::Win32::System::Diagnostics::ToolHelp::{CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS};
     use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -153,34 +146,6 @@ mod win {
                 DispatchMessageW(&msg);
             }
         });
-    }
-
-    // -- DPAPI (current user) --
-
-    fn blob(data: &[u8]) -> CRYPT_INTEGER_BLOB {
-        CRYPT_INTEGER_BLOB { cbData: data.len() as u32, pbData: data.as_ptr() as *mut u8 }
-    }
-
-    unsafe fn take(out: CRYPT_INTEGER_BLOB) -> Vec<u8> {
-        let v = std::slice::from_raw_parts(out.pbData, out.cbData as usize).to_vec();
-        let _ = LocalFree(Some(HLOCAL(out.pbData as *mut core::ffi::c_void)));
-        v
-    }
-
-    pub fn protect(data: &[u8]) -> Option<Vec<u8>> {
-        let mut out = CRYPT_INTEGER_BLOB::default();
-        unsafe {
-            CryptProtectData(&blob(data), w!("Descall+"), None, None, None, CRYPTPROTECT_UI_FORBIDDEN, &mut out).ok()?;
-            Some(take(out))
-        }
-    }
-
-    pub fn unprotect(data: &[u8]) -> Option<Vec<u8>> {
-        let mut out = CRYPT_INTEGER_BLOB::default();
-        unsafe {
-            CryptUnprotectData(&blob(data), None, None, None, None, CRYPTPROTECT_UI_FORBIDDEN, &mut out).ok()?;
-            Some(take(out))
-        }
     }
 
     // -- save dialog (instant_clip) --

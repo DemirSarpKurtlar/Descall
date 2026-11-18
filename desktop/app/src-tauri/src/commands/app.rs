@@ -19,6 +19,7 @@ pub fn app_set_locale<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, l
     }
     let locale: String = locale.chars().take(16).collect();
     if state::set_ui_locale(&app, &locale) {
+        crate::premium::set_locale(&locale);
         crate::tray::rebuild(&app);
         crate::commands::overlay::refresh_language(&app);
     }

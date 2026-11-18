@@ -45,26 +45,15 @@ pub struct F {
     idle: Poll,
 }
 
-fn pin_file(h: &Host) -> std::path::PathBuf {
-    h.premium_dir().join("app-lock.bin")
-}
-
-/// DPAPI-sealed JSON; a plain JSON record (an older copy) is still read.
+/// The PIN record (salted scrypt hash, never the PIN) lives DPAPI-sealed in the shell's secret
+/// store as `app-lock` (crate::secure_store::APP_LOCK), where the Electron import puts it.
 fn load_record(h: &Host) -> (Option<Value>, bool) {
-    let Ok(bytes) = std::fs::read(pin_file(h)) else { return (None, cfg!(windows)) };
-    if let Some(plain) = platform::unprotect(&bytes) {
-        if let Ok(v) = serde_json::from_slice::<Value>(&plain) {
-            return (Some(v), cfg!(windows));
-        }
-    }
-    (serde_json::from_slice::<Value>(&bytes).ok().filter(Value::is_object), cfg!(windows))
+    let rec = crate::secure_store::get(&h.app, crate::secure_store::APP_LOCK).and_then(|t| serde_json::from_str::<Value>(&t).ok()).filter(Value::is_object);
+    (rec, cfg!(windows))
 }
 
 fn write_record(h: &Host, rec: &Value) -> bool {
-    let text = rec.to_string();
-    let Some(sealed) = platform::protect(text.as_bytes()) else { return false };
-    let _ = std::fs::create_dir_all(h.premium_dir());
-    std::fs::write(pin_file(h), sealed).is_ok()
+    crate::secure_store::set(&h.app, crate::secure_store::APP_LOCK, &rec.to_string())
 }
 
 impl F {
@@ -174,7 +163,7 @@ impl Feature for F {
                         return Ok(json!({ "ok": false, "error": "wrong_pin" }));
                     }
                 }
-                let _ = std::fs::remove_file(pin_file(h));
+                crate::secure_store::set(&h.app, crate::secure_store::APP_LOCK, "");
                 *lock(&self.record) = None;
                 let cfg = {
                     let mut c = lock(&self.config);

@@ -105,14 +105,15 @@ mod win {
     use std::sync::atomic::Ordering;
     use std::sync::{Arc, Mutex, OnceLock};
 
-    use descall_capture::convert::Nv12Converter;
+    use descall_capture::audio::{CHANNELS, SAMPLE_RATE};
+    use descall_capture::bridge::SourceId;
+    use descall_capture::convert::{Converter, OutFormat};
     use descall_capture::d3d::D3d;
-    use descall_capture::hdr::{monitor_hdr, ToneMapper};
-    use descall_capture::loopback::{self, LoopbackCapture, CHANNELS, SAMPLE_RATE};
+    use descall_capture::hdr::{any_monitor_hdr, monitor_hdr, ToneMapper};
+    use descall_capture::loopback::{self, LoopbackCapture};
     use descall_capture::wgc::{self, Options, Target, WgcSession};
     use windows::core::{implement, Interface, IUnknown, Ref, BOOL, GUID, PCWSTR};
     use windows::Win32::Foundation::E_NOTIMPL;
-    use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_B8G8R8A8_UNORM;
     use windows::Win32::Media::MediaFoundation::*;
     use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
     use windows::Win32::System::Variant::{VARIANT, VARIANT_0, VARIANT_0_0, VARIANT_0_0_0, VT_UI4};
@@ -404,11 +405,15 @@ mod win {
         if !wgc::is_supported() {
             return Err("capture-unsupported".into());
         }
-        let src = descall_capture::sources::list_all().into_iter().find(|s| s.id == opts.source_id).ok_or("source-gone")?;
-        let target = if src.kind == "window" { Target::Window(src.handle) } else { Target::Monitor(src.handle) };
-        let hdr = match target {
-            Target::Monitor(h) => monitor_hdr(h),
-            Target::Window(_) => Default::default(),
+        // Same source ids and HDR rules as the screen share (descall_capture::pipeline).
+        let id = SourceId::parse(&opts.source_id).ok_or("source-gone")?;
+        let src = descall_capture::sources::resolve(id).map_err(|_| "source-gone")?;
+        let (target, hdr_capture, tone_params) = match id {
+            SourceId::Screen(_) => {
+                let i = monitor_hdr(src.handle);
+                (Target::Monitor(src.handle), i.hdr, i.tone_params())
+            }
+            SourceId::Window(h) => (Target::Window(h), any_monitor_hdr(), monitor_hdr(descall_capture::sources::monitor_of_window(h)).tone_params()),
         };
         let d3d = Arc::new(D3d::new().map_err(|e| e.to_string())?);
         let stream: IMFByteStream = RingStream { ring, st: Mutex::new((0, 0, 0)) }.into();
@@ -445,13 +450,14 @@ mod win {
         let stats_v = stats.clone();
         let d3d_cb = d3d.clone();
         struct Gpu {
-            conv: Option<Nv12Converter>,
+            conv: Option<Converter>,
             tone: Option<ToneMapper>,
             out: Option<(u32, u32)>,
         }
         let mut gpu = Gpu { conv: None, tone: None, out: None };
-        let peak = if hdr.max_nits > 0.0 { hdr.max_nits } else { 1000.0 };
-        let video = wgc::start(&d3d, target, Options { cursor: true, hdr: hdr.hdr, max_fps: fps }, move |frame| {
+        let stats_c = stats.clone();
+        let on_closed = move || *lock(&stats_c.error) = Some("source-closed".into());
+        let video = wgc::start(&d3d, target, Options { cursor: true, hdr: hdr_capture, max_fps: fps, ..Default::default() }, None, move |frame| {
             let stream = &stream;
             // Output size is fixed by the first frame (the encoder cannot change size).
             let (ow, oh) = *gpu.out.get_or_insert_with(|| {
@@ -459,18 +465,23 @@ mod win {
                 (even((frame.width as u64 * oh as u64 / frame.height.max(1) as u64) as u32), oh)
             });
             if gpu.conv.as_ref().is_none_or(|c| c.in_w != frame.width || c.in_h != frame.height) {
-                gpu.conv = Nv12Converter::new(&d3d_cb, frame.width, frame.height, ow, oh, fps, DXGI_FORMAT_B8G8R8A8_UNORM).ok();
-                gpu.tone = if hdr.hdr { ToneMapper::new(&d3d_cb, frame.width, frame.height, 200.0, peak).ok() } else { None };
+                gpu.conv = Converter::new(&d3d_cb, frame.width, frame.height, ow, oh, fps, OutFormat::Nv12).ok();
+                gpu.tone = if frame.hdr { ToneMapper::new(&d3d_cb, frame.width, frame.height, tone_params).ok() } else { None };
             }
-            let input = match &gpu.tone {
-                Some(t) => {
+            let input = match (&gpu.tone, frame.hdr) {
+                (Some(t), true) => {
                     t.run(&d3d_cb, frame.texture);
                     t.out.clone()
                 }
-                None => frame.texture.clone(),
+                (None, true) => {
+                    stats_v.dropped.fetch_add(1, Ordering::Relaxed);
+                    return;
+                }
+                _ => frame.texture.clone(),
             };
-            let Some(conv) = &gpu.conv else { return };
-            let ts = frame.timestamp_us;
+            let Some(conv) = gpu.conv.as_mut() else { return };
+            // QPC microseconds, the clock of the loopback packets too.
+            let ts = (frame.time_100ns / 10).max(0) as u64;
             let r = conv.convert_and_read(&d3d_cb, &input, |bytes, pitch| {
                 let mut w = lock(&w_video);
                 if w.is_none() {
@@ -497,7 +508,7 @@ mod win {
             if r.is_err() {
                 stats_v.dropped.fetch_add(1, Ordering::Relaxed);
             }
-        });
+        }, on_closed);
         let video = match video {
             Ok(v) => v,
             Err(e) => {

@@ -2,6 +2,7 @@
 //! "Update and quit (vX)". Left click and double click restore the window. Labels follow
 //! the shell language and are rebuilt when it or the update state changes.
 
+use std::any::Any;
 use std::sync::atomic::Ordering;
 
 use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem};
@@ -20,7 +21,18 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         None => et(app, "tray.quit", &[]),
     };
     let quit = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
-    Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &autostart, &PredefinedMenuItem::separator(app)?, &quit])
+    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &autostart, &PredefinedMenuItem::separator(app)?])?;
+    // Descall+ items of the running features (they end with their own separator). The
+    // premium module is written for the Wry runtime, the only one this app runs on.
+    let any_app: &dyn Any = app;
+    let any_menu: &dyn Any = &menu;
+    if let (Some(a), Some(m)) = (any_app.downcast_ref::<AppHandle<tauri::Wry>>(), any_menu.downcast_ref::<Menu<tauri::Wry>>()) {
+        if let Err(e) = crate::premium::tray::append(a, m) {
+            log::warn!("[tray] Descall+ items: {e}");
+        }
+    }
+    menu.append(&quit)?;
+    Ok(menu)
 }
 
 fn on_menu<R: Runtime>(app: &AppHandle<R>, e: MenuEvent) {
@@ -42,7 +54,9 @@ fn on_menu<R: Runtime>(app: &AppHandle<R>, e: MenuEvent) {
             state::set_quitting(app);
             app.exit(0);
         }
-        _ => {}
+        id => {
+            crate::premium::tray::on_menu_event(id);
+        }
     }
 }
 

@@ -25,7 +25,7 @@ serde.workspace = true
 serde_json.workspace = true
 log.workspace = true
 # download-file: same HTTP stack as tauri-plugin-updater (rustls + ring, system proxy).
-reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "stream", "system-proxy"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "stream", "system-proxy", "json"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 futures-util = "0.3"
 tokio = { version = "1", features = ["time"] }
@@ -33,6 +33,9 @@ base64 = "0.22"
 descall-shell = { path = "../../crates/descall-shell" }
 descall-capture = { path = "../../crates/descall-capture" }
 descall-migrate = { path = "../../crates/descall-migrate" }
+# Descall+ (src/premium): gate check (reqwest json), PIN records (scrypt), account ids.
+getrandom = "0.3"
+scrypt = { version = "0.11", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 # Same major as wry's own webview2-com, so the COM types from PlatformWebview line up.
@@ -49,6 +52,24 @@ windows = { workspace = true, features = [
   "Win32_System_Time",
   "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_WindowsAndMessaging",
+  # Descall+ (src/premium): Raw Input PTT, idle time, opacity, taskbar buttons, session
+  # lock, save dialog, process metrics, reply toasts, the instant-clip encoder.
+  "Win32_UI_Input",
+  "Win32_UI_Shell",
+  "Win32_UI_Shell_Common",
+  "Win32_UI_Controls",
+  "Win32_Graphics_Gdi",
+  "Win32_System_LibraryLoader",
+  "Win32_System_RemoteDesktop",
+  "Win32_System_ProcessStatus",
+  "Data_Xml_Dom",
+  "Foundation",
+  "Foundation_Collections",
+  "UI_Notifications",
+  "Win32_UI_Notifications",
+  "Win32_Media_MediaFoundation",
+  "Win32_System_Variant",
+  "Win32_Graphics_Dxgi_Common",
 ] }
 windows-core.workspace = true
 windows-registry = "0.6"

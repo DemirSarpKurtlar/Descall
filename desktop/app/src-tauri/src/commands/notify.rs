@@ -346,7 +346,18 @@ pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     if window.label() != state::MAIN {
         return;
     }
-    let _ = show_capsule(&app, &payload.title, &payload.options);
+    // Descall+ notification hooks (notifyHooks.cjs): focus mode may drop it, quick reply may
+    // turn a DM into a native reply toast.
+    let Some(filtered) = crate::premium::notify_filter(serde_json::json!({ "title": payload.title, "options": payload.options })) else { return };
+    let options = filtered.get("options").cloned().unwrap_or(Value::Null);
+    if let Some(conv) = filtered.get("quickReply").and_then(|q| q.get("conv")).and_then(Value::as_str) {
+        let body = options.get("body").and_then(Value::as_str).unwrap_or_default();
+        let data = options.get("data").cloned().unwrap_or(Value::Null);
+        if crate::premium::show_quick_reply(&payload.title, body, conv, data) {
+            return;
+        }
+    }
+    let _ = show_capsule(&app, &payload.title, &options);
 }
 
 /// electronAPI.closeNotification({ tag } | { tags }): incoming-call capsules close when the

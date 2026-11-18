@@ -1,7 +1,8 @@
 //! multi_account (Ultra): each extra account runs in its own window ("acct-<id>") with its own
 //! WebView2 data directory (`premium/accounts/<id>/webview`): separate localStorage, IndexedDB,
 //! cookies and cache, so nothing of account A leaks into account B. Each account's session token
-//! is sealed with DPAPI in `premium/accounts/<id>/auth-token.bin`; the account window's
+//! is sealed with DPAPI in the shell's secret store as `account-<id>` (crate::secure_store, the
+//! same entry the Electron import fills); the account window's
 //! secureToken.set / clear land there (never in the owner's store). Descall+ calls from an
 //! account window are refused (entitlements belong to the main account). The tray label is the
 //! username claim of the account's own token. Cost: one browser process per account, cap 3.
@@ -13,7 +14,7 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 use crate::premium::logic::rules::{cut, jwt_username, s};
 use crate::premium::logic::tray::{self, TrayItem};
-use crate::premium::{arg, host, iso_now, lock, ok, platform, wins, Caller, Feature, From, Host};
+use crate::premium::{arg, host, iso_now, lock, ok, wins, Caller, Feature, From, Host};
 
 const MAX_EXTRA: usize = 3;
 const FILE: &str = "accounts";
@@ -55,9 +56,12 @@ fn dir(h: &Host, id: &str) -> std::path::PathBuf {
     h.premium_dir().join("accounts").join(id)
 }
 
+fn token_key(id: &str) -> String {
+    format!("account-{id}")
+}
+
 fn token(h: &Host, id: &str) -> Option<String> {
-    let bytes = std::fs::read(dir(h, id).join("auth-token.bin")).ok()?;
-    String::from_utf8(platform::unprotect(&bytes)?).ok().filter(|t| !t.is_empty())
+    crate::secure_store::get(&h.app, &token_key(id)).filter(|t| !t.is_empty())
 }
 
 fn label_for(h: &Host, a: &Value) -> String {
@@ -76,19 +80,8 @@ pub(crate) fn store_token(h: &Host, label: &str, tok: Option<&str>) -> bool {
     if !accounts(h).iter().any(|a| s(a, "id") == id) {
         return false;
     }
-    let d = dir(h, id);
-    let _ = std::fs::create_dir_all(&d);
-    let file = d.join("auth-token.bin");
-    match tok.filter(|t| !t.is_empty()) {
-        Some(t) => {
-            if let Some(sealed) = platform::protect(t.as_bytes()) {
-                let _ = std::fs::write(&file, sealed);
-            }
-        }
-        None => {
-            let _ = std::fs::remove_file(&file);
-        }
-    }
+    // An empty value removes the entry.
+    crate::secure_store::set(&h.app, &token_key(id), tok.unwrap_or_default());
     h.refresh_tray();
     true
 }
@@ -155,6 +148,7 @@ fn remove(h: &Host, id: &str) -> Value {
     if let Some(w) = h.app.get_webview_window(&window_label(id)) {
         let _ = w.destroy();
     }
+    crate::secure_store::set(&h.app, &token_key(id), "");
     // The WebView2 browser process may still hold the profile for a moment.
     let d = dir(h, id);
     std::thread::spawn(move || {
@@ -199,7 +193,7 @@ impl Feature for F {
                     json!({
                         "id": id, "label": label_for(h, a), "createdAt": a["createdAt"],
                         "open": h.app.get_webview_window(&window_label(&id)).is_some(),
-                        "signedIn": dir(h, &id).join("auth-token.bin").exists(),
+                        "signedIn": token(h, &id).is_some(),
                     })
                 }).collect::<Vec<_>>(),
                 "max": MAX_EXTRA,

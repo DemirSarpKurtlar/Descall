@@ -12,7 +12,14 @@ fn trusted<R: Runtime>(w: &WebviewWindow<R>) -> bool {
 
 #[tauri::command]
 pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token: String) -> bool {
-    if !trusted(&window) || token.len() > 16 * 1024 {
+    if token.len() > 16 * 1024 {
+        return false;
+    }
+    // A Descall+ extra-account window stores its own session, never the owner's.
+    if crate::premium::account_token(window.label(), Some(token.trim())) {
+        return true;
+    }
+    if !trusted(&window) {
         return false;
     }
     crate::secure_store::set(&app, crate::secure_store::TOKEN, token.trim())
@@ -20,6 +27,9 @@ pub fn token_set<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>, token:
 
 #[tauri::command]
 pub fn token_clear<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) -> bool {
+    if crate::premium::account_token(window.label(), None) {
+        return true;
+    }
     trusted(&window) && crate::secure_store::set(&app, crate::secure_store::TOKEN, "")
 }
 

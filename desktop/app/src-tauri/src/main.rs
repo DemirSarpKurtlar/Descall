@@ -2,7 +2,8 @@
 //!
 //! The page (frontend/dist, unchanged) keeps calling `window.electronAPI.*`; the shim in
 //! app/shim/electron-api-shim.js maps every preload.cjs member to a command below.
-//! `window.descallPremium.invoke('premium:*')` goes to commands::premium::premium_invoke.
+//! `window.descallPremium.invoke('premium:*')` goes to premium::premium_invoke (src/premium,
+//! the Descall+ desktop features; its page bridge is app/shim/premium-shim.js).
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -11,6 +12,8 @@ mod boot;
 mod commands;
 mod migration;
 mod platform;
+mod premium;
+mod premium_hooks;
 #[cfg(windows)]
 mod screenshare;
 mod secure_store;
@@ -69,6 +72,10 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        // Descall+ (src/premium): after the import plugin, so its settings store opens on the
+        // files the one-time Electron import just wrote.
+        .plugin(boot::import_plugin())
+        .plugin(premium::init())
         .manage(state::Shell::default())
         .manage(commands::notify::Notifications::default())
         .manage(commands::overlay::Overlay::default())
@@ -93,9 +100,9 @@ fn main() {
             let _ = APP.set(handle.clone());
             state::init_locale(&handle);
 
-            // One-time Electron import (handoff file, or the OSCrypt fallback), before the
-            // first page load so the boot script already carries the token and settings.
-            let imported = boot::import_from_electron_once(&handle);
+            // The one-time Electron import already ran in boot::import_plugin (before the
+            // first page load, so the boot script carries the token and settings).
+            let imported = boot::take_imported(&handle);
             let boot_js = boot::boot_script(&handle, imported.as_ref());
             let script = format!("{boot_js}\n{SHIM}\n{NATIVE_SHARE}");
             let launch = boot::cold_start(&handle, &argv);
@@ -114,9 +121,13 @@ fn main() {
                 .additional_browser_args(BROWSER_ARGS)
                 .initialization_script(script)
                 .on_navigation(boot::is_app_url)
-                .on_new_window(move |url, _features| {
-                    // Descall+ portal windows (window.open("about:blank")) keep their opener;
-                    // any other http(s) link opens in the default browser (setWindowOpenHandler).
+                .on_new_window(move |url, features| {
+                    // Descall+ portal windows (call, sidebar: about:blank#descall-premium-<kind>).
+                    if let Some(r) = premium::on_new_window(&nav_app, &url, features) {
+                        return r;
+                    }
+                    // Other about:blank windows keep their opener; any other http(s) link opens
+                    // in the default browser (setWindowOpenHandler).
                     if admin::is_admin_url(&url) {
                         let h = nav_app.clone();
                         let _ = nav_app.run_on_main_thread(move || admin::open(&h, &url));
@@ -154,6 +165,7 @@ fn main() {
             boot::bind_window_events(&w);
             webview::install_permission_handler(&w);
             tray::create(&handle);
+            premium_hooks::install(&handle);
 
             use descall_shell::launch::StartAction;
             match launch.action {
@@ -219,7 +231,10 @@ fn main() {
             commands::system::clipboard_write_text,
             commands::system::processes_scan,
             commands::system::download_file,
-            commands::premium::premium_invoke,
+            premium::premium_invoke,
+            premium::premium_blob_put,
+            premium::premium_blob_take,
+            premium::premium_hud_action,
         ])
         .build(tauri::generate_context!())
         .expect("Descall failed to start");

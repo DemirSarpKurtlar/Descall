@@ -59,7 +59,7 @@ fn session_key(h: &Handoff) -> Option<String> {
 /// migration: see descall_migrate::app::should_import). The handoff is unsealed, validated
 /// and shredded by descall_migrate::import::take; its secrets go straight into the DPAPI
 /// secret store and never touch the disk in clear.
-pub fn import_from_electron_once(app: &AppHandle) -> Option<Imported> {
+fn import_from_electron_once(app: &AppHandle) -> Option<Imported> {
     let marker = migration_dir(app)?.join("imported");
     let migration_id = crate::migration::migration_id();
     let previous = std::fs::read(&marker).ok();
@@ -104,6 +104,26 @@ pub fn import_from_electron_once(app: &AppHandle) -> Option<Imported> {
     result
 }
 
+struct PendingImport(std::sync::Mutex<Option<Imported>>);
+
+/// Runs the one-time import during plugin setup: registered before the Descall+ plugin, so
+/// its settings store (premium-settings.json, premium/*.json) opens on the imported files,
+/// and before the app's own setup, so the UI locale is the imported one from the first frame.
+pub fn import_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("descall-import")
+        .setup(|app, _api| {
+            let imported = import_from_electron_once(app);
+            app.manage(PendingImport(std::sync::Mutex::new(imported)));
+            Ok(())
+        })
+        .build()
+}
+
+/// The import result for the first boot script (taken once).
+pub fn take_imported(app: &AppHandle) -> Option<Imported> {
+    app.try_state::<PendingImport>().and_then(|p| p.0.lock().ok()?.take())
+}
+
 fn apply_handoff(app: &AppHandle, h: &Handoff) {
     use crate::secure_store::{set, APP_LOCK, TOKEN};
     if let Some(t) = &h.token {
@@ -116,12 +136,15 @@ fn apply_handoff(app: &AppHandle, h: &Handoff) {
         set(app, APP_LOCK, &r.0);
     }
     if let Ok(dir) = app.path().app_data_dir() {
-        let premium = dir.join("premium");
-        let _ = std::fs::create_dir_all(&premium);
+        let _ = std::fs::create_dir_all(dir.join("premium"));
         for (name, body) in &h.premium_files {
-            // Plain file names only (same rule as electron/safeDownload.cjs).
-            if !name.contains(['/', '\\']) && !name.contains("..") {
-                let _ = std::fs::write(premium.join(name), body);
+            // Descall+ settings in the layout src/premium reads (premium-settings.json and
+            // premium/<n>.json); the bridge's names are mapped and checked by the crate.
+            match descall_migrate::app::premium_file_target(name) {
+                Some(rel) => {
+                    let _ = std::fs::write(dir.join(rel), body);
+                }
+                None => log::warn!("[migration] premium file skipped: {name}"),
             }
         }
         if let Some(ws) = &h.window_state {
@@ -155,12 +178,27 @@ pub fn boot_script_for<R: Runtime>(app: &AppHandle<R>, mode: &'static str) -> St
     boot_script_with(app, None, mode)
 }
 
+/// Boot values for a Descall+ app window (premium::set_boot_script_provider): pop-outs run
+/// as the owner; an extra-account window (`acct-<id>`) gets that account's own token, never
+/// the owner's.
+pub fn boot_script_for_premium_window<R: Runtime>(app: &AppHandle<R>, label: &str) -> String {
+    let token_key = match label.strip_prefix("acct-") {
+        Some(id) => format!("account-{id}"),
+        None => crate::secure_store::TOKEN.to_string(),
+    };
+    boot_script_token(app, None, "main", crate::secure_store::get(app, &token_key))
+}
+
 fn boot_script_with<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>, mode: &'static str) -> String {
+    boot_script_token(app, imported, mode, crate::secure_store::get(app, crate::secure_store::TOKEN))
+}
+
+fn boot_script_token<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>, mode: &'static str, token: Option<String>) -> String {
     let boot = Boot {
         mode,
         version: app.package_info().version.to_string(),
         platform: "win32",
-        token: crate::secure_store::get(app, crate::secure_store::TOKEN),
+        token,
         reduced_transparency: crate::platform::reduced_transparency(),
         locale: crate::state::locale(app),
         import_local_storage: imported.map(|i| &i.local_storage),
