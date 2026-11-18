@@ -185,6 +185,7 @@ export const API_RU = {
   "This person cannot receive more gifts today.": "Этот человек сегодня больше не может получать подарки.",
   "The message can be up to {max} characters.": "Сообщение может содержать до {max} символов.",
   "Choose a valid delivery time.": "Выбери допустимое время доставки.",
+  "Birthday delivery is no longer available. Send the gift now or pick a time.": "Доставка в день рождения больше недоступна. Отправь подарок сейчас или выбери время.",
   "Gifts can be scheduled up to {days, plural, one {# day} other {# days}} ahead.": "Подарки можно запланировать не более чем на {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} вперёд.",
   "You cannot send a gift to this person.": "Ты не можешь отправить подарок этому человеку.",
   "You can only send gifts to friends.": "Подарки можно отправлять только друзьям.",

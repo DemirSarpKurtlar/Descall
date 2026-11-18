@@ -20,7 +20,7 @@ const actions = require("./actions");
 const events = require("./events");
 const sets = require("./sets");
 const pricing = require("./pricing");
-const { checkGift, detectRing } = require("./giftRules");
+const { checkGift, detectRing, deliveryMode } = require("./giftRules");
 const { shopError } = require("./storefrontService");
 const shop = require("../shop");
 const descoin = require("../descoin");
@@ -143,8 +143,12 @@ async function allowed(senderId, toUserId, body, now = Date.now()) {
     recipientReceivedToday: recvToday,
     message: typeof body?.message === "string" ? body.message.trim() : null,
     sendAt: body?.sendAt || null,
+    delivery: deliveryMode(body),
   });
 }
+
+/** HTTP status of a refused gift: unknown user 404, a removed delivery mode 400, else 403. */
+const statusOf = (code) => (code === "recipient_not_found" ? 404 : code === "gift_birthday_removed" ? 400 : 403);
 
 async function send(senderId, body, { now = Date.now(), base = "" } = {}) {
   const limits = await config.getLimits();
@@ -160,7 +164,7 @@ async function send(senderId, body, { now = Date.now(), base = "" } = {}) {
     if (["gift_daily_cap", "gift_recipient_cap", "gift_receive_cap", "gift_new_account", "gift_new_account_set"].includes(check.code)) {
       await logBlocked(senderId, toUserId, check.code, now);
     }
-    throw shopError(check.code, check.code === "recipient_not_found" ? 404 : 403, check.vars);
+    throw shopError(check.code, statusOf(check.code), check.vars);
   }
   const sendAt = body?.sendAt ? Math.max(now, time.ms(body.sendAt)) : now;
   const r = await resolveGift(senderId, toUserId, body);
@@ -176,7 +180,7 @@ async function send(senderId, body, { now = Date.now(), base = "" } = {}) {
       if (dup) return { duplicate: true, row: dup };
     }
     const again = await allowed(senderId, toUserId, body, now);
-    if (!again.ok) throw shopError(again.code, again.code === "recipient_not_found" ? 404 : 403, again.vars);
+    if (!again.ok) throw shopError(again.code, statusOf(again.code), again.vars);
     let claimed = false;
     if (r.kind === "night" && r.meta?.nightId) {
       if (!(await night.claimCard(senderId, r.meta.nightId, r.meta.cardIndex, now))) throw shopError("card_bought", 409);

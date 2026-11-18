@@ -919,6 +919,7 @@ export const API_TR = {
   "This person cannot receive more gifts today.": "Bu kişi bugün daha fazla hediye alamaz.",
   "The message can be up to {max} characters.": "Mesaj en fazla {max} karakter olabilir.",
   "Choose a valid delivery time.": "Geçerli bir teslim zamanı seç.",
+  "Birthday delivery is no longer available. Send the gift now or pick a time.": "Doğum gününde teslim artık yok. Hediyeyi şimdi gönder ya da bir zaman seç.",
   "Gifts can be scheduled up to {days, plural, one {# day} other {# days}} ahead.": "Hediyeler en fazla {days} gün önceden zamanlanabilir.",
   "You cannot send a gift to this person.": "Bu kişiye hediye gönderemezsin.",
   "You can only send gifts to friends.": "Hediyeyi yalnızca arkadaşlarına gönderebilirsin.",

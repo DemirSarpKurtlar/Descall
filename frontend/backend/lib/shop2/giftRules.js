@@ -9,6 +9,19 @@ const { normalizeLimits } = require("./rules");
 const time = require("./time");
 
 /**
+ * Delivery modes a new gift may ask for: "now", or "at" a chosen time (sendAt). The
+ * "birthday" mode was removed; gifts already scheduled with it are plain scheduled rows
+ * (status "scheduled" + send_at) and the scheduler still delivers them.
+ */
+const DELIVERY_MODES = new Set(["now", "at"]);
+
+/** The delivery mode a request names (`delivery`, or the sheet's `when`), or null. */
+function deliveryMode(body) {
+  const mode = body?.delivery ?? body?.when ?? null;
+  return mode == null || mode === "" ? null : String(mode);
+}
+
+/**
  * @returns {{ ok: true } | { ok: false, code: string, vars?: object }}
  */
 function checkGift(p) {
@@ -16,6 +29,10 @@ function checkGift(p) {
   const now = time.ms(p.now) ?? Date.now();
   if (!g.enabled || g.frozen) return { ok: false, code: "gifts_paused" };
   if (!p.senderId || !p.recipientId || p.senderId === p.recipientId) return { ok: false, code: "gift_self" };
+  if (p.delivery != null) {
+    if (p.delivery === "birthday") return { ok: false, code: "gift_birthday_removed" };
+    if (!DELIVERY_MODES.has(p.delivery)) return { ok: false, code: "gift_bad_time" };
+  }
   const ageDays = p.senderCreatedAt ? (now - time.ms(p.senderCreatedAt)) / time.DAY_MS : Infinity;
   if (ageDays < g.minAccountDaysSend) return { ok: false, code: "gift_new_account", vars: { days: g.minAccountDaysSend } };
   if (p.kind === "set" && ageDays < g.minAccountDaysSetBuy) return { ok: false, code: "gift_new_account_set", vars: { days: g.minAccountDaysSetBuy } };
@@ -108,4 +125,4 @@ function impactOf(gifts, limits, { usersById = new Map() } = {}) {
   return { total: sorted.length, blocked, blockedAmount, byCode };
 }
 
-module.exports = { checkGift, detectRing, impactOf };
+module.exports = { checkGift, detectRing, impactOf, deliveryMode, DELIVERY_MODES };
