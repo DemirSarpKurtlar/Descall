@@ -898,6 +898,29 @@
   }
 }
 
+/* Classic phone layout (glass off, e.g. the kill switch): the bottom bar is
+   the main navigation on every root tab. It sat under the drawer (z 280 < 300)
+   on five of six tabs and only showed on Activity, on top of the rail's
+   avatar. Keep it above the drawer and end the drawer, and Activity's rail,
+   at its top edge. The glass shell (.g-shell) has its own floating bar. */
+@media (max-width: 768px) {
+  .app-root.is-mobile:not(.g-shell):not(.in-conversation) > .mobile-tab-bar {
+    z-index: 310;
+  }
+
+  .app-root.is-mobile:not(.g-shell):not(.in-conversation):not([data-view="activity"]) .app-sidebar-shell {
+    padding-bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px));
+  }
+
+  html.kb-bar-hidden .app-root.is-mobile:not(.g-shell) .app-sidebar-shell {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .app-root.is-mobile:not(.g-shell):not(.in-conversation)[data-view="activity"] .app-sidebar-shell .nav-rail {
+    bottom: calc(var(--mobile-tab-bar-h, 60px) + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
 /* Outer shells never pad for the tab bar, only scrollable inners do. */
 
 /* Win over any display:flex !important, inactive hub panel must fully unmount from layout. */

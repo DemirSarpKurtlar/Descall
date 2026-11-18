@@ -2705,6 +2705,8 @@ export const phrases = {
   "No groups yet": "No groups yet",
   "No conversations yet": "No conversations yet",
   "is now online": "is now online",
+  "Sent, {count}": "Sent, {count}",
+  "Cancel request": "Cancel request",
   "Pick a friend": "Pick a friend",
   "Pick a friend on the left to chat or call": "Pick a friend on the left to chat or call",
   "accepted your friend request": "accepted your friend request",

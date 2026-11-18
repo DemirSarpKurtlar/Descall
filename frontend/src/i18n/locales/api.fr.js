@@ -55,6 +55,7 @@ export const API_FR = {
   "This change has no state for the flag.": "Ce changement ne contient pas l'état du flag.",
   "Unknown flag.": "Flag inconnu.",
   "Use System > Safe restart.": "Utilisez Système > Redémarrage sûr.",
+  "Send popups to everyone from Live popup.": "Envoyez les popups à tous depuis Popup en direct.",
   "This tool moved to System.": "Cet outil a été déplacé dans Système.",
   "Failed to load overview.": "Impossible de charger la vue d’ensemble.",
   "Could not check your verification code status. Try again.": "Impossible de vérifier l’état de votre code de vérification. Réessayez.",

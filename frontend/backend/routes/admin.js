@@ -1283,23 +1283,19 @@ router.delete("/profanity/:word", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/broadcast", (req, res) => {
-  const text = String(req.body?.text || "").trim();
-  if (!text) return res.status(400).json({ error: "text required." });
-  getIo(req).emit("server:announcement", {
-    text,
-    at: new Date().toISOString(),
-    from: "admin",
-  });
-  audit(req.user, "broadcast", "all", { len: text.length });
-  res.json({ ok: true });
-});
+// Instant notice to everyone lives in Sistem > Yayin (/system/broadcast) now (polish admin-b-11).
+router.post("/broadcast", (_req, res) => res.status(410).json(apiError("This tool moved to System.", null, { code: "LEGACY_TOOL_REMOVED" })));
 
 router.get("/popup/recent", (_req, res) => {
   res.json({ entries: popupBroadcast.listRecent(20) });
 });
 
 router.post("/popup", (req, res) => {
+  // One person only (Kullanici dosyasi). A popup to everyone goes through Canli popup, which
+  // has the daily limit, receipts and recall (polish admin-b-11).
+  if (!req.body?.targetUserId) {
+    return res.status(410).json(apiError("Send popups to everyone from Live popup.", null, { code: "USE_LIVE_POPUP" }));
+  }
   const io = getIo(req);
   pruneDeadPresence(state.presence, io);
   const roster = summarizePresence(state.presence, { io });

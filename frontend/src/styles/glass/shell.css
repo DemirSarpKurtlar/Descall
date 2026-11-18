@@ -1034,6 +1034,15 @@ html.glass-ui .g-status-menu .status-picker-btn.ghost {
   }
 }
 
+/* 320-340px Android phones (Galaxy S9-class): six ~48px tabs. Tighter still
+   so "Sunucular" / "Arkadaşlar" keep a gap instead of touching. */
+@media (max-width: 340px) {
+  html.glass-ui .g-tab {
+    font-size: 9px;
+    letter-spacing: -0.05em;
+  }
+}
+
 /* List rows are <button>s (UA text-align: center); glass lists read from the
    leading edge like the mockup. Row visuals themselves are Stage 3. */
 @media (max-width: 768px) {

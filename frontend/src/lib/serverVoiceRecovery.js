@@ -163,3 +163,36 @@ export function liveKitRetryBudget(attempts, nowMs = Date.now()) {
   const kept = (Array.isArray(attempts) ? attempts : []).filter((t) => nowMs - t < LIVEKIT_RETRY_WINDOW_MS);
   return { kept, allowed: kept.length < LIVEKIT_RETRY_MAX };
 }
+
+/* ------------------------------------------- user-facing reasons (server-voice-22 / -25) */
+
+/** svoice.* key telling the user why the server took them out of voice. */
+export function dropMessageKey(reason, { byUserId = null } = {}) {
+  const r = String(reason || "").toLowerCase();
+  if (r === "other_device") return "svoice.dropOtherDevice";
+  if (r === "timeout") return "svoice.dropTimeout";
+  if (r === "kick" || r === "kicked") return "svoice.dropKick";
+  if (r === "ban" || r === "banned") return "svoice.dropBan";
+  if (r === "channel_deleted") return "svoice.dropChannelDeleted";
+  if (r === "server_deleted") return "svoice.dropServerDeleted";
+  if (r === "disconnected") return "svoice.dropConnection";
+  if (r === "afk") return "svoice.dropAfk";
+  if (r === "not_member" || r === "no_access" || r === "missing_permission") return "svoice.dropNoAccess";
+  if (r === "livekit_lost") return "svoice.mediaLost";
+  if (!r && byUserId) return "svoice.dropByMod";
+  return "callui.voice.disconnected";
+}
+
+/** svoice.* key for a force-move (AFK or a moderator); null when nothing needs saying. */
+export function moveMessageKey(reason, { byUserId = null } = {}) {
+  if (String(reason || "").toLowerCase() === "afk") return "svoice.movedAfk";
+  if (byUserId) return "svoice.movedByMod";
+  return null;
+}
+
+/** Why an unmute is refused: AFK channel, no SPEAK, or a moderator's server mute. */
+export function unmuteDeniedKey({ afkChannel = false, canSpeak = true, modMuted = false } = {}) {
+  if (afkChannel) return "svoice.unmuteAfk";
+  if (!modMuted && canSpeak === false) return "svoice.unmuteNoSpeak";
+  return "svoice.unmuteServerMuted";
+}

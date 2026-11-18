@@ -83,6 +83,9 @@ import {
   dropReasonToken,
   liveKitDropAction,
   liveKitRetryBudget,
+  dropMessageKey,
+  moveMessageKey,
+  unmuteDeniedKey,
 } from "../lib/serverVoiceRecovery";
 import {
   isScreenCompanionIdentity,
@@ -194,6 +197,7 @@ export function useServerVoice(socket) {
   const [screenStream, setScreenStream] = useState(null);
   const screenStreamRef = useRef(null);
   const stopScreenShareRef = useRef(null);
+  const startScreenShareRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
   const cameraStreamRef = useRef(null);
@@ -218,6 +222,10 @@ export function useServerVoice(socket) {
   const handlePeerLinkRef = useRef(null);
   const reconnectLiveKitRef = useRef(null);
   const onLiveKitDroppedRef = useRef(null);
+  /** Seat facts the unmute refusal toast names (AFK channel, moderator mute). */
+  const afkChannelRef = useRef(false);
+  const modMutedRef = useRef(false);
+  const toggleDeafenRef = useRef(null);
   const liveKitRecoverRef = useRef({ attempts: [], timer: null });
   /** Per-session link counters for the drop telemetry (voice-drops-05). */
   const linkStatsRef = useRef({ sockDrops: 0, pcFailed: 0, iceRestarts: 0, rebuilds: 0, startedAt: 0 });
@@ -229,7 +237,14 @@ export function useServerVoice(socket) {
   const participantsRef = useRef([]);
   const channelNameRef = useRef("");
   const liveKitConfigRef = useRef(null);
-  const screenQuality = GROUP_SCREEN_DEFAULT_QUALITY;
+  // Screen share quality from the owner-picked quality window (server-voice-21),
+  // remembered per device. Mesh caps still apply in resolveScreenCaptureSize.
+  const [screenQuality, setScreenQualityState] = useState(readServerScreenQuality);
+  const setScreenQuality = useCallback((next) => {
+    const clean = cleanServerScreenQuality(next);
+    setScreenQualityState(clean);
+    writeServerScreenQuality(clean);
+  }, []);
 
   useEffect(() => {
     preloadIceServers().catch(() => {});
@@ -1541,7 +1556,7 @@ export function useServerVoice(socket) {
     [acquireJoinMic, cleanupAll, connectLiveKitRoom, disconnectLiveKit, getLiveKitToken, getMediaConfig, leave, micConstraints, socket, toast]
   );
 
-  const setMicEnabled = useCallback((enabled, { persist = false, sound = true } = {}) => {
+  const setMicEnabled = useCallback((enabled, { persist = false, sound = true, ptt = false } = {}) => {
     if ((deafenedRef.current || serverMutedRef.current) && enabled) return;
     const track = localStreamRef.current?.getAudioTracks()?.[0];
     if (!track || track.enabled === enabled) return;
@@ -1561,6 +1576,8 @@ export function useServerVoice(socket) {
         muted: nextMuted,
         deafened: deafenedRef.current,
         cameraOn: cameraStreamRef.current?.getVideoTracks?.()[0]?.readyState === "live",
+        // Push-to-talk: a DesCoin beat right after the release still counts (2d75c4d3).
+        ptt: Boolean(ptt),
       });
     }
   }, []);
@@ -1568,13 +1585,29 @@ export function useServerVoice(socket) {
   setMicEnabledRef.current = setMicEnabled;
 
   const toggleMute = useCallback(async () => {
-    if (serverMutedRef.current) return;
+    if (serverMutedRef.current) {
+      // Say why the mic stays off (server-voice-11): AFK channel, no SPEAK, or a moderator.
+      const key = unmuteDeniedKey({
+        afkChannel: afkChannelRef.current,
+        canSpeak: canSpeakRef.current,
+        modMuted: modMutedRef.current,
+      });
+      toastRef.current?.(tRuntime(key), "info");
+      return;
+    }
     if (!canPublishVoice()) {
-      setError(
-        channelTypeRef.current === "stage"
-          ? "callui.voice.needInvite"
-          : "callui.voice.noSpeakPerm"
+      // A toast, not the room status: the red header status is for the connection.
+      toastRef.current?.(
+        tRuntime(channelTypeRef.current === "stage" ? "callui.voice.needInvite" : "callui.voice.noSpeakPerm"),
+        "info"
       );
+      return;
+    }
+    // Discord parity: unmuting while deafened undeafens too (it was a silent no-op).
+    if (deafenedRef.current) {
+      toggleDeafenRef.current?.();
+      const live = localStreamRef.current?.getAudioTracks()?.[0];
+      if (live && !live.enabled && !serverMutedRef.current) setMicEnabled(true, { persist: true });
       return;
     }
     let track = localStreamRef.current?.getAudioTracks()?.[0];
@@ -1607,7 +1640,7 @@ export function useServerVoice(socket) {
   useEffect(() => {
     const onPtt = (event) => {
       if (!activeChannelIdRef.current || !canPublishVoice()) return;
-      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false });
+      setMicEnabledRef.current?.(Boolean(event.detail?.down), { persist: false, ptt: true });
     };
     window.addEventListener("descall:ptt", onPtt);
     return () => window.removeEventListener("descall:ptt", onPtt);
@@ -1648,6 +1681,7 @@ export function useServerVoice(socket) {
       });
     }
   }, [applyVoiceElement, socket]);
+  toggleDeafenRef.current = toggleDeafen;
 
   const applyLocalMute = useCallback((nextMuted, { forced = false } = {}) => {
     const track = localStreamRef.current?.getAudioTracks()?.[0];
@@ -1782,11 +1816,18 @@ export function useServerVoice(socket) {
       await beginNativeShare({ anchor: opts?.anchor || null, showPicker: true });
       return;
     }
+    const quality = opts?.quality ? cleanServerScreenQuality(opts.quality) : screenQuality;
+    if (opts?.quality) setScreenQuality(quality);
+    let announced = false;
+    let stream = null;
     try {
-      const { width, height, fps: frameRate } = resolveScreenCaptureSize(screenQuality);
       const peerCount = Math.max(1, pcMapRef.current.size);
-      const maxBitrate = screenBitrateForPeerCount(peerCount, screenQuality.resolution || "720p");
-      const stream = await captureScreenShareStream({
+      // SFU: one upload whatever the room size; mesh: one encode per peer, so the mesh cap.
+      const { width, height, fps: frameRate } = resolveScreenCaptureSize(quality, {
+        peerCount: sfuModeRef.current ? 1 : peerCount + 1,
+      });
+      const maxBitrate = screenBitrateForPeerCount(sfuModeRef.current ? 1 : peerCount, quality.resolution || "720p");
+      stream = await captureScreenShareStream({
         width,
         height,
         fps: frameRate,
@@ -1799,7 +1840,7 @@ export function useServerVoice(socket) {
         width,
         height,
         fps: frameRate,
-        contentHint: screenQuality.contentHint || "motion",
+        contentHint: quality.contentHint || "motion",
       });
       if (screenTrack.readyState !== "live") {
         stream.getTracks().forEach((t) => t.stop());
@@ -1810,12 +1851,14 @@ export function useServerVoice(socket) {
       setScreenStream(stream);
 
       const channelId = activeChannelIdRef.current;
-      if (socket?.connected && channelId) {
+      const announce = () => {
+        if (announced || !socket?.connected || !channelId) return;
+        announced = true;
         socket.emit("server:voice:screen:start", {
           channelId,
           screen: sanitizeScreenAnnouncement({ streamId: stream.id }),
         });
-      }
+      };
 
       if (sfuModeRef.current && liveKitRoomRef.current) {
         const videoOptions = liveKitScreenVideoPublishOptions();
@@ -1832,6 +1875,9 @@ export function useServerVoice(socket) {
             name: audioOptions.name,
           });
         }
+        // Announce only once the share is really published (server-voice-23): a failed
+        // publish no longer leaves the seat "sharing" (and earning) with nothing sent.
+        announce();
         screenTrack.onended = () => {
           stopScreenShareRef.current?.();
         };
@@ -1839,6 +1885,9 @@ export function useServerVoice(socket) {
         audioManager.play("screenShareStart");
         return;
       }
+
+      // Mesh: peers classify the incoming track by this announcement, so it goes first.
+      announce();
 
       for (const [userId, peerData] of pcMapRef.current.entries()) {
         try {
@@ -1862,15 +1911,47 @@ export function useServerVoice(socket) {
       setIsScreenSharing(true);
       audioManager.play("screenShareStart");
     } catch (err) {
+      // Never leave a half-started share: stop the capture, unpublish, tell the room.
+      if (stream) {
+        const room = liveKitRoomRef.current;
+        for (const track of stream.getTracks()) {
+          try {
+            if (sfuModeRef.current && room) room.localParticipant.unpublishTrack(track);
+          } catch {
+            /* not published */
+          }
+          track.stop();
+        }
+        if (screenStreamRef.current === stream) {
+          screenStreamRef.current = null;
+          setScreenStream(null);
+        }
+        if (announced && socket?.connected && activeChannelIdRef.current) {
+          socket.emit("server:voice:screen:stop", { channelId: activeChannelIdRef.current });
+        }
+      }
       if (err?.name === "AbortError" || err?.name === "NotAllowedError") return;
       console.error("[ServerVoice] screen share failed:", err);
-      setError(err?.message || "Could not start screen share.");
+      toastRef.current?.(tRuntime("Could not start screen share."), "error");
     }
-  }, [beginNativeShare, canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, socket]);
+  }, [beginNativeShare, canPublishVideo, isScreenSharing, renegotiateWithPeer, screenQuality, setScreenQuality, socket]);
+
+  /** Quality changed while sharing: restart the capture with the new settings. */
+  const restartScreenShareWithQuality = useCallback(
+    async (quality) => {
+      const clean = cleanServerScreenQuality(quality);
+      setScreenQuality(clean);
+      if (!screenStreamRef.current) return;
+      await stopScreenShareRef.current?.({ quiet: true });
+      await startScreenShareRef.current?.({ quality: clean });
+    },
+    [setScreenQuality]
+  );
 
   useEffect(() => {
     stopScreenShareRef.current = stopScreenShare;
-  }, [stopScreenShare]);
+    startScreenShareRef.current = startScreenShare;
+  }, [stopScreenShare, startScreenShare]);
 
   // Native broadcast events. "orphan" = a broadcast was started outside the app
   // (Control Center > Screen Broadcast > Descall) with no companion session yet:
@@ -2242,6 +2323,7 @@ export function useServerVoice(socket) {
       requestedToSpeak: requested,
       serverMuted: forcedMute,
       serverDeafened: forcedDeafen,
+      afkChannel,
       livekit,
       rejoin,
     } = {}) => {
@@ -2255,6 +2337,8 @@ export function useServerVoice(socket) {
       // A socket reconnect re-emits the join for the seat we already hold (onConnect).
       // Keep the roster and its media, no join sound (voice-drops-01, server-voice-05).
       const isRejoin = !initialJoin && (Boolean(rejoin) || Boolean(activeChannelIdRef.current));
+      afkChannelRef.current = Boolean(afkChannel);
+      modMutedRef.current = Boolean(forcedMute) && !afkChannel;
       if (forcedDeafen) applyRemoteDeafen(true);
       setActiveServerId(serverId || null);
       if (name) setChannelName(name);
@@ -2486,7 +2570,7 @@ export function useServerVoice(socket) {
       }
     };
 
-    const onForceDisconnected = ({ serverId, channelId, reason } = {}) => {
+    const onForceDisconnected = ({ serverId, channelId, reason, byUserId } = {}) => {
       const ch = channelId || activeChannelIdRef.current;
       const meId = myIdRef.current;
       if (ch && meId) removeUserFromVoiceStates(ch, meId, serverId || activeServerIdRef.current);
@@ -2494,12 +2578,16 @@ export function useServerVoice(socket) {
         audioManager.play("disconnect");
         // The server already removed the seat: no leave (it would hit the user's
         // other device), and the session counts as dropped, not ended.
-        cleanupAll({ emitLeave: false, result: dropResultFor(reason), reason: reason || "disconnected" });
+        cleanupAll({ emitLeave: false, result: dropResultFor(reason), reason: reason || (byUserId ? "moderator" : "disconnected") });
+        // Say why (server-voice-25): "other device", timeout, kick, deleted channel...
+        const key = dropMessageKey(reason, { byUserId });
+        setError(key);
+        toastRef.current?.(tRuntime(key), reason === "other_device" ? "info" : "error");
       } else if (ch) {
-        // Already cleaned locally but still clear any leftover roster
+        // This device was not in that channel (the event goes to every device of
+        // the user): only clear a leftover roster entry, no red status here.
         setParticipants((prev) => prev.filter((p) => String(p.id) !== String(meId)));
       }
-      setError("callui.voice.disconnected");
     };
 
     const onForceMoved = ({
@@ -2507,13 +2595,19 @@ export function useServerVoice(socket) {
       channelName: name,
       channelType: type,
       serverId,
+      reason,
+      byUserId,
     } = {}) => {
       if (!toChannelId || !serverId) return;
       const activeId = activeChannelIdRef.current;
-      // Event is only emitted to the moved user. Always rejoin destination unless
-      // this client is already connected there (avoids sticky early-return bugs).
-      if (activeId && String(activeId) === String(toChannelId)) return;
-      cleanupAll();
+      // Only the device that is in voice follows a move; an idle device of the same
+      // user must not grab the mic and race for the seat (server-voice-03).
+      if (!activeId) return;
+      if (String(activeId) === String(toChannelId)) return;
+      // The server already moved the seat: tear down locally, no leave for the old channel.
+      cleanupAll({ emitLeave: false, result: "moved", reason: reason === "afk" ? "afk" : "moved" });
+      const moveKey = moveMessageKey(reason, { byUserId });
+      if (moveKey) toastRef.current?.(tRuntime(moveKey, { channel: name || "Voice" }), "info");
       // Rejoin destination after brief cleanup so tracks/LiveKit fully release.
       window.setTimeout(() => {
         joinRef.current?.(serverId, {
@@ -2526,6 +2620,7 @@ export function useServerVoice(socket) {
 
     const onForceMute = ({ channelId, muted: isMuted, canSpeak: speakPerm } = {}) => {
       if (!channelId || channelId !== activeChannelIdRef.current) return;
+      modMutedRef.current = Boolean(isMuted);
       if (isMuted) {
         applyLocalMute(true, { forced: true });
       } else {
@@ -2628,14 +2723,14 @@ export function useServerVoice(socket) {
         if (code !== "RULES_REQUIRED") toastRef.current?.(tRuntime(text), "error");
         return;
       }
-      if (message) setError(message);
       // Moderation failures (move/disconnect/mute) are emitted without a channelId
       // and must not kick the moderator out of their own voice session.
       const isJoinContext =
         Boolean(channelId) &&
         (!activeChannelIdRef.current || String(channelId) === String(activeChannelIdRef.current));
       const waiter = joinedTokenWaiterRef.current;
-      if (isJoinContext && waiter && String(waiter.channelId) === String(channelId)) {
+      const joinPending = Boolean(isJoinContext && waiter && String(waiter.channelId) === String(channelId));
+      if (joinPending) {
         joinedTokenWaiterRef.current = null;
         waiter.resolve(null);
       }
@@ -2644,26 +2739,30 @@ export function useServerVoice(socket) {
         if (isJoinContext) cleanupAll();
         return;
       }
-      if (!isJoinContext && message) {
-        window.dispatchEvent(
-          new CustomEvent("descall:server-voice-mod-error", {
-            detail: { message, code: code || null },
-          })
-        );
-      }
-      // Join-time permission failures happen after optimistic local join, always
-      // roll back so the UI doesn't look "in voice" while the server rejected us.
-      if (isJoinContext && (code === "MISSING_PERMISSION" || code === "NOT_MEMBER")) {
-        cleanupAll();
+      if (!isJoinContext) {
+        // Not about our connection: never the room's red status (server-voice-09).
+        if (message) {
+          window.dispatchEvent(
+            new CustomEvent("descall:server-voice-mod-error", {
+              detail: { message, code: code || null },
+            })
+          );
+        }
         return;
       }
-      if (
-        isJoinContext &&
-        activeChannelIdRef.current &&
-        /failed to join|microphone|could not join/i.test(message || "")
-      ) {
-        cleanupAll();
+      // Join refusals arrive tagged (phase "join", handled above). While our own join
+      // is still pending, an untagged refusal rolls back too. A refused screen share or
+      // camera (also MISSING_PERMISSION) used to take the user out of voice.
+      if (joinPending) {
+        if (message) setError(message);
+        if (code === "MISSING_PERMISSION" || code === "NOT_MEMBER" || /failed to join|microphone|could not join/i.test(message || "")) {
+          cleanupAll();
+        }
+        return;
       }
+      // An action in the channel was refused (screen share, camera, stage): a toast,
+      // the connection status stays as it is.
+      if (message) toastRef.current?.(tRuntime(message), "error");
     };
 
     const onLeft = ({ channelId } = {}) => {
@@ -2950,6 +3049,9 @@ export function useServerVoice(socket) {
     stopCamera,
     startScreenShare,
     stopScreenShare,
+    screenQuality,
+    setScreenQuality,
+    restartScreenShareWithQuality,
     audioInputDevices,
     audioOutputDevices,
     videoInputDevices,

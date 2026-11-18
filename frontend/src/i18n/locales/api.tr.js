@@ -820,6 +820,7 @@ export const API_TR = {
   "This change has no state for the flag.": "Bu değişiklikte bayrağın durumu yok.",
   "Unknown flag.": "Bilinmeyen bayrak.",
   "Use System > Safe restart.": "Sistem > Güvenli yeniden başlat'ı kullan.",
+  "Send popups to everyone from Live popup.": "Herkese popup göndermek için Canlı popup sayfasını kullan.",
   "This tool moved to System.": "Bu araç Sistem sayfasına taşındı.",
   "Failed to load overview.": "Genel bakış yüklenemedi.",
   "Could not check your verification code status. Try again.": "Doğrulama kodu durumun kontrol edilemedi. Tekrar dene.",

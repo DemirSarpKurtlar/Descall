@@ -75,7 +75,13 @@ export function serverMessage(body, field = "error", translate = t) {
   const key = body[`${field}Key`];
   if (typeof key === "string" && key) {
     const vars = resolveVars(body[`${field}Vars`], getLocale());
-    return translate(key, vars);
+    const out = translate(key, vars);
+    // A translator without ICU support (the web sign-in shell) leaves "{n, plural, ...}"
+    // in place: show the server's filled English sentence (or its translation) instead.
+    if (typeof out === "string" && /\{\w+,\s*(plural|select)/.test(out) && typeof body[field] === "string") {
+      return translate(body[field]);
+    }
+    return out;
   }
   const raw = body[field];
   return typeof raw === "string" && raw ? translate(raw) : "";

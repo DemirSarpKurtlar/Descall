@@ -2593,6 +2593,36 @@ html.a11y-solid .call-summary-card.is-missed .call-summary-icon {
   white-space: nowrap;
   max-width: 100%;
 }
+/* Requests I sent, with a take-back button (polish world-social-10). */
+.friend-sent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.friend-sent-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.friend-sent-cancel:hover,
+.friend-sent-cancel:focus-visible {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
 /* Friends search with no match (polish world-social-18). */
 .friends-search-empty {
   margin: 10px 12px;

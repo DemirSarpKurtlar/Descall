@@ -70,3 +70,11 @@ html.native-app .toast-stack {
   right: calc(env(safe-area-inset-right, 0px) + 12px);
   max-width: min(360px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
 }
+
+/* Android WebView paints Chromium's default rgba(51,181,229,.4) box on every
+   tap of a row without its own value (classic list rows). Press feedback is
+   the app's own (:active / usePressFeedback). */
+html.native-app,
+html.native-app * {
+  -webkit-tap-highlight-color: transparent;
+}

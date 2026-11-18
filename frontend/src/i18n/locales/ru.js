@@ -10927,6 +10927,8 @@ export const phrases = {
   "identity": "Личность",
   "in": "в",
   "is now online": "теперь в сети",
+  "Sent, {count}": "Отправленные, {count}",
+  "Cancel request": "Отменить запрос",
   "Pick a friend": "Выберите друга",
   "Pick a friend on the left to chat or call": "Выберите друга слева, чтобы написать или позвонить",
   "accepted your friend request": "принял(а) вашу заявку в друзья",

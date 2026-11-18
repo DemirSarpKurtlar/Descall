@@ -1402,7 +1402,10 @@ function MessageBubbleView({
   }, []);
 
   const beginMenuPress = useCallback((event, { pressed = false, fromMedia = false } = {}) => {
-    if (!glass || editing) return;
+    if (editing) return;
+    // Classic UI (glass off) on a touch phone also opens the menu on long-press;
+    // a mouse keeps the hover bar.
+    if (!glass && !(event.pointerType === "touch" || event.pointerType === "pen")) return;
     if (event.button != null && event.button !== 0) return;
     const el = event.currentTarget;
     if (!el) return;

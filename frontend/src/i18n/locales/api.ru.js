@@ -55,6 +55,7 @@ export const API_RU = {
   "This change has no state for the flag.": "В этом изменении нет состояния флага.",
   "Unknown flag.": "Неизвестный флаг.",
   "Use System > Safe restart.": "Используйте Система > Безопасный перезапуск.",
+  "Send popups to everyone from Live popup.": "Всплывающие окна для всех отправляются из раздела «Живой попап».",
   "This tool moved to System.": "Этот инструмент перенесён в Систему.",
   "Failed to load overview.": "Не удалось загрузить обзор.",
   "Could not check your verification code status. Try again.": "Не удалось проверить статус кода подтверждения. Попробуйте ещё раз.",

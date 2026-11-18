@@ -582,6 +582,8 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  // Requests I sent that are still waiting (polish world-social-10).
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [messageRequests, setMessageRequests] = useState([]);
   const [dmByUserId, setDmByUserId] = useState({});
   const dmByUserIdRef = useRef({});
@@ -2079,6 +2081,7 @@ export default function App() {
       });
     });
     socket.on("friend:requests", (list) => setFriendRequests((list ?? []).map((u) => normalizeUser(u))));
+    socket.on("friend:outgoing", (list) => setOutgoingRequests((Array.isArray(list) ? list : []).map((u) => normalizeUser(u)).filter(Boolean)));
     socket.on("friend:request:incoming", ({ from }) => {
       if (!from) return;
       const normalized = stampArrival(normalizeUser(from), "requestedAt");
@@ -3377,7 +3380,7 @@ export default function App() {
     setMe(null);
     setSessionChecked(true);
     setActiveTimeout(null);
-    setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]); setMessageRequests([]);
+    setIsConnected(false); setOnlineUsers([]); setFriends([]); setFriendRequests([]); setOutgoingRequests([]); setMessageRequests([]);
     forgetBootHashes();
     friendsFromSocketRef.current = false;
     setFriendsLoaded(false);
@@ -4646,6 +4649,24 @@ export default function App() {
     socketRef.current?.emit("dm:request:decline", { fromUserId: id });
   };
 
+  // Take back a request I sent; the server answers with the new friend:outgoing list.
+  const handleCancelFriendRequest = (toUserId) => {
+    const id = String(toUserId || "").trim();
+    if (!id) return;
+    setOutgoingRequests((prev) => prev.filter((r) => String(r.id) !== id));
+    const socket = socketRef.current;
+    if (socket?.connected) {
+      socket.emit("friend:cancel", { toUserId: id });
+      return;
+    }
+    const token = getToken();
+    fetch(`${API_BASE_URL}/friends/remove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ friendId: id }),
+    }).catch(() => {});
+  };
+
   const handleDeclineFriend = (fromUserId) => {
     const id = String(fromUserId || "").trim();
     if (!id) return;
@@ -5859,6 +5880,8 @@ export default function App() {
           messageRequests={orderedMessageRequests}
           onAcceptFriend={handleAcceptFriend}
           onDeclineFriend={handleDeclineFriend}
+          outgoingRequests={outgoingRequests}
+          onCancelFriendRequest={handleCancelFriendRequest}
           onAcceptMessageRequest={handleAcceptMessageRequest}
           onDeclineMessageRequest={handleDeclineMessageRequest}
           replyTo={replyTo}

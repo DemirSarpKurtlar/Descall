@@ -11,6 +11,12 @@ const COOLDOWN_SEC = 60;
  */
 export default function TwoFaResendButton({ pendingToken, className = "", onSent, onError }) {
   const t = useT();
+  // The web sign-in shell translates flat phrases only (no "authx.*" namespace there):
+  // fall back to phrases it has.
+  const tx = (key, vars, fallback) => {
+    const out = t(key, vars);
+    return out && out !== key ? out : fallback();
+  };
   const [left, setLeft] = useState(COOLDOWN_SEC);
   const [busy, setBusy] = useState(false);
 
@@ -26,7 +32,7 @@ export default function TwoFaResendButton({ pendingToken, className = "", onSent
     try {
       await resend2faCode(pendingToken);
       setLeft(COOLDOWN_SEC);
-      onSent?.(t("authx.login.codeResent"));
+      onSent?.(tx("authx.login.codeResent", undefined, () => t("Verification code sent. Check your inbox.")));
     } catch (err) {
       if (err?.body?.code === "cooldown") setLeft(COOLDOWN_SEC);
       onError?.(serverMessage(err?.body, "error", t) || (err?.message ? t(err.message) : t("Could not send reset code.")));
@@ -37,7 +43,7 @@ export default function TwoFaResendButton({ pendingToken, className = "", onSent
 
   return (
     <button type="button" className={className} onClick={resend} disabled={busy || left > 0} aria-live="polite">
-      {left > 0 ? t("authx.login.resendIn", { seconds: left }) : t("Resend code")}
+      {left > 0 ? tx("authx.login.resendIn", { seconds: left }, () => `${t("Resend code")} (${left})`) : t("Resend code")}
     </button>
   );
 }

@@ -14,6 +14,9 @@ import {
   liveKitDropAction,
   liveKitRetryBudget,
   LIVEKIT_RETRY_WINDOW_MS,
+  dropMessageKey,
+  moveMessageKey,
+  unmuteDeniedKey,
 } from "./serverVoiceRecovery.js";
 
 let passed = 0;
@@ -116,5 +119,37 @@ t("LiveKit retry budget: 3 per 2 minutes", () => {
   assert.equal(later.allowed, true);
   assert.deepEqual(later.kept, []);
 });
+
+t("user-facing reason keys", () => {
+  assert.equal(dropMessageKey("other_device"), "svoice.dropOtherDevice");
+  assert.equal(dropMessageKey("timeout"), "svoice.dropTimeout");
+  assert.equal(dropMessageKey("kick"), "svoice.dropKick");
+  assert.equal(dropMessageKey("disconnected"), "svoice.dropConnection");
+  assert.equal(dropMessageKey(null, { byUserId: "u-1" }), "svoice.dropByMod");
+  assert.equal(dropMessageKey(null), "callui.voice.disconnected");
+  assert.equal(moveMessageKey("afk"), "svoice.movedAfk");
+  assert.equal(moveMessageKey(null, { byUserId: "u-1" }), "svoice.movedByMod");
+  assert.equal(moveMessageKey(null), null);
+  assert.equal(unmuteDeniedKey({ afkChannel: true }), "svoice.unmuteAfk");
+  assert.equal(unmuteDeniedKey({ canSpeak: false }), "svoice.unmuteNoSpeak");
+  assert.equal(unmuteDeniedKey({ canSpeak: false, modMuted: true }), "svoice.unmuteServerMuted");
+  assert.equal(unmuteDeniedKey({}), "svoice.unmuteServerMuted");
+});
+
+{
+  const keys = [
+    "dropOtherDevice", "dropTimeout", "dropKick", "dropBan", "dropChannelDeleted", "dropServerDeleted",
+    "dropConnection", "dropAfk", "dropByMod", "dropNoAccess", "mediaLost", "movedAfk", "movedByMod",
+    "unmuteServerMuted", "unmuteAfk", "unmuteNoSpeak",
+  ];
+  for (const loc of ["en", "tr", "de", "es", "fr", "pt-BR", "ru"]) {
+    const mod = await import(`../i18n/locales/svoice.${loc}.js`);
+    const table = Object.values(mod)[0];
+    for (const k of keys) assert.ok(typeof table[k] === "string" && table[k].length > 0, `svoice.${loc}.${k}`);
+    for (const k of ["movedAfk", "movedByMod"]) assert.ok(table[k].includes("{channel}"), `svoice.${loc}.${k} keeps {channel}`);
+  }
+  passed += 1;
+  console.log("ok - reason strings in all 7 svoice locales");
+}
 
 console.log(`serverVoiceRecovery: ${passed} passed`);

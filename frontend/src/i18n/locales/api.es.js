@@ -55,6 +55,7 @@ export const API_ES = {
   "This change has no state for the flag.": "Este cambio no guarda el estado del flag.",
   "Unknown flag.": "Flag desconocido.",
   "Use System > Safe restart.": "Usa Sistema > Reinicio seguro.",
+  "Send popups to everyone from Live popup.": "Envía popups a todos desde Popup en vivo.",
   "This tool moved to System.": "Esta herramienta se trasladó a Sistema.",
   "Failed to load overview.": "No se pudo cargar el resumen.",
   "Could not check your verification code status. Try again.": "No se pudo comprobar el estado de tu código de verificación. Inténtalo de nuevo.",

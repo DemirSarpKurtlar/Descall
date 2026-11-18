@@ -98,6 +98,8 @@ export default function AppLayout({
   messageRequests,
   onAcceptFriend,
   onDeclineFriend,
+  outgoingRequests,
+  onCancelFriendRequest,
   onAcceptMessageRequest,
   onDeclineMessageRequest,
   notifPermission,
@@ -747,6 +749,8 @@ export default function AppLayout({
             messageRequests={messageRequests}
             onAcceptFriend={onAcceptFriend}
             onDeclineFriend={onDeclineFriend}
+            outgoingRequests={outgoingRequests}
+            onCancelFriendRequest={onCancelFriendRequest}
             onAcceptMessageRequest={onAcceptMessageRequest}
             onDeclineMessageRequest={onDeclineMessageRequest}
             onMobileClose={isMobile ? closeMobileDrawer : undefined}
