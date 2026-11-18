@@ -3,6 +3,7 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const supabase = require('../db/supabase');
+const { apiError } = require('../lib/apiError');
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get('/history', requireAuth, async (req, res) => {
 
   if (error) {
     console.error('[activity] history failed:', error.message);
-    return res.status(500).json({ error: 'Could not load the activity history.' });
+    return res.status(500).json(apiError('Could not load the activity history.'));
   }
   return res.json({ history: await groupedHistory(data) });
 });
@@ -86,7 +87,7 @@ async function isInvisible(userId) {
 // ─── GET friend's activity history (privacy-gated) ───────────────────────────
 router.get('/friend/:userId/history', requireAuth, async (req, res) => {
   const { userId } = req.params;
-  if (!SAFE_ID.test(String(userId))) return res.status(400).json({ error: 'Invalid user.' });
+  if (!SAFE_ID.test(String(userId))) return res.status(400).json(apiError('Invalid user.'));
   try {
     const access = await activityAccess(req.user.id, userId);
     if (!access.ok) return res.json({ history: [], restricted: true });
@@ -102,14 +103,14 @@ router.get('/friend/:userId/history', requireAuth, async (req, res) => {
     return res.json({ history: await groupedHistory(rows) });
   } catch (err) {
     console.error('[activity] friend history failed:', err?.message || err);
-    return res.status(500).json({ error: 'Could not load the activity history.' });
+    return res.status(500).json(apiError('Could not load the activity history.'));
   }
 });
 
 // ─── GET friend's current presence (privacy-gated) ───────────────────────────
 router.get('/friend/:userId/presence', requireAuth, async (req, res) => {
   const { userId } = req.params;
-  if (!SAFE_ID.test(String(userId))) return res.status(400).json({ error: 'Invalid user.' });
+  if (!SAFE_ID.test(String(userId))) return res.status(400).json(apiError('Invalid user.'));
   try {
     const access = await activityAccess(req.user.id, userId);
     if (!access.ok) {
@@ -127,7 +128,7 @@ router.get('/friend/:userId/presence', requireAuth, async (req, res) => {
     return res.json({ presence: data || null });
   } catch (err) {
     console.error('[activity] friend presence failed:', err?.message || err);
-    return res.status(500).json({ error: 'Could not load the activity.' });
+    return res.status(500).json(apiError('Could not load the activity.'));
   }
 });
 
@@ -141,7 +142,7 @@ router.get('/settings', requireAuth, async (req, res) => {
 
   if (error && error.code !== 'PGRST116') {
     console.error('[activity] settings read failed:', error.message);
-    return res.status(500).json({ error: 'Could not load the activity settings.' });
+    return res.status(500).json(apiError('Could not load the activity settings.'));
   }
 
   const defaults = {
@@ -176,7 +177,7 @@ router.post('/settings', requireAuth, async (req, res) => {
 
   if (error) {
     console.error('[activity] settings save failed:', error.message);
-    return res.status(500).json({ error: 'Could not save the activity settings.' });
+    return res.status(500).json(apiError('Could not save the activity settings.'));
   }
   return res.json({ success: true });
 });

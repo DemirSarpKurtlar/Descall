@@ -125,7 +125,7 @@ router.get("/invite-links/:code", async (req, res) => {
     if (rejectIfLimited(res, [peek(missKey, { windowMs: 10 * 60 * 1000, max: 60 })])) return;
     if (!/^[A-Za-z0-9]{4,32}$/.test(code)) {
       recordFailure(missKey, { windowMs: 10 * 60 * 1000, max: 60 });
-      return res.status(404).json({ error: "Invite invalid or expired" });
+      return res.status(404).json(apiError("Invite invalid or expired"));
     }
 
     const { data: invite, error } = await supabase
@@ -484,7 +484,7 @@ router.get("/:groupId/invite-links", requireAuth, async (req, res) => {
     if (error) {
       // Raw database text never goes to the client (security scan 17 Nov 2026).
       console.error("[Groups] invite links:", error.message);
-      return res.status(500).json({ error: "Failed to fetch invite links" });
+      return res.status(500).json(apiError("Failed to fetch invite links"));
     }
     return res.json({
       invites: (invites || []).map((i) => ({ ...i, url: publicInviteUrl(req, i.code) })),
