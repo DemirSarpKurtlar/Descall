@@ -292,9 +292,9 @@ html.reduce-motion *::after {
 @media (max-width: 1100px) {
   html.glass-desktop .user-settings.is-desktop.s3-shell .us-sidebar.s3-side { width: 280px !important; }
   .s3-two { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
-  /* 280px sidebar: long section names (ru "Конфиденциальность") take a step down and may
-     wrap instead of ending in an ellipsis. */
-  .s3-side .s3-row .lab b { font-size: var(--fs-15); white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+  /* 280px sidebar: long section names (ru "Конфиденциальность", 173px at 16px in a
+     161px slot) take a step down so they fit instead of ending in an ellipsis. */
+  .s3-side .s3-row .lab b { font-size: var(--fs-15); letter-spacing: -0.01em; }
 }
 @media (max-width: 900px) {
   .s3-two { grid-template-columns: minmax(0, 1fr); }
