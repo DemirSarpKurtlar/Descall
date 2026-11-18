@@ -74,6 +74,12 @@ pub fn run(args: &Args, layout: &Layout, lang: &str) -> i32 {
 
 fn remove(dir: &Path, layout: &Layout, purge: bool) -> bool {
     log::info(&format!("uninstall {}", dir.display()));
+    // Never delete a folder that is not a Descall install.
+    if !dir.join(crate::layout::EXE).is_file() && !dir.join(UNINSTALLER).is_file() {
+        log::error("refusing to remove a folder without Descall.exe");
+        shell::unregister_all();
+        return !dir.exists();
+    }
     if !procs::close_all(dir, Duration::from_secs(6)) {
         log::error("Descall still running");
         return false;
@@ -92,5 +98,6 @@ fn remove(dir: &Path, layout: &Layout, purge: bool) -> bool {
         let _ = std::fs::remove_dir_all(layout.app_data());
     }
     let _ = std::fs::remove_dir_all(layout.cache_root());
+    let _ = std::fs::remove_dir_all(layout.setup_root().join("webview"));
     ok
 }

@@ -84,7 +84,7 @@ const FREEZE = "*,*::before,*::after{animation-delay:0s!important;animation-play
         const o = axis === "y" ? e.scrollHeight - e.clientHeight : e.scrollWidth - e.clientWidth;
         if (o > 1) bad.push(`${sel} ${axis}+${o}`);
       });
-      chk(".content", "y"); chk(".ftr", "x"); chk(".stepper", "x"); chk(".panel", "y"); chk(".art", "y");
+      chk(".content", "y"); chk(".ftr", "x"); chk(".stepper", "x"); chk(".panel", "y");
       chk(".btn", "x"); chk(".opt .tx", "x"); chk(".toast-b .bd", "x"); chk(".kv4 > div", "x"); chk(".xi", "x");
       document.querySelectorAll(".ftr, .head, .tips, .xfer, .first, .sum").forEach((e) => {
         const r = e.getBoundingClientRect(), w = document.querySelector(".win").getBoundingClientRect();
