@@ -1,0 +1,26 @@
+[package]
+name = "descall-migrate"
+description = "Electron -> Tauri migration: handoff format, Electron safeStorage (OSCrypt v10) fallback decrypt, DPAPI, owner-only ACL file, install/autostart discovery, the migration state machine."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+base64 = "0.22"
+aes-gcm = "0.10"
+zeroize = { version = "1", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_Security_Cryptography",
+  "Win32_Storage_FileSystem",
+  "Win32_System_IO",
+  "Win32_System_Memory",
+  "Win32_System_Registry",
+] }

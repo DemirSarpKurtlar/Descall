@@ -1,0 +1,15 @@
+[package]
+name = "descall-migrator"
+description = "DescallMigrator.exe: signed one-time bootstrapper that moves an Electron install to the Tauri app (no UI by default; glass progress window only if it takes > 4 s)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "DescallMigrator"
+path = "src/main.rs"
+
+[dependencies]
+descall-migrate = { path = "../descall-migrate" }
+serde.workspace = true
+serde_json.workspace = true
