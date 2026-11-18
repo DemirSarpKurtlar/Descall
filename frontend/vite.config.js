@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { phosphorWeightsPlugin } from "./scripts/phosphor-weights-lib.mjs";
 import { createRequire } from "node:module";
 
 // Web needs absolute asset URLs so deep marketing routes (/faq, /download, …)
@@ -67,7 +68,7 @@ function electronClassicScriptPlugin() {
 const appVersion = require("./package.json").version;
 
 export default defineConfig({
-  plugins: [react(), descallHtmlSeoPlugin(), electronClassicScriptPlugin()].filter(Boolean),
+  plugins: [phosphorWeightsPlugin(), react(), descallHtmlSeoPlugin(), electronClassicScriptPlugin()].filter(Boolean),
   // Sentry release tag (descall@<version>), kept in sync by electron/sync-version.cjs.
   define: {
     __DESCALL_VERSION__: JSON.stringify(appVersion),

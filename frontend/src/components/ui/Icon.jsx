@@ -274,9 +274,11 @@ import {
 function make(Glyph, name) {
   const C = forwardRef(function UiIcon(props, ref) {
     const {
-      size = 24, color = "currentColor", weight = "regular", className,
+      size = 24, color = "currentColor", weight: askedWeight = "regular", className,
       strokeWidth: _sw, absoluteStrokeWidth: _asw, ...rest
     } = props;
+    // The build keeps only these three weights (scripts/phosphor-weights-lib.mjs).
+    const weight = askedWeight === "bold" || askedWeight === "fill" ? askedWeight : "regular";
     const labelled = rest["aria-label"] || rest["aria-labelledby"] || rest.title;
     return createElement(Glyph, {
       ref, size, color, weight,
