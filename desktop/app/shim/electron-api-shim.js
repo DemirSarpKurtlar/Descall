@@ -126,6 +126,8 @@
     closeWindow: () => fire("window_close"),
     onMaximizedChange: (cb) => on("window:maximized", cb, Boolean),
     onAppVisibility: (cb) => on("app:visibility", cb, (p) => p || {}),
+    // Main-process errors (preload onMainError); admin windows get a no-op like adminPreload.
+    onMainError: ADMIN ? () => noop : (cb) => on("app:main-error", cb, (p) => p || {}),
     getContentBox: () => invoke("window_content_box"),
     onContentBox: (cb) => on("window:content-box", cb),
 
@@ -195,7 +197,6 @@
   // Shell-only extras the Electron preload did not have (the page probes them optionally).
   const extras = {
     isTauri: true,
-    onMainError: (cb) => on("app:main-error", cb, (p) => p || {}),
   };
   for (const [k, v] of Object.entries(extras)) Object.defineProperty(api, k, { value: v, enumerable: false });
 

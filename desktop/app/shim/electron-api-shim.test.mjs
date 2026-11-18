@@ -244,6 +244,7 @@ const LISTENERS = {
   onCallAccept: "notification:call-accept",
   onCallDecline: "notification:call-decline",
   onOverlayAction: "descall:overlay:action",
+  onMainError: "app:main-error",
 };
 // Same channel names as the Electron preload subscribes to.
 for (const [k, channel] of Object.entries(LISTENERS)) {
@@ -294,5 +295,12 @@ const registered = new Set([...handler.matchAll(/::(\w+),/g)].map((m) => m[1]));
 const fromShim = new Set([...shimSrc.matchAll(/(?:invoke|fire)\("(\w+)"/g)].map((m) => m[1]));
 for (const cmd of new Set([...called, ...fromShim])) assert.ok(registered.has(cmd), `${cmd} is registered in main.rs`);
 for (const cmd of ["notif_action", "overlay_action"]) assert.ok(registered.has(cmd), `${cmd} (shell pages) is registered`);
+// The native screen-share lane (native-screen-share.js) is injected into the same page.
+const nativeSrc = readFileSync(join(here, "native-screen-share.js"), "utf8");
+const fromNative = new Set([...nativeSrc.matchAll(/invoke\("(\w+)"/g)].map((m) => m[1]));
+assert.ok(fromNative.has("screen_share_start") && fromNative.has("screen_thumbnails"), "native lane commands found");
+for (const cmd of fromNative) assert.ok(registered.has(cmd), `${cmd} (native screen share) is registered in main.rs`);
+assert.match(mainRs, /include_str!\("\.\.\/\.\.\/shim\/native-screen-share\.js"\)/, "main.rs injects the native lane");
+assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with the main shim");
 
 console.log("electron-api-shim.test: ok");
