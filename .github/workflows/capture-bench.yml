@@ -83,15 +83,24 @@ jobs:
           CARGO_PROFILE_RELEASE_STRIP: none
           CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
         run: cargo build --release -p descall-capture-bench
+      # __fastfail (0xC0000409) bypasses in-process handlers; WER LocalDumps (full dump) and
+      # a run under cdb (below) are the routes that still see it.
       - name: Collect crash dumps (WER LocalDumps)
         run: |
           $dumps = Join-Path $PWD 'bench-out\dumps'
           New-Item -ItemType Directory -Force -Path $dumps | Out-Null
-          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\descall-capture-bench.exe'
+          $wer = 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting'
+          New-Item -Path $wer -Force | Out-Null
+          New-ItemProperty -Path $wer -Name Disabled -PropertyType DWord -Value 0 -Force | Out-Null
+          New-ItemProperty -Path $wer -Name DontShowUI -PropertyType DWord -Value 1 -Force | Out-Null
+          $key = "$wer\LocalDumps\descall-capture-bench.exe"
           New-Item -Path $key -Force | Out-Null
           New-ItemProperty -Path $key -Name DumpFolder -PropertyType ExpandString -Value $dumps -Force | Out-Null
-          New-ItemProperty -Path $key -Name DumpType -PropertyType DWord -Value 1 -Force | Out-Null
+          New-ItemProperty -Path $key -Name DumpType -PropertyType DWord -Value 2 -Force | Out-Null
           New-ItemProperty -Path $key -Name DumpCount -PropertyType DWord -Value 5 -Force | Out-Null
+          Set-Service -Name WerSvc -StartupType Manual -ErrorAction SilentlyContinue
+          Start-Service -Name WerSvc -ErrorAction SilentlyContinue
+          Get-Service WerSvc | Format-Table -AutoSize | Out-String | Write-Host
       - name: Run the bench
         id: run
         env:
@@ -130,6 +139,26 @@ jobs:
           }
           exit 0
       # Native fail-fasts (0xC0000409 without a Rust panic) leave a WER dump: print its stack.
+      # A debugger sees a fail-fast as a second-chance exception: run the crashing groups
+      # under cdb and print the faulting stack with line numbers.
+      - name: Run crashing groups under cdb
+        if: steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '1'
+        run: |
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { Write-Host "cdb.exe not found on this runner."; exit 0 }
+          $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+          "## Crashing groups under cdb" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          foreach ($g in 'echo','picker','video','follow','color') {
+            $log = "bench-out/rerun-$g.txt"
+            if (-not (Test-Path $log)) { continue }
+            if ((Select-String -Path $log -Pattern 'P0 OK|P0 FAILED' -Quiet)) { continue }
+            Write-Host "===== cdb --only $g ====="
+            & $cdb.FullName -g -G -lines -y $sym -c ".lastevent; .ecxr; kn 80; !analyze -v; q" ./target/release/descall-capture-bench.exe --ci --only $g --seconds 3 --out "bench-out/cdb-$g.json" 2>&1 | Tee-Object -FilePath "bench-out/cdb-$g.txt"
+            '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content "bench-out/cdb-$g.txt" | Select-String -Pattern 'follow:|Last event|ExceptionCode|FAILURE_BUCKET|FAST_FAIL|descall|^\s*[0-9a-f]{2} ' | Select-Object -First 120 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+          exit 0
       - name: Analyse crash dumps
         if: always()
         run: |
