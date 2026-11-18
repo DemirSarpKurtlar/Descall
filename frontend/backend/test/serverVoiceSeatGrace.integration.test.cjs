@@ -100,6 +100,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(50);
   assert.ok(bobSaw.some((e) => e[0] === "joined" && e[1] === "u-alice" && e[2] === false), "late return is a normal join");
   console.log("PASS late return is a fresh join");
-  console.log("serverVoiceSeatGrace.integration: 3 checks passed");
+  // 4) mesh signaling reaches only the device that holds the seat (voice-drops-06)
+  const aliceIdle = await conn("alice");
+  const got = { seat: 0, idle: 0 };
+  alice.on("server:voice:offer", () => { got.seat += 1; });
+  aliceIdle.on("server:voice:offer", () => { got.idle += 1; });
+  bob.emit("server:voice:offer", { channelId: "ch-voice", toUserId: "u-alice", offer: { type: "offer", sdp: "v=0" } });
+  await sleep(150);
+  assert.deepEqual(got, { seat: 1, idle: 0 }, "the idle device of the same account gets no offer");
+  console.log("PASS signaling goes to the seat holder only");
+  console.log("serverVoiceSeatGrace.integration: 4 checks passed");
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

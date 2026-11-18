@@ -247,6 +247,17 @@ function notifySeatTakenOver(io, oldSocketId, { serverId, channelId }) {
   }
 }
 
+/**
+ * Where to relay mesh signaling for a seated user: the socket that holds the seat, so
+ * another open device of the same account never answers the offer (voice-drops-06).
+ * Falls back to the user room while that socket is gone (reconnect grace).
+ */
+function seatSignalTarget(io, channelId, userId) {
+  const sid = seatOwners.get(seatOwnerKey(channelId, userId));
+  if (sid && io?.sockets?.sockets?.get?.(sid)) return sid;
+  return `user:${String(userId)}`;
+}
+
 function removeFromVoice(io, channelId, userId, { originSocketId = null, keepCoinSession = false } = {}) {
   channelId = normId(channelId);
   seatOwners.delete(seatOwnerKey(channelId, userId));
@@ -1114,7 +1125,7 @@ function registerServerVoiceHandlers(io, socket) {
     if (!getParticipantEntry(call, toUserId)) return;
     const { sanitizeScreenAnnouncement } = require("../lib/screenShareSignal");
     const announced = sanitizeScreenAnnouncement(screen);
-    io.to(`user:${String(toUserId)}`).emit("server:voice:offer", {
+    io.to(seatSignalTarget(io, channelId, toUserId)).emit("server:voice:offer", {
       channelId,
       fromUserId: String(myId),
       fromUser: self.member || resolvePublicUser(socket),
@@ -1129,7 +1140,7 @@ function registerServerVoiceHandlers(io, socket) {
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
     if (!getParticipantEntry(call, toUserId)) return;
-    io.to(`user:${String(toUserId)}`).emit("server:voice:answer", {
+    io.to(seatSignalTarget(io, channelId, toUserId)).emit("server:voice:answer", {
       channelId,
       fromUserId: String(myId),
       answer,
@@ -1142,7 +1153,7 @@ function registerServerVoiceHandlers(io, socket) {
     const call = activeServerVoiceCalls.get(channelId);
     if (!getParticipantEntry(call, myId)) return;
     if (!getParticipantEntry(call, toUserId)) return;
-    io.to(`user:${String(toUserId)}`).emit("server:voice:ice", {
+    io.to(seatSignalTarget(io, channelId, toUserId)).emit("server:voice:ice", {
       channelId,
       fromUserId: String(myId),
       candidate,
