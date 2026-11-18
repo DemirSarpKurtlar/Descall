@@ -69,7 +69,7 @@ fn band_lumas(f: &VideoFrameCopy) -> Vec<u8> {
         .collect()
 }
 
-fn pattern_test(id: &str, name: &str, mon: &Source, tol: u8) -> TestResult {
+fn pattern_test(id: &str, name: &str, mon: &Source, tol: u8, soft_gpu: bool) -> TestResult {
     let p = match Presenter::spawn(Opts { x: mon.left + 60, y: mon.top + 60, width: 960, height: 540, popup: true, topmost: true, title: "DescallCaptureBench colour".into(), content: Content::Pattern }) {
         Ok(p) => p,
         Err(e) => return TestResult::new(id, name, Status::Fail).note(format!("test window: {e}")),
@@ -87,9 +87,11 @@ fn pattern_test(id: &str, name: &str, mon: &Source, tol: u8) -> TestResult {
     let worst = got.iter().zip(&want).map(|(a, b)| a.abs_diff(*b)).max().unwrap_or(255);
     let mon_hdr = monitor_hdr(mon.handle).hdr;
     let white_ok = !mon_hdr || got.last().copied().unwrap_or(0) >= MIN_WHITE_HDR;
-    TestResult::judged(id, name, worst <= tol && white_ok)
+    let status = if soft_gpu { Status::Info } else if worst <= tol && white_ok { Status::Pass } else { Status::Fail };
+    TestResult::new(id, name, status)
         .measured(format!("max error {worst}, white {}", got.last().copied().unwrap_or(0)))
         .limit(format!("<= {tol} codes{}", if mon_hdr { format!(", white >= {MIN_WHITE_HDR}") } else { String::new() }))
+        .note(if soft_gpu { "software GPU: measured, not judged" } else { "" })
         .details(json!({ "bands": BANDS, "expectedY": want, "capturedY": got, "monitor": mon.id.format(), "monitorHdr": mon_hdr, "fp16Capture": hdr_capture, "hdrInfo": monitor_hdr(mon.handle) }))
 }
 
@@ -127,7 +129,7 @@ pub fn run(env: &Env) -> Vec<TestResult> {
     }
     let mut out = Vec::new();
     match env.monitors.iter().find(|m| !m.hdr) {
-        Some(m) => out.push(pattern_test("color.sdr", "Colour accuracy (SDR path)", m, TOL_SDR)),
+        Some(m) => out.push(pattern_test("color.sdr", "Colour accuracy (SDR path)", m, TOL_SDR, env.software_gpu())),
         None => out.push(TestResult::skip("color.sdr", "Colour accuracy (SDR path)", "skipped (every monitor is HDR)")),
     }
     let hdr: Vec<&Source> = env.monitors.iter().filter(|m| m.hdr).collect();
@@ -135,7 +137,7 @@ pub fn run(env: &Env) -> Vec<TestResult> {
         out.push(TestResult::skip("hdr.sdr_content", "HDR: SDR content not washed out", "skipped (no HDR monitor; turn on HDR in Windows display settings)"));
     }
     for m in hdr {
-        out.push(pattern_test(&format!("hdr.sdr_content.{}", m.id.format().replace(':', "_")), &format!("HDR {}: SDR content not washed out", m.name), m, TOL_HDR));
+        out.push(pattern_test(&format!("hdr.sdr_content.{}", m.id.format().replace(':', "_")), &format!("HDR {}: SDR content not washed out", m.name), m, TOL_HDR, env.software_gpu()));
         out.push(histogram_test(m));
     }
     out
