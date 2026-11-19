@@ -151,6 +151,10 @@ impl Gfx {
         }
         let device: ID3D11Device = device.ok_or_else(|| windows::core::Error::from(windows::Win32::Foundation::E_FAIL))?;
         let ctx = ctx.ok_or_else(|| windows::core::Error::from(windows::Win32::Foundation::E_FAIL))?;
+        // Like every device we create: multithread-protected (DXGI and DWM call into it).
+        if let Ok(mt) = device.cast::<ID3D11Multithread>() {
+            let _ = unsafe { mt.SetMultithreadProtected(true) };
+        }
         let factory: IDXGIFactory2 = unsafe { device.cast::<IDXGIDevice>()?.GetAdapter()?.GetParent()? };
         let desc = DXGI_SWAP_CHAIN_DESC1 {
             Width: 0,
