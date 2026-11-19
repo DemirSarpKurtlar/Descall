@@ -3,10 +3,22 @@
 ; Keep in sync with frontend/electron/premium/toastIdentity.cjs and installer.nsh.
 !define DESCALL_AUMID "com.descall.app"
 !define DESCALL_TOAST_CLSID "{BCF5A315-F914-4A7E-95BD-313CBE4B661B}"
+; Capture helper next to Descall.exe (bundle.externalBin, tauri.capture-host.conf.json). It
+; lives in Descall's kill-on-close job and normally exits with the app; if one is still
+; running (a share being torn down) its file would be locked during update or uninstall.
+!define DESCALL_CAPTURE_HOST "descall-capture-host.exe"
+
+!macro DESCALL_STOP_CAPTURE_HOST
+  Push $0 ; keep the template's $0
+  nsExec::Exec 'taskkill /F /IM "${DESCALL_CAPTURE_HOST}"'
+  Pop $0 ; exit code (128 = none running)
+  Pop $0
+!macroend
 
 !macro NSIS_HOOK_PREINSTALL
-  ; The migrator passes /D=<old InstallLocation> so Descall.exe keeps its path. Nothing else
-  ; to do here: the old files were moved to <dir>.legacy by the migrator before we run.
+  ; The migrator passes /D=<old InstallLocation> so Descall.exe keeps its path. The old files
+  ; were moved to <dir>.legacy by the migrator before we run.
+  !insertmacro DESCALL_STOP_CAPTURE_HOST
 !macroend
 
 !macro NSIS_HOOK_POSTINSTALL
@@ -18,6 +30,7 @@
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL
+  !insertmacro DESCALL_STOP_CAPTURE_HOST
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL

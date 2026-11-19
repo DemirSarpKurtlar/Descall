@@ -239,6 +239,22 @@ jobs:
           cargo test -p descall-desktop
           if ($LASTEXITCODE -ne 0) { throw "cargo test -p descall-desktop failed" }
 
+      # descall-capture-host.exe: the screen-share / instant-clip capture helper. Tauri bundles
+      # it next to Descall.exe as an external binary (tauri.capture-host.conf.json); without it
+      # the app falls back to in-process capture, which a GPU device loss can crash.
+      - name: Capture helper (bundled next to Descall.exe)
+        working-directory: desktop
+        shell: pwsh
+        env:
+          DESCALL_SIGN_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          cargo build --release --target x86_64-pc-windows-msvc -p descall-capture --bin descall-capture-host
+          if ($LASTEXITCODE -ne 0) { throw "capture helper build failed" }
+          New-Item -ItemType Directory -Force app/src-tauri/binaries | Out-Null
+          Copy-Item target/x86_64-pc-windows-msvc/release/descall-capture-host.exe app/src-tauri/binaries/descall-capture-host-x86_64-pc-windows-msvc.exe
+          # Signed before Tauri copies it into the bundle (the setup ships this exact file).
+          if ($env:DESCALL_SIGN_PFX) { pwsh -NoProfile -File tools/publish/sign.ps1 app/src-tauri/binaries/descall-capture-host-x86_64-pc-windows-msvc.exe; if ($LASTEXITCODE -ne 0) { throw "signing the capture helper failed" } }
+
       - name: Tauri build (Descall.exe + NSIS setup, updater signature when enabled)
         working-directory: desktop/app/src-tauri
         shell: pwsh
@@ -247,7 +263,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           DESCALL_SIGN_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
-          $conf = @{ bundle = @{ createUpdaterArtifacts = ($env:DO_UPDATER -eq 'true') } }
+          $conf = @{ bundle = @{ createUpdaterArtifacts = ($env:DO_UPDATER -eq 'true'); externalBin = @('binaries/descall-capture-host') } }
           if ($env:DO_UPDATER -eq 'true') {
             $conf.plugins = @{ updater = @{ pubkey = $env:UPDATER_PUB } }
           } else {
@@ -263,6 +279,8 @@ jobs:
           Get-Content $path
           npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis --config $path
           if ($LASTEXITCODE -ne 0) { throw "tauri build failed with $LASTEXITCODE" }
+          python ../../tools/publish/desktop_release.py check-app-dir "../../../$env:REL"
+          if ($LASTEXITCODE -ne 0) { throw "the built app folder lacks the capture helper" }
 
       - name: Migrator and setup bootstrapper
         working-directory: desktop
@@ -321,7 +339,7 @@ jobs:
             $tool = 'desktop/crates/descall-setup/tools/release.py'
             $zip = Join-Path $out "Descall-$env:VERSION-x64.zip"
             # uninstall.exe: the signed setup itself (layout.rs), so Apps & features shows a signed uninstaller.
-            python desktop/tools/publish/desktop_release.py payload $zip "$env:REL/Descall.exe=Descall.exe" "$env:REL/DescallSetup.exe=uninstall.exe"; Check "payload"
+            python desktop/tools/publish/desktop_release.py payload $zip "$env:REL/Descall.exe=Descall.exe" "$env:REL/descall-capture-host.exe=descall-capture-host.exe" "$env:REL/DescallSetup.exe=uninstall.exe"; Check "payload"
             $mirrors = @('--mirror', "$base=GitHub")
             if ($env:EXTRA_MIRROR.Trim()) { $mirrors = @('--mirror', $env:EXTRA_MIRROR.Trim().Replace('{version}', $env:VERSION)) + $mirrors }
             $notesJson = ConvertTo-Json -Compress @(@{ en = $notes })

@@ -10,7 +10,10 @@ tools/release.py does). Keys: docs/desktop/anahtarlar.md.
   desktop_release.py verify-updater <installer> <installer.sig> <tauri-updater.pub>
       Checks a `tauri signer sign` signature exactly as tauri-plugin-updater will (exit 1 if not).
   desktop_release.py payload <out.zip> <file>=<name-in-zip> ...
-      Deterministic zip (fixed timestamps, sorted) for the setup's payload.
+      Deterministic zip (fixed timestamps, sorted) for the setup's payload. Refuses a payload
+      without the files every install needs (APP_FILES: Descall.exe, descall-capture-host.exe).
+  desktop_release.py check-app-dir <folder>
+      Exit 1 unless an installed / built app folder has every file in APP_FILES.
   desktop_release.py latest-json <out> --version 4.0.0 --url <installer url> --sig <installer.sig> [--notes ..]
       The static updater feed (https://v2.tauri.app/plugin/updater/#static-json-file).
 """
@@ -24,6 +27,23 @@ import sys
 import zipfile
 
 PLACEHOLDER = 3
+
+# Files an installed Descall folder must have. descall-capture-host.exe is the capture helper
+# (desktop/crates/descall-capture): without it screen share and instant clip fall back to
+# in-process capture, which a GPU device loss can crash. Keep in sync with
+# desktop/crates/descall-setup/src/layout.rs REQUIRED_FILES.
+APP_FILES = ("Descall.exe", "descall-capture-host.exe")
+
+
+def missing_app_files(names):
+    have = {n.lower() for n in names}
+    return [f for f in APP_FILES if f.lower() not in have]
+
+
+def check_app_dir(folder):
+    if not os.path.isdir(folder):
+        return list(APP_FILES)
+    return missing_app_files([n for n in os.listdir(folder) if os.path.isfile(os.path.join(folder, n))])
 
 
 def _key_lines(text):
@@ -111,6 +131,9 @@ def payload(out, pairs):
         if name.startswith("/") or ".." in name.split("/") or "\\" in name:
             raise ValueError(f"unsafe name in payload: {name}")
         entries.append((name, src))
+    missing = missing_app_files([n for n, _ in entries])
+    if missing:
+        raise ValueError(f"payload lacks {', '.join(missing)}")
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for name, src in sorted(entries):
             info = zipfile.ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
@@ -136,6 +159,7 @@ def main(argv=None):
     k = sub.add_parser("key-status"); k.add_argument("kind", choices=["setup", "updater"]); k.add_argument("file")
     v = sub.add_parser("verify-updater"); v.add_argument("installer"); v.add_argument("sig"); v.add_argument("pub")
     p = sub.add_parser("payload"); p.add_argument("out"); p.add_argument("files", nargs="+")
+    c = sub.add_parser("check-app-dir"); c.add_argument("folder")
     l = sub.add_parser("latest-json"); l.add_argument("out"); l.add_argument("--version", required=True)
     l.add_argument("--url", required=True); l.add_argument("--sig", required=True); l.add_argument("--notes", default="")
     a = ap.parse_args(argv)
@@ -162,7 +186,18 @@ def main(argv=None):
         print(f"ok: {os.path.basename(a.installer)} verifies with {a.pub}")
         return 0
     if a.cmd == "payload":
-        payload(a.out, a.files)
+        try:
+            payload(a.out, a.files)
+        except ValueError as e:
+            print(f"payload refused: {e}", file=sys.stderr)
+            return 1
+        return 0
+    if a.cmd == "check-app-dir":
+        missing = check_app_dir(a.folder)
+        if missing:
+            print(f"{a.folder} lacks {', '.join(missing)}", file=sys.stderr)
+            return 1
+        print(f"ok: {a.folder} has {', '.join(APP_FILES)}")
         return 0
     if a.cmd == "latest-json":
         with open(a.out, "w", encoding="utf-8") as f:

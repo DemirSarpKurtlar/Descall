@@ -347,9 +347,9 @@ pub fn install_files(ctx: &Ctx, rel: &Release, zip: &Path, dir: &Path, opts: &In
         if e.kind() == std::io::ErrorKind::Interrupted { JobError::Cancelled } else { inst(e) }
     })?;
     log::event("l_extract", json!({ "n": unpacked.files }), "");
-    if !staging.join(EXE).is_file() {
+    if let Some(code) = layout::missing_required(&staging) {
         let _ = fs::remove_dir_all(&staging);
-        return Err(JobError::Integrity { code: "PKG-0EXE".into(), sig_ok: true });
+        return Err(JobError::Integrity { code: code.into(), sig_ok: true });
     }
     if !staging.join(UNINSTALLER).is_file() {
         // The payload normally ships a signed uninstall.exe; otherwise copy this exe (without any overlay).

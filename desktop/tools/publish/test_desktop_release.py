@@ -112,13 +112,33 @@ class Outputs(unittest.TestCase):
             with open(src, "wb") as f:
                 f.write(b"MZ" * 100)
             a, b = os.path.join(d, "a.zip"), os.path.join(d, "b.zip")
-            dr.payload(a, [f"{src}=Descall.exe", f"{src}=uninstall.exe"])
-            dr.payload(b, [f"{src}=uninstall.exe", f"{src}=Descall.exe"])
+            host = f"{src}=descall-capture-host.exe"
+            dr.payload(a, [f"{src}=Descall.exe", host, f"{src}=uninstall.exe"])
+            dr.payload(b, [f"{src}=uninstall.exe", f"{src}=Descall.exe", host])
             self.assertEqual(open(a, "rb").read(), open(b, "rb").read())
-            self.assertEqual(zipfile.ZipFile(a).namelist(), ["Descall.exe", "uninstall.exe"])
+            self.assertEqual(zipfile.ZipFile(a).namelist(), ["Descall.exe", "descall-capture-host.exe", "uninstall.exe"])
             for bad in ("../x.exe", "/abs.exe", "a\\b.exe"):
                 with self.assertRaises(ValueError):
-                    dr.payload(os.path.join(d, "c.zip"), [f"{src}={bad}"])
+                    dr.payload(os.path.join(d, "c.zip"), [f"{src}={bad}", f"{src}=Descall.exe", host])
+
+    def test_payload_and_app_folder_need_the_capture_helper(self):
+        with tempfile.TemporaryDirectory() as d:
+            src = os.path.join(d, "Descall.exe")
+            with open(src, "wb") as f:
+                f.write(b"MZ")
+            with self.assertRaises(ValueError) as e:
+                dr.payload(os.path.join(d, "p.zip"), [f"{src}=Descall.exe", f"{src}=uninstall.exe"])
+            self.assertIn("descall-capture-host.exe", str(e.exception))
+            app = os.path.join(d, "app")
+            os.makedirs(app)
+            self.assertEqual(dr.check_app_dir(app), ["Descall.exe", "descall-capture-host.exe"])
+            open(os.path.join(app, "Descall.exe"), "wb").close()
+            self.assertEqual(dr.check_app_dir(app), ["descall-capture-host.exe"])
+            self.assertEqual(dr.main(["check-app-dir", app]), 1)
+            open(os.path.join(app, "descall-capture-host.exe"), "wb").close()
+            self.assertEqual(dr.check_app_dir(app), [])
+            self.assertEqual(dr.main(["check-app-dir", app]), 0)
+            self.assertEqual(dr.check_app_dir(os.path.join(d, "nope")), list(dr.APP_FILES))
 
     def test_latest_json_is_the_plugins_static_format(self):
         v = dr.latest_json("4.0.1", "https://github.com/o/r/releases/download/desktop-v4.0.1/Descall_4.0.1_x64-setup.exe", data("installer.bin.sig"), "fixes", pub_date="2026-11-19T00:00:00Z")

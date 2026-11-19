@@ -16,6 +16,12 @@ pub const PRODUCT: &str = "Descall";
 /// AppUserModelID, Run value name, Tauri identifier: identical to the Electron build.
 pub const APP_ID: &str = "com.descall.app";
 pub const EXE: &str = "Descall.exe";
+/// Screen-share / instant-clip capture helper (desktop/crates/descall-capture). Descall falls
+/// back to in-process capture without it, which a GPU device loss can crash, so the setup
+/// refuses a payload that lacks it.
+pub const CAPTURE_HOST: &str = "descall-capture-host.exe";
+/// Files every payload must contain, with the error code reported when one is missing.
+pub const REQUIRED_FILES: &[(&str, &str)] = &[(EXE, "PKG-0EXE"), (CAPTURE_HOST, "PKG-0CAP")];
 pub const UNINSTALLER: &str = "uninstall.exe";
 pub const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Descall";
 pub const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -125,6 +131,11 @@ pub fn normalize_choice(picked: &Path) -> PathBuf {
 }
 
 /// `<dir>.new` (staging) and `<dir>.old` (previous files during the swap).
+/// The error code of the first required file missing from an unpacked payload in `dir`.
+pub fn missing_required(dir: &Path) -> Option<&'static str> {
+    REQUIRED_FILES.iter().find(|(name, _)| !dir.join(name).is_file()).map(|(_, code)| *code)
+}
+
 pub fn sibling(dir: &Path, suffix: &str) -> PathBuf {
     let mut s = dir.as_os_str().to_os_string();
     s.push(suffix);
@@ -168,6 +179,19 @@ mod tests {
         assert!(u.contains(&(toast_clsid_key(), None)));
         assert!(u.contains(&(UNINSTALL_KEY.to_string(), None)));
         assert!(u.contains(&(RUN_KEY.to_string(), Some("com.descall.app"))));
+    }
+
+    #[test]
+    fn payload_needs_the_app_and_the_capture_helper() {
+        let d = std::env::temp_dir().join(format!("descall-setup-req-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        assert_eq!(missing_required(&d), Some("PKG-0EXE"));
+        std::fs::write(d.join(EXE), b"MZ").unwrap();
+        assert_eq!(missing_required(&d), Some("PKG-0CAP"));
+        std::fs::write(d.join(CAPTURE_HOST), b"MZ").unwrap();
+        assert_eq!(missing_required(&d), None);
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]

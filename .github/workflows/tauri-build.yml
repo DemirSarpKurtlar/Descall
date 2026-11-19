@@ -83,12 +83,40 @@ jobs:
         working-directory: desktop
         run: cargo test -p descall-desktop
 
+      # descall-capture-host.exe: the screen-share / instant-clip capture helper. Tauri bundles
+      # it next to Descall.exe as an external binary (tauri.capture-host.conf.json); without it
+      # the app falls back to in-process capture, which a GPU device loss can crash.
+      - name: Capture helper (bundled next to Descall.exe)
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          cargo build --release --target x86_64-pc-windows-msvc -p descall-capture --bin descall-capture-host
+          if ($LASTEXITCODE -ne 0) { throw "capture helper build failed" }
+          New-Item -ItemType Directory -Force app/src-tauri/binaries | Out-Null
+          Copy-Item target/x86_64-pc-windows-msvc/release/descall-capture-host.exe app/src-tauri/binaries/descall-capture-host-x86_64-pc-windows-msvc.exe
+
       - name: Tauri build (Descall.exe + NSIS setup, per-user)
         working-directory: desktop/app/src-tauri
         shell: pwsh
         run: |
-          npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis
+          npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis --config tauri.capture-host.conf.json
           if ($LASTEXITCODE -ne 0) { throw "tauri build failed with $LASTEXITCODE" }
+
+      # The built app folder and an actual (silent, per-user) install of the NSIS setup must
+      # both have descall-capture-host.exe next to Descall.exe.
+      - name: The app ships the capture helper
+        shell: pwsh
+        run: |
+          $rel = "desktop/target/x86_64-pc-windows-msvc/release"
+          python desktop/tools/publish/desktop_release.py check-app-dir $rel
+          if ($LASTEXITCODE -ne 0) { throw "the built app folder lacks the capture helper" }
+          $setup = Get-ChildItem -Recurse -Filter "*-setup.exe" "$rel/bundle/nsis" | Select-Object -First 1
+          if (-not $setup) { throw "no NSIS setup was produced" }
+          $dir = Join-Path $env:RUNNER_TEMP 'descall-install-check'
+          $p = Start-Process -FilePath $setup.FullName -ArgumentList '/S', "/D=$dir" -Wait -PassThru
+          Write-Host "setup exit code $($p.ExitCode)"
+          python desktop/tools/publish/desktop_release.py check-app-dir $dir
+          if ($LASTEXITCODE -ne 0) { throw "the installed app folder lacks the capture helper" }
 
       - name: Migrator and setup bootstrapper
         working-directory: desktop
@@ -106,6 +134,7 @@ jobs:
           $rel = "desktop/target/x86_64-pc-windows-msvc/release"
           $out = New-Item -ItemType Directory -Force -Path artifacts
           Copy-Item "$rel/Descall.exe" $out
+          Copy-Item "$rel/descall-capture-host.exe" $out
           Get-ChildItem -Recurse -Filter "*-setup.exe" "$rel/bundle/nsis" | Copy-Item -Destination $out
           Copy-Item "$rel/DescallMigrator.exe" $out
           Copy-Item "$rel/DescallSetup.exe" $out
