@@ -12,6 +12,10 @@
  *      "Zaten hesabım var" → /login, the code kept either way
  *   3. after login (token present, back on "/") → the invite is redeemed by itself and the server opens
  *   4. expired code → "Davet geçersiz veya süresi dolmuş."
+ *   5. slow phone (CPU 4x): back signed in with the invite pending, the server list answers
+ *      just before the join → the user lands on the server and stays there (CI once saw
+ *      /servers/join/GOODCODE > /servers/s-perf-0 > /servers: the list render, still on the
+ *      invite path, read "join" as a server id and its route effect ran after the join)
  *
  *   VITE_API_BASE_URL=http://127.0.0.1:5361 VITE_SOCKET_URL=http://127.0.0.1:5361 npx vite build --outDir dist-e2e
  *   node e2e/serverInvite.e2e.cjs [--dist=dist-e2e] [--out=/tmp/server-invite-e2e] [--shots-only]
@@ -49,7 +53,7 @@ async function main() {
   const joins = [];
   try {
     for (const vp of viewports) {
-      const newCtx = async (loggedIn) => {
+      const newCtx = async (loggedIn, { cpu = 0, listBeforeJoin = false } = {}) => {
         const ctx = await browser.newContext({ ...vp.opts, locale: 'tr-TR', timezoneId: 'Europe/Istanbul', colorScheme: 'dark' });
         await ctx.route('**/*', async (r) => {
           const url = r.request().url();
@@ -84,7 +88,36 @@ async function main() {
             localStorage.setItem('descall_user', JSON.stringify(me));
           }
         }, [base, mock.ME, loggedIn]);
+        if (listBeforeJoin) {
+          // GET /api/servers/my is held in the page until POST .../join has answered; then the
+          // list goes first and the app gets the join answer a moment later (a slow phone where
+          // both land together). Synthetic timing only, the responses are the mock's.
+          await ctx.addInitScript((delayMs) => {
+            let release;
+            const gate = new Promise((res) => { release = res; });
+            const realFetch = window.fetch.bind(window);
+            window.fetch = (input, init) => {
+              const url = String(input && input.url ? input.url : input);
+              const res = realFetch(input, init);
+              if (/\/api\/servers\/invites\/[^/]+\/join$/.test(url)) {
+                return res.then((r) => { release(); return new Promise((done) => setTimeout(() => done(r), delayMs)); });
+              }
+              if (/\/api\/servers\/my$/.test(url)) {
+                return res.then(async (r) => {
+                  const body = await r.text();
+                  await gate;
+                  return new Response(body, { status: r.status, headers: r.headers });
+                });
+              }
+              return res;
+            };
+          }, 10);
+        }
         const page = await ctx.newPage();
+        if (cpu > 1) {
+          const cdp = await ctx.newCDPSession(page);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
+        }
         const errors = [];
         // URL history of this page, printed when a step fails (CI-only timing failures).
         const navs = [];
@@ -104,6 +137,16 @@ async function main() {
         const ok = await page.getByTestId('server-invite-name').filter({ hasText: 'Oyun Gecesi' }).first().waitFor({ timeout: 15000 }).then(() => true, () => false);
         if (!ok) fails.push(`${vp.name}: ${label}: no invite preview (url ${page.url()})`);
         return ok;
+      };
+
+      // Landed on the joined server: nothing may send the user on to /servers afterwards.
+      const expectStaysOnServer = async (page, label) => {
+        await page.waitForTimeout(1500);
+        const onServer = (p) => p.startsWith(`/servers/${SERVER.id}`);
+        const after = page.navs.slice(page.navs.findIndex(onServer) + 1).filter((p) => !onServer(p));
+        if (!onServer(new URL(page.url()).pathname) || after.length) {
+          fails.push(`${vp.name}: ${label}: bounced off the joined server (url ${page.url()}; path history ${page.navs.slice(-8).join(' > ')})`);
+        }
       };
 
       // 1. logged in
@@ -149,13 +192,34 @@ async function main() {
           await page.waitForTimeout(2000);
           {
             // Back signed in from the landing's own flow: joined without a second click.
-            await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 15000 }).catch(() => fails.push(`${vp.name}: after login the invite was not redeemed by itself (url ${page.url()}; path history ${page.navs.slice(-8).join(' > ')})`));
+            const landed = await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 15000 }).then(() => true, () => false);
+            if (!landed) fails.push(`${vp.name}: after login the invite was not redeemed by itself (url ${page.url()}; path history ${page.navs.slice(-8).join(' > ')})`);
+            else await expectStaysOnServer(page, 'after login');
             await shot(page, '3-after-login');
             const left = await page.evaluate(() => localStorage.getItem('descall:pendingServerInvite'));
             if (left) fails.push(`${vp.name}: pending invite not cleared after join`);
           }
         }
         if (errors.length) fails.push(`${vp.name} page errors: ${errors.join(' | ')}`);
+        await ctx.close();
+      }
+
+      // 5. slow phone: the server list answers just before the join (see the header)
+      if (!SHOTS_ONLY) {
+        const { ctx, page, errors } = await newCtx(true, { cpu: 4, listBeforeJoin: true });
+        // Back signed in with the invite pending (as in 3), straight at "/".
+        await ctx.addInitScript(() => {
+          if (!sessionStorage.getItem('e2e:pending-set')) {
+            sessionStorage.setItem('e2e:pending-set', '1');
+            localStorage.setItem('descall:pendingServerInvite', JSON.stringify({ code: 'GOODCODE', at: Date.now() }));
+          }
+        });
+        await page.goto(`${base}/`, { waitUntil: 'load' });
+        const landed = await page.waitForURL((u) => u.pathname.startsWith(`/servers/${SERVER.id}`), { timeout: 20000 }).then(() => true, () => false);
+        if (!landed) fails.push(`${vp.name}: slow phone: the pending invite did not open the server (url ${page.url()}; path history ${page.navs.slice(-8).join(' > ')})`);
+        else await expectStaysOnServer(page, 'slow phone');
+        await shot(page, '5-slow-phone');
+        if (errors.length) fails.push(`${vp.name} slow phone page errors: ${errors.join(' | ')}`);
         await ctx.close();
       }
 
@@ -177,7 +241,7 @@ async function main() {
     await browser.close();
     srv.close();
   }
-  if (!SHOTS_ONLY && joins.length < 4) fails.push(`expected 4 joins, got ${joins.length}`);
+  if (!SHOTS_ONLY && joins.length < 6) fails.push(`expected 6 joins, got ${joins.length}`);
   if (fails.length && !SHOTS_ONLY) {
     console.error(`[e2e-server-invite] FAIL\n - ${fails.join('\n - ')}`);
     process.exit(1);

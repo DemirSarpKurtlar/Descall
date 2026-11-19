@@ -11,8 +11,10 @@
  *  2. Wait for the same quiet moment as an update install (updateDeferral.cjs: no call, no
  *     typing / upload, idle or in the background).
  *  3. Download DescallMigrator.exe and the new setup; size and SHA-256 must match the plan.
- *  4. Decrypt our own secrets with safeStorage, export localStorage of descall://app,
- *     premium files, window state, autostart and locale, and pipe { job, handoff } to
+ *  4. Decrypt our own secrets with safeStorage, export localStorage of descall://app (and of
+ *     every Descall+ extra account's partition: its saved app settings, read from a hidden
+ *     page when its window is closed), premium files, window state, autostart and locale,
+ *     and pipe { job, handoff } to
  *     `DescallMigrator.exe --receive-handoff` over stdin (it DPAPI-seals it; plain text
  *     never touches the disk).
  *  5. Spawn `DescallMigrator.exe --run` detached, then quit. The migrator renames the
@@ -135,6 +137,12 @@ async function downloadVerified({ fetchImpl, url, sha256, size, dest, fsImpl = f
   return dest;
 }
 
+/** A lone surrogate (a draft cut mid-emoji) would make the migrator's JSON parser refuse the whole envelope. */
+function wellFormed(s) {
+  const t = String(s);
+  return typeof t.toWellFormed === 'function' ? t.toWellFormed() : t.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '\uFFFD');
+}
+
 /** localStorage of one webContents as { key: value } (the app origin only). */
 async function dumpLocalStorage(wc) {
   if (!wc || (typeof wc.isDestroyed === 'function' && wc.isDestroyed())) return {};
@@ -142,12 +150,130 @@ async function dumpLocalStorage(wc) {
     '(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return JSON.stringify(o); })()',
     true,
   );
-  const out = JSON.parse(json || '{}');
-  for (const k of SECRET_LOCAL_STORAGE_KEYS) delete out[k];
+  const raw = JSON.parse(json || '{}');
+  const out = {};
+  for (const [k, v] of Object.entries(raw && typeof raw === 'object' ? raw : {})) {
+    if (typeof v === 'string' && !SECRET_LOCAL_STORAGE_KEYS.includes(k)) out[wellFormed(k)] = wellFormed(v);
+  }
   return out;
 }
 
 const ACCOUNT_ID = /^[a-f0-9]{12}$/;
+/** Per extra account: 4 of them (main + 3) must stay well under the migrator's 8 MiB stdin cap. */
+const ACCOUNT_LOCAL_STORAGE_MAX_BYTES = 1024 * 1024;
+/** Same cap as descall_migrate::handoff::MAX_LOCAL_STORAGE_KEYS. */
+const MAX_LOCAL_STORAGE_KEYS = 4000;
+/** A static file of the app origin with no script: the hidden page only needs the origin. */
+const ACCOUNT_PROBE_PATH = 'favicon.ico';
+const ACCOUNT_PROBE_TIMEOUT_MS = 15 * 1000;
+
+/**
+ * Keep an extra account's settings within the budget: the smallest entries first (theme,
+ * sounds, toggles), so one huge cached blob is what gets left behind, never the settings.
+ */
+function trimLocalStorage(obj, maxBytes = ACCOUNT_LOCAL_STORAGE_MAX_BYTES, maxKeys = MAX_LOCAL_STORAGE_KEYS) {
+  const entries = Object.entries(obj && typeof obj === 'object' ? obj : {})
+    .filter(([k, v]) => typeof v === 'string' && !SECRET_LOCAL_STORAGE_KEYS.includes(k))
+    .map(([k, v]) => [k, v, Buffer.byteLength(k, 'utf8') + Buffer.byteLength(v, 'utf8')])
+    .sort((a, b) => a[2] - b[2] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const out = {};
+  let used = 0;
+  let n = 0;
+  for (const [k, v, size] of entries) {
+    if (n >= maxKeys || used + size > maxBytes) break;
+    out[k] = v;
+    used += size;
+    n += 1;
+  }
+  return out;
+}
+
+/**
+ * localStorage of an extra account (its own partition, persist:acct-<id>): its saved app
+ * settings. From the account's window when it is open, else from a hidden page of the app
+ * origin on that partition (accounts are usually closed while Electron runs). Never throws:
+ * a missing export only means the account starts with default settings.
+ */
+async function accountLocalStorage(deps, id) {
+  if (!ACCOUNT_ID.test(String(id))) return {};
+  try {
+    const open = deps.accountWebContents?.(id);
+    if (open && !(typeof open.isDestroyed === 'function' && open.isDestroyed())) return trimLocalStorage(await dumpLocalStorage(open));
+  } catch (_) { /* try the hidden page */ }
+  if (typeof deps.openAccountProbe !== 'function') return {};
+  let probe = null;
+  try {
+    probe = await deps.openAccountProbe(id);
+    return probe ? trimLocalStorage(await dumpLocalStorage(probe.webContents)) : {};
+  } catch (_) {
+    return {};
+  } finally {
+    try { probe?.close?.(); } catch (_) { /* gone */ }
+  }
+}
+
+function withTimeout(promise, ms, code) {
+  let timer = null;
+  return Promise.race([
+    Promise.resolve(promise).finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(code)), ms); }),
+  ]);
+}
+
+/**
+ * The Electron side of accountLocalStorage (main.cjs passes no account access, so start()
+ * builds it from electron and the premium host hooks). Pure apart from what it is given.
+ */
+function electronAccountAccess(electron, hooks) {
+  const { BrowserWindow, session } = electron;
+  const partition = (id) => `persist:acct-${id}`;
+  return {
+    accountWebContents(id) {
+      if (!ACCOUNT_ID.test(String(id))) return null;
+      const ses = session.fromPartition(partition(id));
+      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && w.webContents && w.webContents.session === ses);
+      return win ? win.webContents : null;
+    },
+    async openAccountProbe(id) {
+      if (!ACCOUNT_ID.test(String(id))) return null;
+      const ses = session.fromPartition(partition(id));
+      // Descall+ multi_account registers descall:// on its partitions only while the feature
+      // runs; the same host hook does it here when it did not.
+      if (!ses.protocol.isProtocolHandled('descall')) {
+        try { hooks?.get?.('registerAppProtocolOn')?.(ses); } catch (_) { /* no handler */ }
+      }
+      if (!ses.protocol.isProtocolHandled('descall')) return null;
+      const win = new BrowserWindow({
+        show: false,
+        width: 320,
+        height: 240,
+        skipTaskbar: true,
+        focusable: false,
+        webPreferences: { partition: partition(id), nodeIntegration: false, contextIsolation: true, sandbox: true, javascript: true, backgroundThrottling: false },
+      });
+      const close = () => { try { if (!win.isDestroyed()) win.destroy(); } catch (_) { /* gone */ } };
+      try {
+        win.webContents.setWindowOpenHandler?.(() => ({ action: 'deny' }));
+        await withTimeout(win.loadURL(`descall://app/${ACCOUNT_PROBE_PATH}`), ACCOUNT_PROBE_TIMEOUT_MS, 'account_probe_timeout');
+      } catch (_) {
+        close();
+        return null;
+      }
+      return { webContents: win.webContents, close };
+    },
+  };
+}
+
+/** start(): add the Electron account access when main.cjs did not pass its own. */
+function withAccountAccess(deps, load = () => ({ electron: require('electron'), hooks: require('./premium/hostHooks.cjs') })) {
+  if (deps.accountWebContents || deps.openAccountProbe || !process.versions?.electron) return deps;
+  try {
+    const { electron, hooks } = load();
+    return { ...deps, ...electronAccountAccess(electron, hooks) };
+  } catch (_) {
+    return deps;
+  }
+}
 const SAFE_NAME = /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,90}\.json$/;
 
 /** premium-settings.json + userData/premium/*.json (as "premium.<name>"), small files only. */
@@ -194,7 +320,8 @@ async function buildHandoff(deps, plan, installId) {
     for (const id of deps.fs.readdirSync(path.join(ud, 'premium', 'accounts'))) {
       if (!ACCOUNT_ID.test(id)) continue;
       const t = await readSecret(path.join(ud, 'premium', 'accounts', id, 'auth-token.bin'), { jwt: true });
-      if (t && deps.looksLikeJwt(t)) accounts.push({ id, label: '', token: t, localStorage: await dumpLocalStorage(deps.accountWebContents?.(id)).catch(() => ({})) });
+      // Each extra account brings its own saved app settings (its partition's localStorage).
+      if (t && deps.looksLikeJwt(t)) accounts.push({ id, label: '', token: t, localStorage: await accountLocalStorage(deps, id) });
     }
   } catch (_) { /* no extra accounts */ }
   const win = deps.getMainWindow?.();
@@ -480,6 +607,7 @@ function forwardIfMigrated(deps) {
 /** Boot hook + loop (every 30 min, backs off on errors). Returns a stop function. */
 function start(deps) {
   if (deps.platform !== 'win32') return () => {};
+  deps = withAccountAccess(deps);
   if (forwardIfMigrated(deps)) return () => {};
   resumeIfInterrupted(deps);
   reportRelaunchOutcome(deps).catch((err) => deps.log.warn('[migration] outcome report failed:', err?.message || err));
@@ -514,6 +642,11 @@ module.exports = {
   appLockRecordOrNull,
   downloadVerified,
   dumpLocalStorage,
+  trimLocalStorage,
+  accountLocalStorage,
+  electronAccountAccess,
+  withAccountAccess,
+  ACCOUNT_LOCAL_STORAGE_MAX_BYTES,
   readPremiumFiles,
   buildHandoff,
   buildJob,

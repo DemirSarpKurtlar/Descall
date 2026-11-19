@@ -80,7 +80,7 @@ function world(over = {}) {
   fs.writeFileSync(path.join(userData, "premium", "app-lock.bin"), "enc:" + APP_LOCK);
   fs.writeFileSync(path.join(userData, "premium", "accounts.json"), '{"accounts":[]}');
   fs.writeFileSync(path.join(userData, ".updaterId"), "3f2c9a1e-1111-4222-8333");
-  const calls = { spawned: [], piped: [], reports: [], quit: 0, fetched: [] };
+  const calls = { spawned: [], piped: [], reports: [], quit: 0, fetched: [], probes: [], probesClosed: 0 };
   let quiet = true;
   const responses = {
     plan: () => {
@@ -113,6 +113,15 @@ function world(over = {}) {
       getNormalBounds: () => ({ x: 10, y: 20, width: 1280, height: 800 }),
       webContents: { isDestroyed: () => false, executeJavaScript: async () => JSON.stringify({ theme: "dark", descall_token: TOKEN, token: TOKEN }) },
     }),
+    // Extra account 0123456789ab: window closed, so its settings come from a hidden page.
+    accountWebContents: () => null,
+    openAccountProbe: async (id) => {
+      calls.probes.push(id);
+      return {
+        webContents: { isDestroyed: () => false, executeJavaScript: async () => JSON.stringify({ theme: "light", "descall-sound-volume": "0.4", authToken: TOKEN }) },
+        close: () => { calls.probesClosed += 1; },
+      };
+    },
     readOpenAtLogin: () => true,
     getLocale: () => "tr",
     isQuietMoment: () => quiet,
@@ -199,6 +208,9 @@ test("a full attempt pipes the secrets over stdin, then starts the migrator and 
   assert.equal(env.handoff.token, TOKEN);
   assert.equal(env.handoff.migrationId, env.job.id);
   assert.equal(env.handoff.accounts[0].id, "0123456789ab");
+  assert.deepEqual(env.handoff.accounts[0].localStorage, { theme: "light", "descall-sound-volume": "0.4" }, "the extra account's own saved settings, without its token");
+  assert.deepEqual(w.calls.probes, ["0123456789ab"]);
+  assert.equal(w.calls.probesClosed, 1, "the hidden page is closed again");
   assert.equal(env.handoff.localStorage.theme, "dark");
   assert.ok(!("descall_token" in env.handoff.localStorage) && !("token" in env.handoff.localStorage), "token never in the localStorage export");
   assert.equal(env.handoff.locale, "tr");
@@ -337,4 +349,96 @@ test("install id comes from electron-updater's .updaterId", () => {
   const a = bridge.installIdFor(w.deps);
   assert.match(a, /^[0-9a-f-]{36}$/);
   assert.equal(bridge.installIdFor(w.deps), a, "stable once created");
+});
+
+test("extra accounts: settings from the open window first, hidden page otherwise, never fatal", async () => {
+  const id = "0123456789ab";
+  const page = (o) => ({ isDestroyed: () => false, executeJavaScript: async () => JSON.stringify(o) });
+  // Open window wins; the hidden page is not even created.
+  let probed = 0;
+  const open = await bridge.accountLocalStorage({ accountWebContents: () => page({ theme: "midnight", token: TOKEN }), openAccountProbe: async () => { probed += 1; return null; } }, id);
+  assert.deepEqual(open, { theme: "midnight" });
+  assert.equal(probed, 0);
+  // Closed window, probe fails or times out: the account still migrates, with default settings.
+  assert.deepEqual(await bridge.accountLocalStorage({ openAccountProbe: async () => { throw new Error("account_probe_timeout"); } }, id), {});
+  assert.deepEqual(await bridge.accountLocalStorage({ openAccountProbe: async () => null }, id), {});
+  assert.deepEqual(await bridge.accountLocalStorage({}, id), {}, "no account access at all");
+  let closed = 0;
+  const broken = { webContents: { isDestroyed: () => false, executeJavaScript: async () => { throw new Error("gone"); } }, close: () => { closed += 1; } };
+  assert.deepEqual(await bridge.accountLocalStorage({ openAccountProbe: async () => broken }, id), {});
+  assert.equal(closed, 1, "closed even when the dump failed");
+  assert.deepEqual(await bridge.accountLocalStorage({ accountWebContents: () => page({ a: "1" }) }, "../../x"), {}, "bad id: nothing");
+  // The whole attempt still goes through when the probe fails.
+  const w = world({ deps: { openAccountProbe: async () => { throw new Error("boom"); } } });
+  assert.equal(await bridge.tryMigrate(w.deps), "started");
+  assert.deepEqual(JSON.parse(w.calls.piped[0]).handoff.accounts[0].localStorage, {});
+});
+
+test("extra account settings stay within budget: small settings kept, big blobs dropped", () => {
+  const big = "x".repeat(bridge.ACCOUNT_LOCAL_STORAGE_MAX_BYTES);
+  const kept = bridge.trimLocalStorage({ theme: "dark", cache: big, descall_token: TOKEN, volume: "0.8", n: 5 });
+  assert.deepEqual(kept, { theme: "dark", volume: "0.8" });
+  assert.deepEqual(Object.keys(bridge.trimLocalStorage({ b: "1", a: "1", c: "1" }, 6)), ["a", "b", "c"], "equal sizes: by key");
+  assert.deepEqual(bridge.trimLocalStorage({ a: "1", b: "22", c: "333" }, 5), { a: "1", b: "22" });
+  assert.equal(Object.keys(bridge.trimLocalStorage(Object.fromEntries(Array.from({ length: 5000 }, (_, i) => [`k${i}`, "v"])))).length, 4000, "same key cap as the Rust handoff");
+});
+
+test("localStorage export is well-formed UTF-16 (serde_json refuses lone surrogates)", async () => {
+  const out = await bridge.dumpLocalStorage({ isDestroyed: () => false, executeJavaScript: async () => JSON.stringify({ draft: "hi \uD83D", ok: "😀", authToken: TOKEN, n: 3 }) });
+  assert.deepEqual(out, { draft: "hi �", ok: "😀" });
+});
+
+test("Electron account access: finds the account's own window and opens a script-free page on its partition", async () => {
+  const id = "0123456789ab";
+  const sessions = new Map();
+  const handled = new Set();
+  const ses = (p) => {
+    if (!sessions.has(p)) sessions.set(p, { name: p, protocol: { isProtocolHandled: (s) => s === "descall" && handled.has(p) } });
+    return sessions.get(p);
+  };
+  const created = [];
+  class FakeWindow {
+    constructor(opts) {
+      this.opts = opts;
+      this.destroyed = false;
+      this.webContents = { session: ses(opts.webPreferences.partition), setWindowOpenHandler() {}, isDestroyed: () => this.destroyed };
+      created.push(this);
+    }
+    static getAllWindows() { return created.filter((w) => !w.destroyed); }
+    isDestroyed() { return this.destroyed; }
+    destroy() { this.destroyed = true; }
+    async loadURL(u) { this.url = u; }
+  }
+  const electron = { BrowserWindow: FakeWindow, session: { fromPartition: ses } };
+  const hookCalls = [];
+  const hooks = { get: (n) => (n === "registerAppProtocolOn" ? (s) => { hookCalls.push(s.name); handled.add(s.name); return true; } : undefined) };
+  const access = bridge.electronAccountAccess(electron, hooks);
+  assert.equal(access.accountWebContents(id), null, "no window open");
+  const probe = await access.openAccountProbe(id);
+  assert.deepEqual(hookCalls, [`persist:acct-${id}`], "descall:// registered on the partition when Descall+ had not");
+  const win = created[0];
+  assert.equal(win.opts.show, false);
+  assert.equal(win.opts.webPreferences.partition, `persist:acct-${id}`);
+  assert.equal(win.opts.webPreferences.nodeIntegration, false);
+  assert.ok(!win.opts.webPreferences.preload, "no preload: the page gets no token");
+  assert.equal(win.url, "descall://app/favicon.ico", "app origin, no app script runs");
+  assert.equal(access.accountWebContents(id), win.webContents, "an open account window is found by its session");
+  probe.close();
+  assert.ok(win.destroyed);
+  assert.equal(await access.openAccountProbe("../x"), null);
+  // No descall:// handler can be registered: no page at all.
+  const none = bridge.electronAccountAccess(electron, { get: () => undefined });
+  assert.equal(await none.openAccountProbe("ba9876543210"), null);
+  // A page that fails to load is closed and gives nothing.
+  class Failing extends FakeWindow { loadURL() { return Promise.reject(new Error("ERR_FAILED")); } }
+  const hang = bridge.electronAccountAccess({ BrowserWindow: Failing, session: { fromPartition: ses } }, hooks);
+  assert.equal(await hang.openAccountProbe("cafe12345678"), null);
+  assert.ok(created.at(-1).destroyed);
+});
+
+test("start() only adds Electron account access inside Electron and keeps injected deps", () => {
+  const deps = { platform: "win32" };
+  assert.equal(bridge.withAccountAccess(deps, () => { throw new Error("not electron"); }), deps, "plain Node: unchanged");
+  const injected = { accountWebContents: () => null };
+  assert.equal(bridge.withAccountAccess(injected, () => { throw new Error("must not load"); }), injected);
 });

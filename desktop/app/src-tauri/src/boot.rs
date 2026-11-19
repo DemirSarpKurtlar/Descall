@@ -147,6 +147,17 @@ fn apply_handoff(app: &AppHandle, h: &Handoff) {
                 None => log::warn!("[migration] premium file skipped: {name}"),
             }
         }
+        // Each extra account's own saved settings, in that account's folder until its window
+        // first opens (boot_script_for_premium_window); removed with the account.
+        for (rel, body) in descall_migrate::app::account_local_storage_files(h) {
+            let path = dir.join(rel);
+            if let Some(parent) = path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            if let Err(e) = std::fs::write(&path, body) {
+                log::warn!("[migration] account settings not written: {e}");
+            }
+        }
         if let Some(ws) = &h.window_state {
             let _ = std::fs::write(dir.join("window-state.json"), serde_json::to_vec(ws).unwrap_or_default());
         }
@@ -180,13 +191,21 @@ pub fn boot_script_for<R: Runtime>(app: &AppHandle<R>, mode: &'static str) -> St
 
 /// Boot values for a Descall+ app window (premium::set_boot_script_provider): pop-outs run
 /// as the owner; an extra-account window (`acct-<id>`) gets that account's own token, never
-/// the owner's.
+/// the owner's, and the settings the account had in Electron (applied once by the shim,
+/// guarded by `__descall_import_v1` in the account's own WebView2 profile).
 pub fn boot_script_for_premium_window<R: Runtime>(app: &AppHandle<R>, label: &str) -> String {
-    let token_key = match label.strip_prefix("acct-") {
-        Some(id) => format!("account-{id}"),
-        None => crate::secure_store::TOKEN.to_string(),
+    let (token_key, imported) = match label.strip_prefix("acct-") {
+        Some(id) => (format!("account-{id}"), account_import(app, id)),
+        None => (crate::secure_store::TOKEN.to_string(), None),
     };
-    boot_script_token(app, None, "main", crate::secure_store::get(app, &token_key))
+    boot_script_token(app, imported.as_ref(), "main", crate::secure_store::get(app, &token_key))
+}
+
+/// The Electron settings of extra account `id` (written by the one-time import), if any.
+fn account_import<R: Runtime>(app: &AppHandle<R>, id: &str) -> Option<Imported> {
+    let rel = descall_migrate::app::account_local_storage_target(id)?;
+    let bytes = std::fs::read(crate::state::data_dir(app)?.join(rel)).ok()?;
+    descall_migrate::app::read_account_local_storage(&bytes).map(|local_storage| Imported { local_storage })
 }
 
 fn boot_script_with<R: Runtime>(app: &AppHandle<R>, imported: Option<&Imported>, mode: &'static str) -> String {

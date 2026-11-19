@@ -18,6 +18,9 @@ pub const MAX_FUTURE_SKEW_SECS: u64 = 10 * 60;
 pub const MAX_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_ACCOUNTS: usize = 8;
 pub const MAX_LOCAL_STORAGE_KEYS: usize = 4000;
+/// An extra account's localStorage (its saved app settings). The bridge keeps each account
+/// under 1 MiB (migrationBridge.cjs trimLocalStorage); twice that is a broken bridge.
+pub const MAX_ACCOUNT_LOCAL_STORAGE_BYTES: usize = 2 * 1024 * 1024;
 pub const MAX_PREMIUM_FILES: usize = 64;
 pub const MAX_PREMIUM_FILE_BYTES: usize = 1024 * 1024;
 /// DPAPI optional entropy: binds the blob to this purpose (another program running as the
@@ -153,6 +156,9 @@ impl Handoff {
             if a.local_storage.keys().any(|k| FORBIDDEN_LOCAL_STORAGE_KEYS.contains(&k.as_str())) {
                 return Err(bad("token found in account localStorage export"));
             }
+            if a.local_storage.len() > MAX_LOCAL_STORAGE_KEYS || local_storage_bytes(&a.local_storage) > MAX_ACCOUNT_LOCAL_STORAGE_BYTES {
+                return Err(bad("account localStorage too large"));
+            }
         }
         if self.premium_files.len() > MAX_PREMIUM_FILES {
             return Err(bad("too many premium files"));
@@ -187,6 +193,11 @@ impl Handoff {
     pub fn has_session(&self) -> bool {
         self.token.is_some() || !self.accounts.is_empty()
     }
+}
+
+/// UTF-8 bytes of keys and values (the bridge's `Buffer.byteLength` sum).
+pub fn local_storage_bytes(m: &BTreeMap<String, String>) -> usize {
+    m.iter().map(|(k, v)| k.len() + v.len()).sum()
 }
 
 /// Same check as electron/tokenCrypto.cjs looksLikeJwt.
@@ -276,6 +287,27 @@ mod tests {
             assert!(h.validate(1_000_000).is_err(), "{bad}");
         }
         assert!(!format!("{:?}", Some(Secret(record.into()))).contains("scrypt"), "never printed");
+    }
+
+    #[test]
+    fn extra_accounts_carry_their_own_settings_within_limits() {
+        let mut h = sample();
+        let mut a = Account { id: "0123456789ab".into(), token: Secret(JWT.into()), ..Default::default() };
+        a.local_storage.insert("theme".into(), "light".into());
+        h.accounts.push(a);
+        h.validate(1_000_000).unwrap();
+        let back: Handoff = serde_json::from_str(&serde_json::to_string(&h).unwrap()).unwrap();
+        assert_eq!(back.accounts[0].local_storage.get("theme").map(String::as_str), Some("light"));
+
+        let mut big = h.clone();
+        big.accounts[0].local_storage.insert("cache".into(), "x".repeat(MAX_ACCOUNT_LOCAL_STORAGE_BYTES));
+        assert!(big.validate(1_000_000).is_err(), "over the byte cap");
+        let mut many = h.clone();
+        many.accounts[0].local_storage = (0..=MAX_LOCAL_STORAGE_KEYS).map(|i| (format!("k{i}"), String::new())).collect();
+        assert!(many.validate(1_000_000).is_err(), "over the key cap");
+        let mut tok = h.clone();
+        tok.accounts[0].local_storage.insert("authToken".into(), JWT.into());
+        assert!(tok.validate(1_000_000).is_err(), "a token never travels in clear");
     }
 
     #[test]

@@ -130,6 +130,44 @@ pub fn premium_file_target(name: &str) -> Option<std::path::PathBuf> {
     (inner.ends_with(".json") && crate::handoff::is_safe_file_name(inner)).then(|| std::path::Path::new("premium").join(inner))
 }
 
+/// An extra account's Electron localStorage (its saved app settings), waiting in the account's
+/// own folder (`premium/accounts/<id>/`, the folder Descall+ multi_account removes with the
+/// account) until that account's window first opens. Not a secret: tokens never travel in
+/// localStorage (`handoff::FORBIDDEN_LOCAL_STORAGE_KEYS`), the session is sealed separately.
+pub const ACCOUNT_LOCAL_STORAGE_FILE: &str = "electron-local-storage.json";
+
+/// Where an extra account's settings go, relative to the app's data folder. None for an id
+/// that is not a multi_account id (it would name a folder outside `premium/accounts`).
+pub fn account_local_storage_target(id: &str) -> Option<std::path::PathBuf> {
+    crate::handoff::is_account_id(id).then(|| std::path::Path::new("premium").join("accounts").join(id).join(ACCOUNT_LOCAL_STORAGE_FILE))
+}
+
+/// The files to write for a validated handoff: one per extra account that has settings.
+pub fn account_local_storage_files(h: &crate::handoff::Handoff) -> Vec<(std::path::PathBuf, Vec<u8>)> {
+    h.accounts
+        .iter()
+        .filter(|a| !a.local_storage.is_empty())
+        .filter_map(|a| Some((account_local_storage_target(&a.id)?, serde_json::to_vec(&clean_local_storage(a.local_storage.clone())).ok()?)))
+        .collect()
+}
+
+/// Reads such a file back for the account window's boot script (`importLocalStorage`).
+/// Re-checked on the way out (the file sits on disk): no token key, same caps as the handoff;
+/// anything unreadable or empty is None (the account starts with default settings).
+pub fn read_account_local_storage(bytes: &[u8]) -> Option<std::collections::BTreeMap<String, String>> {
+    if bytes.len() > crate::handoff::MAX_ACCOUNT_LOCAL_STORAGE_BYTES * 2 {
+        return None;
+    }
+    let m = clean_local_storage(serde_json::from_slice(bytes).ok()?);
+    let ok = !m.is_empty() && m.len() <= crate::handoff::MAX_LOCAL_STORAGE_KEYS && crate::handoff::local_storage_bytes(&m) <= crate::handoff::MAX_ACCOUNT_LOCAL_STORAGE_BYTES;
+    ok.then_some(m)
+}
+
+fn clean_local_storage(mut m: std::collections::BTreeMap<String, String>) -> std::collections::BTreeMap<String, String> {
+    m.retain(|k, _| !crate::handoff::FORBIDDEN_LOCAL_STORAGE_KEYS.contains(&k.as_str()));
+    m
+}
+
 /// Outcome of the app's own `GET /api/auth/me` with the imported session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthCheck {
@@ -336,6 +374,30 @@ mod tests {
         assert_eq!(premium_file_target("premium.accounts.json"), Some(PathBuf::from("premium").join("accounts.json")));
         for bad in ["accounts.json", "premium.app-lock.bin", "premium.", "premium...json", "premium.a/b.json", "other.json"] {
             assert_eq!(premium_file_target(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn extra_account_settings_wait_in_the_accounts_own_folder() {
+        use crate::handoff::{Account, Handoff, Secret};
+        use std::path::PathBuf;
+        let jwt = "eyJhbGciOi.eyJzdWIiOiIx.c2ln";
+        let acct = |id: &str, ls: &[(&str, &str)]| Account { id: id.into(), token: Secret(jwt.into()), local_storage: ls.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(), ..Default::default() };
+        let h = Handoff { version: 1, accounts: vec![acct("0123456789ab", &[("theme", "light"), ("descall-sound-volume", "0.4")]), acct("ba9876543210", &[])], ..Default::default() };
+        let files = account_local_storage_files(&h);
+        assert_eq!(files.len(), 1, "an account without settings writes nothing");
+        assert_eq!(files[0].0, PathBuf::from("premium").join("accounts").join("0123456789ab").join(ACCOUNT_LOCAL_STORAGE_FILE));
+        let back = read_account_local_storage(&files[0].1).unwrap();
+        assert_eq!(back.get("theme").map(String::as_str), Some("light"));
+        assert_eq!(back.len(), 2);
+        for bad in ["../../x", "ABCDEF123456", ""] {
+            assert_eq!(account_local_storage_target(bad), None, "{bad}");
+        }
+        // Read back defensively: a token key planted in the file is dropped, junk is None.
+        let planted = read_account_local_storage(br#"{"theme":"dark","descall_token":"eyJ.x.y"}"#).unwrap();
+        assert!(!planted.contains_key("descall_token") && planted.contains_key("theme"));
+        for junk in [&b"{broken"[..], b"[]", b"{}", br#"{"descall_token":"x"}"#, br#"{"a":1}"#] {
+            assert_eq!(read_account_local_storage(junk), None, "{}", String::from_utf8_lossy(junk));
         }
     }
 
