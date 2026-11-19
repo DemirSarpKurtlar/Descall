@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use descall_capture::bridge::{StartInfo, StartRequest, UpdateRequest};
-use descall_capture::host::{HostSink, ShareHost};
+use descall_capture::host::{CaptureMode, HostSink, ShareHost};
 use descall_capture::ring::{RingReader, VideoFrameCopy};
 use descall_capture::stats::{Samples, StatsSnapshot};
 
@@ -127,9 +127,20 @@ pub struct Harness {
     pub info: StartInfo,
 }
 
+static MODE: std::sync::OnceLock<CaptureMode> = std::sync::OnceLock::new();
+
+/// Capture mode of every share the bench starts (set once by main).
+pub fn set_mode(m: CaptureMode) {
+    let _ = MODE.set(m);
+}
+
+pub fn mode() -> CaptureMode {
+    MODE.get().cloned().unwrap_or(CaptureMode::InProcess)
+}
+
 impl Harness {
     pub fn start(req: &StartRequest, keep_last: bool) -> Result<Harness, String> {
-        let host = ShareHost::new();
+        let host = ShareHost::with_mode(mode());
         let plan = host.plan(req).map_err(|e| format!("plan: {e}"))?;
         let mem: Box<[std::cell::UnsafeCell<u8>]> = (0..plan.layout.total).map(|_| std::cell::UnsafeCell::new(0u8)).collect();
         let sink = Arc::new(BenchSink { mem, last_audio: AtomicU64::new(0), c: Mutex::new(Collector { keep_last, ..Default::default() }) });

@@ -266,6 +266,12 @@ impl Inner {
                     if self.stopping.load(Ordering::Acquire) {
                         return;
                     }
+                    let target = if self.job.target_kind == "monitor" { Target::Monitor(self.job.handle) } else { Target::Window(self.job.handle) };
+                    if !crate::wgc::source_alive(target) {
+                        // The window closed (or the monitor went away) and took the helper
+                        // with it: that is the end of the share, not a reason to restart.
+                        last_end = Some("source-closed".into());
+                    }
                     if let Some(reason) = end_reason_after_exit(last_end.as_deref()) {
                         if reason == "source-closed" {
                             self.closed.store(true, Ordering::Release);

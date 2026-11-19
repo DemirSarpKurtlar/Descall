@@ -56,7 +56,7 @@ impl Env {
 }
 
 fn probe_wgc(monitor: isize) -> bool {
-    let Ok(d3d) = D3d::shared() else { return false };
+    let Ok(d3d) = D3d::new() else { return false };
     let got = Arc::new(AtomicBool::new(false));
     let g = got.clone();
     let opts = wgc::Options { cursor: false, hdr: false, max_fps: 30, buffers: 1 };
@@ -83,7 +83,7 @@ pub fn detect() -> Env {
         Err(_) => false,
     };
     let monitors = sources::list_monitors();
-    let adapter = D3d::shared().map(|d| d.adapter.clone()).unwrap_or_default();
+    let adapter = D3d::new().map(|d| d.adapter.clone()).unwrap_or_default();
     let primary = monitors.first().map(|m| m.handle);
     let wgc_frames = caps.wgc && input_desktop && primary.map(probe_wgc).unwrap_or(false);
     let desktop_reason = if !caps.wgc {

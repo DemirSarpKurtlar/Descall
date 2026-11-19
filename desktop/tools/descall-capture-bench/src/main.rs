@@ -6,6 +6,8 @@
 //!   --only echo,video,follow,color,picker   run some groups
 //!   --seconds N                             length of each 60 fps run (default 10)
 //!   --repeat N                              run video + follow N times in one process
+//!   --mode helper|inproc                    where the capture runs (default: helper process)
+//!   group "inproc": video + follow once more with in-process capture, in a child process
 //!   --out PATH                              JSON report path (default: next to the exe)
 //!   --ci                                    no "press Enter" at the end
 //!   --list                                  print the sources and capabilities, run nothing
@@ -43,13 +45,15 @@ pub struct Args {
     /// Run the video and follow groups this many times in one process (lifecycle check:
     /// shares started and stopped back to back must not leave anything behind).
     pub repeat: u32,
+    /// "helper" (default, the product default) or "inproc".
+    pub mode: String,
     pub play_tone: Option<Vec<String>>,
 }
 
-pub const GROUPS: [&str; 5] = ["echo", "video", "follow", "color", "picker"];
+pub const GROUPS: [&str; 6] = ["echo", "video", "follow", "color", "picker", "inproc"];
 
 pub fn parse_args(a: &[String]) -> Result<Args, String> {
-    let mut r = Args { ci: false, list: false, out: None, only: Vec::new(), seconds: 10, repeat: 1, play_tone: None };
+    let mut r = Args { ci: false, list: false, out: None, only: Vec::new(), seconds: 10, repeat: 1, mode: "helper".into(), play_tone: None };
     let mut i = 0;
     while i < a.len() {
         let next = |i: usize| a.get(i + 1).cloned().ok_or_else(|| format!("{} needs a value", a[i]));
@@ -68,6 +72,13 @@ pub fn parse_args(a: &[String]) -> Result<Args, String> {
             "--repeat" => {
                 r.repeat = next(i)?.parse().map_err(|_| "--repeat needs a number".to_string())?;
                 r.repeat = r.repeat.clamp(1, 10);
+                i += 1;
+            }
+            "--mode" => {
+                r.mode = next(i)?.to_ascii_lowercase();
+                if r.mode != "helper" && r.mode != "inproc" {
+                    return Err("--mode is helper or inproc".into());
+                }
                 i += 1;
             }
             "--only" => {
@@ -95,10 +106,15 @@ impl Args {
     }
 }
 
-const USAGE: &str = "descall-capture-bench [--only echo,video,follow,color,picker] [--seconds N] [--repeat N] [--out report.json] [--ci] [--list]";
+const USAGE: &str = "descall-capture-bench [--only echo,video,follow,color,picker,inproc] [--mode helper|inproc] [--seconds N] [--repeat N] [--out report.json] [--ci] [--list]";
 
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
+    // Started by the bench itself as the capture helper (helper mode).
+    #[cfg(windows)]
+    if argv.first().map(|a| a == descall_capture::helper::HOST_ARG).unwrap_or(false) {
+        std::process::exit(descall_capture::helper::host_main());
+    }
     let args = match parse_args(&argv) {
         Ok(a) => a,
         Err(e) => {
@@ -126,6 +142,10 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
     if let Some(t) = &args.play_tone {
         return echo::child_main(t);
     }
+    harness::set_mode(match (args.mode.as_str(), std::env::current_exe()) {
+        ("helper", Ok(exe)) => descall_capture::host::CaptureMode::Helper(descall_capture::helper::HelperSpawn { exe, args: vec![descall_capture::helper::HOST_ARG.into()] }),
+        _ => descall_capture::host::CaptureMode::InProcess,
+    });
     unsafe {
         use windows::Win32::UI::HiDpi::{SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2};
         let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -203,6 +223,22 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
             group(&format!("Round {round}: window follow"), &format!("follow.round{round}"), &|| tag(follow::run(&env)), &mut results);
         }
     }
+    // In-process capture once more, isolated in a child process: Windows' frame-pool thread
+    // can kill the process when the GPU device is removed (the reason helper mode exists).
+    if args.wants("inproc") && args.mode == "helper" {
+        group("In-process mode (child process)", "inproc", &|| inproc_round(&env, args.seconds), &mut results);
+    }
+    let lost = descall_capture::d3d::device_lost_events();
+    if !lost.is_empty() {
+        let reasons: Vec<String> = lost.iter().map(|d| format!("{} ({})", d.reason, d.seen_in)).collect();
+        results.push(
+            TestResult::new("device.lost", "Capture device lost during the run (info)", Status::Info)
+                .measured(format!("{} time(s)", lost.len()))
+                .limit("-")
+                .note(reasons.join(", "))
+                .details(serde_json::to_value(&lost).unwrap_or_default()),
+        );
+    }
     if results.is_empty() {
         results.push(TestResult::new("none", "No test selected", Status::Skip));
     }
@@ -221,7 +257,9 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
 
 #[cfg(windows)]
 fn write_report(path: &str, machine: &serde_json::Value, results: &[report::TestResult], argv: &[String], last: bool) {
-    let doc = report::document(machine.clone(), results, argv);
+    let mut doc = report::document(machine.clone(), results, argv);
+    doc["captureMode"] = serde_json::json!(format!("{:?}", harness::mode()).split('(').next().unwrap_or_default());
+    doc["deviceLost"] = serde_json::to_value(descall_capture::d3d::device_lost_events()).unwrap_or_default();
     match std::fs::write(path, serde_json::to_string_pretty(&doc).unwrap_or_default()) {
         Ok(()) if last => println!("JSON report: {path}"),
         Ok(()) => {}
@@ -238,6 +276,53 @@ fn default_report_path() -> String {
         .filter(|p| std::fs::OpenOptions::new().create(true).append(true).open(p).is_ok())
         .map(|p| p.display().to_string())
         .unwrap_or_else(|| name.to_string())
+}
+
+/// Video + follow with in-process capture, run by a child copy of the bench so a crash
+/// inside Windows' capture code cannot end this run. Its rows come back tagged `.inproc`.
+#[cfg(windows)]
+fn inproc_round(env: &env::Env, seconds: u64) -> Vec<report::TestResult> {
+    use report::{Status, TestResult};
+    let (id, name) = ("inproc.run", "In-process capture run");
+    let Ok(exe) = std::env::current_exe() else { return vec![TestResult::new(id, name, Status::Fail).note("no exe path")] };
+    let out = std::env::temp_dir().join(format!("descall-bench-inproc-{}.json", std::process::id()));
+    let _ = std::fs::remove_file(&out);
+    let status = std::process::Command::new(&exe)
+        .args(["--ci", "--mode", "inproc", "--only", "video,follow", "--seconds", &seconds.min(4).to_string(), "--out"])
+        .arg(&out)
+        .stdout(std::process::Stdio::null())
+        .status();
+    let code = status.as_ref().ok().and_then(|s| s.code()).unwrap_or(-1);
+    let doc: Option<serde_json::Value> = std::fs::read_to_string(&out).ok().and_then(|t| serde_json::from_str(&t).ok());
+    let _ = std::fs::remove_file(&out);
+    let mut rows: Vec<TestResult> = Vec::new();
+    if let Some(d) = &doc {
+        for r in d["results"].as_array().into_iter().flatten() {
+            let st = match r["status"].as_str() {
+                Some("pass") => Status::Pass,
+                Some("fail") => Status::Fail,
+                Some("skip") => Status::Skip,
+                _ => Status::Info,
+            };
+            rows.push(
+                TestResult::new(&format!("{}.inproc", r["id"].as_str().unwrap_or("?")), &format!("{} [in-process]", r["name"].as_str().unwrap_or("?")), st)
+                    .measured(r["measured"].as_str().unwrap_or_default())
+                    .limit(r["limit"].as_str().unwrap_or_default())
+                    .note(r["note"].as_str().unwrap_or_default()),
+            );
+        }
+    }
+    if code == 0 || code == 1 {
+        rows.push(TestResult::new(id, name, Status::Pass).measured(format!("exit {code}")).limit("no crash"));
+    } else {
+        let lost = doc.as_ref().map(|d| d["deviceLost"].clone()).unwrap_or_default();
+        let why = format!("in-process run crashed (exit 0x{:08X}) after {} result rows; helper mode survives this", code as u32, rows.len());
+        let mut r = TestResult::cannot_run(id, name, env.software_gpu(), why).details(serde_json::json!({ "exitCode": code, "deviceLost": lost }));
+        r.measured = format!("exit 0x{:08X}", code as u32);
+        r.limit = "no crash".into();
+        rows.push(r);
+    }
+    rows
 }
 
 /// The picker list with first thumbnails and icons, and how long it takes.
@@ -285,6 +370,10 @@ mod tests {
         assert!(parse_args(&[]).unwrap().wants("hdr") || parse_args(&[]).unwrap().wants("color"));
         assert_eq!(parse_args(&a(&["--play-tone", "440", "8"])).unwrap().play_tone, Some(a(&["440", "8"])));
         assert_eq!(parse_args(&a(&["--repeat", "3"])).unwrap().repeat, 3);
+        assert_eq!(parse_args(&[]).unwrap().mode, "helper");
+        assert_eq!(parse_args(&a(&["--mode", "INPROC"])).unwrap().mode, "inproc");
+        assert!(parse_args(&a(&["--mode", "gpu"])).is_err());
+        assert!(parse_args(&a(&["--only", "inproc"])).unwrap().wants("inproc"));
         assert_eq!(parse_args(&a(&["--repeat", "99"])).unwrap().repeat, 10);
         assert_eq!(parse_args(&[]).unwrap().repeat, 1);
         assert!(parse_args(&a(&["--repeat", "x"])).is_err());

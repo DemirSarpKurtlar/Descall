@@ -88,7 +88,8 @@ pub fn run(env: &Env, preset_id: &str, label: &str, seconds: u64) -> Vec<TestRes
         "cpuBaselinePct": base_cpu, "cpuCapturePct": cap_cpu, "cpuAddedPct": added_cpu,
         "pipeline": { "arrived": s1.frames_arrived - s0.frames_arrived, "pacedOut": s1.frames_paced_out - s0.frames_paced_out,
                       "written": s1.frames_written - s0.frames_written, "failed": s1.frames_failed - s0.frames_failed,
-                      "convertUsAvg": s1.convert_us_avg, "convertUsMax": s1.convert_us_max },
+                      "convertUsAvg": s1.convert_us_avg, "convertUsMax": s1.convert_us_max, "helperRestarts": s1.helper_restarts },
+        "captureMode": format!("{:?}", crate::harness::mode()).split('(').next().unwrap_or_default().to_string(),
         "startInfo": { "width": info.width, "height": info.height, "fps": info.fps, "hdr": info.hdr },
         "adapter": env.adapter.description,
     });
