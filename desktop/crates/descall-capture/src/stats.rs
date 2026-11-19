@@ -3,7 +3,7 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Live counters of one share. All fields are monotonic except `black_streak`.
 #[derive(Debug, Default)]
@@ -23,8 +23,8 @@ pub struct ShareStats {
     pub black_streak: AtomicU64,
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", default)]
 pub struct StatsSnapshot {
     pub frames_arrived: u64,
     pub frames_paced_out: u64,
@@ -37,6 +37,8 @@ pub struct StatsSnapshot {
     pub audio_silent_packets: u64,
     pub audio_discontinuities: u64,
     pub black_streak: u64,
+    /// Helper mode: how often the capture helper was restarted (device lost, crash).
+    pub helper_restarts: u64,
 }
 
 impl ShareStats {
@@ -64,6 +66,7 @@ impl ShareStats {
             audio_silent_packets: g(&self.audio_silent_packets),
             audio_discontinuities: g(&self.audio_discontinuities),
             black_streak: g(&self.black_streak),
+            helper_restarts: 0,
         }
     }
 }

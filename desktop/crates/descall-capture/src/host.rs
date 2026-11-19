@@ -21,6 +21,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::bridge::{Lane, SourceId, StartInfo, StartRequest, UpdateRequest};
+use crate::helper::{HelperShare, HelperSpawn};
 use crate::pipeline::{self, Share, ShareRequest};
 use crate::presets::Quality;
 use crate::ring::{Layout, RingWriter};
@@ -50,19 +51,93 @@ pub struct Plan {
     pub audio: bool,
 }
 
+/// Where the capture runs.
+#[derive(Debug, Clone, PartialEq)]
+pub enum CaptureMode {
+    /// In this process (Windows' frame pool thread can take the process down if the GPU
+    /// device is removed).
+    InProcess,
+    /// In a helper process (helper.rs): a device loss or crash restarts the helper.
+    Helper(HelperSpawn),
+}
+
+/// A running share, whichever mode.
+enum Running {
+    InProcess(Share),
+    Helper(HelperShare),
+}
+
+impl Running {
+    fn detach_ring(&self) {
+        match self {
+            Running::InProcess(s) => s.detach_ring(),
+            Running::Helper(h) => h.detach_ring(),
+        }
+    }
+
+    fn stop(self) {
+        match self {
+            Running::InProcess(s) => s.stop(),
+            Running::Helper(h) => h.stop(),
+        }
+    }
+
+    fn update(&self, u: &UpdateRequest) -> bool {
+        match self {
+            Running::InProcess(s) => s.update(u),
+            Running::Helper(h) => h.update(u),
+        }
+    }
+
+    fn stats(&self) -> StatsSnapshot {
+        match self {
+            Running::InProcess(s) => s.stats(),
+            Running::Helper(h) => h.stats(),
+        }
+    }
+
+    fn source_closed(&self) -> bool {
+        match self {
+            Running::InProcess(s) => s.source_closed(),
+            Running::Helper(h) => h.source_closed(),
+        }
+    }
+
+    /// The reason a "source went away" signal really means.
+    fn end_reason<'a>(&self, reason: &'a str) -> &'a str {
+        if reason != "source-closed" {
+            return reason;
+        }
+        match self {
+            Running::InProcess(s) if s.device_lost() => "device-lost",
+            Running::Helper(h) if h.device_lost() => "device-lost",
+            Running::Helper(h) if h.failed() => "capture-failed",
+            _ => reason,
+        }
+    }
+}
+
 struct Active {
     id: u32,
-    share: Share,
+    share: Running,
     sink: Arc<dyn HostSink>,
 }
 
 type Slot = Arc<Mutex<Option<Active>>>;
 
-#[derive(Default)]
+/// One share at a time. `ShareHost::default()` runs the capture in the helper process when
+/// `descall-capture-host.exe` sits next to the app (installed builds), else in-process.
 pub struct ShareHost {
     active: Slot,
     next_id: AtomicU32,
+    mode: CaptureMode,
     pub thumbs: ThumbnailHub,
+}
+
+impl Default for ShareHost {
+    fn default() -> Self {
+        Self::with_mode(crate::helper::default_spawn().map(CaptureMode::Helper).unwrap_or(CaptureMode::InProcess))
+    }
 }
 
 /// Audio wakes every 20 ms (two packets); the page drains all unread packets per wake.
@@ -106,7 +181,7 @@ fn stop_slot(slot: &Slot, only_id: Option<u32>, reason: &str) -> bool {
             // buffer), then wind the capture down; closing WGC and joining the loopback
             // thread can take a moment and must not delay "source-closed".
             a.share.detach_ring();
-            a.sink.ended(a.id, reason);
+            a.sink.ended(a.id, a.share.end_reason(reason));
             a.share.stop();
             true
         }
@@ -117,6 +192,22 @@ fn stop_slot(slot: &Slot, only_id: Option<u32>, reason: &str) -> bool {
 impl ShareHost {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn with_mode(mode: CaptureMode) -> Self {
+        ShareHost { active: Arc::new(Mutex::new(None)), next_id: AtomicU32::new(0), mode, thumbs: ThumbnailHub::new() }
+    }
+
+    pub fn in_process() -> Self {
+        Self::with_mode(CaptureMode::InProcess)
+    }
+
+    pub fn with_helper(spawn: HelperSpawn) -> Self {
+        Self::with_mode(CaptureMode::Helper(spawn))
+    }
+
+    pub fn mode(&self) -> &CaptureMode {
+        &self.mode
     }
 
     /// Validate the request and size the ring. Cheap; no capture starts.
@@ -155,8 +246,12 @@ impl ShareHost {
             log::warn!("echo guard: WebView2 audio outside our process tree: {:?}", echo.as_ref().map(|a| &a.webview_outside_tree));
         }
         let psink = Arc::new(PipelineSink { id: plan.id, sink: sink.clone(), slot: self.active.clone() });
-        let req = ShareRequest { target: plan.target, quality: plan.quality, cursor: plan.cursor, system_audio: plan.audio };
-        let share = match pipeline::start(req, ring.clone(), psink) {
+        let req = ShareRequest { target: plan.target, quality: plan.quality, cursor: plan.cursor, system_audio: plan.audio, exclude_pid: None };
+        let started = match &self.mode {
+            CaptureMode::InProcess => pipeline::start(req, ring.clone(), psink).map(Running::InProcess),
+            CaptureMode::Helper(spawn) => HelperShare::start(spawn.clone(), &req, plan.layout, ring.clone(), psink).map(Running::Helper),
+        };
+        let share = match started {
             Ok(s) => s,
             Err(e) => {
                 if let Ok(mut r) = ring.lock() {
@@ -166,7 +261,10 @@ impl ShareHost {
                 return Err(e);
             }
         };
-        let audio = share.has_audio();
+        let (hdr, audio, audio_error) = match &share {
+            Running::InProcess(s) => (s.hdr, s.has_audio(), s.audio_error.clone()),
+            Running::Helper(h) => (h.ready.hdr, h.ready.audio, h.ready.audio_error.clone()),
+        };
         let info = StartInfo {
             id: plan.id,
             bytes: plan.layout.total,
@@ -174,10 +272,10 @@ impl ShareHost {
             height: plan.quality.height,
             fps: plan.quality.fps,
             display_surface: plan.source.display_surface(),
-            hdr: share.hdr,
+            hdr,
             cursor: plan.cursor,
             audio,
-            audio_error: share.audio_error.clone(),
+            audio_error,
             echo_risk,
             lane: if audio { Lane::L1 } else { Lane::L2 },
         };

@@ -29,6 +29,7 @@ pub mod bridge;
 pub mod caps;
 pub mod encode;
 pub mod ending;
+pub mod helper_proto;
 pub mod presets;
 pub mod proctree;
 pub mod ring;
@@ -45,6 +46,8 @@ pub mod d3d;
 pub mod echo_guard;
 #[cfg(windows)]
 pub mod hdr;
+#[cfg(windows)]
+pub mod helper;
 #[cfg(windows)]
 pub mod host;
 #[cfg(windows)]
@@ -78,6 +81,8 @@ pub enum CaptureError {
     ItemClosed,
     #[error("no share is running")]
     NotRunning,
+    #[error("capture helper: {0}")]
+    Helper(String),
     #[cfg(windows)]
     #[error(transparent)]
     Win(#[from] windows_core::Error),

@@ -137,7 +137,7 @@ impl StartRequest {
 }
 
 /// Mid-share change (track.applyConstraints, the cursor toggle in the share bar).
-#[derive(Debug, Clone, Deserialize, Default, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct UpdateRequest {
     pub width: Option<u32>,

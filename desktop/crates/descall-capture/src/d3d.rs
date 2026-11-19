@@ -1,6 +1,13 @@
 //! One D3D11 device per capture session, shared by WGC, the HDR tone-map pass and the
 //! video processor (scale + colour conversion). VIDEO_SUPPORT is needed for
 //! ID3D11VideoDevice; BGRA_SUPPORT for WGC surfaces.
+//!
+//! Every device is multithread-protected (the frame pool uses it on its own threads) and our
+//! GPU work runs under its Enter/Leave lock ([`D3d::lock`]). A device per share limits what
+//! a removed device (driver update, TDR, GPU switch) takes down. `DESCALL_D3D_DEBUG=1`
+//! creates devices with the debug layer (when the Graphics Tools are installed) and keeps
+//! its messages, so the call that got a device removed can be found
+//! ([`device_lost_events`]).
 
 use serde::Serialize;
 use windows::core::Interface;
@@ -29,6 +36,30 @@ pub struct D3d {
     pub winrt: IDirect3DDevice,
     pub adapter: AdapterInfo,
     multithread: Option<ID3D11Multithread>,
+    info_queue: Option<ID3D11InfoQueue>,
+}
+
+pub use crate::helper_proto::DeviceLost;
+
+static LOST: std::sync::Mutex<Vec<DeviceLost>> = std::sync::Mutex::new(Vec::new());
+
+/// Record a device loss (kept for the bench report and telemetry; at most 16).
+pub fn record_device_lost(d: DeviceLost) {
+    log::error!("capture device lost: {} on {} ({} debug messages)", d.reason, d.adapter, d.messages.len());
+    if let Ok(mut v) = LOST.lock() {
+        if v.len() < 16 {
+            v.push(d);
+        }
+    }
+}
+
+/// Every device loss seen in this process (and reported by capture helpers).
+pub fn device_lost_events() -> Vec<DeviceLost> {
+    LOST.lock().map(|v| v.clone()).unwrap_or_default()
+}
+
+fn debug_layer_wanted() -> bool {
+    std::env::var("DESCALL_D3D_DEBUG").map(|v| v == "1").unwrap_or(false)
 }
 
 /// Holds the device's multithread lock (ID3D11Multithread::Enter/Leave) for a block of
@@ -51,11 +82,17 @@ unsafe impl Sync for D3d {}
 
 impl D3d {
     pub fn new() -> crate::Result<Self> {
-        let flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+        let debug = if debug_layer_wanted() { D3D11_CREATE_DEVICE_DEBUG } else { D3D11_CREATE_DEVICE_FLAG(0) };
+        let flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT | debug;
         let levels: [D3D_FEATURE_LEVEL; 3] = [D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1];
         let mut device = None;
         let mut context = None;
-        let hw = unsafe { D3D11CreateDevice(None, D3D_DRIVER_TYPE_HARDWARE, HMODULE::default(), flags, Some(&levels), D3D11_SDK_VERSION, Some(&mut device), None, Some(&mut context)) };
+        let mut hw = unsafe { D3D11CreateDevice(None, D3D_DRIVER_TYPE_HARDWARE, HMODULE::default(), flags, Some(&levels), D3D11_SDK_VERSION, Some(&mut device), None, Some(&mut context)) };
+        if (hw.is_err() || device.is_none()) && debug.0 != 0 {
+            // Debug layer requested but the SDK layers are not installed: go on without it.
+            let f = D3D11_CREATE_DEVICE_FLAG(flags.0 & !debug.0);
+            hw = unsafe { D3D11CreateDevice(None, D3D_DRIVER_TYPE_HARDWARE, HMODULE::default(), f, Some(&levels), D3D11_SDK_VERSION, Some(&mut device), None, Some(&mut context)) };
+        }
         if hw.is_err() || device.is_none() {
             // WARP: RDP sessions, hosted CI and broken drivers. Slow, but the share still starts.
             // Without VIDEO_SUPPORT the converter falls back to the CPU path (convert.rs).
@@ -91,24 +128,54 @@ impl D3d {
             }
         });
         let winrt: IDirect3DDevice = unsafe { CreateDirect3D11DeviceFromDXGIDevice(&dxgi)? }.cast()?;
-        Ok(D3d { device, context, winrt, adapter: adapter.unwrap_or_default(), multithread })
+        let info_queue = device.cast::<ID3D11InfoQueue>().ok();
+        Ok(D3d { device, context, winrt, adapter: adapter.unwrap_or_default(), multithread, info_queue })
     }
 
-    /// The process-wide capture device. Shares reuse it instead of creating and destroying
-    /// a device each time (teardown races with the OS capture threads are gone with it); a
-    /// removed device (driver reset, TDR) is replaced on the next call.
-    pub fn shared() -> crate::Result<std::sync::Arc<D3d>> {
-        use std::sync::{Arc, Mutex};
-        static SHARED: Mutex<Option<Arc<D3d>>> = Mutex::new(None);
-        let mut g = SHARED.lock().unwrap_or_else(|p| p.into_inner());
-        if let Some(d) = g.as_ref() {
-            if unsafe { d.device.GetDeviceRemovedReason() }.is_ok() {
-                return Ok(d.clone());
+    /// None while the device is fine, else the GetDeviceRemovedReason HRESULT.
+    pub fn removed_reason(&self) -> Option<windows::core::HRESULT> {
+        unsafe { self.device.GetDeviceRemovedReason() }.err().map(|e| e.code())
+    }
+
+    pub fn debug_layer(&self) -> bool {
+        self.info_queue.is_some()
+    }
+
+    /// Drain the debug layer's stored messages (empty without the debug layer).
+    pub fn drain_messages(&self) -> Vec<String> {
+        let Some(q) = &self.info_queue else { return Vec::new() };
+        let mut out = Vec::new();
+        unsafe {
+            let n = q.GetNumStoredMessages();
+            for i in 0..n.min(200) {
+                let mut len = 0usize;
+                if q.GetMessage(i, None, &mut len).is_err() || len == 0 {
+                    continue;
+                }
+                // D3D11_MESSAGE is followed by its description in the same allocation.
+                let mut buf = vec![0u64; len.div_ceil(8)];
+                let m = buf.as_mut_ptr() as *mut D3D11_MESSAGE;
+                if q.GetMessage(i, Some(m), &mut len).is_ok() {
+                    let msg = &*m;
+                    if !msg.pDescription.is_null() {
+                        let d = std::slice::from_raw_parts(msg.pDescription, msg.DescriptionByteLength.saturating_sub(1));
+                        out.push(format!("[sev {}] {}", msg.Severity.0, String::from_utf8_lossy(d)));
+                    }
+                }
             }
+            q.ClearStoredMessages();
         }
-        let d = Arc::new(D3d::new()?);
-        *g = Some(d.clone());
-        Ok(d)
+        out
+    }
+
+    /// If the device is removed, record it (with the debug messages) and say so.
+    pub fn check_lost(&self, seen_in: &str) -> bool {
+        self.probe().check_lost(seen_in)
+    }
+
+    /// A Send handle for watching the device from another thread.
+    pub fn probe(&self) -> DeviceProbe {
+        DeviceProbe { device: self.device.clone(), info_queue: self.info_queue.clone(), adapter: self.adapter.description.clone() }
     }
 
     /// Take the immediate-context lock for a block of GPU work.
@@ -123,6 +190,41 @@ impl D3d {
         let mut t = None;
         unsafe { self.device.CreateTexture2D(desc, None, Some(&mut t))? };
         t.ok_or_else(|| windows::core::Error::from(windows::Win32::Foundation::E_OUTOFMEMORY).into())
+    }
+}
+
+/// Watches one device for removal (the capture watchdog polls it every 100 ms).
+pub struct DeviceProbe {
+    device: ID3D11Device,
+    info_queue: Option<ID3D11InfoQueue>,
+    adapter: String,
+}
+
+// ID3D11Device and ID3D11InfoQueue are free-threaded.
+unsafe impl Send for DeviceProbe {}
+
+impl DeviceProbe {
+    pub fn check_lost(&self, seen_in: &str) -> bool {
+        let Err(e) = (unsafe { self.device.GetDeviceRemovedReason() }) else { return false };
+        let mut messages = Vec::new();
+        if let Some(q) = &self.info_queue {
+            unsafe {
+                for i in 0..q.GetNumStoredMessages().min(200) {
+                    let mut len = 0usize;
+                    if q.GetMessage(i, None, &mut len).is_err() || len == 0 {
+                        continue;
+                    }
+                    let mut buf = vec![0u64; len.div_ceil(8)];
+                    let m = buf.as_mut_ptr() as *mut D3D11_MESSAGE;
+                    if q.GetMessage(i, Some(m), &mut len).is_ok() && !(*m).pDescription.is_null() {
+                        let d = std::slice::from_raw_parts((*m).pDescription, (*m).DescriptionByteLength.saturating_sub(1));
+                        messages.push(format!("[sev {}] {}", (*m).Severity.0, String::from_utf8_lossy(d)));
+                    }
+                }
+            }
+        }
+        record_device_lost(DeviceLost { reason: format!("0x{:08X}", e.code().0 as u32), adapter: self.adapter.clone(), debug_layer: self.info_queue.is_some(), messages, seen_in: seen_in.into() });
+        true
     }
 }
 

@@ -32,6 +32,9 @@ pub struct ShareRequest {
     pub quality: Quality,
     pub cursor: bool,
     pub system_audio: bool,
+    /// Whose process tree the loopback leaves out: None = this process (in-process mode);
+    /// the capture helper passes the app's PID (the helper is a child of the app).
+    pub exclude_pid: Option<u32>,
 }
 
 pub struct Share {
@@ -70,6 +73,11 @@ impl Share {
 
     pub fn source_closed(&self) -> bool {
         self.video.as_ref().map(|v| v.is_closed()).unwrap_or(true)
+    }
+
+    /// The capture device was removed (the end reason is then "device-lost").
+    pub fn device_lost(&self) -> bool {
+        self.video.as_ref().map(|v| v.device_lost()).unwrap_or(false)
     }
 
     pub fn has_audio(&self) -> bool {
@@ -131,7 +139,7 @@ struct Gpu {
 
 /// Start a share. `ring`'s box must be at least the request's quality box.
 pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink>) -> crate::Result<Share> {
-    let d3d = D3d::shared()?;
+    let d3d = Arc::new(D3d::new()?);
     let adapter = d3d.adapter.clone();
     // Monitor: HDR if that monitor is. Window: FP16 whenever any monitor is HDR, with the
     // curve following the monitor the window is on (passthrough on SDR monitors).
@@ -225,7 +233,8 @@ pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink
         let ring_a = ring.clone();
         let sink_a = sink.clone();
         let stats_a = stats.clone();
-        match loopback::start_excluding_self(move |samples, frames, ts, flags| {
+        let exclude = req.exclude_pid.unwrap_or_else(std::process::id);
+        match loopback::start(loopback::Mode::ExcludeTree(exclude), move |samples, frames, ts, flags| {
             let seq = ring_a.lock().ok().and_then(|mut r| r.write_audio(samples, frames, ts, flags).ok());
             ShareStats::add(&stats_a.audio_packets, 1);
             if flags & crate::ring::AUDIO_SILENT != 0 {

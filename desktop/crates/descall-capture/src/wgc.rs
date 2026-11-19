@@ -77,6 +77,7 @@ pub struct WgcSession {
     session: ManuallyDrop<GraphicsCaptureSession>,
     pool: ManuallyDrop<Direct3D11CaptureFramePool>,
     latch: Arc<EndLatch>,
+    device_lost: Arc<std::sync::atomic::AtomicBool>,
     watchdog: Option<std::thread::JoinHandle<()>>,
     interval_100ns: Arc<AtomicI64>,
     /// Set before Close: callbacks that start after it return at once.
@@ -109,6 +110,12 @@ impl Drop for InFlight {
 impl WgcSession {
     pub fn is_closed(&self) -> bool {
         self.latch.fired()
+    }
+
+    /// The share ended because the capture device was removed (driver update, TDR, GPU
+    /// switch), not because the source went away.
+    pub fn device_lost(&self) -> bool {
+        self.device_lost.load(Ordering::Acquire)
     }
 
     pub fn set_cursor(&self, on: bool) -> bool {
@@ -334,11 +341,22 @@ where
         }
     }))?;
 
-    let mut s = WgcSession { session: ManuallyDrop::new(session), pool: ManuallyDrop::new(pool), latch: latch.clone(), watchdog: None, interval_100ns: interval, inflight, stopped: false, closed_token, frame_token, item: ManuallyDrop::new(item) };
+    let device_lost = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let mut s = WgcSession { session: ManuallyDrop::new(session), pool: ManuallyDrop::new(pool), latch: latch.clone(), device_lost: device_lost.clone(), watchdog: None, interval_100ns: interval, inflight, stopped: false, closed_token, frame_token, item: ManuallyDrop::new(item) };
     s.session.StartCapture()?;
-    // Watchdog: the shared window destroyed / the monitor gone, even if Closed never comes.
+    // Watchdog: the shared window destroyed / the monitor gone, even if Closed never comes,
+    // and the capture device removed (then the session must close before the frame pool
+    // keeps presenting on a dead device).
+    let probe = d3d.probe();
     let wd = std::thread::Builder::new().name("descall-capture-watchdog".into()).spawn(move || {
-        crate::ending::watch(&latch, crate::ending::WATCH_INTERVAL, || source_alive(target), || {
+        let alive = || {
+            if probe.check_lost("watchdog") {
+                device_lost.store(true, Ordering::Release);
+                return false;
+            }
+            source_alive(target)
+        };
+        crate::ending::watch(&latch, crate::ending::WATCH_INTERVAL, alive, || {
             let _ = catch_unwind(AssertUnwindSafe(|| on_closed()));
         }, std::thread::sleep);
     });

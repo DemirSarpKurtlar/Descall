@@ -346,6 +346,16 @@ impl RingWriter {
     }
 }
 
+/// Metadata of one video slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VideoMeta {
+    pub width: u32,
+    pub height: u32,
+    pub timestamp_us: u64,
+    pub arrival_us: u64,
+    pub written_us: u64,
+}
+
 /// A video frame copied out of the ring.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VideoFrameCopy {
@@ -413,6 +423,33 @@ impl<'a> RingReader<'a> {
             self.u32(off::AUDIO_SLOT_BYTES) as usize,
             self.u32(off::AUDIO_SLOTS) as u64,
         )
+    }
+
+    /// Borrow frame `seq` without copying: its metadata and tight NV12 payload, if the slot
+    /// holds a complete `seq` now. The bytes may be overwritten while the caller reads them;
+    /// check [`RingReader::video_still`] afterwards (seqlock) before trusting the copy.
+    pub fn video_view(&self, seq: u64) -> Option<(VideoMeta, &'a [u8])> {
+        let (vo, vb, vs, ..) = self.layout();
+        if seq == 0 || vs == 0 {
+            return None;
+        }
+        let slot = vo + ((seq % vs) as usize) * vb;
+        if self.u64(slot + off::V_SEQ_END) != seq {
+            return None;
+        }
+        let len = self.u32(slot + off::V_LEN) as usize;
+        let (width, height) = (self.u32(slot + off::V_W), self.u32(slot + off::V_H));
+        if VIDEO_SLOT_HEADER + len > vb || len != crate::presets::nv12_size(width, height) {
+            return None;
+        }
+        let meta = VideoMeta { width, height, timestamp_us: self.u64(slot + off::V_TS), arrival_us: self.u64(slot + off::V_ARRIVAL), written_us: self.u64(slot + off::V_WRITTEN) };
+        Some((meta, &self.mem[slot + VIDEO_SLOT_HEADER..slot + VIDEO_SLOT_HEADER + len]))
+    }
+
+    /// No newer write has started in `seq`'s slot (call after copying a [`video_view`]).
+    pub fn video_still(&self, seq: u64) -> bool {
+        let (vo, vb, vs, ..) = self.layout();
+        vs != 0 && self.u64(vo + ((seq % vs) as usize) * vb + off::V_SEQ_BEGIN) == seq
     }
 
     /// Copy frame `seq` out, or `None` if the slot no longer (or not yet) holds it intact.
@@ -534,6 +571,26 @@ mod tests {
             assert_eq!(r.read_video(s).unwrap().nv12, vec![(s - 1) as u8; 6]);
         }
         assert!(r.read_video(7).is_none(), "slot reused by seq 10");
+    }
+
+    #[test]
+    fn borrowed_view_and_forwarding_between_rings() {
+        // The helper-mode path: read a frame in place from one ring, write it into another.
+        let (mut a, la) = ring(4, 4);
+        let (mut b, lb) = ring(4, 4);
+        let mut wa = unsafe { RingWriter::new(a.as_mut_ptr(), a.len(), la, 48_000, 2) };
+        let mut wb = unsafe { RingWriter::new(b.as_mut_ptr(), b.len(), lb, 48_000, 2) };
+        let src: Vec<u8> = (0..24).collect();
+        let s = wa.write_nv12(4, 4, &src, 4, FrameTimes { timestamp_us: 5, arrival_us: 6, written_us: 7 }).unwrap();
+        let ra = RingReader::new(&a).unwrap();
+        let (m, payload) = ra.video_view(s).unwrap();
+        assert_eq!((m.width, m.height, m.timestamp_us, m.arrival_us), (4, 4, 5, 6));
+        let t = wb.write_nv12(m.width, m.height, payload, m.width as usize, FrameTimes { written_us: 9, ..FrameTimes::at(m.timestamp_us) }).unwrap();
+        assert!(ra.video_still(s));
+        let f = RingReader::new(&b).unwrap().read_video(t).unwrap();
+        assert_eq!((f.nv12, f.written_us, f.timestamp_us), (src, 9, 5));
+        assert!(ra.video_view(s + 1).is_none());
+        assert!(!ra.video_still(s + 3));
     }
 
     #[test]
