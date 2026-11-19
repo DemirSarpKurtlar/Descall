@@ -82,7 +82,20 @@ jobs:
           CARGO_PROFILE_RELEASE_PANIC: unwind
           CARGO_PROFILE_RELEASE_STRIP: none
           CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
-        run: cargo build --release -p descall-capture-bench
+        run: cargo build --release -p descall-capture-bench -p descall-capture
+      # D3D11 debug layer (Graphics Tools optional feature): with it the bench logs which
+      # call got a capture device removed. Optional: the run works without it.
+      - name: Install the D3D11 debug layer (Graphics Tools)
+        id: gfxtools
+        continue-on-error: true
+        timeout-minutes: 12
+        run: |
+          $cap = Get-WindowsCapability -Online -Name 'Tools.Graphics.DirectX*' | Select-Object -First 1
+          if ($cap -and $cap.State -ne 'Installed') { Add-WindowsCapability -Online -Name $cap.Name | Out-Null }
+          $ok = Test-Path (Join-Path $env:SystemRoot 'System32\d3d11_3SDKLayers.dll')
+          Write-Host "D3D11 debug layer available: $ok"
+          $flag = if ($ok) { '1' } else { '0' }
+          "debug=$flag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       # __fastfail (0xC0000409) bypasses in-process handlers; WER LocalDumps (full dump) and
       # a run under cdb (below) are the routes that still see it.
       - name: Collect crash dumps (WER LocalDumps)
@@ -111,10 +124,12 @@ jobs:
         env:
           BENCH_SECONDS: ${{ github.event.inputs.seconds || '6' }}
           RUST_BACKTRACE: "1"
+          DESCALL_D3D_DEBUG: ${{ steps.gfxtools.outputs.debug || '0' }}
         run: |
           New-Item -ItemType Directory -Force -Path bench-out | Out-Null
           Copy-Item target/release/descall-capture-bench.exe bench-out/
           Copy-Item target/release/*.pdb bench-out/ -ErrorAction SilentlyContinue
+          Copy-Item target/release/descall-capture-host.exe bench-out/ -ErrorAction SilentlyContinue
           $benchArgs = @('--ci', '--repeat', '3', '--seconds', $env:BENCH_SECONDS, '--out', 'bench-out/descall-capture-report.json')
           $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($cdb) {
