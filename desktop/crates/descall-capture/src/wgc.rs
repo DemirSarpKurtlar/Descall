@@ -14,6 +14,7 @@
 //!   callback (frames closer than 90 % of the period are dropped), switchable mid-share.
 //! - HDR: the pool is created in R16G16B16A16Float (scRGB) and hdr.rs tone-maps.
 
+use std::mem::ManuallyDrop;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -71,8 +72,10 @@ pub struct Frame<'a> {
 }
 
 pub struct WgcSession {
-    session: GraphicsCaptureSession,
-    pool: Direct3D11CaptureFramePool,
+    // ManuallyDrop: released explicitly at the end of shutdown, after every callback is out
+    // (or deliberately leaked if one never returns, rather than freed under it).
+    session: ManuallyDrop<GraphicsCaptureSession>,
+    pool: ManuallyDrop<Direct3D11CaptureFramePool>,
     latch: Arc<EndLatch>,
     watchdog: Option<std::thread::JoinHandle<()>>,
     interval_100ns: Arc<AtomicI64>,
@@ -83,7 +86,7 @@ pub struct WgcSession {
     /// Event registrations, removed before Close so no delegate stays registered.
     closed_token: i64,
     frame_token: i64,
-    _item: GraphicsCaptureItem,
+    item: ManuallyDrop<GraphicsCaptureItem>,
 }
 
 /// Counts a running callback; the session teardown waits for the count to reach zero so
@@ -120,8 +123,9 @@ impl WgcSession {
         }
     }
 
-    /// Close the session and the pool, then wait (up to 2 s) until no callback is running.
-    /// Must not be called from inside `on_frame` (it would wait for itself).
+    /// Deterministic teardown: stop the watchdog (joined), unregister both handlers, close
+    /// the session and the pool, wait until no callback is running, then release the
+    /// session, pool and item. Must not be called from inside a callback.
     pub fn stop(mut self) {
         self.shutdown();
     }
@@ -135,13 +139,28 @@ impl WgcSession {
         if let Some(w) = self.watchdog.take() {
             let _ = w.join();
         }
-        let _ = self.pool.RemoveFrameArrived(self.frame_token);
-        let _ = self._item.RemoveClosed(self.closed_token);
+        if let Err(e) = self.pool.RemoveFrameArrived(self.frame_token) {
+            log::warn!("RemoveFrameArrived failed: {e}");
+        }
+        if let Err(e) = self.item.RemoveClosed(self.closed_token) {
+            log::warn!("RemoveClosed failed: {e}");
+        }
         let _ = self.session.Close();
         let _ = self.pool.Close();
         let t0 = std::time::Instant::now();
-        while self.inflight.load(Ordering::Acquire) > 0 && t0.elapsed() < std::time::Duration::from_secs(2) {
+        while self.inflight.load(Ordering::Acquire) > 0 && t0.elapsed() < std::time::Duration::from_secs(5) {
             std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        if self.inflight.load(Ordering::Acquire) > 0 {
+            // A callback never returned: leak the WinRT objects instead of releasing them
+            // under it. Never seen in practice; the log makes it visible if it happens.
+            log::error!("capture callback still running after 5 s; leaking the session objects");
+            return;
+        }
+        unsafe {
+            ManuallyDrop::drop(&mut self.session);
+            ManuallyDrop::drop(&mut self.pool);
+            ManuallyDrop::drop(&mut self.item);
         }
     }
 }
@@ -315,7 +334,7 @@ where
         }
     }))?;
 
-    let mut s = WgcSession { session, pool, latch: latch.clone(), watchdog: None, interval_100ns: interval, inflight, stopped: false, closed_token, frame_token, _item: item };
+    let mut s = WgcSession { session: ManuallyDrop::new(session), pool: ManuallyDrop::new(pool), latch: latch.clone(), watchdog: None, interval_100ns: interval, inflight, stopped: false, closed_token, frame_token, item: ManuallyDrop::new(item) };
     s.session.StartCapture()?;
     // Watchdog: the shared window destroyed / the monitor gone, even if Closed never comes.
     let wd = std::thread::Builder::new().name("descall-capture-watchdog".into()).spawn(move || {
