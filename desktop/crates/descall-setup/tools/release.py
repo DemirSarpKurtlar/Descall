@@ -179,7 +179,7 @@ if __name__ == "__main__":
         try:
             verify(a.file, pub_from_file(a.pub), a.sig)
         except Exception as e:
-            sys.exit(f"signature check failed: {e or type(e).__name__}")
+            sys.exit(f"signature check failed: {str(e) or type(e).__name__}")
         print(f"ok: {a.file} is signed by {a.pub}")
     elif a.cmd == "manifest": manifest(a.zip, a.out, a.version, a.mirror, a.part_size, json.loads(a.notes))
     elif a.cmd == "pack": pack(a.setup, a.zip, a.manifest, a.sig, a.out)
