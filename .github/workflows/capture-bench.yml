@@ -142,8 +142,11 @@ jobs:
             ) | Set-Content -Path bench-out/cdb-commands.txt -Encoding ascii
             & $cdb.FullName -G -lines -y $sym -cf bench-out/cdb-commands.txt ./target/release/descall-capture-bench.exe @benchArgs 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
             $text = Get-Content bench-out/bench-output.txt -Raw
-            # cdb's own exit code is not the bench's: read the verdict line instead.
-            if ($text -match 'DESCALL_CRASH_STACK') { $code = 99 }
+            # cdb's own exit code is not the bench's: read the verdict line instead. The marker
+            # must be a line of its own (the .echo output): cdb also echoes the sxe commands,
+            # which contain the marker text. Only the bench process is debugged (no -o), so
+            # a helper or in-process child crash is reported by the bench, not here.
+            if ($text -match '(?m)^DESCALL_CRASH_STACK\s*$') { $code = 99 }
             elseif ($text -match 'P0 OK') { $code = 0 }
             elseif ($text -match 'P0 FAILED') { $code = 1 }
             else { $code = 98 }
@@ -198,6 +201,28 @@ jobs:
             Get-Content "bench-out/cdb-$g.txt" | Select-String -Pattern 'follow:|Last event|ExceptionCode|FAILURE_BUCKET|FAST_FAIL|descall|^\s*[0-9a-f]{2} ' | Select-Object -First 120 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           }
+          exit 0
+      # Diagnostic only (never fails the job): the in-process lane under cdb with the D3D11
+      # debug layer. The debugger prints the debug layer's messages and, if Windows' capture
+      # code takes the process down, the faulting stack: why the device goes away on this
+      # runner. Helper mode (the product) is what the main run judges.
+      - name: In-process lane under cdb (diagnostic)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          DESCALL_D3D_DEBUG: ${{ steps.gfxtools.outputs.debug || '0' }}
+        run: |
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { Write-Host "cdb.exe not found on this runner."; exit 0 }
+          $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+          & $cdb.FullName -G -lines -y $sym -cf bench-out/cdb-commands.txt ./target/release/descall-capture-bench.exe --ci --mode inproc --only video,follow --seconds 3 --out bench-out/inproc-report.json 2>&1 | Tee-Object -FilePath bench-out/cdb-inproc.txt | Out-Null
+          $lines = Get-Content bench-out/cdb-inproc.txt
+          $crashed = [bool]($lines | Select-String -Pattern '^DESCALL_CRASH_STACK\s*$' -Quiet)
+          "## In-process lane under cdb (diagnostic): crashed = $crashed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $lines | Select-String -Pattern 'D3D11 (ERROR|CORRUPTION|WARNING)|DXGI ERROR|device lost|follow:|DESCALL_CRASH_STACK|ExceptionCode|FAILURE_BUCKET|^\s*[0-9a-f]{2} [0-9a-f`]+ ' | Select-Object -First 150 | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           exit 0
       - name: Analyse crash dumps
         if: always()

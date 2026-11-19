@@ -63,24 +63,13 @@ fn start_capture(p: &Presenter, cursor: bool) -> Result<Harness, String> {
 
 pub fn run(env: &Env) -> Vec<TestResult> {
     let mut restarts = 0u64;
-    let rows = run_steps(env, &mut restarts);
-    soften(rows, env.software_gpu(), restarts)
-}
-
-/// On a software GPU the adapter can reset under load and take the capture device with it;
-/// helper mode then restarts the capture and the share goes on, but a frame count can fall
-/// short in that second. Such a FAIL is an environment limit there: SKIP with the reason.
-fn soften(rows: Vec<TestResult>, soft: bool, restarts: u64) -> Vec<TestResult> {
-    rows.into_iter()
-        .map(|r| {
-            if soft && restarts > 0 && r.status == crate::report::Status::Fail {
-                let note = format!("skipped (software GPU: capture device lost, helper restarted {restarts}x; {})", r.measured);
-                TestResult { status: crate::report::Status::Skip, note, ..r }
-            } else {
-                r
-            }
-        })
-        .collect()
+    let mut rows = run_steps(env, &mut restarts);
+    // Results are judged as measured. A capture-helper restart is reported next to them (the
+    // CI run with the D3D11 debug layer showed none in helper mode, so no FAIL is excused).
+    if restarts > 0 {
+        rows.push(TestResult::new("follow.helper_restarts", "Capture helper restarts during follow (info)", crate::report::Status::Info).measured(format!("{restarts}")).limit("0"));
+    }
+    rows
 }
 
 fn run_steps(env: &Env, restarts: &mut u64) -> Vec<TestResult> {
