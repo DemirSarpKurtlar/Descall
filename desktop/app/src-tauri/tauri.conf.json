@@ -69,7 +69,7 @@
       "pubkey": "REPLACE_WITH_MINISIGN_PUBLIC_KEY (tauri signer generate)",
       "endpoints": [
         "https://api.descall.com/api/desktop/tauri/{{target}}/{{arch}}/{{current_version}}",
-        "https://github.com/DemirSarpKurtlar/Descall/releases/latest/download/latest.json"
+        "https://github.com/DemirSarpKurtlar/Descall/releases/download/desktop-latest/latest.json"
       ],
       "windows": {
         "installMode": "passive"
