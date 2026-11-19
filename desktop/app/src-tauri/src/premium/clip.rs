@@ -4,6 +4,11 @@
 //! hardware encoder when present) into fragmented MP4, kept in memory by logic::fmp4::ClipRing.
 //! Saving cuts the ring on keyframes; nothing is re-encoded. The renderer's WebCodecs recorder
 //! stays as the fallback when this cannot start.
+//!
+//! Capture runs in the capture helper process (descall_capture::helper) whenever
+//! `descall-capture-host.exe` sits next to Descall.exe, exactly like the screen share: a GPU
+//! device loss or a crash inside Windows' capture code then ends or restarts the helper, never
+//! Descall. Encoding stays here. Without the helper (dev builds) the capture runs in-process.
 
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -41,6 +46,14 @@ pub struct Recorder {
     started: u64,
     #[cfg(windows)]
     inner: Option<win::Running>,
+}
+
+/// The capture request of a clip in helper mode: a 32:9 box at the clip height and fps; the
+/// helper fixes the output size from the first frame (presets::clip_size), the same size the
+/// in-process recorder picks.
+pub fn helper_quality(opts: &Opts) -> descall_capture::presets::Quality {
+    let (w, h) = descall_capture::presets::clip_box(opts.height.clamp(360, 1440));
+    descall_capture::presets::Quality { width: w, height: h, fps: opts.fps.clamp(10, 60), hint: descall_capture::presets::ContentHint::Motion }
 }
 
 impl Recorder {
@@ -102,7 +115,7 @@ impl Recorder {
 #[cfg(windows)]
 mod win {
     use std::mem::ManuallyDrop;
-    use std::sync::atomic::Ordering;
+    use std::sync::atomic::{AtomicU8, Ordering};
     use std::sync::{Arc, Mutex, OnceLock};
 
     use descall_capture::audio::{CHANNELS, SAMPLE_RATE};
@@ -111,6 +124,9 @@ mod win {
     use descall_capture::d3d::D3d;
     use descall_capture::hdr::{any_monitor_hdr, monitor_hdr, ToneMapper};
     use descall_capture::loopback::{self, LoopbackCapture};
+    use descall_capture::helper::{FrameSink, HelperShare, HelperSpawn, Output};
+    use descall_capture::pipeline::ShareRequest;
+    use descall_capture::ring::{Layout, VideoMeta};
     use descall_capture::wgc::{self, Options, Target, WgcSession};
     use windows::core::{implement, Interface, IUnknown, Ref, BOOL, GUID, PCWSTR};
     use windows::Win32::Foundation::E_NOTIMPL;
@@ -375,11 +391,16 @@ mod win {
     pub struct Running {
         video: Option<WgcSession>,
         audio: Option<LoopbackCapture>,
+        helper: Option<HelperShare>,
         writer: Arc<Mutex<Option<Writer>>>,
     }
 
     impl Running {
         pub fn stop(mut self) {
+            if let Some(h) = self.helper.take() {
+                h.detach_ring();
+                h.stop();
+            }
             if let Some(v) = self.video.take() {
                 v.stop();
             }
@@ -392,6 +413,88 @@ mod win {
                 }
             }
         }
+    }
+
+    // ---- helper mode ------------------------------------------------------------------------
+
+    /// The byte stream travels into capture callbacks; MF objects are free-threaded.
+    struct SendStream(IMFByteStream);
+    unsafe impl Send for SendStream {}
+
+    /// Frames from the capture helper into the encoder (same writer as the in-process lane).
+    struct ClipFrames {
+        writer: Arc<Mutex<Option<Writer>>>,
+        stream: Mutex<SendStream>,
+        stats: Arc<Stats>,
+        fps: u32,
+        /// 0 = not known yet (frames wait), 1 = with audio, 2 = video only.
+        audio: AtomicU8,
+    }
+
+    impl FrameSink for ClipFrames {
+        fn video(&self, meta: &VideoMeta, nv12: &[u8]) {
+            let want_audio = match self.audio.load(Ordering::Acquire) {
+                0 => return,
+                a => a == 1,
+            };
+            let mut w = lock(&self.writer);
+            if w.is_none() {
+                match Writer::new(&lock(&self.stream).0, meta.width, meta.height, self.fps, want_audio, &self.stats) {
+                    Ok(nw) => {
+                        self.stats.width.store(meta.width, Ordering::Relaxed);
+                        self.stats.height.store(meta.height, Ordering::Relaxed);
+                        *w = Some(nw);
+                    }
+                    Err(e) => {
+                        *lock(&self.stats.error) = Some(format!("encoder: {e}"));
+                        self.stats.dropped.fetch_add(1, Ordering::Relaxed);
+                        return;
+                    }
+                }
+            }
+            // The encoder's size is fixed; a restarted helper normally picks the same size.
+            let ok = w.as_mut().is_some_and(|w| w.w == meta.width && w.h == meta.height && w.video(nv12, meta.width as usize, meta.timestamp_us).is_ok());
+            if ok {
+                self.stats.frames.fetch_add(1, Ordering::Relaxed);
+            } else {
+                self.stats.dropped.fetch_add(1, Ordering::Relaxed);
+            }
+        }
+
+        fn audio(&self, samples: &[f32], frames: u32, timestamp_us: u64, _flags: u32) {
+            if let Some(w) = lock(&self.writer).as_mut() {
+                let _ = w.audio(samples, frames, timestamp_us);
+            }
+        }
+    }
+
+    /// The helper reports the end of the source; the recorder keeps its clip ring, as before.
+    struct ClipEnd(Arc<Stats>);
+
+    impl descall_capture::pipeline::Sink for ClipEnd {
+        fn video(&self, _seq: u64) {}
+        fn audio(&self, _seq: u64) {}
+        fn source_closed(&self) {
+            *lock(&self.0.error) = Some("source-closed".into());
+        }
+    }
+
+    fn start_helper(spawn: HelperSpawn, opts: &Opts, target: Target, ring: Arc<Mutex<ClipRing>>, stats: Arc<Stats>) -> Result<Running, String> {
+        let stream: IMFByteStream = RingStream { ring, st: Mutex::new((0, 0, 0)) }.into();
+        let writer: Arc<Mutex<Option<Writer>>> = Arc::new(Mutex::new(None));
+        let quality = super::helper_quality(opts);
+        let frames = Arc::new(ClipFrames { writer: writer.clone(), stream: Mutex::new(SendStream(stream)), stats: stats.clone(), fps: quality.fps, audio: AtomicU8::new(0) });
+        let req = ShareRequest { target, quality, cursor: true, system_audio: opts.audio, exclude_pid: None, fixed_output: true };
+        let layout = Layout::new(quality.width, quality.height);
+        let share = HelperShare::start_with(spawn, &req, layout, Output::Frames(frames.clone()), Arc::new(ClipEnd(stats.clone()))).map_err(|e| e.to_string())?;
+        // Game audio only when the helper's loopback started (an audio stream without samples
+        // would hold the fragments back); never whole-system loopback.
+        stats.audio.store(share.ready.audio, Ordering::Relaxed);
+        if let Some(e) = &share.ready.audio_error {
+            log::warn!("[premium:clip] game audio unavailable: {e}");
+        }
+        frames.audio.store(if share.ready.audio { 1 } else { 2 }, Ordering::Release);
+        Ok(Running { video: None, audio: None, helper: Some(share), writer })
     }
 
     fn even(v: u32) -> u32 {
@@ -415,11 +518,11 @@ mod win {
             }
             SourceId::Window(h) => (Target::Window(h), any_monitor_hdr(), monitor_hdr(descall_capture::sources::monitor_of_window(h)).tone_params()),
         };
+        if let Some(spawn) = descall_capture::helper::default_spawn() {
+            return start_helper(spawn, opts, target, ring, stats);
+        }
         let d3d = Arc::new(D3d::new().map_err(|e| e.to_string())?);
         let stream: IMFByteStream = RingStream { ring, st: Mutex::new((0, 0, 0)) }.into();
-        // The byte stream travels into the capture callback; MF objects are free-threaded.
-        struct SendStream(IMFByteStream);
-        unsafe impl Send for SendStream {}
         let stream = SendStream(stream);
         let writer: Arc<Mutex<Option<Writer>>> = Arc::new(Mutex::new(None));
         let (fps, max_h) = (opts.fps.clamp(10, 60), opts.height.clamp(360, 1440));
@@ -518,6 +621,29 @@ mod win {
                 return Err(e.to_string());
             }
         };
-        Ok(Running { video: Some(video), audio, writer })
+        Ok(Running { video: Some(video), audio, helper: None, writer })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn opts(height: u32, fps: u32) -> Opts {
+        Opts { source_id: "screen:0:0".into(), window_sec: 30, height, fps, audio: true }
+    }
+
+    #[test]
+    fn helper_capture_matches_the_in_process_clip_size() {
+        // The in-process recorder: oh = even(min(height, src_h)), ow from the aspect.
+        let q = helper_quality(&opts(1080, 60));
+        assert_eq!((q.width, q.height, q.fps), (3840, 1080, 60));
+        assert_eq!(descall_capture::presets::clip_size(2560, 1440, q.width, q.height), (1920, 1080));
+        assert_eq!(descall_capture::presets::clip_size(1280, 720, q.width, q.height), (1280, 720));
+        // Same clamps as before: height 360..1440, fps 10..60.
+        let q = helper_quality(&opts(4000, 500));
+        assert_eq!((q.height, q.fps), (1440, 60));
+        let q = helper_quality(&opts(100, 1));
+        assert_eq!((q.height, q.fps), (360, 10));
     }
 }

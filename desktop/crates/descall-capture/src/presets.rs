@@ -99,6 +99,27 @@ pub fn fit_box(src_w: u32, src_h: u32, box_w: u32, box_h: u32) -> (u32, u32) {
     (even(src_w as f64 * scale), even(src_h as f64 * scale))
 }
 
+/// Fixed output size of a clip recording (the encoder cannot change size mid-stream): the
+/// first frame's aspect at `max_h` lines (never upscaled), even sizes, and never wider than
+/// `max_w` (super-wide windows are scaled to fit). Later frames are scaled to this size.
+pub fn clip_size(src_w: u32, src_h: u32, max_w: u32, max_h: u32) -> (u32, u32) {
+    let even = |v: u64| ((v / 2 * 2).max(2)) as u32;
+    let (sw, sh) = (src_w.max(1) as u64, src_h.max(1) as u64);
+    let oh = even((max_h as u64).min(sh));
+    let ow = even(sw * oh as u64 / sh);
+    if ow <= max_w.max(2) {
+        return (ow, oh);
+    }
+    let ow = even(max_w as u64);
+    (ow, even(sh * ow as u64 / sw))
+}
+
+/// The ring box of a clip recording at `max_h` lines: room for up to 32:9.
+pub fn clip_box(max_h: u32) -> (u32, u32) {
+    let h = max_h.clamp(2, MAX_BOX.1) & !1;
+    ((h as u64 * 32 / 9) as u32 & !1, h)
+}
+
 /// NV12 bytes per frame.
 pub const fn nv12_size(w: u32, h: u32) -> usize {
     (w as usize) * (h as usize) * 3 / 2
@@ -160,6 +181,20 @@ mod tests {
         let q = clamp_request(Some(1440), Some(2560), Some(60), ContentHint::Motion);
         assert!(q.width as u64 * q.height as u64 <= 2560 * 1440, "{q:?}");
         assert!(q.width % 2 == 0 && q.height % 2 == 0);
+    }
+
+    #[test]
+    fn clip_size_is_fixed_by_aspect_and_height() {
+        // The instant-clip formula: height capped, width from the aspect, even sizes.
+        assert_eq!(clip_size(2560, 1440, 3840, 1080), (1920, 1080));
+        assert_eq!(clip_size(1280, 720, 3840, 1080), (1280, 720), "never upscaled");
+        assert_eq!(clip_size(1001, 601, 3840, 1080), (998, 600)); // 1001 * 600 / 601 = 999 -> even
+        assert_eq!(clip_size(5120, 1440, 3840, 1080), (3840, 1080));
+        // Wider than the box: fit the width instead.
+        assert_eq!(clip_size(7680, 1080, 3840, 1080), (3840, 540));
+        assert_eq!(clip_size(0, 0, 3840, 1080), (2, 2));
+        assert_eq!(clip_box(1080), (3840, 1080));
+        assert_eq!(clip_box(1441), (5120, 1440));
     }
 
     #[test]

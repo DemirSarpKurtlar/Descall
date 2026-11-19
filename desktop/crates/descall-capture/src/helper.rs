@@ -31,7 +31,7 @@ use crate::bridge::UpdateRequest;
 pub use crate::helper_proto::HOST_ARG;
 use crate::helper_proto::{end_reason_after_exit, Command, DeviceLost, Event, HelperJob, HelperReady, RestartPolicy, EXIT_DEVICE_LOST};
 use crate::pipeline::{self, ShareRequest};
-use crate::ring::{FrameTimes, Layout, RingReader, RingWriter};
+use crate::ring::{FrameTimes, Layout, RingReader, RingWriter, VideoMeta};
 use crate::stats::StatsSnapshot;
 use crate::wgc::Target;
 
@@ -124,6 +124,21 @@ fn job() -> Option<HANDLE> {
 
 /* ---------------------------------------------------------------- app side */
 
+/// A consumer of the helper's frames other than a page ring (the instant clip encoder).
+/// Called on the forwarder thread, one frame or packet at a time.
+pub trait FrameSink: Send + Sync + 'static {
+    /// Tight NV12 (`meta.width` x `meta.height`), timestamps on the QPC clock.
+    fn video(&self, meta: &VideoMeta, nv12: &[u8]);
+    /// Interleaved f32, 48 kHz stereo, QPC-clock timestamp.
+    fn audio(&self, samples: &[f32], frames: u32, timestamp_us: u64, flags: u32);
+}
+
+/// Where the helper's frames go in the app.
+pub enum Output {
+    Ring(Arc<Mutex<RingWriter>>),
+    Frames(Arc<dyn FrameSink>),
+}
+
 enum Msg {
     Ev(Event),
     Eof,
@@ -138,7 +153,10 @@ struct Inner {
     spawn: HelperSpawn,
     job: HelperJob,
     mapping: Mapping,
-    target: Arc<Mutex<RingWriter>>,
+    output: Output,
+    /// Set by detach: nothing is delivered any more.
+    detached: AtomicBool,
+    scratch: Mutex<Vec<u8>>,
     sink: Arc<dyn pipeline::Sink>,
     stdin: Mutex<Option<ChildStdin>>,
     child_pid: AtomicU64,
@@ -217,26 +235,51 @@ impl Inner {
     }
 
     fn forward_video(&self, seq: u64) {
+        if self.detached.load(Ordering::Acquire) {
+            return;
+        }
         let Some(r) = RingReader::new(self.mapping.bytes()) else { return };
         let Some((m, payload)) = r.video_view(seq) else { return };
-        let written = crate::clock::now_us();
-        let t = FrameTimes { timestamp_us: m.timestamp_us, arrival_us: m.arrival_us, written_us: written };
-        let out = self.target.lock().ok().and_then(|mut w| w.write_nv12(m.width, m.height, payload, m.width as usize, t).ok());
-        // Seqlock: drop the announcement if the helper started rewriting that slot meanwhile
-        // (the next frame replaces it in the page's ring).
-        if let (Some(s), true) = (out, r.video_still(seq)) {
-            self.sink.video(s);
+        match &self.output {
+            Output::Ring(target) => {
+                let written = crate::clock::now_us();
+                let t = FrameTimes { timestamp_us: m.timestamp_us, arrival_us: m.arrival_us, written_us: written };
+                let out = target.lock().ok().and_then(|mut w| w.write_nv12(m.width, m.height, payload, m.width as usize, t).ok());
+                // Seqlock: drop the announcement if the helper started rewriting that slot
+                // meanwhile (the next frame replaces it in the page's ring).
+                if let (Some(s), true) = (out, r.video_still(seq)) {
+                    self.sink.video(s);
+                }
+            }
+            Output::Frames(fs) => {
+                // Copy out first, check the seqlock, then hand over: a consumer such as an
+                // encoder must never see a torn frame.
+                let Ok(mut buf) = self.scratch.lock() else { return };
+                buf.clear();
+                buf.extend_from_slice(payload);
+                if r.video_still(seq) {
+                    fs.video(&m, &buf);
+                }
+            }
         }
     }
 
     fn forward_audio(&self, last: &mut u64) {
+        if self.detached.load(Ordering::Acquire) {
+            return;
+        }
         let Some(r) = RingReader::new(self.mapping.bytes()) else { return };
         let (pkts, new_last) = r.read_audio_since(*last);
         *last = new_last;
         for p in pkts {
-            let s = self.target.lock().ok().and_then(|mut w| w.write_audio(&p.samples, p.frames, p.timestamp_us, p.flags).ok());
-            if let Some(s) = s {
-                self.sink.audio(s);
+            match &self.output {
+                Output::Ring(target) => {
+                    let s = target.lock().ok().and_then(|mut w| w.write_audio(&p.samples, p.frames, p.timestamp_us, p.flags).ok());
+                    if let Some(s) = s {
+                        self.sink.audio(s);
+                    }
+                }
+                Output::Frames(fs) => fs.audio(&p.samples, p.frames, p.timestamp_us, p.flags),
             }
         }
     }
@@ -332,8 +375,14 @@ pub struct HelperShare {
 }
 
 impl HelperShare {
-    /// `target` is the page's ring (the WebView2 shared buffer).
+    /// Screen share: frames go into `target`, the page's ring (the WebView2 shared buffer).
     pub fn start(spawn: HelperSpawn, req: &ShareRequest, layout: Layout, target: Arc<Mutex<RingWriter>>, sink: Arc<dyn pipeline::Sink>) -> crate::Result<HelperShare> {
+        Self::start_with(spawn, req, layout, Output::Ring(target), sink)
+    }
+
+    /// Any consumer: `Output::Frames` hands each frame and packet to a [`FrameSink`] (the
+    /// Descall+ instant clip encoder). `sink.source_closed()` still reports the end.
+    pub fn start_with(spawn: HelperSpawn, req: &ShareRequest, layout: Layout, output: Output, sink: Arc<dyn pipeline::Sink>) -> crate::Result<HelperShare> {
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let name = format!("Local\\DescallCapture-{}-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed), crate::clock::qpc());
         let mapping = Mapping::create(&name, layout.total)?;
@@ -352,12 +401,15 @@ impl HelperShare {
             cursor: req.cursor,
             audio: req.system_audio,
             exclude_pid: std::process::id(),
+            fixed_output: req.fixed_output,
         };
         let inner = Arc::new(Inner {
             spawn,
             job,
             mapping,
-            target,
+            output,
+            detached: AtomicBool::new(false),
+            scratch: Mutex::new(Vec::new()),
             sink,
             stdin: Mutex::new(None),
             child_pid: AtomicU64::new(0),
@@ -375,8 +427,11 @@ impl HelperShare {
     }
 
     pub fn detach_ring(&self) {
-        if let Ok(mut r) = self.inner.target.lock() {
-            r.detach();
+        self.inner.detached.store(true, Ordering::Release);
+        if let Output::Ring(target) = &self.inner.output {
+            if let Ok(mut r) = target.lock() {
+                r.detach();
+            }
         }
     }
 
@@ -511,7 +566,7 @@ pub fn host_main() -> i32 {
     };
     let ring = Arc::new(Mutex::new(unsafe { RingWriter::new(mapping.base(), job.bytes, layout, crate::audio::SAMPLE_RATE, crate::audio::CHANNELS as u32) }));
     let target = if job.target_kind == "monitor" { Target::Monitor(job.handle) } else { Target::Window(job.handle) };
-    let req = ShareRequest { target, quality: job.quality, cursor: job.cursor, system_audio: job.audio, exclude_pid: Some(job.exclude_pid) };
+    let req = ShareRequest { target, quality: job.quality, cursor: job.cursor, system_audio: job.audio, exclude_pid: Some(job.exclude_pid), fixed_output: job.fixed_output };
     let sink = Arc::new(HelperSink { tx: Mutex::new(tx.clone()) });
     let share = match pipeline::start(req, ring, sink) {
         Ok(s) => s,

@@ -246,7 +246,7 @@ impl ShareHost {
             log::warn!("echo guard: WebView2 audio outside our process tree: {:?}", echo.as_ref().map(|a| &a.webview_outside_tree));
         }
         let psink = Arc::new(PipelineSink { id: plan.id, sink: sink.clone(), slot: self.active.clone() });
-        let req = ShareRequest { target: plan.target, quality: plan.quality, cursor: plan.cursor, system_audio: plan.audio, exclude_pid: None };
+        let req = ShareRequest { target: plan.target, quality: plan.quality, cursor: plan.cursor, system_audio: plan.audio, exclude_pid: None, fixed_output: false };
         let started = match &self.mode {
             CaptureMode::InProcess => pipeline::start(req, ring.clone(), psink).map(Running::InProcess),
             CaptureMode::Helper(spawn) => HelperShare::start(spawn.clone(), &req, plan.layout, ring.clone(), psink).map(Running::Helper),

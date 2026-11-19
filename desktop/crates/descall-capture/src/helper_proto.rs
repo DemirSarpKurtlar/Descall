@@ -57,6 +57,9 @@ pub struct HelperJob {
     pub audio: bool,
     /// The app's PID: loopback excludes the app's whole process tree (the helper is in it).
     pub exclude_pid: u32,
+    /// Clip recording: fixed output size (pipeline::ShareRequest::fixed_output).
+    #[serde(default)]
+    pub fixed_output: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -202,7 +205,7 @@ mod tests {
     use crate::presets::preset;
 
     fn job() -> HelperJob {
-        HelperJob { mapping: "Local\\DescallCapture-1-2".into(), bytes: 1234, max_w: 1920, max_h: 1080, target_kind: "window".into(), handle: -77, quality: preset("hfr1080"), cursor: true, audio: false, exclude_pid: 4242 }
+        HelperJob { mapping: "Local\\DescallCapture-1-2".into(), bytes: 1234, max_w: 1920, max_h: 1080, target_kind: "window".into(), handle: -77, quality: preset("hfr1080"), cursor: true, audio: false, exclude_pid: 4242, fixed_output: true }
     }
 
     #[test]
@@ -211,6 +214,9 @@ mod tests {
             assert_eq!(Command::parse(&format!("{}\r\n", c.line())), Some(c.clone()), "{}", c.line());
         }
         assert_eq!(Command::parse("start {not json"), None);
+        // Jobs from an older app (no fixedOutput) still parse.
+        let old = Command::Start(Box::new(job())).line().replace(",\"fixedOutput\":true", "");
+        assert!(matches!(Command::parse(&old), Some(Command::Start(j)) if !j.fixed_output));
         assert_eq!(Command::parse("jump"), None);
     }
 

@@ -11,7 +11,7 @@ use crate::convert::{Converter, OutFormat};
 use crate::d3d::D3d;
 use crate::hdr::{monitor_hdr, ToneMapper};
 use crate::loopback::{self, LoopbackCapture};
-use crate::presets::{clamp_request, fit, Quality};
+use crate::presets::{clamp_request, clip_size, fit, Quality};
 use crate::ring::{FrameTimes, RingWriter, FLAG_AUDIO, FLAG_CURSOR, FLAG_HDR};
 use crate::stats::{looks_black, ShareStats, StatsSnapshot};
 use crate::tonemap::ToneParams;
@@ -35,6 +35,9 @@ pub struct ShareRequest {
     /// Whose process tree the loopback leaves out: None = this process (in-process mode);
     /// the capture helper passes the app's PID (the helper is a child of the app).
     pub exclude_pid: Option<u32>,
+    /// Clip recording: the output size is fixed by the first frame (presets::clip_size within
+    /// the quality box) and every later frame is scaled to it. Screen share: false (fit).
+    pub fixed_output: bool,
 }
 
 pub struct Share {
@@ -135,6 +138,7 @@ struct Gpu {
     tone: Option<ToneMapper>,
     tone_params: ToneParams,
     tone_checked: Instant,
+    fixed: Option<(u32, u32)>,
 }
 
 /// Start a share. `ring`'s box must be at least the request's quality box.
@@ -154,13 +158,14 @@ pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink
     let quality = Arc::new(Mutex::new(req.quality));
     let (box_w, box_h) = ring.lock().map(|r| (r.layout().max_w, r.layout().max_h)).unwrap_or((req.quality.width, req.quality.height));
 
-    let gpu = Mutex::new(Gpu { conv: None, tone: None, tone_params: initial_params, tone_checked: Instant::now() });
+    let gpu = Mutex::new(Gpu { conv: None, tone: None, tone_params: initial_params, tone_checked: Instant::now(), fixed: None });
     let ring_v = ring.clone();
     let sink_v = sink.clone();
     let stats_v = stats.clone();
     let quality_v = quality.clone();
     let d3d_cb = d3d.clone();
     let target = req.target;
+    let fixed_output = req.fixed_output;
     let on_frame = move |frame: wgc::Frame<'_>| {
         let Ok(mut g) = gpu.lock() else { return };
         let g = &mut *g;
@@ -169,7 +174,7 @@ pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink
         let gpu_lock = d3d_cb.lock();
         let q = quality_v.lock().map(|q| *q).unwrap_or(req.quality);
         let qb = Quality { width: q.width.min(box_w), height: q.height.min(box_h), ..q };
-        let (ow, oh) = fit(frame.width, frame.height, &qb);
+        let (ow, oh) = if fixed_output { *g.fixed.get_or_insert_with(|| clip_size(frame.width, frame.height, qb.width, qb.height)) } else { fit(frame.width, frame.height, &qb) };
         let rebuild = g.conv.as_ref().map(|c| c.in_w != frame.width || c.in_h != frame.height || c.out_w != ow || c.out_h != oh).unwrap_or(true);
         if rebuild {
             g.conv = Converter::new(&d3d_cb, frame.width, frame.height, ow, oh, q.fps, OutFormat::Nv12).ok();
