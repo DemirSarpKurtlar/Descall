@@ -38,6 +38,10 @@ jobs:
         run: cargo test
       - name: electronAPI shim parity (+ native screen-share commands registered)
         run: node app/shim/electron-api-shim.test.mjs
+      - name: Release helpers (key checks, Tauri updater signature, setup manifest signing)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/py" && "$RUNNER_TEMP/py/bin/pip" install --quiet cryptography
+          "$RUNNER_TEMP/py/bin/python" -m unittest discover -s tools/publish
       - name: cargo check --workspace (x86_64-pc-windows-gnu)
         run: |
           # tauri::generate_context! embeds frontend/dist; a placeholder is enough to type-check.

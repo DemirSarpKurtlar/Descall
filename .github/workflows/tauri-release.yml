@@ -1,0 +1,419 @@
+# Descall desktop on Rust / Tauri 2: signed release.
+#
+# Publishes to its OWN prerelease `desktop-vX.Y.Z`, never to the Electron release `vX.Y.Z`:
+#  - release.yml refuses to run when `vX.Y.Z` already exists, so touching that tag first would
+#    break the next Electron release; and its asset list is what electron-updater reads.
+#  - A prerelease is never "latest", so electron-updater's GitHub fallback (allowPrerelease
+#    false, /releases/latest) and the download page keep pointing at the Electron release.
+#  - Tauri and Electron versions can differ (the 3.10.x bridge ships next to Tauri 4.x).
+# Stable URLs live on a second prerelease, `desktop-latest` (the channel): latest.json (Tauri
+# updater fallback in tauri.conf.json) and manifest.json + .minisig (DescallSetup.exe's default
+# manifest URL in this build). `promote: false` publishes without moving the channel.
+#
+# Signing keys come only from GitHub secrets; public keys are desktop/keys/*.pub. A part whose
+# secret or public key is missing is skipped with the reason in the job summary; a secret that
+# does not match its public key fails the run before the long build. docs/desktop/anahtarlar.md
+#   DESCALL_SETUP_SIGNING_KEY                                setup manifest (Ed25519, minisign format)
+#   TAURI_SIGNING_PRIVATE_KEY (+ TAURI_SIGNING_PRIVATE_KEY_PASSWORD)   updater bundle + latest.json
+#   WIN_CSC_LINK + WIN_CSC_KEY_PASSWORD (optional)           Authenticode, same secrets as Electron
+name: Desktop (Tauri) release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, e.g. 4.0.1 (must equal tauri.conf.json, the app and descall-setup Cargo.toml)"
+        required: true
+      notes:
+        description: "Short release notes (updater dialog, setup manifest, release body). Empty = docs/release-notes/desktop-vX.Y.Z.md or a default line"
+        required: false
+        default: ""
+      extra_mirror:
+        description: "Extra setup download mirror, tried with GitHub: https://cdn.example.com/desktop/{version}/=Istanbul,tr:İstanbul"
+        required: false
+        default: ""
+      setup_manifest_url:
+        description: "Manifest URL compiled into DescallSetup.exe. Empty = this repo's desktop-latest/manifest.json"
+        required: false
+        default: ""
+      promote:
+        description: "Move the desktop-latest channel (latest.json, setup manifest) to this version"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tauri-release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Version, keys and secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      setup: ${{ steps.parts.outputs.setup }}
+      updater: ${{ steps.parts.outputs.updater }}
+      authenticode: ${{ steps.parts.outputs.authenticode }}
+      setup_pub: ${{ steps.parts.outputs.setup_pub }}
+      updater_pub: ${{ steps.parts.outputs.updater_pub }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version and tag
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          v="${INPUT_VERSION#desktop-v}"; v="${v#v}"
+          if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$INPUT_VERSION' is not a version like 4.0.1"; exit 1
+          fi
+          conf="$(jq -r .version desktop/app/src-tauri/tauri.conf.json)"
+          app="$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/app/src-tauri/Cargo.toml | head -1)"
+          setup="$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/crates/descall-setup/Cargo.toml | head -1)"
+          bad=0
+          for pair in "desktop/app/src-tauri/tauri.conf.json=$conf" "desktop/app/src-tauri/Cargo.toml=$app" "desktop/crates/descall-setup/Cargo.toml=$setup"; do
+            if [ "${pair#*=}" != "$v" ]; then echo "::error file=${pair%%=*}::version is ${pair#*=}, the release asks for $v. Bump it first."; bad=1; fi
+          done
+          [ "$bad" = 0 ] || exit 1
+          tag="desktop-v$v"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::Release $tag already exists. Refusing to overwrite it; delete it first or bump the version."; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Release helper tests
+        run: |
+          python -m pip install --quiet cryptography
+          python -m unittest discover -s desktop/tools/publish
+
+      - name: Which parts can be signed
+        id: parts
+        env:
+          SETUP_KEY: ${{ secrets.DESCALL_SETUP_SIGNING_KEY }}
+          UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+        run: |
+          set -uo pipefail
+          tool=desktop/tools/publish/desktop_release.py
+          summary() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          summary "## Desktop (Tauri) release ${{ steps.version.outputs.tag }}"
+          summary ""
+          summary "| Part | Status |"
+          summary "|---|---|"
+
+          setup_pub="$(python "$tool" key-status setup desktop/keys/setup-manifest.pub 2>/tmp/setup.err)"; setup_pub_ok=$?
+          if [ -z "${SETUP_KEY// }" ]; then
+            setup=false; why="secret DESCALL_SETUP_SIGNING_KEY is not set"
+          elif [ "$setup_pub_ok" != 0 ]; then
+            setup=false; why="$(cat /tmp/setup.err) (the secret is set, but the public key is not committed)"
+          else
+            setup=true; why="manifest signed with DESCALL_SETUP_SIGNING_KEY"
+          fi
+          if [ "$setup" = true ]; then summary "| Setup (DescallSetup.exe, manifest, payload) | signed: $why |"; else
+            echo "::warning title=Setup skipped::$why. DescallSetup.exe, its manifest and payload are not published (see docs/desktop/anahtarlar.md)."
+            summary "| Setup (DescallSetup.exe, manifest, payload) | **skipped**: $why |"; setup_pub=""; fi
+
+          updater_pub="$(python "$tool" key-status updater desktop/keys/tauri-updater.pub 2>/tmp/updater.err)"; updater_pub_ok=$?
+          if [ -z "${UPDATER_KEY// }" ]; then
+            updater=false; why="secret TAURI_SIGNING_PRIVATE_KEY is not set"
+          elif [ "$updater_pub_ok" != 0 ]; then
+            updater=false; why="$(cat /tmp/updater.err) (the secret is set, but the public key is not committed)"
+          else
+            updater=true; why="signed with TAURI_SIGNING_PRIVATE_KEY"
+          fi
+          if [ "$updater" = true ]; then summary "| Updater bundle + latest.json | signed: $why |"; else
+            echo "::warning title=Updater skipped::$why. No .sig and no latest.json: installed apps will not see this version (see docs/desktop/anahtarlar.md)."
+            summary "| Updater bundle + latest.json | **skipped**: $why |"; updater_pub=""; fi
+
+          if [ -n "${CSC_LINK// }" ]; then
+            authenticode=true; summary "| Authenticode | WIN_CSC_LINK present (checked on Windows) |"
+          else
+            authenticode=false
+            echo "::warning title=Unsigned executables::secret WIN_CSC_LINK is not set. Executables are not Authenticode-signed (SmartScreen: unknown publisher)."
+            summary "| Authenticode | **skipped**: secret WIN_CSC_LINK is not set (executables unsigned) |"
+          fi
+          {
+            echo "setup=$setup"; echo "updater=$updater"; echo "authenticode=$authenticode"
+            echo "setup_pub=$setup_pub"; echo "updater_pub=$updater_pub"
+          } >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Build and sign (windows-latest)
+    needs: preflight
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      TAG: ${{ needs.preflight.outputs.tag }}
+      DO_SETUP: ${{ needs.preflight.outputs.setup }}
+      DO_UPDATER: ${{ needs.preflight.outputs.updater }}
+      DO_SIGN: ${{ needs.preflight.outputs.authenticode }}
+      SETUP_PUB: ${{ needs.preflight.outputs.setup_pub }}
+      UPDATER_PUB: ${{ needs.preflight.outputs.updater_pub }}
+      REL: desktop/target/x86_64-pc-windows-msvc/release
+      OUT: dist-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-msvc }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: desktop }
+      - name: Python for the release tools
+        run: python -m pip install --quiet cryptography
+
+      # Fail fast (before a 30-minute build) when a secret does not belong to its public key.
+      - name: Signing keys match the committed public keys
+        if: env.DO_SETUP == 'true' || env.DO_UPDATER == 'true'
+        shell: pwsh
+        env:
+          DESCALL_SETUP_SIGNING_KEY: ${{ secrets.DESCALL_SETUP_SIGNING_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'key-probe.json'
+          Set-Content -LiteralPath $probe -Value '{"probe":true}' -NoNewline
+          if ($env:DO_SETUP -eq 'true') {
+            python desktop/crates/descall-setup/tools/release.py sign $probe --key env:DESCALL_SETUP_SIGNING_KEY
+            if ($LASTEXITCODE -ne 0) { throw "DESCALL_SETUP_SIGNING_KEY could not be read (format: docs/desktop/anahtarlar.md)" }
+            python desktop/crates/descall-setup/tools/release.py verify $probe --pub desktop/keys/setup-manifest.pub
+            if ($LASTEXITCODE -ne 0) { throw "DESCALL_SETUP_SIGNING_KEY does not belong to desktop/keys/setup-manifest.pub. Put the matching public key in the repo or the matching private key in the secret." }
+          }
+          if ($env:DO_UPDATER -eq 'true') {
+            npx --yes @tauri-apps/cli@2 signer sign $probe
+            if ($LASTEXITCODE -ne 0) { throw "TAURI_SIGNING_PRIVATE_KEY could not sign (wrong TAURI_SIGNING_PRIVATE_KEY_PASSWORD?)" }
+            python desktop/tools/publish/desktop_release.py verify-updater $probe "$probe.sig" desktop/keys/tauri-updater.pub
+            if ($LASTEXITCODE -ne 0) { throw "TAURI_SIGNING_PRIVATE_KEY does not belong to desktop/keys/tauri-updater.pub. Installed apps would refuse this update." }
+          }
+          Remove-Item -Force -ErrorAction SilentlyContinue $probe, "$probe.sig", "$probe.minisig"
+
+      - name: Authenticode certificate
+        if: env.DO_SIGN == 'true'
+        shell: pwsh
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'descall-sign.pfx'
+          try { [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WIN_CSC_LINK.Trim())) }
+          catch { throw "WIN_CSC_LINK is set but is not a base64-encoded .pfx (the same value electron-builder takes in release.yml)." }
+          try { $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($pfx, $env:WIN_CSC_KEY_PASSWORD) }
+          catch { Remove-Item -Force $pfx; throw "The WIN_CSC_LINK certificate does not open with WIN_CSC_KEY_PASSWORD." }
+          if (-not $cert.HasPrivateKey) { Remove-Item -Force $pfx; throw "The WIN_CSC_LINK certificate has no private key." }
+          Write-Host "Authenticode: $($cert.Subject), valid until $($cert.NotAfter.ToString('yyyy-MM-dd'))"
+          "DESCALL_SIGN_PFX=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Web build (same gate and flags as the Electron release)
+        working-directory: frontend
+        shell: pwsh
+        env:
+          ELECTRON_BUILD: "1"
+        run: |
+          $crlf = (git ls-files --eol index.html) -match 'w/crlf'
+          if ($crlf) { throw "frontend/index.html was checked out with CRLF (check .gitattributes)" }
+          npm ci
+          if ($LASTEXITCODE -ne 0) { throw "npm ci failed with $LASTEXITCODE" }
+          npm run build:prod
+          if ($LASTEXITCODE -ne 0) { throw "build:prod failed with $LASTEXITCODE" }
+
+      - name: cargo test (Windows)
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          cargo test
+          if ($LASTEXITCODE -ne 0) { throw "cargo test failed" }
+          cargo test -p descall-desktop
+          if ($LASTEXITCODE -ne 0) { throw "cargo test -p descall-desktop failed" }
+
+      - name: Tauri build (Descall.exe + NSIS setup, updater signature when enabled)
+        working-directory: desktop/app/src-tauri
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          DESCALL_SIGN_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          $conf = @{ bundle = @{ createUpdaterArtifacts = ($env:DO_UPDATER -eq 'true') } }
+          if ($env:DO_UPDATER -eq 'true') {
+            $conf.plugins = @{ updater = @{ pubkey = $env:UPDATER_PUB } }
+          } else {
+            Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY, Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
+            Write-Host "Updater signing skipped: the app is built with the placeholder pubkey and keeps its updater off."
+          }
+          if ($env:DESCALL_SIGN_PFX) {
+            $sign = (Resolve-Path ../../tools/publish/sign.ps1).Path
+            $conf.bundle.windows = @{ signCommand = @{ cmd = 'pwsh'; args = @('-NoProfile', '-File', $sign, '%1') } }
+          }
+          $path = Join-Path $env:RUNNER_TEMP 'tauri-release.conf.json'
+          $conf | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $path -Encoding utf8
+          Get-Content $path
+          npx --yes @tauri-apps/cli@2 build --target x86_64-pc-windows-msvc --bundles nsis --config $path
+          if ($LASTEXITCODE -ne 0) { throw "tauri build failed with $LASTEXITCODE" }
+
+      - name: Migrator and setup bootstrapper
+        working-directory: desktop
+        shell: pwsh
+        env:
+          DESCALL_SIGN_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          MANIFEST_URL_INPUT: ${{ inputs.setup_manifest_url }}
+        run: |
+          cargo build --release --target x86_64-pc-windows-msvc -p descall-migrator
+          if ($LASTEXITCODE -ne 0) { throw "migrator build failed" }
+          if ($env:DESCALL_SIGN_PFX) { pwsh -NoProfile -File tools/publish/sign.ps1 "../$env:REL/DescallMigrator.exe"; if ($LASTEXITCODE -ne 0) { throw "signing the migrator failed" } }
+          if ($env:DO_SETUP -ne 'true') { Write-Host "Setup skipped (no manifest key): DescallSetup.exe would refuse to install."; exit 0 }
+          # The setup refuses to install without a compiled-in manifest key (descall-setup manifest.rs).
+          $env:DESCALL_SETUP_PUBKEY = $env:SETUP_PUB
+          $url = $env:MANIFEST_URL_INPUT.Trim()
+          if (-not $url) { $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/desktop-latest/manifest.json" }
+          if (-not $url.StartsWith('https://')) { throw "setup_manifest_url must be https" }
+          $env:DESCALL_SETUP_MANIFEST_URL = $url
+          Write-Host "DescallSetup.exe reads its manifest from $url"
+          cargo build --release --target x86_64-pc-windows-msvc -p descall-setup
+          if ($LASTEXITCODE -ne 0) { throw "setup build failed" }
+          if ($env:DESCALL_SIGN_PFX) { pwsh -NoProfile -File tools/publish/sign.ps1 "../$env:REL/DescallSetup.exe"; if ($LASTEXITCODE -ne 0) { throw "signing the setup failed" } }
+
+      - name: Assemble release assets
+        shell: pwsh
+        env:
+          DESCALL_SETUP_SIGNING_KEY: ${{ secrets.DESCALL_SETUP_SIGNING_KEY }}
+          DESCALL_SIGN_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          NOTES_INPUT: ${{ inputs.notes }}
+          EXTRA_MIRROR: ${{ inputs.extra_mirror }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = New-Item -ItemType Directory -Force -Path $env:OUT
+          $base = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:TAG/"
+          $notes = $env:NOTES_INPUT.Trim()
+          if (-not $notes -and (Test-Path "docs/release-notes/$env:TAG.md")) { $notes = (Get-Content -Raw "docs/release-notes/$env:TAG.md").Trim() }
+          if (-not $notes) { $notes = "Descall $env:VERSION" }
+          function Check($what) { if ($LASTEXITCODE -ne 0) { throw "$what failed with $LASTEXITCODE" } }
+
+          # App installer (NSIS) and its updater signature. Names never collide with Electron's.
+          $nsis = Get-ChildItem -Recurse -Filter "*_x64-setup.exe" "$env:REL/bundle/nsis" | Select-Object -First 1
+          if (-not $nsis) { throw "no NSIS setup was produced" }
+          $setupName = "Descall-Desktop-$env:VERSION-x64-setup.exe"
+          Copy-Item $nsis.FullName (Join-Path $out $setupName)
+          Copy-Item "$env:REL/DescallMigrator.exe" (Join-Path $out "DescallMigrator-$env:VERSION.exe")
+          if ($env:DO_UPDATER -eq 'true') {
+            $sig = "$($nsis.FullName).sig"
+            if (-not (Test-Path $sig)) { throw "createUpdaterArtifacts was on but no .sig was written" }
+            Copy-Item $sig (Join-Path $out "$setupName.sig")
+            python desktop/tools/publish/desktop_release.py verify-updater (Join-Path $out $setupName) (Join-Path $out "$setupName.sig") desktop/keys/tauri-updater.pub; Check "updater signature check"
+            python desktop/tools/publish/desktop_release.py latest-json (Join-Path $out 'latest.json') --version $env:VERSION --url "$base$setupName" --sig (Join-Path $out "$setupName.sig") --notes $notes; Check "latest.json"
+          }
+
+          # Setup: payload zip, signed manifest (per-part SHA-256), web and offline DescallSetup.
+          if ($env:DO_SETUP -eq 'true') {
+            $tool = 'desktop/crates/descall-setup/tools/release.py'
+            $zip = Join-Path $out "Descall-$env:VERSION-x64.zip"
+            # uninstall.exe: the signed setup itself (layout.rs), so Apps & features shows a signed uninstaller.
+            python desktop/tools/publish/desktop_release.py payload $zip "$env:REL/Descall.exe=Descall.exe" "$env:REL/DescallSetup.exe=uninstall.exe"; Check "payload"
+            $mirrors = @('--mirror', "$base=GitHub")
+            if ($env:EXTRA_MIRROR.Trim()) { $mirrors = @('--mirror', $env:EXTRA_MIRROR.Trim().Replace('{version}', $env:VERSION)) + $mirrors }
+            $notesJson = ConvertTo-Json -Compress @(@{ en = $notes })
+            python $tool manifest $zip $out --version $env:VERSION @mirrors --notes $notesJson; Check "manifest"
+            $man = Join-Path $out 'manifest.json'
+            python $tool sign $man --key env:DESCALL_SETUP_SIGNING_KEY; Check "manifest signing"
+            python $tool verify $man --pub desktop/keys/setup-manifest.pub; Check "manifest signature check"
+            Copy-Item "$env:REL/DescallSetup.exe" (Join-Path $out "DescallSetup-$env:VERSION.exe")
+            $offline = Join-Path $out "DescallSetup-$env:VERSION-offline.exe"
+            python $tool pack "$env:REL/DescallSetup.exe" $zip $man "$man.minisig" $offline; Check "offline pack"
+            # Authenticode after packing: the signature covers the appended payload.
+            if ($env:DESCALL_SIGN_PFX) { pwsh -NoProfile -File desktop/tools/publish/sign.ps1 $offline; Check "signing the offline setup" }
+          }
+
+          Get-ChildItem $out -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object Name | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content -Encoding ascii (Join-Path $out 'SHA256SUMS.txt')
+          Get-Content (Join-Path $out 'SHA256SUMS.txt')
+          "### Assets`n" | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem $out -File | ForEach-Object { "- ``$($_.Name)`` ($([math]::Round($_.Length / 1MB, 1)) MB)" } | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+
+      - name: Remove the decoded certificate
+        if: always()
+        shell: pwsh
+        run: if ($env:DESCALL_SIGN_PFX) { Remove-Item -Force -ErrorAction SilentlyContinue $env:DESCALL_SIGN_PFX }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: descall-desktop-release-${{ needs.preflight.outputs.version }}
+          path: dist-desktop/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish desktop-v${{ needs.preflight.outputs.version }} (prerelease)
+    needs: [preflight, windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.preflight.outputs.tag }}
+      VERSION: ${{ needs.preflight.outputs.version }}
+    steps:
+      # gh needs the repository context (and the notes file, if any).
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: descall-desktop-release-${{ needs.preflight.outputs.version }}
+          path: dist-desktop
+      - name: Create the desktop prerelease
+        env:
+          NOTES_INPUT: ${{ inputs.notes }}
+          SETUP: ${{ needs.preflight.outputs.setup }}
+          UPDATER: ${{ needs.preflight.outputs.updater }}
+          AUTHENTICODE: ${{ needs.preflight.outputs.authenticode }}
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/notes.md"
+          if [ -n "$NOTES_INPUT" ]; then printf '%s\n' "$NOTES_INPUT" > "$notes"
+          elif [ -f "docs/release-notes/$TAG.md" ]; then cp "docs/release-notes/$TAG.md" "$notes"
+          else echo "Descall desktop (Rust / Tauri) $VERSION." > "$notes"; fi
+          {
+            echo
+            echo "Desktop (Tauri) build, separate from the Electron release v$VERSION. Prerelease: never offered as \"latest\"."
+            echo
+            echo "- Setup manifest signed: $SETUP"
+            echo "- Updater bundle signed: $UPDATER"
+            echo "- Authenticode: $AUTHENTICODE"
+            echo
+            echo "SHA-256: see SHA256SUMS.txt."
+          } >> "$notes"
+          gh release create "$TAG" dist-desktop/* --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Descall desktop (Tauri) $VERSION" --notes-file "$notes"
+
+      - name: Move the desktop-latest channel
+        if: inputs.promote
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(dist-desktop/latest.json dist-desktop/manifest.json dist-desktop/manifest.json.minisig)
+          have=()
+          for f in "${files[@]}"; do [ -f "$f" ] && have+=("$f"); done
+          if [ ${#have[@]} -eq 0 ]; then
+            echo "::warning::Nothing signed to promote (no updater or setup key): desktop-latest unchanged."
+            exit 0
+          fi
+          if ! gh release view desktop-latest >/dev/null 2>&1; then
+            gh release create desktop-latest --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Descall desktop channel" \
+              --notes "Stable URLs for the Tauri app: latest.json (updater fallback) and the DescallSetup manifest. Moved by tauri-release.yml; the files point at a desktop-vX.Y.Z prerelease."
+          fi
+          gh release upload desktop-latest "${have[@]}" --clobber
+          echo "desktop-latest now points at $TAG: ${have[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
