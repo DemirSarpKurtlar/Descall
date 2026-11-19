@@ -5,6 +5,7 @@
 //! descall-capture-bench.exe                 run everything, print the table, write the JSON
 //!   --only echo,video,follow,color,picker   run some groups
 //!   --seconds N                             length of each 60 fps run (default 10)
+//!   --repeat N                              run video + follow N times in one process
 //!   --out PATH                              JSON report path (default: next to the exe)
 //!   --ci                                    no "press Enter" at the end
 //!   --list                                  print the sources and capabilities, run nothing
@@ -39,13 +40,16 @@ pub struct Args {
     pub out: Option<String>,
     pub only: Vec<String>,
     pub seconds: u64,
+    /// Run the video and follow groups this many times in one process (lifecycle check:
+    /// shares started and stopped back to back must not leave anything behind).
+    pub repeat: u32,
     pub play_tone: Option<Vec<String>>,
 }
 
 pub const GROUPS: [&str; 5] = ["echo", "video", "follow", "color", "picker"];
 
 pub fn parse_args(a: &[String]) -> Result<Args, String> {
-    let mut r = Args { ci: false, list: false, out: None, only: Vec::new(), seconds: 10, play_tone: None };
+    let mut r = Args { ci: false, list: false, out: None, only: Vec::new(), seconds: 10, repeat: 1, play_tone: None };
     let mut i = 0;
     while i < a.len() {
         let next = |i: usize| a.get(i + 1).cloned().ok_or_else(|| format!("{} needs a value", a[i]));
@@ -59,6 +63,11 @@ pub fn parse_args(a: &[String]) -> Result<Args, String> {
             "--seconds" => {
                 r.seconds = next(i)?.parse().map_err(|_| "--seconds needs a number".to_string())?;
                 r.seconds = r.seconds.clamp(2, 120);
+                i += 1;
+            }
+            "--repeat" => {
+                r.repeat = next(i)?.parse().map_err(|_| "--repeat needs a number".to_string())?;
+                r.repeat = r.repeat.clamp(1, 10);
                 i += 1;
             }
             "--only" => {
@@ -86,7 +95,7 @@ impl Args {
     }
 }
 
-const USAGE: &str = "descall-capture-bench [--only echo,video,follow,color,picker] [--seconds N] [--out report.json] [--ci] [--list]";
+const USAGE: &str = "descall-capture-bench [--only echo,video,follow,color,picker] [--seconds N] [--repeat N] [--out report.json] [--ci] [--list]";
 
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
@@ -183,6 +192,17 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
     if args.wants("color") {
         group("Colour and HDR", "color", &|| color::run(&env), &mut results);
     }
+    // Extra rounds of the share-heavy groups in the same process.
+    for round in 2..=args.repeat {
+        let tag = |rows: Vec<TestResult>| report::tag_round(rows, round);
+        if args.wants("video") {
+            group(&format!("Round {round}: 1080p60 run ({} s)", args.seconds), &format!("video.1080p60.round{round}"), &|| tag(video::run(&env, "hfr1080", "1080p60", args.seconds)), &mut results);
+            group(&format!("Round {round}: 1440p60 run ({} s)", args.seconds), &format!("video.1440p60.round{round}"), &|| tag(video::run(&env, "hfr1440", "1440p60", args.seconds)), &mut results);
+        }
+        if args.wants("follow") {
+            group(&format!("Round {round}: window follow"), &format!("follow.round{round}"), &|| tag(follow::run(&env)), &mut results);
+        }
+    }
     if results.is_empty() {
         results.push(TestResult::new("none", "No test selected", Status::Skip));
     }
@@ -264,6 +284,10 @@ mod tests {
         assert_eq!((r.seconds, r.out.as_deref()), (120, Some("x.json")));
         assert!(parse_args(&[]).unwrap().wants("hdr") || parse_args(&[]).unwrap().wants("color"));
         assert_eq!(parse_args(&a(&["--play-tone", "440", "8"])).unwrap().play_tone, Some(a(&["440", "8"])));
+        assert_eq!(parse_args(&a(&["--repeat", "3"])).unwrap().repeat, 3);
+        assert_eq!(parse_args(&a(&["--repeat", "99"])).unwrap().repeat, 10);
+        assert_eq!(parse_args(&[]).unwrap().repeat, 1);
+        assert!(parse_args(&a(&["--repeat", "x"])).is_err());
         assert!(parse_args(&a(&["--only", "nope"])).is_err());
         assert!(parse_args(&a(&["--seconds"])).is_err());
         assert!(parse_args(&a(&["--wat"])).is_err());

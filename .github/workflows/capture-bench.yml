@@ -101,8 +101,13 @@ jobs:
           Set-Service -Name WerSvc -StartupType Manual -ErrorAction SilentlyContinue
           Start-Service -Name WerSvc -ErrorAction SilentlyContinue
           Get-Service WerSvc | Format-Table -AutoSize | Out-String | Write-Host
+      # The main run goes under cdb from the start: a __fastfail (0xC0000409, e.g. a CFG
+      # check on a freed callback) never reaches WER LocalDumps on the hosted runner, but a
+      # debugger gets it as an exception and prints the faulting stack. --repeat 3 runs the
+      # video and follow groups three times in one process, which is where it showed up.
       - name: Run the bench
         id: run
+        timeout-minutes: 15
         env:
           BENCH_SECONDS: ${{ github.event.inputs.seconds || '6' }}
           RUST_BACKTRACE: "1"
@@ -110,12 +115,32 @@ jobs:
           New-Item -ItemType Directory -Force -Path bench-out | Out-Null
           Copy-Item target/release/descall-capture-bench.exe bench-out/
           Copy-Item target/release/*.pdb bench-out/ -ErrorAction SilentlyContinue
-          ./target/release/descall-capture-bench.exe --ci --seconds $env:BENCH_SECONDS --out bench-out/descall-capture-report.json 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
-          $code = $LASTEXITCODE
+          $benchArgs = @('--ci', '--repeat', '3', '--seconds', $env:BENCH_SECONDS, '--out', 'bench-out/descall-capture-report.json')
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($cdb) {
+            $sym = "srv*$env:RUNNER_TEMP\symbols*https://msdl.microsoft.com/download/symbols;$PWD\target\release"
+            $dump = ".echo DESCALL_CRASH_STACK; .lastevent; .ecxr; kn 80; !analyze -v; q"
+            @(
+              "sxe -c `"$dump`" -c2 `"$dump`" c0000409",
+              "sxd -c2 `"$dump`" av",
+              "g"
+            ) | Set-Content -Path bench-out/cdb-commands.txt -Encoding ascii
+            & $cdb.FullName -G -lines -y $sym -cf bench-out/cdb-commands.txt ./target/release/descall-capture-bench.exe @benchArgs 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
+            $text = Get-Content bench-out/bench-output.txt -Raw
+            # cdb's own exit code is not the bench's: read the verdict line instead.
+            if ($text -match 'DESCALL_CRASH_STACK') { $code = 99 }
+            elseif ($text -match 'P0 OK') { $code = 0 }
+            elseif ($text -match 'P0 FAILED') { $code = 1 }
+            else { $code = 98 }
+          } else {
+            Write-Host "cdb.exe not found; running without a debugger."
+            ./target/release/descall-capture-bench.exe @benchArgs 2>&1 | Tee-Object -FilePath bench-out/bench-output.txt
+            $code = $LASTEXITCODE
+          }
           "exit_code=$code" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "## DescallCaptureBench (exit code $code)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          Get-Content bench-out/bench-output.txt | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Get-Content bench-out/bench-output.txt | Select-String -NotMatch -Pattern '^(ModLoad|Symbol search path|Executable search path|\*\*\*)' | ForEach-Object { $_.Line } | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           exit 0
       # A crash (any exit code other than 0 = all good, 1 = a FAIL row) ends the whole run.

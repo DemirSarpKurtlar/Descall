@@ -28,6 +28,20 @@ pub struct D3d {
     /// The WinRT wrapper Direct3D11CaptureFramePool wants.
     pub winrt: IDirect3DDevice,
     pub adapter: AdapterInfo,
+    multithread: Option<ID3D11Multithread>,
+}
+
+/// Holds the device's multithread lock (ID3D11Multithread::Enter/Leave) for a block of
+/// immediate-context work. The frame pool uses the same device (and lock) on its own
+/// threads; holding it keeps our video-context calls from interleaving with WGC's copies.
+pub struct D3dLock<'a>(Option<&'a ID3D11Multithread>);
+
+impl Drop for D3dLock<'_> {
+    fn drop(&mut self) {
+        if let Some(m) = self.0 {
+            unsafe { m.Leave() };
+        }
+    }
 }
 
 // D3D11 devices are free-threaded; the immediate context is protected by
@@ -58,7 +72,8 @@ impl D3d {
             return Err(windows::core::Error::from(windows::Win32::Foundation::E_FAIL).into());
         };
         // Video, thumbnails and the bench may touch the device from different threads.
-        if let Ok(mt) = device.cast::<ID3D11Multithread>() {
+        let multithread = device.cast::<ID3D11Multithread>().ok();
+        if let Some(mt) = &multithread {
             unsafe {
                 let _ = mt.SetMultithreadProtected(true);
             }
@@ -76,7 +91,32 @@ impl D3d {
             }
         });
         let winrt: IDirect3DDevice = unsafe { CreateDirect3D11DeviceFromDXGIDevice(&dxgi)? }.cast()?;
-        Ok(D3d { device, context, winrt, adapter: adapter.unwrap_or_default() })
+        Ok(D3d { device, context, winrt, adapter: adapter.unwrap_or_default(), multithread })
+    }
+
+    /// The process-wide capture device. Shares reuse it instead of creating and destroying
+    /// a device each time (teardown races with the OS capture threads are gone with it); a
+    /// removed device (driver reset, TDR) is replaced on the next call.
+    pub fn shared() -> crate::Result<std::sync::Arc<D3d>> {
+        use std::sync::{Arc, Mutex};
+        static SHARED: Mutex<Option<Arc<D3d>>> = Mutex::new(None);
+        let mut g = SHARED.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(d) = g.as_ref() {
+            if unsafe { d.device.GetDeviceRemovedReason() }.is_ok() {
+                return Ok(d.clone());
+            }
+        }
+        let d = Arc::new(D3d::new()?);
+        *g = Some(d.clone());
+        Ok(d)
+    }
+
+    /// Take the immediate-context lock for a block of GPU work.
+    pub fn lock(&self) -> D3dLock<'_> {
+        if let Some(m) = &self.multithread {
+            unsafe { m.Enter() };
+        }
+        D3dLock(self.multithread.as_ref())
     }
 
     pub fn texture(&self, desc: &D3D11_TEXTURE2D_DESC) -> crate::Result<ID3D11Texture2D> {

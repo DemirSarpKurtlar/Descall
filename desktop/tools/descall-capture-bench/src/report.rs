@@ -82,6 +82,17 @@ impl TestResult {
     }
 }
 
+/// Rows of a repeated round: ids get `.round<k>`, names ` (round k)`.
+pub fn tag_round(rows: Vec<TestResult>, round: u32) -> Vec<TestResult> {
+    rows.into_iter()
+        .map(|mut r| {
+            r.id = format!("{}.round{round}", r.id);
+            r.name = format!("{} (round {round})", r.name);
+            r
+        })
+        .collect()
+}
+
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
 pub struct Summary {
     pub pass: usize,
@@ -245,6 +256,13 @@ mod tests {
         assert_eq!((r.status, r.note.as_str()), (Status::Skip, "skipped (software GPU: no frames)"));
         let r = TestResult::cannot_run("a", "A", false, "no frames");
         assert_eq!((r.status, r.note.as_str()), (Status::Fail, "no frames"));
+    }
+
+    #[test]
+    fn rounds_are_tagged() {
+        let v = tag_round(vec![TestResult::judged("follow.close", "Window closed ends the share", true)], 3);
+        assert_eq!(v[0].id, "follow.close.round3");
+        assert_eq!(v[0].name, "Window closed ends the share (round 3)");
     }
 
     #[test]

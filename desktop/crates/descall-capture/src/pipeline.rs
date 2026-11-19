@@ -131,7 +131,7 @@ struct Gpu {
 
 /// Start a share. `ring`'s box must be at least the request's quality box.
 pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink>) -> crate::Result<Share> {
-    let d3d = Arc::new(D3d::new()?);
+    let d3d = D3d::shared()?;
     let adapter = d3d.adapter.clone();
     // Monitor: HDR if that monitor is. Window: FP16 whenever any monitor is HDR, with the
     // curve following the monitor the window is on (passthrough on SDR monitors).
@@ -156,6 +156,9 @@ pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink
     let on_frame = move |frame: wgc::Frame<'_>| {
         let Ok(mut g) = gpu.lock() else { return };
         let g = &mut *g;
+        // All our immediate-context work (converter rebuild, tone-map, blit, readback) runs
+        // under the device lock the frame pool also takes on its threads.
+        let gpu_lock = d3d_cb.lock();
         let q = quality_v.lock().map(|q| *q).unwrap_or(req.quality);
         let qb = Quality { width: q.width.min(box_w), height: q.height.min(box_h), ..q };
         let (ow, oh) = fit(frame.width, frame.height, &qb);
@@ -206,6 +209,7 @@ pub fn start(req: ShareRequest, ring: Arc<Mutex<RingWriter>>, sink: Arc<dyn Sink
             }
             stats_v.record_convert(((written - frame.arrival_100ns) / 10).max(0) as u64);
         });
+        drop(gpu_lock);
         match (r, seq) {
             (Ok(()), Some(s)) => {
                 ShareStats::add(&stats_v.frames_written, 1);

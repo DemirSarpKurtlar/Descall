@@ -182,7 +182,10 @@ impl Gfx {
         }
         if (w, h) != (self.w, self.h) {
             unsafe {
+                // ResizeBuffers needs every back-buffer reference gone, including the ones
+                // D3D11 destroys lazily: ClearState + Flush first.
                 self.ctx.ClearState();
+                self.ctx.Flush();
                 self.swap.ResizeBuffers(0, w, h, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG(0))?;
             }
             self.w = w;
@@ -286,6 +289,11 @@ impl Presenter {
                         }
                         _ => std::thread::sleep(std::time::Duration::from_millis(10)),
                     }
+                }
+                // Swap chain first, fully idle, then the window.
+                unsafe {
+                    gfx.ctx.ClearState();
+                    gfx.ctx.Flush();
                 }
                 drop(gfx);
                 unsafe {
