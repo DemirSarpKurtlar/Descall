@@ -19,10 +19,12 @@
 //! | `csp` (tests only)  | cspPolicy.cjs vs tauri.conf.json        | CSP source lists                      |
 //! | `pages`             | notificationCard/overlayHtml runtime    | node check of the bundled modules     |
 //! | `tray_panel`        | trayMenuModel.cjs                       | trayMenu.selftest.mjs (1-4)           |
+//! | `dist_path`         | appProtocolPath.cjs resolveDistFile     | (nested ./assets URLs)                |
 
 pub mod clipboard;
 pub mod csp;
 pub mod deferral;
+pub mod dist_path;
 pub mod download;
 pub mod i18n;
 pub mod launch;

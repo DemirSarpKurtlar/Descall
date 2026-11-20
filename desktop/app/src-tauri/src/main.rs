@@ -8,6 +8,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod admin;
+mod assets;
 mod boot;
 mod commands;
 mod migration;
@@ -242,7 +243,7 @@ fn main() {
             tray_menu::tray_menu_state,
             tray_menu::tray_menu_act,
         ])
-        .build(tauri::generate_context!())
+        .build(assets::with_nested_routes(tauri::generate_context!()))
         .expect("Descall failed to start");
 
     app.run(|app, event| {
