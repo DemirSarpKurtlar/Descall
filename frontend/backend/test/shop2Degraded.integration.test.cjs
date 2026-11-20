@@ -9,7 +9,7 @@
  */
 
 const assert = require("node:assert/strict");
-const { boot, harness, U, I } = require("./shop2Fixture.cjs");
+const { boot, harness, U, I, skipOpenScheduledNight } = require("./shop2Fixture.cjs");
 const { TABLES } = require("../lib/shop2/db");
 
 const { check, finish } = harness("shop2Degraded.integration.test.cjs");
@@ -55,6 +55,7 @@ async function run() {
       assert.equal(g.status, 200, JSON.stringify(g.body));
       const o = await call(`/shop2/gifts/${g.body.giftId}/open`, { method: "POST", body: {}, user: 2 });
       assert.equal(o.status, 200, JSON.stringify(o.body));
+      await skipOpenScheduledNight(call);
       const n = await call("/admin/shop2/night-markets/open-now", { method: "POST", body: { reason: "degraded test" } });
       assert.equal(n.status, 200, JSON.stringify(n.body));
       const f = await call("/shop2/night-market/flip", { method: "POST", body: { cardIndex: 1 } });
