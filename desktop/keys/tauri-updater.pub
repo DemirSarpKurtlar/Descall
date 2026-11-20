@@ -1,6 +1,1 @@
-# Tauri updater public key: the one line `cargo tauri signer generate` writes into its .pub file
-# (tauri.conf.json plugins.updater.pubkey; tauri-release.yml injects it at build time). Public,
-# safe to commit. Its private half is the GitHub secret TAURI_SIGNING_PRIVATE_KEY (+ _PASSWORD)
-# and never goes into this repository. How: docs/desktop/anahtarlar.md
-# Until this line is replaced, tauri-release.yml skips the updater bundle and latest.json.
-REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY
+dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI4MkY5OEMyNjIyNUQxMEMKUldRTTBTVml3cGd2dUJhOXJYd0lRczRmeHI3cit3dUVmVnhCZkV2b3BGNW5vYmZ2WXBEM2RZT00K

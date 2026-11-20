@@ -1,5 +1,1 @@
-# Public key that DescallSetup.exe checks manifest.json.minisig against (DESCALL_SETUP_PUBKEY at
-# build time). Public, safe to commit. Its private half is the GitHub secret
-# DESCALL_SETUP_SIGNING_KEY and never goes into this repository. How: docs/desktop/anahtarlar.md
-# Until this line is replaced, tauri-release.yml skips the setup (manifest, parts, DescallSetup.exe).
-REPLACE_WITH_SETUP_MANIFEST_PUBLIC_KEY
+RWRTJiGbXeQcf7ENhFZG9dp9biayBZp6DT/uiFtrn9ZrJ8TrgflRdh88
