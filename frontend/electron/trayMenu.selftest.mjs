@@ -360,8 +360,10 @@ const ids = (m) => plain(m.rows.map((r) => r.kind === "separator" ? "|" : r.id))
   assert.match(win, /nodeIntegration: false/);
   assert.match(win, /setWindowOpenHandler\(\(\) => \(\{ action: 'deny' \}\)\)/);
   assert.match(win, /'will-navigate', \(e\) => e\.preventDefault\(\)/);
-  assert.match(win, /ipcMain\.on\('tray-menu:act', \(event, msg\) => \{\s*if \(!isPanelSender\(event\)\) return;\s*const v = validateAction\(msg, \{ premiumIds \}\);/);
-  assert.match(win, /ipcMain\.handle\('tray-menu:get-state', \(event\) => \{\s*if \(!isPanelSender\(event\)\) throw/);
+  assert.match(win, /function act\(event, msg\) \{\s*if \(!isPanelSender\(event\)\) return;\s*const v = validateAction\(msg, \{ premiumIds \}\);/);
+  assert.match(win, /function getState\(event\) \{\s*if \(!isPanelSender\(event\)\) throw/);
+  assert.match(win, /ipcMain\.on\('tray-menu:act', \(event, msg\) => \{\s*for \(const p of panels\) if \(p\.owns\(event\)\) return p\.act\(event, msg\);/, "only the panel that owns the sender answers");
+  assert.match(win, /return alive\(\) && event && event\.sender === win\.webContents && \(!event\.senderFrame \|\| event\.senderFrame === win\.webContents\.mainFrame\)/, "top frame of the panel window only");
   assert.deepEqual([...preload.matchAll(/ipcRenderer\.(\w+)\('([\w:-]+)'/g)].map((x) => `${x[1]} ${x[2]}`).sort(),
     ["invoke tray-menu:get-state", "on tray-menu:state", "removeListener tray-menu:state", "send tray-menu:act"], "the panel preload exposes three calls only");
 }

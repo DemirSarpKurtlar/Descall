@@ -252,12 +252,12 @@ function createTrayPanel(opts) {
     }
   }
 
-  ipcMain.handle('tray-menu:get-state', (event) => {
+  function getState(event) {
     if (!isPanelSender(event)) throw new Error('E_UNTRUSTED_SENDER');
     return lastState || buildState();
-  });
+  }
 
-  ipcMain.on('tray-menu:act', (event, msg) => {
+  function act(event, msg) {
     if (!isPanelSender(event)) return;
     const v = validateAction(msg, { premiumIds });
     if (!v) {
@@ -282,16 +282,39 @@ function createTrayPanel(opts) {
     }
     if (v.closes) hide(v.action);
     try { opts.onAction(v); } catch (err) { log.warn(`[tray-menu] ${v.action} failed:`, err?.message || err); }
-  });
+  }
 
-  return {
+  const panel = {
     open,
     hide: () => hide('external'),
     refresh,
     warm,
     destroy,
     isVisible: visible,
+    // IPC routing (registerIpc): only the panel that owns the sender answers.
+    owns: (event) => isPanelSender(event),
+    getState,
+    act,
   };
+  panels.add(panel);
+  registerIpc();
+  return panel;
+}
+
+/** The panel IPC channels, registered once and routed to the panel that owns the sender. */
+const panels = new Set();
+let ipcRegistered = false;
+function registerIpc() {
+  if (ipcRegistered) return;
+  ipcRegistered = true;
+  ipcMain.handle('tray-menu:get-state', (event) => {
+    for (const p of panels) if (p.owns(event)) return p.getState(event);
+    throw new Error('E_UNTRUSTED_SENDER');
+  });
+  ipcMain.on('tray-menu:act', (event, msg) => {
+    for (const p of panels) if (p.owns(event)) return p.act(event, msg);
+    return undefined;
+  });
 }
 
 module.exports = { createTrayPanel };
