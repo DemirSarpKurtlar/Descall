@@ -116,6 +116,8 @@ const plain = (v) => JSON.parse(JSON.stringify(v));
   assert.equal(p.y + p.height, 1032, "window sits on the taskbar");
   assert.equal(p.height, P.maxHeight);
   assert.equal(p.cardLeft, P.pad + P.flyout + P.gap);
+  // Same numbers as the Rust port (descall_shell::tray_panel same_answers_as_the_electron_model).
+  assert.deepEqual([p.x, p.y, p.width, p.height, p.cardLeft], [1364, 252, 556, 780, 252]);
   // Icon in the middle: card centred on it, flyout to the right.
   p = M.placePanel({ tray: { x: 950, y: 1040, width: 20, height: 32 }, work });
   assert.equal(p.flyout, "right");

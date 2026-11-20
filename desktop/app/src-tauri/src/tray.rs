@@ -1,17 +1,22 @@
-//! Tray icon (main.cjs createTray): Open Descall, Start with Windows, Quit or
-//! "Update and quit (vX)". Left click and double click restore the window. Labels follow
+//! Tray icon (main.cjs createTray). Right click opens the tray panel (owner pick, draft B,
+//! src/tray_menu.rs); the native menu (Open Descall, Start with Windows, Descall+ items,
+//! Quit or "Update and quit (vX)") stays as its fallback when the panel cannot load, and is
+//! the only menu off Windows. Left click and double click restore the window. Labels follow
 //! the shell language and are rebuilt when it or the update state changes.
 
 use std::any::Any;
 use std::sync::atomic::Ordering;
 
-use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem};
+use tauri::menu::{CheckMenuItem, ContextMenu, Menu, MenuEvent, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Runtime};
 
 use crate::state::{self, et, shell};
 
 pub const ID: &str = "descall-tray";
+
+/// The panel handles right click on Windows; elsewhere the menu stays attached to the icon.
+const PANEL: bool = cfg!(windows);
 
 fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let open = MenuItem::with_id(app, "open", et(app, "tray.open", &[]), true, None::<&str>)?;
@@ -35,6 +40,19 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     Ok(menu)
 }
 
+/// Tray Quit / "Update and quit": in a call the update asks first (request_explicit_install).
+pub fn quit<R: Runtime>(app: &AppHandle<R>) {
+    if crate::commands::updates::is_ready(app) {
+        // In a call this asks before cutting it; otherwise it installs and exits.
+        let r = crate::commands::updates::request_explicit_install(app, "tray");
+        if r.get("needsConfirm").and_then(|v| v.as_bool()) == Some(true) || r.get("installing").and_then(|v| v.as_bool()) == Some(true) {
+            return;
+        }
+    }
+    state::set_quitting(app);
+    app.exit(0);
+}
+
 fn on_menu<R: Runtime>(app: &AppHandle<R>, e: MenuEvent) {
     match e.id().as_ref() {
         "open" => state::show_main(app),
@@ -43,32 +61,64 @@ fn on_menu<R: Runtime>(app: &AppHandle<R>, e: MenuEvent) {
             crate::platform::set_autostart(next);
             rebuild(app);
         }
-        "quit" => {
-            if crate::commands::updates::is_ready(app) {
-                // In a call this asks before cutting it; otherwise it installs and exits.
-                let r = crate::commands::updates::request_explicit_install(app, "tray");
-                if r.get("needsConfirm").and_then(|v| v.as_bool()) == Some(true) || r.get("installing").and_then(|v| v.as_bool()) == Some(true) {
-                    return;
-                }
-            }
-            state::set_quitting(app);
-            app.exit(0);
-        }
+        "quit" => quit(app),
         id => {
             crate::premium::tray::on_menu_event(id);
         }
     }
 }
 
+/// The native menu at the cursor: the panel's fallback (UI thread).
+pub fn popup_native<R: Runtime>(app: &AppHandle<R>) {
+    let Some(w) = state::main_window(app) else { return };
+    match build_menu(app) {
+        Ok(menu) => {
+            if let Err(e) = menu.popup(w.as_ref().window()) {
+                log::warn!("[tray] native menu: {e}");
+            }
+        }
+        Err(e) => log::warn!("[tray] native menu: {e}"),
+    }
+}
+
+fn icon_rect(rect: &tauri::Rect) -> descall_shell::tray_panel::Rect {
+    let p = rect.position.to_physical::<f64>(1.0);
+    let s = rect.size.to_physical::<f64>(1.0);
+    descall_shell::tray_panel::Rect::new(p.x, p.y, s.width, s.height)
+}
+
 pub fn create<R: Runtime>(app: &AppHandle<R>) {
     let Ok(menu) = build_menu(app) else { return };
-    let mut b = TrayIconBuilder::with_id(ID).tooltip("Descall").menu(&menu).show_menu_on_left_click(false).on_menu_event(on_menu).on_tray_icon_event(|tray, e| {
+    let mut b = TrayIconBuilder::with_id(ID).tooltip("Descall").show_menu_on_left_click(false).on_menu_event(on_menu).on_tray_icon_event(|tray, e| {
         let app = tray.app_handle();
         match e {
-            TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } | TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } => state::show_main(app),
+            TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } | TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } => {
+                state::show_main(app);
+                if PANEL {
+                    crate::tray_menu::close(app);
+                }
+            }
+            TrayIconEvent::Click { button: MouseButton::Right, button_state: MouseButtonState::Up, rect, position, .. } if PANEL => {
+                // Off the UI thread: the first open creates the panel's webview.
+                let app = app.clone();
+                let icon = icon_rect(&rect);
+                tauri::async_runtime::spawn(async move {
+                    if !crate::tray_menu::open(&app, Some(icon), (position.x, position.y)) {
+                        let h = app.clone();
+                        let _ = app.run_on_main_thread(move || popup_native(&h));
+                    }
+                });
+            }
+            TrayIconEvent::Enter { .. } if PANEL => {
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move { crate::tray_menu::warm(&app) });
+            }
             _ => {}
         }
     });
+    if !PANEL {
+        b = b.menu(&menu);
+    }
     if let Some(icon) = app.default_window_icon() {
         b = b.icon(icon.clone());
     }
@@ -78,8 +128,12 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
+/// Labels, update state or Descall+ items changed: native menu (off Windows) and panel.
 pub fn rebuild<R: Runtime>(app: &AppHandle<R>) {
-    if let (Some(tray), Ok(menu)) = (app.tray_by_id(ID), build_menu(app)) {
-        let _ = tray.set_menu(Some(menu));
+    if !PANEL {
+        if let (Some(tray), Ok(menu)) = (app.tray_by_id(ID), build_menu(app)) {
+            let _ = tray.set_menu(Some(menu));
+        }
     }
+    crate::tray_menu::refresh(app);
 }

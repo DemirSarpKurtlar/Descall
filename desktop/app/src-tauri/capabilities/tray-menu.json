@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "tray-menu",
+  "description": "Tray panel (draft B): may only listen for its state. Its two app commands (tray_menu_state, tray_menu_act) check the window label and an action allow list in src/tray_menu.rs.",
+  "windows": [
+    "tray-menu"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

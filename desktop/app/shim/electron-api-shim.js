@@ -28,6 +28,7 @@
  *  isWindowFocused / focusWindow     invoke                             window_is_focused / window_focus
  *  scanProcesses                     invoke scan-processes              processes_scan
  *  overlayShow / Hide / Update       send descall:overlay:*             overlay_show / overlay_hide / overlay_update
+ *  setTrayState                      send tray:set-state                tray_set_state
  *  secureToken.get / set / clear     sendSync secure-token:*            boot snapshot + cache / token_set / token_clear
  *  on* listeners                     ipcRenderer.on(channel)            event.listen(same channel name)
  */
@@ -192,6 +193,10 @@
       clear: () => { remember(""); fire("token_clear"); return true; },
     },
     onOverlayAction: (cb) => on("descall:overlay:action", cb),
+
+    // Tray panel (draft B, src/lib/desktopTray.js); admin windows get a no-op like adminPreload.
+    setTrayState: ADMIN ? noop : (state) => fire("tray_set_state", { state: state && typeof state === "object" ? state : {} }),
+    onTrayAction: ADMIN ? () => noop : (cb) => on("tray:action", cb, (p) => p || {}),
   };
 
   // Shell-only extras the Electron preload did not have (the page probes them optionally).
