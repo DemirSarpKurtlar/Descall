@@ -82,6 +82,7 @@ import { useElectronOverlay } from "./hooks/useElectronOverlay";
 import { attachPremiumSocket } from "./premium/usePremium.js";
 import { usePremiumAudioBridge } from "./premium/usePremiumAudioBridge.js";
 import { usePremiumAppSnapshot } from "./premium/desktop/usePremiumAppSnapshot.js";
+import { useDesktopTray } from "./hooks/useDesktopTray.js";
 import { isPopoutWindow, applyPopoutMode } from "./premium/desktop/popout.js";
 import { useElectronVoiceBusy } from "./hooks/useElectronVoiceBusy";
 import { getVoiceBusy } from "./lib/voiceBusy";
@@ -5137,6 +5138,8 @@ export default function App() {
 
   // Descall+ desktop windows (Electron): unread, friends, DMs, status. Before the early returns.
   usePremiumAppSnapshot({ me, friends, onlineUsers, dmUnread, groupUnread, dmLastActivity, myStatus, navigate, setStatus: handleStatusChange });
+  // Desktop tray panel (draft B): profile, status, badges, voice; runs the panel's app actions.
+  useDesktopTray({ me, myStatus, dmUnread, groupUnread, friendRequests, navigate, setStatus: handleStatusChange });
 
   if (bootError && !me) {
     return (

@@ -2102,7 +2102,8 @@ function trayPanelShellState() {
 /** Panel actions: the shell runs its own, the rest go to the page (electronAPI.onTrayAction). */
 function runTrayPanelAction({ action, arg, kind }) {
   if (kind === 'app') {
-    if (action === 'openDms' || action === 'openRequests') showMainWindow();
+    // These open something in the window (DM list, requests, the clip editor).
+    if (action === 'openDms' || action === 'openRequests' || action === 'clip') showMainWindow();
     mainWindow?.webContents?.send('tray:action', { action, arg });
     return;
   }
