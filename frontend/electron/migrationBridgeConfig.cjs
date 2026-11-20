@@ -11,6 +11,8 @@
  */
 module.exports = Object.freeze({
   MIGRATION_BRIDGE_ENABLED: false,
-  PLAN_PUBLIC_KEYS: Object.freeze([]),
+  // Owner's plan key, key id 07db6a323b895041 (20 Nov 2026). Private half: Render env
+  // DESKTOP_MIGRATION_PLAN_KEY only. Inert until MIGRATION_BRIDGE_ENABLED is true.
+  PLAN_PUBLIC_KEYS: Object.freeze(['MCowBQYDK2VwAyEArlOiXuRiUhopWEUzb7kROEFfT53k1zF5jUcsGE4VmLg=']),
   API_BASE: 'https://api.descall.com',
 });

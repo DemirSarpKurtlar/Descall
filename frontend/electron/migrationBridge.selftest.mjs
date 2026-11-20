@@ -151,9 +151,12 @@ function world(over = {}) {
   return { root, userData, local, deps, calls, responses, setQuiet: (q) => { quiet = q; } };
 }
 
-test("shipped builds have the bridge switched off and no key pinned", () => {
+test("shipped builds have the bridge switched off; pinned keys are Ed25519 public keys", () => {
   assert.equal(config.MIGRATION_BRIDGE_ENABLED, false);
-  assert.equal(config.PLAN_PUBLIC_KEYS.length, 0);
+  for (const k of config.PLAN_PUBLIC_KEYS) {
+    const key = crypto.createPublicKey({ key: Buffer.from(k, "base64"), format: "der", type: "spki" });
+    assert.equal(key.asymmetricKeyType, "ed25519");
+  }
   assert.ok(Object.isFrozen(config));
   const main = fs.readFileSync(path.join(dir, "main.cjs"), "utf8");
   const fn = main.slice(main.indexOf("function startMigrationBridge()"));
