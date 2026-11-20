@@ -30,6 +30,7 @@ pub mod caps;
 pub mod encode;
 pub mod ending;
 pub mod helper_proto;
+pub mod pacer;
 pub mod presets;
 pub mod proctree;
 pub mod ring;

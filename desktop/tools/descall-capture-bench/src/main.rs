@@ -23,6 +23,8 @@ mod report;
 #[cfg(windows)]
 mod color;
 #[cfg(windows)]
+mod crash;
+#[cfg(windows)]
 mod echo;
 #[cfg(windows)]
 mod env;
@@ -139,6 +141,7 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
     use report::{Status, TestResult};
 
     report::install_panic_hook();
+    crash::install();
     if let Some(t) = &args.play_tone {
         return echo::child_main(t);
     }
@@ -181,6 +184,7 @@ fn run(args: Args, argv: Vec<String>) -> i32 {
     let group = |label: &str, id: &str, run: &dyn Fn() -> Vec<TestResult>, results: &mut Vec<TestResult>| {
         println!("- {label}...");
         report::set_current(id);
+        crash::set_step(id);
         let rows = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(run)) {
             Ok(rows) => rows,
             // Only reachable in an unwinding build (CI); the release exe aborts after the hook.
