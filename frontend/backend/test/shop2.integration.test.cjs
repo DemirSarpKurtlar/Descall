@@ -12,7 +12,7 @@
  */
 
 const assert = require("node:assert/strict");
-const { boot, harness, U, I, PIECES } = require("./shop2Fixture.cjs");
+const { boot, harness, U, I, PIECES, skipOpenScheduledNight } = require("./shop2Fixture.cjs");
 
 const { check, finish } = harness("shop2.integration.test.cjs");
 
@@ -234,6 +234,7 @@ async function run() {
     await check("night market: closed by default, open-now, flip, flips limit, keep limit, buy at discount", async () => {
       const closed = await call("/shop2/night-market/flip", { method: "POST", body: { cardIndex: 0 } });
       if (closed.status !== 200) assert.equal(closed.body.code, "night_closed");
+      await skipOpenScheduledNight(call);
       const open = await call("/admin/shop2/night-markets/open-now", { method: "POST", body: { reason: "Weekend test night", durationHours: 2 } });
       assert.equal(open.status, 200, JSON.stringify(open.body));
       const v = (await call("/shop2/night-market")).body;

@@ -10,7 +10,7 @@
  */
 
 const assert = require("node:assert/strict");
-const { boot, harness, U, I, iso, DAY } = require("./shop2Fixture.cjs");
+const { boot, harness, U, I, iso, DAY, skipOpenScheduledNight } = require("./shop2Fixture.cjs");
 
 const { check, finish } = harness("shop2Security.integration.test.cjs");
 
@@ -59,6 +59,7 @@ async function run() {
     const settle = (list) => Promise.allSettled(list).then((rs) => rs.map((r) => (r.status === "fulfilled" ? "ok" : r.reason?.code || r.reason?.message)));
 
     await check("night market: a revealed card is bought or gifted once, even in parallel", async () => {
+      await skipOpenScheduledNight(call);
       const open = await call("/admin/shop2/night-markets/open-now", { method: "POST", body: { reason: "Security night", durationHours: 2 } });
       assert.equal(open.status, 200, JSON.stringify(open.body));
       const f = await call("/shop2/night-market/flip", { method: "POST", user: 5, body: { cardIndex: 0 } });

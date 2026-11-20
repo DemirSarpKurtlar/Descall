@@ -13,7 +13,7 @@
 
 const assert = require("node:assert/strict");
 const crypto = require("crypto");
-const { boot, harness, U, I, DAY } = require("./shop2Fixture.cjs");
+const { boot, harness, U, I, DAY, skipOpenScheduledNight } = require("./shop2Fixture.cjs");
 
 const { check, finish } = harness("shop2Vitrin.integration.test.cjs");
 
@@ -142,6 +142,7 @@ async function run() {
     });
 
     await check("night deck: buying elsewhere during the night never reshuffles the face-down cards", async () => {
+      await skipOpenScheduledNight(call);
       const open = await call("/admin/shop2/night-markets/open-now", { method: "POST", body: { reason: "Deck stability test", durationHours: 2 } });
       assert.equal(open.status, 200, JSON.stringify(open.body));
       const v0 = (await call("/shop2/night-market", { user: 5 })).body;

@@ -118,6 +118,18 @@ async function boot({ missingTables = [], now = Date.now() } = {}) {
   return { fake, call, rows, emitted, close: () => srv.close(), base };
 }
 
+/**
+ * Tests that open their own night with open-now need no other night running. The default
+ * schedule opens one on some evenings (Istanbul time), so a run on such an evening hit
+ * night_open (409). Skip the scheduled night that is open right now, if any.
+ */
+async function skipOpenScheduledNight(call) {
+  const o = (await call("/admin/shop2/night-markets", {})).body;
+  if (!o?.open || !String(o.open.id || "").startsWith("auto-")) return;
+  const sk = await call(`/admin/shop2/night-markets/${o.open.id}/skip`, { method: "POST", body: { reason: "test: clear the scheduled night" } });
+  if (sk.status !== 200) throw new Error(`could not skip the scheduled night: ${JSON.stringify(sk.body)}`);
+}
+
 function harness(name) {
   const failures = [];
   let passed = 0;
@@ -143,4 +155,4 @@ function harness(name) {
   return { check, finish };
 }
 
-module.exports = { U, I, DAY, iso, PIECES, PIECE_PRICES, seed, boot, harness };
+module.exports = { U, I, DAY, iso, PIECES, PIECE_PRICES, seed, boot, harness, skipOpenScheduledNight };
