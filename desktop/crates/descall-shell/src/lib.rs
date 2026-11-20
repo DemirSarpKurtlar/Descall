@@ -18,6 +18,7 @@
 //! | `clipboard`       | clipboardText.cjs, clipboardImage.cjs   | clipboardText.selftest.mjs            |
 //! | `csp` (tests only)  | cspPolicy.cjs vs tauri.conf.json        | CSP source lists                      |
 //! | `pages`             | notificationCard/overlayHtml runtime    | node check of the bundled modules     |
+//! | `tray_panel`        | trayMenuModel.cjs                       | trayMenu.selftest.mjs (1-4)           |
 
 pub mod clipboard;
 pub mod csp;
@@ -29,5 +30,6 @@ pub mod notif;
 pub mod occlusion;
 pub mod pages;
 pub mod processes;
+pub mod tray_panel;
 pub mod trust;
 pub mod watchdog;

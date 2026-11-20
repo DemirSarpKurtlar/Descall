@@ -31,7 +31,8 @@ for (const { id } of registry.locales) {
     assert.ok(typeof text === "string" && text.trim(), `${id}.${key} empty`);
     assert.equal(placeholders(text), placeholders(en[key]), `${id}.${key} placeholders`);
     // Translated, not copied from English (brand-only titles and same-spelled words excepted).
-    const sameEverywhere = ["window.adminPanel", "notif.message", "premium.tray.status", "premium.tray.online", "premium.tray.invisible"];
+    // Tray panel: the brand group title and the short time units ("25 min", "1 h").
+    const sameEverywhere = ["window.adminPanel", "notif.message", "premium.tray.status", "premium.tray.online", "premium.tray.invisible", "tray.premium", "tray.remainMin", "tray.remainHour", "tray.remainHourMin"];
     if (id !== "en" && !sameEverywhere.includes(key)) assert.notEqual(text, en[key], `${id}.${key} still English`);
   }
 }

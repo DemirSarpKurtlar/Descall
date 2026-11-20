@@ -24,13 +24,15 @@ function items() {
   if (call.active) {
     out.push(
       { label: et('premium.tray.inCall', { title: call.title || '' }), enabled: false },
-      { label: call.muted ? et('premium.tray.unmute') : et('premium.tray.mute'), click: act('mute') },
-      { label: call.deafened ? et('premium.tray.undeafen') : et('premium.tray.deafen'), click: act('deafen') },
+      // ids: the tray panel has its own rows for these (trayMenuModel PREMIUM_DUPLICATES).
+      { id: 'premium-call-mute', label: call.muted ? et('premium.tray.unmute') : et('premium.tray.mute'), click: act('mute') },
+      { id: 'premium-call-deafen', label: call.deafened ? et('premium.tray.undeafen') : et('premium.tray.deafen'), click: act('deafen') },
       { label: et('premium.tray.hangup'), click: act('leave') },
       { type: 'separator' },
     );
   }
   out.push({
+    id: 'premium-status',
     label: et('premium.tray.status'),
     submenu: STATUSES.map((s) => ({ label: et(`premium.tray.${s}`), type: 'radio', checked: s === status, click: act('status', s) })),
   });

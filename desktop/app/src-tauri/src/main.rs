@@ -19,6 +19,7 @@ mod screenshare;
 mod secure_store;
 mod state;
 mod tray;
+mod tray_menu;
 mod webview;
 
 use std::sync::OnceLock;
@@ -81,6 +82,7 @@ fn main() {
         .manage(commands::overlay::Overlay::default())
         .manage(commands::updates::Updates::default())
         .manage(commands::screen::ShareState::default())
+        .manage(tray_menu::TrayMenu::default())
         .register_uri_scheme_protocol(descall_shell::trust::SHELL_SCHEME, |_ctx, req| {
             use tauri::http::{header, Response, StatusCode};
             let (status, mime, body) = match descall_shell::pages::serve(req.uri().path()) {
@@ -99,6 +101,7 @@ fn main() {
             let handle = app.handle().clone();
             let _ = APP.set(handle.clone());
             state::init_locale(&handle);
+            tray_menu::load_snooze(&handle);
 
             // The one-time Electron import already ran in boot::import_plugin (before the
             // first page load, so the boot script carries the token and settings).
@@ -235,6 +238,9 @@ fn main() {
             premium::premium_blob_put,
             premium::premium_blob_take,
             premium::premium_hud_action,
+            tray_menu::tray_set_state,
+            tray_menu::tray_menu_state,
+            tray_menu::tray_menu_act,
         ])
         .build(tauri::generate_context!())
         .expect("Descall failed to start");

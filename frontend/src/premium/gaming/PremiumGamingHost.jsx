@@ -19,6 +19,7 @@ import { emptyState, evaluate, idleThresholdSec, normalizeRules } from "./ruleEn
 import { runAction } from "./actions.js";
 import { applyProfile, mergeProfiles, profileName } from "./workspaceProfiles.js";
 import { configureClip, saveClip, stopClip, useClipState } from "./clipController.js";
+import { acceleratorLabel, publishTray, setTrayHandler } from "../../lib/desktopTray.js";
 import { captureClipboard } from "./clipboardHistory.js";
 import { recentTargets, sendFileTo } from "./sendMedia.js";
 import AppLockScreen from "./AppLockScreen.jsx";
@@ -285,6 +286,13 @@ export default function PremiumGamingHost({
     pinvoke("premium:instant_clip:hotkey", clipCfg.on ? clipCfg.hotkey : "");
     return pon("premium:instant_clip:save", () => saveClip());
   }, [clipAllowed, clipCfg.on, clipCfg.hotkey]);
+  // Desktop tray panel: "Save instant clip" while the buffer is recording, with its hotkey.
+  const clipReady = clipAllowed && Boolean(clip.running);
+  useEffect(() => {
+    publishTray("clip", clipReady ? { available: true, hotkey: acceleratorLabel(clipCfg.hotkey || "") } : null);
+  }, [clipReady, clipCfg.hotkey]);
+  useEffect(() => () => publishTray("clip", null), []);
+  useEffect(() => (clipReady ? setTrayHandler("clip", () => saveClip()) : undefined), [clipReady]);
 
   // ---- clipboard history -----------------------------------------------------------
   const clipboardOn = has("clipboard_history") && clipboardCfg.on;

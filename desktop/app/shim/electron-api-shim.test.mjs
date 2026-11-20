@@ -140,6 +140,8 @@ const CASES = [
   ["overlayShow", [{ title: "Genel" }], "overlay_show", { payload: { title: "Genel" } }],
   ["overlayHide", [], "overlay_hide", undefined],
   ["overlayUpdate", [{ muted: true }], "overlay_update", { payload: { muted: true } }],
+  ["setTrayState", [{ name: "Demir", unreadMessages: 2 }], "tray_set_state", { state: { name: "Demir", unreadMessages: 2 } }],
+  ["setTrayState", [null], "tray_set_state", { state: {} }],
   ["secureToken.set", ["a.b.c"], "token_set", { token: "a.b.c" }],
   ["secureToken.set", [""], "token_clear", undefined],
   ["secureToken.clear", [], "token_clear", undefined],
@@ -226,7 +228,8 @@ for (const [path, args, cmd, expected] of CASES) {
     deq(mine, value, `admin ${k}`);
     deq(mine, theirs, `admin ${k} equals adminPreload.cjs`);
   }
-  for (const k of ["downloadFile", "overlayShow", "overlayHide", "overlayUpdate"]) assert.equal(s.api[k]("x"), undefined);
+  for (const k of ["downloadFile", "overlayShow", "overlayHide", "overlayUpdate", "setTrayState"]) assert.equal(s.api[k]("x"), undefined);
+  assert.equal(typeof s.api.onTrayAction(() => {}), "function", "admin onTrayAction: inert unsubscribe");
   await tick();
   deq(s.invokes, [], "admin stubs send nothing");
 }
@@ -251,6 +254,7 @@ const LISTENERS = {
   onCallDecline: "notification:call-decline",
   onOverlayAction: "descall:overlay:action",
   onMainError: "app:main-error",
+  onTrayAction: "tray:action",
 };
 // Same channel names as the Electron preload subscribes to.
 for (const [k, channel] of Object.entries(LISTENERS)) {
@@ -308,7 +312,7 @@ assert.ok(fromNative.has("screen_share_start") && fromNative.has("screen_thumbna
 for (const cmd of fromNative) assert.ok(registered.has(cmd), `${cmd} (native screen share) is registered in main.rs`);
 assert.match(mainRs, /include_str!\("\.\.\/\.\.\/shim\/native-screen-share\.js"\)/, "main.rs injects the native lane");
 // Descall+ page bridges (premium plugin, HUD and launcher windows).
-for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shim.js"]) {
+for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shim.js", "tray-menu-shim.js"]) {
   const src = readFileSync(join(here, f), "utf8");
   const cmds = new Set([...src.matchAll(/invoke\("(\w+)"/g)].map((m) => m[1]));
   assert.ok(cmds.size > 0, `${f}: commands found`);
@@ -316,5 +320,30 @@ for (const f of ["premium-shim.js", "premium-hud-shim.js", "premium-launcher-shi
 }
 assert.match(mainRs, /\.plugin\(premium::init\(\)\)/, "the Descall+ plugin is registered");
 assert.match(mainRs, /\{SHIM\}\\n\{NATIVE_SHARE\}/, "the native lane loads with the main shim");
+
+// 5. Tray panel (draft B): its own window, capability and commands.
+{
+  const src = join(here, "..", "src-tauri");
+  const trayMenuRs = readFileSync(join(src, "src", "tray_menu.rs"), "utf8");
+  const cap = JSON.parse(readFileSync(join(src, "capabilities", "tray-menu.json"), "utf8"));
+  const def = JSON.parse(readFileSync(join(src, "capabilities", "default.json"), "utf8"));
+  deq(cap.windows, ["tray-menu"], "the tray panel capability covers that window only");
+  deq(cap.permissions.sort(), ["core:event:allow-listen", "core:event:allow-unlisten"], "event listen only, no other plugin");
+  assert.ok(!def.windows.includes("tray-menu"), "the panel is not in the app windows' capability");
+  for (const cmd of ["tray_menu_state", "tray_menu_act"]) {
+    const at = trayMenuRs.indexOf(`pub fn ${cmd}`);
+    assert.ok(at > 0 && /if window\.label\(\) != LABEL \{\s*return/.test(trayMenuRs.slice(at, at + 400)), `${cmd} answers the panel window only`);
+  }
+  const setAt = trayMenuRs.indexOf("pub fn tray_set_state");
+  assert.ok(/if window\.label\(\) != state::MAIN \{\s*return;/.test(trayMenuRs.slice(setAt, setAt + 300)), "only the main window sets the tray state");
+  assert.match(trayMenuRs, /model::validate_action\(&action, &arg\.unwrap_or\(Value::Null\), &ids\)/, "allow list on every action");
+  assert.match(trayMenuRs, /\.initialization_script\(SHIM\)/);
+  assert.match(trayMenuRs, /include_str!\("\.\.\/\.\.\/shim\/tray-menu-shim\.js"\)/);
+  assert.match(premiumShimSrc, /label === "tray-menu"/, "no descallPremium bridge in the panel");
+  const notifyRs = readFileSync(join(src, "src", "commands", "notify.rs"), "utf8");
+  assert.match(notifyRs, /crate::tray_menu::suppress_notification\(&app, &payload\.options\)/, "the snooze gates desktop cards");
+  const trayRs = readFileSync(join(src, "src", "tray.rs"), "utf8");
+  assert.match(trayRs, /if !crate::tray_menu::open\(&app, Some\(icon\), \(position\.x, position\.y\)\) \{[\s\S]{0,120}popup_native/, "native menu when the panel cannot open");
+}
 
 console.log("electron-api-shim.test: ok");

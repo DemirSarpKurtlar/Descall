@@ -346,6 +346,10 @@ pub fn notification_show<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>
     if window.label() != state::MAIN {
         return;
     }
+    // Tray panel "Mute notifications": nothing but calls until the snooze ends.
+    if crate::tray_menu::suppress_notification(&app, &payload.options) {
+        return;
+    }
     // Descall+ notification hooks (notifyHooks.cjs): focus mode may drop it, quick reply may
     // turn a DM into a native reply toast.
     let Some(filtered) = crate::premium::notify_filter(serde_json::json!({ "title": payload.title, "options": payload.options })) else { return };

@@ -10,6 +10,7 @@ import { useT } from "../../context/LocaleContext";
 import { inputMenuGroups, outputMenuGroups } from "../../lib/callDeviceMenus";
 import { readAudioPrefs, writeAudioPref } from "../../lib/callAudioDevices";
 import { readLocalMute, writeLocalMute } from "../../lib/voiceProfile";
+import { publishTray, setTrayHandler } from "../../lib/desktopTray";
 import {
   activityGameName,
   deriveVoiceSession,
@@ -269,6 +270,17 @@ export default function UserVoicePanel({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [toggleMute, toggleDeafen]);
+
+  // Desktop tray panel: the same mic / deafen state and toggles as this panel (in a call
+  // or as the preference for the next one).
+  useEffect(() => {
+    publishTray("voice", { inCall: live, micMuted: muted, deafened });
+  }, [live, muted, deafened]);
+  useEffect(() => () => publishTray("voice", null), []);
+  useEffect(() => {
+    const offs = [setTrayHandler("mute", toggleMute), setTrayHandler("deafen", toggleDeafen)];
+    return () => offs.forEach((off) => off());
   }, [toggleMute, toggleDeafen]);
 
   // User row
