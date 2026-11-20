@@ -494,6 +494,15 @@ def listing_text_check(asc, ver):
     log(f"  checked live description/keywords/promo/What's New for {BANNED_LISTING}")
 
 
+def norm_build(b):
+    """App Store Connect stores CFBundleVersion with leading zeros dropped per
+    component (20261120.0016 -> 20261120.16); compare and filter on that form."""
+    b = (b or "").strip()
+    if not b:
+        return ""
+    return ".".join(str(int(x)) if x.isdigit() else x for x in b.split("."))
+
+
 @step("Submit for review")
 def submit(asc, app_id, ver, pin, subs):
     blockers = list(errors) + list(warnings)
@@ -504,7 +513,7 @@ def submit(asc, app_id, ver, pin, subs):
     attached = cur["attributes"].get("version") if cur else None
     if not attached:
         blockers.append("no build attached")
-    elif pin and attached != pin:
+    elif pin and norm_build(attached) != pin:
         blockers.append(f"attached build {attached} != requested {pin}")
     elif cur["attributes"].get("processingState") != "VALID":
         blockers.append(f"attached build {attached} is {cur['attributes'].get('processingState')}")
@@ -627,7 +636,7 @@ def main():
     availability(asc, app_id, apply)
     price(asc, app_id, apply)
     if ver:
-        build(asc, app_id, ver, version, apply, a.wait_build_minutes, a.build.strip())
+        build(asc, app_id, ver, version, apply, a.wait_build_minutes, norm_build(a.build))
 
     # Read-back summary of the text fields (always)
     try:
@@ -652,7 +661,7 @@ def main():
 
     if a.mode == "submit":
         if ver:
-            submit(asc, app_id, ver, a.build.strip(), subs)
+            submit(asc, app_id, ver, norm_build(a.build), subs)
         else:
             err("submit requested but the version is missing")
 
