@@ -176,4 +176,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('descall:overlay:action', handler);
     return () => ipcRenderer.off('descall:overlay:action', handler);
   },
+
+  // Not in the admin windows: the tray panel follows the main window only.
+  setTrayState: noop,
+  onTrayAction: () => noop,
 });

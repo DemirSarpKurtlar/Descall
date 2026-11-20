@@ -64,13 +64,13 @@ for (const [k, value] of Object.entries(STUBBED)) {
   assert.equal(JSON.stringify(await out), JSON.stringify(value), `${k} answers ${JSON.stringify(value)}`);
   assert.equal(admin.calls.length, before, `${k} sends no IPC`);
 }
-for (const k of ["downloadFile", "overlayShow", "overlayHide", "overlayUpdate"]) {
+for (const k of ["downloadFile", "overlayShow", "overlayHide", "overlayUpdate", "setTrayState"]) {
   const before = admin.calls.length;
   assert.equal(admin.api[k]("https://x/y.exe", "y.exe"), undefined);
   assert.equal(admin.calls.length, before, `${k} sends no IPC`);
 }
 const adminSrc = readFileSync(new URL("./adminPreload.cjs", import.meta.url), "utf8");
-for (const ch of ["clipboard:read-image", "get-screen-sources", "scan-processes", "download-file", "descall:overlay:show", "descall:overlay:hide", "descall:overlay:update", "check-for-updates", "restart-app"]) {
+for (const ch of ["clipboard:read-image", "get-screen-sources", "scan-processes", "download-file", "descall:overlay:show", "descall:overlay:hide", "descall:overlay:update", "check-for-updates", "restart-app", "tray:set-state", "tray:action"]) {
   assert.ok(!adminSrc.includes(`'${ch}'`), `adminPreload.cjs never sends ${ch}`);
 }
 

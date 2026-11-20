@@ -82,6 +82,18 @@ function matchesOrGroups(row, groups) {
   );
 }
 
+// Column defaults the real schema fills on insert (DEFAULT NOW()) besides created_at.
+// game_history.played_at: without it a hand played inside a test has no time and the
+// daily hand / loss limits (gte played_at, start of the Istanbul day) never see it.
+const TIMESTAMP_DEFAULTS = Object.freeze({ game_history: ["played_at"] });
+
+function columnDefaults(table) {
+  const now = new Date().toISOString();
+  const out = {};
+  for (const col of TIMESTAMP_DEFAULTS[table] || []) out[col] = now;
+  return out;
+}
+
 class FakeQuery {
   constructor(table, mode, opts = {}, name = "") {
     this.table = table;
@@ -223,6 +235,7 @@ class FakeQuery {
       const row = {
         id: crypto.randomUUID(),
         created_at: new Date().toISOString(),
+        ...columnDefaults(this.name),
         ...this.payload,
       };
       rows.push(row);

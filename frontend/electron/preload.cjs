@@ -187,6 +187,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('descall:overlay:action', handler);
     return () => ipcRenderer.off('descall:overlay:action', handler);
   },
+
+  // Tray panel (draft B, src/lib/desktopTray.js): the page's compact tray state, and the
+  // panel actions main forwards back ({ action, arg }: status, mute, deafen, clip, openDms,
+  // openRequests, openSettings).
+  setTrayState: (state) => ipcRenderer.send('tray:set-state', state && typeof state === 'object' ? state : {}),
+  onTrayAction: (callback) => {
+    const handler = (_, msg) => callback(msg || {});
+    ipcRenderer.on('tray:action', handler);
+    return () => ipcRenderer.off('tray:action', handler);
+  },
 });
 
 // Descall+ (electron/premium/index.cjs): one generic bridge, limited to 'premium:*'

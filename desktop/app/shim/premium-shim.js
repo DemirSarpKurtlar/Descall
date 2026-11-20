@@ -23,7 +23,8 @@
   // (capsules, overlay). The label is known before any page script runs.
   const meta = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata;
   const label = String((meta && meta.currentWebview && meta.currentWebview.label) || "");
-  if (label === "admin" || label === "signup-stats" || location.hostname === "descall-shell.localhost") return;
+  // The tray panel ("tray-menu") has its own three-call bridge (tray-menu-shim.js).
+  if (label === "admin" || label === "signup-stats" || label === "tray-menu" || location.hostname === "descall-shell.localhost") return;
   Object.defineProperty(window, "__descallPremiumShim", { value: true });
 
   const invoke = (cmd, args) => T.core.invoke(cmd, args);
