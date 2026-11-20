@@ -23,8 +23,9 @@ use windows::Win32::System::Diagnostics::Debug::{AddVectoredExceptionHandler, Rt
 use windows::Win32::System::LibraryLoader::{GetModuleFileNameW, GetModuleHandleExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT};
 
 /// Access violation, heap corruption, stack buffer overrun / fail-fast, stack overflow,
-/// illegal instruction, integer divide by zero, assertion failure.
-const FATAL: [u32; 7] = [0xC000_0005, 0xC000_0374, 0xC000_0409, 0xC000_00FD, 0xC000_001D, 0xC000_0094, 0xC000_0420];
+/// illegal instruction, integer divide by zero, assertion failure, and the breakpoint that
+/// page heap raises when it catches a bad free (no debugger attached: the process ends).
+const FATAL: [u32; 8] = [0xC000_0005, 0xC000_0374, 0xC000_0409, 0xC000_00FD, 0xC000_001D, 0xC000_0094, 0xC000_0420, 0x8000_0003];
 const MAX_REPORTS: usize = 6;
 const EXCEPTION_CONTINUE_SEARCH: i32 = 0;
 
@@ -59,9 +60,10 @@ impl Line {
         Line { b: [0; 1024], n: 0 }
     }
     fn flush(&mut self) {
-        let _ = std::io::stderr().write_all(&self.b[..self.n]);
-        let _ = std::io::stdout().write_all(&self.b[..self.n]);
+        // stderr only: on the console stdout and stderr are the same screen (printing to both
+        // showed every line twice), and CI merges them with 2>&1.
         let _ = std::io::stdout().flush();
+        let _ = std::io::stderr().write_all(&self.b[..self.n]);
         self.n = 0;
     }
 }
@@ -142,8 +144,6 @@ unsafe extern "system" fn handler(info: *mut EXCEPTION_POINTERS) -> i32 {
             let bt = std::backtrace::Backtrace::force_capture();
             let text = format!("backtrace:\n{bt}\n");
             let _ = std::io::stderr().write_all(text.as_bytes());
-            let _ = std::io::stdout().write_all(text.as_bytes());
-            let _ = std::io::stdout().flush();
         } else {
             let _ = writeln!(line, "(heap corruption: symbolized backtrace skipped; see docs/desktop/ekran-paylasimi-testi.md, page heap)");
             line.flush();
