@@ -69,7 +69,10 @@ const { isPermissionAllowed, permissionUrl, writeClipboardText } = require('./cl
 const { resolveDownloadPath, uniqueDownloadPath, isDownloadableUrl } = require('./safeDownload.cjs');
 const { isAppUrl, isSafeExternalUrl, createSenderGuard } = require('./appTrust.cjs');
 const { isSignupStatsUrl, signupStatsWindowOptions, isAdminPanelUrl, adminPanelWindowOptions } = require('./adminStatsWindow.cjs');
-const { et, getLocale, initLocale, setUiLocale, onLocaleChange } = require('./mainI18n.cjs');
+const { et, getLocale, initLocale, setUiLocale, onLocaleChange, namespaceForAll } = require('./mainI18n.cjs');
+// Tray panel (draft B "Gelismis menu"): window in trayMenuWindow.cjs, rules in trayMenuModel.cjs.
+const trayModel = require('./trayMenuModel.cjs');
+const { createTrayPanel } = require('./trayMenuWindow.cjs');
 // Descall+ desktop features (gated by electron/premium/gate.cjs, modules in premium/features/).
 const premium = require('./premium/index.cjs');
 const premiumNotify = require('./premium/notifyHooks.cjs');
@@ -302,6 +305,15 @@ trustedOn('app:locale', (event, locale) => {
   const w = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
   if (!w || (w !== mainWindow && w !== signupStatsWindow && w !== adminPanelWindow)) return;
   if (setUiLocale(String(locale || '').slice(0, 16))) log.info(`[i18n] main-process language: ${getLocale()}`);
+});
+// Tray panel state from the main page (src/lib/desktopTray.js, debounced): name, avatar,
+// status, badges, voice toggles, shortcut hints, theme. Normalised and capped here.
+trustedOn('tray:set-state', (event, raw) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) return;
+  const next = trayModel.normalizeAppState(raw);
+  if (trayModel.sameAppState(next, trayAppState)) return;
+  trayAppState = next;
+  trayPanel?.refresh();
 });
 onLocaleChange(() => {
   rebuildTrayMenu?.();
@@ -895,6 +907,33 @@ let splashWindow = null;
 let tray = null;
 let rebuildTrayMenu = null;
 let isQuitting = false;
+/** Tray panel (Windows): created with the tray icon; the native menu stays as its fallback. */
+let trayPanel = null;
+/** Latest tray state from the main page (electronAPI.setTrayState), normalised. */
+let trayAppState = trayModel.normalizeAppState({});
+/** Tray panel "Mute notifications": desktop cards stay quiet until this time (ms, 0 = off). */
+let notifSnoozeUntil = 0;
+const NOTIF_SNOOZE_FILE = () => path.join(app.getPath('userData'), 'notification-snooze.json');
+
+function loadNotifSnooze() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(NOTIF_SNOOZE_FILE(), 'utf8'));
+    notifSnoozeUntil = trayModel.activeSnooze(raw?.until, Date.now());
+  } catch (_) {
+    notifSnoozeUntil = 0;
+  }
+}
+
+function setNotifSnooze(minutes) {
+  notifSnoozeUntil = trayModel.snoozeUntilFor(minutes, Date.now());
+  try {
+    if (notifSnoozeUntil) fs.writeFileSync(NOTIF_SNOOZE_FILE(), JSON.stringify({ until: notifSnoozeUntil }), 'utf8');
+    else if (fs.existsSync(NOTIF_SNOOZE_FILE())) fs.unlinkSync(NOTIF_SNOOZE_FILE());
+  } catch (err) {
+    log.warn('[tray-menu] snooze not saved:', err?.message || err);
+  }
+  log.info(`[tray-menu] notifications ${notifSnoozeUntil ? `muted until ${new Date(notifSnoozeUntil).toISOString()}` : 'on'}`);
+}
 
 // Persist "running in background" for a quiet updater relaunch only.
 // A manual shortcut launch ignores this file (see decideColdStart). It must
@@ -2022,6 +2061,62 @@ function createMainWindow() {
   });
 }
 
+/** Tray Quit / "Update and quit": in a call the update asks first (requestExplicitInstall). */
+function trayQuit() {
+  if (updateReady) {
+    // In a voice chat this asks before cutting the call. Otherwise it
+    // installs. A plain quit with a staged update installs from before-quit
+    // after this process releases Descall.exe and ffmpeg.dll.
+    const result = requestExplicitInstall('tray');
+    if (result?.needsConfirm) return;
+    if (result?.installing) return;
+  }
+  isQuitting = true;
+  app.quit();
+}
+
+function setTrayAutostart(on) {
+  syncLoginItem(on);
+  markAutostartDecided();
+  rebuildTrayMenu?.();
+}
+
+/** What the tray panel shows besides the page's own state. */
+function trayPanelShellState() {
+  const lang = getLocale();
+  const all = namespaceForAll('tray');
+  return {
+    lang,
+    strings: all[lang] || all.en || {},
+    app: trayAppState,
+    shell: {
+      version: app.getVersion(),
+      updateVersion: updateReady ? String(updateVersion || '') : '',
+      autostart: readOpenAtLogin(),
+      autostartKey: process.platform === 'win32' ? 'startWithWindows' : 'startAtLogin',
+      snoozeUntil: trayModel.activeSnooze(notifSnoozeUntil, Date.now()),
+    },
+  };
+}
+
+/** Panel actions: the shell runs its own, the rest go to the page (electronAPI.onTrayAction). */
+function runTrayPanelAction({ action, arg, kind }) {
+  if (kind === 'app') {
+    if (action === 'openDms' || action === 'openRequests') showMainWindow();
+    mainWindow?.webContents?.send('tray:action', { action, arg });
+    return;
+  }
+  if (action === 'open') showMainWindow();
+  else if (action === 'settings') {
+    showMainWindow();
+    mainWindow?.webContents?.send('tray:action', { action: 'openSettings', arg: null });
+  } else if (action === 'autostart') setTrayAutostart(!readOpenAtLogin());
+  else if (action === 'snooze') {
+    setNotifSnooze(arg);
+    rebuildTrayMenu?.();
+  } else if (action === 'quit' || action === 'update') trayQuit();
+}
+
 function createTray() {
   if (tray && !(typeof tray.isDestroyed === 'function' && tray.isDestroyed())) return tray;
 
@@ -2040,6 +2135,7 @@ function createTray() {
 
   tray.setToolTip('Descall');
 
+  // The native menu: Linux / macOS, and the Windows fallback when the panel cannot load.
   const buildMenu = () => Menu.buildFromTemplate([
     {
       label: et('tray.open'),
@@ -2055,45 +2151,56 @@ function createTray() {
       type: 'checkbox',
       checked: readOpenAtLogin(),
       click: (item) => {
-        syncLoginItem(item.checked);
-        markAutostartDecided();
-        tray.setContextMenu(buildMenu());
+        setTrayAutostart(item.checked);
       },
     },
     { type: 'separator' },
     {
       label: updateReady ? et('tray.updateAndQuit', { version: updateVersion || '' }) : et('tray.quit'),
-      click: () => {
-        if (updateReady) {
-          // In a voice chat this asks before cutting the call. Otherwise it
-          // installs. A plain quit with a staged update installs from before-quit
-          // after this process releases Descall.exe and ffmpeg.dll.
-          const result = requestExplicitInstall('tray');
-          if (result?.needsConfirm) return;
-          if (result?.installing) return;
-        }
-        isQuitting = true;
-        app.quit();
-      },
+      click: () => trayQuit(),
     },
   ]);
 
+  // Windows: right click opens the tray panel (draft B). No context menu is attached, or
+  // Windows would pop it on every right click; the panel pops it itself when it fails.
+  if (process.platform === 'win32') {
+    trayPanel = createTrayPanel({
+      url: isDev ? 'http://localhost:5173/tray-menu/tray-menu.html' : 'descall://app/tray-menu/tray-menu.html',
+      isDev,
+      log,
+      shellState: trayPanelShellState,
+      premiumTemplate: () => premium.trayMenuItems(),
+      onAction: runTrayPanelAction,
+      onFail: () => {
+        try { tray?.popUpContextMenu(buildMenu()); } catch (_) { /* ignore */ }
+      },
+    });
+  }
+
   rebuildTrayMenu = () => {
     if (!tray || (typeof tray.isDestroyed === 'function' && tray.isDestroyed())) return;
-    try { tray.setContextMenu(buildMenu()); } catch (_) { /* ignore */ }
+    if (!trayPanel) {
+      try { tray.setContextMenu(buildMenu()); } catch (_) { /* ignore */ }
+    }
+    trayPanel?.refresh();
   };
 
-  tray.setContextMenu(buildMenu());
+  if (!trayPanel) tray.setContextMenu(buildMenu());
   // Left click / double click always restores + focuses the window.
   tray.on('click', () => {
     showMainWindow();
+    trayPanel?.hide();
   });
   tray.on('double-click', () => {
     showMainWindow();
+    trayPanel?.hide();
   });
-  tray.on('right-click', () => {
+  tray.on('right-click', (_event, bounds) => {
+    if (trayPanel && trayPanel.open(bounds)) return;
     try { tray.popUpContextMenu(buildMenu()); } catch (_) { /* ignore */ }
   });
+  // Load the panel while the pointer rests on the icon, so the first right click is instant.
+  tray.on('mouse-enter', () => trayPanel?.warm());
   return tray;
 }
 
@@ -2178,6 +2285,7 @@ app.whenReady().then(async () => {
   }
 
   registerDescallProtocol();
+  loadNotifSnooze();
   if (!smokeBoot) ensureAutostartLoginItem();
   if (!smokeBoot) startMigrationBridge();
 
@@ -2230,6 +2338,7 @@ app.on('before-quit', () => {
   saveWindowStateNow();
   premium.flush();
   destroyOverlayWindow();
+  trayPanel?.destroy();
   if (!updateReady || installStarted || !app.isPackaged) return;
   try {
     installStarted = true;
@@ -2409,6 +2518,8 @@ function showAppNotification(payload = {}) {
   const { body, tag = 'descall', data = {}, requireInteraction = false, avatarUrl = null } = options;
 
   const isCall    = data?.type === 'call' || data?.type === 'group-call';
+  // Tray panel "Mute notifications": nothing but calls until the snooze ends.
+  if (!isCall && trayModel.suppressNotification(options, notifSnoozeUntil, Date.now())) return null;
   // Descall in front: the in-app UI (message list, incoming call card) is
   // already showing this. A toast on top would be a duplicate.
   if (mainWindowInFront() && (isCall || !requireInteraction)) return null;

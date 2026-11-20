@@ -340,4 +340,28 @@ const ids = (m) => plain(m.rows.map((r) => r.kind === "separator" ? "|" : r.id))
   assert.ok(!/animation[^;]*infinite/.test(css), "no infinite animation (idle CPU)");
 }
 
+// ---- 9. Electron wiring -------------------------------------------------------------------
+{
+  const main = readFileSync(join(here, "main.cjs"), "utf8");
+  const win = readFileSync(join(here, "trayMenuWindow.cjs"), "utf8");
+  const preload = readFileSync(join(here, "trayMenuPreload.cjs"), "utf8");
+  assert.match(main, /trustedOn\('tray:set-state', \(event, raw\) => \{\s*if \(!mainWindow \|\| mainWindow\.isDestroyed\(\) \|\| event\.sender !== mainWindow\.webContents\) return;/, "only the main window sets the tray state");
+  assert.match(main, /trayModel\.normalizeAppState\(raw\)/);
+  assert.match(main, /suppressNotification\(options, notifSnoozeUntil/, "the snooze gates desktop cards");
+  assert.match(main, /if \(trayPanel && trayPanel\.open\(bounds\)\) return;\s*try \{ tray\.popUpContextMenu\(buildMenu\(\)\); \}/, "native menu when the panel cannot open");
+  assert.match(main, /onFail: \(\) => \{\s*try \{ tray\?\.popUpContextMenu\(buildMenu\(\)\); \}/, "native menu when the panel fails to load");
+  assert.match(main, /if \(!trayPanel\) tray\.setContextMenu\(buildMenu\(\)\);/, "no context menu attached while the panel handles right click");
+  // The panel window: own preload, sandbox, no navigation, sender checked, allow list.
+  assert.match(win, /preload: path\.join\(__dirname, 'trayMenuPreload\.cjs'\)/);
+  assert.match(win, /sandbox: true/);
+  assert.match(win, /contextIsolation: true/);
+  assert.match(win, /nodeIntegration: false/);
+  assert.match(win, /setWindowOpenHandler\(\(\) => \(\{ action: 'deny' \}\)\)/);
+  assert.match(win, /'will-navigate', \(e\) => e\.preventDefault\(\)/);
+  assert.match(win, /ipcMain\.on\('tray-menu:act', \(event, msg\) => \{\s*if \(!isPanelSender\(event\)\) return;\s*const v = validateAction\(msg, \{ premiumIds \}\);/);
+  assert.match(win, /ipcMain\.handle\('tray-menu:get-state', \(event\) => \{\s*if \(!isPanelSender\(event\)\) throw/);
+  assert.deepEqual([...preload.matchAll(/ipcRenderer\.(\w+)\('([\w:-]+)'/g)].map((x) => `${x[1]} ${x[2]}`).sort(),
+    ["invoke tray-menu:get-state", "on tray-menu:state", "removeListener tray-menu:state", "send tray-menu:act"], "the panel preload exposes three calls only");
+}
+
 console.log("trayMenu.selftest ok");
