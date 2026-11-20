@@ -108,20 +108,31 @@ async function run() {
     });
 
     await check("sets: a piece taken off sale is never sold or gifted with its set", async () => {
-      const off = rows("shop_items").find((r) => r.sku === "s2-banner-bakir-kervan");
+      // User 5 bought a random night card above (the deck depends on the night id, a fresh
+      // UUID each run), which is now and then a piece of this set: take off sale a piece
+      // neither buyer owns yet, so "not granted" tests the set purchase and nothing else.
+      const off = rows("shop_items")
+        .filter((r) => r.set_key === "bakir-kervan" && r.active !== false)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .find((r) => !owns(5, r.id) && !owns(3, r.id));
+      assert.ok(off, "a bakir-kervan piece neither buyer owns");
       off.active = false;
       require("../lib/shop2/catalog").invalidate();
-      const d = (await call("/shop2/sets/bakir-kervan", { user: 5 })).body;
-      assert.ok(!(d.pieces || []).some((p) => p.item && p.item.id === off.id), "off-sale piece not offered");
-      const r = await call("/shop2/sets/bakir-kervan/buy", { method: "POST", user: 5, body: { all: true, holdToken: "hold-sec-set-0001" } });
-      assert.equal(r.status, 200, JSON.stringify(r.body));
-      assert.ok(!r.body.itemIds.includes(off.id));
-      assert.ok(!owns(5, off.id), "off-sale piece not granted");
-      const piece = await call("/shop2/sets/bakir-kervan/buy", { method: "POST", user: 3, body: { pieceIds: [off.id], holdToken: "hold-sec-set-0002" } });
-      assert.notEqual(piece.status, 200);
-      assert.ok(!owns(3, off.id));
-      off.active = true;
-      require("../lib/shop2/catalog").invalidate();
+      try {
+        const d = (await call("/shop2/sets/bakir-kervan", { user: 5 })).body;
+        assert.ok(!(d.pieces || []).some((p) => p.item && p.item.id === off.id), "off-sale piece not offered");
+        const r = await call("/shop2/sets/bakir-kervan/buy", { method: "POST", user: 5, body: { all: true, holdToken: "hold-sec-set-0001" } });
+        assert.equal(r.status, 200, JSON.stringify(r.body));
+        assert.ok(!r.body.itemIds.includes(off.id));
+        assert.ok(!owns(5, off.id), "off-sale piece not granted");
+        const piece = await call("/shop2/sets/bakir-kervan/buy", { method: "POST", user: 3, body: { pieceIds: [off.id], holdToken: "hold-sec-set-0002" } });
+        assert.notEqual(piece.status, 200);
+        assert.ok(!owns(3, off.id));
+      } finally {
+        // Back on sale even when an assertion failed, so later checks see the real catalog.
+        off.active = true;
+        require("../lib/shop2/catalog").invalidate();
+      }
     });
 
     await check("refund: the piece that opened the partial price cannot be refunded once the window was used", async () => {
